@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### Added
+
+- **A guardian can file documents for a managed profile.** From your own
+  account, inside the profile, Documents now takes uploads with the same
+  types and size limit as your own vault, and you can rename, retype, link,
+  delete and restore what is there. The files belong to the profile: they
+  count against its storage, not yours, and its activity log names you as
+  the one who added or changed them. Automatic AI reading follows the
+  profile's own settings and consent. An adult who shares their record at
+  any level, manage included, keeps the vault to themselves, as before.
+  Thanks to @ch3funio for the careful write-up and for offering to test it
+  with a real archive. (#1403)
+
 ### Changed
 
 - API responses and CSV or JSON exports now go out gzip-compressed when the
