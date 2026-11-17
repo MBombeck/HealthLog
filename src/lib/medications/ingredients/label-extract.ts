@@ -80,9 +80,11 @@ export type SupplementLabelMime =
 export async function requireSupplementLabelProvider(
   userId: string,
 ): Promise<OcrVisionPick> {
-  const { chain, pick } = await resolveVisionProvider(userId, {
-    reorder: reorderChainForDocumentClass,
-  });
+  const { chain, pick } = await resolveVisionProvider(
+    userId,
+    "supplementLabel",
+    { reorder: reorderChainForDocumentClass },
+  );
   if (!pick) {
     annotate({
       action: { name: "medication.ingredients.extract.providerUnsupported" },

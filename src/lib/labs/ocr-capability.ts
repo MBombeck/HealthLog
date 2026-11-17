@@ -15,8 +15,14 @@ import {
   AiUnavailableError,
   type NoProviderRefusal,
 } from "@/lib/ai/capabilities/refusal";
-import { PICK_DECIDED_REASONS } from "@/lib/ai/capabilities/types";
-import type { ProviderChainResolved } from "@/lib/ai/provider-runner";
+import {
+  PICK_DECIDED_REASONS,
+  type AiCapabilityKey,
+} from "@/lib/ai/capabilities/types";
+import {
+  isPinnedChain,
+  type ProviderChainResolved,
+} from "@/lib/ai/provider-runner";
 import { resolveProviderChain } from "@/lib/ai/provider";
 import { chainEntryReadsImages } from "@/lib/ai/codex-slug-chain";
 import { RASTERIZATION_AVAILABLE } from "@/lib/documents/rasterize-pdf";
@@ -61,8 +67,26 @@ export type ChainReorder = (
 ) => ProviderChainResolved[];
 
 export interface ResolveProviderOptions {
-  /** Reorder the resolved chain before picking. Defaults to identity. */
+  /**
+   * Reorder the resolved chain before picking. Defaults to identity. Never
+   * applied to a capability's pinned named chain (#1404): the person chose
+   * that order for this capability.
+   */
   reorder?: ChainReorder;
+}
+
+/**
+ * The capability's chain, in the order its pick reads it: the pinned named
+ * chain as stored, otherwise the default chain through the caller's reorder.
+ */
+async function capabilityChain(
+  userId: string,
+  capability: AiCapabilityKey,
+  options?: ResolveProviderOptions,
+): Promise<ProviderChainResolved[]> {
+  const resolved = await resolveProviderChain(userId, capability);
+  if (!options?.reorder || isPinnedChain(resolved)) return resolved;
+  return options.reorder(resolved);
 }
 
 /** A vision-capable provider pick: its instance, logical tag, and model. */
@@ -88,6 +112,7 @@ export interface VisionProviderPick {
  */
 export async function resolveVisionProvider(
   userId: string,
+  capability: AiCapabilityKey,
   options?: ResolveProviderOptions,
 ): Promise<VisionProviderPick> {
   const userRow = await prisma.user.findUnique({
@@ -108,13 +133,9 @@ export async function resolveVisionProvider(
     adminModel: settings?.adminAiModel ?? null,
   };
 
-  const resolvedChain = await resolveProviderChain(userId);
-
   // Apply the caller's reorder (document class demotes external providers below
   // local) before picking; labs passes no reorder → identity.
-  const chain = options?.reorder
-    ? options.reorder(resolvedChain)
-    : resolvedChain;
+  const chain = await capabilityChain(userId, capability, options);
 
   for (const entry of chain) {
     const providerType = entry.providerType as VisionProviderType;
@@ -142,6 +163,7 @@ export async function resolveVisionProvider(
  */
 export async function resolveTextProvider(
   userId: string,
+  capability: AiCapabilityKey,
   options?: ResolveProviderOptions,
 ): Promise<{
   chain: ProviderChainResolved[];
@@ -149,10 +171,7 @@ export async function resolveTextProvider(
 }> {
   // The text-mode structuring pass needs no vision — any configured provider in
   // the main chain can structure the OCR'd text.
-  const resolvedChain = await resolveProviderChain(userId);
-  const chain = options?.reorder
-    ? options.reorder(resolvedChain)
-    : resolvedChain;
+  const chain = await capabilityChain(userId, capability, options);
   const entry = chain[0];
   return {
     chain,
@@ -195,8 +214,8 @@ export async function requireLabsOcrProvider(
 ) {
   const { chain, pick } =
     mode === "vision"
-      ? await resolveVisionProvider(userId)
-      : await resolveTextProvider(userId);
+      ? await resolveVisionProvider(userId, "labsOcr")
+      : await resolveTextProvider(userId, "labsOcr");
   if (!pick) {
     annotate({
       action: { name: "labs.ocr.providerUnsupported" },
@@ -232,7 +251,7 @@ export async function resolveOcrCapability(
   userId: string,
 ): Promise<OcrCapabilityDto> {
   const [{ chain, pick, localOcrEnabled }, ai] = await Promise.all([
-    resolveVisionProvider(userId),
+    resolveVisionProvider(userId, "labsOcr"),
     getAiCapability("labsOcr"),
   ]);
 

@@ -58,8 +58,20 @@ export interface ProviderEntryPresence {
  * operator's key alone.
  */
 export interface ProviderPresence {
-  /** Usable entries in chain order, the central Codex and the picked gateway included. */
+  /**
+   * Usable entries of the default chain in chain order, the central Codex and
+   * the picked gateway included: what every capability not attached to a
+   * named chain reads.
+   */
   entries: readonly ProviderEntryPresence[];
+  /**
+   * #1404 — the capabilities attached to a named chain, each with the usable
+   * entries of that chain in its order and nothing else. A capability listed
+   * here reads these instead of `entries`, with no reorder: an empty list is a
+   * binding whose provider cannot serve, and the capability has none. Absent
+   * reads as no capability attached.
+   */
+  pinned?: Partial<Record<AiCapabilityKey, readonly ProviderEntryPresence[]>>;
   /** The person's in-browser OCR opt-in, which lets a text-only provider read a document. */
   localOcrEnabled: boolean;
   managedBy: AiProviderManagedBy | null;
@@ -192,12 +204,34 @@ function modulesFinding(
   return closed.find((finding) => finding.reason === reason)!;
 }
 
-/** The entries in the order this capability would pick from. */
+/**
+ * The entries this capability reads: its pinned named chain when it is
+ * attached to one, otherwise the default chain.
+ */
+export function capabilityEntries(
+  key: AiCapabilityKey,
+  provider: ProviderPresence,
+): readonly ProviderEntryPresence[] {
+  return provider.pinned?.[key] ?? provider.entries;
+}
+
+function isPinned(key: AiCapabilityKey, provider: ProviderPresence): boolean {
+  return provider.pinned?.[key] !== undefined;
+}
+
+/**
+ * The entries in the order this capability would pick from. A pinned chain is
+ * read in its own order: the person chose it for this capability, so the
+ * document-class preference does not reorder it.
+ */
 function orderedEntries(
   def: AiCapabilityDefinition,
-  entries: readonly ProviderEntryPresence[],
+  provider: ProviderPresence,
 ): readonly ProviderEntryPresence[] {
-  if (def.providerOrder === "chain") return entries;
+  const entries = capabilityEntries(def.key, provider);
+  if (def.providerOrder === "chain" || isPinned(def.key, provider)) {
+    return entries;
+  }
   // A stable sort keeps the person's own order within a rank.
   return [...entries].sort(
     (a, b) =>
@@ -215,7 +249,7 @@ function documentPick(
   def: AiCapabilityDefinition,
   provider: ProviderPresence,
 ): ProviderEntryPresence | null {
-  const ordered = orderedEntries(def, provider.entries);
+  const ordered = orderedEntries(def, provider);
   const vision = ordered.find((entry) => entry.vision);
   if (vision) return vision;
   if (provider.localOcrEnabled && ordered.length > 0) return ordered[0]!;
@@ -229,7 +263,9 @@ function providerReason(
   if (def.modality === "document") {
     return documentPick(def, provider) === null ? "no_provider" : null;
   }
-  return provider.entries.length === 0 ? "no_provider" : null;
+  return capabilityEntries(def.key, provider).length === 0
+    ? "no_provider"
+    : null;
 }
 
 /** Does serving this capability need a consent receipt? */
@@ -240,7 +276,7 @@ function consentNeeded(
   if (def.consent.rule === "self-snapshot") {
     // A cascade may fall through to any entry, so one operator-held entry
     // anywhere in the chain is enough to need the receipt.
-    return provider.entries.some((entry) =>
+    return capabilityEntries(def.key, provider).some((entry) =>
       isOperatorHeldProvider(entry.providerType),
     );
   }
@@ -251,7 +287,7 @@ function consentNeeded(
   }
   // Text under the document rule cascades like a snapshot does, so any entry
   // that leaves the machine needs the receipt.
-  return provider.entries.some((entry) =>
+  return capabilityEntries(def.key, provider).some((entry) =>
     isExternalProvider(entry.providerType),
   );
 }
@@ -372,6 +408,24 @@ export function resolveAiCapabilities(
   return out;
 }
 
+/**
+ * Every entry any capability reads: the default chain's, then each pinned
+ * chain's in capability order. What the record has configured, as a whole.
+ */
+export function everyEntry(
+  provider: ProviderPresence,
+): readonly ProviderEntryPresence[] {
+  const out: ProviderEntryPresence[] = [...provider.entries];
+  for (const key of AI_CAPABILITY_KEYS) {
+    for (const entry of provider.pinned?.[key] ?? []) {
+      if (!out.some((seen) => seen.providerType === entry.providerType)) {
+        out.push(entry);
+      }
+    }
+  }
+  return out;
+}
+
 /** The account-level provider block. */
 export function resolveAiProviderState(
   inputs: AiCapabilityInputs | null,
@@ -385,7 +439,7 @@ export function resolveAiProviderState(
     };
   }
   return {
-    configured: inputs.provider.entries.length > 0,
+    configured: everyEntry(inputs.provider).length > 0,
     managedBy: inputs.provider.managedBy,
     canConfigure: inputs.recordKind === "self" && inputs.switches.enabled,
     responseTimeoutMs: resolveEffectiveTimeoutMs(
@@ -416,7 +470,7 @@ function operatorKeyServiceName(baseUrl: string | null | undefined): string {
 
 function consentRecipients(provider: ProviderPresence): AiConsentRecipient[] {
   const out: AiConsentRecipient[] = [];
-  for (const entry of provider.entries) {
+  for (const entry of everyEntry(provider)) {
     if (!isOperatorHeldProvider(entry.providerType)) continue;
     const recipient: AiConsentRecipient =
       entry.providerType === "admin-codex"

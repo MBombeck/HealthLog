@@ -196,7 +196,7 @@ async function handleExtract(request: NextRequest): Promise<Response> {
   // Resolve the same provider chain the Coach uses. If the user has no
   // provider configured AND the operator has not seeded an admin key,
   // surface a structured 503 — the wizard hides the overlay.
-  const chain = await resolveProviderChain(userId);
+  const chain = await resolveProviderChain(userId, "medicationExtract");
   if (chain.length === 0) {
     annotate({ action: { name: "medications.extract.no-provider" } });
     throw new AiUnavailableError(

@@ -29,7 +29,7 @@ import { buildBriefingPrompt } from "./prompt";
 export async function resolveConsentedBriefingChain(
   userId: string,
 ): Promise<ProviderChainResolved[] | null> {
-  const chain = await resolveProviderChain(userId);
+  const chain = await resolveProviderChain(userId, "briefing");
   if (chain.length === 0) return null;
   await assertConsentForChain({ userId, chain, surface: "insights" });
   return chain;

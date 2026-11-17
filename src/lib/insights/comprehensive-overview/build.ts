@@ -203,7 +203,7 @@ export async function buildComprehensiveResponse(user: OverviewRecord) {
     medications: medCompliance,
     alerts,
     // Presence only: no client is built and no token is refreshed on a read.
-    hasProvider: await probeProviderPresence(userId),
+    hasProvider: await probeProviderPresence(userId, "text", "briefing"),
     dataSpanDays,
     totalMeasurements: aggregate.totalMeasurements,
   };

@@ -55,7 +55,7 @@ export const GET = apiHandler(async () => {
   const persisted = parseProviderChain(userRow?.aiProviderChain ?? null);
 
   const [resolved, presence] = await Promise.all([
-    resolveProviderChain(user.id),
+    resolveProviderChain(user.id, null),
     probeProviderChain(user.id),
   ]);
   const availableTypes = new Set(presence.availableTypes ?? []);

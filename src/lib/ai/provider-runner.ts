@@ -164,6 +164,19 @@ export interface ProviderChainResolved {
   providerType: ProviderChainType;
   /** The constructed provider instance. */
   instance: AIProvider;
+  /**
+   * #1404 — the entry comes from a named chain the capability is attached to.
+   * Its order is the person's word: the last-working memo neither reorders
+   * such a chain nor learns from it.
+   */
+  pinned?: true;
+}
+
+/** Whether a resolved chain is a capability's pinned named chain. */
+export function isPinnedChain(
+  providers: readonly ProviderChainResolved[],
+): boolean {
+  return providers.some((p) => p.pinned === true);
 }
 
 export interface FallbackHop {
@@ -275,6 +288,7 @@ function applyLastWorkingCache(
   userId: string,
   providers: ProviderChainResolved[],
 ): ProviderChainResolved[] {
+  if (isPinnedChain(providers)) return providers;
   const cached = getLastWorkingProvider(userId);
   if (!cached) return providers;
   const idx = providers.findIndex((p) => p.providerType === cached);
@@ -650,7 +664,9 @@ async function runRawChain(
     }
     try {
       const result = await invoke(candidate);
-      rememberWorkingProvider(userId, candidate.providerType);
+      if (!candidate.pinned) {
+        rememberWorkingProvider(userId, candidate.providerType);
+      }
       void ledger.recordSuccess(userId, candidate.providerType);
       annotate({
         meta: {

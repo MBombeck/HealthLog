@@ -318,8 +318,10 @@ describe("POST /api/insights/generate — a provider the health ledger benched",
       httpStatus: 401,
     });
     makeProviderThatThrows(err);
-    const [{ instance: provider }] =
-      await vi.mocked(resolveProviderChain)("u-1");
+    const [{ instance: provider }] = await vi.mocked(resolveProviderChain)(
+      "u-1",
+      null,
+    );
     const body = JSON.stringify({ force: true });
     const request = new NextRequest("http://localhost/api/insights/generate", {
       method: "POST",

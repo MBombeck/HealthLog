@@ -42,10 +42,16 @@ import {
   PROVIDER_REFRESH_TRANSACTION_OPTIONS,
 } from "@/lib/integrations/oauth-refresh";
 import type { Prisma } from "@/generated/prisma/client";
-import type { AiModality } from "@/lib/ai/capabilities/types";
-import type {
-  ProviderEntryPresence,
-  ProviderPresence,
+import {
+  AI_CAPABILITY_KEYS,
+  type AiCapabilityKey,
+  type AiModality,
+} from "@/lib/ai/capabilities/types";
+import { chainSelectionFor, parseNamedChains } from "./named-chains";
+import {
+  everyEntry,
+  type ProviderEntryPresence,
+  type ProviderPresence,
 } from "@/lib/ai/capabilities/resolve";
 
 const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
@@ -803,20 +809,32 @@ async function readBoundSettings(userId: string): Promise<{
  * `providerType` with a constructed `AIProvider` instance ready to
  * accept `generateCompletion()` calls.
  *
- * Steps:
- *   1. Read `User.aiProviderChain` (or `PROVIDER_CHAIN_DEFAULT` when
- *      null). Already sorted + deduplicated by `parseProviderChain`.
- *   2. For each enabled entry, attempt to materialise the provider
- *      from the user's saved credentials. Drop entries that have no
- *      usable credential (e.g. chain says `anthropic` but
- *      `aiAnthropicKeyEncrypted` is null).
+ * #1404 — `capability` names the AI capability the chain will serve, and
+ * decides which chain is read (`chainSelectionFor`). `null` asks for the
+ * default chain itself (the settings summary, the connection test).
+ *
+ * Steps for an unattached capability (today's rules):
+ *   1. Read the default chain: the enabled entries of `User.aiProviderChain`
+ *      (or `PROVIDER_CHAIN_DEFAULT` when null), or the entries of the named
+ *      chain the record marked default.
+ *   2. For each entry, attempt to materialise the provider from the user's
+ *      saved credentials. Drop entries that have no usable credential (e.g.
+ *      chain says `anthropic` but `aiAnthropicKeyEncrypted` is null).
  *   3. Append the operator's central Codex behind the person's opt-in.
  *   4. Still empty: the picked gateway, unless the chain switched it off
  *      (`servesPickedGateway`), else nothing. Every caller treats an
  *      empty result as "no provider"; none falls back on its own.
+ *
+ * A capability attached to a named chain resolves exactly that chain's
+ * entries under the same credential policy, marked `pinned`, and nothing
+ * else: no central Codex appended (it serves only where the chain lists
+ * `admin-codex`, and then only behind the same opt-in), no gateway fallback.
+ * An entry without a usable credential drops out, so a one-entry chain whose
+ * provider is gone resolves empty and the capability refuses.
  */
 export async function resolveProviderChain(
   userId: string,
+  capability: AiCapabilityKey | null,
 ): Promise<ProviderChainResolved[]> {
   const authority = providerWorkAuthorityForRecord(userId);
   if (providerCredentialPolicy(authority) === "deny") return [];
@@ -835,6 +853,7 @@ export async function resolveProviderChain(
       aiCompatModel: true,
       role: true,
       aiProviderChain: true,
+      aiNamedChains: true,
       useCentralCodex: true,
       managedProfileAt: true,
       aiResponseTimeoutSeconds: true,
@@ -850,6 +869,31 @@ export async function resolveProviderChain(
     authority,
     userRow?.managedProfileAt ?? null,
   );
+  const selection = chainSelectionFor(
+    parseNamedChains(userRow?.aiNamedChains ?? null),
+    capability,
+  );
+
+  if (selection.kind === "pinned") {
+    const pinned: ProviderChainResolved[] = [];
+    for (const providerType of selection.entries) {
+      const instance =
+        providerType === "admin-codex"
+          ? policy === "operator-default" || !userRow?.useCentralCodex
+            ? null
+            : await resolveAdminCodexProvider()
+          : await resolveProviderForType(providerType, {
+              userId,
+              userRow,
+              policy,
+            });
+      if (instance) {
+        pinned.push({ providerType, instance: bind(instance), pinned: true });
+      }
+    }
+    return pinned;
+  }
+
   if (policy === "operator-default") {
     const provider = await resolveAdminProvider();
     return provider.type === "none"
@@ -857,30 +901,32 @@ export async function resolveProviderChain(
       : [{ providerType: "admin-openai", instance: bind(provider) }];
   }
 
-  const rawChain = userRow?.aiProviderChain ?? null;
-  const chain = parseProviderChain(rawChain).filter((e) => e.enabled);
+  const chain: readonly ProviderChainType[] =
+    selection.kind === "default"
+      ? selection.entries.filter((type) => type !== "admin-codex")
+      : parseProviderChain(userRow?.aiProviderChain ?? null)
+          .filter((e) => e.enabled)
+          .map((e) => e.providerType);
 
   const resolved: ProviderChainResolved[] = [];
-  for (const entry of chain) {
-    const instance = await resolveProviderForType(entry.providerType, {
+  for (const providerType of chain) {
+    const instance = await resolveProviderForType(providerType, {
       userId,
       userRow,
       policy,
     });
     if (instance) {
-      resolved.push({
-        providerType: entry.providerType,
-        instance: bind(instance),
-      });
+      resolved.push({ providerType, instance: bind(instance) });
     }
   }
 
   // Operator-shared central Codex — appended LAST, and ONLY when the user opted
   // in AND the operator has connected it. It is never part of the persisted
   // chain (a persisted `admin-codex` entry resolves to null above), so this is
-  // the single place the opt-in gate is enforced. As a trailing fallback the
-  // user's own providers are tried first; a user with no personal provider
-  // resolves to `[admin-codex]` and is billed against the operator cap.
+  // the single place the opt-in gate is enforced for an unattached capability.
+  // As a trailing fallback the user's own providers are tried first; a user
+  // with no personal provider resolves to `[admin-codex]` and is billed against
+  // the operator cap.
   if (userRow?.useCentralCodex) {
     const centralCodex = await resolveAdminCodexProvider();
     if (centralCodex) {
@@ -912,8 +958,9 @@ export async function resolveProviderChain(
  */
 export async function hasAnyConfiguredProvider(
   userId: string,
+  capability: AiCapabilityKey = "briefing",
 ): Promise<boolean> {
-  return probeProviderPresence(userId, "text");
+  return probeProviderPresence(userId, "text", capability);
 }
 
 /**
@@ -963,6 +1010,20 @@ function providerOrigin(providerType: string): ProviderManagedBy {
 }
 
 /**
+ * Where the provider that serves the record comes from: the head of the
+ * default chain, else the head of the first pinned chain that has one.
+ */
+function firstOrigin(
+  entries: readonly ProviderEntryPresence[],
+  pinned: ProviderPresence["pinned"],
+): ProviderManagedBy | null {
+  const head =
+    entries[0] ??
+    AI_CAPABILITY_KEYS.map((key) => pinned?.[key]?.[0]).find(Boolean);
+  return head ? providerOrigin(head.providerType) : null;
+}
+
+/**
  * What a chain that resolves empty falls back to: the OpenAI-compatible
  * gateway picked under Settings, AI, unless the chain switched it off. The
  * default chain has no entry for the gateway, so a chain never saved, reset
@@ -994,7 +1055,7 @@ export async function resolveProviderAvailability(
   userId: string,
 ): Promise<{ aiAvailable: boolean; managedBy: ProviderManagedBy | null }> {
   const presence = await probeProviderChain(userId);
-  return presence.entries.length > 0
+  return everyEntry(presence).length > 0
     ? { aiAvailable: true, managedBy: presence.managedBy }
     : { aiAvailable: false, managedBy: null };
 }
@@ -1005,6 +1066,7 @@ export async function resolveProviderAvailability(
 const PRESENCE_USER_SELECT = {
   aiProvider: true,
   aiProviderChain: true,
+  aiNamedChains: true,
   aiAnthropicKeyEncrypted: true,
   aiLocalKeyEncrypted: true,
   aiOpenaiKeyEncrypted: true,
@@ -1091,9 +1153,26 @@ export function probeProviderChain(
       });
 
       if (policy === "deny") return NO_PRESENCE;
+      const named = parseNamedChains(row.aiNamedChains ?? null);
+      // #1404 — the capabilities attached to a named chain, each with exactly
+      // the entries of its chain that hold a usable credential, in its order.
+      const pinnedPresence = (
+        present: (providerType: ProviderChainType) => boolean,
+      ): ProviderPresence["pinned"] => {
+        const out: NonNullable<ProviderPresence["pinned"]> = {};
+        for (const key of AI_CAPABILITY_KEYS) {
+          const selection = chainSelectionFor(named, key);
+          if (selection.kind !== "pinned") continue;
+          out[key] = selection.entries.filter(present).map(vision);
+        }
+        return out;
+      };
       if (policy === "operator-default") {
         return {
           entries: adminKey ? [vision("admin-openai")] : [],
+          pinned: pinnedPresence(
+            (providerType) => providerType === "admin-openai" && adminKey,
+          ),
           operatorKeyBaseUrl: settings?.adminAiBaseUrl ?? null,
           // A guardian's in-browser OCR is not the record's opt-in to use.
           localOcrEnabled: false,
@@ -1131,11 +1210,17 @@ export function probeProviderChain(
       };
       const centralCodex =
         row.useCentralCodex && appSettingsCentralCodexConnected(settings);
+      const defaultSelection = chainSelectionFor(named, null);
+      const defaultChain: readonly ProviderChainType[] =
+        defaultSelection.kind === "default"
+          ? defaultSelection.entries.filter((type) => type !== "admin-codex")
+          : parseProviderChain(row.aiProviderChain ?? null)
+              .filter((entry) => entry.enabled)
+              .map((entry) => entry.providerType);
       const entries: ProviderEntryPresence[] = [];
-      for (const entry of parseProviderChain(row.aiProviderChain ?? null)) {
-        if (!entry.enabled) continue;
-        if (credentialPresent(entry.providerType)) {
-          entries.push(vision(entry.providerType));
+      for (const providerType of defaultChain) {
+        if (credentialPresent(providerType)) {
+          entries.push(vision(providerType));
         }
       }
       if (centralCodex) {
@@ -1152,11 +1237,16 @@ export function probeProviderChain(
         entries.push(vision("openai-compatible"));
       }
 
+      const pinned = pinnedPresence((providerType) =>
+        providerType === "admin-codex"
+          ? centralCodex
+          : credentialPresent(providerType),
+      );
       return {
         entries,
+        pinned,
         localOcrEnabled: row.labsLocalOcrEnabled,
-        managedBy:
-          entries.length > 0 ? providerOrigin(entries[0].providerType) : null,
+        managedBy: firstOrigin(entries, pinned),
         availableTypes,
         responseTimeoutSeconds: row.aiResponseTimeoutSeconds,
         operatorKeyBaseUrl: settings?.adminAiBaseUrl ?? null,
@@ -1174,12 +1264,17 @@ export function probeProviderChain(
 export async function probeProviderPresence(
   recordId: string,
   modality: AiModality = "text",
+  capability: AiCapabilityKey | null = null,
 ): Promise<boolean> {
   const presence = await probeProviderChain(recordId);
-  if (modality === "text") return presence.entries.length > 0;
+  // #1404 — a capability attached to a named chain asks about that chain.
+  const entries =
+    (capability ? presence.pinned?.[capability] : undefined) ??
+    presence.entries;
+  if (modality === "text") return entries.length > 0;
   return (
-    presence.entries.some((entry) => entry.vision) ||
-    (presence.localOcrEnabled && presence.entries.length > 0)
+    entries.some((entry) => entry.vision) ||
+    (presence.localOcrEnabled && entries.length > 0)
   );
 }
 
@@ -1361,7 +1456,7 @@ async function resolveProviderForTestUnbound(
   // no signal about whether overnight generation would work.
   // Nothing resolving is the route's `ai.provider.none`, not a refused entry.
   if (!provider) {
-    const chain = await resolveProviderChain(userId);
+    const chain = await resolveProviderChain(userId, null);
     return chain.length > 0 ? chain[0].instance : new NoProvider();
   }
 

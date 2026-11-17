@@ -34,7 +34,7 @@ export async function unavailableStatusBody(
   ai: AiCapabilityState,
 ): Promise<UnavailableStatusBody> {
   return {
-    hasProvider: await probeProviderPresence(recordId),
+    hasProvider: await probeProviderPresence(recordId, "text", "statusText"),
     text: null,
     cached: false,
     updatedAt: null,
@@ -59,7 +59,7 @@ export async function unavailableComplianceStatusBody(
   ai: AiCapabilityState,
 ): Promise<UnavailableComplianceStatusBody> {
   return {
-    hasProvider: await probeProviderPresence(recordId),
+    hasProvider: await probeProviderPresence(recordId, "text", "statusText"),
     summary: null,
     medications: [],
     cached: false,
