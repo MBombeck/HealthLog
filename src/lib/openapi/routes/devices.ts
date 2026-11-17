@@ -46,7 +46,7 @@ const deviceRegisterRequest = z
       .nullable()
       .optional()
       .describe(
-        'v1.7.0 per-device medication-delivery override. NULL / omitted = inherit the user-level roaming default. "server" forces server APNs for this device; "client" forces local. Stored + echoed; cron suppression stays user-level.',
+        'v1.7.0 per-device medication-delivery override; omitted keeps the stored value. "client" keeps the server\'s medication-reminder push off this device (the app reminds locally), "server" pushes it to this device whatever the account says, and null / no override follows the account-wide switch (`notificationPrefs.medication.clientManaged` or `deliveryDefault: "client"`). Since v1.48.0 the server honours it per device on the APNs send; before, it was stored and echoed only. Only the reminder that announces a dose is affected: follow-ups for a dose still open, every other push, and the Telegram, ntfy, webhook, email and Web Push channels are not.',
       ),
     liveActivityPushToken: z
       .string()

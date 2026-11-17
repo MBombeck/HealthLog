@@ -138,6 +138,7 @@ async function seedDevice(opts: {
   apnsToken: string;
   apnsEnvironment?: "sandbox" | "production";
   token?: string;
+  medicationDelivery?: "server" | "client" | null;
 }): Promise<string> {
   const device = await getPrismaClient().device.create({
     data: {
@@ -147,6 +148,7 @@ async function seedDevice(opts: {
       bundleId: APNS_ENV.APNS_BUNDLE_ID,
       apnsToken: opts.apnsToken,
       apnsEnvironment: opts.apnsEnvironment ?? "sandbox",
+      medicationDelivery: opts.medicationDelivery ?? null,
     },
   });
   return device.id;
@@ -307,5 +309,116 @@ describe("APNs dispatcher integration", () => {
       where: { userId: TEST_USER_ID, type: "TELEGRAM" },
     });
     expect(tg?.lastSuccessAt).toBeInstanceOf(Date);
+  });
+});
+
+/**
+ * #179 — `Device.medicationDelivery` decides per device whether the server
+ * pushes a medication reminder to it: `client` never, `server` always, and no
+ * override follows the account-wide switch (`notificationPrefs.medication
+ * .clientManaged` / `deliveryDefault`). Every other push reaches every device.
+ */
+describe("APNs per-device medication delivery", () => {
+  async function setAccountClientManaged(on: boolean): Promise<void> {
+    await getPrismaClient().user.update({
+      where: { id: TEST_USER_ID },
+      data: { notificationPrefs: { medication: { clientManaged: on } } },
+    });
+  }
+
+  async function dispatch(
+    eventType:
+      "MEDICATION_REMINDER" | "PERSONAL_RECORD" = "MEDICATION_REMINDER",
+    metadata: Record<string, unknown> = {
+      medicationId: "med-1",
+      scheduledAt: "2026-11-17T08:00:00.000Z",
+    },
+  ): Promise<string[]> {
+    apnsSendMock.mockImplementation(async (_note: unknown, token: string) => ({
+      sent: [{ device: token }],
+      failed: [],
+    }));
+    const { dispatchNotification } =
+      await import("@/lib/notifications/dispatcher");
+    await dispatchNotification({
+      userId: TEST_USER_ID,
+      eventType,
+      title: "Time for your meds",
+      message: "1 tablet",
+      metadata,
+    });
+    return apnsSendMock.mock.calls.map((c) => c[1] as string).sort();
+  }
+
+  it("skips a device set to client and pushes to the one that inherits a server account", async () => {
+    await seedApnsChannel();
+    await seedDevice({ apnsToken: "phone", medicationDelivery: "client" });
+    await seedDevice({ apnsToken: "pad", medicationDelivery: null });
+    await setAccountClientManaged(false);
+    expect(await dispatch()).toEqual(["pad"]);
+  });
+
+  it("pushes to a device set to server even when the account leaves reminders to the app", async () => {
+    await seedApnsChannel();
+    await seedDevice({ apnsToken: "phone", medicationDelivery: "server" });
+    await seedDevice({ apnsToken: "pad", medicationDelivery: null });
+    await setAccountClientManaged(true);
+    expect(await dispatch()).toEqual(["phone"]);
+  });
+
+  it("falls back to the account switch for devices without an override", async () => {
+    await seedApnsChannel();
+    await seedDevice({ apnsToken: "phone" });
+    await seedDevice({ apnsToken: "pad" });
+    await setAccountClientManaged(false);
+    expect(await dispatch()).toEqual(["pad", "phone"]);
+  });
+
+  it("sends nothing over APNs and records the skip when every device delivers locally", async () => {
+    await seedApnsChannel();
+    await seedDevice({ apnsToken: "phone", medicationDelivery: "client" });
+    await seedDevice({ apnsToken: "pad", medicationDelivery: null });
+    await setAccountClientManaged(true);
+    expect(await dispatch()).toEqual([]);
+    // The ledger write is fire-and-forget; wait for it to land.
+    let attempts: Array<{ result: string; reason: string | null }> = [];
+    for (let i = 0; i < 40 && attempts.length === 0; i++) {
+      attempts = await getPrismaClient().pushAttempt.findMany({
+        where: { userId: TEST_USER_ID, channel: "APNS" },
+      });
+      if (attempts.length === 0) await new Promise((r) => setTimeout(r, 50));
+    }
+    expect(attempts.map((a) => [a.result, a.reason])).toEqual([
+      ["skipped", "client_managed"],
+    ]);
+  });
+
+  it("pushes a follow-up for an open dose to every device", async () => {
+    await seedApnsChannel();
+    await seedDevice({ apnsToken: "phone", medicationDelivery: "client" });
+    await seedDevice({ apnsToken: "pad", medicationDelivery: null });
+    await setAccountClientManaged(true);
+    expect(
+      await dispatch("MEDICATION_REMINDER", {
+        medicationId: "med-1",
+        scheduledAt: "2026-11-17T08:00:00.000Z",
+        followUp: true,
+      }),
+    ).toEqual(["pad", "phone"]);
+  });
+
+  it("never filters a push that is not a medication reminder", async () => {
+    await seedApnsChannel();
+    await seedDevice({ apnsToken: "phone", medicationDelivery: "client" });
+    await seedDevice({ apnsToken: "pad", medicationDelivery: "client" });
+    await setAccountClientManaged(true);
+    const apns = await getPrismaClient().notificationChannel.findFirstOrThrow({
+      where: { userId: TEST_USER_ID, type: "APNS" },
+    });
+    // Personal records are opt-in; switch them on for this channel.
+    await getPrismaClient().notificationPreference.create({
+      data: { channelId: apns.id, eventType: "PERSONAL_RECORD", enabled: true },
+    });
+    expect(await dispatch("PERSONAL_RECORD", {})).toEqual(["pad", "phone"]);
   });
 });

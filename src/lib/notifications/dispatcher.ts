@@ -33,7 +33,9 @@ import {
 } from "@/lib/app-settings";
 import {
   CLIENT_MANAGED_APNS_EVENTS,
+  resolveApnsDeliveryTargets,
   hasClientManagedApnsGate,
+  type ApnsDeliveryTargets,
 } from "@/lib/notifications/client-managed-apns";
 import { recordPushAttempt } from "@/lib/notifications/senders/push-attempt-record";
 import { withDeliveryLinks } from "@/lib/notifications/delivery-links";
@@ -42,6 +44,7 @@ import {
   completeManagedGuardianEgressAuthorization,
   resolveManagedGuardianRecipientIds,
   resolveNotificationDeliveryIdentity,
+  type NotificationDeliveryIdentity,
 } from "@/lib/notifications/delivery-identity";
 
 /**
@@ -344,24 +347,16 @@ export async function dispatchNotification(
       // The iOS client owns the local banner for this event type — skip
       // the server's APNs send and nothing else. Not counted as an
       // attempt: no send was made, so `dispatched` keeps telling the truth
-      // about whether anything actually reached the user.
-      if (
-        channel.type === "APNS" &&
-        !delivery.managed &&
-        hasClientManagedApnsGate(
-          recipientPayload.eventType,
-          recipientPayload.metadata,
-        ) &&
-        (await resolveClientManagedApns())
-      ) {
-        const gate = CLIENT_MANAGED_APNS_EVENTS[recipientPayload.eventType];
-        getEvent()?.addMeta(gate.metaKey, gate.tag(recipientPayload.metadata));
-        if (gate.detail && gate.detailKey) {
-          getEvent()?.addMeta(
-            gate.detailKey,
-            gate.detail(recipientPayload.userId, recipientPayload.metadata),
-          );
-        }
+      // about whether anything actually reached the user. A medication
+      // reminder is decided per device (#179), see `resolveApnsTargetsFor`.
+      const apnsTargets = await resolveApnsTargetsFor(
+        channel.type,
+        delivery,
+        recipientPayload,
+        resolveClientManagedApns,
+      );
+      if (apnsTargets?.kind === "skip") {
+        annotateClientManagedSkip(recipientPayload);
         recordPushAttempt({
           recordUserId: delivery.recordUserId,
           recipientUserId: delivery.recipientUserId,
@@ -384,6 +379,7 @@ export async function dispatchNotification(
           channel.config,
           delivery.recipientUserId,
           recipientPayload,
+          apnsTargets?.kind === "send" ? apnsTargets.onlyDeviceIds : undefined,
         );
         let outcome: SendOutcome;
         if ("outcome" in prepared) {
@@ -486,11 +482,64 @@ type PreparedChannelSend =
  * Guardian authorization claim. The returned closure is the only code that
  * can begin provider I/O, and is invoked immediately after that claim commits.
  */
+/**
+ * Where the APNs leg of a client-managed event goes (#179): null when no
+ * client-managed gate applies (send to every device as ever), `skip` when no
+ * device takes the server's push, or `send` with the devices that do. Devices
+ * left out are annotated on the wide event, like a whole-channel skip.
+ */
+async function resolveApnsTargetsFor(
+  channelType: string,
+  delivery: NotificationDeliveryIdentity,
+  payload: NotificationPayload,
+  accountDeliversLocally: () => Promise<boolean>,
+): Promise<ApnsDeliveryTargets | null> {
+  if (
+    channelType !== "APNS" ||
+    delivery.managed ||
+    !hasClientManagedApnsGate(payload.eventType, payload.metadata)
+  ) {
+    return null;
+  }
+  const targets = await resolveApnsDeliveryTargets(
+    payload.eventType,
+    delivery.recipientUserId,
+    await accountDeliversLocally(),
+  );
+  if (targets.kind === "send" && targets.localDeviceIds.length > 0) {
+    annotateClientManagedSkip(payload);
+    getEvent()?.addMeta(
+      "apns_devices_suppressed_client_managed",
+      targets.localDeviceIds.join(","),
+    );
+  }
+  return targets;
+}
+
+/**
+ * The per-skip wide-event annotation of a client-managed APNs suppression,
+ * under the key the crons emitted before the gate moved here. Emitted for a
+ * whole-channel skip and, since #179, when some devices were left out.
+ */
+function annotateClientManagedSkip(payload: NotificationPayload): void {
+  const gate = CLIENT_MANAGED_APNS_EVENTS[payload.eventType];
+  if (!gate) return;
+  getEvent()?.addMeta(gate.metaKey, gate.tag(payload.metadata));
+  if (gate.detail && gate.detailKey) {
+    getEvent()?.addMeta(
+      gate.detailKey,
+      gate.detail(payload.userId, payload.metadata),
+    );
+  }
+}
+
 function prepareChannelSend(
   type: ChannelType,
   encryptedConfig: string,
   recipientUserId: string,
   payload: NotificationPayload,
+  /** APNs only: push to these devices alone (#179); all when absent. */
+  apnsDeviceIds?: readonly string[],
 ): PreparedChannelSend {
   let decrypted: string;
   try {
@@ -591,7 +640,14 @@ function prepareChannelSend(
       // we just keep the symmetric path so future per-user overrides
       // (e.g. a custom APNs topic) can hang off the channel without
       // changing the dispatcher shape.
-      return { send: () => sendViaApns(recipientUserId, payload) };
+      return {
+        send: () =>
+          sendViaApns(
+            recipientUserId,
+            payload,
+            apnsDeviceIds ? { onlyDeviceIds: apnsDeviceIds } : undefined,
+          ),
+      };
     }
     default:
       getEvent()?.addWarning(`Unknown notification channel type: ${type}`);

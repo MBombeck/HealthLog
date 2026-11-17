@@ -18,6 +18,15 @@
 
 ### Changed
 
+- With HealthLog on both an iPhone and an iPad, each device's own
+  medication reminder setting now counts. A device set to remind on its
+  own no longer gets the server's push for the same dose, a device set to
+  get reminders from the server gets them even when your account leaves
+  reminders to the app, and a device without its own setting follows your
+  account as before. Follow-up reminders for a dose you haven't logged yet,
+  and reminders over Telegram, ntfy, webhook, email or the browser, are
+  unchanged.
+
 - A phone or iPad now counts as recently seen whenever the HealthLog app
   uses it to talk to your server, not only when the app registers it after
   a cold start. The device list shows the real last use, at most an hour

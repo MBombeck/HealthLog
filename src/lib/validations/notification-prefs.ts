@@ -426,10 +426,11 @@ export function isMeasurementReminderClientManaged(raw: unknown): boolean {
 /**
  * v1.7.0 — resolve the effective delivery channel for a device. The
  * per-device override wins; otherwise the user-level roaming default;
- * otherwise "server" (the safe default). This is an iOS-display concern
- * in v1.7.0 — which device shows the local banner — not a server
- * fan-out concern, so the reminder cron stays user-level (APNs already
- * fans out to all the user's devices and iOS dedupes locally).
+ * otherwise "server" (the safe default). The iOS display side of the
+ * override: which device shows the local banner. The server's APNs
+ * fan-out (#179) resolves the same override against the account-wide
+ * client-managed flag instead, in `deviceDeliversLocally`
+ * (`src/lib/notifications/client-managed-apns.ts`).
  */
 export function resolveDeviceDelivery(
   raw: unknown,

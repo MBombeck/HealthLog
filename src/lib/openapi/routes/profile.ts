@@ -990,7 +990,7 @@ const devicePatchRequest = z
   .meta({
     id: "DevicePatchRequest",
     description:
-      "Per-device medication-reminder delivery override. `server` forces server-side dispatch to this device, `client` leaves it to the app's own local reminders, and `null` CLEARS the override so the device inherits the account default.",
+      "Per-device medication-reminder delivery override. `server` forces server-side dispatch to this device, `client` leaves it to the app's own local reminders, and `null` CLEARS the override so the device inherits the account-wide switch (`notificationPrefs.medication.clientManaged` or `deliveryDefault: \"client\"`). Since v1.48.0 the server's APNs send honours it per device, so a reminder can go to an iPad and not to the iPhone that reminds locally. It covers the reminder that announces a dose only: follow-ups for a dose still open, other pushes and the non-APNs channels are unaffected.",
   });
 
 const labsLocalOcrPatchRequest = labsLocalOcrPatchSchema.meta({
