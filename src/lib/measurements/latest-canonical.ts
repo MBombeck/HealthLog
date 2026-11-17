@@ -29,13 +29,24 @@ export interface LatestCanonicalRow {
  * ordered on. As a plain equality, an account whose rows arrived after the
  * last ANALYZE had the planner walk the type-less `(user_id, measured_at)`
  * index through every row of the account once per type.
+ *
+ * The read of that day is written the same way: the day's rows come out of a
+ * subquery that descends the live index (account through a scalar subquery,
+ * type as a closed range, ordered on type and instant), and only those rows
+ * are ranked by source. Ranked in place, the source order left the planner no
+ * reason to prefer the live index, and in the same statistics states it read
+ * every row of the account to keep one day of one type.
  */
 export function readLatestCanonical(
   userId: string,
   priorityJson: unknown,
   since: Date | null = null,
 ): Promise<LatestCanonicalRow[]> {
-  const rank = buildSourceRankCase(priorityJson, 'm."type"', 'm."source"');
+  const rank = buildSourceRankCase(
+    priorityJson,
+    'day_rows."type"',
+    'day_rows."source"',
+  );
   return prisma.$queryRawUnsafe<LatestCanonicalRow[]>(
     `
     SELECT
@@ -55,16 +66,24 @@ export function readLatestCanonical(
       LIMIT 1
     ) last_day
     CROSS JOIN LATERAL (
-      SELECT
-        m."value"::double precision AS value,
-        m."measured_at"             AS measured_at
-      FROM measurements m
-      WHERE m."user_id" = $1
-        AND m."type" = mt."type"
-        AND m."deleted_at" IS NULL
-        AND m."measured_at" >= last_day.day
-        AND m."measured_at" < last_day.day + INTERVAL '1 day'
-      ORDER BY (${rank}), m."measured_at" DESC, m."id" DESC
+      SELECT day_rows.value, day_rows.measured_at
+      FROM (
+        SELECT
+          m."value"::double precision AS value,
+          m."measured_at"             AS measured_at,
+          m."id"                      AS id,
+          m."type"                    AS type,
+          m."source"                  AS source
+        FROM measurements m
+        WHERE m."user_id" = (SELECT $1::text)
+          AND m."type" >= mt."type"
+          AND m."type" <= mt."type"
+          AND m."deleted_at" IS NULL
+          AND m."measured_at" >= last_day.day
+          AND m."measured_at" < last_day.day + INTERVAL '1 day'
+        ORDER BY m."type" ASC, m."measured_at" DESC
+      ) day_rows
+      ORDER BY (${rank}), day_rows.measured_at DESC, day_rows.id DESC
       LIMIT 1
     ) l
     ORDER BY mt."type"

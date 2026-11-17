@@ -4,9 +4,9 @@
  *
  * `readNewestRowsPerType`, `readLiveMeasurementSpan`,
  * `readLatestReadingsPerType` and the dashboard's latest-reading probes
- * (`readLatestEver`, `readLatestCanonical`) exist so the rows a dense stream
- * makes the database touch track the rows returned, not the length of the
- * stream. That
+ * (`readLatestEver`, `readLatestCanonical`, both its latest-instant probe and
+ * its read of that day) exist so the rows a dense stream makes the database
+ * touch track the rows returned, not the length of the stream. That
  * only holds while the planner picks the per-type descent, and its pick
  * follows its row estimates. The estimates go wrong in exactly the states a
  * dense account passes through, so each state is built here on purpose and
@@ -288,10 +288,28 @@ describe.each<
       readLatestCanonical(ACCOUNT, null),
     );
     expect(rows.map((r) => r.type).sort()).toEqual([...TYPES].sort());
-    // Only the latest-instant probe (`d`) is held here; the read of that
-    // one day that follows ranks the day's rows by source and is not a
-    // per-type descent.
     expectBounded(plans, TYPES.length, "d");
+  });
+
+  it("reads only the latest day's rows of each type for the canonical reading", async () => {
+    // The day is ranked by source, so all of its rows are read; no more.
+    const [{ rows: latestDayRows }] = await prisma.$queryRawUnsafe<
+      Array<{ rows: number }>
+    >(
+      `SELECT COUNT(*)::int AS rows
+         FROM measurements m
+        WHERE m.user_id = $1 AND m.deleted_at IS NULL
+          AND date_trunc('day', m.measured_at) = (
+            SELECT max(date_trunc('day', l.measured_at)) FROM measurements l
+             WHERE l.user_id = m.user_id AND l.type = m.type
+               AND l.deleted_at IS NULL)`,
+      ACCOUNT,
+    );
+    const [rows, plans] = await withPlans(() =>
+      readLatestCanonical(ACCOUNT, null),
+    );
+    expect(rows).toHaveLength(TYPES.length);
+    expectBounded(plans, latestDayRows, "m");
   });
 });
 
