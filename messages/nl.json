@@ -6500,7 +6500,7 @@
       },
       "namedChains": {
         "title": "Ketens per taak",
-        "description": "Geef een taak een eigen keten van providers. Taken op Standaard volgen de terugvalketen hierboven, met hun gebruikelijke regels.",
+        "description": "Geef een taak een eigen providerketen; taken op Standaard houden hun gebruikelijke regels.",
         "empty": "Nog geen ketens. Elke taak volgt de terugvalketen.",
         "newChain": "Nieuwe keten",
         "newChainName": "Keten {n}",

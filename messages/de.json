@@ -6500,7 +6500,7 @@
       },
       "namedChains": {
         "title": "Ketten pro Aufgabe",
-        "description": "Gib einer Aufgabe ihre eigene Kette von Anbietern. Aufgaben auf „Standard“ folgen weiter der Fallback-Kette oben, nach ihren gewohnten Regeln.",
+        "description": "Gib einer Aufgabe eine eigene Anbieterkette; Aufgaben auf „Standard“ behalten ihre Regeln.",
         "empty": "Noch keine Ketten. Jede Aufgabe folgt der Fallback-Kette.",
         "newChain": "Neue Kette",
         "newChainName": "Kette {n}",

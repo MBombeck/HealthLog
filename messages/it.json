@@ -6500,7 +6500,7 @@
       },
       "namedChains": {
         "title": "Catene per attività",
-        "description": "Assegna a un'attività la sua catena di provider. Le attività lasciate su Predefinita continuano a seguire la catena di fallback qui sopra, con le loro regole abituali.",
+        "description": "Assegna a un'attività la sua catena di provider; le attività su Predefinita mantengono le loro regole.",
         "empty": "Ancora nessuna catena. Ogni attività segue la catena di fallback.",
         "newChain": "Nuova catena",
         "newChainName": "Catena {n}",

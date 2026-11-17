@@ -6500,7 +6500,7 @@
       },
       "namedChains": {
         "title": "Łańcuchy dla zadań",
-        "description": "Przypisz zadaniu własny łańcuch dostawców. Zadania pozostawione na Domyślnym nadal korzystają z łańcucha zapasowego powyżej, według swoich zwykłych zasad.",
+        "description": "Przypisz zadaniu własny łańcuch dostawców; zadania na Domyślnym zachowują swoje zasady.",
         "empty": "Nie ma jeszcze łańcuchów. Każde zadanie korzysta z łańcucha zapasowego.",
         "newChain": "Nowy łańcuch",
         "newChainName": "Łańcuch {n}",

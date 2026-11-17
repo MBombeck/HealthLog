@@ -6500,7 +6500,7 @@
       },
       "namedChains": {
         "title": "Chaînes par tâche",
-        "description": "Donnez à une tâche sa propre chaîne de fournisseurs. Les tâches laissées sur Par défaut suivent toujours la chaîne de secours ci-dessus, avec leurs règles habituelles.",
+        "description": "Donnez à une tâche sa propre chaîne de fournisseurs ; les tâches sur Par défaut gardent leurs règles.",
         "empty": "Aucune chaîne pour l'instant. Chaque tâche suit la chaîne de secours.",
         "newChain": "Nouvelle chaîne",
         "newChainName": "Chaîne {n}",

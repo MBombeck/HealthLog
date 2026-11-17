@@ -41,10 +41,12 @@ function render(data: NamedChainsData | undefined, isPending = false) {
     <QueryClientProvider client={new QueryClient()}>
       <I18nProvider initialLocale="en">
         <NamedChainsCard
-          data={data}
-          isPending={isPending}
-          error={null}
-          onRetry={() => {}}
+          query={{
+            data,
+            isPending,
+            error: null,
+            refetch: (async () => ({})) as never,
+          }}
         />
       </I18nProvider>
     </QueryClientProvider>,

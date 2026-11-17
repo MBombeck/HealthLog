@@ -394,6 +394,9 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   // (e.g. to set up a provider before re-enabling the module).
   "src/app/api/insights/settings/route.ts",
   "src/app/api/insights/provider-chain/route.ts",
+  // #1404 — the named chains and capability attachments: the same AI
+  // configuration as the main chain above.
+  "src/app/api/insights/provider-chains/route.ts",
   // Insights tile-order + visibility layout (GET/PUT/DELETE) — the user's
   // own persisted preference blob, the insights peer of
   // `/api/dashboard/widgets`. Pure UI configuration, no module data; the

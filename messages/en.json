@@ -6500,7 +6500,7 @@
       },
       "namedChains": {
         "title": "Chains per task",
-        "description": "Give a task its own chain of providers. Tasks left on Default keep following the fallback chain above, under their usual rules.",
+        "description": "Give a task its own provider chain; tasks on Default keep their usual rules.",
         "empty": "No chains yet. Every task follows the fallback chain.",
         "newChain": "New chain",
         "newChainName": "Chain {n}",

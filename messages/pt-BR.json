@@ -6500,7 +6500,7 @@
       },
       "namedChains": {
         "title": "Cadeias por tarefa",
-        "description": "Dê a uma tarefa sua própria cadeia de provedores. Tarefas deixadas em Padrão continuam seguindo a cadeia de fallback acima, com suas regras de sempre.",
+        "description": "Dê a uma tarefa sua própria cadeia de provedores; tarefas em Padrão mantêm suas regras.",
         "empty": "Ainda não há cadeias. Todas as tarefas seguem a cadeia de fallback.",
         "newChain": "Nova cadeia",
         "newChainName": "Cadeia {n}",

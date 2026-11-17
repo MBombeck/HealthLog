@@ -6500,7 +6500,7 @@
       },
       "namedChains": {
         "title": "Cadenas por tarea",
-        "description": "Da a una tarea su propia cadena de proveedores. Las tareas en Predeterminada siguen la cadena de respaldo de arriba, con sus reglas habituales.",
+        "description": "Da a una tarea su propia cadena de proveedores; las tareas en Predeterminada mantienen sus reglas.",
         "empty": "Aún no hay cadenas. Todas las tareas siguen la cadena de respaldo.",
         "newChain": "Nueva cadena",
         "newChainName": "Cadena {n}",
