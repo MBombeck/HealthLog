@@ -13,6 +13,7 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { buildSourceRankCase } from "@/lib/analytics/source-rank-sql";
 import { dayWeightedRowsSql, foldMeanSql } from "@/lib/measurements/day-mean";
+import { liveTypeDescent } from "@/lib/measurements/live-type-descent";
 import {
   loadUserSourcePriority,
   utcBucketEnd,
@@ -68,11 +69,25 @@ interface AllTimeExtremes {
  *
  *   - the DAY tier, for every whole UTC day from `tierFrom` on, for each type
  *     whose tier rows in that range all carry the reading extremes
- *     (migration 0417; the boot re-fold fills older rows) and account for
- *     the live record day by day (same days, same reading counts);
+ *     (migration 0417; the boot re-fold fills older rows) and match the live
+ *     record at both ends: the tier's first and last day are the days of the
+ *     oldest and newest live reading, and each of those two days holds as
+ *     many readings in the tier as it does live;
  *   - the raw rows for the rest: the days before `tierFrom` (older than the
  *     fold window, or the partial day the `floor` falls in), and every day of
  *     a type the tier does not cover yet or no longer matches.
+ *
+ * The check reads two days of each type, not its history. It used to compare
+ * the tier with a count of every live reading per day, which on a watch's
+ * heart-rate stream was every row of the account on every call, and the
+ * largest single read an insight or MCP call made. The ends are where the
+ * tier and the record part: a history the fold has not reached yet starts
+ * before the tier's first day, a write the fold has not caught up with lands
+ * on or after its last day, and readings deleted from the end of a stream
+ * leave the tier's last day after the record's. A day in the middle that
+ * disagrees, which only a failed recompute leaves, is the case the bound
+ * gives up; the write path recomputes the day it touches inline, and the
+ * admin recompute repairs one that failed.
  *
  * The split is at a UTC midnight, so no day is folded from both, and the
  * canonical pick per day is the same on both sides. The tier's pulse day
@@ -107,72 +122,103 @@ export async function readAllTimeExtremes(
 
   const [priorityJson, tierRows] = await Promise.all([
     loadUserSourcePriority(userId),
-    // A type is read from the tier only when the tier accounts for the live
-    // record day by day: every day with a live reading has DAY rows whose
-    // counts add up to that day's live count, and every DAY row has its day
-    // of live readings. A bucket that outlived its rows (a hard delete with no
-    // rollup recompute) or a day the tier never got fails the comparison and
-    // the type is read raw. The figures from here are the anchor the Coach
-    // snapshot checks its coarse history against, so they must never repeat
-    // a stale bucket. The live side is a count per day off the partial
-    // `(user_id, type, measured_at)` live index, not a read of the rows.
+    // A type is read from the tier only when the tier matches the live
+    // record at its ends (see above). Each type is one descent of the live
+    // index to its oldest and its newest reading from `tierFrom` on
+    // (`liveTypeDescent`, so the plan does not follow the statistics), a
+    // count of the readings on those two days, and the type's DAY rows from
+    // `tierFrom` on, which are days, not readings. A type with no live
+    // reading in the range drops out here and is read raw, which is how a
+    // tier that outlived every row of a type is never repeated.
     prisma.$queryRaw<Array<{ type: string }>>`
-      WITH live AS (
-        SELECT m."type", date_trunc('day', m."measured_at") AS day,
-               COUNT(*)::bigint AS n
+      SELECT mt."type" AS type
+      FROM unnest(${[...types]}::text[]) AS mt("type")
+      CROSS JOIN LATERAL (
+        SELECT m."measured_at" AS at
         FROM measurements m
-        WHERE m."user_id" = ${userId}
-          AND m."deleted_at" IS NULL
-          AND m."type" IN (${typeList(types)})
-          AND m."measured_at" >= ${tierFrom}
-        GROUP BY 1, 2
-      ),
-      tier AS (
-        SELECT r."type", r."bucket_start" AT TIME ZONE 'UTC' AS day,
-               SUM(r."count")::bigint AS n,
+        ${liveTypeDescent(userId, Prisma.sql`mt."type"::measurement_type`, "oldest", tierFrom)}
+        LIMIT 1
+      ) oldest
+      CROSS JOIN LATERAL (
+        SELECT m."measured_at" AS at
+        FROM measurements m
+        ${liveTypeDescent(userId, Prisma.sql`mt."type"::measurement_type`, "newest", tierFrom)}
+        LIMIT 1
+      ) newest
+      CROSS JOIN LATERAL (
+        SELECT date_trunc('day', oldest.at) AS first_day,
+               date_trunc('day', newest.at) AS last_day
+      ) ends
+      CROSS JOIN LATERAL (
+        SELECT MIN(r."bucket_start") AS first_bucket,
+               MAX(r."bucket_start") AS last_bucket,
                bool_and(
                  r."reading_min_value" IS NOT NULL
                  AND r."reading_max_value" IS NOT NULL
-               ) AS complete
+               ) AS complete,
+               COALESCE(SUM(r."count") FILTER (
+                 WHERE r."bucket_start" = ends.first_day AT TIME ZONE 'UTC'
+               ), 0)::bigint AS first_count,
+               COALESCE(SUM(r."count") FILTER (
+                 WHERE r."bucket_start" = ends.last_day AT TIME ZONE 'UTC'
+               ), 0)::bigint AS last_count
         FROM measurement_rollups r
         WHERE r."user_id" = ${userId}
+          AND r."type" = mt."type"::measurement_type
           AND r."granularity" = 'DAY'
-          AND r."type" IN (${typeList(types)})
           AND r."bucket_start" >= ${tierFrom}
-        GROUP BY 1, 2
-      )
-      SELECT COALESCE(l."type", t."type")::text AS type
-      FROM live l
-      FULL JOIN tier t ON t."type" = l."type" AND t.day = l.day
-      GROUP BY 1
-      HAVING bool_and(COALESCE(l.n = t.n AND t.complete, false))
+      ) tier
+      CROSS JOIN LATERAL (
+        SELECT
+          (SELECT COUNT(*) FROM measurements m
+            WHERE m."user_id" = (SELECT ${userId}::text)
+              AND m."type" >= mt."type"::measurement_type
+              AND m."type" <= mt."type"::measurement_type
+              AND m."deleted_at" IS NULL
+              AND m."measured_at" >= ends.first_day
+              AND m."measured_at" < ends.first_day + interval '1 day'
+          )::bigint AS first_count,
+          (SELECT COUNT(*) FROM measurements m
+            WHERE m."user_id" = (SELECT ${userId}::text)
+              AND m."type" >= mt."type"::measurement_type
+              AND m."type" <= mt."type"::measurement_type
+              AND m."deleted_at" IS NULL
+              AND m."measured_at" >= ends.last_day
+              AND m."measured_at" < ends.last_day + interval '1 day'
+          )::bigint AS last_count
+      ) live
+      WHERE tier.complete
+        AND tier.first_bucket = ends.first_day AT TIME ZONE 'UTC'
+        AND tier.last_bucket = ends.last_day AT TIME ZONE 'UTC'
+        AND tier.first_count = live.first_count
+        AND tier.last_count = live.last_count
     `,
   ]);
   const tierTypes = new Set(tierRows.map((r) => r.type));
   const fromTier = types.filter((t) => tierTypes.has(t));
   const rawOnly = types.filter((t) => !tierTypes.has(t));
 
-  const since =
-    floor === null ? Prisma.empty : Prisma.sql`AND m."measured_at" >= ${floor}`;
+  // The raw rows, one descent of the live index per type (`liveTypeDescent`):
+  // all of a type the tier does not cover, and only the days before
+  // `tierFrom` of one it does. Written as a plain range over the type list,
+  // the second read walked a type's every row on a table whose statistics
+  // predate the account, through an index that has no `measured_at`, and
+  // threw them all away at the `tierFrom` filter.
+  const rawArm = (list: readonly MeasurementType[], until: Date | null) =>
+    Prisma.sql`
+      SELECT mt."type"::measurement_type AS "type", x."source",
+             x."measured_at", x."value"
+      FROM unnest(${[...list]}::text[]) AS mt("type")
+      CROSS JOIN LATERAL (
+        SELECT m."source", m."measured_at", m."value"
+        FROM measurements m
+        ${liveTypeDescent(userId, Prisma.sql`mt."type"::measurement_type`, "oldest", floor, until)}
+      ) x`;
   const rawArms: Prisma.Sql[] = [];
-  if (rawOnly.length > 0) {
-    rawArms.push(Prisma.sql`
-      SELECT m."type", m."source", m."measured_at", m."value"
-      FROM measurements m
-      WHERE m."user_id" = ${userId}
-        AND m."deleted_at" IS NULL
-        AND m."type" IN (${typeList(rawOnly)})
-        ${since}`);
-  }
+  if (rawOnly.length > 0) rawArms.push(rawArm(rawOnly, null));
   if (fromTier.length > 0) {
-    rawArms.push(Prisma.sql`
-      SELECT m."type", m."source", m."measured_at", m."value"
-      FROM measurements m
-      WHERE m."user_id" = ${userId}
-        AND m."deleted_at" IS NULL
-        AND m."type" IN (${typeList(fromTier)})
-        ${since}
-        AND m."measured_at" < ${tierFrom}`);
+    // `measured_at` is stored to the millisecond, so this is `< tierFrom`.
+    rawArms.push(rawArm(fromTier, new Date(tierFrom.getTime() - 1)));
   }
   const rank = (alias: string) =>
     Prisma.raw(
