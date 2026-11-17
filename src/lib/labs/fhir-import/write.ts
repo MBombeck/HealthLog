@@ -70,7 +70,6 @@ interface Pending {
   at: number;
   reading: MappedFhirLab;
   markerId: string | null;
-  keys: string[];
 }
 
 export async function writeFhirLabReadings(args: {
@@ -168,51 +167,11 @@ export async function writeFhirLabReadings(args: {
         at,
         reading,
         markerId: hit?.marker.id ?? null,
-        keys: [],
       });
     }
 
     // 3. The reading itself, against the live record.
-    const existingKeys = new Set<string>();
-    if (planned.length > 0) {
-      const days = planned
-        .map((p) => labReadingDay(p.reading.takenAt, tz))
-        .sort();
-      const ids = [
-        ...new Set(
-          planned.map((p) => p.markerId).filter((id): id is string => !!id),
-        ),
-      ];
-      const names = [...new Set(planned.map((p) => p.reading.analyte))];
-      const existing = await client.labResult.findMany({
-        where: {
-          userId,
-          deletedAt: null,
-          takenAt: {
-            gte: labReadingDaySearchRange(days[0]).gte,
-            lt: labReadingDaySearchRange(days[days.length - 1]).lt,
-          },
-          OR: [{ biomarkerId: { in: ids } }, { analyte: { in: names } }],
-        },
-        select: {
-          biomarkerId: true,
-          analyte: true,
-          takenAt: true,
-          value: true,
-          valueText: true,
-          sourceValue: true,
-          sourceUnit: true,
-        },
-      });
-      for (const e of existing) {
-        for (const k of readingKeys(e, tz)) existingKeys.add(k);
-        if (e.biomarkerId) {
-          for (const k of readingKeys({ ...e, biomarkerId: null }, tz)) {
-            existingKeys.add(k);
-          }
-        }
-      }
-    }
+    const existingKeys = await liveReadingKeys(client, userId, tz, planned);
 
     // 4. Build the rows, field by field.
     const rows: Prisma.LabResultCreateManyInput[] = [];
@@ -237,72 +196,16 @@ export async function writeFhirLabReadings(args: {
         continue;
       }
 
-      const marker = await resolveOrMintBiomarker(
-        userId,
-        {
-          analyte: reading.analyte,
-          unit: reading.unit ?? "",
-          referenceLow: reading.sourceReferenceLow,
-          referenceHigh: reading.sourceReferenceHigh,
-          panel: reading.panel,
-        },
-        { index, catalogKey: reading.catalogKey },
-      );
-
-      let storedValue = reading.value;
-      let storedLow =
-        reading.valueText === null ? reading.sourceReferenceLow : null;
-      let storedHigh =
-        reading.valueText === null ? reading.sourceReferenceHigh : null;
-      let convertedFrom: { sourceValue: number; sourceUnit: string } | null =
-        null;
-      if (reading.value !== null) {
-        const converted = await readingInMarkerUnit(client, {
-          marker,
-          value: reading.value,
-          unit: reading.unit ?? undefined,
-          sourceReferenceLow: storedLow,
-          sourceReferenceHigh: storedHigh,
-        });
-        if (!converted.ok) {
-          failed(plan.at, "unit_mismatch");
-          continue;
-        }
-        storedValue = converted.value;
-        storedLow = converted.sourceReferenceLow;
-        storedHigh = converted.sourceReferenceHigh;
-        if (converted.converted) {
-          convertedFrom = {
-            sourceValue: converted.sourceValue,
-            sourceUnit: converted.sourceUnit,
-          };
-        }
+      const built = await buildRow(client, userId, reading, index);
+      if (!built.ok) {
+        failed(plan.at, "unit_mismatch");
+        continue;
       }
-
-      rows.push({
-        userId,
-        biomarkerId: marker.id,
-        panel: reading.panel ?? marker.panel,
-        analyte: marker.name,
-        value: storedValue,
-        valueText: reading.valueText,
-        unit: marker.unit,
-        sourceValue: convertedFrom?.sourceValue ?? null,
-        sourceUnit: convertedFrom?.sourceUnit ?? null,
-        referenceLow: marker.lowerBound,
-        referenceHigh: marker.upperBound,
-        sourceReferenceLow: storedLow,
-        sourceReferenceHigh: storedHigh,
-        sourceReferenceText: reading.sourceReferenceText,
-        takenAt: reading.takenAt,
-        source: APPLE_HEALTH_LAB_SOURCE,
-        externalId: reading.externalId,
-        noteEncrypted: reading.note ? encryptNoteToBytes(reading.note) : null,
-      });
+      rows.push(built.row);
       rowAt.set(reading.externalId, plan);
       for (const k of [
         ...keys,
-        ...readingKeys({ ...probe, biomarkerId: marker.id }, tz),
+        ...readingKeys({ ...probe, biomarkerId: built.markerId }, tz),
       ]) {
         seenKeys.add(k);
       }
@@ -334,4 +237,129 @@ export async function writeFhirLabReadings(args: {
     }
   }
   return result;
+}
+
+/** Duplicate keys of the live readings a chunk could collide with. */
+async function liveReadingKeys(
+  client: LabWriteClient,
+  userId: string,
+  tz: string,
+  planned: readonly Pending[],
+): Promise<Set<string>> {
+  const keys = new Set<string>();
+  if (planned.length === 0) return keys;
+  const days = planned.map((p) => labReadingDay(p.reading.takenAt, tz)).sort();
+  const ids = [
+    ...new Set(
+      planned.map((p) => p.markerId).filter((id): id is string => !!id),
+    ),
+  ];
+  const names = [...new Set(planned.map((p) => p.reading.analyte))];
+  const existing = await client.labResult.findMany({
+    where: {
+      userId,
+      deletedAt: null,
+      takenAt: {
+        gte: labReadingDaySearchRange(days[0]).gte,
+        lt: labReadingDaySearchRange(days[days.length - 1]).lt,
+      },
+      OR: [{ biomarkerId: { in: ids } }, { analyte: { in: names } }],
+    },
+    select: {
+      biomarkerId: true,
+      analyte: true,
+      takenAt: true,
+      value: true,
+      valueText: true,
+      sourceValue: true,
+      sourceUnit: true,
+    },
+  });
+  for (const e of existing) {
+    for (const k of readingKeys(e, tz)) keys.add(k);
+    // A reading filed under a marker also answers to its printed name.
+    if (e.biomarkerId) {
+      for (const k of readingKeys({ ...e, biomarkerId: null }, tz)) keys.add(k);
+    }
+  }
+  return keys;
+}
+
+/**
+ * The row for one reading: its marker resolved or minted, the value moved
+ * into the marker's unit when it states another. Built field by field.
+ */
+async function buildRow(
+  client: LabWriteClient,
+  userId: string,
+  reading: MappedFhirLab,
+  index: MarkerIndex,
+): Promise<
+  | { ok: true; row: Prisma.LabResultCreateManyInput; markerId: string }
+  | { ok: false }
+> {
+  const marker = await resolveOrMintBiomarker(
+    userId,
+    {
+      analyte: reading.analyte,
+      unit: reading.unit ?? "",
+      referenceLow: reading.sourceReferenceLow,
+      referenceHigh: reading.sourceReferenceHigh,
+      panel: reading.panel,
+    },
+    { index, catalogKey: reading.catalogKey },
+  );
+
+  // Like the CSV import: on a text result the window only seeds a new
+  // marker; the reading itself records none.
+  let storedValue = reading.value;
+  let storedLow =
+    reading.valueText === null ? reading.sourceReferenceLow : null;
+  let storedHigh =
+    reading.valueText === null ? reading.sourceReferenceHigh : null;
+  let convertedFrom: { sourceValue: number; sourceUnit: string } | null = null;
+  if (reading.value !== null) {
+    const converted = await readingInMarkerUnit(client, {
+      marker,
+      value: reading.value,
+      unit: reading.unit ?? undefined,
+      sourceReferenceLow: storedLow,
+      sourceReferenceHigh: storedHigh,
+    });
+    if (!converted.ok) return { ok: false };
+    storedValue = converted.value;
+    storedLow = converted.sourceReferenceLow;
+    storedHigh = converted.sourceReferenceHigh;
+    if (converted.converted) {
+      convertedFrom = {
+        sourceValue: converted.sourceValue,
+        sourceUnit: converted.sourceUnit,
+      };
+    }
+  }
+
+  return {
+    ok: true,
+    markerId: marker.id,
+    row: {
+      userId,
+      biomarkerId: marker.id,
+      panel: reading.panel ?? marker.panel,
+      analyte: marker.name,
+      value: storedValue,
+      valueText: reading.valueText,
+      unit: marker.unit,
+      sourceValue: convertedFrom?.sourceValue ?? null,
+      sourceUnit: convertedFrom?.sourceUnit ?? null,
+      referenceLow: marker.lowerBound,
+      referenceHigh: marker.upperBound,
+      sourceReferenceLow: storedLow,
+      sourceReferenceHigh: storedHigh,
+      sourceReferenceText: reading.sourceReferenceText,
+      takenAt: reading.takenAt,
+      source: APPLE_HEALTH_LAB_SOURCE,
+      externalId: reading.externalId,
+      noteEncrypted: reading.note ? encryptNoteToBytes(reading.note) : null,
+    },
+  };
 }

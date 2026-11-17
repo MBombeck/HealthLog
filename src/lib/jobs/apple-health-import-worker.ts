@@ -30,9 +30,12 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma, toJson } from "@/lib/db";
 import type { Job } from "pg-boss";
 
-import { streamAppleHealthEcgMembers } from "@/lib/apple-health/archive-stream";
-import { parseAppleHealthEcgCsv } from "@/lib/apple-health/ecg-csv";
-import { importAppleHealthEcg } from "@/lib/apple-health/ecg-import";
+import {
+  importAppleHealthClinicalLabs,
+  type AppleHealthImportJobResult,
+} from "@/lib/apple-health/clinical-labs-import";
+import type { ClinicalLabReference } from "@/lib/apple-health/clinical-record-ref";
+import { importAppleHealthArchiveEcgs } from "@/lib/apple-health/ecg-import";
 import { extractExportXml } from "@/lib/import/unzip-export-xml";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -45,7 +48,6 @@ import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
 import {
   streamParseExportXml,
   type ImportJobProgress,
-  type ImportJobResult,
 } from "@/lib/measurements/import-apple-health-export";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
@@ -125,17 +127,12 @@ export async function handleImportJobReconcileTick(
   );
 }
 
-/** Parser semantics carried by every newly-created ImportJob. */
-export const APPLE_HEALTH_IMPORT_PARSER_REVISION = 3;
-
-const APPLE_HEALTH_ECG_ARCHIVE_LIMITS = {
-  maxMembers: 20_000,
-  maxEcgMembers: 2_000,
-  maxMemberBytes: 16 * 1024 * 1024,
-  maxTotalEcgBytes: 512 * 1024 * 1024,
-  maxCompressionRatio: 200,
-} as const;
-const APPLE_HEALTH_ECG_MAX_SAMPLES = 2_000_000;
+/**
+ * Parser semantics carried by every newly-created ImportJob. 4: lab results
+ * from Health Records are read (#1400), so an archive imported before is
+ * worth uploading again.
+ */
+export const APPLE_HEALTH_IMPORT_PARSER_REVISION = 4;
 
 /**
  * (issue #775) Memory preflight for the parse. The streaming pipeline
@@ -404,6 +401,7 @@ export async function handleAppleHealthImport(
     // GPS tracks are read from the archive only when the person keeps them.
     const keepRoutes = userRow?.storeWorkoutRoutes === true;
     const routeReferences: WorkoutRouteReference[] = [];
+    const labReferences: ClinicalLabReference[] = [];
     const userTimezone =
       userRow?.timezone && userRow.timezone.length > 0
         ? userRow.timezone
@@ -439,79 +437,57 @@ export async function handleAppleHealthImport(
       elapsedMs: 0,
     });
 
-    const result: ImportJobResult = {
-      ...(await streamParseExportXml({
-        xmlPath: unzip.xmlPath,
-        userId,
-        userTimezone,
-        prisma,
-        ...(keepRoutes
-          ? { onWorkoutRoute: (ref) => void routeReferences.push(ref) }
-          : {}),
-        onProgress: async (snapshot) => {
-          // The phase label here is what the polling endpoint surfaces;
-          // map "parsing" / "upserting" through verbatim.
-          await prisma.importJob.update({
-            where: { id: importJobId },
-            data: {
-              status: snapshot.currentPhase,
-              progress: toJson(snapshot),
-            },
-          });
-        },
-        // The instant the Health app stamped on the archive. Persisted as
-        // soon as the parser reads it, so the status endpoint answers with
-        // it for the rest of the run and a job that later fails still
-        // records which export it was working from. Best-effort: the
-        // stamp is provenance, and losing it must not fail an import.
-        onExportDate: async (exportedAt) => {
-          await prisma.importJob
-            .update({ where: { id: importJobId }, data: { exportedAt } })
-            .catch(caughtAs("apple_health.import.export_date_failed"));
-        },
-      })),
-      ecg: {
+    const parsed = await streamParseExportXml({
+      xmlPath: unzip.xmlPath,
+      userId,
+      userTimezone,
+      prisma,
+      ...(keepRoutes
+        ? { onWorkoutRoute: (ref) => void routeReferences.push(ref) }
+        : {}),
+      onClinicalLabRecord: (ref) => void labReferences.push(ref),
+      onProgress: async (snapshot) => {
+        // The phase label here is what the polling endpoint surfaces;
+        // map "parsing" / "upserting" through verbatim.
+        await prisma.importJob.update({
+          where: { id: importJobId },
+          data: {
+            status: snapshot.currentPhase,
+            progress: toJson(snapshot),
+          },
+        });
+      },
+      // The instant the Health app stamped on the archive. Persisted as
+      // soon as the parser reads it, so the status endpoint answers with
+      // it for the rest of the run and a job that later fails still
+      // records which export it was working from. Best-effort: the
+      // stamp is provenance, and losing it must not fail an import.
+      onExportDate: async (exportedAt) => {
+        await prisma.importJob
+          .update({ where: { id: importJobId }, data: { exportedAt } })
+          .catch(caughtAs("apple_health.import.export_date_failed"));
+      },
+    });
+
+    // The auxiliary passes below are fail-soft: the export.xml rows are
+    // committed, and a member that cannot be read is only counted.
+    const ecg = await importAppleHealthArchiveEcgs({
+      archivePath: uploadPath,
+      userId,
+      memberNames: unzip.otherMembers.map((member) => member.name),
+      prisma,
+    });
+    const result: AppleHealthImportJobResult = {
+      ...parsed,
+      ecg,
+      labs: {
         discovered: 0,
         imported: 0,
-        updated: 0,
+        duplicate: 0,
         skipped: 0,
         failed: 0,
       },
     };
-
-    // Auxiliary ECGs are intentionally fail-soft. The canonical export.xml
-    // transaction has already completed; malformed, oversized, or unwritable
-    // ECG members affect only bounded scalar counters in the terminal result.
-    const ecg = result.ecg;
-    ecg.discovered = unzip.otherMembers.filter((member) => {
-      const lower = member.name.toLowerCase();
-      return lower.includes("electrocardiograms/") && lower.endsWith(".csv");
-    }).length;
-    try {
-      for await (const member of streamAppleHealthEcgMembers({
-        archivePath: uploadPath,
-        limits: APPLE_HEALTH_ECG_ARCHIVE_LIMITS,
-      })) {
-        try {
-          const parsed = await parseAppleHealthEcgCsv({
-            memberName: member.name,
-            stream: member.stream,
-            maxSamples: APPLE_HEALTH_ECG_MAX_SAMPLES,
-          });
-          const outcome = await importAppleHealthEcg({
-            userId,
-            ecg: parsed,
-            prisma,
-          });
-          ecg[outcome] += 1;
-        } catch {
-          ecg.failed += 1;
-        }
-      }
-    } catch {
-      const completed = ecg.imported + ecg.updated + ecg.skipped + ecg.failed;
-      ecg.failed += Math.max(0, ecg.discovered - completed);
-    }
 
     // Workout GPS tracks, on opt-in only. Fail-soft like the ECGs: the
     // workouts are committed, a track that cannot be read is only counted.
@@ -536,6 +512,19 @@ export async function handleAppleHealthImport(
         },
       });
       routeReferences.length = 0;
+    }
+
+    // Lab results from Health Records, one FHIR file at a time; only counts
+    // reach the result.
+    if (labReferences.length > 0) {
+      result.labs = await importAppleHealthClinicalLabs({
+        archivePath: uploadPath,
+        userId,
+        tz: userTimezone,
+        references: labReferences,
+        prisma,
+      });
+      labReferences.length = 0;
     }
 
     // Done. Persist the terminal envelope.
