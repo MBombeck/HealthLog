@@ -25079,7 +25079,11 @@ paths:
         capped at 16 KiB. Auth via cookie or Bearer. A browser session needs a fresh proof as well as a live one: a
         sign-in or `POST /api/auth/reproof` within the last five minutes (with a second factor, on an account that has
         one). Without it the answer is 401 `auth.reproof.required`, with `meta.methods` naming the proofs the account
-        can give. A Bearer caller is not asked for more than its token yet."
+        can give. A Bearer caller on an account that holds a second factor or a passkey sends an `X-Step-Up` elevation
+        minted from a second-factor or passkey proof (`POST /api/auth/step-up`); without one the answer is 401
+        `auth.stepup.required` and no token is minted. The elevation is spent right before the mint. A Bearer caller on
+        an account holding neither (an SSO-only account, typically) has nothing to prove in the app and mints on its
+        token."
       requestBody:
         required: true
         content:

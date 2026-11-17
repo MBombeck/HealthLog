@@ -16,6 +16,12 @@
 
 ### Security
 
+- Creating an MCP connector token in the iPhone app now asks for your
+  second factor or passkey when your account has one, the same way the
+  web asks for a fresh sign-in. An account without either, such as one
+  that only signs in through single sign-on, keeps creating tokens in the
+  app as before. App builds that already ask for the proof keep working
+  unchanged.
 - The container image moves to Node 22.23.5, a security release with fixes
   in HTTP, HTTP/2 and TLS handling (CVE-2026-123863 and others).
 
