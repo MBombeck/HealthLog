@@ -112,7 +112,7 @@ CSVs into the existing HealthLog schema (CHANGELOG v1.4.34):
 | `<Record>`         | `Measurement` rows                     | One row per spot sample. Keyed by `HKMetadataKeyExternalUUID` when present, otherwise a deterministic `sample:<sha256-of-attributes>` fallback so re-imports stay idempotent. |
 | `<Workout>`        | `Workout` rows                         | Activity type + duration + energy + distance.                                                                                                                                 |
 | `<Correlation>`    | `Measurement` rows                     | Compound samples like blood pressure (systolic + diastolic) explode into their per-metric children.                                                                           |
-| `<ClinicalRecord>` | `Measurement` rows where the type maps | Health-record FHIR snapshots; only the metric-typed fields are ingested.                                                                                                      |
+| `<ClinicalRecord>` | Not stored                             | Health-record FHIR snapshots are counted in the skip tally but not imported.                                                                                                  |
 | ECG CSV            | `EcgRecording` rows                    | The source-provided waveform is encrypted before persistence; descriptors and the device's classification are stored without diagnostic inference.                            |
 
 The HK quantity types that map to HealthLog metric types live in
