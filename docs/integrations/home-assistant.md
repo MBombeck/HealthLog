@@ -1,7 +1,7 @@
 # Home Assistant and other push integrations
 
-HealthLog pulls from Withings, WHOOP, Fitbit, Oura, Polar and Strava over
-OAuth. A local sensor has no such door: a BLE scale, a Garmin bridge or a
+HealthLog pulls from Withings, WHOOP, Google Health, Oura, Polar and Strava
+over OAuth. A local sensor has no such door: a BLE scale, a Garmin bridge or a
 Zigbee thermometer lives in your own automation platform and has to push. This
 page covers that path — a token you mint yourself, and the two endpoints it
 reaches.

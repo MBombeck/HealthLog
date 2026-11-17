@@ -9,6 +9,23 @@
   and document chat streams are left uncompressed, so their text still
   arrives as it is written.
 
+### Removed
+
+- **The Fitbit integration.** Google switched the Fitbit Web API off on 30
+  October 2026, and HealthLog's Fitbit connection has not been able to sync
+  since. This release takes it out: the Fitbit card and its connect button,
+  the hourly sync, and the stored Fitbit tokens and app credentials are gone,
+  and so is the `FITBIT_REDIRECT_URI` setting. Everything already imported
+  from Fitbit stays. It is still in your charts, exports, backups and the
+  doctor report, and it is still marked as coming from Fitbit. Older backups
+  restore as before. If you had Fitbit connected, Settings → Integrations
+  shows a short note about this once, until you dismiss it. To keep data
+  from a Fitbit or Pixel Watch coming, connect Google Health, which reads the
+  same devices and needs one new consent from your Google account. On
+  Android you can also import a Health Connect export, since the Fitbit app
+  writes to Health Connect. The Fitbit app does not write to Apple Health, so
+  Apple Health is not a way round it.
+
 ### Fixed
 
 - A lab marker created from a text result, such as "negative" on a scanned report or a CSV row without a unit, can be edited again. It opens with "No unit" ticked, a rename saves without touching the unit, and the unit can be set while the marker holds only text results. The unit stays locked once numbers are stored under it, and writing the same unit another way (`mg/dl` for `mg/dL`) no longer counts as a change. (#1393)
