@@ -55,6 +55,7 @@ const TILE_TYPES: Record<TileCapableWidgetId, readonly string[]> = {
   totalBodyWater: ["TOTAL_BODY_WATER"],
   boneMass: ["BONE_MASS"],
   waterIntake: ["NUTRIENT_WATER"],
+  energyIntake: ["NUTRIENT_ENERGY"],
 };
 
 /**
@@ -68,6 +69,11 @@ const NON_MEASUREMENT_DESTINATION: Partial<
     slug: "nutrients",
     reason:
       "fluid intake is a NutrientIntakeDay total, charted on the nutrients page",
+  },
+  energyIntake: {
+    slug: "nutrients",
+    reason:
+      "energy intake is a NutrientIntakeDay total, charted on the nutrients page",
   },
 };
 

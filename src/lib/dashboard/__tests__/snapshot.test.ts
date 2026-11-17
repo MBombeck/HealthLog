@@ -319,7 +319,11 @@ describe("buildDashboardSnapshot — the shared summaries cell", () => {
     };
     readSummariesSlice.mockResolvedValue(cached);
     fakePrisma.nutrientIntakeDay.findMany.mockResolvedValue([
-      { day: new Date().toISOString().slice(0, 10), amount: 1500 },
+      {
+        nutrient: "water",
+        day: new Date().toISOString().slice(0, 10),
+        amount: 1500,
+      },
     ]);
 
     const snap = await buildDashboardSnapshot(fakePrisma, baseUser());
@@ -998,11 +1002,11 @@ describe("buildDashboardSnapshot — layoutCatalogue (35-id round-trip)", () => 
     isFullyCovered.mockReturnValue(false);
   });
 
-  it("emits all 42 catalogue ids with visibility + order", async () => {
+  it("emits all 43 catalogue ids with visibility + order", async () => {
     const snap = await buildDashboardSnapshot(fakePrisma, baseUser());
-    expect(snap.layoutCatalogue).toHaveLength(42);
+    expect(snap.layoutCatalogue).toHaveLength(43);
     const ids = new Set(snap.layoutCatalogue.map((w) => w.id));
-    expect(ids.size).toBe(42);
+    expect(ids.size).toBe(43);
     // iOS-only ids appended default-invisible.
     const walkingSpeed = snap.layoutCatalogue.find(
       (w) => w.id === "walkingSpeed",
@@ -1075,7 +1079,7 @@ describe("buildDashboardSnapshot — additive proof", () => {
     expect(snap.layout).toHaveProperty("version");
     expect(Array.isArray(snap.layout.widgets)).toBe(true);
     // Resolved layout still carries only server-known widget ids.
-    expect(snap.layout.widgets.length).toBeLessThanOrEqual(29);
+    expect(snap.layout.widgets.length).toBeLessThanOrEqual(30);
 
     // tiles shape unchanged.
     expect(snap.tiles).toHaveProperty("summaries");
@@ -1212,7 +1216,11 @@ describe("buildDashboardSnapshot — module gating (v1.18.0)", () => {
     // v1.29 — water rows so the fluid-intake tile would otherwise carry a
     // summary (proving the nutrients module actually strips it below).
     fakePrisma.nutrientIntakeDay.findMany.mockResolvedValue([
-      { day: new Date().toISOString().slice(0, 10), amount: 1500 },
+      {
+        nutrient: "water",
+        day: new Date().toISOString().slice(0, 10),
+        amount: 1500,
+      },
     ]);
   });
 
@@ -1342,6 +1350,22 @@ describe("buildDashboardSnapshot — module gating (v1.18.0)", () => {
     expect(snap.tiles.summaries.NUTRIENT_WATER!.latest).toBe(1500);
   });
 
+  it("nutrients on: the energy tile's NUTRIENT_ENERGY summary rides the same read, apart from water", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    fakePrisma.nutrientIntakeDay.findMany.mockResolvedValueOnce([
+      { nutrient: "water", day: today, amount: 1500, source: "MANUAL" },
+      { nutrient: "energy", day: today, amount: 2150, source: "EXTERNAL" },
+    ]);
+    const snap = await buildDashboardSnapshot(fakePrisma, baseUser(), {
+      modules: () => Promise.resolve(moduleMap()),
+    });
+    expect(snap.tiles.summaries.NUTRIENT_ENERGY!.latest).toBe(2150);
+    expect(snap.tiles.summaries.NUTRIENT_WATER!.latest).toBe(1500);
+    // Opt-in: present in the catalogue, off on a default layout.
+    expect(cat(snap, "energyIntake")).toBeDefined();
+    expect(widget(snap, "energyIntake")?.tileVisible ?? false).toBe(false);
+  });
+
   it("nutrients disabled: waterIntake tile hidden + NUTRIENT_WATER stripped from summaries (v1.29)", async () => {
     const snap = await buildDashboardSnapshot(fakePrisma, baseUser(), {
       modules: () => Promise.resolve(moduleMap({ nutrients: false })),
@@ -1351,6 +1375,7 @@ describe("buildDashboardSnapshot — module gating (v1.18.0)", () => {
     expect(cat(snap, "waterIntake")!.visible).toBe(false);
     expect(snap.tiles.summaries.NUTRIENT_WATER).toBeUndefined();
     expect(snap.tiles.lastSeenByType.NUTRIENT_WATER).toBeUndefined();
+    expect(snap.tiles.summaries.NUTRIENT_ENERGY).toBeUndefined();
   });
 
   it("insights disabled: the builder no longer decides the briefing (the read applies the capability)", async () => {

@@ -157,6 +157,8 @@ const STATIC_SURFACE_MODULE = {
   "widget:breathingDisturbances": "sleep",
   // The fluid-intake tile reads the nutrient store.
   "widget:waterIntake": "nutrients",
+  // v1.48 — the energy-intake tile reads the same store.
+  "widget:energyIntake": "nutrients",
 
   // ── Dashboard summary keys ──
   "summary:SLEEP_DURATION": "sleep",
@@ -179,6 +181,7 @@ const STATIC_SURFACE_MODULE = {
   // Synthetic keys: derived from `NutrientIntakeDay` and `MoodEntry` rather
   // than a `MeasurementType`, riding the same gate.
   "summary:NUTRIENT_WATER": "nutrients",
+  "summary:NUTRIENT_ENERGY": "nutrients",
   "summary:MOOD_ENTRY": "mood",
 
   // ── Derived scores ──

@@ -80,6 +80,10 @@ export const DASHBOARD_WIDGET_IDS = [
   // `NUTRIENT_WATER` in the dashboard snapshot), gated on the `nutrients`
   // module; self-gates on data like the v1.28.52 strip tiles.
   "waterIntake",
+  // v1.48 — the day's energy intake. Nutrients-store-backed like the
+  // fluid-intake tile (`NUTRIENT_ENERGY`), gated on the `nutrients` module and
+  // on data; opt-in (`tileVisible: false`), so no existing dashboard changes.
+  "energyIntake",
 ] as const;
 
 export type DashboardWidgetId = (typeof DASHBOARD_WIDGET_IDS)[number];
@@ -823,6 +827,11 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayout = {
     // module (opt-in, default off), so an account that never enabled
     // nutrients or never logged water sees a clean dashboard.
     { id: "waterIntake", visible: false, tileVisible: true, order: 28 },
+    // v1.48 — energy intake strip tile. Opt-in from Settings → Dashboard:
+    // a calorie figure is not something every account that syncs meals
+    // wants on its first screen. Self-gates on data and the module like the
+    // fluid-intake tile once switched on.
+    { id: "energyIntake", visible: false, tileVisible: false, order: 29 },
   ],
 };
 

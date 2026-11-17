@@ -124,6 +124,8 @@ export const WIDGET_LABEL_KEYS: Record<DashboardWidgetId, string> = {
   vorsorge: "measurementReminders.sectionTitle",
   // Fluid intake strip tile (nutrients-store-backed).
   waterIntake: "nutrients.names.water",
+  // Energy intake strip tile (nutrients-store-backed, opt-in).
+  energyIntake: "nutrients.names.energy",
 };
 
 export const HERO_ITEM_LABEL_KEYS: Record<PriorityItemKind, string> = {

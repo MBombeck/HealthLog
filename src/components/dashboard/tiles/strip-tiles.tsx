@@ -7,6 +7,7 @@ import {
   Droplet,
   Droplets,
   Dumbbell,
+  Flame,
   Footprints,
   Gauge,
   GlassWater,
@@ -376,6 +377,13 @@ export const STRIP_TILES: readonly StripTile[] = [
     label: ctx.t("nutrients.names.water"),
     unit: "mL",
     icon: GlassWater,
+  })),
+  // Energy intake, opt-in: the day's total kcal, neutral like water (more is
+  // not simply better or worse). Opens the nutrients page.
+  metricTile("energyIntake", "NUTRIENT_ENERGY", (ctx) => ({
+    label: ctx.t("nutrients.names.energy"),
+    unit: "kcal",
+    icon: Flame,
   })),
   {
     // Blood pressure in target. Hidden while every window reads zero, so a
