@@ -295,7 +295,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # pointed at the other one, and this line failed with "Cannot find module
 # '/app/node_modules/pg/lib/index.js'" on both architectures. Declaring the
 # runtime requirement makes the two resolve to the same copy by construction.
-RUN node -e "require.resolve('pg-boss'); require.resolve('pg')"
+RUN node -e "require.resolve('pg-boss'); require.resolve('pg'); require.resolve('fit-file-parser')"
 
 # @napi-rs/canvas (document PDF rasterization): Next's file tracer copies the
 # native binary's package into the standalone tree but NOT the pnpm symlinks that

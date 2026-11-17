@@ -303,6 +303,12 @@ const nextConfig: NextConfig = {
     // still ships pdfjs's wasm decoders.
     "pdfjs-dist",
     "@napi-rs/canvas",
+    // The activity FIT decoder (`src/lib/fit/parse.ts`) runs from its own
+    // published files, pinned exactly in package.json, rather than a copy
+    // the bundler rewrote: what the golden tests decode is what the image
+    // decodes. The tracer copies it into the standalone node_modules, and
+    // the Dockerfile asserts it resolves there.
+    "fit-file-parser",
   ],
   // v1.4.25 — `src/lib/ai/prompts/safety-contracts.ts` reads its
   // sibling YAML files at runtime via `__dirname + readFileSync`. The
