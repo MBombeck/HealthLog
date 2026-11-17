@@ -16,7 +16,11 @@ vi.mock("@/lib/db", () => {
       createMany: vi.fn(),
     },
     biomarkerMerge: { findFirst: vi.fn(async () => null) },
-    labResult: { deleteMany: vi.fn(), findMany: vi.fn(async () => []) },
+    labResult: {
+      deleteMany: vi.fn(),
+      findMany: vi.fn(async () => []),
+      count: vi.fn(async () => 0),
+    },
     labResultImportKey: { createMany: vi.fn() },
     auditLog: { create: vi.fn().mockResolvedValue({}) },
   };
@@ -240,5 +244,54 @@ describe("PUT /api/biomarkers/[id] — target range", () => {
     );
     expect(res.status).toBe(422);
     expect(prisma.biomarker.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("PUT /api/biomarkers/[id] — a no-unit marker given a unit", () => {
+  // A marker minted from a text result holds a range that came with no
+  // unit ("10 - 20" beside "SEE NOTE"). Under a real unit those numbers are
+  // not a window, so they give way to the bounds the edit sends, or to none,
+  // the way the first numeric import reading treats them.
+  const TEXT_MARKER = { ...EXISTING, unit: "", lowerBound: 10, upperBound: 20 };
+
+  function setUp() {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.biomarker.findFirst).mockResolvedValue(
+      TEXT_MARKER as never,
+    );
+    vi.mocked(prisma.labResult.count).mockResolvedValue(0 as never);
+    vi.mocked(prisma.biomarker.update).mockImplementation((async (args: {
+      data: Record<string, unknown>;
+    }) => ({ ...TEXT_MARKER, ...args.data })) as never);
+  }
+  const updateData = () =>
+    (
+      vi.mocked(prisma.biomarker.update).mock.calls[0][0] as {
+        data: Record<string, unknown>;
+      }
+    ).data;
+
+  it("drops the unitless bounds the edit does not set", async () => {
+    setUp();
+    const res = await PUT(putReq({ unit: "mg/dL" }), params("bm-1"));
+    expect(res.status).toBe(200);
+    expect(updateData()).toMatchObject({
+      unit: "mg/dL",
+      lowerBound: null,
+      upperBound: null,
+    });
+  });
+
+  it("keeps the bounds the edit sends with the unit", async () => {
+    setUp();
+    await PUT(putReq({ unit: "mg/dL", upperBound: 150 }), params("bm-1"));
+    expect(updateData()).toMatchObject({ lowerBound: null, upperBound: 150 });
+  });
+
+  it("keeps them under the unity, the unit they were printed in", async () => {
+    setUp();
+    await PUT(putReq({ unit: "1" }), params("bm-1"));
+    expect(updateData()).not.toHaveProperty("lowerBound");
+    expect(updateData()).not.toHaveProperty("upperBound");
   });
 });

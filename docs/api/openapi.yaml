@@ -79498,7 +79498,9 @@ components:
             real unit and the other way round. Clients show nothing beside such a value. An empty unit on a numeric
             value is never read as `\"1\"` and stays refused. On a marker, an empty unit means none has been chosen yet:
             the marker was minted from a text result, and its first numeric reading gives it that reading's unit. It is
-            not the unity: it holds no number, so a `PUT` may set any unit on it."
+            not the unity: it holds no number, so a `PUT` may set any unit on it. The range a marker without a unit
+            (empty or `\"1\"`) holds came with none: a `PUT` that gives it a real unit clears each bound it does not
+            send."
         lowerBound:
           type:
             - number
@@ -79604,7 +79606,9 @@ components:
             real unit and the other way round. Clients show nothing beside such a value. An empty unit on a numeric
             value is never read as `\"1\"` and stays refused. On a marker, an empty unit means none has been chosen yet:
             the marker was minted from a text result, and its first numeric reading gives it that reading's unit. It is
-            not the unity: it holds no number, so a `PUT` may set any unit on it."
+            not the unity: it holds no number, so a `PUT` may set any unit on it. The range a marker without a unit
+            (empty or `\"1\"`) holds came with none: a `PUT` that gives it a real unit clears each bound it does not
+            send."
         lowerBound:
           type:
             - number
