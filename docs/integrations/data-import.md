@@ -40,8 +40,9 @@ the browser — and a background job parses it while a progress indicator
 polls for the imported / skipped counts.
 
 Re-uploading the same archive resolves to the same job by content hash,
-so it merges instead of creating duplicates. ECG CSVs and metric-typed
-clinical records are imported too; see
+so it merges instead of creating duplicates. ECG CSVs and the lab
+results among the Health Records are imported too (lab results land in
+Labs, matched to your markers); see
 [`apple-health.md`](./apple-health.md) for the details and the full
 type mapping.
 

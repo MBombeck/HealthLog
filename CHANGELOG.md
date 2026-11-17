@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Lab results from Apple Health's Health Records now land in Labs. An Apple Health export used to skip every clinical record; the lab results among them are now read, matched to your existing markers (by name, alias or LOINC code, with a reading in another unit converted and the printed value kept), and filed under their panel. A result like "<0.5 mg/L" is kept as printed, the report's own reference range comes along, and preliminary or withdrawn results are left out. Importing the same results again writes nothing, a result you delete stays deleted, and a reading you already typed or scanned is not doubled. If you imported an archive before, upload it once more to pick up its lab results. For the iOS app, `POST /api/labs/fhir-batch` takes the same results straight from HealthKit. Thanks to @camiracode for asking for this. (#1400)
+
 ### Changed
 
 - API responses and CSV or JSON exports now go out gzip-compressed when the
@@ -13,6 +17,7 @@
 
 - A lab marker created from a text result, such as "negative" on a scanned report or a CSV row without a unit, can be edited again. It opens with "No unit" ticked, a rename saves without touching the unit, and the unit can be set while the marker holds only text results. The unit stays locked once numbers are stored under it, and writing the same unit another way (`mg/dl` for `mg/dL`) no longer counts as a change. (#1393)
 - On an account with a watch sending heart rate every few seconds, weight, blood pressure and other occasional readings went missing from the MCP metric series, the Coach and the insights, because the heart rate filled every read before they were reached. Each kind of reading now gets its own share, so they all show up again. (#1398)
+- Large Apple Health exports, which the Health app writes as ZIP64 archives, no longer lose their ECGs and workout routes: the reader for those files refused ZIP64 and counted every one as failed.
 
 ### Security
 

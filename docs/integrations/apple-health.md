@@ -30,10 +30,12 @@ re-uploading the same archive merges instead of duplicating.
 
 The archive contains `apple_health_export/export.xml` (the canonical
 record stream) plus a handful of auxiliary files (workout routes,
-clinical records, electrocardiograms). The importer reads `export.xml`
-and supported ECG CSVs under
-`apple_health_export/electrocardiograms/`; unsupported auxiliary files
-remain ignored.
+clinical records, electrocardiograms). The importer reads `export.xml`,
+supported ECG CSVs under `apple_health_export/electrocardiograms/`,
+workout routes (when the account keeps them) and the lab results among
+the Health Records files under `apple_health_export/clinical-records/`;
+other auxiliary files remain ignored. Large exports written as ZIP64 are
+read in full.
 
 ## 2. Upload to HealthLog
 
@@ -107,13 +109,13 @@ they triggered.
 The parser folds four XML element types and supported auxiliary ECG
 CSVs into the existing HealthLog schema (CHANGELOG v1.4.34):
 
-| XML element        | Maps to                                | Notes                                                                                                                                                                         |
-| ------------------ | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `<Record>`         | `Measurement` rows                     | One row per spot sample. Keyed by `HKMetadataKeyExternalUUID` when present, otherwise a deterministic `sample:<sha256-of-attributes>` fallback so re-imports stay idempotent. |
-| `<Workout>`        | `Workout` rows                         | Activity type + duration + energy + distance.                                                                                                                                 |
-| `<Correlation>`    | `Measurement` rows                     | Compound samples like blood pressure (systolic + diastolic) explode into their per-metric children.                                                                           |
-| `<ClinicalRecord>` | `Measurement` rows where the type maps | Health-record FHIR snapshots; only the metric-typed fields are ingested.                                                                                                      |
-| ECG CSV            | `EcgRecording` rows                    | The source-provided waveform is encrypted before persistence; descriptors and the device's classification are stored without diagnostic inference.                            |
+| XML element        | Maps to                             | Notes                                                                                                                                                                                            |
+| ------------------ | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `<Record>`         | `Measurement` rows                  | One row per spot sample. Keyed by `HKMetadataKeyExternalUUID` when present, otherwise a deterministic `sample:<sha256-of-attributes>` fallback so re-imports stay idempotent.                    |
+| `<Workout>`        | `Workout` rows                      | Activity type + duration + energy + distance.                                                                                                                                                    |
+| `<Correlation>`    | `Measurement` rows                  | Compound samples like blood pressure (systolic + diastolic) explode into their per-metric children.                                                                                              |
+| `<ClinicalRecord>` | `LabResult` rows (lab results only) | `HKClinicalTypeIdentifierLabResultRecord` entries: the referenced FHIR Observation (DSTU2 or R4) becomes a lab reading under source `APPLE_HEALTH`. Other clinical types are counted as skipped. |
+| ECG CSV            | `EcgRecording` rows                 | The source-provided waveform is encrypted before persistence; descriptors and the device's classification are stored without diagnostic inference.                                               |
 
 The HK quantity types that map to HealthLog metric types live in
 `src/lib/measurements/apple-health-mapping.ts`. Anything outside the
@@ -161,6 +163,36 @@ device classifications are preserved as source-reported facts;
 unknown or localized classifications are stored as `null`. HealthLog
 does not inspect the waveform to infer AFib or make a diagnosis.
 
+### Lab results from Health Records
+
+When the Health app holds lab results downloaded from a provider
+(Health Records), `export.xml` lists each one as a
+`<ClinicalRecord type="HKClinicalTypeIdentifierLabResultRecord">` whose
+`resourceFilePath` names a FHIR JSON file under `clinical-records/`.
+After the `export.xml` rows are written, the importer reads those files
+one at a time (at most 50,000 files, 2 MiB each, 256 MiB together) and
+turns each final laboratory Observation into a lab reading:
+
+- the name is the result's own text; a LOINC code matches it to the
+  account's existing marker for the same analyte, and a reading in
+  another unit is converted into the marker's unit with the printed
+  value kept beside it;
+- a result with a comparator (`<0.5 mg/L`) is kept as text, as printed;
+- the report's own reference range is kept with the reading;
+- a panel header is not a reading, but its members carry its name;
+- preliminary results, withdrawn results and other categories (vital
+  signs, for instance) are skipped.
+
+Each reading keeps an identity built from the issuing institution and
+the record identifier (a digest, `lab_results.external_id`). Uploading
+the archive again writes nothing new, a result deleted in HealthLog
+stays deleted, and the iOS app sending the same result through
+`POST /api/labs/fhir-batch` is recognised as the same reading. A
+reading already entered by hand, scanned or imported from a CSV on the
+same day with the same value is not written twice. The pass is
+fail-soft like the ECG pass, and the job result carries only
+`discovered/imported/duplicate/skipped/failed` lab counts.
+
 ### Cumulative HK type → daily aggregate
 
 Cumulative quantity types — steps, active energy, walking/running
@@ -201,8 +233,9 @@ The two-axis idempotency story:
 1. **File-level** — re-uploading the same `export.zip` (same SHA-256
    of bytes) short-circuits to the previous job only when that job
    used the current parser revision. Existing jobs may use revisions 1
-   or 2; new jobs use revision 3, so an earlier successful archive can be
-   deliberately processed again under the corrected aggregation.
+   to 3; new jobs use revision 4, so an earlier successful archive can be
+   deliberately processed again: revision 3 corrected the aggregation,
+   revision 4 reads the lab results among the Health Records.
 2. **Record-level** — when an older `export.zip` is re-exported from
    iOS (same history, slightly newer device timestamps), every
    record's external ID stays stable. The serialized reconciliation
