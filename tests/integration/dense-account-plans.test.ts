@@ -31,6 +31,7 @@ import { getPrismaClient, truncateAllTables } from "./setup";
 import { describeLedger, explainStatements } from "./statement-plans";
 import { readAllTimeExtremes } from "@/lib/insights/feature-blocks";
 import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";
+import { probeCoachAvailability } from "@/lib/ai/coach/tools/availability";
 
 vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: vi.fn(() => null),
@@ -49,8 +50,11 @@ const OTHER_ACCOUNTS = 20;
 const OTHER_ROWS = 1_000;
 const HISTORY_ROWS = PULSE_ROWS + SPO2_ROWS + STRESS_ROWS;
 
-/** Pulse readings in one UTC day. */
+/** Rows the availability probe samples per type (its own cap). */
+const SAMPLE_CAP = 5_000;
+/** Pulse readings in one UTC day, and oxygen readings. */
 const PULSE_DAY = 720;
+const SPO2_DAY = 144;
 
 type StatisticsState = "none" | "predate" | "analysed";
 
@@ -221,6 +225,28 @@ describe.each<StatisticsState>(["none", "predate", "analysed"])(
       // Two days of pulse at most (the oldest and the newest, each counted
       // against its bucket) and one row per sparse day. The history is 200,000.
       expectBounded(ledger, 2 * PULSE_DAY + 64);
+    });
+
+    it("probes a lapsed dense stream without aggregating its history", async () => {
+      const ledger = await explainStatements(() =>
+        probeCoachAvailability(
+          ACCOUNT,
+          new Map([
+            ["spo2", { kind: "measurement", types: ["OXYGEN_SATURATION"] }],
+            ["weight", { kind: "measurement", types: ["WEIGHT"] }],
+          ]),
+        ),
+      );
+      const spo2 = ledger.result.get("spo2");
+      expect(spo2?.count).toBe(SPO2_ROWS);
+      expect(spo2?.series).toEqual([
+        expect.objectContaining({ unit: "%", min: 95, max: 98 }),
+      ]);
+      expect(spo2?.reachableWithWindow).toBe("last90days");
+      expect(ledger.result.get("weight")?.count).toBe(SPARSE_DAYS);
+      // A capped sample of each type, one oldest row each, and the two days
+      // the tier is checked on for the dense one. The history is 30,000.
+      expectBounded(ledger, 2 * (SAMPLE_CAP + 1) + 2 + 2 * SPO2_DAY + 2 + 64);
     });
   },
 );

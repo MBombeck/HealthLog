@@ -42,7 +42,9 @@ import type {
 } from "@/generated/prisma/client";
 
 /** All-time aggregate (full history) for one measurement type. */
-interface AllTimeExtremes {
+export interface AllTimeExtremes {
+  /** Readings folded: one ladder-canonical source per day. */
+  count: number;
   mean: number | null;
   min: number | null;
   max: number | null;
@@ -273,7 +275,13 @@ export async function readAllTimeExtremes(
     }),
   );
   const rows = await prisma.$queryRaw<
-    Array<{ type: string; mean: number; min: number; max: number }>
+    Array<{
+      type: string;
+      count: number;
+      mean: number;
+      min: number;
+      max: number;
+    }>
   >`
     WITH live AS (${Prisma.join(rawArms, " UNION ALL ")}),
     per_source AS (
@@ -292,6 +300,7 @@ export async function readAllTimeExtremes(
     )
     SELECT
       c."type"::text                                  AS type,
+      SUM(c.cnt)::int                                 AS count,
       ${mean}::double precision                       AS mean,
       MIN(c.min_value)::double precision              AS min,
       MAX(c.max_value)::double precision              AS max
@@ -308,6 +317,7 @@ export async function readAllTimeExtremes(
   `;
   for (const r of rows) {
     out.set(r.type as MeasurementType, {
+      count: Number(r.count),
       mean: r.mean === null ? null : Number(r.mean),
       min: r.min === null ? null : Number(r.min),
       max: r.max === null ? null : Number(r.max),
