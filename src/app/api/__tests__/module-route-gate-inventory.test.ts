@@ -274,6 +274,9 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   // capability, which carries the labs module, so it counts as gated.
   "src/app/api/labs/ocr/capability/route.ts",
   "src/app/api/labs/ocr/commit/route.ts",
+  // #1400 — Health Records lab results from the iOS app write the same row
+  // store as the export import, which runs whatever the module switch says.
+  "src/app/api/labs/fhir-batch/route.ts",
   // ── DATA LAYER (medications) ──────────────────────────────────────
   // v1.18.1 — medications graduated from CORE to a toggleable module,
   // but it is SURFACE-gated (nav / dashboard widget / settings entry), not
