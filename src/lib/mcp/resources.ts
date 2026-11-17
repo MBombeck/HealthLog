@@ -627,7 +627,7 @@ export const MCP_RESOURCE_TEMPLATES: McpResourceTemplateDefinition[] = [
     uriTemplate: "healthlog://nutrient/{code}",
     title: "Nutrient intake",
     description:
-      "One tracked nutrient's per-day summed intake series (e.g. healthlog://nutrient/water) over the default 30-day window, plus its EFSA dietary reference resolved against the user's own profile sex. Same read get_nutrients serves. Gated on the opt-in nutrients module. Returns { present: false } when the module is off or nothing is logged for that code.",
+      "One tracked nutrient's per-day intake series (e.g. healthlog://nutrient/water, healthlog://nutrient/protein) over the default 30-day window, plus its dietary reference resolved against the user's own profile sex and the user's own target, if set. Same read get_nutrients serves. Gated on the opt-in nutrients module. Returns { present: false } when the module is off or nothing is logged for that code.",
     mimeType: "application/json",
     complete: { code: completeNutrient },
     async list(ctx) {

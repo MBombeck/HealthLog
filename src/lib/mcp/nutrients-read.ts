@@ -3,11 +3,11 @@
  * coverage review G1).
  *
  * Thin façade over the SAME two reads `GET /api/nutrients` (presence
- * overview) and `GET /api/nutrients/daily` (per-day summed series + the
- * resolved EFSA reference) run: the same tz-anchored day-key math
- * (`userDayKey` / `shiftDateKey` against the caller's own local "today"),
- * the same sum-across-sources fold (a day can carry an APPLE_HEALTH row AND
- * a MANUAL row since migration 0249), and the same sex-aware
+ * overview) and `GET /api/nutrients/daily` (per-day series + the resolved
+ * dietary reference + the person's own target) run: the same tz-anchored
+ * day-key math (`userDayKey` / `shiftDateKey` against the caller's own local
+ * "today"), the same `foldNutrientDay` across sources (the largest day-total
+ * source counts, manual and supplement rows add on top), and the same sex-aware
  * `resolveNutrientReference` — omit, never guess, when the profile has no
  * sex on file. No new analytics.
  *
@@ -43,6 +43,7 @@ import {
   labelIn,
 } from "@/lib/i18n/localised-label-index";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import type { NutrientTarget } from "@/lib/validations/nutrient-targets";
 
 /** The i18n key the app already labels a nutrient with, in every bundle. */
 function nutrientLabelKey(code: NutrientCode): string {
@@ -134,6 +135,7 @@ export interface NutrientsDailyResult {
   windowDays?: number;
   days?: NutrientDailyEntry[];
   reference?: ResolvedNutrientReference | null;
+  personalTarget?: NutrientTarget | null;
   upperLimit?: NutrientUpperLimit | null;
 }
 
@@ -141,7 +143,7 @@ export interface NutrientsDailyResult {
  * Resolve a free-text nutrient name to a catalog code, or `null`. Forgiving
  * for an NL assistant (the exact code, or the display name in ANY shipped
  * language, with case, accents and separators folded) but closed to the
- * 26-code catalog — an unresolved name reports
+ * nutrient catalog — an unresolved name reports
  * `{ present: false, reason: "unknown_nutrient" }` rather than inventing a
  * series.
  *
@@ -201,12 +203,11 @@ async function readDaily(
   days: number,
 ): Promise<NutrientsDailyResult> {
   const definition = NUTRIENT_CATALOG[nutrient];
-  const { days: daySeries, rowCount } = await readNutrientDaily(
-    userId,
-    userTz,
-    nutrient,
-    days,
-  );
+  const {
+    days: daySeries,
+    rowCount,
+    personalTarget,
+  } = await readNutrientDaily(userId, userTz, nutrient, days);
   const reference = resolveNutrientReference(nutrient, sex);
 
   return {
@@ -218,6 +219,7 @@ async function readDaily(
     windowDays: days,
     days: daySeries,
     reference,
+    personalTarget,
     upperLimit: definition.upperLimit,
   };
 }
@@ -237,7 +239,7 @@ function clampDays(
  * `get_nutrients` entry point. No `nutrient` → the presence overview
  * (latest day / latest total / days-with-data per logged code). A named
  * `nutrient` → that code's per-day summed series over a trailing window plus
- * its resolved EFSA reference. `{ present: false, reason: "module_disabled" }`
+ * its resolved dietary reference and the person's own target. `{ present: false, reason: "module_disabled" }`
  * when the opt-in `nutrients` module is off — checked before any other read,
  * mirroring both backing routes.
  */

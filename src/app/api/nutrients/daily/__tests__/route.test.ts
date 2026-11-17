@@ -14,6 +14,7 @@ vi.mock("@/lib/db", () => ({
     nutrientIntakeDay: {
       findMany: vi.fn(),
     },
+    user: { findUnique: vi.fn() },
   },
 }));
 
@@ -62,6 +63,7 @@ interface DailyResponse {
     windowDays: number;
     days: Array<{ day: string; amount: number }>;
     reference: { kind: string; direction: string; value: number } | null;
+    personalTarget: { value: number; direction: string } | null;
   };
 }
 
@@ -70,6 +72,9 @@ beforeEach(() => {
   vi.mocked(getSession).mockResolvedValue(sessionFor("FEMALE") as never);
   vi.mocked(requireModuleEnabled).mockResolvedValue({ enabled: true } as never);
   vi.mocked(prisma.nutrientIntakeDay.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.user.findUnique).mockResolvedValue({
+    nutrientTargetsJson: null,
+  } as never);
 });
 
 describe("GET /api/nutrients/daily", () => {
@@ -114,7 +119,7 @@ describe("GET /api/nutrients/daily", () => {
     }
   });
 
-  it("sums amounts across sources within the same day before bucketing", async () => {
+  it("folds sources within the same day before bucketing", async () => {
     // Relative day-keys — a fixed literal slides out of the window as the
     // calendar advances (a `?days=3` window only ever holds today..today-2).
     const utcDay = (offset: number) =>
@@ -122,9 +127,11 @@ describe("GET /api/nutrients/daily", () => {
     const today = utcDay(0);
     const yesterday = utcDay(1);
     vi.mocked(prisma.nutrientIntakeDay.findMany).mockResolvedValue([
-      { day: today, amount: 900 },
-      { day: today, amount: 600 },
-      { day: yesterday, amount: 400 },
+      { day: today, amount: 900, source: "APPLE_HEALTH" },
+      { day: today, amount: 600, source: "MANUAL" },
+      // The smaller of two day-total sources does not count.
+      { day: yesterday, amount: 400, source: "APPLE_HEALTH" },
+      { day: yesterday, amount: 350, source: "EXTERNAL" },
     ] as never);
 
     const res = await GET(getReq("?nutrient=water&days=3"));
@@ -139,11 +146,33 @@ describe("GET /api/nutrients/daily", () => {
     const res = await GET(getReq("?nutrient=water&days=7"));
     const body = (await res.json()) as DailyResponse;
     expect(body.data.reference).toEqual({
+      authority: "EFSA",
       kind: "AI",
       direction: "target",
       value: 2000,
       source: expect.stringContaining("EFSA"),
     });
+  });
+
+  it("returns the person's own target for the code, and null without one", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      nutrientTargetsJson: {
+        protein: { value: 120, direction: "target" },
+        sugar: { value: 40, direction: "limit" },
+      },
+    } as never);
+    const protein = (await (
+      await GET(getReq("?nutrient=protein&days=7"))
+    ).json()) as DailyResponse;
+    expect(protein.data.personalTarget).toEqual({
+      value: 120,
+      direction: "target",
+    });
+    expect(protein.data.unit).toBe("g");
+    const water = (await (
+      await GET(getReq("?nutrient=water&days=7"))
+    ).json()) as DailyResponse;
+    expect(water.data.personalTarget).toBeNull();
   });
 
   it("omits the reference when the profile has no sex on file — never guesses", async () => {

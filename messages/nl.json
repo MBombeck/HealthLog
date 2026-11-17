@@ -5809,7 +5809,7 @@
         "subtitle": "Bepaal welke bron voorrang krijgt als twee bronnen dezelfde meetwaarde melden.",
         "nutrients": {
           "title": "Gesynchroniseerde inname van voedingsstoffen",
-          "description": "Dagtotalen over de afgelopen {days} dagen: wat Apple Health heeft gesynchroniseerd plus de supplementen die je hebt ingenomen.",
+          "description": "Dagtotalen over de afgelopen {days} dagen: wat Apple Health of een voedingsapp heeft gesynchroniseerd plus de supplementen die je hebt ingenomen.",
           "empty": "Er zijn nog geen gegevens over voedingsstoffen gesynchroniseerd.",
           "latest": "{amount} {unit} op {date}",
           "daysWithData": "{count} van {days} dagen",
@@ -6997,9 +6997,9 @@
     "apiTokensDescription": "Bekijk tokens voor metingen, trainingen, documenten en medicatie-inname en trek ze in.",
     "measurementsToken": {
       "title": "Metingtokens",
-      "description": "Maak een token aan zodat een weegschaal, een horlogekoppeling of je domotica metingen en waarden voor je eigen metingen kan toevoegen.",
+      "description": "Maak een token aan zodat een weegschaal, een horlogekoppeling, een voedingsapp of je domotica metingen, waarden voor je eigen metingen en dagtotalen van voedingsstoffen kan toevoegen.",
       "detail": "Het token wordt één keer getoond.",
-      "scopeNote": "Het kan alleen nieuwe metingen aan je eigen dossier toevoegen, en waarden aan eigen metingen die je al hebt aangemaakt. Het kan je gegevens niet lezen, geen eigen meting aanmaken, niets wijzigen of verwijderen en geen ander token aanmaken. Metingen worden gemarkeerd als afkomstig van een extern apparaat, zodat je ze later kunt onderscheiden; waarden van eigen metingen krijgen die markering niet. Je kunt beide nog steeds zelf corrigeren. De ID van een eigen meting is het deel na /custom-metrics/ in het adres van de pagina ervan.",
+      "scopeNote": "Het kan alleen nieuwe metingen aan je eigen dossier toevoegen, waarden aan eigen metingen die je al hebt aangemaakt, en dagtotalen van voedingsstoffen zolang de module voedingsstoffen aan staat. Het kan je gegevens niet lezen, geen eigen meting aanmaken, niets wijzigen of verwijderen en geen ander token aanmaken. Metingen en voedingstotalen worden gemarkeerd als afkomstig van een extern apparaat, zodat je ze later kunt onderscheiden; waarden van eigen metingen krijgen die markering niet. Metingen en waarden van eigen metingen kun je nog steeds zelf corrigeren; een voedingsapp corrigeert een dag door hem opnieuw te sturen. De ID van een eigen meting is het deel na /custom-metrics/ in het adres van de pagina ervan.",
       "createFailed": "Het token kon niet worden aangemaakt. Probeer het opnieuw.",
       "namePlaceholder": "Naam, bijv. Home Assistant",
       "appleHealth": {
@@ -10839,7 +10839,7 @@
     },
     "nutrients": {
       "label": "Inname van voedingsstoffen",
-      "description": "Dagelijkse totalen van micronutriënten, gesynchroniseerd vanuit Apple Health."
+      "description": "Dagelijkse totalen van voedingsstoffen uit Apple Health of een voedingsapp: water, energie, macro's, vitaminen en mineralen."
     },
     "vaccinations": {
       "label": "Vaccinaties",
@@ -12658,15 +12658,24 @@
       "water": "Water",
       "caffeine": "Cafeïne",
       "dha": "DHA (omega-3)",
-      "epa": "EPA (omega-3)"
+      "epa": "EPA (omega-3)",
+      "energy": "Energie",
+      "protein": "Eiwit",
+      "carbohydrates": "Koolhydraten",
+      "fat": "Vet",
+      "sugar": "Suiker",
+      "fiber": "Vezels",
+      "sodium": "Natrium",
+      "potassium": "Kalium",
+      "alcohol": "Alcohol"
     },
     "page": {
       "title": "Inname van voedingsstoffen",
-      "description": "Vochtinname en inname van vitaminen en mineralen, gesynchroniseerd vanuit de gezondheidsapp op je telefoon, plus handmatig ingevoerd water.",
-      "moduleOffDescription": "Zet de module voedingsstoffen aan om hier je vochtinname en je inname van vitaminen en mineralen te zien. Gesynchroniseerde inname wordt onderdeel van de gegevens die de Coach kan lezen.",
+      "description": "Water, energie, macro's, vitaminen en mineralen uit je gezondheidsapp of een voedingsapp, plus handmatig ingevoerd water.",
+      "moduleOffDescription": "Zet de module voedingsstoffen aan om hier je vochtinname, energie, macronutriënten en je inname van vitaminen en mineralen te zien. Gesynchroniseerde inname wordt onderdeel van de gegevens die de Coach kan lezen.",
       "moduleOffCta": "Voedingsstoffen aanzetten",
       "emptyTitle": "Nog geen gegevens over voedingsstoffen",
-      "emptyDescription": "Gegevens komen binnen via de synchronisatie met de gezondheidsapp op je telefoon of via handmatig ingevoerd water.",
+      "emptyDescription": "Gegevens komen binnen via de synchronisatie met de gezondheidsapp op je telefoon, via een voedingsapp met een metingentoken of via handmatig ingevoerd water.",
       "loadError": "Je gegevens over voedingsstoffen konden niet worden geladen",
       "lastAttemptTitle": "Er is een synchronisatie binnengekomen, maar er kon niets worden opgeslagen",
       "lastAttemptAt": "Laatste poging: {date}",
@@ -12679,7 +12688,7 @@
       }
     },
     "hydration": {
-      "referenceMeta": "Referentie-inname {value} {unit}/dag (EFSA)",
+      "referenceMeta": "Referentie-inname {value} {unit}/dag ({authority})",
       "loadError": "Water kon niet worden geladen."
     },
     "caffeine": {
@@ -12688,7 +12697,7 @@
     },
     "micronutrients": {
       "title": "Vitaminen en mineralen",
-      "rowMeta": "{days} van {window} dagen, ref. {value} {unit} (EFSA)",
+      "rowMeta": "{days} van {window} dagen, ref. {value} {unit} ({authority})",
       "rowMetaNoRef": "{days} van {window} dagen",
       "footer": "{tracked} van {total} gevolgde micronutriënten hebben gegevens in deze periode.",
       "emptyTitle": "Nog geen gegevens over micronutriënten gesynchroniseerd",
@@ -12703,14 +12712,43 @@
         "alpha_tocopherol": "De grens is vastgesteld voor alfa-tocoferol."
       }
     },
-    "sparseNote": "Een laag getal betekent hier meestal dat er weinig is vastgelegd, niet dat er een tekort is. Dagtotalen in Apple Health weerspiegelen wat je apps hebben vastgelegd, niet je totale inname via voeding.",
+    "sparseNote": "Een laag getal betekent hier meestal dat er weinig is vastgelegd, niet dat er een tekort is. Dagtotalen weerspiegelen wat je apps hebben vastgelegd, niet je totale inname via voeding. Melden een voedingsapp en Apple Health dezelfde dag, dan telt het grootste totaal.",
     "units": {
       "IU": "IE"
     },
     "sources": {
       "APPLE_HEALTH": "Gesynchroniseerd",
       "MANUAL": "Ingevoerd",
-      "SUPPLEMENT": "Supplementen"
+      "SUPPLEMENT": "Supplementen",
+      "EXTERNAL": "Extern",
+      "HEALTH_CONNECT": "Health Connect"
+    },
+    "macros": {
+      "title": "Energie en macronutriënten",
+      "short": {
+        "energy": "Energie",
+        "protein": "Eiwit",
+        "carbohydrates": "Koolh.",
+        "fat": "Vet",
+        "sugar": "Suiker",
+        "fiber": "Vezels"
+      },
+      "pickLabel": "Voedingsstof",
+      "referenceMeta": "Referentie {value} {unit}/dag ({authority})",
+      "targetMeta": "Jouw doel {value} {unit}/dag",
+      "limitMeta": "Jouw grens {value} {unit}/dag",
+      "setTarget": "Doel instellen",
+      "editTarget": "Doel wijzigen",
+      "clearTarget": "Doel verwijderen",
+      "targetLabel": "{name} per dag in {unit}",
+      "directionLabel": "Soort doel",
+      "directionTarget": "Minstens halen",
+      "directionLimit": "Eronder blijven",
+      "saveFailed": "Het doel kon niet worden opgeslagen. Probeer het opnieuw.",
+      "loadError": "Energie en macronutriënten konden niet worden geladen."
+    },
+    "alcohol": {
+      "loadError": "Alcohol kon niet worden geladen."
     }
   },
   "daily": {

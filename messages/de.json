@@ -5809,7 +5809,7 @@
         "subtitle": "Lege fest, welche Quelle gewinnt, wenn zwei dieselbe Messgröße liefern.",
         "nutrients": {
           "title": "Synchronisierte Nährstoffzufuhr",
-          "description": "Tagessummen der letzten {days} Tage aus Apple Health und den eingenommenen Supplementen.",
+          "description": "Tagessummen der letzten {days} Tage aus Apple Health oder einem Ernährungstracker und den eingenommenen Supplementen.",
           "empty": "Noch keine Nährstoffdaten synchronisiert.",
           "latest": "{amount} {unit} am {date}",
           "daysWithData": "{count} von {days} Tagen",
@@ -6997,9 +6997,9 @@
     "apiTokensDescription": "Tokens für Messwerte, Trainings, Dokumente und Medikamenten-Einnahme prüfen und widerrufen.",
     "measurementsToken": {
       "title": "Messwert-Tokens",
-      "description": "Erzeuge ein Token, damit eine Waage, eine Uhr oder deine Hausautomatisierung Messwerte und Werte deiner eigenen Metriken eintragen kann.",
+      "description": "Erzeuge ein Token, damit eine Waage, eine Uhr, ein Ernährungstracker oder deine Hausautomatisierung Messwerte, Werte deiner eigenen Metriken und tägliche Nährstoffsummen eintragen kann.",
       "detail": "Das Token wird nur einmal angezeigt.",
-      "scopeNote": "Es kann ausschließlich neue Werte in deine eigene Akte eintragen, auch für eigene Metriken, die du bereits angelegt hast. Es kann deine Daten nicht lesen, keine Metrik anlegen, nichts ändern oder löschen und kein weiteres Token erstellen. Messwerte werden als von einem externen Gerät gekennzeichnet, damit du sie später erkennst; Werte eigener Metriken tragen keine solche Kennzeichnung. Beides lässt sich jederzeit korrigieren. Die ID einer eigenen Metrik ist der Teil nach /custom-metrics/ in der Adresse ihrer Seite.",
+      "scopeNote": "Es kann ausschließlich neue Werte in deine eigene Akte eintragen, auch für eigene Metriken, die du bereits angelegt hast, und tägliche Nährstoffsummen, solange das Nährstoffe-Modul aktiv ist. Es kann deine Daten nicht lesen, keine Metrik anlegen, nichts ändern oder löschen und kein weiteres Token erstellen. Messwerte und Nährstoffsummen werden als von einem externen Gerät gekennzeichnet, damit du sie später erkennst; Werte eigener Metriken tragen keine solche Kennzeichnung. Messwerte und Werte eigener Metriken kannst du jederzeit selbst korrigieren; einen Nährstofftag korrigiert der Tracker, indem er ihn erneut sendet. Die ID einer eigenen Metrik ist der Teil nach /custom-metrics/ in der Adresse ihrer Seite.",
       "createFailed": "Das Token konnte nicht erstellt werden. Bitte versuche es erneut.",
       "namePlaceholder": "Name, z. B. Home Assistant",
       "appleHealth": {
@@ -10839,7 +10839,7 @@
     },
     "nutrients": {
       "label": "Nährstoffzufuhr",
-      "description": "Tägliche Mikronährstoff-Summen aus Apple Health."
+      "description": "Tägliche Nährstoffsummen aus Apple Health oder einem Ernährungstracker: Wasser, Energie, Makros, Vitamine und Mineralstoffe."
     },
     "vaccinations": {
       "label": "Impfungen",
@@ -12658,15 +12658,24 @@
       "water": "Wasser",
       "caffeine": "Koffein",
       "dha": "DHA (Omega-3)",
-      "epa": "EPA (Omega-3)"
+      "epa": "EPA (Omega-3)",
+      "energy": "Energie",
+      "protein": "Eiweiß",
+      "carbohydrates": "Kohlenhydrate",
+      "fat": "Fett",
+      "sugar": "Zucker",
+      "fiber": "Ballaststoffe",
+      "sodium": "Natrium",
+      "potassium": "Kalium",
+      "alcohol": "Alkohol"
     },
     "page": {
       "title": "Nährstoffaufnahme",
-      "description": "Flüssigkeits- und Vitamin-/Mineralstoffaufnahme aus der Gesundheits-App deines Telefons, plus manuelle Wassereinträge.",
-      "moduleOffDescription": "Aktiviere das Nährstoffe-Modul, um Flüssigkeits- und Vitamin-/Mineralstoffaufnahme hier zu sehen. Synchronisierte Werte werden Teil der Aufzeichnung, die der Coach lesen kann.",
+      "description": "Wasser, Energie, Makros, Vitamine und Mineralstoffe aus deiner Gesundheits-App oder einem Ernährungstracker, plus manuelle Wassereinträge.",
+      "moduleOffDescription": "Aktiviere das Nährstoffe-Modul, um Flüssigkeit, Energie, Makronährstoffe und Vitamin-/Mineralstoffaufnahme hier zu sehen. Synchronisierte Werte werden Teil der Aufzeichnung, die der Coach lesen kann.",
       "moduleOffCta": "Nährstoffe aktivieren",
       "emptyTitle": "Noch keine Nährstoffdaten",
-      "emptyDescription": "Daten kommen aus der Synchronisierung der Gesundheits-App deines Telefons oder einem manuellen Wassereintrag.",
+      "emptyDescription": "Daten kommen aus der Synchronisierung der Gesundheits-App deines Telefons, von einem Ernährungstracker mit Messwert-Token oder aus einem manuellen Wassereintrag.",
       "loadError": "Deine Nährstoffdaten konnten nicht geladen werden",
       "lastAttemptTitle": "Eine Synchronisierung ist angekommen, aber nichts konnte gespeichert werden",
       "lastAttemptAt": "Letzter Versuch: {date}",
@@ -12679,7 +12688,7 @@
       }
     },
     "hydration": {
-      "referenceMeta": "Richtwert {value} {unit}/Tag (EFSA)",
+      "referenceMeta": "Richtwert {value} {unit}/Tag ({authority})",
       "loadError": "Wasser konnte nicht geladen werden."
     },
     "caffeine": {
@@ -12688,7 +12697,7 @@
     },
     "micronutrients": {
       "title": "Vitamine & Mineralstoffe",
-      "rowMeta": "{days} von {window} Tagen, Richtwert {value} {unit} (EFSA)",
+      "rowMeta": "{days} von {window} Tagen, Richtwert {value} {unit} ({authority})",
       "rowMetaNoRef": "{days} von {window} Tagen",
       "footer": "{tracked} von {total} erfassten Mikronährstoffen haben Daten in diesem Zeitraum.",
       "emptyTitle": "Noch keine Mikronährstoffdaten synchronisiert",
@@ -12703,14 +12712,43 @@
         "alpha_tocopherol": "Die Höchstmenge ist für Alpha-Tocopherol festgelegt."
       }
     },
-    "sparseNote": "Ein niedriger Wert bedeutet hier meist lückenhafte Erfassung, keinen Mangel. Die Tagessummen aus Apple Health spiegeln wider, was deine Apps erfasst haben, nicht die gesamte Nahrungsaufnahme.",
+    "sparseNote": "Ein niedriger Wert bedeutet hier meist lückenhafte Erfassung, keinen Mangel. Die Tagessummen spiegeln wider, was deine Apps erfasst haben, nicht die gesamte Nahrungsaufnahme. Melden ein Tracker und Apple Health denselben Tag, zählt die größere Summe.",
     "units": {
       "IU": "IE"
     },
     "sources": {
       "APPLE_HEALTH": "Synchronisiert",
       "MANUAL": "Eingetragen",
-      "SUPPLEMENT": "Präparate"
+      "SUPPLEMENT": "Präparate",
+      "EXTERNAL": "Extern",
+      "HEALTH_CONNECT": "Health Connect"
+    },
+    "macros": {
+      "title": "Energie & Makronährstoffe",
+      "short": {
+        "energy": "Energie",
+        "protein": "Eiweiß",
+        "carbohydrates": "KH",
+        "fat": "Fett",
+        "sugar": "Zucker",
+        "fiber": "Ballaststoffe"
+      },
+      "pickLabel": "Nährstoff",
+      "referenceMeta": "Richtwert {value} {unit}/Tag ({authority})",
+      "targetMeta": "Dein Ziel {value} {unit}/Tag",
+      "limitMeta": "Deine Obergrenze {value} {unit}/Tag",
+      "setTarget": "Ziel setzen",
+      "editTarget": "Ziel ändern",
+      "clearTarget": "Ziel entfernen",
+      "targetLabel": "{name} pro Tag in {unit}",
+      "directionLabel": "Art des Ziels",
+      "directionTarget": "Mindestens erreichen",
+      "directionLimit": "Darunter bleiben",
+      "saveFailed": "Das Ziel konnte nicht gespeichert werden. Bitte versuche es erneut.",
+      "loadError": "Energie und Makronährstoffe konnten nicht geladen werden."
+    },
+    "alcohol": {
+      "loadError": "Alkohol konnte nicht geladen werden."
     }
   },
   "daily": {

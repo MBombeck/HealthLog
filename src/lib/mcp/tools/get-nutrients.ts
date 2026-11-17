@@ -33,10 +33,18 @@ const getNutrientsOutput: z.ZodRawShape = {
   days: z.array(z.object({ day: z.string(), amount: z.number() })).optional(),
   reference: z
     .object({
+      authority: z.enum(["EFSA", "IOM", "NIH ODS"]).optional(),
       kind: z.enum(["PRI", "AI", "safeLevel"]),
       direction: z.enum(["target", "upperGuidance"]),
       value: z.number(),
       source: z.string(),
+    })
+    .nullable()
+    .optional(),
+  personalTarget: z
+    .object({
+      value: z.number(),
+      direction: z.enum(["target", "limit"]),
     })
     .nullable()
     .optional(),
@@ -46,7 +54,7 @@ export const getNutrientsTool: McpToolDefinition = {
   name: "get_nutrients",
   title: "Get nutrient intake",
   description:
-    "Fetch the user's synced micronutrient intake — water, caffeine, and the 24 tracked vitamins/minerals — as day totals summed across sources (e.g. an Apple Health sync AND a manual water entry on the same day). Omit `nutrient` for a presence overview across every logged code (latest logged day, latest day's total, days with data). Pass a catalog code, or the nutrient's display name in any language HealthLog ships (e.g. 'water', 'magnesium', 'vitamin_d', 'Magnésium', 'Żelazo'), for that nutrient's per-day series over a trailing window, plus its EFSA dietary reference resolved against the user's own profile sex — omitted, never guessed, when sex is not on file. Gated on the opt-in `nutrients` module. Returns { present: false, reason: \"module_disabled\" } when the module is off, or { present: false } when nothing matches.",
+    "Fetch the user's nutrient intake — water, caffeine, the tracked vitamins and minerals (sodium and potassium included), dietary energy in kcal, the macronutrients (protein, carbohydrates, fat, sugar, fiber) in g, and alcohol in g of ethanol — as day totals across sources. Apple Health, Health Connect and a food-tracker bridge each report the whole day, so only the largest of them counts; a manual water entry and taken supplements add on top. Omit `nutrient` for a presence overview across every logged code (latest logged day, latest day's total, days with data). Pass a catalog code, or the nutrient's display name in any language HealthLog ships (e.g. 'water', 'magnesium', 'vitamin_d', 'Magnésium', 'Żelazo'), for that nutrient's per-day series over a trailing window, plus its dietary reference (with the authority that set it: EFSA, or IOM for protein and carbohydrates) resolved against the user's own profile sex — omitted, never guessed, when sex is not on file or the nutrient has none — and the target the user set for it, if any. Gated on the opt-in `nutrients` module. Returns { present: false, reason: \"module_disabled\" } when the module is off, or { present: false } when nothing matches.",
   inputShape: {
     nutrient: z
       .string()

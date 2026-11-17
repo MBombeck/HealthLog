@@ -14,10 +14,12 @@ import { apiGet } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
 import { binaryReferenceSex } from "@/lib/profile/sex";
 import {
-  NUTRIENT_CODES,
+  NUTRIENT_CATALOG,
   isNutrientCode,
+  nutrientCodesInGroup,
   resolveNutrientReference,
   type NutrientCode,
+  type NutrientGroup,
 } from "@/lib/nutrients/catalog";
 import type {
   NutrientAmountBySource,
@@ -28,10 +30,16 @@ import { nutrientUnitLabel } from "./unit-label";
 
 const WINDOW_DAYS = 30;
 
-/** The vitamin/mineral codes — water + caffeine ride their own cards. */
-const MICRONUTRIENT_CODES = NUTRIENT_CODES.filter(
-  (code) => code !== "water" && code !== "caffeine",
-);
+/**
+ * The groups this card lists. Water, caffeine, alcohol and energy with the
+ * macros ride their own cards.
+ */
+const MICRONUTRIENT_GROUPS: ReadonlyArray<NutrientGroup> = [
+  "vitamin",
+  "mineral",
+  "omega3",
+];
+const MICRONUTRIENT_CODES = nutrientCodesInGroup(...MICRONUTRIENT_GROUPS);
 
 function formatAmount(
   fmt: { number: (v: number, d?: number) => string },
@@ -45,6 +53,8 @@ const SOURCES = [
   { key: "APPLE_HEALTH", color: "var(--chart-1)" },
   { key: "MANUAL", color: "var(--chart-2)" },
   { key: "SUPPLEMENT", color: "var(--chart-3)" },
+  { key: "EXTERNAL", color: "var(--chart-4)" },
+  { key: "HEALTH_CONNECT", color: "var(--chart-5)" },
 ] as const;
 
 /**
@@ -144,9 +154,9 @@ function UpperLimitNote({
  *
  * Rows ONLY for codes with data in the last 30 days (catalog order),
  * each carrying a latest-day total + a muted "N of 30 days · ref X
- * (EFSA)" meta line — reference omitted when the profile has no sex on
- * file. A muted footer counts "M of 24 tracked"; zero rows collapse the
- * card to a single honest `EmptyState`, never 24 empty rows. No
+ * (authority)" meta line — reference omitted when the profile has no sex on
+ * file. A muted footer counts "M of N tracked"; zero rows collapse the
+ * card to a single honest `EmptyState`, never a column of empty rows. No
  * sparkline in slice 1 — sparse series make sparklines lie.
  */
 export function MicronutrientsCard() {
@@ -168,8 +178,7 @@ export function MicronutrientsCard() {
   const rows = (data?.nutrients ?? []).filter(
     (row) =>
       isNutrientCode(row.nutrient) &&
-      row.nutrient !== "water" &&
-      row.nutrient !== "caffeine",
+      MICRONUTRIENT_GROUPS.includes(NUTRIENT_CATALOG[row.nutrient].group),
   );
 
   return (
@@ -229,6 +238,7 @@ export function MicronutrientsCard() {
                                 window: WINDOW_DAYS,
                                 value: formatAmount(fmt, reference.value),
                                 unit: unitLabel,
+                                authority: reference.authority,
                               })
                             : t("nutrients.micronutrients.rowMetaNoRef", {
                                 days: row.daysWithData,

@@ -24,6 +24,7 @@ import {
   buildOvernightClimateSeries,
   buildTrainingLoadSeries,
   buildWorkoutMinutesSeries,
+  MAX_MACRONUTRIENT_CHANNELS,
   MAX_MICRONUTRIENT_CHANNELS,
   MIN_ALCOHOL_DAYS,
   MIN_OVERNIGHT_HOURS,
@@ -38,12 +39,22 @@ function daily(values: number[], from = 0): DailySeriesPoint[] {
 }
 
 describe("buildNutrientDailySeries", () => {
-  it("sums sources per day and maps water and caffeine to their channels", () => {
+  it("folds sources per day and maps water and caffeine to their channels", () => {
     const out = buildNutrientDailySeries(
       [
-        { day: dayN(0), nutrient: "water", amount: 1200 },
-        { day: dayN(0), nutrient: "water", amount: 300 },
-        { day: dayN(1), nutrient: "caffeine", amount: 95 },
+        {
+          day: dayN(0),
+          nutrient: "water",
+          amount: 1200,
+          source: "APPLE_HEALTH",
+        },
+        { day: dayN(0), nutrient: "water", amount: 300, source: "MANUAL" },
+        {
+          day: dayN(1),
+          nutrient: "caffeine",
+          amount: 95,
+          source: "APPLE_HEALTH",
+        },
       ],
       { minDays: 20 },
     );
@@ -68,15 +79,30 @@ describe("buildNutrientDailySeries", () => {
     ];
     codes.forEach((code, c) => {
       for (let d = 0; d < 30 - c; d += 1) {
-        rows.push({ day: dayN(d), nutrient: code, amount: 10 + (d % 3) });
+        rows.push({
+          day: dayN(d),
+          nutrient: code,
+          amount: 10 + (d % 3),
+          source: "APPLE_HEALTH",
+        });
       }
     });
     for (let d = 0; d < 40; d += 1) {
-      rows.push({ day: dayN(d), nutrient: "vitamin_c", amount: 500 });
+      rows.push({
+        day: dayN(d),
+        nutrient: "vitamin_c",
+        amount: 500,
+        source: "APPLE_HEALTH",
+      });
     }
     // One varying code below the day floor.
     for (let d = 0; d < 10; d += 1) {
-      rows.push({ day: dayN(d), nutrient: "copper", amount: d });
+      rows.push({
+        day: dayN(d),
+        nutrient: "copper",
+        amount: d,
+        source: "APPLE_HEALTH",
+      });
     }
     const keys = buildNutrientDailySeries(rows, { minDays: 20 })
       .map((s) => s.key)
@@ -88,6 +114,70 @@ describe("buildNutrientDailySeries", () => {
       "NUTRIENT:magnesium",
       "NUTRIENT:vitamin_d",
     ]);
+  });
+
+  it("counts only the largest day-total source when a tracker and Apple Health both report", () => {
+    const out = buildNutrientDailySeries(
+      [
+        {
+          day: dayN(0),
+          nutrient: "water",
+          amount: 2000,
+          source: "APPLE_HEALTH",
+        },
+        { day: dayN(0), nutrient: "water", amount: 2100, source: "EXTERNAL" },
+        { day: dayN(0), nutrient: "water", amount: 250, source: "MANUAL" },
+      ],
+      { minDays: 20 },
+    );
+    expect(out[0].points).toEqual([{ day: dayN(0), value: 2350 }]);
+  });
+
+  it("gives the macros their own budget, so they never crowd out the micronutrients, and leaves alcohol out", () => {
+    const rows: Array<{
+      day: string;
+      nutrient: string;
+      amount: number;
+      source: string;
+    }> = [];
+    const push = (code: string, days: number) => {
+      for (let d = 0; d < days; d += 1) {
+        rows.push({
+          day: dayN(d),
+          nutrient: code,
+          amount: 10 + (d % 4),
+          source: "EXTERNAL",
+        });
+      }
+    };
+    // Six macros logged every day, more than any micronutrient.
+    for (const code of [
+      "energy",
+      "protein",
+      "carbohydrates",
+      "fat",
+      "sugar",
+      "fiber",
+    ]) {
+      push(code, 60);
+    }
+    push("alcohol", 60);
+    for (const code of ["zinc", "iron", "magnesium", "vitamin_d", "selenium"]) {
+      push(code, 30);
+    }
+    const keys = buildNutrientDailySeries(rows, { minDays: 20 })
+      .map((s) => s.key)
+      .slice(2);
+    expect(MAX_MACRONUTRIENT_CHANNELS).toBe(2);
+    expect(keys).toEqual([
+      "NUTRIENT:iron",
+      "NUTRIENT:magnesium",
+      "NUTRIENT:selenium",
+      "NUTRIENT:vitamin_d",
+      "NUTRIENT:carbohydrates",
+      "NUTRIENT:energy",
+    ]);
+    expect(keys).not.toContain("NUTRIENT:alcohol");
   });
 });
 

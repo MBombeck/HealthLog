@@ -5809,7 +5809,7 @@
         "subtitle": "Decidi quale fonte prevale quando due riportano la stessa metrica.",
         "nutrients": {
           "title": "Assunzione di nutrienti sincronizzata",
-          "description": "Totali giornalieri degli ultimi {days} giorni: quanto sincronizzato da Apple Health più gli integratori che hai assunto.",
+          "description": "Totali giornalieri degli ultimi {days} giorni: quanto sincronizzato da Apple Health o da un'app per l'alimentazione più gli integratori che hai assunto.",
           "empty": "Nessun dato sui nutrienti ancora sincronizzato.",
           "latest": "{amount} {unit} il {date}",
           "daysWithData": "{count} giorni su {days}",
@@ -6997,9 +6997,9 @@
     "apiTokensDescription": "Rivedi e revoca i token per misurazioni, allenamenti, documenti e assunzioni di farmaci.",
     "measurementsToken": {
       "title": "Token per misurazioni",
-      "description": "Crea un token perché una bilancia, un orologio o la tua domotica aggiungano misurazioni e valori delle tue metriche personalizzate.",
+      "description": "Crea un token perché una bilancia, un orologio, un'app per l'alimentazione o la tua domotica aggiungano misurazioni, valori delle tue metriche personalizzate e totali giornalieri di nutrienti.",
       "detail": "Il token viene mostrato una sola volta.",
-      "scopeNote": "Può soltanto aggiungere nuove misurazioni alla tua cartella e valori alle metriche personalizzate che hai già creato: non può leggere i tuoi dati, creare una metrica, modificare o eliminare nulla, né creare un altro token. Le misurazioni vengono contrassegnate come provenienti da un dispositivo esterno, così le riconosci in seguito; i valori delle metriche personalizzate non hanno questo contrassegno. Puoi comunque correggere entrambi. L'ID di una metrica personalizzata è la parte che segue /custom-metrics/ nell'indirizzo della sua pagina.",
+      "scopeNote": "Può soltanto aggiungere nuove misurazioni alla tua cartella, valori alle metriche personalizzate che hai già creato e totali giornalieri di nutrienti finché il modulo nutrienti è attivo: non può leggere i tuoi dati, creare una metrica, modificare o eliminare nulla, né creare un altro token. Le misurazioni e i totali di nutrienti vengono contrassegnati come provenienti da un dispositivo esterno, così li riconosci in seguito; i valori delle metriche personalizzate non hanno questo contrassegno. Misurazioni e valori delle metriche puoi sempre correggerli tu; un'app per l'alimentazione corregge un giorno inviandolo di nuovo. L'ID di una metrica personalizzata è la parte che segue /custom-metrics/ nell'indirizzo della sua pagina.",
       "createFailed": "Non è stato possibile creare il token. Riprova.",
       "namePlaceholder": "Nome, ad es. Home Assistant",
       "appleHealth": {
@@ -10839,7 +10839,7 @@
     },
     "nutrients": {
       "label": "Assunzione di nutrienti",
-      "description": "Totali giornalieri di micronutrienti sincronizzati da Apple Health."
+      "description": "Totali giornalieri di nutrienti da Apple Health o da un'app per l'alimentazione: acqua, energia, macro, vitamine e minerali."
     },
     "vaccinations": {
       "label": "Vaccinazioni",
@@ -12658,15 +12658,24 @@
       "water": "Acqua",
       "caffeine": "Caffeina",
       "dha": "DHA (acido grasso omega-3)",
-      "epa": "EPA (acido grasso omega-3)"
+      "epa": "EPA (acido grasso omega-3)",
+      "energy": "Energia",
+      "protein": "Proteine",
+      "carbohydrates": "Carboidrati",
+      "fat": "Grassi",
+      "sugar": "Zuccheri",
+      "fiber": "Fibre",
+      "sodium": "Sodio",
+      "potassium": "Potassio",
+      "alcohol": "Alcol"
     },
     "page": {
       "title": "Apporto di nutrienti",
-      "description": "Idratazione e apporto di vitamine/minerali sincronizzati dall'app salute del telefono, più le voci di acqua inserite manualmente.",
-      "moduleOffDescription": "Attiva il modulo nutrienti per vedere qui idratazione e apporto di vitamine/minerali. I dati sincronizzati diventano parte dei dati che il Coach può leggere.",
+      "description": "Acqua, energia, macro, vitamine e minerali dall'app salute o da un'app per l'alimentazione, più l'acqua inserita a mano.",
+      "moduleOffDescription": "Attiva il modulo nutrienti per vedere qui idratazione, energia, macronutrienti e apporto di vitamine/minerali. I dati sincronizzati diventano parte dei dati che il Coach può leggere.",
       "moduleOffCta": "Attiva nutrienti",
       "emptyTitle": "Ancora nessun dato sui nutrienti",
-      "emptyDescription": "I dati arrivano dalla sincronizzazione dell'app salute del telefono o da una voce di acqua inserita manualmente.",
+      "emptyDescription": "I dati arrivano dalla sincronizzazione dell'app salute del telefono, da un'app per l'alimentazione con un token di misurazione o da una voce di acqua inserita manualmente.",
       "loadError": "Non è stato possibile caricare i tuoi dati sui nutrienti",
       "lastAttemptTitle": "È arrivata una sincronizzazione, ma non è stato possibile salvare nulla",
       "lastAttemptAt": "Ultimo tentativo: {date}",
@@ -12679,7 +12688,7 @@
       }
     },
     "hydration": {
-      "referenceMeta": "Apporto di riferimento {value} {unit}/giorno (EFSA)",
+      "referenceMeta": "Apporto di riferimento {value} {unit}/giorno ({authority})",
       "loadError": "Impossibile caricare l'acqua."
     },
     "caffeine": {
@@ -12688,7 +12697,7 @@
     },
     "micronutrients": {
       "title": "Vitamine e minerali",
-      "rowMeta": "{days} di {window} giorni, rif. {value} {unit} (EFSA)",
+      "rowMeta": "{days} di {window} giorni, rif. {value} {unit} ({authority})",
       "rowMetaNoRef": "{days} di {window} giorni",
       "footer": "{tracked} di {total} micronutrienti monitorati hanno dati in questo periodo.",
       "emptyTitle": "Nessun dato sui micronutrienti ancora sincronizzato",
@@ -12703,14 +12712,43 @@
         "alpha_tocopherol": "Il livello è fissato per l'alfa-tocoferolo."
       }
     },
-    "sparseNote": "Un valore basso qui di solito indica una registrazione poco frequente, non una carenza: i totali giornalieri di Apple Health riflettono ciò che le tue app hanno registrato, non l'apporto alimentare totale.",
+    "sparseNote": "Un valore basso qui di solito indica una registrazione poco frequente, non una carenza: i totali giornalieri riflettono ciò che le tue app hanno registrato, non l'apporto alimentare totale. Quando un'app per l'alimentazione e Apple Health riportano lo stesso giorno, conta il totale più alto.",
     "units": {
       "IU": "UI"
     },
     "sources": {
       "APPLE_HEALTH": "Sincronizzato",
       "MANUAL": "Inserito",
-      "SUPPLEMENT": "Integratori"
+      "SUPPLEMENT": "Integratori",
+      "EXTERNAL": "Esterno",
+      "HEALTH_CONNECT": "Health Connect"
+    },
+    "macros": {
+      "title": "Energia e macronutrienti",
+      "short": {
+        "energy": "Energia",
+        "protein": "Proteine",
+        "carbohydrates": "Carboidrati",
+        "fat": "Grassi",
+        "sugar": "Zuccheri",
+        "fiber": "Fibre"
+      },
+      "pickLabel": "Nutriente",
+      "referenceMeta": "Riferimento {value} {unit}/giorno ({authority})",
+      "targetMeta": "Il tuo obiettivo {value} {unit}/giorno",
+      "limitMeta": "Il tuo limite {value} {unit}/giorno",
+      "setTarget": "Imposta obiettivo",
+      "editTarget": "Modifica obiettivo",
+      "clearTarget": "Rimuovi obiettivo",
+      "targetLabel": "{name} al giorno in {unit}",
+      "directionLabel": "Tipo di obiettivo",
+      "directionTarget": "Raggiungere almeno",
+      "directionLimit": "Restare sotto",
+      "saveFailed": "Non è stato possibile salvare l'obiettivo. Riprova.",
+      "loadError": "Impossibile caricare energia e macronutrienti."
+    },
+    "alcohol": {
+      "loadError": "Impossibile caricare l'alcol."
     }
   },
   "daily": {

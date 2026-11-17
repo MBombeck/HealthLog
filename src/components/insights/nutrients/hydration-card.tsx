@@ -18,7 +18,7 @@ const WINDOW_DAYS = 30;
 /**
  * v1.29 — hydration hero card on `/insights/nutrients`.
  *
- * Today's total (all sources summed) as the content value, a muted EFSA
+ * Today's total (all sources folded) as the content value, a muted
  * reference-intake meta line (omitted when the profile has no sex on
  * file — the catalog's own contract), a 30-day bar chart with a dashed
  * reference line. No ring, no attainment colour — the bar chart with a
@@ -86,6 +86,7 @@ export function HydrationCard() {
                   {t("nutrients.hydration.referenceMeta", {
                     value: fmt.integer(Math.round(data.reference.value)),
                     unit: data.unit,
+                    authority: data.reference.authority ?? "EFSA",
                   })}
                 </p>
               ) : null}

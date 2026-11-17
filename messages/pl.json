@@ -5809,7 +5809,7 @@
         "subtitle": "Zdecyduj, które źródło wygrywa, gdy dwa podają tę samą metrykę.",
         "nutrients": {
           "title": "Zsynchronizowane spożycie składników",
-          "description": "Dzienne sumy z ostatnich {days} dni: dane zsynchronizowane z Apple Health oraz przyjęte suplementy.",
+          "description": "Dzienne sumy z ostatnich {days} dni: dane zsynchronizowane z Apple Health lub aplikacji dietetycznej oraz przyjęte suplementy.",
           "empty": "Nie zsynchronizowano jeszcze danych o składnikach odżywczych.",
           "latest": "{amount} {unit} dnia {date}",
           "daysWithData": "{count} z {days} dni",
@@ -6997,9 +6997,9 @@
     "apiTokensDescription": "Przeglądaj i unieważniaj tokeny do pomiarów, treningów, dokumentów i przyjęć leków.",
     "measurementsToken": {
       "title": "Tokeny pomiarów",
-      "description": "Utwórz token, aby waga, zegarek lub automatyka domowa mogły dodawać pomiary i wartości Twoich metryk własnych.",
+      "description": "Utwórz token, aby waga, zegarek, aplikacja dietetyczna lub automatyka domowa mogły dodawać pomiary, wartości Twoich metryk własnych i dzienne sumy składników odżywczych.",
       "detail": "Token pokazujemy tylko raz.",
-      "scopeNote": "Może wyłącznie dodawać nowe pomiary do Twojej dokumentacji oraz wartości do już utworzonych metryk własnych: nie odczyta danych, nie utworzy metryki, niczego nie zmieni ani nie usunie i nie utworzy kolejnego tokenu. Pomiary są oznaczane jako pochodzące z urządzenia zewnętrznego, dzięki czemu później je rozpoznasz; wartości metryk własnych nie mają takiego oznaczenia. Jedne i drugie nadal możesz poprawić. Identyfikator metryki własnej to część po /custom-metrics/ w adresie jej strony.",
+      "scopeNote": "Może wyłącznie dodawać nowe pomiary do Twojej dokumentacji, wartości do już utworzonych metryk własnych oraz dzienne sumy składników odżywczych, dopóki moduł składników odżywczych jest włączony: nie odczyta danych, nie utworzy metryki, niczego nie zmieni ani nie usunie i nie utworzy kolejnego tokenu. Pomiary i sumy składników są oznaczane jako pochodzące z urządzenia zewnętrznego, dzięki czemu później je rozpoznasz; wartości metryk własnych nie mają takiego oznaczenia. Pomiary i wartości metryk możesz nadal poprawiać sam; aplikacja dietetyczna poprawia dzień, wysyłając go ponownie. Identyfikator metryki własnej to część po /custom-metrics/ w adresie jej strony.",
       "createFailed": "Nie udało się utworzyć tokenu. Spróbuj ponownie.",
       "namePlaceholder": "Nazwa, np. Home Assistant",
       "appleHealth": {
@@ -10839,7 +10839,7 @@
     },
     "nutrients": {
       "label": "Spożycie składników odżywczych",
-      "description": "Dzienne sumy mikroskładników synchronizowane z Apple Health."
+      "description": "Dzienne sumy składników odżywczych z Apple Health lub aplikacji dietetycznej: woda, energia, makroskładniki, witaminy i minerały."
     },
     "vaccinations": {
       "label": "Szczepienia",
@@ -12658,15 +12658,24 @@
       "water": "Woda",
       "caffeine": "Kofeina",
       "dha": "DHA (kwas omega-3)",
-      "epa": "EPA (kwas omega-3)"
+      "epa": "EPA (kwas omega-3)",
+      "energy": "Energia",
+      "protein": "Białko",
+      "carbohydrates": "Węglowodany",
+      "fat": "Tłuszcz",
+      "sugar": "Cukry",
+      "fiber": "Błonnik",
+      "sodium": "Sód",
+      "potassium": "Potas",
+      "alcohol": "Alkohol"
     },
     "page": {
       "title": "Spożycie składników odżywczych",
-      "description": "Nawodnienie oraz spożycie witamin/minerałów zsynchronizowane z aplikacji zdrowia telefonu, plus ręczne wpisy wody.",
-      "moduleOffDescription": "Włącz moduł składników odżywczych, aby zobaczyć tu nawodnienie i spożycie witamin/minerałów. Zsynchronizowane dane staną się częścią zapisu, który może odczytać Coach.",
+      "description": "Woda, energia, makroskładniki, witaminy i minerały z aplikacji zdrowia lub aplikacji dietetycznej, plus ręczne wpisy wody.",
+      "moduleOffDescription": "Włącz moduł składników odżywczych, aby zobaczyć tu nawodnienie, energię, makroskładniki i spożycie witamin/minerałów. Zsynchronizowane dane staną się częścią zapisu, który może odczytać Coach.",
       "moduleOffCta": "Włącz składniki odżywcze",
       "emptyTitle": "Brak jeszcze danych o składnikach odżywczych",
-      "emptyDescription": "Dane pochodzą z synchronizacji aplikacji zdrowia telefonu lub z ręcznego wpisu wody.",
+      "emptyDescription": "Dane pochodzą z synchronizacji aplikacji zdrowia telefonu, z aplikacji dietetycznej z tokenem pomiarów lub z ręcznego wpisu wody.",
       "loadError": "Nie udało się wczytać danych o składnikach odżywczych",
       "lastAttemptTitle": "Synchronizacja dotarła, ale nic nie udało się zapisać",
       "lastAttemptAt": "Ostatnia próba: {date}",
@@ -12679,7 +12688,7 @@
       }
     },
     "hydration": {
-      "referenceMeta": "Zalecane spożycie {value} {unit}/dzień (EFSA)",
+      "referenceMeta": "Zalecane spożycie {value} {unit}/dzień ({authority})",
       "loadError": "Nie udało się załadować wody."
     },
     "caffeine": {
@@ -12688,7 +12697,7 @@
     },
     "micronutrients": {
       "title": "Witaminy i minerały",
-      "rowMeta": "{days} z {window} dni, zalecane {value} {unit} (EFSA)",
+      "rowMeta": "{days} z {window} dni, zalecane {value} {unit} ({authority})",
       "rowMetaNoRef": "{days} z {window} dni",
       "footer": "{tracked} z {total} śledzonych mikroskładników ma dane w tym okresie.",
       "emptyTitle": "Brak jeszcze zsynchronizowanych danych o mikroskładnikach",
@@ -12703,14 +12712,43 @@
         "alpha_tocopherol": "Poziom ustalono dla alfa-tokoferolu."
       }
     },
-    "sparseNote": "Niska wartość zwykle oznacza tu rzadkie zapisywanie, a nie niedobór. Dzienne sumy z Apple Health odzwierciedlają to, co zapisały twoje aplikacje, a nie całkowite spożycie w diecie.",
+    "sparseNote": "Niska wartość zwykle oznacza tu rzadkie zapisywanie, a nie niedobór. Dzienne sumy odzwierciedlają to, co zapisały twoje aplikacje, a nie całkowite spożycie w diecie. Gdy aplikacja dietetyczna i Apple Health podają ten sam dzień, liczy się większa suma.",
     "units": {
       "IU": "j.m."
     },
     "sources": {
       "APPLE_HEALTH": "Zsynchronizowane",
       "MANUAL": "Wpisane",
-      "SUPPLEMENT": "Suplementy"
+      "SUPPLEMENT": "Suplementy",
+      "EXTERNAL": "Zewnętrzne",
+      "HEALTH_CONNECT": "Health Connect"
+    },
+    "macros": {
+      "title": "Energia i makroskładniki",
+      "short": {
+        "energy": "Energia",
+        "protein": "Białko",
+        "carbohydrates": "Węgle",
+        "fat": "Tłuszcz",
+        "sugar": "Cukry",
+        "fiber": "Błonnik"
+      },
+      "pickLabel": "Składnik",
+      "referenceMeta": "Wartość referencyjna {value} {unit}/dzień ({authority})",
+      "targetMeta": "Twój cel {value} {unit}/dzień",
+      "limitMeta": "Twój limit {value} {unit}/dzień",
+      "setTarget": "Ustaw cel",
+      "editTarget": "Zmień cel",
+      "clearTarget": "Usuń cel",
+      "targetLabel": "{name} dziennie w {unit}",
+      "directionLabel": "Rodzaj celu",
+      "directionTarget": "Osiągnąć co najmniej",
+      "directionLimit": "Nie przekraczać",
+      "saveFailed": "Nie udało się zapisać celu. Spróbuj ponownie.",
+      "loadError": "Nie udało się wczytać energii i makroskładników."
+    },
+    "alcohol": {
+      "loadError": "Nie udało się wczytać alkoholu."
     }
   },
   "daily": {

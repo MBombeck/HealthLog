@@ -218,7 +218,8 @@ async function addNutrientCandidates(
   origin: string,
   legacy: AddCandidate,
 ): Promise<void> {
-  // Nutrients (water/caffeine/24 micronutrients) presence
+  // Nutrients (water, caffeine, vitamins and minerals, energy and macros,
+  // alcohol) presence
   // probe, gated on the opt-in `nutrients` module exactly like the
   // ingest/read routes: an account that never turned the module on gets
   // no rows here, mirroring the module's own dark-by-default posture.

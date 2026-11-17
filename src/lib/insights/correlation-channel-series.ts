@@ -1168,13 +1168,13 @@ export async function fetchLabDraws(
 // ─── v1.44 — the extended channel families ─────────────────────────────────
 
 /**
- * Upper bound on nutrient rows read for one scan: 180 days × 28 codes × two
- * sources is about ten thousand; the cap falls on the oldest rows.
+ * Upper bound on nutrient rows read for one scan: 180 days × 37 codes × three
+ * sources is about twenty thousand; the cap falls on the oldest rows.
  */
-const NUTRIENT_READ_CAP = 12_000;
+const NUTRIENT_READ_CAP = 20_000;
 
 /**
- * HYDRATION, CAFFEINE and up to four micronutrients from the nutrient log.
+ * HYDRATION, CAFFEINE and the capped micronutrient and macro channels.
  * The caller skips this read when the opt-in `nutrients` module is off.
  */
 export async function fetchNutrientSeries(
@@ -1186,7 +1186,7 @@ export async function fetchNutrientSeries(
     where: { userId, day: { gte: userDayKey(since, tz) } },
     orderBy: { day: "desc" },
     take: NUTRIENT_READ_CAP,
-    select: { day: true, nutrient: true, amount: true },
+    select: { day: true, nutrient: true, amount: true, source: true },
   });
   return buildNutrientDailySeries(rows, { minDays: MIN_PAIRED_N });
 }
