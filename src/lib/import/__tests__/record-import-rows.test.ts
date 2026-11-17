@@ -14,7 +14,8 @@ import {
   medicationsCsvQuerySchema,
 } from "@/lib/validations/record-import";
 
-import { normaliseLabRow, readingKeys } from "../labs-csv";
+import { readingKeys } from "@/lib/labs/reading-keys";
+import { normaliseLabRow } from "../labs-csv";
 import {
   medicationCreateBody,
   normaliseMedicationRow,

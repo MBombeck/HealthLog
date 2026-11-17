@@ -46,6 +46,7 @@ import {
   labReadingDay,
   labReadingDaySearchRange,
 } from "@/lib/labs/reading-day";
+import { LAB_TEXT_LIMITS, readingKeys } from "@/lib/labs/reading-keys";
 import { encryptNoteToBytes } from "@/lib/labs/store";
 import type {
   LabsCsvQuery,
@@ -59,14 +60,6 @@ const MAX_LISTED_MARKERS = 200;
 /** A reading dated more than a day ahead is a typing mistake, not a result. */
 const FUTURE_SLACK_MS = 86_400_000;
 const EARLIEST = Date.UTC(1900, 0, 1);
-
-export const LAB_TEXT_LIMITS = {
-  analyte: 200,
-  valueText: 200,
-  unit: 80,
-  panel: 100,
-  note: 1000,
-} as const;
 
 export interface LabCsvRow {
   line: number;
@@ -210,45 +203,6 @@ export function normaliseLabRow(
       note,
     },
   };
-}
-
-/**
- * The keys a reading is a duplicate under, mirroring the scan commit's
- * `isDuplicate`: the marker (or the name, for a reading filed without one),
- * the reading's calendar day, and the value as stored, as printed, or as text.
- */
-export function readingKeys(
-  reading: {
-    biomarkerId: string | null;
-    analyte: string;
-    takenAt: Date;
-    value: number | null;
-    valueText: string | null;
-    sourceValue?: number | null;
-    sourceUnit?: string | null;
-    unit?: string | null;
-  },
-  tz: string,
-): string[] {
-  const who = reading.biomarkerId
-    ? `bm:${reading.biomarkerId}`
-    : `an:${reading.analyte.trim().toLowerCase()}`;
-  const day = labReadingDay(reading.takenAt, tz);
-  const keys: string[] = [];
-  if (reading.value !== null) keys.push(`${who}|${day}|n:${reading.value}`);
-  if (
-    reading.sourceValue !== null &&
-    reading.sourceValue !== undefined &&
-    reading.sourceUnit
-  ) {
-    keys.push(
-      `${who}|${day}|s:${reading.sourceValue}:${reading.sourceUnit.trim().toLowerCase()}`,
-    );
-  }
-  if (reading.valueText !== null) {
-    keys.push(`${who}|${day}|t:${reading.valueText.trim().toLowerCase()}`);
-  }
-  return keys;
 }
 
 interface Planned {
