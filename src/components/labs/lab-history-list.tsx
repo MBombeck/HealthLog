@@ -436,16 +436,21 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
                 {r.hasNote ? (
                   <span className="text-xs">{t("labs.hasNote")}</span>
                 ) : null}
-                {sourceLabel(r) ? (
-                  <span className="text-xs" data-slot="lab-reading-source">
-                    {sourceLabel(r)}
-                  </span>
-                ) : null}
               </div>
               <SourceRangeNote
                 reading={r}
-                className="text-muted-foreground text-xs"
+                className="text-muted-foreground block text-xs"
               />
+              {/* Its own line under the meta row, so it sits at one place on
+                  every row instead of wrapping wherever the badge ends. */}
+              {sourceLabel(r) ? (
+                <p
+                  className="text-muted-foreground text-xs"
+                  data-slot="lab-reading-source"
+                >
+                  {sourceLabel(r)}
+                </p>
+              ) : null}
             </div>
             {renderActions(r)}
           </li>
