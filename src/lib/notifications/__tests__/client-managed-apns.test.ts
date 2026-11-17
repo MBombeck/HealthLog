@@ -274,7 +274,7 @@ describe("dispatchNotification — per-device medication delivery (#179)", () =>
   it("pushes only to the devices the server delivers to, and annotates the rest", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       notificationPrefs: { medication: { clientManaged: false } },
-    } as UserRow);
+    } as unknown as UserRow);
     devices([
       ["dev-phone", "client"],
       ["dev-pad", null],
@@ -299,7 +299,7 @@ describe("dispatchNotification — per-device medication delivery (#179)", () =>
   it("does not narrow the push when every device follows a server account", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       notificationPrefs: {},
-    } as UserRow);
+    } as unknown as UserRow);
     devices([
       ["dev-phone", null],
       ["dev-pad", "server"],

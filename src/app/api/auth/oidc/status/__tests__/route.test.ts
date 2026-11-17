@@ -6,7 +6,6 @@ vi.mock("@/lib/auth/oidc", () => ({
 }));
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
 
-import { NextRequest } from "next/server";
 import { GET } from "../route";
 import { getOidcConfig, isOidcOnly } from "@/lib/auth/oidc";
 
@@ -19,9 +18,7 @@ const CONFIG = {
 };
 
 async function status(): Promise<Record<string, unknown>> {
-  const res = await GET(
-    new NextRequest("http://localhost/api/auth/oidc/status"),
-  );
+  const res = await GET();
   expect(res.status).toBe(200);
   return (await res.json()).data;
 }
