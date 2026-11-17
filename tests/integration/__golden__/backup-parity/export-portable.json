@@ -547,6 +547,7 @@
         "sourceUnit": "rt-LabResult-sourceUnit",
         "takenAt": "2026-06-30T09:00:00.000Z",
         "source": "rt-LabResult-source",
+        "externalId": "rt-LabResult-externalId",
         "biomarkerName": "Ferritin"
       }
     ],
@@ -2216,6 +2217,7 @@
         "sourceUnit": "rt-LabResult-sourceUnit",
         "takenAt": "2026-06-30T09:00:00.000Z",
         "source": "rt-LabResult-source",
+        "externalId": "rt-LabResult-externalId",
         "biomarkerName": "Ferritin",
         "note": "rt-LabResult-noteEncrypted"
       }

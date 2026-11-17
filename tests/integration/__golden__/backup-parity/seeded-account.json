@@ -557,9 +557,10 @@
         "takenAt": "2026-06-30T09:00:00.000Z",
         "biomarkerId": "<id:26>",
         "source": "rt-LabResult-source",
+        "externalId": "rt-LabResult-externalId",
         "noteEncrypted": "<sealed:v1:rt-LabResult-noteEncrypted>",
-        "createdAt": "2026-05-02T10:58:00.000Z",
-        "updatedAt": "2026-05-02T10:59:00.000Z",
+        "createdAt": "2026-05-02T10:59:00.000Z",
+        "updatedAt": "2026-05-02T11:00:00.000Z",
         "deletedAt": null
       },
       {
@@ -580,9 +581,10 @@
         "takenAt": "2026-05-30T09:00:00.000Z",
         "biomarkerId": null,
         "source": "MANUAL",
+        "externalId": null,
         "noteEncrypted": null,
-        "createdAt": "2026-05-02T10:58:01.000Z",
-        "updatedAt": "2026-05-02T10:59:01.000Z",
+        "createdAt": "2026-05-02T10:59:01.000Z",
+        "updatedAt": "2026-05-02T11:00:01.000Z",
         "deletedAt": "<tombstone>"
       }
     ],

@@ -44,6 +44,9 @@ export const labResultBackupSchema = z
     sourceUnit: z.string().nullable().optional(),
     takenAt: isoDateTime,
     source: z.string().min(1),
+    // The identity a reading arrived under from Health Records (a digest).
+    // Optional: absent on every file written before the column.
+    externalId: z.string().min(1).max(128).nullable().optional(),
     biomarkerName: z.string().nullable().optional(),
     biomarkerId: z.string().nullable().optional(),
     note: z.string().nullable().optional(),

@@ -738,6 +738,7 @@
         "takenAt": "2026-07-05T08:00:00.000Z",
         "biomarkerId": "<id:14>",
         "source": "MANUAL",
+        "externalId": null,
         "noteEncrypted": "<sealed:v2:morning draw>",
         "createdAt": "<now>",
         "updatedAt": "<now>",
@@ -1635,6 +1636,7 @@
         "sourceUnit": null,
         "takenAt": "2026-07-05T08:00:00.000Z",
         "source": "MANUAL",
+        "externalId": null,
         "biomarkerName": "Ferritin"
       }
     ],

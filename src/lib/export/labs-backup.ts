@@ -81,6 +81,9 @@ export interface LabResultBackupEntry {
   sourceUnit?: string | null;
   takenAt: string;
   source: string;
+  /** The identity a Health Records reading arrived under (a digest), so a
+   *  restored account still recognises it when it arrives again. */
+  externalId?: string | null;
   /** Human-readable cross-reference into `biomarkers` below, not an id. */
   /** Stable canonical FK; legacy portable payloads use biomarkerName. */
   biomarkerId?: string | null;
@@ -221,6 +224,7 @@ export async function buildLabsBackupSlice(
     sourceUnit: r.sourceUnit,
     takenAt: r.takenAt.toISOString(),
     source: r.source,
+    externalId: r.externalId,
     biomarkerName: r.biomarker?.name ?? null,
   }));
 
@@ -464,6 +468,7 @@ export async function restoreLabResults(ctx: RestoreContext): Promise<void> {
         sourceUnit: lab.sourceUnit ?? null,
         takenAt: new Date(lab.takenAt),
         source: lab.source,
+        externalId: lab.externalId ?? null,
         noteEncrypted:
           lab.noteEncrypted !== undefined
             ? lab.noteEncrypted === null
