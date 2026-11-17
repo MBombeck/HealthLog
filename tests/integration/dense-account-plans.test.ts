@@ -82,33 +82,83 @@ interface InventoryRow {
   availability?: { state: string; count?: number };
 }
 
+/** Rows one seed or copy statement writes, well inside the statement timeout. */
+const SEED_CHUNK = 25_000;
+
+/** One stream of the account: `rows` readings `step` apart, back from `from`. */
+async function seedStream(
+  prefix: string,
+  type: string,
+  rows: number,
+  value: string,
+  unit: string,
+  source: string,
+  from: string,
+  step: string,
+  anchor: Date,
+): Promise<void> {
+  for (let start = 0; start < rows; start += SEED_CHUNK) {
+    const end = Math.min(rows, start + SEED_CHUNK) - 1;
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO measurements
+         (id, user_id, type, value, unit, source, measured_at, updated_at)
+       SELECT '${prefix}' || i, $1, '${type}'::measurement_type, ${value},
+              '${unit}', '${source}'::measurement_source,
+              $2::timestamp - interval '${from}' - i * interval '${step}', now()
+         FROM generate_series(${start}, ${end}) i`,
+      ACCOUNT,
+      anchor,
+    );
+  }
+}
+
 async function seedAccount(): Promise<void> {
+  const anchor = new Date();
+  await seedStream(
+    "p",
+    "PULSE",
+    PULSE_ROWS,
+    "55 + (i % 40)",
+    "bpm",
+    "APPLE_HEALTH",
+    "1 minute",
+    "2 minutes",
+    anchor,
+  );
+  await seedStream(
+    "o",
+    "OXYGEN_SATURATION",
+    SPO2_ROWS,
+    "95 + (i % 4)",
+    "%",
+    "APPLE_HEALTH",
+    "45 days",
+    "10 minutes",
+    anchor,
+  );
+  await seedStream(
+    "s",
+    "STRESS_LEVEL",
+    STRESS_ROWS,
+    "i % 100",
+    "score",
+    "GARMIN",
+    "2 minutes",
+    "3 minutes",
+    anchor,
+  );
   await prisma.$executeRawUnsafe(
     `INSERT INTO measurements
        (id, user_id, type, value, unit, source, measured_at, updated_at)
-     SELECT 'p' || i, $1, 'PULSE'::measurement_type, 55 + (i % 40), 'bpm',
-            'APPLE_HEALTH'::measurement_source,
-            now() - interval '1 minute' - i * interval '2 minutes', now()
-       FROM generate_series(0, ${PULSE_ROWS - 1}) i
-     UNION ALL
-     SELECT 'o' || i, $1, 'OXYGEN_SATURATION'::measurement_type, 95 + (i % 4),
-            '%', 'APPLE_HEALTH'::measurement_source,
-            now() - interval '45 days' - i * interval '10 minutes', now()
-       FROM generate_series(0, ${SPO2_ROWS - 1}) i
-     UNION ALL
-     SELECT 's' || i, $1, 'STRESS_LEVEL'::measurement_type, i % 100, 'score',
-            'GARMIN'::measurement_source,
-            now() - interval '2 minutes' - i * interval '3 minutes', now()
-       FROM generate_series(0, ${STRESS_ROWS - 1}) i
-     UNION ALL
      SELECT t || d, $1, t::measurement_type, 70 + (d % 9), 'x',
             'WITHINGS'::measurement_source,
-            now() - d * interval '1 day' - interval '7 hours', now()
+            $2::timestamp - d * interval '1 day' - interval '7 hours', now()
        FROM generate_series(0, ${SPARSE_DAYS - 1}) d,
             unnest(ARRAY['WEIGHT', 'BLOOD_PRESSURE_SYS', 'BLOOD_PRESSURE_DIA',
                          'RESTING_HEART_RATE', 'SLEEP_DURATION',
                          'ACTIVITY_STEPS']) t`,
     ACCOUNT,
+    anchor,
   );
 }
 
@@ -125,9 +175,13 @@ async function seedOthers(): Promise<void> {
 }
 
 async function restoreAccount(): Promise<void> {
-  await prisma.$executeRawUnsafe(
-    "INSERT INTO measurements SELECT * FROM dense_plans_stage",
-  );
+  const parts = Math.ceil((HISTORY_ROWS + SPARSE_DAYS * 6) / SEED_CHUNK);
+  for (let part = 0; part < parts; part++) {
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO measurements SELECT * FROM dense_plans_stage
+        WHERE abs(hashtext(id)) % ${parts} = ${part}`,
+    );
+  }
 }
 
 async function dropStatistics(): Promise<void> {
