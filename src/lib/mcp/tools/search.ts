@@ -3,7 +3,7 @@ import { z } from "zod/v4";
 import { prisma } from "@/lib/db";
 import { readLatestEver } from "@/lib/dashboard/summary-reads";
 import { annotate } from "@/lib/logging/context";
-import { buildCoachDataInventory } from "@/lib/ai/coach/tools/inventory";
+import { buildMcpDataInventory } from "@/lib/mcp/data-inventory";
 import { isModuleEnabled } from "@/lib/modules/gate";
 import { resolveBaseOrigin } from "@/lib/mcp/oauth/config";
 import {
@@ -79,13 +79,15 @@ function startAssembly(): SearchAssembly {
   return { candidates, legacy, truncatedSources: [] };
 }
 
-/** The metric domains the Coach data inventory holds. */
+/** The metric domains the record holds in the inventory's window. */
 async function addInventoryCandidates(
   ctx: McpAuthContext,
   origin: string,
   legacy: AddCandidate,
 ): Promise<void> {
-  const inventory = await buildCoachDataInventory(ctx.userId, undefined);
+  const inventory = await buildMcpDataInventory(ctx.userId, {
+    availability: false,
+  });
   for (const entry of inventory.entries) {
     if (!entry.present) continue;
     // Per-item deep-link where a metric id exists (mirrors `fetch`),

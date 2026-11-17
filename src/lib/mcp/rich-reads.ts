@@ -33,6 +33,7 @@ import type { MeasurementType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { resolveMarkerForRead } from "@/lib/labs/biomarker-resolve";
 import { windowWeighting } from "@/lib/measurements/day-statistic";
+import { countLiveReadingsPerType } from "@/lib/measurements/newest-per-type";
 import { annotate } from "@/lib/logging/context";
 import { isModuleEnabled } from "@/lib/modules/gate";
 import { moduleForMeasurementType } from "@/lib/modules/measurement-scope";
@@ -278,14 +279,15 @@ async function withHrvFallback(
   metric: RichMetric,
 ): Promise<RichMetric> {
   if (!metric.fallbackMeasurementType) return metric;
-  const primaryCount = await prisma.measurement.count({
-    where: { userId, type: metric.measurementType, deletedAt: null },
-  });
-  if (primaryCount > 0) return metric;
-  const fallbackCount = await prisma.measurement.count({
-    where: { userId, type: metric.fallbackMeasurementType, deletedAt: null },
-  });
-  if (fallbackCount === 0) return metric;
+  // Presence, not a count: one descent per type that stops at the first row.
+  const present = await countLiveReadingsPerType(
+    userId,
+    [metric.measurementType, metric.fallbackMeasurementType],
+    1,
+    null,
+  );
+  if (present.has(metric.measurementType)) return metric;
+  if (!present.has(metric.fallbackMeasurementType)) return metric;
   return { ...metric, measurementType: metric.fallbackMeasurementType };
 }
 
@@ -482,6 +484,9 @@ export const MCP_METRIC_STATUS_DISCOVERY: ReadonlyArray<{
  * inventory so a discover-before-fetch assistant can find a metric that IS
  * resolvable but sits off the Coach snapshot.
  */
+/** Readings a discovery row's count stops at. */
+const DISCOVERY_COUNT_CAP = 6_000;
+
 export async function metricStatusDiscoveryRows(userId: string): Promise<
   Array<{
     tool: string;
@@ -491,20 +496,17 @@ export async function metricStatusDiscoveryRows(userId: string): Promise<
     metric: string;
   }>
 > {
-  // v1.41.2 — live rows only. Without `deletedAt: null` a type whose rows
-  // were all deleted still counted as present, and the grouped count could
-  // not use the live-rows partial index (`measurements_live_covering_idx`),
-  // so it walked every tombstone on the way.
-  const rows = await prisma.measurement.groupBy({
-    by: ["type"],
-    where: {
-      userId,
-      type: { in: MCP_METRIC_STATUS_DISCOVERY.map((s) => s.measurementType) },
-      deletedAt: null,
-    },
-    _count: { _all: true },
-  });
-  const countByType = new Map(rows.map((r) => [r.type, r._count._all]));
+  // Live rows only, counted up to a cap through one descent of the live
+  // index per type. A grouped count of every row was a pass over the whole
+  // history of a stress or energy stream a watch writes every few minutes,
+  // on a call a host makes first and often; past the cap the count is the
+  // cap, which is what an approximate sample count can say of it.
+  const countByType = await countLiveReadingsPerType(
+    userId,
+    MCP_METRIC_STATUS_DISCOVERY.map((s) => s.measurementType),
+    DISCOVERY_COUNT_CAP,
+    null,
+  );
 
   // v1.30.22 — drop a metric whose owning module the account has off (or the
   // operator switched off server-wide). Discovery is the assistant's map of

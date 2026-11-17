@@ -4,8 +4,8 @@ import { describe, it, expect, vi, beforeEach, onTestFinished } from "vitest";
 vi.mock("@/lib/ai/coach/tools/executor", () => ({
   executeCoachTool: vi.fn(),
 }));
-vi.mock("@/lib/ai/coach/tools/inventory", () => ({
-  buildCoachDataInventory: vi.fn(),
+vi.mock("@/lib/mcp/data-inventory", () => ({
+  buildMcpDataInventory: vi.fn(),
 }));
 // The labs read builds its block first and asks the Coach only on a miss; a
 // miss here keeps the labs tests on the executor result each one states.
@@ -164,7 +164,7 @@ vi.mock("../rich-reads", () => ({
 import { MCP_TOOLS, MCP_TOOL_NAMES } from "../tools";
 import { getMetricBaseline, metricStatusDiscoveryRows } from "../rich-reads";
 import { executeCoachTool } from "@/lib/ai/coach/tools/executor";
-import { buildCoachDataInventory } from "@/lib/ai/coach/tools/inventory";
+import { buildMcpDataInventory } from "@/lib/mcp/data-inventory";
 import { prisma } from "@/lib/db";
 import { computeDisplayDue } from "@/lib/medications/scheduling/next-due";
 import { getIntegrationStatus } from "@/lib/integrations/status";
@@ -351,7 +351,7 @@ describe("MCP tool registry — surface", () => {
 
 describe("list_metrics", () => {
   it("enumerates available metrics with coverage from the inventory", async () => {
-    vi.mocked(buildCoachDataInventory).mockResolvedValue({
+    vi.mocked(buildMcpDataInventory).mockResolvedValue({
       entries: [
         {
           tool: "get_metric_series",
@@ -379,14 +379,14 @@ describe("list_metrics", () => {
       metrics: unknown[];
     };
 
-    expect(buildCoachDataInventory).toHaveBeenCalledWith("user-1", undefined);
+    expect(buildMcpDataInventory).toHaveBeenCalledWith("user-1");
     expect(result.present).toBe(true);
     expect(result.window).toBe("last30days");
     expect(result.metrics).toHaveLength(2);
   });
 
   it("appends the v1.30 metric-status-only discovery rows (G5/C4) alongside the Coach inventory", async () => {
-    vi.mocked(buildCoachDataInventory).mockResolvedValue({
+    vi.mocked(buildMcpDataInventory).mockResolvedValue({
       entries: [
         {
           tool: "get_metric_series",
@@ -648,7 +648,7 @@ describe("get_correlations", () => {
 describe("no prose verdict (ADR-004 / REQ-SEC-2)", () => {
   it("every tool result is a structured object without verdict/diagnosis fields", async () => {
     vi.mocked(executeCoachTool).mockResolvedValue({ present: true, data: {} });
-    vi.mocked(buildCoachDataInventory).mockResolvedValue({
+    vi.mocked(buildMcpDataInventory).mockResolvedValue({
       entries: [],
       restMode: false,
       cycleEnabled: false,
@@ -1332,7 +1332,7 @@ describe("get_visits", () => {
 describe("search — cursor pagination", () => {
   it("returns a bounded page and an opaque nextCursor when more results exist", async () => {
     // 60 lab analytes → exceeds the 50-result page.
-    vi.mocked(buildCoachDataInventory).mockResolvedValue({
+    vi.mocked(buildMcpDataInventory).mockResolvedValue({
       entries: [],
       restMode: false,
       cycleEnabled: false,
@@ -1362,7 +1362,7 @@ describe("search — cursor pagination", () => {
 
 describe("v1.25 clinical signals on the MCP surface", () => {
   beforeEach(() => {
-    vi.mocked(buildCoachDataInventory).mockResolvedValue({
+    vi.mocked(buildMcpDataInventory).mockResolvedValue({
       entries: [],
       restMode: false,
       cycleEnabled: false,
@@ -1425,7 +1425,7 @@ describe("v1.25 clinical signals on the MCP surface", () => {
 
 describe("metric-status-only discovery on search/fetch (v1.30 coverage review G5/C4)", () => {
   beforeEach(() => {
-    vi.mocked(buildCoachDataInventory).mockResolvedValue({
+    vi.mocked(buildMcpDataInventory).mockResolvedValue({
       entries: [],
       restMode: false,
       cycleEnabled: false,
@@ -1523,7 +1523,7 @@ describe("get_nutrients — v1.30 coverage review (G1)", () => {
 
 describe("nutrients on search / fetch (v1.30 coverage review G1)", () => {
   beforeEach(() => {
-    vi.mocked(buildCoachDataInventory).mockResolvedValue({
+    vi.mocked(buildMcpDataInventory).mockResolvedValue({
       entries: [],
       restMode: false,
       cycleEnabled: false,

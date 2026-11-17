@@ -16,7 +16,10 @@
  * parenthesis, and asserts the argument names `deletedAt`. Unique-key
  * lookups (`findUnique`) are idempotency checks on a key a tombstone still
  * holds, and are left out on purpose. Raw SQL against `measurements` must
- * carry `deleted_at` the same way.
+ * carry `deleted_at` the same way, or take its WHERE from `liveTypeDescent`,
+ * which carries it. The presence and count probes that moved to
+ * `countLiveReadingsPerType` are live by the same construction; their call
+ * sites count toward the floor below, so the matcher still has to find them.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -26,6 +29,8 @@ const ROOTS = ["src/lib/mcp", "src/lib/ai/coach/tools"];
 const READS =
   /\bprisma\.measurement\.(findMany|findFirst|count|groupBy|aggregate)\s*\(/g;
 const RAW = /\b(?:FROM|JOIN)\s+"?measurements"?\b/gi;
+/** Readers whose statements carry the live-row predicate themselves. */
+const LIVE_HELPERS = /\bcountLiveReadingsPerType\s*\(/g;
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -55,9 +60,10 @@ interface Site {
   argument: string;
 }
 
-function readSites(): { calls: Site[]; raw: Site[] } {
+function readSites(): { calls: Site[]; raw: Site[]; helpers: number } {
   const calls: Site[] = [];
   const raw: Site[] = [];
+  let helpers = 0;
   for (const root of ROOTS) {
     for (const file of sourceFiles(join(process.cwd(), root))) {
       const text = readFileSync(file, "utf8");
@@ -70,6 +76,7 @@ function readSites(): { calls: Site[]; raw: Site[] } {
           argument: balanced(text, open),
         });
       }
+      helpers += [...text.matchAll(LIVE_HELPERS)].length;
       for (const match of text.matchAll(RAW)) {
         // The statement around it: up to the closing backtick of the
         // tagged template the query lives in.
@@ -82,17 +89,17 @@ function readSites(): { calls: Site[]; raw: Site[] } {
       }
     }
   }
-  return { calls, raw };
+  return { calls, raw, helpers };
 }
 
 describe("measurement reads on the MCP surface and in the Coach tools", () => {
-  const { calls, raw } = readSites();
+  const { calls, raw, helpers } = readSites();
 
   it("finds the reads it is meant to check", () => {
     // A matcher that matches nothing proves nothing: the two probes this
     // guard was written for, the rich-read counts and the availability
     // probe are all in these trees.
-    expect(calls.length).toBeGreaterThanOrEqual(5);
+    expect(calls.length + helpers + raw.length).toBeGreaterThanOrEqual(5);
     expect(raw.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -105,7 +112,9 @@ describe("measurement reads on the MCP surface and in the Coach tools", () => {
 
   it("filters every raw read to live rows", () => {
     const missing = raw
-      .filter((site) => !/\bdeleted_at\b/.test(site.argument))
+      .filter(
+        (site) => !/\bdeleted_at\b|\bliveTypeDescent\(/.test(site.argument),
+      )
       .map((site) => site.at);
     expect(missing).toEqual([]);
   });

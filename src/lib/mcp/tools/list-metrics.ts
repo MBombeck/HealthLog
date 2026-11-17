@@ -1,7 +1,7 @@
 import { z } from "zod/v4";
 
 import { annotate } from "@/lib/logging/context";
-import { buildCoachDataInventory } from "@/lib/ai/coach/tools/inventory";
+import { buildMcpDataInventory } from "@/lib/mcp/data-inventory";
 import { metricStatusDiscoveryRows } from "@/lib/mcp/rich-reads";
 import { READ_ONLY_ANNOTATIONS, type McpToolDefinition } from "./types";
 
@@ -48,7 +48,7 @@ export const listMetricsTool: McpToolDefinition = {
   outputShape: listMetricsOutput,
   async run(ctx) {
     const [inventory, statusDiscoveryRows] = await Promise.all([
-      buildCoachDataInventory(ctx.userId, undefined),
+      buildMcpDataInventory(ctx.userId),
       // The metric-status-only set
       // (wrist temperature, cardio recovery, sleep score, breathing
       // disturbances, strain/load, …) is resolvable via `compare_metric` /

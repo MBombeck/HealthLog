@@ -181,3 +181,35 @@ export async function readLiveMeasurementSpan(
     newest: row?.newest ? new Date(row.newest) : null,
   };
 }
+
+/**
+ * Live readings per type from `since` on (the whole history when null) and up
+ * to `until` (inclusive, when given), each counted up to `cap`: one descent
+ * per type that stops at the cap, so a dense stream costs the cap, not its
+ * length. A type with no reading is absent. A caller that only compares a
+ * count with a threshold asks for one past it; one that asks whether a type
+ * exists asks for one.
+ */
+export async function countLiveReadingsPerType(
+  userId: string,
+  types: readonly MeasurementType[],
+  cap: number,
+  since: Date | null,
+  until: Date | null = null,
+): Promise<Map<MeasurementType, number>> {
+  const out = new Map<MeasurementType, number>();
+  if (types.length === 0) return out;
+  const rows = await prisma.$queryRaw<Array<{ type: string; n: number }>>`
+    SELECT mt."type" AS type, COUNT(*)::int AS n
+    FROM unnest(${[...new Set(types)]}::text[]) AS mt("type")
+    CROSS JOIN LATERAL (
+      SELECT 1
+      FROM measurements m
+      ${liveTypeDescent(userId, Prisma.sql`mt."type"::measurement_type`, "newest", since, until)}
+      LIMIT (SELECT ${cap}::int)
+    ) x
+    GROUP BY mt."type"
+  `;
+  for (const r of rows) out.set(r.type as MeasurementType, Number(r.n));
+  return out;
+}

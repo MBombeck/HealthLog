@@ -39,6 +39,41 @@ const { labResult, measurement, user } = vi.hoisted(() => ({
   // narrated sentence, which reads the stored preference.
   user: { findUnique: vi.fn(async () => ({ locale: "de" })) },
 }));
+// The presence and count probes run one capped descent per type in SQL; here
+// they answer from the mocked grouped count and per-type count, so each case
+// still states the rows it means.
+vi.mock("@/lib/measurements/newest-per-type", () => ({
+  countLiveReadingsPerType: vi.fn(
+    async (userId: string, types: readonly string[], cap: number) => {
+      const { prisma } = await import("@/lib/db");
+      const db = prisma as unknown as {
+        measurement: {
+          groupBy: (args: unknown) => Promise<unknown>;
+          count: (args: unknown) => Promise<unknown>;
+        };
+      };
+      const out = new Map<string, number>();
+      const grouped = ((await db.measurement.groupBy({
+        by: ["type"],
+        where: { userId, type: { in: types }, deletedAt: null },
+        _count: { _all: true },
+      })) ?? []) as Array<{ type: string; _count: { _all: number } }>;
+      for (const row of grouped) {
+        out.set(row.type, Math.min(cap, row._count._all));
+      }
+      for (const type of types) {
+        if (out.has(type)) continue;
+        const n = Number(
+          await db.measurement.count({
+            where: { userId, type, deletedAt: null },
+          }),
+        );
+        if (n > 0) out.set(type, Math.min(cap, n));
+      }
+      return out;
+    },
+  ),
+}));
 vi.mock("@/lib/db", () => ({ prisma: { labResult, measurement, user } }));
 
 import {

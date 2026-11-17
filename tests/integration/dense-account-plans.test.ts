@@ -32,6 +32,11 @@ import { describeLedger, explainStatements } from "./statement-plans";
 import { readAllTimeExtremes } from "@/lib/insights/feature-blocks";
 import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";
 import { probeCoachAvailability } from "@/lib/ai/coach/tools/availability";
+import { listMetricsTool } from "@/lib/mcp/tools/list-metrics";
+import { searchTool } from "@/lib/mcp/tools/search";
+import { metricStatusDiscoveryRows } from "@/lib/mcp/rich-reads";
+import { __resetCoachSnapshotCacheForTests } from "@/lib/ai/coach/snapshot-cache";
+import type { McpAuthContext } from "@/lib/mcp/auth";
 
 vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: vi.fn(() => null),
@@ -50,13 +55,32 @@ const OTHER_ACCOUNTS = 20;
 const OTHER_ROWS = 1_000;
 const HISTORY_ROWS = PULSE_ROWS + SPO2_ROWS + STRESS_ROWS;
 
-/** Rows the availability probe samples per type (its own cap). */
+/** Readings a count or a sample stops at (the readers' own caps). */
+const COUNT_CAP = 6_000;
 const SAMPLE_CAP = 5_000;
 /** Pulse readings in one UTC day, and oxygen readings. */
 const PULSE_DAY = 720;
 const SPO2_DAY = 144;
 
 type StatisticsState = "none" | "predate" | "analysed";
+
+const ctx: McpAuthContext = {
+  userId: ACCOUNT,
+  tokenId: "dense-plans-token",
+  scopes: ["health:read"],
+  binding: `${ACCOUNT}:dense-plans-token`,
+  canRead: true,
+  canWrite: false,
+};
+
+interface InventoryRow {
+  tool: string;
+  metric?: string;
+  domain: string;
+  present: boolean;
+  count?: number;
+  availability?: { state: string; count?: number };
+}
 
 async function seedAccount(): Promise<void> {
   await prisma.$executeRawUnsafe(
@@ -247,6 +271,52 @@ describe.each<StatisticsState>(["none", "predate", "analysed"])(
       // A capped sample of each type, one oldest row each, and the two days
       // the tier is checked on for the dense one. The history is 30,000.
       expectBounded(ledger, 2 * (SAMPLE_CAP + 1) + 2 + 2 * SPO2_DAY + 2 + 64);
+    });
+
+    it("lists the metrics from presence probes, not the Coach snapshot", async () => {
+      __resetCoachSnapshotCacheForTests();
+      const ledger = await explainStatements(() =>
+        listMetricsTool.run(ctx, {}),
+      );
+      const result = ledger.result as { metrics: InventoryRow[] };
+      const row = (metric: string) =>
+        result.metrics.find((m) => m.metric === metric);
+      expect(row("pulse")).toMatchObject({ present: true, count: COUNT_CAP });
+      expect(row("weight")).toMatchObject({ present: true, count: 30 });
+      expect(row("spo2")).toMatchObject({
+        present: false,
+        availability: { state: "outside_window", count: SPO2_ROWS },
+      });
+      expect(row("STRESS_LEVEL")).toMatchObject({
+        present: true,
+        count: COUNT_CAP,
+      });
+      // Pulse and stress to the count cap, the oxygen history's sample and
+      // tier ends, and the sparse types' month. The history is 258,800.
+      expectBounded(
+        ledger,
+        2 * COUNT_CAP + (SAMPLE_CAP + 1) + 2 * SPO2_DAY + 1_000,
+      );
+    });
+
+    it("searches the domains without the Coach snapshot", async () => {
+      __resetCoachSnapshotCacheForTests();
+      const ledger = await explainStatements(() =>
+        searchTool.run(ctx, { query: "pulse" }),
+      );
+      const result = ledger.result as { results: Array<{ id: string }> };
+      expect(result.results.map((r) => r.id)).toContain("metric:pulse");
+      expectBounded(ledger, COUNT_CAP + 1_000);
+    });
+
+    it("counts the discovery rows up to the cap", async () => {
+      const ledger = await explainStatements(() =>
+        metricStatusDiscoveryRows(ACCOUNT),
+      );
+      expect(
+        ledger.result.find((r) => r.metric === "STRESS_LEVEL"),
+      ).toMatchObject({ present: true, count: COUNT_CAP });
+      expectBounded(ledger, COUNT_CAP + 64);
     });
   },
 );

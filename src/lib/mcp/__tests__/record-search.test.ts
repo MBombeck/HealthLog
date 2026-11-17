@@ -15,8 +15,8 @@ process.env.APP_URL = "https://health.example";
 const disabled = new Set<string>();
 
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
-vi.mock("@/lib/ai/coach/tools/inventory", () => ({
-  buildCoachDataInventory: vi.fn(async () => ({
+vi.mock("@/lib/mcp/data-inventory", () => ({
+  buildMcpDataInventory: vi.fn(async () => ({
     entries: [],
     window: "90d",
     restMode: false,
