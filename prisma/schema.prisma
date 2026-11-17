@@ -1051,6 +1051,13 @@ model User {
   illnessDayLogs                            IllnessDayLog[]
   symptomDefinitions                        SymptomDefinition[]
   symptomEvents                             SymptomEvent[]
+  // The seizure diary: the person's own seizure types, each
+  // recorded seizure, the rescue doses given for it, and the record's cluster
+  // rule.
+  seizureTypeProfiles                       SeizureTypeProfile[]
+  seizureEvents                             SeizureEvent[]
+  seizureRescueDoses                        SeizureRescueDose[]
+  seizureDiarySettings                      SeizureDiarySettings?
   // v1.25 (W-RECORDS) — structured health-record entries. Allergies map to
   // FHIR AllergyIntolerance; family-history entries map to FHIR
   // FamilyMemberHistory. Reference records (not time-series signals); the
@@ -3146,6 +3153,10 @@ model Medication {
   /// creation. `startsOn`/`endsOn` above project the latest one, written only
   /// by `src/lib/medications/courses.ts`.
   courses            MedicationCourse[]
+  /// Seizure types whose rescue plan names this medication,
+  /// and the rescue doses given from it.
+  seizureTypes       SeizureTypeProfile[]
+  seizureRescueDoses SeizureRescueDose[]
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -3607,6 +3618,10 @@ model MedicationIntakeEvent {
 
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+
+  /// The seizure-diary rescue dose this intake was written
+  /// for, when it was written from the diary.
+  seizureRescueDoses SeizureRescueDose[]
 
   /// v1.4.39 W-SERVER-FIX-2 — both the intake route and the dashboard
   /// summary route project active schedules through `expandTodayIntakes`
@@ -8873,6 +8888,370 @@ model SymptomEvent {
   @@index([definitionId, occurredAt])
   @@index([episodeId])
   @@map("symptom_events")
+}
+
+// ─── Seizure diary (v1.48.0, #1368) ──────────────────────────────
+//
+// A record of what a person, or the carer beside them, observed: one row per
+// seizure (or per tally of brief ones), against seizure types the family set
+// up once, ideally with the clinician. Records and summarises; never
+// diagnoses, classifies on the person's behalf, scores risk or says it is safe
+// to wait. Clusters, streaks and duration flags are derived at read time from
+// these rows and the record's cluster rule; nothing derived is stored.
+//
+// The classification code is the ILAE 2025 seizure type (Beniczky et al.,
+// Epilepsia 2025); the ILAE 2017 name is a label shown beside it, mapped one
+// to one in `src/lib/seizures/ilae.ts`. The ILAE class is derived from the
+// type and is not stored, so the two can never disagree. Born-gated by the
+// `seizures` module (off by default); the gate is app-layer.
+
+/// ILAE 2025 seizure type. The three `*_UNDETERMINED` values are the parent
+/// class ("focal seizure", "generalized seizure", "unknown whether focal or
+/// generalized"), which the 2025 paper says to record when the next level is
+/// not known.
+enum SeizureIlaeType {
+  FOCAL_PRESERVED
+  FOCAL_IMPAIRED
+  FOCAL_UNDETERMINED
+  FOCAL_TO_BILATERAL_TC
+  GENERALIZED_UNDETERMINED
+  GENERALIZED_TC
+  GEN_CLONIC
+  GEN_TONIC
+  GEN_MYOCLONIC
+  GEN_MYOCLONIC_ATONIC
+  GEN_ATONIC
+  GEN_NEGATIVE_MYOCLONIC
+  GEN_SPASMS
+  ABSENCE_TYPICAL
+  ABSENCE_ATYPICAL
+  ABSENCE_MYOCLONIC
+  EYELID_MYOCLONIA
+  UNKNOWN_UNDETERMINED
+  UNKNOWN_PRESERVED
+  UNKNOWN_IMPAIRED
+  UNKNOWN_BILATERAL_TC
+  UNCLASSIFIED
+
+  @@map("seizure_ilae_type")
+}
+
+/// How well the onset time is known.
+enum SeizureOnsetPrecision {
+  EXACT
+  APPROX
+  UNKNOWN_TIME
+
+  @@map("seizure_onset_precision")
+}
+
+/// Where a duration came from. UNKNOWN pairs with a NULL duration; a seizure
+/// nobody timed is not a seizure of zero seconds.
+enum SeizureDurationSource {
+  TIMED
+  ESTIMATED
+  UNKNOWN
+
+  @@map("seizure_duration_source")
+}
+
+/// CONFIRMED: the person or carer is sure it was a seizure. SUSPECTED: maybe.
+/// Reports list suspected events separately.
+enum SeizureCertainty {
+  CONFIRMED
+  SUSPECTED
+
+  @@map("seizure_certainty")
+}
+
+enum SeizureSleepState {
+  AWAKE
+  ASLEEP
+  ON_WAKING
+  UNKNOWN
+
+  @@map("seizure_sleep_state")
+}
+
+/// Yes / no / not known, for "were there observable manifestations".
+enum SeizureObservation {
+  YES
+  NO
+  UNKNOWN
+
+  @@map("seizure_observation")
+}
+
+/// Responsiveness and recall, asked separately because carers can answer
+/// them separately (the 2025 paper's advice for young children).
+enum SeizureFunctionState {
+  PRESERVED
+  IMPAIRED
+  UNKNOWN
+
+  @@map("seizure_function_state")
+}
+
+/// Observed features in the order they happened, from the ILAE glossary.
+enum SeizureSemiology {
+  AURA
+  BEHAVIOUR_ARREST
+  STARING
+  AUTOMATISMS
+  TONIC
+  CLONIC
+  MYOCLONIC
+  ATONIC_DROP
+  SPASMS
+  HEAD_EYE_VERSION
+  VOCALISATION
+  CYANOSIS
+  DROOLING
+  BREATHING_CHANGE
+
+  @@map("seizure_semiology")
+}
+
+/// Suspected triggers. Patient- or carer-attributed; shown as "suspected".
+enum SeizureTrigger {
+  MISSED_DOSE
+  SLEEP_DEPRIVATION
+  FEVER
+  ILLNESS
+  MENSTRUATION
+  ALCOHOL
+  FLASHING_LIGHTS
+  STRESS
+  OTHER
+  NONE_IDENTIFIED
+
+  @@map("seizure_trigger")
+}
+
+enum SeizurePostictal {
+  SLEEP
+  CONFUSION
+  HEADACHE
+  WEAKNESS_TODD
+  SPEECH
+  AGITATION
+  OTHER
+
+  @@map("seizure_postictal")
+}
+
+enum SeizureInjury {
+  NONE
+  TONGUE_BITE
+  HEAD
+  FALL_OTHER
+  BURN
+  FRACTURE
+  OTHER
+
+  @@map("seizure_injury")
+}
+
+enum SeizureEmergency {
+  NONE
+  EMS_CALLED
+  ED_VISIT
+  ADMITTED
+
+  @@map("seizure_emergency")
+}
+
+/// Who saw the seizure, or who gave a rescue dose.
+enum SeizureObserverRole {
+  SELF
+  PARENT
+  PARTNER
+  FAMILY
+  CARER
+  TEACHER
+  CLINICIAN
+  PARAMEDIC
+  OTHER
+
+  @@map("seizure_observer_role")
+}
+
+enum SeizureEventSource {
+  MANUAL
+  DEVICE_ALERT
+
+  @@map("seizure_event_source")
+}
+
+enum SeizureRescueRoute {
+  BUCCAL
+  INTRANASAL
+  RECTAL
+  ORAL
+  SUBLINGUAL
+  IM
+  IV_BY_EMS
+
+  @@map("seizure_rescue_route")
+}
+
+enum SeizureRescueEffect {
+  STOPPED
+  REDUCED
+  NO_EFFECT
+  UNKNOWN
+
+  @@map("seizure_rescue_effect")
+}
+
+/// One of the person's own seizure types, set up once: the family's name for
+/// it, the ILAE type, how long it usually lasts, and the rescue plan agreed
+/// with the care team. Events reference it; archiving hides it from the quick
+/// log and keeps every event that names it.
+model SeizureTypeProfile {
+  id                  String              @id @default(cuid())
+  userId              String              @map("user_id")
+  /// The family's own name ("the big one"), AES-256-GCM encrypted at rest.
+  labelEncrypted      Bytes               @map("label_encrypted")
+  ilaeType            SeizureIlaeType     @map("ilae_type")
+  /// How long this type usually lasts, in seconds. Drives the NICE
+  /// "more than 2 minutes longer than usual" prolonged flag. NULL = not set.
+  usualDurationSec    Int?                @map("usual_duration_sec")
+  /// The plan text agreed with the care team, shown when the timer passes the
+  /// threshold. Encrypted at rest.
+  rescuePlanEncrypted Bytes?              @map("rescue_plan_encrypted")
+  /// The as-needed medication the plan names. Deleting the medication keeps
+  /// the type and drops the link.
+  rescueMedicationId  String?             @map("rescue_medication_id")
+  rescueDoseAmount    Float?              @map("rescue_dose_amount")
+  rescueDoseUnit      String?             @map("rescue_dose_unit")
+  rescueRoute         SeizureRescueRoute? @map("rescue_route")
+  sortOrder           Int                 @default(0) @map("sort_order")
+  /// Hidden from the quick log; events keep their link. NULL = in use.
+  archivedAt          DateTime?           @map("archived_at")
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rescueMedication Medication?    @relation(fields: [rescueMedicationId], references: [id], onDelete: SetNull)
+  events           SeizureEvent[]
+
+  @@index([userId, archivedAt, sortOrder])
+  @@index([rescueMedicationId])
+  @@map("seizure_type_profiles")
+}
+
+/// One recorded seizure, or a tally of brief ones (`count` > 1, e.g. the
+/// absences of one day). Who logged it and whether anybody saw it are kept,
+/// because diaries miss many seizures and a clinician weighs an entry by both.
+model SeizureEvent {
+  id                       String                @id @default(cuid())
+  userId                   String                @map("user_id")
+  typeProfileId            String?               @map("type_profile_id")
+  /// Per-event override of the type's ILAE classification. NULL = the
+  /// type's.
+  ilaeType                 SeizureIlaeType?      @map("ilae_type")
+  onsetAt                  DateTime              @map("onset_at")
+  onsetPrecision           SeizureOnsetPrecision @default(EXACT) @map("onset_precision")
+  /// Seconds. NULL = not known (an unwitnessed or nocturnal seizure).
+  durationSec              Int?                  @map("duration_sec")
+  durationSource           SeizureDurationSource @default(UNKNOWN) @map("duration_source")
+  /// How many seizures this row stands for. 1 for a single seizure.
+  count                    Int                   @default(1)
+  certainty                SeizureCertainty      @default(CONFIRMED)
+  sleepState               SeizureSleepState     @default(UNKNOWN) @map("sleep_state")
+  observableManifestations SeizureObservation?   @map("observable_manifestations")
+  responsiveness           SeizureFunctionState?
+  recall                   SeizureFunctionState?
+  /// Observed features in chronological order.
+  semiology                SeizureSemiology[]    @default([])
+  /// Free-text description beside the glossary terms. Encrypted.
+  semiologyNoteEncrypted   Bytes?                @map("semiology_note_encrypted")
+  /// What the person felt before, in their words. Encrypted.
+  auraEncrypted            Bytes?                @map("aura_encrypted")
+  triggers                 SeizureTrigger[]      @default([])
+  /// Minutes until back to usual. NULL = not recorded.
+  postictalMinutes         Int?                  @map("postictal_minutes")
+  postictal                SeizurePostictal[]    @default([])
+  injuries                 SeizureInjury[]       @default([])
+  incontinence             Boolean?
+  emergency                SeizureEmergency      @default(NONE)
+  witnessed                Boolean?
+  witnessRole              SeizureObserverRole?  @map("witness_role")
+  witnessNoteEncrypted     Bytes?                @map("witness_note_encrypted")
+  /// The account that logged it: the owner, or a delegate acting on the
+  /// record (a guardian logging for a child). Deliberately NOT a foreign key,
+  /// for the reason `AuditLog.actorUserId` gives: nulling it when the
+  /// delegate's account goes would turn "logged by a carer" into "logged by
+  /// the person". NULL = unknown (a restore from another instance).
+  loggedByUserId           String?               @map("logged_by_user_id")
+  source                   SeizureEventSource    @default(MANUAL)
+  noteEncrypted            Bytes?                @map("note_encrypted")
+  createdAt                DateTime              @default(now()) @map("created_at")
+  updatedAt                DateTime              @updatedAt @map("updated_at")
+
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  typeProfile SeizureTypeProfile? @relation(fields: [typeProfileId], references: [id], onDelete: SetNull)
+  rescueDoses SeizureRescueDose[]
+
+  @@index([userId, onsetAt])
+  @@index([typeProfileId, onsetAt])
+  @@map("seizure_events")
+}
+
+/// One rescue dose given during or after a seizure. Each one also writes a
+/// `MedicationIntakeEvent` on the as-needed medication it names, so the
+/// medication's history and inventory see it; an as-needed medication is
+/// never counted in compliance, so the diary changes no adherence figure.
+model SeizureRescueDose {
+  id             String               @id @default(cuid())
+  userId         String               @map("user_id")
+  eventId        String               @map("event_id")
+  /// The medication given. NULL once the medication is deleted; the name
+  /// snapshot below keeps the history readable.
+  medicationId   String?              @map("medication_id")
+  /// The medication's name when the dose was recorded (plaintext, like
+  /// `Medication.name`).
+  medicationName String               @map("medication_name")
+  doseAmount     Float?               @map("dose_amount")
+  doseUnit       String?              @map("dose_unit")
+  route          SeizureRescueRoute?
+  givenAt        DateTime             @map("given_at")
+  givenBy        SeizureObserverRole? @map("given_by")
+  effect         SeizureRescueEffect  @default(UNKNOWN)
+  /// When the seizure stopped after this dose, if it was noted.
+  seizureEndedAt DateTime?            @map("seizure_ended_at")
+  /// The intake row written for this dose. NULL when no medication was
+  /// linked, or after that intake was deleted on the medication.
+  intakeEventId  String?              @map("intake_event_id")
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
+
+  user        User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event       SeizureEvent           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  medication  Medication?            @relation(fields: [medicationId], references: [id], onDelete: SetNull)
+  intakeEvent MedicationIntakeEvent? @relation(fields: [intakeEventId], references: [id], onDelete: SetNull)
+
+  @@index([userId, givenAt])
+  @@index([eventId])
+  @@index([medicationId])
+  @@index([intakeEventId])
+  @@map("seizure_rescue_doses")
+}
+
+/// The record's cluster rule: N or more seizures within W hours. One row per
+/// record at most; absence reads as the default (2 in 24 hours). NICE's
+/// 3-in-24-hours count is shown beside it, never instead of it.
+model SeizureDiarySettings {
+  userId             String   @id @map("user_id")
+  clusterCount       Int      @default(2) @map("cluster_count")
+  clusterWindowHours Int      @default(24) @map("cluster_window_hours")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("seizure_diary_settings")
 }
 
 // ─── Structured health records (v1.25 W-RECORDS) ──────────────────

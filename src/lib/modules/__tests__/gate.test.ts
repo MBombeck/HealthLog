@@ -378,7 +378,11 @@ describe("registry — opt-in marker", () => {
   // v1.42 — `timeline` joins them for a different reason: it opens no channel,
   // but it is a new way of reading the whole record, and the readiness
   // inventory shown when it is switched on is meant to be the first contact.
-  const OPT_IN_KEYS = new Set(["mcp", "nutrients", "timeline"]);
+  //
+  // The seizure diary (#1368) ships dark too: only a small share of records
+  // need it, and its quick log carries emergency guidance that should be met
+  // when somebody turns it on deliberately.
+  const OPT_IN_KEYS = new Set(["mcp", "nutrients", "timeline", "seizures"]);
 
   it("marks only the egress-surface modules opt-in (every other is default-on)", () => {
     for (const key of MODULE_KEYS) {

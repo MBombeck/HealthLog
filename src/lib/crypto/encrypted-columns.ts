@@ -346,6 +346,14 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   // v1.40 — the person's own symptom names and the note on one occurrence.
   { model: "SymptomDefinition", field: "labelEncrypted", kind: "bytes" },
   { model: "SymptomEvent", field: "noteEncrypted", kind: "bytes" },
+  // The seizure diary: the family's name for a type, its
+  // rescue plan, and the free text on one seizure.
+  { model: "SeizureTypeProfile", field: "labelEncrypted", kind: "bytes" },
+  { model: "SeizureTypeProfile", field: "rescuePlanEncrypted", kind: "bytes" },
+  { model: "SeizureEvent", field: "semiologyNoteEncrypted", kind: "bytes" },
+  { model: "SeizureEvent", field: "auraEncrypted", kind: "bytes" },
+  { model: "SeizureEvent", field: "witnessNoteEncrypted", kind: "bytes" },
+  { model: "SeizureEvent", field: "noteEncrypted", kind: "bytes" },
   // v1.42 — a life event's title and note, in the person's own words.
   { model: "LifeEvent", field: "titleEncrypted", kind: "bytes" },
   { model: "LifeEvent", field: "noteEncrypted", kind: "bytes" },
@@ -669,6 +677,8 @@ export const UPDATED_AT_MODELS: ReadonlySet<string> = new Set([
   "MoodEntry",
   "NotificationChannel",
   "Practitioner",
+  "SeizureEvent",
+  "SeizureTypeProfile",
   "SymptomDefinition",
   "SymptomEvent",
   "User",

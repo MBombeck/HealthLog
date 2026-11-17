@@ -186,6 +186,14 @@ export const MODULE_KEYS = [
   // from the day with it; the `/api/life-events` row store stays reachable so
   // a restore keeps working and re-enabling finds the events intact.
   "timeline",
+  // The seizure diary (`/seizures`): the person's own
+  // seizure types, each recorded seizure with its rescue doses, clusters and
+  // the doctor-report section. OPT-IN (off by default): it is a clinical
+  // vertical only a small share of records need, and its quick log carries
+  // emergency guidance that should be met when somebody turns it on, not
+  // stumbled on. No egress. The data routes gate on it like the illness
+  // journal's: a record with the diary off answers `seizures.disabled`.
+  "seizures",
 ] as const;
 
 export type ModuleKey = (typeof MODULE_KEYS)[number];
@@ -386,6 +394,14 @@ export const MODULE_REGISTRY: Readonly<Record<ModuleKey, ModuleDefinition>> =
       key: "timeline",
       labelKey: "modules.timeline.label",
       descriptionKey: "modules.timeline.description",
+      category: "tracking",
+      // Off by default; see the key's comment in `MODULE_KEYS`.
+      optIn: true,
+    },
+    seizures: {
+      key: "seizures",
+      labelKey: "modules.seizures.label",
+      descriptionKey: "modules.seizures.description",
       category: "tracking",
       // Off by default; see the key's comment in `MODULE_KEYS`.
       optIn: true,
