@@ -23,6 +23,7 @@
   "get_intraday_pulse",
   "get_ecg_recordings",
   "get_visits",
+  "get_seizures",
   "search",
   "fetch"
 ]

@@ -69,6 +69,13 @@ vi.mock("@/lib/db", () => ({
     },
     // v1.30 — ECG recording metadata.
     ecgRecording: { findMany: vi.fn(async () => []) },
+    // The seizure diary (#1368): an empty diary.
+    seizureTypeProfile: { findMany: vi.fn(async () => []) },
+    seizureEvent: {
+      findMany: vi.fn(async () => []),
+      findFirst: vi.fn(async () => null),
+    },
+    seizureDiarySettings: { findUnique: vi.fn(async () => null) },
   },
 }));
 
@@ -237,6 +244,8 @@ describe("MCP tool registry — surface", () => {
         "get_day",
         // v1.38 — the bounded visit history.
         "get_visits",
+        // The seizure diary.
+        "get_seizures",
       ].sort(),
     );
   });
