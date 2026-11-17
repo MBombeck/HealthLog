@@ -7008,6 +7008,7 @@
       "description": "Erzeuge ein Token, damit eine Waage, eine Uhr, ein Ernährungstracker oder deine Hausautomatisierung Messwerte, Werte deiner eigenen Metriken und tägliche Nährstoffsummen eintragen kann.",
       "detail": "Das Token wird nur einmal angezeigt.",
       "scopeNote": "Es kann ausschließlich neue Werte in deine eigene Akte eintragen, auch für eigene Metriken, die du bereits angelegt hast, und tägliche Nährstoffsummen, solange das Nährstoffe-Modul aktiv ist. Es kann deine Daten nicht lesen, keine Metrik anlegen, nichts ändern oder löschen und kein weiteres Token erstellen. Messwerte und Nährstoffsummen werden als von einem externen Gerät gekennzeichnet, damit du sie später erkennst; Werte eigener Metriken tragen keine solche Kennzeichnung. Messwerte und Werte eigener Metriken kannst du jederzeit selbst korrigieren; einen Nährstofftag korrigiert der Tracker, indem er ihn erneut sendet. Die ID einer eigenen Metrik ist der Teil nach /custom-metrics/ in der Adresse ihrer Seite.",
+      "nutrientsLink": "Nährstoffaufnahme ansehen",
       "createFailed": "Das Token konnte nicht erstellt werden. Bitte versuche es erneut.",
       "namePlaceholder": "Name, z. B. Home Assistant",
       "appleHealth": {
@@ -10355,12 +10356,14 @@
     "addResult": "Wert hinzufügen",
     "addDescription": "Erfasse einen Biomarker aus deinem Laborbefund.",
     "addFirst": "Ersten Wert erfassen",
+    "importAction": "Aus Apple Health oder CSV importieren",
     "emptyTitle": "Noch keine Laborwerte",
     "emptyDescription": "Erfasse Blutwerte wie HbA1c, LDL oder Ferritin, um sie über die Zeit zu verfolgen und mit deiner Ärztin oder deinem Arzt zu teilen.",
     "referenceLabel": "Referenz",
     "readingsCount": "{count} Messungen",
     "deleteConfirmTitle": "Laborwert löschen?",
     "deleteConfirmDescription": "Dieser Laborwert wird gelöscht. Direkt danach kannst du das kurz rückgängig machen.",
+    "deleteAppleHealthNote": "Beim nächsten Apple-Health-Import kommt er nicht zurück.",
     "deletedToast": "Wert gelöscht",
     "deleteError": "Wert konnte nicht gelöscht werden",
     "loadError": "Laborwerte konnten nicht geladen werden",
@@ -10444,8 +10447,8 @@
         "365": "1 J",
         "all": "Alle"
       },
-      "sourceRangeLabel": "Befundbereich",
-      "sourceBandLegend": "Zweites Band: der Bereich aus dem Befund vom {date}.",
+      "sourceRangeLabel": "Laborbereich",
+      "sourceBandLegend": "Zweites Band: der Bereich, den das Labor zum Wert vom {date} angegeben hat.",
       "sourceBandMixed": "Zweites Band: der Bereich aus dem neuesten Befund. Frühere Befunde im Zeitraum nennen andere Bereiche."
     },
     "biomarker": {
@@ -10681,9 +10684,9 @@
       "orderDefault": "Bis du eine verschiebst, stehen eingebaute Kategorien in fester Folge, deine eigenen alphabetisch und {other} zuletzt."
     },
     "sourceRange": {
-      "fromReport": "Befundbereich {range}",
+      "fromReport": "Laborbereich {range}",
       "catalogDiffers": "dein Bereich {range}",
-      "printed": "auf dem Befund in {unit}: {range}"
+      "printed": "angegeben in {unit}: {range}"
     },
     "match": {
       "viaAlias": "über einen Namen, den du früher zugeordnet hast",
@@ -10774,6 +10777,10 @@
       "markerCountOther": "{count} Biomarker",
       "noMatchesTitle": "Keine passenden Biomarker",
       "noMatchesDescription": "Passe deinen Suchbegriff oder die Filter an."
+    },
+    "source": {
+      "OCR": "Gescannter Befund",
+      "DOCUMENT": "Dokument"
     }
   },
   "modules": {
@@ -12684,6 +12691,7 @@
       "moduleOffCta": "Nährstoffe aktivieren",
       "emptyTitle": "Noch keine Nährstoffdaten",
       "emptyDescription": "Daten kommen aus der Synchronisierung der Gesundheits-App deines Telefons, von einem Ernährungstracker mit Messwert-Token oder aus einem manuellen Wassereintrag.",
+      "emptyTokenAction": "Messwert-Token erstellen",
       "loadError": "Deine Nährstoffdaten konnten nicht geladen werden",
       "lastAttemptTitle": "Eine Synchronisierung ist angekommen, aber nichts konnte gespeichert werden",
       "lastAttemptAt": "Letzter Versuch: {date}",
@@ -12700,11 +12708,16 @@
       "loadError": "Wasser konnte nicht geladen werden."
     },
     "caffeine": {
-      "ceilingMeta": "Sichere Obergrenze {value} {unit}/Tag (EFSA)",
+      "ceilingMeta": "Sichere Obergrenze {value} {unit}/Tag ({authority})",
       "loadError": "Koffein konnte nicht geladen werden."
     },
     "micronutrients": {
-      "title": "Vitamine & Mineralstoffe",
+      "title": "Mikronährstoffe",
+      "groups": {
+        "vitamin": "Vitamine",
+        "mineral": "Mineralstoffe",
+        "omega3": "Omega-3-Fettsäuren"
+      },
       "rowMeta": "{days} von {window} Tagen, Richtwert {value} {unit} ({authority})",
       "rowMetaNoRef": "{days} von {window} Tagen",
       "footer": "{tracked} von {total} erfassten Mikronährstoffen haben Daten in diesem Zeitraum.",
@@ -12725,30 +12738,22 @@
       "IU": "IE"
     },
     "sources": {
-      "APPLE_HEALTH": "Synchronisiert",
-      "MANUAL": "Eingetragen",
-      "SUPPLEMENT": "Präparate",
-      "EXTERNAL": "Extern",
-      "HEALTH_CONNECT": "Health Connect"
+      "SUPPLEMENT": "Präparate"
     },
     "macros": {
       "title": "Energie & Makronährstoffe",
-      "short": {
-        "energy": "Energie",
-        "protein": "Eiweiß",
-        "carbohydrates": "KH",
-        "fat": "Fett",
-        "sugar": "Zucker",
-        "fiber": "Ballaststoffe"
-      },
       "pickLabel": "Nährstoff",
       "referenceMeta": "Richtwert {value} {unit}/Tag ({authority})",
       "targetMeta": "Dein Ziel {value} {unit}/Tag",
       "limitMeta": "Deine Obergrenze {value} {unit}/Tag",
-      "setTarget": "Ziel setzen",
-      "editTarget": "Ziel ändern",
+      "sheetTitle": "Tagesziel: {name}",
+      "sheetDescription": "Eine Tagesmenge, die du erreichen oder nicht überschreiten willst, als gestrichelte Linie im Diagramm.",
       "clearTarget": "Ziel entfernen",
+      "removeTitle": "Dieses Ziel entfernen?",
+      "removeBody": "Das Diagramm zeigt dann wieder den Referenzwert, wo es einen gibt. Die Menge, die du gesetzt hast, wird nirgends sonst gespeichert.",
       "targetLabel": "{name} pro Tag in {unit}",
+      "boundsHint": "Über 0, höchstens {max} {unit} pro Tag.",
+      "validationBounds": "Gib eine Menge innerhalb der oben genannten Grenzen ein.",
       "directionLabel": "Art des Ziels",
       "directionTarget": "Mindestens erreichen",
       "directionLimit": "Darunter bleiben",
@@ -13806,6 +13811,7 @@
     "usualRange": "Üblich {lo} bis {hi}",
     "groups": {
       "scores": "Scores",
+      "nutrients": "Ernährung",
       "running": "Laufend an diesem Tag",
       "values": "Werte",
       "happened": "Was war",
@@ -13881,6 +13887,12 @@
       "travelYes": "Ja",
       "kilometres": "{value} km",
       "miles": "{value} mi"
+    },
+    "nutrients": {
+      "micronutrientsOne": "{count} Mikronährstoff erfasst",
+      "micronutrientsOther": "{count} Mikronährstoffe erfasst",
+      "micronutrientsFew": "{count} Mikronährstoffe erfasst",
+      "open": "Nährstoffaufnahme öffnen"
     }
   },
   "timeline": {

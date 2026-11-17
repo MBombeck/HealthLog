@@ -7008,6 +7008,7 @@
       "description": "Crea un token perché una bilancia, un orologio, un'app per l'alimentazione o la tua domotica aggiungano misurazioni, valori delle tue metriche personalizzate e totali giornalieri di nutrienti.",
       "detail": "Il token viene mostrato una sola volta.",
       "scopeNote": "Può soltanto aggiungere nuove misurazioni alla tua cartella, valori alle metriche personalizzate che hai già creato e totali giornalieri di nutrienti finché il modulo nutrienti è attivo: non può leggere i tuoi dati, creare una metrica, modificare o eliminare nulla, né creare un altro token. Le misurazioni e i totali di nutrienti vengono contrassegnati come provenienti da un dispositivo esterno, così li riconosci in seguito; i valori delle metriche personalizzate non hanno questo contrassegno. Misurazioni e valori delle metriche puoi sempre correggerli tu; un'app per l'alimentazione corregge un giorno inviandolo di nuovo. L'ID di una metrica personalizzata è la parte che segue /custom-metrics/ nell'indirizzo della sua pagina.",
+      "nutrientsLink": "Vedi apporto di nutrienti",
       "createFailed": "Non è stato possibile creare il token. Riprova.",
       "namePlaceholder": "Nome, ad es. Home Assistant",
       "appleHealth": {
@@ -10355,12 +10356,14 @@
     "addResult": "Aggiungi valore",
     "addDescription": "Registra un biomarcatore da un referto di laboratorio.",
     "addFirst": "Aggiungi il primo risultato",
+    "importAction": "Importa da Apple Health o CSV",
     "emptyTitle": "Ancora nessun risultato",
     "emptyDescription": "Registra esami come HbA1c, LDL o ferritina per seguirli nel tempo e condividerli con il tuo medico.",
     "referenceLabel": "Riferimento",
     "readingsCount": "{count} misurazioni",
     "deleteConfirmTitle": "Eliminare il risultato di laboratorio?",
     "deleteConfirmDescription": "Questo risultato di laboratorio verrà eliminato. Subito dopo potrai annullare l’operazione per un breve momento.",
+    "deleteAppleHealthNote": "Non tornerà con la prossima importazione da Apple Health.",
     "deletedToast": "Risultato eliminato",
     "deleteError": "Impossibile eliminare il risultato",
     "loadError": "Impossibile caricare i risultati",
@@ -10444,8 +10447,8 @@
         "365": "1 a",
         "all": "Tutto"
       },
-      "sourceRangeLabel": "Intervallo del referto",
-      "sourceBandLegend": "Seconda banda: l'intervallo stampato sul referto del {date}.",
+      "sourceRangeLabel": "Intervallo del laboratorio",
+      "sourceBandLegend": "Seconda banda: l'intervallo indicato dal laboratorio con il risultato del {date}.",
       "sourceBandMixed": "Seconda banda: l'intervallo stampato sul referto più recente. Referti precedenti nel periodo indicano intervalli diversi."
     },
     "biomarker": {
@@ -10681,9 +10684,9 @@
       "orderDefault": "Finché non ne sposti una, le categorie predefinite seguono un ordine fisso, le tue l’ordine alfabetico e {other} viene per ultima."
     },
     "sourceRange": {
-      "fromReport": "Intervallo del referto {range}",
+      "fromReport": "Intervallo del laboratorio {range}",
       "catalogDiffers": "il tuo intervallo {range}",
-      "printed": "stampato in {unit}: {range}"
+      "printed": "indicato in {unit}: {range}"
     },
     "match": {
       "viaAlias": "tramite un nome che hai scelto in precedenza",
@@ -10774,6 +10777,10 @@
       "markerCountOther": "{count} biomarcatori",
       "noMatchesTitle": "Nessun biomarcatore trovato",
       "noMatchesDescription": "Prova a modificare i termini di ricerca o i filtri."
+    },
+    "source": {
+      "OCR": "Referto scansionato",
+      "DOCUMENT": "Documento"
     }
   },
   "modules": {
@@ -12684,6 +12691,7 @@
       "moduleOffCta": "Attiva nutrienti",
       "emptyTitle": "Ancora nessun dato sui nutrienti",
       "emptyDescription": "I dati arrivano dalla sincronizzazione dell'app salute del telefono, da un'app per l'alimentazione con un token di misurazione o da una voce di acqua inserita manualmente.",
+      "emptyTokenAction": "Crea un token per le misurazioni",
       "loadError": "Non è stato possibile caricare i tuoi dati sui nutrienti",
       "lastAttemptTitle": "È arrivata una sincronizzazione, ma non è stato possibile salvare nulla",
       "lastAttemptAt": "Ultimo tentativo: {date}",
@@ -12700,11 +12708,16 @@
       "loadError": "Impossibile caricare l'acqua."
     },
     "caffeine": {
-      "ceilingMeta": "Limite di sicurezza {value} {unit}/giorno (EFSA)",
+      "ceilingMeta": "Limite di sicurezza {value} {unit}/giorno ({authority})",
       "loadError": "Impossibile caricare la caffeina."
     },
     "micronutrients": {
-      "title": "Vitamine e minerali",
+      "title": "Micronutrienti",
+      "groups": {
+        "vitamin": "Vitamine",
+        "mineral": "Minerali",
+        "omega3": "Acidi grassi omega-3"
+      },
       "rowMeta": "{days} di {window} giorni, rif. {value} {unit} ({authority})",
       "rowMetaNoRef": "{days} di {window} giorni",
       "footer": "{tracked} di {total} micronutrienti monitorati hanno dati in questo periodo.",
@@ -12725,30 +12738,22 @@
       "IU": "UI"
     },
     "sources": {
-      "APPLE_HEALTH": "Sincronizzato",
-      "MANUAL": "Inserito",
-      "SUPPLEMENT": "Integratori",
-      "EXTERNAL": "Esterno",
-      "HEALTH_CONNECT": "Health Connect"
+      "SUPPLEMENT": "Integratori"
     },
     "macros": {
       "title": "Energia e macronutrienti",
-      "short": {
-        "energy": "Energia",
-        "protein": "Proteine",
-        "carbohydrates": "Carboidrati",
-        "fat": "Grassi",
-        "sugar": "Zuccheri",
-        "fiber": "Fibre"
-      },
       "pickLabel": "Nutriente",
       "referenceMeta": "Riferimento {value} {unit}/giorno ({authority})",
       "targetMeta": "Il tuo obiettivo {value} {unit}/giorno",
       "limitMeta": "Il tuo limite {value} {unit}/giorno",
-      "setTarget": "Imposta obiettivo",
-      "editTarget": "Modifica obiettivo",
+      "sheetTitle": "Obiettivo giornaliero: {name}",
+      "sheetDescription": "Una quantità giornaliera da raggiungere o da non superare, tracciata come linea tratteggiata nel grafico.",
       "clearTarget": "Rimuovi obiettivo",
+      "removeTitle": "Rimuovere questo obiettivo?",
+      "removeBody": "Il grafico torna al valore di riferimento, se esiste. La quantità che hai impostato non viene conservata altrove.",
       "targetLabel": "{name} al giorno in {unit}",
+      "boundsHint": "Più di 0, al massimo {max} {unit} al giorno.",
+      "validationBounds": "Inserisci una quantità entro i limiti indicati sopra.",
       "directionLabel": "Tipo di obiettivo",
       "directionTarget": "Raggiungere almeno",
       "directionLimit": "Restare sotto",
@@ -13806,6 +13811,7 @@
     "usualRange": "Di solito da {lo} a {hi}",
     "groups": {
       "scores": "Punteggi",
+      "nutrients": "Nutrizione",
       "running": "In corso quel giorno",
       "values": "Valori",
       "happened": "Cosa è successo",
@@ -13881,6 +13887,12 @@
       "travelYes": "Sì",
       "kilometres": "{value} km",
       "miles": "{value} mi"
+    },
+    "nutrients": {
+      "micronutrientsOne": "{count} micronutriente registrato",
+      "micronutrientsOther": "{count} micronutrienti registrati",
+      "micronutrientsFew": "{count} micronutrienti registrati",
+      "open": "Apri apporto di nutrienti"
     }
   },
   "timeline": {

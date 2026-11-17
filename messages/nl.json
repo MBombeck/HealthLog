@@ -7008,6 +7008,7 @@
       "description": "Maak een token aan zodat een weegschaal, een horlogekoppeling, een voedingsapp of je domotica metingen, waarden voor je eigen metingen en dagtotalen van voedingsstoffen kan toevoegen.",
       "detail": "Het token wordt één keer getoond.",
       "scopeNote": "Het kan alleen nieuwe metingen aan je eigen dossier toevoegen, waarden aan eigen metingen die je al hebt aangemaakt, en dagtotalen van voedingsstoffen zolang de module voedingsstoffen aan staat. Het kan je gegevens niet lezen, geen eigen meting aanmaken, niets wijzigen of verwijderen en geen ander token aanmaken. Metingen en voedingstotalen worden gemarkeerd als afkomstig van een extern apparaat, zodat je ze later kunt onderscheiden; waarden van eigen metingen krijgen die markering niet. Metingen en waarden van eigen metingen kun je nog steeds zelf corrigeren; een voedingsapp corrigeert een dag door hem opnieuw te sturen. De ID van een eigen meting is het deel na /custom-metrics/ in het adres van de pagina ervan.",
+      "nutrientsLink": "Inname van voedingsstoffen bekijken",
       "createFailed": "Het token kon niet worden aangemaakt. Probeer het opnieuw.",
       "namePlaceholder": "Naam, bijv. Home Assistant",
       "appleHealth": {
@@ -10355,12 +10356,14 @@
     "addResult": "Waarde toevoegen",
     "addDescription": "Leg een biomarkerwaarde uit een labrapport vast.",
     "addFirst": "Je eerste uitslag toevoegen",
+    "importAction": "Importeren uit Apple Health of csv",
     "emptyTitle": "Nog geen labuitslagen",
     "emptyDescription": "Leg bloedwaarden zoals HbA1c, LDL of ferritine vast om ze in de tijd te volgen en met je arts te delen.",
     "referenceLabel": "Referentie",
     "readingsCount": "{count} metingen",
     "deleteConfirmTitle": "Labuitslag verwijderen?",
     "deleteConfirmDescription": "Deze labuitslag wordt verwijderd. Je kunt dit daarna nog even ongedaan maken.",
+    "deleteAppleHealthNote": "Bij de volgende Apple Health-import komt hij niet terug.",
     "deletedToast": "Uitslag verwijderd",
     "deleteError": "De uitslag kon niet worden verwijderd",
     "loadError": "Labuitslagen konden niet worden geladen",
@@ -10444,8 +10447,8 @@
         "365": "1 j",
         "all": "Alles"
       },
-      "sourceRangeLabel": "Rapportbereik",
-      "sourceBandLegend": "Tweede band: het bereik vermeld op het rapport van {date}.",
+      "sourceRangeLabel": "Bereik van het lab",
+      "sourceBandLegend": "Tweede band: het bereik dat het lab bij de uitslag van {date} gaf.",
       "sourceBandMixed": "Tweede band: het bereik vermeld op het meest recente rapport. Eerdere rapporten in beeld vermelden andere bereiken."
     },
     "biomarker": {
@@ -10681,9 +10684,9 @@
       "orderDefault": "Tot je er een verplaatst, staan de ingebouwde categorieën in een vaste volgorde, je eigen alfabetisch daarna en {other} als laatste."
     },
     "sourceRange": {
-      "fromReport": "Bereik volgens rapport: {range}",
+      "fromReport": "Bereik van het lab: {range}",
       "catalogDiffers": "jouw bereik: {range}",
-      "printed": "zoals afgedrukt in {unit}: {range}"
+      "printed": "zoals opgegeven in {unit}: {range}"
     },
     "match": {
       "viaAlias": "via een naam die je eerder hebt gekozen",
@@ -10774,6 +10777,10 @@
       "markerCountOther": "{count} biomarkers",
       "noMatchesTitle": "Geen passende biomarkers",
       "noMatchesDescription": "Probeer je zoekopdracht of filters aan te passen."
+    },
+    "source": {
+      "OCR": "Gescand verslag",
+      "DOCUMENT": "Document"
     }
   },
   "modules": {
@@ -12684,6 +12691,7 @@
       "moduleOffCta": "Voedingsstoffen aanzetten",
       "emptyTitle": "Nog geen gegevens over voedingsstoffen",
       "emptyDescription": "Gegevens komen binnen via de synchronisatie met de gezondheidsapp op je telefoon, via een voedingsapp met een metingentoken of via handmatig ingevoerd water.",
+      "emptyTokenAction": "Metingtoken aanmaken",
       "loadError": "Je gegevens over voedingsstoffen konden niet worden geladen",
       "lastAttemptTitle": "Er is een synchronisatie binnengekomen, maar er kon niets worden opgeslagen",
       "lastAttemptAt": "Laatste poging: {date}",
@@ -12700,11 +12708,16 @@
       "loadError": "Water kon niet worden geladen."
     },
     "caffeine": {
-      "ceilingMeta": "Veilige bovengrens {value} {unit}/dag (EFSA)",
+      "ceilingMeta": "Veilige bovengrens {value} {unit}/dag ({authority})",
       "loadError": "Cafeïne kon niet worden geladen."
     },
     "micronutrients": {
-      "title": "Vitaminen en mineralen",
+      "title": "Micronutriënten",
+      "groups": {
+        "vitamin": "Vitaminen",
+        "mineral": "Mineralen",
+        "omega3": "Omega-3-vetzuren"
+      },
       "rowMeta": "{days} van {window} dagen, ref. {value} {unit} ({authority})",
       "rowMetaNoRef": "{days} van {window} dagen",
       "footer": "{tracked} van {total} gevolgde micronutriënten hebben gegevens in deze periode.",
@@ -12725,30 +12738,22 @@
       "IU": "IE"
     },
     "sources": {
-      "APPLE_HEALTH": "Gesynchroniseerd",
-      "MANUAL": "Ingevoerd",
-      "SUPPLEMENT": "Supplementen",
-      "EXTERNAL": "Extern",
-      "HEALTH_CONNECT": "Health Connect"
+      "SUPPLEMENT": "Supplementen"
     },
     "macros": {
       "title": "Energie en macronutriënten",
-      "short": {
-        "energy": "Energie",
-        "protein": "Eiwit",
-        "carbohydrates": "Koolh.",
-        "fat": "Vet",
-        "sugar": "Suiker",
-        "fiber": "Vezels"
-      },
       "pickLabel": "Voedingsstof",
       "referenceMeta": "Referentie {value} {unit}/dag ({authority})",
       "targetMeta": "Jouw doel {value} {unit}/dag",
       "limitMeta": "Jouw grens {value} {unit}/dag",
-      "setTarget": "Doel instellen",
-      "editTarget": "Doel wijzigen",
+      "sheetTitle": "Dagdoel: {name}",
+      "sheetDescription": "Een hoeveelheid per dag om te halen of onder te blijven, als stippellijn in de grafiek.",
       "clearTarget": "Doel verwijderen",
+      "removeTitle": "Dit doel verwijderen?",
+      "removeBody": "De grafiek toont dan weer de referentiewaarde, als die er is. De hoeveelheid die je instelde wordt nergens anders bewaard.",
       "targetLabel": "{name} per dag in {unit}",
+      "boundsHint": "Boven 0, hoogstens {max} {unit} per dag.",
+      "validationBounds": "Vul een hoeveelheid binnen de grenzen hierboven in.",
       "directionLabel": "Soort doel",
       "directionTarget": "Minstens halen",
       "directionLimit": "Eronder blijven",
@@ -13806,6 +13811,7 @@
     "usualRange": "Meestal {lo} tot {hi}",
     "groups": {
       "scores": "Scores",
+      "nutrients": "Voeding",
       "running": "Lopend op die dag",
       "values": "Waarden",
       "happened": "Wat er gebeurde",
@@ -13881,6 +13887,12 @@
       "travelYes": "Ja",
       "kilometres": "{value} km",
       "miles": "{value} mi"
+    },
+    "nutrients": {
+      "micronutrientsOne": "{count} micronutriënt vastgelegd",
+      "micronutrientsOther": "{count} micronutriënten vastgelegd",
+      "micronutrientsFew": "{count} micronutriënten vastgelegd",
+      "open": "Inname van voedingsstoffen openen"
     }
   },
   "timeline": {

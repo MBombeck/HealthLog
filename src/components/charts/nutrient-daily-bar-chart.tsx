@@ -21,6 +21,7 @@ import {
 import { CHART_HEIGHT_PX } from "@/lib/charts/constants";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
 import { useFormatters } from "@/lib/i18n/context";
+import { formatNutrientAmount } from "@/lib/nutrients/format-amount";
 
 import { ChartDataTable } from "./chart-data-table";
 import { RichChartTooltip, type RichTooltipRow } from "./chart-tooltip";
@@ -60,10 +61,14 @@ export function NutrientDailyBarChart({
   dayLinks = false,
 }: NutrientDailyBarChartProps) {
   const fmt = useFormatters();
+  // The raw day totals: the card's headline prints 82,5 g, so the bar and its
+  // tooltip must not say 82 g for the same day. Every number below goes
+  // through the cards' one formatter.
   const points = useMemo(
-    () => days.map((d) => ({ day: d.day, amount: Math.round(d.amount) })),
+    () => days.map((d) => ({ day: d.day, amount: d.amount })),
     [days],
   );
+  const formatAmount = (value: number) => formatNutrientAmount(fmt, value);
 
   const yDomain = useMemo<[number, number]>(() => {
     const values = points.map((p) => p.amount);
@@ -81,7 +86,7 @@ export function NutrientDailyBarChart({
     focusFor: (index) => {
       const point = points[index];
       return point
-        ? { label: valueLabel, value: fmt.integer(point.amount), unit }
+        ? { label: valueLabel, value: formatAmount(point.amount), unit }
         : null;
     },
   });
@@ -114,6 +119,7 @@ export function NutrientDailyBarChart({
             />
             <YAxis
               domain={yDomain}
+              tickFormatter={(value: number) => formatAmount(value)}
               tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
               stroke="var(--border)"
               width={44}
@@ -146,7 +152,7 @@ export function NutrientDailyBarChart({
                 const rows: RichTooltipRow[] = [
                   {
                     name: valueLabel,
-                    value: `${point.amount} ${unit}`,
+                    value: `${formatAmount(point.amount)} ${unit}`,
                     color: barColor,
                   },
                 ];
@@ -186,7 +192,7 @@ export function NutrientDailyBarChart({
           }))}
           columns={[{ key: "amount", label: valueLabel }]}
           unit={unit}
-          formatValue={(value) => fmt.integer(value)}
+          formatValue={(value) => formatAmount(value)}
           formatDate={(date) => fmt.dateShortSmartCalendar(date)}
           bucket="day"
           metricLabel={valueLabel}

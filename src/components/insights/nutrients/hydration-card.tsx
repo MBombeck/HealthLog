@@ -11,6 +11,7 @@ import { NutrientDailyBarChartDynamic } from "@/components/charts/nutrient-daily
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { apiGet } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
+import { formatNutrientAmount } from "@/lib/nutrients/format-amount";
 import type { NutrientDailySeries } from "./types";
 
 const WINDOW_DAYS = 30;
@@ -79,12 +80,12 @@ export function HydrationCard() {
                 className="text-2xl font-bold tabular-nums"
                 data-slot="nutrients-hydration-today"
               >
-                {fmt.integer(Math.round(todayTotal))} {data.unit}
+                {formatNutrientAmount(fmt, todayTotal)} {data.unit}
               </p>
               {data.reference ? (
                 <p className="text-muted-foreground text-xs">
                   {t("nutrients.hydration.referenceMeta", {
-                    value: fmt.integer(Math.round(data.reference.value)),
+                    value: formatNutrientAmount(fmt, data.reference.value),
                     unit: data.unit,
                     authority: data.reference.authority ?? "EFSA",
                   })}

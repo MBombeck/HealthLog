@@ -44,7 +44,28 @@ import { TargetEditSheet } from "@/components/targets/target-edit-sheet";
  * into the primary one.
  */
 
-export interface AdjustableTarget {
+/**
+ * A target whose editor is not the threshold-range sheet: the nutrient
+ * targets (an amount and a direction, `/api/nutrients/targets`) bring their
+ * own sheet, and the gear only asks the registering card to open it. Same
+ * gear, same sheet anatomy, a different store behind it.
+ */
+export interface CustomAdjustableTarget {
+  /** A key unique on the page, e.g. `"NUTRIENT_TARGET"`. */
+  type: string;
+  /** Opens the registering card's own editor. */
+  openEditor: () => void;
+}
+
+export type AdjustableTarget = RangeAdjustableTarget | CustomAdjustableTarget;
+
+function isCustomTarget(
+  target: AdjustableTarget,
+): target is CustomAdjustableTarget {
+  return "openEditor" in target;
+}
+
+export interface RangeAdjustableTarget {
   /** Target type literal, e.g. `"WEIGHT"` or `"BLOOD_GLUCOSE_FASTING"`. */
   type: string;
   /** Display label for the sheet heading. */
@@ -98,7 +119,9 @@ export function TargetAdjustProvider({ children }: { children: ReactNode }) {
 
   const requestAdjust = useCallback(() => {
     const primary = targetsRef.current[0];
-    if (primary) setOpenType(primary.type);
+    if (!primary) return;
+    if (isCustomTarget(primary)) primary.openEditor();
+    else setOpenType(primary.type);
   }, []);
 
   const value = useMemo<TargetAdjustValue>(
@@ -106,7 +129,8 @@ export function TargetAdjustProvider({ children }: { children: ReactNode }) {
     [targets.length, register, requestAdjust],
   );
 
-  const openTarget = targets.find((entry) => entry.type === openType) ?? null;
+  const found = targets.find((entry) => entry.type === openType);
+  const openTarget = found && !isCustomTarget(found) ? found : null;
 
   return (
     <TargetAdjustContext.Provider value={value}>

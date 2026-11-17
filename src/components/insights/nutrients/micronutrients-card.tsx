@@ -5,12 +5,14 @@ import { Info, Leaf } from "lucide-react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { QueryErrorCard } from "@/components/ui/query-error-card";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TileHeader } from "@/components/insights/tile-header";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { apiGet } from "@/lib/api/api-fetch";
+import { NUTRIENT_SOURCE_LABEL_KEYS } from "@/lib/i18n/source-labels";
+import { formatNutrientAmount } from "@/lib/nutrients/format-amount";
 import { queryKeys } from "@/lib/query-keys";
 import { binaryReferenceSex } from "@/lib/profile/sex";
 import {
@@ -31,8 +33,9 @@ import { nutrientUnitLabel } from "./unit-label";
 const WINDOW_DAYS = 30;
 
 /**
- * The groups this card lists. Water, caffeine, alcohol and energy with the
- * macros ride their own cards.
+ * The groups this card lists, in the order it lists them, each under its own
+ * section label. Water, caffeine, alcohol and energy with the macros ride
+ * their own cards.
  */
 const MICRONUTRIENT_GROUPS: ReadonlyArray<NutrientGroup> = [
   "vitamin",
@@ -40,13 +43,6 @@ const MICRONUTRIENT_GROUPS: ReadonlyArray<NutrientGroup> = [
   "omega3",
 ];
 const MICRONUTRIENT_CODES = nutrientCodesInGroup(...MICRONUTRIENT_GROUPS);
-
-function formatAmount(
-  fmt: { number: (v: number, d?: number) => string },
-  amount: number,
-): string {
-  return fmt.number(Math.round(amount * 10) / 10, 1);
-}
 
 /** The sources in the order the split reads, each with its bar colour. */
 const SOURCES = [
@@ -58,9 +54,11 @@ const SOURCES = [
 ] as const;
 
 /**
- * v1.43 — the latest day split by source: a thin bar and a one-line legend.
- * Shown only when the day has more than one source or a supplement share,
- * because a single synced total has nothing to split.
+ * v1.43 — the latest day split by source: a thin bar and a legend whose parts
+ * each carry the swatch of their bar segment, so five possible sources stay
+ * readable. Source names are the app's own ("Apple Health", "Manual",
+ * "External device"). Shown only when the day has more than one source or a
+ * supplement share, because a single synced total has nothing to split.
  */
 function SourceSplit({
   bySource,
@@ -74,15 +72,15 @@ function SourceSplit({
   const parts = SOURCES.filter((s) => (bySource[s.key] ?? 0) > 0);
   const total = parts.reduce((sum, s) => sum + (bySource[s.key] ?? 0), 0);
   if (total <= 0 || (parts.length < 2 && !bySource.SUPPLEMENT)) return null;
-  const legend = parts
-    .map((s) =>
-      t("nutrients.micronutrients.sourcePart", {
-        source: t(`nutrients.sources.${s.key}`),
-        value: formatAmount(fmt, bySource[s.key] ?? 0),
-        unit: unitLabel,
-      }),
-    )
-    .join(", ");
+  const labelled = parts.map((s) => ({
+    ...s,
+    text: t("nutrients.micronutrients.sourcePart", {
+      source: t(NUTRIENT_SOURCE_LABEL_KEYS[s.key]),
+      value: formatNutrientAmount(fmt, bySource[s.key] ?? 0),
+      unit: unitLabel,
+    }),
+  }));
+  const legend = labelled.map((s) => s.text).join(", ");
   return (
     <div className="space-y-1" data-slot="nutrients-source-split">
       <div
@@ -101,7 +99,20 @@ function SourceSplit({
           />
         ))}
       </div>
-      <p className="text-muted-foreground text-xs tabular-nums">{legend}</p>
+      <ul
+        className="text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5 text-xs tabular-nums"
+        aria-hidden="true"
+      >
+        {labelled.map((s) => (
+          <li key={s.key} className="flex items-center gap-1.5">
+            <span
+              className="size-2 shrink-0 rounded-full"
+              style={{ backgroundColor: s.color }}
+            />
+            {s.text}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -136,7 +147,7 @@ function UpperLimitNote({
             ? "nutrients.micronutrients.aboveUpperLimitSupplemental"
             : "nutrients.micronutrients.aboveUpperLimit",
           {
-            value: formatAmount(fmt, limit.value),
+            value: formatNutrientAmount(fmt, limit.value),
             unit: unitLabel,
             source: limit.source,
           },
@@ -188,9 +199,11 @@ export function MicronutrientsCard() {
       </CardHeader>
       <CardContent className="space-y-3">
         {isError ? (
-          <QueryErrorCard
+          <QueryErrorRow
+            inset
             error={error}
-            title={t("nutrients.micronutrients.loadError")}
+            slot="nutrients-micronutrients-error"
+            message={t("nutrients.micronutrients.loadError")}
             onRetry={() => void refetch()}
           />
         ) : isLoading ? (
@@ -207,57 +220,85 @@ export function MicronutrientsCard() {
           />
         ) : (
           <>
-            <ul
-              className="divide-border divide-y rounded-md border"
-              role="list"
-            >
-              {rows.map((row) => {
-                const reference = resolveNutrientReference(
-                  row.nutrient as NutrientCode,
-                  sex,
-                );
-                const unitLabel = nutrientUnitLabel(row.unit, t);
-                return (
-                  <li
-                    key={row.nutrient}
-                    data-slot="nutrients-micronutrient-row"
-                    className="space-y-2 p-2"
+            {MICRONUTRIENT_GROUPS.map((group) => {
+              const groupRows = rows.filter(
+                (row) =>
+                  NUTRIENT_CATALOG[row.nutrient as NutrientCode].group ===
+                  group,
+              );
+              if (groupRows.length === 0) return null;
+              const labelId = `nutrients-group-${group}`;
+              return (
+                <section
+                  key={group}
+                  aria-labelledby={labelId}
+                  className="space-y-1.5"
+                  data-slot="nutrients-micronutrient-group"
+                >
+                  <h3
+                    id={labelId}
+                    className="text-muted-foreground text-xs font-medium tracking-wide uppercase"
                   >
-                    <div className="flex items-baseline justify-between gap-3">
-                      <span className="text-sm">
-                        {t(`nutrients.names.${row.nutrient}`)}
-                      </span>
-                      <span className="flex flex-col items-end gap-0.5 text-right">
-                        <span className="text-sm font-medium tabular-nums">
-                          {formatAmount(fmt, row.latestAmount)} {unitLabel}
-                        </span>
-                        <span className="text-muted-foreground text-xs tabular-nums">
-                          {reference
-                            ? t("nutrients.micronutrients.rowMeta", {
-                                days: row.daysWithData,
-                                window: WINDOW_DAYS,
-                                value: formatAmount(fmt, reference.value),
-                                unit: unitLabel,
-                                authority: reference.authority,
-                              })
-                            : t("nutrients.micronutrients.rowMetaNoRef", {
-                                days: row.daysWithData,
-                                window: WINDOW_DAYS,
-                              })}
-                        </span>
-                      </span>
-                    </div>
-                    {row.latestBySource && (
-                      <SourceSplit
-                        bySource={row.latestBySource}
-                        unitLabel={unitLabel}
-                      />
-                    )}
-                    <UpperLimitNote row={row} unitLabel={unitLabel} />
-                  </li>
-                );
-              })}
-            </ul>
+                    {t(`nutrients.micronutrients.groups.${group}`)}
+                  </h3>
+                  <ul
+                    className="divide-border divide-y rounded-md border"
+                    role="list"
+                  >
+                    {groupRows.map((row) => {
+                      const reference = resolveNutrientReference(
+                        row.nutrient as NutrientCode,
+                        sex,
+                      );
+                      const unitLabel = nutrientUnitLabel(row.unit, t);
+                      return (
+                        <li
+                          key={row.nutrient}
+                          data-slot="nutrients-micronutrient-row"
+                          className="space-y-2 p-2"
+                        >
+                          <div className="flex items-baseline justify-between gap-3">
+                            <span className="text-sm">
+                              {t(`nutrients.names.${row.nutrient}`)}
+                            </span>
+                            <span className="flex flex-col items-end gap-0.5 text-right">
+                              <span className="text-sm font-medium tabular-nums">
+                                {formatNutrientAmount(fmt, row.latestAmount)}{" "}
+                                {unitLabel}
+                              </span>
+                              <span className="text-muted-foreground text-xs tabular-nums">
+                                {reference
+                                  ? t("nutrients.micronutrients.rowMeta", {
+                                      days: row.daysWithData,
+                                      window: WINDOW_DAYS,
+                                      value: formatNutrientAmount(
+                                        fmt,
+                                        reference.value,
+                                      ),
+                                      unit: unitLabel,
+                                      authority: reference.authority,
+                                    })
+                                  : t("nutrients.micronutrients.rowMetaNoRef", {
+                                      days: row.daysWithData,
+                                      window: WINDOW_DAYS,
+                                    })}
+                              </span>
+                            </span>
+                          </div>
+                          {row.latestBySource && (
+                            <SourceSplit
+                              bySource={row.latestBySource}
+                              unitLabel={unitLabel}
+                            />
+                          )}
+                          <UpperLimitNote row={row} unitLabel={unitLabel} />
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              );
+            })}
             <p className="text-muted-foreground text-xs">
               {t("nutrients.micronutrients.footer", {
                 tracked: rows.length,

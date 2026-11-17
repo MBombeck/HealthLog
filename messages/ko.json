@@ -7008,6 +7008,7 @@
       "description": "체중계나 시계, 식단 기록 앱, 홈 오토메이션이 측정값, 사용자 지표 값, 하루 영양소 합계를 기록할 수 있도록 토큰을 만들어요.",
       "detail": "토큰은 한 번만 표시돼요.",
       "scopeNote": "본인 기록에 새 측정값을 추가하고, 이미 만든 사용자 지표에 값을 추가하고, 영양소 모듈이 켜져 있는 동안 하루 영양소 합계를 추가하는 것만 할 수 있어요. 데이터를 읽거나, 사용자 지표를 만들거나, 무언가를 고치거나 지우거나, 다른 토큰을 만들 수는 없어요. 측정값과 영양소 합계는 외부 기기에서 온 것으로 표시되어 나중에 구분할 수 있지만, 사용자 지표 값에는 이런 표시가 없어요. 측정값과 사용자 지표 값은 언제든 직접 고칠 수 있고, 영양소 하루 합계는 식단 기록 앱이 다시 보내서 고쳐요. 사용자 지표의 ID는 해당 지표 페이지 주소에서 /custom-metrics/ 뒤에 오는 부분이에요.",
+      "nutrientsLink": "영양소 섭취 보기",
       "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요.",
       "namePlaceholder": "이름 (예: Home Assistant)",
       "appleHealth": {
@@ -10355,12 +10356,14 @@
     "addResult": "값 추가",
     "addDescription": "검사 결과지의 바이오마커 측정값을 기록해요.",
     "addFirst": "첫 결과 추가",
+    "importAction": "Apple Health 또는 CSV에서 가져오기",
     "emptyTitle": "아직 검사 결과가 없어요",
     "emptyDescription": "HbA1c, LDL, 페리틴 같은 혈액검사 수치를 기록하면 추이를 보고 의사와 공유할 수 있어요.",
     "referenceLabel": "참고 범위",
     "readingsCount": "측정값 {count}개",
     "deleteConfirmTitle": "검사 결과를 삭제할까요?",
     "deleteConfirmDescription": "이 검사 결과를 삭제해요. 삭제 직후 잠깐은 되돌릴 수 있어요.",
+    "deleteAppleHealthNote": "다음 Apple Health 가져오기 때 다시 생기지 않아요.",
     "deletedToast": "결과를 삭제했어요",
     "deleteError": "결과를 삭제하지 못했어요",
     "loadError": "검사 결과를 불러오지 못했어요",
@@ -10444,8 +10447,8 @@
         "365": "1년",
         "all": "전체"
       },
-      "sourceRangeLabel": "결과지 범위",
-      "sourceBandLegend": "두 번째 띠: {date} 결과지에 적힌 범위예요.",
+      "sourceRangeLabel": "검사기관 범위",
+      "sourceBandLegend": "두 번째 띠: {date} 결과와 함께 검사기관이 제시한 범위예요.",
       "sourceBandMixed": "두 번째 띠: 가장 최근 결과지에 적힌 범위예요. 이 구간의 이전 결과지에는 다른 범위가 적혀 있어요."
     },
     "biomarker": {
@@ -10681,9 +10684,9 @@
       "orderDefault": "직접 옮기기 전에는 기본 카테고리가 정해진 순서로, 직접 만든 카테고리가 가나다순으로 이어지고 {other}가 마지막에 와요."
     },
     "sourceRange": {
-      "fromReport": "결과지 범위 {range}",
+      "fromReport": "검사기관 범위 {range}",
       "catalogDiffers": "내 범위 {range}",
-      "printed": "결과지 원문({unit}): {range}"
+      "printed": "원래 단위({unit}): {range}"
     },
     "match": {
       "viaAlias": "전에 고른 이름으로 연결됨",
@@ -10774,6 +10777,10 @@
       "markerCountOther": "바이오마커 {count}개",
       "noMatchesTitle": "일치하는 바이오마커 없음",
       "noMatchesDescription": "검색어 또는 필터를 조정해 보세요."
+    },
+    "source": {
+      "OCR": "스캔한 결과지",
+      "DOCUMENT": "문서"
     }
   },
   "modules": {
@@ -12684,6 +12691,7 @@
       "moduleOffCta": "영양소 켜기",
       "emptyTitle": "아직 영양소 데이터가 없어요",
       "emptyDescription": "휴대폰 건강 앱 동기화, 측정값 토큰을 쓰는 식단 기록 앱, 또는 직접 입력한 수분 기록에서 데이터가 들어와요.",
+      "emptyTokenAction": "측정 토큰 만들기",
       "loadError": "영양소 데이터를 불러오지 못했어요",
       "lastAttemptTitle": "동기화는 도착했지만 아무것도 저장하지 못했어요",
       "lastAttemptAt": "마지막 시도: {date}",
@@ -12700,11 +12708,16 @@
       "loadError": "수분을 불러오지 못했어요."
     },
     "caffeine": {
-      "ceilingMeta": "안전 상한 {value} {unit}/일 (EFSA)",
+      "ceilingMeta": "안전 상한 {value} {unit}/일 ({authority})",
       "loadError": "카페인을 불러오지 못했어요."
     },
     "micronutrients": {
-      "title": "비타민·미네랄",
+      "title": "미량영양소",
+      "groups": {
+        "vitamin": "비타민",
+        "mineral": "미네랄",
+        "omega3": "오메가-3 지방산"
+      },
       "rowMeta": "{window}일 중 {days}일, 기준 {value} {unit} ({authority})",
       "rowMetaNoRef": "{window}일 중 {days}일",
       "footer": "이 기간에 데이터가 있는 미량영양소는 추적 중인 {total}개 중 {tracked}개예요.",
@@ -12725,30 +12738,22 @@
       "IU": "IU"
     },
     "sources": {
-      "APPLE_HEALTH": "동기화됨",
-      "MANUAL": "직접 입력",
-      "SUPPLEMENT": "보충제",
-      "EXTERNAL": "외부",
-      "HEALTH_CONNECT": "Health Connect"
+      "SUPPLEMENT": "보충제"
     },
     "macros": {
       "title": "에너지·다량영양소",
-      "short": {
-        "energy": "에너지",
-        "protein": "단백질",
-        "carbohydrates": "탄수화물",
-        "fat": "지방",
-        "sugar": "당류",
-        "fiber": "식이섬유"
-      },
       "pickLabel": "영양소",
       "referenceMeta": "기준 {value} {unit}/일 ({authority})",
       "targetMeta": "내 목표 {value} {unit}/일",
       "limitMeta": "내 상한 {value} {unit}/일",
-      "setTarget": "목표 설정",
-      "editTarget": "목표 수정",
+      "sheetTitle": "하루 목표: {name}",
+      "sheetDescription": "하루에 채우거나 넘지 않을 양이에요. 차트에 점선으로 표시돼요.",
       "clearTarget": "목표 삭제",
+      "removeTitle": "이 목표를 삭제할까요?",
+      "removeBody": "기준값이 있으면 차트가 기준값으로 돌아가요. 설정한 양은 다른 곳에 저장되지 않아요.",
       "targetLabel": "하루 {name} ({unit})",
+      "boundsHint": "0보다 크고 하루 최대 {max}{unit}까지예요.",
+      "validationBounds": "위에 표시된 범위 안의 양을 입력하세요.",
       "directionLabel": "목표 종류",
       "directionTarget": "이상 채우기",
       "directionLimit": "이하로 유지",
@@ -13806,6 +13811,7 @@
     "usualRange": "평소 {lo}~{hi}",
     "groups": {
       "scores": "점수",
+      "nutrients": "영양",
       "running": "그날 진행 중",
       "values": "수치",
       "happened": "있었던 일",
@@ -13881,6 +13887,12 @@
       "travelYes": "예",
       "kilometres": "{value}km",
       "miles": "{value}mi"
+    },
+    "nutrients": {
+      "micronutrientsOne": "미량영양소 {count}개 기록됨",
+      "micronutrientsOther": "미량영양소 {count}개 기록됨",
+      "micronutrientsFew": "미량영양소 {count}개 기록됨",
+      "open": "영양소 섭취 열기"
     }
   },
   "timeline": {

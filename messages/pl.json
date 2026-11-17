@@ -7008,6 +7008,7 @@
       "description": "Utwórz token, aby waga, zegarek, aplikacja dietetyczna lub automatyka domowa mogły dodawać pomiary, wartości Twoich metryk własnych i dzienne sumy składników odżywczych.",
       "detail": "Token pokazujemy tylko raz.",
       "scopeNote": "Może wyłącznie dodawać nowe pomiary do Twojej dokumentacji, wartości do już utworzonych metryk własnych oraz dzienne sumy składników odżywczych, dopóki moduł składników odżywczych jest włączony: nie odczyta danych, nie utworzy metryki, niczego nie zmieni ani nie usunie i nie utworzy kolejnego tokenu. Pomiary i sumy składników są oznaczane jako pochodzące z urządzenia zewnętrznego, dzięki czemu później je rozpoznasz; wartości metryk własnych nie mają takiego oznaczenia. Pomiary i wartości metryk możesz nadal poprawiać sam; aplikacja dietetyczna poprawia dzień, wysyłając go ponownie. Identyfikator metryki własnej to część po /custom-metrics/ w adresie jej strony.",
+      "nutrientsLink": "Zobacz spożycie składników odżywczych",
       "createFailed": "Nie udało się utworzyć tokenu. Spróbuj ponownie.",
       "namePlaceholder": "Nazwa, np. Home Assistant",
       "appleHealth": {
@@ -10355,12 +10356,14 @@
     "addResult": "Dodaj wynik",
     "addDescription": "Zapisz biomarker z wyniku laboratoryjnego.",
     "addFirst": "Dodaj pierwszy wynik",
+    "importAction": "Importuj z Apple Health lub CSV",
     "emptyTitle": "Brak wyników badań",
     "emptyDescription": "Zapisuj badania takie jak HbA1c, LDL czy ferrytyna, aby śledzić je w czasie i udostępniać lekarzowi.",
     "referenceLabel": "Norma",
     "readingsCount": "{count} pomiarów",
     "deleteConfirmTitle": "Usunąć wynik laboratoryjny?",
     "deleteConfirmDescription": "Ten wynik laboratoryjny zostanie usunięty. Zaraz po usunięciu możesz to przez chwilę cofnąć.",
+    "deleteAppleHealthNote": "Nie wróci przy następnym imporcie z Apple Health.",
     "deletedToast": "Wynik usunięty",
     "deleteError": "Nie udało się usunąć wyniku",
     "loadError": "Nie udało się wczytać wyników",
@@ -10444,8 +10447,8 @@
         "365": "1 r",
         "all": "Wszystko"
       },
-      "sourceRangeLabel": "Zakres z wyniku",
-      "sourceBandLegend": "Drugie pasmo: zakres wydrukowany na wyniku z {date}.",
+      "sourceRangeLabel": "Zakres laboratorium",
+      "sourceBandLegend": "Drugie pasmo: zakres podany przez laboratorium przy wyniku z {date}.",
       "sourceBandMixed": "Drugie pasmo: zakres z najnowszego wyniku. Wcześniejsze wyniki w tym okresie podają inne zakresy."
     },
     "biomarker": {
@@ -10681,9 +10684,9 @@
       "orderDefault": "Dopóki żadnej nie przesuniesz, wbudowane kategorie mają stałą kolejność, twoje własne idą alfabetycznie, a {other} na końcu."
     },
     "sourceRange": {
-      "fromReport": "Zakres z wyniku {range}",
+      "fromReport": "Zakres laboratorium {range}",
       "catalogDiffers": "twój zakres {range}",
-      "printed": "wydrukowano w {unit}: {range}"
+      "printed": "podano w {unit}: {range}"
     },
     "match": {
       "viaAlias": "według nazwy, którą wybrałeś wcześniej",
@@ -10774,6 +10777,10 @@
       "markerCountOther": "{count} biomarkerów",
       "noMatchesTitle": "Brak pasujących biomarkerów",
       "noMatchesDescription": "Spróbuj zmienić zapytanie lub zresetować filtry."
+    },
+    "source": {
+      "OCR": "Zeskanowany wynik",
+      "DOCUMENT": "Dokument"
     }
   },
   "modules": {
@@ -12684,6 +12691,7 @@
       "moduleOffCta": "Włącz składniki odżywcze",
       "emptyTitle": "Brak jeszcze danych o składnikach odżywczych",
       "emptyDescription": "Dane pochodzą z synchronizacji aplikacji zdrowia telefonu, z aplikacji dietetycznej z tokenem pomiarów lub z ręcznego wpisu wody.",
+      "emptyTokenAction": "Utwórz token pomiarów",
       "loadError": "Nie udało się wczytać danych o składnikach odżywczych",
       "lastAttemptTitle": "Synchronizacja dotarła, ale nic nie udało się zapisać",
       "lastAttemptAt": "Ostatnia próba: {date}",
@@ -12700,11 +12708,16 @@
       "loadError": "Nie udało się załadować wody."
     },
     "caffeine": {
-      "ceilingMeta": "Bezpieczny limit {value} {unit}/dzień (EFSA)",
+      "ceilingMeta": "Bezpieczny limit {value} {unit}/dzień ({authority})",
       "loadError": "Nie udało się załadować kofeiny."
     },
     "micronutrients": {
-      "title": "Witaminy i minerały",
+      "title": "Mikroskładniki",
+      "groups": {
+        "vitamin": "Witaminy",
+        "mineral": "Minerały",
+        "omega3": "Kwasy tłuszczowe omega-3"
+      },
       "rowMeta": "{days} z {window} dni, zalecane {value} {unit} ({authority})",
       "rowMetaNoRef": "{days} z {window} dni",
       "footer": "{tracked} z {total} śledzonych mikroskładników ma dane w tym okresie.",
@@ -12725,30 +12738,22 @@
       "IU": "j.m."
     },
     "sources": {
-      "APPLE_HEALTH": "Zsynchronizowane",
-      "MANUAL": "Wpisane",
-      "SUPPLEMENT": "Suplementy",
-      "EXTERNAL": "Zewnętrzne",
-      "HEALTH_CONNECT": "Health Connect"
+      "SUPPLEMENT": "Suplementy"
     },
     "macros": {
       "title": "Energia i makroskładniki",
-      "short": {
-        "energy": "Energia",
-        "protein": "Białko",
-        "carbohydrates": "Węgle",
-        "fat": "Tłuszcz",
-        "sugar": "Cukry",
-        "fiber": "Błonnik"
-      },
       "pickLabel": "Składnik",
       "referenceMeta": "Wartość referencyjna {value} {unit}/dzień ({authority})",
       "targetMeta": "Twój cel {value} {unit}/dzień",
       "limitMeta": "Twój limit {value} {unit}/dzień",
-      "setTarget": "Ustaw cel",
-      "editTarget": "Zmień cel",
+      "sheetTitle": "Cel dzienny: {name}",
+      "sheetDescription": "Dzienna ilość do osiągnięcia lub nieprzekraczania, rysowana na wykresie linią przerywaną.",
       "clearTarget": "Usuń cel",
+      "removeTitle": "Usunąć ten cel?",
+      "removeBody": "Wykres wróci do wartości referencyjnej, jeśli istnieje. Ustawiona ilość nie jest nigdzie indziej zapisywana.",
       "targetLabel": "{name} dziennie w {unit}",
+      "boundsHint": "Powyżej 0, najwyżej {max} {unit} dziennie.",
+      "validationBounds": "Wpisz ilość w granicach podanych powyżej.",
       "directionLabel": "Rodzaj celu",
       "directionTarget": "Osiągnąć co najmniej",
       "directionLimit": "Nie przekraczać",
@@ -13806,6 +13811,7 @@
     "usualRange": "Zwykle od {lo} do {hi}",
     "groups": {
       "scores": "Wyniki",
+      "nutrients": "Odżywianie",
       "running": "W toku tego dnia",
       "values": "Wartości",
       "happened": "Co się działo",
@@ -13881,6 +13887,12 @@
       "travelYes": "Tak",
       "kilometres": "{value} km",
       "miles": "{value} mi"
+    },
+    "nutrients": {
+      "micronutrientsOne": "Zapisano {count} mikroskładnik",
+      "micronutrientsOther": "Zapisano {count} mikroskładników",
+      "micronutrientsFew": "Zapisano {count} mikroskładniki",
+      "open": "Otwórz spożycie składników odżywczych"
     }
   },
   "timeline": {

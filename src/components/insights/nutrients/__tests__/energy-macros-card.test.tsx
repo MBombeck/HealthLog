@@ -96,9 +96,11 @@ describe("EnergyMacrosCard", () => {
     state.daily = { energy: series("energy", "kcal") };
     const html = render(<EnergyMacrosCard />);
     expect(html).toContain('data-slot="nutrients-energy-macros-card"');
-    expect(html).toContain('data-slot="nutrients-macros-pick-energy"');
-    expect(html).toContain('data-slot="nutrients-macros-pick-protein"');
-    expect(html).not.toContain("nutrients-macros-pick-fat");
+    // Six names do not fit one segmented row at 390 px: a select, full names.
+    expect(html).toContain('data-slot="nutrients-macros-pick"');
+    expect(html).toMatch(/<option value="energy"[^>]*>Energy<\/option>/);
+    expect(html).toMatch(/<option value="protein"[^>]*>Protein<\/option>/);
+    expect(html).not.toContain('value="fat"');
     expect(html).toContain("2,150");
     expect(html).toContain("kcal");
     // Energy has no reference: no meta line, no dashed line.
@@ -122,7 +124,8 @@ describe("EnergyMacrosCard", () => {
     };
     const html = render(<EnergyMacrosCard />);
     expect(html).toContain("Your target 120 g/day");
-    expect(html).toContain("Edit target");
+    // The card is a read surface: the page header's gear edits the target.
+    expect(html).not.toContain("Edit target");
     expect(state.chartLine).toEqual([120]);
   });
 
@@ -141,7 +144,6 @@ describe("EnergyMacrosCard", () => {
     };
     const html = render(<EnergyMacrosCard />);
     expect(html).toContain("Reference 56 g/day (IOM)");
-    expect(html).toContain("Set target");
     expect(state.chartLine).toEqual([56]);
   });
 });
@@ -164,6 +166,20 @@ describe("MicronutrientsCard grouping", () => {
     expect(html).not.toContain("Alcohol");
     expect(html).not.toContain("Caffeine");
     // Sodium's reference is EFSA's safe and adequate intake.
-    expect(html).toContain("ref 2,000.0 mg (EFSA)");
+    expect(html).toContain("ref 2,000 mg (EFSA)");
+    // Each group sits under its own section label.
+    expect(html).toContain(">Minerals</h3>");
+    expect(html).not.toContain(">Vitamins</h3>");
+  });
+
+  it("puts EPA and DHA under their own label, not under vitamins and minerals", () => {
+    state.rows = [row("vitamin_d", "ug"), row("epa", "mg"), row("dha", "mg")];
+    const html = render(<MicronutrientsCard />);
+    expect(html).toContain(">Micronutrients<");
+    const vitamins = html.indexOf(">Vitamins</h3>");
+    const omega = html.indexOf(">Omega-3 fatty acids</h3>");
+    expect(vitamins).toBeGreaterThan(-1);
+    expect(omega).toBeGreaterThan(vitamins);
+    expect(html.indexOf("EPA (omega-3)")).toBeGreaterThan(omega);
   });
 });

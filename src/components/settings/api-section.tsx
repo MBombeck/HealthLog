@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
@@ -21,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { InlineAction } from "@/components/ui/inline-action";
 import { Input } from "@/components/ui/input";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -79,6 +81,10 @@ export function ApiSection() {
  */
 function MeasurementTokensCard() {
   const { t } = useTranslations();
+  const { user } = useAuth();
+  // A food tracker's day totals land on the nutrients page; with the module
+  // on, the card that mints the tracker's token says where to look.
+  const nutrientsOn = user?.modules?.nutrients === true;
   return (
     <IngestTokenCard
       endpoint="/api/tokens/measurements"
@@ -86,7 +92,21 @@ function MeasurementTokensCard() {
       slot="settings-measurements-token-created"
       anchor="measurements-token"
       mirrorOptIn
-      footer={<UnattributedReadingsNotice />}
+      footer={
+        <>
+          <UnattributedReadingsNotice />
+          {nutrientsOn ? (
+            <InlineAction asChild tone="primary" size="sm">
+              <Link
+                href="/insights/nutrients"
+                data-slot="settings-measurements-token-nutrients-link"
+              >
+                {t("settings.measurementsToken.nutrientsLink")}
+              </Link>
+            </InlineAction>
+          ) : null}
+        </>
+      }
       copy={{
         title: t("settings.measurementsToken.title"),
         description: t("settings.measurementsToken.description"),

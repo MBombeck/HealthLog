@@ -7008,6 +7008,7 @@
       "description": "Mint a token so a scale, a watch bridge, a food tracker or your home automation can add readings, custom-metric values and daily nutrient totals.",
       "detail": "The token is shown once.",
       "scopeNote": "It can only add new readings to your own record, values to custom metrics you already created, and daily nutrient totals while the nutrients module is on. It cannot read your data, create a custom metric, change or delete anything, or create another token. Readings and nutrient totals are marked as coming from an external device, so you can tell them apart later; custom-metric values carry no such mark. You can still correct readings and custom-metric values yourself; a tracker corrects a nutrient day by sending it again. A custom metric's ID is the part after /custom-metrics/ in the address of its page.",
+      "nutrientsLink": "View nutrient intake",
       "createFailed": "The token could not be created. Please try again.",
       "namePlaceholder": "Name, e.g. Home Assistant",
       "appleHealth": {
@@ -10355,12 +10356,14 @@
     "addResult": "Add value",
     "addDescription": "Record a biomarker reading from a lab report.",
     "addFirst": "Add your first result",
+    "importAction": "Import from Apple Health or CSV",
     "emptyTitle": "No lab results yet",
     "emptyDescription": "Record bloodwork like HbA1c, LDL or ferritin to track it over time and share it with your doctor.",
     "referenceLabel": "Reference",
     "readingsCount": "{count} readings",
     "deleteConfirmTitle": "Delete lab result?",
     "deleteConfirmDescription": "This lab result will be deleted. You can undo this for a short moment afterwards.",
+    "deleteAppleHealthNote": "It will not come back on the next Apple Health import.",
     "deletedToast": "Result deleted",
     "deleteError": "Could not delete the result",
     "loadError": "Could not load lab results",
@@ -10444,8 +10447,8 @@
         "365": "1y",
         "all": "All"
       },
-      "sourceRangeLabel": "Report range",
-      "sourceBandLegend": "Second band: the range printed on the report of {date}.",
+      "sourceRangeLabel": "Lab's range",
+      "sourceBandLegend": "Second band: the range the lab gave with the reading of {date}.",
       "sourceBandMixed": "Second band: the range printed on the most recent report. Earlier reports in view state different ranges."
     },
     "biomarker": {
@@ -10681,9 +10684,9 @@
       "orderDefault": "Until you move one, built-in categories keep a fixed order, your own follow alphabetically and {other} comes last."
     },
     "sourceRange": {
-      "fromReport": "Report range {range}",
+      "fromReport": "Lab's range {range}",
       "catalogDiffers": "your range {range}",
-      "printed": "as printed in {unit}: {range}"
+      "printed": "as given in {unit}: {range}"
     },
     "match": {
       "viaAlias": "by a name you chose before",
@@ -10774,6 +10777,10 @@
       "markerCountOther": "{count} biomarkers",
       "noMatchesTitle": "No matching biomarkers",
       "noMatchesDescription": "Try adjusting your search query or filters."
+    },
+    "source": {
+      "OCR": "Scanned report",
+      "DOCUMENT": "Document"
     }
   },
   "modules": {
@@ -12684,6 +12691,7 @@
       "moduleOffCta": "Turn on nutrients",
       "emptyTitle": "No nutrient data yet",
       "emptyDescription": "Data arrives from your phone's health app sync, a food tracker with a measurement token, or a manual water entry.",
+      "emptyTokenAction": "Create a measurement token",
       "loadError": "Your nutrient data could not be loaded",
       "lastAttemptTitle": "A sync arrived, but nothing could be stored",
       "lastAttemptAt": "Last attempt: {date}",
@@ -12700,11 +12708,16 @@
       "loadError": "Could not load water."
     },
     "caffeine": {
-      "ceilingMeta": "Safe-level ceiling {value} {unit}/day (EFSA)",
+      "ceilingMeta": "Safe-level ceiling {value} {unit}/day ({authority})",
       "loadError": "Could not load caffeine."
     },
     "micronutrients": {
-      "title": "Vitamins & minerals",
+      "title": "Micronutrients",
+      "groups": {
+        "vitamin": "Vitamins",
+        "mineral": "Minerals",
+        "omega3": "Omega-3 fatty acids"
+      },
       "rowMeta": "{days} of {window} days, ref {value} {unit} ({authority})",
       "rowMetaNoRef": "{days} of {window} days",
       "footer": "{tracked} of {total} tracked micronutrients have data in this window.",
@@ -12725,30 +12738,22 @@
       "IU": "IU"
     },
     "sources": {
-      "APPLE_HEALTH": "Synced",
-      "MANUAL": "Entered",
-      "SUPPLEMENT": "Supplements",
-      "EXTERNAL": "External",
-      "HEALTH_CONNECT": "Health Connect"
+      "SUPPLEMENT": "Supplements"
     },
     "macros": {
       "title": "Energy & macronutrients",
-      "short": {
-        "energy": "Energy",
-        "protein": "Protein",
-        "carbohydrates": "Carbs",
-        "fat": "Fat",
-        "sugar": "Sugar",
-        "fiber": "Fiber"
-      },
       "pickLabel": "Nutrient",
       "referenceMeta": "Reference {value} {unit}/day ({authority})",
       "targetMeta": "Your target {value} {unit}/day",
       "limitMeta": "Your limit {value} {unit}/day",
-      "setTarget": "Set target",
-      "editTarget": "Edit target",
+      "sheetTitle": "Daily target: {name}",
+      "sheetDescription": "An amount a day to reach or to stay under, drawn as the dashed line in the chart.",
       "clearTarget": "Remove target",
-      "targetLabel": "Daily {name} in {unit}",
+      "removeTitle": "Remove this target?",
+      "removeBody": "The chart goes back to the dietary reference where one exists. The amount you set is not kept anywhere else.",
+      "targetLabel": "{name} per day ({unit})",
+      "boundsHint": "Above 0, at most {max} {unit} a day.",
+      "validationBounds": "Enter an amount within the bounds shown above.",
       "directionLabel": "Kind of target",
       "directionTarget": "Reach at least",
       "directionLimit": "Stay under",
@@ -13806,6 +13811,7 @@
     "usualRange": "Usually {lo} to {hi}",
     "groups": {
       "scores": "Scores",
+      "nutrients": "Nutrition",
       "running": "Running that day",
       "values": "Values",
       "happened": "What happened",
@@ -13881,6 +13887,12 @@
       "travelYes": "Yes",
       "kilometres": "{value} km",
       "miles": "{value} mi"
+    },
+    "nutrients": {
+      "micronutrientsOne": "{count} micronutrient logged",
+      "micronutrientsOther": "{count} micronutrients logged",
+      "micronutrientsFew": "{count} micronutrients logged",
+      "open": "Open nutrient intake"
     }
   },
   "timeline": {

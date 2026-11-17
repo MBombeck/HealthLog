@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Coffee, Leaf, Wine } from "lucide-react";
+import { Coffee, KeyRound, Leaf, Wine } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
@@ -136,32 +138,53 @@ export default function InsightsNutrientsPage() {
             icon={<Leaf className="size-6" />}
             title={t("nutrients.page.emptyTitle")}
             description={t("nutrients.page.emptyDescription")}
+            action={
+              // A food tracker posts its day totals with a measurement token;
+              // the empty page names that route, so it opens it too.
+              <Button asChild>
+                <Link
+                  href="/settings/api#measurements-token"
+                  data-slot="nutrients-empty-token-link"
+                >
+                  <KeyRound aria-hidden="true" />
+                  {t("nutrients.page.emptyTokenAction")}
+                </Link>
+              </Button>
+            }
           />
         )}
       </SubPageShell>
     );
   }
 
+  // Which cards exist depends on the overview (the codes with data in the
+  // window), so the spine below the always-present hydration card waits for
+  // it and then mounts in one step, each card with its own skeleton, instead
+  // of cards popping in one by one between their siblings.
   return (
     <SubPageShell
       title={t("nutrients.page.title")}
       description={t("nutrients.page.description")}
     >
       <HydrationCard />
-      <EnergyMacrosCard />
-      <SingleNutrientCard
-        code="caffeine"
-        icon={Coffee}
-        metaKey="nutrients.caffeine.ceilingMeta"
-        loadErrorKey="nutrients.caffeine.loadError"
-      />
-      <SingleNutrientCard
-        code="alcohol"
-        icon={Wine}
-        metaKey={null}
-        loadErrorKey="nutrients.alcohol.loadError"
-      />
-      <MicronutrientsCard />
+      {overview.isLoading ? null : (
+        <>
+          <EnergyMacrosCard />
+          <SingleNutrientCard
+            code="caffeine"
+            icon={Coffee}
+            metaKey="nutrients.caffeine.ceilingMeta"
+            loadErrorKey="nutrients.caffeine.loadError"
+          />
+          <SingleNutrientCard
+            code="alcohol"
+            icon={Wine}
+            metaKey={null}
+            loadErrorKey="nutrients.alcohol.loadError"
+          />
+          <MicronutrientsCard />
+        </>
+      )}
     </SubPageShell>
   );
 }

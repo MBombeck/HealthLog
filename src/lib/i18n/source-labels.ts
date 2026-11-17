@@ -14,6 +14,7 @@
  * keys resolve in the message bundle.
  */
 import { MEASUREMENT_SOURCES } from "@/lib/measurements/sources";
+import type { NutrientSource } from "@/lib/nutrients/sources";
 
 export type MeasurementSourceValue = (typeof MEASUREMENT_SOURCES)[number];
 
@@ -99,3 +100,40 @@ export const INTAKE_SOURCE_LABEL_KEYS: Record<IntakeSourceValue, string> = {
   IMPORT: "medications.sourceImport",
   APPLE_HEALTH: "medications.sourceAppleHealth",
 };
+
+/**
+ * `NutrientIntakeDay.source` — where a nutrient day total came from, in the
+ * measurement list's vocabulary so one source reads the same on every page
+ * ("Apple Health", "Manual", "External device"). `SUPPLEMENT` is the one
+ * member with no measurement twin: the sum of the day's supplement doses.
+ */
+export const NUTRIENT_SOURCE_LABEL_KEYS: Record<NutrientSource, string> = {
+  APPLE_HEALTH: MEASUREMENT_SOURCE_LIST_LABEL_KEYS.APPLE_HEALTH,
+  HEALTH_CONNECT: MEASUREMENT_SOURCE_LIST_LABEL_KEYS.HEALTH_CONNECT,
+  EXTERNAL: MEASUREMENT_SOURCE_LIST_LABEL_KEYS.EXTERNAL,
+  MANUAL: MEASUREMENT_SOURCE_LIST_LABEL_KEYS.MANUAL,
+  SUPPLEMENT: "nutrients.sources.SUPPLEMENT",
+};
+
+/**
+ * `LabResult.source` — how a lab reading reached the record, in the same
+ * vocabulary. `OCR` (a scanned report) and `DOCUMENT` (a document import)
+ * have no measurement twin and carry labs keys of their own. The column is
+ * open text, so {@link labSourceLabelKey} answers null for a value it does
+ * not know, and the surface shows nothing rather than the raw string.
+ */
+export const LAB_SOURCE_LABEL_KEYS = {
+  MANUAL: MEASUREMENT_SOURCE_LIST_LABEL_KEYS.MANUAL,
+  OCR: "labs.source.OCR",
+  DOCUMENT: "labs.source.DOCUMENT",
+  IMPORT: MEASUREMENT_SOURCE_LIST_LABEL_KEYS.IMPORT,
+  APPLE_HEALTH: MEASUREMENT_SOURCE_LIST_LABEL_KEYS.APPLE_HEALTH,
+} as const;
+
+export type LabSourceValue = keyof typeof LAB_SOURCE_LABEL_KEYS;
+
+export function labSourceLabelKey(source: string): string | null {
+  return Object.hasOwn(LAB_SOURCE_LABEL_KEYS, source)
+    ? LAB_SOURCE_LABEL_KEYS[source as LabSourceValue]
+    : null;
+}
