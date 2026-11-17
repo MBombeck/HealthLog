@@ -84,6 +84,11 @@ const INVENTORY: Readonly<Record<string, Poll>> = {
     shape: "until-done",
     cadence: "2 s until the job reports a terminal status",
   },
+  "components/settings/import-panel/fit-import-card.tsx": {
+    sites: 1,
+    shape: "until-done",
+    cadence: "2 s until the job reports a terminal status",
+  },
   "components/admin/backups/use-backup-restores.ts": {
     sites: 1,
     shape: "until-done",

@@ -124,6 +124,10 @@ import {
   HEALTH_CONNECT_IMPORT_QUEUE,
 } from "@/lib/jobs/health-connect-import-queue";
 import {
+  FIT_IMPORT_CONCURRENCY,
+  FIT_IMPORT_QUEUE,
+} from "@/lib/jobs/fit-import-queue";
+import {
   INTAKE_AUTO_SKIP_CRON,
   INTAKE_AUTO_SKIP_QUEUE,
 } from "@/lib/jobs/intake-auto-skip-queue";
@@ -497,6 +501,12 @@ const jobs: readonly JobDefinition[] = [
     load: async () =>
       (await import("@/lib/jobs/health-connect-import-worker"))
         .handleHealthConnectImport,
+  }),
+  defineJob({
+    queue: FIT_IMPORT_QUEUE,
+    work: { localConcurrency: FIT_IMPORT_CONCURRENCY },
+    load: async () =>
+      (await import("@/lib/jobs/fit-import-worker")).handleFitImport,
   }),
   // A run that stops early sends its own follow-up while still active, which
   // `exclusive` would swallow. Serial: each batch holds an account against a

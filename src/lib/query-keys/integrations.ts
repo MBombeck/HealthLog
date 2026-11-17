@@ -96,4 +96,7 @@ export const integrationKeys = {
    */
   healthConnectImportStatus: () =>
     ["import", "health-connect", "status"] as const,
+
+  /** The account's latest activity FIT file import, like Health Connect's. */
+  fitImportStatus: () => ["import", "fit", "status"] as const,
 };

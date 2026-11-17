@@ -6076,6 +6076,53 @@
               "stagingMissing": "Przesłanego pliku nie było już na serwerze. Prześlij go ponownie.",
               "interrupted": "Import został przerwany przez ponowne uruchomienie serwera. Prześlij plik ponownie."
             }
+          },
+          "fit": {
+            "title": "Plik aktywności (FIT)",
+            "description": "Zaimportuj trening z pliku FIT zapisanego przez zegarek lub licznik rowerowy, na przykład Garmin, Wahoo, Coros, Polar, Suunto albo Zwift.",
+            "choose": "Wybierz plik aktywności",
+            "uploading": "Przesyłanie…",
+            "uploadFailed": "Przesyłanie nie powiodło się. Spróbuj ponownie.",
+            "tooLarge": "Plik jest większy niż 10 MB.",
+            "rateLimited": "Zbyt wiele przesłań w krótkim czasie. Odczekaj minutę i spróbuj ponownie.",
+            "busy": "Dla Twojego konta trwa już import. Poczekaj, aż się zakończy.",
+            "failed": "Import nie powiódł się. Spróbuj ponownie.",
+            "doneSummary": "Plik aktywności został zaimportowany.",
+            "doneNothing": "Import się zakończył, ale nie było nic nowego do dodania.",
+            "dropLabel": "Upuść tutaj plik aktywności",
+            "dropHint": "lub kliknij, aby go wybrać. .fit, .fit.gz lub .zip, do 10 MB.",
+            "fileInputLabel": "Plik aktywności",
+            "privacyNote": "Plik jest usuwany z serwera, gdy tylko import się zakończy. Trening, który już tu jest z Garmina, Apple Zdrowie lub innej aplikacji, nie zostanie dodany drugi raz: dostanie krzywą tętna z pliku, jeśli jeszcze jej nie miał. Ślad GPS jest zapisywany tylko wtedy, gdy włączone są Trasy treningów. Ponowne przesłanie tego samego pliku niczego nie zmienia.",
+            "steps": {
+              "garmin": "Garmin Connect: otwórz aktywność na stronie, wybierz menu z kołem zębatym, a potem Eksportuj oryginał. Prześlij plik ZIP bez zmian.",
+              "other": "Inne aplikacje i urządzenia: wyeksportuj aktywność jako plik FIT (.fit lub .fit.gz) i prześlij go tutaj."
+            },
+            "phase": {
+              "queued": "Oczekiwanie na start",
+              "parsing": "Odczytywanie pliku",
+              "upserting": "Zapisywanie treningu"
+            },
+            "result": {
+              "imported": "Nowe treningi",
+              "merged": "Uzupełnione istniejące treningi",
+              "alreadyPresent": "Już były",
+              "sessionsSkipped": "Sesje, których nie udało się odczytać",
+              "withSeries": "Z krzywą tętna",
+              "withRoute": "Ze śladem GPS"
+            },
+            "failure": {
+              "unsupportedFile": "To nie jest plik aktywności. Wybierz plik .fit, .fit.gz lub .zip.",
+              "archiveInvalid": "Plik ZIP musi zawierać dokładnie jeden plik .fit i nie udało się go odczytać.",
+              "tooLarge": "Plik jest większy, niż przyjmuje ten serwer.",
+              "notFit": "Ten plik nie jest plikiem FIT.",
+              "crcMismatch": "Plik jest uszkodzony: suma kontrolna się nie zgadza. Wyeksportuj go ponownie.",
+              "malformed": "Plik jest uszkodzony lub niekompletny i nie udało się go odczytać.",
+              "tooComplex": "Plik zawiera znacznie więcej danych niż jedna aktywność i nie został odczytany.",
+              "notActivity": "Ten plik FIT nie jest aktywnością (może to być trasa lub podsumowanie dnia). Wybierz plik pojedynczego treningu.",
+              "noSession": "Plik nie zawiera żadnego treningu, który dałoby się odczytać.",
+              "stagingMissing": "Przesłanego pliku nie było już na serwerze. Prześlij go ponownie.",
+              "interrupted": "Import przerwał restart serwera. Prześlij plik ponownie."
+            }
           }
         },
         "subtitle": "Eksportuj swoje dane albo importuj pomiary i wpisy z innych aplikacji i plików."
@@ -7467,7 +7514,7 @@
       },
       "workoutRoutes": {
         "title": "Trasy treningów",
-        "description": "Zapisuj ślad GPS nowych treningów z aplikacji na iPhone’a i z eksportu Apple Zdrowie.",
+        "description": "Zapisuj ślad GPS nowych treningów z aplikacji na iPhone’a, z eksportu Apple Zdrowie, z plików aktywności i z Garmina.",
         "detail": "Wyłączone dla nowych kont. Trasa pokazuje, gdzie mieszkasz, pracujesz i trenujesz, więc zapisujemy ją dopiero po włączeniu. Treningi są zapisywane zawsze, a żadna funkcja AI nigdy nie odczytuje trasy. Wyłączenie zatrzymuje nowe trasy; już zapisane zostają do usunięcia treningu.",
         "loadError": "Nie udało się wczytać ustawienia tras."
       },

@@ -6076,6 +6076,53 @@
               "stagingMissing": "업로드한 파일이 더 이상 서버에 없습니다. 다시 업로드하세요.",
               "interrupted": "서버 재시작으로 가져오기가 중단되었습니다. 파일을 다시 업로드하세요."
             }
+          },
+          "fit": {
+            "title": "활동 파일(FIT)",
+            "description": "Garmin, Wahoo, Coros, Polar, Suunto, Zwift 등 시계나 자전거 컴퓨터가 기록한 FIT 파일에서 운동을 가져옵니다.",
+            "choose": "활동 파일 선택",
+            "uploading": "업로드 중…",
+            "uploadFailed": "업로드에 실패했습니다. 다시 시도해 주세요.",
+            "tooLarge": "파일이 10MB보다 큽니다.",
+            "rateLimited": "짧은 시간에 업로드가 너무 많습니다. 1분 후에 다시 시도해 주세요.",
+            "busy": "계정에서 이미 가져오기가 진행 중입니다. 끝날 때까지 기다려 주세요.",
+            "failed": "가져오기에 실패했습니다. 다시 시도해 주세요.",
+            "doneSummary": "활동 파일을 가져왔습니다.",
+            "doneNothing": "가져오기가 끝났지만 새로 추가할 항목이 없었습니다.",
+            "dropLabel": "활동 파일을 여기에 놓으세요",
+            "dropHint": "또는 클릭해서 선택하세요. .fit, .fit.gz 또는 .zip, 최대 10MB.",
+            "fileInputLabel": "활동 파일",
+            "privacyNote": "가져오기가 끝나는 즉시 파일은 서버에서 삭제됩니다. Garmin, Apple 건강 또는 다른 앱에서 이미 들어온 운동은 두 번 추가되지 않으며, 심박수 곡선이 없던 경우에만 파일의 곡선이 더해집니다. GPS 경로는 운동 경로가 켜져 있을 때만 저장됩니다. 같은 파일을 다시 올려도 바뀌는 것은 없습니다.",
+            "steps": {
+              "garmin": "Garmin Connect: 웹사이트에서 활동을 열고 톱니바퀴 메뉴에서 원본 내보내기를 선택하세요. ZIP 파일을 그대로 업로드하면 됩니다.",
+              "other": "다른 앱과 기기: 활동을 FIT 파일(.fit 또는 .fit.gz)로 내보내 여기에 업로드하세요."
+            },
+            "phase": {
+              "queued": "시작 대기 중",
+              "parsing": "파일 읽는 중",
+              "upserting": "운동 저장 중"
+            },
+            "result": {
+              "imported": "새 운동",
+              "merged": "기존 운동에 추가됨",
+              "alreadyPresent": "이미 있음",
+              "sessionsSkipped": "읽을 수 없는 세션",
+              "withSeries": "심박수 곡선 포함",
+              "withRoute": "GPS 경로 포함"
+            },
+            "failure": {
+              "unsupportedFile": "활동 파일이 아닙니다. .fit, .fit.gz 또는 .zip 파일을 선택하세요.",
+              "archiveInvalid": "ZIP 파일에는 .fit 파일이 정확히 하나 있어야 하며, 이 파일은 읽을 수 없었습니다.",
+              "tooLarge": "파일이 이 서버가 받을 수 있는 크기보다 큽니다.",
+              "notFit": "이 파일은 FIT 파일이 아닙니다.",
+              "crcMismatch": "파일이 손상되었습니다. 체크섬이 일치하지 않습니다. 다시 내보내 주세요.",
+              "malformed": "파일이 손상되었거나 완전하지 않아 읽을 수 없었습니다.",
+              "tooComplex": "파일에 활동 하나보다 훨씬 많은 데이터가 있어 읽지 않았습니다.",
+              "notActivity": "이 FIT 파일은 활동이 아닙니다(코스나 일일 요약일 수 있습니다). 운동 하나의 파일을 선택하세요.",
+              "noSession": "파일에 읽을 수 있는 운동이 없습니다.",
+              "stagingMissing": "업로드한 파일이 서버에 더 이상 없습니다. 다시 업로드하세요.",
+              "interrupted": "서버 재시작으로 가져오기가 중단되었습니다. 파일을 다시 업로드하세요."
+            }
           }
         },
         "subtitle": "데이터를 내보내거나, 다른 앱과 파일에서 측정값과 기록을 가져와요."
@@ -7467,7 +7514,7 @@
       },
       "workoutRoutes": {
         "title": "운동 경로",
-        "description": "iPhone 앱과 Apple 건강 내보내기에서 새 운동의 GPS 경로를 저장합니다.",
+        "description": "iPhone 앱, Apple 건강 내보내기, 활동 파일, Garmin에서 가져온 새 운동의 GPS 경로를 저장합니다.",
         "detail": "새 계정에서는 꺼져 있어요. 경로는 사는 곳, 일하는 곳, 운동하는 곳을 보여 주므로 이 설정을 켠 뒤에만 저장됩니다. 운동 기록은 항상 저장되며, 어떤 AI 기능도 경로를 읽지 않습니다. 끄면 새 경로 저장이 멈추고, 이미 저장된 경로는 운동을 삭제할 때까지 남습니다.",
         "loadError": "경로 설정을 불러오지 못했습니다."
       },
