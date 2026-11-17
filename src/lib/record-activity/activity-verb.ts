@@ -524,24 +524,35 @@ function cycleManageVerb(
 }
 
 /** The seizure diary's verbs (#1368): recording is WRITE, the rest MANAGE. */
-const SEIZURE_VERB_KEYS: Readonly<Record<string, string>> = {
-  "seizures.event.create": "seizureEventCreate",
-  "seizures.rescue.create": "seizureRescueCreate",
-  "seizures.event.update": "seizureEventUpdate",
-  "seizures.event.delete": "seizureEventDelete",
-  "seizures.rescue.update": "seizureRescueUpdate",
-  "seizures.rescue.delete": "seizureRescueDelete",
-  "seizures.type.create": "seizureTypeCreate",
-  "seizures.type.update": "seizureTypeUpdate",
-  "seizures.type.delete": "seizureTypeDelete",
-  "seizures.settings.update": "seizureSettingsUpdate",
-};
-
 function seizureVerb(
   t: Translator,
   action: string,
   name: string,
 ): string | null {
-  const key = SEIZURE_VERB_KEYS[action];
-  return key ? t(`recordSharing.activityVerb.${key}`, { name }) : null;
+  const line = (key: string) =>
+    t(`recordSharing.activityVerb.${key}`, { name });
+  switch (action) {
+    case "seizures.event.create":
+      return line("seizureEventCreate");
+    case "seizures.rescue.create":
+      return line("seizureRescueCreate");
+    case "seizures.event.update":
+      return line("seizureEventUpdate");
+    case "seizures.event.delete":
+      return line("seizureEventDelete");
+    case "seizures.rescue.update":
+      return line("seizureRescueUpdate");
+    case "seizures.rescue.delete":
+      return line("seizureRescueDelete");
+    case "seizures.type.create":
+      return line("seizureTypeCreate");
+    case "seizures.type.update":
+      return line("seizureTypeUpdate");
+    case "seizures.type.delete":
+      return line("seizureTypeDelete");
+    case "seizures.settings.update":
+      return line("seizureSettingsUpdate");
+    default:
+      return null;
+  }
 }
