@@ -12741,8 +12741,7 @@
       },
       "preventiveCare": {
         "title": "Examen à faire",
-        "body": "{label} est à faire.",
-        "bodyManyNamed": "À faire : {labels}"
+        "body": "{label} est à faire."
       },
       "syncIssue": {
         "title": "La synchronisation demande votre attention",
@@ -12904,7 +12903,8 @@
       },
       "medications": {
         "label": "Médicaments",
-        "value": "{taken} sur {scheduled} pris"
+        "value": "{taken} sur {scheduled} pris",
+        "next": "Prochaine prise à {time}"
       },
       "appointment": {
         "label": "Rendez-vous",

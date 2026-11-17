@@ -1382,6 +1382,12 @@ export const dashboardSnapshotResponse = z
         scheduledToday: z.number().int(),
         takenToday: z.number().int(),
         skippedToday: z.number().int(),
+        scheduledTodayAt: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "v1.48.0 — the slot instants (ISO 8601, ascending) of the doses `scheduledToday` counts. The Today medications fact counts the ones already due (at or before now) instead of the whole day. Absent on a snapshot cached by an older server.",
+          ),
         nextDueAt: z.string().nullable(),
         nextDueOverdue: z.boolean(),
         nextDueMedicationName: z.string().nullable(),

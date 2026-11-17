@@ -12741,8 +12741,7 @@
       },
       "preventiveCare": {
         "title": "Revisión pendiente",
-        "body": "{label} está pendiente.",
-        "bodyManyNamed": "Pendientes: {labels}"
+        "body": "{label} está pendiente."
       },
       "syncIssue": {
         "title": "La sincronización necesita atención",
@@ -12904,7 +12903,8 @@
       },
       "medications": {
         "label": "Medicamentos",
-        "value": "{taken} de {scheduled} tomados"
+        "value": "{taken} de {scheduled} tomados",
+        "next": "Próxima toma a las {time}"
       },
       "appointment": {
         "label": "Cita",

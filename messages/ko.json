@@ -12741,8 +12741,7 @@
       },
       "preventiveCare": {
         "title": "건강검진 시기",
-        "body": "{label}: 받을 때가 됐어요.",
-        "bodyManyNamed": "받을 때가 된 건강검진: {labels}"
+        "body": "{label}: 받을 때가 됐어요."
       },
       "syncIssue": {
         "title": "동기화 확인이 필요해요",
@@ -12904,7 +12903,8 @@
       },
       "medications": {
         "label": "복약",
-        "value": "{scheduled}회 중 {taken}회 복용"
+        "value": "{scheduled}회 중 {taken}회 복용",
+        "next": "다음 복용 {time}"
       },
       "appointment": {
         "label": "예약",

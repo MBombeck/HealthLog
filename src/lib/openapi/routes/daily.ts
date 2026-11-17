@@ -198,7 +198,7 @@ export const dailyDigestResponse = z
       .array(todayFactSchema)
       .max(MAX_TODAY_FACTS)
       .describe(
-        `The Today overview: up to ${MAX_TODAY_FACTS} statements about the day in priority order (Rest Mode, medications taken today, an appointment today or tomorrow that is not already on the rail, last night's sleep, vitals against their personal range, cycle day), never padded. A fact about a switched-off module is absent. A narrow surface shows the first ${MAX_TODAY_FACTS_NARROW}. Additive since v1.40.`,
+        `The Today overview: up to ${MAX_TODAY_FACTS} statements about the day in priority order (Rest Mode, medications taken today counted against the doses due so far, or, before the first is due with nothing taken, when the next dose is (since v1.48.0), an appointment today or tomorrow that is not already on the rail, last night's sleep, vitals against their personal range, cycle day), never padded. A fact about a switched-off module is absent. A narrow surface shows the first ${MAX_TODAY_FACTS_NARROW}. Additive since v1.40.`,
       ),
     restMode: z
       .object({

@@ -60,6 +60,9 @@ function input(over: Partial<TodayOverviewInput> = {}): TodayOverviewInput {
     sleep: null,
     vitals: [],
     cycle: null,
+    now: new Date("2026-11-17T06:00:00.000Z"),
+    firstName: null,
+    nextDoseTimeLabel: null,
     ...over,
   };
 }
@@ -928,5 +931,195 @@ describe("lead length — the ellipsis counts toward the budget", () => {
     expect(lead.length).toBeLessThanOrEqual(160);
     // The space at the edge still ends a whole word.
     expect(lead).toBe(`${"b".repeat(159)}…`);
+  });
+});
+
+describe("the lead never opens with the first name (#173)", () => {
+  it("drops a leading name and capitalises what follows", () => {
+    const o = buildTodayOverview(
+      input({
+        firstName: "Alex",
+        briefing: briefing("Alex, your resting heart rate held at 54 bpm."),
+      }),
+      t,
+    );
+    expect(o.lead).toEqual({
+      text: "Your resting heart rate held at 54 bpm.",
+      source: "briefing",
+    });
+    expect(o.briefingLead).toBe("Your resting heart rate held at 54 bpm.");
+  });
+
+  it("does so in German too, whatever the case of the name", () => {
+    const de = getServerTranslator("de").t;
+    const o = buildTodayOverview(
+      input({
+        locale: "de",
+        firstName: "Jörg",
+        briefing: briefing("jörg, dein Ruhepuls lag über Nacht bei 54."),
+      }),
+      de,
+    );
+    expect(o.lead?.text).toBe("Dein Ruhepuls lag über Nacht bei 54.");
+  });
+
+  it("then skips a greeting the name was standing in front of", () => {
+    const o = buildTodayOverview(
+      input({
+        firstName: "Alex",
+        briefing: briefing(
+          "Alex, good morning. Your resting heart rate held at 54 bpm.",
+        ),
+      }),
+      t,
+    );
+    expect(o.lead?.text).toBe("Your resting heart rate held at 54 bpm.");
+  });
+
+  it("keeps a sentence that only starts like the name, or names it later", () => {
+    for (const paragraph of [
+      "Alexander, your resting heart rate held at 54 bpm.",
+      "Your resting heart rate held at 54 bpm, Alex.",
+    ]) {
+      const o = buildTodayOverview(
+        input({ firstName: "Alex", briefing: briefing(paragraph) }),
+        t,
+      );
+      expect(o.lead?.text).toBe(paragraph);
+    }
+  });
+
+  it("drops it from the signal headline the lead may fall back to", () => {
+    const o = buildTodayOverview(
+      input({
+        firstName: "Alex",
+        briefing: briefing("", "Alex, your pulse is back in range"),
+      }),
+      t,
+    );
+    expect(o.lead?.text).toBe("Your pulse is back in range");
+  });
+
+  it("leaves everything alone without a first name", () => {
+    const o = buildTodayOverview(
+      input({
+        briefing: briefing("Alex, your resting heart rate held at 54 bpm."),
+      }),
+      t,
+    );
+    expect(o.lead?.text).toBe("Alex, your resting heart rate held at 54 bpm.");
+  });
+});
+
+describe("the medications fact counts only what was due so far (#173)", () => {
+  const at = (h: number, m = 0) =>
+    new Date(Date.UTC(2026, 10, 17, h, m)).toISOString();
+  const slots = [at(8), at(13), at(20)];
+
+  function medsFact(over: Partial<TodayOverviewInput>) {
+    return buildTodayOverview(input(over), t).today.find(
+      (f) => f.kind === "medications",
+    );
+  }
+
+  it("names the next dose before the first one is due", () => {
+    const fact = medsFact({
+      now: new Date(at(7)),
+      medsToday: meds({
+        scheduledToday: 3,
+        scheduledTodayAt: slots,
+        nextDueAt: at(8),
+      }),
+      nextDoseTimeLabel: "08:00",
+    });
+    expect(fact?.value).toBe("Next dose at 08:00");
+  });
+
+  it("names it in German as well", () => {
+    const de = getServerTranslator("de").t;
+    const o = buildTodayOverview(
+      input({
+        locale: "de",
+        now: new Date(at(7)),
+        medsToday: meds({
+          scheduledToday: 3,
+          scheduledTodayAt: slots,
+          nextDueAt: at(8),
+        }),
+        nextDoseTimeLabel: "08:00",
+      }),
+      de,
+    );
+    expect(o.today.find((f) => f.kind === "medications")?.value).toBe(
+      "Nächste Einnahme 08:00",
+    );
+  });
+
+  it("counts against the doses due so far once one was due", () => {
+    expect(
+      medsFact({
+        now: new Date(at(9)),
+        medsToday: meds({
+          scheduledToday: 3,
+          takenToday: 1,
+          scheduledTodayAt: slots,
+          nextDueAt: at(13),
+        }),
+        nextDoseTimeLabel: "13:00",
+      })?.value,
+    ).toBe("1 of 1 taken");
+  });
+
+  it("counts an open overdue dose as not taken yet", () => {
+    expect(
+      medsFact({
+        now: new Date(at(8, 30)),
+        medsToday: meds({
+          scheduledToday: 3,
+          scheduledTodayAt: slots,
+          nextDueAt: at(8),
+          nextDueOverdue: true,
+        }),
+        nextDoseTimeLabel: "08:00",
+      })?.value,
+    ).toBe("0 of 1 taken");
+  });
+
+  it("never reads more taken than due when a dose was taken early", () => {
+    expect(
+      medsFact({
+        now: new Date(at(7, 30)),
+        medsToday: meds({
+          scheduledToday: 3,
+          takenToday: 1,
+          scheduledTodayAt: slots,
+          nextDueAt: at(13),
+        }),
+        nextDoseTimeLabel: "13:00",
+      })?.value,
+    ).toBe("1 of 1 taken");
+  });
+
+  it("counts the whole day once every dose was due", () => {
+    expect(
+      medsFact({
+        now: new Date(at(21)),
+        medsToday: meds({
+          scheduledToday: 3,
+          takenToday: 2,
+          scheduledTodayAt: slots,
+        }),
+      })?.value,
+    ).toBe("2 of 3 taken");
+  });
+
+  it("keeps the day's count for a snapshot cached before slot times were kept", () => {
+    expect(
+      medsFact({
+        now: new Date(at(7)),
+        medsToday: meds({ scheduledToday: 3, takenToday: 0, nextDueAt: at(8) }),
+        nextDoseTimeLabel: "08:00",
+      })?.value,
+    ).toBe("0 of 3 taken");
   });
 });

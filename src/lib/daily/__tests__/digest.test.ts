@@ -689,7 +689,9 @@ describe("buildDailyDigest — worth-a-look rail item builders", () => {
     );
     const care = d.worthALook.filter((i) => i.kind === "preventive_care");
     expect(care).toHaveLength(1);
-    expect(care[0].body).toBe("Due: A, B, C");
+    // The title already says "due"; the body names them (#173).
+    expect(care[0].title).toBe("Check-up due");
+    expect(care[0].body).toBe("A, B, C");
   });
 
   it("names the first three due check-ups and counts the rest", () => {
@@ -700,7 +702,7 @@ describe("buildDailyDigest — worth-a-look rail item builders", () => {
       t,
     );
     const care = d.worthALook.find((i) => i.kind === "preventive_care");
-    expect(care?.body).toBe("Due: A, B, C +2");
+    expect(care?.body).toBe("A, B, C +2");
   });
 
   it("bounds the rail at three items, never padded", () => {

@@ -13,6 +13,7 @@
  * builders consult.
  */
 import type { SessionUser } from "@/lib/auth/session-user";
+import { firstNameFromDisplayName } from "@/lib/ai/prompts/opener-archetype";
 
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
@@ -756,7 +757,7 @@ export async function loadDailyDigest(
   // timezone and hour-cycle preference. Done on the server so every reader of
   // the digest prints the same time for the same visit, whatever zone their
   // device is in.
-  const visitTime = makeFormatters(
+  const localTime = makeFormatters(
     locale,
     user.timezone,
     (user.timeFormat ?? "AUTO") as TimeFormatPreference,
@@ -768,7 +769,7 @@ export async function loadDailyDigest(
     occurredAt: row.occurredAt.toISOString(),
     practitionerName: row.practitioner?.name ?? null,
     dayOffset: calendarDaysUntil(row.occurredAt, now, user.timezone),
-    timeLabel: visitTime(row.occurredAt),
+    timeLabel: localTime(row.occurredAt),
   }));
 
   // Rest Mode is read per request; today's cycle day rides the extras cell
@@ -940,6 +941,10 @@ export async function loadDailyDigest(
       // via `applyBriefingForToday`), as every surface serves it.
       briefing: snapshot.briefing,
       medsToday: snapshot.medsToday,
+      firstName: firstNameFromDisplayName(user.displayName),
+      nextDoseTimeLabel: snapshot.medsToday.nextDueAt
+        ? localTime(new Date(snapshot.medsToday.nextDueAt))
+        : null,
       sleepLastSeenDaysAgo,
       morningRefreshedToday,
       syncIssues,

@@ -47,6 +47,15 @@
 
 ### Fixed
 
+- The Today screen no longer says your first name twice. When the daily
+  briefing opened with it, the line under the greeting started with the
+  name again; that line now drops it. The briefing itself still may.
+- In the morning, the medications line on Today no longer reads "0 of 5
+  taken" before your first dose is even due. Until then it says when the
+  next dose is, and after that it counts the doses that were due so far.
+- With more than one check-up due, the hint under "Check-up due" now lists
+  them without repeating "due" in front.
+
 - A lab marker created from a text result, such as "negative" on a scanned report or a CSV row without a unit, can be edited again. It opens with "No unit" ticked, a rename saves without touching the unit, and the unit can be set while the marker holds only text results. The unit stays locked once numbers are stored under it, and writing the same unit another way (`mg/dl` for `mg/dL`) no longer counts as a change. (#1393)
 - On an account with a watch sending heart rate every few seconds, weight, blood pressure and other occasional readings went missing from the MCP metric series, the Coach and the insights, because the heart rate filled every read before they were reached. Each kind of reading now gets its own share, so they all show up again. (#1398)
 

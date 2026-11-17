@@ -12741,8 +12741,7 @@
       },
       "preventiveCare": {
         "title": "Пора на осмотр",
-        "body": "Пора: {label}.",
-        "bodyManyNamed": "Пора: {labels}"
+        "body": "Пора: {label}."
       },
       "syncIssue": {
         "title": "Синхронизация требует внимания",
@@ -12904,7 +12903,8 @@
       },
       "medications": {
         "label": "Лекарства",
-        "value": "{taken} из {scheduled} принято"
+        "value": "{taken} из {scheduled} принято",
+        "next": "Следующий приём в {time}"
       },
       "appointment": {
         "label": "Приём",

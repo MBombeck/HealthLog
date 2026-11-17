@@ -12741,8 +12741,7 @@
       },
       "preventiveCare": {
         "title": "Vorsorge fällig",
-        "body": "{label} ist fällig.",
-        "bodyManyNamed": "Fällig: {labels}"
+        "body": "{label} ist fällig."
       },
       "syncIssue": {
         "title": "Synchronisierung braucht Aufmerksamkeit",
@@ -12904,7 +12903,8 @@
       },
       "medications": {
         "label": "Medikamente",
-        "value": "{taken} von {scheduled} genommen"
+        "value": "{taken} von {scheduled} genommen",
+        "next": "Nächste Einnahme {time}"
       },
       "appointment": {
         "label": "Termin",

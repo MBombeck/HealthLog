@@ -12741,8 +12741,7 @@
       },
       "preventiveCare": {
         "title": "Badanie do wykonania",
-        "body": "{label} jest do wykonania.",
-        "bodyManyNamed": "Do wykonania: {labels}"
+        "body": "{label} jest do wykonania."
       },
       "syncIssue": {
         "title": "Synchronizacja wymaga uwagi",
@@ -12904,7 +12903,8 @@
       },
       "medications": {
         "label": "Leki",
-        "value": "Przyjęto {taken} z {scheduled}"
+        "value": "Przyjęto {taken} z {scheduled}",
+        "next": "Następna dawka o {time}"
       },
       "appointment": {
         "label": "Wizyta",

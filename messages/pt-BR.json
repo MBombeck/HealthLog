@@ -12741,8 +12741,7 @@
       },
       "preventiveCare": {
         "title": "Check previsto",
-        "body": "{label} está previsto.",
-        "bodyManyNamed": "Previstos: {labels}"
+        "body": "{label} está previsto."
       },
       "syncIssue": {
         "title": "Sincronização precisa de atenção",
@@ -12904,7 +12903,8 @@
       },
       "medications": {
         "label": "Medicamentos",
-        "value": "{taken} de {scheduled} tomados"
+        "value": "{taken} de {scheduled} tomados",
+        "next": "Próxima dose às {time}"
       },
       "appointment": {
         "label": "Compromisso",

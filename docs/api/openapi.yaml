@@ -67650,6 +67650,13 @@ components:
               type: integer
               minimum: -9007199254740991
               maximum: 9007199254740991
+            scheduledTodayAt:
+              description: v1.48.0 — the slot instants (ISO 8601, ascending) of the doses `scheduledToday` counts. The Today
+                medications fact counts the ones already due (at or before now) instead of the whole day. Absent on a
+                snapshot cached by an older server.
+              type: array
+              items:
+                type: string
             nextDueAt:
               type:
                 - string
@@ -87815,10 +87822,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DailyTodayFact"
-          description: "The Today overview: up to 5 statements about the day in priority order (Rest Mode, medications taken
-            today, an appointment today or tomorrow that is not already on the rail, last night's sleep, vitals against
-            their personal range, cycle day), never padded. A fact about a switched-off module is absent. A narrow
-            surface shows the first 4. Additive since v1.40."
+          description: "The Today overview: up to 5 statements about the day in priority order (Rest Mode, medications taken today
+            counted against the doses due so far, or, before the first is due with nothing taken, when the next dose is
+            (since v1.48.0), an appointment today or tomorrow that is not already on the rail, last night's sleep,
+            vitals against their personal range, cycle day), never padded. A fact about a switched-off module is absent.
+            A narrow surface shows the first 4. Additive since v1.40."
         restMode:
           anyOf:
             - type: object

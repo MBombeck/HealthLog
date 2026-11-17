@@ -12741,8 +12741,7 @@
       },
       "preventiveCare": {
         "title": "Check-up due",
-        "body": "{label} is due.",
-        "bodyManyNamed": "Due: {labels}"
+        "body": "{label} is due."
       },
       "syncIssue": {
         "title": "Sync needs attention",
@@ -12904,7 +12903,8 @@
       },
       "medications": {
         "label": "Medications",
-        "value": "{taken} of {scheduled} taken"
+        "value": "{taken} of {scheduled} taken",
+        "next": "Next dose at {time}"
       },
       "appointment": {
         "label": "Appointment",

@@ -71,6 +71,14 @@ export interface MedsTodayBlock {
   /** Rows the user deliberately skipped. */
   skippedToday: number;
   /**
+   * The slot instants (ISO8601, ascending) of the rows `scheduledToday`
+   * counts. Kept as instants rather than a "due so far" count so a cached
+   * snapshot still answers correctly later in the day: the Today fact counts
+   * the ones at or before its own `now` (#173). Optional only so snapshots
+   * cached before it stay valid; the live builder always emits it.
+   */
+  scheduledTodayAt?: string[];
+  /**
    * Earliest display-due instant across active medications (ISO8601),
    * or null when nothing is due (no schedules, course ended, all PRN).
    * May lie outside today — the consumer gates on the local day.
@@ -150,7 +158,7 @@ export async function buildMedsTodayBlock(
           scheduledFor: { gte: todayStart, lt: todayEndExclusive },
           ...TRACKED_INTAKE_EVENT_WHERE,
         },
-        select: { takenAt: true, skipped: true },
+        select: { takenAt: true, skipped: true, scheduledFor: true },
       }),
       prisma.medicationIntakeEvent.groupBy({
         by: ["medicationId"],
@@ -255,6 +263,9 @@ export async function buildMedsTodayBlock(
     scheduledToday: todayEvents.length,
     takenToday,
     skippedToday,
+    scheduledTodayAt: todayEvents
+      .map((e) => e.scheduledFor.toISOString())
+      .sort(),
     nextDueAt: next?.dueAt ?? null,
     nextDueOverdue: next?.overdue ?? false,
     nextDueMedicationName: next?.medicationName ?? null,

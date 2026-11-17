@@ -335,6 +335,10 @@ export interface DailyDigestInput {
   /** The cached daily briefing (paragraph + signals-of-day), or null. */
   briefing: DailyBriefing | null;
   medsToday: MedsTodayBlock;
+  /** The Today lead drops this first name where it opens a sentence. */
+  firstName?: string | null;
+  /** `medsToday.nextDueAt` as a local time in the reader's format. */
+  nextDoseTimeLabel?: string | null;
   /** Days since the freshest sleep reading; null when never recorded. */
   sleepLastSeenDaysAgo: number | null;
   /**
@@ -641,14 +645,13 @@ function buildPreventiveCareItem(
   if (due.length === 1) {
     body = t("daily.item.preventiveCare.body", { label: due[0].label });
   } else {
+    // Just the names: the title already says they are due (#173).
     const named = due
       .slice(0, PREVENTIVE_NAMED_MAX)
       .map((d) => d.label)
       .join(", ");
     const rest = due.length - PREVENTIVE_NAMED_MAX;
-    body = t("daily.item.preventiveCare.bodyManyNamed", {
-      labels: rest > 0 ? `${named} +${rest}` : named,
-    });
+    body = rest > 0 ? `${named} +${rest}` : named;
   }
   return {
     kind: "preventive_care",
@@ -1283,6 +1286,9 @@ export function buildDailyDigest(
       sleep: input.sleepLastNight ?? null,
       vitals: input.vitals ?? [],
       cycle: input.cycle ?? null,
+      now: input.now,
+      firstName: input.firstName ?? null,
+      nextDoseTimeLabel: input.nextDoseTimeLabel ?? null,
     },
     t,
   );
