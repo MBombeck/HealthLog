@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Chains per task.** Settings, AI has a new card for named provider chains.
+  A chain is an ordered list of the providers you already set up, and any AI
+  task can follow one: documents only on your local model, lab scans local
+  first with a cloud model behind it, the Coach on a cloud model. A chain
+  with a single provider is a binding, so the task stops with a clear reason
+  when that provider cannot answer instead of trying one you did not pick.
+  Each entry shows whether what it reads stays on this machine or leaves it.
+  Tasks left on Default keep exactly the rules they had, so nothing changes
+  for anyone who leaves the card alone, and consent, the operator's switches
+  and the server-key rules apply to every chain the same way. Thanks to
+  @ch3funio for the careful proposal and the code references behind it.
+  (#1404)
+
 ### Changed
 
 - API responses and CSV or JSON exports now go out gzip-compressed when the
