@@ -19,6 +19,7 @@ import pLimit from "p-limit";
 import type { MeasurementType } from "@/generated/prisma/enums";
 
 import { readDayMovement } from "@/lib/dawarich/movement";
+import { readDayNutrients } from "@/lib/day/nutrients";
 import type { DayEvent, DayResponse, DayRunningItem } from "@/lib/day/contract";
 import { loadNotableRange } from "@/lib/day/notable";
 import {
@@ -110,8 +111,11 @@ export async function loadDay(args: LoadDayArgs): Promise<DayResponse> {
     (section) => RECORD_SECTION_READERS[section] !== undefined,
   );
   // The movement context rides the environment section: owner-only, and
-  // gone with the module.
-  const [readings, parts, scores, movement] = await Promise.all([
+  // gone with the module. The nutrient totals ride the values section (the
+  // nutrients routes read under the `measurements` domain too), and go with
+  // the nutrients module.
+  const nutrientsReadable = valuesReadable && access.modules.nutrients === true;
+  const [readings, parts, scores, movement, nutrients] = await Promise.all([
     valuesReadable || sleepReadable
       ? resolveDayReadings(
           recordId,
@@ -151,6 +155,7 @@ export async function loadDay(args: LoadDayArgs): Promise<DayResponse> {
     access.readable.has("environment")
       ? readDayMovement(recordId, day)
       : Promise.resolve(undefined),
+    nutrientsReadable ? readDayNutrients(recordId, day) : Promise.resolve([]),
   ]);
 
   const presentTypes = [...readings.rowsByType.keys()];
@@ -213,6 +218,7 @@ export async function loadDay(args: LoadDayArgs): Promise<DayResponse> {
     notable: notable.map(({ kind, type, params }) => ({ kind, type, params })),
     scores,
     sections,
+    ...(nutrients.length > 0 ? { nutrients } : {}),
     ...(movement === undefined ? {} : { movement }),
   };
 }

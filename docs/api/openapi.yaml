@@ -38723,6 +38723,7 @@ components:
                   - walkingSteadiness
                   - vorsorge
                   - waterIntake
+                  - energyIntake
                   - restingHeartRate
                   - walkingSpeed
                   - walkingAsymmetry
@@ -89446,6 +89447,7 @@ components:
                   - walkingSteadiness
                   - vorsorge
                   - waterIntake
+                  - energyIntake
                   - restingHeartRate
                   - walkingSpeed
                   - walkingAsymmetry
@@ -89713,6 +89715,7 @@ components:
                   - walkingSteadiness
                   - vorsorge
                   - waterIntake
+                  - energyIntake
                   - restingHeartRate
                   - walkingSpeed
                   - walkingAsymmetry
@@ -95234,6 +95237,12 @@ components:
               - reason
             additionalProperties: false
           description: Sections the caller cannot see. A section of a switched-off module is left out entirely rather than listed.
+        nutrients:
+          description: The day's nutrient totals in catalog order, each above zero. Absent when the day holds none, with the
+            `nutrients` module off, for a caller whose grant does not cover measurements, and on older servers.
+          type: array
+          items:
+            $ref: "#/components/schemas/DayNutrient"
         movement:
           description: v1.43 — the day's movement context; absent for a delegate, with the `environment` module off, with no
             Dawarich connection, and on older servers.
@@ -95604,6 +95613,24 @@ components:
         - max
         - source
         - band
+      additionalProperties: false
+    DayNutrient:
+      type: object
+      properties:
+        code:
+          type: string
+          description: The nutrient catalog code (`protein`, `water`).
+        amount:
+          type: number
+          minimum: 0
+          description: The day's total in `unit`, unrounded.
+        unit:
+          type: string
+          description: "The code's canonical unit as the nutrients routes spell it: `kcal`, `g`, `mg`, `ug`, `ml`, `IU`."
+      required:
+        - code
+        - amount
+        - unit
       additionalProperties: false
     DayMovement:
       type: object
