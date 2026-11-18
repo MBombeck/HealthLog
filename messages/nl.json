@@ -12771,8 +12771,12 @@
       "protein": "Eiwit",
       "carbohydrates": "Koolhydraten",
       "fat": "Vet",
+      "saturated_fat": "Verzadigd vet",
+      "monounsaturated_fat": "Enkelvoudig onverzadigd vet",
+      "polyunsaturated_fat": "Meervoudig onverzadigd vet",
       "sugar": "Suiker",
       "fiber": "Vezels",
+      "cholesterol": "Cholesterol",
       "sodium": "Natrium",
       "potassium": "Kalium",
       "alcohol": "Alcohol"

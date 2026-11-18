@@ -215,6 +215,69 @@ describe("POST /api/nutrients/batch (real Postgres)", () => {
     ]);
   });
 
+  it("stores the fat parts in g and cholesterol in mg, and skips cholesterol sent in g", async () => {
+    const { POST } = await import("@/app/api/nutrients/batch/route");
+    const res = await POST(
+      postReq({
+        entries: [
+          {
+            day: recentDay(1),
+            nutrient: "saturated_fat",
+            unit: "g",
+            amount: 21.5,
+          },
+          {
+            day: recentDay(1),
+            nutrient: "monounsaturated_fat",
+            unit: "g",
+            amount: 30,
+          },
+          {
+            day: recentDay(1),
+            nutrient: "polyunsaturated_fat",
+            unit: "g",
+            amount: 12.25,
+          },
+          {
+            day: recentDay(1),
+            nutrient: "cholesterol",
+            unit: "mg",
+            amount: 280,
+          },
+          {
+            day: recentDay(2),
+            nutrient: "cholesterol",
+            unit: "g",
+            amount: 0.3,
+          },
+          {
+            day: recentDay(3),
+            nutrient: "saturated_fat",
+            unit: "g",
+            amount: 5000,
+          },
+        ],
+      }),
+    );
+    const json = (await res.json()) as BatchEnvelope;
+    expect(json.data.inserted).toBe(4);
+    expect(json.data.skipped).toEqual([
+      { index: 4, reason: "unit_mismatch" },
+      { index: 5, reason: "value_out_of_range" },
+    ]);
+    const stored = await getPrismaClient().nutrientIntakeDay.findMany({
+      where: { userId: OPTED_IN_USER },
+      orderBy: { nutrient: "asc" },
+      select: { nutrient: true, unit: true, amount: true },
+    });
+    expect(stored).toEqual([
+      { nutrient: "cholesterol", unit: "mg", amount: 280 },
+      { nutrient: "monounsaturated_fat", unit: "g", amount: 30 },
+      { nutrient: "polyunsaturated_fat", unit: "g", amount: 12.25 },
+      { nutrient: "saturated_fat", unit: "g", amount: 21.5 },
+    ]);
+  });
+
   // Before this, `nutrient.batch.ingest` audited only when
   // `inserted + updated > 0` — the ONLY durable record of the call — so a
   // batch where every entry was rejected left the exact same empty

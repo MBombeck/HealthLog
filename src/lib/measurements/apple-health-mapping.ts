@@ -1248,8 +1248,12 @@ export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
   "HKQuantityTypeIdentifierDietaryCarbohydrates",
   "HKQuantityTypeIdentifierDietaryProtein",
   "HKQuantityTypeIdentifierDietaryFatTotal",
+  "HKQuantityTypeIdentifierDietaryFatSaturated",
+  "HKQuantityTypeIdentifierDietaryFatMonounsaturated",
+  "HKQuantityTypeIdentifierDietaryFatPolyunsaturated",
   "HKQuantityTypeIdentifierDietarySugar",
   "HKQuantityTypeIdentifierDietaryFiber",
+  "HKQuantityTypeIdentifierDietaryCholesterol",
   "HKQuantityTypeIdentifierDietarySodium",
   // Pregnancy bleeding — stays deferred (pregnancy-mode is a later
   // release). v1.15.0 promoted the cycle-tracking reproductive types

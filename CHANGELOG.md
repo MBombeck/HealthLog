@@ -5,8 +5,9 @@
 ### Added
 
 - **Energy and macronutrients.** The nutrients module now tracks dietary
-  energy (kcal), protein, carbohydrates, fat, sugar and fiber (g), sodium and
-  potassium (mg), and alcohol (grams of ethanol). The iPhone app can sync them
+  energy (kcal), protein, carbohydrates, fat with its saturated,
+  monounsaturated and polyunsaturated parts, sugar and fiber (g), sodium,
+  potassium and cholesterol (mg), and alcohol (grams of ethanol). The iPhone app can sync them
   from Apple Health once its next release asks for them; a food tracker can
   push its daily totals today with a measurement token through
   `POST /api/nutrients/batch`, where they are stored as "External". The

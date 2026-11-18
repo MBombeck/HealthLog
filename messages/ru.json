@@ -12771,8 +12771,12 @@
       "protein": "Белки",
       "carbohydrates": "Углеводы",
       "fat": "Жиры",
+      "saturated_fat": "Насыщенные жиры",
+      "monounsaturated_fat": "Мононенасыщенные жиры",
+      "polyunsaturated_fat": "Полиненасыщенные жиры",
       "sugar": "Сахара",
       "fiber": "Клетчатка",
+      "cholesterol": "Холестерин",
       "sodium": "Натрий",
       "potassium": "Калий",
       "alcohol": "Алкоголь"

@@ -12771,8 +12771,12 @@
       "protein": "Eiweiß",
       "carbohydrates": "Kohlenhydrate",
       "fat": "Fett",
+      "saturated_fat": "Gesättigte Fettsäuren",
+      "monounsaturated_fat": "Einfach ungesättigte Fettsäuren",
+      "polyunsaturated_fat": "Mehrfach ungesättigte Fettsäuren",
       "sugar": "Zucker",
       "fiber": "Ballaststoffe",
+      "cholesterol": "Cholesterin",
       "sodium": "Natrium",
       "potassium": "Kalium",
       "alcohol": "Alkohol"

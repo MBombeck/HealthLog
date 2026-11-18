@@ -21,7 +21,7 @@ export const MAX_NUTRIENT_ENTRIES_PER_BATCH = 500;
 export const nutrientCodeEnum = z.enum(NUTRIENT_CODES).meta({
   id: "NutrientCode",
   description:
-    "Closed nutrient catalog code: the vitamins and minerals (sodium and potassium included), water, caffeine, dietary energy (`energy`, kcal), the macronutrients (`protein`, `carbohydrates`, `fat`, `sugar`, `fiber`, g), `alcohol` (grams of ethanol), and (responses only) `dha` and `epa`, which only a supplement's composition produces. The set grows; decode unknown values leniently.",
+    "Closed nutrient catalog code: the vitamins and minerals (sodium and potassium included), water, caffeine, dietary energy (`energy`, kcal), the macronutrients (`protein`, `carbohydrates`, `fat`, `saturated_fat`, `monounsaturated_fat`, `polyunsaturated_fat`, `sugar`, `fiber`, g), `cholesterol` (mg), `alcohol` (grams of ethanol), and (responses only) `dha` and `epa`, which only a supplement's composition produces. The set grows; decode unknown values leniently.",
 });
 
 /**

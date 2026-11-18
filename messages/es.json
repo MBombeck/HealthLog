@@ -12771,8 +12771,12 @@
       "protein": "Proteínas",
       "carbohydrates": "Carbohidratos",
       "fat": "Grasas",
+      "saturated_fat": "Grasas saturadas",
+      "monounsaturated_fat": "Grasas monoinsaturadas",
+      "polyunsaturated_fat": "Grasas poliinsaturadas",
       "sugar": "Azúcares",
       "fiber": "Fibra",
+      "cholesterol": "Colesterol",
       "sodium": "Sodio",
       "potassium": "Potasio",
       "alcohol": "Alcohol"

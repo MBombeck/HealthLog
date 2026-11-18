@@ -29,12 +29,21 @@ const SYNCABLE = NUTRIENT_DEFINITIONS.filter((d) => d.syncable);
 /** The codes HealthKit carries. */
 const HEALTHKIT = NUTRIENT_DEFINITIONS.filter((d) => d.hkIdentifier !== null);
 /** Codes that deliberately carry no reference, each for a stated reason. */
-const REFERENCE_LESS = ["energy", "fat", "sugar", "alcohol"];
+const REFERENCE_LESS = [
+  "energy",
+  "fat",
+  "saturated_fat",
+  "monounsaturated_fat",
+  "polyunsaturated_fat",
+  "sugar",
+  "cholesterol",
+  "alcohol",
+];
 
 describe("nutrient catalog", () => {
-  it("carries the 35 syncable codes plus the two supplement-only ones", () => {
-    expect(SYNCABLE_NUTRIENT_CODES).toHaveLength(35);
-    expect(NUTRIENT_CODES).toHaveLength(37);
+  it("carries the 39 syncable codes plus the two supplement-only ones", () => {
+    expect(SYNCABLE_NUTRIENT_CODES).toHaveLength(39);
+    expect(NUTRIENT_CODES).toHaveLength(41);
     expect(NUTRIENT_CODES.filter((c) => !isSyncableNutrientCode(c))).toEqual([
       "dha",
       "epa",
@@ -49,8 +58,12 @@ describe("nutrient catalog", () => {
       "carbohydrates",
       "protein",
       "fat",
+      "saturated_fat",
+      "monounsaturated_fat",
+      "polyunsaturated_fat",
       "sugar",
       "fiber",
+      "cholesterol",
       "alcohol",
     ]) {
       expect(isSyncableNutrientCode(code), code).toBe(true);
@@ -58,7 +71,7 @@ describe("nutrient catalog", () => {
   });
 
   it("every syncable code but alcohol carries a HealthKit identifier", () => {
-    expect(HEALTHKIT).toHaveLength(34);
+    expect(HEALTHKIT).toHaveLength(38);
     expect(
       SYNCABLE.filter((d) => d.hkIdentifier === null).map((d) => d.code),
     ).toEqual(["alcohol"]);
@@ -67,6 +80,18 @@ describe("nutrient catalog", () => {
     );
     expect(NUTRIENT_CATALOG.fat.hkIdentifier).toBe(
       "HKQuantityTypeIdentifierDietaryFatTotal",
+    );
+    expect(NUTRIENT_CATALOG.saturated_fat.hkIdentifier).toBe(
+      "HKQuantityTypeIdentifierDietaryFatSaturated",
+    );
+    expect(NUTRIENT_CATALOG.monounsaturated_fat.hkIdentifier).toBe(
+      "HKQuantityTypeIdentifierDietaryFatMonounsaturated",
+    );
+    expect(NUTRIENT_CATALOG.polyunsaturated_fat.hkIdentifier).toBe(
+      "HKQuantityTypeIdentifierDietaryFatPolyunsaturated",
+    );
+    expect(NUTRIENT_CATALOG.cholesterol.hkIdentifier).toBe(
+      "HKQuantityTypeIdentifierDietaryCholesterol",
     );
   });
 
@@ -80,8 +105,12 @@ describe("nutrient catalog", () => {
       "protein",
       "carbohydrates",
       "fat",
+      "saturated_fat",
+      "monounsaturated_fat",
+      "polyunsaturated_fat",
       "sugar",
       "fiber",
+      "cholesterol",
     ]);
     expect(groups("alcohol")).toEqual(["alcohol"]);
     expect(groups("omega3")).toEqual(["dha", "epa"]);
@@ -123,8 +152,19 @@ describe("nutrient catalog", () => {
     ).toEqual(["energy"]);
     expect(
       NUTRIENT_DEFINITIONS.filter((d) => d.unit === "g").map((d) => d.code),
-    ).toEqual(["protein", "carbohydrates", "fat", "sugar", "fiber", "alcohol"]);
+    ).toEqual([
+      "protein",
+      "carbohydrates",
+      "fat",
+      "saturated_fat",
+      "monounsaturated_fat",
+      "polyunsaturated_fat",
+      "sugar",
+      "fiber",
+      "alcohol",
+    ]);
     expect(NUTRIENT_CATALOG.sodium.unit).toBe("mg");
+    expect(NUTRIENT_CATALOG.cholesterol.unit).toBe("mg");
     expect(NUTRIENT_CATALOG.potassium.unit).toBe("mg");
     const mlCodes = NUTRIENT_DEFINITIONS.filter((d) => d.unit === "ml").map(
       (d) => d.code,

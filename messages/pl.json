@@ -12771,8 +12771,12 @@
       "protein": "Białko",
       "carbohydrates": "Węglowodany",
       "fat": "Tłuszcz",
+      "saturated_fat": "Tłuszcze nasycone",
+      "monounsaturated_fat": "Tłuszcze jednonienasycone",
+      "polyunsaturated_fat": "Tłuszcze wielonienasycone",
       "sugar": "Cukry",
       "fiber": "Błonnik",
+      "cholesterol": "Cholesterol",
       "sodium": "Sód",
       "potassium": "Potas",
       "alcohol": "Alkohol"

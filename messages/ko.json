@@ -12771,8 +12771,12 @@
       "protein": "단백질",
       "carbohydrates": "탄수화물",
       "fat": "지방",
+      "saturated_fat": "포화지방",
+      "monounsaturated_fat": "단일불포화지방",
+      "polyunsaturated_fat": "다중불포화지방",
       "sugar": "당류",
       "fiber": "식이섬유",
+      "cholesterol": "콜레스테롤",
       "sodium": "나트륨",
       "potassium": "칼륨",
       "alcohol": "알코올"

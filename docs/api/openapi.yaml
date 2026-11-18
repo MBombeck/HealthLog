@@ -22054,9 +22054,17 @@ paths:
 
         | fat | HKQuantityTypeIdentifierDietaryFatTotal | g |
 
+        | saturated_fat | HKQuantityTypeIdentifierDietaryFatSaturated | g |
+
+        | monounsaturated_fat | HKQuantityTypeIdentifierDietaryFatMonounsaturated | g |
+
+        | polyunsaturated_fat | HKQuantityTypeIdentifierDietaryFatPolyunsaturated | g |
+
         | sugar | HKQuantityTypeIdentifierDietarySugar | g |
 
         | fiber | HKQuantityTypeIdentifierDietaryFiber | g |
+
+        | cholesterol | HKQuantityTypeIdentifierDietaryCholesterol | mg |
       parameters:
         - *a6
       requestBody:
@@ -22130,9 +22138,10 @@ paths:
             $ref: "#/components/schemas/NutrientCode"
           required: true
           description: "Closed nutrient catalog code: the vitamins and minerals (sodium and potassium included), water, caffeine,
-            dietary energy (`energy`, kcal), the macronutrients (`protein`, `carbohydrates`, `fat`, `sugar`, `fiber`,
-            g), `alcohol` (grams of ethanol), and (responses only) `dha` and `epa`, which only a supplement's
-            composition produces. The set grows; decode unknown values leniently."
+            dietary energy (`energy`, kcal), the macronutrients (`protein`, `carbohydrates`, `fat`, `saturated_fat`,
+            `monounsaturated_fat`, `polyunsaturated_fat`, `sugar`, `fiber`, g), `cholesterol` (mg), `alcohol` (grams of
+            ethanol), and (responses only) `dha` and `epa`, which only a supplement's composition produces. The set
+            grows; decode unknown values leniently."
         - in: query
           name: days
           schema:
@@ -38442,8 +38451,12 @@ components:
         - protein
         - carbohydrates
         - fat
+        - saturated_fat
+        - monounsaturated_fat
+        - polyunsaturated_fat
         - sugar
         - fiber
+        - cholesterol
         - alcohol
       description: "A nutrient code the batch accepts: the HealthKit Dietary vitamin, mineral, energy and macronutrient types,
         water and caffeine, plus `alcohol` (no HealthKit type; a bridge token posts it). Never `dha` or `epa`."
@@ -38482,15 +38495,20 @@ components:
         - protein
         - carbohydrates
         - fat
+        - saturated_fat
+        - monounsaturated_fat
+        - polyunsaturated_fat
         - sugar
         - fiber
+        - cholesterol
         - alcohol
         - dha
         - epa
       description: "Closed nutrient catalog code: the vitamins and minerals (sodium and potassium included), water, caffeine,
-        dietary energy (`energy`, kcal), the macronutrients (`protein`, `carbohydrates`, `fat`, `sugar`, `fiber`, g),
-        `alcohol` (grams of ethanol), and (responses only) `dha` and `epa`, which only a supplement's composition
-        produces. The set grows; decode unknown values leniently."
+        dietary energy (`energy`, kcal), the macronutrients (`protein`, `carbohydrates`, `fat`, `saturated_fat`,
+        `monounsaturated_fat`, `polyunsaturated_fat`, `sugar`, `fiber`, g), `cholesterol` (mg), `alcohol` (grams of
+        ethanol), and (responses only) `dha` and `epa`, which only a supplement's composition produces. The set grows;
+        decode unknown values leniently."
     NutrientWaterWriteRequest:
       type: object
       properties:
@@ -39093,6 +39111,60 @@ components:
                     - direction
                   additionalProperties: false
                 - type: "null"
+            saturated_fat:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 1000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            monounsaturated_fat:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 1000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            polyunsaturated_fat:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 1000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
             sugar:
               anyOf:
                 - type: object
@@ -39119,6 +39191,24 @@ components:
                       type: number
                       exclusiveMinimum: 0
                       maximum: 500
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            cholesterol:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 10000
                     direction:
                       type: string
                       enum:
