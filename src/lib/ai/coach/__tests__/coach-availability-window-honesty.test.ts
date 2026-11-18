@@ -62,6 +62,24 @@ const moodAggregate = vi.fn();
 const intakeAggregate = vi.fn();
 const labAggregate = vi.fn();
 
+// The measurement side of the probe reads a bounded sample per type
+// (`measurement-sample.ts`); here it answers from the scripted aggregates.
+vi.mock("@/lib/ai/coach/tools/measurement-sample", async () => {
+  const { sampleFromGroupRows } = await import("./fake-measurement-sample");
+  return {
+    MEASUREMENT_SAMPLE_CAP: 5_000,
+    readMeasurementSample: (_userId: string, types: readonly string[]) => {
+      if (measurementThrows) return Promise.reject(new Error("probe down"));
+      return Promise.resolve(
+        sampleFromGroupRows(
+          measurementRows.filter((r) => types.includes(r.type)),
+          pulseDayMeans,
+        ),
+      );
+    },
+  };
+});
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     measurement: {

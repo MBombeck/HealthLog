@@ -20,8 +20,8 @@ vi.mock("@/lib/labs/biomarker-resolve", () => ({
 vi.mock("@/lib/ai/coach/tools/executor", () => ({
   executeCoachTool: vi.fn(),
 }));
-vi.mock("@/lib/ai/coach/tools/inventory", () => ({
-  buildCoachDataInventory: vi.fn(),
+vi.mock("@/lib/mcp/data-inventory", () => ({
+  buildMcpDataInventory: vi.fn(),
 }));
 vi.mock("@/lib/doctor-report-data", () => ({
   collectDoctorReportData: vi.fn(),
@@ -40,7 +40,7 @@ import {
 } from "../resources";
 import { prisma } from "@/lib/db";
 import { executeCoachTool } from "@/lib/ai/coach/tools/executor";
-import { buildCoachDataInventory } from "@/lib/ai/coach/tools/inventory";
+import { buildMcpDataInventory } from "@/lib/mcp/data-inventory";
 import { collectDoctorReportData } from "@/lib/doctor-report-data";
 import { isModuleEnabled } from "@/lib/modules/gate";
 import type { McpAuthContext } from "../auth";
@@ -277,14 +277,16 @@ describe("healthlog://labs/catalogue (fixed)", () => {
 
 describe("argument completion (user-scoped, doubles as discovery)", () => {
   it("completes metric types from ONLY the user's present inventory", async () => {
-    vi.mocked(buildCoachDataInventory).mockResolvedValue(INVENTORY as never);
+    vi.mocked(buildMcpDataInventory).mockResolvedValue(INVENTORY as never);
     const complete = template("metric").complete!.type;
     const all = await complete(CTX, "");
     // `steps` is present:false in the inventory → never suggested.
     expect(all.sort()).toEqual(["bp", "weight"]);
     const filtered = await complete(CTX, "wei");
     expect(filtered).toEqual(["weight"]);
-    expect(buildCoachDataInventory).toHaveBeenCalledWith("user-1", undefined);
+    expect(buildMcpDataInventory).toHaveBeenCalledWith("user-1", {
+      availability: false,
+    });
   });
 
   it("completes analytes from ONLY the user's own lab set", async () => {
@@ -378,7 +380,7 @@ describe("healthlog://nutrient/{code} (v1.30 coverage review G1)", () => {
 
 describe("template listing (browseable, user-scoped)", () => {
   it("lists only the user's present metrics", async () => {
-    vi.mocked(buildCoachDataInventory).mockResolvedValue(INVENTORY as never);
+    vi.mocked(buildMcpDataInventory).mockResolvedValue(INVENTORY as never);
     const list = await template("metric").list!(CTX);
     expect(list.map((r) => r.uri).sort()).toEqual([
       "healthlog://metric/bp",

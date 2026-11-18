@@ -97,7 +97,7 @@ beforeEach(() => {
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
   // v1.37.0 — the 422 breadcrumb goes through `auditLog()` and the route
   // chains `.catch()` on it; `resetAllMocks` clears the factory's resolution.
-  vi.mocked(auditLog).mockResolvedValue(undefined as never);
+  vi.mocked(auditLog).mockResolvedValue(undefined);
   vi.mocked(prisma.$transaction).mockImplementation((async (arg: unknown) =>
     typeof arg === "function"
       ? (arg as (tx: unknown) => Promise<unknown>)(prisma)
@@ -146,7 +146,7 @@ describe("GET /api/biomarkers/[id] — trend (v1.44)", () => {
   it("answers insufficient below three readings", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(prisma.biomarker.findFirst).mockResolvedValue(EXISTING as never);
-    vi.mocked(prisma.labResult.findMany).mockResolvedValue([] as never);
+    vi.mocked(prisma.labResult.findMany).mockResolvedValue([]);
     const body = await (await GET(getReq(), params("bm-1"))).json();
     expect(body.data.trend).toEqual({
       status: "insufficient",

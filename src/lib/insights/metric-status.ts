@@ -23,6 +23,7 @@
  */
 import { prisma } from "@/lib/db";
 import { readRecentReadings } from "@/lib/insights/recent-readings";
+import { countLiveReadingsPerType } from "@/lib/measurements/newest-per-type";
 import {
   getMetricArchetypeSystemPrompt,
   getMetricArchetypeUserPrompt,
@@ -102,14 +103,23 @@ export interface MetricStatusResult {
   insufficient?: boolean;
 }
 
-/** Count this metric's live (non-deleted) readings — the empty-data gate. */
+/**
+ * Whether this metric has a live (non-deleted) reading — the empty-data
+ * gate. One descent of the live index that stops at the first row; a count
+ * here read every reading of a dense stream on each card load to compare
+ * the total with zero.
+ */
 async function countMetricReadings(
   userId: string,
   meta: MetricStatusMeta,
 ): Promise<number> {
-  return prisma.measurement.count({
-    where: { userId, type: meta.measurementType, deletedAt: null },
-  });
+  const present = await countLiveReadingsPerType(
+    userId,
+    [meta.measurementType],
+    1,
+    null,
+  );
+  return present.get(meta.measurementType) ?? 0;
 }
 
 /**

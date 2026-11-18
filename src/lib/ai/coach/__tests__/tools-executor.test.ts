@@ -9,6 +9,10 @@ import { describe, expect, it, vi, beforeEach, onTestFinished } from "vitest";
 
 // The labs module is on unless a test switches it off.
 const { labsModule } = vi.hoisted(() => ({ labsModule: { on: true } }));
+vi.mock("@/lib/ai/coach/tools/measurement-sample", () => ({
+  MEASUREMENT_SAMPLE_CAP: 5_000,
+  readMeasurementSample: async () => [],
+}));
 vi.mock("@/lib/modules/gate", async (importActual) => {
   const actual = await importActual<typeof import("@/lib/modules/gate")>();
   return {

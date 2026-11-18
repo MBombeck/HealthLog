@@ -13,6 +13,13 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { buildSourceRankCase } from "@/lib/analytics/source-rank-sql";
 import { dayWeightedRowsSql, foldMeanSql } from "@/lib/measurements/day-mean";
+import { liveTypeDescent } from "@/lib/measurements/live-type-descent";
+import { readTierCoveredTypes } from "@/lib/rollups/tier-coverage";
+import {
+  readPreFoldRemainder,
+  type PreFoldRemainderRow,
+} from "@/lib/analytics/pre-fold-remainder";
+import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 import {
   loadUserSourcePriority,
   utcBucketEnd,
@@ -41,7 +48,9 @@ import type {
 } from "@/generated/prisma/client";
 
 /** All-time aggregate (full history) for one measurement type. */
-interface AllTimeExtremes {
+export interface AllTimeExtremes {
+  /** Readings folded: one ladder-canonical source per day. */
+  count: number;
   mean: number | null;
   min: number | null;
   max: number | null;
@@ -68,11 +77,25 @@ interface AllTimeExtremes {
  *
  *   - the DAY tier, for every whole UTC day from `tierFrom` on, for each type
  *     whose tier rows in that range all carry the reading extremes
- *     (migration 0417; the boot re-fold fills older rows) and account for
- *     the live record day by day (same days, same reading counts);
+ *     (migration 0417; the boot re-fold fills older rows) and match the live
+ *     record at both ends: the tier's first and last day are the days of the
+ *     oldest and newest live reading, and each of those two days holds as
+ *     many readings in the tier as it does live;
  *   - the raw rows for the rest: the days before `tierFrom` (older than the
  *     fold window, or the partial day the `floor` falls in), and every day of
  *     a type the tier does not cover yet or no longer matches.
+ *
+ * The check reads two days of each type, not its history. It used to compare
+ * the tier with a count of every live reading per day, which on a watch's
+ * heart-rate stream was every row of the account on every call, and the
+ * largest single read an insight or MCP call made. The ends are where the
+ * tier and the record part: a history the fold has not reached yet starts
+ * before the tier's first day, a write the fold has not caught up with lands
+ * on or after its last day, and readings deleted from the end of a stream
+ * leave the tier's last day after the record's. A day in the middle that
+ * disagrees, which only a failed recompute leaves, is the case the bound
+ * gives up; the write path recomputes the day it touches inline, and the
+ * admin recompute repairs one that failed.
  *
  * The split is at a UTC midnight, so no day is folded from both, and the
  * canonical pick per day is the same on both sides. The tier's pulse day
@@ -107,72 +130,49 @@ export async function readAllTimeExtremes(
 
   const [priorityJson, tierRows] = await Promise.all([
     loadUserSourcePriority(userId),
-    // A type is read from the tier only when the tier accounts for the live
-    // record day by day: every day with a live reading has DAY rows whose
-    // counts add up to that day's live count, and every DAY row has its day
-    // of live readings. A bucket that outlived its rows (a hard delete with no
-    // rollup recompute) or a day the tier never got fails the comparison and
-    // the type is read raw. The figures from here are the anchor the Coach
-    // snapshot checks its coarse history against, so they must never repeat
-    // a stale bucket. The live side is a count per day off the partial
-    // `(user_id, type, measured_at)` live index, not a read of the rows.
-    prisma.$queryRaw<Array<{ type: string }>>`
-      WITH live AS (
-        SELECT m."type", date_trunc('day', m."measured_at") AS day,
-               COUNT(*)::bigint AS n
-        FROM measurements m
-        WHERE m."user_id" = ${userId}
-          AND m."deleted_at" IS NULL
-          AND m."type" IN (${typeList(types)})
-          AND m."measured_at" >= ${tierFrom}
-        GROUP BY 1, 2
-      ),
-      tier AS (
-        SELECT r."type", r."bucket_start" AT TIME ZONE 'UTC' AS day,
-               SUM(r."count")::bigint AS n,
-               bool_and(
-                 r."reading_min_value" IS NOT NULL
-                 AND r."reading_max_value" IS NOT NULL
-               ) AS complete
-        FROM measurement_rollups r
-        WHERE r."user_id" = ${userId}
-          AND r."granularity" = 'DAY'
-          AND r."type" IN (${typeList(types)})
-          AND r."bucket_start" >= ${tierFrom}
-        GROUP BY 1, 2
-      )
-      SELECT COALESCE(l."type", t."type")::text AS type
-      FROM live l
-      FULL JOIN tier t ON t."type" = l."type" AND t.day = l.day
-      GROUP BY 1
-      HAVING bool_and(COALESCE(l.n = t.n AND t.complete, false))
-    `,
+    readTierCoveredTypes(userId, types, tierFrom),
   ]);
   const tierTypes = new Set(tierRows.map((r) => r.type));
   const fromTier = types.filter((t) => tierTypes.has(t));
   const rawOnly = types.filter((t) => !tierTypes.has(t));
 
-  const since =
-    floor === null ? Prisma.empty : Prisma.sql`AND m."measured_at" >= ${floor}`;
+  // The raw rows, one descent of the live index per type (`liveTypeDescent`):
+  // all of a type the tier does not cover, and only the days before
+  // `tierFrom` of one it does. Written as a plain range over the type list,
+  // the second read walked a type's every row on a table whose statistics
+  // predate the account, through an index that has no `measured_at`, and
+  // threw them all away at the `tierFrom` filter.
+  const rawArm = (list: readonly MeasurementType[], until: Date | null) =>
+    Prisma.sql`
+      SELECT mt."type"::measurement_type AS "type", x."source",
+             x."measured_at", x."value"
+      FROM unnest(${[...list]}::text[]) AS mt("type")
+      CROSS JOIN LATERAL (
+        SELECT m."source", m."measured_at", m."value"
+        FROM measurements m
+        ${liveTypeDescent(userId, Prisma.sql`mt."type"::measurement_type`, "oldest", floor, until)}
+      ) x`;
+  // Without a floor, the readings of a tier-read type older than `tierFrom`
+  // are a closed block: nothing written after the fold window can change
+  // them. They come from the pre-fold remainder (`pre-fold-remainder.ts`),
+  // the same canonical-day fold cached under a closed-block key, instead of
+  // being folded again on every call; an account with ten years of a watch's
+  // heart rate pays that once, not per read. With a floor the days before
+  // `tierFrom` are at most the part of one day the floor cuts.
+  const remainderFromCache = floor === null && fromTier.length > 0;
   const rawArms: Prisma.Sql[] = [];
-  if (rawOnly.length > 0) {
-    rawArms.push(Prisma.sql`
-      SELECT m."type", m."source", m."measured_at", m."value"
-      FROM measurements m
-      WHERE m."user_id" = ${userId}
-        AND m."deleted_at" IS NULL
-        AND m."type" IN (${typeList(rawOnly)})
-        ${since}`);
+  if (rawOnly.length > 0) rawArms.push(rawArm(rawOnly, null));
+  if (fromTier.length > 0 && !remainderFromCache) {
+    // `measured_at` is stored to the millisecond, so this is `< tierFrom`.
+    rawArms.push(rawArm(fromTier, new Date(tierFrom.getTime() - 1)));
   }
-  if (fromTier.length > 0) {
+  if (rawArms.length === 0) {
     rawArms.push(Prisma.sql`
-      SELECT m."type", m."source", m."measured_at", m."value"
-      FROM measurements m
-      WHERE m."user_id" = ${userId}
-        AND m."deleted_at" IS NULL
-        AND m."type" IN (${typeList(fromTier)})
-        ${since}
-        AND m."measured_at" < ${tierFrom}`);
+      SELECT NULL::measurement_type AS "type",
+             NULL::measurement_source AS "source",
+             NULL::timestamp(3) AS "measured_at",
+             NULL::double precision AS "value"
+      WHERE false`);
   }
   const rank = (alias: string) =>
     Prisma.raw(
@@ -227,7 +227,14 @@ export async function readAllTimeExtremes(
     }),
   );
   const rows = await prisma.$queryRaw<
-    Array<{ type: string; mean: number; min: number; max: number }>
+    Array<{
+      type: string;
+      count: number;
+      days: number;
+      mean: number;
+      min: number;
+      max: number;
+    }>
   >`
     WITH live AS (${Prisma.join(rawArms, " UNION ALL ")}),
     per_source AS (
@@ -246,6 +253,8 @@ export async function readAllTimeExtremes(
     )
     SELECT
       c."type"::text                                  AS type,
+      SUM(c.cnt)::int                                 AS count,
+      COUNT(*)::int                                   AS days,
       ${mean}::double precision                       AS mean,
       MIN(c.min_value)::double precision              AS min,
       MAX(c.max_value)::double precision              AS max
@@ -260,14 +269,73 @@ export async function readAllTimeExtremes(
     ) c
     GROUP BY c."type"
   `;
+  const remainder = remainderFromCache
+    ? new Map(
+        (
+          await readPreFoldRemainder(
+            userId,
+            tierFrom,
+            priorityJson,
+            buildSourceRankCase(priorityJson, 'p."type"', 'p."source"'),
+          )
+        ).map((r) => [r.type, r]),
+      )
+    : new Map<string, PreFoldRemainderRow>();
   for (const r of rows) {
-    out.set(r.type as MeasurementType, {
-      mean: r.mean === null ? null : Number(r.mean),
-      min: r.min === null ? null : Number(r.min),
-      max: r.max === null ? null : Number(r.max),
-    });
+    const old = fromTier.includes(r.type as MeasurementType)
+      ? remainder.get(r.type)
+      : undefined;
+    out.set(
+      r.type as MeasurementType,
+      old === undefined
+        ? {
+            count: Number(r.count),
+            mean: r.mean === null ? null : Number(r.mean),
+            min: r.min === null ? null : Number(r.min),
+            max: r.max === null ? null : Number(r.max),
+          }
+        : joinFigures(r.type, r, old),
+    );
   }
   return out;
+}
+
+/**
+ * The figures of two disjoint runs of canonical days of one type, folded the
+ * way one fold over both would: the counts and extremes combine, and the mean
+ * is weighted by days for an hourly-mean type (each day weighs one) and by
+ * readings otherwise (`foldMeanSql`).
+ */
+function joinFigures(
+  type: string,
+  a: {
+    count: number;
+    days: number;
+    mean: number | null;
+    min: number | null;
+    max: number | null;
+  },
+  b: PreFoldRemainderRow,
+): AllTimeExtremes {
+  const weight = (x: { count: number; days: number }) =>
+    usesHourlyMeanDay(type) ? Number(x.days) : Number(x.count);
+  const wa = a.mean === null ? 0 : weight(a);
+  const wb = weight(b);
+  const extreme = (
+    pick: (x: number, y: number) => number,
+    x: number | null,
+    y: number,
+  ) => (x === null ? y : pick(x, Number(y)));
+  return {
+    count: Number(a.count) + Number(b.count),
+    mean:
+      wa + wb === 0
+        ? null
+        : ((a.mean === null ? 0 : Number(a.mean) * wa) + Number(b.mean) * wb) /
+          (wa + wb),
+    min: extreme(Math.min, a.min === null ? null : Number(a.min), b.min),
+    max: extreme(Math.max, a.max === null ? null : Number(a.max), b.max),
+  };
 }
 
 /**

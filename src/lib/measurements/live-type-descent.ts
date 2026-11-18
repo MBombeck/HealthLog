@@ -48,9 +48,13 @@ export function liveTypeDescent(
   typeSql: Prisma.Sql,
   end: "newest" | "oldest",
   since: Date | null,
+  /** Inclusive upper bound on `measured_at`, when the read has one. */
+  until: Date | null = null,
 ): Prisma.Sql {
   const sinceSql =
     since === null ? Prisma.empty : Prisma.sql`AND m."measured_at" >= ${since}`;
+  const untilSql =
+    until === null ? Prisma.empty : Prisma.sql`AND m."measured_at" <= ${until}`;
   const order =
     end === "newest"
       ? Prisma.sql`ORDER BY m."type" ASC, m."measured_at" DESC`
@@ -61,5 +65,6 @@ export function liveTypeDescent(
       AND m."type" <= ${typeSql}
       AND m."deleted_at" IS NULL
       ${sinceSql}
+      ${untilSql}
     ${order}`;
 }

@@ -19,6 +19,7 @@ import {
 } from "../route-import";
 import { routeMemberNameFromReference } from "../archive-stream";
 import { MAX_ROUTE_POINTS } from "@/lib/validations/workout";
+import type { PrismaClient } from "@/generated/prisma/client";
 
 const dirs: string[] = [];
 afterEach(() => {
@@ -61,13 +62,19 @@ function fakePrisma(
     route: { id: string } | null;
   } | null,
 ) {
-  return {
+  const fake = {
     workout: {
       findUnique: vi.fn(async () => workout),
       update: vi.fn(async () => ({})),
     },
     workoutRoute: { createMany: vi.fn(async () => ({ count: 1 })) },
   };
+  // The importer's view of it: the two delegates it calls, nothing else.
+  const client = fake as unknown as Pick<
+    PrismaClient,
+    "workout" | "workoutRoute"
+  >;
+  return { ...fake, client };
 }
 
 describe("routeMemberNameFromReference", () => {
@@ -174,7 +181,7 @@ describe("importAppleHealthWorkoutRoutes", () => {
       references: [
         { externalId: "ext-1", path: "/workout-routes/route_1.gpx" },
       ],
-      prisma: prisma as never,
+      prisma: prisma.client,
     });
     expect(counts).toEqual({
       discovered: 1,
@@ -205,7 +212,7 @@ describe("importAppleHealthWorkoutRoutes", () => {
       references: [
         { externalId: "ext-1", path: "/workout-routes/route_1.gpx" },
       ],
-      prisma: prisma as never,
+      prisma: prisma.client,
     });
     expect(counts).toEqual({
       discovered: 1,
@@ -224,7 +231,7 @@ describe("importAppleHealthWorkoutRoutes", () => {
       references: [
         { externalId: "ext-2", path: "/workout-routes/route_2.gpx" },
       ],
-      prisma: prisma as never,
+      prisma: prisma.client,
     });
     expect(counts.failed).toBe(1);
     expect(prisma.workoutRoute.createMany).not.toHaveBeenCalled();
@@ -238,7 +245,7 @@ describe("importAppleHealthWorkoutRoutes", () => {
       references: [
         { externalId: "ext-1", path: "/workout-routes/route_1.gpx" },
       ],
-      prisma: prisma as never,
+      prisma: prisma.client,
       limits: {
         maxMembers: 100,
         maxRouteMembers: 10,

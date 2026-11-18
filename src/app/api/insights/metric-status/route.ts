@@ -32,7 +32,7 @@ import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { requireModuleEnabled, type ModuleKey } from "@/lib/modules/gate";
 import { aiCapabilityToServe } from "@/lib/ai/capabilities/gate";
 import { unavailableStatusBody } from "@/lib/insights/status-unavailable";
-import { prisma } from "@/lib/db";
+import { countLiveReadingsPerType } from "@/lib/measurements/newest-per-type";
 import { generateMetricStatus } from "@/lib/insights/metric-status";
 import { normalizeLocale } from "@/lib/insights/status-shared";
 import {
@@ -111,14 +111,16 @@ export const GET = apiHandler(async (request: NextRequest) => {
     // The note is not served, but whether there is anything to assess is
     // data: the card keeps its insufficient-data state.
     const meta = getMetricStatusMeta(metric);
+    // Presence only: one descent that stops at the first live reading.
     const readings = meta
-      ? await prisma.measurement.count({
-          where: {
-            userId: user.id,
-            type: meta.measurementType,
-            deletedAt: null,
-          },
-        })
+      ? ((
+          await countLiveReadingsPerType(
+            user.id,
+            [meta.measurementType],
+            1,
+            null,
+          )
+        ).get(meta.measurementType) ?? 0)
       : 0;
     annotate({
       action: { name: "insights.metric-status.unavailable" },

@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 332,
-  "total": 108048,
+  "total": 108043,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
@@ -259,7 +259,7 @@
     "lib/doctor-report-pdf/clinical-records-notes-section.ts :: buildClinicalRecordsNotesSection": 648,
     "lib/doctor-report-pdf/measurements-charts-section.ts :: buildMeasurementsChartsSection": 384,
     "lib/doctor-report-pdf/medication-mood-wellness-section.ts :: buildMedicationMoodWellnessSection": 509,
-    "lib/doctor-report/collect.ts :: collectDoctorReportData": 675,
+    "lib/doctor-report/collect.ts :: collectDoctorReportData": 670,
     "lib/documents/fenced-chat.ts :: streamFencedReply": 309,
     "lib/documents/ingest.ts :: ingestDocument": 272,
     "lib/export/backup-json-scan.ts :: scanBackupJson": 225,

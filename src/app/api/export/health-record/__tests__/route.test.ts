@@ -18,6 +18,15 @@ import { unzipSync } from "fflate";
 
 import { readPdfText } from "@/lib/documents/pdfjs";
 
+// The report's dense-window counts are capped descents
+// (`countLiveReadingsPerType`): a sparse account holds none past the cap.
+vi.mock("@/lib/measurements/newest-per-type", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@/lib/measurements/newest-per-type")
+  >()),
+  countLiveReadingsPerType: vi.fn(async () => new Map()),
+}));
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     // `groupBy` sizes the report's dense windows (#1023): a sparse account.

@@ -1,10 +1,45 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import type { MeasurementType } from "@/generated/prisma/client";
 
 // The breadcrumb's contract is the call; whether `auditLog` writes a row
 // (only for a delegate's request) is tested in its own suite.
 vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn(async () => undefined),
+}));
+
+// The dense-window switch counts one past its cap through
+// `countLiveReadingsPerType`; here it answers from the mocked count, so each
+// case states the readings its window holds.
+vi.mock("@/lib/measurements/newest-per-type", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@/lib/measurements/newest-per-type")
+  >()),
+  countLiveReadingsPerType: vi.fn(
+    async (
+      userId: string,
+      types: readonly MeasurementType[],
+      cap: number,
+      since: Date | null,
+    ) => {
+      const { prisma } = await import("@/lib/db");
+      const out = new Map<MeasurementType, number>();
+      for (const type of types) {
+        const n = Number(
+          await prisma.measurement.count({
+            where: {
+              userId,
+              type,
+              deletedAt: null,
+              ...(since ? { measuredAt: { gte: since } } : {}),
+            },
+          }),
+        );
+        if (n > 0) out.set(type, Math.min(cap, n));
+      }
+      return out;
+    },
+  ),
 }));
 
 vi.mock("@/lib/db", () => ({

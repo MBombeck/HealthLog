@@ -262,7 +262,7 @@ export async function buildCoachDataInventory(
   // advertised as if it had never been recorded, and rule 2 then tells the model
   // not to fetch it at all. That is the reported defect: the tool never even
   // runs, so nothing downstream can recover the distinction.
-  await attachAvailability(userId, entries, probeScope.window, reach);
+  await attachInventoryAvailability(userId, entries, probeScope.window, reach);
 
   // restMode rides the illness section.
   const illness = sections.illness as { restMode?: boolean } | undefined;
@@ -285,7 +285,9 @@ export async function buildCoachDataInventory(
  * or the probe failed (the row is left out), else whether any day is stored.
  * One indexed probe.
  */
-async function probeEnvironment(userId: string): Promise<boolean | null> {
+export async function probeEnvironment(
+  userId: string,
+): Promise<boolean | null> {
   try {
     if (!(await isModuleEnabled(userId, "environment"))) return null;
     const row = await prisma.environmentContext.findFirst({
@@ -316,11 +318,11 @@ async function probeEnvironment(userId: string): Promise<boolean | null> {
  * precision and never its correctness. The per-tool result path is the one that
  * must distinguish an unconfirmed absence, and it does (`no_data_unconfirmed`).
  */
-async function attachAvailability(
+export async function attachInventoryAvailability(
   userId: string,
   entries: InventoryEntry[],
   window: CoachScopeWindow | undefined,
-  reach: CoachHistoryReach,
+  reach: CoachHistoryReach = UNBOUNDED_REACH,
 ): Promise<void> {
   const subjects = new Map<string, CoachAvailabilitySubject>();
   const keyed = new Map<string, InventoryEntry>();

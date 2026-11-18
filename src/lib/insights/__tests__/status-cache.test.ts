@@ -1,5 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
+// The input gate's stamp read answers from the mocked grouped count.
+vi.mock("@/lib/insights/measurement-input-stamps", async () => ({
+  readMeasurementInputStamps: (await import("./fake-input-stamps"))
+    .stampsFromMockedGroupBy,
+}));
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     insightStatusCache: {

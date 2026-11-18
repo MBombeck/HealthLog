@@ -32,7 +32,7 @@ import { resolveMedicationCategories } from "@/lib/medication-category";
 import { dayKeyOfDate } from "@/lib/medications/course-window";
 import { annotate } from "@/lib/logging/context";
 import { executeCoachTool } from "@/lib/ai/coach/tools/executor";
-import { buildCoachDataInventory } from "@/lib/ai/coach/tools/inventory";
+import { buildMcpDataInventory } from "@/lib/mcp/data-inventory";
 import {
   BIOMARKER_CATALOG,
   BIOMARKER_PANELS,
@@ -285,11 +285,11 @@ export const MCP_RESOURCES: McpResourceDefinition[] = [
     uri: "healthlog://measurements/inventory",
     title: "Data inventory",
     description:
-      "What health data the user has and which tool retrieves each domain — one row per domain with presence + approximate sample count. The same manifest list_metrics returns; read this first to discover what is available before fetching figures.",
+      "What health data the user has and which tool retrieves each domain — one row per domain with presence in the last 30 days and its reading count there (a compare_metric row counts its whole history). The same manifest list_metrics returns; read this first to discover what is available before fetching figures.",
     mimeType: "application/json",
     async read(ctx) {
       const [inventory, statusDiscoveryRows] = await Promise.all([
-        buildCoachDataInventory(ctx.userId, undefined),
+        buildMcpDataInventory(ctx.userId),
         // v1.30 coverage review (G5/C4) — mirrors the same supplement rows
         // `list_metrics` appends, so the two discovery surfaces stay in sync.
         metricStatusDiscoveryRows(ctx.userId),
@@ -380,7 +380,9 @@ function completeWindow(_ctx: McpAuthContext, value: string): string[] {
 
 /** The user's own present metric types (the `metric` arg get_metric_series takes). */
 async function userMetricTypes(ctx: McpAuthContext): Promise<string[]> {
-  const inventory = await buildCoachDataInventory(ctx.userId, undefined);
+  const inventory = await buildMcpDataInventory(ctx.userId, {
+    availability: false,
+  });
   const seen = new Set<string>();
   for (const entry of inventory.entries) {
     if (entry.present && entry.metric) seen.add(entry.metric);
