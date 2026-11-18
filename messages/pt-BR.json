@@ -14227,7 +14227,7 @@
       "labValuesOne": "{count} valor laboratorial",
       "labValuesFew": "{count} valores laboratoriais",
       "labValuesOther": "{count} valores laboratoriais",
-      "seizuresOne": "1 crise",
+      "seizuresOne": "{count} crise",
       "seizuresFew": "{count} crises",
       "seizuresOther": "{count} crises"
     },

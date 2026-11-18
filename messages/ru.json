@@ -14227,7 +14227,7 @@
       "labValuesOne": "{count} результат анализа",
       "labValuesFew": "{count} результата анализов",
       "labValuesOther": "{count} результатов анализов",
-      "seizuresOne": "1 приступ",
+      "seizuresOne": "{count} приступ",
       "seizuresFew": "{count} приступа",
       "seizuresOther": "{count} приступов"
     },
