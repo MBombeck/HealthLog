@@ -133,6 +133,18 @@ const PROVIDER_INGESTS: ProviderIngest[] = [
     writeFile: "lib/oura/sync-workouts.ts",
     metadataKey: "ouraActivity",
   },
+  {
+    // Activity FIT files (the import page and the Garmin activity files).
+    // The rows are written by the shared workout batch write, with the
+    // metadata the map builds.
+    provider: "FIT file",
+    mapper: "mapFitSportType",
+    mapperFile: "lib/fit/sport-map.ts",
+    captureFile: "lib/fit/map.ts",
+    captureField: 'own(session, "sport")',
+    writeFile: "lib/workouts/batch-ingest/write.ts",
+    metadataKey: "fitSport",
+  },
 ];
 
 /**
@@ -205,9 +217,13 @@ describe("T2 — the set of files writing Workout rows is frozen", () => {
       ),
     );
 
+    // A file can be both: the batch write persists client rows and the FIT
+    // import's rows.
     const expected = [
-      ...PROVIDER_INGESTS.map((p) => p.writeFile),
-      ...Object.keys(NON_MAPPING_WRITERS),
+      ...new Set([
+        ...PROVIDER_INGESTS.map((p) => p.writeFile),
+        ...Object.keys(NON_MAPPING_WRITERS),
+      ]),
     ].sort();
 
     expect(writers.sort()).toEqual(expected);
@@ -224,8 +240,10 @@ describe("T3 — every mapping ingest preserves the raw label", () => {
       ).toBe(true);
 
       const writer = read(writeFile);
+      // The FIT import builds its rows' metadata in the capture file and
+      // hands them to the shared batch write, which copies it field by field.
       expect(
-        /metadata[,:]/.test(writer),
+        /metadata[,:]/.test(writer) || /metadata[,:]/.test(read(captureFile)),
         `${provider}: ${writeFile} writes no metadata onto the Workout row`,
       ).toBe(true);
 

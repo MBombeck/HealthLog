@@ -6086,6 +6086,53 @@
               "stagingMissing": "Die hochgeladene Datei war nicht mehr auf dem Server. Lade sie noch einmal hoch.",
               "interrupted": "Der Import wurde durch einen Neustart des Servers unterbrochen. Lade die Datei noch einmal hoch."
             }
+          },
+          "fit": {
+            "title": "Aktivitätsdatei (FIT)",
+            "description": "Ein Training aus der FIT-Datei einer Uhr oder eines Radcomputers importieren, etwa von Garmin, Wahoo oder Coros.",
+            "choose": "Aktivitätsdatei auswählen",
+            "uploading": "Wird hochgeladen…",
+            "uploadFailed": "Das Hochladen ist fehlgeschlagen. Bitte versuche es erneut.",
+            "tooLarge": "Die Datei ist größer als 10 MB.",
+            "rateLimited": "Zu viele Uploads in kurzer Zeit. Warte eine Minute und versuche es erneut.",
+            "busy": "Für dein Konto läuft bereits ein Import. Warte, bis er abgeschlossen ist.",
+            "failed": "Der Import ist fehlgeschlagen. Bitte versuche es erneut.",
+            "doneSummary": "Die Aktivitätsdatei wurde importiert.",
+            "doneNothing": "Der Import ist abgeschlossen, es gab aber nichts Neues hinzuzufügen.",
+            "dropLabel": "Aktivitätsdatei hier ablegen",
+            "dropHint": "oder klicken, um sie auszuwählen. .fit, .fit.gz oder .zip, bis 10 MB.",
+            "fileInputLabel": "Aktivitätsdatei",
+            "privacyNote": "Die Datei wird vom Server gelöscht, sobald der Import endet. Ein Training, das schon von Garmin, Apple Health oder einer anderen App hier ist, wird nicht doppelt angelegt: Es bekommt den Herzfrequenzverlauf aus der Datei, wenn es noch keinen hatte. Der GPS-Verlauf wird nur gespeichert, wenn Trainingsrouten eingeschaltet sind. Dieselbe Datei erneut hochzuladen ändert nichts.",
+            "steps": {
+              "garmin": "Garmin Connect: Öffne die Aktivität auf der Website, wähle das Zahnradmenü und dann „Original exportieren“. Lade die ZIP-Datei so hoch, wie sie ist.",
+              "other": "Andere Apps und Geräte: Exportiere die Aktivität als FIT-Datei (.fit oder .fit.gz) und lade sie hier hoch."
+            },
+            "phase": {
+              "queued": "Wartet auf den Start",
+              "parsing": "Datei wird gelesen",
+              "upserting": "Training wird gespeichert"
+            },
+            "result": {
+              "imported": "Neue Trainings",
+              "merged": "Zu vorhandenen Trainings ergänzt",
+              "alreadyPresent": "Schon vorhanden",
+              "sessionsSkipped": "Nicht lesbare Einheiten",
+              "withSeries": "Mit Herzfrequenzverlauf",
+              "withRoute": "Mit GPS-Verlauf"
+            },
+            "failure": {
+              "unsupportedFile": "Das ist keine Aktivitätsdatei. Wähle eine .fit-, .fit.gz- oder .zip-Datei.",
+              "archiveInvalid": "Die ZIP-Datei muss genau eine .fit-Datei enthalten und konnte nicht gelesen werden.",
+              "tooLarge": "Die Datei ist größer, als dieser Server annimmt.",
+              "notFit": "Diese Datei ist keine FIT-Datei.",
+              "crcMismatch": "Die Datei ist beschädigt: Ihre Prüfsumme stimmt nicht. Exportiere sie erneut.",
+              "malformed": "Die Datei ist beschädigt oder unvollständig und konnte nicht gelesen werden.",
+              "tooComplex": "Die Datei enthält weit mehr Daten als eine Aktivität und wurde nicht gelesen.",
+              "notActivity": "Diese FIT-Datei ist keine Aktivität (vielleicht eine Strecke oder eine Tageszusammenfassung). Wähle die Datei eines einzelnen Trainings.",
+              "noSession": "Die Datei enthält kein lesbares Training.",
+              "stagingMissing": "Die hochgeladene Datei war nicht mehr auf dem Server. Lade sie erneut hoch.",
+              "interrupted": "Der Import wurde durch einen Neustart des Servers unterbrochen. Lade die Datei erneut hoch."
+            }
           }
         },
         "subtitle": "Exportiere deine Daten oder importiere Messwerte und Einträge aus anderen Apps und Dateien."
@@ -7492,7 +7539,7 @@
       },
       "workoutRoutes": {
         "title": "Trainingsrouten",
-        "description": "Den GPS-Verlauf neuer Trainings aus der iPhone-App und dem Apple-Health-Export speichern.",
+        "description": "Den GPS-Verlauf neuer Trainings aus der iPhone-App, dem Apple-Health-Export, Aktivitätsdateien und Garmin speichern.",
         "detail": "Für neue Konten aus. Eine Route zeigt, wo du wohnst, arbeitest und trainierst, deshalb wird sie erst gespeichert, wenn du das einschaltest. Die Trainings selbst werden immer gespeichert, und keine KI-Funktion liest jemals eine Route. Ausschalten stoppt neue Routen; schon gespeicherte bleiben, bis du das Training löschst.",
         "loadError": "Die Routen-Einstellung konnte nicht geladen werden."
       },

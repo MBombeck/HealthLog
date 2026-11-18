@@ -168,6 +168,7 @@ describe("reconcileOrphanImportJobs", () => {
             parserRevision: APPLE_HEALTH_IMPORT_PARSER_REVISION,
           },
           { kind: "health_connect" },
+          { kind: "fit" },
         ],
       },
       select: { id: true, pgBossJobId: true, updatedAt: true, kind: true },

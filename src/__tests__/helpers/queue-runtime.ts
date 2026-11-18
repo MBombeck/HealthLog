@@ -475,6 +475,9 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     },
     why: "Reads a Health Connect export database that can hold years of minute-level samples.",
   },
+  "fit-import": short(
+    "One activity file of at most 10 MB (32 MB unpacked), its messages capped by the structural scan before decoding; a one-shot with retryLimit 0.",
+  ),
   "compaction-tombstone-purge": short(
     "At most 40 batches of 5 000 rows per run; the predicate is idempotent, so the next run resumes.",
   ),

@@ -1,5 +1,5 @@
 {
-  "registeredQueueCount": 126,
+  "registeredQueueCount": 127,
   "registeredQueues": [
     "account-deletion-purge",
     "achievement-unlock-sweep",
@@ -43,6 +43,7 @@
     "environment-aq-history",
     "environment-fetch",
     "feedback-aggregator",
+    "fit-import",
     "free-text-encryption-backfill",
     "garmin-backfill",
     "garmin-sync",
@@ -750,6 +751,21 @@
       "expire_seconds": 900,
       "heartbeat_seconds": null,
       "name": "feedback-aggregator",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "fit-import",
       "notify": false,
       "partition": false,
       "policy": "standard",
@@ -3249,6 +3265,12 @@
       "options": {
         "localConcurrency": 1,
         "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "fit-import",
+      "options": {
+        "localConcurrency": 1
       }
     },
     {

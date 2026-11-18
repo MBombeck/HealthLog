@@ -6086,6 +6086,53 @@
               "stagingMissing": "Het geüploade bestand stond niet meer op de server. Upload het opnieuw.",
               "interrupted": "De import is onderbroken doordat de server opnieuw is gestart. Upload het bestand opnieuw."
             }
+          },
+          "fit": {
+            "title": "Activiteitsbestand (FIT)",
+            "description": "Importeer een training uit het FIT-bestand van een horloge of fietscomputer, zoals Garmin, Wahoo, Coros of Polar.",
+            "choose": "Activiteitsbestand kiezen",
+            "uploading": "Uploaden…",
+            "uploadFailed": "Het uploaden is mislukt. Probeer het opnieuw.",
+            "tooLarge": "Het bestand is groter dan 10 MB.",
+            "rateLimited": "Te veel uploads in korte tijd. Wacht een minuut en probeer het opnieuw.",
+            "busy": "Er loopt al een import voor je account. Wacht tot die klaar is.",
+            "failed": "De import is mislukt. Probeer het opnieuw.",
+            "doneSummary": "Het activiteitsbestand is geïmporteerd.",
+            "doneNothing": "De import is klaar, maar er was niets nieuws toe te voegen.",
+            "dropLabel": "Zet het activiteitsbestand hier neer",
+            "dropHint": "of klik om het te kiezen. .fit, .fit.gz of .zip, tot 10 MB.",
+            "fileInputLabel": "Activiteitsbestand",
+            "privacyNote": "Het bestand wordt van de server verwijderd zodra de import klaar is. Een training die hier al is via Garmin, Apple Gezondheid of een andere app wordt niet dubbel toegevoegd: die krijgt de hartslagcurve uit het bestand als hij er nog geen had. Het GPS-spoor wordt alleen bewaard als Trainingsroutes aan staat. Hetzelfde bestand opnieuw uploaden verandert niets.",
+            "steps": {
+              "garmin": "Garmin Connect: open de activiteit op de website, kies het tandwielmenu en daarna Origineel exporteren. Upload het ZIP-bestand zoals het is.",
+              "other": "Andere apps en apparaten: exporteer de activiteit als FIT-bestand (.fit of .fit.gz) en upload het hier."
+            },
+            "phase": {
+              "queued": "Wacht op start",
+              "parsing": "Bestand wordt gelezen",
+              "upserting": "Training wordt opgeslagen"
+            },
+            "result": {
+              "imported": "Nieuwe trainingen",
+              "merged": "Aangevuld bij bestaande trainingen",
+              "alreadyPresent": "Al aanwezig",
+              "sessionsSkipped": "Sessies die niet gelezen konden worden",
+              "withSeries": "Met hartslagcurve",
+              "withRoute": "Met GPS-spoor"
+            },
+            "failure": {
+              "unsupportedFile": "Dit is geen activiteitsbestand. Kies een .fit-, .fit.gz- of .zip-bestand.",
+              "archiveInvalid": "Het ZIP-bestand moet precies één .fit-bestand bevatten en kon niet gelezen worden.",
+              "tooLarge": "Het bestand is groter dan deze server accepteert.",
+              "notFit": "Dit bestand is geen FIT-bestand.",
+              "crcMismatch": "Het bestand is beschadigd: de controlesom klopt niet. Exporteer het opnieuw.",
+              "malformed": "Het bestand is beschadigd of onvolledig en kon niet gelezen worden.",
+              "tooComplex": "Het bestand bevat veel meer gegevens dan een activiteit en is niet gelezen.",
+              "notActivity": "Dit FIT-bestand is geen activiteit (misschien een parcours of een dagoverzicht). Kies het bestand van één training.",
+              "noSession": "Het bestand bevat geen leesbare training.",
+              "stagingMissing": "Het geüploade bestand stond niet meer op de server. Upload het opnieuw.",
+              "interrupted": "De import werd onderbroken door een herstart van de server. Upload het bestand opnieuw."
+            }
           }
         },
         "subtitle": "Exporteer je gegevens, of importeer metingen en gegevens uit andere apps en bestanden."
@@ -7492,7 +7539,7 @@
       },
       "workoutRoutes": {
         "title": "Trainingsroutes",
-        "description": "Het GPS-spoor van nieuwe trainingen uit de iPhone-app en de Apple Gezondheid-export bewaren.",
+        "description": "Het GPS-spoor van nieuwe trainingen uit de iPhone-app, de Apple Gezondheid-export, activiteitsbestanden en Garmin bewaren.",
         "detail": "Uit voor nieuwe accounts. Een route laat zien waar je woont, werkt en traint, dus hij wordt pas bewaard als je dit aanzet. Trainingen worden altijd bewaard en geen enkele AI-functie leest ooit een route. Uitzetten stopt nieuwe routes; al bewaarde routes blijven tot je de training verwijdert.",
         "loadError": "De route-instelling kon niet worden geladen."
       },

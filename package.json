@@ -75,6 +75,7 @@
     "date-fns": "^4.4.0",
     "dotenv": "^18.0.10",
     "fflate": "^0.8.3",
+    "fit-file-parser": "6.2.7",
     "jose": "^6.2.17",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.9",

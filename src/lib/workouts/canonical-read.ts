@@ -304,6 +304,46 @@ export function incomingWorkoutsToKeep<
 }
 
 /**
+ * The stored workout an incoming one duplicates: the canonical stored row of
+ * the incoming row's cluster, nearest start first, clustered with the stored
+ * rows around it exactly as `incomingWorkoutsToKeep` clusters a batch. When
+ * none of the cluster's stored sources is on the ladder (every one is kept),
+ * the nearest of them. `null` when the incoming row shares its cluster with
+ * no stored row. A file importer uses it to hand the file's series to the
+ * workout the list shows instead of storing a second copy.
+ */
+export function storedTwinOf<S extends CanonicalReadRow>(
+  stored: WindowedWorkouts<S>,
+  incoming: WorkoutPickerRow,
+  priorityJson: unknown,
+): S | null {
+  type Tagged = WorkoutPickerRow & { row: S | null };
+  const union: Tagged[] = [
+    ...stored.rows.map((row) => ({ ...row, row })),
+    { ...incoming, row: null },
+  ].sort(
+    (a, b) =>
+      a.startedAt.getTime() - b.startedAt.getTime() ||
+      Number(a.row === null) - Number(b.row === null),
+  );
+  const keys = workoutDuplicateClusterKeys(union);
+  const ownKey = keys[union.findIndex((t) => t.row === null)];
+  const members = union
+    .filter((t, i) => t.row !== null && keys[i] === ownKey)
+    .map((t) => t.row!);
+  if (members.length === 0) return null;
+  const at = incoming.startedAt.getTime();
+  const picked = pickCanonicalWorkoutRows(members, priorityJson);
+  const pickedIds = new Set(picked.map((row) => row.id));
+  const pool = members.filter((row) => pickedIds.has(row.id));
+  return [...(pool.length > 0 ? pool : members)].sort(
+    (a, b) =>
+      Math.abs(a.startedAt.getTime() - at) -
+        Math.abs(b.startedAt.getTime() - at) || compareRows(a, b),
+  )[0]!;
+}
+
+/**
  * One training impulse per workout SESSION, not per stored row.
  *
  * The same session can be stored more than once: the watch writes it to Apple

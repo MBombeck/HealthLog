@@ -6086,6 +6086,53 @@
               "stagingMissing": "The uploaded file was no longer on the server. Upload it again.",
               "interrupted": "The import was interrupted by a server restart. Upload the file again."
             }
+          },
+          "fit": {
+            "title": "Activity file (FIT)",
+            "description": "Import a workout from the FIT file a watch or bike computer records, such as Garmin, Wahoo, Coros or Polar.",
+            "choose": "Choose activity file",
+            "uploading": "Uploading…",
+            "uploadFailed": "The upload failed. Please try again.",
+            "tooLarge": "The file is larger than 10 MB.",
+            "rateLimited": "Too many uploads in a short time. Wait a minute and try again.",
+            "busy": "An import is already running for your account. Wait until it has finished.",
+            "failed": "The import failed. Please try again.",
+            "doneSummary": "The activity file was imported.",
+            "doneNothing": "The import finished, but there was nothing new to add.",
+            "dropLabel": "Drop the activity file here",
+            "dropHint": "or click to choose it. .fit, .fit.gz or .zip, up to 10 MB.",
+            "fileInputLabel": "Activity file",
+            "privacyNote": "The file is deleted from the server as soon as the import ends. A workout that is already here from Garmin, Apple Health or another app is not added twice: it gets the heart rate curve from the file if it had none. The GPS track is only kept when Workout routes is switched on. Uploading the same file again changes nothing.",
+            "steps": {
+              "garmin": "Garmin Connect: open the activity on the website, choose the gear menu, then Export original. Upload the ZIP file as it is.",
+              "other": "Other apps and devices: export the activity as a FIT file (.fit or .fit.gz) and upload it here."
+            },
+            "phase": {
+              "queued": "Waiting to start",
+              "parsing": "Reading the file",
+              "upserting": "Saving the workout"
+            },
+            "result": {
+              "imported": "New workouts",
+              "merged": "Added to existing workouts",
+              "alreadyPresent": "Already here",
+              "sessionsSkipped": "Sessions that could not be read",
+              "withSeries": "With heart rate curve",
+              "withRoute": "With GPS track"
+            },
+            "failure": {
+              "unsupportedFile": "This is not an activity file. Choose a .fit, .fit.gz or .zip file.",
+              "archiveInvalid": "The ZIP file must contain exactly one .fit file and could not be read.",
+              "tooLarge": "The file is larger than this server accepts.",
+              "notFit": "This file is not a FIT file.",
+              "crcMismatch": "The file is damaged: its checksum does not match. Export it again.",
+              "malformed": "The file is damaged or incomplete and could not be read.",
+              "tooComplex": "The file holds far more data than an activity has and was not read.",
+              "notActivity": "This FIT file is not an activity (it might be a course or a daily summary). Choose the file of a single workout.",
+              "noSession": "The file contains no workout that could be read.",
+              "stagingMissing": "The uploaded file was no longer on the server. Upload it again.",
+              "interrupted": "The import was interrupted by a server restart. Upload the file again."
+            }
           }
         },
         "subtitle": "Export your data, or import measurements and records from other apps and files."
@@ -7492,7 +7539,7 @@
       },
       "workoutRoutes": {
         "title": "Workout routes",
-        "description": "Keep the GPS track of new workouts from the iPhone app and the Apple Health export.",
+        "description": "Keep the GPS track of new workouts from the iPhone app, the Apple Health export, activity files and Garmin.",
         "detail": "Off for new accounts. A route shows where you live, work and train, so it is only kept once you turn this on. Workouts are kept either way, and no AI feature ever reads a route. Turning it off stops new routes; routes already kept stay until you delete the workout.",
         "loadError": "The route setting could not be loaded."
       },

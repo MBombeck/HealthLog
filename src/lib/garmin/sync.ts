@@ -67,6 +67,7 @@ import {
   type GarminTransport,
 } from "./client";
 import { getGarminCredentials, rememberGarminKeyExpiry } from "./credentials";
+import { syncGarminActivityFiles } from "./activity-files";
 import { syncGarminCycle } from "./cycle-sync";
 import {
   garminUnavailableCode,
@@ -579,6 +580,22 @@ export async function syncUserGarmin(
       }
       getEvent()?.addWarning(
         `garmin: cycle import skipped for ${userId}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
+  // The heart-rate series of new activities, from their original files.
+  // Best-effort and off the ledger like the cycle: the summaries are stored,
+  // and a refusal here never turns the connection red.
+  if (
+    !unavailable.has("activities") &&
+    !failures.some((f) => isGarminRateLimit(f.err))
+  ) {
+    try {
+      await syncGarminActivityFiles(userId, session);
+    } catch (err) {
+      getEvent()?.addWarning(
+        `garmin: activity files skipped for ${userId}: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
   }

@@ -6086,6 +6086,53 @@
               "stagingMissing": "Le fichier envoyé n’était plus sur le serveur. Envoyez-le à nouveau.",
               "interrupted": "Un redémarrage du serveur a interrompu l’importation. Envoyez le fichier à nouveau."
             }
+          },
+          "fit": {
+            "title": "Fichier d’activité (FIT)",
+            "description": "Importer un entraînement depuis le fichier FIT d’une montre ou d’un compteur vélo, comme Garmin, Wahoo ou Coros.",
+            "choose": "Choisir un fichier d’activité",
+            "uploading": "Envoi en cours…",
+            "uploadFailed": "L’envoi a échoué. Veuillez réessayer.",
+            "tooLarge": "Le fichier dépasse 10 Mo.",
+            "rateLimited": "Trop d’envois en peu de temps. Attendez une minute et réessayez.",
+            "busy": "Une importation est déjà en cours pour votre compte. Attendez qu’elle soit terminée.",
+            "failed": "L’importation a échoué. Veuillez réessayer.",
+            "doneSummary": "Le fichier d’activité a été importé.",
+            "doneNothing": "L’importation est terminée, mais il n’y avait rien de nouveau à ajouter.",
+            "dropLabel": "Déposez le fichier d’activité ici",
+            "dropHint": "ou cliquez pour le choisir. .fit, .fit.gz ou .zip, jusqu’à 10 Mo.",
+            "fileInputLabel": "Fichier d’activité",
+            "privacyNote": "Le fichier est supprimé du serveur dès la fin de l’importation. Un entraînement déjà présent via Garmin, Apple Santé ou une autre app n’est pas ajouté deux fois : il reçoit la courbe de fréquence cardiaque du fichier s’il n’en avait pas. Le tracé GPS n’est conservé que si Parcours d’entraînement est activé. Renvoyer le même fichier ne change rien.",
+            "steps": {
+              "garmin": "Garmin Connect : ouvrez l’activité sur le site, choisissez le menu en forme de roue dentée, puis Exporter l’original. Envoyez le fichier ZIP tel quel.",
+              "other": "Autres apps et appareils : exportez l’activité au format FIT (.fit ou .fit.gz) et envoyez-la ici."
+            },
+            "phase": {
+              "queued": "En attente de démarrage",
+              "parsing": "Lecture du fichier",
+              "upserting": "Enregistrement de l’entraînement"
+            },
+            "result": {
+              "imported": "Nouveaux entraînements",
+              "merged": "Ajouté à des entraînements existants",
+              "alreadyPresent": "Déjà présent",
+              "sessionsSkipped": "Séances illisibles",
+              "withSeries": "Avec courbe de fréquence cardiaque",
+              "withRoute": "Avec tracé GPS"
+            },
+            "failure": {
+              "unsupportedFile": "Ce n’est pas un fichier d’activité. Choisissez un fichier .fit, .fit.gz ou .zip.",
+              "archiveInvalid": "Le fichier ZIP doit contenir exactement un fichier .fit et n’a pas pu être lu.",
+              "tooLarge": "Le fichier est plus volumineux que ce que ce serveur accepte.",
+              "notFit": "Ce fichier n’est pas un fichier FIT.",
+              "crcMismatch": "Le fichier est endommagé : sa somme de contrôle ne correspond pas. Exportez-le à nouveau.",
+              "malformed": "Le fichier est endommagé ou incomplet et n’a pas pu être lu.",
+              "tooComplex": "Le fichier contient bien plus de données qu’une activité et n’a pas été lu.",
+              "notActivity": "Ce fichier FIT n’est pas une activité (peut-être un parcours ou un résumé quotidien). Choisissez le fichier d’un seul entraînement.",
+              "noSession": "Le fichier ne contient aucun entraînement lisible.",
+              "stagingMissing": "Le fichier envoyé n’était plus sur le serveur. Envoyez-le à nouveau.",
+              "interrupted": "L’importation a été interrompue par un redémarrage du serveur. Envoyez le fichier à nouveau."
+            }
           }
         },
         "subtitle": "Exportez vos données, ou importez des mesures et des entrées depuis d’autres applis et fichiers."
@@ -7492,7 +7539,7 @@
       },
       "workoutRoutes": {
         "title": "Parcours d’entraînement",
-        "description": "Conserver le tracé GPS des nouveaux entraînements de l’app iPhone et de l’export Apple Santé.",
+        "description": "Conserver le tracé GPS des nouveaux entraînements de l’app iPhone, de l’export Apple Santé, des fichiers d’activité et de Garmin.",
         "detail": "Désactivé pour les nouveaux comptes. Un parcours montre où vous habitez, travaillez et vous entraînez : il n’est donc conservé qu’une fois l’option activée. Les entraînements sont conservés dans tous les cas, et aucune fonction d’IA ne lit jamais un parcours. Désactiver l’option arrête les nouveaux parcours ; ceux déjà conservés restent jusqu’à la suppression de l’entraînement.",
         "loadError": "Impossible de charger le réglage des parcours."
       },

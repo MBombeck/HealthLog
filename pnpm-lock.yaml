@@ -109,6 +109,9 @@ importers:
       fflate:
         specifier: ^0.8.3
         version: 0.8.3
+      fit-file-parser:
+        specifier: 6.2.7
+        version: 6.2.7
       jose:
         specifier: ^6.2.17
         version: 6.2.17
@@ -4557,6 +4560,9 @@ packages:
   find-up@5.0.0:
     resolution: {integrity: sha512-78/PXT1wlLLDgTzDs7sjq9hzz0vXD+zn+7wypEe4fXQxCmdmqfGsEPQxmiCSQI3ajFV91bVSsvNtrJRiW6nGng==}
     engines: {node: '>=10'}
+
+  fit-file-parser@6.2.7:
+    resolution: {integrity: sha512-z/xv9+fxsgDKGP3AmlQWpl5uDVQCzRhNM8ppaMk++tAG8AfQ5xMgcwXNUYGVdU6CYIlV6d3piRB7BFcj7Ogl6w==}
 
   flat-cache@4.0.1:
     resolution: {integrity: sha512-f7ccFPK3SXFHpx15UIGyRJ/FJQctuKZ0zVuN3frBo4HnK3cay9VEW0R6yPYFHC0AgqhukPzKjq22t5DmAyqGyw==}
@@ -11875,6 +11881,10 @@ snapshots:
     dependencies:
       locate-path: 6.0.0
       path-exists: 4.0.0
+
+  fit-file-parser@6.2.7:
+    dependencies:
+      buffer: 6.0.3
 
   flat-cache@4.0.1:
     dependencies:

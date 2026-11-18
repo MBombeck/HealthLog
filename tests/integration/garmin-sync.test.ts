@@ -98,6 +98,8 @@ const fake = vi.hoisted(() => ({
   /** Runs on each data request, before the answer. */
   onData: null as null | ((path: string) => Promise<void>),
   sends: [] as Array<{ queue: string; payload: unknown }>,
+  /** The original file of activity 777 (a ZIP), or null for a 404. */
+  activityFile: null as Buffer | null,
 }));
 
 vi.mock("@/lib/jobs/boss-instance", () => ({
@@ -324,6 +326,16 @@ beforeAll(async () => {
       return;
     }
     await fake.onData?.(u.pathname);
+    if (u.pathname.startsWith("/download-service/files/activity/")) {
+      if (u.pathname.endsWith("/777") && fake.activityFile) {
+        res
+          .writeHead(200, { "content-type": "application/x-zip-compressed" })
+          .end(fake.activityFile);
+      } else {
+        res.writeHead(404).end();
+      }
+      return;
+    }
     const body = answer(u.pathname, u.searchParams);
     if (
       body &&
@@ -384,8 +396,12 @@ beforeEach(async () => {
   fake.sleepGone = [];
   fake.hosts.length = 0;
   fake.onData = null;
+  fake.activityFile = null;
   const { clearGarminTokenCache } = await import("@/lib/garmin/client");
   clearGarminTokenCache();
+  const { clearGarminActivityFileMemory } =
+    await import("@/lib/garmin/activity-files");
+  clearGarminActivityFileMemory();
   await prisma.user.create({
     data: {
       id: USER_ID,
@@ -540,6 +556,60 @@ describe("Garmin sync", () => {
     const skipped = await syncUserGarmin(USER_ID, { skipWhenParked: true });
     expect(skipped).toEqual({ imported: 0, failed: false });
     expect(fake.requests.length).toBe(before);
+  });
+
+  it("adds the heart-rate series from the activity's original file", async () => {
+    const { buildWatchActivity, zipOne } =
+      await import("../fixtures/fit/build-fit");
+    const runDay = addDays(fake.today, -2);
+    fake.activityFile = zipOne(
+      "777_ACTIVITY.fit",
+      buildWatchActivity({
+        start: new Date(`${runDay}T06:00:00Z`),
+        seconds: 1800,
+      }),
+    );
+    await connectUser();
+    const { syncUserGarmin } = await import("@/lib/garmin/sync");
+    const result = await syncUserGarmin(USER_ID, { lookbackDays: 6 });
+    expect(result.failed).toBe(false);
+    expect(
+      fake.requests.filter((r) =>
+        r.startsWith("GET /download-service/files/activity/777"),
+      ),
+    ).toHaveLength(1);
+
+    const workouts = await getPrismaClient().workout.findMany({
+      where: { userId: USER_ID },
+      include: { samples: true, route: true },
+    });
+    // Still the one Garmin row: the file adds to it, it does not add a row.
+    expect(workouts).toHaveLength(1);
+    const run = workouts[0]!;
+    expect(run.source).toBe("GARMIN");
+    expect(run.durationSec).toBe(1800);
+    expect(run.samples?.sampleCount).toBe(1800);
+    // The account keeps no tracks: the file's positions are dropped.
+    expect(run.route).toBeNull();
+
+    // A second sync asks for nothing more: the workout has its series.
+    fake.requests.length = 0;
+    await syncUserGarmin(USER_ID, { lookbackDays: 6 });
+    expect(
+      fake.requests.filter((r) => r.includes("/download-service/")),
+    ).toHaveLength(0);
+  });
+
+  it("keeps the sync green when Garmin has no file for an activity", async () => {
+    await connectUser();
+    const { syncUserGarmin } = await import("@/lib/garmin/sync");
+    const result = await syncUserGarmin(USER_ID, { lookbackDays: 6 });
+    expect(result.failed).toBe(false);
+    const run = await getPrismaClient().workout.findFirstOrThrow({
+      where: { userId: USER_ID },
+      include: { samples: true },
+    });
+    expect(run.samples).toBeNull();
   });
 
   it("stops at a 429 and records a transient failure", async () => {

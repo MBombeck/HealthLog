@@ -63,6 +63,7 @@ import {
 import { caughtAs, logCaught } from "@/lib/logging/signal";
 import { HEALTH_CONNECT_IMPORT_KIND } from "@/lib/jobs/health-connect-import-worker";
 import { HEALTH_CONNECT_IMPORT_QUEUE } from "@/lib/jobs/health-connect-import-queue";
+import { FIT_IMPORT_KIND, FIT_IMPORT_QUEUE } from "@/lib/jobs/fit-import-queue";
 import {
   APPLE_HEALTH_IMPORT_V2_QUEUE,
   APPLE_HEALTH_IMPORT_LEGACY_QUEUE,
@@ -79,9 +80,9 @@ export const APPLE_HEALTH_IMPORT_KIND = "apple_health";
  * the reconcile used to fail it while it was still running.
  */
 function queuesForKind(kind: string): readonly string[] {
-  return kind === HEALTH_CONNECT_IMPORT_KIND
-    ? [HEALTH_CONNECT_IMPORT_QUEUE]
-    : [APPLE_HEALTH_IMPORT_V2_QUEUE, APPLE_HEALTH_IMPORT_LEGACY_QUEUE];
+  if (kind === HEALTH_CONNECT_IMPORT_KIND) return [HEALTH_CONNECT_IMPORT_QUEUE];
+  if (kind === FIT_IMPORT_KIND) return [FIT_IMPORT_QUEUE];
+  return [APPLE_HEALTH_IMPORT_V2_QUEUE, APPLE_HEALTH_IMPORT_LEGACY_QUEUE];
 }
 
 /**
@@ -724,6 +725,7 @@ export async function reconcileOrphanImportJobs(): Promise<void> {
           parserRevision: APPLE_HEALTH_IMPORT_PARSER_REVISION,
         },
         { kind: HEALTH_CONNECT_IMPORT_KIND },
+        { kind: FIT_IMPORT_KIND },
       ],
     },
     select: { id: true, pgBossJobId: true, updatedAt: true, kind: true },
@@ -747,9 +749,7 @@ export async function reconcileOrphanImportJobs(): Promise<void> {
     let live = false;
     try {
       const job = await boss.getJobById(
-        row.kind === HEALTH_CONNECT_IMPORT_KIND
-          ? HEALTH_CONNECT_IMPORT_QUEUE
-          : APPLE_HEALTH_IMPORT_V2_QUEUE,
+        queuesForKind(row.kind)[0]!,
         row.pgBossJobId,
       );
       live = job !== null && LIVE_PG_BOSS_STATES.has(job.state);

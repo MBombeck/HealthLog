@@ -9,15 +9,33 @@
  * the body and aborts the moment the running byte count exceeds the ceiling.
  *
  * Returns `{ ok: false }` on overflow (the caller maps it to its own error);
- * returns the decoded UTF-8 text on success.
+ * returns the decoded UTF-8 text on success. `readBodyBytesCapped` is the
+ * same read for a binary body (an activity file download).
  */
 export type CappedReadResult =
   { ok: true; text: string } | { ok: false; reason: "too_large" };
 
+export type CappedBytesResult =
+  { ok: true; bytes: Uint8Array } | { ok: false; reason: "too_large" };
+
+type CappedSource = {
+  headers: Headers;
+  body: ReadableStream<Uint8Array> | null;
+};
+
 export async function readBodyCapped(
-  source: { headers: Headers; body: ReadableStream<Uint8Array> | null },
+  source: CappedSource,
   maxBytes: number,
 ): Promise<CappedReadResult> {
+  const read = await readBodyBytesCapped(source, maxBytes);
+  if (!read.ok) return read;
+  return { ok: true, text: new TextDecoder("utf-8").decode(read.bytes) };
+}
+
+export async function readBodyBytesCapped(
+  source: CappedSource,
+  maxBytes: number,
+): Promise<CappedBytesResult> {
   // Up-front reject on a declared oversized length — cheap and stops the read
   // before a single byte is buffered.
   const declared = source.headers.get("content-length");
@@ -29,7 +47,7 @@ export async function readBodyCapped(
   }
 
   const body = source.body;
-  if (!body) return { ok: true, text: "" };
+  if (!body) return { ok: true, bytes: new Uint8Array(0) };
 
   const reader = body.getReader();
   const chunks: Uint8Array[] = [];
@@ -57,5 +75,5 @@ export async function readBodyCapped(
     merged.set(chunk, offset);
     offset += chunk.byteLength;
   }
-  return { ok: true, text: new TextDecoder("utf-8").decode(merged) };
+  return { ok: true, bytes: merged };
 }

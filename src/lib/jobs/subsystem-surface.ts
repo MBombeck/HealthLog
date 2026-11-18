@@ -117,6 +117,7 @@ const subsystemSurface = {
   "apple-health-import": { audience: "account" },
   "apple-health-import-reconcile": { audience: "account" },
   "health-connect-import": { audience: "account" },
+  "fit-import": { audience: "account" },
   "compaction-tombstone-purge": { audience: "system" },
   "measurement-fold-repair": { audience: "system" },
   "lab-document-date-repair": { audience: "system" },

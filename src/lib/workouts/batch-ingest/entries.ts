@@ -3,7 +3,7 @@
  * what the ingest answers per entry, and the row, track and series each
  * accepted entry becomes.
  */
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma, type MeasurementSource } from "@/generated/prisma/client";
 import { EXTERNAL_SOURCE } from "@/lib/measurements/external-source";
 import type { CreateBatchWorkoutInput } from "@/lib/validations/workout";
 import {
@@ -70,12 +70,21 @@ export function prepareWorkouts(args: {
   keepRoutes: boolean;
   workouts: WorkoutEntry[];
   refusedSampleIndices: ReadonlySet<number>;
+  /**
+   * The source a server-side importer writes under (the FIT import's
+   * `IMPORT`, the Garmin activity file's `GARMIN`). Never set from a request
+   * body: the client routes leave it out, and the entry's own `source`
+   * applies.
+   */
+  sourceOverride?: MeasurementSource;
 }): {
   prepared: PreparedWorkout[];
   results: EntryResult[];
   unstableShapes: UnstableExternalIdShape[];
 } {
   const { userId, scoped, keepRoutes, workouts, refusedSampleIndices } = args;
+  const sourceOf = (w: WorkoutEntry): MeasurementSource =>
+    args.sourceOverride ?? (scoped ? EXTERNAL_SOURCE : w.source);
   const results: EntryResult[] = new Array(workouts.length);
   const unstableShapes: UnstableExternalIdShape[] = [];
   const prepared: PreparedWorkout[] = workouts.flatMap((w, index) => {
@@ -109,14 +118,14 @@ export function prepareWorkouts(args: {
       return [];
     }
 
-    return [preparedFor(userId, scoped, keepRoutes, w, index)];
+    return [preparedFor(userId, sourceOf(w), keepRoutes, w, index)];
   });
   return { prepared, results, unstableShapes };
 }
 
 function preparedFor(
   userId: string,
-  scoped: boolean,
+  source: MeasurementSource,
   keepRoutes: boolean,
   w: WorkoutEntry,
   index: number,
@@ -157,8 +166,9 @@ function preparedFor(
     // `EXTERNAL` under a scoped credential, and nothing else: the route
     // refused any body that named a source, so nothing asserted is
     // discarded here. It also moves the dedup key into its own namespace,
-    // so a bridge's ids can never collide with the phone's.
-    source: scoped ? EXTERNAL_SOURCE : w.source,
+    // so a bridge's ids can never collide with the phone's. A server-side
+    // importer names its own source (`sourceOverride`).
+    source,
     externalId: w.externalId ?? null,
     externalSourceVersion: w.externalSourceVersion ?? null,
     metadata: w.metadata
@@ -170,11 +180,6 @@ function preparedFor(
     row,
     route,
     samples,
-    dedupKey: w.externalId
-      ? {
-          source: scoped ? EXTERNAL_SOURCE : w.source,
-          externalId: w.externalId,
-        }
-      : null,
+    dedupKey: w.externalId ? { source, externalId: w.externalId } : null,
   };
 }

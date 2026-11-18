@@ -6086,6 +6086,53 @@
               "stagingMissing": "O arquivo enviado não estava mais no servidor. Envie-o novamente.",
               "interrupted": "A importação foi interrompida por uma reinicialização do servidor. Envie o arquivo novamente."
             }
+          },
+          "fit": {
+            "title": "Arquivo de atividade (FIT)",
+            "description": "Importe um treino do arquivo FIT de um relógio ou ciclocomputador, como Garmin, Wahoo, Coros ou Polar.",
+            "choose": "Escolher arquivo de atividade",
+            "uploading": "Enviando…",
+            "uploadFailed": "O envio falhou. Tente novamente.",
+            "tooLarge": "O arquivo tem mais de 10 MB.",
+            "rateLimited": "Muitos envios em pouco tempo. Aguarde um minuto e tente novamente.",
+            "busy": "Já há uma importação em andamento para sua conta. Aguarde até ela terminar.",
+            "failed": "A importação falhou. Tente novamente.",
+            "doneSummary": "O arquivo de atividade foi importado.",
+            "doneNothing": "A importação terminou, mas não havia nada novo para adicionar.",
+            "dropLabel": "Solte o arquivo de atividade aqui",
+            "dropHint": "ou clique para escolhê-lo. .fit, .fit.gz ou .zip, até 10 MB.",
+            "fileInputLabel": "Arquivo de atividade",
+            "privacyNote": "O arquivo é apagado do servidor assim que a importação termina. Um treino que já está aqui pelo Garmin, Apple Health ou outro app não é adicionado duas vezes: ele recebe a curva de frequência cardíaca do arquivo se ainda não tinha uma. O trajeto de GPS só é guardado quando Rotas de treino está ativado. Enviar o mesmo arquivo de novo não muda nada.",
+            "steps": {
+              "garmin": "Garmin Connect: abra a atividade no site, escolha o menu da engrenagem e depois Exportar original. Envie o arquivo ZIP do jeito que ele vier.",
+              "other": "Outros apps e aparelhos: exporte a atividade como arquivo FIT (.fit ou .fit.gz) e envie aqui."
+            },
+            "phase": {
+              "queued": "Aguardando o início",
+              "parsing": "Lendo o arquivo",
+              "upserting": "Salvando o treino"
+            },
+            "result": {
+              "imported": "Treinos novos",
+              "merged": "Adicionado a treinos existentes",
+              "alreadyPresent": "Já estava aqui",
+              "sessionsSkipped": "Sessões que não puderam ser lidas",
+              "withSeries": "Com curva de frequência cardíaca",
+              "withRoute": "Com trajeto de GPS"
+            },
+            "failure": {
+              "unsupportedFile": "Isto não é um arquivo de atividade. Escolha um arquivo .fit, .fit.gz ou .zip.",
+              "archiveInvalid": "O arquivo ZIP precisa conter exatamente um arquivo .fit e não pôde ser lido.",
+              "tooLarge": "O arquivo é maior do que este servidor aceita.",
+              "notFit": "Este arquivo não é um arquivo FIT.",
+              "crcMismatch": "O arquivo está danificado: a soma de verificação não confere. Exporte-o de novo.",
+              "malformed": "O arquivo está danificado ou incompleto e não pôde ser lido.",
+              "tooComplex": "O arquivo contém muito mais dados do que uma atividade e não foi lido.",
+              "notActivity": "Este arquivo FIT não é uma atividade (pode ser um percurso ou um resumo diário). Escolha o arquivo de um único treino.",
+              "noSession": "O arquivo não contém nenhum treino legível.",
+              "stagingMissing": "O arquivo enviado não estava mais no servidor. Envie-o de novo.",
+              "interrupted": "A importação foi interrompida por uma reinicialização do servidor. Envie o arquivo de novo."
+            }
           }
         },
         "subtitle": "Exporte seus dados ou importe medições e registros de outros apps e arquivos."
@@ -7492,7 +7539,7 @@
       },
       "workoutRoutes": {
         "title": "Rotas de treino",
-        "description": "Guardar o trajeto de GPS de novos treinos vindos do app para iPhone e da exportação do Apple Health.",
+        "description": "Guardar o trajeto de GPS de novos treinos vindos do app para iPhone, da exportação do Apple Health, de arquivos de atividade e do Garmin.",
         "detail": "Desligado para contas novas. Uma rota mostra onde você mora, trabalha e treina, então ela só é guardada depois que você liga esta opção. Os treinos são guardados de qualquer forma, e nenhum recurso de IA lê uma rota. Desligar impede novas rotas; as rotas já guardadas permanecem até você excluir o treino.",
         "loadError": "Não foi possível carregar a configuração de rotas."
       },
