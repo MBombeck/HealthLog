@@ -14,7 +14,8 @@
   storage, not yours, and its activity log names you as the one who added,
   changed or confirmed them. Every AI read follows the profile's own
   settings and consent and runs on the instance's provider, never your
-  personal one. An adult who shares their record at any level, manage
+  personal one. Automatic reading of new uploads is the profile's own
+  switch, under Settings → AI while you are inside the profile. An adult who shares their record at any level, manage
   included, keeps the vault to themselves, as before. Thanks to @ch3funio
   for the careful write-up and for offering to test it with a real
   archive. (#1403)

@@ -251,7 +251,12 @@ as something to log in as.
   guardian's consent does not stand in for it, and the read uses the
   operator's provider, never the guardian's personal one. Automatic reading
   is off on a new profile, so an upload alone is stored, thumbnailed and its
-  text layer indexed on the server. This hangs on the managed profile, not
+  text layer indexed on the server. A guardian turns it on for the profile
+  under **Settings → AI** while inside it; that switch is the profile's own,
+  and turning it on records the profile's consent to having its documents
+  read, with the guardian named in the activity log. Asking about a document
+  opens a chat on that document alone, the same conversation the owner has
+  through the Coach. This hangs on the managed profile, not
   on the level: an adult who shares their record at manage still keeps the
   vault to themselves.
 
