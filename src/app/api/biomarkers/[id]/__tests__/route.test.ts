@@ -96,14 +96,14 @@ beforeEach(() => {
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
   // v1.37.0 — the 422 breadcrumb goes through `auditLog()` and the route
   // chains `.catch()` on it; `resetAllMocks` clears the factory's resolution.
-  vi.mocked(auditLog).mockResolvedValue(undefined as never);
+  vi.mocked(auditLog).mockResolvedValue(undefined);
   vi.mocked(prisma.$transaction).mockImplementation((async (arg: unknown) =>
     typeof arg === "function"
       ? (arg as (tx: unknown) => Promise<unknown>)(prisma)
       : Promise.all(arg as Promise<unknown>[])) as never);
-  vi.mocked(prisma.biomarkerAlias.findMany).mockResolvedValue([] as never);
-  vi.mocked(prisma.biomarker.findMany).mockResolvedValue([] as never);
-  vi.mocked(prisma.biomarkerMerge.findFirst).mockResolvedValue(null as never);
+  vi.mocked(prisma.biomarkerAlias.findMany).mockResolvedValue([]);
+  vi.mocked(prisma.biomarker.findMany).mockResolvedValue([]);
+  vi.mocked(prisma.biomarkerMerge.findFirst).mockResolvedValue(null);
 });
 
 describe("GET /api/biomarkers/[id] — trend (v1.44)", () => {
@@ -145,7 +145,7 @@ describe("GET /api/biomarkers/[id] — trend (v1.44)", () => {
   it("answers insufficient below three readings", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(prisma.biomarker.findFirst).mockResolvedValue(EXISTING as never);
-    vi.mocked(prisma.labResult.findMany).mockResolvedValue([] as never);
+    vi.mocked(prisma.labResult.findMany).mockResolvedValue([]);
     const body = await (await GET(getReq(), params("bm-1"))).json();
     expect(body.data.trend).toEqual({
       status: "insufficient",
@@ -259,7 +259,7 @@ describe("PUT /api/biomarkers/[id] — a no-unit marker given a unit", () => {
     vi.mocked(prisma.biomarker.findFirst).mockResolvedValue(
       TEXT_MARKER as never,
     );
-    vi.mocked(prisma.labResult.count).mockResolvedValue(0 as never);
+    vi.mocked(prisma.labResult.count).mockResolvedValue(0);
     vi.mocked(prisma.biomarker.update).mockImplementation((async (args: {
       data: Record<string, unknown>;
     }) => ({ ...TEXT_MARKER, ...args.data })) as never);

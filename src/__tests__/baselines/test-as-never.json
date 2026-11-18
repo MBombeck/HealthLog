@@ -1,7 +1,7 @@
 {
   "$comment": "as never casts in tests, per test file under src/. Maintained by src/__tests__/test-realism-ratchet.test.ts.",
-  "count": 522,
-  "total": 5447,
+  "count": 521,
+  "total": 5441,
   "entries": {
     "__tests__/api/auth/login/mfa-branch.test.ts": 10,
     "__tests__/api/auth/mfa/verify.test.ts": 9,
@@ -326,7 +326,6 @@
     "lib/analytics/__tests__/sleep-stage-composition.test.ts": 2,
     "lib/analytics/score/__tests__/config-change-is-not-a-health-event.test.ts": 1,
     "lib/analytics/score/__tests__/record.test.ts": 2,
-    "lib/apple-health/__tests__/route-import.test.ts": 4,
     "lib/arrivals/__tests__/reaction-line-shared.test.ts": 1,
     "lib/auth/__tests__/audit.test.ts": 2,
     "lib/auth/__tests__/bearer.test.ts": 16,
