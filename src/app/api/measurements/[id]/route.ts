@@ -125,6 +125,24 @@ export const PUT = apiHandler(
       if (refused) return refused;
     }
 
+    // #1407 — a meal context belongs to a blood glucose reading only. Any
+    // source may correct it, like the note: the context is the person's
+    // account of when they measured, not the provider's number.
+    if (
+      data.glucoseContext !== undefined &&
+      existing.type !== "BLOOD_GLUCOSE"
+    ) {
+      annotate({
+        action: { name: "measurements.update.validation-failed" },
+        meta: { measurement_id: id, reason: "glucose_context_not_glucose" },
+      });
+      return apiError(
+        "A meal context can only be set on a blood glucose reading",
+        422,
+        { errorCode: "measurement.update.glucose_context_not_glucose" },
+      );
+    }
+
     let measurement;
     try {
       measurement = await prisma.measurement.update({
@@ -132,6 +150,9 @@ export const PUT = apiHandler(
         data: {
           ...(data.value !== undefined && { value: data.value }),
           ...(data.measuredAt !== undefined && { measuredAt: data.measuredAt }),
+          ...(data.glucoseContext !== undefined && {
+            glucoseContext: data.glucoseContext,
+          }),
           // v1.23 — write the note to the encrypted column; null the legacy
           // plaintext column. An explicit `null` clears the note.
           ...(data.notes !== undefined && {
@@ -171,10 +192,15 @@ export const PUT = apiHandler(
       details: {
         measurementId: id,
         ...overwriteDetails({
-          before: { value: existing.value, measuredAt: existing.measuredAt },
+          before: {
+            value: existing.value,
+            measuredAt: existing.measuredAt,
+            glucoseContext: existing.glucoseContext,
+          },
           after: {
             value: measurement.value,
             measuredAt: measurement.measuredAt,
+            glucoseContext: measurement.glucoseContext,
           },
           redacted: data.notes !== undefined ? ["notes"] : [],
         }),

@@ -336,6 +336,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "measurement.delete.too_large",
       "measurement.duplicate_timestamp",
       "measurement.restore.invalid",
+      "measurement.update.glucose_context_not_glucose",
       "measurement.update.server_owned_source",
     ],
     medication: [

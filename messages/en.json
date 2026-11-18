@@ -949,6 +949,7 @@
     "glucoseContextPostprandial": "Post-meal (2h after eating)",
     "glucoseContextRandom": "Random / casual",
     "glucoseContextBedtime": "Before bed",
+    "glucoseContextNone": "Not specified",
     "unitHours": "hours",
     "unitSteps": "steps",
     "sourceManual": "Manual",

@@ -44,6 +44,15 @@ import {
   loadSegmentedEffects,
 } from "@/lib/medications/efficacy/load-segmented-effects";
 import type { EfficacySegmented } from "@/lib/medications/efficacy/segmented-effect";
+import {
+  CANONICAL_DISPLAY,
+  displaySegmented,
+  efficacyDisplayFor,
+  efficacyReferenceBand,
+  loadEfficacyAccount,
+  type EfficacyAccount,
+  type EfficacyDisplay,
+} from "@/lib/medications/efficacy/account-units";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -203,6 +212,7 @@ const round1 = (n: number): number => Math.round(n * 10) / 10;
 export function beforeAfterFromSeries(
   points: { at: number; value: number }[],
   pivotMs: number | null,
+  display: Pick<EfficacyDisplay, "abs" | "delta"> = CANONICAL_DISPLAY,
 ): EfficacyBeforeAfter {
   if (pivotMs === null) return { present: false, reason: "no_start" };
   const beforeFloor = pivotMs - BEFORE_WINDOW_DAYS * DAY_MS;
@@ -220,26 +230,32 @@ export function beforeAfterFromSeries(
   return {
     present: true,
     before: {
-      mean: round1(beforeMean),
+      mean: display.abs(beforeMean),
       count: before.length,
       from: new Date(before[0].at).toISOString(),
       to: new Date(before[before.length - 1].at).toISOString(),
     },
     after: {
-      mean: round1(afterMean),
+      mean: display.abs(afterMean),
       count: after.length,
       from: new Date(after[0].at).toISOString(),
       to: new Date(after[after.length - 1].at).toISOString(),
     },
     delta: {
-      mean: round1(diff),
+      mean: display.delta(diff),
+      // Relative change of the canonical means: a percentage of a stored
+      // value, independent of the unit it is read in.
       pct:
         beforeMean !== 0 ? round1((diff / Math.abs(beforeMean)) * 100) : null,
     },
   };
 }
 
-/** Build the metric-target view (day-mean series + before/after + changepoint). */
+/**
+ * Build the metric-target view (day-mean series + before/after + changepoint),
+ * in the account's display unit. The canonical straddle rides along so a later
+ * re-pivot recomputes the before/after from stored values, not rounded ones.
+ */
 async function buildMetricTarget(
   userId: string,
   mt: MeasurementType,
@@ -248,8 +264,15 @@ async function buildMetricTarget(
   windowDays: number,
   now: Date,
   coverage: Awaited<ReturnType<typeof probeRollupCoverage>>,
-): Promise<EfficacyTargetView> {
+  account: EfficacyAccount,
+): Promise<{
+  view: EfficacyTargetView;
+  straddle: { at: number; value: number }[];
+  display: EfficacyDisplay;
+}> {
   const meta = resolveMetricMeta(mt);
+  const display = efficacyDisplayFor(mt, meta.unit, account.preferences);
+  const band = efficacyReferenceBand(mt, meta.band, account);
   const { points } = await readDayMeanSeries(
     userId,
     mt,
@@ -259,7 +282,7 @@ async function buildMetricTarget(
   );
   const series: EfficacySeriesPoint[] = points.map((p) => ({
     t: p.day,
-    value: round1(p.mean),
+    value: display.abs(p.mean),
   }));
   const straddle = points.map((p) => ({
     at: dayToInstant(p.day),
@@ -295,16 +318,22 @@ async function buildMetricTarget(
   }
 
   return {
-    kind: "metric",
-    key: mt,
-    label: meta.label,
-    unit: meta.unit,
-    primary,
-    referenceBand: meta.band,
-    series,
-    beforeAfter: beforeAfterFromSeries(straddle, pivotMs),
-    levelShift,
-    segmented: null,
+    view: {
+      kind: "metric",
+      key: mt,
+      label: meta.label,
+      unit: display.unit,
+      primary,
+      referenceBand: band
+        ? { low: display.abs(band.low), high: display.abs(band.high) }
+        : null,
+      series,
+      beforeAfter: beforeAfterFromSeries(straddle, pivotMs, display),
+      levelShift,
+      segmented: null,
+    },
+    straddle,
+    display,
   };
 }
 
@@ -356,6 +385,25 @@ async function buildLabTarget(
     levelShift: null,
     segmented: null,
   };
+}
+
+/**
+ * Hang each metric target's segmented effect on its view, converted to the
+ * account's unit like the rest of the view (#1406). The fit stays canonical.
+ */
+function attachSegmented(
+  targets: EfficacyTargetView[],
+  segmented: Map<MeasurementType, EfficacySegmented>,
+  account: EfficacyAccount,
+): void {
+  for (const view of targets) {
+    if (view.kind !== "metric") continue;
+    const mt = view.key as MeasurementType;
+    view.segmented = displaySegmented(
+      segmented.get(mt) ?? null,
+      efficacyDisplayFor(mt, view.unit, account.preferences),
+    );
+  }
 }
 
 /**
@@ -433,6 +481,8 @@ export async function buildMedicationEfficacy(
     include: EFFECT_MEDICATION_INCLUDE,
   });
   if (!med) return null;
+
+  const account = await loadEfficacyAccount(userId);
 
   const startsOnIso = med.startsOn ? med.startsOn.toISOString() : null;
   const baseDto = {
@@ -537,7 +587,7 @@ export async function buildMedicationEfficacy(
     const target = resolved.targets[i];
     const primary = i === 0;
     if (target.kind === "metric") {
-      const view = await buildMetricTarget(
+      const { view, straddle, display } = await buildMetricTarget(
         userId,
         target.measurementType,
         primary,
@@ -545,15 +595,13 @@ export async function buildMedicationEfficacy(
         windowDays,
         now,
         coverage,
+        account,
       );
       // Legacy no-start med: fall back to the primary metric's first reading.
-      if (primary && pivotMs === null && view.series.length > 0) {
-        pivotMs = dayToInstant(view.series[0].t);
+      if (primary && pivotMs === null && straddle.length > 0) {
+        pivotMs = straddle[0].at;
         startSource = "firstReading";
-        view.beforeAfter = beforeAfterFromSeries(
-          view.series.map((p) => ({ at: dayToInstant(p.t), value: p.value })),
-          pivotMs,
-        );
+        view.beforeAfter = beforeAfterFromSeries(straddle, pivotMs, display);
       }
       targets.push(view);
     } else {
@@ -587,11 +635,7 @@ export async function buildMedicationEfficacy(
     timezone,
     now,
   });
-  for (const view of targets) {
-    if (view.kind === "metric") {
-      view.segmented = segmented.get(view.key as MeasurementType) ?? null;
-    }
-  }
+  attachSegmented(targets, segmented, account);
 
   // Adherence lane — the cadence-aware per-day rate from the SAME ledger the
   // compliance surfaces read; never recomputed here.

@@ -1150,7 +1150,7 @@ export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Measurements"],
       summary: "Update a measurement",
       description:
-        "Edits a manually entered row. Rows owned by a connected source are refused with 409 `measurement.update.server_owned_source`; a timestamp collision with an existing row is refused with 409 `measurement.duplicate_timestamp`.",
+        "Edits a row. A value change on a row owned by a connected source is refused with 409 `measurement.update.server_owned_source`; a timestamp collision with an existing row is refused with 409 `measurement.duplicate_timestamp`. `glucoseContext` corrects the meal context of a `BLOOD_GLUCOSE` reading from any source, and `null` clears it; sent for any other type it is refused with 422 `measurement.update.glucose_context_not_glucose`.",
       requestParams: { path: z.object({ id: z.string() }) },
       requestBody: {
         required: true,

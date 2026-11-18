@@ -42,6 +42,10 @@ import {
 } from "@/lib/measurements/last-used-type";
 
 import { DurationReadAs } from "./duration-read-as";
+import {
+  GlucoseContextSelect,
+  type GlucoseContextValue,
+} from "./glucose-context-select";
 import { ketoneFingerstickBatch } from "./ketone-fingerstick";
 import {
   MeasurementFormFooter,
@@ -251,18 +255,6 @@ export function resolveAddToken(
   const aliased = ADD_TOKEN_ALIASES[token] ?? token;
   return MEASUREMENT_FORM_TYPE_VALUES.includes(aliased) ? aliased : null;
 }
-
-const GLUCOSE_CONTEXTS = [
-  { value: "FASTING", labelKey: "measurements.glucoseContextFasting" },
-  {
-    value: "POSTPRANDIAL",
-    labelKey: "measurements.glucoseContextPostprandial",
-  },
-  { value: "RANDOM", labelKey: "measurements.glucoseContextRandom" },
-  { value: "BEDTIME", labelKey: "measurements.glucoseContextBedtime" },
-] as const;
-
-type GlucoseContextValue = (typeof GLUCOSE_CONTEXTS)[number]["value"];
 
 interface MeasurementFormProps {
   onSuccess?: () => void;
@@ -723,28 +715,13 @@ export function MeasurementForm({
           htmlFor="glucose-context"
           label={t("measurements.glucoseContext")}
         >
-          <Select
+          <GlucoseContextSelect
+            id="glucose-context"
             value={glucoseContext}
-            onValueChange={(v) => setGlucoseContext(v as GlucoseContextValue)}
-          >
-            <SelectTrigger id="glucose-context">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {GLUCOSE_CONTEXTS.map((ctx) => (
-                <SelectItem
-                  key={ctx.value}
-                  value={ctx.value}
-                  // The option carries its enum alongside the translated
-                  // label, so an option can be chosen by which meal time it
-                  // means rather than by the words the current locale prints.
-                  data-glucose-context={ctx.value}
-                >
-                  {t(ctx.labelKey)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            // The add form offers no "none": a reading typed in always says
+            // when it was taken.
+            onValueChange={(v) => v && setGlucoseContext(v)}
+          />
         </FieldGroup>
       )}
 
