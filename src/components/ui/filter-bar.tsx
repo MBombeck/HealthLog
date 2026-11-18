@@ -100,9 +100,10 @@ export function FilterBar({
       className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
     >
       {/* Pill rail — horizontal scroll row below `sm` (hidden scrollbar,
-          edge-bleed so the row scrolls to the screen edge), wrapping flex
-          row on desktop. */}
-      <div className="-mx-4 flex [scrollbar-width:none] items-center gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden">
+          edge-bleed so the row scrolls to the screen edge, and a fade at the
+          right edge so a pill cut off there reads as "scroll for more"),
+          wrapping flex row on desktop. */}
+      <div className="-mx-4 flex [scrollbar-width:none] items-center gap-2 overflow-x-auto px-4 max-sm:mask-r-from-90% sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden">
         <ListFilter
           className="text-muted-foreground size-4 shrink-0"
           aria-hidden="true"
@@ -121,13 +122,15 @@ export function FilterBar({
         )}
       </div>
       {/* A polite status, so a list that filters while you type says how
-          many results are left, not only when none are. */}
+          many results are left, not only when none are. `ml-auto` keeps it
+          on the container's right edge when the pills wrap and it drops to
+          a line of its own. */}
       {count != null && (
         <span
           role="status"
           aria-live="polite"
           aria-atomic="true"
-          className="text-muted-foreground text-sm tabular-nums"
+          className="text-muted-foreground text-sm tabular-nums sm:ml-auto"
         >
           {count}
         </span>
