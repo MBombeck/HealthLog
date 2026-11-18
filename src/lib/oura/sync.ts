@@ -57,7 +57,7 @@ import {
 } from "@/lib/sleep/sweep-stale-segments";
 import {
   MeasurementReconciliationError,
-  reconcileExternalMeasurement,
+  reconcileExternalMeasurements,
 } from "@/lib/measurements/reconcile-external-measurement";
 import {
   fetchCardiovascularAge,
@@ -840,28 +840,26 @@ export async function upsertOuraMeasurements(
 
   const verdicts = await prisma.$transaction(
     async (tx) => {
-      const outcomes = [];
-      for (const r of readings) {
-        const verdict = await reconcileExternalMeasurement(
-          tx,
-          {
-            userId,
-            type: r.type as MeasurementType,
-            source: "OURA",
-            value: r.value,
-            unit: r.unit,
-            measuredAt: r.measuredAt,
-            externalId: r.externalId,
-            sleepStage: r.sleepStage ?? null,
-          },
-          { exactExternalMatch: "update" },
-        );
+      const outcomes = await reconcileExternalMeasurements(
+        tx,
+        readings.map((r) => ({
+          userId,
+          type: r.type as MeasurementType,
+          source: "OURA" as const,
+          value: r.value,
+          unit: r.unit,
+          measuredAt: r.measuredAt,
+          externalId: r.externalId,
+          sleepStage: r.sleepStage ?? null,
+        })),
+        { exactExternalMatch: "update" },
+      );
+      return outcomes.map((verdict) => {
         if (verdict.status === "failed") {
           throw new MeasurementReconciliationError(verdict);
         }
-        outcomes.push(verdict);
-      }
-      return outcomes;
+        return verdict;
+      });
     },
     { timeout: 60_000 },
   );

@@ -59,7 +59,10 @@ import {
   MEASURED_AT_TOLERANCE_MS,
   valuesMatch,
 } from "@/lib/measurements/cross-source-merge";
-import { reconcileExternalMeasurement } from "@/lib/measurements/reconcile-external-measurement";
+import {
+  reconcileExternalMeasurementsInChunks,
+  type ExternalMeasurementWrite,
+} from "@/lib/measurements/reconcile-external-measurement";
 import {
   FOLDED_WINDOW_REASON,
   findFoldedWindowDuplicates,
@@ -968,6 +971,7 @@ class ImportRun {
       ).map((row) => [row.externalId, row]),
     );
     const stat = this.stat(type);
+    const writes: ExternalMeasurementWrite[] = [];
     for (let i = 0; i < days.length; i++) {
       const { dayKey, value } = days[i];
       if (validateMeasurementRange(type, value) !== null) {
@@ -983,46 +987,39 @@ class ImportRun {
         stat.unchanged += 1;
         continue;
       }
-      const measuredAt = canonicalDailyTimestamp(dayKey, this.tz);
-      const verdict = await this.prisma.$transaction((tx) =>
-        reconcileExternalMeasurement(
-          tx,
-          {
-            userId: this.userId,
-            type,
-            value,
-            unit: hcUnit(type),
-            source: SOURCE,
-            measuredAt,
-            externalId: ids[i],
-            externalSourceVersion: null,
-            sleepStage: null,
-            deviceType: null,
-          },
-          { exactExternalMatch: "update" },
-        ),
-      );
-      if (verdict.status === "inserted") {
-        stat.inserted += 1;
-      } else if (
-        verdict.status === "updated" ||
-        verdict.status === "resurrected"
-      ) {
-        stat.updated += 1;
-      } else if (verdict.status === "duplicate") {
-        stat.unchanged += 1;
-        continue;
-      } else {
-        this.skip(
-          verdict.status === "rejected_range" ? "out_of_range" : "write_failed",
-          1,
-          type,
-        );
-        continue;
-      }
-      this.rowsUpserted += 1;
-      this.widen(measuredAt);
+      writes.push({
+        userId: this.userId,
+        type,
+        value,
+        unit: hcUnit(type),
+        source: SOURCE,
+        measuredAt: canonicalDailyTimestamp(dayKey, this.tz),
+        externalId: ids[i],
+        externalSourceVersion: null,
+        sleepStage: null,
+        deviceType: null,
+      });
     }
+    const verdicts = await reconcileExternalMeasurementsInChunks(
+      this.prisma,
+      writes,
+      { exactExternalMatch: "update" },
+    );
+    verdicts.forEach((verdict, index) => {
+      if (verdict.status === "duplicate") {
+        stat.unchanged += 1;
+        return;
+      }
+      if (verdict.status === "failed" || verdict.status === "rejected_range") {
+        const refused = verdict.status === "rejected_range";
+        this.skip(refused ? "out_of_range" : "write_failed", 1, type);
+        return;
+      }
+      if (verdict.status === "inserted") stat.inserted += 1;
+      else stat.updated += 1;
+      this.rowsUpserted += 1;
+      this.widen(writes[index]!.measuredAt);
+    });
     await this.progress();
   }
 

@@ -137,18 +137,9 @@ export async function emitDataArrival(input: EmitArrivalInput): Promise<void> {
   const now = input.now ?? new Date();
 
   try {
-    const moduleKey = KIND_MODULE[kind];
-    if (moduleKey) {
-      const modules = await resolveModuleMap(userId);
-      if (modules[moduleKey] === false) {
-        annotate({
-          action: { name: `arrival.${kind}.skipped` },
-          meta: { reason: "module_off", source },
-        });
-        return;
-      }
-    }
-
+    // Recency first: the zone is cached, the module map is three reads, and
+    // a history import lands here once per row it inserts, almost all of
+    // them old.
     const tz = await resolveUserTimezone(userId);
     const classification = classifyArrival({
       kind,
@@ -176,6 +167,18 @@ export async function emitDataArrival(input: EmitArrivalInput): Promise<void> {
         },
       });
       return;
+    }
+
+    const moduleKey = KIND_MODULE[kind];
+    if (moduleKey) {
+      const modules = await resolveModuleMap(userId);
+      if (modules[moduleKey] === false) {
+        annotate({
+          action: { name: `arrival.${kind}.skipped` },
+          meta: { reason: "module_off", source },
+        });
+        return;
+      }
     }
 
     const localDate = arrivalLocalDate(now, tz);

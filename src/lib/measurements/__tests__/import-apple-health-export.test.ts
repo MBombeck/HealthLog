@@ -1054,11 +1054,12 @@ describe("streamParseExportXml — statement-level insertion identity", () => {
       inserted: 1,
       updated: 0,
     });
-    // The concurrently visible native statistics row is authoritative, so the
-    // XML estimate is an intentional no-op.
+    // The daily estimate meets the row that landed first under both of its
+    // identities, so it overwrites that row: never counted as an insert, and
+    // never an arrival.
     expect(result.perType.ACTIVITY_STEPS).toMatchObject({
       inserted: 0,
-      updated: 0,
+      updated: 1,
     });
 
     const arrivalRows = vi.mocked(emitInsertedMeasurementArrivals).mock

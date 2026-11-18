@@ -52,7 +52,8 @@ import {
 } from "@/lib/sleep/sweep-stale-segments";
 import {
   MeasurementReconciliationError,
-  reconcileExternalMeasurement,
+  reconcileExternalMeasurements,
+  type ExternalMeasurementWrite,
 } from "@/lib/measurements/reconcile-external-measurement";
 
 import { hasActivityScope } from "./oauth";
@@ -340,6 +341,39 @@ export async function fetchWithingsSleepSummary(
 }
 
 /**
+ * Settle `writes` in one transaction and note what they touched; a failed
+ * write rolls the whole set back. Returns how many were written.
+ */
+async function writeSleepRows(
+  writes: ExternalMeasurementWrite[],
+  touched: Array<{ type: MeasurementType; measuredAt: Date }>,
+  onInserted?: (write: ExternalMeasurementWrite) => void,
+): Promise<number> {
+  return prisma.$transaction(
+    async (tx) => {
+      let written = 0;
+      const verdicts = await reconcileExternalMeasurements(tx, writes, {
+        exactExternalMatch: "update",
+      });
+      verdicts.forEach((verdict, index) => {
+        if (verdict.status === "failed") {
+          throw new MeasurementReconciliationError(verdict);
+        }
+        // Refused by the plausibility gate: nothing was written and nothing
+        // was touched. The drop is already on the wide event.
+        if (verdict.status === "rejected_range") return;
+        const { type, measuredAt } = writes[index]!;
+        touched.push(...(verdict.dirtyIdentities ?? []), { type, measuredAt });
+        if (verdict.status === "inserted") onInserted?.(writes[index]!);
+        written++;
+      });
+      return written;
+    },
+    { timeout: 60_000 },
+  );
+}
+
+/**
  * Sync sleep data for a single user. Walks the trailing 30-day window
  * (or whatever `SLEEP_BACKFILL_DAYS` is set to), writing one
  * Measurement row per stage segment. Returns the number of upserted
@@ -577,56 +611,35 @@ export async function syncUserSleep(
     throw err;
   };
 
-  await prisma
-    .$transaction(
-      async (tx) => {
-        for (const segment of segments) {
-          const stage = mapWithingsSleepState(segment.state);
-          if (!stage) continue;
+  const segmentWrites: ExternalMeasurementWrite[] = [];
+  for (const segment of segments) {
+    const stage = mapWithingsSleepState(segment.state);
+    if (!stage) continue;
 
-          const measuredAt = new Date(segment.enddate * 1000);
-          const durationSec = Math.max(0, segment.enddate - segment.startdate);
-          const minutes = Math.round(durationSec / 60);
-          const externalId = `withings:sleep:${userId}:${segment.id ?? "no-id"}:${segment.startdate}`;
-          if (typeof segment.id === "number") {
-            const fresh = freshBySession.get(segment.id) ?? [];
-            fresh.push(externalId);
-            freshBySession.set(segment.id, fresh);
-          }
+    const measuredAt = new Date(segment.enddate * 1000);
+    const durationSec = Math.max(0, segment.enddate - segment.startdate);
+    const minutes = Math.round(durationSec / 60);
+    const externalId = `withings:sleep:${userId}:${segment.id ?? "no-id"}:${segment.startdate}`;
+    if (typeof segment.id === "number") {
+      const fresh = freshBySession.get(segment.id) ?? [];
+      fresh.push(externalId);
+      freshBySession.set(segment.id, fresh);
+    }
+    segmentWrites.push({
+      userId,
+      type: SLEEP_TYPE,
+      value: minutes,
+      unit: getUnitForType(SLEEP_TYPE),
+      measuredAt,
+      source: "WITHINGS",
+      sleepStage: stage,
+      externalId,
+    });
+  }
 
-          const verdict = await reconcileExternalMeasurement(
-            tx,
-            {
-              userId,
-              type: SLEEP_TYPE,
-              value: minutes,
-              unit: getUnitForType(SLEEP_TYPE),
-              measuredAt,
-              source: "WITHINGS",
-              sleepStage: stage,
-              externalId,
-            },
-            { exactExternalMatch: "update" },
-          );
-          if (verdict.status === "failed") {
-            throw new MeasurementReconciliationError(verdict);
-          }
-          // Refused by the plausibility gate: nothing was written and nothing
-          // was touched. The drop is already on the wide event.
-          if (verdict.status === "rejected_range") continue;
-          for (const dirty of verdict.dirtyIdentities ?? []) {
-            touched.push(dirty);
-          }
-          if (verdict.status === "inserted") {
-            insertedSleepMeasuredAts.push(measuredAt);
-          }
-          touched.push({ type: SLEEP_TYPE, measuredAt });
-          imported++;
-        }
-      },
-      { timeout: 60_000 },
-    )
-    .catch(recordSleepWriteFailure);
+  imported += await writeSleepRows(segmentWrites, touched, (write) =>
+    insertedSleepMeasuredAts.push(write.measuredAt),
+  ).catch(recordSleepWriteFailure);
 
   // Session-scoped sweep (mirrors Google Health's replace-by-window): for each
   // session this fetch re-produced, soft-delete any live WITHINGS
@@ -648,43 +661,25 @@ export async function syncUserSleep(
   // v1.18.10 — nightly sleep vitals (avg HR / respiratory rate / SDNN HRV
   // / avg SpO2 / sleep score) from the per-night summary read above. Database
   // failures are hard sync failures.
-  await prisma
-    .$transaction(
-      async (tx) => {
-        for (const summary of summaries) {
-          const measuredAt = new Date(summary.enddate * 1000);
-          const sessionId = summary.id ?? "no-id";
-          for (const vital of mapWithingsSleepSummary(summary.data)) {
-            const verdict = await reconcileExternalMeasurement(
-              tx,
-              {
-                userId,
-                type: vital.type,
-                value: vital.value,
-                unit: getUnitForType(vital.type),
-                measuredAt,
-                source: "WITHINGS",
-                externalId: `withings:sleep:${userId}:${sessionId}:${vital.fieldTag}`,
-              },
-              { exactExternalMatch: "update" },
-            );
-            if (verdict.status === "failed") {
-              throw new MeasurementReconciliationError(verdict);
-            }
-            // Refused by the plausibility gate: nothing was written and
-            // nothing was touched. The drop is already on the wide event.
-            if (verdict.status === "rejected_range") continue;
-            for (const dirty of verdict.dirtyIdentities ?? []) {
-              touched.push(dirty);
-            }
-            touched.push({ type: vital.type, measuredAt });
-            imported++;
-          }
-        }
-      },
-      { timeout: 60_000 },
-    )
-    .catch(recordSleepWriteFailure);
+  const vitalWrites: ExternalMeasurementWrite[] = [];
+  for (const summary of summaries) {
+    const measuredAt = new Date(summary.enddate * 1000);
+    const sessionId = summary.id ?? "no-id";
+    for (const vital of mapWithingsSleepSummary(summary.data)) {
+      vitalWrites.push({
+        userId,
+        type: vital.type,
+        value: vital.value,
+        unit: getUnitForType(vital.type),
+        measuredAt,
+        source: "WITHINGS",
+        externalId: `withings:sleep:${userId}:${sessionId}:${vital.fieldTag}`,
+      });
+    }
+  }
+  imported += await writeSleepRows(vitalWrites, touched).catch(
+    recordSleepWriteFailure,
+  );
 
   // v1.4.39.1 — refresh the persistent rollup table for every distinct
   // (type, day) the sync touched. Sleep segments collapse heavily —

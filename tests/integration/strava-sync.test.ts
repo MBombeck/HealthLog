@@ -40,6 +40,7 @@ import { POST as syncRoute } from "@/app/api/strava/sync/route";
 
 import { anonymous, callRoute } from "../kit/call-route";
 import { makeSession, makeUser } from "../kit/factories";
+import { countStatements, summariseStatements } from "./query-counter";
 import { getPrismaClient, truncateAllTables } from "./setup";
 
 interface RecordedRequest {
@@ -874,6 +875,31 @@ describe("the history backfill", () => {
       activity(i + 1, T0 + (i + 1) * HOUR),
     );
   }
+
+  it("writes a history at about one statement an activity, and reads it again the same way", async () => {
+    const user = await connectedUser();
+    history(5 * PER_PAGE);
+
+    // An insert attempt per activity, then a read and an update for each one
+    // already stored, and three module reads for each arrival of a years-old
+    // activity: about four statements an activity first and three again.
+    const first = await countStatements(() => syncStravaHistory(user.id));
+    expect(first.result.imported).toBe(5 * PER_PAGE);
+    expect(
+      first.count,
+      summariseStatements(first.statements).slice(0, 2_000),
+    ).toBeLessThanOrEqual(5 * PER_PAGE * 1.5);
+
+    const again = await countStatements(() => syncStravaHistory(user.id));
+    expect(again.result.imported).toBe(5 * PER_PAGE);
+    expect(await prisma.workout.count({ where: { userId: user.id } })).toBe(
+      5 * PER_PAGE,
+    );
+    expect(
+      again.count,
+      summariseStatements(again.statements).slice(0, 2_000),
+    ).toBeLessThanOrEqual(5 * PER_PAGE * 1.5);
+  });
 
   it("reads newest first until a short page and marks the history complete", async () => {
     const user = await connectedUser();

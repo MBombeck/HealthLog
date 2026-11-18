@@ -332,7 +332,7 @@
     "lib/telegram-webhook-handlers.ts :: handleTextMessage": 322,
     "lib/withings/sync-activity.ts :: syncUserActivity": 377,
     "lib/withings/sync-ecg.ts :: syncUserEcg": 202,
-    "lib/withings/sync-sleep.ts :: syncUserSleep": 414,
+    "lib/withings/sync-sleep.ts :: syncUserSleep": 375,
     "lib/withings/sync.ts :: syncUserMeasurements": 337,
     "proxy.ts :: proxy": 467
   }

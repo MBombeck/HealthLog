@@ -31,6 +31,17 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("@/lib/measurements/reconcile-external-measurement", () => ({
   reconcileExternalMeasurement: reconcileMock,
+  // The batch form, entry by entry through the same mock.
+  reconcileExternalMeasurements: async (
+    tx: unknown,
+    batch: unknown[],
+    options: unknown,
+  ) => {
+    const out = [];
+    for (const entry of batch)
+      out.push(await reconcileMock(tx, entry, options));
+    return out;
+  },
   MeasurementReconciliationError: class extends Error {},
 }));
 
