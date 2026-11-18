@@ -24,8 +24,13 @@ test.beforeEach(async ({ page }) => {
   await resetSeizures();
   await setSeizuresModule(true);
   // The timer lives in the browser; a previous test's start must not carry.
+  // An init script runs on every load, the reload under test included, so it
+  // clears once per tab: the marker survives a reload, a new test's tab
+  // starts without it.
   await page.addInitScript(() => {
     try {
+      if (window.sessionStorage.getItem("e2e:seizure-timer-cleared")) return;
+      window.sessionStorage.setItem("e2e:seizure-timer-cleared", "1");
       for (const key of Object.keys(window.localStorage)) {
         if (key.startsWith("healthlog:seizure-timer:")) {
           window.localStorage.removeItem(key);
