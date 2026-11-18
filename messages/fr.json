@@ -12347,7 +12347,8 @@
       "description": "Conservez courriers médicaux, résultats de laboratoire, imagerie, ordonnances et carnets de vaccination. Ils sont chiffrés et consultables par type, affection et année.",
       "action": "Téléverser un premier document",
       "noMatchesTitle": "Aucun document correspondant",
-      "noMatchesDescription": "Rien ne correspond à la recherche et aux filtres actuels."
+      "noMatchesDescription": "Rien ne correspond à la recherche et aux filtres actuels.",
+      "titleRecord": "Le coffre à documents de {name} est vide"
     },
     "detail": {
       "title": "Détails du document",
@@ -12653,6 +12654,10 @@
     "picker": {
       "capped": "Les {count} plus récents sont affichés. Utilisez la recherche pour trouver un document plus ancien.",
       "cappedSearching": "Les {count} résultats les plus récents sont affichés. Affinez la recherche pour en trouver un plus ancien."
+    },
+    "recordAi": {
+      "noProvider": "Aucun fournisseur d'IA de ce serveur ne peut lire les documents de ce dossier : ils n'ont donc ni résumé, ni recherche dans le contenu, ni discussion sur les documents.",
+      "off": "L'IA est désactivée pour ce dossier : ses documents n'ont donc ni résumé, ni recherche dans le contenu, ni discussion sur les documents."
     }
   },
   "selfDescription": {
@@ -13137,7 +13142,8 @@
       "viewing": "Vous êtes dans le dossier de {name}",
       "readOnly": "Vous pouvez le lire, pas le modifier.",
       "canAdd": "Vous pouvez y ajouter, mais pas modifier ni supprimer ce qui s'y trouve.",
-      "leave": "Revenir à mon dossier"
+      "leave": "Revenir à mon dossier",
+      "canManage": "Vous pouvez y ajouter, modifier ou retirer ce qui s'y trouve."
     },
     "switcher": {
       "label": "Ouvrir un dossier",

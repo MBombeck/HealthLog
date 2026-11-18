@@ -12347,7 +12347,8 @@
       "description": "Przechowuj pisma lekarskie, wyniki laboratoryjne, obrazowanie, recepty i zaświadczenia o szczepieniach. Są zaszyfrowane i można je przeszukiwać według typu, schorzenia i roku.",
       "action": "Prześlij pierwszy dokument",
       "noMatchesTitle": "Brak pasujących dokumentów",
-      "noMatchesDescription": "Nic nie pasuje do bieżącego wyszukiwania i filtrów."
+      "noMatchesDescription": "Nic nie pasuje do bieżącego wyszukiwania i filtrów.",
+      "titleRecord": "Sejf dokumentów {name} jest pusty"
     },
     "detail": {
       "title": "Szczegóły dokumentu",
@@ -12653,6 +12654,10 @@
     "picker": {
       "capped": "Widać {count} najnowszych. Starszy dokument znajdziesz przez wyszukiwanie.",
       "cappedSearching": "Widać {count} najnowszych wyników. Zawęź wyszukiwanie, aby znaleźć starszy."
+    },
+    "recordAi": {
+      "noProvider": "Żaden dostawca AI na tym serwerze nie może czytać dokumentów w tej kartotece, więc nie ma podsumowań, wyszukiwania w treści ani czatu o dokumentach.",
+      "off": "AI jest wyłączona dla tej kartoteki, więc jej dokumenty nie mają podsumowań, wyszukiwania w treści ani czatu o dokumentach."
     }
   },
   "selfDescription": {
@@ -13137,7 +13142,8 @@
       "viewing": "Jesteś w karcie użytkownika {name}",
       "readOnly": "Możesz ją czytać, nie zmieniać.",
       "canAdd": "Możesz coś dodać, ale nie zmieniać ani usuwać tego, co już jest.",
-      "leave": "Wróć do mojej karty"
+      "leave": "Wróć do mojej karty",
+      "canManage": "Możesz coś dodać oraz zmieniać lub usuwać to, co już jest."
     },
     "switcher": {
       "label": "Otwórz kartę",

@@ -12347,7 +12347,8 @@
       "description": "Armazene cartas médicas, laudos laboratoriais, imagens, receitas e registros de vacinação. Eles são criptografados e pesquisáveis por tipo, condição e ano.",
       "action": "Enviar um primeiro documento",
       "noMatchesTitle": "Nenhum documento correspondente",
-      "noMatchesDescription": "Nada corresponde à busca e aos filtros atuais."
+      "noMatchesDescription": "Nada corresponde à busca e aos filtros atuais.",
+      "titleRecord": "O cofre de documentos de {name} está vazio"
     },
     "detail": {
       "title": "Detalhes do documento",
@@ -12653,6 +12654,10 @@
     "picker": {
       "capped": "Mostrando os {count} mais recentes. Use a busca para encontrar um documento mais antigo.",
       "cappedSearching": "Mostrando os {count} resultados mais recentes. Refine a busca para encontrar um mais antigo."
+    },
+    "recordAi": {
+      "noProvider": "Nenhum provedor de IA deste servidor pode ler os documentos deste registro, então eles não têm resumo, busca no conteúdo nem chat de documentos.",
+      "off": "A IA está desligada para este registro, então seus documentos não têm resumo, busca no conteúdo nem chat de documentos."
     }
   },
   "selfDescription": {
@@ -13137,7 +13142,8 @@
       "viewing": "Você está no registro de {name}",
       "readOnly": "Você pode lê-lo, não alterá-lo.",
       "canAdd": "Você pode adicionar a ele, mas não alterar ou excluir o que está lá.",
-      "leave": "Voltar ao meu registro"
+      "leave": "Voltar ao meu registro",
+      "canManage": "Você pode adicionar a ele e alterar ou remover o que está lá."
     },
     "switcher": {
       "label": "Abrir um registro",

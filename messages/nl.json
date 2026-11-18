@@ -12347,7 +12347,8 @@
       "description": "Bewaar artsenbrieven, labverslagen, beeldvorming, recepten en vaccinatiebewijzen. Ze worden versleuteld en zijn doorzoekbaar op type, aandoening en jaar.",
       "action": "Een eerste document uploaden",
       "noMatchesTitle": "Geen overeenkomende documenten",
-      "noMatchesDescription": "Niets komt overeen met de huidige zoekopdracht en filters."
+      "noMatchesDescription": "Niets komt overeen met de huidige zoekopdracht en filters.",
+      "titleRecord": "De documentenkluis van {name} is leeg"
     },
     "detail": {
       "title": "Documentdetails",
@@ -12653,6 +12654,10 @@
     "picker": {
       "capped": "De nieuwste {count} staan hier. Zoek om een ouder document te vinden.",
       "cappedSearching": "De nieuwste {count} resultaten staan hier. Verfijn de zoekopdracht om een ouder document te vinden."
+    },
+    "recordAi": {
+      "noProvider": "Geen AI-aanbieder op deze server kan de documenten in dit dossier lezen, dus ze krijgen geen samenvatting, geen zoeken op inhoud en geen documentchat.",
+      "off": "AI staat uit voor dit dossier, dus de documenten krijgen geen samenvatting, geen zoeken op inhoud en geen documentchat."
     }
   },
   "selfDescription": {
@@ -13137,7 +13142,8 @@
       "viewing": "Je bent in het dossier van {name}",
       "readOnly": "Je kunt het lezen, maar niet wijzigen.",
       "canAdd": "Je kunt er iets aan toevoegen, maar niet wijzigen of verwijderen wat er al staat.",
-      "leave": "Terug naar mijn dossier"
+      "leave": "Terug naar mijn dossier",
+      "canManage": "Je kunt er iets aan toevoegen en wijzigen of verwijderen wat er staat."
     },
     "switcher": {
       "label": "Een dossier openen",

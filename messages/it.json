@@ -12347,7 +12347,8 @@
       "description": "Conserva lettere mediche, referti di laboratorio, imaging, prescrizioni e certificati vaccinali. Sono cifrati e ricercabili per tipo, patologia e anno.",
       "action": "Carica un primo documento",
       "noMatchesTitle": "Nessun documento corrispondente",
-      "noMatchesDescription": "Nulla corrisponde alla ricerca e ai filtri attuali."
+      "noMatchesDescription": "Nulla corrisponde alla ricerca e ai filtri attuali.",
+      "titleRecord": "L'archivio documenti di {name} è vuoto"
     },
     "detail": {
       "title": "Dettagli del documento",
@@ -12653,6 +12654,10 @@
     "picker": {
       "capped": "Sono mostrati i {count} più recenti. Usa la ricerca per trovare un documento più vecchio.",
       "cappedSearching": "Sono mostrati i {count} risultati più recenti. Restringi la ricerca per trovarne uno più vecchio."
+    },
+    "recordAi": {
+      "noProvider": "Nessun fornitore di IA su questo server può leggere i documenti di questa cartella, quindi non hanno riassunto, ricerca nel contenuto né chat sui documenti.",
+      "off": "L'IA è disattivata per questa cartella, quindi i suoi documenti non hanno riassunto, ricerca nel contenuto né chat sui documenti."
     }
   },
   "selfDescription": {
@@ -13137,7 +13142,8 @@
       "viewing": "Sei nella cartella di {name}",
       "readOnly": "Puoi leggerla, non modificarla.",
       "canAdd": "Puoi aggiungere qualcosa, ma non modificare né eliminare ciò che c'è.",
-      "leave": "Torna alla mia cartella"
+      "leave": "Torna alla mia cartella",
+      "canManage": "Puoi aggiungere, modificare o rimuovere ciò che c'è."
     },
     "switcher": {
       "label": "Apri una cartella",

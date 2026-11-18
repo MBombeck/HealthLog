@@ -12347,7 +12347,8 @@
       "description": "Store doctor letters, lab reports, imaging, prescriptions and vaccination records. They are encrypted and searchable by type, condition and year.",
       "action": "Upload a first document",
       "noMatchesTitle": "No matching documents",
-      "noMatchesDescription": "Nothing matches the current search and filters."
+      "noMatchesDescription": "Nothing matches the current search and filters.",
+      "titleRecord": "{name}'s document vault is empty"
     },
     "detail": {
       "title": "Document details",
@@ -12653,6 +12654,10 @@
     "picker": {
       "capped": "Showing the newest {count}. Search to find an older document.",
       "cappedSearching": "Showing the newest {count} matches. Narrow the search to find an older one."
+    },
+    "recordAi": {
+      "noProvider": "No AI provider on this server can read the documents in this record, so they get no summary, no search by content and no document chat.",
+      "off": "AI is off for this record, so its documents get no summary, no search by content and no document chat."
     }
   },
   "selfDescription": {
@@ -13137,7 +13142,8 @@
       "viewing": "You are in {name}'s record",
       "readOnly": "You can read it, not change it.",
       "canAdd": "You can add to it, but not change or delete what is there.",
-      "leave": "Back to my record"
+      "leave": "Back to my record",
+      "canManage": "You can add to it and change or remove what is in it."
     },
     "switcher": {
       "label": "Open a record",

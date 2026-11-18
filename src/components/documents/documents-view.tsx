@@ -29,6 +29,8 @@ import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import { useAiCapability } from "@/hooks/use-ai-capability";
+import { accountLabel } from "@/lib/sharing/account-access-view";
 import { DOCUMENT_PURGE_GRACE_DAYS } from "@/lib/documents/inbound-constants";
 import { useTranslations } from "@/lib/i18n/context";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
@@ -65,6 +67,21 @@ export function DocumentsView() {
   // Sharing and the sources also ask `!inSharedRecord`.
   const { canManageDomain, inSharedRecord, sections } = useRecordCapabilities();
   const canManageDocuments = canManageDomain("documents");
+  const activeRecord = user?.accountAccess?.active ?? null;
+  // Inside a record the guardian manages, the AI actions and the document
+  // chat are simply absent when no provider can read its documents; say why
+  // once, rather than leave the guardian looking for them.
+  const documentAi = useAiCapability("documentAi");
+  const aiAbsentCopy =
+    inSharedRecord &&
+    canManageDocuments &&
+    !documentAi.available &&
+    documentAi.reason !== "consent_required" &&
+    documentAi.reason !== "check_failed"
+      ? documentAi.reason === "no_provider"
+        ? t("documents.recordAi.noProvider")
+        : t("documents.recordAi.off")
+      : null;
   const router = useRouter();
   const pathname = usePathname();
 
@@ -184,6 +201,14 @@ export function DocumentsView() {
           onFiles={enqueueFiles}
         />
       )}
+      {aiAbsentCopy ? (
+        <p
+          className="text-muted-foreground text-sm"
+          data-slot="documents-record-ai-absent"
+        >
+          {aiAbsentCopy}
+        </p>
+      ) : null}
       {inSharedRecord && !canManageDocuments && (
         // Where the upload zone would be: the one empty space a person acting
         // for somebody else would otherwise search a control in.
@@ -250,7 +275,13 @@ export function DocumentsView() {
       ) : showEmpty && !isFiltered ? (
         <EmptyState
           icon={<FolderOpen className="size-6" aria-hidden />}
-          title={t("documents.empty.title")}
+          title={
+            inSharedRecord && activeRecord
+              ? t("documents.empty.titleRecord", {
+                  name: accountLabel(activeRecord),
+                })
+              : t("documents.empty.title")
+          }
           description={t("documents.empty.description")}
           action={
             canManageDocuments ? (

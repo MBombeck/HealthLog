@@ -12347,7 +12347,8 @@
       "description": "Bewahre Arztbriefe, Laborbefunde, Bildgebung, Rezepte und Impfnachweise auf. Sie werden verschlüsselt gespeichert und sind nach Typ, Erkrankung und Jahr durchsuchbar.",
       "action": "Erstes Dokument hochladen",
       "noMatchesTitle": "Keine passenden Dokumente",
-      "noMatchesDescription": "Nichts entspricht der aktuellen Suche und den Filtern."
+      "noMatchesDescription": "Nichts entspricht der aktuellen Suche und den Filtern.",
+      "titleRecord": "Der Dokumenten-Tresor von {name} ist leer"
     },
     "detail": {
       "title": "Dokumentdetails",
@@ -12653,6 +12654,10 @@
     "picker": {
       "capped": "Hier stehen die neuesten {count}. Ältere Dokumente findest du über die Suche.",
       "cappedSearching": "Hier stehen die neuesten {count} Treffer. Ältere findest du mit einer genaueren Suche."
+    },
+    "recordAi": {
+      "noProvider": "Kein KI-Anbieter auf diesem Server kann die Dokumente in dieser Akte lesen, deshalb gibt es keine Zusammenfassung, keine Suche im Inhalt und keinen Dokumenten-Chat.",
+      "off": "KI ist für diese Akte ausgeschaltet, deshalb gibt es für ihre Dokumente keine Zusammenfassung, keine Suche im Inhalt und keinen Dokumenten-Chat."
     }
   },
   "selfDescription": {
@@ -13137,7 +13142,8 @@
       "viewing": "Du bist in der Akte von {name}",
       "readOnly": "Du kannst sie lesen, nicht ändern.",
       "canAdd": "Du kannst etwas hinzufügen, aber nichts ändern oder löschen.",
-      "leave": "Zurück zu meiner Akte"
+      "leave": "Zurück zu meiner Akte",
+      "canManage": "Du kannst etwas hinzufügen und Vorhandenes ändern oder entfernen."
     },
     "switcher": {
       "label": "Akte öffnen",

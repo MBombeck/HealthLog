@@ -12347,7 +12347,8 @@
       "description": "Guarda cartas médicas, resultados de laboratorio, imágenes, recetas y certificados de vacunación. Se guardan cifrados y puedes buscarlos por tipo, afección y año.",
       "action": "Subir un primer documento",
       "noMatchesTitle": "No hay documentos coincidentes",
-      "noMatchesDescription": "Nada coincide con la búsqueda y los filtros actuales."
+      "noMatchesDescription": "Nada coincide con la búsqueda y los filtros actuales.",
+      "titleRecord": "El archivo de documentos de {name} está vacío"
     },
     "detail": {
       "title": "Detalles del documento",
@@ -12653,6 +12654,10 @@
     "picker": {
       "capped": "Se muestran los {count} más recientes. Usa la búsqueda para encontrar un documento más antiguo.",
       "cappedSearching": "Se muestran las {count} coincidencias más recientes. Afina la búsqueda para encontrar una más antigua."
+    },
+    "recordAi": {
+      "noProvider": "Ningún proveedor de IA de este servidor puede leer los documentos de este registro, así que no tienen resumen, búsqueda por contenido ni chat de documentos.",
+      "off": "La IA está desactivada para este registro, así que sus documentos no tienen resumen, búsqueda por contenido ni chat de documentos."
     }
   },
   "selfDescription": {
@@ -13137,7 +13142,8 @@
       "viewing": "Estás en el historial de {name}",
       "readOnly": "Puedes leerlo, no modificarlo.",
       "canAdd": "Puedes añadir cosas, pero no cambiar ni borrar lo que hay.",
-      "leave": "Volver a mi historial"
+      "leave": "Volver a mi historial",
+      "canManage": "Puedes añadir cosas y cambiar o quitar lo que hay."
     },
     "switcher": {
       "label": "Abrir un historial",
