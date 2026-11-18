@@ -7104,7 +7104,7 @@
       "title": "Metingtokens",
       "description": "Maak een token aan zodat een weegschaal, een horlogekoppeling, een voedingsapp of je domotica metingen, waarden voor je eigen metingen en dagtotalen van voedingsstoffen kan toevoegen.",
       "detail": "Het token wordt één keer getoond.",
-      "scopeNote": "Het kan alleen nieuwe metingen aan je eigen dossier toevoegen, waarden aan eigen metingen die je al hebt aangemaakt, en dagtotalen van voedingsstoffen zolang de module voedingsstoffen aan staat. Het kan je gegevens niet lezen, geen eigen meting aanmaken, niets wijzigen of verwijderen en geen ander token aanmaken. Metingen en voedingstotalen worden gemarkeerd als afkomstig van een extern apparaat, zodat je ze later kunt onderscheiden; waarden van eigen metingen krijgen die markering niet. Metingen en waarden van eigen metingen kun je nog steeds zelf corrigeren; een voedingsapp corrigeert een dag door hem opnieuw te sturen. De ID van een eigen meting is het deel na /custom-metrics/ in het adres van de pagina ervan.",
+      "scopeNote": "Het kan alleen metingen aan je eigen dossier toevoegen, waarden aan eigen metingen die je al hebt aangemaakt, en dagtotalen van voedingsstoffen zolang de module voedingsstoffen aan staat; lezen, wijzigen of verwijderen kan het niet. Metingen en voedingstotalen worden als extern gemarkeerd. De ID van een eigen meting is het deel na /custom-metrics/ in het adres van de pagina ervan.",
       "nutrientsLink": "Inname van voedingsstoffen bekijken",
       "createFailed": "Het token kon niet worden aangemaakt. Probeer het opnieuw.",
       "namePlaceholder": "Naam, bijv. Home Assistant",

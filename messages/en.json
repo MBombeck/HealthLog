@@ -7104,7 +7104,7 @@
       "title": "Measurement tokens",
       "description": "Mint a token so a scale, a watch bridge, a food tracker or your home automation can add readings, custom-metric values and daily nutrient totals.",
       "detail": "The token is shown once.",
-      "scopeNote": "It can only add new readings to your own record, values to custom metrics you already created, and daily nutrient totals while the nutrients module is on. It cannot read your data, create a custom metric, change or delete anything, or create another token. Readings and nutrient totals are marked as coming from an external device, so you can tell them apart later; custom-metric values carry no such mark. You can still correct readings and custom-metric values yourself; a tracker corrects a nutrient day by sending it again. A custom metric's ID is the part after /custom-metrics/ in the address of its page.",
+      "scopeNote": "It can only add readings to your own record, values to custom metrics you already created, and daily nutrient totals while the nutrients module is on; it cannot read, change or delete anything. Readings and nutrient totals are marked as external. A custom metric's ID is the part after /custom-metrics/ in its page's address.",
       "nutrientsLink": "View nutrient intake",
       "createFailed": "The token could not be created. Please try again.",
       "namePlaceholder": "Name, e.g. Home Assistant",

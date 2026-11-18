@@ -7104,7 +7104,7 @@
       "title": "Tokens de medição",
       "description": "Gere um token para que uma balança, uma ponte de relógio, um app de dieta ou sua automação residencial possa adicionar leituras, valores das suas métricas personalizadas e totais diários de nutrientes.",
       "detail": "O token é exibido uma vez.",
-      "scopeNote": "Ele só pode adicionar novas leituras ao seu próprio registro, valores às métricas personalizadas que você já criou e totais diários de nutrientes enquanto o módulo de nutrientes estiver ativo. Não pode ler seus dados, criar uma métrica, alterar ou excluir nada, nem criar outro token. As leituras e os totais de nutrientes são marcados como vindos de um dispositivo externo, para você distingui-los depois; os valores de métricas personalizadas não recebem essa marca. Você ainda pode corrigir leituras e valores de métricas; um app de dieta corrige um dia enviando-o de novo. O ID de uma métrica personalizada é a parte depois de /custom-metrics/ no endereço da página dela.",
+      "scopeNote": "Ele só pode adicionar leituras ao seu próprio registro, valores às métricas personalizadas que você já criou e totais diários de nutrientes enquanto o módulo de nutrientes estiver ativo; não pode ler, alterar nem excluir nada. Leituras e totais de nutrientes são marcados como externos. O ID de uma métrica personalizada é a parte depois de /custom-metrics/ no endereço da página dela.",
       "nutrientsLink": "Ver ingestão de nutrientes",
       "createFailed": "O token não pôde ser criado. Tente novamente.",
       "namePlaceholder": "Nome, ex.: Home Assistant",

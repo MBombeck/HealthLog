@@ -7104,7 +7104,7 @@
       "title": "Tokens de mediciones",
       "description": "Crea un token para que una báscula, un reloj, una app de nutrición o tu domótica añadan mediciones, valores de tus métricas personalizadas y totales diarios de nutrientes.",
       "detail": "El token se muestra una sola vez.",
-      "scopeNote": "Solo puede añadir mediciones nuevas a tu propio historial, valores a las métricas personalizadas que ya creaste y totales diarios de nutrientes mientras el módulo de nutrientes esté activado: no puede leer tus datos, ni crear una métrica, ni modificar o borrar nada, ni crear otro token. Las mediciones y los totales de nutrientes se marcan como procedentes de un dispositivo externo, así los distingues más tarde; los valores de las métricas personalizadas no llevan esa marca. Puedes seguir corrigiendo tú mismo las mediciones y los valores de las métricas; una app de nutrición corrige un día volviendo a enviarlo. El ID de una métrica personalizada es la parte que sigue a /custom-metrics/ en la dirección de su página.",
+      "scopeNote": "Solo puede añadir mediciones a tu propio historial, valores a las métricas personalizadas que ya creaste y totales diarios de nutrientes mientras el módulo de nutrientes esté activado; no puede leer, cambiar ni borrar nada. Las mediciones y los totales de nutrientes se marcan como externos. El ID de una métrica personalizada es la parte que sigue a /custom-metrics/ en la dirección de su página.",
       "nutrientsLink": "Ver ingesta de nutrientes",
       "createFailed": "No se pudo crear el token. Inténtalo de nuevo.",
       "namePlaceholder": "Nombre, p. ej. Home Assistant",

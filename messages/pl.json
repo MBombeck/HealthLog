@@ -7104,7 +7104,7 @@
       "title": "Tokeny pomiarów",
       "description": "Utwórz token, aby waga, zegarek, aplikacja dietetyczna lub automatyka domowa mogły dodawać pomiary, wartości Twoich metryk własnych i dzienne sumy składników odżywczych.",
       "detail": "Token pokazujemy tylko raz.",
-      "scopeNote": "Może wyłącznie dodawać nowe pomiary do Twojej dokumentacji, wartości do już utworzonych metryk własnych oraz dzienne sumy składników odżywczych, dopóki moduł składników odżywczych jest włączony: nie odczyta danych, nie utworzy metryki, niczego nie zmieni ani nie usunie i nie utworzy kolejnego tokenu. Pomiary i sumy składników są oznaczane jako pochodzące z urządzenia zewnętrznego, dzięki czemu później je rozpoznasz; wartości metryk własnych nie mają takiego oznaczenia. Pomiary i wartości metryk możesz nadal poprawiać sam; aplikacja dietetyczna poprawia dzień, wysyłając go ponownie. Identyfikator metryki własnej to część po /custom-metrics/ w adresie jej strony.",
+      "scopeNote": "Może tylko dodawać pomiary do Twojej dokumentacji, wartości do już utworzonych metryk własnych oraz dzienne sumy składników odżywczych, dopóki moduł składników odżywczych jest włączony; niczego nie odczyta, nie zmieni ani nie usunie. Pomiary i sumy składników są oznaczane jako zewnętrzne. Identyfikator metryki własnej to część po /custom-metrics/ w adresie jej strony.",
       "nutrientsLink": "Zobacz spożycie składników odżywczych",
       "createFailed": "Nie udało się utworzyć tokenu. Spróbuj ponownie.",
       "namePlaceholder": "Nazwa, np. Home Assistant",

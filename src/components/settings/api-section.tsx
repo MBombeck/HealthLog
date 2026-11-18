@@ -92,20 +92,18 @@ function MeasurementTokensCard() {
       slot="settings-measurements-token-created"
       anchor="measurements-token"
       mirrorOptIn
-      footer={
-        <>
-          <UnattributedReadingsNotice />
-          {nutrientsOn ? (
-            <InlineAction asChild tone="primary" size="sm">
-              <Link
-                href="/insights/nutrients"
-                data-slot="settings-measurements-token-nutrients-link"
-              >
-                {t("settings.measurementsToken.nutrientsLink")}
-              </Link>
-            </InlineAction>
-          ) : null}
-        </>
+      footer={<UnattributedReadingsNotice />}
+      explainerAction={
+        nutrientsOn ? (
+          <InlineAction asChild tone="primary" size="sm">
+            <Link
+              href="/insights/nutrients"
+              data-slot="settings-measurements-token-nutrients-link"
+            >
+              {t("settings.measurementsToken.nutrientsLink")}
+            </Link>
+          </InlineAction>
+        ) : null
       }
       copy={{
         title: t("settings.measurementsToken.title"),
@@ -178,10 +176,17 @@ function IngestTokenCard({
   copy,
   mirrorOptIn = false,
   footer,
+  explainerAction,
 }: {
   /** Offer the Apple Health write-back on the mint (measurement tokens). */
   mirrorOptIn?: boolean;
   footer?: React.ReactNode;
+  /**
+   * A link that belongs to the explainer (where the data the token writes
+   * shows up), set beside it rather than after the form: §12, nothing
+   * follows the action row.
+   */
+  explainerAction?: React.ReactNode;
   /** Deep-link anchor for the card (`/settings/api#<anchor>`). */
   anchor: string;
   endpoint:
@@ -280,6 +285,7 @@ function IngestTokenCard({
         <p className="text-sm leading-relaxed">
           {copy.detail} {copy.scopeNote}
         </p>
+        {explainerAction}
 
         <form onSubmit={handleCreate} className="flex items-center gap-2">
           <Input

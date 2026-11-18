@@ -7104,7 +7104,7 @@
       "title": "Messwert-Tokens",
       "description": "Erzeuge ein Token, damit eine Waage, eine Uhr, ein Ernährungstracker oder deine Hausautomatisierung Messwerte, Werte deiner eigenen Metriken und tägliche Nährstoffsummen eintragen kann.",
       "detail": "Das Token wird nur einmal angezeigt.",
-      "scopeNote": "Es kann ausschließlich neue Werte in deine eigene Akte eintragen, auch für eigene Metriken, die du bereits angelegt hast, und tägliche Nährstoffsummen, solange das Nährstoffe-Modul aktiv ist. Es kann deine Daten nicht lesen, keine Metrik anlegen, nichts ändern oder löschen und kein weiteres Token erstellen. Messwerte und Nährstoffsummen werden als von einem externen Gerät gekennzeichnet, damit du sie später erkennst; Werte eigener Metriken tragen keine solche Kennzeichnung. Messwerte und Werte eigener Metriken kannst du jederzeit selbst korrigieren; einen Nährstofftag korrigiert der Tracker, indem er ihn erneut sendet. Die ID einer eigenen Metrik ist der Teil nach /custom-metrics/ in der Adresse ihrer Seite.",
+      "scopeNote": "Es kann nur Messwerte in deine eigene Akte eintragen, Werte zu eigenen Metriken, die du schon angelegt hast, und tägliche Nährstoffsummen, solange das Nährstoffe-Modul aktiv ist; lesen, ändern oder löschen kann es nichts. Messwerte und Nährstoffsummen werden als extern gekennzeichnet. Die ID einer eigenen Metrik ist der Teil nach /custom-metrics/ in der Adresse ihrer Seite.",
       "nutrientsLink": "Nährstoffaufnahme ansehen",
       "createFailed": "Das Token konnte nicht erstellt werden. Bitte versuche es erneut.",
       "namePlaceholder": "Name, z. B. Home Assistant",
