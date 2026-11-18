@@ -157,7 +157,7 @@ const STATIC_SURFACE_MODULE = {
   "widget:breathingDisturbances": "sleep",
   // The fluid-intake tile reads the nutrient store.
   "widget:waterIntake": "nutrients",
-  // v1.48 — the energy-intake tile reads the same store.
+  // The energy-intake tile reads the same store.
   "widget:energyIntake": "nutrients",
 
   // ── Dashboard summary keys ──

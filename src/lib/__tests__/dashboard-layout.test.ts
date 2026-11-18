@@ -460,7 +460,7 @@ describe("DASHBOARD_WIDGET_CATALOGUE_IDS — 27-id catalogue", () => {
     // (9 → 13), so the catalogue grew 38 → 42. Before they were catalogued
     // the widgets PUT dropped them as unknown ids and every native layout
     // save lost the user's placement of those tiles.
-    // v1.48 — the opt-in energy-intake strip tile (`energyIntake`) added one
+    // The opt-in energy-intake strip tile (`energyIntake`) added one
     // server-known id: 29 → 30, catalogue 42 → 43.
     expect(DASHBOARD_WIDGET_IDS).toHaveLength(30);
     expect(DASHBOARD_IOS_ONLY_WIDGET_IDS).toHaveLength(13);

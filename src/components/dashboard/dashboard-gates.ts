@@ -74,7 +74,7 @@ export const TILE_CAPABLE_WIDGET_IDS = [
   // v1.29 — fluid intake strip tile: paints one strip card and self-gates
   // on having a NUTRIENT_WATER sample.
   "waterIntake",
-  // v1.48 — energy intake: one strip card, self-gates on NUTRIENT_ENERGY.
+  // Energy intake: one strip card, self-gates on NUTRIENT_ENERGY.
   "energyIntake",
 ] as const satisfies readonly DashboardWidgetId[];
 
