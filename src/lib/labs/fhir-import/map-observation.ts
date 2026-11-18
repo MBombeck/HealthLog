@@ -109,6 +109,24 @@ export function normaliseObservationRef(raw: unknown): string | null {
   return `Observation/${parts[at + 1]}`;
 }
 
+/**
+ * The institution a record came from, as a namespace for its references. A
+ * local id such as `Observation/1` is unique only within one FHIR server, and
+ * one export holds the records of several institutions, so a panel and its
+ * members are matched within the institution they came from: its FHIR base
+ * (`sourceURL`), else the name the Health app gives it, else none.
+ */
+function issuerOf(input: FhirLabRecordInput): string {
+  const url = input.sourceURL?.trim().toLowerCase().replace(/\/+$/u, "");
+  if (url) return url;
+  return input.sourceName?.trim().toLowerCase() ?? "";
+}
+
+/** A reference key scoped to the institution that wrote the record. */
+function scopedRef(issuer: string, ref: string): string {
+  return `${issuer}|${ref}`;
+}
+
 function memberRefs(resource: Json): string[] {
   const refs: string[] = [];
   for (const member of list(resource.hasMember)) {
@@ -342,7 +360,8 @@ export function mapFhirLabRecord(
 ): FhirLabMapping {
   const resource = obj(input.resource);
   const id = resource ? str(resource.id) : null;
-  const selfRef = id ? `Observation/${id}` : null;
+  const issuer = issuerOf(input);
+  const selfRef = id ? scopedRef(issuer, `Observation/${id}`) : null;
   const skip = (
     reason: FhirLabSkipReason,
     members: string[] = [],
@@ -375,7 +394,7 @@ export function mapFhirLabRecord(
 
   const code = obj(resource.code);
   const analyte = analyteName(code);
-  const members = memberRefs(resource);
+  const members = memberRefs(resource).map((ref) => scopedRef(issuer, ref));
   if (analyte && analyte.length > LAB_TEXT_LIMITS.analyte) {
     return fail("text_too_long");
   }

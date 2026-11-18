@@ -151,6 +151,34 @@ describe("mapFhirLabRecord — R4", () => {
     expect(reading(results[2]).unit).toBe("10^3/µL");
   });
 
+  it("keeps panels of different institutions apart when their local ids match", () => {
+    const panel = (name: string) =>
+      base({
+        id: "panel-1",
+        code: { text: name },
+        valueQuantity: undefined,
+        hasMember: [{ reference: "Observation/obs-1" }],
+      });
+    const member = base({ id: "obs-1" });
+    const north = {
+      sourceURL: "https://fhir.north-hospital.test/R4/",
+      sourceName: "North Hospital",
+    };
+    const south = {
+      sourceURL: "https://fhir.south-lab.test/R4/",
+      sourceName: "South Lab",
+    };
+    const results = [
+      map(panel("Kidney panel"), north),
+      map(member, north),
+      map(panel("Electrolytes"), south),
+      map(member, south),
+    ];
+    assignPanels(results);
+    expect(reading(results[1]).panel).toBe("Kidney panel");
+    expect(reading(results[3]).panel).toBe("Electrolytes");
+  });
+
   it.each([
     ["r4-preliminary", "not_final"],
     ["r4-vital-signs", "not_lab"],
@@ -354,7 +382,10 @@ describe("mapFhirLabRecord — DSTU2", () => {
     expect(results[0]).toMatchObject({
       kind: "skip",
       reason: "panel_header",
-      memberRefs: ["Observation/dstu2-hdl"],
+      // Scoped to the institution that wrote it.
+      memberRefs: [
+        "https://fhir.example-health.test/api/fhir/r4|Observation/dstu2-hdl",
+      ],
     });
     assignPanels(results);
     expect(reading(results[1]).panel).toBe("Lipid panel");
