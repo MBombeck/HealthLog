@@ -98,7 +98,7 @@ export async function runWithWhoopSoftSkipTracking<T>(
  * `recordSyncSuccess` un-parks `error_reauth`, resets the failure buckets +
  * `alertedAt`, and the hourly cohort hammers the dead refresh token forever.
  * The orchestrator + the per-resource driver read this ledger to refuse the
- * success stamp. Ported from Fitbit R2 / Google Health's `hardFailStorage`.
+ * success stamp. Ported from Google Health's `hardFailStorage`.
  * Scoped by AsyncLocalStorage so concurrent per-user jobs never cross-pollinate.
  */
 export interface HardFailTracker {
@@ -109,7 +109,6 @@ export const hardFailStorage = new AsyncLocalStorage<HardFailTracker>();
 /**
  * Ledger label for a dead-token failure (`getValidToken` returning null on a
  * missing-credentials, failed-refresh, or in-lock vanished-connection path).
- * Ported from Fitbit's `FITBIT_TOKEN_HARD_FAIL`.
  */
 export const WHOOP_TOKEN_HARD_FAIL = "token";
 
@@ -117,7 +116,7 @@ export const WHOOP_TOKEN_HARD_FAIL = "token";
  * Record a hard failure on the ambient per-cycle ledger, if one is in scope.
  * No-op outside a ledger scope (e.g. a direct REPL call). Used by
  * `getValidToken`'s dead-token paths — anything that must fail the cycle's
- * verdict without aborting sibling work. Ported from Fitbit's `noteHardFailure`.
+ * verdict without aborting sibling work.
  */
 export function noteHardFailure(label: string): void {
   const tracker = hardFailStorage.getStore();

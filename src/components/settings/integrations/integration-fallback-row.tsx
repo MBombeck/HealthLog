@@ -33,7 +33,6 @@ import type { IntegrationKey, IntegrationStatusViewModel } from "./shared";
 export const INTEGRATION_DISPLAY_NAMES: Record<IntegrationKey, string> = {
   withings: "Withings",
   whoop: "WHOOP",
-  fitbit: "Fitbit",
   nightscout: "Nightscout",
   polar: "Polar",
   oura: "Oura",

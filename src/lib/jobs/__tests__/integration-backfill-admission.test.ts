@@ -20,11 +20,6 @@ vi.mock("@/lib/jobs/whoop-backfill", async (importOriginal) => ({
   enqueueBootTimeWhoopBackfill: async (stagger: number) =>
     recordStagger("whoop-backfill", stagger),
 }));
-vi.mock("@/lib/fitbit/jobs/backfill", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/fitbit/jobs/backfill")>()),
-  enqueueBootTimeFitbitBackfill: async (stagger: number) =>
-    recordStagger("fitbit-backfill", stagger),
-}));
 vi.mock("@/lib/jobs/google-health-backfill", async (importOriginal) => ({
   ...(await importOriginal<
     typeof import("@/lib/jobs/google-health-backfill")
@@ -58,11 +53,6 @@ vi.mock("@/lib/jobs/strava-backfill", async (importOriginal) => ({
   enqueueBootTimeStravaBackfill: async (stagger: number) =>
     recordStagger("strava-backfill", stagger),
 }));
-vi.mock("@/lib/fitbit/jobs/sleep-repair", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/fitbit/jobs/sleep-repair")>()),
-  enqueueBootTimeFitbitSleepRepair: async (stagger: number) =>
-    recordStagger("fitbit-sleep-repair", stagger),
-}));
 vi.mock("@/lib/jobs/oura-backfill", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/jobs/oura-backfill")>()),
   enqueueBootTimeOuraBackfill: async (stagger: number) =>
@@ -86,11 +76,6 @@ import {
   integrationBackfillSourceOptions,
   type IntegrationBackfillKind,
 } from "../integration-backfill-admission";
-import {
-  FITBIT_BACKFILL_QUEUE,
-  FITBIT_SLEEP_REPAIR_QUEUE,
-  FITBIT_SYNC_QUEUE,
-} from "@/lib/fitbit/jobs/queues";
 import { GOOGLE_HEALTH_BACKFILL_QUEUE } from "../google-health-backfill-queue";
 import { GOOGLE_HEALTH_SLEEP_REPAIR_QUEUE } from "../google-health-sleep-repair-queue";
 import {
@@ -111,13 +96,11 @@ import { WHOOP_BACKFILL_QUEUE } from "../whoop-backfill-queue";
 
 const providerSources = [
   "whoop-backfill.ts",
-  "../fitbit/jobs/backfill.ts",
   "google-health-backfill.ts",
   "google-health-sleep-repair.ts",
   "sleep-timeline-backfill.ts",
   "lab-biomarker-backfill.ts",
   "strava-backfill.ts",
-  "../fitbit/jobs/sleep-repair.ts",
   "oura-backfill.ts",
   "garmin-backfill.ts",
 ].map((file) => readFileSync(join(__dirname, "..", file), "utf8"));
@@ -126,18 +109,16 @@ describe("shared full-history backfill admission", () => {
   it("assigns every integration backfill a deterministic durable boot stagger", async () => {
     expect(INTEGRATION_BACKFILL_BOOT_ORDER).toEqual([
       "whoop-backfill",
-      "fitbit-backfill",
       "google-health-backfill",
       "google-health-sleep-repair",
       "sleep-timeline-backfill",
       "lab-biomarker-backfill",
       "strava-backfill",
-      "fitbit-sleep-repair",
       "oura-backfill",
       "garmin-backfill",
     ]);
     expect(INTEGRATION_BACKFILL_BOOT_ORDER.map(bootStaggerSecondsFor)).toEqual([
-      30, 60, 90, 120, 150, 180, 210, 240, 270, 300,
+      30, 60, 90, 120, 150, 180, 210, 240,
     ]);
     expect(INTEGRATION_BACKFILL_STAGGER_SECONDS).toBe(30);
 
@@ -232,13 +213,11 @@ describe("shared full-history backfill admission", () => {
 
     const sources: ReadonlyArray<[string, IntegrationBackfillKind]> = [
       [WHOOP_BACKFILL_QUEUE, "whoop-backfill"],
-      [FITBIT_BACKFILL_QUEUE, "fitbit-backfill"],
       [GOOGLE_HEALTH_BACKFILL_QUEUE, "google-health-backfill"],
       [GOOGLE_HEALTH_SLEEP_REPAIR_QUEUE, "google-health-sleep-repair"],
       [SLEEP_TIMELINE_BACKFILL_QUEUE, "sleep-timeline-backfill"],
       [LAB_BIOMARKER_BACKFILL_QUEUE, "lab-biomarker-backfill"],
       [STRAVA_BACKFILL_QUEUE, "strava-backfill"],
-      [FITBIT_SLEEP_REPAIR_QUEUE, "fitbit-sleep-repair"],
       [OURA_BACKFILL_QUEUE, "oura-backfill"],
       [GARMIN_BACKFILL_QUEUE, "garmin-backfill"],
     ];
@@ -261,11 +240,7 @@ describe("shared full-history backfill admission", () => {
       expect(sends[0]!.data).toMatchObject({ kind });
     }
 
-    for (const queue of [
-      FITBIT_SYNC_QUEUE,
-      GOOGLE_HEALTH_SYNC_QUEUE,
-      STRAVA_SYNC_QUEUE,
-    ]) {
+    for (const queue of [GOOGLE_HEALTH_SYNC_QUEUE, STRAVA_SYNC_QUEUE]) {
       expect(jobOf(queue).work, queue).toEqual({ localConcurrency: 1 });
       expect(jobOf(queue).lane, queue).toBeUndefined();
     }

@@ -14,14 +14,12 @@ import type { GoogleHealthBackfillEndedEntry } from "@/lib/google-health/backfil
 import type { ConnectionHealth } from "@/lib/integrations/connection-health";
 import type { MetricFreshnessEntry } from "@/lib/integrations/sync-verdict";
 import { queryKeys } from "@/lib/query-keys";
-import type { PublishedFitbitRetirement } from "@/lib/fitbit/retirement";
 import type { GarminKeyExpiry } from "@/lib/garmin/key-expiry";
 import type { GarminBackfillStep } from "@/lib/garmin/backfill-progress";
 
 export type IntegrationKey =
   | "withings"
   | "whoop"
-  | "fitbit"
   | "polar"
   | "oura"
   // v1.27.0 — Google Health (Fitbit + Pixel Watch + Fitbit Air).
@@ -58,7 +56,7 @@ export interface IntegrationStatusViewModel {
   failureThreshold?: number;
   configured?: boolean;
   connected?: boolean;
-  /** WHOOP / Fitbit / Google Health / Garmin: older history still loading. */
+  /** WHOOP / Google Health / Garmin: older history still loading. */
   backfillCompleted?: boolean | null;
   /**
    * Google Health: data types whose history backfill ended before the start
@@ -80,13 +78,13 @@ export interface IntegrationStatusViewModel {
   unavailableResources?: GarminBackfillStep[] | null;
   /** Per-metric last-seen timestamps with the server-computed stale flag. */
   metricFreshness?: MetricFreshnessEntry[];
-  /** Fitbit: the end of the legacy Web API, resolved on the server. */
-  retirement?: PublishedFitbitRetirement;
 }
 
 export interface IntegrationStatusEnvelope {
   threshold: number;
   integrations: IntegrationStatusViewModel[];
+  /** Show the note that the Fitbit integration is gone (decided server-side). */
+  fitbitRemovalNotice?: boolean;
 }
 
 /**

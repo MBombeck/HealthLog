@@ -251,8 +251,6 @@ export const WIPE_MODELS = [
   "WhoopConnection",
   "WhoopOAuthState",
   "WhoopConnectTicket",
-  "FitbitConnection",
-  "FitbitOAuthState",
   "GoogleHealthConnection",
   "GoogleHealthOAuthState",
   "McpOAuthConnection",
@@ -463,8 +461,9 @@ export const USER_RESET = {
   withingsClientSecretEncrypted: null,
   whoopClientIdEncrypted: null,
   whoopClientSecretEncrypted: null,
-  fitbitClientIdEncrypted: null,
-  fitbitClientSecretEncrypted: null,
+  // The Fitbit removal note says the imported data stays; after a wipe there
+  // is none, so the note goes with it.
+  fitbitRemovalNoticeAt: null,
   googleHealthClientIdEncrypted: null,
   googleHealthClientSecretEncrypted: null,
   nightscoutUrlEncrypted: null,

@@ -46,7 +46,6 @@ import { readOuraScopeDenied } from "@/lib/oura/credentials";
 import { ouraScopeReconnectList } from "@/lib/oura/scope";
 import { localDayWindow } from "@/lib/tz/local-day";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
-import { isFitbitRetired } from "@/lib/fitbit/retirement";
 
 export type ConnectionHealthMap = Record<
   ConnectionKey,
@@ -154,7 +153,6 @@ export async function loadConnectionFacts(
     dbUser,
     withingsConn,
     whoopConn,
-    fitbitConn,
     googleHealthConn,
     healthKitArrivals,
   ] = await Promise.all([
@@ -200,12 +198,6 @@ export async function loadConnectionFacts(
           select: { lastSyncedAt: true, whoopUserId: true },
         })
       : null,
-    wanted.has("fitbit")
-      ? prisma.fitbitConnection.findUnique({
-          where: { userId },
-          select: { lastSyncedAt: true },
-        })
-      : null,
     wanted.has("google-health")
       ? prisma.googleHealthConnection.findUnique({
           where: { userId },
@@ -236,10 +228,6 @@ export async function loadConnectionFacts(
   const connected: Record<ConnectionKey, boolean> = {
     withings: !!withingsConn,
     whoop: !!whoopConn?.whoopUserId,
-    // Once Google has turned the Fitbit Web API off the row stays (it carries
-    // the imported history) but nothing will sync through it: no health to
-    // judge and nothing for the watchdog to call silent.
-    fitbit: !!fitbitConn && !isFitbitRetired(now),
     "google-health": !!googleHealthConn,
     polar: !!dbUser?.polarAccessTokenEncrypted,
     oura: !!dbUser?.ouraAccessTokenEncrypted,
@@ -254,7 +242,6 @@ export async function loadConnectionFacts(
   const legacyLastSyncedAt: Partial<Record<ConnectionKey, Date | null>> = {
     withings: withingsConn?.lastSyncedAt ?? null,
     whoop: whoopConn?.whoopUserId ? (whoopConn.lastSyncedAt ?? null) : null,
-    fitbit: fitbitConn?.lastSyncedAt ?? null,
     "google-health": googleHealthConn?.lastSyncedAt ?? null,
   };
 

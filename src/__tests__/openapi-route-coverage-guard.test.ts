@@ -316,7 +316,6 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
   // the web's re-proof dialog that ends at the provider's sign-in page; the
   // native client never re-proves this way (Bearer has its own step-up).
   "/api/auth/oidc/reproof": { kind: "browserHandoff", methods: ["GET"] },
-  "/api/fitbit/connect": { kind: "browserHandoff", methods: ["GET"] },
   "/api/google-health/connect": { kind: "browserHandoff", methods: ["GET"] },
   // `/api/nightscout/connect` sat here as a `browserHandoff` and is published
   // now. Nightscout has no OAuth step and no authorise page: the route is an
@@ -349,7 +348,6 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
   "/api/mcp/oauth/token": { kind: "mcpTransport", methods: ["POST"] },
   "/mcp": { kind: "mcpTransport", methods: ["DELETE", "GET", "POST"] },
   "/api/auth/oidc/callback": { kind: "oauthCallback", methods: ["GET"] },
-  "/api/fitbit/callback": { kind: "oauthCallback", methods: ["GET"] },
   "/api/google-health/callback": { kind: "oauthCallback", methods: ["GET"] },
   "/api/oura/callback": { kind: "oauthCallback", methods: ["GET"] },
   "/api/polar/callback": { kind: "oauthCallback", methods: ["GET"] },

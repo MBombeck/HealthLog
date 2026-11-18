@@ -51,7 +51,6 @@ export const INTEGRATION_MEASUREMENT_SOURCE: Partial<
 > = {
   withings: "WITHINGS",
   whoop: "WHOOP",
-  fitbit: "FITBIT",
   nightscout: "NIGHTSCOUT",
   polar: "POLAR",
   oura: "OURA",
@@ -69,11 +68,10 @@ export const INTEGRATION_WORKOUT_SOURCE: Partial<
 > = {
   strava: "STRAVA",
   polar: "POLAR",
-  // These three write workouts too, and were missing from this table, so their
+  // These write workouts too, and were missing from this table, so their
   // cards could report every measurement type fresh while the workout leg had
   // been silent for weeks — the freshness disclosure had no row to go quiet.
   whoop: "WHOOP",
-  fitbit: "FITBIT",
   "google-health": "GOOGLE_HEALTH",
   garmin: "GARMIN",
 };

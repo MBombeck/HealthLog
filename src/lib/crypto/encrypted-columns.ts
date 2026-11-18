@@ -159,8 +159,6 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   { model: "User", field: "withingsClientSecretEncrypted", kind: "string" },
   { model: "User", field: "whoopClientIdEncrypted", kind: "string" },
   { model: "User", field: "whoopClientSecretEncrypted", kind: "string" },
-  { model: "User", field: "fitbitClientIdEncrypted", kind: "string" },
-  { model: "User", field: "fitbitClientSecretEncrypted", kind: "string" },
   // v1.27.0 — Google Health (Fitbit / Pixel Watch) BYO OAuth client.
   { model: "User", field: "googleHealthClientIdEncrypted", kind: "string" },
   { model: "User", field: "googleHealthClientSecretEncrypted", kind: "string" },
@@ -200,8 +198,6 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   { model: "WithingsConnection", field: "refreshToken", kind: "string" },
   { model: "WhoopConnection", field: "accessToken", kind: "string" },
   { model: "WhoopConnection", field: "refreshToken", kind: "string" },
-  { model: "FitbitConnection", field: "accessToken", kind: "string" },
-  { model: "FitbitConnection", field: "refreshToken", kind: "string" },
   { model: "GoogleHealthConnection", field: "accessToken", kind: "string" },
   { model: "GoogleHealthConnection", field: "refreshToken", kind: "string" },
 
@@ -649,7 +645,6 @@ export const UPDATED_AT_MODELS: ReadonlySet<string> = new Set([
   "EnvironmentTravelLocation",
   "ExtractedFact",
   "FamilyHistoryEntry",
-  "FitbitConnection",
   "GoogleHealthConnection",
   "IllnessDayLog",
   "IllnessEpisode",

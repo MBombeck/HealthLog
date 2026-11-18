@@ -102,8 +102,6 @@ function backfillFiles(): string[] {
  * Backfill writes that stamp `updatedAt` on purpose, keyed `file > model`.
  */
 const BACKFILL_STAMPS: Record<string, string> = {
-  "src/lib/fitbit/jobs/backfill.ts > fitbitConnection":
-    "the job's own progress on the connection row; not a listed record",
   "src/lib/jobs/google-health-backfill.ts > googleHealthConnection":
     "the job's own progress on the connection row; not a listed record",
   "src/lib/jobs/whoop-backfill.ts > whoopConnection":

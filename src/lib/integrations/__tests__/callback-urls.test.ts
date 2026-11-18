@@ -21,7 +21,6 @@ const OVERRIDE_VARS: Record<
 > = {
   withings: "WITHINGS_REDIRECT_URI",
   whoop: "WHOOP_REDIRECT_URI",
-  fitbit: "FITBIT_REDIRECT_URI",
   "google-health": "GOOGLE_HEALTH_REDIRECT_URI",
   polar: "POLAR_REDIRECT_URI",
   oura: "OURA_REDIRECT_URI",
@@ -79,33 +78,28 @@ describe("getIntegrationCallbackUrls", () => {
         `https://edge.example/api/${provider}/callback`,
       );
     }
-    // No override for these two, so they still derive.
-    expect(urls.fitbit).toBe("https://health.example/api/fitbit/callback");
+    // No override for this one, so it still derives.
     expect(urls["google-health"]).toBe(
       "https://health.example/api/google-health/callback",
     );
   });
 
-  it("uses the explicit Fitbit / Google Health override when the app URL is unset", () => {
-    // Those two pin an explicit override to the app origin when both are set;
-    // with only the override present it is taken verbatim.
-    process.env.FITBIT_REDIRECT_URI =
-      "https://edge.example/api/fitbit/callback";
+  it("uses the explicit Google Health override when the app URL is unset", () => {
+    // Google Health pins an explicit override to the app origin when both are
+    // set; with only the override present it is taken verbatim.
     process.env.GOOGLE_HEALTH_REDIRECT_URI =
       "https://edge.example/api/google-health/callback";
     const urls = getIntegrationCallbackUrls();
-    expect(urls.fitbit).toBe("https://edge.example/api/fitbit/callback");
     expect(urls["google-health"]).toBe(
       "https://edge.example/api/google-health/callback",
     );
   });
 
   it("reports null for a provider whose redirect URI fails validation, leaving the rest intact", () => {
-    // Fitbit refuses a plain-http, non-loopback origin; the others do not
-    // validate and keep deriving.
+    // Google Health refuses a plain-http, non-loopback origin; the others do
+    // not validate and keep deriving.
     process.env.NEXT_PUBLIC_APP_URL = "http://health.example";
     const urls = getIntegrationCallbackUrls();
-    expect(urls.fitbit).toBeNull();
     expect(urls["google-health"]).toBeNull();
     expect(urls.withings).toBe("http://health.example/api/withings/callback");
     expect(urls.whoop).toBe("http://health.example/api/whoop/callback");

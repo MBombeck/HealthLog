@@ -2,7 +2,7 @@
 
 /**
  * The bring-your-own OAuth app credentials form, one copy for every provider
- * that takes a client id and secret (Withings, WHOOP, Fitbit, Google Health,
+ * that takes a client id and secret (Withings, WHOOP, Google Health,
  * Polar, Oura, Strava). It sits in the not-connected card before "Connect",
  * and behind "Change credentials" in the menu once connected.
  *

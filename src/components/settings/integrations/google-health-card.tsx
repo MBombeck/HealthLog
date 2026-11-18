@@ -1,8 +1,8 @@
 "use client";
 
 // Google Health (Fitbit + Pixel Watch + Fitbit Air), read through the
-// successor Google Health API: a separate, coexisting integration from the
-// classic `fitbit` transport, which sunsets in September 2026.
+// Google Health API, the successor of the Fitbit Web API Google turned off on
+// 30 October 2026.
 //
 // It renders the shared OAuth integration card. What it adds is its own sync
 // choreography: a manual sync may outlive its request, so the card polls the

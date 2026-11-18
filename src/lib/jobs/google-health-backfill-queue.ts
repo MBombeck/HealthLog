@@ -8,6 +8,6 @@ export const GOOGLE_HEALTH_BACKFILL_QUEUE = "google-health-backfill";
 /**
  * Serial concurrency — a backfill walks years of history for one account and is
  * rate-bounded by Google's per-app quota; concurrency-1 keeps it from crowding
- * the request pool, matching `FITBIT_BACKFILL_CONCURRENCY`.
+ * the request pool, matching `WHOOP_BACKFILL_CONCURRENCY`.
  */
 export const GOOGLE_HEALTH_BACKFILL_CONCURRENCY = 1;

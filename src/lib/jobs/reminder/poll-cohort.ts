@@ -12,10 +12,6 @@
  * Each provider file collapses to a small config calling `makePollCohortHandler`.
  * The queue name, cron schedule, and boss.work registration stay in
  * reminder-worker.ts.
- *
- * Fitbit is intentionally NOT built on this factory: it fans the cohort out
- * with bounded concurrency via `runFitbitPollCohort`, a different control flow
- * from this sequential pass.
  */
 import { type Job } from "pg-boss";
 import { fireAndForget } from "@/lib/logging/fire-and-forget";

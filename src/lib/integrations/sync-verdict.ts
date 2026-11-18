@@ -119,7 +119,6 @@ const NIGHTLY_CADENCE: SyncCadence = {
 export const INTEGRATION_CADENCE: Record<IntegrationKey, SyncCadence> = {
   withings: POLLED_CADENCE,
   whoop: POLLED_CADENCE,
-  fitbit: POLLED_CADENCE,
   nightscout: POLLED_CADENCE,
   polar: POLLED_CADENCE,
   oura: POLLED_CADENCE,

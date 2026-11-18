@@ -252,13 +252,12 @@ x-healthlog-env: &healthlog_env
   STRAVA_CLIENT_ID: "${STRAVA_CLIENT_ID:-}"
   STRAVA_CLIENT_SECRET: "${STRAVA_CLIENT_SECRET:-}"
   STRAVA_REDIRECT_URI: "${STRAVA_REDIRECT_URI:-}"
-  # Fitbit + Google Health are per-user BYO-key integrations, so there is no
-  # client id/secret env for either. These override the derived
-  # `${NEXT_PUBLIC_APP_URL}/api/{fitbit,google-health}/callback` when the URL
-  # registered with the provider differs from the app's public URL. Both are
-  # asserted same-origin with NEXT_PUBLIC_APP_URL, so they cannot redirect
-  # the authorization code somewhere else.
-  FITBIT_REDIRECT_URI: "${FITBIT_REDIRECT_URI:-}"
+  # Google Health is a per-user BYO-key integration, so there is no client
+  # id/secret env for it. This overrides the derived
+  # `${NEXT_PUBLIC_APP_URL}/api/google-health/callback` when the URL
+  # registered with Google differs from the app's public URL. It is asserted
+  # same-origin with NEXT_PUBLIC_APP_URL, so it cannot redirect the
+  # authorization code somewhere else.
   GOOGLE_HEALTH_REDIRECT_URI: "${GOOGLE_HEALTH_REDIRECT_URI:-}"
   # How many years back the Google Health history backfill reads (a whole
   # number from 1 to 100; 20 when unset). A data type whose history goes

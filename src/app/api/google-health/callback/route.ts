@@ -28,7 +28,7 @@ import { timingSafeEqual } from "node:crypto";
 
 /**
  * OAuth callback from Google for the Google Health integration (v1.26.0).
- * Mirrors the Fitbit callback with PKCE: the `state` param is a random
+ * PKCE: the `state` param is a random
  * base64url nonce keyed against the `GoogleHealthOAuthState` ledger, which also
  * carries the PKCE `code_verifier`. The in-flight user is resolved via the
  * row's `userId` (never parsed from the cookie value) and cross-checked against

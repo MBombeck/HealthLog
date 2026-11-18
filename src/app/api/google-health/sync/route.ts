@@ -65,7 +65,7 @@ function publicResourceOutcome(value: unknown): GoogleHealthResourceOutcome {
 /**
  * Manually trigger a Google Health sync for the current user (v1.26.0).
  *
- * Mirrors the Fitbit manual-sync route: incremental by default, full history
+ * Incremental by default, full history
  * when `{ fullSync: true }` is posted.
  *
  * Rate-limited: a baseline 5/60s bucket gates the route, and the expensive

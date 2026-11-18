@@ -10,7 +10,7 @@ import { POST as postAppleHealthBatch } from "@/app/api/measurements/batch/route
 import { POST as postManualMeasurement } from "@/app/api/measurements/route";
 import { hashToken } from "@/lib/auth/hmac";
 import { encrypt } from "@/lib/crypto";
-import { upsertFitbitMeasurements } from "@/lib/fitbit/sync-core";
+import { insertMeasurementRows } from "@/lib/export/measurement-bulk-insert";
 import { upsertGoogleHealthMeasurements } from "@/lib/google-health/sync-core";
 import { upsertScoreRow } from "@/lib/insights/score-row";
 import { logMcpMeasurement } from "@/lib/mcp/writes";
@@ -184,17 +184,34 @@ const SOURCE_CASES = {
       ]);
     },
   },
+  // The Fitbit integration is gone; a backup restore is the one path that
+  // still writes its rows back.
   FITBIT: {
     expectedType: "PULSE",
     expectedExternalId: "source-smoke-fitbit:pulse",
     write: async () => {
-      await upsertFitbitMeasurements(USER_ID, [
+      await insertMeasurementRows(getPrismaClient(), [
         {
+          id: "source-smoke-fitbit",
+          userId: USER_ID,
           type: "PULSE",
           value: 67,
+          valueMin: null,
+          valueMax: null,
           unit: "bpm",
+          source: "FITBIT",
           measuredAt: new Date("2026-07-20T08:05:00.000Z"),
+          notes: null,
+          notesEncrypted: null,
           externalId: "source-smoke-fitbit:pulse",
+          externalSourceVersion: null,
+          aggregationProvenance: null,
+          glucoseContext: null,
+          sleepStage: null,
+          rhythmClassification: null,
+          deviceType: null,
+          syncVersion: 1,
+          deletedAt: null,
         },
       ]);
     },

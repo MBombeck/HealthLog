@@ -51,14 +51,12 @@ import {
 export type IntegrationKey =
   | "withings"
   | "whoop"
-  | "fitbit"
   // v1.17.0 — Nightscout glucose (F1) + Polar / Oura OAuth (F4).
   | "nightscout"
   | "polar"
   | "oura"
   // v1.27.0 — Google Health (Fitbit + Pixel Watch + Fitbit Air) via the
-  // successor Google Health API. Separate connection from the classic
-  // `fitbit` transport, which sunsets Sept 2026.
+  // Google Health API, the successor of the retired Fitbit Web API.
   | "google-health"
   // v1.28.x — Strava OAuth workout source.
   | "strava"
@@ -1276,7 +1274,6 @@ export interface AlertInput {
 const INTEGRATION_LABELS: Record<IntegrationKey, string> = {
   withings: "Withings",
   whoop: "WHOOP",
-  fitbit: "Fitbit",
   nightscout: "Nightscout",
   polar: "Polar",
   oura: "Oura",

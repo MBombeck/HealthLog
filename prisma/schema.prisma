@@ -229,17 +229,15 @@ model User {
   whoopClientIdEncrypted     String? @map("whoop_client_id_encrypted")
   whoopClientSecretEncrypted String? @map("whoop_client_secret_encrypted")
 
-  // v1.12.0 — Fitbit/Pixel OAuth credentials (per-user BYO-keys, encrypted at
-  // app level) over the Google Health API. The per-app authorized-user cap in
-  // Google's Testing mode makes a single shared client unworkable for a
-  // multi-operator product, so each self-hoster registers their own Google
-  // Cloud OAuth client and pastes the client id/secret into Settings.
-  fitbitClientIdEncrypted     String? @map("fitbit_client_id_encrypted")
-  fitbitClientSecretEncrypted String? @map("fitbit_client_secret_encrypted")
+  /// When migration 0503 removed this account's Fitbit connection with the
+  /// integration (Google turned the Fitbit Web API off on 2026-10-30). Set
+  /// shows the one note about it on Settings > Integrations, published as
+  /// `fitbitRemovalNotice` on `/api/integrations/status`; dismissing the note
+  /// clears it. Nothing else sets it.
+  fitbitRemovalNoticeAt DateTime? @map("fitbit_removal_notice_at")
 
   // v1.27.0 — Google Health API OAuth credentials (per-user BYO-keys, encrypted
-  // at app level). A separate provider from the classic Fitbit Web API columns
-  // above: the CASA-free "Testing" consent path caps a single OAuth client at
+  // at app level). The CASA-free "Testing" consent path caps a single OAuth client at
   // ≤100 test users, so each self-hoster registers their own Google Cloud OAuth
   // client and pastes the client id/secret into Settings.
   googleHealthClientIdEncrypted     String? @map("google_health_client_id_encrypted")
@@ -896,13 +894,8 @@ model User {
   whoopConnection                           WhoopConnection?
   whoopOAuthStates                          WhoopOAuthState[]
   whoopConnectTickets                       WhoopConnectTicket[]
-  // v1.12.0 — Fitbit/Pixel integration. Mirrors the WHOOP connection (1:1) +
+  // v1.27.0 — Google Health API integration. Mirrors the connection (1:1) +
   // OAuth-state ledger (1:N) relations.
-  fitbitConnection                          FitbitConnection?
-  fitbitOAuthStates                         FitbitOAuthState[]
-  // v1.27.0 — Google Health API integration (separate provider from the classic
-  // Fitbit Web API above). Mirrors the connection (1:1) + OAuth-state ledger
-  // (1:N) relations.
   googleHealthConnection                    GoogleHealthConnection?
   googleHealthOAuthStates                   GoogleHealthOAuthState[]
   moodEntries                               MoodEntry[]
@@ -2004,9 +1997,11 @@ enum MeasurementSource {
   // (no client write path) as `source = WHOOP` rows. iOS DTO mirrors this
   // exact spelling so the `/api/sync/changes` delta feed decodes the rows.
   WHOOP
-  // v1.12.0 — Fitbit/Pixel integration via the Google Health API. Server-owned
-  // (no client write path); rejected on batch + single POST like WITHINGS/WHOOP.
-  // iOS DTO mirrors this exact spelling so /api/sync/changes decodes the rows.
+  // v1.12.0 — the Fitbit Web API integration, removed in v1.48.0 after Google
+  // turned the API off. The rows it imported keep this source, and a backup
+  // restore writes them back. Rejected on batch + single POST like
+  // WITHINGS/WHOOP. iOS DTO mirrors this exact spelling so
+  // /api/sync/changes decodes the rows.
   FITBIT
   // v1.17.0 — Nightscout glucose integration (F1). Server-owned (no client
   // write path); glucose rows ingest from the user's Nightscout instance.
@@ -4614,66 +4609,10 @@ model WhoopConnectTicket {
   @@map("whoop_connect_tickets")
 }
 
-/// v1.12.0 — Fitbit/Pixel connection over the Google Health API. Mirrors
-/// `WhoopConnection` 1:1 per user. Tokens are encrypted at the app level
-/// before persistence. Unlike WHOOP, Google refresh tokens do not rotate per
-/// use, so `refreshToken` is overwritten only when a token response carries a
-/// fresh one.
-model FitbitConnection {
-  id                  String    @id @default(cuid())
-  userId              String    @unique @map("user_id")
-  fitbitUserId        String    @map("fitbit_user_id") // Google/Fitbit external id
-  accessToken         String    @map("access_token") // encrypted at app level
-  refreshToken        String    @map("refresh_token") // encrypted at app level
-  tokenExpiresAt      DateTime  @map("token_expires_at")
-  /// Space-separated OAuth scope string granted by the Google authorisation
-  /// flow. Null = legacy connection that predates scope tracking.
-  scope               String?   @map("scope")
-  lastSyncedAt        DateTime? @map("last_synced_at")
-  /// Set once the self-converging history backfill walks every collection to
-  /// completion. Null = backfill still in flight (or never started).
-  backfillCompletedAt DateTime? @map("backfill_completed_at")
-  /// Set once the one-shot sleep repair re-reads the bounded sleep history and
-  /// collapses the duplicates the earlier volatile segment key left behind.
-  /// Null = repair pending.
-  sleepRepairedAt     DateTime? @map("sleep_repaired_at")
-  createdAt           DateTime  @default(now()) @map("created_at")
-  updatedAt           DateTime  @updatedAt @map("updated_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("fitbit_connections")
-}
-
-/// v1.12.0 — short-lived `(nonce → userId)` ledger backing the Fitbit OAuth
-/// state check, identical in shape + lifecycle to `WhoopOAuthState`.
-///
-/// v1.20.0 — the classic Fitbit Web API (`api.fitbit.com`) authorises with PKCE
-/// (Authorization Code + S256), so the connect route mints a `code_verifier`
-/// alongside the nonce and stashes it here; the callback reads it back to present
-/// on the token exchange. Nullable + additive: a legacy row (or a non-PKCE path)
-/// simply carries no verifier.
-model FitbitOAuthState {
-  nonce        String   @id
-  userId       String   @map("user_id")
-  /// PKCE code_verifier carried from connect to callback (v1.20.0). Null when no
-  /// PKCE handshake is in flight (legacy rows).
-  codeVerifier String?  @map("code_verifier")
-  createdAt    DateTime @default(now()) @map("created_at")
-  expiresAt    DateTime @map("expires_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([expiresAt])
-  // Leads the foreign key, so a cascade from the parent row is an index lookup.
-  @@index([userId])
-  @@map("fitbit_oauth_states")
-}
-
 /// v1.27.0 — Google Health connection (Fitbit + Pixel Watch + Fitbit Air) over
-/// the Google Health API (`health.googleapis.com/v4`). A separate, coexisting
-/// provider alongside the classic Fitbit Web API integration (`FitbitConnection`)
-/// — its own token row, `GOOGLE_HEALTH` source enum value, and OAuth client.
+/// the Google Health API (`health.googleapis.com/v4`), the successor of the
+/// retired Fitbit Web API — its own token row, `GOOGLE_HEALTH` source enum
+/// value, and OAuth client.
 /// Tokens are encrypted at the app level before persistence. Google refresh
 /// tokens do NOT rotate per use, so `refreshToken` is overwritten only when a
 /// token response carries a fresh one.
@@ -4729,7 +4668,7 @@ model GoogleHealthConnection {
 }
 
 /// v1.27.0 — short-lived `(nonce → userId)` ledger backing the Google Health
-/// OAuth state check, identical in shape + lifecycle to `FitbitOAuthState`.
+/// OAuth state check, identical in shape + lifecycle to `WhoopOAuthState`.
 /// Google's OAuth is Authorization Code + PKCE (S256), so the connect route
 /// mints a `code_verifier` alongside the nonce and stashes it here; the callback
 /// reads it back to present on the token exchange.

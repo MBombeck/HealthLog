@@ -116,18 +116,18 @@ with a verb naming the act rather than a generic "made a change".
 **Nothing about the account around the record.** This is the line the
 whole feature is built on, and it is drawn on the server:
 
-| Not reachable                                                                                | Why it would matter                                                      |
-| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Password, passkeys, second factor, recovery codes                                            | Silent takeover, surviving any revocation                                |
-| Sessions, trusted devices, sign-out-everywhere                                               | Ending or enumerating the owner's logins                                 |
-| API tokens, the MCP connector                                                                | A durable credential that outlives the access                            |
-| Connected services (Withings, Fitbit, WHOOP, Google Health, Polar, Oura, Strava, Nightscout) | Re-pointing a sync, or feeding somebody else's wearable into this record |
-| Notification channels and push devices                                                       | The owner's health alerts redirected to another phone or chat            |
-| Full exports, the encrypted archive, clinician share links                                   | A one-click copy of everything, or a new door that outlives the access   |
-| Asking an AI provider anything                                                               | AI processing of the owner's data, under the owner's own consent         |
-| Modules, thresholds, units, the record's language and timezone                               | Configuration of the account, not content of the record                  |
-| Sharing itself                                                                               | Inviting somebody else, widening the access, or passing it on            |
-| Locale, theme, dashboard layout                                                              | Presentation belongs to the person, not to the record                    |
+| Not reachable                                                                        | Why it would matter                                                      |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| Password, passkeys, second factor, recovery codes                                    | Silent takeover, surviving any revocation                                |
+| Sessions, trusted devices, sign-out-everywhere                                       | Ending or enumerating the owner's logins                                 |
+| API tokens, the MCP connector                                                        | A durable credential that outlives the access                            |
+| Connected services (Withings, WHOOP, Google Health, Polar, Oura, Strava, Nightscout) | Re-pointing a sync, or feeding somebody else's wearable into this record |
+| Notification channels and push devices                                               | The owner's health alerts redirected to another phone or chat            |
+| Full exports, the encrypted archive, clinician share links                           | A one-click copy of everything, or a new door that outlives the access   |
+| Asking an AI provider anything                                                       | AI processing of the owner's data, under the owner's own consent         |
+| Modules, thresholds, units, the record's language and timezone                       | Configuration of the account, not content of the record                  |
+| Sharing itself                                                                       | Inviting somebody else, widening the access, or passing it on            |
+| Locale, theme, dashboard layout                                                      | Presentation belongs to the person, not to the record                    |
 
 One export is the exception, and it is deliberate: the doctor report
 (`POST /api/export/health-record`) answers at manage on a whole-record
@@ -218,9 +218,9 @@ as something to log in as.
   can also connect and disconnect the record's Withings, WHOOP, Oura, Polar,
   Strava and Google Health from its integrations page; the data lands in the
   profile's record, and a profile without its own provider app uses the
-  guardian's. Fitbit (no new connections), Nightscout and Dawarich cannot be
-  connected for a profile. Sync, the connection test and provider
-  credentials are not guardian surfaces: once connected, the record syncs on
+  guardian's. Nightscout and Dawarich cannot be connected for a profile.
+  Sync, the connection test and provider credentials are not guardian
+  surfaces: once connected, the record syncs on
   its own schedule, and their deep links land on the shared-record
   unavailable page rather than on a raw refusal.
 - **Its reminders go to its guardians.** A record with no login has no

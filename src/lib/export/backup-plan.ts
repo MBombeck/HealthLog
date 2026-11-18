@@ -702,10 +702,6 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "A CSRF nonce for a handshake that is valid for minutes and is already over by the time any backup is read.",
   WhoopConnectTicket:
     "A single-use ticket that binds one connect attempt to one browser; spent or expired long before a restore.",
-  FitbitConnection:
-    "An OAuth grant bound to this deployment's client registration; on another host it is a dead token that reads as connected.",
-  FitbitOAuthState:
-    "A CSRF nonce for a handshake that is valid for minutes and is already over by the time any backup is read.",
   GoogleHealthConnection:
     "An OAuth grant bound to this deployment's client registration; on another host it is a dead token that reads as connected.",
   GoogleHealthOAuthState:

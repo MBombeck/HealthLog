@@ -538,7 +538,6 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "oidc_only",
       "private_origin_not_approved",
       "private_origin_not_grantable",
-      "provider_retired",
       "rate_limited_self",
       "sync_in_progress",
       "too_many_rows",

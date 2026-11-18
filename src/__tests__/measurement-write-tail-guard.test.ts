@@ -76,7 +76,6 @@ const WRITE_SITES: Record<string, string> = {
   "lib/oura/retire-distance.ts": TAIL,
   // Integration syncs: each collects the (type, day) pairs it touched and
   // runs the provider write step over them.
-  "lib/fitbit/sync-core.ts": PROVIDER_TAIL,
   "lib/google-health/sync-core.ts": PROVIDER_TAIL,
   "lib/nightscout/sync.ts": PROVIDER_TAIL,
   "lib/withings/sync.ts": PROVIDER_TAIL,

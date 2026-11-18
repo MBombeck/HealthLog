@@ -37,7 +37,6 @@ export type ConnectionKey = IntegrationKey | "apple-health";
 export const CONNECTION_KEYS: readonly ConnectionKey[] = [
   "withings",
   "whoop",
-  "fitbit",
   "google-health",
   "polar",
   "oura",
