@@ -400,7 +400,7 @@ describe("sharing provider origin", () => {
       await withProviderWorkAuthority(system, async () =>
         Promise.all([
           resolveProvider("managed-system-record"),
-          resolveProviderChain("managed-system-record"),
+          resolveProviderChain("managed-system-record", null),
           hasAnyConfiguredProvider("managed-system-record"),
           resolveProviderAvailability("managed-system-record"),
         ]),

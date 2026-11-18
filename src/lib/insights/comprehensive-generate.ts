@@ -856,7 +856,7 @@ export async function generateComprehensiveInsight(
     };
   }
 
-  const chain = await resolveProviderChain(userId);
+  const chain = await resolveProviderChain(userId, "briefing");
   if (chain.length === 0) {
     return { status: "skipped", reason: "no-provider" };
   }

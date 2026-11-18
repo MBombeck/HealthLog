@@ -94,7 +94,7 @@ beforeEach(() => {
 describe("resolveProviderChain binds each entry's own setting", () => {
   it("a mixed chain sends none, nothing, nothing", async () => {
     withChain(MIXED);
-    const chain = await resolveProviderChain("user-1");
+    const chain = await resolveProviderChain("user-1", null);
     expect(chain.map((e) => e.providerType)).toEqual([
       "local",
       "openai-compatible",
@@ -120,7 +120,7 @@ describe("resolveProviderChain binds each entry's own setting", () => {
         reasoningEffort: "high",
       },
     ]);
-    const chain = await resolveProviderChain("user-1");
+    const chain = await resolveProviderChain("user-1", null);
     expect(await sentEffort(chain[0].instance)).toBe("(absent)");
     expect(await sentEffort(chain[1].instance)).toBe("high");
   });

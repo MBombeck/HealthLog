@@ -155,6 +155,9 @@
       "aiProviderChain": {
         "roundTrip": "rt-User-aiProviderChain"
       },
+      "aiNamedChains": {
+        "roundTrip": "rt-User-aiNamedChains"
+      },
       "aiResponseTimeoutSeconds": 3,
       "useCentralCodex": true,
       "insightsPrivacyMode": "raw",
@@ -2624,6 +2627,9 @@
       "aiCompatModel": "rt-User-aiCompatModel",
       "aiProviderChain": {
         "roundTrip": "rt-User-aiProviderChain"
+      },
+      "aiNamedChains": {
+        "roundTrip": "rt-User-aiNamedChains"
       },
       "aiResponseTimeoutSeconds": 3,
       "useCentralCodex": true,

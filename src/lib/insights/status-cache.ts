@@ -706,7 +706,11 @@ export async function resolveReadOnlyStatusMiss(args: {
     return {
       kind: "unavailable",
       reason,
-      hasProvider: await probeProviderPresence(args.userId, "text"),
+      hasProvider: await probeProviderPresence(
+        args.userId,
+        "text",
+        "statusText",
+      ),
     };
   }
 

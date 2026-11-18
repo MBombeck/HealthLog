@@ -134,8 +134,8 @@ describe("a refused Codex sign-in", () => {
 
     // Two workers meet the refusal at once: one transition, one signal.
     const [first, second] = await Promise.all([
-      resolveProviderChain(user.id),
-      resolveProviderChain(user.id),
+      resolveProviderChain(user.id, null),
+      resolveProviderChain(user.id, null),
     ]);
     expect(first.map((p) => p.providerType)).not.toContain("codex");
     expect(second.map((p) => p.providerType)).not.toContain("codex");
@@ -153,7 +153,7 @@ describe("a refused Codex sign-in", () => {
     // Parked: later runs neither ask the issuer nor count Codex as present.
     const asked = vi.mocked(refreshDeviceTokens).mock.calls.length;
     for (let i = 0; i < 3; i += 1) {
-      const chain = await resolveProviderChain(user.id);
+      const chain = await resolveProviderChain(user.id, null);
       expect(chain.map((p) => p.providerType)).not.toContain("codex");
     }
     expect(vi.mocked(refreshDeviceTokens).mock.calls.length).toBe(asked);
@@ -187,7 +187,7 @@ describe("a refused Codex sign-in", () => {
 
     // Resumed in place: connected, first in the chain, not benched by the
     // refused credential's ledger row, and the fresh token needs no refresh.
-    const resumed = await resolveProviderChain(user.id);
+    const resumed = await resolveProviderChain(user.id, null);
     expect(resumed[0]?.providerType).toBe("codex");
     expect(
       (await postgresProviderHealthLedger.getSkipHints(user.id)).has("codex"),
@@ -201,7 +201,7 @@ describe("a refused Codex sign-in", () => {
       new CodexRefreshError(503, null),
     );
 
-    const chain = await resolveProviderChain(user.id);
+    const chain = await resolveProviderChain(user.id, null);
 
     // A brown-out at the issuer: the connection stays, the client's own
     // on-401 path gets its chance, and nothing is signalled.
@@ -241,7 +241,7 @@ describe("a refused Codex sign-in", () => {
       new CodexRefreshError(401, null),
     );
 
-    const chain = await resolveProviderChain(user.id);
+    const chain = await resolveProviderChain(user.id, null);
     expect(chain.map((p) => p.providerType)).not.toContain("admin-codex");
     expect(
       (
@@ -253,7 +253,7 @@ describe("a refused Codex sign-in", () => {
     ).toBe("expired");
     expect(parkSignals("admin-codex")).toHaveLength(1);
 
-    await resolveProviderChain(user.id);
+    await resolveProviderChain(user.id, null);
     expect(vi.mocked(refreshDeviceTokens)).toHaveBeenCalledTimes(1);
   });
 });
@@ -388,8 +388,8 @@ describe("two refreshes of one Codex token", () => {
     });
 
     const [first, second] = await Promise.all([
-      resolveProviderChain(user.id),
-      resolveProviderChain(user.id),
+      resolveProviderChain(user.id, null),
+      resolveProviderChain(user.id, null),
     ]);
 
     expect(first.map((p) => p.providerType)).toContain("codex");
@@ -415,7 +415,7 @@ describe("two refreshes of one Codex token", () => {
       throw new CodexRefreshError(400, "refresh_token_reused");
     });
 
-    const chain = await resolveProviderChain(user.id);
+    const chain = await resolveProviderChain(user.id, null);
 
     expect(chain.map((p) => p.providerType)).toContain("codex");
     expect(await codexStatus(user.id)).toBe("connected");
@@ -432,7 +432,7 @@ describe("a Codex refresh under the lock", () => {
       new CodexRefreshError(400, "refresh_token_reused"),
     );
 
-    const chain = await resolveProviderChain(user.id);
+    const chain = await resolveProviderChain(user.id, null);
 
     expect(chain.map((p) => p.providerType)).not.toContain("codex");
     expect(
@@ -463,7 +463,7 @@ describe("a Codex refresh under the lock", () => {
       return creds("rotated", 10 * HOUR_MS);
     });
 
-    const chain = await resolveProviderChain(user.id);
+    const chain = await resolveProviderChain(user.id, null);
 
     expect(chain.map((p) => p.providerType)).not.toContain("codex");
     expect(

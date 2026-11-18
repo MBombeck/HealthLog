@@ -439,6 +439,7 @@ export const USER_RESET = {
   aiCompatKeyEncrypted: null,
   aiCompatModel: null,
   aiProviderChain: Prisma.DbNull,
+  aiNamedChains: Prisma.DbNull,
   aiResponseTimeoutSeconds: null,
   disableCoach: false,
   aiUsageLevel: null,

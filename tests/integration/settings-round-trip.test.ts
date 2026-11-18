@@ -56,6 +56,7 @@ import { POST as uploadAvatar } from "@/app/api/user/avatar/route";
 import { GET as getAvatar } from "@/app/api/user/avatar/[id]/route";
 import * as aiProvider from "@/app/api/user/ai-provider/route";
 import * as providerChain from "@/app/api/insights/provider-chain/route";
+import * as providerChains from "@/app/api/insights/provider-chains/route";
 import * as insightsSettings from "@/app/api/insights/settings/route";
 import { POST as completeOnboarding } from "@/app/api/onboarding/complete/route";
 import { POST as onboardingTour } from "@/app/api/onboarding/tour/route";
@@ -736,6 +737,42 @@ function entries(user: Pick<User, "id">): Entry[] {
         ["anthropic", true],
         ["openai", false],
       ],
+    },
+    {
+      columns: ["aiNamedChains"],
+      write: {
+        handler: providerChains.PUT,
+        method: "PUT",
+        route: "/api/insights/provider-chains",
+        body: {
+          chains: [
+            { id: "docs", name: "Stays home", entries: ["local"] },
+            { id: "cloud", name: "Cloud", entries: ["anthropic", "openai"] },
+          ],
+          defaultChainId: "cloud",
+          attachments: { documentAi: "docs", labsOcr: "docs" },
+        },
+      },
+      read: {
+        call: {
+          handler: providerChains.GET,
+          method: "GET",
+          route: "/api/insights/provider-chains",
+        },
+        pick: (res) => ({
+          chains: at(res.data, "chains"),
+          defaultChainId: at(res.data, "defaultChainId"),
+          attachments: at(res.data, "attachments"),
+        }),
+      },
+      expected: {
+        chains: [
+          { id: "docs", name: "Stays home", entries: ["local"] },
+          { id: "cloud", name: "Cloud", entries: ["anthropic", "openai"] },
+        ],
+        defaultChainId: "cloud",
+        attachments: { documentAi: "docs", labsOcr: "docs" },
+      },
     },
     {
       columns: ["insightsPrivacyMode"],

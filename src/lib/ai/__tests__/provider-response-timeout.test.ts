@@ -62,7 +62,7 @@ describe("the resolvers bind the record's response-timeout setting", () => {
 
   it("resolveProviderChain, every entry", async () => {
     withSetting(300);
-    const chain = await resolveProviderChain("user-1");
+    const chain = await resolveProviderChain("user-1", null);
     expect(chain.length).toBeGreaterThan(0);
     for (const entry of chain) {
       expect(entry.instance.responseTimeoutSeconds).toBe(300);

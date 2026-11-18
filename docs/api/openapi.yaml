@@ -13588,6 +13588,59 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
+  /api/insights/provider-chains:
+    get:
+      tags:
+        - Insights
+      summary: Read the account's named provider chains
+      description: "The named chains next to the main chain, which of them is the default, which capability is attached to
+        which, and every provider type with its availability and egress class (`local` stays on the machine, `external`
+        leaves it). An attached capability is pinned to its chain: exactly those entries, in that order, and a one-entry
+        chain refuses rather than fall back. Whether a capability is available is NOT here; it is published on
+        `/api/auth/me` (`ai`). No key, token or account id is on this wire. Cookie or Bearer auth; not delegable."
+      responses:
+        "200":
+          description: The named chains.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NamedChainsEnvelope"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
+    put:
+      tags:
+        - Insights
+      summary: Replace the account's named provider chains
+      description: "Persists the named chains, the default and the attachments wholesale and answers the stored state. Chain
+        ids are chosen by the client and must be unique; names are unique ignoring case; a chain lists each provider
+        type at most once and at least one. A default or attachment that names an unknown chain is refused. Deleting a
+        chain is saving without it: its capabilities return to the default chain. Body capped at 64 KiB. Cookie or
+        Bearer auth; not delegable."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NamedChainsPutRequest"
+      responses:
+        "200":
+          description: Saved; the stored state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NamedChainsSavedEnvelope"
+        "401": *a1
+        "403": *a9
+        "422":
+          description: "The body was not a valid set of chains: an empty or repeated entry, a repeated id or name, more than ten
+            chains, or a default or attachment naming an unknown chain."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429": *a5
   /api/insights/feedback:
     post:
       tags:
@@ -33402,6 +33455,78 @@ components:
       description: Replaces the account's provider chain wholesale. No credential is written or read here — only which
         provider types exist, in what order, which are enabled, and the reasoning setting of the Local and
         OpenAI-compatible entries.
+    NamedChainsPutRequest:
+      type: object
+      properties:
+        chains:
+          maxItems: 10
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                pattern: ^[A-Za-z0-9_-]{1,32}$
+                description: Chosen by the client that creates the chain (letters, digits, `-`, `_`; at most 32). Stable across renames;
+                  attachments and the default refer to it.
+              name:
+                type: string
+                minLength: 1
+                maxLength: 40
+                description: Shown in settings. Unique per account, ignoring case.
+              entries:
+                minItems: 1
+                maxItems: 7
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - codex
+                    - openai
+                    - anthropic
+                    - local
+                    - openai-compatible
+                    - admin-openai
+                    - admin-codex
+                description: "Provider types in the order they are tried. One entry is a binding: the capability uses that provider or
+                  refuses. A repeated type is refused."
+            required:
+              - id
+              - name
+              - entries
+            additionalProperties: false
+        defaultChainId:
+          description: The named chain every unattached capability follows, or null for the main chain
+            (`/api/insights/provider-chain`).
+          type:
+            - string
+            - "null"
+        attachments:
+          type: object
+          propertyNames:
+            type: string
+            enum:
+              - coach
+              - briefing
+              - periodNarrative
+              - statusText
+              - workoutInsights
+              - reactionLines
+              - aboutMeQuestions
+              - documentAi
+              - labsOcr
+              - medicationExtract
+              - supplementLabel
+          additionalProperties:
+            type: string
+          description: Capability → chain id. A capability left out follows the default chain under its own rules.
+      required:
+        - chains
+        - defaultChainId
+        - attachments
+      additionalProperties: false
+      description: Replaces the named chains, the default and the attachments wholesale. The main chain is not touched. No
+        credential is written or read here.
     InsightsFeedbackRequest:
       type: object
       properties:
@@ -43710,6 +43835,7 @@ components:
                     - string
                     - "null"
                 aiProviderChain: {}
+                aiNamedChains: {}
                 aiResponseTimeoutSeconds:
                   anyOf:
                     - type: integer
@@ -71351,6 +71477,159 @@ components:
           required:
             - saved
           additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    NamedChainsEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/NamedChainsResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    NamedChainsResponse:
+      type: object
+      properties:
+        chains:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                pattern: ^[A-Za-z0-9_-]{1,32}$
+                description: Chosen by the client that creates the chain (letters, digits, `-`, `_`; at most 32). Stable across renames;
+                  attachments and the default refer to it.
+              name:
+                type: string
+                minLength: 1
+                maxLength: 40
+                description: Shown in settings. Unique per account, ignoring case.
+              entries:
+                minItems: 1
+                maxItems: 7
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - codex
+                    - openai
+                    - anthropic
+                    - local
+                    - openai-compatible
+                    - admin-openai
+                    - admin-codex
+                description: "Provider types in the order they are tried. One entry is a binding: the capability uses that provider or
+                  refuses. A repeated type is refused."
+            required:
+              - id
+              - name
+              - entries
+            additionalProperties: false
+          description: The account's named chains, in the order they were saved.
+        defaultChainId:
+          description: The named chain every unattached capability follows, or null for the main chain.
+          type:
+            - string
+            - "null"
+        attachments:
+          type: object
+          propertyNames:
+            type: string
+            enum:
+              - coach
+              - briefing
+              - periodNarrative
+              - statusText
+              - workoutInsights
+              - reactionLines
+              - aboutMeQuestions
+              - documentAi
+              - labsOcr
+              - medicationExtract
+              - supplementLabel
+          additionalProperties:
+            type: string
+          description: Capability → chain id. An attached capability uses exactly its chain's entries in their order and nothing
+            else; one left out follows the default chain under its own rules (documents prefer a local entry, lab scans
+            keep the chain order).
+        mainChain:
+          type: array
+          items:
+            type: string
+            enum:
+              - codex
+              - openai
+              - anthropic
+              - local
+              - openai-compatible
+              - admin-openai
+              - admin-codex
+          description: The enabled entries of the main chain in order, for showing what Default means.
+        providers:
+          type: array
+          items:
+            type: object
+            properties:
+              providerType:
+                type: string
+                enum:
+                  - codex
+                  - openai
+                  - anthropic
+                  - local
+                  - openai-compatible
+                  - admin-openai
+                  - admin-codex
+              available:
+                type: boolean
+                description: Whether the account holds a usable credential for it (presence only; a dead key still reads true). An entry
+                  that is not available never serves.
+              egress:
+                type: string
+                enum:
+                  - local
+                  - external
+                description: "`local` keeps the input on the machine; `external` sends it to a third-party AI service."
+            required:
+              - providerType
+              - available
+              - egress
+            additionalProperties: false
+          description: Every provider type a chain may list.
+      required:
+        - chains
+        - defaultChainId
+        - attachments
+        - mainChain
+        - providers
+      additionalProperties: false
+      description: The account's named provider chains and attachments. Provider TYPES, names and capability keys only.
+        Whether a capability is available is published on `/api/auth/me` (`ai`), resolved through these chains.
+    NamedChainsSavedEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/NamedChainsResponse"
         error:
           type: "null"
         meta:

@@ -139,7 +139,7 @@ interface RunStatusCompletionArgs {
 export async function hasUsableStatusProvider(
   userId: string,
 ): Promise<boolean> {
-  return probeProviderPresence(userId, "text");
+  return probeProviderPresence(userId, "text", "statusText");
 }
 
 /**
@@ -168,7 +168,7 @@ export async function runStatusCompletion(
     return { kind: "none", reason };
   }
 
-  const chain = await resolveProviderChain(userId);
+  const chain = await resolveProviderChain(userId, args.capability);
   if (chain.length === 0) {
     return { kind: "none", reason: "no_provider" };
   }

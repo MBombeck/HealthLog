@@ -360,7 +360,11 @@ describe("resolveReadOnlyStatusMiss", () => {
       reason: "consent_required",
       hasProvider: true,
     });
-    expect(probeProviderPresence).toHaveBeenCalledWith("u1", "text");
+    expect(probeProviderPresence).toHaveBeenCalledWith(
+      "u1",
+      "text",
+      "statusText",
+    );
     expect(enqueueStatusGeneration).not.toHaveBeenCalled();
     expect(prisma.insightStatusCache.findUnique).not.toHaveBeenCalled();
   });

@@ -505,6 +505,13 @@ model User {
   // behaviour (single-provider resolution via `aiProvider`).
   aiProviderChain Json? @map("ai_provider_chain")
 
+  // #1404 — named provider chains next to the main chain above, and which AI
+  // capability is attached to which: `{ chains: [{ id, name, entries }],
+  // defaultChainId, attachments }`, parsed by `parseNamedChains`
+  // (`src/lib/ai/named-chains.ts`). Metadata only; null = no named chains, so
+  // every capability reads the main chain under today's rules.
+  aiNamedChains Json? @map("ai_named_chains")
+
   // v1.22 (#89) — per-user response timeout for AI generation, in SECONDS.
   // Threaded onto `CompletionParams.timeoutMs` (×1000). Null = the generous
   // built-in default (~180 s). Surfaced in Settings → AI mainly for

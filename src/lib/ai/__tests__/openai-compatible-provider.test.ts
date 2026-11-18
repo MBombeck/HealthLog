@@ -197,7 +197,7 @@ describe("the pinned OpenAI arm never reads the gateway's base URL", () => {
       }),
     );
 
-    const chain = await resolveProviderChain("u-1");
+    const chain = await resolveProviderChain("u-1", null);
     expect(chain).toHaveLength(1);
     await chain[0].instance.generateCompletion(probe());
 
@@ -254,7 +254,7 @@ describe("an unconfigured gateway entry is skipped, not an error", () => {
       }),
     );
 
-    await expect(resolveProviderChain("u-1")).resolves.toEqual([]);
+    await expect(resolveProviderChain("u-1", null)).resolves.toEqual([]);
   });
 
   it("drops the chain entry when no model can be resolved", async () => {
@@ -267,7 +267,7 @@ describe("an unconfigured gateway entry is skipped, not an error", () => {
       }),
     );
 
-    await expect(resolveProviderChain("u-1")).resolves.toEqual([]);
+    await expect(resolveProviderChain("u-1", null)).resolves.toEqual([]);
   });
 
   it("resolves the entry once both are present", async () => {
@@ -281,7 +281,7 @@ describe("an unconfigured gateway entry is skipped, not an error", () => {
       }),
     );
 
-    const chain = await resolveProviderChain("u-1");
+    const chain = await resolveProviderChain("u-1", null);
     expect(chain.map((e) => e.providerType)).toEqual(["openai-compatible"]);
   });
 });

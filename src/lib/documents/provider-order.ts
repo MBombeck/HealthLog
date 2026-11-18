@@ -111,7 +111,7 @@ export async function resolveDocumentVisionProvider(
 ): Promise<DocumentProviderPick<VisionProviderPick>> {
   return atTheWire(
     userId,
-    await resolveVisionProvider(userId, {
+    await resolveVisionProvider(userId, "documentAi", {
       reorder: reorderChainForDocumentClass,
     }),
   );
@@ -130,7 +130,7 @@ export async function resolveDocumentTextProvider(userId: string): Promise<
 > {
   return atTheWire(
     userId,
-    await resolveTextProvider(userId, {
+    await resolveTextProvider(userId, "documentAi", {
       reorder: reorderChainForDocumentClass,
     }),
   );
@@ -190,7 +190,9 @@ export async function resolveDocumentAiCapability(
   userId: string,
 ): Promise<DocumentAiCapabilityDto> {
   const [{ chain, pick, localOcrEnabled }, ai] = await Promise.all([
-    resolveVisionProvider(userId, { reorder: reorderChainForDocumentClass }),
+    resolveVisionProvider(userId, "documentAi", {
+      reorder: reorderChainForDocumentClass,
+    }),
     getAiCapability("documentAi"),
   ]);
 

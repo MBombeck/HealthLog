@@ -210,3 +210,25 @@ export function chainWithReasoningEffort(
   }
   return chain;
 }
+
+/**
+ * What a chain that resolves empty falls back to: the OpenAI-compatible
+ * gateway picked under Settings, AI, unless the chain switched it off. The
+ * default chain has no entry for the gateway, so a chain never saved, reset
+ * to the default, or reordered without it says nothing about the gateway.
+ * Nor does a disabled gateway entry that carries a reasoning effort: that is
+ * the holder the gateway form wrote for the setting
+ * (`chainWithReasoningEffort`), not a switch somebody turned off; the chain
+ * editor drops the effort of a gateway it switches off. Resolution and the
+ * presence probe both read this, so they cannot disagree about it.
+ */
+export function servesPickedGateway(row: {
+  aiProvider: string | null;
+  aiProviderChain: unknown;
+}): boolean {
+  if (row.aiProvider?.toUpperCase() !== "OPENAI_COMPATIBLE") return false;
+  const gateway = parseProviderChain(row.aiProviderChain ?? null).find(
+    (entry) => entry.providerType === "openai-compatible",
+  );
+  return !gateway || gateway.enabled || gateway.reasoningEffort !== undefined;
+}
