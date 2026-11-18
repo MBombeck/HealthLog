@@ -361,6 +361,12 @@ export interface NotificationPayload {
    */
   managedFanoutEvent?: ManagedGuardianFanoutEvent;
   /**
+   * Guardians a managed record's fan-out must not reach: the person whose own
+   * action caused the delivery (a guardian who logged the seizure that formed
+   * a cluster already knows). Applied where the fan-out picks its guardians.
+   */
+  excludeRecipientUserIds?: readonly string[];
+  /**
    * Internal rendering hook for record-owned notification content. The
    * dispatcher invokes it only after choosing a recipient, then removes it
    * before handing the payload to a channel adapter.

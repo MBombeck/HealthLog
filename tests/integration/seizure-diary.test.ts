@@ -437,7 +437,7 @@ describe("an adult's shared record holds the grant levels", () => {
     expect(
       (await newEvent({ onsetAt: ago(3 * 3_600_000).toISOString() })).status,
     ).toBe(201);
-    await delegateWith(owner.id, "WRITE");
+    const carer = await delegateWith(owner.id, "WRITE");
     dispatched.length = 0;
 
     // The carer's seizure makes two within 24 h: the cluster forms.
@@ -464,6 +464,9 @@ describe("an adult's shared record holds the grant levels", () => {
         userId: owner.id,
         eventType: "SEIZURE_CLUSTER",
         params: expect.objectContaining({ count: 2, hours: 24 }),
+        // On a managed profile the carer would be among the guardians the
+        // push fans out to; the one who logged it is never told.
+        excludeRecipientUserIds: [carer.id],
       }),
     ]);
   });

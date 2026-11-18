@@ -16,8 +16,8 @@
  *  3. A seizure that joins a cluster that was already there sends nothing.
  *
  * On a managed profile the dispatcher fans the push out to the record's
- * guardians; on an adult's record it goes to the owner, who learns that a
- * carer logged it. No free text rides along: the count, the window and the
+ * guardians, except the one who logged the seizure; on an adult's record it
+ * goes to the owner, who learns that a carer logged it. No free text rides along: the count, the window and the
  * name of the person who logged it.
  */
 import { prisma } from "@/lib/db";
@@ -140,6 +140,9 @@ export async function notifySeizureCluster(
         name: accountLabel(actor),
       },
       metadata: { eventId },
+      // On a managed profile the push fans out to the guardians, and the one
+      // who logged the seizure is among them; they already know.
+      excludeRecipientUserIds: [actorId],
     });
   } catch (err) {
     getEvent()?.addWarning(

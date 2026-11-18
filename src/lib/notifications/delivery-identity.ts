@@ -77,7 +77,8 @@ export async function resolveManagedGuardianRecipientIds(
     .filter(
       (grant) =>
         grant.granteeId !== payload.userId &&
-        grant.grantee.managedProfileAt == null,
+        grant.grantee.managedProfileAt == null &&
+        !payload.excludeRecipientUserIds?.includes(grant.granteeId),
     )
     .map((grant) => grant.granteeId);
 }
