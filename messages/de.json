@@ -3951,7 +3951,8 @@
         "sleepTrendsLink": "Schlaf-Trends",
         "moodHistoryLink": "Stimmungsverlauf",
         "previousSessionLink": "Vorherige Einheit",
-        "insightTitle": "Aktivitäts-Einblick"
+        "insightTitle": "Aktivitäts-Einblick",
+        "sourceFitFile": "FIT-Datei"
       },
       "sport": {
         "walking": "Gehen",
@@ -5084,7 +5085,8 @@
         "afternoon": "Eine anhaltend erhöhte Ruhephase heute Nachmittag, möglicherweise etwas Anspannung.",
         "evening": "Eine anhaltend erhöhte Ruhephase heute Abend, möglicherweise etwas Anspannung.",
         "night": "Eine anhaltend erhöhte Ruhephase in der Nacht, möglicherweise etwas Anspannung."
-      }
+      },
+      "emptyOutsideWorkouts": "Außerhalb von Trainings gibt es für diesen Tag zu wenige Pulswerte, um seinen Verlauf zu zeigen."
     },
     "navEcg": "EKG",
     "sectionLoadError": "Dieser Bereich konnte nicht geladen werden.",
@@ -5668,7 +5670,11 @@
         "documents": {
           "title": "Dokumente",
           "autoAiRead": "Neue Dokumente automatisch mit KI lesen",
-          "honesty": "Wenn eingeschaltet, wird jedes in dieses Profil hochgeladene Dokument an den KI-Anbieter der Instanz geschickt, dort gelesen, beschrieben und für die Suche erschlossen, ohne Tippen je Dokument; schon vorhandene Dokumente ohne Zusammenfassung werden ebenfalls geschickt (bis zu 200 bei jedem Einschalten). Das Einschalten hält die Einwilligung dieses Profils fest, dass seine Dokumente gelesen werden dürfen. Es gelten die KI-Einstellungen des Profils; dein eigener KI-Anbieter wird nie verwendet. Standardmäßig aus."
+          "honesty": "Wenn eingeschaltet, wird jedes in dieses Profil hochgeladene Dokument an den KI-Anbieter der Instanz geschickt, dort gelesen, beschrieben und für die Suche erschlossen, ohne Tippen je Dokument; schon vorhandene Dokumente ohne Zusammenfassung werden ebenfalls geschickt (bis zu 200 bei jedem Einschalten). Das Einschalten hält die Einwilligung dieses Profils fest, dass seine Dokumente gelesen werden dürfen. Es gelten die KI-Einstellungen des Profils; dein eigener KI-Anbieter wird nie verwendet. Standardmäßig aus.",
+          "pageTitle": "Dokumente und KI",
+          "pageSubtitle": "Ob KI die Dokumente liest, die in das Profil von {name} hochgeladen werden.",
+          "noProvider": "Dieser Server hat keinen KI-Anbieter, der die Dokumente von {name} lesen könnte, deshalb bleibt der Schalter aus. Wer den Server betreibt, kann einen einrichten.",
+          "aiOff": "KI ist für das Profil von {name} ausgeschaltet, deshalb würde kein Dokument gelesen."
         }
       },
       "unavailableTitle": "In diesem geteilten Datensatz nicht verfügbar",
@@ -5901,7 +5907,7 @@
         },
         "import": {
           "heading": "Import",
-          "description": "Importiere Daten aus einem Apple-Health-Export oder einer JSON-Datei. Bereits vorhandene Einträge werden übersprungen, ein erneuter Import ist also unbedenklich.",
+          "description": "Importiere Daten aus Apple Health, Health Connect, der Aktivitätsdatei einer Uhr, einer JSON- oder einer CSV-Datei. Bereits vorhandene Einträge werden übersprungen, ein erneuter Import ist also unbedenklich.",
           "charCount": "{used} / {max} Zeichen",
           "appleHealth": {
             "title": "Apple Health",
@@ -5955,7 +5961,7 @@
             "fileInputLabel": "Eine JSON-Datei zum Import auswählen",
             "schemaHint": "Zwei Arrays: measurements und moodEntries.",
             "docsLink": "Schema und Beispiel ansehen.",
-            "uploadFile": "Datei hochladen",
+            "uploadFile": "Datei auswählen",
             "downloadExample": "Beispiel herunterladen",
             "import": "Importieren",
             "invalidJson": "Das ist kein gültiges JSON. Bitte die Syntax prüfen und erneut versuchen.",
@@ -5978,7 +5984,7 @@
             "fileInputLabel": "CSV-Datei zum Importieren auswählen",
             "schemaHint": "Spalten: type, value, unit, measuredAt (mit Zeitzonen-Offset) sowie optional glucoseContext, notes, externalId.",
             "docsLink": "Spaltenschema und Beispiel ansehen.",
-            "uploadFile": "Datei hochladen",
+            "uploadFile": "Datei auswählen",
             "downloadExample": "Beispiel herunterladen",
             "preview": "Vorschau",
             "import": "Importieren",
@@ -6021,7 +6027,7 @@
             "description": "Ein Einnahmeverlauf, wie ihn ein anderer Medikamenten-Tracker exportiert, direkt gelesen.",
             "pasteLabel": "Export einfügen",
             "fileInputLabel": "Datei mit Einnahmeverlauf wählen",
-            "uploadFile": "Datei wählen",
+            "uploadFile": "Datei auswählen",
             "preview": "Vorschau",
             "import": "Importieren",
             "empty": "Erst den Export einfügen oder eine Datei wählen.",
@@ -6075,7 +6081,7 @@
           "healthConnect": {
             "title": "Health-Connect-Export",
             "description": "Importiere die ZIP-Datei, die die Health-Connect-App auf Android beim Export deiner Daten schreibt.",
-            "choose": "ZIP-Datei wählen",
+            "choose": "Datei auswählen",
             "uploading": "Wird hochgeladen …",
             "uploadFailed": "Das Hochladen ist fehlgeschlagen. Bitte versuch es noch einmal.",
             "tooLarge": "Die Datei ist größer, als dieser Server annimmt.",
@@ -6118,7 +6124,7 @@
           "fit": {
             "title": "Aktivitätsdatei (FIT)",
             "description": "Ein Training aus der FIT-Datei einer Uhr oder eines Radcomputers importieren, etwa von Garmin, Wahoo oder Coros.",
-            "choose": "Aktivitätsdatei auswählen",
+            "choose": "Datei auswählen",
             "uploading": "Wird hochgeladen…",
             "uploadFailed": "Das Hochladen ist fehlgeschlagen. Bitte versuche es erneut.",
             "tooLarge": "Die Datei ist größer als 10 MB.",
@@ -6128,7 +6134,7 @@
             "doneSummary": "Die Aktivitätsdatei wurde importiert.",
             "doneNothing": "Der Import ist abgeschlossen, es gab aber nichts Neues hinzuzufügen.",
             "dropLabel": "Aktivitätsdatei hier ablegen",
-            "dropHint": "oder klicken, um sie auszuwählen. .fit, .fit.gz oder .zip, bis 10 MB.",
+            "dropHint": "oder klicken, um sie auszuwählen: eine .fit-, .fit.gz- oder .zip-Datei bis 10 MB.",
             "fileInputLabel": "Aktivitätsdatei",
             "privacyNote": "Die Datei wird vom Server gelöscht, sobald der Import endet. Ein Training, das schon von Garmin, Apple Health oder einer anderen App hier ist, wird nicht doppelt angelegt: Es bekommt den Herzfrequenzverlauf aus der Datei, wenn es noch keinen hatte. Der GPS-Verlauf wird nur gespeichert, wenn Trainingsrouten eingeschaltet sind. Dieselbe Datei erneut hochzuladen ändert nichts.",
             "steps": {
@@ -6606,7 +6612,7 @@
         "defaultChainLabel": "Standardkette",
         "defaultChainHint": "Aufgaben auf „Standard“ folgen dieser Kette. Ihre gewohnten Regeln gelten weiter: Dokumente versuchen zuerst ein lokales Modell.",
         "tasksHeading": "Aufgaben",
-        "tasksHint": "Wähle die Kette für jede Aufgabe. Die Anbieter, die sie versuchen würde, stehen in Reihenfolge darunter.",
+        "tasksHint": "Wähle die Kette für jede Aufgabe. Unter einer Aufgabe mit eigener Kette stehen die Anbieter, die sie versucht, in Reihenfolge.",
         "taskDefault": "Standard",
         "save": "Ketten speichern",
         "saved": "Ketten gespeichert",
@@ -6623,7 +6629,8 @@
           "statusText": "Statushinweise",
           "workoutInsights": "Trainingshinweise",
           "reactionLines": "Reaktionen auf neue Messwerte"
-        }
+        },
+        "tasksNeedChain": "Lege oben eine Kette an, um einer Aufgabe eigene Anbieter zu geben. Bis dahin folgt jede Aufgabe dem Standard."
       },
       "activeProviderHeading": "Aktiver Anbieter",
       "activeProviderLabel": "Anbieter einrichten",
@@ -7098,7 +7105,7 @@
       "title": "Messwert-Tokens",
       "description": "Erzeuge ein Token, damit eine Waage, eine Uhr, ein Ernährungstracker oder deine Hausautomatisierung Messwerte, Werte deiner eigenen Metriken und tägliche Nährstoffsummen eintragen kann.",
       "detail": "Das Token wird nur einmal angezeigt.",
-      "scopeNote": "Es kann ausschließlich neue Werte in deine eigene Akte eintragen, auch für eigene Metriken, die du bereits angelegt hast, und tägliche Nährstoffsummen, solange das Nährstoffe-Modul aktiv ist. Es kann deine Daten nicht lesen, keine Metrik anlegen, nichts ändern oder löschen und kein weiteres Token erstellen. Messwerte und Nährstoffsummen werden als von einem externen Gerät gekennzeichnet, damit du sie später erkennst; Werte eigener Metriken tragen keine solche Kennzeichnung. Messwerte und Werte eigener Metriken kannst du jederzeit selbst korrigieren; einen Nährstofftag korrigiert der Tracker, indem er ihn erneut sendet. Die ID einer eigenen Metrik ist der Teil nach /custom-metrics/ in der Adresse ihrer Seite.",
+      "scopeNote": "Es kann nur Messwerte in deine eigene Akte eintragen, Werte zu eigenen Metriken, die du schon angelegt hast, und tägliche Nährstoffsummen, solange das Nährstoffe-Modul aktiv ist; lesen, ändern oder löschen kann es nichts. Messwerte und Nährstoffsummen werden als extern gekennzeichnet. Die ID einer eigenen Metrik ist der Teil nach /custom-metrics/ in der Adresse ihrer Seite.",
       "nutrientsLink": "Nährstoffaufnahme ansehen",
       "createFailed": "Das Token konnte nicht erstellt werden. Bitte versuche es erneut.",
       "namePlaceholder": "Name, z. B. Home Assistant",
@@ -12310,7 +12317,8 @@
       "duplicateExists": "Ein identisches Dokument ist bereits gespeichert.",
       "uploadBusy": "Der Server war mit anderen Uploads beschäftigt. Versuche es jetzt erneut.",
       "rateLimited": "Das Upload-Limit für diese Stunde ist erreicht. Versuche es später erneut.",
-      "generic": "Upload fehlgeschlagen. Bitte erneut versuchen."
+      "generic": "Upload fehlgeschlagen. Bitte erneut versuchen.",
+      "recordChanged": "Während des Uploads hat sich die geöffnete Akte geändert. Lade die Datei erneut hoch."
     },
     "toast": {
       "duplicate": "Bereits gespeichert. Das vorhandene Dokument ist hervorgehoben.",
@@ -12340,7 +12348,8 @@
       "description": "Bewahre Arztbriefe, Laborbefunde, Bildgebung, Rezepte und Impfnachweise auf. Sie werden verschlüsselt gespeichert und sind nach Typ, Erkrankung und Jahr durchsuchbar.",
       "action": "Erstes Dokument hochladen",
       "noMatchesTitle": "Keine passenden Dokumente",
-      "noMatchesDescription": "Nichts entspricht der aktuellen Suche und den Filtern."
+      "noMatchesDescription": "Nichts entspricht der aktuellen Suche und den Filtern.",
+      "titleRecord": "Der Dokumenten-Tresor von {name} ist leer"
     },
     "detail": {
       "title": "Dokumentdetails",
@@ -12646,6 +12655,10 @@
     "picker": {
       "capped": "Hier stehen die neuesten {count}. Ältere Dokumente findest du über die Suche.",
       "cappedSearching": "Hier stehen die neuesten {count} Treffer. Ältere findest du mit einer genaueren Suche."
+    },
+    "recordAi": {
+      "noProvider": "Kein KI-Anbieter auf diesem Server kann die Dokumente in dieser Akte lesen, deshalb gibt es keine Zusammenfassung, keine Suche im Inhalt und keinen Dokumenten-Chat.",
+      "off": "KI ist für diese Akte ausgeschaltet, deshalb gibt es für ihre Dokumente keine Zusammenfassung, keine Suche im Inhalt und keinen Dokumenten-Chat."
     }
   },
   "selfDescription": {
@@ -12847,12 +12860,12 @@
       "removeBody": "Das Diagramm zeigt dann wieder den Referenzwert, wo es einen gibt. Die Menge, die du gesetzt hast, wird nirgends sonst gespeichert.",
       "targetLabel": "{name} pro Tag in {unit}",
       "boundsHint": "Über 0, höchstens {max} {unit} pro Tag.",
-      "validationBounds": "Gib eine Menge innerhalb der oben genannten Grenzen ein.",
       "directionLabel": "Art des Ziels",
       "directionTarget": "Mindestens erreichen",
       "directionLimit": "Darunter bleiben",
       "saveFailed": "Das Ziel konnte nicht gespeichert werden. Bitte versuche es erneut.",
-      "loadError": "Energie und Makronährstoffe konnten nicht geladen werden."
+      "loadError": "Energie und Makronährstoffe konnten nicht geladen werden.",
+      "gearLabel": "Tagesziel für {name} festlegen"
     },
     "alcohol": {
       "loadError": "Alkohol konnte nicht geladen werden."
@@ -13130,7 +13143,8 @@
       "viewing": "Du bist in der Akte von {name}",
       "readOnly": "Du kannst sie lesen, nicht ändern.",
       "canAdd": "Du kannst etwas hinzufügen, aber nichts ändern oder löschen.",
-      "leave": "Zurück zu meiner Akte"
+      "leave": "Zurück zu meiner Akte",
+      "canManage": "Du kannst etwas hinzufügen und Vorhandenes ändern oder entfernen."
     },
     "switcher": {
       "label": "Akte öffnen",
@@ -14008,7 +14022,7 @@
       "micronutrientsOne": "{count} Mikronährstoff erfasst",
       "micronutrientsOther": "{count} Mikronährstoffe erfasst",
       "micronutrientsFew": "{count} Mikronährstoffe erfasst",
-      "open": "Nährstoffaufnahme öffnen"
+      "open": "Nährstoffaufnahme ansehen"
     }
   },
   "timeline": {
@@ -14827,9 +14841,9 @@
       "rescueGiven": "Notfallmedikament gegeben: {name}",
       "rescueGivenCount": "Notfallmedikament gegeben ({count}), tippen für eine weitere Dosis",
       "threshold": {
-        "t1": "Der Anfall dauert schon {time}. Folge dem Notfallplan.",
-        "usualPlusTwo": "Der Anfall dauert schon {time}, mehr als 2 Minuten länger als üblich. Folge dem Notfallplan.",
-        "generic": "Der Anfall dauert schon {time}. Folge dem Notfallplan."
+        "t1": "Der Anfall dauert länger als {time}. Folge dem Notfallplan.",
+        "usualPlusTwo": "Der Anfall dauert länger als {time}, 2 Minuten über seiner üblichen Dauer. Folge dem Notfallplan.",
+        "generic": "Der Anfall dauert länger als {time}. Folge dem Notfallplan."
       },
       "noPlan": "Für diese Anfallsart ist kein Notfallplan gespeichert. Ruf den Notruf, wenn du unsicher bist.",
       "call": "{number} anrufen",
@@ -14843,14 +14857,14 @@
     },
     "summary": {
       "title": "Erfasst",
-      "recorded": "Erfasste Anfälle, letzte {days} Tage",
+      "recorded": "Erfasste Anfälle seit {date}",
       "seizureDays": "Tage mit Anfall",
       "sinceLast": "Tage seit dem letzten erfassten Anfall",
       "longestFree": "Längster anfallsfreier Zeitraum, Tage",
       "clusters": "Anfallsserien ({rule})",
       "niceClusters": "Anfallsserien nach NICE (3 in 24 h)",
       "suspected": "{count} Verdachtsfälle sind aufgeführt, aber nicht mitgezählt.",
-      "clusterLine": "Anfallsserie ab {start}: {count} Anfälle",
+      "clusterLine": "Ab {start}: {count} Anfälle",
       "monthlyCaption": "Anfälle pro Anfallsart und Monat",
       "undercount": "Erfasste Anfälle, wahrscheinlich zu wenige, insbesondere bei Anfällen aus dem Schlaf."
     },
@@ -14862,7 +14876,8 @@
       "showAll": "Alle {count} anzeigen",
       "truncated": "Nur die letzten Anfälle werden angezeigt.",
       "loggedByYou": "von dir eingetragen",
-      "loggedByName": "eingetragen von {name}"
+      "loggedByName": "eingetragen von {name}",
+      "cluster": "Anfallsserie"
     },
     "certainty": {
       "CONFIRMED": "Anfall",
@@ -14948,7 +14963,7 @@
       "seconds": "Sekunden",
       "durationHint": "Leer lassen, wenn niemand gesehen hat, wie lange er dauerte.",
       "durationSource": "Die Dauer wurde",
-      "certainty": "War es ein Anfall",
+      "certainty": "Gewissheit",
       "count": "Wie viele",
       "countHint": "Mehr als einer für eine Strichliste, etwa die Absencen eines Tages.",
       "sleepState": "Wach oder im Schlaf",
@@ -15024,9 +15039,9 @@
     },
     "rule": {
       "title": "Regel für Anfallsserien",
-      "explainer": "Eine Anfallsserie sind so viele Anfälle innerhalb so vieler Stunden. Verwende die Regel aus dem Notfallplan; NICE verwendet {niceCount} in {niceHours} Stunden, das wird daneben angezeigt.",
+      "explainer": "Eine Anfallsserie sind so viele Anfälle innerhalb so vieler Stunden. Verwende die Regel aus dem Notfallplan; NICE verwendet {niceCount} in {niceHours} Stunden, und die Übersicht zählt Anfallsserien nach beiden Regeln.",
       "count": "Anfälle",
-      "hours": "Innerhalb von Stunden",
+      "hours": "Zeitfenster (Std.)",
       "invalid": "Erlaubt sind 2 bis 20 Anfälle innerhalb von 1 bis 168 Stunden.",
       "saved": "Regel für Anfallsserien gespeichert"
     },

@@ -30,6 +30,35 @@ function renderSportIconBadge(sportType: string) {
   );
 }
 
+/**
+ * The provenance line. A FIT upload is stored under the generic `IMPORT`
+ * source, which read as "Import" over a run whose file names its device; the
+ * maker from the file says more, and "FIT file" stands in when it has none.
+ */
+function sourceLine(
+  workout: WorkoutDetailPayload,
+  t: (key: string) => string,
+): string {
+  const meta =
+    workout.metadata !== null && typeof workout.metadata === "object"
+      ? (workout.metadata as Record<string, unknown>)
+      : null;
+  if (meta?.importFormat === "fit") {
+    const maker = meta.fitManufacturer;
+    return typeof maker === "string" && maker.length > 0
+      ? maker
+          .split("_")
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ")
+      : t("insights.workouts.detail.sourceFitFile");
+  }
+  const key =
+    MEASUREMENT_SOURCE_LIST_LABEL_KEYS[
+      workout.source as keyof typeof MEASUREMENT_SOURCE_LIST_LABEL_KEYS
+    ];
+  return key ? t(key) : workout.source;
+}
+
 export function WorkoutDetailHeader({ workout }: WorkoutDetailHeaderProps) {
   const { t, locale } = useTranslations();
   const fmt = useFormatters();
@@ -48,15 +77,7 @@ export function WorkoutDetailHeader({ workout }: WorkoutDetailHeaderProps) {
         {renderSportIconBadge(workout.sportType)}
         <div className="min-w-0 flex-1 space-y-1">
           <p className="text-muted-foreground text-xs tracking-wide uppercase">
-            {MEASUREMENT_SOURCE_LIST_LABEL_KEYS[
-              workout.source as keyof typeof MEASUREMENT_SOURCE_LIST_LABEL_KEYS
-            ]
-              ? t(
-                  MEASUREMENT_SOURCE_LIST_LABEL_KEYS[
-                    workout.source as keyof typeof MEASUREMENT_SOURCE_LIST_LABEL_KEYS
-                  ],
-                )
-              : workout.source}
+            {sourceLine(workout, t)}
           </p>
           <h2 className="truncate text-lg font-semibold sm:text-xl">
             {sportName}

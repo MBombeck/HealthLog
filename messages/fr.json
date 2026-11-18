@@ -3951,7 +3951,8 @@
         "sleepTrendsLink": "Tendances du sommeil",
         "moodHistoryLink": "Historique d'humeur",
         "previousSessionLink": "Séance précédente",
-        "insightTitle": "Analyse de l'activité"
+        "insightTitle": "Analyse de l'activité",
+        "sourceFitFile": "Fichier FIT"
       },
       "sport": {
         "walking": "Marche",
@@ -5084,7 +5085,8 @@
         "afternoon": "Une période élevée au repos cet après-midi, peut-être un peu de tension.",
         "evening": "Une période élevée au repos ce soir, peut-être un peu de tension.",
         "night": "Une période élevée au repos cette nuit, peut-être un peu de tension."
-      }
+      },
+      "emptyOutsideWorkouts": "Pas assez de mesures de fréquence cardiaque en dehors des entraînements pour montrer l’allure de cette journée."
     },
     "navEcg": "ECG",
     "sectionLoadError": "Cette section n'a pas pu être chargée.",
@@ -5668,7 +5670,11 @@
         "documents": {
           "title": "Documents",
           "autoAiRead": "Lire automatiquement les nouveaux documents avec l'IA",
-          "honesty": "Activé, chaque document téléversé dans ce profil est envoyé au fournisseur d'IA de l'instance pour être lu, décrit et indexé pour la recherche, sans action par document, et les documents déjà présents sans résumé sont aussi envoyés (jusqu'à 200 à chaque activation). L'activer enregistre le consentement de ce profil à la lecture de ses documents. Les réglages d'IA du profil s'appliquent ; votre propre fournisseur d'IA n'est jamais utilisé. Désactivé par défaut."
+          "honesty": "Activé, chaque document téléversé dans ce profil est envoyé au fournisseur d'IA de l'instance pour être lu, décrit et indexé pour la recherche, sans action par document, et les documents déjà présents sans résumé sont aussi envoyés (jusqu'à 200 à chaque activation). L'activer enregistre le consentement de ce profil à la lecture de ses documents. Les réglages d'IA du profil s'appliquent ; votre propre fournisseur d'IA n'est jamais utilisé. Désactivé par défaut.",
+          "pageTitle": "Documents et IA",
+          "pageSubtitle": "Si l'IA lit les documents téléversés dans le profil de {name}.",
+          "noProvider": "Ce serveur n'a aucun fournisseur d'IA capable de lire les documents de {name}, l'interrupteur reste donc désactivé. La personne qui gère le serveur peut en configurer un.",
+          "aiOff": "L'IA est désactivée pour le profil de {name}, aucun document ne serait donc lu."
         }
       },
       "unavailableTitle": "Indisponible dans ce dossier partagé",
@@ -5901,7 +5907,7 @@
         },
         "import": {
           "heading": "Import",
-          "description": "Importez des données dans HealthLog depuis un export Apple Santé ou un fichier JSON. L'import ignore les lignes déjà présentes : le relancer est sans risque.",
+          "description": "Importez des données dans HealthLog depuis Apple Santé, Health Connect, le fichier d’activité d’une montre, un fichier JSON ou un CSV. L'import ignore les lignes déjà présentes : le relancer est sans risque.",
           "charCount": "{used} / {max} caractères",
           "appleHealth": {
             "title": "Apple Santé",
@@ -5955,7 +5961,7 @@
             "fileInputLabel": "Choisir un fichier JSON à importer",
             "schemaHint": "Deux tableaux : measurements et moodEntries.",
             "docsLink": "Voir le schéma et un exemple.",
-            "uploadFile": "Importer un fichier",
+            "uploadFile": "Choisir un fichier",
             "downloadExample": "Télécharger l'exemple",
             "import": "Importer",
             "invalidJson": "Ce n'est pas du JSON valide. Vérifiez la syntaxe et réessayez.",
@@ -5978,7 +5984,7 @@
             "fileInputLabel": "Choisir un fichier CSV à importer",
             "schemaHint": "Colonnes : type, value, unit, measuredAt (avec décalage horaire) et, en option, glucoseContext, notes, externalId.",
             "docsLink": "Voir le schéma des colonnes et un exemple.",
-            "uploadFile": "Téléverser un fichier",
+            "uploadFile": "Choisir un fichier",
             "downloadExample": "Télécharger un exemple",
             "preview": "Aperçu",
             "import": "Importer",
@@ -6075,7 +6081,7 @@
           "healthConnect": {
             "title": "Export Health Connect",
             "description": "Importez le fichier ZIP que l’app Health Connect sur Android crée lors de l’export de vos données.",
-            "choose": "Choisir le fichier ZIP",
+            "choose": "Choisir un fichier",
             "uploading": "Envoi en cours…",
             "uploadFailed": "L’envoi a échoué. Réessayez.",
             "tooLarge": "Le fichier dépasse la taille acceptée par ce serveur.",
@@ -6118,7 +6124,7 @@
           "fit": {
             "title": "Fichier d’activité (FIT)",
             "description": "Importer un entraînement depuis le fichier FIT d’une montre ou d’un compteur vélo, comme Garmin, Wahoo ou Coros.",
-            "choose": "Choisir un fichier d’activité",
+            "choose": "Choisir un fichier",
             "uploading": "Envoi en cours…",
             "uploadFailed": "L’envoi a échoué. Veuillez réessayer.",
             "tooLarge": "Le fichier dépasse 10 Mo.",
@@ -6128,7 +6134,7 @@
             "doneSummary": "Le fichier d’activité a été importé.",
             "doneNothing": "L’importation est terminée, mais il n’y avait rien de nouveau à ajouter.",
             "dropLabel": "Déposez le fichier d’activité ici",
-            "dropHint": "ou cliquez pour le choisir. .fit, .fit.gz ou .zip, jusqu’à 10 Mo.",
+            "dropHint": "ou cliquez pour le choisir : un fichier .fit, .fit.gz ou .zip jusqu’à 10 Mo.",
             "fileInputLabel": "Fichier d’activité",
             "privacyNote": "Le fichier est supprimé du serveur dès la fin de l’importation. Un entraînement déjà présent via Garmin, Apple Santé ou une autre app n’est pas ajouté deux fois : il reçoit la courbe de fréquence cardiaque du fichier s’il n’en avait pas. Le tracé GPS n’est conservé que si Parcours d’entraînement est activé. Renvoyer le même fichier ne change rien.",
             "steps": {
@@ -6606,7 +6612,7 @@
         "defaultChainLabel": "Chaîne par défaut",
         "defaultChainHint": "Les tâches sur Par défaut suivent cette chaîne. Leurs règles habituelles s'appliquent toujours : les documents essaient d'abord un modèle local.",
         "tasksHeading": "Tâches",
-        "tasksHint": "Choisissez la chaîne de chaque tâche. Les fournisseurs qu'elle essaierait sont listés dans l'ordre.",
+        "tasksHint": "Choisissez la chaîne de chaque tâche. Une tâche avec sa propre chaîne affiche, dans l’ordre, les fournisseurs qu’elle essaie.",
         "taskDefault": "Par défaut",
         "save": "Enregistrer les chaînes",
         "saved": "Chaînes enregistrées",
@@ -6623,7 +6629,8 @@
           "statusText": "Notes d'état",
           "workoutInsights": "Notes d'entraînement",
           "reactionLines": "Réactions aux nouvelles mesures"
-        }
+        },
+        "tasksNeedChain": "Créez une chaîne ci-dessus pour donner à une tâche ses propres fournisseurs. D’ici là, chaque tâche suit la chaîne par défaut."
       },
       "activeProviderHeading": "Fournisseur actif",
       "activeProviderLabel": "Configurer un fournisseur",
@@ -7098,7 +7105,7 @@
       "title": "Jetons de mesures",
       "description": "Créez un jeton pour qu'une balance, une montre, une appli de suivi alimentaire ou votre domotique ajoutent des mesures, des valeurs à vos mesures personnalisées et des totaux quotidiens de nutriments.",
       "detail": "Le jeton n'est affiché qu'une fois.",
-      "scopeNote": "Il peut uniquement ajouter de nouvelles mesures à votre propre dossier, des valeurs aux mesures personnalisées que vous avez déjà créées et des totaux quotidiens de nutriments tant que le module nutriments est activé : il ne peut pas lire vos données, ni créer une mesure personnalisée, ni modifier ou supprimer quoi que ce soit, ni créer un autre jeton. Les mesures et les totaux de nutriments sont signalés comme provenant d'un appareil externe, ce qui vous permet de les reconnaître plus tard ; les valeurs des mesures personnalisées ne portent pas cette marque. Vous pouvez toujours corriger vous-même les mesures et les valeurs personnalisées ; une appli de suivi corrige un jour de nutriments en l'envoyant à nouveau. L'identifiant d'une mesure personnalisée est la partie qui suit /custom-metrics/ dans l'adresse de sa page.",
+      "scopeNote": "Il peut uniquement ajouter des mesures à votre propre dossier, des valeurs aux mesures personnalisées que vous avez déjà créées et des totaux quotidiens de nutriments tant que le module nutriments est activé ; il ne peut rien lire, modifier ni supprimer. Les mesures et les totaux de nutriments sont signalés comme externes. L'identifiant d'une mesure personnalisée est la partie qui suit /custom-metrics/ dans l'adresse de sa page.",
       "nutrientsLink": "Voir les apports en nutriments",
       "createFailed": "Le jeton n'a pas pu être créé. Veuillez réessayer.",
       "namePlaceholder": "Nom, p. ex. Home Assistant",
@@ -12310,7 +12317,8 @@
       "duplicateExists": "Un document identique est déjà enregistré.",
       "uploadBusy": "Le serveur était occupé par d’autres téléversements. Réessayez maintenant.",
       "rateLimited": "Vous avez atteint la limite de téléversements pour cette heure. Réessayez plus tard.",
-      "generic": "Le téléversement a échoué. Veuillez réessayer."
+      "generic": "Le téléversement a échoué. Veuillez réessayer.",
+      "recordChanged": "Le dossier ouvert a changé pendant le téléversement de ce fichier. Téléversez-le à nouveau."
     },
     "toast": {
       "duplicate": "Déjà enregistré. Le document existant est mis en évidence.",
@@ -12340,7 +12348,8 @@
       "description": "Conservez courriers médicaux, résultats de laboratoire, imagerie, ordonnances et carnets de vaccination. Ils sont chiffrés et consultables par type, affection et année.",
       "action": "Téléverser un premier document",
       "noMatchesTitle": "Aucun document correspondant",
-      "noMatchesDescription": "Rien ne correspond à la recherche et aux filtres actuels."
+      "noMatchesDescription": "Rien ne correspond à la recherche et aux filtres actuels.",
+      "titleRecord": "Le coffre à documents de {name} est vide"
     },
     "detail": {
       "title": "Détails du document",
@@ -12646,6 +12655,10 @@
     "picker": {
       "capped": "Les {count} plus récents sont affichés. Utilisez la recherche pour trouver un document plus ancien.",
       "cappedSearching": "Les {count} résultats les plus récents sont affichés. Affinez la recherche pour en trouver un plus ancien."
+    },
+    "recordAi": {
+      "noProvider": "Aucun fournisseur d'IA de ce serveur ne peut lire les documents de ce dossier : ils n'ont donc ni résumé, ni recherche dans le contenu, ni discussion sur les documents.",
+      "off": "L'IA est désactivée pour ce dossier : ses documents n'ont donc ni résumé, ni recherche dans le contenu, ni discussion sur les documents."
     }
   },
   "selfDescription": {
@@ -12847,12 +12860,12 @@
       "removeBody": "Le graphique revient à la valeur de référence, s’il y en a une. La quantité que vous avez fixée n’est conservée nulle part ailleurs.",
       "targetLabel": "{name} par jour en {unit}",
       "boundsHint": "Plus de 0, au maximum {max} {unit} par jour.",
-      "validationBounds": "Saisissez une quantité dans les limites indiquées ci-dessus.",
       "directionLabel": "Type d'objectif",
       "directionTarget": "Atteindre au moins",
       "directionLimit": "Rester en dessous",
       "saveFailed": "L'objectif n'a pas pu être enregistré. Veuillez réessayer.",
-      "loadError": "Impossible de charger l'énergie et les macronutriments."
+      "loadError": "Impossible de charger l'énergie et les macronutriments.",
+      "gearLabel": "Définir l’objectif quotidien pour {name}"
     },
     "alcohol": {
       "loadError": "Impossible de charger l'alcool."
@@ -13130,7 +13143,8 @@
       "viewing": "Vous êtes dans le dossier de {name}",
       "readOnly": "Vous pouvez le lire, pas le modifier.",
       "canAdd": "Vous pouvez y ajouter, mais pas modifier ni supprimer ce qui s'y trouve.",
-      "leave": "Revenir à mon dossier"
+      "leave": "Revenir à mon dossier",
+      "canManage": "Vous pouvez y ajouter, modifier ou retirer ce qui s'y trouve."
     },
     "switcher": {
       "label": "Ouvrir un dossier",
@@ -14008,7 +14022,7 @@
       "micronutrientsOne": "{count} micronutriment enregistré",
       "micronutrientsOther": "{count} micronutriments enregistrés",
       "micronutrientsFew": "{count} micronutriments enregistrés",
-      "open": "Ouvrir les apports en nutriments"
+      "open": "Voir les apports en nutriments"
     }
   },
   "timeline": {
@@ -14827,9 +14841,9 @@
       "rescueGiven": "Secours administré : {name}",
       "rescueGivenCount": "Secours administré ({count}), touchez pour une autre dose",
       "threshold": {
-        "t1": "La crise dure depuis {time}. Suivez le plan d'urgence.",
-        "usualPlusTwo": "La crise dure depuis {time}, plus de 2 minutes de plus que d'habitude. Suivez le plan d'urgence.",
-        "generic": "La crise dure depuis {time}. Suivez le plan d'urgence."
+        "t1": "La crise dure depuis plus de {time}. Suivez le plan d'urgence.",
+        "usualPlusTwo": "La crise dure depuis plus de {time}, soit 2 minutes de plus que d'habitude. Suivez le plan d'urgence.",
+        "generic": "La crise dure depuis plus de {time}. Suivez le plan d'urgence."
       },
       "noPlan": "Aucun plan n'est enregistré pour ce type de crise. Appelez les secours en cas de doute.",
       "call": "Appeler le {number}",
@@ -14843,14 +14857,14 @@
     },
     "summary": {
       "title": "Enregistré",
-      "recorded": "Crises enregistrées, {days} derniers jours",
+      "recorded": "Crises enregistrées depuis le {date}",
       "seizureDays": "Jours avec crise",
       "sinceLast": "Jours depuis la dernière crise enregistrée",
       "longestFree": "Plus longue période sans crise, en jours",
       "clusters": "Salves ({rule})",
       "niceClusters": "Salves selon NICE (3 en 24 h)",
       "suspected": "{count} crises suspectées sont listées mais non comptées.",
-      "clusterLine": "Salve à partir du {start} : {count} crises",
+      "clusterLine": "À partir du {start} : {count} crises",
       "monthlyCaption": "Crises par type et par mois",
       "undercount": "Crises enregistrées, probablement sous-estimées, en particulier pour les crises survenant pendant le sommeil."
     },
@@ -14862,7 +14876,8 @@
       "showAll": "Afficher les {count}",
       "truncated": "Seules les crises les plus récentes sont affichées.",
       "loggedByYou": "enregistré par vous",
-      "loggedByName": "enregistré par {name}"
+      "loggedByName": "enregistré par {name}",
+      "cluster": "Salve"
     },
     "certainty": {
       "CONFIRMED": "Crise",
@@ -14948,7 +14963,7 @@
       "seconds": "Secondes",
       "durationHint": "Laissez vide si personne n'a vu combien de temps elle a duré.",
       "durationSource": "La durée a été",
-      "certainty": "Était-ce une crise",
+      "certainty": "Certitude",
       "count": "Combien",
       "countHint": "Plus d'une pour un décompte, par exemple les absences d'une journée.",
       "sleepState": "Éveillé ou endormi",
@@ -15024,9 +15039,9 @@
     },
     "rule": {
       "title": "Règle des crises en salves",
-      "explainer": "Une salve correspond à ce nombre de crises en ce nombre d'heures. Utilisez la règle du plan d'urgence ; NICE utilise {niceCount} en {niceHours} heures, affiché à côté.",
+      "explainer": "Une salve correspond à ce nombre de crises en ce nombre d'heures. Utilisez la règle du plan d'urgence ; NICE utilise {niceCount} en {niceHours} heures, et le résumé compte les salves selon les deux règles.",
       "count": "Crises",
-      "hours": "En heures",
+      "hours": "Fenêtre (heures)",
       "invalid": "Indiquez 2 à 20 crises en 1 à 168 heures.",
       "saved": "Règle des crises en salves enregistrée"
     },

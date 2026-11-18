@@ -20,4 +20,11 @@ describe("formatNutrientAmount", () => {
     expect(formatNutrientAmount(en, 2150.4)).toBe("2,150");
     expect(formatNutrientAmount(de, 400)).toBe("400");
   });
+
+  it("prints milligram and microgram amounts whole from 100 up", () => {
+    expect(formatNutrientAmount(de, 230.3, "mg")).toBe("230");
+    expect(formatNutrientAmount(de, 120.5, "ug")).toBe("121");
+    expect(formatNutrientAmount(de, 82.5, "mg")).toBe("82,5");
+    expect(formatNutrientAmount(de, 120.5, "g")).toBe("120,5");
+  });
 });

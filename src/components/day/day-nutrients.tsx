@@ -17,6 +17,28 @@ type DayNutrient = NonNullable<DayResponse["nutrients"]>[number];
 const CELL_GROUPS = new Set(["energy_macro", "water", "caffeine", "alcohol"]);
 
 /**
+ * The cells' reading order: energy and the macros first, as on the nutrients
+ * page, then what was drunk. The server's order put caffeine beside water
+ * ahead of energy.
+ */
+const CELL_ORDER = [
+  "energy",
+  "protein",
+  "carbohydrates",
+  "fat",
+  "sugar",
+  "fiber",
+  "water",
+  "caffeine",
+  "alcohol",
+];
+
+function cellRank(code: string): number {
+  const at = CELL_ORDER.indexOf(code);
+  return at === -1 ? CELL_ORDER.length : at;
+}
+
+/**
  * "Nutrition": the day's nutrient totals as the server summed them, in the
  * movement section's shape (a label over a two-column grid). Energy, the
  * macros, water, caffeine and alcohol each get a cell; the micronutrients are
@@ -34,7 +56,9 @@ export function DayNutrientsSection({
   const known = nutrients.filter((n) => isNutrientCode(n.code));
   const entry = (code: string) =>
     NUTRIENT_CATALOG[code as keyof typeof NUTRIENT_CATALOG];
-  const cells = known.filter((n) => CELL_GROUPS.has(entry(n.code).group));
+  const cells = known
+    .filter((n) => CELL_GROUPS.has(entry(n.code).group))
+    .sort((a, b) => cellRank(a.code) - cellRank(b.code));
   const micronutrients = known.length - cells.length;
   if (known.length === 0) return null;
 
@@ -49,7 +73,7 @@ export function DayNutrientsSection({
                 {t(entry(n.code).labelKey)}
               </dt>
               <dd className="truncate text-sm tabular-nums">
-                {formatNutrientAmount(fmt, n.amount)}{" "}
+                {formatNutrientAmount(fmt, n.amount, n.unit)}{" "}
                 {nutrientUnitLabel(n.unit, t)}
               </dd>
             </div>

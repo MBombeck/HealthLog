@@ -55,6 +55,12 @@ export interface CustomAdjustableTarget {
   type: string;
   /** Opens the registering card's own editor. */
   openEditor: () => void;
+  /**
+   * What the gear opens, as its accessible name and tooltip ("Set the daily
+   * target for Protein"). Without it the gear says "Adjust target range",
+   * which names neither which target nor that it is not a range.
+   */
+  label?: string;
 }
 
 export type AdjustableTarget = RangeAdjustableTarget | CustomAdjustableTarget;
@@ -85,6 +91,8 @@ interface TargetAdjustValue {
   register: (target: AdjustableTarget) => () => void;
   /** Open the editor for the primary (first-registered) target. */
   requestAdjust: () => void;
+  /** The primary target's own label for the gear, when it brings one. */
+  primaryLabel: string | null;
 }
 
 const TargetAdjustContext = createContext<TargetAdjustValue | null>(null);
@@ -124,9 +132,17 @@ export function TargetAdjustProvider({ children }: { children: ReactNode }) {
     else setOpenType(primary.type);
   }, []);
 
+  const primary = targets[0];
+  const primaryLabel =
+    primary && isCustomTarget(primary) ? (primary.label ?? null) : null;
   const value = useMemo<TargetAdjustValue>(
-    () => ({ canAdjust: targets.length > 0, register, requestAdjust }),
-    [targets.length, register, requestAdjust],
+    () => ({
+      canAdjust: targets.length > 0,
+      register,
+      requestAdjust,
+      primaryLabel,
+    }),
+    [targets.length, register, requestAdjust, primaryLabel],
   );
 
   const found = targets.find((entry) => entry.type === openType);

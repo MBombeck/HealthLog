@@ -56,6 +56,13 @@ export function TimelineLegend({
           className="bg-muted-foreground size-2 shrink-0 rounded-full"
           aria-hidden="true"
         />
+        {/* Life events and seizure days are drawn as outlined diamonds, so
+            the legend shows that mark beside the dot. */}
+        <span
+          className="border-muted-foreground size-2 shrink-0 rotate-45 border"
+          aria-hidden="true"
+          data-slot="timeline-legend-diamond"
+        />
         {t("timeline.legendEvent")}
       </span>
       {hasSeries && (

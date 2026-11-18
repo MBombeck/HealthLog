@@ -43,7 +43,9 @@ export function TargetAdjustButton({ className }: { className?: string }) {
   // Reuse the action's existing copy ("Adjust target range" /
   // "Zielbereich anpassen") — the gear performs exactly what the old
   // in-card link did, so the same string is the right accessible label.
-  const label = t("insights.subPage.target.adjustLink");
+  // A target with its own editor names itself (the nutrient gear opens the
+  // energy card's selected nutrient, and should say which).
+  const label = adjust.primaryLabel ?? t("insights.subPage.target.adjustLink");
 
   return (
     <Button

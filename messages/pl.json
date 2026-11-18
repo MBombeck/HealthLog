@@ -3951,7 +3951,8 @@
         "sleepTrendsLink": "Trendy snu",
         "moodHistoryLink": "Historia nastroju",
         "previousSessionLink": "Poprzedni trening",
-        "insightTitle": "Analiza aktywności"
+        "insightTitle": "Analiza aktywności",
+        "sourceFitFile": "Plik FIT"
       },
       "sport": {
         "walking": "Marsz",
@@ -5084,7 +5085,8 @@
         "afternoon": "Utrzymujący się podwyższony spoczynek po południu: możliwe napięcie.",
         "evening": "Utrzymujący się podwyższony spoczynek wieczorem: możliwe napięcie.",
         "night": "Utrzymujący się podwyższony spoczynek w nocy: możliwe napięcie."
-      }
+      },
+      "emptyOutsideWorkouts": "Poza treningami jest za mało pomiarów tętna, by pokazać przebieg tego dnia."
     },
     "navEcg": "EKG",
     "sectionLoadError": "Nie udało się wczytać tej sekcji.",
@@ -5668,7 +5670,11 @@
         "documents": {
           "title": "Dokumenty",
           "autoAiRead": "Automatycznie czytaj nowe dokumenty przez AI",
-          "honesty": "Po włączeniu każdy dokument przesłany do tego profilu trafia do dostawcy AI instancji, który go czyta, opisuje i indeksuje do wyszukiwania, bez dotykania każdego dokumentu; wysyłane są też dokumenty już zapisane bez podsumowania (do 200 przy każdym włączeniu). Włączenie zapisuje zgodę tego profilu na czytanie jego dokumentów. Obowiązują ustawienia AI profilu; twój własny dostawca AI nigdy nie jest używany. Domyślnie wyłączone."
+          "honesty": "Po włączeniu każdy dokument przesłany do tego profilu trafia do dostawcy AI instancji, który go czyta, opisuje i indeksuje do wyszukiwania, bez dotykania każdego dokumentu; wysyłane są też dokumenty już zapisane bez podsumowania (do 200 przy każdym włączeniu). Włączenie zapisuje zgodę tego profilu na czytanie jego dokumentów. Obowiązują ustawienia AI profilu; twój własny dostawca AI nigdy nie jest używany. Domyślnie wyłączone.",
+          "pageTitle": "Dokumenty i AI",
+          "pageSubtitle": "Czy AI czyta dokumenty przesłane do profilu {name}.",
+          "noProvider": "Ten serwer nie ma dostawcy AI, który mógłby czytać dokumenty {name}, więc przełącznik pozostaje wyłączony. Osoba zarządzająca serwerem może go skonfigurować.",
+          "aiOff": "AI jest wyłączona dla profilu {name}, więc żaden dokument nie zostałby przeczytany."
         }
       },
       "unavailableTitle": "Niedostępne w tym udostępnionym rekordzie",
@@ -5901,7 +5907,7 @@
         },
         "import": {
           "heading": "Import",
-          "description": "Zaimportuj dane do HealthLog z eksportu Apple Health lub pliku JSON. Import pomija wiersze, które już istnieją, więc ponowne uruchomienie jest bezpieczne.",
+          "description": "Zaimportuj dane do HealthLog z Apple Health, Health Connect, pliku aktywności z zegarka, pliku JSON lub CSV. Import pomija wiersze, które już istnieją, więc ponowne uruchomienie jest bezpieczne.",
           "charCount": "{used} / {max} znaków",
           "appleHealth": {
             "title": "Apple Health",
@@ -5955,7 +5961,7 @@
             "fileInputLabel": "Wybierz plik JSON do zaimportowania",
             "schemaHint": "Dwie tablice: measurements i moodEntries.",
             "docsLink": "Zobacz schemat i przykład.",
-            "uploadFile": "Prześlij plik",
+            "uploadFile": "Wybierz plik",
             "downloadExample": "Pobierz przykład",
             "import": "Importuj",
             "invalidJson": "To nie jest prawidłowy JSON. Sprawdź składnię i spróbuj ponownie.",
@@ -5978,7 +5984,7 @@
             "fileInputLabel": "Wybierz plik CSV do zaimportowania",
             "schemaHint": "Kolumny: type, value, unit, measuredAt (z przesunięciem strefy czasowej) oraz opcjonalnie glucoseContext, notes, externalId.",
             "docsLink": "Zobacz schemat kolumn i przykład.",
-            "uploadFile": "Prześlij plik",
+            "uploadFile": "Wybierz plik",
             "downloadExample": "Pobierz przykład",
             "preview": "Podgląd",
             "import": "Importuj",
@@ -6075,7 +6081,7 @@
           "healthConnect": {
             "title": "Eksport z Health Connect",
             "description": "Zaimportuj plik ZIP, który aplikacja Health Connect na Androidzie tworzy przy eksporcie danych.",
-            "choose": "Wybierz plik ZIP",
+            "choose": "Wybierz plik",
             "uploading": "Przesyłanie…",
             "uploadFailed": "Przesyłanie nie powiodło się. Spróbuj ponownie.",
             "tooLarge": "Plik jest większy, niż przyjmuje ten serwer.",
@@ -6118,7 +6124,7 @@
           "fit": {
             "title": "Plik aktywności (FIT)",
             "description": "Zaimportuj trening z pliku FIT zegarka lub licznika rowerowego, np. Garmin, Wahoo, Coros albo Polar.",
-            "choose": "Wybierz plik aktywności",
+            "choose": "Wybierz plik",
             "uploading": "Przesyłanie…",
             "uploadFailed": "Przesyłanie nie powiodło się. Spróbuj ponownie.",
             "tooLarge": "Plik jest większy niż 10 MB.",
@@ -6128,7 +6134,7 @@
             "doneSummary": "Plik aktywności został zaimportowany.",
             "doneNothing": "Import się zakończył, ale nie było nic nowego do dodania.",
             "dropLabel": "Upuść tutaj plik aktywności",
-            "dropHint": "lub kliknij, aby go wybrać. .fit, .fit.gz lub .zip, do 10 MB.",
+            "dropHint": "lub kliknij, aby go wybrać: plik .fit, .fit.gz lub .zip do 10 MB.",
             "fileInputLabel": "Plik aktywności",
             "privacyNote": "Plik jest usuwany z serwera, gdy tylko import się zakończy. Trening, który już tu jest z Garmina, Apple Zdrowie lub innej aplikacji, nie zostanie dodany drugi raz: dostanie krzywą tętna z pliku, jeśli jeszcze jej nie miał. Ślad GPS jest zapisywany tylko wtedy, gdy włączone są Trasy treningów. Ponowne przesłanie tego samego pliku niczego nie zmienia.",
             "steps": {
@@ -6606,7 +6612,7 @@
         "defaultChainLabel": "Łańcuch domyślny",
         "defaultChainHint": "Zadania na Domyślnym korzystają z tego łańcucha. Ich zwykłe zasady nadal obowiązują: dokumenty najpierw próbują modelu lokalnego.",
         "tasksHeading": "Zadania",
-        "tasksHint": "Wybierz łańcuch dla każdego zadania. Dostawcy, których by próbowało, są podani w kolejności.",
+        "tasksHint": "Wybierz łańcuch dla każdego zadania. Pod zadaniem z własnym łańcuchem widać, w kolejności, dostawców, których próbuje.",
         "taskDefault": "Domyślny",
         "save": "Zapisz łańcuchy",
         "saved": "Łańcuchy zapisane",
@@ -6623,7 +6629,8 @@
           "statusText": "Notatki o stanie",
           "workoutInsights": "Notatki o treningach",
           "reactionLines": "Reakcje na nowe pomiary"
-        }
+        },
+        "tasksNeedChain": "Utwórz łańcuch powyżej, aby nadać zadaniu własnych dostawców. Do tego czasu każde zadanie korzysta z domyślnego."
       },
       "activeProviderHeading": "Aktywny dostawca",
       "activeProviderLabel": "Skonfiguruj dostawcę",
@@ -7098,7 +7105,7 @@
       "title": "Tokeny pomiarów",
       "description": "Utwórz token, aby waga, zegarek, aplikacja dietetyczna lub automatyka domowa mogły dodawać pomiary, wartości Twoich metryk własnych i dzienne sumy składników odżywczych.",
       "detail": "Token pokazujemy tylko raz.",
-      "scopeNote": "Może wyłącznie dodawać nowe pomiary do Twojej dokumentacji, wartości do już utworzonych metryk własnych oraz dzienne sumy składników odżywczych, dopóki moduł składników odżywczych jest włączony: nie odczyta danych, nie utworzy metryki, niczego nie zmieni ani nie usunie i nie utworzy kolejnego tokenu. Pomiary i sumy składników są oznaczane jako pochodzące z urządzenia zewnętrznego, dzięki czemu później je rozpoznasz; wartości metryk własnych nie mają takiego oznaczenia. Pomiary i wartości metryk możesz nadal poprawiać sam; aplikacja dietetyczna poprawia dzień, wysyłając go ponownie. Identyfikator metryki własnej to część po /custom-metrics/ w adresie jej strony.",
+      "scopeNote": "Może tylko dodawać pomiary do Twojej dokumentacji, wartości do już utworzonych metryk własnych oraz dzienne sumy składników odżywczych, dopóki moduł składników odżywczych jest włączony; niczego nie odczyta, nie zmieni ani nie usunie. Pomiary i sumy składników są oznaczane jako zewnętrzne. Identyfikator metryki własnej to część po /custom-metrics/ w adresie jej strony.",
       "nutrientsLink": "Zobacz spożycie składników odżywczych",
       "createFailed": "Nie udało się utworzyć tokenu. Spróbuj ponownie.",
       "namePlaceholder": "Nazwa, np. Home Assistant",
@@ -12310,7 +12317,8 @@
       "duplicateExists": "Identyczny dokument jest już zapisany.",
       "uploadBusy": "Serwer był zajęty innymi przesyłaniami. Spróbuj ponownie teraz.",
       "rateLimited": "Osiągnięto limit przesyłań na tę godzinę. Spróbuj ponownie później.",
-      "generic": "Przesyłanie nie powiodło się. Spróbuj ponownie."
+      "generic": "Przesyłanie nie powiodło się. Spróbuj ponownie.",
+      "recordChanged": "Otwarta kartoteka zmieniła się podczas przesyłania tego pliku. Prześlij go ponownie."
     },
     "toast": {
       "duplicate": "Już zapisano. Istniejący dokument został wyróżniony.",
@@ -12340,7 +12348,8 @@
       "description": "Przechowuj pisma lekarskie, wyniki laboratoryjne, obrazowanie, recepty i zaświadczenia o szczepieniach. Są zaszyfrowane i można je przeszukiwać według typu, schorzenia i roku.",
       "action": "Prześlij pierwszy dokument",
       "noMatchesTitle": "Brak pasujących dokumentów",
-      "noMatchesDescription": "Nic nie pasuje do bieżącego wyszukiwania i filtrów."
+      "noMatchesDescription": "Nic nie pasuje do bieżącego wyszukiwania i filtrów.",
+      "titleRecord": "Sejf dokumentów {name} jest pusty"
     },
     "detail": {
       "title": "Szczegóły dokumentu",
@@ -12646,6 +12655,10 @@
     "picker": {
       "capped": "Widać {count} najnowszych. Starszy dokument znajdziesz przez wyszukiwanie.",
       "cappedSearching": "Widać {count} najnowszych wyników. Zawęź wyszukiwanie, aby znaleźć starszy."
+    },
+    "recordAi": {
+      "noProvider": "Żaden dostawca AI na tym serwerze nie może czytać dokumentów w tej kartotece, więc nie ma podsumowań, wyszukiwania w treści ani czatu o dokumentach.",
+      "off": "AI jest wyłączona dla tej kartoteki, więc jej dokumenty nie mają podsumowań, wyszukiwania w treści ani czatu o dokumentach."
     }
   },
   "selfDescription": {
@@ -12847,12 +12860,12 @@
       "removeBody": "Wykres wróci do wartości referencyjnej, jeśli istnieje. Ustawiona ilość nie jest nigdzie indziej zapisywana.",
       "targetLabel": "{name} dziennie w {unit}",
       "boundsHint": "Powyżej 0, najwyżej {max} {unit} dziennie.",
-      "validationBounds": "Wpisz ilość w granicach podanych powyżej.",
       "directionLabel": "Rodzaj celu",
       "directionTarget": "Osiągnąć co najmniej",
       "directionLimit": "Nie przekraczać",
       "saveFailed": "Nie udało się zapisać celu. Spróbuj ponownie.",
-      "loadError": "Nie udało się wczytać energii i makroskładników."
+      "loadError": "Nie udało się wczytać energii i makroskładników.",
+      "gearLabel": "Ustaw dzienny cel dla: {name}"
     },
     "alcohol": {
       "loadError": "Nie udało się wczytać alkoholu."
@@ -13130,7 +13143,8 @@
       "viewing": "Jesteś w karcie użytkownika {name}",
       "readOnly": "Możesz ją czytać, nie zmieniać.",
       "canAdd": "Możesz coś dodać, ale nie zmieniać ani usuwać tego, co już jest.",
-      "leave": "Wróć do mojej karty"
+      "leave": "Wróć do mojej karty",
+      "canManage": "Możesz coś dodać oraz zmieniać lub usuwać to, co już jest."
     },
     "switcher": {
       "label": "Otwórz kartę",
@@ -14008,7 +14022,7 @@
       "micronutrientsOne": "Zapisano {count} mikroskładnik",
       "micronutrientsOther": "Zapisano {count} mikroskładników",
       "micronutrientsFew": "Zapisano {count} mikroskładniki",
-      "open": "Otwórz spożycie składników odżywczych"
+      "open": "Zobacz spożycie składników odżywczych"
     }
   },
   "timeline": {
@@ -14827,9 +14841,9 @@
       "rescueGiven": "Podano lek ratunkowy: {name}",
       "rescueGivenCount": "Podano lek ratunkowy ({count}), dotknij, aby dodać kolejną dawkę",
       "threshold": {
-        "t1": "Napad trwa już {time}. Stosuj się do planu postępowania w nagłym wypadku.",
-        "usualPlusTwo": "Napad trwa już {time}, ponad 2 minuty dłużej niż zwykle. Stosuj się do planu postępowania w nagłym wypadku.",
-        "generic": "Napad trwa już {time}. Stosuj się do planu postępowania w nagłym wypadku."
+        "t1": "Napad trwa już dłużej niż {time}. Stosuj się do planu postępowania w nagłym wypadku.",
+        "usualPlusTwo": "Napad trwa już dłużej niż {time}, 2 minuty dłużej niż zwykle. Stosuj się do planu postępowania w nagłym wypadku.",
+        "generic": "Napad trwa już dłużej niż {time}. Stosuj się do planu postępowania w nagłym wypadku."
       },
       "noPlan": "Dla tego rodzaju napadu nie zapisano planu. W razie wątpliwości zadzwoń po pogotowie.",
       "call": "Zadzwoń pod {number}",
@@ -14843,14 +14857,14 @@
     },
     "summary": {
       "title": "Zapisane",
-      "recorded": "Zapisane napady, ostatnie {days} dni",
+      "recorded": "Zapisane napady od {date}",
       "seizureDays": "Dni z napadem",
       "sinceLast": "Dni od ostatniego zapisanego napadu",
       "longestFree": "Najdłuższy okres bez napadu, dni",
       "clusters": "Napady gromadne ({rule})",
       "niceClusters": "Napady gromadne wg NICE (3 w ciągu 24 h)",
       "suspected": "Podejrzane napady na liście, ale nieliczone: {count}.",
-      "clusterLine": "Napady gromadne od {start}: {count}",
+      "clusterLine": "Od {start}: liczba napadów {count}",
       "monthlyCaption": "Napady według rodzaju i miesiąca",
       "undercount": "Zapisane napady, prawdopodobnie zaniżona liczba, zwłaszcza w przypadku napadów ze snu."
     },
@@ -14862,7 +14876,8 @@
       "showAll": "Pokaż wszystkie ({count})",
       "truncated": "Pokazano tylko najnowsze napady.",
       "loggedByYou": "zapisane przez ciebie",
-      "loggedByName": "zapisane przez: {name}"
+      "loggedByName": "zapisane przez: {name}",
+      "cluster": "Napady gromadne"
     },
     "certainty": {
       "CONFIRMED": "Napad",
@@ -14948,7 +14963,7 @@
       "seconds": "Sekundy",
       "durationHint": "Zostaw puste, jeśli nikt nie widział, jak długo trwał.",
       "durationSource": "Czas trwania był",
-      "certainty": "Czy to był napad",
+      "certainty": "Pewność",
       "count": "Ile",
       "countHint": "Więcej niż jeden, aby zliczyć, np. napady nieświadomości z jednego dnia.",
       "sleepState": "W czuwaniu czy we śnie",
@@ -15024,9 +15039,9 @@
     },
     "rule": {
       "title": "Reguła napadów gromadnych",
-      "explainer": "Napady gromadne to tyle napadów w ciągu tylu godzin. Użyj reguły z planu postępowania w nagłym wypadku; NICE stosuje {niceCount} w ciągu {niceHours} godzin, co jest pokazane obok.",
+      "explainer": "Napady gromadne to tyle napadów w ciągu tylu godzin. Użyj reguły z planu postępowania w nagłym wypadku; NICE stosuje {niceCount} w ciągu {niceHours} godzin, a podsumowanie liczy napady gromadne według obu reguł.",
       "count": "Napady",
-      "hours": "W ciągu godzin",
+      "hours": "Okno (godziny)",
       "invalid": "Podaj od 2 do 20 napadów w ciągu od 1 do 168 godzin.",
       "saved": "Reguła napadów gromadnych zapisana"
     },

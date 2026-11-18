@@ -3951,7 +3951,8 @@
         "sleepTrendsLink": "수면 추이",
         "moodHistoryLink": "기분 기록",
         "previousSessionLink": "이전 세션",
-        "insightTitle": "활동 인사이트"
+        "insightTitle": "활동 인사이트",
+        "sourceFitFile": "FIT 파일"
       },
       "sport": {
         "walking": "걷기",
@@ -5084,7 +5085,8 @@
         "afternoon": "오늘 오후에 안정 시 심박수가 높은 구간이 이어졌어요. 긴장이 있었을 수 있어요.",
         "evening": "오늘 저녁에 안정 시 심박수가 높은 구간이 이어졌어요. 긴장이 있었을 수 있어요.",
         "night": "밤사이 안정 시 심박수가 높은 구간이 이어졌어요. 긴장이 있었을 수 있어요."
-      }
+      },
+      "emptyOutsideWorkouts": "운동 외 시간의 심박수 기록이 부족해 이날의 흐름을 보여 줄 수 없어요."
     },
     "navEcg": "심전도",
     "sectionLoadError": "이 섹션을 불러오지 못했습니다.",
@@ -5668,7 +5670,11 @@
         "documents": {
           "title": "문서",
           "autoAiRead": "새 문서를 AI로 자동으로 읽기",
-          "honesty": "켜면 이 프로필에 올린 문서마다 인스턴스의 AI 제공자에게 보내져 문서별로 누를 필요 없이 읽히고 설명되고 검색용으로 색인돼요. 요약이 없는 기존 문서도 함께 보내져요(켤 때마다 최대 200개). 켜면 이 프로필의 문서를 읽어도 된다는 동의가 기록돼요. 프로필의 AI 설정이 적용되며 내 AI 제공자는 쓰이지 않아요. 기본값은 꺼짐이에요."
+          "honesty": "켜면 이 프로필에 올린 문서마다 인스턴스의 AI 제공자에게 보내져 문서별로 누를 필요 없이 읽히고 설명되고 검색용으로 색인돼요. 요약이 없는 기존 문서도 함께 보내져요(켤 때마다 최대 200개). 켜면 이 프로필의 문서를 읽어도 된다는 동의가 기록돼요. 프로필의 AI 설정이 적용되며 내 AI 제공자는 쓰이지 않아요. 기본값은 꺼짐이에요.",
+          "pageTitle": "문서와 AI",
+          "pageSubtitle": "{name}님의 프로필에 올린 문서를 AI가 읽을지 정해요.",
+          "noProvider": "이 서버에는 {name}님의 문서를 읽을 AI 제공자가 없어서 스위치를 켤 수 없어요. 서버 운영자가 제공자를 설정할 수 있어요.",
+          "aiOff": "{name}님의 프로필에서 AI가 꺼져 있어 문서를 읽지 않아요."
         }
       },
       "unavailableTitle": "이 공유 기록에서는 사용할 수 없어요",
@@ -5901,7 +5907,7 @@
         },
         "import": {
           "heading": "불러오기",
-          "description": "Apple Health 내보내기 파일, JSON, CSV에서 HealthLog로 데이터를 가져와요. 이미 있는 행은 건너뛰니 다시 실행해도 안전해요.",
+          "description": "Apple Health, Health Connect, 시계의 활동 파일, JSON 또는 CSV에서 HealthLog로 데이터를 가져와요. 이미 있는 행은 건너뛰니 다시 실행해도 안전해요.",
           "charCount": "{used} / {max}자",
           "appleHealth": {
             "title": "Apple Health",
@@ -5955,7 +5961,7 @@
             "fileInputLabel": "불러올 JSON 파일 선택",
             "schemaHint": "배열 두 개: measurements와 moodEntries.",
             "docsLink": "스키마와 예시 보기.",
-            "uploadFile": "파일 올리기",
+            "uploadFile": "파일 선택",
             "downloadExample": "예시 내려받기",
             "import": "불러오기",
             "invalidJson": "올바른 JSON이 아니에요. 문법을 확인하고 다시 시도해 주세요.",
@@ -5978,7 +5984,7 @@
             "fileInputLabel": "불러올 CSV 파일 선택",
             "schemaHint": "열: type, value, unit, measuredAt (시간대 오프셋 포함), 그리고 선택 항목인 glucoseContext, notes, externalId.",
             "docsLink": "열 스키마와 예시 보기.",
-            "uploadFile": "파일 올리기",
+            "uploadFile": "파일 선택",
             "downloadExample": "예시 내려받기",
             "preview": "미리 보기",
             "import": "불러오기",
@@ -6075,7 +6081,7 @@
           "healthConnect": {
             "title": "Health Connect 내보내기",
             "description": "Android의 Health Connect 앱에서 데이터를 내보낼 때 만들어지는 ZIP 파일을 가져옵니다.",
-            "choose": "ZIP 파일 선택",
+            "choose": "파일 선택",
             "uploading": "업로드 중…",
             "uploadFailed": "업로드에 실패했습니다. 다시 시도해 주세요.",
             "tooLarge": "파일이 이 서버에서 허용하는 크기보다 큽니다.",
@@ -6118,7 +6124,7 @@
           "fit": {
             "title": "활동 파일(FIT)",
             "description": "Garmin, Wahoo, Coros, Polar 등 시계나 자전거 컴퓨터가 기록한 FIT 파일에서 운동을 가져옵니다.",
-            "choose": "활동 파일 선택",
+            "choose": "파일 선택",
             "uploading": "업로드 중…",
             "uploadFailed": "업로드에 실패했습니다. 다시 시도해 주세요.",
             "tooLarge": "파일이 10MB보다 큽니다.",
@@ -6128,7 +6134,7 @@
             "doneSummary": "활동 파일을 가져왔습니다.",
             "doneNothing": "가져오기가 끝났지만 새로 추가할 항목이 없었습니다.",
             "dropLabel": "활동 파일을 여기에 놓으세요",
-            "dropHint": "또는 클릭해서 선택하세요. .fit, .fit.gz 또는 .zip, 최대 10MB.",
+            "dropHint": "또는 클릭해서 선택하세요: 최대 10MB의 .fit, .fit.gz 또는 .zip 파일.",
             "fileInputLabel": "활동 파일",
             "privacyNote": "가져오기가 끝나는 즉시 파일은 서버에서 삭제됩니다. Garmin, Apple 건강 또는 다른 앱에서 이미 들어온 운동은 두 번 추가되지 않으며, 심박수 곡선이 없던 경우에만 파일의 곡선이 더해집니다. GPS 경로는 운동 경로가 켜져 있을 때만 저장됩니다. 같은 파일을 다시 올려도 바뀌는 것은 없습니다.",
             "steps": {
@@ -6606,7 +6612,7 @@
         "defaultChainLabel": "기본 순서",
         "defaultChainHint": "기본값인 작업은 이 순서를 따릅니다. 평소 규칙은 그대로이며, 문서는 로컬 모델을 먼저 시도합니다.",
         "tasksHeading": "작업",
-        "tasksHint": "각 작업이 사용할 순서를 고르세요. 시도할 제공자가 순서대로 표시됩니다.",
+        "tasksHint": "작업마다 체인을 고르세요. 자체 체인을 쓰는 작업 아래에는 시도할 제공자가 순서대로 표시돼요.",
         "taskDefault": "기본값",
         "save": "순서 저장",
         "saved": "순서가 저장되었습니다",
@@ -6623,7 +6629,8 @@
           "statusText": "상태 메모",
           "workoutInsights": "운동 메모",
           "reactionLines": "새 측정값에 대한 반응"
-        }
+        },
+        "tasksNeedChain": "작업마다 제공자를 따로 정하려면 위에서 체인을 만드세요. 그전까지는 모든 작업이 기본값을 따라요."
       },
       "activeProviderHeading": "사용 중인 제공자",
       "activeProviderLabel": "설정할 제공자",
@@ -7098,7 +7105,7 @@
       "title": "측정 토큰",
       "description": "체중계나 시계, 식단 기록 앱, 홈 오토메이션이 측정값, 사용자 지표 값, 하루 영양소 합계를 기록할 수 있도록 토큰을 만들어요.",
       "detail": "토큰은 한 번만 표시돼요.",
-      "scopeNote": "본인 기록에 새 측정값을 추가하고, 이미 만든 사용자 지표에 값을 추가하고, 영양소 모듈이 켜져 있는 동안 하루 영양소 합계를 추가하는 것만 할 수 있어요. 데이터를 읽거나, 사용자 지표를 만들거나, 무언가를 고치거나 지우거나, 다른 토큰을 만들 수는 없어요. 측정값과 영양소 합계는 외부 기기에서 온 것으로 표시되어 나중에 구분할 수 있지만, 사용자 지표 값에는 이런 표시가 없어요. 측정값과 사용자 지표 값은 언제든 직접 고칠 수 있고, 영양소 하루 합계는 식단 기록 앱이 다시 보내서 고쳐요. 사용자 지표의 ID는 해당 지표 페이지 주소에서 /custom-metrics/ 뒤에 오는 부분이에요.",
+      "scopeNote": "본인 기록에 측정값을, 이미 만든 사용자 지표에 값을, 영양소 모듈이 켜져 있는 동안 하루 영양소 합계를 추가하는 것만 할 수 있어요. 무엇도 읽거나 고치거나 지울 수 없어요. 측정값과 영양소 합계는 외부에서 온 것으로 표시돼요. 사용자 지표의 ID는 지표 페이지 주소에서 /custom-metrics/ 뒤에 오는 부분이에요.",
       "nutrientsLink": "영양소 섭취 보기",
       "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요.",
       "namePlaceholder": "이름 (예: Home Assistant)",
@@ -12310,7 +12317,8 @@
       "duplicateExists": "같은 문서가 이미 저장돼 있어요.",
       "uploadBusy": "서버가 다른 업로드를 처리하느라 바빴어요. 지금 다시 시도해 주세요.",
       "rateLimited": "이번 시간의 업로드 한도에 도달했어요. 나중에 다시 시도해 주세요.",
-      "generic": "업로드하지 못했어요. 다시 시도해 주세요."
+      "generic": "업로드하지 못했어요. 다시 시도해 주세요.",
+      "recordChanged": "이 파일을 업로드하는 동안 열린 기록이 바뀌었습니다. 다시 업로드하세요."
     },
     "toast": {
       "duplicate": "이미 저장돼 있어요. 기존 문서를 표시해요.",
@@ -12340,7 +12348,8 @@
       "description": "의사 소견서, 검사 리포트, 영상, 처방전, 예방접종 기록을 암호화해 보관하고 종류, 질환, 연도별로 검색해요.",
       "action": "첫 문서 올리기",
       "noMatchesTitle": "일치하는 문서 없음",
-      "noMatchesDescription": "현재 검색·필터에 맞는 문서가 없어요."
+      "noMatchesDescription": "현재 검색·필터에 맞는 문서가 없어요.",
+      "titleRecord": "{name}님의 문서 보관함이 비어 있어요"
     },
     "detail": {
       "title": "문서 상세",
@@ -12646,6 +12655,10 @@
     "picker": {
       "capped": "최신 {count}개를 보여 줘요. 이전 문서는 검색으로 찾아 주세요.",
       "cappedSearching": "최근 검색 결과 {count}개를 보여 줘요. 이전 문서는 검색어를 좁혀서 찾아 주세요."
+    },
+    "recordAi": {
+      "noProvider": "이 서버에는 이 기록의 문서를 읽을 AI 제공자가 없어서 요약, 내용 검색, 문서 채팅을 쓸 수 없어요.",
+      "off": "이 기록에서는 AI가 꺼져 있어 문서 요약, 내용 검색, 문서 채팅을 쓸 수 없어요."
     }
   },
   "selfDescription": {
@@ -12847,12 +12860,12 @@
       "removeBody": "기준값이 있으면 차트가 기준값으로 돌아가요. 설정한 양은 다른 곳에 저장되지 않아요.",
       "targetLabel": "하루 {name} ({unit})",
       "boundsHint": "0보다 크고 하루 최대 {max}{unit}까지예요.",
-      "validationBounds": "위에 표시된 범위 안의 양을 입력하세요.",
       "directionLabel": "목표 종류",
       "directionTarget": "이상 채우기",
       "directionLimit": "이하로 유지",
       "saveFailed": "목표를 저장하지 못했어요. 다시 시도해 주세요.",
-      "loadError": "에너지와 다량영양소를 불러오지 못했어요."
+      "loadError": "에너지와 다량영양소를 불러오지 못했어요.",
+      "gearLabel": "{name} 하루 목표 설정"
     },
     "alcohol": {
       "loadError": "알코올을 불러오지 못했어요."
@@ -13130,7 +13143,8 @@
       "viewing": "{name} 님의 기록을 보고 있어요",
       "readOnly": "열람만 할 수 있고 수정은 할 수 없어요.",
       "canAdd": "기록을 추가할 수 있지만, 이미 있는 내용은 수정하거나 삭제할 수 없어요.",
-      "leave": "내 기록으로 돌아가기"
+      "leave": "내 기록으로 돌아가기",
+      "canManage": "기록을 추가하고, 이미 있는 내용을 수정하거나 삭제할 수 있어요."
     },
     "switcher": {
       "label": "기록 열기",
@@ -14008,7 +14022,7 @@
       "micronutrientsOne": "미량영양소 {count}개 기록됨",
       "micronutrientsOther": "미량영양소 {count}개 기록됨",
       "micronutrientsFew": "미량영양소 {count}개 기록됨",
-      "open": "영양소 섭취 열기"
+      "open": "영양소 섭취 보기"
     }
   },
   "timeline": {
@@ -14827,9 +14841,9 @@
       "rescueGiven": "응급약 투여: {name}",
       "rescueGivenCount": "응급약 투여({count}), 한 번 더 투여하려면 누르세요",
       "threshold": {
-        "t1": "발작이 {time} 동안 계속되고 있어요. 응급 계획을 따르세요.",
-        "usualPlusTwo": "발작이 {time} 동안 계속되어 평소보다 2분 넘게 길어졌어요. 응급 계획을 따르세요.",
-        "generic": "발작이 {time} 동안 계속되고 있어요. 응급 계획을 따르세요."
+        "t1": "발작이 {time} 넘게 계속되고 있어요. 응급 계획을 따르세요.",
+        "usualPlusTwo": "발작이 {time} 넘게 계속되어 평소보다 2분 더 길어졌어요. 응급 계획을 따르세요.",
+        "generic": "발작이 {time} 넘게 계속되고 있어요. 응급 계획을 따르세요."
       },
       "noPlan": "이 발작 유형에 저장된 계획이 없어요. 확실하지 않으면 응급 신고를 하세요.",
       "call": "{number}에 전화",
@@ -14843,14 +14857,14 @@
     },
     "summary": {
       "title": "기록",
-      "recorded": "기록된 발작, 최근 {days}일",
+      "recorded": "{date} 이후 기록된 발작",
       "seizureDays": "발작이 있었던 날",
       "sinceLast": "마지막으로 기록된 발작 이후 일수",
       "longestFree": "발작 없이 지난 가장 긴 기간(일)",
       "clusters": "군집 발작({rule})",
       "niceClusters": "NICE 기준 군집 발작(24시간 내 3회)",
       "suspected": "의심 발작 {count}건은 목록에는 있지만 집계에서 제외돼요.",
-      "clusterLine": "{start}부터 군집 발작: {count}회",
+      "clusterLine": "{start}부터 {count}회",
       "monthlyCaption": "유형별, 월별 발작",
       "undercount": "기록된 발작이며 실제보다 적을 가능성이 높고, 특히 수면 중 발작이 그래요."
     },
@@ -14862,7 +14876,8 @@
       "showAll": "{count}건 모두 보기",
       "truncated": "최근 발작만 표시해요.",
       "loggedByYou": "내가 기록함",
-      "loggedByName": "{name} 님이 기록함"
+      "loggedByName": "{name} 님이 기록함",
+      "cluster": "군집 발작"
     },
     "certainty": {
       "CONFIRMED": "발작",
@@ -14948,7 +14963,7 @@
       "seconds": "초",
       "durationHint": "얼마나 오래 지속됐는지 본 사람이 없으면 비워 두세요.",
       "durationSource": "지속 시간",
-      "certainty": "발작이었나요",
+      "certainty": "확실성",
       "count": "횟수",
       "countHint": "하루 동안의 결신발작처럼 한꺼번에 셀 때는 1보다 크게 입력하세요.",
       "sleepState": "깨어 있었나요, 자고 있었나요",
@@ -15024,9 +15039,9 @@
     },
     "rule": {
       "title": "군집 발작 기준",
-      "explainer": "군집 발작은 정해진 시간 안에 정해진 횟수 이상 일어난 발작이에요. 응급 계획에 있는 기준을 사용하세요. NICE 기준은 {niceHours}시간 내 {niceCount}회이며, 옆에 함께 표시돼요.",
+      "explainer": "군집 발작은 정해진 시간 안에 정해진 횟수 이상 일어난 발작이에요. 응급 계획에 있는 기준을 사용하세요. NICE 기준은 {niceHours}시간 내 {niceCount}회이며, 요약에서는 두 기준으로 모두 세어요.",
       "count": "발작 횟수",
-      "hours": "시간 이내",
+      "hours": "시간 범위(시간)",
       "invalid": "1~168시간 안에 2~20회로 설정하세요.",
       "saved": "군집 발작 기준을 저장했어요"
     },

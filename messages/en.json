@@ -3951,7 +3951,8 @@
         "sleepTrendsLink": "Sleep trends",
         "moodHistoryLink": "Mood history",
         "previousSessionLink": "Previous session",
-        "insightTitle": "Activity insight"
+        "insightTitle": "Activity insight",
+        "sourceFitFile": "FIT file"
       },
       "sport": {
         "walking": "Walking",
@@ -5084,7 +5085,8 @@
         "afternoon": "A sustained elevated-at-rest stretch this afternoon, possibly some tension.",
         "evening": "A sustained elevated-at-rest stretch this evening, possibly some tension.",
         "night": "A sustained elevated-at-rest stretch overnight, possibly some tension."
-      }
+      },
+      "emptyOutsideWorkouts": "Not enough heart-rate readings outside workouts for this day to show its shape."
     },
     "navEcg": "ECG",
     "sectionLoadError": "This section could not be loaded.",
@@ -5668,7 +5670,11 @@
         "documents": {
           "title": "Documents",
           "autoAiRead": "Read new documents automatically with AI",
-          "honesty": "When on, each document uploaded into this profile is sent to the instance's AI provider to be read, described and indexed for search, with no tap per document, and documents already here without a summary are sent too (up to 200 each time it is switched on). Turning it on records this profile's consent to having its documents read. The profile's AI settings apply; your own AI provider is never used. Off by default."
+          "honesty": "When on, each document uploaded into this profile is sent to the instance's AI provider to be read, described and indexed for search, with no tap per document, and documents already here without a summary are sent too (up to 200 each time it is switched on). Turning it on records this profile's consent to having its documents read. The profile's AI settings apply; your own AI provider is never used. Off by default.",
+          "pageTitle": "Documents and AI",
+          "pageSubtitle": "Whether AI reads the documents uploaded into {name}'s profile.",
+          "noProvider": "This server has no AI provider that could read {name}'s documents, so the switch stays off. The person who runs the server can set one up.",
+          "aiOff": "AI is off for {name}'s profile, so no document would be read."
         }
       },
       "unavailableTitle": "Unavailable in this shared record",
@@ -5901,7 +5907,7 @@
         },
         "import": {
           "heading": "Import",
-          "description": "Bring data into HealthLog from an Apple Health export, a JSON file, or a CSV. Imports skip rows that already exist, so re-running one is safe.",
+          "description": "Bring data into HealthLog from Apple Health, Health Connect, a watch's activity file, a JSON file or a CSV. Imports skip rows that already exist, so re-running one is safe.",
           "charCount": "{used} / {max} characters",
           "appleHealth": {
             "title": "Apple Health",
@@ -5955,7 +5961,7 @@
             "fileInputLabel": "Choose a JSON file to import",
             "schemaHint": "Two arrays: measurements and moodEntries.",
             "docsLink": "See the schema and an example.",
-            "uploadFile": "Upload file",
+            "uploadFile": "Choose file",
             "downloadExample": "Download example",
             "import": "Import",
             "invalidJson": "That isn't valid JSON. Check the syntax and try again.",
@@ -5978,7 +5984,7 @@
             "fileInputLabel": "Choose a CSV file to import",
             "schemaHint": "Columns: type, value, unit, measuredAt (with timezone offset), and optional glucoseContext, notes, externalId.",
             "docsLink": "See the column schema and an example.",
-            "uploadFile": "Upload file",
+            "uploadFile": "Choose file",
             "downloadExample": "Download example",
             "preview": "Preview",
             "import": "Import",
@@ -6075,7 +6081,7 @@
           "healthConnect": {
             "title": "Health Connect export",
             "description": "Import the ZIP file the Health Connect app on Android writes when you export your data.",
-            "choose": "Choose ZIP file",
+            "choose": "Choose file",
             "uploading": "Uploading…",
             "uploadFailed": "The upload failed. Please try again.",
             "tooLarge": "The file is larger than this server accepts.",
@@ -6118,7 +6124,7 @@
           "fit": {
             "title": "Activity file (FIT)",
             "description": "Import a workout from the FIT file a watch or bike computer records, such as Garmin, Wahoo, Coros or Polar.",
-            "choose": "Choose activity file",
+            "choose": "Choose file",
             "uploading": "Uploading…",
             "uploadFailed": "The upload failed. Please try again.",
             "tooLarge": "The file is larger than 10 MB.",
@@ -6128,7 +6134,7 @@
             "doneSummary": "The activity file was imported.",
             "doneNothing": "The import finished, but there was nothing new to add.",
             "dropLabel": "Drop the activity file here",
-            "dropHint": "or click to choose it. .fit, .fit.gz or .zip, up to 10 MB.",
+            "dropHint": "or click to choose it: a .fit, .fit.gz or .zip file up to 10 MB.",
             "fileInputLabel": "Activity file",
             "privacyNote": "The file is deleted from the server as soon as the import ends. A workout that is already here from Garmin, Apple Health or another app is not added twice: it gets the heart rate curve from the file if it had none. The GPS track is only kept when Workout routes is switched on. Uploading the same file again changes nothing.",
             "steps": {
@@ -6606,7 +6612,7 @@
         "defaultChainLabel": "Default chain",
         "defaultChainHint": "Tasks on Default follow this chain. Their usual rules still apply: document reads try a local model first.",
         "tasksHeading": "Tasks",
-        "tasksHint": "Pick the chain each task uses. The providers it would try are listed in order.",
+        "tasksHint": "Choose the chain for each task. A task on a chain of its own lists the providers it tries, in order.",
         "taskDefault": "Default",
         "save": "Save chains",
         "saved": "Chains saved",
@@ -6623,7 +6629,8 @@
           "statusText": "Status notes",
           "workoutInsights": "Workout notes",
           "reactionLines": "Reactions to new readings"
-        }
+        },
+        "tasksNeedChain": "Create a chain above to give a task its own providers. Until then every task follows the default."
       },
       "activeProviderHeading": "Active provider",
       "activeProviderLabel": "Set up a provider",
@@ -6965,7 +6972,7 @@
     },
     "fitbitRemoval": {
       "title": "Fitbit no longer syncs",
-      "body": "Google shut down the Fitbit Web API on 30 October 2026, so HealthLog can no longer connect to Fitbit and the Fitbit integration has been removed. Everything already imported stays: your charts, exports, backups and doctor reports keep it, still marked as Fitbit.",
+      "body": "Google shut down the Fitbit Web API on October 30, 2026, so HealthLog can no longer connect to Fitbit and the Fitbit integration has been removed. Everything already imported stays: your charts, exports, backups and doctor reports keep it, still marked as Fitbit.",
       "ways": "To keep data from a Fitbit or Pixel Watch coming, connect Google Health below. It reads the same devices and asks for your consent at Google once. On Android you can also import a Health Connect export.",
       "toGoogleHealth": "Go to Google Health",
       "toHealthConnect": "Health Connect import",
@@ -7098,7 +7105,7 @@
       "title": "Measurement tokens",
       "description": "Mint a token so a scale, a watch bridge, a food tracker or your home automation can add readings, custom-metric values and daily nutrient totals.",
       "detail": "The token is shown once.",
-      "scopeNote": "It can only add new readings to your own record, values to custom metrics you already created, and daily nutrient totals while the nutrients module is on. It cannot read your data, create a custom metric, change or delete anything, or create another token. Readings and nutrient totals are marked as coming from an external device, so you can tell them apart later; custom-metric values carry no such mark. You can still correct readings and custom-metric values yourself; a tracker corrects a nutrient day by sending it again. A custom metric's ID is the part after /custom-metrics/ in the address of its page.",
+      "scopeNote": "It can only add readings to your own record, values to custom metrics you already created, and daily nutrient totals while the nutrients module is on; it cannot read, change or delete anything. Readings and nutrient totals are marked as external. A custom metric's ID is the part after /custom-metrics/ in its page's address.",
       "nutrientsLink": "View nutrient intake",
       "createFailed": "The token could not be created. Please try again.",
       "namePlaceholder": "Name, e.g. Home Assistant",
@@ -12310,7 +12317,8 @@
       "duplicateExists": "An identical document is already stored.",
       "uploadBusy": "The server was busy with other uploads. Try again now.",
       "rateLimited": "You have reached the upload limit for this hour. Try again later.",
-      "generic": "Upload failed. Please try again."
+      "generic": "Upload failed. Please try again.",
+      "recordChanged": "The open record changed while this file was uploading. Upload it again."
     },
     "toast": {
       "duplicate": "Already stored. The existing document is highlighted.",
@@ -12340,7 +12348,8 @@
       "description": "Store doctor letters, lab reports, imaging, prescriptions and vaccination records. They are encrypted and searchable by type, condition and year.",
       "action": "Upload a first document",
       "noMatchesTitle": "No matching documents",
-      "noMatchesDescription": "Nothing matches the current search and filters."
+      "noMatchesDescription": "Nothing matches the current search and filters.",
+      "titleRecord": "{name}'s document vault is empty"
     },
     "detail": {
       "title": "Document details",
@@ -12646,6 +12655,10 @@
     "picker": {
       "capped": "Showing the newest {count}. Search to find an older document.",
       "cappedSearching": "Showing the newest {count} matches. Narrow the search to find an older one."
+    },
+    "recordAi": {
+      "noProvider": "No AI provider on this server can read the documents in this record, so they get no summary, no search by content and no document chat.",
+      "off": "AI is off for this record, so its documents get no summary, no search by content and no document chat."
     }
   },
   "selfDescription": {
@@ -12847,12 +12860,12 @@
       "removeBody": "The chart goes back to the dietary reference where one exists. The amount you set is not kept anywhere else.",
       "targetLabel": "{name} per day ({unit})",
       "boundsHint": "Above 0, at most {max} {unit} a day.",
-      "validationBounds": "Enter an amount within the bounds shown above.",
       "directionLabel": "Kind of target",
       "directionTarget": "Reach at least",
       "directionLimit": "Stay under",
       "saveFailed": "The target could not be saved. Please try again.",
-      "loadError": "Could not load energy and macronutrients."
+      "loadError": "Could not load energy and macronutrients.",
+      "gearLabel": "Set the daily target for {name}"
     },
     "alcohol": {
       "loadError": "Could not load alcohol."
@@ -13130,7 +13143,8 @@
       "viewing": "You are in {name}'s record",
       "readOnly": "You can read it, not change it.",
       "canAdd": "You can add to it, but not change or delete what is there.",
-      "leave": "Back to my record"
+      "leave": "Back to my record",
+      "canManage": "You can add to it and change or remove what is in it."
     },
     "switcher": {
       "label": "Open a record",
@@ -14008,7 +14022,7 @@
       "micronutrientsOne": "{count} micronutrient logged",
       "micronutrientsOther": "{count} micronutrients logged",
       "micronutrientsFew": "{count} micronutrients logged",
-      "open": "Open nutrient intake"
+      "open": "View nutrient intake"
     }
   },
   "timeline": {
@@ -14827,9 +14841,9 @@
       "rescueGiven": "Rescue given: {name}",
       "rescueGivenCount": "Rescue given ({count}), tap for another dose",
       "threshold": {
-        "t1": "The seizure has lasted {time}. Follow the emergency plan.",
-        "usualPlusTwo": "The seizure has lasted {time}, more than 2 minutes longer than usual. Follow the emergency plan.",
-        "generic": "The seizure has lasted {time}. Follow the emergency plan."
+        "t1": "The seizure has lasted longer than {time}. Follow the emergency plan.",
+        "usualPlusTwo": "The seizure has lasted longer than {time}, 2 minutes past its usual length. Follow the emergency plan.",
+        "generic": "The seizure has lasted longer than {time}. Follow the emergency plan."
       },
       "noPlan": "No plan is saved for this seizure type. Call emergency services if you are unsure.",
       "call": "Call {number}",
@@ -14843,14 +14857,14 @@
     },
     "summary": {
       "title": "Recorded",
-      "recorded": "Recorded seizures, last {days} days",
+      "recorded": "Recorded seizures since {date}",
       "seizureDays": "Days with a seizure",
       "sinceLast": "Days since the last recorded seizure",
       "longestFree": "Longest run without one, days",
       "clusters": "Clusters ({rule})",
       "niceClusters": "Clusters under NICE (3 in 24 h)",
       "suspected": "{count} suspected seizures are listed but not counted.",
-      "clusterLine": "Cluster from {start}: {count} seizures",
+      "clusterLine": "From {start}: {count} seizures",
       "monthlyCaption": "Seizures per type and month",
       "undercount": "Recorded seizures, likely an undercount, especially for seizures from sleep."
     },
@@ -14862,7 +14876,8 @@
       "showAll": "Show all {count}",
       "truncated": "Only the most recent seizures are shown.",
       "loggedByYou": "recorded by you",
-      "loggedByName": "recorded by {name}"
+      "loggedByName": "recorded by {name}",
+      "cluster": "Cluster"
     },
     "certainty": {
       "CONFIRMED": "Seizure",
@@ -14948,7 +14963,7 @@
       "seconds": "Seconds",
       "durationHint": "Leave empty when nobody saw how long it lasted.",
       "durationSource": "Duration was",
-      "certainty": "Was it a seizure",
+      "certainty": "Certainty",
       "count": "How many",
       "countHint": "More than one for a tally, such as the absences of a day.",
       "sleepState": "Awake or asleep",
@@ -15000,7 +15015,7 @@
       "editTitle": "Edit seizure type",
       "description": "The classification is chosen by you or the care team; HealthLog does not classify.",
       "label": "Your name for it",
-      "labelHint": "The word your family uses, such as \"the big one\".",
+      "labelHint": "The word your family uses, such as “the big one”.",
       "class": "Onset",
       "ilaeType": "Seizure type (ILAE 2025)",
       "notSure": "Not sure: {name}",
@@ -15024,9 +15039,9 @@
     },
     "rule": {
       "title": "Cluster rule",
-      "explainer": "A cluster is this many seizures within this many hours. Use the rule in the emergency plan; NICE uses {niceCount} in {niceHours} hours, which is shown beside it.",
+      "explainer": "A cluster is this many seizures within this many hours. Use the rule in the emergency plan; NICE uses {niceCount} in {niceHours} hours, and the summary counts clusters under both.",
       "count": "Seizures",
-      "hours": "Within hours",
+      "hours": "Window (hours)",
       "invalid": "Use 2 to 20 seizures within 1 to 168 hours.",
       "saved": "Cluster rule saved"
     },

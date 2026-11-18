@@ -44,7 +44,11 @@ import {
   TaskList,
   type ProviderInfo,
 } from "./named-chains-parts";
-import type { NamedChainsData, NamedChainView } from "./shared";
+import type {
+  ChainProviderType,
+  NamedChainsData,
+  NamedChainView,
+} from "./shared";
 
 /** How many named chains a record may hold; mirrors the server's cap. */
 const MAX_CHAINS = 10;
@@ -93,9 +97,15 @@ function withNewChain(
   const taken = new Set(prev.chains.map((c) => c.name.toLowerCase()));
   let n = prev.chains.length + 1;
   while (taken.has(nameFor(n).toLowerCase())) n += 1;
+  // The first provider that is set up, in the fallback chain's order: the
+  // head of that chain can be one that is not set up yet, and a new chain
+  // seeded with it could not answer anything.
+  const isAvailable = (type: ChainProviderType) =>
+    data.providers.some((p) => p.providerType === type && p.available);
   const first =
-    data.mainChain[0] ??
+    data.mainChain.find(isAvailable) ??
     data.providers.find((p) => p.available)?.providerType ??
+    data.mainChain[0] ??
     "local";
   const id = `c${randomId().replace(/-/g, "").slice(0, 15)}`;
   return {
@@ -229,7 +239,6 @@ function NamedChainsEditor({ data }: { data: NamedChainsData }) {
     );
   }
 
-  const defaultChain = draft.chains.find((c) => c.id === draft.defaultChainId);
   const outcome = nameIssue
     ? {
         ok: false,
@@ -308,7 +317,6 @@ function NamedChainsEditor({ data }: { data: NamedChainsData }) {
       <TaskList
         chains={draft.chains}
         attachments={draft.attachments}
-        defaultEntries={defaultChain?.entries ?? data.mainChain}
         providers={providers}
         onAttach={(capability, chainId) =>
           edit((prev) => {

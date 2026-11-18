@@ -233,6 +233,13 @@
 - A blood glucose reading's context (fasting, post-meal, random, before bed) can be changed after it is saved. The edit sheet shows the same choice as the add form, set to the reading's current context, and a reading from a sensor or another app that came without one can stay "Not specified". Per-context targets and the Coach use the corrected context right away. For API clients, `PUT /api/measurements/{id}` takes `glucoseContext`, where `null` clears it. (#1407)
 - A medication's Effect tab now follows your unit settings. With glucose set to mmol/L, the blood glucose chart, its before and after means, the change at the start and the shaded band used to show mg/dL figures; weight and temperature targets stayed in kilograms and Celsius on an imperial account. The band is now your own target where you set one, or the diabetes goal band when you turned that on. (#1406)
 - Large Apple Health exports, which the Health app writes as ZIP64 archives, no longer lose their ECGs and workout routes: the reader for those files refused ZIP64 and counted every one as failed. An export with more than 20,000 files no longer loses its ECGs either, a large file the import does not read no longer stops the routes or lab results from being read, and a single file over a size limit now fails on its own instead of taking every file of its kind with it.
+- On a phone, the vitamins and minerals on the nutrients page no longer break
+  a name like "Vitamin C" across two lines; the days and reference line now
+  sits under the name.
+- The import cards in Settings no longer squeeze into narrow columns when the
+  day panel is open beside them, where titles broke word by word and the
+  activity-file button ran past the card. Every card's file button now
+  reads "Choose file".
 
 ### Security
 

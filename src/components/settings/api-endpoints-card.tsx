@@ -38,6 +38,12 @@ export function ApiEndpointsCard() {
     },
     {
       method: "POST",
+      path: "/api/nutrients/batch",
+      auth: "Authorization: Bearer hlk_...",
+      example: `{ "entries": [ { "day": "2026-11-18", "nutrient": "protein", "unit": "g", "amount": 92 } ] }`,
+    },
+    {
+      method: "POST",
       path: "/api/workouts/batch",
       auth: "Authorization: Bearer hlk_...",
       example: `{ "workouts": [ { "sportType": "running", "startedAt": "...", "endedAt": "...", "externalId": "..." } ] }`,

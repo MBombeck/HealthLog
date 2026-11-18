@@ -86,17 +86,26 @@ const AXIS_TICKS = [0, 360, 720, 1080, 1440];
  * the session's `dayKey` so the chart opens on the day of the workout. The
  * navigator still works from there, so "the day before" stays one tap away.
  * Absent, the view opens on today and keeps tracking it.
+ *
+ * `emptyMessage` replaces the not-enough-readings sentence. The workout page
+ * passes one that says "outside workouts": a workout's own heart rate lives
+ * on the workout, not in this series, so the generic sentence sat under a
+ * full heart-rate curve from the same day and read as a contradiction.
  */
 /** Fewest present buckets that make a course worth drawing across 24 h. */
 const MIN_BUCKETS_FOR_COURSE = 3;
 
+interface IntradayPulseChartProps {
+  userTimezone?: string;
+  initialDateKey?: string;
+  emptyMessage?: string;
+}
+
 export function IntradayPulseChart({
   userTimezone,
   initialDateKey,
-}: {
-  userTimezone?: string;
-  initialDateKey?: string;
-}) {
+  emptyMessage,
+}: IntradayPulseChartProps) {
   const { isAuthenticated } = useAuth();
   const { t } = useTranslations();
   const fmt = useFormatters();
@@ -266,7 +275,7 @@ export function IntradayPulseChart({
         // field and called it the course of the day. Below a handful of
         // buckets the card says there is not enough for a course.
         <ChartEmptyState
-          title={t("insights.intradayPulse.empty")}
+          title={emptyMessage ?? t("insights.intradayPulse.empty")}
           height={176}
         />
       ) : (

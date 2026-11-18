@@ -56,7 +56,10 @@ export function ImportPanel() {
         title={t("settings.sections.export.import.heading")}
         subtitle={t("settings.sections.export.import.description")}
       />
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {/* Columns follow the space the cards actually get, not the viewport:
+          with the settings rail and the day panel open, a viewport-keyed
+          three-column grid left each card about 150 px wide. */}
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,16rem),1fr))] gap-4">
         <AppleHealthImportCard />
         <HealthConnectImportCard />
         <FitImportCard />

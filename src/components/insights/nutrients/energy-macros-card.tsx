@@ -109,13 +109,17 @@ function MacroSeries({ code }: { code: NutrientCode }) {
   // The page header's gear edits the chosen code's target. Registered once
   // the series is in, so the gear never opens a sheet without its seed.
   const loaded = data !== undefined;
+  const gearLabel = t("nutrients.macros.gearLabel", {
+    name: t(`nutrients.names.${code}`),
+  });
   useEffect(() => {
     if (!register || !loaded) return;
     return register({
       type: "NUTRIENT_TARGET",
       openEditor: () => setEditing(true),
+      label: gearLabel,
     });
-  }, [register, loaded]);
+  }, [register, loaded, gearLabel]);
 
   if (isError && !data) {
     return (

@@ -52,6 +52,10 @@ import { useTranslations } from "@/lib/i18n/context";
 import { isSurfaceVisible } from "@/lib/modules/surface";
 import { isSettingsDestinationListedForRecord } from "@/lib/record-settings/classification";
 import {
+  accountLabel,
+  type AccountAccessEntry,
+} from "@/lib/sharing/account-access-view";
+import {
   SETTINGS_SECTION_SLUGS,
   isSettingsSectionSlug,
   type SettingsSectionSlug,
@@ -282,6 +286,33 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   },
 ] as const;
 
+/**
+ * Inside a managed profile the AI page carries only the profile's
+ * document-reading switch (the provider is the instance's, not something a
+ * guardian picks), so "Choose your AI provider and bring your own key"
+ * promised a page that is not there. The caller passes the record only
+ * after hydration, for the reason the module filter in `SettingsShell` gives.
+ */
+function headingText(
+  section: SettingsSection,
+  activeRecord: AccountAccessEntry | null,
+  t: ReturnType<typeof useTranslations>["t"],
+): { title: string; subtitle: string } {
+  if (section.slug === "ai" && activeRecord?.recordKind === "managed") {
+    return {
+      title: t("settings.sharedRecord.managedSettings.documents.pageTitle"),
+      subtitle: t(
+        "settings.sharedRecord.managedSettings.documents.pageSubtitle",
+        { name: accountLabel(activeRecord) },
+      ),
+    };
+  }
+  return {
+    title: t(section.titleKey),
+    subtitle: t(`settings.sections.${section.slug}.subtitle`),
+  };
+}
+
 export interface SettingsShellProps {
   /**
    * Optional override for the active section. When omitted the shell reads
@@ -429,8 +460,7 @@ export function SettingsShell({
     heading ??
     (activeSection
       ? {
-          title: t(activeSection.titleKey),
-          subtitle: t(`settings.sections.${activeSection.slug}.subtitle`),
+          ...headingText(activeSection, hydrated ? activeRecord : null, t),
           headingId: `settings-section-${activeSection.slug}-title`,
           topSlot: LAYOUT_CHILD_SLUGS.has(activeSection.slug) ? (
             <SettingsHubBackLink

@@ -3951,7 +3951,8 @@
         "sleepTrendsLink": "Slaaptrends",
         "moodHistoryLink": "Stemmingsgeschiedenis",
         "previousSessionLink": "Vorige sessie",
-        "insightTitle": "Activiteitsinzicht"
+        "insightTitle": "Activiteitsinzicht",
+        "sourceFitFile": "FIT-bestand"
       },
       "sport": {
         "walking": "Wandelen",
@@ -5084,7 +5085,8 @@
         "afternoon": "Vanmiddag een aanhoudende periode met een verhoogde hartslag in rust, mogelijk wat spanning.",
         "evening": "Vanavond een aanhoudende periode met een verhoogde hartslag in rust, mogelijk wat spanning.",
         "night": "Afgelopen nacht een aanhoudende periode met een verhoogde hartslag in rust, mogelijk wat spanning."
-      }
+      },
+      "emptyOutsideWorkouts": "Buiten trainingen zijn er te weinig hartslagmetingen om het verloop van deze dag te tonen."
     },
     "navEcg": "ECG",
     "sectionLoadError": "Deze sectie kon niet worden geladen.",
@@ -5668,7 +5670,11 @@
         "documents": {
           "title": "Documenten",
           "autoAiRead": "Nieuwe documenten automatisch met AI lezen",
-          "honesty": "Aan betekent dat elk document dat in dit profiel wordt geüpload naar de AI-provider van de instantie gaat om gelezen, beschreven en doorzoekbaar gemaakt te worden, zonder tik per document, en documenten die er al zijn zonder samenvatting gaan ook (tot 200 bij elke keer aanzetten). Aanzetten legt de toestemming van dit profiel vast om zijn documenten te laten lezen. De AI-instellingen van het profiel gelden; je eigen AI-provider wordt nooit gebruikt. Standaard uit."
+          "honesty": "Aan betekent dat elk document dat in dit profiel wordt geüpload naar de AI-provider van de instantie gaat om gelezen, beschreven en doorzoekbaar gemaakt te worden, zonder tik per document, en documenten die er al zijn zonder samenvatting gaan ook (tot 200 bij elke keer aanzetten). Aanzetten legt de toestemming van dit profiel vast om zijn documenten te laten lezen. De AI-instellingen van het profiel gelden; je eigen AI-provider wordt nooit gebruikt. Standaard uit.",
+          "pageTitle": "Documenten en AI",
+          "pageSubtitle": "Of AI de documenten leest die in het profiel van {name} worden geüpload.",
+          "noProvider": "Deze server heeft geen AI-aanbieder die de documenten van {name} kan lezen, dus de schakelaar blijft uit. Wie de server beheert, kan er een instellen.",
+          "aiOff": "AI staat uit voor het profiel van {name}, dus er zou geen document worden gelezen."
         }
       },
       "unavailableTitle": "Niet beschikbaar in dit gedeelde dossier",
@@ -5901,7 +5907,7 @@
         },
         "import": {
           "heading": "Importeren",
-          "description": "Breng gegevens naar HealthLog vanuit een Apple Health-export, een JSON-bestand of een CSV. Bij het importeren worden rijen die al bestaan overgeslagen, dus een import opnieuw uitvoeren is veilig.",
+          "description": "Breng gegevens naar HealthLog vanuit Apple Health, Health Connect, het activiteitsbestand van een horloge, een JSON-bestand of een CSV. Bij het importeren worden rijen die al bestaan overgeslagen, dus een import opnieuw uitvoeren is veilig.",
           "charCount": "{used} / {max} tekens",
           "appleHealth": {
             "title": "Apple Health",
@@ -5955,7 +5961,7 @@
             "fileInputLabel": "Kies een JSON-bestand om te importeren",
             "schemaHint": "Twee arrays: measurements en moodEntries.",
             "docsLink": "Bekijk het schema en een voorbeeld.",
-            "uploadFile": "Bestand uploaden",
+            "uploadFile": "Bestand kiezen",
             "downloadExample": "Voorbeeld downloaden",
             "import": "Importeren",
             "invalidJson": "Dat is geen geldige JSON. Controleer de syntaxis en probeer het opnieuw.",
@@ -5978,7 +5984,7 @@
             "fileInputLabel": "Kies een CSV-bestand om te importeren",
             "schemaHint": "Kolommen: type, value, unit, measuredAt (met tijdzoneverschil), en optioneel glucoseContext, notes, externalId.",
             "docsLink": "Bekijk het kolomschema en een voorbeeld.",
-            "uploadFile": "Bestand uploaden",
+            "uploadFile": "Bestand kiezen",
             "downloadExample": "Voorbeeld downloaden",
             "preview": "Voorbeeld",
             "import": "Importeren",
@@ -6075,7 +6081,7 @@
           "healthConnect": {
             "title": "Health Connect-export",
             "description": "Importeer het ZIP-bestand dat de Health Connect-app op Android aanmaakt wanneer je je gegevens exporteert.",
-            "choose": "ZIP-bestand kiezen",
+            "choose": "Bestand kiezen",
             "uploading": "Uploaden…",
             "uploadFailed": "Het uploaden is mislukt. Probeer het opnieuw.",
             "tooLarge": "Het bestand is groter dan deze server accepteert.",
@@ -6118,7 +6124,7 @@
           "fit": {
             "title": "Activiteitsbestand (FIT)",
             "description": "Importeer een training uit het FIT-bestand van een horloge of fietscomputer, zoals Garmin, Wahoo, Coros of Polar.",
-            "choose": "Activiteitsbestand kiezen",
+            "choose": "Bestand kiezen",
             "uploading": "Uploaden…",
             "uploadFailed": "Het uploaden is mislukt. Probeer het opnieuw.",
             "tooLarge": "Het bestand is groter dan 10 MB.",
@@ -6128,7 +6134,7 @@
             "doneSummary": "Het activiteitsbestand is geïmporteerd.",
             "doneNothing": "De import is klaar, maar er was niets nieuws toe te voegen.",
             "dropLabel": "Zet het activiteitsbestand hier neer",
-            "dropHint": "of klik om het te kiezen. .fit, .fit.gz of .zip, tot 10 MB.",
+            "dropHint": "of klik om het te kiezen: een .fit-, .fit.gz- of .zip-bestand tot 10 MB.",
             "fileInputLabel": "Activiteitsbestand",
             "privacyNote": "Het bestand wordt van de server verwijderd zodra de import klaar is. Een training die hier al is via Garmin, Apple Gezondheid of een andere app wordt niet dubbel toegevoegd: die krijgt de hartslagcurve uit het bestand als hij er nog geen had. Het GPS-spoor wordt alleen bewaard als Trainingsroutes aan staat. Hetzelfde bestand opnieuw uploaden verandert niets.",
             "steps": {
@@ -6606,7 +6612,7 @@
         "defaultChainLabel": "Standaardketen",
         "defaultChainHint": "Taken op Standaard volgen deze keten. Hun gebruikelijke regels blijven gelden: documenten proberen eerst een lokaal model.",
         "tasksHeading": "Taken",
-        "tasksHint": "Kies de keten voor elke taak. De providers die hij zou proberen staan op volgorde.",
+        "tasksHint": "Kies de keten voor elke taak. Onder een taak met een eigen keten staan de aanbieders die ze probeert, op volgorde.",
         "taskDefault": "Standaard",
         "save": "Ketens opslaan",
         "saved": "Ketens opgeslagen",
@@ -6623,7 +6629,8 @@
           "statusText": "Statusnotities",
           "workoutInsights": "Trainingsnotities",
           "reactionLines": "Reacties op nieuwe metingen"
-        }
+        },
+        "tasksNeedChain": "Maak hierboven een keten om een taak eigen aanbieders te geven. Tot dan volgt elke taak de standaard."
       },
       "activeProviderHeading": "Actieve provider",
       "activeProviderLabel": "Provider instellen",
@@ -7098,7 +7105,7 @@
       "title": "Metingtokens",
       "description": "Maak een token aan zodat een weegschaal, een horlogekoppeling, een voedingsapp of je domotica metingen, waarden voor je eigen metingen en dagtotalen van voedingsstoffen kan toevoegen.",
       "detail": "Het token wordt één keer getoond.",
-      "scopeNote": "Het kan alleen nieuwe metingen aan je eigen dossier toevoegen, waarden aan eigen metingen die je al hebt aangemaakt, en dagtotalen van voedingsstoffen zolang de module voedingsstoffen aan staat. Het kan je gegevens niet lezen, geen eigen meting aanmaken, niets wijzigen of verwijderen en geen ander token aanmaken. Metingen en voedingstotalen worden gemarkeerd als afkomstig van een extern apparaat, zodat je ze later kunt onderscheiden; waarden van eigen metingen krijgen die markering niet. Metingen en waarden van eigen metingen kun je nog steeds zelf corrigeren; een voedingsapp corrigeert een dag door hem opnieuw te sturen. De ID van een eigen meting is het deel na /custom-metrics/ in het adres van de pagina ervan.",
+      "scopeNote": "Het kan alleen metingen aan je eigen dossier toevoegen, waarden aan eigen metingen die je al hebt aangemaakt, en dagtotalen van voedingsstoffen zolang de module voedingsstoffen aan staat; lezen, wijzigen of verwijderen kan het niet. Metingen en voedingstotalen worden als extern gemarkeerd. De ID van een eigen meting is het deel na /custom-metrics/ in het adres van de pagina ervan.",
       "nutrientsLink": "Inname van voedingsstoffen bekijken",
       "createFailed": "Het token kon niet worden aangemaakt. Probeer het opnieuw.",
       "namePlaceholder": "Naam, bijv. Home Assistant",
@@ -12310,7 +12317,8 @@
       "duplicateExists": "Er is al een identiek document opgeslagen.",
       "uploadBusy": "De server was bezig met andere uploads. Probeer het nu opnieuw.",
       "rateLimited": "Je hebt de uploadlimiet voor dit uur bereikt. Probeer het later opnieuw.",
-      "generic": "Uploaden is mislukt. Probeer het opnieuw."
+      "generic": "Uploaden is mislukt. Probeer het opnieuw.",
+      "recordChanged": "Het geopende dossier is gewijzigd terwijl dit bestand werd geüpload. Upload het opnieuw."
     },
     "toast": {
       "duplicate": "Al opgeslagen. Het bestaande document is gemarkeerd.",
@@ -12340,7 +12348,8 @@
       "description": "Bewaar artsenbrieven, labverslagen, beeldvorming, recepten en vaccinatiebewijzen. Ze worden versleuteld en zijn doorzoekbaar op type, aandoening en jaar.",
       "action": "Een eerste document uploaden",
       "noMatchesTitle": "Geen overeenkomende documenten",
-      "noMatchesDescription": "Niets komt overeen met de huidige zoekopdracht en filters."
+      "noMatchesDescription": "Niets komt overeen met de huidige zoekopdracht en filters.",
+      "titleRecord": "De documentenkluis van {name} is leeg"
     },
     "detail": {
       "title": "Documentdetails",
@@ -12646,6 +12655,10 @@
     "picker": {
       "capped": "De nieuwste {count} staan hier. Zoek om een ouder document te vinden.",
       "cappedSearching": "De nieuwste {count} resultaten staan hier. Verfijn de zoekopdracht om een ouder document te vinden."
+    },
+    "recordAi": {
+      "noProvider": "Geen AI-aanbieder op deze server kan de documenten in dit dossier lezen, dus ze krijgen geen samenvatting, geen zoeken op inhoud en geen documentchat.",
+      "off": "AI staat uit voor dit dossier, dus de documenten krijgen geen samenvatting, geen zoeken op inhoud en geen documentchat."
     }
   },
   "selfDescription": {
@@ -12847,12 +12860,12 @@
       "removeBody": "De grafiek toont dan weer de referentiewaarde, als die er is. De hoeveelheid die je instelde wordt nergens anders bewaard.",
       "targetLabel": "{name} per dag in {unit}",
       "boundsHint": "Boven 0, hoogstens {max} {unit} per dag.",
-      "validationBounds": "Vul een hoeveelheid binnen de grenzen hierboven in.",
       "directionLabel": "Soort doel",
       "directionTarget": "Minstens halen",
       "directionLimit": "Eronder blijven",
       "saveFailed": "Het doel kon niet worden opgeslagen. Probeer het opnieuw.",
-      "loadError": "Energie en macronutriënten konden niet worden geladen."
+      "loadError": "Energie en macronutriënten konden niet worden geladen.",
+      "gearLabel": "Dagdoel voor {name} instellen"
     },
     "alcohol": {
       "loadError": "Alcohol kon niet worden geladen."
@@ -13130,7 +13143,8 @@
       "viewing": "Je bent in het dossier van {name}",
       "readOnly": "Je kunt het lezen, maar niet wijzigen.",
       "canAdd": "Je kunt er iets aan toevoegen, maar niet wijzigen of verwijderen wat er al staat.",
-      "leave": "Terug naar mijn dossier"
+      "leave": "Terug naar mijn dossier",
+      "canManage": "Je kunt er iets aan toevoegen en wijzigen of verwijderen wat er staat."
     },
     "switcher": {
       "label": "Een dossier openen",
@@ -14008,7 +14022,7 @@
       "micronutrientsOne": "{count} micronutriënt vastgelegd",
       "micronutrientsOther": "{count} micronutriënten vastgelegd",
       "micronutrientsFew": "{count} micronutriënten vastgelegd",
-      "open": "Inname van voedingsstoffen openen"
+      "open": "Inname van voedingsstoffen bekijken"
     }
   },
   "timeline": {
@@ -14827,9 +14841,9 @@
       "rescueGiven": "Noodmedicatie gegeven: {name}",
       "rescueGivenCount": "Noodmedicatie gegeven ({count}), tik voor nog een dosis",
       "threshold": {
-        "t1": "De aanval duurt al {time}. Volg het noodplan.",
-        "usualPlusTwo": "De aanval duurt al {time}, meer dan 2 minuten langer dan gewoonlijk. Volg het noodplan.",
-        "generic": "De aanval duurt al {time}. Volg het noodplan."
+        "t1": "De aanval duurt al langer dan {time}. Volg het noodplan.",
+        "usualPlusTwo": "De aanval duurt al langer dan {time}, 2 minuten langer dan gewoonlijk. Volg het noodplan.",
+        "generic": "De aanval duurt al langer dan {time}. Volg het noodplan."
       },
       "noPlan": "Voor dit aanvalstype is geen noodplan opgeslagen. Bel het alarmnummer als je twijfelt.",
       "call": "{number} bellen",
@@ -14843,14 +14857,14 @@
     },
     "summary": {
       "title": "Vastgelegd",
-      "recorded": "Vastgelegde aanvallen, laatste {days} dagen",
+      "recorded": "Vastgelegde aanvallen sinds {date}",
       "seizureDays": "Dagen met een aanval",
       "sinceLast": "Dagen sinds de laatste vastgelegde aanval",
       "longestFree": "Langste periode zonder aanval, dagen",
       "clusters": "Clusters ({rule})",
       "niceClusters": "Clusters volgens NICE (3 in 24 u)",
       "suspected": "{count} vermoedelijke aanvallen staan in de lijst maar worden niet meegeteld.",
-      "clusterLine": "Cluster vanaf {start}: {count} aanvallen",
+      "clusterLine": "Vanaf {start}: {count} aanvallen",
       "monthlyCaption": "Aanvallen per type en maand",
       "undercount": "Vastgelegde aanvallen, waarschijnlijk een onderschatting, vooral bij aanvallen vanuit de slaap."
     },
@@ -14862,7 +14876,8 @@
       "showAll": "Alle {count} tonen",
       "truncated": "Alleen de meest recente aanvallen worden getoond.",
       "loggedByYou": "door jou vastgelegd",
-      "loggedByName": "vastgelegd door {name}"
+      "loggedByName": "vastgelegd door {name}",
+      "cluster": "Cluster"
     },
     "certainty": {
       "CONFIRMED": "Aanval",
@@ -14948,7 +14963,7 @@
       "seconds": "Seconden",
       "durationHint": "Laat leeg als niemand heeft gezien hoe lang de aanval duurde.",
       "durationSource": "De duur is",
-      "certainty": "Was het een aanval",
+      "certainty": "Zekerheid",
       "count": "Hoeveel",
       "countHint": "Meer dan één om te turven, zoals de absences van een dag.",
       "sleepState": "Wakker of in slaap",
@@ -15024,9 +15039,9 @@
     },
     "rule": {
       "title": "Clusterregel",
-      "explainer": "Een cluster is dit aantal aanvallen binnen dit aantal uur. Gebruik de regel uit het noodplan; NICE gebruikt {niceCount} in {niceHours} uur, dat ernaast wordt getoond.",
+      "explainer": "Een cluster is dit aantal aanvallen binnen dit aantal uur. Gebruik de regel uit het noodplan; NICE gebruikt {niceCount} in {niceHours} uur, en het overzicht telt clusters volgens beide regels.",
       "count": "Aanvallen",
-      "hours": "Binnen uur",
+      "hours": "Tijdvenster (uur)",
       "invalid": "Gebruik 2 tot 20 aanvallen binnen 1 tot 168 uur.",
       "saved": "Clusterregel opgeslagen"
     },

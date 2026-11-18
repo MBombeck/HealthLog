@@ -10,12 +10,19 @@
  * nothing on it diagnoses, scores a risk or says it is safe to wait.
  */
 import { useMemo, useState } from "react";
-import { BrainCircuit, ListChecks, Plus, Settings2 } from "lucide-react";
+import {
+  BrainCircuit,
+  ChevronRight,
+  ListChecks,
+  Plus,
+  Settings2,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { InlineAction } from "@/components/ui/inline-action";
+import { ListCapNotice } from "@/components/ui/list-cap-notice";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -65,6 +72,10 @@ export function SeizuresView() {
     setTypeSheet((s) => ({ session: (s?.session ?? 0) + 1, type }));
 
   const events = data?.events ?? [];
+  const clusterEventIds = useMemo(
+    () => new Set(data?.summary.clusters.flatMap((c) => c.eventIds) ?? []),
+    [data],
+  );
 
   return (
     <div className="space-y-6">
@@ -103,6 +114,7 @@ export function SeizuresView() {
             events={events}
             typeById={typeById}
             truncated={data.truncated}
+            clusterEventIds={clusterEventIds}
             onOpen={openEvent}
           />
 
@@ -153,11 +165,14 @@ function SeizureList({
   events,
   typeById,
   truncated,
+  clusterEventIds,
   onOpen,
 }: {
   events: SeizureEventDTO[];
   typeById: ReadonlyMap<string, SeizureTypeDTO>;
   truncated: boolean;
+  /** Seizures that belong to a cluster episode under the record's rule. */
+  clusterEventIds: ReadonlySet<string>;
   onOpen: (event: SeizureEventDTO) => void;
 }) {
   const { t } = useTranslations();
@@ -165,7 +180,6 @@ function SeizureList({
   const [showAll, setShowAll] = useState(false);
   const listed = showAll ? events : events.slice(0, 20);
   const openEvent = onOpen;
-  const data = { truncated };
   return (
     <Card>
       <CardHeader>
@@ -190,44 +204,55 @@ function SeizureList({
                     type="button"
                     onClick={() => openEvent(event)}
                     data-seizure-id={event.id}
-                    className="hover:bg-accent focus-visible:ring-ring/50 flex min-h-11 w-full flex-col items-start gap-1 rounded-md px-1 py-2.5 text-left focus-visible:ring-2 focus-visible:outline-none"
+                    className="hover:bg-accent focus-visible:ring-ring/50 flex min-h-11 w-full items-center gap-2 rounded-md px-1 py-2.5 text-left focus-visible:ring-2 focus-visible:outline-none"
                   >
-                    <span className="flex w-full flex-wrap items-center gap-2">
-                      <span className="text-foreground text-sm font-medium">
-                        {typeName(type, t)}
+                    <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
+                      <span className="flex w-full flex-wrap items-center gap-2">
+                        <span className="text-foreground text-sm font-medium">
+                          {typeName(type, t)}
+                        </span>
+                        {event.count > 1 ? (
+                          <TagChip>×{event.count}</TagChip>
+                        ) : null}
+                        {event.certainty === "SUSPECTED" ? (
+                          <TagChip>{t("seizures.certainty.SUSPECTED")}</TagChip>
+                        ) : null}
+                        {event.rescueDoses.length > 0 ? (
+                          <TagChip>{t("seizures.list.rescue")}</TagChip>
+                        ) : null}
+                        {clusterEventIds.has(event.id) ? (
+                          <TagChip data-slot="seizure-cluster-chip">
+                            {t("seizures.list.cluster")}
+                          </TagChip>
+                        ) : null}
+                        <span className="text-foreground ml-auto text-sm tabular-nums">
+                          {event.durationSec === null
+                            ? "—"
+                            : `${event.durationSource === "ESTIMATED" ? "~" : ""}${formatClock(event.durationSec)}`}
+                        </span>
                       </span>
-                      {event.count > 1 ? (
-                        <TagChip>×{event.count}</TagChip>
-                      ) : null}
-                      {event.certainty === "SUSPECTED" ? (
-                        <TagChip>{t("seizures.certainty.SUSPECTED")}</TagChip>
-                      ) : null}
-                      {event.rescueDoses.length > 0 ? (
-                        <TagChip>{t("seizures.list.rescue")}</TagChip>
-                      ) : null}
-                      <span className="text-foreground ml-auto text-sm tabular-nums">
-                        {event.durationSec === null
-                          ? "—"
-                          : `${event.durationSource === "ESTIMATED" ? "~" : ""}${formatClock(event.durationSec)}`}
+                      <span className="text-muted-foreground text-xs">
+                        {fmt.dateTime(event.onsetAt)}
+                        {event.sleepState !== "UNKNOWN"
+                          ? ` · ${t(`seizures.sleepState.${event.sleepState}`)}`
+                          : ""}
+                        {event.loggedBy === "delegate"
+                          ? ` · ${
+                              event.loggedByViewer
+                                ? t("seizures.list.loggedByYou")
+                                : event.loggedByName
+                                  ? t("seizures.list.loggedByName", {
+                                      name: event.loggedByName,
+                                    })
+                                  : t("seizures.list.loggedByDelegate")
+                            }`
+                          : ""}
                       </span>
                     </span>
-                    <span className="text-muted-foreground text-xs">
-                      {fmt.dateTime(event.onsetAt)}
-                      {event.sleepState !== "UNKNOWN"
-                        ? ` · ${t(`seizures.sleepState.${event.sleepState}`)}`
-                        : ""}
-                      {event.loggedBy === "delegate"
-                        ? ` · ${
-                            event.loggedByViewer
-                              ? t("seizures.list.loggedByYou")
-                              : event.loggedByName
-                                ? t("seizures.list.loggedByName", {
-                                    name: event.loggedByName,
-                                  })
-                                : t("seizures.list.loggedByDelegate")
-                          }`
-                        : ""}
-                    </span>
+                    <ChevronRight
+                      className="text-muted-foreground size-4 shrink-0"
+                      aria-hidden="true"
+                    />
                   </button>
                 </li>
               );
@@ -243,11 +268,10 @@ function SeizureList({
             {t("seizures.list.showAll", { count: events.length })}
           </InlineAction>
         ) : null}
-        {data.truncated ? (
-          <p className="text-muted-foreground text-xs">
-            {t("seizures.list.truncated")}
-          </p>
-        ) : null}
+        <ListCapNotice
+          cap={{ truncated, limit: events.length }}
+          message={t("seizures.list.truncated")}
+        />
       </CardContent>
     </Card>
   );
@@ -302,25 +326,33 @@ function SeizureTypeList({
                   type="button"
                   disabled={!canManage}
                   onClick={() => openType(ty)}
-                  className="hover:bg-accent focus-visible:ring-ring/50 flex min-h-11 w-full flex-col items-start gap-1 rounded-md px-1 py-2.5 text-left focus-visible:ring-2 focus-visible:outline-none disabled:hover:bg-transparent"
+                  className="hover:bg-accent focus-visible:ring-ring/50 flex min-h-11 w-full items-center gap-2 rounded-md px-1 py-2.5 text-left focus-visible:ring-2 focus-visible:outline-none disabled:hover:bg-transparent"
                 >
-                  <span className="flex w-full items-center gap-2">
-                    <span className="text-foreground text-sm font-medium">
-                      {typeName(ty, t)}
+                  <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
+                    <span className="flex w-full items-center gap-2">
+                      <span className="text-foreground text-sm font-medium">
+                        {typeName(ty, t)}
+                      </span>
+                      {ty.archived ? (
+                        <TagChip>{t("seizures.types.archived")}</TagChip>
+                      ) : null}
                     </span>
-                    {ty.archived ? (
-                      <TagChip>{t("seizures.types.archived")}</TagChip>
+                    <span className="text-muted-foreground text-xs">
+                      {ilaeLine(ty.ilaeType, t)}
+                    </span>
+                    {ty.rescueMedicationName ? (
+                      <span className="text-muted-foreground text-xs">
+                        {t("seizures.types.rescueLine", {
+                          name: ty.rescueMedicationName,
+                        })}
+                      </span>
                     ) : null}
                   </span>
-                  <span className="text-muted-foreground text-xs">
-                    {ilaeLine(ty.ilaeType, t)}
-                  </span>
-                  {ty.rescueMedicationName ? (
-                    <span className="text-muted-foreground text-xs">
-                      {t("seizures.types.rescueLine", {
-                        name: ty.rescueMedicationName,
-                      })}
-                    </span>
+                  {canManage ? (
+                    <ChevronRight
+                      className="text-muted-foreground size-4 shrink-0"
+                      aria-hidden="true"
+                    />
                   ) : null}
                 </button>
               </li>

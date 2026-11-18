@@ -21,7 +21,7 @@ describe("<FitbitRemovalNoticeView>", () => {
   it("says what stopped and that the imported data stays", () => {
     const html = render();
     expect(html).toContain('data-testid="fitbit-removal-notice"');
-    expect(html).toContain("30 October 2026");
+    expect(html).toContain("October 30, 2026");
     expect(html).toContain("still marked as Fitbit");
   });
 

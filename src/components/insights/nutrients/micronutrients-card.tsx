@@ -242,7 +242,7 @@ export function MicronutrientsCard() {
                     {t(`nutrients.micronutrients.groups.${group}`)}
                   </h3>
                   <ul
-                    className="divide-border divide-y rounded-md border"
+                    className="divide-border divide-y rounded-lg border"
                     role="list"
                   >
                     {groupRows.map((row) => {
@@ -255,36 +255,36 @@ export function MicronutrientsCard() {
                         <li
                           key={row.nutrient}
                           data-slot="nutrients-micronutrient-row"
-                          className="space-y-2 p-2"
+                          className="space-y-2 p-3"
                         >
                           <div className="flex items-baseline justify-between gap-3">
-                            <span className="text-sm">
+                            <span className="min-w-0 text-sm">
                               {t(`nutrients.names.${row.nutrient}`)}
                             </span>
-                            <span className="flex flex-col items-end gap-0.5 text-right">
-                              <span className="text-sm font-medium tabular-nums">
-                                {formatNutrientAmount(fmt, row.latestAmount)}{" "}
-                                {unitLabel}
-                              </span>
-                              <span className="text-muted-foreground text-xs tabular-nums">
-                                {reference
-                                  ? t("nutrients.micronutrients.rowMeta", {
-                                      days: row.daysWithData,
-                                      window: WINDOW_DAYS,
-                                      value: formatNutrientAmount(
-                                        fmt,
-                                        reference.value,
-                                      ),
-                                      unit: unitLabel,
-                                      authority: reference.authority,
-                                    })
-                                  : t("nutrients.micronutrients.rowMetaNoRef", {
-                                      days: row.daysWithData,
-                                      window: WINDOW_DAYS,
-                                    })}
-                              </span>
+                            <span className="shrink-0 text-sm font-medium tabular-nums">
+                              {formatNutrientAmount(fmt, row.latestAmount)}{" "}
+                              {unitLabel}
                             </span>
                           </div>
+                          {/* Its own line: beside the name it took the row's
+                              width and broke two-word names like "Vitamin C". */}
+                          <p className="text-muted-foreground -mt-1.5 text-xs tabular-nums">
+                            {reference
+                              ? t("nutrients.micronutrients.rowMeta", {
+                                  days: row.daysWithData,
+                                  window: WINDOW_DAYS,
+                                  value: formatNutrientAmount(
+                                    fmt,
+                                    reference.value,
+                                  ),
+                                  unit: unitLabel,
+                                  authority: reference.authority,
+                                })
+                              : t("nutrients.micronutrients.rowMetaNoRef", {
+                                  days: row.daysWithData,
+                                  window: WINDOW_DAYS,
+                                })}
+                          </p>
                           {row.latestBySource && (
                             <SourceSplit
                               bySource={row.latestBySource}
