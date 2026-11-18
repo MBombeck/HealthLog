@@ -9187,6 +9187,7 @@ model SeizureClusterAlert {
   userId        String   @map("user_id")
   /// The cluster's first seizure, by onset. Not a foreign key: the claim
   /// outlives a removed seizure, so the same cluster does not alert again.
+  /// @internal: a claim key; only its unique index reads it
   anchorEventId String   @map("anchor_event_id")
   createdAt     DateTime @default(now()) @map("created_at")
 
