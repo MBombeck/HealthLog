@@ -86,8 +86,16 @@ export const PATCH = apiHandler(
     const updated = await prisma.seizureEvent.update({
       where: { id: existing.id },
       data: {
-        ...(e.typeProfileId !== undefined
-          ? { typeProfileId: e.typeProfileId ?? null }
+        // Moved to another type: it takes that type's class as it stands.
+        ...(e.typeProfileId !== undefined &&
+        e.typeProfileId !== existing.typeProfileId
+          ? {
+              typeProfileId: e.typeProfileId ?? null,
+              ilaeTypeAtLog: e.typeProfileId
+                ? (types.find((t) => t.id === e.typeProfileId)?.ilaeType ??
+                  null)
+                : null,
+            }
           : {}),
         ...(e.ilaeType !== undefined ? { ilaeType: e.ilaeType ?? null } : {}),
         ...(e.onsetAt !== undefined ? { onsetAt: e.onsetAt } : {}),

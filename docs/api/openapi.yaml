@@ -47851,6 +47851,33 @@ components:
                       - UNKNOWN_BILATERAL_TC
                       - UNCLASSIFIED
                   - type: "null"
+              ilaeTypeAtLog:
+                anyOf:
+                  - type: string
+                    enum:
+                      - FOCAL_PRESERVED
+                      - FOCAL_IMPAIRED
+                      - FOCAL_UNDETERMINED
+                      - FOCAL_TO_BILATERAL_TC
+                      - GENERALIZED_UNDETERMINED
+                      - GENERALIZED_TC
+                      - GEN_CLONIC
+                      - GEN_TONIC
+                      - GEN_MYOCLONIC
+                      - GEN_MYOCLONIC_ATONIC
+                      - GEN_ATONIC
+                      - GEN_NEGATIVE_MYOCLONIC
+                      - GEN_SPASMS
+                      - ABSENCE_TYPICAL
+                      - ABSENCE_ATYPICAL
+                      - ABSENCE_MYOCLONIC
+                      - EYELID_MYOCLONIA
+                      - UNKNOWN_UNDETERMINED
+                      - UNKNOWN_PRESERVED
+                      - UNKNOWN_IMPAIRED
+                      - UNKNOWN_BILATERAL_TC
+                      - UNCLASSIFIED
+                  - type: "null"
               onsetAt:
                 type: string
                 minLength: 1

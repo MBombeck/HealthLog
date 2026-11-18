@@ -1258,6 +1258,7 @@
         "userId": "round-trip-owner",
         "typeProfileId": "<id:39>",
         "ilaeType": null,
+        "ilaeTypeAtLog": "FOCAL_PRESERVED",
         "onsetAt": "2026-06-22T07:00:00.000Z",
         "onsetPrecision": "APPROX",
         "durationSec": 420,
@@ -1293,14 +1294,15 @@
         "loggedByUserId": "round-trip-owner",
         "source": "DEVICE_ALERT",
         "noteEncrypted": "<sealed:v2:woke from a nap>",
-        "createdAt": "2026-05-03T05:29:00.000Z",
-        "updatedAt": "2026-05-03T05:30:00.000Z"
+        "createdAt": "2026-05-03T05:30:00.000Z",
+        "updatedAt": "2026-05-03T05:31:00.000Z"
       },
       {
         "id": "<id:41>",
         "userId": "round-trip-owner",
         "typeProfileId": null,
         "ilaeType": "ABSENCE_TYPICAL",
+        "ilaeTypeAtLog": null,
         "onsetAt": "2026-06-23T10:00:00.000Z",
         "onsetPrecision": "EXACT",
         "durationSec": null,
@@ -1326,8 +1328,8 @@
         "loggedByUserId": null,
         "source": "MANUAL",
         "noteEncrypted": null,
-        "createdAt": "2026-05-03T05:29:01.000Z",
-        "updatedAt": "2026-05-03T05:30:01.000Z"
+        "createdAt": "2026-05-03T05:30:01.000Z",
+        "updatedAt": "2026-05-03T05:31:01.000Z"
       }
     ],
     "SeizureRescueDose": [
@@ -2414,6 +2416,8 @@
       "withingsClientSecretEncrypted": null,
       "whoopClientIdEncrypted": null,
       "whoopClientSecretEncrypted": null,
+      "fitbitClientIdEncrypted": null,
+      "fitbitClientSecretEncrypted": null,
       "fitbitRemovalNoticeAt": null,
       "googleHealthClientIdEncrypted": null,
       "googleHealthClientSecretEncrypted": null,
@@ -4098,6 +4102,7 @@
       {
         "typeProfileId": "<id:31>",
         "ilaeType": null,
+        "ilaeTypeAtLog": "FOCAL_PRESERVED",
         "onsetAt": "2026-06-22T07:00:00.000Z",
         "onsetPrecision": "APPROX",
         "durationSec": 420,
@@ -4134,8 +4139,8 @@
         "loggedByUserId": null,
         "source": "DEVICE_ALERT",
         "note": "woke from a nap",
-        "createdAt": "2026-05-03T05:29:00.000Z",
-        "updatedAt": "2026-05-03T05:30:00.000Z",
+        "createdAt": "2026-05-03T05:30:00.000Z",
+        "updatedAt": "2026-05-03T05:31:00.000Z",
         "rescueDoses": [
           {
             "medicationId": "<id:6>",
@@ -4156,6 +4161,7 @@
       {
         "typeProfileId": null,
         "ilaeType": "ABSENCE_TYPICAL",
+        "ilaeTypeAtLog": null,
         "onsetAt": "2026-06-23T10:00:00.000Z",
         "onsetPrecision": "EXACT",
         "durationSec": null,
@@ -4182,8 +4188,8 @@
         "loggedByUserId": null,
         "source": "MANUAL",
         "note": null,
-        "createdAt": "2026-05-03T05:29:01.000Z",
-        "updatedAt": "2026-05-03T05:30:01.000Z",
+        "createdAt": "2026-05-03T05:30:01.000Z",
+        "updatedAt": "2026-05-03T05:31:01.000Z",
         "rescueDoses": []
       }
     ],

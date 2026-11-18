@@ -9184,6 +9184,10 @@ model SeizureEvent {
   /// Per-event override of the type's ILAE classification. NULL = the
   /// type's.
   ilaeType                 SeizureIlaeType?      @map("ilae_type")
+  /// The type's ILAE classification when the seizure was logged (or moved to
+  /// that type), so re-classifying a type changes later seizures only. Read
+  /// after the override and before the type's current class. NULL = no type.
+  ilaeTypeAtLog            SeizureIlaeType?      @map("ilae_type_at_log")
   onsetAt                  DateTime              @map("onset_at")
   onsetPrecision           SeizureOnsetPrecision @default(EXACT) @map("onset_precision")
   /// Seconds. NULL = not known (an unwitnessed or nocturnal seizure).

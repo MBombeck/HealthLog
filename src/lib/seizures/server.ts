@@ -129,12 +129,17 @@ export type TypeLookup = ReadonlyMap<
   { ilaeType: SeizureIlaeType; usualDurationSec: number | null }
 >;
 
-/** The override, else the type's classification, else null. */
+/**
+ * The override, else the type's class when the seizure was logged, else the
+ * type's current class (an event restored from a backup written before the
+ * class was kept), else null.
+ */
 export function effectiveIlaeType(
-  row: Pick<SeizureEvent, "ilaeType" | "typeProfileId">,
+  row: Pick<SeizureEvent, "ilaeType" | "typeProfileId" | "ilaeTypeAtLog">,
   types: TypeLookup,
 ): SeizureIlaeType | null {
   if (row.ilaeType) return row.ilaeType;
+  if (row.typeProfileId && row.ilaeTypeAtLog) return row.ilaeTypeAtLog;
   return row.typeProfileId
     ? (types.get(row.typeProfileId)?.ilaeType ?? null)
     : null;
@@ -208,6 +213,7 @@ export function toDerivable(
     | "count"
     | "certainty"
     | "ilaeType"
+    | "ilaeTypeAtLog"
     | "typeProfileId"
     | "durationSec"
     | "sleepState"

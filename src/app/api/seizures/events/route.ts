@@ -104,6 +104,11 @@ async function postEvent(request: NextRequest): Promise<Response> {
         userId: user.id,
         typeProfileId: entry.typeProfileId ?? null,
         ilaeType: entry.ilaeType ?? null,
+        // The type's class as it stands now: re-classifying the type later
+        // changes the seizures logged after that, not this one.
+        ilaeTypeAtLog: entry.typeProfileId
+          ? (types.find((t) => t.id === entry.typeProfileId)?.ilaeType ?? null)
+          : null,
         onsetAt: entry.onsetAt,
         onsetPrecision: entry.onsetPrecision ?? "EXACT",
         durationSec: entry.durationSec ?? null,

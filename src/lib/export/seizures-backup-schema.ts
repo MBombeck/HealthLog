@@ -84,6 +84,8 @@ export const seizureEventBackupSchema = z
     id: z.string().min(1).optional(),
     typeProfileId: z.string().min(1).nullable().optional(),
     ilaeType: z.enum(SeizureIlaeType).nullable().optional(),
+    // The type's class when the seizure was logged; absent from older files.
+    ilaeTypeAtLog: z.enum(SeizureIlaeType).nullable().optional(),
     onsetAt: isoDateTime,
     onsetPrecision: z.enum(SeizureOnsetPrecision),
     durationSec: z.number().int().nullable().optional(),

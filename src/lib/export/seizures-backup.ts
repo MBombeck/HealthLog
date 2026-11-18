@@ -90,6 +90,7 @@ export interface SeizureEventBackupEntry {
   id?: string;
   typeProfileId: string | null;
   ilaeType: string | null;
+  ilaeTypeAtLog: string | null;
   onsetAt: string;
   onsetPrecision: string;
   durationSec: number | null;
@@ -218,6 +219,7 @@ export async function buildSeizuresBackupSection(
       ...(dr ? { id: e.id } : {}),
       typeProfileId: e.typeProfileId,
       ilaeType: e.ilaeType,
+      ilaeTypeAtLog: e.ilaeTypeAtLog,
       onsetAt: e.onsetAt.toISOString(),
       onsetPrecision: e.onsetPrecision,
       durationSec: e.durationSec,
@@ -440,6 +442,11 @@ export async function restoreSeizuresData(
         userId: ownerId,
         typeProfileId,
         ilaeType: (e.ilaeType ?? null) as any,
+        // An older file kept no class at logging: the type's current one
+        // stands in, as the reader falls back to it anyway.
+        ilaeTypeAtLog: (typeProfileId
+          ? (e.ilaeTypeAtLog ?? null)
+          : null) as any,
         onsetAt: new Date(e.onsetAt),
         onsetPrecision: (e.onsetPrecision ?? "EXACT") as any,
         durationSec: e.durationSec ?? null,

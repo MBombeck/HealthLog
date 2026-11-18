@@ -911,6 +911,7 @@
         "userId": "round-trip-owner",
         "typeProfileId": "<id:47>",
         "ilaeType": null,
+        "ilaeTypeAtLog": "FOCAL_PRESERVED",
         "onsetAt": "2026-06-22T07:00:00.000Z",
         "onsetPrecision": "APPROX",
         "durationSec": 420,
@@ -946,14 +947,15 @@
         "loggedByUserId": "round-trip-owner",
         "source": "DEVICE_ALERT",
         "noteEncrypted": "<sealed:v1:woke from a nap>",
-        "createdAt": "2026-05-03T05:29:00.000Z",
-        "updatedAt": "2026-05-03T05:30:00.000Z"
+        "createdAt": "2026-05-03T05:30:00.000Z",
+        "updatedAt": "2026-05-03T05:31:00.000Z"
       },
       {
         "id": "<id:49>",
         "userId": "round-trip-owner",
         "typeProfileId": null,
         "ilaeType": "ABSENCE_TYPICAL",
+        "ilaeTypeAtLog": null,
         "onsetAt": "2026-06-23T10:00:00.000Z",
         "onsetPrecision": "EXACT",
         "durationSec": null,
@@ -979,8 +981,8 @@
         "loggedByUserId": null,
         "source": "MANUAL",
         "noteEncrypted": null,
-        "createdAt": "2026-05-03T05:29:01.000Z",
-        "updatedAt": "2026-05-03T05:30:01.000Z"
+        "createdAt": "2026-05-03T05:30:01.000Z",
+        "updatedAt": "2026-05-03T05:31:01.000Z"
       }
     ],
     "SeizureRescueDose": [
@@ -2521,6 +2523,8 @@
       "withingsClientSecretEncrypted": "<sealed:v1:rt-User-withingsClientSecretEncrypted>",
       "whoopClientIdEncrypted": "<sealed:v1:rt-User-whoopClientIdEncrypted>",
       "whoopClientSecretEncrypted": "<sealed:v1:rt-User-whoopClientSecretEncrypted>",
+      "fitbitClientIdEncrypted": "<sealed:v1:rt-User-fitbitClientIdEncrypted>",
+      "fitbitClientSecretEncrypted": "<sealed:v1:rt-User-fitbitClientSecretEncrypted>",
       "fitbitRemovalNoticeAt": "2026-06-30T12:34:56.789Z",
       "googleHealthClientIdEncrypted": "<sealed:v1:rt-User-googleHealthClientIdEncrypted>",
       "googleHealthClientSecretEncrypted": "<sealed:v1:rt-User-googleHealthClientSecretEncrypted>",

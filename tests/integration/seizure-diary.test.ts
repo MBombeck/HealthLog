@@ -29,7 +29,10 @@ import {
   PATCH as patchEvent,
 } from "@/app/api/seizures/events/[id]/route";
 import { POST as createType } from "@/app/api/seizures/types/route";
-import { DELETE as deleteType } from "@/app/api/seizures/types/[id]/route";
+import {
+  DELETE as deleteType,
+  PATCH as patchType,
+} from "@/app/api/seizures/types/[id]/route";
 import { collectDoctorReportData } from "@/lib/doctor-report-data";
 import { renderDoctorReportPdfBytes } from "@/lib/doctor-report-pdf-core";
 import { buildFhirDocumentBundle } from "@/lib/fhir/build-bundle";
@@ -358,6 +361,44 @@ describe("the module gates every route", () => {
     const write = await newEvent({ onsetAt: ago(60_000).toISOString() });
     expect(write.status).toBe(403);
     expect(await getPrismaClient().seizureEvent.count()).toBe(0);
+  });
+});
+
+describe("a type's classification at the time of logging", () => {
+  it("keeps past seizures in the class they were logged under", async () => {
+    const owner = await person("owner");
+    signIn(owner);
+    const type = await newType({ label: "Turns", ilaeType: "FOCAL_IMPAIRED" });
+    const before = await newEvent({
+      typeProfileId: type.id,
+      onsetAt: ago(2 * DAY_MS).toISOString(),
+    });
+    expect(before.status).toBe(201);
+
+    // The type is re-diagnosed; history must not be rewritten.
+    const edited = await patchType(
+      json("PATCH", `/api/seizures/types/${type.id}`, {
+        ilaeType: "FOCAL_TO_BILATERAL_TC",
+      }),
+      params({ id: type.id }),
+    );
+    expect(edited.status).toBe(200);
+    const after = await newEvent({
+      typeProfileId: type.id,
+      onsetAt: ago(DAY_MS).toISOString(),
+    });
+    expect(after.status).toBe(201);
+
+    const read = (await (await diary()).json()) as {
+      data: { events: Array<{ onsetAt: string; effectiveIlaeType: string }> };
+    };
+    const byAge = [...read.data.events].sort((a, b) =>
+      a.onsetAt.localeCompare(b.onsetAt),
+    );
+    expect(byAge.map((e) => e.effectiveIlaeType)).toEqual([
+      "FOCAL_IMPAIRED",
+      "FOCAL_TO_BILATERAL_TC",
+    ]);
   });
 });
 
