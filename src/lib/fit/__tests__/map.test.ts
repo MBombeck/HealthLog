@@ -231,4 +231,30 @@ describe("decode refusals", () => {
       code: "crc_mismatch",
     });
   });
+
+  it("reads a peak heart rate over a long series without a stack overflow", () => {
+    // A multi-day file without the session's own peak: the peak comes from
+    // the series, 130 000 samples of it.
+    const start = Date.parse("2026-09-01T00:00:00Z");
+    const records = Array.from({ length: 130_000 }, (_, i) => ({
+      timestamp: new Date(start + i * 1000),
+      heart_rate: 100 + (i % 50),
+    }));
+    const decoded = {
+      sessions: [
+        {
+          start_time: new Date(start),
+          total_elapsed_time: 130_000,
+          sport: "cycling",
+        },
+      ],
+      records,
+    };
+    const { drafts } = mapFitActivity(decoded, {
+      externalIdFor: () => "fit:x:1",
+      keepRoutes: false,
+      now: NOW,
+    });
+    expect(drafts[0]?.maxHeartRate).toBe(149);
+  });
 });

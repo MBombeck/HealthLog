@@ -128,4 +128,8 @@ describe("unwrapFitUpload", () => {
       deflateRawSync(Buffer.alloc(FIT_DECOMPRESSED_MAX_BYTES * 2)).length,
     ).toBeLessThan(FIT_UPLOAD_MAX_BYTES);
   });
+
+  it("inflates no more than an activity's worth: 8 MiB", () => {
+    expect(FIT_DECOMPRESSED_MAX_BYTES).toBe(8 * 1024 * 1024);
+  });
 });

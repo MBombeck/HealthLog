@@ -12,6 +12,7 @@ import {
   FIT_MAX_DEFINITIONS,
   FIT_MAX_DEVELOPER_FIELDS_PER_DEFINITION,
   FIT_MAX_FIELD_DESCRIPTIONS,
+  FIT_MAX_FIELD_CELLS,
   fitCrc,
   scanFitFile,
 } from "../scan";
@@ -127,5 +128,46 @@ describe("scanFitFile", () => {
     const file = buildWatchActivity({ start: START, seconds: 5 });
     const chained = Buffer.concat([file, Buffer.from("trailing bytes")]);
     expect(scanFitFile(chained).fileLength).toBe(file.length);
+  });
+
+  it("sizes a compressed-timestamp message without the timestamp it omits", () => {
+    // The definition opens with the timestamp (field 253); a message under a
+    // compressed-timestamp header leaves those four bytes out.
+    const b = new FitBuilder({ headerSize: 12 });
+    b.define(0, 20, [
+      [253, 4, BT.uint32],
+      [3, 1, BT.uint8],
+    ]).data(0, [1_100_000_000, 120]);
+    for (let i = 0; i < 10; i += 1) b.raw([0x80 | (i & 0x1f), 121]);
+    const scan = scanFitFile(b.build());
+    expect(scan.dataMessages).toBe(11);
+  });
+
+  it("counts a compressed-timestamp flood against the message cap", () => {
+    const b = new FitBuilder({ headerSize: 12 });
+    b.define(0, 20, [
+      [253, 4, BT.uint32],
+      [3, 1, BT.uint8],
+    ]).data(0, [1_100_000_000, 120]);
+    for (let i = 0; i < FIT_MAX_DATA_MESSAGES; i += 1) {
+      b.raw([0x80 | (i & 0x1f), 121]);
+    }
+    expect(codeOf(() => scanFitFile(b.build()))).toBe("too_complex");
+  });
+
+  it("refuses more decoded fields across the file than any activity holds", () => {
+    // Few messages, each declaring a hundred one-byte fields: the decoder
+    // builds an object per field, so the field count is what is bounded.
+    const fields = Array.from(
+      { length: 100 },
+      (_, i) => [i + 10, 1, BT.uint8] as [number, number, number],
+    );
+    const b = new FitBuilder({ headerSize: 12 });
+    b.define(0, 20, fields);
+    const messages = Math.ceil(FIT_MAX_FIELD_CELLS / 100) + 1;
+    const row = Array.from({ length: 100 }, () => 1);
+    for (let i = 0; i < messages; i += 1) b.data(0, row);
+    expect(messages).toBeLessThan(FIT_MAX_DATA_MESSAGES);
+    expect(codeOf(() => scanFitFile(b.build()))).toBe("too_complex");
   });
 });

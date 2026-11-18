@@ -143,6 +143,14 @@ export interface FitSample {
   cadence?: number;
 }
 
+/** The largest value, by a loop: a spread overflows the stack past ~120k. */
+function maxOf(values: readonly number[]): number | null {
+  if (values.length === 0) return null;
+  let max = values[0]!;
+  for (const v of values) if (v > max) max = v;
+  return max;
+}
+
 function mean(values: number[]): number | null {
   if (values.length === 0) return null;
   return values.reduce((a, b) => a + b, 0) / values.length;
@@ -394,7 +402,7 @@ function mapSession(
     mean(heartRates);
   const maxHr =
     inRange(own(session, "max_heart_rate"), FIT_PLAUSIBLE.heartRate) ??
-    (heartRates.length > 0 ? Math.max(...heartRates) : null);
+    maxOf(heartRates);
   if (avgHr !== null) draft.avgHeartRate = Math.round(avgHr);
   if (maxHr !== null) draft.maxHeartRate = Math.round(maxHr);
   if (heartRates.length > 0) {

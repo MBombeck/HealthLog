@@ -23,11 +23,11 @@ export const FIT_UPLOAD_MAX_BYTES = 10 * 1024 * 1024;
 
 /**
  * The largest FIT file a compressed upload may inflate to. A four-hour ride
- * at one record a second is one to two megabytes; a full day of 1 Hz data
- * with every sensor stays under ten. Thirty-two leaves room and bounds the
- * one buffer the import holds.
+ * at one record a second is one to two megabytes, and a full day of 1 Hz
+ * data with the usual sensors about five. Eight bounds the one buffer the
+ * import holds and, with the scan's caps, what the decoder builds from it.
  */
-export const FIT_DECOMPRESSED_MAX_BYTES = 32 * 1024 * 1024;
+export const FIT_DECOMPRESSED_MAX_BYTES = 8 * 1024 * 1024;
 
 /** A ZIP with more entries than this is not an activity export. */
 const MAX_ZIP_ENTRIES = 16;
