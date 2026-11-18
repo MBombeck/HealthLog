@@ -28,6 +28,8 @@ export interface Measurement {
   source: string;
   measuredAt: string;
   notes: string | null;
+  /** The meal context of a blood glucose reading; null when none was given. */
+  glucoseContext?: string | null;
   /**
    * Present only on collapsed daily rows (`?type=…&groupBy=day`): drives the
    * expand chevron and the drill-down read keyed by the calendar day.

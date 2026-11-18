@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 332,
-  "total": 107999,
+  "total": 107980,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
@@ -142,7 +142,7 @@
     "components/links/entity-link-picker.tsx :: EntityLinkPicker": 392,
     "components/measurement-reminders/vorsorge-dashboard-card.tsx :: VorsorgeDashboardCard": 215,
     "components/measurement-reminders/vorsorge-section.tsx :: VorsorgeSection": 354,
-    "components/measurements/measurement-form.tsx :: MeasurementForm": 496,
+    "components/measurements/measurement-form.tsx :: MeasurementForm": 481,
     "components/medications/detail/efficacy/efficacy-chart.tsx :: EfficacyChart": 361,
     "components/medications/detail/medication-detail-tabs.tsx :: MedicationDetailTabs": 761,
     "components/medications/dose-history-add-dialog.tsx :: LedgerAddDialog": 221,
@@ -313,7 +313,7 @@
     "lib/measurements/drain-per-sample-cumulative.ts :: drainPerSampleCumulative > writeDay": 205,
     "lib/measurements/import-apple-health-export.ts :: streamParseExportXml": 1242,
     "lib/measurements/import-apple-health-export.ts :: streamParseExportXml > (anonymous) #2": 325,
-    "lib/medications/efficacy/build-efficacy.ts :: buildMedicationEfficacy": 268,
+    "lib/medications/efficacy/build-efficacy.ts :: buildMedicationEfficacy": 264,
     "lib/medications/intake-slot-dedup.ts :: dedupeUserIntakeSlots": 319,
     "lib/medications/list-read.ts :: buildMedicationsList": 310,
     "lib/medications/scheduling/dose-history.ts :: reconstructDoseHistory": 218,

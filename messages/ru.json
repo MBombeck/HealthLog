@@ -949,6 +949,7 @@
     "glucoseContextPostprandial": "После еды (через 2 ч)",
     "glucoseContextRandom": "Случайно / без привязки",
     "glucoseContextBedtime": "Перед сном",
+    "glucoseContextNone": "Не указано",
     "unitHours": "часы",
     "unitSteps": "шаги",
     "sourceManual": "Вручную",

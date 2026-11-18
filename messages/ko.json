@@ -949,6 +949,7 @@
     "glucoseContextPostprandial": "식후 (식사 2h 후)",
     "glucoseContextRandom": "임의 / 수시",
     "glucoseContextBedtime": "취침 전",
+    "glucoseContextNone": "지정 안 함",
     "unitHours": "시간",
     "unitSteps": "걸음",
     "sourceManual": "직접 입력",

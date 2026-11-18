@@ -5094,9 +5094,11 @@ paths:
       tags:
         - Measurements
       summary: Update a measurement
-      description: Edits a manually entered row. Rows owned by a connected source are refused with 409
+      description: Edits a row. A value change on a row owned by a connected source is refused with 409
         `measurement.update.server_owned_source`; a timestamp collision with an existing row is refused with 409
-        `measurement.duplicate_timestamp`.
+        `measurement.duplicate_timestamp`. `glucoseContext` corrects the meal context of a `BLOOD_GLUCOSE` reading from
+        any source, and `null` clears it; sent for any other type it is refused with 422
+        `measurement.update.glucose_context_not_glucose`.
       parameters:
         - in: path
           name: id
@@ -5120,6 +5122,15 @@ paths:
                   anyOf:
                     - type: string
                       maxLength: 200
+                    - type: "null"
+                glucoseContext:
+                  anyOf:
+                    - type: string
+                      enum:
+                        - FASTING
+                        - POSTPRANDIAL
+                        - RANDOM
+                        - BEDTIME
                     - type: "null"
       responses:
         "200":
@@ -42387,41 +42398,41 @@ components:
                 measurement.batch.invalid, measurement.batch.source_not_permitted, measurement.batch.too_large,
                 measurement.bulk-delete.invalid, measurement.create.invalid, measurement.create.source_not_permitted,
                 measurement.delete.too_large, measurement.duplicate_timestamp, measurement.restore.invalid,
-                measurement.update.server_owned_source; medication — medication.intake.import.invalid_format,
-                medication.intake.notTracked, medication.link.invalid; medications — medications.category.invalid,
-                medications.category.limitReached, medications.category.unknown, medications.course.currentOpen,
-                medications.course.invalid, medications.course.invalidRange, medications.course.notFound,
-                medications.course.notRunning, medications.course.oneShot, medications.course.overlap,
-                medications.course.windowRequired, medications.ingredients.extract.budgetExceeded,
-                medications.ingredients.extract.failed, medications.ingredients.extract.fileTooLarge,
-                medications.ingredients.extract.fileType, medications.ingredients.extract.rateLimited,
-                medications.ingredients.invalid, medications.ingredients.unitMismatch,
-                medications.intake.bulk.apple_health_not_mirrored, medications.intake.bulk.invalid,
-                medications.intake.bulk.too_large, medications.intake.force_slot.invalid,
-                medications.intake.force_slot.occupied, medications.intake.injection_site.disallowed,
-                medications.intake.taken_at.before_start, medications.mirror.limit_exceeded, medications.notFound;
-                mentalHealth — mentalHealth.rateLimited; module — module.disabled; modules — modules.body.invalid_json,
-                modules.invalid; mood — mood.bulk-delete.invalid, mood.bulk.invalid, mood.bulk.too_large,
-                mood.create.external_id_not_delegable, mood.create.invalid, mood.duplicate_timestamp,
-                mood.linkedContext.invalid, mood.list.invalid, mood.not_found, mood.ratedFactor.out_of_range,
-                mood.restore.invalid, mood.update.invalid; notification-prefs — notification-prefs.body.invalid_json;
-                notification — notification.action.already_used, notification.action.expired,
-                notification.action.invalid, notification.action.module_disabled; nutrient — nutrient.batch.invalid,
-                nutrient.batch.too_large, nutrient.daily.invalid, nutrient.read.invalid, nutrient.water.invalid,
-                nutrient.water.invalid_day; onboarding — onboarding.answers.invalid, onboarding.answers.rateLimited,
-                onboarding.complete.invalid, onboarding.complete.recordNotFound,
-                onboarding.complete.recordTargetMismatch, onboarding.disclaimer.invalid, onboarding.restart.invalid,
-                onboarding.restart.rateLimited, onboarding.tour.invalid; passkey — passkey.challenge.expired,
-                passkey.response.invalid, passkey.unknown, passkey.verification.failed; personal_records —
-                personal_records.invalid_query; practitioner — practitioner.invalid; profile —
-                profile.update.emailInUse, profile.update.emailRateLimited, profile.update.emailSecondFactorRequired,
-                profile.update.invalidBody, profile.update.nothingSaved; profile_claim — profile_claim.invalid,
-                profile_claim.oidc_only_unsupported, profile_claim.sso_unavailable, profile_claim.taken; record_write —
-                record_write.rate_limited; recovery — recovery.kit.stale; report-selection —
-                report-selection.body.invalid_json, report-selection.body.invalid_shape,
-                report-selection.leaves.unknown; request — request.cross_site; route — route.retired; search —
-                search.invalid; security_activity — security_activity.invalid; seizures — seizures.disabled,
-                seizures.event.notFound, seizures.invalid, seizures.rescue.medicationNotFound,
+                measurement.update.glucose_context_not_glucose, measurement.update.server_owned_source; medication —
+                medication.intake.import.invalid_format, medication.intake.notTracked, medication.link.invalid;
+                medications — medications.category.invalid, medications.category.limitReached,
+                medications.category.unknown, medications.course.currentOpen, medications.course.invalid,
+                medications.course.invalidRange, medications.course.notFound, medications.course.notRunning,
+                medications.course.oneShot, medications.course.overlap, medications.course.windowRequired,
+                medications.ingredients.extract.budgetExceeded, medications.ingredients.extract.failed,
+                medications.ingredients.extract.fileTooLarge, medications.ingredients.extract.fileType,
+                medications.ingredients.extract.rateLimited, medications.ingredients.invalid,
+                medications.ingredients.unitMismatch, medications.intake.bulk.apple_health_not_mirrored,
+                medications.intake.bulk.invalid, medications.intake.bulk.too_large,
+                medications.intake.force_slot.invalid, medications.intake.force_slot.occupied,
+                medications.intake.injection_site.disallowed, medications.intake.taken_at.before_start,
+                medications.mirror.limit_exceeded, medications.notFound; mentalHealth — mentalHealth.rateLimited; module
+                — module.disabled; modules — modules.body.invalid_json, modules.invalid; mood —
+                mood.bulk-delete.invalid, mood.bulk.invalid, mood.bulk.too_large, mood.create.external_id_not_delegable,
+                mood.create.invalid, mood.duplicate_timestamp, mood.linkedContext.invalid, mood.list.invalid,
+                mood.not_found, mood.ratedFactor.out_of_range, mood.restore.invalid, mood.update.invalid;
+                notification-prefs — notification-prefs.body.invalid_json; notification —
+                notification.action.already_used, notification.action.expired, notification.action.invalid,
+                notification.action.module_disabled; nutrient — nutrient.batch.invalid, nutrient.batch.too_large,
+                nutrient.daily.invalid, nutrient.read.invalid, nutrient.water.invalid, nutrient.water.invalid_day;
+                onboarding — onboarding.answers.invalid, onboarding.answers.rateLimited, onboarding.complete.invalid,
+                onboarding.complete.recordNotFound, onboarding.complete.recordTargetMismatch,
+                onboarding.disclaimer.invalid, onboarding.restart.invalid, onboarding.restart.rateLimited,
+                onboarding.tour.invalid; passkey — passkey.challenge.expired, passkey.response.invalid, passkey.unknown,
+                passkey.verification.failed; personal_records — personal_records.invalid_query; practitioner —
+                practitioner.invalid; profile — profile.update.emailInUse, profile.update.emailRateLimited,
+                profile.update.emailSecondFactorRequired, profile.update.invalidBody, profile.update.nothingSaved;
+                profile_claim — profile_claim.invalid, profile_claim.oidc_only_unsupported,
+                profile_claim.sso_unavailable, profile_claim.taken; record_write — record_write.rate_limited; recovery —
+                recovery.kit.stale; report-selection — report-selection.body.invalid_json,
+                report-selection.body.invalid_shape, report-selection.leaves.unknown; request — request.cross_site;
+                route — route.retired; search — search.invalid; security_activity — security_activity.invalid; seizures
+                — seizures.disabled, seizures.event.notFound, seizures.invalid, seizures.rescue.medicationNotFound,
                 seizures.rescue.medicationRequired, seizures.rescue.notAsNeeded, seizures.rescue.notFound,
                 seizures.type.inUse, seizures.type.limit, seizures.type.notFound; share-link —
                 share-link.document.decryptFailed, share-link.document.notFound, share-link.document.rateLimited,

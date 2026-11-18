@@ -348,6 +348,11 @@ export const updateMeasurementSchema = z.object({
     )
     .nullable()
     .optional(),
+  // #1407 — the meal context of a blood glucose reading can be corrected
+  // after it is saved. `null` clears it (sensor and MCP rows carry none).
+  // The schema cannot know the row's type; the route refuses the field on
+  // any row that is not BLOOD_GLUCOSE.
+  glucoseContext: glucoseContextEnum.nullable().optional(),
 });
 
 /**

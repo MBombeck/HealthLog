@@ -949,6 +949,7 @@
     "glucoseContextPostprandial": "Na de maaltijd (2 u na het eten)",
     "glucoseContextRandom": "Willekeurig / tussendoor",
     "glucoseContextBedtime": "Voor het slapengaan",
+    "glucoseContextNone": "Niet opgegeven",
     "unitHours": "uur",
     "unitSteps": "stappen",
     "sourceManual": "Handmatig",
