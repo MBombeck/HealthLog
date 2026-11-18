@@ -248,6 +248,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     familyHistory: ["familyHistory.invalid"],
     feedback: ["feedback.body.invalid"],
     garmin: ["garmin.key_refused", "garmin.rate_limited", "garmin.unreachable"],
+    glp1: ["glp1.doseChange.deleted"],
     health_score_config: [
       "health_score_config.invalid",
       "health_score_config.too_narrow",

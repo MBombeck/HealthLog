@@ -143,7 +143,21 @@ export const DELETE = apiHandler(
     const existing = await findStep(id, doseChangeId);
     if (!existing) return apiError("Dose change not found", 404);
 
-    await prisma.medicationDoseChange.delete({ where: { id: existing.id } });
+    // The step's client id is spent with it: a later upload under the same
+    // id answers 410 instead of creating the step anew.
+    const clientId = existing.clientId;
+    await prisma.$transaction([
+      prisma.medicationDoseChange.delete({ where: { id: existing.id } }),
+      ...(clientId
+        ? [
+            prisma.medicationDoseChangeTombstone.upsert({
+              where: { medicationId_clientId: { medicationId: id, clientId } },
+              create: { medicationId: id, clientId },
+              update: {},
+            }),
+          ]
+        : []),
+    ]);
 
     await auditLog("medication.glp1.doseChange.delete", {
       userId: user.id,

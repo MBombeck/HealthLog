@@ -411,6 +411,11 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "Medication not found (or owned by another account).",
           content: { "application/json": { schema: errorEnvelope } },
         },
+        "410": {
+          description:
+            "`glp1.doseChange.deleted`: the dose step under this `clientId` was removed, so the upload is refused and nothing is written. A client drops its pending copy of the step.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
         ...stdResponses,
       },
     },

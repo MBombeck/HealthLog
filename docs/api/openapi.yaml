@@ -6373,6 +6373,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "409": *a7
+        "410":
+          description: "`glp1.doseChange.deleted`: the dose step under this `clientId` was removed, so the upload is refused and
+            nothing is written. A client drops its pending copy of the step."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
   /api/medications/{id}/api-endpoint:
@@ -42352,25 +42359,26 @@ components:
                 environment.range_too_large, environment.travel.not_found, environment.travel_suggestion.not_found;
                 export — export.selection.empty, export.selection.unknown_leaf; familyHistory — familyHistory.invalid;
                 feedback — feedback.body.invalid; garmin — garmin.key_refused, garmin.rate_limited, garmin.unreachable;
-                health_score_config — health_score_config.invalid, health_score_config.too_narrow; http —
-                http.bad_gateway, http.bad_request, http.client_error, http.conflict, http.forbidden,
-                http.gateway_timeout, http.gone, http.internal, http.invalid, http.method_not_allowed, http.not_found,
-                http.payload_too_large, http.rate_limited, http.server_error, http.unauthenticated, http.unavailable,
-                http.unsupported_media_type; illness — illness.day-log.invalid, illness.disabled,
-                illness.episode.chronic-no-resolve, illness.episode.invalid, illness.episode.invalid-window,
-                illness.episode.parent-not-found, illness.insights.invalid; import — import.apple_health.busy,
-                import.csv.content_type, import.csv.empty, import.csv.too_large, import.rate_limited,
-                import.write_failed; ingest — ingest.rate_limited; insights — insights.generate.budgetExceeded,
-                insights.generate.outboundScreened, insights.generate.profileScopeChanged,
-                insights.generate.scopeChanged; labs — labs.biomarker.alias.taken, labs.biomarker.create.invalid,
-                labs.biomarker.duplicate, labs.biomarker.merge.invalid, labs.biomarker.merge.unitMismatch,
-                labs.biomarker.notFound, labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid,
-                labs.create.invalid, labs.fhir_batch.invalid, labs.series.invalid, labs.link.invalid,
-                labs.ocr.budgetExceeded, labs.ocr.extractFailed, labs.ocr.fileTooLarge, labs.ocr.fileType,
-                labs.ocr.localOcrDisabled, labs.ocr.outputLimit, labs.ocr.pdfRendererUnavailable,
-                labs.ocr.providerUnsupported, labs.ocr.rateLimited, labs.ocr.tooLarge, labs.restore.invalid,
-                labs.result.notFound, labs.unit.mismatch, labs.update.invalid, labs.update.linkedFieldsImmutable,
-                labs.update.numericExpected, labs.update.qualitativeExpected, labs.update.referenceRangeInvalid,
+                glp1 — glp1.doseChange.deleted; health_score_config — health_score_config.invalid,
+                health_score_config.too_narrow; http — http.bad_gateway, http.bad_request, http.client_error,
+                http.conflict, http.forbidden, http.gateway_timeout, http.gone, http.internal, http.invalid,
+                http.method_not_allowed, http.not_found, http.payload_too_large, http.rate_limited, http.server_error,
+                http.unauthenticated, http.unavailable, http.unsupported_media_type; illness — illness.day-log.invalid,
+                illness.disabled, illness.episode.chronic-no-resolve, illness.episode.invalid,
+                illness.episode.invalid-window, illness.episode.parent-not-found, illness.insights.invalid; import —
+                import.apple_health.busy, import.csv.content_type, import.csv.empty, import.csv.too_large,
+                import.rate_limited, import.write_failed; ingest — ingest.rate_limited; insights —
+                insights.generate.budgetExceeded, insights.generate.outboundScreened,
+                insights.generate.profileScopeChanged, insights.generate.scopeChanged; labs —
+                labs.biomarker.alias.taken, labs.biomarker.create.invalid, labs.biomarker.duplicate,
+                labs.biomarker.merge.invalid, labs.biomarker.merge.unitMismatch, labs.biomarker.notFound,
+                labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid, labs.create.invalid,
+                labs.fhir_batch.invalid, labs.series.invalid, labs.link.invalid, labs.ocr.budgetExceeded,
+                labs.ocr.extractFailed, labs.ocr.fileTooLarge, labs.ocr.fileType, labs.ocr.localOcrDisabled,
+                labs.ocr.outputLimit, labs.ocr.pdfRendererUnavailable, labs.ocr.providerUnsupported,
+                labs.ocr.rateLimited, labs.ocr.tooLarge, labs.restore.invalid, labs.result.notFound, labs.unit.mismatch,
+                labs.update.invalid, labs.update.linkedFieldsImmutable, labs.update.numericExpected,
+                labs.update.qualitativeExpected, labs.update.referenceRangeInvalid,
                 labs.update.sourceReferenceRangeInvalid; life_event — life_event.invalid, life_event.not_found;
                 managed_profile — managed_profile.guardian.duplicate, managed_profile.guardian.managed_invitee,
                 managed_profile.guardian.required, managed_profile.handover.no_pending,

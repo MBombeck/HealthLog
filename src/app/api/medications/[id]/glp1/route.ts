@@ -43,6 +43,7 @@ import {
 import { NextRequest } from "next/server";
 import type { MedicationDoseChange } from "@/generated/prisma/client";
 import { isP2002 } from "@/lib/prisma-errors";
+import { GLP1_DOSE_CHANGE_DELETED_ERROR_CODE } from "@/lib/medications/glp1-dose-change-tombstone";
 import { dueSchedules } from "@/lib/medications/intake-tracking";
 import { floorWhole } from "@/lib/medications/units-per-dose";
 import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
@@ -320,6 +321,24 @@ async function postGlp1Update(
           });
     const existing = await stored();
     if (existing) return doseChangeAlreadyStored(id, existing);
+    // A step removed earlier stays removed: a device that still held it as
+    // pending upload sends it again under the same id, and gets 410 so it
+    // drops its copy instead of bringing the step back.
+    if (
+      clientId !== undefined &&
+      (await prisma.medicationDoseChangeTombstone.findUnique({
+        where: { medicationId_clientId: { medicationId: id, clientId } },
+        select: { id: true },
+      }))
+    ) {
+      annotate({
+        action: { name: "medication.glp1.doseChange.deletedReupload" },
+        meta: { medication_id: id },
+      });
+      return apiError("This dose step was removed", 410, {
+        errorCode: GLP1_DOSE_CHANGE_DELETED_ERROR_CODE,
+      });
+    }
     let created: MedicationDoseChange;
     try {
       created = await prisma.medicationDoseChange.create({

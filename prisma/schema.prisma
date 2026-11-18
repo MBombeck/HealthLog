@@ -3133,35 +3133,36 @@ model Medication {
   createdAt                     DateTime               @default(now()) @map("created_at")
   updatedAt                     DateTime               @updatedAt @map("updated_at")
 
-  schedules          MedicationSchedule[]
-  intakeEvents       MedicationIntakeEvent[]
+  schedules            MedicationSchedule[]
+  intakeEvents         MedicationIntakeEvent[]
   /// v1.43 — composition per unit (supplements), and the relation links to
   /// visits, documents and conditions (indication).
-  ingredients        MedicationIngredient[]
-  encounterLinks     EncounterMedicationLink[]
-  documentLinks      MedicationDocumentLink[]
-  conditionLinks     MedicationConditionLink[]
-  intakeImportJobs   MedicationIntakeImportJob[]
-  phaseConfig        ReminderPhaseConfig?
-  telegramMessages   TelegramReminderMessage[]
-  doseChanges        MedicationDoseChange[]
-  inventoryEvents    MedicationInventoryEvent[]
+  ingredients          MedicationIngredient[]
+  encounterLinks       EncounterMedicationLink[]
+  documentLinks        MedicationDocumentLink[]
+  conditionLinks       MedicationConditionLink[]
+  intakeImportJobs     MedicationIntakeImportJob[]
+  phaseConfig          ReminderPhaseConfig?
+  telegramMessages     TelegramReminderMessage[]
+  doseChanges          MedicationDoseChange[]
+  doseChangeTombstones MedicationDoseChangeTombstone[]
+  inventoryEvents      MedicationInventoryEvent[]
   /// v1.4.25 W19b — per-pen / per-vial entities (state machine +
   /// 30-day in-use clock). Complements the running-sum
   /// MedicationInventoryEvent ledger.
-  inventoryItems     MedicationInventoryItem[]
+  inventoryItems       MedicationInventoryItem[]
   /// v1.4.25 W19d — structured GLP-1 side-effect logs. Surfaced on
   /// the medication detail page for GLP-1 treatmentClass only; the
   /// taxonomy follows EMA EPAR §4.8 with HealthLog's 5-category
   /// roll-up (GI / METABOLIC / INJECTION_SITE / COGNITIVE /
   /// GLP1_SPECIFIC) and 1-5 Likert severity per entry.
-  sideEffects        MedicationSideEffect[]
+  sideEffects          MedicationSideEffect[]
   /// v1.16.3 — archived schedule eras (effective dating). Superseded
   /// schedule states land here when a wholesale schedule replace changes
   /// cadence-relevant fields; the band minter segments historical minting
   /// ranges into eras so past days read against the schedule that was
   /// live THEN, not the current one.
-  scheduleRevisions  MedicationScheduleRevision[]
+  scheduleRevisions    MedicationScheduleRevision[]
   /// v1.25 — durable pause intervals. A pause stamps an open era
   /// (`resumedAt = null`); resume closes the latest open era. The
   /// compliance engine drops expected slots whose anchor falls inside a
@@ -3169,23 +3170,23 @@ model Medication {
   /// as missed. The `pausedAt` column on this model stays the live
   /// single-pause marker the reminder/today surfaces read; the era table
   /// is the additive durable record the rate paths need.
-  pauseEras          MedicationPauseEra[]
+  pauseEras            MedicationPauseEra[]
   /// v1.28 — user-pinned efficacy target(s) for the "Wirkung" view. Rows
   /// exist ONLY when the user explicitly overrides the derived (ATC / name)
   /// target resolution; absence means the resolver derives the target each
   /// read. Nothing about a class→outcome association is denormalised here.
-  efficacyTargets    MedicationEfficacyTarget[]
+  efficacyTargets      MedicationEfficacyTarget[]
   /// v1.40 — the clinical category the person filed this medication under
   /// (one row at most; absence reads as OTHER).
-  categoryAssignment MedicationCategoryAssignment?
+  categoryAssignment   MedicationCategoryAssignment?
   /// v1.40 (#1024) — the medication's courses. Empty = chronic since
   /// creation. `startsOn`/`endsOn` above project the latest one, written only
   /// by `src/lib/medications/courses.ts`.
-  courses            MedicationCourse[]
+  courses              MedicationCourse[]
   /// Seizure types whose rescue plan names this medication,
   /// and the rescue doses given from it.
-  seizureTypes       SeizureTypeProfile[]
-  seizureRescueDoses SeizureRescueDose[]
+  seizureTypes         SeizureTypeProfile[]
+  seizureRescueDoses   SeizureRescueDose[]
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -3743,6 +3744,24 @@ model MedicationDoseChange {
   // changes to medications on medication_id to reach the owner; the index
   // leads with that join key. Raw SQL only (partial predicate).
   @@map("medication_dose_changes")
+}
+
+/// v1.48.0 — the client id of a GLP-1 titration step that was removed. A
+/// device that still holds the step as pending upload sends it again under
+/// the same id; this row makes that POST answer 410 instead of creating the
+/// step anew. Written by the step's DELETE, read by the step's POST, gone with
+/// the medication. Not in backups: a restore brings back the steps the backup
+/// holds on purpose.
+model MedicationDoseChangeTombstone {
+  id           String   @id @default(cuid())
+  medicationId String   @map("medication_id")
+  clientId     String   @map("client_id")
+  deletedAt    DateTime @default(now()) @map("deleted_at")
+
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+
+  @@unique([medicationId, clientId])
+  @@map("medication_dose_change_tombstones")
 }
 
 /// v1.4.25 W4d — append-only inventory ledger. Positive delta when

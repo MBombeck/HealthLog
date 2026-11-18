@@ -292,9 +292,19 @@ describe("PATCH and DELETE /api/medications/[id]/glp1/dose-changes/[doseChangeId
       destroyedAt: STEP.effectiveFrom,
     });
 
-    // The client id is free again: the device can upload the step anew.
+    // A device that still holds the removed step as pending upload sends it
+    // again under its client id. That must not bring the step back: the id
+    // stays spent, answered 410 so the device drops its copy.
+    const again = await postStep(medicationId, { ...STEP, clientId: "step-a" });
+    expect(again.status).toBe(410);
+    expect((await again.json()).meta?.errorCode).toBe(
+      "glp1.doseChange.deleted",
+    );
+    expect(await prisma.medicationDoseChange.count()).toBe(0);
+
+    // A new step under a new client id is created as usual.
     expect(
-      (await postStep(medicationId, { ...STEP, clientId: "step-a" })).status,
+      (await postStep(medicationId, { ...STEP, clientId: "step-b" })).status,
     ).toBe(201);
   });
 
