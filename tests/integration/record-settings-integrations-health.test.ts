@@ -96,7 +96,7 @@ describe("GET /api/record-settings/integrations", () => {
 
     const data = await readIntegrations();
     expect(data.recordId).toBe(profile.id);
-    expect(data.integrations).toHaveLength(8);
+    expect(data.integrations).toHaveLength(7);
 
     const byKey = new Map(data.integrations.map((i) => [i.integration, i]));
     const oura = byKey.get("oura");
@@ -110,7 +110,6 @@ describe("GET /api/record-settings/integrations", () => {
     for (const key of [
       "withings",
       "whoop",
-      "fitbit",
       "nightscout",
       "google-health",
       "strava",
