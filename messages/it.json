@@ -14827,9 +14827,9 @@
       "rescueGiven": "Soccorso somministrato: {name}",
       "rescueGivenCount": "Soccorso somministrato ({count}), tocca per un'altra dose",
       "threshold": {
-        "t1": "La crisi dura da {time}. Segui il piano d'emergenza.",
-        "usualPlusTwo": "La crisi dura da {time}, più di 2 minuti oltre il solito. Segui il piano d'emergenza.",
-        "generic": "La crisi dura da {time}. Segui il piano d'emergenza."
+        "t1": "La crisi dura da più di {time}. Segui il piano d'emergenza.",
+        "usualPlusTwo": "La crisi dura da più di {time}, 2 minuti oltre il solito. Segui il piano d'emergenza.",
+        "generic": "La crisi dura da più di {time}. Segui il piano d'emergenza."
       },
       "noPlan": "Per questo tipo di crisi non è salvato alcun piano. Se non sei sicuro, chiama il numero di emergenza.",
       "call": "Chiama il {number}",

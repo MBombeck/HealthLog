@@ -275,6 +275,9 @@ function ThresholdPanel({
       data-slot="seizure-threshold"
       className="border-destructive/40 bg-destructive/10 space-y-3 rounded-lg border p-3 focus-visible:outline-none"
     >
+      {/* `{time}` is the threshold, not the running clock, and every variant
+          says "longer than": a fixed alert text that named it as the elapsed
+          time contradicted the timer above it from the next second on. */}
       <p className="text-foreground text-sm font-semibold">
         {t(`seizures.quick.threshold.${type?.alert.source ?? "generic"}`, {
           time: formatClock(alertAt),

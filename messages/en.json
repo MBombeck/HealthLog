@@ -14827,9 +14827,9 @@
       "rescueGiven": "Rescue given: {name}",
       "rescueGivenCount": "Rescue given ({count}), tap for another dose",
       "threshold": {
-        "t1": "The seizure has lasted {time}. Follow the emergency plan.",
-        "usualPlusTwo": "The seizure has lasted {time}, more than 2 minutes longer than usual. Follow the emergency plan.",
-        "generic": "The seizure has lasted {time}. Follow the emergency plan."
+        "t1": "The seizure has lasted longer than {time}. Follow the emergency plan.",
+        "usualPlusTwo": "The seizure has lasted longer than {time}, 2 minutes past its usual length. Follow the emergency plan.",
+        "generic": "The seizure has lasted longer than {time}. Follow the emergency plan."
       },
       "noPlan": "No plan is saved for this seizure type. Call emergency services if you are unsure.",
       "call": "Call {number}",

@@ -14827,9 +14827,9 @@
       "rescueGiven": "Secours administré : {name}",
       "rescueGivenCount": "Secours administré ({count}), touchez pour une autre dose",
       "threshold": {
-        "t1": "La crise dure depuis {time}. Suivez le plan d'urgence.",
-        "usualPlusTwo": "La crise dure depuis {time}, plus de 2 minutes de plus que d'habitude. Suivez le plan d'urgence.",
-        "generic": "La crise dure depuis {time}. Suivez le plan d'urgence."
+        "t1": "La crise dure depuis plus de {time}. Suivez le plan d'urgence.",
+        "usualPlusTwo": "La crise dure depuis plus de {time}, soit 2 minutes de plus que d'habitude. Suivez le plan d'urgence.",
+        "generic": "La crise dure depuis plus de {time}. Suivez le plan d'urgence."
       },
       "noPlan": "Aucun plan n'est enregistré pour ce type de crise. Appelez les secours en cas de doute.",
       "call": "Appeler le {number}",

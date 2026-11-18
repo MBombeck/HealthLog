@@ -14827,9 +14827,9 @@
       "rescueGiven": "Notfallmedikament gegeben: {name}",
       "rescueGivenCount": "Notfallmedikament gegeben ({count}), tippen für eine weitere Dosis",
       "threshold": {
-        "t1": "Der Anfall dauert schon {time}. Folge dem Notfallplan.",
-        "usualPlusTwo": "Der Anfall dauert schon {time}, mehr als 2 Minuten länger als üblich. Folge dem Notfallplan.",
-        "generic": "Der Anfall dauert schon {time}. Folge dem Notfallplan."
+        "t1": "Der Anfall dauert länger als {time}. Folge dem Notfallplan.",
+        "usualPlusTwo": "Der Anfall dauert länger als {time}, 2 Minuten über seiner üblichen Dauer. Folge dem Notfallplan.",
+        "generic": "Der Anfall dauert länger als {time}. Folge dem Notfallplan."
       },
       "noPlan": "Für diese Anfallsart ist kein Notfallplan gespeichert. Ruf den Notruf, wenn du unsicher bist.",
       "call": "{number} anrufen",

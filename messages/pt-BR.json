@@ -14827,9 +14827,9 @@
       "rescueGiven": "Resgate administrado: {name}",
       "rescueGivenCount": "Resgate administrado ({count}), toque para outra dose",
       "threshold": {
-        "t1": "A crise já dura {time}. Siga o plano de emergência.",
-        "usualPlusTwo": "A crise já dura {time}, mais de 2 minutos além do habitual. Siga o plano de emergência.",
-        "generic": "A crise já dura {time}. Siga o plano de emergência."
+        "t1": "A crise já dura mais de {time}. Siga o plano de emergência.",
+        "usualPlusTwo": "A crise já dura mais de {time}, 2 minutos além do habitual. Siga o plano de emergência.",
+        "generic": "A crise já dura mais de {time}. Siga o plano de emergência."
       },
       "noPlan": "Nenhum plano salvo para este tipo de crise. Ligue para a emergência se tiver dúvida.",
       "call": "Ligar para {number}",

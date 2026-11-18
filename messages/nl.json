@@ -14827,9 +14827,9 @@
       "rescueGiven": "Noodmedicatie gegeven: {name}",
       "rescueGivenCount": "Noodmedicatie gegeven ({count}), tik voor nog een dosis",
       "threshold": {
-        "t1": "De aanval duurt al {time}. Volg het noodplan.",
-        "usualPlusTwo": "De aanval duurt al {time}, meer dan 2 minuten langer dan gewoonlijk. Volg het noodplan.",
-        "generic": "De aanval duurt al {time}. Volg het noodplan."
+        "t1": "De aanval duurt al langer dan {time}. Volg het noodplan.",
+        "usualPlusTwo": "De aanval duurt al langer dan {time}, 2 minuten langer dan gewoonlijk. Volg het noodplan.",
+        "generic": "De aanval duurt al langer dan {time}. Volg het noodplan."
       },
       "noPlan": "Voor dit aanvalstype is geen noodplan opgeslagen. Bel het alarmnummer als je twijfelt.",
       "call": "{number} bellen",

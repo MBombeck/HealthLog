@@ -14827,9 +14827,9 @@
       "rescueGiven": "Podano lek ratunkowy: {name}",
       "rescueGivenCount": "Podano lek ratunkowy ({count}), dotknij, aby dodać kolejną dawkę",
       "threshold": {
-        "t1": "Napad trwa już {time}. Stosuj się do planu postępowania w nagłym wypadku.",
-        "usualPlusTwo": "Napad trwa już {time}, ponad 2 minuty dłużej niż zwykle. Stosuj się do planu postępowania w nagłym wypadku.",
-        "generic": "Napad trwa już {time}. Stosuj się do planu postępowania w nagłym wypadku."
+        "t1": "Napad trwa już dłużej niż {time}. Stosuj się do planu postępowania w nagłym wypadku.",
+        "usualPlusTwo": "Napad trwa już dłużej niż {time}, 2 minuty dłużej niż zwykle. Stosuj się do planu postępowania w nagłym wypadku.",
+        "generic": "Napad trwa już dłużej niż {time}. Stosuj się do planu postępowania w nagłym wypadku."
       },
       "noPlan": "Dla tego rodzaju napadu nie zapisano planu. W razie wątpliwości zadzwoń po pogotowie.",
       "call": "Zadzwoń pod {number}",
