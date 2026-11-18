@@ -12854,12 +12854,12 @@
       "removeBody": "Wykres wróci do wartości referencyjnej, jeśli istnieje. Ustawiona ilość nie jest nigdzie indziej zapisywana.",
       "targetLabel": "{name} dziennie w {unit}",
       "boundsHint": "Powyżej 0, najwyżej {max} {unit} dziennie.",
-      "validationBounds": "Wpisz ilość w granicach podanych powyżej.",
       "directionLabel": "Rodzaj celu",
       "directionTarget": "Osiągnąć co najmniej",
       "directionLimit": "Nie przekraczać",
       "saveFailed": "Nie udało się zapisać celu. Spróbuj ponownie.",
-      "loadError": "Nie udało się wczytać energii i makroskładników."
+      "loadError": "Nie udało się wczytać energii i makroskładników.",
+      "gearLabel": "Ustaw dzienny cel dla: {name}"
     },
     "alcohol": {
       "loadError": "Nie udało się wczytać alkoholu."

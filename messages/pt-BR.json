@@ -12854,12 +12854,12 @@
       "removeBody": "O gráfico volta ao valor de referência, se houver. A quantidade que você definiu não fica guardada em outro lugar.",
       "targetLabel": "{name} por dia em {unit}",
       "boundsHint": "Acima de 0, no máximo {max} {unit} por dia.",
-      "validationBounds": "Informe uma quantidade dentro dos limites mostrados acima.",
       "directionLabel": "Tipo de meta",
       "directionTarget": "Atingir pelo menos",
       "directionLimit": "Ficar abaixo",
       "saveFailed": "Não foi possível salvar a meta. Tente novamente.",
-      "loadError": "Não foi possível carregar energia e macronutrientes."
+      "loadError": "Não foi possível carregar energia e macronutrientes.",
+      "gearLabel": "Definir a meta diária de {name}"
     },
     "alcohol": {
       "loadError": "Não foi possível carregar o álcool."

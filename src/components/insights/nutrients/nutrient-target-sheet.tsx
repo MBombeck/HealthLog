@@ -163,34 +163,44 @@ export function NutrientTargetSheet({
             disabled={busy}
             data-slot="nutrients-target-input"
           />
-          <p id={hintId} className="text-muted-foreground text-xs">
+          {/* The bounds are the hint and, once the entry breaks them, the
+              error: in the slot under the field, not under the toggle below
+              it. */}
+          <p
+            id={hintId}
+            aria-live="polite"
+            data-slot={
+              !empty && !valid ? "nutrients-target-validation" : undefined
+            }
+            className={
+              !empty && !valid
+                ? "text-destructive text-xs"
+                : "text-muted-foreground text-xs"
+            }
+          >
             {t("nutrients.macros.boundsHint", {
               max: fmt.integer(max),
               unit,
             })}
           </p>
         </div>
-        <Segmented
-          mode="toggle"
-          size="sm"
-          options={[
-            { value: "target", label: t("nutrients.macros.directionTarget") },
-            { value: "limit", label: t("nutrients.macros.directionLimit") },
-          ]}
-          value={direction}
-          onChange={setDirection}
-          label={t("nutrients.macros.directionLabel")}
-          slot="nutrients-target-direction"
-        />
-        {!empty && !valid ? (
-          <p
-            role="alert"
-            data-slot="nutrients-target-validation"
-            className="text-destructive text-xs"
-          >
-            {t("nutrients.macros.validationBounds")}
+        <div className="space-y-1.5">
+          <p className="pl-1 text-sm font-medium" aria-hidden="true">
+            {t("nutrients.macros.directionLabel")}
           </p>
-        ) : null}
+          <Segmented
+            mode="toggle"
+            size="sm"
+            options={[
+              { value: "target", label: t("nutrients.macros.directionTarget") },
+              { value: "limit", label: t("nutrients.macros.directionLimit") },
+            ]}
+            value={direction}
+            onChange={setDirection}
+            label={t("nutrients.macros.directionLabel")}
+            slot="nutrients-target-direction"
+          />
+        </div>
         {error ? (
           <p role="alert" className="text-destructive text-sm">
             {error}

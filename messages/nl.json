@@ -12854,12 +12854,12 @@
       "removeBody": "De grafiek toont dan weer de referentiewaarde, als die er is. De hoeveelheid die je instelde wordt nergens anders bewaard.",
       "targetLabel": "{name} per dag in {unit}",
       "boundsHint": "Boven 0, hoogstens {max} {unit} per dag.",
-      "validationBounds": "Vul een hoeveelheid binnen de grenzen hierboven in.",
       "directionLabel": "Soort doel",
       "directionTarget": "Minstens halen",
       "directionLimit": "Eronder blijven",
       "saveFailed": "Het doel kon niet worden opgeslagen. Probeer het opnieuw.",
-      "loadError": "Energie en macronutriënten konden niet worden geladen."
+      "loadError": "Energie en macronutriënten konden niet worden geladen.",
+      "gearLabel": "Dagdoel voor {name} instellen"
     },
     "alcohol": {
       "loadError": "Alcohol kon niet worden geladen."

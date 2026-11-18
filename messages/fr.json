@@ -12854,12 +12854,12 @@
       "removeBody": "Le graphique revient à la valeur de référence, s’il y en a une. La quantité que vous avez fixée n’est conservée nulle part ailleurs.",
       "targetLabel": "{name} par jour en {unit}",
       "boundsHint": "Plus de 0, au maximum {max} {unit} par jour.",
-      "validationBounds": "Saisissez une quantité dans les limites indiquées ci-dessus.",
       "directionLabel": "Type d'objectif",
       "directionTarget": "Atteindre au moins",
       "directionLimit": "Rester en dessous",
       "saveFailed": "L'objectif n'a pas pu être enregistré. Veuillez réessayer.",
-      "loadError": "Impossible de charger l'énergie et les macronutriments."
+      "loadError": "Impossible de charger l'énergie et les macronutriments.",
+      "gearLabel": "Définir l’objectif quotidien pour {name}"
     },
     "alcohol": {
       "loadError": "Impossible de charger l'alcool."

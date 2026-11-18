@@ -12854,12 +12854,12 @@
       "removeBody": "The chart goes back to the dietary reference where one exists. The amount you set is not kept anywhere else.",
       "targetLabel": "{name} per day ({unit})",
       "boundsHint": "Above 0, at most {max} {unit} a day.",
-      "validationBounds": "Enter an amount within the bounds shown above.",
       "directionLabel": "Kind of target",
       "directionTarget": "Reach at least",
       "directionLimit": "Stay under",
       "saveFailed": "The target could not be saved. Please try again.",
-      "loadError": "Could not load energy and macronutrients."
+      "loadError": "Could not load energy and macronutrients.",
+      "gearLabel": "Set the daily target for {name}"
     },
     "alcohol": {
       "loadError": "Could not load alcohol."

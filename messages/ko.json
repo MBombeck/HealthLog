@@ -12854,12 +12854,12 @@
       "removeBody": "기준값이 있으면 차트가 기준값으로 돌아가요. 설정한 양은 다른 곳에 저장되지 않아요.",
       "targetLabel": "하루 {name} ({unit})",
       "boundsHint": "0보다 크고 하루 최대 {max}{unit}까지예요.",
-      "validationBounds": "위에 표시된 범위 안의 양을 입력하세요.",
       "directionLabel": "목표 종류",
       "directionTarget": "이상 채우기",
       "directionLimit": "이하로 유지",
       "saveFailed": "목표를 저장하지 못했어요. 다시 시도해 주세요.",
-      "loadError": "에너지와 다량영양소를 불러오지 못했어요."
+      "loadError": "에너지와 다량영양소를 불러오지 못했어요.",
+      "gearLabel": "{name} 하루 목표 설정"
     },
     "alcohol": {
       "loadError": "알코올을 불러오지 못했어요."

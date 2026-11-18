@@ -12854,12 +12854,12 @@
       "removeBody": "Das Diagramm zeigt dann wieder den Referenzwert, wo es einen gibt. Die Menge, die du gesetzt hast, wird nirgends sonst gespeichert.",
       "targetLabel": "{name} pro Tag in {unit}",
       "boundsHint": "Über 0, höchstens {max} {unit} pro Tag.",
-      "validationBounds": "Gib eine Menge innerhalb der oben genannten Grenzen ein.",
       "directionLabel": "Art des Ziels",
       "directionTarget": "Mindestens erreichen",
       "directionLimit": "Darunter bleiben",
       "saveFailed": "Das Ziel konnte nicht gespeichert werden. Bitte versuche es erneut.",
-      "loadError": "Energie und Makronährstoffe konnten nicht geladen werden."
+      "loadError": "Energie und Makronährstoffe konnten nicht geladen werden.",
+      "gearLabel": "Tagesziel für {name} festlegen"
     },
     "alcohol": {
       "loadError": "Alkohol konnte nicht geladen werden."
