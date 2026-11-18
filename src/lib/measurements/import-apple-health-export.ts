@@ -49,7 +49,10 @@ import {
   isSameReadingAcrossSource,
   MEASURED_AT_TOLERANCE_MS,
 } from "@/lib/measurements/cross-source-merge";
-import { reconcileExternalMeasurement } from "@/lib/measurements/reconcile-external-measurement";
+import {
+  reconcileExternalMeasurementsInChunks,
+  type ExternalMeasurementWrite,
+} from "@/lib/measurements/reconcile-external-measurement";
 import {
   FOLDED_WINDOW_REASON,
   findFoldedWindowDuplicates,
@@ -1048,6 +1051,8 @@ export async function streamParseExportXml(
       if (!mapping) continue;
       const stat = bumpStat(type);
 
+      const days: string[] = [];
+      const writes: ExternalMeasurementWrite[] = [];
       for (const [dayKey, bySource] of byDay.entries()) {
         let selected: [sourceHash: string, subtotal: number] | undefined;
         for (const entry of bySource.entries()) {
@@ -1069,57 +1074,50 @@ export async function streamParseExportXml(
             (unknown[`${type}::aggregate_out_of_range`] ?? 0) + 1;
           continue;
         }
-        const externalId = dailyStatsExternalId(mapping.hkIdentifier, dayKey);
         const measuredAt = canonicalDailyTimestamp(dayKey, userTimezone);
         widenSpan(measuredAt);
-        const rowStart = Date.now();
-        const verdict = await prisma.$transaction((tx) =>
-          reconcileExternalMeasurement(
-            tx,
-            {
-              userId,
-              type,
-              value: selectedSubtotal,
-              unit: mapping.dbUnit,
-              source: "APPLE_HEALTH",
-              measuredAt,
-              externalId,
-              externalSourceVersion: null,
-              sleepStage: null,
-              deviceType: null,
-              aggregationProvenance: "EXPORT_XML_SOURCE_MAX",
-            },
-            { exactExternalMatch: "update" },
-          ),
-        );
+        days.push(dayKey);
+        writes.push({
+          userId,
+          type,
+          value: selectedSubtotal,
+          unit: mapping.dbUnit,
+          source: "APPLE_HEALTH",
+          measuredAt,
+          externalId: dailyStatsExternalId(mapping.hkIdentifier, dayKey),
+          externalSourceVersion: null,
+          sleepStage: null,
+          deviceType: null,
+          aggregationProvenance: "EXPORT_XML_SOURCE_MAX",
+        });
+      }
 
+      const writeStart = Date.now();
+      const verdicts = await reconcileExternalMeasurementsInChunks(
+        prisma,
+        writes,
+        { exactExternalMatch: "update" },
+      );
+      verdicts.forEach((verdict, index) => {
         // The reconciler carries the same plausibility gate the block above
         // already applied, so this arm means the two disagreed. Tally it under
         // the same counter the earlier guard uses and count no row.
         if (verdict.status === "rejected_range") {
           unknown[`${type}::aggregate_out_of_range`] =
             (unknown[`${type}::aggregate_out_of_range`] ?? 0) + 1;
-          stat.durationMs += Date.now() - rowStart;
-          continue;
+          return;
         }
-
-        cumulativeEstimatedDays.add(dayKey);
+        cumulativeEstimatedDays.add(days[index]!);
         cumulativeEstimatedRows += 1;
-        if (verdict.status === "inserted") {
-          stat.inserted += 1;
-          rowsUpserted += 1;
-        } else if (
-          verdict.status === "updated" ||
-          verdict.status === "resurrected"
-        ) {
+        if (verdict.status === "inserted") stat.inserted += 1;
+        if (verdict.status === "updated" || verdict.status === "resurrected")
           stat.updated += 1;
-          rowsUpserted += 1;
-        } else if (verdict.status === "failed") {
+        if (verdict.status === "failed") {
           unknown[`${type}::upsert_failed`] =
             (unknown[`${type}::upsert_failed`] ?? 0) + 1;
-        }
-        stat.durationMs += Date.now() - rowStart;
-      }
+        } else if (verdict.status !== "duplicate") rowsUpserted += 1;
+      });
+      stat.durationMs += Date.now() - writeStart;
     }
   };
 

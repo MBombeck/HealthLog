@@ -18,7 +18,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { streamParseExportXml } from "@/lib/measurements/import-apple-health-export";
 
 import { makeUser } from "../kit/factories";
-import { countStatements } from "./query-counter";
+import { countStatements, summariseStatements } from "./query-counter";
 import { getPrismaClient, truncateAllTables } from "./setup";
 
 const prisma = getPrismaClient();
@@ -107,5 +107,55 @@ describe("Apple Health re-import of unchanged rows", () => {
     // the same instant: it adopts the stored row through the natural key.
     expect(rows).toHaveLength(values.length);
     expect(rows[3]!.value).toBe(99.9);
+  });
+});
+
+describe("Apple Health daily step totals", () => {
+  const DAYS = 200;
+
+  function steps(perDay: number): string {
+    return Array.from({ length: DAYS }, (_, day) => {
+      const date = new Date(Date.UTC(2025, 0, 1) + day * 86_400_000)
+        .toISOString()
+        .slice(0, 10);
+      return `  <Record type="HKQuantityTypeIdentifierStepCount"
+          unit="count" sourceName="Phone"
+          startDate="${date} 09:00:00 +0000" endDate="${date} 09:30:00 +0000"
+          value="${perDay}"/>`;
+    }).join("\n");
+  }
+
+  it("writes and re-writes a day's total in sets, not one transaction a day", async () => {
+    await truncateAllTables(prisma);
+    const userId = (await makeUser()).id;
+    const run = (perDay: number) =>
+      countStatements(() =>
+        streamParseExportXml({
+          xmlPath: writeXml(steps(perDay)),
+          userId,
+          userTimezone: "UTC",
+          prisma,
+        }),
+      );
+
+    // One day at a time this was a transaction of about ten statements a day.
+    const first = await run(4_000);
+    expect(first.result.perType.ACTIVITY_STEPS?.inserted).toBe(DAYS);
+    expect(
+      first.count,
+      summariseStatements(first.statements).slice(0, 2_000),
+    ).toBeLessThanOrEqual(DAYS / 2);
+
+    const again = await run(5_000);
+    expect(again.result.perType.ACTIVITY_STEPS?.updated).toBe(DAYS);
+    expect(
+      await prisma.measurement.count({
+        where: { userId, type: "ACTIVITY_STEPS", value: 5_000 },
+      }),
+    ).toBe(DAYS);
+    expect(
+      again.count,
+      summariseStatements(again.statements).slice(0, 2_000),
+    ).toBeLessThanOrEqual(DAYS * 1.5);
   });
 });

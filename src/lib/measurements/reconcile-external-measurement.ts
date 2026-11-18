@@ -1,9 +1,11 @@
 import {
   Prisma,
+  type PrismaClient,
   type Measurement,
   type MeasurementAggregationProvenance,
   type Prisma as PrismaTypes,
 } from "@/generated/prisma/client";
+import { insertNewMeasurementRows } from "@/lib/export/measurement-bulk-insert";
 import {
   classifyRangeRejection,
   recordRangeRejections,
@@ -382,9 +384,6 @@ export async function reconcileExternalMeasurement(
 
 const SET_SAVEPOINT = "measurement_identity_set_write";
 
-/** Rows per set-based insert; each binds about fifteen parameters. */
-const SET_INSERT_CHUNK = 250;
-
 function externalKey(row: {
   userId: string;
   type: Measurement["type"];
@@ -427,28 +426,68 @@ async function underSavepoint(
   }
 }
 
-/** Insert the entries no row holds an identity of, in one statement a chunk. */
+/** The fields the set insert writes; an entry carrying any other goes one by one. */
+const SET_INSERT_FIELDS = new Set<string>([
+  "userId",
+  "type",
+  "value",
+  "valueMin",
+  "valueMax",
+  "unit",
+  "source",
+  "measuredAt",
+  "externalId",
+  "externalSourceVersion",
+  "aggregationProvenance",
+  "glucoseContext",
+  "sleepStage",
+  "rhythmClassification",
+  "deviceType",
+  "notesEncrypted",
+]);
+
+function setInsertable(desired: ExternalMeasurementWrite): boolean {
+  return Object.entries(desired).every(
+    ([field, value]) => value === undefined || SET_INSERT_FIELDS.has(field),
+  );
+}
+
+/**
+ * Insert the entries no row holds an identity of, through the bulk insert the
+ * imports use (one statement shape, a hundred rows a statement), and match
+ * what landed back to its entry by `(type, externalId)` within one account
+ * and source.
+ */
 async function insertFresh(
   tx: PrismaTypes.TransactionClient,
   entries: readonly Entry[],
 ): Promise<Array<[number, MeasurementReconciliationVerdict]>> {
-  const byExternalKey = new Map(
-    entries.map((entry) => [externalKey(entry.desired), entry.index]),
-  );
+  const groups = new Map<string, Entry[]>();
+  for (const entry of entries) {
+    const key = JSON.stringify([entry.desired.userId, entry.desired.source]);
+    groups.set(key, [...(groups.get(key) ?? []), entry]);
+  }
   const landed: Array<[number, MeasurementReconciliationVerdict]> = [];
-  for (let i = 0; i < entries.length; i += SET_INSERT_CHUNK) {
-    const rows = await tx.measurement.createManyAndReturn({
-      // The reconciler's own insert, row for row.
-      data: entries.slice(i, i + SET_INSERT_CHUNK).map(({ desired }) => ({
+  for (const group of groups.values()) {
+    const byKey = new Map(
+      group.map((e) => [
+        JSON.stringify([e.desired.type, e.desired.externalId]),
+        e.index,
+      ]),
+    );
+    const rows = await insertNewMeasurementRows(
+      tx,
+      group.map(({ desired }) => ({
         ...desired,
+        source: desired.source!,
+        externalSourceVersion: desired.externalSourceVersion ?? null,
         sleepStage: desired.sleepStage ?? null,
-        deletedAt: null,
+        deviceType: desired.deviceType ?? null,
+        notesEncrypted: desired.notesEncrypted ?? null,
       })),
-      skipDuplicates: true,
-      select: rowSelect,
-    });
+    );
     for (const row of rows) {
-      const index = byExternalKey.get(externalKey(row));
+      const index = byKey.get(JSON.stringify([row.type, row.externalId]));
       if (index !== undefined)
         landed.push([index, { status: "inserted", row }]);
     }
@@ -498,7 +537,15 @@ async function settleExactMatches(
         measuredAt: row.measuredAt,
         externalId: row.externalId,
       };
-      if (options.exactExternalMatch === "duplicate") {
+      // The reconciler's two no-write answers for a row holding both
+      // identities: a weaker aggregate than the stored one, or a caller that
+      // keeps the stored row.
+      if (
+        (desired.aggregationProvenance != null &&
+          aggregationAuthority(desired.aggregationProvenance) <
+            aggregationAuthority(row.aggregationProvenance)) ||
+        options.exactExternalMatch === "duplicate"
+      ) {
         settled.push([index, { status: "duplicate", row: reconciled }]);
         continue;
       }
@@ -565,7 +612,7 @@ async function settleExactMatches(
  *     those rows for the whole batch.
  *
  * Everything else (an identity shared within the batch, the two identities
- * held by two rows, an aggregation provenance to weigh, a refused value)
+ * held by two rows, a refused value)
  * goes through the reconciler afterwards, in input order. An entry that
  * shares no identity with another cannot be affected by another entry's
  * reconcile, so settling it first changes nothing. The per-account lock
@@ -595,9 +642,9 @@ export async function reconcileExternalMeasurements(
       ({ desired }) =>
         seen.get(externalKey(desired)) === 1 &&
         seen.get(naturalKey(desired)) === 1 &&
-        // Without a source the insert takes the column default, which the
-        // keys below could not match the returned row to.
+        // Without a source the insert would take the column default.
         desired.source !== undefined &&
+        setInsertable(desired) &&
         classifyRangeRejection(desired.type, desired.value) === null,
     );
 
@@ -606,11 +653,7 @@ export async function reconcileExternalMeasurements(
       await lockMeasurementUser(tx, userId);
     }
     settle(await underSavepoint(tx, () => insertFresh(tx, alone)));
-    const skipped = alone.filter(
-      (e) =>
-        verdicts[e.index] === undefined &&
-        e.desired.aggregationProvenance == null,
-    );
+    const skipped = alone.filter((e) => verdicts[e.index] === undefined);
     if (skipped.length > 0) {
       settle(
         await underSavepoint(tx, () =>
@@ -628,4 +671,28 @@ export async function reconcileExternalMeasurements(
     );
   }
   return verdicts as MeasurementReconciliationVerdict[];
+}
+
+/**
+ * `reconcileExternalMeasurements` over a batch of any size, one transaction
+ * per `chunk` entries, for a writer whose entries need not land together:
+ * every verdict is its entry's own, and a failed one is returned, not thrown.
+ */
+export async function reconcileExternalMeasurementsInChunks(
+  db: Pick<PrismaClient, "$transaction">,
+  batch: readonly ExternalMeasurementWrite[],
+  options: MeasurementReconciliationOptions = {},
+  chunk = 500,
+): Promise<MeasurementReconciliationVerdict[]> {
+  const verdicts: MeasurementReconciliationVerdict[] = [];
+  for (let at = 0; at < batch.length; at += chunk) {
+    const slice = batch.slice(at, at + chunk);
+    verdicts.push(
+      ...(await db.$transaction(
+        (tx) => reconcileExternalMeasurements(tx, slice, options),
+        { timeout: 60_000 },
+      )),
+    );
+  }
+  return verdicts;
 }

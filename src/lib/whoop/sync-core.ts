@@ -41,7 +41,7 @@ import type { InsertedMeasurementArrivalRow } from "@/lib/arrivals/measurement-e
 import { obtainAccessToken } from "@/lib/integrations/oauth-kit/token";
 import {
   MeasurementReconciliationError,
-  reconcileExternalMeasurement,
+  reconcileExternalMeasurements,
 } from "@/lib/measurements/reconcile-external-measurement";
 import { whoopTokenDescriptor } from "./oauth-descriptor";
 import {
@@ -362,29 +362,26 @@ export async function upsertWhoopMeasurements(
     const verdicts = await prisma
       .$transaction(
         async (tx) => {
-          const outcomes = [];
-          for (let index = chunkStart; index < chunkEnd; index++) {
-            const reading = readings[index]!;
-            const verdict = await reconcileExternalMeasurement(
-              tx,
-              {
-                userId,
-                type: reading.type as MeasurementType,
-                source: "WHOOP",
-                value: reading.value,
-                unit: reading.unit,
-                measuredAt: reading.measuredAt,
-                externalId: reading.externalId,
-                sleepStage: reading.sleepStage ?? null,
-              },
-              { exactExternalMatch: "update" },
-            );
+          const outcomes = await reconcileExternalMeasurements(
+            tx,
+            readings.slice(chunkStart, chunkEnd).map((reading) => ({
+              userId,
+              type: reading.type as MeasurementType,
+              source: "WHOOP" as const,
+              value: reading.value,
+              unit: reading.unit,
+              measuredAt: reading.measuredAt,
+              externalId: reading.externalId,
+              sleepStage: reading.sleepStage ?? null,
+            })),
+            { exactExternalMatch: "update" },
+          );
+          return outcomes.map((verdict) => {
             if (verdict.status === "failed") {
               throw new MeasurementReconciliationError(verdict);
             }
-            outcomes.push(verdict);
-          }
-          return outcomes;
+            return verdict;
+          });
         },
         { maxWait: 10_000, timeout: 60_000 },
       )

@@ -363,6 +363,12 @@ describe("batch reconciliation gives the per-reading verdicts", () => {
     await row("x:both", 5);
     await row("x:occupant", 6);
     await row("x:quiet", 20);
+    await row("x:native", 30, {
+      aggregationProvenance: "HEALTHKIT_STATISTICS",
+    });
+    await row("x:estimate", 31, {
+      aggregationProvenance: "EXPORT_XML_SOURCE_MAX",
+    });
   }
 
   /** The batch: written against the seeded rows, in this order. */
@@ -383,6 +389,12 @@ describe("batch reconciliation gives the per-reading verdicts", () => {
       entry("x:shared-natural", 15),
       entry("x:shared-natural-twin", 15),
       entry("x:quiet", 20),
+      // A weaker aggregate than the stored one changes nothing; a stronger
+      // one overwrites it.
+      entry("x:native", 30, { aggregationProvenance: "EXPORT_XML_SOURCE_MAX" }),
+      entry("x:estimate", 31, {
+        aggregationProvenance: "HEALTHKIT_STATISTICS",
+      }),
     ];
   }
 
@@ -409,6 +421,7 @@ describe("batch reconciliation gives the per-reading verdicts", () => {
         measuredAt: r.measuredAt,
         value: r.value,
         sleepStage: r.sleepStage,
+        aggregationProvenance: r.aggregationProvenance,
         deleted: r.deletedAt !== null,
         syncVersion: r.syncVersion,
       }))
@@ -461,9 +474,8 @@ describe("batch reconciliation gives the per-reading verdicts", () => {
           "inserted",
           "updated",
           "rejected_range",
-          ...(exactExternalMatch === "update"
-            ? ["resurrected"]
-            : ["duplicate"]),
+          "duplicate",
+          ...(exactExternalMatch === "update" ? ["resurrected"] : []),
         ]),
       );
       expect(together.count).toBeLessThan(sequential.count);
