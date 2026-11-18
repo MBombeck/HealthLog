@@ -93,6 +93,8 @@ const EXEMPT_TEMPLATES: Record<string, string> = {
     "auditLog action name for the previous-insight memory read (getPreviousInsightContext), not an i18n key",
   "apiErrors.${errorCode}":
     "the runtime error-code lookup; its namespace is allowlisted above",
+  'coach.${code.slice("documents.chat.".length)}':
+    "a document chat stream error code renamed to the Coach's code (coachErrorCode), not an i18n key; errorCodeToI18nKey maps it to the key",
 };
 
 function walk(dir: string, out: string[] = []): string[] {

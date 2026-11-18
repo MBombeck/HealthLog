@@ -73,9 +73,7 @@ describe("record settings contract", () => {
       kind: "managed-guardian",
       guardianWritable: true,
     });
-    expect(classifySettingsDestination("environment").kind).toBe(
-      "unavailable",
-    );
+    expect(classifySettingsDestination("environment").kind).toBe("unavailable");
     // v1.37.19 — "dashboard" left SETTINGS_SECTION_SLUGS (its URL is
     // owned by a permanent redirect to /settings/layout/dashboard), so an
     // unknown destination falls closed to plain unavailable; "layout" is
