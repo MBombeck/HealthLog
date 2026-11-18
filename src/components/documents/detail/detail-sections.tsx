@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -33,6 +35,13 @@ import { formatBytes } from "@/lib/format/bytes";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
 import { cn } from "@/lib/utils";
+
+// Loaded on demand: only a managed profile's guardian ever opens it, and it
+// carries the Coach's bubble renderer.
+const DocumentChatSheet = dynamic(
+  () => import("../chat/document-chat-sheet").then((m) => m.DocumentChatSheet),
+  { ssr: false, loading: () => null },
+);
 import type {
   InboundDocumentDetailDto,
   InboundDocumentKindValue,
@@ -67,6 +76,9 @@ export function DocumentDetailFooter({
   // The vault's "Ask the Coach" opens the fenced conversation scoped to this
   // document in the shared side drawer.
   const launch = useCoachLaunch();
+  // #1403 — a managed profile's guardian has no Coach drawer (a shared record
+  // does not mount one), so the same question opens the document's own chat.
+  const [chatOpen, setChatOpen] = useState(false);
   const {
     canManageDocuments,
     ownsVault,
@@ -123,6 +135,29 @@ export function DocumentDetailFooter({
               {t("documents.chat.openButton")}
             </span>
           </Button>
+        ) : aiEnabled &&
+          !launch &&
+          !ownsVault &&
+          canManageDocuments &&
+          doc.hasContentIndex ? (
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setChatOpen(true)}
+              data-slot="document-chat-open"
+            >
+              <Sparkles className="size-4" aria-hidden />
+              <span className="sr-only sm:not-sr-only">
+                {t("documents.chat.openButton")}
+              </span>
+            </Button>
+            <DocumentChatSheet
+              documentId={doc.id}
+              title={doc.title ?? doc.filename ?? t("documents.card.untitled")}
+              open={chatOpen}
+              onOpenChange={setChatOpen}
+            />
+          </>
         ) : null}
         {ownsVault && (
           <Button
