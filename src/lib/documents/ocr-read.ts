@@ -48,6 +48,12 @@ import { annotate } from "@/lib/logging/context";
 import { emitSignal } from "@/lib/logging/signal";
 
 /**
+ * Fallback timeout for text-layer extraction on slow models / complex reports.
+ */
+export const TEXT_LAYER_FALLBACK_TIMEOUT_MS =
+  AI_BUDGETS.ocrExtractFallback?.timeoutMs ?? 240_000;
+
+/**
  * The completion one read sends: the surface's prompt under the shared
  * limits. Every transcription read goes through here, so a long report is
  * read under the same ceiling and timeout whichever surface reads it.
@@ -57,13 +63,14 @@ export function ocrReadParams(prompt: {
   user: string;
   images?: CompletionImage[];
   documents?: CompletionDocument[];
+  timeoutMs?: number;
 }): CompletionParams {
   return {
     ...singleUserTurn({
       ...prompt,
       temperature: AI_BUDGETS.ocrExtract.temperature,
       maxTokens: AI_BUDGETS.ocrExtract.maxTokens,
-      timeoutMs: AI_BUDGETS.ocrExtract.timeoutMs,
+      timeoutMs: prompt.timeoutMs ?? AI_BUDGETS.ocrExtract.timeoutMs,
       responseFormat: "json",
     }),
     reasoning: TRANSCRIPTION_REASONING,
@@ -190,6 +197,15 @@ interface OcrCallOutcome<E> {
   truncated: boolean;
 }
 
+/** Strip markdown code blocks before JSON parsing. */
+function cleanJsonText(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed.startsWith("```")) {
+    return trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  }
+  return raw;
+}
+
 /** Parse a reply, salvaging the closed rows of one cut at the output limit. */
 function parseReply<E>(
   content: string,
@@ -197,10 +213,11 @@ function parseReply<E>(
   parse: OcrParse<E>,
 ): E | null {
   let json: unknown;
+  const cleaned = cleanJsonText(content);
   try {
-    json = JSON.parse(content);
+    json = JSON.parse(cleaned);
   } catch {
-    json = truncated ? salvageTruncatedJson(content) : undefined;
+    json = truncated ? salvageTruncatedJson(cleaned) : undefined;
   }
   return parse(json);
 }
