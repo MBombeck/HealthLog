@@ -74,6 +74,18 @@ vi.mock("@/lib/measurements/newest-per-type", () => ({
     },
   ),
 }));
+// The discovery counts are exact through the rollup tier; here they answer
+// from the mocked grouped count the same way.
+vi.mock("@/lib/rollups/live-counts", async () => {
+  const { countLiveReadingsPerType } =
+    await import("@/lib/measurements/newest-per-type");
+  return {
+    countLiveReadings: (
+      userId: string,
+      types: Parameters<typeof countLiveReadingsPerType>[1],
+    ) => countLiveReadingsPerType(userId, types, Number.MAX_SAFE_INTEGER, null),
+  };
+});
 vi.mock("@/lib/db", () => ({ prisma: { labResult, measurement, user } }));
 
 import {

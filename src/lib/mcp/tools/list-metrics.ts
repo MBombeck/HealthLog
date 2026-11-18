@@ -42,7 +42,7 @@ export const listMetricsTool: McpToolDefinition = {
   name: "list_metrics",
   title: "List available metrics",
   description:
-    "Enumerate which of the user's health data exists and how to fetch it: one row per domain with whether data is present, an approximate sample count, and the tool that retrieves it. Call this first to discover what is available before fetching figures.",
+    "Enumerate which of the user's health data exists and how to fetch it: one row per domain with whether data is present in the last 30 days, how many readings it holds there (every source counted; a compare_metric row counts its whole history), and the tool that retrieves it. Call this first to discover what is available before fetching figures.",
   inputShape: {},
   annotations: READ_ONLY_ANNOTATIONS,
   outputShape: listMetricsOutput,

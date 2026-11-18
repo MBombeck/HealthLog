@@ -34,6 +34,7 @@ import { prisma } from "@/lib/db";
 import { resolveMarkerForRead } from "@/lib/labs/biomarker-resolve";
 import { windowWeighting } from "@/lib/measurements/day-statistic";
 import { countLiveReadingsPerType } from "@/lib/measurements/newest-per-type";
+import { countLiveReadings } from "@/lib/rollups/live-counts";
 import { annotate } from "@/lib/logging/context";
 import { isModuleEnabled } from "@/lib/modules/gate";
 import { moduleForMeasurementType } from "@/lib/modules/measurement-scope";
@@ -474,7 +475,7 @@ export const MCP_METRIC_STATUS_DISCOVERY: ReadonlyArray<{
 });
 
 /**
- * Presence + approximate sample count for the metric-status-only discovery
+ * Presence + exact reading count (whole history) for the metric-status-only discovery
  * set, in the `list_metrics` inventory-row shape — `tool` fixed to
  * `compare_metric` (a resolver-closed metric with no Coach-snapshot series
  * fetches through `compare_metric` / `get_metric_baseline`, never
@@ -493,13 +494,12 @@ export async function metricStatusDiscoveryRows(userId: string): Promise<
     metric: string;
   }>
 > {
-  // Live rows only, counted to 6,000 through one descent of the live index
-  // per type: a grouped count read every row of a dense stress or energy
+  // Live rows only, counted from the DAY rollup tier where it matches the
+  // record: a grouped count read every row of a dense stress or energy
   // stream on a call a host makes first and often.
-  const countByType = await countLiveReadingsPerType(
+  const countByType = await countLiveReadings(
     userId,
     MCP_METRIC_STATUS_DISCOVERY.map((s) => s.measurementType),
-    6_000,
     null,
   );
 

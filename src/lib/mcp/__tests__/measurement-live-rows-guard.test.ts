@@ -18,7 +18,7 @@
  * holds, and are left out on purpose. Raw SQL against `measurements` must
  * carry `deleted_at` the same way, or take its WHERE from `liveTypeDescent`,
  * which carries it. The presence and count probes that moved to
- * `countLiveReadingsPerType` are live by the same construction; their call
+ * `countLiveReadingsPerType` and `countLiveReadings` are live by the same construction; their call
  * sites count toward the floor below, so the matcher still has to find them.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
@@ -30,7 +30,7 @@ const READS =
   /\bprisma\.measurement\.(findMany|findFirst|count|groupBy|aggregate)\s*\(/g;
 const RAW = /\b(?:FROM|JOIN)\s+"?measurements"?\b/gi;
 /** Readers whose statements carry the live-row predicate themselves. */
-const LIVE_HELPERS = /\bcountLiveReadingsPerType\s*\(/g;
+const LIVE_HELPERS = /\bcountLiveReadings(?:PerType)?\s*\(/g;
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {

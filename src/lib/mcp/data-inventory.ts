@@ -15,9 +15,10 @@
  * window, under the same gates the snapshot applies (the module switches and
  * the Coach exclusions, `coachExclusions` / `admitCoachSources`):
  *
- *   - a measurement-backed domain is one descent of the live index per type
- *     (`liveTypeDescent`), reading at most `COUNT_CAP` rows, so its count is
- *     the readings in the window up to that cap;
+ *   - a measurement-backed domain's count is its readings in the window,
+ *     exact, from the DAY rollup tier where it matches the record and the
+ *     live rows where it does not (`countLiveReadings`), so a dense stream
+ *     costs a day of rows and the tier's days, not the stream;
  *   - mood, medication intake and workouts are one count each over their own
  *     tables in the window, labs and cycles one existence probe each;
  *   - illness reads its own small block, which also carries Rest Mode;
@@ -29,11 +30,11 @@
  * inventory uses (`attachInventoryAvailability`), so a history older than
  * the window is named as such and not as absence. The rows keep the Coach
  * inventory's shape and tools, so a host sees the same manifest it always
- * did; only `count` differs for a dense stream, where it is the cap.
+ * did; `count` is the readings in the window, every source counted.
  */
 import { prisma } from "@/lib/db";
 import type { MeasurementType } from "@/generated/prisma/client";
-import { countLiveReadingsPerType } from "@/lib/measurements/newest-per-type";
+import { countLiveReadings } from "@/lib/rollups/live-counts";
 import { isModuleEnabled, resolveModuleMap } from "@/lib/modules/gate";
 import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 import { isCycleAvailableForUser } from "@/lib/cycle/gate";
@@ -55,12 +56,6 @@ import { buildIllnessSnapshotBlock } from "@/lib/ai/coach/illness-snapshot";
 import { DEFAULT_WINDOW } from "@/lib/ai/coach/snapshot-cache";
 import { windowToDays } from "@/lib/ai/coach/snapshot-series";
 import type { CoachScopeSource } from "@/lib/ai/coach/types";
-
-/**
- * Readings a type's count stops at: the per-type row cap of the snapshot's
- * own windowed read, so a dense stream reports what the snapshot read of it.
- */
-const COUNT_CAP = 6_000;
 
 export interface McpDataInventory {
   entries: InventoryEntry[];
@@ -119,7 +114,7 @@ export async function buildMcpDataInventory(
   const windowed = { userId, deletedAt: null };
   const [counts, mood, intakes, workouts, labs, cycle, illness, environment] =
     await Promise.all([
-      countLiveReadingsPerType(userId, [...measured], COUNT_CAP, since),
+      countLiveReadings(userId, [...measured], since, now),
       sources.has("mood")
         ? prisma.moodEntry.count({
             where: { ...windowed, moodLoggedAt: { gte: since } },

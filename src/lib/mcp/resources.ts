@@ -285,7 +285,7 @@ export const MCP_RESOURCES: McpResourceDefinition[] = [
     uri: "healthlog://measurements/inventory",
     title: "Data inventory",
     description:
-      "What health data the user has and which tool retrieves each domain — one row per domain with presence + approximate sample count. The same manifest list_metrics returns; read this first to discover what is available before fetching figures.",
+      "What health data the user has and which tool retrieves each domain — one row per domain with presence in the last 30 days and its reading count there (a compare_metric row counts its whole history). The same manifest list_metrics returns; read this first to discover what is available before fetching figures.",
     mimeType: "application/json",
     async read(ctx) {
       const [inventory, statusDiscoveryRows] = await Promise.all([

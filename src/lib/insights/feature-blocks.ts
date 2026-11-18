@@ -14,6 +14,12 @@ import { Prisma } from "@/generated/prisma/client";
 import { buildSourceRankCase } from "@/lib/analytics/source-rank-sql";
 import { dayWeightedRowsSql, foldMeanSql } from "@/lib/measurements/day-mean";
 import { liveTypeDescent } from "@/lib/measurements/live-type-descent";
+import { readTierCoveredTypes } from "@/lib/rollups/tier-coverage";
+import {
+  readPreFoldRemainder,
+  type PreFoldRemainderRow,
+} from "@/lib/analytics/pre-fold-remainder";
+import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 import {
   loadUserSourcePriority,
   utcBucketEnd,
@@ -48,86 +54,6 @@ export interface AllTimeExtremes {
   mean: number | null;
   min: number | null;
   max: number | null;
-}
-
-/**
- * The types the DAY tier may answer for from `tierFrom` on: those it matches
- * at their ends (see `readAllTimeExtremes`). Each type is one descent of the live
- * index to its oldest and its newest reading from `tierFrom` on
- * (`liveTypeDescent`, so the plan does not follow the statistics), a
- * count of the readings on those two days, and the type's DAY rows from
- * `tierFrom` on, which are days, not readings. A type with no live
- * reading in the range drops out here and is read raw, which is how a
- * tier that outlived every row of a type is never repeated.
- */
-async function readTierCoveredTypes(
-  userId: string,
-  types: readonly MeasurementType[],
-  tierFrom: Date,
-): Promise<Array<{ type: string }>> {
-  return prisma.$queryRaw<Array<{ type: string }>>`
-    SELECT mt."type" AS type
-    FROM unnest(${[...types]}::text[]) AS mt("type")
-    CROSS JOIN LATERAL (
-      SELECT m."measured_at" AS at
-      FROM measurements m
-      ${liveTypeDescent(userId, Prisma.sql`mt."type"::measurement_type`, "oldest", tierFrom)}
-      LIMIT 1
-    ) oldest
-    CROSS JOIN LATERAL (
-      SELECT m."measured_at" AS at
-      FROM measurements m
-      ${liveTypeDescent(userId, Prisma.sql`mt."type"::measurement_type`, "newest", tierFrom)}
-      LIMIT 1
-    ) newest
-    CROSS JOIN LATERAL (
-      SELECT date_trunc('day', oldest.at) AS first_day,
-             date_trunc('day', newest.at) AS last_day
-    ) ends
-    CROSS JOIN LATERAL (
-      SELECT MIN(r."bucket_start") AS first_bucket,
-             MAX(r."bucket_start") AS last_bucket,
-             bool_and(
-               r."reading_min_value" IS NOT NULL
-               AND r."reading_max_value" IS NOT NULL
-             ) AS complete,
-             COALESCE(SUM(r."count") FILTER (
-               WHERE r."bucket_start" = ends.first_day AT TIME ZONE 'UTC'
-             ), 0)::bigint AS first_count,
-             COALESCE(SUM(r."count") FILTER (
-               WHERE r."bucket_start" = ends.last_day AT TIME ZONE 'UTC'
-             ), 0)::bigint AS last_count
-      FROM measurement_rollups r
-      WHERE r."user_id" = ${userId}
-        AND r."type" = mt."type"::measurement_type
-        AND r."granularity" = 'DAY'
-        AND r."bucket_start" >= ${tierFrom}
-    ) tier
-    CROSS JOIN LATERAL (
-      SELECT
-        (SELECT COUNT(*) FROM measurements m
-          WHERE m."user_id" = (SELECT ${userId}::text)
-            AND m."type" >= mt."type"::measurement_type
-            AND m."type" <= mt."type"::measurement_type
-            AND m."deleted_at" IS NULL
-            AND m."measured_at" >= ends.first_day
-            AND m."measured_at" < ends.first_day + interval '1 day'
-        )::bigint AS first_count,
-        (SELECT COUNT(*) FROM measurements m
-          WHERE m."user_id" = (SELECT ${userId}::text)
-            AND m."type" >= mt."type"::measurement_type
-            AND m."type" <= mt."type"::measurement_type
-            AND m."deleted_at" IS NULL
-            AND m."measured_at" >= ends.last_day
-            AND m."measured_at" < ends.last_day + interval '1 day'
-        )::bigint AS last_count
-    ) live
-    WHERE tier.complete
-      AND tier.first_bucket = ends.first_day AT TIME ZONE 'UTC'
-      AND tier.last_bucket = ends.last_day AT TIME ZONE 'UTC'
-      AND tier.first_count = live.first_count
-      AND tier.last_count = live.last_count
-  `;
 }
 
 /**
@@ -226,11 +152,27 @@ export async function readAllTimeExtremes(
         FROM measurements m
         ${liveTypeDescent(userId, Prisma.sql`mt."type"::measurement_type`, "oldest", floor, until)}
       ) x`;
+  // Without a floor, the readings of a tier-read type older than `tierFrom`
+  // are a closed block: nothing written after the fold window can change
+  // them. They come from the pre-fold remainder (`pre-fold-remainder.ts`),
+  // the same canonical-day fold cached under a closed-block key, instead of
+  // being folded again on every call; an account with ten years of a watch's
+  // heart rate pays that once, not per read. With a floor the days before
+  // `tierFrom` are at most the part of one day the floor cuts.
+  const remainderFromCache = floor === null && fromTier.length > 0;
   const rawArms: Prisma.Sql[] = [];
   if (rawOnly.length > 0) rawArms.push(rawArm(rawOnly, null));
-  if (fromTier.length > 0) {
+  if (fromTier.length > 0 && !remainderFromCache) {
     // `measured_at` is stored to the millisecond, so this is `< tierFrom`.
     rawArms.push(rawArm(fromTier, new Date(tierFrom.getTime() - 1)));
+  }
+  if (rawArms.length === 0) {
+    rawArms.push(Prisma.sql`
+      SELECT NULL::measurement_type AS "type",
+             NULL::measurement_source AS "source",
+             NULL::timestamp(3) AS "measured_at",
+             NULL::double precision AS "value"
+      WHERE false`);
   }
   const rank = (alias: string) =>
     Prisma.raw(
@@ -288,6 +230,7 @@ export async function readAllTimeExtremes(
     Array<{
       type: string;
       count: number;
+      days: number;
       mean: number;
       min: number;
       max: number;
@@ -311,6 +254,7 @@ export async function readAllTimeExtremes(
     SELECT
       c."type"::text                                  AS type,
       SUM(c.cnt)::int                                 AS count,
+      COUNT(*)::int                                   AS days,
       ${mean}::double precision                       AS mean,
       MIN(c.min_value)::double precision              AS min,
       MAX(c.max_value)::double precision              AS max
@@ -325,15 +269,73 @@ export async function readAllTimeExtremes(
     ) c
     GROUP BY c."type"
   `;
+  const remainder = remainderFromCache
+    ? new Map(
+        (
+          await readPreFoldRemainder(
+            userId,
+            tierFrom,
+            priorityJson,
+            buildSourceRankCase(priorityJson, 'p."type"', 'p."source"'),
+          )
+        ).map((r) => [r.type, r]),
+      )
+    : new Map<string, PreFoldRemainderRow>();
   for (const r of rows) {
-    out.set(r.type as MeasurementType, {
-      count: Number(r.count),
-      mean: r.mean === null ? null : Number(r.mean),
-      min: r.min === null ? null : Number(r.min),
-      max: r.max === null ? null : Number(r.max),
-    });
+    const old = fromTier.includes(r.type as MeasurementType)
+      ? remainder.get(r.type)
+      : undefined;
+    out.set(
+      r.type as MeasurementType,
+      old === undefined
+        ? {
+            count: Number(r.count),
+            mean: r.mean === null ? null : Number(r.mean),
+            min: r.min === null ? null : Number(r.min),
+            max: r.max === null ? null : Number(r.max),
+          }
+        : joinFigures(r.type, r, old),
+    );
   }
   return out;
+}
+
+/**
+ * The figures of two disjoint runs of canonical days of one type, folded the
+ * way one fold over both would: the counts and extremes combine, and the mean
+ * is weighted by days for an hourly-mean type (each day weighs one) and by
+ * readings otherwise (`foldMeanSql`).
+ */
+function joinFigures(
+  type: string,
+  a: {
+    count: number;
+    days: number;
+    mean: number | null;
+    min: number | null;
+    max: number | null;
+  },
+  b: PreFoldRemainderRow,
+): AllTimeExtremes {
+  const weight = (x: { count: number; days: number }) =>
+    usesHourlyMeanDay(type) ? Number(x.days) : Number(x.count);
+  const wa = a.mean === null ? 0 : weight(a);
+  const wb = weight(b);
+  const extreme = (
+    pick: (x: number, y: number) => number,
+    x: number | null,
+    y: number,
+  ) => (x === null ? y : pick(x, Number(y)));
+  return {
+    count: Number(a.count) + Number(b.count),
+    mean:
+      wa + wb === 0
+        ? null
+        : ((a.mean === null ? 0 : Number(a.mean) * wa) + Number(b.mean) * wb) /
+          (wa + wb),
+    min: extreme(Math.min, a.min === null ? null : Number(a.min), b.min),
+    max: extreme(Math.max, a.max === null ? null : Number(a.max), b.max),
+  };
 }
 
 /**
