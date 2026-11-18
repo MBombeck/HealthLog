@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2862,
-  "total": 9107,
+  "total": 9103,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1019,7 +1019,7 @@
     "components/insights/mood/mood-weekday-chart.tsx": 4,
     "components/insights/mood/mood-what-stands-out.tsx": 1,
     "components/insights/nutrients/hydration-card.tsx": 1,
-    "components/insights/nutrients/micronutrients-card.tsx": 3,
+    "components/insights/nutrients/micronutrients-card.tsx": 2,
     "components/insights/nutrients/types.ts": 3,
     "components/insights/period-narrative-card.tsx": 1,
     "components/insights/prose-blocks.tsx": 1,
@@ -1930,7 +1930,7 @@
     "lib/dashboard/score-narrative.ts": 1,
     "lib/dashboard/score-rings.ts": 2,
     "lib/dashboard/snapshot-read.ts": 1,
-    "lib/dashboard/snapshot.ts": 55,
+    "lib/dashboard/snapshot.ts": 52,
     "lib/dashboard/summary-reads.ts": 5,
     "lib/dashboard/widget-modules.ts": 1,
     "lib/data-wipe/wipe-plan.ts": 11,

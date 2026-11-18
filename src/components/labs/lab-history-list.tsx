@@ -35,10 +35,10 @@ import { LabConvertedNote } from "./lab-converted-note";
 import { resolveNoteForUpdate } from "@/lib/labs/note-update";
 import { resolveValueForUpdate, valueEditSeed } from "@/lib/labs/value-update";
 import { useTranslations } from "@/lib/i18n/context";
-import { labSourceLabelKey } from "@/lib/i18n/source-labels";
 import { invalidateKeys, labDependentKeys, queryKeys } from "@/lib/query-keys";
 
 import { ReferenceRangeBadge } from "./reference-range-badge";
+import { LabSourceLine, labSourceLabel } from "./lab-source-line";
 import { LabReferenceRangeBar } from "./lab-reference-range-bar";
 import { SourceRangeNote } from "./source-range-note";
 import {
@@ -356,13 +356,6 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
     });
   }, [readings, sortBy, sortDir]);
 
-  // How the reading reached the record, in the app's source vocabulary; a
-  // value this client does not know shows nothing rather than a raw code.
-  const sourceLabel = (r: LabResultDto) => {
-    const key = labSourceLabelKey(r.source);
-    return key ? t(key) : null;
-  };
-
   // One action pair per reading, shared by the phone list and the table.
   const renderActions = (r: LabResultDto) => (
     <div className="flex items-center justify-end gap-1">
@@ -383,14 +376,7 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
         domain="labs"
         onConfirm={() => deleteMutation.mutate(r.id)}
         title={t("labs.deleteConfirmTitle")}
-        description={
-          // A reading from Apple Health's Health Records stays deleted: the
-          // next import recognises it and leaves it out. Say so before the
-          // delete, since nothing on the row will bring it back.
-          r.source === "APPLE_HEALTH"
-            ? `${t("labs.deleteConfirmDescription")} ${t("labs.deleteAppleHealthNote")}`
-            : t("labs.deleteConfirmDescription")
-        }
+        description={deleteDescription(r, t)}
         confirmLabel={t("labs.deleteReading")}
         className="size-11 sm:size-9"
         iconClassName="h-4 w-4"
@@ -441,16 +427,7 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
                 reading={r}
                 className="text-muted-foreground block text-xs"
               />
-              {/* Its own line under the meta row, so it sits at one place on
-                  every row instead of wrapping wherever the badge ends. */}
-              {sourceLabel(r) ? (
-                <p
-                  className="text-muted-foreground text-xs"
-                  data-slot="lab-reading-source"
-                >
-                  {sourceLabel(r)}
-                </p>
-              ) : null}
+              <LabSourceLine source={r.source} />
             </div>
             {renderActions(r)}
           </li>
@@ -531,11 +508,8 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
                 <TableCell className="text-muted-foreground text-sm">
                   {r.hasNote ? t("labs.hasNote") : ""}
                 </TableCell>
-                <TableCell
-                  className="text-muted-foreground text-sm whitespace-nowrap"
-                  data-slot="lab-reading-source"
-                >
-                  {sourceLabel(r) ?? ""}
+                <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
+                  {labSourceLabel(r.source, t)}
                 </TableCell>
                 <TableCell className="pr-4 text-right">
                   {renderActions(r)}
@@ -642,4 +616,19 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
       />
     </>
   );
+}
+
+/**
+ * The delete question. A reading from Apple Health's Health Records stays
+ * deleted (the next import recognises it and leaves it out), so its question
+ * says so: nothing on the row will bring it back.
+ */
+function deleteDescription(
+  reading: LabResultDto,
+  t: (key: string) => string,
+): string {
+  const base = t("labs.deleteConfirmDescription");
+  return reading.source === "APPLE_HEALTH"
+    ? `${base} ${t("labs.deleteAppleHealthNote")}`
+    : base;
 }

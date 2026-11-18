@@ -54,7 +54,7 @@ const SOURCES = [
 ] as const;
 
 /**
- * v1.43 — the latest day split by source: a thin bar and a legend whose parts
+ * The latest day split by source: a thin bar and a legend whose parts
  * each carry the swatch of their bar segment, so five possible sources stay
  * readable. Source names are the app's own ("Apple Health", "Manual",
  * "External device"). Shown only when the day has more than one source or a

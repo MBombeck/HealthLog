@@ -38,7 +38,7 @@ import { ApiError, apiDelete, apiGet } from "@/lib/api/api-fetch";
 import { summarize, type DataSummary } from "@/lib/analytics/trends";
 import { BIOMARKER_CATALOG } from "@/lib/labs/biomarker-catalog";
 import { useTranslations } from "@/lib/i18n/context";
-import { labSourceLabelKey } from "@/lib/i18n/source-labels";
+import { LabSourceLine } from "./lab-source-line";
 import {
   getFallbackMessages,
   loadMessages,
@@ -222,7 +222,6 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
             new Date(b.takenAt).getTime() - new Date(a.takenAt).getTime(),
         )[0]
       : null;
-  const latestSourceKey = latest ? labSourceLabelKey(latest.source) : null;
 
   // v1.24 — the numbers-first stat strip + the AI assessment card mirror the
   // metric sub-pages. The strip reads a client-side `DataSummary` over the
@@ -482,14 +481,7 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
               {t("labs.detail.latestResult")}
             </p>
             <p className="text-2xl font-bold">{latest?.valueText ?? ""}</p>
-            {latestSourceKey ? (
-              <p
-                className="text-muted-foreground text-xs"
-                data-slot="lab-reading-source"
-              >
-                {t(latestSourceKey)}
-              </p>
-            ) : null}
+            {latest ? <LabSourceLine source={latest.source} /> : null}
           </CardContent>
         </Card>
       ) : (

@@ -292,10 +292,64 @@ export function appleHealthDoneSummaryKind(
   return auxWritten > 0 ? "auxOnly" : "nothing";
 }
 
+/** The sentence that heads a finished import (see `appleHealthDoneSummaryKind`). */
+function appleHealthDoneMessage(
+  counts: {
+    rowsWritten: number;
+    auxWritten: number;
+    recordsRead: number;
+    clinicalSkipped: number;
+  },
+  t: (key: string, params?: Record<string, string | number>) => string,
+  fmt: { integer: (value: number) => string },
+): string {
+  const read = fmt.integer(counts.recordsRead);
+  switch (appleHealthDoneSummaryKind(counts.rowsWritten, counts.auxWritten)) {
+    case "samples":
+      return t("settings.sections.export.import.appleHealth.doneSummary", {
+        imported: fmt.integer(counts.rowsWritten),
+        read,
+        skipped: fmt.integer(counts.clinicalSkipped),
+      });
+    case "auxOnly":
+      return t(
+        "settings.sections.export.import.appleHealth.doneSummaryAuxOnly",
+        {
+          read,
+        },
+      );
+    default:
+      return t("settings.sections.export.import.appleHealth.doneNothing", {
+        read,
+      });
+  }
+}
+
+/**
+ * The job writes measurements, workouts, cycle days, lab results and ECGs
+ * behind the session's back, so every read of those stays on its pre-import
+ * answer until its stale time runs out. Once per finished job, evict them the
+ * way a write from those surfaces does (the dose-history import card does the
+ * same for medication reads).
+ */
+function useRefreshReadsAfterImport(finishedJobId: string | null): void {
+  const queryClient = useQueryClient();
+  const refreshedJobRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!finishedJobId || refreshedJobRef.current === finishedJobId) return;
+    refreshedJobRef.current = finishedJobId;
+    void invalidateKeys(queryClient, [
+      ...measurementDependentKeys,
+      ...workoutDependentKeys,
+      ...cycleDependentKeys,
+      ...labDependentKeys,
+    ]).then(() => refetchInactiveDailyReads(queryClient));
+  }, [finishedJobId, queryClient]);
+}
+
 export function AppleHealthImportCard() {
   const { t } = useTranslations();
   const fmt = useFormatters();
-  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -390,23 +444,7 @@ export function AppleHealthImportCard() {
   const isRunning = status !== null && !TERMINAL_STATES.includes(status.status);
   const isDone = status?.status === "done";
 
-  // The job writes measurements, workouts, cycle days, lab results and ECGs
-  // behind the session's back, so every read of those stays on its pre-import
-  // answer until its stale time runs out. Once per finished job, evict them
-  // the way a write from those surfaces does (the dose-history import card
-  // does the same for medication reads).
-  const refreshedJobRef = useRef<string | null>(null);
-  const finishedJobId = isDone ? (status?.jobId ?? null) : null;
-  useEffect(() => {
-    if (!finishedJobId || refreshedJobRef.current === finishedJobId) return;
-    refreshedJobRef.current = finishedJobId;
-    void invalidateKeys(queryClient, [
-      ...measurementDependentKeys,
-      ...workoutDependentKeys,
-      ...cycleDependentKeys,
-      ...labDependentKeys,
-    ]).then(() => refetchInactiveDailyReads(queryClient));
-  }, [finishedJobId, queryClient]);
+  useRefreshReadsAfterImport(isDone ? (status?.jobId ?? null) : null);
   const ownRecordsSkipped =
     (status?.result?.writtenByHealthLog?.byMarker ?? 0) +
     (status?.result?.writtenByHealthLog?.byExternalId ?? 0) +
@@ -438,7 +476,7 @@ export function AppleHealthImportCard() {
   const auxWritten =
     (ecg?.imported ?? 0) + (ecg?.updated ?? 0) + (labs?.imported ?? 0);
   const skips = summarizeAppleHealthSkips(status?.result ?? null);
-  const doneKind = appleHealthDoneSummaryKind(rowsWritten, auxWritten);
+  const clinicalSkipped = status?.result?.clinical?.skipped ?? 0;
   const cycleStats = status?.result?.cycle;
 
   return (
@@ -541,28 +579,11 @@ export function AppleHealthImportCard() {
                 (cycleStats?.daysFailed ?? 0) +
                 (labs?.failed ?? 0),
             })}
-            message={
-              // An archive whose only new data is lab results or ECGs still
-              // imported something: it says so instead of "0 of N imported"
-              // under a success outcome, and the lines below count them.
-              doneKind === "samples"
-                ? t("settings.sections.export.import.appleHealth.doneSummary", {
-                    imported: fmt.integer(rowsWritten),
-                    read: fmt.integer(recordsRead),
-                    skipped: fmt.integer(
-                      status?.result?.clinical?.skipped ?? 0,
-                    ),
-                  })
-                : doneKind === "auxOnly"
-                  ? t(
-                      "settings.sections.export.import.appleHealth.doneSummaryAuxOnly",
-                      { read: fmt.integer(recordsRead) },
-                    )
-                  : t(
-                      "settings.sections.export.import.appleHealth.doneNothing",
-                      { read: fmt.integer(recordsRead) },
-                    )
-            }
+            message={appleHealthDoneMessage(
+              { rowsWritten, auxWritten, recordsRead, clinicalSkipped },
+              t,
+              fmt,
+            )}
             testId="import-apple-health-result"
           />
         )}

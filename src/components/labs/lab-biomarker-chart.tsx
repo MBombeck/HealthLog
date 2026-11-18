@@ -17,7 +17,6 @@ import {
 import { CHART_HEIGHT_PX } from "@/lib/charts/constants";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
 import { formatReferenceRange } from "@/lib/labs/reference-range";
-import { labSourceLabelKey } from "@/lib/i18n/source-labels";
 import {
   useDisplayTimezone,
   useFormatters,
@@ -34,6 +33,7 @@ import {
 import { dateKeyOfInstant } from "../day/day-url";
 import type { LabResultDto } from "./types";
 import { useLabNumber } from "./use-lab-format";
+import { labSourceLabel } from "./lab-source-line";
 import { Segmented } from "@/components/ui/segmented";
 import { ChartEmptyState } from "@/components/charts/chart-empty-state";
 
@@ -384,15 +384,12 @@ export function LabBiomarkerChart({
                     if (!active || !point) {
                       return <RichChartTooltip active={false} rows={[]} />;
                     }
-                    // Where the reading came from, under its value: a reading
-                    // the phone imported looks like a typed one otherwise.
-                    const sourceKey = labSourceLabelKey(point.source);
                     const rows: RichTooltipRow[] = [
                       {
                         name: t("labs.chart.valueLabel"),
                         value: `${labNumber(point.value, point.sourceValue)} ${unit}`,
                         color: primary,
-                        delta: sourceKey ? t(sourceKey) : undefined,
+                        delta: labSourceLabel(point.source, t) ?? undefined,
                       },
                     ];
                     // Name the window THIS reading was judged against. Two
