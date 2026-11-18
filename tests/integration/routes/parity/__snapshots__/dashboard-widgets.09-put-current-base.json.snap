@@ -177,6 +177,12 @@
           "order": 28,
           "visible": false,
           "tileVisible": true
+        },
+        {
+          "id": "energyIntake",
+          "order": 29,
+          "visible": false,
+          "tileVisible": false
         }
       ],
       "comparisonBaseline": "lastMonth",
@@ -399,6 +405,12 @@
         "order": 28,
         "visible": false,
         "tileVisible": true
+      },
+      {
+        "id": "energyIntake",
+        "order": 29,
+        "visible": false,
+        "tileVisible": false
       }
     ],
     "heroRingOrder": [
