@@ -48,9 +48,11 @@
 /api/medications/{id}/glp1/dose-changes/{doseChangeId}` change or remove
   one step, with the same access rules and audit trail as adding one. A
   step can also carry the app's own id (`clientId`), so when your iPhone
-  and iPad both upload the same step, it is stored once. The id travels
-  with backups and restores. Migration
-  `0506_medication_dose_change_client_id`.
+  and iPad both upload the same step, it is stored once, and a step you
+  removed stays removed: an upload under its id later answers 410
+  `glp1.doseChange.deleted`. The id travels with backups and restores.
+  Migrations `0506_medication_dose_change_client_id` and
+  `0507_medication_dose_change_tombstones`.
 - **Set the injection site on a dose you already logged.** Correcting a
   dose (`PUT /api/medications/{id}/intake/{eventId}`) now takes
   `injectionSite`, or `null` to clear it, so "I forgot to pick the site"
@@ -106,7 +108,9 @@
   the witness are added later. The page shows recorded seizures, seizure
   days, days since the last one, clusters under the record's own rule (2 in
   24 hours until you set one) with NICE's 3 in 24 hours beside it, and a
-  type by month table. A new doctor report section adds monthly charts with
+  type by month table. A cluster takes at least two entries, so a tally of
+  brief seizures logged at once counts in every total but is no cluster on
+  its own, and each seizure keeps the class its type had when it was logged. A new doctor report section adds monthly charts with
   medication changes, duration and rescue tables, and, where the record has
   them, missed doses, cycle days, the night's sleep and illness at the time.
   The FHIR export carries each seizure, rescue dose and cluster, and the MCP
@@ -115,9 +119,12 @@
   logged it. "Log seizure" sits in the add menus, the timeline gains a
   seizure lane, and an opt-in "Seizure cluster" notification tells the
   person, or a child's guardians, once when a seizure someone else logged
-  forms a cluster. The diary records what was seen; it does
-  not diagnose and never says it is safe to wait. New routes under
-  `/api/seizures`; migration `0504_seizure_diary`. Thanks to @ch3funio for
+  forms a cluster, never the guardian who logged it. A carer whose share
+  does not include medications logs seizures and rescue doses by name, but
+  cannot record a dose on a medication. The diary records what was seen; it
+  does not diagnose and never says it is safe to wait. New routes under
+  `/api/seizures`; migrations `0504_seizure_diary` and
+  `0508_seizure_ilae_at_log_and_cluster_alerts`. Thanks to @ch3funio for
   the detailed request and the clinical detail behind it. (#1368)
 
 - **A guardian can file documents for a managed profile.** From your own
@@ -221,7 +228,7 @@
 - History imports from Garmin, Polar, Oura, WHOOP and Withings sleep, and the daily totals of a Health Connect or Apple Health import, slowed down the longer the history was, and so did reading it again. Each reading was written on its own, about eight database round trips apiece, and on an account the database had not yet gathered statistics for, each one also looked through every reading the account already held. Readings are now written in batches: a year of Garmin history that took some 48,000 statements takes about 450. A Strava history import also needs under a third of the statements it did, because an activity already stored is no longer tried as a new one first, and a years-old activity no longer reads the account's module settings.
 - A lab marker created from a text result, such as "negative" on a scanned report or a CSV row without a unit, can be edited again. It opens with "No unit" ticked, a rename saves without touching the unit, and the unit can be set while the marker holds only text results. A range read beside such a text result came without a unit, so it is dropped when the marker gets a unit, unless you enter the range again with it. An Apple Health or CSV import no longer refuses the first number for such a marker as a unit mismatch; that number gives the marker its unit. The unit stays locked once numbers are stored under it, and writing the same unit another way (`mg/dl` for `mg/dL`) no longer counts as a change. (#1393)
 - On an account with a watch sending heart rate every few seconds, weight, blood pressure and other occasional readings went missing from the MCP metric series, the Coach and the insights, because the heart rate filled every read before they were reached. Each kind of reading now gets its own share, so they all show up again. (#1398)
-- Large accounts, such as a watch sending heart rate every few seconds for years, no longer time out in the MCP `list_metrics` and `search` tools. They used to build the whole Coach context to learn which data exists; they now ask each kind of data whether it has readings and take exact reading counts from the daily summaries, and the check for older readings, the all-time figures in the insights, the per-metric status cards, the charts, the doctor report and the iPhone app's sync check no longer read the whole history on every call. A nightly check now compares the daily summaries with the readings written in the last two days and rebuilds a day that does not match. Thanks to @mailuminatti for measuring it on a real account. (#1398)
+- Large accounts, such as a watch sending heart rate every few seconds for years, no longer time out in the MCP `list_metrics` and `search` tools. For MCP clients: the counts `list_metrics` reports now cover the last 30 days, not the whole history. They used to build the whole Coach context to learn which data exists; they now ask each kind of data whether it has readings and take exact reading counts from the daily summaries, and the check for older readings, the all-time figures in the insights, the per-metric status cards, the charts, the doctor report and the iPhone app's sync check no longer read the whole history on every call. A nightly check now compares the daily summaries with the readings written in the last two days and rebuilds a day that does not match. Thanks to @mailuminatti for measuring it on a real account. (#1398)
 - Right after a large first import, before the database had refreshed its statistics, the dashboard's latest readings and the insight reads could walk through every reading of the account once for each kind of measurement, which on a long history takes seconds or runs into the timeout. Each kind is now looked up on its own whatever the statistics say.
 - Large Apple Health exports, which the Health app writes as ZIP64 archives, no longer lose their ECGs and workout routes: the reader for those files refused ZIP64 and counted every one as failed. An export with more than 20,000 files no longer loses its ECGs either, a large file the import does not read no longer stops the routes or lab results from being read, and a single file over a size limit now fails on its own instead of taking every file of its kind with it.
 
