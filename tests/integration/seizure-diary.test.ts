@@ -354,11 +354,22 @@ describe("a guardian logs against the managed child's record", () => {
     const read = await diary();
     const events = (
       (await read.json()) as {
-        data: { events: Array<{ loggedBy: string; loggedByViewer: boolean }> };
+        data: {
+          events: Array<{
+            loggedBy: string;
+            loggedByViewer: boolean;
+            loggedByName: string | null;
+          }>;
+        };
       }
     ).data.events;
     expect(events[0]).toEqual(
-      expect.objectContaining({ loggedBy: "delegate", loggedByViewer: true }),
+      expect.objectContaining({
+        loggedBy: "delegate",
+        loggedByViewer: true,
+        // The guardian is named the way the record switcher names them.
+        loggedByName: expect.stringContaining("guardian"),
+      }),
     );
 
     // The guardian manages the record, so the details can be added later.

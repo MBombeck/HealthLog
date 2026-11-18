@@ -11,6 +11,7 @@
 import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
+import { accountLabel } from "@/lib/sharing/account-access-view";
 import { daysBetweenDateKeys, userDayKey } from "@/lib/tz/format";
 import type {
   SeizureEvent,
@@ -143,6 +144,7 @@ export function toSeizureEventDTO(
   row: EventRow,
   types: TypeLookup,
   viewerId: string,
+  loggerNames: ReadonlyMap<string, string> = new Map(),
 ): SeizureEventDTO {
   const effective = effectiveIlaeType(row, types);
   const usual = row.typeProfileId
@@ -182,6 +184,10 @@ export function toSeizureEventDTO(
           ? "owner"
           : "delegate",
     loggedByViewer: row.loggedByUserId === viewerId,
+    loggedByName:
+      row.loggedByUserId !== null && row.loggedByUserId !== row.userId
+        ? (loggerNames.get(row.loggedByUserId) ?? null)
+        : null,
     source: row.source,
     note: decryptSeizureText(row.noteEncrypted, "note"),
     rescueDoses: [...row.rescueDoses]
@@ -358,6 +364,7 @@ export async function readSeizureDiary(
     }),
   ]);
   const truncated = rows.length > MAX_SEIZURE_EVENTS_PAGE;
+  const loggerNames = await readLoggerNames(opts.userId, rows);
   const page = truncated ? rows.slice(0, MAX_SEIZURE_EVENTS_PAGE) : rows;
   const lookup = typeLookupOf(types);
   const summary = summarise(page, lookup, rule, {
@@ -378,7 +385,9 @@ export async function readSeizureDiary(
   return {
     types,
     settings: toSettingsDTO(rule),
-    events: page.map((r) => toSeizureEventDTO(r, lookup, opts.viewerId)),
+    events: page.map((r) =>
+      toSeizureEventDTO(r, lookup, opts.viewerId, loggerNames),
+    ),
     summary,
     truncated,
   };
@@ -440,4 +449,29 @@ export function formatRescueDose(
   if (amount == null) return null;
   const text = `${Number(amount.toFixed(3))}${unit ? ` ${unit}` : ""}`;
   return text.slice(0, 50);
+}
+
+/**
+ * The names of the people who logged seizures on someone else's record. The
+ * same label the record switcher and the activity view use (`accountLabel`),
+ * so a guardian reads as they do everywhere else. An account that no longer
+ * exists has no entry.
+ */
+export async function readLoggerNames(
+  ownerId: string,
+  rows: ReadonlyArray<Pick<SeizureEvent, "loggedByUserId">>,
+): Promise<Map<string, string>> {
+  const ids = [
+    ...new Set(
+      rows
+        .map((r) => r.loggedByUserId)
+        .filter((id): id is string => id !== null && id !== ownerId),
+    ),
+  ];
+  if (ids.length === 0) return new Map();
+  const users = await prisma.user.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, username: true, displayName: true },
+  });
+  return new Map(users.map((u) => [u.id, accountLabel(u)]));
 }

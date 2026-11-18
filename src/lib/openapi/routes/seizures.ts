@@ -189,6 +189,7 @@ const seizureEvent = z
     witnessNote: z.string().nullable(),
     loggedBy: z.enum(["owner", "delegate", "unknown"]),
     loggedByViewer: z.boolean(),
+    loggedByName: z.string().nullable(),
     source: z.enum(SEIZURE_EVENT_SOURCES),
     note: z.string().nullable(),
     rescueDoses: z.array(rescueDose),

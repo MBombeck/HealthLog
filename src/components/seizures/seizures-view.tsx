@@ -217,7 +217,15 @@ function SeizureList({
                         ? ` · ${t(`seizures.sleepState.${event.sleepState}`)}`
                         : ""}
                       {event.loggedBy === "delegate"
-                        ? ` · ${t("seizures.list.loggedByDelegate")}`
+                        ? ` · ${
+                            event.loggedByViewer
+                              ? t("seizures.list.loggedByYou")
+                              : event.loggedByName
+                                ? t("seizures.list.loggedByName", {
+                                    name: event.loggedByName,
+                                  })
+                                : t("seizures.list.loggedByDelegate")
+                          }`
                         : ""}
                     </span>
                   </button>

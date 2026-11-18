@@ -229,6 +229,12 @@ export interface SeizureEventDTO {
   loggedBy: "owner" | "delegate" | "unknown";
   /** True when the viewer is the one who logged it. */
   loggedByViewer: boolean;
+  /**
+   * The name of the person who logged it when that was someone acting on the
+   * record (a guardian, a carer); null for the person themselves, an unknown
+   * logger or an account that no longer exists.
+   */
+  loggedByName: string | null;
   source: SeizureEventSource;
   note: string | null;
   rescueDoses: SeizureRescueDoseDTO[];
