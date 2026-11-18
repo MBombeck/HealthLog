@@ -15,9 +15,11 @@
 -- deleting either keeps the diary entry readable.
 --
 -- Purely additive: new types and tables only, nothing existing changes shape,
--- nothing to backfill. One DO block, so the file is one statement that rolls
--- back whole and the foreign keys' lock wait on `users`, `medications` and
--- `medication_intake_events` is bounded. Reversibility: dropping the four
+-- nothing to backfill. Every statement is guarded, the foreign keys included,
+-- so a lock-timeout retry or a database that already holds the diary from a
+-- beta build runs the file again without a change. One DO block, so the file
+-- is one statement that rolls back whole and the foreign keys' lock wait on
+-- `users`, `medications` and `medication_intake_events` is bounded. Reversibility: dropping the four
 -- tables and the sixteen types restores the previous schema.
 --
 -- @retry-on-lock-timeout
@@ -207,31 +209,49 @@ BEGIN
 
     CREATE INDEX IF NOT EXISTS "seizure_rescue_doses_intake_event_id_idx" ON "seizure_rescue_doses"("intake_event_id");
 
-    ALTER TABLE "seizure_type_profiles"
-        ADD CONSTRAINT "seizure_type_profiles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'seizure_type_profiles_user_id_fkey') THEN
+        ALTER TABLE "seizure_type_profiles"
+            ADD CONSTRAINT "seizure_type_profiles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
 
-    ALTER TABLE "seizure_type_profiles"
-        ADD CONSTRAINT "seizure_type_profiles_rescue_medication_id_fkey" FOREIGN KEY ("rescue_medication_id") REFERENCES "medications"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'seizure_type_profiles_rescue_medication_id_fkey') THEN
+        ALTER TABLE "seizure_type_profiles"
+            ADD CONSTRAINT "seizure_type_profiles_rescue_medication_id_fkey" FOREIGN KEY ("rescue_medication_id") REFERENCES "medications"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
 
-    ALTER TABLE "seizure_events"
-        ADD CONSTRAINT "seizure_events_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'seizure_events_user_id_fkey') THEN
+        ALTER TABLE "seizure_events"
+            ADD CONSTRAINT "seizure_events_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
 
-    ALTER TABLE "seizure_events"
-        ADD CONSTRAINT "seizure_events_type_profile_id_fkey" FOREIGN KEY ("type_profile_id") REFERENCES "seizure_type_profiles"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'seizure_events_type_profile_id_fkey') THEN
+        ALTER TABLE "seizure_events"
+            ADD CONSTRAINT "seizure_events_type_profile_id_fkey" FOREIGN KEY ("type_profile_id") REFERENCES "seizure_type_profiles"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
 
-    ALTER TABLE "seizure_rescue_doses"
-        ADD CONSTRAINT "seizure_rescue_doses_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'seizure_rescue_doses_user_id_fkey') THEN
+        ALTER TABLE "seizure_rescue_doses"
+            ADD CONSTRAINT "seizure_rescue_doses_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
 
-    ALTER TABLE "seizure_rescue_doses"
-        ADD CONSTRAINT "seizure_rescue_doses_event_id_fkey" FOREIGN KEY ("event_id") REFERENCES "seizure_events"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'seizure_rescue_doses_event_id_fkey') THEN
+        ALTER TABLE "seizure_rescue_doses"
+            ADD CONSTRAINT "seizure_rescue_doses_event_id_fkey" FOREIGN KEY ("event_id") REFERENCES "seizure_events"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
 
-    ALTER TABLE "seizure_rescue_doses"
-        ADD CONSTRAINT "seizure_rescue_doses_medication_id_fkey" FOREIGN KEY ("medication_id") REFERENCES "medications"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'seizure_rescue_doses_medication_id_fkey') THEN
+        ALTER TABLE "seizure_rescue_doses"
+            ADD CONSTRAINT "seizure_rescue_doses_medication_id_fkey" FOREIGN KEY ("medication_id") REFERENCES "medications"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
 
-    ALTER TABLE "seizure_rescue_doses"
-        ADD CONSTRAINT "seizure_rescue_doses_intake_event_id_fkey" FOREIGN KEY ("intake_event_id") REFERENCES "medication_intake_events"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'seizure_rescue_doses_intake_event_id_fkey') THEN
+        ALTER TABLE "seizure_rescue_doses"
+            ADD CONSTRAINT "seizure_rescue_doses_intake_event_id_fkey" FOREIGN KEY ("intake_event_id") REFERENCES "medication_intake_events"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
 
-    ALTER TABLE "seizure_diary_settings"
-        ADD CONSTRAINT "seizure_diary_settings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'seizure_diary_settings_user_id_fkey') THEN
+        ALTER TABLE "seizure_diary_settings"
+            ADD CONSTRAINT "seizure_diary_settings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
 END
 $migration$;
