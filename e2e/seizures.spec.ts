@@ -16,8 +16,9 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 
-import { expect, test } from "./setup/test";
+import { STORAGE_STATE_PATH } from "./setup/global-setup";
 import { resetSeizures, setSeizuresModule } from "./setup/seizure-fixture";
+import { expect, test } from "./setup/test";
 
 test.beforeEach(async ({ page }) => {
   await resetSeizures();
@@ -35,6 +36,10 @@ test.beforeEach(async ({ page }) => {
     }
   });
 });
+
+// The fixture owns the seeded e2e user's seizures, so the browser signs in
+// as that same user.
+test.use({ storageState: STORAGE_STATE_PATH });
 
 test.describe.configure({ mode: "serial" });
 

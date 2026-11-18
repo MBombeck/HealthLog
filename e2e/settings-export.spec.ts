@@ -160,7 +160,7 @@ test.describe("Settings → Export & Import", () => {
     ).toContainText("2/12");
     await expect(
       page.getByTestId("report-group-row-cardio-export"),
-    ).toContainText("2/16");
+    ).toContainText("2/17");
     await expect(
       page.getByTestId("report-group-row-mobility-export"),
     ).toContainText("0/11");

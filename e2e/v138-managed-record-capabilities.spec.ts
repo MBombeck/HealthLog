@@ -263,8 +263,14 @@ test.describe.serial("a guardian's controls inside a managed profile", () => {
     await openRecord(page, managed.username);
     await page.goto("/documents");
 
+    // The zone carries the picker's file input and no visible card of its
+    // own; in an empty vault the empty state's button is what the guardian
+    // sees.
     const zone = page.locator('[data-slot="document-upload-zone"]');
-    await expect(zone).toBeVisible({ timeout: 30_000 });
+    await expect(zone).toBeAttached({ timeout: 30_000 });
+    await expect(
+      page.getByRole("button", { name: "Upload a first document" }),
+    ).toBeVisible();
     await expect(
       page.locator('[data-slot="documents-owner-only"]'),
     ).toHaveCount(0);
