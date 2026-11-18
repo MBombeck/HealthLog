@@ -142,6 +142,19 @@ export function currentAssertion(): { epoch: string; scope: string } {
 }
 
 /**
+ * The two assertion headers as name/value pairs, for a transport that sets
+ * headers one at a time (the vault upload's `XMLHttpRequest`). Built here so
+ * the header names stay inside this module.
+ */
+export function recordFenceHeaderPairs(): Array<[string, string]> {
+  const assertion = currentAssertion();
+  return [
+    [RECORD_EPOCH_HEADER, assertion.epoch],
+    [RECORD_SCOPE_HEADER, assertion.scope],
+  ];
+}
+
+/**
  * Attach the assertion to a request.
  *
  * Applied inside `apiFetch` / `apiFetchEnvelope` / `apiFetchRaw` rather than at

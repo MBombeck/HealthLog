@@ -95,15 +95,17 @@ const AXIS_TICKS = [0, 360, 720, 1080, 1440];
 /** Fewest present buckets that make a course worth drawing across 24 h. */
 const MIN_BUCKETS_FOR_COURSE = 3;
 
+interface IntradayPulseChartProps {
+  userTimezone?: string;
+  initialDateKey?: string;
+  emptyMessage?: string;
+}
+
 export function IntradayPulseChart({
   userTimezone,
   initialDateKey,
   emptyMessage,
-}: {
-  userTimezone?: string;
-  initialDateKey?: string;
-  emptyMessage?: string;
-}) {
+}: IntradayPulseChartProps) {
   const { isAuthenticated } = useAuth();
   const { t } = useTranslations();
   const fmt = useFormatters();

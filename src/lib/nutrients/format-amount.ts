@@ -1,3 +1,5 @@
+import { NUTRIENT_UNIT } from "./catalog";
+
 /**
  * How a nutrient amount reads on screen, one rule for every card on
  * `/insights/nutrients`, the day view and the chart tooltips: whole numbers
@@ -21,7 +23,8 @@ export function formatNutrientAmount(
    */
   unit?: string,
 ): string {
-  const wholeFrom = unit === "mg" || unit === "ug" ? 100 : 1000;
+  const wholeFrom =
+    unit === NUTRIENT_UNIT.mg || unit === NUTRIENT_UNIT.ug ? 100 : 1000;
   const rounded =
     Math.abs(amount) >= wholeFrom
       ? Math.round(amount)

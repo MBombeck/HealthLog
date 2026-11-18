@@ -33,15 +33,11 @@ import { useTranslations } from "@/lib/i18n/context";
 import { DOCUMENT_UPLOAD_PER_USER_CONCURRENCY } from "@/lib/documents/inbound-constants";
 import { randomId } from "@/lib/random-id";
 import {
-  currentAssertion,
   RecordContextMismatchError,
+  recordFenceHeaderPairs,
   reportRecordSessionChanged,
   validateEchoedContext,
 } from "@/lib/api/record-fence";
-import {
-  RECORD_EPOCH_HEADER,
-  RECORD_SCOPE_HEADER,
-} from "@/lib/sharing/record-session-fence-contract";
 import { documentDependentKeys, invalidateKeys } from "@/lib/query-keys";
 import { uploadWithBusyRetry } from "./upload-busy-retry";
 import {
@@ -157,9 +153,9 @@ export function uploadViaXhr(
     // Retry-safe by construction: the server honours Idempotency-Key, so a
     // network blip that DID land server-side cannot double-store on retry.
     xhr.setRequestHeader("Idempotency-Key", randomId());
-    const assertion = currentAssertion();
-    xhr.setRequestHeader(RECORD_EPOCH_HEADER, assertion.epoch);
-    xhr.setRequestHeader(RECORD_SCOPE_HEADER, assertion.scope);
+    for (const [name, value] of recordFenceHeaderPairs()) {
+      xhr.setRequestHeader(name, value);
+    }
     xhr.upload.addEventListener("progress", (event) => {
       if (event.lengthComputable && event.total > 0) {
         onProgress(event.loaded / event.total);

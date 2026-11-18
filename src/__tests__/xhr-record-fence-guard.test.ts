@@ -9,7 +9,8 @@
  * guardian's record failed with the generic error.
  *
  * So the set of files that construct an XHR is frozen here, and each one must
- * set both headers from `currentAssertion()` and check the response echo. A new
+ * set both headers from `recordFenceHeaderPairs()` (built on
+ * `currentAssertion()`) and check the response echo. A new
  * XHR fails this test until it does the same, or until the reason it does not
  * need to is written down in the allowlist.
  */
@@ -53,9 +54,8 @@ describe("raw XMLHttpRequest carries the record-session fence", () => {
     "%s sets both fence headers and checks the echo",
     (rel) => {
       const src = code(rel);
-      expect(src).toMatch(/currentAssertion\s*\(\s*\)/);
-      expect(src).toMatch(/setRequestHeader\(\s*RECORD_EPOCH_HEADER\s*,/);
-      expect(src).toMatch(/setRequestHeader\(\s*RECORD_SCOPE_HEADER\s*,/);
+      expect(src).toMatch(/recordFenceHeaderPairs\s*\(\s*\)/);
+      expect(src).toMatch(/setRequestHeader\(\s*name\s*,\s*value\s*\)/);
       expect(src).toMatch(/validateEchoedContext\s*\(/);
     },
   );

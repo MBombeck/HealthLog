@@ -72,6 +72,15 @@ export function isNudgeUnread(
   return seenStamp !== status.nudgedAt;
 }
 
+/**
+ * The seizure diary is an emergency surface: a carer reads the threshold
+ * alert and taps the call button there, and the launcher covered the end of
+ * that alert on a phone.
+ */
+function isEmergencySurface(pathname: string | null): boolean {
+  return pathname?.startsWith("/seizures") ?? false;
+}
+
 export function LayoutCoachFab() {
   const { t } = useTranslations();
   const pathname = usePathname();
@@ -182,11 +191,7 @@ export function LayoutCoachFab() {
 
   if (!coachAvailable) return null;
   // The Coach chat page IS the destination — no launcher on top of it.
-  if (onCoachPage) return null;
-  // The seizure diary is an emergency surface: a carer reads the threshold
-  // alert and taps the call button there, and the launcher covered the end of
-  // that alert on a phone.
-  if (pathname?.startsWith("/seizures")) return null;
+  if (onCoachPage || isEmergencySurface(pathname)) return null;
 
   const accessibleLabel = unread
     ? t("insights.coach.nudgeBubbleLabel")
