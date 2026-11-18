@@ -243,6 +243,9 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "reminders_due",
   "removed",
   "resting_corrected",
+  // The nightly audit of the DAY rollup tier: days a failed recompute had
+  // left behind, refolded (`rollup-audit.ts`).
+  "rollup_days_refolded",
   "rows_written",
   // #1384 — how many accounts a fan-out pass attempted; 0 marks a run that
   // neither failed nor recovered, which the failure streak steps over.
