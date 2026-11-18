@@ -218,6 +218,8 @@ export const DATA_ROUTES: Readonly<Record<string, string>> = {
   "src/app/api/insights/ecg/route.ts":
     "Device recordings, list and live ingest: an upload is never refused because AI is off.",
   "src/app/api/insights/ecg/[id]/route.ts": "One device recording's waveform.",
+  "src/app/api/insights/ecg/by-external-ids/route.ts":
+    "Removes device recordings the phone reports deleted in Apple Health.",
   "src/app/api/insights/rhythm-events/route.ts":
     "The device's own flagged events, verbatim.",
   "src/app/api/insights/score-history/route.ts":
