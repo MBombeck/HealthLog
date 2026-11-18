@@ -61,11 +61,12 @@ const API_ROOT = join(process.cwd(), "src", "app", "api");
  * file has never heard of is reported instead of ignored.
  */
 const DELEGATED_WRITE =
-  /requireRecordAuth\(\s*"(write|manage)"\s*,\s*"([a-z-]+)"/g;
+  /requireRecordAuth\(\s*"(write|manage|guardian)"\s*,\s*"([a-z-]+)"/g;
 
 interface Observed {
   write: Set<string>;
   manage: Set<string>;
+  guardian: Set<string>;
   matches: number;
   unknown: string[];
 }
@@ -74,6 +75,7 @@ function observe(): Observed {
   const out: Observed = {
     write: new Set(),
     manage: new Set(),
+    guardian: new Set(),
     matches: 0,
     unknown: [],
   };
@@ -83,7 +85,7 @@ function observe(): Observed {
     const source = readFileSync(join(API_ROOT, rel), "utf8");
     for (const m of source.matchAll(DELEGATED_WRITE)) {
       out.matches += 1;
-      const need = m[1] as "write" | "manage";
+      const need = m[1] as "write" | "manage" | "guardian";
       const domain = m[2];
       if (domain === "record") continue;
       if (!known.has(domain)) {
@@ -105,6 +107,7 @@ describe("the delegated-write table agrees with the routes", () => {
     expect(observed.matches).toBeGreaterThan(50);
     expect(observed.write.size).toBeGreaterThan(0);
     expect(observed.manage.size).toBeGreaterThan(0);
+    expect(observed.guardian.size).toBeGreaterThan(0);
   });
 
   it("names no section outside the vocabulary", () => {
@@ -118,9 +121,13 @@ describe("the delegated-write table agrees with the routes", () => {
         {
           write: observed.write.has(domain),
           manage: observed.manage.has(domain),
+          guardian: observed.guardian.has(domain),
         },
       ]),
-    ) as Record<ShareDomain, { write: boolean; manage: boolean }>;
+    ) as Record<
+      ShareDomain,
+      { write: boolean; manage: boolean; guardian: boolean }
+    >;
     expect(DOMAIN_WRITE_SUPPORT).toEqual(derived);
   });
 
@@ -147,15 +154,48 @@ describe("delegatedDomains", () => {
     expect(delegatedDomains("write", null, "manage")).toEqual([]);
   });
 
-  it("gives a manage grant every section with a delegated route, and never the vault", () => {
-    const writable = delegatedDomains("manage", null, "write");
-    const manageable = delegatedDomains("manage", null, "manage");
+  it("gives an adult's manage grant every section with a delegated route, and never the vault", () => {
+    // The default record kind is the adult share: a caller that forgets to
+    // say which kind of record it is gets the narrower answer.
+    for (const writable of [
+      delegatedDomains("manage", null, "write"),
+      delegatedDomains("manage", null, "write", "shared"),
+    ]) {
+      expect(writable).not.toContain("documents");
+    }
+    const writable = delegatedDomains("manage", null, "write", "shared");
+    const manageable = delegatedDomains("manage", null, "manage", "shared");
     expect(manageable).toContain("mind");
     expect(manageable).toContain("profile");
     expect(manageable).not.toContain("documents");
-    expect(writable).not.toContain("documents");
+    expect(delegatedDomains("manage", null, "manage")).not.toContain(
+      "documents",
+    );
     // manageable ⊆ writable: a section a grant can manage is one it can add to.
     for (const domain of manageable) expect(writable).toContain(domain);
+  });
+
+  it("gives a managed profile's guardian the vault as well (#1403)", () => {
+    const writable = delegatedDomains("manage", null, "write", "managed");
+    const manageable = delegatedDomains("manage", null, "manage", "managed");
+    expect(writable).toContain("documents");
+    expect(manageable).toContain("documents");
+    // Everything an adult's manage grant reaches, the guardian reaches too.
+    for (const domain of delegatedDomains("manage", null, "manage", "shared")) {
+      expect(manageable).toContain(domain);
+    }
+    for (const domain of manageable) expect(writable).toContain(domain);
+  });
+
+  it("never gives the vault below MANAGE, managed record or not", () => {
+    for (const level of ["read", "write"] as const) {
+      for (const need of ["write", "manage"] as const) {
+        expect(
+          delegatedDomains(level, null, need, "managed"),
+          `${level}/${need}`,
+        ).not.toContain("documents");
+      }
+    }
   });
 
   it("narrows to the grant's sections, keeping consent order", () => {

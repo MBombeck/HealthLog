@@ -24,7 +24,7 @@
 import { type NextRequest } from "next/server";
 
 import { requireAiCapability } from "@/lib/ai/capabilities/gate";
-import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
+import { apiHandler, requireRecordAuth, HttpError } from "@/lib/api-handler";
 import {
   apiError,
   apiSuccess,
@@ -73,7 +73,9 @@ export const POST = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
     // Metered by the document chat's own bucket below, not the shared
     // ceiling.
-    const { user } = await requireAuth(undefined, { writeBucket: "own" });
+    const { user } = await requireRecordAuth("guardian", "documents", {
+      writeBucket: "own",
+    });
     const userId = user.id;
 
     const gate = await requireModuleEnabled(userId, "inboundDocuments");
@@ -221,7 +223,7 @@ export const POST = apiHandler(
 
 export const GET = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireAuth();
+    const { user } = await requireRecordAuth("guardian", "documents");
     const userId = user.id;
 
     const gate = await requireModuleEnabled(userId, "inboundDocuments");

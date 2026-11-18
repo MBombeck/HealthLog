@@ -5663,6 +5663,11 @@
             "labsChanges": "Variazioni di laboratorio",
             "ecg": "ECG"
           }
+        },
+        "documents": {
+          "title": "Documenti",
+          "autoAiRead": "Leggi automaticamente i nuovi documenti con l'IA",
+          "honesty": "Se attivo, ogni documento caricato in questo profilo viene inviato al fornitore di IA dell'istanza per essere letto, descritto e indicizzato per la ricerca, senza un tocco per documento, e vengono inviati anche i documenti già presenti senza riassunto (fino a 200 a ogni attivazione). Attivarlo registra il consenso di questo profilo alla lettura dei suoi documenti. Valgono le impostazioni IA del profilo; il tuo fornitore di IA non viene mai usato. Disattivato per impostazione predefinita."
         }
       },
       "unavailableTitle": "Non disponibile in questo record condiviso",
@@ -13478,6 +13483,16 @@
       "documentStore": "{name} ha aggiunto un documento",
       "documentUpdate": "{name} ha modificato un documento",
       "documentDiscard": "{name} ha scartato un documento",
+      "documentRestore": "{name} ha ripristinato un documento",
+      "documentBulk": "{name} ha modificato più documenti",
+      "documentConfirm": "{name} ha confermato dei valori da un documento",
+      "documentExtract": "{name} ha letto i valori di un documento",
+      "documentIndex": "{name} ha reso un documento ricercabile",
+      "documentReindex": "{name} ha reso i documenti ricercabili",
+      "documentSuggest": "{name} ha chiesto i dettagli di un documento",
+      "documentSummary": "{name} ha riassunto un documento",
+      "documentChat": "{name} ha fatto una domanda su un documento",
+      "documentFactEdit": "{name} ha corretto un valore di un documento",
       "medicationIntakeImportFinished": "L'importazione delle dosi avviata da {name} è terminata",
       "medicationOneShotReconciled": "Un farmaco monodose è stato riaperto o chiuso dopo una dose registrata da {name}",
       "vaccinationBoosterPlanned": "{name} ha pianificato un richiamo",

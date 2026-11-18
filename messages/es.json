@@ -5663,6 +5663,11 @@
             "labsChanges": "Cambios de laboratorio",
             "ecg": "ECG"
           }
+        },
+        "documents": {
+          "title": "Documentos",
+          "autoAiRead": "Leer los documentos nuevos automáticamente con IA",
+          "honesty": "Si está activado, cada documento subido a este perfil se envía al proveedor de IA de la instancia para leerlo, describirlo e indexarlo para la búsqueda, sin tocar cada documento, y también se envían los documentos que ya hay sin resumen (hasta 200 cada vez que se activa). Activarlo registra el consentimiento de este perfil para que se lean sus documentos. Se aplican los ajustes de IA del perfil; nunca se usa tu propio proveedor de IA. Desactivado por defecto."
         }
       },
       "unavailableTitle": "No disponible en este registro compartido",
@@ -13478,6 +13483,16 @@
       "documentStore": "{name} añadió un documento",
       "documentUpdate": "{name} cambió un documento",
       "documentDiscard": "{name} descartó un documento",
+      "documentRestore": "{name} restauró un documento",
+      "documentBulk": "{name} cambió varios documentos",
+      "documentConfirm": "{name} confirmó valores de un documento",
+      "documentExtract": "{name} leyó los valores de un documento",
+      "documentIndex": "{name} hizo que un documento se pueda buscar",
+      "documentReindex": "{name} hizo que los documentos se puedan buscar",
+      "documentSuggest": "{name} pidió los datos de un documento",
+      "documentSummary": "{name} resumió un documento",
+      "documentChat": "{name} preguntó sobre un documento",
+      "documentFactEdit": "{name} corrigió un valor de un documento",
       "medicationIntakeImportFinished": "La importación de dosis que inició {name} ha terminado",
       "medicationOneShotReconciled": "Un medicamento de una sola toma se abrió o se cerró tras una dosis que registró {name}",
       "vaccinationBoosterPlanned": "{name} planificó un refuerzo",

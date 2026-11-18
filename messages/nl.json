@@ -5663,6 +5663,11 @@
             "labsChanges": "Veranderingen in labuitslagen",
             "ecg": "ECG"
           }
+        },
+        "documents": {
+          "title": "Documenten",
+          "autoAiRead": "Nieuwe documenten automatisch met AI lezen",
+          "honesty": "Aan betekent dat elk document dat in dit profiel wordt geüpload naar de AI-provider van de instantie gaat om gelezen, beschreven en doorzoekbaar gemaakt te worden, zonder tik per document, en documenten die er al zijn zonder samenvatting gaan ook (tot 200 bij elke keer aanzetten). Aanzetten legt de toestemming van dit profiel vast om zijn documenten te laten lezen. De AI-instellingen van het profiel gelden; je eigen AI-provider wordt nooit gebruikt. Standaard uit."
         }
       },
       "unavailableTitle": "Niet beschikbaar in dit gedeelde dossier",
@@ -13478,6 +13483,16 @@
       "documentStore": "{name} heeft een document toegevoegd",
       "documentUpdate": "{name} heeft een document gewijzigd",
       "documentDiscard": "{name} heeft een document weggegooid",
+      "documentRestore": "{name} heeft een document hersteld",
+      "documentBulk": "{name} heeft meerdere documenten gewijzigd",
+      "documentConfirm": "{name} heeft waarden uit een document bevestigd",
+      "documentExtract": "{name} heeft de waarden in een document uitgelezen",
+      "documentIndex": "{name} heeft een document doorzoekbaar gemaakt",
+      "documentReindex": "{name} heeft de documenten doorzoekbaar gemaakt",
+      "documentSuggest": "{name} heeft gegevens voor een document laten voorstellen",
+      "documentSummary": "{name} heeft een document laten samenvatten",
+      "documentChat": "{name} heeft een vraag over een document gesteld",
+      "documentFactEdit": "{name} heeft een waarde uit een document gecorrigeerd",
       "medicationIntakeImportFinished": "De dosisimport die {name} had gestart, is voltooid",
       "medicationOneShotReconciled": "Een eenmalig medicijn is geopend of afgesloten na een dosis die {name} had vastgelegd",
       "vaccinationBoosterPlanned": "{name} heeft een booster gepland",

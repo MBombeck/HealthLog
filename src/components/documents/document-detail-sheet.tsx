@@ -218,9 +218,8 @@ export function DocumentDetailSheet({
 
             <DocumentSummaryBlock
               summary={doc.summary}
-              // The stored summary is read; generating one writes to the
-              // owner's record, so a delegate reads what is there and has no
-              // generate control.
+              // Generating writes to the record: the owner and a managed
+              // profile's guardian; an adult's delegate reads what is there.
               canGenerate={canManageDocuments}
               summaryState={doc.summaryState}
               generatedAtLabel={
@@ -235,7 +234,7 @@ export function DocumentDetailSheet({
               onGenerate={generateStoredSummary}
             />
 
-            {canManageDocuments && documentAi.reason === "consent_required" ? (
+            {detail.ownsVault && documentAi.reason === "consent_required" ? (
               <DocumentReadingConsentPrompt />
             ) : null}
 

@@ -163,6 +163,7 @@ describe("the utility tail under a switch", () => {
             level,
             sections === null ? null : [...sections],
             "manage",
+            recordKind,
           ),
   });
   const MANAGED_AT_MANAGE = context("managed", "manage");

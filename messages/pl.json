@@ -5663,6 +5663,11 @@
             "labsChanges": "Zmiany wyników laboratoryjnych",
             "ecg": "EKG"
           }
+        },
+        "documents": {
+          "title": "Dokumenty",
+          "autoAiRead": "Automatycznie czytaj nowe dokumenty przez AI",
+          "honesty": "Po włączeniu każdy dokument przesłany do tego profilu trafia do dostawcy AI instancji, który go czyta, opisuje i indeksuje do wyszukiwania, bez dotykania każdego dokumentu; wysyłane są też dokumenty już zapisane bez podsumowania (do 200 przy każdym włączeniu). Włączenie zapisuje zgodę tego profilu na czytanie jego dokumentów. Obowiązują ustawienia AI profilu; twój własny dostawca AI nigdy nie jest używany. Domyślnie wyłączone."
         }
       },
       "unavailableTitle": "Niedostępne w tym udostępnionym rekordzie",
@@ -13478,6 +13483,16 @@
       "documentStore": "{name} dodał dokument",
       "documentUpdate": "{name} zmienił dokument",
       "documentDiscard": "{name} odrzucił dokument",
+      "documentRestore": "{name} przywrócił dokument",
+      "documentBulk": "{name} zmienił kilka dokumentów",
+      "documentConfirm": "{name} potwierdził wartości z dokumentu",
+      "documentExtract": "{name} odczytał wartości z dokumentu",
+      "documentIndex": "{name} umożliwił wyszukiwanie w dokumencie",
+      "documentReindex": "{name} umożliwił wyszukiwanie w dokumentach",
+      "documentSuggest": "{name} poprosił o dane dokumentu",
+      "documentSummary": "{name} streścił dokument",
+      "documentChat": "{name} zadał pytanie o dokument",
+      "documentFactEdit": "{name} poprawił wartość z dokumentu",
       "medicationIntakeImportFinished": "Import przyjęć rozpoczęty przez {name} zakończył się",
       "medicationOneShotReconciled": "Lek jednorazowy został otwarty lub zamknięty po dawce zapisanej przez {name}",
       "vaccinationBoosterPlanned": "{name} zaplanował dawkę przypominającą",

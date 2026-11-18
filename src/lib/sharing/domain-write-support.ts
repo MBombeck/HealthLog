@@ -27,7 +27,10 @@
  * to (`scope.ts`), and a route declaring it reads across sections; nothing a
  * per-section control asks is answered by it.
  */
-import type { AccountAccessLevel } from "@/lib/sharing/account-access-view";
+import type {
+  AccountAccessLevel,
+  SharedAccountRecordKind,
+} from "@/lib/sharing/account-access-view";
 import { SHARE_DOMAINS, type ShareDomain } from "@/lib/sharing/scope";
 
 /** Whether any route in the section declares the need. */
@@ -36,6 +39,13 @@ export interface DomainWriteSupport {
   readonly write: boolean;
   /** At least one route declares `requireRecordAuth("manage", domain)`. */
   readonly manage: boolean;
+  /**
+   * #1403 — at least one route declares `requireRecordAuth("guardian",
+   * domain)`: a change only a managed profile's guardian may make under a
+   * grant. Reached by a MANAGE grant on a managed record and by nothing on an
+   * adult's.
+   */
+  readonly guardian: boolean;
 }
 
 /**
@@ -45,18 +55,19 @@ export interface DomainWriteSupport {
 export const DOMAIN_WRITE_SUPPORT: Readonly<
   Record<ShareDomain, DomainWriteSupport>
 > = {
-  measurements: { write: true, manage: true },
-  medications: { write: true, manage: true },
-  labs: { write: true, manage: true },
-  profile: { write: true, manage: true },
-  illness: { write: true, manage: true },
+  measurements: { write: true, manage: true, guardian: false },
+  medications: { write: true, manage: true, guardian: false },
+  labs: { write: true, manage: true, guardian: false },
+  profile: { write: true, manage: true, guardian: false },
+  illness: { write: true, manage: true, guardian: false },
   // A mood entry and a screener are created at MANAGE, not at WRITE.
-  mind: { write: false, manage: true },
+  mind: { write: false, manage: true, guardian: false },
   // Every cycle write is a MANAGE route.
-  cycle: { write: false, manage: true },
-  // The vault is read-only under every grant; upload, filing, sharing and the
-  // AI verbs stay with the owner.
-  documents: { write: false, manage: false },
+  cycle: { write: false, manage: true, guardian: false },
+  // #1403 — the vault is read-only under every adult grant. A managed
+  // profile's guardian uploads, files, deletes and restores; sharing, sources
+  // and the AI verbs stay with the owner.
+  documents: { write: false, manage: false, guardian: true },
 };
 
 /** The two needs a delegated write can declare. */
@@ -92,18 +103,29 @@ const LEVEL_RANK: Record<AccountAccessLevel, number> = {
  *
  * For `need === "manage"` only a MANAGE grant answers, and only where a route
  * declares the need. The result keeps the consent screen's order.
+ *
+ * #1403 — `recordKind` adds the guardian routes. On a managed record a MANAGE
+ * grant also reaches every section with a `"guardian"` route, in both lists:
+ * the vault takes an upload (a create) and a rename, delete and restore (the
+ * changes), and the guardian may make them all. On an adult's record the
+ * guardian routes refuse at every level, so they add nothing. The default is
+ * the adult share, so a caller that does not say which kind of record it is
+ * publishes the narrower answer.
  */
 export function delegatedDomains(
   level: AccountAccessLevel,
   sections: readonly ShareDomain[] | null,
   need: DelegatedWriteNeed,
+  recordKind: SharedAccountRecordKind = "shared",
 ): ShareDomain[] {
   if (LEVEL_RANK[level] < LEVEL_RANK[need]) return [];
   const opened =
     sections === null ? new Set<ShareDomain>(SHARE_DOMAINS) : new Set(sections);
+  const guardian = level === "manage" && recordKind === "managed";
   return SHARE_DOMAINS.filter((domain) => {
     if (!opened.has(domain)) return false;
     const support = DOMAIN_WRITE_SUPPORT[domain];
+    if (guardian && support.guardian) return true;
     if (need === "manage") return support.manage;
     return support.write || (level === "manage" && support.manage);
   });

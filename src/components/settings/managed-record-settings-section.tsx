@@ -21,6 +21,7 @@ import {
 
 import { SettingsCardHeader } from "./_card-header";
 import { CoachSettingsForm } from "./managed-record/coach-form";
+import { DocumentsSettingsForm } from "./managed-record/documents-form";
 import type { SettingsFormProps } from "./managed-record/form-kit";
 import { InsightsSettingsForm } from "./managed-record/insights-form";
 import { ModulesSettingsForm } from "./managed-record/modules-form";
@@ -57,6 +58,8 @@ export function ManagedRecordSettingsForm({
       return <CoachSettingsForm {...props} />;
     case "insights":
       return <InsightsSettingsForm {...props} />;
+    case "documents":
+      return <DocumentsSettingsForm {...props} />;
   }
 }
 

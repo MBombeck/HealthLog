@@ -5663,6 +5663,11 @@
             "labsChanges": "Évolutions de laboratoire",
             "ecg": "ECG"
           }
+        },
+        "documents": {
+          "title": "Documents",
+          "autoAiRead": "Lire automatiquement les nouveaux documents avec l'IA",
+          "honesty": "Activé, chaque document téléversé dans ce profil est envoyé au fournisseur d'IA de l'instance pour être lu, décrit et indexé pour la recherche, sans action par document, et les documents déjà présents sans résumé sont aussi envoyés (jusqu'à 200 à chaque activation). L'activer enregistre le consentement de ce profil à la lecture de ses documents. Les réglages d'IA du profil s'appliquent ; votre propre fournisseur d'IA n'est jamais utilisé. Désactivé par défaut."
         }
       },
       "unavailableTitle": "Indisponible dans ce dossier partagé",
@@ -13478,6 +13483,16 @@
       "documentStore": "{name} a ajouté un document",
       "documentUpdate": "{name} a modifié un document",
       "documentDiscard": "{name} a écarté un document",
+      "documentRestore": "{name} a restauré un document",
+      "documentBulk": "{name} a modifié plusieurs documents",
+      "documentConfirm": "{name} a confirmé des valeurs d'un document",
+      "documentExtract": "{name} a lu les valeurs d'un document",
+      "documentIndex": "{name} a rendu un document consultable par recherche",
+      "documentReindex": "{name} a rendu les documents consultables par recherche",
+      "documentSuggest": "{name} a demandé les détails d'un document",
+      "documentSummary": "{name} a résumé un document",
+      "documentChat": "{name} a posé une question sur un document",
+      "documentFactEdit": "{name} a corrigé une valeur d'un document",
       "medicationIntakeImportFinished": "L'import de prises lancé par {name} est terminé",
       "medicationOneShotReconciled": "Un médicament à prise unique a été rouvert ou clos après une prise enregistrée par {name}",
       "vaccinationBoosterPlanned": "{name} a planifié un rappel",

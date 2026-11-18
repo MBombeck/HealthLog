@@ -450,6 +450,20 @@ const HANDLER_BODY_MODULES: Record<string, readonly string[]> = {
     "lib/medications/update-intake-event.ts",
     "lib/medications/delete-intake-event.ts",
   ],
+  // #1403 — the vault upload stores through the shared ingest, which files
+  // `documents.inbound.store`.
+  "app/api/documents/inbound/route.ts": ["lib/documents/ingest.ts"],
+  // The document AI routes file their rows where the read finishes, in the
+  // run module the route and the background worker share.
+  "app/api/documents/inbound/[id]/extract/route.ts": [
+    "lib/documents/ai-runs/extract-run.ts",
+  ],
+  "app/api/documents/inbound/[id]/suggest/route.ts": [
+    "lib/documents/ai-runs/suggest-run.ts",
+  ],
+  "app/api/documents/inbound/[id]/index/route.ts": [
+    "lib/documents/ai-runs/index-run.ts",
+  ],
 };
 
 /** The route and the service modules carrying its handler bodies. */
@@ -1326,16 +1340,72 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   // The document vault. Five reads admitted together for the reason the front
   // door's eight were: `/documents` carries `sharedRecord: true`, so the shell
   // offers the destination and every read behind it refused — the same failure
-  // v1.36.1 describes as fixed on `/`. Uploading, retyping, deleting, linking,
-  // indexing and every AI verb stay bare; the split is per-arm, because the
-  // resolver escalates a non-safe method to `"write"` on its own.
+  // v1.36.1 describes as fixed on `/`. The split is per-arm, because the
+  // resolver escalates a non-safe method to `"write"` on its own. #1403 —
+  // uploading, retyping, linking, deleting, restoring, the document AI
+  // actions and the review that confirms their values declare `"guardian"`:
+  // a managed profile's guardian runs the vault, an adult's share at any level
+  // does not. Those arms are frozen a second time in the guardian literal
+  // below. Delete now, share links and the document sources stay bare.
   "app/api/documents/inbound/route.ts": {
     domain: "documents",
-    why: "The record's document list. The GET never selects the encrypted blob column and scopes every predicate to the resolved user id; the POST upload beside it is not delegable and keeps `requireAuth()`.",
+    why: "The record's document list. The GET never selects the encrypted blob column and scopes every predicate to the resolved user id. The POST upload beside it declares `\"guardian\"`: only a managed profile's guardian uploads into somebody else's vault.",
   },
   "app/api/documents/inbound/[id]/route.ts": {
     domain: "documents",
-    why: "One document of the record with its staged facts and condition links, fetched under the resolved user id before anything is serialised. The PATCH and DELETE are edits and stay with the owner.",
+    why: "One document of the record with its staged facts and condition links, fetched under the resolved user id before anything is serialised. The PATCH and DELETE are edits and declare `\"guardian\"`: a managed profile's guardian makes them, an adult's delegate never does.",
+  },
+  "app/api/documents/inbound/[id]/restore/route.ts": {
+    domain: "documents",
+    why: "Bringing a deleted document back, under the resolved record. Declares `\"guardian\"` and nothing else: a managed profile's guardian replaces a bad scan and undoes a slip; an adult's delegate deleted nothing they could restore.",
+  },
+  "app/api/documents/inbound/deleted/route.ts": {
+    domain: "documents",
+    why: "Recently deleted, metadata only, for whoever may restore from it. A GET that declares `\"guardian\"` on purpose: an adult's delegate restores nothing, so they are not shown the owner's decisions in progress at any level.",
+  },
+  "app/api/documents/inbound/[id]/extract/route.ts": {
+    domain: "documents",
+    why: "Reading a document's values into staged facts, under the record's own `documentAi` capability and the provider the record resolves to (the operator's, for a managed profile). Declares `\"guardian\"` only: an adult's delegate starts no model work in somebody else's record.",
+  },
+  "app/api/documents/inbound/[id]/suggest/route.ts": {
+    domain: "documents",
+    why: 'A filing draft (title, kind, date) read by a model, written nowhere. Same capability, provider and egress re-check as extract; `"guardian"` only.',
+  },
+  "app/api/documents/inbound/[id]/summary/route.ts": {
+    domain: "documents",
+    why: 'A document\'s summary or transcribed text on request, optionally stored on the row. Same capability, provider and egress re-check as extract; `"guardian"` only.',
+  },
+  "app/api/documents/inbound/[id]/index/route.ts": {
+    domain: "documents",
+    why: 'Making one document searchable, and the lab staging that follows it. Same capability, provider and egress re-check as extract; `"guardian"` only.',
+  },
+  "app/api/documents/inbound/reindex/route.ts": {
+    domain: "documents",
+    why: "Queueing the record's unindexed documents for search. The worker re-asks the record's capability before every read; `\"guardian\"` only.",
+  },
+  "app/api/documents/inbound/[id]/chat/route.ts": {
+    domain: "documents",
+    why: 'Asking about one document, grounded in its own text only, and the record\'s thread history. Same capability, provider and egress re-check as extract, its own rate bucket; `"guardian"` only.',
+  },
+  "app/api/documents/inbound/[id]/facts/[factId]/route.ts": {
+    domain: "documents",
+    why: 'Correcting a staged value before it is confirmed; nothing reaches a structured store here. `"guardian"` only, with an audit row naming the actor.',
+  },
+  "app/api/documents/inbound/[id]/confirm/route.ts": {
+    domain: "documents",
+    why: 'The one write path out of the staging area: approved values become the record\'s lab results, conditions or medications. Each fact is committed only into a section the grant opens, and the audit row names the actor. `"guardian"` only.',
+  },
+  "app/api/documents/inbound/capability/route.ts": {
+    domain: "documents",
+    why: 'Which document AI transport this record would use, without a model call; the vault needs it to offer the AI actions. `"guardian"`, because it describes actions only the owner or a guardian can take.',
+  },
+  "app/api/ai-runs/[id]/route.ts": {
+    domain: "documents",
+    why: 'Where one background document AI run stands, scoped to the record that queued it. A guardian who queued a read polls it here; `"guardian"`, the same people who can queue one.',
+  },
+  "app/api/documents/inbound/bulk/route.ts": {
+    domain: "documents",
+    why: 'The vault\'s selection actions — retype, link and unlink, delete, restore — batched under the resolved record, every id narrowed to it. Declares `"guardian"`, the same people as the single-document verbs it batches; the link targets are re-checked against the sections the grant opens.',
   },
   "app/api/documents/inbound/[id]/thumbnail/route.ts": {
     domain: "documents",
@@ -2237,6 +2307,56 @@ const GUARDIAN_ROUTES: Record<string, string> = {
 };
 
 /**
+ * #1403 — route modules whose arms declare `requireRecordAuth("guardian", …)`:
+ * a change only the record's owner or a managed profile's guardian may make.
+ *
+ * A subset of {@link DELEGABLE_ROUTES} (each is health data in a section, so
+ * the section column lives there) frozen a second time here, because the
+ * people it admits are a different set from every level above: a MANAGE grant
+ * on a record carrying the managed-profile marker, and nobody on an adult's
+ * record at any level. A route joining this list widens what a guardian may do
+ * and is the diff to review; a route that should have joined it and declared
+ * `"manage"` instead would open the vault to every adult manager, which is
+ * what leg (g) and `domain-write-support-guard.test.ts` would show.
+ *
+ * Every member with a mutating guardian arm files its rows through
+ * `auditLog`, for the reason the write literal states: the actor column is the
+ * only trail of who did it.
+ */
+const DELEGABLE_GUARDIAN_ROUTES: Record<string, string> = {
+  "app/api/documents/inbound/route.ts":
+    "The vault upload. The file lands on the resolved record, counts against its quota, and the AI work it queues follows the record's capability under the guardian's authority. The importer's `documents:write` token is refused under any selector before a grant is read.",
+  "app/api/documents/inbound/[id]/route.ts":
+    "Renaming, retyping, re-dating and re-linking a document, and moving it to Recently deleted. Links are narrowed to the record and re-checked against the sections the grant opens.",
+  "app/api/documents/inbound/[id]/restore/route.ts":
+    "Restoring a deleted document, through the shared restore with its duplicate check and import-ledger cleanup.",
+  "app/api/documents/inbound/deleted/route.ts":
+    "The list the restore is chosen from. Read only; it writes nothing and so files nothing.",
+  "app/api/documents/inbound/bulk/route.ts":
+    "The batched form of the single-document verbs above, one audit row per batch.",
+  "app/api/documents/inbound/[id]/extract/route.ts":
+    "Reading a document's values into staged facts. The record's capability, consent and provider, the egress re-check on the pick, the record's budget.",
+  "app/api/documents/inbound/[id]/suggest/route.ts":
+    "A filing draft from a model, written nowhere.",
+  "app/api/documents/inbound/[id]/summary/route.ts":
+    "A summary or the transcribed text, on request.",
+  "app/api/documents/inbound/[id]/index/route.ts":
+    "Making one document searchable, and the lab staging it continues into.",
+  "app/api/documents/inbound/reindex/route.ts":
+    "Queueing the record's unindexed documents; the worker re-checks the record's capability.",
+  "app/api/documents/inbound/[id]/chat/route.ts":
+    "Asking about one document, and reading the record's threads about it.",
+  "app/api/documents/inbound/[id]/facts/[factId]/route.ts":
+    "Correcting a staged value before confirmation.",
+  "app/api/documents/inbound/[id]/confirm/route.ts":
+    "Confirming staged values into the record's labs, conditions or medications, per section the grant opens.",
+  "app/api/documents/inbound/capability/route.ts":
+    "The AI transport probe the vault needs to offer the actions. Read only.",
+  "app/api/ai-runs/[id]/route.ts":
+    "Polling a background run the guardian queued. Read only.",
+};
+
+/**
  * Route modules that deliberately resolve the ACTOR and keep working under a
  * switch, because they serve the caller's own account and nothing of the
  * owner's.
@@ -2391,8 +2511,20 @@ const ACTOR_ROUTES: Record<string, string> = {
  *
  * Correcting and removing a GLP-1 dose step joins the manage literal: the
  * step's PATCH and DELETE. With the diary, 279 -> 296.
+ *
+ * #1403 -- a managed profile's guardian runs the vault: the restore, the
+ * Recently deleted list and the bulk actions join the record list, and the
+ * new guardian literal holds the five modules with a `"guardian"` arm.
+ * 279 -> 287.
+ *
+ * #1403 -- the guardian finishes what an upload starts: the document AI
+ * actions, the staged-fact edit and confirm, the AI transport probe and the
+ * background-run poll join the record list and the guardian literal.
+ * 287 -> 307.
+ *
+ * Together, the diary, the dose step and the vault: 279 -> 324.
  */
-const FROZEN_ENTRY_COUNT = 296;
+const FROZEN_ENTRY_COUNT = 324;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
@@ -2862,6 +2994,7 @@ describe("every frozen entry carries a reason", () => {
         ([rel, entry]): [string, string] => [rel, entry.why],
       ),
       ...Object.entries(DELEGABLE_WRITE_ROUTES),
+      ...Object.entries(DELEGABLE_GUARDIAN_ROUTES),
       ...Object.entries(GUARDIAN_ROUTES),
       ...Object.entries(ACTOR_ROUTES),
     ];
@@ -3031,7 +3164,7 @@ describe("(e) the delegable write set is frozen", () => {
     for (const rel of remainder) {
       const needs = recordNeeds(rel);
       expect(
-        needs.has("read") || needs.has("manage"),
+        needs.has("read") || needs.has("manage") || needs.has("guardian"),
         `${rel} resolves no record level at all`,
       ).toBe(true);
       expect(needs.has("write"), `${rel} writes without being listed`).toBe(
@@ -3623,15 +3756,89 @@ describe("(h) the guardian route set is frozen", () => {
     expect(guardian).toContain(GUARDIAN_RESOLVER);
     expect(guardian).toContain("managedProfileAt");
 
-    // …and the record resolver must NOT read it. The two resolvers differ in
-    // exactly this fact, so a marker check that drifted into the delegable
-    // path would make the fence meaningless while every list still agreed.
+    // …and the record resolver must NOT read it on the read, write and
+    // manage paths. The two resolvers differ in exactly this fact, so a marker
+    // check that drifted into the delegable path would make the fence
+    // meaningless while every list still agreed. #1403 — the one exception is
+    // the `"guardian"` need, whose admission lives in its own function and is
+    // reached from exactly one branch; leg (j) reads that function.
     const record = functionSource(
       guardModuleOf(RECORD_RESOLVER),
       RECORD_RESOLVER,
     );
     expect(record.length).toBeGreaterThan(0);
     expect(record).not.toContain("managedProfileAt");
+    expect(record.match(/admitGuardianNeed\(/g)).toHaveLength(1);
+    expect(record).toMatch(
+      /if \(need === "guardian"\) \{[^}]*admitGuardianNeed\(domain\)/,
+    );
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+/* (j) the guardian-need set                                                  */
+/* -------------------------------------------------------------------------- */
+
+describe("(j) the guardian-need route set is frozen", () => {
+  it("equals the frozen guardian-need list", () => {
+    const scanned = routeModules();
+    expect(scanned.length).toBeGreaterThan(ROUTE_MODULE_FLOOR);
+
+    // The evidence the matcher works: `recordNeeds` is the same function that
+    // produces the large read set leg (g) measures, so a blinded matcher fails
+    // there loudly before this one can agree with itself.
+    expect(
+      scanned.filter((rel) => recordNeeds(rel).has("read")).length,
+    ).toBeGreaterThan(20);
+
+    const guarding = scanned.filter((rel) => recordNeeds(rel).has("guardian"));
+    expect(guarding.length).toBeGreaterThan(0);
+    expect(guarding).toEqual(Object.keys(DELEGABLE_GUARDIAN_ROUTES).sort());
+  });
+
+  it("is a subset of the delegable set, every member in a frozen section", () => {
+    for (const rel of Object.keys(DELEGABLE_GUARDIAN_ROUTES)) {
+      expect(DELEGABLE_ROUTES, rel).toHaveProperty([rel]);
+    }
+  });
+
+  it("declares guardian on a verb handler, and every mutating one audits", () => {
+    let mutating = 0;
+    for (const rel of Object.keys(DELEGABLE_GUARDIAN_ROUTES)) {
+      const verbs = resolverVerbsIn(rel, "guardian");
+      expect(
+        verbs.length,
+        `${rel} declares guardian outside a handler`,
+      ).toBeGreaterThan(0);
+      if (verbs.some((verb) => MUTATING_VERBS.has(verb))) {
+        mutating += 1;
+        expect(
+          handlerCallsSymbol(rel, "auditLog"),
+          `${rel} never calls auditLog`,
+        ).toBe(true);
+        expect(
+          handlerDirectAuditWrites(rel),
+          `${rel} writes an audit row without the helper`,
+        ).toEqual([]);
+      }
+    }
+    // Non-zero: the leg above is about the mutating members — the upload,
+    // edit/delete, restore, bulk, the AI actions, the fact edit and confirm.
+    expect(mutating).toBeGreaterThanOrEqual(4);
+  });
+
+  it("the guardian need gates on the grant level and the marker", () => {
+    // The anchor, as leg (h) anchors the guardian resolver: the literal means
+    // "a managed profile's guardian and nobody else", and that is only true
+    // while the admission reads both the MANAGE level and the marker.
+    const admission = functionSource(
+      guardModuleOf(RECORD_RESOLVER),
+      "admitGuardianNeed",
+    );
+    expect(admission.length).toBeGreaterThan(0);
+    expect(admission).toContain('grantAllows(grant, "manage")');
+    expect(admission).toContain("managedProfileAt");
+    expect(admission).toContain("grantCoversDomain(grant, domain)");
   });
 });
 

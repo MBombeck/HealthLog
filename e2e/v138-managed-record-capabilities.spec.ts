@@ -12,9 +12,11 @@
  *   - Mood is a section whose create answers at MANAGE, so the add control
  *     is there and an entry can be added — asserted on the POST's status, not
  *     on the paint, because the paint is what lied before.
- *   - Documents is the section with no delegated write route, so the upload
- *     control is absent and the page says why, in a sentence, where the
- *     control would have been.
+ *   - Documents takes its writes from the record's owner and, since #1403,
+ *     from a managed profile's guardian, so the guardian is offered the
+ *     upload and a file lands in the profile's vault — asserted on the POST's
+ *     status. An adult's MANAGE share is still offered none of it, and the
+ *     page says why, in a sentence, where the control would have been.
  *
  * A third journey reaches the profile's Settings from the navigation (#939).
  * The Settings shell has always listed a managed profile's own configuration,
@@ -110,6 +112,10 @@ test.describe.serial("a guardian's controls inside a managed profile", () => {
     (record) => record.recordKind === "managed",
   );
   if (!managed) throw new Error("managed record fixture is missing");
+  const adultManage = E2E_LEVEL_RECORDS.find(
+    (record) => record.recordKind === "shared" && record.access === "MANAGE",
+  );
+  if (!adultManage) throw new Error("adult MANAGE record fixture is missing");
 
   test("offers the mood add control and lands the entry", async ({ page }) => {
     // The profile starts every run without mood entries. The form stamps an
@@ -236,10 +242,63 @@ test.describe.serial("a guardian's controls inside a managed profile", () => {
     await leaveRecord(page);
   });
 
-  test("withholds the vault's upload control and says why", async ({
+  test("offers a guardian the vault's upload and lands the file in the profile", async ({
     page,
   }) => {
+    // A fresh vault each run: the empty state carries the upload, and a
+    // re-run's bytes are new anyway, so the sha256 dedupe never answers 200.
+    const dbUrl = process.env.DATABASE_URL;
+    test.skip(!dbUrl, "DATABASE_URL is required to reset the profile's vault");
+    const pool = new pg.Pool({ connectionString: dbUrl });
+    try {
+      await pool.query(
+        `DELETE FROM inbound_documents
+          WHERE user_id = (SELECT id FROM users WHERE username = $1)`,
+        [managed.username],
+      );
+    } finally {
+      await pool.end();
+    }
+
     await openRecord(page, managed.username);
+    await page.goto("/documents");
+
+    const zone = page.locator('[data-slot="document-upload-zone"]');
+    await expect(zone).toBeVisible({ timeout: 30_000 });
+    await expect(
+      page.locator('[data-slot="documents-owner-only"]'),
+    ).toHaveCount(0);
+
+    const posted = page.waitForResponse(
+      (response) =>
+        response.request().method() === "POST" &&
+        /\/api\/documents\/inbound(\?|$)/.test(response.url()),
+      { timeout: 30_000 },
+    );
+    await zone.locator('input[type="file"]').setInputFiles([
+      {
+        name: "guardian-scan.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from(
+          `%PDF-1.4\n%guardian-${Date.now()}-${Math.random()}\n1 0 obj<</Type/Catalog>>endobj\n%%EOF\n`,
+          "utf8",
+        ),
+      },
+    ]);
+    // The route, not the paint: the control is only worth offering if the
+    // server takes the file into the profile's vault.
+    expect((await posted).status()).toBe(201);
+    await expect(
+      page.getByRole("button", { name: /Open guardian-scan/ }).first(),
+    ).toBeVisible({ timeout: 30_000 });
+
+    await leaveRecord(page);
+  });
+
+  test("still withholds the vault's upload from an adult's manager and says why", async ({
+    page,
+  }) => {
+    await openRecord(page, adultManage.username);
 
     await page.goto("/documents");
     const note = page.locator('[data-slot="documents-owner-only"]');

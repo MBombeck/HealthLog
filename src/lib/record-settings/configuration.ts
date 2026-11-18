@@ -36,6 +36,8 @@ export const MANAGED_RECORD_SETTINGS_FIELD_ALLOWLIST = {
   thresholds: ["overrides"],
   coach: ["disableCoach", "preferences"],
   insights: ["layout"],
+  // #1403 — whether the profile's uploads are read with AI automatically.
+  documents: ["autoAiRead"],
 } as const;
 
 export type ManagedRecordSettingsFamily =
@@ -178,6 +180,14 @@ export const MANAGED_RECORD_SETTINGS_PATCH_SCHEMAS = {
     })
     .strict(),
   insights: z.object({ layout: insightsLayoutSchema }).strict(),
+  /**
+   * #1403 — the record's own "read documents automatically with AI" switch,
+   * the `documentsAutoAiRead` column on the record's row: the one the upload
+   * pipeline and the summary job already read for the record. A guardian sets
+   * it for the managed profile; turning it on records the profile's document
+   * reading consent, as the owner's switch does for their own record.
+   */
+  documents: z.object({ autoAiRead: z.boolean() }).strict(),
 } as const;
 
 export type ManagedRecordSettingsPatch = {
@@ -191,6 +201,9 @@ export type ManagedRecordSettingsPatch = {
   >;
   coach: z.infer<(typeof MANAGED_RECORD_SETTINGS_PATCH_SCHEMAS)["coach"]>;
   insights: z.infer<(typeof MANAGED_RECORD_SETTINGS_PATCH_SCHEMAS)["insights"]>;
+  documents: z.infer<
+    (typeof MANAGED_RECORD_SETTINGS_PATCH_SCHEMAS)["documents"]
+  >;
 };
 
 export function isManagedRecordSettingsFamily(

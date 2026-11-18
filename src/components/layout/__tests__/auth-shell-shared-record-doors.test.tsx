@@ -160,8 +160,8 @@ const MANAGED_GUARDIAN: AccountAccessEntry = {
   sections: null,
   recordKind: "managed" as const,
   canWrite: true,
-  writableDomains: delegatedDomains("manage", null, "write"),
-  manageableDomains: delegatedDomains("manage", null, "manage"),
+  writableDomains: delegatedDomains("manage", null, "write", "managed"),
+  manageableDomains: delegatedDomains("manage", null, "manage", "managed"),
 };
 
 function render(

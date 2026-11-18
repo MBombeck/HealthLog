@@ -120,6 +120,22 @@
   `/api/seizures`; migration `0504_seizure_diary`. Thanks to @ch3funio for
   the detailed request and the clinical detail behind it. (#1368)
 
+- **A guardian can file documents for a managed profile.** From your own
+  account, inside the profile, Documents now takes uploads with the same
+  types and size limit as your own vault, and you can rename, retype, link,
+  delete and restore what is there. You can also finish what the upload
+  starts: read a scanned lab report with AI, correct the values it found
+  and confirm them into the profile's lab results, or ask about a letter.
+  The files and the values belong to the profile: they count against its
+  storage, not yours, and its activity log names you as the one who added,
+  changed or confirmed them. Every AI read follows the profile's own
+  settings and consent and runs on the instance's provider, never your
+  personal one. Automatic reading of new uploads is the profile's own
+  switch, under Settings → AI while you are inside the profile. An adult who shares their record at any level, manage
+  included, keeps the vault to themselves, as before. Thanks to @ch3funio
+  for the careful write-up and for offering to test it with a real
+  archive. (#1403)
+
 ### Changed
 
 - A day's nutrient total no longer adds up sources that each report the whole

@@ -512,14 +512,17 @@ describe("T4b — `documents:write` opens exactly two doors", () => {
       "app/api/documents/inbound/source/route.ts",
     ]);
     // Within the upload file, once: the GET list beside the POST must not
-    // name it.
+    // name it. #1403 moved the upload onto the record resolver (a managed
+    // profile's guardian uploads into it), so the one naming is there now and
+    // the bare-resolver form is gone; T5 freezes it as a scoped delegable route.
     const upload = readSource(
       "src/app/api/documents/inbound/route.ts",
       "DOCUMENTS_WRITE_SCOPE",
     );
     expect(
-      requireAuthScopes(upload).filter((x) => x === "DOCUMENTS_WRITE_SCOPE"),
+      recordAuthScopes(upload).filter((x) => x === "DOCUMENTS_WRITE_SCOPE"),
     ).toHaveLength(1);
+    expect(requireAuthScopes(upload)).toEqual([]);
     // And the lookup is a read of one key and nothing else: a single GET.
     const lookup = readSource(
       "src/app/api/documents/inbound/source/route.ts",
@@ -578,6 +581,11 @@ describe("T5 — a delegable route naming a Bearer scope is frozen", () => {
     // home-automation rule. The sibling read, edit and delete legs on this
     // module name no scope and so still refuse every narrow token.
     "app/api/measurements/route.ts": "MEASUREMENTS_WRITE_SCOPE",
+    // #1403 — the vault upload. Delegable only to a managed profile's
+    // guardian (`"guardian"`); the importer's `documents:write` token keeps
+    // reaching its own vault and is refused under any selector, before a
+    // grant is read.
+    "app/api/documents/inbound/route.ts": "DOCUMENTS_WRITE_SCOPE",
   };
 
   it("only the known routes pass a scope to the record resolver", () => {

@@ -5663,6 +5663,11 @@
             "labsChanges": "Laborveränderungen",
             "ecg": "EKG"
           }
+        },
+        "documents": {
+          "title": "Dokumente",
+          "autoAiRead": "Neue Dokumente automatisch mit KI lesen",
+          "honesty": "Wenn eingeschaltet, wird jedes in dieses Profil hochgeladene Dokument an den KI-Anbieter der Instanz geschickt, dort gelesen, beschrieben und für die Suche erschlossen, ohne Tippen je Dokument; schon vorhandene Dokumente ohne Zusammenfassung werden ebenfalls geschickt (bis zu 200 bei jedem Einschalten). Das Einschalten hält die Einwilligung dieses Profils fest, dass seine Dokumente gelesen werden dürfen. Es gelten die KI-Einstellungen des Profils; dein eigener KI-Anbieter wird nie verwendet. Standardmäßig aus."
         }
       },
       "unavailableTitle": "In diesem geteilten Datensatz nicht verfügbar",
@@ -13478,6 +13483,16 @@
       "documentStore": "{name} hat ein Dokument hinzugefügt",
       "documentUpdate": "{name} hat ein Dokument geändert",
       "documentDiscard": "{name} hat ein Dokument verworfen",
+      "documentRestore": "{name} hat ein Dokument wiederhergestellt",
+      "documentBulk": "{name} hat mehrere Dokumente geändert",
+      "documentConfirm": "{name} hat Werte aus einem Dokument bestätigt",
+      "documentExtract": "{name} hat die Werte in einem Dokument ausgelesen",
+      "documentIndex": "{name} hat ein Dokument durchsuchbar gemacht",
+      "documentReindex": "{name} hat die Dokumente durchsuchbar gemacht",
+      "documentSuggest": "{name} hat Angaben zu einem Dokument vorschlagen lassen",
+      "documentSummary": "{name} hat ein Dokument zusammenfassen lassen",
+      "documentChat": "{name} hat eine Frage zu einem Dokument gestellt",
+      "documentFactEdit": "{name} hat einen Wert aus einem Dokument korrigiert",
       "medicationIntakeImportFinished": "Der von {name} gestartete Einnahme-Import ist fertig",
       "medicationOneShotReconciled": "Ein einmaliges Medikament wurde nach einer Einnahme von {name} geöffnet oder geschlossen",
       "vaccinationBoosterPlanned": "{name} hat eine Auffrischung geplant",

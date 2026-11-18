@@ -7,18 +7,23 @@
  * same table the visit's own sheet writes from the other end),
  * `delete` (tombstone, undo-able), `restore` (clear tombstone). A
  * partial failure never aborts the batch — each id reports `ok` or a short
- * machine reason. Every id is narrowed to the caller; a foreign id reads as
+ * machine reason. Every id is narrowed to the record; a foreign id reads as
  * "notFound", exactly like the single-document routes.
+ *
+ * #1403 — the owner's, and a managed profile's guardian's (`"guardian"`),
+ * like every single-document verb it batches. An adult's share reaches none
+ * of it at any level.
  */
 import { NextRequest } from "next/server";
 
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { restoreDocumentTombstone } from "@/lib/documents/tombstones";
 import { linkTargets, unlinkTargets } from "@/lib/links";
+import { actingDomainVisibility } from "@/lib/sharing/acting-domains";
 import { annotate } from "@/lib/logging/context";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { isP2002 } from "@/lib/prisma-errors";
@@ -33,17 +38,21 @@ export const dynamic = "force-dynamic";
 /**
  * One bulk call covers up to 100 rows, so the bucket is tighter than the
  * single-row write bucket (240/h) while allowing the same overall throughput.
+ * Keyed on the person acting, like the single-row bucket.
  */
 const BULK_LIMIT_PER_HOUR = 60;
 const BULK_WINDOW_MS = 60 * 60 * 1000;
 
 export const POST = apiHandler(async (request: NextRequest) => {
-  const { user } = await requireAuth();
+  const { user, actor, grantId } = await requireRecordAuth(
+    "guardian",
+    "documents",
+  );
   const gate = await requireModuleEnabled(user.id, "inboundDocuments");
   if (!gate.enabled) return gate.response;
 
   const rl = await checkRateLimit(
-    `documents-bulk:${user.id}`,
+    `documents-bulk:${actor.id}`,
     BULK_LIMIT_PER_HOUR,
     BULK_WINDOW_MS,
   );
@@ -64,12 +73,18 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const { ids, action, kind, episodeId, encounterId } = parsed.data;
   const uniqueIds = [...new Set(ids)];
 
-  // Episode actions: the target episode must be a LIVE episode of the caller.
+  // The link actions reach into another section of the record; a section the
+  // grant does not cover answers like a foreign target (see the PATCH).
+  const visible = await actingDomainVisibility(prisma, grantId);
+
+  // Episode actions: the target episode must be a LIVE episode of the record.
   if (action === "linkEpisode" || action === "unlinkEpisode") {
-    const episode = await prisma.illnessEpisode.findFirst({
-      where: { id: episodeId!, userId: user.id, deletedAt: null },
-      select: { id: true },
-    });
+    const episode = !visible("illness")
+      ? null
+      : await prisma.illnessEpisode.findFirst({
+          where: { id: episodeId!, userId: user.id, deletedAt: null },
+          select: { id: true },
+        });
     if (!episode) {
       return apiError("Episode not found", 404, {
         errorCode: "documents.inbound.episodeNotFound",
@@ -77,14 +92,16 @@ export const POST = apiHandler(async (request: NextRequest) => {
     }
   }
 
-  // Visit actions: the target visit must be a LIVE visit of the caller. Same
+  // Visit actions: the target visit must be a LIVE visit of the record. Same
   // shape as the episode gate above — the endpoint is checked once, before the
   // batch, so a foreign id costs one refusal rather than a hundred.
   if (action === "linkEncounter" || action === "unlinkEncounter") {
-    const encounter = await prisma.encounter.findFirst({
-      where: { id: encounterId!, userId: user.id, deletedAt: null },
-      select: { id: true },
-    });
+    const encounter = !visible("profile")
+      ? null
+      : await prisma.encounter.findFirst({
+          where: { id: encounterId!, userId: user.id, deletedAt: null },
+          select: { id: true },
+        });
     if (!encounter) {
       return apiError("Visit not found", 404, {
         errorCode: "documents.inbound.encounterNotFound",
@@ -92,8 +109,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
     }
   }
 
-  // One owner-scoped sweep resolves every id's current state; per-id work
-  // then never touches a row the caller does not own.
+  // One record-scoped sweep resolves every id's current state; per-id work
+  // then never touches a row the record does not own.
   const owned = await prisma.inboundDocument.findMany({
     where: { id: { in: uniqueIds }, userId: user.id },
     select: { id: true, deletedAt: true },

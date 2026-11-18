@@ -90,7 +90,9 @@ export const SETTINGS_DESTINATION_INVENTORY = {
   anamnesis: MANAGE_WRITABLE,
   score: ADULT_SHARED_UNAVAILABLE,
   thresholds: MANAGED_GUARDIAN,
-  ai: UNAVAILABLE,
+  // #1403 — inside a managed profile the AI page holds the profile's own
+  // automatic-reading switch; the owner's AI configuration stays theirs.
+  ai: MANAGED_GUARDIAN,
   coach: MANAGED_GUARDIAN,
   api: PERSONAL,
   mcp: PERSONAL,

@@ -5663,6 +5663,11 @@
             "labsChanges": "Lab changes",
             "ecg": "ECG"
           }
+        },
+        "documents": {
+          "title": "Documents",
+          "autoAiRead": "Read new documents automatically with AI",
+          "honesty": "When on, each document uploaded into this profile is sent to the instance's AI provider to be read, described and indexed for search, with no tap per document, and documents already here without a summary are sent too (up to 200 each time it is switched on). Turning it on records this profile's consent to having its documents read. The profile's AI settings apply; your own AI provider is never used. Off by default."
         }
       },
       "unavailableTitle": "Unavailable in this shared record",
@@ -13478,6 +13483,16 @@
       "documentStore": "{name} added a document",
       "documentUpdate": "{name} changed a document",
       "documentDiscard": "{name} discarded a document",
+      "documentRestore": "{name} restored a document",
+      "documentBulk": "{name} changed several documents",
+      "documentConfirm": "{name} confirmed values from a document",
+      "documentExtract": "{name} read the values in a document",
+      "documentIndex": "{name} made a document searchable",
+      "documentReindex": "{name} made the documents searchable",
+      "documentSuggest": "{name} asked for a document's details",
+      "documentSummary": "{name} summarised a document",
+      "documentChat": "{name} asked about a document",
+      "documentFactEdit": "{name} corrected a value from a document",
       "medicationIntakeImportFinished": "The dose import {name} started has finished",
       "medicationOneShotReconciled": "A one-off medication was opened or closed after a dose {name} recorded",
       "vaccinationBoosterPlanned": "{name} planned a booster",

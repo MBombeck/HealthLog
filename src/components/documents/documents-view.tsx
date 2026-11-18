@@ -59,11 +59,10 @@ export function DocumentsView() {
   const { t } = useTranslations();
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const timezone = user?.timezone || DEFAULT_TIMEZONE;
-  // Uploading a document, filing it, sharing it and asking the AI about it
-  // are none of them delegated verbs. Inside somebody else's record the vault
-  // reads and nothing more: no upload path, no selection, no bulk bar, no
-  // corpus backfill. `canManageDomain("documents")` says so from the server's
-  // table, and answers false under every grant today.
+  // Uploading, filing, deleting and restoring are the owner's and a managed
+  // profile's guardian's (#1403), the AI actions included:
+  // `canManageDomain("documents")` says so, false under every adult grant.
+  // Sharing and the sources also ask `!inSharedRecord`.
   const { canManageDomain, inSharedRecord, sections } = useRecordCapabilities();
   const canManageDocuments = canManageDomain("documents");
   const router = useRouter();
@@ -320,7 +319,7 @@ export function DocumentsView() {
           onLinkEncounter={(encounterId) =>
             runBulk("linkEncounter", { encounterId })
           }
-          onShare={openBulkShare}
+          onShare={inSharedRecord ? undefined : openBulkShare}
           onRequestDelete={() => requestDelete([...selectedIds])}
           onClear={clearSelection}
         />
