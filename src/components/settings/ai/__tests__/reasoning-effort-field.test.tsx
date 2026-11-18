@@ -110,3 +110,71 @@ describe.each([
     expect(select).toMatch(/<option value="none" selected="">/);
   });
 });
+
+describe("ReasoningEffortField with restricted levels (Antigravity)", () => {
+  it("renders Default and Low, Medium, High when restricted with showDefault", async () => {
+    const { ReasoningEffortField } = await import("../reasoning-effort-field");
+    const html = render(
+      <ReasoningEffortField
+        id="settings-ai-antigravity-reasoning"
+        value={null}
+        onChange={() => {}}
+        allowedLevels={["low", "medium", "high"]}
+        showDefault={true}
+      />,
+    );
+    const select = selectMarkup(html, "settings-ai-antigravity-reasoning");
+    const optionValues = [
+      ...select.matchAll(/<option value="([^"]*)"/g),
+    ].map((m) => m[1]);
+    expect(optionValues).toEqual(["", "low", "medium", "high"]);
+    expect(select).not.toContain('value="none"');
+    expect(select).toContain(en.settings.ai.reasoning.options.default);
+    expect(select).toContain(en.settings.ai.reasoning.options.low);
+    expect(select).toContain(en.settings.ai.reasoning.options.medium);
+    expect(select).toContain(en.settings.ai.reasoning.options.high);
+    expect(select).toMatch(/<option value="" selected="">/);
+  });
+
+  it("filters advertised levels to valid choices low, medium, high at trust boundary", async () => {
+    const { ReasoningEffortField } = await import("../reasoning-effort-field");
+    const validLevels = ["low", "medium", "high"] as const;
+    const rawAdvertised = ["xhigh", "medium", "ultra", "low"];
+    const filtered = rawAdvertised.filter((l): l is "low" | "medium" | "high" =>
+      validLevels.includes(l as "low" | "medium" | "high"),
+    );
+
+    const html = render(
+      <ReasoningEffortField
+        id="settings-ai-antigravity-reasoning"
+        value="medium"
+        onChange={() => {}}
+        allowedLevels={filtered}
+        showDefault={false}
+      />,
+    );
+    const select = selectMarkup(html, "settings-ai-antigravity-reasoning");
+    const optionValues = [
+      ...select.matchAll(/<option value="([^"]*)"/g),
+    ].map((m) => m[1]);
+    expect(optionValues).toEqual(["medium", "low"]);
+    expect(optionValues).not.toContain("xhigh");
+    expect(optionValues).not.toContain("ultra");
+  });
+
+  it("disables select when antigravity is disabled or not in chain", async () => {
+    const { ReasoningEffortField } = await import("../reasoning-effort-field");
+    const html = render(
+      <ReasoningEffortField
+        id="settings-ai-antigravity-reasoning"
+        disabled={true}
+        value={null}
+        onChange={() => {}}
+        allowedLevels={["low", "medium", "high"]}
+        showDefault={true}
+      />,
+    );
+    const select = selectMarkup(html, "settings-ai-antigravity-reasoning");
+    expect(select).toContain("disabled");
+  });
+});

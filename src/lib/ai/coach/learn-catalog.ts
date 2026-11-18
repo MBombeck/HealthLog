@@ -108,7 +108,7 @@ export function learnCatalogPromptBlock(): string {
   return [
     "LEARN GUIDES (public articles you MAY link when genuinely helpful):",
     lines,
-    "Only link a URL from this list — never invent a /learn URL or article",
+    "Only link a URL from this list — never invent a learn-guide URL or article",
     "content. Reference at most one guide, and only when it adds real value,",
     'e.g. "more on this: ' + exampleGuide.url + '".',
   ].join("\n");

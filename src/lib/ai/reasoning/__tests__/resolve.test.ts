@@ -260,6 +260,27 @@ describe("completionReasoning", () => {
       summaries: false,
     });
   });
+
+  it("carries administrative maxEffort when admin controls and costOwner are supplied", () => {
+    const r = resolveReasoning({
+      surface: "coach",
+      userPref: "high",
+      admin: { enabled: true, maxEffort: "medium" },
+      costOwner: "user",
+    });
+    expect(
+      completionReasoning(
+        r,
+        "coach",
+        { enabled: true, maxEffort: "medium" },
+        "user",
+      ),
+    ).toEqual({
+      effort: "medium",
+      summaries: true,
+      maxEffort: "medium",
+    });
+  });
 });
 
 describe("coachReasoningCeiling", () => {

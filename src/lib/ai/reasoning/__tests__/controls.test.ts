@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { row, user } = vi.hoisted(() => ({
   row: { current: null as unknown, fail: false },
-  user: { level: null as string | null },
+  user: { level: null as string | null, fail: false },
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -19,7 +19,10 @@ vi.mock("@/lib/db", () => ({
       }),
     },
     user: {
-      findUnique: vi.fn(async () => ({ aiUsageLevel: user.level })),
+      findUnique: vi.fn(async () => {
+        if (user.fail) throw new Error("user db down");
+        return { aiUsageLevel: user.level };
+      }),
     },
   },
 }));
@@ -38,6 +41,7 @@ beforeEach(() => {
   row.current = null;
   row.fail = false;
   user.level = null;
+  user.fail = false;
 });
 
 describe("loadReasoningControls", () => {
@@ -118,15 +122,85 @@ describe("resolveJobReasoning by usage level", () => {
       expect(await resolveJobReasoning("daily_briefing", chain, "u1")).toEqual({
         effort: "medium",
         summaries: false,
+        maxEffort: "high",
       });
     },
   );
+
+  it("clamps maxEffort to admin ceiling when admin caps at low", async () => {
+    row.current = {
+      aiReasoningEnabled: true,
+      aiReasoningMaxEffort: "low",
+      aiUsageMaxLevel: "FULL",
+      aiUsageDefaultLevel: "STANDARD",
+    };
+    expect(await resolveJobReasoning("daily_briefing", chain, "u1")).toEqual({
+      effort: "low",
+      summaries: false,
+      maxEffort: "low",
+    });
+  });
 
   it("follows a frugal instance default for an account without a choice", async () => {
     row.current = {
       aiUsageMaxLevel: "STANDARD",
       aiUsageDefaultLevel: "FRUGAL",
     };
+    expect(
+      await resolveJobReasoning("daily_briefing", chain, "u1"),
+    ).toBeUndefined();
+  });
+
+  it("returns explicit off with maxEffort off for antigravity chain on frugal or admin disabled", async () => {
+    const agyChain = [{ providerType: "antigravity" as const }];
+    user.level = "FRUGAL";
+    row.current = { aiUsageMaxLevel: "FULL", aiUsageDefaultLevel: "STANDARD" };
+    expect(await resolveJobReasoning("daily_briefing", agyChain, "u1")).toEqual({
+      effort: "off",
+      summaries: false,
+      maxEffort: "off",
+    });
+
+    user.level = "FULL";
+    row.current = {
+      aiReasoningEnabled: false,
+      aiUsageMaxLevel: "FULL",
+      aiUsageDefaultLevel: "STANDARD",
+    };
+    expect(await resolveJobReasoning("daily_briefing", agyChain, "u1")).toEqual({
+      effort: "off",
+      summaries: false,
+      maxEffort: "off",
+    });
+
+    // Non-antigravity chain receives undefined on admin disabled
+    expect(
+      await resolveJobReasoning("daily_briefing", chain, "u1"),
+    ).toBeUndefined();
+  });
+
+  it("fails closed with explicit off for antigravity chain when db errors occur, while non-antigravity receives undefined", async () => {
+    const agyChain = [{ providerType: "antigravity" as const }];
+
+    // 1. DB failure during loadRecordUsageLevel
+    user.fail = true;
+    expect(await resolveJobReasoning("daily_briefing", agyChain, "u1")).toEqual({
+      effort: "off",
+      summaries: false,
+      maxEffort: "off",
+    });
+    expect(
+      await resolveJobReasoning("daily_briefing", chain, "u1"),
+    ).toBeUndefined();
+
+    // 2. DB failure during loadReasoningControls
+    user.fail = false;
+    row.fail = true;
+    expect(await resolveJobReasoning("daily_briefing", agyChain, "u1")).toEqual({
+      effort: "off",
+      summaries: false,
+      maxEffort: "off",
+    });
     expect(
       await resolveJobReasoning("daily_briefing", chain, "u1"),
     ).toBeUndefined();

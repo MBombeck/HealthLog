@@ -204,10 +204,21 @@ export const TRANSCRIPTION_REASONING: NonNullable<
 export function completionReasoning(
   resolved: ResolvedReasoning,
   surface: ReasoningSurface,
+  admin?: ReasoningAdminControls,
+  costOwner?: ReasoningCostOwner,
 ): CompletionParams["reasoning"] {
   if (resolved.source === "unsupported") return undefined;
   if (resolved.effort === "off" && surface !== "coach") return undefined;
-  return { effort: resolved.effort, summaries: resolved.summaries };
+  const maxEffort = admin
+    ? costOwner === "operator"
+      ? capReasoningLevel(admin.maxEffort, OPERATOR_FUNDED_REASONING_CAP)
+      : admin.maxEffort
+    : undefined;
+  return {
+    effort: resolved.effort,
+    summaries: resolved.summaries,
+    ...(maxEffort ? { maxEffort } : {}),
+  };
 }
 
 /**
@@ -265,5 +276,8 @@ export function reasoningSupportForChainEntry(
             config.adminModel ?? "claude-sonnet-4-6",
           )
         : reasoningSupport("admin-key", config.adminModel ?? "gpt-4o");
+    case "antigravity":
+      // ACP thought_level offers effort control (low/medium/high).
+      return reasoningSupport("antigravity", "");
   }
 }

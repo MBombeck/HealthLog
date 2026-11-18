@@ -51,6 +51,10 @@ export interface TurnInput {
    * caps it again when the operator pays.
    */
   reasoningLevel: ReasoningLevel;
+  /** The effective administrative reasoning ceiling for this instance/request. */
+  adminCeiling?: ReasoningLevel;
+  /** Whether reasoningLevel comes from an explicit user preference (true) or default (false). */
+  reasoningExplicit?: boolean;
   /** v1.41 — the fact proposal this message answers with a tap, if any. */
   memoryDecision?: { messageId: string; proposalId: string; accept: boolean };
   /** v1.41 — the plan proposal this message answers with a tap, if any. */

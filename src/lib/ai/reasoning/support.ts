@@ -249,6 +249,16 @@ export function reasoningSupport(
         stateRoundTrip: false,
         offIsReal: true,
       };
+    case "antigravity":
+      // ACP thought_level offers effort control (low/medium/high).
+      // Summaries are not verified summaries in ACP, and agy has no wire "off" (maps to low).
+      return {
+        effort: true,
+        summaries: false,
+        liveSummaries: false,
+        stateRoundTrip: false,
+        offIsReal: false,
+      };
     case "none":
       return NONE;
   }

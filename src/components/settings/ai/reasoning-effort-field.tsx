@@ -21,6 +21,8 @@ export function ReasoningEffortField({
   value,
   onChange,
   noColon = false,
+  allowedLevels,
+  showDefault = true,
 }: {
   id: string;
   /** Locks the select while a write is in flight. */
@@ -29,8 +31,13 @@ export function ReasoningEffortField({
   onChange: (next: ReasoningEffort | null) => void;
   /** The Coach's quick settings label their fields without a colon. */
   noColon?: boolean;
+  /** Allowed options in the dropdown. Defaults to ["none", "low", "medium", "high"]. */
+  allowedLevels?: readonly ReasoningEffort[];
+  /** Whether to show the Default option. Defaults to true. */
+  showDefault?: boolean;
 }) {
   const { t } = useTranslations();
+  const levels = allowedLevels ?? (["none", "low", "medium", "high"] as const);
   return (
     <div>
       <Label htmlFor={id} noColon={noColon}>
@@ -48,13 +55,14 @@ export function ReasoningEffortField({
         className="mt-1"
         aria-describedby={`${id}-hint`}
       >
-        <option value="">{t("settings.ai.reasoning.options.default")}</option>
-        <option value="none">{t("settings.ai.reasoning.options.none")}</option>
-        <option value="low">{t("settings.ai.reasoning.options.low")}</option>
-        <option value="medium">
-          {t("settings.ai.reasoning.options.medium")}
-        </option>
-        <option value="high">{t("settings.ai.reasoning.options.high")}</option>
+        {showDefault && (
+          <option value="">{t("settings.ai.reasoning.options.default")}</option>
+        )}
+        {levels.map((lvl) => (
+          <option key={lvl} value={lvl}>
+            {t(`settings.ai.reasoning.options.${lvl}`)}
+          </option>
+        ))}
       </NativeSelect>
       <p id={`${id}-hint`} className="text-muted-foreground mt-1 text-xs">
         {t("settings.ai.reasoning.hint")}

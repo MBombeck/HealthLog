@@ -254,3 +254,15 @@ describe("parsing helpers", () => {
     expect(levelOfWireEffort(null)).toBe("off");
   });
 });
+
+describe("reasoningSupport for antigravity", () => {
+  it("offers effort control without summaries or real off", () => {
+    expect(reasoningSupport("antigravity", "")).toEqual({
+      effort: true,
+      summaries: false,
+      liveSummaries: false,
+      stateRoundTrip: false,
+      offIsReal: false,
+    });
+  });
+});

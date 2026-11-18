@@ -191,8 +191,33 @@ describe("the turn's reasoning", () => {
   });
 
   it("caps at medium when the operator pays", () => {
-    expect(reasoningForTurn("high", "operator").effort).toBe("medium");
+    const capped = reasoningForTurn("high", "operator");
+    expect(capped.effort).toBe("medium");
+    expect(capped.maxEffort).toBe("medium");
     expect(reasoningForTurn("low", "operator").effort).toBe("low");
+    expect(reasoningForTurn("low", "operator").maxEffort).toBe("medium");
+  });
+
+  it("clamps to admin ceiling for user payer", () => {
+    const capped = reasoningForTurn("high", "user", "low");
+    expect(capped.effort).toBe("low");
+    expect(capped.maxEffort).toBe("low");
+
+    const mediumAdmin = reasoningForTurn("high", "user", "medium");
+    expect(mediumAdmin.effort).toBe("medium");
+    expect(mediumAdmin.maxEffort).toBe("medium");
+  });
+
+  it("clamps to lower of admin ceiling and operator payer cap", () => {
+    // Admin low, operator payer -> clamps to low (lower than operator medium)
+    const lowBoth = reasoningForTurn("high", "operator", "low");
+    expect(lowBoth.effort).toBe("low");
+    expect(lowBoth.maxEffort).toBe("low");
+
+    // Admin high, operator payer -> clamps to operator medium
+    const opWins = reasoningForTurn("high", "operator", "high");
+    expect(opWins.effort).toBe("medium");
+    expect(opWins.maxEffort).toBe("medium");
   });
 
   it("asks for no summaries when reasoning is off", () => {
