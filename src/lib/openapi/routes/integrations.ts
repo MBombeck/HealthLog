@@ -2828,7 +2828,7 @@ export const integrationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Integrations"],
       summary: "Dismiss the note that the Fitbit integration is gone",
       description:
-        "Hides the note an account that held a Fitbit connection sees on the integrations surface after the integration was removed (`fitbitRemovalNotice` on `GET /api/integrations/status`). Cookie-only, takes no body, idempotent: dismissing twice, or with no note to dismiss, is a success.",
+        "Hides the note an account that held a Fitbit connection sees on the integrations surface after the integration was removed (`fitbitRemovalNotice` on `GET /api/integrations/status`). Auth via cookie or Bearer, takes no body, idempotent: dismissing twice, or with no note to dismiss, is a success.",
       responses: {
         "200": {
           description: "Note dismissed.",

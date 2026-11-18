@@ -15,6 +15,8 @@ import { resolve } from "node:path";
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { hashToken } from "@/lib/auth/hmac";
+
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";
 
@@ -217,6 +219,29 @@ describe("the note on the status envelope", () => {
     // Idempotent: a second dismissal is a success and changes nothing.
     expect((await dismiss()).status).toBe(200);
     expect(await notice()).toBe(false);
+  });
+
+  it("lets the iPhone app clear the note with its Bearer token", async () => {
+    await user("had-fitbit", { fitbitRemovalNoticeAt: new Date() });
+    const raw = "hlk_fitbit-notice-app".padEnd(20, "0");
+    await prisma().apiToken.create({
+      data: {
+        userId: "had-fitbit",
+        name: "app",
+        tokenHash: hashToken(raw),
+        permissions: ["*"],
+      },
+    });
+    headerJar.set("authorization", `Bearer ${raw}`);
+
+    const { POST } =
+      await import("@/app/api/integrations/fitbit-removal-notice/dismiss/route");
+    expect((await POST()).status).toBe(200);
+    const row = await prisma().user.findUnique({
+      where: { id: "had-fitbit" },
+      select: { fitbitRemovalNoticeAt: true },
+    });
+    expect(row?.fitbitRemovalNoticeAt).toBeNull();
   });
 
   it("refuses a dismissal without a session", async () => {
