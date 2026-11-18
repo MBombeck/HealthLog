@@ -159,6 +159,40 @@ worker container that start together wait for each other on an advisory lock
 and derive the same password. Going back to 1.46 runs as the owner, as 1.46
 always did, and finds nothing in the queue schema it did not create.
 
+### v1.48.0 notes
+
+The sequence above covers this release; no step by hand is needed. Every
+migration in it is additive or deletes rows only, so the v1.47.6 image keeps
+working beside the new schema during the switchover and after a rollback.
+
+- Migration `0503` removes the Fitbit integration's data, not its shape. It
+  marks each account that still had a Fitbit connection (for the one note on
+  Settings > Integrations), then deletes every row of `fitbit_connections`
+  (with the sealed OAuth tokens) and `fitbit_oauth_states`, empties
+  `users.fitbit_client_id_encrypted` and `fitbit_client_secret_encrypted`,
+  and deletes the integration's status and watchdog rows. The tables and
+  columns stay, empty, so the previous image still reads every user row;
+  the next minor release drops them. The tokens are gone for good: the
+  pre-migration dump is the only copy, and Google turned the Fitbit Web API
+  off on 30 October 2026, so they no longer work anyway. Imported Fitbit
+  readings stay.
+- Migration `0500` builds a unique index on `lab_results` without
+  `CONCURRENTLY`. Lab writes wait for the build, a few seconds on a large
+  table; nothing else does.
+- Migration `0505` builds a partial index on `measurements` concurrently, in
+  its own file (see "A concurrent index build that failed" above if a
+  deploy is interrupted during it).
+- The other migrations add columns (`0499`, `0502`, `0506`, `0508`) and
+  create tables and types (`0501`, `0504`, `0507`, `0508`).
+
+Rollback to v1.47.6: switch the image back. The schema needs nothing: no
+column or table the old image reads was dropped. What the old image does
+not know stays in place and unused (the seizure diary, named provider
+chains, nutrient targets, lab import keys, the GLP-1 step ids), and comes
+back into use when you deploy v1.48.0 again. Fitbit stays disconnected: the
+old image shows the card as not connected, and a Fitbit sync it starts
+fails at Google, which turned the API off.
+
 ### v1.46.0 notes
 
 - **Postgres 18.** The compose file moves the bundled database from

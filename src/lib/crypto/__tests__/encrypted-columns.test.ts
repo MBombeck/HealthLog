@@ -4,6 +4,7 @@ import { join } from "node:path";
 import {
   ENCRYPTED_COLUMNS,
   encryptedColumnKey,
+  RETIRED_ENCRYPTED_COLUMNS,
   UPDATED_AT_MODELS,
   type EncryptedColumn,
 } from "../encrypted-columns";
@@ -148,7 +149,7 @@ describe("encrypted-column registry", () => {
     // reach — and the sibling guard `encrypted-column-writers.test.ts` is
     // what finds those, by tracing the writers instead of the names.
     const missingFromRegistry = schemaEncrypted.filter(
-      (k) => !registered.includes(k),
+      (k) => !registered.includes(k) && !RETIRED_ENCRYPTED_COLUMNS.has(k),
     );
     const staleInRegistry = registered.filter((k) => !allSchemaColumns.has(k));
     expect(

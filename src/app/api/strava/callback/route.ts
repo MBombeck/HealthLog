@@ -159,8 +159,8 @@ async function completeCallback(
     // history lands within the hour instead of waiting for the next worker
     // reboot. Best-effort: the boot-time discovery query
     // (`stravaBackfillCompletedAt IS NULL`) is the safety net, so a missing
-    // boss instance here never strands the connection. Mirrors the WHOOP /
-    // Fitbit callback enqueue.
+    // boss instance here never strands the connection. Mirrors the WHOOP
+    // callback enqueue.
     await enqueueWhenBossReady("strava-backfill", async (boss) => {
       await boss
         .send(STRAVA_BACKFILL_QUEUE, {

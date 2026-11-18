@@ -1,0 +1,9 @@
+{
+  "resourceType": "Observation",
+  "id": "obs-prelim",
+  "status": "preliminary",
+  "category": [{ "coding": [{ "code": "laboratory" }] }],
+  "code": { "text": "Potassium" },
+  "effectiveDateTime": "2025-02-01T07:30:00Z",
+  "valueQuantity": { "value": 4.1, "unit": "mmol/L" }
+}

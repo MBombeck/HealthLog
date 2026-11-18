@@ -1,6 +1,7 @@
 /**
- * Bounded ZIP reader for Apple Health's auxiliary members: the ECG CSVs and
- * the workout-route GPX files.
+ * Bounded ZIP reader for Apple Health's auxiliary members: the ECG CSVs, the
+ * workout-route GPX files and the Health Records FHIR JSON files. Reads ZIP64
+ * archives too, which is what the Health app writes for a large export.
  *
  * ZIP entry names are treated as untrusted identifiers only: no archive member
  * is ever materialised on disk. Central-directory metadata is checked before
@@ -19,9 +20,19 @@ export interface AppleHealthArchiveLimits {
   maxCompressionRatio: number;
 }
 
+/**
+ * Why a wanted member was not read: it breaks a per-member limit (`too_large`
+ * for its size or compression ratio, `unsupported` for encryption or a
+ * compression method the reader does not inflate).
+ */
+export type AppleHealthMemberRefusal = "too_large" | "unsupported";
+
 export interface AppleHealthArchiveMember {
   name: string;
+  /** Errors on the first read when the member was refused. */
   stream: Readable;
+  /** Set when the member broke a per-member limit and was not inflated. */
+  refused?: AppleHealthMemberRefusal;
 }
 
 interface ZipEntry {
@@ -31,14 +42,30 @@ interface ZipEntry {
   compressedSize: number;
   uncompressedSize: number;
   localHeaderOffset: number;
+  /** Set on a wanted member of the kind that breaks a per-member limit. */
+  refused?: AppleHealthMemberRefusal;
 }
+
+/**
+ * The most directory entries an archive may hold, for every pass alike. It
+ * bounds the walk of the central directory, which every pass makes over every
+ * entry whatever its kind; a pass's own members are bounded by its own count.
+ * A Health app export holds one file per ECG, per workout route and per Health
+ * Records resource beside `export.xml`, so years of routes and a clinic's
+ * history reach tens of thousands.
+ */
+export const APPLE_HEALTH_ARCHIVE_MAX_ENTRIES = 200_000;
 
 const EOCD_SIGNATURE = 0x06054b50;
 const CENTRAL_SIGNATURE = 0x02014b50;
 const LOCAL_SIGNATURE = 0x04034b50;
+const ZIP64_EOCD_SIGNATURE = 0x06064b50;
+const ZIP64_LOCATOR_SIGNATURE = 0x07064b50;
+const ZIP64_EXTRA_ID = 0x0001;
 const MAX_EOCD_SEARCH = 65_535 + 22;
 const ECG_PREFIX = "apple_health_export/electrocardiograms/";
 const ROUTE_PREFIX = "apple_health_export/workout-routes/";
+const CLINICAL_PREFIX = "apple_health_export/clinical-records/";
 
 /**
  * One family of auxiliary members: which names belong to it, the label its
@@ -93,6 +120,48 @@ async function readExactly(
   return buffer;
 }
 
+/** A 64-bit ZIP field as a number, refused past the safe-integer range. */
+function safeNumber(value: bigint): number {
+  if (value > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw archiveError("ZIP64 value is too large to address safely");
+  }
+  return Number(value);
+}
+
+/**
+ * The ZIP64 extended-information values a central-directory entry asked for.
+ * A sentinel without its value in the extra field is a malformed archive.
+ */
+function zip64ExtraValues(
+  extra: Buffer,
+  wanted: { uncompressed: boolean; compressed: boolean; offset: boolean },
+): { uncompressed?: number; compressed?: number; offset?: number } {
+  let cursor = 0;
+  while (cursor + 4 <= extra.length) {
+    const id = extra.readUInt16LE(cursor);
+    const size = extra.readUInt16LE(cursor + 2);
+    const end = cursor + 4 + size;
+    if (end > extra.length) break;
+    if (id === ZIP64_EXTRA_ID) {
+      const out: {
+        uncompressed?: number;
+        compressed?: number;
+        offset?: number;
+      } = {};
+      let at = cursor + 4;
+      for (const field of ["uncompressed", "compressed", "offset"] as const) {
+        if (!wanted[field]) continue;
+        if (at + 8 > end) throw archiveError("malformed ZIP64 member");
+        out[field] = safeNumber(extra.readBigUInt64LE(at));
+        at += 8;
+      }
+      return out;
+    }
+    cursor = end;
+  }
+  throw archiveError("malformed ZIP64 member");
+}
+
 function isUnsafeName(name: string): boolean {
   if (
     name.length === 0 ||
@@ -138,11 +207,37 @@ export function routeMemberNameFromReference(path: string): string | null {
   return isWorkoutRouteGpx(name) ? name : null;
 }
 
+/** A Health Records resource as the archive names it: `clinical-records/<file>.json`. */
+export function isClinicalRecordJson(name: string): boolean {
+  return isDirectChild(name, CLINICAL_PREFIX, ".json");
+}
+
+/**
+ * The archive member a `<ClinicalRecord resourceFilePath="…">` points at.
+ * Apple writes the path from the export root
+ * (`/clinical-records/Observation-….json`); the member carries the export
+ * folder in front. Null for anything that is not a direct clinical file.
+ */
+export function clinicalMemberNameFromReference(path: string): string | null {
+  const trimmed = path.startsWith("/") ? path.slice(1) : path;
+  const name = `apple_health_export/${trimmed}`;
+  return isClinicalRecordJson(name) ? name : null;
+}
+
+/**
+ * The central directory, checked as a whole: entry count, bounds, names. Of
+ * the entries, only the ones the pass will read (`wanted` members of its
+ * kind) are held to the per-member limits and counted against the kind's
+ * ceiling; one that breaks a per-member limit is marked refused rather than
+ * failing the archive. The others are not read, so neither their size nor how
+ * many there are can make reading the wanted ones unsafe.
+ */
 async function readCentralDirectory(
   handle: FileHandle,
   fileSize: number,
   limits: AppleHealthArchiveLimits,
   kind: MemberKind,
+  wanted: (name: string) => boolean,
 ): Promise<ZipEntry[]> {
   if (fileSize < 22) throw archiveError("missing ZIP directory");
 
@@ -160,18 +255,47 @@ async function readCentralDirectory(
   const disk = tail.readUInt16LE(eocdOffset + 4);
   const centralDisk = tail.readUInt16LE(eocdOffset + 6);
   const diskEntries = tail.readUInt16LE(eocdOffset + 8);
-  const totalEntries = tail.readUInt16LE(eocdOffset + 10);
-  const centralSize = tail.readUInt32LE(eocdOffset + 12);
-  const centralOffset = tail.readUInt32LE(eocdOffset + 16);
+  let totalEntries = tail.readUInt16LE(eocdOffset + 10);
+  let centralSize = tail.readUInt32LE(eocdOffset + 12);
+  let centralOffset = tail.readUInt32LE(eocdOffset + 16);
+  if (disk !== 0 || centralDisk !== 0 || diskEntries !== totalEntries) {
+    throw archiveError("unsupported multi-disk archive");
+  }
+  // ZIP64: a sentinel in any of the three fields means the real values live
+  // in the ZIP64 end record, found through the locator just before the end
+  // record. The Health app writes one for a large export.
   if (
-    disk !== 0 ||
-    centralDisk !== 0 ||
-    diskEntries !== totalEntries ||
     totalEntries === 0xffff ||
     centralSize === 0xffffffff ||
     centralOffset === 0xffffffff
   ) {
-    throw archiveError("unsupported multi-disk or ZIP64 archive");
+    const locatorOffset = fileSize - tailLength + eocdOffset - 20;
+    if (locatorOffset < 0) throw archiveError("missing ZIP64 locator");
+    const locator = await readExactly(handle, 20, locatorOffset);
+    if (locator.readUInt32LE(0) !== ZIP64_LOCATOR_SIGNATURE) {
+      throw archiveError("missing ZIP64 locator");
+    }
+    if (locator.readUInt32LE(4) !== 0 || locator.readUInt32LE(16) > 1) {
+      throw archiveError("unsupported multi-disk archive");
+    }
+    const recordOffset = safeNumber(locator.readBigUInt64LE(8));
+    if (recordOffset + 56 > fileSize) {
+      throw archiveError("invalid ZIP64 directory bounds");
+    }
+    const record = await readExactly(handle, 56, recordOffset);
+    if (record.readUInt32LE(0) !== ZIP64_EOCD_SIGNATURE) {
+      throw archiveError("malformed ZIP64 directory");
+    }
+    if (record.readUInt32LE(16) !== 0 || record.readUInt32LE(20) !== 0) {
+      throw archiveError("unsupported multi-disk archive");
+    }
+    const recordDiskEntries = safeNumber(record.readBigUInt64LE(24));
+    totalEntries = safeNumber(record.readBigUInt64LE(32));
+    centralSize = safeNumber(record.readBigUInt64LE(40));
+    centralOffset = safeNumber(record.readBigUInt64LE(48));
+    if (recordDiskEntries !== totalEntries) {
+      throw archiveError("unsupported multi-disk archive");
+    }
   }
   if (totalEntries > limits.maxMembers) {
     throw archiveError("member count limit exceeded");
@@ -192,44 +316,52 @@ async function readCentralDirectory(
     }
     const flags = header.readUInt16LE(8);
     const method = header.readUInt16LE(10);
-    const compressedSize = header.readUInt32LE(20);
-    const uncompressedSize = header.readUInt32LE(24);
+    let compressedSize = header.readUInt32LE(20);
+    let uncompressedSize = header.readUInt32LE(24);
     const nameLength = header.readUInt16LE(28);
     const extraLength = header.readUInt16LE(30);
     const commentLength = header.readUInt16LE(32);
-    const localHeaderOffset = header.readUInt32LE(42);
+    let localHeaderOffset = header.readUInt32LE(42);
+
+    const nameBuffer = await readExactly(handle, nameLength, cursor + 46);
     if (
       compressedSize === 0xffffffff ||
       uncompressedSize === 0xffffffff ||
       localHeaderOffset === 0xffffffff
     ) {
-      throw archiveError("unsupported ZIP64 member");
+      // ZIP64 member: the real values sit in the extended-information extra
+      // field (id 0x0001), in this order, each present only when its 32-bit
+      // field holds the sentinel.
+      const extra = await readExactly(
+        handle,
+        extraLength,
+        cursor + 46 + nameLength,
+      );
+      const sizes = zip64ExtraValues(extra, {
+        uncompressed: uncompressedSize === 0xffffffff,
+        compressed: compressedSize === 0xffffffff,
+        offset: localHeaderOffset === 0xffffffff,
+      });
+      if (sizes.uncompressed !== undefined)
+        uncompressedSize = sizes.uncompressed;
+      if (sizes.compressed !== undefined) compressedSize = sizes.compressed;
+      if (sizes.offset !== undefined) localHeaderOffset = sizes.offset;
     }
-
-    const nameBuffer = await readExactly(handle, nameLength, cursor + 46);
     const name = nameBuffer.toString("utf8");
     if (isUnsafeName(name)) throw archiveError("unsafe member path");
     if (names.has(name)) throw archiveError("duplicate member name");
     names.add(name);
 
-    if (kind.matches(name)) {
+    let refused: AppleHealthMemberRefusal | undefined;
+    if (kind.matches(name) && wanted(name)) {
       kindCount += 1;
       if (kindCount > kind.maxMembers) {
         throw archiveError(`${kind.label} member count limit exceeded`);
       }
-      if ((flags & 0x1) !== 0) {
-        throw archiveError(`encrypted ${kind.label} member is unsupported`);
-      }
-      if (method !== 0 && method !== 8) {
-        throw archiveError(`unsupported ${kind.label} compression method`);
-      }
-      if (uncompressedSize > limits.maxMemberBytes) {
-        throw archiveError(`${kind.label} member byte limit exceeded`);
-      }
-      const ratio = uncompressedSize / Math.max(1, compressedSize);
-      if (ratio > limits.maxCompressionRatio) {
-        throw archiveError(`${kind.label} compression ratio limit exceeded`);
-      }
+      refused = memberRefusal(
+        { flags, method, compressedSize, uncompressedSize },
+        limits,
+      );
     }
 
     entries.push({
@@ -239,6 +371,7 @@ async function readCentralDirectory(
       compressedSize,
       uncompressedSize,
       localHeaderOffset,
+      ...(refused ? { refused } : {}),
     });
     cursor += 46 + nameLength + extraLength + commentLength;
     if (cursor > centralOffset + centralSize) {
@@ -246,6 +379,60 @@ async function readCentralDirectory(
     }
   }
   return entries;
+}
+
+/**
+ * Why a member breaks a per-member limit by what its directory entry
+ * declares, or undefined. The compressed size is held to the member limit
+ * too: it is what the reader allocates before inflating, and a member that
+ * does not fit compressed cannot fit inflated.
+ */
+function memberRefusal(
+  entry: Pick<
+    ZipEntry,
+    "flags" | "method" | "compressedSize" | "uncompressedSize"
+  >,
+  limits: AppleHealthArchiveLimits,
+): AppleHealthMemberRefusal | undefined {
+  if ((entry.flags & 0x1) !== 0) return "unsupported";
+  if (entry.method !== 0 && entry.method !== 8) return "unsupported";
+  if (
+    entry.uncompressedSize > limits.maxMemberBytes ||
+    entry.compressedSize > limits.maxMemberBytes
+  ) {
+    return "too_large";
+  }
+  const ratio = entry.uncompressedSize / Math.max(1, entry.compressedSize);
+  if (ratio > limits.maxCompressionRatio) return "too_large";
+  return undefined;
+}
+
+/** A member breaking a per-member limit; the pass goes on without it. */
+class MemberRefused extends Error {
+  constructor(
+    readonly reason: AppleHealthMemberRefusal,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+/** A member that was not read: its stream errors on the first read. */
+function refusedMember(
+  name: string,
+  reason: AppleHealthMemberRefusal,
+  label: string,
+): AppleHealthArchiveMember {
+  const error = archiveError(`${label} member refused (${reason})`);
+  return {
+    name,
+    refused: reason,
+    stream: new Readable({
+      read() {
+        this.destroy(error);
+      },
+    }),
+  };
 }
 
 async function decompressEntry(
@@ -278,34 +465,51 @@ async function decompressEntry(
   if (dataOffset + entry.compressedSize > fileSize) {
     throw archiveError("invalid member data bounds");
   }
+  // Checked again here, beside the allocation it guards.
+  if (entry.compressedSize > limits.maxMemberBytes) {
+    throw new MemberRefused(
+      "too_large",
+      `${kind.label} member byte limit exceeded`,
+    );
+  }
 
   const compressed = await readExactly(
     handle,
     entry.compressedSize,
     dataOffset,
   );
+  // A stored member is read through a copy: the read buffer is wiped below,
+  // and the stored bytes are the member's content.
   const source =
     entry.method === 0
-      ? Readable.from([compressed])
+      ? Readable.from([Buffer.from(compressed)])
       : Readable.from([compressed]).pipe(createInflateRaw());
   const chunks: Buffer[] = [];
   let memberBytes = 0;
+  // Which limit stopped the inflate: the member's own fails the member, the
+  // running total ends the pass.
+  let stop: Error | null = null;
 
   try {
     for await (const value of source) {
       const chunk = Buffer.isBuffer(value) ? value : Buffer.from(value);
       memberBytes += chunk.byteLength;
       if (memberBytes > limits.maxMemberBytes) {
-        throw archiveError(`actual ${kind.label} member byte limit exceeded`);
+        stop = new MemberRefused(
+          "too_large",
+          `actual ${kind.label} member byte limit exceeded`,
+        );
+        throw stop;
       }
       if (total.bytes + memberBytes > kind.maxTotalBytes) {
-        throw archiveError(`total ${kind.label} byte limit exceeded`);
+        stop = archiveError(`total ${kind.label} byte limit exceeded`);
+        throw stop;
       }
       chunks.push(chunk);
     }
   } catch {
     for (const chunk of chunks) chunk.fill(0);
-    throw archiveError(`${kind.label} decompression or byte limit failure`);
+    throw stop ?? archiveError(`${kind.label} decompression failure`);
   } finally {
     compressed.fill(0);
   }
@@ -319,6 +523,9 @@ async function decompressEntry(
  * The complete central directory is validated before any health data is
  * yielded, so a structurally unsafe archive is never partly processed.
  * `wanted` narrows further (a route the export's XML actually references).
+ * A wanted member that breaks a per-member limit is yielded refused (its
+ * stream errors) and the pass goes on; a running total, a malformed archive
+ * or an inflate failure ends it.
  */
 async function* streamMembers(
   archivePath: string,
@@ -334,18 +541,35 @@ async function* streamMembers(
     if (!Number.isSafeInteger(fileSize)) {
       throw archiveError("archive is too large to address safely");
     }
-    const entries = await readCentralDirectory(handle, fileSize, limits, kind);
+    const entries = await readCentralDirectory(
+      handle,
+      fileSize,
+      limits,
+      kind,
+      wanted,
+    );
     const total = { bytes: 0 };
     for (const entry of entries) {
       if (!kind.matches(entry.name) || !wanted(entry.name)) continue;
-      const chunks = await decompressEntry(
-        handle,
-        entry,
-        fileSize,
-        limits,
-        kind,
-        total,
-      );
+      if (entry.refused) {
+        yield refusedMember(entry.name, entry.refused, kind.label);
+        continue;
+      }
+      let chunks: Buffer[];
+      try {
+        chunks = await decompressEntry(
+          handle,
+          entry,
+          fileSize,
+          limits,
+          kind,
+          total,
+        );
+      } catch (err) {
+        if (!(err instanceof MemberRefused)) throw err;
+        yield refusedMember(entry.name, err.reason, kind.label);
+        continue;
+      }
       yield { name: entry.name, stream: Readable.from(chunks) };
     }
   } finally {
@@ -399,6 +623,44 @@ export async function* streamAppleHealthRouteMembers(input: {
       matches: isWorkoutRouteGpx,
       maxMembers: limits.maxRouteMembers,
       maxTotalBytes: limits.maxTotalRouteBytes,
+    },
+    input.wanted,
+  );
+}
+
+/** Ceilings for the Health Records members; the shared ones keep their meaning. */
+export interface AppleHealthClinicalArchiveLimits {
+  maxMembers: number;
+  maxClinicalMembers: number;
+  maxMemberBytes: number;
+  maxTotalClinicalBytes: number;
+  maxCompressionRatio: number;
+}
+
+/**
+ * Yield the Health Records JSON members `wanted` names, one bounded buffer at
+ * a time: the caller parses and drops each before the next is inflated.
+ */
+export async function* streamAppleHealthClinicalMembers(input: {
+  archivePath: string;
+  limits: AppleHealthClinicalArchiveLimits;
+  wanted: (name: string) => boolean;
+}): AsyncGenerator<AppleHealthArchiveMember> {
+  const { limits } = input;
+  yield* streamMembers(
+    input.archivePath,
+    {
+      maxMembers: limits.maxMembers,
+      maxEcgMembers: limits.maxClinicalMembers,
+      maxMemberBytes: limits.maxMemberBytes,
+      maxTotalEcgBytes: limits.maxTotalClinicalBytes,
+      maxCompressionRatio: limits.maxCompressionRatio,
+    },
+    {
+      label: "clinical record",
+      matches: isClinicalRecordJson,
+      maxMembers: limits.maxClinicalMembers,
+      maxTotalBytes: limits.maxTotalClinicalBytes,
     },
     input.wanted,
   );

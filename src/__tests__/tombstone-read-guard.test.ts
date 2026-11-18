@@ -47,6 +47,8 @@ const SCOPES = [
 const ALLOWED: Record<string, string> = {
   "measurement@lib/rollups/measurement-rollups.ts":
     "Freshness probe on updatedAt: a delete bumps it and must invalidate the rollup.",
+  "measurement@lib/insights/feature-cache.ts":
+    "Input fingerprint on updatedAt: a soft delete bumps it and must invalidate the cached feature read.",
   "moodEntry@lib/rollups/mood-rollups.ts":
     "Freshness probe on updatedAt: a delete bumps it and must invalidate the rollup.",
   "coachFact@lib/ai/coach/memory/trail-read.ts":

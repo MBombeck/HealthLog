@@ -17,19 +17,33 @@ import {
   NUTRIENT_DEFINITIONS,
   SYNCABLE_NUTRIENT_CODES,
   isAboveUpperLimit,
-  isNutrientCode,
+  isIngredientNutrientCode,
   isSyncableNutrientCode,
+  nutrientCodesInGroup,
   resolveNutrientReference,
   toCanonicalNutrientAmount,
 } from "../catalog";
 
-/** The codes HealthKit sends, which carry an HK identifier and a reference. */
+/** The codes the batch accepts. */
 const SYNCABLE = NUTRIENT_DEFINITIONS.filter((d) => d.syncable);
+/** The codes HealthKit carries. */
+const HEALTHKIT = NUTRIENT_DEFINITIONS.filter((d) => d.hkIdentifier !== null);
+/** Codes that deliberately carry no reference, each for a stated reason. */
+const REFERENCE_LESS = [
+  "energy",
+  "fat",
+  "saturated_fat",
+  "monounsaturated_fat",
+  "polyunsaturated_fat",
+  "sugar",
+  "cholesterol",
+  "alcohol",
+];
 
 describe("nutrient catalog", () => {
-  it("carries exactly the 26 syncable codes plus the two supplement-only ones (no sodium, no potassium, no macros)", () => {
-    expect(SYNCABLE_NUTRIENT_CODES).toHaveLength(26);
-    expect(NUTRIENT_CODES).toHaveLength(28);
+  it("carries the 39 syncable codes plus the two supplement-only ones", () => {
+    expect(SYNCABLE_NUTRIENT_CODES).toHaveLength(39);
+    expect(NUTRIENT_CODES).toHaveLength(41);
     expect(NUTRIENT_CODES.filter((c) => !isSyncableNutrientCode(c))).toEqual([
       "dha",
       "epa",
@@ -37,27 +51,88 @@ describe("nutrient catalog", () => {
     expect(Object.keys(NUTRIENT_CATALOG).sort()).toEqual(
       [...NUTRIENT_CODES].sort(),
     );
-    // The maintainer exclusions stay excluded.
-    for (const banned of [
+    for (const code of [
       "sodium",
       "potassium",
       "energy",
       "carbohydrates",
       "protein",
       "fat",
+      "saturated_fat",
+      "monounsaturated_fat",
+      "polyunsaturated_fat",
       "sugar",
       "fiber",
+      "cholesterol",
+      "alcohol",
     ]) {
-      expect(isNutrientCode(banned), `banned code present: ${banned}`).toBe(
-        false,
+      expect(isSyncableNutrientCode(code), code).toBe(true);
+    }
+  });
+
+  it("every syncable code but alcohol carries a HealthKit identifier", () => {
+    expect(HEALTHKIT).toHaveLength(38);
+    expect(
+      SYNCABLE.filter((d) => d.hkIdentifier === null).map((d) => d.code),
+    ).toEqual(["alcohol"]);
+    expect(NUTRIENT_CATALOG.energy.hkIdentifier).toBe(
+      "HKQuantityTypeIdentifierDietaryEnergyConsumed",
+    );
+    expect(NUTRIENT_CATALOG.fat.hkIdentifier).toBe(
+      "HKQuantityTypeIdentifierDietaryFatTotal",
+    );
+    expect(NUTRIENT_CATALOG.saturated_fat.hkIdentifier).toBe(
+      "HKQuantityTypeIdentifierDietaryFatSaturated",
+    );
+    expect(NUTRIENT_CATALOG.monounsaturated_fat.hkIdentifier).toBe(
+      "HKQuantityTypeIdentifierDietaryFatMonounsaturated",
+    );
+    expect(NUTRIENT_CATALOG.polyunsaturated_fat.hkIdentifier).toBe(
+      "HKQuantityTypeIdentifierDietaryFatPolyunsaturated",
+    );
+    expect(NUTRIENT_CATALOG.cholesterol.hkIdentifier).toBe(
+      "HKQuantityTypeIdentifierDietaryCholesterol",
+    );
+  });
+
+  it("groups every code, and only vitamins, minerals, caffeine and omega-3 are ingredients", () => {
+    const groups = (g: string) =>
+      NUTRIENT_DEFINITIONS.filter((d) => d.group === g).map((d) => d.code);
+    expect(groups("vitamin")).toHaveLength(13);
+    expect(groups("mineral")).toHaveLength(13);
+    expect(groups("energy_macro")).toEqual([
+      "energy",
+      "protein",
+      "carbohydrates",
+      "fat",
+      "saturated_fat",
+      "monounsaturated_fat",
+      "polyunsaturated_fat",
+      "sugar",
+      "fiber",
+      "cholesterol",
+    ]);
+    expect(groups("alcohol")).toEqual(["alcohol"]);
+    expect(groups("omega3")).toEqual(["dha", "epa"]);
+    for (const def of NUTRIENT_DEFINITIONS) {
+      expect(def.ingredient, def.code).toBe(
+        ["vitamin", "mineral", "caffeine", "omega3"].includes(def.group),
       );
     }
+    expect(isIngredientNutrientCode("magnesium")).toBe(true);
+    expect(isIngredientNutrientCode("energy")).toBe(false);
+    expect(isIngredientNutrientCode("alcohol")).toBe(false);
+    expect(isIngredientNutrientCode("water")).toBe(false);
+    expect(isIngredientNutrientCode("nope")).toBe(false);
+    expect(nutrientCodesInGroup("energy_macro")).toEqual(
+      groups("energy_macro"),
+    );
   });
 
   it("codes and HealthKit identifiers are unique, and every HK id is a Dietary quantity type", () => {
     const codes = new Set<string>();
     const hkIds = new Set<string>();
-    for (const def of SYNCABLE) {
+    for (const def of HEALTHKIT) {
       expect(def.hkIdentifier).not.toBeNull();
       const hk = def.hkIdentifier!;
       expect(codes.has(def.code)).toBe(false);
@@ -68,10 +143,29 @@ describe("nutrient catalog", () => {
     }
   });
 
-  it("every unit is canonical (mg | ug | ml) and water is the only ml type", () => {
+  it("every unit is canonical (mg | ug | ml | g | kcal) and water is the only ml type", () => {
     for (const def of NUTRIENT_DEFINITIONS) {
-      expect(["mg", "ug", "ml"]).toContain(def.unit);
+      expect(["mg", "ug", "ml", "g", "kcal"]).toContain(def.unit);
     }
+    expect(
+      NUTRIENT_DEFINITIONS.filter((d) => d.unit === "kcal").map((d) => d.code),
+    ).toEqual(["energy"]);
+    expect(
+      NUTRIENT_DEFINITIONS.filter((d) => d.unit === "g").map((d) => d.code),
+    ).toEqual([
+      "protein",
+      "carbohydrates",
+      "fat",
+      "saturated_fat",
+      "monounsaturated_fat",
+      "polyunsaturated_fat",
+      "sugar",
+      "fiber",
+      "alcohol",
+    ]);
+    expect(NUTRIENT_CATALOG.sodium.unit).toBe("mg");
+    expect(NUTRIENT_CATALOG.cholesterol.unit).toBe("mg");
+    expect(NUTRIENT_CATALOG.potassium.unit).toBe("mg");
     const mlCodes = NUTRIENT_DEFINITIONS.filter((d) => d.unit === "ml").map(
       (d) => d.code,
     );
@@ -115,9 +209,14 @@ describe("nutrient catalog", () => {
     }
   });
 
-  it("every syncable code has a reference entry carrying kind, direction, a citation, and a resolvable value", () => {
+  it("every syncable code but the documented reference-less ones has a reference entry carrying authority, kind, direction, a citation, and a resolvable value", () => {
+    expect(
+      SYNCABLE.filter((d) => d.reference === null).map((d) => d.code),
+    ).toEqual(REFERENCE_LESS);
     for (const def of SYNCABLE) {
+      if (REFERENCE_LESS.includes(def.code)) continue;
       const ref = def.reference!;
+      expect(["EFSA", "IOM", "NIH ODS"]).toContain(ref.authority);
       expect(ref, `missing reference: ${def.code}`).toBeTruthy();
       expect(["PRI", "AI", "safeLevel"]).toContain(ref.kind);
       expect(["target", "upperGuidance"]).toContain(ref.direction);
@@ -135,25 +234,40 @@ describe("nutrient catalog", () => {
     }
   });
 
-  it("caffeine is the one upperGuidance reference; everything else is a target", () => {
+  it("caffeine and sodium are the upperGuidance references; everything else is a target", () => {
     for (const def of SYNCABLE) {
-      expect(def.reference!.direction).toBe(
-        def.code === "caffeine" ? "upperGuidance" : "target",
+      if (!def.reference) continue;
+      expect(def.reference.direction, def.code).toBe(
+        def.code === "caffeine" || def.code === "sodium"
+          ? "upperGuidance"
+          : "target",
       );
     }
+    expect(NUTRIENT_CATALOG.sodium.reference!.kind).toBe("safeLevel");
+    expect(NUTRIENT_CATALOG.sodium.reference!.adult).toBe(2000);
     expect(NUTRIENT_CATALOG.caffeine.reference!.kind).toBe("safeLevel");
     expect(NUTRIENT_CATALOG.caffeine.reference!.adult).toBe(400);
   });
 
-  it("every citation names EFSA, except the documented chromium exception (EFSA sets no DRV)", () => {
+  it("every citation names its authority; the non-EFSA ones are exactly chromium, protein and carbohydrates, and each says why EFSA does not apply", () => {
+    const nonEfsa: string[] = [];
     for (const def of SYNCABLE) {
-      if (def.code === "chromium") {
-        expect(def.reference!.source).toContain("NIH");
-        expect(def.reference!.source).toContain("EFSA");
-        continue;
+      const ref = def.reference;
+      if (!ref) continue;
+      expect(ref.source, `citation: ${def.code}`).toContain(ref.authority);
+      if (ref.authority !== "EFSA") {
+        nonEfsa.push(def.code);
+        // The citation also names EFSA, saying why its value is not used.
+        expect(ref.source, def.code).toContain("EFSA");
       }
-      expect(def.reference!.source, `citation: ${def.code}`).toContain("EFSA");
     }
+    expect(nonEfsa).toEqual(["chromium", "protein", "carbohydrates"]);
+    expect(NUTRIENT_CATALOG.chromium.reference!.authority).toBe("NIH ODS");
+    expect(NUTRIENT_CATALOG.protein.reference!.male).toBe(56);
+    expect(NUTRIENT_CATALOG.protein.reference!.female).toBe(46);
+    expect(NUTRIENT_CATALOG.carbohydrates.reference!.adult).toBe(130);
+    expect(NUTRIENT_CATALOG.fiber.reference!.adult).toBe(25);
+    expect(NUTRIENT_CATALOG.potassium.reference!.adult).toBe(3500);
   });
 
   it("iron carries the EFSA sex split (11 male / 16 female)", () => {
@@ -204,6 +318,7 @@ describe("resolveNutrientReference (v1.29)", () => {
   it("resolves caffeine's upperGuidance ceiling regardless of sex", () => {
     const ref = resolveNutrientReference("caffeine", null);
     expect(ref).toEqual({
+      authority: "EFSA",
       kind: "safeLevel",
       direction: "upperGuidance",
       value: 400,
@@ -216,8 +331,12 @@ describe("resolveNutrientReference (v1.29)", () => {
     expect(resolveNutrientReference("epa", "FEMALE")).toBeNull();
   });
 
-  it("resolves every syncable code to a non-null reference for at least one sex", () => {
+  it("resolves every syncable code with a reference to a non-null value for at least one sex", () => {
     for (const code of SYNCABLE_NUTRIENT_CODES) {
+      if (REFERENCE_LESS.includes(code)) {
+        expect(resolveNutrientReference(code, "MALE")).toBeNull();
+        continue;
+      }
       const resolved =
         resolveNutrientReference(code, "MALE") ??
         resolveNutrientReference(code, "FEMALE");
@@ -252,6 +371,15 @@ describe("input units and the converter (v1.43)", () => {
     expect(toCanonicalNutrientAmount("magnesium", 500, "ug")).toBe(0.5);
     expect(toCanonicalNutrientAmount("dha", 0.5, "g")).toBe(500);
     expect(toCanonicalNutrientAmount("water", 1.5, "l")).toBe(1500);
+  });
+
+  it("converts macros from mg and keeps energy in kcal only", () => {
+    expect(toCanonicalNutrientAmount("protein", 500, "mg")).toBe(0.5);
+    expect(toCanonicalNutrientAmount("protein", 30, "g")).toBe(30);
+    expect(toCanonicalNutrientAmount("energy", 2100, "kcal")).toBe(2100);
+    // No kJ: 4.184× off and still plausible, so refused.
+    expect(toCanonicalNutrientAmount("energy", 8800, "kJ")).toBeNull();
+    expect(toCanonicalNutrientAmount("energy", 2, "g")).toBeNull();
   });
 
   it("refuses a unit the code does not list rather than guessing", () => {
@@ -307,8 +435,8 @@ describe("upper intake levels (v1.43)", () => {
   });
 });
 
-describe("the batch contract stays the syncable codes (v1.43)", () => {
-  it("refuses dha and epa in the HealthKit batch and accepts a syncable code", async () => {
+describe("the batch contract is the syncable codes", () => {
+  it("refuses dha and epa in the batch and accepts a syncable code, energy and alcohol included", async () => {
     const { nutrientBatchSchema } = await import("@/lib/validations/nutrients");
     const entry = (nutrient: string) => ({
       entries: [{ day: "2026-07-10", nutrient, unit: "mg", amount: 100 }],
@@ -318,5 +446,7 @@ describe("the batch contract stays the syncable codes (v1.43)", () => {
     expect(nutrientBatchSchema.safeParse(entry("magnesium")).success).toBe(
       true,
     );
+    expect(nutrientBatchSchema.safeParse(entry("energy")).success).toBe(true);
+    expect(nutrientBatchSchema.safeParse(entry("alcohol")).success).toBe(true);
   });
 });

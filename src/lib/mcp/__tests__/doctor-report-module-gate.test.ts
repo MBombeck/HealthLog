@@ -31,8 +31,8 @@ vi.mock("@/lib/db", () => ({
     labResult: { findMany: vi.fn(async () => []) },
   },
 }));
-vi.mock("@/lib/ai/coach/tools/inventory", () => ({
-  buildCoachDataInventory: vi.fn(async () => ({})),
+vi.mock("@/lib/mcp/data-inventory", () => ({
+  buildMcpDataInventory: vi.fn(async () => ({})),
 }));
 vi.mock("@/lib/ai/coach/tools/executor", () => ({
   executeCoachTool: vi.fn(async () => ({ present: false })),

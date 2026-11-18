@@ -403,6 +403,21 @@ export async function upsertStravaWorkouts(
   let imported = 0;
   let firstError: unknown;
   let hadError = false;
+  // One read for the whole batch finds the rows already stored, so a re-read
+  // costs one write per activity rather than an insert attempt, a read and
+  // the write.
+  const stored = new Map(
+    (
+      await prisma.workout.findMany({
+        where: {
+          userId,
+          source: "STRAVA",
+          externalId: { in: rows.map((r) => r.externalId) },
+        },
+        select: { externalId: true, metadata: true },
+      })
+    ).map((w) => [w.externalId, w]),
+  );
   for (const r of rows) {
     const data = {
       sportType: r.sportType,
@@ -416,14 +431,22 @@ export async function upsertStravaWorkouts(
       elevationM: r.elevationM,
       metadata: r.metadata,
     };
+    const key = { userId, source: "STRAVA" as const, externalId: r.externalId };
     try {
+      const known = stored.get(r.externalId);
+      if (known) {
+        const { count } = await prisma.workout.updateMany({
+          where: key,
+          data: r.summaryOnly ? await summaryOnlyUpdate(data, known) : data,
+        });
+        // Gone since the read: written fresh below, as any new activity.
+        if (count === 1) {
+          imported += 1;
+          continue;
+        }
+      }
       const [inserted] = await prisma.workout.createManyAndReturn({
-        data: {
-          userId,
-          source: "STRAVA",
-          externalId: r.externalId,
-          ...data,
-        },
+        data: { ...key, ...data },
         skipDuplicates: true,
         select: { id: true, startedAt: true },
       });
@@ -432,13 +455,7 @@ export async function upsertStravaWorkouts(
           () => {},
         );
       } else {
-        const where = {
-          userId_source_externalId: {
-            userId,
-            source: "STRAVA" as const,
-            externalId: r.externalId,
-          },
-        };
+        const where = { userId_source_externalId: key };
         await prisma.workout.update({
           where,
           data: r.summaryOnly

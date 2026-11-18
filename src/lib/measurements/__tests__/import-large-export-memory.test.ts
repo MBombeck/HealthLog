@@ -410,8 +410,12 @@ describe("large-export bounded-memory regression (issue #775)", () => {
         // fold produced one estimate row per (type, day) — not one per
         // record or per runtime device address.
         expect(result.totals.recordsRead).toBe(TOTAL_RECORDS);
-        expect(prisma.counters.measurementInserts).toBe(SPOT_RECORDS);
-        expect(prisma.counters.cumulativeCreates).toBe(STEP_DAYS);
+        // The daily estimates land through the same bulk insert as the
+        // spot rows, none of them one at a time.
+        expect(prisma.counters.measurementInserts).toBe(
+          SPOT_RECORDS + STEP_DAYS,
+        );
+        expect(prisma.counters.cumulativeCreates).toBe(0);
         expect(result.cumulativeEstimates.days).toBe(STEP_DAYS);
         expect(result.cumulativeEstimates.rows).toBe(STEP_DAYS);
       } finally {

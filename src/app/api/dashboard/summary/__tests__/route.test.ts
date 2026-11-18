@@ -4,6 +4,12 @@ import { NextRequest } from "next/server";
 // Every module is on for the aggregate assertions below; the gate's own
 // behaviour (which cards a disabled module drops) is pinned in the sibling
 // `module-gate.test.ts`.
+// The month-over-month trend reads the rollup tier; it is proven against
+// Postgres in tests/integration/dashboard-tile-trend.test.ts. Here the cards
+// keep their sparkline trend.
+vi.mock("@/lib/dashboard/summary/month-trend", () => ({
+  withMonthTrends: async (_userId: string, cards: unknown[]) => cards,
+}));
 vi.mock("@/lib/modules/gate", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/modules/gate")>();
   return {
@@ -907,12 +913,13 @@ describe("GET /api/dashboard/summary", () => {
       };
       if (a.where.OR) return Promise.resolve([]) as never;
       // The existence probe asks for `(medicationId, scheduledFor)`;
-      // the tally read asks for `(takenAt, skipped)`.
+      // the tally read asks for `(takenAt, skipped, scheduledFor)`.
       if (a.select?.medicationId) return Promise.resolve([]) as never;
       return Promise.resolve([
         {
           takenAt: null,
           skipped: false,
+          scheduledFor: new Date(),
         },
       ]) as never;
     }) as never);
@@ -1060,7 +1067,9 @@ describe("GET /api/dashboard/summary", () => {
         ]) as never;
       }
       // Today tally read — the pre-existing pending row.
-      return Promise.resolve([{ takenAt: null, skipped: false }]) as never;
+      return Promise.resolve([
+        { takenAt: null, skipped: false, scheduledFor },
+      ]) as never;
     }) as never);
 
     const res = await callGet(makeReq());
@@ -1083,8 +1092,8 @@ describe("GET /api/dashboard/summary", () => {
       const a = args as { where: { OR?: unknown } };
       if (!a.where.OR) {
         return Promise.resolve([
-          { takenAt: new Date(), skipped: false },
-          { takenAt: null, skipped: false },
+          { takenAt: new Date(), skipped: false, scheduledFor: new Date() },
+          { takenAt: null, skipped: false, scheduledFor: new Date() },
         ]) as never;
       }
       return Promise.resolve([]) as never;

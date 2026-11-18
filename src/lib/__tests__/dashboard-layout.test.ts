@@ -443,7 +443,7 @@ describe("resolveDashboardLayout() — retired heroVisible field", () => {
  * iOS-only ids extend it without touching the writable PUT enum.
  */
 describe("DASHBOARD_WIDGET_CATALOGUE_IDS — 27-id catalogue", () => {
-  it("carries exactly 42 distinct ids (29 server-known + 13 iOS-only)", () => {
+  it("carries exactly 43 distinct ids (30 server-known + 13 iOS-only)", () => {
     // v1.11.2 — the 8 v1.10 additive metrics became web-writable, so
     // the server-known set grew 16 → 24 and the catalogue 27 → 35.
     // v1.18.2 — the Vorsorge summary widget added one server-known id
@@ -460,10 +460,12 @@ describe("DASHBOARD_WIDGET_CATALOGUE_IDS — 27-id catalogue", () => {
     // (9 → 13), so the catalogue grew 38 → 42. Before they were catalogued
     // the widgets PUT dropped them as unknown ids and every native layout
     // save lost the user's placement of those tiles.
-    expect(DASHBOARD_WIDGET_IDS).toHaveLength(29);
+    // The opt-in energy-intake strip tile (`energyIntake`) added one
+    // server-known id: 29 → 30, catalogue 42 → 43.
+    expect(DASHBOARD_WIDGET_IDS).toHaveLength(30);
     expect(DASHBOARD_IOS_ONLY_WIDGET_IDS).toHaveLength(13);
-    expect(DASHBOARD_WIDGET_CATALOGUE_IDS).toHaveLength(42);
-    expect(new Set(DASHBOARD_WIDGET_CATALOGUE_IDS).size).toBe(42);
+    expect(DASHBOARD_WIDGET_CATALOGUE_IDS).toHaveLength(43);
+    expect(new Set(DASHBOARD_WIDGET_CATALOGUE_IDS).size).toBe(43);
   });
 
   it("catalogues the four clinical signals the native client pins", () => {
@@ -724,16 +726,16 @@ describe("resolveDashboardLayout() — iOS-only id retention (v1.7.0)", () => {
     expect(ids).not.toContain("totally-made-up");
   });
 
-  it("keeps the default layout at the 29 web tiles (no iOS-only seeded)", () => {
+  it("keeps the default layout at the 30 web tiles (no iOS-only seeded)", () => {
     const ids = DEFAULT_DASHBOARD_LAYOUT.widgets.map((w) => w.id);
-    expect(ids).toHaveLength(29);
+    expect(ids).toHaveLength(30);
     for (const iosId of DASHBOARD_IOS_ONLY_WIDGET_IDS) {
       expect(ids).not.toContain(iosId);
     }
   });
 
   it("does NOT auto-append iOS-only ids when a web-only layout is read", () => {
-    // A web account that saved only `weight` must auto-upgrade to the 29
+    // A web account that saved only `weight` must auto-upgrade to the 30
     // web defaults — never to the 38 catalogue. iOS-only ids appear only
     // once a native client has explicitly sent them.
     const partial = {
@@ -742,7 +744,7 @@ describe("resolveDashboardLayout() — iOS-only id retention (v1.7.0)", () => {
     };
     const resolved = resolveDashboardLayout(partial);
     const ids = resolved.widgets.map((w) => w.id);
-    expect(ids).toHaveLength(29);
+    expect(ids).toHaveLength(30);
     for (const iosId of DASHBOARD_IOS_ONLY_WIDGET_IDS) {
       expect(ids).not.toContain(iosId);
     }

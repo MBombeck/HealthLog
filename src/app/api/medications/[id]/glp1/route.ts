@@ -41,6 +41,9 @@ import {
   shapeDoseChangeNote,
 } from "@/lib/crypto/note-cipher";
 import { NextRequest } from "next/server";
+import type { MedicationDoseChange } from "@/generated/prisma/client";
+import { isP2002 } from "@/lib/prisma-errors";
+import { GLP1_DOSE_CHANGE_DELETED_ERROR_CODE } from "@/lib/medications/glp1-dose-change-tombstone";
 import { dueSchedules } from "@/lib/medications/intake-tracking";
 import { floorWhole } from "@/lib/medications/units-per-dose";
 import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
@@ -216,6 +219,7 @@ export const GET = apiHandler(
         doseValue: dc.doseValue,
         doseUnit: dc.doseUnit,
         note: readNote(dc.noteEncrypted, dc.note),
+        clientId: dc.clientId,
       })),
       recentIntakes: medication.intakeEvents.map((iv) => ({
         takenAt: iv.takenAt ? iv.takenAt.toISOString() : null,
@@ -249,6 +253,22 @@ export const GET = apiHandler(
 export const POST = apiHandler(
   withIdempotency<[NextRequest, RouteParams]>(postGlp1Update),
 );
+
+/** The answer to a create whose client id names a stored step (#169). */
+function doseChangeAlreadyStored(
+  medicationId: string,
+  row: MedicationDoseChange,
+): Response {
+  annotate({
+    action: {
+      name: "medication.glp1.doseChange.client_id_replay",
+      entity_type: "medication_dose_change",
+      entity_id: row.id,
+    },
+    meta: { medication_id: medicationId },
+  });
+  return apiSuccess({ doseChange: shapeDoseChangeNote(row) }, 200);
+}
 
 async function postGlp1Update(
   request: NextRequest,
@@ -287,18 +307,57 @@ async function postGlp1Update(
   const ip = getClientIp(request);
 
   if (parsed.data.doseChange) {
-    const { effectiveFrom, doseValue, doseUnit, note } = parsed.data.doseChange;
-    const created = await prisma.medicationDoseChange.create({
-      data: {
-        medicationId: id,
-        effectiveFrom,
-        doseValue,
-        doseUnit,
-        // Encrypt the titration note at rest; the plaintext column stays null.
-        noteEncrypted: encryptNote(note),
-        note: null,
-      },
-    });
+    const { effectiveFrom, doseValue, doseUnit, note, clientId } =
+      parsed.data.doseChange;
+    // #169 — a step the client already uploaded under this id (from another
+    // device, or before a lost response) answers the stored row and writes
+    // nothing. The unique index makes the race between two devices land the
+    // same way: the loser's create fails and it answers the winner's row.
+    const stored = (): Promise<MedicationDoseChange | null> =>
+      clientId === undefined
+        ? Promise.resolve(null)
+        : prisma.medicationDoseChange.findUnique({
+            where: { medicationId_clientId: { medicationId: id, clientId } },
+          });
+    const existing = await stored();
+    if (existing) return doseChangeAlreadyStored(id, existing);
+    // A step removed earlier stays removed: a device that still held it as
+    // pending upload sends it again under the same id, and gets 410 so it
+    // drops its copy instead of bringing the step back.
+    if (
+      clientId !== undefined &&
+      (await prisma.medicationDoseChangeTombstone.findUnique({
+        where: { medicationId_clientId: { medicationId: id, clientId } },
+        select: { id: true },
+      }))
+    ) {
+      annotate({
+        action: { name: "medication.glp1.doseChange.deletedReupload" },
+        meta: { medication_id: id },
+      });
+      return apiError("This dose step was removed", 410, {
+        errorCode: GLP1_DOSE_CHANGE_DELETED_ERROR_CODE,
+      });
+    }
+    let created: MedicationDoseChange;
+    try {
+      created = await prisma.medicationDoseChange.create({
+        data: {
+          medicationId: id,
+          effectiveFrom,
+          doseValue,
+          doseUnit,
+          // Encrypt the titration note at rest; the plaintext column stays null.
+          noteEncrypted: encryptNote(note),
+          note: null,
+          clientId: clientId ?? null,
+        },
+      });
+    } catch (err) {
+      const raced = isP2002(err) ? await stored() : null;
+      if (raced) return doseChangeAlreadyStored(id, raced);
+      throw err;
+    }
 
     await auditLog("medication.glp1.update", {
       userId: user.id,

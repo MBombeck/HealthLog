@@ -7,6 +7,8 @@
  */
 
 export interface ResolvedNutrientReferenceDto {
+  /** The body that set the value; absent on an older server (read as EFSA). */
+  authority?: "EFSA" | "IOM" | "NIH ODS";
   kind: "PRI" | "AI" | "safeLevel";
   direction: "target" | "upperGuidance";
   value: number;
@@ -24,12 +26,23 @@ export interface NutrientDailySeries {
     aboveUpperLimit?: boolean | null;
   }>;
   reference: ResolvedNutrientReferenceDto | null;
+  /** The target the person set for this nutrient; absent on an older server. */
+  personalTarget?: NutrientPersonalTargetDto | null;
   upperLimit?: NutrientUpperLimitDto | null;
 }
 
-/** v1.43 — an amount split by source; a source with nothing is absent. */
+/** A daily amount the person set: one to reach, or one to stay under. */
+export interface NutrientPersonalTargetDto {
+  value: number;
+  direction: "target" | "limit";
+}
+
+/** An amount split by the sources that counted; any other is absent. */
 export type NutrientAmountBySource = Partial<
-  Record<"APPLE_HEALTH" | "MANUAL" | "SUPPLEMENT", number>
+  Record<
+    "APPLE_HEALTH" | "HEALTH_CONNECT" | "EXTERNAL" | "MANUAL" | "SUPPLEMENT",
+    number
+  >
 >;
 
 /** v1.43 — the tolerable upper intake level the server judged against. */

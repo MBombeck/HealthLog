@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 
 vi.mock("@/lib/api-handler", () => ({
@@ -227,6 +227,82 @@ describe("GET /api/auth/oidc/login", () => {
       expect(stored.next).toBe("/");
       // The server↔IdP verifier stays independent and present.
       expect(typeof stored.codeVerifier).toBe("string");
+      // Without `return=https` nothing about the return changes.
+      expect(stored.nativeReturn).toBeUndefined();
+    });
+
+    describe("return=https (opt-in https return)", () => {
+      beforeEach(() => {
+        vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://healthlog.example.com");
+        vi.mocked(getOidcConfig).mockReturnValue(CONFIG);
+        vi.mocked(discoverOidcMetadata).mockResolvedValue({
+          issuer: "https://idp.example.com",
+          authorization_endpoint: "https://idp.example.com/authorize",
+          token_endpoint: "https://idp.example.com/token",
+          jwks_uri: "https://idp.example.com/jwks",
+        });
+      });
+      afterEach(() => vi.unstubAllEnvs());
+
+      it("folds the https return into the sealed state blob", async () => {
+        const res = await GET(
+          makeRequest(
+            `/api/auth/oidc/login?client=native&code_challenge=${CHALLENGE}&return=https`,
+          ),
+        );
+        expect(res.headers.get("location")).toBe(
+          "https://idp.example.com/authorize?x=1",
+        );
+        const stored = storedFromCookie(res);
+        expect(stored.native).toBe(true);
+        expect(stored.nativeReturn).toBe("https");
+      });
+
+      it("routes a login error to the instance's own return page", async () => {
+        const res = await GET(
+          makeRequest("/api/auth/oidc/login?client=native&return=https"),
+        );
+        expect(res.headers.get("location")).toBe(
+          "https://healthlog.example.com/auth/native-return?error=oidc_invalid_request",
+        );
+      });
+
+      it.each([
+        ["an unknown value", "return=http"],
+        [
+          "a full URL",
+          `return=${encodeURIComponent("https://evil.example/x")}`,
+        ],
+        ["an empty value", "return="],
+        ["the scheme spelled out", "return=scheme"],
+      ])("answers 422 for %s", async (_label, query) => {
+        const res = await GET(
+          makeRequest(
+            `/api/auth/oidc/login?client=native&code_challenge=${CHALLENGE}&${query}`,
+          ),
+        );
+        expect(res.status).toBe(422);
+        expect(res.headers.get("location")).toBeNull();
+        expect(res.cookies.get("oidc_auth_state")).toBeUndefined();
+        expect(discoverOidcMetadata).not.toHaveBeenCalled();
+      });
+
+      it("answers 422 for return=https on a web sign-in", async () => {
+        const res = await GET(makeRequest("/api/auth/oidc/login?return=https"));
+        expect(res.status).toBe(422);
+        expect(res.cookies.get("oidc_auth_state")).toBeUndefined();
+      });
+
+      it("answers 422 for return=https on an instance not served over https", async () => {
+        vi.stubEnv("NEXT_PUBLIC_APP_URL", "http://192.168.1.10:3000");
+        const res = await GET(
+          makeRequest(
+            `/api/auth/oidc/login?client=native&code_challenge=${CHALLENGE}&return=https`,
+          ),
+        );
+        expect(res.status).toBe(422);
+        expect(res.cookies.get("oidc_auth_state")).toBeUndefined();
+      });
     });
   });
 });

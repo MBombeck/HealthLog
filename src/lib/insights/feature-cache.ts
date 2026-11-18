@@ -41,7 +41,6 @@
  * cache is exposed as a standalone helper either could adopt without coupling.
  */
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { MeasurementType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { hashInsightSnapshot } from "@/lib/insights/snapshot-hash";
 import { resolveUserTimezone, userDayKey } from "@/lib/tz/resolver";
@@ -61,27 +60,6 @@ type FeatureCacheStore = Map<string, CacheEntry>;
 const store = new AsyncLocalStorage<FeatureCacheStore>();
 
 /**
- * The measurement types whose count + newest stamp fingerprint a briefing
- * feature read. This is the same salient set `extractFeatures` narrates over;
- * the fingerprint is intentionally coarse (count + newest per type) so it is a
- * single cheap grouped query, not a second full read. A new or removed reading
- * for any of these flips the hash and forces a recompute within the scope.
- */
-const FEATURE_INPUT_TYPES: readonly MeasurementType[] = [
-  "WEIGHT",
-  "BLOOD_PRESSURE_SYS",
-  "BLOOD_PRESSURE_DIA",
-  "PULSE",
-  "RESTING_HEART_RATE",
-  "HEART_RATE_VARIABILITY",
-  "BODY_FAT",
-  "SLEEP_DURATION",
-  "ACTIVITY_STEPS",
-  "BLOOD_GLUCOSE",
-  "TIME_IN_DAYLIGHT",
-];
-
-/**
  * Run `fn` inside a fresh feature-cache scope. Every `getCachedFeatures` call
  * made (synchronously or via awaited async work) within `fn` shares one cache.
  * Nesting reuses the innermost store, so an inner scope never shadows an outer
@@ -94,31 +72,29 @@ export function withFeatureCacheScope<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 /**
- * Cheap salient-input fingerprint for `userId` — one grouped query over the
- * feature input types' count + newest stamp. Deterministic across group order
- * (sorted before hashing). Best-effort: a read failure yields a sentinel hash
- * so the cache degrades to "always recompute" rather than reusing a wrong
+ * Cheap input fingerprint for `userId`: the newest `updated_at` of any of the
+ * account's measurement rows, live or deleted. Every write stamps it (a new
+ * reading, an edit, a soft delete), so a reading that lands or goes mid-scope
+ * flips the hash and the read is recomputed. One backward step on the
+ * `(user_id, updated_at, id)` index.
+ *
+ * It used to be a count and the newest reading per salient type, grouped over
+ * every live row of those types: on an account with a watch's heart rate that
+ * was the whole stream counted on each cached read, to protect a read that
+ * was itself bounded. Best-effort: a read failure yields a sentinel hash so
+ * the cache degrades to "always recompute" rather than reusing a wrong
  * object.
  */
 async function computeFeatureInputHash(userId: string): Promise<string> {
   try {
-    const grouped = await prisma.measurement.groupBy({
-      by: ["type"],
-      where: {
-        userId,
-        type: { in: [...FEATURE_INPUT_TYPES] },
-        deletedAt: null,
-      },
-      _count: { _all: true },
-      _max: { measuredAt: true },
+    const newest = await prisma.measurement.findFirst({
+      where: { userId },
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+      select: { updatedAt: true, id: true },
     });
-    const fingerprint = grouped
-      .map((row) => ({
-        type: row.type,
-        count: row._count._all,
-        newest: row._max.measuredAt ? row._max.measuredAt.toISOString() : null,
-      }))
-      .sort((a, b) => (a.type < b.type ? -1 : a.type > b.type ? 1 : 0));
+    const fingerprint = newest
+      ? { updatedAt: newest.updatedAt.toISOString(), id: newest.id }
+      : null;
     return hashInsightSnapshot({ featureInput: fingerprint });
   } catch {
     // A probe failure must never serve a stale object: a unique sentinel makes
@@ -136,7 +112,7 @@ async function computeFeatureInputHash(userId: string): Promise<string> {
  * simply runs `compute()` (no caching). The returned value is whatever
  * `compute()` resolves to — callers re-narrow it to their feature type.
  *
- * The input fingerprint is probed once per call (a cheap grouped query); the
+ * The input fingerprint is probed once per call (one index step); the
  * cost is paid to GUARANTEE correctness (a mid-scope ingest recomputes). The
  * net saving is the full feature read on every cache HIT, which dwarfs the
  * fingerprint probe.

@@ -53,6 +53,7 @@ const EVENT_ICONS: Record<string, LucideIcon> = {
   IRREGULAR_RHYTHM_NOTIFICATION: Activity,
   HIGH_HEART_RATE_EVENT: HeartPulse,
   LOW_HEART_RATE_EVENT: HeartPulse,
+  HYPERTENSION_EVENT: HeartPulse,
   WALKING_STEADINESS_EVENT: Footprints,
   BREATHING_DISTURBANCE_EVENT: Wind,
 };
@@ -61,6 +62,7 @@ const EVENT_LABEL_KEYS: Record<string, string> = {
   IRREGULAR_RHYTHM_NOTIFICATION: "insights.rhythmEvents.event.irregularRhythm",
   HIGH_HEART_RATE_EVENT: "insights.rhythmEvents.event.highHeartRate",
   LOW_HEART_RATE_EVENT: "insights.rhythmEvents.event.lowHeartRate",
+  HYPERTENSION_EVENT: "insights.rhythmEvents.event.hypertension",
   WALKING_STEADINESS_EVENT: "insights.rhythmEvents.event.walkingSteadiness",
   BREATHING_DISTURBANCE_EVENT:
     "insights.rhythmEvents.event.breathingDisturbance",

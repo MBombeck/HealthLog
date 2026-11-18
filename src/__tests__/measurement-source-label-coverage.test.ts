@@ -25,11 +25,14 @@ import { join } from "node:path";
 
 import {
   INTAKE_SOURCE_LABEL_KEYS,
+  LAB_SOURCE_LABEL_KEYS,
+  NUTRIENT_SOURCE_LABEL_KEYS,
   INTAKE_SOURCE_VALUES,
   MEASUREMENT_SOURCE_LIST_LABEL_KEYS,
   MEASUREMENT_SOURCE_SETTINGS_LABEL_KEYS,
 } from "@/lib/i18n/source-labels";
 import { measurementSourceEnum } from "@/lib/validations/measurement";
+import { NUTRIENT_SOURCE } from "@/lib/nutrients/sources";
 import { deviceTypeEnum } from "@/lib/validations/source-priority";
 import { readDeclaredSchema } from "./helpers/prisma-schema-names";
 
@@ -139,6 +142,43 @@ describe("source label coverage", () => {
       5,
       INTAKE_SOURCE_LABEL_KEYS,
       "The intake source catalogue",
+    );
+  });
+
+  /**
+   * Nutrient day totals and lab readings keep their source as text, closed by
+   * a constant (`NUTRIENT_SOURCE`) or by the write paths (`LabResult.source`),
+   * not a schema enum. Both read in the measurement list's vocabulary, so the
+   * same source carries the same name on every page.
+   */
+  it("labels every nutrient source in the measurement vocabulary", () => {
+    const members = Object.values(NUTRIENT_SOURCE);
+    expectLabelled(
+      members,
+      5,
+      NUTRIENT_SOURCE_LABEL_KEYS,
+      "The nutrient source catalogue",
+    );
+    expect(NUTRIENT_SOURCE_LABEL_KEYS.APPLE_HEALTH).toBe(
+      MEASUREMENT_SOURCE_LIST_LABEL_KEYS.APPLE_HEALTH,
+    );
+    expect(NUTRIENT_SOURCE_LABEL_KEYS.EXTERNAL).toBe(
+      MEASUREMENT_SOURCE_LIST_LABEL_KEYS.EXTERNAL,
+    );
+  });
+
+  it("labels every lab source the write paths set", () => {
+    // MANUAL / OCR (lab routes), DOCUMENT (document import), IMPORT (lab CSV),
+    // APPLE_HEALTH (Health Records).
+    const members = ["MANUAL", "OCR", "DOCUMENT", "IMPORT", "APPLE_HEALTH"];
+    expect(Object.keys(LAB_SOURCE_LABEL_KEYS).sort()).toEqual(
+      [...members].sort(),
+    );
+    expectLabelled(
+      members,
+      5,
+      LAB_SOURCE_LABEL_KEYS,
+      "The lab source catalogue",
     );
   });
 

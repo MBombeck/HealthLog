@@ -46,10 +46,12 @@ function privacySafeResult(
   value: Record<string, unknown> | null,
 ): Record<string, unknown> | null {
   if (!value) return null;
-  const ecg =
-    typeof value.ecg === "object" && value.ecg !== null
-      ? (value.ecg as Record<string, unknown>)
+  const block = (key: string): Record<string, unknown> =>
+    typeof value[key] === "object" && value[key] !== null
+      ? (value[key] as Record<string, unknown>)
       : {};
+  const ecg = block("ecg");
+  const labs = block("labs");
   return {
     ...value,
     ecg: {
@@ -58,6 +60,14 @@ function privacySafeResult(
       updated: boundedCount(ecg.updated),
       skipped: boundedCount(ecg.skipped),
       failed: boundedCount(ecg.failed),
+    },
+    labs: {
+      discovered: boundedCount(labs.discovered),
+      imported: boundedCount(labs.imported),
+      duplicate: boundedCount(labs.duplicate),
+      skipped: boundedCount(labs.skipped),
+      failed: boundedCount(labs.failed),
+      markersCreated: boundedCount(labs.markersCreated),
     },
   };
 }

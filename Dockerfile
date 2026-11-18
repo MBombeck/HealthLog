@@ -296,6 +296,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # '/app/node_modules/pg/lib/index.js'" on both architectures. Declaring the
 # runtime requirement makes the two resolve to the same copy by construction.
 RUN node -e "require.resolve('pg-boss'); require.resolve('pg')"
+# The activity FIT decoder is external too, but Turbopack loads it as ES module
+# through a hashed alias under .next/node_modules rather than from the top
+# level, and the tracer copies only its ESM build. Assert exactly that path:
+# the alias exists and its entry imports.
+RUN node --input-type=module -e "import { readdirSync } from 'node:fs'; const d = readdirSync('/app/.next/node_modules').find((n) => n.startsWith('fit-file-parser-')); if (!d) throw new Error('fit-file-parser is missing from the standalone output'); const m = await import('/app/.next/node_modules/' + d + '/dist/fit-parser.js'); if (typeof m.default !== 'function') throw new Error('fit-file-parser has no default export');"
 
 # @napi-rs/canvas (document PDF rasterization): Next's file tracer copies the
 # native binary's package into the standalone tree but NOT the pnpm symlinks that

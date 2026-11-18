@@ -33,6 +33,7 @@ import {
 import { dateKeyOfInstant } from "../day/day-url";
 import type { LabResultDto } from "./types";
 import { useLabNumber } from "./use-lab-format";
+import { labSourceLabel } from "./lab-source-line";
 import { Segmented } from "@/components/ui/segmented";
 import { ChartEmptyState } from "@/components/charts/chart-empty-state";
 
@@ -78,6 +79,8 @@ interface ChartPoint {
   sourceReferenceText: string | null;
   /** What the report printed, for a converted reading; sets its precision. */
   sourceValue: number | null;
+  /** How the reading reached the record (`LabResult.source`). */
+  source: string;
 }
 
 /** The source window drawn as the second band, resolved from the readings in view. */
@@ -157,6 +160,7 @@ export function LabBiomarkerChart({
       referenceOrigin: r.referenceOrigin,
       sourceReferenceText: r.sourceReferenceText,
       sourceValue: r.sourceValue,
+      source: r.source,
     }));
   }, [readings, range, nowMs]);
 
@@ -385,6 +389,7 @@ export function LabBiomarkerChart({
                         name: t("labs.chart.valueLabel"),
                         value: `${labNumber(point.value, point.sourceValue)} ${unit}`,
                         color: primary,
+                        delta: labSourceLabel(point.source, t) ?? undefined,
                       },
                     ];
                     // Name the window THIS reading was judged against. Two

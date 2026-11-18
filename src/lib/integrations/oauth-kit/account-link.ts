@@ -18,13 +18,7 @@ import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
 
 export type LinkedAccountProvider =
-  | "withings"
-  | "whoop"
-  | "fitbit"
-  | "google-health"
-  | "strava"
-  | "polar"
-  | "oura";
+  "withings" | "whoop" | "google-health" | "strava" | "polar" | "oura";
 
 /** The callback reason a refused second holder redirects with. */
 export const ALREADY_LINKED_REASON = "already_linked";
@@ -50,13 +44,6 @@ export async function otherHoldersOfAccount(
       return (
         await prisma.whoopConnection.findMany({
           where: { whoopUserId: accountId, userId: notMe },
-          select: { userId: true },
-        })
-      ).map((r) => r.userId);
-    case "fitbit":
-      return (
-        await prisma.fitbitConnection.findMany({
-          where: { fitbitUserId: accountId, userId: notMe },
           select: { userId: true },
         })
       ).map((r) => r.userId);

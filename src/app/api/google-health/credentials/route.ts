@@ -76,7 +76,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
  * Delete Google Health credentials and the active connection.
  *
  * Audits the teardown and parks the integration ledger at `disconnected` for
- * parity with the Fitbit / Polar / Oura credential-DELETE so a sensitive op
+ * parity with the Polar / Oura credential-DELETE so a sensitive op
  * leaves a uniform audit trail and the status snapshot does not linger at a
  * stale state.
  */

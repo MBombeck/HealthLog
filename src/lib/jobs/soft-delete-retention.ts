@@ -34,10 +34,11 @@
  * so a new nulling key into a purged model cannot ship without one.
  */
 // account-deletion(file): a retention sweep over rows already deleted, with its own retention clock; it does no work for an account.
-import type { PrismaClient } from "@/generated/prisma/client";
+import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { TOMBSTONE_RETENTION_DAYS } from "@/lib/auth/native-client";
 import { getCoachMessageRetentionDays } from "@/lib/jobs/coach-message-cleanup";
 import { DOCUMENT_PURGE_GRACE_DAYS } from "@/lib/jobs/document-purge-queue";
+import { retireLabImportKeys } from "@/lib/labs/fhir-import/import-keys";
 import {
   purgeTombstonesByAccount,
   type TombstonePurgeOutcome,
@@ -72,6 +73,15 @@ export type SoftDeleteRetention =
       keep?: string;
       /** The live references that hold a tombstone back. */
       referencedBy?: readonly LiveReferrer[];
+      /**
+       * Runs in the purge's transaction before the delete, over the rows the
+       * delete is about to take: for what a tombstone remembers that must
+       * outlive the row.
+       */
+      beforePurge?: (
+        tx: Prisma.TransactionClient,
+        rows: { ids: string[]; userId: string; cutoff: Date },
+      ) => Promise<unknown>;
       /** Why the horizon or the condition differs from the default. */
       why?: string;
     };
@@ -129,7 +139,17 @@ export const SOFT_DELETE_RETENTION: Readonly<
     live("encounters", "reminder_id"),
     live("vaccination_records", "reminder_id"),
   ]),
-  LabResult: standard("lab_results"),
+  LabResult: {
+    kind: "purge",
+    table: "lab_results",
+    days: () => TOMBSTONE_RETENTION_DAYS,
+    beforePurge: (tx, { ids, userId, cutoff }) =>
+      retireLabImportKeys(tx, userId, {
+        id: { in: ids },
+        deletedAt: { not: null, lt: cutoff },
+      }),
+    why: "A deleted Health Records reading's identity is what keeps the next import from writing it again; the purge moves it into the import ledger (`LabResultImportKey`) before the row goes.",
+  },
   CustomMetric: standard("custom_metrics"),
   CustomMetricEntry: standard("custom_metric_entries"),
   CoachPlan: standard("coach_plans"),
@@ -217,15 +237,17 @@ export async function purgeSoftDeletedTable(
       ),
     // The row is re-checked inside the delete: a restore between the read and
     // the delete un-tombstones it, and then it stays.
-    deleteIds: (tx, ids, userId) =>
-      tx.$executeRawUnsafe(
+    deleteIds: async (tx, ids, userId) => {
+      await entry.beforePurge?.(tx, { ids, userId, cutoff });
+      return tx.$executeRawUnsafe(
         `DELETE FROM ${table} t
           WHERE t."id" = ANY($1::text[]) AND t."user_id" = $2
             AND t."deleted_at" IS NOT NULL AND t."deleted_at" < $3 ${keep}`,
         ids,
         userId,
         cutoff,
-      ),
+      );
+    },
   });
   return { ...outcome, model, table: entry.table };
 }

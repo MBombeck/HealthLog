@@ -635,3 +635,71 @@ describe("the standing consent (v1.43.2)", () => {
     });
   });
 });
+
+describe("pinned named chains (#1404)", () => {
+  const entry = (providerType: string, vision = true) => ({
+    providerType,
+    vision,
+  });
+
+  it("reads an attached capability off its own chain and leaves the rest alone", () => {
+    const inputs = baseline();
+    inputs.provider = {
+      ...inputs.provider,
+      entries: [entry("local")],
+      pinned: { coach: [] },
+    };
+    const caps = resolveAiCapabilities(inputs);
+    expect(caps.coach).toMatchObject({
+      available: false,
+      reason: "no_provider",
+    });
+    for (const key of AI_CAPABILITY_KEYS) {
+      if (key === "coach") continue;
+      expect(caps[key].available, key).toBe(true);
+    }
+  });
+
+  it("does not reorder a pinned document chain", () => {
+    const inputs = baseline();
+    inputs.provider = {
+      ...inputs.provider,
+      // The default chain would pick the local entry for a document …
+      entries: [entry("anthropic"), entry("local")],
+      // … the pinned one picks what it lists first.
+      pinned: { documentAi: [entry("anthropic"), entry("local")] },
+    };
+    expect(resolveAiCapability("documentAi", inputs)).toMatchObject({
+      reason: "consent_required",
+    });
+    expect(resolveAiCapability("supplementLabel", inputs).available).toBe(true);
+  });
+
+  it("asks for consent from the pinned chain's entries", () => {
+    const inputs = baseline();
+    inputs.provider = {
+      ...inputs.provider,
+      entries: [entry("anthropic")],
+      pinned: { briefing: [entry("admin-openai")] },
+    };
+    expect(resolveAiCapability("briefing", inputs)).toMatchObject({
+      reason: "consent_required",
+    });
+    expect(resolveAiCapability("statusText", inputs).available).toBe(true);
+  });
+
+  it("counts pinned entries as configured and as consent recipients", () => {
+    const inputs = baseline();
+    inputs.provider = {
+      ...inputs.provider,
+      entries: [],
+      managedBy: null,
+      pinned: { coach: [entry("admin-openai")] },
+    };
+    const block = resolveAiBlock(inputs);
+    expect(block.provider.configured).toBe(true);
+    expect(block.consent.recipients).toEqual([
+      { via: "operator_key", name: "OpenAI" },
+    ]);
+  });
+});

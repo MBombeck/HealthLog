@@ -44,7 +44,34 @@ import { TargetEditSheet } from "@/components/targets/target-edit-sheet";
  * into the primary one.
  */
 
-export interface AdjustableTarget {
+/**
+ * A target whose editor is not the threshold-range sheet: the nutrient
+ * targets (an amount and a direction, `/api/nutrients/targets`) bring their
+ * own sheet, and the gear only asks the registering card to open it. Same
+ * gear, same sheet anatomy, a different store behind it.
+ */
+export interface CustomAdjustableTarget {
+  /** A key unique on the page, e.g. `"NUTRIENT_TARGET"`. */
+  type: string;
+  /** Opens the registering card's own editor. */
+  openEditor: () => void;
+  /**
+   * What the gear opens, as its accessible name and tooltip ("Set the daily
+   * target for Protein"). Without it the gear says "Adjust target range",
+   * which names neither which target nor that it is not a range.
+   */
+  label?: string;
+}
+
+export type AdjustableTarget = RangeAdjustableTarget | CustomAdjustableTarget;
+
+function isCustomTarget(
+  target: AdjustableTarget,
+): target is CustomAdjustableTarget {
+  return "openEditor" in target;
+}
+
+export interface RangeAdjustableTarget {
   /** Target type literal, e.g. `"WEIGHT"` or `"BLOOD_GLUCOSE_FASTING"`. */
   type: string;
   /** Display label for the sheet heading. */
@@ -64,6 +91,8 @@ interface TargetAdjustValue {
   register: (target: AdjustableTarget) => () => void;
   /** Open the editor for the primary (first-registered) target. */
   requestAdjust: () => void;
+  /** The primary target's own label for the gear, when it brings one. */
+  primaryLabel: string | null;
 }
 
 const TargetAdjustContext = createContext<TargetAdjustValue | null>(null);
@@ -98,15 +127,26 @@ export function TargetAdjustProvider({ children }: { children: ReactNode }) {
 
   const requestAdjust = useCallback(() => {
     const primary = targetsRef.current[0];
-    if (primary) setOpenType(primary.type);
+    if (!primary) return;
+    if (isCustomTarget(primary)) primary.openEditor();
+    else setOpenType(primary.type);
   }, []);
 
+  const primary = targets[0];
+  const primaryLabel =
+    primary && isCustomTarget(primary) ? (primary.label ?? null) : null;
   const value = useMemo<TargetAdjustValue>(
-    () => ({ canAdjust: targets.length > 0, register, requestAdjust }),
-    [targets.length, register, requestAdjust],
+    () => ({
+      canAdjust: targets.length > 0,
+      register,
+      requestAdjust,
+      primaryLabel,
+    }),
+    [targets.length, register, requestAdjust, primaryLabel],
   );
 
-  const openTarget = targets.find((entry) => entry.type === openType) ?? null;
+  const found = targets.find((entry) => entry.type === openType);
+  const openTarget = found && !isCustomTarget(found) ? found : null;
 
   return (
     <TargetAdjustContext.Provider value={value}>

@@ -136,7 +136,9 @@ describe("micronutrients card", () => {
     await seedFailure(client, queryKeys.nutrientIntake(30));
     const html = render(<MicronutrientsCard />, client);
 
-    expect(html).toContain('data-slot="query-error-card"');
+    // Inside its own card the failure is an inset row, never a card in a card.
+    expect(html).toContain('data-slot="nutrients-micronutrients-error"');
+    expect(html).not.toContain('data-slot="query-error-card"');
     expect(html).toContain(mn.loadError);
     expect(html).toContain(en.common.retry);
     expect(html).not.toContain(mn.emptyTitle);
@@ -147,7 +149,7 @@ describe("micronutrients card", () => {
     client.setQueryData(queryKeys.nutrientIntake(30), { nutrients: [] });
     const html = render(<MicronutrientsCard />, client);
 
-    expect(html).not.toContain('data-slot="query-error-card"');
+    expect(html).not.toContain('data-slot="nutrients-micronutrients-error"');
     expect(html).toContain(mn.emptyTitle);
   });
 });

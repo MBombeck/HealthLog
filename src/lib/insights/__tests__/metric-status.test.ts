@@ -8,6 +8,20 @@ vi.mock("@/lib/measurements/day-aggregates", async () => ({
   ).fakeReadDayAggregates,
 }));
 
+// The empty-data gate is a presence probe; it answers from the same mocked
+// count the tests set, so each case states the reading count it means.
+vi.mock("@/lib/measurements/newest-per-type", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@/lib/measurements/newest-per-type")
+  >()),
+  countLiveReadingsPerType: vi.fn(
+    async (_userId: string, types: readonly string[]) => {
+      const { prisma } = await import("@/lib/db");
+      const n = Number(await prisma.measurement.count());
+      return new Map(n > 0 ? [[types[0], 1]] : []);
+    },
+  ),
+}));
 vi.mock("@/lib/db", () => ({
   prisma: {
     user: { findUnique: vi.fn() },

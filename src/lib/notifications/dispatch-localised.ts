@@ -54,6 +54,8 @@ interface DispatchLocalisedOptions {
   metadata?: Record<string, unknown>;
   /** Closed internal marker for an admitted managed-record event. */
   managedFanoutEvent?: NotificationPayload["managedFanoutEvent"];
+  /** Guardians the fan-out must not reach (see `NotificationPayload`). */
+  excludeRecipientUserIds?: readonly string[];
   /**
    * Escalate to every channel's highest urgency (v1.18.4). Forwarded to
    * the dispatcher so APNs goes time-sensitive, ntfy max, Web Push
@@ -163,6 +165,7 @@ export async function dispatchLocalisedNotification(
     renderForRecipient,
     metadata: opts.metadata,
     managedFanoutEvent: opts.managedFanoutEvent,
+    excludeRecipientUserIds: opts.excludeRecipientUserIds,
     urgent: opts.urgent,
   });
 }

@@ -111,6 +111,13 @@ const batchEntrySchema = z.object({
   // iOS build omits them and the bucket keeps the avg-only contract.
   valueMin: z.number().finite().optional(),
   valueMax: z.number().finite().optional(),
+  // The per-item answers of a PHQ-9 / GAD-7 scored assessment
+  // (`HKScoredAssessmentTypeIdentifierPHQ9` / `GAD7`), in the order the
+  // instrument asks them; `value` carries the total. Optional: without them
+  // the administration is stored score only. The count and each answer's
+  // ceiling are checked per entry against the instrument, so one bad entry
+  // does not fail the batch. Ignored for every other identifier.
+  assessmentAnswers: z.array(z.number().finite()).max(12).optional(),
   // Stability is enforced per entry in the loop below, not at the field:
   // a schema-level refusal would fail the whole batch on one bad row.
   // @external-id-checked-per-entry: src/lib/measurements/batch-ingest/prepare.ts

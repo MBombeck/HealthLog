@@ -51,6 +51,9 @@ const MANAGED_RECORD_SETTINGS_FAMILY_BY_SECTION = {
   notifications: "notifications",
   thresholds: "thresholds",
   coach: "coach",
+  // #1403 — the AI page carries the owner's automatic-reading switch; inside
+  // a managed profile it carries the profile's.
+  ai: "documents",
 } as const;
 
 /**

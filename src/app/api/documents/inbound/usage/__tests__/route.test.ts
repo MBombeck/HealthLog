@@ -25,6 +25,10 @@ const mocks = vi.hoisted(() => ({
   requireRecordAuth: vi.fn(),
   visible: vi.fn((_domain: string) => true),
   actingDomainVisibility: vi.fn(),
+  // The deleted count's gate; the owner path, as every case below is.
+  actingHoldsGuardianVerbs: vi.fn(async (_tx: unknown, grantId: unknown) =>
+    Promise.resolve(grantId === null),
+  ),
 }));
 
 vi.mock("@/lib/api-handler", () => ({
@@ -63,6 +67,7 @@ vi.mock("@/lib/links", () => ({
 }));
 vi.mock("@/lib/sharing/acting-domains", () => ({
   actingDomainVisibility: mocks.actingDomainVisibility,
+  actingHoldsGuardianVerbs: mocks.actingHoldsGuardianVerbs,
 }));
 
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";

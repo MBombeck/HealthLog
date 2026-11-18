@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    measurement: { groupBy: vi.fn() },
+    measurement: { findFirst: vi.fn() },
   },
 }));
 
@@ -26,15 +26,14 @@ import { getCachedFeatures, withFeatureCacheScope } from "../feature-cache";
 
 const T0 = new Date("2026-06-20T08:00:00.000Z");
 
-function fingerprintRows(weightCount: number) {
-  return [
-    { type: "WEIGHT", _count: { _all: weightCount }, _max: { measuredAt: T0 } },
-  ];
+/** The account's newest write, `writes` milliseconds after T0. */
+function fingerprintRows(writes: number) {
+  return { updatedAt: new Date(T0.getTime() + writes), id: `m${writes}` };
 }
 
 beforeEach(() => {
   vi.resetAllMocks();
-  vi.mocked(prisma.measurement.groupBy).mockResolvedValue(
+  vi.mocked(prisma.measurement.findFirst).mockResolvedValue(
     fingerprintRows(10) as never,
   );
   resolveUserTimezoneMock.mockResolvedValue("Europe/Berlin");
@@ -80,8 +79,8 @@ describe("getCachedFeatures (P3)", () => {
         compute,
       });
       // A new reading lands mid-scope — the fingerprint probe now sees a
-      // higher count, so the gate misses and the read is recomputed.
-      vi.mocked(prisma.measurement.groupBy).mockResolvedValue(
+      // newer write, so the gate misses and the read is recomputed.
+      vi.mocked(prisma.measurement.findFirst).mockResolvedValue(
         fingerprintRows(11) as never,
       );
       const after = await getCachedFeatures({
@@ -176,7 +175,7 @@ describe("getCachedFeatures (P3)", () => {
     // No scope → no memoisation → each call computes; and the fingerprint
     // probe is never even issued (it only runs inside a scope).
     expect(compute).toHaveBeenCalledTimes(2);
-    expect(prisma.measurement.groupBy).not.toHaveBeenCalled();
+    expect(prisma.measurement.findFirst).not.toHaveBeenCalled();
     expect(a).toEqual({ marker: "x" });
     expect(b).toEqual({ marker: "x" });
   });
@@ -225,7 +224,7 @@ describe("getCachedFeatures (P3)", () => {
       .fn()
       .mockResolvedValueOnce({ marker: "1" })
       .mockResolvedValueOnce({ marker: "2" });
-    vi.mocked(prisma.measurement.groupBy).mockRejectedValue(
+    vi.mocked(prisma.measurement.findFirst).mockRejectedValue(
       new Error("db down"),
     );
 

@@ -1,3 +1,5 @@
+import { NATIVE_OIDC_RETURN_PATH } from "@/lib/auth/native-return";
+
 /**
  * Edge headers for the paths whose credential is the URL itself.
  *
@@ -25,6 +27,11 @@
  * downloading the body on every poll. `no-store` here would throw the
  * validator away.
  *
+ * The native https return page (`/auth/native-return`, #163 B2) receives a
+ * one-time sign-in code or second-factor ticket in its query. The app normally
+ * intercepts the address; in a browser without it the page loads, and earns
+ * the share view's defence for the same reasons.
+ *
  * Runs after the proxy's general header block, so these values win.
  */
 export function setPathCredentialHeaders(
@@ -32,7 +39,11 @@ export function setPathCredentialHeaders(
   headers: Headers,
 ): void {
   const feed = pathname.startsWith("/api/cycle/feed/");
-  const page = pathname.startsWith("/c/") || pathname.startsWith("/invite/");
+  const page =
+    pathname.startsWith("/c/") ||
+    pathname.startsWith("/invite/") ||
+    pathname === NATIVE_OIDC_RETURN_PATH ||
+    pathname.startsWith(`${NATIVE_OIDC_RETURN_PATH}/`);
   if (!feed && !page) return;
   if (page) headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
   headers.set("X-Robots-Tag", "noindex, nofollow");

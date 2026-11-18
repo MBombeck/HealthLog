@@ -12,16 +12,25 @@
  * back as `needsReview` so the user edits it first. A per-fact commit miss
  * (e.g. a numeric observation with no unit) is reported per-fact and never
  * fails the whole batch. `userId` is narrowed from the session; every fact id
- * is re-scoped to the document + the caller.
+ * is re-scoped to the document + the record.
+ *
+ * #1403 — the owner's, and a managed profile's guardian's (`"guardian"`): a
+ * guardian finishes what their upload started, and the values land in the
+ * profile's labs (or illness, or medications) with the guardian named as the
+ * actor on the audit row. Each fact is committed only into a section the
+ * grant opens; a guardian's grant is the whole record, and the check stands
+ * anyway. An adult's share confirms nothing at any level.
  */
 import { NextRequest } from "next/server";
 
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { commitApprovedFact, FactCommitError } from "@/lib/documents/commit";
+import { actingDomainVisibility } from "@/lib/sharing/acting-domains";
+import type { ShareDomain } from "@/lib/sharing/scope";
 import { annotate } from "@/lib/logging/context";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { withIdempotency } from "@/lib/idempotency";
@@ -29,17 +38,25 @@ import { inboundConfirmSchema } from "@/lib/validations/inbound-documents";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
+/** The section an approved fact is committed into (see `commitApprovedFact`). */
+function factSection(factType: string): ShareDomain {
+  if (factType === "OBSERVATION") return "labs";
+  if (factType === "CONDITION") return "illness";
+  return "medications";
+}
+
 export const dynamic = "force-dynamic";
 
 async function confirmDocument(
   request: NextRequest,
   { params }: RouteParams,
 ): Promise<Response> {
-  const { user } = await requireAuth();
+  const { user, grantId } = await requireRecordAuth("guardian", "documents");
   const gate = await requireModuleEnabled(user.id, "inboundDocuments");
   if (!gate.enabled) return gate.response;
 
   const { id } = await params;
+  const visible = await actingDomainVisibility(prisma, grantId);
 
   const document = await prisma.inboundDocument.findFirst({
     where: { id, userId: user.id, deletedAt: null },
@@ -83,6 +100,12 @@ async function confirmDocument(
         data: { status: "REJECTED" },
       });
       rejected.push(fact.id);
+      continue;
+    }
+
+    // approve — only into a section this request may write to.
+    if (!visible(factSection(fact.factType))) {
+      failed.push({ factId: fact.id, reason: "notPermitted" });
       continue;
     }
 

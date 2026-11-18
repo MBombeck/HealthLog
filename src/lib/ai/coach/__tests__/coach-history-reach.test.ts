@@ -9,6 +9,30 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 
 const groupBy = vi.fn();
 const findFirst = vi.fn();
+// The measurement side of the probe reads a bounded sample per type; here it
+// answers through the scripted grouped aggregate, with the same where.
+vi.mock("@/lib/ai/coach/tools/measurement-sample", async () => {
+  const { sampleFromGroupRows } = await import("./fake-measurement-sample");
+  return {
+    MEASUREMENT_SAMPLE_CAP: 5_000,
+    readMeasurementSample: async (
+      userId: string,
+      types: readonly string[],
+      floor: Date | null,
+    ) =>
+      sampleFromGroupRows(
+        (await groupBy({
+          where: {
+            userId,
+            deletedAt: null,
+            type: { in: [...types] },
+            ...(floor ? { measuredAt: { gte: floor } } : {}),
+          },
+        })) ?? [],
+      ),
+  };
+});
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     measurement: {

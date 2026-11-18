@@ -122,7 +122,11 @@ describe("GET /api/integrations/healthkit", () => {
     const res = await callGet(makeGetReq());
     const body = (await res.json()) as { data: { acceptedTypes: string[] } };
     expect(body.data.acceptedTypes).toEqual(
-      Object.keys(APPLE_HEALTH_TYPE_MAP).sort(),
+      [
+        ...Object.keys(APPLE_HEALTH_TYPE_MAP),
+        "HKScoredAssessmentTypeIdentifierGAD7",
+        "HKScoredAssessmentTypeIdentifierPHQ9",
+      ].sort(),
     );
     expect(body.data.acceptedTypes).toContain(
       "HKCategoryTypeIdentifierSleepAnalysis",

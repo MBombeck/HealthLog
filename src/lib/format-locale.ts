@@ -179,6 +179,11 @@ export interface Formatters {
   dateWithWeekdaySmart: (value: DateInput) => string;
   /** For axis labels: 3-letter month abbreviation. */
   monthShort: (value: DateInput) => string;
+  /**
+   * A month with its two-digit year, for a column per month that can cross a
+   * year boundary ("Aug 26", "Aug. 26"). Never "26/08", which reads as a day.
+   */
+  monthYearShort: (value: DateInput) => string;
 }
 
 /**
@@ -352,6 +357,13 @@ export function makeFormatters(
       getDateTimeFormat(intlLocale, {
         timeZone: tz,
         month: "short",
+      }).format(asDate(value)),
+
+    monthYearShort: (value) =>
+      getDateTimeFormat(intlLocale, {
+        timeZone: tz,
+        month: "short",
+        year: "2-digit",
       }).format(asDate(value)),
   };
 }

@@ -285,9 +285,11 @@ export const DAILY_SUM_SPECS: readonly DailySumSpec[] = [
 ];
 
 /**
- * Nutrition columns (grams) onto the nutrient catalog. Energy and the
- * macronutrients are left out: the catalog is supplements and water, never a
- * food diary.
+ * Nutrition columns (grams) onto the nutrient catalog: the vitamins, the
+ * minerals this import has always read, and caffeine. Energy, the
+ * macronutrients, sodium and potassium are in the catalog since #1402 but not
+ * read from a Health Connect export yet; they arrive through the HealthKit sync
+ * or a bridge token.
  */
 export const NUTRITION_COLUMNS: Readonly<
   Partial<Record<NutrientCode, { column: string; factor: number }>>

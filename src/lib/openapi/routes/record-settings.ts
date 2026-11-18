@@ -48,6 +48,7 @@ const settingsFamilyEnum = z
     "thresholds",
     "coach",
     "insights",
+    "documents",
   ])
   .describe(
     "The closed set of configuration families a Guardian may read and write on a managed record. Identity, credentials, delivery channels, Coach memories and provider connections are absent by construction — no family accepts them, so every future field fails closed until one deliberately does.",
@@ -84,7 +85,6 @@ const recordSettingsIntegrationsResponse = z
           integration: z.enum([
             "withings",
             "whoop",
-            "fitbit",
             "nightscout",
             "polar",
             "oura",
@@ -108,7 +108,7 @@ const recordSettingsIntegrationsResponse = z
         }),
       )
       .describe(
-        "All eight providers, always, in the fixed order withings, whoop, fitbit, nightscout, polar, oura, google-health, strava. Note the order differs from the owner's own `/api/integrations/status` envelope.",
+        "All seven providers, always, in the fixed order withings, whoop, nightscout, polar, oura, google-health, strava. Note the order differs from the owner's own `/api/integrations/status` envelope.",
       ),
   })
   .meta({
@@ -255,6 +255,12 @@ const insightsSettings = z
       "The resolved insights layout. Unknown and legacy tile ids are normalised or dropped on read, and a newly-shipped tile is merged in default-visible, so the response is always the full current tile set rather than whatever was last persisted.",
   });
 
+const documentsSettings = z.object({ autoAiRead: z.boolean() }).meta({
+  id: "RecordDocumentsSettings",
+  description:
+    "Whether the record's uploads are read with AI automatically, the record's own switch that the upload pipeline reads. Off by default. Turning it on records the record's document-reading consent (an `ai_extraction` receipt) when none is active, and queues a bounded catch-up over documents already stored when the record's `documentAi` capability is open.",
+});
+
 const recordSettingsFamilyResponse = z
   .object({
     recordId: z.string(),
@@ -267,6 +273,7 @@ const recordSettingsFamilyResponse = z
         thresholdSettings,
         coachSettings,
         insightsSettings,
+        documentsSettings,
       ])
       .describe(
         "The DTO for the family in the path. Which variant arrives is determined entirely by `{family}`, so branch on `family` rather than probing the shape — OpenAPI cannot express the dependency between a path parameter and a response variant.",
@@ -309,6 +316,11 @@ const recordSettingsPatchRequest = z
       id: "RecordInsightsSettingsPatch",
       description:
         "The full insights layout. Unlike the other five families this one is a replacement rather than a merge.",
+    }),
+    MANAGED_RECORD_SETTINGS_PATCH_SCHEMAS.documents.meta({
+      id: "RecordDocumentsSettingsPatch",
+      description:
+        "Turn automatic AI reading of the record's uploads on or off. Turning it on is the guardian's consent to document reading on the profile's behalf: it mints the profile's `ai_extraction` receipt when none is active, and the audit row names the guardian.",
     }),
   ])
   .meta({
@@ -427,7 +439,7 @@ export const recordSettingsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Account sharing"],
       summary: "Start connecting an OAuth provider for the managed record",
       description:
-        "Mints the OAuth state for the record the session is acting on, sets it as an httpOnly cookie, and answers with the provider's consent URL; the client then sends the browser there. A fetch rather than a navigation, so the record-session fence applies. The state names the managed record: the provider's callback lands the tokens on it after checking the browser still belongs to a Guardian holding a live MANAGE grant on that record. When the record has no provider app of its own and the deployment has none, the Guardian's own app is copied onto the record (audited). Fitbit is not offered: its classic API is retired. Cookie session, while acting on a managed record the caller guards.",
+        "Mints the OAuth state for the record the session is acting on, sets it as an httpOnly cookie, and answers with the provider's consent URL; the client then sends the browser there. A fetch rather than a navigation, so the record-session fence applies. The state names the managed record: the provider's callback lands the tokens on it after checking the browser still belongs to a Guardian holding a live MANAGE grant on that record. When the record has no provider app of its own and the deployment has none, the Guardian's own app is copied onto the record (audited). Cookie session, while acting on a managed record the caller guards.",
       parameters: [managedProviderParameter],
       responses: {
         ...recordRefusal(),

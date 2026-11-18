@@ -13,7 +13,7 @@ import { NextRequest } from "next/server";
  * Mirrors the Withings manual-sync route: incremental by default, full
  * history when `{ fullSync: true }` is posted.
  *
- * Rate-limited on both arms, matching the Fitbit / Google Health siblings.
+ * Rate-limited on both arms, matching the Google Health sibling.
  * This route and the Withings one were the two that never got a limiter, while
  * `fullSync` drives the full four-resource history walk against WHOOP's
  * per-user budget: a tight loop or a stolen native token could exhaust it and

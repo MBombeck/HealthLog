@@ -132,6 +132,7 @@ const LEGIT_IDENTICAL = new Set<string>([
   "measurements.sourceGoogleHealth",
   "measurements.sourceHealthConnect",
   "medications.sourceAppleHealth",
+  "mood.sourceAppleHealth",
   "settings.ai.providerChain.types.anthropic",
   "settings.ai.providerChain.types.codex",
   "settings.ai.providerSelect.anthropic",
@@ -147,8 +148,6 @@ const LEGIT_IDENTICAL = new Set<string>([
   "admin.webPushVapidPublicKeyPlaceholder",
   "settings.ai.baseUrlLabel",
   "settings.ai.openai.modelCustomPlaceholder",
-  "settings.fitbitClientId",
-  "settings.fitbitClientSecret",
   "settings.ouraClientId",
   "settings.ouraClientSecret",
   "settings.polarClientId",
@@ -171,7 +170,6 @@ const LEGIT_IDENTICAL = new Set<string>([
   // Proper nouns, a URL label and an acronym — the accepted written form in
   // Korean is the Latin original, so these stay identical to en.json.
   "auth.emailPlaceholder",
-  "settings.fitbitTag",
   "settings.googleHealthTag",
   "settings.nightscoutUrl",
   "admin.aiServerKey.baseUrlLabel",

@@ -24,6 +24,7 @@ import type {
 import type { InventoryEntry } from "@/lib/ai/coach/tools/inventory";
 import { COACH_SOURCE_MEASUREMENT_TYPES } from "@/lib/ai/coach/source-measurement-types";
 import { COACH_SOURCE_SNAPSHOT_KEY } from "@/lib/ai/coach/tools/source-keys";
+import { sampleFromGroupRows } from "@/lib/ai/coach/__tests__/fake-measurement-sample";
 
 // ── The world a turn runs against ─────────────────────────────────────────
 
@@ -496,6 +497,15 @@ export const modules = {
       medicationIntakeEvent: { aggregate: async () => EMPTY_AGGREGATE },
       labResult: { aggregate: async () => EMPTY_AGGREGATE },
     },
+  }),
+  // The availability probe's bounded sample, answered from the same
+  // scripted aggregates the grouped read above returns.
+  measurementSample: () => ({
+    MEASUREMENT_SAMPLE_CAP: 5_000,
+    readMeasurementSample: async (_userId: string, types: string[]) =>
+      sampleFromGroupRows(
+        measurementBounds({ where: { type: { in: types } } }),
+      ),
   }),
   rateLimit: () => ({
     checkRateLimit: m.checkRateLimit,

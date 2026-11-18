@@ -275,6 +275,9 @@ function serialiseMedicationHistory(
       effectiveFrom: d.effectiveFrom.toISOString(),
       doseValue: d.doseValue,
       doseUnit: d.doseUnit,
+      // #169 — the client's own id for the step, so a device that uploads
+      // its local steps after a restore still finds them stored.
+      clientId: d.clientId,
       createdAt: d.createdAt.toISOString(),
     })),
   };

@@ -49,6 +49,7 @@ export const TILE_DESTINATION: Readonly<
   // Fluid intake lives on the nutrients page (hydration hero + quick-add),
   // not on a Measurement-backed detail page.
   waterIntake: "nutrients",
+  energyIntake: "nutrients",
 };
 
 const TILE_WIDGET_IDS: ReadonlySet<string> = new Set(TILE_CAPABLE_WIDGET_IDS);

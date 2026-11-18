@@ -69,6 +69,44 @@ Edit the order in `/settings/ai`. Disable an entry without removing
 it by toggling its switch — a malformed chain on disk falls back to
 the default rather than 500-ing.
 
+## Chains per task
+
+Next to the fallback chain an account can keep named chains
+(`User.aiNamedChains`, parsed by `parseNamedChains` in
+`src/lib/ai/named-chains.ts`) and attach any AI capability to one of
+them under Settings, AI, "Chains per task". A chain is an ordered list
+of provider entries; each entry is the provider with the key and model
+saved for it, so attaching a one-entry chain pins one model on one key
+to one task.
+
+- **Unattached capabilities keep today's rules.** They read the default
+  chain: the fallback chain, or a named chain marked default, in which
+  case its entries take the fallback chain's place. Document reads and
+  supplement labels still prefer a local entry, the lab scan still keeps
+  the chain's own order, the central Codex is still appended behind the
+  opt-in, and the picked gateway still answers when the chain resolves
+  empty. Nobody who leaves the screen alone sees a change.
+- **An attached capability uses exactly its chain.** Its entries, in
+  their order, and nothing else: no document reorder, no central Codex
+  appended (it serves only where the chain lists it, and then only behind
+  the same opt-in), no gateway fallback, and the runner's "last working
+  provider" memo neither reorders the chain nor learns from it.
+- **One entry is a binding.** If that provider has no credential, the
+  capability reports `no_provider` in the `ai` block on `/api/auth/me`
+  and refuses; if it fails at call time there is nothing to fall back to.
+- **Guardrails apply per chain.** Entries resolve under the same
+  credential policy (a delegate gets nothing, a guardian only the
+  operator's key, so a managed profile's local-only binding refuses
+  rather than reach the operator's key), consent is decided from the
+  attached chain's entries under the capability's own rule, and the
+  egress re-check at the wire runs as before.
+- **Deleting a chain** returns its capabilities to Default; if it was the
+  default, the fallback chain becomes the default again.
+
+The settings screen shows, for each entry, whether input stays on the
+machine (`local`) or leaves it (every other provider). The chains travel
+in the account-settings backup; keys never do.
+
 ## OpenAI setup
 
 1. Sign in at <https://platform.openai.com/api-keys>.

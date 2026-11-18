@@ -10,10 +10,14 @@
  * same bytes (the `inbound_documents_user_sha_live` partial unique index).
  * The restore itself is the shared one (`src/lib/documents/tombstones.ts`):
  * it also clears any import-ledger entry for the document's source keys.
+ *
+ * #1403 — the owner's, and a managed profile's guardian's (`"guardian"`):
+ * a bad scan the guardian deleted is one they can bring back. An adult's
+ * share restores nothing at any level.
  */
 import { NextRequest } from "next/server";
 
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
@@ -31,18 +35,21 @@ type RouteParams = { params: Promise<{ id: string }> };
 
 export const dynamic = "force-dynamic";
 
-/** Shares the write posture of the other owner-scoped document mutations. */
+/**
+ * Shares the write posture of the other document mutations, keyed on the
+ * person restoring.
+ */
 const WRITE_LIMIT_PER_HOUR = 240;
 const WRITE_WINDOW_MS = 60 * 60 * 1000;
 
 export const POST = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireAuth();
+    const { user, actor } = await requireRecordAuth("guardian", "documents");
     const gate = await requireModuleEnabled(user.id, "inboundDocuments");
     if (!gate.enabled) return gate.response;
 
     const rl = await checkRateLimit(
-      `documents-write:${user.id}`,
+      `documents-write:${actor.id}`,
       WRITE_LIMIT_PER_HOUR,
       WRITE_WINDOW_MS,
     );

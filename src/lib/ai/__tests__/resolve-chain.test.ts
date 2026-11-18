@@ -72,7 +72,7 @@ describe("resolveProviderChain", () => {
       adminAiBaseUrl: "https://api.openai.com/v1",
     });
 
-    const chain = await resolveProviderChain("user-1");
+    const chain = await resolveProviderChain("user-1", null);
     // Default chain trims out entries with no creds; codex (tokens
     // present) and admin-openai (key present) survive.
     const types = chain.map((c) => c.providerType);
@@ -105,7 +105,7 @@ describe("resolveProviderChain", () => {
       adminAiBaseUrl: "https://api.openai.com/v1",
     });
 
-    const chain = await resolveProviderChain("user-1");
+    const chain = await resolveProviderChain("user-1", null);
     const types = chain.map((c) => c.providerType);
     expect(types).toEqual(["openai", "anthropic"]);
   });
@@ -129,7 +129,7 @@ describe("resolveProviderChain", () => {
       adminAiBaseUrl: "https://api.openai.com/v1",
     });
 
-    const chain = await resolveProviderChain("user-1");
+    const chain = await resolveProviderChain("user-1", null);
     const types = chain.map((c) => c.providerType);
     expect(types).toEqual(["openai"]);
   });
@@ -153,7 +153,7 @@ describe("resolveProviderChain", () => {
       adminAiBaseUrl: "https://api.openai.com/v1",
     });
 
-    const chain = await resolveProviderChain("user-1");
+    const chain = await resolveProviderChain("user-1", null);
     const types = chain.map((c) => c.providerType);
     expect(types).toEqual(["admin-openai"]);
   });
@@ -182,7 +182,7 @@ describe("resolveProviderChain", () => {
       adminAiBaseUrl: "https://api.openai.com/v1",
     });
 
-    const chain = await resolveProviderChain("user-1");
+    const chain = await resolveProviderChain("user-1", null);
     expect(chain).toEqual([]);
   });
 
@@ -209,7 +209,7 @@ describe("resolveProviderChain", () => {
       adminAiBaseUrl: "https://api.openai.com/v1",
     });
 
-    expect(await resolveProviderChain("user-1")).toEqual([]);
+    expect(await resolveProviderChain("user-1", null)).toEqual([]);
   });
 });
 
@@ -243,7 +243,9 @@ describe("resolveProviderChain and the picked gateway", () => {
       read as unknown as typeof prisma.user.findUnique,
     );
     operator({ adminAiKeyEncrypted: null });
-    return (await resolveProviderChain("user-1")).map((c) => c.providerType);
+    return (await resolveProviderChain("user-1", null)).map(
+      (c) => c.providerType,
+    );
   }
 
   it.each([

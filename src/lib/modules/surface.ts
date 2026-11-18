@@ -87,6 +87,7 @@ const STATIC_SURFACE_MODULE = {
   "nav:/labs": "labs",
   "nav:/illness": "illness",
   "nav:/vaccinations": "vaccinations",
+  "nav:/seizures": "seizures",
   "nav:/documents": "inboundDocuments",
   "nav:/coach": "coach",
   "nav:/achievements": "achievements",
@@ -139,6 +140,7 @@ const STATIC_SURFACE_MODULE = {
   "capture:workout": "workouts",
   // v1.40 — an occurrence of a person-defined symptom rides the illness module.
   "capture:symptom": "illness",
+  "capture:seizure": "seizures",
   "capture:lifeEvent": "timeline",
 
   // ── Dashboard widgets ──
@@ -157,6 +159,8 @@ const STATIC_SURFACE_MODULE = {
   "widget:breathingDisturbances": "sleep",
   // The fluid-intake tile reads the nutrient store.
   "widget:waterIntake": "nutrients",
+  // The energy-intake tile reads the same store.
+  "widget:energyIntake": "nutrients",
 
   // ── Dashboard summary keys ──
   "summary:SLEEP_DURATION": "sleep",
@@ -179,6 +183,7 @@ const STATIC_SURFACE_MODULE = {
   // Synthetic keys: derived from `NutrientIntakeDay` and `MoodEntry` rather
   // than a `MeasurementType`, riding the same gate.
   "summary:NUTRIENT_WATER": "nutrients",
+  "summary:NUTRIENT_ENERGY": "nutrients",
   "summary:MOOD_ENTRY": "mood",
 
   // ── Derived scores ──
@@ -280,6 +285,7 @@ const STATIC_SURFACE_MODULE = {
   "timeline-lane:medications": "medications",
   "timeline-lane:vaccinations": "vaccinations",
   "timeline-lane:labs": "labs",
+  "timeline-lane:seizures": "seizures",
   "timeline-lane:documents": "inboundDocuments",
   "timeline-lane:cycle": "cycle",
 

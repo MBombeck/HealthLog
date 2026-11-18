@@ -79,6 +79,7 @@ import { restoreRemindersData } from "@/lib/export/reminders-backup";
 import type { RestoreContext } from "@/lib/export/restore-context";
 import { restoreSensitiveData } from "@/lib/export/sensitive-backup";
 import { restoreSymptomsData } from "@/lib/export/symptoms-backup";
+import { restoreSeizuresData } from "@/lib/export/seizures-backup";
 import { restoreVaccinationsData } from "@/lib/export/vaccinations-backup";
 import { restoreVisitsData } from "@/lib/export/visits-backup";
 import { clearWorkouts, restoreWorkouts } from "@/lib/export/workouts-backup";
@@ -215,6 +216,24 @@ export const RESTORE_STEPS: readonly RestoreStep[] = [
           ctx.ownerId,
           ctx.payload,
           ctx.links.episodeIds,
+          ctx.skips,
+        ),
+      );
+    },
+  },
+  {
+    // The seizure diary. After the medications and their intakes, because a
+    // type's rescue plan and a dose point at a medication and a dose at the
+    // intake it wrote.
+    name: "seizures",
+    run: async (ctx) => {
+      Object.assign(
+        ctx.cleared,
+        await restoreSeizuresData(
+          ctx.tx,
+          ctx.ownerId,
+          ctx.payload,
+          ctx.links.medicationIdBySourceId,
           ctx.skips,
         ),
       );

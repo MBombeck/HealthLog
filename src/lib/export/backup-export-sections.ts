@@ -82,6 +82,10 @@ import {
   countSymptomsBackupSection,
 } from "@/lib/export/symptoms-backup";
 import {
+  buildSeizuresBackupSection,
+  countSeizuresBackupSection,
+} from "@/lib/export/seizures-backup";
+import {
   buildVaccinationsBackupSection,
   countVaccinationsBackupSection,
 } from "@/lib/export/vaccinations-backup";
@@ -371,6 +375,18 @@ export const BACKUP_EXPORT_SECTIONS: readonly BackupExportSection[] = [
     },
   },
   {
+    // The seizure diary: types, seizures with their rescue doses, the rule.
+    name: "seizures",
+    build: async (ctx) => {
+      const seizures = await buildSeizuresBackupSection(
+        ctx.prisma,
+        ctx.userId,
+        { purpose: ctx.purpose },
+      );
+      return part(seizures, countSeizuresBackupSection(seizures));
+    },
+  },
+  {
     // The person's life events.
     name: "lifeEvents",
     build: async (ctx) => {
@@ -426,4 +442,5 @@ export const BACKUP_EXPORT_COUNT_ORDER: readonly string[] = [
   "symptoms",
   "lifeEvents",
   "relationLinks",
+  "seizures",
 ];

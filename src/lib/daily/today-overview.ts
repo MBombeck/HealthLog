@@ -29,6 +29,8 @@ import type { ModuleKey } from "@/lib/modules/registry";
 import type { PriorityItem } from "@/lib/daily/priority-item";
 import { translateOrNull } from "@/lib/i18n/translate-code";
 import { visitsPath } from "@/lib/encounters/visit-links";
+import { withoutLeadingName } from "@/lib/daily/today-lead-name";
+import { medicationsFact } from "@/lib/daily/today-medications-fact";
 
 type Translate = (
   key: string,
@@ -81,6 +83,7 @@ export type TodayLeadSource = (typeof TODAY_LEAD_SOURCES)[number];
 export interface TodayLead {
   text: string;
   source: TodayLeadSource;
+  language?: string | null; // the digest's only (`text-languages.ts`)
 }
 
 /**
@@ -154,6 +157,12 @@ export interface TodayOverviewInput {
   sleep: TodaySleep | null;
   vitals: readonly TodayVital[];
   cycle: TodayCycle | null;
+  /** The instant the overview is built for, for the doses due so far. */
+  now: Date;
+  /** The first name the briefing may use; a lead drops it (#173). */
+  firstName: string | null;
+  /** `medsToday.nextDueAt` as a local time ("08:00"), or null. */
+  nextDoseTimeLabel: string | null;
 }
 
 /**
@@ -164,6 +173,7 @@ export interface TodayOverviewInput {
 export interface TodaySignalLine {
   headline: string | null;
   delta: string | null;
+  language?: string | null; // the digest's only (`text-languages.ts`)
 }
 
 export interface TodayOverview {
@@ -293,11 +303,12 @@ function shortenAtWord(text: string): string {
 function substantiveSentences(
   paragraph: string | null | undefined,
   score: number | null,
+  opts?: { firstName: string | null; locale: Locale },
 ): string[] {
   if (!paragraph) return [];
-  return sentences(paragraph).filter(
-    (s) => !isGreetingOnly(s) && !repeatsScore(s, score),
-  );
+  return sentences(paragraph)
+    .map((s) => (opts ? withoutLeadingName(s, opts.firstName, opts.locale) : s))
+    .filter((s) => !isGreetingOnly(s) && !repeatsScore(s, score));
 }
 
 /**
@@ -634,25 +645,6 @@ function restModeFact(
   };
 }
 
-function medicationsFact(
-  input: TodayOverviewInput,
-  t: Translate,
-): TodayFact | null {
-  if (!moduleOn(input.modules, "medications")) return null;
-  const { scheduledToday, takenToday } = input.medsToday;
-  if (scheduledToday <= 0) return null;
-  return {
-    kind: "medications",
-    label: t("daily.todayFact.medications.label"),
-    value: t("daily.todayFact.medications.value", {
-      taken: Math.min(takenToday, scheduledToday),
-      scheduled: scheduledToday,
-    }),
-    href: "/medications",
-    moduleKey: "medications",
-  };
-}
-
 /**
  * The next appointment today or tomorrow, and nothing further out.
  *
@@ -781,15 +773,23 @@ export function buildTodayOverview(
 ): TodayOverview {
   const sleep = moduleOn(input.modules, "sleep") ? input.sleep : null;
 
+  const leadOpts = { firstName: input.firstName, locale: input.locale };
   const briefingSentence =
-    substantiveSentences(input.briefing?.paragraph, input.scoreValue)[0] ??
-    null;
+    substantiveSentences(
+      input.briefing?.paragraph,
+      input.scoreValue,
+      leadOpts,
+    )[0] ?? null;
   const briefingLead = briefingSentence
     ? shortenAtWord(briefingSentence)
     : null;
   const reaction = cleanReactionLine(input.reactionLine, input.scoreValue);
   const rawHeadline =
-    input.briefing?.signalsOfDay?.[0]?.headline?.trim() || null;
+    withoutLeadingName(
+      input.briefing?.signalsOfDay?.[0]?.headline?.trim() ?? "",
+      input.firstName,
+      input.locale,
+    ) || null;
   const headline =
     rawHeadline && !repeatsScore(rawHeadline, input.scoreValue)
       ? rawHeadline

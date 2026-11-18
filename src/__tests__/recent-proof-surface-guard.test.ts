@@ -79,11 +79,15 @@ const RECENT_PROOF_ROUTES: Record<string, string> = {
   "app/api/export/route.ts": "elevation",
   "app/api/export/full-backup/route.ts": "elevation",
   "app/api/export/encrypted/route.ts": "elevation-if-enrolled",
-  // The shipped iOS app calls these two on its token without an elevation and
-  // reads a 401 outside its known paths as a dead session. Tightening them is
+  // A connector token outlives the session that mints it. An account holding
+  // a second factor or a passkey proves it in the app; one holding neither
+  // (most SSO-only accounts) has nothing it could prove there and mints on its
+  // token. The shipped app reads `auth.stepup.required` as a proof request.
+  "app/api/mcp/tokens/route.ts": "elevation-if-possession",
+  // The shipped iOS app calls this one on its token without an elevation and
+  // reads a 401 outside its known paths as a dead session. Tightening it is
   // an app release first; see the iOS note for v1.39.3.
   "app/api/share-links/route.ts": "token",
-  "app/api/mcp/tokens/route.ts": "token",
 };
 
 /**

@@ -1,9 +1,8 @@
 /**
- * v1.17.1 (04-M1) — the WHOOP / Fitbit OAuth callbacks redirect back with
- * `?whoop=connected|error` / `?fitbit=connected|error&reason=<tag>`, but the
- * settings page only read the param for Withings/Polar/Oura — so a user
- * returning from a WHOOP or Fitbit round-trip landed on a silently unchanged
- * page. These pin the four-provider outcome parsing + reason-key resolution.
+ * v1.17.1 (04-M1) — the WHOOP OAuth callback redirects back with
+ * `?whoop=connected|error&reason=<tag>`, but the settings page only read the
+ * param for Withings/Polar/Oura — so a user returning from a WHOOP round-trip
+ * landed on a silently unchanged page. These pin the four-provider outcome parsing + reason-key resolution.
  */
 import { describe, it, expect } from "vitest";
 
@@ -11,7 +10,13 @@ import { parseOAuthOutcome, oauthReasonKey } from "../integrations-section";
 
 describe("parseOAuthOutcome", () => {
   it("reads a connected outcome for every OAuth provider", () => {
-    for (const p of ["polar", "oura", "whoop", "fitbit", "strava"] as const) {
+    for (const p of [
+      "polar",
+      "oura",
+      "whoop",
+      "googleHealth",
+      "strava",
+    ] as const) {
       expect(parseOAuthOutcome(`?${p}=connected`)).toEqual({
         provider: p,
         kind: "connected",
@@ -19,7 +24,7 @@ describe("parseOAuthOutcome", () => {
     }
   });
 
-  it("reads WHOOP + Fitbit error outcomes with their reason tag (the gap fix)", () => {
+  it("reads WHOOP and Strava error outcomes with their reason tag (the gap fix)", () => {
     expect(parseOAuthOutcome("?whoop=error&reason=token")).toEqual({
       provider: "whoop",
       kind: "error",
@@ -29,11 +34,6 @@ describe("parseOAuthOutcome", () => {
       provider: "strava",
       kind: "error",
       reason: "cross_user",
-    });
-    expect(parseOAuthOutcome("?fitbit=error&reason=expired")).toEqual({
-      provider: "fitbit",
-      kind: "error",
-      reason: "expired",
     });
   });
 
@@ -56,8 +56,8 @@ describe("oauthReasonKey", () => {
     expect(oauthReasonKey("whoop", "token")).toBe(
       "settings.whoopOauthError.token",
     );
-    expect(oauthReasonKey("fitbit", "expired")).toBe(
-      "settings.fitbitOauthError.expired",
+    expect(oauthReasonKey("whoop", "expired")).toBe(
+      "settings.whoopOauthError.expired",
     );
   });
 
@@ -71,15 +71,6 @@ describe("oauthReasonKey", () => {
     );
   });
 
-  it("names the Fitbit turndown refusal with its own copy, and only for Fitbit", () => {
-    expect(oauthReasonKey("fitbit", "retired")).toBe(
-      "settings.fitbitOauthError.retired",
-    );
-    expect(oauthReasonKey("whoop", "retired")).toBe(
-      "settings.whoopOauthError.generic",
-    );
-  });
-
   it("names an account already held by another record for every provider", async () => {
     const en = (await import("../../../../messages/en.json"))
       .default as unknown as {
@@ -89,7 +80,6 @@ describe("oauthReasonKey", () => {
       "polar",
       "oura",
       "whoop",
-      "fitbit",
       "googleHealth",
       "strava",
     ] as const) {

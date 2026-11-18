@@ -57,6 +57,7 @@ const CATALOGS: Readonly<Record<string, string>> = {
   "lib/measurements/apple-health-mapping.ts":
     "the HealthKit identifier mapping table",
   "lib/labs/biomarker-catalog.ts": "the biomarker catalogue",
+  "lib/nutrients/catalog.ts": "the nutrient catalog, one entry per code",
   "app/privacy/page.tsx":
     "legal copy rendered as React text, one long static component",
 };

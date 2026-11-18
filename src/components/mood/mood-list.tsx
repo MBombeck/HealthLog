@@ -1377,10 +1377,8 @@ function MoodNoteText({
 }
 
 /**
- * v1.15.13 — render a `MoodEntry.source` value with its localized label.
- * MANUAL is shown via the source filter only (a manual row carries no
- * badge in the table). MOODLOG keeps its existing `mood.sourceMoodlog`
- * key; the rest fall back to their own keys.
+ * A `MoodEntry.source` value with its localized label. MANUAL shows in the
+ * source filter only (a manual row carries no badge in the table).
  */
 function formatMoodSource(
   source: string,
@@ -1399,6 +1397,8 @@ function formatMoodSource(
       return t("mood.sourceDaylio");
     case "NOTIFICATION":
       return t("mood.sourceNotification");
+    case "APPLE_HEALTH":
+      return t("mood.sourceAppleHealth");
     default:
       return source;
   }

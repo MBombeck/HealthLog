@@ -16,8 +16,8 @@ import { syncUserOura } from "@/lib/oura/sync";
  * newest row it already holds, which is what makes a catch-up honest. Accepting
  * a `lookbackDays` here would hand an unvalidated cost knob to the client.
  *
- * Rate-limited 5/60s per user, matching the hardened Fitbit / Google Health
- * routes; a sync is a fan-out of upstream requests plus a batched write, so a
+ * Rate-limited 5/60s per user, matching the hardened Google Health
+ * route; a sync is a fan-out of upstream requests plus a batched write, so a
  * tight retry loop must not be able to pin Prisma or burn the Oura budget.
  */
 export const POST = apiHandler(async () => {

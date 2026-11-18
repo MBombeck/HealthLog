@@ -19,6 +19,10 @@ vi.mock("@/lib/db", () => ({
       upsert: vi.fn(),
     },
     user: { findUnique: vi.fn(), count: vi.fn().mockResolvedValue(0) },
+    // No APNs device rows: a medication reminder falls back to the account
+    // rule, which is what these tests pin. Per-device delivery (#179) is
+    // pinned in tests/integration/apns-dispatch.test.ts.
+    device: { findMany: vi.fn(async () => []) },
     auditLog: { create: vi.fn() },
   },
 }));

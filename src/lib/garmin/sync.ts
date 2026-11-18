@@ -47,7 +47,7 @@ import { maybeEnqueueMorningRefresh } from "@/lib/daily/morning-refresh-trigger"
 import { walkPages } from "@/lib/integrations/page-walk";
 import {
   MeasurementReconciliationError,
-  reconcileExternalMeasurement,
+  reconcileExternalMeasurements,
 } from "@/lib/measurements/reconcile-external-measurement";
 import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
@@ -67,6 +67,7 @@ import {
   type GarminTransport,
 } from "./client";
 import { getGarminCredentials, rememberGarminKeyExpiry } from "./credentials";
+import { syncGarminActivityFiles } from "./activity-files";
 import { syncGarminCycle } from "./cycle-sync";
 import {
   garminUnavailableCode,
@@ -386,29 +387,27 @@ export async function upsertGarminMeasurements(
     const chunk = readings.slice(i, i + WRITE_CHUNK);
     const verdicts = await prisma.$transaction(
       async (tx) => {
-        const outcomes = [];
-        for (const r of chunk) {
-          const verdict = await reconcileExternalMeasurement(
-            tx,
-            {
-              userId,
-              type: r.type as MeasurementType,
-              source: "GARMIN",
-              value: r.value,
-              unit: r.unit,
-              measuredAt: r.measuredAt,
-              externalId: r.externalId,
-              sleepStage: r.sleepStage ?? null,
-              deviceType: r.deviceType ?? null,
-            },
-            { exactExternalMatch: "update" },
-          );
+        const outcomes = await reconcileExternalMeasurements(
+          tx,
+          chunk.map((r) => ({
+            userId,
+            type: r.type as MeasurementType,
+            source: "GARMIN" as const,
+            value: r.value,
+            unit: r.unit,
+            measuredAt: r.measuredAt,
+            externalId: r.externalId,
+            sleepStage: r.sleepStage ?? null,
+            deviceType: r.deviceType ?? null,
+          })),
+          { exactExternalMatch: "update" },
+        );
+        return outcomes.map((verdict) => {
           if (verdict.status === "failed") {
             throw new MeasurementReconciliationError(verdict);
           }
-          outcomes.push(verdict);
-        }
-        return outcomes;
+          return verdict;
+        });
       },
       { timeout: 60_000 },
     );
@@ -579,6 +578,22 @@ export async function syncUserGarmin(
       }
       getEvent()?.addWarning(
         `garmin: cycle import skipped for ${userId}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
+  // The heart-rate series of new activities, from their original files.
+  // Best-effort and off the ledger like the cycle: the summaries are stored,
+  // and a refusal here never turns the connection red.
+  if (
+    !unavailable.has("activities") &&
+    !failures.some((f) => isGarminRateLimit(f.err))
+  ) {
+    try {
+      await syncGarminActivityFiles(userId, session);
+    } catch (err) {
+      getEvent()?.addWarning(
+        `garmin: activity files skipped for ${userId}: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
   }

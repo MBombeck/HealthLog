@@ -124,7 +124,10 @@ import {
   toProfileSex,
   type ProfileSex,
 } from "@/lib/profile/sex";
-import { dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
+import {
+  buildNutrientTileBlocks,
+  foldNutrientTiles,
+} from "@/lib/dashboard/nutrient-tiles";
 
 /** Briefing freshness window — mirrors the 24 h TTL on the advisor cache. */
 const BRIEFING_TTL_MS = 24 * 60 * 60 * 1000;
@@ -597,51 +600,6 @@ async function buildMoodBlock(
 }> {
   const series = await buildMoodDailySeries(userId, client);
   return { summary: series.summary, entries: series.entries };
-}
-
-/**
- * v1.29 — fluid-intake dashboard tile block, read from `NutrientIntakeDay`
- * (nutrient="water", last 30 day-keys, summed ACROSS SOURCES per day —
- * migration 0249 can carry an APPLE_HEALTH row and a MANUAL row for the
- * same day). ≤ 60 rows off the existing `(userId, nutrient, day desc)`
- * index. Sparse by construction (only days with an actual write become a
- * `DataPoint`) — matching the convention every real `MeasurementType`
- * summary follows: an unlogged day is absent, not a zero reading. `null`
- * when there is no water data in the window; the caller strips the
- * synthetic `NUTRIENT_WATER` key entirely in that case (mirrors mood).
- * Always fetched (cheap, indexed) and stripped post-hoc by
- * `gateSummariesByModules` when the `nutrients` module is off — the same
- * fetch-then-gate posture the sleep/glucose/recovery types already use.
- */
-async function buildNutrientWaterBlock(
-  prisma: PrismaClient,
-  userId: string,
-): Promise<{ summary: DataSummary; lastSeenAt: string } | null> {
-  // eslint-disable-next-line healthlog/no-utc-day-key -- baseline: 30-day lower bound on stored water day keys; a day either way at the far edge does not change the tile
-  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
-  const rows = await prisma.nutrientIntakeDay.findMany({
-    where: { userId, nutrient: "water", day: { gte: since } },
-    select: { day: true, amount: true },
-  });
-  if (rows.length === 0) return null;
-
-  const sumByDay = new Map<string, number>();
-  for (const row of rows) {
-    sumByDay.set(row.day, (sumByDay.get(row.day) ?? 0) + row.amount);
-  }
-  const points: DataPoint[] = [...sumByDay.entries()]
-    .map(([day, amount]) => ({
-      date: dayKeyAsUtcMidnight(day),
-      value: amount,
-    }))
-    .sort((a, b) => a.date.getTime() - b.date.getTime());
-
-  return {
-    summary: summarize(points),
-    lastSeenAt: points[points.length - 1].date.toISOString(),
-  };
 }
 
 /**
@@ -1326,7 +1284,7 @@ export async function buildDashboardSnapshot(
     medsToday,
     modules,
     scoreRings,
-    nutrientWater,
+    nutrientTiles,
   ] = await Promise.all([
     // A5 — reuse the coverage map already probed above so the slice
     // doesn't re-run the identical `probeRollupCoverage` query.
@@ -1365,31 +1323,11 @@ export async function buildDashboardSnapshot(
         await medsTodayPromise,
       ),
     ).catch(() => [] as DashboardScoreRing[]),
-    // v1.29 — fluid-intake tile block (see `buildNutrientWaterBlock`).
-    time("nutrientWater", () => buildNutrientWaterBlock(prisma, user.id)),
+    // The nutrient strip tiles (water, opt-in energy): see `./nutrient-tiles`.
+    time("nutrientTiles", () => buildNutrientTileBlocks(prisma, user.id)),
   ]);
-
-  // v1.29 — fold the water block into the slim slice under a synthetic
-  // `NUTRIENT_WATER` key BEFORE the module gate below strips it (like
-  // every other summary type) when `nutrients` is off. Not a real
-  // `MeasurementType` — see the widened `SUMMARY_TYPE_MODULE` note.
-  // The slice is the shared cache cell's value: fold into copies, never into
-  // the cached object itself.
-  const slimSummaries = nutrientWater
-    ? { ...slimRaw.summaries, NUTRIENT_WATER: nutrientWater.summary }
-    : slimRaw.summaries;
-  const slimLastSeen = nutrientWater
-    ? {
-        ...slimRaw.lastSeenByType,
-        NUTRIENT_WATER: {
-          lastSeenAt: nutrientWater.lastSeenAt,
-          daysAgo: Math.floor(
-            (nowMs - new Date(nutrientWater.lastSeenAt).getTime()) /
-              (24 * 60 * 60 * 1000),
-          ),
-        },
-      }
-    : slimRaw.lastSeenByType;
+  const { summaries: slimSummaries, lastSeenByType: slimLastSeen } =
+    foldNutrientTiles(slimRaw, nutrientTiles, nowMs);
 
   // v1.18.0 — strip disabled-module data before it leaves the server.
   // Mood is blanked when the mood module is off; sleep / glucose summary

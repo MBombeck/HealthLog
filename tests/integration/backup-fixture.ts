@@ -383,6 +383,7 @@ export async function seedEveryTwoEndedModel(
         doseValue: 5,
         doseUnit: "mg",
         noteEncrypted: encryptToBytes(DOSE_CHANGE_NOTE),
+        clientId: "device-step-1",
       },
       {
         medicationId: medication.id,
@@ -551,6 +552,17 @@ export async function seedEveryTwoEndedModel(
       takenAt: AT("2026-06-30T09:00:00.000Z"),
     },
   });
+  // A Health Records reading the person deleted and the purge then removed:
+  // only the import ledger remembers it, and a restore that dropped the row
+  // would let the next Apple Health import write it again.
+  await prisma.labResultImportKey.create({
+    data: {
+      userId: OWNER_ID,
+      source: "APPLE_HEALTH",
+      externalId: "fhir:round-trip-deleted-result",
+      createdAt: AT("2026-07-04T09:00:00.000Z"),
+    },
+  });
   // What the drug above is FOR, pinned to the analyte just created. The two
   // rows are seeded at opposite ends of this fixture on purpose: the drug is
   // restored hundreds of lines before the analyte, so this pairing is what
@@ -652,6 +664,85 @@ export async function seedEveryTwoEndedModel(
       occurredAt: AT("2026-07-10T18:30:00.000Z"),
       intensity: 2,
     },
+  });
+
+  // The seizure diary: a type with its rescue plan on an as-needed
+  // medication, a timed seizure with a rescue dose that wrote an intake, an
+  // untyped suspected tally, and the record's own cluster rule.
+  const rescueMed = await prisma.medication.create({
+    data: {
+      userId: OWNER_ID,
+      name: "Buccal midazolam",
+      dose: "10 mg",
+      asNeeded: true,
+    },
+  });
+  const rescueIntake = await prisma.medicationIntakeEvent.create({
+    data: {
+      userId: OWNER_ID,
+      medicationId: rescueMed.id,
+      scheduledFor: AT("2026-06-22T07:06:00.000Z"),
+      takenAt: AT("2026-06-22T07:06:00.000Z"),
+    },
+  });
+  const seizureType = await prisma.seizureTypeProfile.create({
+    data: {
+      userId: OWNER_ID,
+      labelEncrypted: encryptToBytes("The big one"),
+      ilaeType: "FOCAL_TO_BILATERAL_TC",
+      usualDurationSec: 120,
+      rescuePlanEncrypted: encryptToBytes("Midazolam after 5 minutes"),
+      rescueMedicationId: rescueMed.id,
+      rescueDoseAmount: 10,
+      rescueDoseUnit: "mg",
+      rescueRoute: "BUCCAL",
+    },
+  });
+  await prisma.seizureEvent.create({
+    data: {
+      userId: OWNER_ID,
+      typeProfileId: seizureType.id,
+      onsetAt: AT("2026-06-22T07:00:00.000Z"),
+      durationSec: 420,
+      durationSource: "TIMED",
+      sleepState: "ASLEEP",
+      triggers: ["SLEEP_DEPRIVATION", "FEVER"],
+      postictal: ["SLEEP", "CONFUSION"],
+      postictalMinutes: 45,
+      injuries: ["TONGUE_BITE"],
+      emergency: "EMS_CALLED",
+      witnessed: true,
+      witnessRole: "PARENT",
+      witnessNoteEncrypted: encryptToBytes("eyes to the left first"),
+      noteEncrypted: encryptToBytes("woke from a nap"),
+      loggedByUserId: OWNER_ID,
+      rescueDoses: {
+        create: {
+          userId: OWNER_ID,
+          medicationId: rescueMed.id,
+          medicationName: "Buccal midazolam",
+          doseAmount: 10,
+          doseUnit: "mg",
+          route: "BUCCAL",
+          givenAt: AT("2026-06-22T07:06:00.000Z"),
+          givenBy: "PARENT",
+          effect: "STOPPED",
+          intakeEventId: rescueIntake.id,
+        },
+      },
+    },
+  });
+  await prisma.seizureEvent.create({
+    data: {
+      userId: OWNER_ID,
+      onsetAt: AT("2026-06-23T10:00:00.000Z"),
+      ilaeType: "ABSENCE_TYPICAL",
+      count: 6,
+      certainty: "SUSPECTED",
+    },
+  });
+  await prisma.seizureDiarySettings.create({
+    data: { userId: OWNER_ID, clusterCount: 3, clusterWindowHours: 12 },
   });
 
   // v1.42 — two life events: a move known to the month, with a note, and a
@@ -1571,6 +1662,11 @@ export const USER_FILL_OVERRIDES: Readonly<Record<string, unknown>> = {
   // The restore admits goal by goal against the goals schema, so the generic
   // `{ roundTrip }` blob would be refused as an unknown key, not carried.
   "User.activityGoalsJson": { workoutsPerWeek: 4, stepsPerMonth: 250_000 },
+  // Admitted code by code against the target schema, like the goals above.
+  "User.nutrientTargetsJson": {
+    protein: { value: 120, direction: "target" },
+    sugar: { value: 40, direction: "limit" },
+  },
   "User.globalExcludedInjectionSites": ["THIGH_LEFT"],
   "User.avatarBytes": () => {
     const bytes = new Uint8Array(new ArrayBuffer(AVATAR_PNG.byteLength));

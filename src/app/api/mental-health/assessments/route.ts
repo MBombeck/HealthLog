@@ -18,7 +18,6 @@
  */
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
-import { invalidateUserHealthScore } from "@/lib/cache/invalidate";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import {
   apiError,
@@ -28,7 +27,6 @@ import {
 } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
-import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
 import { auditLog } from "@/lib/auth/audit";
 import { withIdempotency } from "@/lib/idempotency";
 import { enqueueReminderSatisfy } from "@/lib/jobs/reminder-satisfy";
@@ -46,18 +44,14 @@ import {
 } from "@/lib/validations/external-id";
 import {
   INSTRUMENTS,
-  INSTRUMENT_MEASUREMENT_TYPE,
   isSafetyFlagged,
   scoreTotal,
   severityBand,
   type InstrumentId,
 } from "@/lib/mental-health/instruments";
 import { crisisResourcesForLocale } from "@/lib/mental-health/crisis-resources";
+import { writeAssessmentScoreProjection } from "@/lib/mental-health/score-projection";
 import { presentedWording } from "@/lib/mental-health/wording/resolve";
-import type {
-  MeasurementType,
-  MeasurementSource,
-} from "@/generated/prisma/client";
 import { apiListSuccess } from "@/lib/api/list-cap";
 import {
   computeAssessmentTrends,
@@ -375,44 +369,19 @@ async function postAssessment(request: NextRequest): Promise<Response> {
     throw err;
   }
 
-  // Read-optimised projection: the total rides a Measurement row so the existing
-  // chart/rollup infra reads the trend without ever touching item content. The
-  // externalId anchors the trend point to this administration; duplicate trend
-  // points are structurally impossible because a replayed externalId returns
-  // the existing assessment above before reaching this create. The row is
-  // `COMPUTED` — a server-derived projection of the encrypted answers, exactly
-  // like RECOVERY_SCORE: clients cannot attribute the COMPUTED source on any
-  // write surface, so a forged PHQ9_SCORE / GAD7_SCORE trend point can never
-  // enter through the measurement POST. The WEB/IOS provenance + client
-  // externalId live on the assessment this row links to.
-  await prisma.measurement.create({
-    data: {
-      userId: user.id,
-      type: INSTRUMENT_MEASUREMENT_TYPE[id] as MeasurementType,
-      value: total,
-      unit: "score",
-      source: "COMPUTED" as MeasurementSource,
-      measuredAt: when,
-      notes: null,
-      externalId: `assessment:${assessment.id}`,
-    },
+  // Read-optimised projection: the total rides a COMPUTED Measurement row
+  // keyed on this administration, so the chart and rollup reads see the
+  // trend without touching item content. Duplicate trend points are
+  // structurally impossible because a replayed externalId returns the
+  // existing assessment above before reaching this write. The WEB/IOS
+  // provenance + client externalId live on the assessment the row links to.
+  await writeAssessmentScoreProjection({
+    userId: user.id,
+    instrument: id,
+    assessmentId: assessment.id,
+    total,
+    takenAt: when,
   });
-  invalidateUserHealthScore(user.id);
-
-  // v1.37.19 — the projection row is a Measurement like any other:
-  // route it through the shared post-mutation tail so the (type, day)
-  // rollup bucket and the cached status assessment converge without
-  // waiting for a nightly discovery pass.
-  await afterMeasurementMutation(
-    user.id,
-    [
-      {
-        type: INSTRUMENT_MEASUREMENT_TYPE[id] as MeasurementType,
-        measuredAt: when,
-      },
-    ],
-    { source: "manual" },
-  );
 
   // v1.27.6 — a screening can be planned as a Vorsorge reminder keyed on
   // PHQ9_SCORE / GAD7_SCORE. Kick the eventful satisfy worker so completing

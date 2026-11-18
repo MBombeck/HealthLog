@@ -198,6 +198,10 @@ const MODULE_ROUTE_TREES_BY_KEY: Readonly<
   // EXEMPT below under the data-layer reasoning. The day view is not this
   // module's: it is core and lives under `/api/day`, which no key owns.
   timeline: ["src/app/api/timeline", "src/app/api/life-events"],
+  // The seizure diary. Every route gates on `seizures`
+  // through `requireSeizuresEnabled`, data routes included: the diary is off
+  // by default and nothing outside it writes these rows.
+  seizures: ["src/app/api/seizures"],
 };
 
 /** Every declared tree, de-duplicated — the set this inventory walks. */
@@ -229,6 +233,9 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   "src/app/api/mood-entries/bulk/route.ts",
   "src/app/api/mood-entries/bulk-delete/route.ts",
   "src/app/api/mood-entries/restore/route.ts",
+  // Apple Health deletion reconciliation: the phone removing rows it
+  // imported must work while the surface is hidden, like the bulk ingest.
+  "src/app/api/mood-entries/by-external-ids/route.ts",
   // Mood tag taxonomy CRUD — the user's tag library + per-tag layout.
   // Pure configuration over the mood vocabulary, not analysis prose;
   // editing the taxonomy while the module is off must not break.
@@ -248,6 +255,8 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   // history rather than a gap. LabResult CRUD follows the same data-layer
   // reasoning (the labs module gates the surfaces, not the row store).
   "src/app/api/workouts/batch/route.ts",
+  // Its deletion counterpart for Apple Health workouts, for the same reason.
+  "src/app/api/workouts/by-external-ids/route.ts",
   "src/app/api/labs/route.ts",
   "src/app/api/labs/[id]/route.ts",
   // The Labs list's per-marker overview reads the same row store.
@@ -274,6 +283,9 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   // capability, which carries the labs module, so it counts as gated.
   "src/app/api/labs/ocr/capability/route.ts",
   "src/app/api/labs/ocr/commit/route.ts",
+  // #1400 — Health Records lab results from the iOS app write the same row
+  // store as the export import, which runs whatever the module switch says.
+  "src/app/api/labs/fhir-batch/route.ts",
   // ── DATA LAYER (medications) ──────────────────────────────────────
   // v1.18.1 — medications graduated from CORE to a toggleable module,
   // but it is SURFACE-gated (nav / dashboard widget / settings entry), not
@@ -298,6 +310,8 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   "src/app/api/medications/compliance/route.ts",
   "src/app/api/medications/intake/route.ts",
   "src/app/api/medications/intake/bulk/route.ts",
+  // Removing the Apple Health doses the phone reports deleted: same row store.
+  "src/app/api/medications/intake/by-external-ids/route.ts",
   // The account-wide dose-history import is the same class as the
   // per-medication importer below: it writes intake rows and reads its own job.
   "src/app/api/medications/intake/dose-history-import/route.ts",
@@ -311,6 +325,8 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   "src/app/api/medications/[id]/compliance/route.ts",
   "src/app/api/medications/[id]/dose-history/route.ts",
   "src/app/api/medications/[id]/glp1/route.ts",
+  // #169 — correcting and removing a titration step, the same rows.
+  "src/app/api/medications/[id]/glp1/dose-changes/[doseChangeId]/route.ts",
   "src/app/api/medications/[id]/phase-config/route.ts",
   "src/app/api/medications/[id]/intake/route.ts",
   "src/app/api/medications/[id]/intake/[eventId]/route.ts",
@@ -344,6 +360,7 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   // AI analysis off must leave every one of them working.
   "src/app/api/insights/ecg/route.ts",
   "src/app/api/insights/ecg/[id]/route.ts",
+  "src/app/api/insights/ecg/by-external-ids/route.ts",
   "src/app/api/insights/rhythm-events/route.ts",
   "src/app/api/insights/derived/batch/route.ts",
   "src/app/api/insights/cards/route.ts",
@@ -394,6 +411,9 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   // (e.g. to set up a provider before re-enabling the module).
   "src/app/api/insights/settings/route.ts",
   "src/app/api/insights/provider-chain/route.ts",
+  // #1404 — the named chains and capability attachments: the same AI
+  // configuration as the main chain above.
+  "src/app/api/insights/provider-chains/route.ts",
   // Insights tile-order + visibility layout (GET/PUT/DELETE) — the user's
   // own persisted preference blob, the insights peer of
   // `/api/dashboard/widgets`. Pure UI configuration, no module data; the
@@ -490,6 +510,9 @@ const AI_CAPABILITY_GATE =
 // `requireCycleEnabled`. Recognised as a delegated gate so illness routes
 // are not flagged as ungated.
 const ILLNESS_GATE_NEEDLE = "requireIllnessEnabled(";
+// The seizure diary's wrapper, the same shape:
+// `requireModuleEnabled(userId, "seizures")` with the diary's errorCode.
+const SEIZURES_GATE_NEEDLE = "requireSeizuresEnabled(";
 
 /**
  * Trees whose routes must gate on ONE specific module key. Naming the key
@@ -744,6 +767,7 @@ describe("module API route gate inventory", () => {
       if (fileHasCall(text, MODULE_GATE_NEEDLE)) continue;
       if (fileHasCall(text, CYCLE_GATE_NEEDLE)) continue;
       if (fileHasCall(text, ILLNESS_GATE_NEEDLE)) continue;
+      if (fileHasCall(text, SEIZURES_GATE_NEEDLE)) continue;
       if (fileHasCapabilityGate(text)) continue;
 
       if (exempt.has(path)) continue;
@@ -865,6 +889,7 @@ describe("module API route gate inventory", () => {
         fileHasCall(text, MODULE_GATE_NEEDLE) ||
         fileHasCall(text, CYCLE_GATE_NEEDLE) ||
         fileHasCall(text, ILLNESS_GATE_NEEDLE) ||
+        fileHasCall(text, SEIZURES_GATE_NEEDLE) ||
         fileHasCapabilityGate(text)
       ) {
         stillGated.push(path);

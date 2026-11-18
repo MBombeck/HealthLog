@@ -36,6 +36,7 @@ const ALLOWED: Record<string, string> = {
   "app/auth/login/page.tsx": "sign-in card",
   "app/auth/register/page.tsx": "register card",
   "components/auth/claim-profile.tsx": "claim card",
+  "components/auth/native-return-notice.tsx": "native sign-in return card",
   "app/invite/[token]/page.tsx": "invalid invite screen",
   "components/clinician/share-unlock-gate.tsx": "share-link unlock gate",
   "app/key-mismatch-page.tsx": "key-mismatch gate",

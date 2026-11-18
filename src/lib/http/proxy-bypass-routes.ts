@@ -35,6 +35,8 @@ export const PROXY_BYPASS_ROUTES: readonly string[] = [
   "/api/import/apple-health-export",
   "/api/import/health-connect-export",
   "/api/admin/import-apple-health-export",
+  // One activity file (.fit, .fit.gz or a one-member ZIP), 10 MB.
+  "/api/import/fit",
   // Backup file upload, up to 512 MB raw.
   "/api/admin/backups/upload",
   // Document vault upload, admin-tunable per-file cap.

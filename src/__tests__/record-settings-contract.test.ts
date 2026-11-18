@@ -66,7 +66,14 @@ describe("record settings contract", () => {
       kind: "managed-guardian",
       guardianWritable: false,
     });
-    expect(classifySettingsDestination("ai").kind).toBe("unavailable");
+    // #1403 — inside a managed profile the AI page holds the profile's own
+    // automatic-reading switch, a guardian write; an adult's share still
+    // reaches nothing there (the managed-guardian kind is the marker's).
+    expect(classifySettingsDestination("ai")).toEqual({
+      kind: "managed-guardian",
+      guardianWritable: true,
+    });
+    expect(classifySettingsDestination("environment").kind).toBe("unavailable");
     // v1.37.19 — "dashboard" left SETTINGS_SECTION_SLUGS (its URL is
     // owned by a permanent redirect to /settings/layout/dashboard), so an
     // unknown destination falls closed to plain unavailable; "layout" is
@@ -78,7 +85,8 @@ describe("record settings contract", () => {
     expect(isGuardianSettingsWriteAllowed("account")).toBe(true);
     expect(isGuardianSettingsWriteAllowed("notifications")).toBe(true);
     expect(isGuardianSettingsWriteAllowed("integrations")).toBe(false);
-    expect(isGuardianSettingsWriteAllowed("ai")).toBe(false);
+    expect(isGuardianSettingsWriteAllowed("ai")).toBe(true);
+    expect(isGuardianSettingsWriteAllowed("api")).toBe(false);
   });
 
   /**

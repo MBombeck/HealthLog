@@ -77,6 +77,11 @@ export const AI_ROUTES: Readonly<Record<string, AiRouteEntry>> = {
     capabilities: ["documentAi"],
     why: "The preference is stored whatever AI says; the catch-up it queues follows the capability.",
   },
+  "src/app/api/record-settings/[family]/route.ts": {
+    kind: "mixed",
+    capabilities: ["documentAi"],
+    why: "A guardian's record settings are stored whatever AI says; only the document catch-up queued when automatic reading turns on follows the profile's capability.",
+  },
   "src/app/api/insights/chat/fenced/route.ts": {
     kind: "action",
     capabilities: ["coach", "documentAi"],
@@ -213,6 +218,8 @@ export const DATA_ROUTES: Readonly<Record<string, string>> = {
   "src/app/api/insights/ecg/route.ts":
     "Device recordings, list and live ingest: an upload is never refused because AI is off.",
   "src/app/api/insights/ecg/[id]/route.ts": "One device recording's waveform.",
+  "src/app/api/insights/ecg/by-external-ids/route.ts":
+    "Removes device recordings the phone reports deleted in Apple Health.",
   "src/app/api/insights/rhythm-events/route.ts":
     "The device's own flagged events, verbatim.",
   "src/app/api/insights/score-history/route.ts":
@@ -261,6 +268,8 @@ export const DATA_ROUTES: Readonly<Record<string, string>> = {
     "A merge of medication events.",
   "src/app/api/insights/layout/route.ts": "The person's tile layout.",
   "src/app/api/insights/provider-chain/route.ts":
+    "AI configuration: editable while AI is unavailable, so it can be set up.",
+  "src/app/api/insights/provider-chains/route.ts":
     "AI configuration: editable while AI is unavailable, so it can be set up.",
   "src/app/api/insights/settings/route.ts":
     "AI configuration: editable while AI is unavailable, so it can be set up.",

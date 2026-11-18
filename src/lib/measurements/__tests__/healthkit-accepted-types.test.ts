@@ -6,12 +6,21 @@ import {
   mapAppleHealthEntry,
 } from "../apple-health-mapping";
 import { acceptedHealthKitTypes } from "../healthkit-accepted-types";
+import { HK_SCORED_ASSESSMENT_INSTRUMENT } from "@/lib/mental-health/apple-health-assessment";
+
+const SCORED_ASSESSMENTS = Object.keys(HK_SCORED_ASSESSMENT_INSTRUMENT);
 
 describe("acceptedHealthKitTypes", () => {
-  it("is exactly the mapping table's identifiers, sorted", () => {
+  it("is exactly the mapping table's and the scored assessments' identifiers, sorted", () => {
     const accepted = acceptedHealthKitTypes();
     expect(accepted.length).toBeGreaterThan(0);
-    expect([...accepted]).toEqual(Object.keys(APPLE_HEALTH_TYPE_MAP).sort());
+    expect([...accepted]).toEqual(
+      [...Object.keys(APPLE_HEALTH_TYPE_MAP), ...SCORED_ASSESSMENTS].sort(),
+    );
+    expect(SCORED_ASSESSMENTS.sort()).toEqual([
+      "HKScoredAssessmentTypeIdentifierGAD7",
+      "HKScoredAssessmentTypeIdentifierPHQ9",
+    ]);
   });
 
   it("carries quantity and category identifiers, never a deferred one", () => {
@@ -27,8 +36,14 @@ describe("acceptedHealthKitTypes", () => {
     expect(accepted).toContain("HKQuantityTypeIdentifierBasalEnergyBurned");
   });
 
-  it("lists only identifiers the batch mapper turns into a row", () => {
+  it("lists only identifiers the batch mapper turns into a row, or a screener", () => {
     for (const id of acceptedHealthKitTypes()) {
+      // A scored assessment is written as a screener administration, never
+      // through the measurement mapper.
+      if (SCORED_ASSESSMENTS.includes(id)) {
+        expect(APPLE_HEALTH_TYPE_MAP[id], id).toBeUndefined();
+        continue;
+      }
       const out = mapAppleHealthEntry({
         hkIdentifier: id,
         value: 1,

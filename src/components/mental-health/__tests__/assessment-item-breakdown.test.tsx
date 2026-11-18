@@ -48,6 +48,7 @@ function detailRow(overrides: Partial<AssessmentDetail>): AssessmentDetail {
     items: [1, 1, 1, 1, 1, 1, 1, 1, 2],
     functionalDifficulty: null,
     itemsUnavailable: false,
+    source: "WEB",
     ...overrides,
   };
 }
@@ -120,6 +121,18 @@ describe("AssessmentItemBreakdown", () => {
     const html = render(detailRow({ items: null, itemsUnavailable: true }));
     expect(html).toContain(mh.history.answersUnavailable);
     expect(html).not.toContain(PHQ9_EN.items[0]);
+  });
+
+  it("says a score-only Apple Health administration never shared its answers", () => {
+    const html = render(
+      detailRow({
+        items: null,
+        itemsUnavailable: true,
+        source: "APPLE_HEALTH",
+      }),
+    );
+    expect(html).toContain(mh.history.answersNotShared);
+    expect(html).not.toContain(mh.history.answersUnavailable);
   });
 
   it("shows a pt-BR reader the Brazilian PHQ-9 the answers were given in", () => {

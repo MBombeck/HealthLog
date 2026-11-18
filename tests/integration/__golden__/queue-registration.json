@@ -1,5 +1,5 @@
 {
-  "registeredQueueCount": 130,
+  "registeredQueueCount": 127,
   "registeredQueues": [
     "account-deletion-purge",
     "achievement-unlock-sweep",
@@ -43,10 +43,7 @@
     "environment-aq-history",
     "environment-fetch",
     "feedback-aggregator",
-    "fitbit-backfill",
-    "fitbit-oauth-state-cleanup",
-    "fitbit-sleep-repair",
-    "fitbit-sync",
+    "fit-import",
     "free-text-encryption-backfill",
     "garmin-backfill",
     "garmin-sync",
@@ -768,52 +765,7 @@
       "deletion_seconds": 604800,
       "expire_seconds": 900,
       "heartbeat_seconds": null,
-      "name": "fitbit-backfill",
-      "notify": false,
-      "partition": false,
-      "policy": "exclusive",
-      "retention_seconds": 1209600,
-      "retry_backoff": false,
-      "retry_delay": 0,
-      "retry_delay_max": null,
-      "retry_limit": 2
-    },
-    {
-      "dead_letter": null,
-      "deletion_seconds": 604800,
-      "expire_seconds": 900,
-      "heartbeat_seconds": null,
-      "name": "fitbit-oauth-state-cleanup",
-      "notify": false,
-      "partition": false,
-      "policy": "standard",
-      "retention_seconds": 1209600,
-      "retry_backoff": false,
-      "retry_delay": 0,
-      "retry_delay_max": null,
-      "retry_limit": 2
-    },
-    {
-      "dead_letter": null,
-      "deletion_seconds": 604800,
-      "expire_seconds": 900,
-      "heartbeat_seconds": null,
-      "name": "fitbit-sleep-repair",
-      "notify": false,
-      "partition": false,
-      "policy": "exclusive",
-      "retention_seconds": 1209600,
-      "retry_backoff": false,
-      "retry_delay": 0,
-      "retry_delay_max": null,
-      "retry_limit": 2
-    },
-    {
-      "dead_letter": null,
-      "deletion_seconds": 604800,
-      "expire_seconds": 900,
-      "heartbeat_seconds": null,
-      "name": "fitbit-sync",
+      "name": "fit-import",
       "notify": false,
       "partition": false,
       "policy": "standard",
@@ -2386,29 +2338,6 @@
       "timezone": "Europe/Berlin"
     },
     {
-      "cron": "24 3 * * *",
-      "data": {},
-      "key": "",
-      "kind": "cron",
-      "name": "fitbit-oauth-state-cleanup",
-      "options": {
-        "retryLimit": 0,
-        "tz": "Europe/Berlin"
-      },
-      "timezone": "Europe/Berlin"
-    },
-    {
-      "cron": "8 * * * *",
-      "data": {},
-      "key": "",
-      "kind": "cron",
-      "name": "fitbit-sync",
-      "options": {
-        "tz": "Europe/Berlin"
-      },
-      "timezone": "Europe/Berlin"
-    },
-    {
       "cron": "7 4 * * *",
       "data": {},
       "key": "",
@@ -3339,29 +3268,9 @@
       }
     },
     {
-      "queue": "fitbit-backfill",
+      "queue": "fit-import",
       "options": {
         "localConcurrency": 1
-      }
-    },
-    {
-      "queue": "fitbit-oauth-state-cleanup",
-      "options": {
-        "localConcurrency": 1,
-        "pollingIntervalSeconds": 30
-      }
-    },
-    {
-      "queue": "fitbit-sleep-repair",
-      "options": {
-        "localConcurrency": 1
-      }
-    },
-    {
-      "queue": "fitbit-sync",
-      "options": {
-        "localConcurrency": 1,
-        "pollingIntervalSeconds": 30
       }
     },
     {

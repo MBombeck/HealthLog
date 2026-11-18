@@ -45,6 +45,7 @@ import type { RelationLinksBackupCounts } from "@/lib/export/relation-links-back
 import type { RemindersBackupCounts } from "@/lib/export/reminders-backup";
 import type { SensitiveBackupCounts } from "@/lib/export/sensitive-backup";
 import type { SymptomsBackupCounts } from "@/lib/export/symptoms-backup";
+import type { SeizuresBackupCounts } from "@/lib/export/seizures-backup";
 import type { VaccinationsBackupCounts } from "@/lib/export/vaccinations-backup";
 import type { VisitsBackupCounts } from "@/lib/export/visits-backup";
 import { BACKUP_SCHEMA_VERSION } from "@/lib/validations/backup-summary";
@@ -70,6 +71,7 @@ export interface FullBackupCounts
     OnboardingBackupCounts,
     EcgBackupCounts,
     SymptomsBackupCounts,
+    SeizuresBackupCounts,
     LifeEventsBackupCounts {
   measurements: number;
   medications: number;

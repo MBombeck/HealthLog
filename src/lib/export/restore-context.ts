@@ -63,6 +63,7 @@ export const RESTORE_CLEARED_KEYS = [
   "cycleDayLogs",
   "cycleProfile",
   "labResults",
+  "labResultImportKeys",
   "biomarkers",
   "nutrientDays",
   "illnessEpisodes",
@@ -105,6 +106,8 @@ export const RESTORE_CLEARED_KEYS = [
   "ecgRecordings",
   "symptomDefinitions",
   "lifeEvents",
+  "seizureTypes",
+  "seizureEvents",
 ] as const;
 
 export type RestoreClearedKey = (typeof RESTORE_CLEARED_KEYS)[number];

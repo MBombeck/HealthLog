@@ -219,6 +219,7 @@ describe("<DashboardHeader> — every entry follows its module, as the capture p
       { mood: false, medications: false, workouts: false, illness: false },
       { timeline: false },
       { timeline: true },
+      { seizures: true },
     ];
     for (const modules of cases) {
       modulesRef.value = modules;
@@ -236,6 +237,7 @@ describe("<DashboardHeader> — every entry follows its module, as the capture p
         medication: "Log medication intake",
         mood: "Log mood",
         symptom: "Log symptom",
+        seizure: "Log seizure",
         workout: "Log workout",
         lifeEvent: "Log life event",
       } as const;

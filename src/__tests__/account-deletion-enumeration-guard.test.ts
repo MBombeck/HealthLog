@@ -67,20 +67,13 @@ const EXTRA_FILES = [
   "lib/workouts/climb-backfill.ts",
 ];
 
-/** Job folders that live beside their domain. */
-const EXTRA_DIRS = [{ dir: "lib/fitbit/jobs", floor: 5 }];
-
 function backgroundFiles(): string[] {
   const walk = (dir: string, floor: number) =>
     walkSourceFiles(join(SRC, dir), { floor })
       .filter((rel) => !rel.includes("__tests__"))
       .filter((rel) => !rel.endsWith(".test.ts"))
       .map((rel) => `${dir}/${rel}`);
-  return [
-    ...walk("lib/jobs", 150),
-    ...EXTRA_DIRS.flatMap(({ dir, floor }) => walk(dir, floor)),
-    ...EXTRA_FILES,
-  ].sort();
+  return [...walk("lib/jobs", 150), ...EXTRA_FILES].sort();
 }
 
 const PREDICATE =

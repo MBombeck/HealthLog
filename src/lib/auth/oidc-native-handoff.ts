@@ -20,6 +20,19 @@ import {
   buildHandoffCallbackUrl,
   NATIVE_HANDOFF_TTL_MS,
 } from "@/lib/auth/native-handoff";
+import {
+  NATIVE_OIDC_RETURN_PATH,
+  nativeHttpsReturnOrigin,
+} from "@/lib/auth/native-return";
+
+export { NATIVE_OIDC_RETURN_PATH, nativeHttpsReturnOrigin };
+
+/**
+ * Where a native sign-in returns: the custom scheme (the default, for every
+ * build and every instance) or the instance's own https return page, which a
+ * build with an associated domain opts into with `return=https` at login.
+ */
+export type NativeOidcReturn = "scheme" | "https";
 
 /**
  * The ONLY callback target for the OIDC native flow. Compiled-in, not operator-
@@ -33,11 +46,25 @@ export const NATIVE_OIDC_REDIRECT_URI = "healthlog://oidc-callback";
 export const OIDC_NATIVE_HANDOFF_TTL_MS = NATIVE_HANDOFF_TTL_MS;
 
 /**
- * Build the OIDC native callback redirect from the compiled-in constant plus
+ * Build the OIDC native callback redirect from a compiled-in target plus
  * query-escaped params only — nothing the client sends is ever echoed into a
- * `Location` header on the native branch.
+ * `Location` header on the native branch. `https` targets the fixed return
+ * path on the operator-set app origin; an instance that cannot offer it (no
+ * https app URL) falls back to the scheme rather than to an http address.
  */
-export function buildNativeCallbackUrl(params: Record<string, string>): string {
+export function buildNativeCallbackUrl(
+  params: Record<string, string>,
+  returnTo: NativeOidcReturn = "scheme",
+): string {
+  if (returnTo === "https") {
+    const origin = nativeHttpsReturnOrigin();
+    if (origin) {
+      return buildHandoffCallbackUrl(
+        `${origin}${NATIVE_OIDC_RETURN_PATH}`,
+        params,
+      );
+    }
+  }
   return buildHandoffCallbackUrl(NATIVE_OIDC_REDIRECT_URI, params);
 }
 

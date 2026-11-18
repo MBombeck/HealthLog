@@ -22,6 +22,10 @@ vi.mock("@/lib/db", () => ({
       upsert: vi.fn(),
     },
     user: { findUnique: vi.fn(), count: vi.fn().mockResolvedValue(0) },
+    // No APNs device rows: a medication reminder falls back to the account
+    // rule, which is what these tests pin. Per-device delivery (#179) is
+    // pinned in tests/integration/apns-dispatch.test.ts.
+    device: { findMany: vi.fn(async () => []) },
   },
 }));
 
@@ -55,6 +59,7 @@ vi.mock("@/lib/notifications/senders/push-attempt-record", () => ({
 }));
 
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
+import { deviceDeliversLocally } from "@/lib/notifications/client-managed-apns";
 import { prisma } from "@/lib/db";
 
 function channel(type: "APNS" | "TELEGRAM") {
@@ -240,5 +245,72 @@ describe("dispatchNotification — client-managed APNs suppression", () => {
     });
 
     expect(sendViaApnsMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+/** The columns the dispatcher selects off these rows. */
+type DeviceRows = Awaited<ReturnType<typeof prisma.device.findMany>>;
+type UserRow = Awaited<ReturnType<typeof prisma.user.findUnique>>;
+
+describe("deviceDeliversLocally — #179", () => {
+  it("lets the device's own override win, and inherits the account otherwise", () => {
+    expect(deviceDeliversLocally("client", false)).toBe(true);
+    expect(deviceDeliversLocally("server", true)).toBe(false);
+    expect(deviceDeliversLocally(null, true)).toBe(true);
+    expect(deviceDeliversLocally(null, false)).toBe(false);
+  });
+});
+
+describe("dispatchNotification — per-device medication delivery (#179)", () => {
+  function devices(rows: Array<[string, string | null]>) {
+    vi.mocked(prisma.device.findMany).mockResolvedValue(
+      rows.map(([id, medicationDelivery]) => ({
+        id,
+        medicationDelivery,
+      })) as DeviceRows,
+    );
+  }
+
+  it("pushes only to the devices the server delivers to, and annotates the rest", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      notificationPrefs: { medication: { clientManaged: false } },
+    } as unknown as UserRow);
+    devices([
+      ["dev-phone", "client"],
+      ["dev-pad", null],
+    ]);
+
+    await dispatchNotification(MEDICATION_PAYLOAD);
+
+    expect(sendViaApnsMock).toHaveBeenCalledTimes(1);
+    expect(sendViaApnsMock.mock.calls[0][2]).toEqual({
+      onlyDeviceIds: ["dev-pad"],
+    });
+    expect(addMetaMock).toHaveBeenCalledWith(
+      "medication_reminder_suppressed_client_managed",
+      "med-1:2026-06-15T08:00:00.000Z",
+    );
+    expect(addMetaMock).toHaveBeenCalledWith(
+      "apns_devices_suppressed_client_managed",
+      "dev-phone",
+    );
+  });
+
+  it("does not narrow the push when every device follows a server account", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      notificationPrefs: {},
+    } as unknown as UserRow);
+    devices([
+      ["dev-phone", null],
+      ["dev-pad", "server"],
+    ]);
+
+    await dispatchNotification(MEDICATION_PAYLOAD);
+
+    expect(sendViaApnsMock.mock.calls[0][2]).toBeUndefined();
+    expect(addMetaMock).not.toHaveBeenCalledWith(
+      "apns_devices_suppressed_client_managed",
+      expect.anything(),
+    );
   });
 });

@@ -39,6 +39,7 @@ import { buildMeasurementsChartsSection } from "./doctor-report-pdf/measurements
 import { buildMedicationMoodWellnessSection } from "./doctor-report-pdf/medication-mood-wellness-section";
 import { buildWorkoutsSection } from "./doctor-report-pdf/activity-effect-sections";
 import { buildClinicalRecordsNotesSection } from "./doctor-report-pdf/clinical-records-notes-section";
+import { buildSeizureSection } from "./doctor-report-pdf/seizure-section";
 import { buildReportFooter } from "./doctor-report-pdf/footer-section";
 import {
   pdfCursorState,
@@ -221,6 +222,7 @@ export function buildDoctorReportPdfDocument(
   cursor = buildMeasurementsChartsSection(context, cursor);
   cursor = buildWorkoutsSection(context, cursor);
   cursor = buildMedicationMoodWellnessSection(context, cursor);
+  cursor = buildSeizureSection(context, cursor);
   cursor = buildClinicalRecordsNotesSection(context, cursor);
   buildReportFooter(context, cursor);
   return doc;

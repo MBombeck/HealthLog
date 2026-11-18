@@ -56,7 +56,7 @@
 #     api_tokens, refresh_tokens, devices, push_subscriptions, push_attempts,
 #     notification_channels, notification_preferences.
 #   - Integration / OAuth: withings_connections, whoop_connections,
-#     fitbit_connections, all *_oauth_states / *_connect_tickets,
+#     google_health_connections, all *_oauth_states / *_connect_tickets,
 #     telegram_scheduled_deletions, telegram_reminder_messages,
 #     clinician_share_links, provider_health.
 #   - Encrypted-at-rest payloads we cannot decrypt on the target:
@@ -333,7 +333,6 @@ readonly USERS_COLS="id, username, email, password_hash, role, created_at, updat
   telegram_bot_token, telegram_chat_id, telegram_enabled,
   withings_client_id_encrypted, withings_client_secret_encrypted,
   whoop_client_id_encrypted, whoop_client_secret_encrypted,
-  fitbit_client_id_encrypted, fitbit_client_secret_encrypted,
   locale, thresholds_json, dashboard_widgets_json, insights_layout_json,
   glucose_unit, unit_preference,
   ai_provider, ai_model, ai_base_url, ai_anthropic_key_encrypted, ai_local_key_encrypted,
@@ -370,8 +369,6 @@ readonly USERS_SELECT="id, username, email, password_hash,
   NULL::text  AS withings_client_secret_encrypted,
   NULL::text  AS whoop_client_id_encrypted,
   NULL::text  AS whoop_client_secret_encrypted,
-  NULL::text  AS fitbit_client_id_encrypted,
-  NULL::text  AS fitbit_client_secret_encrypted,
   locale, thresholds_json, dashboard_widgets_json, insights_layout_json,
   glucose_unit, unit_preference,
   ai_provider, ai_model, ai_base_url,

@@ -38,6 +38,7 @@ vi.mock("@/hooks/use-auth", () => ({
                 recordRef.value.level as "read" | "write" | "manage",
                 null,
                 "manage",
+                recordRef.value.kind,
               ),
             },
             accounts: [],

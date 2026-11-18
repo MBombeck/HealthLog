@@ -34,7 +34,8 @@ export function isManagedGuardianFanoutAllowed(
     payload.managedFanoutEvent === undefined &&
     (payload.eventType === "MEDICATION_REMINDER" ||
       payload.eventType === "MEASUREMENT_REMINDER" ||
-      payload.eventType === "MEDICATION_LOW_STOCK")
+      payload.eventType === "MEDICATION_LOW_STOCK" ||
+      payload.eventType === "SEIZURE_CLUSTER")
   );
 }
 
@@ -76,7 +77,8 @@ export async function resolveManagedGuardianRecipientIds(
     .filter(
       (grant) =>
         grant.granteeId !== payload.userId &&
-        grant.grantee.managedProfileAt == null,
+        grant.grantee.managedProfileAt == null &&
+        !payload.excludeRecipientUserIds?.includes(grant.granteeId),
     )
     .map((grant) => grant.granteeId);
 }

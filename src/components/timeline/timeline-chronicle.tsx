@@ -16,6 +16,7 @@
  */
 import { useState } from "react";
 import {
+  BrainCircuit,
   CalendarHeart,
   ChevronDown,
   FileText,
@@ -76,6 +77,7 @@ const KIND_ICON: Partial<Record<TimelineItemKind, LucideIcon>> = {
   visit: Stethoscope,
   procedure: Stethoscope,
   labDay: FlaskConical,
+  seizureDay: BrainCircuit,
   document: FileText,
   cycle: CalendarHeart,
 };

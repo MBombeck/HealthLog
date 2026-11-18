@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import type { Biomarker } from "@/generated/prisma/client";
 
 vi.mock("@/lib/db", () => {
   const prisma = {
@@ -16,11 +17,16 @@ vi.mock("@/lib/db", () => {
       createMany: vi.fn(),
     },
     biomarkerMerge: { findFirst: vi.fn(async () => null) },
-    labResult: { deleteMany: vi.fn(), findMany: vi.fn(async () => []) },
+    labResult: {
+      deleteMany: vi.fn(),
+      findMany: vi.fn(async () => []),
+      count: vi.fn(async () => 0),
+    },
+    labResultImportKey: { createMany: vi.fn() },
     auditLog: { create: vi.fn().mockResolvedValue({}) },
   };
-  // `$transaction` is set in `beforeEach`: the batch form for the delete, the
-  // callback form for the edit.
+  // `$transaction` is set in `beforeEach`: the callback form for the delete
+  // and the edit, the batch form where a caller still uses it.
   return { prisma: { ...prisma, $transaction: vi.fn() } };
 });
 
@@ -91,14 +97,14 @@ beforeEach(() => {
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
   // v1.37.0 — the 422 breadcrumb goes through `auditLog()` and the route
   // chains `.catch()` on it; `resetAllMocks` clears the factory's resolution.
-  vi.mocked(auditLog).mockResolvedValue(undefined as never);
+  vi.mocked(auditLog).mockResolvedValue(undefined);
   vi.mocked(prisma.$transaction).mockImplementation((async (arg: unknown) =>
     typeof arg === "function"
       ? (arg as (tx: unknown) => Promise<unknown>)(prisma)
       : Promise.all(arg as Promise<unknown>[])) as never);
-  vi.mocked(prisma.biomarkerAlias.findMany).mockResolvedValue([] as never);
-  vi.mocked(prisma.biomarker.findMany).mockResolvedValue([] as never);
-  vi.mocked(prisma.biomarkerMerge.findFirst).mockResolvedValue(null as never);
+  vi.mocked(prisma.biomarkerAlias.findMany).mockResolvedValue([]);
+  vi.mocked(prisma.biomarker.findMany).mockResolvedValue([]);
+  vi.mocked(prisma.biomarkerMerge.findFirst).mockResolvedValue(null);
 });
 
 describe("GET /api/biomarkers/[id] — trend (v1.44)", () => {
@@ -140,7 +146,7 @@ describe("GET /api/biomarkers/[id] — trend (v1.44)", () => {
   it("answers insufficient below three readings", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(prisma.biomarker.findFirst).mockResolvedValue(EXISTING as never);
-    vi.mocked(prisma.labResult.findMany).mockResolvedValue([] as never);
+    vi.mocked(prisma.labResult.findMany).mockResolvedValue([]);
     const body = await (await GET(getReq(), params("bm-1"))).json();
     expect(body.data.trend).toEqual({
       status: "insufficient",
@@ -155,9 +161,10 @@ describe("DELETE /api/biomarkers/[id]", () => {
   it("drops the marker and its readings in one userId-narrowed transaction", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(prisma.biomarker.findFirst).mockResolvedValue(EXISTING as never);
-    vi.mocked(prisma.labResult.deleteMany).mockResolvedValue({
-      count: 3,
-    } as never);
+    vi.mocked(prisma.labResult.deleteMany).mockResolvedValue({ count: 3 });
+    vi.mocked(prisma.labResultImportKey.createMany).mockResolvedValue({
+      count: 0,
+    });
     vi.mocked(prisma.biomarker.delete).mockResolvedValue(EXISTING as never);
 
     const res = await DELETE(delReq(), params("bm-1"));
@@ -226,5 +233,55 @@ describe("PUT /api/biomarkers/[id] — target range", () => {
     );
     expect(res.status).toBe(422);
     expect(prisma.biomarker.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("PUT /api/biomarkers/[id] — a no-unit marker given a unit", () => {
+  // A marker minted from a text result holds a range that came with no
+  // unit ("10 - 20" beside "SEE NOTE"). Under a real unit those numbers are
+  // not a window, so they give way to the bounds the edit sends, or to none,
+  // the way the first numeric import reading treats them.
+  const TEXT_MARKER: Biomarker = {
+    ...EXISTING,
+    unit: "",
+    lowerBound: 10,
+    upperBound: 20,
+    analyteKey: null,
+  };
+
+  function setUp() {
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    vi.mocked(prisma.biomarker.findFirst).mockResolvedValue(TEXT_MARKER);
+    vi.mocked(prisma.biomarker.update).mockResolvedValue(TEXT_MARKER);
+  }
+  const updateData = () =>
+    (
+      vi.mocked(prisma.biomarker.update).mock.calls[0][0] as {
+        data: Record<string, unknown>;
+      }
+    ).data;
+
+  it("drops the unitless bounds the edit does not set", async () => {
+    setUp();
+    const res = await PUT(putReq({ unit: "mg/dL" }), params("bm-1"));
+    expect(res.status).toBe(200);
+    expect(updateData()).toMatchObject({
+      unit: "mg/dL",
+      lowerBound: null,
+      upperBound: null,
+    });
+  });
+
+  it("keeps the bounds the edit sends with the unit", async () => {
+    setUp();
+    await PUT(putReq({ unit: "mg/dL", upperBound: 150 }), params("bm-1"));
+    expect(updateData()).toMatchObject({ lowerBound: null, upperBound: 150 });
+  });
+
+  it("keeps them under the unity, the unit they were printed in", async () => {
+    setUp();
+    await PUT(putReq({ unit: "1" }), params("bm-1"));
+    expect(updateData()).not.toHaveProperty("lowerBound");
+    expect(updateData()).not.toHaveProperty("upperBound");
   });
 });

@@ -1,6 +1,6 @@
 # Data import
 
-HealthLog has four ways to bring data in, all reachable from
+HealthLog has five ways to bring data in, all reachable from
 **Settings → Export & Import**:
 
 1. An **Apple Health `export.zip`** upload — the full archive from the
@@ -15,6 +15,8 @@ HealthLog has four ways to bring data in, all reachable from
 4. A **medication dose-history import** — its own card in the same
    panel, posting to `POST /api/medications/intake/dose-history-import`
    with its own `?dryRun=1` preview.
+5. An **activity file (FIT)** — one workout as a watch or bike computer
+   recorded it, with its heart-rate curve. Documented in section 4 below.
 
 All paths skip rows that already exist, so re-running an import is
 safe — it merges rather than duplicating.
@@ -40,8 +42,9 @@ the browser — and a background job parses it while a progress indicator
 polls for the imported / skipped counts.
 
 Re-uploading the same archive resolves to the same job by content hash,
-so it merges instead of creating duplicates. ECG CSVs and metric-typed
-clinical records are imported too; see
+so it merges instead of creating duplicates. ECG CSVs and the lab
+results among the Health Records are imported too (lab results land in
+Labs, matched to your markers); see
 [`apple-health.md`](./apple-health.md) for the details and the full
 type mapping.
 
@@ -215,6 +218,7 @@ hand-authored.
 | `LOW_HEART_RATE_EVENT`          | event                |
 | `WALKING_STEADINESS_EVENT`      | event                |
 | `BREATHING_DISTURBANCE_EVENT`   | event                |
+| `HYPERTENSION_EVENT`            | event                |
 
 The table is a curated subset and lags the enum by a few
 device-derived types. The live, machine-readable list of writable
@@ -305,6 +309,57 @@ The response carries per-row outcomes alongside the counts, and the card
 renders the counts, not the status code: rows written and none skipped is
 a success, a mixed result is a warning, and nothing written is a failure
 with the reasons grouped by count.
+
+## 4. Activity files (FIT)
+
+Watches and bike computers record each workout as a FIT file: Garmin,
+Wahoo, Coros, Polar, Suunto, Zwift and most others. The **Activity file
+(FIT)** card in **Settings → Export & Import** takes one such file at a
+time and posts it to `POST /api/import/fit`; a background job reads it
+while the card shows its progress, and the result stays on the card after
+a reload (`GET /api/import/fit/status`).
+
+Accepted files, up to 10 MB:
+
+- a bare `.fit` file;
+- a gzipped `.fit.gz`, as Strava's "Export original" returns for some
+  uploads;
+- the ZIP Garmin Connect's **Export original** writes (open the activity on
+  the website, the gear menu, **Export original**). Upload it as it is; it
+  must hold exactly one `.fit` file.
+
+What a file becomes:
+
+| FIT                                          | HealthLog                                                                                                |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Each session (one per sport in a multisport) | One workout: sport, start, end, distance, energy, average and peak heart rate, climb, pause time         |
+| The record stream (usually once a second)    | The workout's series: heart rate, speed, power and cadence, shown as the heart-rate chart on the workout |
+| The positions in the records                 | The GPS track, only when **Workout routes** is switched on in the privacy settings, stored encrypted     |
+| Laps, power and cadence averages, the device | Kept as the workout's details                                                                            |
+
+The series is capped at 30 000 points. A longer session (a day-long
+race at one record a second) is averaged down evenly so its shape stays.
+Beat-to-beat (R-R) intervals, developer fields from Connect IQ apps, and
+the device's serial number are not stored. A virtual ride or run (Zwift
+and other trainer apps) never keeps a track: its coordinates are invented.
+
+**Nothing arrives twice.** A session that is already here from another
+source, the same sport starting within the duplicate window that the
+workout list uses, is not stored again: the stored workout gains the
+file's heart-rate curve (and track) when it had none. So a run synced from
+Garmin, Apple Health or Strava and then imported from its file stays one
+workout. New workouts carry the source `IMPORT`, and importing the same
+file again, bare or zipped, changes nothing.
+
+**Refused files.** The card says why a file was turned away: not a FIT,
+gzip or ZIP file; a ZIP with no or several `.fit` files; a file whose
+checksum does not match (damaged on the way, export it again); a FIT file
+that is not an activity (a course or a daily monitoring file); or a file
+holding far more messages than any activity (a structural limit checked
+before the file is decoded).
+
+The file is deleted from the server as soon as the import ends. Ten
+uploads a minute per account; one import of any kind runs at a time.
 
 ## Converting a CSV into the import JSON
 

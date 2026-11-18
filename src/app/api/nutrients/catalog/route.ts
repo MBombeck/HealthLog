@@ -2,7 +2,8 @@
  * `GET /api/nutrients/catalog` — the nutrient catalogue as the forms use it.
  *
  * One entry per code: canonical unit, label in the account's language,
- * whether HealthKit may send it (`syncable`), the input units with their
+ * whether the nutrient batch accepts it (`syncable`), whether a supplement's
+ * composition may name it (`ingredient`), the input units with their
  * factor to the canonical unit, and the tolerable upper intake level with its
  * scope and source (or null). Clients build the composition form from this
  * and never convert units themselves.
@@ -27,6 +28,7 @@ export const GET = apiHandler(async () => {
     labelKey: def.labelKey,
     label: nutrientLabel(def.code, user.locale ?? null),
     syncable: def.syncable,
+    ingredient: def.ingredient,
     inputUnits: def.inputUnits.map((u) => ({
       unit: u.unit,
       factorToCanonical: u.factorToCanonical,

@@ -53,6 +53,7 @@ export const NOTIFICATION_TAP_PATHS: Record<SentEventType, string | null> = {
   DAILY_BRIEFING: "/",
   SHARED_RECORD_INTAKE: "/medications",
   BACKUP_HEALTH: "/admin/backups",
+  SEIZURE_CLUSTER: "/seizures",
 };
 
 const MAX_PATH_LENGTH = 512;

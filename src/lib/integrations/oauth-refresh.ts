@@ -3,7 +3,7 @@ import type { Prisma } from "@/generated/prisma/client";
 /**
  * Shared OAuth rotating-refresh-token persistence helper.
  *
- * Fitbit, WHOOP, and Oura all issue ONE-TIME-USE refresh tokens: every refresh
+ * WHOOP and Oura both issue ONE-TIME-USE refresh tokens: every refresh
  * response carries a fresh `refresh_token` that invalidates the one just spent.
  * The naive read → refresh → persist sequence is racy. When two syncs for the
  * same user overlap (a scheduled tick collides with a manual sync, or two

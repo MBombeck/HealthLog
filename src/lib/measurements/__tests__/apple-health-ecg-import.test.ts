@@ -19,6 +19,7 @@ type ArchiveLimits = {
 type ArchiveMember = {
   name: string;
   stream: Readable;
+  refused?: "too_large" | "unsupported";
 };
 
 type NormalizedEcg = {
@@ -171,6 +172,21 @@ async function collectMembers(path: string, limits = LIMITS) {
   return members;
 }
 
+/** One member came back refused, and reading it fails. */
+async function expectRefused(
+  members: Promise<ArchiveMember[]>,
+  reason: "too_large" | "unsupported",
+) {
+  const [member, ...rest] = await members;
+  expect(rest).toEqual([]);
+  expect(member.refused).toBe(reason);
+  await expect(
+    (async () => {
+      for await (const chunk of member.stream) void chunk;
+    })(),
+  ).rejects.toThrow(/refused/);
+}
+
 afterEach(() => {
   for (const dir of tempDirs.splice(0)) {
     rmSync(dir, { recursive: true, force: true });
@@ -239,7 +255,7 @@ describe("Apple Health ECG archive stream — path and resource bounds", () => {
       (header: Buffer, central: boolean) =>
         header.writeUInt16LE(99, central ? 10 : 8),
     ],
-  ] as const)("rejects %s ECG entries", async (_label, mutate) => {
+  ] as const)("refuses %s ECG entries on their own", async (_label, mutate) => {
     const member = "apple_health_export/electrocardiograms/ecg_2026-07-18.csv";
     const path = archivePath({
       "apple_health_export/export.xml": "<HealthData/>",
@@ -251,9 +267,8 @@ describe("Apple Health ECG archive stream — path and resource bounds", () => {
       mutateZipHeaders(fs.readFileSync(path), member, mutate),
     );
 
-    await expect(collectMembers(path)).rejects.toThrow(
-      /encrypted|compression|unsupported/i,
-    );
+    // The member fails; the pass, and any other strip in it, goes on.
+    await expectRefused(collectMembers(path), "unsupported");
   });
 
   it("enforces member-count and ECG-count caps before parsing", async () => {
@@ -275,9 +290,9 @@ describe("Apple Health ECG archive stream — path and resource bounds", () => {
     ).rejects.toThrow(/member|count|limit/i);
   });
 
-  it("rejects declared compression-ratio bombs", async () => {
+  it("refuses declared compression-ratio bombs", async () => {
     const repetitive = `${"0,".repeat(2_000)}\n`;
-    await expect(
+    await expectRefused(
       collectMembers(
         archivePath({
           "apple_health_export/export.xml": "<HealthData/>",
@@ -285,7 +300,8 @@ describe("Apple Health ECG archive stream — path and resource bounds", () => {
         }),
         { ...LIMITS, maxMemberBytes: 10_000, maxCompressionRatio: 2 },
       ),
-    ).rejects.toThrow(/compression|ratio|bomb/i);
+      "too_large",
+    );
   });
 
   it("enforces actual decompressed member bytes even when metadata lies", async () => {
@@ -305,9 +321,10 @@ describe("Apple Health ECG archive stream — path and resource bounds", () => {
     );
     writeFileSync(path, lied);
 
-    await expect(
+    await expectRefused(
       collectMembers(path, { ...LIMITS, maxMemberBytes: 64 }),
-    ).rejects.toThrow(/byte|size|limit/i);
+      "too_large",
+    );
   });
 
   it("enforces the running total across otherwise valid ECG members", async () => {

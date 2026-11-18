@@ -134,7 +134,8 @@ describe("resolveDocumentVisionProvider", () => {
 
     const call = vi.mocked(resolveVisionProvider).mock.calls[0]!;
     expect(call[0]).toBe("u1");
-    const reorder = call[1]!.reorder!;
+    expect(call[1]).toBe("documentAi");
+    const reorder = call[2]!.reorder!;
     // The reorder the document resolver hands down puts a codex-first chain
     // local-first — proving documents never default to the subscription path.
     expect(

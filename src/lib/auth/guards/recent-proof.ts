@@ -9,7 +9,10 @@ import { REPROOF_REQUIRED_CODE, StepUpRequiredError } from "@/lib/api-errors";
 
 import { requireAuth } from "./caller";
 import { resolveBearerElevation } from "./elevation";
-import { MFA_STEP_UP_MAX_AGE_SECONDS } from "./fresh-factor";
+import {
+  canProveFreshFactor,
+  MFA_STEP_UP_MAX_AGE_SECONDS,
+} from "./fresh-factor";
 import type { ErasureAuthContext } from "./fresh-mfa";
 
 /**
@@ -26,6 +29,15 @@ import type { ErasureAuthContext } from "./fresh-mfa";
  *   route the shipped app calls, where the second-factor arm was already
  *   refused before and the other arm must keep working.
  *
+ *   `elevation-if-possession` — the same, but a primary passkey counts as
+ *   something to prove: an account with a second factor OR a passkey presents
+ *   a fresh-factor elevation (a passkey-proved one clears it on a passkey-only
+ *   account), an account holding neither passes on the token. For a mint whose
+ *   result outlives the session (the MCP connector token), where an SSO-only
+ *   account has nothing it could prove in the app and must not be sent to the
+ *   web for it. `hasSecondFactorEnrolled` keeps its narrow meaning; the wider
+ *   question is `canProveFreshFactor(..., "any-possession")`.
+ *
  *   `token` — the token is the proof, as before. Only for routes the shipped
  *   app calls without an elevation, where a refusal would sign the app out (it
  *   reads a 401 outside its known paths as a dead session). Each one is named
@@ -33,7 +45,7 @@ import type { ErasureAuthContext } from "./fresh-mfa";
  *   it later is a visible edit.
  */
 export type RecentProofBearerRule =
-  "elevation" | "elevation-if-enrolled" | "token";
+  "elevation" | "elevation-if-enrolled" | "elevation-if-possession" | "token";
 
 /**
  * The fresh-proof gate in front of the actions that hand the record, or a
@@ -80,6 +92,20 @@ export async function requireRecentProof(options: {
   if (options.bearer === "elevation-if-enrolled" && !enrolled) {
     annotate({ meta: { recent_proof: "bearer_token" } });
     return { ...auth, commitElevation: noop };
+  }
+  if (options.bearer === "elevation-if-possession") {
+    if (
+      !enrolled &&
+      !(await canProveFreshFactor(auth.user, "any-possession"))
+    ) {
+      annotate({ meta: { recent_proof: "bearer_token" } });
+      return { ...auth, commitElevation: noop };
+    }
+    const commitElevation = await resolveBearerElevation(
+      { user: auth.user, apiTokenId: auth.session.id },
+      { freshFactor: true, proofSource: "any-possession" },
+    );
+    return { ...auth, commitElevation };
   }
   const commitElevation = await resolveBearerElevation(
     { user: auth.user, apiTokenId: auth.session.id },

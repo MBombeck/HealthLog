@@ -10,6 +10,8 @@
  *      (multipart POST + status poll).
  *   1b. Health Connect export ZIP — `health-connect-import-card.tsx`
  *      (v1.42; multipart POST + poll of the account's latest job).
+ *   1c. Activity file (.fit, .fit.gz, Garmin "Export original" ZIP) —
+ *      `fit-import-card.tsx` (multipart POST + poll, like Health Connect).
  *   2. Generic JSON import        — `json-import-card.tsx`
  *      (file/paste, client-side parseability guard).
  *   3. CSV import                 — `csv-import-card.tsx`
@@ -28,6 +30,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { AppleHealthImportCard } from "./apple-health-import-card";
 import { HealthConnectImportCard } from "./health-connect-import-card";
+import { FitImportCard } from "./fit-import-card";
 import { JsonImportCard } from "./json-import-card";
 import { CsvImportCard } from "./csv-import-card";
 import { DoseHistoryImportCard } from "./dose-history-import-card";
@@ -53,9 +56,13 @@ export function ImportPanel() {
         title={t("settings.sections.export.import.heading")}
         subtitle={t("settings.sections.export.import.description")}
       />
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {/* Columns follow the space the cards actually get, not the viewport:
+          with the settings rail and the day panel open, a viewport-keyed
+          three-column grid left each card about 150 px wide. */}
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,16rem),1fr))] gap-4">
         <AppleHealthImportCard />
         <HealthConnectImportCard />
+        <FitImportCard />
         <JsonImportCard />
         <CsvImportCard />
         <DoseHistoryImportCard />

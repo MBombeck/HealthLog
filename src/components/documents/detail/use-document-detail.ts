@@ -100,8 +100,14 @@ export function useDocumentDetail({
       (fact) => fact.factType === "OBSERVATION" && fact.status === "APPROVED",
     ).length ?? 0;
   const { user } = useAuth();
-  const { canManageDomain } = useRecordCapabilities();
+  const { canManageDomain, inSharedRecord } = useRecordCapabilities();
+  // Filing, deleting, the AI actions and the staged-facts review: the
+  // owner's, and a managed profile's guardian's (#1403), whose AI work runs
+  // under the profile's own capability.
   const canManageDocuments = canManageDomain("documents");
+  // What stays with an owner who signs in, a guardian's grant included:
+  // share links and the owner's own automatic-reading preference.
+  const ownsVault = canManageDocuments && !inSharedRecord;
   const labsModuleEnabled = user?.modules?.labs !== false;
 
   const episodes = useIllnessEpisodes(true);
@@ -211,6 +217,7 @@ export function useDocumentDetail({
     linkSeedFresh,
     labFactCount,
     canManageDocuments,
+    ownsVault,
     labsModuleEnabled,
     episodes,
     mutationError,

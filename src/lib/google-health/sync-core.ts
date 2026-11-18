@@ -65,8 +65,7 @@ import {
 } from "./response-classifier";
 
 /**
- * The status-ledger key for this integration. Distinct from the classic Fitbit
- * `"fitbit"` key so the two coexisting providers keep independent status rows.
+ * The status-ledger key for this integration.
  */
 export const GOOGLE_HEALTH_INTEGRATION_KEY = "google-health";
 

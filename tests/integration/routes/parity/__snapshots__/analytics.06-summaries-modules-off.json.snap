@@ -648,6 +648,20 @@
           "avg30LastMonth": null,
           "avg30LastYear": null
         },
+        "HYPERTENSION_EVENT": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
         "RECOVERY_SCORE": {
           "count": 0,
           "latest": null,
@@ -1277,6 +1291,7 @@
         "LOW_HEART_RATE_EVENT": null,
         "WALKING_STEADINESS_EVENT": null,
         "BREATHING_DISTURBANCE_EVENT": null,
+        "HYPERTENSION_EVENT": null,
         "RECOVERY_SCORE": null,
         "STRESS_SCORE": null,
         "STRAIN_SCORE": null,

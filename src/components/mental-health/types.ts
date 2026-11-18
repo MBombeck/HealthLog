@@ -48,6 +48,8 @@ export interface AssessmentDetail extends AssessmentRow {
   /** The unscored PHQ-9 functional follow-up, when it was answered. */
   functionalDifficulty: number | null;
   itemsUnavailable: boolean;
+  /** `WEB` | `IOS` | `APPLE_HEALTH`; an Apple Health row may be score only. */
+  source: string;
 }
 
 export interface CrisisSet {

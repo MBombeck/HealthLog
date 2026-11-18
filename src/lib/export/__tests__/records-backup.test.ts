@@ -75,6 +75,7 @@ function buildMockPrisma() {
     },
     biomarkerAlias: { findMany: vi.fn().mockResolvedValue([]) },
     biomarkerMerge: { findMany: vi.fn().mockResolvedValue([]) },
+    labResultImportKey: { findMany: vi.fn().mockResolvedValue([]) },
     illnessEpisode: {
       findMany: vi.fn().mockResolvedValue([
         {
@@ -473,6 +474,7 @@ describe("buildRecordsBackupSection", () => {
 
     expect(counts).toEqual({
       labResults: 1,
+      labResultImportKeys: 0,
       biomarkers: 1,
       illnessEpisodes: 2,
       illnessDayLogs: 1,

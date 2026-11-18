@@ -1,11 +1,11 @@
 /**
- * `GET /api/nutrients/daily?nutrient=<code>&days=N` — per-day summed
- * series for one nutrient, plus its resolved EFSA reference (v1.29).
+ * `GET /api/nutrients/daily?nutrient=<code>&days=N` — per-day series for one
+ * nutrient, plus its resolved dietary reference (v1.29) and the target the
+ * person set for it (#1402).
  *
- * Feeds the `/insights/nutrients` hydration + caffeine charts: a dense
- * day-bucketed series (one row per calendar day in the window, 0 for a
- * day with no logged data) summed ACROSS sources — a day can carry an
- * APPLE_HEALTH row and a MANUAL row since migration 0249, and the
+ * Feeds the `/insights/nutrients` charts: a dense day-bucketed series (one row
+ * per calendar day in the window, 0 for a day with no logged data) folded
+ * across sources by `foldNutrientDay` — a day can carry several rows, and the
  * chart shows one honest bar per day. The window is anchored to the
  * caller's own local "today" (`User.timezone`), not a UTC floor —
  * unlike the coarser window on `GET /api/nutrients`, a chart with a
@@ -51,16 +51,15 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const { nutrient, days } = parsed.data;
   const definition = NUTRIENT_CATALOG[nutrient];
 
-  // Summed across sources within a day, split by source and judged against
-  // the upper intake level in `readNutrientDaily` (v1.43), the same read the
-  // overview and the MCP tool use.
+  // Folded across sources within a day, split by source and judged against
+  // the upper intake level in `readNutrientDaily`, the same read the overview
+  // and the MCP tool use.
   const userTz = user.timezone || DEFAULT_TIMEZONE;
-  const { days: daySeries, rowCount } = await readNutrientDaily(
-    user.id,
-    userTz,
-    nutrient,
-    days,
-  );
+  const {
+    days: daySeries,
+    rowCount,
+    personalTarget,
+  } = await readNutrientDaily(user.id, userTz, nutrient, days);
 
   const sex = binaryReferenceSex(user.gender);
   const reference = resolveNutrientReference(nutrient, sex);
@@ -76,6 +75,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     windowDays: days,
     days: daySeries,
     reference,
+    personalTarget,
     upperLimit: definition.upperLimit,
   });
 });

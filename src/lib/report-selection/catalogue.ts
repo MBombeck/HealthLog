@@ -49,6 +49,7 @@ export type StructuredLeafId =
   | "WORKOUTS"
   | "ALLERGIES"
   | "ILLNESS_EPISODES"
+  | "SEIZURES"
   | "VISITS"
   | "SURGICAL_HISTORY"
   | "IMMUNIZATIONS"
@@ -122,6 +123,7 @@ export const MEASUREMENT_LEAF_GROUP: Record<MeasurementType, ReportGroupId> = {
   IRREGULAR_RHYTHM_NOTIFICATION: "cardio",
   HIGH_HEART_RATE_EVENT: "cardio",
   LOW_HEART_RATE_EVENT: "cardio",
+  HYPERTENSION_EVENT: "cardio",
   AFIB_BURDEN: "cardio",
 
   // ── body ──
@@ -226,6 +228,7 @@ export const STRUCTURED_LEAF_GROUP: Record<StructuredLeafId, ReportGroupId> = {
   WORKOUTS: "activity",
   ALLERGIES: "history",
   ILLNESS_EPISODES: "history",
+  SEIZURES: "history",
   VISITS: "history",
   SURGICAL_HISTORY: "history",
   IMMUNIZATIONS: "history",
@@ -250,6 +253,7 @@ export const STRUCTURED_LEAF_LABEL_KEYS: Record<StructuredLeafId, string> = {
   WORKOUTS: "reportSelection.leafWorkouts",
   ALLERGIES: "reportSelection.leafAllergies",
   ILLNESS_EPISODES: "reportSelection.leafIllnessEpisodes",
+  SEIZURES: "reportSelection.leafSeizures",
   VISITS: "reportSelection.leafVisits",
   SURGICAL_HISTORY: "reportSelection.leafSurgicalHistory",
   IMMUNIZATIONS: "reportSelection.leafImmunizations",
@@ -356,6 +360,9 @@ export const LEAF_MODULE: Partial<Record<ReportLeafId, ModuleKey>> = {
   MOOD: "mood",
   CYCLE: "cycle",
   ILLNESS_EPISODES: "illness",
+  // The seizure diary is its own opt-in module; the leaf and the module
+  // exclude independently, like `ILLNESS_EPISODES`.
+  SEIZURES: "seizures",
   MEDICATION_LIST: "medications",
   MEDICATION_ADMINISTRATIONS: "medications",
   MEDICATION_COMPLIANCE: "medications",

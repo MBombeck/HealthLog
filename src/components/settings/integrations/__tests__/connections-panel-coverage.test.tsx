@@ -92,7 +92,6 @@ function fullEnvelope() {
 const CALLBACK_URLS = {
   withings: "https://app.example/api/withings/callback",
   whoop: "https://app.example/api/whoop/callback",
-  fitbit: "https://app.example/api/fitbit/callback",
   "google-health": "https://app.example/api/google-health/callback",
   polar: "https://app.example/api/polar/callback",
   oura: "https://app.example/api/oura/callback",
@@ -179,40 +178,5 @@ describe("ConnectionsPanel — every envelope entry surfaces", () => {
       ],
     };
     expect(render()).not.toContain('data-testid="integration-fallback-row"');
-  });
-});
-
-describe("ConnectionsPanel — the Fitbit card after the turndown", () => {
-  const withFitbit = (retirement: Record<string, unknown>) => ({
-    threshold: 3,
-    integrations: fullEnvelope().integrations.map((e) =>
-      e.integration === "fitbit"
-        ? { ...e, connected: false, configured: false, retirement }
-        : e,
-    ),
-  });
-
-  it("shows no Fitbit card when the server does not offer it", () => {
-    envelope = withFitbit({
-      endsOn: "2026-10-30",
-      ended: true,
-      successor: "google-health",
-      offered: false,
-    });
-    const html = render();
-    expect(html).not.toContain('id="fitbit"');
-    expect(html).not.toContain('data-testid="fitbit-retirement-notice"');
-  });
-
-  it("keeps the card and its notice for an account that had Fitbit", () => {
-    envelope = withFitbit({
-      endsOn: "2026-10-30",
-      ended: true,
-      successor: "google-health",
-      offered: true,
-    });
-    const html = render();
-    expect(html).toContain('id="fitbit"');
-    expect(html).toContain('data-testid="fitbit-retirement-notice"');
   });
 });

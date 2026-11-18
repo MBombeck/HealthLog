@@ -80,6 +80,7 @@ export const MEASUREMENT_TYPE_COLORS: Record<string, string> = {
     "bg-chart-3/10 text-chart-3 dark:bg-chart-3/20",
   HIGH_HEART_RATE_EVENT: "bg-chart-3/10 text-chart-3 dark:bg-chart-3/20",
   LOW_HEART_RATE_EVENT: "bg-chart-3/10 text-chart-3 dark:bg-chart-3/20",
+  HYPERTENSION_EVENT: "bg-chart-3/10 text-chart-3 dark:bg-chart-3/20",
   WALKING_STEADINESS_EVENT: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
   BREATHING_DISTURBANCE_EVENT: "bg-chart-5/10 text-chart-5 dark:bg-chart-5/20",
   // ── v1.10.0 — computed scores (WX-C) ──

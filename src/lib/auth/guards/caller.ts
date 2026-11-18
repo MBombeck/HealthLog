@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 
 import { getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
+import { stampDeviceLastSeen } from "@/lib/auth/device-last-seen";
 import {
   resolveBearerToken,
   BearerAuthError,
@@ -206,6 +207,11 @@ export async function authenticateBearer(
       );
     }
   }
+
+  // #179 — the app's sign-in token keeps its device's `lastSeen` fresh, at
+  // most once an hour and fire-and-forget. Only a wildcard token is a native
+  // sign-in token; a narrow one belongs to no device.
+  if (permissions.includes("*")) stampDeviceLastSeen(user.id, tokenId);
 
   // No per-request success audit row. The polling iOS client drove a
   // constant INSERT + pool checkout on every authenticated Bearer request; the

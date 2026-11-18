@@ -114,3 +114,38 @@ describe("buildBiomarkerBody: the unit on an edit", () => {
     ).toEqual({ name: "LDL", unit: "1" });
   });
 });
+
+describe("a no-unit marker given a unit in the editor", () => {
+  const initial = {
+    unit: "",
+    lowerBound: 10,
+    upperBound: 20,
+    panel: null,
+    context: null,
+  };
+  const fields = {
+    name: "Ratio",
+    unit: "mg/dL",
+    lower: 10,
+    upper: 20,
+    panel: "",
+    context: "",
+  };
+
+  it("does not send the unitless bounds back unchanged", () => {
+    // They were read beside a text result with no unit; the server drops
+    // what the edit does not set, as the first numeric import does.
+    const body = buildBiomarkerBody(fields, initial);
+    expect(body).toEqual({ name: "Ratio", unit: "mg/dL" });
+  });
+
+  it("sends a bound the person typed in the new unit", () => {
+    const body = buildBiomarkerBody({ ...fields, upper: 150 }, initial);
+    expect(body).toEqual({ name: "Ratio", unit: "mg/dL", upperBound: 150 });
+  });
+
+  it("keeps sending them while the marker stays without a unit", () => {
+    const body = buildBiomarkerBody({ ...fields, unit: "1" }, initial);
+    expect(body).toEqual({ name: "Ratio", lowerBound: 10, upperBound: 20 });
+  });
+});

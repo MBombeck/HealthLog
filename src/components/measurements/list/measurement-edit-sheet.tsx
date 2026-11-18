@@ -28,6 +28,7 @@ import { Label } from "@/components/ui/label";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { useTranslations } from "@/lib/i18n/context";
 
+import { GlucoseContextSelect } from "../glucose-context-select";
 import { MEASUREMENT_TYPE_LABEL_KEYS as TYPE_LABEL_KEYS } from "../measurement-list-meta";
 
 import { MAX_COMMENT_LENGTH, toDateTimeLocalValue } from "./list-model";
@@ -36,7 +37,7 @@ import type { MeasurementRowDisplay } from "./use-measurement-row-display";
 
 /**
  * The edit sheet (a bottom sheet on phones): value in the display unit,
- * timestamp, note, and the delete behind the overflow menu, with the
+ * the meal context of a blood glucose reading, timestamp, note, and the delete behind the overflow menu, with the
  * actions portalled into the sheet's pinned footer.
  */
 export function MeasurementEditSheet({
@@ -64,6 +65,8 @@ export function MeasurementEditSheet({
     setEditMeasuredAt,
     editNotes,
     setEditNotes,
+    editGlucoseContext,
+    setEditGlucoseContext,
     editErrorId,
     editFooterEl,
     deleteMutation,
@@ -113,6 +116,22 @@ export function MeasurementEditSheet({
               />
               <FieldError id={editValueErrorId} message={editValueError} />
             </div>
+
+            {editing.type === "BLOOD_GLUCOSE" && (
+              <div className="space-y-2">
+                <Label htmlFor="edit-glucose-context">
+                  {t("measurements.glucoseContext")}
+                </Label>
+                <GlucoseContextSelect
+                  id="edit-glucose-context"
+                  value={editGlucoseContext}
+                  onValueChange={setEditGlucoseContext}
+                  // A sensor or MCP reading arrives without a context, and
+                  // saving its note must not force one onto it.
+                  allowNone
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="edit-measuredAt">

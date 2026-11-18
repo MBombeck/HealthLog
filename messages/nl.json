@@ -58,7 +58,8 @@
     "errorIdCopied": "Fout-ID gekopieerd",
     "readThrottled": "Er zijn net te veel verzoeken, dus probeer het later opnieuw.",
     "sessionEnded": "Je sessie is verlopen, dus meld je opnieuw aan om verder te gaan.",
-    "signIn": "Aanmelden"
+    "signIn": "Aanmelden",
+    "yes": "Ja"
   },
   "apiErrors": {
     "measurement": {
@@ -249,7 +250,24 @@
         "invalid": "Het antwoord van de passkey kon niet worden gelezen. Probeer het opnieuw."
       }
     },
-    "oidc_only": "Deze server staat alleen single sign-on toe. Ga in plaats daarvan verder met je identiteitsprovider."
+    "oidc_only": "Deze server staat alleen single sign-on toe. Ga in plaats daarvan verder met je identiteitsprovider.",
+    "seizures": {
+      "disabled": "Het aanvalsdagboek staat uit voor dit dossier.",
+      "event": {
+        "notFound": "Deze aanval bestaat niet meer."
+      },
+      "rescue": {
+        "notFound": "Deze nooddosis bestaat niet meer.",
+        "medicationNotFound": "Dit medicijn bestaat niet meer.",
+        "medicationRequired": "Kies het medicijn dat is gegeven.",
+        "notAsNeeded": "Noodmedicatie moet een zo-nodig-medicijn zijn."
+      },
+      "type": {
+        "inUse": "Onder dit type zijn aanvallen vastgelegd. Archiveer het in plaats daarvan.",
+        "limit": "Er zijn al 12 aanvalstypen. Archiveer er een om een nieuw type toe te voegen.",
+        "notFound": "Dit aanvalstype bestaat niet meer."
+      }
+    }
   },
   "doctorReport": {
     "title": "Gezondheidsrapport",
@@ -574,7 +592,9 @@
       "symptom": "Symptoom",
       "symptomDescription": "Een van je eigen symptomen, met de ernst",
       "lifeEventDescription": "Een verhuizing, een geboorte, een nieuwe baan",
-      "lifeEvent": "Levensgebeurtenis"
+      "lifeEvent": "Levensgebeurtenis",
+      "seizure": "Aanval",
+      "seizureDescription": "Start de timer of leg een niet getimede aanval vast"
     },
     "cycle": "Cyclus",
     "labs": "Labwaarden",
@@ -584,7 +604,8 @@
     "documents": "Documenten",
     "vaccinations": "Vaccinaties",
     "mentalWellbeing": "Mentaal welzijn",
-    "timeline": "Tijdlijn"
+    "timeline": "Tijdlijn",
+    "seizures": "Aanvallen"
   },
   "auth": {
     "login": "Inloggen",
@@ -626,7 +647,9 @@
       "errorLinkRequired": "Er bestaat hier al een account met dit e-mailadres. Log daar één keer in met het wachtwoord of de passkey om het aan single sign-on te koppelen."
     },
     "native": {
-      "signingInToApp": "Inloggen bij de HealthLog-app"
+      "signingInToApp": "Inloggen bij de HealthLog-app",
+      "returnTitle": "Terug naar de app",
+      "returnBody": "Het inloggen gaat verder in de HealthLog-app. Is die niet geopend, ga dan terug naar de app en start het inloggen daar opnieuw. Je kunt deze pagina sluiten."
     },
     "mfa": {
       "title": "Tweestapsverificatie",
@@ -864,7 +887,8 @@
     },
     "greetingOnly": "{greeting}.",
     "welcomeNew": "Welkom.",
-    "welcomeNewWithName": "Welkom, {name}."
+    "welcomeNewWithName": "Welkom, {name}.",
+    "quickAddSeizure": "Aanval vastleggen"
   },
   "measurements": {
     "title": "Metingen",
@@ -925,6 +949,7 @@
     "glucoseContextPostprandial": "Na de maaltijd (2 u na het eten)",
     "glucoseContextRandom": "Willekeurig / tussendoor",
     "glucoseContextBedtime": "Voor het slapengaan",
+    "glucoseContextNone": "Niet opgegeven",
     "unitHours": "uur",
     "unitSteps": "stappen",
     "sourceManual": "Handmatig",
@@ -981,6 +1006,7 @@
     "typeIrregularRhythmNotification": "Melding onregelmatig ritme",
     "typeHighHeartRateEvent": "Melding hoge hartslag",
     "typeLowHeartRateEvent": "Melding lage hartslag",
+    "typeHypertensionEvent": "Melding hoge bloeddruk",
     "typeWalkingSteadinessEvent": "Waarschuwing loopstabiliteit",
     "typeBreathingDisturbanceEvent": "Ademhalingsstoornis",
     "typeRecoveryScore": "Herstelscore",
@@ -1413,6 +1439,7 @@
       "openIllness": "Openen"
     },
     "sourceNotification": "Melding",
+    "sourceAppleHealth": "Apple Health",
     "tagCatalogLoadError": "De tags konden niet worden geladen."
   },
   "medications": {
@@ -3926,7 +3953,8 @@
         "sleepTrendsLink": "Slaaptrends",
         "moodHistoryLink": "Stemmingsgeschiedenis",
         "previousSessionLink": "Vorige sessie",
-        "insightTitle": "Activiteitsinzicht"
+        "insightTitle": "Activiteitsinzicht",
+        "sourceFitFile": "FIT-bestand"
       },
       "sport": {
         "walking": "Wandelen",
@@ -4815,6 +4843,7 @@
         "irregularRhythm": "Melding onregelmatig ritme",
         "highHeartRate": "Melding hoge hartslag",
         "lowHeartRate": "Melding lage hartslag",
+        "hypertension": "Melding hoge bloeddruk",
         "walkingSteadiness": "Waarschuwing loopstabiliteit",
         "breathingDisturbance": "Ademhalingsstoornis tijdens de slaap"
       },
@@ -5059,7 +5088,8 @@
         "afternoon": "Vanmiddag een aanhoudende periode met een verhoogde hartslag in rust, mogelijk wat spanning.",
         "evening": "Vanavond een aanhoudende periode met een verhoogde hartslag in rust, mogelijk wat spanning.",
         "night": "Afgelopen nacht een aanhoudende periode met een verhoogde hartslag in rust, mogelijk wat spanning."
-      }
+      },
+      "emptyOutsideWorkouts": "Buiten trainingen zijn er te weinig hartslagmetingen om het verloop van deze dag te tonen."
     },
     "navEcg": "ECG",
     "sectionLoadError": "Deze sectie kon niet worden geladen.",
@@ -5493,7 +5523,7 @@
       "medicationDescription": "Houd je therapietrouw bij en krijg herinneringen precies wanneer je ze nodig hebt.",
       "medicationCta": "Medicijn toevoegen",
       "dataSourceTitle": "Een gegevensbron koppelen (optioneel)",
-      "dataSourceDescription": "Synchroniseer automatisch gewicht, bloeddruk, slaap en meer vanuit Withings, WHOOP, Oura, Polar, Nightscout, Fitbit of Apple Health.",
+      "dataSourceDescription": "Synchroniseer automatisch gewicht, bloeddruk, slaap en meer vanuit Withings, WHOOP, Oura, Polar, Nightscout, Google Health of Apple Health.",
       "dataSourceCta": "Koppelen",
       "notificationsTitle": "Meldingen instellen",
       "notificationsDescription": "Kies hoe HealthLog je herinneringen stuurt: Telegram, ntfy of Web Push.",
@@ -5639,6 +5669,15 @@
             "labsChanges": "Veranderingen in labuitslagen",
             "ecg": "ECG"
           }
+        },
+        "documents": {
+          "title": "Documenten",
+          "autoAiRead": "Nieuwe documenten automatisch met AI lezen",
+          "honesty": "Aan betekent dat elk document dat in dit profiel wordt geüpload naar de AI-provider van de instantie gaat om gelezen, beschreven en doorzoekbaar gemaakt te worden, zonder tik per document, en documenten die er al zijn zonder samenvatting gaan ook (tot 200 bij elke keer aanzetten). Aanzetten legt de toestemming van dit profiel vast om zijn documenten te laten lezen. De AI-instellingen van het profiel gelden; je eigen AI-provider wordt nooit gebruikt. Standaard uit.",
+          "pageTitle": "Documenten en AI",
+          "pageSubtitle": "Of AI de documenten leest die in het profiel van {name} worden geüpload.",
+          "noProvider": "Deze server heeft geen AI-aanbieder die de documenten van {name} kan lezen, dus de schakelaar blijft uit. Wie de server beheert, kan er een instellen.",
+          "aiOff": "AI staat uit voor het profiel van {name}, dus er zou geen document worden gelezen."
         }
       },
       "unavailableTitle": "Niet beschikbaar in dit gedeelde dossier",
@@ -5809,7 +5848,7 @@
         "subtitle": "Bepaal welke bron voorrang krijgt als twee bronnen dezelfde meetwaarde melden.",
         "nutrients": {
           "title": "Gesynchroniseerde inname van voedingsstoffen",
-          "description": "Dagtotalen over de afgelopen {days} dagen: wat Apple Health heeft gesynchroniseerd plus de supplementen die je hebt ingenomen.",
+          "description": "Dagtotalen over de afgelopen {days} dagen: wat Apple Health of een voedingsapp heeft gesynchroniseerd plus de supplementen die je hebt ingenomen.",
           "empty": "Er zijn nog geen gegevens over voedingsstoffen gesynchroniseerd.",
           "latest": "{amount} {unit} op {date}",
           "daysWithData": "{count} van {days} dagen",
@@ -5871,7 +5910,7 @@
         },
         "import": {
           "heading": "Importeren",
-          "description": "Breng gegevens naar HealthLog vanuit een Apple Health-export, een JSON-bestand of een CSV. Bij het importeren worden rijen die al bestaan overgeslagen, dus een import opnieuw uitvoeren is veilig.",
+          "description": "Breng gegevens naar HealthLog vanuit Apple Health, Health Connect, het activiteitsbestand van een horloge, een JSON-bestand of een CSV. Bij het importeren worden rijen die al bestaan overgeslagen, dus een import opnieuw uitvoeren is veilig.",
           "charCount": "{used} / {max} tekens",
           "appleHealth": {
             "title": "Apple Health",
@@ -5890,11 +5929,19 @@
             "failureInsufficientMemory": "De geheugenlimiet van de server is te laag voor een archief van deze grootte. Vraag de beheerder van de server om de heap-limiet van Node.js te verhogen (NODE_OPTIONS=--max-old-space-size) en upload de export daarna opnieuw.",
             "rowsImported": "Tot nu toe {count} rijen geïmporteerd",
             "doneSummary": "Klaar: {imported} van {read} records geïmporteerd, {skipped} klinische records overgeslagen.",
+            "doneSummaryAuxOnly": "Klaar: niets nieuws in de {read} records, maar de labuitslagen of ECG's hieronder zijn geïmporteerd.",
             "doneNothing": "Er is niets uit dat archief geïmporteerd: 0 van {read} records zijn opgeslagen.",
             "writtenByHealthLogOne": "{count} record dat HealthLog zelf naar Apple Health had geschreven, is weggelaten, omdat het al in je gegevens staat.",
             "writtenByHealthLogOther": "{count} records die HealthLog zelf naar Apple Health had geschreven, zijn weggelaten, omdat ze al in je gegevens staan.",
             "writtenByHealthLogFew": "{count} records die HealthLog zelf naar Apple Health had geschreven, zijn weggelaten, omdat ze al in je gegevens staan.",
-            "ecgResult": "ECG's: {discovered} gevonden, {imported} geïmporteerd, {updated} bijgewerkt, {skipped} overgeslagen, {failed} mislukt. Mislukte ECG's maken ondersteunde records die uit export.xml zijn geïmporteerd niet ongedaan.",
+            "ecgResult": "ECG's: {discovered} gevonden, {imported} geïmporteerd, {updated} bijgewerkt, {skipped} overgeslagen, {failed} mislukt.",
+            "ecgFailedNote": "Mislukte ECG's maken ondersteunde records die uit export.xml zijn geïmporteerd niet ongedaan.",
+            "labsResult": "Labuitslagen uit medische dossiers: {discovered} gevonden, {imported} geïmporteerd, {duplicate} al aanwezig, {skipped} overgeslagen, {failed} mislukt.",
+            "labsFailedNote": "Een mislukte uitslag gooit verder niets uit het archief weg.",
+            "labsMarkersCreatedOne": "{count} nieuwe marker toegevoegd aan Labwaarden.",
+            "labsMarkersCreatedOther": "{count} nieuwe markers toegevoegd aan Labwaarden.",
+            "labsMarkersCreatedFew": "{count} nieuwe markers toegevoegd aan Labwaarden.",
+            "viewInLabs": "Bekijken in Labwaarden",
             "estimateWarning": "Cumulatieve totalen voor {count} dag(en) zijn geschat op basis van de grootste bron in de export. De eigen statistieken van Apple Health blijven leidend.",
             "phase": {
               "queued": "In de wachtrij…",
@@ -5917,7 +5964,7 @@
             "fileInputLabel": "Kies een JSON-bestand om te importeren",
             "schemaHint": "Twee arrays: measurements en moodEntries.",
             "docsLink": "Bekijk het schema en een voorbeeld.",
-            "uploadFile": "Bestand uploaden",
+            "uploadFile": "Bestand kiezen",
             "downloadExample": "Voorbeeld downloaden",
             "import": "Importeren",
             "invalidJson": "Dat is geen geldige JSON. Controleer de syntaxis en probeer het opnieuw.",
@@ -5940,7 +5987,7 @@
             "fileInputLabel": "Kies een CSV-bestand om te importeren",
             "schemaHint": "Kolommen: type, value, unit, measuredAt (met tijdzoneverschil), en optioneel glucoseContext, notes, externalId.",
             "docsLink": "Bekijk het kolomschema en een voorbeeld.",
-            "uploadFile": "Bestand uploaden",
+            "uploadFile": "Bestand kiezen",
             "downloadExample": "Voorbeeld downloaden",
             "preview": "Voorbeeld",
             "import": "Importeren",
@@ -6037,7 +6084,7 @@
           "healthConnect": {
             "title": "Health Connect-export",
             "description": "Importeer het ZIP-bestand dat de Health Connect-app op Android aanmaakt wanneer je je gegevens exporteert.",
-            "choose": "ZIP-bestand kiezen",
+            "choose": "Bestand kiezen",
             "uploading": "Uploaden…",
             "uploadFailed": "Het uploaden is mislukt. Probeer het opnieuw.",
             "tooLarge": "Het bestand is groter dan deze server accepteert.",
@@ -6075,6 +6122,53 @@
               "tooLarge": "De export is groter dan deze server accepteert.",
               "stagingMissing": "Het geüploade bestand stond niet meer op de server. Upload het opnieuw.",
               "interrupted": "De import is onderbroken doordat de server opnieuw is gestart. Upload het bestand opnieuw."
+            }
+          },
+          "fit": {
+            "title": "Activiteitsbestand (FIT)",
+            "description": "Importeer een training uit het FIT-bestand van een horloge of fietscomputer, zoals Garmin, Wahoo, Coros of Polar.",
+            "choose": "Bestand kiezen",
+            "uploading": "Uploaden…",
+            "uploadFailed": "Het uploaden is mislukt. Probeer het opnieuw.",
+            "tooLarge": "Het bestand is groter dan 10 MB.",
+            "rateLimited": "Te veel uploads in korte tijd. Wacht een minuut en probeer het opnieuw.",
+            "busy": "Er loopt al een import voor je account. Wacht tot die klaar is.",
+            "failed": "De import is mislukt. Probeer het opnieuw.",
+            "doneSummary": "Het activiteitsbestand is geïmporteerd.",
+            "doneNothing": "De import is klaar, maar er was niets nieuws toe te voegen.",
+            "dropLabel": "Zet het activiteitsbestand hier neer",
+            "dropHint": "of klik om het te kiezen: een .fit-, .fit.gz- of .zip-bestand tot 10 MB.",
+            "fileInputLabel": "Activiteitsbestand",
+            "privacyNote": "Het bestand wordt van de server verwijderd zodra de import klaar is. Een training die hier al is via Garmin, Apple Gezondheid of een andere app wordt niet dubbel toegevoegd: die krijgt de hartslagcurve uit het bestand als hij er nog geen had. Het GPS-spoor wordt alleen bewaard als Trainingsroutes aan staat. Hetzelfde bestand opnieuw uploaden verandert niets.",
+            "steps": {
+              "garmin": "Garmin Connect: open de activiteit op de website, kies het tandwielmenu en daarna Origineel exporteren. Upload het ZIP-bestand zoals het is.",
+              "other": "Andere apps en apparaten: exporteer de activiteit als FIT-bestand (.fit of .fit.gz) en upload het hier."
+            },
+            "phase": {
+              "queued": "Wacht op start",
+              "parsing": "Bestand wordt gelezen",
+              "upserting": "Training wordt opgeslagen"
+            },
+            "result": {
+              "imported": "Nieuwe trainingen",
+              "merged": "Aangevuld bij bestaande trainingen",
+              "alreadyPresent": "Al aanwezig",
+              "sessionsSkipped": "Sessies die niet gelezen konden worden",
+              "withSeries": "Met hartslagcurve",
+              "withRoute": "Met GPS-spoor"
+            },
+            "failure": {
+              "unsupportedFile": "Dit is geen activiteitsbestand. Kies een .fit-, .fit.gz- of .zip-bestand.",
+              "archiveInvalid": "Het ZIP-bestand moet precies één .fit-bestand bevatten en kon niet gelezen worden.",
+              "tooLarge": "Het bestand is groter dan deze server accepteert.",
+              "notFit": "Dit bestand is geen FIT-bestand.",
+              "crcMismatch": "Het bestand is beschadigd: de controlesom klopt niet. Exporteer het opnieuw.",
+              "malformed": "Het bestand is beschadigd of onvolledig en kon niet gelezen worden.",
+              "tooComplex": "Het bestand bevat veel meer gegevens dan een activiteit en is niet gelezen.",
+              "notActivity": "Dit FIT-bestand is geen activiteit (misschien een parcours of een dagoverzicht). Kies het bestand van één training.",
+              "noSession": "Het bestand bevat geen leesbare training.",
+              "stagingMissing": "Het geüploade bestand stond niet meer op de server. Upload het opnieuw.",
+              "interrupted": "De import werd onderbroken door een herstart van de server. Upload het bestand opnieuw."
             }
           }
         },
@@ -6481,7 +6575,8 @@
           "anthropic": "Anthropic (Claude)",
           "local": "Lokaal model",
           "openai-compatible": "OpenAI-compatibele gateway",
-          "admin-openai": "OpenAI van beheerder"
+          "admin-openai": "OpenAI van beheerder",
+          "admin-codex": "Gedeelde ChatGPT van de server"
         },
         "title": "Terugvalketen",
         "description": "Als de actieve provider faalt, probeert HealthLog de volgende ingeschakelde provider in deze volgorde.",
@@ -6496,6 +6591,49 @@
         "resetDefaults": "Standaardwaarden herstellen",
         "resetConfirmTitle": "Keten terugzetten naar standaard?",
         "resetConfirmBody": "De keten wordt teruggezet naar Codex → OpenAI → Anthropic → Lokaal → OpenAI van beheerder. Je opgeslagen inloggegevens blijven onaangeroerd."
+      },
+      "namedChains": {
+        "title": "Ketens per taak",
+        "description": "Geef een taak een eigen providerketen; taken op Standaard houden hun gebruikelijke regels.",
+        "empty": "Nog geen ketens. Elke taak volgt de terugvalketen.",
+        "newChain": "Nieuwe keten",
+        "newChainName": "Keten {n}",
+        "nameLabel": "Naam van de keten",
+        "nameRequired": "Elke keten heeft een naam nodig.",
+        "nameTaken": "Twee ketens kunnen niet dezelfde naam hebben.",
+        "defaultBadge": "Standaard",
+        "makeDefault": "Als standaard",
+        "deleteChain": "Keten verwijderen",
+        "deleteConfirmTitle": "‘{name}’ verwijderen?",
+        "deleteConfirmBody": "De keten wordt verwijderd bij het opslaan. Je providers en sleutels blijven zoals ze zijn.",
+        "deleteConfirmBodyUsed": "Taken die deze keten gebruiken ({count}) gaan bij het opslaan terug naar Standaard. Is het de standaardketen, dan neemt de terugvalketen het weer over. Je providers en sleutels blijven zoals ze zijn.",
+        "bindingHint": "Met één provider is de keten een vaste binding: kan die niet antwoorden, dan stopt de taak in plaats van een andere provider te proberen.",
+        "bindingShort": "Vast aan deze provider, geen terugval.",
+        "egressLocal": "Blijft op deze machine",
+        "egressExternal": "Verlaat deze machine",
+        "notSetUp": "Nog niet ingesteld",
+        "defaultChainLabel": "Standaardketen",
+        "defaultChainHint": "Taken op Standaard volgen deze keten. Hun gebruikelijke regels blijven gelden: documenten proberen eerst een lokaal model.",
+        "tasksHeading": "Taken",
+        "tasksHint": "Kies de keten voor elke taak. Onder een taak met een eigen keten staan de aanbieders die ze probeert, op volgorde.",
+        "taskDefault": "Standaard",
+        "save": "Ketens opslaan",
+        "saved": "Ketens opgeslagen",
+        "saveFailed": "Opslaan van de ketens mislukt",
+        "capabilities": {
+          "documentAi": "Documenten lezen",
+          "labsOcr": "Labuitslagen scannen",
+          "supplementLabel": "Etiketten van supplementen lezen",
+          "medicationExtract": "Medicijnen uit tekst aanmaken",
+          "coach": "Coach",
+          "aboutMeQuestions": "Vragen over jou",
+          "briefing": "Dagelijkse briefing",
+          "periodNarrative": "Week- en maandoverzichten",
+          "statusText": "Statusnotities",
+          "workoutInsights": "Trainingsnotities",
+          "reactionLines": "Reacties op nieuwe metingen"
+        },
+        "tasksNeedChain": "Maak hierboven een keten om een taak eigen aanbieders te geven. Tot dan volgt elke taak de standaard."
       },
       "activeProviderHeading": "Actieve provider",
       "activeProviderLabel": "Provider instellen",
@@ -6835,31 +6973,15 @@
       "generic": "Onbekende fout bij het koppelen. Start de koppeling opnieuw.",
       "already_linked": "Dit WHOOP-account is al gekoppeld aan een ander HealthLog-profiel. Log bij WHOOP in met het account van dit profiel, of ontkoppel het eerst van het andere profiel."
     },
-    "fitbit": "Fitbit",
-    "fitbitTag": "Fitbit & Pixel",
-    "fitbitDescription": "Koppel Fitbit om de vitale gegevens van je Fitbit en Pixel Watch te synchroniseren: gewicht, hartslag en meer.",
-    "fitbitExperimentalBadge": "Experimenteel",
-    "fitbitCredentials": "API-inloggegevens",
-    "fitbitClientId": "Client-ID",
-    "fitbitClientSecret": "Clientgeheim",
-    "fitbitCredentialsSaved": "Inloggegevens opgeslagen",
-    "fitbitCredentialsSavedPlaceholder": "Opgeslagen. Voer een nieuwe waarde in om te vervangen",
-    "fitbitCredentialsSavedPlaceholderSecret": "Opgeslagen. Voer een nieuwe waarde in om te vervangen",
-    "fitbitSaveCredentials": "Opslaan",
-    "fitbitSync": "Nu synchroniseren",
-    "fitbitFullSync": "Alle gegevens synchroniseren",
-    "fitbitFullSyncTitle": "Volledige synchronisatie?",
-    "fitbitFullSyncDescription": "De volledige beschikbare Fitbit-geschiedenis wordt gesynchroniseerd. Afhankelijk van je geschiedenis kan dit even duren.",
-    "fitbitSyncResult": "{count} metingen gesynchroniseerd",
-    "fitbitSyncFailed": "Synchronisatie mislukt",
-    "fitbitSynchronize": "Synchroniseren",
-    "fitbitDisconnect": "Ontkoppelen",
-    "fitbitDisconnectTitle": "Fitbit ontkoppelen?",
-    "fitbitDisconnectDescription": "De koppeling met Fitbit wordt verbroken. Eerder gesynchroniseerde gegevens blijven bewaard.",
-    "fitbitConnect": "Koppelen met Fitbit",
-    "fitbitNoCredentials": "Voer hierboven je API-inloggegevens in om Fitbit te koppelen.",
-    "fitbitOauthConnected": "Fitbit gekoppeld. De eerste synchronisatie start op de achtergrond.",
-    "fitbitOauthFailed": "Koppeling met Fitbit mislukt",
+    "fitbitRemoval": {
+      "title": "Fitbit synchroniseert niet meer",
+      "body": "Google heeft de Fitbit Web API op 30 oktober 2026 uitgeschakeld. HealthLog kan daardoor geen verbinding meer maken met Fitbit en de Fitbit-koppeling is verwijderd. Alles wat al is geïmporteerd blijft: je grafieken, exports, back-ups en artsrapporten bevatten het nog steeds, gemarkeerd als Fitbit.",
+      "ways": "Koppel hieronder Google Health om gegevens van een Fitbit of Pixel Watch te blijven ontvangen. Het leest dezelfde apparaten en vraagt één keer om je toestemming bij Google. Op Android kun je ook een Health Connect-export importeren.",
+      "toGoogleHealth": "Naar Google Health",
+      "toHealthConnect": "Health Connect-import",
+      "dismiss": "Begrepen",
+      "dismissFailed": "De melding kon niet worden verborgen. Probeer het opnieuw."
+    },
     "googleHealth": "Google Health",
     "googleHealthTag": "Fitbit & Pixel",
     "googleHealthBetaBadge": "Bèta",
@@ -6914,18 +7036,6 @@
       "token": "De tokenuitwisseling met Google is mislukt. Start de koppeling opnieuw.",
       "generic": "Onbekende fout bij het koppelen. Start de koppeling opnieuw.",
       "already_linked": "Dit Google-account is al gekoppeld aan een ander HealthLog-profiel. Log bij Google in met het account van dit profiel, of ontkoppel het eerst van het andere profiel."
-    },
-    "fitbitOauthError": {
-      "csrf1": "De beveiligingscontrole is mislukt omdat de browsercookie ontbrak. Start de koppeling opnieuw in dezelfde browser.",
-      "state": "Het antwoord van Fitbit kwam niet overeen met een openstaand koppelingsverzoek. Start de koppeling opnieuw.",
-      "expired": "Het koppelingsverzoek is verlopen voordat het was afgerond. Start de koppeling opnieuw.",
-      "cross_user": "Het antwoord hoort bij een verzoek van een ander account. Start de koppeling opnieuw vanuit je eigen account.",
-      "nocode": "Fitbit heeft geen autorisatiecode teruggestuurd. Probeer het opnieuw en sta toegang toe in het Fitbit-venster.",
-      "nocreds": "Fitbit is niet geconfigureerd. Voeg hierboven je Fitbit-OAuth-inloggegevens toe en probeer het opnieuw.",
-      "token": "De tokenuitwisseling met Fitbit is mislukt. Start de koppeling opnieuw.",
-      "generic": "Onbekende fout bij het koppelen. Start de koppeling opnieuw.",
-      "retired": "Google heeft de Fitbit Web API uitgeschakeld, dus er kan geen nieuwe Fitbit-koppeling meer worden gemaakt. Koppel in plaats daarvan Google Health, dat dezelfde apparaten leest.",
-      "already_linked": "Dit Fitbit-account is al gekoppeld aan een ander HealthLog-profiel. Log bij Fitbit in met het account van dit profiel, of ontkoppel het eerst van het andere profiel."
     },
     "integrations": {
       "withings": {
@@ -6991,15 +7101,15 @@
     },
     "withingsViewData": "Je metingen bekijken",
     "whoopViewData": "Je herstel bekijken",
-    "fitbitViewData": "Je slaap bekijken",
     "googleHealthViewData": "Je stappen bekijken",
     "apiTokens": "API-tokens",
     "apiTokensDescription": "Bekijk tokens voor metingen, trainingen, documenten en medicatie-inname en trek ze in.",
     "measurementsToken": {
       "title": "Metingtokens",
-      "description": "Maak een token aan zodat een weegschaal, een horlogekoppeling of je domotica metingen en waarden voor je eigen metingen kan toevoegen.",
+      "description": "Maak een token aan zodat een weegschaal, een horlogekoppeling, een voedingsapp of je domotica metingen, waarden voor je eigen metingen en dagtotalen van voedingsstoffen kan toevoegen.",
       "detail": "Het token wordt één keer getoond.",
-      "scopeNote": "Het kan alleen nieuwe metingen aan je eigen dossier toevoegen, en waarden aan eigen metingen die je al hebt aangemaakt. Het kan je gegevens niet lezen, geen eigen meting aanmaken, niets wijzigen of verwijderen en geen ander token aanmaken. Metingen worden gemarkeerd als afkomstig van een extern apparaat, zodat je ze later kunt onderscheiden; waarden van eigen metingen krijgen die markering niet. Je kunt beide nog steeds zelf corrigeren. De ID van een eigen meting is het deel na /custom-metrics/ in het adres van de pagina ervan.",
+      "scopeNote": "Het kan alleen metingen aan je eigen dossier toevoegen, waarden aan eigen metingen die je al hebt aangemaakt, en dagtotalen van voedingsstoffen zolang de module voedingsstoffen aan staat; lezen, wijzigen of verwijderen kan het niet. Metingen en voedingstotalen worden als extern gemarkeerd. De ID van een eigen meting is het deel na /custom-metrics/ in het adres van de pagina ervan.",
+      "nutrientsLink": "Inname van voedingsstoffen bekijken",
       "createFailed": "Het token kon niet worden aangemaakt. Probeer het opnieuw.",
       "namePlaceholder": "Naam, bijv. Home Assistant",
       "appleHealth": {
@@ -7467,7 +7577,7 @@
       },
       "workoutRoutes": {
         "title": "Trainingsroutes",
-        "description": "Het GPS-spoor van nieuwe trainingen uit de iPhone-app en de Apple Gezondheid-export bewaren.",
+        "description": "Het GPS-spoor van nieuwe trainingen uit de iPhone-app, de Apple Gezondheid-export, activiteitsbestanden en Garmin bewaren.",
         "detail": "Uit voor nieuwe accounts. Een route laat zien waar je woont, werkt en traint, dus hij wordt pas bewaard als je dit aanzet. Trainingen worden altijd bewaard en geen enkele AI-functie leest ooit een route. Uitzetten stopt nieuwe routes; al bewaarde routes blijven tot je de training verwijdert.",
         "loadError": "De route-instelling kon niet worden geladen."
       },
@@ -7769,15 +7879,6 @@
       "homePlaceUnknown": "De Dawarich-instantie kent deze plaats niet meer.",
       "notConnected": "Dawarich is niet gekoppeld.",
       "generic": "Dat is niet gelukt. Probeer het opnieuw."
-    },
-    "fitbitRetirement": {
-      "ending": "Google schakelt de Fitbit Web API uit op {date}. Vanaf dan synchroniseert deze koppeling niet meer.",
-      "ended": "Google heeft de Fitbit Web API uitgeschakeld op {date}. Deze koppeling synchroniseert niet meer.",
-      "move": "Google Health leest dezelfde Fitbit- en Pixel-apparaten. Koppel het hieronder om je gegevens te blijven ontvangen. Google vraagt nog een keer om je toestemming, omdat de Fitbit-koppeling niet kan worden overgezet. Alles wat al is geïmporteerd blijft bewaard.",
-      "toCard": "Naar Google Health",
-      "guide": "Zo koppel je Google Health",
-      "badgeEnding": "Wordt uitgeschakeld",
-      "badgeEnded": "Uitgeschakeld"
     },
     "passkeyAddedToast": "Passkey toegevoegd.",
     "passkeyRemovedToast": "Passkey verwijderd.",
@@ -8582,7 +8683,9 @@
           "failureUnconfirmed": "Typ de gebruikersnaam van het account precies over om te bevestigen.",
           "failureUsernameTaken": "Deze gebruikersnaam is al in gebruik.",
           "failureOwnerExists": "Het account waar dit bestand bij hoort, staat op deze server, en het bestand wordt in dat account teruggezet. Upload het opnieuw zonder een account te kiezen."
-        }
+        },
+        "restoreSkippedSeizureMedicationReference": "Noodplan of nooddosis van een aanval gekoppeld aan een medicijn dat niet in het bestand staat (bewaard zonder de koppeling)",
+        "restoreSkippedSeizureTypeReference": "Aanval gekoppeld aan een aanvalstype dat niet in het bestand staat (bewaard zonder het type)"
       },
       "danger-zone": {
         "title": "Gevarenzone",
@@ -9467,6 +9570,12 @@
       "titleRecovered": "Achtergrondtaak werkt weer: {queue}",
       "bodyFailing": "De achtergrondtaak {queue} is {failures} keer achter elkaar mislukt en staat op de beheerstatuspagina. Laatste fout: {error}",
       "bodyRecovered": "De achtergrondtaak {queue} is weer met succes uitgevoerd."
+    },
+    "eventSeizureCluster": "Clusteraanvallen",
+    "eventSeizureClusterDesc": "Als een aanval die iemand anders vastlegt volgens de regel in het dagboek een cluster vormt. Eén keer per cluster.",
+    "seizureCluster": {
+      "title": "Clusteraanvallen",
+      "body": "{count} aanvallen binnen {hours} u, vastgelegd door {name}. Het noodplan staat in het aanvallendagboek."
     }
   },
   "i18n": {
@@ -10347,12 +10456,14 @@
     "addResult": "Waarde toevoegen",
     "addDescription": "Leg een biomarkerwaarde uit een labrapport vast.",
     "addFirst": "Je eerste uitslag toevoegen",
+    "importAction": "Importeren uit Apple Health of csv",
     "emptyTitle": "Nog geen labuitslagen",
     "emptyDescription": "Leg bloedwaarden zoals HbA1c, LDL of ferritine vast om ze in de tijd te volgen en met je arts te delen.",
     "referenceLabel": "Referentie",
     "readingsCount": "{count} metingen",
     "deleteConfirmTitle": "Labuitslag verwijderen?",
     "deleteConfirmDescription": "Deze labuitslag wordt verwijderd. Je kunt dit daarna nog even ongedaan maken.",
+    "deleteAppleHealthNote": "Bij de volgende Apple Health-import komt hij niet terug.",
     "deletedToast": "Uitslag verwijderd",
     "deleteError": "De uitslag kon niet worden verwijderd",
     "loadError": "Labuitslagen konden niet worden geladen",
@@ -10436,8 +10547,8 @@
         "365": "1 j",
         "all": "Alles"
       },
-      "sourceRangeLabel": "Rapportbereik",
-      "sourceBandLegend": "Tweede band: het bereik vermeld op het rapport van {date}.",
+      "sourceRangeLabel": "Bereik van het lab",
+      "sourceBandLegend": "Tweede band: het bereik dat het lab bij de uitslag van {date} gaf.",
       "sourceBandMixed": "Tweede band: het bereik vermeld op het meest recente rapport. Eerdere rapporten in beeld vermelden andere bereiken."
     },
     "biomarker": {
@@ -10673,9 +10784,9 @@
       "orderDefault": "Tot je er een verplaatst, staan de ingebouwde categorieën in een vaste volgorde, je eigen alfabetisch daarna en {other} als laatste."
     },
     "sourceRange": {
-      "fromReport": "Bereik volgens rapport: {range}",
+      "fromReport": "Bereik van het lab: {range}",
       "catalogDiffers": "jouw bereik: {range}",
-      "printed": "zoals afgedrukt in {unit}: {range}"
+      "printed": "zoals opgegeven in {unit}: {range}"
     },
     "match": {
       "viaAlias": "via een naam die je eerder hebt gekozen",
@@ -10766,6 +10877,10 @@
       "markerCountOther": "{count} biomarkers",
       "noMatchesTitle": "Geen passende biomarkers",
       "noMatchesDescription": "Probeer je zoekopdracht of filters aan te passen."
+    },
+    "source": {
+      "OCR": "Gescand verslag",
+      "DOCUMENT": "Document"
     }
   },
   "modules": {
@@ -10839,7 +10954,7 @@
     },
     "nutrients": {
       "label": "Inname van voedingsstoffen",
-      "description": "Dagelijkse totalen van micronutriënten, gesynchroniseerd vanuit Apple Health."
+      "description": "Dagtotalen uit Apple Health of een voedingsapp: water, energie, macro's, vitaminen en mineralen."
     },
     "vaccinations": {
       "label": "Vaccinaties",
@@ -10848,6 +10963,10 @@
     "timeline": {
       "label": "Tijdlijn",
       "description": "Jaren in één oogopslag: aandoeningen, medicatie en bezoeken naast je metingen, plus je eigen levensgebeurtenissen."
+    },
+    "seizures": {
+      "label": "Aanvalsdagboek",
+      "description": "Leg aanvallen vast met type, duur en noodmedicatie, bekijk clusters en aanvalsvrije dagen, en voeg een onderdeel over aanvallen toe aan het artsenrapport."
     }
   },
   "moduleOff": {
@@ -11547,7 +11666,8 @@
       "totalLabel": "Score",
       "bandLabel": "Categorie",
       "answersToggle": "Antwoorden",
-      "answersUnavailable": "De opgeslagen antwoorden van deze check-in kunnen niet worden ontsleuteld."
+      "answersUnavailable": "De opgeslagen antwoorden van deze check-in kunnen niet worden ontsleuteld.",
+      "answersNotShared": "Ingevuld in Apple Health. Alleen de score is gedeeld, niet de antwoorden."
     },
     "crisis": {
       "title": "Je hoeft dit niet alleen te doen",
@@ -12201,7 +12321,8 @@
       "duplicateExists": "Er is al een identiek document opgeslagen.",
       "uploadBusy": "De server was bezig met andere uploads. Probeer het nu opnieuw.",
       "rateLimited": "Je hebt de uploadlimiet voor dit uur bereikt. Probeer het later opnieuw.",
-      "generic": "Uploaden is mislukt. Probeer het opnieuw."
+      "generic": "Uploaden is mislukt. Probeer het opnieuw.",
+      "recordChanged": "Het geopende dossier is gewijzigd terwijl dit bestand werd geüpload. Upload het opnieuw."
     },
     "toast": {
       "duplicate": "Al opgeslagen. Het bestaande document is gemarkeerd.",
@@ -12231,7 +12352,8 @@
       "description": "Bewaar artsenbrieven, labverslagen, beeldvorming, recepten en vaccinatiebewijzen. Ze worden versleuteld en zijn doorzoekbaar op type, aandoening en jaar.",
       "action": "Een eerste document uploaden",
       "noMatchesTitle": "Geen overeenkomende documenten",
-      "noMatchesDescription": "Niets komt overeen met de huidige zoekopdracht en filters."
+      "noMatchesDescription": "Niets komt overeen met de huidige zoekopdracht en filters.",
+      "titleRecord": "De documentenkluis van {name} is leeg"
     },
     "detail": {
       "title": "Documentdetails",
@@ -12537,6 +12659,10 @@
     "picker": {
       "capped": "De nieuwste {count} staan hier. Zoek om een ouder document te vinden.",
       "cappedSearching": "De nieuwste {count} resultaten staan hier. Verfijn de zoekopdracht om een ouder document te vinden."
+    },
+    "recordAi": {
+      "noProvider": "Geen AI-aanbieder op deze server kan de documenten in dit dossier lezen, dus ze krijgen geen samenvatting, geen zoeken op inhoud en geen documentchat.",
+      "off": "AI staat uit voor dit dossier, dus de documenten krijgen geen samenvatting, geen zoeken op inhoud en geen documentchat."
     }
   },
   "selfDescription": {
@@ -12658,15 +12784,29 @@
       "water": "Water",
       "caffeine": "Cafeïne",
       "dha": "DHA (omega-3)",
-      "epa": "EPA (omega-3)"
+      "epa": "EPA (omega-3)",
+      "energy": "Energie",
+      "protein": "Eiwit",
+      "carbohydrates": "Koolhydraten",
+      "fat": "Vet",
+      "saturated_fat": "Verzadigd vet",
+      "monounsaturated_fat": "Enkelvoudig onverzadigd vet",
+      "polyunsaturated_fat": "Meervoudig onverzadigd vet",
+      "sugar": "Suiker",
+      "fiber": "Vezels",
+      "cholesterol": "Cholesterol",
+      "sodium": "Natrium",
+      "potassium": "Kalium",
+      "alcohol": "Alcohol"
     },
     "page": {
       "title": "Inname van voedingsstoffen",
-      "description": "Vochtinname en inname van vitaminen en mineralen, gesynchroniseerd vanuit de gezondheidsapp op je telefoon, plus handmatig ingevoerd water.",
-      "moduleOffDescription": "Zet de module voedingsstoffen aan om hier je vochtinname en je inname van vitaminen en mineralen te zien. Gesynchroniseerde inname wordt onderdeel van de gegevens die de Coach kan lezen.",
+      "description": "Water, energie, macro's, vitaminen en mineralen uit je gezondheids- of voedingsapp, plus ingevoerd water.",
+      "moduleOffDescription": "Zet de module voedingsstoffen aan om hier je vochtinname, energie, macronutriënten en je inname van vitaminen en mineralen te zien. Gesynchroniseerde inname wordt onderdeel van de gegevens die de Coach kan lezen.",
       "moduleOffCta": "Voedingsstoffen aanzetten",
       "emptyTitle": "Nog geen gegevens over voedingsstoffen",
-      "emptyDescription": "Gegevens komen binnen via de synchronisatie met de gezondheidsapp op je telefoon of via handmatig ingevoerd water.",
+      "emptyDescription": "Gegevens komen binnen via de synchronisatie met de gezondheidsapp op je telefoon, via een voedingsapp met een metingentoken of via handmatig ingevoerd water.",
+      "emptyTokenAction": "Metingtoken aanmaken",
       "loadError": "Je gegevens over voedingsstoffen konden niet worden geladen",
       "lastAttemptTitle": "Er is een synchronisatie binnengekomen, maar er kon niets worden opgeslagen",
       "lastAttemptAt": "Laatste poging: {date}",
@@ -12679,16 +12819,21 @@
       }
     },
     "hydration": {
-      "referenceMeta": "Referentie-inname {value} {unit}/dag (EFSA)",
+      "referenceMeta": "Referentie-inname {value} {unit}/dag ({authority})",
       "loadError": "Water kon niet worden geladen."
     },
     "caffeine": {
-      "ceilingMeta": "Veilige bovengrens {value} {unit}/dag (EFSA)",
+      "ceilingMeta": "Veilige bovengrens {value} {unit}/dag ({authority})",
       "loadError": "Cafeïne kon niet worden geladen."
     },
     "micronutrients": {
-      "title": "Vitaminen en mineralen",
-      "rowMeta": "{days} van {window} dagen, ref. {value} {unit} (EFSA)",
+      "title": "Micronutriënten",
+      "groups": {
+        "vitamin": "Vitaminen",
+        "mineral": "Mineralen",
+        "omega3": "Omega-3-vetzuren"
+      },
+      "rowMeta": "{days} van {window} dagen, ref. {value} {unit} ({authority})",
       "rowMetaNoRef": "{days} van {window} dagen",
       "footer": "{tracked} van {total} gevolgde micronutriënten hebben gegevens in deze periode.",
       "emptyTitle": "Nog geen gegevens over micronutriënten gesynchroniseerd",
@@ -12703,14 +12848,35 @@
         "alpha_tocopherol": "De grens is vastgesteld voor alfa-tocoferol."
       }
     },
-    "sparseNote": "Een laag getal betekent hier meestal dat er weinig is vastgelegd, niet dat er een tekort is. Dagtotalen in Apple Health weerspiegelen wat je apps hebben vastgelegd, niet je totale inname via voeding.",
+    "sparseNote": "Een laag getal betekent hier meestal dat er weinig is vastgelegd, niet dat er een tekort is. Dagtotalen weerspiegelen wat je apps hebben vastgelegd, niet je totale inname via voeding. Melden een voedingsapp en Apple Health dezelfde dag, dan telt het grootste totaal.",
     "units": {
       "IU": "IE"
     },
     "sources": {
-      "APPLE_HEALTH": "Gesynchroniseerd",
-      "MANUAL": "Ingevoerd",
       "SUPPLEMENT": "Supplementen"
+    },
+    "macros": {
+      "title": "Energie en macronutriënten",
+      "pickLabel": "Voedingsstof",
+      "referenceMeta": "Referentie {value} {unit}/dag ({authority})",
+      "targetMeta": "Jouw doel {value} {unit}/dag",
+      "limitMeta": "Jouw grens {value} {unit}/dag",
+      "sheetTitle": "Dagdoel: {name}",
+      "sheetDescription": "Een hoeveelheid per dag om te halen of onder te blijven, als stippellijn in de grafiek.",
+      "clearTarget": "Doel verwijderen",
+      "removeTitle": "Dit doel verwijderen?",
+      "removeBody": "De grafiek toont dan weer de referentiewaarde, als die er is. De hoeveelheid die je instelde wordt nergens anders bewaard.",
+      "targetLabel": "{name} per dag in {unit}",
+      "boundsHint": "Boven 0, hoogstens {max} {unit} per dag.",
+      "directionLabel": "Soort doel",
+      "directionTarget": "Minstens halen",
+      "directionLimit": "Eronder blijven",
+      "saveFailed": "Het doel kon niet worden opgeslagen. Probeer het opnieuw.",
+      "loadError": "Energie en macronutriënten konden niet worden geladen.",
+      "gearLabel": "Dagdoel voor {name} instellen"
+    },
+    "alcohol": {
+      "loadError": "Alcohol kon niet worden geladen."
     }
   },
   "daily": {
@@ -12739,8 +12905,7 @@
       },
       "preventiveCare": {
         "title": "Tijd voor een controle",
-        "body": "{label} staat gepland.",
-        "bodyManyNamed": "Gepland: {labels}"
+        "body": "{label} staat gepland."
       },
       "syncIssue": {
         "title": "Synchronisatie vraagt aandacht",
@@ -12902,7 +13067,8 @@
       },
       "medications": {
         "label": "Medicatie",
-        "value": "{taken} van {scheduled} ingenomen"
+        "value": "{taken} van {scheduled} ingenomen",
+        "next": "Volgende inname om {time}"
       },
       "appointment": {
         "label": "Afspraak",
@@ -12977,14 +13143,16 @@
     "leafEmergency": "Noodinformatie (bloedgroep, contactpersonen, wilsverklaringen)",
     "leafMedicationEffect": "Verandering rond de start van elk medicijn (vereist de medicatielijst)",
     "leafWorkouts": "Trainingen (overzicht per sport)",
-    "leafHrvSdnn": "HRV (SDNN)"
+    "leafHrvSdnn": "HRV (SDNN)",
+    "leafSeizures": "Aanvalsdagboek"
   },
   "recordSharing": {
     "banner": {
       "viewing": "Je bent in het dossier van {name}",
       "readOnly": "Je kunt het lezen, maar niet wijzigen.",
       "canAdd": "Je kunt er iets aan toevoegen, maar niet wijzigen of verwijderen wat er al staat.",
-      "leave": "Terug naar mijn dossier"
+      "leave": "Terug naar mijn dossier",
+      "canManage": "Je kunt er iets aan toevoegen en wijzigen of verwijderen wat er staat."
     },
     "switcher": {
       "label": "Een dossier openen",
@@ -13281,6 +13449,7 @@
       "medicationCourseEnd": "{name} heeft een medicijnkuur beëindigd",
       "medicationDelete": "{name} heeft een medicijn verwijderd",
       "medicationGlp1Update": "{name} heeft een GLP-1-kuur gewijzigd",
+      "medicationGlp1DoseChangeDelete": "{name} heeft een GLP-1-dosisstap verwijderd",
       "medicationScheduleCreate": "{name} heeft een doseerschema toegevoegd",
       "medicationScheduleUpdate": "{name} heeft een doseerschema gewijzigd",
       "medicationScheduleDelete": "{name} heeft een doseerschema verwijderd",
@@ -13337,6 +13506,16 @@
       "documentStore": "{name} heeft een document toegevoegd",
       "documentUpdate": "{name} heeft een document gewijzigd",
       "documentDiscard": "{name} heeft een document weggegooid",
+      "documentRestore": "{name} heeft een document hersteld",
+      "documentBulk": "{name} heeft meerdere documenten gewijzigd",
+      "documentConfirm": "{name} heeft waarden uit een document bevestigd",
+      "documentExtract": "{name} heeft de waarden in een document uitgelezen",
+      "documentIndex": "{name} heeft een document doorzoekbaar gemaakt",
+      "documentReindex": "{name} heeft de documenten doorzoekbaar gemaakt",
+      "documentSuggest": "{name} heeft gegevens voor een document laten voorstellen",
+      "documentSummary": "{name} heeft een document laten samenvatten",
+      "documentChat": "{name} heeft een vraag over een document gesteld",
+      "documentFactEdit": "{name} heeft een waarde uit een document gecorrigeerd",
       "medicationIntakeImportFinished": "De dosisimport die {name} had gestart, is voltooid",
       "medicationOneShotReconciled": "Een eenmalig medicijn is geopend of afgesloten na een dosis die {name} had vastgelegd",
       "vaccinationBoosterPlanned": "{name} heeft een booster gepland",
@@ -13360,7 +13539,17 @@
       "cycleFeedCreate": "{name} heeft het agenda-abonnement aangezet",
       "cycleFeedUpdate": "{name} heeft het agenda-abonnement gewijzigd",
       "cycleFeedRotate": "{name} heeft de link van het agenda-abonnement vernieuwd",
-      "cycleFeedRevoke": "{name} heeft het agenda-abonnement uitgezet"
+      "cycleFeedRevoke": "{name} heeft het agenda-abonnement uitgezet",
+      "seizureEventCreate": "{name} heeft een aanval vastgelegd",
+      "seizureRescueCreate": "{name} heeft een nooddosis vastgelegd",
+      "seizureEventUpdate": "{name} heeft een aanval bewerkt",
+      "seizureEventDelete": "{name} heeft een aanval verwijderd",
+      "seizureRescueUpdate": "{name} heeft een nooddosis bewerkt",
+      "seizureRescueDelete": "{name} heeft een nooddosis verwijderd",
+      "seizureTypeCreate": "{name} heeft een aanvalstype toegevoegd",
+      "seizureTypeUpdate": "{name} heeft een aanvalstype bewerkt",
+      "seizureTypeDelete": "{name} heeft een aanvalstype verwijderd",
+      "seizureSettingsUpdate": "{name} heeft de clusterregel gewijzigd"
     },
     "section": {
       "measurements": {
@@ -13381,7 +13570,7 @@
       },
       "illness": {
         "label": "Ziekte",
-        "detail": "Ziekte-episodes en de dagregistraties die daarbij horen."
+        "detail": "Ziekte-episodes en de dagregistraties die daarbij horen, je eigen symptomen en het aanvalsdagboek. Een nooddosis die in het aanvalsdagboek is vastgelegd, wordt ook bij het bijbehorende medicijn vastgelegd."
       },
       "mind": {
         "label": "Stemming en mentale gezondheid",
@@ -13760,6 +13949,7 @@
     "usualRange": "Meestal {lo} tot {hi}",
     "groups": {
       "scores": "Scores",
+      "nutrients": "Voeding",
       "running": "Lopend op die dag",
       "values": "Waarden",
       "happened": "Wat er gebeurde",
@@ -13835,6 +14025,12 @@
       "travelYes": "Ja",
       "kilometres": "{value} km",
       "miles": "{value} mi"
+    },
+    "nutrients": {
+      "micronutrientsOne": "{count} micronutriënt vastgelegd",
+      "micronutrientsOther": "{count} micronutriënten vastgelegd",
+      "micronutrientsFew": "{count} micronutriënten vastgelegd",
+      "open": "Inname van voedingsstoffen bekijken"
     }
   },
   "timeline": {
@@ -13857,7 +14053,8 @@
       "visits": "Arts en ingrepen",
       "labs": "Lab",
       "documents": "Documenten",
-      "cycle": "Cyclus"
+      "cycle": "Cyclus",
+      "seizures": "Aanvallen"
     },
     "readiness": {
       "title": "Wat je tijdlijn al te bieden heeft",
@@ -13932,7 +14129,10 @@
         "environmentOne": "{count} dag met omgevingsgegevens",
         "environmentFew": "{count} dagen met omgevingsgegevens",
         "environmentOther": "{count} dagen met omgevingsgegevens",
-        "empty": "Nog geen"
+        "empty": "Nog geen",
+        "seizuresOne": "{count} dag met aanvallen",
+        "seizuresFew": "{count} dagen met aanvallen",
+        "seizuresOther": "{count} dagen met aanvallen"
       },
       "gap": {
         "valuesEmpty": "Bronnen koppelen",
@@ -13942,7 +14142,8 @@
         "documentsUndated": "Controleren",
         "labsEmpty": "Uitslag toevoegen",
         "vaccinationsEmpty": "Vaccinaties toevoegen",
-        "lifeEventsEmpty": "Toevoegen"
+        "lifeEventsEmpty": "Toevoegen",
+        "seizuresEmpty": "Aanval vastleggen"
       },
       "gapLine": {
         "medicationsWithoutStartOne": "{count} medicijn zonder startdatum",
@@ -13956,7 +14157,8 @@
         "visitsEmpty": "Nog geen afgeronde doktersbezoeken",
         "labsEmpty": "Nog geen labuitslagen",
         "vaccinationsEmpty": "Nog geen vaccinaties",
-        "lifeEventsEmpty": "Nog geen levensgebeurtenissen"
+        "lifeEventsEmpty": "Nog geen levensgebeurtenissen",
+        "seizuresEmpty": "Nog geen aanvallen vastgelegd"
       }
     },
     "legendSpan": "Periode",
@@ -14047,7 +14249,10 @@
     "item": {
       "labValuesOne": "1 labwaarde",
       "labValuesFew": "{count} labwaarden",
-      "labValuesOther": "{count} labwaarden"
+      "labValuesOther": "{count} labwaarden",
+      "seizuresOne": "1 aanval",
+      "seizuresFew": "{count} aanvallen",
+      "seizuresOther": "{count} aanvallen"
     },
     "labs": {
       "menuTitle": "Labwaarden",
@@ -14422,5 +14627,436 @@
       "endsOn": "Einde"
     },
     "unitlessHint": "Een verhouding of index zonder eenheid (INR, cholesterol/HDL): vul 1 in de eenheidskolom in. Een lege eenheid blijft een fout."
+  },
+  "seizures": {
+    "ilae": {
+      "FOCAL_PRESERVED": {
+        "current": "Focale aanval met behouden bewustzijn",
+        "ilae2017": "Focale bewuste aanval"
+      },
+      "FOCAL_IMPAIRED": {
+        "current": "Focale aanval met verminderd bewustzijn",
+        "ilae2017": "Focale aanval met verminderd bewustzijn"
+      },
+      "FOCAL_UNDETERMINED": {
+        "current": "Focale aanval",
+        "ilae2017": "Aanval met focaal begin"
+      },
+      "FOCAL_TO_BILATERAL_TC": {
+        "current": "Focaal naar bilateraal tonisch-klonische aanval",
+        "ilae2017": "Focaal naar bilateraal tonisch-klonische aanval"
+      },
+      "GENERALIZED_UNDETERMINED": {
+        "current": "Gegeneraliseerde aanval",
+        "ilae2017": "Aanval met gegeneraliseerd begin"
+      },
+      "GENERALIZED_TC": {
+        "current": "Gegeneraliseerde tonisch-klonische aanval",
+        "ilae2017": "Tonisch-klonische aanval met gegeneraliseerd begin"
+      },
+      "GEN_CLONIC": {
+        "current": "Gegeneraliseerde klonische aanval",
+        "ilae2017": "Klonische aanval met gegeneraliseerd begin"
+      },
+      "GEN_TONIC": {
+        "current": "Gegeneraliseerde tonische aanval",
+        "ilae2017": "Tonische aanval met gegeneraliseerd begin"
+      },
+      "GEN_MYOCLONIC": {
+        "current": "Gegeneraliseerde myoclonische aanval",
+        "ilae2017": "Myoclonische aanval met gegeneraliseerd begin"
+      },
+      "GEN_MYOCLONIC_ATONIC": {
+        "current": "Gegeneraliseerde myoclonisch-atone aanval",
+        "ilae2017": "Myoclonisch-atone aanval met gegeneraliseerd begin"
+      },
+      "GEN_ATONIC": {
+        "current": "Gegeneraliseerde atone aanval",
+        "ilae2017": "Atone aanval met gegeneraliseerd begin"
+      },
+      "GEN_NEGATIVE_MYOCLONIC": {
+        "current": "Gegeneraliseerde negatief myoclonische aanval"
+      },
+      "GEN_SPASMS": {
+        "current": "Gegeneraliseerde epileptische spasmen",
+        "ilae2017": "Epileptische spasmen met gegeneraliseerd begin"
+      },
+      "ABSENCE_TYPICAL": {
+        "current": "Typische absence",
+        "ilae2017": "Gegeneraliseerde niet-motorische aanval (absence), typisch"
+      },
+      "ABSENCE_ATYPICAL": {
+        "current": "Atypische absence",
+        "ilae2017": "Gegeneraliseerde niet-motorische aanval (absence), atypisch"
+      },
+      "ABSENCE_MYOCLONIC": {
+        "current": "Myoclonische absence",
+        "ilae2017": "Gegeneraliseerde niet-motorische aanval (absence), myoclonisch"
+      },
+      "EYELID_MYOCLONIA": {
+        "current": "Ooglidmyoclonieën (met of zonder absence)",
+        "ilae2017": "Absence met ooglidmyoclonieën"
+      },
+      "UNKNOWN_UNDETERMINED": {
+        "current": "Aanval, onbekend of focaal of gegeneraliseerd",
+        "ilae2017": "Aanval met onbekend begin"
+      },
+      "UNKNOWN_PRESERVED": {
+        "current": "Onbekend of focaal of gegeneraliseerd, behouden bewustzijn",
+        "ilae2017": "Aanval met onbekend begin, bewust"
+      },
+      "UNKNOWN_IMPAIRED": {
+        "current": "Onbekend of focaal of gegeneraliseerd, verminderd bewustzijn",
+        "ilae2017": "Aanval met onbekend begin, verminderd bewustzijn"
+      },
+      "UNKNOWN_BILATERAL_TC": {
+        "current": "Bilateraal tonisch-klonische aanval, onbekend of focaal of gegeneraliseerd",
+        "ilae2017": "Tonisch-klonische aanval met onbekend begin"
+      },
+      "UNCLASSIFIED": {
+        "current": "Niet-geclassificeerde aanval",
+        "ilae2017": "Niet-geclassificeerde aanval"
+      }
+    },
+    "ilaeClass": {
+      "FOCAL": "Focaal begin",
+      "GENERALIZED": "Gegeneraliseerd begin",
+      "UNKNOWN": "Onbekend of focaal of gegeneraliseerd",
+      "UNCLASSIFIED": "Niet geclassificeerd"
+    },
+    "route": {
+      "BUCCAL": "Buccaal",
+      "INTRANASAL": "Intranasaal",
+      "RECTAL": "Rectaal",
+      "ORAL": "Oraal",
+      "SUBLINGUAL": "Sublinguaal",
+      "IM": "Intramusculair",
+      "IV_BY_EMS": "Intraveneus (ambulancepersoneel)"
+    },
+    "effect": {
+      "STOPPED": "Aanval gestopt",
+      "REDUCED": "Aanval verminderd",
+      "NO_EFFECT": "Geen effect",
+      "UNKNOWN": "Onbekend"
+    },
+    "trigger": {
+      "MISSED_DOSE": "Vergeten dosis",
+      "SLEEP_DEPRIVATION": "Slaaptekort",
+      "FEVER": "Koorts",
+      "ILLNESS": "Ziekte",
+      "MENSTRUATION": "Menstruatie",
+      "ALCOHOL": "Alcohol",
+      "FLASHING_LIGHTS": "Flikkerend licht",
+      "STRESS": "Stress",
+      "OTHER": "Anders",
+      "NONE_IDENTIFIED": "Geen gevonden"
+    },
+    "sleepState": {
+      "AWAKE": "Wakker",
+      "ASLEEP": "In slaap",
+      "ON_WAKING": "Bij het ontwaken",
+      "UNKNOWN": "Onbekend"
+    },
+    "type": {
+      "unreadable": "Onleesbare naam"
+    },
+    "report": {
+      "title": "Aanvalsdagboek",
+      "untyped": "Geen type vastgelegd",
+      "ruleText": "{count} of meer in {hours} u",
+      "recorded": "Vastgelegde aanvallen",
+      "seizureDays": "Dagen met een aanval",
+      "seizureFreeDays": "Dagen zonder vastgelegde aanval",
+      "per28Days": "Aanvallen per 28 dagen",
+      "longestFree": "Langste periode zonder vastgelegde aanval",
+      "daysValue": "{count} dagen",
+      "daysSinceLast": "Dagen sinds de laatste vastgelegde aanval",
+      "convulsive": "Bilateraal tonisch-klonische aanvallen",
+      "fromSleep": "Aanvallen vanuit de slaap",
+      "clusters": "Clusters (regel: {rule})",
+      "niceClusters": "volgens NICE: 3 in 24 u",
+      "rescueDoses": "Gegeven nooddoses",
+      "emergencies": "Ambulance, spoedeisende hulp, opnames",
+      "emergencyValue": "{ems} / {ed} / {admitted}",
+      "suspected": "Vermoedelijke voorvallen (hierboven niet meegeteld)",
+      "monthlyTitle": "Aanvallen per type en maand",
+      "monthlyNote": "Aanvallen per maand, met tussen haakjes het aantal dagen waarop ze voorkwamen.",
+      "type": "Type",
+      "total": "Totaal",
+      "chartTitle": "Aanvallen per maand en medicatiewijzigingen",
+      "markersTitle": "Medicatiewijzigingen:",
+      "marker": {
+        "start": "({n}) {date} {name} gestart",
+        "stop": "({n}) {date} {name} gestopt",
+        "change": "({n}) {date} {name} gewijzigd naar {dose}"
+      },
+      "markersNote": "Wijzigingen in vast ingeplande medicatie, getoond naast de aantallen. Het dagboek zegt niet of een wijziging verschil heeft gemaakt.",
+      "durationTitle": "Duur",
+      "timed": "Met duur",
+      "median": "Mediaan",
+      "max": "Langste",
+      "overT1": "t1 bereikt of overschreden",
+      "prolonged": "2 min langer dan gewoonlijk",
+      "durationNote": "Duur als min:s. t1 is de tijd waarna spoedbehandeling nodig is (ILAE, Trinka 2015: tonisch-klonisch 5 min, focaal met verminderd bewustzijn en absence 10 min). “2 min langer dan gewoonlijk” telt aanvallen die minstens 2 minuten langer duurden dan de gebruikelijke duur bij deze persoon (NICE NG217).",
+      "rescueTitle": "Noodmedicatie",
+      "date": "Datum",
+      "drug": "Medicijn",
+      "dose": "Dosis",
+      "route": "Toedieningsweg",
+      "minutesFromOnset": "Minuten na begin",
+      "effect": "Effect",
+      "triggersTitle": "Vermoedelijke uitlokkers",
+      "triggersNote": "Genoemd door de persoon of verzorger bij het vastleggen; geen vastgestelde oorzaken.",
+      "overlaysTitle": "Tegelijk vastgelegd",
+      "overlayMissedDose": "{followed} van {of} aanvallen volgden binnen de voorafgaande 48 uur op een vergeten of overgeslagen geplande dosis.",
+      "overlayIllness": "{during} aanvallen vonden plaats tijdens een van {episodes} vastgelegde ziekte-episodes.",
+      "overlaySleep": "Vastgelegde slaap in de nacht voor een aanvalsdag: gemiddeld {before} u ({nightsBefore} nachten); andere nachten: {other} u ({nightsOther} nachten).",
+      "overlayCycleDays": "Aanvallen per cyclusdag (dag: aantal): {list}.",
+      "overlayCycleRatio": "Over {cycles} volledig bijgehouden cycli was het aantal aanvallen per dag rond de menstruatie (dag −3 tot +3) {c1} keer zo hoog als op de andere dagen, en {c2} keer rond de ovulatie (dag 10 tot −13). Het catameniale criterium van Herzog is een verdubbeling of meer; dit is een referentie, geen bevinding.",
+      "overlayCycleTooFew": "Aantallen per cyclusfase worden getoond vanaf drie volledig bijgehouden cycli (tot nu toe {cycles}).",
+      "overlaysNote": "Dit zijn dingen die tegelijk zijn vastgelegd, geen oorzaken.",
+      "eventsTitle": "Alle vastgelegde voorvallen",
+      "duration": "Duur",
+      "sleep": "Slaap",
+      "rescueShort": "Noodmed.",
+      "injury": "Letsel",
+      "note": "Notitie",
+      "suspectedMark": "(vermoed)",
+      "eventsTruncated": "Alleen de 200 meest recente voorvallen staan in de lijst; de cijfers hierboven gaan over alle voorvallen.",
+      "classificationNote": "De aanvalstypen volgen de ILAE-classificatie 2025; de namen volgens ILAE 2017 zijn:",
+      "footer": "Dagboek bijgehouden door patiënt of verzorger. Dit zijn vastgelegde aanvallen, waarschijnlijk een onderschatting, vooral bij aanvallen vanuit de slaap. Het dagboek legt waarnemingen vast en stelt geen diagnose en beoordeelt geen aanvallen.",
+      "seizureDaysValue": "op {count} dagen"
+    },
+    "title": "Aanvalsdagboek",
+    "subtitle": "Aanvallen zoals ze zijn waargenomen, met het type, de duur en de gegeven noodmedicatie.",
+    "loadError": "Het aanvalsdagboek kon niet worden geladen.",
+    "saveError": "Opslaan is niet gelukt. Probeer het opnieuw.",
+    "untyped": "Geen type",
+    "notRecorded": "Niet vastgelegd",
+    "ilaeWith2017": "{current} (ILAE 2017: {legacy})",
+    "safety": {
+      "header": "Dit dagboek legt vast wat je waarneemt, zodat je het met het behandelteam kunt delen. Het stelt geen diagnose en beoordeelt geen aanvallen. Volg het noodplan dat je met je arts hebt afgesproken.",
+      "timer": "Bel het alarmnummer ({number} of je lokale nummer) als een aanval met schokken of verstijven 5 minuten of langer duurt, als er een nieuwe aanval volgt voordat de persoon hersteld is, als de ademhaling moeilijk gaat, als de persoon gewond is, als de aanval in het water plaatsvond of als het de eerste aanval is. Je eigen noodplan gaat voor.",
+      "notifications": "HealthLog is geen aanvalsalarm en geen medisch hulpmiddel. Het legt alleen vast wat hier wordt ingevoerd."
+    },
+    "quick": {
+      "title": "Snel vastleggen",
+      "typeGroup": "Aanvalstype",
+      "elapsedLabel": "Tijd sinds het begin van de aanval",
+      "startedAt": "Begonnen om {time}",
+      "start": "Aanval begonnen",
+      "stop": "Aanval gestopt",
+      "rescueGiven": "Noodmedicatie gegeven: {name}",
+      "rescueGivenCount": "Noodmedicatie gegeven ({count}), tik voor nog een dosis",
+      "threshold": {
+        "t1": "De aanval duurt al langer dan {time}. Volg het noodplan.",
+        "usualPlusTwo": "De aanval duurt al langer dan {time}, 2 minuten langer dan gewoonlijk. Volg het noodplan.",
+        "generic": "De aanval duurt al langer dan {time}. Volg het noodplan."
+      },
+      "noPlan": "Voor dit aanvalstype is geen noodplan opgeslagen. Bel het alarmnummer als je twijfelt.",
+      "call": "{number} bellen",
+      "recorded": "Aanval vastgelegd",
+      "recordedLine": "Vastgelegd, duur {duration}.",
+      "addDetails": "Details toevoegen",
+      "logPast": "Aanval vastleggen die niet is getimed",
+      "discard": "Timer weggooien",
+      "discardTitle": "Lopende timer weggooien?",
+      "discardConfirm": "Er wordt niets vastgelegd en de begintijd gaat verloren."
+    },
+    "summary": {
+      "title": "Vastgelegd",
+      "recorded": "Vastgelegde aanvallen sinds {date}",
+      "seizureDays": "Dagen met een aanval",
+      "sinceLast": "Dagen sinds de laatste vastgelegde aanval",
+      "longestFree": "Langste periode zonder aanval, dagen",
+      "clusters": "Clusters ({rule})",
+      "niceClusters": "Clusters volgens NICE (3 in 24 u)",
+      "suspected": "{count} vermoedelijke aanvallen staan in de lijst maar worden niet meegeteld.",
+      "clusterLine": "Vanaf {start}: {count} aanvallen",
+      "monthlyCaption": "Aanvallen per type en maand",
+      "undercount": "Vastgelegde aanvallen, waarschijnlijk een onderschatting, vooral bij aanvallen vanuit de slaap."
+    },
+    "list": {
+      "title": "Vastgelegde aanvallen",
+      "empty": "Geen aanval vastgelegd in de afgelopen 90 dagen.",
+      "rescue": "Noodmed.",
+      "loggedByDelegate": "vastgelegd door iemand met toegang",
+      "showAll": "Alle {count} tonen",
+      "truncated": "Alleen de meest recente aanvallen worden getoond.",
+      "loggedByYou": "door jou vastgelegd",
+      "loggedByName": "vastgelegd door {name}",
+      "cluster": "Cluster"
+    },
+    "certainty": {
+      "CONFIRMED": "Aanval",
+      "SUSPECTED": "Vermoed"
+    },
+    "onsetPrecision": {
+      "EXACT": "Exacte tijd",
+      "APPROX": "Rond deze tijd",
+      "UNKNOWN_TIME": "Tijd onbekend"
+    },
+    "durationSource": {
+      "TIMED": "Getimed",
+      "ESTIMATED": "Geschat",
+      "UNKNOWN": "Onbekend"
+    },
+    "functionState": {
+      "PRESERVED": "Behouden",
+      "IMPAIRED": "Verminderd",
+      "UNKNOWN": "Niet zeker"
+    },
+    "emergency": {
+      "NONE": "Geen",
+      "EMS_CALLED": "Ambulance gebeld",
+      "ED_VISIT": "Spoedeisende hulp",
+      "ADMITTED": "Opgenomen in het ziekenhuis"
+    },
+    "observer": {
+      "SELF": "De persoon zelf",
+      "PARENT": "Ouder",
+      "PARTNER": "Partner",
+      "FAMILY": "Familielid",
+      "CARER": "Verzorger",
+      "TEACHER": "Leerkracht",
+      "CLINICIAN": "Zorgverlener",
+      "PARAMEDIC": "Ambulanceverpleegkundige",
+      "OTHER": "Iemand anders"
+    },
+    "semiology": {
+      "AURA": "Aura",
+      "BEHAVIOUR_ARREST": "Stopte met wat hij of zij deed",
+      "STARING": "Staren",
+      "AUTOMATISMS": "Automatismen (smakken, friemelen)",
+      "TONIC": "Verstijven",
+      "CLONIC": "Ritmische schokken",
+      "MYOCLONIC": "Korte schokjes",
+      "ATONIC_DROP": "Plotseling neervallen",
+      "SPASMS": "Spasmen",
+      "HEAD_EYE_VERSION": "Hoofd of ogen naar één kant gedraaid",
+      "VOCALISATION": "Kreet of geluiden",
+      "CYANOSIS": "Blauwe lippen of blauw gezicht",
+      "DROOLING": "Kwijlen",
+      "BREATHING_CHANGE": "Veranderde ademhaling"
+    },
+    "postictal": {
+      "SLEEP": "Slaap",
+      "CONFUSION": "Verwardheid",
+      "HEADACHE": "Hoofdpijn",
+      "WEAKNESS_TODD": "Zwakte aan één kant (Toddse parese)",
+      "SPEECH": "Moeite met praten",
+      "AGITATION": "Onrust",
+      "OTHER": "Anders"
+    },
+    "injury": {
+      "NONE": "Geen letsel",
+      "TONGUE_BITE": "Tongbeet",
+      "HEAD": "Hoofdletsel",
+      "FALL_OTHER": "Ander letsel door een val",
+      "BURN": "Brandwond",
+      "FRACTURE": "Botbreuk",
+      "OTHER": "Anders"
+    },
+    "sheet": {
+      "newTitle": "Aanval vastleggen",
+      "editTitle": "Details van de aanval",
+      "description": "Alleen het begin is nodig. Vul aan wat je weet.",
+      "created": "Aanval vastgelegd",
+      "updated": "Aanval bijgewerkt",
+      "type": "Aanvalstype",
+      "onset": "Begin",
+      "onsetPrecision": "Hoe zeker is de begintijd",
+      "duration": "Duur",
+      "minutes": "Minuten",
+      "seconds": "Seconden",
+      "durationHint": "Laat leeg als niemand heeft gezien hoe lang de aanval duurde.",
+      "durationSource": "De duur is",
+      "certainty": "Zekerheid",
+      "count": "Hoeveel",
+      "countHint": "Meer dan één om te turven, zoals de absences van een dag.",
+      "sleepState": "Wakker of in slaap",
+      "sectionObserved": "Wat werd gezien",
+      "responsiveness": "Reageerde op aanspreken",
+      "recall": "Herinnert zich de aanval",
+      "semiology": "Wat er gebeurde, op volgorde",
+      "semiologyNote": "Beschrijving",
+      "aura": "Waarschuwing vooraf (aura)",
+      "ilaeOverride": "Classificatie van deze aanval",
+      "ilaeFromType": "Zoals ingesteld bij het type",
+      "sectionAfter": "Daarna",
+      "postictalMinutes": "Minuten tot weer zoals gewoonlijk",
+      "postictal": "Na de aanval",
+      "injuries": "Letsel",
+      "emergency": "Spoedzorg",
+      "sectionContext": "Uitlokkers en getuige",
+      "triggers": "Vermoedelijke uitlokkers",
+      "triggersHint": "Je eigen vermoeden, in het rapport aangeduid als vermoed.",
+      "witnessed": "Heeft iemand het gezien",
+      "witnessRole": "Wie heeft het gezien",
+      "witnessNote": "Wat diegene zag",
+      "note": "Notitie",
+      "delete": "Aanval verwijderen",
+      "deleteTitle": "Deze aanval verwijderen?",
+      "deleteBody": "De aanval en de bijbehorende nooddoses worden verwijderd, en de doses worden ook weer van het medicijn afgehaald.",
+      "observable": "Zichtbare tekenen",
+      "incontinence": "Incontinentie"
+    },
+    "rescue": {
+      "title": "Noodmedicatie",
+      "none": "Geen nooddosis vastgelegd.",
+      "effect": "Effect",
+      "remove": "Dosis verwijderen",
+      "removeTitle": "Deze nooddosis verwijderen?",
+      "removeBody": "De dosis wordt ook weer van het medicijn afgehaald.",
+      "medication": "Medicijn",
+      "pick": "Kies een medicijn",
+      "givenAt": "Gegeven om",
+      "route": "Toedieningsweg",
+      "intakeHint": "De dosis wordt ook bij het medicijn vastgelegd. Zo-nodig-medicatie telt niet mee voor de therapietrouw.",
+      "add": "Nooddosis toevoegen"
+    },
+    "types": {
+      "title": "Aanvalstypen",
+      "emptyTitle": "Nog geen aanvalstypen",
+      "emptyDescription": "Stel de aanvalstypen van de persoon één keer in, het liefst samen met het behandelteam.",
+      "newTitle": "Aanvalstype toevoegen",
+      "editTitle": "Aanvalstype bewerken",
+      "description": "De classificatie kies jij of het behandelteam; HealthLog classificeert niet.",
+      "label": "Je eigen naam ervoor",
+      "labelHint": "Het woord dat jullie thuis gebruiken, zoals “de grote”.",
+      "class": "Begin",
+      "ilaeType": "Aanvalstype (ILAE 2025)",
+      "notSure": "Niet zeker: {name}",
+      "usualDuration": "Gebruikelijke duur",
+      "usualHint": "Wordt gebruikt om het noodplan te tonen als een aanval 2 minuten langer duurt dan gewoonlijk (NICE).",
+      "plan": "Noodplan",
+      "planHint": "De stappen die met het behandelteam zijn afgesproken, getoond zodra de timer de drempel passeert.",
+      "rescueMedication": "Noodmedicatie",
+      "noMedication": "Geen",
+      "noAsNeeded": "Voeg de noodmedicatie eerst toe als zo-nodig-medicijn.",
+      "dose": "Dosis",
+      "unit": "Eenheid",
+      "saved": "Aanvalstype opgeslagen",
+      "archive": "Archiveren",
+      "unarchive": "Weer gebruiken",
+      "archived": "Gearchiveerd",
+      "delete": "Type verwijderen",
+      "deleteTitle": "Dit aanvalstype verwijderen?",
+      "deleteBody": "Alleen een type waaronder geen aanval is vastgelegd, kan worden verwijderd. Archiveer het anders.",
+      "rescueLine": "Noodmedicatie: {name}"
+    },
+    "rule": {
+      "title": "Clusterregel",
+      "explainer": "Een cluster is dit aantal aanvallen binnen dit aantal uur. Gebruik de regel uit het noodplan; NICE gebruikt {niceCount} in {niceHours} uur, en het overzicht telt clusters volgens beide regels.",
+      "count": "Aanvallen",
+      "hours": "Tijdvenster (uur)",
+      "invalid": "Gebruik 2 tot 20 aanvallen binnen 1 tot 168 uur.",
+      "saved": "Clusterregel opgeslagen"
+    },
+    "observation": {
+      "YES": "Ja",
+      "NO": "Nee, niets zichtbaar",
+      "UNKNOWN": "Niet zeker"
+    }
   }
 }

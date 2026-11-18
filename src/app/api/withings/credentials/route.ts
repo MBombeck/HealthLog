@@ -73,7 +73,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
  * Delete Withings credentials and disconnect.
  *
  * Audits the teardown and parks the integration ledger at `disconnected`, for
- * parity with the Fitbit / Google Health / WHOOP credential-DELETE. Withings
+ * parity with the Google Health / WHOOP credential-DELETE. Withings
  * was the one provider that did neither: the connection row went, the
  * credential columns went, and the ledger kept whatever state it last held —
  * so a client reading `state` afterwards was told `connected` about a

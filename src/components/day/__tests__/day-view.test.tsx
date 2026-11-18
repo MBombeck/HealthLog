@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import enMessages from "../../../../messages/en.json";
 
@@ -169,6 +169,15 @@ async function render(
     </I18nProvider>,
   );
 }
+
+// Every test re-imports the view after resetModules. The first import also
+// transforms the whole module graph, which on a loaded machine outlasts a
+// single test's timeout; warming it once here keeps that cost out of the
+// first test.
+beforeAll(async () => {
+  await import("@/lib/i18n/context");
+  await import("../day-view");
+}, 60_000);
 
 beforeEach(() => {
   vi.resetModules();

@@ -79,6 +79,8 @@ export const MODULE_SHARE_DOMAIN: Readonly<
   // The timeline lays every section side by side. Its own content, the life
   // events, sits in `profile`, but the surface reads across the record.
   timeline: null,
+  // The seizure diary rides the illness section (see `scope.ts`).
+  seizures: "illness",
 });
 
 /** Does a grant carrying these sections open this one? `null` is the whole record. */

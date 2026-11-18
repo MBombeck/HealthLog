@@ -332,12 +332,14 @@ describe("GET /api/insights/targets — mood-rollup tier swap", () => {
     expect(latestCall).toBeDefined();
     const [strings, ...values] = latestCall as [string[], ...unknown[]];
     expect(strings.join("?")).not.toContain("DISTINCT ON");
-    expect(values).toContain("user-targets-1");
-    const floor = values.find(
+    // The probe's WHERE is the shared live-index descent, a nested fragment
+    // that carries the account and the floor.
+    const descent = values.find(
       (v): v is { values: unknown[] } =>
         typeof v === "object" && v !== null && !Array.isArray(v),
     );
-    const flooredAt = floor?.values[0];
+    expect(descent?.values).toContain("user-targets-1");
+    const flooredAt = descent?.values.find((v) => v instanceof Date);
     expect(flooredAt).toBeInstanceOf(Date);
     const oneYearMs = 365 * 24 * 60 * 60 * 1000;
     const ageMs = Date.now() - (flooredAt as Date).getTime();

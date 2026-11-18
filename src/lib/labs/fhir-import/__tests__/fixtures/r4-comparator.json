@@ -1,0 +1,25 @@
+{
+  "resourceType": "Observation",
+  "id": "obs-crp-1",
+  "status": "final",
+  "category": [{ "coding": [{ "code": "laboratory" }] }],
+  "code": {
+    "coding": [
+      {
+        "system": "http://loinc.org",
+        "code": "1988-5",
+        "display": "C reactive protein [Mass/volume] in Serum or Plasma"
+      }
+    ]
+  },
+  "subject": { "reference": "Patient/example-patient" },
+  "effectiveDateTime": "2025-03-04T08:15:00Z",
+  "valueQuantity": {
+    "value": 0.5,
+    "comparator": "<",
+    "unit": "mg/L",
+    "system": "http://unitsofmeasure.org",
+    "code": "mg/L"
+  },
+  "referenceRange": [{ "high": { "value": 5, "unit": "mg/L" } }]
+}

@@ -48,9 +48,6 @@ export const COMPOSITION_CATEGORIES: ReadonlySet<string> = new Set([
   "SUPPLEMENT",
 ]);
 
-/** Water is a day total, never a supplement ingredient. */
-const NOT_AN_INGREDIENT = "water";
-
 interface EditorRow {
   key: number;
   nutrient: string;
@@ -127,9 +124,7 @@ function CompositionEditor({
   const queryClient = useQueryClient();
   const formId = useId();
   const catalog = useNutrientCatalog(open);
-  const entries = (catalog.data?.entries ?? []).filter(
-    (entry) => entry.code !== NOT_AN_INGREDIENT,
-  );
+  const entries = (catalog.data?.entries ?? []).filter((e) => e.ingredient);
   const byCode = new Map(entries.map((entry) => [entry.code, entry]));
 
   const [rows, setRows] = useState<EditorRow[]>(() =>

@@ -39,6 +39,7 @@ import {
   DayValues,
 } from "./day-sections";
 import { DayMovementSection } from "./day-movement";
+import { DayNutrientsSection } from "./day-nutrients";
 import { DayScores } from "./day-scores";
 import { tileKeyOf } from "./day-values-model";
 import { shiftDateKey } from "./day-url";
@@ -148,6 +149,7 @@ export function DayView({
     data.events.length === 0 &&
     data.running.length === 0 &&
     (data.scores ?? []).length === 0 &&
+    (data.nutrients ?? []).length === 0 &&
     !data.movement;
   const notShared = data
     ? Object.values(data.sections).some((s) => s?.reason === "not_shared")
@@ -311,9 +313,8 @@ export function DayView({
               />
             )}
             <DayScores scores={data.scores ?? []} />
-            {data.movement ? (
-              <DayMovementSection movement={data.movement} />
-            ) : null}
+            <DayNutrientsSection nutrients={data.nutrients ?? []} />
+            <DayMovementSection movement={data.movement} />
             <DayEvents events={data.events} />
           </>
         )}

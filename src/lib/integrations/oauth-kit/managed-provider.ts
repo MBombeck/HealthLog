@@ -2,9 +2,7 @@
  * The OAuth providers a guardian may connect for a managed profile, and the
  * route parameter that names one.
  *
- * Every kit provider qualifies. Fitbit does not: the classic Fitbit Web API is
- * retired on 2026-10-30 and takes no new connections. Nightscout and Dawarich
- * are not OAuth flows.
+ * Every kit provider qualifies. Nightscout and Dawarich are not OAuth flows.
  */
 import type { OAuthKitProvider } from "./token";
 

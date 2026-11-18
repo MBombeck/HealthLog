@@ -69,7 +69,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const LABELS: Record<ConnectionKey, string> = {
   withings: "Withings",
   whoop: "WHOOP",
-  fitbit: "Fitbit",
   "google-health": "Google Health",
   polar: "Polar",
   oura: "Oura",
@@ -117,7 +116,7 @@ async function countDeliveredDays(
  * closed).
  */
 async function listWatchedUserIds(): Promise<string[]> {
-  const [withings, whoop, fitbit, google, userRows, healthKit, watches] =
+  const [withings, whoop, google, userRows, healthKit, watches] =
     await Promise.all([
       // An account pending deletion is frozen: its connections are not
       // synced, so their silence is not an incident.
@@ -127,10 +126,6 @@ async function listWatchedUserIds(): Promise<string[]> {
       }),
       prisma.whoopConnection.findMany({
         where: { whoopUserId: { not: null }, ...OWNED_BY_ACTIVE_ACCOUNT },
-        select: { userId: true },
-      }),
-      prisma.fitbitConnection.findMany({
-        where: OWNED_BY_ACTIVE_ACCOUNT,
         select: { userId: true },
       }),
       prisma.googleHealthConnection.findMany({
@@ -169,7 +164,7 @@ async function listWatchedUserIds(): Promise<string[]> {
       }),
     ]);
   const ids = new Set<string>();
-  for (const r of [...withings, ...whoop, ...fitbit, ...google, ...healthKit]) {
+  for (const r of [...withings, ...whoop, ...google, ...healthKit]) {
     ids.add(r.userId);
   }
   for (const r of userRows) ids.add(r.id);

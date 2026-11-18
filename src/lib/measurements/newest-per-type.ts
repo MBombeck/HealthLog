@@ -26,11 +26,13 @@
  * One statement: one index descent per type on the partial live index
  * `measurements_live_covering_idx (user_id, type, measured_at DESC) WHERE
  * deleted_at IS NULL`, each stopping at the cap, so the rows touched track the
- * rows returned, never the length of a dense stream. The driving relation is
- * aliased `mt`, as in `readLatestReadingsPerType`, so the i18n call-site
- * scanner does not read the SQL as a translation call.
+ * rows returned, never the length of a dense stream (`liveTypeDescent` says how
+ * the statement keeps the planner on that path). The driving relation is
+ * aliased `mt` so the i18n call-site scanner does not read the SQL as a
+ * translation call.
  */
 import { prisma } from "@/lib/db";
+import { liveTypeDescent } from "@/lib/measurements/live-type-descent";
 import {
   Prisma,
   type GlucoseContext,
@@ -74,8 +76,6 @@ export async function readNewestRowsPerType(
     }
   }
   const since = options.since ?? null;
-  const sinceSql =
-    since === null ? Prisma.empty : Prisma.sql`AND m."measured_at" >= ${since}`;
   // With a total, each row's rank within its type orders the cut, and the
   // count per type says whether the cut reached it.
   const fairShare = totalCap !== undefined;
@@ -115,12 +115,8 @@ export async function readNewestRowsPerType(
         SELECT m."id", m."value", m."measured_at", m."source",
                m."device_type", m."sleep_stage", m."glucose_context"
         FROM measurements m
-        WHERE m."user_id" = ${userId}
-          AND m."type" = mt."type"::measurement_type
-          AND m."deleted_at" IS NULL
-          ${sinceSql}
-        ORDER BY m."measured_at" DESC
-        LIMIT ${perTypeCap}
+        ${liveTypeDescent(userId, Prisma.sql`mt."type"::measurement_type`, "newest", since)}
+        LIMIT (SELECT ${perTypeCap}::int)
       ) x
       ${shareCut}
     ) y
@@ -155,16 +151,15 @@ export async function readNewestRowsPerType(
  * history when `since` is null), so the span a capped read reports is the
  * account's, not the hours a dense stream fills of the read. One index probe
  * at each end of every type on the partial live index, each stopping at its
- * first row. The type-less `(user_id, measured_at)` index would answer in two
- * probes, but on a table without statistics the planner took the live
- * partial index instead and sorted every row of the account.
+ * first row (`liveTypeDescent`). The type-less `(user_id, measured_at)` index
+ * would answer in two probes, but on a table without statistics the planner
+ * took the live partial index instead and sorted every row of the account.
  */
 export async function readLiveMeasurementSpan(
   userId: string,
   since: Date | null,
 ): Promise<{ oldest: Date | null; newest: Date | null }> {
-  const sinceSql =
-    since === null ? Prisma.empty : Prisma.sql`AND m."measured_at" >= ${since}`;
+  const type = Prisma.sql`mt."type"`;
   const [row] = await prisma.$queryRaw<
     Array<{ oldest: Date | null; newest: Date | null }>
   >`
@@ -172,19 +167,49 @@ export async function readLiveMeasurementSpan(
     FROM unnest(enum_range(NULL::measurement_type)) AS mt("type")
     LEFT JOIN LATERAL (
       SELECT m."measured_at" AS "at" FROM measurements m
-      WHERE m."user_id" = ${userId} AND m."type" = mt."type"
-        AND m."deleted_at" IS NULL ${sinceSql}
-      ORDER BY m."measured_at" ASC LIMIT 1
+      ${liveTypeDescent(userId, type, "oldest", since)}
+      LIMIT 1
     ) o ON true
     LEFT JOIN LATERAL (
       SELECT m."measured_at" AS "at" FROM measurements m
-      WHERE m."user_id" = ${userId} AND m."type" = mt."type"
-        AND m."deleted_at" IS NULL ${sinceSql}
-      ORDER BY m."measured_at" DESC LIMIT 1
+      ${liveTypeDescent(userId, type, "newest", since)}
+      LIMIT 1
     ) n ON true
   `;
   return {
     oldest: row?.oldest ? new Date(row.oldest) : null,
     newest: row?.newest ? new Date(row.newest) : null,
   };
+}
+
+/**
+ * Live readings per type from `since` on (the whole history when null) and up
+ * to `until` (inclusive, when given), each counted up to `cap`: one descent
+ * per type that stops at the cap, so a dense stream costs the cap, not its
+ * length. A type with no reading is absent. A caller that only compares a
+ * count with a threshold asks for one past it; one that asks whether a type
+ * exists asks for one.
+ */
+export async function countLiveReadingsPerType(
+  userId: string,
+  types: readonly MeasurementType[],
+  cap: number,
+  since: Date | null,
+  until: Date | null = null,
+): Promise<Map<MeasurementType, number>> {
+  const out = new Map<MeasurementType, number>();
+  if (types.length === 0) return out;
+  const rows = await prisma.$queryRaw<Array<{ type: string; n: number }>>`
+    SELECT mt."type" AS type, COUNT(*)::int AS n
+    FROM unnest(${[...new Set(types)]}::text[]) AS mt("type")
+    CROSS JOIN LATERAL (
+      SELECT 1
+      FROM measurements m
+      ${liveTypeDescent(userId, Prisma.sql`mt."type"::measurement_type`, "newest", since, until)}
+      LIMIT (SELECT ${cap}::int)
+    ) x
+    GROUP BY mt."type"
+  `;
+  for (const r of rows) out.set(r.type as MeasurementType, Number(r.n));
+  return out;
 }

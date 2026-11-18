@@ -160,6 +160,7 @@ export async function seedContractAccount(
   await write("modules", "PATCH", "api/auth/me/modules", {
     nutrients: true,
     timeline: true,
+    seizures: true,
   });
 
   // ── Measurements: ninety days of the common series ─────────────────────
@@ -870,6 +871,29 @@ export async function seedContractAccount(
     value: 5.6,
     unit: "%",
     takenAt: daysAgo(20).toISOString(),
+  });
+  // The seizure diary: a type, a timed seizure under it, and the rule.
+  const seizureType = await write(
+    "seizure-type",
+    "POST",
+    "api/seizures/types",
+    {
+      label: "Big one",
+      ilaeType: "FOCAL_TO_BILATERAL_TC",
+      usualDurationSec: 90,
+    },
+  );
+  await write("seizure", "POST", "api/seizures/events", {
+    typeProfileId: seizureType?.id ?? null,
+    onsetAt: daysAgo(3).toISOString(),
+    durationSec: 95,
+    durationSource: "TIMED",
+    sleepState: "ASLEEP",
+    triggers: ["FEVER"],
+  });
+  await write("seizure-rule", "PATCH", "api/seizures/settings", {
+    clusterCount: 2,
+    clusterWindowHours: 24,
   });
   await write("nutrients", "POST", "api/nutrients/batch", {
     entries: [1, 2, 3].map((n) => ({

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/filter-bar";
 import { Input } from "@/components/ui/input";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { labSourceLabelKey } from "@/lib/i18n/source-labels";
 import {
   isLabStatusFilter,
   type LabListFilters,
@@ -25,11 +26,14 @@ export interface LabFilterRailProps {
   searchInputRef: React.RefObject<HTMLInputElement | null>;
   onStatusChange: (status: LabStatusFilter | "ALL") => void;
   onCategoryChange: (category: string) => void;
+  onSourceChange: (source: string) => void;
   onFromDayChange: (from: string) => void;
   onToDayChange: (to: string) => void;
   onResetFilters: () => void;
   isFiltered: boolean;
   categories?: LabOverviewCategoryDto[] | null;
+  /** The sources the markers' newest readings carry, in display order. */
+  sources?: readonly string[];
   total?: number;
 }
 
@@ -40,11 +44,13 @@ export function LabFilterRail({
   searchInputRef,
   onStatusChange,
   onCategoryChange,
+  onSourceChange,
   onFromDayChange,
   onToDayChange,
   onResetFilters,
   isFiltered,
   categories,
+  sources,
   total,
 }: LabFilterRailProps) {
   const { t, tCount } = useTranslations();
@@ -65,6 +71,15 @@ export function LabFilterRail({
       value: c.key,
       label: c.label,
     }),
+  );
+
+  // Like the categories: one source is nothing to choose between, unless a
+  // link already filters by it and the pill is the way to clear it.
+  const sourceOptions: FilterBarSelectOption[] = (sources ?? []).flatMap(
+    (source) => {
+      const key = labSourceLabelKey(source);
+      return key ? [{ value: source, label: t(key) }] : [];
+    },
   );
 
   // Search sits beside the rail rather than in it: below `sm` the rail is
@@ -153,6 +168,16 @@ export function LabFilterRail({
               options={categoryOptions}
               allValue="ALL"
               allLabel={t("labs.filter.categoryAll")}
+            />
+          )}
+          {(sourceOptions.length > 1 || filters.source) && (
+            <FilterBarSelect
+              label={t("dataList.sourceLabel")}
+              value={filters.source ?? "ALL"}
+              onValueChange={onSourceChange}
+              options={sourceOptions}
+              allValue="ALL"
+              allLabel={t("dataList.allSources")}
             />
           )}
         </FilterBar>

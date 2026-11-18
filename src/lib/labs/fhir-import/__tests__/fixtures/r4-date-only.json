@@ -1,0 +1,17 @@
+{
+  "resourceType": "Observation",
+  "id": "obs-tsh",
+  "status": "corrected",
+  "code": {
+    "coding": [
+      {
+        "system": "urn:oid:2.16.840.1.113883.6.1",
+        "code": "11579-0",
+        "display": "Thyrotropin [Units/volume] in Serum or Plasma by Detection limit <= 0.05 mIU/L"
+      }
+    ]
+  },
+  "effectiveDateTime": "2024-11-20",
+  "valueQuantity": { "value": 2.3, "code": "m[IU]/L" },
+  "referenceRange": [{ "text": "0.4 - 4.0" }]
+}

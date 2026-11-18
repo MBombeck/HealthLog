@@ -22,11 +22,15 @@ import {
   OIDC_STATE_COOKIE_PATH,
 } from "@/lib/auth/oidc-cookie";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
-import { buildNativeCallbackUrl } from "@/lib/auth/oidc-native-handoff";
+import {
+  buildNativeCallbackUrl,
+  type NativeOidcReturn,
+} from "@/lib/auth/oidc-native-handoff";
 import { setPendingLinkCookie } from "@/lib/auth/oidc-pending-link";
 import {
   idpErrorCode,
   readStoredOidcState,
+  type StoredOidcState,
 } from "@/lib/auth/oidc-callback/state";
 import { resolveOidcAccount } from "@/lib/auth/oidc-callback/resolve-account";
 import {
@@ -96,12 +100,23 @@ function secondFactorRedirect(
 }
 
 /**
- * A failure on the native leg: the custom scheme with `error` and, at most,
- * a non-secret detail beside it. An error redirect carries no code, ticket,
- * or session.
+ * Every ending of the native leg: the one-time code, the second-factor
+ * ticket, or `error` with at most a non-secret detail beside it. It goes to
+ * the custom scheme, or to this instance's own https return page when the
+ * app chose `return=https` at login (#163 B2). That choice is read only from
+ * the decrypted, tamper-authenticated state blob, never from this request.
  */
-function nativeErrorRedirect(params: Record<string, string>): NextResponse {
-  const response = NextResponse.redirect(buildNativeCallbackUrl(params));
+function nativeRedirect(
+  stored: StoredOidcState | null,
+  params: Record<string, string>,
+): NextResponse {
+  const returnTo: NativeOidcReturn =
+    stored?.native === true && stored.nativeReturn === "https"
+      ? "https"
+      : "scheme";
+  const response = NextResponse.redirect(
+    buildNativeCallbackUrl(params, returnTo),
+  );
   deleteStateCookie(response);
   return response;
 }
@@ -206,7 +221,8 @@ export const GET = apiHandler(async (req: NextRequest) => {
   ): NextResponse => {
     if (isReproof) return reproofBack(reason);
     if (isClaim) return claimRedirect(reason);
-    if (isNative) return nativeErrorRedirect({ error: reason, ...nativeExtra });
+    if (isNative)
+      return nativeRedirect(stored, { error: reason, ...nativeExtra });
     return errorRedirect(reason);
   };
 
@@ -383,14 +399,10 @@ export const GET = apiHandler(async (req: NextRequest) => {
       // ticket alone is inert: single-use, hashed at rest, 5-minute TTL,
       // 5-attempt cap, factor-gated.
       if (isNative) {
-        const response = NextResponse.redirect(
-          buildNativeCallbackUrl({
-            mfa_ticket: secondFactor.ticket,
-            methods: secondFactor.methods.join(","),
-          }),
-        );
-        deleteStateCookie(response);
-        return response;
+        return nativeRedirect(stored, {
+          mfa_ticket: secondFactor.ticket,
+          methods: secondFactor.methods.join(","),
+        });
       }
 
       return secondFactorRedirect(stored.next, secondFactor);
@@ -406,11 +418,7 @@ export const GET = apiHandler(async (req: NextRequest) => {
         ip,
         userAgent: ua,
       });
-      const response = NextResponse.redirect(
-        buildNativeCallbackUrl({ code: handoffCode }),
-      );
-      deleteStateCookie(response);
-      return response;
+      return nativeRedirect(stored, { code: handoffCode });
     }
 
     await openOidcSession(user, ip, ua);

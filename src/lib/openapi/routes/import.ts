@@ -412,6 +412,72 @@ const healthConnectImportJob = z
   })
   .meta({ id: "HealthConnectImportJob" });
 
+const fitImportResult = z
+  .object({
+    container: z
+      .enum(["fit", "gzip", "zip"])
+      .describe("How the upload was wrapped."),
+    sessions: z
+      .number()
+      .int()
+      .describe("Sessions in the file that became a workout entry."),
+    sessionsSkipped: z
+      .number()
+      .int()
+      .describe(
+        "Sessions that could not become a workout (no start or duration, or refused by the workout schema).",
+      ),
+    imported: z.number().int().describe("New workouts stored."),
+    merged: z
+      .number()
+      .int()
+      .describe(
+        "Stored workouts (from Garmin, Apple Health, another file, ...) that gained the file's series or GPS track instead of a second copy.",
+      ),
+    alreadyPresent: z
+      .number()
+      .int()
+      .describe(
+        "Sessions already stored with everything the file adds; nothing written.",
+      ),
+    withSeries: z
+      .number()
+      .int()
+      .describe(
+        "Sessions carrying a heart-rate, speed, power or cadence series.",
+      ),
+    withRoute: z
+      .number()
+      .int()
+      .describe(
+        "Sessions carrying a GPS track the account keeps (`storeWorkoutRoutes`).",
+      ),
+  })
+  .meta({ id: "FitImportResult" });
+
+const fitImportJob = z
+  .object({
+    jobId: z.string(),
+    status: z
+      .string()
+      .describe("`queued`, `parsing`, `upserting`, `done` or `failed`."),
+    startedAt: isoDateTime(),
+    completedAt: isoDateTime().nullable(),
+    uploadBytes: z.number().int(),
+    result: fitImportResult
+      .nullable()
+      .describe(
+        "The outcome, null until the job finishes. Counts only, never a value, a timestamp or text from the file.",
+      ),
+    failureReason: z
+      .string()
+      .nullable()
+      .describe(
+        "Why the job failed. Starts with a code when the file was refused: `unsupported_file` (not FIT, gzip or ZIP), `archive_invalid` (a ZIP without exactly one `.fit`, encrypted, or unreadable), `too_large` (over 10 MB, or inflating past 32 MB), `not_fit`, `crc_mismatch` (header or file checksum), `malformed`, `too_complex` (more messages, definitions or developer fields than the caps), `not_activity` (a course, monitoring or other non-activity FIT), `no_session`, `staging_missing`; `interrupted_by_restart` after a worker restart; else free text.",
+      ),
+  })
+  .meta({ id: "FitImportJob" });
+
 export const importPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   "/api/import/health-connect-export": {
     post: {
@@ -498,6 +564,92 @@ export const importPaths: NonNullable<ZodOpenApiObject["paths"]> = {
               schema: dataEnvelope(
                 z.object({ job: healthConnectImportJob.nullable() }),
                 "HealthConnectImportStatusEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/import/fit": {
+    post: {
+      tags: ["Import"],
+      summary: "Upload an activity FIT file for background import",
+      description:
+        'Takes one activity file: a bare `.fit`, a gzipped `.fit.gz`, or the ZIP Garmin Connect\'s "Export original" writes (exactly one `.fit` member). The response is **202 with a `jobId`**; poll `GET /api/import/fit/status`. Body is `multipart/form-data` with the file under `file`, streamed to disk after authentication and capped at 10 MB. The worker checks the FIT header and both checksums, caps the messages, definitions and developer fields before decoding, and maps each session to a workout with its heart-rate / speed / power / cadence series (at most 30 000 points, averaged down above that) and, when the account keeps routes, its GPS track (stored encrypted). A session that duplicates a stored workout from another source (same sport, start within the duplicate window) adds its series and track to that workout instead of being stored twice. New rows carry `source = IMPORT` and the external id `fit:<sha-256 of the FIT bytes>:<session start>`, so re-importing the same file changes nothing. Re-uploading the same bytes resolves to the still-viable job and returns `idempotent: true`. Ten uploads a minute per account. Cookie or wildcard Bearer.',
+      requestBody: {
+        required: true,
+        content: {
+          "multipart/form-data": {
+            schema: z.object({
+              file: z
+                .string()
+                .describe(
+                  "The activity file (`.fit`, `.fit.gz` or `.zip`), under the field name `file`.",
+                ),
+            }),
+          },
+        },
+      },
+      responses: {
+        "202": {
+          description:
+            "Accepted and queued, or matched to a job already carrying these bytes.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({
+                  jobId: z.string(),
+                  status: z.enum(["queued", "parsing", "upserting", "done"]),
+                  idempotent: z.boolean().optional(),
+                }),
+                "FitImportKickoffEnvelope",
+              ),
+            },
+          },
+        },
+        "400": {
+          description: "The request carried no body at all.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "409": {
+          description:
+            "An import for this account (of any kind) is already queued or running. The upload was discarded. `errorCode` is `import.apple_health.busy`, `jobId` names the running job.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "413": {
+          description: "The file is larger than 10 MB.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+        "422": {
+          description:
+            "The multipart body could not be read: no `file` part or a malformed body. Whether the file is a readable activity is decided by the worker and reported on the job (`status: failed`, `failureReason`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "503": {
+          description:
+            "No background worker is bound, or the queue did not take the job, so nothing would run the import.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+      },
+    },
+  },
+  "/api/import/fit/status": {
+    get: {
+      tags: ["Import"],
+      summary: "The caller's latest activity file import",
+      description:
+        "The most recent activity FIT file import job of the caller, or `null` when there has never been one.",
+      responses: {
+        "200": {
+          description: "The latest job, or null.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ job: fitImportJob.nullable() }),
+                "FitImportStatusEnvelope",
               ),
             },
           },
@@ -748,7 +900,7 @@ export const importPaths: NonNullable<ZodOpenApiObject["paths"]> = {
                     .record(z.string(), z.unknown())
                     .nullable()
                     .describe(
-                      "The worker's outcome summary, null until it finishes. Free-form except for `ecg`, whose five counters (`discovered` / `imported` / `updated` / `skipped` / `failed`) are normalised to bounded non-negative integers before serving.",
+                      "The worker's outcome summary, null until it finishes. Free-form except for `ecg` and `labs`, whose counters (`ecg`: `discovered` / `imported` / `updated` / `skipped` / `failed`; `labs`, the lab results from Health Records: `discovered` / `imported` / `duplicate` / `skipped` / `failed`, plus `markersCreated`, the markers the import added to Labs) are normalised to bounded non-negative integers before serving.",
                     ),
                   failureReason: z
                     .string()

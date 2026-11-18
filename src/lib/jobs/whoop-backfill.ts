@@ -38,8 +38,7 @@ export interface WhoopBackfillPayload {
  * Per-user backfill handler. Runs a full-history sync for one account and stamps
  * `backfillCompletedAt` ONLY on a clean run, so the discovery query drops it.
  * Idempotent: the per-resource upserts are key-stable, so a re-run (e.g. a
- * reboot mid-walk) overwrites rather than duplicating. Mirrors the landed
- * `runFitbitBackfillForUser`.
+ * reboot mid-walk) overwrites rather than duplicating.
  *
  * Verdict-gated (`backfillVerdict`, `integrations/page-walk.ts`): a partial
  * hard failure (a dead token, a write failing, a fetch hard-fail) THROWS so

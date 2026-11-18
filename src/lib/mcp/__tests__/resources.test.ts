@@ -16,8 +16,8 @@ vi.mock("@/lib/medication-category", () => ({
 vi.mock("@/lib/doctor-report-data", () => ({
   collectDoctorReportData: vi.fn(),
 }));
-vi.mock("@/lib/ai/coach/tools/inventory", () => ({
-  buildCoachDataInventory: vi.fn(),
+vi.mock("@/lib/mcp/data-inventory", () => ({
+  buildMcpDataInventory: vi.fn(),
 }));
 // v1.30 — `measurements-inventory` appends the metric-status-only
 // discovery rows; stub the engine so this file never reaches a real DB read.
@@ -28,7 +28,7 @@ vi.mock("@/lib/mcp/rich-reads", () => ({
 import { MCP_RESOURCES, MCP_RESOURCE_URIS } from "../resources";
 import { prisma } from "@/lib/db";
 import { collectDoctorReportData } from "@/lib/doctor-report-data";
-import { buildCoachDataInventory } from "@/lib/ai/coach/tools/inventory";
+import { buildMcpDataInventory } from "@/lib/mcp/data-inventory";
 import { metricStatusDiscoveryRows } from "@/lib/mcp/rich-reads";
 import { resolveMedicationCategories } from "@/lib/medication-category";
 import type { McpAuthContext } from "../auth";
@@ -173,7 +173,7 @@ describe("healthlog://medications", () => {
 
 describe("healthlog://measurements/inventory", () => {
   it("merges the Coach inventory with the metric-status-only discovery rows (G5/C4)", async () => {
-    vi.mocked(buildCoachDataInventory).mockResolvedValue({
+    vi.mocked(buildMcpDataInventory).mockResolvedValue({
       entries: [
         {
           tool: "get_metric_series",

@@ -2,7 +2,7 @@
 
 /**
  * The controller behind every OAuth integration card: Withings, WHOOP,
- * Fitbit, Google Health, Polar, Oura and Strava.
+ * Google Health, Polar, Oura and Strava.
  *
  * It owns the requests (connect, resume, sync, test, disconnect, the BYO
  * credentials form) and hands `<IntegrationCard>` what the person can do. The
@@ -22,7 +22,6 @@ import {
   BookOpen,
   CircleDot,
   ExternalLink,
-  HeartPulse,
   History,
   KeyRound,
   Link2,
@@ -70,13 +69,7 @@ import { failureStreakFor, type IntegrationStatusViewModel } from "./shared";
 import { InlineAction } from "@/components/ui/inline-action";
 
 export type OAuthIntegrationKey =
-  | "withings"
-  | "whoop"
-  | "fitbit"
-  | "google-health"
-  | "polar"
-  | "oura"
-  | "strava";
+  "withings" | "whoop" | "google-health" | "polar" | "oura" | "strava";
 
 export interface OAuthIntegrationConfig {
   /** Connection key; also the `/api/<key>/…` route segment. */
@@ -143,20 +136,6 @@ export const OAUTH_INTEGRATIONS: Record<
     testEndpoint: "/api/integrations/whoop/test",
     statusQueryKey: queryKeys.whoop,
   },
-  fitbit: {
-    provider: "fitbit",
-    i18nPrefix: "settings.fitbit",
-    icon: HeartPulse,
-    docs: "fitbit",
-    dataHref: "/insights/sleep",
-    fullSync: true,
-    credentials: "required",
-    secretPlaceholder: true,
-    redirectGuide: true,
-    resumeEndpoint: "/api/integrations/fitbit/resume",
-    testEndpoint: "/api/integrations/fitbit/test",
-    statusQueryKey: queryKeys.fitbit,
-  },
   "google-health": {
     provider: "google-health",
     i18nPrefix: "settings.googleHealth",
@@ -222,10 +201,6 @@ export function OAuthIntegrationCard(props: {
   callbackUrl: IntegrationCallbackUrls[OAuthIntegrationKey];
   icon?: LucideIcon;
   titleAccessory?: ReactNode;
-  /** The provider cannot sync any more (Fitbit after its API turndown). */
-  syncDisabled?: boolean;
-  /** …and cannot be connected either. */
-  connectDisabled?: boolean;
 }) {
   const { config } = props;
   const sync = useStandardSync({
@@ -235,13 +210,7 @@ export function OAuthIntegrationCard(props: {
     fullSyncResult: config.fullSyncResult,
     statusQueryKey: config.statusQueryKey(),
   });
-  return (
-    <OAuthIntegrationCardView
-      {...props}
-      sync={sync}
-      fullSyncDisabled={props.syncDisabled}
-    />
-  );
+  return <OAuthIntegrationCardView {...props} sync={sync} />;
 }
 
 /**
@@ -256,11 +225,9 @@ export function OAuthIntegrationCardView({
   titleAccessory,
   sync,
   syncLabel,
-  syncDisabled,
   fullSyncDisabled,
   syncResults,
   details,
-  connectDisabled,
 }: {
   config: OAuthIntegrationConfig;
   viewModel: IntegrationStatusViewModel | undefined;
@@ -270,14 +237,11 @@ export function OAuthIntegrationCardView({
   sync: ProviderSync;
   /** Overrides the sync item's label (Google Health's "check status"). */
   syncLabel?: string;
-  syncDisabled?: boolean;
   fullSyncDisabled?: boolean;
   /** Replaces the standard sync result line. */
   syncResults?: ReactNode;
   /** Provider extras for the details section. */
   details?: ReactNode;
-  /** Greys out "Connect" whatever the credentials say. */
-  connectDisabled?: boolean;
 }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
@@ -402,7 +366,7 @@ export function OAuthIntegrationCardView({
             type="button"
             size="sm"
             className="min-h-11 w-full sm:min-h-9 sm:w-auto"
-            disabled={!configured || connectDisabled}
+            disabled={!configured}
             onClick={connect}
             data-slot="integration-primary-action"
             data-action="connect"
@@ -422,7 +386,7 @@ export function OAuthIntegrationCardView({
       id: "sync",
       label: syncLabel ?? t(`${i18nPrefix}Sync`),
       icon: RefreshCw,
-      disabled: busy || syncDisabled,
+      disabled: busy,
       onSelect: () => sync.run(false),
     },
     ...(config.fullSync

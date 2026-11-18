@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Settings } from "lucide-react";
+import { FileText, Settings } from "lucide-react";
 
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { useAuth } from "@/hooks/use-auth";
@@ -21,6 +21,7 @@ import {
 
 import { SettingsCardHeader } from "./_card-header";
 import { CoachSettingsForm } from "./managed-record/coach-form";
+import { DocumentsSettingsForm } from "./managed-record/documents-form";
 import type { SettingsFormProps } from "./managed-record/form-kit";
 import { InsightsSettingsForm } from "./managed-record/insights-form";
 import { ModulesSettingsForm } from "./managed-record/modules-form";
@@ -57,6 +58,8 @@ export function ManagedRecordSettingsForm({
       return <CoachSettingsForm {...props} />;
     case "insights":
       return <InsightsSettingsForm {...props} />;
+    case "documents":
+      return <DocumentsSettingsForm {...props} />;
   }
 }
 
@@ -134,7 +137,7 @@ export function ManagedRecordSettingsSection({
       data-record-settings-family={family}
     >
       <SettingsCardHeader
-        icon={Settings}
+        icon={family === "documents" ? FileText : Settings}
         title={t(`settings.sharedRecord.managedSettings.${family}.title`)}
       />
       {query.data ? (

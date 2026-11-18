@@ -15,6 +15,7 @@
  * the suppression stays countable; the annotation key per category is the
  * one the crons emitted before the move.
  */
+import { prisma } from "@/lib/db";
 import {
   isMeasurementReminderClientManaged,
   isMedicationReminderClientManaged,
@@ -43,6 +44,13 @@ interface ClientManagedGate {
    * what the phone replaces and nothing the phone does not send.
    */
   covers?: (metadata: Record<string, unknown> | undefined) => boolean;
+  /**
+   * #179 — each device may override the account-wide flag for this event
+   * through `Device.medicationDelivery`: `client` keeps the server's push off
+   * that device, `server` sends it there whatever the account says, and no
+   * override follows the account. See {@link resolveApnsDeliveryTargets}.
+   */
+  perDevice?: boolean;
 }
 
 function str(value: unknown): string {
@@ -75,6 +83,7 @@ export const CLIENT_MANAGED_APNS_EVENTS: Record<string, ClientManagedGate> = {
     // A dispatch that does not say is treated as the announcement, the
     // behaviour every reminder had before the cron started saying.
     covers: (metadata) => metadata?.followUp !== true,
+    perDevice: true,
   },
   MEASUREMENT_REMINDER: {
     isClientManaged: isMeasurementReminderClientManaged,
@@ -95,4 +104,73 @@ export function hasClientManagedApnsGate(
   const gate = CLIENT_MANAGED_APNS_EVENTS[eventType];
   if (!gate) return false;
   return gate.covers ? gate.covers(metadata) : true;
+}
+
+/**
+ * Does this device deliver the reminder itself? Its own override decides;
+ * without one (`null`, shown as "inherit") the account-wide flag does.
+ */
+export function deviceDeliversLocally(
+  override: string | null,
+  accountDeliversLocally: boolean,
+): boolean {
+  if (override === "client") return true;
+  if (override === "server") return false;
+  return accountDeliversLocally;
+}
+
+/**
+ * Where the server's APNs push of a client-managed event goes.
+ *
+ *   `skip` — nothing is pushed over APNs: every device with a push token
+ *   delivers the reminder itself (or, with no device, the account does).
+ *   `send` — push, to `onlyDeviceIds` when set and to every device
+ *   otherwise. `localDeviceIds` names the devices left out, for the wide
+ *   event.
+ *
+ * An event without per-device overrides keeps the account-wide rule: skip
+ * when the account delivers locally, send to every device otherwise.
+ */
+export type ApnsDeliveryTargets =
+  | { kind: "skip" }
+  | {
+      kind: "send";
+      onlyDeviceIds?: string[];
+      localDeviceIds: string[];
+    };
+
+export async function resolveApnsDeliveryTargets(
+  eventType: string,
+  recipientUserId: string,
+  accountDeliversLocally: boolean,
+): Promise<ApnsDeliveryTargets> {
+  const gate = CLIENT_MANAGED_APNS_EVENTS[eventType];
+  if (!gate?.perDevice) {
+    return accountDeliversLocally
+      ? { kind: "skip" }
+      : { kind: "send", localDeviceIds: [] };
+  }
+  const devices = await prisma.device.findMany({
+    where: { userId: recipientUserId, apnsToken: { not: null } },
+    select: { id: true, medicationDelivery: true },
+  });
+  // No device to decide for: the account's rule, exactly as before. The
+  // sender then reports `apns_no_devices` when it is asked to send.
+  if (devices.length === 0) {
+    return accountDeliversLocally
+      ? { kind: "skip" }
+      : { kind: "send", localDeviceIds: [] };
+  }
+  const local: string[] = [];
+  const server: string[] = [];
+  for (const device of devices) {
+    (deviceDeliversLocally(device.medicationDelivery, accountDeliversLocally)
+      ? local
+      : server
+    ).push(device.id);
+  }
+  if (server.length === 0) return { kind: "skip" };
+  return local.length === 0
+    ? { kind: "send", localDeviceIds: [] }
+    : { kind: "send", onlyDeviceIds: server, localDeviceIds: local };
 }

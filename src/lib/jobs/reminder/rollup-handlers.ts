@@ -66,6 +66,7 @@ import {
   recomputeUserRollups,
   type RollupRecomputePayload,
 } from "@/lib/rollups/measurement-rollups";
+import { auditRecentRollupDays } from "@/lib/rollups/rollup-audit";
 import {
   recomputeUserMoodRollups,
   type MoodRollupFullBackfillPayload,
@@ -463,6 +464,7 @@ export function drainCumulativeHandler(
     let denseDaysConsolidated = 0;
     let denseRowsSoftDeleted = 0;
     let denseSkipped = false;
+    let rollupDaysRefolded = 0;
 
     for (const job of jobs) {
       try {
@@ -550,6 +552,25 @@ export function drainCumulativeHandler(
       }
     }
 
+    // The DAY tier against the record, for the days written since the last
+    // two nights: a write whose inline bucket recompute failed is found and
+    // refolded here (`rollup-audit.ts`). Once per tick, after the drains,
+    // whose own writes it then checks too.
+    try {
+      const audit = await auditRecentRollupDays({
+        shouldStop,
+        log: (line) => workerLog("info", line),
+      });
+      stoppedEarly ||= audit.stoppedEarly;
+      rollupDaysRefolded = audit.daysRefolded;
+      if (audit.usersFailed > 0) passesFailed++;
+    } catch (err) {
+      recordError();
+      await reportWorkerError("rollup-audit", err, { tick: "nightly" });
+      passesFailed++;
+      firstFailure ??= { reason: "rollup audit failed", cause: err };
+    }
+
     const continuation = Math.max(
       0,
       ...jobs.map((job) => job.data.continuation ?? 0),
@@ -591,6 +612,7 @@ export function drainCumulativeHandler(
       dense_days_consolidated: denseDaysConsolidated,
       dense_rows_soft_deleted: denseRowsSoftDeleted,
       dense_skipped: denseSkipped,
+      rollup_days_refolded: rollupDaysRefolded,
     };
 
     if (firstFailure) {

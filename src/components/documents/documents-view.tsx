@@ -29,6 +29,11 @@ import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import { useAiCapability } from "@/hooks/use-ai-capability";
+import {
+  accountLabel,
+  type AccountAccessEntry,
+} from "@/lib/sharing/account-access-view";
 import { DOCUMENT_PURGE_GRACE_DAYS } from "@/lib/documents/inbound-constants";
 import { useTranslations } from "@/lib/i18n/context";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
@@ -50,20 +55,57 @@ import { VaultPageActions } from "./vault/vault-page-actions";
 /** The grace window the delete confirmation names. */
 const GRACE = { days: DOCUMENT_PURGE_GRACE_DAYS };
 
+/** "Your document vault is empty", or the managed person's name inside their record. */
+function emptyVaultTitle(
+  t: ReturnType<typeof useTranslations>["t"],
+  record: AccountAccessEntry | null,
+): string {
+  return record
+    ? t("documents.empty.titleRecord", { name: accountLabel(record) })
+    : t("documents.empty.title");
+}
+
+/**
+ * Inside a record the guardian manages, the AI actions and the document chat
+ * are simply absent when no provider can read its documents; say why once,
+ * rather than leave the guardian looking for them.
+ */
+function RecordAiAbsentNote() {
+  const { t } = useTranslations();
+  const documentAi = useAiCapability("documentAi");
+  if (
+    documentAi.available ||
+    documentAi.reason === "consent_required" ||
+    documentAi.reason === "check_failed"
+  ) {
+    return null;
+  }
+  return (
+    <p
+      className="text-muted-foreground text-sm"
+      data-slot="documents-record-ai-absent"
+    >
+      {documentAi.reason === "no_provider"
+        ? t("documents.recordAi.noProvider")
+        : t("documents.recordAi.off")}
+    </p>
+  );
+}
+
 /**
  * The vault page. Its state lives in `./vault/`: the URL filters, the
  * library (list, usage, uploads, filter choices), the selection and its bulk
  * actions, and the `?doc=` detail sheet; this component lays them out.
+ *
+ * Uploading, filing, deleting and restoring are the owner's and a managed
+ * profile's guardian's (#1403), the AI actions included:
+ * `canManageDomain("documents")` says so, false under every adult grant.
+ * Sharing and the sources also ask `!inSharedRecord`.
  */
 export function DocumentsView() {
   const { t } = useTranslations();
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const timezone = user?.timezone || DEFAULT_TIMEZONE;
-  // Uploading a document, filing it, sharing it and asking the AI about it
-  // are none of them delegated verbs. Inside somebody else's record the vault
-  // reads and nothing more: no upload path, no selection, no bulk bar, no
-  // corpus backfill. `canManageDomain("documents")` says so from the server's
-  // table, and answers false under every grant today.
   const { canManageDomain, inSharedRecord, sections } = useRecordCapabilities();
   const canManageDocuments = canManageDomain("documents");
   const router = useRouter();
@@ -185,6 +227,7 @@ export function DocumentsView() {
           onFiles={enqueueFiles}
         />
       )}
+      {inSharedRecord && canManageDocuments ? <RecordAiAbsentNote /> : null}
       {inSharedRecord && !canManageDocuments && (
         // Where the upload zone would be: the one empty space a person acting
         // for somebody else would otherwise search a control in.
@@ -251,7 +294,10 @@ export function DocumentsView() {
       ) : showEmpty && !isFiltered ? (
         <EmptyState
           icon={<FolderOpen className="size-6" aria-hidden />}
-          title={t("documents.empty.title")}
+          title={emptyVaultTitle(
+            t,
+            inSharedRecord ? (user?.accountAccess?.active ?? null) : null,
+          )}
           description={t("documents.empty.description")}
           action={
             canManageDocuments ? (
@@ -320,7 +366,7 @@ export function DocumentsView() {
           onLinkEncounter={(encounterId) =>
             runBulk("linkEncounter", { encounterId })
           }
-          onShare={openBulkShare}
+          onShare={inSharedRecord ? undefined : openBulkShare}
           onRequestDelete={() => requestDelete([...selectedIds])}
           onClear={clearSelection}
         />

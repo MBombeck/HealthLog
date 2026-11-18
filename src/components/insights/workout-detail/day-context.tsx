@@ -105,6 +105,7 @@ export function WorkoutDetailDayContext({
       <IntradayPulseChart
         userTimezone={user?.timezone}
         initialDateKey={workout.dayKey}
+        emptyMessage={t("insights.intradayPulse.emptyOutsideWorkouts")}
       />
 
       <Card density="compact" data-slot="workout-detail-day-card">

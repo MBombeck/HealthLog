@@ -32,6 +32,12 @@ import { toast } from "sonner";
 import { useTranslations } from "@/lib/i18n/context";
 import { DOCUMENT_UPLOAD_PER_USER_CONCURRENCY } from "@/lib/documents/inbound-constants";
 import { randomId } from "@/lib/random-id";
+import {
+  RecordContextMismatchError,
+  recordFenceHeaderPairs,
+  reportRecordSessionChanged,
+  validateEchoedContext,
+} from "@/lib/api/record-fence";
 import { documentDependentKeys, invalidateKeys } from "@/lib/query-keys";
 import { uploadWithBusyRetry } from "./upload-busy-retry";
 import {
@@ -124,9 +130,17 @@ async function downscaleImage(file: File): Promise<File> {
 /**
  * One multipart POST via XHR, reporting upload progress.
  *
- * Exported for the unit test: this function mints the `Idempotency-Key`,
+ * Exported for the unit tests: this function mints the `Idempotency-Key`,
  * and it did so with `crypto.randomUUID()`, which a plain-HTTP origin does
  * not expose. The test drives it with that property absent.
+ *
+ * It also carries the record-session fence by hand. `apiFetch` adds the two
+ * assertion headers to every request, but this is not `apiFetch`, and a
+ * headerless POST inside a managed or shared record is refused as an
+ * unfenced client — every upload into such a record failed with the generic
+ * error until the headers were set here. The response is checked the same way
+ * `apiFetch` checks one: an echo naming a record this tab has left, or a 409
+ * `sharing.session.changed`, hands the tab to the reconciler.
  */
 export function uploadViaXhr(
   file: File,
@@ -139,19 +153,33 @@ export function uploadViaXhr(
     // Retry-safe by construction: the server honours Idempotency-Key, so a
     // network blip that DID land server-side cannot double-store on retry.
     xhr.setRequestHeader("Idempotency-Key", randomId());
+    for (const [name, value] of recordFenceHeaderPairs()) {
+      xhr.setRequestHeader(name, value);
+    }
     xhr.upload.addEventListener("progress", (event) => {
       if (event.lengthComputable && event.total > 0) {
         onProgress(event.loaded / event.total);
       }
     });
     xhr.addEventListener("load", () => {
-      resolve(
-        parseUploadResponse(
-          xhr.status,
-          xhr.responseText,
-          xhr.getResponseHeader("Retry-After"),
-        ),
+      try {
+        validateEchoedContext((name) => xhr.getResponseHeader(name));
+      } catch (err) {
+        if (err instanceof RecordContextMismatchError) {
+          resolve({ ok: false, reason: "recordChanged" });
+          return;
+        }
+        throw err;
+      }
+      const result = parseUploadResponse(
+        xhr.status,
+        xhr.responseText,
+        xhr.getResponseHeader("Retry-After"),
       );
+      if (!result.ok && result.reason === "recordChanged") {
+        reportRecordSessionChanged();
+      }
+      resolve(result);
     });
     xhr.addEventListener("error", () =>
       resolve({ ok: false, reason: "generic" }),

@@ -3,7 +3,7 @@
 /**
  * Pure URL-facet helpers for the labs overview list, following the
  * documents-vault and measurements patterns: the list's filter state
- * lives in the page URL (?q&status&category&from&to) so a filtered view is
+ * lives in the page URL (?q&status&category&source&from&to) so a filtered view is
  * deep-linkable and survives navigation, reload and back/forward. Parsing is
  * lenient — an unknown facet drops silently — and serialisation omits defaults
  * so the unfiltered list keeps a clean URL.
@@ -39,6 +39,12 @@ export interface LabListFilters {
   status?: LabStatusFilter;
   /** Category key (matches category.key) or ALL. */
   category?: string;
+  /**
+   * How the marker's newest reading reached the record (`LabResult.source`,
+   * `?source=`): typed, scanned, imported from a CSV or from Apple Health.
+   * Like "Last measured", only the newest reading is looked at.
+   */
+  source?: string;
   /**
    * "Last measured": inclusive day bounds (`?from` / `?to`, YYYY-MM-DD) on
    * the marker's newest reading (`latest.takenAt`), in the display zone.
@@ -93,6 +99,11 @@ export function parseLabListSearchParams(
     filters.category = category;
   }
 
+  const source = params.get("source")?.trim();
+  if (source && source !== "ALL" && /^[A-Z_]{1,40}$/.test(source)) {
+    filters.source = source;
+  }
+
   const fromDay = dayOrUndefined(params.get("from"));
   if (fromDay) filters.fromDay = fromDay;
 
@@ -119,6 +130,9 @@ export function labListFiltersToSearch(filters: LabListFilters): string {
     sp.set("status", filters.status);
   if (filters.category && filters.category !== "ALL") {
     sp.set("category", filters.category);
+  }
+  if (filters.source && filters.source !== "ALL") {
+    sp.set("source", filters.source);
   }
   if (filters.fromDay) sp.set("from", filters.fromDay);
   if (filters.toDay) sp.set("to", filters.toDay);
@@ -159,7 +173,8 @@ function searchFold(value: string): string {
 }
 
 /**
- * Filter rows by text search, reference range status, category, and date bounds.
+ * Filter rows by text search, reference range status, category, source and
+ * date bounds.
  */
 export function filterMarkerRows(
   rows: readonly MarkerRow[],
@@ -171,6 +186,7 @@ export function filterMarkerRows(
   const query = trimmed ? searchFold(trimmed) : undefined;
   const status = filters.status;
   const category = filters.category;
+  const source = filters.source;
   const fromDay = filters.fromDay;
   const toDay = filters.toDay;
 
@@ -201,7 +217,12 @@ export function filterMarkerRows(
       if (markerCategory !== category) return false;
     }
 
-    // 4. "Last measured": the newest reading's day, never an older one
+    // 4. Source of the newest reading
+    if (source && source !== "ALL" && row.latest.source !== source) {
+      return false;
+    }
+
+    // 5. "Last measured": the newest reading's day, never an older one
     if (fromDay || toDay) {
       const takenDate = dayKeyOf(row.latest.takenAt);
       if (fromDay && takenDate < fromDay) return false;

@@ -144,6 +144,8 @@ export const insightsKeys = {
    */
   insightsSettings: () => ["insights", "settings"] as const,
   insightsProviderChain: () => ["insights", "provider-chain"] as const,
+  /** #1404 — the named chains and which capability is attached to which. */
+  insightsProviderChains: () => ["insights", "provider-chains"] as const,
   insightsGlp1Timeline: (limit: number | string) =>
     ["insights", "glp1-timeline", limit] as const,
   /**

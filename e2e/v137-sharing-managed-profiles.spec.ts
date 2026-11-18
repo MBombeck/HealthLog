@@ -632,12 +632,12 @@ test.describe.serial("scoped sharing browser journeys", () => {
     await expect(integrations).toHaveAttribute("data-record-id", accountId);
     // A guardian holds MANAGE on the profile, so each OAuth provider's card
     // carries one control, connect, and says whose record it connects for.
-    // Fitbit takes no new connections and Nightscout is not an OAuth flow, so
-    // those two stay status-only. No card takes typed input: provider
+    // Nightscout is not an OAuth flow, so it stays status-only. No card takes
+    // typed input: provider
     // credentials and sync settings stay with the guardian's own Settings.
     await expect(
       integrations.locator('[data-slot="integration-card"]'),
-    ).toHaveCount(8);
+    ).toHaveCount(7);
     for (const provider of MANAGED_OAUTH_PROVIDERS) {
       const card = integrations.getByTestId(`managed-integration-${provider}`);
       await expect(
@@ -652,15 +652,13 @@ test.describe.serial("scoped sharing browser journeys", () => {
         'button:not([data-slot="integration-details-toggle"]):not([data-slot="integration-diagnostics-copy"])',
       ),
     ).toHaveCount(MANAGED_OAUTH_PROVIDERS.length);
-    for (const provider of ["fitbit", "nightscout"]) {
-      await expect(
-        integrations
-          .getByTestId(`managed-integration-${provider}`)
-          .locator(
-            'button:not([data-slot="integration-details-toggle"]):not([data-slot="integration-diagnostics-copy"])',
-          ),
-      ).toHaveCount(0);
-    }
+    await expect(
+      integrations
+        .getByTestId("managed-integration-nightscout")
+        .locator(
+          'button:not([data-slot="integration-details-toggle"]):not([data-slot="integration-diagnostics-copy"])',
+        ),
+    ).toHaveCount(0);
     await expect(integrations.locator("input, select, textarea")).toHaveCount(
       0,
     );

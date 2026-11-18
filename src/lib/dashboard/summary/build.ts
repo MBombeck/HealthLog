@@ -45,6 +45,7 @@ import {
 } from "@/lib/insights/derived/sleep-rhythm";
 
 import { plainCard, SPARK_DAYS, withVerdicts, type MetricCard } from "./cards";
+import { withMonthTrends } from "./month-trend";
 import { summaryLookups, type SummaryLookups } from "./lookups";
 import { measurementCards } from "./measurement-cards";
 
@@ -347,6 +348,15 @@ export async function buildDashboardSummary(
     },
   });
 
+  const monthTrended = await time("monthTrend", () =>
+    withMonthTrends(
+      userId,
+      metrics,
+      { timezone: userTz, priorityJson: sleepPriorityJson },
+      now,
+    ),
+  );
+
   annotate({ meta: timings });
 
   return {
@@ -367,7 +377,7 @@ export async function buildDashboardSummary(
       takenToday: medsToday.takenToday,
     },
     highlightInsight: null,
-    metrics: withVerdicts(metrics, {
+    metrics: withVerdicts(monthTrended, {
       profile: {
         dateOfBirth: verdictProfile?.dateOfBirth ?? null,
         gender: verdictProfile?.gender ?? null,

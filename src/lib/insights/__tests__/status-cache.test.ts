@@ -1,5 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
+// The input gate's stamp read answers from the mocked grouped count.
+vi.mock("@/lib/insights/measurement-input-stamps", async () => ({
+  readMeasurementInputStamps: (await import("./fake-input-stamps"))
+    .stampsFromMockedGroupBy,
+}));
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     insightStatusCache: {
@@ -360,7 +366,11 @@ describe("resolveReadOnlyStatusMiss", () => {
       reason: "consent_required",
       hasProvider: true,
     });
-    expect(probeProviderPresence).toHaveBeenCalledWith("u1", "text");
+    expect(probeProviderPresence).toHaveBeenCalledWith(
+      "u1",
+      "text",
+      "statusText",
+    );
     expect(enqueueStatusGeneration).not.toHaveBeenCalled();
     expect(prisma.insightStatusCache.findUnique).not.toHaveBeenCalled();
   });

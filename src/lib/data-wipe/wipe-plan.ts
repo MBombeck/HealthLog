@@ -136,6 +136,10 @@ export const WIPE_MODELS = [
   // ── Clinical record ─────────────────────────────────────────────────────
   "MentalHealthAssessment",
   "LabResult",
+  // The identities of Health Records readings the person deleted (#1400).
+  // Kept, they would make the first import after the wipe skip results for
+  // a decision about a record that no longer exists.
+  "LabResultImportKey",
   // v1.43 — a marker's other spellings and the merges folded into it. Both
   // cascade from the marker; named before it so their counts read true.
   "BiomarkerAlias",
@@ -152,6 +156,12 @@ export const WIPE_MODELS = [
   "IllnessDayLog",
   // Before its definition and before the episode it may point at (SetNull).
   "SymptomEvent",
+  // The seizure diary. The doses cascade from their seizure,
+  // so they go first for a truthful count; the rule row points at nothing.
+  "SeizureRescueDose",
+  "SeizureEvent",
+  "SeizureClusterAlert",
+  "SeizureDiarySettings",
   // v1.42 — the person's life events. Nothing points at them.
   "LifeEvent",
   "EcgRecording",
@@ -247,8 +257,6 @@ export const WIPE_MODELS = [
   "WhoopConnection",
   "WhoopOAuthState",
   "WhoopConnectTicket",
-  "FitbitConnection",
-  "FitbitOAuthState",
   "GoogleHealthConnection",
   "GoogleHealthOAuthState",
   "McpOAuthConnection",
@@ -302,6 +310,8 @@ export const WIPE_MODELS = [
   "CustomMetric",
   "IllnessEpisode",
   "SymptomDefinition",
+  // Seizures point here with SetNull; they are already gone above.
+  "SeizureTypeProfile",
   "Workout",
   "InboundDocument",
   // Encounters point here with SetNull, so the address book outlives the
@@ -319,6 +329,10 @@ export const WIPE_MODELS = [
  * typed the confirmation.
  */
 export const WIPE_EXEMPT: Readonly<Record<string, string>> = {
+  FitbitConnection:
+    "the removed Fitbit integration's, emptied by migration 0503 and kept one release for rollback safety; nothing in this release reads or writes it, and the next minor drops it",
+  FitbitOAuthState:
+    "the removed Fitbit integration's, emptied by migration 0503 and kept one release for rollback safety; nothing in this release reads or writes it, and the next minor drops it",
   Session:
     "the signed-in session performing the wipe; deleting it signs the person out mid-action and the account is preserved",
   RefreshToken:
@@ -435,6 +449,7 @@ export const USER_RESET = {
   aiCompatKeyEncrypted: null,
   aiCompatModel: null,
   aiProviderChain: Prisma.DbNull,
+  aiNamedChains: Prisma.DbNull,
   aiResponseTimeoutSeconds: null,
   disableCoach: false,
   aiUsageLevel: null,
@@ -458,8 +473,9 @@ export const USER_RESET = {
   withingsClientSecretEncrypted: null,
   whoopClientIdEncrypted: null,
   whoopClientSecretEncrypted: null,
-  fitbitClientIdEncrypted: null,
-  fitbitClientSecretEncrypted: null,
+  // The Fitbit removal note says the imported data stays; after a wipe there
+  // is none, so the note goes with it.
+  fitbitRemovalNoticeAt: null,
   googleHealthClientIdEncrypted: null,
   googleHealthClientSecretEncrypted: null,
   nightscoutUrlEncrypted: null,
@@ -511,6 +527,7 @@ export const USER_RESET = {
   documentsLayoutJson: Prisma.DbNull,
   moduleListLayoutJson: Prisma.DbNull,
   activityGoalsJson: Prisma.DbNull,
+  nutrientTargetsJson: Prisma.DbNull,
   reportSelectionJson: Prisma.DbNull,
   modulePreferencesJson: Prisma.DbNull,
   healthScoreConfigJson: Prisma.DbNull,
@@ -529,6 +546,10 @@ export const USER_RESET = {
  * {@link WIPE_EXEMPT}: sign-in, identity, and how the interface is rendered.
  */
 export const USER_KEPT_FIELDS: Readonly<Record<string, string>> = {
+  fitbitClientIdEncrypted:
+    "the removed Fitbit integration's, emptied by migration 0503 and kept one release for rollback safety; nothing in this release reads or writes it, and the next minor drops it",
+  fitbitClientSecretEncrypted:
+    "the removed Fitbit integration's, emptied by migration 0503 and kept one release for rollback safety; nothing in this release reads or writes it, and the next minor drops it",
   id: "the account's primary key",
   username: "the account's sign-in identity",
   email: "the account's sign-in identity and recovery address",
