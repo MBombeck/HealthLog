@@ -128,7 +128,12 @@ export interface SeizureEventBackupEntry {
 export interface SeizuresBackupSection {
   seizureTypes: SeizureTypeBackupEntry[];
   seizureEvents: SeizureEventBackupEntry[];
-  seizureSettings: { clusterCount: number; clusterWindowHours: number } | null;
+  seizureSettings: {
+    clusterCount: number;
+    clusterWindowHours: number;
+    createdAt: string;
+    updatedAt: string;
+  } | null;
 }
 
 export interface SeizuresBackupCounts {
@@ -269,6 +274,8 @@ export async function buildSeizuresBackupSection(
       ? {
           clusterCount: settings.clusterCount,
           clusterWindowHours: settings.clusterWindowHours,
+          createdAt: settings.createdAt.toISOString(),
+          updatedAt: settings.updatedAt.toISOString(),
         }
       : null,
   };
@@ -323,6 +330,8 @@ export interface SeizuresRestoreInput {
   seizureSettings?: {
     clusterCount: number;
     clusterWindowHours: number;
+    createdAt?: string | undefined;
+    updatedAt?: string | undefined;
   } | null;
 }
 
@@ -498,6 +507,12 @@ export async function restoreSeizuresData(
         userId: ownerId,
         clusterCount: payload.seizureSettings.clusterCount,
         clusterWindowHours: payload.seizureSettings.clusterWindowHours,
+        ...(payload.seizureSettings.createdAt
+          ? { createdAt: new Date(payload.seizureSettings.createdAt) }
+          : {}),
+        ...(payload.seizureSettings.updatedAt
+          ? { updatedAt: new Date(payload.seizureSettings.updatedAt) }
+          : {}),
       },
     });
   }

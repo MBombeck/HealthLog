@@ -124,5 +124,7 @@ export const seizureSettingsBackupSchema = z
   .object({
     clusterCount: z.number().int().min(2).max(20),
     clusterWindowHours: z.number().int().min(1).max(168),
+    createdAt: isoDateTime.optional(),
+    updatedAt: isoDateTime.optional(),
   })
   .passthrough();
