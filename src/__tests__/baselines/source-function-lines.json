@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 332,
-  "total": 108043,
+  "total": 107999,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
@@ -311,7 +311,7 @@
     "lib/measurements/dense-intraday-retention.ts :: runDenseIntradayRetention > walkSource > writeDay > foldOnce": 212,
     "lib/measurements/drain-per-sample-cumulative.ts :: drainPerSampleCumulative": 344,
     "lib/measurements/drain-per-sample-cumulative.ts :: drainPerSampleCumulative > writeDay": 205,
-    "lib/measurements/import-apple-health-export.ts :: streamParseExportXml": 1247,
+    "lib/measurements/import-apple-health-export.ts :: streamParseExportXml": 1242,
     "lib/measurements/import-apple-health-export.ts :: streamParseExportXml > (anonymous) #2": 325,
     "lib/medications/efficacy/build-efficacy.ts :: buildMedicationEfficacy": 268,
     "lib/medications/intake-slot-dedup.ts :: dedupeUserIntakeSlots": 319,
