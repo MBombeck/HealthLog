@@ -175,24 +175,53 @@ export function withRecordFenceHeaders(init?: RequestInit): RequestInit {
  * response to SSE readers and blob downloads that need the stream intact.
  */
 export function validateResponseContext(res: Response): Response {
-  const echoedEpoch = res.headers.get(RECORD_EPOCH_HEADER);
-  const echoedScope = res.headers.get(RECORD_SCOPE_HEADER);
+  validateEchoedContext((name) => res.headers.get(name));
+  return res;
+}
+
+/**
+ * The header-level check behind `validateResponseContext`, for a transport
+ * that is not `fetch`.
+ *
+ * The vault upload is an `XMLHttpRequest` because it needs real upload
+ * progress, so it has no `Response` to hand over — only a header getter. It
+ * runs the same rule through this function rather than a copy of it, so the
+ * mismatch-only posture cannot drift between the two transports.
+ */
+export function validateEchoedContext(
+  getHeader: (name: string) => string | null,
+): void {
+  const echoedEpoch = getHeader(RECORD_EPOCH_HEADER);
+  const echoedScope = getHeader(RECORD_SCOPE_HEADER);
 
   // No echo: this response resolved no record scope. True, safe, and the
   // common case — see the version-poller note above.
-  if (echoedEpoch === null || echoedScope === null) return res;
+  if (echoedEpoch === null || echoedScope === null) return;
 
   // Not adopted yet: there is nothing to contradict. The request itself
   // asserted `bootstrap`, so the server already decided whether to serve it.
-  if (adopted === null) return res;
+  if (adopted === null) return;
 
   const expected = currentAssertion();
   if (echoedEpoch === expected.epoch && echoedScope === expected.scope) {
-    return res;
+    return;
   }
 
   onContextMismatch?.();
   throw new RecordContextMismatchError();
+}
+
+/**
+ * Hand a 409 `sharing.session.changed` that did not travel through the query
+ * cache to the same reconciler.
+ *
+ * `RecordSessionFenceBridge` finds the 409 by watching errored queries, which
+ * covers every `useQuery` read. A transport outside that cache (the XHR upload)
+ * reports the refusal here, so the tab holds and re-reads `/api/auth/me` the
+ * same way it would for a read.
+ */
+export function reportRecordSessionChanged(): void {
+  onContextMismatch?.();
 }
 
 /**

@@ -12309,7 +12309,8 @@
       "duplicateExists": "Un document identique est déjà enregistré.",
       "uploadBusy": "Le serveur était occupé par d’autres téléversements. Réessayez maintenant.",
       "rateLimited": "Vous avez atteint la limite de téléversements pour cette heure. Réessayez plus tard.",
-      "generic": "Le téléversement a échoué. Veuillez réessayer."
+      "generic": "Le téléversement a échoué. Veuillez réessayer.",
+      "recordChanged": "Le dossier ouvert a changé pendant le téléversement de ce fichier. Téléversez-le à nouveau."
     },
     "toast": {
       "duplicate": "Déjà enregistré. Le document existant est mis en évidence.",

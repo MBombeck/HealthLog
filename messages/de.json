@@ -12309,7 +12309,8 @@
       "duplicateExists": "Ein identisches Dokument ist bereits gespeichert.",
       "uploadBusy": "Der Server war mit anderen Uploads beschäftigt. Versuche es jetzt erneut.",
       "rateLimited": "Das Upload-Limit für diese Stunde ist erreicht. Versuche es später erneut.",
-      "generic": "Upload fehlgeschlagen. Bitte erneut versuchen."
+      "generic": "Upload fehlgeschlagen. Bitte erneut versuchen.",
+      "recordChanged": "Während des Uploads hat sich die geöffnete Akte geändert. Lade die Datei erneut hoch."
     },
     "toast": {
       "duplicate": "Bereits gespeichert. Das vorhandene Dokument ist hervorgehoben.",

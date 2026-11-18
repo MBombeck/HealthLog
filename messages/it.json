@@ -12309,7 +12309,8 @@
       "duplicateExists": "Un documento identico è già archiviato.",
       "uploadBusy": "Il server era occupato con altri caricamenti. Riprova adesso.",
       "rateLimited": "Hai raggiunto il limite di caricamenti per quest’ora. Riprova più tardi.",
-      "generic": "Caricamento non riuscito. Riprova."
+      "generic": "Caricamento non riuscito. Riprova.",
+      "recordChanged": "La cartella aperta è cambiata durante il caricamento di questo file. Caricalo di nuovo."
     },
     "toast": {
       "duplicate": "Già archiviato. Il documento esistente è evidenziato.",

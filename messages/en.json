@@ -12309,7 +12309,8 @@
       "duplicateExists": "An identical document is already stored.",
       "uploadBusy": "The server was busy with other uploads. Try again now.",
       "rateLimited": "You have reached the upload limit for this hour. Try again later.",
-      "generic": "Upload failed. Please try again."
+      "generic": "Upload failed. Please try again.",
+      "recordChanged": "The open record changed while this file was uploading. Upload it again."
     },
     "toast": {
       "duplicate": "Already stored. The existing document is highlighted.",

@@ -12309,7 +12309,8 @@
       "duplicateExists": "Um documento idêntico já está armazenado.",
       "uploadBusy": "O servidor estava ocupado com outros envios. Tente novamente agora.",
       "rateLimited": "Você atingiu o limite de envios desta hora. Tente novamente mais tarde.",
-      "generic": "Falha no envio. Tente novamente."
+      "generic": "Falha no envio. Tente novamente.",
+      "recordChanged": "O registro aberto mudou enquanto este arquivo era enviado. Envie-o novamente."
     },
     "toast": {
       "duplicate": "Já armazenado. O documento existente está destacado.",

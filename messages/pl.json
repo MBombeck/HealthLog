@@ -12309,7 +12309,8 @@
       "duplicateExists": "Identyczny dokument jest już zapisany.",
       "uploadBusy": "Serwer był zajęty innymi przesyłaniami. Spróbuj ponownie teraz.",
       "rateLimited": "Osiągnięto limit przesyłań na tę godzinę. Spróbuj ponownie później.",
-      "generic": "Przesyłanie nie powiodło się. Spróbuj ponownie."
+      "generic": "Przesyłanie nie powiodło się. Spróbuj ponownie.",
+      "recordChanged": "Otwarta kartoteka zmieniła się podczas przesyłania tego pliku. Prześlij go ponownie."
     },
     "toast": {
       "duplicate": "Już zapisano. Istniejący dokument został wyróżniony.",

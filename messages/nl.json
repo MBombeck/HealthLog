@@ -12309,7 +12309,8 @@
       "duplicateExists": "Er is al een identiek document opgeslagen.",
       "uploadBusy": "De server was bezig met andere uploads. Probeer het nu opnieuw.",
       "rateLimited": "Je hebt de uploadlimiet voor dit uur bereikt. Probeer het later opnieuw.",
-      "generic": "Uploaden is mislukt. Probeer het opnieuw."
+      "generic": "Uploaden is mislukt. Probeer het opnieuw.",
+      "recordChanged": "Het geopende dossier is gewijzigd terwijl dit bestand werd geüpload. Upload het opnieuw."
     },
     "toast": {
       "duplicate": "Al opgeslagen. Het bestaande document is gemarkeerd.",
