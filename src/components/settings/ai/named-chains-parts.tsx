@@ -115,41 +115,44 @@ function EntryRow({
           )}
         </p>
       </div>
-      <div className="ml-auto flex shrink-0 items-center gap-2">
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          aria-label={t("settings.ai.providerChain.moveUp")}
-          disabled={index === 0}
-          onClick={() => onMove(-1)}
-          className={ICON_BUTTON}
-        >
-          <ArrowUp className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          aria-label={t("settings.ai.providerChain.moveDown")}
-          disabled={index === count - 1}
-          onClick={() => onMove(1)}
-          className={ICON_BUTTON}
-        >
-          <ArrowDown className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          aria-label={t("settings.ai.providerChain.removeFromChain")}
-          disabled={count <= 1}
-          onClick={onRemove}
-          className={`text-destructive ${ICON_BUTTON}`}
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
+      {/* A lone entry can be neither moved nor removed, so its three
+          disabled buttons were a whole row of nothing. */}
+      {count > 1 && (
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            aria-label={t("settings.ai.providerChain.moveUp")}
+            disabled={index === 0}
+            onClick={() => onMove(-1)}
+            className={ICON_BUTTON}
+          >
+            <ArrowUp className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            aria-label={t("settings.ai.providerChain.moveDown")}
+            disabled={index === count - 1}
+            onClick={() => onMove(1)}
+            className={ICON_BUTTON}
+          >
+            <ArrowDown className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            aria-label={t("settings.ai.providerChain.removeFromChain")}
+            onClick={onRemove}
+            className={`text-destructive ${ICON_BUTTON}`}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </li>
   );
 }
@@ -309,18 +312,22 @@ export function ChainTile({
   );
 }
 
-/** Every task, the chain it follows, and the providers that chain tries. */
+/**
+ * Every task and the chain it follows.
+ *
+ * The providers a chain tries are listed only under a task that follows a
+ * named chain: repeating the default chain under every task stacked about a
+ * dozen identical lines. Until a chain exists there is nothing to choose, so
+ * one sentence says so instead of a column of disabled selects.
+ */
 export function TaskList({
   chains,
   attachments,
-  defaultEntries,
   providers,
   onAttach,
 }: {
   chains: readonly NamedChainView[];
   attachments: Readonly<Record<string, string>>;
-  /** What Default resolves to: the default chain's entries. */
-  defaultEntries: readonly ChainProviderType[];
   providers: ProviderInfo;
   onAttach: (capability: string, chainId: string) => void;
 }) {
@@ -335,55 +342,69 @@ export function TaskList({
           {t("settings.ai.namedChains.tasksHint")}
         </p>
       </div>
-      <ul className="divide-border divide-y" data-slot="named-chain-tasks">
-        {NAMED_CHAIN_CAPABILITIES.map((capability) => {
-          const label = t(`settings.ai.namedChains.capabilities.${capability}`);
-          const attached = chains.find((c) => c.id === attachments[capability]);
-          const entries = attached?.entries ?? defaultEntries;
-          return (
-            <li
-              key={capability}
-              data-capability={capability}
-              className="flex flex-wrap items-start gap-x-3 gap-y-2 py-3 first:pt-0 last:pb-0"
-            >
-              <div className="min-w-0 flex-1 basis-48">
-                <p className="text-sm font-medium">{label}</p>
-                <ul className="text-muted-foreground mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs">
-                  {entries.map((type) => (
-                    <li key={type}>
-                      <EgressText
-                        egress={providers.get(type)?.egress ?? "external"}
-                        name={t(`settings.ai.providerChain.types.${type}`)}
-                      />
-                    </li>
-                  ))}
-                </ul>
-                {attached?.entries.length === 1 && (
-                  <p className="text-muted-foreground mt-1 text-xs">
-                    {t("settings.ai.namedChains.bindingShort")}
-                  </p>
-                )}
-              </div>
-              <NativeSelect
-                aria-label={label}
-                value={attached?.id ?? ""}
-                onChange={(e) => onAttach(capability, e.target.value)}
-                className="w-full sm:w-48"
-                disabled={chains.length === 0}
+      {chains.length === 0 ? (
+        <p
+          className="text-muted-foreground text-xs"
+          data-slot="named-chain-tasks-empty"
+        >
+          {t("settings.ai.namedChains.tasksNeedChain")}
+        </p>
+      ) : (
+        <ul className="divide-border divide-y" data-slot="named-chain-tasks">
+          {NAMED_CHAIN_CAPABILITIES.map((capability) => {
+            const label = t(
+              `settings.ai.namedChains.capabilities.${capability}`,
+            );
+            const attached = chains.find(
+              (c) => c.id === attachments[capability],
+            );
+
+            return (
+              <li
+                key={capability}
+                data-capability={capability}
+                className="flex flex-wrap items-start gap-x-3 gap-y-2 py-3 first:pt-0 last:pb-0"
               >
-                <option value="">
-                  {t("settings.ai.namedChains.taskDefault")}
-                </option>
-                {chains.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name.trim() || "…"}
+                <div className="min-w-0 flex-1 basis-48">
+                  <p className="text-sm font-medium">{label}</p>
+                  {attached ? (
+                    <ul className="text-muted-foreground mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+                      {attached.entries.map((type) => (
+                        <li key={type}>
+                          <EgressText
+                            egress={providers.get(type)?.egress ?? "external"}
+                            name={t(`settings.ai.providerChain.types.${type}`)}
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {attached?.entries.length === 1 && (
+                    <p className="text-muted-foreground mt-1 text-xs">
+                      {t("settings.ai.namedChains.bindingShort")}
+                    </p>
+                  )}
+                </div>
+                <NativeSelect
+                  aria-label={label}
+                  value={attached?.id ?? ""}
+                  onChange={(e) => onAttach(capability, e.target.value)}
+                  className="w-full sm:w-48"
+                >
+                  <option value="">
+                    {t("settings.ai.namedChains.taskDefault")}
                   </option>
-                ))}
-              </NativeSelect>
-            </li>
-          );
-        })}
-      </ul>
+                  {chains.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name.trim() || "…"}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </>
   );
 }

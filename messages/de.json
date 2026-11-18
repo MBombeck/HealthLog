@@ -6611,7 +6611,7 @@
         "defaultChainLabel": "Standardkette",
         "defaultChainHint": "Aufgaben auf „Standard“ folgen dieser Kette. Ihre gewohnten Regeln gelten weiter: Dokumente versuchen zuerst ein lokales Modell.",
         "tasksHeading": "Aufgaben",
-        "tasksHint": "Wähle die Kette für jede Aufgabe. Die Anbieter, die sie versuchen würde, stehen in Reihenfolge darunter.",
+        "tasksHint": "Wähle die Kette für jede Aufgabe. Unter einer Aufgabe mit eigener Kette stehen die Anbieter, die sie versucht, in Reihenfolge.",
         "taskDefault": "Standard",
         "save": "Ketten speichern",
         "saved": "Ketten gespeichert",
@@ -6628,7 +6628,8 @@
           "statusText": "Statushinweise",
           "workoutInsights": "Trainingshinweise",
           "reactionLines": "Reaktionen auf neue Messwerte"
-        }
+        },
+        "tasksNeedChain": "Lege oben eine Kette an, um einer Aufgabe eigene Anbieter zu geben. Bis dahin folgt jede Aufgabe dem Standard."
       },
       "activeProviderHeading": "Aktiver Anbieter",
       "activeProviderLabel": "Anbieter einrichten",

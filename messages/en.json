@@ -6611,7 +6611,7 @@
         "defaultChainLabel": "Default chain",
         "defaultChainHint": "Tasks on Default follow this chain. Their usual rules still apply: document reads try a local model first.",
         "tasksHeading": "Tasks",
-        "tasksHint": "Pick the chain each task uses. The providers it would try are listed in order.",
+        "tasksHint": "Choose the chain for each task. A task on a chain of its own lists the providers it tries, in order.",
         "taskDefault": "Default",
         "save": "Save chains",
         "saved": "Chains saved",
@@ -6628,7 +6628,8 @@
           "statusText": "Status notes",
           "workoutInsights": "Workout notes",
           "reactionLines": "Reactions to new readings"
-        }
+        },
+        "tasksNeedChain": "Create a chain above to give a task its own providers. Until then every task follows the default."
       },
       "activeProviderHeading": "Active provider",
       "activeProviderLabel": "Set up a provider",

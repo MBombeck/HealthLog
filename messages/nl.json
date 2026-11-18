@@ -6611,7 +6611,7 @@
         "defaultChainLabel": "Standaardketen",
         "defaultChainHint": "Taken op Standaard volgen deze keten. Hun gebruikelijke regels blijven gelden: documenten proberen eerst een lokaal model.",
         "tasksHeading": "Taken",
-        "tasksHint": "Kies de keten voor elke taak. De providers die hij zou proberen staan op volgorde.",
+        "tasksHint": "Kies de keten voor elke taak. Onder een taak met een eigen keten staan de aanbieders die ze probeert, op volgorde.",
         "taskDefault": "Standaard",
         "save": "Ketens opslaan",
         "saved": "Ketens opgeslagen",
@@ -6628,7 +6628,8 @@
           "statusText": "Statusnotities",
           "workoutInsights": "Trainingsnotities",
           "reactionLines": "Reacties op nieuwe metingen"
-        }
+        },
+        "tasksNeedChain": "Maak hierboven een keten om een taak eigen aanbieders te geven. Tot dan volgt elke taak de standaard."
       },
       "activeProviderHeading": "Actieve provider",
       "activeProviderLabel": "Provider instellen",

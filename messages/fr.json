@@ -6611,7 +6611,7 @@
         "defaultChainLabel": "Chaîne par défaut",
         "defaultChainHint": "Les tâches sur Par défaut suivent cette chaîne. Leurs règles habituelles s'appliquent toujours : les documents essaient d'abord un modèle local.",
         "tasksHeading": "Tâches",
-        "tasksHint": "Choisissez la chaîne de chaque tâche. Les fournisseurs qu'elle essaierait sont listés dans l'ordre.",
+        "tasksHint": "Choisissez la chaîne de chaque tâche. Une tâche avec sa propre chaîne affiche, dans l’ordre, les fournisseurs qu’elle essaie.",
         "taskDefault": "Par défaut",
         "save": "Enregistrer les chaînes",
         "saved": "Chaînes enregistrées",
@@ -6628,7 +6628,8 @@
           "statusText": "Notes d'état",
           "workoutInsights": "Notes d'entraînement",
           "reactionLines": "Réactions aux nouvelles mesures"
-        }
+        },
+        "tasksNeedChain": "Créez une chaîne ci-dessus pour donner à une tâche ses propres fournisseurs. D’ici là, chaque tâche suit la chaîne par défaut."
       },
       "activeProviderHeading": "Fournisseur actif",
       "activeProviderLabel": "Configurer un fournisseur",

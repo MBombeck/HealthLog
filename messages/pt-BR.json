@@ -6611,7 +6611,7 @@
         "defaultChainLabel": "Cadeia padrão",
         "defaultChainHint": "Tarefas em Padrão seguem esta cadeia. Suas regras de sempre continuam valendo: documentos tentam primeiro um modelo local.",
         "tasksHeading": "Tarefas",
-        "tasksHint": "Escolha a cadeia de cada tarefa. Os provedores que ela tentaria aparecem em ordem.",
+        "tasksHint": "Escolha a cadeia de cada tarefa. Uma tarefa com cadeia própria mostra, em ordem, os provedores que tenta.",
         "taskDefault": "Padrão",
         "save": "Salvar cadeias",
         "saved": "Cadeias salvas",
@@ -6628,7 +6628,8 @@
           "statusText": "Notas de status",
           "workoutInsights": "Notas de treino",
           "reactionLines": "Reações a novas medições"
-        }
+        },
+        "tasksNeedChain": "Crie uma cadeia acima para dar a uma tarefa os próprios provedores. Até lá, todas as tarefas seguem o padrão."
       },
       "activeProviderHeading": "Provedor ativo",
       "activeProviderLabel": "Configurar um provedor",

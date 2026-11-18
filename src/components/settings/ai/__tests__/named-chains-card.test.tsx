@@ -90,17 +90,19 @@ describe("NamedChainsCard", () => {
     expect(documents).toContain("Bound to this provider, no fallback.");
     expect(documents).toMatch(/<option value="home" selected="">/);
 
-    // Default shows the fallback chain's entries.
+    // A task on Default does not repeat the default chain's providers.
     const briefing = row(html, "data-capability", "briefing");
     expect(briefing).toMatch(/<option value="" selected="">Default/);
-    expect(briefing.indexOf("OpenAI")).toBeLessThan(
-      briefing.indexOf("Local model"),
-    );
+    expect(briefing).not.toContain("OpenAI");
+    expect(briefing).not.toContain("Local model");
   });
 
   it("says what Default means when there are no chains yet", () => {
     const html = render({ ...DATA, chains: [], attachments: {} });
     expect(html).toContain("No chains yet.");
     expect(html).not.toContain("Default chain");
+    // No column of disabled selects: one sentence instead.
+    expect(html).toContain('data-slot="named-chain-tasks-empty"');
+    expect(html).not.toContain('data-slot="named-chain-tasks"');
   });
 });

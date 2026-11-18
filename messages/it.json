@@ -6611,7 +6611,7 @@
         "defaultChainLabel": "Catena predefinita",
         "defaultChainHint": "Le attività su Predefinita seguono questa catena. Le loro regole abituali restano valide: i documenti provano prima un modello locale.",
         "tasksHeading": "Attività",
-        "tasksHint": "Scegli la catena di ogni attività. I provider che proverebbe sono elencati in ordine.",
+        "tasksHint": "Scegli la catena per ogni attività. Un'attività con una catena propria mostra, in ordine, i fornitori che prova.",
         "taskDefault": "Predefinita",
         "save": "Salva catene",
         "saved": "Catene salvate",
@@ -6628,7 +6628,8 @@
           "statusText": "Note di stato",
           "workoutInsights": "Note sugli allenamenti",
           "reactionLines": "Reazioni alle nuove misurazioni"
-        }
+        },
+        "tasksNeedChain": "Crea una catena qui sopra per dare a un'attività i suoi fornitori. Fino ad allora ogni attività segue quella predefinita."
       },
       "activeProviderHeading": "Provider attivo",
       "activeProviderLabel": "Configura un fornitore",

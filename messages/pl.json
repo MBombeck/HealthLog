@@ -6611,7 +6611,7 @@
         "defaultChainLabel": "Łańcuch domyślny",
         "defaultChainHint": "Zadania na Domyślnym korzystają z tego łańcucha. Ich zwykłe zasady nadal obowiązują: dokumenty najpierw próbują modelu lokalnego.",
         "tasksHeading": "Zadania",
-        "tasksHint": "Wybierz łańcuch dla każdego zadania. Dostawcy, których by próbowało, są podani w kolejności.",
+        "tasksHint": "Wybierz łańcuch dla każdego zadania. Pod zadaniem z własnym łańcuchem widać, w kolejności, dostawców, których próbuje.",
         "taskDefault": "Domyślny",
         "save": "Zapisz łańcuchy",
         "saved": "Łańcuchy zapisane",
@@ -6628,7 +6628,8 @@
           "statusText": "Notatki o stanie",
           "workoutInsights": "Notatki o treningach",
           "reactionLines": "Reakcje na nowe pomiary"
-        }
+        },
+        "tasksNeedChain": "Utwórz łańcuch powyżej, aby nadać zadaniu własnych dostawców. Do tego czasu każde zadanie korzysta z domyślnego."
       },
       "activeProviderHeading": "Aktywny dostawca",
       "activeProviderLabel": "Skonfiguruj dostawcę",

@@ -6611,7 +6611,7 @@
         "defaultChainLabel": "Cadena predeterminada",
         "defaultChainHint": "Las tareas en Predeterminada siguen esta cadena. Sus reglas habituales se mantienen: los documentos prueban primero un modelo local.",
         "tasksHeading": "Tareas",
-        "tasksHint": "Elige la cadena de cada tarea. Debajo aparecen, en orden, los proveedores que probaría.",
+        "tasksHint": "Elige la cadena de cada tarea. Una tarea con cadena propia muestra, en orden, los proveedores que prueba.",
         "taskDefault": "Predeterminada",
         "save": "Guardar cadenas",
         "saved": "Cadenas guardadas",
@@ -6628,7 +6628,8 @@
           "statusText": "Notas de estado",
           "workoutInsights": "Notas de entrenamiento",
           "reactionLines": "Reacciones a nuevas mediciones"
-        }
+        },
+        "tasksNeedChain": "Crea una cadena arriba para dar a una tarea sus propios proveedores. Hasta entonces, todas las tareas siguen la predeterminada."
       },
       "activeProviderHeading": "Proveedor activo",
       "activeProviderLabel": "Configurar un proveedor",
