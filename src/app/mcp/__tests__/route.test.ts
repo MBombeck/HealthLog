@@ -122,6 +122,8 @@ const READ_TOOLS = [
   "get_day",
   // v1.38 — the bounded visit history.
   "get_visits",
+  // The seizure diary.
+  "get_seizures",
 ].sort();
 
 /** A valid, narrow-scope (`health:read`) token resolution. */

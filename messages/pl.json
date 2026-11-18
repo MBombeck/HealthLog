@@ -58,7 +58,8 @@
     "errorIdCopied": "Skopiowano ID błędu",
     "readThrottled": "W tej chwili jest zbyt wiele zapytań, więc spróbuj ponownie później.",
     "sessionEnded": "Twoja sesja wygasła, więc zaloguj się ponownie, aby kontynuować.",
-    "signIn": "Zaloguj się"
+    "signIn": "Zaloguj się",
+    "yes": "Tak"
   },
   "apiErrors": {
     "measurement": {
@@ -249,7 +250,24 @@
         "invalid": "Nie udało się odczytać odpowiedzi passkey. Spróbuj ponownie."
       }
     },
-    "oidc_only": "Ten serwer pozwala tylko na logowanie jednokrotne (SSO). Kontynuuj u swojego dostawcy tożsamości."
+    "oidc_only": "Ten serwer pozwala tylko na logowanie jednokrotne (SSO). Kontynuuj u swojego dostawcy tożsamości.",
+    "seizures": {
+      "disabled": "Dzienniczek napadów jest wyłączony dla tej kartoteki.",
+      "event": {
+        "notFound": "Ten napad już nie istnieje."
+      },
+      "rescue": {
+        "notFound": "Ta dawka ratunkowa już nie istnieje.",
+        "medicationNotFound": "Ten lek już nie istnieje.",
+        "medicationRequired": "Wybierz podany lek.",
+        "notAsNeeded": "Lek ratunkowy musi być lekiem przyjmowanym w razie potrzeby."
+      },
+      "type": {
+        "inUse": "Pod tym rodzajem zapisano napady. Zamiast tego zarchiwizuj go.",
+        "limit": "Jest już 12 rodzajów napadów. Zarchiwizuj jeden, aby dodać kolejny.",
+        "notFound": "Ten rodzaj napadu już nie istnieje."
+      }
+    }
   },
   "doctorReport": {
     "title": "Raport zdrowotny",
@@ -574,7 +592,9 @@
       "symptom": "Objaw",
       "symptomDescription": "Jeden z twoich objawów, z nasileniem",
       "lifeEventDescription": "Przeprowadzka, narodziny, nowa praca",
-      "lifeEvent": "Wydarzenie życiowe"
+      "lifeEvent": "Wydarzenie życiowe",
+      "seizure": "Napad",
+      "seizureDescription": "Uruchom stoper lub zapisz napad, którego czasu nie mierzono"
     },
     "cycle": "Cykl",
     "labs": "Wyniki badań",
@@ -584,7 +604,8 @@
     "documents": "Dokumenty",
     "vaccinations": "Szczepienia",
     "mentalWellbeing": "Dobrostan psychiczny",
-    "timeline": "Oś czasu"
+    "timeline": "Oś czasu",
+    "seizures": "Napady"
   },
   "auth": {
     "login": "Zaloguj się",
@@ -866,7 +887,8 @@
     },
     "greetingOnly": "{greeting}.",
     "welcomeNew": "Witaj.",
-    "welcomeNewWithName": "Witaj, {name}."
+    "welcomeNewWithName": "Witaj, {name}.",
+    "quickAddSeizure": "Zapisz napad"
   },
   "measurements": {
     "title": "Pomiary",
@@ -8645,7 +8667,9 @@
           "failureUnconfirmed": "Wpisz dokładnie nazwę użytkownika konta, aby potwierdzić.",
           "failureUsernameTaken": "Ta nazwa użytkownika jest już zajęta.",
           "failureOwnerExists": "Konto, do którego należy ten plik, jest na tym serwerze, a plik przywraca się do tego konta. Prześlij go ponownie bez wybierania konta."
-        }
+        },
+        "restoreSkippedSeizureMedicationReference": "Plan ratunkowy lub dawka ratunkowa napadu powiązane z lekiem, którego nie ma w pliku (zachowane bez powiązania)",
+        "restoreSkippedSeizureTypeReference": "Napad powiązany z rodzajem napadu, którego nie ma w pliku (zachowany bez rodzaju)"
       },
       "danger-zone": {
         "title": "Strefa zagrożenia",
@@ -9530,6 +9554,12 @@
       "titleRecovered": "Zadanie w tle znów działa: {queue}",
       "bodyFailing": "Zadanie w tle {queue} zakończyło się błędem {failures} razy z rzędu i jest widoczne na stronie stanu w panelu administratora. Ostatni błąd: {error}",
       "bodyRecovered": "Zadanie w tle {queue} znów wykonało się poprawnie."
+    },
+    "eventSeizureCluster": "Napady gromadne",
+    "eventSeizureClusterDesc": "Gdy napad zapisany przez inną osobę tworzy serię według reguły dzienniczka. Raz na serię.",
+    "seizureCluster": {
+      "title": "Napady gromadne",
+      "body": "Napady: {count} w ciągu {hours} h, zapisane przez: {name}. Plan ratunkowy jest w dzienniczku napadów."
     }
   },
   "i18n": {
@@ -10917,6 +10947,10 @@
     "timeline": {
       "label": "Oś czasu",
       "description": "Lata w jednym widoku: choroby, leki i wizyty obok Twoich wartości, a do tego Twoje własne wydarzenia życiowe."
+    },
+    "seizures": {
+      "label": "Dzienniczek napadów",
+      "description": "Zapisuj napady z ich rodzajem, czasem trwania i lekiem ratunkowym, przeglądaj napady gromadne i dni bez napadów oraz dodaj sekcję o napadach do raportu dla lekarza."
     }
   },
   "moduleOff": {
@@ -13082,7 +13116,8 @@
     "leafEmergency": "Informacje na wypadek nagły (grupa krwi, kontakty, oświadczenia)",
     "leafMedicationEffect": "Zmiana wokół rozpoczęcia każdego leku (wymaga listy leków)",
     "leafWorkouts": "Treningi (podsumowanie według dyscypliny)",
-    "leafHrvSdnn": "HRV (SDNN)"
+    "leafHrvSdnn": "HRV (SDNN)",
+    "leafSeizures": "Dzienniczek napadów"
   },
   "recordSharing": {
     "banner": {
@@ -13466,7 +13501,17 @@
       "cycleFeedCreate": "{name} włączył subskrypcję kalendarza",
       "cycleFeedUpdate": "{name} zmienił subskrypcję kalendarza",
       "cycleFeedRotate": "{name} odnowił link subskrypcji kalendarza",
-      "cycleFeedRevoke": "{name} wyłączył subskrypcję kalendarza"
+      "cycleFeedRevoke": "{name} wyłączył subskrypcję kalendarza",
+      "seizureEventCreate": "{name} zapisał napad",
+      "seizureRescueCreate": "{name} zapisał dawkę ratunkową",
+      "seizureEventUpdate": "{name} edytował wpis o napadzie",
+      "seizureEventDelete": "{name} usunął wpis o napadzie",
+      "seizureRescueUpdate": "{name} edytował dawkę ratunkową",
+      "seizureRescueDelete": "{name} usunął dawkę ratunkową",
+      "seizureTypeCreate": "{name} dodał rodzaj napadu",
+      "seizureTypeUpdate": "{name} edytował rodzaj napadu",
+      "seizureTypeDelete": "{name} usunął rodzaj napadu",
+      "seizureSettingsUpdate": "{name} zmienił regułę napadów gromadnych"
     },
     "section": {
       "measurements": {
@@ -13487,7 +13532,7 @@
       },
       "illness": {
         "label": "Choroby",
-        "detail": "Epizody chorobowe i prowadzone przy nich wpisy dzienne."
+        "detail": "Epizody chorobowe i prowadzone przy nich wpisy dzienne, własne objawy oraz dzienniczek napadów. Dawka ratunkowa zapisana w dzienniczku napadów jest też zapisywana przy danym leku."
       },
       "mind": {
         "label": "Nastrój i zdrowie psychiczne",
@@ -13970,7 +14015,8 @@
       "visits": "Lekarz i zabiegi",
       "labs": "Badania",
       "documents": "Dokumenty",
-      "cycle": "Cykl"
+      "cycle": "Cykl",
+      "seizures": "Napady"
     },
     "readiness": {
       "title": "Co już zawiera Twoja oś czasu",
@@ -14045,7 +14091,10 @@
         "environmentOne": "{count} dzień z danymi o środowisku",
         "environmentFew": "{count} dni z danymi o środowisku",
         "environmentOther": "{count} dni z danymi o środowisku",
-        "empty": "Jeszcze brak"
+        "empty": "Jeszcze brak",
+        "seizuresOne": "{count} dzień z napadami",
+        "seizuresFew": "{count} dni z napadami",
+        "seizuresOther": "{count} dni z napadami"
       },
       "gap": {
         "valuesEmpty": "Połącz źródła",
@@ -14055,7 +14104,8 @@
         "documentsUndated": "Przejrzyj",
         "labsEmpty": "Dodaj wynik",
         "vaccinationsEmpty": "Dodaj szczepienia",
-        "lifeEventsEmpty": "Dodaj"
+        "lifeEventsEmpty": "Dodaj",
+        "seizuresEmpty": "Zapisz napad"
       },
       "gapLine": {
         "medicationsWithoutStartOne": "{count} lek bez daty rozpoczęcia",
@@ -14069,7 +14119,8 @@
         "visitsEmpty": "Jeszcze brak odbytych wizyt",
         "labsEmpty": "Jeszcze brak wyników badań",
         "vaccinationsEmpty": "Jeszcze brak szczepień",
-        "lifeEventsEmpty": "Brak wydarzeń życiowych"
+        "lifeEventsEmpty": "Brak wydarzeń życiowych",
+        "seizuresEmpty": "Brak zapisanych napadów"
       }
     },
     "legendSpan": "Okres",
@@ -14160,7 +14211,10 @@
     "item": {
       "labValuesOne": "1 wynik badania",
       "labValuesFew": "{count} wyniki badań",
-      "labValuesOther": "{count} wyników badań"
+      "labValuesOther": "{count} wyników badań",
+      "seizuresOne": "1 napad",
+      "seizuresFew": "{count} napady",
+      "seizuresOther": "{count} napadów"
     },
     "labs": {
       "menuTitle": "Wyniki badań",
@@ -14535,5 +14589,435 @@
       "endsOn": "Koniec"
     },
     "unitlessHint": "Iloraz lub wskaźnik bez jednostki (INR, cholesterol/HDL): wpisz 1 w kolumnie jednostki. Pusta jednostka nadal jest błędem."
+  },
+  "seizures": {
+    "ilae": {
+      "FOCAL_PRESERVED": {
+        "current": "Napad ogniskowy z zachowaną świadomością",
+        "ilae2017": "Napad ogniskowy z zachowaną świadomością"
+      },
+      "FOCAL_IMPAIRED": {
+        "current": "Napad ogniskowy z zaburzoną świadomością",
+        "ilae2017": "Napad ogniskowy z zaburzeniami świadomości"
+      },
+      "FOCAL_UNDETERMINED": {
+        "current": "Napad ogniskowy",
+        "ilae2017": "Napad o początku ogniskowym"
+      },
+      "FOCAL_TO_BILATERAL_TC": {
+        "current": "Napad ogniskowy przechodzący w obustronny toniczno-kloniczny",
+        "ilae2017": "Napad ogniskowy przechodzący w obustronny toniczno-kloniczny"
+      },
+      "GENERALIZED_UNDETERMINED": {
+        "current": "Napad uogólniony",
+        "ilae2017": "Napad o początku uogólnionym"
+      },
+      "GENERALIZED_TC": {
+        "current": "Napad uogólniony toniczno-kloniczny",
+        "ilae2017": "Napad toniczno-kloniczny o początku uogólnionym"
+      },
+      "GEN_CLONIC": {
+        "current": "Napad uogólniony kloniczny",
+        "ilae2017": "Napad kloniczny o początku uogólnionym"
+      },
+      "GEN_TONIC": {
+        "current": "Napad uogólniony toniczny",
+        "ilae2017": "Napad toniczny o początku uogólnionym"
+      },
+      "GEN_MYOCLONIC": {
+        "current": "Napad uogólniony miokloniczny",
+        "ilae2017": "Napad miokloniczny o początku uogólnionym"
+      },
+      "GEN_MYOCLONIC_ATONIC": {
+        "current": "Napad uogólniony miokloniczno-atoniczny",
+        "ilae2017": "Napad miokloniczno-atoniczny o początku uogólnionym"
+      },
+      "GEN_ATONIC": {
+        "current": "Napad uogólniony atoniczny",
+        "ilae2017": "Napad atoniczny o początku uogólnionym"
+      },
+      "GEN_NEGATIVE_MYOCLONIC": {
+        "current": "Napad uogólniony z mioklonią negatywną"
+      },
+      "GEN_SPASMS": {
+        "current": "Uogólnione skurcze padaczkowe",
+        "ilae2017": "Skurcze padaczkowe o początku uogólnionym"
+      },
+      "ABSENCE_TYPICAL": {
+        "current": "Typowy napad nieświadomości",
+        "ilae2017": "Napad uogólniony bez objawów ruchowych (napad nieświadomości), typowy"
+      },
+      "ABSENCE_ATYPICAL": {
+        "current": "Nietypowy napad nieświadomości",
+        "ilae2017": "Napad uogólniony bez objawów ruchowych (napad nieświadomości), nietypowy"
+      },
+      "ABSENCE_MYOCLONIC": {
+        "current": "Miokloniczny napad nieświadomości",
+        "ilae2017": "Napad uogólniony bez objawów ruchowych (napad nieświadomości), miokloniczny"
+      },
+      "EYELID_MYOCLONIA": {
+        "current": "Mioklonie powiek (z napadem nieświadomości lub bez)",
+        "ilae2017": "Napad nieświadomości z mioklonią powiek"
+      },
+      "UNKNOWN_UNDETERMINED": {
+        "current": "Napad, nie wiadomo czy ogniskowy czy uogólniony",
+        "ilae2017": "Napad o nieznanym początku"
+      },
+      "UNKNOWN_PRESERVED": {
+        "current": "Nie wiadomo czy ogniskowy czy uogólniony, z zachowaną świadomością",
+        "ilae2017": "Napad o nieznanym początku, z zachowaną świadomością"
+      },
+      "UNKNOWN_IMPAIRED": {
+        "current": "Nie wiadomo czy ogniskowy czy uogólniony, z zaburzoną świadomością",
+        "ilae2017": "Napad o nieznanym początku, z zaburzeniami świadomości"
+      },
+      "UNKNOWN_BILATERAL_TC": {
+        "current": "Napad obustronny toniczno-kloniczny, nie wiadomo czy ogniskowy czy uogólniony",
+        "ilae2017": "Napad toniczno-kloniczny o nieznanym początku"
+      },
+      "UNCLASSIFIED": {
+        "current": "Napad niesklasyfikowany",
+        "ilae2017": "Napad niesklasyfikowany"
+      }
+    },
+    "ilaeClass": {
+      "FOCAL": "Początek ogniskowy",
+      "GENERALIZED": "Początek uogólniony",
+      "UNKNOWN": "Nie wiadomo czy ogniskowy czy uogólniony",
+      "UNCLASSIFIED": "Niesklasyfikowany"
+    },
+    "route": {
+      "BUCCAL": "Podpoliczkowo",
+      "INTRANASAL": "Donosowo",
+      "RECTAL": "Doodbytniczo",
+      "ORAL": "Doustnie",
+      "SUBLINGUAL": "Podjęzykowo",
+      "IM": "Domięśniowo",
+      "IV_BY_EMS": "Dożylnie (ratownicy medyczni)"
+    },
+    "effect": {
+      "STOPPED": "Napad ustąpił",
+      "REDUCED": "Napad złagodniał",
+      "NO_EFFECT": "Bez efektu",
+      "UNKNOWN": "Nie wiadomo"
+    },
+    "trigger": {
+      "MISSED_DOSE": "Pominięta dawka",
+      "SLEEP_DEPRIVATION": "Niedobór snu",
+      "FEVER": "Gorączka",
+      "ILLNESS": "Choroba",
+      "MENSTRUATION": "Miesiączka",
+      "ALCOHOL": "Alkohol",
+      "FLASHING_LIGHTS": "Migające światło",
+      "STRESS": "Stres",
+      "OTHER": "Inne",
+      "NONE_IDENTIFIED": "Nie zidentyfikowano"
+    },
+    "sleepState": {
+      "AWAKE": "W czuwaniu",
+      "ASLEEP": "We śnie",
+      "ON_WAKING": "Po przebudzeniu",
+      "UNKNOWN": "Nie wiadomo"
+    },
+    "type": {
+      "unreadable": "Nieczytelna nazwa"
+    },
+    "report": {
+      "title": "Dzienniczek napadów",
+      "untyped": "Nie zapisano rodzaju",
+      "ruleText": "{count} lub więcej w ciągu {hours} h",
+      "recorded": "Zapisane napady",
+      "seizureDays": "Dni z napadem",
+      "seizureFreeDays": "Dni bez zapisanego napadu",
+      "per28Days": "Napady na 28 dni",
+      "longestFree": "Najdłuższy okres bez zapisanego napadu",
+      "daysValue": "Dni: {count}",
+      "daysSinceLast": "Dni od ostatniego zapisanego napadu",
+      "convulsive": "Napady obustronne toniczno-kloniczne",
+      "fromSleep": "Napady ze snu",
+      "clusters": "Napady gromadne (reguła: {rule})",
+      "niceClusters": "wg NICE: 3 w ciągu 24 h",
+      "rescueDoses": "Podane dawki ratunkowe",
+      "emergencies": "Ratownicy medyczni, SOR, hospitalizacje",
+      "emergencyValue": "{ems} / {ed} / {admitted}",
+      "suspected": "Zdarzenia podejrzane (nieliczone powyżej)",
+      "monthlyTitle": "Napady według rodzaju i miesiąca",
+      "monthlyNote": "Napady na miesiąc, w nawiasach liczba dni, w których wystąpiły.",
+      "type": "Rodzaj",
+      "total": "Razem",
+      "chartTitle": "Napady na miesiąc i zmiany leczenia",
+      "markersTitle": "Zmiany leczenia:",
+      "marker": {
+        "start": "({n}) {date} rozpoczęto {name}",
+        "stop": "({n}) {date} odstawiono {name}",
+        "change": "({n}) {date} {name} zmieniono na {dose}"
+      },
+      "markersNote": "Zmiany leków przyjmowanych według stałego planu, pokazane obok liczby napadów. Dzienniczek nie mówi, czy zmiana coś zmieniła.",
+      "durationTitle": "Czas trwania",
+      "timed": "Z czasem trwania",
+      "median": "Mediana",
+      "max": "Najdłuższy",
+      "overT1": "t1 lub dłużej",
+      "prolonged": "2 min dłużej niż zwykle",
+      "durationNote": "Czas trwania w min:s. t1 to czas, po którym należy wdrożyć leczenie ratunkowe (ILAE, Trinka 2015: toniczno-kloniczny 5 min, ogniskowy z zaburzeniami świadomości i napad nieświadomości 10 min). „2 min dłużej niż zwykle” liczy napady trwające co najmniej 2 minuty dłużej niż zwykły czas trwania u tej osoby (NICE NG217).",
+      "rescueTitle": "Leki ratunkowe",
+      "date": "Data",
+      "drug": "Lek",
+      "dose": "Dawka",
+      "route": "Droga podania",
+      "minutesFromOnset": "Minuty od początku",
+      "effect": "Efekt",
+      "triggersTitle": "Podejrzewane czynniki wyzwalające",
+      "triggersNote": "Wskazane przez osobę lub opiekuna przy zapisie; nie są to ustalone przyczyny.",
+      "overlaysTitle": "Zapisane w tym samym czasie",
+      "overlayMissedDose": "{followed} z {of} napadów wystąpiło w ciągu 48 godzin po pominiętej lub opuszczonej zaplanowanej dawce.",
+      "overlayIllness": "Napady w trakcie jednego z {episodes} zapisanych epizodów chorobowych: {during}.",
+      "overlaySleep": "Zapisany sen w nocy przed dniem z napadem: średnio {before} h (noce: {nightsBefore}); pozostałe noce: {other} h (noce: {nightsOther}).",
+      "overlayCycleDays": "Napady według dnia cyklu (dzień: liczba): {list}.",
+      "overlayCycleRatio": "W {cycles} pełnych śledzonych cyklach częstość napadów na dzień wokół miesiączki (dzień −3 do +3) wynosiła {c1} razy tyle co w pozostałe dni, a wokół owulacji (dzień 10 do −13) {c2} razy tyle. Kryterium padaczki katamenialnej według Herzoga to co najmniej dwukrotny wzrost; to wartość odniesienia, nie wynik badania.",
+      "overlayCycleTooFew": "Częstość według fazy cyklu jest pokazywana od trzech pełnych śledzonych cykli (na razie: {cycles}).",
+      "overlaysNote": "To rzeczy zapisane w tym samym czasie, a nie przyczyny.",
+      "eventsTitle": "Wszystkie zapisane zdarzenia",
+      "duration": "Czas trwania",
+      "sleep": "Sen",
+      "rescueShort": "Ratunkowy",
+      "injury": "Uraz",
+      "note": "Notatka",
+      "suspectedMark": "(podejrzenie)",
+      "eventsTruncated": "Wymieniono tylko 200 najnowszych zdarzeń; liczby powyżej obejmują wszystkie.",
+      "classificationNote": "Rodzaje napadów są zgodne z klasyfikacją ILAE 2025; nazwy według ILAE 2017:",
+      "footer": "Dzienniczek prowadzony przez pacjenta lub opiekuna. Są to zapisane napady, prawdopodobnie zaniżona liczba, zwłaszcza w przypadku napadów ze snu. Dzienniczek zapisuje obserwacje i nie diagnozuje ani nie ocenia napadów.",
+      "seizureDaysValue": "w dniach: {count}"
+    },
+    "title": "Dzienniczek napadów",
+    "subtitle": "Napady tak, jak je zaobserwowano, z rodzajem, czasem trwania i podanym lekiem ratunkowym.",
+    "loadError": "Nie udało się wczytać dzienniczka napadów.",
+    "saveError": "Nie udało się zapisać. Spróbuj ponownie.",
+    "untyped": "Bez rodzaju",
+    "notRecorded": "Nie zapisano",
+    "ilaeWith2017": "{current} (ILAE 2017: {legacy})",
+    "safety": {
+      "header": "Ten dzienniczek zapisuje to, co obserwujesz, aby można było przekazać to zespołowi leczącemu. Nie diagnozuje ani nie ocenia napadów. Stosuj się do planu postępowania w nagłym wypadku ustalonego z lekarzem.",
+      "timer": "Zadzwoń po pogotowie ({number} lub lokalny numer alarmowy), jeśli napad z drgawkami lub sztywnieniem trwa 5 minut lub dłużej, jeśli kolejny napad następuje, zanim osoba odzyska siły, jeśli oddychanie jest utrudnione, jeśli osoba doznała urazu, jeśli napad wystąpił w wodzie lub jeśli to jej pierwszy napad. Twój własny plan postępowania w nagłym wypadku ma pierwszeństwo.",
+      "notifications": "HealthLog nie jest alarmem napadowym ani wyrobem medycznym. Zapisuje tylko to, co zostało tu wprowadzone."
+    },
+    "quick": {
+      "title": "Szybki zapis",
+      "typeGroup": "Rodzaj napadu",
+      "elapsedLabel": "Czas od początku napadu",
+      "startedAt": "Początek o {time}",
+      "start": "Napad się zaczął",
+      "stop": "Napad się skończył",
+      "rescueGiven": "Podano lek ratunkowy: {name}",
+      "rescueGivenCount": "Podano lek ratunkowy ({count}), dotknij, aby dodać kolejną dawkę",
+      "threshold": {
+        "t1": "Napad trwa już {time}. Stosuj się do planu postępowania w nagłym wypadku.",
+        "usualPlusTwo": "Napad trwa już {time}, ponad 2 minuty dłużej niż zwykle. Stosuj się do planu postępowania w nagłym wypadku.",
+        "generic": "Napad trwa już {time}. Stosuj się do planu postępowania w nagłym wypadku."
+      },
+      "noPlan": "Dla tego rodzaju napadu nie zapisano planu. W razie wątpliwości zadzwoń po pogotowie.",
+      "call": "Zadzwoń pod {number}",
+      "recorded": "Napad zapisany",
+      "recordedLine": "Zapisano, czas trwania {duration}.",
+      "addDetails": "Dodaj szczegóły",
+      "logPast": "Zapisz napad bez pomiaru czasu",
+      "discard": "Odrzuć stoper",
+      "discardTitle": "Odrzucić uruchomiony stoper?",
+      "discardConfirm": "Nic nie zostanie zapisane, a czas rozpoczęcia przepadnie."
+    },
+    "summary": {
+      "title": "Zapisane",
+      "recorded": "Zapisane napady, ostatnie {days} dni",
+      "seizureDays": "Dni z napadem",
+      "sinceLast": "Dni od ostatniego zapisanego napadu",
+      "longestFree": "Najdłuższy okres bez napadu, dni",
+      "clusters": "Napady gromadne ({rule})",
+      "niceClusters": "Napady gromadne wg NICE (3 w ciągu 24 h)",
+      "suspected": "Podejrzane napady na liście, ale nieliczone: {count}.",
+      "clusterLine": "Napady gromadne od {start}: {count}",
+      "monthlyCaption": "Napady według rodzaju i miesiąca",
+      "undercount": "Zapisane napady, prawdopodobnie zaniżona liczba, zwłaszcza w przypadku napadów ze snu."
+    },
+    "list": {
+      "title": "Zapisane napady",
+      "empty": "Brak zapisanych napadów w ostatnich 90 dniach.",
+      "rescue": "Ratunkowy",
+      "loggedByDelegate": "zapisane przez osobę z dostępem",
+      "showAll": "Pokaż wszystkie ({count})",
+      "truncated": "Pokazano tylko najnowsze napady.",
+      "loggedByYou": "zapisane przez ciebie",
+      "loggedByName": "zapisane przez: {name}"
+    },
+    "certainty": {
+      "CONFIRMED": "Napad",
+      "SUSPECTED": "Podejrzenie"
+    },
+    "onsetPrecision": {
+      "EXACT": "Dokładna godzina",
+      "APPROX": "Mniej więcej o tej porze",
+      "UNKNOWN_TIME": "Godzina nieznana"
+    },
+    "durationSource": {
+      "TIMED": "Zmierzony",
+      "ESTIMATED": "Szacowany",
+      "UNKNOWN": "Nie wiadomo"
+    },
+    "functionState": {
+      "PRESERVED": "Zachowana",
+      "IMPAIRED": "Zaburzona",
+      "UNKNOWN": "Nie wiem"
+    },
+    "emergency": {
+      "NONE": "Brak",
+      "EMS_CALLED": "Wezwano pogotowie",
+      "ED_VISIT": "SOR",
+      "ADMITTED": "Przyjęcie do szpitala"
+    },
+    "observer": {
+      "SELF": "Sama osoba",
+      "PARENT": "Rodzic",
+      "PARTNER": "Partner lub partnerka",
+      "FAMILY": "Członek rodziny",
+      "CARER": "Opiekun",
+      "TEACHER": "Nauczyciel",
+      "CLINICIAN": "Personel medyczny",
+      "PARAMEDIC": "Ratownik medyczny",
+      "OTHER": "Ktoś inny"
+    },
+    "semiology": {
+      "AURA": "Aura",
+      "BEHAVIOUR_ARREST": "Przerwał wykonywaną czynność",
+      "STARING": "Nieruchome spojrzenie",
+      "AUTOMATISMS": "Automatyzmy (cmokanie, skubanie)",
+      "TONIC": "Sztywnienie",
+      "CLONIC": "Rytmiczne drgawki",
+      "MYOCLONIC": "Krótkie szarpnięcia",
+      "ATONIC_DROP": "Nagły upadek",
+      "SPASMS": "Skurcze",
+      "HEAD_EYE_VERSION": "Głowa lub oczy zwrócone w jedną stronę",
+      "VOCALISATION": "Krzyk lub dźwięki",
+      "CYANOSIS": "Sine usta lub twarz",
+      "DROOLING": "Ślinienie się",
+      "BREATHING_CHANGE": "Zmieniony oddech"
+    },
+    "postictal": {
+      "SLEEP": "Sen",
+      "CONFUSION": "Splątanie",
+      "HEADACHE": "Ból głowy",
+      "WEAKNESS_TODD": "Osłabienie jednej strony ciała (porażenie Todda)",
+      "SPEECH": "Trudności z mówieniem",
+      "AGITATION": "Pobudzenie",
+      "OTHER": "Inne"
+    },
+    "injury": {
+      "NONE": "Bez urazu",
+      "TONGUE_BITE": "Przygryzienie języka",
+      "HEAD": "Uraz głowy",
+      "FALL_OTHER": "Inny uraz po upadku",
+      "BURN": "Oparzenie",
+      "FRACTURE": "Złamanie",
+      "OTHER": "Inny"
+    },
+    "sheet": {
+      "newTitle": "Zapisz napad",
+      "editTitle": "Szczegóły napadu",
+      "description": "Wymagany jest tylko początek. Dodaj to, co wiesz.",
+      "created": "Napad zapisany",
+      "updated": "Napad zaktualizowany",
+      "type": "Rodzaj napadu",
+      "onset": "Początek",
+      "onsetPrecision": "Jak pewna jest godzina początku",
+      "duration": "Czas trwania",
+      "minutes": "Minuty",
+      "seconds": "Sekundy",
+      "durationHint": "Zostaw puste, jeśli nikt nie widział, jak długo trwał.",
+      "durationSource": "Czas trwania był",
+      "certainty": "Czy to był napad",
+      "count": "Ile",
+      "countHint": "Więcej niż jeden, aby zliczyć, np. napady nieświadomości z jednego dnia.",
+      "sleepState": "W czuwaniu czy we śnie",
+      "sectionObserved": "Co zaobserwowano",
+      "responsiveness": "Reagował na mowę",
+      "recall": "Pamięta napad",
+      "semiology": "Co się działo, po kolei",
+      "semiologyNote": "Opis",
+      "aura": "Sygnał ostrzegawczy (aura)",
+      "ilaeOverride": "Klasyfikacja tego napadu",
+      "ilaeFromType": "Jak ustawiono dla rodzaju",
+      "sectionAfter": "Po napadzie",
+      "postictalMinutes": "Minuty do powrotu do zwykłego stanu",
+      "postictal": "Po napadzie",
+      "injuries": "Urazy",
+      "emergency": "Pomoc doraźna",
+      "sectionContext": "Czynniki wyzwalające i świadek",
+      "triggers": "Podejrzewane czynniki wyzwalające",
+      "triggersHint": "Twoje własne przypuszczenie, oznaczone w raporcie jako podejrzewane.",
+      "witnessed": "Czy ktoś to widział",
+      "witnessRole": "Kto to widział",
+      "witnessNote": "Co widział świadek",
+      "note": "Notatka",
+      "delete": "Usuń napad",
+      "deleteTitle": "Usunąć ten napad?",
+      "deleteBody": "Napad i jego dawki ratunkowe zostaną usunięte, a dawki zostaną też wycofane z leku.",
+      "observable": "Widoczne objawy",
+      "incontinence": "Nietrzymanie moczu lub stolca"
+    },
+    "rescue": {
+      "title": "Leki ratunkowe",
+      "none": "Nie zapisano dawki ratunkowej.",
+      "effect": "Efekt",
+      "remove": "Usuń dawkę",
+      "removeTitle": "Usunąć tę dawkę ratunkową?",
+      "removeBody": "Dawka zostanie też wycofana z leku.",
+      "medication": "Lek",
+      "pick": "Wybierz lek",
+      "givenAt": "Podano o",
+      "route": "Droga podania",
+      "intakeHint": "Dawka jest też zapisywana przy leku. Leki przyjmowane w razie potrzeby nie wliczają się do przestrzegania zaleceń.",
+      "add": "Dodaj dawkę ratunkową"
+    },
+    "types": {
+      "title": "Rodzaje napadów",
+      "emptyTitle": "Brak rodzajów napadów",
+      "emptyDescription": "Ustaw raz rodzaje napadów tej osoby, najlepiej razem z zespołem leczącym.",
+      "newTitle": "Dodaj rodzaj napadu",
+      "editTitle": "Edytuj rodzaj napadu",
+      "description": "Klasyfikację wybierasz Ty lub zespół leczący; HealthLog nie klasyfikuje.",
+      "label": "Twoja nazwa",
+      "labelHint": "Słowo używane w rodzinie, np. „ten duży”.",
+      "class": "Początek",
+      "ilaeType": "Rodzaj napadu (ILAE 2025)",
+      "notSure": "Nie wiem: {name}",
+      "usualDuration": "Zwykły czas trwania",
+      "usualHint": "Służy do pokazania planu, gdy napad trwa 2 minuty dłużej niż zwykle (NICE).",
+      "plan": "Plan postępowania w nagłym wypadku",
+      "planHint": "Kroki ustalone z zespołem leczącym, pokazywane, gdy stoper przekroczy próg.",
+      "rescueMedication": "Lek ratunkowy",
+      "noMedication": "Brak",
+      "noAsNeeded": "Najpierw dodaj lek ratunkowy jako lek w razie potrzeby.",
+      "dose": "Dawka",
+      "unit": "Jednostka",
+      "saved": "Rodzaj napadu zapisany",
+      "archive": "Archiwizuj",
+      "unarchive": "Używaj ponownie",
+      "archived": "Zarchiwizowany",
+      "delete": "Usuń rodzaj",
+      "deleteTitle": "Usunąć ten rodzaj napadu?",
+      "deleteBody": "Usunąć można tylko rodzaj, pod którym nie zapisano żadnego napadu. W przeciwnym razie zarchiwizuj go.",
+      "rescueLine": "Lek ratunkowy: {name}"
+    },
+    "rule": {
+      "title": "Reguła napadów gromadnych",
+      "explainer": "Napady gromadne to tyle napadów w ciągu tylu godzin. Użyj reguły z planu postępowania w nagłym wypadku; NICE stosuje {niceCount} w ciągu {niceHours} godzin, co jest pokazane obok.",
+      "count": "Napady",
+      "hours": "W ciągu godzin",
+      "invalid": "Podaj od 2 do 20 napadów w ciągu od 1 do 168 godzin.",
+      "saved": "Reguła napadów gromadnych zapisana"
+    },
+    "observation": {
+      "YES": "Tak",
+      "NO": "Nie, nic nie było widać",
+      "UNKNOWN": "Nie wiem"
+    }
   }
 }

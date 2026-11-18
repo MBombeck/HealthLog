@@ -46,6 +46,7 @@ import { getNutrientsTool } from "./get-nutrients";
 import { getIntradayPulseTool } from "./get-intraday-pulse";
 import { getEcgRecordingsTool } from "./get-ecg-recordings";
 import { getVisitsTool } from "./get-visits";
+import { getSeizuresTool } from "./get-seizures";
 import { searchTool } from "./search";
 import { fetchTool } from "./fetch";
 
@@ -84,6 +85,8 @@ export const MCP_TOOLS: McpToolDefinition[] = [
   getIntradayPulseTool,
   getEcgRecordingsTool,
   getVisitsTool,
+  // The seizure diary, behind its opt-in module.
+  getSeizuresTool,
   // The `search` + `fetch` pair ChatGPT calls in its default mode.
   searchTool,
   fetchTool,

@@ -62,6 +62,8 @@ const INTAKE_MAY_SEE_EVERY_ROW: Record<string, string> = {
   "app/api/export/medications/route.ts": "export of the recorded history",
   "app/api/export/route.ts": "export of the recorded history",
   "lib/export/medications-backup.ts": "backup of the recorded history",
+  "lib/export/seizures-backup.ts":
+    "restore keeps a rescue dose's link to the intake it wrote, no rate",
   "app/api/sync/state/route.ts": "sync watermarks, no rate",
   "lib/sync/changes/read-rows.ts":
     "delta feed mirroring the recorded rows to a paired client, no rate",

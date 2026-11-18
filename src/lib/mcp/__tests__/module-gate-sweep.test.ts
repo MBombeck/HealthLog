@@ -206,3 +206,10 @@ describe("get_visits", () => {
     expect(result.visits[0].specialty).toBe("Cardiology");
   });
 });
+
+describe("get_seizures", () => {
+  it("answers module_disabled while the seizure diary is off", async () => {
+    disabled.add("seizures");
+    expect(await tool("get_seizures").run(CTX, {})).toEqual(OFF);
+  });
+});

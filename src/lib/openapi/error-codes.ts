@@ -446,6 +446,18 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     route: ["route.retired"],
     search: ["search.invalid"],
     security_activity: ["security_activity.invalid"],
+    seizures: [
+      "seizures.disabled",
+      "seizures.event.notFound",
+      "seizures.invalid",
+      "seizures.rescue.medicationNotFound",
+      "seizures.rescue.medicationRequired",
+      "seizures.rescue.notAsNeeded",
+      "seizures.rescue.notFound",
+      "seizures.type.inUse",
+      "seizures.type.limit",
+      "seizures.type.notFound",
+    ],
     "share-link": [
       "share-link.document.decryptFailed",
       "share-link.document.notFound",

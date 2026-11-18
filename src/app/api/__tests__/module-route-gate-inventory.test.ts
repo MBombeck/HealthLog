@@ -198,6 +198,10 @@ const MODULE_ROUTE_TREES_BY_KEY: Readonly<
   // EXEMPT below under the data-layer reasoning. The day view is not this
   // module's: it is core and lives under `/api/day`, which no key owns.
   timeline: ["src/app/api/timeline", "src/app/api/life-events"],
+  // The seizure diary. Every route gates on `seizures`
+  // through `requireSeizuresEnabled`, data routes included: the diary is off
+  // by default and nothing outside it writes these rows.
+  seizures: ["src/app/api/seizures"],
 };
 
 /** Every declared tree, de-duplicated — the set this inventory walks. */
@@ -498,6 +502,9 @@ const AI_CAPABILITY_GATE =
 // `requireCycleEnabled`. Recognised as a delegated gate so illness routes
 // are not flagged as ungated.
 const ILLNESS_GATE_NEEDLE = "requireIllnessEnabled(";
+// The seizure diary's wrapper, the same shape:
+// `requireModuleEnabled(userId, "seizures")` with the diary's errorCode.
+const SEIZURES_GATE_NEEDLE = "requireSeizuresEnabled(";
 
 /**
  * Trees whose routes must gate on ONE specific module key. Naming the key
@@ -752,6 +759,7 @@ describe("module API route gate inventory", () => {
       if (fileHasCall(text, MODULE_GATE_NEEDLE)) continue;
       if (fileHasCall(text, CYCLE_GATE_NEEDLE)) continue;
       if (fileHasCall(text, ILLNESS_GATE_NEEDLE)) continue;
+      if (fileHasCall(text, SEIZURES_GATE_NEEDLE)) continue;
       if (fileHasCapabilityGate(text)) continue;
 
       if (exempt.has(path)) continue;
@@ -873,6 +881,7 @@ describe("module API route gate inventory", () => {
         fileHasCall(text, MODULE_GATE_NEEDLE) ||
         fileHasCall(text, CYCLE_GATE_NEEDLE) ||
         fileHasCall(text, ILLNESS_GATE_NEEDLE) ||
+        fileHasCall(text, SEIZURES_GATE_NEEDLE) ||
         fileHasCapabilityGate(text)
       ) {
         stillGated.push(path);

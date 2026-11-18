@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   Activity,
+  BrainCircuit,
   Flag,
   Footprints,
   Pill,
@@ -58,7 +60,13 @@ import {
  */
 
 export type CaptureKind =
-  "measurement" | "medication" | "mood" | "symptom" | "workout" | "lifeEvent";
+  | "measurement"
+  | "medication"
+  | "mood"
+  | "symptom"
+  | "seizure"
+  | "workout"
+  | "lifeEvent";
 
 /**
  * The section each capture surface writes to.
@@ -80,6 +88,8 @@ const CAPTURE_KIND_DOMAIN: Readonly<Record<CaptureKind, ShareDomain | null>> = {
   mood: "mind",
   // A symptom occurrence is an illness-section write, admitted at WRITE.
   symptom: "illness",
+  // A seizure is an illness-section write too (#1368), admitted at WRITE.
+  seizure: "illness",
   // A workout goes through the batch ingest, which resolves the caller:
   // no grant reaches it, so it is offered in one's own record only.
   workout: null,
@@ -94,6 +104,7 @@ export const CAPTURE_KIND_ORDER: ReadonlyArray<CaptureKind> = [
   "medication",
   "mood",
   "symptom",
+  "seizure",
   "workout",
   "lifeEvent",
 ];
@@ -147,6 +158,62 @@ export function visibleCaptureKinds(
       domain === null ? !caps.inSharedRecord : caps.canWriteDomain(domain);
     return writable && isSurfaceVisible(`capture:${kind}`, modules);
   });
+}
+
+const OPTION_CLASS =
+  "border-border hover:bg-accent/40 focus-visible:ring-ring/50 flex min-h-14 items-center gap-3 rounded-lg border px-4 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none";
+
+/**
+ * One row of the chooser. A seizure is logged with the diary's timer, which
+ * has to outlive any sheet, so that row opens the diary instead of a form.
+ * A plain function, not a component, so the rows stay in the picker's own
+ * element tree.
+ */
+function captureOption(
+  option: {
+    kind: CaptureKind;
+    label: string;
+    description: string;
+    icon: typeof Activity;
+  },
+  onChoose: () => void,
+  onLeave: () => void,
+) {
+  const body = (
+    <>
+      <span className="bg-primary/10 text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
+        <option.icon className="h-5 w-5" aria-hidden="true" />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-medium">{option.label}</span>
+        <span className="text-muted-foreground block text-xs">
+          {option.description}
+        </span>
+      </span>
+    </>
+  );
+  const testId = `capture-picker-${option.kind}`;
+  return option.kind === "seizure" ? (
+    <Link
+      key={option.kind}
+      href="/seizures"
+      data-testid={testId}
+      onClick={onLeave}
+      className={OPTION_CLASS}
+    >
+      {body}
+    </Link>
+  ) : (
+    <button
+      key={option.kind}
+      type="button"
+      data-testid={testId}
+      onClick={onChoose}
+      className={OPTION_CLASS}
+    >
+      {body}
+    </button>
+  );
 }
 
 interface CapturePickerProps {
@@ -227,6 +294,12 @@ export function CapturePicker({
       icon: Stethoscope,
     },
     {
+      kind: "seizure",
+      label: t("nav.capture.seizure"),
+      description: t("nav.capture.seizureDescription"),
+      icon: BrainCircuit,
+    },
+    {
       kind: "workout",
       label: t("nav.capture.workout"),
       description: t("nav.capture.workoutDescription"),
@@ -248,6 +321,8 @@ export function CapturePicker({
     medication: t("dashboard.quickAddMedicationIntake"),
     mood: t("dashboard.quickAddMood"),
     symptom: t("dashboard.quickAddSymptom"),
+    // Never shown: the seizure choice navigates instead of opening a form.
+    seizure: t("nav.capture.seizure"),
     workout: t("dashboard.quickAddWorkout"),
     lifeEvent: t("dashboard.quickAddLifeEvent"),
   };
@@ -270,25 +345,13 @@ export function CapturePicker({
           className="grid grid-cols-1 gap-2"
           data-testid="capture-picker-options"
         >
-          {options.map((opt) => (
-            <button
-              key={opt.kind}
-              type="button"
-              data-testid={`capture-picker-${opt.kind}`}
-              onClick={() => chooseKind(opt.kind)}
-              className="border-border hover:bg-accent/40 focus-visible:ring-ring/50 flex min-h-14 items-center gap-3 rounded-lg border px-4 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
-            >
-              <span className="bg-primary/10 text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
-                <opt.icon className="h-5 w-5" aria-hidden="true" />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-sm font-medium">{opt.label}</span>
-                <span className="text-muted-foreground block text-xs">
-                  {opt.description}
-                </span>
-              </span>
-            </button>
-          ))}
+          {options.map((opt) =>
+            captureOption(
+              opt,
+              () => chooseKind(opt.kind),
+              () => onOpenChange(false),
+            ),
+          )}
         </div>
       </ResponsiveSheet>
 

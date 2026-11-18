@@ -8,8 +8,8 @@
         "userId": "round-trip-owner",
         "exportedAt": "2026-08-01T00:00:00.000Z",
         "measurements": 5,
-        "medications": 1,
-        "intakeEvents": 2,
+        "medications": 2,
+        "intakeEvents": 3,
         "medicationSideEffects": 1,
         "medicationEfficacyTargets": 1,
         "medicationScheduleRevisions": 3,
@@ -66,8 +66,8 @@
       },
       "cleared": {
         "measurements": 5,
-        "medications": 1,
-        "intakeEvents": 2,
+        "medications": 2,
+        "intakeEvents": 3,
         "moodEntries": 2,
         "notificationChannels": 0,
         "pushSubscriptions": 0,
@@ -118,7 +118,9 @@
         "dawarichDays": 1,
         "ecgRecordings": 1,
         "symptomDefinitions": 2,
-        "lifeEvents": 3
+        "lifeEvents": 3,
+        "seizureTypes": 1,
+        "seizureEvents": 2
       }
     }
   },
@@ -284,8 +286,8 @@
         "restoreInstanceSettings": false,
         "cleared": {
           "measurements": 5,
-          "medications": 1,
-          "intakeEvents": 2,
+          "medications": 2,
+          "intakeEvents": 3,
           "moodEntries": 2,
           "notificationChannels": 0,
           "pushSubscriptions": 0,
@@ -336,7 +338,9 @@
           "dawarichDays": 1,
           "ecgRecordings": 1,
           "symptomDefinitions": 2,
-          "lifeEvents": 3
+          "lifeEvents": 3,
+          "seizureTypes": 1,
+          "seizureEvents": 2
         },
         "accountSettingsApplied": 63,
         "skipped": {
@@ -345,8 +349,8 @@
         },
         "restored": {
           "measurements": 5,
-          "medications": 1,
-          "intakeEvents": 2,
+          "medications": 2,
+          "intakeEvents": 3,
           "moodEntries": 2,
           "cycles": 3,
           "cycleDayLogs": 2,

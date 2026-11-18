@@ -2,6 +2,7 @@ import {
   Activity,
   Bell,
   Brain,
+  BrainCircuit,
   ClipboardList,
   Droplets,
   FileScan,
@@ -181,6 +182,16 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     tKey: "nav.illness",
     icon: Thermometer,
     tourId: "nav-illness",
+  },
+  // The seizure diary, beside the illness journal. Owned by
+  // the opt-in `seizures` module in the surface map, so it appears only once
+  // the record switches the diary on.
+  {
+    href: "/seizures",
+    sharedRecord: true,
+    tKey: "nav.seizures",
+    icon: BrainCircuit,
+    tourId: "nav-seizures",
   },
   // v1.37.3: the immunization log sits in the clinical spine beside Illness.
   // Owned by `vaccinations` in the surface map (default-on; it drops only when

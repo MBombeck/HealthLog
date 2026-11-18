@@ -95,6 +95,7 @@ import { recordSettingsPaths } from "./record-settings";
 import { retiredPaths } from "./retired";
 import { settingsPaths } from "./settings";
 import { symptomPaths } from "./symptoms";
+import { seizurePaths } from "./seizures";
 import { syncPaths } from "./sync";
 import { workoutPaths } from "./workouts";
 import { coachPrefsSchema, withScopeRefusal } from "./shared";
@@ -206,6 +207,9 @@ const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   ...lifeCircumstancesPaths,
   ...dawarichPaths,
   ...relationLinkPaths,
+  // The seizure diary, behind its own module (appended, spread order
+  // is load-bearing).
+  ...seizurePaths,
   // The environmental-context overview. Its own module because nothing else
   // owns the surface (appended, spread order is load-bearing).
   //

@@ -156,6 +156,11 @@ export const WIPE_MODELS = [
   "IllnessDayLog",
   // Before its definition and before the episode it may point at (SetNull).
   "SymptomEvent",
+  // The seizure diary. The doses cascade from their seizure,
+  // so they go first for a truthful count; the rule row points at nothing.
+  "SeizureRescueDose",
+  "SeizureEvent",
+  "SeizureDiarySettings",
   // v1.42 — the person's life events. Nothing points at them.
   "LifeEvent",
   "EcgRecording",
@@ -304,6 +309,8 @@ export const WIPE_MODELS = [
   "CustomMetric",
   "IllnessEpisode",
   "SymptomDefinition",
+  // Seizures point here with SetNull; they are already gone above.
+  "SeizureTypeProfile",
   "Workout",
   "InboundDocument",
   // Encounters point here with SetNull, so the address book outlives the

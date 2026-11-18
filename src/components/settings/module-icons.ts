@@ -2,6 +2,7 @@ import {
   Activity,
   Award,
   Brain,
+  BrainCircuit,
   CalendarHeart,
   CloudSun,
   Droplet,
@@ -54,4 +55,6 @@ export const MODULE_ICONS: Record<ModuleKey, LucideIcon> = {
   vaccinations: Syringe,
   // v1.42 — the life timeline (opt-in).
   timeline: History,
+  // The seizure diary (opt-in).
+  seizures: BrainCircuit,
 };

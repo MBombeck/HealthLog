@@ -206,6 +206,13 @@ const COUNT_BACK: Record<
     p.symptomDefinition.count({ where: { userId } }),
   SymptomEvent: (p, userId) => p.symptomEvent.count({ where: { userId } }),
   LifeEvent: (p, userId) => p.lifeEvent.count({ where: { userId } }),
+  SeizureTypeProfile: (p, userId) =>
+    p.seizureTypeProfile.count({ where: { userId } }),
+  SeizureEvent: (p, userId) => p.seizureEvent.count({ where: { userId } }),
+  SeizureRescueDose: (p, userId) =>
+    p.seizureRescueDose.count({ where: { userId } }),
+  SeizureDiarySettings: (p, userId) =>
+    p.seizureDiarySettings.count({ where: { userId } }),
   IllnessSymptomLink: (p, userId) =>
     p.illnessSymptomLink.count({ where: { dayLog: { userId } } }),
   UserHealthProfile: (p, userId) =>

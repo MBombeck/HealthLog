@@ -65,7 +65,8 @@ export function recordActivityVerbLine(
   if (refused !== null) return refused;
   const medication = medicationManageVerb(t, action, name);
   if (medication !== null) return medication;
-  const cycle = cycleManageVerb(t, action, name);
+  const cycle =
+    cycleManageVerb(t, action, name) ?? seizureVerb(t, action, name);
   if (cycle !== null) return cycle;
   switch (action) {
     case "measurement.create":
@@ -521,6 +522,40 @@ function cycleManageVerb(
       return t("recordSharing.activityVerb.cycleFeedRotate", { name });
     case "cycle.feed.revoke":
       return t("recordSharing.activityVerb.cycleFeedRevoke", { name });
+    default:
+      return null;
+  }
+}
+
+/** The seizure diary's verbs (#1368): recording is WRITE, the rest MANAGE. */
+function seizureVerb(
+  t: Translator,
+  action: string,
+  name: string,
+): string | null {
+  const line = (key: string) =>
+    t(`recordSharing.activityVerb.${key}`, { name });
+  switch (action) {
+    case "seizures.event.create":
+      return line("seizureEventCreate");
+    case "seizures.rescue.create":
+      return line("seizureRescueCreate");
+    case "seizures.event.update":
+      return line("seizureEventUpdate");
+    case "seizures.event.delete":
+      return line("seizureEventDelete");
+    case "seizures.rescue.update":
+      return line("seizureRescueUpdate");
+    case "seizures.rescue.delete":
+      return line("seizureRescueDelete");
+    case "seizures.type.create":
+      return line("seizureTypeCreate");
+    case "seizures.type.update":
+      return line("seizureTypeUpdate");
+    case "seizures.type.delete":
+      return line("seizureTypeDelete");
+    case "seizures.settings.update":
+      return line("seizureSettingsUpdate");
     default:
       return null;
   }

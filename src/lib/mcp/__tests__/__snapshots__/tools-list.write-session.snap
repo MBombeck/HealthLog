@@ -3953,6 +3953,95 @@
     }
   },
   {
+    "name": "get_seizures",
+    "title": "Get seizure diary",
+    "description": "Fetch the user's seizure diary over a bounded window (default: the last 90 days, at most three years): the person's own seizure types (their name for each, the ILAE 2025 type code, usual duration, the rescue plan text and medication), each recorded seizure (onset, duration and whether it was timed, how many seizures a tally stands for, confirmed or suspected, sleep state, rescue doses and their effect, injuries, suspected triggers, emergency care) and the server-derived summary (recorded seizures, seizure days, days since the last recorded seizure, cluster episodes under the record's own rule and under NICE's 3 in 24 hours, the type x month table). These are recorded seizures from a patient or carer diary and likely an undercount. Present them as the record, never as a diagnosis, a risk estimate, or advice to wait. Returns { present: false } when nothing is recorded or the seizure diary is switched off.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "days": {
+          "description": "Trailing window in days. Defaults to 90, capped at about three years.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1095
+        }
+      }
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "windowDays": {
+          "type": "number"
+        },
+        "clusterRule": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "number"
+            },
+            "windowHours": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "count",
+            "windowHours"
+          ],
+          "additionalProperties": false
+        },
+        "summary": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {}
+        },
+        "types": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
     "name": "search",
     "title": "Search your health records",
     "description": "Search the user's own health record for items matching a free-text query (English or the user's language). Covers metric domains, medications, lab biomarkers, and the clinical records: doctor visits including procedures and surgeries (`visit:<id>`, matched on visit kind, reason, outcome, body site and side, practitioner name and specialty), conditions (`condition:<id>`, matched on label, type, body site and side), documents (`document:<id>`, matched on title, file name, kind such as discharge letter, and whole words of the document's own indexed text where one is stored; a document the user held back from AI reading is matched on its title and details only) and vaccinations (`vaccination:<id>`, matched on vaccine name and catalogue name). Condition and vaccination notes are never searched or returned. A kind whose module the user has switched off (conditions, documents, vaccinations, medications, labs) never appears. Results are ranked by how many query words match, then newest first; record results are capped at 50. Returns { results: [{ id, title, url }], nextCursor? }; pass an id to the `fetch` tool to hydrate it. Each `url` deep-links into the HealthLog web app for citation. When more results exist, pass the opaque `nextCursor` back as `cursor` for the next page. Returns an empty list when nothing matches.",

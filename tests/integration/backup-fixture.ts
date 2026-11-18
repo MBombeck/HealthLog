@@ -666,6 +666,85 @@ export async function seedEveryTwoEndedModel(
     },
   });
 
+  // The seizure diary: a type with its rescue plan on an as-needed
+  // medication, a timed seizure with a rescue dose that wrote an intake, an
+  // untyped suspected tally, and the record's own cluster rule.
+  const rescueMed = await prisma.medication.create({
+    data: {
+      userId: OWNER_ID,
+      name: "Buccal midazolam",
+      dose: "10 mg",
+      asNeeded: true,
+    },
+  });
+  const rescueIntake = await prisma.medicationIntakeEvent.create({
+    data: {
+      userId: OWNER_ID,
+      medicationId: rescueMed.id,
+      scheduledFor: AT("2026-06-22T07:06:00.000Z"),
+      takenAt: AT("2026-06-22T07:06:00.000Z"),
+    },
+  });
+  const seizureType = await prisma.seizureTypeProfile.create({
+    data: {
+      userId: OWNER_ID,
+      labelEncrypted: encryptToBytes("The big one"),
+      ilaeType: "FOCAL_TO_BILATERAL_TC",
+      usualDurationSec: 120,
+      rescuePlanEncrypted: encryptToBytes("Midazolam after 5 minutes"),
+      rescueMedicationId: rescueMed.id,
+      rescueDoseAmount: 10,
+      rescueDoseUnit: "mg",
+      rescueRoute: "BUCCAL",
+    },
+  });
+  await prisma.seizureEvent.create({
+    data: {
+      userId: OWNER_ID,
+      typeProfileId: seizureType.id,
+      onsetAt: AT("2026-06-22T07:00:00.000Z"),
+      durationSec: 420,
+      durationSource: "TIMED",
+      sleepState: "ASLEEP",
+      triggers: ["SLEEP_DEPRIVATION", "FEVER"],
+      postictal: ["SLEEP", "CONFUSION"],
+      postictalMinutes: 45,
+      injuries: ["TONGUE_BITE"],
+      emergency: "EMS_CALLED",
+      witnessed: true,
+      witnessRole: "PARENT",
+      witnessNoteEncrypted: encryptToBytes("eyes to the left first"),
+      noteEncrypted: encryptToBytes("woke from a nap"),
+      loggedByUserId: OWNER_ID,
+      rescueDoses: {
+        create: {
+          userId: OWNER_ID,
+          medicationId: rescueMed.id,
+          medicationName: "Buccal midazolam",
+          doseAmount: 10,
+          doseUnit: "mg",
+          route: "BUCCAL",
+          givenAt: AT("2026-06-22T07:06:00.000Z"),
+          givenBy: "PARENT",
+          effect: "STOPPED",
+          intakeEventId: rescueIntake.id,
+        },
+      },
+    },
+  });
+  await prisma.seizureEvent.create({
+    data: {
+      userId: OWNER_ID,
+      onsetAt: AT("2026-06-23T10:00:00.000Z"),
+      ilaeType: "ABSENCE_TYPICAL",
+      count: 6,
+      certainty: "SUSPECTED",
+    },
+  });
+  await prisma.seizureDiarySettings.create({
+    data: { userId: OWNER_ID, clusterCount: 3, clusterWindowHours: 12 },
+  });
+
   // v1.42 — two life events: a move known to the month, with a note, and a
   // period known to the day.
   await prisma.lifeEvent.create({

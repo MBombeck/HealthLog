@@ -177,6 +177,12 @@
  * note, address and phone; a visit's reason, outcome and body site) and of a
  * vaccination's note (`vaccinations.<id>.noteEncrypted`). The row restores
  * without the field.
+ *
+ * `seizureMedicationReference` names a rescue medication a seizure type or a
+ * rescue dose pointed at that the restore did not put back; the link is nulled
+ * and the dose keeps its name snapshot. `seizureTypeReference` names a type a
+ * seizure pointed at that the file did not carry; the seizure restores
+ * untyped, keeping any classification it carried itself.
  */
 export type SkippedCatalogue =
   | "cycleSymptom"
@@ -199,6 +205,8 @@ export type SkippedCatalogue =
   | "checkupClosure"
   | "accountSetting"
   | "symptomEpisodeReference"
+  | "seizureMedicationReference"
+  | "seizureTypeReference"
   | "cycleCiphertext"
   | "moodLabelCiphertext"
   | "visitCiphertext"

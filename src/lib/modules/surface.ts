@@ -87,6 +87,7 @@ const STATIC_SURFACE_MODULE = {
   "nav:/labs": "labs",
   "nav:/illness": "illness",
   "nav:/vaccinations": "vaccinations",
+  "nav:/seizures": "seizures",
   "nav:/documents": "inboundDocuments",
   "nav:/coach": "coach",
   "nav:/achievements": "achievements",
@@ -139,6 +140,7 @@ const STATIC_SURFACE_MODULE = {
   "capture:workout": "workouts",
   // v1.40 — an occurrence of a person-defined symptom rides the illness module.
   "capture:symptom": "illness",
+  "capture:seizure": "seizures",
   "capture:lifeEvent": "timeline",
 
   // ── Dashboard widgets ──
@@ -283,6 +285,7 @@ const STATIC_SURFACE_MODULE = {
   "timeline-lane:medications": "medications",
   "timeline-lane:vaccinations": "vaccinations",
   "timeline-lane:labs": "labs",
+  "timeline-lane:seizures": "seizures",
   "timeline-lane:documents": "inboundDocuments",
   "timeline-lane:cycle": "cycle",
 

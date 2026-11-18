@@ -93,6 +93,7 @@ const GLYPH_HALF_WIDTH: Record<PointShape, number> = {
 export const LANE_ORDER: readonly TimelineLaneKey[] = [
   "life",
   "illness",
+  "seizures",
   "allergies",
   "medications",
   "vaccinations",
@@ -109,6 +110,7 @@ export const LANE_ORDER: readonly TimelineLaneKey[] = [
 export const LANE_COLOR: Readonly<Record<TimelineLaneKey, string>> = {
   life: "var(--foreground)",
   illness: "var(--chart-5)",
+  seizures: "var(--chart-5)",
   allergies: "var(--chart-3)",
   medications: "var(--chart-1)",
   vaccinations: "var(--chart-2)",
@@ -506,6 +508,7 @@ const POINT_SHAPE: Partial<Record<TimelineItemKind, PointShape>> = {
   visit: "dot",
   procedure: "square",
   labDay: "ring",
+  seizureDay: "diamond",
   document: "tick",
 };
 

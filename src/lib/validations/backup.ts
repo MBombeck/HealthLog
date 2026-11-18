@@ -102,6 +102,11 @@ import {
 } from "@/lib/export/sensitive-backup-schema";
 import { symptomDefinitionBackupSchema } from "@/lib/export/symptoms-backup-schema";
 import {
+  seizureEventBackupSchema,
+  seizureSettingsBackupSchema,
+  seizureTypeBackupSchema,
+} from "@/lib/export/seizures-backup-schema";
+import {
   customVaccineBackupSchema,
   vaccinationBackupSchema,
   vaccinationLinkBackupSchema,
@@ -176,6 +181,10 @@ export const backupPayloadSchema = z
     symptomDefinitions: z.array(symptomDefinitionBackupSchema).default([]),
     // Defaulted: a file written before v1.42 carries no key.
     lifeEvents: z.array(lifeEventBackupSchema).default([]),
+    // Defaulted: a file written before v1.48 carries no key.
+    seizureTypes: z.array(seizureTypeBackupSchema).default([]),
+    seizureEvents: z.array(seizureEventBackupSchema).default([]),
+    seizureSettings: seizureSettingsBackupSchema.nullable().default(null),
     allergies: z.array(allergyBackupSchema).default([]),
     familyHistory: z.array(familyHistoryBackupSchema).default([]),
     workouts: z.array(workoutBackupSchema).default([]),

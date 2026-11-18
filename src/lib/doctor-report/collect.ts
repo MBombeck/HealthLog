@@ -83,6 +83,7 @@ import {
   loadSurgicalHistory,
   loadLabResults,
 } from "./clinical-records";
+import { loadSeizureReport } from "@/lib/seizures/report";
 import { dateOfBirthKey, dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
 import { PATIENT_NAME_SELECT, patientName } from "@/lib/account-name";
 import { readingsMean } from "@/lib/measurements/day-mean";
@@ -647,6 +648,7 @@ export async function collectDoctorReportData(
     cycle,
     labResults,
     illnessEpisodes,
+    seizureDiary,
     visits,
     surgicalHistory,
     immunizations,
@@ -687,6 +689,14 @@ export async function collectDoctorReportData(
       : Promise.resolve(null),
     gate.admits("ILLNESS_EPISODES")
       ? loadIllnessEpisodes(userId, start, end)
+      : Promise.resolve(null),
+    gate.admits("SEIZURES")
+      ? loadSeizureReport(userId, start, end, reportTz, {
+          missedDose: gate.admits("MEDICATION_COMPLIANCE"),
+          cycle: gate.admits("CYCLE"),
+          sleep: gate.admits("SLEEP_DURATION"),
+          illness: gate.admits("ILLNESS_EPISODES"),
+        })
       : Promise.resolve(null),
     gate.admits("VISITS")
       ? loadVisits(userId, start, end)
@@ -783,6 +793,7 @@ export async function collectDoctorReportData(
     cycle,
     labResults,
     illnessEpisodes,
+    seizureDiary,
     visits,
     surgicalHistory,
     immunizations,

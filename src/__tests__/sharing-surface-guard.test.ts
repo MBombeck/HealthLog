@@ -1124,6 +1124,40 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "illness",
     why: "One symptom occurrence of the record, fetch-then-guard against the resolved user. Reached only through this module's MANAGE arm.",
   },
+  // The seizure diary rides the illness section. A
+  // guardian logging for a managed child is the primary user.
+  "app/api/seizures/route.ts": {
+    domain: "illness",
+    why: "The record's seizure diary in one read: types, rule, the period's seizures and the summary derived from them. Module-gated on the record; every query is scoped `userId: user.id`.",
+  },
+  "app/api/seizures/events/route.ts": {
+    domain: "illness",
+    why: "Recording a seizure. Module-gated on the record; the type and every rescue medication the body names are re-narrowed to the resolved user before anything is written. The create arm is a delegable write.",
+  },
+  "app/api/seizures/events/[id]/route.ts": {
+    domain: "illness",
+    why: "One seizure of the record, fetch-then-guard against the resolved user. Reached only through this module's MANAGE arm.",
+  },
+  "app/api/seizures/events/[id]/rescue/route.ts": {
+    domain: "illness",
+    why: "Adding a rescue dose to one seizure of the record; the seizure and the medication are looked up under the resolved user. A delegable write.",
+  },
+  "app/api/seizures/events/[id]/rescue/[doseId]/route.ts": {
+    domain: "illness",
+    why: "One rescue dose, fetch-then-guard on dose, seizure and record together. Reached only through this module's MANAGE arm.",
+  },
+  "app/api/seizures/types/route.ts": {
+    domain: "illness",
+    why: "The record's seizure types. The read is READ; the create arm is MANAGE (see the manage literal), because the types and their rescue plans are set up once with the care team and a delegate who may log a seizure picks from them.",
+  },
+  "app/api/seizures/types/[id]/route.ts": {
+    domain: "illness",
+    why: "One seizure type, fetch-then-guard against the resolved user. Reached only through this module's MANAGE arm.",
+  },
+  "app/api/seizures/settings/route.ts": {
+    domain: "illness",
+    why: "The record's cluster rule. The read is READ; the write is MANAGE.",
+  },
   // v1.42 (#613) — the day, its index and the visit preparation are admitted
   // on the readings and narrowed section by section after that: every other
   // section is read only when the grant also covers that section's own
@@ -1636,6 +1670,10 @@ const DELEGABLE_WRITE_ROUTES: Record<string, string> = {
     "Opening an illness episode. The module gate runs against the RECORD before the write, so a delegate cannot create an episode inside a record whose owner switched the module off.",
   "app/api/symptoms/events/route.ts":
     "Logging a symptom occurrence. The definition and the episode the body names are looked up under the RECORD, and an episode must still be open, so a delegate cannot attach an occurrence to an episode the owner closed or to another record's.",
+  "app/api/seizures/events/route.ts":
+    "Recording a seizure, typically a guardian logging for a managed child with a timer running. The type and each rescue medication the body names are looked up under the RECORD. A rescue dose also writes an intake on the RECORD's as-needed medication through the medication's own intake path, which notifies the owner of a delegated dose exactly as marking it taken would; the consent copy for this section names that one write outside it.",
+  "app/api/seizures/events/[id]/rescue/route.ts":
+    "Adding a rescue dose to a seizure already recorded, for the carer who gave it after the timer stopped. Same lookups and the same intake write as the create.",
   "app/api/encounters/route.ts":
     "Filing a visit, or booking one. Every id the body may carry — the practitioner, the checkup it closes, the three link arrays — is re-narrowed to the resolved record before anything is written, so a delegate cannot attach one record's document to another's visit. Booking mints the appointment reminder under the RECORD, which is correct: it is the owner's appointment and the owner's channels that should be nudged about it.",
   "app/api/practitioners/route.ts":
@@ -1841,6 +1879,31 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
     domain: "illness",
     conditions: ["C3", "C4"],
     why: "Correcting and removing one occurrence. The delete is hard, so C3 carries its time and intensity; C4 on the edit, the encrypted note named and never quoted.",
+  },
+  "app/api/seizures/events/[id]/route.ts": {
+    domain: "illness",
+    conditions: ["C3", "C4"],
+    why: "Adding details to, correcting and removing one seizure. The delete is hard, so C3 files its time, type id, count and how many intakes it undid; C4 on the edit over the plaintext scalars, the encrypted notes named and never quoted.",
+  },
+  "app/api/seizures/events/[id]/rescue/[doseId]/route.ts": {
+    domain: "illness",
+    conditions: ["C3", "C4"],
+    why: "Recording whether a rescue dose worked, correcting it, or removing it. The delete is hard and undoes the intake the dose wrote on the medication, so C3 names the medication and the time; C4 on the edit.",
+  },
+  "app/api/seizures/types/route.ts": {
+    domain: "illness",
+    conditions: [],
+    why: "Setting up a seizure type with its rescue plan on the record. Capped at twelve active types; the name and plan are encrypted and never filed.",
+  },
+  "app/api/seizures/types/[id]/route.ts": {
+    domain: "illness",
+    conditions: ["C3", "C4"],
+    why: "Editing, archiving and deleting a seizure type. A type any seizure names cannot be deleted, only archived, so no recorded seizure loses its type; C3 on the delete, C4 on the edit with the name and plan named, never quoted.",
+  },
+  "app/api/seizures/settings/route.ts": {
+    domain: "illness",
+    conditions: ["C4"],
+    why: "Setting the record's cluster rule. C4: the rule it had before is filed beside the new one.",
   },
   "app/api/mood-entries/route.ts": {
     domain: "mind",
@@ -2320,8 +2383,16 @@ const ACTOR_ROUTES: Record<string, string> = {
  *
  * The Insights presence read joins the record list and the manage literal:
  * the tab strip's gate over the overview, counts and flags only. 277 -> 279.
+ *
+ * The seizure diary (#1368) adds fifteen: eight modules on the
+ * record list in `illness`, the seizure and rescue-dose creates on the write
+ * literal, and the seizure, rescue-dose and type edits/deletes, the type
+ * create and the cluster rule on the manage literal. 279 -> 294.
+ *
+ * Correcting and removing a GLP-1 dose step joins the manage literal: the
+ * step's PATCH and DELETE. With the diary, 279 -> 296.
  */
-const FROZEN_ENTRY_COUNT = 281;
+const FROZEN_ENTRY_COUNT = 296;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
@@ -3099,7 +3170,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
   it("keeps the admitted mutation inventory complete and discoverable", () => {
     expect(ADMITTED_MUTATING_HANDLERS.length).toBeGreaterThan(0);
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(95);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(105);
 
     const expected = ADMITTED_MUTATING_HANDLERS.map(
       ({ handlerModule, action, level }) =>

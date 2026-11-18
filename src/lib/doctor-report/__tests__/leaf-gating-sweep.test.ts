@@ -259,6 +259,32 @@ function seed() {
       practitioner: { name: "Sample practice" },
     },
   ];
+  rows.seizureEvent = [
+    {
+      id: "seizure-1",
+      userId: "u1",
+      typeProfileId: null,
+      ilaeType: "FOCAL_TO_BILATERAL_TC",
+      onsetAt: new Date("2026-02-04T07:00:00.000Z"),
+      onsetPrecision: "EXACT",
+      durationSec: 120,
+      durationSource: "TIMED",
+      count: 1,
+      certainty: "CONFIRMED",
+      sleepState: "ASLEEP",
+      responsiveness: null,
+      recall: null,
+      triggers: [],
+      postictal: [],
+      injuries: [],
+      emergency: "NONE",
+      witnessed: true,
+      witnessRole: null,
+      loggedByUserId: "u1",
+      noteEncrypted: null,
+      rescueDoses: [],
+    },
+  ];
   rows.workout = [
     {
       sportType: "running",
@@ -320,6 +346,7 @@ describe("per-leaf gating sweep", () => {
     expect(allPayload.illnessEpisodes).not.toBeNull();
     expect(allPayload.visits).not.toBeNull();
     expect(allPayload.surgicalHistory).not.toBeNull();
+    expect(allPayload.seizureDiary).not.toBeNull();
     expect(allPayload.mood).not.toBeNull();
     expect(allPayload.cycle).not.toBeNull();
     expect(allPayload.anamnesis).not.toBeNull();
@@ -574,6 +601,7 @@ describe("zero read for unchosen leaves", () => {
     ["VISITS", "encounter"],
     ["SURGICAL_HISTORY", "encounter"],
     ["IMMUNIZATIONS", "vaccinationRecord"],
+    ["SEIZURES", "seizureEvent"],
     ["ANAMNESIS", "userHealthProfile"],
     ["EMERGENCY", "userHealthProfile"],
     ["ANAMNESIS", "healthProfileFactRevision"],

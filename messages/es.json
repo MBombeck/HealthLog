@@ -58,7 +58,8 @@
     "errorIdCopied": "ID de error copiado",
     "readThrottled": "Hay demasiadas solicitudes ahora mismo, así que vuelve a intentarlo más tarde.",
     "sessionEnded": "Tu sesión ha caducado, así que inicia sesión de nuevo para continuar.",
-    "signIn": "Iniciar sesión"
+    "signIn": "Iniciar sesión",
+    "yes": "Sí"
   },
   "apiErrors": {
     "measurement": {
@@ -249,7 +250,24 @@
         "invalid": "No se pudo leer la respuesta de la passkey. Vuelve a intentarlo."
       }
     },
-    "oidc_only": "Este servidor solo permite el inicio de sesión único. Continúa con tu proveedor de identidad."
+    "oidc_only": "Este servidor solo permite el inicio de sesión único. Continúa con tu proveedor de identidad.",
+    "seizures": {
+      "disabled": "El diario de crisis está desactivado para este registro.",
+      "event": {
+        "notFound": "Esta crisis ya no existe."
+      },
+      "rescue": {
+        "notFound": "Esta dosis de rescate ya no existe.",
+        "medicationNotFound": "Este medicamento ya no existe.",
+        "medicationRequired": "Elige el medicamento que se administró.",
+        "notAsNeeded": "Una medicación de rescate tiene que ser un medicamento a demanda."
+      },
+      "type": {
+        "inUse": "Hay crisis registradas con este tipo. Archívalo en su lugar.",
+        "limit": "Ya hay 12 tipos de crisis. Archiva uno para añadir otro.",
+        "notFound": "Este tipo de crisis ya no existe."
+      }
+    }
   },
   "doctorReport": {
     "title": "Informe de salud",
@@ -574,7 +592,9 @@
       "symptom": "Síntoma",
       "symptomDescription": "Uno de tus propios síntomas, con su intensidad",
       "lifeEventDescription": "Una mudanza, un nacimiento, un nuevo trabajo",
-      "lifeEvent": "Acontecimiento vital"
+      "lifeEvent": "Acontecimiento vital",
+      "seizure": "Crisis",
+      "seizureDescription": "Inicia el cronómetro o registra una crisis no cronometrada"
     },
     "cycle": "Ciclo",
     "labs": "Análisis",
@@ -584,7 +604,8 @@
     "documents": "Documentos",
     "vaccinations": "Vacunas",
     "mentalWellbeing": "Bienestar mental",
-    "timeline": "Cronología"
+    "timeline": "Cronología",
+    "seizures": "Crisis"
   },
   "auth": {
     "login": "Iniciar sesión",
@@ -866,7 +887,8 @@
     },
     "greetingOnly": "{greeting}.",
     "welcomeNew": "Te damos la bienvenida.",
-    "welcomeNewWithName": "Te damos la bienvenida, {name}."
+    "welcomeNewWithName": "Te damos la bienvenida, {name}.",
+    "quickAddSeizure": "Registrar crisis"
   },
   "measurements": {
     "title": "Mediciones",
@@ -8645,7 +8667,9 @@
           "failureUnconfirmed": "Escribe exactamente el nombre de usuario de la cuenta para confirmar.",
           "failureUsernameTaken": "Este nombre de usuario ya está en uso.",
           "failureOwnerExists": "La cuenta a la que pertenece este archivo está en este servidor, y el archivo se restaura en esa cuenta. Súbelo de nuevo sin elegir una cuenta."
-        }
+        },
+        "restoreSkippedSeizureMedicationReference": "Plan de rescate o dosis de rescate de una crisis vinculados a un medicamento que no está en el archivo (se conservan sin el vínculo)",
+        "restoreSkippedSeizureTypeReference": "Crisis vinculada a un tipo de crisis que no está en el archivo (se conserva sin el tipo)"
       },
       "danger-zone": {
         "title": "Zona de peligro",
@@ -9530,6 +9554,12 @@
       "titleRecovered": "La tarea en segundo plano vuelve a funcionar: {queue}",
       "bodyFailing": "La tarea en segundo plano {queue} ha fallado {failures} veces seguidas y aparece en la página de estado de administración. Último error: {error}",
       "bodyRecovered": "La tarea en segundo plano {queue} se ha vuelto a ejecutar correctamente."
+    },
+    "eventSeizureCluster": "Racimo de crisis",
+    "eventSeizureClusterDesc": "Cuando una crisis registrada por otra persona forma un racimo según la regla del diario. Una vez por racimo.",
+    "seizureCluster": {
+      "title": "Racimo de crisis",
+      "body": "{count} crisis en {hours} h, registradas por {name}. El plan de rescate está en el diario de crisis."
     }
   },
   "i18n": {
@@ -10917,6 +10947,10 @@
     "timeline": {
       "label": "Cronología",
       "description": "Años de un vistazo: enfermedades, medicamentos y visitas junto a tus valores, además de tus propios acontecimientos vitales."
+    },
+    "seizures": {
+      "label": "Diario de crisis",
+      "description": "Registra las crisis con su tipo, duración y medicación de rescate, consulta los racimos y los días sin crisis, y añade una sección de crisis al informe médico."
     }
   },
   "moduleOff": {
@@ -13082,7 +13116,8 @@
     "leafEmergency": "Información de emergencia (grupo sanguíneo, contactos, voluntades)",
     "leafMedicationEffect": "Cambio en torno al inicio de cada medicamento (requiere la lista de medicamentos)",
     "leafWorkouts": "Entrenamientos (resumen por deporte)",
-    "leafHrvSdnn": "VFC (SDNN)"
+    "leafHrvSdnn": "VFC (SDNN)",
+    "leafSeizures": "Diario de crisis"
   },
   "recordSharing": {
     "banner": {
@@ -13466,7 +13501,17 @@
       "cycleFeedCreate": "{name} activó la suscripción de calendario",
       "cycleFeedUpdate": "{name} cambió la suscripción de calendario",
       "cycleFeedRotate": "{name} renovó el enlace de la suscripción de calendario",
-      "cycleFeedRevoke": "{name} desactivó la suscripción de calendario"
+      "cycleFeedRevoke": "{name} desactivó la suscripción de calendario",
+      "seizureEventCreate": "{name} registró una crisis",
+      "seizureRescueCreate": "{name} registró una dosis de rescate",
+      "seizureEventUpdate": "{name} editó una crisis",
+      "seizureEventDelete": "{name} eliminó una crisis",
+      "seizureRescueUpdate": "{name} editó una dosis de rescate",
+      "seizureRescueDelete": "{name} eliminó una dosis de rescate",
+      "seizureTypeCreate": "{name} añadió un tipo de crisis",
+      "seizureTypeUpdate": "{name} editó un tipo de crisis",
+      "seizureTypeDelete": "{name} eliminó un tipo de crisis",
+      "seizureSettingsUpdate": "{name} cambió la regla de crisis en racimo"
     },
     "section": {
       "measurements": {
@@ -13487,7 +13532,7 @@
       },
       "illness": {
         "label": "Enfermedades",
-        "detail": "Los episodios de enfermedad y los registros diarios asociados."
+        "detail": "Los episodios de enfermedad y los registros diarios asociados, tus propios síntomas y el diario de crisis. Una dosis de rescate registrada en el diario de crisis también queda registrada en su medicamento."
       },
       "mind": {
         "label": "Ánimo y bienestar mental",
@@ -13970,7 +14015,8 @@
       "visits": "Médico e intervenciones",
       "labs": "Laboratorio",
       "documents": "Documentos",
-      "cycle": "Ciclo"
+      "cycle": "Ciclo",
+      "seizures": "Crisis"
     },
     "readiness": {
       "title": "Lo que tu cronología ya muestra",
@@ -14045,7 +14091,10 @@
         "environmentOne": "{count} día con datos ambientales",
         "environmentFew": "{count} días con datos ambientales",
         "environmentOther": "{count} días con datos ambientales",
-        "empty": "Aún ninguno"
+        "empty": "Aún ninguno",
+        "seizuresOne": "{count} día con crisis",
+        "seizuresFew": "{count} días con crisis",
+        "seizuresOther": "{count} días con crisis"
       },
       "gap": {
         "valuesEmpty": "Conectar fuentes",
@@ -14055,7 +14104,8 @@
         "documentsUndated": "Revisar",
         "labsEmpty": "Añadir resultado",
         "vaccinationsEmpty": "Añadir vacunas",
-        "lifeEventsEmpty": "Añadir"
+        "lifeEventsEmpty": "Añadir",
+        "seizuresEmpty": "Registrar una crisis"
       },
       "gapLine": {
         "medicationsWithoutStartOne": "{count} medicamento sin fecha de inicio",
@@ -14069,7 +14119,8 @@
         "visitsEmpty": "Aún no hay visitas médicas realizadas",
         "labsEmpty": "Aún no hay resultados de laboratorio",
         "vaccinationsEmpty": "Aún no hay vacunas",
-        "lifeEventsEmpty": "Aún no hay acontecimientos vitales"
+        "lifeEventsEmpty": "Aún no hay acontecimientos vitales",
+        "seizuresEmpty": "Aún no hay crisis registradas"
       }
     },
     "legendSpan": "Periodo",
@@ -14160,7 +14211,10 @@
     "item": {
       "labValuesOne": "1 valor de laboratorio",
       "labValuesFew": "{count} valores de laboratorio",
-      "labValuesOther": "{count} valores de laboratorio"
+      "labValuesOther": "{count} valores de laboratorio",
+      "seizuresOne": "1 crisis",
+      "seizuresFew": "{count} crisis",
+      "seizuresOther": "{count} crisis"
     },
     "labs": {
       "menuTitle": "Valores de laboratorio",
@@ -14535,5 +14589,435 @@
       "endsOn": "Fin"
     },
     "unitlessHint": "Un cociente o un índice sin unidad (INR, colesterol/HDL): escribe 1 en la columna de la unidad. Una unidad vacía sigue siendo un error."
+  },
+  "seizures": {
+    "ilae": {
+      "FOCAL_PRESERVED": {
+        "current": "Crisis focal con conciencia preservada",
+        "ilae2017": "Crisis focal consciente"
+      },
+      "FOCAL_IMPAIRED": {
+        "current": "Crisis focal con conciencia alterada",
+        "ilae2017": "Crisis focal con alteración de la conciencia"
+      },
+      "FOCAL_UNDETERMINED": {
+        "current": "Crisis focal",
+        "ilae2017": "Crisis de inicio focal"
+      },
+      "FOCAL_TO_BILATERAL_TC": {
+        "current": "Crisis focal con evolución a tónico-clónica bilateral",
+        "ilae2017": "Crisis focal con evolución a tónico-clónica bilateral"
+      },
+      "GENERALIZED_UNDETERMINED": {
+        "current": "Crisis generalizada",
+        "ilae2017": "Crisis de inicio generalizado"
+      },
+      "GENERALIZED_TC": {
+        "current": "Crisis tónico-clónica generalizada",
+        "ilae2017": "Crisis tónico-clónica de inicio generalizado"
+      },
+      "GEN_CLONIC": {
+        "current": "Crisis clónica generalizada",
+        "ilae2017": "Crisis clónica de inicio generalizado"
+      },
+      "GEN_TONIC": {
+        "current": "Crisis tónica generalizada",
+        "ilae2017": "Crisis tónica de inicio generalizado"
+      },
+      "GEN_MYOCLONIC": {
+        "current": "Crisis mioclónica generalizada",
+        "ilae2017": "Crisis mioclónica de inicio generalizado"
+      },
+      "GEN_MYOCLONIC_ATONIC": {
+        "current": "Crisis mioclónico-atónica generalizada",
+        "ilae2017": "Crisis mioclónico-atónica de inicio generalizado"
+      },
+      "GEN_ATONIC": {
+        "current": "Crisis atónica generalizada",
+        "ilae2017": "Crisis atónica de inicio generalizado"
+      },
+      "GEN_NEGATIVE_MYOCLONIC": {
+        "current": "Crisis mioclónica negativa generalizada"
+      },
+      "GEN_SPASMS": {
+        "current": "Espasmos epilépticos generalizados",
+        "ilae2017": "Espasmos epilépticos de inicio generalizado"
+      },
+      "ABSENCE_TYPICAL": {
+        "current": "Crisis de ausencia típica",
+        "ilae2017": "Crisis generalizada no motora (ausencia), típica"
+      },
+      "ABSENCE_ATYPICAL": {
+        "current": "Crisis de ausencia atípica",
+        "ilae2017": "Crisis generalizada no motora (ausencia), atípica"
+      },
+      "ABSENCE_MYOCLONIC": {
+        "current": "Crisis de ausencia mioclónica",
+        "ilae2017": "Crisis generalizada no motora (ausencia), mioclónica"
+      },
+      "EYELID_MYOCLONIA": {
+        "current": "Mioclonías palpebrales (con o sin ausencia)",
+        "ilae2017": "Ausencia con mioclonías palpebrales"
+      },
+      "UNKNOWN_UNDETERMINED": {
+        "current": "Crisis, sin saber si focal o generalizada",
+        "ilae2017": "Crisis de inicio desconocido"
+      },
+      "UNKNOWN_PRESERVED": {
+        "current": "Sin saber si focal o generalizada, conciencia preservada",
+        "ilae2017": "Crisis de inicio desconocido, consciente"
+      },
+      "UNKNOWN_IMPAIRED": {
+        "current": "Sin saber si focal o generalizada, conciencia alterada",
+        "ilae2017": "Crisis de inicio desconocido, con alteración de la conciencia"
+      },
+      "UNKNOWN_BILATERAL_TC": {
+        "current": "Crisis tónico-clónica bilateral, sin saber si focal o generalizada",
+        "ilae2017": "Crisis tónico-clónica de inicio desconocido"
+      },
+      "UNCLASSIFIED": {
+        "current": "Crisis no clasificada",
+        "ilae2017": "Crisis no clasificada"
+      }
+    },
+    "ilaeClass": {
+      "FOCAL": "Inicio focal",
+      "GENERALIZED": "Inicio generalizado",
+      "UNKNOWN": "Sin saber si focal o generalizada",
+      "UNCLASSIFIED": "No clasificada"
+    },
+    "route": {
+      "BUCCAL": "Bucal",
+      "INTRANASAL": "Intranasal",
+      "RECTAL": "Rectal",
+      "ORAL": "Oral",
+      "SUBLINGUAL": "Sublingual",
+      "IM": "Intramuscular",
+      "IV_BY_EMS": "Intravenosa (servicios de emergencia)"
+    },
+    "effect": {
+      "STOPPED": "La crisis cedió",
+      "REDUCED": "La crisis se atenuó",
+      "NO_EFFECT": "Sin efecto",
+      "UNKNOWN": "No se sabe"
+    },
+    "trigger": {
+      "MISSED_DOSE": "Dosis olvidada",
+      "SLEEP_DEPRIVATION": "Falta de sueño",
+      "FEVER": "Fiebre",
+      "ILLNESS": "Enfermedad",
+      "MENSTRUATION": "Regla",
+      "ALCOHOL": "Alcohol",
+      "FLASHING_LIGHTS": "Luces intermitentes",
+      "STRESS": "Estrés",
+      "OTHER": "Otro",
+      "NONE_IDENTIFIED": "Ninguno identificado"
+    },
+    "sleepState": {
+      "AWAKE": "Despierto",
+      "ASLEEP": "Dormido",
+      "ON_WAKING": "Al despertar",
+      "UNKNOWN": "No se sabe"
+    },
+    "type": {
+      "unreadable": "Nombre ilegible"
+    },
+    "report": {
+      "title": "Diario de crisis",
+      "untyped": "Sin tipo registrado",
+      "ruleText": "{count} o más en {hours} h",
+      "recorded": "Crisis registradas",
+      "seizureDays": "Días con crisis",
+      "seizureFreeDays": "Días sin crisis registradas",
+      "per28Days": "Crisis cada 28 días",
+      "longestFree": "Periodo más largo sin crisis registradas",
+      "daysValue": "{count} días",
+      "daysSinceLast": "Días desde la última crisis registrada",
+      "convulsive": "Crisis tónico-clónicas bilaterales",
+      "fromSleep": "Crisis durante el sueño",
+      "clusters": "Crisis en racimo (regla: {rule})",
+      "niceClusters": "según NICE: 3 en 24 h",
+      "rescueDoses": "Dosis de rescate administradas",
+      "emergencies": "Servicios de emergencia, urgencias, ingresos",
+      "emergencyValue": "{ems} / {ed} / {admitted}",
+      "suspected": "Episodios sospechosos (no contados arriba)",
+      "monthlyTitle": "Crisis por tipo y mes",
+      "monthlyNote": "Crisis por mes, con el número de días en que ocurrieron entre paréntesis.",
+      "type": "Tipo",
+      "total": "Total",
+      "chartTitle": "Crisis por mes y cambios de medicación",
+      "markersTitle": "Cambios de medicación:",
+      "marker": {
+        "start": "({n}) {date} inicio de {name}",
+        "stop": "({n}) {date} retirada de {name}",
+        "change": "({n}) {date} {name} cambiado a {dose}"
+      },
+      "markersNote": "Cambios en la medicación pautada de forma regular, mostrados junto a los recuentos. El diario no indica si un cambio produjo alguna diferencia.",
+      "durationTitle": "Duración",
+      "timed": "Con duración",
+      "median": "Mediana",
+      "max": "La más larga",
+      "overT1": "En t1 o por encima",
+      "prolonged": "2 min más de lo habitual",
+      "durationNote": "Duraciones en min:s. t1 es el tiempo a partir del cual corresponde el tratamiento de urgencia (ILAE, Trinka 2015: tónico-clónica 5 min, focal con alteración de la conciencia y ausencia 10 min). «2 min más de lo habitual» cuenta las crisis que duraron al menos 2 minutos más que la duración habitual de esta persona (NICE NG217).",
+      "rescueTitle": "Medicación de rescate",
+      "date": "Fecha",
+      "drug": "Medicamento",
+      "dose": "Dosis",
+      "route": "Vía",
+      "minutesFromOnset": "Minutos tras el inicio",
+      "effect": "Efecto",
+      "triggersTitle": "Desencadenantes sospechados",
+      "triggersNote": "Indicados por la persona o su cuidador al registrar; no son causas establecidas.",
+      "overlaysTitle": "Registrado a la vez",
+      "overlayMissedDose": "{followed} de {of} crisis siguieron a una dosis pautada olvidada u omitida en las 48 horas previas.",
+      "overlayIllness": "{during} crisis ocurrieron durante uno de {episodes} episodios de enfermedad registrados.",
+      "overlaySleep": "Sueño registrado la noche anterior a un día con crisis: {before} h de media ({nightsBefore} noches); otras noches: {other} h ({nightsOther} noches).",
+      "overlayCycleDays": "Crisis por día del ciclo (día: número): {list}.",
+      "overlayCycleRatio": "En {cycles} ciclos completos registrados, la tasa de crisis por día en torno a la regla (día −3 a +3) fue {c1} veces la de los demás días, y {c2} veces en torno a la ovulación (día 10 a −13). El criterio catamenial de Herzog es un aumento del doble o más; esto es una referencia, no un hallazgo.",
+      "overlayCycleTooFew": "Las tasas por fase del ciclo se muestran a partir de tres ciclos completos registrados ({cycles} hasta ahora).",
+      "overlaysNote": "Son cosas registradas al mismo tiempo, no causas.",
+      "eventsTitle": "Todos los episodios registrados",
+      "duration": "Duración",
+      "sleep": "Sueño",
+      "rescueShort": "Rescate",
+      "injury": "Lesión",
+      "note": "Nota",
+      "suspectedMark": "(sospecha)",
+      "eventsTruncated": "Solo se listan los 200 episodios más recientes; las cifras de arriba los incluyen todos.",
+      "classificationNote": "Los tipos de crisis siguen la clasificación ILAE 2025; los nombres ILAE 2017 son:",
+      "footer": "Diario registrado por el paciente o su cuidador. Son crisis registradas, probablemente menos de las reales, sobre todo las que ocurren durante el sueño. El diario recoge observaciones y no diagnostica ni evalúa las crisis.",
+      "seizureDaysValue": "en {count} días"
+    },
+    "title": "Diario de crisis",
+    "subtitle": "Las crisis tal como se observaron, con el tipo, la duración y la medicación de rescate administrada.",
+    "loadError": "No se pudo cargar el diario de crisis.",
+    "saveError": "No se pudo guardar. Inténtalo de nuevo.",
+    "untyped": "Sin tipo",
+    "notRecorded": "No registrado",
+    "ilaeWith2017": "{current} (ILAE 2017: {legacy})",
+    "safety": {
+      "header": "Este diario recoge lo que observas para que puedas compartirlo con el equipo médico. No diagnostica ni evalúa las crisis. Sigue el plan de emergencia acordado con tu médico.",
+      "timer": "Llama a emergencias ({number} o tu número local) si una crisis con sacudidas o rigidez dura 5 minutos o más, si sigue otra crisis antes de que la persona se recupere, si le cuesta respirar, si se ha lesionado, si la crisis ocurrió en el agua o si es su primera crisis. Tu propio plan de emergencia tiene prioridad.",
+      "notifications": "HealthLog no es una alarma de crisis ni un producto sanitario. Solo registra lo que se introduce aquí."
+    },
+    "quick": {
+      "title": "Registro rápido",
+      "typeGroup": "Tipo de crisis",
+      "elapsedLabel": "Tiempo desde el inicio de la crisis",
+      "startedAt": "Empezó a las {time}",
+      "start": "La crisis ha empezado",
+      "stop": "La crisis ha terminado",
+      "rescueGiven": "Rescate administrado: {name}",
+      "rescueGivenCount": "Rescate administrado ({count}), toca para otra dosis",
+      "threshold": {
+        "t1": "La crisis dura ya {time}. Sigue el plan de emergencia.",
+        "usualPlusTwo": "La crisis dura ya {time}, más de 2 minutos más de lo habitual. Sigue el plan de emergencia.",
+        "generic": "La crisis dura ya {time}. Sigue el plan de emergencia."
+      },
+      "noPlan": "No hay ningún plan guardado para este tipo de crisis. Llama a emergencias si tienes dudas.",
+      "call": "Llamar al {number}",
+      "recorded": "Crisis registrada",
+      "recordedLine": "Registrada, duración {duration}.",
+      "addDetails": "Añadir detalles",
+      "logPast": "Registrar una crisis no cronometrada",
+      "discard": "Descartar el cronómetro",
+      "discardTitle": "¿Descartar el cronómetro en marcha?",
+      "discardConfirm": "No se registra nada y se pierde la hora de inicio."
+    },
+    "summary": {
+      "title": "Registrado",
+      "recorded": "Crisis registradas, últimos {days} días",
+      "seizureDays": "Días con crisis",
+      "sinceLast": "Días desde la última crisis registrada",
+      "longestFree": "Periodo más largo sin crisis, días",
+      "clusters": "Racimos ({rule})",
+      "niceClusters": "Racimos según NICE (3 en 24 h)",
+      "suspected": "{count} crisis sospechosas aparecen en la lista pero no se cuentan.",
+      "clusterLine": "Racimo desde {start}: {count} crisis",
+      "monthlyCaption": "Crisis por tipo y mes",
+      "undercount": "Crisis registradas, probablemente menos de las reales, sobre todo las que ocurren durante el sueño."
+    },
+    "list": {
+      "title": "Crisis registradas",
+      "empty": "No hay crisis registradas en los últimos 90 días.",
+      "rescue": "Rescate",
+      "loggedByDelegate": "registrada por una persona con acceso",
+      "showAll": "Mostrar las {count}",
+      "truncated": "Solo se muestran las crisis más recientes.",
+      "loggedByYou": "registrado por ti",
+      "loggedByName": "registrado por {name}"
+    },
+    "certainty": {
+      "CONFIRMED": "Crisis",
+      "SUSPECTED": "Sospecha"
+    },
+    "onsetPrecision": {
+      "EXACT": "Hora exacta",
+      "APPROX": "Hacia esta hora",
+      "UNKNOWN_TIME": "Hora desconocida"
+    },
+    "durationSource": {
+      "TIMED": "Cronometrada",
+      "ESTIMATED": "Estimada",
+      "UNKNOWN": "No se sabe"
+    },
+    "functionState": {
+      "PRESERVED": "Preservada",
+      "IMPAIRED": "Alterada",
+      "UNKNOWN": "No estoy seguro"
+    },
+    "emergency": {
+      "NONE": "Ninguna",
+      "EMS_CALLED": "Se llamó a emergencias",
+      "ED_VISIT": "Urgencias",
+      "ADMITTED": "Ingreso hospitalario"
+    },
+    "observer": {
+      "SELF": "La propia persona",
+      "PARENT": "Madre o padre",
+      "PARTNER": "Pareja",
+      "FAMILY": "Familiar",
+      "CARER": "Cuidador",
+      "TEACHER": "Docente",
+      "CLINICIAN": "Profesional sanitario",
+      "PARAMEDIC": "Técnico de emergencias",
+      "OTHER": "Otra persona"
+    },
+    "semiology": {
+      "AURA": "Aura",
+      "BEHAVIOUR_ARREST": "Se detuvo en lo que hacía",
+      "STARING": "Mirada fija",
+      "AUTOMATISMS": "Automatismos (chupeteo, movimientos de manoseo)",
+      "TONIC": "Rigidez",
+      "CLONIC": "Sacudidas rítmicas",
+      "MYOCLONIC": "Sacudidas breves",
+      "ATONIC_DROP": "Caída brusca",
+      "SPASMS": "Espasmos",
+      "HEAD_EYE_VERSION": "Cabeza u ojos girados hacia un lado",
+      "VOCALISATION": "Grito o sonidos",
+      "CYANOSIS": "Labios o cara azulados",
+      "DROOLING": "Babeo",
+      "BREATHING_CHANGE": "Respiración alterada"
+    },
+    "postictal": {
+      "SLEEP": "Sueño",
+      "CONFUSION": "Confusión",
+      "HEADACHE": "Dolor de cabeza",
+      "WEAKNESS_TODD": "Debilidad en un lado (parálisis de Todd)",
+      "SPEECH": "Dificultad para hablar",
+      "AGITATION": "Agitación",
+      "OTHER": "Otro"
+    },
+    "injury": {
+      "NONE": "Sin lesiones",
+      "TONGUE_BITE": "Mordedura de lengua",
+      "HEAD": "Traumatismo craneal",
+      "FALL_OTHER": "Otra lesión por caída",
+      "BURN": "Quemadura",
+      "FRACTURE": "Fractura",
+      "OTHER": "Otra"
+    },
+    "sheet": {
+      "newTitle": "Registrar una crisis",
+      "editTitle": "Detalles de la crisis",
+      "description": "Solo hace falta el inicio. Añade lo que sepas.",
+      "created": "Crisis registrada",
+      "updated": "Crisis actualizada",
+      "type": "Tipo de crisis",
+      "onset": "Inicio",
+      "onsetPrecision": "Precisión de la hora de inicio",
+      "duration": "Duración",
+      "minutes": "Minutos",
+      "seconds": "Segundos",
+      "durationHint": "Déjalo vacío si nadie vio cuánto duró.",
+      "durationSource": "La duración fue",
+      "certainty": "¿Fue una crisis?",
+      "count": "Cuántas",
+      "countHint": "Más de una para un recuento, como las ausencias de un día.",
+      "sleepState": "Despierto o dormido",
+      "sectionObserved": "Lo que se observó",
+      "responsiveness": "Respondía cuando se le hablaba",
+      "recall": "Recuerda la crisis",
+      "semiology": "Qué pasó, en orden",
+      "semiologyNote": "Descripción",
+      "aura": "Aviso previo (aura)",
+      "ilaeOverride": "Clasificación de esta crisis",
+      "ilaeFromType": "Según el tipo",
+      "sectionAfter": "Después",
+      "postictalMinutes": "Minutos hasta volver a la normalidad",
+      "postictal": "Después de la crisis",
+      "injuries": "Lesiones",
+      "emergency": "Atención de emergencia",
+      "sectionContext": "Desencadenantes y testigo",
+      "triggers": "Desencadenantes sospechados",
+      "triggersHint": "Tu propia sospecha, que aparece como sospechada en el informe.",
+      "witnessed": "¿La vio alguien?",
+      "witnessRole": "Quién la vio",
+      "witnessNote": "Qué vio",
+      "note": "Nota",
+      "delete": "Eliminar crisis",
+      "deleteTitle": "¿Eliminar esta crisis?",
+      "deleteBody": "Se eliminan la crisis y sus dosis de rescate, y las dosis se retiran también del medicamento.",
+      "observable": "Signos visibles",
+      "incontinence": "Incontinencia"
+    },
+    "rescue": {
+      "title": "Medicación de rescate",
+      "none": "No hay dosis de rescate registradas.",
+      "effect": "Efecto",
+      "remove": "Quitar dosis",
+      "removeTitle": "¿Quitar esta dosis de rescate?",
+      "removeBody": "La dosis también se retira del medicamento.",
+      "medication": "Medicamento",
+      "pick": "Elige un medicamento",
+      "givenAt": "Administrada a las",
+      "route": "Vía",
+      "intakeHint": "La dosis también se registra en el medicamento. La medicación a demanda no cuenta para la adherencia.",
+      "add": "Añadir dosis de rescate"
+    },
+    "types": {
+      "title": "Tipos de crisis",
+      "emptyTitle": "Aún no hay tipos de crisis",
+      "emptyDescription": "Configura una vez los tipos de crisis de la persona, idealmente con el equipo médico.",
+      "newTitle": "Añadir un tipo de crisis",
+      "editTitle": "Editar tipo de crisis",
+      "description": "La clasificación la eliges tú o el equipo médico; HealthLog no clasifica.",
+      "label": "Tu nombre para este tipo",
+      "labelHint": "La palabra que usa tu familia, como «la grande».",
+      "class": "Inicio",
+      "ilaeType": "Tipo de crisis (ILAE 2025)",
+      "notSure": "No estoy seguro: {name}",
+      "usualDuration": "Duración habitual",
+      "usualHint": "Se usa para mostrar el plan cuando una crisis dura 2 minutos más de lo habitual (NICE).",
+      "plan": "Plan de emergencia",
+      "planHint": "Los pasos acordados con el equipo médico, que se muestran cuando el cronómetro supera el umbral.",
+      "rescueMedication": "Medicación de rescate",
+      "noMedication": "Ninguna",
+      "noAsNeeded": "Añade primero la medicación de rescate como medicamento a demanda.",
+      "dose": "Dosis",
+      "unit": "Unidad",
+      "saved": "Tipo de crisis guardado",
+      "archive": "Archivar",
+      "unarchive": "Volver a usar",
+      "archived": "Archivado",
+      "delete": "Eliminar tipo",
+      "deleteTitle": "¿Eliminar este tipo de crisis?",
+      "deleteBody": "Solo se puede eliminar un tipo sin crisis registradas. Si no, archívalo.",
+      "rescueLine": "Rescate: {name}"
+    },
+    "rule": {
+      "title": "Regla de crisis en racimo",
+      "explainer": "Un racimo es este número de crisis en este número de horas. Usa la regla del plan de emergencia; NICE usa {niceCount} en {niceHours} horas, que se muestra al lado.",
+      "count": "Crisis",
+      "hours": "En horas",
+      "invalid": "Usa de 2 a 20 crisis en 1 a 168 horas.",
+      "saved": "Regla de crisis en racimo guardada"
+    },
+    "observation": {
+      "YES": "Sí",
+      "NO": "No, nada visible",
+      "UNKNOWN": "No estoy seguro"
+    }
   }
 }

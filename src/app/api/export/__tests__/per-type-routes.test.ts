@@ -79,6 +79,9 @@ vi.mock("@/lib/db", () => ({
     ecgRecording: { findMany: vi.fn().mockResolvedValue([]) },
     symptomDefinition: { findMany: vi.fn().mockResolvedValue([]) },
     lifeEvent: { findMany: vi.fn().mockResolvedValue([]) },
+    seizureTypeProfile: { findMany: vi.fn().mockResolvedValue([]) },
+    seizureEvent: { findMany: vi.fn().mockResolvedValue([]) },
+    seizureDiarySettings: { findUnique: vi.fn().mockResolvedValue(null) },
     labResultDocumentLink: { findMany: vi.fn().mockResolvedValue([]) },
     encounterMedicationLink: { findMany: vi.fn().mockResolvedValue([]) },
     encounterVaccinationLink: { findMany: vi.fn().mockResolvedValue([]) },
@@ -187,6 +190,11 @@ beforeEach(() => {
   vi.mocked(prisma.ecgRecording.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.symptomDefinition.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.lifeEvent.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.seizureTypeProfile.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.seizureEvent.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.seizureDiarySettings.findUnique).mockResolvedValue(
+    null as never,
+  );
   vi.mocked(prisma.labResultDocumentLink.findMany).mockResolvedValue(
     [] as never,
   );

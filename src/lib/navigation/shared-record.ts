@@ -36,7 +36,8 @@ export const SHARED_RECORD_DOMAIN_ROUTE_FAMILIES = {
   // already lets them read — without this line the grant reads the data and
   // the chrome hides the only page that shows it.
   profile: ["/profile", "/checkups", "/vaccinations"],
-  illness: ["/illness"],
+  // The seizure diary rides the illness section (`scope.ts`).
+  illness: ["/illness", "/seizures"],
   mind: ["/mood", "/mental-wellbeing"],
   cycle: ["/cycle"],
   documents: ["/documents"],

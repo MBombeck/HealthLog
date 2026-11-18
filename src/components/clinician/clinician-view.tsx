@@ -47,6 +47,7 @@ import { ShareDownloadActions } from "./download-actions";
 import { EmergencySection, PatientIdentitySection } from "./identity-sections";
 import {
   IllnessSection,
+  SeizuresSection,
   ImmunizationsSection,
   SurgicalHistorySection,
   LabResultsSection,
@@ -292,6 +293,7 @@ export function ClinicianView({
               scope={scope}
               fmtDate={fmtDate}
             />
+            <SeizuresSection t={t} report={report} scope={scope} />
             <VisitsSection
               t={t}
               report={report}

@@ -28194,6 +28194,406 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
+  /api/seizures:
+    get:
+      tags:
+        - Seizures
+      summary: Read the seizure diary (v1.48)
+      description: Types, the cluster rule, the period's seizures with their rescue doses, and the derived summary in one read.
+      parameters:
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date-time
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date-time
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+      responses:
+        "200":
+          description: The diary.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeizureDiaryEnvelope"
+        "401": *a1
+        "403": &a81
+          description: >-
+            `meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
+            generic auth gate answers it before the route's own checks run. Otherwise: `seizures.disabled`: the record
+            has the seizure diary switched off (it is off until turned on), or the operator turned it off server-wide.
+
+
+            Refused: this request named a record the caller may not act on (`meta.errorCode` = `sharing.access.denied`).
+            Byte-identical for an account that does not exist, an account that granted nothing, a grant whose sections
+            do not reach this surface, and a read grant on a request that writes — the response carries no reason, so it
+            is not an account-enumeration oracle. The reason reaches the record owner's activity feed and the operator's
+            audit trail instead. On the cookie transport the same code answers one further case: a session that has
+            entered a shared record and sends a request without its record-context assertion, which is a client older
+            than the fence — leave the record and reload. A request that names no record but the caller's own never
+            reaches this response, so a client that never switches and never sends the per-request account selector will
+            not see it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+  /api/seizures/events:
+    post:
+      tags:
+        - Seizures
+      summary: Record a seizure (v1.48)
+      description: Creates one seizure and the rescue doses given during it. Idempotent under `Idempotency-Key`. Audits as
+        `seizures.event.create` without free text.
+      parameters:
+        - *a6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSeizureEventRequest"
+      responses:
+        "201":
+          description: Seizure recorded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateSeizureEventEnvelope"
+        "401": *a1
+        "403": *a81
+        "404":
+          description: "`seizures.type.notFound`: no seizure type with this id on the record."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409": *a7
+        "422": *a4
+        "429": *a5
+  /api/seizures/events/{id}:
+    patch:
+      tags:
+        - Seizures
+      summary: Add or correct a seizure's details (v1.48)
+      description: Partial edit. Audits as `seizures.event.update`, naming free-text changes without quoting them.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSeizureEventRequest"
+      responses:
+        "200":
+          description: Seizure updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateSeizureEventEnvelope"
+        "401": *a1
+        "403": *a81
+        "404":
+          description: "`seizures.event.notFound`: no seizure with this id on the record."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+    delete:
+      tags:
+        - Seizures
+      summary: Delete a seizure (v1.48)
+      description: Removes the seizure and its rescue doses, and undoes the intakes those doses wrote on the medication.
+        Audits as `seizures.event.delete`.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: Deleted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteSeizureEventEnvelope"
+        "401": *a1
+        "403": *a81
+        "404":
+          description: "`seizures.event.notFound`: no seizure with this id on the record."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+  /api/seizures/events/{id}/rescue:
+    post:
+      tags:
+        - Seizures
+      summary: Add a rescue dose to a seizure (v1.48)
+      description: Records the dose and, when it names a medication, an intake on that as-needed medication. Idempotent under
+        `Idempotency-Key`.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+        - *a6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSeizureRescueDoseRequest"
+      responses:
+        "201":
+          description: Dose recorded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateSeizureRescueDoseEnvelope"
+        "401": *a1
+        "403": *a81
+        "404":
+          description: "`seizures.event.notFound`: no seizure with this id on the record."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409": *a7
+        "422": *a4
+        "429": *a5
+  /api/seizures/events/{id}/rescue/{doseId}:
+    patch:
+      tags:
+        - Seizures
+      summary: Record how a rescue dose worked (v1.48)
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+        - in: path
+          name: doseId
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSeizureRescueDoseRequest"
+      responses:
+        "200":
+          description: Dose updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateSeizureRescueDoseEnvelope"
+        "401": *a1
+        "403": *a81
+        "404":
+          description: "`seizures.rescue.notFound`: no rescue dose with this id on the record."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+    delete:
+      tags:
+        - Seizures
+      summary: Delete a rescue dose (v1.48)
+      description: Removes the dose and undoes the intake it wrote on the medication.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+        - in: path
+          name: doseId
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: Deleted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteSeizureRescueDoseEnvelope"
+        "401": *a1
+        "403": *a81
+        "404":
+          description: "`seizures.rescue.notFound`: no rescue dose with this id on the record."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+  /api/seizures/types:
+    get:
+      tags:
+        - Seizures
+      summary: List the person's seizure types (v1.48)
+      responses:
+        "200":
+          description: The types, active first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListSeizureTypesEnvelope"
+        "401": *a1
+        "403": *a81
+        "422": *a4
+        "429": *a5
+    post:
+      tags:
+        - Seizures
+      summary: Set up a seizure type (v1.48)
+      description: Audits as `seizures.type.create` without the label or the plan.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSeizureTypeRequest"
+      responses:
+        "201":
+          description: Type created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateSeizureTypeEnvelope"
+        "401": *a1
+        "403": *a81
+        "422": *a4
+        "429": *a5
+  /api/seizures/types/{id}:
+    patch:
+      tags:
+        - Seizures
+      summary: Edit, reorder or archive a seizure type (v1.48)
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSeizureTypeRequest"
+      responses:
+        "200":
+          description: Type updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateSeizureTypeEnvelope"
+        "401": *a1
+        "403": *a81
+        "404":
+          description: "`seizures.type.notFound`: no seizure type with this id on the record."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+    delete:
+      tags:
+        - Seizures
+      summary: Delete an unused seizure type (v1.48)
+      description: A type that any seizure names answers 409 `seizures.type.inUse`; archive it instead.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: Deleted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteSeizureTypeEnvelope"
+        "401": *a1
+        "403": *a81
+        "404":
+          description: "`seizures.type.notFound`: no seizure type with this id on the record."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: "`seizures.type.inUse`: seizures name this type."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+  /api/seizures/settings:
+    get:
+      tags:
+        - Seizures
+      summary: Read the cluster rule (v1.48)
+      responses:
+        "200":
+          description: The rule.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeizureSettingsEnvelope"
+        "401": *a1
+        "403": *a81
+        "422": *a4
+        "429": *a5
+    patch:
+      tags:
+        - Seizures
+      summary: Set the cluster rule (v1.48)
+      description: Clusters are derived at read time, so the new rule applies to every past seizure too.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSeizureSettingsRequest"
+      responses:
+        "200":
+          description: The rule.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateSeizureSettingsEnvelope"
+        "401": *a1
+        "403": *a81
+        "422": *a4
+        "429": *a5
   /api/bugreport:
     post:
       security: []
@@ -29044,7 +29444,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 112
+              maxItems: 113
               type: array
               items:
                 type: string
@@ -29106,7 +29506,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 112
+              maxItems: 113
               type: array
               items:
                 type: string
@@ -32177,6 +32577,8 @@ components:
           type: boolean
         timeline:
           type: boolean
+        seizures:
+          type: boolean
         baseUpdatedAt:
           description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
             legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored
@@ -32283,7 +32685,7 @@ components:
           type: number
           const: 2
         leaves:
-          maxItems: 112
+          maxItems: 113
           type: array
           items:
             type: string
@@ -39467,6 +39869,7 @@ components:
             - DAILY_BRIEFING
             - SHARED_RECORD_INTAKE
             - BACKUP_HEALTH
+            - SEIZURE_CLUSTER
         enabled:
           type: boolean
       required:
@@ -39628,6 +40031,8 @@ components:
             vaccinations:
               type: boolean
             timeline:
+              type: boolean
+            seizures:
               type: boolean
           additionalProperties: false
         cycleTrackingEnabled:
@@ -40585,6 +40990,826 @@ components:
         - targetKind
         - targetIds
       additionalProperties: false
+    CreateSeizureEventRequest:
+      type: object
+      properties:
+        typeProfileId:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 40
+            - type: "null"
+        ilaeType:
+          anyOf:
+            - type: string
+              enum:
+                - FOCAL_PRESERVED
+                - FOCAL_IMPAIRED
+                - FOCAL_UNDETERMINED
+                - FOCAL_TO_BILATERAL_TC
+                - GENERALIZED_UNDETERMINED
+                - GENERALIZED_TC
+                - GEN_CLONIC
+                - GEN_TONIC
+                - GEN_MYOCLONIC
+                - GEN_MYOCLONIC_ATONIC
+                - GEN_ATONIC
+                - GEN_NEGATIVE_MYOCLONIC
+                - GEN_SPASMS
+                - ABSENCE_TYPICAL
+                - ABSENCE_ATYPICAL
+                - ABSENCE_MYOCLONIC
+                - EYELID_MYOCLONIA
+                - UNKNOWN_UNDETERMINED
+                - UNKNOWN_PRESERVED
+                - UNKNOWN_IMPAIRED
+                - UNKNOWN_BILATERAL_TC
+                - UNCLASSIFIED
+            - type: "null"
+        onsetAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        onsetPrecision:
+          type: string
+          enum:
+            - EXACT
+            - APPROX
+            - UNKNOWN_TIME
+        durationSec:
+          anyOf:
+            - type: integer
+              minimum: 0
+              maximum: 86400
+            - type: "null"
+        durationSource:
+          type: string
+          enum:
+            - TIMED
+            - ESTIMATED
+            - UNKNOWN
+        count:
+          type: integer
+          minimum: 1
+          maximum: 500
+        certainty:
+          type: string
+          enum:
+            - CONFIRMED
+            - SUSPECTED
+        sleepState:
+          type: string
+          enum:
+            - AWAKE
+            - ASLEEP
+            - ON_WAKING
+            - UNKNOWN
+        observableManifestations:
+          anyOf:
+            - type: string
+              enum:
+                - YES
+                - NO
+                - UNKNOWN
+            - type: "null"
+        responsiveness:
+          anyOf:
+            - type: string
+              enum:
+                - PRESERVED
+                - IMPAIRED
+                - UNKNOWN
+            - type: "null"
+        recall:
+          anyOf:
+            - type: string
+              enum:
+                - PRESERVED
+                - IMPAIRED
+                - UNKNOWN
+            - type: "null"
+        semiology:
+          maxItems: 14
+          type: array
+          items:
+            type: string
+            enum:
+              - AURA
+              - BEHAVIOUR_ARREST
+              - STARING
+              - AUTOMATISMS
+              - TONIC
+              - CLONIC
+              - MYOCLONIC
+              - ATONIC_DROP
+              - SPASMS
+              - HEAD_EYE_VERSION
+              - VOCALISATION
+              - CYANOSIS
+              - DROOLING
+              - BREATHING_CHANGE
+        semiologyNote:
+          anyOf:
+            - type: string
+              maxLength: 1000
+            - type: "null"
+        aura:
+          anyOf:
+            - type: string
+              maxLength: 1000
+            - type: "null"
+        triggers:
+          maxItems: 10
+          type: array
+          items:
+            type: string
+            enum:
+              - MISSED_DOSE
+              - SLEEP_DEPRIVATION
+              - FEVER
+              - ILLNESS
+              - MENSTRUATION
+              - ALCOHOL
+              - FLASHING_LIGHTS
+              - STRESS
+              - OTHER
+              - NONE_IDENTIFIED
+        postictalMinutes:
+          anyOf:
+            - type: integer
+              minimum: 0
+              maximum: 10080
+            - type: "null"
+        postictal:
+          maxItems: 7
+          type: array
+          items:
+            type: string
+            enum:
+              - SLEEP
+              - CONFUSION
+              - HEADACHE
+              - WEAKNESS_TODD
+              - SPEECH
+              - AGITATION
+              - OTHER
+        injuries:
+          maxItems: 7
+          type: array
+          items:
+            type: string
+            enum:
+              - NONE
+              - TONGUE_BITE
+              - HEAD
+              - FALL_OTHER
+              - BURN
+              - FRACTURE
+              - OTHER
+        incontinence:
+          type:
+            - boolean
+            - "null"
+        emergency:
+          type: string
+          enum:
+            - NONE
+            - EMS_CALLED
+            - ED_VISIT
+            - ADMITTED
+        witnessed:
+          type:
+            - boolean
+            - "null"
+        witnessRole:
+          anyOf:
+            - type: string
+              enum:
+                - SELF
+                - PARENT
+                - PARTNER
+                - FAMILY
+                - CARER
+                - TEACHER
+                - CLINICIAN
+                - PARAMEDIC
+                - OTHER
+            - type: "null"
+        witnessNote:
+          anyOf:
+            - type: string
+              maxLength: 1000
+            - type: "null"
+        source:
+          type: string
+          enum:
+            - MANUAL
+            - DEVICE_ALERT
+        note:
+          anyOf:
+            - type: string
+              maxLength: 1000
+            - type: "null"
+        rescueDoses:
+          maxItems: 5
+          type: array
+          items:
+            type: object
+            properties:
+              medicationId:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                    maxLength: 40
+                  - type: "null"
+              medicationName:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                    maxLength: 120
+                  - type: "null"
+              doseAmount:
+                anyOf:
+                  - type: number
+                    exclusiveMinimum: 0
+                    maximum: 100000
+                  - type: "null"
+              doseUnit:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                    maxLength: 20
+                  - type: "null"
+              route:
+                anyOf:
+                  - type: string
+                    enum:
+                      - BUCCAL
+                      - INTRANASAL
+                      - RECTAL
+                      - ORAL
+                      - SUBLINGUAL
+                      - IM
+                      - IV_BY_EMS
+                  - type: "null"
+              givenAt:
+                type: string
+                format: date-time
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              givenBy:
+                anyOf:
+                  - type: string
+                    enum:
+                      - SELF
+                      - PARENT
+                      - PARTNER
+                      - FAMILY
+                      - CARER
+                      - TEACHER
+                      - CLINICIAN
+                      - PARAMEDIC
+                      - OTHER
+                  - type: "null"
+              effect:
+                type: string
+                enum:
+                  - STOPPED
+                  - REDUCED
+                  - NO_EFFECT
+                  - UNKNOWN
+              seizureEndedAt:
+                anyOf:
+                  - type: string
+                    format: date-time
+                    pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                  - type: "null"
+            required:
+              - givenAt
+      required:
+        - onsetAt
+      description: Record one seizure, or a tally of brief ones (`count` > 1). `onsetAt` may not lie in the future beyond five
+        minutes. `durationSec` stays null when nobody timed it; `durationSource` defaults to ESTIMATED when a duration
+        is given and UNKNOWN when not. `typeProfileId` must name one of the record's own types (404
+        `seizures.type.notFound`). `rescueDoses` are written with the seizure; each one naming a medication also records
+        an intake on it. Free text is encrypted at rest. The account that sent the request is kept as the one who logged
+        it.
+    UpdateSeizureEventRequest:
+      type: object
+      properties:
+        typeProfileId:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 40
+            - type: "null"
+        ilaeType:
+          anyOf:
+            - type: string
+              enum:
+                - FOCAL_PRESERVED
+                - FOCAL_IMPAIRED
+                - FOCAL_UNDETERMINED
+                - FOCAL_TO_BILATERAL_TC
+                - GENERALIZED_UNDETERMINED
+                - GENERALIZED_TC
+                - GEN_CLONIC
+                - GEN_TONIC
+                - GEN_MYOCLONIC
+                - GEN_MYOCLONIC_ATONIC
+                - GEN_ATONIC
+                - GEN_NEGATIVE_MYOCLONIC
+                - GEN_SPASMS
+                - ABSENCE_TYPICAL
+                - ABSENCE_ATYPICAL
+                - ABSENCE_MYOCLONIC
+                - EYELID_MYOCLONIA
+                - UNKNOWN_UNDETERMINED
+                - UNKNOWN_PRESERVED
+                - UNKNOWN_IMPAIRED
+                - UNKNOWN_BILATERAL_TC
+                - UNCLASSIFIED
+            - type: "null"
+        onsetAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        onsetPrecision:
+          type: string
+          enum:
+            - EXACT
+            - APPROX
+            - UNKNOWN_TIME
+        durationSec:
+          anyOf:
+            - type: integer
+              minimum: 0
+              maximum: 86400
+            - type: "null"
+        durationSource:
+          type: string
+          enum:
+            - TIMED
+            - ESTIMATED
+            - UNKNOWN
+        count:
+          type: integer
+          minimum: 1
+          maximum: 500
+        certainty:
+          type: string
+          enum:
+            - CONFIRMED
+            - SUSPECTED
+        sleepState:
+          type: string
+          enum:
+            - AWAKE
+            - ASLEEP
+            - ON_WAKING
+            - UNKNOWN
+        observableManifestations:
+          anyOf:
+            - type: string
+              enum:
+                - YES
+                - NO
+                - UNKNOWN
+            - type: "null"
+        responsiveness:
+          anyOf:
+            - type: string
+              enum:
+                - PRESERVED
+                - IMPAIRED
+                - UNKNOWN
+            - type: "null"
+        recall:
+          anyOf:
+            - type: string
+              enum:
+                - PRESERVED
+                - IMPAIRED
+                - UNKNOWN
+            - type: "null"
+        semiology:
+          maxItems: 14
+          type: array
+          items:
+            type: string
+            enum:
+              - AURA
+              - BEHAVIOUR_ARREST
+              - STARING
+              - AUTOMATISMS
+              - TONIC
+              - CLONIC
+              - MYOCLONIC
+              - ATONIC_DROP
+              - SPASMS
+              - HEAD_EYE_VERSION
+              - VOCALISATION
+              - CYANOSIS
+              - DROOLING
+              - BREATHING_CHANGE
+        semiologyNote:
+          anyOf:
+            - type: string
+              maxLength: 1000
+            - type: "null"
+        aura:
+          anyOf:
+            - type: string
+              maxLength: 1000
+            - type: "null"
+        triggers:
+          maxItems: 10
+          type: array
+          items:
+            type: string
+            enum:
+              - MISSED_DOSE
+              - SLEEP_DEPRIVATION
+              - FEVER
+              - ILLNESS
+              - MENSTRUATION
+              - ALCOHOL
+              - FLASHING_LIGHTS
+              - STRESS
+              - OTHER
+              - NONE_IDENTIFIED
+        postictalMinutes:
+          anyOf:
+            - type: integer
+              minimum: 0
+              maximum: 10080
+            - type: "null"
+        postictal:
+          maxItems: 7
+          type: array
+          items:
+            type: string
+            enum:
+              - SLEEP
+              - CONFUSION
+              - HEADACHE
+              - WEAKNESS_TODD
+              - SPEECH
+              - AGITATION
+              - OTHER
+        injuries:
+          maxItems: 7
+          type: array
+          items:
+            type: string
+            enum:
+              - NONE
+              - TONGUE_BITE
+              - HEAD
+              - FALL_OTHER
+              - BURN
+              - FRACTURE
+              - OTHER
+        incontinence:
+          type:
+            - boolean
+            - "null"
+        emergency:
+          type: string
+          enum:
+            - NONE
+            - EMS_CALLED
+            - ED_VISIT
+            - ADMITTED
+        witnessed:
+          type:
+            - boolean
+            - "null"
+        witnessRole:
+          anyOf:
+            - type: string
+              enum:
+                - SELF
+                - PARENT
+                - PARTNER
+                - FAMILY
+                - CARER
+                - TEACHER
+                - CLINICIAN
+                - PARAMEDIC
+                - OTHER
+            - type: "null"
+        witnessNote:
+          anyOf:
+            - type: string
+              maxLength: 1000
+            - type: "null"
+        source:
+          type: string
+          enum:
+            - MANUAL
+            - DEVICE_ALERT
+        note:
+          anyOf:
+            - type: string
+              maxLength: 1000
+            - type: "null"
+      description: Partial edit (the details added later). An omitted key is left alone; `null`, or an empty string for text,
+        clears it.
+    CreateSeizureRescueDoseRequest:
+      type: object
+      properties:
+        medicationId:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 40
+            - type: "null"
+        medicationName:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 120
+            - type: "null"
+        doseAmount:
+          anyOf:
+            - type: number
+              exclusiveMinimum: 0
+              maximum: 100000
+            - type: "null"
+        doseUnit:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 20
+            - type: "null"
+        route:
+          anyOf:
+            - type: string
+              enum:
+                - BUCCAL
+                - INTRANASAL
+                - RECTAL
+                - ORAL
+                - SUBLINGUAL
+                - IM
+                - IV_BY_EMS
+            - type: "null"
+        givenAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        givenBy:
+          anyOf:
+            - type: string
+              enum:
+                - SELF
+                - PARENT
+                - PARTNER
+                - FAMILY
+                - CARER
+                - TEACHER
+                - CLINICIAN
+                - PARAMEDIC
+                - OTHER
+            - type: "null"
+        effect:
+          type: string
+          enum:
+            - STOPPED
+            - REDUCED
+            - NO_EFFECT
+            - UNKNOWN
+        seizureEndedAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+      required:
+        - givenAt
+      description: A rescue dose. `medicationId` names one of the record's as-needed medications and also writes an intake on
+        it; without it, `medicationName` is required (a dose given by paramedics).
+    UpdateSeizureRescueDoseRequest:
+      type: object
+      properties:
+        effect:
+          type: string
+          enum:
+            - STOPPED
+            - REDUCED
+            - NO_EFFECT
+            - UNKNOWN
+        seizureEndedAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+        givenBy:
+          anyOf:
+            - type: string
+              enum:
+                - SELF
+                - PARENT
+                - PARTNER
+                - FAMILY
+                - CARER
+                - TEACHER
+                - CLINICIAN
+                - PARAMEDIC
+                - OTHER
+            - type: "null"
+        route:
+          anyOf:
+            - type: string
+              enum:
+                - BUCCAL
+                - INTRANASAL
+                - RECTAL
+                - ORAL
+                - SUBLINGUAL
+                - IM
+                - IV_BY_EMS
+            - type: "null"
+      description: Whether the dose worked, when the seizure ended, who gave it and how.
+    CreateSeizureTypeRequest:
+      type: object
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 40
+        ilaeType:
+          type: string
+          enum:
+            - FOCAL_PRESERVED
+            - FOCAL_IMPAIRED
+            - FOCAL_UNDETERMINED
+            - FOCAL_TO_BILATERAL_TC
+            - GENERALIZED_UNDETERMINED
+            - GENERALIZED_TC
+            - GEN_CLONIC
+            - GEN_TONIC
+            - GEN_MYOCLONIC
+            - GEN_MYOCLONIC_ATONIC
+            - GEN_ATONIC
+            - GEN_NEGATIVE_MYOCLONIC
+            - GEN_SPASMS
+            - ABSENCE_TYPICAL
+            - ABSENCE_ATYPICAL
+            - ABSENCE_MYOCLONIC
+            - EYELID_MYOCLONIA
+            - UNKNOWN_UNDETERMINED
+            - UNKNOWN_PRESERVED
+            - UNKNOWN_IMPAIRED
+            - UNKNOWN_BILATERAL_TC
+            - UNCLASSIFIED
+        usualDurationSec:
+          anyOf:
+            - type: integer
+              minimum: 1
+              maximum: 86400
+            - type: "null"
+        rescuePlan:
+          anyOf:
+            - type: string
+              maxLength: 2000
+            - type: "null"
+        rescueMedicationId:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 40
+            - type: "null"
+        rescueDoseAmount:
+          anyOf:
+            - type: number
+              exclusiveMinimum: 0
+              maximum: 100000
+            - type: "null"
+        rescueDoseUnit:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 20
+            - type: "null"
+        rescueRoute:
+          anyOf:
+            - type: string
+              enum:
+                - BUCCAL
+                - INTRANASAL
+                - RECTAL
+                - ORAL
+                - SUBLINGUAL
+                - IM
+                - IV_BY_EMS
+            - type: "null"
+      required:
+        - label
+        - ilaeType
+      description: Set up one of the person's seizure types. `label` is the family's own name (1-40 characters, encrypted at
+        rest). `ilaeType` is the ILAE 2025 seizure type; the `*_UNDETERMINED` values record the parent class when the
+        next level is not known. `usualDurationSec` drives the NICE prolonged flag. `rescuePlan` is the plan text agreed
+        with the care team (encrypted). `rescueMedicationId` must name one of the record's as-needed medications (404
+        `seizures.rescue.medicationNotFound`, 422 `seizures.rescue.notAsNeeded`). At most twelve active types (422
+        `seizures.type.limit`).
+    UpdateSeizureTypeRequest:
+      type: object
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 40
+        ilaeType:
+          type: string
+          enum:
+            - FOCAL_PRESERVED
+            - FOCAL_IMPAIRED
+            - FOCAL_UNDETERMINED
+            - FOCAL_TO_BILATERAL_TC
+            - GENERALIZED_UNDETERMINED
+            - GENERALIZED_TC
+            - GEN_CLONIC
+            - GEN_TONIC
+            - GEN_MYOCLONIC
+            - GEN_MYOCLONIC_ATONIC
+            - GEN_ATONIC
+            - GEN_NEGATIVE_MYOCLONIC
+            - GEN_SPASMS
+            - ABSENCE_TYPICAL
+            - ABSENCE_ATYPICAL
+            - ABSENCE_MYOCLONIC
+            - EYELID_MYOCLONIA
+            - UNKNOWN_UNDETERMINED
+            - UNKNOWN_PRESERVED
+            - UNKNOWN_IMPAIRED
+            - UNKNOWN_BILATERAL_TC
+            - UNCLASSIFIED
+        usualDurationSec:
+          anyOf:
+            - type: integer
+              minimum: 1
+              maximum: 86400
+            - type: "null"
+        rescuePlan:
+          anyOf:
+            - type: string
+              maxLength: 2000
+            - type: "null"
+        rescueMedicationId:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 40
+            - type: "null"
+        rescueDoseAmount:
+          anyOf:
+            - type: number
+              exclusiveMinimum: 0
+              maximum: 100000
+            - type: "null"
+        rescueDoseUnit:
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 20
+            - type: "null"
+        rescueRoute:
+          anyOf:
+            - type: string
+              enum:
+                - BUCCAL
+                - INTRANASAL
+                - RECTAL
+                - ORAL
+                - SUBLINGUAL
+                - IM
+                - IV_BY_EMS
+            - type: "null"
+        archived:
+          type: boolean
+        sortOrder:
+          type: integer
+          minimum: 0
+          maximum: 1000
+      description: "Partial edit; an omitted key is left alone, `null` clears it. `archived: true` takes the type out of the
+        quick log and keeps every seizure that names it."
+    UpdateSeizureSettingsRequest:
+      type: object
+      properties:
+        clusterCount:
+          type: integer
+          minimum: 2
+          maximum: 20
+        clusterWindowHours:
+          type: integer
+          minimum: 1
+          maximum: 168
+      required:
+        - clusterCount
+        - clusterWindowHours
+      description: "The record's cluster rule: `clusterCount` (2-20) seizures within `clusterWindowHours` (1-168)."
     MedicationTreatmentClass:
       type: string
       enum:
@@ -40927,7 +42152,10 @@ components:
                 record_write.rate_limited; recovery — recovery.kit.stale; report-selection —
                 report-selection.body.invalid_json, report-selection.body.invalid_shape,
                 report-selection.leaves.unknown; request — request.cross_site; route — route.retired; search —
-                search.invalid; security_activity — security_activity.invalid; share-link —
+                search.invalid; security_activity — security_activity.invalid; seizures — seizures.disabled,
+                seizures.event.notFound, seizures.invalid, seizures.rescue.medicationNotFound,
+                seizures.rescue.medicationRequired, seizures.rescue.notAsNeeded, seizures.rescue.notFound,
+                seizures.type.inUse, seizures.type.limit, seizures.type.notFound; share-link —
                 share-link.document.decryptFailed, share-link.document.notFound, share-link.document.rateLimited,
                 share-link.documents.invalid, share-link.report.notFound, share-link.report.rateLimited,
                 share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf; sharing —
@@ -46210,6 +47438,491 @@ components:
               - createdAt
               - updatedAt
             additionalProperties: {}
+        seizureTypes:
+          default: []
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                minLength: 1
+              ref:
+                type: string
+                minLength: 1
+              label:
+                type: string
+                minLength: 1
+              labelEncrypted:
+                type: string
+                minLength: 1
+              ilaeType:
+                type: string
+                enum:
+                  - FOCAL_PRESERVED
+                  - FOCAL_IMPAIRED
+                  - FOCAL_UNDETERMINED
+                  - FOCAL_TO_BILATERAL_TC
+                  - GENERALIZED_UNDETERMINED
+                  - GENERALIZED_TC
+                  - GEN_CLONIC
+                  - GEN_TONIC
+                  - GEN_MYOCLONIC
+                  - GEN_MYOCLONIC_ATONIC
+                  - GEN_ATONIC
+                  - GEN_NEGATIVE_MYOCLONIC
+                  - GEN_SPASMS
+                  - ABSENCE_TYPICAL
+                  - ABSENCE_ATYPICAL
+                  - ABSENCE_MYOCLONIC
+                  - EYELID_MYOCLONIA
+                  - UNKNOWN_UNDETERMINED
+                  - UNKNOWN_PRESERVED
+                  - UNKNOWN_IMPAIRED
+                  - UNKNOWN_BILATERAL_TC
+                  - UNCLASSIFIED
+              usualDurationSec:
+                anyOf:
+                  - type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  - type: "null"
+              rescuePlan:
+                type:
+                  - string
+                  - "null"
+              rescuePlanEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              rescueMedicationId:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              rescueDoseAmount:
+                type:
+                  - number
+                  - "null"
+              rescueDoseUnit:
+                type:
+                  - string
+                  - "null"
+              rescueRoute:
+                anyOf:
+                  - type: string
+                    enum:
+                      - BUCCAL
+                      - INTRANASAL
+                      - RECTAL
+                      - ORAL
+                      - SUBLINGUAL
+                      - IM
+                      - IV_BY_EMS
+                  - type: "null"
+              sortOrder:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+              archivedAt:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              createdAt:
+                type: string
+                minLength: 1
+              updatedAt:
+                type: string
+                minLength: 1
+            required:
+              - ilaeType
+              - sortOrder
+              - createdAt
+              - updatedAt
+            additionalProperties: {}
+        seizureEvents:
+          default: []
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                minLength: 1
+              typeProfileId:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              ilaeType:
+                anyOf:
+                  - type: string
+                    enum:
+                      - FOCAL_PRESERVED
+                      - FOCAL_IMPAIRED
+                      - FOCAL_UNDETERMINED
+                      - FOCAL_TO_BILATERAL_TC
+                      - GENERALIZED_UNDETERMINED
+                      - GENERALIZED_TC
+                      - GEN_CLONIC
+                      - GEN_TONIC
+                      - GEN_MYOCLONIC
+                      - GEN_MYOCLONIC_ATONIC
+                      - GEN_ATONIC
+                      - GEN_NEGATIVE_MYOCLONIC
+                      - GEN_SPASMS
+                      - ABSENCE_TYPICAL
+                      - ABSENCE_ATYPICAL
+                      - ABSENCE_MYOCLONIC
+                      - EYELID_MYOCLONIA
+                      - UNKNOWN_UNDETERMINED
+                      - UNKNOWN_PRESERVED
+                      - UNKNOWN_IMPAIRED
+                      - UNKNOWN_BILATERAL_TC
+                      - UNCLASSIFIED
+                  - type: "null"
+              onsetAt:
+                type: string
+                minLength: 1
+              onsetPrecision:
+                type: string
+                enum:
+                  - EXACT
+                  - APPROX
+                  - UNKNOWN_TIME
+              durationSec:
+                anyOf:
+                  - type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  - type: "null"
+              durationSource:
+                type: string
+                enum:
+                  - TIMED
+                  - ESTIMATED
+                  - UNKNOWN
+              count:
+                type: integer
+                minimum: 1
+                maximum: 9007199254740991
+              certainty:
+                type: string
+                enum:
+                  - CONFIRMED
+                  - SUSPECTED
+              sleepState:
+                type: string
+                enum:
+                  - AWAKE
+                  - ASLEEP
+                  - ON_WAKING
+                  - UNKNOWN
+              observableManifestations:
+                anyOf:
+                  - type: string
+                    enum:
+                      - YES
+                      - NO
+                      - UNKNOWN
+                  - type: "null"
+              responsiveness:
+                anyOf:
+                  - type: string
+                    enum:
+                      - PRESERVED
+                      - IMPAIRED
+                      - UNKNOWN
+                  - type: "null"
+              recall:
+                anyOf:
+                  - type: string
+                    enum:
+                      - PRESERVED
+                      - IMPAIRED
+                      - UNKNOWN
+                  - type: "null"
+              semiology:
+                default: []
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - AURA
+                    - BEHAVIOUR_ARREST
+                    - STARING
+                    - AUTOMATISMS
+                    - TONIC
+                    - CLONIC
+                    - MYOCLONIC
+                    - ATONIC_DROP
+                    - SPASMS
+                    - HEAD_EYE_VERSION
+                    - VOCALISATION
+                    - CYANOSIS
+                    - DROOLING
+                    - BREATHING_CHANGE
+              semiologyNote:
+                type:
+                  - string
+                  - "null"
+              semiologyNoteEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              aura:
+                type:
+                  - string
+                  - "null"
+              auraEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              triggers:
+                default: []
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - MISSED_DOSE
+                    - SLEEP_DEPRIVATION
+                    - FEVER
+                    - ILLNESS
+                    - MENSTRUATION
+                    - ALCOHOL
+                    - FLASHING_LIGHTS
+                    - STRESS
+                    - OTHER
+                    - NONE_IDENTIFIED
+              postictalMinutes:
+                anyOf:
+                  - type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  - type: "null"
+              postictal:
+                default: []
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - SLEEP
+                    - CONFUSION
+                    - HEADACHE
+                    - WEAKNESS_TODD
+                    - SPEECH
+                    - AGITATION
+                    - OTHER
+              injuries:
+                default: []
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - NONE
+                    - TONGUE_BITE
+                    - HEAD
+                    - FALL_OTHER
+                    - BURN
+                    - FRACTURE
+                    - OTHER
+              incontinence:
+                type:
+                  - boolean
+                  - "null"
+              emergency:
+                type: string
+                enum:
+                  - NONE
+                  - EMS_CALLED
+                  - ED_VISIT
+                  - ADMITTED
+              witnessed:
+                type:
+                  - boolean
+                  - "null"
+              witnessRole:
+                anyOf:
+                  - type: string
+                    enum:
+                      - SELF
+                      - PARENT
+                      - PARTNER
+                      - FAMILY
+                      - CARER
+                      - TEACHER
+                      - CLINICIAN
+                      - PARAMEDIC
+                      - OTHER
+                  - type: "null"
+              witnessNote:
+                type:
+                  - string
+                  - "null"
+              witnessNoteEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              loggedBy:
+                type: string
+                enum:
+                  - owner
+                  - delegate
+                  - unknown
+              loggedByUserId:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              source:
+                type: string
+                enum:
+                  - MANUAL
+                  - DEVICE_ALERT
+              note:
+                type:
+                  - string
+                  - "null"
+              noteEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
+              createdAt:
+                type: string
+                minLength: 1
+              updatedAt:
+                type: string
+                minLength: 1
+              rescueDoses:
+                default: []
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      minLength: 1
+                    medicationId:
+                      anyOf:
+                        - type: string
+                          minLength: 1
+                        - type: "null"
+                    medicationName:
+                      type: string
+                    doseAmount:
+                      type:
+                        - number
+                        - "null"
+                    doseUnit:
+                      type:
+                        - string
+                        - "null"
+                    route:
+                      anyOf:
+                        - type: string
+                          enum:
+                            - BUCCAL
+                            - INTRANASAL
+                            - RECTAL
+                            - ORAL
+                            - SUBLINGUAL
+                            - IM
+                            - IV_BY_EMS
+                        - type: "null"
+                    givenAt:
+                      type: string
+                      minLength: 1
+                    givenBy:
+                      anyOf:
+                        - type: string
+                          enum:
+                            - SELF
+                            - PARENT
+                            - PARTNER
+                            - FAMILY
+                            - CARER
+                            - TEACHER
+                            - CLINICIAN
+                            - PARAMEDIC
+                            - OTHER
+                        - type: "null"
+                    effect:
+                      type: string
+                      enum:
+                        - STOPPED
+                        - REDUCED
+                        - NO_EFFECT
+                        - UNKNOWN
+                    seizureEndedAt:
+                      anyOf:
+                        - type: string
+                          minLength: 1
+                        - type: "null"
+                    intakeEventId:
+                      anyOf:
+                        - type: string
+                          minLength: 1
+                        - type: "null"
+                    createdAt:
+                      type: string
+                      minLength: 1
+                    updatedAt:
+                      type: string
+                      minLength: 1
+                  required:
+                    - medicationName
+                    - givenAt
+                    - effect
+                    - createdAt
+                    - updatedAt
+                  additionalProperties: {}
+            required:
+              - onsetAt
+              - onsetPrecision
+              - durationSource
+              - count
+              - certainty
+              - sleepState
+              - semiology
+              - triggers
+              - postictal
+              - injuries
+              - emergency
+              - source
+              - createdAt
+              - updatedAt
+              - rescueDoses
+            additionalProperties: {}
+        seizureSettings:
+          default: null
+          anyOf:
+            - type: object
+              properties:
+                clusterCount:
+                  type: integer
+                  minimum: 2
+                  maximum: 20
+                clusterWindowHours:
+                  type: integer
+                  minimum: 1
+                  maximum: 168
+                createdAt:
+                  type: string
+                  minLength: 1
+                updatedAt:
+                  type: string
+                  minLength: 1
+              required:
+                - clusterCount
+                - clusterWindowHours
+              additionalProperties: {}
+            - type: "null"
         allergies:
           default: []
           type: array
@@ -49243,6 +50956,9 @@ components:
         - illnessEpisodes
         - symptomDefinitions
         - lifeEvents
+        - seizureTypes
+        - seizureEvents
+        - seizureSettings
         - allergies
         - familyHistory
         - workouts
@@ -61112,6 +62828,9 @@ components:
         timeline:
           type: boolean
           description: Whether the "timeline" module is enabled for this account.
+        seizures:
+          type: boolean
+          description: Whether the "seizures" module is enabled for this account.
       required:
         - cycle
         - mood
@@ -61133,6 +62852,7 @@ components:
         - nutrients
         - vaccinations
         - timeline
+        - seizures
       additionalProperties: false
       description: Fully-resolved module enable/disable map. Every toggleable module key is present. `false` means the surface
         should disappear end-to-end (nav, dashboard, insights, …). `cycle` mirrors `cycleTrackingEnabled`; `coach`
@@ -91133,6 +92853,14 @@ components:
             - not_granted
             - unavailable
           description: Why the "timeline" module is or is not available here.
+        seizures:
+          type: string
+          enum:
+            - enabled
+            - disabled
+            - not_granted
+            - unavailable
+          description: Why the "seizures" module is or is not available here.
       required:
         - cycle
         - mood
@@ -91154,6 +92882,7 @@ components:
         - nutrients
         - vaccinations
         - timeline
+        - seizures
       additionalProperties: false
       description: "Why each toggleable module is or is not available for the record this session is inside. `enabled` — the
         module is on and the client may paint it. `disabled` — the record has it switched off. `not_granted` — the
@@ -92357,6 +94086,7 @@ components:
               - DAILY_BRIEFING
               - SHARED_RECORD_INTAKE
               - BACKUP_HEALTH
+              - SEIZURE_CLUSTER
             description: Notification category a per-channel preference can toggle.
           additionalProperties:
             type: boolean
@@ -92379,6 +94109,7 @@ components:
             - DAILY_BRIEFING
             - SHARED_RECORD_INTAKE
             - BACKUP_HEALTH
+            - SEIZURE_CLUSTER
           description: What each event does on a channel with no stored row, resolved for this account by the function delivery
             uses. Most are constant per category; the mood reminder follows the account's mood-reminder setting
             (`moodReminderEnabled` on `/api/user/profile`). Render a switch without a row from this map rather than from
@@ -92450,6 +94181,7 @@ components:
             - DAILY_BRIEFING
             - SHARED_RECORD_INTAKE
             - BACKUP_HEALTH
+            - SEIZURE_CLUSTER
           description: Notification category a per-channel preference can toggle.
         enabled:
           type: boolean
@@ -96248,6 +97980,7 @@ components:
                 enum:
                   - life
                   - illness
+                  - seizures
                   - allergies
                   - medications
                   - vaccinations
@@ -96368,6 +98101,7 @@ components:
             - visit
             - procedure
             - labDay
+            - seizureDay
             - document
             - cycle
         start:
@@ -96432,6 +98166,7 @@ components:
           enum:
             - life
             - illness
+            - seizures
             - allergies
             - medications
             - vaccinations
@@ -96661,6 +98396,7 @@ components:
                   - values
                   - life
                   - illness
+                  - seizures
                   - allergies
                   - medications
                   - vaccinations
@@ -97999,6 +99735,1027 @@ components:
       properties:
         data:
           $ref: "#/components/schemas/RelationLinkResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    SeizureDiaryEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/SeizureDiary"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    SeizureDiary:
+      type: object
+      properties:
+        types:
+          type: array
+          items:
+            $ref: "#/components/schemas/SeizureType"
+        settings:
+          $ref: "#/components/schemas/SeizureSettings"
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/SeizureEvent"
+        summary:
+          $ref: "#/components/schemas/SeizureDiarySummary"
+        truncated:
+          type: boolean
+      required:
+        - types
+        - settings
+        - events
+        - summary
+        - truncated
+      additionalProperties: false
+    SeizureType:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type:
+            - string
+            - "null"
+        ilaeType:
+          type: string
+          enum:
+            - FOCAL_PRESERVED
+            - FOCAL_IMPAIRED
+            - FOCAL_UNDETERMINED
+            - FOCAL_TO_BILATERAL_TC
+            - GENERALIZED_UNDETERMINED
+            - GENERALIZED_TC
+            - GEN_CLONIC
+            - GEN_TONIC
+            - GEN_MYOCLONIC
+            - GEN_MYOCLONIC_ATONIC
+            - GEN_ATONIC
+            - GEN_NEGATIVE_MYOCLONIC
+            - GEN_SPASMS
+            - ABSENCE_TYPICAL
+            - ABSENCE_ATYPICAL
+            - ABSENCE_MYOCLONIC
+            - EYELID_MYOCLONIA
+            - UNKNOWN_UNDETERMINED
+            - UNKNOWN_PRESERVED
+            - UNKNOWN_IMPAIRED
+            - UNKNOWN_BILATERAL_TC
+            - UNCLASSIFIED
+        usualDurationSec:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        rescuePlan:
+          type:
+            - string
+            - "null"
+        rescueMedicationId:
+          type:
+            - string
+            - "null"
+        rescueMedicationName:
+          type:
+            - string
+            - "null"
+        rescueDoseAmount:
+          type:
+            - number
+            - "null"
+        rescueDoseUnit:
+          type:
+            - string
+            - "null"
+        rescueRoute:
+          anyOf:
+            - type: string
+              enum:
+                - BUCCAL
+                - INTRANASAL
+                - RECTAL
+                - ORAL
+                - SUBLINGUAL
+                - IM
+                - IV_BY_EMS
+            - type: "null"
+        sortOrder:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        archived:
+          type: boolean
+        alert:
+          $ref: "#/components/schemas/SeizureAlertThreshold"
+      required:
+        - id
+        - label
+        - ilaeType
+        - usualDurationSec
+        - rescuePlan
+        - rescueMedicationId
+        - rescueMedicationName
+        - rescueDoseAmount
+        - rescueDoseUnit
+        - rescueRoute
+        - sortOrder
+        - archived
+        - alert
+      additionalProperties: false
+      description: One of the person's seizure types. `label` and `rescuePlan` are decrypted (null on an unreadable value).
+    SeizureAlertThreshold:
+      type: object
+      properties:
+        seconds:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        source:
+          type: string
+          enum:
+            - t1
+            - usualPlusTwo
+            - generic
+      required:
+        - seconds
+        - source
+      additionalProperties: false
+      description: "When the quick-log timer shows the plan: `t1` (Trinka 2015: tonic-clonic 5 min, focal impaired or absence
+        10 min), `usualPlusTwo` (NICE NG217: usual duration plus 2 minutes, convulsive types, when earlier than t1), or
+        `generic` (5 minutes, CDC first aid)."
+    SeizureSettings:
+      type: object
+      properties:
+        rule:
+          $ref: "#/components/schemas/SeizureClusterRule"
+        niceRule:
+          $ref: "#/components/schemas/SeizureClusterRule"
+      required:
+        - rule
+        - niceRule
+      additionalProperties: false
+      description: The record's cluster rule (2 in 24 hours until one is saved) and NICE NG217's 3 in 24 hours, shown beside it.
+    SeizureClusterRule:
+      type: object
+      properties:
+        count:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        windowHours:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+      required:
+        - count
+        - windowHours
+      additionalProperties: false
+    SeizureEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        typeProfileId:
+          type:
+            - string
+            - "null"
+        ilaeType:
+          anyOf:
+            - type: string
+              enum:
+                - FOCAL_PRESERVED
+                - FOCAL_IMPAIRED
+                - FOCAL_UNDETERMINED
+                - FOCAL_TO_BILATERAL_TC
+                - GENERALIZED_UNDETERMINED
+                - GENERALIZED_TC
+                - GEN_CLONIC
+                - GEN_TONIC
+                - GEN_MYOCLONIC
+                - GEN_MYOCLONIC_ATONIC
+                - GEN_ATONIC
+                - GEN_NEGATIVE_MYOCLONIC
+                - GEN_SPASMS
+                - ABSENCE_TYPICAL
+                - ABSENCE_ATYPICAL
+                - ABSENCE_MYOCLONIC
+                - EYELID_MYOCLONIA
+                - UNKNOWN_UNDETERMINED
+                - UNKNOWN_PRESERVED
+                - UNKNOWN_IMPAIRED
+                - UNKNOWN_BILATERAL_TC
+                - UNCLASSIFIED
+            - type: "null"
+        effectiveIlaeType:
+          anyOf:
+            - type: string
+              enum:
+                - FOCAL_PRESERVED
+                - FOCAL_IMPAIRED
+                - FOCAL_UNDETERMINED
+                - FOCAL_TO_BILATERAL_TC
+                - GENERALIZED_UNDETERMINED
+                - GENERALIZED_TC
+                - GEN_CLONIC
+                - GEN_TONIC
+                - GEN_MYOCLONIC
+                - GEN_MYOCLONIC_ATONIC
+                - GEN_ATONIC
+                - GEN_NEGATIVE_MYOCLONIC
+                - GEN_SPASMS
+                - ABSENCE_TYPICAL
+                - ABSENCE_ATYPICAL
+                - ABSENCE_MYOCLONIC
+                - EYELID_MYOCLONIA
+                - UNKNOWN_UNDETERMINED
+                - UNKNOWN_PRESERVED
+                - UNKNOWN_IMPAIRED
+                - UNKNOWN_BILATERAL_TC
+                - UNCLASSIFIED
+            - type: "null"
+        onsetAt:
+          type: string
+        onsetPrecision:
+          type: string
+          enum:
+            - EXACT
+            - APPROX
+            - UNKNOWN_TIME
+        durationSec:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        durationSource:
+          type: string
+          enum:
+            - TIMED
+            - ESTIMATED
+            - UNKNOWN
+        count:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        certainty:
+          type: string
+          enum:
+            - CONFIRMED
+            - SUSPECTED
+        sleepState:
+          type: string
+          enum:
+            - AWAKE
+            - ASLEEP
+            - ON_WAKING
+            - UNKNOWN
+        observableManifestations:
+          anyOf:
+            - type: string
+              enum:
+                - YES
+                - NO
+                - UNKNOWN
+            - type: "null"
+        responsiveness:
+          anyOf:
+            - type: string
+              enum:
+                - PRESERVED
+                - IMPAIRED
+                - UNKNOWN
+            - type: "null"
+        recall:
+          anyOf:
+            - type: string
+              enum:
+                - PRESERVED
+                - IMPAIRED
+                - UNKNOWN
+            - type: "null"
+        semiology:
+          type: array
+          items:
+            type: string
+            enum:
+              - AURA
+              - BEHAVIOUR_ARREST
+              - STARING
+              - AUTOMATISMS
+              - TONIC
+              - CLONIC
+              - MYOCLONIC
+              - ATONIC_DROP
+              - SPASMS
+              - HEAD_EYE_VERSION
+              - VOCALISATION
+              - CYANOSIS
+              - DROOLING
+              - BREATHING_CHANGE
+        semiologyNote:
+          type:
+            - string
+            - "null"
+        aura:
+          type:
+            - string
+            - "null"
+        triggers:
+          type: array
+          items:
+            type: string
+            enum:
+              - MISSED_DOSE
+              - SLEEP_DEPRIVATION
+              - FEVER
+              - ILLNESS
+              - MENSTRUATION
+              - ALCOHOL
+              - FLASHING_LIGHTS
+              - STRESS
+              - OTHER
+              - NONE_IDENTIFIED
+        postictalMinutes:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        postictal:
+          type: array
+          items:
+            type: string
+            enum:
+              - SLEEP
+              - CONFUSION
+              - HEADACHE
+              - WEAKNESS_TODD
+              - SPEECH
+              - AGITATION
+              - OTHER
+        injuries:
+          type: array
+          items:
+            type: string
+            enum:
+              - NONE
+              - TONGUE_BITE
+              - HEAD
+              - FALL_OTHER
+              - BURN
+              - FRACTURE
+              - OTHER
+        incontinence:
+          type:
+            - boolean
+            - "null"
+        emergency:
+          type: string
+          enum:
+            - NONE
+            - EMS_CALLED
+            - ED_VISIT
+            - ADMITTED
+        witnessed:
+          type:
+            - boolean
+            - "null"
+        witnessRole:
+          anyOf:
+            - type: string
+              enum:
+                - SELF
+                - PARENT
+                - PARTNER
+                - FAMILY
+                - CARER
+                - TEACHER
+                - CLINICIAN
+                - PARAMEDIC
+                - OTHER
+            - type: "null"
+        witnessNote:
+          type:
+            - string
+            - "null"
+        loggedBy:
+          type: string
+          enum:
+            - owner
+            - delegate
+            - unknown
+        loggedByViewer:
+          type: boolean
+        loggedByName:
+          type:
+            - string
+            - "null"
+        source:
+          type: string
+          enum:
+            - MANUAL
+            - DEVICE_ALERT
+        note:
+          type:
+            - string
+            - "null"
+        rescueDoses:
+          type: array
+          items:
+            $ref: "#/components/schemas/SeizureRescueDose"
+        flags:
+          type: object
+          properties:
+            overT1:
+              type:
+                - boolean
+                - "null"
+            prolonged:
+              type:
+                - boolean
+                - "null"
+          required:
+            - overT1
+            - prolonged
+          additionalProperties: false
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - typeProfileId
+        - ilaeType
+        - effectiveIlaeType
+        - onsetAt
+        - onsetPrecision
+        - durationSec
+        - durationSource
+        - count
+        - certainty
+        - sleepState
+        - observableManifestations
+        - responsiveness
+        - recall
+        - semiology
+        - semiologyNote
+        - aura
+        - triggers
+        - postictalMinutes
+        - postictal
+        - injuries
+        - incontinence
+        - emergency
+        - witnessed
+        - witnessRole
+        - witnessNote
+        - loggedBy
+        - loggedByViewer
+        - loggedByName
+        - source
+        - note
+        - rescueDoses
+        - flags
+        - createdAt
+        - updatedAt
+      additionalProperties: false
+      description: One recorded seizure (or tally). `effectiveIlaeType` is the event's override, else its type's.
+        `flags.overT1` compares the duration with Trinka's t1 for the type, `flags.prolonged` with the type's usual
+        duration plus 2 minutes (NICE); null where either input is missing. `loggedBy` says whether the person or
+        someone acting on the record logged it.
+    SeizureRescueDose:
+      type: object
+      properties:
+        id:
+          type: string
+        eventId:
+          type: string
+        medicationId:
+          type:
+            - string
+            - "null"
+        medicationName:
+          type: string
+        doseAmount:
+          type:
+            - number
+            - "null"
+        doseUnit:
+          type:
+            - string
+            - "null"
+        route:
+          anyOf:
+            - type: string
+              enum:
+                - BUCCAL
+                - INTRANASAL
+                - RECTAL
+                - ORAL
+                - SUBLINGUAL
+                - IM
+                - IV_BY_EMS
+            - type: "null"
+        givenAt:
+          type: string
+        givenBy:
+          anyOf:
+            - type: string
+              enum:
+                - SELF
+                - PARENT
+                - PARTNER
+                - FAMILY
+                - CARER
+                - TEACHER
+                - CLINICIAN
+                - PARAMEDIC
+                - OTHER
+            - type: "null"
+        effect:
+          type: string
+          enum:
+            - STOPPED
+            - REDUCED
+            - NO_EFFECT
+            - UNKNOWN
+        seizureEndedAt:
+          type:
+            - string
+            - "null"
+        intakeEventId:
+          type:
+            - string
+            - "null"
+      required:
+        - id
+        - eventId
+        - medicationId
+        - medicationName
+        - doseAmount
+        - doseUnit
+        - route
+        - givenAt
+        - givenBy
+        - effect
+        - seizureEndedAt
+        - intakeEventId
+      additionalProperties: false
+      description: A rescue dose. `intakeEventId` is the intake written on the medication for it.
+    SeizureDiarySummary:
+      type: object
+      properties:
+        from:
+          type: string
+        to:
+          type: string
+        days:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        seizures:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        suspected:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        seizureDays:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        seizureFreeDays:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        per28Days:
+          type: number
+        convulsive:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        fromSleep:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        rescueDoses:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        emergencies:
+          type: object
+          properties:
+            emsCalled:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            edVisits:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            admissions:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          required:
+            - emsCalled
+            - edVisits
+            - admissions
+          additionalProperties: false
+        streak:
+          type: object
+          properties:
+            daysSinceLast:
+              anyOf:
+                - type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                - type: "null"
+            lastAt:
+              type:
+                - string
+                - "null"
+            longestFreeDays:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          required:
+            - daysSinceLast
+            - lastAt
+            - longestFreeDays
+          additionalProperties: false
+        clusters:
+          type: array
+          items:
+            type: object
+            properties:
+              startAt:
+                type: string
+              endAt:
+                type: string
+              seizureCount:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+              eventIds:
+                type: array
+                items:
+                  type: string
+            required:
+              - startAt
+              - endAt
+              - seizureCount
+              - eventIds
+            additionalProperties: false
+        niceClusterCount:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        monthly:
+          type: object
+          properties:
+            months:
+              type: array
+              items:
+                type: string
+            rows:
+              type: array
+              items:
+                type: object
+                properties:
+                  typeProfileId:
+                    type:
+                      - string
+                      - "null"
+                  counts:
+                    type: object
+                    propertyNames:
+                      type: string
+                    additionalProperties:
+                      type: integer
+                      minimum: -9007199254740991
+                      maximum: 9007199254740991
+                  days:
+                    type: object
+                    propertyNames:
+                      type: string
+                    additionalProperties:
+                      type: integer
+                      minimum: -9007199254740991
+                      maximum: 9007199254740991
+                  total:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                required:
+                  - typeProfileId
+                  - counts
+                  - days
+                  - total
+                additionalProperties: false
+            total:
+              type: object
+              properties:
+                typeProfileId:
+                  type:
+                    - string
+                    - "null"
+                counts:
+                  type: object
+                  propertyNames:
+                    type: string
+                  additionalProperties:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                days:
+                  type: object
+                  propertyNames:
+                    type: string
+                  additionalProperties:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                total:
+                  type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+              required:
+                - typeProfileId
+                - counts
+                - days
+                - total
+              additionalProperties: false
+          required:
+            - months
+            - rows
+            - total
+          additionalProperties: false
+      required:
+        - from
+        - to
+        - days
+        - seizures
+        - suspected
+        - seizureDays
+        - seizureFreeDays
+        - per28Days
+        - convulsive
+        - fromSleep
+        - rescueDoses
+        - emergencies
+        - streak
+        - clusters
+        - niceClusterCount
+        - monthly
+      additionalProperties: false
+      description: Derived server-side from the period's recorded seizures. Counts are confirmed seizures, each row weighted
+        by its `count`; `suspected` is listed apart. `clusters` are episodes under the record's rule (overlapping
+        qualifying windows merged), `niceClusterCount` the episodes under 3 in 24 hours. A diary records what was
+        observed and can under-count.
+    CreateSeizureEventEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/SeizureEvent"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    UpdateSeizureEventEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/SeizureEvent"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DeleteSeizureEventEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            deleted:
+              type: boolean
+              const: true
+          required:
+            - deleted
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    CreateSeizureRescueDoseEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/SeizureRescueDose"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    UpdateSeizureRescueDoseEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/SeizureRescueDose"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DeleteSeizureRescueDoseEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            deleted:
+              type: boolean
+              const: true
+          required:
+            - deleted
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    ListSeizureTypesEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            types:
+              type: array
+              items:
+                $ref: "#/components/schemas/SeizureType"
+          required:
+            - types
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    CreateSeizureTypeEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/SeizureType"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    UpdateSeizureTypeEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/SeizureType"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DeleteSeizureTypeEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            deleted:
+              type: boolean
+              const: true
+          required:
+            - deleted
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    SeizureSettingsEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/SeizureSettings"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    UpdateSeizureSettingsEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/SeizureSettings"
         error:
           type: "null"
         meta:

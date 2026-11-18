@@ -170,6 +170,18 @@ function everyKind(): TimelineResponse {
         ],
       },
       {
+        key: "seizures",
+        items: [
+          item({
+            id: "seizure-day",
+            kind: "seizureDay",
+            start: day(),
+            label: "Abwesenheit",
+            sub: "2",
+          }),
+        ],
+      },
+      {
         key: "allergies",
         items: [
           item({

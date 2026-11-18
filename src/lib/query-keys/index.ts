@@ -46,6 +46,7 @@ import { timelineKeys } from "./timeline";
 import { searchKeys } from "./search";
 import { sharingKeys } from "./sharing";
 import { vaccinationKeys } from "./vaccinations";
+import { seizureKeys } from "./seizures";
 import { workoutKeys } from "./workouts";
 import { activityKeys } from "./activity";
 import { provenanceKeys } from "./provenance";
@@ -82,6 +83,7 @@ export const queryKeys = {
   ...profileKeys,
   ...sharingKeys,
   ...vaccinationKeys,
+  ...seizureKeys,
   ...aiRunKeys,
   ...dayKeys,
   ...timelineKeys,
@@ -547,3 +549,17 @@ export async function invalidateMedicationReads(
   await invalidateKeys(queryClient, medicationDependentKeys);
   await refetchInactiveDailyReads(queryClient);
 }
+
+/**
+ * Keys invalidated by any seizure-diary write (#1368).
+ *
+ * A rescue dose also writes an intake on its as-needed medication, so the
+ * medication reads evict with the diary; and an open day or the timeline
+ * would otherwise keep showing the write's old state.
+ */
+export const seizureDependentKeys = [
+  queryKeys.seizures(),
+  queryKeys.medications(),
+  queryKeys.dayRoot(),
+  queryKeys.timelineRoot(),
+];
