@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2850,
-  "total": 9088,
+  "total": 9086,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -446,7 +446,7 @@
     "app/api/medications/layout/route.ts": 3,
     "app/api/medications/route.ts": 2,
     "app/api/mental-health/assessments/__tests__/route.test.ts": 2,
-    "app/api/mental-health/assessments/route.ts": 6,
+    "app/api/mental-health/assessments/route.ts": 5,
     "app/api/mood-entries/__tests__/route.test.ts": 7,
     "app/api/mood-entries/[id]/__tests__/route.test.ts": 4,
     "app/api/mood-entries/[id]/route.ts": 22,
@@ -1229,7 +1229,7 @@
     "components/mood/manage/tag-manager-card.tsx": 3,
     "components/mood/manage/use-mood-tag-manage.ts": 2,
     "components/mood/mood-form.tsx": 23,
-    "components/mood/mood-list.tsx": 22,
+    "components/mood/mood-list.tsx": 21,
     "components/mood/mood-quick-tags.tsx": 1,
     "components/mood/mood-tag-icon-picker.tsx": 1,
     "components/mood/mood-tag-icons.ts": 4,

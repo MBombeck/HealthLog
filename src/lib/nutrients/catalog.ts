@@ -1,9 +1,10 @@
 /**
  * Nutrient catalog — the closed code set for nutrient intake.
  *
- * 35 syncable codes: the HealthKit `Dietary*` vitamin and mineral quantity
+ * 39 syncable codes: the HealthKit `Dietary*` vitamin and mineral quantity
  * types (sodium and potassium among them), water and caffeine, dietary energy
- * and the macronutrients (protein, carbohydrates, fat, sugar, fiber), and
+ * and the macronutrients (protein, carbohydrates, fat with its saturated,
+ * monounsaturated and polyunsaturated parts, sugar, fiber, cholesterol), and
  * alcohol. Energy and the macros came in by maintainer decision on #1402, once
  * users asked to bring the day totals a food tracker already computes. "Syncable"
  * means the batch accepts the code; whether HealthKit carries it is a separate
@@ -42,9 +43,11 @@
  * concluded no DRV can be set; NIH ODS adequate intake), protein and
  * carbohydrates (EFSA states them per kilogram of body weight or as a share of
  * energy, never per day; the IOM recommended dietary allowance is the per-day
- * figure). Energy, fat, sugar and alcohol carry no reference: EFSA's energy
- * requirement depends on age, sex and activity, fat is a share of energy, and
- * sugar and alcohol have no intake to aim for.
+ * figure). Energy, the fats, sugar, cholesterol and alcohol carry no
+ * reference: EFSA's energy requirement depends on age, sex and activity, fat
+ * is a share of energy, saturated fat is "as low as possible" with no number,
+ * EFSA set no value for cholesterol, and sugar and alcohol have no intake to
+ * aim for.
  */
 
 import type { BinaryReferenceSex } from "@/lib/profile/sex";
@@ -90,8 +93,12 @@ export const SYNCABLE_NUTRIENT_CODES = [
   "protein",
   "carbohydrates",
   "fat",
+  "saturated_fat",
+  "monounsaturated_fat",
+  "polyunsaturated_fat",
   "sugar",
   "fiber",
+  "cholesterol",
   // no HealthKit dietary type; a bridge token posts it
   "alcohol",
 ] as const;
@@ -724,6 +731,34 @@ export const NUTRIENT_CATALOG: Readonly<
   ),
   // EFSA (2010) states fat as 20–35 % of energy; there is no per-day figure.
   fat: def("fat", "energy_macro", "FatTotal", "g", 1000, null),
+  // The three parts of the total fat. EFSA (2010) asks for saturated fat "as
+  // low as possible" within a nutritionally adequate diet and sets no amount;
+  // the two unsaturated parts are shares of energy. Each part is capped like
+  // the total, since no part can exceed it.
+  saturated_fat: def(
+    "saturated_fat",
+    "energy_macro",
+    "FatSaturated",
+    "g",
+    1000,
+    null,
+  ),
+  monounsaturated_fat: def(
+    "monounsaturated_fat",
+    "energy_macro",
+    "FatMonounsaturated",
+    "g",
+    1000,
+    null,
+  ),
+  polyunsaturated_fat: def(
+    "polyunsaturated_fat",
+    "energy_macro",
+    "FatPolyunsaturated",
+    "g",
+    1000,
+    null,
+  ),
   // EFSA (2022) set no safe level for added and free sugars.
   sugar: def("sugar", "energy_macro", "Sugar", "g", 1500, null),
   fiber: def("fiber", "energy_macro", "Fiber", "g", 500, {
@@ -733,6 +768,16 @@ export const NUTRIENT_CATALOG: Readonly<
     adult: 25,
     source: "EFSA DRV 2010 (dietary fibre, adults)",
   }),
+  // In mg, as labels and HealthKit state it. EFSA (2010) set no reference
+  // value; the cap is about ten times a day of eggs and offal.
+  cholesterol: def(
+    "cholesterol",
+    "energy_macro",
+    "Cholesterol",
+    "mg",
+    10000,
+    null,
+  ),
   // Grams of ethanol. HealthKit has no dietary type for it (its alcohol
   // quantity is the number of drinks), so only a bridge token posts it.
   alcohol: tokenOnly("alcohol", "alcohol", "g", 1000),

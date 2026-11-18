@@ -132,6 +132,7 @@ const LEGIT_IDENTICAL = new Set<string>([
   "measurements.sourceGoogleHealth",
   "measurements.sourceHealthConnect",
   "medications.sourceAppleHealth",
+  "mood.sourceAppleHealth",
   "settings.ai.providerChain.types.anthropic",
   "settings.ai.providerChain.types.codex",
   "settings.ai.providerSelect.anthropic",

@@ -1006,6 +1006,7 @@
     "typeIrregularRhythmNotification": "Irregular rhythm notification",
     "typeHighHeartRateEvent": "High heart rate notification",
     "typeLowHeartRateEvent": "Low heart rate notification",
+    "typeHypertensionEvent": "Hypertension notification",
     "typeWalkingSteadinessEvent": "Walking steadiness alert",
     "typeBreathingDisturbanceEvent": "Breathing disturbance",
     "typeRecoveryScore": "Recovery score",
@@ -1438,6 +1439,7 @@
       "openIllness": "Open"
     },
     "sourceNotification": "Notification",
+    "sourceAppleHealth": "Apple Health",
     "tagCatalogLoadError": "Could not load the tags."
   },
   "medications": {
@@ -4841,6 +4843,7 @@
         "irregularRhythm": "Irregular rhythm notification",
         "highHeartRate": "High heart rate notification",
         "lowHeartRate": "Low heart rate notification",
+        "hypertension": "Hypertension notification",
         "walkingSteadiness": "Walking steadiness alert",
         "breathingDisturbance": "Breathing disturbance during sleep"
       },
@@ -11663,7 +11666,8 @@
       "totalLabel": "Score",
       "bandLabel": "Category",
       "answersToggle": "Answers",
-      "answersUnavailable": "The stored answers for this check-in cannot be decrypted."
+      "answersUnavailable": "The stored answers for this check-in cannot be decrypted.",
+      "answersNotShared": "Taken in Apple Health. Only the score was shared, not the answers."
     },
     "crisis": {
       "title": "You don't have to face this alone",
@@ -12785,8 +12789,12 @@
       "protein": "Protein",
       "carbohydrates": "Carbohydrates",
       "fat": "Fat",
+      "saturated_fat": "Saturated fat",
+      "monounsaturated_fat": "Monounsaturated fat",
+      "polyunsaturated_fat": "Polyunsaturated fat",
       "sugar": "Sugar",
       "fiber": "Fiber",
+      "cholesterol": "Cholesterol",
       "sodium": "Sodium",
       "potassium": "Potassium",
       "alcohol": "Alcohol"

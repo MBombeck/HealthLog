@@ -1006,6 +1006,7 @@
     "typeIrregularRhythmNotification": "Melding onregelmatig ritme",
     "typeHighHeartRateEvent": "Melding hoge hartslag",
     "typeLowHeartRateEvent": "Melding lage hartslag",
+    "typeHypertensionEvent": "Melding hoge bloeddruk",
     "typeWalkingSteadinessEvent": "Waarschuwing loopstabiliteit",
     "typeBreathingDisturbanceEvent": "Ademhalingsstoornis",
     "typeRecoveryScore": "Herstelscore",
@@ -1438,6 +1439,7 @@
       "openIllness": "Openen"
     },
     "sourceNotification": "Melding",
+    "sourceAppleHealth": "Apple Health",
     "tagCatalogLoadError": "De tags konden niet worden geladen."
   },
   "medications": {
@@ -4841,6 +4843,7 @@
         "irregularRhythm": "Melding onregelmatig ritme",
         "highHeartRate": "Melding hoge hartslag",
         "lowHeartRate": "Melding lage hartslag",
+        "hypertension": "Melding hoge bloeddruk",
         "walkingSteadiness": "Waarschuwing loopstabiliteit",
         "breathingDisturbance": "Ademhalingsstoornis tijdens de slaap"
       },
@@ -11663,7 +11666,8 @@
       "totalLabel": "Score",
       "bandLabel": "Categorie",
       "answersToggle": "Antwoorden",
-      "answersUnavailable": "De opgeslagen antwoorden van deze check-in kunnen niet worden ontsleuteld."
+      "answersUnavailable": "De opgeslagen antwoorden van deze check-in kunnen niet worden ontsleuteld.",
+      "answersNotShared": "Ingevuld in Apple Health. Alleen de score is gedeeld, niet de antwoorden."
     },
     "crisis": {
       "title": "Je hoeft dit niet alleen te doen",
@@ -12785,8 +12789,12 @@
       "protein": "Eiwit",
       "carbohydrates": "Koolhydraten",
       "fat": "Vet",
+      "saturated_fat": "Verzadigd vet",
+      "monounsaturated_fat": "Enkelvoudig onverzadigd vet",
+      "polyunsaturated_fat": "Meervoudig onverzadigd vet",
       "sugar": "Suiker",
       "fiber": "Vezels",
+      "cholesterol": "Cholesterol",
       "sodium": "Natrium",
       "potassium": "Kalium",
       "alcohol": "Alcohol"

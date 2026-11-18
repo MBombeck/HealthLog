@@ -37,7 +37,7 @@ const MACRO_CODES = nutrientCodesInGroup("energy_macro");
  * metric picker is a select everywhere else), and one 30-day bar chart shows
  * it: the day's total as the content value, and a dashed line at the
  * person's own target when one is set, else at the dietary reference where
- * one exists (energy, fat and sugar have none). The value stays foreground
+ * one exists (energy, the fats, sugar and cholesterol have none). The value stays foreground
  * and the bars are never coloured by attainment (ui-standards.md): a day
  * above the line is a bar above a line.
  *

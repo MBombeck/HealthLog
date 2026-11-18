@@ -5,8 +5,9 @@
 ### Added
 
 - **Energy and macronutrients.** The nutrients module now tracks dietary
-  energy (kcal), protein, carbohydrates, fat, sugar and fiber (g), sodium and
-  potassium (mg), and alcohol (grams of ethanol). The iPhone app can sync them
+  energy (kcal), protein, carbohydrates, fat with its saturated,
+  monounsaturated and polyunsaturated parts, sugar and fiber (g), sodium,
+  potassium and cholesterol (mg), and alcohol (grams of ethanol). The iPhone app can sync them
   from Apple Health once its next release asks for them; a food tracker can
   push its daily totals today with a measurement token through
   `POST /api/nutrients/batch`, where they are stored as "External". The
@@ -27,6 +28,25 @@
   will not bring it back. An Apple Health import that brought only lab
   results or ECGs says so instead of "0 of N records imported", counts the
   markers it added and links to Labs. (#1400)
+- Apple Watch hypertension notifications from Apple Health are kept beside
+  the irregular rhythm and heart rate notifications: listed under device
+  notifications in insights, on the timeline and in the measurement list, and
+  selectable for the doctor report. They are what the watch flagged, shown as
+  it flagged them, and never count as a blood pressure reading.
+- PHQ-9 and GAD-7 check-ins taken in Apple Health can come over with the
+  iPhone app's sync. They land in the mental wellbeing history beside the
+  ones taken in HealthLog, count once on the score trend and in the doctor
+  report, and keep their answers when Apple Health shares them; one that
+  shares only its score says so instead of showing answers. With the mental
+  health module turned off, none of them is stored.
+- Deleting a workout, an ECG, a cycle day, a State of Mind entry or a dose in
+  Apple Health now removes it in HealthLog too, once the iPhone app sends the
+  deletion. Before, only measurements followed, so editing one of these in
+  Apple Health left the old copy beside the new one. For the app:
+  `DELETE /api/workouts/by-external-ids`, `/api/insights/ecg/by-external-ids`,
+  `/api/cycle/day-logs/by-external-ids`, `/api/mood-entries/by-external-ids`
+  and `/api/medications/intake/by-external-ids`, shaped like the measurements
+  one; mood entries take `APPLE_HEALTH` as their source for this.
 - The day view lists the day's nutrient totals, so tapping a bar on a
   nutrient chart opens a day that shows it. An opt-in energy tile for the
   dashboard is available under Settings > Dashboard. (#1402)

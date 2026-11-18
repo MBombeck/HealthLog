@@ -693,6 +693,21 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     isPrivacySensitive: true,
     fallbackClassification: "FIRED",
   },
+  // Hypertension notification (iOS 26) — the watch's certified algorithm
+  // flagged signs of possible hypertension across a 30-day window. A
+  // notification, not a blood-pressure reading: it never lands on the BP
+  // series. Single neutral `FIRED` verdict, like the heart-rate events.
+  HKCategoryTypeIdentifierHypertensionEvent: {
+    hkIdentifier: "HKCategoryTypeIdentifierHypertensionEvent",
+    measurementType: "HYPERTENSION_EVENT",
+    hkUnit: "event",
+    unitFixedReason: UNIT_FIXED_EVENT_PIN,
+    dbUnit: "event",
+    convertToDbUnit: () => 1,
+    aggregation: "sum",
+    isPrivacySensitive: true,
+    fallbackClassification: "FIRED",
+  },
 
   // ── v1.5.5 iOS-coord — six previously-deferred identifiers ───
   // Background: each entry below sat in `HK_QUANTITY_TYPE_DEFERRED`.
@@ -1248,8 +1263,12 @@ export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
   "HKQuantityTypeIdentifierDietaryCarbohydrates",
   "HKQuantityTypeIdentifierDietaryProtein",
   "HKQuantityTypeIdentifierDietaryFatTotal",
+  "HKQuantityTypeIdentifierDietaryFatSaturated",
+  "HKQuantityTypeIdentifierDietaryFatMonounsaturated",
+  "HKQuantityTypeIdentifierDietaryFatPolyunsaturated",
   "HKQuantityTypeIdentifierDietarySugar",
   "HKQuantityTypeIdentifierDietaryFiber",
+  "HKQuantityTypeIdentifierDietaryCholesterol",
   "HKQuantityTypeIdentifierDietarySodium",
   // Pregnancy bleeding — stays deferred (pregnancy-mode is a later
   // release). v1.15.0 promoted the cycle-tracking reproductive types
@@ -1275,9 +1294,10 @@ export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
   "HKClinicalTypeIdentifierVitalSignRecord",
   // ECG / waveforms — defer
   "HKElectrocardiogramType",
-  // Scored assessments (iOS 18) — v1.5 (PHQ-9 / GAD-7 mapping TBD)
-  "HKScoredAssessmentTypeIdentifierGAD7",
-  "HKScoredAssessmentTypeIdentifierPHQ9",
+  // Scored assessments (iOS 18): PHQ-9 and GAD-7 are taken by the batch, but
+  // as screener administrations, never as measurements
+  // (`src/lib/mental-health/apple-health-assessment.ts`), so they appear in
+  // neither list here.
   // ── v1.4.25 W16a — iOS-17 + iOS-18 long-tail closure ──
   // Cardiovascular / clinical (iOS 16+) — no HealthLog counterpart yet;
   // clinical decision-support territory, defer behind a stricter user

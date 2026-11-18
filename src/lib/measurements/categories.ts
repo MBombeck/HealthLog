@@ -157,6 +157,7 @@ export const MEASUREMENT_CATEGORIES: ReadonlyMap<
   ["IRREGULAR_RHYTHM_NOTIFICATION", "cardiovascular"],
   ["HIGH_HEART_RATE_EVENT", "cardiovascular"],
   ["LOW_HEART_RATE_EVENT", "cardiovascular"],
+  ["HYPERTENSION_EVENT", "cardiovascular"],
   ["WALKING_STEADINESS_EVENT", "activity"],
   ["BREATHING_DISTURBANCE_EVENT", "sleep"],
 

@@ -72,6 +72,7 @@ export const MEASUREMENT_TYPE_LABEL_KEYS: Record<MeasurementType, string> = {
   IRREGULAR_RHYTHM_NOTIFICATION: "measurements.typeIrregularRhythmNotification",
   HIGH_HEART_RATE_EVENT: "measurements.typeHighHeartRateEvent",
   LOW_HEART_RATE_EVENT: "measurements.typeLowHeartRateEvent",
+  HYPERTENSION_EVENT: "measurements.typeHypertensionEvent",
   WALKING_STEADINESS_EVENT: "measurements.typeWalkingSteadinessEvent",
   BREATHING_DISTURBANCE_EVENT: "measurements.typeBreathingDisturbanceEvent",
   // ── v1.10.0 — computed scores (WX-C) ──

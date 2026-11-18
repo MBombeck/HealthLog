@@ -1006,6 +1006,7 @@
     "typeIrregularRhythmNotification": "불규칙 심장 리듬 알림",
     "typeHighHeartRateEvent": "높은 심박수 알림",
     "typeLowHeartRateEvent": "낮은 심박수 알림",
+    "typeHypertensionEvent": "고혈압 알림",
     "typeWalkingSteadinessEvent": "보행 안정성 경고",
     "typeBreathingDisturbanceEvent": "호흡 장애",
     "typeRecoveryScore": "회복 점수",
@@ -1438,6 +1439,7 @@
       "openIllness": "열기"
     },
     "sourceNotification": "알림",
+    "sourceAppleHealth": "Apple Health",
     "tagCatalogLoadError": "태그를 불러오지 못했어요."
   },
   "medications": {
@@ -4841,6 +4843,7 @@
         "irregularRhythm": "불규칙한 리듬 알림",
         "highHeartRate": "높은 심박수 알림",
         "lowHeartRate": "낮은 심박수 알림",
+        "hypertension": "고혈압 알림",
         "walkingSteadiness": "보행 안정성 알림",
         "breathingDisturbance": "수면 중 호흡 장애"
       },
@@ -11663,7 +11666,8 @@
       "totalLabel": "점수",
       "bandLabel": "분류",
       "answersToggle": "답변",
-      "answersUnavailable": "이 점검에 저장된 답변을 복호화할 수 없어요."
+      "answersUnavailable": "이 점검에 저장된 답변을 복호화할 수 없어요.",
+      "answersNotShared": "Apple Health에서 작성했어요. 답변은 공유되지 않고 점수만 공유됐어요."
     },
     "crisis": {
       "title": "혼자 견디지 않아도 돼요",
@@ -12785,8 +12789,12 @@
       "protein": "단백질",
       "carbohydrates": "탄수화물",
       "fat": "지방",
+      "saturated_fat": "포화지방",
+      "monounsaturated_fat": "단일불포화지방",
+      "polyunsaturated_fat": "다중불포화지방",
       "sugar": "당류",
       "fiber": "식이섬유",
+      "cholesterol": "콜레스테롤",
       "sodium": "나트륨",
       "potassium": "칼륨",
       "alcohol": "알코올"

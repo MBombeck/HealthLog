@@ -1006,6 +1006,7 @@
     "typeIrregularRhythmNotification": "Notificação de ritmo irregular",
     "typeHighHeartRateEvent": "Notificação de frequência cardíaca alta",
     "typeLowHeartRateEvent": "Notificação de frequência cardíaca baixa",
+    "typeHypertensionEvent": "Notificação de hipertensão",
     "typeWalkingSteadinessEvent": "Alerta de estabilidade ao caminhar",
     "typeBreathingDisturbanceEvent": "Distúrbio respiratório",
     "typeRecoveryScore": "Pontuação de recuperação",
@@ -1438,6 +1439,7 @@
       "openIllness": "Abrir"
     },
     "sourceNotification": "Notificação",
+    "sourceAppleHealth": "Apple Health",
     "tagCatalogLoadError": "Não foi possível carregar as tags."
   },
   "medications": {
@@ -4841,6 +4843,7 @@
         "irregularRhythm": "Notificação de ritmo irregular",
         "highHeartRate": "Notificação de frequência cardíaca alta",
         "lowHeartRate": "Notificação de frequência cardíaca baixa",
+        "hypertension": "Notificação de hipertensão",
         "walkingSteadiness": "Alerta de estabilidade ao caminhar",
         "breathingDisturbance": "Perturbação respiratória durante o sono"
       },
@@ -11663,7 +11666,8 @@
       "totalLabel": "Pontuação",
       "bandLabel": "Categoria",
       "answersToggle": "Respostas",
-      "answersUnavailable": "As respostas armazenadas para este check-in não podem ser descriptografadas."
+      "answersUnavailable": "As respostas armazenadas para este check-in não podem ser descriptografadas.",
+      "answersNotShared": "Respondido no Apple Health. Só a pontuação foi compartilhada, não as respostas."
     },
     "crisis": {
       "title": "Você não precisa enfrentar isso sozinho",
@@ -12785,8 +12789,12 @@
       "protein": "Proteínas",
       "carbohydrates": "Carboidratos",
       "fat": "Gorduras",
+      "saturated_fat": "Gorduras saturadas",
+      "monounsaturated_fat": "Gorduras monoinsaturadas",
+      "polyunsaturated_fat": "Gorduras poli-insaturadas",
       "sugar": "Açúcares",
       "fiber": "Fibras",
+      "cholesterol": "Colesterol",
       "sodium": "Sódio",
       "potassium": "Potássio",
       "alcohol": "Álcool"

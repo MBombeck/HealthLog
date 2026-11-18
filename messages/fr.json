@@ -1006,6 +1006,7 @@
     "typeIrregularRhythmNotification": "Notification de rythme irrégulier",
     "typeHighHeartRateEvent": "Notification de fréquence cardiaque élevée",
     "typeLowHeartRateEvent": "Notification de fréquence cardiaque basse",
+    "typeHypertensionEvent": "Notification d'hypertension",
     "typeWalkingSteadinessEvent": "Alerte de stabilité de la marche",
     "typeBreathingDisturbanceEvent": "Trouble respiratoire",
     "typeRecoveryScore": "Score de récupération",
@@ -1438,6 +1439,7 @@
       "openIllness": "Ouvrir"
     },
     "sourceNotification": "Notification",
+    "sourceAppleHealth": "Apple Health",
     "tagCatalogLoadError": "Impossible de charger les étiquettes."
   },
   "medications": {
@@ -4841,6 +4843,7 @@
         "irregularRhythm": "Notification de rythme irrégulier",
         "highHeartRate": "Notification de fréquence cardiaque élevée",
         "lowHeartRate": "Notification de fréquence cardiaque basse",
+        "hypertension": "Notification d'hypertension",
         "walkingSteadiness": "Alerte de stabilité à la marche",
         "breathingDisturbance": "Trouble respiratoire pendant le sommeil"
       },
@@ -11663,7 +11666,8 @@
       "totalLabel": "Score",
       "bandLabel": "Catégorie",
       "answersToggle": "Réponses",
-      "answersUnavailable": "Les réponses enregistrées de ce bilan ne peuvent pas être déchiffrées."
+      "answersUnavailable": "Les réponses enregistrées de ce bilan ne peuvent pas être déchiffrées.",
+      "answersNotShared": "Rempli dans Apple Health. Seul le score a été partagé, pas les réponses."
     },
     "crisis": {
       "title": "Vous n'avez pas à affronter cela seul(e)",
@@ -12785,8 +12789,12 @@
       "protein": "Protéines",
       "carbohydrates": "Glucides",
       "fat": "Lipides",
+      "saturated_fat": "Acides gras saturés",
+      "monounsaturated_fat": "Acides gras monoinsaturés",
+      "polyunsaturated_fat": "Acides gras polyinsaturés",
       "sugar": "Sucres",
       "fiber": "Fibres",
+      "cholesterol": "Cholestérol",
       "sodium": "Sodium",
       "potassium": "Potassium",
       "alcohol": "Alcool"

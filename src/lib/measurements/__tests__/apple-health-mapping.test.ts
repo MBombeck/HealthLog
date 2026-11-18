@@ -153,6 +153,7 @@ describe("APPLE_HEALTH_TYPE_MAP", () => {
         "HKCategoryTypeIdentifierLowHeartRateEvent",
         "HKCategoryTypeIdentifierAppleWalkingSteadinessEvent",
         "HKCategoryTypeIdentifierSleepApneaEvent",
+        "HKCategoryTypeIdentifierHypertensionEvent",
         // v1.44 — mindfulness and the State of Mind are mental-health
         // self-care and self-report; AFib burden is the AFib History
         // feature the person enabled on the watch.
@@ -1017,6 +1018,7 @@ describe("v1.10.0 categorical events (WX-B)", () => {
         "HKCategoryTypeIdentifierSleepApneaEvent",
         "BREATHING_DISTURBANCE_EVENT",
       ],
+      ["HKCategoryTypeIdentifierHypertensionEvent", "HYPERTENSION_EVENT"],
     ];
     for (const [hkId, type] of expected) {
       const mapping = APPLE_HEALTH_TYPE_MAP[hkId];
@@ -1074,6 +1076,7 @@ describe("v1.10.0 categorical events (WX-B)", () => {
       "HKCategoryTypeIdentifierHighHeartRateEvent",
       "HKCategoryTypeIdentifierLowHeartRateEvent",
       "HKCategoryTypeIdentifierSleepApneaEvent",
+      "HKCategoryTypeIdentifierHypertensionEvent",
     ]) {
       const out = mapAppleHealthEntry({
         hkIdentifier: hkId,

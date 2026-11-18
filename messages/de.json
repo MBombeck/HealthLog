@@ -1006,6 +1006,7 @@
     "typeIrregularRhythmNotification": "Hinweis auf unregelmäßigen Rhythmus",
     "typeHighHeartRateEvent": "Hinweis auf hohe Herzfrequenz",
     "typeLowHeartRateEvent": "Hinweis auf niedrige Herzfrequenz",
+    "typeHypertensionEvent": "Hinweis auf Bluthochdruck",
     "typeWalkingSteadinessEvent": "Hinweis zur Gehstabilität",
     "typeBreathingDisturbanceEvent": "Atemstörung",
     "typeRecoveryScore": "Erholungs-Score",
@@ -1438,6 +1439,7 @@
       "openIllness": "Öffnen"
     },
     "sourceNotification": "Benachrichtigung",
+    "sourceAppleHealth": "Apple Health",
     "tagCatalogLoadError": "Die Tags konnten nicht geladen werden."
   },
   "medications": {
@@ -4841,6 +4843,7 @@
         "irregularRhythm": "Hinweis auf unregelmäßigen Rhythmus",
         "highHeartRate": "Hinweis auf hohe Herzfrequenz",
         "lowHeartRate": "Hinweis auf niedrige Herzfrequenz",
+        "hypertension": "Hinweis auf Bluthochdruck",
         "walkingSteadiness": "Hinweis zur Gehstabilität",
         "breathingDisturbance": "Atemstörung während des Schlafs"
       },
@@ -11663,7 +11666,8 @@
       "totalLabel": "Punkte",
       "bandLabel": "Einstufung",
       "answersToggle": "Antworten",
-      "answersUnavailable": "Die gespeicherten Antworten dieses Check-ins können nicht entschlüsselt werden."
+      "answersUnavailable": "Die gespeicherten Antworten dieses Check-ins können nicht entschlüsselt werden.",
+      "answersNotShared": "In Apple Health ausgefüllt. Geteilt wurde nur die Punktzahl, nicht die Antworten."
     },
     "crisis": {
       "title": "Du musst das nicht allein durchstehen",
@@ -12785,8 +12789,12 @@
       "protein": "Eiweiß",
       "carbohydrates": "Kohlenhydrate",
       "fat": "Fett",
+      "saturated_fat": "Gesättigte Fettsäuren",
+      "monounsaturated_fat": "Einfach ungesättigte Fettsäuren",
+      "polyunsaturated_fat": "Mehrfach ungesättigte Fettsäuren",
       "sugar": "Zucker",
       "fiber": "Ballaststoffe",
+      "cholesterol": "Cholesterin",
       "sodium": "Natrium",
       "potassium": "Kalium",
       "alcohol": "Alkohol"

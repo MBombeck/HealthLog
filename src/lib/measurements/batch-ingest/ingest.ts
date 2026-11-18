@@ -10,6 +10,7 @@
  * limit, the body and the response envelope.
  */
 import { annotate } from "@/lib/logging/context";
+import { writeAppleHealthAssessments } from "@/lib/mental-health/apple-health-assessment";
 import { unstableExternalIdMeta } from "@/lib/validations/external-id";
 
 import type { BatchIngestInput, EntryResult } from "./entries";
@@ -64,6 +65,18 @@ export async function ingestMeasurementBatch(
   writer.duplicateCount += hours.duplicates;
   writer.failedCount += hours.failed;
 
+  const assessments = await writeAppleHealthAssessments({
+    userId: user.id,
+    scoped,
+    entries: batch.assessments,
+  });
+  let assessmentsInserted = 0;
+  for (const result of assessments) {
+    results[result.index] = result;
+    if (result.status === "inserted") assessmentsInserted += 1;
+    if (result.status === "duplicate") writer.duplicateCount += 1;
+  }
+
   await stampSyncCheckpoint({
     userId: user.id,
     scoped,
@@ -114,7 +127,8 @@ export async function ingestMeasurementBatch(
 
   return {
     processed: entries.length,
-    inserted: writer.insertedCount + hours.hourInsertedCount,
+    inserted:
+      writer.insertedCount + hours.hourInsertedCount + assessmentsInserted,
     updated:
       writer.updatedCount + writer.unchangedStatsCount + hours.hourUpdatedCount,
     duplicates: writer.duplicateCount,

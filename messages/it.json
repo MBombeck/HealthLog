@@ -1006,6 +1006,7 @@
     "typeIrregularRhythmNotification": "Notifica di ritmo irregolare",
     "typeHighHeartRateEvent": "Notifica di frequenza cardiaca alta",
     "typeLowHeartRateEvent": "Notifica di frequenza cardiaca bassa",
+    "typeHypertensionEvent": "Notifica di ipertensione",
     "typeWalkingSteadinessEvent": "Avviso di stabilità della camminata",
     "typeBreathingDisturbanceEvent": "Disturbo respiratorio",
     "typeRecoveryScore": "Punteggio di recupero",
@@ -1438,6 +1439,7 @@
       "openIllness": "Apri"
     },
     "sourceNotification": "Notifica",
+    "sourceAppleHealth": "Apple Health",
     "tagCatalogLoadError": "Impossibile caricare le etichette."
   },
   "medications": {
@@ -4841,6 +4843,7 @@
         "irregularRhythm": "Notifica di ritmo irregolare",
         "highHeartRate": "Notifica di frequenza cardiaca alta",
         "lowHeartRate": "Notifica di frequenza cardiaca bassa",
+        "hypertension": "Notifica di ipertensione",
         "walkingSteadiness": "Avviso di stabilità nella camminata",
         "breathingDisturbance": "Disturbo respiratorio durante il sonno"
       },
@@ -11663,7 +11666,8 @@
       "totalLabel": "Punteggio",
       "bandLabel": "Categoria",
       "answersToggle": "Risposte",
-      "answersUnavailable": "Le risposte salvate di questo check-in non possono essere decifrate."
+      "answersUnavailable": "Le risposte salvate di questo check-in non possono essere decifrate.",
+      "answersNotShared": "Compilato in Apple Health. È stato condiviso solo il punteggio, non le risposte."
     },
     "crisis": {
       "title": "Non devi affrontare tutto questo da solo/a",
@@ -12785,8 +12789,12 @@
       "protein": "Proteine",
       "carbohydrates": "Carboidrati",
       "fat": "Grassi",
+      "saturated_fat": "Grassi saturi",
+      "monounsaturated_fat": "Grassi monoinsaturi",
+      "polyunsaturated_fat": "Grassi polinsaturi",
       "sugar": "Zuccheri",
       "fiber": "Fibre",
+      "cholesterol": "Colesterolo",
       "sodium": "Sodio",
       "potassium": "Potassio",
       "alcohol": "Alcol"

@@ -1898,9 +1898,10 @@ const rhythmEventType = z
     "LOW_HEART_RATE_EVENT",
     "WALKING_STEADINESS_EVENT",
     "BREATHING_DISTURBANCE_EVENT",
+    "HYPERTENSION_EVENT",
   ])
   .describe(
-    "The HealthKit category the device flagged. IRREGULAR_RHYTHM_NOTIFICATION (`HKCategoryTypeIdentifierIrregularHeartRhythmEvent` + ScanWatch AFib screening), HIGH_HEART_RATE_EVENT / LOW_HEART_RATE_EVENT (a sustained heart rate above / below the user's configured threshold while apparently inactive), WALKING_STEADINESS_EVENT (`HKCategoryTypeIdentifierAppleWalkingSteadinessEvent`; the severity rides in `classification`), BREATHING_DISTURBANCE_EVENT (`HKCategoryTypeIdentifierSleepApneaEvent` + `AppleSleepingBreathingDisturbances`, an elevated breathing-disturbance / possible sleep-apnea screening signal).",
+    "The HealthKit category the device flagged. IRREGULAR_RHYTHM_NOTIFICATION (`HKCategoryTypeIdentifierIrregularHeartRhythmEvent` + ScanWatch AFib screening), HIGH_HEART_RATE_EVENT / LOW_HEART_RATE_EVENT (a sustained heart rate above / below the user's configured threshold while apparently inactive), WALKING_STEADINESS_EVENT (`HKCategoryTypeIdentifierAppleWalkingSteadinessEvent`; the severity rides in `classification`), BREATHING_DISTURBANCE_EVENT (`HKCategoryTypeIdentifierSleepApneaEvent` + `AppleSleepingBreathingDisturbances`, an elevated breathing-disturbance / possible sleep-apnea screening signal), HYPERTENSION_EVENT (`HKCategoryTypeIdentifierHypertensionEvent`, iOS 26: the watch flagged signs of possible hypertension over a 30-day window; a notification, not a blood-pressure reading). Decode unknown values leniently: the set grows.",
   );
 
 const rhythmEventClassification = z
@@ -1914,7 +1915,7 @@ const rhythmEventClassification = z
   ])
   .nullable()
   .describe(
-    "The RECORDING DEVICE's own verdict, surfaced verbatim. IRREGULAR / NOT_DETECTED / INCONCLUSIVE are the ECG-style rhythm verdicts (device flagged a possible irregular rhythm / algorithm ran and found nothing / signal too poor to classify) and occur on an `IRREGULAR_RHYTHM_NOTIFICATION` row. LOW / VERY_LOW are walking-steadiness severities and occur on a `WALKING_STEADINESS_EVENT` row. FIRED is the neutral \"event occurred\" verdict with no severity gradient, and occurs on a `HIGH_HEART_RATE_EVENT` / `LOW_HEART_RATE_EVENT` / `BREATHING_DISTURBANCE_EVENT` row. Null when the source reported none. HealthLog never re-classifies — this is the device's certified on-device result. Distinct from `EcgRecordingListItem.classification` / `EcgDetailResponse.classification` above, which are scoped to the three ECG-only values.",
+    "The RECORDING DEVICE's own verdict, surfaced verbatim. IRREGULAR / NOT_DETECTED / INCONCLUSIVE are the ECG-style rhythm verdicts (device flagged a possible irregular rhythm / algorithm ran and found nothing / signal too poor to classify) and occur on an `IRREGULAR_RHYTHM_NOTIFICATION` row. LOW / VERY_LOW are walking-steadiness severities and occur on a `WALKING_STEADINESS_EVENT` row. FIRED is the neutral \"event occurred\" verdict with no severity gradient, and occurs on a `HIGH_HEART_RATE_EVENT` / `LOW_HEART_RATE_EVENT` / `BREATHING_DISTURBANCE_EVENT` / `HYPERTENSION_EVENT` row. Null when the source reported none. HealthLog never re-classifies — this is the device's certified on-device result. Distinct from `EcgRecordingListItem.classification` / `EcgDetailResponse.classification` above, which are scoped to the three ECG-only values.",
   );
 
 const rhythmEventListItem = z

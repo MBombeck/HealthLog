@@ -1006,6 +1006,7 @@
     "typeIrregularRhythmNotification": "Powiadomienie o nieregularnym rytmie",
     "typeHighHeartRateEvent": "Powiadomienie o wysokim tętnie",
     "typeLowHeartRateEvent": "Powiadomienie o niskim tętnie",
+    "typeHypertensionEvent": "Powiadomienie o nadciśnieniu",
     "typeWalkingSteadinessEvent": "Alert stabilności chodu",
     "typeBreathingDisturbanceEvent": "Zaburzenie oddychania",
     "typeRecoveryScore": "Wynik regeneracji",
@@ -1438,6 +1439,7 @@
       "openIllness": "Otwórz"
     },
     "sourceNotification": "Powiadomienie",
+    "sourceAppleHealth": "Apple Health",
     "tagCatalogLoadError": "Nie udało się załadować tagów."
   },
   "medications": {
@@ -4841,6 +4843,7 @@
         "irregularRhythm": "Powiadomienie o nieregularnym rytmie",
         "highHeartRate": "Powiadomienie o wysokim tętnie",
         "lowHeartRate": "Powiadomienie o niskim tętnie",
+        "hypertension": "Powiadomienie o nadciśnieniu",
         "walkingSteadiness": "Alert o stabilności chodu",
         "breathingDisturbance": "Zaburzenie oddychania podczas snu"
       },
@@ -11663,7 +11666,8 @@
       "totalLabel": "Wynik",
       "bandLabel": "Kategoria",
       "answersToggle": "Odpowiedzi",
-      "answersUnavailable": "Nie można odszyfrować zapisanych odpowiedzi tego sprawdzenia."
+      "answersUnavailable": "Nie można odszyfrować zapisanych odpowiedzi tego sprawdzenia.",
+      "answersNotShared": "Wypełnione w Apple Health. Udostępniono tylko wynik, bez odpowiedzi."
     },
     "crisis": {
       "title": "Nie musisz mierzyć się z tym sam(a)",
@@ -12785,8 +12789,12 @@
       "protein": "Białko",
       "carbohydrates": "Węglowodany",
       "fat": "Tłuszcz",
+      "saturated_fat": "Tłuszcze nasycone",
+      "monounsaturated_fat": "Tłuszcze jednonienasycone",
+      "polyunsaturated_fat": "Tłuszcze wielonienasycone",
       "sugar": "Cukry",
       "fiber": "Błonnik",
+      "cholesterol": "Cholesterol",
       "sodium": "Sód",
       "potassium": "Potas",
       "alcohol": "Alkohol"

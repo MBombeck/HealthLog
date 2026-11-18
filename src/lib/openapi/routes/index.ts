@@ -98,6 +98,7 @@ import { symptomPaths } from "./symptoms";
 import { seizurePaths } from "./seizures";
 import { syncPaths } from "./sync";
 import { workoutPaths } from "./workouts";
+import { externalIdDeletePaths } from "./external-id-deletes";
 import { coachPrefsSchema, withScopeRefusal } from "./shared";
 
 const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
@@ -110,6 +111,7 @@ const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   ...syncPaths,
   ...measurementPaths,
   ...workoutPaths,
+  ...externalIdDeletePaths,
   ...activityPaths,
   ...provenancePaths,
   ...devicePaths,

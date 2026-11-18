@@ -1006,6 +1006,7 @@
     "typeIrregularRhythmNotification": "Уведомление о нерегулярном ритме",
     "typeHighHeartRateEvent": "Уведомление о высокой ЧСС",
     "typeLowHeartRateEvent": "Уведомление о низкой ЧСС",
+    "typeHypertensionEvent": "Уведомление о гипертонии",
     "typeWalkingSteadinessEvent": "Оповещение об устойчивости ходьбы",
     "typeBreathingDisturbanceEvent": "Нарушение дыхания",
     "typeRecoveryScore": "Балл восстановления",
@@ -1438,6 +1439,7 @@
       "openIllness": "Открыть"
     },
     "sourceNotification": "Уведомление",
+    "sourceAppleHealth": "Apple Health",
     "tagCatalogLoadError": "Не удалось загрузить теги."
   },
   "medications": {
@@ -4841,6 +4843,7 @@
         "irregularRhythm": "Уведомление о нерегулярном ритме",
         "highHeartRate": "Уведомление о высокой ЧСС",
         "lowHeartRate": "Уведомление о низкой ЧСС",
+        "hypertension": "Уведомление о гипертонии",
         "walkingSteadiness": "Оповещение об устойчивости ходьбы",
         "breathingDisturbance": "Нарушение дыхания во сне"
       },
@@ -11663,7 +11666,8 @@
       "totalLabel": "Балл",
       "bandLabel": "Категория",
       "answersToggle": "Ответы",
-      "answersUnavailable": "Сохранённые ответы этого опросника не удаётся расшифровать."
+      "answersUnavailable": "Сохранённые ответы этого опросника не удаётся расшифровать.",
+      "answersNotShared": "Заполнено в Apple Health. Передан только балл, без ответов."
     },
     "crisis": {
       "title": "Вам не обязательно справляться с этим в одиночку",
@@ -12785,8 +12789,12 @@
       "protein": "Белки",
       "carbohydrates": "Углеводы",
       "fat": "Жиры",
+      "saturated_fat": "Насыщенные жиры",
+      "monounsaturated_fat": "Мононенасыщенные жиры",
+      "polyunsaturated_fat": "Полиненасыщенные жиры",
       "sugar": "Сахара",
       "fiber": "Клетчатка",
+      "cholesterol": "Холестерин",
       "sodium": "Натрий",
       "potassium": "Калий",
       "alcohol": "Алкоголь"

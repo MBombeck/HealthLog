@@ -233,6 +233,9 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   "src/app/api/mood-entries/bulk/route.ts",
   "src/app/api/mood-entries/bulk-delete/route.ts",
   "src/app/api/mood-entries/restore/route.ts",
+  // Apple Health deletion reconciliation: the phone removing rows it
+  // imported must work while the surface is hidden, like the bulk ingest.
+  "src/app/api/mood-entries/by-external-ids/route.ts",
   // Mood tag taxonomy CRUD — the user's tag library + per-tag layout.
   // Pure configuration over the mood vocabulary, not analysis prose;
   // editing the taxonomy while the module is off must not break.
@@ -252,6 +255,8 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   // history rather than a gap. LabResult CRUD follows the same data-layer
   // reasoning (the labs module gates the surfaces, not the row store).
   "src/app/api/workouts/batch/route.ts",
+  // Its deletion counterpart for Apple Health workouts, for the same reason.
+  "src/app/api/workouts/by-external-ids/route.ts",
   "src/app/api/labs/route.ts",
   "src/app/api/labs/[id]/route.ts",
   // The Labs list's per-marker overview reads the same row store.
@@ -305,6 +310,8 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   "src/app/api/medications/compliance/route.ts",
   "src/app/api/medications/intake/route.ts",
   "src/app/api/medications/intake/bulk/route.ts",
+  // Removing the Apple Health doses the phone reports deleted: same row store.
+  "src/app/api/medications/intake/by-external-ids/route.ts",
   // The account-wide dose-history import is the same class as the
   // per-medication importer below: it writes intake rows and reads its own job.
   "src/app/api/medications/intake/dose-history-import/route.ts",
@@ -353,6 +360,7 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   // AI analysis off must leave every one of them working.
   "src/app/api/insights/ecg/route.ts",
   "src/app/api/insights/ecg/[id]/route.ts",
+  "src/app/api/insights/ecg/by-external-ids/route.ts",
   "src/app/api/insights/rhythm-events/route.ts",
   "src/app/api/insights/derived/batch/route.ts",
   "src/app/api/insights/cards/route.ts",
