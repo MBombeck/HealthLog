@@ -6971,7 +6971,7 @@
     },
     "fitbitRemoval": {
       "title": "Fitbit no longer syncs",
-      "body": "Google shut down the Fitbit Web API on 30 October 2026, so HealthLog can no longer connect to Fitbit and the Fitbit integration has been removed. Everything already imported stays: your charts, exports, backups and doctor reports keep it, still marked as Fitbit.",
+      "body": "Google shut down the Fitbit Web API on October 30, 2026, so HealthLog can no longer connect to Fitbit and the Fitbit integration has been removed. Everything already imported stays: your charts, exports, backups and doctor reports keep it, still marked as Fitbit.",
       "ways": "To keep data from a Fitbit or Pixel Watch coming, connect Google Health below. It reads the same devices and asks for your consent at Google once. On Android you can also import a Health Connect export.",
       "toGoogleHealth": "Go to Google Health",
       "toHealthConnect": "Health Connect import",

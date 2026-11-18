@@ -56,14 +56,16 @@ export function FitbitRemovalNoticeView({
       role="note"
       aria-labelledby="fitbit-removal-notice-title"
       data-testid="fitbit-removal-notice"
-      className="border-border bg-muted/40 text-foreground space-y-2 rounded-md border px-4 py-3 text-sm"
+      className="border-border bg-muted/40 text-foreground space-y-2 rounded-lg border px-4 py-3 text-sm"
     >
       <h3 id="fitbit-removal-notice-title" className="font-medium">
         {t("settings.fitbitRemoval.title")}
       </h3>
       <p>{t("settings.fitbitRemoval.body")}</p>
       <p>{t("settings.fitbitRemoval.ways")}</p>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1">
+      {/* No row gap: each action already carries the 44 px touch floor, so a
+          gap on top stacked them far apart once they wrapped on a phone. */}
+      <div className="flex flex-wrap items-center gap-x-4 pt-1">
         <InlineAction asChild size="sm">
           <a href="#google-health" data-testid="fitbit-removal-to-google">
             {t("settings.fitbitRemoval.toGoogleHealth")}
