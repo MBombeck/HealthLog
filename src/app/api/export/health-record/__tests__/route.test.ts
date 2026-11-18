@@ -188,12 +188,10 @@ beforeEach(() => {
   vi.mocked(prisma.encounter.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.allergy.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.vaccinationRecord.findMany).mockResolvedValue([] as never);
-  vi.mocked(prisma.seizureTypeProfile.findMany).mockResolvedValue([] as never);
-  vi.mocked(prisma.seizureEvent.findMany).mockResolvedValue([] as never);
-  vi.mocked(prisma.seizureEvent.findFirst).mockResolvedValue(null as never);
-  vi.mocked(prisma.seizureDiarySettings.findUnique).mockResolvedValue(
-    null as never,
-  );
+  vi.mocked(prisma.seizureTypeProfile.findMany).mockResolvedValue([]);
+  vi.mocked(prisma.seizureEvent.findMany).mockResolvedValue([]);
+  vi.mocked(prisma.seizureEvent.findFirst).mockResolvedValue(null);
+  vi.mocked(prisma.seizureDiarySettings.findUnique).mockResolvedValue(null);
   vi.mocked(prisma.familyHistoryEntry.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.userHealthProfile.findUnique).mockResolvedValue(
     null as never,
