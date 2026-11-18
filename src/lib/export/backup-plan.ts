@@ -702,6 +702,8 @@ export const DERIVED_MODELS: Readonly<Record<string, string>> = {
  * be argued with later, so each says what it would cost to include.
  */
 export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
+  SeizureClusterAlert:
+    "Which seizure clusters already sent their notification; a restore holds no news to send.",
   // Provider credentials and handshake state.
   WithingsConnection:
     "An OAuth grant bound to this deployment's client registration. Restored elsewhere it is a dead token that makes the integration look connected while it silently fails — the exact shape of defect this release is about.",

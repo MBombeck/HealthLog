@@ -613,6 +613,38 @@ describe("an adult's shared record holds the grant levels", () => {
     });
   });
 
+  it("sends one alert when two entries that form a cluster land together", async () => {
+    const owner = await person("owner");
+    const carer = await delegateWith(owner.id, "WRITE");
+    const prisma = getPrismaClient();
+    // Two seizures from two devices, both stored before either notifier
+    // looked: each sees the other and calls itself the cluster's first.
+    const [a, b] = await Promise.all(
+      [2 * 3_600_000, 3_600_000].map((msAgo) =>
+        prisma.seizureEvent.create({
+          data: {
+            userId: owner.id,
+            onsetAt: ago(msAgo),
+            loggedByUserId: carer.id,
+          },
+        }),
+      ),
+    );
+    dispatched.length = 0;
+    const { notifySeizureCluster } =
+      await import("@/lib/seizures/cluster-notify");
+    await Promise.all(
+      [a!, b!].map((event) =>
+        notifySeizureCluster({
+          ownerId: owner.id,
+          actorId: carer.id,
+          eventId: event.id,
+        }),
+      ),
+    );
+    expect(dispatched).toHaveLength(1);
+  });
+
   it("lets an illness WRITE delegate log and not edit", async () => {
     const owner = await person("owner");
     await delegateWith(owner.id, "WRITE");

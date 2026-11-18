@@ -15,6 +15,9 @@
  *     window) sends nothing. Back-filling last month's diary is not news.
  *  3. A seizure that joins a cluster that was already there sends nothing.
  *
+ * Each cluster is claimed in `seizure_cluster_alerts` before the send, so two
+ * seizures that form it together, logged at the same moment, send once.
+ *
  * On a managed profile the dispatcher fans the push out to the record's
  * guardians, except the one who logged the seizure; on an adult's record it
  * goes to the owner, who learns that a carer logged it. No free text rides along: the count, the window and the
@@ -122,6 +125,15 @@ export async function notifySeizureCluster(
     });
     const episode = newlyFormedCluster(events, eventId, rule, new Date());
     if (!episode) return;
+
+    // Two seizures that form the cluster together, logged at once, each see
+    // the other and call themselves its first. The cluster is claimed under
+    // its first seizure, and only the write that inserts the claim sends.
+    const claimed = await prisma.seizureClusterAlert.createMany({
+      data: [{ userId: ownerId, anchorEventId: episode.eventIds[0]! }],
+      skipDuplicates: true,
+    });
+    if (claimed.count === 0) return;
 
     const actor = await prisma.user.findUnique({
       where: { id: actorId },

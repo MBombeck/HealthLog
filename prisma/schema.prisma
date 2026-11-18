@@ -1076,6 +1076,7 @@ model User {
   // rule.
   seizureTypeProfiles                       SeizureTypeProfile[]
   seizureEvents                             SeizureEvent[]
+  seizureClusterAlerts                      SeizureClusterAlert[]
   seizureRescueDoses                        SeizureRescueDose[]
   seizureDiarySettings                      SeizureDiarySettings?
   // v1.25 (W-RECORDS) — structured health-record entries. Allergies map to
@@ -9177,6 +9178,24 @@ model SeizureTypeProfile {
 /// One recorded seizure, or a tally of brief ones (`count` > 1, e.g. the
 /// absences of one day). Who logged it and whether anybody saw it are kept,
 /// because diaries miss many seizures and a clinician weighs an entry by both.
+/// One "Seizure cluster" notification sent (#1368), keyed on the cluster's
+/// first seizure. The notifier claims the cluster here before it sends, so
+/// two seizures that form a cluster together send one alert, not two.
+/// Operational: not in backups; wiped with the diary.
+model SeizureClusterAlert {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  /// The cluster's first seizure, by onset. Not a foreign key: the claim
+  /// outlives a removed seizure, so the same cluster does not alert again.
+  anchorEventId String   @map("anchor_event_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, anchorEventId])
+  @@map("seizure_cluster_alerts")
+}
+
 model SeizureEvent {
   id                       String                @id @default(cuid())
   userId                   String                @map("user_id")

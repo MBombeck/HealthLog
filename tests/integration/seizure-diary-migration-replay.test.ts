@@ -31,7 +31,11 @@ const MIGRATION = readFileSync(
 async function foreignKeys(): Promise<string[]> {
   const rows = await getPrismaClient().$queryRaw<Array<{ conname: string }>>`
     SELECT conname FROM pg_constraint
-    WHERE contype = 'f' AND conname LIKE 'seizure_%'
+    WHERE contype = 'f'
+      AND conrelid::regclass::text IN (
+        'seizure_type_profiles', 'seizure_events',
+        'seizure_rescue_doses', 'seizure_diary_settings'
+      )
     ORDER BY conname
   `;
   return rows.map((r) => r.conname);

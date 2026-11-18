@@ -160,6 +160,7 @@ export const WIPE_MODELS = [
   // so they go first for a truthful count; the rule row points at nothing.
   "SeizureRescueDose",
   "SeizureEvent",
+  "SeizureClusterAlert",
   "SeizureDiarySettings",
   // v1.42 — the person's life events. Nothing points at them.
   "LifeEvent",
