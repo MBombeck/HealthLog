@@ -38,3 +38,9 @@ read time in `src/lib/seizures/derive.ts`; nothing derived is stored.
   guidance is always visible.
 - The ketogenic diet ratio is not drawn on the report chart: blood ketones
   (#1367) store no prescribed ratio to mark.
+- `SEIZURE_CLUSTER` is off by default and fires once per cluster, on the
+  write that forms it, only when someone other than the person logged it and
+  only when the seizure is not back-filled (`src/lib/seizures/cluster-notify.ts`).
+  On a managed profile it fans out to the guardians.
+- The timeline's `seizures` lane draws one point per day, owned by the
+  `seizures` module and shared under `illness`.

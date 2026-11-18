@@ -38809,6 +38809,7 @@ components:
             - DAILY_BRIEFING
             - SHARED_RECORD_INTAKE
             - BACKUP_HEALTH
+            - SEIZURE_CLUSTER
         enabled:
           type: boolean
       required:
@@ -92488,6 +92489,7 @@ components:
               - DAILY_BRIEFING
               - SHARED_RECORD_INTAKE
               - BACKUP_HEALTH
+              - SEIZURE_CLUSTER
             description: Notification category a per-channel preference can toggle.
           additionalProperties:
             type: boolean
@@ -92510,6 +92512,7 @@ components:
             - DAILY_BRIEFING
             - SHARED_RECORD_INTAKE
             - BACKUP_HEALTH
+            - SEIZURE_CLUSTER
           description: What each event does on a channel with no stored row, resolved for this account by the function delivery
             uses. Most are constant per category; the mood reminder follows the account's mood-reminder setting
             (`moodReminderEnabled` on `/api/user/profile`). Render a switch without a row from this map rather than from
@@ -92581,6 +92584,7 @@ components:
             - DAILY_BRIEFING
             - SHARED_RECORD_INTAKE
             - BACKUP_HEALTH
+            - SEIZURE_CLUSTER
           description: Notification category a per-channel preference can toggle.
         enabled:
           type: boolean

@@ -57,6 +57,17 @@ vi.mock("next/headers", async () => {
   };
 });
 
+const dispatched = vi.hoisted(
+  () => [] as Array<{ userId: string; eventType?: string; params?: unknown }>,
+);
+vi.mock("@/lib/notifications/dispatch-localised", () => ({
+  dispatchLocalisedNotification: vi.fn(
+    async (opts: { userId: string; eventType?: string; params?: unknown }) => {
+      dispatched.push(opts);
+    },
+  ),
+}));
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ago = (ms: number) => new Date(Date.now() - ms);
 
@@ -417,6 +428,44 @@ describe("an adult's shared record holds the grant levels", () => {
         where: { userId: owner.id },
       }),
     ).toBe(1);
+  });
+
+  it("tells the owner once when a carer's seizure forms a cluster", async () => {
+    const owner = await person("owner");
+    // The owner's own seizure: the first of the run, and no push for it.
+    signIn(owner);
+    expect(
+      (await newEvent({ onsetAt: ago(3 * 3_600_000).toISOString() })).status,
+    ).toBe(201);
+    await delegateWith(owner.id, "WRITE");
+    dispatched.length = 0;
+
+    // The carer's seizure makes two within 24 h: the cluster forms.
+    expect(
+      (await newEvent({ onsetAt: ago(3_600_000).toISOString() })).status,
+    ).toBe(201);
+    // A third inside the same cluster, and a back-filled pair, add nothing.
+    expect(
+      (await newEvent({ onsetAt: ago(60_000).toISOString() })).status,
+    ).toBe(201);
+    expect(
+      (await newEvent({ onsetAt: ago(9 * DAY_MS).toISOString() })).status,
+    ).toBe(201);
+    expect(
+      (await newEvent({ onsetAt: ago(9 * DAY_MS - 60_000).toISOString() }))
+        .status,
+    ).toBe(201);
+
+    // The push is not awaited by the route; let it settle.
+    await vi.waitFor(() => expect(dispatched.length).toBeGreaterThan(0));
+    await new Promise((r) => setTimeout(r, 300));
+    expect(dispatched).toEqual([
+      expect.objectContaining({
+        userId: owner.id,
+        eventType: "SEIZURE_CLUSTER",
+        params: expect.objectContaining({ count: 2, hours: 24 }),
+      }),
+    ]);
   });
 
   it("lets an illness WRITE delegate log and not edit", async () => {

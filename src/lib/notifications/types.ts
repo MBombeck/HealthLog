@@ -129,6 +129,12 @@ export const EVENT_TYPES = [
   // An admin routes it per channel in the /notifications matrix, where only
   // admins see the row (`eventTypesForRole`).
   "BACKUP_HEALTH",
+  // A seizure cluster just formed under the person's own rule (#1368): sent
+  // once per cluster, only when somebody else logged the seizure that formed
+  // it, and never for a back-filled one (`src/lib/seizures/cluster-notify.ts`).
+  // Default OFF, see EVENT_DEFAULT_ENABLED. On a managed profile it reaches
+  // the guardians, like a medication reminder.
+  "SEIZURE_CLUSTER",
 ] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
@@ -142,6 +148,7 @@ export const MANAGED_GUARDIAN_FANOUT_EVENTS = [
   "MEASUREMENT_REMINDER",
   "MEDICATION_LOW_STOCK",
   "SAFETY_FLOOR_ALERT",
+  "SEIZURE_CLUSTER",
 ] as const;
 export type ManagedGuardianFanoutEvent =
   (typeof MANAGED_GUARDIAN_FANOUT_EVENTS)[number];
@@ -219,6 +226,10 @@ export const EVENT_DEFAULT_ENABLED: Record<EventType, boolean> = {
   // ON by default; see the note on `EVENT_TYPES`. Only admins are ever
   // addressed, and at most once per state change per signal.
   BACKUP_HEALTH: true,
+  // OFF by default (the PERSONAL_RECORD precedent): whoever wants to hear
+  // about clusters turns it on per channel, so nobody is woken by a push
+  // they never asked for.
+  SEIZURE_CLUSTER: false,
 };
 
 /** Event types only an admin is ever sent, and only an admin is shown. */

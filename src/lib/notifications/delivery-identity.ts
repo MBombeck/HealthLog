@@ -34,7 +34,8 @@ export function isManagedGuardianFanoutAllowed(
     payload.managedFanoutEvent === undefined &&
     (payload.eventType === "MEDICATION_REMINDER" ||
       payload.eventType === "MEASUREMENT_REMINDER" ||
-      payload.eventType === "MEDICATION_LOW_STOCK")
+      payload.eventType === "MEDICATION_LOW_STOCK" ||
+      payload.eventType === "SEIZURE_CLUSTER")
   );
 }
 

@@ -32,6 +32,7 @@ import {
   typeLookupOf,
 } from "@/lib/seizures/server";
 import { writeRescueDose } from "@/lib/seizures/rescue";
+import { notifySeizureCluster } from "@/lib/seizures/cluster-notify";
 
 export const dynamic = "force-dynamic";
 
@@ -161,6 +162,13 @@ async function postEvent(request: NextRequest): Promise<Response> {
       rescue_doses: rescueDoses.length,
       delegated: actor.id !== user.id,
     },
+  });
+
+  // Not awaited: the person logging at the bedside never waits on a push.
+  void notifySeizureCluster({
+    ownerId: user.id,
+    actorId: actor.id,
+    eventId: created.id,
   });
 
   return apiSuccess(

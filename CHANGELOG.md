@@ -26,7 +26,11 @@
   them, missed doses, cycle days, the night's sleep and illness at the time.
   The FHIR export carries each seizure, rescue dose and cluster, and the MCP
   server has a `get_seizures` tool. It works in a managed child profile:
-  the guardian logs for the child. The diary records what was seen; it does
+  the guardian logs for the child, and a seizure a carer logged says who
+  logged it. "Log seizure" sits in the add menus, the timeline gains a
+  seizure lane, and an opt-in "Seizure cluster" notification tells the
+  person, or a child's guardians, once when a seizure someone else logged
+  forms a cluster. The diary records what was seen; it does
   not diagnose and never says it is safe to wait. New routes under
   `/api/seizures`; migration `0504_seizure_diary`. Thanks to @ch3funio for
   the detailed request and the clinical detail behind it. (#1368)
