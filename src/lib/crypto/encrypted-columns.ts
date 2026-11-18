@@ -628,6 +628,21 @@ export function encryptedColumnKey(c: EncryptedColumn): string {
 }
 
 /**
+ * Sealed columns of the removed Fitbit integration. Migration 0503 emptied
+ * them, and they stay one release only so the v1.47.6 image keeps reading
+ * user rows during the switchover and after a rollback. Nothing in this
+ * release reads or writes them, the key rotation included; the next minor
+ * release drops them. `encrypted-columns.test.ts` accepts them as accounted
+ * for instead of as a rotation gap.
+ */
+export const RETIRED_ENCRYPTED_COLUMNS: ReadonlySet<string> = new Set([
+  "User.fitbitClientIdEncrypted",
+  "User.fitbitClientSecretEncrypted",
+  "FitbitConnection.accessToken",
+  "FitbitConnection.refreshToken",
+]);
+
+/**
  * The registry models that carry a Prisma `@updatedAt` column. Re-sealing a
  * value under a new key is not an edit, so the rotation carries each row's
  * own `updatedAt` through the write instead of letting Prisma stamp the run

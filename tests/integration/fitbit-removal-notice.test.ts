@@ -2,13 +2,13 @@
  * The Fitbit integration's removal, against real Postgres.
  *
  * Migration 0503 marks every account that still held a Fitbit connection,
- * then drops the connection rows, the OAuth state ledger, the per-account app
- * credentials and the integration's status and watchdog rows. Imported
- * readings stay. The status envelope then publishes `fitbitRemovalNotice` for
- * a marked account only, and dismissing the note clears it for good.
- *
- * The schema here is already migrated, so the Fitbit tables and columns are
- * put back in their last shape before the migration file is replayed.
+ * then deletes the connection rows with their tokens, the OAuth state ledger,
+ * the per-account app credentials and the integration's status and watchdog
+ * rows. The tables and columns themselves stay for one release, so a v1.47.6
+ * image started beside this schema, or rolled back to, still reads every
+ * user row. Imported readings stay. The status envelope then publishes
+ * `fitbitRemovalNotice` for a marked account only, and dismissing the note
+ * clears it for good.
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -53,33 +53,18 @@ async function user(id: string, data: Record<string, unknown> = {}) {
   });
 }
 
-/** The Fitbit tables and columns as they stood before 0503. */
-async function restorePreRemovalShape() {
-  await prisma().$executeRawUnsafe(`
-    ALTER TABLE "users"
-      ADD COLUMN IF NOT EXISTS "fitbit_client_id_encrypted" TEXT,
-      ADD COLUMN IF NOT EXISTS "fitbit_client_secret_encrypted" TEXT`);
-  await prisma().$executeRawUnsafe(`
-    CREATE TABLE IF NOT EXISTS "fitbit_connections" (
-      "id" TEXT PRIMARY KEY,
-      "user_id" TEXT NOT NULL UNIQUE
-        REFERENCES "users"("id") ON DELETE CASCADE,
-      "fitbit_user_id" TEXT NOT NULL,
-      "access_token" TEXT NOT NULL,
-      "refresh_token" TEXT NOT NULL,
-      "token_expires_at" TIMESTAMP(3) NOT NULL)`);
-  await prisma().$executeRawUnsafe(`
-    CREATE TABLE IF NOT EXISTS "fitbit_oauth_states" (
-      "nonce" TEXT PRIMARY KEY,
-      "user_id" TEXT NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
-      "expires_at" TIMESTAMP(3) NOT NULL)`);
-}
-
 async function exists(relation: string): Promise<boolean> {
   const rows = await prisma().$queryRawUnsafe<Array<{ found: boolean }>>(
     `SELECT to_regclass('${relation}') IS NOT NULL AS found`,
   );
   return rows[0]!.found;
+}
+
+async function rows(relation: string): Promise<number> {
+  const result = await prisma().$queryRawUnsafe<Array<{ n: number }>>(
+    `SELECT COUNT(*)::int AS n FROM "${relation}"`,
+  );
+  return result[0]!.n;
 }
 
 async function hasColumn(column: string): Promise<boolean> {
@@ -91,18 +76,25 @@ async function hasColumn(column: string): Promise<boolean> {
 }
 
 describe("migration 0503", () => {
-  it("marks the formerly connected, drops what only the integration used, and keeps the readings", async () => {
+  it("keeps the Fitbit tables and columns the previous image reads", async () => {
+    expect(await exists("fitbit_connections")).toBe(true);
+    expect(await exists("fitbit_oauth_states")).toBe(true);
+    expect(await hasColumn("fitbit_client_id_encrypted")).toBe(true);
+    expect(await hasColumn("fitbit_client_secret_encrypted")).toBe(true);
+  });
+
+  it("marks the formerly connected, deletes what only the integration held, and keeps the readings", async () => {
     await user("had-fitbit");
     await user("never-fitbit");
-    await restorePreRemovalShape();
     await prisma().$executeRawUnsafe(`
       UPDATE "users" SET "fitbit_client_id_encrypted" = 'sealed-id',
                          "fitbit_client_secret_encrypted" = 'sealed-secret'
        WHERE "id" IN ('had-fitbit', 'never-fitbit')`);
     await prisma().$executeRawUnsafe(`
       INSERT INTO "fitbit_connections"
-        ("id", "user_id", "fitbit_user_id", "access_token", "refresh_token", "token_expires_at")
-      VALUES ('c1', 'had-fitbit', 'FB1', 'sealed-a', 'sealed-r', NOW())`);
+        ("id", "user_id", "fitbit_user_id", "access_token", "refresh_token",
+         "token_expires_at", "updated_at")
+      VALUES ('c1', 'had-fitbit', 'FB1', 'sealed-a', 'sealed-r', NOW(), NOW())`);
     await prisma().$executeRawUnsafe(`
       INSERT INTO "fitbit_oauth_states" ("nonce", "user_id", "expires_at")
       VALUES ('n1', 'never-fitbit', NOW())`);
@@ -140,10 +132,16 @@ describe("migration 0503", () => {
       fitbitRemovalNoticeAt: null,
     });
 
-    expect(await exists("fitbit_connections")).toBe(false);
-    expect(await exists("fitbit_oauth_states")).toBe(false);
-    expect(await hasColumn("fitbit_client_id_encrypted")).toBe(false);
-    expect(await hasColumn("fitbit_client_secret_encrypted")).toBe(false);
+    // The rows and the credentials are gone; the shape stays for rollback.
+    expect(await rows("fitbit_connections")).toBe(0);
+    expect(await rows("fitbit_oauth_states")).toBe(0);
+    expect(await hasColumn("fitbit_client_id_encrypted")).toBe(true);
+    const credentials = await prisma().$queryRawUnsafe<Array<{ n: number }>>(
+      `SELECT COUNT(*)::int AS n FROM "users"
+        WHERE "fitbit_client_id_encrypted" IS NOT NULL
+           OR "fitbit_client_secret_encrypted" IS NOT NULL`,
+    );
+    expect(credentials[0]!.n).toBe(0);
 
     const statuses = await prisma().integrationStatus.findMany({
       select: { integration: true },

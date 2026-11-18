@@ -96,6 +96,10 @@ export const USER_COLUMNS_OUTSIDE_SETTINGS = {
   withingsClientSecretEncrypted: "CREDENTIAL",
   whoopClientIdEncrypted: "CREDENTIAL",
   whoopClientSecretEncrypted: "CREDENTIAL",
+  // The removed Fitbit integration's app credentials, emptied by migration
+  // 0503 and kept one release for rollback safety.
+  fitbitClientIdEncrypted: "CREDENTIAL",
+  fitbitClientSecretEncrypted: "CREDENTIAL",
   googleHealthClientIdEncrypted: "CREDENTIAL",
   googleHealthClientSecretEncrypted: "CREDENTIAL",
   // The address is stored sealed beside its token because it can carry one,

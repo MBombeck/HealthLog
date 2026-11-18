@@ -229,6 +229,15 @@ model User {
   whoopClientIdEncrypted     String? @map("whoop_client_id_encrypted")
   whoopClientSecretEncrypted String? @map("whoop_client_secret_encrypted")
 
+  // The Fitbit integration's per-account app credentials, emptied by
+  // migration 0503. The columns stay one release so the v1.47.6 image keeps
+  // reading user rows during the switchover and after a rollback; nothing in
+  // this release reads or writes them.
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  fitbitClientIdEncrypted     String? @map("fitbit_client_id_encrypted")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  fitbitClientSecretEncrypted String? @map("fitbit_client_secret_encrypted")
+
   /// When migration 0503 removed this account's Fitbit connection with the
   /// integration (Google turned the Fitbit Web API off on 2026-10-30). Set
   /// shows the one note about it on Settings > Integrations, published as
@@ -324,17 +333,17 @@ model User {
   // exchanges it for a short-lived token on every run, so the key is the only
   // credential at rest. The token itself is never stored.
   /// Sealed Garmin Personal API key.
-  garminApiKeyEncrypted       String?   @map("garmin_api_key_encrypted")
+  garminApiKeyEncrypted     String?   @map("garmin_api_key_encrypted")
   /// v1.47 — when the Garmin key stops working: learned from the token's own expiry once it is capped by the key's, else the validity the person picked at connect counted from then. Null when neither is known. Drives the card's expiry warning.
-  garminKeyExpiresAt          DateTime? @map("garmin_key_expires_at")
+  garminKeyExpiresAt        DateTime? @map("garmin_key_expires_at")
   /// v1.47 — when the current Garmin key was connected; the anchor the picked validity counts from.
-  garminConnectedAt           DateTime? @map("garmin_connected_at")
+  garminConnectedAt         DateTime? @map("garmin_connected_at")
   /// v1.47 — which Garmin service accepted the key at connect: `global` (personal.connectapi.garmin.com) or `china` (…garmin.cn). Not a secret; the sync reads it to pick the host.
-  garminRegion                String?   @map("garmin_region")
+  garminRegion              String?   @map("garmin_region")
   /// v1.47 — how far the Garmin history backfill has got, per resource (see `src/lib/garmin/backfill-progress.ts`). Cleared on connect and disconnect.
-  garminBackfillProgress      Json?     @map("garmin_backfill_progress")
+  garminBackfillProgress    Json?     @map("garmin_backfill_progress")
   /// v1.47 — the Garmin history backfill finished (discovery predicate `garmin_backfill_completed_at IS NULL`). Cleared on connect.
-  garminBackfillCompletedAt   DateTime? @map("garmin_backfill_completed_at")
+  garminBackfillCompletedAt DateTime? @map("garmin_backfill_completed_at")
   /// v1.44 — which provider apps on this record were copied from a
   /// guardian at connect, and from whom: `{ "<provider>": "<guardianUserId>" }`.
   /// A managed profile has no settings page for its own app, so a guardian's is
@@ -894,6 +903,10 @@ model User {
   whoopConnection                           WhoopConnection?
   whoopOAuthStates                          WhoopOAuthState[]
   whoopConnectTickets                       WhoopConnectTicket[]
+  // The removed Fitbit integration's tables, emptied by migration 0503 and
+  // kept one release for rollback safety (see `FitbitConnection`).
+  fitbitConnection                          FitbitConnection?
+  fitbitOAuthStates                         FitbitOAuthState[]
   // v1.27.0 — Google Health API integration. Mirrors the connection (1:1) +
   // OAuth-state ledger (1:N) relations.
   googleHealthConnection                    GoogleHealthConnection?
@@ -1176,13 +1189,13 @@ model User {
   // (lazily upserted on first cycle-surface access); MenstrualCycle +
   // CycleDayLog are the soft-deleted, sync-feed-bearing capture rows;
   // CyclePrediction is a 1:1 cached forecast (debounced regenerate).
-  cycleProfile        CycleProfile?
-  menstrualCycles     MenstrualCycle[]
-  cycleDayLogs        CycleDayLog[]
-  cyclePrediction     CyclePrediction?
+  cycleProfile             CycleProfile?
+  menstrualCycles          MenstrualCycle[]
+  cycleDayLogs             CycleDayLog[]
+  cyclePrediction          CyclePrediction?
   // v1.15.0 — owner of a per-user custom CycleSymptom (NULL = the global
   // seeded catalogue).
-  cycleSymptomsCustom CycleSymptom[]   @relation("UserCycleSymptoms")
+  cycleSymptomsCustom      CycleSymptom[]      @relation("UserCycleSymptoms")
   // #1350 — the subscribable cycle forecast. `cycleCalendarFeeds` is the
   // record the feed serves; `cycleCalendarFeedsMinted` is the carrier who
   // minted it, which is the owner on their own record and the guardian on a
@@ -10929,4 +10942,61 @@ model MedicationConditionLink {
   @@index([episodeId])
   @@index([userId])
   @@map("medication_condition_links")
+}
+
+/// The removed Fitbit integration's connection rows (v1.12.0 to v1.47.6).
+/// Migration 0503 deleted every row with its tokens; the table stays one
+/// release so the v1.47.6 image keeps working beside this schema and after a
+/// rollback. Nothing in this release reads or writes it; the next minor
+/// release drops it.
+model FitbitConnection {
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  id                  String    @id @default(cuid())
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  userId              String    @unique @map("user_id")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  fitbitUserId        String    @map("fitbit_user_id")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  accessToken         String    @map("access_token")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  refreshToken        String    @map("refresh_token")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  tokenExpiresAt      DateTime  @map("token_expires_at")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  scope               String?   @map("scope")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  lastSyncedAt        DateTime? @map("last_synced_at")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  backfillCompletedAt DateTime? @map("backfill_completed_at")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  sleepRepairedAt     DateTime? @map("sleep_repaired_at")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  createdAt           DateTime  @default(now()) @map("created_at")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("fitbit_connections")
+}
+
+/// The removed Fitbit integration's OAuth state ledger, emptied by migration
+/// 0503 and kept one release for rollback safety (see `FitbitConnection`).
+model FitbitOAuthState {
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  nonce        String   @id
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  userId       String   @map("user_id")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  codeVerifier String?  @map("code_verifier")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  createdAt    DateTime @default(now()) @map("created_at")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  expiresAt    DateTime @map("expires_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@index([userId])
+  @@map("fitbit_oauth_states")
 }

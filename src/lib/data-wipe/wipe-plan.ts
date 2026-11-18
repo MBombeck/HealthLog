@@ -328,6 +328,10 @@ export const WIPE_MODELS = [
  * typed the confirmation.
  */
 export const WIPE_EXEMPT: Readonly<Record<string, string>> = {
+  FitbitConnection:
+    "the removed Fitbit integration's, emptied by migration 0503 and kept one release for rollback safety; nothing in this release reads or writes it, and the next minor drops it",
+  FitbitOAuthState:
+    "the removed Fitbit integration's, emptied by migration 0503 and kept one release for rollback safety; nothing in this release reads or writes it, and the next minor drops it",
   Session:
     "the signed-in session performing the wipe; deleting it signs the person out mid-action and the account is preserved",
   RefreshToken:
@@ -541,6 +545,10 @@ export const USER_RESET = {
  * {@link WIPE_EXEMPT}: sign-in, identity, and how the interface is rendered.
  */
 export const USER_KEPT_FIELDS: Readonly<Record<string, string>> = {
+  fitbitClientIdEncrypted:
+    "the removed Fitbit integration's, emptied by migration 0503 and kept one release for rollback safety; nothing in this release reads or writes it, and the next minor drops it",
+  fitbitClientSecretEncrypted:
+    "the removed Fitbit integration's, emptied by migration 0503 and kept one release for rollback safety; nothing in this release reads or writes it, and the next minor drops it",
   id: "the account's primary key",
   username: "the account's sign-in identity",
   email: "the account's sign-in identity and recovery address",
