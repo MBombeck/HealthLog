@@ -98,14 +98,18 @@ export const moodPattern = z
     ]),
     strength: z.enum(["weak", "moderate", "strong"]),
     direction: z.enum(["higher", "lower", "none"]),
-    values: z.object({
-      subject: z.number(),
-      comparison: z.number(),
-      delta: z.number(),
-      weekday: z.number().int().min(0).max(6).optional(),
-      tagKey: z.string().optional(),
-      tagLabel: z.string().optional(),
-    }),
+    values: z
+      .object({
+        subject: z.number(),
+        comparison: z.number(),
+        delta: z.number(),
+        weekday: z.number().int().min(0).max(6).optional(),
+        tagKey: z.string().optional(),
+        tagLabel: z.string().optional(),
+      })
+      .describe(
+        "`subject` and `comparison` are mean daily mood scores on the mood scale entries are logged on (1 to 5, the scale of `summary` in the same response), rounded to two places; `delta` is their difference. Never rescaled.",
+      ),
     sampleSize: z.object({
       subject: z.number().int(),
       comparison: z.number().int(),

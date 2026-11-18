@@ -173,7 +173,7 @@ async function readDigest() {
   return json<{
     briefingLead: string | null;
     ai: { briefing: { reason: string | null } };
-  }>(await GET());
+  }>(await GET(new Request("http://localhost/api/daily/digest")));
 }
 
 async function readNudge() {

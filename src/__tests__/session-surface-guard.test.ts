@@ -36,6 +36,7 @@ import { describe, it, expect } from "vitest";
 import { join } from "node:path";
 
 import { readSourceText, walkSourceFiles } from "./helpers/source-files";
+import { NATIVE_OIDC_RETURN_PATH } from "@/lib/auth/native-return";
 
 const SRC = join(process.cwd(), "src");
 
@@ -302,6 +303,14 @@ describe("S2 — the URL-token authentication set is frozen", () => {
     // logs by `PATH_SECRET_PATHS`.
     "app/api/cycle/feed/[token]/route.ts":
       "calendar provider polls without a session; the hlf_ path token is the credential",
+    // The native https return (#163 B2). A sign-in in the app finishes here
+    // with a one-time, PKCE-locked handoff code or a second-factor ticket in
+    // the query; the app intercepts the address before it loads. In a browser
+    // without the app the page shows a fixed message, never reads the query,
+    // and scrubs it from the address bar. Nothing here resolves the code: only
+    // `POST /api/auth/oidc/native/token` does, with the app's verifier.
+    "app/auth/native-return/page.tsx":
+      "lands the one-time native sign-in code in a browser without the app; reads and resolves nothing",
     "app/api/notifications/action/[token]/route.ts":
       "signed single-use quick-answer token from a notification action",
   };
@@ -330,6 +339,22 @@ describe("S2 — the URL-token authentication set is frozen", () => {
    */
   const QUERY_CREDENTIAL =
     /searchParams\.get\(\s*["'](secret|token|key|passphrase)["']\s*\)/;
+
+  /**
+   * Leg 4 — pages the server itself redirects a one-time credential to. No
+   * segment name and no `searchParams.get` gives these away: the credential
+   * arrives in a query the page deliberately never reads. Derived from the
+   * constant the callback builds the address from, so moving the path moves
+   * the check with it.
+   */
+  function redirectLandingFiles(): string[] {
+    const page = `app${NATIVE_OIDC_RETURN_PATH}/page.tsx`;
+    return appFiles().filter((rel) => rel === page);
+  }
+
+  it("every page the server redirects a one-time credential to is named", () => {
+    expect(redirectLandingFiles()).toEqual(["app/auth/native-return/page.tsx"]);
+  });
 
   it("every URL-credential route segment is named", () => {
     const bySegment = urlCredentialSegmentFiles();
@@ -374,12 +399,13 @@ describe("S2 — the URL-token authentication set is frozen", () => {
     ]);
   });
 
-  it("the three legs together equal the frozen allowlist", () => {
+  it("the four legs together equal the frozen allowlist", () => {
     const union = [
       ...new Set([
         ...urlCredentialSegmentFiles(),
         ...appFilesMatching(SHARE_TOKEN_RESOLVERS),
         ...appFilesMatching(QUERY_CREDENTIAL),
+        ...redirectLandingFiles(),
       ]),
     ].sort();
 

@@ -601,6 +601,8 @@ export async function sendViaApns(
     recipientUserId?: string;
     tap?: NotificationTap;
   },
+  /** #179: only these devices (per-device medication delivery); absent = all. */
+  options?: { onlyDeviceIds?: readonly string[] },
 ): Promise<SendOutcome> {
   const config = loadApnsConfig();
   if (!config) {
@@ -611,23 +613,17 @@ export async function sendViaApns(
       result: "skipped",
       reason: "apns_not_configured",
     });
-    return {
-      ok: false,
-      hardReject: false,
-      reason: "apns_not_configured",
-    };
+    return { ok: false, hardReject: false, reason: "apns_not_configured" };
   }
 
+  const only = options?.onlyDeviceIds;
   const devices = await prisma.device.findMany({
     where: {
       userId,
       apnsToken: { not: null },
+      ...(only && { id: { in: [...only] } }),
     },
-    select: {
-      id: true,
-      apnsToken: true,
-      apnsEnvironment: true,
-    },
+    select: { id: true, apnsToken: true, apnsEnvironment: true },
   });
 
   if (devices.length === 0) {
@@ -640,11 +636,7 @@ export async function sendViaApns(
       result: "skipped",
       reason: "apns_no_devices",
     });
-    return {
-      ok: false,
-      hardReject: false,
-      reason: "apns_no_devices",
-    };
+    return { ok: false, hardReject: false, reason: "apns_no_devices" };
   }
 
   let anySuccess = false;

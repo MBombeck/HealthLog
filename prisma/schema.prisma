@@ -3692,10 +3692,16 @@ model MedicationDoseChange {
   /// stays for read-fallback until the backfill reports zero remaining
   /// rows; the plaintext drop is DEFERRED to a later release.
   noteEncrypted Bytes?   @map("note_encrypted")
+  /// v1.48.0 (#169) — the client's own id for this step, optional. Unique
+  /// per medication, so a step two devices hold locally is created once: a
+  /// second POST with the same id answers the stored row instead of adding
+  /// one. Carried by backup and restore; never edited after create.
+  clientId      String?  @map("client_id")
   createdAt     DateTime @default(now()) @map("created_at")
 
   medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
 
+  @@unique([medicationId, clientId])
   @@index([medicationId, effectiveFrom])
   // `medication_dose_changes_note_backfill_idx` is a partial index over
   // `(medication_id) WHERE note IS NOT NULL AND note_encrypted IS NULL` — see
@@ -6346,9 +6352,10 @@ model Device {
   /// v1.7.0 — per-device medication-delivery override. NULL = inherit the
   /// user-level roaming default
   /// (`User.notificationPrefs.medication.deliveryDefault`). "server"
-  /// forces server APNs for this device; "client" forces local. Stored +
-  /// echoed in v1.7.0; cron suppression stays user-level (APNs fans out to
-  /// all the user's devices and iOS dedupes locally).
+  /// forces server APNs for this device; "client" forces local. Since
+  /// v1.48.0 (#179) the dispatcher's APNs send honours it per device for the
+  /// medication reminder that announces a dose; NULL there follows the
+  /// account-wide client-managed flag (`deviceDeliversLocally`).
   medicationDelivery    String?  @map("medication_delivery")
   /// v1.17.1 (#22) — APNs push token for the iOS Live Activity update/end
   /// channel. ActivityKit issues a per-Activity push token distinct from the

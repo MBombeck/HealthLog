@@ -149,6 +149,8 @@ export const medicationDoseChangeSchema = z
     doseUnit: z.string().min(1),
     note: z.string().nullable().optional(),
     noteEncrypted: base64BytesSchema.nullable().optional(),
+    /** #169 — absent in files written before v1.48.0. */
+    clientId: z.string().min(1).max(128).nullable().optional(),
     createdAt: isoDateTime.optional(),
   })
   .passthrough();

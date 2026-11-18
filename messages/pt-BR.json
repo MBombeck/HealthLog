@@ -626,7 +626,9 @@
       "errorLinkRequired": "Já existe uma conta com este e-mail aqui. Entre nela uma vez com a senha ou chave de acesso para vinculá-la ao login único."
     },
     "native": {
-      "signingInToApp": "Entrando no app HealthLog"
+      "signingInToApp": "Entrando no app HealthLog",
+      "returnTitle": "Volte para o app",
+      "returnBody": "O login continua no app HealthLog. Se ele não abriu, volte para o app e comece o login por lá de novo. Você pode fechar esta página."
     },
     "mfa": {
       "title": "Autenticação de dois fatores",
@@ -12790,8 +12792,7 @@
       },
       "preventiveCare": {
         "title": "Check previsto",
-        "body": "{label} está previsto.",
-        "bodyManyNamed": "Previstos: {labels}"
+        "body": "{label} está previsto."
       },
       "syncIssue": {
         "title": "Sincronização precisa de atenção",
@@ -12953,7 +12954,8 @@
       },
       "medications": {
         "label": "Medicamentos",
-        "value": "{taken} de {scheduled} tomados"
+        "value": "{taken} de {scheduled} tomados",
+        "next": "Próxima dose às {time}"
       },
       "appointment": {
         "label": "Compromisso",
@@ -13332,6 +13334,7 @@
       "medicationCourseEnd": "{name} encerrou um tratamento",
       "medicationDelete": "{name} removeu um medicamento",
       "medicationGlp1Update": "{name} alterou um curso de GLP-1",
+      "medicationGlp1DoseChangeDelete": "{name} removeu uma etapa de dose de GLP-1",
       "medicationScheduleCreate": "{name} adicionou um cronograma de doses",
       "medicationScheduleUpdate": "{name} alterou um cronograma de doses",
       "medicationScheduleDelete": "{name} removeu um cronograma de doses",

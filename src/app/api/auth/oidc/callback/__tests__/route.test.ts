@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 
 vi.mock("@/lib/api-handler", () => ({
@@ -75,9 +75,10 @@ vi.mock("@/lib/auth/oidc", () => ({
 // The handoff lib is unit-tested separately; here we assert the callback
 // branches into it and redirects to the custom scheme (real
 // `buildNativeCallbackUrl`, mocked `mintNativeHandoff`).
-vi.mock("@/lib/auth/oidc-native-handoff", () => ({
-  buildNativeCallbackUrl: (params: Record<string, string>) =>
-    `healthlog://oidc-callback?${new URLSearchParams(params).toString()}`,
+vi.mock("@/lib/auth/oidc-native-handoff", async (importOriginal) => ({
+  buildNativeCallbackUrl: (
+    await importOriginal<typeof import("@/lib/auth/oidc-native-handoff")>()
+  ).buildNativeCallbackUrl,
   mintNativeHandoff: vi.fn(async () => ({
     code: "hlh_test_code",
     handoffId: "ho-1",
@@ -798,6 +799,119 @@ describe("GET /api/auth/oidc/callback — native branch", () => {
     expect(res.headers.get("location")).toBe(
       "healthlog://oidc-callback?error=oidc_denied",
     );
+  });
+
+  describe("with the https return chosen at login", () => {
+    beforeEach(() => {
+      vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://healthlog.example.com");
+    });
+    afterEach(() => vi.unstubAllEnvs());
+
+    function httpsRequest(query = "?code=abc&state=STATE"): NextRequest {
+      return makeRequest({
+        query,
+        cookie: nativeStateCookie({ nativeReturn: "https" }),
+      });
+    }
+
+    it("hands the one-time code to the instance's own return page", async () => {
+      mockIdentity();
+      mockUserLookups({
+        byIdentity: userRow({ oidcIssuer: METADATA.issuer, oidcSub: "sub-1" }),
+      });
+      const res = await GET(httpsRequest());
+      expect(res.headers.get("location")).toBe(
+        "https://healthlog.example.com/auth/native-return?code=hlh_test_code",
+      );
+      expect(createSession).not.toHaveBeenCalled();
+      // No session cookie of any kind rides the hop.
+      expect(
+        res.headers
+          .getSetCookie()
+          .some((c) => c.startsWith("healthlog_session=")),
+      ).toBe(false);
+    });
+
+    it("hands the MFA ticket to the return page, never a session", async () => {
+      mockIdentity();
+      mockUserLookups({
+        byIdentity: userRow({
+          oidcIssuer: METADATA.issuer,
+          oidcSub: "sub-1",
+          totpConfirmedAt: new Date(),
+        }),
+      });
+      const res = await GET(httpsRequest());
+      const location = res.headers.get("location")!;
+      expect(
+        location.startsWith(
+          "https://healthlog.example.com/auth/native-return?mfa_ticket=mfa-ticket-1",
+        ),
+      ).toBe(true);
+      expect(mintNativeHandoff).not.toHaveBeenCalled();
+      expect(createSession).not.toHaveBeenCalled();
+    });
+
+    it("delivers errors and purgeAt to the return page", async () => {
+      mockIdentity();
+      mockUserLookups({
+        byIdentity: userRow({ oidcIssuer: METADATA.issuer, oidcSub: "sub-1" }),
+      });
+      vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+        deletionRequestedAt: new Date("2026-11-01T10:00:00.000Z"),
+        deletionPurgeAt: new Date("2026-12-01T10:00:00.000Z"),
+      } as PendingRow);
+      const res = await GET(httpsRequest());
+      expect(res.headers.get("location")).toBe(
+        "https://healthlog.example.com/auth/native-return?error=account_deletion_pending&purgeAt=2026-12-01T10%3A00%3A00.000Z",
+      );
+    });
+
+    it("delivers an IdP denial to the return page", async () => {
+      const res = await GET(httpsRequest("?error=access_denied&state=STATE"));
+      expect(res.headers.get("location")).toBe(
+        "https://healthlog.example.com/auth/native-return?error=oidc_denied",
+      );
+    });
+
+    it("never follows the request's own Host for the return address", async () => {
+      mockIdentity();
+      mockUserLookups({
+        byIdentity: userRow({ oidcIssuer: METADATA.issuer, oidcSub: "sub-1" }),
+      });
+      const req = new NextRequest(
+        "https://evil.example/api/auth/oidc/callback?code=abc&state=STATE",
+        {
+          headers: { host: "evil.example", "x-forwarded-host": "evil.example" },
+        },
+      );
+      req.cookies.set(
+        "oidc_auth_state",
+        nativeStateCookie({ nativeReturn: "https" }),
+      );
+      const res = await GET(req);
+      expect(res.headers.get("location")).toMatch(
+        /^https:\/\/healthlog\.example\.com\/auth\/native-return\?/,
+      );
+    });
+
+    it("refuses a blob that names the https return without the native flag", async () => {
+      const res = await GET(
+        makeRequest({
+          query: "?code=abc&state=STATE",
+          cookie: stateCookie({
+            state: "STATE",
+            nonce: "nonce-1",
+            codeVerifier: "verifier-1",
+            next: "/",
+            nativeReturn: "https",
+          }),
+        }),
+      );
+      expect(res.headers.get("location")).toContain(
+        "/auth/login?error=oidc_state",
+      );
+    });
   });
 
   it("falls back to the WEB oidc_state page on a CSRF mismatch (broken flow)", async () => {

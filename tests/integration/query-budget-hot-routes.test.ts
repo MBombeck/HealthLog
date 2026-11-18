@@ -63,7 +63,11 @@ const DAY_MS = 86_400_000;
  */
 const BUDGET = {
   authMe: 13,
-  dashboardSummary: 28,
+  // 28 → 36 (#176): each measured card reads its month-over-month comparison
+  // (one rollup read per card, the sleep card its nights), the same read
+  // `GET /api/analytics/range` makes, so the card's arrow and the metric
+  // page's agree. Bounded by the card count, not the data.
+  dashboardSummary: 36,
   dashboardSnapshot: 99,
   series30: 6,
   series365: 5,

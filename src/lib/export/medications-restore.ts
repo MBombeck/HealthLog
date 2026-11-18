@@ -298,6 +298,7 @@ function medicationChildrenData(m: BackupMedication, ownerId: string) {
           d.noteEncrypted == null
             ? encryptNote(d.note ?? null)
             : decodeEncryptedBytes(d.noteEncrypted),
+        clientId: d.clientId ?? null,
         ...(d.createdAt ? { createdAt: new Date(d.createdAt) } : {}),
       })),
     },

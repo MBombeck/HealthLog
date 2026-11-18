@@ -230,3 +230,33 @@ describe("moodPatternsWire", () => {
     expect(moodPatternsWire(undefined, (k) => k)).toEqual([]);
   });
 });
+
+describe("pattern values stay on the mood scale (#176)", () => {
+  it("averages the logged 1–5 scores and never rescales them", () => {
+    // Weekdays around 2, weekend days around 4, on the 1–5 scale.
+    const r = rng(11);
+    const entries = days(120, (date) =>
+      Math.min(
+        5,
+        Math.max(1, (weekdayOfKey(date) >= 5 ? 4 : 2) + (r() - 0.5) / 2),
+      ),
+    );
+    const patterns = run(entries);
+    const weekend = patterns.find((p) => p.kind === "weekend");
+    expect(weekend).toBeDefined();
+    expect(weekend!.values.subject).toBeCloseTo(4, 0);
+    expect(weekend!.values.comparison).toBeCloseTo(2, 0);
+    for (const p of patterns) {
+      for (const v of [p.values.subject, p.values.comparison]) {
+        expect(v).toBeGreaterThanOrEqual(1);
+        expect(v).toBeLessThanOrEqual(5);
+      }
+    }
+    // The wire carries the same numbers.
+    const wire = moodPatternsWire(patterns, (k) => k);
+    expect(wire.find((p) => p.kind === "weekend")?.values).toMatchObject({
+      subject: weekend!.values.subject,
+      comparison: weekend!.values.comparison,
+    });
+  });
+});

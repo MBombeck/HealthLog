@@ -689,7 +689,9 @@ describe("buildDailyDigest — worth-a-look rail item builders", () => {
     );
     const care = d.worthALook.filter((i) => i.kind === "preventive_care");
     expect(care).toHaveLength(1);
-    expect(care[0].body).toBe("Due: A, B, C");
+    // The title already says "due"; the body names them (#173).
+    expect(care[0].title).toBe("Check-up due");
+    expect(care[0].body).toBe("A, B, C");
   });
 
   it("names the first three due check-ups and counts the rest", () => {
@@ -700,7 +702,7 @@ describe("buildDailyDigest — worth-a-look rail item builders", () => {
       t,
     );
     const care = d.worthALook.find((i) => i.kind === "preventive_care");
-    expect(care?.body).toBe("Due: A, B, C +2");
+    expect(care?.body).toBe("A, B, C +2");
   });
 
   it("bounds the rail at three items, never padded", () => {
@@ -1592,6 +1594,8 @@ describe("buildDailyDigest — Today overview", () => {
     expect(d.lead).toEqual({
       text: "Your latest blood pressure is sitting in the optimal band.",
       source: "briefing",
+      // The fixture names no briefing language; the digest says so.
+      language: null,
     });
     expect(d.line).toBe(d.briefingLead);
   });
@@ -1610,6 +1614,7 @@ describe("buildDailyDigest — Today overview", () => {
     expect(d.lead).toEqual({
       text: "Resting heart rate is at 61 bpm, above your usual range of 50 to 58 bpm.",
       source: "signal",
+      language: "en",
     });
     // The lead names the reading in the app. The push line is shown on a
     // locked phone and carries no value, so it does not take that sentence.

@@ -47,6 +47,7 @@ import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { headers } from "next/headers";
 import { auditLog } from "@/lib/auth/audit";
+import type { StepUpElevation } from "@/generated/prisma/client";
 
 const MFA_USER = {
   id: "user-1",
@@ -111,6 +112,19 @@ function bearer(user: unknown, elevation: string | null = null) {
   } as never);
   vi.mocked(prisma.user.findUnique).mockResolvedValue(user as never);
   vi.mocked(prisma.apiToken.update).mockResolvedValue({} as never);
+}
+
+function possessionElevation(method: string): StepUpElevation {
+  return {
+    id: "elev-1",
+    userId: "user-1",
+    apiTokenId: "tok-1",
+    tokenHash: "hash",
+    method,
+    expiresAt: new Date(Date.now() + 60_000),
+    consumedAt: null,
+    createdAt: new Date(),
+  };
 }
 
 async function refusal(p: Promise<unknown>): Promise<StepUpRequiredError> {
@@ -195,6 +209,51 @@ describe("Bearer", () => {
   it("`elevation-if-enrolled` refuses a bare token on an enrolled account", async () => {
     bearer(MFA_USER);
     await refusal(requireRecentProof({ bearer: "elevation-if-enrolled" }));
+  });
+
+  it("`elevation-if-possession` passes a token on an account with neither a second factor nor a passkey", async () => {
+    bearer(PLAIN_USER);
+    await expect(
+      requireRecentProof({ bearer: "elevation-if-possession" }),
+    ).resolves.toBeTruthy();
+  });
+
+  it("`elevation-if-possession` refuses a bare token on an enrolled account", async () => {
+    bearer(MFA_USER);
+    const err = await refusal(
+      requireRecentProof({ bearer: "elevation-if-possession" }),
+    );
+    expect(err.errorCode).toBe("auth.stepup.required");
+  });
+
+  it("`elevation-if-possession` refuses a bare token on a passkey-only account", async () => {
+    bearer(PLAIN_USER);
+    vi.mocked(prisma.passkey.count).mockResolvedValue(1);
+    const err = await refusal(
+      requireRecentProof({ bearer: "elevation-if-possession" }),
+    );
+    expect(err.errorCode).toBe("auth.stepup.required");
+  });
+
+  it("`elevation-if-possession` accepts a passkey-proved elevation on a passkey-only account", async () => {
+    bearer(PLAIN_USER, `hle_${"a".repeat(64)}`);
+    vi.mocked(prisma.passkey.count).mockResolvedValue(1);
+    vi.mocked(prisma.stepUpElevation.findUnique).mockResolvedValue(
+      possessionElevation("passkey"),
+    );
+    const auth = await requireRecentProof({
+      bearer: "elevation-if-possession",
+    });
+    expect(typeof auth.commitElevation).toBe("function");
+  });
+
+  it("`elevation-if-possession` refuses a password-proved elevation on a passkey-only account", async () => {
+    bearer(PLAIN_USER, `hle_${"a".repeat(64)}`);
+    vi.mocked(prisma.passkey.count).mockResolvedValue(1);
+    vi.mocked(prisma.stepUpElevation.findUnique).mockResolvedValue(
+      possessionElevation("password"),
+    );
+    await refusal(requireRecentProof({ bearer: "elevation-if-possession" }));
   });
 
   it("`token` passes on the token alone", async () => {

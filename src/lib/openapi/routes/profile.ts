@@ -965,7 +965,9 @@ const deviceInfo = z
       .describe(
         "Which push transports this device row can currently be reached on. Derived from which token columns are populated, not from a stored list.",
       ),
-    lastSeenAt: isoDateTime(),
+    lastSeenAt: isoDateTime().describe(
+      "When the device was last seen. Moves when the app registers the device (`POST /api/devices`) and, since v1.48.0, on any request made with the app's sign-in token for that device, at most once an hour. The device is the one the token's refresh family names, never one a request header claims. A token with no device link (one from before the app sent `X-Device-Id`) moves it only through registration.",
+    ),
     createdAt: isoDateTime(),
     isCurrent: z
       .boolean()
@@ -988,7 +990,7 @@ const devicePatchRequest = z
   .meta({
     id: "DevicePatchRequest",
     description:
-      "Per-device medication-reminder delivery override. `server` forces server-side dispatch to this device, `client` leaves it to the app's own local reminders, and `null` CLEARS the override so the device inherits the account default.",
+      "Per-device medication-reminder delivery override. `server` forces server-side dispatch to this device, `client` leaves it to the app's own local reminders, and `null` CLEARS the override so the device inherits the account-wide switch (`notificationPrefs.medication.clientManaged` or `deliveryDefault: \"client\"`). Since v1.48.0 the server's APNs send honours it per device, so a reminder can go to an iPad and not to the iPhone that reminds locally. It covers the reminder that announces a dose only: follow-ups for a dose still open, other pushes and the non-APNs channels are unaffected.",
   });
 
 const labsLocalOcrPatchRequest = labsLocalOcrPatchSchema.meta({

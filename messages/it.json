@@ -626,7 +626,9 @@
       "errorLinkRequired": "Esiste già un account con questo indirizzo email. Accedi una volta con la sua password o passkey per collegarlo al single sign-on."
     },
     "native": {
-      "signingInToApp": "Accesso all'app HealthLog"
+      "signingInToApp": "Accesso all'app HealthLog",
+      "returnTitle": "Torna all’app",
+      "returnBody": "L’accesso prosegue nell’app HealthLog. Se non si è aperta, torna all’app e avvia di nuovo l’accesso da lì. Puoi chiudere questa pagina."
     },
     "mfa": {
       "title": "Autenticazione a due fattori",
@@ -12790,8 +12792,7 @@
       },
       "preventiveCare": {
         "title": "Controllo da fare",
-        "body": "{label} è da fare.",
-        "bodyManyNamed": "Da fare: {labels}"
+        "body": "{label} è da fare."
       },
       "syncIssue": {
         "title": "La sincronizzazione richiede attenzione",
@@ -12953,7 +12954,8 @@
       },
       "medications": {
         "label": "Farmaci",
-        "value": "{taken} di {scheduled} presi"
+        "value": "{taken} di {scheduled} presi",
+        "next": "Prossima assunzione alle {time}"
       },
       "appointment": {
         "label": "Appuntamento",
@@ -13332,6 +13334,7 @@
       "medicationCourseEnd": "{name} ha concluso un ciclo di terapia",
       "medicationDelete": "{name} ha eliminato un farmaco",
       "medicationGlp1Update": "{name} ha modificato una terapia GLP-1",
+      "medicationGlp1DoseChangeDelete": "{name} ha eliminato un gradino di dose GLP-1",
       "medicationScheduleCreate": "{name} ha aggiunto uno schema di assunzione",
       "medicationScheduleUpdate": "{name} ha modificato uno schema di assunzione",
       "medicationScheduleDelete": "{name} ha eliminato uno schema di assunzione",

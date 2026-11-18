@@ -16,6 +16,9 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+vi.mock("@/lib/dashboard/summary/month-trend", () => ({
+  withMonthTrends: async (_userId: string, cards: unknown[]) => cards,
+}));
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
 // The gate resolver runs for real; only its data sources are stubbed, so the

@@ -170,11 +170,18 @@ export const updateIntakeEventSchema = z
       .describe(
         "Late-take override on edit: pin the edited dose onto the named scheduled slot instead of re-attributing by window band. Must be a real scheduled slot of this medication on its day (validated server-side); a non-slot instant returns 422. Explicit null unpins: the dose re-attributes by window band on its takenAt (ad-hoc when no band matches). Absent re-runs the default window-band attribution on the edited `takenAt`.",
       ),
+    /** #169 — set or clear the injection site of a recorded dose. */
+    injectionSite: injectionSiteEnum
+      .nullable()
+      .optional()
+      .describe(
+        "Set the injection site of this dose, or `null` to clear it. Absent keeps it. A site is accepted only on a dose that is taken after the edit, of an INJECTION medication with site tracking on, and inside the medication's effective allowed set (its allowed sites minus the account-wide exclusions); anything else answers 422 `medications.intake.injection_site.disallowed`. Clearing is always allowed.",
+      ),
   })
   .meta({
     id: "UpdateMedicationIntakeEventRequest",
     description:
-      "Edit a single intake event. v1.15.18 re-runs window-band slot attribution whenever `takenAt` or `skipped` change, snapping `scheduledFor` to the matched slot (or the take's own time when it falls in no window). `forceSlotInstant` overrides that to pin the take onto a named real slot (explicit null unpins, re-attributing by band); an explicit `scheduledFor` still wins when supplied directly. `takenAt` must not be in the future (5-minute clock-skew allowance) nor more than 5 years in the past; a `takenAt` before the medication's start date returns 422.",
+      "Edit a single intake event. Since v1.48.0 it can also set or clear the dose's `injectionSite`. v1.15.18 re-runs window-band slot attribution whenever `takenAt` or `skipped` change, snapping `scheduledFor` to the matched slot (or the take's own time when it falls in no window). `forceSlotInstant` overrides that to pin the take onto a named real slot (explicit null unpins, re-attributing by band); an explicit `scheduledFor` still wins when supplied directly. `takenAt` must not be in the future (5-minute clock-skew allowance) nor more than 5 years in the past; a `takenAt` before the medication's start date returns 422.",
   });
 
 /**

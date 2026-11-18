@@ -21,19 +21,27 @@ import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { NO_STORE_BUT_BFCACHE } from "@/lib/http/cache-headers";
 import { loadDailyDigest } from "@/lib/daily/load-digest";
+import { nativeRequestLocale } from "@/lib/i18n/server-locale";
 
 export const dynamic = "force-dynamic";
 
-export const GET = apiHandler(async () => {
+export const GET = apiHandler(async (request: Request) => {
   // The record's Today hero. Same family as the dashboard snapshot and
   // admitted on the same argument: an aggregate over the record's own data,
   // assembled from already-cached values with no provider on the path. The
   // AI parts resolve against the RECORD, so a delegate sees the owner's
   // capabilities, never their own. Re-examine with the snapshot when
   // per-module scope lands; a digest is a summary of several modules at once.
-  const { user } = await requireRecordAuth("read", "record");
+  const { user, authMethod } = await requireRecordAuth("read", "record");
 
-  const digest = await loadDailyDigest(user);
+  // #176 — the app's own language (Accept-Language) words the texts the
+  // server writes itself; a browser's cookie already does that.
+  const locale = nativeRequestLocale(authMethod, request);
+  const digest = await loadDailyDigest(
+    user,
+    new Date(),
+    locale ? { locale } : {},
+  );
 
   const response = apiSuccess(digest);
   response.headers.set("Cache-Control", NO_STORE_BUT_BFCACHE);

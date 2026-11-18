@@ -626,7 +626,9 @@
       "errorLinkRequired": "Аккаунт с этим адресом электронной почты здесь уже есть. Войдите в него один раз с паролем или ключом доступа, чтобы связать его с единым входом."
     },
     "native": {
-      "signingInToApp": "Вход в приложение HealthLog"
+      "signingInToApp": "Вход в приложение HealthLog",
+      "returnTitle": "Вернитесь в приложение",
+      "returnBody": "Вход продолжается в приложении HealthLog. Если оно не открылось, вернитесь в приложение и начните вход там заново. Эту страницу можно закрыть."
     },
     "mfa": {
       "title": "Двухфакторная аутентификация",
@@ -12790,8 +12792,7 @@
       },
       "preventiveCare": {
         "title": "Пора на осмотр",
-        "body": "Пора: {label}.",
-        "bodyManyNamed": "Пора: {labels}"
+        "body": "Пора: {label}."
       },
       "syncIssue": {
         "title": "Синхронизация требует внимания",
@@ -12953,7 +12954,8 @@
       },
       "medications": {
         "label": "Лекарства",
-        "value": "{taken} из {scheduled} принято"
+        "value": "{taken} из {scheduled} принято",
+        "next": "Следующий приём в {time}"
       },
       "appointment": {
         "label": "Приём",
@@ -13332,6 +13334,7 @@
       "medicationCourseEnd": "{name} завершил(а) курс лекарства",
       "medicationDelete": "{name} убрал(а) лекарство",
       "medicationGlp1Update": "{name} изменил(а) курс GLP-1",
+      "medicationGlp1DoseChangeDelete": "{name} удалил(а) шаг дозы GLP-1",
       "medicationScheduleCreate": "{name} добавил(а) расписание приёма",
       "medicationScheduleUpdate": "{name} изменил(а) расписание приёма",
       "medicationScheduleDelete": "{name} убрал(а) расписание приёма",

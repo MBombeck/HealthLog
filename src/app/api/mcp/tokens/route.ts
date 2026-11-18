@@ -70,10 +70,13 @@ export const GET = apiHandler(async () => {
 
 export const POST = apiHandler(async (request: NextRequest) => {
   // A connector token outlives the session that mints it, so the cookie path
-  // needs a fresh proof. The shipped app mints these on its token without an
-  // elevation and reads a 401 here as a dead session, so the Bearer arm stays
-  // on the token until it sends one (see the iOS note).
-  const { user } = await requireRecentProof({ bearer: "token" });
+  // needs a fresh proof. On the app's token, an account holding a second
+  // factor or a passkey presents an `X-Step-Up` elevation proved with it; an
+  // account holding neither (most SSO-only accounts) has nothing it could
+  // prove in the app and mints on its token. The shipped app reads
+  // `auth.stepup.required` here as a request for proof, not a dead session.
+  const auth = await requireRecentProof({ bearer: "elevation-if-possession" });
+  const { user } = auth;
   annotate({ action: { name: "mcp.tokens.create" } });
 
   if (!(await isApiGloballyEnabled())) {
@@ -92,6 +95,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
     parsed.data.scope === "read_write"
       ? [SCOPE_HEALTH_READ, SCOPE_HEALTH_WRITE]
       : [SCOPE_HEALTH_READ];
+
+  // Spend the elevation right before minting: a refused body never burns it.
+  await auth.commitElevation();
 
   const issued = await issueApiToken({
     userId: user.id,

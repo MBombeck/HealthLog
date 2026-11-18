@@ -626,7 +626,9 @@
       "errorLinkRequired": "Konto z tym adresem e-mail już tu istnieje. Zaloguj się do niego raz hasłem lub kluczem dostępu, aby połączyć je z logowaniem jednokrotnym."
     },
     "native": {
-      "signingInToApp": "Logowanie do aplikacji HealthLog"
+      "signingInToApp": "Logowanie do aplikacji HealthLog",
+      "returnTitle": "Wróć do aplikacji",
+      "returnBody": "Logowanie jest kontynuowane w aplikacji HealthLog. Jeśli się nie otworzyła, wróć do aplikacji i zacznij logowanie tam od nowa. Możesz zamknąć tę stronę."
     },
     "mfa": {
       "title": "Uwierzytelnianie dwuskładnikowe",
@@ -12790,8 +12792,7 @@
       },
       "preventiveCare": {
         "title": "Badanie do wykonania",
-        "body": "{label} jest do wykonania.",
-        "bodyManyNamed": "Do wykonania: {labels}"
+        "body": "{label} jest do wykonania."
       },
       "syncIssue": {
         "title": "Synchronizacja wymaga uwagi",
@@ -12953,7 +12954,8 @@
       },
       "medications": {
         "label": "Leki",
-        "value": "Przyjęto {taken} z {scheduled}"
+        "value": "Przyjęto {taken} z {scheduled}",
+        "next": "Następna dawka o {time}"
       },
       "appointment": {
         "label": "Wizyta",
@@ -13332,6 +13334,7 @@
       "medicationCourseEnd": "{name} zakończył kurację",
       "medicationDelete": "{name} usunął lek",
       "medicationGlp1Update": "{name} zmienił terapię GLP-1",
+      "medicationGlp1DoseChangeDelete": "{name} usunął etap dawki GLP-1",
       "medicationScheduleCreate": "{name} dodał schemat dawkowania",
       "medicationScheduleUpdate": "{name} zmienił schemat dawkowania",
       "medicationScheduleDelete": "{name} usunął schemat dawkowania",

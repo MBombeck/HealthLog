@@ -626,7 +626,9 @@
       "errorLinkRequired": "이 이메일 주소를 사용하는 계정이 이미 있습니다. 싱글 사인온에 연결하려면 해당 계정의 비밀번호나 패스키로 한 번 로그인하세요."
     },
     "native": {
-      "signingInToApp": "HealthLog 앱에 로그인하는 중"
+      "signingInToApp": "HealthLog 앱에 로그인하는 중",
+      "returnTitle": "앱으로 돌아가기",
+      "returnBody": "로그인은 HealthLog 앱에서 계속됩니다. 앱이 열리지 않았다면 앱으로 돌아가 다시 로그인하세요. 이 페이지는 닫아도 됩니다."
     },
     "mfa": {
       "title": "2단계 인증",
@@ -12790,8 +12792,7 @@
       },
       "preventiveCare": {
         "title": "건강검진 시기",
-        "body": "{label}: 받을 때가 됐어요.",
-        "bodyManyNamed": "받을 때가 된 건강검진: {labels}"
+        "body": "{label}: 받을 때가 됐어요."
       },
       "syncIssue": {
         "title": "동기화 확인이 필요해요",
@@ -12953,7 +12954,8 @@
       },
       "medications": {
         "label": "복약",
-        "value": "{scheduled}회 중 {taken}회 복용"
+        "value": "{scheduled}회 중 {taken}회 복용",
+        "next": "다음 복용 {time}"
       },
       "appointment": {
         "label": "예약",
@@ -13332,6 +13334,7 @@
       "medicationCourseEnd": "{name} 님이 복용 기간을 끝냈어요",
       "medicationDelete": "{name} 님이 약을 삭제했어요",
       "medicationGlp1Update": "{name} 님이 GLP-1 요법을 수정했어요",
+      "medicationGlp1DoseChangeDelete": "{name} 님이 GLP-1 용량 단계를 삭제했어요",
       "medicationScheduleCreate": "{name} 님이 복용 일정을 추가했어요",
       "medicationScheduleUpdate": "{name} 님이 복용 일정을 수정했어요",
       "medicationScheduleDelete": "{name} 님이 복용 일정을 삭제했어요",

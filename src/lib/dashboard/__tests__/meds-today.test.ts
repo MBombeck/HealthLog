@@ -211,11 +211,30 @@ describe("buildMedsTodayBlock — the 25-hour day", () => {
 
 describe("buildMedsTodayBlock — tally", () => {
   it("counts scheduled / taken / skipped with the summary-tile semantics", async () => {
+    const slot = (iso: string) => new Date(iso);
     todayRows = [
-      { takenAt: new Date("2026-06-10T06:05:00.000Z"), skipped: false },
-      { takenAt: new Date("2026-06-10T08:00:00.000Z"), skipped: false },
-      { takenAt: null, skipped: true }, // deliberate skip
-      { takenAt: null, skipped: false }, // still-open pending
+      {
+        takenAt: new Date("2026-06-10T06:05:00.000Z"),
+        skipped: false,
+        scheduledFor: slot("2026-06-10T06:00:00.000Z"),
+      },
+      {
+        takenAt: new Date("2026-06-10T08:00:00.000Z"),
+        skipped: false,
+        scheduledFor: slot("2026-06-10T08:00:00.000Z"),
+      },
+      // deliberate skip
+      {
+        takenAt: null,
+        skipped: true,
+        scheduledFor: slot("2026-06-10T12:00:00.000Z"),
+      },
+      // still-open pending
+      {
+        takenAt: null,
+        skipped: false,
+        scheduledFor: slot("2026-06-10T04:00:00.000Z"),
+      },
     ];
 
     const block = await buildMedsTodayBlock(fakePrisma, "user-1", BERLIN, NOW);
@@ -223,6 +242,13 @@ describe("buildMedsTodayBlock — tally", () => {
     expect(block.scheduledToday).toBe(4);
     expect(block.takenToday).toBe(2);
     expect(block.skippedToday).toBe(1);
+    // The slot instants the Today fact counts "due so far" against (#173).
+    expect(block.scheduledTodayAt).toEqual([
+      "2026-06-10T04:00:00.000Z",
+      "2026-06-10T06:00:00.000Z",
+      "2026-06-10T08:00:00.000Z",
+      "2026-06-10T12:00:00.000Z",
+    ]);
   });
 
   it("returns a zeroed block for an account with no medications", async () => {
@@ -232,6 +258,7 @@ describe("buildMedsTodayBlock — tally", () => {
       scheduledToday: 0,
       takenToday: 0,
       skippedToday: 0,
+      scheduledTodayAt: [],
       nextDueAt: null,
       nextDueOverdue: false,
       nextDueMedicationName: null,

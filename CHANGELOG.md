@@ -31,6 +31,31 @@
   nutrient chart opens a day that shows it. An opt-in energy tile for the
   dashboard is available under Settings > Dashboard. (#1402)
 
+- **Single sign-on can hand back to the iPhone app over https.** An app
+  build set up for your server can now finish an SSO sign-in on your
+  server's own address instead of the `healthlog://` link, so the sign-in
+  sheet closes without asking whether to open the app. It is opt-in: the
+  server says it supports it on `GET /api/auth/oidc/status`
+  (`nativeReturnPath`), and the app asks for it with `return=https` when it
+  starts the sign-in. Builds that don't ask keep the `healthlog://` return
+  exactly as before. If the address ever opens in a browser without the
+  app, you see a short "Back to the app" page, and the one-time sign-in
+  code is removed from the address bar. Only servers reached over https
+  offer it.
+
+- **GLP-1 dose steps can be corrected and removed.** A titration step
+  with a typo no longer stays for good: `PATCH` and `DELETE
+/api/medications/{id}/glp1/dose-changes/{doseChangeId}` change or remove
+  one step, with the same access rules and audit trail as adding one. A
+  step can also carry the app's own id (`clientId`), so when your iPhone
+  and iPad both upload the same step, it is stored once. The id travels
+  with backups and restores. Migration
+  `0506_medication_dose_change_client_id`.
+- **Set the injection site on a dose you already logged.** Correcting a
+  dose (`PUT /api/medications/{id}/intake/{eventId}`) now takes
+  `injectionSite`, or `null` to clear it, so "I forgot to pick the site"
+  has a fix. Only sites allowed for that medication are accepted.
+
 ### Changed
 
 - A day's nutrient total no longer adds up sources that each report the whole
@@ -42,12 +67,56 @@
   owner's own record and only while the nutrients module is on. It still
   cannot read anything back. (#1402)
 
+- With HealthLog on both an iPhone and an iPad, each device's own
+  medication reminder setting now counts. A device set to remind on its
+  own no longer gets the server's push for the same dose, a device set to
+  get reminders from the server gets them even when your account leaves
+  reminders to the app, and a device without its own setting follows your
+  account as before. Follow-up reminders for a dose you haven't logged yet,
+  and reminders over Telegram, ntfy, webhook, email or the browser, are
+  unchanged.
+
+- A phone or iPad now counts as recently seen whenever the HealthLog app
+  uses it to talk to your server, not only when the app registers it after
+  a cold start. The device list shows the real last use, at most an hour
+  behind, and the app can tell reliably which of your devices is still in
+  use, for example to decide which one should remind you of a medication.
+
+- The `apple-app-site-association` file now lists only the addresses the
+  iPhone app actually opens: registration and invite links, and the new
+  sign-in return. Before, it claimed every address on the server, so an app
+  build linked to your server could pull pages into the app that belong in
+  the browser, such as the web sign-in's own return from your identity
+  provider.
+
 - API responses and CSV or JSON exports now go out gzip-compressed when the
   browser or app asks for it, which comes with Next.js 16.4.6. The live Coach
   and document chat streams are left uncompressed, so their text still
   arrives as it is written.
 
 ### Fixed
+
+- The arrow on a dashboard tile in the iPhone app now points the same way
+  as the change shown on that metric's page. The tile used to compare the
+  first and last of the past seven days while the page compared this month
+  with last month, so weight could show a falling arrow on the tile and
+  "+0.1 kg vs last month" on the page. The tile now uses the month
+  comparison too and tells the app which window it used; with less than two
+  months of readings it keeps the seven-day direction.
+- With the iPhone app set to English or Dutch on an account stored in
+  German, the Today screen's own texts (facts, hints, the lead the server
+  writes) now follow the app's language. The briefing and the reaction
+  line are written once per account, so each now says which language it is
+  in, and a reaction line in another language no longer becomes the lead.
+
+- The Today screen no longer says your first name twice. When the daily
+  briefing opened with it, the line under the greeting started with the
+  name again; that line now drops it. The briefing itself still may.
+- In the morning, the medications line on Today no longer reads "0 of 5
+  taken" before your first dose is even due. Until then it says when the
+  next dose is, and after that it counts the doses that were due so far.
+- With more than one check-up due, the hint under "Check-up due" now lists
+  them without repeating "due" in front.
 
 - A lab marker created from a text result, such as "negative" on a scanned report or a CSV row without a unit, can be edited again. It opens with "No unit" ticked, a rename saves without touching the unit, and the unit can be set while the marker holds only text results. A range read beside such a text result came without a unit, so it is dropped when the marker gets a unit, unless you enter the range again with it. An Apple Health or CSV import no longer refuses the first number for such a marker as a unit mismatch; that number gives the marker its unit. The unit stays locked once numbers are stored under it, and writing the same unit another way (`mg/dl` for `mg/dL`) no longer counts as a change. (#1393)
 - On an account with a watch sending heart rate every few seconds, weight, blood pressure and other occasional readings went missing from the MCP metric series, the Coach and the insights, because the heart rate filled every read before they were reached. Each kind of reading now gets its own share, so they all show up again. (#1398)
@@ -56,6 +125,12 @@
 
 ### Security
 
+- Creating an MCP connector token in the iPhone app now asks for your
+  second factor or passkey when your account has one, the same way the
+  web asks for a fresh sign-in. An account without either, such as one
+  that only signs in through single sign-on, keeps creating tokens in the
+  app as before. App builds that already ask for the proof keep working
+  unchanged.
 - The container image moves to Node 22.23.5, a security release with fixes
   in HTTP, HTTP/2 and TLS handling (CVE-2026-123863 and others).
 

@@ -626,7 +626,9 @@
       "errorLinkRequired": "Ya existe aquí una cuenta con esta dirección de correo. Inicia sesión en ella una vez con su contraseña o llave de acceso para conectarla al inicio de sesión único."
     },
     "native": {
-      "signingInToApp": "Iniciando sesión en la app de HealthLog"
+      "signingInToApp": "Iniciando sesión en la app de HealthLog",
+      "returnTitle": "Vuelve a la app",
+      "returnBody": "El inicio de sesión continúa en la app HealthLog. Si no se ha abierto, vuelve a la app e inicia sesión allí de nuevo. Puedes cerrar esta página."
     },
     "mfa": {
       "title": "Autenticación de dos factores",
@@ -12790,8 +12792,7 @@
       },
       "preventiveCare": {
         "title": "Revisión pendiente",
-        "body": "{label} está pendiente.",
-        "bodyManyNamed": "Pendientes: {labels}"
+        "body": "{label} está pendiente."
       },
       "syncIssue": {
         "title": "La sincronización necesita atención",
@@ -12953,7 +12954,8 @@
       },
       "medications": {
         "label": "Medicamentos",
-        "value": "{taken} de {scheduled} tomados"
+        "value": "{taken} de {scheduled} tomados",
+        "next": "Próxima toma a las {time}"
       },
       "appointment": {
         "label": "Cita",
@@ -13332,6 +13334,7 @@
       "medicationCourseEnd": "{name} terminó un tratamiento",
       "medicationDelete": "{name} eliminó un medicamento",
       "medicationGlp1Update": "{name} cambió un tratamiento con GLP-1",
+      "medicationGlp1DoseChangeDelete": "{name} eliminó un escalón de dosis de GLP-1",
       "medicationScheduleCreate": "{name} añadió una pauta de dosificación",
       "medicationScheduleUpdate": "{name} cambió una pauta de dosificación",
       "medicationScheduleDelete": "{name} eliminó una pauta de dosificación",

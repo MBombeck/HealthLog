@@ -219,7 +219,14 @@ const dashboardMetricCard = z
     trend: z
       .enum(["up", "down", "flat", "unknown"])
       .describe(
-        "First-to-last direction across `sparkline`, with a 1 % (min 1 unit) dead band. `unknown` under two points.",
+        "Since v1.48.0, for a measured metric: this month's mean against last month's, exactly the `trend` of `GET /api/analytics/range?range=30d` for the card's measurement type (systolic for `bloodPressure`), so the card and the metric page point the same way; `trendWindowDays` is then 30. Without a previous month to compare, and always for `mood` and `bmi`: the first-to-last direction across `sparkline`, with a 1 % (min 1 unit) dead band, `unknown` under two points, and `trendWindowDays` null.",
+      ),
+    trendWindowDays: z
+      .number()
+      .int()
+      .nullable()
+      .describe(
+        'v1.48.0 — the window `trend` compares: 30 for month against previous month, null for the sparkline\'s first-to-last direction. Label the arrow with it ("vs last month").',
       ),
     sparkline: z
       .array(z.number())

@@ -32,6 +32,11 @@ import {
 } from "vitest";
 import { NextRequest } from "next/server";
 
+// The tile trend's month comparison reads the rollup tier through its own
+// path; it is proven in tests/integration/dashboard-tile-trend.test.ts.
+vi.mock("@/lib/dashboard/summary/month-trend", () => ({
+  withMonthTrends: async (_userId: string, cards: unknown[]) => cards,
+}));
 vi.mock("@/lib/modules/gate", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/modules/gate")>();
   return {

@@ -18,6 +18,7 @@ import {
   intakeAggregateQuerySchema,
   intakeStatusUpdateSchema,
   glp1PostBodySchema,
+  glp1DoseChangePatchSchema,
   bulkDeleteIntakeEventsSchema,
   updateIntakeEventSchema,
   createMedicationCategoryLabelSchema,
@@ -370,7 +371,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Medications"],
       summary: "Record a titration step or a legacy stock correction",
       description:
-        "The body carries exactly one of `doseChange` or `inventory`; carrying both or neither is refused. `doseChange` writes a titration step with its note encrypted at rest and evicts the medication caches so the card's runway reflects the new daily-dose estimate. `inventory` is DEPRECATED: it appends to the legacy running-sum pen ledger, which reads back only while the medication has no per-container inventory items — new callers register containers through the inventory endpoints instead. Rate-limited 30/min keyed on the ACTOR, so a delegate burns their own allowance and cannot collect a fresh one by switching records. Audits both branches as `medication.glp1.update`. Delegable at MANAGE level over the `medications` section: a titration step is record data and the dose is what the server then acts on.",
+        "The body carries exactly one of `doseChange` or `inventory`; carrying both or neither is refused. `doseChange` writes a titration step with its note encrypted at rest and evicts the medication caches so the card's runway reflects the new daily-dose estimate. `inventory` is DEPRECATED: it appends to the legacy running-sum pen ledger, which reads back only while the medication has no per-container inventory items — new callers register containers through the inventory endpoints instead. Rate-limited 30/min keyed on the ACTOR, so a delegate burns their own allowance and cannot collect a fresh one by switching records. Audits both branches as `medication.glp1.update`. Delegable at MANAGE level over the `medications` section: a titration step is record data and the dose is what the server then acts on.\n\n**`doseChange.clientId` (v1.48.0).** Optional; unique per medication. A create whose `clientId` names a stored step returns that step with **200** and writes nothing, whatever else the body says, so a step two devices hold locally is uploaded once. The `Idempotency-Key` still covers a retry from one device; the client id covers the same step from several. Correct or remove a step at `/api/medications/{id}/glp1/dose-changes/{doseChangeId}`.",
       requestParams: { path: z.object({ id: z.string() }) },
       requestBody: {
         required: true,
@@ -379,6 +380,18 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       responses: {
         ...idempotentWrite(),
         ...recordRefusal(),
+        "200": {
+          description:
+            "A step with this `doseChange.clientId` was already stored for the medication; it is returned unchanged and nothing was written.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ doseChange: glp1DoseChange }),
+                "Glp1DoseChangeStoredEnvelope",
+              ),
+            },
+          },
+        },
         "201": {
           description:
             "Created. The body carries `doseChange` OR `inventory` — whichever branch the request took — and never both.",
@@ -660,6 +673,77 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       },
     },
   },
+  "/api/medications/{id}/glp1/dose-changes/{doseChangeId}": {
+    patch: {
+      tags: ["Medications"],
+      summary: "Correct one GLP-1 titration step",
+      description:
+        "Changes the named fields of one titration step and keeps the rest; `note: null` clears the note, and a new note is encrypted at rest. The client id cannot be changed. Evicts the medication caches, so the runway, the Coach snapshot, the timeline and the doctor report read the corrected step. Rate-limited 30/min keyed on the ACTOR. Audited as `medication.glp1.update` with the changed fields and their previous dose, unit and date (the note is named, not copied). Delegable at MANAGE level over the `medications` section, like the create. Body capped at 16 KiB. Cookie or Bearer auth.",
+      requestParams: {
+        path: z.object({ id: z.string(), doseChangeId: z.string() }),
+      },
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: glp1DoseChangePatchSchema },
+        },
+      },
+      responses: {
+        ...recordRefusal(),
+        "200": {
+          description: "The corrected step.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ doseChange: glp1DoseChange }),
+                "Glp1DoseChangePatchEnvelope",
+              ),
+            },
+          },
+        },
+        "404": {
+          description:
+            "No such step for this medication and this record. An unknown id, another medication's step and another record's step are indistinguishable.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+        "422": {
+          description:
+            "Validation failed: an empty body, a field out of range, or a field that is not part of the correction (the client id among them). The envelope carries every offending issue.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+      },
+    },
+    delete: {
+      tags: ["Medications"],
+      summary: "Remove one GLP-1 titration step",
+      description:
+        "A HARD delete: the step is removed, not tombstoned, and its client id is free again. The audit row (`medication.glp1.doseChange.delete`) carries the step's dose, unit, date and client id, so the removal is reconstructable from the trail. Rate-limited 30/min keyed on the ACTOR. Delegable at MANAGE level over the `medications` section. Cookie or Bearer auth.",
+      requestParams: {
+        path: z.object({ id: z.string(), doseChangeId: z.string() }),
+      },
+      responses: {
+        ...recordRefusal(),
+        "200": {
+          description: "The step was removed.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ id: z.string(), deleted: z.literal(true) }),
+                "DeleteGlp1DoseChangeEnvelope",
+              ),
+            },
+          },
+        },
+        "404": {
+          description:
+            "No such step for this medication and this record. An unknown id, another medication's step and another record's step are indistinguishable.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+  },
   "/api/medications/{id}/side-effects/{logId}": {
     delete: {
       tags: ["Medications"],
@@ -696,7 +780,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Medications"],
       summary: "Correct one dose",
       description:
-        "Edits a single intake event. Whenever `takenAt` or `skipped` changes, slot attribution is re-run and `scheduledFor` snaps to the matched window — or to the take's own time when it falls in none. `forceSlotInstant` overrides that with a named real slot of this medication; an explicit `null` UNPINS and re-attributes by band, resetting the binding provenance to automatic. A correction that lands on a DIFFERENT slot is not an in-place edit: the original row is tombstoned and the dose is re-created on the corrected slot, so the row id in the response can differ from the `eventId` in the path, and the tombstone rides the sync feed. A `takenAt` before the medication's start date is refused. Tombstoned events 404 rather than resurrect. Delegable at MANAGE level over the `medications` section. Body capped at 64 KiB. Cookie or Bearer auth.",
+        "Edits a single intake event. Whenever `takenAt` or `skipped` changes, slot attribution is re-run and `scheduledFor` snaps to the matched window — or to the take's own time when it falls in none. `forceSlotInstant` overrides that with a named real slot of this medication; an explicit `null` UNPINS and re-attributes by band, resetting the binding provenance to automatic. A correction that lands on a DIFFERENT slot is not an in-place edit: the original row is tombstoned and the dose is re-created on the corrected slot, so the row id in the response can differ from the `eventId` in the path, and the tombstone rides the sync feed. A `takenAt` before the medication's start date is refused. Since v1.48.0 `injectionSite` sets or clears the dose's site (a site the medication does not allow, or a site on a dose that is not taken, is refused with 422 `medications.intake.injection_site.disallowed`). Tombstoned events 404 rather than resurrect. Delegable at MANAGE level over the `medications` section. Body capped at 64 KiB. Cookie or Bearer auth.",
       requestParams: {
         path: z.object({ id: z.string(), eventId: z.string() }),
       },

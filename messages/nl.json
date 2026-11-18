@@ -626,7 +626,9 @@
       "errorLinkRequired": "Er bestaat hier al een account met dit e-mailadres. Log daar één keer in met het wachtwoord of de passkey om het aan single sign-on te koppelen."
     },
     "native": {
-      "signingInToApp": "Inloggen bij de HealthLog-app"
+      "signingInToApp": "Inloggen bij de HealthLog-app",
+      "returnTitle": "Terug naar de app",
+      "returnBody": "Het inloggen gaat verder in de HealthLog-app. Is die niet geopend, ga dan terug naar de app en start het inloggen daar opnieuw. Je kunt deze pagina sluiten."
     },
     "mfa": {
       "title": "Tweestapsverificatie",
@@ -12790,8 +12792,7 @@
       },
       "preventiveCare": {
         "title": "Tijd voor een controle",
-        "body": "{label} staat gepland.",
-        "bodyManyNamed": "Gepland: {labels}"
+        "body": "{label} staat gepland."
       },
       "syncIssue": {
         "title": "Synchronisatie vraagt aandacht",
@@ -12953,7 +12954,8 @@
       },
       "medications": {
         "label": "Medicatie",
-        "value": "{taken} van {scheduled} ingenomen"
+        "value": "{taken} van {scheduled} ingenomen",
+        "next": "Volgende inname om {time}"
       },
       "appointment": {
         "label": "Afspraak",
@@ -13332,6 +13334,7 @@
       "medicationCourseEnd": "{name} heeft een medicijnkuur beëindigd",
       "medicationDelete": "{name} heeft een medicijn verwijderd",
       "medicationGlp1Update": "{name} heeft een GLP-1-kuur gewijzigd",
+      "medicationGlp1DoseChangeDelete": "{name} heeft een GLP-1-dosisstap verwijderd",
       "medicationScheduleCreate": "{name} heeft een doseerschema toegevoegd",
       "medicationScheduleUpdate": "{name} heeft een doseerschema gewijzigd",
       "medicationScheduleDelete": "{name} heeft een doseerschema verwijderd",

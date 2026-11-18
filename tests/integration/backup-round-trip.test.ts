@@ -892,6 +892,7 @@ describe("every model the plan claims two-ended survives a real restore", () => 
         doseUnit: d.doseUnit,
         note: readNote(d.noteEncrypted, d.note),
         plaintextColumn: d.note,
+        clientId: d.clientId,
       })),
       "the titration must come back as the same ramp, in order",
     ).toEqual([
@@ -901,6 +902,7 @@ describe("every model the plan claims two-ended survives a real restore", () => 
         doseUnit: "mg",
         note: DOSE_CHANGE_NOTE,
         plaintextColumn: null,
+        clientId: "device-step-1",
       },
       {
         effectiveFrom: "2026-06-01T08:00:00.000Z",
@@ -908,6 +910,7 @@ describe("every model the plan claims two-ended survives a real restore", () => 
         doseUnit: "mg",
         note: null,
         plaintextColumn: null,
+        clientId: null,
       },
     ]);
 

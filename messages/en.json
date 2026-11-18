@@ -626,7 +626,9 @@
       "errorLinkRequired": "An account with this email address already exists here. Sign in to it once with its password or passkey to connect it to single sign-on."
     },
     "native": {
-      "signingInToApp": "Signing in to the HealthLog app"
+      "signingInToApp": "Signing in to the HealthLog app",
+      "returnTitle": "Back to the app",
+      "returnBody": "Your sign-in continues in the HealthLog app. If it did not open, switch back to the app and start the sign-in there again. You can close this page."
     },
     "mfa": {
       "title": "Two-factor authentication",
@@ -12790,8 +12792,7 @@
       },
       "preventiveCare": {
         "title": "Check-up due",
-        "body": "{label} is due.",
-        "bodyManyNamed": "Due: {labels}"
+        "body": "{label} is due."
       },
       "syncIssue": {
         "title": "Sync needs attention",
@@ -12953,7 +12954,8 @@
       },
       "medications": {
         "label": "Medications",
-        "value": "{taken} of {scheduled} taken"
+        "value": "{taken} of {scheduled} taken",
+        "next": "Next dose at {time}"
       },
       "appointment": {
         "label": "Appointment",
@@ -13332,6 +13334,7 @@
       "medicationCourseEnd": "{name} ended a medication course",
       "medicationDelete": "{name} removed a medication",
       "medicationGlp1Update": "{name} changed a GLP-1 course",
+      "medicationGlp1DoseChangeDelete": "{name} removed a GLP-1 dose step",
       "medicationScheduleCreate": "{name} added a dosing schedule",
       "medicationScheduleUpdate": "{name} changed a dosing schedule",
       "medicationScheduleDelete": "{name} removed a dosing schedule",
