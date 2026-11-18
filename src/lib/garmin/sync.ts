@@ -47,7 +47,7 @@ import { maybeEnqueueMorningRefresh } from "@/lib/daily/morning-refresh-trigger"
 import { walkPages } from "@/lib/integrations/page-walk";
 import {
   MeasurementReconciliationError,
-  reconcileExternalMeasurement,
+  reconcileExternalMeasurements,
 } from "@/lib/measurements/reconcile-external-measurement";
 import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
@@ -386,29 +386,27 @@ export async function upsertGarminMeasurements(
     const chunk = readings.slice(i, i + WRITE_CHUNK);
     const verdicts = await prisma.$transaction(
       async (tx) => {
-        const outcomes = [];
-        for (const r of chunk) {
-          const verdict = await reconcileExternalMeasurement(
-            tx,
-            {
-              userId,
-              type: r.type as MeasurementType,
-              source: "GARMIN",
-              value: r.value,
-              unit: r.unit,
-              measuredAt: r.measuredAt,
-              externalId: r.externalId,
-              sleepStage: r.sleepStage ?? null,
-              deviceType: r.deviceType ?? null,
-            },
-            { exactExternalMatch: "update" },
-          );
+        const outcomes = await reconcileExternalMeasurements(
+          tx,
+          chunk.map((r) => ({
+            userId,
+            type: r.type as MeasurementType,
+            source: "GARMIN" as const,
+            value: r.value,
+            unit: r.unit,
+            measuredAt: r.measuredAt,
+            externalId: r.externalId,
+            sleepStage: r.sleepStage ?? null,
+            deviceType: r.deviceType ?? null,
+          })),
+          { exactExternalMatch: "update" },
+        );
+        return outcomes.map((verdict) => {
           if (verdict.status === "failed") {
             throw new MeasurementReconciliationError(verdict);
           }
-          outcomes.push(verdict);
-        }
-        return outcomes;
+          return verdict;
+        });
       },
       { timeout: 60_000 },
     );

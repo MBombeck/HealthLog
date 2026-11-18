@@ -42,6 +42,7 @@ process.env.ENCRYPTION_KEY ??=
 import { Prisma } from "@/generated/prisma/client";
 
 import { cookieJar } from "./mock-next-headers";
+import { countStatements, summariseStatements } from "./query-counter";
 import { getPrismaClient, truncateAllTables } from "./setup";
 
 vi.mock("next/headers", async () => {
@@ -608,6 +609,63 @@ describe("Garmin history backfill", () => {
     expect(dailyReads.length - new Set(dailyReads).size).toBe(1);
     const repeated = dailyReads.find((r, i) => dailyReads.indexOf(r) !== i);
     expect(dailyReads.indexOf(repeated!)).toBe(fake.rateLimitHit);
+  });
+});
+
+describe("Garmin history backfill cost", () => {
+  async function backfill() {
+    const { runGarminBackfillForUser } =
+      await import("@/lib/jobs/garmin-backfill");
+    const prisma = getPrismaClient();
+    for (let slice = 0; slice < 20; slice++) {
+      const user = await prisma.user.findUnique({
+        where: { id: USER_ID },
+        select: { garminBackfillCompletedAt: true },
+      });
+      if (user?.garminBackfillCompletedAt) return;
+      await runGarminBackfillForUser(USER_ID, () => false, slice);
+    }
+    throw new Error("backfill did not finish");
+  }
+
+  it("writes a history in sets, and re-reads it without walking the account per reading", async () => {
+    await connectUser();
+    fake.historyFrom = addDays(fake.today, -120);
+
+    // Written one reading at a time, each reading cost about eight
+    // statements, and each candidate read walked the account's Garmin rows
+    // whenever the planner did not know the account yet: 48,000 statements
+    // and some 13 million index rows for a 400-day history, which ran past
+    // the test timeout in the full suite.
+    const first = await countStatements(backfill);
+    const rows = await getPrismaClient().measurement.count({
+      where: { userId: USER_ID, source: "GARMIN" },
+    });
+    expect(rows).toBeGreaterThan(1_500);
+    expect(
+      first.count,
+      summariseStatements(first.statements).slice(0, 2_000),
+    ).toBeLessThanOrEqual(rows / 4);
+
+    // A reconnect walks the same history again: one read per batch and the
+    // overwrite per reading, not the reconciler's walk per reading.
+    await getPrismaClient().user.update({
+      where: { id: USER_ID },
+      data: {
+        garminBackfillProgress: Prisma.DbNull,
+        garminBackfillCompletedAt: null,
+      },
+    });
+    const again = await countStatements(backfill);
+    expect(
+      await getPrismaClient().measurement.count({
+        where: { userId: USER_ID, source: "GARMIN" },
+      }),
+    ).toBe(rows);
+    expect(
+      again.count,
+      summariseStatements(again.statements).slice(0, 2_000),
+    ).toBeLessThanOrEqual(rows * 1.5);
   });
 });
 

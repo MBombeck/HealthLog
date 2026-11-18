@@ -379,3 +379,253 @@ export async function reconcileExternalMeasurement(
     return errorVerdict(err);
   }
 }
+
+const SET_SAVEPOINT = "measurement_identity_set_write";
+
+/** Rows per set-based insert; each binds about fifteen parameters. */
+const SET_INSERT_CHUNK = 250;
+
+function externalKey(row: {
+  userId: string;
+  type: Measurement["type"];
+  source?: Measurement["source"];
+  externalId: string | null;
+}): string {
+  return JSON.stringify([row.userId, row.type, row.source, row.externalId]);
+}
+
+function naturalKey(desired: ExternalMeasurementWrite): string {
+  return JSON.stringify([
+    desired.userId,
+    desired.type,
+    desired.source,
+    desired.measuredAt.getTime(),
+    desired.sleepStage ?? null,
+  ]);
+}
+
+type Entry = { desired: ExternalMeasurementWrite; index: number };
+
+/**
+ * Run `write` under a savepoint and hand back its verdicts, or none when it
+ * failed: the savepoint is rolled back and the entries go through the
+ * reconciler, which turns a real fault into its `failed` verdict.
+ */
+async function underSavepoint(
+  tx: PrismaTypes.TransactionClient,
+  write: () => Promise<Array<[number, MeasurementReconciliationVerdict]>>,
+): Promise<Array<[number, MeasurementReconciliationVerdict]>> {
+  await tx.$executeRawUnsafe(`SAVEPOINT ${SET_SAVEPOINT}`);
+  try {
+    const out = await write();
+    await tx.$executeRawUnsafe(`RELEASE SAVEPOINT ${SET_SAVEPOINT}`);
+    return out;
+  } catch {
+    await tx.$executeRawUnsafe(`ROLLBACK TO SAVEPOINT ${SET_SAVEPOINT}`);
+    await tx.$executeRawUnsafe(`RELEASE SAVEPOINT ${SET_SAVEPOINT}`);
+    return [];
+  }
+}
+
+/** Insert the entries no row holds an identity of, in one statement a chunk. */
+async function insertFresh(
+  tx: PrismaTypes.TransactionClient,
+  entries: readonly Entry[],
+): Promise<Array<[number, MeasurementReconciliationVerdict]>> {
+  const byExternalKey = new Map(
+    entries.map((entry) => [externalKey(entry.desired), entry.index]),
+  );
+  const landed: Array<[number, MeasurementReconciliationVerdict]> = [];
+  for (let i = 0; i < entries.length; i += SET_INSERT_CHUNK) {
+    const rows = await tx.measurement.createManyAndReturn({
+      // The reconciler's own insert, row for row.
+      data: entries.slice(i, i + SET_INSERT_CHUNK).map(({ desired }) => ({
+        ...desired,
+        sleepStage: desired.sleepStage ?? null,
+        deletedAt: null,
+      })),
+      skipDuplicates: true,
+      select: rowSelect,
+    });
+    for (const row of rows) {
+      const index = byExternalKey.get(externalKey(row));
+      if (index !== undefined)
+        landed.push([index, { status: "inserted", row }]);
+    }
+  }
+  return landed;
+}
+
+/**
+ * Settle the entries whose row already holds both of their identities: one
+ * read for all of them, then the reconciler's own update (or its duplicate
+ * verdict) per entry. The update repeats the identity in its condition, so a
+ * row that changed since the read is left alone and its entry goes through
+ * the reconciler.
+ */
+async function settleExactMatches(
+  tx: PrismaTypes.TransactionClient,
+  entries: readonly Entry[],
+  options: MeasurementReconciliationOptions,
+): Promise<Array<[number, MeasurementReconciliationVerdict]>> {
+  const settled: Array<[number, MeasurementReconciliationVerdict]> = [];
+  const byUser = new Map<string, Entry[]>();
+  for (const entry of entries) {
+    const list = byUser.get(entry.desired.userId) ?? [];
+    list.push(entry);
+    byUser.set(entry.desired.userId, list);
+  }
+  for (const [userId, list] of byUser) {
+    const held = new Map(
+      (
+        await tx.measurement.findMany({
+          where: {
+            userId,
+            externalId: {
+              in: [...new Set(list.map((e) => e.desired.externalId))],
+            },
+          },
+          select: rowSelect,
+        })
+      ).map((row) => [externalKey(row), row]),
+    );
+    for (const { desired, index } of list) {
+      const row = held.get(externalKey(desired));
+      if (!row || !sameNaturalIdentity(row, desired)) continue;
+      const reconciled: ReconciledMeasurementRow = {
+        id: row.id,
+        type: row.type,
+        measuredAt: row.measuredAt,
+        externalId: row.externalId,
+      };
+      if (options.exactExternalMatch === "duplicate") {
+        settled.push([index, { status: "duplicate", row: reconciled }]);
+        continue;
+      }
+      const { userId: _ownerId, ...mutable } = desired;
+      void _ownerId;
+      const { count } = await tx.measurement.updateMany({
+        where: {
+          id: row.id,
+          userId,
+          type: desired.type,
+          source: desired.source,
+          externalId: desired.externalId,
+          measuredAt: desired.measuredAt,
+          sleepStage: desired.sleepStage ?? null,
+          deletedAt: row.deletedAt === null ? null : { not: null },
+        },
+        data: {
+          ...mutable,
+          sleepStage: desired.sleepStage ?? null,
+          deletedAt: null,
+          syncVersion: { increment: 1 },
+        },
+      });
+      if (count !== 1) continue;
+      settled.push([
+        index,
+        {
+          status: row.deletedAt === null ? "updated" : "resurrected",
+          row: reconciled,
+          dirtyIdentities: [{ type: row.type, measuredAt: row.measuredAt }],
+        },
+      ]);
+    }
+  }
+  return settled;
+}
+
+/**
+ * `reconcileExternalMeasurement` over a batch, with the verdict each entry
+ * would have got on its own, in input order, inside the caller's transaction.
+ *
+ * The reconciler costs about eight statements per reading (savepoint, three
+ * advisory locks, two candidate reads, the write, the release), and its
+ * candidate read is planned from statistics: for an account the statistics
+ * do not know yet (none at all, or gathered before its rows arrived) the
+ * planner expects one row and walks the account's whole `(user_id, source)`
+ * or `(user_id)` index range on every call. A history written one reading at
+ * a time was therefore quadratic in its length, on the first backfill and on
+ * every re-read of it.
+ *
+ * An entry that shares neither identity with another entry of the batch, and
+ * that the plausibility gate admits, is settled in sets instead:
+ *
+ *   - The reconciler inserts exactly when no row, live or tombstoned, holds
+ *     the entry's external identity `(type, source, externalId)` or its
+ *     natural one `(type, measuredAt, source, sleepStage)`. Both are full
+ *     unique indexes (the natural one NULLS NOT DISTINCT), so
+ *     `INSERT … ON CONFLICT DO NOTHING` inserts exactly those rows, finding
+ *     the conflicts through the indexes themselves rather than a planned
+ *     read, and skips every other.
+ *   - A skipped entry whose external identity is held by a row that also
+ *     holds its natural identity is the reconciler's plain overwrite (or its
+ *     duplicate, under `exactExternalMatch: "duplicate"`); one read finds
+ *     those rows for the whole batch.
+ *
+ * Everything else (an identity shared within the batch, the two identities
+ * held by two rows, an aggregation provenance to weigh, a refused value)
+ * goes through the reconciler afterwards, in input order. An entry that
+ * shares no identity with another cannot be affected by another entry's
+ * reconcile, so settling it first changes nothing. The per-account lock
+ * every reconciler takes first is taken here first, so the set writes
+ * serialise with other writers as another reconciler would.
+ */
+export async function reconcileExternalMeasurements(
+  tx: PrismaTypes.TransactionClient,
+  batch: readonly ExternalMeasurementWrite[],
+  options: MeasurementReconciliationOptions = {},
+): Promise<MeasurementReconciliationVerdict[]> {
+  const verdicts: Array<MeasurementReconciliationVerdict | undefined> =
+    new Array(batch.length);
+  const settle = (done: Array<[number, MeasurementReconciliationVerdict]>) => {
+    for (const [index, verdict] of done) verdicts[index] = verdict;
+  };
+
+  const seen = new Map<string, number>();
+  for (const desired of batch) {
+    for (const key of [externalKey(desired), naturalKey(desired)]) {
+      seen.set(key, (seen.get(key) ?? 0) + 1);
+    }
+  }
+  const alone: Entry[] = batch
+    .map((desired, index) => ({ desired, index }))
+    .filter(
+      ({ desired }) =>
+        seen.get(externalKey(desired)) === 1 &&
+        seen.get(naturalKey(desired)) === 1 &&
+        // Without a source the insert takes the column default, which the
+        // keys below could not match the returned row to.
+        desired.source !== undefined &&
+        classifyRangeRejection(desired.type, desired.value) === null,
+    );
+
+  if (alone.length > 0) {
+    for (const userId of new Set(alone.map((e) => e.desired.userId))) {
+      await lockMeasurementUser(tx, userId);
+    }
+    settle(await underSavepoint(tx, () => insertFresh(tx, alone)));
+    const skipped = alone.filter(
+      (e) =>
+        verdicts[e.index] === undefined &&
+        e.desired.aggregationProvenance == null,
+    );
+    if (skipped.length > 0) {
+      settle(
+        await underSavepoint(tx, () =>
+          settleExactMatches(tx, skipped, options),
+        ),
+      );
+    }
+  }
+
+  for (let index = 0; index < batch.length; index++) {
+    verdicts[index] ??= await reconcileExternalMeasurement(
+      tx,
+      batch[index]!,
+      options,
+    );
+  }
+  return verdicts as MeasurementReconciliationVerdict[];
+}
