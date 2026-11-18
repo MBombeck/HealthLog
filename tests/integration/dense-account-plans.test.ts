@@ -36,6 +36,12 @@ import { listMetricsTool } from "@/lib/mcp/tools/list-metrics";
 import { searchTool } from "@/lib/mcp/tools/search";
 import { metricStatusDiscoveryRows } from "@/lib/mcp/rich-reads";
 import { __resetCoachSnapshotCacheForTests } from "@/lib/ai/coach/snapshot-cache";
+import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
+import { computeStatusInputFingerprint } from "@/lib/insights/status-cache";
+import {
+  countLiveMeasurements,
+  countTombstonedMeasurements,
+} from "@/lib/sync/measurement-counts";
 import type { McpAuthContext } from "@/lib/mcp/auth";
 
 vi.mock("@/lib/jobs/boss-instance", () => ({
@@ -53,14 +59,17 @@ const STRESS_ROWS = 28_800;
 const SPARSE_DAYS = 400;
 const OTHER_ACCOUNTS = 20;
 const OTHER_ROWS = 1_000;
-const HISTORY_ROWS = PULSE_ROWS + SPO2_ROWS + STRESS_ROWS;
+/** Pulse older than the five-year fold window: every two minutes for 28 days. */
+const OLD_PULSE_ROWS = 20_000;
+const HISTORY_ROWS = PULSE_ROWS + OLD_PULSE_ROWS + SPO2_ROWS + STRESS_ROWS;
 
-/** Readings a count or a sample stops at (the readers' own caps). */
-const COUNT_CAP = 6_000;
+/** Rows the availability probe samples per type (its own cap). */
 const SAMPLE_CAP = 5_000;
 /** Pulse readings in one UTC day, and oxygen readings. */
 const PULSE_DAY = 720;
 const SPO2_DAY = 144;
+const DAY_MS = 86_400_000;
+const STRESS_DAY = 480;
 
 type StatisticsState = "none" | "predate" | "analysed";
 
@@ -114,6 +123,17 @@ async function seedStream(
 
 async function seedAccount(): Promise<void> {
   const anchor = new Date();
+  await seedStream(
+    "q",
+    "PULSE",
+    OLD_PULSE_ROWS,
+    "30 + (i % 10)",
+    "bpm",
+    "APPLE_HEALTH",
+    "2000 days",
+    "2 minutes",
+    anchor,
+  );
   await seedStream(
     "p",
     "PULSE",
@@ -248,6 +268,19 @@ afterAll(async () => {
   }
 });
 
+/** Live readings of a type from `since` on, counted the plain way. */
+async function liveCount(type: string, since: Date): Promise<number> {
+  const [{ n }] = await prisma.$queryRawUnsafe<Array<{ n: number }>>(
+    `SELECT COUNT(*)::int AS n FROM measurements
+      WHERE user_id = $1 AND type = $2::measurement_type
+        AND deleted_at IS NULL AND measured_at >= $3`,
+    ACCOUNT,
+    type,
+    since,
+  );
+  return n;
+}
+
 /**
  * No sequential scan of the measurements, and the rows their scans visit
  * within `bound`. A window that read no measurement at all fails too, so a
@@ -287,6 +320,22 @@ describe.each<StatisticsState>(["none", "predate", "analysed"])(
       expect(n).toBe(HISTORY_ROWS + SPARSE_DAYS * 6);
     });
 
+    it("folds the history older than the fold window once, not per read", async () => {
+      __resetAllCachesForTests();
+      const cold = await explainStatements(() =>
+        readAllTimeExtremes(ACCOUNT, ["PULSE"]),
+      );
+      // The first read folds the readings the tier never holds...
+      expect(cold.rowVisits).toBeGreaterThanOrEqual(OLD_PULSE_ROWS);
+      expect(cold.result.get("PULSE")?.min).toBe(30);
+      // ...and the next one takes them from the closed block.
+      const warm = await explainStatements(() =>
+        readAllTimeExtremes(ACCOUNT, ["PULSE"]),
+      );
+      expect(warm.result.get("PULSE")).toEqual(cold.result.get("PULSE"));
+      expectBounded(warm, 2 * PULSE_DAY + 64);
+    });
+
     it("reads the full-history figures from the tier, checking it at its ends", async () => {
       const ledger = await explainStatements(() =>
         readAllTimeExtremes(ACCOUNT, [
@@ -297,7 +346,8 @@ describe.each<StatisticsState>(["none", "predate", "analysed"])(
         ]),
       );
       const pulse = ledger.result.get("PULSE");
-      expect(pulse?.min).toBe(55);
+      // The oldest pulse, five and a half years back, reads 30 to 39.
+      expect(pulse?.min).toBe(30);
       expect(pulse?.max).toBe(94);
       expect(ledger.result.get("WEIGHT")?.max).toBe(78);
       // Two days of pulse at most (the oldest and the newest, each counted
@@ -328,14 +378,28 @@ describe.each<StatisticsState>(["none", "predate", "analysed"])(
     });
 
     it("lists the metrics from presence probes, not the Coach snapshot", async () => {
+      // The readings older than the fold window are counted once into a
+      // closed block; the first call folds it, every later one reads it.
+      await listMetricsTool.run(ctx, {});
       __resetCoachSnapshotCacheForTests();
+      const windowFrom = () => new Date(Date.now() - 30 * DAY_MS);
+      const before = windowFrom();
       const ledger = await explainStatements(() =>
         listMetricsTool.run(ctx, {}),
       );
+      const after = windowFrom();
       const result = ledger.result as { metrics: InventoryRow[] };
       const row = (metric: string) =>
         result.metrics.find((m) => m.metric === metric);
-      expect(row("pulse")).toMatchObject({ present: true, count: COUNT_CAP });
+      // The true count of the window, every reading, not a cap: between the
+      // counts at the window's start just before and just after the call.
+      expect(row("pulse")?.present).toBe(true);
+      expect(row("pulse")?.count).toBeGreaterThanOrEqual(
+        await liveCount("PULSE", after),
+      );
+      expect(row("pulse")?.count).toBeLessThanOrEqual(
+        await liveCount("PULSE", before),
+      );
       expect(row("weight")).toMatchObject({ present: true, count: 30 });
       expect(row("spo2")).toMatchObject({
         present: false,
@@ -343,13 +407,19 @@ describe.each<StatisticsState>(["none", "predate", "analysed"])(
       });
       expect(row("STRESS_LEVEL")).toMatchObject({
         present: true,
-        count: COUNT_CAP,
+        count: STRESS_ROWS,
       });
-      // Pulse and stress to the count cap, the oxygen history's sample and
-      // tier ends, and the sparse types' month. The history is 258,800.
+      // Three days of pulse and of stress at most (the part of the first day
+      // the window cuts, and the two days the tier is checked on), the oxygen
+      // history's sample and tier ends, and the sparse types' month. The
+      // history is 258,800.
       expectBounded(
         ledger,
-        2 * COUNT_CAP + (SAMPLE_CAP + 1) + 2 * SPO2_DAY + 1_000,
+        3 * PULSE_DAY +
+          3 * STRESS_DAY +
+          (SAMPLE_CAP + 1) +
+          2 * SPO2_DAY +
+          1_000,
       );
     });
 
@@ -360,17 +430,50 @@ describe.each<StatisticsState>(["none", "predate", "analysed"])(
       );
       const result = ledger.result as { results: Array<{ id: string }> };
       expect(result.results.map((r) => r.id)).toContain("metric:pulse");
-      expectBounded(ledger, COUNT_CAP + 1_000);
+      expectBounded(ledger, 3 * PULSE_DAY + 1_000);
     });
 
-    it("counts the discovery rows up to the cap", async () => {
+    it("stamps the status gate's inputs from the tier, not the readings", async () => {
+      const read = () =>
+        computeStatusInputFingerprint({
+          userId: ACCOUNT,
+          types: ["PULSE"],
+          includeCorrelationChannels: true,
+        });
+      // The readings older than the fold window are a closed block, folded
+      // on the first read and kept.
+      await read();
+      const ledger = await explainStatements(read);
+      expect(typeof ledger.result).toBe("string");
+      // The tier's two end days of pulse and stress, and the sparse types'.
+      expectBounded(ledger, 2 * PULSE_DAY + 2 * STRESS_DAY + 1_000);
+    });
+
+    it("counts the sync handshake's measurements exactly, from the tier and the tombstones", async () => {
+      await countLiveMeasurements(ACCOUNT);
+      const ledger = await explainStatements(async () => ({
+        live: await countLiveMeasurements(ACCOUNT),
+        tombstoned: await countTombstonedMeasurements(ACCOUNT),
+      }));
+      expect(ledger.result).toEqual({
+        live: HISTORY_ROWS + SPARSE_DAYS * 6,
+        tombstoned: 0,
+      });
+      expectBounded(
+        ledger,
+        2 * PULSE_DAY + 2 * STRESS_DAY + 2 * SPO2_DAY + 1_000,
+      );
+    });
+
+    it("counts the discovery rows exactly from the tier", async () => {
       const ledger = await explainStatements(() =>
         metricStatusDiscoveryRows(ACCOUNT),
       );
       expect(
         ledger.result.find((r) => r.metric === "STRESS_LEVEL"),
-      ).toMatchObject({ present: true, count: COUNT_CAP });
-      expectBounded(ledger, COUNT_CAP + 64);
+      ).toMatchObject({ present: true, count: STRESS_ROWS });
+      // The tier's two end days of stress; no reading predates the window.
+      expectBounded(ledger, 2 * STRESS_DAY + 64);
     });
   },
 );
