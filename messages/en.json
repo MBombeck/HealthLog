@@ -5667,7 +5667,11 @@
         "documents": {
           "title": "Documents",
           "autoAiRead": "Read new documents automatically with AI",
-          "honesty": "When on, each document uploaded into this profile is sent to the instance's AI provider to be read, described and indexed for search, with no tap per document, and documents already here without a summary are sent too (up to 200 each time it is switched on). Turning it on records this profile's consent to having its documents read. The profile's AI settings apply; your own AI provider is never used. Off by default."
+          "honesty": "When on, each document uploaded into this profile is sent to the instance's AI provider to be read, described and indexed for search, with no tap per document, and documents already here without a summary are sent too (up to 200 each time it is switched on). Turning it on records this profile's consent to having its documents read. The profile's AI settings apply; your own AI provider is never used. Off by default.",
+          "pageTitle": "Documents and AI",
+          "pageSubtitle": "Whether AI reads the documents uploaded into {name}'s profile.",
+          "noProvider": "This server has no AI provider that could read {name}'s documents, so the switch stays off. The person who runs the server can set one up.",
+          "aiOff": "AI is off for {name}'s profile, so no document would be read."
         }
       },
       "unavailableTitle": "Unavailable in this shared record",

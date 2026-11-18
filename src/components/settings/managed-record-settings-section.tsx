@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Settings } from "lucide-react";
+import { FileText, Settings } from "lucide-react";
 
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { useAuth } from "@/hooks/use-auth";
@@ -137,7 +137,7 @@ export function ManagedRecordSettingsSection({
       data-record-settings-family={family}
     >
       <SettingsCardHeader
-        icon={Settings}
+        icon={family === "documents" ? FileText : Settings}
         title={t(`settings.sharedRecord.managedSettings.${family}.title`)}
       />
       {query.data ? (

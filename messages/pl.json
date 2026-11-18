@@ -5667,7 +5667,11 @@
         "documents": {
           "title": "Dokumenty",
           "autoAiRead": "Automatycznie czytaj nowe dokumenty przez AI",
-          "honesty": "Po włączeniu każdy dokument przesłany do tego profilu trafia do dostawcy AI instancji, który go czyta, opisuje i indeksuje do wyszukiwania, bez dotykania każdego dokumentu; wysyłane są też dokumenty już zapisane bez podsumowania (do 200 przy każdym włączeniu). Włączenie zapisuje zgodę tego profilu na czytanie jego dokumentów. Obowiązują ustawienia AI profilu; twój własny dostawca AI nigdy nie jest używany. Domyślnie wyłączone."
+          "honesty": "Po włączeniu każdy dokument przesłany do tego profilu trafia do dostawcy AI instancji, który go czyta, opisuje i indeksuje do wyszukiwania, bez dotykania każdego dokumentu; wysyłane są też dokumenty już zapisane bez podsumowania (do 200 przy każdym włączeniu). Włączenie zapisuje zgodę tego profilu na czytanie jego dokumentów. Obowiązują ustawienia AI profilu; twój własny dostawca AI nigdy nie jest używany. Domyślnie wyłączone.",
+          "pageTitle": "Dokumenty i AI",
+          "pageSubtitle": "Czy AI czyta dokumenty przesłane do profilu {name}.",
+          "noProvider": "Ten serwer nie ma dostawcy AI, który mógłby czytać dokumenty {name}, więc przełącznik pozostaje wyłączony. Osoba zarządzająca serwerem może go skonfigurować.",
+          "aiOff": "AI jest wyłączona dla profilu {name}, więc żaden dokument nie zostałby przeczytany."
         }
       },
       "unavailableTitle": "Niedostępne w tym udostępnionym rekordzie",

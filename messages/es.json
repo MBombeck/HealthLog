@@ -5667,7 +5667,11 @@
         "documents": {
           "title": "Documentos",
           "autoAiRead": "Leer los documentos nuevos automáticamente con IA",
-          "honesty": "Si está activado, cada documento subido a este perfil se envía al proveedor de IA de la instancia para leerlo, describirlo e indexarlo para la búsqueda, sin tocar cada documento, y también se envían los documentos que ya hay sin resumen (hasta 200 cada vez que se activa). Activarlo registra el consentimiento de este perfil para que se lean sus documentos. Se aplican los ajustes de IA del perfil; nunca se usa tu propio proveedor de IA. Desactivado por defecto."
+          "honesty": "Si está activado, cada documento subido a este perfil se envía al proveedor de IA de la instancia para leerlo, describirlo e indexarlo para la búsqueda, sin tocar cada documento, y también se envían los documentos que ya hay sin resumen (hasta 200 cada vez que se activa). Activarlo registra el consentimiento de este perfil para que se lean sus documentos. Se aplican los ajustes de IA del perfil; nunca se usa tu propio proveedor de IA. Desactivado por defecto.",
+          "pageTitle": "Documentos e IA",
+          "pageSubtitle": "Si la IA lee los documentos que se suben al perfil de {name}.",
+          "noProvider": "Este servidor no tiene ningún proveedor de IA que pueda leer los documentos de {name}, así que el interruptor sigue desactivado. Quien administra el servidor puede configurar uno.",
+          "aiOff": "La IA está desactivada para el perfil de {name}, así que no se leería ningún documento."
         }
       },
       "unavailableTitle": "No disponible en este registro compartido",

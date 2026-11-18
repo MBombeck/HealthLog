@@ -51,6 +51,7 @@ import { useMounted } from "@/hooks/use-mounted";
 import { useTranslations } from "@/lib/i18n/context";
 import { isSurfaceVisible } from "@/lib/modules/surface";
 import { isSettingsDestinationListedForRecord } from "@/lib/record-settings/classification";
+import { accountLabel } from "@/lib/sharing/account-access-view";
 import {
   SETTINGS_SECTION_SLUGS,
   isSettingsSectionSlug,
@@ -425,12 +426,29 @@ export function SettingsShell({
   // title from the active section. The heading lives in the shell so it can
   // occupy its own grid row spanning only the content column — see the grid
   // below.
+  //
+  // Inside a managed profile the AI page carries only the profile's
+  // document-reading switch (the provider is the instance's, not something a
+  // guardian picks), so "Choose your AI provider and bring your own key"
+  // promised a page that is not there. Post-hydration only, for the reason
+  // the module filter above gives.
+  const managedAiPage =
+    hydrated && activeSlug === "ai" && activeRecord?.recordKind === "managed";
   const resolvedHeading =
     heading ??
     (activeSection
       ? {
-          title: t(activeSection.titleKey),
-          subtitle: t(`settings.sections.${activeSection.slug}.subtitle`),
+          title: managedAiPage
+            ? t("settings.sharedRecord.managedSettings.documents.pageTitle")
+            : t(activeSection.titleKey),
+          subtitle: managedAiPage
+            ? t(
+                "settings.sharedRecord.managedSettings.documents.pageSubtitle",
+                {
+                  name: accountLabel(activeRecord),
+                },
+              )
+            : t(`settings.sections.${activeSection.slug}.subtitle`),
           headingId: `settings-section-${activeSection.slug}-title`,
           topSlot: LAYOUT_CHILD_SLUGS.has(activeSection.slug) ? (
             <SettingsHubBackLink

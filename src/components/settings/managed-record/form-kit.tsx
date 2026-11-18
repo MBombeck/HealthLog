@@ -111,7 +111,7 @@ export function ManagedSwitchRow({
     <div
       className={className ?? "flex items-center justify-between gap-3 text-sm"}
     >
-      <Label htmlFor={id} className="font-normal">
+      <Label htmlFor={id} noColon className="leading-snug font-normal">
         {label}
       </Label>
       <Switch
