@@ -239,8 +239,7 @@ async function routes() {
   const restore =
     await import("@/app/api/documents/inbound/[id]/restore/route");
   const purge = await import("@/app/api/documents/inbound/[id]/purge/route");
-  const summary =
-    await import("@/app/api/documents/inbound/[id]/summary/route");
+  const sources = await import("@/app/api/documents/sources/route");
   const deleted = await import("@/app/api/documents/inbound/deleted/route");
   const bulk = await import("@/app/api/documents/inbound/bulk/route");
   const usage = await import("@/app/api/documents/inbound/usage/route");
@@ -285,11 +284,8 @@ async function routes() {
         jsonRequest(`/api/documents/inbound/${id}/purge`, "POST", {}),
         ctx(id),
       ),
-    summary: (id: string) =>
-      cast(summary.POST)(
-        jsonRequest(`/api/documents/inbound/${id}/summary`, "POST", {}),
-        ctx(id),
-      ),
+    sources: () =>
+      cast(sources.GET)(new Request("http://localhost/api/documents/sources")),
     deleted: () =>
       cast(deleted.GET)(
         new Request("http://localhost/api/documents/inbound/deleted"),
@@ -523,10 +519,11 @@ describe("a guardian in a managed profile's vault", () => {
       }),
     ).toBe(1);
 
-    // An on-demand AI read.
-    await r.restore(id);
-    const summary = await r.summary(id);
-    expect(summary.status).toBe(403);
+    // The document sources (Paperless-ngx, Papra): an integration with
+    // credentials, the owner's alone.
+    const sources = await r.sources();
+    expect(sources.status).toBe(403);
+    expect((await sources.json()).meta.errorCode).toBe("sharing.not_permitted");
   });
 
   it("asks the profile's own AI capability under the guardian's authority, and queues work for the profile", async () => {

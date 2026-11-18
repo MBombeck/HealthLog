@@ -25,7 +25,12 @@ import {
 } from "./documents";
 import { supplementLabelExtractResult } from "./medications";
 import { ocrExtractResponse } from "./ocr";
-import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
+import {
+  dataEnvelope,
+  errorEnvelope,
+  recordRefusal,
+  stdResponses,
+} from "./shared";
 
 const aiRun = z
   .object({
@@ -96,11 +101,12 @@ export const aiRunPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Documents"],
       summary: "Poll a background document AI run",
       description:
-        "Where one background read stands, and its result or failure once it ends. Scoped to the caller: another account's run, a run that never existed, and a run more than an hour past its end are the same 404 `aiRuns.notFound`. A plain read of the caller's own run; it calls no model and asks no AI capability (those were asked when the run was queued, and again in the worker before anything left the server). Auth via cookie or Bearer.",
+        "Where one background read stands, and its result or failure once it ends. Scoped to the record the run was queued for (the caller's own, or the managed profile a guardian is inside): another account's run, a run that never existed, and a run more than an hour past its end are the same 404 `aiRuns.notFound`. A plain read of the caller's own run; it calls no model and asks no AI capability (those were asked when the run was queued, and again in the worker before anything left the server). Auth via cookie or Bearer.",
       parameters: [
         { name: "id", in: "path", required: true, schema: { type: "string" } },
       ],
       responses: {
+        ...recordRefusal(),
         "200": {
           description: "The run.",
           content: {

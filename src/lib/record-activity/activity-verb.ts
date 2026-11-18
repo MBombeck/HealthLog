@@ -316,8 +316,8 @@ export function recordActivityVerbLine(
 
 /**
  * The document vault's verbs, or null when `action` is not one. A managed
- * profile's guardian uploads, files, deletes, restores and bulk-acts (#1403);
- * an older row from a delegated read of the vault never reaches here.
+ * profile's guardian uploads, files, deletes, restores, bulk-acts, and runs
+ * the document AI actions and the review that confirms their values (#1403).
  */
 function documentVerb(
   t: Translator,
@@ -335,6 +335,25 @@ function documentVerb(
       return t("recordSharing.activityVerb.documentRestore", { name });
     case "documents.inbound.bulk":
       return t("recordSharing.activityVerb.documentBulk", { name });
+    case "documents.inbound.confirm":
+      return t("recordSharing.activityVerb.documentConfirm", { name });
+    case "documents.inbound.factEdit":
+      return t("recordSharing.activityVerb.documentFactEdit", { name });
+    case "documents.inbound.extract":
+      return t("recordSharing.activityVerb.documentExtract", { name });
+    case "documents.inbound.index":
+      return t("recordSharing.activityVerb.documentIndex", { name });
+    case "documents.inbound.reindex":
+      return t("recordSharing.activityVerb.documentReindex", { name });
+    case "documents.inbound.suggest":
+      return t("recordSharing.activityVerb.documentSuggest", { name });
+    case "documents.inbound.summary":
+      return t("recordSharing.activityVerb.documentSummary", { name });
+    // The two safety rows a document chat turn can file: the turn was the
+    // person asking, whatever the screen then withheld.
+    case "documents.chat.outbound_blocked":
+    case "documents.chat.replay_injection":
+      return t("recordSharing.activityVerb.documentChat", { name });
     default:
       return null;
   }

@@ -7,12 +7,15 @@
  * `needsReview`: a low-confidence fact that was failing closed becomes
  * user-asserted and is then eligible for approval. The fact's resource type
  * cannot change (the edit is discriminated by `factType`).
+ *
+ * #1403 — the owner's, and a managed profile's guardian's (`"guardian"`).
  */
 import { NextRequest } from "next/server";
 
-import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { apiError, apiSuccess } from "@/lib/api-response";
+import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
+import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import {
   encryptFactData,
@@ -75,7 +78,7 @@ function editToFactData(edit: InboundFactEdit): FactData {
 
 export const PATCH = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireAuth();
+    const { user } = await requireRecordAuth("guardian", "documents");
     const gate = await requireModuleEnabled(user.id, "inboundDocuments");
     if (!gate.enabled) return gate.response;
 
@@ -115,6 +118,15 @@ export const PATCH = apiHandler(
         // The values are now user-asserted — the fail-closed gate is cleared.
         needsReview: false,
       },
+    });
+
+    // #1403 — a managed profile's guardian corrects staged values too, so the
+    // edit is on the record's trail with the actor stamped. The values stay
+    // off the row: what changed is the record's to answer.
+    await auditLog("documents.inbound.factEdit", {
+      userId: user.id,
+      ipAddress: getClientIp(request),
+      details: { documentId: id, factId: fact.id, factType: fact.factType },
     });
 
     annotate({

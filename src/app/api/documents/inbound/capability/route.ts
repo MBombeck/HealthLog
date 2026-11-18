@@ -11,7 +11,7 @@
  * routes (suggest / summary / extract / index) will do, so the affordance the
  * UI offers never diverges from what the endpoint accepts.
  */
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { resolveDocumentAiCapability } from "@/lib/documents/provider-order";
 import { annotate } from "@/lib/logging/context";
@@ -20,7 +20,7 @@ import { requireModuleEnabled } from "@/lib/modules/gate";
 export const dynamic = "force-dynamic";
 
 export const GET = apiHandler(async () => {
-  const { user } = await requireAuth();
+  const { user } = await requireRecordAuth("guardian", "documents");
 
   const gate = await requireModuleEnabled(user.id, "inboundDocuments");
   if (!gate.enabled) return gate.response;

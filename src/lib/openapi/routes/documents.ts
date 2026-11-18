@@ -36,7 +36,10 @@ import {
   DOCUMENTS_LAYOUT_VIEWS,
 } from "@/lib/documents/documents-layout";
 
-import { aiExtractionRefusals } from "./ai-extraction-refusals";
+import {
+  aiExtractionRefusalDescription,
+  aiExtractionRefusals,
+} from "./ai-extraction-refusals";
 import { aiRunAccepted, preferRespondAsyncParameter } from "./ai-run-accepted";
 import { aiCapabilityState } from "./profile";
 import {
@@ -58,6 +61,16 @@ const kindEnum = z.enum(INBOUND_DOCUMENT_KINDS);
  */
 const GUARDIAN_VAULT_NOTE =
   "The owner's, and a managed profile's guardian's: a guardian inside the managed record (the session switch, or the per-request account selector on a cookie-equivalent token) acts on that record, the document stays the record's, and the audit row names the guardian. An adult's share is refused at every level, MANAGE included.";
+
+/**
+ * The document AI refusals with the sharing refusal on the same 403: these
+ * routes act on the record a managed profile's guardian is inside, so they
+ * can answer either. One response per status, so the two sentences share it.
+ */
+const documentAiRefusals = {
+  ...aiExtractionRefusals("documentAi"),
+  ...recordRefusal(aiExtractionRefusalDescription("documentAi")),
+};
 
 // ─── Vault presentation (v1.42) ────────────────────────────────────────────
 
@@ -820,6 +833,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       description:
         'Cheap probe (no provider call) the vault uses to decide the AI transport and whether to warn before a read leaves the machine. Resolved over the DOCUMENT provider order (local-first, ChatGPT-subscription OAuth last), so `mode` / `pdfSupported` / `egress` match exactly what the document AI routes do. `egress` is vendor-blind: `"local"` (a self-hosted model — the document never leaves the operator\'s machine) or `"external"` (a third-party AI service). The vault shows a per-egress notice before any external document read; sending a document to any external provider also requires an active `ai_extraction` or `ai_full` consent receipt. `ai` is the `documentAi` capability for the record: when the operator turned reading documents off, the module is off, or the record is somebody else\'s, `available` is false with a null `reason` and `ai.reason` says why. A missing consent receipt leaves the read offered (`ai.reason = "consent_required"`), because the read is where the person is asked for it.',
       responses: {
+        ...recordRefusal(),
         "200": {
           description: "Document-AI capability flags + egress class.",
           content: {
@@ -1301,7 +1315,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...aiRunAccepted,
-        ...aiExtractionRefusals("documentAi"),
+        ...documentAiRefusals,
         ...stdResponses,
       },
     },
@@ -1341,7 +1355,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...aiRunAccepted,
-        ...aiExtractionRefusals("documentAi"),
+        ...documentAiRefusals,
         ...stdResponses,
       },
     },
@@ -1410,7 +1424,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...aiRunAccepted,
-        ...aiExtractionRefusals("documentAi"),
+        ...documentAiRefusals,
         ...stdResponses,
       },
     },
@@ -1450,7 +1464,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...aiRunAccepted,
-        ...aiExtractionRefusals("documentAi"),
+        ...documentAiRefusals,
         ...stdResponses,
       },
     },
@@ -1484,7 +1498,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
-        ...aiExtractionRefusals("documentAi"),
+        ...documentAiRefusals,
         ...stdResponses,
       },
     },
@@ -1517,6 +1531,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
       ],
       responses: {
+        ...recordRefusal(),
         "200": {
           description:
             "Either the conversation detail (with `messages`) or the paginated conversation list for the document.",
@@ -1556,7 +1571,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
-        ...aiExtractionRefusals("documentAi"),
+        ...documentAiRefusals,
         ...stdResponses,
       },
     },
@@ -1581,6 +1596,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         content: { "application/json": { schema: inboundFactEditRequest } },
       },
       responses: {
+        ...recordRefusal(),
         "200": {
           description: "The updated fact.",
           content: {
@@ -1598,7 +1614,9 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Documents"],
       summary: "Confirm the review decisions",
       description:
-        "The ONLY write path out of staging. Commits the user's approvals into the structured stores (labs / conditions / medications) and discards rejections. A low-confidence fact that was never edited cannot be approved (fail-closed). Idempotent (Idempotency-Key). Audits as `documents.inbound.confirm`.",
+        "The ONLY write path out of staging. Commits the user's approvals into the structured stores (labs / conditions / medications) and discards rejections. A low-confidence fact that was never edited cannot be approved (fail-closed). Idempotent (Idempotency-Key). Audits as `documents.inbound.confirm`." +
+        " " +
+        GUARDIAN_VAULT_NOTE,
       parameters: [
         idempotencyKeyParameter,
         {
@@ -1613,6 +1631,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         content: { "application/json": { schema: inboundConfirmRequest } },
       },
       responses: {
+        ...recordRefusal(),
         ...idempotentWrite(),
         "200": {
           description: "Per-decision outcome.",

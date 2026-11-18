@@ -7,7 +7,7 @@
  * consent receipt for that provider (the worker re-checks all of it). The work runs off-request on pg-boss; this route only
  * enqueues and returns immediately so the vault stays responsive.
  */
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { requireAiCapability } from "@/lib/ai/capabilities/gate";
 import { auditLog } from "@/lib/auth/audit";
@@ -25,7 +25,7 @@ const REINDEX_LIMIT_PER_HOUR = 12;
 const REINDEX_WINDOW_MS = 60 * 60 * 1000;
 
 export const POST = apiHandler(async (request) => {
-  const { user } = await requireAuth();
+  const { user } = await requireRecordAuth("guardian", "documents");
 
   const gate = await requireModuleEnabled(user.id, "inboundDocuments");
   if (!gate.enabled) return gate.response;

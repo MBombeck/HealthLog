@@ -453,6 +453,17 @@ const HANDLER_BODY_MODULES: Record<string, readonly string[]> = {
   // #1403 — the vault upload stores through the shared ingest, which files
   // `documents.inbound.store`.
   "app/api/documents/inbound/route.ts": ["lib/documents/ingest.ts"],
+  // The document AI routes file their rows where the read finishes, in the
+  // run module the route and the background worker share.
+  "app/api/documents/inbound/[id]/extract/route.ts": [
+    "lib/documents/ai-runs/extract-run.ts",
+  ],
+  "app/api/documents/inbound/[id]/suggest/route.ts": [
+    "lib/documents/ai-runs/suggest-run.ts",
+  ],
+  "app/api/documents/inbound/[id]/index/route.ts": [
+    "lib/documents/ai-runs/index-run.ts",
+  ],
 };
 
 /** The route and the service modules carrying its handler bodies. */
@@ -1295,12 +1306,13 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   // The document vault. Five reads admitted together for the reason the front
   // door's eight were: `/documents` carries `sharedRecord: true`, so the shell
   // offers the destination and every read behind it refused — the same failure
-  // v1.36.1 describes as fixed on `/`. Indexing and every AI verb stay bare;
-  // the split is per-arm, because the resolver escalates a non-safe method to
-  // `"write"` on its own. #1403 — uploading, retyping, linking, deleting and
-  // restoring declare `"guardian"`: a managed profile's guardian runs the
-  // vault, an adult's share at any level does not. Those arms are frozen a
-  // second time in the guardian literal below.
+  // v1.36.1 describes as fixed on `/`. The split is per-arm, because the
+  // resolver escalates a non-safe method to `"write"` on its own. #1403 —
+  // uploading, retyping, linking, deleting, restoring, the document AI
+  // actions and the review that confirms their values declare `"guardian"`:
+  // a managed profile's guardian runs the vault, an adult's share at any level
+  // does not. Those arms are frozen a second time in the guardian literal
+  // below. Delete now, share links and the document sources stay bare.
   "app/api/documents/inbound/route.ts": {
     domain: "documents",
     why: "The record's document list. The GET never selects the encrypted blob column and scopes every predicate to the resolved user id. The POST upload beside it declares `\"guardian\"`: only a managed profile's guardian uploads into somebody else's vault.",
@@ -1316,6 +1328,46 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   "app/api/documents/inbound/deleted/route.ts": {
     domain: "documents",
     why: "Recently deleted, metadata only, for whoever may restore from it. A GET that declares `\"guardian\"` on purpose: an adult's delegate restores nothing, so they are not shown the owner's decisions in progress at any level.",
+  },
+  "app/api/documents/inbound/[id]/extract/route.ts": {
+    domain: "documents",
+    why: "Reading a document's values into staged facts, under the record's own `documentAi` capability and the provider the record resolves to (the operator's, for a managed profile). Declares `\"guardian\"` only: an adult's delegate starts no model work in somebody else's record.",
+  },
+  "app/api/documents/inbound/[id]/suggest/route.ts": {
+    domain: "documents",
+    why: 'A filing draft (title, kind, date) read by a model, written nowhere. Same capability, provider and egress re-check as extract; `"guardian"` only.',
+  },
+  "app/api/documents/inbound/[id]/summary/route.ts": {
+    domain: "documents",
+    why: 'A document\'s summary or transcribed text on request, optionally stored on the row. Same capability, provider and egress re-check as extract; `"guardian"` only.',
+  },
+  "app/api/documents/inbound/[id]/index/route.ts": {
+    domain: "documents",
+    why: 'Making one document searchable, and the lab staging that follows it. Same capability, provider and egress re-check as extract; `"guardian"` only.',
+  },
+  "app/api/documents/inbound/reindex/route.ts": {
+    domain: "documents",
+    why: "Queueing the record's unindexed documents for search. The worker re-asks the record's capability before every read; `\"guardian\"` only.",
+  },
+  "app/api/documents/inbound/[id]/chat/route.ts": {
+    domain: "documents",
+    why: 'Asking about one document, grounded in its own text only, and the record\'s thread history. Same capability, provider and egress re-check as extract, its own rate bucket; `"guardian"` only.',
+  },
+  "app/api/documents/inbound/[id]/facts/[factId]/route.ts": {
+    domain: "documents",
+    why: 'Correcting a staged value before it is confirmed; nothing reaches a structured store here. `"guardian"` only, with an audit row naming the actor.',
+  },
+  "app/api/documents/inbound/[id]/confirm/route.ts": {
+    domain: "documents",
+    why: 'The one write path out of the staging area: approved values become the record\'s lab results, conditions or medications. Each fact is committed only into a section the grant opens, and the audit row names the actor. `"guardian"` only.',
+  },
+  "app/api/documents/inbound/capability/route.ts": {
+    domain: "documents",
+    why: 'Which document AI transport this record would use, without a model call; the vault needs it to offer the AI actions. `"guardian"`, because it describes actions only the owner or a guardian can take.',
+  },
+  "app/api/ai-runs/[id]/route.ts": {
+    domain: "documents",
+    why: 'Where one background document AI run stands, scoped to the record that queued it. A guardian who queued a read polls it here; `"guardian"`, the same people who can queue one.',
   },
   "app/api/documents/inbound/bulk/route.ts": {
     domain: "documents",
@@ -2210,6 +2262,26 @@ const DELEGABLE_GUARDIAN_ROUTES: Record<string, string> = {
     "The list the restore is chosen from. Read only; it writes nothing and so files nothing.",
   "app/api/documents/inbound/bulk/route.ts":
     "The batched form of the single-document verbs above, one audit row per batch.",
+  "app/api/documents/inbound/[id]/extract/route.ts":
+    "Reading a document's values into staged facts. The record's capability, consent and provider, the egress re-check on the pick, the record's budget.",
+  "app/api/documents/inbound/[id]/suggest/route.ts":
+    "A filing draft from a model, written nowhere.",
+  "app/api/documents/inbound/[id]/summary/route.ts":
+    "A summary or the transcribed text, on request.",
+  "app/api/documents/inbound/[id]/index/route.ts":
+    "Making one document searchable, and the lab staging it continues into.",
+  "app/api/documents/inbound/reindex/route.ts":
+    "Queueing the record's unindexed documents; the worker re-checks the record's capability.",
+  "app/api/documents/inbound/[id]/chat/route.ts":
+    "Asking about one document, and reading the record's threads about it.",
+  "app/api/documents/inbound/[id]/facts/[factId]/route.ts":
+    "Correcting a staged value before confirmation.",
+  "app/api/documents/inbound/[id]/confirm/route.ts":
+    "Confirming staged values into the record's labs, conditions or medications, per section the grant opens.",
+  "app/api/documents/inbound/capability/route.ts":
+    "The AI transport probe the vault needs to offer the actions. Read only.",
+  "app/api/ai-runs/[id]/route.ts":
+    "Polling a background run the guardian queued. Read only.",
 };
 
 /**
@@ -2364,8 +2436,13 @@ const ACTOR_ROUTES: Record<string, string> = {
  * Recently deleted list and the bulk actions join the record list, and the
  * new guardian literal holds the five modules with a `"guardian"` arm.
  * 279 -> 287.
+ *
+ * #1403 -- the guardian finishes what an upload starts: the document AI
+ * actions, the staged-fact edit and confirm, the AI transport probe and the
+ * background-run poll join the record list and the guardian literal.
+ * 287 -> 307.
  */
-const FROZEN_ENTRY_COUNT = 287;
+const FROZEN_ENTRY_COUNT = 307;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
@@ -3663,8 +3740,8 @@ describe("(j) the guardian-need route set is frozen", () => {
         ).toEqual([]);
       }
     }
-    // Non-zero: the leg above is about the mutating members, and there are
-    // four of them today (upload, edit/delete, restore, bulk).
+    // Non-zero: the leg above is about the mutating members — the upload,
+    // edit/delete, restore, bulk, the AI actions, the fact edit and confirm.
     expect(mutating).toBeGreaterThanOrEqual(4);
   });
 
