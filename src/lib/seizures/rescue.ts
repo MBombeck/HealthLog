@@ -13,7 +13,7 @@ import {
   deleteIntakeEvent,
   findDeletableIntakeEvent,
 } from "@/lib/medications/delete-intake-event";
-import type { SeizureRescueDose } from "@/generated/prisma/client";
+import type { Prisma, SeizureRescueDose } from "@/generated/prisma/client";
 
 import { formatRescueDose } from "./server";
 
@@ -51,9 +51,32 @@ export async function writeRescueDose(
   input: RescueDoseInput,
   medication: { id: string; name: string } | null,
 ): Promise<SeizureRescueDose> {
-  const created = await prisma.seizureRescueDose.create({
+  const created = await createRescueDoseRow(
+    prisma,
+    ctx.user.id,
+    eventId,
+    input,
+    medication,
+  );
+  if (!medication) return created;
+  return recordRescueIntake(ctx, created, input, medication);
+}
+
+/**
+ * The dose row alone, inside the caller's transaction: a seizure logged with
+ * its doses is stored whole or not at all, and the intakes follow after the
+ * commit (`recordRescueIntake`).
+ */
+export function createRescueDoseRow(
+  db: Pick<Prisma.TransactionClient, "seizureRescueDose">,
+  userId: string,
+  eventId: string,
+  input: RescueDoseInput,
+  medication: { id: string; name: string } | null,
+): Promise<SeizureRescueDose> {
+  return db.seizureRescueDose.create({
     data: {
-      userId: ctx.user.id,
+      userId,
       eventId,
       medicationId: medication?.id ?? null,
       medicationName: medication?.name ?? input.medicationName ?? "",
@@ -66,8 +89,18 @@ export async function writeRescueDose(
       seizureEndedAt: input.seizureEndedAt ?? null,
     },
   });
-  if (!medication) return created;
+}
 
+/**
+ * The intake a stored dose writes on its medication, keyed on the dose's id
+ * so a retry cannot record it twice, then linked back on the dose.
+ */
+export async function recordRescueIntake(
+  ctx: RescueWriteContext,
+  created: SeizureRescueDose,
+  input: RescueDoseInput,
+  medication: { id: string; name: string },
+): Promise<SeizureRescueDose> {
   const outcome = await recordIntake(
     {
       user: ctx.user,

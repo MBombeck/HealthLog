@@ -143,6 +143,45 @@ beforeEach(async () => {
 });
 
 describe("the quick log's write lands whole", () => {
+  it("stores the seizure with all its doses or nothing", async () => {
+    const owner = await person("owner");
+    signIn(owner);
+    const prisma = getPrismaClient();
+    // A database that refuses the second dose mid-write, the way a dropped
+    // connection or a lock timeout would.
+    await prisma.$executeRawUnsafe(`
+      CREATE OR REPLACE FUNCTION refuse_test_dose() RETURNS trigger AS $$
+      BEGIN
+        IF NEW.medication_name = 'refused-by-test' THEN
+          RAISE EXCEPTION 'refused by the test';
+        END IF;
+        RETURN NEW;
+      END $$ LANGUAGE plpgsql`);
+    await prisma.$executeRawUnsafe(`
+      CREATE TRIGGER refuse_test_dose BEFORE INSERT ON seizure_rescue_doses
+      FOR EACH ROW EXECUTE FUNCTION refuse_test_dose()`);
+    try {
+      const res = await newEvent({
+        onsetAt: ago(60_000).toISOString(),
+        rescueDoses: [
+          { medicationName: "Midazolam", givenAt: ago(50_000) },
+          { medicationName: "refused-by-test", givenAt: ago(40_000) },
+        ],
+      });
+      expect(res.status).toBe(500);
+      // A retry must not find half of the first attempt stored.
+      expect(await prisma.seizureEvent.count()).toBe(0);
+      expect(await prisma.seizureRescueDose.count()).toBe(0);
+    } finally {
+      await prisma.$executeRawUnsafe(
+        "DROP TRIGGER IF EXISTS refuse_test_dose ON seizure_rescue_doses",
+      );
+      await prisma.$executeRawUnsafe(
+        "DROP FUNCTION IF EXISTS refuse_test_dose()",
+      );
+    }
+  });
+
   it("records the seizure, the rescue dose and the intake, and undoes the intake on delete", async () => {
     const owner = await person("owner");
     signIn(owner);

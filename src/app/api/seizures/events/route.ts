@@ -18,7 +18,7 @@ import { prisma } from "@/lib/db";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
-import { annotate } from "@/lib/logging/context";
+import { annotate, getEvent } from "@/lib/logging/context";
 import { withIdempotency } from "@/lib/idempotency";
 import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
@@ -35,7 +35,7 @@ import {
   toSeizureEventDTO,
   typeLookupOf,
 } from "@/lib/seizures/server";
-import { writeRescueDose } from "@/lib/seizures/rescue";
+import { createRescueDoseRow, recordRescueIntake } from "@/lib/seizures/rescue";
 import { notifySeizureCluster } from "@/lib/seizures/cluster-notify";
 
 export const dynamic = "force-dynamic";
@@ -96,57 +96,90 @@ async function postEvent(request: NextRequest): Promise<Response> {
     medications.set(dose.medicationId, check.medication);
   }
 
-  const created = await prisma.seizureEvent.create({
-    data: {
-      userId: user.id,
-      typeProfileId: entry.typeProfileId ?? null,
-      ilaeType: entry.ilaeType ?? null,
-      onsetAt: entry.onsetAt,
-      onsetPrecision: entry.onsetPrecision ?? "EXACT",
-      durationSec: entry.durationSec ?? null,
-      durationSource:
-        entry.durationSource ??
-        (entry.durationSec == null ? "UNKNOWN" : "ESTIMATED"),
-      count: entry.count ?? 1,
-      certainty: entry.certainty ?? "CONFIRMED",
-      sleepState: entry.sleepState ?? "UNKNOWN",
-      observableManifestations: entry.observableManifestations ?? null,
-      responsiveness: entry.responsiveness ?? null,
-      recall: entry.recall ?? null,
-      semiology: entry.semiology ?? [],
-      semiologyNoteEncrypted: sealOptional(entry.semiologyNote) ?? null,
-      auraEncrypted: sealOptional(entry.aura) ?? null,
-      triggers: entry.triggers ?? [],
-      postictalMinutes: entry.postictalMinutes ?? null,
-      postictal: entry.postictal ?? [],
-      injuries: entry.injuries ?? [],
-      incontinence: entry.incontinence ?? null,
-      emergency: entry.emergency ?? "NONE",
-      witnessed: entry.witnessed ?? null,
-      witnessRole: entry.witnessRole ?? null,
-      witnessNoteEncrypted: sealOptional(entry.witnessNote) ?? null,
-      loggedByUserId: actor.id,
-      source: entry.source ?? "MANUAL",
-      noteEncrypted: sealOptional(entry.note) ?? null,
-    },
+  // The seizure and its doses are stored whole or not at all: a dose that
+  // fails must not leave the seizure behind for a retry to store again.
+  const { created, rows } = await prisma.$transaction(async (tx) => {
+    const created = await tx.seizureEvent.create({
+      data: {
+        userId: user.id,
+        typeProfileId: entry.typeProfileId ?? null,
+        ilaeType: entry.ilaeType ?? null,
+        onsetAt: entry.onsetAt,
+        onsetPrecision: entry.onsetPrecision ?? "EXACT",
+        durationSec: entry.durationSec ?? null,
+        durationSource:
+          entry.durationSource ??
+          (entry.durationSec == null ? "UNKNOWN" : "ESTIMATED"),
+        count: entry.count ?? 1,
+        certainty: entry.certainty ?? "CONFIRMED",
+        sleepState: entry.sleepState ?? "UNKNOWN",
+        observableManifestations: entry.observableManifestations ?? null,
+        responsiveness: entry.responsiveness ?? null,
+        recall: entry.recall ?? null,
+        semiology: entry.semiology ?? [],
+        semiologyNoteEncrypted: sealOptional(entry.semiologyNote) ?? null,
+        auraEncrypted: sealOptional(entry.aura) ?? null,
+        triggers: entry.triggers ?? [],
+        postictalMinutes: entry.postictalMinutes ?? null,
+        postictal: entry.postictal ?? [],
+        injuries: entry.injuries ?? [],
+        incontinence: entry.incontinence ?? null,
+        emergency: entry.emergency ?? "NONE",
+        witnessed: entry.witnessed ?? null,
+        witnessRole: entry.witnessRole ?? null,
+        witnessNoteEncrypted: sealOptional(entry.witnessNote) ?? null,
+        loggedByUserId: actor.id,
+        source: entry.source ?? "MANUAL",
+        noteEncrypted: sealOptional(entry.note) ?? null,
+      },
+    });
+    const rows = [];
+    for (const dose of entry.rescueDoses ?? []) {
+      rows.push(
+        await createRescueDoseRow(
+          tx,
+          user.id,
+          created.id,
+          dose,
+          dose.medicationId
+            ? (medications.get(dose.medicationId) ?? null)
+            : null,
+        ),
+      );
+    }
+    return { created, rows };
   });
 
+  // Then the intakes on the medications, each keyed on its dose, so a retry
+  // cannot record one twice. One that fails is reported, not thrown: the
+  // seizure is stored, and a 500 now would invite a second one.
+  const intakeContext = {
+    user,
+    actorId: actor.id,
+    intakeSource: authMethod === "bearer" ? ("API" as const) : ("WEB" as const),
+    ipAddress: getClientIp(request),
+    originDeviceToken: request.headers.get("x-device-id"),
+  };
   const rescueDoses = [];
-  for (const dose of entry.rescueDoses ?? []) {
-    rescueDoses.push(
-      await writeRescueDose(
-        {
-          user,
-          actorId: actor.id,
-          intakeSource: authMethod === "bearer" ? "API" : "WEB",
-          ipAddress: getClientIp(request),
-          originDeviceToken: request.headers.get("x-device-id"),
-        },
-        created.id,
-        dose,
-        dose.medicationId ? (medications.get(dose.medicationId) ?? null) : null,
-      ),
-    );
+  for (const [index, row] of rows.entries()) {
+    const dose = (entry.rescueDoses ?? [])[index]!;
+    const medication = dose.medicationId
+      ? (medications.get(dose.medicationId) ?? null)
+      : null;
+    if (!medication) {
+      rescueDoses.push(row);
+      continue;
+    }
+    try {
+      rescueDoses.push(
+        await recordRescueIntake(intakeContext, row, dose, medication),
+      );
+    } catch (err) {
+      getEvent()?.addWarning(
+        `seizure rescue intake failed: ${err instanceof Error ? err.name : "error"}`,
+      );
+      rescueDoses.push(row);
+    }
   }
 
   await auditLog("seizures.event.create", {
