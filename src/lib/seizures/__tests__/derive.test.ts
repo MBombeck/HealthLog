@@ -98,10 +98,21 @@ describe("deriveClusters", () => {
     expect(deriveClusters(events, DEFAULT_CLUSTER_RULE)).toHaveLength(2);
   });
 
-  it("weights a tally by its count", () => {
+  it("does not make a cluster of one tally row on its own", () => {
+    // Three absences logged as one tally are one entry, not a run of
+    // seizures that formed a cluster; the rule is read over entries.
     const events = [seizure("2026-03-01T08:00:00Z", { count: 3 })];
-    expect(deriveClusters(events, NICE_CLUSTER_RULE)).toHaveLength(1);
-    expect(deriveClusters(events, { count: 4, windowHours: 24 })).toEqual([]);
+    expect(deriveClusters(events, NICE_CLUSTER_RULE)).toEqual([]);
+  });
+
+  it("weights a tally by its count once another entry shares the window", () => {
+    const events = [
+      seizure("2026-03-01T08:00:00Z", { count: 3 }),
+      seizure("2026-03-01T12:00:00Z"),
+    ];
+    const [episode] = deriveClusters(events, { count: 4, windowHours: 24 });
+    expect(episode?.seizureCount).toBe(4);
+    expect(deriveClusters(events, { count: 5, windowHours: 24 })).toEqual([]);
   });
 
   it("counts suspected events, since they are exactly when the rule matters", () => {

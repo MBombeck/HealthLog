@@ -38,6 +38,11 @@ read time in `src/lib/seizures/derive.ts`; nothing derived is stored.
   guidance is always visible.
 - The ketogenic diet ratio is not drawn on the report chart: blood ketones
   (#1367) store no prescribed ratio to mark.
+- A cluster needs at least two entries in the window. A tally row (a
+  `count` above 1, say five absences logged at once) is one entry: its
+  seizures count in every total and in the report, but it is no cluster by
+  itself and sends no cluster notification; it joins a cluster once another
+  entry shares its window, weighted by its count.
 - `SEIZURE_CLUSTER` is off by default and fires once per cluster, on the
   write that forms it, only when someone other than the person logged it and
   only when the seizure is not back-filled (`src/lib/seizures/cluster-notify.ts`).

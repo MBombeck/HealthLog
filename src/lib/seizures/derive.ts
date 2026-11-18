@@ -73,7 +73,10 @@ function ms(at: Date | string): number {
  *
  * Events are sorted by onset, each weighted by its `count`. The window
  * starting at event i is [tᵢ, tᵢ + W); it qualifies when the seizures inside
- * total at least N. Qualifying windows that share an event merge into one
+ * total at least N and it holds at least two entries. A tally row alone (a
+ * carer's "five absences this morning") is never a cluster by itself: it is
+ * one entry, its seizures still count everywhere else (the totals, the
+ * report), and it joins a cluster once another entry shares its window. Qualifying windows that share an event merge into one
  * episode, counted once and spanning its first to its last onset. Windows are
  * measured in absolute time, so a day with a clock change and a cluster that
  * runs over midnight are judged by the hours that actually passed.
@@ -100,7 +103,7 @@ export function deriveClusters(
       total += sorted[j].e.count;
       last = j;
     }
-    if (total < rule.count) continue;
+    if (total < rule.count || last === i) continue;
     const open = episodes.at(-1);
     if (open && i <= open.last) {
       open.last = Math.max(open.last, last);

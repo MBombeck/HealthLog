@@ -101,7 +101,9 @@ describe("buildSeizureReportSection", () => {
     expect(section.summary.seizureDays).toBe(2);
     expect(section.summary.convulsive).toBe(2);
     expect(section.summary.fromSleep).toBe(1);
-    expect(section.summary.clusterEpisodes).toBe(2);
+    // The two on 5 January; the tally of five absences on 10 February is one
+    // entry and no cluster on its own, though its seizures count above.
+    expect(section.summary.clusterEpisodes).toBe(1);
     expect(section.months).toEqual(["2026-01", "2026-02", "2026-03"]);
     expect(section.monthlyTotal.counts).toEqual([2, 5, 0]);
     const big = section.monthly.find((m) => m.typeId === "t1")!;

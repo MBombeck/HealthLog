@@ -30,11 +30,14 @@ describe("newlyFormedCluster", () => {
     expect(newlyFormedCluster(events, "c", rule, now)).toBeNull();
   });
 
-  it("counts a logged run as several", () => {
-    const events = [{ id: "a", onsetAt: at(1), count: 3 }];
-    expect(
-      newlyFormedCluster(events, "a", { count: 3, windowHours: 24 }, now),
-    ).toMatchObject({ seizureCount: 3 });
+  it("sends nothing for a tally alone, and counts it once another entry joins", () => {
+    const rule = { count: 3, windowHours: 24 };
+    const tally = { id: "a", onsetAt: at(2), count: 3 };
+    expect(newlyFormedCluster([tally], "a", rule, now)).toBeNull();
+    const next = { id: "b", onsetAt: at(1), count: 1 };
+    expect(newlyFormedCluster([tally, next], "b", rule, now)).toMatchObject({
+      seizureCount: 4,
+    });
   });
 
   it("stays silent below the rule and for a back-filled seizure", () => {
