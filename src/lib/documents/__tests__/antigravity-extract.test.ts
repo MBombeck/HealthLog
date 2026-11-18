@@ -198,4 +198,77 @@ describe("runAntigravityTextExtraction", () => {
     );
     expect((result.facts[0].data as ObservationFactData).value).toBe(14.5);
   });
+
+  it("requires human review with valid label anchor and unverified numeric value", async () => {
+    const rawJson = JSON.stringify({
+      reportDate: "2026-11-15",
+      results: [
+        {
+          label: "Glukoza",
+          value: 999.9,
+          unit: "mg/dl",
+          confidence: 0.95,
+        },
+      ],
+    });
+
+    const provider = fakeProvider(rawJson);
+    const chunk: OcrChunk = {
+      text: "Data: 2026-11-15\nGlukoza: nieoznaczona w materiale\nKomentarz: brak",
+      pages: [1],
+    };
+
+    const result = await runAntigravityTextExtraction({
+      userId: "user-1",
+      provider,
+      providerType: "antigravity",
+      chunks: [chunk],
+      ocrText: chunk.text ?? "",
+    });
+
+    expect(result.facts).toHaveLength(1);
+    const fact = result.facts[0];
+    expect((fact.data as ObservationFactData).label).toBe("Glukoza");
+    expect((fact.data as ObservationFactData).value).toBe(999.9);
+    // Anchor for the label itself is valid
+    expect(fact.provenance.anchored).toBe(true);
+    // But unverified numeric value must explicitly require review
+    expect(fact.needsReview).toBe(true);
+  });
+
+  it("avoids treating absent confidence as high and preserves unknown unit guard", async () => {
+    const rawJson = JSON.stringify({
+      reportDate: "2026-11-15",
+      results: [
+        {
+          label: "Glukoza",
+          value: 95.5,
+          unit: "(calc)",
+          // confidence omitted
+        },
+      ],
+    });
+
+    const provider = fakeProvider(rawJson);
+    const chunk: OcrChunk = {
+      text: "Glukoza: 95.5 (calc)",
+      pages: [1],
+    };
+
+    const result = await runAntigravityTextExtraction({
+      userId: "user-1",
+      provider,
+      providerType: "antigravity",
+      chunks: [chunk],
+      ocrText: chunk.text ?? "",
+    });
+
+    expect(result.facts).toHaveLength(1);
+    const fact = result.facts[0];
+    // Absent confidence is not treated as high (0.5 < floor 0.6)
+    expect(fact.confidence).toBeLessThan(0.6);
+    // Unknown unit (calc-only note) and absent confidence both require review
+    expect(fact.needsReview).toBe(true);
+    expect((fact.data as ObservationFactData).unit).toBeNull();
+  });
 });

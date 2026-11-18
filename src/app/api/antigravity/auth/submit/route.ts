@@ -10,6 +10,7 @@ import { apiSuccess } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { parseJsonBody } from "@/lib/api/body";
 import { prisma } from "@/lib/db";
+import { Prisma } from "@/generated/prisma/client";
 import { antigravityAuthSubmitSchema } from "@/lib/validations/antigravity";
 import {
   ANTIGRAVITY_LOGIN_FAILURE_MESSAGES,
@@ -52,6 +53,8 @@ export const POST = apiHandler(async (request: Request) => {
     select: { antigravityProfileId: true },
   });
 
+  let status: "connected" | "auth_required" | "error" = "connected";
+
   if (user?.antigravityProfileId) {
     const profile = antigravityProfileLocation(user.antigravityProfileId);
     if (profile) {
@@ -63,7 +66,9 @@ export const POST = apiHandler(async (request: Request) => {
             antigravityConnectionStatus: "connected",
             antigravityConnectedAt: new Date(),
             antigravityCapabilitiesJson: {
-              promptCapabilities: probeResult.capabilities,
+              promptCapabilities: {
+                ...probeResult.capabilities,
+              },
             },
           },
         });
@@ -72,20 +77,43 @@ export const POST = apiHandler(async (request: Request) => {
         });
       } catch (err) {
         // The reason only. The probe error can carry CLI output.
-        console.warn(
-          "Post-login Antigravity probe failed:",
-          antigravityReasonOf(err),
-        );
+        const reason = antigravityReasonOf(err);
+        status = reason === "auth_required" ? "auth_required" : "error";
+        console.warn("Post-login Antigravity probe failed:", reason);
         await prisma.user.update({
           where: { id: caller.id },
           data: {
-            antigravityConnectionStatus: "connected",
-            antigravityConnectedAt: new Date(),
+            antigravityConnectionStatus: status,
+            antigravityConnectedAt: null,
+            antigravityCapabilitiesJson: Prisma.DbNull,
           },
         });
+        setAntigravityCapabilities(caller.id, null);
       }
+    } else {
+      status = "error";
+      await prisma.user.update({
+        where: { id: caller.id },
+        data: {
+          antigravityConnectionStatus: status,
+          antigravityConnectedAt: null,
+          antigravityCapabilitiesJson: Prisma.DbNull,
+        },
+      });
+      setAntigravityCapabilities(caller.id, null);
     }
+  } else {
+    status = "error";
+    await prisma.user.update({
+      where: { id: caller.id },
+      data: {
+        antigravityConnectionStatus: status,
+        antigravityConnectedAt: null,
+        antigravityCapabilitiesJson: Prisma.DbNull,
+      },
+    });
+    setAntigravityCapabilities(caller.id, null);
   }
 
-  return apiSuccess({ success: true, status: "connected" });
+  return apiSuccess({ success: status === "connected", status });
 });

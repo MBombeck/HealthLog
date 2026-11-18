@@ -9,7 +9,7 @@ Antigravity CLI is an optional AI provider that runs locally in the HealthLog co
 **Key characteristics**:
 
 - ✅ Runs locally in Docker container
-- ✅ Support for images and PDFs
+- ✅ Support for images and PDFs (via text layer or page images fallback)
 - ❌ No HealthLog function calling (`supportsTools = false`)
 - ⚠️ External data processing (sends data to Antigravity/Google)
 - ⚠️ Requires separate Antigravity account
@@ -19,6 +19,13 @@ Antigravity CLI is an optional AI provider that runs locally in the HealthLog co
 1. **Antigravity Account**: You need an Antigravity account (account type depends on Antigravity's terms)
 2. **Docker Host**: Linux amd64 or arm64 host
 3. **Network Access**: Container must reach Antigravity services
+4. **Single App Instance**: Antigravity operations require a single HealthLog app instance (see [Single Instance Requirement](#single-instance-requirement))
+
+### Single Instance Requirement
+
+HealthLog manages interactive OAuth login flows (`agy acp --login`) through child processes whose standard I/O streams and pending authentication states are kept in local Node.js process memory (`activeSessions` in `src/lib/ai/antigravity-auth-session.ts`). Additionally, runtime capability negotiation results are cached in a process-local memory cache (`antigravity-capability-cache.ts`).
+
+Because interactive sessions and capability caches are process-local, **horizontal scaling (running multiple app replicas behind a round-robin load balancer) is not supported** for Antigravity operation. Deployments using the Antigravity CLI provider must run as a single application container instance.
 
 ## Installation
 
@@ -57,9 +64,9 @@ If you prefer to manage the CLI separately:
 
 ## Configuration
 
-### 1. Create Profile Directory (Recommended for Multi-user Deploys)
+### 1. Profile Directory Persistence (Default Named Volume)
 
-For multi-user deployments, create a dedicated volume for Antigravity profiles:
+By default, `docker-compose.yml` mounts a dedicated named volume `antigravity-profiles` to `/var/lib/healthlog/antigravity`:
 
 ```yaml
 # docker-compose.yml
@@ -67,7 +74,7 @@ services:
   app:
     volumes:
       - backups:/var/lib/healthlog/backups
-      - antigravity-profiles:/var/lib/healthlog/antigravity # Uncomment this
+      - antigravity-profiles:/var/lib/healthlog/antigravity
     environment:
       ANTIGRAVITY_PROFILE_ROOT: /var/lib/healthlog/antigravity
 
@@ -75,10 +82,32 @@ volumes:
   postgres-data:
   pgdata:
   backups:
-  antigravity-profiles: # Uncomment this
+  antigravity-profiles:
 ```
 
-Each user gets an isolated subdirectory under `/var/lib/healthlog/antigravity/<profile-id>`.
+This persistent volume retains:
+
+- **Per-user OAuth tokens**: Each authenticated user gets an isolated subdirectory under `/var/lib/healthlog/antigravity/<profile-id>`.
+- **Admin-installed binary**: When installed via the admin panel, `agy` is stored at `/var/lib/healthlog/antigravity/bin/agy`.
+
+Both user OAuth tokens and the installed binary persist across container restarts and image recreations (`docker compose down && docker compose up -d`).
+
+#### Migration Notes for Existing Deployments
+
+If an existing deployment was created before the named volume was enabled by default, its Antigravity profiles and admin-installed binary were stored directly in the container's writable overlay layer.
+
+When upgrading `docker-compose.yml` to the version with the persistent volume:
+
+1. Docker will mount an empty named volume over `/var/lib/healthlog/antigravity`, hiding files previously stored in the container layer.
+2. To preserve existing data without re-authenticating, operators can copy existing profile data before recreating the container:
+   ```bash
+   # Copy profiles from running container to host
+   docker compose cp app:/var/lib/healthlog/antigravity ./agy-backup
+   # After restarting with the new volume mount, copy back into the named volume
+   docker compose cp ./agy-backup/. app:/var/lib/healthlog/antigravity/
+   ```
+   Alternatively, administrators can re-run "Install Antigravity CLI" in Settings → AI → Antigravity, and users can reconnect their accounts.
+3. Do not modify running deployments or remote containers without a planned maintenance window.
 
 ### 2. Configure Environment Variable
 
@@ -107,24 +136,18 @@ Each user must authenticate independently:
 2. Click "Connect Antigravity"
 3. HealthLog generates a profile ID and shows instructions
 4. HealthLog starts the CLI's login on the server and shows a Google sign-in link
-5. The user opens the link, signs in to Antigravity, and pastes the code into the HealthLog dialog
-6. The user runs "Test connection" in HealthLog. The test starts the CLI on the profile and sends no prompt
+5. The user opens the link in their browser, signs in with Google, and pastes the authorization code into the HealthLog dialog
+6. Submitting the code completes the authentication and verifies the connection and capabilities
 
 Disconnecting removes the profile folder and its login. So does wiping the data
-(Settings → Data, or the admin wipe). Connecting again needs a new sign-in.
+(Settings → Data, or the admin wipe). Account locking during the deletion grace
+window also immediately removes the profile folder and OAuth login from disk to
+ensure credentials do not outlive the account. If an account deletion is
+subsequently undone, the account is restored without the CLI login; the user
+must sign in again (relogin) in Settings → AI Providers → Antigravity. Connecting
+again always needs a new sign-in.
 
-The login must run on the host where HealthLog runs. The profile folder lives there, so a login on a laptop does not help the server.
-
-### Agent tool steps (optional, risky)
-
-Sometimes the agent asks for an internal tool step while it answers. With the
-default setting the sandbox refuses that step, and the reply comes back empty.
-Set `ANTIGRAVITY_AUTO_APPROVE_TOOLS=true` to approve those steps automatically
-(agy `--dangerously-skip-permissions`).
-
-With the switch on, the agent may read and write files the app container can
-reach, and may run commands there, without a confirmation. Use it only on a
-server you run for yourself, and leave it off on any host other people use.
+The CLI process and profile folder reside on the host where HealthLog runs; the user completes the Google OAuth sign-in via their browser and pastes the authorization code into HealthLog's dialog.
 
 Without `ANTIGRAVITY_PROFILE_ROOT` the provider stays off, because there is no per-user folder to isolate the login in.
 
@@ -142,10 +165,10 @@ Without `ANTIGRAVITY_PROFILE_ROOT` the provider stays off, because there is no p
 
 When `ANTIGRAVITY_PROFILE_ROOT` is configured:
 
-- Each user gets a profile folder, `<root>/<profile-id>`. HealthLog passes the root as `--gemini-dir` and the profile ID as `--app-data-dir`. Without `--gemini-dir` the CLI would use `$HOME/.gemini`, which all users would share.
+- Each user gets a profile folder, `<root>/<profile-id>`. HealthLog passes the user profile directory as `--gemini-dir` to provide per-user CLI state and OAuth credential isolation. `--app-data-dir` is not used. Without per-user `--gemini-dir` the CLI would use `$HOME/.gemini`, which all users would share.
 - The CLI also keeps a shared `<root>/config` folder. In a test run with agy 1.5.8 it held `config.json` and `mcp_config.json`. Review what it holds before relying on it.
 - Separate `agy` process per call
-- Not yet verified: which file the CLI writes the OAuth token to. Check the profile folder after the first real login.
+- **Token retention**: The CLI stores the OAuth token at `<geminiDir>/antigravity-oauth-token`, within the user's profile directory. Because `--gemini-dir` points to the user's profile folder under `ANTIGRAVITY_PROFILE_ROOT`, the token is isolated per-user and preserved across container recreates when the profile root volume is mounted.
 
 ### Workspace Isolation
 
@@ -177,7 +200,7 @@ HealthLog never sees:
 ### Supported
 
 - ✅ **Images**: PNG, JPEG, WebP (via `promptCapabilities.image`)
-- ✅ **PDFs**: Single and multi-page (via `promptCapabilities.resourceBlob`)
+- ✅ **PDFs**: Single and multi-page handled via text layer extraction or rendered page images fallback (`supportsPdfForProvider("antigravity")` is `false`; ACP wire has no native PDF block)
 - ✅ **Models**: Discovered at runtime from ACP
 - ✅ **Thinking Levels**: Model-specific reasoning depth
 
@@ -187,6 +210,14 @@ HealthLog never sees:
 - ❌ **Audio**: Not implemented
 - ❌ **JSON Schema**: No native enforcement
 - ❌ **Session Resume**: Each completion gets fresh session
+
+### Clinical Document Extraction Limitations
+
+When using the Antigravity provider for clinical document extraction (`antigravity-extract.ts`):
+
+- **Analyte Label Anchoring Only**: Automated text anchoring (`anchorSourceText`) checks and anchors the **analyte label** against document text.
+- **Unverified Numeric Values and Reference Ranges**: Extracted numeric values, qualitative values, units, and reference ranges are **not** verified against source document text by anchoring.
+- **Human Review Required**: All staged clinical facts extracted via this path require explicit human review and clinical validation before acceptance into the permanent record.
 
 ## Monitoring
 
@@ -267,6 +298,61 @@ docker compose exec app chown -R nextjs:nodejs /var/lib/healthlog/antigravity
 docker compose exec app chmod 755 /var/lib/healthlog/antigravity
 ```
 
+### Malformed Profile IDs & Operator Repair
+
+**Symptom**: Wipe or account deletion returns 500 with an `antigravity.profile.invalid_id` diagnostic.
+
+**Cause**: A user row has a malformed `antigravityProfileId` containing illegal characters or path traversal elements. Safe profile IDs must be either standard 32-character hex or safe legacy alphanumeric identifiers (`^[A-Za-z0-9_-]{1,64}$`).
+
+**Operator Recovery**:
+
+1. Inspect the profile root (`/var/lib/healthlog/antigravity`) on the host to verify whether any directory or credentials exist for this user. **Never interpolate an unvalidated or malformed profile ID directly into a destructive path (`rm -rf ...`)**; always verify containment strictly within the profile root (no `..` or path traversal). Only delete the directory after confirming it resides directly within the root:
+   ```bash
+   cd /var/lib/healthlog/antigravity && ls -la
+   # Confirm directory name matches the expected profile without traversal before removing:
+   rm -rf -- ./<confirmed-profileId>
+   ```
+2. Only after verifying on the host that no credentials remain, repair the database pointer:
+
+```sql
+UPDATE "User"
+SET "antigravityProfileId" = NULL,
+    "antigravityConnectionStatus" = 'disconnected',
+    "antigravityModel" = NULL
+WHERE "id" = '<userId>';
+```
+
+3. Re-run the wipe or account deletion.
+
+### Profile Cleanup Blocking Account Erasure
+
+**Symptom**: Account purge or deletion fails with an error:
+`Failed to remove Antigravity profile directory for user <userId>; aborting account erasure to preserve retry reference`.
+
+**Cause**: Account deletion verifies that the on-disk profile folder and OAuth credentials are deleted before committing the deletion of the user row. If `ANTIGRAVITY_PROFILE_ROOT` is unset/invalid, directory permissions prevent `rm -rf`, or the filesystem is mounted read-only, erasure is aborted to prevent orphaned credentials on host disk. The database pointer is intentionally preserved so cleanup can be retried.
+
+**Operator Recovery**:
+
+> [!WARNING]
+> Never clear the profile pointer in the database while credentials may remain on disk. Doing so abandons unmanaged OAuth tokens on the host. Always restore configuration or verify manual folder deletion before retrying.
+
+1. **Restore volume or configuration (Preferred)**:
+   - Ensure `ANTIGRAVITY_PROFILE_ROOT` is set to the valid absolute path and that the volume mount is active.
+   - Fix filesystem permissions on the host directory:
+     ```bash
+     docker compose exec app chmod -R 700 /var/lib/healthlog/antigravity
+     ```
+2. **Or verified manual deletion on host**:
+   - If the root path changed permanently or cannot be mounted, inspect the host filesystem and verify root containment before deleting (never interpolate unvalidated profile IDs into destructive commands):
+     ```bash
+     cd /var/lib/healthlog/antigravity && ls -la
+     # Confirm directory name and remove safely within root:
+     rm -rf -- ./<confirmed-profileId>
+     ```
+3. **Retry without manual SQL**:
+   - Once the path is accessible or the directory is verified deleted on the host, retry the purge job or account deletion.
+   - Because profile removal is idempotent (`rm -rf` succeeds when the directory no longer exists under a valid root), the cleanup check will succeed and account erasure will complete cleanly without manual SQL edits.
+
 ## Resource Limits
 
 ### Process Limits
@@ -310,11 +396,21 @@ HealthLog automatically discovers new stable releases of the Antigravity CLI fro
 [Google Antigravity CLI releases](https://github.com/google-antigravity/antigravity-cli/releases).
 
 When a newer official release is available:
+
 1. An administrator navigates to Settings → AI → Antigravity.
 2. If an update is available for an eligible HealthLog-managed binary, an "Update Antigravity CLI" button is displayed.
-3. Clicking "Update Antigravity CLI" performs latest-release discovery from GitHub, strictly verifies the official release URL, verifies downloaded archive bytes against the official GitHub release metadata SHA-256 digest over HTTPS (not an out-of-band or hard-coded pinned hash), verifies the extracted binary `--version`, and replaces the managed binary atomically.
+3. Clicking "Update Antigravity CLI" performs latest-release discovery from GitHub, strictly verifies the official release URL in `src/lib/ai/antigravity-release.ts` (`parseAntigravityRelease`) and `src/lib/ai/antigravity-install-core.mjs`, verifies downloaded archive bytes against the official GitHub release metadata SHA-256 digest over HTTPS (not an out-of-band or hard-coded pinned hash), verifies the extracted binary `--version`, and replaces the managed binary atomically.
 4. If GitHub discovery is unreachable or rate-limited during initial installation, HealthLog falls back to installing the default pinned version (`AGY_PINNED_VERSION` in `src/lib/ai/antigravity-install-core.mjs`).
 5. Externally managed binaries (e.g. mounted from the host) cannot be updated via the admin panel and remain operator-managed.
+
+### Installer Trust Model & Binary Verification
+
+When installing or updating the CLI via HealthLog:
+
+- **Symlink & Non-Regular File Rejection**: The installer inspects the extracted file using `lstat` before applying execution permissions (`chmod 0o755`) and before moving it into place (`rename`). Symbolic links and non-regular files (such as sockets, FIFOs, and directories) are strictly rejected with an error (`"Extracted antigravity binary must be a regular file"`).
+- **Checksum Verification**:
+  - **Pinned Base Version**: When installing the build-pinned version (`AGY_PINNED_VERSION` = 1.5.10), the installer strictly enforces the hardcoded SHA-256 digest (`AGY_SHA256_AMD64` or `AGY_SHA256_ARM64`).
+  - **Dynamic Releases**: When an administrator updates to a newer release discovered via GitHub releases, HealthLog strictly validates that the asset download URL belongs to `github.com/google-antigravity/antigravity-cli` over HTTPS (enforced in `src/lib/ai/antigravity-release.ts` and `src/lib/ai/antigravity-install-core.mjs`), retrieves the release asset SHA-256 digest published in official GitHub release metadata over HTTPS, and validates the downloaded archive against this digest before extraction.
 
 ### No Automatic Updates
 

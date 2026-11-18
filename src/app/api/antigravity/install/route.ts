@@ -19,6 +19,8 @@
  */
 import { apiHandler, requireAdmin } from "@/lib/api-handler";
 import { apiError, apiSuccess, isJsonContentType } from "@/lib/api-response";
+import { envValue } from "@/lib/env";
+import { normalizeAntigravityProfileRoot } from "@/lib/ai/antigravity-profile-cleanup";
 import { parseJsonBody } from "@/lib/api/body";
 import {
   compareSemver,
@@ -37,6 +39,25 @@ export const dynamic = "force-dynamic";
 
 export const POST = apiHandler(async (req: Request) => {
   await requireAdmin();
+
+  const binaryOverride = envValue("ANTIGRAVITY_BIN_PATH");
+  if (binaryOverride) {
+    return apiError(
+      "Antigravity CLI is externally managed via ANTIGRAVITY_BIN_PATH and cannot be installed or modified by HealthLog",
+      400,
+    );
+  }
+
+  const rawProfileRoot = envValue("ANTIGRAVITY_PROFILE_ROOT");
+  if (rawProfileRoot) {
+    const normalizedRoot = normalizeAntigravityProfileRoot(rawProfileRoot);
+    if (!normalizedRoot) {
+      return apiError(
+        "Configured ANTIGRAVITY_PROFILE_ROOT must be a valid absolute path",
+        400,
+      );
+    }
+  }
 
   const contentType = req.headers.get("content-type");
   if (req.body && !isJsonContentType(contentType)) {
@@ -70,10 +91,7 @@ export const POST = apiHandler(async (req: Request) => {
 
     const cli = await probeCli(existing);
     if (!cli.installed || !cli.version) {
-      return apiError(
-        "Cannot determine current Antigravity CLI version",
-        400,
-      );
+      return apiError("Cannot determine current Antigravity CLI version", 400);
     }
 
     let latestRelease;

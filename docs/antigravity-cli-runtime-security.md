@@ -20,7 +20,7 @@ The container image does not include `agy`. In-container installation and update
 - **Image does not include `agy`**: The base container image ships without the CLI binary pre-installed.
 - **Admin-only installation and updates**: Only an administrator can install or update an eligible HealthLog-managed CLI via Settings → AI → Antigravity to the latest official release. A fresh installation falls back to `AGY_PINNED_VERSION` if GitHub discovery is unavailable; updates and repairs require a discovered release to avoid downgrading an existing binary.
 - **Official release validation and verified download**: Downloads strictly validate the official `google-antigravity/antigravity-cli` GitHub release URL and tag, and verify the platform SHA-256 checksum and extracted binary version before installation and atomic replacement.
-  - *Trust boundary*: For dynamic updates and online installs, the SHA-256 digest is retrieved from official GitHub release metadata over HTTPS and verifies downloaded asset bytes against that metadata, rather than an independently signed or out-of-band detached cryptographic checksum. Hard-coded pinned hashes (`AGY_SHA256_AMD64`, `AGY_SHA256_ARM64`) apply only to the offline fallback pinned version (`AGY_PINNED_VERSION`), not to dynamic updates to newer releases.
+  - _Trust boundary_: For dynamic updates and online installs, the SHA-256 digest is retrieved from official GitHub release metadata over HTTPS and verifies downloaded asset bytes against that metadata, rather than an independently signed or out-of-band detached cryptographic checksum. Hard-coded pinned hashes (`AGY_SHA256_AMD64`, `AGY_SHA256_ARM64`) apply only to the offline fallback pinned version (`AGY_PINNED_VERSION`), not to dynamic updates to newer releases.
 - **Profile root storage**: The managed binary is stored under the configured profile root (`<ANTIGRAVITY_PROFILE_ROOT>/bin/agy`).
 - **Externally managed binary**: An externally managed binary (e.g. mounted from the host, system-installed, or configured via `ANTIGRAVITY_BIN_PATH`) remains operator-managed and cannot be updated from the admin panel.
 
@@ -83,7 +83,7 @@ const connection = await AcpConnection.start(args, {
 2. **Environment**: Only allowlisted vars (`PATH`, `HOME`, `LANG`, etc.)
 3. **Sandbox**: `--sandbox` flag enabled
 4. **Telemetry**: `--disable-telemetry` (doesn't disable Interactions)
-5. **Profile**: `--gemini-dir` set to the operator's root and `--app-data-dir` set to the user's profile id. Not yet verified end to end with a real login.
+5. **Profile**: `--gemini-dir` set to the user's profile directory (`<root>/<profile-id>`) ensuring per-user CLI state and OAuth token isolation (`<geminiDir>/antigravity-oauth-token`). `--app-data-dir` is not used.
 
 ### Environment Allowlist
 

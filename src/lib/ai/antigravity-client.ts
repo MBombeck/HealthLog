@@ -8,16 +8,13 @@
  * Guarantees:
  * - The child runs in an empty temporary workspace, deleted when the call ends.
  * - The child gets an allowlisted environment only, so app secrets stay out.
- * - The child runs with `--gemini-dir` set to the operator's profile root and
- *   `--app-data-dir` set to the user's profile id. Without `--gemini-dir` the
- *   CLI keeps its state under $HOME/.gemini, which every user would share.
+ * - The child runs with `--gemini-dir` set to the user's profile directory.
+ *   Without per-user `--gemini-dir` the CLI keeps its state under $HOME/.gemini,
+ *   which every user would share. `--app-data-dir` is not used.
  * - The agent gets no MCP servers and no fs or terminal capabilities.
  * - Every permission request from the agent is refused.
  *
- * Checked against agy 1.5.8: the flags, the `initialize` shape, the
- * "Authentication required" error on a fresh profile, and a live E2E run on
- * 2026-11-13 (probe + text completion + streaming, gemini-3.8-flash,
- * image/PDF capabilities confirmed).
+ * Pinned to agy 1.5.10: the flags, the `initialize` shape, and the authentication flow.
  *
  * @see docs/antigravity-cli-architecture.md
  * @see docs/antigravity-cli-transport-decision.md
@@ -25,9 +22,41 @@
 
 import { existsSync, mkdtempSync, rmSync } from "fs";
 import { tmpdir } from "os";
-import { isAbsolute, join } from "path";
-import { AcpConnection, type JsonRpcResponse } from "./antigravity-acp";
+import { join } from "path";
+import { AcpConnection } from "./antigravity-acp";
 import { ANTIGRAVITY_ERRORS, AntigravityError } from "./antigravity-errors";
+import { antigravityChildEnv } from "./antigravity-bin";
+import type { AntigravityPromptCapabilities } from "./antigravity-capability-cache";
+import {
+  SETUP_TIMEOUT_MS,
+  resultOrThrow,
+  type AntigravityModel,
+  type AntigravityModelOptions,
+  type AntigravityThoughtLevelOptions,
+  thoughtLevelOptionsOf,
+  mapToAgyThoughtLevel,
+  resolveTargetThoughtLevel,
+  modelOptionsOf,
+  AGY_LEVEL_ORDER,
+  agyLevelRank,
+  selectModel,
+  selectThoughtLevel,
+  stricterReasoningLevel,
+} from "./antigravity-options";
+
+export { antigravityChildEnv };
+export {
+  type AntigravityPromptCapabilities,
+  type AntigravityModel,
+  type AntigravityModelOptions,
+  type AntigravityThoughtLevelOptions,
+  thoughtLevelOptionsOf,
+  mapToAgyThoughtLevel,
+  resolveTargetThoughtLevel,
+  modelOptionsOf,
+  AGY_LEVEL_ORDER,
+  agyLevelRank,
+};
 
 export {
   ANTIGRAVITY_ERRORS,
@@ -44,19 +73,14 @@ import type {
   ProviderType,
 } from "./types";
 import type { ReasoningEffort } from "./reasoning-effort";
-import {
-  capReasoningLevel,
-  isReasoningLevel,
-  type ReasoningLevel,
-  type ReasoningMaxEffort,
-} from "./reasoning/levels";
+import { isReasoningLevel, type ReasoningLevel } from "./reasoning/levels";
 import { reasoningTitleOf } from "./reasoning/support";
+import {
+  isValidAntigravityProfileId,
+  normalizeAntigravityProfileRoot,
+} from "./antigravity-profile-cleanup";
 
 // ─── Constants ───────────────────────────────────────────────
-
-/** Operator-set root that holds one profile directory per user id. */
-const PROFILE_ROOT_ENV = "ANTIGRAVITY_PROFILE_ROOT";
-const USER_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 
 /** Image MIME types accepted by ACP `image` blocks. */
 const ALLOWED_IMAGE_MIMES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -64,23 +88,7 @@ const ALLOWED_IMAGE_MIMES = new Set(["image/jpeg", "image/png", "image/webp"]);
 /** Document MIME types accepted by ACP `resource` blocks. */
 const ALLOWED_DOCUMENT_MIMES = new Set(["application/pdf"]);
 
-/** Environment variables passed to the child. Everything else is dropped. */
-const CHILD_ENV_ALLOWLIST = [
-  "PATH",
-  "HOME",
-  "USER",
-  "LANG",
-  "LC_ALL",
-  "TZ",
-  "TMPDIR",
-  "XDG_CONFIG_HOME",
-  "XDG_DATA_HOME",
-  "XDG_CACHE_HOME",
-  "XDG_STATE_HOME",
-] as const;
-
 const PROTOCOL_VERSION = 1;
-const SETUP_TIMEOUT_MS = 30_000;
 const DEFAULT_PROMPT_TIMEOUT_MS = 60_000;
 
 const ROLE_LABEL: Record<AiMessage["role"], string> = {
@@ -104,9 +112,13 @@ const ROLE_LABEL: Record<AiMessage["role"], string> = {
  * profileId, not the database userId.
  */
 export function antigravityProfileDir(profileId: string): string | null {
-  const root = process.env[PROFILE_ROOT_ENV];
-  if (!root || !isAbsolute(root) || !USER_ID_PATTERN.test(profileId))
+  const root = normalizeAntigravityProfileRoot();
+  if (!root || !isValidAntigravityProfileId(profileId)) {
+    if (profileId && !isValidAntigravityProfileId(profileId)) {
+      console.warn(`Invalid Antigravity profile ID: "${profileId}"`);
+    }
     return null;
+  }
   const dir = join(root, profileId);
   return existsSync(dir) ? dir : null;
 }
@@ -125,15 +137,15 @@ export interface AntigravityProfileLocation {
 export function antigravityProfileLocation(
   profileId: string,
 ): AntigravityProfileLocation | null {
-  if (antigravityProfileDir(profileId) === null) return null;
+  const dir = antigravityProfileDir(profileId);
+  if (dir === null) return null;
   // geminiDir is the per-user directory (not the shared root). The CLI stores
   // the OAuth token at <geminiDir>/antigravity-oauth-token, so it must point
   // to the user's own directory to keep credentials isolated and to place the
   // token file inside the volume-mounted path where it survives container
   // recreates.
-  const root = process.env[PROFILE_ROOT_ENV] as string;
   return {
-    geminiDir: join(root, profileId),
+    geminiDir: dir,
   };
 }
 
@@ -151,210 +163,9 @@ interface AcpInitializeResult {
   };
 }
 
-/** Prompt input the CLI accepts, as negotiated in `initialize`. */
-export type AntigravityPromptCapabilities = {
-  image: boolean;
-  embeddedContext: boolean;
-};
-
 interface AcpSessionNewResult {
   sessionId?: string;
   configOptions?: unknown;
-}
-
-/** One model the CLI offers in a profile. */
-export interface AntigravityModel {
-  id: string;
-  name: string;
-}
-
-/** The model selector from a session's `configOptions`. */
-export interface AntigravityModelOptions {
-  /** The `configId` that `session/set_config_option` takes. */
-  configId: string;
-  models: AntigravityModel[];
-  /** The model the CLI uses when none is selected. */
-  currentModel: string | null;
-}
-
-/** The thought level selector from a session's `configOptions`. */
-export interface AntigravityThoughtLevelOptions {
-  /** The `configId` that `session/set_config_option` takes. */
-  configId: string;
-  choices: string[];
-  /** The thought level the CLI uses when none is selected. */
-  currentLevel: string | null;
-}
-
-/**
- * Read the thought_level selector out of a session's `configOptions`.
- * Discovers the option by category or id `thought_level` / `thoughtLevel`
- * with type `select`. Grouped choices are flattened. Null when absent.
- */
-export function thoughtLevelOptionsOf(
-  configOptions: unknown,
-): AntigravityThoughtLevelOptions | null {
-  if (!Array.isArray(configOptions)) return null;
-  const option = configOptions.find(
-    (o): o is Record<string, unknown> =>
-      typeof o === "object" &&
-      o !== null &&
-      ((o as { category?: unknown }).category === "thought_level" ||
-        (o as { id?: unknown }).id === "thought_level" ||
-        (o as { id?: unknown }).id === "thoughtLevel") &&
-      (o as { type?: unknown }).type === "select",
-  );
-  if (!option || typeof option.id !== "string") return null;
-  if (!Array.isArray(option.options)) return null;
-
-  const entries: unknown[] = [];
-  for (const entry of option.options as unknown[]) {
-    if (typeof entry === "object" && entry !== null && "options" in entry) {
-      const group = (entry as { options?: unknown }).options;
-      if (Array.isArray(group)) entries.push(...group);
-    } else {
-      entries.push(entry);
-    }
-  }
-
-  const choices: string[] = [];
-  for (const entry of entries) {
-    if (typeof entry === "string" && entry.trim().length > 0) {
-      choices.push(entry.trim());
-    } else if (typeof entry === "object" && entry !== null) {
-      const val = (entry as { value?: unknown }).value;
-      if (typeof val === "string" && val.trim().length > 0) {
-        choices.push(val.trim());
-      }
-    }
-  }
-
-  return {
-    configId: option.id,
-    choices,
-    currentLevel:
-      typeof option.currentValue === "string" ? option.currentValue : null,
-  };
-}
-
-/**
- * Maps the taxonomy (off/none/low/medium/high) onto the ACP thought_level.
- * Unsupported "off" or "none" safely maps to "low".
- */
-export function mapToAgyThoughtLevel(
-  level: string | null | undefined,
-): string | null {
-  if (!level) return null;
-  const lower = level.toLowerCase().trim();
-  if (lower === "off" || lower === "none") return "low";
-  if (lower === "low" || lower === "medium" || lower === "high") {
-    return lower;
-  }
-  return null;
-}
-
-/**
- * Resolves the effective target thought level for an Antigravity call.
- * Precedence:
- * 1. Admin cap / switch "off" -> "low" (lowest supported level, honoring offIsReal: false).
- * 2. Explicit manual call "off" or "none" -> "low".
- * 3. Deliberate background job policy (admin off or frugal level) marked via
- *    maxEffort === "off" -> "low".
- * 4. Explicit manual Coach selection (isExplicit === true) -> overrides saved provider default,
- *    subject to administrative/cost cap (maxEffort).
- * 5. Saved provider effort (this.reasoningEffort) -> provider default (overrides non-explicit/default Coach),
- *    subject to administrative/cost cap (maxEffort).
- * 6. Explicit per-call reasoning effort (when this.reasoningEffort is not set and call has a level),
- *    subject to administrative/cost cap (maxEffort).
- * 7. Unconfigured default -> if maxEffort is "low" or "medium", clamped to maxEffort;
- *    otherwise null (preserves agy CLI's default "high" without sending set_config_option).
- */
-export function resolveTargetThoughtLevel(
-  paramsReasoningEffort: string | null | undefined,
-  savedProviderEffort: ReasoningEffort | null | undefined,
-  maxEffort?: ReasoningLevel | null,
-  isExplicit?: boolean,
-): string | null {
-  if (
-    paramsReasoningEffort === "off" ||
-    paramsReasoningEffort === "none" ||
-    maxEffort === "off"
-  ) {
-    return "low";
-  }
-
-  let candidate: string | null = null;
-  if (isExplicit && paramsReasoningEffort) {
-    candidate = mapToAgyThoughtLevel(paramsReasoningEffort);
-  } else if (savedProviderEffort && savedProviderEffort !== "none") {
-    candidate = savedProviderEffort;
-  } else if (savedProviderEffort === "none") {
-    candidate = "low";
-  } else if (paramsReasoningEffort) {
-    candidate = mapToAgyThoughtLevel(paramsReasoningEffort);
-  }
-
-  if (candidate) {
-    if (maxEffort) {
-      return capReasoningLevel(candidate as ReasoningLevel, maxEffort);
-    }
-    return candidate;
-  }
-
-  if (maxEffort && (maxEffort === "low" || maxEffort === "medium")) {
-    return maxEffort;
-  }
-
-  return null;
-}
-
-/**
- * Read the model selector out of a session's `configOptions`. The option is
- * the one with category `model` (or id `model`) and type `select`. Grouped
- * option lists are flattened. Null when the CLI offers no model selector.
- */
-export function modelOptionsOf(
-  configOptions: unknown,
-): AntigravityModelOptions | null {
-  if (!Array.isArray(configOptions)) return null;
-  const option = configOptions.find(
-    (o): o is Record<string, unknown> =>
-      typeof o === "object" &&
-      o !== null &&
-      ((o as { category?: unknown }).category === "model" ||
-        (o as { id?: unknown }).id === "model") &&
-      (o as { type?: unknown }).type === "select",
-  );
-  if (!option || typeof option.id !== "string") return null;
-  if (!Array.isArray(option.options)) return null;
-
-  const entries: unknown[] = [];
-  for (const entry of option.options as unknown[]) {
-    if (typeof entry === "object" && entry !== null && "options" in entry) {
-      const group = (entry as { options?: unknown }).options;
-      if (Array.isArray(group)) entries.push(...group);
-    } else {
-      entries.push(entry);
-    }
-  }
-
-  const models: AntigravityModel[] = [];
-  for (const entry of entries) {
-    if (typeof entry !== "object" || entry === null) continue;
-    const { value, name } = entry as { value?: unknown; name?: unknown };
-    if (typeof value !== "string" || value.length === 0) continue;
-    models.push({
-      id: value,
-      name: typeof name === "string" && name.length > 0 ? name : value,
-    });
-  }
-
-  return {
-    configId: option.id,
-    models,
-    currentModel:
-      typeof option.currentValue === "string" ? option.currentValue : null,
-  };
 }
 
 interface AcpPromptResult {
@@ -371,52 +182,15 @@ type AcpPromptBlock =
 
 // ─── Request helpers ─────────────────────────────────────────
 
-/** The environment every `agy` child runs with. Only allowlisted variables pass.
- * HOME is overridden to the user's profile directory so that agy's file-based
- * token storage writes to the volume-mounted path instead of the container's
- * ephemeral $HOME. Without this, the OAuth token disappears on every container
- * recreate and the user must re-login.
- */
-export function antigravityChildEnv(profileDir?: string): NodeJS.ProcessEnv {
-  const env = {} as NodeJS.ProcessEnv;
-  for (const key of CHILD_ENV_ALLOWLIST) {
-    const value = process.env[key];
-    if (value !== undefined) env[key] = value;
-  }
-  // Override $HOME so agy stores its token (and other home-relative files)
-  // under the per-user profile directory, which is volume-mounted and persists
-  // across container recreates. The XDG variables follow the same override so
-  // nothing leaks into the container's default home directory.
-  // When profileDir is not provided (e.g. for the CLI version probe in the
-  // status route) the app's own HOME is used as-is.
-  if (profileDir) {
-    env.HOME = profileDir;
-    env.XDG_DATA_HOME = join(profileDir, ".local", "share");
-    env.XDG_CONFIG_HOME = join(profileDir, ".config");
-    env.XDG_CACHE_HOME = join(profileDir, ".cache");
-    env.XDG_STATE_HOME = join(profileDir, ".local", "state");
-  }
-  return env;
-}
-
-/**
- * Operator switch. When "true", agy approves every tool request of the agent
- * without asking. Without it, the agent's internal steps are refused by the
- * sandbox, and a reply that needs one comes back empty. Off by default.
- */
-export function antigravityAutoApproveTools(): boolean {
-  return (
-    process.env.ANTIGRAVITY_AUTO_APPROVE_TOOLS?.trim().toLowerCase() === "true"
-  );
-}
-
 /** Arguments that start the ACP server for one user's profile. */
 function acpArgs(profile: AntigravityProfileLocation): string[] {
-  const args = ["acp", "--sandbox", "--disable-telemetry"];
-  if (antigravityAutoApproveTools())
-    args.push("--dangerously-skip-permissions");
-  args.push("--gemini-dir", profile.geminiDir);
-  return args;
+  return [
+    "acp",
+    "--sandbox",
+    "--disable-telemetry",
+    "--gemini-dir",
+    profile.geminiDir,
+  ];
 }
 
 function initializeParams() {
@@ -491,11 +265,6 @@ function textOf(content: AiMessage["content"]): string {
 }
 
 /**
- * Turn the request into ACP prompt blocks: one text block (system prompt
- * followed by the conversation), then one block per attached image or PDF.
- */
-
-/**
  * Injected into every agy session via two channels:
  *   1. The ACP `initialize` systemPrompt field (model's actual system prompt)
  *   2. Prepended to every conversation text block (belt-and-suspenders)
@@ -517,7 +286,11 @@ const AGY_NO_TOOL_HINT =
   "fully embedded in this message — you can read them directly without using any tools. " +
   "Provide your complete answer in a single text reply.";
 
-function buildPromptBlocks(params: CompletionParams): AcpPromptBlock[] {
+/**
+ * Turn the request into ACP prompt blocks: one text block (system prompt
+ * followed by the conversation), then one block per attached image or PDF.
+ */
+export function buildPromptBlocks(params: CompletionParams): AcpPromptBlock[] {
   const { messages } = params;
   const single = messages.length === 1 && messages[0].role === "user";
   const body = single
@@ -574,171 +347,11 @@ function buildPromptBlocks(params: CompletionParams): AcpPromptBlock[] {
   return blocks;
 }
 
-/**
- * Make the session use `model`. The model must be one the CLI offers in this
- * session, otherwise the call fails before any prompt is sent.
- */
-async function selectModel(
-  connection: AcpConnection,
-  sessionId: string,
-  options: AntigravityModelOptions | null,
-  model: string,
-): Promise<{ configOptions?: unknown }> {
-  if (!options || !options.models.some((m) => m.id === model)) {
-    throw new AntigravityError(
-      "Antigravity model is not available",
-      ANTIGRAVITY_ERRORS.MODEL_UNAVAILABLE,
-    );
-  }
-  if (options.currentModel === model) return {};
-  const res = resultOrThrow<{ configOptions?: unknown }>(
-    await connection.call(
-      "session/set_config_option",
-      { sessionId, configId: options.configId, value: model },
-      SETUP_TIMEOUT_MS,
-    ),
-    ANTIGRAVITY_ERRORS.SESSION_FAILED,
-    "Antigravity model could not be selected",
-  );
-  return res ?? {};
-}
-
-const AGY_LEVEL_ORDER: Record<string, number> = {
-  off: 1,
-  none: 1,
-  low: 1,
-  medium: 2,
-  high: 3,
-};
-
-function agyLevelRank(level: string | null | undefined): number | null {
-  if (!level) return null;
-  const key = level.trim().toLowerCase();
-  return AGY_LEVEL_ORDER[key] ?? null;
-}
-
-/**
- * Configure thought level via session/set_config_option if advertised.
- * Safe compatibility: if options is null (older agy or model with no selector), returns null without error.
- * If target level is unsupported:
- * - If mandatory cap (policyCap) is set: picks highest advertised level at or below cap,
- *   or fails closed with AntigravityError if no advertised level satisfies cap.
- * - If uncapped: preserves current CLI value without sending set_config_option.
- * If target level is identical to current, avoids redundant call.
- */
-async function selectThoughtLevel(
-  connection: AcpConnection,
-  sessionId: string,
-  options: AntigravityThoughtLevelOptions | null,
-  targetLevel: string | null,
-  policyCap?: ReasoningLevel | null,
-): Promise<{ appliedLevel: string | null; configOptions?: unknown }> {
-  if (!options) return { appliedLevel: null };
-
-  const capRank = agyLevelRank(policyCap);
-
-  let selected: string | null = null;
-
-  if (targetLevel && options.choices.includes(targetLevel)) {
-    const targetRank = agyLevelRank(targetLevel) ?? Infinity;
-    if (capRank === null || targetRank <= capRank) {
-      selected = targetLevel;
-    }
-  }
-
-  if (!selected) {
-    if (capRank !== null) {
-      const compatibleChoices = options.choices.filter((c) => {
-        const rank = agyLevelRank(c);
-        return rank !== null && rank <= capRank;
-      });
-      if (compatibleChoices.length === 0) {
-        throw new AntigravityError(
-          "Antigravity thought level could not be selected",
-          ANTIGRAVITY_ERRORS.SESSION_FAILED,
-        );
-      }
-      const currentRank = agyLevelRank(options.currentLevel) ?? Infinity;
-      if (!targetLevel && currentRank <= capRank && options.currentLevel) {
-        selected = options.currentLevel;
-      } else {
-        compatibleChoices.sort(
-          (a, b) => (agyLevelRank(b) ?? 0) - (agyLevelRank(a) ?? 0),
-        );
-        selected = compatibleChoices[0];
-      }
-    } else {
-      selected = options.currentLevel;
-    }
-  }
-
-  if (!selected) {
-    return { appliedLevel: options.currentLevel };
-  }
-
-  if (options.currentLevel === selected) {
-    return { appliedLevel: selected };
-  }
-
-  const res = resultOrThrow<{ configOptions?: unknown }>(
-    await connection.call(
-      "session/set_config_option",
-      { sessionId, configId: options.configId, value: selected },
-      SETUP_TIMEOUT_MS,
-    ),
-    ANTIGRAVITY_ERRORS.SESSION_FAILED,
-    "Antigravity thought level could not be selected",
-  );
-  const updatedOptions = thoughtLevelOptionsOf(res?.configOptions);
-  if (capRank !== null) {
-    if (!updatedOptions || !updatedOptions.currentLevel) {
-      throw new AntigravityError(
-        "Antigravity thought level could not be selected",
-        ANTIGRAVITY_ERRORS.SESSION_FAILED,
-      );
-    }
-    const updatedRank = agyLevelRank(updatedOptions.currentLevel);
-    if (
-      updatedRank === null ||
-      updatedRank > capRank ||
-      updatedOptions.currentLevel !== selected
-    ) {
-      throw new AntigravityError(
-        "Antigravity thought level could not be selected",
-        ANTIGRAVITY_ERRORS.SESSION_FAILED,
-      );
-    }
-  }
-  return {
-    appliedLevel: updatedOptions?.currentLevel ?? selected,
-    configOptions: res?.configOptions,
-  };
-}
-
 function cancelledError(): AntigravityError {
   return new AntigravityError(
     "Request cancelled",
     ANTIGRAVITY_ERRORS.CANCELLED,
   );
-}
-
-/** Unwrap a response, or throw with a generic message. The CLI text stays in originalError. */
-function resultOrThrow<T>(
-  response: JsonRpcResponse,
-  code: string,
-  label: string,
-): T {
-  if (response.error) {
-    const authRequired = /authentication required/i.test(
-      response.error.message,
-    );
-    throw new AntigravityError(
-      label,
-      authRequired ? ANTIGRAVITY_ERRORS.AUTH_REQUIRED : code,
-      response.error,
-    );
-  }
-  return response.result as T;
 }
 
 // ─── Client ──────────────────────────────────────────────────
@@ -917,9 +530,8 @@ export class AntigravityClient implements AIProvider {
     const modelOptions = modelOptionsOf(activeConfigOptions);
     const selected = this.options.model ?? null;
     if (selected) {
-      if (modelOptions && modelOptions.currentModel !== selected) {
+      if (modelOptions && modelOptions.currentModel !== selected)
         modelChanged = true;
-      }
       const modelRes = await selectModel(
         connection,
         session.sessionId,
@@ -936,7 +548,10 @@ export class AntigravityClient implements AIProvider {
     }
 
     const thoughtOptions = thoughtLevelOptionsOf(activeConfigOptions);
-    const effectiveCap = params.reasoning?.maxEffort ?? this.policyCap ?? null;
+    const effectiveCap = stricterReasoningLevel(
+      params.reasoning?.maxEffort,
+      this.policyCap,
+    );
     const capRank = agyLevelRank(effectiveCap);
     if (unknownConfigAfterModelChange && capRank !== null && capRank < 3) {
       // Under a restrictive mandatory cap, unknown config after a model change
@@ -946,7 +561,8 @@ export class AntigravityClient implements AIProvider {
         ANTIGRAVITY_ERRORS.SESSION_FAILED,
       );
     }
-    const isExplicit = params.reasoning?.explicit ?? (params.reasoning?.effort === "off");
+    const isExplicit =
+      params.reasoning?.explicit ?? params.reasoning?.effort === "off";
     const targetLevel = resolveTargetThoughtLevel(
       params.reasoning?.effort,
       this.reasoningEffort,
@@ -1035,11 +651,14 @@ export class AntigravityClient implements AIProvider {
     const isDowngraded =
       isValidAppliedLevel &&
       appliedRank !== null &&
-      ((requestedEffort === "off" || requestedEffort === "none") && appliedThoughtLevel === "low"
+      ((requestedEffort === "off" || requestedEffort === "none") &&
+      appliedThoughtLevel === "low"
         ? true
         : requestedRank !== null
           ? appliedRank < requestedRank
-          : effectiveCap !== null && effectiveCap !== undefined && appliedRank < defaultRank);
+          : effectiveCap !== null &&
+            effectiveCap !== undefined &&
+            appliedRank < defaultRank);
 
     return {
       content,
@@ -1109,7 +728,11 @@ export async function probeAntigravity(
     }
     let activeConfigOptions: unknown = session.configOptions;
     const modelOptions = modelOptionsOf(activeConfigOptions);
-    if (model && modelOptions && modelOptions.models.some((m) => m.id === model)) {
+    if (
+      model &&
+      modelOptions &&
+      modelOptions.models.some((m) => m.id === model)
+    ) {
       const modelRes = await selectModel(
         connection,
         session.sessionId,
@@ -1134,20 +757,36 @@ export async function probeAntigravity(
 
 // ─── Provider wiring ─────────────────────────────────────────
 
-/** Whether a stored profile id has a profile folder on the server. */
-export function antigravityAvailable(profileId: string | null): boolean {
+if (process.env.ANTIGRAVITY_AUTO_APPROVE_TOOLS) {
+  console.warn(
+    "[antigravity] ANTIGRAVITY_AUTO_APPROVE_TOOLS is deprecated and ignored. Strict permissions are enforced.",
+  );
+}
+
+/** Whether a stored profile id has a profile folder on the server and is connected. */
+export function antigravityAvailable(
+  profileId: string | null,
+  connectionStatus?: string | null,
+): boolean {
+  if (connectionStatus !== undefined && connectionStatus !== "connected") {
+    return false;
+  }
   return profileId !== null && antigravityProfileLocation(profileId) !== null;
 }
 
 /**
  * The client for a user's stored profile and model. Null when the user has no
- * profile, or the profile folder is gone.
+ * profile, the profile folder is gone, or connection is not active.
  */
 export function antigravityProviderFor(user: {
   antigravityProfileId: string | null;
   antigravityModel: string | null;
+  antigravityConnectionStatus: string | null;
 }): AntigravityClient | null {
   if (!user.antigravityProfileId) return null;
+  if (user.antigravityConnectionStatus !== "connected") {
+    return null;
+  }
   const profile = antigravityProfileLocation(user.antigravityProfileId);
   if (!profile) return null;
   return new AntigravityClient({ profile, model: user.antigravityModel });

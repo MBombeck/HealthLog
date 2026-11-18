@@ -4,10 +4,10 @@
  * Returns the Antigravity CLI status for the authenticated user:
  * - CLI installation and version
  * - Saved configuration (profile ID, connection status, last test result)
- * - Whether this user may install the CLI (administrators only)
+ * - Whether this user may install or update the CLI (administrators only)
  *
- * The connection status only changes through POST /api/antigravity/test, which
- * starts the CLI on the profile. This endpoint never claims a connection on its own.
+ * The connection status changes through authentication, test, and disconnect
+ * endpoints. This endpoint is read-only and never modifies the connection state.
  */
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess } from "@/lib/api-response";

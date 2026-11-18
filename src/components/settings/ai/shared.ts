@@ -186,3 +186,31 @@ export function localiseTestReason(
 export function isProviderType(v: string | null): v is ProviderType {
   return v != null && (PROVIDER_TYPES as readonly string[]).includes(v);
 }
+
+/**
+ * Pure semver comparison helper safe for client bundles.
+ * Returns -1 if a < b, 1 if a > b, 0 if equal.
+ */
+export function compareSemver(a: string, b: string): number {
+  const stripV = (s: string) =>
+    s.startsWith("v") || s.startsWith("V") ? s.slice(1) : s;
+  const partsA = stripV(a)
+    .split(/[.-]/)
+    .map((n) => Number.parseInt(n, 10));
+  const partsB = stripV(b)
+    .split(/[.-]/)
+    .map((n) => Number.parseInt(n, 10));
+  const len = Math.max(partsA.length, partsB.length);
+  for (let i = 0; i < len; i++) {
+    const ai = partsA[i] ?? 0;
+    const bi = partsB[i] ?? 0;
+    if (Number.isNaN(ai) || Number.isNaN(bi)) {
+      const sA = stripV(a);
+      const sB = stripV(b);
+      return sA < sB ? -1 : sA > sB ? 1 : 0;
+    }
+    if (ai < bi) return -1;
+    if (ai > bi) return 1;
+  }
+  return 0;
+}

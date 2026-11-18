@@ -7,6 +7,7 @@ import {
   eraseAccount,
   lockAccountForDeletion,
 } from "@/lib/account-deletion/lifecycle";
+import { cleanAntigravityProfileOnLock } from "@/lib/ai/antigravity-profile-cleanup";
 import {
   activeGuardianWhere,
   remainingGuardianWhere,
@@ -333,7 +334,11 @@ export async function deleteManagedProfile(input: {
       await eraseAccount(tx, profile.id, "managed_profile_deleted");
     });
   }, ACCOUNT_DELETION_TRANSACTION_OPTIONS);
-  if (!purgeAt) await kickOffhostPurge();
+  if (!purgeAt) {
+    await kickOffhostPurge();
+  } else {
+    await cleanAntigravityProfileOnLock(input.profileId);
+  }
   return { scheduledPurgeAt: purgeAt };
 }
 

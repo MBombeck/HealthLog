@@ -210,4 +210,18 @@ describe("antigravity-auth-session", () => {
       vi.useRealTimers();
     }
   });
+
+  it("rejects when explicit ANTIGRAVITY_BIN_PATH override fails to resolve", async () => {
+    const orig = process.env.ANTIGRAVITY_BIN_PATH;
+    process.env.ANTIGRAVITY_BIN_PATH = "/nonexistent/binary";
+    try {
+      await expect(
+        startAntigravityLogin("user-test-1", "profile-123", "/tmp/profile-123"),
+      ).rejects.toThrow("Antigravity login could not start");
+      expect(mockSpawn).not.toHaveBeenCalled();
+    } finally {
+      if (orig !== undefined) process.env.ANTIGRAVITY_BIN_PATH = orig;
+      else delete process.env.ANTIGRAVITY_BIN_PATH;
+    }
+  });
 });

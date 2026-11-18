@@ -37,7 +37,10 @@ import { coachChatRequestSchema } from "@/lib/ai/coach/types";
 import { listConversations } from "@/lib/ai/coach/persistence";
 import { detectRefusal } from "@/lib/ai/coach/refusal";
 import { runCoachTurn } from "@/lib/ai/coach/turn/pipeline";
-import { isReasoningLevel, type ReasoningLevel } from "@/lib/ai/reasoning/levels";
+import {
+  isReasoningLevel,
+  type ReasoningLevel,
+} from "@/lib/ai/reasoning/levels";
 import {
   loadReasoningControls,
   resolveCoachTurnReasoningLevel,

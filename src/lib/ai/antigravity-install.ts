@@ -5,13 +5,15 @@
  */
 import { envValue } from "@/lib/env";
 import { safeFetch } from "@/lib/safe-fetch";
-import { antigravityChildEnv } from "./antigravity-client";
+import {
+  antigravityChildEnv,
+  resolveAntigravityBinary,
+} from "./antigravity-bin";
 import {
   AGY_PINNED_VERSION,
   compareSemver,
   installAgy,
   isManagedAntigravityBinary,
-  resolveAntigravityBinary as resolveFromConfig,
 } from "./antigravity-install-core.mjs";
 import {
   type AntigravityReleaseInfo,
@@ -21,6 +23,7 @@ import {
 export {
   AGY_PINNED_VERSION,
   compareSemver,
+  resolveAntigravityBinary,
   type AntigravityReleaseInfo,
   getLatestAntigravityRelease,
 };
@@ -37,17 +40,6 @@ export interface InstallAntigravityResult {
 export interface InstallAntigravityOptions {
   force?: boolean;
   release?: AntigravityReleaseInfo;
-}
-
-/**
- * The installed binary: `ANTIGRAVITY_BIN_PATH`, then the profile root's `bin`,
- * then the default volume path, then the system paths. Null when none runs.
- */
-export function resolveAntigravityBinary(): string | null {
-  return resolveFromConfig({
-    binaryPath: envValue("ANTIGRAVITY_BIN_PATH") ?? undefined,
-    profileRoot: envValue("ANTIGRAVITY_PROFILE_ROOT") ?? undefined,
-  });
 }
 
 /**

@@ -39,6 +39,4 @@ export const antigravityInstallSchema = z
   })
   .strict();
 
-export type AntigravityInstallInput = z.infer<
-  typeof antigravityInstallSchema
->;
+export type AntigravityInstallInput = z.infer<typeof antigravityInstallSchema>;

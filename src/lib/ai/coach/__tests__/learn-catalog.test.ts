@@ -1,9 +1,10 @@
 /**
  * Regression test for the Coach learn catalog prompt block.
  *
- * Verifies that the prompt block does not contain standalone `/learn` tokens
- * (which trigger external assistant / ACP tool-injection blocks like `<LEARN>`),
- * while retaining all published guide URLs and guidance.
+ * Verifies that the ACP text emitted by buildPromptBlocks does not contain
+ * `/learn` tokens (which trigger external assistant / ACP command injection
+ * blocks like `<LEARN>`), including tokens directly following punctuation
+ * (e.g. Polish./learn), while preserving all published safe guide URLs.
  */
 import { describe, expect, it } from "vitest";
 
@@ -12,44 +13,60 @@ import {
   learnCatalogPromptBlock,
 } from "@/lib/ai/coach/learn-catalog";
 import { getCoachSystemPrompt } from "@/lib/ai/coach/system-prompt";
+import { buildPromptBlocks } from "@/lib/ai/antigravity-client";
 
-describe("learnCatalogPromptBlock", () => {
-  it("lacks standalone /learn tokens that could trigger ACP command injection", () => {
-    const block = learnCatalogPromptBlock();
+describe("learnCatalogPromptBlock and ACP text", () => {
+  // Matches any /learn not followed by a valid guide slug path (e.g. "/learn/slug").
+  // Catches standalone "/learn", "...never invent a /learn URL...", and "Polish./learn",
+  // without relying on whitespace boundaries, while preserving safe full URLs.
+  const unsafeLearnPattern = /\/learn(?!\/[a-z0-9-]+)/i;
 
-    // Standalone /learn token: /learn not immediately followed by /
-    // e.g. "/learn " or "/learn\n" or "...never invent a /learn URL..."
-    const standaloneLearnPattern = /(?:^|\s)\/learn(?=[^\w/]|$)/i;
-    expect(block).not.toMatch(standaloneLearnPattern);
+  it("the test pattern correctly catches /learn including Polish./learn while allowing safe URLs", () => {
+    expect(unsafeLearnPattern.test("Polish./learn")).toBe(true);
+    expect(unsafeLearnPattern.test("never invent a /learn URL")).toBe(true);
+    expect(unsafeLearnPattern.test("/learn ")).toBe(true);
+    expect(unsafeLearnPattern.test("in Polish./learn")).toBe(true);
+    expect(
+      unsafeLearnPattern.test("https://healthlog.dev/learn/resting-heart-rate"),
+    ).toBe(false);
+  });
 
-    // Specifically verify the reworded guidance phrasing
-    expect(block).toContain("never invent a learn-guide URL or article");
-    expect(block).not.toContain("never invent a /learn URL");
+  it("ensures actual ACP prompt blocks from buildPromptBlocks contain no unsafe /learn tokens", () => {
+    const systemPrompt = getCoachSystemPrompt("en");
+    expect(systemPrompt).not.toMatch(unsafeLearnPattern);
 
-    // Every occurrence of "/learn" in the block must be part of a full URL path "/learn/"
-    const matches = block.match(/\/learn[^\s]*/g) ?? [];
-    expect(matches.length).toBeGreaterThan(0);
-    for (const match of matches) {
-      expect(match).toMatch(/^\/learn\/[a-z0-9-]+/);
+    const blocks = buildPromptBlocks({
+      messages: [{ role: "user", content: "hi" }],
+      system: systemPrompt,
+    });
+
+    const acpText = blocks
+      .map((b) => (b.type === "text" ? b.text : ""))
+      .join("\n\n");
+
+    expect(acpText).not.toMatch(unsafeLearnPattern);
+    expect(acpText).toContain("never invent a learn-guide URL or article");
+    expect(acpText).not.toContain("never invent a /learn URL");
+
+    // All safe guide URLs must be preserved in the prompt
+    for (const guide of LEARN_GUIDES) {
+      expect(acpText).toContain(guide.url);
+      expect(guide.url).toMatch(
+        /^https:\/\/healthlog\.dev\/learn\/[a-z0-9-]+$/,
+      );
     }
   });
 
-  it("retains all published guide URLs in the prompt block", () => {
+  it("learnCatalogPromptBlock lacks unsafe /learn tokens and retains all published guides", () => {
     const block = learnCatalogPromptBlock();
+
+    expect(block).not.toMatch(unsafeLearnPattern);
+    expect(block).toContain("never invent a learn-guide URL or article");
+    expect(block).not.toContain("never invent a /learn URL");
 
     expect(LEARN_GUIDES.length).toBeGreaterThanOrEqual(15);
     for (const guide of LEARN_GUIDES) {
       expect(block).toContain(guide.url);
-      expect(guide.url).toMatch(/^https:\/\/healthlog\.dev\/learn\/[a-z0-9-]+$/);
     }
-  });
-
-  it("ensures the resolved Coach system prompt also lacks standalone /learn", () => {
-    const systemPrompt = getCoachSystemPrompt("en");
-
-    const standaloneLearnPattern = /(?:^|\s)\/learn(?=[^\w/]|$)/i;
-    expect(systemPrompt).not.toMatch(standaloneLearnPattern);
-    expect(systemPrompt).toContain("LEARN GUIDES");
-    expect(systemPrompt).toContain("never invent a learn-guide URL or article");
   });
 });

@@ -28,7 +28,8 @@ vi.mock("@/lib/ai/antigravity-probe", () => ({
 }));
 
 vi.mock("@/lib/ai/antigravity-install", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/ai/antigravity-install")>();
+  const actual =
+    await importOriginal<typeof import("@/lib/ai/antigravity-install")>();
   return {
     ...actual,
     resolveAntigravityBinary: vi.fn(),
@@ -123,9 +124,14 @@ describe("Admin Authorization Boundary", () => {
 
   it("denies canInstallCli and canUpdateCli to non-admin user in GET /status", async () => {
     vi.mocked(getSession).mockResolvedValue(USER_SESSION as never);
-    vi.mocked(resolveAntigravityBinary).mockReturnValue("/var/lib/healthlog/bin/agy");
+    vi.mocked(resolveAntigravityBinary).mockReturnValue(
+      "/var/lib/healthlog/bin/agy",
+    );
     vi.mocked(isAntigravityBinaryManaged).mockReturnValue(true);
-    vi.mocked(probeCli).mockResolvedValue({ installed: true, version: "1.5.10" });
+    vi.mocked(probeCli).mockResolvedValue({
+      installed: true,
+      version: "1.5.10",
+    });
     vi.mocked(getLatestAntigravityRelease).mockResolvedValue(mockRelease);
 
     const res = await statusGETWithRequest(statusReq());
@@ -153,9 +159,14 @@ describe("GET /api/antigravity/status updater discovery", () => {
   });
 
   it("reports updateAvailable: true when installed version is older than GitHub release", async () => {
-    vi.mocked(resolveAntigravityBinary).mockReturnValue("/var/lib/healthlog/bin/agy");
+    vi.mocked(resolveAntigravityBinary).mockReturnValue(
+      "/var/lib/healthlog/bin/agy",
+    );
     vi.mocked(isAntigravityBinaryManaged).mockReturnValue(true);
-    vi.mocked(probeCli).mockResolvedValue({ installed: true, version: "1.5.10" });
+    vi.mocked(probeCli).mockResolvedValue({
+      installed: true,
+      version: "1.5.10",
+    });
     vi.mocked(getLatestAntigravityRelease).mockResolvedValue(mockRelease);
 
     const res = await statusGETWithRequest(statusReq());
@@ -179,9 +190,14 @@ describe("GET /api/antigravity/status updater discovery", () => {
   });
 
   it("reports updateAvailable: false when installed version is equal to GitHub release", async () => {
-    vi.mocked(resolveAntigravityBinary).mockReturnValue("/var/lib/healthlog/bin/agy");
+    vi.mocked(resolveAntigravityBinary).mockReturnValue(
+      "/var/lib/healthlog/bin/agy",
+    );
     vi.mocked(isAntigravityBinaryManaged).mockReturnValue(true);
-    vi.mocked(probeCli).mockResolvedValue({ installed: true, version: "1.5.11" });
+    vi.mocked(probeCli).mockResolvedValue({
+      installed: true,
+      version: "1.5.11",
+    });
     vi.mocked(getLatestAntigravityRelease).mockResolvedValue(mockRelease);
 
     const res = await statusGETWithRequest(statusReq());
@@ -201,9 +217,14 @@ describe("GET /api/antigravity/status updater discovery", () => {
   });
 
   it("reports updateAvailable: false when installed version is newer than GitHub release", async () => {
-    vi.mocked(resolveAntigravityBinary).mockReturnValue("/var/lib/healthlog/bin/agy");
+    vi.mocked(resolveAntigravityBinary).mockReturnValue(
+      "/var/lib/healthlog/bin/agy",
+    );
     vi.mocked(isAntigravityBinaryManaged).mockReturnValue(true);
-    vi.mocked(probeCli).mockResolvedValue({ installed: true, version: "1.6.0" });
+    vi.mocked(probeCli).mockResolvedValue({
+      installed: true,
+      version: "1.6.0",
+    });
     vi.mocked(getLatestAntigravityRelease).mockResolvedValue(mockRelease);
 
     const res = await statusGETWithRequest(statusReq());
@@ -225,7 +246,10 @@ describe("GET /api/antigravity/status updater discovery", () => {
   it("reports updateAvailable: false and canUpdateCli: false when binary is externally managed", async () => {
     vi.mocked(resolveAntigravityBinary).mockReturnValue("/usr/local/bin/agy");
     vi.mocked(isAntigravityBinaryManaged).mockReturnValue(false);
-    vi.mocked(probeCli).mockResolvedValue({ installed: true, version: "1.5.8" });
+    vi.mocked(probeCli).mockResolvedValue({
+      installed: true,
+      version: "1.5.8",
+    });
     vi.mocked(getLatestAntigravityRelease).mockResolvedValue(mockRelease);
 
     const res = await statusGETWithRequest(statusReq());
@@ -247,9 +271,14 @@ describe("GET /api/antigravity/status updater discovery", () => {
   });
 
   it("fails safely when GitHub release lookup fails during status polling", async () => {
-    vi.mocked(resolveAntigravityBinary).mockReturnValue("/var/lib/healthlog/bin/agy");
+    vi.mocked(resolveAntigravityBinary).mockReturnValue(
+      "/var/lib/healthlog/bin/agy",
+    );
     vi.mocked(isAntigravityBinaryManaged).mockReturnValue(true);
-    vi.mocked(probeCli).mockResolvedValue({ installed: true, version: "1.5.10" });
+    vi.mocked(probeCli).mockResolvedValue({
+      installed: true,
+      version: "1.5.10",
+    });
     vi.mocked(getLatestAntigravityRelease).mockRejectedValue(
       new Error("GitHub releases API rate limit exceeded"),
     );
@@ -324,9 +353,14 @@ describe("POST /api/antigravity/install updater flow", () => {
   });
 
   it("refuses update when installed version equals GitHub release version", async () => {
-    vi.mocked(resolveAntigravityBinary).mockReturnValue("/var/lib/healthlog/bin/agy");
+    vi.mocked(resolveAntigravityBinary).mockReturnValue(
+      "/var/lib/healthlog/bin/agy",
+    );
     vi.mocked(isAntigravityBinaryManaged).mockReturnValue(true);
-    vi.mocked(probeCli).mockResolvedValue({ installed: true, version: "1.5.11" });
+    vi.mocked(probeCli).mockResolvedValue({
+      installed: true,
+      version: "1.5.11",
+    });
     vi.mocked(getLatestAntigravityRelease).mockResolvedValue(mockRelease);
 
     const res = await installPOSTWithRequest(installReq({ action: "update" }));
@@ -338,9 +372,14 @@ describe("POST /api/antigravity/install updater flow", () => {
   });
 
   it("refuses update when installed version is newer than GitHub release version", async () => {
-    vi.mocked(resolveAntigravityBinary).mockReturnValue("/var/lib/healthlog/bin/agy");
+    vi.mocked(resolveAntigravityBinary).mockReturnValue(
+      "/var/lib/healthlog/bin/agy",
+    );
     vi.mocked(isAntigravityBinaryManaged).mockReturnValue(true);
-    vi.mocked(probeCli).mockResolvedValue({ installed: true, version: "1.6.0" });
+    vi.mocked(probeCli).mockResolvedValue({
+      installed: true,
+      version: "1.6.0",
+    });
     vi.mocked(getLatestAntigravityRelease).mockResolvedValue(mockRelease);
 
     const res = await installPOSTWithRequest(installReq({ action: "update" }));
@@ -354,9 +393,14 @@ describe("POST /api/antigravity/install updater flow", () => {
   });
 
   it("handles GitHub failure during update by returning 502 without touching binary", async () => {
-    vi.mocked(resolveAntigravityBinary).mockReturnValue("/var/lib/healthlog/bin/agy");
+    vi.mocked(resolveAntigravityBinary).mockReturnValue(
+      "/var/lib/healthlog/bin/agy",
+    );
     vi.mocked(isAntigravityBinaryManaged).mockReturnValue(true);
-    vi.mocked(probeCli).mockResolvedValue({ installed: true, version: "1.5.10" });
+    vi.mocked(probeCli).mockResolvedValue({
+      installed: true,
+      version: "1.5.10",
+    });
     vi.mocked(getLatestAntigravityRelease).mockRejectedValue(
       new Error("GitHub releases API rate limit exceeded"),
     );
@@ -365,14 +409,21 @@ describe("POST /api/antigravity/install updater flow", () => {
     expect(res.status).toBe(502);
 
     const body = (await res.json()) as { error: string };
-    expect(body.error).toContain("Failed to discover latest Antigravity CLI release");
+    expect(body.error).toContain(
+      "Failed to discover latest Antigravity CLI release",
+    );
     expect(installAntigravityCli).not.toHaveBeenCalled();
   });
 
   it("does not repair an existing binary from the pinned fallback during a GitHub outage", async () => {
-    vi.mocked(resolveAntigravityBinary).mockReturnValue("/var/lib/healthlog/bin/agy");
+    vi.mocked(resolveAntigravityBinary).mockReturnValue(
+      "/var/lib/healthlog/bin/agy",
+    );
     vi.mocked(isAntigravityBinaryManaged).mockReturnValue(true);
-    vi.mocked(probeCli).mockResolvedValue({ installed: true, version: "1.5.11" });
+    vi.mocked(probeCli).mockResolvedValue({
+      installed: true,
+      version: "1.5.11",
+    });
     vi.mocked(getLatestAntigravityRelease).mockRejectedValue(
       new Error("GitHub releases API rate limit exceeded"),
     );
@@ -383,9 +434,14 @@ describe("POST /api/antigravity/install updater flow", () => {
   });
 
   it("refuses forced repair when the discovered release is older than the installed binary", async () => {
-    vi.mocked(resolveAntigravityBinary).mockReturnValue("/var/lib/healthlog/bin/agy");
+    vi.mocked(resolveAntigravityBinary).mockReturnValue(
+      "/var/lib/healthlog/bin/agy",
+    );
     vi.mocked(isAntigravityBinaryManaged).mockReturnValue(true);
-    vi.mocked(probeCli).mockResolvedValue({ installed: true, version: "1.6.0" });
+    vi.mocked(probeCli).mockResolvedValue({
+      installed: true,
+      version: "1.6.0",
+    });
     vi.mocked(getLatestAntigravityRelease).mockResolvedValue(mockRelease);
 
     const res = await installPOSTWithRequest(installReq({ force: true }));
@@ -394,9 +450,14 @@ describe("POST /api/antigravity/install updater flow", () => {
   });
 
   it("successfully updates when a newer release is discovered", async () => {
-    vi.mocked(resolveAntigravityBinary).mockReturnValue("/var/lib/healthlog/bin/agy");
+    vi.mocked(resolveAntigravityBinary).mockReturnValue(
+      "/var/lib/healthlog/bin/agy",
+    );
     vi.mocked(isAntigravityBinaryManaged).mockReturnValue(true);
-    vi.mocked(probeCli).mockResolvedValue({ installed: true, version: "1.5.10" });
+    vi.mocked(probeCli).mockResolvedValue({
+      installed: true,
+      version: "1.5.10",
+    });
     vi.mocked(getLatestAntigravityRelease).mockResolvedValue(mockRelease);
     vi.mocked(installAntigravityCli).mockResolvedValue({
       version: "1.5.11",
@@ -407,7 +468,9 @@ describe("POST /api/antigravity/install updater flow", () => {
     const res = await installPOSTWithRequest(installReq({ action: "update" }));
     expect(res.status).toBe(200);
 
-    expect(getLatestAntigravityRelease).toHaveBeenCalledWith({ forceFresh: true });
+    expect(getLatestAntigravityRelease).toHaveBeenCalledWith({
+      forceFresh: true,
+    });
     expect(installAntigravityCli).toHaveBeenCalledWith({
       force: true,
       release: mockRelease,
@@ -452,8 +515,13 @@ describe("POST /api/antigravity/install Content-Type and forced reinstall handli
   });
 
   it("accepts a bodyless install request as the default install action", async () => {
-    vi.mocked(resolveAntigravityBinary).mockReturnValue("/var/lib/healthlog/bin/agy");
-    vi.mocked(probeCli).mockResolvedValue({ installed: true, version: "1.5.11" });
+    vi.mocked(resolveAntigravityBinary).mockReturnValue(
+      "/var/lib/healthlog/bin/agy",
+    );
+    vi.mocked(probeCli).mockResolvedValue({
+      installed: true,
+      version: "1.5.11",
+    });
 
     const req = new NextRequest("http://localhost/api/antigravity/install", {
       method: "POST",
@@ -466,9 +534,14 @@ describe("POST /api/antigravity/install Content-Type and forced reinstall handli
   });
 
   it("allows forced reinstall of an already installed healthy managed binary", async () => {
-    vi.mocked(resolveAntigravityBinary).mockReturnValue("/var/lib/healthlog/bin/agy");
+    vi.mocked(resolveAntigravityBinary).mockReturnValue(
+      "/var/lib/healthlog/bin/agy",
+    );
     vi.mocked(isAntigravityBinaryManaged).mockReturnValue(true);
-    vi.mocked(probeCli).mockResolvedValue({ installed: true, version: "1.5.11" });
+    vi.mocked(probeCli).mockResolvedValue({
+      installed: true,
+      version: "1.5.11",
+    });
     vi.mocked(getLatestAntigravityRelease).mockResolvedValue(mockRelease);
     vi.mocked(installAntigravityCli).mockResolvedValue({
       version: "1.5.11",
@@ -487,7 +560,10 @@ describe("POST /api/antigravity/install Content-Type and forced reinstall handli
   it("refuses forced reinstall when binary is externally managed", async () => {
     vi.mocked(resolveAntigravityBinary).mockReturnValue("/usr/local/bin/agy");
     vi.mocked(isAntigravityBinaryManaged).mockReturnValue(false);
-    vi.mocked(probeCli).mockResolvedValue({ installed: true, version: "1.5.11" });
+    vi.mocked(probeCli).mockResolvedValue({
+      installed: true,
+      version: "1.5.11",
+    });
 
     const res = await installPOSTWithRequest(installReq({ force: true }));
     expect(res.status).toBe(400);

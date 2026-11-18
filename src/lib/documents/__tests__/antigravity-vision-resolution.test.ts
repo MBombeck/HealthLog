@@ -22,7 +22,9 @@ vi.mock("@/lib/ai/capabilities/gate", () => ({
 }));
 
 vi.mock("@/lib/documents/pdf-isolation", () => ({
-  withPdfWork: vi.fn().mockImplementation((_opts: any, fn: any) => fn()),
+  withPdfWork: vi
+    .fn()
+    .mockImplementation((_opts: unknown, fn: () => unknown) => fn()),
 }));
 
 vi.mock("@/lib/documents/ai-route-support", () => ({
@@ -78,7 +80,11 @@ import {
   resolveDocumentVisionProvider,
 } from "../provider-order";
 import { runDocumentAiRun } from "@/lib/jobs/document-ai-run";
-import { claimAiRun, completeAiRun, failAiRun } from "@/lib/documents/ai-runs/store";
+import {
+  claimAiRun,
+  completeAiRun,
+  failAiRun,
+} from "@/lib/documents/ai-runs/store";
 import { executeDocumentSummary } from "@/lib/documents/ai-runs/summary-run";
 
 describe("Antigravity cold-cache vision provider resolution regression", () => {
@@ -97,23 +103,23 @@ describe("Antigravity cold-cache vision provider resolution regression", () => {
     expect(antigravityReadsMedia(userId)).toBe(false);
 
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
-        id: userId,
-        role: "user",
-        aiModel: null,
-        labsLocalOcrEnabled: false,
-        aiProviderChain: [
-          { providerType: "antigravity", enabled: true, priority: 1 },
-        ],
-        antigravityProfileId: "prof-1",
-        antigravityModel: "gemini-2.5-pro",
-        antigravityCapabilitiesJson: {
-          promptCapabilities: { image: true, embeddedContext: true },
-        },
-      } as never);
+      id: userId,
+      role: "user",
+      aiModel: null,
+      labsLocalOcrEnabled: false,
+      aiProviderChain: [
+        { providerType: "antigravity", enabled: true, priority: 1 },
+      ],
+      antigravityProfileId: "prof-1",
+      antigravityModel: "gemini-2.5-pro",
+      antigravityCapabilitiesJson: {
+        promptCapabilities: { image: true, embeddedContext: true },
+      },
+    } as never);
 
     vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
       adminAiModel: null,
-    } as any);
+    } as never);
 
     const resolved = await resolveDocumentVisionProvider(userId);
     expect(resolved.pick).not.toBeNull();
@@ -128,23 +134,23 @@ describe("Antigravity cold-cache vision provider resolution regression", () => {
     expect(antigravityReadsMedia(userId)).toBe(false);
 
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
-        id: userId,
-        role: "user",
-        aiModel: null,
-        labsLocalOcrEnabled: false,
-        aiProviderChain: [
-          { providerType: "antigravity", enabled: true, priority: 1 },
-        ],
-        antigravityProfileId: "prof-1",
-        antigravityModel: "gemini-2.5-pro",
-        antigravityCapabilitiesJson: {
-          promptCapabilities: { image: false, embeddedContext: false },
-        },
-      } as never);
+      id: userId,
+      role: "user",
+      aiModel: null,
+      labsLocalOcrEnabled: false,
+      aiProviderChain: [
+        { providerType: "antigravity", enabled: true, priority: 1 },
+      ],
+      antigravityProfileId: "prof-1",
+      antigravityModel: "gemini-2.5-pro",
+      antigravityCapabilitiesJson: {
+        promptCapabilities: { image: false, embeddedContext: false },
+      },
+    } as never);
 
     vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
       adminAiModel: null,
-    } as any);
+    } as never);
 
     const resolved = await resolveDocumentVisionProvider(userId);
     expect(resolved.pick).toBeNull();
@@ -160,23 +166,23 @@ describe("Antigravity cold-cache vision provider resolution regression", () => {
     expect(antigravityReadsMedia(userId)).toBe(false);
 
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
-        id: userId,
-        role: "user",
-        aiModel: null,
-        labsLocalOcrEnabled: false,
-        aiProviderChain: [
-          { providerType: "antigravity", enabled: true, priority: 1 },
-        ],
-        antigravityProfileId: "prof-1",
-        antigravityModel: "gemini-2.5-pro",
-        antigravityCapabilitiesJson: {
-          promptCapabilities: { image: true, embeddedContext: true },
-        },
-      } as never);
+      id: userId,
+      role: "user",
+      aiModel: null,
+      labsLocalOcrEnabled: false,
+      aiProviderChain: [
+        { providerType: "antigravity", enabled: true, priority: 1 },
+      ],
+      antigravityProfileId: "prof-1",
+      antigravityModel: "gemini-2.5-pro",
+      antigravityCapabilitiesJson: {
+        promptCapabilities: { image: true, embeddedContext: true },
+      },
+    } as never);
 
     vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
       adminAiModel: null,
-    } as any);
+    } as never);
 
     const runId = "run-summary-agy-1";
     vi.mocked(claimAiRun).mockResolvedValue({
@@ -199,7 +205,7 @@ describe("Antigravity cold-cache vision provider resolution regression", () => {
       createdAt: new Date(),
       expiresAt: new Date(Date.now() + 3600_000),
       claimedAt: new Date(),
-    } as any);
+    } as never);
 
     const result = await runDocumentAiRun(runId, Date.now() + 3600_000);
     expect(result).toBe("succeeded");
@@ -217,23 +223,23 @@ describe("Antigravity cold-cache vision provider resolution regression", () => {
     expect(antigravityReadsMedia(userId)).toBe(false);
 
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
-        id: userId,
-        role: "user",
-        aiModel: null,
-        labsLocalOcrEnabled: false,
-        aiProviderChain: [
-          { providerType: "antigravity", enabled: true, priority: 1 },
-        ],
-        antigravityProfileId: "prof-1",
-        antigravityModel: "gemini-2.5-pro",
-        antigravityCapabilitiesJson: {
-          promptCapabilities: { image: false, embeddedContext: false },
-        },
-      } as never);
+      id: userId,
+      role: "user",
+      aiModel: null,
+      labsLocalOcrEnabled: false,
+      aiProviderChain: [
+        { providerType: "antigravity", enabled: true, priority: 1 },
+      ],
+      antigravityProfileId: "prof-1",
+      antigravityModel: "gemini-2.5-pro",
+      antigravityCapabilitiesJson: {
+        promptCapabilities: { image: false, embeddedContext: false },
+      },
+    } as never);
 
     vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
       adminAiModel: null,
-    } as any);
+    } as never);
 
     const runId = "run-summary-agy-unsupported";
     vi.mocked(claimAiRun).mockResolvedValue({
@@ -256,7 +262,7 @@ describe("Antigravity cold-cache vision provider resolution regression", () => {
       createdAt: new Date(),
       expiresAt: new Date(Date.now() + 3600_000),
       claimedAt: new Date(),
-    } as any);
+    } as never);
 
     const result = await runDocumentAiRun(runId, Date.now() + 3600_000);
     expect(result).toBe("failed");

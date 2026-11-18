@@ -7,6 +7,7 @@ import {
   rmSync,
   writeFileSync,
   chmodSync,
+  symlinkSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -14,7 +15,6 @@ import {
   antigravityBinaryPath,
   installAgy,
   isManagedAntigravityBinary,
-  DEFAULT_PROFILE_ROOT,
   AGY_PINNED_VERSION,
 } from "../antigravity-install-core.mjs";
 
@@ -77,7 +77,6 @@ describe("antigravity-install-core", () => {
       chmodSync(realBin, 0o755);
 
       const linkPath = join(root, "bin", "agy");
-      const { symlinkSync } = require("node:fs");
       symlinkSync(realBin, linkPath);
 
       try {
@@ -105,7 +104,9 @@ describe("antigravity-install-core", () => {
 
     expect(calls).toBe(1);
     expect(requestedUrl).toMatch(
-      new RegExp(`/releases/download/v${AGY_PINNED_VERSION}/agy_cli_linux_(x64|arm64)\\.tar\\.gz$`),
+      new RegExp(
+        `/releases/download/v${AGY_PINNED_VERSION}/agy_cli_linux_(x64|arm64)\\.tar\\.gz$`,
+      ),
     );
     expect(existsSync(antigravityBinaryPath(root))).toBe(false);
     // The partial archive and the staging folder are removed too.
@@ -140,7 +141,7 @@ describe("antigravity-install-core", () => {
   });
 
   it("does not allow concurrent update to falsely reuse an in-flight base install", async () => {
-    let downloadCalls: string[] = [];
+    const downloadCalls: string[] = [];
     const download = async (url: string) => {
       downloadCalls.push(url);
       await new Promise((resolve) => setTimeout(resolve, 30));
@@ -149,14 +150,21 @@ describe("antigravity-install-core", () => {
 
     const mockRelease = {
       version: "1.5.11",
-      downloadUrl: "https://github.com/google-antigravity/antigravity-cli/releases/download/v1.5.11/agy_cli_linux_x64.tar.gz",
-      sha256: "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
+      downloadUrl:
+        "https://github.com/google-antigravity/antigravity-cli/releases/download/v1.5.11/agy_cli_linux_x64.tar.gz",
+      sha256:
+        "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
     };
 
     // Caller 1 starts base install
     const p1 = installAgy({ profileRoot: root, download });
     // Caller 2 starts update to 1.5.11 concurrently
-    const p2 = installAgy({ profileRoot: root, download, force: true, release: mockRelease });
+    const p2 = installAgy({
+      profileRoot: root,
+      download,
+      force: true,
+      release: mockRelease,
+    });
 
     const [r1, r2] = await Promise.allSettled([p1, p2]);
 
@@ -166,5 +174,78 @@ describe("antigravity-install-core", () => {
     expect(downloadCalls.length).toBe(2);
     expect(downloadCalls[0]).toContain(AGY_PINNED_VERSION);
     expect(downloadCalls[1]).toContain("v1.5.11");
+  });
+
+  it("rejects an archive where extracted binary is a symlink", async () => {
+    const { execSync } = await import("node:child_process");
+    const { symlinkSync, readFileSync } = await import("node:fs");
+    const { createHash } = await import("node:crypto");
+
+    const tarDir = mkdtempSync(join(tmpdir(), "tar-build-"));
+    const dummyTarget = join(tarDir, "dummy-target");
+    writeFileSync(dummyTarget, "#!/bin/sh\nexit 0\n");
+    const linkFile = join(tarDir, "antigravity");
+    symlinkSync(dummyTarget, linkFile);
+
+    const archivePath = join(tarDir, "test.tar.gz");
+    execSync(`tar -czf "${archivePath}" -C "${tarDir}" antigravity`);
+    const archiveBytes = readFileSync(archivePath);
+    const sha256 = createHash("sha256").update(archiveBytes).digest("hex");
+
+    const release = {
+      version: "9.9.9",
+      downloadUrl: "https://example.com/fake.tar.gz",
+      sha256,
+    };
+
+    const download = async () => new Response(archiveBytes, { status: 200 });
+
+    try {
+      await expect(
+        installAgy({ profileRoot: root, download, release }),
+      ).rejects.toThrow("Extracted antigravity binary must be a regular file");
+      expect(existsSync(antigravityBinaryPath(root))).toBe(false);
+    } finally {
+      rmSync(tarDir, { recursive: true, force: true });
+    }
+  });
+
+  it("enforces build-pinned hash when release version matches AGY_PINNED_VERSION", async () => {
+    const release = {
+      version: AGY_PINNED_VERSION,
+      downloadUrl: "https://example.com/fake.tar.gz",
+      sha256:
+        "0000000000000000000000000000000000000000000000000000000000000000",
+    };
+    const download = async () => new Response("archive-bytes", { status: 200 });
+    await expect(
+      installAgy({ profileRoot: root, download, release }),
+    ).rejects.toThrow(/SHA256 checksum mismatch/);
+  });
+
+  it("rejects invalid sha256 digest format", async () => {
+    const release = {
+      version: "9.9.9",
+      downloadUrl: "https://example.com/fake.tar.gz",
+      sha256: "invalid-hash",
+    };
+    const download = async () => new Response("archive-bytes", { status: 200 });
+    await expect(
+      installAgy({ profileRoot: root, download, release }),
+    ).rejects.toThrow(/Invalid sha256 digest format/);
+  });
+
+  it("rejects release with non-HTTPS downloadUrl", async () => {
+    const release = {
+      version: "1.5.11",
+      downloadUrl:
+        "http://github.com/google-antigravity/antigravity-cli/releases/download/v1.5.11/agy.tar.gz",
+      sha256:
+        "0000000000000000000000000000000000000000000000000000000000000000",
+    };
+    const download = async () => new Response("archive-bytes", { status: 200 });
+    await expect(
+      installAgy({ profileRoot: root, download, release }),
+    ).rejects.toThrow(/must use HTTPS protocol/);
   });
 });

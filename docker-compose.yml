@@ -151,9 +151,6 @@ x-healthlog-env: &healthlog_env
   # Path to an agy binary the operator mounts or installs. Empty: the app looks
   # in the profile root's bin folder and the system paths.
   ANTIGRAVITY_BIN_PATH: "${ANTIGRAVITY_BIN_PATH:-}"
-  # Off by default. "true" lets the agent run its tool steps without asking,
-  # the agy --dangerously-skip-permissions flag. See docs/self-hosting/antigravity-cli.md.
-  ANTIGRAVITY_AUTO_APPROVE_TOOLS: "${ANTIGRAVITY_AUTO_APPROVE_TOOLS:-false}"
   # MaxMind licence key for the RUNTIME GeoLite2 fetch (issue #659). Set this
   # and the worker downloads GeoLite2-City + GeoLite2-ASN itself into
   # GEOLITE2_DIR on the next boot and monthly thereafter — no image rebuild,
@@ -525,11 +522,9 @@ services:
     # here and takes none before a migration; the boot log says so.
     volumes:
       - backups:/var/lib/healthlog/backups
-      # Antigravity CLI profiles (optional). Uncomment to mount a named volume
-      # for Antigravity profile directories. Each user gets a subdirectory
-      # under this path. Without this mount, profiles stay in the container layer
-      # (acceptable for single-user deploys). See docs/self-hosting/antigravity-cli.md.
-      # - antigravity-profiles:/var/lib/healthlog/antigravity
+      # Antigravity CLI profile root: persistent named volume retaining user OAuth
+      # tokens and admin-installed CLI binary (bin/agy) across container recreations.
+      - antigravity-profiles:/var/lib/healthlog/antigravity
     # Bring your own GeoLite2 databases. The published image only carries
     # MMDBs if the build had a MaxMind licence key, so on `:latest` the
     # offline tier is usually absent and every login IP goes to the online
@@ -904,5 +899,5 @@ volumes:
   postgres-data:
   pgdata:
   backups:
-  # Antigravity CLI profiles (optional, uncomment in app volumes: to use)
-  # antigravity-profiles:
+  # Antigravity CLI profile root (user OAuth tokens and admin-installed bin/agy)
+  antigravity-profiles:

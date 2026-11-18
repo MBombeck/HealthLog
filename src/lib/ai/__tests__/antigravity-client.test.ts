@@ -190,8 +190,10 @@ function createMockProcess({
           error: { code: -32602, message: "Invalid value" },
         });
       } else {
-        const val = (msg.params as { configId?: string; value?: unknown })?.value;
-        const configId = (msg.params as { configId?: string; value?: unknown })?.configId;
+        const val = (msg.params as { configId?: string; value?: unknown })
+          ?.value;
+        const configId = (msg.params as { configId?: string; value?: unknown })
+          ?.configId;
         const updatedConfigOptions = Array.isArray(configOptions)
           ? configOptions.map((opt) =>
               typeof opt === "object" &&
@@ -205,7 +207,9 @@ function createMockProcess({
         sendMessage({
           jsonrpc: "2.0",
           id: msg.id,
-          result: setReturnsConfigOptions ? { configOptions: updatedConfigOptions } : {},
+          result: setReturnsConfigOptions
+            ? { configOptions: updatedConfigOptions }
+            : {},
         });
       }
     } else if (msg.method === "session/prompt") {
@@ -266,14 +270,7 @@ describe("AntigravityClient", () => {
       expect(client.type).toBe("antigravity");
     });
   });
-  describe("agent tool approval", () => {
-    const original = process.env.ANTIGRAVITY_AUTO_APPROVE_TOOLS;
-    afterEach(() => {
-      if (original === undefined)
-        delete process.env.ANTIGRAVITY_AUTO_APPROVE_TOOLS;
-      else process.env.ANTIGRAVITY_AUTO_APPROVE_TOOLS = original;
-    });
-
+  describe("ACP server flags and strict permissions", () => {
     async function startedArgs(): Promise<string[]> {
       const client = new AntigravityClient({ profile: TEST_PROFILE });
       void client
@@ -283,30 +280,17 @@ describe("AntigravityClient", () => {
       return mockSpawn.mock.calls[0][1] as string[];
     }
 
-    it("does not approve tools by default", async () => {
-      delete process.env.ANTIGRAVITY_AUTO_APPROVE_TOOLS;
+    it("never passes --dangerously-skip-permissions and keeps strict sandbox", async () => {
       const args = await startedArgs();
       expect(args).not.toContain("--dangerously-skip-permissions");
       expect(args).toContain("--sandbox");
-    });
-
-    it("adds the approval flag only when the operator sets it to true", async () => {
-      process.env.ANTIGRAVITY_AUTO_APPROVE_TOOLS = " TRUE ";
-      const args = await startedArgs();
       expect(args).toEqual([
         "acp",
         "--sandbox",
         "--disable-telemetry",
-        "--dangerously-skip-permissions",
         "--gemini-dir",
         TEST_PROFILE.geminiDir,
       ]);
-    });
-
-    it("treats any other value as off", async () => {
-      process.env.ANTIGRAVITY_AUTO_APPROVE_TOOLS = "yes";
-      const args = await startedArgs();
-      expect(args).not.toContain("--dangerously-skip-permissions");
     });
   });
 
@@ -745,10 +729,7 @@ describe("thoughtLevelOptionsOf and mapToAgyThoughtLevel", () => {
         id: "thought_level",
         type: "select",
         currentValue: "medium",
-        options: [
-          { options: [{ value: "low" }, "medium"] },
-          { value: "high" },
-        ],
+        options: [{ options: [{ value: "low" }, "medium"] }, { value: "high" }],
       },
     ];
     const opts = thoughtLevelOptionsOf(config);
@@ -800,7 +781,9 @@ describe("AntigravityClient thought level ACP selection", () => {
   ];
 
   it("selects low thought level via session/set_config_option before prompt", async () => {
-    const { proc } = createMockProcess({ configOptions: THOUGHT_CONFIG_OPTIONS });
+    const { proc } = createMockProcess({
+      configOptions: THOUGHT_CONFIG_OPTIONS,
+    });
     mockSpawn.mockReturnValue(proc);
     const client = new AntigravityClient({ profile: TEST_PROFILE });
 
@@ -810,7 +793,9 @@ describe("AntigravityClient thought level ACP selection", () => {
     });
 
     const messages = sentMessages(proc.stdin.write);
-    const setCalls = messages.filter((m) => m.method === "session/set_config_option");
+    const setCalls = messages.filter(
+      (m) => m.method === "session/set_config_option",
+    );
     expect(setCalls).toHaveLength(1);
     expect(setCalls[0].params).toEqual({
       sessionId: "test-session-123",
@@ -827,7 +812,9 @@ describe("AntigravityClient thought level ACP selection", () => {
   });
 
   it("safely maps off to low for antigravity", async () => {
-    const { proc } = createMockProcess({ configOptions: THOUGHT_CONFIG_OPTIONS });
+    const { proc } = createMockProcess({
+      configOptions: THOUGHT_CONFIG_OPTIONS,
+    });
     mockSpawn.mockReturnValue(proc);
     const client = new AntigravityClient({ profile: TEST_PROFILE });
 
@@ -848,7 +835,9 @@ describe("AntigravityClient thought level ACP selection", () => {
   });
 
   it("ensures model selection occurs before thought level selection", async () => {
-    const { proc } = createMockProcess({ configOptions: THOUGHT_CONFIG_OPTIONS });
+    const { proc } = createMockProcess({
+      configOptions: THOUGHT_CONFIG_OPTIONS,
+    });
     mockSpawn.mockReturnValue(proc);
     const client = new AntigravityClient({
       profile: TEST_PROFILE,
@@ -861,7 +850,9 @@ describe("AntigravityClient thought level ACP selection", () => {
     });
 
     const messages = sentMessages(proc.stdin.write);
-    const setCalls = messages.filter((m) => m.method === "session/set_config_option");
+    const setCalls = messages.filter(
+      (m) => m.method === "session/set_config_option",
+    );
     expect(setCalls).toHaveLength(2);
     expect(setCalls[0].params).toEqual({
       sessionId: "test-session-123",
@@ -879,7 +870,9 @@ describe("AntigravityClient thought level ACP selection", () => {
   });
 
   it("leaves CLI default without set_config_option when target matches current", async () => {
-    const { proc } = createMockProcess({ configOptions: THOUGHT_CONFIG_OPTIONS });
+    const { proc } = createMockProcess({
+      configOptions: THOUGHT_CONFIG_OPTIONS,
+    });
     mockSpawn.mockReturnValue(proc);
     const client = new AntigravityClient({ profile: TEST_PROFILE });
 
@@ -895,7 +888,9 @@ describe("AntigravityClient thought level ACP selection", () => {
   });
 
   it("uses client reasoningEffort when params.reasoning is absent", async () => {
-    const { proc } = createMockProcess({ configOptions: THOUGHT_CONFIG_OPTIONS });
+    const { proc } = createMockProcess({
+      configOptions: THOUGHT_CONFIG_OPTIONS,
+    });
     mockSpawn.mockReturnValue(proc);
     const client = new AntigravityClient({ profile: TEST_PROFILE });
     client.reasoningEffort = "low";
@@ -915,7 +910,9 @@ describe("AntigravityClient thought level ACP selection", () => {
 
   it("does not fail prompt and sends no set_config_option when older agy lacks thought_level", async () => {
     // DEFAULT_CONFIG_OPTIONS has no thought_level
-    const { proc } = createMockProcess({ configOptions: DEFAULT_CONFIG_OPTIONS });
+    const { proc } = createMockProcess({
+      configOptions: DEFAULT_CONFIG_OPTIONS,
+    });
     mockSpawn.mockReturnValue(proc);
     const client = new AntigravityClient({ profile: TEST_PROFILE });
 
@@ -975,7 +972,9 @@ describe("AntigravityClient thought level ACP selection", () => {
   });
 
   it("prioritizes saved provider selection over generic Coach default", async () => {
-    const { proc } = createMockProcess({ configOptions: THOUGHT_CONFIG_OPTIONS });
+    const { proc } = createMockProcess({
+      configOptions: THOUGHT_CONFIG_OPTIONS,
+    });
     mockSpawn.mockReturnValue(proc);
     const client = new AntigravityClient({ profile: TEST_PROFILE });
     client.reasoningEffort = "low";
@@ -1024,7 +1023,9 @@ describe("AntigravityClient thought level ACP selection", () => {
   });
 
   it("reports downgradedTo when requested effort cannot be applied directly", async () => {
-    const { proc } = createMockProcess({ configOptions: THOUGHT_CONFIG_OPTIONS });
+    const { proc } = createMockProcess({
+      configOptions: THOUGHT_CONFIG_OPTIONS,
+    });
     mockSpawn.mockReturnValue(proc);
     const client = new AntigravityClient({ profile: TEST_PROFILE });
 
@@ -1038,7 +1039,9 @@ describe("AntigravityClient thought level ACP selection", () => {
   });
 
   it("combines coach reasoningForTurn operator cap and saved high to enforce cap on client", async () => {
-    const { proc } = createMockProcess({ configOptions: THOUGHT_CONFIG_OPTIONS });
+    const { proc } = createMockProcess({
+      configOptions: THOUGHT_CONFIG_OPTIONS,
+    });
     mockSpawn.mockReturnValue(proc);
     const client = new AntigravityClient({
       profile: TEST_PROFILE,
@@ -1070,7 +1073,9 @@ describe("AntigravityClient thought level ACP selection", () => {
   });
 
   it("enforces admin low cap on saved high for user payer in coach turn", async () => {
-    const { proc } = createMockProcess({ configOptions: THOUGHT_CONFIG_OPTIONS });
+    const { proc } = createMockProcess({
+      configOptions: THOUGHT_CONFIG_OPTIONS,
+    });
     mockSpawn.mockReturnValue(proc);
     const client = new AntigravityClient({
       profile: TEST_PROFILE,
@@ -1099,7 +1104,9 @@ describe("AntigravityClient thought level ACP selection", () => {
   });
 
   it("reports downgradedTo when requested effort is off with saved high", async () => {
-    const { proc } = createMockProcess({ configOptions: THOUGHT_CONFIG_OPTIONS });
+    const { proc } = createMockProcess({
+      configOptions: THOUGHT_CONFIG_OPTIONS,
+    });
     mockSpawn.mockReturnValue(proc);
     const client = new AntigravityClient({
       profile: TEST_PROFILE,
@@ -1155,7 +1162,11 @@ describe("AntigravityClient thought level ACP selection", () => {
 
     const probe = await probeAntigravity(TEST_PROFILE, "model-pro");
     expect(probe.modelOptions?.models).toHaveLength(2);
-    expect(probe.thoughtLevelOptions?.choices).toEqual(["low", "medium", "high"]);
+    expect(probe.thoughtLevelOptions?.choices).toEqual([
+      "low",
+      "medium",
+      "high",
+    ]);
     const setCalls = sentMessages(proc.stdin.write).filter(
       (m) => m.method === "session/set_config_option",
     );
@@ -1169,7 +1180,9 @@ describe("AntigravityClient thought level ACP selection", () => {
 
   describe("background job unattended ceiling enforcement", () => {
     it("preserves saved provider default on unattended jobs that omit reasoning without policy cap", async () => {
-      const { proc } = createMockProcess({ configOptions: THOUGHT_CONFIG_OPTIONS });
+      const { proc } = createMockProcess({
+        configOptions: THOUGHT_CONFIG_OPTIONS,
+      });
       mockSpawn.mockReturnValue(proc);
       const client = new AntigravityClient({
         profile: TEST_PROFILE,
@@ -1191,7 +1204,9 @@ describe("AntigravityClient thought level ACP selection", () => {
     });
 
     it("clamps to low when background job carries policy cap off (admin off or frugal)", async () => {
-      const { proc } = createMockProcess({ configOptions: THOUGHT_CONFIG_OPTIONS });
+      const { proc } = createMockProcess({
+        configOptions: THOUGHT_CONFIG_OPTIONS,
+      });
       mockSpawn.mockReturnValue(proc);
       const client = new AntigravityClient({
         profile: TEST_PROFILE,
@@ -1218,7 +1233,9 @@ describe("AntigravityClient thought level ACP selection", () => {
     });
 
     it("clamps saved high to low when background job carries maxEffort low", async () => {
-      const { proc } = createMockProcess({ configOptions: THOUGHT_CONFIG_OPTIONS });
+      const { proc } = createMockProcess({
+        configOptions: THOUGHT_CONFIG_OPTIONS,
+      });
       mockSpawn.mockReturnValue(proc);
       const client = new AntigravityClient({
         profile: TEST_PROFILE,
@@ -1245,7 +1262,9 @@ describe("AntigravityClient thought level ACP selection", () => {
     });
 
     it("clamps saved high to medium when background job carries maxEffort medium", async () => {
-      const { proc } = createMockProcess({ configOptions: THOUGHT_CONFIG_OPTIONS });
+      const { proc } = createMockProcess({
+        configOptions: THOUGHT_CONFIG_OPTIONS,
+      });
       mockSpawn.mockReturnValue(proc);
       const client = new AntigravityClient({
         profile: TEST_PROFILE,
@@ -1274,7 +1293,9 @@ describe("AntigravityClient thought level ACP selection", () => {
 
   describe("explicit manual Coach choice vs provider default", () => {
     it("manual low overrides saved high in Coach turn", async () => {
-      const { proc } = createMockProcess({ configOptions: THOUGHT_CONFIG_OPTIONS });
+      const { proc } = createMockProcess({
+        configOptions: THOUGHT_CONFIG_OPTIONS,
+      });
       mockSpawn.mockReturnValue(proc);
       const client = new AntigravityClient({
         profile: TEST_PROFILE,
@@ -1304,7 +1325,9 @@ describe("AntigravityClient thought level ACP selection", () => {
     });
 
     it("manual high overrides saved low in Coach turn", async () => {
-      const { proc } = createMockProcess({ configOptions: THOUGHT_CONFIG_OPTIONS });
+      const { proc } = createMockProcess({
+        configOptions: THOUGHT_CONFIG_OPTIONS,
+      });
       mockSpawn.mockReturnValue(proc);
       const client = new AntigravityClient({
         profile: TEST_PROFILE,
@@ -1330,7 +1353,9 @@ describe("AntigravityClient thought level ACP selection", () => {
     });
 
     it("manual medium overrides saved high in Coach turn", async () => {
-      const { proc } = createMockProcess({ configOptions: THOUGHT_CONFIG_OPTIONS });
+      const { proc } = createMockProcess({
+        configOptions: THOUGHT_CONFIG_OPTIONS,
+      });
       mockSpawn.mockReturnValue(proc);
       const client = new AntigravityClient({
         profile: TEST_PROFILE,
@@ -1359,7 +1384,9 @@ describe("AntigravityClient thought level ACP selection", () => {
     });
 
     it("untouched default Coach turn uses saved provider default", async () => {
-      const { proc } = createMockProcess({ configOptions: THOUGHT_CONFIG_OPTIONS });
+      const { proc } = createMockProcess({
+        configOptions: THOUGHT_CONFIG_OPTIONS,
+      });
       mockSpawn.mockReturnValue(proc);
       const client = new AntigravityClient({
         profile: TEST_PROFILE,
@@ -1368,7 +1395,12 @@ describe("AntigravityClient thought level ACP selection", () => {
 
       const { reasoningForTurn } = await import("../coach/turn/reasoning");
       // Untouched default (explicit: false) with generic resolved medium
-      const turnReasoning = reasoningForTurn("medium", "user", undefined, false);
+      const turnReasoning = reasoningForTurn(
+        "medium",
+        "user",
+        undefined,
+        false,
+      );
       expect(turnReasoning.effort).toBe("medium");
       expect(turnReasoning.explicit).toBe(false);
 
@@ -1415,7 +1447,9 @@ describe("resolveTargetThoughtLevel precedence", () => {
 
   it("enforces administrative reasoning cap against saved effort and defaults", () => {
     // Saved high clamped to medium by maxEffort
-    expect(resolveTargetThoughtLevel("medium", "high", "medium")).toBe("medium");
+    expect(resolveTargetThoughtLevel("medium", "high", "medium")).toBe(
+      "medium",
+    );
     // Saved high clamped to low by maxEffort
     expect(resolveTargetThoughtLevel("medium", "high", "low")).toBe("low");
     // Unconfigured medium with cap medium remains medium
@@ -1433,21 +1467,33 @@ describe("resolveTargetThoughtLevel precedence", () => {
   it("handles unattended background jobs when admin is disabled or frugal (reasoning omitted/off)", () => {
     // Unattended with saved high and deliberate policy cap off
     expect(resolveTargetThoughtLevel("off", "high", "off", false)).toBe("low");
-    expect(resolveTargetThoughtLevel(undefined, "high", "off", false)).toBe("low");
+    expect(resolveTargetThoughtLevel(undefined, "high", "off", false)).toBe(
+      "low",
+    );
 
     // Unattended without reasoning and without policy cap keeps saved provider default
-    expect(resolveTargetThoughtLevel(undefined, "high", undefined, false)).toBe("high");
+    expect(resolveTargetThoughtLevel(undefined, "high", undefined, false)).toBe(
+      "high",
+    );
 
     // Unattended with saved high and admin capped at low
     expect(resolveTargetThoughtLevel("low", "high", "low", false)).toBe("low");
 
     // Unattended with saved high and admin capped at medium
-    expect(resolveTargetThoughtLevel("medium", "high", "medium", false)).toBe("medium");
+    expect(resolveTargetThoughtLevel("medium", "high", "medium", false)).toBe(
+      "medium",
+    );
 
     // Manual Coach selection overrides provider default
-    expect(resolveTargetThoughtLevel("low", "high", undefined, true)).toBe("low");
-    expect(resolveTargetThoughtLevel("high", "low", undefined, true)).toBe("high");
-    expect(resolveTargetThoughtLevel("medium", "high", undefined, true)).toBe("medium");
+    expect(resolveTargetThoughtLevel("low", "high", undefined, true)).toBe(
+      "low",
+    );
+    expect(resolveTargetThoughtLevel("high", "low", undefined, true)).toBe(
+      "high",
+    );
+    expect(resolveTargetThoughtLevel("medium", "high", undefined, true)).toBe(
+      "medium",
+    );
   });
 });
 
@@ -1494,7 +1540,11 @@ describe("end-to-end background job reasoning resolution through runner into Ant
 
     // 1. Admin reasoning disabled
     dbState.adminSettings = { aiReasoningEnabled: false };
-    const adminDisabledReasoning = await resolveJobReasoning("daily_briefing", agyChain, "u1");
+    const adminDisabledReasoning = await resolveJobReasoning(
+      "daily_briefing",
+      agyChain,
+      "u1",
+    );
     expect(adminDisabledReasoning).toEqual({
       effort: "off",
       summaries: false,
@@ -1507,7 +1557,9 @@ describe("end-to-end background job reasoning resolution through runner into Ant
       providers: [{ providerType: "antigravity", instance: client }],
       params: {
         ...singleUserTurn({ system: "sys", user: "usr" }),
-        ...(adminDisabledReasoning ? { reasoning: adminDisabledReasoning } : {}),
+        ...(adminDisabledReasoning
+          ? { reasoning: adminDisabledReasoning }
+          : {}),
       },
     });
 
@@ -1515,14 +1567,20 @@ describe("end-to-end background job reasoning resolution through runner into Ant
       downgradedTo: "low",
     });
     const setCalls1 = sentMessages(spawnedProcs[0].proc.stdin.write).filter(
-      (m) => m.method === "session/set_config_option" && (m.params as any)?.configId === "thought_level",
+      (m) =>
+        m.method === "session/set_config_option" &&
+        (m.params as any)?.configId === "thought_level",
     );
     expect(setCalls1.at(-1)?.params?.value).toBe("low");
 
     // 2. Frugal AI usage level
     dbState.adminSettings = { aiReasoningEnabled: true };
     dbState.userLevel = "FRUGAL";
-    const frugalReasoning = await resolveJobReasoning("daily_briefing", agyChain, "u1");
+    const frugalReasoning = await resolveJobReasoning(
+      "daily_briefing",
+      agyChain,
+      "u1",
+    );
     expect(frugalReasoning).toEqual({
       effort: "off",
       summaries: false,
@@ -1543,7 +1601,9 @@ describe("end-to-end background job reasoning resolution through runner into Ant
       downgradedTo: "low",
     });
     const setCalls2 = sentMessages(spawnedProcs[1].proc.stdin.write).filter(
-      (m) => m.method === "session/set_config_option" && (m.params as any)?.configId === "thought_level",
+      (m) =>
+        m.method === "session/set_config_option" &&
+        (m.params as any)?.configId === "thought_level",
     );
     expect(setCalls2.at(-1)?.params?.value).toBe("low");
 
@@ -1627,7 +1687,11 @@ describe("end-to-end background job reasoning resolution through runner into Ant
 
     // 1. DB failure during usage level lookup (loadRecordUsageLevel throws)
     dbState.failUser = true;
-    const usageErrReasoning = await resolveJobReasoning("daily_briefing", agyChain, "u1");
+    const usageErrReasoning = await resolveJobReasoning(
+      "daily_briefing",
+      agyChain,
+      "u1",
+    );
     expect(usageErrReasoning).toEqual({
       effort: "off",
       summaries: false,
@@ -1648,14 +1712,20 @@ describe("end-to-end background job reasoning resolution through runner into Ant
       downgradedTo: "low",
     });
     const setCalls1 = sentMessages(spawnedProcs[0].proc.stdin.write).filter(
-      (m) => m.method === "session/set_config_option" && (m.params as any)?.configId === "thought_level",
+      (m) =>
+        m.method === "session/set_config_option" &&
+        (m.params as any)?.configId === "thought_level",
     );
     expect(setCalls1.at(-1)?.params?.value).toBe("low");
 
     // 2. DB failure during admin settings lookup (loadReasoningControls fails closed)
     dbState.failUser = false;
     dbState.failAdmin = true;
-    const adminErrReasoning = await resolveJobReasoning("daily_briefing", agyChain, "u1");
+    const adminErrReasoning = await resolveJobReasoning(
+      "daily_briefing",
+      agyChain,
+      "u1",
+    );
     expect(adminErrReasoning).toEqual({
       effort: "off",
       summaries: false,
@@ -1676,13 +1746,19 @@ describe("end-to-end background job reasoning resolution through runner into Ant
       downgradedTo: "low",
     });
     const setCalls2 = sentMessages(spawnedProcs[1].proc.stdin.write).filter(
-      (m) => m.method === "session/set_config_option" && (m.params as any)?.configId === "thought_level",
+      (m) =>
+        m.method === "session/set_config_option" &&
+        (m.params as any)?.configId === "thought_level",
     );
     expect(setCalls2.at(-1)?.params?.value).toBe("low");
 
     // 3. Non-Antigravity chain receives undefined on lookup failure
     expect(
-      await resolveJobReasoning("daily_briefing", [{ providerType: "openai" as const }], "u1"),
+      await resolveJobReasoning(
+        "daily_briefing",
+        [{ providerType: "openai" as const }],
+        "u1",
+      ),
     ).toBeUndefined();
 
     // 4. Missing/no-job normal call (unrequested) retains saved high
@@ -1698,12 +1774,31 @@ describe("end-to-end background job reasoning resolution through runner into Ant
     });
 
     expect(run3.result.reasoning).toBeUndefined();
+
+    // 5. Failure during normalizeCandidateParams lookup fails closed to off cap
+    dbState.failAdmin = true;
+    dbState.failUser = true;
+    const run4 = await runRawCompletionWithFallback({
+      userId: "u1",
+      surface: "job",
+      providers: [{ providerType: "antigravity", instance: client }],
+      params: {
+        ...singleUserTurn({ system: "sys", user: "usr" }),
+      },
+    });
+
+    expect(run4.result.reasoning).toMatchObject({
+      downgradedTo: "low",
+    });
+    dbState.failAdmin = false;
+    dbState.failUser = false;
   });
 
   it("enforces admin off/frugal/low cap on omitted-job/status calls with saved high, and preserves saved high on normal allowed policy (buffered and streaming)", async () => {
-    const { runRawCompletionWithFallback, runStreamingRawCompletionWithFallback } = await import(
-      "../provider-runner"
-    );
+    const {
+      runRawCompletionWithFallback,
+      runStreamingRawCompletionWithFallback,
+    } = await import("../provider-runner");
 
     const THOUGHT_CONFIG_OPTIONS = [
       MODEL_OPTION,
@@ -1732,7 +1827,9 @@ describe("end-to-end background job reasoning resolution through runner into Ant
     const client = new AntigravityClient({ profile: TEST_PROFILE });
     client.reasoningEffort = "high";
 
-    const agyProvider = [{ providerType: "antigravity" as const, instance: client }];
+    const agyProvider = [
+      { providerType: "antigravity" as const, instance: client },
+    ];
 
     // 1. Status call (omitted reasoning) with admin disabled clamps saved high to low
     dbState.adminSettings = { aiReasoningEnabled: false };
@@ -1746,12 +1843,17 @@ describe("end-to-end background job reasoning resolution through runner into Ant
       downgradedTo: "low",
     });
     const setCalls1 = sentMessages(spawnedProcs[0].proc.stdin.write).filter(
-      (m) => m.method === "session/set_config_option" && (m.params as any)?.configId === "thought_level",
+      (m) =>
+        m.method === "session/set_config_option" &&
+        (m.params as any)?.configId === "thought_level",
     );
     expect(setCalls1.at(-1)?.params?.value).toBe("low");
 
     // 2. Status call (omitted reasoning) on frugal AI usage level clamps saved high to low
-    dbState.adminSettings = { aiReasoningEnabled: true, aiReasoningMaxEffort: "high" };
+    dbState.adminSettings = {
+      aiReasoningEnabled: true,
+      aiReasoningMaxEffort: "high",
+    };
     dbState.userLevel = "FRUGAL";
     const runFrugal = await runRawCompletionWithFallback({
       userId: "u1",
@@ -1763,12 +1865,17 @@ describe("end-to-end background job reasoning resolution through runner into Ant
       downgradedTo: "low",
     });
     const setCalls2 = sentMessages(spawnedProcs[1].proc.stdin.write).filter(
-      (m) => m.method === "session/set_config_option" && (m.params as any)?.configId === "thought_level",
+      (m) =>
+        m.method === "session/set_config_option" &&
+        (m.params as any)?.configId === "thought_level",
     );
     expect(setCalls2.at(-1)?.params?.value).toBe("low");
 
     // 3. Status call (omitted reasoning) with admin cap low clamps saved high to low
-    dbState.adminSettings = { aiReasoningEnabled: true, aiReasoningMaxEffort: "low" };
+    dbState.adminSettings = {
+      aiReasoningEnabled: true,
+      aiReasoningMaxEffort: "low",
+    };
     dbState.userLevel = "FULL";
     const runAdminLow = await runRawCompletionWithFallback({
       userId: "u1",
@@ -1780,12 +1887,17 @@ describe("end-to-end background job reasoning resolution through runner into Ant
       downgradedTo: "low",
     });
     const setCalls3 = sentMessages(spawnedProcs[2].proc.stdin.write).filter(
-      (m) => m.method === "session/set_config_option" && (m.params as any)?.configId === "thought_level",
+      (m) =>
+        m.method === "session/set_config_option" &&
+        (m.params as any)?.configId === "thought_level",
     );
     expect(setCalls3.at(-1)?.params?.value).toBe("low");
 
     // 4. Normal omitted status call with allowed policy preserves saved high without downgrade
-    dbState.adminSettings = { aiReasoningEnabled: true, aiReasoningMaxEffort: "high" };
+    dbState.adminSettings = {
+      aiReasoningEnabled: true,
+      aiReasoningMaxEffort: "high",
+    };
     dbState.userLevel = "FULL";
     const runNormal = await runRawCompletionWithFallback({
       userId: "u1",
@@ -1875,7 +1987,9 @@ describe("end-to-end background job reasoning resolution through runner into Ant
     });
 
     it("fails closed before prompt when mandatory cap is low and choices are only [medium, high]", async () => {
-      const { proc } = createMockProcess({ configOptions: MEDIUM_HIGH_OPTIONS });
+      const { proc } = createMockProcess({
+        configOptions: MEDIUM_HIGH_OPTIONS,
+      });
       mockSpawn.mockReturnValue(proc);
       const client = new AntigravityClient({ profile: TEST_PROFILE });
 
@@ -1891,7 +2005,9 @@ describe("end-to-end background job reasoning resolution through runner into Ant
     });
 
     it("fails closed before prompt when saved client policyCap is low and choices are only [medium, high]", async () => {
-      const { proc } = createMockProcess({ configOptions: MEDIUM_HIGH_OPTIONS });
+      const { proc } = createMockProcess({
+        configOptions: MEDIUM_HIGH_OPTIONS,
+      });
       mockSpawn.mockReturnValue(proc);
       const client = new AntigravityClient({ profile: TEST_PROFILE });
       client.policyCap = "low";
@@ -1908,7 +2024,9 @@ describe("end-to-end background job reasoning resolution through runner into Ant
     });
 
     it("fails closed before prompt when policy cap is off and choices are only [medium, high]", async () => {
-      const { proc } = createMockProcess({ configOptions: MEDIUM_HIGH_OPTIONS });
+      const { proc } = createMockProcess({
+        configOptions: MEDIUM_HIGH_OPTIONS,
+      });
       mockSpawn.mockReturnValue(proc);
       const client = new AntigravityClient({ profile: TEST_PROFILE });
 
@@ -1921,6 +2039,53 @@ describe("end-to-end background job reasoning resolution through runner into Ant
 
       const methods = sentMessages(proc.stdin.write).map((m) => m.method);
       expect(methods).not.toContain("session/prompt");
+    });
+
+    it("enforces stricter client policyCap when caller passes looser maxEffort (caller cannot bypass admin cap)", async () => {
+      const { proc } = createMockProcess({
+        configOptions: MEDIUM_HIGH_OPTIONS,
+      });
+      mockSpawn.mockReturnValue(proc);
+      const client = new AntigravityClient({ profile: TEST_PROFILE });
+      client.policyCap = "low";
+
+      // Caller attempts to pass looser maxEffort: "high" while client policyCap is "low":
+      // Stricter policyCap "low" must be enforced and fail closed before prompt on [medium, high]
+      await expect(
+        client.generateCompletion({
+          ...singleUserTurn({ system: "s", user: "u" }),
+          reasoning: { effort: "high", summaries: false, maxEffort: "high" },
+        }),
+      ).rejects.toThrow("Antigravity thought level could not be selected");
+
+      const methods = sentMessages(proc.stdin.write).map((m) => m.method);
+      expect(methods).not.toContain("session/prompt");
+    });
+
+    it("enforces stricter caller maxEffort when client policyCap is looser", async () => {
+      const { proc } = createMockProcess({
+        configOptions: FULL_THOUGHT_OPTIONS,
+      });
+      mockSpawn.mockReturnValue(proc);
+      const client = new AntigravityClient({ profile: TEST_PROFILE });
+      client.policyCap = "high";
+
+      // Caller passes stricter maxEffort: "low" while client policyCap is "high":
+      const result = await client.generateCompletion({
+        ...singleUserTurn({ system: "s", user: "u" }),
+        reasoning: { effort: "high", summaries: false, maxEffort: "low" },
+      });
+
+      const setCalls = sentMessages(proc.stdin.write).filter(
+        (m) => m.method === "session/set_config_option",
+      );
+      expect(setCalls).toHaveLength(1);
+      expect(setCalls[0].params).toEqual({
+        sessionId: "test-session-123",
+        configId: "thought_level",
+        value: "low",
+      });
+      expect(result.reasoning?.downgradedTo).toBe("low");
     });
 
     it("falls back to compatible lower level when target is unavailable at/below medium cap", async () => {
@@ -1974,7 +2139,9 @@ describe("end-to-end background job reasoning resolution through runner into Ant
           options: [{ value: "medium", name: "Medium" }],
         },
       ];
-      const { proc } = createMockProcess({ configOptions: MEDIUM_ONLY_OPTIONS });
+      const { proc } = createMockProcess({
+        configOptions: MEDIUM_ONLY_OPTIONS,
+      });
       mockSpawn.mockReturnValue(proc);
       const client = new AntigravityClient({ profile: TEST_PROFILE });
 
@@ -2020,7 +2187,9 @@ describe("end-to-end background job reasoning resolution through runner into Ant
     });
 
     it("reports downgrade for omitted-request when cap clamps default high to medium", async () => {
-      const { proc } = createMockProcess({ configOptions: FULL_THOUGHT_OPTIONS });
+      const { proc } = createMockProcess({
+        configOptions: FULL_THOUGHT_OPTIONS,
+      });
       mockSpawn.mockReturnValue(proc);
       const client = new AntigravityClient({ profile: TEST_PROFILE });
       client.policyCap = "medium";
@@ -2045,7 +2214,9 @@ describe("end-to-end background job reasoning resolution through runner into Ant
 
     it("preserves supported behavior without failure for models with no thought selector", async () => {
       // DEFAULT_CONFIG_OPTIONS has no thought selector
-      const { proc } = createMockProcess({ configOptions: DEFAULT_CONFIG_OPTIONS });
+      const { proc } = createMockProcess({
+        configOptions: DEFAULT_CONFIG_OPTIONS,
+      });
       mockSpawn.mockReturnValue(proc);
       const client = new AntigravityClient({ profile: TEST_PROFILE });
       client.policyCap = "low";
@@ -2063,7 +2234,9 @@ describe("end-to-end background job reasoning resolution through runner into Ant
     });
 
     it("handles full 3 choices correctly when setting each level", async () => {
-      const { proc } = createMockProcess({ configOptions: FULL_THOUGHT_OPTIONS });
+      const { proc } = createMockProcess({
+        configOptions: FULL_THOUGHT_OPTIONS,
+      });
       mockSpawn.mockReturnValue(proc);
       const client = new AntigravityClient({ profile: TEST_PROFILE });
 
@@ -2193,7 +2366,9 @@ describe("end-to-end background job reasoning resolution through runner into Ant
           options: [{ value: "max", name: "Max" }],
         },
       ];
-      const { proc } = createMockProcess({ configOptions: UNKNOWN_LEVEL_OPTIONS });
+      const { proc } = createMockProcess({
+        configOptions: UNKNOWN_LEVEL_OPTIONS,
+      });
       mockSpawn.mockReturnValue(proc);
       const client = new AntigravityClient({ profile: TEST_PROFILE });
 

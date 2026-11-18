@@ -19,8 +19,14 @@
  *   3. It runs under a generous 240 s timeout (`TEXT_LAYER_FALLBACK_TIMEOUT_MS`)
  *      through the shared transcription core (`runOcrReads`), ensuring robust
  *      metering, budget reservations, retries, and truncated-JSON salvaging.
- *   4. Results are mapped cleanly into `InboundExtractionResult` with verbatim
- *      text anchoring, identical to the standard clinical document extraction.
+ *   4. Results are mapped cleanly into `InboundExtractionResult` with
+ *      analyte label text anchoring, following the standard staging format.
+ *
+ * Known limitation:
+ * `anchorSourceText` anchors and verifies the analyte label only (`rawLabel`).
+ * Extracted numeric values, qualitative values, units, and reference ranges are
+ * NOT verified against source document text by anchoring. All staged facts
+ * require human review before saving to the permanent clinical record.
  */
 
 import { anchorSourceText } from "@/lib/documents/anchor-source-text";
@@ -293,19 +299,31 @@ function stagedFactOf(
     data = obsData;
   }
 
+  // Avoid treating absent confidence as high. Floor is 0.6.
   const confidence =
     typeof raw.confidence === "number" &&
     raw.confidence >= 0 &&
     raw.confidence <= 1
       ? raw.confidence
-      : 0.9;
+      : 0.5;
 
   const anchor = anchorSourceText(rawLabel, ocrText);
+  // Known limitation: anchorSourceText anchors the analyte label only.
+  // Extracted values (numeric/text) and units are not verified against source
+  // document text by anchoring. Fail closed: require explicit human review
+  // for any extracted item with unverified values/units.
+  const hasUnverifiedValue =
+    numericValue !== null ||
+    textValue !== null ||
+    (raw.value !== undefined && raw.value !== null);
+
   return {
     factType,
     confidence,
     needsReview:
+      hasUnverifiedValue ||
       confidence < INBOUND_CONFIDENCE_FLOOR ||
+      !anchor.anchored ||
       (factType === "OBSERVATION" &&
         (isDimensionlessUnit(unit) ||
           (rawUnit !== null && rawUnit !== "" && unit === null))),

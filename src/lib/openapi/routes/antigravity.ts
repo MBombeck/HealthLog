@@ -113,6 +113,7 @@ const antigravityModelsResponse = z.object({
     .string()
     .nullable()
     .describe("The model the user picked, or null for the CLI's default."),
+  thoughtLevels: z.array(z.string()).nullable().optional(),
   reason: z
     .enum([
       "not_set_up",

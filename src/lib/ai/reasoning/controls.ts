@@ -11,7 +11,10 @@ import { annotate, getEvent } from "@/lib/logging/context";
 import { memoizePerRequest } from "@/lib/request-cache";
 import { isAnthropicBaseUrl } from "@/lib/ai/anthropic-host";
 import { probeProviderChain } from "@/lib/ai/provider";
-import { isOperatorFundedProvider, type BudgetSurface } from "@/lib/ai/coach/budget";
+import {
+  isOperatorFundedProvider,
+  type BudgetSurface,
+} from "@/lib/ai/coach/budget";
 import type { ProviderChainType } from "@/lib/ai/provider-chain";
 import type { ProviderWorkAuthority } from "@/lib/sharing/provider-work-authority";
 import type { CompletionParams } from "@/lib/ai/types";

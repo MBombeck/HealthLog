@@ -382,6 +382,20 @@ describe("resolveProviderForTest — empty override resolves via the chain", () 
     expect(provider.type).toBe("anthropic");
   });
 
+  it("restores partial override on stored provider when provider is omitted in override", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      aiProvider: "ANTHROPIC",
+      aiAnthropicKeyEncrypted: "enc-anthropic",
+      aiModel: "claude-sonnet-4-6",
+    } as unknown as UserRowForTest);
+    const provider = await resolveProviderForTest("user-123", {
+      model: "claude-3-5-sonnet",
+    });
+    expect(provider.type).toBe("anthropic");
+    const inspect = provider as unknown as { config: { model?: string } };
+    expect(inspect.config.model).toBe("claude-3-5-sonnet");
+  });
+
   it("rejects unsaved settings without an explicit provider", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(
       {} as unknown as UserRowForTest,
@@ -389,6 +403,24 @@ describe("resolveProviderForTest — empty override resolves via the chain", () 
     await expect(
       resolveProviderForTest("user-123", { model: "other" }),
     ).rejects.toMatchObject({ name: "AITestConfigError", status: 422 });
+  });
+
+  it("rejects changing base URL origin while reusing stored key without explicit key override", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      aiProvider: "LOCAL",
+      aiLocalKeyEncrypted: "enc-local-key",
+      aiBaseUrl: "http://localhost:8080/v1",
+      aiModel: "local-model",
+    } as unknown as UserRowForTest);
+    await expect(
+      resolveProviderForTest("user-123", {
+        baseUrl: "https://evil.external.host/v1",
+      }),
+    ).rejects.toMatchObject({
+      name: "AITestConfigError",
+      status: 422,
+      message: "API key is required when testing a new base URL origin",
+    });
   });
 });
 

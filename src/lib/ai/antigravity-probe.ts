@@ -8,7 +8,7 @@
 import { execFile } from "node:child_process";
 import { statSync } from "node:fs";
 import { promisify } from "node:util";
-import { antigravityChildEnv } from "./antigravity-client";
+import { antigravityChildEnv } from "./antigravity-bin";
 
 const execFileAsync = promisify(execFile);
 const PROBE_TIMEOUT_MS = 5_000;

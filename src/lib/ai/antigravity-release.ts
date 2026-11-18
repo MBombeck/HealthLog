@@ -155,8 +155,8 @@ export function parseAntigravityRelease(
     (a: unknown): a is Record<string, unknown> =>
       Boolean(
         a &&
-          typeof a === "object" &&
-          (a as Record<string, unknown>).name === expectedAssetName,
+        typeof a === "object" &&
+        (a as Record<string, unknown>).name === expectedAssetName,
       ),
   );
 
@@ -170,10 +170,7 @@ export function parseAntigravityRelease(
   const downloadUrl = asset.browser_download_url;
   const expectedDownloadUrl = `https://github.com/${AGY_GITHUB_REPO}/releases/download/${String(release.tag_name)}/${expectedAssetName}`;
 
-  if (
-    typeof downloadUrl !== "string" ||
-    downloadUrl !== expectedDownloadUrl
-  ) {
+  if (typeof downloadUrl !== "string" || downloadUrl !== expectedDownloadUrl) {
     throw new AntigravityReleaseError(
       `Release asset "${expectedAssetName}" download URL does not match official GitHub release URL: expected "${expectedDownloadUrl}", got "${String(downloadUrl)}"`,
       "invalid_asset",
@@ -201,8 +198,10 @@ export function parseAntigravityRelease(
   };
 }
 
-let cachedRelease: { release: AntigravityReleaseInfo; expiresAt: number } | null =
-  null;
+let cachedRelease: {
+  release: AntigravityReleaseInfo;
+  expiresAt: number;
+} | null = null;
 let cachedError: { error: AntigravityReleaseError; expiresAt: number } | null =
   null;
 let inFlightFetch: Promise<AntigravityReleaseInfo> | null = null;

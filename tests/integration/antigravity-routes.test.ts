@@ -257,6 +257,7 @@ describe("GET /api/antigravity/models", () => {
       ],
       selectedModel: "model-pro",
       reason: null,
+      thoughtLevels: null,
     });
   });
 

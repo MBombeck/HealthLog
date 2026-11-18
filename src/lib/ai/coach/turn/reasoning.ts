@@ -39,15 +39,13 @@ export function reasoningForTurn(
       ? capReasoningLevel(ceiling, OPERATOR_REASONING_CAP)
       : OPERATOR_REASONING_CAP;
   }
-  const effort = ceiling ? capReasoningLevel(level, ceiling as ReasoningMaxEffort) : (
-    payer === "operator"
-      ? capReasoningLevel(level, OPERATOR_REASONING_CAP)
-      : level
-  );
+  const effort = ceiling
+    ? capReasoningLevel(level, ceiling as ReasoningMaxEffort)
+    : level;
   return {
     effort,
     summaries: effort !== "off",
-    ...(ceiling ? { maxEffort: ceiling } : payer === "operator" ? { maxEffort: OPERATOR_REASONING_CAP } : {}),
+    ...(ceiling ? { maxEffort: ceiling } : {}),
     ...(explicit !== undefined ? { explicit } : {}),
   };
 }

@@ -26,10 +26,7 @@ import type { ReasoningEffort } from "./shared";
 import { ReasoningEffortField } from "./reasoning-effort-field";
 import { AntigravityModelPicker } from "./antigravity-model-picker";
 import { AntigravityConnectDialog } from "./antigravity-connect-dialog";
-import {
-  CliInstallRow,
-  ConnectionStateRow,
-} from "./antigravity-status-rows";
+import { CliInstallRow, ConnectionStateRow } from "./antigravity-status-rows";
 import { reasonText, useAntigravityProfile } from "./use-antigravity-profile";
 
 export function AntigravityProviderForm({
@@ -132,12 +129,11 @@ export function AntigravityProviderForm({
                 if (filteredLevels.length === 0) return null;
 
                 const candidate =
-                  profile.reasoning === "none"
-                    ? "low"
-                    : profile.reasoning;
-                const currentValue = candidate && filteredLevels.includes(candidate)
-                  ? candidate
-                  : null;
+                  profile.reasoning === "none" ? "low" : profile.reasoning;
+                const currentValue =
+                  candidate && filteredLevels.includes(candidate)
+                    ? candidate
+                    : null;
 
                 return (
                   <ReasoningEffortField
@@ -159,6 +155,7 @@ export function AntigravityProviderForm({
               <Button
                 onClick={() => void profile.installCli()}
                 disabled={busy !== null}
+                aria-busy={busy === "install" || undefined}
               >
                 {busy === "install" ? (
                   <>
@@ -181,7 +178,6 @@ export function AntigravityProviderForm({
                 slot="settings-ai-antigravity-disconnect"
                 destructive
                 variant="destructive"
-                size="sm"
                 label={t("settings.ai.antigravity.disconnectButton")}
                 title={t("settings.ai.antigravity.disconnectTitle")}
                 body={t("settings.ai.antigravity.disconnectBody")}
@@ -196,6 +192,7 @@ export function AntigravityProviderForm({
                 variant="outline"
                 onClick={() => void profile.updateCli()}
                 disabled={busy !== null}
+                aria-busy={busy === "update" || undefined}
               >
                 {busy === "update" ? (
                   <>

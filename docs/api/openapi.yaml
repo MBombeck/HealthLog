@@ -28152,9 +28152,9 @@ paths:
       summary: Install or update Antigravity CLI binary on-demand
       description: "Downloads and installs or updates the Antigravity CLI binary in the persistent profile directory.
         Administrators only: the binary is shared by every user on the server. Other users get 403. When updating,
-        replaces an eligible HealthLog-managed binary atomically with the latest official release after checksum
-        and version verification; externally managed binaries remain operator-managed. Administrators may pass
-        force: true to force a reinstall or repair of a managed binary."
+        replaces an eligible HealthLog-managed binary atomically with the latest official release after checksum and
+        version verification; externally managed binaries remain operator-managed. Administrators may pass force: true
+        to force a reinstall or repair of a managed binary."
       requestBody:
         required: false
         content:
@@ -96621,11 +96621,10 @@ components:
               type: boolean
               description: Whether an update to the latest available release is available for the managed binary.
             latestVersion:
+              description: The latest available Antigravity CLI version from official GitHub releases, or null if discovery failed.
               type:
                 - string
                 - "null"
-              description: The latest available Antigravity CLI version from official GitHub releases, or null if discovery
-                failed.
             profileId:
               type:
                 - string
@@ -96846,6 +96845,12 @@ components:
               type:
                 - string
                 - "null"
+            thoughtLevels:
+              anyOf:
+                - type: array
+                  items:
+                    type: string
+                - type: "null"
             reason:
               anyOf:
                 - type: string

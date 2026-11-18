@@ -11,7 +11,8 @@ import { spawn, type ChildProcess } from "child_process";
 import { StringDecoder } from "string_decoder";
 
 import { ANTIGRAVITY_ERRORS, AntigravityError } from "./antigravity-errors";
-import { resolveAntigravityBinary } from "./antigravity-install";
+import { resolveAntigravityBinary } from "./antigravity-bin";
+import { envValue } from "@/lib/env";
 
 /** How long a closing child gets after SIGTERM before SIGKILL. */
 const KILL_GRACE_MS = 2_000;
@@ -138,7 +139,18 @@ export class AcpConnection {
     options: { cwd: string; env: NodeJS.ProcessEnv },
   ): Promise<AcpConnection> {
     return new Promise((resolve, reject) => {
-      const binary = resolveAntigravityBinary() ?? "agy";
+      const override = envValue("ANTIGRAVITY_BIN_PATH");
+      const resolved = resolveAntigravityBinary();
+      if (override && !resolved) {
+        reject(
+          new AntigravityError(
+            "Failed to start agy",
+            ANTIGRAVITY_ERRORS.CLI_UNAVAILABLE,
+          ),
+        );
+        return;
+      }
+      const binary = resolved ?? "agy";
       let child: ChildProcess;
       try {
         child = spawn(binary, args, {

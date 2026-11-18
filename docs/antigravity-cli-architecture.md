@@ -1,7 +1,7 @@
 # Antigravity CLI Architecture
 
-**Status**: Draft — Stage 0 audit  
-**Date**: 2026-11-13  
+**Status**: Draft — Stage 0 audit
+**Date**: 2026-11-13
 **Version**: `agy` 1.5.8
 
 ---

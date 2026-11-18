@@ -48,6 +48,20 @@ vi.mock("../provider-health-ledger", async () => {
   };
 });
 
+const { mockResolveEffectivePolicyCap } = vi.hoisted(() => ({
+  mockResolveEffectivePolicyCap: vi.fn(),
+}));
+vi.mock("../reasoning/controls", async () => {
+  const actual = await vi.importActual<typeof import("../reasoning/controls")>(
+    "../reasoning/controls",
+  );
+  return {
+    ...actual,
+    resolveEffectivePolicyCap: (...args: unknown[]) =>
+      mockResolveEffectivePolicyCap(...args),
+  };
+});
+
 import {
   AllProvidersFailedError,
   clearLastWorkingProviderCache,
@@ -81,6 +95,7 @@ class ScriptedProvider implements AIProvider {
   readonly type: AIProvider["type"];
   readonly model: string;
   readonly calls: CompletionParams[] = [];
+  reasoningEffort?: import("../reasoning-effort").ReasoningEffort | null;
   private readonly script: ScriptedCall[];
   private cursor = 0;
 
@@ -88,10 +103,13 @@ class ScriptedProvider implements AIProvider {
     type?: AIProvider["type"];
     model?: string;
     script: ScriptedCall[];
+    reasoningEffort?: import("../reasoning-effort").ReasoningEffort | null;
   }) {
     this.type = opts.type ?? "local";
     this.model = opts.model ?? "scripted-model";
     this.script = opts.script;
+    if (opts.reasoningEffort !== undefined)
+      this.reasoningEffort = opts.reasoningEffort;
   }
 
   async generateCompletion(
@@ -1096,5 +1114,113 @@ describe("v1.42 — failed hops get their own line", () => {
     clearLastWorkingProviderCache();
     expect((await run()).workingProvider.providerType).toBe("admin-openai");
     expect(admin.callCount).toBe(1);
+  });
+
+  describe("normalizeCandidateParams and reasoning cap enforcement for Antigravity", () => {
+    it("enforces stricter admin policyCap when caller sets looser maxEffort", async () => {
+      mockResolveEffectivePolicyCap.mockResolvedValueOnce("low" as const);
+      const agy = new ScriptedProvider({
+        type: "antigravity",
+        script: [{ ok: true }],
+      });
+
+      // Caller requests effort: "high" with looser maxEffort: "high", but admin policyCap is "low":
+      await runRawCompletionWithFallback({
+        userId: "u-cap-test",
+        surface: "coach",
+        providers: [{ providerType: "antigravity", instance: agy }],
+        params: {
+          ...singleUserTurn({ system: "s", user: "u" }),
+          reasoning: { effort: "high", summaries: false, maxEffort: "high" },
+        },
+      });
+
+      expect(agy.calls).toHaveLength(1);
+      expect(agy.calls[0].reasoning?.maxEffort).toBe("low");
+      expect(agy.calls[0].reasoning?.effort).toBe("high");
+    });
+
+    it("enforces stricter caller maxEffort when admin policyCap is looser", async () => {
+      mockResolveEffectivePolicyCap.mockResolvedValueOnce("high" as const);
+      const agy = new ScriptedProvider({
+        type: "antigravity",
+        script: [{ ok: true }],
+      });
+
+      // Caller sets tighter maxEffort: "low" while admin policyCap is "high":
+      await runRawCompletionWithFallback({
+        userId: "u-cap-test",
+        surface: "coach",
+        providers: [{ providerType: "antigravity", instance: agy }],
+        params: {
+          ...singleUserTurn({ system: "s", user: "u" }),
+          reasoning: { effort: "medium", summaries: false, maxEffort: "low" },
+        },
+      });
+
+      expect(agy.calls).toHaveLength(1);
+      expect(agy.calls[0].reasoning?.maxEffort).toBe("low");
+      expect(agy.calls[0].reasoning?.effort).toBe("medium");
+    });
+
+    it("fails closed to 'off' when policyCap lookup rejects", async () => {
+      mockResolveEffectivePolicyCap.mockRejectedValueOnce(
+        new Error("database connection timeout"),
+      );
+      const agy = new ScriptedProvider({
+        type: "antigravity",
+        script: [{ ok: true }],
+      });
+
+      await runRawCompletionWithFallback({
+        userId: "u-cap-test",
+        surface: "coach",
+        providers: [{ providerType: "antigravity", instance: agy }],
+        params: {
+          ...singleUserTurn({ system: "s", user: "u" }),
+          reasoning: { effort: "high", summaries: false, maxEffort: "high" },
+        },
+      });
+
+      expect(agy.calls).toHaveLength(1);
+      expect(agy.calls[0].reasoning?.maxEffort).toBe("off");
+    });
+
+    it("preserves non-Antigravity provider by stripping reasoning when omitted on original request", async () => {
+      const openAi = new ScriptedProvider({
+        type: "local",
+        script: [{ ok: true }],
+      });
+
+      await runRawCompletionWithFallback({
+        userId: "u-non-agy",
+        surface: "coach",
+        providers: [{ providerType: "local", instance: openAi }],
+        params: singleUserTurn({ system: "s", user: "u" }),
+      });
+
+      expect(openAi.calls).toHaveLength(1);
+      expect(openAi.calls[0].reasoning).toBeUndefined();
+    });
+
+    it("preserves non-Antigravity provider by stripping reasoning on job surface when effort is 'off'", async () => {
+      const openAi = new ScriptedProvider({
+        type: "local",
+        script: [{ ok: true }],
+      });
+
+      await runRawCompletionWithFallback({
+        userId: "u-non-agy",
+        surface: "job",
+        providers: [{ providerType: "local", instance: openAi }],
+        params: {
+          ...singleUserTurn({ system: "s", user: "u" }),
+          reasoning: { effort: "off", summaries: false },
+        },
+      });
+
+      expect(openAi.calls).toHaveLength(1);
+      expect(openAi.calls[0].reasoning).toBeUndefined();
+    });
   });
 });

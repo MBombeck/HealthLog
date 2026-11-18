@@ -450,6 +450,14 @@ export const USER_RESET = {
   codexConnectionStatus: "disconnected",
   useCentralCodex: false,
 
+  // Antigravity CLI: status and models reset to disable use immediately.
+  // antigravityProfileId is cleared conditionally by profile lifecycle after
+  // confirmed directory removal, preserving durable retry on host cleanup failure.
+  antigravityModel: null,
+  antigravityConnectionStatus: "disconnected",
+  antigravityConnectedAt: null,
+  antigravityCapabilitiesJson: Prisma.DbNull,
+
   // Integration credentials and per-integration state
   telegramBotToken: null,
   telegramChatId: null,
@@ -567,6 +575,8 @@ export const USER_KEPT_FIELDS: Readonly<Record<string, string>> = {
     "the account's deletion lifecycle, not record content; null whenever a wipe runs, for the same reason",
   deletionRequestedById:
     "the account's deletion lifecycle, not record content; null whenever a wipe runs, for the same reason",
+  antigravityProfileId:
+    "managed by Antigravity profile lifecycle; cleared conditionally after confirmed directory removal, preserved on failure for durable retry",
 };
 
 /**

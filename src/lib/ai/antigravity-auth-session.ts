@@ -16,8 +16,11 @@
  * `ANTIGRAVITY_LOGIN_FAILURE_MESSAGES`.
  */
 import { spawn, type ChildProcess } from "child_process";
-import { antigravityChildEnv } from "./antigravity-client";
-import { resolveAntigravityBinary } from "./antigravity-install";
+import {
+  antigravityChildEnv,
+  resolveAntigravityBinary,
+} from "./antigravity-bin";
+import { envValue } from "@/lib/env";
 
 const GOOGLE_AUTH_URL_REGEX =
   /(https:\/\/accounts\.google\.com\/o\/oauth2\/auth\?[^\s]+)/;
@@ -120,7 +123,12 @@ export function startAntigravityLogin(
   // Cancel any existing session for this user
   cancelAntigravityLogin(userId);
 
-  const binary = resolveAntigravityBinary() ?? "agy";
+  const override = envValue("ANTIGRAVITY_BIN_PATH");
+  const resolved = resolveAntigravityBinary();
+  if (override && !resolved) {
+    return Promise.reject(new AntigravityLoginError("start_failed"));
+  }
+  const binary = resolved ?? "agy";
   let child: ChildProcess;
   try {
     child = spawn(binary, ["acp", "--login", "--gemini-dir", profileDir], {

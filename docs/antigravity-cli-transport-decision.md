@@ -1,14 +1,14 @@
 # Antigravity CLI Transport Decision
 
-**Status**: PoC Complete  
+**Status**: PoC Complete
 **Date**: 2026-11-13
 
 ---
 
 ## PoC Results
 
-**Run date**: 2026-11-13 12:30 CET  
-**CLI version**: 1.5.8  
+**Run date**: 2026-11-13 12:30 CET
+**CLI version**: 1.5.8
 **Account type**: Individual (quota exceeded during test)
 
 ### Test Summary
@@ -193,7 +193,7 @@ From `session/new` configOptions:
 
 **Resolved (checked 2026-11-13 with agy 1.5.8)**: `--app-data-dir` must be a relative name. The CLI puts the state at `<--gemini-dir>/<--app-data-dir>`. `--gemini-dir` defaults to `$HOME/.gemini`, which every user would share. The client now passes `--gemini-dir <profile root>` and `--app-data-dir <profile id>`.
 
-**Still open**: which file holds the OAuth token. The login needs a browser and a pasted code, so it was not run. Check the profile folder after the first real login.
+**Token retention verified**: The CLI writes the OAuth token to `<geminiDir>/antigravity-oauth-token`. Setting `--gemini-dir` to the per-user profile directory keeps tokens isolated per-user and preserved across container recreates.
 
 ### 3. Capability Discovery Timing
 

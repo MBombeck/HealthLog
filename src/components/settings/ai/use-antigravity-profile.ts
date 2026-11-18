@@ -5,7 +5,7 @@
  * model list, the connection test, the connect dialog, and the model choice.
  * The card renders these; this file talks to the API.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
@@ -21,7 +21,17 @@ import type {
   AntigravityModelsResponse,
 } from "@/app/api/antigravity/models/route";
 import type { AntigravityModelResponse } from "@/app/api/antigravity/model/route";
-import type { ProviderChainData, ReasoningEffort } from "./shared";
+import {
+  compareSemver,
+  type ProviderChainData,
+  type ReasoningEffort,
+} from "./shared";
+
+interface AntigravityInstallResponse {
+  version?: string;
+  binaryPath?: string;
+  alreadyInstalled?: boolean;
+}
 
 type Busy = "test" | "disconnect" | "model" | "install" | "update";
 type Translate = ReturnType<typeof useTranslations>["t"];
@@ -79,6 +89,10 @@ export function useAntigravityProfile(callbacks?: {
   onProviderChanged?: () => void;
 }) {
   const { t } = useTranslations();
+  const tRef = useRef(t);
+  useEffect(() => {
+    tRef.current = t;
+  }, [t]);
   const queryClient = useQueryClient();
 
   const [status, setStatus] = useState<AntigravityStatusResponse | null>(null);
@@ -90,6 +104,9 @@ export function useAntigravityProfile(callbacks?: {
   const [models, setModels] = useState<AntigravityModelsResponse | null>(null);
   const [reasoning, setReasoning] = useState<ReasoningEffort | null>(null);
   const [antigravityEnabled, setAntigravityEnabled] = useState(false);
+  const busyRef = useRef<Busy | null>(null);
+  const refreshSeqRef = useRef<number>(0);
+  const pendingVersionRef = useRef<string | null>(null);
 
   const connected = status?.connectionStatus === "connected";
   const connectedAt = status?.connectedAt ?? null;
@@ -137,7 +154,8 @@ export function useAntigravityProfile(callbacks?: {
         }
       })
       .catch(() => {
-        if (active) setNotice(t("settings.ai.antigravity.reasonFailed"));
+        if (active)
+          setNotice(tRef.current("settings.ai.antigravity.reasonFailed"));
       });
     return () => {
       active = false;
@@ -145,21 +163,61 @@ export function useAntigravityProfile(callbacks?: {
   }, [connected, connectedAt]);
 
   async function refresh() {
-    setStatus(
-      await apiGet<AntigravityStatusResponse>("/api/antigravity/status"),
+    const seq = ++refreshSeqRef.current;
+    const data = await apiGet<AntigravityStatusResponse>(
+      "/api/antigravity/status",
     );
+    if (seq < refreshSeqRef.current) return;
+
+    const pending = pendingVersionRef.current;
+    // Bounded: consumed for this immediate refresh so subsequent refreshes are server authoritative
+    pendingVersionRef.current = null;
+
+    if (pending) {
+      if (data.cliVersion && compareSemver(data.cliVersion, pending) >= 0) {
+        setStatus(data);
+      } else {
+        const upToDate =
+          Boolean(data.latestVersion) &&
+          compareSemver(pending, data.latestVersion!) >= 0;
+        setStatus({
+          ...data,
+          cliInstalled: true,
+          canInstallCli: false,
+          cliVersion: pending,
+          updateAvailable: upToDate ? false : data.updateAvailable,
+          canUpdateCli: upToDate ? false : data.canUpdateCli,
+        });
+      }
+    } else {
+      setStatus(data);
+    }
   }
 
-  async function run(kind: Busy, action: () => Promise<void>) {
+  async function run(
+    kind: Busy,
+    action: () => Promise<void>,
+    options?: {
+      fallbackError?: string;
+      toastOnError?: boolean;
+    },
+  ) {
+    if (busyRef.current !== null || busy !== null) return;
+    busyRef.current = kind;
     setBusy(kind);
     setNotice(null);
     try {
       await action();
     } catch (error) {
-      setNotice(
-        localizedApiError(error, t, "settings.ai.antigravity.reasonFailed"),
-      );
+      const fallbackKey =
+        options?.fallbackError ?? "settings.ai.antigravity.reasonFailed";
+      const message = localizedApiError(error, t, fallbackKey);
+      setNotice(message);
+      if (options?.toastOnError) {
+        toastWrittenOutcome("failed", message);
+      }
     } finally {
+      busyRef.current = null;
       setBusy(null);
     }
   }
@@ -261,25 +319,99 @@ export function useAntigravityProfile(callbacks?: {
   }
 
   function installCli() {
-    return run("install", async () => {
-      await apiPost("/api/antigravity/install", {});
-      toastWrittenOutcome(
-        "success",
-        t("settings.ai.antigravity.installCliSuccess"),
-      );
-      await refresh();
-    });
+    return run(
+      "install",
+      async () => {
+        const result = await apiPost<AntigravityInstallResponse>(
+          "/api/antigravity/install",
+          {},
+          { signal: null },
+        );
+        const version = result?.version;
+        if (version) {
+          pendingVersionRef.current = version;
+          setStatus((current) =>
+            current
+              ? {
+                  ...current,
+                  cliInstalled: true,
+                  canInstallCli: false,
+                  cliVersion: version,
+                }
+              : null,
+          );
+        }
+        ++refreshSeqRef.current;
+        const baseMsg = t("settings.ai.antigravity.installCliSuccess", {
+          version: version ?? "",
+        });
+        const versionLabel =
+          version && !baseMsg.includes(version)
+            ? ` (${t("settings.ai.antigravity.cliVersion", { version })})`
+            : "";
+        toastWrittenOutcome("success", `${baseMsg}${versionLabel}`);
+        try {
+          await refresh();
+        } catch (err) {
+          pendingVersionRef.current = null;
+          setNotice(
+            localizedApiError(err, t, "settings.ai.antigravity.reasonFailed"),
+          );
+        }
+      },
+      {
+        fallbackError: "settings.ai.antigravity.installCliFailed",
+        toastOnError: true,
+      },
+    );
   }
 
   function updateCli() {
-    return run("update", async () => {
-      await apiPost("/api/antigravity/install", { action: "update" });
-      toastWrittenOutcome(
-        "success",
-        t("settings.ai.antigravity.updateCliSuccess"),
-      );
-      await refresh();
-    });
+    return run(
+      "update",
+      async () => {
+        const result = await apiPost<AntigravityInstallResponse>(
+          "/api/antigravity/install",
+          { action: "update" },
+          { signal: null },
+        );
+        const version = result?.version;
+        if (version) {
+          pendingVersionRef.current = version;
+          setStatus((current) =>
+            current
+              ? {
+                  ...current,
+                  cliVersion: version,
+                  updateAvailable: false,
+                  canUpdateCli: false,
+                }
+              : null,
+          );
+        }
+        ++refreshSeqRef.current;
+        const baseMsg = t("settings.ai.antigravity.updateCliSuccess", {
+          version: version ?? "",
+        });
+        const versionLabel =
+          version && !baseMsg.includes(version)
+            ? ` (${t("settings.ai.antigravity.cliVersion", { version })})`
+            : "";
+        toastWrittenOutcome("success", `${baseMsg}${versionLabel}`);
+        try {
+          await refresh();
+        } catch (err) {
+          pendingVersionRef.current = null;
+          setNotice(
+            localizedApiError(err, t, "settings.ai.antigravity.reasonFailed"),
+          );
+        }
+      },
+      {
+        fallbackError: "settings.ai.antigravity.updateCliFailed",
+        toastOnError: true,
+      },
+    );
   }
 
   return {
@@ -300,6 +432,7 @@ export function useAntigravityProfile(callbacks?: {
     disconnect,
     changeModel,
     changeReasoning,
+    refresh,
     installCli,
     updateCli,
   };

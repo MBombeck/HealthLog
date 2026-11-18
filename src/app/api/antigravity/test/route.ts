@@ -59,13 +59,29 @@ export const POST = apiHandler(async () => {
 
   const row = await prisma.user.findUnique({
     where: { id: caller.id },
-    select: { antigravityProfileId: true },
+    select: {
+      antigravityProfileId: true,
+      antigravityConnectionStatus: true,
+    },
   });
   const profileId = row?.antigravityProfileId ?? null;
+  const isConnected = row?.antigravityConnectionStatus === "connected";
+  const rawStatus = row?.antigravityConnectionStatus;
+  const fallbackStatus: AntigravityConnectionStatus =
+    rawStatus === "auth_required" || rawStatus === "error"
+      ? rawStatus
+      : "disconnected";
 
-  const result: AntigravityTestResponse = profileId
-    ? await probe(profileId)
-    : { status: "disconnected", reason: "not_set_up", capabilities: null };
+  // Retained profiles from failed wipes/cleanups cannot reconnect via test.
+  // With no profile configured, always return disconnected.
+  const result: AntigravityTestResponse =
+    profileId && isConnected
+      ? await probe(profileId)
+      : {
+          status: !profileId ? "disconnected" : fallbackStatus,
+          reason: "not_set_up",
+          capabilities: null,
+        };
 
   await prisma.user.update({
     where: { id: caller.id },
@@ -73,7 +89,7 @@ export const POST = apiHandler(async () => {
       antigravityConnectionStatus: result.status,
       antigravityConnectedAt: result.status === "connected" ? new Date() : null,
       antigravityCapabilitiesJson: result.capabilities
-        ? { promptCapabilities: result.capabilities }
+        ? { promptCapabilities: { ...result.capabilities } }
         : Prisma.DbNull,
     },
   });

@@ -20,12 +20,14 @@
  * slug and the account's model list.
  */
 
-export interface AntigravityCapabilities {
+export type AntigravityCapabilities = {
   /** CLI reports `agentCapabilities.promptCapabilities.image`. */
   image: boolean;
   /** CLI reports `agentCapabilities.promptCapabilities.embeddedContext`. */
   embeddedContext: boolean;
-}
+};
+
+export type AntigravityPromptCapabilities = AntigravityCapabilities;
 
 const cache = new Map<string, AntigravityCapabilities>();
 

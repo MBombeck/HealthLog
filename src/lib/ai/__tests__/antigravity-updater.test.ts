@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   chmodSync,
-  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -93,12 +92,16 @@ describe("Antigravity Updater Success and Integrity", () => {
 
     const release = {
       version: "1.5.11",
-      downloadUrl: "https://github.com/google-antigravity/antigravity-cli/releases/download/v1.5.11/agy.tar.gz",
+      downloadUrl:
+        "https://github.com/google-antigravity/antigravity-cli/releases/download/v1.5.11/agy.tar.gz",
       sha256: validSha256,
     };
 
     const download = async () =>
-      new Response("Network timeout", { status: 504, statusText: "Gateway Timeout" });
+      new Response("Network timeout", {
+        status: 504,
+        statusText: "Gateway Timeout",
+      });
 
     await expect(
       installAgy({
@@ -123,7 +126,8 @@ describe("Antigravity Updater Success and Integrity", () => {
 
     const release = {
       version: "1.5.11",
-      downloadUrl: "https://github.com/google-antigravity/antigravity-cli/releases/download/v1.5.11/agy.tar.gz",
+      downloadUrl:
+        "https://github.com/google-antigravity/antigravity-cli/releases/download/v1.5.11/agy.tar.gz",
       sha256: wrongSha256,
     };
 
@@ -149,16 +153,26 @@ describe("Antigravity Updater Success and Integrity", () => {
     chmodSync(targetBinary, 0o755);
 
     // Create fixture archive where extracted binary outputs 1.5.10 instead of 1.5.11
-    const mismatchFixtureDir = mkdtempSync(join(tmpdir(), "healthlog-agy-mismatch-"));
+    const mismatchFixtureDir = mkdtempSync(
+      join(tmpdir(), "healthlog-agy-mismatch-"),
+    );
     try {
       const scriptPath = join(mismatchFixtureDir, "antigravity");
       writeFileSync(scriptPath, "#!/bin/sh\necho 'agy version 1.5.10'\n");
       chmodSync(scriptPath, 0o755);
 
       const archivePath = join(mismatchFixtureDir, "agy_cli_linux_x64.tar.gz");
-      execFileSync("tar", ["-czf", archivePath, "-C", mismatchFixtureDir, "antigravity"]);
+      execFileSync("tar", [
+        "-czf",
+        archivePath,
+        "-C",
+        mismatchFixtureDir,
+        "antigravity",
+      ]);
       const archiveBytes = readFileSync(archivePath);
-      const archiveSha256 = createHash("sha256").update(archiveBytes).digest("hex");
+      const archiveSha256 = createHash("sha256")
+        .update(archiveBytes)
+        .digest("hex");
 
       const release = {
         version: "1.5.11",
@@ -190,12 +204,17 @@ describe("Antigravity Updater Success and Integrity", () => {
     writeFileSync(targetBinary, "#!/bin/sh\necho 'agy version 1.5.8'\n");
     chmodSync(targetBinary, 0o755);
 
-    const corruptBuffer = Buffer.from("corrupt archive bytes not in tar format");
-    const corruptSha256 = createHash("sha256").update(corruptBuffer).digest("hex");
+    const corruptBuffer = Buffer.from(
+      "corrupt archive bytes not in tar format",
+    );
+    const corruptSha256 = createHash("sha256")
+      .update(corruptBuffer)
+      .digest("hex");
 
     const release = {
       version: "1.5.11",
-      downloadUrl: "https://github.com/google-antigravity/antigravity-cli/releases/download/v1.5.11/agy.tar.gz",
+      downloadUrl:
+        "https://github.com/google-antigravity/antigravity-cli/releases/download/v1.5.11/agy.tar.gz",
       sha256: corruptSha256,
     };
 

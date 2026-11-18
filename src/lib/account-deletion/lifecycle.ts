@@ -24,6 +24,9 @@ import {
   requestOffhostPurge,
   type OffhostPurgeReason,
 } from "@/lib/jobs/offhost-purge";
+import { removeAntigravityProfile } from "@/lib/ai/antigravity-profile-cleanup";
+import { cancelAntigravityLogin } from "@/lib/ai/antigravity-auth-session";
+import { forgetAntigravityCapabilities } from "@/lib/ai/antigravity-capability-cache";
 
 type Tx = Prisma.TransactionClient;
 
@@ -89,6 +92,26 @@ export async function eraseAccount(
     await tx.session.deleteMany({ where: { userId } });
     await tx.auditLog.deleteMany({ where: { userId } });
   }
+
+  // Google OAuth profile for Antigravity CLI sits on disk. Clean it up before
+  // deleting the user row. If cleanup fails, throw so the transaction aborts
+  // and preserves the user row with its antigravityProfileId reference,
+  // ensuring durable retry on subsequent purge runs.
+  const user = await tx.user.findUnique({
+    where: { id: userId },
+    select: { antigravityProfileId: true },
+  });
+  if (user?.antigravityProfileId) {
+    cancelAntigravityLogin(userId);
+    forgetAntigravityCapabilities(userId);
+    const ok = await removeAntigravityProfile(user.antigravityProfileId);
+    if (!ok) {
+      throw new Error(
+        `Failed to remove Antigravity profile directory for user ${userId}; aborting account erasure to preserve retry reference`,
+      );
+    }
+  }
+
   // The nightly off-host copies go with the account. The request commits
   // with the deletion; the purge job deletes the objects.
   await requestOffhostPurge(tx, userId, reason);

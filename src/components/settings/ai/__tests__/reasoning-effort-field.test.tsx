@@ -124,9 +124,9 @@ describe("ReasoningEffortField with restricted levels (Antigravity)", () => {
       />,
     );
     const select = selectMarkup(html, "settings-ai-antigravity-reasoning");
-    const optionValues = [
-      ...select.matchAll(/<option value="([^"]*)"/g),
-    ].map((m) => m[1]);
+    const optionValues = [...select.matchAll(/<option value="([^"]*)"/g)].map(
+      (m) => m[1],
+    );
     expect(optionValues).toEqual(["", "low", "medium", "high"]);
     expect(select).not.toContain('value="none"');
     expect(select).toContain(en.settings.ai.reasoning.options.default);
@@ -154,9 +154,9 @@ describe("ReasoningEffortField with restricted levels (Antigravity)", () => {
       />,
     );
     const select = selectMarkup(html, "settings-ai-antigravity-reasoning");
-    const optionValues = [
-      ...select.matchAll(/<option value="([^"]*)"/g),
-    ].map((m) => m[1]);
+    const optionValues = [...select.matchAll(/<option value="([^"]*)"/g)].map(
+      (m) => m[1],
+    );
     expect(optionValues).toEqual(["medium", "low"]);
     expect(optionValues).not.toContain("xhigh");
     expect(optionValues).not.toContain("ultra");

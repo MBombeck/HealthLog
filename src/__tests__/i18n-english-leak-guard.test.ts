@@ -79,6 +79,11 @@ const LEGIT_IDENTICAL = new Set<string>([
   // Italian UI, and "Cycle (HealthLog)" is the French word for the same thing.
   "cycle.feed.fetcher.GOOGLE",
   "cycle.feed.ics.calendarName",
+  // "Antigravity CLI" is the product's own name in every locale, as Google
+  // Calendar is above. The provider labels and the settings card title use it.
+  "settings.ai.providerChain.types.antigravity",
+  "settings.ai.providerSelect.antigravity",
+  "settings.ai.antigravity.title",
   // Vaccine catalogue: clinical proper nouns whose accepted written form is the
   // same across these locales. "Hib" carries its Latin binomial verbatim, and
   // "Hepatitis A" / "Hepatitis B" read identically in Spanish. The catalogue

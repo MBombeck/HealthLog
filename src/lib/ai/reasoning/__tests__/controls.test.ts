@@ -155,11 +155,13 @@ describe("resolveJobReasoning by usage level", () => {
     const agyChain = [{ providerType: "antigravity" as const }];
     user.level = "FRUGAL";
     row.current = { aiUsageMaxLevel: "FULL", aiUsageDefaultLevel: "STANDARD" };
-    expect(await resolveJobReasoning("daily_briefing", agyChain, "u1")).toEqual({
-      effort: "off",
-      summaries: false,
-      maxEffort: "off",
-    });
+    expect(await resolveJobReasoning("daily_briefing", agyChain, "u1")).toEqual(
+      {
+        effort: "off",
+        summaries: false,
+        maxEffort: "off",
+      },
+    );
 
     user.level = "FULL";
     row.current = {
@@ -167,11 +169,13 @@ describe("resolveJobReasoning by usage level", () => {
       aiUsageMaxLevel: "FULL",
       aiUsageDefaultLevel: "STANDARD",
     };
-    expect(await resolveJobReasoning("daily_briefing", agyChain, "u1")).toEqual({
-      effort: "off",
-      summaries: false,
-      maxEffort: "off",
-    });
+    expect(await resolveJobReasoning("daily_briefing", agyChain, "u1")).toEqual(
+      {
+        effort: "off",
+        summaries: false,
+        maxEffort: "off",
+      },
+    );
 
     // Non-antigravity chain receives undefined on admin disabled
     expect(
@@ -184,11 +188,13 @@ describe("resolveJobReasoning by usage level", () => {
 
     // 1. DB failure during loadRecordUsageLevel
     user.fail = true;
-    expect(await resolveJobReasoning("daily_briefing", agyChain, "u1")).toEqual({
-      effort: "off",
-      summaries: false,
-      maxEffort: "off",
-    });
+    expect(await resolveJobReasoning("daily_briefing", agyChain, "u1")).toEqual(
+      {
+        effort: "off",
+        summaries: false,
+        maxEffort: "off",
+      },
+    );
     expect(
       await resolveJobReasoning("daily_briefing", chain, "u1"),
     ).toBeUndefined();
@@ -196,11 +202,13 @@ describe("resolveJobReasoning by usage level", () => {
     // 2. DB failure during loadReasoningControls
     user.fail = false;
     row.fail = true;
-    expect(await resolveJobReasoning("daily_briefing", agyChain, "u1")).toEqual({
-      effort: "off",
-      summaries: false,
-      maxEffort: "off",
-    });
+    expect(await resolveJobReasoning("daily_briefing", agyChain, "u1")).toEqual(
+      {
+        effort: "off",
+        summaries: false,
+        maxEffort: "off",
+      },
+    );
     expect(
       await resolveJobReasoning("daily_briefing", chain, "u1"),
     ).toBeUndefined();

@@ -98,7 +98,7 @@ function sendError(id, message) {
 rl.on('line', (line) => {
   try {
     const msg = JSON.parse(line);
-    
+
     if (msg.method === "initialize") {
       sendResponse(msg.id, {
         protocolVersion: 1,
@@ -129,11 +129,11 @@ rl.on('line', (line) => {
         sendResponse(msg.id, { stopReason: "end_turn" });
         return;
       }
-      
+
       // Send a message chunk
       const response = responses[responseIndex % responses.length];
       responseIndex++;
-      
+
       sendNotification("session/update", {
         sessionId: msg.params.sessionId,
         update: {
@@ -141,7 +141,7 @@ rl.on('line', (line) => {
           content: { type: "text", text: response }
         }
       });
-      
+
       // Send completion
       sendResponse(msg.id, { stopReason: "end_turn" });
     }

@@ -138,6 +138,14 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["ConfirmButton"],
   },
   {
+    file: "components/settings/ai/use-antigravity-profile.ts",
+    destroys:
+      "the link from the account to its Antigravity profile, the chosen model, and the profile folder with the CLI OAuth login on the server",
+    triggers: ["components/settings/ai/antigravity-provider-form.tsx"],
+    recovery: "restorable",
+    confirm: ["ConfirmButton"],
+  },
+  {
     file: "components/settings/ai/remove-saved-key-button.tsx",
     destroys:
       "one stored personal AI provider key (OpenAI, Anthropic, the local model or the gateway); the provider choice and model stay",

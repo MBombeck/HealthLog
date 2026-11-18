@@ -81,7 +81,7 @@ export function antigravityBinaryPath(profileRoot = DEFAULT_PROFILE_ROOT) {
  * standard system locations.
  */
 export function resolveAntigravityBinary({ binaryPath, profileRoot } = {}) {
-  if (binaryPath && isExecutableFile(binaryPath)) return binaryPath;
+  if (binaryPath) return isExecutableFile(binaryPath) ? binaryPath : null;
   if (profileRoot) {
     const candidate = antigravityBinaryPath(profileRoot);
     if (isExecutableFile(candidate)) return candidate;
@@ -126,12 +126,7 @@ export function compareSemver(a, b) {
 
 function isPathInside(parent, child) {
   const rel = relative(parent, child);
-  return (
-    rel !== "" &&
-    rel !== "." &&
-    !rel.startsWith("..") &&
-    !isAbsolute(rel)
-  );
+  return rel !== "" && rel !== "." && !rel.startsWith("..") && !isAbsolute(rel);
 }
 
 function isSafeManagedBinary(candidateBinary, root) {
@@ -323,7 +318,20 @@ async function downloadArchive(response, file) {
   return hash.digest("hex");
 }
 
-async function doInstall({ profileRoot, binaryPath, force, download, childEnv, release }) {
+async function doInstall({
+  profileRoot,
+  binaryPath,
+  force,
+  download,
+  childEnv,
+  release,
+}) {
+  if (binaryPath) {
+    throw new Error(
+      "Antigravity CLI is externally managed via binaryPath override and cannot be installed or modified by HealthLog",
+    );
+  }
+
   const root = profileRoot || DEFAULT_PROFILE_ROOT;
   const binDir = join(root, "bin");
   const targetBinary = antigravityBinaryPath(root);
@@ -363,8 +371,30 @@ async function doInstall({ profileRoot, binaryPath, force, download, childEnv, r
         "Invalid release provided to installer: missing downloadUrl or sha256",
       );
     }
+    if (
+      typeof release.downloadUrl !== "string" ||
+      !release.downloadUrl.startsWith("https://")
+    ) {
+      throw new Error(
+        `Invalid downloadUrl for Antigravity release: must use HTTPS protocol, got "${release.downloadUrl}"`,
+      );
+    }
     downloadUrl = release.downloadUrl;
-    expectedSha256 = String(release.sha256).toLowerCase();
+    // Trust model: for the pinned version, always enforce the build-pinned
+    // SHA-256 hash. For dynamic newer releases discovered via official GitHub
+    // release metadata over HTTPS, trust the release asset digest published
+    // on GitHub.
+    if (compareSemver(release.version, AGY_PINNED_VERSION) === 0) {
+      const { sha256: pinnedSha } = shaFor(process.arch);
+      expectedSha256 = pinnedSha;
+    } else {
+      expectedSha256 = String(release.sha256).toLowerCase();
+    }
+    if (!/^[a-f0-9]{64}$/.test(expectedSha256)) {
+      throw new Error(
+        `Invalid sha256 digest format for Antigravity release: ${expectedSha256}`,
+      );
+    }
   } else {
     const { asset, sha256 } = shaFor(process.arch);
     expectedSha256 = sha256;
@@ -406,6 +436,10 @@ async function doInstall({ profileRoot, binaryPath, force, download, childEnv, r
     if (!existsSync(extracted)) {
       throw new Error("Extracted antigravity binary not found in archive");
     }
+    const stat = lstatSync(extracted);
+    if (stat.isSymbolicLink() || !stat.isFile()) {
+      throw new Error("Extracted antigravity binary must be a regular file");
+    }
     chmodSync(extracted, 0o755);
 
     const { stdout: probeStdout } = await execFileAsync(
@@ -434,6 +468,11 @@ async function doInstall({ profileRoot, binaryPath, force, download, childEnv, r
     }
 
     assertSafeInstallTarget(root);
+
+    const preRenameStat = lstatSync(extracted);
+    if (preRenameStat.isSymbolicLink() || !preRenameStat.isFile()) {
+      throw new Error("Extracted antigravity binary must be a regular file");
+    }
 
     // rename replaces the old binary in one step, so no caller sees a gap.
     renameSync(extracted, targetBinary);

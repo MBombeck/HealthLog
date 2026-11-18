@@ -1,6 +1,6 @@
 # Antigravity CLI Multimodal Support
 
-**Status**: Stage 3 Complete  
+**Status**: Stage 3 Complete
 **Date**: 2026-11-13
 
 ---

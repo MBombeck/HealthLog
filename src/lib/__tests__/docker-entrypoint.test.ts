@@ -1,4 +1,10 @@
-import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -107,7 +113,9 @@ describe("docker entrypoint startup installation", () => {
     });
 
     expect(result.status).toBe(0);
-    expect(result.stderr).toContain("ANTIGRAVITY_AUTO_INSTALL is deprecated and ignored");
+    expect(result.stderr).toContain(
+      "ANTIGRAVITY_AUTO_INSTALL is deprecated and ignored",
+    );
     expect(result.stdout).not.toContain("install-agy");
     expect(result.stderr).not.toContain("install-agy");
   });

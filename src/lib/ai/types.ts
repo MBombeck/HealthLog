@@ -1,5 +1,5 @@
 import type { ReasoningEffort } from "./reasoning-effort";
-import type { ReasoningLevel, ReasoningMaxEffort } from "./reasoning/levels";
+import type { ReasoningLevel } from "./reasoning/levels";
 import { z } from "zod/v4";
 
 // ─── Insight Result Schema ─────────────────────────────────
@@ -148,11 +148,6 @@ export interface AIProvider {
    * ever stamped with a value. `null` / absent → Default: the key is not sent.
    */
   reasoningEffort?: ReasoningEffort | null;
-  /**
-   * Effective administrative/record reasoning cap for this provider instance
-   * (e.g. for Antigravity, where the operator cap or frugal level clamps saved effort).
-   */
-  policyCap?: import("./reasoning/levels").ReasoningLevel | null;
   generateCompletion(params: CompletionParams): Promise<CompletionResult>;
   /**
    * v1.22 (#89) — optional true-streaming variant. A provider that can emit
@@ -307,7 +302,31 @@ export interface AiReasoningEvent {
   text: string;
 }
 
-export interface CompletionParams {
+export interface StandardReasoning {
+  effort: ReasoningLevel;
+  summaries: boolean;
+  maxEffort?: ReasoningLevel;
+  source?: import("./reasoning/resolve").ReasoningSource;
+  explicit?: boolean;
+}
+
+export interface AntigravityReasoning {
+  effort?: ReasoningLevel;
+  summaries: boolean;
+  maxEffort?: ReasoningLevel;
+  source?: import("./reasoning/resolve").ReasoningSource;
+  explicit?: boolean;
+}
+
+export interface CompletionParams<
+  R extends {
+    effort?: ReasoningLevel;
+    summaries: boolean;
+    maxEffort?: ReasoningLevel;
+    source?: import("./reasoning/resolve").ReasoningSource;
+    explicit?: boolean;
+  } = StandardReasoning,
+> {
   /**
    * Stable system prompt. Carries the brand-free reference grounding, persona
    * and instructions. Eligible for the provider cache prefix on every client;
@@ -394,13 +413,7 @@ export interface CompletionParams {
    * summaries where the provider offers them. Absent → today's behaviour: the
    * client sends exactly what it sent before the field existed.
    */
-  reasoning?: {
-    effort: ReasoningLevel;
-    summaries: boolean;
-    maxEffort?: ReasoningLevel;
-    source?: import("./reasoning/resolve").ReasoningSource;
-    explicit?: boolean;
-  };
+  reasoning?: R;
   /**
    * #1276 — no person reads this reply as it streams: the call runs as
    * background work. Set by the chain runner for every `"job"` walk, never by

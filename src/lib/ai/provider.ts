@@ -14,6 +14,13 @@ import { LocalOpenAICompatibleClient } from "./local-client";
 import { antigravityAvailable } from "./antigravity-client";
 import { setAntigravityCapabilities } from "./antigravity-capability-cache";
 import {
+  appSettingsCentralCodexConnected,
+  providerOrigin,
+  servesPickedGateway,
+  type ProviderManagedBy,
+} from "./provider-origin";
+export type { ProviderManagedBy };
+import {
   refreshDeviceTokens,
   codexReconnectRequired,
   encryptCodexCreds,
@@ -837,6 +844,7 @@ export async function resolveProviderChain(
       aiCompatModel: true,
       antigravityProfileId: true,
       antigravityModel: true,
+      antigravityConnectionStatus: true,
       antigravityCapabilitiesJson: true,
       role: true,
       aiProviderChain: true,
@@ -849,38 +857,33 @@ export async function resolveProviderChain(
     authority,
     userRow?.managedProfileAt ?? null,
   );
+  // Configured user chain instances carry the record's timeout and reasoning effort (operator-default binds timeout only).
+  const bind = (provider: AIProvider): AIProvider =>
+    bindReasoningEffort(
+      bindResponseTimeout(provider, userRow?.aiResponseTimeoutSeconds),
+      userRow?.aiProviderChain,
+    );
   if (policy === "operator-default") {
     const provider = await resolveAdminProvider();
     return provider.type === "none"
       ? []
-      : [{ providerType: "admin-openai", instance: bindResponseTimeout(provider, userRow?.aiResponseTimeoutSeconds) }];
+      : [
+          {
+            providerType: "admin-openai",
+            instance: bindResponseTimeout(
+              provider,
+              userRow?.aiResponseTimeoutSeconds,
+            ),
+          },
+        ];
   }
 
   const rawChain = userRow?.aiProviderChain ?? null;
   const chain = parseProviderChain(rawChain).filter((e) => e.enabled);
 
-  let agyPolicyCap: import("./reasoning/levels").ReasoningLevel | null = null;
   if (chain.some((e) => e.providerType === "antigravity")) {
     setAntigravityCapabilities(userId, userRow?.antigravityCapabilitiesJson);
-    try {
-      const { resolveEffectivePolicyCap } = await import("./reasoning/controls");
-      agyPolicyCap = await resolveEffectivePolicyCap(userId, "job");
-    } catch {
-      agyPolicyCap = "off";
-    }
   }
-
-  // Every instance carries the record's timeout and reasoning effort.
-  const bind = (provider: AIProvider): AIProvider => {
-    const bound = bindReasoningEffort(
-      bindResponseTimeout(provider, userRow?.aiResponseTimeoutSeconds),
-      userRow?.aiProviderChain,
-    );
-    if (bound.type === "antigravity" && agyPolicyCap) {
-      bound.policyCap = agyPolicyCap;
-    }
-    return bound;
-  };
 
   const resolved: ProviderChainResolved[] = [];
   for (const entry of chain) {
@@ -936,74 +939,6 @@ export async function hasAnyConfiguredProvider(
   userId: string,
 ): Promise<boolean> {
   return probeProviderPresence(userId, "text");
-}
-
-/**
- * Presence-only check that the operator's central Codex is connected, over an
- * already-loaded `AppSettings` subset. No decrypt, no network.
- */
-function appSettingsCentralCodexConnected(
-  settings: {
-    adminCodexConnectionStatus: string | null;
-    adminCodexAccessTokenEncrypted: string | null;
-    adminCodexRefreshTokenEncrypted: string | null;
-    adminCodexAccountIdEncrypted: string | null;
-  } | null,
-): boolean {
-  return (
-    settings?.adminCodexConnectionStatus === "connected" &&
-    !!settings.adminCodexAccessTokenEncrypted &&
-    !!settings.adminCodexRefreshTokenEncrypted &&
-    !!settings.adminCodexAccountIdEncrypted
-  );
-}
-
-/**
- * Origin of the provider that would serve a given user, surfaced to
- * clients that need to show or hide an AI surface (the iOS Coach gate).
- *
- *   - "user"   — a personal cloud credential resolves (Codex OAuth, or a
- *                BYO OpenAI / Anthropic key).
- *   - "local"  — a per-user self-hosted base URL (Ollama / LM Studio).
- *   - "server" — no personal config, but the operator's admin-managed
- *                key serves the user. This is the case iOS #24 missed:
- *                the Coach works server-side yet the client saw `null`.
- *   - null     — nothing configured anywhere; no provider can serve.
- *
- * Read off the first entry of the presence probe: it never decrypts a key,
- * builds a client, or probes liveness.
- */
-export type ProviderManagedBy = "user" | "local" | "server";
-
-/** Where the credential behind one chain entry comes from. */
-function providerOrigin(providerType: string): ProviderManagedBy {
-  if (providerType === "local") return "local";
-  if (providerType === "admin-openai" || providerType === "admin-codex") {
-    return "server";
-  }
-  return "user";
-}
-
-/**
- * What a chain that resolves empty falls back to: the OpenAI-compatible
- * gateway picked under Settings, AI, unless the chain switched it off. The
- * default chain has no entry for the gateway, so a chain never saved, reset
- * to the default, or reordered without it says nothing about the gateway.
- * Nor does a disabled gateway entry that carries a reasoning effort: that is
- * the holder the gateway form wrote for the setting
- * (`chainWithReasoningEffort`), not a switch somebody turned off; the chain
- * editor drops the effort of a gateway it switches off. Resolution and the
- * presence probe both read this, so they cannot disagree about it.
- */
-function servesPickedGateway(row: {
-  aiProvider: string | null;
-  aiProviderChain: unknown;
-}): boolean {
-  if (row.aiProvider?.toUpperCase() !== "OPENAI_COMPATIBLE") return false;
-  const gateway = parseProviderChain(row.aiProviderChain ?? null).find(
-    (entry) => entry.providerType === "openai-compatible",
-  );
-  return !gateway || gateway.enabled || gateway.reasoningEffort !== undefined;
 }
 
 /**
@@ -1159,7 +1094,10 @@ export function probeProviderChain(
             // server's shared login, so the provider stays off.
             return (
               row.antigravityConnectionStatus === "connected" &&
-              antigravityAvailable(row.antigravityProfileId)
+              antigravityAvailable(
+                row.antigravityProfileId,
+                row.antigravityConnectionStatus,
+              )
             );
           default:
             // `admin-codex` is never resolved from a stored chain entry.
@@ -1239,6 +1177,7 @@ async function resolveProviderForType(
       aiCompatModel: string | null;
       antigravityProfileId: string | null;
       antigravityModel: string | null;
+      antigravityConnectionStatus: string | null;
       role: string;
     } | null;
     policy: ProviderCredentialPolicy;
@@ -1368,6 +1307,15 @@ export async function resolveProviderForTest(
   );
 }
 
+function isSameOrigin(url1?: string | null, url2?: string | null): boolean {
+  if (!url1 || !url2) return false;
+  try {
+    return new URL(url1).origin === new URL(url2).origin;
+  } catch {
+    return false;
+  }
+}
+
 async function resolveProviderForTestUnbound(
   userId: string,
   override: AITestOverride,
@@ -1375,6 +1323,7 @@ async function resolveProviderForTestUnbound(
   const stored = await prisma.user.findUnique({
     where: { id: userId },
     select: {
+      aiProvider: true,
       aiModel: true,
       aiBaseUrl: true,
       aiAnthropicKeyEncrypted: true,
@@ -1391,11 +1340,14 @@ async function resolveProviderForTestUnbound(
   // saved one: it belongs to the calling account.
   const owner = { operatorTrusted: isOperatorOwned(stored) };
 
-  const provider = (override.provider ?? "").trim().toUpperCase();
-  const model = (override.model ?? stored?.aiModel ?? "").toString().trim();
-  const baseUrl = (override.baseUrl ?? stored?.aiBaseUrl ?? "")
-    .toString()
-    .trim();
+  const overrideProvider = (override.provider ?? "").trim().toUpperCase();
+  const hasOverrideFields = Object.entries(override).some(
+    ([, value]) =>
+      value !== undefined &&
+      value !== null &&
+      typeof value === "string" &&
+      value.trim() !== "",
+  );
 
   // Empty selection ("test my saved config" — the ai-section calls
   // /api/ai/test with an empty body): resolve via the SAME path generation
@@ -1404,20 +1356,25 @@ async function resolveProviderForTestUnbound(
   // (observed: test→admin-key while generation→codex), so a green test gave
   // no signal about whether overnight generation would work.
   // Nothing resolving is the route's `ai.provider.none`, not a refused entry.
-  if (!provider) {
-    if (
-      Object.entries(override).some(
-        ([key, value]) => key !== "provider" && value?.trim(),
-      )
-    ) {
-      throw new AITestConfigError(
-        422,
-        "Select a provider to test these settings",
-      );
-    }
+  if (!hasOverrideFields) {
     const chain = await resolveProviderChain(userId);
     return chain.length > 0 ? chain[0].instance : new NoProvider();
   }
+
+  // Restore partial override on stored provider when provider is omitted in override.
+  const provider =
+    overrideProvider || (stored?.aiProvider ?? "").trim().toUpperCase();
+  if (!provider) {
+    throw new AITestConfigError(
+      422,
+      "Select a provider to test these settings",
+    );
+  }
+
+  const model = (override.model ?? stored?.aiModel ?? "").toString().trim();
+  const baseUrl = (override.baseUrl ?? stored?.aiBaseUrl ?? "")
+    .toString()
+    .trim();
 
   switch (provider) {
     case "ANTHROPIC": {
@@ -1440,6 +1397,18 @@ async function resolveProviderForTestUnbound(
     case "LOCAL": {
       if (!baseUrl) {
         throw new AITestConfigError(422, "Local provider requires a base URL");
+      }
+      const isReusingStoredKey =
+        !override.localKey?.trim() && !!stored?.aiLocalKeyEncrypted;
+      if (
+        isReusingStoredKey &&
+        override.baseUrl &&
+        !isSameOrigin(override.baseUrl, stored?.aiBaseUrl)
+      ) {
+        throw new AITestConfigError(
+          422,
+          "API key is required when testing a new base URL origin",
+        );
       }
       // A private host only when the operator granted its origin
       // (`AI_PRIVATE_ORIGINS` or the legacy host list; v1.39.3).
@@ -1478,6 +1447,18 @@ async function resolveProviderForTestUnbound(
         throw new AITestConfigError(
           422,
           "OpenAI-compatible provider requires a base URL",
+        );
+      }
+      const isReusingStoredKey =
+        !override.compatKey?.trim() && !!stored?.aiCompatKeyEncrypted;
+      if (
+        isReusingStoredKey &&
+        override.compatBaseUrl &&
+        !isSameOrigin(override.compatBaseUrl, stored?.aiCompatBaseUrl)
+      ) {
+        throw new AITestConfigError(
+          422,
+          "API key is required when testing a new base URL origin",
         );
       }
       if (

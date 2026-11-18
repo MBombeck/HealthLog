@@ -338,3 +338,63 @@ describe("vision for a Codex sign-in", () => {
     );
   });
 });
+
+// ─── antigravity via capability cache ────────────────────────────────────────
+
+import {
+  clearAntigravityCapabilityCache,
+  setAntigravityCapabilities,
+} from "../antigravity-capability-cache";
+
+describe("chainEntryReadsImages — antigravity", () => {
+  beforeEach(() => {
+    clearAntigravityCapabilityCache();
+  });
+
+  afterEach(() => {
+    clearAntigravityCapabilityCache();
+  });
+
+  it("returns false when no capabilities are cached", () => {
+    expect(chainEntryReadsImages("antigravity", "u1", null)).toBe(false);
+  });
+
+  it("returns false when cached capabilities have neither image nor embeddedContext", () => {
+    setAntigravityCapabilities("u1", {
+      promptCapabilities: { image: false, embeddedContext: false },
+    });
+    expect(chainEntryReadsImages("antigravity", "u1", null)).toBe(false);
+  });
+
+  it("returns false when embeddedContext is true but image is false", () => {
+    setAntigravityCapabilities("u1", {
+      promptCapabilities: { image: false, embeddedContext: true },
+    });
+    expect(chainEntryReadsImages("antigravity", "u1", null)).toBe(false);
+  });
+
+  it("returns true when cached capabilities have image: true", () => {
+    setAntigravityCapabilities("u1", {
+      promptCapabilities: { image: true, embeddedContext: false },
+    });
+    expect(chainEntryReadsImages("antigravity", "u1", null)).toBe(true);
+  });
+
+  it("model argument is ignored for antigravity (capability comes from cache)", () => {
+    setAntigravityCapabilities("u1", {
+      promptCapabilities: { image: false, embeddedContext: true },
+    });
+    expect(chainEntryReadsImages("antigravity", "u1", "some-model")).toBe(
+      false,
+    );
+    expect(chainEntryReadsImages("antigravity", "u1", null)).toBe(false);
+  });
+
+  it("tracks multiple users independently", () => {
+    setAntigravityCapabilities("u1", {
+      promptCapabilities: { image: true, embeddedContext: true },
+    });
+    expect(chainEntryReadsImages("antigravity", "u1", null)).toBe(true);
+    expect(chainEntryReadsImages("antigravity", "u2", null)).toBe(false);
+  });
+});

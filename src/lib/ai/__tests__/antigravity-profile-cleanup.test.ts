@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   existsSync,
   mkdirSync,
@@ -8,7 +8,10 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { removeAntigravityProfiles } from "../antigravity-profile-cleanup";
+import {
+  removeAntigravityProfile,
+  removeAntigravityProfiles,
+} from "../antigravity-profile-cleanup";
 
 const PROFILE = "0123456789abcdef0123456789abcdef";
 
@@ -59,5 +62,41 @@ describe("removeAntigravityProfiles", () => {
   it("does nothing when the profile root is not an absolute path", async () => {
     process.env.ANTIGRAVITY_PROFILE_ROOT = "relative/root";
     expect(await removeAntigravityProfiles([PROFILE])).toBe(0);
+  });
+
+  it("logs warning when profile root is unset or relative and valid IDs were passed", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    delete process.env.ANTIGRAVITY_PROFILE_ROOT;
+    const removed1 = await removeAntigravityProfiles([PROFILE]);
+    expect(removed1).toBe(0);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Antigravity profile root is unset or not absolute",
+      ),
+    );
+
+    warnSpy.mockClear();
+    process.env.ANTIGRAVITY_PROFILE_ROOT = "relative/path";
+    const removed2 = await removeAntigravityProfiles([PROFILE]);
+    expect(removed2).toBe(0);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Antigravity profile root is unset or not absolute",
+      ),
+    );
+
+    warnSpy.mockRestore();
+  });
+
+  it("removeAntigravityProfile returns false when profile root is unset or relative, retaining pointer", async () => {
+    delete process.env.ANTIGRAVITY_PROFILE_ROOT;
+    expect(await removeAntigravityProfile(PROFILE)).toBe(false);
+
+    process.env.ANTIGRAVITY_PROFILE_ROOT = "relative/path";
+    expect(await removeAntigravityProfile(PROFILE)).toBe(false);
+
+    // Missing/empty profile ID returns true (no-op)
+    expect(await removeAntigravityProfile(null)).toBe(true);
+    expect(await removeAntigravityProfile(undefined)).toBe(true);
   });
 });

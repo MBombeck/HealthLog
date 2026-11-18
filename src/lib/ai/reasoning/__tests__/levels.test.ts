@@ -10,6 +10,7 @@ import {
   REASONING_THINKING_BUDGET,
   capReasoningLevel,
   isReasoningLevel,
+  stricterReasoningLevel,
 } from "../levels";
 
 describe("reasoning levels", () => {
@@ -57,5 +58,21 @@ describe("reasoning levels", () => {
         REASONING_LEVELS.indexOf(level),
       );
     }
+  });
+
+  it("stricterReasoningLevel picks the lower (stricter) level or the only provided cap", () => {
+    expect(stricterReasoningLevel("high", "low")).toBe("low");
+    expect(stricterReasoningLevel("low", "high")).toBe("low");
+    expect(stricterReasoningLevel("high", "off")).toBe("off");
+    expect(stricterReasoningLevel("off", "high")).toBe("off");
+    expect(stricterReasoningLevel("medium", "low")).toBe("low");
+    expect(stricterReasoningLevel("low", "medium")).toBe("low");
+    expect(stricterReasoningLevel("medium", "medium")).toBe("medium");
+    expect(stricterReasoningLevel("high", null)).toBe("high");
+    expect(stricterReasoningLevel(null, "medium")).toBe("medium");
+    expect(stricterReasoningLevel(undefined, "low")).toBe("low");
+    expect(stricterReasoningLevel("off", undefined)).toBe("off");
+    expect(stricterReasoningLevel(null, null)).toBe(null);
+    expect(stricterReasoningLevel(undefined, undefined)).toBe(null);
   });
 });

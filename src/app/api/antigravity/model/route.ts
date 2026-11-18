@@ -4,6 +4,7 @@
  * Saves the model the user picked for Antigravity, or clears it (`null`) to
  * return to the CLI's default. The id is checked against the CLI's model list
  * when a completion runs, so a stale id fails there with a clear error.
+ * Requires an existing profile ID; returns 409 if Antigravity is not set up.
  */
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess } from "@/lib/api-response";

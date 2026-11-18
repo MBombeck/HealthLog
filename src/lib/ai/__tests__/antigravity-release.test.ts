@@ -52,10 +52,14 @@ describe("Antigravity Release Parsing & Validation", () => {
       expect(parseSha256Digest(null)).toBeNull();
       expect(parseSha256Digest(undefined)).toBeNull();
       expect(parseSha256Digest("")).toBeNull();
-      expect(parseSha256Digest("md5:1234567890abcdef1234567890abcdef")).toBeNull();
+      expect(
+        parseSha256Digest("md5:1234567890abcdef1234567890abcdef"),
+      ).toBeNull();
       expect(parseSha256Digest(validSha256.slice(0, 63))).toBeNull(); // too short
       expect(parseSha256Digest(validSha256 + "a")).toBeNull(); // too long
-      expect(parseSha256Digest("not-a-hex-string-at-all-xyz0123456789abcdef")).toBeNull();
+      expect(
+        parseSha256Digest("not-a-hex-string-at-all-xyz0123456789abcdef"),
+      ).toBeNull();
     });
   });
 
@@ -125,13 +129,19 @@ describe("Antigravity Release Parsing & Validation", () => {
 
     it("refuses unsupported platforms", () => {
       expect(() =>
-        parseAntigravityRelease(validPayload, { platform: "darwin", arch: "x64" }),
+        parseAntigravityRelease(validPayload, {
+          platform: "darwin",
+          arch: "x64",
+        }),
       ).toThrowError(/Unsupported platform/);
     });
 
     it("refuses unsupported architectures", () => {
       expect(() =>
-        parseAntigravityRelease(validPayload, { platform: "linux", arch: "s390x" }),
+        parseAntigravityRelease(validPayload, {
+          platform: "linux",
+          arch: "s390x",
+        }),
       ).toThrowError(/Unsupported architecture/);
     });
 
@@ -141,7 +151,10 @@ describe("Antigravity Release Parsing & Validation", () => {
         assets: [validPayload.assets[1]], // arm64 only
       };
       expect(() =>
-        parseAntigravityRelease(missingAsset, { platform: "linux", arch: "x64" }),
+        parseAntigravityRelease(missingAsset, {
+          platform: "linux",
+          arch: "x64",
+        }),
       ).toThrowError(/does not contain asset/);
     });
 
@@ -151,13 +164,17 @@ describe("Antigravity Release Parsing & Validation", () => {
         assets: [
           {
             name: "agy_cli_linux_x64.tar.gz",
-            browser_download_url: "http://github.com/google-antigravity/antigravity-cli/releases/download/v1.5.11/agy_cli_linux_x64.tar.gz",
+            browser_download_url:
+              "http://github.com/google-antigravity/antigravity-cli/releases/download/v1.5.11/agy_cli_linux_x64.tar.gz",
             digest: `sha256:${validSha256}`,
           },
         ],
       };
       expect(() =>
-        parseAntigravityRelease(insecureUrl, { platform: "linux", arch: "x64" }),
+        parseAntigravityRelease(insecureUrl, {
+          platform: "linux",
+          arch: "x64",
+        }),
       ).toThrowError(/download URL does not match official GitHub release URL/);
 
       const arbitraryHost = {
@@ -165,13 +182,17 @@ describe("Antigravity Release Parsing & Validation", () => {
         assets: [
           {
             name: "agy_cli_linux_x64.tar.gz",
-            browser_download_url: "https://evil.example.com/agy_cli_linux_x64.tar.gz",
+            browser_download_url:
+              "https://evil.example.com/agy_cli_linux_x64.tar.gz",
             digest: `sha256:${validSha256}`,
           },
         ],
       };
       expect(() =>
-        parseAntigravityRelease(arbitraryHost, { platform: "linux", arch: "x64" }),
+        parseAntigravityRelease(arbitraryHost, {
+          platform: "linux",
+          arch: "x64",
+        }),
       ).toThrowError(/download URL does not match official GitHub release URL/);
 
       const wrongRepo = {
@@ -179,7 +200,8 @@ describe("Antigravity Release Parsing & Validation", () => {
         assets: [
           {
             name: "agy_cli_linux_x64.tar.gz",
-            browser_download_url: "https://github.com/other-org/antigravity-cli/releases/download/v1.5.11/agy_cli_linux_x64.tar.gz",
+            browser_download_url:
+              "https://github.com/other-org/antigravity-cli/releases/download/v1.5.11/agy_cli_linux_x64.tar.gz",
             digest: `sha256:${validSha256}`,
           },
         ],
@@ -193,7 +215,8 @@ describe("Antigravity Release Parsing & Validation", () => {
         assets: [
           {
             name: "agy_cli_linux_x64.tar.gz",
-            browser_download_url: "https://github.com/google-antigravity/antigravity-cli/releases/download/v9.9.9/agy_cli_linux_x64.tar.gz",
+            browser_download_url:
+              "https://github.com/google-antigravity/antigravity-cli/releases/download/v9.9.9/agy_cli_linux_x64.tar.gz",
             digest: `sha256:${validSha256}`,
           },
         ],
@@ -216,7 +239,10 @@ describe("Antigravity Release Parsing & Validation", () => {
         ],
       };
       expect(() =>
-        parseAntigravityRelease(missingDigest, { platform: "linux", arch: "x64" }),
+        parseAntigravityRelease(missingDigest, {
+          platform: "linux",
+          arch: "x64",
+        }),
       ).toThrowError(/missing a valid SHA-256 digest/);
     });
   });
@@ -364,7 +390,9 @@ describe("Antigravity Release Parsing & Validation", () => {
     });
 
     it("handles network failures cleanly", async () => {
-      const mockFetch = vi.fn().mockRejectedValue(new Error("Connection reset"));
+      const mockFetch = vi
+        .fn()
+        .mockRejectedValue(new Error("Connection reset"));
 
       await expect(
         getLatestAntigravityRelease({
@@ -376,7 +404,9 @@ describe("Antigravity Release Parsing & Validation", () => {
     });
 
     it("caches lookup failures for bounded TTL to prevent rate limit hammering", async () => {
-      const mockFetch = vi.fn().mockRejectedValue(new Error("Connection refused"));
+      const mockFetch = vi
+        .fn()
+        .mockRejectedValue(new Error("Connection refused"));
       let mockNow = 1000;
 
       // First call fails and caches the error

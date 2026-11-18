@@ -2,19 +2,21 @@
  * POST /api/antigravity/disconnect
  *
  * Disconnects the Antigravity CLI provider for the authenticated user:
- * 1. Clears the profile ID, the connection status and the stored capabilities
- * 2. Deletes the profile folder, which holds the CLI's OAuth login
+ * 1. Deletes the profile folder, which holds the CLI's OAuth login
+ * 2. Clears the profile ID, the connection status and the stored capabilities
  *
  * The CLI has no logout command. Deleting the folder is the only way to end the
- * login from HealthLog, so it is deleted rather than left on disk.
+ * login from HealthLog, so it is deleted rather than left on disk. The folder
+ * is deleted successfully before clearing the DB pointer to retain a retry path
+ * on failures and avoid clobbering a concurrent changed pointer.
  */
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { forgetAntigravityCapabilities } from "@/lib/ai/antigravity-capability-cache";
 import { cancelAntigravityLogin } from "@/lib/ai/antigravity-auth-session";
-import { removeAntigravityProfiles } from "@/lib/ai/antigravity-profile-cleanup";
+import { removeAntigravityProfile } from "@/lib/ai/antigravity-profile-cleanup";
 
 export interface AntigravityDisconnectResponse {
   /** Whether the disconnect was successful */
@@ -34,8 +36,42 @@ export const POST = apiHandler(async () => {
     select: { antigravityProfileId: true },
   });
 
-  await prisma.user.update({
-    where: { id: userId },
+  // Cancel any active login flow before deleting the profile folder, so an
+  // in-flight login waiting for code cannot attach after or during cleanup.
+  cancelAntigravityLogin(userId);
+  // Drop the in-process capabilities cache immediately, mirroring forgetCodexSignIn.
+  forgetAntigravityCapabilities(userId);
+
+  const profileId = existing?.antigravityProfileId ?? null;
+  if (profileId) {
+    const ok = await removeAntigravityProfile(profileId);
+    if (!ok) {
+      await prisma.user.updateMany({
+        where: {
+          id: userId,
+          antigravityProfileId: profileId,
+        },
+        data: {
+          antigravityModel: null,
+          antigravityConnectionStatus: "error",
+          antigravityConnectedAt: null,
+          antigravityCapabilitiesJson: Prisma.DbNull,
+        },
+      });
+      throw new HttpError(
+        500,
+        "Failed to remove Antigravity profile directory",
+      );
+    }
+  }
+
+  // Clear DB pointer only after directory is deleted successfully.
+  // Using updateMany with matching profileId prevents clobbering concurrent changes.
+  await prisma.user.updateMany({
+    where: {
+      id: userId,
+      antigravityProfileId: profileId,
+    },
     data: {
       antigravityProfileId: null,
       antigravityModel: null,
@@ -45,18 +81,9 @@ export const POST = apiHandler(async () => {
     },
   });
 
-  // A login still waiting for its code belongs to the link being removed.
-  cancelAntigravityLogin(userId);
-  // Drop the in-process capabilities cache immediately, mirroring forgetCodexSignIn.
-  forgetAntigravityCapabilities(userId);
-
-  const removed = await removeAntigravityProfiles([
-    existing?.antigravityProfileId,
-  ]);
-
   const response: AntigravityDisconnectResponse = {
     success: true,
-    loginRemoved: removed > 0 || !existing?.antigravityProfileId,
+    loginRemoved: true,
   };
 
   return apiSuccess(response);
