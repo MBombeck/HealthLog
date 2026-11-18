@@ -319,7 +319,13 @@ describe("coarse buckets — canonical source per day", () => {
     });
 
     const extremes = await readAllTimeExtremes(user.id, ["WEIGHT"]);
-    expect(extremes.get("WEIGHT")).toEqual({ mean: 75, min: 70, max: 80 });
+    // One reading per day: the scale's on day A, the typed one on day B.
+    expect(extremes.get("WEIGHT")).toEqual({
+      count: 2,
+      mean: 75,
+      min: 70,
+      max: 80,
+    });
   });
 
   it("rows older than the rollup window count one source per day in the all-time figures", async () => {

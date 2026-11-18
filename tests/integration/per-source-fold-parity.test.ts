@@ -396,6 +396,9 @@ function legacyAllTimeExtremes(
     )
     SELECT
       c."type"::text                                  AS type,
+      -- Not in the statement as it shipped: the reader now also returns
+      -- the canonical days' reading count, the same sum over the same days.
+      SUM(c.cnt)::int                                 AS count,
       ${mean}::double precision                       AS mean,
       MIN(c.min_value)::double precision              AS min,
       MAX(c.max_value)::double precision              AS max
