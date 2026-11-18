@@ -5639,6 +5639,11 @@
             "labsChanges": "Évolutions de laboratoire",
             "ecg": "ECG"
           }
+        },
+        "documents": {
+          "title": "Documents",
+          "autoAiRead": "Lire automatiquement les nouveaux documents avec l'IA",
+          "honesty": "Activé, chaque document téléversé dans ce profil est envoyé au fournisseur d'IA de l'instance pour être lu, décrit et indexé pour la recherche, sans action par document, et les documents déjà présents sans résumé sont aussi envoyés (jusqu'à 200 à chaque activation). L'activer enregistre le consentement de ce profil à la lecture de ses documents. Les réglages d'IA du profil s'appliquent ; votre propre fournisseur d'IA n'est jamais utilisé. Désactivé par défaut."
         }
       },
       "unavailableTitle": "Indisponible dans ce dossier partagé",

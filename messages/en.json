@@ -5639,6 +5639,11 @@
             "labsChanges": "Lab changes",
             "ecg": "ECG"
           }
+        },
+        "documents": {
+          "title": "Documents",
+          "autoAiRead": "Read new documents automatically with AI",
+          "honesty": "When on, each document uploaded into this profile is sent to the instance's AI provider to be read, described and indexed for search, with no tap per document, and documents already here without a summary are sent too (up to 200 each time it is switched on). Turning it on records this profile's consent to having its documents read. The profile's AI settings apply; your own AI provider is never used. Off by default."
         }
       },
       "unavailableTitle": "Unavailable in this shared record",

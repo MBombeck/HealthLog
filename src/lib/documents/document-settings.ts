@@ -18,6 +18,9 @@
  * again as soon as the level allows it. The stored choice is never changed.
  */
 import { prisma } from "@/lib/db";
+import { AI_CAPABILITIES } from "@/lib/ai/capabilities/types";
+import { AI_EXTRACTION_CONSENT_KIND } from "@/lib/consent/receipts";
+import { isP2002 } from "@/lib/prisma-errors";
 import { loadRecordUsageLevel } from "@/lib/ai/capabilities/usage";
 import { AI_USAGE_LEVEL_EFFECTS } from "@/lib/ai/usage-level";
 
@@ -41,5 +44,56 @@ export async function documentAutoReadEnabled(
     return AI_USAGE_LEVEL_EFFECTS[level].documentsAutoRead;
   } catch {
     return false;
+  }
+}
+
+/**
+ * Mint the record's extraction receipt unless one that satisfies document
+ * reads is already active, as turning automatic reading on does.
+ *
+ * The switch is an affirmative act, so an earlier revocation does not block
+ * it, exactly as a first grant would not be blocked. The partial unique index
+ * on active receipts is the backstop for two concurrent flips; losing that
+ * race means the other flip already minted, which is the outcome wanted.
+ * `grantedBy` says who flipped it: the person themselves, or (#1403) the
+ * guardian of a managed profile, who decides for a record with no self.
+ * Returns whether a receipt was written.
+ */
+export async function ensureExtractionReceipt(
+  recordId: string,
+  grantedBy: "self" | "guardian" = "self",
+  now: Date = new Date(),
+): Promise<boolean> {
+  const active = await prisma.consentReceipt.findFirst({
+    where: {
+      userId: recordId,
+      revokedAt: null,
+      kind: { in: [...AI_CAPABILITIES.documentAi.consent.kinds] },
+    },
+    select: { id: true },
+  });
+  if (active) return false;
+  try {
+    await prisma.consentReceipt.create({
+      data: {
+        userId: recordId,
+        kind: AI_EXTRACTION_CONSENT_KIND,
+        artefact: JSON.stringify({
+          source: "web",
+          kind: AI_EXTRACTION_CONSENT_KIND,
+          grantedAt: now.toISOString(),
+          ...(grantedBy === "guardian" ? { grantedBy: "guardian" } : {}),
+          note:
+            grantedBy === "guardian"
+              ? "Documents read automatically with AI, turned on for a managed profile by its guardian."
+              : "Documents read automatically with AI, turned on in the app.",
+        }),
+        signedAt: now,
+      },
+    });
+    return true;
+  } catch (err) {
+    if (isP2002(err)) return false;
+    throw err;
   }
 }

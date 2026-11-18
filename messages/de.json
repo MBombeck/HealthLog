@@ -5639,6 +5639,11 @@
             "labsChanges": "Laborveränderungen",
             "ecg": "EKG"
           }
+        },
+        "documents": {
+          "title": "Dokumente",
+          "autoAiRead": "Neue Dokumente automatisch mit KI lesen",
+          "honesty": "Wenn eingeschaltet, wird jedes in dieses Profil hochgeladene Dokument an den KI-Anbieter der Instanz geschickt, dort gelesen, beschrieben und für die Suche erschlossen, ohne Tippen je Dokument; schon vorhandene Dokumente ohne Zusammenfassung werden ebenfalls geschickt (bis zu 200 bei jedem Einschalten). Das Einschalten hält die Einwilligung dieses Profils fest, dass seine Dokumente gelesen werden dürfen. Es gelten die KI-Einstellungen des Profils; dein eigener KI-Anbieter wird nie verwendet. Standardmäßig aus."
         }
       },
       "unavailableTitle": "In diesem geteilten Datensatz nicht verfügbar",

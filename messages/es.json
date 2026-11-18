@@ -5639,6 +5639,11 @@
             "labsChanges": "Cambios de laboratorio",
             "ecg": "ECG"
           }
+        },
+        "documents": {
+          "title": "Documentos",
+          "autoAiRead": "Leer los documentos nuevos automáticamente con IA",
+          "honesty": "Si está activado, cada documento subido a este perfil se envía al proveedor de IA de la instancia para leerlo, describirlo e indexarlo para la búsqueda, sin tocar cada documento, y también se envían los documentos que ya hay sin resumen (hasta 200 cada vez que se activa). Activarlo registra el consentimiento de este perfil para que se lean sus documentos. Se aplican los ajustes de IA del perfil; nunca se usa tu propio proveedor de IA. Desactivado por defecto."
         }
       },
       "unavailableTitle": "No disponible en este registro compartido",

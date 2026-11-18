@@ -5639,6 +5639,11 @@
             "labsChanges": "Zmiany wyników laboratoryjnych",
             "ecg": "EKG"
           }
+        },
+        "documents": {
+          "title": "Dokumenty",
+          "autoAiRead": "Automatycznie czytaj nowe dokumenty przez AI",
+          "honesty": "Po włączeniu każdy dokument przesłany do tego profilu trafia do dostawcy AI instancji, który go czyta, opisuje i indeksuje do wyszukiwania, bez dotykania każdego dokumentu; wysyłane są też dokumenty już zapisane bez podsumowania (do 200 przy każdym włączeniu). Włączenie zapisuje zgodę tego profilu na czytanie jego dokumentów. Obowiązują ustawienia AI profilu; twój własny dostawca AI nigdy nie jest używany. Domyślnie wyłączone."
         }
       },
       "unavailableTitle": "Niedostępne w tym udostępnionym rekordzie",

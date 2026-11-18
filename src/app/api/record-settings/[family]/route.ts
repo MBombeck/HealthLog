@@ -44,6 +44,9 @@ import {
 } from "@/lib/validations/notification-prefs";
 import { dayKeyAsUtcMidnight, dateOnlyKey } from "@/lib/tz/date-only";
 import { refreshTextsAfterUnitChange } from "@/lib/insights/unit-change-refresh";
+import { getAiCapability } from "@/lib/ai/capabilities/gate";
+import { ensureExtractionReceipt } from "@/lib/documents/document-settings";
+import { enqueueSummaryCatchUp } from "@/lib/jobs/document-summary-catchup";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +61,49 @@ async function resolveManagedRecordSettings(params: RouteParams["params"]) {
   if (!access) throw new SharingAccessDeniedError();
 
   return { access, family: rawFamily };
+}
+
+/**
+ * #1403 — the profile's own automatic-reading switch: the column the upload
+ * pipeline and the summary job read for the record. Turning it on is the
+ * standing consent act for the profile's document reads, made by the guardian
+ * who decides for it; the receipt is the profile's and the route's audit row
+ * names the guardian.
+ */
+async function patchDocumentsSettings(
+  recordId: string,
+  body: unknown,
+): Promise<{ settings: unknown; changed: readonly string[] }> {
+  const patch = parseManagedRecordSettingsPatch("documents", body);
+  const previous = await prisma.user.findUnique({
+    where: { id: recordId },
+    select: { documentsAutoAiRead: true },
+  });
+  await prisma.user.update({
+    where: { id: recordId },
+    data: { documentsAutoAiRead: patch.autoAiRead },
+  });
+  const consentMinted = patch.autoAiRead
+    ? await ensureExtractionReceipt(recordId, "guardian")
+    : false;
+  if (patch.autoAiRead && !(previous?.documentsAutoAiRead ?? false)) {
+    // Read after the mint, under the profile's capability, so a receipt this
+    // request wrote counts; the catch-up only enqueues, and every gate runs
+    // again per document inside the job.
+    const documentAi = await getAiCapability("documentAi", { recordId });
+    if (documentAi.available) {
+      void enqueueSummaryCatchUp(recordId);
+    } else {
+      annotate({
+        action: { name: "record-settings.documents.catchUpSkipped" },
+        meta: { reason: documentAi.reason },
+      });
+    }
+  }
+  return {
+    settings: { autoAiRead: patch.autoAiRead },
+    changed: consentMinted ? ["autoAiRead", "consent"] : ["autoAiRead"],
+  };
 }
 
 /** Each response names the target record and only one field-specific DTO. */
@@ -86,6 +132,7 @@ export const GET = apiHandler(
         disableCoach: true,
         coachPrefsJson: true,
         insightsLayoutJson: true,
+        documentsAutoAiRead: true,
       },
     });
     if (!record) return apiError("Record not found", 404);
@@ -165,6 +212,9 @@ export const GET = apiHandler(
       }
       case "insights":
         settings = { layout: resolveInsightsLayout(record.insightsLayoutJson) };
+        break;
+      case "documents":
+        settings = { autoAiRead: record.documentsAutoAiRead };
         break;
     }
 
@@ -414,6 +464,13 @@ export const PATCH = apiHandler(
           invalidateUserInsightsLayout(access.recordId);
           settings = { layout };
           changed = ["layout"];
+          break;
+        }
+        case "documents": {
+          ({ settings, changed } = await patchDocumentsSettings(
+            access.recordId,
+            body,
+          ));
           break;
         }
       }

@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 334,
-  "total": 108816,
+  "total": 108823,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
@@ -35,7 +35,7 @@
     "app/api/mood-entries/route.ts :: postMoodEntry": 324,
     "app/api/nutrients/batch/route.ts :: postBatch": 304,
     "app/api/onboarding/complete/route.ts :: completeNeedsFlow": 218,
-    "app/api/record-settings/[family]/route.ts :: apiHandler(arg) #2": 262,
+    "app/api/record-settings/[family]/route.ts :: apiHandler(arg) #2": 269,
     "app/api/user/ai-provider/route.ts :: apiHandler(arg) #2": 224,
     "app/api/withings/callback/route.ts :: apiHandler(arg)": 247,
     "app/auth/login/page.tsx :: LoginPage": 559,

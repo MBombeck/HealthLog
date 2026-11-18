@@ -31,10 +31,8 @@ import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { getAiCapability } from "@/lib/ai/capabilities/gate";
-import { AI_CAPABILITIES } from "@/lib/ai/capabilities/types";
-import { AI_EXTRACTION_CONSENT_KIND } from "@/lib/consent/receipts";
 import { prisma } from "@/lib/db";
-import { isP2002 } from "@/lib/prisma-errors";
+import { ensureExtractionReceipt } from "@/lib/documents/document-settings";
 import { enqueueSummaryCatchUp } from "@/lib/jobs/document-summary-catchup";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { documentsAutoAiReadPatchSchema } from "@/lib/validations/user-prefs";
@@ -47,55 +45,6 @@ const PATCH_WINDOW_MS = 60_000;
 type DocumentsAutoAiReadResponse = {
   documentsAutoAiRead: boolean;
 };
-
-/**
- * The receipt kind the toggle mints: the extraction grant, narrower than the
- * master `ai_full`. The capability table lists it (with `ai_full`) as what
- * satisfies the document consent rule.
- */
-const AUTO_READ_CONSENT_KIND = AI_EXTRACTION_CONSENT_KIND;
-
-/**
- * Mint the extraction receipt unless one that satisfies document reads is
- * already active. The toggle is an affirmative act, so an earlier revocation
- * does not block it, exactly as a first grant would not be blocked. The
- * partial unique index on active receipts is the backstop for two concurrent
- * flips; losing that race means the other flip already minted, which is the
- * outcome wanted. Returns whether a receipt was written.
- */
-async function ensureExtractionReceipt(
-  userId: string,
-  now: Date = new Date(),
-): Promise<boolean> {
-  const active = await prisma.consentReceipt.findFirst({
-    where: {
-      userId,
-      revokedAt: null,
-      kind: { in: [...AI_CAPABILITIES.documentAi.consent.kinds] },
-    },
-    select: { id: true },
-  });
-  if (active) return false;
-  try {
-    await prisma.consentReceipt.create({
-      data: {
-        userId,
-        kind: AUTO_READ_CONSENT_KIND,
-        artefact: JSON.stringify({
-          source: "web",
-          kind: AUTO_READ_CONSENT_KIND,
-          grantedAt: now.toISOString(),
-          note: "Documents read automatically with AI, turned on in the app.",
-        }),
-        signedAt: now,
-      },
-    });
-    return true;
-  } catch (err) {
-    if (isP2002(err)) return false;
-    throw err;
-  }
-}
 
 export const GET = apiHandler(async () => {
   const { user } = await requireAuth();

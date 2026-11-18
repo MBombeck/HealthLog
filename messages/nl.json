@@ -5639,6 +5639,11 @@
             "labsChanges": "Veranderingen in labuitslagen",
             "ecg": "ECG"
           }
+        },
+        "documents": {
+          "title": "Documenten",
+          "autoAiRead": "Nieuwe documenten automatisch met AI lezen",
+          "honesty": "Aan betekent dat elk document dat in dit profiel wordt geüpload naar de AI-provider van de instantie gaat om gelezen, beschreven en doorzoekbaar gemaakt te worden, zonder tik per document, en documenten die er al zijn zonder samenvatting gaan ook (tot 200 bij elke keer aanzetten). Aanzetten legt de toestemming van dit profiel vast om zijn documenten te laten lezen. De AI-instellingen van het profiel gelden; je eigen AI-provider wordt nooit gebruikt. Standaard uit."
         }
       },
       "unavailableTitle": "Niet beschikbaar in dit gedeelde dossier",
