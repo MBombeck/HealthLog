@@ -224,7 +224,8 @@ describe("release container inputs", () => {
     const dockerfile = readRepoFile("Dockerfile");
     const fromLines = dockerfile.match(/^FROM node:[^\n]+$/gm) ?? [];
 
-    // deps, builder, the prisma-cli install and the runner.
+    // deps, builder, the prisma-cli install and the runner. The Antigravity
+    // CLI is not in the image: an administrator installs it on the server.
     expect(fromLines).toHaveLength(4);
     expect(new Set(fromLines.map((line) => line.split(" AS ")[0]))).toEqual(
       new Set([

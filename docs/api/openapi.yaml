@@ -27976,6 +27976,211 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
+  /api/antigravity/status:
+    get:
+      tags:
+        - ai
+      summary: Get the Antigravity CLI status for the authenticated user
+      description: Reports the CLI installation and the stored profile state. It never sets the connection to connected. Only
+        the connection test does that.
+      responses:
+        "200":
+          description: Antigravity CLI status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AntigravityStatusResponse"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
+  /api/antigravity/auth/start:
+    post:
+      tags:
+        - ai
+      summary: Start interactive Antigravity CLI login
+      description: Spawns `agy acp --login` on the host and captures the Google OAuth authorization URL for the user to
+        complete in their browser.
+      responses:
+        "200":
+          description: Authorization URL and profile ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AntigravityAuthStartResponse"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
+  /api/antigravity/auth/submit:
+    post:
+      tags:
+        - ai
+      summary: Submit Google OAuth code for Antigravity login
+      description: Sends the authorization code to the active CLI login session stdin, verifies tokens, and marks the profile
+        as connected.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                  minLength: 1
+              required:
+                - code
+      responses:
+        "200":
+          description: Authentication result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AntigravityAuthSubmitResponse"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
+  /api/antigravity/auth/cancel:
+    post:
+      tags:
+        - ai
+      summary: Cancel an active Antigravity CLI login session
+      description: Terminates the spawned `agy acp --login` process and cleans up session state.
+      responses:
+        "200":
+          description: Cancellation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AntigravityAuthCancelResponse"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
+  /api/antigravity/test:
+    post:
+      tags:
+        - ai
+      summary: Test the Antigravity profile connection
+      description: Starts the CLI on the user's profile and opens a session. No prompt and no health data are sent. The result
+        is stored and returned.
+      responses:
+        "200":
+          description: Connection test result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AntigravityTestResponse"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
+  /api/antigravity/models:
+    get:
+      tags:
+        - ai
+      summary: List the models the Antigravity profile offers
+      description: Starts the CLI on the user's profile and reads the model selector from the session. The list is never
+        static. An empty list comes with a `reason`.
+      responses:
+        "200":
+          description: Models and the selected model
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AntigravityModelsResponse"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
+  /api/antigravity/model:
+    patch:
+      tags:
+        - ai
+      summary: Choose the Antigravity model, or return to the CLI default
+      description: Saves the model id, or clears it with `null`. Requires a profile set up by the connect flow (`auth/start`).
+        A model the CLI does not offer fails the next completion with a clear error.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                model:
+                  anyOf:
+                    - type: string
+                      pattern: ^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$
+                    - type: "null"
+              required:
+                - model
+              additionalProperties: false
+      responses:
+        "200":
+          description: The saved model
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AntigravityModelResponse"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
+  /api/antigravity/disconnect:
+    post:
+      tags:
+        - ai
+      summary: Disconnect the Antigravity CLI provider
+      description: Clears the profile ID and the stored state, and deletes the profile folder that holds the CLI login.
+      responses:
+        "200":
+          description: Disconnect result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AntigravityDisconnectResponse"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
+  /api/antigravity/install:
+    post:
+      tags:
+        - ai
+      summary: Install or update Antigravity CLI binary on-demand
+      description: "Downloads and installs or updates the Antigravity CLI binary in the persistent profile directory.
+        Administrators only: the binary is shared by every user on the server. Other users get 403. When updating,
+        replaces an eligible HealthLog-managed binary atomically with the latest official release after checksum
+        and version verification; externally managed binaries remain operator-managed. Administrators may pass
+        force: true to force a reinstall or repair of a managed binary."
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                  enum:
+                    - install
+                    - update
+                force:
+                  type: boolean
+              additionalProperties: false
+      responses:
+        "200":
+          description: Installation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AntigravityInstallResponse"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
   /api/bugreport:
     post:
       security: []
@@ -31573,6 +31778,7 @@ components:
                 - LOCAL
                 - OPENAI_COMPATIBLE
                 - CHATGPT_OAUTH
+                - ANTIGRAVITY_CLI
             - type: "null"
         model:
           anyOf:
@@ -31639,6 +31845,7 @@ components:
                     - LOCAL
                     - OPENAI_COMPATIBLE
                     - CHATGPT_OAUTH
+                    - ANTIGRAVITY_CLI
                 - type: string
                   const: ""
             - type: "null"
@@ -33038,7 +33245,7 @@ components:
       properties:
         chain:
           minItems: 1
-          maxItems: 7
+          maxItems: 8
           type: array
           items:
             type: object
@@ -33051,6 +33258,7 @@ components:
                   - anthropic
                   - local
                   - openai-compatible
+                  - antigravity
                   - admin-openai
                   - admin-codex
                 description: Closed allow-list. The mock provider is excluded from it structurally, which is what keeps production from
@@ -33065,9 +33273,9 @@ components:
               enabled:
                 type: boolean
               reasoningEffort:
-                description: Only on a `local` or `openai-compatible` entry; refused on any other. Omitted keeps the value already
-                  stored for that provider, `null` restores Default, `none` / `low` / `medium` / `high` are sent as
-                  `reasoning_effort`.
+                description: Only on a `local`, `openai-compatible` or `antigravity` entry; refused on any other. Omitted keeps the
+                  value already stored for that provider, `null` restores Default, `none` / `low` / `medium` / `high`
+                  are sent as reasoning effort.
                 anyOf:
                   - type: string
                     enum:
@@ -89703,7 +89911,9 @@ components:
                 enum:
                   - operator_key
                   - operator_chatgpt
-                description: "`operator_key` — the operator's API key. `operator_chatgpt` — the operator's shared ChatGPT account."
+                  - antigravity_cli
+                description: "`operator_key` — the operator's API key. `operator_chatgpt` — the operator's shared ChatGPT account.
+                  `antigravity_cli` — the person's own Antigravity login, through the local agy CLI."
               name:
                 type: string
                 description: "The service, named for a person: `OpenAI`, `Anthropic`, `ChatGPT (OpenAI)`, or the host name of the
@@ -96373,6 +96583,367 @@ components:
       properties:
         data:
           $ref: "#/components/schemas/RelationLinkResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AntigravityStatusResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            cliInstalled:
+              type: boolean
+            cliVersion:
+              type:
+                - string
+                - "null"
+            canInstallCli:
+              type: boolean
+              description: Whether the signed-in user is an administrator and may install the CLI.
+            canUpdateCli:
+              type: boolean
+              description: Whether the signed-in user is an administrator and may update an eligible HealthLog-managed binary.
+            cliManaged:
+              type: boolean
+              description: Whether the detected binary is managed by HealthLog in the profile directory rather than externally
+                managed.
+            updateAvailable:
+              type: boolean
+              description: Whether an update to the latest available release is available for the managed binary.
+            latestVersion:
+              type:
+                - string
+                - "null"
+              description: The latest available Antigravity CLI version from official GitHub releases, or null if discovery
+                failed.
+            profileId:
+              type:
+                - string
+                - "null"
+            connectionStatus:
+              type: string
+              enum:
+                - disconnected
+                - connected
+                - auth_required
+                - error
+              description: State of the profile as of the last connection test.
+            connectedAt:
+              type:
+                - string
+                - "null"
+            capabilities:
+              anyOf:
+                - type: object
+                  properties:
+                    image:
+                      type: boolean
+                    embeddedContext:
+                      type: boolean
+                      description: Embedded resources such as PDFs. The CLI calls this embeddedContext.
+                  required:
+                    - image
+                    - embeddedContext
+                  additionalProperties: false
+                  description: Prompt input the CLI accepted in its last successful connection test.
+                - type: "null"
+          required:
+            - cliInstalled
+            - cliVersion
+            - canInstallCli
+            - canUpdateCli
+            - cliManaged
+            - updateAvailable
+            - latestVersion
+            - profileId
+            - connectionStatus
+            - connectedAt
+            - capabilities
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AntigravityAuthStartResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            authUrl:
+              type: string
+            profileId:
+              type: string
+          required:
+            - authUrl
+            - profileId
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AntigravityAuthSubmitResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            success:
+              type: boolean
+            status:
+              type: string
+              enum:
+                - disconnected
+                - connected
+                - auth_required
+                - error
+              description: State of the profile as of the last connection test.
+          required:
+            - success
+            - status
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AntigravityAuthCancelResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            success:
+              type: boolean
+          required:
+            - success
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AntigravityTestResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              enum:
+                - disconnected
+                - connected
+                - auth_required
+                - error
+              description: State of the profile as of the last connection test.
+            reason:
+              anyOf:
+                - type: string
+                  enum:
+                    - not_set_up
+                    - profile_missing
+                    - cli_unavailable
+                    - auth_required
+                    - timeout
+                    - cli_error
+                - type: "null"
+              description: Why the test did not pass. Null when the profile is connected.
+            capabilities:
+              anyOf:
+                - type: object
+                  properties:
+                    image:
+                      type: boolean
+                    embeddedContext:
+                      type: boolean
+                      description: Embedded resources such as PDFs. The CLI calls this embeddedContext.
+                  required:
+                    - image
+                    - embeddedContext
+                  additionalProperties: false
+                  description: Prompt input the CLI accepted in its last successful connection test.
+                - type: "null"
+          required:
+            - status
+            - reason
+            - capabilities
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AntigravityModelsResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            models:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: Model id as the CLI names it.
+                  name:
+                    type: string
+                required:
+                  - id
+                  - name
+                additionalProperties: false
+            selectedModel:
+              description: The model the user picked, or null for the CLI's default.
+              type:
+                - string
+                - "null"
+            reason:
+              anyOf:
+                - type: string
+                  enum:
+                    - not_set_up
+                    - profile_missing
+                    - cli_unavailable
+                    - auth_required
+                    - timeout
+                    - cli_error
+                    - no_models
+                - type: "null"
+              description: Why `models` is empty. Null when the CLI offered models.
+          required:
+            - models
+            - selectedModel
+            - reason
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AntigravityModelResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            selectedModel:
+              type:
+                - string
+                - "null"
+          required:
+            - selectedModel
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AntigravityDisconnectResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            success:
+              type: boolean
+            loginRemoved:
+              type: boolean
+              description: Whether the CLI login was removed from the server.
+          required:
+            - success
+            - loginRemoved
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AntigravityInstallResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            version:
+              type: string
+            binaryPath:
+              type: string
+            alreadyInstalled:
+              type: boolean
+          required:
+            - binaryPath
+            - alreadyInstalled
+          additionalProperties: false
         error:
           type: "null"
         meta:

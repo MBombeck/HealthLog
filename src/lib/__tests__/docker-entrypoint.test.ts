@@ -1,4 +1,4 @@
-import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -95,5 +95,26 @@ describe("docker entrypoint crypto configuration", () => {
 
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("ENCRYPTION_ACTIVE_KEY_ID");
+  });
+});
+
+describe("docker entrypoint startup installation", () => {
+  it("does not auto-install Antigravity CLI and warns that ANTIGRAVITY_AUTO_INSTALL is ignored", () => {
+    const result = runEntrypoint({
+      ENCRYPTION_KEY: key,
+      ANTIGRAVITY_AUTO_INSTALL: "true",
+      ANTIGRAVITY_AUTO_DOWNLOAD: "true",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain("ANTIGRAVITY_AUTO_INSTALL is deprecated and ignored");
+    expect(result.stdout).not.toContain("install-agy");
+    expect(result.stderr).not.toContain("install-agy");
+  });
+
+  it("never executes install-agy or attempts binary download on startup", () => {
+    const source = readFileSync(entrypoint, "utf8");
+    expect(source).not.toContain("install-agy");
+    expect(source).not.toContain("scripts/install-agy.mjs");
   });
 });
