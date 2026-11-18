@@ -14,9 +14,14 @@ type DayMovement = NonNullable<DayResponse["movement"]>;
  * value for is left out, never shown as zero. The country of a travel day is
  * named in the reader's language.
  */
-export function DayMovementSection({ movement }: { movement: DayMovement }) {
+export function DayMovementSection({
+  movement,
+}: {
+  movement: DayMovement | null | undefined;
+}) {
   const { t, locale } = useTranslations();
   const fmt = useFormatters();
+  if (!movement) return null;
   const unit = movement.distance.unit;
   const distance = (value: number) =>
     t(unit === "mi" ? "day.movement.miles" : "day.movement.kilometres", {

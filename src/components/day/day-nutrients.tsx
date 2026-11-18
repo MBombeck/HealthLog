@@ -32,11 +32,9 @@ export function DayNutrientsSection({
   const { t, tCount } = useTranslations();
   const fmt = useFormatters();
   const known = nutrients.filter((n) => isNutrientCode(n.code));
-  const cells = known.filter((n) =>
-    CELL_GROUPS.has(
-      NUTRIENT_CATALOG[n.code as keyof typeof NUTRIENT_CATALOG].group,
-    ),
-  );
+  const entry = (code: string) =>
+    NUTRIENT_CATALOG[code as keyof typeof NUTRIENT_CATALOG];
+  const cells = known.filter((n) => CELL_GROUPS.has(entry(n.code).group));
   const micronutrients = known.length - cells.length;
   if (known.length === 0) return null;
 
@@ -48,7 +46,7 @@ export function DayNutrientsSection({
           {cells.map((n) => (
             <div key={n.code} className="min-w-0" data-nutrient={n.code}>
               <dt className="text-muted-foreground truncate text-xs">
-                {t(`nutrients.names.${n.code}`)}
+                {t(entry(n.code).labelKey)}
               </dt>
               <dd className="truncate text-sm tabular-nums">
                 {formatNutrientAmount(fmt, n.amount)}{" "}

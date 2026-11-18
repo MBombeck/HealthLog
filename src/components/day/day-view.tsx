@@ -313,12 +313,8 @@ export function DayView({
               />
             )}
             <DayScores scores={data.scores ?? []} />
-            {data.nutrients && data.nutrients.length > 0 ? (
-              <DayNutrientsSection nutrients={data.nutrients} />
-            ) : null}
-            {data.movement ? (
-              <DayMovementSection movement={data.movement} />
-            ) : null}
+            <DayNutrientsSection nutrients={data.nutrients ?? []} />
+            <DayMovementSection movement={data.movement} />
             <DayEvents events={data.events} />
           </>
         )}

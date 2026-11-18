@@ -9,6 +9,8 @@
  */
 import { z } from "zod/v4";
 
+import { dayNutrientSchema } from "./day-nutrient-schema";
+
 import { dateOnlyAtNoonUtc } from "@/lib/tz/date-only";
 
 import {
@@ -240,27 +242,6 @@ export const dayMovementSchema = z
       "Distances to one decimal in `distance.unit`. Hide a null field; never show it as zero.",
   });
 
-/**
- * The day's nutrient totals, one per catalog code, summed across sources the
- * way the nutrients page sums them.
- */
-const dayNutrient = z
-  .object({
-    code: z
-      .string()
-      .describe("The nutrient catalog code (`protein`, `water`)."),
-    amount: z
-      .number()
-      .nonnegative()
-      .describe("The day's total in `unit`, unrounded."),
-    unit: z
-      .string()
-      .describe(
-        "The code's canonical unit as the nutrients routes spell it: `kcal`, `g`, `mg`, `ug`, `ml`, `IU`.",
-      ),
-  })
-  .meta({ id: "DayNutrient" });
-
 export const dayResponseSchema = z
   .object({
     date: dateKeySchema,
@@ -296,7 +277,7 @@ export const dayResponseSchema = z
         "Sections the caller cannot see. A section of a switched-off module is left out entirely rather than listed.",
       ),
     nutrients: z
-      .array(dayNutrient)
+      .array(dayNutrientSchema)
       .optional()
       .describe(
         "The day's nutrient totals in catalog order, each above zero. Absent when the day holds none, with the `nutrients` module off, for a caller whose grant does not cover measurements, and on older servers.",
