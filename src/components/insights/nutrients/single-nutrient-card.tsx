@@ -127,7 +127,7 @@ export function SingleNutrientCard({
       <CardContent className="space-y-4">
         <div className="space-y-1">
           <p className="text-2xl font-bold tabular-nums">
-            {formatNutrientAmount(fmt, todayTotal)} {unit}
+            {formatNutrientAmount(fmt, todayTotal, data.unit)} {unit}
           </p>
           {metaKey && reference ? (
             <p className="text-muted-foreground text-xs">

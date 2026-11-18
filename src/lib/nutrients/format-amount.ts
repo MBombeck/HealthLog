@@ -14,9 +14,16 @@ export function formatNutrientAmount(
     integer: (value: number) => string;
   },
   amount: number,
+  /**
+   * The catalog unit, when the caller has it. A milligram or microgram
+   * amount from 100 up prints whole: "230 mg" of caffeine, not "230,3 mg",
+   * a tenth no label or tracker states.
+   */
+  unit?: string,
 ): string {
+  const wholeFrom = unit === "mg" || unit === "ug" ? 100 : 1000;
   const rounded =
-    Math.abs(amount) >= 1000
+    Math.abs(amount) >= wholeFrom
       ? Math.round(amount)
       : Math.round(amount * 10) / 10;
   return Number.isInteger(rounded)

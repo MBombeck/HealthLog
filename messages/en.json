@@ -14015,7 +14015,7 @@
       "micronutrientsOne": "{count} micronutrient logged",
       "micronutrientsOther": "{count} micronutrients logged",
       "micronutrientsFew": "{count} micronutrients logged",
-      "open": "Open nutrient intake"
+      "open": "View nutrient intake"
     }
   },
   "timeline": {

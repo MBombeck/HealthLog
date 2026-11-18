@@ -14015,7 +14015,7 @@
       "micronutrientsOne": "미량영양소 {count}개 기록됨",
       "micronutrientsOther": "미량영양소 {count}개 기록됨",
       "micronutrientsFew": "미량영양소 {count}개 기록됨",
-      "open": "영양소 섭취 열기"
+      "open": "영양소 섭취 보기"
     }
   },
   "timeline": {
