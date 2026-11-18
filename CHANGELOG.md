@@ -231,6 +231,13 @@
 - Large accounts, such as a watch sending heart rate every few seconds for years, no longer time out in the MCP `list_metrics` and `search` tools. For MCP clients: the counts `list_metrics` reports now cover the last 30 days, not the whole history. They used to build the whole Coach context to learn which data exists; they now ask each kind of data whether it has readings and take exact reading counts from the daily summaries, and the check for older readings, the all-time figures in the insights, the per-metric status cards, the charts, the doctor report and the iPhone app's sync check no longer read the whole history on every call. A nightly check now compares the daily summaries with the readings written in the last two days and rebuilds a day that does not match. Thanks to @mailuminatti for measuring it on a real account. (#1398)
 - Right after a large first import, before the database had refreshed its statistics, the dashboard's latest readings and the insight reads could walk through every reading of the account once for each kind of measurement, which on a long history takes seconds or runs into the timeout. Each kind is now looked up on its own whatever the statistics say.
 - Large Apple Health exports, which the Health app writes as ZIP64 archives, no longer lose their ECGs and workout routes: the reader for those files refused ZIP64 and counted every one as failed. An export with more than 20,000 files no longer loses its ECGs either, a large file the import does not read no longer stops the routes or lab results from being read, and a single file over a size limit now fails on its own instead of taking every file of its kind with it.
+- On a phone, the vitamins and minerals on the nutrients page no longer break
+  a name like "Vitamin C" across two lines; the days and reference line now
+  sits under the name.
+- The import cards in Settings no longer squeeze into narrow columns when the
+  day panel is open beside them, where titles broke word by word and the
+  activity-file button ran past the card. Every card's file button now
+  reads "Choose file".
 
 ### Security
 
