@@ -60,9 +60,9 @@ export function DocumentsView() {
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const timezone = user?.timezone || DEFAULT_TIMEZONE;
   // Uploading, filing, deleting and restoring are the owner's and a managed
-  // profile's guardian's (#1403): `canManageDomain("documents")` says so from
-  // the server's table, false under every adult grant. Sharing, sources, the
-  // corpus backfill and the AI verbs also ask `!inSharedRecord`.
+  // profile's guardian's (#1403), the AI actions included:
+  // `canManageDomain("documents")` says so, false under every adult grant.
+  // Sharing and the sources also ask `!inSharedRecord`.
   const { canManageDomain, inSharedRecord, sections } = useRecordCapabilities();
   const canManageDocuments = canManageDomain("documents");
   const router = useRouter();

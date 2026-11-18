@@ -69,7 +69,7 @@ export function DocumentDetailFooter({
   const launch = useCoachLaunch();
   const {
     canManageDocuments,
-    canUseOwnerVerbs,
+    ownsVault,
     setConfirmDeleteOpen,
     remove,
     setShareOpen,
@@ -124,7 +124,7 @@ export function DocumentDetailFooter({
             </span>
           </Button>
         ) : null}
-        {canUseOwnerVerbs && (
+        {ownsVault && (
           <Button
             variant="outline"
             onClick={() => setShareOpen(true)}

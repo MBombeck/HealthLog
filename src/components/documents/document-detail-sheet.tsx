@@ -218,9 +218,9 @@ export function DocumentDetailSheet({
 
             <DocumentSummaryBlock
               summary={doc.summary}
-              // Generating a summary is AI work: no control inside somebody
-              // else's record, a guardian's included; the stored one reads.
-              canGenerate={detail.canUseOwnerVerbs}
+              // Generating writes to the record: the owner and a managed
+              // profile's guardian; an adult's delegate reads what is there.
+              canGenerate={canManageDocuments}
               summaryState={doc.summaryState}
               generatedAtLabel={
                 doc.summaryGeneratedAt
@@ -234,12 +234,11 @@ export function DocumentDetailSheet({
               onGenerate={generateStoredSummary}
             />
 
-            {detail.canUseOwnerVerbs &&
-            documentAi.reason === "consent_required" ? (
+            {detail.ownsVault && documentAi.reason === "consent_required" ? (
               <DocumentReadingConsentPrompt />
             ) : null}
 
-            {detail.canUseOwnerVerbs && documentAi.available && (
+            {canManageDocuments && documentAi.available && (
               <DocumentAiSection
                 aiEnabled={aiEnabled}
                 autoReadEnabled={autoReadEnabled}
@@ -340,7 +339,7 @@ export function DocumentDetailSheet({
                   values" over its stored text — never a re-upload. */}
               <DocumentFactsSection
                 doc={doc}
-                canManage={detail.canUseOwnerVerbs}
+                canManage={canManageDocuments}
                 aiEnabled={aiEnabled}
                 labsModuleEnabled={labsModuleEnabled}
               />

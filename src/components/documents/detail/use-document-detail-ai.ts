@@ -49,7 +49,7 @@ export function useDocumentDetailAi({
 }) {
   const { t, tCount } = useTranslations();
   const queryClient = useQueryClient();
-  const { doc, canUseOwnerVerbs } = detail;
+  const { doc, canManageDocuments, ownsVault } = detail;
   // AI layer — capability drives the vision/text transport; the mutations run
   // the review-first assist, the session-only summary, and content indexing.
   // The affordance itself is gated on `assistAvailable` (from usage); the
@@ -59,9 +59,9 @@ export function useDocumentDetailAi({
   // document reads behind this sheet are delegable; the AI verbs above them are
   // not, and both of these routes stay on the caller's own authentication. A
   // delegate would fire two queries that must 403 in order to compute an
-  // affordance every branch below already withholds on `canUseOwnerVerbs` —
-  // a managed profile's guardian included, who files and deletes but does not
-  // run the AI verbs.
+  // affordance every branch below already withholds on `canManageDocuments`.
+  // A managed profile's guardian has the AI actions (#1403), resolved for
+  // the profile; the automatic-reading preference is the owner's own row.
   // Reading a document with AI follows the `documentAi` capability on
   // `/api/auth/me` (the operator's "Reading documents" switch, the provider,
   // the document-reading consent). Unavailable, the actions are simply not
@@ -70,12 +70,12 @@ export function useDocumentDetailAi({
   const documentAi = useAiCapability("documentAi");
   const coach = useAiCapability("coach");
   const capability = useDocumentAiCapability(
-    canUseOwnerVerbs && open && documentId !== null && documentAi.available,
+    canManageDocuments && open && documentId !== null && documentAi.available,
   );
   // When auto-read is ON, reading happens automatically on upload — the manual
   // per-document AI action row is redundant and collapses away.
   const autoRead = useDocumentsAutoAiRead(
-    canUseOwnerVerbs && open && documentId !== null,
+    ownsVault && open && documentId !== null,
   );
   const suggest = useSuggestDetails();
   const summary = useDocumentSummary();

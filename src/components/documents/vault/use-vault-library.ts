@@ -139,11 +139,10 @@ export function useVaultLibrary({
   const reindexAll = useReindexAll();
   const contentIndex = usage.data?.contentIndex;
   const canIndexContent = contentIndex?.enabled ?? false;
-  // Index all is AI work on the owner's provider: never offered inside
-  // somebody else's record, a managed profile's guardian included.
+  // Index all is AI work under the record's capability: the owner's, and a
+  // managed profile's guardian's (#1403).
   const showIndexAll =
     canManageDocuments &&
-    !inSharedRecord &&
     canIndexContent &&
     contentIndex !== undefined &&
     contentIndex.totalCount > 0 &&

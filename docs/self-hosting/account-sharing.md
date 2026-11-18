@@ -229,25 +229,31 @@ as something to log in as.
   the profile's vault from their own account, with no second login, and
   manages what is there:
 
-  | In the profile's document vault                                              | A guardian                                     |
-  | ---------------------------------------------------------------------------- | ---------------------------------------------- |
-  | Upload a file, with the same types and size limit as the owner's upload      | Yes                                            |
-  | List, open and download                                                      | Yes                                            |
-  | Rename, change the type or date, link to an episode, a visit or a dose       | Yes                                            |
-  | Delete, and restore from Recently deleted                                    | Yes                                            |
-  | Delete now from Recently deleted                                             | No; the daily purge removes it after the grace |
-  | Share links, imports from Paperless-ngx or Papra, reading with AI on request | No                                             |
+  | In the profile's document vault                                           | A guardian                                     |
+  | ------------------------------------------------------------------------- | ---------------------------------------------- |
+  | Upload a file, with the same types and size limit as the owner's upload   | Yes                                            |
+  | List, open and download                                                   | Yes                                            |
+  | Rename, change the type or date, link to an episode, a visit or a dose    | Yes                                            |
+  | Delete, and restore from Recently deleted                                 | Yes                                            |
+  | Read it with AI: suggest details, summarise, read the values, search, ask | Yes, under the profile's AI settings           |
+  | Correct and confirm the values read from it into the profile's records    | Yes                                            |
+  | Delete now from Recently deleted                                          | No; the daily purge removes it after the grace |
+  | Share links, imports from Paperless-ngx or Papra                          | No                                             |
 
   The document belongs to the profile: it counts against the profile's
   storage quota, never the guardian's, it travels with the profile's record
   in an instance backup, and the profile's activity log names the guardian
-  as the one who added, changed, deleted or restored it. Automatic AI
-  reading of an upload follows the profile's own AI settings and consent and
-  uses the operator's provider, never the guardian's personal one; on a new
-  profile it is off, so a scan is stored, thumbnailed and its text layer
-  indexed on the server. This hangs on the managed profile, not on the
-  level: an adult who shares their record at manage still keeps the vault to
-  themselves.
+  as the one who added, changed, deleted, restored, read or confirmed it.
+  Confirmed values become the profile's lab results (or conditions, or
+  medications), never the guardian's. Every AI read, automatic or on
+  request, follows the profile's own AI settings and consent: the profile
+  needs its own consent for a provider that leaves the server, the
+  guardian's consent does not stand in for it, and the read uses the
+  operator's provider, never the guardian's personal one. Automatic reading
+  is off on a new profile, so an upload alone is stored, thumbnailed and its
+  text layer indexed on the server. This hangs on the managed profile, not
+  on the level: an adult who shares their record at manage still keeps the
+  vault to themselves.
 
 - **Its reminders go to its guardians.** A record with no login has no
   channels of its own, so medication reminders, measurement reminders,
