@@ -14847,14 +14847,14 @@
     },
     "summary": {
       "title": "Erfasst",
-      "recorded": "Erfasste Anfälle, letzte {days} Tage",
+      "recorded": "Erfasste Anfälle seit {date}",
       "seizureDays": "Tage mit Anfall",
       "sinceLast": "Tage seit dem letzten erfassten Anfall",
       "longestFree": "Längster anfallsfreier Zeitraum, Tage",
       "clusters": "Anfallsserien ({rule})",
       "niceClusters": "Anfallsserien nach NICE (3 in 24 h)",
       "suspected": "{count} Verdachtsfälle sind aufgeführt, aber nicht mitgezählt.",
-      "clusterLine": "Anfallsserie ab {start}: {count} Anfälle",
+      "clusterLine": "Ab {start}: {count} Anfälle",
       "monthlyCaption": "Anfälle pro Anfallsart und Monat",
       "undercount": "Erfasste Anfälle, wahrscheinlich zu wenige, insbesondere bei Anfällen aus dem Schlaf."
     },
@@ -14866,7 +14866,8 @@
       "showAll": "Alle {count} anzeigen",
       "truncated": "Nur die letzten Anfälle werden angezeigt.",
       "loggedByYou": "von dir eingetragen",
-      "loggedByName": "eingetragen von {name}"
+      "loggedByName": "eingetragen von {name}",
+      "cluster": "Anfallsserie"
     },
     "certainty": {
       "CONFIRMED": "Anfall",
@@ -14952,7 +14953,7 @@
       "seconds": "Sekunden",
       "durationHint": "Leer lassen, wenn niemand gesehen hat, wie lange er dauerte.",
       "durationSource": "Die Dauer wurde",
-      "certainty": "War es ein Anfall",
+      "certainty": "Gewissheit",
       "count": "Wie viele",
       "countHint": "Mehr als einer für eine Strichliste, etwa die Absencen eines Tages.",
       "sleepState": "Wach oder im Schlaf",
@@ -15028,9 +15029,9 @@
     },
     "rule": {
       "title": "Regel für Anfallsserien",
-      "explainer": "Eine Anfallsserie sind so viele Anfälle innerhalb so vieler Stunden. Verwende die Regel aus dem Notfallplan; NICE verwendet {niceCount} in {niceHours} Stunden, das wird daneben angezeigt.",
+      "explainer": "Eine Anfallsserie sind so viele Anfälle innerhalb so vieler Stunden. Verwende die Regel aus dem Notfallplan; NICE verwendet {niceCount} in {niceHours} Stunden, und die Übersicht zählt Anfallsserien nach beiden Regeln.",
       "count": "Anfälle",
-      "hours": "Innerhalb von Stunden",
+      "hours": "Zeitfenster (Std.)",
       "invalid": "Erlaubt sind 2 bis 20 Anfälle innerhalb von 1 bis 168 Stunden.",
       "saved": "Regel für Anfallsserien gespeichert"
     },

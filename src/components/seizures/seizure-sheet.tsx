@@ -374,7 +374,7 @@ function CoreFields({
         ]}
       />
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium">
+        <legend className="pl-1 text-sm font-medium">
           {t("seizures.sheet.duration")}
         </legend>
         <div className="grid grid-cols-2 gap-4">
@@ -714,7 +714,7 @@ function DraftChips({
   const { t } = useTranslations();
   return (
     <fieldset className="space-y-2">
-      <legend className="text-sm font-medium">{label}</legend>
+      <legend className="pl-1 text-sm font-medium">{label}</legend>
       <div className="flex flex-wrap gap-2">
         {values.map((v) => (
           <Chip

@@ -14847,14 +14847,14 @@
     },
     "summary": {
       "title": "Registrato",
-      "recorded": "Crisi registrate, ultimi {days} giorni",
+      "recorded": "Crisi registrate dal {date}",
       "seizureDays": "Giorni con crisi",
       "sinceLast": "Giorni dall'ultima crisi registrata",
       "longestFree": "Periodo più lungo senza crisi, giorni",
       "clusters": "Grappoli ({rule})",
       "niceClusters": "Grappoli secondo NICE (3 in 24 h)",
       "suspected": "{count} crisi sospette sono elencate ma non conteggiate.",
-      "clusterLine": "Grappolo dal {start}: {count} crisi",
+      "clusterLine": "Dal {start}: {count} crisi",
       "monthlyCaption": "Crisi per tipo e mese",
       "undercount": "Crisi registrate, probabilmente sottostimate, soprattutto quelle dal sonno."
     },
@@ -14866,7 +14866,8 @@
       "showAll": "Mostra tutte le {count}",
       "truncated": "Sono mostrate solo le crisi più recenti.",
       "loggedByYou": "registrato da te",
-      "loggedByName": "registrato da {name}"
+      "loggedByName": "registrato da {name}",
+      "cluster": "Grappolo"
     },
     "certainty": {
       "CONFIRMED": "Crisi",
@@ -14952,7 +14953,7 @@
       "seconds": "Secondi",
       "durationHint": "Lascia vuoto se nessuno ha visto quanto è durata.",
       "durationSource": "La durata è stata",
-      "certainty": "Era una crisi",
+      "certainty": "Certezza",
       "count": "Quante",
       "countHint": "Più di una per un conteggio, come le assenze di una giornata.",
       "sleepState": "Da sveglio o nel sonno",
@@ -15028,9 +15029,9 @@
     },
     "rule": {
       "title": "Regola delle crisi a grappolo",
-      "explainer": "Un grappolo è questo numero di crisi entro questo numero di ore. Usa la regola del piano d'emergenza; NICE usa {niceCount} in {niceHours} ore, mostrato accanto.",
+      "explainer": "Un grappolo è questo numero di crisi entro questo numero di ore. Usa la regola del piano d'emergenza; NICE usa {niceCount} in {niceHours} ore, e il riepilogo conta i grappoli con entrambe le regole.",
       "count": "Crisi",
-      "hours": "Entro ore",
+      "hours": "Intervallo (ore)",
       "invalid": "Usa da 2 a 20 crisi entro 1 a 168 ore.",
       "saved": "Regola delle crisi a grappolo salvata"
     },

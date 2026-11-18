@@ -8,6 +8,7 @@
 import { useState, type ComponentType } from "react";
 
 import { Button } from "@/components/ui/button";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { FieldGroup } from "@/components/ui/field-group";
 import { Input } from "@/components/ui/input";
@@ -58,7 +59,7 @@ export function ClusterRuleCard({
             niceHours: niceRule.windowHours,
           })}
         </p>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 items-end gap-4">
           <FieldGroup
             htmlFor="seizure-rule-count"
             label={t("seizures.rule.count")}
@@ -95,26 +96,28 @@ export function ClusterRuleCard({
           </p>
         ) : null}
         {canManage ? (
-          <Button
-            variant="outline"
-            className="min-h-11 sm:min-h-9"
-            disabled={!valid || !changed || save.isPending}
-            onClick={async () => {
-              setError(null);
-              try {
-                await save.mutateAsync({
-                  clusterCount: n,
-                  clusterWindowHours: h,
-                });
-                toastWrittenOutcome("success", t("seizures.rule.saved"));
-              } catch (err) {
-                setError(localizedApiError(err, t, "seizures.saveError"));
-              }
-            }}
-            data-slot="seizure-rule-save"
-          >
-            {t("common.save")}
-          </Button>
+          <SettingsCardActions>
+            <Button
+              size="sm"
+              className="min-h-11 sm:min-h-9"
+              disabled={!valid || !changed || save.isPending}
+              onClick={async () => {
+                setError(null);
+                try {
+                  await save.mutateAsync({
+                    clusterCount: n,
+                    clusterWindowHours: h,
+                  });
+                  toastWrittenOutcome("success", t("seizures.rule.saved"));
+                } catch (err) {
+                  setError(localizedApiError(err, t, "seizures.saveError"));
+                }
+              }}
+              data-slot="seizure-rule-save"
+            >
+              {t("common.save")}
+            </Button>
+          </SettingsCardActions>
         ) : null}
       </CardContent>
     </Card>

@@ -14847,14 +14847,14 @@
     },
     "summary": {
       "title": "Vastgelegd",
-      "recorded": "Vastgelegde aanvallen, laatste {days} dagen",
+      "recorded": "Vastgelegde aanvallen sinds {date}",
       "seizureDays": "Dagen met een aanval",
       "sinceLast": "Dagen sinds de laatste vastgelegde aanval",
       "longestFree": "Langste periode zonder aanval, dagen",
       "clusters": "Clusters ({rule})",
       "niceClusters": "Clusters volgens NICE (3 in 24 u)",
       "suspected": "{count} vermoedelijke aanvallen staan in de lijst maar worden niet meegeteld.",
-      "clusterLine": "Cluster vanaf {start}: {count} aanvallen",
+      "clusterLine": "Vanaf {start}: {count} aanvallen",
       "monthlyCaption": "Aanvallen per type en maand",
       "undercount": "Vastgelegde aanvallen, waarschijnlijk een onderschatting, vooral bij aanvallen vanuit de slaap."
     },
@@ -14866,7 +14866,8 @@
       "showAll": "Alle {count} tonen",
       "truncated": "Alleen de meest recente aanvallen worden getoond.",
       "loggedByYou": "door jou vastgelegd",
-      "loggedByName": "vastgelegd door {name}"
+      "loggedByName": "vastgelegd door {name}",
+      "cluster": "Cluster"
     },
     "certainty": {
       "CONFIRMED": "Aanval",
@@ -14952,7 +14953,7 @@
       "seconds": "Seconden",
       "durationHint": "Laat leeg als niemand heeft gezien hoe lang de aanval duurde.",
       "durationSource": "De duur is",
-      "certainty": "Was het een aanval",
+      "certainty": "Zekerheid",
       "count": "Hoeveel",
       "countHint": "Meer dan één om te turven, zoals de absences van een dag.",
       "sleepState": "Wakker of in slaap",
@@ -15028,9 +15029,9 @@
     },
     "rule": {
       "title": "Clusterregel",
-      "explainer": "Een cluster is dit aantal aanvallen binnen dit aantal uur. Gebruik de regel uit het noodplan; NICE gebruikt {niceCount} in {niceHours} uur, dat ernaast wordt getoond.",
+      "explainer": "Een cluster is dit aantal aanvallen binnen dit aantal uur. Gebruik de regel uit het noodplan; NICE gebruikt {niceCount} in {niceHours} uur, en het overzicht telt clusters volgens beide regels.",
       "count": "Aanvallen",
-      "hours": "Binnen uur",
+      "hours": "Tijdvenster (uur)",
       "invalid": "Gebruik 2 tot 20 aanvallen binnen 1 tot 168 uur.",
       "saved": "Clusterregel opgeslagen"
     },

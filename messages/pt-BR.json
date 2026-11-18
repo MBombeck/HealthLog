@@ -14847,14 +14847,14 @@
     },
     "summary": {
       "title": "Registrado",
-      "recorded": "Crises registradas, últimos {days} dias",
+      "recorded": "Crises registradas desde {date}",
       "seizureDays": "Dias com crise",
       "sinceLast": "Dias desde a última crise registrada",
       "longestFree": "Maior período sem crise, dias",
       "clusters": "Salvas ({rule})",
       "niceClusters": "Salvas segundo o NICE (3 em 24 h)",
       "suspected": "{count} crises suspeitas estão listadas, mas não são contadas.",
-      "clusterLine": "Salva a partir de {start}: {count} crises",
+      "clusterLine": "A partir de {start}: {count} crises",
       "monthlyCaption": "Crises por tipo e mês",
       "undercount": "Crises registradas, provavelmente subestimadas, especialmente as que ocorrem durante o sono."
     },
@@ -14866,7 +14866,8 @@
       "showAll": "Mostrar todas as {count}",
       "truncated": "Somente as crises mais recentes são mostradas.",
       "loggedByYou": "registrado por você",
-      "loggedByName": "registrado por {name}"
+      "loggedByName": "registrado por {name}",
+      "cluster": "Salva"
     },
     "certainty": {
       "CONFIRMED": "Crise",
@@ -14952,7 +14953,7 @@
       "seconds": "Segundos",
       "durationHint": "Deixe vazio se ninguém viu quanto tempo durou.",
       "durationSource": "A duração foi",
-      "certainty": "Foi uma crise",
+      "certainty": "Certeza",
       "count": "Quantas",
       "countHint": "Mais de uma para uma contagem, como as ausências de um dia.",
       "sleepState": "Acordado ou dormindo",
@@ -15028,9 +15029,9 @@
     },
     "rule": {
       "title": "Regra de crises em salvas",
-      "explainer": "Uma salva é este número de crises dentro deste número de horas. Use a regra do plano de emergência; o NICE usa {niceCount} em {niceHours} horas, o que aparece ao lado.",
+      "explainer": "Uma salva é este número de crises dentro deste número de horas. Use a regra do plano de emergência; o NICE usa {niceCount} em {niceHours} horas, e o resumo conta as salvas pelas duas regras.",
       "count": "Crises",
-      "hours": "Dentro de horas",
+      "hours": "Janela (horas)",
       "invalid": "Use de 2 a 20 crises dentro de 1 a 168 horas.",
       "saved": "Regra de crises em salvas atualizada"
     },

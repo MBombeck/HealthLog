@@ -14847,14 +14847,14 @@
     },
     "summary": {
       "title": "기록",
-      "recorded": "기록된 발작, 최근 {days}일",
+      "recorded": "{date} 이후 기록된 발작",
       "seizureDays": "발작이 있었던 날",
       "sinceLast": "마지막으로 기록된 발작 이후 일수",
       "longestFree": "발작 없이 지난 가장 긴 기간(일)",
       "clusters": "군집 발작({rule})",
       "niceClusters": "NICE 기준 군집 발작(24시간 내 3회)",
       "suspected": "의심 발작 {count}건은 목록에는 있지만 집계에서 제외돼요.",
-      "clusterLine": "{start}부터 군집 발작: {count}회",
+      "clusterLine": "{start}부터 {count}회",
       "monthlyCaption": "유형별, 월별 발작",
       "undercount": "기록된 발작이며 실제보다 적을 가능성이 높고, 특히 수면 중 발작이 그래요."
     },
@@ -14866,7 +14866,8 @@
       "showAll": "{count}건 모두 보기",
       "truncated": "최근 발작만 표시해요.",
       "loggedByYou": "내가 기록함",
-      "loggedByName": "{name} 님이 기록함"
+      "loggedByName": "{name} 님이 기록함",
+      "cluster": "군집 발작"
     },
     "certainty": {
       "CONFIRMED": "발작",
@@ -14952,7 +14953,7 @@
       "seconds": "초",
       "durationHint": "얼마나 오래 지속됐는지 본 사람이 없으면 비워 두세요.",
       "durationSource": "지속 시간",
-      "certainty": "발작이었나요",
+      "certainty": "확실성",
       "count": "횟수",
       "countHint": "하루 동안의 결신발작처럼 한꺼번에 셀 때는 1보다 크게 입력하세요.",
       "sleepState": "깨어 있었나요, 자고 있었나요",
@@ -15028,9 +15029,9 @@
     },
     "rule": {
       "title": "군집 발작 기준",
-      "explainer": "군집 발작은 정해진 시간 안에 정해진 횟수 이상 일어난 발작이에요. 응급 계획에 있는 기준을 사용하세요. NICE 기준은 {niceHours}시간 내 {niceCount}회이며, 옆에 함께 표시돼요.",
+      "explainer": "군집 발작은 정해진 시간 안에 정해진 횟수 이상 일어난 발작이에요. 응급 계획에 있는 기준을 사용하세요. NICE 기준은 {niceHours}시간 내 {niceCount}회이며, 요약에서는 두 기준으로 모두 세어요.",
       "count": "발작 횟수",
-      "hours": "시간 이내",
+      "hours": "시간 범위(시간)",
       "invalid": "1~168시간 안에 2~20회로 설정하세요.",
       "saved": "군집 발작 기준을 저장했어요"
     },

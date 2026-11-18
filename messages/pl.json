@@ -14847,14 +14847,14 @@
     },
     "summary": {
       "title": "Zapisane",
-      "recorded": "Zapisane napady, ostatnie {days} dni",
+      "recorded": "Zapisane napady od {date}",
       "seizureDays": "Dni z napadem",
       "sinceLast": "Dni od ostatniego zapisanego napadu",
       "longestFree": "Najdłuższy okres bez napadu, dni",
       "clusters": "Napady gromadne ({rule})",
       "niceClusters": "Napady gromadne wg NICE (3 w ciągu 24 h)",
       "suspected": "Podejrzane napady na liście, ale nieliczone: {count}.",
-      "clusterLine": "Napady gromadne od {start}: {count}",
+      "clusterLine": "Od {start}: liczba napadów {count}",
       "monthlyCaption": "Napady według rodzaju i miesiąca",
       "undercount": "Zapisane napady, prawdopodobnie zaniżona liczba, zwłaszcza w przypadku napadów ze snu."
     },
@@ -14866,7 +14866,8 @@
       "showAll": "Pokaż wszystkie ({count})",
       "truncated": "Pokazano tylko najnowsze napady.",
       "loggedByYou": "zapisane przez ciebie",
-      "loggedByName": "zapisane przez: {name}"
+      "loggedByName": "zapisane przez: {name}",
+      "cluster": "Napady gromadne"
     },
     "certainty": {
       "CONFIRMED": "Napad",
@@ -14952,7 +14953,7 @@
       "seconds": "Sekundy",
       "durationHint": "Zostaw puste, jeśli nikt nie widział, jak długo trwał.",
       "durationSource": "Czas trwania był",
-      "certainty": "Czy to był napad",
+      "certainty": "Pewność",
       "count": "Ile",
       "countHint": "Więcej niż jeden, aby zliczyć, np. napady nieświadomości z jednego dnia.",
       "sleepState": "W czuwaniu czy we śnie",
@@ -15028,9 +15029,9 @@
     },
     "rule": {
       "title": "Reguła napadów gromadnych",
-      "explainer": "Napady gromadne to tyle napadów w ciągu tylu godzin. Użyj reguły z planu postępowania w nagłym wypadku; NICE stosuje {niceCount} w ciągu {niceHours} godzin, co jest pokazane obok.",
+      "explainer": "Napady gromadne to tyle napadów w ciągu tylu godzin. Użyj reguły z planu postępowania w nagłym wypadku; NICE stosuje {niceCount} w ciągu {niceHours} godzin, a podsumowanie liczy napady gromadne według obu reguł.",
       "count": "Napady",
-      "hours": "W ciągu godzin",
+      "hours": "Okno (godziny)",
       "invalid": "Podaj od 2 do 20 napadów w ciągu od 1 do 168 godzin.",
       "saved": "Reguła napadów gromadnych zapisana"
     },

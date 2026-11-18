@@ -166,7 +166,7 @@ export function SeizureTypeSheet({
           onType={setIlaeType}
         />
         <fieldset className="space-y-2">
-          <legend className="text-sm font-medium">
+          <legend className="pl-1 text-sm font-medium">
             {t("seizures.types.usualDuration")}
           </legend>
           <div className="grid grid-cols-2 gap-4">

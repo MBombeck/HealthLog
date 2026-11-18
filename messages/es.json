@@ -14847,14 +14847,14 @@
     },
     "summary": {
       "title": "Registrado",
-      "recorded": "Crisis registradas, últimos {days} días",
+      "recorded": "Crisis registradas desde el {date}",
       "seizureDays": "Días con crisis",
       "sinceLast": "Días desde la última crisis registrada",
       "longestFree": "Periodo más largo sin crisis, días",
       "clusters": "Racimos ({rule})",
       "niceClusters": "Racimos según NICE (3 en 24 h)",
       "suspected": "{count} crisis sospechosas aparecen en la lista pero no se cuentan.",
-      "clusterLine": "Racimo desde {start}: {count} crisis",
+      "clusterLine": "Desde {start}: {count} crisis",
       "monthlyCaption": "Crisis por tipo y mes",
       "undercount": "Crisis registradas, probablemente menos de las reales, sobre todo las que ocurren durante el sueño."
     },
@@ -14866,7 +14866,8 @@
       "showAll": "Mostrar las {count}",
       "truncated": "Solo se muestran las crisis más recientes.",
       "loggedByYou": "registrado por ti",
-      "loggedByName": "registrado por {name}"
+      "loggedByName": "registrado por {name}",
+      "cluster": "Racimo"
     },
     "certainty": {
       "CONFIRMED": "Crisis",
@@ -14952,7 +14953,7 @@
       "seconds": "Segundos",
       "durationHint": "Déjalo vacío si nadie vio cuánto duró.",
       "durationSource": "La duración fue",
-      "certainty": "¿Fue una crisis?",
+      "certainty": "Certeza",
       "count": "Cuántas",
       "countHint": "Más de una para un recuento, como las ausencias de un día.",
       "sleepState": "Despierto o dormido",
@@ -15028,9 +15029,9 @@
     },
     "rule": {
       "title": "Regla de crisis en racimo",
-      "explainer": "Un racimo es este número de crisis en este número de horas. Usa la regla del plan de emergencia; NICE usa {niceCount} en {niceHours} horas, que se muestra al lado.",
+      "explainer": "Un racimo es este número de crisis en este número de horas. Usa la regla del plan de emergencia; NICE usa {niceCount} en {niceHours} horas, y el resumen cuenta los racimos con ambas reglas.",
       "count": "Crisis",
-      "hours": "En horas",
+      "hours": "Intervalo (horas)",
       "invalid": "Usa de 2 a 20 crisis en 1 a 168 horas.",
       "saved": "Regla de crisis en racimo guardada"
     },

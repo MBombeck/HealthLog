@@ -14847,14 +14847,14 @@
     },
     "summary": {
       "title": "Enregistré",
-      "recorded": "Crises enregistrées, {days} derniers jours",
+      "recorded": "Crises enregistrées depuis le {date}",
       "seizureDays": "Jours avec crise",
       "sinceLast": "Jours depuis la dernière crise enregistrée",
       "longestFree": "Plus longue période sans crise, en jours",
       "clusters": "Salves ({rule})",
       "niceClusters": "Salves selon NICE (3 en 24 h)",
       "suspected": "{count} crises suspectées sont listées mais non comptées.",
-      "clusterLine": "Salve à partir du {start} : {count} crises",
+      "clusterLine": "À partir du {start} : {count} crises",
       "monthlyCaption": "Crises par type et par mois",
       "undercount": "Crises enregistrées, probablement sous-estimées, en particulier pour les crises survenant pendant le sommeil."
     },
@@ -14866,7 +14866,8 @@
       "showAll": "Afficher les {count}",
       "truncated": "Seules les crises les plus récentes sont affichées.",
       "loggedByYou": "enregistré par vous",
-      "loggedByName": "enregistré par {name}"
+      "loggedByName": "enregistré par {name}",
+      "cluster": "Salve"
     },
     "certainty": {
       "CONFIRMED": "Crise",
@@ -14952,7 +14953,7 @@
       "seconds": "Secondes",
       "durationHint": "Laissez vide si personne n'a vu combien de temps elle a duré.",
       "durationSource": "La durée a été",
-      "certainty": "Était-ce une crise",
+      "certainty": "Certitude",
       "count": "Combien",
       "countHint": "Plus d'une pour un décompte, par exemple les absences d'une journée.",
       "sleepState": "Éveillé ou endormi",
@@ -15028,9 +15029,9 @@
     },
     "rule": {
       "title": "Règle des crises en salves",
-      "explainer": "Une salve correspond à ce nombre de crises en ce nombre d'heures. Utilisez la règle du plan d'urgence ; NICE utilise {niceCount} en {niceHours} heures, affiché à côté.",
+      "explainer": "Une salve correspond à ce nombre de crises en ce nombre d'heures. Utilisez la règle du plan d'urgence ; NICE utilise {niceCount} en {niceHours} heures, et le résumé compte les salves selon les deux règles.",
       "count": "Crises",
-      "hours": "En heures",
+      "hours": "Fenêtre (heures)",
       "invalid": "Indiquez 2 à 20 crises en 1 à 168 heures.",
       "saved": "Règle des crises en salves enregistrée"
     },

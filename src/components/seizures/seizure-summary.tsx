@@ -11,6 +11,7 @@
 import { CalendarDays } from "lucide-react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { ScorePill } from "@/components/ui/score-pill";
 import { TileHeader } from "@/components/insights/tile-header";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { SeizureDiaryDTO } from "@/lib/seizures/shared";
@@ -31,7 +32,7 @@ export function SeizureSummary({ diary }: { diary: SeizureDiaryDTO }) {
 
   const figures: Array<{ label: string; value: string; slot: string }> = [
     {
-      label: t("seizures.summary.recorded", { days: s.days }),
+      label: t("seizures.summary.recorded", { date: fmt.date(s.from) }),
       value: String(s.seizures),
       slot: "recorded",
     },
@@ -89,9 +90,15 @@ export function SeizureSummary({ diary }: { diary: SeizureDiaryDTO }) {
           </p>
         ) : null}
         {s.clusters.length > 0 ? (
-          <ul className="space-y-1">
+          <ul className="space-y-2" data-slot="seizure-cluster-lines">
             {s.clusters.slice(0, 5).map((c) => (
-              <li key={c.startAt} className="text-foreground text-sm">
+              <li
+                key={c.startAt}
+                className="bg-warning/10 text-foreground flex flex-wrap items-center gap-2 rounded-lg px-3 py-2 text-sm"
+              >
+                <ScorePill tone="warning">
+                  {t("seizures.list.cluster")}
+                </ScorePill>
                 {t("seizures.summary.clusterLine", {
                   start: fmt.dateTime(c.startAt),
                   count: c.seizureCount,
@@ -117,7 +124,9 @@ export function SeizureSummary({ diary }: { diary: SeizureDiaryDTO }) {
                       scope="col"
                       className="px-2 py-1 text-right font-medium tabular-nums"
                     >
-                      {m.slice(2).replace("-", "/")}
+                      {/* Mid-month noon UTC lands in the same month in
+                          every time zone. */}
+                      {fmt.monthYearShort(`${m}-15T12:00:00Z`)}
                     </th>
                   ))}
                 </tr>

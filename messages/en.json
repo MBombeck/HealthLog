@@ -14847,14 +14847,14 @@
     },
     "summary": {
       "title": "Recorded",
-      "recorded": "Recorded seizures, last {days} days",
+      "recorded": "Recorded seizures since {date}",
       "seizureDays": "Days with a seizure",
       "sinceLast": "Days since the last recorded seizure",
       "longestFree": "Longest run without one, days",
       "clusters": "Clusters ({rule})",
       "niceClusters": "Clusters under NICE (3 in 24 h)",
       "suspected": "{count} suspected seizures are listed but not counted.",
-      "clusterLine": "Cluster from {start}: {count} seizures",
+      "clusterLine": "From {start}: {count} seizures",
       "monthlyCaption": "Seizures per type and month",
       "undercount": "Recorded seizures, likely an undercount, especially for seizures from sleep."
     },
@@ -14866,7 +14866,8 @@
       "showAll": "Show all {count}",
       "truncated": "Only the most recent seizures are shown.",
       "loggedByYou": "recorded by you",
-      "loggedByName": "recorded by {name}"
+      "loggedByName": "recorded by {name}",
+      "cluster": "Cluster"
     },
     "certainty": {
       "CONFIRMED": "Seizure",
@@ -14952,7 +14953,7 @@
       "seconds": "Seconds",
       "durationHint": "Leave empty when nobody saw how long it lasted.",
       "durationSource": "Duration was",
-      "certainty": "Was it a seizure",
+      "certainty": "Certainty",
       "count": "How many",
       "countHint": "More than one for a tally, such as the absences of a day.",
       "sleepState": "Awake or asleep",
@@ -15004,7 +15005,7 @@
       "editTitle": "Edit seizure type",
       "description": "The classification is chosen by you or the care team; HealthLog does not classify.",
       "label": "Your name for it",
-      "labelHint": "The word your family uses, such as \"the big one\".",
+      "labelHint": "The word your family uses, such as “the big one”.",
       "class": "Onset",
       "ilaeType": "Seizure type (ILAE 2025)",
       "notSure": "Not sure: {name}",
@@ -15028,9 +15029,9 @@
     },
     "rule": {
       "title": "Cluster rule",
-      "explainer": "A cluster is this many seizures within this many hours. Use the rule in the emergency plan; NICE uses {niceCount} in {niceHours} hours, which is shown beside it.",
+      "explainer": "A cluster is this many seizures within this many hours. Use the rule in the emergency plan; NICE uses {niceCount} in {niceHours} hours, and the summary counts clusters under both.",
       "count": "Seizures",
-      "hours": "Within hours",
+      "hours": "Window (hours)",
       "invalid": "Use 2 to 20 seizures within 1 to 168 hours.",
       "saved": "Cluster rule saved"
     },
