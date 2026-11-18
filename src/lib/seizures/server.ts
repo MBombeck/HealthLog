@@ -243,19 +243,31 @@ export function toSettingsDTO(rule: ClusterRule): SeizureSettingsDTO {
   return { rule, niceRule: NICE_CLUSTER_RULE };
 }
 
-/** Every type of the record, active first in their order. */
+/**
+ * Every type of the record, active first in their order. With
+ * `medicationsVisible: false` (a delegate whose grant does not reach the
+ * medications section) a type does not name its rescue medication.
+ */
 export async function listSeizureTypes(
   userId: string,
+  { medicationsVisible = true }: { medicationsVisible?: boolean } = {},
 ): Promise<SeizureTypeDTO[]> {
   const rows = await prisma.seizureTypeProfile.findMany({
     where: { userId },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }, { id: "asc" }],
     include: { rescueMedication: { select: { name: true } } },
   });
-  return rows.map(toSeizureTypeDTO).sort((a, b) => {
-    if (a.archived !== b.archived) return a.archived ? 1 : -1;
-    return 0;
-  });
+  return rows
+    .map(toSeizureTypeDTO)
+    .map((t) =>
+      medicationsVisible
+        ? t
+        : { ...t, rescueMedicationId: null, rescueMedicationName: null },
+    )
+    .sort((a, b) => {
+      if (a.archived !== b.archived) return a.archived ? 1 : -1;
+      return 0;
+    });
 }
 
 export function typeLookupOf(types: readonly SeizureTypeDTO[]): TypeLookup {
@@ -327,6 +339,8 @@ export interface DiaryReadOptions {
   from?: Date;
   to?: Date;
   now?: Date;
+  /** False for a delegate whose grant does not reach medications. */
+  medicationsVisible?: boolean;
 }
 
 /**
@@ -345,7 +359,9 @@ export async function readSeizureDiary(
     opts.from ?? new Date(to.getTime() - DEFAULT_DIARY_DAYS * DAY_MS);
 
   const [types, rule, rows, lastConfirmed] = await Promise.all([
-    listSeizureTypes(opts.userId),
+    listSeizureTypes(opts.userId, {
+      medicationsVisible: opts.medicationsVisible ?? true,
+    }),
     readClusterRule(opts.userId),
     prisma.seizureEvent.findMany({
       where: { userId: opts.userId, onsetAt: { gte: from, lte: to } },

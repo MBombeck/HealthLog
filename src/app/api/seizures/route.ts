@@ -17,7 +17,10 @@ import { apiSuccess, returnAllZodIssues } from "@/lib/api-response";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
-import { requireSeizuresEnabled } from "@/lib/seizures/gate";
+import {
+  requireSeizuresEnabled,
+  seizureMedicationsReachable,
+} from "@/lib/seizures/gate";
 import {
   readSeizureDiary,
   seizureDiaryQuerySchema,
@@ -26,7 +29,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export const GET = apiHandler(async (request: NextRequest) => {
-  const { user, actor } = await requireRecordAuth("read", "illness");
+  const { user, actor, grantId } = await requireRecordAuth("read", "illness");
 
   const gate = await requireSeizuresEnabled(user.id);
   if (!gate.enabled) return gate.response;
@@ -48,6 +51,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     tz: await resolveUserTimezone(user.id),
     from: parsed.data.from ? new Date(parsed.data.from) : undefined,
     to: parsed.data.to ? new Date(parsed.data.to) : undefined,
+    medicationsVisible: await seizureMedicationsReachable(grantId),
   });
 
   annotate({

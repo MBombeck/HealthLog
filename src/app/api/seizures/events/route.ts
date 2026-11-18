@@ -22,7 +22,11 @@ import { annotate } from "@/lib/logging/context";
 import { withIdempotency } from "@/lib/idempotency";
 import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
-import { requireSeizuresEnabled } from "@/lib/seizures/gate";
+import {
+  requireSeizuresEnabled,
+  seizureMedicationsNotPermitted,
+  seizureMedicationsReachable,
+} from "@/lib/seizures/gate";
 import {
   checkRescueMedication,
   listSeizureTypes,
@@ -41,7 +45,7 @@ export const dynamic = "force-dynamic";
 export const POST = apiHandler(withIdempotency<[NextRequest]>(postEvent));
 
 async function postEvent(request: NextRequest): Promise<Response> {
-  const { user, actor, authMethod } = await requireRecordAuth(
+  const { user, actor, authMethod, grantId } = await requireRecordAuth(
     "write",
     "illness",
   );
@@ -64,7 +68,14 @@ async function postEvent(request: NextRequest): Promise<Response> {
   }
 
   // Every rescue medication is checked before anything is written, so a
-  // refused dose never leaves a seizure behind without it.
+  // refused dose never leaves a seizure behind without it. A dose that names
+  // a medication writes an intake on it, which needs the medications section.
+  if (
+    (entry.rescueDoses ?? []).some((dose) => dose.medicationId) &&
+    !(await seizureMedicationsReachable(grantId))
+  ) {
+    return seizureMedicationsNotPermitted();
+  }
   const medications = new Map<string, { id: string; name: string }>();
   for (const dose of entry.rescueDoses ?? []) {
     if (!dose.medicationId) {

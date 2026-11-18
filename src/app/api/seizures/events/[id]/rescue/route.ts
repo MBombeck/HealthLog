@@ -20,7 +20,11 @@ import { annotate } from "@/lib/logging/context";
 import { withIdempotency } from "@/lib/idempotency";
 import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
-import { requireSeizuresEnabled } from "@/lib/seizures/gate";
+import {
+  requireSeizuresEnabled,
+  seizureMedicationsNotPermitted,
+  seizureMedicationsReachable,
+} from "@/lib/seizures/gate";
 import {
   checkRescueMedication,
   seizureRescueDoseCreateSchema,
@@ -40,7 +44,7 @@ async function postRescue(
   request: NextRequest,
   { params }: RouteParams,
 ): Promise<Response> {
-  const { user, actor, authMethod } = await requireRecordAuth(
+  const { user, actor, authMethod, grantId } = await requireRecordAuth(
     "write",
     "illness",
   );
@@ -68,6 +72,10 @@ async function postRescue(
 
   let medication: { id: string; name: string } | null = null;
   if (dose.medicationId) {
+    // The dose writes an intake on the medication: the medications section.
+    if (!(await seizureMedicationsReachable(grantId))) {
+      return seizureMedicationsNotPermitted();
+    }
     const check = await checkRescueMedication(user.id, dose.medicationId);
     if (!check.ok) {
       return apiError(check.message, check.status, {

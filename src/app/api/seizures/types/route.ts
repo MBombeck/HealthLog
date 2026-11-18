@@ -20,7 +20,10 @@ import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
-import { requireSeizuresEnabled } from "@/lib/seizures/gate";
+import {
+  requireSeizuresEnabled,
+  seizureMedicationsReachable,
+} from "@/lib/seizures/gate";
 import {
   checkRescueMedication,
   encryptSeizureText,
@@ -33,12 +36,14 @@ import {
 export const dynamic = "force-dynamic";
 
 export const GET = apiHandler(async () => {
-  const { user } = await requireRecordAuth("read", "illness");
+  const { user, grantId } = await requireRecordAuth("read", "illness");
 
   const gate = await requireSeizuresEnabled(user.id);
   if (!gate.enabled) return gate.response;
 
-  const types = await listSeizureTypes(user.id);
+  const types = await listSeizureTypes(user.id, {
+    medicationsVisible: await seizureMedicationsReachable(grantId),
+  });
   annotate({
     action: { name: "seizures.type.list" },
     meta: { count: types.length },

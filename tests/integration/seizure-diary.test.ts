@@ -471,6 +471,68 @@ describe("an adult's shared record holds the grant levels", () => {
     ]);
   });
 
+  it("keeps an illness-only delegate out of the medications section", async () => {
+    const owner = await person("owner");
+    const med = await rescueMedication(owner.id);
+    signIn(owner);
+    await newType({
+      label: "Tonic-clonic",
+      ilaeType: "GENERALIZED_TC",
+      rescueMedicationId: med.id,
+    });
+    const before = await newEvent({ onsetAt: ago(3_600_000).toISOString() });
+    const eventId = ((await before.json()) as { data: { id: string } }).data.id;
+    await delegateWith(owner.id, "WRITE");
+    const prisma = getPrismaClient();
+
+    // A dose that names the medication would write an intake on it: the
+    // grant does not reach medications, so nothing is written at all.
+    const logged = await newEvent({
+      onsetAt: ago(60_000).toISOString(),
+      rescueDoses: [{ medicationId: med.id, givenAt: ago(30_000) }],
+    });
+    expect(logged.status).toBe(403);
+    expect(
+      ((await logged.json()) as { meta?: { errorCode?: string } }).meta
+        ?.errorCode,
+    ).toBe("sharing.not_permitted");
+    const { POST: addRescue } =
+      await import("@/app/api/seizures/events/[id]/rescue/route");
+    const added = await addRescue(
+      json("POST", `/api/seizures/events/${eventId}/rescue`, {
+        medicationId: med.id,
+        givenAt: ago(30_000),
+      }),
+      params({ id: eventId }),
+    );
+    expect(added.status).toBe(403);
+    expect(await prisma.seizureEvent.count()).toBe(1);
+    expect(await prisma.seizureRescueDose.count()).toBe(0);
+    expect(await prisma.medicationIntakeEvent.count()).toBe(0);
+
+    // A dose by name alone is diary text and still lands.
+    const byName = await newEvent({
+      onsetAt: ago(50_000).toISOString(),
+      rescueDoses: [{ medicationName: "Midazolam", givenAt: ago(20_000) }],
+    });
+    expect(byName.status).toBe(201);
+
+    // The type's rescue medication is not named to someone who cannot see
+    // the medications.
+    const read = (await (await diary()).json()) as {
+      data: {
+        types: Array<{
+          rescueMedicationId: string | null;
+          rescueMedicationName: string | null;
+        }>;
+      };
+    };
+    expect(read.data.types[0]).toMatchObject({
+      rescueMedicationId: null,
+      rescueMedicationName: null,
+    });
+  });
+
   it("lets an illness WRITE delegate log and not edit", async () => {
     const owner = await person("owner");
     await delegateWith(owner.id, "WRITE");

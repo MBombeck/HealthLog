@@ -23,7 +23,11 @@ import {
   overwriteDetails,
 } from "@/lib/sharing/audit-details";
 import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
-import { requireSeizuresEnabled } from "@/lib/seizures/gate";
+import {
+  requireSeizuresEnabled,
+  seizureMedicationsNotPermitted,
+  seizureMedicationsReachable,
+} from "@/lib/seizures/gate";
 import {
   listSeizureTypes,
   sealOptional,
@@ -192,7 +196,7 @@ export const PATCH = apiHandler(
 
 export const DELETE = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireRecordAuth("manage", "illness");
+    const { user, grantId } = await requireRecordAuth("manage", "illness");
 
     const gate = await requireSeizuresEnabled(user.id);
     if (!gate.enabled) return gate.response;
@@ -209,6 +213,13 @@ export const DELETE = apiHandler(
       },
     });
     if (!existing) return notFound();
+    // Removing the seizure undoes its rescue doses' intakes on the medication.
+    if (
+      existing.rescueDoses.some((d) => d.medicationId && d.intakeEventId) &&
+      !(await seizureMedicationsReachable(grantId))
+    ) {
+      return seizureMedicationsNotPermitted();
+    }
 
     const undone = await undoRescueIntakes(
       user,
