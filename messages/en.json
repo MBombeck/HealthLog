@@ -11657,7 +11657,8 @@
       "totalLabel": "Score",
       "bandLabel": "Category",
       "answersToggle": "Answers",
-      "answersUnavailable": "The stored answers for this check-in cannot be decrypted."
+      "answersUnavailable": "The stored answers for this check-in cannot be decrypted.",
+      "answersNotShared": "Taken in Apple Health. Only the score was shared, not the answers."
     },
     "crisis": {
       "title": "You don't have to face this alone",

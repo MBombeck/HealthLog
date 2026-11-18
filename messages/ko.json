@@ -11657,7 +11657,8 @@
       "totalLabel": "점수",
       "bandLabel": "분류",
       "answersToggle": "답변",
-      "answersUnavailable": "이 점검에 저장된 답변을 복호화할 수 없어요."
+      "answersUnavailable": "이 점검에 저장된 답변을 복호화할 수 없어요.",
+      "answersNotShared": "Apple 건강 앱에서 작성했어요. 답변은 공유되지 않고 점수만 공유됐어요."
     },
     "crisis": {
       "title": "혼자 견디지 않아도 돼요",

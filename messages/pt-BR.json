@@ -11657,7 +11657,8 @@
       "totalLabel": "Pontuação",
       "bandLabel": "Categoria",
       "answersToggle": "Respostas",
-      "answersUnavailable": "As respostas armazenadas para este check-in não podem ser descriptografadas."
+      "answersUnavailable": "As respostas armazenadas para este check-in não podem ser descriptografadas.",
+      "answersNotShared": "Respondido no app Saúde. Só a pontuação foi compartilhada, não as respostas."
     },
     "crisis": {
       "title": "Você não precisa enfrentar isso sozinho",

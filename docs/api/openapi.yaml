@@ -30831,12 +30831,29 @@ components:
           maximum: 20
         categoryValue:
           description: v1.10.0 — `HKCategoryValue` codepoint for an EVENT-class category sample (irregular-rhythm, high/low-HR,
-            walking-steadiness, breathing-disturbance). Carries the device's own classification verdict / severity,
-            which the server resolves to a stored `rhythmClassification`. HealthLog stores ONLY the device's result — it
-            never re-classifies. Ignored for non-event identifiers.
+            walking-steadiness, breathing-disturbance, hypertension). Carries the device's own classification verdict /
+            severity, which the server resolves to a stored `rhythmClassification`. HealthLog stores ONLY the device's
+            result — it never re-classifies. Ignored for non-event identifiers.
           type: integer
           minimum: 0
           maximum: 20
+        assessmentAnswers:
+          description: "Only for `HKScoredAssessmentTypeIdentifierPHQ9` (9 answers) and `HKScoredAssessmentTypeIdentifierGAD7` (7
+            answers): the per-item answers, each 0–3, in the order the instrument asks them. `value` carries the total
+            (PHQ-9 0–27, GAD-7 0–21), `startDate` the time it was taken, `externalId` the `HKSample.uuid`. A scored
+            assessment is written to the screener history (`GET /api/mental-health/assessments`), with `source =
+            APPLE_HEALTH`, and its total reaches the PHQ9_SCORE / GAD7_SCORE trend through the same server-computed row
+            an in-app check-in writes; it is never stored as a measurement of its own. With the answers the server
+            scores them and refuses the entry (`invalid_assessment_answers`) when their sum is not `value` or one is out
+            of range, and a non-zero PHQ-9 item 9 sets `item9Flagged`; without them the administration is score only and
+            its detail read reports `itemsUnavailable: true`. Other per-entry refusals: `module_disabled` (the
+            mental-health module is off), `unsupported_source` (a `MANUAL` entry or a bridge token),
+            `value_out_of_range`, `implausible_timestamp`. A re-sent sample, or one whose administration was deleted,
+            answers `duplicate`. Ignored for every other identifier."
+          maxItems: 12
+          type: array
+          items:
+            type: number
         externalId:
           type: string
           minLength: 1
@@ -85507,6 +85524,12 @@ components:
             - type: "null"
         itemsUnavailable:
           type: boolean
+        source:
+          type: string
+          description: "Where the administration came from: `WEB` or `IOS` (the in-app questionnaire) or `APPLE_HEALTH` (a PHQ-9 /
+            GAD-7 scored assessment from the measurement batch). An `APPLE_HEALTH` row sent without its answers has
+            `items: null` and `itemsUnavailable: true` because the answers were never shared, not because they failed to
+            decrypt. Decode unknown values leniently."
       required:
         - id
         - instrument
@@ -85522,6 +85545,7 @@ components:
         - items
         - functionalDifficulty
         - itemsUnavailable
+        - source
       additionalProperties: false
       description: "One administration with its decrypted per-item answers, in the order the instrument presents its items
         (PHQ-9/GAD-7 answers 0–3, SCI 0–4, WHO-5 0–5). `functionalDifficulty` is the PHQ-9's unscored functional

@@ -11657,7 +11657,8 @@
       "totalLabel": "Puntuación",
       "bandLabel": "Categoría",
       "answersToggle": "Respuestas",
-      "answersUnavailable": "Las respuestas guardadas de esta revisión no se pueden descifrar."
+      "answersUnavailable": "Las respuestas guardadas de esta revisión no se pueden descifrar.",
+      "answersNotShared": "Realizado en Apple Health. Solo se compartió la puntuación, no las respuestas."
     },
     "crisis": {
       "title": "No tienes que afrontar esto a solas",

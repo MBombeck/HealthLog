@@ -62,7 +62,7 @@ const WRITE_SITES: Record<string, string> = {
     "lib/measurements/batch-ingest/tail.ts",
   ),
   "lib/measurements/create/create-readings.ts": TAIL,
-  "app/api/mental-health/assessments/route.ts": TAIL,
+  "lib/mental-health/score-projection.ts": TAIL,
   "lib/insights/score-row.ts": TAIL,
   "lib/mcp/writes.ts": TAIL,
   "lib/measurements/create-from-telegram.ts": TAIL,

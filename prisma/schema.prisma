@@ -1904,7 +1904,8 @@ model MentalHealthAssessment {
   wording            String?
   /// Instrument variant identifier (e.g. "standard"); future-proofs revisions.
   version            String               @default("standard")
-  /// Encrypted JSON blob: { items: number[], functionalDifficulty?: 0..3, schema: 1 }.
+  /// Encrypted JSON blob: { items: number[] | null, functionalDifficulty?: 0..3, schema: 1 }.
+  /// `items` is null for a score-only administration from Apple Health.
   /// AES-256-GCM via the shared Bytes codec; registered in ENCRYPTED_COLUMNS +
   /// the rotation script. The item-9 raw value lives ONLY here.
   responsesEncrypted Bytes                @map("responses_encrypted")
@@ -1921,6 +1922,8 @@ model MentalHealthAssessment {
   /// Recall-window anchor (when the screener was taken).
   takenAt            DateTime             @map("taken_at")
   tz                 String?
+  /// "WEB" | "IOS" (the questionnaire) | "APPLE_HEALTH" (a PHQ-9 / GAD-7
+  /// scored assessment from the measurement batch). Closed set in app code.
   source             String               @default("WEB")
   externalId         String?              @map("external_id")
   syncVersion        Int                  @default(0) @map("sync_version")

@@ -23,6 +23,8 @@ export interface BatchIngestEntry {
   categoryValue?: number;
   valueMin?: number;
   valueMax?: number;
+  /** Per-item answers of a PHQ-9 / GAD-7 scored assessment. */
+  assessmentAnswers?: number[];
   externalId: string;
   externalSourceVersion?: string;
   source?: "APPLE_HEALTH" | "MANUAL";

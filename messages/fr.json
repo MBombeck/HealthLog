@@ -11657,7 +11657,8 @@
       "totalLabel": "Score",
       "bandLabel": "Catégorie",
       "answersToggle": "Réponses",
-      "answersUnavailable": "Les réponses enregistrées de ce bilan ne peuvent pas être déchiffrées."
+      "answersUnavailable": "Les réponses enregistrées de ce bilan ne peuvent pas être déchiffrées.",
+      "answersNotShared": "Rempli dans Apple Santé. Seul le score a été partagé, pas les réponses."
     },
     "crisis": {
       "title": "Vous n'avez pas à affronter cela seul(e)",

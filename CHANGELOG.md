@@ -33,6 +33,12 @@
   notifications in insights, on the timeline and in the measurement list, and
   selectable for the doctor report. They are what the watch flagged, shown as
   it flagged them, and never count as a blood pressure reading.
+- PHQ-9 and GAD-7 check-ins taken in Apple Health can come over with the
+  iPhone app's sync. They land in the mental wellbeing history beside the
+  ones taken in HealthLog, count once on the score trend and in the doctor
+  report, and keep their answers when Apple Health shares them; one that
+  shares only its score says so instead of showing answers. With the mental
+  health module turned off, none of them is stored.
 - The day view lists the day's nutrient totals, so tapping a bar on a
   nutrient chart opens a day that shows it. An opt-in energy tile for the
   dashboard is available under Settings > Dashboard. (#1402)

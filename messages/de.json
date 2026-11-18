@@ -11657,7 +11657,8 @@
       "totalLabel": "Punkte",
       "bandLabel": "Einstufung",
       "answersToggle": "Antworten",
-      "answersUnavailable": "Die gespeicherten Antworten dieses Check-ins können nicht entschlüsselt werden."
+      "answersUnavailable": "Die gespeicherten Antworten dieses Check-ins können nicht entschlüsselt werden.",
+      "answersNotShared": "In Apple Health ausgefüllt. Geteilt wurde nur die Punktzahl, nicht die Antworten."
     },
     "crisis": {
       "title": "Du musst das nicht allein durchstehen",

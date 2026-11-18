@@ -11657,7 +11657,8 @@
       "totalLabel": "Wynik",
       "bandLabel": "Kategoria",
       "answersToggle": "Odpowiedzi",
-      "answersUnavailable": "Nie można odszyfrować zapisanych odpowiedzi tego sprawdzenia."
+      "answersUnavailable": "Nie można odszyfrować zapisanych odpowiedzi tego sprawdzenia.",
+      "answersNotShared": "Wypełnione w aplikacji Zdrowie. Udostępniono tylko wynik, bez odpowiedzi."
     },
     "crisis": {
       "title": "Nie musisz mierzyć się z tym sam(a)",

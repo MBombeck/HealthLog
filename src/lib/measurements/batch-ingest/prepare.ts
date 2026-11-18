@@ -24,6 +24,10 @@ import {
   type UnstableExternalIdShape,
 } from "@/lib/validations/external-id";
 import { validateMeasurementRange } from "@/lib/validations/measurement";
+import {
+  scoredAssessmentInstrument,
+  type AppleHealthAssessmentEntry,
+} from "@/lib/mental-health/apple-health-assessment";
 
 import {
   outOfRangeResult,
@@ -41,6 +45,12 @@ export interface PreparedBatch {
   hourWrites: HourBucketEntry[];
   /** The zone the hours are cut in, resolved when the batch carried one. */
   accountTz: string | undefined;
+  /**
+   * PHQ-9 / GAD-7 scored assessments. A screener is an administration, not a
+   * measurement, so it is written to the screener history after the
+   * measurements (`writeAppleHealthAssessments`).
+   */
+  assessments: AppleHealthAssessmentEntry[];
 }
 
 export async function prepareBatch(
@@ -57,6 +67,7 @@ export async function prepareBatch(
     unstableShapes: [],
     hourWrites: [],
     accountTz: undefined,
+    assessments: [],
   };
   const batchNow = new Date();
 
@@ -78,6 +89,20 @@ export async function prepareBatch(
         status: "skipped",
         reason: UNSTABLE_EXTERNAL_ID_REASON,
       };
+      continue;
+    }
+
+    const instrument = scoredAssessmentInstrument(entry.hkIdentifier);
+    if (instrument) {
+      batch.assessments.push({
+        index,
+        instrument,
+        value: entry.value,
+        startDate: entry.startDate,
+        externalId: entry.externalId,
+        answers: entry.assessmentAnswers,
+        source: entry.source,
+      });
       continue;
     }
 
