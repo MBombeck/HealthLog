@@ -1005,6 +1005,7 @@
     "typeIrregularRhythmNotification": "Melding onregelmatig ritme",
     "typeHighHeartRateEvent": "Melding hoge hartslag",
     "typeLowHeartRateEvent": "Melding lage hartslag",
+    "typeHypertensionEvent": "Melding hoge bloeddruk",
     "typeWalkingSteadinessEvent": "Waarschuwing loopstabiliteit",
     "typeBreathingDisturbanceEvent": "Ademhalingsstoornis",
     "typeRecoveryScore": "Herstelscore",
@@ -4839,6 +4840,7 @@
         "irregularRhythm": "Melding onregelmatig ritme",
         "highHeartRate": "Melding hoge hartslag",
         "lowHeartRate": "Melding lage hartslag",
+        "hypertension": "Melding hoge bloeddruk",
         "walkingSteadiness": "Waarschuwing loopstabiliteit",
         "breathingDisturbance": "Ademhalingsstoornis tijdens de slaap"
       },

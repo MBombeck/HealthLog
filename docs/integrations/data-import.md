@@ -218,6 +218,7 @@ hand-authored.
 | `LOW_HEART_RATE_EVENT`          | event                |
 | `WALKING_STEADINESS_EVENT`      | event                |
 | `BREATHING_DISTURBANCE_EVENT`   | event                |
+| `HYPERTENSION_EVENT`            | event                |
 
 The table is a curated subset and lags the enum by a few
 device-derived types. The live, machine-readable list of writable

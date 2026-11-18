@@ -1005,6 +1005,7 @@
     "typeIrregularRhythmNotification": "Irregular rhythm notification",
     "typeHighHeartRateEvent": "High heart rate notification",
     "typeLowHeartRateEvent": "Low heart rate notification",
+    "typeHypertensionEvent": "Hypertension notification",
     "typeWalkingSteadinessEvent": "Walking steadiness alert",
     "typeBreathingDisturbanceEvent": "Breathing disturbance",
     "typeRecoveryScore": "Recovery score",
@@ -4839,6 +4840,7 @@
         "irregularRhythm": "Irregular rhythm notification",
         "highHeartRate": "High heart rate notification",
         "lowHeartRate": "Low heart rate notification",
+        "hypertension": "Hypertension notification",
         "walkingSteadiness": "Walking steadiness alert",
         "breathingDisturbance": "Breathing disturbance during sleep"
       },

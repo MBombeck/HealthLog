@@ -1005,6 +1005,7 @@
     "typeIrregularRhythmNotification": "불규칙 심장 리듬 알림",
     "typeHighHeartRateEvent": "높은 심박수 알림",
     "typeLowHeartRateEvent": "낮은 심박수 알림",
+    "typeHypertensionEvent": "고혈압 알림",
     "typeWalkingSteadinessEvent": "보행 안정성 경고",
     "typeBreathingDisturbanceEvent": "호흡 장애",
     "typeRecoveryScore": "회복 점수",
@@ -4839,6 +4840,7 @@
         "irregularRhythm": "불규칙한 리듬 알림",
         "highHeartRate": "높은 심박수 알림",
         "lowHeartRate": "낮은 심박수 알림",
+        "hypertension": "고혈압 알림",
         "walkingSteadiness": "보행 안정성 알림",
         "breathingDisturbance": "수면 중 호흡 장애"
       },

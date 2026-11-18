@@ -1005,6 +1005,7 @@
     "typeIrregularRhythmNotification": "Notification de rythme irrégulier",
     "typeHighHeartRateEvent": "Notification de fréquence cardiaque élevée",
     "typeLowHeartRateEvent": "Notification de fréquence cardiaque basse",
+    "typeHypertensionEvent": "Notification d'hypertension",
     "typeWalkingSteadinessEvent": "Alerte de stabilité de la marche",
     "typeBreathingDisturbanceEvent": "Trouble respiratoire",
     "typeRecoveryScore": "Score de récupération",
@@ -4839,6 +4840,7 @@
         "irregularRhythm": "Notification de rythme irrégulier",
         "highHeartRate": "Notification de fréquence cardiaque élevée",
         "lowHeartRate": "Notification de fréquence cardiaque basse",
+        "hypertension": "Notification d'hypertension",
         "walkingSteadiness": "Alerte de stabilité à la marche",
         "breathingDisturbance": "Trouble respiratoire pendant le sommeil"
       },

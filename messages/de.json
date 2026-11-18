@@ -1005,6 +1005,7 @@
     "typeIrregularRhythmNotification": "Hinweis auf unregelmäßigen Rhythmus",
     "typeHighHeartRateEvent": "Hinweis auf hohe Herzfrequenz",
     "typeLowHeartRateEvent": "Hinweis auf niedrige Herzfrequenz",
+    "typeHypertensionEvent": "Hinweis auf Bluthochdruck",
     "typeWalkingSteadinessEvent": "Hinweis zur Gehstabilität",
     "typeBreathingDisturbanceEvent": "Atemstörung",
     "typeRecoveryScore": "Erholungs-Score",
@@ -4839,6 +4840,7 @@
         "irregularRhythm": "Hinweis auf unregelmäßigen Rhythmus",
         "highHeartRate": "Hinweis auf hohe Herzfrequenz",
         "lowHeartRate": "Hinweis auf niedrige Herzfrequenz",
+        "hypertension": "Hinweis auf Bluthochdruck",
         "walkingSteadiness": "Hinweis zur Gehstabilität",
         "breathingDisturbance": "Atemstörung während des Schlafs"
       },

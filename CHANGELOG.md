@@ -28,6 +28,11 @@
   will not bring it back. An Apple Health import that brought only lab
   results or ECGs says so instead of "0 of N records imported", counts the
   markers it added and links to Labs. (#1400)
+- Apple Watch hypertension notifications from Apple Health are kept beside
+  the irregular rhythm and heart rate notifications: listed under device
+  notifications in insights, on the timeline and in the measurement list, and
+  selectable for the doctor report. They are what the watch flagged, shown as
+  it flagged them, and never count as a blood pressure reading.
 - The day view lists the day's nutrient totals, so tapping a bar on a
   nutrient chart opens a day that shows it. An opt-in energy tile for the
   dashboard is available under Settings > Dashboard. (#1402)

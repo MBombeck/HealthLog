@@ -72,6 +72,7 @@ export const measurementTypeEnum = z.enum([
   "LOW_HEART_RATE_EVENT",
   "WALKING_STEADINESS_EVENT",
   "BREATHING_DISTURBANCE_EVENT",
+  "HYPERTENSION_EVENT",
   // ── v1.10.0 — computed scores (WX-C) ──
   // Server-derived wellness scores (0–100, unit `score`). Minted by a
   // nightly engine from the user's already-stored signals and persisted as a
@@ -188,6 +189,7 @@ export const EVENT_MEASUREMENT_TYPES: ReadonlySet<string> = new Set<string>([
   "LOW_HEART_RATE_EVENT",
   "WALKING_STEADINESS_EVENT",
   "BREATHING_DISTURBANCE_EVENT",
+  "HYPERTENSION_EVENT",
 ]);
 
 export const glucoseContextEnum = z.enum([

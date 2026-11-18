@@ -693,6 +693,21 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     isPrivacySensitive: true,
     fallbackClassification: "FIRED",
   },
+  // Hypertension notification (iOS 26) — the watch's certified algorithm
+  // flagged signs of possible hypertension across a 30-day window. A
+  // notification, not a blood-pressure reading: it never lands on the BP
+  // series. Single neutral `FIRED` verdict, like the heart-rate events.
+  HKCategoryTypeIdentifierHypertensionEvent: {
+    hkIdentifier: "HKCategoryTypeIdentifierHypertensionEvent",
+    measurementType: "HYPERTENSION_EVENT",
+    hkUnit: "event",
+    unitFixedReason: UNIT_FIXED_EVENT_PIN,
+    dbUnit: "event",
+    convertToDbUnit: () => 1,
+    aggregation: "sum",
+    isPrivacySensitive: true,
+    fallbackClassification: "FIRED",
+  },
 
   // ── v1.5.5 iOS-coord — six previously-deferred identifiers ───
   // Background: each entry below sat in `HK_QUANTITY_TYPE_DEFERRED`.

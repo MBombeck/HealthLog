@@ -1005,6 +1005,7 @@
     "typeIrregularRhythmNotification": "Уведомление о нерегулярном ритме",
     "typeHighHeartRateEvent": "Уведомление о высокой ЧСС",
     "typeLowHeartRateEvent": "Уведомление о низкой ЧСС",
+    "typeHypertensionEvent": "Уведомление о гипертонии",
     "typeWalkingSteadinessEvent": "Оповещение об устойчивости ходьбы",
     "typeBreathingDisturbanceEvent": "Нарушение дыхания",
     "typeRecoveryScore": "Балл восстановления",
@@ -4839,6 +4840,7 @@
         "irregularRhythm": "Уведомление о нерегулярном ритме",
         "highHeartRate": "Уведомление о высокой ЧСС",
         "lowHeartRate": "Уведомление о низкой ЧСС",
+        "hypertension": "Уведомление о гипертонии",
         "walkingSteadiness": "Оповещение об устойчивости ходьбы",
         "breathingDisturbance": "Нарушение дыхания во сне"
       },

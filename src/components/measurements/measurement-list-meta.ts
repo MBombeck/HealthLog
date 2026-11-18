@@ -98,6 +98,7 @@ export const MEASUREMENT_TYPE_LABEL_KEYS: Record<string, string> = {
   IRREGULAR_RHYTHM_NOTIFICATION: "measurements.typeIrregularRhythmNotification",
   HIGH_HEART_RATE_EVENT: "measurements.typeHighHeartRateEvent",
   LOW_HEART_RATE_EVENT: "measurements.typeLowHeartRateEvent",
+  HYPERTENSION_EVENT: "measurements.typeHypertensionEvent",
   WALKING_STEADINESS_EVENT: "measurements.typeWalkingSteadinessEvent",
   BREATHING_DISTURBANCE_EVENT: "measurements.typeBreathingDisturbanceEvent",
   // ── v1.10.0 — computed scores (WX-C) ──
@@ -235,6 +236,7 @@ export const MEASUREMENT_TYPE_ICONS: Record<string, LucideIcon> = {
   IRREGULAR_RHYTHM_NOTIFICATION: Activity,
   HIGH_HEART_RATE_EVENT: HeartPulse,
   LOW_HEART_RATE_EVENT: HeartPulse,
+  HYPERTENSION_EVENT: HeartPulse,
   WALKING_STEADINESS_EVENT: Footprints,
   BREATHING_DISTURBANCE_EVENT: Wind,
   // ── v1.10.0 — computed scores (WX-C) ──

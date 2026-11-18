@@ -123,6 +123,7 @@ export const MEASUREMENT_LEAF_GROUP: Record<MeasurementType, ReportGroupId> = {
   IRREGULAR_RHYTHM_NOTIFICATION: "cardio",
   HIGH_HEART_RATE_EVENT: "cardio",
   LOW_HEART_RATE_EVENT: "cardio",
+  HYPERTENSION_EVENT: "cardio",
   AFIB_BURDEN: "cardio",
 
   // ── body ──

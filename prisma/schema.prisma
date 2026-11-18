@@ -1724,6 +1724,7 @@ enum MeasurementType {
   LOW_HEART_RATE_EVENT // HealthKit `HKCategoryTypeIdentifierLowHeartRateEvent`. The watch detected a sustained low heart rate below the user's configured threshold.
   WALKING_STEADINESS_EVENT // HealthKit `HKCategoryTypeIdentifierAppleWalkingSteadinessEvent`. The device flagged low / very-low walking steadiness (a falls-risk mobility signal); the severity rides in `rhythmClassification`.
   BREATHING_DISTURBANCE_EVENT // HealthKit `HKCategoryTypeIdentifierSleepApneaEvent` + `AppleSleepingBreathingDisturbances`. The device flagged an elevated breathing-disturbance / possible sleep-apnea signal during sleep. SCREENING SIGNAL ONLY — never a HealthLog diagnosis.
+  HYPERTENSION_EVENT // HealthKit `HKCategoryTypeIdentifierHypertensionEvent` (Apple Watch hypertension notifications, iOS 26). The watch's certified algorithm flagged signs of possible hypertension over a 30-day window. AWARENESS ONLY — never a HealthLog diagnosis; it is not a blood-pressure reading.
   // v1.10.0 — computed scores (WX-C)
   // Server-derived wellness scores (0–100, unit `score`). Each is minted by a
   // nightly engine from the user's already-stored signals and persisted as a
@@ -1945,7 +1946,7 @@ model MentalHealthAssessment {
 /// The device's own classification RESULT / severity for an EVENT row.
 /// Non-NULL only for the categorical EVENT `MeasurementType`s
 /// (IRREGULAR_RHYTHM_NOTIFICATION, HIGH/LOW_HEART_RATE_EVENT,
-/// WALKING_STEADINESS_EVENT, BREATHING_DISTURBANCE_EVENT), NULL for every
+/// WALKING_STEADINESS_EVENT, BREATHING_DISTURBANCE_EVENT, HYPERTENSION_EVENT), NULL for every
 /// continuous measurement — mirroring the `GlucoseContext` / `SleepStage`
 /// nullable-context precedent.
 ///

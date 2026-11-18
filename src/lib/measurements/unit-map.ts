@@ -103,6 +103,7 @@ const unitMap: Record<string, string> = {
   IRREGULAR_RHYTHM_NOTIFICATION: "event",
   HIGH_HEART_RATE_EVENT: "event",
   LOW_HEART_RATE_EVENT: "event",
+  HYPERTENSION_EVENT: "event",
   WALKING_STEADINESS_EVENT: "event",
   BREATHING_DISTURBANCE_EVENT: "event",
   // ── v1.10.0 — computed scores (WX-C) ──

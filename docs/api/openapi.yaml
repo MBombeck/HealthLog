@@ -4816,6 +4816,7 @@ paths:
               - LOW_HEART_RATE_EVENT
               - WALKING_STEADINESS_EVENT
               - BREATHING_DISTURBANCE_EVENT
+              - HYPERTENSION_EVENT
               - RECOVERY_SCORE
               - STRESS_SCORE
               - STRAIN_SCORE
@@ -5742,6 +5743,7 @@ paths:
               - LOW_HEART_RATE_EVENT
               - WALKING_STEADINESS_EVENT
               - BREATHING_DISTURBANCE_EVENT
+              - HYPERTENSION_EVENT
               - RECOVERY_SCORE
               - STRESS_SCORE
               - STRAIN_SCORE
@@ -5873,6 +5875,7 @@ paths:
               - LOW_HEART_RATE_EVENT
               - WALKING_STEADINESS_EVENT
               - BREATHING_DISTURBANCE_EVENT
+              - HYPERTENSION_EVENT
               - RECOVERY_SCORE
               - STRESS_SCORE
               - STRAIN_SCORE
@@ -29708,7 +29711,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 113
+              maxItems: 114
               type: array
               items:
                 type: string
@@ -29770,7 +29773,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 113
+              maxItems: 114
               type: array
               items:
                 type: string
@@ -30609,6 +30612,7 @@ components:
             - LOW_HEART_RATE_EVENT
             - WALKING_STEADINESS_EVENT
             - BREATHING_DISTURBANCE_EVENT
+            - HYPERTENSION_EVENT
             - RECOVERY_SCORE
             - STRESS_SCORE
             - STRAIN_SCORE
@@ -32406,6 +32410,7 @@ components:
             - LOW_HEART_RATE_EVENT
             - WALKING_STEADINESS_EVENT
             - BREATHING_DISTURBANCE_EVENT
+            - HYPERTENSION_EVENT
             - RECOVERY_SCORE
             - STRESS_SCORE
             - STRAIN_SCORE
@@ -32949,7 +32954,7 @@ components:
           type: number
           const: 2
         leaves:
-          maxItems: 113
+          maxItems: 114
           type: array
           items:
             type: string
@@ -34187,6 +34192,7 @@ components:
         - LOW_HEART_RATE_EVENT
         - WALKING_STEADINESS_EVENT
         - BREATHING_DISTURBANCE_EVENT
+        - HYPERTENSION_EVENT
         - RECOVERY_SCORE
         - STRESS_SCORE
         - STRAIN_SCORE
@@ -45413,6 +45419,7 @@ components:
                   - LOW_HEART_RATE_EVENT
                   - WALKING_STEADINESS_EVENT
                   - BREATHING_DISTURBANCE_EVENT
+                  - HYPERTENSION_EVENT
                   - RECOVERY_SCORE
                   - STRESS_SCORE
                   - STRAIN_SCORE
@@ -46198,6 +46205,7 @@ components:
                             - LOW_HEART_RATE_EVENT
                             - WALKING_STEADINESS_EVENT
                             - BREATHING_DISTURBANCE_EVENT
+                            - HYPERTENSION_EVENT
                             - RECOVERY_SCORE
                             - STRESS_SCORE
                             - STRAIN_SCORE
@@ -49336,6 +49344,7 @@ components:
                   - LOW_HEART_RATE_EVENT
                   - WALKING_STEADINESS_EVENT
                   - BREATHING_DISTURBANCE_EVENT
+                  - HYPERTENSION_EVENT
                   - RECOVERY_SCORE
                   - STRESS_SCORE
                   - STRAIN_SCORE
@@ -50537,6 +50546,7 @@ components:
                       - LOW_HEART_RATE_EVENT
                       - WALKING_STEADINESS_EVENT
                       - BREATHING_DISTURBANCE_EVENT
+                      - HYPERTENSION_EVENT
                       - RECOVERY_SCORE
                       - STRESS_SCORE
                       - STRAIN_SCORE
@@ -50764,6 +50774,7 @@ components:
                   - LOW_HEART_RATE_EVENT
                   - WALKING_STEADINESS_EVENT
                   - BREATHING_DISTURBANCE_EVENT
+                  - HYPERTENSION_EVENT
                   - RECOVERY_SCORE
                   - STRESS_SCORE
                   - STRAIN_SCORE
@@ -57127,6 +57138,7 @@ components:
             - LOW_HEART_RATE_EVENT
             - WALKING_STEADINESS_EVENT
             - BREATHING_DISTURBANCE_EVENT
+            - HYPERTENSION_EVENT
             - RECOVERY_SCORE
             - STRESS_SCORE
             - STRAIN_SCORE
@@ -57408,6 +57420,7 @@ components:
             - LOW_HEART_RATE_EVENT
             - WALKING_STEADINESS_EVENT
             - BREATHING_DISTURBANCE_EVENT
+            - HYPERTENSION_EVENT
             - RECOVERY_SCORE
             - STRESS_SCORE
             - STRAIN_SCORE
@@ -75556,13 +75569,16 @@ components:
             - LOW_HEART_RATE_EVENT
             - WALKING_STEADINESS_EVENT
             - BREATHING_DISTURBANCE_EVENT
-          description: The HealthKit category the device flagged. IRREGULAR_RHYTHM_NOTIFICATION
+            - HYPERTENSION_EVENT
+          description: "The HealthKit category the device flagged. IRREGULAR_RHYTHM_NOTIFICATION
             (`HKCategoryTypeIdentifierIrregularHeartRhythmEvent` + ScanWatch AFib screening), HIGH_HEART_RATE_EVENT /
             LOW_HEART_RATE_EVENT (a sustained heart rate above / below the user's configured threshold while apparently
             inactive), WALKING_STEADINESS_EVENT (`HKCategoryTypeIdentifierAppleWalkingSteadinessEvent`; the severity
             rides in `classification`), BREATHING_DISTURBANCE_EVENT (`HKCategoryTypeIdentifierSleepApneaEvent` +
             `AppleSleepingBreathingDisturbances`, an elevated breathing-disturbance / possible sleep-apnea screening
-            signal).
+            signal), HYPERTENSION_EVENT (`HKCategoryTypeIdentifierHypertensionEvent`, iOS 26: the watch flagged signs of
+            possible hypertension over a 30-day window; a notification, not a blood-pressure reading). Decode unknown
+            values leniently: the set grows."
         classification:
           anyOf:
             - type: string
@@ -75579,10 +75595,10 @@ components:
             signal too poor to classify) and occur on an `IRREGULAR_RHYTHM_NOTIFICATION` row. LOW / VERY_LOW are
             walking-steadiness severities and occur on a `WALKING_STEADINESS_EVENT` row. FIRED is the neutral "event
             occurred" verdict with no severity gradient, and occurs on a `HIGH_HEART_RATE_EVENT` /
-            `LOW_HEART_RATE_EVENT` / `BREATHING_DISTURBANCE_EVENT` row. Null when the source reported none. HealthLog
-            never re-classifies — this is the device's certified on-device result. Distinct from
-            `EcgRecordingListItem.classification` / `EcgDetailResponse.classification` above, which are scoped to the
-            three ECG-only values.
+            `LOW_HEART_RATE_EVENT` / `BREATHING_DISTURBANCE_EVENT` / `HYPERTENSION_EVENT` row. Null when the source
+            reported none. HealthLog never re-classifies — this is the device's certified on-device result. Distinct
+            from `EcgRecordingListItem.classification` / `EcgDetailResponse.classification` above, which are scoped to
+            the three ECG-only values.
         occurredAt:
           type: string
           format: date-time
