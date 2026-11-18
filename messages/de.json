@@ -9491,6 +9491,12 @@
       "titleRecovered": "Hintergrundjob läuft wieder: {queue}",
       "bodyFailing": "Der Hintergrundjob {queue} ist {failures}-mal in Folge fehlgeschlagen und steht auf der Admin-Statusseite. Letzter Fehler: {error}",
       "bodyRecovered": "Der Hintergrundjob {queue} ist wieder erfolgreich gelaufen."
+    },
+    "eventSeizureCluster": "Anfallsserie",
+    "eventSeizureClusterDesc": "Wenn ein von jemand anderem eingetragener Anfall nach der Regel im Tagebuch eine Serie bildet. Einmal je Serie.",
+    "seizureCluster": {
+      "title": "Anfallsserie",
+      "body": "{count} Anfälle innerhalb von {hours} h, eingetragen von {name}. Der Notfallplan steht im Anfallstagebuch."
     }
   },
   "i18n": {
@@ -13896,7 +13902,8 @@
       "visits": "Arzt und Eingriffe",
       "labs": "Labor",
       "documents": "Dokumente",
-      "cycle": "Zyklus"
+      "cycle": "Zyklus",
+      "seizures": "Anfälle"
     },
     "readiness": {
       "title": "Was deine Zeitleiste schon trägt",
@@ -13971,7 +13978,10 @@
         "environmentOne": "{count} Tag mit Umweltdaten",
         "environmentFew": "{count} Tage mit Umweltdaten",
         "environmentOther": "{count} Tage mit Umweltdaten",
-        "empty": "Noch keine"
+        "empty": "Noch keine",
+        "seizuresOne": "{count} Tag mit Anfällen",
+        "seizuresFew": "{count} Tage mit Anfällen",
+        "seizuresOther": "{count} Tage mit Anfällen"
       },
       "gap": {
         "valuesEmpty": "Quellen verbinden",
@@ -13981,7 +13991,8 @@
         "documentsUndated": "Ansehen",
         "labsEmpty": "Befund erfassen",
         "vaccinationsEmpty": "Impfpass erfassen",
-        "lifeEventsEmpty": "Hinzufügen"
+        "lifeEventsEmpty": "Hinzufügen",
+        "seizuresEmpty": "Anfall eintragen"
       },
       "gapLine": {
         "medicationsWithoutStartOne": "{count} Medikament ohne Startdatum",
@@ -13995,7 +14006,8 @@
         "visitsEmpty": "Noch keine erledigten Arztbesuche",
         "labsEmpty": "Noch keine Laborbefunde",
         "vaccinationsEmpty": "Noch keine Impfungen",
-        "lifeEventsEmpty": "Noch keine Lebensereignisse"
+        "lifeEventsEmpty": "Noch keine Lebensereignisse",
+        "seizuresEmpty": "Noch keine Anfälle eingetragen"
       }
     },
     "legendSpan": "Zeitraum",
@@ -14086,7 +14098,10 @@
     "item": {
       "labValuesOne": "1 Laborwert",
       "labValuesFew": "{count} Laborwerte",
-      "labValuesOther": "{count} Laborwerte"
+      "labValuesOther": "{count} Laborwerte",
+      "seizuresOne": "1 Anfall",
+      "seizuresFew": "{count} Anfälle",
+      "seizuresOther": "{count} Anfälle"
     },
     "labs": {
       "menuTitle": "Laborwerte",

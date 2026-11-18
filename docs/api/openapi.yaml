@@ -46816,6 +46816,12 @@ components:
                   type: integer
                   minimum: 1
                   maximum: 168
+                createdAt:
+                  type: string
+                  minLength: 1
+                updatedAt:
+                  type: string
+                  minLength: 1
               required:
                 - clusterCount
                 - clusterWindowHours
@@ -96350,6 +96356,7 @@ components:
                 enum:
                   - life
                   - illness
+                  - seizures
                   - allergies
                   - medications
                   - vaccinations
@@ -96470,6 +96477,7 @@ components:
             - visit
             - procedure
             - labDay
+            - seizureDay
             - document
             - cycle
         start:
@@ -96534,6 +96542,7 @@ components:
           enum:
             - life
             - illness
+            - seizures
             - allergies
             - medications
             - vaccinations
@@ -96763,6 +96772,7 @@ components:
                   - values
                   - life
                   - illness
+                  - seizures
                   - allergies
                   - medications
                   - vaccinations
@@ -98533,6 +98543,10 @@ components:
             - unknown
         loggedByViewer:
           type: boolean
+        loggedByName:
+          type:
+            - string
+            - "null"
         source:
           type: string
           enum:
@@ -98594,6 +98608,7 @@ components:
         - witnessNote
         - loggedBy
         - loggedByViewer
+        - loggedByName
         - source
         - note
         - rescueDoses

@@ -403,6 +403,24 @@ async function labsLane(frame: Frame) {
   });
 }
 
+async function seizuresLane(frame: Frame) {
+  const rows = await prisma.seizureEvent.findMany({
+    where: { userId: frame.userId },
+    select: { onsetAt: true },
+    orderBy: [{ onsetAt: "asc" }, { id: "asc" }],
+  });
+  if (rows.length === 0) {
+    return lane("empty", 0, null, {
+      detail: EMPTY_DETAIL,
+      gaps: [gap("seizuresEmpty", 0, "/seizures")],
+    });
+  }
+  const days = new Set(rows.map((r) => userDayKey(r.onsetAt, frame.tz)));
+  return lane("carries", days.size, userDayKey(rows[0].onsetAt, frame.tz), {
+    detail: { key: "seizures", params: { count: days.size } },
+  });
+}
+
 async function documentsLane(frame: Frame) {
   const [dated, undated] = await Promise.all([
     prisma.inboundDocument.findMany({
@@ -490,6 +508,7 @@ export async function loadTimelineReadiness(args: {
   > = {
     life: () => lifeLane(frame),
     illness: () => illnessLane(frame),
+    seizures: () => seizuresLane(frame),
     allergies: () => allergiesLane(frame),
     medications: () => medicationsLane(frame),
     vaccinations: () => vaccinationsLane(frame),

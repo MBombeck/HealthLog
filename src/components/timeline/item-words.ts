@@ -119,6 +119,19 @@ export function makeItemWords(
               : null,
         };
       }
+      case "seizureDay": {
+        const count = Number(item.sub);
+        // The label lists the day's types; a day of untyped seizures is
+        // named by the diary itself.
+        return {
+          label: item.label || t("nav.seizures"),
+          sub: null,
+          tag:
+            Number.isInteger(count) && count > 0
+              ? tCount("timeline.item.seizures", count)
+              : null,
+        };
+      }
       case "document":
         return {
           label: item.label,

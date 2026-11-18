@@ -9491,6 +9491,12 @@
       "titleRecovered": "Фоновое задание снова работает: {queue}",
       "bodyFailing": "Фоновое задание {queue} сбоило {failures} раз подряд и указано на странице состояния администратора. Последняя ошибка: {error}",
       "bodyRecovered": "Фоновое задание {queue} снова выполнилось успешно."
+    },
+    "eventSeizureCluster": "Серия приступов",
+    "eventSeizureClusterDesc": "Когда приступ, записанный другим человеком, образует серию по правилу дневника. Один раз на серию.",
+    "seizureCluster": {
+      "title": "Серия приступов",
+      "body": "Приступов: {count} за {hours} ч, записал(а): {name}. План помощи в дневнике приступов."
     }
   },
   "i18n": {
@@ -13896,7 +13902,8 @@
       "visits": "Врачи и процедуры",
       "labs": "Анализы",
       "documents": "Документы",
-      "cycle": "Цикл"
+      "cycle": "Цикл",
+      "seizures": "Приступы"
     },
     "readiness": {
       "title": "Что ваша хронология уже содержит",
@@ -13971,7 +13978,10 @@
         "environmentOne": "{count} день с данными об окружающей среде",
         "environmentFew": "{count} дня с данными об окружающей среде",
         "environmentOther": "{count} дней с данными об окружающей среде",
-        "empty": "Пока ничего"
+        "empty": "Пока ничего",
+        "seizuresOne": "{count} день с приступами",
+        "seizuresFew": "{count} дня с приступами",
+        "seizuresOther": "{count} дней с приступами"
       },
       "gap": {
         "valuesEmpty": "Подключите источники",
@@ -13981,7 +13991,8 @@
         "documentsUndated": "Проверьте",
         "labsEmpty": "Добавьте результат",
         "vaccinationsEmpty": "Добавьте вакцинации",
-        "lifeEventsEmpty": "Добавьте"
+        "lifeEventsEmpty": "Добавьте",
+        "seizuresEmpty": "Записать приступ"
       },
       "gapLine": {
         "medicationsWithoutStartOne": "{count} лекарство без даты начала",
@@ -13995,7 +14006,8 @@
         "visitsEmpty": "Пока нет завершённых визитов к врачу",
         "labsEmpty": "Пока нет результатов анализов",
         "vaccinationsEmpty": "Вакцинаций пока нет",
-        "lifeEventsEmpty": "Событий жизни пока нет"
+        "lifeEventsEmpty": "Событий жизни пока нет",
+        "seizuresEmpty": "Приступы пока не записаны"
       }
     },
     "legendSpan": "Период",
@@ -14086,7 +14098,10 @@
     "item": {
       "labValuesOne": "{count} результат анализа",
       "labValuesFew": "{count} результата анализов",
-      "labValuesOther": "{count} результатов анализов"
+      "labValuesOther": "{count} результатов анализов",
+      "seizuresOne": "1 приступ",
+      "seizuresFew": "{count} приступа",
+      "seizuresOther": "{count} приступов"
     },
     "labs": {
       "menuTitle": "Лабораторные показатели",

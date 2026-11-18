@@ -9491,6 +9491,12 @@
       "titleRecovered": "백그라운드 작업이 다시 작동해요: {queue}",
       "bodyFailing": "백그라운드 작업 {queue}이(가) {failures}번 연속 실패했어요. 관리자 상태 페이지에서 확인할 수 있어요. 마지막 오류: {error}",
       "bodyRecovered": "백그라운드 작업 {queue}이(가) 다시 정상적으로 실행됐어요."
+    },
+    "eventSeizureCluster": "군집 발작",
+    "eventSeizureClusterDesc": "다른 사람이 기록한 발작이 일지 규칙에 따라 군집을 이룰 때. 군집마다 한 번.",
+    "seizureCluster": {
+      "title": "군집 발작",
+      "body": "{hours}시간 안에 발작 {count}회, {name} 님이 기록함. 응급 계획은 발작 일지에 있습니다."
     }
   },
   "i18n": {
@@ -13896,7 +13902,8 @@
       "visits": "진료와 시술",
       "labs": "검사",
       "documents": "문서",
-      "cycle": "생리 주기"
+      "cycle": "생리 주기",
+      "seizures": "발작"
     },
     "readiness": {
       "title": "타임라인에 이미 담긴 것",
@@ -13971,7 +13978,10 @@
         "environmentOne": "환경 데이터가 있는 날 {count}일",
         "environmentFew": "환경 데이터가 있는 날 {count}일",
         "environmentOther": "환경 데이터가 있는 날 {count}일",
-        "empty": "아직 없음"
+        "empty": "아직 없음",
+        "seizuresOne": "발작이 있었던 날 {count}일",
+        "seizuresFew": "발작이 있었던 날 {count}일",
+        "seizuresOther": "발작이 있었던 날 {count}일"
       },
       "gap": {
         "valuesEmpty": "소스 연결",
@@ -13981,7 +13991,8 @@
         "documentsUndated": "확인하기",
         "labsEmpty": "결과 추가",
         "vaccinationsEmpty": "예방접종 추가",
-        "lifeEventsEmpty": "추가"
+        "lifeEventsEmpty": "추가",
+        "seizuresEmpty": "발작 기록"
       },
       "gapLine": {
         "medicationsWithoutStartOne": "시작일 없는 약 {count}개",
@@ -13995,7 +14006,8 @@
         "visitsEmpty": "아직 완료된 진료가 없어요",
         "labsEmpty": "아직 검사 결과가 없어요",
         "vaccinationsEmpty": "아직 예방접종이 없어요",
-        "lifeEventsEmpty": "아직 삶의 사건이 없어요"
+        "lifeEventsEmpty": "아직 삶의 사건이 없어요",
+        "seizuresEmpty": "아직 기록된 발작이 없습니다"
       }
     },
     "legendSpan": "기간",
@@ -14086,7 +14098,10 @@
     "item": {
       "labValuesOne": "검사 수치 1개",
       "labValuesFew": "검사 수치 {count}개",
-      "labValuesOther": "검사 수치 {count}개"
+      "labValuesOther": "검사 수치 {count}개",
+      "seizuresOne": "발작 1회",
+      "seizuresFew": "발작 {count}회",
+      "seizuresOther": "발작 {count}회"
     },
     "labs": {
       "menuTitle": "검사 수치",

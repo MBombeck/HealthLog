@@ -9491,6 +9491,12 @@
       "titleRecovered": "Zadanie w tle znów działa: {queue}",
       "bodyFailing": "Zadanie w tle {queue} zakończyło się błędem {failures} razy z rzędu i jest widoczne na stronie stanu w panelu administratora. Ostatni błąd: {error}",
       "bodyRecovered": "Zadanie w tle {queue} znów wykonało się poprawnie."
+    },
+    "eventSeizureCluster": "Napady gromadne",
+    "eventSeizureClusterDesc": "Gdy napad zapisany przez inną osobę tworzy serię według reguły dzienniczka. Raz na serię.",
+    "seizureCluster": {
+      "title": "Napady gromadne",
+      "body": "Napady: {count} w ciągu {hours} h, zapisane przez: {name}. Plan ratunkowy jest w dzienniczku napadów."
     }
   },
   "i18n": {
@@ -13896,7 +13902,8 @@
       "visits": "Lekarz i zabiegi",
       "labs": "Badania",
       "documents": "Dokumenty",
-      "cycle": "Cykl"
+      "cycle": "Cykl",
+      "seizures": "Napady"
     },
     "readiness": {
       "title": "Co już zawiera Twoja oś czasu",
@@ -13971,7 +13978,10 @@
         "environmentOne": "{count} dzień z danymi o środowisku",
         "environmentFew": "{count} dni z danymi o środowisku",
         "environmentOther": "{count} dni z danymi o środowisku",
-        "empty": "Jeszcze brak"
+        "empty": "Jeszcze brak",
+        "seizuresOne": "{count} dzień z napadami",
+        "seizuresFew": "{count} dni z napadami",
+        "seizuresOther": "{count} dni z napadami"
       },
       "gap": {
         "valuesEmpty": "Połącz źródła",
@@ -13981,7 +13991,8 @@
         "documentsUndated": "Przejrzyj",
         "labsEmpty": "Dodaj wynik",
         "vaccinationsEmpty": "Dodaj szczepienia",
-        "lifeEventsEmpty": "Dodaj"
+        "lifeEventsEmpty": "Dodaj",
+        "seizuresEmpty": "Zapisz napad"
       },
       "gapLine": {
         "medicationsWithoutStartOne": "{count} lek bez daty rozpoczęcia",
@@ -13995,7 +14006,8 @@
         "visitsEmpty": "Jeszcze brak odbytych wizyt",
         "labsEmpty": "Jeszcze brak wyników badań",
         "vaccinationsEmpty": "Jeszcze brak szczepień",
-        "lifeEventsEmpty": "Brak wydarzeń życiowych"
+        "lifeEventsEmpty": "Brak wydarzeń życiowych",
+        "seizuresEmpty": "Brak zapisanych napadów"
       }
     },
     "legendSpan": "Okres",
@@ -14086,7 +14098,10 @@
     "item": {
       "labValuesOne": "1 wynik badania",
       "labValuesFew": "{count} wyniki badań",
-      "labValuesOther": "{count} wyników badań"
+      "labValuesOther": "{count} wyników badań",
+      "seizuresOne": "1 napad",
+      "seizuresFew": "{count} napady",
+      "seizuresOther": "{count} napadów"
     },
     "labs": {
       "menuTitle": "Wyniki badań",

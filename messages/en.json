@@ -9491,6 +9491,12 @@
       "titleRecovered": "Background job working again: {queue}",
       "bodyFailing": "The background job {queue} has failed {failures} times in a row and is listed on the admin status page. Last error: {error}",
       "bodyRecovered": "The background job {queue} has run successfully again."
+    },
+    "eventSeizureCluster": "Seizure cluster",
+    "eventSeizureClusterDesc": "When a seizure someone else logs forms a cluster under the diary's rule. Once per cluster.",
+    "seizureCluster": {
+      "title": "Seizure cluster",
+      "body": "{count} seizures within {hours} h, logged by {name}. The rescue plan is in the seizure diary."
     }
   },
   "i18n": {
@@ -13896,7 +13902,8 @@
       "visits": "Doctor and procedures",
       "labs": "Labs",
       "documents": "Documents",
-      "cycle": "Cycle"
+      "cycle": "Cycle",
+      "seizures": "Seizures"
     },
     "readiness": {
       "title": "What your timeline already carries",
@@ -13971,7 +13978,10 @@
         "environmentOne": "{count} day with environment data",
         "environmentFew": "{count} days with environment data",
         "environmentOther": "{count} days with environment data",
-        "empty": "None yet"
+        "empty": "None yet",
+        "seizuresOne": "{count} day with seizures",
+        "seizuresFew": "{count} days with seizures",
+        "seizuresOther": "{count} days with seizures"
       },
       "gap": {
         "valuesEmpty": "Connect sources",
@@ -13981,7 +13991,8 @@
         "documentsUndated": "Review",
         "labsEmpty": "Add a result",
         "vaccinationsEmpty": "Add vaccinations",
-        "lifeEventsEmpty": "Add"
+        "lifeEventsEmpty": "Add",
+        "seizuresEmpty": "Log a seizure"
       },
       "gapLine": {
         "medicationsWithoutStartOne": "{count} medication without a start date",
@@ -13995,7 +14006,8 @@
         "visitsEmpty": "No completed doctor visits yet",
         "labsEmpty": "No lab results yet",
         "vaccinationsEmpty": "No vaccinations yet",
-        "lifeEventsEmpty": "No life events yet"
+        "lifeEventsEmpty": "No life events yet",
+        "seizuresEmpty": "No seizures logged yet"
       }
     },
     "legendSpan": "Period",
@@ -14086,7 +14098,10 @@
     "item": {
       "labValuesOne": "1 lab value",
       "labValuesFew": "{count} lab values",
-      "labValuesOther": "{count} lab values"
+      "labValuesOther": "{count} lab values",
+      "seizuresOne": "1 seizure",
+      "seizuresFew": "{count} seizures",
+      "seizuresOther": "{count} seizures"
     },
     "labs": {
       "menuTitle": "Lab values",

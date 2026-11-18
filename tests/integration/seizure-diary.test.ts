@@ -22,6 +22,7 @@ process.env.ENCRYPTION_KEY ??=
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
 import { GET as readDiary } from "@/app/api/seizures/route";
+import { GET as readTimeline } from "@/app/api/timeline/route";
 import { POST as createEvent } from "@/app/api/seizures/events/route";
 import {
   DELETE as deleteEvent,
@@ -523,5 +524,61 @@ describe("the report, the FHIR export and the MCP tool read the same figures", (
     )) as { present: boolean; summary: { recordedSeizures: number } };
     expect(tool.present).toBe(true);
     expect(tool.summary.recordedSeizures).toBe(2);
+  });
+});
+
+describe("the timeline carries a seizure lane", () => {
+  it("draws one point per day with the day's count, and only with the diary on", async () => {
+    const owner = await person("lane");
+    const prisma = getPrismaClient();
+    await prisma.user.update({
+      where: { id: owner.id },
+      data: { modulePreferencesJson: { seizures: true, timeline: true } },
+    });
+    // Noon in Berlin, two days ago: a run of two, then one more an hour on.
+    const noon = new Date(Date.now() - 2 * DAY_MS);
+    noon.setUTCHours(11, 0, 0, 0);
+    for (const [offset, count] of [
+      [0, 2],
+      [60 * 60 * 1000, 1],
+    ] as const) {
+      await prisma.seizureEvent.create({
+        data: {
+          userId: owner.id,
+          onsetAt: new Date(noon.getTime() + offset),
+          count,
+          loggedByUserId: owner.id,
+        },
+      });
+    }
+    signIn(owner);
+
+    const res = await readTimeline(json("GET", "/api/timeline?zoom=year"));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: {
+        lanes: Array<{
+          key: string;
+          items: Array<{ kind: string; sub: string | null; href: string }>;
+        }>;
+      };
+    };
+    const lane = body.data.lanes.find((l) => l.key === "seizures");
+    expect(lane?.items).toEqual([
+      expect.objectContaining({
+        kind: "seizureDay",
+        sub: "3",
+        href: "/seizures",
+      }),
+    ]);
+
+    // The diary switched off takes the lane with it.
+    await prisma.user.update({
+      where: { id: owner.id },
+      data: { modulePreferencesJson: { seizures: false, timeline: true } },
+    });
+    const off = await readTimeline(json("GET", "/api/timeline?zoom=year"));
+    const offBody = (await off.json()) as typeof body;
+    expect(offBody.data.lanes.some((l) => l.key === "seizures")).toBe(false);
   });
 });

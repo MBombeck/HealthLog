@@ -9491,6 +9491,12 @@
       "titleRecovered": "Achtergrondtaak werkt weer: {queue}",
       "bodyFailing": "De achtergrondtaak {queue} is {failures} keer achter elkaar mislukt en staat op de beheerstatuspagina. Laatste fout: {error}",
       "bodyRecovered": "De achtergrondtaak {queue} is weer met succes uitgevoerd."
+    },
+    "eventSeizureCluster": "Clusteraanvallen",
+    "eventSeizureClusterDesc": "Als een aanval die iemand anders vastlegt volgens de regel in het dagboek een cluster vormt. Eén keer per cluster.",
+    "seizureCluster": {
+      "title": "Clusteraanvallen",
+      "body": "{count} aanvallen binnen {hours} u, vastgelegd door {name}. Het noodplan staat in het aanvallendagboek."
     }
   },
   "i18n": {
@@ -13896,7 +13902,8 @@
       "visits": "Arts en ingrepen",
       "labs": "Lab",
       "documents": "Documenten",
-      "cycle": "Cyclus"
+      "cycle": "Cyclus",
+      "seizures": "Aanvallen"
     },
     "readiness": {
       "title": "Wat je tijdlijn al te bieden heeft",
@@ -13971,7 +13978,10 @@
         "environmentOne": "{count} dag met omgevingsgegevens",
         "environmentFew": "{count} dagen met omgevingsgegevens",
         "environmentOther": "{count} dagen met omgevingsgegevens",
-        "empty": "Nog geen"
+        "empty": "Nog geen",
+        "seizuresOne": "{count} dag met aanvallen",
+        "seizuresFew": "{count} dagen met aanvallen",
+        "seizuresOther": "{count} dagen met aanvallen"
       },
       "gap": {
         "valuesEmpty": "Bronnen koppelen",
@@ -13981,7 +13991,8 @@
         "documentsUndated": "Controleren",
         "labsEmpty": "Uitslag toevoegen",
         "vaccinationsEmpty": "Vaccinaties toevoegen",
-        "lifeEventsEmpty": "Toevoegen"
+        "lifeEventsEmpty": "Toevoegen",
+        "seizuresEmpty": "Aanval vastleggen"
       },
       "gapLine": {
         "medicationsWithoutStartOne": "{count} medicijn zonder startdatum",
@@ -13995,7 +14006,8 @@
         "visitsEmpty": "Nog geen afgeronde doktersbezoeken",
         "labsEmpty": "Nog geen labuitslagen",
         "vaccinationsEmpty": "Nog geen vaccinaties",
-        "lifeEventsEmpty": "Nog geen levensgebeurtenissen"
+        "lifeEventsEmpty": "Nog geen levensgebeurtenissen",
+        "seizuresEmpty": "Nog geen aanvallen vastgelegd"
       }
     },
     "legendSpan": "Periode",
@@ -14086,7 +14098,10 @@
     "item": {
       "labValuesOne": "1 labwaarde",
       "labValuesFew": "{count} labwaarden",
-      "labValuesOther": "{count} labwaarden"
+      "labValuesOther": "{count} labwaarden",
+      "seizuresOne": "1 aanval",
+      "seizuresFew": "{count} aanvallen",
+      "seizuresOther": "{count} aanvallen"
     },
     "labs": {
       "menuTitle": "Labwaarden",

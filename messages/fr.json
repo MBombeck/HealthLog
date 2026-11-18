@@ -9491,6 +9491,12 @@
       "titleRecovered": "Tâche d'arrière-plan rétablie : {queue}",
       "bodyFailing": "La tâche d'arrière-plan {queue} a échoué {failures} fois de suite ; vous la trouverez sur la page d'état de l'administration. Dernière erreur : {error}",
       "bodyRecovered": "La tâche d'arrière-plan {queue} s'est de nouveau exécutée avec succès."
+    },
+    "eventSeizureCluster": "Crises en série",
+    "eventSeizureClusterDesc": "Quand une crise enregistrée par quelqu'un d'autre forme une série selon la règle du journal. Une fois par série.",
+    "seizureCluster": {
+      "title": "Crises en série",
+      "body": "{count} crises en {hours} h, enregistrées par {name}. Le plan d'urgence est dans le journal des crises."
     }
   },
   "i18n": {
@@ -13896,7 +13902,8 @@
       "visits": "Médecin et interventions",
       "labs": "Analyses",
       "documents": "Documents",
-      "cycle": "Cycle"
+      "cycle": "Cycle",
+      "seizures": "Crises"
     },
     "readiness": {
       "title": "Ce que votre chronologie contient déjà",
@@ -13971,7 +13978,10 @@
         "environmentOne": "{count} jour avec données d’environnement",
         "environmentFew": "{count} jours avec données d’environnement",
         "environmentOther": "{count} jours avec données d’environnement",
-        "empty": "Rien pour l’instant"
+        "empty": "Rien pour l’instant",
+        "seizuresOne": "{count} jour avec crises",
+        "seizuresFew": "{count} jours avec crises",
+        "seizuresOther": "{count} jours avec crises"
       },
       "gap": {
         "valuesEmpty": "Connecter des sources",
@@ -13981,7 +13991,8 @@
         "documentsUndated": "Vérifier",
         "labsEmpty": "Ajouter un résultat",
         "vaccinationsEmpty": "Ajouter des vaccins",
-        "lifeEventsEmpty": "Ajouter"
+        "lifeEventsEmpty": "Ajouter",
+        "seizuresEmpty": "Enregistrer une crise"
       },
       "gapLine": {
         "medicationsWithoutStartOne": "{count} médicament sans date de début",
@@ -13995,7 +14006,8 @@
         "visitsEmpty": "Pas encore de consultations effectuées",
         "labsEmpty": "Pas encore de résultats d’analyses",
         "vaccinationsEmpty": "Pas encore de vaccins",
-        "lifeEventsEmpty": "Aucun événement de vie pour l’instant"
+        "lifeEventsEmpty": "Aucun événement de vie pour l’instant",
+        "seizuresEmpty": "Aucune crise enregistrée"
       }
     },
     "legendSpan": "Période",
@@ -14086,7 +14098,10 @@
     "item": {
       "labValuesOne": "{count} valeur de laboratoire",
       "labValuesFew": "{count} valeurs de laboratoire",
-      "labValuesOther": "{count} valeurs de laboratoire"
+      "labValuesOther": "{count} valeurs de laboratoire",
+      "seizuresOne": "1 crise",
+      "seizuresFew": "{count} crises",
+      "seizuresOther": "{count} crises"
     },
     "labs": {
       "menuTitle": "Valeurs de laboratoire",

@@ -9491,6 +9491,12 @@
       "titleRecovered": "Attività in background di nuovo funzionante: {queue}",
       "bodyFailing": "L'attività in background {queue} non è riuscita {failures} volte di seguito ed è elencata nella pagina di stato dell'amministrazione. Ultimo errore: {error}",
       "bodyRecovered": "L'attività in background {queue} è stata di nuovo eseguita correttamente."
+    },
+    "eventSeizureCluster": "Crisi a grappolo",
+    "eventSeizureClusterDesc": "Quando una crisi registrata da un'altra persona forma un grappolo secondo la regola del diario. Una volta per grappolo.",
+    "seizureCluster": {
+      "title": "Crisi a grappolo",
+      "body": "{count} crisi in {hours} h, registrate da {name}. Il piano di soccorso è nel diario delle crisi."
     }
   },
   "i18n": {
@@ -13896,7 +13902,8 @@
       "visits": "Medico e interventi",
       "labs": "Esami",
       "documents": "Documenti",
-      "cycle": "Ciclo"
+      "cycle": "Ciclo",
+      "seizures": "Crisi"
     },
     "readiness": {
       "title": "Cosa contiene già la tua cronologia",
@@ -13971,7 +13978,10 @@
         "environmentOne": "{count} giorno con dati ambientali",
         "environmentFew": "{count} giorni con dati ambientali",
         "environmentOther": "{count} giorni con dati ambientali",
-        "empty": "Ancora nulla"
+        "empty": "Ancora nulla",
+        "seizuresOne": "{count} giorno con crisi",
+        "seizuresFew": "{count} giorni con crisi",
+        "seizuresOther": "{count} giorni con crisi"
       },
       "gap": {
         "valuesEmpty": "Collega le fonti",
@@ -13981,7 +13991,8 @@
         "documentsUndated": "Controlla",
         "labsEmpty": "Aggiungi referto",
         "vaccinationsEmpty": "Aggiungi vaccinazioni",
-        "lifeEventsEmpty": "Aggiungi"
+        "lifeEventsEmpty": "Aggiungi",
+        "seizuresEmpty": "Registra una crisi"
       },
       "gapLine": {
         "medicationsWithoutStartOne": "{count} farmaco senza data di inizio",
@@ -13995,7 +14006,8 @@
         "visitsEmpty": "Ancora nessuna visita medica svolta",
         "labsEmpty": "Ancora nessun referto di laboratorio",
         "vaccinationsEmpty": "Ancora nessuna vaccinazione",
-        "lifeEventsEmpty": "Ancora nessun evento di vita"
+        "lifeEventsEmpty": "Ancora nessun evento di vita",
+        "seizuresEmpty": "Nessuna crisi registrata"
       }
     },
     "legendSpan": "Periodo",
@@ -14086,7 +14098,10 @@
     "item": {
       "labValuesOne": "1 valore di laboratorio",
       "labValuesFew": "{count} valori di laboratorio",
-      "labValuesOther": "{count} valori di laboratorio"
+      "labValuesOther": "{count} valori di laboratorio",
+      "seizuresOne": "1 crisi",
+      "seizuresFew": "{count} crisi",
+      "seizuresOther": "{count} crisi"
     },
     "labs": {
       "menuTitle": "Valori di laboratorio",

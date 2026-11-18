@@ -282,6 +282,7 @@ const STATIC_SURFACE_MODULE = {
   "timeline-lane:medications": "medications",
   "timeline-lane:vaccinations": "vaccinations",
   "timeline-lane:labs": "labs",
+  "timeline-lane:seizures": "seizures",
   "timeline-lane:documents": "inboundDocuments",
   "timeline-lane:cycle": "cycle",
 

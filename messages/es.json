@@ -9491,6 +9491,12 @@
       "titleRecovered": "La tarea en segundo plano vuelve a funcionar: {queue}",
       "bodyFailing": "La tarea en segundo plano {queue} ha fallado {failures} veces seguidas y aparece en la página de estado de administración. Último error: {error}",
       "bodyRecovered": "La tarea en segundo plano {queue} se ha vuelto a ejecutar correctamente."
+    },
+    "eventSeizureCluster": "Racimo de crisis",
+    "eventSeizureClusterDesc": "Cuando una crisis registrada por otra persona forma un racimo según la regla del diario. Una vez por racimo.",
+    "seizureCluster": {
+      "title": "Racimo de crisis",
+      "body": "{count} crisis en {hours} h, registradas por {name}. El plan de rescate está en el diario de crisis."
     }
   },
   "i18n": {
@@ -13896,7 +13902,8 @@
       "visits": "Médico e intervenciones",
       "labs": "Laboratorio",
       "documents": "Documentos",
-      "cycle": "Ciclo"
+      "cycle": "Ciclo",
+      "seizures": "Crisis"
     },
     "readiness": {
       "title": "Lo que tu cronología ya muestra",
@@ -13971,7 +13978,10 @@
         "environmentOne": "{count} día con datos ambientales",
         "environmentFew": "{count} días con datos ambientales",
         "environmentOther": "{count} días con datos ambientales",
-        "empty": "Aún ninguno"
+        "empty": "Aún ninguno",
+        "seizuresOne": "{count} día con crisis",
+        "seizuresFew": "{count} días con crisis",
+        "seizuresOther": "{count} días con crisis"
       },
       "gap": {
         "valuesEmpty": "Conectar fuentes",
@@ -13981,7 +13991,8 @@
         "documentsUndated": "Revisar",
         "labsEmpty": "Añadir resultado",
         "vaccinationsEmpty": "Añadir vacunas",
-        "lifeEventsEmpty": "Añadir"
+        "lifeEventsEmpty": "Añadir",
+        "seizuresEmpty": "Registrar una crisis"
       },
       "gapLine": {
         "medicationsWithoutStartOne": "{count} medicamento sin fecha de inicio",
@@ -13995,7 +14006,8 @@
         "visitsEmpty": "Aún no hay visitas médicas realizadas",
         "labsEmpty": "Aún no hay resultados de laboratorio",
         "vaccinationsEmpty": "Aún no hay vacunas",
-        "lifeEventsEmpty": "Aún no hay acontecimientos vitales"
+        "lifeEventsEmpty": "Aún no hay acontecimientos vitales",
+        "seizuresEmpty": "Aún no hay crisis registradas"
       }
     },
     "legendSpan": "Periodo",
@@ -14086,7 +14098,10 @@
     "item": {
       "labValuesOne": "1 valor de laboratorio",
       "labValuesFew": "{count} valores de laboratorio",
-      "labValuesOther": "{count} valores de laboratorio"
+      "labValuesOther": "{count} valores de laboratorio",
+      "seizuresOne": "1 crisis",
+      "seizuresFew": "{count} crisis",
+      "seizuresOther": "{count} crisis"
     },
     "labs": {
       "menuTitle": "Valores de laboratorio",

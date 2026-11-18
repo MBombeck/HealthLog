@@ -29,6 +29,7 @@ export const TIMELINE_LANE_LABEL_KEY: Readonly<
 > = {
   life: "timeline.lanes.life",
   illness: "timeline.lanes.illness",
+  seizures: "timeline.lanes.seizures",
   allergies: "timeline.lanes.allergies",
   medications: "timeline.lanes.medications",
   vaccinations: "timeline.lanes.vaccinations",
@@ -91,6 +92,7 @@ export const TIMELINE_READINESS_LANE_KEY: Readonly<
   environment: "timeline.readiness.lanes.environment",
   life: "timeline.readiness.lanes.life",
   illness: "timeline.lanes.illness",
+  seizures: "timeline.lanes.seizures",
   allergies: "timeline.lanes.allergies",
   medications: "timeline.lanes.medications",
   vaccinations: "timeline.lanes.vaccinations",
