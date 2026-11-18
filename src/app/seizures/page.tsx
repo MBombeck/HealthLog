@@ -11,8 +11,10 @@ import { SeizuresView } from "@/components/seizures/seizures-view";
  * The seizure diary (#1368).
  *
  * Gated on the resolved `modules.seizures` flag from `GET /api/auth/me`. The
- * module is opt-in, so only an explicit `true` opens the page; anything else
- * bounces home (the nav entry is already gone, so this catches a direct URL).
+ * module is opt-in, so only an explicit `true` opens the page. A direct visit
+ * with the module off meets the shared module gate's notice before this page
+ * mounts; the redirect below is the fallback for a flag that changes while
+ * the page is open.
  * The map is the RECORD's, masked to what the grant opens, so a guardian in a
  * managed child's record is answered about the child's diary. The
  * `/api/seizures*` routes refuse on their own; this is a UX redirect, never

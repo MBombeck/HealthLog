@@ -6,7 +6,7 @@
  *
  *   1. Quick log: start, stop, and the seizure is in the list and the count.
  *   2. The timer survives a reload: it stores its start, not a tick.
- *   3. Module off: the direct visit leaves the page instead of showing it.
+ *   3. Module off: the direct visit meets the module notice, not the diary.
  *   4. a11y: axe over the diary and the details sheet, serious/critical only.
  *
  * The flows mutate the one seeded account, so this file runs in a single
@@ -80,9 +80,13 @@ test.describe("seizure diary", () => {
   test("the module switched off closes the page", async ({ page }) => {
     await setSeizuresModule(false);
     await page.goto("/seizures");
-    await page.waitForURL((url) => url.pathname !== "/seizures", {
-      timeout: 15_000,
-    });
+    // The shared module gate answers the direct visit with its notice, the
+    // way every opt-in module does, and the diary never mounts.
+    await expect(
+      page.locator(
+        '[data-slot="module-disabled-notice"][data-module="seizures"]',
+      ),
+    ).toBeVisible({ timeout: 20_000 });
     await expect(page.locator('[data-slot="seizure-quick-log"]')).toHaveCount(
       0,
     );
