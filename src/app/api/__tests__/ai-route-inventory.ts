@@ -77,6 +77,11 @@ export const AI_ROUTES: Readonly<Record<string, AiRouteEntry>> = {
     capabilities: ["documentAi"],
     why: "The preference is stored whatever AI says; the catch-up it queues follows the capability.",
   },
+  "src/app/api/record-settings/[family]/route.ts": {
+    kind: "mixed",
+    capabilities: ["documentAi"],
+    why: "A guardian's record settings are stored whatever AI says; only the document catch-up queued when automatic reading turns on follows the profile's capability.",
+  },
   "src/app/api/insights/chat/fenced/route.ts": {
     kind: "action",
     capabilities: ["coach", "documentAi"],
