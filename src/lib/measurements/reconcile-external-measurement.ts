@@ -6,6 +6,7 @@ import {
   type Prisma as PrismaTypes,
 } from "@/generated/prisma/client";
 import { insertNewMeasurementRows } from "@/lib/export/measurement-bulk-insert";
+import { getEvent } from "@/lib/logging/context";
 import {
   classifyRangeRejection,
   recordRangeRejections,
@@ -673,26 +674,49 @@ export async function reconcileExternalMeasurements(
   return verdicts as MeasurementReconciliationVerdict[];
 }
 
+/** Entries one chunk transaction settles; the account's lock is held per chunk. */
+export const RECONCILE_CHUNK_SIZE = 200;
+
 /**
  * `reconcileExternalMeasurements` over a batch of any size, one transaction
  * per `chunk` entries, for a writer whose entries need not land together:
  * every verdict is its entry's own, and a failed one is returned, not thrown.
+ * A chunk whose transaction fails (a timeout, a lock wait, a dropped
+ * connection) returns `failed` for each of its entries and the next chunk
+ * still runs, so one slow stretch of an import does not cost the rest of it.
  */
 export async function reconcileExternalMeasurementsInChunks(
   db: Pick<PrismaClient, "$transaction">,
   batch: readonly ExternalMeasurementWrite[],
   options: MeasurementReconciliationOptions = {},
-  chunk = 500,
+  chunk = RECONCILE_CHUNK_SIZE,
 ): Promise<MeasurementReconciliationVerdict[]> {
   const verdicts: MeasurementReconciliationVerdict[] = [];
   for (let at = 0; at < batch.length; at += chunk) {
     const slice = batch.slice(at, at + chunk);
-    verdicts.push(
-      ...(await db.$transaction(
-        (tx) => reconcileExternalMeasurements(tx, slice, options),
-        { timeout: 60_000 },
-      )),
-    );
+    try {
+      verdicts.push(
+        ...(await db.$transaction(
+          (tx) => reconcileExternalMeasurements(tx, slice, options),
+          { timeout: 60_000 },
+        )),
+      );
+    } catch (err) {
+      const code =
+        typeof err === "object" && err !== null && "code" in err
+          ? String((err as { code: unknown }).code)
+          : undefined;
+      getEvent()?.addWarning(
+        `measurement reconcile chunk failed: ${slice.length} entries${code ? ` (${code})` : ""}`,
+      );
+      const error = {
+        message: err instanceof Error ? err.message : String(err),
+        ...(code ? { code } : {}),
+      };
+      for (let i = 0; i < slice.length; i++) {
+        verdicts.push({ status: "failed", error });
+      }
+    }
   }
   return verdicts;
 }
