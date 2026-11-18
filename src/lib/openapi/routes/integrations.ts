@@ -2796,6 +2796,33 @@ export const integrationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       },
     },
   },
+  "/api/fitbit/status": {
+    get: {
+      tags: ["Integrations"],
+      summary: "The removed Fitbit integration, reported as not connected",
+      deprecated: true,
+      description:
+        "Google turned the Fitbit Web API off on 2026-10-30 and the Fitbit integration was removed in v1.48.0. This status stays for app builds that read it on every open of their integrations screen: it always answers `connected: false`, `configured: false` and `retired: true`, in the shape it had before. The integration's other routes answer 410 `route.retired`. It will be removed once no supported app build reads it. Auth via cookie or Bearer.",
+      responses: {
+        "200": {
+          description: "Always not connected.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({
+                  connected: z.literal(false),
+                  configured: z.literal(false),
+                  retired: z.literal(true),
+                }),
+                "FitbitRetiredStatusEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
   "/api/integrations/fitbit-removal-notice/dismiss": {
     post: {
       tags: ["Integrations"],

@@ -189,7 +189,10 @@
   same devices and needs one new consent from your Google account. On
   Android you can also import a Health Connect export, since the Fitbit app
   writes to Health Connect. The Fitbit app does not write to Apple Health, so
-  Apple Health is not a way round it.
+  Apple Health is not a way round it. For iPhone app builds that still show
+  a Fitbit card, `GET /api/fitbit/status` keeps answering "not connected"
+  (with `retired: true`), and the integration's other routes answer 410
+  `route.retired` instead of 404.
 
 ### Fixed
 

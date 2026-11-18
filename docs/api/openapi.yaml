@@ -23686,6 +23686,28 @@ paths:
         "403": *a9
         "422": *a4
         "429": *a5
+  /api/fitbit/status:
+    get:
+      tags:
+        - Integrations
+      summary: The removed Fitbit integration, reported as not connected
+      deprecated: true
+      description: "Google turned the Fitbit Web API off on 2026-10-30 and the Fitbit integration was removed in v1.48.0. This
+        status stays for app builds that read it on every open of their integrations screen: it always answers
+        `connected: false`, `configured: false` and `retired: true`, in the shape it had before. The integration's other
+        routes answer 410 `route.retired`. It will be removed once no supported app build reads it. Auth via cookie or
+        Bearer."
+      responses:
+        "200":
+          description: Always not connected.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FitbitRetiredStatusEnvelope"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
   /api/integrations/fitbit-removal-notice/dismiss:
     post:
       tags:
@@ -28928,6 +28950,193 @@ paths:
       responses:
         "410":
           description: The path was removed in v1.46.0 and will not answer again. `meta.errorCode` = `route.retired`,
+            `meta.removedIn` carries the version, and `meta.replacedBy` carries the replacement path or null.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /api/fitbit/credentials:
+    get:
+      security: []
+      deprecated: true
+      tags:
+        - Retired
+      summary: GET /api/fitbit/credentials — removed in v1.48.0
+      description: >-
+        Removed in v1.48.0. Every request to this path answers 410 Gone, whatever the method and whatever credential it
+        carries. There is no replacement; the capability is gone rather than moved.
+
+
+        Google turned the Fitbit Web API off on 30 October 2026 and the Fitbit integration was removed. Fitbit and Pixel
+        Watch data reaches HealthLog through Google Health or Health Connect; readings imported from Fitbit stay.
+
+
+        Retiring a path is deliberate, so the answer says so rather than leaving a client to read a 404 as a broken
+        deployment and retry forever. Treat 410 as terminal: drop the call, degrade the surface that depended on it, and
+        do not offer a retry.
+      responses:
+        "410":
+          description: The path was removed in v1.48.0 and will not answer again. `meta.errorCode` = `route.retired`,
+            `meta.removedIn` carries the version, and `meta.replacedBy` carries the replacement path or null.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    put:
+      security: []
+      deprecated: true
+      tags:
+        - Retired
+      summary: PUT /api/fitbit/credentials — removed in v1.48.0
+      description: >-
+        Removed in v1.48.0. Every request to this path answers 410 Gone, whatever the method and whatever credential it
+        carries. There is no replacement; the capability is gone rather than moved.
+
+
+        Google turned the Fitbit Web API off on 30 October 2026 and the Fitbit integration was removed. Fitbit and Pixel
+        Watch data reaches HealthLog through Google Health or Health Connect; readings imported from Fitbit stay.
+
+
+        Retiring a path is deliberate, so the answer says so rather than leaving a client to read a 404 as a broken
+        deployment and retry forever. Treat 410 as terminal: drop the call, degrade the surface that depended on it, and
+        do not offer a retry.
+      responses:
+        "410":
+          description: The path was removed in v1.48.0 and will not answer again. `meta.errorCode` = `route.retired`,
+            `meta.removedIn` carries the version, and `meta.replacedBy` carries the replacement path or null.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    delete:
+      security: []
+      deprecated: true
+      tags:
+        - Retired
+      summary: DELETE /api/fitbit/credentials — removed in v1.48.0
+      description: >-
+        Removed in v1.48.0. Every request to this path answers 410 Gone, whatever the method and whatever credential it
+        carries. There is no replacement; the capability is gone rather than moved.
+
+
+        Google turned the Fitbit Web API off on 30 October 2026 and the Fitbit integration was removed. Fitbit and Pixel
+        Watch data reaches HealthLog through Google Health or Health Connect; readings imported from Fitbit stay.
+
+
+        Retiring a path is deliberate, so the answer says so rather than leaving a client to read a 404 as a broken
+        deployment and retry forever. Treat 410 as terminal: drop the call, degrade the surface that depended on it, and
+        do not offer a retry.
+      responses:
+        "410":
+          description: The path was removed in v1.48.0 and will not answer again. `meta.errorCode` = `route.retired`,
+            `meta.removedIn` carries the version, and `meta.replacedBy` carries the replacement path or null.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /api/fitbit/disconnect:
+    post:
+      security: []
+      deprecated: true
+      tags:
+        - Retired
+      summary: POST /api/fitbit/disconnect — removed in v1.48.0
+      description: >-
+        Removed in v1.48.0. Every request to this path answers 410 Gone, whatever the method and whatever credential it
+        carries. There is no replacement; the capability is gone rather than moved.
+
+
+        Google turned the Fitbit Web API off on 30 October 2026 and the Fitbit integration was removed. Fitbit and Pixel
+        Watch data reaches HealthLog through Google Health or Health Connect; readings imported from Fitbit stay.
+
+
+        Retiring a path is deliberate, so the answer says so rather than leaving a client to read a 404 as a broken
+        deployment and retry forever. Treat 410 as terminal: drop the call, degrade the surface that depended on it, and
+        do not offer a retry.
+      responses:
+        "410":
+          description: The path was removed in v1.48.0 and will not answer again. `meta.errorCode` = `route.retired`,
+            `meta.removedIn` carries the version, and `meta.replacedBy` carries the replacement path or null.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /api/fitbit/sync:
+    post:
+      security: []
+      deprecated: true
+      tags:
+        - Retired
+      summary: POST /api/fitbit/sync — removed in v1.48.0
+      description: >-
+        Removed in v1.48.0. Every request to this path answers 410 Gone, whatever the method and whatever credential it
+        carries. There is no replacement; the capability is gone rather than moved.
+
+
+        Google turned the Fitbit Web API off on 30 October 2026 and the Fitbit integration was removed. Fitbit and Pixel
+        Watch data reaches HealthLog through Google Health or Health Connect; readings imported from Fitbit stay.
+
+
+        Retiring a path is deliberate, so the answer says so rather than leaving a client to read a 404 as a broken
+        deployment and retry forever. Treat 410 as terminal: drop the call, degrade the surface that depended on it, and
+        do not offer a retry.
+      responses:
+        "410":
+          description: The path was removed in v1.48.0 and will not answer again. `meta.errorCode` = `route.retired`,
+            `meta.removedIn` carries the version, and `meta.replacedBy` carries the replacement path or null.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /api/integrations/fitbit/resume:
+    post:
+      security: []
+      deprecated: true
+      tags:
+        - Retired
+      summary: POST /api/integrations/fitbit/resume — removed in v1.48.0
+      description: >-
+        Removed in v1.48.0. Every request to this path answers 410 Gone, whatever the method and whatever credential it
+        carries. There is no replacement; the capability is gone rather than moved.
+
+
+        Google turned the Fitbit Web API off on 30 October 2026 and the Fitbit integration was removed. Fitbit and Pixel
+        Watch data reaches HealthLog through Google Health or Health Connect; readings imported from Fitbit stay.
+
+
+        Retiring a path is deliberate, so the answer says so rather than leaving a client to read a 404 as a broken
+        deployment and retry forever. Treat 410 as terminal: drop the call, degrade the surface that depended on it, and
+        do not offer a retry.
+      responses:
+        "410":
+          description: The path was removed in v1.48.0 and will not answer again. `meta.errorCode` = `route.retired`,
+            `meta.removedIn` carries the version, and `meta.replacedBy` carries the replacement path or null.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /api/integrations/fitbit/test:
+    post:
+      security: []
+      deprecated: true
+      tags:
+        - Retired
+      summary: POST /api/integrations/fitbit/test — removed in v1.48.0
+      description: >-
+        Removed in v1.48.0. Every request to this path answers 410 Gone, whatever the method and whatever credential it
+        carries. There is no replacement; the capability is gone rather than moved.
+
+
+        Google turned the Fitbit Web API off on 30 October 2026 and the Fitbit integration was removed. Fitbit and Pixel
+        Watch data reaches HealthLog through Google Health or Health Connect; readings imported from Fitbit stay.
+
+
+        Retiring a path is deliberate, so the answer says so rather than leaving a client to read a 404 as a broken
+        deployment and retry forever. Treat 410 as terminal: drop the call, degrade the surface that depended on it, and
+        do not offer a retry.
+      responses:
+        "410":
+          description: The path was removed in v1.48.0 and will not answer again. `meta.errorCode` = `route.retired`,
             `meta.removedIn` carries the version, and `meta.replacedBy` carries the replacement path or null.
           content:
             application/json:
@@ -90698,6 +90907,38 @@ components:
       additionalProperties: false
       description: Per-metric-type last-seen timestamp with the server-computed staleness flag. Only types that have actually
         delivered appear — absence is absence, never an invented row.
+    FitbitRetiredStatusEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            connected:
+              type: boolean
+              const: false
+            configured:
+              type: boolean
+              const: false
+            retired:
+              type: boolean
+              const: true
+          required:
+            - connected
+            - configured
+            - retired
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
     FitbitRemovalNoticeDismissEnvelope:
       type: object
       properties:
