@@ -1438,6 +1438,7 @@
       "openIllness": "Otwórz"
     },
     "sourceNotification": "Powiadomienie",
+    "sourceAppleHealth": "Apple Health",
     "tagCatalogLoadError": "Nie udało się załadować tagów."
   },
   "medications": {
@@ -11658,7 +11659,7 @@
       "bandLabel": "Kategoria",
       "answersToggle": "Odpowiedzi",
       "answersUnavailable": "Nie można odszyfrować zapisanych odpowiedzi tego sprawdzenia.",
-      "answersNotShared": "Wypełnione w aplikacji Zdrowie. Udostępniono tylko wynik, bez odpowiedzi."
+      "answersNotShared": "Wypełnione w Apple Health. Udostępniono tylko wynik, bez odpowiedzi."
     },
     "crisis": {
       "title": "Nie musisz mierzyć się z tym sam(a)",

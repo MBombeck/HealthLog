@@ -1438,6 +1438,7 @@
       "openIllness": "Ouvrir"
     },
     "sourceNotification": "Notification",
+    "sourceAppleHealth": "Apple Health",
     "tagCatalogLoadError": "Impossible de charger les étiquettes."
   },
   "medications": {
@@ -11658,7 +11659,7 @@
       "bandLabel": "Catégorie",
       "answersToggle": "Réponses",
       "answersUnavailable": "Les réponses enregistrées de ce bilan ne peuvent pas être déchiffrées.",
-      "answersNotShared": "Rempli dans Apple Santé. Seul le score a été partagé, pas les réponses."
+      "answersNotShared": "Rempli dans Apple Health. Seul le score a été partagé, pas les réponses."
     },
     "crisis": {
       "title": "Vous n'avez pas à affronter cela seul(e)",

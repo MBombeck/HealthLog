@@ -1438,6 +1438,7 @@
       "openIllness": "Открыть"
     },
     "sourceNotification": "Уведомление",
+    "sourceAppleHealth": "Apple Health",
     "tagCatalogLoadError": "Не удалось загрузить теги."
   },
   "medications": {
@@ -11658,7 +11659,7 @@
       "bandLabel": "Категория",
       "answersToggle": "Ответы",
       "answersUnavailable": "Сохранённые ответы этого опросника не удаётся расшифровать.",
-      "answersNotShared": "Заполнено в приложении «Здоровье». Передан только балл, без ответов."
+      "answersNotShared": "Заполнено в Apple Health. Передан только балл, без ответов."
     },
     "crisis": {
       "title": "Вам не обязательно справляться с этим в одиночку",

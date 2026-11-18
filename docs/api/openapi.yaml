@@ -5592,6 +5592,154 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
+  /api/workouts/by-external-ids:
+    delete:
+      tags:
+        - Measurements
+      summary: Delete Apple Health workouts by external ID
+      description: Removes the workouts whose externalId is listed, with the personal records they set; the records are
+        re-derived afterwards. Workouts carry no tombstone, so the rows go outright and a later re-post of the same
+        externalId inserts the workout again. Only the caller's own rows with `source = APPLE_HEALTH` are matched; an id
+        naming anything else is a no-op, never an error. Idempotent. Cookie session or a wildcard Bearer token (the
+        native login); a narrow-scope token is refused 403. Metered by the shared per-account write bucket.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExternalIdDeleteRequest"
+      responses:
+        "200":
+          description: Delete batch processed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkoutsDeleteByExternalIdsResponse"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a12
+  /api/insights/ecg/by-external-ids:
+    delete:
+      tags:
+        - Insights
+      summary: Delete Apple Health ECG recordings by external ID
+      description: Removes the ECG recordings whose `externalRecordingId` (the id `POST /api/insights/ecg` stored) is listed,
+        waveform included. A paired rhythm notification is a measurement of its own and stays. Recordings carry no
+        tombstone, so a later re-post of the same id inserts the recording again. Only the caller's own rows with
+        `source = APPLE_HEALTH` are matched; an id naming anything else is a no-op, never an error. Idempotent. Cookie
+        session or a wildcard Bearer token (the native login); a narrow-scope token is refused 403. Metered by the
+        shared per-account write bucket.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExternalIdDeleteRequest"
+      responses:
+        "200":
+          description: Delete batch processed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EcgDeleteByExternalIdsResponse"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a12
+  /api/cycle/day-logs/by-external-ids:
+    delete:
+      tags:
+        - Cycle
+      summary: Delete Apple Health cycle day-logs by external ID
+      description: "Soft-deletes the day-logs whose externalId is listed, each as `DELETE /api/cycle/day-logs/{id}` does: the
+        tombstone reaches `/api/sync/changes`, and a day that opened a cycle takes that cycle with it, the cycle before
+        it re-anchored. A later re-post of the same externalId through `POST /api/cycle/day-logs/bulk` brings the day
+        back. Only the caller's own rows with `source = APPLE_HEALTH` are matched; an id naming anything else is a
+        no-op, never an error. Idempotent. Cookie session or a wildcard Bearer token (the native login); a narrow-scope
+        token is refused 403. Metered by the shared per-account write bucket."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExternalIdDeleteRequest"
+      responses:
+        "200":
+          description: Delete batch processed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CycleDayLogsDeleteByExternalIdsResponse"
+        "401": *a1
+        "403":
+          description: "`meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
+            generic auth gate answers it before the route's own checks run. Otherwise: Cycle tracking is not enabled for
+            this account (errorCode `cycle.disabled`)."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a12
+  /api/mood-entries/by-external-ids:
+    delete:
+      tags:
+        - Mood
+      summary: Delete Apple Health State of Mind entries by external ID
+      description: "Soft-deletes the mood entries posted with `source = APPLE_HEALTH` whose externalId is listed, each as
+        `DELETE /api/mood-entries/{id}` does; the tombstone reaches `/api/sync/changes`. A mood logged in HealthLog
+        itself is never touched. A later re-post of a deleted externalId stays deleted: `POST /api/mood-entries/bulk`
+        answers `duplicate`. Only the caller's own rows with `source = APPLE_HEALTH` are matched; an id naming anything
+        else is a no-op, never an error. Idempotent. Cookie session or a wildcard Bearer token (the native login); a
+        narrow-scope token is refused 403. Metered by the shared per-account write bucket."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExternalIdDeleteRequest"
+      responses:
+        "200":
+          description: Delete batch processed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MoodEntriesDeleteByExternalIdsResponse"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a12
+  /api/medications/intake/by-external-ids:
+    delete:
+      tags:
+        - Medications
+      summary: Delete Apple Health dose records by external ID
+      description: "Soft-deletes the intake events posted with `source = APPLE_HEALTH` whose externalId (the HealthKit
+        dose-event UUID) is listed, each as `DELETE /api/medications/{id}/intake/{eventId}` does: the stock it consumed
+        is refunded, the tombstone reaches `/api/sync/changes`, and a one-shot medication whose only dose it was becomes
+        active again. The caller's other devices get one silent intake-sync push (the device named by `x-device-id` is
+        skipped). A later re-post of the same externalId through `POST /api/medications/intake/bulk` inserts a new dose:
+        a tombstone never blocks the ledger. Only the caller's own rows with `source = APPLE_HEALTH` are matched; an id
+        naming anything else is a no-op, never an error. Idempotent. Cookie session or a wildcard Bearer token (the
+        native login); a narrow-scope token is refused 403. Metered by the shared per-account write bucket."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExternalIdDeleteRequest"
+      responses:
+        "200":
+          description: Delete batch processed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MedicationIntakesDeleteByExternalIdsResponse"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a12
   /api/activity/calendar:
     get:
       tags:
@@ -15288,6 +15436,7 @@ paths:
               - TELEGRAM
               - DAYLIO
               - NOTIFICATION
+              - APPLE_HEALTH
         - in: query
           name: from
           schema:
@@ -31145,6 +31294,22 @@ components:
         speedMs?, power?, cadence? }]`, up to 30 000 points). The `samples` series is the strain-engine input for indoor
         workouts that have no GPS route. Up to 100 workouts per call; nested route geometry capped at 20 000 points.
         Withings server-to-server callers pass source: WITHINGS and ship no route (Withings reports aggregates only)."
+    ExternalIdDeleteRequest:
+      type: object
+      properties:
+        externalIds:
+          maxItems: 500
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 120
+      required:
+        - externalIds
+      additionalProperties: false
+      description: "The externalIds of Apple Health samples the app no longer finds in HealthKit. At most 500; more is refused
+        422 with `meta.errorCode` `<domain>.delete.too_large`, a malformed body 422 with `<domain>.delete.invalid`.
+        Duplicates in the list count once. An empty list answers `{ deletedCount: 0 }`."
     ActivityGoalsPatch:
       type: object
       properties:
@@ -34467,6 +34632,7 @@ components:
             - TELEGRAM
             - DAYLIO
             - NOTIFICATION
+            - APPLE_HEALTH
         externalId:
           description: "iOS-side source-stable id for idempotent dedup on the `(userId, source, externalId)` key. Must be stable
             across app restarts — an object description or memory address (`<Class: 0x…>`, `0x12ab34cd`) is a new value
@@ -34988,6 +35154,7 @@ components:
             - TELEGRAM
             - DAYLIO
             - NOTIFICATION
+            - APPLE_HEALTH
         externalId:
           type: string
           minLength: 1
@@ -56613,6 +56780,103 @@ components:
       required:
         - index
         - status
+      additionalProperties: false
+    WorkoutsDeleteByExternalIdsResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ExternalIdDeleteResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    ExternalIdDeleteResult:
+      type: object
+      properties:
+        deletedCount:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          description: Rows this call deleted. An id that matched nothing, matched a row of another source or account, or was
+            already deleted is not counted.
+      required:
+        - deletedCount
+      additionalProperties: false
+    EcgDeleteByExternalIdsResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ExternalIdDeleteResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    CycleDayLogsDeleteByExternalIdsResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ExternalIdDeleteResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    MoodEntriesDeleteByExternalIdsResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ExternalIdDeleteResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    MedicationIntakesDeleteByExternalIdsResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ExternalIdDeleteResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
       additionalProperties: false
     ActivityCalendarEnvelope:
       type: object
@@ -78264,6 +78528,7 @@ components:
             - TELEGRAM
             - DAYLIO
             - NOTIFICATION
+            - APPLE_HEALTH
         externalId:
           description: The sync client's source-stable dedup id, or null.
           type:

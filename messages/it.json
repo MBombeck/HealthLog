@@ -1438,6 +1438,7 @@
       "openIllness": "Apri"
     },
     "sourceNotification": "Notifica",
+    "sourceAppleHealth": "Apple Health",
     "tagCatalogLoadError": "Impossibile caricare le etichette."
   },
   "medications": {
@@ -11658,7 +11659,7 @@
       "bandLabel": "Categoria",
       "answersToggle": "Risposte",
       "answersUnavailable": "Le risposte salvate di questo check-in non possono essere decifrate.",
-      "answersNotShared": "Compilato in Apple Salute. È stato condiviso solo il punteggio, non le risposte."
+      "answersNotShared": "Compilato in Apple Health. È stato condiviso solo il punteggio, non le risposte."
     },
     "crisis": {
       "title": "Non devi affrontare tutto questo da solo/a",

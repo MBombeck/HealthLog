@@ -1438,6 +1438,7 @@
       "openIllness": "Abrir"
     },
     "sourceNotification": "Notificação",
+    "sourceAppleHealth": "Apple Health",
     "tagCatalogLoadError": "Não foi possível carregar as tags."
   },
   "medications": {
@@ -11658,7 +11659,7 @@
       "bandLabel": "Categoria",
       "answersToggle": "Respostas",
       "answersUnavailable": "As respostas armazenadas para este check-in não podem ser descriptografadas.",
-      "answersNotShared": "Respondido no app Saúde. Só a pontuação foi compartilhada, não as respostas."
+      "answersNotShared": "Respondido no Apple Health. Só a pontuação foi compartilhada, não as respostas."
     },
     "crisis": {
       "title": "Você não precisa enfrentar isso sozinho",

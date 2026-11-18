@@ -1438,6 +1438,7 @@
       "openIllness": "Openen"
     },
     "sourceNotification": "Melding",
+    "sourceAppleHealth": "Apple Health",
     "tagCatalogLoadError": "De tags konden niet worden geladen."
   },
   "medications": {
@@ -11658,7 +11659,7 @@
       "bandLabel": "Categorie",
       "answersToggle": "Antwoorden",
       "answersUnavailable": "De opgeslagen antwoorden van deze check-in kunnen niet worden ontsleuteld.",
-      "answersNotShared": "Ingevuld in Apple Gezondheid. Alleen de score is gedeeld, niet de antwoorden."
+      "answersNotShared": "Ingevuld in Apple Health. Alleen de score is gedeeld, niet de antwoorden."
     },
     "crisis": {
       "title": "Je hoeft dit niet alleen te doen",

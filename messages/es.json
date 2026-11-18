@@ -1438,6 +1438,7 @@
       "openIllness": "Abrir"
     },
     "sourceNotification": "Notificación",
+    "sourceAppleHealth": "Apple Health",
     "tagCatalogLoadError": "No se pudieron cargar las etiquetas."
   },
   "medications": {

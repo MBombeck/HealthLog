@@ -39,6 +39,14 @@
   report, and keep their answers when Apple Health shares them; one that
   shares only its score says so instead of showing answers. With the mental
   health module turned off, none of them is stored.
+- Deleting a workout, an ECG, a cycle day, a State of Mind entry or a dose in
+  Apple Health now removes it in HealthLog too, once the iPhone app sends the
+  deletion. Before, only measurements followed, so editing one of these in
+  Apple Health left the old copy beside the new one. For the app:
+  `DELETE /api/workouts/by-external-ids`, `/api/insights/ecg/by-external-ids`,
+  `/api/cycle/day-logs/by-external-ids`, `/api/mood-entries/by-external-ids`
+  and `/api/medications/intake/by-external-ids`, shaped like the measurements
+  one; mood entries take `APPLE_HEALTH` as their source for this.
 - The day view lists the day's nutrient totals, so tapping a bar on a
   nutrient chart opens a day that shows it. An opt-in energy tile for the
   dashboard is available under Settings > Dashboard. (#1402)
