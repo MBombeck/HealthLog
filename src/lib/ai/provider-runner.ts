@@ -26,6 +26,7 @@ import {
   resolveTotalCapFor,
   type BudgetSurface,
 } from "@/lib/ai/coach/budget";
+import { resolveEffectivePolicyCap } from "./reasoning/controls";
 
 /**
  * The local model is the guaranteed floor (Epic B Pillar 4): a
@@ -727,6 +728,38 @@ async function runRawChain(
   throw new AllProvidersFailedError([...hops, ...benchedHops]);
 }
 
+async function normalizeCandidateParams(
+  candidate: ProviderChainResolved,
+  params: CompletionParams,
+  args: ChainWalkArgs,
+): Promise<CompletionParams> {
+  if (candidate.providerType !== "antigravity") {
+    // Preserve non-agy wire: if deliberate off was passed on background jobs,
+    // or if reasoning was omitted on the original request, strip reasoning.
+    if (!args.params.reasoning || (args.surface === "job" && params.reasoning?.effort === "off")) {
+      return { ...params, reasoning: undefined };
+    }
+    return params;
+  }
+
+  // Candidate is Antigravity:
+  // If params.reasoning?.maxEffort is already present (e.g. resolveJobReasoning or Coach turn set it),
+  // retain it. Otherwise independently carry the effective administrative/record cap.
+  const existingMaxEffort = params.reasoning?.maxEffort;
+  const effectiveCap = existingMaxEffort ?? (await resolveEffectivePolicyCap(args.userId, args.surface));
+
+  return {
+    ...params,
+    reasoning: {
+      ...params.reasoning,
+      effort: params.reasoning?.effort as any,
+      summaries: params.reasoning?.summaries ?? false,
+      maxEffort: effectiveCap,
+      ...(params.reasoning?.explicit !== undefined ? { explicit: params.reasoning.explicit } : {}),
+    },
+  };
+}
+
 /**
  * v1.22 (#89) — streaming sibling of {@link runRawCompletionWithFallback}.
  * Identical chain / fallback / health-ledger semantics (via {@link runRawChain}),
@@ -750,10 +783,12 @@ export async function runStreamingRawCompletionWithFallback(
     args,
     // Prefer the provider's streaming wire; fall back to the buffered call for
     // providers (cloud clients today) that do not implement streaming.
-    (candidate) =>
-      candidate.instance.generateCompletionStream
-        ? candidate.instance.generateCompletionStream(params, args.onDelta)
-        : candidate.instance.generateCompletion(params),
+    async (candidate) => {
+      const candidateParams = await normalizeCandidateParams(candidate, params, args);
+      return candidate.instance.generateCompletionStream
+        ? candidate.instance.generateCompletionStream(candidateParams, args.onDelta)
+        : candidate.instance.generateCompletion(candidateParams);
+    },
     (candidate) => ({
       ai_chain_streamed: Boolean(candidate.instance.generateCompletionStream),
     }),
@@ -794,7 +829,8 @@ export async function runRawCompletionWithFallback(
 ): Promise<RunRawWithFallbackResult> {
   const params: CompletionParams =
     args.surface === "job" ? { ...args.params, unattended: true } : args.params;
-  return runRawChain(args, (candidate) =>
-    candidate.instance.generateCompletion(params),
-  );
+  return runRawChain(args, async (candidate) => {
+    const candidateParams = await normalizeCandidateParams(candidate, params, args);
+    return candidate.instance.generateCompletion(candidateParams);
+  });
 }

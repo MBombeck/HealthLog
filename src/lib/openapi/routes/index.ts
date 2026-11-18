@@ -97,6 +97,7 @@ import { settingsPaths } from "./settings";
 import { symptomPaths } from "./symptoms";
 import { syncPaths } from "./sync";
 import { workoutPaths } from "./workouts";
+import { antigravityPaths } from "./antigravity";
 import { coachPrefsSchema, withScopeRefusal } from "./shared";
 
 const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
@@ -206,6 +207,9 @@ const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   ...lifeCircumstancesPaths,
   ...dawarichPaths,
   ...relationLinkPaths,
+  // Antigravity CLI provider routes (appended, spread order is
+  // load-bearing).
+  ...antigravityPaths,
   // The environmental-context overview. Its own module because nothing else
   // owns the surface (appended, spread order is load-bearing).
   //

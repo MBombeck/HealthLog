@@ -1,5 +1,5 @@
 import type { ReasoningEffort } from "./reasoning-effort";
-import type { ReasoningLevel } from "./reasoning/levels";
+import type { ReasoningLevel, ReasoningMaxEffort } from "./reasoning/levels";
 import { z } from "zod/v4";
 
 // ─── Insight Result Schema ─────────────────────────────────
@@ -112,8 +112,15 @@ export type InsightResult = z.infer<typeof insightResultSchema>;
 // the user owns, so it is a distinct runtime tag from `admin-key`: logs,
 // analytics and the budget classifier must be able to tell "the operator's
 // OpenAI key" from "an endpoint someone pointed us at".
+// `antigravity` is the Antigravity CLI (agy) ACP provider.
 export type ProviderType =
-  "codex" | "admin-key" | "openai-compatible" | "anthropic" | "local" | "none";
+  | "codex"
+  | "admin-key"
+  | "openai-compatible"
+  | "anthropic"
+  | "local"
+  | "antigravity"
+  | "none";
 
 export interface AIProvider {
   type: ProviderType;
@@ -141,6 +148,11 @@ export interface AIProvider {
    * ever stamped with a value. `null` / absent → Default: the key is not sent.
    */
   reasoningEffort?: ReasoningEffort | null;
+  /**
+   * Effective administrative/record reasoning cap for this provider instance
+   * (e.g. for Antigravity, where the operator cap or frugal level clamps saved effort).
+   */
+  policyCap?: import("./reasoning/levels").ReasoningLevel | null;
   generateCompletion(params: CompletionParams): Promise<CompletionResult>;
   /**
    * v1.22 (#89) — optional true-streaming variant. A provider that can emit
@@ -382,7 +394,13 @@ export interface CompletionParams {
    * summaries where the provider offers them. Absent → today's behaviour: the
    * client sends exactly what it sent before the field existed.
    */
-  reasoning?: { effort: ReasoningLevel; summaries: boolean };
+  reasoning?: {
+    effort: ReasoningLevel;
+    summaries: boolean;
+    maxEffort?: ReasoningLevel;
+    source?: import("./reasoning/resolve").ReasoningSource;
+    explicit?: boolean;
+  };
   /**
    * #1276 — no person reads this reply as it streams: the call runs as
    * background work. Set by the chain runner for every `"job"` walk, never by

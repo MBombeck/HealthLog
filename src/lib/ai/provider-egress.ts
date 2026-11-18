@@ -27,6 +27,21 @@ export function isOperatorHeldProvider(providerType: string): boolean {
 }
 
 /**
+ * Providers whose calls need an active consent receipt before any health data
+ * leaves. Operator-held providers are in the set, and so is Antigravity. It
+ * sends data to an external Google service, and the architecture doc requires
+ * consent before its first use.
+ */
+const CONSENT_GATED_PROVIDER_TYPES: ReadonlySet<string> = new Set([
+  ...OPERATOR_HELD_PROVIDER_TYPES,
+  "antigravity",
+]);
+
+export function isConsentGatedProvider(providerType: string): boolean {
+  return CONSENT_GATED_PROVIDER_TYPES.has(providerType);
+}
+
+/**
  * True when this provider sends its input OFF the machine to a third-party AI
  * service. Only the self-hosted `local` provider keeps it on the operator's
  * own infrastructure.

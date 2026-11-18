@@ -364,11 +364,13 @@ export interface AiProviderState {
 }
 
 /**
- * Whose credential an operator-held provider sends through: the operator's
- * API key (`admin-openai`) or the operator's shared ChatGPT account
- * (`admin-codex`).
+ * Whose credential the data is sent with. `operator_key` is the operator's API
+ * key (`admin-openai`). `operator_chatgpt` is the operator's shared ChatGPT
+ * account (`admin-codex`). `antigravity_cli` is the person's own Antigravity
+ * login, used through the local `agy` CLI.
  */
-export type AiConsentRecipientVia = "operator_key" | "operator_chatgpt";
+export type AiConsentRecipientVia =
+  "operator_key" | "operator_chatgpt" | "antigravity_cli";
 
 /** One service a record's data would go to on the operator's credential. */
 export interface AiConsentRecipient {

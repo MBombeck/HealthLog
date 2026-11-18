@@ -178,9 +178,28 @@ describe("the connection test under ALLOW_LOCAL_AI_PRIVATE_HOSTS=true", () => {
         aiBaseUrl: "http://10.0.0.5:11434/v1",
       }),
     );
-    await expect(resolveProviderForTest("u-1")).rejects.toBeInstanceOf(
-      AITestConfigError,
+    await expect(
+      resolveProviderForTest("u-1", { provider: "LOCAL" }),
+    ).rejects.toBeInstanceOf(AITestConfigError);
+  });
+
+  it("keeps the public-host guard when testing the active chain", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(
+      row("USER", {
+        aiProvider: "LOCAL",
+        aiBaseUrl: "http://10.0.0.5:11434/v1",
+        aiProviderChain: [
+          { providerType: "local", priority: 1, enabled: true },
+        ],
+      }),
     );
+    const provider = await resolveProviderForTest("u-1");
+    await provider.generateCompletion(
+      singleUserTurn({ system: "s", user: "u" }),
+    );
+    expect(safeFetch.mock.calls[0][2]).toMatchObject({
+      requirePublicHost: true,
+    });
   });
 
   it("resolves an admin account's private endpoint", async () => {

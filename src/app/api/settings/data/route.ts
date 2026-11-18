@@ -1,5 +1,6 @@
 import { releaseUnbackedClientApps } from "@/lib/integrations/oauth-kit/connect-target";
 import { prisma } from "@/lib/db";
+import { removeAntigravityProfiles } from "@/lib/ai/antigravity-profile-cleanup";
 import { auditLog } from "@/lib/auth/audit";
 import {
   kickOffhostPurge,
@@ -114,6 +115,12 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
     }
   }
 
+  // The Antigravity profile is read before the wipe clears the pointer to it.
+  const antigravityProfile = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { antigravityProfileId: true },
+  });
+
   let counts: Record<string, number>;
   try {
     counts = await prisma.$transaction(
@@ -183,6 +190,9 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
   }
 
   const deletedRows = Object.values(counts).reduce((sum, n) => sum + n, 0);
+
+  // The CLI login is a credential of the person, so it goes with the rest.
+  await removeAntigravityProfiles([antigravityProfile?.antigravityProfileId]);
 
   // Written after the transaction commits, so the row cannot be removed by the
   // AuditLog delete inside it. The person's whole audit history goes; this one

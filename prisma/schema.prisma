@@ -153,6 +153,20 @@ model User {
   // train-by-default account bound by the operator's rate limits — consent-gated
   // exactly like any other server-managed egress.
   useCentralCodex             Boolean   @default(false) @map("use_central_codex")
+
+  // Antigravity CLI provider configuration.
+  // The CLI authenticates independently (via `agy acp --login`), so HealthLog
+  // stores NO credentials — only a profile identifier and runtime metadata.
+  // The profile lives under ANTIGRAVITY_PROFILE_ROOT when set, otherwise the
+  // CLI uses its default location (~/.gemini/antigravity-cli).
+  antigravityProfileId        String?   @map("antigravity_profile_id")
+  antigravityModel            String?   @map("antigravity_model")
+  antigravityConnectionStatus String    @default("disconnected") @map("antigravity_connection_status") // "disconnected" | "connected" | "auth_required" | "error"
+  antigravityConnectedAt      DateTime? @map("antigravity_connected_at")
+  /// Capabilities from the last ACP initialize negotiation (promptCapabilities,
+  /// CLI version, etc.). NOT a dump of stderr or user data.
+  antigravityCapabilitiesJson Json?     @map("antigravity_capabilities_json")
+
   insightsPrivacyMode         String    @default("aggregated") @map("insights_privacy_mode") // "aggregated" | "raw"
   insightsCachedAt            DateTime? @map("insights_cached_at")
   /// v1.43.7 — the cached AI insights payload (briefing, per-domain readings,

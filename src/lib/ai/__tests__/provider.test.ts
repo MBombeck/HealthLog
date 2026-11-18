@@ -38,6 +38,9 @@ import { decryptCodexCreds, encryptCodexCreds } from "@/lib/ai/codex-oauth";
  * We use mockResolvedValueOnce in order so each call returns the right shape.
  */
 
+/** The user row `findUnique` returns. Each test sets only the fields it reads. */
+type UserRowForTest = Awaited<ReturnType<typeof prisma.user.findUnique>>;
+
 describe("resolveProvider", () => {
   beforeEach(() => {
     // Reset mocks AND mockResolvedValueOnce queues, then re-establish
@@ -321,12 +324,12 @@ describe("resolveProviderForTest — empty override resolves via the chain", () 
     // resolveProviderChain reads the chain row. The chain enables openai
     // and the user has an OpenAI key → first chain entry is OpenAIClient.
     vi.mocked(prisma.user.findUnique)
-      // 1st: resolveProviderForTest's own read
+      // 1st: a stale selection must not override the active chain.
       .mockResolvedValueOnce({
-        aiProvider: null,
+        aiProvider: "ANTHROPIC",
         aiModel: null,
         aiBaseUrl: null,
-        aiAnthropicKeyEncrypted: null,
+        aiAnthropicKeyEncrypted: "enc-anthropic",
         aiLocalKeyEncrypted: null,
         aiOpenaiKeyEncrypted: "enc-user-openai",
       } as never)
@@ -366,6 +369,26 @@ describe("resolveProviderForTest — empty override resolves via the chain", () 
 
     const provider = await resolveProviderForTest("user-123", {});
     expect(provider.type).toBe("none");
+  });
+
+  it("uses an explicitly selected provider", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      aiProvider: "OPENAI",
+      aiAnthropicKeyEncrypted: "enc-anthropic",
+    } as unknown as UserRowForTest);
+    const provider = await resolveProviderForTest("user-123", {
+      provider: "ANTHROPIC",
+    });
+    expect(provider.type).toBe("anthropic");
+  });
+
+  it("rejects unsaved settings without an explicit provider", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(
+      {} as unknown as UserRowForTest,
+    );
+    await expect(
+      resolveProviderForTest("user-123", { model: "other" }),
+    ).rejects.toMatchObject({ name: "AITestConfigError", status: 422 });
   });
 });
 

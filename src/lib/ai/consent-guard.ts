@@ -32,7 +32,7 @@ import type { ConsentKind } from "@/lib/validations/consent";
 import type { ProviderChainResolved } from "@/lib/ai/provider-runner";
 import {
   isExternalProvider,
-  isOperatorHeldProvider,
+  isConsentGatedProvider,
 } from "@/lib/ai/provider-egress";
 
 /**
@@ -66,13 +66,14 @@ export class ConsentRequiredError extends Error {
 
 /**
  * True when the resolved provider chain contains at least one entry that
- * would egress via the operator's server-managed/global key. BYOK + local +
- * the user's own ChatGPT OAuth never trip this.
+ * sends health data to an external service that needs consent: an
+ * operator-held key (admin-openai, admin-codex) or Antigravity. BYOK and local
+ * providers never trip this.
  */
 export function chainRequiresServerManagedConsent(
   chain: ReadonlyArray<ProviderChainResolved>,
 ): boolean {
-  return chain.some((entry) => isOperatorHeldProvider(entry.providerType));
+  return chain.some((entry) => isConsentGatedProvider(entry.providerType));
 }
 
 /** The consent kinds that satisfy a given surface (the specific + the master). */

@@ -218,9 +218,9 @@ export const aiConsentState = z
       .array(
         z.object({
           via: z
-            .enum(["operator_key", "operator_chatgpt"])
+            .enum(["operator_key", "operator_chatgpt", "antigravity_cli"])
             .describe(
-              "`operator_key` — the operator's API key. `operator_chatgpt` — the operator's shared ChatGPT account.",
+              "`operator_key` — the operator's API key. `operator_chatgpt` — the operator's shared ChatGPT account. `antigravity_cli` — the person's own Antigravity login, through the local agy CLI.",
             ),
           name: z
             .string()

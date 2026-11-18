@@ -26,13 +26,14 @@ import {
   REASONING_EFFORTS,
 } from "@/lib/ai/reasoning-effort";
 
-/** The five provider kinds a user may select. */
+/** The six provider kinds a user may select. */
 export const AI_PROVIDER_KINDS = [
   "OPENAI",
   "ANTHROPIC",
   "LOCAL",
   "OPENAI_COMPATIBLE",
   "CHATGPT_OAUTH",
+  "ANTIGRAVITY_CLI",
 ] as const;
 
 export const aiProviderKindSchema = z.enum(AI_PROVIDER_KINDS);
@@ -185,7 +186,7 @@ export const providerChainEntrySchema = z
     reasoningEffort: reasoningEffortSchema
       .optional()
       .describe(
-        "Only on a `local` or `openai-compatible` entry; refused on any other. Omitted keeps the value already stored for that provider, `null` restores Default, `none` / `low` / `medium` / `high` are sent as `reasoning_effort`.",
+        "Only on a `local`, `openai-compatible` or `antigravity` entry; refused on any other. Omitted keeps the value already stored for that provider, `null` restores Default, `none` / `low` / `medium` / `high` are sent as reasoning effort.",
       ),
   })
   .strict()
@@ -198,7 +199,7 @@ export const providerChainEntrySchema = z
         code: "custom",
         path: ["reasoningEffort"],
         message:
-          "A reasoning setting applies to the local and openai-compatible providers only",
+          "A reasoning setting applies to the local, openai-compatible and antigravity providers only",
       });
     }
   });

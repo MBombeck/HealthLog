@@ -201,6 +201,13 @@ export const AI_BUDGETS = {
   ocrExtract: { temperature: 0, maxTokens: 8000, timeoutMs: 120_000 },
 
   /**
+   * Fallback text-layer extraction timeout for slower models or complex
+   * reports (e.g. Antigravity / Gemini 3.8 Flash). Raised to 240 s to give
+   * streaming room and prevent premature SIGTERM abortion.
+   */
+  ocrExtractFallback: { temperature: 0, maxTokens: 8000, timeoutMs: 240_000 },
+
+  /**
    * v1.43 — a supplement label photo read into its ingredients. One vision
    * call; a label lists a few dozen lines at most, so half the lab budget
    * holds the JSON with room for reasoning. Temperature 0: transcription.
@@ -231,7 +238,7 @@ export const AI_BUDGETS = {
    * diagnosis. 600 tokens covers 2-4 sentences plus headroom; a touch of
    * temperature for readable prose without drift.
    */
-  documentSummary: { temperature: 0.3, maxTokens: 600 },
+  documentSummary: { temperature: 0.3, maxTokens: 600, timeoutMs: 120_000 },
 
   /**
    * v1.27.22 — raw verbatim transcription of a document's text. Feeds the

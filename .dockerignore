@@ -52,6 +52,8 @@ public/sw-version.js
 # Captures from local debugging sessions.
 *.har
 *.heapsnapshot
+agy-profiles
+agy-profiles/
 
 # Editor worktrees and caches.
 .worktrees

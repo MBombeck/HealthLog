@@ -1,6 +1,28 @@
-# Changelog
-
 ## [Unreleased]
+### Added
+
+- **Antigravity CLI provider.** The Antigravity CLI (`agy`) can now be used
+  as an AI provider. Each user logs in with their own Google account through
+  the CLI, and HealthLog starts an isolated `agy acp` process per request —
+  no shared login, no credentials stored in the database. Connect the CLI in
+  Settings → AI, run the connection test, then add `Antigravity` to your
+  fallback chain.
+  - Text, image (JPEG / PNG / WebP) and PDF inputs are supported when the CLI
+    reports those capabilities during the connection handshake.
+  - Function calling is not supported (`supportsTools = false`); a chain that
+    includes Antigravity uses the existing no-tools Coach path.
+  - The model the CLI offers for your profile is shown in a picker and saved
+    per user; leaving it blank keeps the CLI's own default.
+  - Every permission request the agent sends is refused. The process runs in
+    an empty temporary workspace, with an allowlisted environment only, and
+    the workspace is deleted when the request ends.
+  - `ANTIGRAVITY_PROFILE_ROOT` — the operator sets this to a directory on the
+    host; HealthLog keeps one profile folder per user under it and never
+    shares logins across accounts.
+  - On disconnect, HealthLog forgets the profile pointer. The login files stay
+    in the profile folder on the host until the operator removes them; the
+    disconnect dialog shows the exact path.
+
 
 ## [1.47.6] — 2026-11-15
 

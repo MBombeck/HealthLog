@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { removeAntigravityProfiles } from "@/lib/ai/antigravity-profile-cleanup";
 import {
   apiHandler,
   requireAdmin,
@@ -101,6 +102,12 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
     details: { confirm: "DELETE ALL" },
   });
 
+  // Every account's Antigravity profile is read before the wipe clears them.
+  const antigravityProfiles = await prisma.user.findMany({
+    where: { antigravityProfileId: { not: null } },
+    select: { antigravityProfileId: true },
+  });
+
   const counts = await prisma.$transaction(
     async (tx) => {
       const perModel: Record<string, number> = {};
@@ -128,6 +135,10 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
   );
 
   const deletedRows = Object.values(counts).reduce((sum, n) => sum + n, 0);
+
+  await removeAntigravityProfiles(
+    antigravityProfiles.map((row) => row.antigravityProfileId),
+  );
 
   // Written after the transaction commits, so the row cannot be removed by the
   // AuditLog delete inside it. The instance's whole audit history goes; this
