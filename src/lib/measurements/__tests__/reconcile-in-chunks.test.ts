@@ -6,6 +6,8 @@
  */
 import { describe, expect, it, vi } from "vitest";
 
+import type { PrismaClient } from "@/generated/prisma/client";
+
 import {
   reconcileExternalMeasurementsInChunks,
   type ExternalMeasurementWrite,
@@ -25,9 +27,14 @@ function entry(i: number): ExternalMeasurementWrite {
 }
 
 function inserted(n: number): MeasurementReconciliationVerdict[] {
-  return Array.from({ length: n }, () => ({
+  return Array.from({ length: n }, (_, i) => ({
     status: "duplicate" as const,
-    row: {} as never,
+    row: {
+      id: `m${i}`,
+      type: "ACTIVITY_STEPS" as const,
+      measuredAt: new Date(Date.UTC(2026, 0, 1)),
+      externalId: `stats:steps:${i}`,
+    },
   }));
 }
 
@@ -36,20 +43,18 @@ describe("reconcileExternalMeasurementsInChunks", () => {
     const batch = Array.from({ length: 450 }, (_, i) => entry(i));
     const sizes = [200, 200, 50];
     let call = 0;
-    const db = {
-      $transaction: vi.fn(async () => {
-        call += 1;
-        if (call === 1) throw new Error("Transaction already closed");
-        return inserted(sizes[call - 1]!);
-      }),
+    const transaction = vi.fn(async () => {
+      call += 1;
+      if (call === 1) throw new Error("Transaction already closed");
+      return inserted(sizes[call - 1]!);
+    });
+    const db: Pick<PrismaClient, "$transaction"> = {
+      $transaction: transaction as PrismaClient["$transaction"],
     };
 
-    const verdicts = await reconcileExternalMeasurementsInChunks(
-      db as never,
-      batch,
-    );
+    const verdicts = await reconcileExternalMeasurementsInChunks(db, batch);
 
-    expect(db.$transaction).toHaveBeenCalledTimes(3);
+    expect(transaction).toHaveBeenCalledTimes(3);
     expect(verdicts).toHaveLength(450);
     expect(verdicts.slice(0, 200).every((v) => v.status === "failed")).toBe(
       true,
