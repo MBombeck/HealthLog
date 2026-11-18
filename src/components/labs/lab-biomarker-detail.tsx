@@ -38,6 +38,7 @@ import { ApiError, apiDelete, apiGet } from "@/lib/api/api-fetch";
 import { summarize, type DataSummary } from "@/lib/analytics/trends";
 import { BIOMARKER_CATALOG } from "@/lib/labs/biomarker-catalog";
 import { useTranslations } from "@/lib/i18n/context";
+import { LabSourceLine } from "./lab-source-line";
 import {
   getFallbackMessages,
   loadMessages,
@@ -480,6 +481,7 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
               {t("labs.detail.latestResult")}
             </p>
             <p className="text-2xl font-bold">{latest?.valueText ?? ""}</p>
+            {latest ? <LabSourceLine source={latest.source} /> : null}
           </CardContent>
         </Card>
       ) : (

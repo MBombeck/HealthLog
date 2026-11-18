@@ -14,13 +14,12 @@
  *
  * Each entry is the exact value the provider's client sends as `redirect_uri`
  * on the wire, through the same function, so what the page shows and what the
- * handshake registers cannot drift apart. Fitbit and Google Health validate
- * their URI and throw on a malformed configuration; here that surfaces as
+ * handshake registers cannot drift apart. Google Health validates
+ * its URI and throw on a malformed configuration; here that surfaces as
  * `null` (nothing would be registered), and the cards fall back to the fixed
  * path for the guide and skip the origin comparison.
  */
 
-import { fitbitOAuth } from "@/lib/fitbit/oauth";
 import { googleHealthOAuth } from "@/lib/google-health/oauth";
 import { ouraOAuth } from "@/lib/oura/oauth";
 import { polarOAuth } from "@/lib/polar/oauth";
@@ -31,7 +30,6 @@ import { withingsOAuth } from "@/lib/withings/oauth";
 export const INTEGRATION_CALLBACK_PROVIDERS = [
   "withings",
   "whoop",
-  "fitbit",
   "google-health",
   "polar",
   "oura",
@@ -50,7 +48,6 @@ export type IntegrationCallbackUrls = Record<
 const RESOLVERS: Record<IntegrationCallbackProvider, () => string> = {
   withings: withingsOAuth.redirectUri,
   whoop: whoopOAuth.redirectUri,
-  fitbit: fitbitOAuth.redirectUri,
   "google-health": googleHealthOAuth.redirectUri,
   polar: polarOAuth.redirectUri,
   oura: ouraOAuth.redirectUri,
@@ -74,7 +71,6 @@ export function getIntegrationCallbackUrls(): IntegrationCallbackUrls {
   return {
     withings: resolve("withings"),
     whoop: resolve("whoop"),
-    fitbit: resolve("fitbit"),
     "google-health": resolve("google-health"),
     polar: resolve("polar"),
     oura: resolve("oura"),

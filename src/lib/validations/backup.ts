@@ -67,6 +67,7 @@ import { intradayProfileBackupSchema } from "@/lib/export/intraday-profile-backu
 import {
   biomarkerBackupSchema,
   biomarkerMergeBackupSchema,
+  labResultImportKeyBackupSchema,
   labResultBackupSchema,
 } from "@/lib/export/labs-backup-schema";
 import { lifeEventBackupSchema } from "@/lib/export/life-events-backup-schema";
@@ -100,6 +101,11 @@ import {
   mentalHealthAssessmentBackupSchema,
 } from "@/lib/export/sensitive-backup-schema";
 import { symptomDefinitionBackupSchema } from "@/lib/export/symptoms-backup-schema";
+import {
+  seizureEventBackupSchema,
+  seizureSettingsBackupSchema,
+  seizureTypeBackupSchema,
+} from "@/lib/export/seizures-backup-schema";
 import {
   customVaccineBackupSchema,
   vaccinationBackupSchema,
@@ -167,11 +173,18 @@ export const backupPayloadSchema = z
     biomarkers: z.array(biomarkerBackupSchema).default([]),
     // Defaulted: a file written before v1.43 carries no key.
     biomarkerMerges: z.array(biomarkerMergeBackupSchema).default([]),
+    // The identities of Health Records readings the person deleted.
+    // Defaulted: a file written before the lab import ledger carries no key.
+    labResultImportKeys: z.array(labResultImportKeyBackupSchema).default([]),
     illnessEpisodes: z.array(illnessEpisodeBackupSchema).default([]),
     // Defaulted: a file written before v1.40 carries no key.
     symptomDefinitions: z.array(symptomDefinitionBackupSchema).default([]),
     // Defaulted: a file written before v1.42 carries no key.
     lifeEvents: z.array(lifeEventBackupSchema).default([]),
+    // Defaulted: a file written before v1.48 carries no key.
+    seizureTypes: z.array(seizureTypeBackupSchema).default([]),
+    seizureEvents: z.array(seizureEventBackupSchema).default([]),
+    seizureSettings: seizureSettingsBackupSchema.nullable().default(null),
     allergies: z.array(allergyBackupSchema).default([]),
     familyHistory: z.array(familyHistoryBackupSchema).default([]),
     workouts: z.array(workoutBackupSchema).default([]),

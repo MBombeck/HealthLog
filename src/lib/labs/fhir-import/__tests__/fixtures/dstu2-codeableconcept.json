@@ -1,0 +1,17 @@
+{
+  "resourceType": "Observation",
+  "id": "dstu2-blood-group",
+  "status": "final",
+  "category": { "coding": [{ "code": "laboratory" }] },
+  "code": { "text": "ABO group" },
+  "effectiveDateTime": "2019-06-11T07:05:00Z",
+  "valueCodeableConcept": {
+    "coding": [
+      {
+        "system": "http://snomed.info/sct",
+        "code": "112144000",
+        "display": "Blood group A"
+      }
+    ]
+  }
+}

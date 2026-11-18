@@ -21,7 +21,6 @@ export const dynamic = "force-dynamic";
 const MANAGED_INTEGRATIONS: readonly IntegrationKey[] = [
   "withings",
   "whoop",
-  "fitbit",
   "nightscout",
   "polar",
   "oura",
@@ -40,7 +39,7 @@ export const GET = apiHandler(async () => {
   const context = await requireGuardianAuth();
   const access = resolveGuardianRecordSettingsAccess(context);
   if (!access) throw new SharingAccessDeniedError();
-  const [statuses, withings, whoop, fitbit, googleHealth, credentials] =
+  const [statuses, withings, whoop, googleHealth, credentials] =
     await Promise.all([
       Promise.all(
         MANAGED_INTEGRATIONS.map((integration) =>
@@ -54,10 +53,6 @@ export const GET = apiHandler(async () => {
       prisma.whoopConnection.findUnique({
         where: { userId: access.recordId },
         select: { whoopUserId: true },
-      }),
-      prisma.fitbitConnection.findUnique({
-        where: { userId: access.recordId },
-        select: { id: true },
       }),
       prisma.googleHealthConnection.findUnique({
         where: { userId: access.recordId },
@@ -78,7 +73,6 @@ export const GET = apiHandler(async () => {
   const connected: Record<IntegrationKey, boolean> = {
     withings: withings !== null,
     whoop: whoop?.whoopUserId != null,
-    fitbit: fitbit !== null,
     "google-health": googleHealth !== null,
     nightscout: (credentials?.nightscoutUrlEncrypted ?? null) !== null,
     polar: (credentials?.polarAccessTokenEncrypted ?? null) !== null,

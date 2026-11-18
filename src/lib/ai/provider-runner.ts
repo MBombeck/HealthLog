@@ -30,8 +30,7 @@ import {
   getLastWorkingProvider,
   rememberWorkingProvider,
 } from "./provider-last-working-cache";
-import { resolveEffectivePolicyCap } from "./reasoning/controls";
-import { stricterReasoningLevel } from "./reasoning/levels";
+import { normalizeCandidateParams } from "./reasoning/normalize-candidate-params";
 
 export {
   clearLastWorkingProviderCache,
@@ -115,6 +114,8 @@ export interface ProviderChainResolved {
   providerType: ProviderChainType;
   /** The constructed provider instance. */
   instance: AIProvider;
+  /** #1404 — from a capability's named chain: walked as given, never memoised. */
+  pinned?: true;
 }
 
 export interface FallbackHop {
@@ -218,22 +219,17 @@ export class AllProvidersFailedError extends Error {
   }
 }
 
-/**
- * Reorder the input chain so the cached "last working" provider is
- * tried first. Cold cache or unknown provider → original order.
- */
+/** Try the cached "last working" provider first. A cold cache, an unknown
+ *  provider or a capability's pinned chain (#1404) keeps the order. */
 function applyLastWorkingCache(
   userId: string,
   providers: ProviderChainResolved[],
 ): ProviderChainResolved[] {
   const cached = getLastWorkingProvider(userId);
-  if (!cached) return providers;
+  if (!cached || providers.some((p) => p.pinned)) return providers;
   const idx = providers.findIndex((p) => p.providerType === cached);
   if (idx <= 0) return providers; // not present, or already first
-  const reordered = [...providers];
-  const [hit] = reordered.splice(idx, 1);
-  reordered.unshift(hit);
-  return reordered;
+  return [providers[idx], ...providers.filter((_, i) => i !== idx)];
 }
 
 /**
@@ -462,7 +458,7 @@ function signalFailedHops(
 }
 
 /** What both raw runners take. */
-interface ChainWalkArgs {
+export interface ChainWalkArgs {
   userId: string;
   providers: ProviderChainResolved[];
   params: CompletionParams;
@@ -601,7 +597,7 @@ async function runRawChain(
     }
     try {
       const result = await invoke(candidate);
-      rememberWorkingProvider(userId, candidate.providerType);
+      rememberWorkingProvider(userId, candidate);
       void ledger.recordSuccess(userId, candidate.providerType);
       annotate({
         meta: {
@@ -676,55 +672,6 @@ async function runRawChain(
   });
   signalFailedHops(failedHops, false, surface);
   throw new AllProvidersFailedError([...hops, ...benchedHops]);
-}
-
-async function normalizeCandidateParams(
-  candidate: ProviderChainResolved,
-  params: CompletionParams,
-  args: ChainWalkArgs,
-): Promise<CompletionParams> {
-  if (candidate.providerType !== "antigravity") {
-    // Preserve non-agy wire: if deliberate off was passed on background jobs,
-    // or if reasoning was omitted on the original request, strip reasoning.
-    if (
-      !args.params.reasoning ||
-      (args.surface === "job" && params.reasoning?.effort === "off")
-    ) {
-      return { ...params, reasoning: undefined };
-    }
-    return params;
-  }
-
-  // Candidate is Antigravity:
-  // Always resolve the administrative/record policy cap on every call.
-  // Take the strictest of caller's maxEffort and the policy cap.
-  const policyCap = await resolveEffectivePolicyCap(
-    args.userId,
-    args.surface,
-  ).catch(() => {
-    emitSignal({
-      action: "ai.reasoning.policy_cap_read_failed",
-      level: "warn",
-      meta: { surface: args.surface },
-    });
-    return "off" as const;
-  });
-  const effectiveCap =
-    stricterReasoningLevel(params.reasoning?.maxEffort, policyCap) ?? undefined;
-  const effort = params.reasoning?.effort;
-
-  return {
-    ...params,
-    reasoning: {
-      ...params.reasoning,
-      ...(effort !== undefined ? { effort } : {}),
-      summaries: params.reasoning?.summaries ?? false,
-      maxEffort: effectiveCap,
-      ...(params.reasoning?.explicit !== undefined
-        ? { explicit: params.reasoning.explicit }
-        : {}),
-    },
-  };
 }
 
 /**

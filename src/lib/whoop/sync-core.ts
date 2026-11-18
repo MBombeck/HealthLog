@@ -41,7 +41,7 @@ import type { InsertedMeasurementArrivalRow } from "@/lib/arrivals/measurement-e
 import { obtainAccessToken } from "@/lib/integrations/oauth-kit/token";
 import {
   MeasurementReconciliationError,
-  reconcileExternalMeasurement,
+  reconcileExternalMeasurements,
 } from "@/lib/measurements/reconcile-external-measurement";
 import { whoopTokenDescriptor } from "./oauth-descriptor";
 import {
@@ -98,7 +98,7 @@ export async function runWithWhoopSoftSkipTracking<T>(
  * `recordSyncSuccess` un-parks `error_reauth`, resets the failure buckets +
  * `alertedAt`, and the hourly cohort hammers the dead refresh token forever.
  * The orchestrator + the per-resource driver read this ledger to refuse the
- * success stamp. Ported from Fitbit R2 / Google Health's `hardFailStorage`.
+ * success stamp. Ported from Google Health's `hardFailStorage`.
  * Scoped by AsyncLocalStorage so concurrent per-user jobs never cross-pollinate.
  */
 export interface HardFailTracker {
@@ -109,7 +109,6 @@ export const hardFailStorage = new AsyncLocalStorage<HardFailTracker>();
 /**
  * Ledger label for a dead-token failure (`getValidToken` returning null on a
  * missing-credentials, failed-refresh, or in-lock vanished-connection path).
- * Ported from Fitbit's `FITBIT_TOKEN_HARD_FAIL`.
  */
 export const WHOOP_TOKEN_HARD_FAIL = "token";
 
@@ -117,7 +116,7 @@ export const WHOOP_TOKEN_HARD_FAIL = "token";
  * Record a hard failure on the ambient per-cycle ledger, if one is in scope.
  * No-op outside a ledger scope (e.g. a direct REPL call). Used by
  * `getValidToken`'s dead-token paths — anything that must fail the cycle's
- * verdict without aborting sibling work. Ported from Fitbit's `noteHardFailure`.
+ * verdict without aborting sibling work.
  */
 export function noteHardFailure(label: string): void {
   const tracker = hardFailStorage.getStore();
@@ -362,29 +361,26 @@ export async function upsertWhoopMeasurements(
     const verdicts = await prisma
       .$transaction(
         async (tx) => {
-          const outcomes = [];
-          for (let index = chunkStart; index < chunkEnd; index++) {
-            const reading = readings[index]!;
-            const verdict = await reconcileExternalMeasurement(
-              tx,
-              {
-                userId,
-                type: reading.type as MeasurementType,
-                source: "WHOOP",
-                value: reading.value,
-                unit: reading.unit,
-                measuredAt: reading.measuredAt,
-                externalId: reading.externalId,
-                sleepStage: reading.sleepStage ?? null,
-              },
-              { exactExternalMatch: "update" },
-            );
+          const outcomes = await reconcileExternalMeasurements(
+            tx,
+            readings.slice(chunkStart, chunkEnd).map((reading) => ({
+              userId,
+              type: reading.type as MeasurementType,
+              source: "WHOOP" as const,
+              value: reading.value,
+              unit: reading.unit,
+              measuredAt: reading.measuredAt,
+              externalId: reading.externalId,
+              sleepStage: reading.sleepStage ?? null,
+            })),
+            { exactExternalMatch: "update" },
+          );
+          return outcomes.map((verdict) => {
             if (verdict.status === "failed") {
               throw new MeasurementReconciliationError(verdict);
             }
-            outcomes.push(verdict);
-          }
-          return outcomes;
+            return verdict;
+          });
         },
         { maxWait: 10_000, timeout: 60_000 },
       )

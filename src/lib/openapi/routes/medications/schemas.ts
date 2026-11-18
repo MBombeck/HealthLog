@@ -1662,6 +1662,12 @@ export const glp1DoseChange = z
       .describe(
         "Titration note, decrypted on read. Null when none was recorded.",
       ),
+    clientId: z
+      .string()
+      .nullable()
+      .describe(
+        "v1.48.0 — the client's own id for the step, as sent on create; null when none was. Unique per medication.",
+      ),
   })
   .meta({
     id: "Glp1DoseChange",

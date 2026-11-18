@@ -14,6 +14,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Activity,
+  BrainCircuit,
   Flag,
   Footprints,
   Pill,
@@ -250,11 +251,9 @@ export function DashboardHeader({
                     {t("dashboard.quickAddMeasurement")}
                   </DropdownMenuItem>
                 )}
-                {/* v1.4.37 — third quick-add row: medication intake.
-                  Same Sheet-on-mobile / Dialog-on-desktop primitive as
-                  the other two; the menu label is a self-contained
-                  verb-phrase so it doesn't collide with the trigger or
-                  the sibling rows (cf. quick-add-labels.test.ts). */}
+                {/* v1.4.37 — medication intake. The menu label is a
+                  self-contained verb phrase so it doesn't collide with
+                  the trigger or its siblings (quick-add-labels.test.ts). */}
                 {canAddIntake && (
                   <DropdownMenuItem
                     onClick={() => onQuickEntry("medicationIntake")}
@@ -275,6 +274,7 @@ export function DashboardHeader({
                     {t("dashboard.quickAddSymptom")}
                   </DropdownMenuItem>
                 )}
+                {offered.includes("seizure") && <LogSeizureItem />}
                 {canAddWorkout && (
                   <DropdownMenuItem onClick={() => onQuickEntry("workout")}>
                     <Footprints className="mr-2 h-4 w-4" aria-hidden="true" />
@@ -293,5 +293,18 @@ export function DashboardHeader({
         </>
       }
     />
+  );
+}
+
+/** The diary's timer outlives any sheet, so "Log seizure" opens the diary. */
+function LogSeizureItem() {
+  const { t } = useTranslations();
+  return (
+    <DropdownMenuItem asChild>
+      <Link href="/seizures">
+        <BrainCircuit className="mr-2 h-4 w-4" aria-hidden="true" />
+        {t("dashboard.quickAddSeizure")}
+      </Link>
+    </DropdownMenuItem>
   );
 }

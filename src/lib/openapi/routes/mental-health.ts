@@ -74,6 +74,11 @@ const assessmentDetail = assessmentRow
     items: z.array(z.number().int()).nullable(),
     functionalDifficulty: z.number().int().nullable(),
     itemsUnavailable: z.boolean(),
+    source: z
+      .string()
+      .describe(
+        "Where the administration came from: `WEB` or `IOS` (the in-app questionnaire) or `APPLE_HEALTH` (a PHQ-9 / GAD-7 scored assessment from the measurement batch). An `APPLE_HEALTH` row sent without its answers has `items: null` and `itemsUnavailable: true` because the answers were never shared, not because they failed to decrypt. Decode unknown values leniently.",
+      ),
   })
   .meta({
     id: "MentalHealthAssessmentDetail",

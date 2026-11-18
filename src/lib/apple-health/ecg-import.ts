@@ -17,7 +17,14 @@
  */
 import { createHash } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
-import type { NormalizedAppleHealthEcg } from "@/lib/apple-health/ecg-csv";
+import {
+  APPLE_HEALTH_ARCHIVE_MAX_ENTRIES,
+  streamAppleHealthEcgMembers,
+} from "@/lib/apple-health/archive-stream";
+import {
+  parseAppleHealthEcgCsv,
+  type NormalizedAppleHealthEcg,
+} from "@/lib/apple-health/ecg-csv";
 import { persistEcgRecording } from "@/lib/ecg/persist-recording";
 
 export type AppleHealthEcgImportOutcome = "imported" | "updated" | "skipped";
@@ -67,4 +74,74 @@ export async function importAppleHealthEcg(input: {
   // Nothing was written and nothing was lost.
   if (result.outcome === "duplicate") return "skipped";
   return "updated";
+}
+
+/** Per-archive ceilings for the ECG members. */
+export const APPLE_HEALTH_ECG_ARCHIVE_LIMITS = {
+  maxMembers: APPLE_HEALTH_ARCHIVE_MAX_ENTRIES,
+  maxEcgMembers: 2_000,
+  maxMemberBytes: 16 * 1024 * 1024,
+  maxTotalEcgBytes: 512 * 1024 * 1024,
+  maxCompressionRatio: 200,
+} as const;
+const APPLE_HEALTH_ECG_MAX_SAMPLES = 2_000_000;
+
+export interface AppleHealthEcgCounts {
+  discovered: number;
+  imported: number;
+  updated: number;
+  skipped: number;
+  failed: number;
+}
+
+/**
+ * Every ECG recording in an export archive. Intentionally fail-soft: the
+ * canonical export.xml pass has already completed, and malformed, oversized
+ * or unwritable ECG members affect only bounded scalar counters in the
+ * terminal result. `memberNames` are the archive's other members, which the
+ * discovered count is taken from.
+ */
+export async function importAppleHealthArchiveEcgs(input: {
+  archivePath: string;
+  userId: string;
+  memberNames: readonly string[];
+  prisma: Pick<PrismaClient, "$transaction">;
+}): Promise<AppleHealthEcgCounts> {
+  const ecg: AppleHealthEcgCounts = {
+    discovered: 0,
+    imported: 0,
+    updated: 0,
+    skipped: 0,
+    failed: 0,
+  };
+  ecg.discovered = input.memberNames.filter((name) => {
+    const lower = name.toLowerCase();
+    return lower.includes("electrocardiograms/") && lower.endsWith(".csv");
+  }).length;
+  try {
+    for await (const member of streamAppleHealthEcgMembers({
+      archivePath: input.archivePath,
+      limits: APPLE_HEALTH_ECG_ARCHIVE_LIMITS,
+    })) {
+      try {
+        const parsed = await parseAppleHealthEcgCsv({
+          memberName: member.name,
+          stream: member.stream,
+          maxSamples: APPLE_HEALTH_ECG_MAX_SAMPLES,
+        });
+        const outcome = await importAppleHealthEcg({
+          userId: input.userId,
+          ecg: parsed,
+          prisma: input.prisma,
+        });
+        ecg[outcome] += 1;
+      } catch {
+        ecg.failed += 1;
+      }
+    }
+  } catch {
+    const completed = ecg.imported + ecg.updated + ecg.skipped + ecg.failed;
+    ecg.failed += Math.max(0, ecg.discovered - completed);
+  }
+  return ecg;
 }

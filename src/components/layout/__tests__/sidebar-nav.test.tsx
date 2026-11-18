@@ -332,7 +332,12 @@ describe("<SidebarNav> inside somebody else's record (#939)", () => {
             canWrite: active.level !== "read",
             sections: null,
             writableDomains: [],
-            manageableDomains: delegatedDomains(active.level, null, "manage"),
+            manageableDomains: delegatedDomains(
+              active.level,
+              null,
+              "manage",
+              active.recordKind,
+            ),
           },
         }
       : undefined;

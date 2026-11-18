@@ -9,6 +9,8 @@
  */
 import { z } from "zod/v4";
 
+import { dayNutrientSchema } from "./day-nutrient-schema";
+
 import { dateOnlyAtNoonUtc } from "@/lib/tz/date-only";
 
 import {
@@ -273,6 +275,12 @@ export const dayResponseSchema = z
       )
       .describe(
         "Sections the caller cannot see. A section of a switched-off module is left out entirely rather than listed.",
+      ),
+    nutrients: z
+      .array(dayNutrientSchema)
+      .optional()
+      .describe(
+        "The day's nutrient totals in catalog order, each above zero. Absent when the day holds none, with the `nutrients` module off, for a caller whose grant does not cover measurements, and on older servers.",
       ),
     movement: dayMovementSchema
       .nullable()

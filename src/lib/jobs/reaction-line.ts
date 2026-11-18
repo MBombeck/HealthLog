@@ -487,7 +487,7 @@ export async function runReactionLine(
   if (!user) return { status: "skipped", reason: "no_user" };
 
   const locale = await resolveJobLocale(user.locale);
-  const chain = await resolveProviderChain(job.userId);
+  const chain = await resolveProviderChain(job.userId, "reactionLines");
   if (chain.length === 0) return { status: "skipped", reason: "no_provider" };
 
   // The wire re-check for exactly this chain: the capability again, and the

@@ -280,6 +280,7 @@ export type TimelineBucket = (typeof TIMELINE_BUCKETS)[number];
  *
  *   life         life events, and travel periods from the environment module
  *   illness      episodes, chronic conditions as open lines
+ *   seizures     days with seizures, only with the diary on
  *   allergies    allergies with an onset; the rest are `standing`
  *   medications  medications and courses, dose marks, pauses as gaps; every
  *                item of one medication carries its id as `group`, and a
@@ -293,6 +294,7 @@ export type TimelineBucket = (typeof TIMELINE_BUCKETS)[number];
 export const TIMELINE_LANE_KEYS = [
   "life",
   "illness",
+  "seizures",
   "allergies",
   "medications",
   "vaccinations",
@@ -319,6 +321,7 @@ export const TIMELINE_ITEM_KINDS = [
   "visit",
   "procedure",
   "labDay",
+  "seizureDay",
   "document",
   "cycle",
 ] as const;

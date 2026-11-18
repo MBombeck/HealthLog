@@ -2,7 +2,7 @@
   {
     "name": "list_metrics",
     "title": "List available metrics",
-    "description": "Enumerate which of the user's health data exists and how to fetch it: one row per domain with whether data is present, an approximate sample count, and the tool that retrieves it. Call this first to discover what is available before fetching figures.",
+    "description": "Enumerate which of the user's health data exists and how to fetch it: one row per domain with whether data is present in the last 30 days, how many readings it holds there (every source counted; a compare_metric row counts its whole history), and the tool that retrieves it. Call this first to discover what is available before fetching figures.",
     "inputSchema": {
       "type": "object",
       "properties": {}
@@ -3126,7 +3126,7 @@
   {
     "name": "get_integration_status",
     "title": "Get device & service sync status",
-    "description": "Fetch the sync health of the user's connected devices and services (Withings, WHOOP, Fitbit, Nightscout, Polar, Oura, Strava, Google Health) — which are connected, when each last synced, and whether one needs reconnecting or is failing. Answers 'why is my data stale?'. Reuses the integration-status ledger; carries no secrets or tokens. `connected` means only 'not explicitly disconnected'; `verdict` is the liveness truth (fresh / stale / stalled / failing / reauth_required / parked / pending_first_sync / disconnected), where `stalled` means the sync has stopped even attempting. Returns { present: false } when no integration has ever attempted a sync.",
+    "description": "Fetch the sync health of the user's connected devices and services (Withings, WHOOP, Nightscout, Polar, Oura, Strava, Google Health, Garmin, Dawarich) — which are connected, when each last synced, and whether one needs reconnecting or is failing. Answers 'why is my data stale?'. Reuses the integration-status ledger; carries no secrets or tokens. `connected` means only 'not explicitly disconnected'; `verdict` is the liveness truth (fresh / stale / stalled / failing / reauth_required / parked / pending_first_sync / disconnected), where `stalled` means the sync has stopped even attempting. Returns { present: false } when no integration has ever attempted a sync.",
     "inputSchema": {
       "type": "object",
       "properties": {}
@@ -3353,7 +3353,7 @@
   {
     "name": "get_nutrients",
     "title": "Get nutrient intake",
-    "description": "Fetch the user's synced micronutrient intake — water, caffeine, and the 24 tracked vitamins/minerals — as day totals summed across sources (e.g. an Apple Health sync AND a manual water entry on the same day). Omit `nutrient` for a presence overview across every logged code (latest logged day, latest day's total, days with data). Pass a catalog code, or the nutrient's display name in any language HealthLog ships (e.g. 'water', 'magnesium', 'vitamin_d', 'Magnésium', 'Żelazo'), for that nutrient's per-day series over a trailing window, plus its EFSA dietary reference resolved against the user's own profile sex — omitted, never guessed, when sex is not on file. Gated on the opt-in `nutrients` module. Returns { present: false, reason: \"module_disabled\" } when the module is off, or { present: false } when nothing matches.",
+    "description": "Fetch the user's nutrient intake — water, caffeine, the tracked vitamins and minerals (sodium and potassium included), dietary energy in kcal, the macronutrients (protein, carbohydrates, fat and its saturated, monounsaturated and polyunsaturated parts, sugar, fiber) in g, cholesterol in mg, and alcohol in g of ethanol — as day totals across sources. Apple Health, Health Connect and a food-tracker bridge each report the whole day, so only the largest of them counts; a manual water entry and taken supplements add on top. Omit `nutrient` for a presence overview across every logged code (latest logged day, latest day's total, days with data). Pass a catalog code, or the nutrient's display name in any language HealthLog ships (e.g. 'water', 'magnesium', 'vitamin_d', 'Magnésium', 'Żelazo'), for that nutrient's per-day series over a trailing window, plus its dietary reference (with the authority that set it: EFSA, or IOM for protein and carbohydrates) resolved against the user's own profile sex — omitted, never guessed, when sex is not on file or the nutrient has none — and the target the user set for it, if any. Gated on the opt-in `nutrients` module. Returns { present: false, reason: \"module_disabled\" } when the module is off, or { present: false } when nothing matches.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -3451,6 +3451,14 @@
             {
               "type": "object",
               "properties": {
+                "authority": {
+                  "type": "string",
+                  "enum": [
+                    "EFSA",
+                    "IOM",
+                    "NIH ODS"
+                  ]
+                },
                 "kind": {
                   "type": "string",
                   "enum": [
@@ -3478,6 +3486,33 @@
                 "direction",
                 "value",
                 "source"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "personalTarget": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "number"
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "target",
+                    "limit"
+                  ]
+                }
+              },
+              "required": [
+                "value",
+                "direction"
               ],
               "additionalProperties": false
             },
@@ -3900,6 +3935,95 @@
           "type": "integer",
           "minimum": -9007199254740991,
           "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_seizures",
+    "title": "Get seizure diary",
+    "description": "Fetch the user's seizure diary over a bounded window (default: the last 90 days, at most three years): the person's own seizure types (their name for each, the ILAE 2025 type code, usual duration, the rescue plan text and medication), each recorded seizure (onset, duration and whether it was timed, how many seizures a tally stands for, confirmed or suspected, sleep state, rescue doses and their effect, injuries, suspected triggers, emergency care) and the server-derived summary (recorded seizures, seizure days, days since the last recorded seizure, cluster episodes under the record's own rule and under NICE's 3 in 24 hours, the type x month table). These are recorded seizures from a patient or carer diary and likely an undercount. Present them as the record, never as a diagnosis, a risk estimate, or advice to wait. Returns { present: false } when nothing is recorded or the seizure diary is switched off.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "days": {
+          "description": "Trailing window in days. Defaults to 90, capped at about three years.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1095
+        }
+      }
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "windowDays": {
+          "type": "number"
+        },
+        "clusterRule": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "number"
+            },
+            "windowHours": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "count",
+            "windowHours"
+          ],
+          "additionalProperties": false
+        },
+        "summary": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {}
+        },
+        "types": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "truncated": {
+          "type": "boolean"
         }
       },
       "required": [

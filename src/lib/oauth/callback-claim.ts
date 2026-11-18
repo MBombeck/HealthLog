@@ -19,7 +19,7 @@
  * Where the claim sits differs by flow:
  *   - signed-state flows (Oura, Polar, Strava) claim right after the signature
  *     check, so only a state this server minted can create a row;
- *   - ledger flows (WHOOP, Withings, Fitbit, Google Health) already consume
+ *   - ledger flows (WHOOP, Withings, Google Health) already consume
  *     their state row with an atomic delete. The claim rides the same
  *     transaction (`consumeLedgerState`), so a duplicate's delete waits on the
  *     row lock, finds the row gone, and then sees the committed claim.
@@ -36,13 +36,7 @@ import { cleanupExpiredOAuthCallbackClaims } from "@/lib/jobs/oauth-callback-cla
 
 /** Providers whose callbacks claim their state here. */
 export type OAuthCallbackProvider =
-  | "oura"
-  | "polar"
-  | "strava"
-  | "whoop"
-  | "withings"
-  | "fitbit"
-  | "google-health";
+  "oura" | "polar" | "strava" | "whoop" | "withings" | "google-health";
 
 /**
  * How long a claim is kept. Longer than any state lives (10 minutes), so a

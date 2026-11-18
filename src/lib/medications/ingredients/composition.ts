@@ -15,7 +15,7 @@ import {
   NUTRIENT_CATALOG,
   catalogEntryFor,
   isCanonicalNutrientUnit,
-  isNutrientCode,
+  isIngredientNutrientCode,
   toCanonicalNutrientAmount,
   type NutrientCode,
 } from "@/lib/nutrients/catalog";
@@ -56,7 +56,10 @@ export function canonicalComposition(
 ): CompositionCheck {
   const ingredients: CanonicalIngredient[] = [];
   for (const [index, input] of inputs.entries()) {
-    if (!isNutrientCode(input.nutrient)) {
+    // Water, energy, the macros and alcohol are catalogue codes but no
+    // ingredient a capsule declares: refused as unknown, like a code the
+    // catalogue never heard of.
+    if (!isIngredientNutrientCode(input.nutrient)) {
       return { ok: false, kind: "unknownNutrient", index };
     }
     const code = input.nutrient;

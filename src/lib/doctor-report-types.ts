@@ -10,6 +10,7 @@
  * `doctor-report-data.ts`.
  */
 
+import type { SeizureReportSection } from "@/lib/seizures/report-types";
 import type { LifeClinicalSummary } from "@/lib/profile/life-derived";
 import type { GlucoseUnit } from "@/lib/glucose";
 import type { GlucoseClinicalMetrics } from "@/lib/analytics/glucose-metrics";
@@ -408,6 +409,13 @@ export interface DoctorReportData {
       booster: boolean;
     }>;
   }> | null;
+  /**
+   * The seizure diary over the report window (#1368). Populated when the
+   * `SEIZURES` leaf is selected AND the `seizures` module is on AND the window
+   * holds at least one recorded seizure; null/absent otherwise, and the PDF
+   * then skips the section. Every figure is derived server-side.
+   */
+  seizureDiary?: SeizureReportSection | null;
   illnessEpisodes?: Array<{
     /** User-facing condition label (e.g. "Erkältung"). */
     label: string;

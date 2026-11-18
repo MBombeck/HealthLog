@@ -44,7 +44,13 @@ describe("record settings authorization", () => {
       kind: "managed-guardian",
       guardianWritable: false,
     });
-    expect(classifySettingsDestination("ai").kind).toBe("unavailable");
+    // #1403: the AI page holds a managed profile's automatic-reading switch,
+    // a guardian write; a page with nothing of the profile's stays closed.
+    expect(classifySettingsDestination("ai")).toMatchObject({
+      kind: "managed-guardian",
+      guardianWritable: true,
+    });
+    expect(classifySettingsDestination("environment").kind).toBe("unavailable");
     expect(classifySettingsDestination("unknown-settings-path").kind).toBe(
       "unavailable",
     );

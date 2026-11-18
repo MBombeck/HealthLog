@@ -1,7 +1,7 @@
 {
   "$comment": "safeJson calls per route file under src/app; new body-reading routes use parseJsonBody. Maintained by src/__tests__/route-body-parse-ratchet.test.ts.",
-  "count": 60,
-  "total": 60,
+  "count": 59,
+  "total": 59,
   "entries": {
     "app/api/admin/ai-settings/route.ts": 1,
     "app/api/admin/drain-per-sample-cumulative/route.ts": 1,
@@ -31,7 +31,6 @@
     "app/api/documents/inbound/[id]/index/route.ts": 1,
     "app/api/documents/inbound/[id]/suggest/route.ts": 1,
     "app/api/documents/inbound/[id]/summary/route.ts": 1,
-    "app/api/fitbit/credentials/route.ts": 1,
     "app/api/google-health/credentials/route.ts": 1,
     "app/api/import/route.ts": 1,
     "app/api/insights/generate/route.ts": 1,

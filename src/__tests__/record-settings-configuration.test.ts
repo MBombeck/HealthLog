@@ -28,6 +28,8 @@ describe("managed record settings configuration contract", () => {
       thresholds: ["overrides"],
       coach: ["disableCoach", "preferences"],
       insights: ["layout"],
+      // #1403 — the profile's own automatic-reading switch.
+      documents: ["autoAiRead"],
     });
   });
 
@@ -50,6 +52,9 @@ describe("managed record settings configuration contract", () => {
     ["thresholds", { glucoseUnit: "imperial" }],
     ["coach", { memories: [] }],
     ["insights", { provider: "external" }],
+    // The owner's preference name is not this family's field.
+    ["documents", { documentsAutoAiRead: true }],
+    ["documents", {}],
   ] as const)("rejects a disallowed %s field", (family, patch) => {
     expect(() => parseManagedRecordSettingsPatch(family, patch)).toThrow();
   });

@@ -101,6 +101,7 @@ export const BACKED_UP_MODELS = [
   // ── Clinical record ───────────────────────────────────────────────────────
   "MentalHealthAssessment",
   "LabResult",
+  "LabResultImportKey", // Deleted Health Records readings: `labs-backup.ts`.
   "Biomarker",
   "Allergy",
   "FamilyHistoryEntry",
@@ -111,6 +112,11 @@ export const BACKED_UP_MODELS = [
   // else holds either; a restore without them loses the history outright.
   "SymptomDefinition",
   "SymptomEvent",
+  // The seizure diary (#1368); nothing else holds any of it.
+  "SeizureTypeProfile",
+  "SeizureEvent",
+  "SeizureRescueDose",
+  "SeizureDiarySettings",
   // v1.42 — the person's life events, the timeline's anchors. Written by the
   // person and held nowhere else.
   "LifeEvent",
@@ -304,6 +310,8 @@ export const BACKUP_WRITER_FILES: readonly string[] = [
   "src/lib/export/symptoms-backup.ts",
   // The person's life events, both ends beside each other (v1.42).
   "src/lib/export/life-events-backup.ts",
+  // The seizure diary; the doses ride inside their seizure both ways.
+  "src/lib/export/seizures-backup.ts",
   // The five relation links that close the relation matrix (v1.43), both
   // ends beside each other, each through its OWN delegate.
   "src/lib/export/relation-links-backup.ts",
@@ -365,6 +373,7 @@ export const TWO_ENDED_MODELS = [
   "MoodEntryTagLink",
   "MoodTag",
   "LabResult",
+  "LabResultImportKey",
   "Biomarker",
   "Allergy",
   "FamilyHistoryEntry",
@@ -373,6 +382,10 @@ export const TWO_ENDED_MODELS = [
   "IllnessSymptomLink",
   "SymptomDefinition",
   "SymptomEvent",
+  "SeizureTypeProfile",
+  "SeizureEvent",
+  "SeizureRescueDose",
+  "SeizureDiarySettings",
   "LifeEvent",
   "UserHealthProfile",
   "HealthProfileFactRevision",
@@ -689,6 +702,8 @@ export const DERIVED_MODELS: Readonly<Record<string, string>> = {
  * be argued with later, so each says what it would cost to include.
  */
 export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
+  SeizureClusterAlert:
+    "Which seizure clusters already sent their notification; a restore holds no news to send.",
   // Provider credentials and handshake state.
   WithingsConnection:
     "An OAuth grant bound to this deployment's client registration. Restored elsewhere it is a dead token that makes the integration look connected while it silently fails — the exact shape of defect this release is about.",
@@ -701,9 +716,9 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
   WhoopConnectTicket:
     "A single-use ticket that binds one connect attempt to one browser; spent or expired long before a restore.",
   FitbitConnection:
-    "An OAuth grant bound to this deployment's client registration; on another host it is a dead token that reads as connected.",
+    "The removed Fitbit integration's grant, emptied by migration 0503 and kept one release for rollback safety; it holds no row to back up.",
   FitbitOAuthState:
-    "A CSRF nonce for a handshake that is valid for minutes and is already over by the time any backup is read.",
+    "The removed Fitbit integration's handshake ledger, emptied by migration 0503 and kept one release for rollback safety; it holds no row to back up.",
   GoogleHealthConnection:
     "An OAuth grant bound to this deployment's client registration; on another host it is a dead token that reads as connected.",
   GoogleHealthOAuthState:

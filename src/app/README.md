@@ -10,7 +10,7 @@ Every endpoint wraps its handler in `apiHandler` (`@/lib/api-handler`), parses a
 - **`measurements/`, `mood-entries/`, `medications/`, `sleep/`** — the core health-data CRUD + batch/bulk ingest.
 - **`ingest/`** — external Bearer-token ingest surfaces.
 - **`insights/`, `analytics/`, `dashboard/`** — AI insights, the Coach SSE stream, trend summaries, the first-paint dashboard snapshot.
-- **`withings/`, `whoop/`, `fitbit/`, `integrations/`, `sync/`** — OAuth connect/sync/webhook surfaces and the offline delta feed.
+- **`withings/`, `whoop/`, `google-health/`, `integrations/`, `sync/`** — OAuth connect/sync/webhook surfaces and the offline delta feed.
 - **`fhir/`, `share-links/`, `doctor-report/`, `export/`, `import/`** — clinician-facing FHIR R4 read API, shareable records, report + data export.
 - **`notifications/`, `devices/`, `send/`, `telegram/`** — channel registration, device tokens, dispatch, webhook intake.
 - **`admin/`** — operator panel APIs (cookie-only).

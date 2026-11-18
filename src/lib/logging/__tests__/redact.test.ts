@@ -414,3 +414,17 @@ describe("redactSecrets — a Prisma call's printed arguments", () => {
     );
   });
 });
+
+describe("redactSecrets — the native sign-in's https return (#163)", () => {
+  it("scrubs the one-time code and the second-factor ticket from its address", () => {
+    const out = redactSecrets(
+      "https://h.example/auth/native-return?mfa_ticket=AbC123_-x&methods=totp",
+    );
+    expect(out).toContain("mfa_ticket=[REDACTED]");
+    expect(out).not.toContain("AbC123_-x");
+    expect(out).toContain("methods=totp");
+    expect(
+      redactSecrets("/auth/native-return?code=hlh_abcdef0123456789"),
+    ).not.toContain("hlh_abcdef0123456789");
+  });
+});

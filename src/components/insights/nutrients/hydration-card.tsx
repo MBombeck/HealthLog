@@ -11,6 +11,7 @@ import { NutrientDailyBarChartDynamic } from "@/components/charts/nutrient-daily
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { apiGet } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
+import { formatNutrientAmount } from "@/lib/nutrients/format-amount";
 import type { NutrientDailySeries } from "./types";
 
 const WINDOW_DAYS = 30;
@@ -18,7 +19,7 @@ const WINDOW_DAYS = 30;
 /**
  * v1.29 — hydration hero card on `/insights/nutrients`.
  *
- * Today's total (all sources summed) as the content value, a muted EFSA
+ * Today's total (all sources folded) as the content value, a muted
  * reference-intake meta line (omitted when the profile has no sex on
  * file — the catalog's own contract), a 30-day bar chart with a dashed
  * reference line. No ring, no attainment colour — the bar chart with a
@@ -79,13 +80,14 @@ export function HydrationCard() {
                 className="text-2xl font-bold tabular-nums"
                 data-slot="nutrients-hydration-today"
               >
-                {fmt.integer(Math.round(todayTotal))} {data.unit}
+                {formatNutrientAmount(fmt, todayTotal)} {data.unit}
               </p>
               {data.reference ? (
                 <p className="text-muted-foreground text-xs">
                   {t("nutrients.hydration.referenceMeta", {
-                    value: fmt.integer(Math.round(data.reference.value)),
+                    value: formatNutrientAmount(fmt, data.reference.value),
                     unit: data.unit,
+                    authority: data.reference.authority ?? "EFSA",
                   })}
                 </p>
               ) : null}

@@ -29,53 +29,47 @@ export const RANKABLE_SOURCES: readonly MeasurementSource[] = Array.from(
 export async function getSourcesInUse(
   userId: string,
 ): Promise<MeasurementSource[]> {
-  const [withData, user, withings, whoop, fitbit, googleHealth] =
-    await Promise.all([
-      Promise.all(
-        RANKABLE_SOURCES.map((source) =>
-          prisma.measurement
-            .findFirst({
-              // A deleted reading is not data: a source whose readings were
-              // all deleted is no longer in use.
-              where: { userId, source, deletedAt: null },
-              select: { id: true },
-            })
-            .then((row) => (row ? source : null)),
-        ),
+  const [withData, user, withings, whoop, googleHealth] = await Promise.all([
+    Promise.all(
+      RANKABLE_SOURCES.map((source) =>
+        prisma.measurement
+          .findFirst({
+            // A deleted reading is not data: a source whose readings were
+            // all deleted is no longer in use.
+            where: { userId, source, deletedAt: null },
+            select: { id: true },
+          })
+          .then((row) => (row ? source : null)),
       ),
-      prisma.user.findUnique({
-        where: { id: userId },
-        select: {
-          polarAccessTokenEncrypted: true,
-          ouraAccessTokenEncrypted: true,
-          stravaAccessTokenEncrypted: true,
-          garminApiKeyEncrypted: true,
-        },
-      }),
-      prisma.withingsConnection.findUnique({
-        where: { userId },
-        select: { userId: true },
-      }),
-      prisma.whoopConnection.findUnique({
-        where: { userId },
-        select: { userId: true },
-      }),
-      prisma.fitbitConnection.findUnique({
-        where: { userId },
-        select: { userId: true },
-      }),
-      prisma.googleHealthConnection.findUnique({
-        where: { userId },
-        select: { userId: true },
-      }),
-    ]);
+    ),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        polarAccessTokenEncrypted: true,
+        ouraAccessTokenEncrypted: true,
+        stravaAccessTokenEncrypted: true,
+        garminApiKeyEncrypted: true,
+      },
+    }),
+    prisma.withingsConnection.findUnique({
+      where: { userId },
+      select: { userId: true },
+    }),
+    prisma.whoopConnection.findUnique({
+      where: { userId },
+      select: { userId: true },
+    }),
+    prisma.googleHealthConnection.findUnique({
+      where: { userId },
+      select: { userId: true },
+    }),
+  ]);
 
   const inUse = new Set<MeasurementSource>(
     withData.filter((s): s is MeasurementSource => s !== null),
   );
   if (withings) inUse.add("WITHINGS");
   if (whoop) inUse.add("WHOOP");
-  if (fitbit) inUse.add("FITBIT");
   if (googleHealth) inUse.add("GOOGLE_HEALTH");
   if (user?.polarAccessTokenEncrypted) inUse.add("POLAR");
   if (user?.ouraAccessTokenEncrypted) inUse.add("OURA");

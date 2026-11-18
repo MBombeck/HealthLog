@@ -18,6 +18,7 @@
         "cycleDayLogs": 0,
         "nutrientDays": 1,
         "labResults": 1,
+        "labResultImportKeys": 0,
         "biomarkers": 1,
         "illnessEpisodes": 2,
         "illnessDayLogs": 1,
@@ -75,6 +76,7 @@
         "cycleDayLogs": 0,
         "cycleProfile": 0,
         "labResults": 0,
+        "labResultImportKeys": 0,
         "biomarkers": 0,
         "nutrientDays": 0,
         "illnessEpisodes": 0,
@@ -116,7 +118,9 @@
         "dawarichDays": 0,
         "ecgRecordings": 0,
         "symptomDefinitions": 0,
-        "lifeEvents": 0
+        "lifeEvents": 0,
+        "seizureTypes": 0,
+        "seizureEvents": 0
       }
     }
   },
@@ -292,6 +296,7 @@
           "cycleDayLogs": 0,
           "cycleProfile": 0,
           "labResults": 0,
+          "labResultImportKeys": 0,
           "biomarkers": 0,
           "nutrientDays": 0,
           "illnessEpisodes": 0,
@@ -333,7 +338,9 @@
           "dawarichDays": 0,
           "ecgRecordings": 0,
           "symptomDefinitions": 0,
-          "lifeEvents": 0
+          "lifeEvents": 0,
+          "seizureTypes": 0,
+          "seizureEvents": 0
         },
         "accountSettingsApplied": 0,
         "skipped": {
@@ -738,12 +745,14 @@
         "takenAt": "2026-07-05T08:00:00.000Z",
         "biomarkerId": "<id:14>",
         "source": "MANUAL",
+        "externalId": null,
         "noteEncrypted": "<sealed:v2:morning draw>",
         "createdAt": "<now>",
         "updatedAt": "<now>",
         "deletedAt": null
       }
     ],
+    "LabResultImportKey": [],
     "Biomarker": [
       {
         "id": "<id:14>",
@@ -842,6 +851,10 @@
     "IllnessSymptomLink": [],
     "SymptomDefinition": [],
     "SymptomEvent": [],
+    "SeizureTypeProfile": [],
+    "SeizureEvent": [],
+    "SeizureRescueDose": [],
+    "SeizureDiarySettings": [],
     "LifeEvent": [],
     "UserHealthProfile": [],
     "HealthProfileFactRevision": [],
@@ -998,6 +1011,7 @@
       "whoopClientSecretEncrypted": null,
       "fitbitClientIdEncrypted": null,
       "fitbitClientSecretEncrypted": null,
+      "fitbitRemovalNoticeAt": null,
       "googleHealthClientIdEncrypted": null,
       "googleHealthClientSecretEncrypted": null,
       "nightscoutUrlEncrypted": null,
@@ -1043,6 +1057,7 @@
       "moodTagLayoutJson": null,
       "moduleListLayoutJson": null,
       "activityGoalsJson": null,
+      "nutrientTargetsJson": null,
       "glucoseUnit": null,
       "hasDiabetes": false,
       "labsLocalOcrEnabled": false,
@@ -1060,6 +1075,7 @@
       "aiCompatKeyEncrypted": null,
       "aiCompatModel": null,
       "aiProviderChain": null,
+      "aiNamedChains": null,
       "aiResponseTimeoutSeconds": null,
       "documentsAutoAiRead": false,
       "onboardingCompletedAt": null,
@@ -1254,6 +1270,7 @@
       "documentsLayoutJson": null,
       "moduleListLayoutJson": null,
       "activityGoalsJson": null,
+      "nutrientTargetsJson": null,
       "reportSelectionJson": null,
       "globalExcludedInjectionSites": [],
       "healthKitConfigJson": null,
@@ -1265,6 +1282,7 @@
       "aiCompatBaseUrl": null,
       "aiCompatModel": null,
       "aiProviderChain": null,
+      "aiNamedChains": null,
       "aiResponseTimeoutSeconds": null,
       "useCentralCodex": false,
       "insightsPrivacyMode": "aggregated",
@@ -1635,6 +1653,7 @@
         "sourceUnit": null,
         "takenAt": "2026-07-05T08:00:00.000Z",
         "source": "MANUAL",
+        "externalId": null,
         "biomarkerName": "Ferritin"
       }
     ],
@@ -1656,6 +1675,7 @@
       }
     ],
     "biomarkerMerges": [],
+    "labResultImportKeys": [],
     "illnessEpisodes": [
       {
         "id": "legacy-episode-child",
@@ -1815,6 +1835,9 @@
     "dawarichDays": [],
     "ecgRecordings": [],
     "symptomDefinitions": [],
+    "seizureTypes": [],
+    "seizureEvents": [],
+    "seizureSettings": null,
     "lifeEvents": [],
     "labResultDocumentLinks": [],
     "encounterMedicationLinks": [],

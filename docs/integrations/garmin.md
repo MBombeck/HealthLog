@@ -66,6 +66,7 @@ refusal that passes on its own clears without you doing anything.
 | Overnight HRV (RMSSD)                                                 | `HRV_RMSSD`                | ms            |
 | Weight, BMI, body fat, body water, muscle and bone mass, visceral fat | the body-composition types | kg, %, rating |
 | Activities                                                            | workouts                   |               |
+| Heart rate over each new activity, from its original file             | the workout's series       | bpm           |
 | Logged period days                                                    | the cycle tracker          |               |
 
 Notes:
@@ -87,6 +88,26 @@ Notes:
 - When the same data also arrives through Apple Health or Health Connect, the
   source order in **Settings → Sources** decides which one a chart shows.
   Garmin ranks with the other watches.
+
+## Heart rate over an activity
+
+The activity list gives a summary per workout: duration, distance, energy,
+average and peak heart rate. The curve over the session is only in the
+activity's original FIT file, which the Personal API serves as well. After
+each hourly sync, HealthLog downloads the files of activities that arrived
+in the last day (up to five per run), reads them with the same importer as
+the **Activity file (FIT)** card, and adds the heart-rate, speed, power and
+cadence series to the Garmin workout. The workout itself is still the
+summary Garmin sent. The GPS track in the file is kept only when **Workout
+routes** is switched on.
+
+A file Garmin does not serve, or one that cannot be read, is skipped and not
+asked for again that day; a refusal of the downloads does not count as a
+sync error. Activities from before you connected keep their summary only.
+To add the curve to one of them, export it in Garmin Connect (**Export
+original**) and drop the ZIP onto the **Activity file (FIT)** card: it finds
+the Garmin workout and adds the curve there instead of creating a second one.
+See [Data import](./data-import.md#4-activity-files-fit).
 
 ## What the Personal API does not carry
 

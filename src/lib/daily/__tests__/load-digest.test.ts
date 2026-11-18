@@ -275,6 +275,51 @@ describe("loadDailyDigest — S11/S12 extras cache", () => {
   });
 });
 
+describe("loadDailyDigest — Today texts (#173)", () => {
+  it("hands the first name and the next dose's local time to the overview", async () => {
+    const t = vi.fn(
+      (key: string, params?: Record<string, string | number>) =>
+        `${key}${params?.time ? ` ${params.time}` : ""}`,
+    );
+    const { getServerTranslator } =
+      await import("@/lib/i18n/server-translator");
+    vi.mocked(getServerTranslator).mockReturnValueOnce({
+      t,
+    } as unknown as ReturnType<typeof getServerTranslator>);
+    vi.mocked(readDashboardSnapshotCached).mockResolvedValueOnce({
+      ...SNAPSHOT,
+      body: {
+        ...SNAPSHOT.body,
+        briefing: {
+          paragraph: "Alex, your resting heart rate held at 54 bpm.",
+          signalsOfDay: [],
+          keyFindings: [],
+        },
+        medsToday: {
+          ...SNAPSHOT.body.medsToday,
+          scheduledToday: 2,
+          // 12:00 and 20:00 in Berlin; NOW is 11:00 there.
+          scheduledTodayAt: [
+            "2026-07-17T10:00:00.000Z",
+            "2026-07-17T18:00:00.000Z",
+          ],
+          nextDueAt: "2026-07-17T10:00:00.000Z",
+        },
+      },
+    } as unknown as Awaited<ReturnType<typeof readDashboardSnapshotCached>>);
+
+    const digest = await loadDailyDigest(
+      { ...USER, displayName: "Alex Example" } as User,
+      NOW,
+    );
+
+    expect(digest.lead?.text).toBe("Your resting heart rate held at 54 bpm.");
+    expect(
+      digest.today.find((fact) => fact.kind === "medications")?.value,
+    ).toMatch(/^daily\.todayFact\.medications\.next 12:00/);
+  });
+});
+
 describe("loadDailyDigest — AI parts", () => {
   const ARRIVAL = {
     kind: "sleep_night",
@@ -460,11 +505,11 @@ describe("loadDailyDigest — due check-ups and today's visits", () => {
       reminderRow({ label: "coach.cadence.bp7day.label" }),
     ] as never);
 
-    await loadDailyDigest(USER, NOW);
+    const digest = await loadDailyDigest(USER, NOW);
 
-    expect(t).toHaveBeenCalledWith("daily.item.preventiveCare.bodyManyNamed", {
-      labels: "Blood pressure week, coach.cadence.bp7day.label",
-    });
+    expect(
+      digest.worthALook.find((i) => i.kind === "preventive_care")?.body,
+    ).toBe("Blood pressure week, coach.cadence.bp7day.label");
   });
 
   // Watched red: with every reminder due before the end of the day on the
@@ -682,6 +727,7 @@ describe("loadDailyDigest — Today overview inputs", () => {
     expect(digest.lead).toEqual({
       text: "daily.lead.vitalOutside.above",
       source: "signal",
+      language: "en",
     });
     expect(digest.briefingLead).toBeNull();
   });

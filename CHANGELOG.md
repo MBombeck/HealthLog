@@ -1,6 +1,276 @@
 # Changelog
 
-## [Unreleased]
+## [1.48.0] — 2026-11-18
+
+### Added
+
+- **Energy and macronutrients.** The nutrients module now tracks dietary
+  energy (kcal), protein, carbohydrates, fat with its saturated,
+  monounsaturated and polyunsaturated parts, sugar and fiber (g), sodium,
+  potassium and cholesterol (mg), and alcohol (grams of ethanol). The iPhone app can sync them
+  from Apple Health once its next release asks for them; a food tracker can
+  push its daily totals today with a measurement token through
+  `POST /api/nutrients/batch`, where they are stored as "External". The
+  nutrients page gets an energy and macronutrient card with a 30-day chart per
+  nutrient, an alcohol card beside caffeine, and sodium and potassium join the
+  vitamins and minerals. Reference values name who set them: EFSA, or the IOM
+  for protein and carbohydrates, since EFSA gives those per kilogram or as a
+  share of energy only. Thanks to @ljcasaai for asking for it. (#1402)
+- **Your own daily nutrient targets.** Set an amount to reach or a limit to
+  stay under for any nutrient on the energy card, from the gear in the page
+  header like every other insights target; the chart draws your number
+  instead of the reference. Targets travel in the full backup and are read
+  and set through `GET` and `PATCH /api/nutrients/targets`. (#1402)
+- Lab results from Apple Health's Health Records now land in Labs. An Apple Health export used to skip every clinical record; the lab results among them are now read, matched to your existing markers (by name, alias or LOINC code, with a reading in another unit converted and the printed value kept), and filed under their panel. A result like "<0.5 mg/L" is kept as printed, a specific gravity, pH or INR sent without a unit is read as a plain number, the report's own reference range comes along, and preliminary or withdrawn results are left out. A result your provider later marks as entered in error is not removed once it is in HealthLog; delete it there if it should go. Importing the same results again writes nothing, a result you delete stays deleted (also when you delete its whole marker, long after the deletion, and across a backup restore), and a reading you already typed or scanned is not doubled. If you imported an archive before, upload it once more to pick up its lab results. For the iOS app, `POST /api/labs/fhir-batch` takes the same results straight from HealthKit. Thanks to @camiracode for asking for this. (#1400)
+- A lab reading now says where it came from (Manual, Scanned report, Import or
+  Apple Health) in its history, its chart tooltip and a new source filter on
+  the Labs list, and deleting an Apple Health reading says the next import
+  will not bring it back. An Apple Health import that brought only lab
+  results or ECGs says so instead of "0 of N records imported", counts the
+  markers it added and links to Labs. (#1400)
+- Apple Watch hypertension notifications from Apple Health are kept beside
+  the irregular rhythm and heart rate notifications: listed under device
+  notifications in insights, on the timeline and in the measurement list, and
+  selectable for the doctor report. They are what the watch flagged, shown as
+  it flagged them, and never count as a blood pressure reading.
+- PHQ-9 and GAD-7 check-ins taken in Apple Health can come over with the
+  iPhone app's sync. They land in the mental wellbeing history beside the
+  ones taken in HealthLog, count once on the score trend and in the doctor
+  report, and keep their answers when Apple Health shares them; one that
+  shares only its score says so instead of showing answers. With the mental
+  health module turned off, none of them is stored.
+- Deleting a workout, an ECG, a cycle day, a State of Mind entry or a dose in
+  Apple Health now removes it in HealthLog too, once the iPhone app sends the
+  deletion. Before, only measurements followed, so editing one of these in
+  Apple Health left the old copy beside the new one. For the app:
+  `DELETE /api/workouts/by-external-ids`, `/api/insights/ecg/by-external-ids`,
+  `/api/cycle/day-logs/by-external-ids`, `/api/mood-entries/by-external-ids`
+  and `/api/medications/intake/by-external-ids`, shaped like the measurements
+  one; mood entries take `APPLE_HEALTH` as their source for this.
+- The day view lists the day's nutrient totals, so tapping a bar on a
+  nutrient chart opens a day that shows it. An opt-in energy tile for the
+  dashboard is available under Settings > Dashboard. (#1402)
+
+- **Single sign-on can hand back to the iPhone app over https.** An app
+  build set up for your server can now finish an SSO sign-in on your
+  server's own address instead of the `healthlog://` link, so the sign-in
+  sheet closes without asking whether to open the app. It is opt-in: the
+  server says it supports it on `GET /api/auth/oidc/status`
+  (`nativeReturnPath`), and the app asks for it with `return=https` when it
+  starts the sign-in. Builds that don't ask keep the `healthlog://` return
+  exactly as before. If the address ever opens in a browser without the
+  app, you see a short "Back to the app" page, and the one-time sign-in
+  code is removed from the address bar. Only servers reached over https
+  offer it.
+
+- **GLP-1 dose steps can be corrected and removed.** A titration step
+  with a typo no longer stays for good: `PATCH` and `DELETE
+/api/medications/{id}/glp1/dose-changes/{doseChangeId}` change or remove
+  one step, with the same access rules and audit trail as adding one. A
+  step can also carry the app's own id (`clientId`), so when your iPhone
+  and iPad both upload the same step, it is stored once, and a step you
+  removed stays removed: an upload under its id later answers 410
+  `glp1.doseChange.deleted`. The id travels with backups and restores.
+  Migrations `0506_medication_dose_change_client_id` and
+  `0507_medication_dose_change_tombstones`.
+- **Set the injection site on a dose you already logged.** Correcting a
+  dose (`PUT /api/medications/{id}/intake/{eventId}`) now takes
+  `injectionSite`, or `null` to clear it, so "I forgot to pick the site"
+  has a fix. Only sites allowed for that medication are accepted.
+
+- **Chains per task.** Settings, AI has a new card for named provider chains.
+  A chain is an ordered list of the providers you already set up, and any AI
+  task can follow one: documents only on your local model, lab scans local
+  first with a cloud model behind it, the Coach on a cloud model. A chain
+  with a single provider is a binding, so the task stops with a clear reason
+  when that provider cannot answer instead of trying one you did not pick.
+  Each entry shows whether what it reads stays on this machine or leaves it.
+  Tasks left on Default keep exactly the rules they had, so nothing changes
+  for anyone who leaves the card alone, and consent, the operator's switches
+  and the server-key rules apply to every chain the same way. Thanks to
+  @ch3funio for the careful proposal and the code references behind it.
+  (#1404)
+
+- **Activity files (FIT).** Settings → Export & Import has a new card for
+  the file a watch or bike computer records: a bare `.fit`, a `.fit.gz`,
+  or the ZIP Garmin Connect's "Export original" writes. Each session
+  becomes a workout with its heart-rate, speed, power and cadence curve
+  (the heart-rate chart on the workout page), and with its GPS track when
+  Workout routes is switched on, stored encrypted like an Apple Health
+  track. A run that is already here from Garmin, Apple Health or Strava is
+  not stored twice: the existing workout gets the curve from the file if it
+  had none. Importing the same file again changes nothing. The file is
+  read in the background worker, never in the request: it is checked for
+  its header and checksums and against limits on messages, definitions and
+  developer fields before it is decoded, and deleted as soon as the import
+  ends. `POST /api/import/fit` (multipart, 10 MB) and
+  `GET /api/import/fit/status`; new rows carry `source = IMPORT`. Thanks to
+  @kruemelro for asking for it. (#1343)
+- **Heart rate over Garmin activities.** The Garmin connection now also
+  downloads the original file of each new activity and adds its heart-rate
+  curve to the workout, which the activity summary leaves out. Older
+  activities get theirs through the FIT card. (#1343)
+
+- **A seizure diary.** For anyone living with epilepsy, and for the parent or
+  carer who keeps the record for them, there is now a diary that stores what
+  a neurologist asks about. Switch it on under Settings, Modules (it is off
+  by default), set up the person's seizure types once with the family's own
+  name, the ILAE 2025 type (the 2017 name is shown beside it), the usual
+  duration and the rescue plan agreed with the care team, and log from a
+  phone: tap the type, tap "Seizure started", and the timer keeps running
+  through a reload or a locked screen. When it passes the type's threshold
+  (5 minutes for a tonic-clonic seizure, or the usual duration plus 2
+  minutes when that comes first, 10 minutes for a focal seizure with
+  impaired consciousness or an absence, 5 minutes otherwise) the person's own
+  plan appears with a call button for the emergency number. "Rescue given"
+  stamps the drug and dose, and the dose is also recorded on the as-needed
+  medication. Details such as sleep state, injuries, suspected triggers and
+  the witness are added later. The page shows recorded seizures, seizure
+  days, days since the last one, clusters under the record's own rule (2 in
+  24 hours until you set one) with NICE's 3 in 24 hours beside it, and a
+  type by month table. A cluster takes at least two entries, so a tally of
+  brief seizures logged at once counts in every total but is no cluster on
+  its own, and each seizure keeps the class its type had when it was logged. A new doctor report section adds monthly charts with
+  medication changes, duration and rescue tables, and, where the record has
+  them, missed doses, cycle days, the night's sleep and illness at the time.
+  The FHIR export carries each seizure, rescue dose and cluster, and the MCP
+  server has a `get_seizures` tool. It works in a managed child profile:
+  the guardian logs for the child, and a seizure a carer logged says who
+  logged it. "Log seizure" sits in the add menus, the timeline gains a
+  seizure lane, and an opt-in "Seizure cluster" notification tells the
+  person, or a child's guardians, once when a seizure someone else logged
+  forms a cluster, never the guardian who logged it. A carer whose share
+  does not include medications logs seizures and rescue doses by name, but
+  cannot record a dose on a medication. The diary records what was seen; it
+  does not diagnose and never says it is safe to wait. New routes under
+  `/api/seizures`; migrations `0504_seizure_diary` and
+  `0508_seizure_ilae_at_log_and_cluster_alerts`. Thanks to @ch3funio for
+  the detailed request and the clinical detail behind it. (#1368)
+
+- **A guardian can file documents for a managed profile.** From your own
+  account, inside the profile, Documents now takes uploads with the same
+  types and size limit as your own vault, and you can rename, retype, link,
+  delete and restore what is there. You can also finish what the upload
+  starts: read a scanned lab report with AI, correct the values it found
+  and confirm them into the profile's lab results, or ask about a letter.
+  The files and the values belong to the profile: they count against its
+  storage, not yours, and its activity log names you as the one who added,
+  changed or confirmed them. Every AI read follows the profile's own
+  settings and consent and runs on the instance's provider, never your
+  personal one. Automatic reading of new uploads is the profile's own
+  switch, under Settings → AI while you are inside the profile. An adult who shares their record at any level, manage
+  included, keeps the vault to themselves, as before. Thanks to @ch3funio
+  for the careful write-up and for offering to test it with a real
+  archive. (#1403)
+
+### Changed
+
+- A day's nutrient total no longer adds up sources that each report the whole
+  day. When a food tracker, Apple Health and Health Connect report the same
+  day, only the largest of their totals counts; manual water entries and
+  supplement doses still add on top. Before, an Apple Health and a Health
+  Connect total for the same day were added together. (#1402)
+- The measurement token can now also post daily nutrient totals, on its
+  owner's own record and only while the nutrients module is on. It still
+  cannot read anything back. (#1402)
+
+- With HealthLog on both an iPhone and an iPad, each device's own
+  medication reminder setting now counts. A device set to remind on its
+  own no longer gets the server's push for the same dose, a device set to
+  get reminders from the server gets them even when your account leaves
+  reminders to the app, and a device without its own setting follows your
+  account as before. Follow-up reminders for a dose you haven't logged yet,
+  and reminders over Telegram, ntfy, webhook, email or the browser, are
+  unchanged.
+
+- A phone or iPad now counts as recently seen whenever the HealthLog app
+  uses it to talk to your server, not only when the app registers it after
+  a cold start. The device list shows the real last use, at most an hour
+  behind, and the app can tell reliably which of your devices is still in
+  use, for example to decide which one should remind you of a medication.
+
+- The `apple-app-site-association` file now lists only the addresses the
+  iPhone app actually opens: registration and invite links, and the new
+  sign-in return. Before, it claimed every address on the server, so an app
+  build linked to your server could pull pages into the app that belong in
+  the browser, such as the web sign-in's own return from your identity
+  provider.
+
+- API responses and CSV or JSON exports now go out gzip-compressed when the
+  browser or app asks for it, which comes with Next.js 16.4.6. The live Coach
+  and document chat streams are left uncompressed, so their text still
+  arrives as it is written.
+
+### Removed
+
+- **The Fitbit integration.** Google switched the Fitbit Web API off on 30
+  October 2026, and HealthLog's Fitbit connection has not been able to sync
+  since. This release takes it out: the Fitbit card and its connect button,
+  the hourly sync, and the stored Fitbit tokens and app credentials are gone,
+  and so is the `FITBIT_REDIRECT_URI` setting. Everything already imported
+  from Fitbit stays. It is still in your charts, exports, backups and the
+  doctor report, and it is still marked as coming from Fitbit. Older backups
+  restore as before. If you had Fitbit connected, Settings → Integrations
+  shows a short note about this once, until you dismiss it. To keep data
+  from a Fitbit or Pixel Watch coming, connect Google Health, which reads the
+  same devices and needs one new consent from your Google account. On
+  Android you can also import a Health Connect export, since the Fitbit app
+  writes to Health Connect. The Fitbit app does not write to Apple Health, so
+  Apple Health is not a way round it. For iPhone app builds that still show
+  a Fitbit card, `GET /api/fitbit/status` keeps answering "not connected"
+  (with `retired: true`), and the integration's other routes answer 410
+  `route.retired` instead of 404.
+
+### Fixed
+
+- The arrow on a dashboard tile in the iPhone app now points the same way
+  as the change shown on that metric's page. The tile used to compare the
+  first and last of the past seven days while the page compared this month
+  with last month, so weight could show a falling arrow on the tile and
+  "+0.1 kg vs last month" on the page. The tile now uses the month
+  comparison too and tells the app which window it used; with less than two
+  months of readings it keeps the seven-day direction.
+- With the iPhone app set to English or Dutch on an account stored in
+  German, the Today screen's own texts (facts, hints, the lead the server
+  writes) now follow the app's language. The briefing and the reaction
+  line are written once per account, so each now says which language it is
+  in, and a reaction line in another language no longer becomes the lead.
+
+- The Today screen no longer says your first name twice. When the daily
+  briefing opened with it, the line under the greeting started with the
+  name again; that line now drops it. The briefing itself still may.
+- In the morning, the medications line on Today no longer reads "0 of 5
+  taken" before your first dose is even due. Until then it says when the
+  next dose is, and after that it counts the doses that were due so far.
+- With more than one check-up due, the hint under "Check-up due" now lists
+  them without repeating "due" in front.
+
+- History imports from Garmin, Polar, Oura, WHOOP and Withings sleep, and the daily totals of a Health Connect or Apple Health import, slowed down the longer the history was, and so did reading it again. Each reading was written on its own, about eight database round trips apiece, and on an account the database had not yet gathered statistics for, each one also looked through every reading the account already held. Readings are now written in batches: a year of Garmin history that took some 48,000 statements takes about 450. A Strava history import also needs under a third of the statements it did, because an activity already stored is no longer tried as a new one first, and a years-old activity no longer reads the account's module settings.
+- A lab marker created from a text result, such as "negative" on a scanned report or a CSV row without a unit, can be edited again. It opens with "No unit" ticked, a rename saves without touching the unit, and the unit can be set while the marker holds only text results. A range read beside such a text result came without a unit, so it is dropped when the marker gets a unit, unless you enter the range again with it. An Apple Health or CSV import no longer refuses the first number for such a marker as a unit mismatch; that number gives the marker its unit. The unit stays locked once numbers are stored under it, and writing the same unit another way (`mg/dl` for `mg/dL`) no longer counts as a change. (#1393)
+- On an account with a watch sending heart rate every few seconds, weight, blood pressure and other occasional readings went missing from the MCP metric series, the Coach and the insights, because the heart rate filled every read before they were reached. Each kind of reading now gets its own share, so they all show up again. (#1398)
+- Large accounts, such as a watch sending heart rate every few seconds for years, no longer time out in the MCP `list_metrics` and `search` tools. For MCP clients: the counts `list_metrics` reports now cover the last 30 days, not the whole history. They used to build the whole Coach context to learn which data exists; they now ask each kind of data whether it has readings and take exact reading counts from the daily summaries, and the check for older readings, the all-time figures in the insights, the per-metric status cards, the charts, the doctor report and the iPhone app's sync check no longer read the whole history on every call. A nightly check now compares the daily summaries with the readings written in the last two days and rebuilds a day that does not match. Thanks to @mailuminatti for measuring it on a real account. (#1398)
+- Right after a large first import, before the database had refreshed its statistics, the dashboard's latest readings and the insight reads could walk through every reading of the account once for each kind of measurement, which on a long history takes seconds or runs into the timeout. Each kind is now looked up on its own whatever the statistics say.
+- A blood glucose reading's context (fasting, post-meal, random, before bed) can be changed after it is saved. The edit sheet shows the same choice as the add form, set to the reading's current context, and a reading from a sensor or another app that came without one can stay "Not specified". Per-context targets and the Coach use the corrected context right away. For API clients, `PUT /api/measurements/{id}` takes `glucoseContext`, where `null` clears it. (#1407)
+- A medication's Effect tab now follows your unit settings. With glucose set to mmol/L, the blood glucose chart, its before and after means, the change at the start and the shaded band used to show mg/dL figures; weight and temperature targets stayed in kilograms and Celsius on an imperial account. The band is now your own target where you set one, or the diabetes goal band when you turned that on. (#1406)
+- Large Apple Health exports, which the Health app writes as ZIP64 archives, no longer lose their ECGs and workout routes: the reader for those files refused ZIP64 and counted every one as failed. An export with more than 20,000 files no longer loses its ECGs either, a large file the import does not read no longer stops the routes or lab results from being read, and a single file over a size limit now fails on its own instead of taking every file of its kind with it.
+- On a phone, the vitamins and minerals on the nutrients page no longer break
+  a name like "Vitamin C" across two lines; the days and reference line now
+  sits under the name.
+- The import cards in Settings no longer squeeze into narrow columns when the
+  day panel is open beside them, where titles broke word by word and the
+  activity-file button ran past the card. Every card's file button now
+  reads "Choose file".
+
+### Security
+
+- Creating an MCP connector token in the iPhone app now asks for your
+  second factor or passkey when your account has one, the same way the
+  web asks for a fresh sign-in. An account without either, such as one
+  that only signs in through single sign-on, keeps creating tokens in the
+  app as before. App builds that already ask for the proof keep working
+  unchanged.
+- The container image moves to Node 22.23.5, a security release with fixes
+  in HTTP, HTTP/2 and TLS handling (CVE-2026-123863 and others).
 
 ### Added
 

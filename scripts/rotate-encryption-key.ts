@@ -278,8 +278,7 @@ async function main() {
   // Columns: "codexAccessTokenEncrypted" "codexRefreshTokenEncrypted"
   // "telegramBotToken" "withingsClientIdEncrypted"
   // "withingsClientSecretEncrypted" "whoopClientIdEncrypted"
-  // "whoopClientSecretEncrypted" "fitbitClientIdEncrypted"
-  // "fitbitClientSecretEncrypted" "nightscoutUrlEncrypted"
+  // "whoopClientSecretEncrypted" "nightscoutUrlEncrypted"
   // "nightscoutTokenEncrypted" "polarAccessTokenEncrypted"
   // "polarUserIdEncrypted" "polarClientIdEncrypted"
   // "polarClientSecretEncrypted" "ouraAccessTokenEncrypted"
@@ -300,8 +299,6 @@ async function main() {
     "withingsClientSecretEncrypted",
     "whoopClientIdEncrypted",
     "whoopClientSecretEncrypted",
-    "fitbitClientIdEncrypted",
-    "fitbitClientSecretEncrypted",
     "googleHealthClientIdEncrypted",
     "googleHealthClientSecretEncrypted",
     "nightscoutUrlEncrypted",
@@ -348,13 +345,6 @@ async function main() {
         "WhoopConnection",
         field,
         prisma.whoopConnection,
-      ),
-    );
-    results.push(
-      await rotateStringColumn(
-        "FitbitConnection",
-        field,
-        prisma.fitbitConnection,
       ),
     );
     results.push(
@@ -665,6 +655,28 @@ async function main() {
       prisma.symptomEvent,
     ),
   );
+  // The seizure diary: a type's name and rescue plan, and
+  // the free text on one seizure. Most text columns are NULL, which the walk
+  // skips.
+  for (const field of ["labelEncrypted", "rescuePlanEncrypted"] as const) {
+    results.push(
+      await rotateBytesColumn(
+        "SeizureTypeProfile",
+        field,
+        prisma.seizureTypeProfile,
+      ),
+    );
+  }
+  for (const field of [
+    "semiologyNoteEncrypted",
+    "auraEncrypted",
+    "witnessNoteEncrypted",
+    "noteEncrypted",
+  ] as const) {
+    results.push(
+      await rotateBytesColumn("SeizureEvent", field, prisma.seizureEvent),
+    );
+  }
   // v1.42 — a life event's title and note. The note is NULL on most rows,
   // which the walk skips.
   results.push(

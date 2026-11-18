@@ -233,3 +233,27 @@ describe("PUT /api/measurements/[id] — value guards (di-001)", () => {
     expect(call.data.value).toBe(82.5);
   });
 });
+
+describe("PUT /api/measurements/[id] — glucose context (#1407)", () => {
+  // The writes themselves run against Postgres in
+  // tests/integration/measurement-glucose-context-edit.test.ts.
+  it("422s a context on any other type with a stable errorCode", async () => {
+    const res = await PUT(putReq({ glucoseContext: "FASTING" }), ROUTE_CTX);
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as { meta?: { errorCode?: string } };
+    expect(body.meta?.errorCode).toBe(
+      "measurement.update.glucose_context_not_glucose",
+    );
+    expect(prisma.measurement.update).not.toHaveBeenCalled();
+  });
+
+  it("422s an unknown context through the multi-issue envelope", async () => {
+    const res = await PUT(putReq({ glucoseContext: "LUNCH" }), ROUTE_CTX);
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      details: { issues: Array<{ path: string }> };
+    };
+    expect(body.details.issues.map((i) => i.path)).toContain("glucoseContext");
+    expect(prisma.measurement.update).not.toHaveBeenCalled();
+  });
+});

@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -33,6 +35,13 @@ import { formatBytes } from "@/lib/format/bytes";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { useCoachLaunch } from "@/lib/insights/coach-launch-context";
 import { cn } from "@/lib/utils";
+
+// Loaded on demand: only a managed profile's guardian ever opens it, and it
+// carries the Coach's bubble renderer.
+const DocumentChatSheet = dynamic(
+  () => import("../chat/document-chat-sheet").then((m) => m.DocumentChatSheet),
+  { ssr: false, loading: () => null },
+);
 import type {
   InboundDocumentDetailDto,
   InboundDocumentKindValue,
@@ -67,8 +76,12 @@ export function DocumentDetailFooter({
   // The vault's "Ask the Coach" opens the fenced conversation scoped to this
   // document in the shared side drawer.
   const launch = useCoachLaunch();
+  // #1403 — a managed profile's guardian has no Coach drawer (a shared record
+  // does not mount one), so the same question opens the document's own chat.
+  const [chatOpen, setChatOpen] = useState(false);
   const {
     canManageDocuments,
+    ownsVault,
     setConfirmDeleteOpen,
     remove,
     setShareOpen,
@@ -77,10 +90,10 @@ export function DocumentDetailFooter({
   } = detail;
   return (
     <div className="flex w-full items-center justify-between gap-2">
-      {/* .x — deleting, sharing and re-filing a document are the
-          owner's alone. Inside somebody else's record the sheet reads
-          the document and offers the download, and the leading slot
-          simply has nothing in it. */}
+      {/* Deleting is the owner's and a managed profile's guardian's;
+          inside an adult's record the sheet reads the document and offers
+          the download, and the leading slot simply has nothing in it.
+          Sharing stays the owner's alone. */}
       {canManageDocuments ? (
         <Button
           variant="ghost"
@@ -122,8 +135,31 @@ export function DocumentDetailFooter({
               {t("documents.chat.openButton")}
             </span>
           </Button>
+        ) : aiEnabled &&
+          !launch &&
+          !ownsVault &&
+          canManageDocuments &&
+          doc.hasContentIndex ? (
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setChatOpen(true)}
+              data-slot="document-chat-open"
+            >
+              <Sparkles className="size-4" aria-hidden />
+              <span className="sr-only sm:not-sr-only">
+                {t("documents.chat.openButton")}
+              </span>
+            </Button>
+            <DocumentChatSheet
+              documentId={doc.id}
+              title={doc.title ?? doc.filename ?? t("documents.card.untitled")}
+              open={chatOpen}
+              onOpenChange={setChatOpen}
+            />
+          </>
         ) : null}
-        {canManageDocuments && (
+        {ownsVault && (
           <Button
             variant="outline"
             onClick={() => setShareOpen(true)}

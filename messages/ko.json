@@ -58,7 +58,8 @@
     "errorIdCopied": "오류 ID 복사됨",
     "readThrottled": "지금은 요청이 너무 많으니 나중에 다시 시도해 주세요.",
     "sessionEnded": "세션이 만료되었으니 계속하려면 다시 로그인해 주세요.",
-    "signIn": "로그인"
+    "signIn": "로그인",
+    "yes": "예"
   },
   "apiErrors": {
     "measurement": {
@@ -249,7 +250,24 @@
         "invalid": "패스키의 응답을 읽을 수 없어요. 다시 시도해 주세요."
       }
     },
-    "oidc_only": "이 서버는 통합 로그인(SSO)만 허용해요. 대신 ID 공급자로 계속해 주세요."
+    "oidc_only": "이 서버는 통합 로그인(SSO)만 허용해요. 대신 ID 공급자로 계속해 주세요.",
+    "seizures": {
+      "disabled": "이 기록에서는 발작 일지가 꺼져 있어요.",
+      "event": {
+        "notFound": "이 발작 기록이 더 이상 없어요."
+      },
+      "rescue": {
+        "notFound": "이 응급약 투여 기록이 더 이상 없어요.",
+        "medicationNotFound": "이 약이 더 이상 없어요.",
+        "medicationRequired": "투여한 약을 선택하세요.",
+        "notAsNeeded": "응급약은 필요시 약이어야 해요."
+      },
+      "type": {
+        "inUse": "이 유형으로 기록된 발작이 있어요. 대신 보관하세요.",
+        "limit": "발작 유형이 이미 12개예요. 새로 추가하려면 하나를 보관하세요.",
+        "notFound": "이 발작 유형이 더 이상 없어요."
+      }
+    }
   },
   "doctorReport": {
     "title": "건강 리포트",
@@ -574,7 +592,9 @@
       "symptom": "증상",
       "symptomDescription": "직접 정한 증상과 강도",
       "lifeEventDescription": "이사, 출산, 새 직장",
-      "lifeEvent": "삶의 사건"
+      "lifeEvent": "삶의 사건",
+      "seizure": "발작",
+      "seizureDescription": "타이머를 시작하거나 시간을 재지 않은 발작을 기록"
     },
     "cycle": "생리 주기",
     "labs": "검사",
@@ -584,7 +604,8 @@
     "documents": "문서",
     "vaccinations": "예방접종",
     "mentalWellbeing": "정신 건강",
-    "timeline": "타임라인"
+    "timeline": "타임라인",
+    "seizures": "발작"
   },
   "auth": {
     "login": "로그인",
@@ -626,7 +647,9 @@
       "errorLinkRequired": "이 이메일 주소를 사용하는 계정이 이미 있습니다. 싱글 사인온에 연결하려면 해당 계정의 비밀번호나 패스키로 한 번 로그인하세요."
     },
     "native": {
-      "signingInToApp": "HealthLog 앱에 로그인하는 중"
+      "signingInToApp": "HealthLog 앱에 로그인하는 중",
+      "returnTitle": "앱으로 돌아가기",
+      "returnBody": "로그인은 HealthLog 앱에서 계속됩니다. 앱이 열리지 않았다면 앱으로 돌아가 다시 로그인하세요. 이 페이지는 닫아도 됩니다."
     },
     "mfa": {
       "title": "2단계 인증",
@@ -864,7 +887,8 @@
     },
     "greetingOnly": "{greeting}.",
     "welcomeNew": "환영합니다.",
-    "welcomeNewWithName": "{name}님, 환영합니다."
+    "welcomeNewWithName": "{name}님, 환영합니다.",
+    "quickAddSeizure": "발작 기록"
   },
   "measurements": {
     "title": "측정",
@@ -925,6 +949,7 @@
     "glucoseContextPostprandial": "식후 (식사 2h 후)",
     "glucoseContextRandom": "임의 / 수시",
     "glucoseContextBedtime": "취침 전",
+    "glucoseContextNone": "지정 안 함",
     "unitHours": "시간",
     "unitSteps": "걸음",
     "sourceManual": "직접 입력",
@@ -981,6 +1006,7 @@
     "typeIrregularRhythmNotification": "불규칙 심장 리듬 알림",
     "typeHighHeartRateEvent": "높은 심박수 알림",
     "typeLowHeartRateEvent": "낮은 심박수 알림",
+    "typeHypertensionEvent": "고혈압 알림",
     "typeWalkingSteadinessEvent": "보행 안정성 경고",
     "typeBreathingDisturbanceEvent": "호흡 장애",
     "typeRecoveryScore": "회복 점수",
@@ -1413,6 +1439,7 @@
       "openIllness": "열기"
     },
     "sourceNotification": "알림",
+    "sourceAppleHealth": "Apple Health",
     "tagCatalogLoadError": "태그를 불러오지 못했어요."
   },
   "medications": {
@@ -3926,7 +3953,8 @@
         "sleepTrendsLink": "수면 추이",
         "moodHistoryLink": "기분 기록",
         "previousSessionLink": "이전 세션",
-        "insightTitle": "활동 인사이트"
+        "insightTitle": "활동 인사이트",
+        "sourceFitFile": "FIT 파일"
       },
       "sport": {
         "walking": "걷기",
@@ -4815,6 +4843,7 @@
         "irregularRhythm": "불규칙한 리듬 알림",
         "highHeartRate": "높은 심박수 알림",
         "lowHeartRate": "낮은 심박수 알림",
+        "hypertension": "고혈압 알림",
         "walkingSteadiness": "보행 안정성 알림",
         "breathingDisturbance": "수면 중 호흡 장애"
       },
@@ -5059,7 +5088,8 @@
         "afternoon": "오늘 오후에 안정 시 심박수가 높은 구간이 이어졌어요. 긴장이 있었을 수 있어요.",
         "evening": "오늘 저녁에 안정 시 심박수가 높은 구간이 이어졌어요. 긴장이 있었을 수 있어요.",
         "night": "밤사이 안정 시 심박수가 높은 구간이 이어졌어요. 긴장이 있었을 수 있어요."
-      }
+      },
+      "emptyOutsideWorkouts": "운동 외 시간의 심박수 기록이 부족해 이날의 흐름을 보여 줄 수 없어요."
     },
     "navEcg": "심전도",
     "sectionLoadError": "이 섹션을 불러오지 못했습니다.",
@@ -5493,7 +5523,7 @@
       "medicationDescription": "복약 순응도를 기록하고 필요한 때에 알림을 받아요.",
       "medicationCta": "약 추가",
       "dataSourceTitle": "데이터 원본 연결하기(선택)",
-      "dataSourceDescription": "Withings, WHOOP, Oura, Polar, Nightscout, Fitbit, Apple Health에서 체중·혈압·수면 등을 자동으로 동기화해요.",
+      "dataSourceDescription": "Withings, WHOOP, Oura, Polar, Nightscout, Google Health, Apple Health에서 체중·혈압·수면 등을 자동으로 동기화해요.",
       "dataSourceCta": "연결",
       "notificationsTitle": "알림 설정하기",
       "notificationsDescription": "HealthLog가 어떻게 알려줄지 고르세요: Telegram, ntfy, 웹 푸시.",
@@ -5639,6 +5669,15 @@
             "labsChanges": "검사 결과 변화",
             "ecg": "심전도"
           }
+        },
+        "documents": {
+          "title": "문서",
+          "autoAiRead": "새 문서를 AI로 자동으로 읽기",
+          "honesty": "켜면 이 프로필에 올린 문서마다 인스턴스의 AI 제공자에게 보내져 문서별로 누를 필요 없이 읽히고 설명되고 검색용으로 색인돼요. 요약이 없는 기존 문서도 함께 보내져요(켤 때마다 최대 200개). 켜면 이 프로필의 문서를 읽어도 된다는 동의가 기록돼요. 프로필의 AI 설정이 적용되며 내 AI 제공자는 쓰이지 않아요. 기본값은 꺼짐이에요.",
+          "pageTitle": "문서와 AI",
+          "pageSubtitle": "{name}님의 프로필에 올린 문서를 AI가 읽을지 정해요.",
+          "noProvider": "이 서버에는 {name}님의 문서를 읽을 AI 제공자가 없어서 스위치를 켤 수 없어요. 서버 운영자가 제공자를 설정할 수 있어요.",
+          "aiOff": "{name}님의 프로필에서 AI가 꺼져 있어 문서를 읽지 않아요."
         }
       },
       "unavailableTitle": "이 공유 기록에서는 사용할 수 없어요",
@@ -5809,7 +5848,7 @@
         "subtitle": "같은 지표를 두 소스가 보낼 때 어느 쪽을 쓸지 정해요.",
         "nutrients": {
           "title": "동기화된 영양 섭취",
-          "description": "최근 {days}일간의 하루 합계예요. Apple Health에서 동기화한 값에 복용한 보충제가 더해져요.",
+          "description": "최근 {days}일간의 하루 합계예요. Apple Health나 식단 기록 앱에서 동기화한 값에 복용한 보충제가 더해져요.",
           "empty": "아직 동기화된 영양 데이터가 없어요.",
           "latest": "{date}에 {amount} {unit}",
           "daysWithData": "{days}일 중 {count}일",
@@ -5871,7 +5910,7 @@
         },
         "import": {
           "heading": "불러오기",
-          "description": "Apple Health 내보내기 파일, JSON, CSV에서 HealthLog로 데이터를 가져와요. 이미 있는 행은 건너뛰니 다시 실행해도 안전해요.",
+          "description": "Apple Health, Health Connect, 시계의 활동 파일, JSON 또는 CSV에서 HealthLog로 데이터를 가져와요. 이미 있는 행은 건너뛰니 다시 실행해도 안전해요.",
           "charCount": "{used} / {max}자",
           "appleHealth": {
             "title": "Apple Health",
@@ -5890,11 +5929,19 @@
             "failureInsufficientMemory": "이 크기의 보관 파일을 처리하기엔 서버 메모리 한도가 낮아요. 서버 운영자에게 Node.js 힙 한도(NODE_OPTIONS=--max-old-space-size)를 올려 달라고 한 뒤 내보내기 파일을 다시 올려 주세요.",
             "rowsImported": "지금까지 {count}개 행을 불러왔어요",
             "doneSummary": "완료: {read}개 중 {imported}개 기록을 불러왔고, 진료 기록 {skipped}개는 건너뛰었어요.",
+            "doneSummaryAuxOnly": "완료: {read}개 기록 중 새 기록은 없었지만, 아래 검사 결과나 심전도는 불러왔어요.",
             "doneNothing": "그 보관 파일에서 불러온 게 없어요: {read}개 중 0개만 들어왔어요.",
             "writtenByHealthLogOne": "HealthLog가 직접 건강 앱에 기록한 {count}개 항목은 이미 데이터에 있으므로 제외했습니다.",
             "writtenByHealthLogOther": "HealthLog가 직접 건강 앱에 기록한 {count}개 항목은 이미 데이터에 있으므로 제외했습니다.",
             "writtenByHealthLogFew": "HealthLog가 직접 건강 앱에 기록한 {count}개 항목은 이미 데이터에 있으므로 제외했습니다.",
-            "ecgResult": "심전도: 발견 {discovered}개, 불러옴 {imported}개, 갱신 {updated}개, 건너뜀 {skipped}개, 실패 {failed}개. 심전도가 실패해도 export.xml에서 불러온 지원 기록은 그대로 남아요.",
+            "ecgResult": "심전도: 발견 {discovered}개, 불러옴 {imported}개, 갱신 {updated}개, 건너뜀 {skipped}개, 실패 {failed}개.",
+            "ecgFailedNote": "심전도가 실패해도 export.xml에서 불러온 지원 기록은 그대로 남아요.",
+            "labsResult": "건강 기록의 검사 결과: 발견 {discovered}개, 불러옴 {imported}개, 이미 있음 {duplicate}개, 건너뜀 {skipped}개, 실패 {failed}개.",
+            "labsFailedNote": "검사 결과가 실패해도 아카이브의 다른 기록은 그대로 남아요.",
+            "labsMarkersCreatedOne": "검사에 새 항목 {count}개가 추가됐어요.",
+            "labsMarkersCreatedOther": "검사에 새 항목 {count}개가 추가됐어요.",
+            "labsMarkersCreatedFew": "검사에 새 항목 {count}개가 추가됐어요.",
+            "viewInLabs": "검사에서 보기",
             "estimateWarning": "{count}일치 누적 합계는 가장 큰 내보내기 소스에서 추정했어요. Apple Health 자체 통계가 여전히 기준이에요.",
             "phase": {
               "queued": "대기 중…",
@@ -5917,7 +5964,7 @@
             "fileInputLabel": "불러올 JSON 파일 선택",
             "schemaHint": "배열 두 개: measurements와 moodEntries.",
             "docsLink": "스키마와 예시 보기.",
-            "uploadFile": "파일 올리기",
+            "uploadFile": "파일 선택",
             "downloadExample": "예시 내려받기",
             "import": "불러오기",
             "invalidJson": "올바른 JSON이 아니에요. 문법을 확인하고 다시 시도해 주세요.",
@@ -5940,7 +5987,7 @@
             "fileInputLabel": "불러올 CSV 파일 선택",
             "schemaHint": "열: type, value, unit, measuredAt (시간대 오프셋 포함), 그리고 선택 항목인 glucoseContext, notes, externalId.",
             "docsLink": "열 스키마와 예시 보기.",
-            "uploadFile": "파일 올리기",
+            "uploadFile": "파일 선택",
             "downloadExample": "예시 내려받기",
             "preview": "미리 보기",
             "import": "불러오기",
@@ -6037,7 +6084,7 @@
           "healthConnect": {
             "title": "Health Connect 내보내기",
             "description": "Android의 Health Connect 앱에서 데이터를 내보낼 때 만들어지는 ZIP 파일을 가져옵니다.",
-            "choose": "ZIP 파일 선택",
+            "choose": "파일 선택",
             "uploading": "업로드 중…",
             "uploadFailed": "업로드에 실패했습니다. 다시 시도해 주세요.",
             "tooLarge": "파일이 이 서버에서 허용하는 크기보다 큽니다.",
@@ -6074,6 +6121,53 @@
               "unsafeSchema": "이 파일은 Health Connect 내보내기 구조가 아니어서 읽지 않았습니다.",
               "tooLarge": "내보내기 파일이 이 서버가 받을 수 있는 크기보다 큽니다.",
               "stagingMissing": "업로드한 파일이 더 이상 서버에 없습니다. 다시 업로드하세요.",
+              "interrupted": "서버 재시작으로 가져오기가 중단되었습니다. 파일을 다시 업로드하세요."
+            }
+          },
+          "fit": {
+            "title": "활동 파일(FIT)",
+            "description": "Garmin, Wahoo, Coros, Polar 등 시계나 자전거 컴퓨터가 기록한 FIT 파일에서 운동을 가져옵니다.",
+            "choose": "파일 선택",
+            "uploading": "업로드 중…",
+            "uploadFailed": "업로드에 실패했습니다. 다시 시도해 주세요.",
+            "tooLarge": "파일이 10MB보다 큽니다.",
+            "rateLimited": "짧은 시간에 업로드가 너무 많습니다. 1분 후에 다시 시도해 주세요.",
+            "busy": "계정에서 이미 가져오기가 진행 중입니다. 끝날 때까지 기다려 주세요.",
+            "failed": "가져오기에 실패했습니다. 다시 시도해 주세요.",
+            "doneSummary": "활동 파일을 가져왔습니다.",
+            "doneNothing": "가져오기가 끝났지만 새로 추가할 항목이 없었습니다.",
+            "dropLabel": "활동 파일을 여기에 놓으세요",
+            "dropHint": "또는 클릭해서 선택하세요: 최대 10MB의 .fit, .fit.gz 또는 .zip 파일.",
+            "fileInputLabel": "활동 파일",
+            "privacyNote": "가져오기가 끝나는 즉시 파일은 서버에서 삭제됩니다. Garmin, Apple 건강 또는 다른 앱에서 이미 들어온 운동은 두 번 추가되지 않으며, 심박수 곡선이 없던 경우에만 파일의 곡선이 더해집니다. GPS 경로는 운동 경로가 켜져 있을 때만 저장됩니다. 같은 파일을 다시 올려도 바뀌는 것은 없습니다.",
+            "steps": {
+              "garmin": "Garmin Connect: 웹사이트에서 활동을 열고 톱니바퀴 메뉴에서 원본 내보내기를 선택하세요. ZIP 파일을 그대로 업로드하면 됩니다.",
+              "other": "다른 앱과 기기: 활동을 FIT 파일(.fit 또는 .fit.gz)로 내보내 여기에 업로드하세요."
+            },
+            "phase": {
+              "queued": "시작 대기 중",
+              "parsing": "파일 읽는 중",
+              "upserting": "운동 저장 중"
+            },
+            "result": {
+              "imported": "새 운동",
+              "merged": "기존 운동에 추가됨",
+              "alreadyPresent": "이미 있음",
+              "sessionsSkipped": "읽을 수 없는 세션",
+              "withSeries": "심박수 곡선 포함",
+              "withRoute": "GPS 경로 포함"
+            },
+            "failure": {
+              "unsupportedFile": "활동 파일이 아닙니다. .fit, .fit.gz 또는 .zip 파일을 선택하세요.",
+              "archiveInvalid": "ZIP 파일에는 .fit 파일이 정확히 하나 있어야 하며, 이 파일은 읽을 수 없었습니다.",
+              "tooLarge": "파일이 이 서버가 받을 수 있는 크기보다 큽니다.",
+              "notFit": "이 파일은 FIT 파일이 아닙니다.",
+              "crcMismatch": "파일이 손상되었습니다. 체크섬이 일치하지 않습니다. 다시 내보내 주세요.",
+              "malformed": "파일이 손상되었거나 완전하지 않아 읽을 수 없었습니다.",
+              "tooComplex": "파일에 활동 하나보다 훨씬 많은 데이터가 있어 읽지 않았습니다.",
+              "notActivity": "이 FIT 파일은 활동이 아닙니다(코스나 일일 요약일 수 있습니다). 운동 하나의 파일을 선택하세요.",
+              "noSession": "파일에 읽을 수 있는 운동이 없습니다.",
+              "stagingMissing": "업로드한 파일이 서버에 더 이상 없습니다. 다시 업로드하세요.",
               "interrupted": "서버 재시작으로 가져오기가 중단되었습니다. 파일을 다시 업로드하세요."
             }
           }
@@ -6482,7 +6576,8 @@
           "local": "로컬 모델",
           "openai-compatible": "OpenAI 호환 게이트웨이",
           "admin-openai": "관리자 OpenAI",
-          "antigravity": "Antigravity CLI"
+          "antigravity": "Antigravity CLI",
+          "admin-codex": "서버 공유 ChatGPT"
         },
         "title": "대체 순서",
         "description": "활성 제공자가 실패하면 HealthLog가 이 순서대로 다음 활성 제공자를 시도해요.",
@@ -6497,6 +6592,49 @@
         "resetDefaults": "기본값으로 되돌리기",
         "resetConfirmTitle": "순서를 기본값으로 되돌릴까요?",
         "resetConfirmBody": "순서가 Codex → OpenAI → Anthropic → 로컬 → 관리자 OpenAI로 돌아가요. 저장한 인증 정보는 그대로예요."
+      },
+      "namedChains": {
+        "title": "작업별 순서",
+        "description": "작업마다 고유한 제공자 순서를 지정할 수 있으며, 기본값인 작업은 평소 규칙을 그대로 따릅니다.",
+        "empty": "아직 순서가 없습니다. 모든 작업이 대체 순서를 따릅니다.",
+        "newChain": "새 순서",
+        "newChainName": "순서 {n}",
+        "nameLabel": "순서 이름",
+        "nameRequired": "모든 순서에는 이름이 필요합니다.",
+        "nameTaken": "두 순서가 같은 이름을 가질 수 없습니다.",
+        "defaultBadge": "기본값",
+        "makeDefault": "기본값으로 설정",
+        "deleteChain": "순서 삭제",
+        "deleteConfirmTitle": "“{name}”을(를) 삭제할까요?",
+        "deleteConfirmBody": "저장하면 순서가 삭제됩니다. 제공자와 키는 그대로 유지됩니다.",
+        "deleteConfirmBodyUsed": "이 순서를 쓰는 작업({count}개)은 저장 시 기본값으로 돌아갑니다. 기본 순서였다면 대체 순서가 다시 기본이 됩니다. 제공자와 키는 그대로 유지됩니다.",
+        "bindingHint": "제공자가 하나뿐이면 고정 연결입니다. 응답할 수 없으면 다른 제공자를 시도하지 않고 작업이 멈춥니다.",
+        "bindingShort": "이 제공자에 고정, 대체 없음.",
+        "egressLocal": "이 기기에 머무름",
+        "egressExternal": "이 기기 밖으로 나감",
+        "notSetUp": "아직 설정되지 않음",
+        "defaultChainLabel": "기본 순서",
+        "defaultChainHint": "기본값인 작업은 이 순서를 따릅니다. 평소 규칙은 그대로이며, 문서는 로컬 모델을 먼저 시도합니다.",
+        "tasksHeading": "작업",
+        "tasksHint": "작업마다 체인을 고르세요. 자체 체인을 쓰는 작업 아래에는 시도할 제공자가 순서대로 표시돼요.",
+        "taskDefault": "기본값",
+        "save": "순서 저장",
+        "saved": "순서가 저장되었습니다",
+        "saveFailed": "순서를 저장하지 못했습니다",
+        "capabilities": {
+          "documentAi": "문서 읽기",
+          "labsOcr": "검사 결과지 스캔",
+          "supplementLabel": "보충제 라벨 읽기",
+          "medicationExtract": "텍스트로 약 등록",
+          "coach": "코치",
+          "aboutMeQuestions": "나에 관한 질문",
+          "briefing": "일일 브리핑",
+          "periodNarrative": "주간 및 월간 요약",
+          "statusText": "상태 메모",
+          "workoutInsights": "운동 메모",
+          "reactionLines": "새 측정값에 대한 반응"
+        },
+        "tasksNeedChain": "작업마다 제공자를 따로 정하려면 위에서 체인을 만드세요. 그전까지는 모든 작업이 기본값을 따라요."
       },
       "activeProviderHeading": "사용 중인 제공자",
       "activeProviderLabel": "설정할 제공자",
@@ -6891,31 +7029,15 @@
       "generic": "연결 중 알 수 없는 오류가 생겼어요. 연결을 다시 시작해 주세요.",
       "already_linked": "이 WHOOP 계정은 이미 다른 HealthLog 프로필에 연결되어 있어요. 이 프로필의 WHOOP 계정으로 로그인하거나, 먼저 다른 프로필에서 연결을 해제해 주세요."
     },
-    "fitbit": "Fitbit",
-    "fitbitTag": "Fitbit & Pixel",
-    "fitbitDescription": "Fitbit을 연결하면 Fitbit과 Pixel Watch의 건강 지표를 동기화해요: 체중, 심박수 등.",
-    "fitbitExperimentalBadge": "실험 기능",
-    "fitbitCredentials": "API 자격 증명",
-    "fitbitClientId": "클라이언트 ID",
-    "fitbitClientSecret": "클라이언트 시크릿",
-    "fitbitCredentialsSaved": "자격 증명을 저장했어요",
-    "fitbitCredentialsSavedPlaceholder": "저장됨: 바꾸려면 새로 입력",
-    "fitbitCredentialsSavedPlaceholderSecret": "저장됨: 바꾸려면 새로 입력",
-    "fitbitSaveCredentials": "저장",
-    "fitbitSync": "지금 동기화",
-    "fitbitFullSync": "전체 데이터 동기화",
-    "fitbitFullSyncTitle": "전체 동기화할까요?",
-    "fitbitFullSyncDescription": "Fitbit에 있는 모든 기록을 전부 동기화해요. 기록이 많으면 시간이 걸릴 수 있어요.",
-    "fitbitSyncResult": "측정값 {count}개를 동기화했어요",
-    "fitbitSyncFailed": "동기화에 실패했어요",
-    "fitbitSynchronize": "동기화",
-    "fitbitDisconnect": "연결 해제",
-    "fitbitDisconnectTitle": "Fitbit 연결을 해제할까요?",
-    "fitbitDisconnectDescription": "Fitbit 연결이 해제돼요. 이미 동기화한 데이터는 그대로 남아요.",
-    "fitbitConnect": "Fitbit으로 연결",
-    "fitbitNoCredentials": "Fitbit을 연결하려면 위에 API 자격 증명을 입력해 주세요.",
-    "fitbitOauthConnected": "Fitbit을 연결했어요. 첫 동기화가 백그라운드에서 시작돼요.",
-    "fitbitOauthFailed": "Fitbit 연결에 실패했어요",
+    "fitbitRemoval": {
+      "title": "Fitbit 동기화가 중단됐어요",
+      "body": "Google이 2026년 10월 30일에 Fitbit Web API를 종료해서 HealthLog는 더 이상 Fitbit에 연결할 수 없고, Fitbit 연동은 제거됐어요. 이미 가져온 데이터는 모두 그대로 남아요. 차트, 내보내기, 백업, 진료 보고서에 계속 Fitbit으로 표시돼요.",
+      "ways": "Fitbit이나 Pixel Watch 데이터를 계속 받으려면 아래에서 Google Health를 연결해 주세요. 같은 기기의 데이터를 읽고, Google에서 동의를 한 번 요청해요. Android에서는 Health Connect 내보내기 파일을 가져올 수도 있어요.",
+      "toGoogleHealth": "Google Health로 이동",
+      "toHealthConnect": "Health Connect 가져오기",
+      "dismiss": "확인",
+      "dismissFailed": "안내를 숨기지 못했어요. 다시 시도해 주세요."
+    },
     "googleHealth": "Google Health",
     "googleHealthTag": "Fitbit & Pixel",
     "googleHealthBetaBadge": "베타",
@@ -6970,18 +7092,6 @@
       "token": "Google과의 토큰 교환에 실패했어요. 연결을 다시 시작해 주세요.",
       "generic": "연결 중 알 수 없는 오류가 생겼어요. 연결을 다시 시작해 주세요.",
       "already_linked": "이 Google 계정은 이미 다른 HealthLog 프로필에 연결되어 있어요. 이 프로필의 Google 계정으로 로그인하거나, 먼저 다른 프로필에서 연결을 해제해 주세요."
-    },
-    "fitbitOauthError": {
-      "csrf1": "브라우저 쿠키가 없어서 보안 확인에 실패했어요. 같은 브라우저에서 연결을 다시 시작해 주세요.",
-      "state": "Fitbit의 응답이 진행 중인 연결 요청과 맞지 않아요. 연결을 다시 시작해 주세요.",
-      "expired": "연결 요청이 완료되기 전에 만료됐어요. 연결을 다시 시작해 주세요.",
-      "cross_user": "다른 계정의 요청에 대한 응답이에요. 본인 계정에서 연결을 다시 시작해 주세요.",
-      "nocode": "Fitbit이 인증 코드를 보내지 않았어요. 다시 시도하고 Fitbit 창에서 접근을 허용해 주세요.",
-      "nocreds": "Fitbit이 설정되지 않았어요. 위에 Fitbit OAuth 자격 증명을 추가하고 다시 시도해 주세요.",
-      "token": "Fitbit과의 토큰 교환에 실패했어요. 연결을 다시 시작해 주세요.",
-      "generic": "연결 중 알 수 없는 오류가 생겼어요. 연결을 다시 시작해 주세요.",
-      "retired": "Google이 Fitbit Web API를 종료해서 새 Fitbit 연결을 만들 수 없어요. 같은 기기의 데이터를 읽는 Google Health를 대신 연결해 주세요.",
-      "already_linked": "이 Fitbit 계정은 이미 다른 HealthLog 프로필에 연결되어 있어요. 이 프로필의 Fitbit 계정으로 로그인하거나, 먼저 다른 프로필에서 연결을 해제해 주세요."
     },
     "integrations": {
       "withings": {
@@ -7047,15 +7157,15 @@
     },
     "withingsViewData": "측정값 보기",
     "whoopViewData": "회복도 보기",
-    "fitbitViewData": "수면 보기",
     "googleHealthViewData": "걸음 수 보기",
     "apiTokens": "API 토큰",
     "apiTokensDescription": "측정값, 운동, 문서, 복용 기록용 토큰을 확인하고 폐기해요.",
     "measurementsToken": {
       "title": "측정 토큰",
-      "description": "체중계나 시계, 홈 오토메이션이 측정값과 사용자 지표 값을 기록할 수 있도록 토큰을 만들어요.",
+      "description": "체중계나 시계, 식단 기록 앱, 홈 오토메이션이 측정값, 사용자 지표 값, 하루 영양소 합계를 기록할 수 있도록 토큰을 만들어요.",
       "detail": "토큰은 한 번만 표시돼요.",
-      "scopeNote": "본인 기록에 새 측정값을 추가하고, 이미 만든 사용자 지표에 값을 추가하는 것만 할 수 있어요. 데이터를 읽거나, 사용자 지표를 만들거나, 무언가를 고치거나 지우거나, 다른 토큰을 만들 수는 없어요. 측정값은 외부 기기에서 온 것으로 표시되어 나중에 구분할 수 있지만, 사용자 지표 값에는 이런 표시가 없어요. 둘 다 언제든 고칠 수 있어요. 사용자 지표의 ID는 해당 지표 페이지 주소에서 /custom-metrics/ 뒤에 오는 부분이에요.",
+      "scopeNote": "본인 기록에 측정값을, 이미 만든 사용자 지표에 값을, 영양소 모듈이 켜져 있는 동안 하루 영양소 합계를 추가하는 것만 할 수 있어요. 무엇도 읽거나 고치거나 지울 수 없어요. 측정값과 영양소 합계는 외부에서 온 것으로 표시돼요. 사용자 지표의 ID는 지표 페이지 주소에서 /custom-metrics/ 뒤에 오는 부분이에요.",
+      "nutrientsLink": "영양소 섭취 보기",
       "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요.",
       "namePlaceholder": "이름 (예: Home Assistant)",
       "appleHealth": {
@@ -7523,7 +7633,7 @@
       },
       "workoutRoutes": {
         "title": "운동 경로",
-        "description": "iPhone 앱과 Apple 건강 내보내기에서 새 운동의 GPS 경로를 저장합니다.",
+        "description": "iPhone 앱, Apple 건강 내보내기, 활동 파일, Garmin에서 가져온 새 운동의 GPS 경로를 저장합니다.",
         "detail": "새 계정에서는 꺼져 있어요. 경로는 사는 곳, 일하는 곳, 운동하는 곳을 보여 주므로 이 설정을 켠 뒤에만 저장됩니다. 운동 기록은 항상 저장되며, 어떤 AI 기능도 경로를 읽지 않습니다. 끄면 새 경로 저장이 멈추고, 이미 저장된 경로는 운동을 삭제할 때까지 남습니다.",
         "loadError": "경로 설정을 불러오지 못했습니다."
       },
@@ -7825,15 +7935,6 @@
       "homePlaceUnknown": "Dawarich 인스턴스에 이 장소가 더 이상 없습니다.",
       "notConnected": "Dawarich가 연결되어 있지 않습니다.",
       "generic": "실패했습니다. 다시 시도하세요."
-    },
-    "fitbitRetirement": {
-      "ending": "Google이 {date}에 Fitbit Web API를 종료해요. 그 이후로 이 연결은 더 이상 동기화되지 않아요.",
-      "ended": "Google이 {date}에 Fitbit Web API를 종료했어요. 이 연결은 더 이상 동기화되지 않아요.",
-      "move": "Google Health는 같은 Fitbit 및 Pixel 기기의 데이터를 읽어요. 데이터를 계속 받으려면 아래에서 연결해 주세요. Fitbit 연결은 옮길 수 없어서 Google이 동의를 한 번 더 요청해요. 이미 가져온 데이터는 모두 그대로 남아요.",
-      "toCard": "Google Health로 이동",
-      "guide": "Google Health 연결 방법",
-      "badgeEnding": "종료 예정",
-      "badgeEnded": "종료됨"
     },
     "passkeyAddedToast": "패스키를 추가했어요.",
     "passkeyRemovedToast": "패스키를 삭제했어요.",
@@ -8613,7 +8714,9 @@
           "failureUnconfirmed": "확인하려면 계정의 사용자 이름을 정확히 입력해 주세요.",
           "failureUsernameTaken": "이미 사용 중인 사용자 이름이에요.",
           "failureOwnerExists": "이 파일의 계정이 이 서버에 있어서 파일은 그 계정으로 복원돼요. 계정을 고르지 말고 다시 업로드해 주세요."
-        }
+        },
+        "restoreSkippedSeizureMedicationReference": "파일에 없는 약에 연결된 발작 응급 계획 또는 응급약 투여 (연결 없이 보존)",
+        "restoreSkippedSeizureTypeReference": "파일에 없는 발작 유형에 연결된 발작 (유형 없이 보존)"
       },
       "danger-zone": {
         "title": "위험 구역",
@@ -9523,6 +9626,12 @@
       "titleRecovered": "백그라운드 작업이 다시 작동해요: {queue}",
       "bodyFailing": "백그라운드 작업 {queue}이(가) {failures}번 연속 실패했어요. 관리자 상태 페이지에서 확인할 수 있어요. 마지막 오류: {error}",
       "bodyRecovered": "백그라운드 작업 {queue}이(가) 다시 정상적으로 실행됐어요."
+    },
+    "eventSeizureCluster": "군집 발작",
+    "eventSeizureClusterDesc": "다른 사람이 기록한 발작이 일지 규칙에 따라 군집을 이룰 때. 군집마다 한 번.",
+    "seizureCluster": {
+      "title": "군집 발작",
+      "body": "{hours}시간 안에 발작 {count}회, {name} 님이 기록함. 응급 계획은 발작 일지에 있습니다."
     }
   },
   "i18n": {
@@ -10403,12 +10512,14 @@
     "addResult": "값 추가",
     "addDescription": "검사 결과지의 바이오마커 측정값을 기록해요.",
     "addFirst": "첫 결과 추가",
+    "importAction": "Apple Health 또는 CSV에서 가져오기",
     "emptyTitle": "아직 검사 결과가 없어요",
     "emptyDescription": "HbA1c, LDL, 페리틴 같은 혈액검사 수치를 기록하면 추이를 보고 의사와 공유할 수 있어요.",
     "referenceLabel": "참고 범위",
     "readingsCount": "측정값 {count}개",
     "deleteConfirmTitle": "검사 결과를 삭제할까요?",
     "deleteConfirmDescription": "이 검사 결과를 삭제해요. 삭제 직후 잠깐은 되돌릴 수 있어요.",
+    "deleteAppleHealthNote": "다음 Apple Health 가져오기 때 다시 생기지 않아요.",
     "deletedToast": "결과를 삭제했어요",
     "deleteError": "결과를 삭제하지 못했어요",
     "loadError": "검사 결과를 불러오지 못했어요",
@@ -10492,8 +10603,8 @@
         "365": "1년",
         "all": "전체"
       },
-      "sourceRangeLabel": "결과지 범위",
-      "sourceBandLegend": "두 번째 띠: {date} 결과지에 적힌 범위예요.",
+      "sourceRangeLabel": "검사기관 범위",
+      "sourceBandLegend": "두 번째 띠: {date} 결과와 함께 검사기관이 제시한 범위예요.",
       "sourceBandMixed": "두 번째 띠: 가장 최근 결과지에 적힌 범위예요. 이 구간의 이전 결과지에는 다른 범위가 적혀 있어요."
     },
     "biomarker": {
@@ -10729,9 +10840,9 @@
       "orderDefault": "직접 옮기기 전에는 기본 카테고리가 정해진 순서로, 직접 만든 카테고리가 가나다순으로 이어지고 {other}가 마지막에 와요."
     },
     "sourceRange": {
-      "fromReport": "결과지 범위 {range}",
+      "fromReport": "검사기관 범위 {range}",
       "catalogDiffers": "내 범위 {range}",
-      "printed": "결과지 원문({unit}): {range}"
+      "printed": "원래 단위({unit}): {range}"
     },
     "match": {
       "viaAlias": "전에 고른 이름으로 연결됨",
@@ -10822,6 +10933,10 @@
       "markerCountOther": "바이오마커 {count}개",
       "noMatchesTitle": "일치하는 바이오마커 없음",
       "noMatchesDescription": "검색어 또는 필터를 조정해 보세요."
+    },
+    "source": {
+      "OCR": "스캔한 결과지",
+      "DOCUMENT": "문서"
     }
   },
   "modules": {
@@ -10895,7 +11010,7 @@
     },
     "nutrients": {
       "label": "영양소 섭취",
-      "description": "Apple Health에서 동기화한 하루 미량영양소 합계."
+      "description": "Apple Health나 식단 기록 앱의 하루 영양소 합계: 수분, 에너지, 다량영양소, 비타민, 미네랄."
     },
     "vaccinations": {
       "label": "예방접종",
@@ -10904,6 +11019,10 @@
     "timeline": {
       "label": "타임라인",
       "description": "몇 년을 한눈에: 수치 옆에 질환, 약, 진료가 놓이고, 내 삶의 사건도 함께 보여요."
+    },
+    "seizures": {
+      "label": "발작 일지",
+      "description": "발작을 유형, 지속 시간, 응급약과 함께 기록하고, 군집 발작과 발작 없는 날을 확인하고, 진료용 리포트에 발작 항목을 추가해요."
     }
   },
   "moduleOff": {
@@ -11603,7 +11722,8 @@
       "totalLabel": "점수",
       "bandLabel": "분류",
       "answersToggle": "답변",
-      "answersUnavailable": "이 점검에 저장된 답변을 복호화할 수 없어요."
+      "answersUnavailable": "이 점검에 저장된 답변을 복호화할 수 없어요.",
+      "answersNotShared": "Apple Health에서 작성했어요. 답변은 공유되지 않고 점수만 공유됐어요."
     },
     "crisis": {
       "title": "혼자 견디지 않아도 돼요",
@@ -12257,7 +12377,8 @@
       "duplicateExists": "같은 문서가 이미 저장돼 있어요.",
       "uploadBusy": "서버가 다른 업로드를 처리하느라 바빴어요. 지금 다시 시도해 주세요.",
       "rateLimited": "이번 시간의 업로드 한도에 도달했어요. 나중에 다시 시도해 주세요.",
-      "generic": "업로드하지 못했어요. 다시 시도해 주세요."
+      "generic": "업로드하지 못했어요. 다시 시도해 주세요.",
+      "recordChanged": "이 파일을 업로드하는 동안 열린 기록이 바뀌었습니다. 다시 업로드하세요."
     },
     "toast": {
       "duplicate": "이미 저장돼 있어요. 기존 문서를 표시해요.",
@@ -12287,7 +12408,8 @@
       "description": "의사 소견서, 검사 리포트, 영상, 처방전, 예방접종 기록을 암호화해 보관하고 종류, 질환, 연도별로 검색해요.",
       "action": "첫 문서 올리기",
       "noMatchesTitle": "일치하는 문서 없음",
-      "noMatchesDescription": "현재 검색·필터에 맞는 문서가 없어요."
+      "noMatchesDescription": "현재 검색·필터에 맞는 문서가 없어요.",
+      "titleRecord": "{name}님의 문서 보관함이 비어 있어요"
     },
     "detail": {
       "title": "문서 상세",
@@ -12593,6 +12715,10 @@
     "picker": {
       "capped": "최신 {count}개를 보여 줘요. 이전 문서는 검색으로 찾아 주세요.",
       "cappedSearching": "최근 검색 결과 {count}개를 보여 줘요. 이전 문서는 검색어를 좁혀서 찾아 주세요."
+    },
+    "recordAi": {
+      "noProvider": "이 서버에는 이 기록의 문서를 읽을 AI 제공자가 없어서 요약, 내용 검색, 문서 채팅을 쓸 수 없어요.",
+      "off": "이 기록에서는 AI가 꺼져 있어 문서 요약, 내용 검색, 문서 채팅을 쓸 수 없어요."
     }
   },
   "selfDescription": {
@@ -12714,15 +12840,29 @@
       "water": "수분",
       "caffeine": "카페인",
       "dha": "DHA (오메가-3)",
-      "epa": "EPA (오메가-3)"
+      "epa": "EPA (오메가-3)",
+      "energy": "에너지",
+      "protein": "단백질",
+      "carbohydrates": "탄수화물",
+      "fat": "지방",
+      "saturated_fat": "포화지방",
+      "monounsaturated_fat": "단일불포화지방",
+      "polyunsaturated_fat": "다중불포화지방",
+      "sugar": "당류",
+      "fiber": "식이섬유",
+      "cholesterol": "콜레스테롤",
+      "sodium": "나트륨",
+      "potassium": "칼륨",
+      "alcohol": "알코올"
     },
     "page": {
       "title": "영양소 섭취",
-      "description": "휴대폰 건강 앱에서 동기화된 수분·비타민/미네랄 섭취량과 직접 입력한 수분 기록이에요.",
-      "moduleOffDescription": "영양소 모듈을 켜면 수분과 비타민/미네랄 섭취량을 여기서 볼 수 있어요. 동기화된 섭취량은 코치가 읽는 기록에 포함돼요.",
+      "description": "건강 앱이나 식단 기록 앱의 수분·에너지·다량영양소·비타민·미네랄과 직접 입력한 수분 기록이에요.",
+      "moduleOffDescription": "영양소 모듈을 켜면 수분, 에너지, 다량영양소, 비타민/미네랄 섭취량을 여기서 볼 수 있어요. 동기화된 섭취량은 코치가 읽는 기록에 포함돼요.",
       "moduleOffCta": "영양소 켜기",
       "emptyTitle": "아직 영양소 데이터가 없어요",
-      "emptyDescription": "휴대폰 건강 앱 동기화나 직접 입력한 수분 기록에서 데이터가 들어와요.",
+      "emptyDescription": "휴대폰 건강 앱 동기화, 측정값 토큰을 쓰는 식단 기록 앱, 또는 직접 입력한 수분 기록에서 데이터가 들어와요.",
+      "emptyTokenAction": "측정 토큰 만들기",
       "loadError": "영양소 데이터를 불러오지 못했어요",
       "lastAttemptTitle": "동기화는 도착했지만 아무것도 저장하지 못했어요",
       "lastAttemptAt": "마지막 시도: {date}",
@@ -12735,16 +12875,21 @@
       }
     },
     "hydration": {
-      "referenceMeta": "권장 섭취량 {value} {unit}/일 (EFSA)",
+      "referenceMeta": "권장 섭취량 {value} {unit}/일 ({authority})",
       "loadError": "수분을 불러오지 못했어요."
     },
     "caffeine": {
-      "ceilingMeta": "안전 상한 {value} {unit}/일 (EFSA)",
+      "ceilingMeta": "안전 상한 {value} {unit}/일 ({authority})",
       "loadError": "카페인을 불러오지 못했어요."
     },
     "micronutrients": {
-      "title": "비타민·미네랄",
-      "rowMeta": "{window}일 중 {days}일, 기준 {value} {unit} (EFSA)",
+      "title": "미량영양소",
+      "groups": {
+        "vitamin": "비타민",
+        "mineral": "미네랄",
+        "omega3": "오메가-3 지방산"
+      },
+      "rowMeta": "{window}일 중 {days}일, 기준 {value} {unit} ({authority})",
       "rowMetaNoRef": "{window}일 중 {days}일",
       "footer": "이 기간에 데이터가 있는 미량영양소는 추적 중인 {total}개 중 {tracked}개예요.",
       "emptyTitle": "아직 동기화된 미량영양소 데이터가 없어요",
@@ -12759,14 +12904,35 @@
         "alpha_tocopherol": "이 상한은 알파토코페롤 기준이에요."
       }
     },
-    "sparseNote": "여기 수치가 낮은 건 보통 결핍이 아니라 기록이 드물다는 뜻이에요. Apple Health의 하루 합계는 앱이 기록한 양만 반영하고, 전체 식이 섭취량은 아니에요.",
+    "sparseNote": "여기 수치가 낮은 건 보통 결핍이 아니라 기록이 드물다는 뜻이에요. 하루 합계는 앱이 기록한 양만 반영하고, 전체 식이 섭취량은 아니에요. 식단 기록 앱과 Apple Health가 같은 날을 보고하면 더 큰 합계가 반영돼요.",
     "units": {
       "IU": "IU"
     },
     "sources": {
-      "APPLE_HEALTH": "동기화됨",
-      "MANUAL": "직접 입력",
       "SUPPLEMENT": "보충제"
+    },
+    "macros": {
+      "title": "에너지·다량영양소",
+      "pickLabel": "영양소",
+      "referenceMeta": "기준 {value} {unit}/일 ({authority})",
+      "targetMeta": "내 목표 {value} {unit}/일",
+      "limitMeta": "내 상한 {value} {unit}/일",
+      "sheetTitle": "하루 목표: {name}",
+      "sheetDescription": "하루에 채우거나 넘지 않을 양이에요. 차트에 점선으로 표시돼요.",
+      "clearTarget": "목표 삭제",
+      "removeTitle": "이 목표를 삭제할까요?",
+      "removeBody": "기준값이 있으면 차트가 기준값으로 돌아가요. 설정한 양은 다른 곳에 저장되지 않아요.",
+      "targetLabel": "하루 {name} ({unit})",
+      "boundsHint": "0보다 크고 하루 최대 {max}{unit}까지예요.",
+      "directionLabel": "목표 종류",
+      "directionTarget": "이상 채우기",
+      "directionLimit": "이하로 유지",
+      "saveFailed": "목표를 저장하지 못했어요. 다시 시도해 주세요.",
+      "loadError": "에너지와 다량영양소를 불러오지 못했어요.",
+      "gearLabel": "{name} 하루 목표 설정"
+    },
+    "alcohol": {
+      "loadError": "알코올을 불러오지 못했어요."
     }
   },
   "daily": {
@@ -12795,8 +12961,7 @@
       },
       "preventiveCare": {
         "title": "건강검진 시기",
-        "body": "{label}: 받을 때가 됐어요.",
-        "bodyManyNamed": "받을 때가 된 건강검진: {labels}"
+        "body": "{label}: 받을 때가 됐어요."
       },
       "syncIssue": {
         "title": "동기화 확인이 필요해요",
@@ -12958,7 +13123,8 @@
       },
       "medications": {
         "label": "복약",
-        "value": "{scheduled}회 중 {taken}회 복용"
+        "value": "{scheduled}회 중 {taken}회 복용",
+        "next": "다음 복용 {time}"
       },
       "appointment": {
         "label": "예약",
@@ -13033,14 +13199,16 @@
     "leafEmergency": "응급 정보 (혈액형, 연락처, 사전지시)",
     "leafMedicationEffect": "각 약 시작 전후의 변화 (약 목록 필요)",
     "leafWorkouts": "운동(종목별 요약)",
-    "leafHrvSdnn": "심박변이도 (SDNN)"
+    "leafHrvSdnn": "심박변이도 (SDNN)",
+    "leafSeizures": "발작 일지"
   },
   "recordSharing": {
     "banner": {
       "viewing": "{name} 님의 기록을 보고 있어요",
       "readOnly": "열람만 할 수 있고 수정은 할 수 없어요.",
       "canAdd": "기록을 추가할 수 있지만, 이미 있는 내용은 수정하거나 삭제할 수 없어요.",
-      "leave": "내 기록으로 돌아가기"
+      "leave": "내 기록으로 돌아가기",
+      "canManage": "기록을 추가하고, 이미 있는 내용을 수정하거나 삭제할 수 있어요."
     },
     "switcher": {
       "label": "기록 열기",
@@ -13337,6 +13505,7 @@
       "medicationCourseEnd": "{name} 님이 복용 기간을 끝냈어요",
       "medicationDelete": "{name} 님이 약을 삭제했어요",
       "medicationGlp1Update": "{name} 님이 GLP-1 요법을 수정했어요",
+      "medicationGlp1DoseChangeDelete": "{name} 님이 GLP-1 용량 단계를 삭제했어요",
       "medicationScheduleCreate": "{name} 님이 복용 일정을 추가했어요",
       "medicationScheduleUpdate": "{name} 님이 복용 일정을 수정했어요",
       "medicationScheduleDelete": "{name} 님이 복용 일정을 삭제했어요",
@@ -13393,6 +13562,16 @@
       "documentStore": "{name} 님이 문서를 추가했어요",
       "documentUpdate": "{name} 님이 문서를 수정했어요",
       "documentDiscard": "{name} 님이 문서를 폐기했어요",
+      "documentRestore": "{name} 님이 문서를 복원했어요",
+      "documentBulk": "{name} 님이 여러 문서를 수정했어요",
+      "documentConfirm": "{name} 님이 문서의 값을 확인했어요",
+      "documentExtract": "{name} 님이 문서의 값을 읽었어요",
+      "documentIndex": "{name} 님이 문서를 검색할 수 있게 했어요",
+      "documentReindex": "{name} 님이 문서들을 검색할 수 있게 했어요",
+      "documentSuggest": "{name} 님이 문서 정보를 제안받았어요",
+      "documentSummary": "{name} 님이 문서를 요약했어요",
+      "documentChat": "{name} 님이 문서에 대해 질문했어요",
+      "documentFactEdit": "{name} 님이 문서의 값을 고쳤어요",
       "medicationIntakeImportFinished": "{name} 님이 시작한 복용 기록 불러오기가 끝났어요",
       "medicationOneShotReconciled": "{name} 님이 기록한 복용에 따라 일회성 약이 시작되거나 종료됐어요",
       "vaccinationBoosterPlanned": "{name} 님이 추가 접종을 계획했어요",
@@ -13416,7 +13595,17 @@
       "cycleFeedCreate": "{name} 님이 캘린더 구독을 켰어요",
       "cycleFeedUpdate": "{name} 님이 캘린더 구독을 변경했어요",
       "cycleFeedRotate": "{name} 님이 캘린더 구독 링크를 다시 발급했어요",
-      "cycleFeedRevoke": "{name} 님이 캘린더 구독을 껐어요"
+      "cycleFeedRevoke": "{name} 님이 캘린더 구독을 껐어요",
+      "seizureEventCreate": "{name} 님이 발작을 기록했어요",
+      "seizureRescueCreate": "{name} 님이 응급약 투여를 기록했어요",
+      "seizureEventUpdate": "{name} 님이 발작 기록을 수정했어요",
+      "seizureEventDelete": "{name} 님이 발작 기록을 삭제했어요",
+      "seizureRescueUpdate": "{name} 님이 응급약 투여 기록을 수정했어요",
+      "seizureRescueDelete": "{name} 님이 응급약 투여 기록을 삭제했어요",
+      "seizureTypeCreate": "{name} 님이 발작 유형을 추가했어요",
+      "seizureTypeUpdate": "{name} 님이 발작 유형을 수정했어요",
+      "seizureTypeDelete": "{name} 님이 발작 유형을 삭제했어요",
+      "seizureSettingsUpdate": "{name} 님이 군집 발작 기준을 변경했어요"
     },
     "section": {
       "measurements": {
@@ -13437,7 +13626,7 @@
       },
       "illness": {
         "label": "아픈 날",
-        "detail": "아픈 기간 기록과 그 아래 남긴 하루 기록이에요."
+        "detail": "아픈 기간 기록과 그 아래 남긴 하루 기록, 본인의 증상, 발작 일지예요. 발작 일지에 기록한 응급약 투여는 해당 약에도 기록돼요."
       },
       "mind": {
         "label": "기분과 마음",
@@ -13816,6 +14005,7 @@
     "usualRange": "평소 {lo}~{hi}",
     "groups": {
       "scores": "점수",
+      "nutrients": "영양",
       "running": "그날 진행 중",
       "values": "수치",
       "happened": "있었던 일",
@@ -13891,6 +14081,12 @@
       "travelYes": "예",
       "kilometres": "{value}km",
       "miles": "{value}mi"
+    },
+    "nutrients": {
+      "micronutrientsOne": "미량영양소 {count}개 기록됨",
+      "micronutrientsOther": "미량영양소 {count}개 기록됨",
+      "micronutrientsFew": "미량영양소 {count}개 기록됨",
+      "open": "영양소 섭취 보기"
     }
   },
   "timeline": {
@@ -13913,7 +14109,8 @@
       "visits": "진료와 시술",
       "labs": "검사",
       "documents": "문서",
-      "cycle": "생리 주기"
+      "cycle": "생리 주기",
+      "seizures": "발작"
     },
     "readiness": {
       "title": "타임라인에 이미 담긴 것",
@@ -13988,7 +14185,10 @@
         "environmentOne": "환경 데이터가 있는 날 {count}일",
         "environmentFew": "환경 데이터가 있는 날 {count}일",
         "environmentOther": "환경 데이터가 있는 날 {count}일",
-        "empty": "아직 없음"
+        "empty": "아직 없음",
+        "seizuresOne": "발작이 있었던 날 {count}일",
+        "seizuresFew": "발작이 있었던 날 {count}일",
+        "seizuresOther": "발작이 있었던 날 {count}일"
       },
       "gap": {
         "valuesEmpty": "소스 연결",
@@ -13998,7 +14198,8 @@
         "documentsUndated": "확인하기",
         "labsEmpty": "결과 추가",
         "vaccinationsEmpty": "예방접종 추가",
-        "lifeEventsEmpty": "추가"
+        "lifeEventsEmpty": "추가",
+        "seizuresEmpty": "발작 기록"
       },
       "gapLine": {
         "medicationsWithoutStartOne": "시작일 없는 약 {count}개",
@@ -14012,7 +14213,8 @@
         "visitsEmpty": "아직 완료된 진료가 없어요",
         "labsEmpty": "아직 검사 결과가 없어요",
         "vaccinationsEmpty": "아직 예방접종이 없어요",
-        "lifeEventsEmpty": "아직 삶의 사건이 없어요"
+        "lifeEventsEmpty": "아직 삶의 사건이 없어요",
+        "seizuresEmpty": "아직 기록된 발작이 없습니다"
       }
     },
     "legendSpan": "기간",
@@ -14103,7 +14305,10 @@
     "item": {
       "labValuesOne": "검사 수치 1개",
       "labValuesFew": "검사 수치 {count}개",
-      "labValuesOther": "검사 수치 {count}개"
+      "labValuesOther": "검사 수치 {count}개",
+      "seizuresOne": "발작 1회",
+      "seizuresFew": "발작 {count}회",
+      "seizuresOther": "발작 {count}회"
     },
     "labs": {
       "menuTitle": "검사 수치",
@@ -14478,5 +14683,436 @@
       "endsOn": "종료"
     },
     "unitlessHint": "단위가 없는 비율이나 지수(INR, 콜레스테롤/HDL)는 단위 열에 1을 입력하세요. 단위 칸이 비어 있으면 여전히 오류예요."
+  },
+  "seizures": {
+    "ilae": {
+      "FOCAL_PRESERVED": {
+        "current": "의식 보존 국결신발작",
+        "ilae2017": "국소 인지 발작"
+      },
+      "FOCAL_IMPAIRED": {
+        "current": "의식 손상 국결신발작",
+        "ilae2017": "국소 인지 장애 발작"
+      },
+      "FOCAL_UNDETERMINED": {
+        "current": "국결신발작",
+        "ilae2017": "국소 시작 발작"
+      },
+      "FOCAL_TO_BILATERAL_TC": {
+        "current": "국소에서 양측 강직간대발작으로 진행",
+        "ilae2017": "국소에서 양측 강직간대발작으로 진행"
+      },
+      "GENERALIZED_UNDETERMINED": {
+        "current": "전신발작",
+        "ilae2017": "전신 시작 발작"
+      },
+      "GENERALIZED_TC": {
+        "current": "전신 강직간대발작",
+        "ilae2017": "전신 시작 강직간대발작"
+      },
+      "GEN_CLONIC": {
+        "current": "전신 간대발작",
+        "ilae2017": "전신 시작 간대발작"
+      },
+      "GEN_TONIC": {
+        "current": "전신 강직발작",
+        "ilae2017": "전신 시작 강직발작"
+      },
+      "GEN_MYOCLONIC": {
+        "current": "전신 근간대발작",
+        "ilae2017": "전신 시작 근간대발작"
+      },
+      "GEN_MYOCLONIC_ATONIC": {
+        "current": "전신 근간대-무긴장발작",
+        "ilae2017": "전신 시작 근간대-무긴장발작"
+      },
+      "GEN_ATONIC": {
+        "current": "전신 무긴장발작",
+        "ilae2017": "전신 시작 무긴장발작"
+      },
+      "GEN_NEGATIVE_MYOCLONIC": {
+        "current": "전신 음성 근간대발작"
+      },
+      "GEN_SPASMS": {
+        "current": "전신 뇌전증 연축",
+        "ilae2017": "전신 시작 뇌전증 연축"
+      },
+      "ABSENCE_TYPICAL": {
+        "current": "전형 결신발작",
+        "ilae2017": "전신 비운동 발작(결신발작), 전형"
+      },
+      "ABSENCE_ATYPICAL": {
+        "current": "비전형 결신발작",
+        "ilae2017": "전신 비운동 발작(결신발작), 비전형"
+      },
+      "ABSENCE_MYOCLONIC": {
+        "current": "근간대 결신발작",
+        "ilae2017": "전신 비운동 발작(결신발작), 근간대"
+      },
+      "EYELID_MYOCLONIA": {
+        "current": "눈꺼풀 근간대경련(결신발작 동반 또는 미동반)",
+        "ilae2017": "눈꺼풀 근간대경련을 동반한 결신발작"
+      },
+      "UNKNOWN_UNDETERMINED": {
+        "current": "발작, 국소인지 전신인지 알 수 없음",
+        "ilae2017": "시작 불명 발작"
+      },
+      "UNKNOWN_PRESERVED": {
+        "current": "국소인지 전신인지 알 수 없음, 의식 보존",
+        "ilae2017": "시작 불명 발작, 인지 유지"
+      },
+      "UNKNOWN_IMPAIRED": {
+        "current": "국소인지 전신인지 알 수 없음, 의식 손상",
+        "ilae2017": "시작 불명 발작, 인지 장애"
+      },
+      "UNKNOWN_BILATERAL_TC": {
+        "current": "양측 강직간대발작, 국소인지 전신인지 알 수 없음",
+        "ilae2017": "시작 불명 강직간대발작"
+      },
+      "UNCLASSIFIED": {
+        "current": "분류되지 않은 발작",
+        "ilae2017": "분류되지 않은 발작"
+      }
+    },
+    "ilaeClass": {
+      "FOCAL": "국소 시작",
+      "GENERALIZED": "전신 시작",
+      "UNKNOWN": "국소인지 전신인지 알 수 없음",
+      "UNCLASSIFIED": "분류되지 않음"
+    },
+    "route": {
+      "BUCCAL": "볼 점막(협측)",
+      "INTRANASAL": "비강 내",
+      "RECTAL": "직장",
+      "ORAL": "경구",
+      "SUBLINGUAL": "설하",
+      "IM": "근육 주사",
+      "IV_BY_EMS": "정맥 주사(구급대원)"
+    },
+    "effect": {
+      "STOPPED": "발작이 멈췄어요",
+      "REDUCED": "발작이 약해졌어요",
+      "NO_EFFECT": "효과 없음",
+      "UNKNOWN": "모름"
+    },
+    "trigger": {
+      "MISSED_DOSE": "약 복용 누락",
+      "SLEEP_DEPRIVATION": "수면 부족",
+      "FEVER": "발열",
+      "ILLNESS": "질병",
+      "MENSTRUATION": "생리",
+      "ALCOHOL": "음주",
+      "FLASHING_LIGHTS": "깜박이는 빛",
+      "STRESS": "스트레스",
+      "OTHER": "기타",
+      "NONE_IDENTIFIED": "찾지 못함"
+    },
+    "sleepState": {
+      "AWAKE": "깨어 있을 때",
+      "ASLEEP": "자는 중",
+      "ON_WAKING": "깨어날 때",
+      "UNKNOWN": "모름"
+    },
+    "type": {
+      "unreadable": "읽을 수 없는 이름"
+    },
+    "report": {
+      "title": "발작 일지",
+      "untyped": "기록된 유형 없음",
+      "ruleText": "{hours}시간 내 {count}회 이상",
+      "recorded": "기록된 발작",
+      "seizureDays": "발작이 있었던 날",
+      "seizureFreeDays": "기록된 발작이 없는 날",
+      "per28Days": "28일당 발작 횟수",
+      "longestFree": "기록된 발작이 없었던 가장 긴 기간",
+      "daysValue": "{count}일",
+      "daysSinceLast": "마지막으로 기록된 발작 이후 일수",
+      "convulsive": "양측 강직간대발작",
+      "fromSleep": "수면 중 발작",
+      "clusters": "군집 발작(기준: {rule})",
+      "niceClusters": "NICE 기준: 24시간 내 3회",
+      "rescueDoses": "투여한 응급약",
+      "emergencies": "구급대 출동, 응급실, 입원",
+      "emergencyValue": "{ems} / {ed} / {admitted}",
+      "suspected": "의심 사례(위 집계에서 제외)",
+      "monthlyTitle": "유형별, 월별 발작",
+      "monthlyNote": "월별 발작 횟수이며, 괄호 안은 발작이 있었던 날의 수예요.",
+      "type": "유형",
+      "total": "합계",
+      "chartTitle": "월별 발작과 약 변경",
+      "markersTitle": "약 변경:",
+      "marker": {
+        "start": "({n}) {date} {name} 시작",
+        "stop": "({n}) {date} {name} 중단",
+        "change": "({n}) {date} {name} {dose}(으)로 변경"
+      },
+      "markersNote": "정기적으로 복용하도록 일정이 잡힌 약의 변경 사항을 발작 횟수 옆에 표시해요. 일지만으로는 변경이 차이를 만들었는지 알 수 없어요.",
+      "durationTitle": "지속 시간",
+      "timed": "지속 시간 기록됨",
+      "median": "중앙값",
+      "max": "최장",
+      "overT1": "t1 이상",
+      "prolonged": "평소보다 2분 이상 김",
+      "durationNote": "지속 시간은 분:초 형식이에요. t1은 응급 치료가 필요한 시점이에요(ILAE, Trinka 2015: 강직간대 5분, 의식 손상 국결신발작과 결신발작 10분). '평소보다 2분 이상 김'은 이 사람의 평소 지속 시간보다 2분 이상 길었던 발작을 세요(NICE NG217).",
+      "rescueTitle": "응급약",
+      "date": "날짜",
+      "drug": "약",
+      "dose": "용량",
+      "route": "투여 경로",
+      "minutesFromOnset": "시작 후 분",
+      "effect": "효과",
+      "triggersTitle": "의심되는 유발 요인",
+      "triggersNote": "기록할 때 본인이나 돌보는 사람이 적은 내용이며, 확인된 원인이 아니에요.",
+      "overlaysTitle": "함께 기록된 내용",
+      "overlayMissedDose": "발작 {of}회 중 {followed}회는 직전 48시간 안에 예정된 약을 잊었거나 건너뛴 뒤에 일어났어요.",
+      "overlayIllness": "발작 {during}회가 기록된 아픈 기간 {episodes}건 중 하나에 일어났어요.",
+      "overlaySleep": "발작이 있던 날 전날 밤의 기록된 수면: 평균 {before}시간({nightsBefore}일 밤), 다른 밤: {other}시간({nightsOther}일 밤).",
+      "overlayCycleDays": "주기 일차별 발작(일차: 횟수): {list}.",
+      "overlayCycleRatio": "완전히 기록된 {cycles}번의 주기 동안 생리 전후(−3일부터 +3일)의 하루 발작 빈도는 다른 날의 {c1}배, 배란 전후(10일부터 −13일)는 {c2}배였어요. Herzog의 월경 관련 뇌전증 기준은 2배 이상 증가이며, 이 값은 참고용일 뿐 판단 결과가 아니에요.",
+      "overlayCycleTooFew": "주기 단계별 빈도는 완전히 기록된 주기가 3번 이상일 때 표시돼요(현재 {cycles}번).",
+      "overlaysNote": "같은 시기에 기록된 내용일 뿐 원인이 아니에요.",
+      "eventsTitle": "기록된 모든 사례",
+      "duration": "지속 시간",
+      "sleep": "수면",
+      "rescueShort": "응급약",
+      "injury": "부상",
+      "note": "메모",
+      "suspectedMark": "(의심)",
+      "eventsTruncated": "최근 200건만 나열해요. 위 수치는 전체를 포함해요.",
+      "classificationNote": "발작 유형은 ILAE 2025 분류를 따르며, ILAE 2017 명칭은 다음과 같아요:",
+      "footer": "환자 본인이나 돌보는 사람이 기록한 일지예요. 기록된 발작이며 실제보다 적을 가능성이 높고, 특히 수면 중 발작이 그래요. 이 일지는 관찰 내용을 기록할 뿐 발작을 진단하거나 평가하지 않아요.",
+      "seizureDaysValue": "{count}일에 걸쳐"
+    },
+    "title": "발작 일지",
+    "subtitle": "관찰한 그대로의 발작을 유형, 지속 시간, 투여한 응급약과 함께 기록해요.",
+    "loadError": "발작 일지를 불러오지 못했어요.",
+    "saveError": "저장하지 못했어요. 다시 시도해 주세요.",
+    "untyped": "유형 없음",
+    "notRecorded": "기록 없음",
+    "ilaeWith2017": "{current} (ILAE 2017: {legacy})",
+    "safety": {
+      "header": "이 일지는 관찰한 내용을 기록해 의료진과 공유할 수 있게 해요. 발작을 진단하거나 평가하지 않아요. 담당 의사와 정한 응급 계획을 따르세요.",
+      "timer": "경련이나 몸이 굳는 발작이 5분 이상 계속되거나, 회복하기 전에 다른 발작이 이어지거나, 숨쉬기 힘들어하거나, 다쳤거나, 물속에서 발작이 일어났거나, 처음 겪는 발작이면 응급 신고({number} 또는 현지 번호)를 하세요. 본인의 응급 계획이 우선이에요.",
+      "notifications": "HealthLog는 발작 경보기도 의료기기도 아니에요. 여기에 입력한 내용만 기록해요."
+    },
+    "quick": {
+      "title": "빠른 기록",
+      "typeGroup": "발작 유형",
+      "elapsedLabel": "발작 시작 후 경과 시간",
+      "startedAt": "{time}에 시작",
+      "start": "발작 시작",
+      "stop": "발작 멈춤",
+      "rescueGiven": "응급약 투여: {name}",
+      "rescueGivenCount": "응급약 투여({count}), 한 번 더 투여하려면 누르세요",
+      "threshold": {
+        "t1": "발작이 {time} 넘게 계속되고 있어요. 응급 계획을 따르세요.",
+        "usualPlusTwo": "발작이 {time} 넘게 계속되어 평소보다 2분 더 길어졌어요. 응급 계획을 따르세요.",
+        "generic": "발작이 {time} 넘게 계속되고 있어요. 응급 계획을 따르세요."
+      },
+      "noPlan": "이 발작 유형에 저장된 계획이 없어요. 확실하지 않으면 응급 신고를 하세요.",
+      "call": "{number}에 전화",
+      "recorded": "발작을 기록했어요",
+      "recordedLine": "기록했어요. 지속 시간 {duration}.",
+      "addDetails": "세부 내용 추가",
+      "logPast": "시간을 재지 못한 발작 기록",
+      "discard": "타이머 취소",
+      "discardTitle": "진행 중인 타이머를 취소할까요?",
+      "discardConfirm": "아무것도 기록되지 않고 시작 시각도 사라져요."
+    },
+    "summary": {
+      "title": "기록",
+      "recorded": "{date} 이후 기록된 발작",
+      "seizureDays": "발작이 있었던 날",
+      "sinceLast": "마지막으로 기록된 발작 이후 일수",
+      "longestFree": "발작 없이 지난 가장 긴 기간(일)",
+      "clusters": "군집 발작({rule})",
+      "niceClusters": "NICE 기준 군집 발작(24시간 내 3회)",
+      "suspected": "의심 발작 {count}건은 목록에는 있지만 집계에서 제외돼요.",
+      "clusterLine": "{start}부터 {count}회",
+      "monthlyCaption": "유형별, 월별 발작",
+      "undercount": "기록된 발작이며 실제보다 적을 가능성이 높고, 특히 수면 중 발작이 그래요."
+    },
+    "list": {
+      "title": "기록된 발작",
+      "empty": "최근 90일 동안 기록된 발작이 없어요.",
+      "rescue": "응급약",
+      "loggedByDelegate": "접근 권한이 있는 사람이 기록함",
+      "showAll": "{count}건 모두 보기",
+      "truncated": "최근 발작만 표시해요.",
+      "loggedByYou": "내가 기록함",
+      "loggedByName": "{name} 님이 기록함",
+      "cluster": "군집 발작"
+    },
+    "certainty": {
+      "CONFIRMED": "발작",
+      "SUSPECTED": "의심"
+    },
+    "onsetPrecision": {
+      "EXACT": "정확한 시각",
+      "APPROX": "대략 이 시각",
+      "UNKNOWN_TIME": "시각 모름"
+    },
+    "durationSource": {
+      "TIMED": "측정함",
+      "ESTIMATED": "추정함",
+      "UNKNOWN": "모름"
+    },
+    "functionState": {
+      "PRESERVED": "유지됨",
+      "IMPAIRED": "손상됨",
+      "UNKNOWN": "잘 모르겠음"
+    },
+    "emergency": {
+      "NONE": "없음",
+      "EMS_CALLED": "구급대 호출",
+      "ED_VISIT": "응급실",
+      "ADMITTED": "입원"
+    },
+    "observer": {
+      "SELF": "본인",
+      "PARENT": "부모",
+      "PARTNER": "배우자 또는 연인",
+      "FAMILY": "가족",
+      "CARER": "돌보는 사람",
+      "TEACHER": "교사",
+      "CLINICIAN": "의료진",
+      "PARAMEDIC": "구급대원",
+      "OTHER": "다른 사람"
+    },
+    "semiology": {
+      "AURA": "전조(아우라)",
+      "BEHAVIOUR_ARREST": "하던 행동을 멈춤",
+      "STARING": "멍하니 응시",
+      "AUTOMATISMS": "자동증(입맛 다시기, 손 만지작거리기)",
+      "TONIC": "몸이 굳음",
+      "CLONIC": "규칙적인 떨림",
+      "MYOCLONIC": "짧은 움찔거림",
+      "ATONIC_DROP": "갑자기 쓰러짐",
+      "SPASMS": "연축",
+      "HEAD_EYE_VERSION": "머리나 눈이 한쪽으로 돌아감",
+      "VOCALISATION": "비명이나 소리",
+      "CYANOSIS": "입술이나 얼굴이 파래짐",
+      "DROOLING": "침 흘림",
+      "BREATHING_CHANGE": "호흡 변화"
+    },
+    "postictal": {
+      "SLEEP": "잠",
+      "CONFUSION": "혼돈",
+      "HEADACHE": "두통",
+      "WEAKNESS_TODD": "한쪽 근력 약화(토드 마비)",
+      "SPEECH": "말하기 어려움",
+      "AGITATION": "초조함",
+      "OTHER": "기타"
+    },
+    "injury": {
+      "NONE": "부상 없음",
+      "TONGUE_BITE": "혀 깨묾",
+      "HEAD": "머리 부상",
+      "FALL_OTHER": "넘어져서 생긴 다른 부상",
+      "BURN": "화상",
+      "FRACTURE": "골절",
+      "OTHER": "기타"
+    },
+    "sheet": {
+      "newTitle": "발작 기록",
+      "editTitle": "발작 세부 내용",
+      "description": "시작 시각만 있으면 돼요. 아는 내용을 추가하세요.",
+      "created": "발작을 기록했어요",
+      "updated": "발작 기록을 수정했어요",
+      "type": "발작 유형",
+      "onset": "시작",
+      "onsetPrecision": "시작 시각이 얼마나 정확한가요",
+      "duration": "지속 시간",
+      "minutes": "분",
+      "seconds": "초",
+      "durationHint": "얼마나 오래 지속됐는지 본 사람이 없으면 비워 두세요.",
+      "durationSource": "지속 시간",
+      "certainty": "확실성",
+      "count": "횟수",
+      "countHint": "하루 동안의 결신발작처럼 한꺼번에 셀 때는 1보다 크게 입력하세요.",
+      "sleepState": "깨어 있었나요, 자고 있었나요",
+      "sectionObserved": "관찰한 내용",
+      "responsiveness": "말을 걸었을 때 반응함",
+      "recall": "발작을 기억함",
+      "semiology": "일어난 일, 순서대로",
+      "semiologyNote": "설명",
+      "aura": "미리 느낀 전조(아우라)",
+      "ilaeOverride": "이 발작의 분류",
+      "ilaeFromType": "유형에 설정한 대로",
+      "sectionAfter": "발작 후",
+      "postictalMinutes": "평소 상태로 돌아오기까지 걸린 분",
+      "postictal": "발작 후",
+      "injuries": "부상",
+      "emergency": "응급 처치",
+      "sectionContext": "유발 요인과 목격자",
+      "triggers": "의심되는 유발 요인",
+      "triggersHint": "본인이 짐작한 내용이며, 리포트에는 의심 요인으로 표시돼요.",
+      "witnessed": "누군가 봤나요",
+      "witnessRole": "본 사람",
+      "witnessNote": "본 내용",
+      "note": "메모",
+      "delete": "발작 삭제",
+      "deleteTitle": "이 발작을 삭제할까요?",
+      "deleteBody": "발작과 응급약 투여 기록이 삭제되고, 해당 약에서도 투여 기록이 빠져요.",
+      "observable": "눈에 보이는 징후",
+      "incontinence": "실금"
+    },
+    "rescue": {
+      "title": "응급약",
+      "none": "기록된 응급약 투여가 없어요.",
+      "effect": "효과",
+      "remove": "투여 기록 삭제",
+      "removeTitle": "이 응급약 투여 기록을 삭제할까요?",
+      "removeBody": "해당 약에서도 투여 기록이 빠져요.",
+      "medication": "약",
+      "pick": "약 선택",
+      "givenAt": "투여 시각",
+      "route": "투여 경로",
+      "intakeHint": "투여 기록은 해당 약에도 남아요. 필요시 약은 복약 순응도에 포함되지 않아요.",
+      "add": "응급약 투여 추가"
+    },
+    "types": {
+      "title": "발작 유형",
+      "emptyTitle": "아직 발작 유형이 없어요",
+      "emptyDescription": "이 사람의 발작 유형을 한 번 설정해 두세요. 가능하면 의료진과 함께 정하는 게 좋아요.",
+      "newTitle": "발작 유형 추가",
+      "editTitle": "발작 유형 수정",
+      "description": "분류는 본인이나 의료진이 정해요. HealthLog는 분류하지 않아요.",
+      "label": "부르는 이름",
+      "labelHint": "가족끼리 부르는 말, 예를 들어 '큰 발작'.",
+      "class": "시작",
+      "ilaeType": "발작 유형(ILAE 2025)",
+      "notSure": "잘 모르겠음: {name}",
+      "usualDuration": "평소 지속 시간",
+      "usualHint": "발작이 평소보다 2분 더 길어지면 계획을 보여 주는 데 쓰여요(NICE).",
+      "plan": "응급 계획",
+      "planHint": "의료진과 정한 단계로, 타이머가 기준을 넘으면 표시돼요.",
+      "rescueMedication": "응급약",
+      "noMedication": "없음",
+      "noAsNeeded": "먼저 응급약을 필요시 약으로 추가하세요.",
+      "dose": "용량",
+      "unit": "단위",
+      "saved": "발작 유형을 저장했어요",
+      "archive": "보관",
+      "unarchive": "다시 사용",
+      "archived": "보관됨",
+      "delete": "유형 삭제",
+      "deleteTitle": "이 발작 유형을 삭제할까요?",
+      "deleteBody": "기록된 발작이 없는 유형만 삭제할 수 있어요. 그렇지 않으면 보관하세요.",
+      "rescueLine": "응급약: {name}"
+    },
+    "rule": {
+      "title": "군집 발작 기준",
+      "explainer": "군집 발작은 정해진 시간 안에 정해진 횟수 이상 일어난 발작이에요. 응급 계획에 있는 기준을 사용하세요. NICE 기준은 {niceHours}시간 내 {niceCount}회이며, 요약에서는 두 기준으로 모두 세어요.",
+      "count": "발작 횟수",
+      "hours": "시간 범위(시간)",
+      "invalid": "1~168시간 안에 2~20회로 설정하세요.",
+      "saved": "군집 발작 기준을 저장했어요"
+    },
+    "observation": {
+      "YES": "예",
+      "NO": "아니요, 보이는 것 없음",
+      "UNKNOWN": "잘 모르겠음"
+    }
   }
 }

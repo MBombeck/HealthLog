@@ -62,6 +62,8 @@ import { UNREADABLE_EXPORT_MARKER } from "@/lib/export/unreadable-marker";
 import { locales } from "@/lib/i18n/config";
 import { thresholdsUpdateSchema } from "@/lib/validations/thresholds";
 import { activityGoalsSchema } from "@/lib/validations/activity-goals";
+import { isNutrientCode } from "@/lib/nutrients/catalog";
+import { parseNutrientTarget } from "@/lib/validations/nutrient-targets";
 import { isPublicUrl } from "@/lib/validations/notifications";
 import {
   glucoseUnitPatchSchema,
@@ -282,6 +284,39 @@ const activityGoals: SettingCodec = {
         refused.push(`activityGoalsJson.${key}`);
       } else if (typeof goal === "number") {
         kept[key] = goal;
+      }
+    }
+    return new PartlyRefused(
+      Object.keys(kept).length === 0 ? Prisma.DbNull : kept,
+      refused,
+    );
+  },
+};
+
+/**
+ * The daily nutrient targets, code by code. A target outside its code's range,
+ * or a code this release does not know, is dropped and named; the valid
+ * targets beside it still come back.
+ */
+const nutrientTargets: SettingCodec = {
+  write: (row) => ({ nutrientTargetsJson: row.nutrientTargetsJson ?? null }),
+  read: (entry) => {
+    if (!has(entry, "nutrientTargetsJson")) return undefined;
+    const value = entry.nutrientTargetsJson;
+    if (value === null) return Prisma.DbNull;
+    if (typeof value !== "object" || Array.isArray(value)) {
+      return new Refused("nutrientTargetsJson");
+    }
+    const kept: Record<string, { value: number; direction: string }> = {};
+    const refused: string[] = [];
+    for (const [code, raw] of Object.entries(value)) {
+      const target = isNutrientCode(code)
+        ? parseNutrientTarget(code, raw)
+        : null;
+      if (target) {
+        kept[code] = { value: target.value, direction: target.direction };
+      } else {
+        refused.push(`nutrientTargetsJson.${code}`);
       }
     }
     return new PartlyRefused(
@@ -540,6 +575,7 @@ const ACCOUNT_SETTING_CODECS = {
   documentsLayoutJson: json("documentsLayoutJson"),
   moduleListLayoutJson: json("moduleListLayoutJson"),
   activityGoalsJson: activityGoals,
+  nutrientTargetsJson: nutrientTargets,
   reportSelectionJson: json("reportSelectionJson"),
   globalExcludedInjectionSites: excludedSites,
   healthKitConfigJson: json("healthKitConfigJson"),
@@ -557,6 +593,9 @@ const ACCOUNT_SETTING_CODECS = {
   aiCompatBaseUrl: aiEndpoint("aiCompatBaseUrl"),
   aiCompatModel: plain("aiCompatModel"),
   aiProviderChain: json("aiProviderChain"),
+  // #1404 — the named chains and which capability is attached to which.
+  // Provider types only; the reader drops anything it cannot resolve.
+  aiNamedChains: json("aiNamedChains"),
   aiResponseTimeoutSeconds: plain("aiResponseTimeoutSeconds"),
   useCentralCodex: plain("useCentralCodex"),
   insightsPrivacyMode: oneOf(

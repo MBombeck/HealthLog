@@ -128,6 +128,8 @@ export async function resolveAccountAccess(auth: {
       // complete three-level contract.
       const level = LEVEL[grant.access];
       const sections = resolveGrantSections(grant.scopeJson);
+      const recordKind =
+        grant.grantor.managedProfileAt === null ? "shared" : "managed";
       return {
         accountId: grant.grantor.id,
         username: grant.grantor.username,
@@ -135,16 +137,22 @@ export async function resolveAccountAccess(auth: {
         fullName: grant.grantor.fullName,
         access: level === "read" ? "read" : "write",
         level,
-        recordKind:
-          grant.grantor.managedProfileAt === null ? "shared" : "managed",
+        recordKind,
         sections,
         canWrite: grantAllows(grant, "write", now),
         // v1.38.12 — per-section write answers, from the same level and scope
         // the two fields above publish, intersected with the routes that
         // exist. The lists are what the controls read; the level and the
         // sections stay published so the chrome can say what was granted.
-        writableDomains: delegatedDomains(level, sections, "write"),
-        manageableDomains: delegatedDomains(level, sections, "manage"),
+        // #1403 — the record kind adds the guardian-only sections (the
+        // vault) on a managed profile, the marker the resolver reads.
+        writableDomains: delegatedDomains(level, sections, "write", recordKind),
+        manageableDomains: delegatedDomains(
+          level,
+          sections,
+          "manage",
+          recordKind,
+        ),
       };
     });
 

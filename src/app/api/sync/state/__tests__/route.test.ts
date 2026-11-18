@@ -22,6 +22,13 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+// The measurement counts read the rollup tier and the tombstone index; an
+// empty account holds nothing.
+vi.mock("@/lib/sync/measurement-counts", () => ({
+  countLiveMeasurements: vi.fn(async () => 0),
+  countTombstonedMeasurements: vi.fn(async () => 0),
+}));
+
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
 
 vi.mock("@/lib/api-response", () => ({

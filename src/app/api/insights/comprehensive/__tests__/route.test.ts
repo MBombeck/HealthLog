@@ -322,7 +322,11 @@ describe("GET /api/insights/comprehensive — envelope shape", () => {
     const res = await callGet(makeReq());
     const body = (await res.json()) as { data: { hasProvider: boolean } };
     expect(body.data.hasProvider).toBe(true);
-    expect(probeProviderPresence).toHaveBeenCalledWith("user-comp-1");
+    expect(probeProviderPresence).toHaveBeenCalledWith(
+      "user-comp-1",
+      "text",
+      "briefing",
+    );
   });
 
   it("computes BMI from aggregate WEIGHT.latest and user heightCm", async () => {

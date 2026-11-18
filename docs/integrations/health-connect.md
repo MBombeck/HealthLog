@@ -118,8 +118,8 @@ count a step the phone and the watch both saw twice, so:
 
 ### Apps HealthLog already connects to
 
-If your account has the Withings, Fitbit, Google Health, Oura, Polar
-or WHOOP integration connected, that app's records in the export are
+If your account has the Withings, Google Health, Oura, Polar or WHOOP
+integration connected, that app's records in the export are
 left out: HealthLog already receives them directly, and importing them
 again would put every reading in twice. As a further safety net, a
 reading that matches one already stored under another source (same

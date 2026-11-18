@@ -18,6 +18,15 @@ import { unzipSync } from "fflate";
 
 import { readPdfText } from "@/lib/documents/pdfjs";
 
+// The report's dense-window counts are capped descents
+// (`countLiveReadingsPerType`): a sparse account holds none past the cap.
+vi.mock("@/lib/measurements/newest-per-type", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@/lib/measurements/newest-per-type")
+  >()),
+  countLiveReadingsPerType: vi.fn(async () => new Map()),
+}));
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     // `groupBy` sizes the report's dense windows (#1023): a sparse account.
@@ -34,6 +43,9 @@ vi.mock("@/lib/db", () => ({
     encounter: { findMany: vi.fn() },
     allergy: { findMany: vi.fn() },
     vaccinationRecord: { findMany: vi.fn() },
+    seizureTypeProfile: { findMany: vi.fn() },
+    seizureEvent: { findMany: vi.fn(), findFirst: vi.fn() },
+    seizureDiarySettings: { findUnique: vi.fn() },
     familyHistoryEntry: { findMany: vi.fn() },
     userHealthProfile: { findUnique: vi.fn() },
     healthProfileFactRevision: { findMany: vi.fn() },
@@ -185,6 +197,10 @@ beforeEach(() => {
   vi.mocked(prisma.encounter.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.allergy.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.vaccinationRecord.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.seizureTypeProfile.findMany).mockResolvedValue([]);
+  vi.mocked(prisma.seizureEvent.findMany).mockResolvedValue([]);
+  vi.mocked(prisma.seizureEvent.findFirst).mockResolvedValue(null);
+  vi.mocked(prisma.seizureDiarySettings.findUnique).mockResolvedValue(null);
   vi.mocked(prisma.familyHistoryEntry.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.userHealthProfile.findUnique).mockResolvedValue(
     null as never,

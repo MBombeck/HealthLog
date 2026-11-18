@@ -54,3 +54,23 @@ export function readOperatorRow(): Promise<OperatorRow | null> {
     { freshInBackground: true },
   );
 }
+
+/**
+ * Presence-only check that the operator's central Codex is connected, over an
+ * already-loaded `AppSettings` subset. No decrypt, no network.
+ */
+export function appSettingsCentralCodexConnected(
+  settings: {
+    adminCodexConnectionStatus: string | null;
+    adminCodexAccessTokenEncrypted: string | null;
+    adminCodexRefreshTokenEncrypted: string | null;
+    adminCodexAccountIdEncrypted: string | null;
+  } | null,
+): boolean {
+  return (
+    settings?.adminCodexConnectionStatus === "connected" &&
+    !!settings.adminCodexAccessTokenEncrypted &&
+    !!settings.adminCodexRefreshTokenEncrypted &&
+    !!settings.adminCodexAccountIdEncrypted
+  );
+}

@@ -1,5 +1,8 @@
 import type { AIProvider, CompletionResult } from "./types";
-import { readOperatorRow } from "@/lib/settings/operator-row";
+import {
+  appSettingsCentralCodexConnected,
+  readOperatorRow,
+} from "@/lib/settings/operator-row";
 import { bindResponseTimeout } from "./effective-timeout";
 import { bindReasoningEffort } from "./reasoning-effort";
 import { prisma } from "@/lib/db";
@@ -14,13 +17,6 @@ import { LocalOpenAICompatibleClient } from "./local-client";
 import { antigravityAvailable } from "./antigravity-client";
 import { setAntigravityCapabilities } from "./antigravity-capability-cache";
 import {
-  appSettingsCentralCodexConnected,
-  providerOrigin,
-  servesPickedGateway,
-  type ProviderManagedBy,
-} from "./provider-origin";
-export type { ProviderManagedBy };
-import {
   refreshDeviceTokens,
   codexReconnectRequired,
   encryptCodexCreds,
@@ -33,10 +29,11 @@ import {
 import { isPublicUrl } from "@/lib/validations/notifications";
 import { isLocalAiHostAllowed } from "./local-host-allowlist";
 import {
-  parseProviderChain,
   PROVIDER_CHAIN_TYPES,
+  servesPickedGateway,
   type ProviderChainType,
 } from "./provider-chain";
+import { providerOrigin } from "./provider-egress";
 import type { ProviderChainResolved } from "./provider-runner";
 import {
   providerCredentialPolicy,
@@ -51,10 +48,17 @@ import {
   PROVIDER_REFRESH_TRANSACTION_OPTIONS,
 } from "@/lib/integrations/oauth-refresh";
 import type { Prisma } from "@/generated/prisma/client";
-import type { AiModality } from "@/lib/ai/capabilities/types";
-import type {
-  ProviderEntryPresence,
-  ProviderPresence,
+import type { AiCapabilityKey, AiModality } from "@/lib/ai/capabilities/types";
+import {
+  chainSelectionFor,
+  defaultChainTypes,
+  parseNamedChains,
+  pinnedChains,
+} from "./named-chains";
+import {
+  everyEntry,
+  type ProviderEntryPresence,
+  type ProviderPresence,
 } from "@/lib/ai/capabilities/resolve";
 
 const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
@@ -813,8 +817,8 @@ async function readBoundSettings(userId: string): Promise<{
  * accept `generateCompletion()` calls.
  *
  * Steps:
- *   1. Read `User.aiProviderChain` (or `PROVIDER_CHAIN_DEFAULT` when
- *      null). Already sorted + deduplicated by `parseProviderChain`.
+ *   1. Read the default chain (`defaultChainTypes`): `User.aiProviderChain`
+ *      (or `PROVIDER_CHAIN_DEFAULT`), or a named chain marked default.
  *   2. For each enabled entry, attempt to materialise the provider
  *      from the user's saved credentials. Drop entries that have no
  *      usable credential (e.g. chain says `anthropic` but
@@ -823,9 +827,13 @@ async function readBoundSettings(userId: string): Promise<{
  *   4. Still empty: the picked gateway, unless the chain switched it off
  *      (`servesPickedGateway`), else nothing. Every caller treats an
  *      empty result as "no provider"; none falls back on its own.
+ *
+ * #1404 — `capability` (null: the default chain itself) attached to a named
+ * chain resolves exactly its entries, `pinned`, without steps 3 and 4.
  */
 export async function resolveProviderChain(
   userId: string,
+  capability: AiCapabilityKey | null,
 ): Promise<ProviderChainResolved[]> {
   const authority = providerWorkAuthorityForRecord(userId);
   if (providerCredentialPolicy(authority) === "deny") return [];
@@ -848,6 +856,7 @@ export async function resolveProviderChain(
       antigravityCapabilitiesJson: true,
       role: true,
       aiProviderChain: true,
+      aiNamedChains: true,
       useCentralCodex: true,
       managedProfileAt: true,
       aiResponseTimeoutSeconds: true,
@@ -863,7 +872,10 @@ export async function resolveProviderChain(
       bindResponseTimeout(provider, userRow?.aiResponseTimeoutSeconds),
       userRow?.aiProviderChain,
     );
-  if (policy === "operator-default") {
+  const named = parseNamedChains(userRow?.aiNamedChains ?? null);
+  const selection = chainSelectionFor(named, capability);
+  const pinned = selection.kind === "pinned";
+  if (!pinned && policy === "operator-default") {
     const provider = await resolveAdminProvider();
     return provider.type === "none"
       ? []
@@ -878,27 +890,33 @@ export async function resolveProviderChain(
         ];
   }
 
-  const rawChain = userRow?.aiProviderChain ?? null;
-  const chain = parseProviderChain(rawChain).filter((e) => e.enabled);
+  const candidateTypes = pinned
+    ? selection.entries
+    : defaultChainTypes(named, userRow?.aiProviderChain ?? null);
 
-  if (chain.some((e) => e.providerType === "antigravity")) {
+  if (candidateTypes.includes("antigravity")) {
     setAntigravityCapabilities(userId, userRow?.antigravityCapabilitiesJson);
   }
 
   const resolved: ProviderChainResolved[] = [];
-  for (const entry of chain) {
-    const instance = await resolveProviderForType(entry.providerType, {
-      userId,
-      userRow,
-      policy,
-    });
+  for (const providerType of candidateTypes) {
+    // Only a pinned chain may list the central Codex, behind the same opt-in.
+    const instance =
+      pinned && providerType === "admin-codex"
+        ? userRow?.useCentralCodex && policy !== "operator-default"
+          ? await resolveAdminCodexProvider()
+          : null
+        : await resolveProviderForType(providerType, {
+            userId,
+            userRow,
+            policy,
+          });
     if (instance) {
-      resolved.push({
-        providerType: entry.providerType,
-        instance: bind(instance),
-      });
+      const entry = { providerType, instance: bind(instance) };
+      resolved.push(pinned ? { ...entry, pinned: true } : entry);
     }
   }
+  if (pinned) return resolved;
 
   // Operator-shared central Codex — appended LAST, and ONLY when the user opted
   // in AND the operator has connected it. It is never part of the persisted
@@ -937,9 +955,27 @@ export async function resolveProviderChain(
  */
 export async function hasAnyConfiguredProvider(
   userId: string,
+  capability: AiCapabilityKey = "briefing",
 ): Promise<boolean> {
-  return probeProviderPresence(userId, "text");
+  return probeProviderPresence(userId, "text", capability);
 }
+
+/**
+ * Origin of the provider that would serve a given user, surfaced to
+ * clients that need to show or hide an AI surface (the iOS Coach gate).
+ *
+ *   - "user"   — a personal cloud credential resolves (Codex OAuth, or a
+ *                BYO OpenAI / Anthropic key).
+ *   - "local"  — a per-user self-hosted base URL (Ollama / LM Studio).
+ *   - "server" — no personal config, but the operator's admin-managed
+ *                key serves the user. This is the case iOS #24 missed:
+ *                the Coach works server-side yet the client saw `null`.
+ *   - null     — nothing configured anywhere; no provider can serve.
+ *
+ * Read off the first entry of the presence probe: it never decrypts a key,
+ * builds a client, or probes liveness.
+ */
+export type ProviderManagedBy = "user" | "local" | "server";
 
 /**
  * Effective AI availability for a user: whether any provider can serve
@@ -951,7 +987,7 @@ export async function resolveProviderAvailability(
   userId: string,
 ): Promise<{ aiAvailable: boolean; managedBy: ProviderManagedBy | null }> {
   const presence = await probeProviderChain(userId);
-  return presence.entries.length > 0
+  return everyEntry(presence).length > 0
     ? { aiAvailable: true, managedBy: presence.managedBy }
     : { aiAvailable: false, managedBy: null };
 }
@@ -962,6 +998,7 @@ export async function resolveProviderAvailability(
 const PRESENCE_USER_SELECT = {
   aiProvider: true,
   aiProviderChain: true,
+  aiNamedChains: true,
   aiAnthropicKeyEncrypted: true,
   aiLocalKeyEncrypted: true,
   aiOpenaiKeyEncrypted: true,
@@ -1055,9 +1092,15 @@ export function probeProviderChain(
       });
 
       if (policy === "deny") return NO_PRESENCE;
+      const named = parseNamedChains(row.aiNamedChains ?? null);
       if (policy === "operator-default") {
         return {
           entries: adminKey ? [vision("admin-openai")] : [],
+          pinned: pinnedChains(
+            named,
+            (type) => type === "admin-openai" && adminKey,
+            vision,
+          ),
           operatorKeyBaseUrl: settings?.adminAiBaseUrl ?? null,
           // A guardian's in-browser OCR is not the record's opt-in to use.
           localOcrEnabled: false,
@@ -1106,13 +1149,12 @@ export function probeProviderChain(
       };
       const centralCodex =
         row.useCentralCodex && appSettingsCentralCodexConnected(settings);
-      const entries: ProviderEntryPresence[] = [];
-      for (const entry of parseProviderChain(row.aiProviderChain ?? null)) {
-        if (!entry.enabled) continue;
-        if (credentialPresent(entry.providerType)) {
-          entries.push(vision(entry.providerType));
-        }
-      }
+      const entries: ProviderEntryPresence[] = defaultChainTypes(
+        named,
+        row.aiProviderChain ?? null,
+      )
+        .filter(credentialPresent)
+        .map(vision);
       if (centralCodex) {
         entries.push(vision("admin-codex"));
       }
@@ -1127,11 +1169,18 @@ export function probeProviderChain(
         entries.push(vision("openai-compatible"));
       }
 
+      const pinned = pinnedChains(
+        named,
+        (type) =>
+          type === "admin-codex" ? centralCodex : credentialPresent(type),
+        vision,
+      );
+      const head = everyEntry({ entries, pinned })[0];
       return {
         entries,
+        pinned,
         localOcrEnabled: row.labsLocalOcrEnabled,
-        managedBy:
-          entries.length > 0 ? providerOrigin(entries[0].providerType) : null,
+        managedBy: head ? providerOrigin(head.providerType) : null,
         availableTypes,
         responseTimeoutSeconds: row.aiResponseTimeoutSeconds,
         operatorKeyBaseUrl: settings?.adminAiBaseUrl ?? null,
@@ -1149,12 +1198,16 @@ export function probeProviderChain(
 export async function probeProviderPresence(
   recordId: string,
   modality: AiModality = "text",
+  capability: AiCapabilityKey | null = null,
 ): Promise<boolean> {
   const presence = await probeProviderChain(recordId);
-  if (modality === "text") return presence.entries.length > 0;
+  const entries =
+    (capability ? presence.pinned?.[capability] : undefined) ??
+    presence.entries;
+  if (modality === "text") return entries.length > 0;
   return (
-    presence.entries.some((entry) => entry.vision) ||
-    (presence.localOcrEnabled && presence.entries.length > 0)
+    entries.some((entry) => entry.vision) ||
+    (presence.localOcrEnabled && entries.length > 0)
   );
 }
 
@@ -1316,6 +1369,31 @@ function isSameOrigin(url1?: string | null, url2?: string | null): boolean {
   }
 }
 
+function assertStoredKeyOriginAllowed(
+  overrideKey: string | null | undefined,
+  storedKey: string | null | undefined,
+  overrideUrl: string | null | undefined,
+  storedUrl: string | null | undefined,
+): void {
+  const isReusingStoredKey = !overrideKey?.trim() && !!storedKey;
+  if (
+    isReusingStoredKey &&
+    overrideUrl &&
+    !isSameOrigin(overrideUrl, storedUrl)
+  ) {
+    throw new AITestConfigError(
+      422,
+      "API key is required when testing a new base URL origin",
+    );
+  }
+}
+
+function hasAnyOverrideField(override: AITestOverride): boolean {
+  return Object.values(override).some(
+    (v) => typeof v === "string" && v.trim() !== "",
+  );
+}
+
 async function resolveProviderForTestUnbound(
   userId: string,
   override: AITestOverride,
@@ -1333,21 +1411,14 @@ async function resolveProviderForTestUnbound(
       aiCompatKeyEncrypted: true,
       aiCompatModel: true,
       antigravityProfileId: true,
+      antigravityModel: true,
+      antigravityConnectionStatus: true,
       role: true,
     },
   });
   // v1.39.3 — an unsaved override is tested under the same owner rule as a
   // saved one: it belongs to the calling account.
   const owner = { operatorTrusted: isOperatorOwned(stored) };
-
-  const overrideProvider = (override.provider ?? "").trim().toUpperCase();
-  const hasOverrideFields = Object.entries(override).some(
-    ([, value]) =>
-      value !== undefined &&
-      value !== null &&
-      typeof value === "string" &&
-      value.trim() !== "",
-  );
 
   // Empty selection ("test my saved config" — the ai-section calls
   // /api/ai/test with an empty body): resolve via the SAME path generation
@@ -1356,12 +1427,13 @@ async function resolveProviderForTestUnbound(
   // (observed: test→admin-key while generation→codex), so a green test gave
   // no signal about whether overnight generation would work.
   // Nothing resolving is the route's `ai.provider.none`, not a refused entry.
-  if (!hasOverrideFields) {
-    const chain = await resolveProviderChain(userId);
+  if (!hasAnyOverrideField(override)) {
+    const chain = await resolveProviderChain(userId, null);
     return chain.length > 0 ? chain[0].instance : new NoProvider();
   }
 
   // Restore partial override on stored provider when provider is omitted in override.
+  const overrideProvider = (override.provider ?? "").trim().toUpperCase();
   const provider =
     overrideProvider || (stored?.aiProvider ?? "").trim().toUpperCase();
   if (!provider) {
@@ -1398,18 +1470,12 @@ async function resolveProviderForTestUnbound(
       if (!baseUrl) {
         throw new AITestConfigError(422, "Local provider requires a base URL");
       }
-      const isReusingStoredKey =
-        !override.localKey?.trim() && !!stored?.aiLocalKeyEncrypted;
-      if (
-        isReusingStoredKey &&
-        override.baseUrl &&
-        !isSameOrigin(override.baseUrl, stored?.aiBaseUrl)
-      ) {
-        throw new AITestConfigError(
-          422,
-          "API key is required when testing a new base URL origin",
-        );
-      }
+      assertStoredKeyOriginAllowed(
+        override.localKey,
+        stored?.aiLocalKeyEncrypted,
+        override.baseUrl,
+        stored?.aiBaseUrl,
+      );
       // A private host only when the operator granted its origin
       // (`AI_PRIVATE_ORIGINS` or the legacy host list; v1.39.3).
       const allowPrivate = isLocalAiHostAllowed(baseUrl, owner);
@@ -1449,18 +1515,12 @@ async function resolveProviderForTestUnbound(
           "OpenAI-compatible provider requires a base URL",
         );
       }
-      const isReusingStoredKey =
-        !override.compatKey?.trim() && !!stored?.aiCompatKeyEncrypted;
-      if (
-        isReusingStoredKey &&
-        override.compatBaseUrl &&
-        !isSameOrigin(override.compatBaseUrl, stored?.aiCompatBaseUrl)
-      ) {
-        throw new AITestConfigError(
-          422,
-          "API key is required when testing a new base URL origin",
-        );
-      }
+      assertStoredKeyOriginAllowed(
+        override.compatKey,
+        stored?.aiCompatKeyEncrypted,
+        override.compatBaseUrl,
+        stored?.aiCompatBaseUrl,
+      );
       if (
         !isLocalAiHostAllowed(compatBaseUrl, owner) &&
         !isPublicUrl(compatBaseUrl)
@@ -1497,6 +1557,25 @@ async function resolveProviderForTestUnbound(
       const codex = await resolveCodexProvider(userId);
       if (codex) return codex;
       throw new AITestConfigError(422, "ChatGPT OAuth is not connected");
+    }
+    case "ANTIGRAVITY":
+    case "ANTIGRAVITY_CLI": {
+      if (
+        !stored?.antigravityProfileId ||
+        stored.antigravityConnectionStatus !== "connected"
+      ) {
+        throw new AITestConfigError(422, "Antigravity is not connected");
+      }
+      const { antigravityProviderFor } = await import("./antigravity-client");
+      const client = antigravityProviderFor({
+        antigravityProfileId: stored.antigravityProfileId,
+        antigravityModel:
+          (override.model ?? stored.antigravityModel ?? "").toString().trim() ||
+          null,
+        antigravityConnectionStatus: stored.antigravityConnectionStatus,
+      });
+      if (client) return client;
+      throw new AITestConfigError(422, "Antigravity is not connected");
     }
     case "OPENAI": {
       // Test path mirrors the persistent resolution: user key first,

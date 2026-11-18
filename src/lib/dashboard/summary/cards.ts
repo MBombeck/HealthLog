@@ -86,6 +86,14 @@ export interface MetricCard {
    */
   sleepSourceDiscrepancy: SleepSourceDiscrepancy | null;
   trend: "up" | "down" | "flat" | "unknown";
+  /**
+   * #176 — the window `trend` compares: 30 when it is this month's mean
+   * against last month's (the metric page's own comparison,
+   * `computeRangeDelta(..., "30d")`), null when it falls back to the
+   * sparkline's first-to-last direction (no previous month to compare, and
+   * always for mood and BMI).
+   */
+  trendWindowDays: number | null;
   sparkline: number[];
   updatedAt: string | null;
   /**
@@ -261,6 +269,7 @@ export function plainCard(
     sleepStages: null,
     sleepSourceDiscrepancy: null,
     trend: trendOf(card.spark),
+    trendWindowDays: null,
     sparkline: card.spark,
     updatedAt: card.updatedAt,
     allTimeCount: card.allTimeCount,
@@ -289,6 +298,7 @@ export function sleepCard(card: {
     sleepStages: card.sleepStages,
     sleepSourceDiscrepancy: card.sleepSourceDiscrepancy,
     trend: trendOf(card.spark),
+    trendWindowDays: null,
     sparkline: card.spark,
     updatedAt: card.updatedAt,
     allTimeCount: card.allTimeCount,

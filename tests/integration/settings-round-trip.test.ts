@@ -33,6 +33,7 @@ import {
 
 import { GET as getMe } from "@/app/api/auth/me/route";
 import * as profile from "@/app/api/user/profile/route";
+import * as nutrientTargets from "@/app/api/nutrients/targets/route";
 import * as diabetes from "@/app/api/auth/me/diabetes/route";
 import * as autoAiRead from "@/app/api/auth/me/documents-auto-ai-read/route";
 import * as labsOcr from "@/app/api/auth/me/labs-local-ocr/route";
@@ -55,6 +56,7 @@ import { POST as uploadAvatar } from "@/app/api/user/avatar/route";
 import { GET as getAvatar } from "@/app/api/user/avatar/[id]/route";
 import * as aiProvider from "@/app/api/user/ai-provider/route";
 import * as providerChain from "@/app/api/insights/provider-chain/route";
+import * as providerChains from "@/app/api/insights/provider-chains/route";
 import * as insightsSettings from "@/app/api/insights/settings/route";
 import { POST as completeOnboarding } from "@/app/api/onboarding/complete/route";
 import { POST as onboardingTour } from "@/app/api/onboarding/tour/route";
@@ -449,11 +451,38 @@ function entries(user: Pick<User, "id">): Entry[] {
         handler: modules.PATCH,
         method: "PATCH",
         route: "/api/auth/me/modules",
-        body: { mood: false },
+        // Nutrients on as well: the nutrient-target entry below is behind it.
+        body: { mood: false, nutrients: true },
       },
       read: get(modules.GET, "/api/auth/me/modules", "modules.mood"),
       expected: false,
       me: { pick: (me) => at(me, "modules.mood"), expected: false },
+    },
+    {
+      columns: ["nutrientTargetsJson"],
+      write: {
+        handler: nutrientTargets.PATCH,
+        method: "PATCH",
+        route: "/api/nutrients/targets",
+        body: {
+          targets: {
+            protein: { value: 120, direction: "target" },
+            sugar: { value: 40, direction: "limit" },
+          },
+        },
+      },
+      read: {
+        call: {
+          handler: nutrientTargets.GET,
+          method: "GET",
+          route: "/api/nutrients/targets",
+        },
+        pick: (res) => [
+          at(res.data, "targets.protein.value"),
+          at(res.data, "targets.sugar.direction"),
+        ],
+      },
+      expected: [120, "limit"],
     },
     {
       columns: ["healthScoreConfigJson"],
@@ -708,6 +737,42 @@ function entries(user: Pick<User, "id">): Entry[] {
         ["anthropic", true],
         ["openai", false],
       ],
+    },
+    {
+      columns: ["aiNamedChains"],
+      write: {
+        handler: providerChains.PUT,
+        method: "PUT",
+        route: "/api/insights/provider-chains",
+        body: {
+          chains: [
+            { id: "docs", name: "Stays home", entries: ["local"] },
+            { id: "cloud", name: "Cloud", entries: ["anthropic", "openai"] },
+          ],
+          defaultChainId: "cloud",
+          attachments: { documentAi: "docs", labsOcr: "docs" },
+        },
+      },
+      read: {
+        call: {
+          handler: providerChains.GET,
+          method: "GET",
+          route: "/api/insights/provider-chains",
+        },
+        pick: (res) => ({
+          chains: at(res.data, "chains"),
+          defaultChainId: at(res.data, "defaultChainId"),
+          attachments: at(res.data, "attachments"),
+        }),
+      },
+      expected: {
+        chains: [
+          { id: "docs", name: "Stays home", entries: ["local"] },
+          { id: "cloud", name: "Cloud", entries: ["anthropic", "openai"] },
+        ],
+        defaultChainId: "cloud",
+        attachments: { documentAi: "docs", labsOcr: "docs" },
+      },
     },
     {
       columns: ["insightsPrivacyMode"],

@@ -7,16 +7,17 @@
  * route's `restore`); removing one for good ahead of time is
  * `POST /api/documents/inbound/{id}/purge`.
  *
- * Owner-only, like the restore and delete beside it: a deleted document is the
- * owner's decision in progress, and nothing a delegate may do (restore, delete
- * now) is a verb a grant admits. A bare `requireAuth()` therefore refuses the
- * request while it acts inside somebody else's record, and refuses a narrow
- * token.
+ * The owner's, and a managed profile's guardian's, like the restore beside
+ * it (#1403): a deleted document is a decision in progress, and the list is
+ * there for whoever may restore from it. It declares `"guardian"` on a GET for
+ * that reason: an adult's delegate restores nothing, so they are not shown what
+ * they could not bring back, at any level. A narrow token is refused, as
+ * before. Delete now stays with the owner (`[id]/purge`).
  *
  * Metadata only. The encrypted blob is never selected; a deleted document's
  * original, thumbnail and AI surfaces stay closed until it is restored.
  */
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { apiListSuccess } from "@/lib/api/list-cap";
 import { prisma } from "@/lib/db";
 import { DOCUMENT_PURGE_GRACE_DAYS } from "@/lib/documents/inbound-constants";
@@ -40,7 +41,7 @@ export const dynamic = "force-dynamic";
 const DELETED_DOCUMENTS_LIMIT = 200;
 
 export const GET = apiHandler(async () => {
-  const { user } = await requireAuth();
+  const { user } = await requireRecordAuth("guardian", "documents");
   const gate = await requireModuleEnabled(user.id, "inboundDocuments");
   if (!gate.enabled) return gate.response;
 

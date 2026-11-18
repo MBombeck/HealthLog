@@ -18,6 +18,7 @@ describe("<LabFilterRail>", () => {
           searchInputRef={{ current: null }}
           onStatusChange={vi.fn()}
           onCategoryChange={vi.fn()}
+          onSourceChange={vi.fn()}
           onFromDayChange={vi.fn()}
           onToDayChange={vi.fn()}
           onResetFilters={vi.fn()}
@@ -61,6 +62,31 @@ describe("<LabFilterRail>", () => {
     // The saved sort in Settings > Labs is the only sort; the rail has none.
     expect(html).not.toContain("Sort order");
     expect(html).toContain("5 biomarkers");
+    // One source or none: nothing to choose between.
+    expect(html).not.toContain('aria-label="Source"');
+  });
+
+  it("offers the source pill once the newest readings come from two sources", () => {
+    const html = renderToStaticMarkup(
+      <I18nProvider initialLocale="en">
+        <LabFilterRail
+          filters={{}}
+          searchDraft=""
+          onSearchChange={vi.fn()}
+          searchInputRef={{ current: null }}
+          onStatusChange={vi.fn()}
+          onCategoryChange={vi.fn()}
+          onSourceChange={vi.fn()}
+          onFromDayChange={vi.fn()}
+          onToDayChange={vi.fn()}
+          onResetFilters={vi.fn()}
+          isFiltered={false}
+          sources={["MANUAL", "APPLE_HEALTH", "SOMETHING_NEW"]}
+          total={3}
+        />
+      </I18nProvider>,
+    );
+    expect(html).toContain('aria-label="Source"');
   });
 
   it("shows search clear button with accessible label and hides kbd shortcut when search has text", () => {
@@ -73,6 +99,7 @@ describe("<LabFilterRail>", () => {
           searchInputRef={{ current: null }}
           onStatusChange={vi.fn()}
           onCategoryChange={vi.fn()}
+          onSourceChange={vi.fn()}
           onFromDayChange={vi.fn()}
           onToDayChange={vi.fn()}
           onResetFilters={vi.fn()}
@@ -102,6 +129,7 @@ describe("<LabFilterRail>", () => {
             searchInputRef={{ current: null }}
             onStatusChange={vi.fn()}
             onCategoryChange={vi.fn()}
+            onSourceChange={vi.fn()}
             onFromDayChange={vi.fn()}
             onToDayChange={vi.fn()}
             onResetFilters={vi.fn()}
@@ -131,6 +159,7 @@ describe("<LabFilterRail>", () => {
           searchInputRef={{ current: null }}
           onStatusChange={vi.fn()}
           onCategoryChange={vi.fn()}
+          onSourceChange={vi.fn()}
           onFromDayChange={vi.fn()}
           onToDayChange={vi.fn()}
           onResetFilters={vi.fn()}
@@ -156,6 +185,7 @@ describe("<LabFilterRail>", () => {
           searchInputRef={{ current: null }}
           onStatusChange={vi.fn()}
           onCategoryChange={vi.fn()}
+          onSourceChange={vi.fn()}
           onFromDayChange={vi.fn()}
           onToDayChange={vi.fn()}
           onResetFilters={vi.fn()}
@@ -188,6 +218,7 @@ describe("<LabFilterRail>", () => {
             searchInputRef={{ current: null }}
             onStatusChange={vi.fn()}
             onCategoryChange={vi.fn()}
+            onSourceChange={vi.fn()}
             onFromDayChange={vi.fn()}
             onToDayChange={vi.fn()}
             onResetFilters={vi.fn()}

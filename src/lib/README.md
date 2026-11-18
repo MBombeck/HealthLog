@@ -20,7 +20,7 @@ The server and runtime toolkit. Everything that is not a page, component, or rou
 - **`rollups/`** — DAY/WEEK/MONTH/YEAR pre-aggregations for measurements, mood, and medication compliance. Read-swap pattern: probe the rollup, fall back to live SQL on a coverage miss.
 - **`notifications/`** — the dispatcher cascade (APNs → Telegram → ntfy → Web Push), per-channel `senders/`, retry policy, VAPID config.
 - **`jobs/`** — pg-boss workers: reminders, insight pre-generation, backups, retention sweeps, integration backfills. Recurring work belongs here, not in `scripts/`.
-- **`integrations/`**, **`withings/`**, **`whoop/`**, **`fitbit/`** — OAuth clients and sync services for the device providers; `sync/` holds the shared delta-feed plumbing.
+- **`integrations/`**, **`withings/`**, **`whoop/`**, **`google-health/`** — OAuth clients and sync services for the device providers; `sync/` holds the shared delta-feed plumbing.
 - **`analytics/`** — trend calculations, cadence-aware medication `compliance.ts`, correlations.
 - **`insights/`**, **`fhir/`**, **`doctor-report-*.ts`** — insight pipeline, FHIR R4 export, client-side doctor-report PDF.
 - **`openapi/`** — Zod registry that is the source of truth for `docs/api/openapi.yaml`.

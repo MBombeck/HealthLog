@@ -35,6 +35,7 @@ import type { ShareDomain } from "@/lib/sharing/scope";
 import { dateOnlyKey } from "@/lib/tz/date-only";
 import { userDayKey } from "@/lib/tz/format";
 import { visitPath } from "@/lib/encounters/visit-links";
+import { decryptSeizureText } from "@/lib/seizures/server";
 
 /**
  * The sharing domain each lane reads, or `null` for a lane only the record's
@@ -45,6 +46,7 @@ export const TIMELINE_LANE_SHARE_DOMAIN: Readonly<
 > = Object.freeze({
   life: null,
   illness: "illness",
+  seizures: "illness",
   allergies: "profile",
   medications: "medications",
   vaccinations: "profile",
@@ -464,6 +466,58 @@ async function labsLane(frame: LaneFrame): Promise<LaneRead> {
   };
 }
 
+/** At most this many seizure types name a seizure day. */
+const SEIZURE_DAY_NAMES = 3;
+
+/**
+ * One point per day with seizures (#1368), in the person's own day. The
+ * label lists the day's seizure types by the person's own names, the sub
+ * the number of seizures, a logged run of several counted as several.
+ */
+async function seizuresLane(frame: LaneFrame): Promise<LaneRead> {
+  const [rows, types] = await Promise.all([
+    prisma.seizureEvent.findMany({
+      where: { userId: frame.userId },
+      select: { onsetAt: true, count: true, typeProfileId: true },
+      orderBy: [{ onsetAt: "asc" }, { id: "asc" }],
+    }),
+    prisma.seizureTypeProfile.findMany({
+      where: { userId: frame.userId },
+      select: { id: true, labelEncrypted: true },
+    }),
+  ]);
+  const labelOf = new Map(
+    types.map((t) => [
+      t.id,
+      decryptSeizureText(t.labelEncrypted, "label") ?? "",
+    ]),
+  );
+  const days = new Map<string, { count: number; names: string[] }>();
+  for (const r of rows) {
+    const day = userDayKey(r.onsetAt, frame.tz);
+    const entry = days.get(day) ?? { count: 0, names: [] };
+    entry.count += r.count;
+    const name = r.typeProfileId ? labelOf.get(r.typeProfileId) : undefined;
+    if (name && !entry.names.includes(name)) entry.names.push(name);
+    days.set(day, entry);
+  }
+  return {
+    items: [...days].map(([day, { count, names }]) =>
+      item({
+        id: `seizure-day:${day}`,
+        kind: "seizureDay",
+        start: day,
+        end: null,
+        open: false,
+        label: names.slice(0, SEIZURE_DAY_NAMES).join(", "),
+        sub: String(count),
+        href: "/seizures",
+      }),
+    ),
+    standing: [],
+  };
+}
+
 async function documentsLane(frame: LaneFrame): Promise<LaneRead> {
   const rows = await prisma.inboundDocument.findMany({
     where: {
@@ -533,6 +587,7 @@ export const LANE_READERS: Readonly<
 > = Object.freeze({
   life: lifeLane,
   illness: illnessLane,
+  seizures: seizuresLane,
   allergies: allergiesLane,
   medications: medicationsLane,
   vaccinations: vaccinationsLane,

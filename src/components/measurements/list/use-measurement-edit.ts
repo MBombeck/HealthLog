@@ -20,6 +20,11 @@ import {
 } from "@/lib/query-keys";
 
 import {
+  toGlucoseContextValue,
+  type GlucoseContextValue,
+} from "../glucose-context-select";
+
+import {
   MAX_COMMENT_LENGTH,
   toDateTimeLocalValue,
   type Measurement,
@@ -102,6 +107,14 @@ export function editValueRange(
 
 type Translate = ReturnType<typeof useTranslations>["t"];
 
+/** The edit sheet's draft; the dismissal guard compares it with its seed. */
+interface EditDraft {
+  value: string;
+  measuredAt: string;
+  notes: string;
+  glucoseContext: GlucoseContextValue | null;
+}
+
 /** The sentence for a value outside its band, in the unit the input shows. */
 export function outOfRangeMessage(
   display: Pick<MeasurementRowDisplay, "rowDisplay">,
@@ -117,6 +130,22 @@ export function outOfRangeMessage(
   return range.unit
     ? t("measurements.valueOutOfRange", { ...bounds, unit: range.unit })
     : t("measurements.valueOutOfRangeNoUnit", bounds);
+}
+
+/** The draft an edit opens with: the reading as it is stored, in the display unit. */
+function editDraftFor(
+  display: Pick<
+    MeasurementRowDisplay,
+    "unitDisplay" | "editsConvertedGlucose" | "rowDisplay"
+  >,
+  measurement: Measurement,
+): EditDraft {
+  return {
+    value: String(editSeedValue(display, measurement)),
+    measuredAt: toDateTimeLocalValue(measurement.measuredAt),
+    notes: (measurement.notes ?? "").slice(0, MAX_COMMENT_LENGTH),
+    glucoseContext: toGlucoseContextValue(measurement.glucoseContext),
+  };
 }
 
 /**
@@ -157,10 +186,14 @@ export function useMeasurementEdit({
   const [editValue, setEditValue] = useState("");
   const [editMeasuredAt, setEditMeasuredAt] = useState("");
   const [editNotes, setEditNotes] = useState("");
-  const [editSeed, setEditSeed] = useState({
+  // #1407 — the meal context of a blood glucose reading; null is "none".
+  const [editGlucoseContext, setEditGlucoseContext] =
+    useState<GlucoseContextValue | null>(null);
+  const [editSeed, setEditSeed] = useState<EditDraft>({
     value: "",
     measuredAt: "",
     notes: "",
+    glucoseContext: null,
   });
   const [editError, setEditError] = useState<string | null>(null);
   // A refused value is said under the value input, not in the banner.
@@ -177,22 +210,22 @@ export function useMeasurementEdit({
   const updateMutation = useMutation({
     mutationFn: async ({
       id,
-      value,
-      measuredAt,
-      notes,
+      ...body
     }: {
       id: string;
-      value: number;
+      value?: number;
       measuredAt: string;
       notes: string | null;
+      glucoseContext?: GlucoseContextValue | null;
     }) => {
-      await apiPut(`/api/measurements/${id}`, { value, measuredAt, notes });
+      await apiPut(`/api/measurements/${id}`, body);
     },
     onSuccess: () => {
       setEditSeed({
         value: editValue,
         measuredAt: editMeasuredAt,
         notes: editNotes,
+        glucoseContext: editGlucoseContext,
       });
       dismissEdit();
       void invalidateKeys(queryClient, measurementDependentKeys);
@@ -218,6 +251,7 @@ export function useMeasurementEdit({
       value: editValue,
       measuredAt: editMeasuredAt,
       notes: editNotes,
+      glucoseContext: editGlucoseContext,
     },
     blocked: updateMutation.isPending || deleteMutation.isPending,
   });
@@ -228,16 +262,12 @@ export function useMeasurementEdit({
       return;
     }
 
-    const seedValue = editSeedValue(display, measurement);
-    const seed = {
-      value: String(seedValue),
-      measuredAt: toDateTimeLocalValue(measurement.measuredAt),
-      notes: (measurement.notes ?? "").slice(0, MAX_COMMENT_LENGTH),
-    };
+    const seed = editDraftFor(display, measurement);
     setEditing(measurement);
     setEditValue(seed.value);
     setEditMeasuredAt(seed.measuredAt);
     setEditNotes(seed.notes);
+    setEditGlucoseContext(seed.glucoseContext);
     setEditSeed(seed);
     setEditError(null);
     setEditValueError(null);
@@ -297,9 +327,15 @@ export function useMeasurementEdit({
 
     updateMutation.mutate({
       id: editing.id,
-      value: canonicalValue,
+      // An untouched value is not sent: converted back from mmol/L or pounds
+      // it can land a rounding step off the stored one, which a connected
+      // source's row would refuse as a value edit.
+      ...(editValue !== editSeed.value && { value: canonicalValue }),
       measuredAt: measuredDate.toISOString(),
       notes: editNotes.trim() ? editNotes.trim() : null,
+      ...(editing.type === "BLOOD_GLUCOSE" && {
+        glucoseContext: editGlucoseContext,
+      }),
     });
   }
 
@@ -311,6 +347,8 @@ export function useMeasurementEdit({
     setEditMeasuredAt,
     editNotes,
     setEditNotes,
+    editGlucoseContext,
+    setEditGlucoseContext,
     editError,
     editErrorId,
     editErrorDescriptor: editError ? editErrorId : undefined,

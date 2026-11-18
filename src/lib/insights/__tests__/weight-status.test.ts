@@ -2,11 +2,24 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 
 // The graded series folds per-day aggregates in SQL; the fake folds the
 // mocked `measurement.findMany` rows with the same rules.
+// The input gate's stamp read answers from the mocked grouped count.
+vi.mock("@/lib/insights/measurement-input-stamps", async () => ({
+  readMeasurementInputStamps: (await import("./fake-input-stamps"))
+    .stampsFromMockedGroupBy,
+}));
+
 vi.mock("@/lib/measurements/day-aggregates", async () => ({
   readDayAggregates: (
     await import("@/lib/measurements/__tests__/fake-day-aggregates")
   ).fakeReadDayAggregates,
 }));
+
+// The per-type measurement read is raw SQL; serve it from the findMany mock.
+vi.mock("@/lib/measurements/newest-per-type", async () =>
+  (
+    await import("@/__tests__/helpers/newest-per-type-mock")
+  ).newestPerTypeMock(),
+);
 
 vi.mock("@/lib/db", () => ({
   prisma: {

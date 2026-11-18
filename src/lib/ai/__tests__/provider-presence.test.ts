@@ -181,6 +181,8 @@ describe("probeProviderChain", () => {
       localOcrEnabled: false,
       managedBy: "server",
       availableTypes: ["admin-openai"],
+      // No capability is attached to a named chain.
+      pinned: {},
       // The endpoint behind the operator's key names the service the consent
       // card asks about; the default column value stands for OpenAI.
       operatorKeyBaseUrl: null,

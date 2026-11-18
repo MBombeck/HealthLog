@@ -58,7 +58,8 @@
     "errorIdCopied": "Error ID copied",
     "readThrottled": "There are too many requests just now, so try again later.",
     "sessionEnded": "Your session has ended, so sign in again to continue.",
-    "signIn": "Sign in"
+    "signIn": "Sign in",
+    "yes": "Yes"
   },
   "apiErrors": {
     "measurement": {
@@ -249,7 +250,24 @@
         "invalid": "The passkey's answer could not be read. Try again."
       }
     },
-    "oidc_only": "This server only allows single sign-on. Continue with your identity provider instead."
+    "oidc_only": "This server only allows single sign-on. Continue with your identity provider instead.",
+    "seizures": {
+      "disabled": "The seizure diary is switched off for this record.",
+      "event": {
+        "notFound": "This seizure no longer exists."
+      },
+      "rescue": {
+        "notFound": "This rescue dose no longer exists.",
+        "medicationNotFound": "This medication no longer exists.",
+        "medicationRequired": "Choose the medication that was given.",
+        "notAsNeeded": "A rescue medication has to be an as-needed medication."
+      },
+      "type": {
+        "inUse": "Seizures are recorded under this type. Archive it instead.",
+        "limit": "There are 12 seizure types. Archive one to add another.",
+        "notFound": "This seizure type no longer exists."
+      }
+    }
   },
   "doctorReport": {
     "title": "Health Report",
@@ -574,7 +592,9 @@
       "symptom": "Symptom",
       "symptomDescription": "One of your own symptoms, with how strong",
       "lifeEventDescription": "A move, a birth, a new job",
-      "lifeEvent": "Life event"
+      "lifeEvent": "Life event",
+      "seizure": "Seizure",
+      "seizureDescription": "Start the timer or record one that was not timed"
     },
     "cycle": "Cycle",
     "labs": "Labs",
@@ -584,7 +604,8 @@
     "documents": "Documents",
     "vaccinations": "Vaccinations",
     "mentalWellbeing": "Mental wellbeing",
-    "timeline": "Timeline"
+    "timeline": "Timeline",
+    "seizures": "Seizures"
   },
   "auth": {
     "login": "Sign in",
@@ -626,7 +647,9 @@
       "errorLinkRequired": "An account with this email address already exists here. Sign in to it once with its password or passkey to connect it to single sign-on."
     },
     "native": {
-      "signingInToApp": "Signing in to the HealthLog app"
+      "signingInToApp": "Signing in to the HealthLog app",
+      "returnTitle": "Back to the app",
+      "returnBody": "Your sign-in continues in the HealthLog app. If it did not open, switch back to the app and start the sign-in there again. You can close this page."
     },
     "mfa": {
       "title": "Two-factor authentication",
@@ -864,7 +887,8 @@
     },
     "greetingOnly": "{greeting}.",
     "welcomeNew": "Welcome.",
-    "welcomeNewWithName": "Welcome, {name}."
+    "welcomeNewWithName": "Welcome, {name}.",
+    "quickAddSeizure": "Log seizure"
   },
   "measurements": {
     "title": "Measurements",
@@ -925,6 +949,7 @@
     "glucoseContextPostprandial": "Post-meal (2h after eating)",
     "glucoseContextRandom": "Random / casual",
     "glucoseContextBedtime": "Before bed",
+    "glucoseContextNone": "Not specified",
     "unitHours": "hours",
     "unitSteps": "steps",
     "sourceManual": "Manual",
@@ -981,6 +1006,7 @@
     "typeIrregularRhythmNotification": "Irregular rhythm notification",
     "typeHighHeartRateEvent": "High heart rate notification",
     "typeLowHeartRateEvent": "Low heart rate notification",
+    "typeHypertensionEvent": "Hypertension notification",
     "typeWalkingSteadinessEvent": "Walking steadiness alert",
     "typeBreathingDisturbanceEvent": "Breathing disturbance",
     "typeRecoveryScore": "Recovery score",
@@ -1413,6 +1439,7 @@
       "openIllness": "Open"
     },
     "sourceNotification": "Notification",
+    "sourceAppleHealth": "Apple Health",
     "tagCatalogLoadError": "Could not load the tags."
   },
   "medications": {
@@ -3926,7 +3953,8 @@
         "sleepTrendsLink": "Sleep trends",
         "moodHistoryLink": "Mood history",
         "previousSessionLink": "Previous session",
-        "insightTitle": "Activity insight"
+        "insightTitle": "Activity insight",
+        "sourceFitFile": "FIT file"
       },
       "sport": {
         "walking": "Walking",
@@ -4815,6 +4843,7 @@
         "irregularRhythm": "Irregular rhythm notification",
         "highHeartRate": "High heart rate notification",
         "lowHeartRate": "Low heart rate notification",
+        "hypertension": "Hypertension notification",
         "walkingSteadiness": "Walking steadiness alert",
         "breathingDisturbance": "Breathing disturbance during sleep"
       },
@@ -5059,7 +5088,8 @@
         "afternoon": "A sustained elevated-at-rest stretch this afternoon, possibly some tension.",
         "evening": "A sustained elevated-at-rest stretch this evening, possibly some tension.",
         "night": "A sustained elevated-at-rest stretch overnight, possibly some tension."
-      }
+      },
+      "emptyOutsideWorkouts": "Not enough heart-rate readings outside workouts for this day to show its shape."
     },
     "navEcg": "ECG",
     "sectionLoadError": "This section could not be loaded.",
@@ -5493,7 +5523,7 @@
       "medicationDescription": "Track adherence and get reminders right when you need them.",
       "medicationCta": "Add medication",
       "dataSourceTitle": "Connect a data source (optional)",
-      "dataSourceDescription": "Auto-sync weight, BP, sleep and more from Withings, WHOOP, Oura, Polar, Nightscout, Fitbit or Apple Health.",
+      "dataSourceDescription": "Auto-sync weight, BP, sleep and more from Withings, WHOOP, Oura, Polar, Nightscout, Google Health or Apple Health.",
       "dataSourceCta": "Connect",
       "notificationsTitle": "Configure notifications",
       "notificationsDescription": "Choose how HealthLog should remind you: Telegram, ntfy or Web Push.",
@@ -5639,6 +5669,15 @@
             "labsChanges": "Lab changes",
             "ecg": "ECG"
           }
+        },
+        "documents": {
+          "title": "Documents",
+          "autoAiRead": "Read new documents automatically with AI",
+          "honesty": "When on, each document uploaded into this profile is sent to the instance's AI provider to be read, described and indexed for search, with no tap per document, and documents already here without a summary are sent too (up to 200 each time it is switched on). Turning it on records this profile's consent to having its documents read. The profile's AI settings apply; your own AI provider is never used. Off by default.",
+          "pageTitle": "Documents and AI",
+          "pageSubtitle": "Whether AI reads the documents uploaded into {name}'s profile.",
+          "noProvider": "This server has no AI provider that could read {name}'s documents, so the switch stays off. The person who runs the server can set one up.",
+          "aiOff": "AI is off for {name}'s profile, so no document would be read."
         }
       },
       "unavailableTitle": "Unavailable in this shared record",
@@ -5809,7 +5848,7 @@
         "subtitle": "Decide which source wins when two report the same metric.",
         "nutrients": {
           "title": "Synced nutrient intake",
-          "description": "Daily totals over the last {days} days: what Apple Health synced plus the supplements you took.",
+          "description": "Daily totals over the last {days} days: what Apple Health or a food tracker synced plus the supplements you took.",
           "empty": "No nutrient data has been synced yet.",
           "latest": "{amount} {unit} on {date}",
           "daysWithData": "{count} of {days} days",
@@ -5871,7 +5910,7 @@
         },
         "import": {
           "heading": "Import",
-          "description": "Bring data into HealthLog from an Apple Health export, a JSON file, or a CSV. Imports skip rows that already exist, so re-running one is safe.",
+          "description": "Bring data into HealthLog from Apple Health, Health Connect, a watch's activity file, a JSON file or a CSV. Imports skip rows that already exist, so re-running one is safe.",
           "charCount": "{used} / {max} characters",
           "appleHealth": {
             "title": "Apple Health",
@@ -5890,11 +5929,19 @@
             "failureInsufficientMemory": "The server's memory limit is too low for an archive this size. Ask whoever runs the server to raise the Node.js heap limit (NODE_OPTIONS=--max-old-space-size), then upload the export again.",
             "rowsImported": "{count} rows imported so far",
             "doneSummary": "Done: {imported} of {read} records imported, {skipped} clinical records skipped.",
+            "doneSummaryAuxOnly": "Done: nothing new among the {read} records, but the lab results or ECGs below were imported.",
             "doneNothing": "Nothing was imported from that archive: 0 of {read} records landed.",
             "writtenByHealthLogOne": "{count} record that HealthLog wrote into Apple Health itself was left out, because it is already in your data.",
             "writtenByHealthLogOther": "{count} records that HealthLog wrote into Apple Health itself were left out, because they are already in your data.",
             "writtenByHealthLogFew": "{count} records that HealthLog wrote into Apple Health itself were left out, because they are already in your data.",
-            "ecgResult": "ECGs: {discovered} discovered, {imported} imported, {updated} updated, {skipped} skipped, {failed} failed. ECG failures do not discard supported records imported from export.xml.",
+            "ecgResult": "ECGs: {discovered} found, {imported} imported, {updated} updated, {skipped} skipped, {failed} failed.",
+            "ecgFailedNote": "ECG failures do not discard supported records imported from export.xml.",
+            "labsResult": "Lab results from health records: {discovered} found, {imported} imported, {duplicate} already in your record, {skipped} skipped, {failed} failed.",
+            "labsFailedNote": "A lab result that fails does not discard anything else from the archive.",
+            "labsMarkersCreatedOne": "{count} new marker was added to Labs.",
+            "labsMarkersCreatedOther": "{count} new markers were added to Labs.",
+            "labsMarkersCreatedFew": "{count} new markers were added to Labs.",
+            "viewInLabs": "View in Labs",
             "estimateWarning": "Cumulative totals for {count} day(s) were estimated from the largest export source. Native Apple Health statistics remain authoritative.",
             "phase": {
               "queued": "Queued…",
@@ -5917,7 +5964,7 @@
             "fileInputLabel": "Choose a JSON file to import",
             "schemaHint": "Two arrays: measurements and moodEntries.",
             "docsLink": "See the schema and an example.",
-            "uploadFile": "Upload file",
+            "uploadFile": "Choose file",
             "downloadExample": "Download example",
             "import": "Import",
             "invalidJson": "That isn't valid JSON. Check the syntax and try again.",
@@ -5940,7 +5987,7 @@
             "fileInputLabel": "Choose a CSV file to import",
             "schemaHint": "Columns: type, value, unit, measuredAt (with timezone offset), and optional glucoseContext, notes, externalId.",
             "docsLink": "See the column schema and an example.",
-            "uploadFile": "Upload file",
+            "uploadFile": "Choose file",
             "downloadExample": "Download example",
             "preview": "Preview",
             "import": "Import",
@@ -6037,7 +6084,7 @@
           "healthConnect": {
             "title": "Health Connect export",
             "description": "Import the ZIP file the Health Connect app on Android writes when you export your data.",
-            "choose": "Choose ZIP file",
+            "choose": "Choose file",
             "uploading": "Uploading…",
             "uploadFailed": "The upload failed. Please try again.",
             "tooLarge": "The file is larger than this server accepts.",
@@ -6073,6 +6120,53 @@
               "notHealthConnect": "This file is not a Health Connect export. Choose the ZIP file Health Connect saved.",
               "unsafeSchema": "This file does not have the structure of a Health Connect export and was not read.",
               "tooLarge": "The export is larger than this server accepts.",
+              "stagingMissing": "The uploaded file was no longer on the server. Upload it again.",
+              "interrupted": "The import was interrupted by a server restart. Upload the file again."
+            }
+          },
+          "fit": {
+            "title": "Activity file (FIT)",
+            "description": "Import a workout from the FIT file a watch or bike computer records, such as Garmin, Wahoo, Coros or Polar.",
+            "choose": "Choose file",
+            "uploading": "Uploading…",
+            "uploadFailed": "The upload failed. Please try again.",
+            "tooLarge": "The file is larger than 10 MB.",
+            "rateLimited": "Too many uploads in a short time. Wait a minute and try again.",
+            "busy": "An import is already running for your account. Wait until it has finished.",
+            "failed": "The import failed. Please try again.",
+            "doneSummary": "The activity file was imported.",
+            "doneNothing": "The import finished, but there was nothing new to add.",
+            "dropLabel": "Drop the activity file here",
+            "dropHint": "or click to choose it: a .fit, .fit.gz or .zip file up to 10 MB.",
+            "fileInputLabel": "Activity file",
+            "privacyNote": "The file is deleted from the server as soon as the import ends. A workout that is already here from Garmin, Apple Health or another app is not added twice: it gets the heart rate curve from the file if it had none. The GPS track is only kept when Workout routes is switched on. Uploading the same file again changes nothing.",
+            "steps": {
+              "garmin": "Garmin Connect: open the activity on the website, choose the gear menu, then Export original. Upload the ZIP file as it is.",
+              "other": "Other apps and devices: export the activity as a FIT file (.fit or .fit.gz) and upload it here."
+            },
+            "phase": {
+              "queued": "Waiting to start",
+              "parsing": "Reading the file",
+              "upserting": "Saving the workout"
+            },
+            "result": {
+              "imported": "New workouts",
+              "merged": "Added to existing workouts",
+              "alreadyPresent": "Already here",
+              "sessionsSkipped": "Sessions that could not be read",
+              "withSeries": "With heart rate curve",
+              "withRoute": "With GPS track"
+            },
+            "failure": {
+              "unsupportedFile": "This is not an activity file. Choose a .fit, .fit.gz or .zip file.",
+              "archiveInvalid": "The ZIP file must contain exactly one .fit file and could not be read.",
+              "tooLarge": "The file is larger than this server accepts.",
+              "notFit": "This file is not a FIT file.",
+              "crcMismatch": "The file is damaged: its checksum does not match. Export it again.",
+              "malformed": "The file is damaged or incomplete and could not be read.",
+              "tooComplex": "The file holds far more data than an activity has and was not read.",
+              "notActivity": "This FIT file is not an activity (it might be a course or a daily summary). Choose the file of a single workout.",
+              "noSession": "The file contains no workout that could be read.",
               "stagingMissing": "The uploaded file was no longer on the server. Upload it again.",
               "interrupted": "The import was interrupted by a server restart. Upload the file again."
             }
@@ -6482,7 +6576,8 @@
           "local": "Local model",
           "openai-compatible": "OpenAI-compatible gateway",
           "admin-openai": "Admin OpenAI",
-          "antigravity": "Antigravity CLI"
+          "antigravity": "Antigravity CLI",
+          "admin-codex": "Server's shared ChatGPT"
         },
         "title": "Fallback chain",
         "description": "If the active provider fails, HealthLog tries the next enabled one in this order.",
@@ -6497,6 +6592,49 @@
         "resetDefaults": "Reset to defaults",
         "resetConfirmTitle": "Reset chain to defaults?",
         "resetConfirmBody": "The chain reverts to Codex → OpenAI → Anthropic → Local → Admin OpenAI. Your saved credentials are not touched."
+      },
+      "namedChains": {
+        "title": "Chains per task",
+        "description": "Give a task its own provider chain; tasks on Default keep their usual rules.",
+        "empty": "No chains yet. Every task follows the fallback chain.",
+        "newChain": "New chain",
+        "newChainName": "Chain {n}",
+        "nameLabel": "Chain name",
+        "nameRequired": "Every chain needs a name.",
+        "nameTaken": "Two chains can't share a name.",
+        "defaultBadge": "Default",
+        "makeDefault": "Make default",
+        "deleteChain": "Delete chain",
+        "deleteConfirmTitle": "Delete \"{name}\"?",
+        "deleteConfirmBody": "The chain is removed when you save. Your providers and keys stay as they are.",
+        "deleteConfirmBodyUsed": "Tasks using this chain ({count}) go back to Default when you save. If it is the default chain, the fallback chain takes over again. Your providers and keys stay as they are.",
+        "bindingHint": "One provider makes this a binding: if it can't answer, the task stops instead of trying another provider.",
+        "bindingShort": "Bound to this provider, no fallback.",
+        "egressLocal": "Stays on this machine",
+        "egressExternal": "Leaves this machine",
+        "notSetUp": "Not set up yet",
+        "defaultChainLabel": "Default chain",
+        "defaultChainHint": "Tasks on Default follow this chain. Their usual rules still apply: document reads try a local model first.",
+        "tasksHeading": "Tasks",
+        "tasksHint": "Choose the chain for each task. A task on a chain of its own lists the providers it tries, in order.",
+        "taskDefault": "Default",
+        "save": "Save chains",
+        "saved": "Chains saved",
+        "saveFailed": "Saving the chains failed",
+        "capabilities": {
+          "documentAi": "Reading documents",
+          "labsOcr": "Scanning lab reports",
+          "supplementLabel": "Reading supplement labels",
+          "medicationExtract": "Setting up medications from text",
+          "coach": "Coach",
+          "aboutMeQuestions": "About-me questions",
+          "briefing": "Daily briefing",
+          "periodNarrative": "Weekly and monthly summaries",
+          "statusText": "Status notes",
+          "workoutInsights": "Workout notes",
+          "reactionLines": "Reactions to new readings"
+        },
+        "tasksNeedChain": "Create a chain above to give a task its own providers. Until then every task follows the default."
       },
       "activeProviderHeading": "Active provider",
       "activeProviderLabel": "Set up a provider",
@@ -6891,31 +7029,15 @@
       "generic": "Unknown error while connecting. Please start the connection again.",
       "already_linked": "This WHOOP account is already connected to another HealthLog profile. Sign in to WHOOP with the account that belongs to this profile, or disconnect it from the other profile first."
     },
-    "fitbit": "Fitbit",
-    "fitbitTag": "Fitbit & Pixel",
-    "fitbitDescription": "Connect Fitbit to sync your Fitbit and Pixel Watch vitals: weight, heart rate, and more.",
-    "fitbitExperimentalBadge": "Experimental",
-    "fitbitCredentials": "API Credentials",
-    "fitbitClientId": "Client ID",
-    "fitbitClientSecret": "Client Secret",
-    "fitbitCredentialsSaved": "Credentials saved",
-    "fitbitCredentialsSavedPlaceholder": "Saved. Enter new to replace",
-    "fitbitCredentialsSavedPlaceholderSecret": "Saved. Enter new to replace",
-    "fitbitSaveCredentials": "Save",
-    "fitbitSync": "Sync now",
-    "fitbitFullSync": "Sync all data",
-    "fitbitFullSyncTitle": "Full synchronization?",
-    "fitbitFullSyncDescription": "All available Fitbit history will be fully synchronized. This may take some time depending on your history.",
-    "fitbitSyncResult": "{count} measurements synchronized",
-    "fitbitSyncFailed": "Sync failed",
-    "fitbitSynchronize": "Synchronize",
-    "fitbitDisconnect": "Disconnect",
-    "fitbitDisconnectTitle": "Disconnect Fitbit?",
-    "fitbitDisconnectDescription": "The connection to Fitbit will be disconnected. Previously synced data will be preserved.",
-    "fitbitConnect": "Connect with Fitbit",
-    "fitbitNoCredentials": "Please enter your API credentials above to connect Fitbit.",
-    "fitbitOauthConnected": "Fitbit connected. The first sync starts in the background.",
-    "fitbitOauthFailed": "Fitbit connection failed",
+    "fitbitRemoval": {
+      "title": "Fitbit no longer syncs",
+      "body": "Google shut down the Fitbit Web API on October 30, 2026, so HealthLog can no longer connect to Fitbit and the Fitbit integration has been removed. Everything already imported stays: your charts, exports, backups and doctor reports keep it, still marked as Fitbit.",
+      "ways": "To keep data from a Fitbit or Pixel Watch coming, connect Google Health below. It reads the same devices and asks for your consent at Google once. On Android you can also import a Health Connect export.",
+      "toGoogleHealth": "Go to Google Health",
+      "toHealthConnect": "Health Connect import",
+      "dismiss": "Got it",
+      "dismissFailed": "The note could not be hidden. Please try again."
+    },
     "googleHealth": "Google Health",
     "googleHealthTag": "Fitbit & Pixel",
     "googleHealthBetaBadge": "Beta",
@@ -6970,18 +7092,6 @@
       "token": "The token exchange with Google failed. Please start the connection again.",
       "generic": "Unknown error while connecting. Please start the connection again.",
       "already_linked": "This Google account is already connected to another HealthLog profile. Sign in to Google with the account that belongs to this profile, or disconnect it from the other profile first."
-    },
-    "fitbitOauthError": {
-      "csrf1": "The security check failed because the browser cookie was missing. Please start the connection again in the same browser.",
-      "state": "The response from Fitbit did not match any open connection request. Please start the connection again.",
-      "expired": "The connection request expired before it completed. Please start the connection again.",
-      "cross_user": "The response belongs to a request from a different account. Please restart the connection from your own account.",
-      "nocode": "Fitbit did not return an authorization code. Try again and allow access in the Fitbit dialog.",
-      "nocreds": "Fitbit is not configured. Add your Fitbit OAuth credentials above and try again.",
-      "token": "The token exchange with Fitbit failed. Please start the connection again.",
-      "generic": "Unknown error while connecting. Please start the connection again.",
-      "retired": "Google has turned the Fitbit Web API off, so no new Fitbit connection can be made. Connect Google Health instead, which reads the same devices.",
-      "already_linked": "This Fitbit account is already connected to another HealthLog profile. Sign in to Fitbit with the account that belongs to this profile, or disconnect it from the other profile first."
     },
     "integrations": {
       "withings": {
@@ -7047,15 +7157,15 @@
     },
     "withingsViewData": "View your measurements",
     "whoopViewData": "View your recovery",
-    "fitbitViewData": "View your sleep",
     "googleHealthViewData": "View your steps",
     "apiTokens": "API tokens",
     "apiTokensDescription": "Review and revoke tokens for measurements, workouts, documents and medication intake.",
     "measurementsToken": {
       "title": "Measurement tokens",
-      "description": "Mint a token so a scale, a watch bridge or your home automation can add readings and custom-metric values.",
+      "description": "Mint a token so a scale, a watch bridge, a food tracker or your home automation can add readings, custom-metric values and daily nutrient totals.",
       "detail": "The token is shown once.",
-      "scopeNote": "It can only add new readings to your own record, and values to custom metrics you already created. It cannot read your data, create a custom metric, change or delete anything, or create another token. Readings are marked as coming from an external device, so you can tell them apart later; custom-metric values carry no such mark. You can still correct both yourself. A custom metric's ID is the part after /custom-metrics/ in the address of its page.",
+      "scopeNote": "It can only add readings to your own record, values to custom metrics you already created, and daily nutrient totals while the nutrients module is on; it cannot read, change or delete anything. Readings and nutrient totals are marked as external. A custom metric's ID is the part after /custom-metrics/ in its page's address.",
+      "nutrientsLink": "View nutrient intake",
       "createFailed": "The token could not be created. Please try again.",
       "namePlaceholder": "Name, e.g. Home Assistant",
       "appleHealth": {
@@ -7523,7 +7633,7 @@
       },
       "workoutRoutes": {
         "title": "Workout routes",
-        "description": "Keep the GPS track of new workouts from the iPhone app and the Apple Health export.",
+        "description": "Keep the GPS track of new workouts from the iPhone app, the Apple Health export, activity files and Garmin.",
         "detail": "Off for new accounts. A route shows where you live, work and train, so it is only kept once you turn this on. Workouts are kept either way, and no AI feature ever reads a route. Turning it off stops new routes; routes already kept stay until you delete the workout.",
         "loadError": "The route setting could not be loaded."
       },
@@ -7825,15 +7935,6 @@
       "homePlaceUnknown": "The Dawarich instance no longer knows this place.",
       "notConnected": "Dawarich is not connected.",
       "generic": "That did not work. Try again."
-    },
-    "fitbitRetirement": {
-      "ending": "Google turns the Fitbit Web API off on {date}. From then on this connection stops syncing.",
-      "ended": "Google turned the Fitbit Web API off on {date}. This connection no longer syncs.",
-      "move": "Google Health reads the same Fitbit and Pixel devices. Connect it below to keep your data coming. Google asks for your consent once more, because the Fitbit connection cannot be carried over. Everything already imported stays.",
-      "toCard": "Go to Google Health",
-      "guide": "How to connect Google Health",
-      "badgeEnding": "Shutting down",
-      "badgeEnded": "Retired"
     },
     "passkeyAddedToast": "Passkey added.",
     "passkeyRemovedToast": "Passkey removed.",
@@ -8638,7 +8739,9 @@
           "failureUnconfirmed": "Type the account's username exactly to confirm.",
           "failureUsernameTaken": "This username is already taken.",
           "failureOwnerExists": "The account this file belongs to is on this server, and the file restores into that account. Upload it again without choosing an account."
-        }
+        },
+        "restoreSkippedSeizureMedicationReference": "Seizure rescue plan or dose linked to a medication the file does not contain (kept without the link)",
+        "restoreSkippedSeizureTypeReference": "Seizure linked to a seizure type the file does not contain (kept without the type)"
       },
       "danger-zone": {
         "title": "Danger zone",
@@ -9523,6 +9626,12 @@
       "titleRecovered": "Background job working again: {queue}",
       "bodyFailing": "The background job {queue} has failed {failures} times in a row and is listed on the admin status page. Last error: {error}",
       "bodyRecovered": "The background job {queue} has run successfully again."
+    },
+    "eventSeizureCluster": "Seizure cluster",
+    "eventSeizureClusterDesc": "When a seizure someone else logs forms a cluster under the diary's rule. Once per cluster.",
+    "seizureCluster": {
+      "title": "Seizure cluster",
+      "body": "{count} seizures within {hours} h, logged by {name}. The rescue plan is in the seizure diary."
     }
   },
   "i18n": {
@@ -10403,12 +10512,14 @@
     "addResult": "Add value",
     "addDescription": "Record a biomarker reading from a lab report.",
     "addFirst": "Add your first result",
+    "importAction": "Import from Apple Health or CSV",
     "emptyTitle": "No lab results yet",
     "emptyDescription": "Record bloodwork like HbA1c, LDL or ferritin to track it over time and share it with your doctor.",
     "referenceLabel": "Reference",
     "readingsCount": "{count} readings",
     "deleteConfirmTitle": "Delete lab result?",
     "deleteConfirmDescription": "This lab result will be deleted. You can undo this for a short moment afterwards.",
+    "deleteAppleHealthNote": "It will not come back on the next Apple Health import.",
     "deletedToast": "Result deleted",
     "deleteError": "Could not delete the result",
     "loadError": "Could not load lab results",
@@ -10492,8 +10603,8 @@
         "365": "1y",
         "all": "All"
       },
-      "sourceRangeLabel": "Report range",
-      "sourceBandLegend": "Second band: the range printed on the report of {date}.",
+      "sourceRangeLabel": "Lab's range",
+      "sourceBandLegend": "Second band: the range the lab gave with the reading of {date}.",
       "sourceBandMixed": "Second band: the range printed on the most recent report. Earlier reports in view state different ranges."
     },
     "biomarker": {
@@ -10522,7 +10633,7 @@
         "namePlaceholder": "e.g. LDL cholesterol",
         "unit": "Unit",
         "unitPlaceholder": "e.g. mg/dL",
-        "unitLockedHint": "Once this marker has readings, its unit stays as it is. The stored values would otherwise be shown in a new unit without being converted.",
+        "unitLockedHint": "Once this marker holds numeric readings, its unit stays as it is. The stored values would otherwise be shown in a new unit without being converted.",
         "panel": "Panel",
         "panelPlaceholder": "e.g. Lipids",
         "panelHint": "Pick a suggestion or type your own. Catalog panels are recognised in every language.",
@@ -10729,9 +10840,9 @@
       "orderDefault": "Until you move one, built-in categories keep a fixed order, your own follow alphabetically and {other} comes last."
     },
     "sourceRange": {
-      "fromReport": "Report range {range}",
+      "fromReport": "Lab's range {range}",
       "catalogDiffers": "your range {range}",
-      "printed": "as printed in {unit}: {range}"
+      "printed": "as given in {unit}: {range}"
     },
     "match": {
       "viaAlias": "by a name you chose before",
@@ -10822,6 +10933,10 @@
       "markerCountOther": "{count} biomarkers",
       "noMatchesTitle": "No matching biomarkers",
       "noMatchesDescription": "Try adjusting your search query or filters."
+    },
+    "source": {
+      "OCR": "Scanned report",
+      "DOCUMENT": "Document"
     }
   },
   "modules": {
@@ -10895,7 +11010,7 @@
     },
     "nutrients": {
       "label": "Nutrient intake",
-      "description": "Daily micronutrient totals synced from Apple Health."
+      "description": "Daily nutrient totals from Apple Health or a food tracker: water, energy, macros, vitamins and minerals."
     },
     "vaccinations": {
       "label": "Vaccinations",
@@ -10904,6 +11019,10 @@
     "timeline": {
       "label": "Timeline",
       "description": "Years at a glance: conditions, medications and visits beside your readings, plus your own life events."
+    },
+    "seizures": {
+      "label": "Seizure diary",
+      "description": "Record seizures with type, duration and rescue medication, see clusters, and add them to the doctor report."
     }
   },
   "moduleOff": {
@@ -11603,7 +11722,8 @@
       "totalLabel": "Score",
       "bandLabel": "Category",
       "answersToggle": "Answers",
-      "answersUnavailable": "The stored answers for this check-in cannot be decrypted."
+      "answersUnavailable": "The stored answers for this check-in cannot be decrypted.",
+      "answersNotShared": "Taken in Apple Health. Only the score was shared, not the answers."
     },
     "crisis": {
       "title": "You don't have to face this alone",
@@ -12257,7 +12377,8 @@
       "duplicateExists": "An identical document is already stored.",
       "uploadBusy": "The server was busy with other uploads. Try again now.",
       "rateLimited": "You have reached the upload limit for this hour. Try again later.",
-      "generic": "Upload failed. Please try again."
+      "generic": "Upload failed. Please try again.",
+      "recordChanged": "The open record changed while this file was uploading. Upload it again."
     },
     "toast": {
       "duplicate": "Already stored. The existing document is highlighted.",
@@ -12287,7 +12408,8 @@
       "description": "Store doctor letters, lab reports, imaging, prescriptions and vaccination records. They are encrypted and searchable by type, condition and year.",
       "action": "Upload a first document",
       "noMatchesTitle": "No matching documents",
-      "noMatchesDescription": "Nothing matches the current search and filters."
+      "noMatchesDescription": "Nothing matches the current search and filters.",
+      "titleRecord": "{name}'s document vault is empty"
     },
     "detail": {
       "title": "Document details",
@@ -12593,6 +12715,10 @@
     "picker": {
       "capped": "Showing the newest {count}. Search to find an older document.",
       "cappedSearching": "Showing the newest {count} matches. Narrow the search to find an older one."
+    },
+    "recordAi": {
+      "noProvider": "No AI provider on this server can read the documents in this record, so they get no summary, no search by content and no document chat.",
+      "off": "AI is off for this record, so its documents get no summary, no search by content and no document chat."
     }
   },
   "selfDescription": {
@@ -12714,15 +12840,29 @@
       "water": "Water",
       "caffeine": "Caffeine",
       "dha": "DHA (omega-3)",
-      "epa": "EPA (omega-3)"
+      "epa": "EPA (omega-3)",
+      "energy": "Energy",
+      "protein": "Protein",
+      "carbohydrates": "Carbohydrates",
+      "fat": "Fat",
+      "saturated_fat": "Saturated fat",
+      "monounsaturated_fat": "Monounsaturated fat",
+      "polyunsaturated_fat": "Polyunsaturated fat",
+      "sugar": "Sugar",
+      "fiber": "Fiber",
+      "cholesterol": "Cholesterol",
+      "sodium": "Sodium",
+      "potassium": "Potassium",
+      "alcohol": "Alcohol"
     },
     "page": {
       "title": "Nutrient intake",
-      "description": "Hydration and vitamin/mineral intake synced from your phone's health app, plus manual water entries.",
-      "moduleOffDescription": "Turn on the nutrients module to see hydration and vitamin/mineral intake here. Synced intake becomes part of the record the Coach can read.",
+      "description": "Water, energy, macros, vitamins and minerals from your health app or a food tracker, plus manual water entries.",
+      "moduleOffDescription": "Turn on the nutrients module to see hydration, energy, macronutrients and vitamin/mineral intake here. Synced intake becomes part of the record the Coach can read.",
       "moduleOffCta": "Turn on nutrients",
       "emptyTitle": "No nutrient data yet",
-      "emptyDescription": "Data arrives from your phone's health app sync or a manual water entry.",
+      "emptyDescription": "Data arrives from your phone's health app sync, a food tracker with a measurement token, or a manual water entry.",
+      "emptyTokenAction": "Create a measurement token",
       "loadError": "Your nutrient data could not be loaded",
       "lastAttemptTitle": "A sync arrived, but nothing could be stored",
       "lastAttemptAt": "Last attempt: {date}",
@@ -12735,16 +12875,21 @@
       }
     },
     "hydration": {
-      "referenceMeta": "Reference intake {value} {unit}/day (EFSA)",
+      "referenceMeta": "Reference intake {value} {unit}/day ({authority})",
       "loadError": "Could not load water."
     },
     "caffeine": {
-      "ceilingMeta": "Safe-level ceiling {value} {unit}/day (EFSA)",
+      "ceilingMeta": "Safe-level ceiling {value} {unit}/day ({authority})",
       "loadError": "Could not load caffeine."
     },
     "micronutrients": {
-      "title": "Vitamins & minerals",
-      "rowMeta": "{days} of {window} days, ref {value} {unit} (EFSA)",
+      "title": "Micronutrients",
+      "groups": {
+        "vitamin": "Vitamins",
+        "mineral": "Minerals",
+        "omega3": "Omega-3 fatty acids"
+      },
+      "rowMeta": "{days} of {window} days, ref {value} {unit} ({authority})",
       "rowMetaNoRef": "{days} of {window} days",
       "footer": "{tracked} of {total} tracked micronutrients have data in this window.",
       "emptyTitle": "No micronutrient data synced yet",
@@ -12759,14 +12904,35 @@
         "alpha_tocopherol": "The level is set for alpha-tocopherol."
       }
     },
-    "sparseNote": "A low number here usually means sparse logging, not a deficiency. Apple Health day totals reflect what your apps logged, not total dietary intake.",
+    "sparseNote": "A low number here usually means sparse logging, not a deficiency. Day totals reflect what your apps logged, not total dietary intake. When a tracker and Apple Health report the same day, the larger total counts.",
     "units": {
       "IU": "IU"
     },
     "sources": {
-      "APPLE_HEALTH": "Synced",
-      "MANUAL": "Entered",
       "SUPPLEMENT": "Supplements"
+    },
+    "macros": {
+      "title": "Energy & macronutrients",
+      "pickLabel": "Nutrient",
+      "referenceMeta": "Reference {value} {unit}/day ({authority})",
+      "targetMeta": "Your target {value} {unit}/day",
+      "limitMeta": "Your limit {value} {unit}/day",
+      "sheetTitle": "Daily target: {name}",
+      "sheetDescription": "An amount a day to reach or to stay under, drawn as the dashed line in the chart.",
+      "clearTarget": "Remove target",
+      "removeTitle": "Remove this target?",
+      "removeBody": "The chart goes back to the dietary reference where one exists. The amount you set is not kept anywhere else.",
+      "targetLabel": "{name} per day ({unit})",
+      "boundsHint": "Above 0, at most {max} {unit} a day.",
+      "directionLabel": "Kind of target",
+      "directionTarget": "Reach at least",
+      "directionLimit": "Stay under",
+      "saveFailed": "The target could not be saved. Please try again.",
+      "loadError": "Could not load energy and macronutrients.",
+      "gearLabel": "Set the daily target for {name}"
+    },
+    "alcohol": {
+      "loadError": "Could not load alcohol."
     }
   },
   "daily": {
@@ -12795,8 +12961,7 @@
       },
       "preventiveCare": {
         "title": "Check-up due",
-        "body": "{label} is due.",
-        "bodyManyNamed": "Due: {labels}"
+        "body": "{label} is due."
       },
       "syncIssue": {
         "title": "Sync needs attention",
@@ -12958,7 +13123,8 @@
       },
       "medications": {
         "label": "Medications",
-        "value": "{taken} of {scheduled} taken"
+        "value": "{taken} of {scheduled} taken",
+        "next": "Next dose at {time}"
       },
       "appointment": {
         "label": "Appointment",
@@ -13033,14 +13199,16 @@
     "leafEmergency": "Emergency information (blood type, contacts, directives)",
     "leafMedicationEffect": "Change around each medication start (needs the medication list)",
     "leafWorkouts": "Workouts (summary per sport)",
-    "leafHrvSdnn": "HRV (SDNN)"
+    "leafHrvSdnn": "HRV (SDNN)",
+    "leafSeizures": "Seizure diary"
   },
   "recordSharing": {
     "banner": {
       "viewing": "You are in {name}'s record",
       "readOnly": "You can read it, not change it.",
       "canAdd": "You can add to it, but not change or delete what is there.",
-      "leave": "Back to my record"
+      "leave": "Back to my record",
+      "canManage": "You can add to it and change or remove what is in it."
     },
     "switcher": {
       "label": "Open a record",
@@ -13337,6 +13505,7 @@
       "medicationCourseEnd": "{name} ended a medication course",
       "medicationDelete": "{name} removed a medication",
       "medicationGlp1Update": "{name} changed a GLP-1 course",
+      "medicationGlp1DoseChangeDelete": "{name} removed a GLP-1 dose step",
       "medicationScheduleCreate": "{name} added a dosing schedule",
       "medicationScheduleUpdate": "{name} changed a dosing schedule",
       "medicationScheduleDelete": "{name} removed a dosing schedule",
@@ -13393,6 +13562,16 @@
       "documentStore": "{name} added a document",
       "documentUpdate": "{name} changed a document",
       "documentDiscard": "{name} discarded a document",
+      "documentRestore": "{name} restored a document",
+      "documentBulk": "{name} changed several documents",
+      "documentConfirm": "{name} confirmed values from a document",
+      "documentExtract": "{name} read the values in a document",
+      "documentIndex": "{name} made a document searchable",
+      "documentReindex": "{name} made the documents searchable",
+      "documentSuggest": "{name} asked for a document's details",
+      "documentSummary": "{name} summarised a document",
+      "documentChat": "{name} asked about a document",
+      "documentFactEdit": "{name} corrected a value from a document",
       "medicationIntakeImportFinished": "The dose import {name} started has finished",
       "medicationOneShotReconciled": "A one-off medication was opened or closed after a dose {name} recorded",
       "vaccinationBoosterPlanned": "{name} planned a booster",
@@ -13416,7 +13595,17 @@
       "cycleFeedCreate": "{name} turned on the calendar subscription",
       "cycleFeedUpdate": "{name} changed the calendar subscription",
       "cycleFeedRotate": "{name} replaced the calendar subscription link",
-      "cycleFeedRevoke": "{name} turned off the calendar subscription"
+      "cycleFeedRevoke": "{name} turned off the calendar subscription",
+      "seizureEventCreate": "{name} recorded a seizure",
+      "seizureRescueCreate": "{name} recorded a rescue dose",
+      "seizureEventUpdate": "{name} edited a seizure entry",
+      "seizureEventDelete": "{name} deleted a seizure entry",
+      "seizureRescueUpdate": "{name} edited a rescue dose",
+      "seizureRescueDelete": "{name} deleted a rescue dose",
+      "seizureTypeCreate": "{name} added a seizure type",
+      "seizureTypeUpdate": "{name} edited a seizure type",
+      "seizureTypeDelete": "{name} deleted a seizure type",
+      "seizureSettingsUpdate": "{name} changed the seizure cluster rule"
     },
     "section": {
       "measurements": {
@@ -13437,7 +13626,7 @@
       },
       "illness": {
         "label": "Illness",
-        "detail": "Illness episodes and the day logs kept under them."
+        "detail": "Illness episodes and the day logs kept under them, your own symptoms, and the seizure diary. A rescue dose recorded in the seizure diary is also recorded on its medication."
       },
       "mind": {
         "label": "Mood and mind",
@@ -13816,6 +14005,7 @@
     "usualRange": "Usually {lo} to {hi}",
     "groups": {
       "scores": "Scores",
+      "nutrients": "Nutrition",
       "running": "Running that day",
       "values": "Values",
       "happened": "What happened",
@@ -13891,6 +14081,12 @@
       "travelYes": "Yes",
       "kilometres": "{value} km",
       "miles": "{value} mi"
+    },
+    "nutrients": {
+      "micronutrientsOne": "{count} micronutrient logged",
+      "micronutrientsOther": "{count} micronutrients logged",
+      "micronutrientsFew": "{count} micronutrients logged",
+      "open": "View nutrient intake"
     }
   },
   "timeline": {
@@ -13913,7 +14109,8 @@
       "visits": "Doctor and procedures",
       "labs": "Labs",
       "documents": "Documents",
-      "cycle": "Cycle"
+      "cycle": "Cycle",
+      "seizures": "Seizures"
     },
     "readiness": {
       "title": "What your timeline already carries",
@@ -13988,7 +14185,10 @@
         "environmentOne": "{count} day with environment data",
         "environmentFew": "{count} days with environment data",
         "environmentOther": "{count} days with environment data",
-        "empty": "None yet"
+        "empty": "None yet",
+        "seizuresOne": "{count} day with seizures",
+        "seizuresFew": "{count} days with seizures",
+        "seizuresOther": "{count} days with seizures"
       },
       "gap": {
         "valuesEmpty": "Connect sources",
@@ -13998,7 +14198,8 @@
         "documentsUndated": "Review",
         "labsEmpty": "Add a result",
         "vaccinationsEmpty": "Add vaccinations",
-        "lifeEventsEmpty": "Add"
+        "lifeEventsEmpty": "Add",
+        "seizuresEmpty": "Log a seizure"
       },
       "gapLine": {
         "medicationsWithoutStartOne": "{count} medication without a start date",
@@ -14012,7 +14213,8 @@
         "visitsEmpty": "No completed doctor visits yet",
         "labsEmpty": "No lab results yet",
         "vaccinationsEmpty": "No vaccinations yet",
-        "lifeEventsEmpty": "No life events yet"
+        "lifeEventsEmpty": "No life events yet",
+        "seizuresEmpty": "No seizures logged yet"
       }
     },
     "legendSpan": "Period",
@@ -14103,7 +14305,10 @@
     "item": {
       "labValuesOne": "1 lab value",
       "labValuesFew": "{count} lab values",
-      "labValuesOther": "{count} lab values"
+      "labValuesOther": "{count} lab values",
+      "seizuresOne": "1 seizure",
+      "seizuresFew": "{count} seizures",
+      "seizuresOther": "{count} seizures"
     },
     "labs": {
       "menuTitle": "Lab values",
@@ -14478,5 +14683,436 @@
       "endsOn": "End"
     },
     "unitlessHint": "A ratio or an index without a unit (INR, cholesterol/HDL): write 1 in the unit column. An empty unit cell stays an error."
+  },
+  "seizures": {
+    "ilae": {
+      "FOCAL_PRESERVED": {
+        "current": "Focal preserved consciousness seizure",
+        "ilae2017": "Focal aware seizure"
+      },
+      "FOCAL_IMPAIRED": {
+        "current": "Focal impaired consciousness seizure",
+        "ilae2017": "Focal impaired awareness seizure"
+      },
+      "FOCAL_UNDETERMINED": {
+        "current": "Focal seizure",
+        "ilae2017": "Focal onset seizure"
+      },
+      "FOCAL_TO_BILATERAL_TC": {
+        "current": "Focal to bilateral tonic-clonic seizure",
+        "ilae2017": "Focal to bilateral tonic-clonic seizure"
+      },
+      "GENERALIZED_UNDETERMINED": {
+        "current": "Generalized seizure",
+        "ilae2017": "Generalized onset seizure"
+      },
+      "GENERALIZED_TC": {
+        "current": "Generalized tonic-clonic seizure",
+        "ilae2017": "Generalized onset tonic-clonic seizure"
+      },
+      "GEN_CLONIC": {
+        "current": "Generalized clonic seizure",
+        "ilae2017": "Generalized onset clonic seizure"
+      },
+      "GEN_TONIC": {
+        "current": "Generalized tonic seizure",
+        "ilae2017": "Generalized onset tonic seizure"
+      },
+      "GEN_MYOCLONIC": {
+        "current": "Generalized myoclonic seizure",
+        "ilae2017": "Generalized onset myoclonic seizure"
+      },
+      "GEN_MYOCLONIC_ATONIC": {
+        "current": "Generalized myoclonic-atonic seizure",
+        "ilae2017": "Generalized onset myoclonic-atonic seizure"
+      },
+      "GEN_ATONIC": {
+        "current": "Generalized atonic seizure",
+        "ilae2017": "Generalized onset atonic seizure"
+      },
+      "GEN_NEGATIVE_MYOCLONIC": {
+        "current": "Generalized negative myoclonic seizure"
+      },
+      "GEN_SPASMS": {
+        "current": "Generalized epileptic spasms",
+        "ilae2017": "Generalized onset epileptic spasms"
+      },
+      "ABSENCE_TYPICAL": {
+        "current": "Typical absence seizure",
+        "ilae2017": "Generalized non-motor (absence) seizure, typical"
+      },
+      "ABSENCE_ATYPICAL": {
+        "current": "Atypical absence seizure",
+        "ilae2017": "Generalized non-motor (absence) seizure, atypical"
+      },
+      "ABSENCE_MYOCLONIC": {
+        "current": "Myoclonic absence seizure",
+        "ilae2017": "Generalized non-motor (absence) seizure, myoclonic"
+      },
+      "EYELID_MYOCLONIA": {
+        "current": "Eyelid myoclonia (with or without absence)",
+        "ilae2017": "Absence seizure with eyelid myoclonia"
+      },
+      "UNKNOWN_UNDETERMINED": {
+        "current": "Seizure, unknown whether focal or generalized",
+        "ilae2017": "Unknown onset seizure"
+      },
+      "UNKNOWN_PRESERVED": {
+        "current": "Unknown whether focal or generalized, preserved consciousness",
+        "ilae2017": "Unknown onset seizure, aware"
+      },
+      "UNKNOWN_IMPAIRED": {
+        "current": "Unknown whether focal or generalized, impaired consciousness",
+        "ilae2017": "Unknown onset seizure, impaired awareness"
+      },
+      "UNKNOWN_BILATERAL_TC": {
+        "current": "Bilateral tonic-clonic seizure, unknown whether focal or generalized",
+        "ilae2017": "Unknown onset tonic-clonic seizure"
+      },
+      "UNCLASSIFIED": {
+        "current": "Unclassified seizure",
+        "ilae2017": "Unclassified seizure"
+      }
+    },
+    "ilaeClass": {
+      "FOCAL": "Focal onset",
+      "GENERALIZED": "Generalized onset",
+      "UNKNOWN": "Unknown whether focal or generalized",
+      "UNCLASSIFIED": "Unclassified"
+    },
+    "route": {
+      "BUCCAL": "Buccal",
+      "INTRANASAL": "Intranasal",
+      "RECTAL": "Rectal",
+      "ORAL": "Oral",
+      "SUBLINGUAL": "Sublingual",
+      "IM": "Intramuscular",
+      "IV_BY_EMS": "Intravenous (paramedics)"
+    },
+    "effect": {
+      "STOPPED": "Seizure stopped",
+      "REDUCED": "Seizure eased",
+      "NO_EFFECT": "No effect",
+      "UNKNOWN": "Not known"
+    },
+    "trigger": {
+      "MISSED_DOSE": "Missed dose",
+      "SLEEP_DEPRIVATION": "Lack of sleep",
+      "FEVER": "Fever",
+      "ILLNESS": "Illness",
+      "MENSTRUATION": "Period",
+      "ALCOHOL": "Alcohol",
+      "FLASHING_LIGHTS": "Flashing lights",
+      "STRESS": "Stress",
+      "OTHER": "Other",
+      "NONE_IDENTIFIED": "None identified"
+    },
+    "sleepState": {
+      "AWAKE": "Awake",
+      "ASLEEP": "Asleep",
+      "ON_WAKING": "On waking",
+      "UNKNOWN": "Not known"
+    },
+    "type": {
+      "unreadable": "Unreadable name"
+    },
+    "report": {
+      "title": "Seizure diary",
+      "untyped": "No type recorded",
+      "ruleText": "{count} or more in {hours} h",
+      "recorded": "Recorded seizures",
+      "seizureDays": "Days with a seizure",
+      "seizureFreeDays": "Days without a recorded seizure",
+      "per28Days": "Seizures per 28 days",
+      "longestFree": "Longest run without a recorded seizure",
+      "daysValue": "{count} days",
+      "daysSinceLast": "Days since the last recorded seizure",
+      "convulsive": "Bilateral tonic-clonic seizures",
+      "fromSleep": "Seizures from sleep",
+      "clusters": "Cluster episodes (rule: {rule})",
+      "niceClusters": "under NICE's 3 in 24 h",
+      "rescueDoses": "Rescue doses given",
+      "emergencies": "Paramedics, emergency department, admissions",
+      "emergencyValue": "{ems} / {ed} / {admitted}",
+      "suspected": "Suspected events (not counted above)",
+      "monthlyTitle": "Seizures by type and month",
+      "monthlyNote": "Seizures per month, with the days on which they happened in brackets.",
+      "type": "Type",
+      "total": "Total",
+      "chartTitle": "Seizures per month and medication changes",
+      "markersTitle": "Medication changes:",
+      "marker": {
+        "start": "({n}) {date} {name} started",
+        "stop": "({n}) {date} {name} stopped",
+        "change": "({n}) {date} {name} changed to {dose}"
+      },
+      "markersNote": "Changes to regularly scheduled medications, shown beside the counts. The diary does not say whether a change caused a difference.",
+      "durationTitle": "Duration",
+      "timed": "With duration",
+      "median": "Median",
+      "max": "Longest",
+      "overT1": "At or over t1",
+      "prolonged": "2 min over usual",
+      "durationNote": "Durations as min:s. t1 is the time after which emergency treatment is due (ILAE, Trinka 2015: tonic-clonic 5 min, focal with impaired consciousness and absence 10 min). \"2 min over usual\" counts seizures at least 2 minutes longer than this person's usual duration (NICE NG217).",
+      "rescueTitle": "Rescue medication",
+      "date": "Date",
+      "drug": "Medication",
+      "dose": "Dose",
+      "route": "Route",
+      "minutesFromOnset": "Minutes after onset",
+      "effect": "Effect",
+      "triggersTitle": "Suspected triggers",
+      "triggersNote": "Named by the person or carer when recording; not established causes.",
+      "overlaysTitle": "Recorded alongside",
+      "overlayMissedDose": "{followed} of {of} seizures followed a missed or skipped scheduled dose within the previous 48 hours.",
+      "overlayIllness": "{during} seizures happened during one of {episodes} recorded illness episodes.",
+      "overlaySleep": "Recorded sleep the night before a seizure day: {before} h on average ({nightsBefore} nights); other nights: {other} h ({nightsOther} nights).",
+      "overlayCycleDays": "Seizures by cycle day (day: count): {list}.",
+      "overlayCycleRatio": "Over {cycles} complete tracked cycles, the seizure rate per day was {c1} times the rate on other days around the period (day −3 to +3) and {c2} times around ovulation (day 10 to −13). Herzog's catamenial criterion is a twofold or greater increase; this is a reference, not a finding.",
+      "overlayCycleTooFew": "Rates by cycle phase are shown from three complete tracked cycles ({cycles} so far).",
+      "overlaysNote": "These are things recorded at the same time, not causes.",
+      "eventsTitle": "All recorded events",
+      "duration": "Duration",
+      "sleep": "Sleep",
+      "rescueShort": "Rescue",
+      "injury": "Injury",
+      "note": "Note",
+      "suspectedMark": "(suspected)",
+      "eventsTruncated": "Only the most recent 200 events are listed; the figures above cover all of them.",
+      "classificationNote": "Seizure types follow the ILAE 2025 classification; the ILAE 2017 names are:",
+      "footer": "Patient or carer recorded diary. These are recorded seizures, likely an undercount, especially for seizures from sleep. The diary records observations and does not diagnose or assess seizures.",
+      "seizureDaysValue": "on {count} days"
+    },
+    "title": "Seizure diary",
+    "subtitle": "Seizures as they were seen, with the type, the duration and the rescue medication given.",
+    "loadError": "The seizure diary could not be loaded.",
+    "saveError": "That could not be saved. Please try again.",
+    "untyped": "No type",
+    "notRecorded": "Not recorded",
+    "ilaeWith2017": "{current} (ILAE 2017: {legacy})",
+    "safety": {
+      "header": "This diary records what you observe so you can share it with the care team. It does not diagnose or assess seizures. Follow the emergency plan agreed with your doctor.",
+      "timer": "Call emergency services ({number} or your local number) if a seizure with jerking or stiffening lasts 5 minutes or longer, if another seizure follows before the person recovers, if breathing is difficult, if they are injured, if the seizure happened in water, or if it is their first seizure. Your own emergency plan comes first.",
+      "notifications": "HealthLog is not a seizure alarm or a medical device. It only records what is entered here."
+    },
+    "quick": {
+      "title": "Quick log",
+      "typeGroup": "Seizure type",
+      "elapsedLabel": "Time since the seizure started",
+      "startedAt": "Started at {time}",
+      "start": "Seizure started",
+      "stop": "Seizure stopped",
+      "rescueGiven": "Rescue given: {name}",
+      "rescueGivenCount": "Rescue given ({count}), tap for another dose",
+      "threshold": {
+        "t1": "The seizure has lasted longer than {time}. Follow the emergency plan.",
+        "usualPlusTwo": "The seizure has lasted longer than {time}, 2 minutes past its usual length. Follow the emergency plan.",
+        "generic": "The seizure has lasted longer than {time}. Follow the emergency plan."
+      },
+      "noPlan": "No plan is saved for this seizure type. Call emergency services if you are unsure.",
+      "call": "Call {number}",
+      "recorded": "Seizure recorded",
+      "recordedLine": "Recorded, duration {duration}.",
+      "addDetails": "Add details",
+      "logPast": "Record a seizure that was not timed",
+      "discard": "Discard timer",
+      "discardTitle": "Discard the running timer?",
+      "discardConfirm": "Nothing is recorded and the start time is lost."
+    },
+    "summary": {
+      "title": "Recorded",
+      "recorded": "Recorded seizures since {date}",
+      "seizureDays": "Days with a seizure",
+      "sinceLast": "Days since the last recorded seizure",
+      "longestFree": "Longest run without one, days",
+      "clusters": "Clusters ({rule})",
+      "niceClusters": "Clusters under NICE (3 in 24 h)",
+      "suspected": "{count} suspected seizures are listed but not counted.",
+      "clusterLine": "From {start}: {count} seizures",
+      "monthlyCaption": "Seizures per type and month",
+      "undercount": "Recorded seizures, likely an undercount, especially for seizures from sleep."
+    },
+    "list": {
+      "title": "Recorded seizures",
+      "empty": "No seizure recorded in the last 90 days.",
+      "rescue": "Rescue",
+      "loggedByDelegate": "recorded by someone with access",
+      "showAll": "Show all {count}",
+      "truncated": "Only the most recent seizures are shown.",
+      "loggedByYou": "recorded by you",
+      "loggedByName": "recorded by {name}",
+      "cluster": "Cluster"
+    },
+    "certainty": {
+      "CONFIRMED": "Seizure",
+      "SUSPECTED": "Suspected"
+    },
+    "onsetPrecision": {
+      "EXACT": "Exact time",
+      "APPROX": "About this time",
+      "UNKNOWN_TIME": "Time not known"
+    },
+    "durationSource": {
+      "TIMED": "Timed",
+      "ESTIMATED": "Estimated",
+      "UNKNOWN": "Not known"
+    },
+    "functionState": {
+      "PRESERVED": "Preserved",
+      "IMPAIRED": "Impaired",
+      "UNKNOWN": "Not sure"
+    },
+    "emergency": {
+      "NONE": "None",
+      "EMS_CALLED": "Paramedics called",
+      "ED_VISIT": "Emergency department",
+      "ADMITTED": "Admitted to hospital"
+    },
+    "observer": {
+      "SELF": "The person themselves",
+      "PARENT": "Parent",
+      "PARTNER": "Partner",
+      "FAMILY": "Family member",
+      "CARER": "Carer",
+      "TEACHER": "Teacher",
+      "CLINICIAN": "Clinician",
+      "PARAMEDIC": "Paramedic",
+      "OTHER": "Someone else"
+    },
+    "semiology": {
+      "AURA": "Aura",
+      "BEHAVIOUR_ARREST": "Stopped what they were doing",
+      "STARING": "Staring",
+      "AUTOMATISMS": "Automatisms (lip smacking, fumbling)",
+      "TONIC": "Stiffening",
+      "CLONIC": "Rhythmic jerking",
+      "MYOCLONIC": "Brief jerks",
+      "ATONIC_DROP": "Sudden drop",
+      "SPASMS": "Spasms",
+      "HEAD_EYE_VERSION": "Head or eyes turned to one side",
+      "VOCALISATION": "Cry or sounds",
+      "CYANOSIS": "Blue lips or face",
+      "DROOLING": "Drooling",
+      "BREATHING_CHANGE": "Changed breathing"
+    },
+    "postictal": {
+      "SLEEP": "Sleep",
+      "CONFUSION": "Confusion",
+      "HEADACHE": "Headache",
+      "WEAKNESS_TODD": "Weakness on one side (Todd's paresis)",
+      "SPEECH": "Speech difficulty",
+      "AGITATION": "Agitation",
+      "OTHER": "Other"
+    },
+    "injury": {
+      "NONE": "No injury",
+      "TONGUE_BITE": "Tongue bite",
+      "HEAD": "Head injury",
+      "FALL_OTHER": "Other injury from a fall",
+      "BURN": "Burn",
+      "FRACTURE": "Fracture",
+      "OTHER": "Other"
+    },
+    "sheet": {
+      "newTitle": "Record a seizure",
+      "editTitle": "Seizure details",
+      "description": "Only the start is needed. Add what you know.",
+      "created": "Seizure recorded",
+      "updated": "Seizure updated",
+      "type": "Seizure type",
+      "onset": "Started",
+      "onsetPrecision": "How sure is the start time",
+      "duration": "Duration",
+      "minutes": "Minutes",
+      "seconds": "Seconds",
+      "durationHint": "Leave empty when nobody saw how long it lasted.",
+      "durationSource": "Duration was",
+      "certainty": "Certainty",
+      "count": "How many",
+      "countHint": "More than one for a tally, such as the absences of a day.",
+      "sleepState": "Awake or asleep",
+      "sectionObserved": "What was seen",
+      "responsiveness": "Responded when spoken to",
+      "recall": "Remembers the seizure",
+      "semiology": "What happened, in order",
+      "semiologyNote": "Description",
+      "aura": "Warning beforehand (aura)",
+      "ilaeOverride": "Classification of this seizure",
+      "ilaeFromType": "As set for the type",
+      "sectionAfter": "Afterwards",
+      "postictalMinutes": "Minutes until back to usual",
+      "postictal": "After the seizure",
+      "injuries": "Injuries",
+      "emergency": "Emergency care",
+      "sectionContext": "Triggers and witness",
+      "triggers": "Suspected triggers",
+      "triggersHint": "Your own suspicion, shown as suspected in the report.",
+      "witnessed": "Did someone see it",
+      "witnessRole": "Who saw it",
+      "witnessNote": "What they saw",
+      "note": "Note",
+      "delete": "Delete seizure",
+      "deleteTitle": "Delete this seizure?",
+      "deleteBody": "The seizure and its rescue doses are removed, and the doses are taken off the medication again.",
+      "observable": "Visible signs",
+      "incontinence": "Incontinence"
+    },
+    "rescue": {
+      "title": "Rescue medication",
+      "none": "No rescue dose recorded.",
+      "effect": "Effect",
+      "remove": "Remove dose",
+      "removeTitle": "Remove this rescue dose?",
+      "removeBody": "The dose is also taken off the medication again.",
+      "medication": "Medication",
+      "pick": "Choose a medication",
+      "givenAt": "Given at",
+      "route": "Route",
+      "intakeHint": "The dose is also recorded on the medication. As-needed medication does not count towards adherence.",
+      "add": "Add rescue dose"
+    },
+    "types": {
+      "title": "Seizure types",
+      "emptyTitle": "No seizure types yet",
+      "emptyDescription": "Set up the person's seizure types once, ideally with the care team.",
+      "newTitle": "Add a seizure type",
+      "editTitle": "Edit seizure type",
+      "description": "The classification is chosen by you or the care team; HealthLog does not classify.",
+      "label": "Your name for it",
+      "labelHint": "The word your family uses, such as “the big one”.",
+      "class": "Onset",
+      "ilaeType": "Seizure type (ILAE 2025)",
+      "notSure": "Not sure: {name}",
+      "usualDuration": "Usual duration",
+      "usualHint": "Used to show the plan when a seizure lasts 2 minutes longer than usual (NICE).",
+      "plan": "Emergency plan",
+      "planHint": "The steps agreed with the care team, shown when the timer passes the threshold.",
+      "rescueMedication": "Rescue medication",
+      "noMedication": "None",
+      "noAsNeeded": "Add the rescue medication as an as-needed medication first.",
+      "dose": "Dose",
+      "unit": "Unit",
+      "saved": "Seizure type saved",
+      "archive": "Archive",
+      "unarchive": "Use again",
+      "archived": "Archived",
+      "delete": "Delete type",
+      "deleteTitle": "Delete this seizure type?",
+      "deleteBody": "Only a type no seizure is recorded under can be deleted. Archive it otherwise.",
+      "rescueLine": "Rescue: {name}"
+    },
+    "rule": {
+      "title": "Cluster rule",
+      "explainer": "A cluster is this many seizures within this many hours. Use the rule in the emergency plan; NICE uses {niceCount} in {niceHours} hours, and the summary counts clusters under both.",
+      "count": "Seizures",
+      "hours": "Window (hours)",
+      "invalid": "Use 2 to 20 seizures within 1 to 168 hours.",
+      "saved": "Cluster rule saved"
+    },
+    "observation": {
+      "YES": "Yes",
+      "NO": "No, nothing visible",
+      "UNKNOWN": "Not sure"
+    }
   }
 }

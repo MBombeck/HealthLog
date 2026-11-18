@@ -49,6 +49,10 @@ export const moodSourceEnum = z.enum([
   "DAYLIO",
   // A quick answer tapped inside a mood-reminder notification (ntfy action).
   "NOTIFICATION",
+  // A State of Mind sample the iPhone app imported from Apple Health, posted
+  // with its sample UUID as `externalId`; only these rows can be removed by
+  // `DELETE /api/mood-entries/by-external-ids`.
+  "APPLE_HEALTH",
 ]);
 
 const MOOD_SCORE_MAP: Record<string, number> = {

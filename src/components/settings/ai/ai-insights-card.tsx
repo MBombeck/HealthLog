@@ -40,6 +40,7 @@ import { CentralCodexSwitch } from "./central-codex-switch";
 import { CodexProviderForm } from "./codex-provider-form";
 import { CompatProviderForm } from "./compat-provider-form";
 import { FallbackChainCard } from "./fallback-chain-card";
+import { NamedChainsCard, useNamedChainsQuery } from "./named-chains-card";
 import { LocalProviderForm } from "./local-provider-form";
 import { OpenAIProviderForm } from "./openai-provider-form";
 import { ResponseTimeoutCard } from "./response-timeout-card";
@@ -102,6 +103,8 @@ export function AiInsightsCard({
     queryFn: () => apiGet<ProviderChainData>("/api/insights/provider-chain"),
     enabled: isAuthenticated,
   });
+
+  const namedChains = useNamedChainsQuery(isAuthenticated);
 
   const hasReadError = settingsError || providerError || chainError;
   // The cards below the provider card size themselves from these reads (the
@@ -191,6 +194,9 @@ export function AiInsightsCard({
                   queryKey: queryKeys.insightsProviderChain(),
                 });
                 void queryClient.invalidateQueries({
+                  queryKey: queryKeys.insightsProviderChains(),
+                });
+                void queryClient.invalidateQueries({
                   queryKey: queryKeys.userAiProvider(),
                 });
               }}
@@ -206,6 +212,7 @@ export function AiInsightsCard({
             selected={selectedProvider}
             onSelect={pickProvider}
           />
+          <NamedChainsCard query={namedChains} />
 
           {/* v1.43 (#1217) — how much background AI work the account
               asks for: one setting, three levels. */}

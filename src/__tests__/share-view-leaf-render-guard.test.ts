@@ -385,6 +385,52 @@ const DISPOSITIONS: Record<StructuredLeafId, Disposition> = {
     },
     marker: "Sinusitis",
   },
+  SEIZURES: {
+    kind: "rendered",
+    data: {
+      seizureDiary: {
+        rule: { count: 2, windowHours: 24 },
+        niceRule: { count: 3, windowHours: 24 },
+        types: [
+          {
+            id: "t1",
+            label: "Evening cluster type",
+            ilaeType: "FOCAL_TO_BILATERAL_TC",
+            usualDurationSec: 90,
+          },
+        ],
+        summary: {
+          seizures: 4,
+          suspected: 0,
+          seizureDays: 3,
+          seizureFreeDays: 27,
+          per28Days: 3.7,
+          longestFreeDays: 12,
+          daysSinceLast: 2,
+          convulsive: 4,
+          fromSleep: 1,
+          clusterEpisodes: 1,
+          niceClusterEpisodes: 0,
+          rescueDoses: 1,
+          emsCalled: 0,
+          edVisits: 0,
+          admissions: 0,
+        },
+        months: ["2026-01"],
+        monthly: [{ typeId: "t1", counts: [4], days: [3], total: 4 }],
+        monthlyTotal: { typeId: null, counts: [4], days: [3], total: 4 },
+        markers: [],
+        durations: [],
+        rescue: [],
+        triggers: [],
+        overlays: { missedDose: null, cycle: null, sleep: null, illness: null },
+        events: [],
+        clusters: [],
+        trailingYearPerDay: [],
+      },
+    },
+    marker: "Evening cluster type",
+  },
   VISITS: {
     kind: "rendered",
     data: {
@@ -506,7 +552,7 @@ describe("clinician view — every catalogue leaf has a renderer or a reason", (
   it("reads a plausible catalogue", () => {
     // Sanity floor: a degraded import would satisfy every loop below
     // vacuously, which is the failure mode a pair guard dies of.
-    expect(STRUCTURED_LEAF_IDS).toHaveLength(20);
+    expect(STRUCTURED_LEAF_IDS).toHaveLength(21);
     expect(Object.keys(DISPOSITIONS).sort()).toEqual(
       [...STRUCTURED_LEAF_IDS].sort(),
     );

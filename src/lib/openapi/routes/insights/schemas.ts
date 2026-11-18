@@ -21,7 +21,13 @@ import {
   SPARKLINE_MAX_POINTS,
 } from "@/lib/insights/derived/types";
 import { ANALYTICS_RANGES } from "@/lib/analytics/range-delta";
-import { providerChainPutSchema } from "@/lib/validations/ai-provider";
+import {
+  namedChainSchema,
+  namedChainsPutSchema,
+  providerChainPutSchema,
+} from "@/lib/validations/ai-provider";
+import { PROVIDER_CHAIN_TYPES } from "@/lib/ai/provider-chain";
+import { AI_CAPABILITY_KEYS } from "@/lib/ai/capabilities/types";
 import { PERIOD_DAYS } from "@/lib/insights/narrative/period-narrative";
 import { aiCapabilityState } from "../profile";
 import {
@@ -1048,6 +1054,11 @@ export const analyticsRangeResponse = z
       .describe(
         "`delta / previous.mean` as a fraction (0.03 = +3 %); null when the prior window has no / zero mean (no divide-by-zero). The client shows 'no prior-period data' in that case.",
       ),
+    trend: z
+      .enum(["up", "down", "flat", "unknown"])
+      .describe(
+        "v1.48.0 — the direction of `delta`: `flat` under 0.05 in the metric's own unit, `unknown` when `delta` is null. The dashboard summary's metric card takes its `trend` from this same comparison over `30d` (its `trendWindowDays` is then 30), so the arrow on the card and on the metric page agree.",
+      ),
   })
   .meta({
     id: "AnalyticsRangeResponse",
@@ -1382,6 +1393,12 @@ export const dashboardSnapshotResponse = z
         scheduledToday: z.number().int(),
         takenToday: z.number().int(),
         skippedToday: z.number().int(),
+        scheduledTodayAt: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "v1.48.0 — the slot instants (ISO 8601, ascending) of the doses `scheduledToday` counts. The Today medications fact counts the ones already due (at or before now) instead of the whole day. Absent on a snapshot cached by an older server.",
+          ),
         nextDueAt: z.string().nullable(),
         nextDueOverdue: z.boolean(),
         nextDueMedicationName: z.string().nullable(),
@@ -1881,9 +1898,10 @@ const rhythmEventType = z
     "LOW_HEART_RATE_EVENT",
     "WALKING_STEADINESS_EVENT",
     "BREATHING_DISTURBANCE_EVENT",
+    "HYPERTENSION_EVENT",
   ])
   .describe(
-    "The HealthKit category the device flagged. IRREGULAR_RHYTHM_NOTIFICATION (`HKCategoryTypeIdentifierIrregularHeartRhythmEvent` + ScanWatch AFib screening), HIGH_HEART_RATE_EVENT / LOW_HEART_RATE_EVENT (a sustained heart rate above / below the user's configured threshold while apparently inactive), WALKING_STEADINESS_EVENT (`HKCategoryTypeIdentifierAppleWalkingSteadinessEvent`; the severity rides in `classification`), BREATHING_DISTURBANCE_EVENT (`HKCategoryTypeIdentifierSleepApneaEvent` + `AppleSleepingBreathingDisturbances`, an elevated breathing-disturbance / possible sleep-apnea screening signal).",
+    "The HealthKit category the device flagged. IRREGULAR_RHYTHM_NOTIFICATION (`HKCategoryTypeIdentifierIrregularHeartRhythmEvent` + ScanWatch AFib screening), HIGH_HEART_RATE_EVENT / LOW_HEART_RATE_EVENT (a sustained heart rate above / below the user's configured threshold while apparently inactive), WALKING_STEADINESS_EVENT (`HKCategoryTypeIdentifierAppleWalkingSteadinessEvent`; the severity rides in `classification`), BREATHING_DISTURBANCE_EVENT (`HKCategoryTypeIdentifierSleepApneaEvent` + `AppleSleepingBreathingDisturbances`, an elevated breathing-disturbance / possible sleep-apnea screening signal), HYPERTENSION_EVENT (`HKCategoryTypeIdentifierHypertensionEvent`, iOS 26: the watch flagged signs of possible hypertension over a 30-day window; a notification, not a blood-pressure reading). Decode unknown values leniently: the set grows.",
   );
 
 const rhythmEventClassification = z
@@ -1897,7 +1915,7 @@ const rhythmEventClassification = z
   ])
   .nullable()
   .describe(
-    "The RECORDING DEVICE's own verdict, surfaced verbatim. IRREGULAR / NOT_DETECTED / INCONCLUSIVE are the ECG-style rhythm verdicts (device flagged a possible irregular rhythm / algorithm ran and found nothing / signal too poor to classify) and occur on an `IRREGULAR_RHYTHM_NOTIFICATION` row. LOW / VERY_LOW are walking-steadiness severities and occur on a `WALKING_STEADINESS_EVENT` row. FIRED is the neutral \"event occurred\" verdict with no severity gradient, and occurs on a `HIGH_HEART_RATE_EVENT` / `LOW_HEART_RATE_EVENT` / `BREATHING_DISTURBANCE_EVENT` row. Null when the source reported none. HealthLog never re-classifies — this is the device's certified on-device result. Distinct from `EcgRecordingListItem.classification` / `EcgDetailResponse.classification` above, which are scoped to the three ECG-only values.",
+    "The RECORDING DEVICE's own verdict, surfaced verbatim. IRREGULAR / NOT_DETECTED / INCONCLUSIVE are the ECG-style rhythm verdicts (device flagged a possible irregular rhythm / algorithm ran and found nothing / signal too poor to classify) and occur on an `IRREGULAR_RHYTHM_NOTIFICATION` row. LOW / VERY_LOW are walking-steadiness severities and occur on a `WALKING_STEADINESS_EVENT` row. FIRED is the neutral \"event occurred\" verdict with no severity gradient, and occurs on a `HIGH_HEART_RATE_EVENT` / `LOW_HEART_RATE_EVENT` / `BREATHING_DISTURBANCE_EVENT` / `HYPERTENSION_EVENT` row. Null when the source reported none. HealthLog never re-classifies — this is the device's certified on-device result. Distinct from `EcgRecordingListItem.classification` / `EcgDetailResponse.classification` above, which are scoped to the three ECG-only values.",
   );
 
 const rhythmEventListItem = z
@@ -2820,6 +2838,59 @@ export const providerChainPutRequest = providerChainPutSchema.meta({
   id: "ProviderChainPutRequest",
   description:
     "Replaces the account's provider chain wholesale. No credential is written or read here — only which provider types exist, in what order, which are enabled, and the reasoning setting of the Local and OpenAI-compatible entries.",
+});
+
+// ── Named provider chains (`/api/insights/provider-chains`, #1404) ─────
+
+export const namedChainsResponse = z
+  .object({
+    chains: z
+      .array(namedChainSchema)
+      .describe("The account's named chains, in the order they were saved."),
+    defaultChainId: z
+      .string()
+      .nullable()
+      .describe(
+        "The named chain every unattached capability follows, or null for the main chain.",
+      ),
+    attachments: z
+      .partialRecord(z.enum(AI_CAPABILITY_KEYS), z.string())
+      .describe(
+        "Capability → chain id. An attached capability uses exactly its chain's entries in their order and nothing else; one left out follows the default chain under its own rules (documents prefer a local entry, lab scans keep the chain order).",
+      ),
+    mainChain: z
+      .array(z.enum(PROVIDER_CHAIN_TYPES))
+      .describe(
+        "The enabled entries of the main chain in order, for showing what Default means.",
+      ),
+    providers: z
+      .array(
+        z.object({
+          providerType: z.enum(PROVIDER_CHAIN_TYPES),
+          available: z
+            .boolean()
+            .describe(
+              "Whether the account holds a usable credential for it (presence only; a dead key still reads true). An entry that is not available never serves.",
+            ),
+          egress: z
+            .enum(["local", "external"])
+            .describe(
+              "`local` keeps the input on the machine; `external` sends it to a third-party AI service.",
+            ),
+        }),
+      )
+      .describe("Every provider type a chain may list."),
+  })
+  .meta({
+    id: "NamedChainsResponse",
+    description:
+      "The account's named provider chains and attachments. Provider TYPES, names and capability keys only. Whether a capability is available is published on `/api/auth/me` (`ai`), resolved through these chains.",
+  });
+
+export const namedChainsPutRequest = namedChainsPutSchema.meta({
+  id: "NamedChainsPutRequest",
+  description:
+    "Replaces the named chains, the default and the attachments wholesale. The main chain is not touched. No credential is written or read here.",
 });
 
 // ── Read-only advisor + generation (`/api/insights/generate`) ─────────

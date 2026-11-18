@@ -24,8 +24,11 @@ import { serialiseBiomarker } from "@/lib/labs/biomarker-dto";
 import { mergedInto } from "@/lib/labs/biomarker-merge";
 import { encryptContextToBytes } from "@/lib/labs/biomarker-store";
 import { matchAnalyteKey } from "@/lib/labs/analyte-match";
+import { markerHasNoUnit } from "@/lib/labs/dimensionless";
+import { sameLabUnit } from "@/lib/labs/unit-normalise";
 import { annotate } from "@/lib/logging/context";
 import { computeLabTrend } from "@/lib/labs/lab-trend";
+import { retireLabImportKeys } from "@/lib/labs/fhir-import/import-keys";
 
 /** Upper bound on readings the trend line reads. */
 const LAB_TREND_READ_CAP = 2000;
@@ -104,6 +107,30 @@ export const GET = apiHandler(
   },
 );
 
+/**
+ * A marker without a unit (minted from a text result, or the unity) holds a
+ * range that came with no unit. Given a real unit, those numbers are not a
+ * window in it, so they give way to the bounds the edit sends, or to none:
+ * the rule the first numeric import reading follows (`adoptFirstNumericUnit`).
+ * Moving to the unity keeps them. Sets the cleared bounds on `data` and says
+ * whether the stored ones are gone.
+ */
+function dropUnitlessBounds(
+  storedUnit: string,
+  edit: {
+    unit?: string;
+    lowerBound?: number | null;
+    upperBound?: number | null;
+  },
+  data: Record<string, unknown>,
+): boolean {
+  if (edit.unit === undefined) return false;
+  if (!markerHasNoUnit(storedUnit) || markerHasNoUnit(edit.unit)) return false;
+  if (edit.lowerBound === undefined) data.lowerBound = null;
+  if (edit.upperBound === undefined) data.upperBound = null;
+  return true;
+}
+
 export const PUT = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
     // v1.37.0 — MANAGE, and the closest call in this domain: a reference range
@@ -160,14 +187,20 @@ export const PUT = apiHandler(
       }
     }
 
-    // A marker's unit labels every reading linked to it: readers resolve the
+    // A marker's unit labels every number linked to it: readers resolve the
     // unit from the marker, and the stored numbers are in the old unit. A
-    // change while readings exist would relabel history without converting a
-    // single value, so it is refused. Tombstoned readings count too, since an
-    // undo brings them back under the new label.
-    if (d.unit !== undefined && d.unit !== existing.unit) {
+    // change while numeric readings exist would relabel history without
+    // converting a single value, so it is refused. Tombstoned readings count
+    // too, since an undo brings them back under the new label.
+    //
+    // Only a real change is one: another spelling of the same unit relabels
+    // nothing. And only numbers lock it: a text result ("negative") carries
+    // no value the unit could misstate. That is what frees a marker minted
+    // from a text result, whose empty unit nothing has chosen yet (#1393);
+    // its first number would have set the unit the same way.
+    if (d.unit !== undefined && !sameLabUnit(d.unit, existing.unit)) {
       const readingCount = await prisma.labResult.count({
-        where: { userId: user.id, biomarkerId: id },
+        where: { userId: user.id, biomarkerId: id, value: { not: null } },
       });
       if (readingCount > 0) {
         annotate({
@@ -216,6 +249,7 @@ export const PUT = apiHandler(
       });
     }
 
+    const unitless = dropUnitlessBounds(existing.unit, d, data);
     // Inverted-range guard for a PARTIAL bound update. The schema refine only
     // fires when both bounds arrive together; moving a single bound past the
     // row's existing other bound would otherwise persist an inverted window.
@@ -223,8 +257,8 @@ export const PUT = apiHandler(
     // both resolve to concrete numbers with low > high.
     if (
       isInvertedRange(
-        effectiveBound(d.lowerBound, existing.lowerBound),
-        effectiveBound(d.upperBound, existing.upperBound),
+        effectiveBound(d.lowerBound, unitless ? null : existing.lowerBound),
+        effectiveBound(d.upperBound, unitless ? null : existing.upperBound),
       )
     ) {
       return apiError("lowerBound must not exceed upperBound", 422, {
@@ -312,14 +346,17 @@ export const DELETE = apiHandler(
     // Hard delete the marker AND its readings in one transaction. Deleting a
     // biomarker is a deliberate "remove this and its history" action, so the
     // readings go with it rather than lingering as orphaned, unlinked rows.
-    // Both legs are userId-narrowed so a cross-user id can never reach another
-    // account's data.
-    const [removedReadings] = await prisma.$transaction([
-      prisma.labResult.deleteMany({
-        where: { userId: user.id, biomarkerId: id },
-      }),
-      prisma.biomarker.delete({ where: { id } }),
-    ]);
+    // Every leg is userId-narrowed so a cross-user id can never reach another
+    // account's data. A reading imported from Health Records leaves its
+    // identity in the import ledger first, so the next export or resend does
+    // not write it again.
+    const removedReadings = await prisma.$transaction(async (tx) => {
+      const where = { userId: user.id, biomarkerId: id };
+      await retireLabImportKeys(tx, user.id, where);
+      const removed = await tx.labResult.deleteMany({ where });
+      await tx.biomarker.delete({ where: { id } });
+      return removed;
+    });
     invalidateUserHealthScore(user.id);
 
     await auditLog("biomarker.delete", {

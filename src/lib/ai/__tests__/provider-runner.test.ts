@@ -150,6 +150,51 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+describe("runRawCompletionWithFallback — a pinned named chain (#1404)", () => {
+  it("walks a pinned chain in its own order and leaves the memo alone", async () => {
+    const warm = new ScriptedProvider({
+      type: "admin-key",
+      script: [{ ok: true }],
+    });
+    await runRawCompletionWithFallback({
+      userId: "u-pin",
+      surface: "coach",
+      providers: [{ providerType: "openai", instance: warm }],
+      params: singleUserTurn({ system: "s", user: "u" }),
+    });
+    expect(getLastWorkingProvider("u-pin")).toBe("openai");
+
+    const local = new ScriptedProvider({
+      type: "local",
+      script: [{ ok: false, error: err(503) }],
+    });
+    const openai = new ScriptedProvider({
+      type: "admin-key",
+      script: [{ ok: true }],
+    });
+    const local2 = new ScriptedProvider({
+      type: "local",
+      script: [{ ok: true }],
+    });
+    const out = await runRawCompletionWithFallback({
+      userId: "u-pin",
+      surface: "coach",
+      providers: [
+        { providerType: "local", instance: local, pinned: true },
+        { providerType: "anthropic", instance: local2, pinned: true },
+        { providerType: "openai", instance: openai, pinned: true },
+      ],
+      params: singleUserTurn({ system: "s", user: "u" }),
+    });
+    // The memo's head is not moved to the front of a pinned chain …
+    expect(local.callCount).toBe(1);
+    expect(out.workingProvider.providerType).toBe("anthropic");
+    expect(openai.callCount).toBe(0);
+    // … and a pinned success does not teach it.
+    expect(getLastWorkingProvider("u-pin")).toBe("openai");
+  });
+});
+
 describe("isHardProviderFailure", () => {
   it("flags 401 (auth-class) as hard", () => {
     expect(isHardProviderFailure(err(401))).toBe(true);

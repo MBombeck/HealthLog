@@ -20,6 +20,7 @@ process.env.ENCRYPTION_KEY ??=
 
 import { encrypt } from "@/lib/crypto";
 
+import { countStatements, summariseStatements } from "./query-counter";
 import { getPrismaClient, truncateAllTables } from "./setup";
 
 const TEST_USER_ID = "user-withings-sleep-sync";
@@ -171,5 +172,49 @@ describe("syncUserSleep — integration", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0].value).toBe(45);
     expect(rows[0].sleepStage).toBe("DEEP");
+  });
+
+  it("writes a week of nights in sets, and re-reads them at about one statement a segment", async () => {
+    // A week of nights, forty segments each, the last one ten hours ago; a
+    // full sync reads every night of the window.
+    const segments: Segment[] = [];
+    for (let night = 0; night < 8; night++) {
+      const start = base - night * 86_400;
+      for (let i = 0; i < 40; i++) {
+        segments.push({
+          startdate: start + i * 900,
+          enddate: start + (i + 1) * 900,
+          state: i % 4,
+          id: 1_000 + night,
+        });
+      }
+    }
+    stubWithingsSleep(segments);
+    const { syncUserSleep } = await import("@/lib/withings/sync-sleep");
+
+    // One segment at a time this was about eight statements a segment, and
+    // ten on the re-read.
+    const first = await countStatements(() =>
+      syncUserSleep(TEST_USER_ID, { fullSync: true }),
+    );
+    expect(first.result).toBe(segments.length);
+    expect(
+      first.count,
+      summariseStatements(first.statements).slice(0, 2_000),
+    ).toBeLessThanOrEqual(segments.length / 2);
+
+    const again = await countStatements(() =>
+      syncUserSleep(TEST_USER_ID, { fullSync: true }),
+    );
+    expect(again.result).toBe(segments.length);
+    expect(
+      await getPrismaClient().measurement.count({
+        where: { userId: TEST_USER_ID, type: "SLEEP_DURATION" },
+      }),
+    ).toBe(segments.length);
+    expect(
+      again.count,
+      summariseStatements(again.statements).slice(0, 2_000),
+    ).toBeLessThanOrEqual(segments.length * 1.5);
   });
 });

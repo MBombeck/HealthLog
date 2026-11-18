@@ -8,11 +8,10 @@ import type { Page } from "@playwright/test";
  *
  *   withings       limited / plan_limited        (no button)
  *   oura           limited / permission_limited  (one Reconnect)
- *   fitbit         ok / data_arriving            (older history loading)
  *   polar          degraded / provider_errors    (no button)
  *   whoop          action_required / paused      (one Resume)
  *   google-health  action_required / reauth      (one Reconnect)
- *   strava         not connected                 (Connect)
+ *   strava         ok / data_arriving            (no button)
  *   nightscout     not connected                 (address form)
  *   apple-health   degraded / no_new_data
  *
@@ -79,11 +78,10 @@ function disconnected(integration: string) {
 export const INTEGRATION_CARD_STATES = {
   withings: { state: "limited", primary: null },
   oura: { state: "limited", primary: "reconnect" },
-  fitbit: { state: "ok", primary: null },
   polar: { state: "degraded", primary: null },
   whoop: { state: "action_required", primary: "resume" },
   "google-health": { state: "action_required", primary: "reconnect" },
-  strava: { state: "not_connected", primary: "connect" },
+  strava: { state: "ok", primary: null },
   nightscout: { state: "not_connected", primary: "connect" },
   "apple-health": { state: "degraded", primary: null },
 } as const;
@@ -144,10 +142,6 @@ export function integrationCardsEnvelope() {
           persistent: 4,
         },
       },
-      {
-        ...connected("fitbit", health()),
-        backfillCompleted: false,
-      },
       connected(
         "google-health",
         health({
@@ -206,7 +200,7 @@ export function integrationCardsEnvelope() {
           ],
         }),
       ),
-      disconnected("strava"),
+      connected("strava", health()),
       { ...disconnected("nightscout"), hasToken: false },
     ],
   };

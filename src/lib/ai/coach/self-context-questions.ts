@@ -183,9 +183,11 @@ export async function deriveClarifyingQuestions(
   }
 
   try {
-    if (!(await hasAnyConfiguredProvider(userId))) return fallback();
+    if (!(await hasAnyConfiguredProvider(userId, "aboutMeQuestions"))) {
+      return fallback();
+    }
 
-    const chain = await resolveProviderChain(userId);
+    const chain = await resolveProviderChain(userId, "aboutMeQuestions");
     if (chain.length === 0) return fallback();
 
     // The wire re-check — BEFORE the snapshot is built, let alone sent. The

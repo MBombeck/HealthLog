@@ -10,7 +10,7 @@ import { NextRequest } from "next/server";
 /**
  * Manually trigger a Withings sync for the current user.
  *
- * Rate-limited on both arms, matching the Fitbit / Google Health siblings.
+ * Rate-limited on both arms, matching the Google Health sibling.
  * This route and the WHOOP one were the two that never got a limiter, while
  * `fullSync` drives the full measure-history walk against Withings' per-user
  * budget: a tight loop or a stolen native token could exhaust it and pin

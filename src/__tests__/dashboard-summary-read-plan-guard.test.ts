@@ -55,9 +55,13 @@ describe("dashboard summary reads — latest reading per type", () => {
     expect(lateral.length).toBeGreaterThan(0);
     // The type list has to reach SQL as the driving relation, and the
     // per-type branch has to stop at the first row — without the LIMIT the
-    // LATERAL still reads every row of the type partition.
+    // LATERAL still reads every row of the type partition. Its WHERE and
+    // ORDER BY are the shared live-index descent, which keeps the planner
+    // on the per-type index whatever the statistics say.
     expect(sql).toMatch(/FROM\s+unnest\(\$\{/);
-    expect(sql).toMatch(/ORDER\s+BY\s+m\."measured_at"\s+DESC\s+LIMIT\s+1/);
+    expect(sql).toMatch(
+      /\$\{liveTypeDescent\(userId,[^}]*"newest",\s*since\)\}\s+LIMIT\s+1/,
+    );
   });
 });
 

@@ -192,6 +192,8 @@ const COUNT_BACK: Record<
     p.moodEntryTagLink.count({ where: { moodEntry: { userId } } }),
   MoodTag: (p, userId) => p.moodTag.count({ where: { userId } }),
   LabResult: (p, userId) => p.labResult.count({ where: { userId } }),
+  LabResultImportKey: (p, userId) =>
+    p.labResultImportKey.count({ where: { userId } }),
   Biomarker: (p, userId) => p.biomarker.count({ where: { userId } }),
   BiomarkerAlias: (p, userId) => p.biomarkerAlias.count({ where: { userId } }),
   BiomarkerMerge: (p, userId) => p.biomarkerMerge.count({ where: { userId } }),
@@ -204,6 +206,13 @@ const COUNT_BACK: Record<
     p.symptomDefinition.count({ where: { userId } }),
   SymptomEvent: (p, userId) => p.symptomEvent.count({ where: { userId } }),
   LifeEvent: (p, userId) => p.lifeEvent.count({ where: { userId } }),
+  SeizureTypeProfile: (p, userId) =>
+    p.seizureTypeProfile.count({ where: { userId } }),
+  SeizureEvent: (p, userId) => p.seizureEvent.count({ where: { userId } }),
+  SeizureRescueDose: (p, userId) =>
+    p.seizureRescueDose.count({ where: { userId } }),
+  SeizureDiarySettings: (p, userId) =>
+    p.seizureDiarySettings.count({ where: { userId } }),
   IllnessSymptomLink: (p, userId) =>
     p.illnessSymptomLink.count({ where: { dayLog: { userId } } }),
   UserHealthProfile: (p, userId) =>
@@ -890,6 +899,7 @@ describe("every model the plan claims two-ended survives a real restore", () => 
         doseUnit: d.doseUnit,
         note: readNote(d.noteEncrypted, d.note),
         plaintextColumn: d.note,
+        clientId: d.clientId,
       })),
       "the titration must come back as the same ramp, in order",
     ).toEqual([
@@ -899,6 +909,7 @@ describe("every model the plan claims two-ended survives a real restore", () => 
         doseUnit: "mg",
         note: DOSE_CHANGE_NOTE,
         plaintextColumn: null,
+        clientId: "device-step-1",
       },
       {
         effectiveFrom: "2026-06-01T08:00:00.000Z",
@@ -906,6 +917,7 @@ describe("every model the plan claims two-ended survives a real restore", () => 
         doseUnit: "mg",
         note: null,
         plaintextColumn: null,
+        clientId: null,
       },
     ]);
 

@@ -112,7 +112,7 @@ function accessLabel(
   access: ReturnType<typeof resolveRecordPresentation>["access"],
   t: ReturnType<typeof useTranslations>["t"],
 ): string {
-  if (access === "manage") return t("recordSharing.row.canManage");
+  if (access === "manage") return t("recordSharing.banner.canManage");
   return access === "view-and-add"
     ? t("recordSharing.banner.canAdd")
     : t("recordSharing.banner.readOnly");

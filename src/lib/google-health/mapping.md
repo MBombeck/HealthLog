@@ -8,9 +8,9 @@ spot readings or its civil date for daily summaries; the field-tag disambiguates
 the metric). The cumulative daily totals use the `stats:<fieldTag>:<YYYY-MM-DD>`
 overwrite shape instead.
 
-Google Health is a **separate, coexisting provider** from the classic Fitbit
-integration (`src/lib/fitbit/*`, `source = FITBIT`). They never share a token,
-connection row, source enum, or cookie.
+Google Health is a separate provider from the retired Fitbit Web API
+integration (removed in v1.48.0). Rows that integration imported keep
+`source = FITBIT`; Google Health writes `source = GOOGLE_HEALTH`.
 
 ## The three encodings (casing)
 

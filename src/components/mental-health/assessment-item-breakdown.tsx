@@ -80,14 +80,17 @@ export function AssessmentItemBreakdown({
 
   const detail = data.assessment;
   if (detail.items === null) {
-    // The server's honest degrade: the blob exists but cannot be decrypted
+    // Either an Apple Health administration that shared its score only, or
+    // the server's honest degrade: the blob exists but cannot be decrypted
     // (key gap / corruption). The score above this breakdown still answers.
     return (
       <p
         className="text-muted-foreground text-sm"
         data-slot="assessment-item-breakdown"
       >
-        {t("mentalHealth.history.answersUnavailable")}
+        {detail.source === "APPLE_HEALTH"
+          ? t("mentalHealth.history.answersNotShared")
+          : t("mentalHealth.history.answersUnavailable")}
       </p>
     );
   }

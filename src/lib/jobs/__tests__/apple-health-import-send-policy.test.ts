@@ -80,8 +80,8 @@ describe("apple health import — pg-boss send policy", () => {
 });
 
 describe("apple health import — parser revision boundary", () => {
-  it("isolates revision-3 sends from legacy workers", () => {
-    expect(APPLE_HEALTH_IMPORT_PARSER_REVISION).toBe(3);
+  it("isolates revision-4 sends from legacy workers", () => {
+    expect(APPLE_HEALTH_IMPORT_PARSER_REVISION).toBe(4);
     expect(APPLE_HEALTH_IMPORT_V2_QUEUE).toBe("apple-health-import-v2");
     expect(APPLE_HEALTH_IMPORT_LEGACY_QUEUE).toBe("apple-health-import");
   });

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { readNewestRowsPerType } from "@/lib/measurements/newest-per-type";
 import { readRecentMoodScores } from "@/lib/mood/recent-scores";
 import {
   getBloodPressureSystemPrompt,
@@ -326,27 +327,14 @@ async function buildBloodPressureSnapshot(
  */
 async function readBpChannels(userId: string, userTz: string) {
   // v1.4.28 — cap the snapshot input. The downstream
-  // `applyPayloadBudget` trims further; this `take` keeps the read
-  // bounded for Apple-Health-rich accounts. BP captures three types
-  // per reading day so 1095 = 365 d × 3 channels.
-  const measurements = await prisma.measurement
-    .findMany({
-      where: {
-        userId,
-        deletedAt: null,
-        type: {
-          in: ["WEIGHT", "BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"],
-        },
-      },
-      orderBy: { measuredAt: "desc" },
-      take: 1095,
-      select: {
-        type: true,
-        value: true,
-        measuredAt: true,
-      },
-    })
-    .then((rows) => rows.reverse());
+  // `applyPayloadBudget` trims further; the cap keeps the read bounded for
+  // Apple-Health-rich accounts: 1095 = 365 d × 3 channels. #1398: shared
+  // fairly across the three channels, so no channel pushes another out.
+  const { rows: measurements } = await readNewestRowsPerType(
+    userId,
+    ["WEIGHT", "BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"],
+    { perTypeCap: 1095, totalCap: 1095 },
+  );
 
   const now = new Date();
 

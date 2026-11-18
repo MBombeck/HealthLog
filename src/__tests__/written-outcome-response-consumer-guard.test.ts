@@ -645,13 +645,6 @@ const GOOGLE_HEALTH_RUN_ID_EXCEPTION =
 
 const SYNC_ROUTES: readonly SyncRouteSpec[] = [
   {
-    id: "fitbit",
-    path: join(ROOT, "src/app/api/fitbit/sync/route.ts"),
-    responseClass: "resolved-with-full-sync-echo",
-    card: join(SYNC_CARD_ROOT, "integration-actions.tsx"),
-    exceptions: { fullSync: FULL_SYNC_EXCEPTION },
-  },
-  {
     id: "google-health",
     path: join(ROOT, "src/app/api/google-health/sync/route.ts"),
     responseClass: "resolved-with-full-sync-echo",

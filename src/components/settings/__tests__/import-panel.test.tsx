@@ -30,6 +30,7 @@ import type { Locale } from "@/lib/i18n/config";
 import {
   AppleHealthEstimateWarning,
   AppleHealthSkipLines,
+  appleHealthDoneSummaryKind,
   appleHealthFailureKind,
   summarizeAppleHealthSkips,
 } from "../import-panel/apple-health-import-card";
@@ -136,6 +137,15 @@ describe("<AppleHealthEstimateWarning>", () => {
  * `<AppleHealthSkipLines>` mount removed the render test fails on the
  * missing test ids.
  */
+describe("appleHealthDoneSummaryKind", () => {
+  it("never heads a labs-only archive with zero imported samples", () => {
+    expect(appleHealthDoneSummaryKind(0, 4)).toBe("auxOnly");
+    expect(appleHealthDoneSummaryKind(12, 4)).toBe("samples");
+    expect(appleHealthDoneSummaryKind(12, 0)).toBe("samples");
+    expect(appleHealthDoneSummaryKind(0, 0)).toBe("nothing");
+  });
+});
+
 describe("summarizeAppleHealthSkips", () => {
   it("splits deliberate exclusions from genuine refusals", () => {
     const summary = summarizeAppleHealthSkips({

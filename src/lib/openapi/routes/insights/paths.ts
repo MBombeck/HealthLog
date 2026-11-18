@@ -57,6 +57,8 @@ import {
   targetsResponse,
   providerChainResponse,
   providerChainPutRequest,
+  namedChainsResponse,
+  namedChainsPutRequest,
   insightsGenerateReadResponse,
   insightsGeneratePostRequest,
   insightsGeneratePostResponse,
@@ -361,6 +363,57 @@ export const insightsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         "422": {
           description:
             "The body was not a valid chain — an empty array, more entries than there are provider types, an unknown provider type, or the same type twice. A single-message envelope with no issue list.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "401": stdResponses["401"],
+        "429": stdResponses["429"],
+      },
+    },
+  },
+  "/api/insights/provider-chains": {
+    get: {
+      tags: ["Insights"],
+      summary: "Read the account's named provider chains",
+      description:
+        "The named chains next to the main chain, which of them is the default, which capability is attached to which, and every provider type with its availability and egress class (`local` stays on the machine, `external` leaves it). An attached capability is pinned to its chain: exactly those entries, in that order, and a one-entry chain refuses rather than fall back. Whether a capability is available is NOT here; it is published on `/api/auth/me` (`ai`). No key, token or account id is on this wire. Cookie or Bearer auth; not delegable.",
+      responses: {
+        "200": {
+          description: "The named chains.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(namedChainsResponse, "NamedChainsEnvelope"),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+    put: {
+      tags: ["Insights"],
+      summary: "Replace the account's named provider chains",
+      description:
+        "Persists the named chains, the default and the attachments wholesale and answers the stored state. Chain ids are chosen by the client and must be unique; names are unique ignoring case; a chain lists each provider type at most once and at least one. A default or attachment that names an unknown chain is refused. Deleting a chain is saving without it: its capabilities return to the default chain. Body capped at 64 KiB. Cookie or Bearer auth; not delegable.",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: namedChainsPutRequest },
+        },
+      },
+      responses: {
+        "200": {
+          description: "Saved; the stored state.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                namedChainsResponse,
+                "NamedChainsSavedEnvelope",
+              ),
+            },
+          },
+        },
+        "422": {
+          description:
+            "The body was not a valid set of chains: an empty or repeated entry, a repeated id or name, more than ten chains, or a default or attachment naming an unknown chain.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "401": stdResponses["401"],

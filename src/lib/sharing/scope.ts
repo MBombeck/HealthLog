@@ -71,7 +71,18 @@ export const SHARE_DOMAINS = [
    * again a separate question from consent.
    */
   "profile",
-  /** Illness episodes and the day logs under them. */
+  /**
+   * Illness episodes and the day logs under them, the person's own symptoms,
+   * and the seizure diary.
+   *
+   * The seizure diary joined this domain rather than getting one of its own,
+   * on the argument `profile` makes for vaccinations: it is the same subject
+   * a person granting "illness" means, and the consent copy names it in every
+   * locale. One write in it lands outside it, named in the copy too: a rescue
+   * dose recorded in the diary also records an intake on its as-needed
+   * medication, so the medication's history and stock are not missing a dose
+   * that was given. An as-needed medication is never counted in compliance.
+   */
   "illness",
   /**
    * Mood entries and mental-health screener history.

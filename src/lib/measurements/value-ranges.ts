@@ -156,6 +156,7 @@ export const VALUE_RANGES: Record<string, { min: number; max: number }> = {
   IRREGULAR_RHYTHM_NOTIFICATION: { min: 1, max: 1 },
   HIGH_HEART_RATE_EVENT: { min: 1, max: 1 },
   LOW_HEART_RATE_EVENT: { min: 1, max: 1 },
+  HYPERTENSION_EVENT: { min: 1, max: 1 },
   WALKING_STEADINESS_EVENT: { min: 1, max: 1 },
   BREATHING_DISTURBANCE_EVENT: { min: 1, max: 1 },
   // Loud-listening event flag (env + headphone). One fired event per row, so

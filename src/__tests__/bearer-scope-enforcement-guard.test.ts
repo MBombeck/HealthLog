@@ -430,13 +430,14 @@ describe("T4 — declared scopes are exported constants, never string literals",
   });
 });
 
-describe("T4a — `measurements:write` opens exactly three doors", () => {
-  it("the two measurement writes and the custom-metric value write, POST only", () => {
+describe("T4a — `measurements:write` opens exactly four doors", () => {
+  it("the two measurement writes, the custom-metric value write and the nutrient batch, POST only", () => {
     // The set of files naming the scope IS its reach. The single and batch
-    // measurement writes, and logging a value against a custom metric the
-    // person already made. Not the measurement reads, not the custom-metric
-    // list or detail, and not creating, editing or deleting a metric: a
-    // fourth file here is a widening and belongs in review.
+    // measurement writes, logging a value against a custom metric the person
+    // already made, and posting nutrient day totals. Not the measurement or
+    // nutrient reads, not the custom-metric list or detail, and not creating,
+    // editing or deleting a metric: a fifth file here is a widening and
+    // belongs in review.
     const declaring = sourceFiles().filter((rel) => {
       const src = read(rel);
       return (
@@ -448,7 +449,25 @@ describe("T4a — `measurements:write` opens exactly three doors", () => {
       "app/api/custom-metrics/[id]/entries/route.ts",
       "app/api/measurements/batch/route.ts",
       "app/api/measurements/route.ts",
+      "app/api/nutrients/batch/route.ts",
     ]);
+
+    // The nutrient batch names it once and exports nothing but its POST: the
+    // nutrient reads live in other files and keep refusing the token.
+    const nutrients = readSource(
+      "src/app/api/nutrients/batch/route.ts",
+      "MEASUREMENTS_WRITE_SCOPE",
+    );
+    expect(
+      requireAuthScopes(nutrients).filter(
+        (x) => x === "MEASUREMENTS_WRITE_SCOPE",
+      ),
+    ).toHaveLength(1);
+    expect(
+      [
+        ...nutrients.matchAll(/export const (GET|POST|PUT|PATCH|DELETE)\b/g),
+      ].map((m) => m[1]),
+    ).toEqual(["POST"]);
 
     // Within the custom-metric file, once, and on the POST: the GET beside it
     // lists the metric's values and must keep refusing the token.
@@ -493,14 +512,17 @@ describe("T4b — `documents:write` opens exactly two doors", () => {
       "app/api/documents/inbound/source/route.ts",
     ]);
     // Within the upload file, once: the GET list beside the POST must not
-    // name it.
+    // name it. #1403 moved the upload onto the record resolver (a managed
+    // profile's guardian uploads into it), so the one naming is there now and
+    // the bare-resolver form is gone; T5 freezes it as a scoped delegable route.
     const upload = readSource(
       "src/app/api/documents/inbound/route.ts",
       "DOCUMENTS_WRITE_SCOPE",
     );
     expect(
-      requireAuthScopes(upload).filter((x) => x === "DOCUMENTS_WRITE_SCOPE"),
+      recordAuthScopes(upload).filter((x) => x === "DOCUMENTS_WRITE_SCOPE"),
     ).toHaveLength(1);
+    expect(requireAuthScopes(upload)).toEqual([]);
     // And the lookup is a read of one key and nothing else: a single GET.
     const lookup = readSource(
       "src/app/api/documents/inbound/source/route.ts",
@@ -559,6 +581,11 @@ describe("T5 — a delegable route naming a Bearer scope is frozen", () => {
     // home-automation rule. The sibling read, edit and delete legs on this
     // module name no scope and so still refuse every narrow token.
     "app/api/measurements/route.ts": "MEASUREMENTS_WRITE_SCOPE",
+    // #1403 — the vault upload. Delegable only to a managed profile's
+    // guardian (`"guardian"`); the importer's `documents:write` token keeps
+    // reaching its own vault and is refused under any selector, before a
+    // grant is read.
+    "app/api/documents/inbound/route.ts": "DOCUMENTS_WRITE_SCOPE",
   };
 
   it("only the known routes pass a scope to the record resolver", () => {

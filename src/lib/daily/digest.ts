@@ -59,6 +59,11 @@ import { DOSE_WINDOW_DEFAULTS } from "@/lib/medications/scheduling/dose-window-d
 import type { Locale } from "@/lib/i18n/config";
 import type { SteadyRun } from "@/lib/daily/score-steady";
 import {
+  reactionLineForLead,
+  withLanguages,
+  type DigestTextLanguages,
+} from "@/lib/daily/text-languages";
+import {
   buildTodayOverview,
   type TodayCycle,
   type TodayFact,
@@ -335,6 +340,13 @@ export interface DailyDigestInput {
   /** The cached daily briefing (paragraph + signals-of-day), or null. */
   briefing: DailyBriefing | null;
   medsToday: MedsTodayBlock;
+  /** Languages of the stored briefing and reaction line (#176). */
+  briefingLanguage?: string | null;
+  reactionLanguage?: string | null;
+  /** The Today lead drops this first name where it opens a sentence. */
+  firstName?: string | null;
+  /** `medsToday.nextDueAt` as a local time in the reader's format. */
+  nextDoseTimeLabel?: string | null;
   /** Days since the freshest sleep reading; null when never recorded. */
   sleepLastSeenDaysAgo: number | null;
   /**
@@ -484,6 +496,8 @@ export interface DailyDigest {
   reactionLine: string | null;
   /** Why the briefing lead, the reaction line or the check-in are absent. */
   ai: DailyDigestAi;
+  /** Which language each text is in (#176); see `text-languages.ts`. */
+  languages?: DigestTextLanguages;
 }
 
 /** Title-case a lowercase integration token for user-facing copy. */
@@ -641,14 +655,13 @@ function buildPreventiveCareItem(
   if (due.length === 1) {
     body = t("daily.item.preventiveCare.body", { label: due[0].label });
   } else {
+    // Just the names: the title already says they are due (#173).
     const named = due
       .slice(0, PREVENTIVE_NAMED_MAX)
       .map((d) => d.label)
       .join(", ");
     const rest = due.length - PREVENTIVE_NAMED_MAX;
-    body = t("daily.item.preventiveCare.bodyManyNamed", {
-      labels: rest > 0 ? `${named} +${rest}` : named,
-    });
+    body = rest > 0 ? `${named} +${rest}` : named;
   }
   return {
     kind: "preventive_care",
@@ -1255,11 +1268,20 @@ export function buildDailyDigest(
 
   const rail = capWithPinned(visible, pinned, MAX_WORTH_A_LOOK);
 
+  const languages: DigestTextLanguages = {
+    response: input.locale ?? "en",
+    briefing: input.briefingLanguage ?? null,
+    reaction: input.reactionLanguage ?? null,
+  };
   const overview = buildTodayOverview(
     {
-      locale: input.locale ?? "en",
+      locale: languages.response,
       modules: input.modules,
-      reactionLine,
+      reactionLine: reactionLineForLead(
+        reactionLine,
+        languages.reaction,
+        languages.response,
+      ),
       briefing,
       scoreValue: input.score?.value ?? null,
       medsToday: input.medsToday,
@@ -1283,6 +1305,9 @@ export function buildDailyDigest(
       sleep: input.sleepLastNight ?? null,
       vitals: input.vitals ?? [],
       cycle: input.cycle ?? null,
+      now: input.now,
+      firstName: input.firstName ?? null,
+      nextDoseTimeLabel: input.nextDoseTimeLabel ?? null,
     },
     t,
   );
@@ -1302,8 +1327,7 @@ export function buildDailyDigest(
     score,
     topSignal,
     briefingLead: overview.briefingLead,
-    lead: overview.lead,
-    signalLine: overview.signalLine,
+    ...withLanguages(overview.lead, overview.signalLine, languages),
     today: overview.today,
     restMode: moduleEnabled(input.modules, "illness")
       ? (input.restMode ?? null)
@@ -1313,5 +1337,6 @@ export function buildDailyDigest(
     justIn,
     reactionLine,
     ai: input.ai,
+    languages,
   };
 }

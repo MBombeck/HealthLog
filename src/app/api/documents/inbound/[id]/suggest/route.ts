@@ -23,7 +23,7 @@ import { Buffer } from "node:buffer";
 
 import { NextRequest } from "next/server";
 
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import {
   apiError,
   apiValidationError,
@@ -76,7 +76,9 @@ export const POST = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
     // Writes nothing (the draft goes back to the edit form), so the shared
     // write ceiling does not count it; the document-AI bucket meters it.
-    const { user } = await requireAuth(undefined, { readOverPost: true });
+    const { user } = await requireRecordAuth("guardian", "documents", {
+      readOverPost: true,
+    });
 
     const gate = await requireModuleEnabled(user.id, "inboundDocuments");
     if (!gate.enabled) return gate.response;

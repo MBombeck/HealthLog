@@ -72,6 +72,12 @@ function catalogueLabel(
   if (catalogue === "symptomEpisodeReference") {
     return t("admin.section.backups.restoreSkippedSymptomEpisodeReference");
   }
+  if (catalogue === "seizureMedicationReference") {
+    return t("admin.section.backups.restoreSkippedSeizureMedicationReference");
+  }
+  if (catalogue === "seizureTypeReference") {
+    return t("admin.section.backups.restoreSkippedSeizureTypeReference");
+  }
   if (catalogue === "visitCiphertext") {
     return t("admin.section.backups.restoreSkippedVisitCiphertext");
   }

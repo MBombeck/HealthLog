@@ -1,6 +1,6 @@
 /**
  * Query keys — external integrations: API tokens, Telegram, Withings,
- * WHOOP, Fitbit, and the Apple Health export import job.
+ * WHOOP, and the Apple Health export import job.
  * Part of the centralized factory; aggregated in `./index.ts`.
  */
 export const integrationKeys = {
@@ -31,23 +31,15 @@ export const integrationKeys = {
    * so a disconnect / credentials mutation invalidates both at once.
    */
   whoopStatus: () => ["whoop", "status"] as const,
-  // v1.12.0 — Fitbit/Pixel integration card, mirroring the WHOOP keys.
-  fitbit: () => ["fitbit"] as const,
-  /**
-   * Per-card Fitbit status read. Shares the `["fitbit"]` prefix with `fitbit()`
-   * so a disconnect / credentials mutation invalidates both at once.
-   */
-  fitbitStatus: () => ["fitbit", "status"] as const,
 
   // v1.27.0 — Google Health (Fitbit + Pixel Watch + Fitbit Air) integration
   // card. Reads status off the consolidated /api/integrations/status envelope
-  // (like Fitbit/WHOOP); the connect/disconnect/credentials/sync mutations
-  // invalidate this key so the card repaints. Distinct hyphenated array so it
-  // never collides with the classic `fitbit` key.
+  // (like WHOOP); the connect/disconnect/credentials/sync mutations
+  // invalidate this key so the card repaints.
   googleHealth: () => ["google-health"] as const,
 
   // v1.17.0 — Nightscout CGM integration card. Reads status off the
-  // consolidated /api/integrations/status envelope (like Fitbit/WHOOP); this
+  // consolidated /api/integrations/status envelope (like WHOOP); this
   // key stays for the card's other reads and invalidations.
   nightscout: () => ["nightscout"] as const,
 
@@ -60,7 +52,7 @@ export const integrationKeys = {
   ouraStatus: () => ["oura", "status"] as const,
 
   // v1.28.x — Strava OAuth integration card. Reads status off the consolidated
-  // /api/integrations/status envelope (like WHOOP/Fitbit/Polar/Oura); the
+  // /api/integrations/status envelope (like WHOOP/Polar/Oura); the
   // connect/disconnect/credentials mutations invalidate this key so the card
   // repaints.
   strava: () => ["strava"] as const,
@@ -96,4 +88,7 @@ export const integrationKeys = {
    */
   healthConnectImportStatus: () =>
     ["import", "health-connect", "status"] as const,
+
+  /** The account's latest activity FIT file import, like Health Connect's. */
+  fitImportStatus: () => ["import", "fit", "status"] as const,
 };

@@ -58,7 +58,8 @@
     "errorIdCopied": "ID de error copiado",
     "readThrottled": "Hay demasiadas solicitudes ahora mismo, así que vuelve a intentarlo más tarde.",
     "sessionEnded": "Tu sesión ha caducado, así que inicia sesión de nuevo para continuar.",
-    "signIn": "Iniciar sesión"
+    "signIn": "Iniciar sesión",
+    "yes": "Sí"
   },
   "apiErrors": {
     "measurement": {
@@ -249,7 +250,24 @@
         "invalid": "No se pudo leer la respuesta de la passkey. Vuelve a intentarlo."
       }
     },
-    "oidc_only": "Este servidor solo permite el inicio de sesión único. Continúa con tu proveedor de identidad."
+    "oidc_only": "Este servidor solo permite el inicio de sesión único. Continúa con tu proveedor de identidad.",
+    "seizures": {
+      "disabled": "El diario de crisis está desactivado para este registro.",
+      "event": {
+        "notFound": "Esta crisis ya no existe."
+      },
+      "rescue": {
+        "notFound": "Esta dosis de rescate ya no existe.",
+        "medicationNotFound": "Este medicamento ya no existe.",
+        "medicationRequired": "Elige el medicamento que se administró.",
+        "notAsNeeded": "Una medicación de rescate tiene que ser un medicamento a demanda."
+      },
+      "type": {
+        "inUse": "Hay crisis registradas con este tipo. Archívalo en su lugar.",
+        "limit": "Ya hay 12 tipos de crisis. Archiva uno para añadir otro.",
+        "notFound": "Este tipo de crisis ya no existe."
+      }
+    }
   },
   "doctorReport": {
     "title": "Informe de salud",
@@ -574,7 +592,9 @@
       "symptom": "Síntoma",
       "symptomDescription": "Uno de tus propios síntomas, con su intensidad",
       "lifeEventDescription": "Una mudanza, un nacimiento, un nuevo trabajo",
-      "lifeEvent": "Acontecimiento vital"
+      "lifeEvent": "Acontecimiento vital",
+      "seizure": "Crisis",
+      "seizureDescription": "Inicia el cronómetro o registra una crisis no cronometrada"
     },
     "cycle": "Ciclo",
     "labs": "Análisis",
@@ -584,7 +604,8 @@
     "documents": "Documentos",
     "vaccinations": "Vacunas",
     "mentalWellbeing": "Bienestar mental",
-    "timeline": "Cronología"
+    "timeline": "Cronología",
+    "seizures": "Crisis"
   },
   "auth": {
     "login": "Iniciar sesión",
@@ -626,7 +647,9 @@
       "errorLinkRequired": "Ya existe aquí una cuenta con esta dirección de correo. Inicia sesión en ella una vez con su contraseña o llave de acceso para conectarla al inicio de sesión único."
     },
     "native": {
-      "signingInToApp": "Iniciando sesión en la app de HealthLog"
+      "signingInToApp": "Iniciando sesión en la app de HealthLog",
+      "returnTitle": "Vuelve a la app",
+      "returnBody": "El inicio de sesión continúa en la app HealthLog. Si no se ha abierto, vuelve a la app e inicia sesión allí de nuevo. Puedes cerrar esta página."
     },
     "mfa": {
       "title": "Autenticación de dos factores",
@@ -864,7 +887,8 @@
     },
     "greetingOnly": "{greeting}.",
     "welcomeNew": "Te damos la bienvenida.",
-    "welcomeNewWithName": "Te damos la bienvenida, {name}."
+    "welcomeNewWithName": "Te damos la bienvenida, {name}.",
+    "quickAddSeizure": "Registrar crisis"
   },
   "measurements": {
     "title": "Mediciones",
@@ -925,6 +949,7 @@
     "glucoseContextPostprandial": "Posprandial (2 h tras comer)",
     "glucoseContextRandom": "Cualquiera / sin contexto",
     "glucoseContextBedtime": "Antes de acostarse",
+    "glucoseContextNone": "Sin indicar",
     "unitHours": "Horas",
     "unitSteps": "Pasos",
     "sourceManual": "Manual",
@@ -981,6 +1006,7 @@
     "typeIrregularRhythmNotification": "Aviso de ritmo irregular",
     "typeHighHeartRateEvent": "Aviso de frecuencia cardíaca alta",
     "typeLowHeartRateEvent": "Aviso de frecuencia cardíaca baja",
+    "typeHypertensionEvent": "Aviso de hipertensión",
     "typeWalkingSteadinessEvent": "Aviso de estabilidad al caminar",
     "typeBreathingDisturbanceEvent": "Alteración respiratoria",
     "typeRecoveryScore": "Puntuación de recuperación",
@@ -1413,6 +1439,7 @@
       "openIllness": "Abrir"
     },
     "sourceNotification": "Notificación",
+    "sourceAppleHealth": "Apple Health",
     "tagCatalogLoadError": "No se pudieron cargar las etiquetas."
   },
   "medications": {
@@ -3926,7 +3953,8 @@
         "sleepTrendsLink": "Tendencias de sueño",
         "moodHistoryLink": "Historial de ánimo",
         "previousSessionLink": "Sesión anterior",
-        "insightTitle": "Análisis de la actividad"
+        "insightTitle": "Análisis de la actividad",
+        "sourceFitFile": "Archivo FIT"
       },
       "sport": {
         "walking": "Caminar",
@@ -4815,6 +4843,7 @@
         "irregularRhythm": "Notificación de ritmo irregular",
         "highHeartRate": "Notificación de frecuencia cardíaca alta",
         "lowHeartRate": "Notificación de frecuencia cardíaca baja",
+        "hypertension": "Aviso de hipertensión",
         "walkingSteadiness": "Alerta de estabilidad al caminar",
         "breathingDisturbance": "Alteración respiratoria durante el sueño"
       },
@@ -5059,7 +5088,8 @@
         "afternoon": "Un tramo elevado en reposo esta tarde; posiblemente algo de tensión.",
         "evening": "Un tramo elevado en reposo al anochecer; posiblemente algo de tensión.",
         "night": "Un tramo elevado en reposo por la noche; posiblemente algo de tensión."
-      }
+      },
+      "emptyOutsideWorkouts": "No hay suficientes lecturas de frecuencia cardíaca fuera de los entrenamientos para mostrar la forma de este día."
     },
     "navEcg": "ECG",
     "sectionLoadError": "No se pudo cargar esta sección.",
@@ -5493,7 +5523,7 @@
       "medicationDescription": "Sigue el cumplimiento y recibe recordatorios justo cuando los necesites.",
       "medicationCta": "Añadir medicamento",
       "dataSourceTitle": "Conectar una fuente de datos (opcional)",
-      "dataSourceDescription": "Sincroniza peso, presión, sueño y más desde Withings, WHOOP, Oura, Polar, Nightscout, Fitbit o Apple Health.",
+      "dataSourceDescription": "Sincroniza peso, presión, sueño y más desde Withings, WHOOP, Oura, Polar, Nightscout, Google Health o Apple Health.",
       "dataSourceCta": "Conectar",
       "notificationsTitle": "Configurar notificaciones",
       "notificationsDescription": "Elige cómo te recuerda HealthLog: Telegram, ntfy o Web Push.",
@@ -5639,6 +5669,15 @@
             "labsChanges": "Cambios de laboratorio",
             "ecg": "ECG"
           }
+        },
+        "documents": {
+          "title": "Documentos",
+          "autoAiRead": "Leer los documentos nuevos automáticamente con IA",
+          "honesty": "Si está activado, cada documento subido a este perfil se envía al proveedor de IA de la instancia para leerlo, describirlo e indexarlo para la búsqueda, sin tocar cada documento, y también se envían los documentos que ya hay sin resumen (hasta 200 cada vez que se activa). Activarlo registra el consentimiento de este perfil para que se lean sus documentos. Se aplican los ajustes de IA del perfil; nunca se usa tu propio proveedor de IA. Desactivado por defecto.",
+          "pageTitle": "Documentos e IA",
+          "pageSubtitle": "Si la IA lee los documentos que se suben al perfil de {name}.",
+          "noProvider": "Este servidor no tiene ningún proveedor de IA que pueda leer los documentos de {name}, así que el interruptor sigue desactivado. Quien administra el servidor puede configurar uno.",
+          "aiOff": "La IA está desactivada para el perfil de {name}, así que no se leería ningún documento."
         }
       },
       "unavailableTitle": "No disponible en este registro compartido",
@@ -5809,7 +5848,7 @@
         "subtitle": "Decide qué fuente prevalece cuando dos informan la misma métrica.",
         "nutrients": {
           "title": "Ingesta de nutrientes sincronizada",
-          "description": "Totales diarios de los últimos {days} días: lo que sincronizó Apple Health más los suplementos que tomaste.",
+          "description": "Totales diarios de los últimos {days} días: lo que sincronizó Apple Health o una app de nutrición más los suplementos que tomaste.",
           "empty": "Todavía no se han sincronizado datos de nutrientes.",
           "latest": "{amount} {unit} el {date}",
           "daysWithData": "{count} de {days} días",
@@ -5871,7 +5910,7 @@
         },
         "import": {
           "heading": "Importar",
-          "description": "Importa datos a HealthLog desde una exportación de Apple Health o un archivo JSON. La importación omite las filas que ya existen, así que repetirla es seguro.",
+          "description": "Importa datos a HealthLog desde Apple Health, Health Connect, el archivo de actividad de un reloj, un archivo JSON o un CSV. La importación omite las filas que ya existen, así que repetirla es seguro.",
           "charCount": "{used} / {max} caracteres",
           "appleHealth": {
             "title": "Apple Health",
@@ -5890,11 +5929,19 @@
             "failureInsufficientMemory": "El límite de memoria del servidor es demasiado bajo para un archivo de este tamaño. Pide a quien administra el servidor que aumente el límite de memoria de Node.js (NODE_OPTIONS=--max-old-space-size) y vuelve a subir el archivo.",
             "rowsImported": "{count} filas importadas hasta ahora",
             "doneSummary": "Listo: {imported} de {read} registros importados, {skipped} registros clínicos omitidos.",
+            "doneSummaryAuxOnly": "Listo: nada nuevo entre los {read} registros, pero sí se importaron los resultados de análisis o ECG de abajo.",
             "doneNothing": "No se importó nada de ese archivo: llegaron 0 de {read} registros.",
             "writtenByHealthLogOne": "Se omitió {count} registro que HealthLog escribió en Apple Health, porque ya está en tus datos.",
             "writtenByHealthLogOther": "Se omitieron {count} registros que HealthLog escribió en Apple Health, porque ya están en tus datos.",
             "writtenByHealthLogFew": "Se omitieron {count} registros que HealthLog escribió en Apple Health, porque ya están en tus datos.",
-            "ecgResult": "ECG: {discovered} detectados, {imported} importados, {updated} actualizados, {skipped} omitidos y {failed} fallidos. Los errores de ECG no descartan los registros compatibles importados desde export.xml.",
+            "ecgResult": "ECG: {discovered} detectados, {imported} importados, {updated} actualizados, {skipped} omitidos y {failed} fallidos.",
+            "ecgFailedNote": "Los errores de ECG no descartan los registros compatibles importados desde export.xml.",
+            "labsResult": "Resultados de laboratorio de los registros de salud: {discovered} detectados, {imported} importados, {duplicate} ya registrados, {skipped} omitidos y {failed} fallidos.",
+            "labsFailedNote": "Un resultado que falla no descarta nada más del archivo.",
+            "labsMarkersCreatedOne": "Se añadió {count} marcador nuevo a Análisis.",
+            "labsMarkersCreatedOther": "Se añadieron {count} marcadores nuevos a Análisis.",
+            "labsMarkersCreatedFew": "Se añadieron {count} marcadores nuevos a Análisis.",
+            "viewInLabs": "Ver en Análisis",
             "estimateWarning": "Los totales acumulados de {count} día(s) se estimaron a partir de la mayor fuente de la exportación. Las estadísticas nativas de Apple Health siguen siendo la referencia.",
             "phase": {
               "queued": "En cola…",
@@ -5917,7 +5964,7 @@
             "fileInputLabel": "Elegir un archivo JSON para importar",
             "schemaHint": "Dos arrays: measurements y moodEntries.",
             "docsLink": "Ver el esquema y un ejemplo.",
-            "uploadFile": "Subir archivo",
+            "uploadFile": "Elegir archivo",
             "downloadExample": "Descargar ejemplo",
             "import": "Importar",
             "invalidJson": "Eso no es JSON válido. Revisa la sintaxis e inténtalo de nuevo.",
@@ -5940,7 +5987,7 @@
             "fileInputLabel": "Elegir un archivo CSV para importar",
             "schemaHint": "Columnas: type, value, unit, measuredAt (con desfase de zona horaria) y opcionales glucoseContext, notes, externalId.",
             "docsLink": "Ver el esquema de columnas y un ejemplo.",
-            "uploadFile": "Subir archivo",
+            "uploadFile": "Elegir archivo",
             "downloadExample": "Descargar ejemplo",
             "preview": "Vista previa",
             "import": "Importar",
@@ -6037,7 +6084,7 @@
           "healthConnect": {
             "title": "Exportación de Health Connect",
             "description": "Importa el archivo ZIP que crea la app Health Connect en Android al exportar tus datos.",
-            "choose": "Elegir archivo ZIP",
+            "choose": "Elegir archivo",
             "uploading": "Subiendo…",
             "uploadFailed": "La subida ha fallado. Inténtalo de nuevo.",
             "tooLarge": "El archivo supera el tamaño que acepta este servidor.",
@@ -6073,6 +6120,53 @@
               "notHealthConnect": "Este archivo no es una exportación de Health Connect. Elige el archivo ZIP que guardó Health Connect.",
               "unsafeSchema": "Este archivo no tiene la estructura de una exportación de Health Connect y no se leyó.",
               "tooLarge": "La exportación es mayor de lo que acepta este servidor.",
+              "stagingMissing": "El archivo subido ya no estaba en el servidor. Súbelo de nuevo.",
+              "interrupted": "Un reinicio del servidor interrumpió la importación. Sube el archivo de nuevo."
+            }
+          },
+          "fit": {
+            "title": "Archivo de actividad (FIT)",
+            "description": "Importa un entrenamiento del archivo FIT de un reloj o ciclocomputador, como Garmin, Wahoo, Coros o Polar.",
+            "choose": "Elegir archivo",
+            "uploading": "Subiendo…",
+            "uploadFailed": "No se pudo subir el archivo. Inténtalo de nuevo.",
+            "tooLarge": "El archivo ocupa más de 10 MB.",
+            "rateLimited": "Demasiadas subidas en poco tiempo. Espera un minuto y vuelve a intentarlo.",
+            "busy": "Ya hay una importación en curso para tu cuenta. Espera a que termine.",
+            "failed": "La importación ha fallado. Inténtalo de nuevo.",
+            "doneSummary": "El archivo de actividad se ha importado.",
+            "doneNothing": "La importación ha terminado, pero no había nada nuevo que añadir.",
+            "dropLabel": "Suelta aquí el archivo de actividad",
+            "dropHint": "o haz clic para elegirlo: un archivo .fit, .fit.gz o .zip de hasta 10 MB.",
+            "fileInputLabel": "Archivo de actividad",
+            "privacyNote": "El archivo se borra del servidor en cuanto termina la importación. Un entrenamiento que ya está aquí desde Garmin, Apple Salud u otra app no se añade dos veces: recibe la curva de frecuencia cardiaca del archivo si no tenía ninguna. El recorrido GPS solo se guarda si Rutas de entrenamiento está activado. Volver a subir el mismo archivo no cambia nada.",
+            "steps": {
+              "garmin": "Garmin Connect: abre la actividad en la web, elige el menú del engranaje y después Exportar original. Sube el archivo ZIP tal cual.",
+              "other": "Otras apps y dispositivos: exporta la actividad como archivo FIT (.fit o .fit.gz) y súbelo aquí."
+            },
+            "phase": {
+              "queued": "Esperando para empezar",
+              "parsing": "Leyendo el archivo",
+              "upserting": "Guardando el entrenamiento"
+            },
+            "result": {
+              "imported": "Entrenamientos nuevos",
+              "merged": "Añadido a entrenamientos existentes",
+              "alreadyPresent": "Ya estaba aquí",
+              "sessionsSkipped": "Sesiones que no se pudieron leer",
+              "withSeries": "Con curva de frecuencia cardiaca",
+              "withRoute": "Con recorrido GPS"
+            },
+            "failure": {
+              "unsupportedFile": "No es un archivo de actividad. Elige un archivo .fit, .fit.gz o .zip.",
+              "archiveInvalid": "El archivo ZIP debe contener exactamente un archivo .fit y no se pudo leer.",
+              "tooLarge": "El archivo es más grande de lo que acepta este servidor.",
+              "notFit": "Este archivo no es un archivo FIT.",
+              "crcMismatch": "El archivo está dañado: su suma de comprobación no coincide. Expórtalo de nuevo.",
+              "malformed": "El archivo está dañado o incompleto y no se pudo leer.",
+              "tooComplex": "El archivo contiene muchos más datos que una actividad y no se ha leído.",
+              "notActivity": "Este archivo FIT no es una actividad (puede ser un recorrido o un resumen diario). Elige el archivo de un solo entrenamiento.",
+              "noSession": "El archivo no contiene ningún entrenamiento legible.",
               "stagingMissing": "El archivo subido ya no estaba en el servidor. Súbelo de nuevo.",
               "interrupted": "Un reinicio del servidor interrumpió la importación. Sube el archivo de nuevo."
             }
@@ -6482,7 +6576,8 @@
           "local": "Modelo local",
           "openai-compatible": "Pasarela compatible con OpenAI",
           "admin-openai": "OpenAI de administrador",
-          "antigravity": "Antigravity CLI"
+          "antigravity": "Antigravity CLI",
+          "admin-codex": "ChatGPT compartido del servidor"
         },
         "title": "Cadena de respaldo",
         "description": "Si el proveedor activo falla, HealthLog prueba el siguiente activado en este orden.",
@@ -6497,6 +6592,49 @@
         "resetDefaults": "Restablecer",
         "resetConfirmTitle": "¿Restablecer la cadena a los valores predeterminados?",
         "resetConfirmBody": "La cadena vuelve a Codex → OpenAI → Anthropic → Local → OpenAI de administrador. Tus credenciales guardadas no se modifican."
+      },
+      "namedChains": {
+        "title": "Cadenas por tarea",
+        "description": "Da a una tarea su propia cadena de proveedores; las tareas en Predeterminada mantienen sus reglas.",
+        "empty": "Aún no hay cadenas. Todas las tareas siguen la cadena de respaldo.",
+        "newChain": "Nueva cadena",
+        "newChainName": "Cadena {n}",
+        "nameLabel": "Nombre de la cadena",
+        "nameRequired": "Cada cadena necesita un nombre.",
+        "nameTaken": "Dos cadenas no pueden tener el mismo nombre.",
+        "defaultBadge": "Predeterminada",
+        "makeDefault": "Hacer predeterminada",
+        "deleteChain": "Eliminar cadena",
+        "deleteConfirmTitle": "¿Eliminar «{name}»?",
+        "deleteConfirmBody": "La cadena se elimina al guardar. Tus proveedores y claves no cambian.",
+        "deleteConfirmBodyUsed": "Las tareas que usan esta cadena ({count}) vuelven a Predeterminada al guardar. Si es la cadena predeterminada, vuelve a mandar la cadena de respaldo. Tus proveedores y claves no cambian.",
+        "bindingHint": "Con un solo proveedor, la cadena es un vínculo fijo: si no puede responder, la tarea se detiene en lugar de probar otro proveedor.",
+        "bindingShort": "Vinculada a este proveedor, sin respaldo.",
+        "egressLocal": "Se queda en este equipo",
+        "egressExternal": "Sale de este equipo",
+        "notSetUp": "Aún no configurado",
+        "defaultChainLabel": "Cadena predeterminada",
+        "defaultChainHint": "Las tareas en Predeterminada siguen esta cadena. Sus reglas habituales se mantienen: los documentos prueban primero un modelo local.",
+        "tasksHeading": "Tareas",
+        "tasksHint": "Elige la cadena de cada tarea. Una tarea con cadena propia muestra, en orden, los proveedores que prueba.",
+        "taskDefault": "Predeterminada",
+        "save": "Guardar cadenas",
+        "saved": "Cadenas guardadas",
+        "saveFailed": "No se pudieron guardar las cadenas",
+        "capabilities": {
+          "documentAi": "Leer documentos",
+          "labsOcr": "Escanear informes de laboratorio",
+          "supplementLabel": "Leer etiquetas de suplementos",
+          "medicationExtract": "Crear medicamentos a partir de texto",
+          "coach": "Coach",
+          "aboutMeQuestions": "Preguntas sobre ti",
+          "briefing": "Resumen diario",
+          "periodNarrative": "Resúmenes semanales y mensuales",
+          "statusText": "Notas de estado",
+          "workoutInsights": "Notas de entrenamiento",
+          "reactionLines": "Reacciones a nuevas mediciones"
+        },
+        "tasksNeedChain": "Crea una cadena arriba para dar a una tarea sus propios proveedores. Hasta entonces, todas las tareas siguen la predeterminada."
       },
       "activeProviderHeading": "Proveedor activo",
       "activeProviderLabel": "Configurar un proveedor",
@@ -6891,31 +7029,15 @@
       "generic": "Error desconocido al conectar. Inicia la conexión de nuevo.",
       "already_linked": "Esta cuenta de WHOOP ya está conectada a otro perfil de HealthLog. Inicia sesión en WHOOP con la cuenta de este perfil o desconéctala primero del otro perfil."
     },
-    "fitbit": "Fitbit",
-    "fitbitTag": "Fitbit y Pixel",
-    "fitbitDescription": "Conecta Fitbit para sincronizar tus datos de Fitbit y Pixel Watch: peso, frecuencia cardíaca y más.",
-    "fitbitExperimentalBadge": "Experimental",
-    "fitbitCredentials": "Credenciales de API",
-    "fitbitClientId": "Client ID",
-    "fitbitClientSecret": "Client Secret",
-    "fitbitCredentialsSaved": "Credenciales guardadas",
-    "fitbitCredentialsSavedPlaceholder": "Guardado: introduce nuevas para reemplazar",
-    "fitbitCredentialsSavedPlaceholderSecret": "Guardado: introduce nuevas para reemplazar",
-    "fitbitSaveCredentials": "Guardar",
-    "fitbitSync": "Sincronizar ahora",
-    "fitbitFullSync": "Sincronizar todos los datos",
-    "fitbitFullSyncTitle": "¿Sincronización completa?",
-    "fitbitFullSyncDescription": "Se sincronizará por completo todo el historial disponible de Fitbit. Esto puede tardar un tiempo según tu historial.",
-    "fitbitSyncResult": "{count} mediciones sincronizadas",
-    "fitbitSyncFailed": "Error de sincronización",
-    "fitbitSynchronize": "Sincronizar",
-    "fitbitDisconnect": "Desconectar",
-    "fitbitDisconnectTitle": "¿Desconectar Fitbit?",
-    "fitbitDisconnectDescription": "Se desconectará la conexión con Fitbit. Los datos sincronizados previamente se conservarán.",
-    "fitbitConnect": "Conectar con Fitbit",
-    "fitbitNoCredentials": "Introduce tus credenciales de API arriba para conectar Fitbit.",
-    "fitbitOauthConnected": "Fitbit conectado: la primera sincronización empieza en segundo plano.",
-    "fitbitOauthFailed": "Error al conectar con Fitbit",
+    "fitbitRemoval": {
+      "title": "Fitbit ya no se sincroniza",
+      "body": "Google cerró la Fitbit Web API el 30 de octubre de 2026, así que HealthLog ya no puede conectarse a Fitbit y la integración de Fitbit se ha retirado. Todo lo que ya se importó se queda: tus gráficos, exportaciones, copias de seguridad e informes médicos lo conservan, marcado todavía como Fitbit.",
+      "ways": "Para que sigan llegando los datos de un Fitbit o un Pixel Watch, conecta Google Health abajo. Lee los mismos dispositivos y te pide tu consentimiento en Google una vez. En Android también puedes importar una exportación de Health Connect.",
+      "toGoogleHealth": "Ir a Google Health",
+      "toHealthConnect": "Importar desde Health Connect",
+      "dismiss": "Entendido",
+      "dismissFailed": "No se pudo ocultar el aviso. Inténtalo de nuevo."
+    },
     "googleHealth": "Google Health",
     "googleHealthTag": "Fitbit y Pixel",
     "googleHealthBetaBadge": "Beta",
@@ -6970,18 +7092,6 @@
       "token": "El intercambio de token con Google falló. Vuelve a iniciar la conexión.",
       "generic": "Error desconocido al conectar. Vuelve a iniciar la conexión.",
       "already_linked": "Esta cuenta de Google ya está conectada a otro perfil de HealthLog. Inicia sesión en Google con la cuenta de este perfil o desconéctala primero del otro perfil."
-    },
-    "fitbitOauthError": {
-      "csrf1": "La verificación de seguridad falló porque faltaba la cookie del navegador. Inicia la conexión de nuevo en el mismo navegador.",
-      "state": "La respuesta de Fitbit no coincidió con ninguna solicitud de conexión abierta. Inicia la conexión de nuevo.",
-      "expired": "La solicitud de conexión caducó antes de completarse. Inicia la conexión de nuevo.",
-      "cross_user": "La respuesta pertenece a una solicitud de otra cuenta. Reinicia la conexión desde tu propia cuenta.",
-      "nocode": "Fitbit no devolvió un código de autorización. Inténtalo de nuevo y permite el acceso en el diálogo de Fitbit.",
-      "nocreds": "Fitbit no está configurado. Añade tus credenciales OAuth de Fitbit arriba e inténtalo de nuevo.",
-      "token": "El intercambio de token con Fitbit falló. Inicia la conexión de nuevo.",
-      "generic": "Error desconocido al conectar. Inicia la conexión de nuevo.",
-      "retired": "Google desactivó la API web de Fitbit, así que ya no se puede crear una nueva conexión de Fitbit. Conecta Google Health, que lee los mismos dispositivos.",
-      "already_linked": "Esta cuenta de Fitbit ya está conectada a otro perfil de HealthLog. Inicia sesión en Fitbit con la cuenta de este perfil o desconéctala primero del otro perfil."
     },
     "integrations": {
       "withings": {
@@ -7047,15 +7157,15 @@
     },
     "withingsViewData": "Ver tus mediciones",
     "whoopViewData": "Ver tu recuperación",
-    "fitbitViewData": "Ver tu sueño",
     "googleHealthViewData": "Ver tus pasos",
     "apiTokens": "Tokens de API",
     "apiTokensDescription": "Revisa y revoca los tokens de mediciones, entrenamientos, documentos y tomas de medicación.",
     "measurementsToken": {
       "title": "Tokens de mediciones",
-      "description": "Crea un token para que una báscula, un reloj o tu domótica añadan mediciones y valores de tus métricas personalizadas.",
+      "description": "Crea un token para que una báscula, un reloj, una app de nutrición o tu domótica añadan mediciones, valores de tus métricas personalizadas y totales diarios de nutrientes.",
       "detail": "El token se muestra una sola vez.",
-      "scopeNote": "Solo puede añadir mediciones nuevas a tu propio historial y valores a las métricas personalizadas que ya creaste: no puede leer tus datos, ni crear una métrica, ni modificar o borrar nada, ni crear otro token. Las mediciones se marcan como procedentes de un dispositivo externo, así las distingues más tarde; los valores de las métricas personalizadas no llevan esa marca. Puedes corregir ambos igualmente. El ID de una métrica personalizada es la parte que sigue a /custom-metrics/ en la dirección de su página.",
+      "scopeNote": "Solo puede añadir mediciones a tu propio historial, valores a las métricas personalizadas que ya creaste y totales diarios de nutrientes mientras el módulo de nutrientes esté activado; no puede leer, cambiar ni borrar nada. Las mediciones y los totales de nutrientes se marcan como externos. El ID de una métrica personalizada es la parte que sigue a /custom-metrics/ en la dirección de su página.",
+      "nutrientsLink": "Ver ingesta de nutrientes",
       "createFailed": "No se pudo crear el token. Inténtalo de nuevo.",
       "namePlaceholder": "Nombre, p. ej. Home Assistant",
       "appleHealth": {
@@ -7523,7 +7633,7 @@
       },
       "workoutRoutes": {
         "title": "Rutas de entrenamiento",
-        "description": "Guardar el recorrido GPS de los entrenamientos nuevos de la app de iPhone y de la exportación de Apple Salud.",
+        "description": "Guardar el recorrido GPS de los entrenamientos nuevos de la app de iPhone, de la exportación de Apple Salud, de los archivos de actividad y de Garmin.",
         "detail": "Desactivado en las cuentas nuevas. Una ruta muestra dónde vives, trabajas y entrenas, así que solo se guarda cuando lo activas. Los entrenamientos se guardan siempre y ninguna función de IA lee nunca una ruta. Al desactivarlo dejan de guardarse rutas nuevas; las ya guardadas se quedan hasta que borres el entrenamiento.",
         "loadError": "No se pudo cargar el ajuste de rutas."
       },
@@ -7825,15 +7935,6 @@
       "homePlaceUnknown": "La instancia de Dawarich ya no conoce este lugar.",
       "notConnected": "Dawarich no está conectado.",
       "generic": "No ha funcionado. Inténtalo de nuevo."
-    },
-    "fitbitRetirement": {
-      "ending": "Google desactivará la API web de Fitbit el {date}. A partir de entonces, esta conexión dejará de sincronizar.",
-      "ended": "Google desactivó la API web de Fitbit el {date}. Esta conexión ya no sincroniza.",
-      "move": "Google Health lee los mismos dispositivos Fitbit y Pixel. Conéctalo abajo para que tus datos sigan llegando. Google te pedirá tu consentimiento otra vez, porque la conexión de Fitbit no se puede transferir. Todo lo ya importado se conserva.",
-      "toCard": "Ir a Google Health",
-      "guide": "Cómo conectar Google Health",
-      "badgeEnding": "Se desactiva pronto",
-      "badgeEnded": "Desactivado"
     },
     "passkeyAddedToast": "Passkey añadida.",
     "passkeyRemovedToast": "Passkey eliminada.",
@@ -8638,7 +8739,9 @@
           "failureUnconfirmed": "Escribe exactamente el nombre de usuario de la cuenta para confirmar.",
           "failureUsernameTaken": "Este nombre de usuario ya está en uso.",
           "failureOwnerExists": "La cuenta a la que pertenece este archivo está en este servidor, y el archivo se restaura en esa cuenta. Súbelo de nuevo sin elegir una cuenta."
-        }
+        },
+        "restoreSkippedSeizureMedicationReference": "Plan de rescate o dosis de rescate de una crisis vinculados a un medicamento que no está en el archivo (se conservan sin el vínculo)",
+        "restoreSkippedSeizureTypeReference": "Crisis vinculada a un tipo de crisis que no está en el archivo (se conserva sin el tipo)"
       },
       "danger-zone": {
         "title": "Zona de peligro",
@@ -9523,6 +9626,12 @@
       "titleRecovered": "La tarea en segundo plano vuelve a funcionar: {queue}",
       "bodyFailing": "La tarea en segundo plano {queue} ha fallado {failures} veces seguidas y aparece en la página de estado de administración. Último error: {error}",
       "bodyRecovered": "La tarea en segundo plano {queue} se ha vuelto a ejecutar correctamente."
+    },
+    "eventSeizureCluster": "Racimo de crisis",
+    "eventSeizureClusterDesc": "Cuando una crisis registrada por otra persona forma un racimo según la regla del diario. Una vez por racimo.",
+    "seizureCluster": {
+      "title": "Racimo de crisis",
+      "body": "{count} crisis en {hours} h, registradas por {name}. El plan de rescate está en el diario de crisis."
     }
   },
   "i18n": {
@@ -10403,12 +10512,14 @@
     "addResult": "Añadir valor",
     "addDescription": "Registra un biomarcador a partir de un informe de laboratorio.",
     "addFirst": "Añade tu primer resultado",
+    "importAction": "Importar desde Apple Health o CSV",
     "emptyTitle": "Aún no hay resultados",
     "emptyDescription": "Registra analíticas como HbA1c, LDL o ferritina para seguirlas a lo largo del tiempo y compartirlas con tu médico.",
     "referenceLabel": "Referencia",
     "readingsCount": "{count} mediciones",
     "deleteConfirmTitle": "¿Eliminar resultado de laboratorio?",
     "deleteConfirmDescription": "Este resultado de laboratorio se eliminará. Justo después podrás deshacerlo durante un breve momento.",
+    "deleteAppleHealthNote": "No volverá con la próxima importación de Apple Health.",
     "deletedToast": "Resultado eliminado",
     "deleteError": "No se pudo eliminar el resultado",
     "loadError": "No se pudieron cargar los resultados",
@@ -10492,8 +10603,8 @@
         "365": "1 a",
         "all": "Todo"
       },
-      "sourceRangeLabel": "Rango del informe",
-      "sourceBandLegend": "Segunda banda: el rango impreso en el informe del {date}.",
+      "sourceRangeLabel": "Rango del laboratorio",
+      "sourceBandLegend": "Segunda banda: el rango que dio el laboratorio con el resultado del {date}.",
       "sourceBandMixed": "Segunda banda: el rango impreso en el informe más reciente. Informes anteriores del periodo indican rangos distintos."
     },
     "biomarker": {
@@ -10729,9 +10840,9 @@
       "orderDefault": "Hasta que muevas una, las categorías integradas siguen un orden fijo, las tuyas van por orden alfabético y {other} al final."
     },
     "sourceRange": {
-      "fromReport": "Rango del informe {range}",
+      "fromReport": "Rango del laboratorio {range}",
       "catalogDiffers": "tu rango {range}",
-      "printed": "impreso en {unit}: {range}"
+      "printed": "indicado en {unit}: {range}"
     },
     "match": {
       "viaAlias": "por un nombre que elegiste antes",
@@ -10822,6 +10933,10 @@
       "markerCountOther": "{count} biomarcadores",
       "noMatchesTitle": "No se encontraron biomarcadores",
       "noMatchesDescription": "Intenta cambiar los términos de búsqueda o los filtros."
+    },
+    "source": {
+      "OCR": "Informe escaneado",
+      "DOCUMENT": "Documento"
     }
   },
   "modules": {
@@ -10895,7 +11010,7 @@
     },
     "nutrients": {
       "label": "Ingesta de nutrientes",
-      "description": "Totales diarios de micronutrientes sincronizados desde Apple Health."
+      "description": "Totales diarios de nutrientes desde Apple Health o una app de nutrición: agua, energía, macros, vitaminas y minerales."
     },
     "vaccinations": {
       "label": "Vacunas",
@@ -10904,6 +11019,10 @@
     "timeline": {
       "label": "Cronología",
       "description": "Años de un vistazo: enfermedades, medicamentos y visitas junto a tus valores, además de tus propios acontecimientos vitales."
+    },
+    "seizures": {
+      "label": "Diario de crisis",
+      "description": "Registra las crisis con su tipo, duración y medicación de rescate, consulta los racimos y los días sin crisis, y añade una sección de crisis al informe médico."
     }
   },
   "moduleOff": {
@@ -11603,7 +11722,8 @@
       "totalLabel": "Puntuación",
       "bandLabel": "Categoría",
       "answersToggle": "Respuestas",
-      "answersUnavailable": "Las respuestas guardadas de esta revisión no se pueden descifrar."
+      "answersUnavailable": "Las respuestas guardadas de esta revisión no se pueden descifrar.",
+      "answersNotShared": "Realizado en Apple Health. Solo se compartió la puntuación, no las respuestas."
     },
     "crisis": {
       "title": "No tienes que afrontar esto a solas",
@@ -12257,7 +12377,8 @@
       "duplicateExists": "Ya hay guardado un documento idéntico.",
       "uploadBusy": "El servidor estaba ocupado con otras subidas. Inténtalo de nuevo ahora.",
       "rateLimited": "Has alcanzado el límite de subidas de esta hora. Inténtalo de nuevo más tarde.",
-      "generic": "La subida falló. Inténtalo de nuevo."
+      "generic": "La subida falló. Inténtalo de nuevo.",
+      "recordChanged": "El registro abierto cambió mientras se subía este archivo. Vuelve a subirlo."
     },
     "toast": {
       "duplicate": "Ya estaba guardado. Se resalta el documento existente.",
@@ -12287,7 +12408,8 @@
       "description": "Guarda cartas médicas, resultados de laboratorio, imágenes, recetas y certificados de vacunación. Se guardan cifrados y puedes buscarlos por tipo, afección y año.",
       "action": "Subir un primer documento",
       "noMatchesTitle": "No hay documentos coincidentes",
-      "noMatchesDescription": "Nada coincide con la búsqueda y los filtros actuales."
+      "noMatchesDescription": "Nada coincide con la búsqueda y los filtros actuales.",
+      "titleRecord": "El archivo de documentos de {name} está vacío"
     },
     "detail": {
       "title": "Detalles del documento",
@@ -12593,6 +12715,10 @@
     "picker": {
       "capped": "Se muestran los {count} más recientes. Usa la búsqueda para encontrar un documento más antiguo.",
       "cappedSearching": "Se muestran las {count} coincidencias más recientes. Afina la búsqueda para encontrar una más antigua."
+    },
+    "recordAi": {
+      "noProvider": "Ningún proveedor de IA de este servidor puede leer los documentos de este registro, así que no tienen resumen, búsqueda por contenido ni chat de documentos.",
+      "off": "La IA está desactivada para este registro, así que sus documentos no tienen resumen, búsqueda por contenido ni chat de documentos."
     }
   },
   "selfDescription": {
@@ -12714,15 +12840,29 @@
       "water": "Agua",
       "caffeine": "Cafeína",
       "dha": "DHA (ácido graso omega-3)",
-      "epa": "EPA (ácido graso omega-3)"
+      "epa": "EPA (ácido graso omega-3)",
+      "energy": "Energía",
+      "protein": "Proteínas",
+      "carbohydrates": "Carbohidratos",
+      "fat": "Grasas",
+      "saturated_fat": "Grasas saturadas",
+      "monounsaturated_fat": "Grasas monoinsaturadas",
+      "polyunsaturated_fat": "Grasas poliinsaturadas",
+      "sugar": "Azúcares",
+      "fiber": "Fibra",
+      "cholesterol": "Colesterol",
+      "sodium": "Sodio",
+      "potassium": "Potasio",
+      "alcohol": "Alcohol"
     },
     "page": {
       "title": "Ingesta de nutrientes",
-      "description": "Hidratación e ingesta de vitaminas/minerales sincronizadas desde la app de salud de tu teléfono, más entradas manuales de agua.",
-      "moduleOffDescription": "Activa el módulo de nutrientes para ver aquí la hidratación y la ingesta de vitaminas/minerales. Los datos sincronizados pasarán a formar parte del registro que el Coach puede leer.",
+      "description": "Agua, energía, macros, vitaminas y minerales desde tu app de salud o de nutrición, más entradas de agua.",
+      "moduleOffDescription": "Activa el módulo de nutrientes para ver aquí la hidratación, la energía, los macronutrientes y la ingesta de vitaminas/minerales. Los datos sincronizados pasarán a formar parte del registro que el Coach puede leer.",
       "moduleOffCta": "Activar nutrientes",
       "emptyTitle": "Aún no hay datos de nutrientes",
-      "emptyDescription": "Los datos llegan desde la sincronización de la app de salud de tu teléfono o desde una entrada manual de agua.",
+      "emptyDescription": "Los datos llegan desde la sincronización de la app de salud de tu teléfono, desde una app de nutrición con un token de mediciones o desde una entrada manual de agua.",
+      "emptyTokenAction": "Crear un token de mediciones",
       "loadError": "No se pudieron cargar tus datos de nutrientes",
       "lastAttemptTitle": "Se recibió una sincronización, pero no se pudo guardar nada",
       "lastAttemptAt": "Último intento: {date}",
@@ -12735,16 +12875,21 @@
       }
     },
     "hydration": {
-      "referenceMeta": "Ingesta de referencia {value} {unit}/día (EFSA)",
+      "referenceMeta": "Ingesta de referencia {value} {unit}/día ({authority})",
       "loadError": "No se pudo cargar el agua."
     },
     "caffeine": {
-      "ceilingMeta": "Límite de seguridad {value} {unit}/día (EFSA)",
+      "ceilingMeta": "Límite de seguridad {value} {unit}/día ({authority})",
       "loadError": "No se pudo cargar la cafeína."
     },
     "micronutrients": {
-      "title": "Vitaminas y minerales",
-      "rowMeta": "{days} de {window} días, ref. {value} {unit} (EFSA)",
+      "title": "Micronutrientes",
+      "groups": {
+        "vitamin": "Vitaminas",
+        "mineral": "Minerales",
+        "omega3": "Ácidos grasos omega-3"
+      },
+      "rowMeta": "{days} de {window} días, ref. {value} {unit} ({authority})",
       "rowMetaNoRef": "{days} de {window} días",
       "footer": "{tracked} de {total} micronutrientes registrados tienen datos en este periodo.",
       "emptyTitle": "Aún no hay datos de micronutrientes sincronizados",
@@ -12759,14 +12904,35 @@
         "alpha_tocopherol": "El nivel está fijado para el alfa-tocoferol."
       }
     },
-    "sparseNote": "Un valor bajo aquí suele significar un registro escaso, no una deficiencia: los totales diarios de Apple Health reflejan lo que registraron tus apps, no la ingesta dietética total.",
+    "sparseNote": "Un valor bajo aquí suele significar un registro escaso, no una deficiencia: los totales diarios reflejan lo que registraron tus apps, no la ingesta dietética total. Cuando una app de nutrición y Apple Health informan del mismo día, cuenta el total mayor.",
     "units": {
       "IU": "UI"
     },
     "sources": {
-      "APPLE_HEALTH": "Sincronizado",
-      "MANUAL": "Introducido",
       "SUPPLEMENT": "Suplementos"
+    },
+    "macros": {
+      "title": "Energía y macronutrientes",
+      "pickLabel": "Nutriente",
+      "referenceMeta": "Referencia {value} {unit}/día ({authority})",
+      "targetMeta": "Tu objetivo {value} {unit}/día",
+      "limitMeta": "Tu límite {value} {unit}/día",
+      "sheetTitle": "Objetivo diario: {name}",
+      "sheetDescription": "Una cantidad diaria que alcanzar o no superar, dibujada como la línea discontinua del gráfico.",
+      "clearTarget": "Quitar objetivo",
+      "removeTitle": "¿Quitar este objetivo?",
+      "removeBody": "El gráfico vuelve al valor de referencia, si lo hay. La cantidad que fijaste no se guarda en ningún otro sitio.",
+      "targetLabel": "{name} al día en {unit}",
+      "boundsHint": "Más de 0, como máximo {max} {unit} al día.",
+      "directionLabel": "Tipo de objetivo",
+      "directionTarget": "Alcanzar al menos",
+      "directionLimit": "Quedarse por debajo",
+      "saveFailed": "No se pudo guardar el objetivo. Inténtalo de nuevo.",
+      "loadError": "No se pudieron cargar la energía y los macronutrientes.",
+      "gearLabel": "Fijar el objetivo diario de {name}"
+    },
+    "alcohol": {
+      "loadError": "No se pudo cargar el alcohol."
     }
   },
   "daily": {
@@ -12795,8 +12961,7 @@
       },
       "preventiveCare": {
         "title": "Revisión pendiente",
-        "body": "{label} está pendiente.",
-        "bodyManyNamed": "Pendientes: {labels}"
+        "body": "{label} está pendiente."
       },
       "syncIssue": {
         "title": "La sincronización necesita atención",
@@ -12958,7 +13123,8 @@
       },
       "medications": {
         "label": "Medicamentos",
-        "value": "{taken} de {scheduled} tomados"
+        "value": "{taken} de {scheduled} tomados",
+        "next": "Próxima toma a las {time}"
       },
       "appointment": {
         "label": "Cita",
@@ -13033,14 +13199,16 @@
     "leafEmergency": "Información de emergencia (grupo sanguíneo, contactos, voluntades)",
     "leafMedicationEffect": "Cambio en torno al inicio de cada medicamento (requiere la lista de medicamentos)",
     "leafWorkouts": "Entrenamientos (resumen por deporte)",
-    "leafHrvSdnn": "VFC (SDNN)"
+    "leafHrvSdnn": "VFC (SDNN)",
+    "leafSeizures": "Diario de crisis"
   },
   "recordSharing": {
     "banner": {
       "viewing": "Estás en el historial de {name}",
       "readOnly": "Puedes leerlo, no modificarlo.",
       "canAdd": "Puedes añadir cosas, pero no cambiar ni borrar lo que hay.",
-      "leave": "Volver a mi historial"
+      "leave": "Volver a mi historial",
+      "canManage": "Puedes añadir cosas y cambiar o quitar lo que hay."
     },
     "switcher": {
       "label": "Abrir un historial",
@@ -13337,6 +13505,7 @@
       "medicationCourseEnd": "{name} terminó un tratamiento",
       "medicationDelete": "{name} eliminó un medicamento",
       "medicationGlp1Update": "{name} cambió un tratamiento con GLP-1",
+      "medicationGlp1DoseChangeDelete": "{name} eliminó un escalón de dosis de GLP-1",
       "medicationScheduleCreate": "{name} añadió una pauta de dosificación",
       "medicationScheduleUpdate": "{name} cambió una pauta de dosificación",
       "medicationScheduleDelete": "{name} eliminó una pauta de dosificación",
@@ -13393,6 +13562,16 @@
       "documentStore": "{name} añadió un documento",
       "documentUpdate": "{name} cambió un documento",
       "documentDiscard": "{name} descartó un documento",
+      "documentRestore": "{name} restauró un documento",
+      "documentBulk": "{name} cambió varios documentos",
+      "documentConfirm": "{name} confirmó valores de un documento",
+      "documentExtract": "{name} leyó los valores de un documento",
+      "documentIndex": "{name} hizo que un documento se pueda buscar",
+      "documentReindex": "{name} hizo que los documentos se puedan buscar",
+      "documentSuggest": "{name} pidió los datos de un documento",
+      "documentSummary": "{name} resumió un documento",
+      "documentChat": "{name} preguntó sobre un documento",
+      "documentFactEdit": "{name} corrigió un valor de un documento",
       "medicationIntakeImportFinished": "La importación de dosis que inició {name} ha terminado",
       "medicationOneShotReconciled": "Un medicamento de una sola toma se abrió o se cerró tras una dosis que registró {name}",
       "vaccinationBoosterPlanned": "{name} planificó un refuerzo",
@@ -13416,7 +13595,17 @@
       "cycleFeedCreate": "{name} activó la suscripción de calendario",
       "cycleFeedUpdate": "{name} cambió la suscripción de calendario",
       "cycleFeedRotate": "{name} renovó el enlace de la suscripción de calendario",
-      "cycleFeedRevoke": "{name} desactivó la suscripción de calendario"
+      "cycleFeedRevoke": "{name} desactivó la suscripción de calendario",
+      "seizureEventCreate": "{name} registró una crisis",
+      "seizureRescueCreate": "{name} registró una dosis de rescate",
+      "seizureEventUpdate": "{name} editó una crisis",
+      "seizureEventDelete": "{name} eliminó una crisis",
+      "seizureRescueUpdate": "{name} editó una dosis de rescate",
+      "seizureRescueDelete": "{name} eliminó una dosis de rescate",
+      "seizureTypeCreate": "{name} añadió un tipo de crisis",
+      "seizureTypeUpdate": "{name} editó un tipo de crisis",
+      "seizureTypeDelete": "{name} eliminó un tipo de crisis",
+      "seizureSettingsUpdate": "{name} cambió la regla de crisis en racimo"
     },
     "section": {
       "measurements": {
@@ -13437,7 +13626,7 @@
       },
       "illness": {
         "label": "Enfermedades",
-        "detail": "Los episodios de enfermedad y los registros diarios asociados."
+        "detail": "Los episodios de enfermedad y los registros diarios asociados, tus propios síntomas y el diario de crisis. Una dosis de rescate registrada en el diario de crisis también queda registrada en su medicamento."
       },
       "mind": {
         "label": "Ánimo y bienestar mental",
@@ -13816,6 +14005,7 @@
     "usualRange": "Habitual de {lo} a {hi}",
     "groups": {
       "scores": "Puntuaciones",
+      "nutrients": "Nutrición",
       "running": "En curso ese día",
       "values": "Valores",
       "happened": "Qué pasó",
@@ -13891,6 +14081,12 @@
       "travelYes": "Sí",
       "kilometres": "{value} km",
       "miles": "{value} mi"
+    },
+    "nutrients": {
+      "micronutrientsOne": "{count} micronutriente registrado",
+      "micronutrientsOther": "{count} micronutrientes registrados",
+      "micronutrientsFew": "{count} micronutrientes registrados",
+      "open": "Ver ingesta de nutrientes"
     }
   },
   "timeline": {
@@ -13913,7 +14109,8 @@
       "visits": "Médico e intervenciones",
       "labs": "Laboratorio",
       "documents": "Documentos",
-      "cycle": "Ciclo"
+      "cycle": "Ciclo",
+      "seizures": "Crisis"
     },
     "readiness": {
       "title": "Lo que tu cronología ya muestra",
@@ -13988,7 +14185,10 @@
         "environmentOne": "{count} día con datos ambientales",
         "environmentFew": "{count} días con datos ambientales",
         "environmentOther": "{count} días con datos ambientales",
-        "empty": "Aún ninguno"
+        "empty": "Aún ninguno",
+        "seizuresOne": "{count} día con crisis",
+        "seizuresFew": "{count} días con crisis",
+        "seizuresOther": "{count} días con crisis"
       },
       "gap": {
         "valuesEmpty": "Conectar fuentes",
@@ -13998,7 +14198,8 @@
         "documentsUndated": "Revisar",
         "labsEmpty": "Añadir resultado",
         "vaccinationsEmpty": "Añadir vacunas",
-        "lifeEventsEmpty": "Añadir"
+        "lifeEventsEmpty": "Añadir",
+        "seizuresEmpty": "Registrar una crisis"
       },
       "gapLine": {
         "medicationsWithoutStartOne": "{count} medicamento sin fecha de inicio",
@@ -14012,7 +14213,8 @@
         "visitsEmpty": "Aún no hay visitas médicas realizadas",
         "labsEmpty": "Aún no hay resultados de laboratorio",
         "vaccinationsEmpty": "Aún no hay vacunas",
-        "lifeEventsEmpty": "Aún no hay acontecimientos vitales"
+        "lifeEventsEmpty": "Aún no hay acontecimientos vitales",
+        "seizuresEmpty": "Aún no hay crisis registradas"
       }
     },
     "legendSpan": "Periodo",
@@ -14103,7 +14305,10 @@
     "item": {
       "labValuesOne": "1 valor de laboratorio",
       "labValuesFew": "{count} valores de laboratorio",
-      "labValuesOther": "{count} valores de laboratorio"
+      "labValuesOther": "{count} valores de laboratorio",
+      "seizuresOne": "1 crisis",
+      "seizuresFew": "{count} crisis",
+      "seizuresOther": "{count} crisis"
     },
     "labs": {
       "menuTitle": "Valores de laboratorio",
@@ -14478,5 +14683,436 @@
       "endsOn": "Fin"
     },
     "unitlessHint": "Un cociente o un índice sin unidad (INR, colesterol/HDL): escribe 1 en la columna de la unidad. Una unidad vacía sigue siendo un error."
+  },
+  "seizures": {
+    "ilae": {
+      "FOCAL_PRESERVED": {
+        "current": "Crisis focal con conciencia preservada",
+        "ilae2017": "Crisis focal consciente"
+      },
+      "FOCAL_IMPAIRED": {
+        "current": "Crisis focal con conciencia alterada",
+        "ilae2017": "Crisis focal con alteración de la conciencia"
+      },
+      "FOCAL_UNDETERMINED": {
+        "current": "Crisis focal",
+        "ilae2017": "Crisis de inicio focal"
+      },
+      "FOCAL_TO_BILATERAL_TC": {
+        "current": "Crisis focal con evolución a tónico-clónica bilateral",
+        "ilae2017": "Crisis focal con evolución a tónico-clónica bilateral"
+      },
+      "GENERALIZED_UNDETERMINED": {
+        "current": "Crisis generalizada",
+        "ilae2017": "Crisis de inicio generalizado"
+      },
+      "GENERALIZED_TC": {
+        "current": "Crisis tónico-clónica generalizada",
+        "ilae2017": "Crisis tónico-clónica de inicio generalizado"
+      },
+      "GEN_CLONIC": {
+        "current": "Crisis clónica generalizada",
+        "ilae2017": "Crisis clónica de inicio generalizado"
+      },
+      "GEN_TONIC": {
+        "current": "Crisis tónica generalizada",
+        "ilae2017": "Crisis tónica de inicio generalizado"
+      },
+      "GEN_MYOCLONIC": {
+        "current": "Crisis mioclónica generalizada",
+        "ilae2017": "Crisis mioclónica de inicio generalizado"
+      },
+      "GEN_MYOCLONIC_ATONIC": {
+        "current": "Crisis mioclónico-atónica generalizada",
+        "ilae2017": "Crisis mioclónico-atónica de inicio generalizado"
+      },
+      "GEN_ATONIC": {
+        "current": "Crisis atónica generalizada",
+        "ilae2017": "Crisis atónica de inicio generalizado"
+      },
+      "GEN_NEGATIVE_MYOCLONIC": {
+        "current": "Crisis mioclónica negativa generalizada"
+      },
+      "GEN_SPASMS": {
+        "current": "Espasmos epilépticos generalizados",
+        "ilae2017": "Espasmos epilépticos de inicio generalizado"
+      },
+      "ABSENCE_TYPICAL": {
+        "current": "Crisis de ausencia típica",
+        "ilae2017": "Crisis generalizada no motora (ausencia), típica"
+      },
+      "ABSENCE_ATYPICAL": {
+        "current": "Crisis de ausencia atípica",
+        "ilae2017": "Crisis generalizada no motora (ausencia), atípica"
+      },
+      "ABSENCE_MYOCLONIC": {
+        "current": "Crisis de ausencia mioclónica",
+        "ilae2017": "Crisis generalizada no motora (ausencia), mioclónica"
+      },
+      "EYELID_MYOCLONIA": {
+        "current": "Mioclonías palpebrales (con o sin ausencia)",
+        "ilae2017": "Ausencia con mioclonías palpebrales"
+      },
+      "UNKNOWN_UNDETERMINED": {
+        "current": "Crisis, sin saber si focal o generalizada",
+        "ilae2017": "Crisis de inicio desconocido"
+      },
+      "UNKNOWN_PRESERVED": {
+        "current": "Sin saber si focal o generalizada, conciencia preservada",
+        "ilae2017": "Crisis de inicio desconocido, consciente"
+      },
+      "UNKNOWN_IMPAIRED": {
+        "current": "Sin saber si focal o generalizada, conciencia alterada",
+        "ilae2017": "Crisis de inicio desconocido, con alteración de la conciencia"
+      },
+      "UNKNOWN_BILATERAL_TC": {
+        "current": "Crisis tónico-clónica bilateral, sin saber si focal o generalizada",
+        "ilae2017": "Crisis tónico-clónica de inicio desconocido"
+      },
+      "UNCLASSIFIED": {
+        "current": "Crisis no clasificada",
+        "ilae2017": "Crisis no clasificada"
+      }
+    },
+    "ilaeClass": {
+      "FOCAL": "Inicio focal",
+      "GENERALIZED": "Inicio generalizado",
+      "UNKNOWN": "Sin saber si focal o generalizada",
+      "UNCLASSIFIED": "No clasificada"
+    },
+    "route": {
+      "BUCCAL": "Bucal",
+      "INTRANASAL": "Intranasal",
+      "RECTAL": "Rectal",
+      "ORAL": "Oral",
+      "SUBLINGUAL": "Sublingual",
+      "IM": "Intramuscular",
+      "IV_BY_EMS": "Intravenosa (servicios de emergencia)"
+    },
+    "effect": {
+      "STOPPED": "La crisis cedió",
+      "REDUCED": "La crisis se atenuó",
+      "NO_EFFECT": "Sin efecto",
+      "UNKNOWN": "No se sabe"
+    },
+    "trigger": {
+      "MISSED_DOSE": "Dosis olvidada",
+      "SLEEP_DEPRIVATION": "Falta de sueño",
+      "FEVER": "Fiebre",
+      "ILLNESS": "Enfermedad",
+      "MENSTRUATION": "Regla",
+      "ALCOHOL": "Alcohol",
+      "FLASHING_LIGHTS": "Luces intermitentes",
+      "STRESS": "Estrés",
+      "OTHER": "Otro",
+      "NONE_IDENTIFIED": "Ninguno identificado"
+    },
+    "sleepState": {
+      "AWAKE": "Despierto",
+      "ASLEEP": "Dormido",
+      "ON_WAKING": "Al despertar",
+      "UNKNOWN": "No se sabe"
+    },
+    "type": {
+      "unreadable": "Nombre ilegible"
+    },
+    "report": {
+      "title": "Diario de crisis",
+      "untyped": "Sin tipo registrado",
+      "ruleText": "{count} o más en {hours} h",
+      "recorded": "Crisis registradas",
+      "seizureDays": "Días con crisis",
+      "seizureFreeDays": "Días sin crisis registradas",
+      "per28Days": "Crisis cada 28 días",
+      "longestFree": "Periodo más largo sin crisis registradas",
+      "daysValue": "{count} días",
+      "daysSinceLast": "Días desde la última crisis registrada",
+      "convulsive": "Crisis tónico-clónicas bilaterales",
+      "fromSleep": "Crisis durante el sueño",
+      "clusters": "Crisis en racimo (regla: {rule})",
+      "niceClusters": "según NICE: 3 en 24 h",
+      "rescueDoses": "Dosis de rescate administradas",
+      "emergencies": "Servicios de emergencia, urgencias, ingresos",
+      "emergencyValue": "{ems} / {ed} / {admitted}",
+      "suspected": "Episodios sospechosos (no contados arriba)",
+      "monthlyTitle": "Crisis por tipo y mes",
+      "monthlyNote": "Crisis por mes, con el número de días en que ocurrieron entre paréntesis.",
+      "type": "Tipo",
+      "total": "Total",
+      "chartTitle": "Crisis por mes y cambios de medicación",
+      "markersTitle": "Cambios de medicación:",
+      "marker": {
+        "start": "({n}) {date} inicio de {name}",
+        "stop": "({n}) {date} retirada de {name}",
+        "change": "({n}) {date} {name} cambiado a {dose}"
+      },
+      "markersNote": "Cambios en la medicación pautada de forma regular, mostrados junto a los recuentos. El diario no indica si un cambio produjo alguna diferencia.",
+      "durationTitle": "Duración",
+      "timed": "Con duración",
+      "median": "Mediana",
+      "max": "La más larga",
+      "overT1": "En t1 o por encima",
+      "prolonged": "2 min más de lo habitual",
+      "durationNote": "Duraciones en min:s. t1 es el tiempo a partir del cual corresponde el tratamiento de urgencia (ILAE, Trinka 2015: tónico-clónica 5 min, focal con alteración de la conciencia y ausencia 10 min). «2 min más de lo habitual» cuenta las crisis que duraron al menos 2 minutos más que la duración habitual de esta persona (NICE NG217).",
+      "rescueTitle": "Medicación de rescate",
+      "date": "Fecha",
+      "drug": "Medicamento",
+      "dose": "Dosis",
+      "route": "Vía",
+      "minutesFromOnset": "Minutos tras el inicio",
+      "effect": "Efecto",
+      "triggersTitle": "Desencadenantes sospechados",
+      "triggersNote": "Indicados por la persona o su cuidador al registrar; no son causas establecidas.",
+      "overlaysTitle": "Registrado a la vez",
+      "overlayMissedDose": "{followed} de {of} crisis siguieron a una dosis pautada olvidada u omitida en las 48 horas previas.",
+      "overlayIllness": "{during} crisis ocurrieron durante uno de {episodes} episodios de enfermedad registrados.",
+      "overlaySleep": "Sueño registrado la noche anterior a un día con crisis: {before} h de media ({nightsBefore} noches); otras noches: {other} h ({nightsOther} noches).",
+      "overlayCycleDays": "Crisis por día del ciclo (día: número): {list}.",
+      "overlayCycleRatio": "En {cycles} ciclos completos registrados, la tasa de crisis por día en torno a la regla (día −3 a +3) fue {c1} veces la de los demás días, y {c2} veces en torno a la ovulación (día 10 a −13). El criterio catamenial de Herzog es un aumento del doble o más; esto es una referencia, no un hallazgo.",
+      "overlayCycleTooFew": "Las tasas por fase del ciclo se muestran a partir de tres ciclos completos registrados ({cycles} hasta ahora).",
+      "overlaysNote": "Son cosas registradas al mismo tiempo, no causas.",
+      "eventsTitle": "Todos los episodios registrados",
+      "duration": "Duración",
+      "sleep": "Sueño",
+      "rescueShort": "Rescate",
+      "injury": "Lesión",
+      "note": "Nota",
+      "suspectedMark": "(sospecha)",
+      "eventsTruncated": "Solo se listan los 200 episodios más recientes; las cifras de arriba los incluyen todos.",
+      "classificationNote": "Los tipos de crisis siguen la clasificación ILAE 2025; los nombres ILAE 2017 son:",
+      "footer": "Diario registrado por el paciente o su cuidador. Son crisis registradas, probablemente menos de las reales, sobre todo las que ocurren durante el sueño. El diario recoge observaciones y no diagnostica ni evalúa las crisis.",
+      "seizureDaysValue": "en {count} días"
+    },
+    "title": "Diario de crisis",
+    "subtitle": "Las crisis tal como se observaron, con el tipo, la duración y la medicación de rescate administrada.",
+    "loadError": "No se pudo cargar el diario de crisis.",
+    "saveError": "No se pudo guardar. Inténtalo de nuevo.",
+    "untyped": "Sin tipo",
+    "notRecorded": "No registrado",
+    "ilaeWith2017": "{current} (ILAE 2017: {legacy})",
+    "safety": {
+      "header": "Este diario recoge lo que observas para que puedas compartirlo con el equipo médico. No diagnostica ni evalúa las crisis. Sigue el plan de emergencia acordado con tu médico.",
+      "timer": "Llama a emergencias ({number} o tu número local) si una crisis con sacudidas o rigidez dura 5 minutos o más, si sigue otra crisis antes de que la persona se recupere, si le cuesta respirar, si se ha lesionado, si la crisis ocurrió en el agua o si es su primera crisis. Tu propio plan de emergencia tiene prioridad.",
+      "notifications": "HealthLog no es una alarma de crisis ni un producto sanitario. Solo registra lo que se introduce aquí."
+    },
+    "quick": {
+      "title": "Registro rápido",
+      "typeGroup": "Tipo de crisis",
+      "elapsedLabel": "Tiempo desde el inicio de la crisis",
+      "startedAt": "Empezó a las {time}",
+      "start": "La crisis ha empezado",
+      "stop": "La crisis ha terminado",
+      "rescueGiven": "Rescate administrado: {name}",
+      "rescueGivenCount": "Rescate administrado ({count}), toca para otra dosis",
+      "threshold": {
+        "t1": "La crisis dura ya más de {time}. Sigue el plan de emergencia.",
+        "usualPlusTwo": "La crisis dura ya más de {time}, 2 minutos más de lo habitual. Sigue el plan de emergencia.",
+        "generic": "La crisis dura ya más de {time}. Sigue el plan de emergencia."
+      },
+      "noPlan": "No hay ningún plan guardado para este tipo de crisis. Llama a emergencias si tienes dudas.",
+      "call": "Llamar al {number}",
+      "recorded": "Crisis registrada",
+      "recordedLine": "Registrada, duración {duration}.",
+      "addDetails": "Añadir detalles",
+      "logPast": "Registrar una crisis no cronometrada",
+      "discard": "Descartar el cronómetro",
+      "discardTitle": "¿Descartar el cronómetro en marcha?",
+      "discardConfirm": "No se registra nada y se pierde la hora de inicio."
+    },
+    "summary": {
+      "title": "Registrado",
+      "recorded": "Crisis registradas desde el {date}",
+      "seizureDays": "Días con crisis",
+      "sinceLast": "Días desde la última crisis registrada",
+      "longestFree": "Periodo más largo sin crisis, días",
+      "clusters": "Racimos ({rule})",
+      "niceClusters": "Racimos según NICE (3 en 24 h)",
+      "suspected": "{count} crisis sospechosas aparecen en la lista pero no se cuentan.",
+      "clusterLine": "Desde {start}: {count} crisis",
+      "monthlyCaption": "Crisis por tipo y mes",
+      "undercount": "Crisis registradas, probablemente menos de las reales, sobre todo las que ocurren durante el sueño."
+    },
+    "list": {
+      "title": "Crisis registradas",
+      "empty": "No hay crisis registradas en los últimos 90 días.",
+      "rescue": "Rescate",
+      "loggedByDelegate": "registrada por una persona con acceso",
+      "showAll": "Mostrar las {count}",
+      "truncated": "Solo se muestran las crisis más recientes.",
+      "loggedByYou": "registrado por ti",
+      "loggedByName": "registrado por {name}",
+      "cluster": "Racimo"
+    },
+    "certainty": {
+      "CONFIRMED": "Crisis",
+      "SUSPECTED": "Sospecha"
+    },
+    "onsetPrecision": {
+      "EXACT": "Hora exacta",
+      "APPROX": "Hacia esta hora",
+      "UNKNOWN_TIME": "Hora desconocida"
+    },
+    "durationSource": {
+      "TIMED": "Cronometrada",
+      "ESTIMATED": "Estimada",
+      "UNKNOWN": "No se sabe"
+    },
+    "functionState": {
+      "PRESERVED": "Preservada",
+      "IMPAIRED": "Alterada",
+      "UNKNOWN": "No estoy seguro"
+    },
+    "emergency": {
+      "NONE": "Ninguna",
+      "EMS_CALLED": "Se llamó a emergencias",
+      "ED_VISIT": "Urgencias",
+      "ADMITTED": "Ingreso hospitalario"
+    },
+    "observer": {
+      "SELF": "La propia persona",
+      "PARENT": "Madre o padre",
+      "PARTNER": "Pareja",
+      "FAMILY": "Familiar",
+      "CARER": "Cuidador",
+      "TEACHER": "Docente",
+      "CLINICIAN": "Profesional sanitario",
+      "PARAMEDIC": "Técnico de emergencias",
+      "OTHER": "Otra persona"
+    },
+    "semiology": {
+      "AURA": "Aura",
+      "BEHAVIOUR_ARREST": "Se detuvo en lo que hacía",
+      "STARING": "Mirada fija",
+      "AUTOMATISMS": "Automatismos (chupeteo, movimientos de manoseo)",
+      "TONIC": "Rigidez",
+      "CLONIC": "Sacudidas rítmicas",
+      "MYOCLONIC": "Sacudidas breves",
+      "ATONIC_DROP": "Caída brusca",
+      "SPASMS": "Espasmos",
+      "HEAD_EYE_VERSION": "Cabeza u ojos girados hacia un lado",
+      "VOCALISATION": "Grito o sonidos",
+      "CYANOSIS": "Labios o cara azulados",
+      "DROOLING": "Babeo",
+      "BREATHING_CHANGE": "Respiración alterada"
+    },
+    "postictal": {
+      "SLEEP": "Sueño",
+      "CONFUSION": "Confusión",
+      "HEADACHE": "Dolor de cabeza",
+      "WEAKNESS_TODD": "Debilidad en un lado (parálisis de Todd)",
+      "SPEECH": "Dificultad para hablar",
+      "AGITATION": "Agitación",
+      "OTHER": "Otro"
+    },
+    "injury": {
+      "NONE": "Sin lesiones",
+      "TONGUE_BITE": "Mordedura de lengua",
+      "HEAD": "Traumatismo craneal",
+      "FALL_OTHER": "Otra lesión por caída",
+      "BURN": "Quemadura",
+      "FRACTURE": "Fractura",
+      "OTHER": "Otra"
+    },
+    "sheet": {
+      "newTitle": "Registrar una crisis",
+      "editTitle": "Detalles de la crisis",
+      "description": "Solo hace falta el inicio. Añade lo que sepas.",
+      "created": "Crisis registrada",
+      "updated": "Crisis actualizada",
+      "type": "Tipo de crisis",
+      "onset": "Inicio",
+      "onsetPrecision": "Precisión de la hora de inicio",
+      "duration": "Duración",
+      "minutes": "Minutos",
+      "seconds": "Segundos",
+      "durationHint": "Déjalo vacío si nadie vio cuánto duró.",
+      "durationSource": "La duración fue",
+      "certainty": "Certeza",
+      "count": "Cuántas",
+      "countHint": "Más de una para un recuento, como las ausencias de un día.",
+      "sleepState": "Despierto o dormido",
+      "sectionObserved": "Lo que se observó",
+      "responsiveness": "Respondía cuando se le hablaba",
+      "recall": "Recuerda la crisis",
+      "semiology": "Qué pasó, en orden",
+      "semiologyNote": "Descripción",
+      "aura": "Aviso previo (aura)",
+      "ilaeOverride": "Clasificación de esta crisis",
+      "ilaeFromType": "Según el tipo",
+      "sectionAfter": "Después",
+      "postictalMinutes": "Minutos hasta volver a la normalidad",
+      "postictal": "Después de la crisis",
+      "injuries": "Lesiones",
+      "emergency": "Atención de emergencia",
+      "sectionContext": "Desencadenantes y testigo",
+      "triggers": "Desencadenantes sospechados",
+      "triggersHint": "Tu propia sospecha, que aparece como sospechada en el informe.",
+      "witnessed": "¿La vio alguien?",
+      "witnessRole": "Quién la vio",
+      "witnessNote": "Qué vio",
+      "note": "Nota",
+      "delete": "Eliminar crisis",
+      "deleteTitle": "¿Eliminar esta crisis?",
+      "deleteBody": "Se eliminan la crisis y sus dosis de rescate, y las dosis se retiran también del medicamento.",
+      "observable": "Signos visibles",
+      "incontinence": "Incontinencia"
+    },
+    "rescue": {
+      "title": "Medicación de rescate",
+      "none": "No hay dosis de rescate registradas.",
+      "effect": "Efecto",
+      "remove": "Quitar dosis",
+      "removeTitle": "¿Quitar esta dosis de rescate?",
+      "removeBody": "La dosis también se retira del medicamento.",
+      "medication": "Medicamento",
+      "pick": "Elige un medicamento",
+      "givenAt": "Administrada a las",
+      "route": "Vía",
+      "intakeHint": "La dosis también se registra en el medicamento. La medicación a demanda no cuenta para la adherencia.",
+      "add": "Añadir dosis de rescate"
+    },
+    "types": {
+      "title": "Tipos de crisis",
+      "emptyTitle": "Aún no hay tipos de crisis",
+      "emptyDescription": "Configura una vez los tipos de crisis de la persona, idealmente con el equipo médico.",
+      "newTitle": "Añadir un tipo de crisis",
+      "editTitle": "Editar tipo de crisis",
+      "description": "La clasificación la eliges tú o el equipo médico; HealthLog no clasifica.",
+      "label": "Tu nombre para este tipo",
+      "labelHint": "La palabra que usa tu familia, como «la grande».",
+      "class": "Inicio",
+      "ilaeType": "Tipo de crisis (ILAE 2025)",
+      "notSure": "No estoy seguro: {name}",
+      "usualDuration": "Duración habitual",
+      "usualHint": "Se usa para mostrar el plan cuando una crisis dura 2 minutos más de lo habitual (NICE).",
+      "plan": "Plan de emergencia",
+      "planHint": "Los pasos acordados con el equipo médico, que se muestran cuando el cronómetro supera el umbral.",
+      "rescueMedication": "Medicación de rescate",
+      "noMedication": "Ninguna",
+      "noAsNeeded": "Añade primero la medicación de rescate como medicamento a demanda.",
+      "dose": "Dosis",
+      "unit": "Unidad",
+      "saved": "Tipo de crisis guardado",
+      "archive": "Archivar",
+      "unarchive": "Volver a usar",
+      "archived": "Archivado",
+      "delete": "Eliminar tipo",
+      "deleteTitle": "¿Eliminar este tipo de crisis?",
+      "deleteBody": "Solo se puede eliminar un tipo sin crisis registradas. Si no, archívalo.",
+      "rescueLine": "Rescate: {name}"
+    },
+    "rule": {
+      "title": "Regla de crisis en racimo",
+      "explainer": "Un racimo es este número de crisis en este número de horas. Usa la regla del plan de emergencia; NICE usa {niceCount} en {niceHours} horas, y el resumen cuenta los racimos con ambas reglas.",
+      "count": "Crisis",
+      "hours": "Intervalo (horas)",
+      "invalid": "Usa de 2 a 20 crisis en 1 a 168 horas.",
+      "saved": "Regla de crisis en racimo guardada"
+    },
+    "observation": {
+      "YES": "Sí",
+      "NO": "No, nada visible",
+      "UNKNOWN": "No estoy seguro"
+    }
   }
 }

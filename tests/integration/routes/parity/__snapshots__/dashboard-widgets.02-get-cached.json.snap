@@ -197,6 +197,12 @@
           "visible": false,
           "tileVisible": true,
           "order": 28
+        },
+        {
+          "id": "energyIntake",
+          "visible": false,
+          "tileVisible": false,
+          "order": 29
         }
       ],
       "updatedAt": "<updatedAt>"

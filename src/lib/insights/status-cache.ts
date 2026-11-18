@@ -9,6 +9,7 @@ import {
   type InsightStatusScope,
 } from "@/lib/jobs/insight-status-generate-shared";
 import { hashInsightSnapshot } from "@/lib/insights/snapshot-hash";
+import { readMeasurementInputStamps } from "@/lib/insights/measurement-input-stamps";
 import {
   discoveryMeasurementTypes,
   DISCOVERY_BEHAVIOURS,
@@ -32,8 +33,8 @@ import type { SupportedLocale } from "@/lib/insights/status-shared";
  *
  * v1.21.0 (FDREXTEND) — `MEDICATION_COMPLIANCE` (dose-history ledger) and
  * `SYMPTOM_SEVERITY` (illness day-log) are likewise NON-measurement channels;
- * `discoveryMeasurementTypes` excludes them too, or the `type IN (...)` groupBy
- * below would try to cast a non-enum string to `MeasurementType` and error.
+ * `discoveryMeasurementTypes` excludes them too, or the stamp read below
+ * would try to cast a non-enum string to `MeasurementType` and error.
  * Their own data changes still flip a card's gate through their source models —
  * they simply do not belong in the measurement fingerprint set.
  */
@@ -389,8 +390,8 @@ export async function refreshUnchangedStatusItems(args: {
  * is paid six days out of seven for nothing.
  *
  * This probe answers "did any salient input change since the cached
- * assessment?" with ONE grouped query — per salient type, the live row
- * `count` plus the newest `measuredAt`. A new or removed reading flips one
+ * assessment?" with one stamp per salient type (`readMeasurementInputStamps`):
+ * the live row `count` plus the newest `measuredAt`. A new or removed reading flips one
  * of those, which flips the hash; an idle day leaves it byte-identical. The
  * caller hashes the result and, on a match, skips the entire build. The
  * finer post-build snapshot gate stays in place for the cases this coarse
@@ -414,8 +415,8 @@ export async function computeStatusInputFingerprint(args: {
    * sleep, HRV, glucose, daylight, … — gained paired data, with NO change to
    * the card's own metric rows. Without this the input gate would re-stamp the
    * stale assessment and the freshly discovered correlation would never reach
-   * the prose. Cheap: it widens the SAME grouped query by the channel type set
-   * (no extra round-trip). `includeMood` is honoured for the mood arm of the
+   * the prose. Cheap: it widens the same stamp read by the channel type set
+   * (`readMeasurementInputStamps`, bounded by the rollup tier). `includeMood` is honoured for the mood arm of the
    * discovery matrix as before. Set on any card whose prompt carries a
    * relations block (i.e. whose metric is a discovery channel).
    */
@@ -427,7 +428,7 @@ export async function computeStatusInputFingerprint(args: {
    */
   extra?: Record<string, string | number | null>;
 }): Promise<string> {
-  // Widen the grouped query by the correlation-discovery channels when the
+  // Widen the stamp read by the correlation-discovery channels when the
   // card folds a relations block, so a discovery-channel change flips the gate.
   // De-duplicate the union (a card's own type can also be a discovery channel)
   // so the `type IN (...)` list carries each type once.
@@ -436,16 +437,7 @@ export async function computeStatusInputFingerprint(args: {
     : [...args.types];
 
   const [grouped, mood, customMetrics] = await Promise.all([
-    prisma.measurement.groupBy({
-      by: ["type"],
-      where: {
-        userId: args.userId,
-        type: { in: groupTypes as MeasurementType[] },
-        deletedAt: null,
-      },
-      _count: { _all: true },
-      _max: { measuredAt: true },
-    }),
+    readMeasurementInputStamps(args.userId, groupTypes as MeasurementType[]),
     args.includeMood
       ? prisma.moodEntry.aggregate({
           // Tombstoned rows are excluded here for the same reason they are in
@@ -488,8 +480,8 @@ export async function computeStatusInputFingerprint(args: {
   const fingerprint = grouped
     .map((row) => ({
       type: row.type,
-      count: row._count._all,
-      newest: row._max.measuredAt ? row._max.measuredAt.toISOString() : null,
+      count: row.count,
+      newest: row.newest ? row.newest.toISOString() : null,
     }))
     .sort((a, b) => (a.type < b.type ? -1 : a.type > b.type ? 1 : 0));
   return hashInsightSnapshot({
@@ -706,7 +698,11 @@ export async function resolveReadOnlyStatusMiss(args: {
     return {
       kind: "unavailable",
       reason,
-      hasProvider: await probeProviderPresence(args.userId, "text"),
+      hasProvider: await probeProviderPresence(
+        args.userId,
+        "text",
+        "statusText",
+      ),
     };
   }
 

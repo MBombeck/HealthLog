@@ -209,9 +209,8 @@ export function getPRDirection(
     // lower reading is an achievement. Defer to a null PR direction.
     case "WRIST_TEMPERATURE":
     // v1.10.0 — categorical events (WX-B). Device-flagged EVENT rows are
-    // discrete occurrences (value is always 1), never a goal axis. A
-    // "personal record" for a health-notification event would be both
-    // meaningless and alarming, so they explicitly have no PR direction.
+    // discrete occurrences (value is always 1), never a goal axis: a record
+    // for a health notification would be meaningless and alarming.
     case "IRREGULAR_RHYTHM_NOTIFICATION":
     // v1.44 — AFib burden is an awareness signal from a certified feature,
     // and a State of Mind valence is a self-report of how a moment felt.
@@ -224,6 +223,7 @@ export function getPRDirection(
     case "INDOOR_HUMIDITY":
     case "HIGH_HEART_RATE_EVENT":
     case "LOW_HEART_RATE_EVENT":
+    case "HYPERTENSION_EVENT":
     case "WALKING_STEADINESS_EVENT":
     case "BREATHING_DISTURBANCE_EVENT":
     // v1.10.0 — computed scores (WX-C). The server-derived wellness scores

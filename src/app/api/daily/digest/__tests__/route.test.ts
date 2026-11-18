@@ -76,6 +76,7 @@ const DIGEST: DailyDigest = {
   worthALook: [],
   justIn: null,
   reactionLine: null,
+  languages: { response: "en", briefing: "en", reaction: null },
 };
 
 const callGet = GET as unknown as (req: NextRequest) => Promise<Response>;
@@ -119,5 +120,15 @@ describe("GET /api/daily/digest", () => {
     expect(body.error).toBeNull();
     expect(body.data).toEqual(DIGEST);
     expect(vi.mocked(loadDailyDigest)).toHaveBeenCalledOnce();
+  });
+});
+
+describe("GET /api/daily/digest — the reader's language (#176)", () => {
+  it("leaves a browser's language to its cookie and the account", async () => {
+    const req = new NextRequest(new URL("http://localhost/api/daily/digest"), {
+      headers: { "accept-language": "nl-NL,nl;q=0.9" },
+    });
+    await callGet(req);
+    expect(vi.mocked(loadDailyDigest).mock.calls[0][2]).toEqual({});
   });
 });

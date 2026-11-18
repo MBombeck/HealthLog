@@ -36,6 +36,7 @@ const SRC = join(process.cwd(), "src");
 const AI_INPUT_ENDPOINTS = [
   "/api/user/ai-provider",
   "/api/insights/provider-chain",
+  "/api/insights/provider-chains",
   "/api/auth/codex/device-poll",
   "/api/auth/codex/disconnect",
   "/api/auth/me/use-central-codex",

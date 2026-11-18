@@ -33,6 +33,7 @@ import {
   type KeyboardEvent,
 } from "react";
 import {
+  BrainCircuit,
   CalendarHeart,
   FileText,
   Flag,
@@ -104,6 +105,7 @@ export const LANE_ICON: Readonly<Record<TimelineLaneKey, LucideIcon>> = {
   vaccinations: Syringe,
   visits: Stethoscope,
   labs: FlaskConical,
+  seizures: BrainCircuit,
   documents: FileText,
   cycle: CalendarHeart,
 };

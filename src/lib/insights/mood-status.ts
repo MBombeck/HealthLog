@@ -45,6 +45,7 @@ import {
   type StatusTextResult,
 } from "@/lib/insights/status-pipeline";
 import { annotate } from "@/lib/logging/context";
+import { readNewestRowsPerType } from "@/lib/measurements/newest-per-type";
 import { createCustomLabelResolver } from "@/lib/mood/custom-tags";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 
@@ -412,8 +413,8 @@ async function readCrossMetricMeasurements(userId: string, now: Date) {
   // `deviceType` ride along so the crosstab's per-day canonical-source pick
   // de-dups a cumulative metric reported by two sources on the same day.
   // The crosstab + correlations only pair against the ~365-day window, so
-  // bound the read to that window: it lets Postgres use the (userId,
-  // measuredAt) index, caps memory to rows that can actually pair, and stops a
+  // bound the read to that window: it caps memory to rows that can actually
+  // pair, and stops a
   // data-rich Apple-Health account from spending the 50k cap on a recency-
   // biased all-recent slice. `deletedAt: null` keeps soft-deleted rows (common
   // on HRV/RHR/steps re-sync) out of the FDR-gated factor deltas the model
@@ -421,39 +422,38 @@ async function readCrossMetricMeasurements(userId: string, now: Date) {
   const crossMetricWindowStart = new Date(
     now.getTime() - 365 * 24 * 60 * 60 * 1000,
   );
+  // #1398: capped per type, the total kept. Shared newest-first across the
+  // channels, a dense pulse stream filled the cap within days and weight and
+  // blood pressure fell out of the pairing. Each channel now keeps at least
+  // its share of the cap, a sparse one all of its year.
   const CROSS_METRIC_ROW_CAP = 50_000;
-  const measurements = await prisma.measurement
-    .findMany({
-      where: {
-        userId,
-        deletedAt: null,
-        measuredAt: { gte: crossMetricWindowStart },
-        type: {
-          in: [
-            "WEIGHT",
-            "BLOOD_PRESSURE_SYS",
-            "PULSE",
-            "RESTING_HEART_RATE",
-            "HEART_RATE_VARIABILITY",
-            "ACTIVITY_STEPS",
-            "SLEEP_DURATION",
-          ],
-        },
-      },
-      orderBy: { measuredAt: "desc" },
-      take: CROSS_METRIC_ROW_CAP,
-      select: {
-        type: true,
-        value: true,
-        measuredAt: true,
-        source: true,
-        deviceType: true,
-      },
-    })
-    .then((rows) => rows.reverse());
-  if (measurements.length >= CROSS_METRIC_ROW_CAP) {
+  const { rows, cappedTypes } = await readNewestRowsPerType(
+    userId,
+    [
+      "WEIGHT",
+      "BLOOD_PRESSURE_SYS",
+      "PULSE",
+      "RESTING_HEART_RATE",
+      "HEART_RATE_VARIABILITY",
+      "ACTIVITY_STEPS",
+      "SLEEP_DURATION",
+    ],
+    {
+      perTypeCap: CROSS_METRIC_ROW_CAP,
+      totalCap: CROSS_METRIC_ROW_CAP,
+      since: crossMetricWindowStart,
+    },
+  );
+  if (cappedTypes.length > 0) {
     annotate({ meta: { cross_metric_truncated: true } });
   }
+  const measurements = rows.map((row) => ({
+    type: row.type,
+    value: row.value,
+    measuredAt: row.measuredAt,
+    source: row.source,
+    deviceType: row.deviceType,
+  }));
 
   return measurements;
 }

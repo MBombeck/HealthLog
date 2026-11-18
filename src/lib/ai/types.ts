@@ -310,14 +310,6 @@ export interface StandardReasoning {
   explicit?: boolean;
 }
 
-export interface AntigravityReasoning {
-  effort?: ReasoningLevel;
-  summaries: boolean;
-  maxEffort?: ReasoningLevel;
-  source?: import("./reasoning/resolve").ReasoningSource;
-  explicit?: boolean;
-}
-
 export interface CompletionParams<
   R extends {
     effort?: ReasoningLevel;

@@ -72,6 +72,7 @@ export const measurementTypeEnum = z.enum([
   "LOW_HEART_RATE_EVENT",
   "WALKING_STEADINESS_EVENT",
   "BREATHING_DISTURBANCE_EVENT",
+  "HYPERTENSION_EVENT",
   // ── v1.10.0 — computed scores (WX-C) ──
   // Server-derived wellness scores (0–100, unit `score`). Minted by a
   // nightly engine from the user's already-stored signals and persisted as a
@@ -188,6 +189,7 @@ export const EVENT_MEASUREMENT_TYPES: ReadonlySet<string> = new Set<string>([
   "LOW_HEART_RATE_EVENT",
   "WALKING_STEADINESS_EVENT",
   "BREATHING_DISTURBANCE_EVENT",
+  "HYPERTENSION_EVENT",
 ]);
 
 export const glucoseContextEnum = z.enum([
@@ -348,6 +350,11 @@ export const updateMeasurementSchema = z.object({
     )
     .nullable()
     .optional(),
+  // #1407 — the meal context of a blood glucose reading can be corrected
+  // after it is saved. `null` clears it (sensor and MCP rows carry none).
+  // The schema cannot know the row's type; the route refuses the field on
+  // any row that is not BLOOD_GLUCOSE.
+  glucoseContext: glucoseContextEnum.nullable().optional(),
 });
 
 /**

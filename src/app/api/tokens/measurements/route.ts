@@ -12,8 +12,10 @@
  * behind a home-automation bridge.
  *
  * What this mints is narrow by construction. `permissions` is a literal, so no
- * request shape reaches it; the scope it names is accepted by exactly two
- * routes, both writes, both on the holder's own record. It cannot read a
+ * request shape reaches it; the scope it names is accepted by exactly four
+ * routes (the single and batch measurement writes, a custom metric's value
+ * write, and the nutrient day-total batch), all writes, all on the holder's
+ * own record. It cannot read a
  * reading back, cannot edit or delete one, cannot reach the export, and cannot
  * mint another token — no Bearer credential reaches this endpoint at all, at
  * any scope. That last property is why the mint is worth its own file: the

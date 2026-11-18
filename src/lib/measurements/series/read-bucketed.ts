@@ -5,6 +5,7 @@
  */
 import { prisma } from "@/lib/db";
 import { readDenseSeries } from "@/lib/measurements/dense-series-read";
+import { countLiveReadingsPerType } from "@/lib/measurements/newest-per-type";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { seriesRowsFrom } from "@/lib/measurements/series-canonical";
 import { resolveUserTimezone, userDayKey } from "@/lib/tz/resolver";
@@ -31,14 +32,17 @@ export async function takesBucketedRead(
   return (
     (DENSE_SERIES_KINDS.has(kind) && days > DENSE_SERIES_RAW_WINDOW_DAYS) ||
     (DENSE_SERIES_KINDS.has(kind) &&
-      (await prisma.measurement.count({
-        where: {
+      // Counted one past the cap and no further: the question is whether
+      // the window holds more than the cap, and a full count read every
+      // reading of a dense stream on each chart request to answer it.
+      ((
+        await countLiveReadingsPerType(
           userId,
-          type: KIND_TO_TYPE[kind],
-          measuredAt: { gte: since },
-          deletedAt: null,
-        },
-      })) > DENSE_SERIES_RAW_ROW_CAP)
+          [KIND_TO_TYPE[kind]],
+          DENSE_SERIES_RAW_ROW_CAP + 1,
+          since,
+        )
+      ).get(KIND_TO_TYPE[kind]) ?? 0) > DENSE_SERIES_RAW_ROW_CAP)
   );
 }
 

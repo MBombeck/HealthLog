@@ -45,10 +45,20 @@ export function forgetLastWorkingProvider(userId: string): void {
 
 export function rememberWorkingProvider(
   userId: string,
-  providerType: ProviderChainType,
+  candidate:
+    | { providerType: ProviderChainType; pinned?: boolean }
+    | ProviderChainType,
 ): void {
+  if (typeof candidate === "object") {
+    if (candidate.pinned) return;
+    lastWorkingCache.set(userId, {
+      providerType: candidate.providerType,
+      expiresAt: Date.now() + LAST_WORKING_TTL_MS,
+    });
+    return;
+  }
   lastWorkingCache.set(userId, {
-    providerType,
+    providerType: candidate,
     expiresAt: Date.now() + LAST_WORKING_TTL_MS,
   });
 }

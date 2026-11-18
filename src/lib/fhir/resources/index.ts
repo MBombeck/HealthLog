@@ -37,6 +37,10 @@ export {
 } from "@/lib/fhir/resources/anamnesis";
 export { conditionsFromReportData } from "@/lib/fhir/resources/conditions";
 export {
+  seizureBundleResources,
+  seizureCompositionSection,
+} from "@/lib/fhir/resources/seizures";
+export {
   medicationStatementsFromReportData,
   medicationAdministrationsFromReportData,
 } from "@/lib/fhir/resources/medications";

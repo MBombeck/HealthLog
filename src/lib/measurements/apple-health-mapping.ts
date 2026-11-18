@@ -693,6 +693,21 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     isPrivacySensitive: true,
     fallbackClassification: "FIRED",
   },
+  // Hypertension notification (iOS 26) — the watch's certified algorithm
+  // flagged signs of possible hypertension across a 30-day window. A
+  // notification, not a blood-pressure reading: it never lands on the BP
+  // series. Single neutral `FIRED` verdict, like the heart-rate events.
+  HKCategoryTypeIdentifierHypertensionEvent: {
+    hkIdentifier: "HKCategoryTypeIdentifierHypertensionEvent",
+    measurementType: "HYPERTENSION_EVENT",
+    hkUnit: "event",
+    unitFixedReason: UNIT_FIXED_EVENT_PIN,
+    dbUnit: "event",
+    convertToDbUnit: () => 1,
+    aggregation: "sum",
+    isPrivacySensitive: true,
+    fallbackClassification: "FIRED",
+  },
 
   // ── v1.5.5 iOS-coord — six previously-deferred identifiers ───
   // Background: each entry below sat in `HK_QUANTITY_TYPE_DEFERRED`.
@@ -1235,12 +1250,11 @@ export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
   // BREATHING_DISTURBANCES, and `HKCategoryTypeIdentifierSleepApneaEvent`
   // (the fired screening event) → BREATHING_DISTURBANCE_EVENT.
   // Nutrition — the Measurement path stays PERMANENTLY closed to
-  // Dietary types. Energy / macros (and sodium): indefinite hold, the
-  // anti-goal against diet-app territory stands. Water + caffeine (and
-  // the 24 micro Dietary vitamin/mineral identifiers, which were never
+  // Dietary types. Water, caffeine, energy, the macros, sodium (and the
+  // other micro Dietary vitamin/mineral identifiers, which were never
   // listed here because no sample ever mapped) ride the dedicated
   // day-total endpoint `POST /api/nutrients/batch` (closed catalog in
-  // `src/lib/nutrients/catalog.ts`) — never Measurements, so the two
+  // `src/lib/nutrients/catalog.ts`) — never Measurements, so the
   // entries below stay deferred and a stray sample-grain post keeps
   // skipping as unmappable.
   "HKQuantityTypeIdentifierDietaryWater",
@@ -1249,8 +1263,12 @@ export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
   "HKQuantityTypeIdentifierDietaryCarbohydrates",
   "HKQuantityTypeIdentifierDietaryProtein",
   "HKQuantityTypeIdentifierDietaryFatTotal",
+  "HKQuantityTypeIdentifierDietaryFatSaturated",
+  "HKQuantityTypeIdentifierDietaryFatMonounsaturated",
+  "HKQuantityTypeIdentifierDietaryFatPolyunsaturated",
   "HKQuantityTypeIdentifierDietarySugar",
   "HKQuantityTypeIdentifierDietaryFiber",
+  "HKQuantityTypeIdentifierDietaryCholesterol",
   "HKQuantityTypeIdentifierDietarySodium",
   // Pregnancy bleeding — stays deferred (pregnancy-mode is a later
   // release). v1.15.0 promoted the cycle-tracking reproductive types
@@ -1263,7 +1281,10 @@ export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
   // branch runs.
   "HKCategoryTypeIdentifierBleedingAfterPregnancy",
   "HKCategoryTypeIdentifierBleedingDuringPregnancy",
-  // Clinical (FHIR) — v1.6+
+  // Clinical (FHIR). These never arrive as a `<Record>`; the export writes
+  // `<ClinicalRecord>` elements, which the parser handles itself: lab results
+  // are imported as lab readings (`src/lib/apple-health/clinical-labs-import.ts`),
+  // every other clinical type is counted in `clinical.skipped`.
   "HKClinicalTypeIdentifierAllergyRecord",
   "HKClinicalTypeIdentifierConditionRecord",
   "HKClinicalTypeIdentifierImmunizationRecord",
@@ -1273,9 +1294,10 @@ export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
   "HKClinicalTypeIdentifierVitalSignRecord",
   // ECG / waveforms — defer
   "HKElectrocardiogramType",
-  // Scored assessments (iOS 18) — v1.5 (PHQ-9 / GAD-7 mapping TBD)
-  "HKScoredAssessmentTypeIdentifierGAD7",
-  "HKScoredAssessmentTypeIdentifierPHQ9",
+  // Scored assessments (iOS 18): PHQ-9 and GAD-7 are taken by the batch, but
+  // as screener administrations, never as measurements
+  // (`src/lib/mental-health/apple-health-assessment.ts`), so they appear in
+  // neither list here.
   // ── v1.4.25 W16a — iOS-17 + iOS-18 long-tail closure ──
   // Cardiovascular / clinical (iOS 16+) — no HealthLog counterpart yet;
   // clinical decision-support territory, defer behind a stricter user

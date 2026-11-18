@@ -1,7 +1,7 @@
 {
   "$comment": "route tests that stub @/lib/api-handler, per test file under src/. Maintained by src/__tests__/test-realism-ratchet.test.ts.",
-  "count": 133,
-  "total": 133,
+  "count": 129,
+  "total": 129,
   "entries": {
     "app/api/account/grants/__tests__/invite-access-level.test.ts": 1,
     "app/api/account/grants/__tests__/invite-scope-and-manage.test.ts": 1,
@@ -46,9 +46,6 @@
     "app/api/documents/inbound/usage/__tests__/route.test.ts": 1,
     "app/api/encounters/procedures/__tests__/route.test.ts": 1,
     "app/api/environment/backfill/__tests__/route.test.ts": 1,
-    "app/api/fitbit/connect/__tests__/route.test.ts": 1,
-    "app/api/fitbit/credentials/__tests__/route.test.ts": 1,
-    "app/api/fitbit/sync/__tests__/route.test.ts": 1,
     "app/api/google-health/credentials/__tests__/route.test.ts": 1,
     "app/api/google-health/sync/__tests__/route.test.ts": 1,
     "app/api/google-health/sync/status/__tests__/route.test.ts": 1,
@@ -77,7 +74,6 @@
     "app/api/insights/glp1-timeline/__tests__/route.test.ts": 1,
     "app/api/insights/provider-chain/__tests__/put.test.ts": 1,
     "app/api/insights/provider-chain/__tests__/route.test.ts": 1,
-    "app/api/integrations/fitbit/test/__tests__/route.test.ts": 1,
     "app/api/integrations/status/__tests__/route.test.ts": 1,
     "app/api/integrations/whoop/test/__tests__/route.test.ts": 1,
     "app/api/integrations/withings/resume/__tests__/route.test.ts": 1,

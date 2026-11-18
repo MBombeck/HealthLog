@@ -6,7 +6,7 @@
  * arrivals. The route owns authentication, the rate limit, the body caps and
  * the response envelope.
  */
-import type { Prisma } from "@/generated/prisma/client";
+import type { MeasurementSource, Prisma } from "@/generated/prisma/client";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { enqueuePrDetection } from "@/lib/jobs/pr-detection";
@@ -21,6 +21,7 @@ import {
   type WorkoutEntry,
 } from "./entries";
 import { planWorkoutWrites } from "./plan";
+import { adoptStoredTwins } from "./twins";
 import { writeWorkoutPlan, type WriteOutcome } from "./write";
 
 // Push-suppression threshold for workout PRs. A batch larger than this fires
@@ -40,7 +41,31 @@ export interface WorkoutBatchInput {
   workouts: WorkoutEntry[];
   refusedSampleIndices: ReadonlySet<number>;
   ipAddress: string | null;
+  /**
+   * Server-side importers only. The source every entry is written under;
+   * see `prepareWorkouts`.
+   */
+  sourceOverride?: MeasurementSource;
+  /**
+   * What an entry that matches no stored workout by key does when a stored
+   * workout of another source duplicates it. `keep` (the client routes)
+   * inserts it and lets the reads hide whichever loses; `adopt` (a file
+   * import) hands its series and track to the stored twin instead, see
+   * `./twins.ts`.
+   */
+  twins?: "keep" | "adopt";
+  /**
+   * Only add series and tracks to stored workouts, never insert one (the
+   * Garmin activity file, whose workout the activity list already wrote).
+   * An entry with nothing to attach to is reported `skipped`.
+   */
+  enrichOnly?: boolean;
+  /** The audit action; the batch route's by default. */
+  auditAction?: string;
 }
+
+/** The skip reason of an `enrichOnly` entry with no stored workout. */
+export const NO_STORED_WORKOUT_REASON = "no_stored_workout";
 
 /** The response body of the workout batch route. */
 export interface WorkoutBatchResult {
@@ -65,6 +90,7 @@ export async function ingestWorkoutBatch(
 ): Promise<WorkoutBatchResult> {
   const { userId, workouts, keepRoutes } = input;
   const { prepared, results, unstableShapes } = prepareWorkouts(input);
+  const auditAction = input.auditAction ?? "workout.batch.ingest";
 
   if (unstableShapes.length > 0) {
     annotate({
@@ -94,6 +120,24 @@ export async function ingestWorkoutBatch(
   let written = NOTHING_WRITTEN;
   if (survivors.length > 0) {
     const plan = await planWorkoutWrites(userId, survivors, results);
+    if (input.twins === "adopt") {
+      await adoptStoredTwins(
+        userId,
+        plan,
+        results,
+        input.sourcePriorityJson ?? null,
+      );
+    }
+    if (input.enrichOnly) {
+      for (const p of plan.toInsert) {
+        results[p.index] = {
+          index: p.index,
+          status: "skipped",
+          reason: NO_STORED_WORKOUT_REASON,
+        };
+      }
+      plan.toInsert = [];
+    }
     duplicateCount += plan.duplicates;
     written = await writeWorkoutPlan(userId, plan, results);
     duplicateCount += written.duplicates;
@@ -104,7 +148,7 @@ export async function ingestWorkoutBatch(
     .filter((r) => r.status === "skipped")
     .map((r) => ({ index: r.index, reason: r.reason ?? "unknown" }));
 
-  await auditLog("workout.batch.ingest", {
+  await auditLog(auditAction, {
     userId,
     ipAddress: input.ipAddress,
     details: {
@@ -141,7 +185,7 @@ export async function ingestWorkoutBatch(
 
   // Counts only. The series itself never reaches a wide event.
   annotate({
-    action: { name: "workout.batch.ingest" },
+    action: { name: auditAction },
     meta: {
       processed: workouts.length,
       inserted: insertedCount,

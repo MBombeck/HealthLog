@@ -19,8 +19,8 @@ vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
 vi.mock("@/lib/ai/coach/tools/executor", () => ({
   executeCoachTool: vi.fn(async () => ({ present: true, data: {} })),
 }));
-vi.mock("@/lib/ai/coach/tools/inventory", () => ({
-  buildCoachDataInventory: vi.fn(),
+vi.mock("@/lib/mcp/data-inventory", () => ({
+  buildMcpDataInventory: vi.fn(),
 }));
 // The labs read builds its block first and asks the Coach only on a miss;
 // a miss here keeps every read on the executor this sweep counts.
@@ -204,5 +204,12 @@ describe("get_visits", () => {
     };
     expect(result.visits[0].practitioner).toBe("Dr. Gone");
     expect(result.visits[0].specialty).toBe("Cardiology");
+  });
+});
+
+describe("get_seizures", () => {
+  it("answers module_disabled while the seizure diary is off", async () => {
+    disabled.add("seizures");
+    expect(await tool("get_seizures").run(CTX, {})).toEqual(OFF);
   });
 });

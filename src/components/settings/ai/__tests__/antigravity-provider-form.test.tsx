@@ -45,6 +45,7 @@ describe("AntigravityProviderForm reasoning field disablement", () => {
     disconnect: vi.fn(),
     changeModel: vi.fn(),
     changeReasoning: vi.fn(),
+    refresh: vi.fn(),
     installCli: vi.fn(),
     updateCli: vi.fn(),
   };

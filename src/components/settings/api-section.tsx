@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
@@ -21,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { InlineAction } from "@/components/ui/inline-action";
 import { Input } from "@/components/ui/input";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -79,6 +81,10 @@ export function ApiSection() {
  */
 function MeasurementTokensCard() {
   const { t } = useTranslations();
+  const { user } = useAuth();
+  // A food tracker's day totals land on the nutrients page; with the module
+  // on, the card that mints the tracker's token says where to look.
+  const nutrientsOn = user?.modules?.nutrients === true;
   return (
     <IngestTokenCard
       endpoint="/api/tokens/measurements"
@@ -87,6 +93,18 @@ function MeasurementTokensCard() {
       anchor="measurements-token"
       mirrorOptIn
       footer={<UnattributedReadingsNotice />}
+      explainerAction={
+        nutrientsOn ? (
+          <InlineAction asChild tone="primary" size="sm">
+            <Link
+              href="/insights/nutrients"
+              data-slot="settings-measurements-token-nutrients-link"
+            >
+              {t("settings.measurementsToken.nutrientsLink")}
+            </Link>
+          </InlineAction>
+        ) : null
+      }
       copy={{
         title: t("settings.measurementsToken.title"),
         description: t("settings.measurementsToken.description"),
@@ -158,10 +176,17 @@ function IngestTokenCard({
   copy,
   mirrorOptIn = false,
   footer,
+  explainerAction,
 }: {
   /** Offer the Apple Health write-back on the mint (measurement tokens). */
   mirrorOptIn?: boolean;
   footer?: React.ReactNode;
+  /**
+   * A link that belongs to the explainer (where the data the token writes
+   * shows up), set beside it rather than after the form: §12, nothing
+   * follows the action row.
+   */
+  explainerAction?: React.ReactNode;
   /** Deep-link anchor for the card (`/settings/api#<anchor>`). */
   anchor: string;
   endpoint:
@@ -260,6 +285,7 @@ function IngestTokenCard({
         <p className="text-sm leading-relaxed">
           {copy.detail} {copy.scopeNote}
         </p>
+        {explainerAction}
 
         <form onSubmit={handleCreate} className="flex items-center gap-2">
           <Input

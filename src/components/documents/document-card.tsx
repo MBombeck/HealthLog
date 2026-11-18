@@ -475,6 +475,9 @@ export function UploadStateCard({
       case "rateLimited":
         failureCopy = t("documents.error.rateLimited");
         break;
+      case "recordChanged":
+        failureCopy = t("documents.error.recordChanged");
+        break;
       default:
         failureCopy = t("documents.error.generic");
     }

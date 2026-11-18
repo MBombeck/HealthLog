@@ -11,8 +11,11 @@
  * long it has left, and offers Restore and "Delete now". Restoring all of them
  * is one action in the card header.
  *
- * Owner-only, like every route behind it: inside somebody else's record the
- * page sends the person back to the vault, which offers no way in either.
+ * The owner's, and a managed profile's guardian's (#1403), like the restore
+ * behind it: inside an adult's record the page sends the person back to the
+ * vault, which offers no way in either. "Delete now" stays the owner's alone,
+ * so a guardian sees Restore and the countdown, and the daily purge does the
+ * rest.
  */
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -46,7 +49,8 @@ import { useRecentlyDeleted } from "./use-recently-deleted";
 export function RecentlyDeletedView() {
   const { t } = useTranslations();
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
-  const { inSharedRecord } = useRecordCapabilities();
+  const { canManageDomain, inSharedRecord } = useRecordCapabilities();
+  const canRestore = canManageDomain("documents");
   const router = useRouter();
   const moduleEnabled = user?.modules?.inboundDocuments === true;
   const ready = !authLoading && isAuthenticated && moduleEnabled;
@@ -56,17 +60,17 @@ export function RecentlyDeletedView() {
     if (authLoading) return;
     if (!isAuthenticated) router.push("/auth/login");
     else if (!moduleEnabled) router.push("/");
-    else if (inSharedRecord) router.push("/documents");
-  }, [authLoading, isAuthenticated, moduleEnabled, inSharedRecord, router]);
+    else if (!canRestore) router.push("/documents");
+  }, [authLoading, isAuthenticated, moduleEnabled, canRestore, router]);
 
   const { list, restore, restoreAll, purge } = useRecentlyDeleted({
-    enabled: ready && !inSharedRecord,
+    enabled: ready && canRestore,
   });
   const [pendingPurge, setPendingPurge] = useState<DeletedDocumentDto | null>(
     null,
   );
 
-  if (!ready || inSharedRecord) {
+  if (!ready || !canRestore) {
     return (
       <div className="flex h-64 items-center justify-center" role="status">
         <Loader2
@@ -152,7 +156,9 @@ export function RecentlyDeletedView() {
                   (purge.isPending && purge.variables === doc.id)
                 }
                 onRestore={() => restore.mutate(doc.id)}
-                onPurge={() => setPendingPurge(doc)}
+                onPurge={
+                  inSharedRecord ? undefined : () => setPendingPurge(doc)
+                }
               />
             ))}
           </ul>
@@ -193,7 +199,10 @@ function sourceName(
   return t("documents.detail.sourceOther");
 }
 
-/** One deleted document: what it was, how long it has left, the two ways out. */
+/**
+ * One deleted document: what it was, how long it has left, the ways out.
+ * Without `onPurge` (inside a managed profile) only Restore is offered.
+ */
 export function DeletedRow({
   doc,
   busy,
@@ -203,7 +212,7 @@ export function DeletedRow({
   doc: DeletedDocumentDto;
   busy: boolean;
   onRestore: () => void;
-  onPurge: () => void;
+  onPurge?: () => void;
 }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
@@ -253,17 +262,19 @@ export function DeletedRow({
           <RotateCcw className="size-4" aria-hidden />
           {t("documents.trash.restore")}
         </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="min-h-11 sm:min-h-9"
-          data-slot="documents-trash-purge"
-          disabled={busy}
-          onClick={onPurge}
-        >
-          {t("documents.trash.purge")}
-        </Button>
+        {onPurge ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="min-h-11 sm:min-h-9"
+            data-slot="documents-trash-purge"
+            disabled={busy}
+            onClick={onPurge}
+          >
+            {t("documents.trash.purge")}
+          </Button>
+        ) : null}
       </div>
     </li>
   );

@@ -18,6 +18,7 @@
  * importing from here unchanged.
  */
 
+import { readNewestRowsPerType } from "@/lib/measurements/newest-per-type";
 import {
   computeMoodPatterns,
   moodPatternsWire,
@@ -276,8 +277,9 @@ export interface CrossMetricMeasurement {
  * Apple + Fitbit + WHOOP) blew past it. The crosstab/correlation only
  * need per-day values, but the read stays raw because the DAY rollup
  * buckets on UTC midnight while these aggregates key on the user's
- * Berlin calendar day — see the read comment. Exported so the read's
- * `take` and the truncation-annotation threshold share one constant.
+ * Berlin calendar day — see the read comment. Shared fairly across the
+ * channels (#1398). Exported so the read's cap and the truncation
+ * annotation share one constant.
  */
 export const MOOD_CROSS_METRIC_ROW_CAP = 50_000;
 
@@ -885,64 +887,45 @@ export async function fetchMoodAggregates(
       }));
     });
 
-  const measurements = await prisma.measurement
-    .findMany({
-      where: {
-        userId,
-        deletedAt: null,
-        measuredAt: { gte: windowCutoff },
-        // v1.8.5 — single-sourced from CORRELATION_METRICS so the fetched
-        // channels and the computed correlations never drift apart.
-        // v1.12.0 — union the crosstab metric channels so the tag × metric
-        // board has its measurements without a second query.
-        type: {
-          in: Array.from(
-            new Set<MeasurementType>([
-              ...(Object.values(CORRELATION_METRICS) as MeasurementType[]),
-              ...CROSSTAB_METRIC_TYPES,
-              // v1.14.0 — union the factor-crosstab vital channels (RHR /
-              // HRV / steps / sleep / weight / BP-sys) so the factor board
-              // has its measurements without a second query.
-              ...FACTOR_CROSSTAB_METRIC_TYPES,
-            ]),
-          ),
-        },
-      },
-      orderBy: { measuredAt: "desc" },
-      // v1.12.1 — scope the cap to the worst-case row count over the
-      // 365-day window instead of the old flat 5,000. The crosstab +
-      // correlation channels are per-day aggregates, but the read is raw
-      // because the DAY rollup buckets on UTC midnight while the crosstab
-      // / correlations key on the user's Berlin calendar day — feeding a
-      // UTC-bucketed metric series against a Berlin-bucketed mood series
-      // would skew the day pairing by up to a few hours at the boundary.
-      // So we stay on raw rows but lift the cap above the realistic worst
-      // case: SLEEP_DURATION (~6 stage rows/night) and PULSE / HRV ingest
-      // the most rows/day, and a user syncing several sources multiplies
-      // that — a flat 5,000 silently dropped the oldest months (the order
-      // is `measuredAt desc`). The cap is the floor that keeps a full
-      // data-rich year intact; if it is ever hit we annotate `truncated`
-      // so the drop is observable rather than silently recency-biased.
-      take: MOOD_CROSS_METRIC_ROW_CAP,
-      select: {
-        type: true,
-        value: true,
-        measuredAt: true,
-        // v1.12.1 — source + deviceType drive the crosstab's canonical
-        // per-day pick so a cumulative metric reported by two sources on
-        // the same day (Fitbit + Apple steps, Fitbit + WHOOP sleep) is
-        // summed once, not double-counted.
-        source: true,
-        deviceType: true,
-      },
-    })
-    .then((rows) => rows.reverse());
+  // v1.12.1 — the read is raw because the DAY rollup buckets on UTC midnight
+  // while the crosstab / correlations key on the user's calendar day, and
+  // feeding a UTC-bucketed metric series against a locally bucketed mood
+  // series would skew the day pairing at the boundary. The cap keeps a full
+  // data-rich year intact; when it is hit, the drop is annotated rather than
+  // silently recency-biased. #1398: the cap is shared fairly across the
+  // channels (each keeps at least its share, a sparse one all of its year),
+  // because newest-first across all of them a dense pulse stream filled it
+  // within days and every sparse channel fell out of the pairing.
+  // `source` + `deviceType` drive the crosstab's canonical per-day pick so a
+  // cumulative metric reported by two sources on the same day is summed once.
+  const crossMetricRead = await readNewestRowsPerType(
+    userId,
+    // v1.8.5 — single-sourced from CORRELATION_METRICS so the fetched
+    // channels and the computed correlations never drift apart; the crosstab
+    // and factor-crosstab channels ride the same read.
+    [
+      ...(Object.values(CORRELATION_METRICS) as MeasurementType[]),
+      ...CROSSTAB_METRIC_TYPES,
+      ...FACTOR_CROSSTAB_METRIC_TYPES,
+    ],
+    {
+      perTypeCap: MOOD_CROSS_METRIC_ROW_CAP,
+      totalCap: MOOD_CROSS_METRIC_ROW_CAP,
+      since: windowCutoff,
+    },
+  );
+  const measurements = crossMetricRead.rows.map((row) => ({
+    type: row.type,
+    value: row.value,
+    measuredAt: row.measuredAt,
+    source: row.source,
+    deviceType: row.deviceType,
+  }));
 
-  if (measurements.length >= MOOD_CROSS_METRIC_ROW_CAP) {
-    // The read hit the cap — the oldest rows in the 365-day window were
-    // dropped (order is `measuredAt desc`). Surface it on the wide event
-    // so a silently-truncated, recency-biased crosstab/correlation is at
-    // least observable instead of looking like clean data.
+  if (crossMetricRead.cappedTypes.length > 0) {
+    // The oldest rows of a channel in the 365-day window were dropped.
+    // Surface it on the wide event so a truncated, recency-biased
+    // crosstab/correlation is at least observable.
     annotate({
       action: { name: "mood.insights.cross_metric.truncated" },
       meta: { rows: measurements.length, cap: MOOD_CROSS_METRIC_ROW_CAP },

@@ -86,6 +86,10 @@ function decodeResponses(
     items?: unknown;
     functionalDifficulty?: unknown;
   };
+  // A score-only administration (an Apple Health PHQ-9 / GAD-7 sent without
+  // its answers) stores `items: null` on purpose: there is nothing to show,
+  // and nothing drifted.
+  if (items === null) return UNAVAILABLE;
   const valid =
     Array.isArray(items) &&
     items.length === def.itemCount &&
@@ -142,6 +146,7 @@ export const GET = apiHandler(
         crisisShownAt: true,
         takenAt: true,
         createdAt: true,
+        source: true,
         responsesEncrypted: true,
       },
     });
@@ -177,6 +182,9 @@ export const GET = apiHandler(
         items: decoded.items,
         functionalDifficulty: decoded.functionalDifficulty,
         itemsUnavailable: decoded.itemsUnavailable,
+        // Says why `items` is null on a score-only Apple Health row, where
+        // nothing failed to decrypt: the answers were never shared.
+        source: row.source,
       },
     });
   },

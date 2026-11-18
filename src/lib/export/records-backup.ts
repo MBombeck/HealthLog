@@ -39,6 +39,7 @@ import {
   type BiomarkerBackupEntry,
   type BiomarkerMergeBackupEntry,
   type LabResultBackupEntry,
+  type LabResultImportKeyBackupEntry,
 } from "@/lib/export/labs-backup";
 import {
   buildWorkoutsBackupSlice,
@@ -71,6 +72,7 @@ export interface RecordsBackupSection {
   labResults: LabResultBackupEntry[];
   biomarkers: BiomarkerBackupEntry[];
   biomarkerMerges: BiomarkerMergeBackupEntry[];
+  labResultImportKeys: LabResultImportKeyBackupEntry[];
   illnessEpisodes: CanonicalIllnessEpisode[];
   allergies: CanonicalAllergy[];
   familyHistory: FamilyHistoryEntryDTO[];
@@ -87,6 +89,7 @@ export interface RecordsBackupSection {
 
 export interface RecordsBackupCounts {
   labResults: number;
+  labResultImportKeys: number;
   biomarkers: number;
   illnessEpisodes: number;
   illnessDayLogs: number;
@@ -107,6 +110,7 @@ export async function buildRecordsBackupSection(
     | "biomarker"
     | "biomarkerAlias"
     | "biomarkerMerge"
+    | "labResultImportKey"
     | "illnessEpisode"
     | "allergy"
     | "familyHistoryEntry"
@@ -157,6 +161,7 @@ export function countRecordsBackupSection(
 ): RecordsBackupCounts {
   return {
     labResults: section.labResults.length,
+    labResultImportKeys: section.labResultImportKeys.length,
     biomarkers: section.biomarkers.length,
     illnessEpisodes: section.illnessEpisodes.length,
     illnessDayLogs: section.illnessEpisodes.reduce(

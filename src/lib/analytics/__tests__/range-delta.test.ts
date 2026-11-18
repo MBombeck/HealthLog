@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 
 import {
   composeDelta,
+  rangeTrend,
   rangeWindowDays,
   sliceWindowDelta,
   type WindowAggregate,
@@ -116,5 +117,19 @@ describe("composeDelta", () => {
     const { delta, deltaPct } = composeDelta(win(5, 90), win(5, 100));
     expect(delta).toBeCloseTo(-10, 6);
     expect(deltaPct).toBeCloseTo(-0.1, 6);
+  });
+});
+
+describe("rangeTrend — the one direction the tile and the page share (#176)", () => {
+  it("reads a change at or above the noise floor as a direction", () => {
+    expect(rangeTrend(0.1)).toBe("up");
+    expect(rangeTrend(-0.05)).toBe("down");
+  });
+
+  it("reads a change under the floor as flat, and no comparison as unknown", () => {
+    expect(rangeTrend(0.049)).toBe("flat");
+    expect(rangeTrend(-0.01)).toBe("flat");
+    expect(rangeTrend(0)).toBe("flat");
+    expect(rangeTrend(null)).toBe("unknown");
   });
 });

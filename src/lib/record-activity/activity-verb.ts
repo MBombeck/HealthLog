@@ -65,8 +65,11 @@ export function recordActivityVerbLine(
   if (refused !== null) return refused;
   const medication = medicationManageVerb(t, action, name);
   if (medication !== null) return medication;
-  const cycle = cycleManageVerb(t, action, name);
+  const cycle =
+    cycleManageVerb(t, action, name) ?? seizureVerb(t, action, name);
   if (cycle !== null) return cycle;
+  const document = documentVerb(t, action, name);
+  if (document !== null) return document;
   switch (action) {
     case "measurement.create":
       return t("recordSharing.activityVerb.measurementCreate", { name });
@@ -306,15 +309,54 @@ export function recordActivityVerbLine(
       return t("recordSharing.activityVerb.customMetricUpdate", { name });
     case "customMetric.delete":
       return t("recordSharing.activityVerb.customMetricDelete", { name });
+
+    default:
+      return t("recordSharing.activity.acted", { name });
+  }
+}
+
+/**
+ * The document vault's verbs, or null when `action` is not one. A managed
+ * profile's guardian uploads, files, deletes, restores, bulk-acts, and runs
+ * the document AI actions and the review that confirms their values (#1403).
+ */
+function documentVerb(
+  t: Translator,
+  action: string,
+  name: string,
+): string | null {
+  switch (action) {
     case "documents.inbound.store":
       return t("recordSharing.activityVerb.documentStore", { name });
     case "documents.inbound.update":
       return t("recordSharing.activityVerb.documentUpdate", { name });
     case "documents.inbound.discard":
       return t("recordSharing.activityVerb.documentDiscard", { name });
-
+    case "documents.inbound.restore":
+      return t("recordSharing.activityVerb.documentRestore", { name });
+    case "documents.inbound.bulk":
+      return t("recordSharing.activityVerb.documentBulk", { name });
+    case "documents.inbound.confirm":
+      return t("recordSharing.activityVerb.documentConfirm", { name });
+    case "documents.inbound.factEdit":
+      return t("recordSharing.activityVerb.documentFactEdit", { name });
+    case "documents.inbound.extract":
+      return t("recordSharing.activityVerb.documentExtract", { name });
+    case "documents.inbound.index":
+      return t("recordSharing.activityVerb.documentIndex", { name });
+    case "documents.inbound.reindex":
+      return t("recordSharing.activityVerb.documentReindex", { name });
+    case "documents.inbound.suggest":
+      return t("recordSharing.activityVerb.documentSuggest", { name });
+    case "documents.inbound.summary":
+      return t("recordSharing.activityVerb.documentSummary", { name });
+    // The two safety rows a document chat turn can file: the turn was the
+    // person asking, whatever the screen then withheld.
+    case "documents.chat.outbound_blocked":
+    case "documents.chat.replay_injection":
+      return t("recordSharing.activityVerb.documentChat", { name });
     default:
-      return t("recordSharing.activity.acted", { name });
+      return null;
   }
 }
 
@@ -441,6 +483,10 @@ function medicationManageVerb(
       });
     case "medication.glp1.update":
       return t("recordSharing.activityVerb.medicationGlp1Update", { name });
+    case "medication.glp1.doseChange.delete":
+      return t("recordSharing.activityVerb.medicationGlp1DoseChangeDelete", {
+        name,
+      });
     case "medication.schedule_revision.created":
       return t("recordSharing.activityVerb.medicationScheduleCreate", { name });
     case "medication.schedule_revision.updated":
@@ -517,6 +563,40 @@ function cycleManageVerb(
       return t("recordSharing.activityVerb.cycleFeedRotate", { name });
     case "cycle.feed.revoke":
       return t("recordSharing.activityVerb.cycleFeedRevoke", { name });
+    default:
+      return null;
+  }
+}
+
+/** The seizure diary's verbs (#1368): recording is WRITE, the rest MANAGE. */
+function seizureVerb(
+  t: Translator,
+  action: string,
+  name: string,
+): string | null {
+  const line = (key: string) =>
+    t(`recordSharing.activityVerb.${key}`, { name });
+  switch (action) {
+    case "seizures.event.create":
+      return line("seizureEventCreate");
+    case "seizures.rescue.create":
+      return line("seizureRescueCreate");
+    case "seizures.event.update":
+      return line("seizureEventUpdate");
+    case "seizures.event.delete":
+      return line("seizureEventDelete");
+    case "seizures.rescue.update":
+      return line("seizureRescueUpdate");
+    case "seizures.rescue.delete":
+      return line("seizureRescueDelete");
+    case "seizures.type.create":
+      return line("seizureTypeCreate");
+    case "seizures.type.update":
+      return line("seizureTypeUpdate");
+    case "seizures.type.delete":
+      return line("seizureTypeDelete");
+    case "seizures.settings.update":
+      return line("seizureSettingsUpdate");
     default:
       return null;
   }

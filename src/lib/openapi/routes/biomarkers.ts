@@ -14,7 +14,7 @@
 import type { ZodOpenApiObject } from "zod-openapi";
 import { z } from "zod/v4";
 
-import { LAB_UNIT_DESCRIPTION } from "@/lib/labs/dimensionless";
+import { BIOMARKER_UNIT_DESCRIPTION } from "@/lib/labs/dimensionless";
 import { dateKeySchema } from "@/lib/day/date-key-schema";
 import {
   labSeriesQuerySchema,
@@ -62,7 +62,7 @@ const biomarkerRow = z
   .object({
     id: z.string(),
     name: z.string(),
-    unit: z.string().describe(LAB_UNIT_DESCRIPTION),
+    unit: z.string().describe(BIOMARKER_UNIT_DESCRIPTION),
     lowerBound: z.number().nullable(),
     upperBound: z.number().nullable(),
     panel: z.string().nullable(),
@@ -318,7 +318,7 @@ export const biomarkerPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Labs"],
       summary: "Edit a biomarker",
       description:
-        "Partial edit; omitted fields are untouched, an explicit null clears `context` / `panel` / a bound. Since v1.43 `aliases` (0..50, each 1..120 characters) replaces the marker's set of other spellings: listed spellings stay or are added, unlisted ones are removed; omitting the field leaves them as they are. Audits as `biomarker.update`. Since v1.40.0 a `unit` different from the stored one is refused with 422 `biomarkers.unit.locked` while any reading is linked to the marker (`meta.readingCount` carries how many): readers label every linked reading with the marker's unit, so a change would relabel stored numbers without converting them. Sending the current unit, or changing it on a marker with no readings, is accepted.",
+        "Partial edit; omitted fields are untouched, an explicit null clears `context` / `panel` / a bound. Since v1.43 `aliases` (0..50, each 1..120 characters) replaces the marker's set of other spellings: listed spellings stay or are added, unlisted ones are removed; omitting the field leaves them as they are. Audits as `biomarker.update`. Since v1.40.0 a `unit` different from the stored one is refused with 422 `biomarkers.unit.locked` while a numeric reading is linked to the marker, a deleted one included (`meta.readingCount` carries how many): readers label every linked number with the marker's unit, so a change would relabel stored numbers without converting them. Sending the current unit or another spelling of it (`mg/dl` for `mg/dL`), or changing it on a marker whose readings are all text or that has none, is accepted. A marker minted from a text result has an empty unit, so any unit may be set on it.",
       requestParams: { path: z.object({ id: z.string() }) },
       requestBody: {
         required: true,

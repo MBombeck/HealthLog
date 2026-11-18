@@ -91,6 +91,32 @@ describe("<BiomarkerForm> unit lock", () => {
   });
 });
 
+describe("<BiomarkerForm> a marker without a unit", () => {
+  function noneBox(html: string): string {
+    const box = html.match(/<button[^>]*role="checkbox"[^>]*>/)?.[0];
+    if (!box) throw new Error("no checkbox rendered");
+    return box;
+  }
+
+  it("opens a marker minted from a text result with No unit ticked", () => {
+    // A text result ("negative") mints its marker with an empty unit. The
+    // editor read that as a unit still to be typed and refused every save.
+    const html = render(<BiomarkerForm existing={{ ...MARKER, unit: "" }} />);
+    expect(noneBox(html)).toContain('aria-checked="true"');
+    expect(html).not.toMatch(/<input[^>]*id="biomarker-unit"[^>]*required/);
+  });
+
+  it("opens a marker kept in the unity with No unit ticked", () => {
+    const html = render(<BiomarkerForm existing={{ ...MARKER, unit: "1" }} />);
+    expect(noneBox(html)).toContain('aria-checked="true"');
+  });
+
+  it("opens a marker with a real unit with the box clear", () => {
+    const html = render(<BiomarkerForm existing={MARKER} />);
+    expect(noneBox(html)).toContain('aria-checked="false"');
+  });
+});
+
 describe("<BiomarkerForm> panel suggestions", () => {
   it("suggests every catalog panel and the person's own panels", () => {
     const html = render(<BiomarkerForm />, ["Annual check"]);

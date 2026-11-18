@@ -25,6 +25,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { countStatements } from "./query-counter";
 import { getPrismaClient, truncateAllTables } from "./setup";
 import {
   buildHealthConnectFixture,
@@ -313,6 +314,41 @@ describe("Health Connect import, mapping", () => {
   });
 });
 
+describe("Health Connect import, day totals", () => {
+  /** The single-reading reconciler's own savepoint, once per reading it settles. */
+  const perReading = (statements: string[]) =>
+    statements.filter((sql) =>
+      sql.startsWith("SAVEPOINT measurement_identity_reconcile"),
+    ).length;
+
+  it("writes and re-writes a day's total in sets, not one reading at a time", async () => {
+    const prisma = getPrismaClient();
+    const user = await createUser("hc-day-totals");
+    const { path } = fixtureDb("day-totals", { days: 60, endUtc: today });
+    const args = {
+      prisma,
+      dbPath: path,
+      userId: user.id,
+      userTimezone: "Europe/Berlin",
+      connectedIntegrations: [],
+    } as const;
+
+    // Each day total used to be its own transaction through the reconciler.
+    const first = await countStatements(() => importHealthConnectExport(args));
+    expect(first.result.perType.ACTIVITY_STEPS.inserted).toBeGreaterThan(50);
+    expect(perReading(first.statements)).toBe(0);
+
+    // Every stored total now differs from the export: each is overwritten.
+    const steps = await prisma.measurement.updateMany({
+      where: { userId: user.id, type: "ACTIVITY_STEPS" },
+      data: { value: { increment: 1 } },
+    });
+    const again = await countStatements(() => importHealthConnectExport(args));
+    expect(again.result.perType.ACTIVITY_STEPS.updated).toBe(steps.count);
+    expect(perReading(again.statements)).toBe(0);
+  });
+});
+
 describe("Health Connect import, duplicates from other paths", () => {
   it("leaves out the apps of connected integrations", async () => {
     const prisma = getPrismaClient();
@@ -323,7 +359,7 @@ describe("Health Connect import, duplicates from other paths", () => {
       dbPath: path,
       userId: user.id,
       userTimezone: "Europe/Berlin",
-      connectedIntegrations: ["withings", "fitbit"],
+      connectedIntegrations: ["withings", "googleHealth"],
     });
     const counts = await countBy(user.id);
     // Only the Health Connect app's own weighings; the scale's are skipped.

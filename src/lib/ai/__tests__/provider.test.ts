@@ -405,6 +405,20 @@ describe("resolveProviderForTest — empty override resolves via the chain", () 
     ).rejects.toMatchObject({ name: "AITestConfigError", status: 422 });
   });
 
+  it("rejects testing Antigravity when not connected", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      antigravityProfileId: null,
+      antigravityConnectionStatus: "disconnected",
+    } as unknown as UserRowForTest);
+    await expect(
+      resolveProviderForTest("user-123", { provider: "ANTIGRAVITY_CLI" }),
+    ).rejects.toMatchObject({
+      name: "AITestConfigError",
+      status: 422,
+      message: "Antigravity is not connected",
+    });
+  });
+
   it("rejects changing base URL origin while reusing stored key without explicit key override", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       aiProvider: "LOCAL",

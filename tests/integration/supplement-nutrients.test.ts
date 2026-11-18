@@ -254,6 +254,13 @@ describe("GET /api/nutrients/catalog", () => {
       scope: "total",
     });
     expect(byCode.get("magnesium")?.upperLimit?.scope).toBe("supplemental");
+    // Energy is syncable but no ingredient; magnesium is both.
+    expect(byCode.get("energy")).toMatchObject({
+      unit: "kcal",
+      syncable: true,
+      ingredient: false,
+    });
+    expect(byCode.get("magnesium")).toMatchObject({ ingredient: true });
   });
 
   it("is behind the nutrients module", async () => {
@@ -365,6 +372,22 @@ describe("PUT /api/medications/{id}/ingredients", () => {
       ],
     });
     expect(duplicate.status).toBe(422);
+  });
+
+  it("refuses energy, a macronutrient and alcohol: they are no ingredient", async () => {
+    const userId = await makeUser();
+    const medicationId = await vitaminD(userId);
+    for (const [nutrient, unit] of [
+      ["energy", "kcal"],
+      ["protein", "g"],
+      ["alcohol", "g"],
+    ]) {
+      const res = await putIngredients(medicationId, {
+        ingredients: [{ nutrient, amount: 5, unit }],
+      });
+      expect(res.status, nutrient).toBe(422);
+      expect(res.body.meta?.errorCode).toBe("medications.ingredients.invalid");
+    }
   });
 
   it("answers 404 for a medication of another account", async () => {

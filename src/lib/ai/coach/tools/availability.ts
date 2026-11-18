@@ -39,11 +39,11 @@
  * Under a limit every probe below reads from inside it only, and
  * `reachableWithWindow` never names a window wider than the limit.
  *
- * Cost. One grouped aggregate over `Measurement` for every measurement-backed
- * subject in the batch (indexed by `(userId, type, measuredAt)`, no rows
- * materialised in JS), plus at most one `aggregate()` per non-measurement
- * subject kind actually asked for. It runs ONLY on the miss path, and only for
- * the domains that missed.
+ * Cost. One bounded sample per measurement type in the batch
+ * (`measurement-sample.ts`: a capped descent of the live index, no rows
+ * materialised in JS), the rollup tier for a type past the cap, plus at most
+ * one `aggregate()` per non-measurement subject kind actually asked for. It
+ * runs ONLY on the miss path, and only for the domains that missed.
  *
  * Why an aggregate and not a wider window. The window cap exists because a
  * multi-year raw history does not fit a prompt budget — 1,597 CGM points cannot
@@ -53,9 +53,15 @@
  * is enough for the Coach to answer the question instead of only naming it.
  */
 import { prisma } from "@/lib/db";
-import { Prisma, type MeasurementType } from "@/generated/prisma/client";
-import { dayWeightedRowsSql, windowMeanSql } from "@/lib/measurements/day-mean";
-import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
+import type { MeasurementType } from "@/generated/prisma/client";
+import {
+  MEASUREMENT_SAMPLE_CAP,
+  readMeasurementSample,
+} from "./measurement-sample";
+import {
+  readAllTimeExtremes,
+  type AllTimeExtremes,
+} from "@/lib/insights/feature-blocks";
 import { userDayKey } from "@/lib/tz/format";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { annotate } from "@/lib/logging/context";
@@ -162,116 +168,112 @@ interface RawBounds {
 }
 
 /**
- * One grouped aggregate over `Measurement` for every type in `types`, split by
- * unit so a mixed-unit history is detectable rather than averaged.
+ * Count, range and per-unit aggregate for every type in `types`, split by unit
+ * so a mixed-unit history is detectable rather than averaged.
+ *
+ * Bounded by construction. Each type is read newest first through its own
+ * descent of the live index (`liveTypeDescent`), stopping one row past
+ * `MEASUREMENT_SAMPLE_CAP`, and its oldest reading is one more descent. A type
+ * that fits under the cap, which is every type a person logs by hand, is
+ * aggregated from those rows exactly as the whole history: count, range,
+ * extremes and mean are what a read of every row gives. A type past the cap
+ * is a device stream, and its figures come from `readAllTimeExtremes`, the
+ * DAY rollup tier checked against the record at its ends: count, extremes
+ * and mean over one ladder-canonical source per day. Its unit is the one its
+ * newest rows and its oldest row carry; a stream whose sampled rows disagree
+ * is mixed and gets no aggregate.
+ *
+ * The earlier read grouped every live row of every type, and for the hourly
+ * types weighted every one of them by its hour a second time. A watch's
+ * heart-rate stream that stopped syncing a month ago was then millions of
+ * rows read twice, on the path that only runs to say the rows exist.
  */
 async function readMeasurementBounds(
   userId: string,
   types: readonly MeasurementType[],
   floor: Date | null,
 ): Promise<Map<MeasurementType, RawBounds>> {
-  const rows = await prisma.measurement.groupBy({
-    by: ["type", "unit"],
-    where: {
-      userId,
-      deletedAt: null,
-      type: { in: [...types] },
-      ...(floor ? { measuredAt: { gte: floor } } : {}),
-    },
-    _count: { _all: true },
-    _min: { measuredAt: true, value: true },
-    _max: { measuredAt: true, value: true },
-    _avg: { value: true },
-  });
-  const dayMeans = await readHourlyMeanTypeMeans(userId, types, floor);
-  const out = new Map<MeasurementType, RawBounds>();
+  const rows = await readMeasurementSample(userId, types, floor);
+
+  const byType = new Map<MeasurementType, typeof rows>();
   for (const row of rows) {
-    const firstAt = row._min.measuredAt;
-    const lastAt = row._max.measuredAt;
-    const min = row._min.value;
-    const max = row._max.value;
-    // A pulse mean is the mean of its days, each the mean of its hours'
-    // means, so a dense workout hour does not stand in for the history.
-    const mean = usesHourlyMeanDay(row.type)
-      ? (dayMeans.get(`${row.type}|${row.unit}`) ?? null)
-      : row._avg.value;
-    if (!firstAt || !lastAt) continue;
-    const existing = out.get(row.type);
-    const unitEntry =
-      min !== null && max !== null && mean !== null
-        ? {
-            series: row.type as string,
-            unit: row.unit,
-            count: row._count._all,
-            // One decimal, like every other mean the snapshot surfaces — a raw
-            // float would invite the model to quote a precision the reading
-            // never had.
-            mean: Math.round(mean * 10) / 10,
-            min,
-            max,
-          }
-        : null;
-    if (!existing) {
-      out.set(row.type, {
-        count: row._count._all,
-        firstAt,
-        lastAt,
-        ...(unitEntry ? { series: [unitEntry] } : {}),
-      });
+    const key = row.type as MeasurementType;
+    byType.set(key, [...(byType.get(key) ?? []), row]);
+  }
+  const dense = [...byType]
+    .filter(
+      ([, units]) =>
+        units.reduce((n, u) => n + u.n, 0) > MEASUREMENT_SAMPLE_CAP,
+    )
+    .map(([t]) => t);
+  const extremes =
+    dense.length > 0
+      ? await readAllTimeExtremes(userId, dense, floor)
+      : new Map<MeasurementType, AllTimeExtremes>();
+
+  const out = new Map<MeasurementType, RawBounds>();
+  for (const [t, units] of byType) {
+    const firstAt = new Date(
+      Math.min(...units.map((u) => new Date(u.first_at).getTime())),
+    );
+    const lastAt = new Date(
+      Math.max(...units.map((u) => new Date(u.last_at).getTime())),
+    );
+    if (!dense.includes(t)) {
+      const count = units.reduce((n, u) => n + u.n, 0);
+      const [only] = units;
+      const series =
+        units.length === 1 &&
+        only.min !== null &&
+        only.max !== null &&
+        only.mean !== null
+          ? [
+              {
+                series: t as string,
+                unit: only.unit,
+                count,
+                // One decimal, like every other mean the snapshot surfaces —
+                // a raw float would invite the model to quote a precision the
+                // reading never had.
+                mean: Math.round(Number(only.mean) * 10) / 10,
+                min: Number(only.min),
+                max: Number(only.max),
+              },
+            ]
+          : null;
+      out.set(t, { count, firstAt, lastAt, ...(series ? { series } : {}) });
       continue;
     }
-    // A second unit for the same type: merge the bounds, and drop the value
-    // aggregate entirely — the two units cannot be folded into one mean.
-    existing.count += row._count._all;
-    if (firstAt < existing.firstAt) existing.firstAt = firstAt;
-    if (lastAt > existing.lastAt) existing.lastAt = lastAt;
-    delete existing.series;
-  }
-  return out;
-}
-
-/**
- * The all-time mean per type and unit for the hourly-mean types among
- * `types` (pulse, see `day-mean.ts`): the mean of the user's local days, each
- * the mean of its local hours' means. Empty when none of `types` is one.
- */
-async function readHourlyMeanTypeMeans(
-  userId: string,
-  types: readonly MeasurementType[],
-  floor: Date | null,
-): Promise<Map<string, number>> {
-  const hourly = types.filter((t) => usesHourlyMeanDay(t));
-  const out = new Map<string, number>();
-  if (hourly.length === 0) return out;
-  const tz = await resolveUserTimezone(userId);
-  const rows = await prisma.$queryRaw<
-    Array<{ type: string; unit: string | null; mean: number | null }>
-  >`
-    WITH src AS (
-      SELECT *
-      FROM measurements m
-      WHERE m."user_id" = ${userId}
-        AND m."deleted_at" IS NULL
-        AND m."type" IN (${Prisma.join(
-          hourly.map((t) => Prisma.sql`${t}::measurement_type`),
-        )})
-        ${floor ? Prisma.sql`AND m."measured_at" >= ${floor}` : Prisma.empty}
-    )
-    SELECT
-      m."type"::text AS type,
-      m."unit" AS unit,
-      ${Prisma.raw(
-        windowMeanSql({
-          typeColumn: 'm."type"',
-          value: 'm."value"',
-          weight: "m.day_weight",
-        }),
-      )}::double precision AS mean
-    FROM ${dayWeightedRowsSql("src", tz)} m
-    GROUP BY m."type", m."unit"
-  `;
-  for (const r of rows) {
-    if (r.mean !== null) out.set(`${r.type}|${r.unit}`, Number(r.mean));
+    const oldest = units[0].oldest_at ? new Date(units[0].oldest_at) : firstAt;
+    const unitSet = new Set([
+      ...units.map((u) => u.unit),
+      units[0].oldest_unit,
+    ]);
+    const figures = extremes.get(t);
+    const count = figures?.count ?? units.reduce((n, u) => n + u.n, 0);
+    const series =
+      unitSet.size === 1 &&
+      figures &&
+      figures.mean !== null &&
+      figures.min !== null &&
+      figures.max !== null
+        ? [
+            {
+              series: t as string,
+              unit: units[0].unit,
+              count,
+              mean: Math.round(figures.mean * 10) / 10,
+              min: figures.min,
+              max: figures.max,
+            },
+          ]
+        : null;
+    out.set(t, {
+      count,
+      firstAt: oldest,
+      lastAt,
+      ...(series ? { series } : {}),
+    });
   }
   return out;
 }

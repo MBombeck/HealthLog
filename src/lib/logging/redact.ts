@@ -174,8 +174,11 @@ export function redactSecrets(input: string): string {
       // `totp`/`mfa` tickets-or-codes, `backup_code` / `recovery_code`, and the
       // `passphrase` that derives the encrypted-export key must never land in
       // `http.path` / error strings reaching Loki / Glitchtip.
+      // #163 B2 — `mfa_ticket`, which the native sign-in's https return page
+      // receives in its query (a CSP report or a client error can carry that
+      // address in `document_uri` / `location.href`).
       .replace(
-        /([?&])(secret|code|token|ticket|api[_-]?key|license[_-]?key|insurance(?:number)?|kvnr|totp|mfa|backup[_-]?code|recovery[_-]?code|passphrase)=[^&\s]+/gi,
+        /([?&])(secret|code|token|(?:mfa[_-]?)?ticket|api[_-]?key|license[_-]?key|insurance(?:number)?|kvnr|totp|mfa|backup[_-]?code|recovery[_-]?code|passphrase)=[^&\s]+/gi,
         "$1$2=[REDACTED]",
       )
   );

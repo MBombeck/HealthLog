@@ -43,13 +43,17 @@ import {
   TOMBSTONE_RETENTION_DAYS,
 } from "@/lib/auth/native-client";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import {
+  countLiveMeasurements,
+  countTombstonedMeasurements,
+} from "@/lib/sync/measurement-counts";
 
 export const GET = apiHandler(async (_request: NextRequest) => {
   const { user } = await requireAuth();
 
-  // Per-domain aggregate reads. Each runs against indexed columns (userId,
-  // deleted_at / updated_at) so it stays O(rows-for-user) and not
-  // O(rows-across-tenants). v1.7.0 adds the mood + intake blocks now that
+  // Per-domain aggregate reads. The measurement counts are bounded by days
+  // and tombstones rather than readings (`measurement-counts.ts`); the mood
+  // and intake tables are counted directly. v1.7.0 adds the mood + intake blocks now that
   // both carry the sync columns.
   const [
     measurementLatest,
@@ -68,10 +72,8 @@ export const GET = apiHandler(async (_request: NextRequest) => {
       orderBy: { updatedAt: "desc" },
       select: { updatedAt: true },
     }),
-    prisma.measurement.count({ where: { userId: user.id, deletedAt: null } }),
-    prisma.measurement.count({
-      where: { userId: user.id, deletedAt: { not: null } },
-    }),
+    countLiveMeasurements(user.id),
+    countTombstonedMeasurements(user.id),
     prisma.moodEntry.findFirst({
       where: { userId: user.id, deletedAt: null },
       orderBy: { updatedAt: "desc" },

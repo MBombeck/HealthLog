@@ -65,6 +65,7 @@ vi.mock("@/lib/integrations/oauth-refresh", () => ({
 }));
 vi.mock("@/lib/measurements/reconcile-external-measurement", () => ({
   reconcileExternalMeasurement: vi.fn(),
+  reconcileExternalMeasurements: vi.fn(async () => []),
   MeasurementReconciliationError: class extends Error {},
 }));
 vi.mock("@/lib/rollups/measurement-rollups", () => ({

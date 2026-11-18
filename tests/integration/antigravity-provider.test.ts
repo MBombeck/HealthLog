@@ -61,7 +61,7 @@ describe("Antigravity provider chain (database and fake agy)", () => {
   it("keeps Antigravity in the chain when the user's profile folder exists", async () => {
     const user = await makeUser({ profileId: "prof-ready" });
 
-    const chain = await resolveProviderChain(user.id);
+    const chain = await resolveProviderChain(user.id, null);
 
     expect(chain.map((entry) => entry.providerType)).toEqual(["antigravity"]);
     expect(chain[0].instance.type).toBe("antigravity");
@@ -71,7 +71,7 @@ describe("Antigravity provider chain (database and fake agy)", () => {
   it("drops Antigravity from the chain when the profile folder is missing", async () => {
     const user = await makeUser({ profileId: "prof-not-created" });
 
-    const chain = await resolveProviderChain(user.id);
+    const chain = await resolveProviderChain(user.id, null);
 
     expect(chain.map((entry) => entry.providerType)).not.toContain(
       "antigravity",
@@ -81,7 +81,7 @@ describe("Antigravity provider chain (database and fake agy)", () => {
   it("drops Antigravity from the chain when the user has no profile", async () => {
     const user = await makeUser({ profileId: null });
 
-    const chain = await resolveProviderChain(user.id);
+    const chain = await resolveProviderChain(user.id, null);
 
     expect(chain.map((entry) => entry.providerType)).not.toContain(
       "antigravity",
@@ -94,7 +94,7 @@ describe("Antigravity provider chain (database and fake agy)", () => {
       model: "model-pro",
     });
 
-    const chain = await resolveProviderChain(user.id);
+    const chain = await resolveProviderChain(user.id, null);
     const result = await chain[0].instance.generateCompletion(
       singleUserTurn({ system: "Be brief.", user: "Hello" }),
     );

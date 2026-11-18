@@ -159,8 +159,6 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   { model: "User", field: "withingsClientSecretEncrypted", kind: "string" },
   { model: "User", field: "whoopClientIdEncrypted", kind: "string" },
   { model: "User", field: "whoopClientSecretEncrypted", kind: "string" },
-  { model: "User", field: "fitbitClientIdEncrypted", kind: "string" },
-  { model: "User", field: "fitbitClientSecretEncrypted", kind: "string" },
   // v1.27.0 — Google Health (Fitbit / Pixel Watch) BYO OAuth client.
   { model: "User", field: "googleHealthClientIdEncrypted", kind: "string" },
   { model: "User", field: "googleHealthClientSecretEncrypted", kind: "string" },
@@ -200,8 +198,6 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   { model: "WithingsConnection", field: "refreshToken", kind: "string" },
   { model: "WhoopConnection", field: "accessToken", kind: "string" },
   { model: "WhoopConnection", field: "refreshToken", kind: "string" },
-  { model: "FitbitConnection", field: "accessToken", kind: "string" },
-  { model: "FitbitConnection", field: "refreshToken", kind: "string" },
   { model: "GoogleHealthConnection", field: "accessToken", kind: "string" },
   { model: "GoogleHealthConnection", field: "refreshToken", kind: "string" },
 
@@ -346,6 +342,14 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   // v1.40 — the person's own symptom names and the note on one occurrence.
   { model: "SymptomDefinition", field: "labelEncrypted", kind: "bytes" },
   { model: "SymptomEvent", field: "noteEncrypted", kind: "bytes" },
+  // The seizure diary: the family's name for a type, its
+  // rescue plan, and the free text on one seizure.
+  { model: "SeizureTypeProfile", field: "labelEncrypted", kind: "bytes" },
+  { model: "SeizureTypeProfile", field: "rescuePlanEncrypted", kind: "bytes" },
+  { model: "SeizureEvent", field: "semiologyNoteEncrypted", kind: "bytes" },
+  { model: "SeizureEvent", field: "auraEncrypted", kind: "bytes" },
+  { model: "SeizureEvent", field: "witnessNoteEncrypted", kind: "bytes" },
+  { model: "SeizureEvent", field: "noteEncrypted", kind: "bytes" },
   // v1.42 — a life event's title and note, in the person's own words.
   { model: "LifeEvent", field: "titleEncrypted", kind: "bytes" },
   { model: "LifeEvent", field: "noteEncrypted", kind: "bytes" },
@@ -624,6 +628,21 @@ export function encryptedColumnKey(c: EncryptedColumn): string {
 }
 
 /**
+ * Sealed columns of the removed Fitbit integration. Migration 0503 emptied
+ * them, and they stay one release only so the v1.47.6 image keeps reading
+ * user rows during the switchover and after a rollback. Nothing in this
+ * release reads or writes them, the key rotation included; the next minor
+ * release drops them. `encrypted-columns.test.ts` accepts them as accounted
+ * for instead of as a rotation gap.
+ */
+export const RETIRED_ENCRYPTED_COLUMNS: ReadonlySet<string> = new Set([
+  "User.fitbitClientIdEncrypted",
+  "User.fitbitClientSecretEncrypted",
+  "FitbitConnection.accessToken",
+  "FitbitConnection.refreshToken",
+]);
+
+/**
  * The registry models that carry a Prisma `@updatedAt` column. Re-sealing a
  * value under a new key is not an edit, so the rotation carries each row's
  * own `updatedAt` through the write instead of letting Prisma stamp the run
@@ -649,7 +668,6 @@ export const UPDATED_AT_MODELS: ReadonlySet<string> = new Set([
   "EnvironmentTravelLocation",
   "ExtractedFact",
   "FamilyHistoryEntry",
-  "FitbitConnection",
   "GoogleHealthConnection",
   "IllnessDayLog",
   "IllnessEpisode",
@@ -669,6 +687,8 @@ export const UPDATED_AT_MODELS: ReadonlySet<string> = new Set([
   "MoodEntry",
   "NotificationChannel",
   "Practitioner",
+  "SeizureEvent",
+  "SeizureTypeProfile",
   "SymptomDefinition",
   "SymptomEvent",
   "User",

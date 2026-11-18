@@ -171,7 +171,10 @@ describe("status path delivers real provider text", () => {
       },
     });
     const { resolveProviderChain } = await import("@/lib/ai/provider");
-    const [entry] = await vi.mocked(resolveProviderChain)(user.id);
+    const [entry] = await vi.mocked(resolveProviderChain)(
+      user.id,
+      "statusText",
+    );
     const generate = vi.mocked(entry.instance.generateCompletion);
     generate.mockClear();
 

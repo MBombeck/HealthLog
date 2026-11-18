@@ -8,16 +8,12 @@
  * the OAuth `state` param. The connect route, the callback route, and the
  * cleanup cron all read these constants so the contract has one source of truth
  * and the unit tests can pin it without importing either route file.
- *
- * The string keys are deliberately distinct from the classic Fitbit provider's
- * (`fitbit_state`) so the two coexisting integrations never collide on a cookie.
  */
 import { randomBytes } from "node:crypto";
 
 /**
  * Cookie name carrying the in-flight state nonce. httpOnly + Secure +
- * sameSite:lax at the connect route (mirrors the WHOOP cookie shape). Distinct
- * from the classic Fitbit `fitbit_state` cookie.
+ * sameSite:lax at the connect route (mirrors the WHOOP cookie shape).
  */
 export const GOOGLE_HEALTH_OAUTH_STATE_COOKIE = "google_health_state" as const;
 

@@ -244,17 +244,24 @@ model User {
   whoopClientIdEncrypted     String? @map("whoop_client_id_encrypted")
   whoopClientSecretEncrypted String? @map("whoop_client_secret_encrypted")
 
-  // v1.12.0 — Fitbit/Pixel OAuth credentials (per-user BYO-keys, encrypted at
-  // app level) over the Google Health API. The per-app authorized-user cap in
-  // Google's Testing mode makes a single shared client unworkable for a
-  // multi-operator product, so each self-hoster registers their own Google
-  // Cloud OAuth client and pastes the client id/secret into Settings.
+  // The Fitbit integration's per-account app credentials, emptied by
+  // migration 0503. The columns stay one release so the v1.47.6 image keeps
+  // reading user rows during the switchover and after a rollback; nothing in
+  // this release reads or writes them.
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
   fitbitClientIdEncrypted     String? @map("fitbit_client_id_encrypted")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
   fitbitClientSecretEncrypted String? @map("fitbit_client_secret_encrypted")
 
+  /// When migration 0503 removed this account's Fitbit connection with the
+  /// integration (Google turned the Fitbit Web API off on 2026-10-30). Set
+  /// shows the one note about it on Settings > Integrations, published as
+  /// `fitbitRemovalNotice` on `/api/integrations/status`; dismissing the note
+  /// clears it. Nothing else sets it.
+  fitbitRemovalNoticeAt DateTime? @map("fitbit_removal_notice_at")
+
   // v1.27.0 — Google Health API OAuth credentials (per-user BYO-keys, encrypted
-  // at app level). A separate provider from the classic Fitbit Web API columns
-  // above: the CASA-free "Testing" consent path caps a single OAuth client at
+  // at app level). The CASA-free "Testing" consent path caps a single OAuth client at
   // ≤100 test users, so each self-hoster registers their own Google Cloud OAuth
   // client and pastes the client id/secret into Settings.
   googleHealthClientIdEncrypted     String? @map("google_health_client_id_encrypted")
@@ -341,17 +348,17 @@ model User {
   // exchanges it for a short-lived token on every run, so the key is the only
   // credential at rest. The token itself is never stored.
   /// Sealed Garmin Personal API key.
-  garminApiKeyEncrypted       String?   @map("garmin_api_key_encrypted")
+  garminApiKeyEncrypted     String?   @map("garmin_api_key_encrypted")
   /// v1.47 — when the Garmin key stops working: learned from the token's own expiry once it is capped by the key's, else the validity the person picked at connect counted from then. Null when neither is known. Drives the card's expiry warning.
-  garminKeyExpiresAt          DateTime? @map("garmin_key_expires_at")
+  garminKeyExpiresAt        DateTime? @map("garmin_key_expires_at")
   /// v1.47 — when the current Garmin key was connected; the anchor the picked validity counts from.
-  garminConnectedAt           DateTime? @map("garmin_connected_at")
+  garminConnectedAt         DateTime? @map("garmin_connected_at")
   /// v1.47 — which Garmin service accepted the key at connect: `global` (personal.connectapi.garmin.com) or `china` (…garmin.cn). Not a secret; the sync reads it to pick the host.
-  garminRegion                String?   @map("garmin_region")
+  garminRegion              String?   @map("garmin_region")
   /// v1.47 — how far the Garmin history backfill has got, per resource (see `src/lib/garmin/backfill-progress.ts`). Cleared on connect and disconnect.
-  garminBackfillProgress      Json?     @map("garmin_backfill_progress")
+  garminBackfillProgress    Json?     @map("garmin_backfill_progress")
   /// v1.47 — the Garmin history backfill finished (discovery predicate `garmin_backfill_completed_at IS NULL`). Cleared on connect.
-  garminBackfillCompletedAt   DateTime? @map("garmin_backfill_completed_at")
+  garminBackfillCompletedAt DateTime? @map("garmin_backfill_completed_at")
   /// v1.44 — which provider apps on this record were copied from a
   /// guardian at connect, and from whom: `{ "<provider>": "<guardianUserId>" }`.
   /// A managed profile has no settings page for its own app, so a guardian's is
@@ -444,6 +451,13 @@ model User {
   /// `/api/activity/goals`, read by the activity calendar
   /// (`/api/activity/calendar`), which reports progress against each goal set.
   activityGoalsJson        Json?                @map("activity_goals_json")
+  /// Optional daily nutrient targets the person set for themselves, keyed by
+  /// catalog code: `{ value, direction: "target" | "limit" }` in the code's
+  /// canonical unit. Null or an absent key = no target. Parsed by
+  /// `src/lib/validations/nutrient-targets.ts`, written through
+  /// `/api/nutrients/targets`, read by `/api/nutrients/daily` and the MCP
+  /// `get_nutrients` tool, whose charts prefer it over the dietary reference.
+  nutrientTargetsJson      Json?                @map("nutrient_targets_json")
   // Blood-glucose display unit preference. Canonical storage is mg/dL.
   glucoseUnit              String?              @map("glucose_unit") // "mg/dL" | "mmol/L" | null = default "mg/dL"
   // v1.18.6 — explicit "I have diabetes / clinician glucose targets" opt-in.
@@ -512,6 +526,13 @@ model User {
   // enumerates which providers to try and in what order. Null = legacy
   // behaviour (single-provider resolution via `aiProvider`).
   aiProviderChain Json? @map("ai_provider_chain")
+
+  // #1404 — named provider chains next to the main chain above, and which AI
+  // capability is attached to which: `{ chains: [{ id, name, entries }],
+  // defaultChainId, attachments }`, parsed by `parseNamedChains`
+  // (`src/lib/ai/named-chains.ts`). Metadata only; null = no named chains, so
+  // every capability reads the main chain under today's rules.
+  aiNamedChains Json? @map("ai_named_chains")
 
   // v1.22 (#89) — per-user response timeout for AI generation, in SECONDS.
   // Threaded onto `CompletionParams.timeoutMs` (×1000). Null = the generous
@@ -897,13 +918,12 @@ model User {
   whoopConnection                           WhoopConnection?
   whoopOAuthStates                          WhoopOAuthState[]
   whoopConnectTickets                       WhoopConnectTicket[]
-  // v1.12.0 — Fitbit/Pixel integration. Mirrors the WHOOP connection (1:1) +
-  // OAuth-state ledger (1:N) relations.
+  // The removed Fitbit integration's tables, emptied by migration 0503 and
+  // kept one release for rollback safety (see `FitbitConnection`).
   fitbitConnection                          FitbitConnection?
   fitbitOAuthStates                         FitbitOAuthState[]
-  // v1.27.0 — Google Health API integration (separate provider from the classic
-  // Fitbit Web API above). Mirrors the connection (1:1) + OAuth-state ledger
-  // (1:N) relations.
+  // v1.27.0 — Google Health API integration. Mirrors the connection (1:1) +
+  // OAuth-state ledger (1:N) relations.
   googleHealthConnection                    GoogleHealthConnection?
   googleHealthOAuthStates                   GoogleHealthOAuthState[]
   moodEntries                               MoodEntry[]
@@ -1066,6 +1086,14 @@ model User {
   illnessDayLogs                            IllnessDayLog[]
   symptomDefinitions                        SymptomDefinition[]
   symptomEvents                             SymptomEvent[]
+  // The seizure diary: the person's own seizure types, each
+  // recorded seizure, the rescue doses given for it, and the record's cluster
+  // rule.
+  seizureTypeProfiles                       SeizureTypeProfile[]
+  seizureEvents                             SeizureEvent[]
+  seizureClusterAlerts                      SeizureClusterAlert[]
+  seizureRescueDoses                        SeizureRescueDose[]
+  seizureDiarySettings                      SeizureDiarySettings?
   // v1.25 (W-RECORDS) — structured health-record entries. Allergies map to
   // FHIR AllergyIntolerance; family-history entries map to FHIR
   // FamilyMemberHistory. Reference records (not time-series signals); the
@@ -1091,6 +1119,9 @@ model User {
   // v1.39.2 — source keys of imported documents that the tombstone purge
   // removed, so a re-run of an importer cannot bring a deleted document back.
   documentImportKeys                        DocumentImportKey[]
+  // v1.47.7 — identities of Health Records lab readings the person deleted,
+  // kept once the reading's row is gone. See LabResultImportKey.
+  labResultImportKeys                       LabResultImportKey[]
   // v1.39.2 — further source keys an import answered with an existing
   // document (same bytes under another key). See DocumentSourceAlias.
   documentSourceAliases                     DocumentSourceAlias[]
@@ -1174,13 +1205,13 @@ model User {
   // (lazily upserted on first cycle-surface access); MenstrualCycle +
   // CycleDayLog are the soft-deleted, sync-feed-bearing capture rows;
   // CyclePrediction is a 1:1 cached forecast (debounced regenerate).
-  cycleProfile        CycleProfile?
-  menstrualCycles     MenstrualCycle[]
-  cycleDayLogs        CycleDayLog[]
-  cyclePrediction     CyclePrediction?
+  cycleProfile             CycleProfile?
+  menstrualCycles          MenstrualCycle[]
+  cycleDayLogs             CycleDayLog[]
+  cyclePrediction          CyclePrediction?
   // v1.15.0 — owner of a per-user custom CycleSymptom (NULL = the global
   // seeded catalogue).
-  cycleSymptomsCustom CycleSymptom[]   @relation("UserCycleSymptoms")
+  cycleSymptomsCustom      CycleSymptom[]      @relation("UserCycleSymptoms")
   // #1350 — the subscribable cycle forecast. `cycleCalendarFeeds` is the
   // record the feed serves; `cycleCalendarFeedsMinted` is the carrier who
   // minted it, which is the owner on their own record and the guardian on a
@@ -1708,6 +1739,7 @@ enum MeasurementType {
   LOW_HEART_RATE_EVENT // HealthKit `HKCategoryTypeIdentifierLowHeartRateEvent`. The watch detected a sustained low heart rate below the user's configured threshold.
   WALKING_STEADINESS_EVENT // HealthKit `HKCategoryTypeIdentifierAppleWalkingSteadinessEvent`. The device flagged low / very-low walking steadiness (a falls-risk mobility signal); the severity rides in `rhythmClassification`.
   BREATHING_DISTURBANCE_EVENT // HealthKit `HKCategoryTypeIdentifierSleepApneaEvent` + `AppleSleepingBreathingDisturbances`. The device flagged an elevated breathing-disturbance / possible sleep-apnea signal during sleep. SCREENING SIGNAL ONLY — never a HealthLog diagnosis.
+  HYPERTENSION_EVENT // HealthKit `HKCategoryTypeIdentifierHypertensionEvent` (Apple Watch hypertension notifications, iOS 26). The watch's certified algorithm flagged signs of possible hypertension over a 30-day window. AWARENESS ONLY — never a HealthLog diagnosis; it is not a blood-pressure reading.
   // v1.10.0 — computed scores (WX-C)
   // Server-derived wellness scores (0–100, unit `score`). Each is minted by a
   // nightly engine from the user's already-stored signals and persisted as a
@@ -1887,7 +1919,8 @@ model MentalHealthAssessment {
   wording            String?
   /// Instrument variant identifier (e.g. "standard"); future-proofs revisions.
   version            String               @default("standard")
-  /// Encrypted JSON blob: { items: number[], functionalDifficulty?: 0..3, schema: 1 }.
+  /// Encrypted JSON blob: { items: number[] | null, functionalDifficulty?: 0..3, schema: 1 }.
+  /// `items` is null for a score-only administration from Apple Health.
   /// AES-256-GCM via the shared Bytes codec; registered in ENCRYPTED_COLUMNS +
   /// the rotation script. The item-9 raw value lives ONLY here.
   responsesEncrypted Bytes                @map("responses_encrypted")
@@ -1904,6 +1937,8 @@ model MentalHealthAssessment {
   /// Recall-window anchor (when the screener was taken).
   takenAt            DateTime             @map("taken_at")
   tz                 String?
+  /// "WEB" | "IOS" (the questionnaire) | "APPLE_HEALTH" (a PHQ-9 / GAD-7
+  /// scored assessment from the measurement batch). Closed set in app code.
   source             String               @default("WEB")
   externalId         String?              @map("external_id")
   syncVersion        Int                  @default(0) @map("sync_version")
@@ -1929,7 +1964,7 @@ model MentalHealthAssessment {
 /// The device's own classification RESULT / severity for an EVENT row.
 /// Non-NULL only for the categorical EVENT `MeasurementType`s
 /// (IRREGULAR_RHYTHM_NOTIFICATION, HIGH/LOW_HEART_RATE_EVENT,
-/// WALKING_STEADINESS_EVENT, BREATHING_DISTURBANCE_EVENT), NULL for every
+/// WALKING_STEADINESS_EVENT, BREATHING_DISTURBANCE_EVENT, HYPERTENSION_EVENT), NULL for every
 /// continuous measurement — mirroring the `GlucoseContext` / `SleepStage`
 /// nullable-context precedent.
 ///
@@ -2002,9 +2037,11 @@ enum MeasurementSource {
   // (no client write path) as `source = WHOOP` rows. iOS DTO mirrors this
   // exact spelling so the `/api/sync/changes` delta feed decodes the rows.
   WHOOP
-  // v1.12.0 — Fitbit/Pixel integration via the Google Health API. Server-owned
-  // (no client write path); rejected on batch + single POST like WITHINGS/WHOOP.
-  // iOS DTO mirrors this exact spelling so /api/sync/changes decodes the rows.
+  // v1.12.0 — the Fitbit Web API integration, removed in v1.48.0 after Google
+  // turned the API off. The rows it imported keep this source, and a backup
+  // restore writes them back. Rejected on batch + single POST like
+  // WITHINGS/WHOOP. iOS DTO mirrors this exact spelling so
+  // /api/sync/changes decodes the rows.
   FITBIT
   // v1.17.0 — Nightscout glucose integration (F1). Server-owned (no client
   // write path); glucose rows ingest from the user's Nightscout instance.
@@ -2285,6 +2322,10 @@ model Measurement {
   // without this one the purge planned a sequential scan and could not finish
   // inside statement_timeout. Raw SQL only (partial predicate not expressible
   // in Prisma).
+  // `measurements_user_id_deleted_at_tombstone_idx` is a partial index over
+  // `(user_id, deleted_at) WHERE deleted_at IS NOT NULL` (migration 0505,
+  // v1.48.0): the sync handshake counts one account's tombstones through it
+  // instead of walking every account's. Raw SQL only, like the one above.
   // `measurements_noted_live_idx` is a partial index over `(user_id,
   // measured_at DESC, id DESC) WHERE deleted_at IS NULL AND (notes_encrypted
   // IS NOT NULL OR notes IS NOT NULL)` — see migration 0397 (v1.42.2). The
@@ -3112,35 +3153,36 @@ model Medication {
   createdAt                     DateTime               @default(now()) @map("created_at")
   updatedAt                     DateTime               @updatedAt @map("updated_at")
 
-  schedules          MedicationSchedule[]
-  intakeEvents       MedicationIntakeEvent[]
+  schedules            MedicationSchedule[]
+  intakeEvents         MedicationIntakeEvent[]
   /// v1.43 — composition per unit (supplements), and the relation links to
   /// visits, documents and conditions (indication).
-  ingredients        MedicationIngredient[]
-  encounterLinks     EncounterMedicationLink[]
-  documentLinks      MedicationDocumentLink[]
-  conditionLinks     MedicationConditionLink[]
-  intakeImportJobs   MedicationIntakeImportJob[]
-  phaseConfig        ReminderPhaseConfig?
-  telegramMessages   TelegramReminderMessage[]
-  doseChanges        MedicationDoseChange[]
-  inventoryEvents    MedicationInventoryEvent[]
+  ingredients          MedicationIngredient[]
+  encounterLinks       EncounterMedicationLink[]
+  documentLinks        MedicationDocumentLink[]
+  conditionLinks       MedicationConditionLink[]
+  intakeImportJobs     MedicationIntakeImportJob[]
+  phaseConfig          ReminderPhaseConfig?
+  telegramMessages     TelegramReminderMessage[]
+  doseChanges          MedicationDoseChange[]
+  doseChangeTombstones MedicationDoseChangeTombstone[]
+  inventoryEvents      MedicationInventoryEvent[]
   /// v1.4.25 W19b — per-pen / per-vial entities (state machine +
   /// 30-day in-use clock). Complements the running-sum
   /// MedicationInventoryEvent ledger.
-  inventoryItems     MedicationInventoryItem[]
+  inventoryItems       MedicationInventoryItem[]
   /// v1.4.25 W19d — structured GLP-1 side-effect logs. Surfaced on
   /// the medication detail page for GLP-1 treatmentClass only; the
   /// taxonomy follows EMA EPAR §4.8 with HealthLog's 5-category
   /// roll-up (GI / METABOLIC / INJECTION_SITE / COGNITIVE /
   /// GLP1_SPECIFIC) and 1-5 Likert severity per entry.
-  sideEffects        MedicationSideEffect[]
+  sideEffects          MedicationSideEffect[]
   /// v1.16.3 — archived schedule eras (effective dating). Superseded
   /// schedule states land here when a wholesale schedule replace changes
   /// cadence-relevant fields; the band minter segments historical minting
   /// ranges into eras so past days read against the schedule that was
   /// live THEN, not the current one.
-  scheduleRevisions  MedicationScheduleRevision[]
+  scheduleRevisions    MedicationScheduleRevision[]
   /// v1.25 — durable pause intervals. A pause stamps an open era
   /// (`resumedAt = null`); resume closes the latest open era. The
   /// compliance engine drops expected slots whose anchor falls inside a
@@ -3148,19 +3190,23 @@ model Medication {
   /// as missed. The `pausedAt` column on this model stays the live
   /// single-pause marker the reminder/today surfaces read; the era table
   /// is the additive durable record the rate paths need.
-  pauseEras          MedicationPauseEra[]
+  pauseEras            MedicationPauseEra[]
   /// v1.28 — user-pinned efficacy target(s) for the "Wirkung" view. Rows
   /// exist ONLY when the user explicitly overrides the derived (ATC / name)
   /// target resolution; absence means the resolver derives the target each
   /// read. Nothing about a class→outcome association is denormalised here.
-  efficacyTargets    MedicationEfficacyTarget[]
+  efficacyTargets      MedicationEfficacyTarget[]
   /// v1.40 — the clinical category the person filed this medication under
   /// (one row at most; absence reads as OTHER).
-  categoryAssignment MedicationCategoryAssignment?
+  categoryAssignment   MedicationCategoryAssignment?
   /// v1.40 (#1024) — the medication's courses. Empty = chronic since
   /// creation. `startsOn`/`endsOn` above project the latest one, written only
   /// by `src/lib/medications/courses.ts`.
-  courses            MedicationCourse[]
+  courses              MedicationCourse[]
+  /// Seizure types whose rescue plan names this medication,
+  /// and the rescue doses given from it.
+  seizureTypes         SeizureTypeProfile[]
+  seizureRescueDoses   SeizureRescueDose[]
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -3623,6 +3669,10 @@ model MedicationIntakeEvent {
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
 
+  /// The seizure-diary rescue dose this intake was written
+  /// for, when it was written from the diary.
+  seizureRescueDoses SeizureRescueDose[]
+
   /// v1.4.39 W-SERVER-FIX-2 — both the intake route and the dashboard
   /// summary route project active schedules through `expandTodayIntakes`
   /// and idempotently `createMany`-backfill missing rows. Without a
@@ -3697,10 +3747,16 @@ model MedicationDoseChange {
   /// stays for read-fallback until the backfill reports zero remaining
   /// rows; the plaintext drop is DEFERRED to a later release.
   noteEncrypted Bytes?   @map("note_encrypted")
+  /// v1.48.0 (#169) — the client's own id for this step, optional. Unique
+  /// per medication, so a step two devices hold locally is created once: a
+  /// second POST with the same id answers the stored row instead of adding
+  /// one. Carried by backup and restore; never edited after create.
+  clientId      String?  @map("client_id")
   createdAt     DateTime @default(now()) @map("created_at")
 
   medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
 
+  @@unique([medicationId, clientId])
   @@index([medicationId, effectiveFrom])
   // `medication_dose_changes_note_backfill_idx` is a partial index over
   // `(medication_id) WHERE note IS NOT NULL AND note_encrypted IS NULL` — see
@@ -3708,6 +3764,25 @@ model MedicationDoseChange {
   // changes to medications on medication_id to reach the owner; the index
   // leads with that join key. Raw SQL only (partial predicate).
   @@map("medication_dose_changes")
+}
+
+/// v1.48.0 — the client id of a GLP-1 titration step that was removed. A
+/// device that still holds the step as pending upload sends it again under
+/// the same id; this row makes that POST answer 410 instead of creating the
+/// step anew. Written by the step's DELETE (`createdAt` is when the step was
+/// removed), read by the step's POST, gone with the medication. A record, not
+/// a soft delete: nothing purges it. Not in backups: a restore brings back
+/// the steps the backup holds on purpose.
+model MedicationDoseChangeTombstone {
+  id           String   @id @default(cuid())
+  medicationId String   @map("medication_id")
+  clientId     String   @map("client_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+
+  @@unique([medicationId, clientId])
+  @@map("medication_dose_change_tombstones")
 }
 
 /// v1.4.25 W4d — append-only inventory ledger. Positive delta when
@@ -4606,66 +4681,10 @@ model WhoopConnectTicket {
   @@map("whoop_connect_tickets")
 }
 
-/// v1.12.0 — Fitbit/Pixel connection over the Google Health API. Mirrors
-/// `WhoopConnection` 1:1 per user. Tokens are encrypted at the app level
-/// before persistence. Unlike WHOOP, Google refresh tokens do not rotate per
-/// use, so `refreshToken` is overwritten only when a token response carries a
-/// fresh one.
-model FitbitConnection {
-  id                  String    @id @default(cuid())
-  userId              String    @unique @map("user_id")
-  fitbitUserId        String    @map("fitbit_user_id") // Google/Fitbit external id
-  accessToken         String    @map("access_token") // encrypted at app level
-  refreshToken        String    @map("refresh_token") // encrypted at app level
-  tokenExpiresAt      DateTime  @map("token_expires_at")
-  /// Space-separated OAuth scope string granted by the Google authorisation
-  /// flow. Null = legacy connection that predates scope tracking.
-  scope               String?   @map("scope")
-  lastSyncedAt        DateTime? @map("last_synced_at")
-  /// Set once the self-converging history backfill walks every collection to
-  /// completion. Null = backfill still in flight (or never started).
-  backfillCompletedAt DateTime? @map("backfill_completed_at")
-  /// Set once the one-shot sleep repair re-reads the bounded sleep history and
-  /// collapses the duplicates the earlier volatile segment key left behind.
-  /// Null = repair pending.
-  sleepRepairedAt     DateTime? @map("sleep_repaired_at")
-  createdAt           DateTime  @default(now()) @map("created_at")
-  updatedAt           DateTime  @updatedAt @map("updated_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("fitbit_connections")
-}
-
-/// v1.12.0 — short-lived `(nonce → userId)` ledger backing the Fitbit OAuth
-/// state check, identical in shape + lifecycle to `WhoopOAuthState`.
-///
-/// v1.20.0 — the classic Fitbit Web API (`api.fitbit.com`) authorises with PKCE
-/// (Authorization Code + S256), so the connect route mints a `code_verifier`
-/// alongside the nonce and stashes it here; the callback reads it back to present
-/// on the token exchange. Nullable + additive: a legacy row (or a non-PKCE path)
-/// simply carries no verifier.
-model FitbitOAuthState {
-  nonce        String   @id
-  userId       String   @map("user_id")
-  /// PKCE code_verifier carried from connect to callback (v1.20.0). Null when no
-  /// PKCE handshake is in flight (legacy rows).
-  codeVerifier String?  @map("code_verifier")
-  createdAt    DateTime @default(now()) @map("created_at")
-  expiresAt    DateTime @map("expires_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([expiresAt])
-  // Leads the foreign key, so a cascade from the parent row is an index lookup.
-  @@index([userId])
-  @@map("fitbit_oauth_states")
-}
-
 /// v1.27.0 — Google Health connection (Fitbit + Pixel Watch + Fitbit Air) over
-/// the Google Health API (`health.googleapis.com/v4`). A separate, coexisting
-/// provider alongside the classic Fitbit Web API integration (`FitbitConnection`)
-/// — its own token row, `GOOGLE_HEALTH` source enum value, and OAuth client.
+/// the Google Health API (`health.googleapis.com/v4`), the successor of the
+/// retired Fitbit Web API — its own token row, `GOOGLE_HEALTH` source enum
+/// value, and OAuth client.
 /// Tokens are encrypted at the app level before persistence. Google refresh
 /// tokens do NOT rotate per use, so `refreshToken` is overwritten only when a
 /// token response carries a fresh one.
@@ -4721,7 +4740,7 @@ model GoogleHealthConnection {
 }
 
 /// v1.27.0 — short-lived `(nonce → userId)` ledger backing the Google Health
-/// OAuth state check, identical in shape + lifecycle to `FitbitOAuthState`.
+/// OAuth state check, identical in shape + lifecycle to `WhoopOAuthState`.
 /// Google's OAuth is Authorization Code + PKCE (S256), so the connect route
 /// mints a `code_verifier` alongside the nonce and stashes it here; the callback
 /// reads it back to present on the token exchange.
@@ -6351,9 +6370,10 @@ model Device {
   /// v1.7.0 — per-device medication-delivery override. NULL = inherit the
   /// user-level roaming default
   /// (`User.notificationPrefs.medication.deliveryDefault`). "server"
-  /// forces server APNs for this device; "client" forces local. Stored +
-  /// echoed in v1.7.0; cron suppression stays user-level (APNs fans out to
-  /// all the user's devices and iOS dedupes locally).
+  /// forces server APNs for this device; "client" forces local. Since
+  /// v1.48.0 (#179) the dispatcher's APNs send honours it per device for the
+  /// medication reminder that announces a dose; NULL there follows the
+  /// account-wide client-managed flag (`deviceDeliversLocally`).
   medicationDelivery    String?  @map("medication_delivery")
   /// v1.17.1 (#22) — APNs push token for the iOS Live Activity update/end
   /// channel. ActivityKit issues a per-Activity push token distinct from the
@@ -6668,6 +6688,15 @@ model LabResult {
   biomarkerId         String?   @map("biomarker_id")
   /// Provenance: "MANUAL" today; import paths set their own source string.
   source              String    @default("MANUAL")
+  /// #1400 — the identity a reading arrived under from Apple Health's Health
+  /// Records: "fhir:" + a SHA-256 digest of the issuing institution and the
+  /// FHIR Observation's identifier (or "fhirc:" + a digest of its content when
+  /// it has none). A digest, not the identifier and not ciphertext. NULL for
+  /// every reading typed, scanned or imported from CSV. Read by
+  /// `writeFhirLabReadings` (`src/lib/labs/fhir-import/write.ts`), which treats
+  /// a reading it already holds under this id, deleted or not, as a duplicate;
+  /// once a deleted reading's row is gone, `LabResultImportKey` holds the id.
+  externalId          String?   @map("external_id")
   /// Optional free-text note, AES-256-GCM encrypted at rest via
   /// `src/lib/crypto.ts` (Bytes column, `*Encrypted` suffix per convention).
   noteEncrypted       Bytes?    @map("note_encrypted")
@@ -6681,6 +6710,7 @@ model LabResult {
   encounterLinks EncounterLabLink[]
   documentLinks  LabResultDocumentLink[]
 
+  @@unique([userId, source, externalId])
   @@index([userId, analyte, takenAt])
   @@index([userId, deletedAt])
   @@index([biomarkerId])
@@ -6689,6 +6719,30 @@ model LabResult {
   // (v1.28.46 H4), serving the lab-biomarker boot-discovery `SELECT DISTINCT
   // user_id`. Raw SQL only (partial predicate not expressible in Prisma).
   @@map("lab_results")
+}
+
+/// v1.47.7 (#1400) — the identity of a Health Records lab reading the person
+/// deleted, once the reading's row is gone. While a deleted reading waits as
+/// a tombstone, its own `externalId` is the memory that the person deleted it
+/// and the import answers "duplicate". When the row leaves the database (the
+/// tombstone purge, or deleting the reading's whole marker) the identity moves
+/// here in the same transaction, so an Apple Health export or the phone
+/// sending the result again still writes nothing. Read by
+/// `writeFhirLabReadings`, carried by the backup. Holds the digest only, no
+/// lab content.
+model LabResultImportKey {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  /// The `LabResult.source` the identity arrived under ("APPLE_HEALTH").
+  source     String
+  /// The `LabResult.externalId` digest.
+  externalId String   @map("external_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, source, externalId])
+  @@map("lab_result_import_keys")
 }
 
 // ─── Biomarker catalog ───────────────────────────────────────
@@ -8890,6 +8944,393 @@ model SymptomEvent {
   @@map("symptom_events")
 }
 
+// ─── Seizure diary (v1.48.0, #1368) ──────────────────────────────
+//
+// A record of what a person, or the carer beside them, observed: one row per
+// seizure (or per tally of brief ones), against seizure types the family set
+// up once, ideally with the clinician. Records and summarises; never
+// diagnoses, classifies on the person's behalf, scores risk or says it is safe
+// to wait. Clusters, streaks and duration flags are derived at read time from
+// these rows and the record's cluster rule; nothing derived is stored.
+//
+// The classification code is the ILAE 2025 seizure type (Beniczky et al.,
+// Epilepsia 2025); the ILAE 2017 name is a label shown beside it, mapped one
+// to one in `src/lib/seizures/ilae.ts`. The ILAE class is derived from the
+// type and is not stored, so the two can never disagree. Born-gated by the
+// `seizures` module (off by default); the gate is app-layer.
+
+/// ILAE 2025 seizure type. The three `*_UNDETERMINED` values are the parent
+/// class ("focal seizure", "generalized seizure", "unknown whether focal or
+/// generalized"), which the 2025 paper says to record when the next level is
+/// not known.
+enum SeizureIlaeType {
+  FOCAL_PRESERVED
+  FOCAL_IMPAIRED
+  FOCAL_UNDETERMINED
+  FOCAL_TO_BILATERAL_TC
+  GENERALIZED_UNDETERMINED
+  GENERALIZED_TC
+  GEN_CLONIC
+  GEN_TONIC
+  GEN_MYOCLONIC
+  GEN_MYOCLONIC_ATONIC
+  GEN_ATONIC
+  GEN_NEGATIVE_MYOCLONIC
+  GEN_SPASMS
+  ABSENCE_TYPICAL
+  ABSENCE_ATYPICAL
+  ABSENCE_MYOCLONIC
+  EYELID_MYOCLONIA
+  UNKNOWN_UNDETERMINED
+  UNKNOWN_PRESERVED
+  UNKNOWN_IMPAIRED
+  UNKNOWN_BILATERAL_TC
+  UNCLASSIFIED
+
+  @@map("seizure_ilae_type")
+}
+
+/// How well the onset time is known.
+enum SeizureOnsetPrecision {
+  EXACT
+  APPROX
+  UNKNOWN_TIME
+
+  @@map("seizure_onset_precision")
+}
+
+/// Where a duration came from. UNKNOWN pairs with a NULL duration; a seizure
+/// nobody timed is not a seizure of zero seconds.
+enum SeizureDurationSource {
+  TIMED
+  ESTIMATED
+  UNKNOWN
+
+  @@map("seizure_duration_source")
+}
+
+/// CONFIRMED: the person or carer is sure it was a seizure. SUSPECTED: maybe.
+/// Reports list suspected events separately.
+enum SeizureCertainty {
+  CONFIRMED
+  SUSPECTED
+
+  @@map("seizure_certainty")
+}
+
+enum SeizureSleepState {
+  AWAKE
+  ASLEEP
+  ON_WAKING
+  UNKNOWN
+
+  @@map("seizure_sleep_state")
+}
+
+/// Yes / no / not known, for "were there observable manifestations".
+enum SeizureObservation {
+  YES
+  NO
+  UNKNOWN
+
+  @@map("seizure_observation")
+}
+
+/// Responsiveness and recall, asked separately because carers can answer
+/// them separately (the 2025 paper's advice for young children).
+enum SeizureFunctionState {
+  PRESERVED
+  IMPAIRED
+  UNKNOWN
+
+  @@map("seizure_function_state")
+}
+
+/// Observed features in the order they happened, from the ILAE glossary.
+enum SeizureSemiology {
+  AURA
+  BEHAVIOUR_ARREST
+  STARING
+  AUTOMATISMS
+  TONIC
+  CLONIC
+  MYOCLONIC
+  ATONIC_DROP
+  SPASMS
+  HEAD_EYE_VERSION
+  VOCALISATION
+  CYANOSIS
+  DROOLING
+  BREATHING_CHANGE
+
+  @@map("seizure_semiology")
+}
+
+/// Suspected triggers. Patient- or carer-attributed; shown as "suspected".
+enum SeizureTrigger {
+  MISSED_DOSE
+  SLEEP_DEPRIVATION
+  FEVER
+  ILLNESS
+  MENSTRUATION
+  ALCOHOL
+  FLASHING_LIGHTS
+  STRESS
+  OTHER
+  NONE_IDENTIFIED
+
+  @@map("seizure_trigger")
+}
+
+enum SeizurePostictal {
+  SLEEP
+  CONFUSION
+  HEADACHE
+  WEAKNESS_TODD
+  SPEECH
+  AGITATION
+  OTHER
+
+  @@map("seizure_postictal")
+}
+
+enum SeizureInjury {
+  NONE
+  TONGUE_BITE
+  HEAD
+  FALL_OTHER
+  BURN
+  FRACTURE
+  OTHER
+
+  @@map("seizure_injury")
+}
+
+enum SeizureEmergency {
+  NONE
+  EMS_CALLED
+  ED_VISIT
+  ADMITTED
+
+  @@map("seizure_emergency")
+}
+
+/// Who saw the seizure, or who gave a rescue dose.
+enum SeizureObserverRole {
+  SELF
+  PARENT
+  PARTNER
+  FAMILY
+  CARER
+  TEACHER
+  CLINICIAN
+  PARAMEDIC
+  OTHER
+
+  @@map("seizure_observer_role")
+}
+
+enum SeizureEventSource {
+  MANUAL
+  DEVICE_ALERT
+
+  @@map("seizure_event_source")
+}
+
+enum SeizureRescueRoute {
+  BUCCAL
+  INTRANASAL
+  RECTAL
+  ORAL
+  SUBLINGUAL
+  IM
+  IV_BY_EMS
+
+  @@map("seizure_rescue_route")
+}
+
+enum SeizureRescueEffect {
+  STOPPED
+  REDUCED
+  NO_EFFECT
+  UNKNOWN
+
+  @@map("seizure_rescue_effect")
+}
+
+/// One of the person's own seizure types, set up once: the family's name for
+/// it, the ILAE type, how long it usually lasts, and the rescue plan agreed
+/// with the care team. Events reference it; archiving hides it from the quick
+/// log and keeps every event that names it.
+model SeizureTypeProfile {
+  id                  String              @id @default(cuid())
+  userId              String              @map("user_id")
+  /// The family's own name ("the big one"), AES-256-GCM encrypted at rest.
+  labelEncrypted      Bytes               @map("label_encrypted")
+  ilaeType            SeizureIlaeType     @map("ilae_type")
+  /// How long this type usually lasts, in seconds. Drives the NICE
+  /// "more than 2 minutes longer than usual" prolonged flag. NULL = not set.
+  usualDurationSec    Int?                @map("usual_duration_sec")
+  /// The plan text agreed with the care team, shown when the timer passes the
+  /// threshold. Encrypted at rest.
+  rescuePlanEncrypted Bytes?              @map("rescue_plan_encrypted")
+  /// The as-needed medication the plan names. Deleting the medication keeps
+  /// the type and drops the link.
+  rescueMedicationId  String?             @map("rescue_medication_id")
+  rescueDoseAmount    Float?              @map("rescue_dose_amount")
+  rescueDoseUnit      String?             @map("rescue_dose_unit")
+  rescueRoute         SeizureRescueRoute? @map("rescue_route")
+  sortOrder           Int                 @default(0) @map("sort_order")
+  /// Hidden from the quick log; events keep their link. NULL = in use.
+  archivedAt          DateTime?           @map("archived_at")
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rescueMedication Medication?    @relation(fields: [rescueMedicationId], references: [id], onDelete: SetNull)
+  events           SeizureEvent[]
+
+  @@index([userId, archivedAt, sortOrder])
+  @@index([rescueMedicationId])
+  @@map("seizure_type_profiles")
+}
+
+/// One recorded seizure, or a tally of brief ones (`count` > 1, e.g. the
+/// absences of one day). Who logged it and whether anybody saw it are kept,
+/// because diaries miss many seizures and a clinician weighs an entry by both.
+/// One "Seizure cluster" notification sent (#1368), keyed on the cluster's
+/// first seizure. The notifier claims the cluster here before it sends, so
+/// two seizures that form a cluster together send one alert, not two.
+/// Operational: not in backups; wiped with the diary.
+model SeizureClusterAlert {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  /// The cluster's first seizure, by onset. Not a foreign key: the claim
+  /// outlives a removed seizure, so the same cluster does not alert again.
+  /// @internal: a claim key; only its unique index reads it
+  anchorEventId String   @map("anchor_event_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, anchorEventId])
+  @@map("seizure_cluster_alerts")
+}
+
+model SeizureEvent {
+  id                       String                @id @default(cuid())
+  userId                   String                @map("user_id")
+  typeProfileId            String?               @map("type_profile_id")
+  /// Per-event override of the type's ILAE classification. NULL = the
+  /// type's.
+  ilaeType                 SeizureIlaeType?      @map("ilae_type")
+  /// The type's ILAE classification when the seizure was logged (or moved to
+  /// that type), so re-classifying a type changes later seizures only. Read
+  /// after the override and before the type's current class. NULL = no type.
+  ilaeTypeAtLog            SeizureIlaeType?      @map("ilae_type_at_log")
+  onsetAt                  DateTime              @map("onset_at")
+  onsetPrecision           SeizureOnsetPrecision @default(EXACT) @map("onset_precision")
+  /// Seconds. NULL = not known (an unwitnessed or nocturnal seizure).
+  durationSec              Int?                  @map("duration_sec")
+  durationSource           SeizureDurationSource @default(UNKNOWN) @map("duration_source")
+  /// How many seizures this row stands for. 1 for a single seizure.
+  count                    Int                   @default(1)
+  certainty                SeizureCertainty      @default(CONFIRMED)
+  sleepState               SeizureSleepState     @default(UNKNOWN) @map("sleep_state")
+  observableManifestations SeizureObservation?   @map("observable_manifestations")
+  responsiveness           SeizureFunctionState?
+  recall                   SeizureFunctionState?
+  /// Observed features in chronological order.
+  semiology                SeizureSemiology[]    @default([])
+  /// Free-text description beside the glossary terms. Encrypted.
+  semiologyNoteEncrypted   Bytes?                @map("semiology_note_encrypted")
+  /// What the person felt before, in their words. Encrypted.
+  auraEncrypted            Bytes?                @map("aura_encrypted")
+  triggers                 SeizureTrigger[]      @default([])
+  /// Minutes until back to usual. NULL = not recorded.
+  postictalMinutes         Int?                  @map("postictal_minutes")
+  postictal                SeizurePostictal[]    @default([])
+  injuries                 SeizureInjury[]       @default([])
+  incontinence             Boolean?
+  emergency                SeizureEmergency      @default(NONE)
+  witnessed                Boolean?
+  witnessRole              SeizureObserverRole?  @map("witness_role")
+  witnessNoteEncrypted     Bytes?                @map("witness_note_encrypted")
+  /// The account that logged it: the owner, or a delegate acting on the
+  /// record (a guardian logging for a child). Deliberately NOT a foreign key,
+  /// for the reason `AuditLog.actorUserId` gives: nulling it when the
+  /// delegate's account goes would turn "logged by a carer" into "logged by
+  /// the person". NULL = unknown (a restore from another instance).
+  loggedByUserId           String?               @map("logged_by_user_id")
+  source                   SeizureEventSource    @default(MANUAL)
+  noteEncrypted            Bytes?                @map("note_encrypted")
+  createdAt                DateTime              @default(now()) @map("created_at")
+  updatedAt                DateTime              @updatedAt @map("updated_at")
+
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  typeProfile SeizureTypeProfile? @relation(fields: [typeProfileId], references: [id], onDelete: SetNull)
+  rescueDoses SeizureRescueDose[]
+
+  @@index([userId, onsetAt])
+  @@index([typeProfileId, onsetAt])
+  @@map("seizure_events")
+}
+
+/// One rescue dose given during or after a seizure. Each one also writes a
+/// `MedicationIntakeEvent` on the as-needed medication it names, so the
+/// medication's history and inventory see it; an as-needed medication is
+/// never counted in compliance, so the diary changes no adherence figure.
+model SeizureRescueDose {
+  id             String               @id @default(cuid())
+  userId         String               @map("user_id")
+  eventId        String               @map("event_id")
+  /// The medication given. NULL once the medication is deleted; the name
+  /// snapshot below keeps the history readable.
+  medicationId   String?              @map("medication_id")
+  /// The medication's name when the dose was recorded (plaintext, like
+  /// `Medication.name`).
+  medicationName String               @map("medication_name")
+  doseAmount     Float?               @map("dose_amount")
+  doseUnit       String?              @map("dose_unit")
+  route          SeizureRescueRoute?
+  givenAt        DateTime             @map("given_at")
+  givenBy        SeizureObserverRole? @map("given_by")
+  effect         SeizureRescueEffect  @default(UNKNOWN)
+  /// When the seizure stopped after this dose, if it was noted.
+  seizureEndedAt DateTime?            @map("seizure_ended_at")
+  /// The intake row written for this dose. NULL when no medication was
+  /// linked, or after that intake was deleted on the medication.
+  intakeEventId  String?              @map("intake_event_id")
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
+
+  user        User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event       SeizureEvent           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  medication  Medication?            @relation(fields: [medicationId], references: [id], onDelete: SetNull)
+  intakeEvent MedicationIntakeEvent? @relation(fields: [intakeEventId], references: [id], onDelete: SetNull)
+
+  @@index([userId, givenAt])
+  @@index([eventId])
+  @@index([medicationId])
+  @@index([intakeEventId])
+  @@map("seizure_rescue_doses")
+}
+
+/// The record's cluster rule: N or more seizures within W hours. One row per
+/// record at most; absence reads as the default (2 in 24 hours). NICE's
+/// 3-in-24-hours count is shown beside it, never instead of it.
+model SeizureDiarySettings {
+  userId             String   @id @map("user_id")
+  clusterCount       Int      @default(2) @map("cluster_count")
+  clusterWindowHours Int      @default(24) @map("cluster_window_hours")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("seizure_diary_settings")
+}
+
 // ─── Structured health records (v1.25 W-RECORDS) ──────────────────
 //
 // Allergies + family history kept as STRUCTURED records (not time-series
@@ -10568,4 +11009,61 @@ model MedicationConditionLink {
   @@index([episodeId])
   @@index([userId])
   @@map("medication_condition_links")
+}
+
+/// The removed Fitbit integration's connection rows (v1.12.0 to v1.47.6).
+/// Migration 0503 deleted every row with its tokens; the table stays one
+/// release so the v1.47.6 image keeps working beside this schema and after a
+/// rollback. Nothing in this release reads or writes it; the next minor
+/// release drops it.
+model FitbitConnection {
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  id                  String    @id @default(cuid())
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  userId              String    @unique @map("user_id")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  fitbitUserId        String    @map("fitbit_user_id")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  accessToken         String    @map("access_token")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  refreshToken        String    @map("refresh_token")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  tokenExpiresAt      DateTime  @map("token_expires_at")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  scope               String?   @map("scope")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  lastSyncedAt        DateTime? @map("last_synced_at")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  backfillCompletedAt DateTime? @map("backfill_completed_at")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  sleepRepairedAt     DateTime? @map("sleep_repaired_at")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  createdAt           DateTime  @default(now()) @map("created_at")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("fitbit_connections")
+}
+
+/// The removed Fitbit integration's OAuth state ledger, emptied by migration
+/// 0503 and kept one release for rollback safety (see `FitbitConnection`).
+model FitbitOAuthState {
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  nonce        String   @id
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  userId       String   @map("user_id")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  codeVerifier String?  @map("code_verifier")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  createdAt    DateTime @default(now()) @map("created_at")
+  /// @internal: dropped in the next minor after Fitbit removal (kept for rollback safety)
+  expiresAt    DateTime @map("expires_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@index([userId])
+  @@map("fitbit_oauth_states")
 }

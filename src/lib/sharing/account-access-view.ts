@@ -101,8 +101,8 @@ export interface AccountAccessEntry {
    * It is not "may this caller add something", and reading it that way is how
    * section-blind controls happen. There is no scope term in it: a WRITE grant
    * scoped to the document vault answers `true` here with
-   * `writableDomains: []`, because the vault takes no delegated write at any
-   * level. Ask {@link AccountAccessEntry.writableDomains} for the section the
+   * `writableDomains: []`, because the vault takes no delegated write below
+   * a managed profile's guardian. Ask {@link AccountAccessEntry.writableDomains} for the section the
    * control belongs to; this boolean answers only whether the grant is a
    * reading one.
    *
@@ -117,7 +117,9 @@ export interface AccountAccessEntry {
    * grant satisfies, resolved server-side from its level and scope against
    * the routes that exist (`domain-write-support.ts`). In the consent
    * screen's order. Empty for a READ grant, and empty for any section whose
-   * routes accept no delegated write at all — the vault, today.
+   * routes accept no delegated write from this grant — the vault, for every
+   * grant but a managed profile's guardian's (#1403), whose record kind
+   * adds the sections with a guardian-only route.
    *
    * Existential, and the word matters: within a section the answer varies by
    * verb, and this list cannot say which. `profile` is writable because a

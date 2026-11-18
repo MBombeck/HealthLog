@@ -58,7 +58,6 @@ const WRITERS: Record<string, Disposition> = {
   // ── Provider sync writers, gated ──────────────────────────────────────
   "lib/withings/sync.ts": { kind: "gate" },
   "lib/withings/sync-activity.ts": { kind: "gate" },
-  "lib/fitbit/sync-core.ts": { kind: "gate" },
   "lib/google-health/sync-core.ts": { kind: "gate" },
   "lib/nightscout/sync.ts": { kind: "gate" },
   "lib/oura/sync-heart-rate.ts": { kind: "gate" },
@@ -101,9 +100,9 @@ const WRITERS: Record<string, Disposition> = {
     kind: "literal",
     why: "an ECG row carries value 1 — the file's own constant, never a provider number",
   },
-  "app/api/mental-health/assessments/route.ts": {
+  "lib/mental-health/score-projection.ts": {
     kind: "literal",
-    why: "the questionnaire score is summed from Zod-bounded item answers",
+    why: "the screener total: summed from Zod-bounded item answers by the questionnaire POST, or an Apple Health score checked against the instrument's 0 to maxScore band (and its answers) before it is written",
   },
   "lib/insights/score-row.ts": {
     kind: "literal",

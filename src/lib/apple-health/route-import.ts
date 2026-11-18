@@ -22,6 +22,7 @@ import sax from "sax";
 
 import type { PrismaClient } from "@/generated/prisma/client";
 import {
+  APPLE_HEALTH_ARCHIVE_MAX_ENTRIES,
   routeMemberNameFromReference,
   streamAppleHealthRouteMembers,
   type AppleHealthRouteArchiveLimits,
@@ -52,7 +53,7 @@ export interface WorkoutRouteImportCounts {
 /** Per-archive ceilings for the route members. */
 export const APPLE_HEALTH_ROUTE_ARCHIVE_LIMITS: AppleHealthRouteArchiveLimits =
   {
-    maxMembers: 100_000,
+    maxMembers: APPLE_HEALTH_ARCHIVE_MAX_ENTRIES,
     maxRouteMembers: 20_000,
     // A three-hour ride at 1 Hz is a few MB of GPX; 32 MB covers a 24-hour
     // ultra with room to spare and bounds the one buffer held at a time.
@@ -180,6 +181,8 @@ export async function importAppleHealthWorkoutRoutes(input: {
   archivePath: string;
   userId: string;
   references: readonly WorkoutRouteReference[];
+  /** References the job counted past its cap and did not keep. */
+  overflow?: number;
   prisma: Pick<PrismaClient, "workout" | "workoutRoute">;
   limits?: AppleHealthRouteArchiveLimits;
 }): Promise<WorkoutRouteImportCounts> {
@@ -187,7 +190,8 @@ export async function importAppleHealthWorkoutRoutes(input: {
     discovered: 0,
     attached: 0,
     skipped: 0,
-    failed: 0,
+    // A track the job did not keep is over the ceiling, never read.
+    failed: input.overflow ?? 0,
   };
   const byMember = new Map<string, string>();
   for (const ref of input.references) {
@@ -256,10 +260,11 @@ export async function importAppleHealthWorkoutRoutes(input: {
       }
     }
   } catch {
-    // The archive itself is unreadable for this pass (a ZIP64 export, a
-    // limit hit in the directory). Every referenced track not yet handled
+    // The archive itself is unreadable for this pass (a malformed directory,
+    // a limit hit in it). Every referenced track not yet handled
     // counts as failed; the import stays done.
-    const handled = counts.attached + counts.skipped + counts.failed;
+    const handled =
+      counts.attached + counts.skipped + counts.failed - (input.overflow ?? 0);
     counts.failed += Math.max(0, byMember.size - handled);
   }
   return counts;

@@ -1,0 +1,46 @@
+{
+  "resourceType": "Observation",
+  "id": "obs-ldl-1",
+  "status": "final",
+  "category": [
+    {
+      "coding": [
+        {
+          "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+          "code": "laboratory",
+          "display": "Laboratory"
+        }
+      ]
+    }
+  ],
+  "code": {
+    "coding": [
+      {
+        "system": "http://loinc.org",
+        "code": "13457-7",
+        "display": "Cholesterol in LDL [Mass/volume] in Serum or Plasma by calculation"
+      }
+    ],
+    "text": "LDL Cholesterol (calc)"
+  },
+  "subject": {
+    "reference": "Patient/example-patient",
+    "display": "Example Patient"
+  },
+  "performer": [{ "display": "Example Laboratory" }],
+  "effectiveDateTime": "2025-03-04T08:15:00+01:00",
+  "issued": "2025-03-05T10:00:00+01:00",
+  "valueQuantity": {
+    "value": 3.1,
+    "unit": "mmol/L",
+    "system": "http://unitsofmeasure.org",
+    "code": "mmol/L"
+  },
+  "referenceRange": [
+    {
+      "high": { "value": 3.0, "unit": "mmol/L", "code": "mmol/L" },
+      "text": "< 3.0 mmol/L"
+    }
+  ],
+  "note": [{ "text": "Fasting sample." }]
+}

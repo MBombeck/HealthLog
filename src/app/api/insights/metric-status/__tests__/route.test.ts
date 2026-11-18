@@ -1,6 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
+// The unavailable path's presence probe answers from the mocked count.
+vi.mock("@/lib/measurements/newest-per-type", () => ({
+  countLiveReadingsPerType: vi.fn(
+    async (_userId: string, types: readonly string[]) => {
+      const { prisma } = await import("@/lib/db");
+      const n = Number(await prisma.measurement.count());
+      return new Map(n > 0 ? [[types[0], 1]] : []);
+    },
+  ),
+}));
 vi.mock("@/lib/db", () => ({
   prisma: {
     appSettings: { findUnique: vi.fn().mockResolvedValue(null) },

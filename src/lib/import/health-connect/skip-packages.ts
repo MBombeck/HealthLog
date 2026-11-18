@@ -13,22 +13,22 @@
  *
  * The list is per integration, by Android package name. Only integrations the
  * account has actually connected count; a person who uses the Fitbit app but
- * not HealthLog's Fitbit integration gets their Fitbit data from the export.
+ * not HealthLog's Google Health integration gets their Fitbit data from the
+ * export.
  *
  * Google Health is the Fitbit Web API's successor and carries what the Fitbit
  * app records (Fitbit devices, Pixel Watch), so it maps to the Fitbit app's
- * package as well.
+ * package.
  */
 import type { PrismaClient } from "@/generated/prisma/client";
 
 export type DirectIntegration =
-  "withings" | "fitbit" | "googleHealth" | "oura" | "polar" | "whoop";
+  "withings" | "googleHealth" | "oura" | "polar" | "whoop";
 
 export const INTEGRATION_PACKAGES: Readonly<
   Record<DirectIntegration, readonly string[]>
 > = {
   withings: ["com.withings.wiscale2"],
-  fitbit: ["com.fitbit.FitbitMobile"],
   googleHealth: ["com.fitbit.FitbitMobile"],
   oura: ["com.ouraring.oura"],
   polar: ["fi.polar.polarflow"],
@@ -40,9 +40,8 @@ export async function connectedDirectIntegrations(
   prisma: PrismaClient,
   userId: string,
 ): Promise<DirectIntegration[]> {
-  const [withings, fitbit, googleHealth, whoop, user] = await Promise.all([
+  const [withings, googleHealth, whoop, user] = await Promise.all([
     prisma.withingsConnection.count({ where: { userId } }),
-    prisma.fitbitConnection.count({ where: { userId } }),
     prisma.googleHealthConnection.count({ where: { userId } }),
     prisma.whoopConnection.count({ where: { userId } }),
     prisma.user.findUnique({
@@ -55,7 +54,6 @@ export async function connectedDirectIntegrations(
   ]);
   const out: DirectIntegration[] = [];
   if (withings > 0) out.push("withings");
-  if (fitbit > 0) out.push("fitbit");
   if (googleHealth > 0) out.push("googleHealth");
   if (whoop > 0) out.push("whoop");
   if (user?.polarAccessTokenEncrypted) out.push("polar");

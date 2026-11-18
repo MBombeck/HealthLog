@@ -116,6 +116,13 @@ export function useLabListFilters() {
     [patchFilters],
   );
 
+  const setSourceFilter = useCallback(
+    (value: string) => {
+      patchFilters({ source: value === "ALL" ? undefined : value });
+    },
+    [patchFilters],
+  );
+
   const setFromDay = useCallback(
     (value: string) => {
       patchFilters({ fromDay: value || undefined }, "replace");
@@ -142,6 +149,7 @@ export function useLabListFilters() {
     searchInputRef,
     setStatusFilter,
     setCategoryFilter,
+    setSourceFilter,
     setFromDay,
     setToDay,
     resetFilters,

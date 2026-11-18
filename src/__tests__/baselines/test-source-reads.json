@@ -1,7 +1,7 @@
 {
   "$comment": "tests that read a source file by path, per test file under src/. Maintained by src/__tests__/test-realism-ratchet.test.ts.",
-  "count": 331,
-  "total": 331,
+  "count": 329,
+  "total": 329,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 1,
     "__tests__/admin-data-wipe-completeness.test.ts": 1,
@@ -285,8 +285,6 @@
     "lib/export/__tests__/full-backup-stream-heap-gauge.test.ts": 1,
     "lib/export/__tests__/intraday-profile-backup.test.ts": 1,
     "lib/feature-flags/__tests__/no-dead-assistant-flag.test.ts": 1,
-    "lib/fitbit/__tests__/sync-module-graph.test.ts": 1,
-    "lib/fitbit/jobs/__tests__/queues.test.ts": 1,
     "lib/format/__tests__/bytes.test.ts": 1,
     "lib/google-health/__tests__/sync-module-graph.test.ts": 1,
     "lib/http/__tests__/deprecation.test.ts": 1,

@@ -167,6 +167,46 @@ export const RETIRED_ROUTES: readonly RetiredRoute[] = [
       "Stored per-account opt-ins to preview features, of which there was one, the topic overview pages. Those pages were dropped before they shipped, so the switch governed nothing; the route and its column are gone, and no preview is gated per account.",
     methods: ["GET", "PATCH"],
   },
+  {
+    path: "/api/fitbit/credentials",
+    removedIn: "1.48.0",
+    replacedBy: null,
+    reason:
+      "Google turned the Fitbit Web API off on 30 October 2026 and the Fitbit integration was removed. Fitbit and Pixel Watch data reaches HealthLog through Google Health or Health Connect; readings imported from Fitbit stay.",
+    methods: ["GET", "PUT", "DELETE"],
+  },
+  {
+    path: "/api/fitbit/disconnect",
+    removedIn: "1.48.0",
+    replacedBy: null,
+    reason:
+      "Google turned the Fitbit Web API off on 30 October 2026 and the Fitbit integration was removed. Fitbit and Pixel Watch data reaches HealthLog through Google Health or Health Connect; readings imported from Fitbit stay.",
+    methods: ["POST"],
+  },
+  {
+    path: "/api/fitbit/sync",
+    removedIn: "1.48.0",
+    replacedBy: null,
+    reason:
+      "Google turned the Fitbit Web API off on 30 October 2026 and the Fitbit integration was removed. Fitbit and Pixel Watch data reaches HealthLog through Google Health or Health Connect; readings imported from Fitbit stay.",
+    methods: ["POST"],
+  },
+  {
+    path: "/api/integrations/fitbit/resume",
+    removedIn: "1.48.0",
+    replacedBy: null,
+    reason:
+      "Google turned the Fitbit Web API off on 30 October 2026 and the Fitbit integration was removed. Fitbit and Pixel Watch data reaches HealthLog through Google Health or Health Connect; readings imported from Fitbit stay.",
+    methods: ["POST"],
+  },
+  {
+    path: "/api/integrations/fitbit/test",
+    removedIn: "1.48.0",
+    replacedBy: null,
+    reason:
+      "Google turned the Fitbit Web API off on 30 October 2026 and the Fitbit integration was removed. Fitbit and Pixel Watch data reaches HealthLog through Google Health or Health Connect; readings imported from Fitbit stay.",
+    methods: ["POST"],
+  },
 ];
 
 const BY_PATH: ReadonlyMap<string, RetiredRoute> = new Map(

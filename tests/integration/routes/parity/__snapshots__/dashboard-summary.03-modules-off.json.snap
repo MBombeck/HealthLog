@@ -27,7 +27,8 @@
           "unit": null,
           "sleepStages": null,
           "sleepSourceDiscrepancy": null,
-          "trend": "flat",
+          "trend": "down",
+          "trendWindowDays": 30,
           "sparkline": [
             82.2,
             82.2,
@@ -45,7 +46,7 @@
             "targetPosition": null,
             "basis": "metric_default"
           },
-          "trendSentiment": "neutral"
+          "trendSentiment": "positive"
         },
         {
           "id": "bp",
@@ -57,7 +58,8 @@
           "unit": null,
           "sleepStages": null,
           "sleepSourceDiscrepancy": null,
-          "trend": "down",
+          "trend": "flat",
+          "trendWindowDays": 30,
           "sparkline": [
             135,
             128,
@@ -75,7 +77,7 @@
             "targetPosition": "above",
             "basis": "profile_default"
           },
-          "trendSentiment": "positive"
+          "trendSentiment": "neutral"
         },
         {
           "id": "pulse",
@@ -88,6 +90,7 @@
           "sleepStages": null,
           "sleepSourceDiscrepancy": null,
           "trend": "flat",
+          "trendWindowDays": 30,
           "sparkline": [
             64,
             69,
@@ -117,7 +120,8 @@
           "unit": null,
           "sleepStages": null,
           "sleepSourceDiscrepancy": null,
-          "trend": "flat",
+          "trend": "down",
+          "trendWindowDays": 30,
           "sparkline": [
             24.8,
             24.7,
@@ -135,7 +139,7 @@
             "targetPosition": null,
             "basis": "metric_default"
           },
-          "trendSentiment": "neutral"
+          "trendSentiment": "positive"
         },
         {
           "id": "steps",
@@ -148,6 +152,7 @@
           "sleepStages": null,
           "sleepSourceDiscrepancy": null,
           "trend": "down",
+          "trendWindowDays": null,
           "sparkline": [
             8238,
             7865,
@@ -178,6 +183,7 @@
           "sleepStages": null,
           "sleepSourceDiscrepancy": null,
           "trend": "flat",
+          "trendWindowDays": null,
           "sparkline": [
             96,
             98,
@@ -208,6 +214,7 @@
           "sleepStages": null,
           "sleepSourceDiscrepancy": null,
           "trend": "flat",
+          "trendWindowDays": null,
           "sparkline": [
             25.9,
             25.9,

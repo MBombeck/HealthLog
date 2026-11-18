@@ -952,6 +952,44 @@ describe("streamParseExportXml — end-to-end", () => {
     expect(result.totals.recordsRead).toBeGreaterThanOrEqual(7);
   });
 
+  it("hands lab-result clinical records to the callback and skips the rest", async () => {
+    const tmp = mkdtempSync(join(tmpdir(), "healthlog-parser-test-"));
+    const xmlPath = join(tmp, "export.xml");
+    writeFileSync(
+      xmlPath,
+      `<?xml version="1.0" encoding="UTF-8"?>
+<HealthData locale="en_US">
+  <ClinicalRecord type="HKClinicalTypeIdentifierLabResultRecord"
+    identifier="obs-1" sourceName="Example Clinic"
+    sourceURL="https://fhir.example-clinic.test/R4" fhirVersion="4.0.1"
+    receivedDate="2025-03-05 10:00:00 +0100"
+    resourceFilePath="/clinical-records/Observation-obs-1.json"/>
+  <ClinicalRecord type="HKClinicalTypeIdentifierConditionRecord"
+    identifier="cond-1" sourceName="Example Clinic" fhirVersion="4.0.1"
+    resourceFilePath="/clinical-records/Condition-cond-1.json"/>
+</HealthData>`,
+    );
+    const refs: unknown[] = [];
+    const result = await streamParseExportXml({
+      xmlPath,
+      userId: "user-1",
+      userTimezone: "Europe/Berlin",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      prisma: makeFakePrisma() as any,
+      onClinicalLabRecord: (ref) => void refs.push(ref),
+    });
+    expect(refs).toEqual([
+      {
+        path: "/clinical-records/Observation-obs-1.json",
+        identifier: "obs-1",
+        sourceURL: "https://fhir.example-clinic.test/R4",
+        sourceName: "Example Clinic",
+        fhirVersion: "4.0.1",
+      },
+    ]);
+    expect(result.clinical.skipped).toBe(1);
+  });
+
   it("re-importing the same export reports 0 inserts and N updates", async () => {
     const tmp = mkdtempSync(join(tmpdir(), "healthlog-parser-test-"));
     const xmlPath = join(tmp, "export.xml");
@@ -1016,11 +1054,12 @@ describe("streamParseExportXml — statement-level insertion identity", () => {
       inserted: 1,
       updated: 0,
     });
-    // The concurrently visible native statistics row is authoritative, so the
-    // XML estimate is an intentional no-op.
+    // The daily estimate meets the row that landed first under both of its
+    // identities, so it overwrites that row: never counted as an insert, and
+    // never an arrival.
     expect(result.perType.ACTIVITY_STEPS).toMatchObject({
       inserted: 0,
-      updated: 0,
+      updated: 1,
     });
 
     const arrivalRows = vi.mocked(emitInsertedMeasurementArrivals).mock

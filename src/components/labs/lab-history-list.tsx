@@ -38,6 +38,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { invalidateKeys, labDependentKeys, queryKeys } from "@/lib/query-keys";
 
 import { ReferenceRangeBadge } from "./reference-range-badge";
+import { LabSourceLine, labSourceLabel } from "./lab-source-line";
 import { LabReferenceRangeBar } from "./lab-reference-range-bar";
 import { SourceRangeNote } from "./source-range-note";
 import {
@@ -375,7 +376,7 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
         domain="labs"
         onConfirm={() => deleteMutation.mutate(r.id)}
         title={t("labs.deleteConfirmTitle")}
-        description={t("labs.deleteConfirmDescription")}
+        description={deleteDescription(r, t)}
         confirmLabel={t("labs.deleteReading")}
         className="size-11 sm:size-9"
         iconClassName="h-4 w-4"
@@ -424,8 +425,9 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
               </div>
               <SourceRangeNote
                 reading={r}
-                className="text-muted-foreground text-xs"
+                className="text-muted-foreground block text-xs"
               />
+              <LabSourceLine source={r.source} />
             </div>
             {renderActions(r)}
           </li>
@@ -463,6 +465,7 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
                 currentDir={sortDir}
                 onSort={toggleSort}
               />
+              <TableHead>{t("dataList.sourceLabel")}</TableHead>
               <TableHead className="w-20 pr-4 text-right">
                 <span className="sr-only">{t("labs.editReading")}</span>
               </TableHead>
@@ -504,6 +507,9 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
                 </TableCell>
                 <TableCell className="text-muted-foreground text-sm">
                   {r.hasNote ? t("labs.hasNote") : ""}
+                </TableCell>
+                <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
+                  {labSourceLabel(r.source, t)}
                 </TableCell>
                 <TableCell className="pr-4 text-right">
                   {renderActions(r)}
@@ -582,7 +588,7 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
           <div className="flex justify-end gap-2">
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               onClick={closeEdit}
               disabled={updateMutation.isPending}
             >
@@ -610,4 +616,19 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
       />
     </>
   );
+}
+
+/**
+ * The delete question. A reading from Apple Health's Health Records stays
+ * deleted (the next import recognises it and leaves it out), so its question
+ * says so: nothing on the row will bring it back.
+ */
+function deleteDescription(
+  reading: LabResultDto,
+  t: (key: string) => string,
+): string {
+  const base = t("labs.deleteConfirmDescription");
+  return reading.source === "APPLE_HEALTH"
+    ? `${base} ${t("labs.deleteAppleHealthNote")}`
+    : base;
 }

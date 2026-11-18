@@ -17,8 +17,8 @@ import { resolveSyncOutcome } from "@/lib/outcome/written-outcome";
  *
  * No body and no `fullSync` flag: there is no full-history arm to call.
  *
- * Rate-limited 5/60s per user, matching the hardened Fitbit / Google Health
- * routes.
+ * Rate-limited 5/60s per user, matching the hardened Google Health
+ * route.
  */
 export const POST = apiHandler(async () => {
   const { user } = await requireAuth();

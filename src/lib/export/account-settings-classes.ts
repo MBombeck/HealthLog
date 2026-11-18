@@ -105,6 +105,8 @@ export const USER_COLUMNS_OUTSIDE_SETTINGS = {
   withingsClientSecretEncrypted: "CREDENTIAL",
   whoopClientIdEncrypted: "CREDENTIAL",
   whoopClientSecretEncrypted: "CREDENTIAL",
+  // The removed Fitbit integration's app credentials, emptied by migration
+  // 0503 and kept one release for rollback safety.
   fitbitClientIdEncrypted: "CREDENTIAL",
   fitbitClientSecretEncrypted: "CREDENTIAL",
   googleHealthClientIdEncrypted: "CREDENTIAL",
@@ -168,6 +170,9 @@ export const USER_COLUMNS_OUTSIDE_SETTINGS = {
   // Same for Garmin: a restored account reads its Garmin history again.
   garminBackfillProgress: "OPERATIONAL",
   garminBackfillCompletedAt: "OPERATIONAL",
+  // A note about this host's removal of a Fitbit connection; another host
+  // never held one, so the note does not travel.
+  fitbitRemovalNoticeAt: "OPERATIONAL",
   healthKitLastSyncedAt: "OPERATIONAL",
   healthKitLastSyncTrigger: "OPERATIONAL",
   healthKitLastBackgroundSyncAt: "OPERATIONAL",

@@ -28,6 +28,9 @@ vi.mock("@/lib/ai/capabilities/gate", () => h.modules.capabilities());
 vi.mock("@/lib/logging/context", () => h.modules.logging());
 vi.mock("@/lib/auth/audit", () => h.modules.audit());
 vi.mock("@/lib/db", () => h.modules.db());
+vi.mock("@/lib/ai/coach/tools/measurement-sample", () =>
+  h.modules.measurementSample(),
+);
 vi.mock("@/lib/rate-limit", () => h.modules.rateLimit());
 vi.mock("@/lib/i18n/server-locale", () => h.modules.serverLocale());
 vi.mock("@/lib/ai/provider-runner", () => h.modules.providerRunner());

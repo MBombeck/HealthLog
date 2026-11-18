@@ -21,6 +21,7 @@ import {
 import { CHART_HEIGHT_PX } from "@/lib/charts/constants";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
 import { useFormatters } from "@/lib/i18n/context";
+import { formatNutrientAmount } from "@/lib/nutrients/format-amount";
 
 import { ChartDataTable } from "./chart-data-table";
 import { RichChartTooltip, type RichTooltipRow } from "./chart-tooltip";
@@ -52,6 +53,29 @@ interface NutrientDailyBarChartProps {
   dayLinks?: boolean;
 }
 
+/**
+ * An axis that ends on a round step: ticks at 1, 2 or 5 times a power of ten.
+ * Left to itself the chart split `max × 1.15` into even fractions, and the
+ * one-decimal labels of a small amount (alcohol in grams) came out as
+ * 0 / 0.2 / 0.3 / 0.5.
+ */
+export function niceAxis(top: number): {
+  yDomain: [number, number];
+  yTicks: number[];
+} {
+  const rough = top / 4;
+  const power = 10 ** Math.floor(Math.log10(rough));
+  const step =
+    [1, 2, 5, 10].map((m) => m * power).find((v) => v >= rough) ?? 10 * power;
+  const count = Math.max(1, Math.ceil(top / step - 1e-9));
+  const yTicks = Array.from(
+    { length: count + 1 },
+    // Rounded so 3 × 0.1 is 0.3 and not 0.30000000000000004.
+    (_, i) => Math.round(i * step * 1e6) / 1e6,
+  );
+  return { yDomain: [0, yTicks[count]], yTicks };
+}
+
 export function NutrientDailyBarChart({
   days,
   unit,
@@ -60,16 +84,20 @@ export function NutrientDailyBarChart({
   dayLinks = false,
 }: NutrientDailyBarChartProps) {
   const fmt = useFormatters();
+  // The raw day totals: the card's headline prints 82,5 g, so the bar and its
+  // tooltip must not say 82 g for the same day. Every number below goes
+  // through the cards' one formatter.
   const points = useMemo(
-    () => days.map((d) => ({ day: d.day, amount: Math.round(d.amount) })),
+    () => days.map((d) => ({ day: d.day, amount: d.amount })),
     [days],
   );
+  const formatAmount = (value: number) => formatNutrientAmount(fmt, value);
 
-  const yDomain = useMemo<[number, number]>(() => {
+  const { yDomain, yTicks } = useMemo(() => {
     const values = points.map((p) => p.amount);
     if (referenceValue != null) values.push(referenceValue);
     const max = values.length > 0 ? Math.max(...values) : 1;
-    return [0, max > 0 ? max * 1.15 : 1];
+    return niceAxis(max > 0 ? max * 1.15 : 1);
   }, [points, referenceValue]);
 
   const animate = !prefersReducedMotion();
@@ -81,7 +109,7 @@ export function NutrientDailyBarChart({
     focusFor: (index) => {
       const point = points[index];
       return point
-        ? { label: valueLabel, value: fmt.integer(point.amount), unit }
+        ? { label: valueLabel, value: formatAmount(point.amount), unit }
         : null;
     },
   });
@@ -114,6 +142,8 @@ export function NutrientDailyBarChart({
             />
             <YAxis
               domain={yDomain}
+              ticks={yTicks}
+              tickFormatter={(value: number) => formatAmount(value)}
               tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
               stroke="var(--border)"
               width={44}
@@ -146,7 +176,7 @@ export function NutrientDailyBarChart({
                 const rows: RichTooltipRow[] = [
                   {
                     name: valueLabel,
-                    value: `${point.amount} ${unit}`,
+                    value: `${formatAmount(point.amount)} ${unit}`,
                     color: barColor,
                   },
                 ];
@@ -186,7 +216,7 @@ export function NutrientDailyBarChart({
           }))}
           columns={[{ key: "amount", label: valueLabel }]}
           unit={unit}
-          formatValue={(value) => fmt.integer(value)}
+          formatValue={(value) => formatAmount(value)}
           formatDate={(date) => fmt.dateShortSmartCalendar(date)}
           bucket="day"
           metricLabel={valueLabel}

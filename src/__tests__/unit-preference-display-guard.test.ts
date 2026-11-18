@@ -521,14 +521,61 @@ const READER_UNIT_PRODUCERS = [
   "lib/insights/glp1-plateau.ts",
   "lib/jobs/reaction-line.ts",
   "lib/targets/weight-trend.ts",
+  // The medication Effect tab: series, means, band and segmented estimates
+  // in the account's unit (#1406).
+  "lib/medications/efficacy/account-units.ts",
 ];
+
+/**
+ * The metric-status registry, read through `resolveRichMetric`, hands back a
+ * metric's CANONICAL unit and band. Only the MCP read tools may pass that
+ * straight to a reader: their contract is the stored unit, stated beside every
+ * value. Any other file that takes a unit from it is building a screen, and a
+ * screen that skips the transform shows mg/dL to an mmol/L account (#1406) —
+ * the unit string travels as data, so the literal sweep above cannot see it.
+ */
+const CANONICAL_REGISTRY_READERS: Record<string, string> = {
+  "lib/mcp/rich-reads.ts":
+    "defines the resolver; the MCP tools state the canonical unit by contract",
+};
+
+/**
+ * A registry reader whose conversion lives in a sibling producer module: the
+ * reader must import it, and the sibling must be a listed producer.
+ */
+const CONVERTS_THROUGH: Record<string, string> = {
+  "lib/medications/efficacy/build-efficacy.ts":
+    "lib/medications/efficacy/account-units.ts",
+};
 
 const READER_UNIT_RESOLVER =
   /\b(?:getReadingTransform|getQuantityTransform|getDisplayTransform|featuresInReaderUnits|weightFeatureInReaderUnits)\(/;
 
 describe("unit-preference display guard — AI and Coach producers", () => {
   it("names enough producers to be a check (a list that shrinks proves nothing)", () => {
-    expect(READER_UNIT_PRODUCERS.length).toBeGreaterThanOrEqual(16);
+    expect(READER_UNIT_PRODUCERS.length).toBeGreaterThanOrEqual(17);
+  });
+
+  it("every reader of the canonical registry unit converts it, or is the MCP contract", () => {
+    const readers = walkSourceFiles(SRC, { floor: 3000 }).filter(
+      (rel) =>
+        !rel.startsWith("generated/") &&
+        !rel.includes("__tests__/") &&
+        /\bresolveRichMetric\(/.test(
+          stripComments(readFileSync(join(SRC, rel), "utf8")),
+        ),
+    );
+    // A sweep that finds nothing proves nothing.
+    expect(readers.length).toBeGreaterThanOrEqual(2);
+    const offenders = readers.filter((rel) => {
+      if (rel in CANONICAL_REGISTRY_READERS) return false;
+      if (READER_UNIT_PRODUCERS.includes(rel)) return false;
+      const sibling = CONVERTS_THROUGH[rel];
+      if (!sibling || !READER_UNIT_PRODUCERS.includes(sibling)) return true;
+      const importPath = `@/${sibling.replace(/\.ts$/, "")}`;
+      return !readFileSync(join(SRC, rel), "utf8").includes(`"${importPath}"`);
+    });
+    expect(offenders).toEqual([]);
   });
 
   it("every producer states its figures through a reader-unit resolver", () => {

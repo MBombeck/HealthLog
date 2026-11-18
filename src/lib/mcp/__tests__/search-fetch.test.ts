@@ -11,8 +11,8 @@ import { z } from "zod/v4";
 process.env.APP_URL = "https://health.example";
 
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
-vi.mock("@/lib/ai/coach/tools/inventory", () => ({
-  buildCoachDataInventory: vi.fn(),
+vi.mock("@/lib/mcp/data-inventory", () => ({
+  buildMcpDataInventory: vi.fn(),
 }));
 vi.mock("@/lib/ai/coach/tools/executor", () => ({ executeCoachTool: vi.fn() }));
 // v1.30 — the nutrients module is opt-in; default this suite's tenant to
@@ -63,7 +63,7 @@ vi.mock("@/lib/dashboard/summary-reads", async (importOriginal) => ({
 }));
 
 import { MCP_TOOLS } from "../tools";
-import { buildCoachDataInventory } from "@/lib/ai/coach/tools/inventory";
+import { buildMcpDataInventory } from "@/lib/mcp/data-inventory";
 import { executeCoachTool } from "@/lib/ai/coach/tools/executor";
 import { prisma } from "@/lib/db";
 import { loadRecordCandidates } from "@/lib/mcp/record-search";
@@ -91,7 +91,7 @@ function tool(name: string) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(buildCoachDataInventory).mockResolvedValue({
+  vi.mocked(buildMcpDataInventory).mockResolvedValue({
     entries: [
       {
         tool: "get_metric_series",
@@ -149,7 +149,7 @@ describe("search", () => {
     expect(result.results.some((r) => r.id.startsWith("med:"))).toBe(false);
   });
   it("says the search was assembled from a cut read, on every page", async () => {
-    vi.mocked(buildCoachDataInventory).mockResolvedValue({
+    vi.mocked(buildMcpDataInventory).mockResolvedValue({
       entries: [],
       window: "90d",
       restMode: false,
@@ -180,7 +180,7 @@ describe("search", () => {
   });
 
   it("keeps distinct lab analytes stable across cursor pages", async () => {
-    vi.mocked(buildCoachDataInventory).mockResolvedValue({
+    vi.mocked(buildMcpDataInventory).mockResolvedValue({
       entries: [],
       window: "90d",
       restMode: false,

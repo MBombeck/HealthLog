@@ -54,13 +54,11 @@ export {
   mapToAgyThoughtLevel,
   resolveTargetThoughtLevel,
   modelOptionsOf,
-  AGY_LEVEL_ORDER,
   agyLevelRank,
 };
 
 export {
   ANTIGRAVITY_ERRORS,
-  AntigravityError,
   antigravityReasonOf,
   type AntigravityFailureReason,
 } from "./antigravity-errors";

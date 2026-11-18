@@ -22,7 +22,7 @@
 
 import { getEvent } from "@/lib/logging/context";
 import { shiftDateKey } from "@/lib/tz/format";
-import { readBodyCapped } from "@/lib/http/read-capped";
+import { readBodyBytesCapped, readBodyCapped } from "@/lib/http/read-capped";
 import { safeFetch } from "@/lib/safe-fetch";
 import { retryAfterMsOf } from "@/lib/integrations/oauth-kit/retry-after";
 import {
@@ -52,6 +52,12 @@ export const GARMIN_PATHS = {
   weightRange: "/weight-service/weight/range",
   activities: "/activitylist-service/activities/search/activities",
   cycleSummary: "/periodichealth-service/menstrualcycle/summary",
+  /**
+   * `/{activityId}`: the activity's original file as the device recorded
+   * it, a ZIP holding one `.fit` (`application/x-zip-compressed`), the same
+   * archive Garmin Connect's "Export original" hands out.
+   */
+  activityFile: "/download-service/files/activity",
 } as const;
 
 /**
@@ -350,49 +356,8 @@ export class GarminSession {
     path: string,
     query: GarminQuery = {},
   ): Promise<T | null> {
-    const params = new URLSearchParams();
-    for (const [k, v] of Object.entries(query)) {
-      if (v !== undefined && v !== null) params.set(k, String(v));
-    }
-    const qs = params.toString();
-    const url = `${GARMIN_HOSTS[this.region]}${path}${qs ? `?${qs}` : ""}`;
-
-    let token = await this.token();
-    let res = await this.call(verb, url, token);
-    if (res.status === 401) {
-      await res.body?.cancel().catch(() => {});
-      token = await this.token(true);
-      res = await this.call(verb, url, token);
-      if (res.status === 401) {
-        await res.body?.cancel().catch(() => {});
-        tokenCache.delete(this.userId);
-        throw new GarminApiError({
-          verb,
-          classification: "reauth_required",
-          httpStatus: 401,
-          reason: "key_refused",
-          keyRefused: true,
-        });
-      }
-    }
-    if (res.status >= 200 && res.status < 300) this.proven = true;
-    if (res.status === 204) return null;
-    if (res.status < 200 || res.status >= 300) {
-      await res.body?.cancel().catch(() => {});
-      const verdict = classifyHttpStatus(res.status);
-      throw new GarminApiError({
-        verb,
-        // A 403 on a data call with a token the exchange just accepted is a
-        // resource the account cannot read, not a dead key.
-        classification:
-          res.status === 403 ? "persistent" : verdict.classification,
-        httpStatus: res.status,
-        reason: verdict.reason,
-        ...(res.status === 429 || res.status === 503
-          ? { retryAfterMs: retryAfterMsOf(res, this.now()) }
-          : {}),
-      });
-    }
+    const res = await this.send(verb, path, query, "application/json");
+    if (res === null) return null;
     const read = await readBodyCapped(res, GARMIN_MAX_BODY_BYTES);
     if (!read.ok) {
       throw new GarminApiError({
@@ -415,16 +380,97 @@ export class GarminSession {
     }
   }
 
+  /**
+   * GET a binary resource (an activity's original file), read with a byte
+   * cap. Null for an empty answer. Refusals and the 401 retry as for `get`;
+   * an answer over the cap is a `body_too_large` refusal, never truncated.
+   */
+  async getFile(
+    verb: string,
+    path: string,
+    maxBytes: number,
+  ): Promise<Uint8Array | null> {
+    const res = await this.send(verb, path, {}, "*/*");
+    if (res === null) return null;
+    const read = await readBodyBytesCapped(res, maxBytes);
+    if (!read.ok) {
+      throw new GarminApiError({
+        verb,
+        classification: "persistent",
+        httpStatus: res.status,
+        reason: "body_too_large",
+      });
+    }
+    return read.bytes.byteLength === 0 ? null : read.bytes;
+  }
+
+  /** The authorised request: a 2xx response, null for 204, else a throw. */
+  private async send(
+    verb: string,
+    path: string,
+    query: GarminQuery,
+    accept: string,
+  ): Promise<Response | null> {
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries(query)) {
+      if (v !== undefined && v !== null) params.set(k, String(v));
+    }
+    const qs = params.toString();
+    const url = `${GARMIN_HOSTS[this.region]}${path}${qs ? `?${qs}` : ""}`;
+
+    let token = await this.token();
+    let res = await this.call(verb, url, token, accept);
+    if (res.status === 401) {
+      await res.body?.cancel().catch(() => {});
+      token = await this.token(true);
+      res = await this.call(verb, url, token, accept);
+      if (res.status === 401) {
+        await res.body?.cancel().catch(() => {});
+        tokenCache.delete(this.userId);
+        throw new GarminApiError({
+          verb,
+          classification: "reauth_required",
+          httpStatus: 401,
+          reason: "key_refused",
+          keyRefused: true,
+        });
+      }
+    }
+    if (res.status >= 200 && res.status < 300) this.proven = true;
+    if (res.status === 204) {
+      await res.body?.cancel().catch(() => {});
+      return null;
+    }
+    if (res.status < 200 || res.status >= 300) {
+      await res.body?.cancel().catch(() => {});
+      const verdict = classifyHttpStatus(res.status);
+      throw new GarminApiError({
+        verb,
+        // A 403 on a data call with a token the exchange just accepted is a
+        // resource the account cannot read, not a dead key.
+        classification:
+          res.status === 403 ? "persistent" : verdict.classification,
+        httpStatus: res.status,
+        reason: verdict.reason,
+        ...(res.status === 429 || res.status === 503
+          ? { retryAfterMs: retryAfterMsOf(res, this.now()) }
+          : {}),
+      });
+    }
+    return res;
+  }
+
   private async call(
     verb: string,
     url: string,
     token: string,
+    accept: string,
   ): Promise<Response> {
     const doFetch = this.transport.fetch ?? safeFetch;
     const start = performance.now();
     const res = await doFetch(url, {
       method: "GET",
-      headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+      headers: { Accept: accept, Authorization: `Bearer ${token}` },
     });
     getEvent()?.addExternalCall({
       service: "garmin",

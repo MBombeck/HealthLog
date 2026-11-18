@@ -22,8 +22,8 @@ import { resolveSyncOutcome } from "@/lib/outcome/written-outcome";
  * The classified failure is already on the `nightscout` ledger, recorded by the
  * provider with its redaction rules applied.
  *
- * Rate-limited 5/60s per user, matching the hardened Fitbit / Google Health
- * routes; every run is an outbound call to a user-supplied host.
+ * Rate-limited 5/60s per user, matching the hardened Google Health
+ * route; every run is an outbound call to a user-supplied host.
  */
 export const POST = apiHandler(async () => {
   const { user } = await requireAuth();

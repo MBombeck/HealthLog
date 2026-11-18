@@ -19,17 +19,22 @@ function read(rel: string): string {
 
 describe("prompt reads exclude tombstoned rows", () => {
   it("general-status filters its measurement read", () => {
-    // The overview reads through the per-type latest-readings query.
+    // The overview reads through the per-type latest-readings query, which
+    // reads through the per-type newest-rows query.
     expect(read("../general-status.ts")).toMatch(/readLatestReadingsPerType\(/);
     expect(read("../recent-readings.ts")).toMatch(
-      /readLatestReadingsPerType[\s\S]*?m\."deleted_at" IS NULL/,
+      /function readLatestReadingsPerType[\s\S]*?readNewestRowsPerType\(/,
+    );
+    expect(read("../../measurements/live-type-descent.ts")).toMatch(
+      /function liveTypeDescent[\s\S]*?m\."deleted_at" IS NULL/,
     );
   });
 
   it("weight-status filters its measurement read", () => {
-    const src = read("../weight-status.ts");
-    expect(src).toMatch(
-      /measurement\s*\n?\s*\.findMany\(\{\s*where:\s*\{[\s\S]{0,300}?\bdeletedAt:\s*null/,
+    // The weight series reads through the per-type newest-rows query.
+    expect(read("../weight-status.ts")).toMatch(/readNewestRowsPerType\(/);
+    expect(read("../../measurements/newest-per-type.ts")).toMatch(
+      /function readNewestRowsPerType[\s\S]*?\$\{liveTypeDescent\(/,
     );
   });
 

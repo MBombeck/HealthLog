@@ -19,6 +19,7 @@ import {
 import type { DocumentVaultFilters } from "@/lib/query-keys/documents";
 import { userDayKey } from "@/lib/tz/format";
 
+import { RECORD_FENCE_ERROR_CODE } from "@/lib/sharing/record-session-fence-contract";
 import { parseRetryAfterSeconds } from "./upload-busy-retry";
 
 const KIND_SET = new Set<string>(INBOUND_DOCUMENT_KINDS);
@@ -382,8 +383,10 @@ export function resolveBulkShareDocuments(
  * The §3.2 failure reasons the upload/restore paths translate client-side,
  * plus the transport-level fallbacks. `uploadBusy` is the route's
  * concurrency refusal (429 with `Retry-After`, retried by the client before
- * it ever shows); `rateLimited` is every other 429; `generic` covers
- * everything unclassifiable (proxy-stripped bodies included).
+ * it ever shows); `rateLimited` is every other 429; `recordChanged` is the
+ * record-session fence (a 409 `sharing.session.changed`, or a response echoing
+ * a record this tab has left); `generic` covers everything unclassifiable
+ * (proxy-stripped bodies included).
  */
 export type UploadFailureReason =
   | "fileTooLarge"
@@ -393,6 +396,7 @@ export type UploadFailureReason =
   | "duplicateExists"
   | "uploadBusy"
   | "rateLimited"
+  | "recordChanged"
   | "generic";
 
 export interface UploadFailure {
@@ -441,6 +445,9 @@ export function classifyUploadFailure(
   retryAfterSeconds?: number,
 ): UploadFailure {
   const reason = typeof meta?.reason === "string" ? meta.reason : "";
+  if (status === 409 && meta?.errorCode === RECORD_FENCE_ERROR_CODE) {
+    return { ok: false, reason: "recordChanged" };
+  }
   if (status === 429 && reason === "uploadBusy") {
     return { ok: false, reason: "uploadBusy", retryAfterSeconds };
   }

@@ -87,7 +87,14 @@ const batchEntrySchema = z
       .max(20)
       .optional()
       .describe(
-        "v1.10.0 — `HKCategoryValue` codepoint for an EVENT-class category sample (irregular-rhythm, high/low-HR, walking-steadiness, breathing-disturbance). Carries the device's own classification verdict / severity, which the server resolves to a stored `rhythmClassification`. HealthLog stores ONLY the device's result — it never re-classifies. Ignored for non-event identifiers.",
+        "v1.10.0 — `HKCategoryValue` codepoint for an EVENT-class category sample (irregular-rhythm, high/low-HR, walking-steadiness, breathing-disturbance, hypertension). Carries the device's own classification verdict / severity, which the server resolves to a stored `rhythmClassification`. HealthLog stores ONLY the device's result — it never re-classifies. Ignored for non-event identifiers.",
+      ),
+    assessmentAnswers: z
+      .array(z.number().finite())
+      .max(12)
+      .optional()
+      .describe(
+        "Only for `HKScoredAssessmentTypeIdentifierPHQ9` (9 answers) and `HKScoredAssessmentTypeIdentifierGAD7` (7 answers): the per-item answers, each 0–3, in the order the instrument asks them. `value` carries the total (PHQ-9 0–27, GAD-7 0–21), `startDate` the time it was taken, `externalId` the `HKSample.uuid`. A scored assessment is written to the screener history (`GET /api/mental-health/assessments`), with `source = APPLE_HEALTH`, and its total reaches the PHQ9_SCORE / GAD7_SCORE trend through the same server-computed row an in-app check-in writes; it is never stored as a measurement of its own. With the answers the server scores them and refuses the entry (`invalid_assessment_answers`) when their sum is not `value` or one is out of range, and a non-zero PHQ-9 item 9 sets `item9Flagged`; without them the administration is score only and its detail read reports `itemsUnavailable: true`. Other per-entry refusals: `module_disabled` (the mental-health module is off), `unsupported_source` (a `MANUAL` entry or a bridge token), `value_out_of_range`, `implausible_timestamp`. A re-sent sample, or one whose administration was deleted, answers `duplicate`. Ignored for every other identifier.",
       ),
     externalId: z
       .string()
@@ -1150,7 +1157,7 @@ export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Measurements"],
       summary: "Update a measurement",
       description:
-        "Edits a manually entered row. Rows owned by a connected source are refused with 409 `measurement.update.server_owned_source`; a timestamp collision with an existing row is refused with 409 `measurement.duplicate_timestamp`.",
+        "Edits a row. A value change on a row owned by a connected source is refused with 409 `measurement.update.server_owned_source`; a timestamp collision with an existing row is refused with 409 `measurement.duplicate_timestamp`. `glucoseContext` corrects the meal context of a `BLOOD_GLUCOSE` reading from any source, and `null` clears it; sent for any other type it is refused with 422 `measurement.update.glucose_context_not_glucose`.",
       requestParams: { path: z.object({ id: z.string() }) },
       requestBody: {
         required: true,

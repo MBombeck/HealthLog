@@ -18,7 +18,7 @@ export async function resolveTurnChain(
 > {
   // v1.20.0 — provider capabilities select tool retrieval or the legacy
   // snapshot-stuffing path.
-  const chain = await resolveProviderChain(userId);
+  const chain = await resolveProviderChain(userId, "coach");
   if (chain.length === 0) {
     annotate({
       action: { name: "insights.coach.noProvider" },

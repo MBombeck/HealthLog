@@ -1,15 +1,19 @@
 import { NextResponse } from "next/server";
 
+import { NATIVE_OIDC_RETURN_PATH } from "@/lib/auth/native-return";
+
 /**
  * Apple App Site Association (AASA) handler.
  *
  * Apple fetches `/.well-known/apple-app-site-association` over HTTPS
  * without credentials, with no extension and with a strict
  * `application/json` Content-Type expectation. iOS uses the body to:
- *   - Wire Universal Links so HealthLog URLs open straight in the iOS
- *     app instead of Safari (SB-4, v1.4.40). The `["*"]` matcher accepts
- *     every path on the host — the iOS side decides which routes it
- *     actually handles via its scene delegate.
+ *   - Wire Universal Links so the addresses the app handles open straight
+ *     in it instead of Safari (SB-4, v1.4.40). Only those addresses are
+ *     listed (#163 B3): the registration and invite links, and the native
+ *     sign-in's https return. Every other address, the web sign-in's own
+ *     SSO return among them, stays in the browser for a build that adds
+ *     `applinks:` for an instance.
  *   - Wire Web Credentials so the website origin and the iOS bundle
  *     share passkey ceremonies (HealthLog passkeys live at
  *     `/api/auth/passkey/*`, so the origins must match the same App ID).
@@ -26,12 +30,18 @@ import { NextResponse } from "next/server";
  */
 const AASA_APP_ID = "S8WDX4W5KX.dev.healthlog.app";
 
+/**
+ * The paths the app handles. The native return is the same constant the
+ * callback redirects to and `GET /api/auth/oidc/status` announces.
+ */
+const AASA_PATHS = ["/auth/register*", "/invite*", NATIVE_OIDC_RETURN_PATH];
+
 const AASA = {
   applinks: {
     details: [
       {
         appID: AASA_APP_ID,
-        paths: ["*"],
+        paths: AASA_PATHS,
       },
     ],
   },

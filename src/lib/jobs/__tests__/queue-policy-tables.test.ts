@@ -76,12 +76,10 @@ describe("status group queue policies", () => {
 describe("integration-sync group queue policies", () => {
   it.each([
     ["whoop-backfill", "exclusive"],
-    ["fitbit-backfill", "exclusive"],
     ["google-health-backfill", "exclusive"],
     ["strava-backfill", "exclusive"],
     ["oura-backfill", "exclusive"],
     ["google-health-sleep-repair", "exclusive"],
-    ["fitbit-sleep-repair", "exclusive"],
     ["sleep-timeline-backfill", "exclusive"],
     ["lab-biomarker-backfill", "exclusive"],
   ])("%s is %s", (queue, policy) => {

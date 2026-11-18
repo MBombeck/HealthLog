@@ -49,7 +49,7 @@ const openRow = (overrides: Partial<WatchRow> = {}): WatchRow => ({
 
 describe("classifySilence", () => {
   // A wearable whose cloud receives data on its own: the 24 h window.
-  const wearable = SOURCE_PROFILES.fitbit;
+  const wearable = SOURCE_PROFILES["google-health"];
   const withings = SOURCE_PROFILES.withings;
 
   it("never flags an on-demand source for silence, however long and however regular", () => {
@@ -166,12 +166,7 @@ describe("classifySilence", () => {
   });
 
   it("keeps the 24 h window for wearables whose cloud receives data on its own", () => {
-    for (const key of [
-      "fitbit",
-      "google-health",
-      "polar",
-      "nightscout",
-    ] as const) {
+    for (const key of ["google-health", "polar", "nightscout"] as const) {
       expect(SOURCE_PROFILES[key]).toEqual({
         kind: "continuous",
         silenceWindowMs: 24 * HOUR,

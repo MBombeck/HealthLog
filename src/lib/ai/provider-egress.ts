@@ -49,3 +49,14 @@ export function isConsentGatedProvider(providerType: string): boolean {
 export function isExternalProvider(providerType: string): boolean {
   return providerType !== LOCAL_PROVIDER_TYPE;
 }
+
+/** Where the credential behind one chain entry comes from. */
+export function providerOrigin(
+  providerType: string,
+): "user" | "local" | "server" {
+  if (providerType === "local") return "local";
+  if (providerType === "admin-openai" || providerType === "admin-codex") {
+    return "server";
+  }
+  return "user";
+}

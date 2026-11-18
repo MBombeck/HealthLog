@@ -184,7 +184,7 @@ export const composeNudgeWithAI: ComposeNudgeWithAI = async (params) => {
       return null;
     }
 
-    const chain = await resolveProviderChain(params.userId);
+    const chain = await resolveProviderChain(params.userId, "coach");
     if (chain.length === 0) return null;
 
     // The wire re-check for exactly this chain, before the budget

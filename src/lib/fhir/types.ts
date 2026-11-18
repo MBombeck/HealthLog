@@ -70,6 +70,18 @@ export interface FhirObservationComponent {
   valueQuantity?: FhirQuantity;
   valueInteger?: number;
   valueString?: string;
+  /** A coded answer (seizure diary: sleep state, post-ictal state). */
+  valueCodeableConcept?: FhirCodeableConcept;
+  valueBoolean?: boolean;
+}
+
+/**
+ * An R4 extension carrying an integer (the seizure diary's
+ * `count` > 1 on a tally Observation).
+ */
+export interface FhirIntegerExtension {
+  url: string;
+  valueInteger: number;
 }
 
 export interface FhirPatient {
@@ -89,7 +101,19 @@ export interface FhirAnnotation {
 export interface FhirObservation {
   resourceType: "Observation";
   id: string;
-  status: "final";
+  /**
+   * `final`, or v1.48.0 `preliminary` for a seizure the person or carer
+   * recorded as suspected.
+   */
+  status: "final" | "preliminary";
+  /** The tally count on a seizure Observation standing for several. */
+  extension?: FhirIntegerExtension[];
+  /** Who recorded it (a carer as `RelatedPerson`, else the Patient). */
+  performer?: FhirReference[];
+  /** The ED or admission Encounter a seizure led to. */
+  encounter?: FhirReference;
+  /** A cluster Observation's member seizures. */
+  hasMember?: FhirReference[];
   category?: FhirCodeableConcept[];
   code: FhirCodeableConcept;
   subject: FhirReference;
@@ -186,6 +210,10 @@ export interface FhirMedicationAdministration {
   effectiveDateTime: string;
   /** Single dosage (R4 `0..1`). Present only when a structured `dose` exists. */
   dosage?: FhirDosage;
+  /** The seizure Observation a rescue dose was given for. */
+  reasonReference?: FhirReference[];
+  /** The recorded effect of a rescue dose. */
+  note?: FhirAnnotation[];
 }
 
 export interface FhirDiagnosticReport {

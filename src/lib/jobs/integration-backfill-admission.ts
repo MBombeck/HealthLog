@@ -10,15 +10,11 @@ export const INTEGRATION_BACKFILL_ADMISSION_GROUP = {
 
 export const INTEGRATION_BACKFILL_BOOT_ORDER = [
   "whoop-backfill",
-  "fitbit-backfill",
   "google-health-backfill",
   "google-health-sleep-repair",
   "sleep-timeline-backfill",
   "lab-biomarker-backfill",
   "strava-backfill",
-  // Appended, not slotted next to `fitbit-backfill`, so every existing
-  // provider's boot stagger stays exactly where it was.
-  "fitbit-sleep-repair",
   "oura-backfill",
   "garmin-backfill",
 ] as const;

@@ -5,7 +5,7 @@
  *
  *   * the HealthKit config the iOS client drives,
  *   * the per-provider surfaces under `/api/<provider>/*` — credentials,
- *     status, disconnect, sync and the token probe, for Fitbit, Google Health,
+ *     status, disconnect, sync and the token probe, for Google Health,
  *     Nightscout, Oura, Polar, Strava, WHOOP and Withings,
  *   * the cross-provider surfaces under `/api/integrations/*` — the
  *     consolidated status envelope, the park-resume endpoints and the
@@ -38,7 +38,6 @@ import {
   RECENT_CALL_STATUSES,
 } from "@/lib/integrations/connection-health";
 import type { ZodOpenApiObject } from "zod-openapi";
-import { fitbitCredentialsSchema } from "@/lib/validations/fitbit";
 import { googleHealthCredentialsSchema } from "@/lib/validations/google-health";
 import { WITHINGS_PLAN_FEATURES } from "@/lib/withings/plan-features";
 import { OURA_SCOPE_GATED_COLLECTIONS } from "@/lib/oura/scope";
@@ -861,14 +860,9 @@ const credentialsPresenceResponse = z
       "Presence check for a provider's per-user BYO-key credentials. Presence only — the stored id and secret are write-only.",
   });
 
-// The BYO-key request bodies. Five providers trim their inputs and two do not
-// (Fitbit / Google Health / Withings take the string verbatim); the difference
-// is real and is stated per schema rather than averaged away.
-const fitbitCredentialsRequest = fitbitCredentialsSchema.meta({
-  id: "FitbitCredentialsRequest",
-  description:
-    "Per-user Fitbit BYO-key credentials, 1–200 characters each, stored encrypted at rest and never read back. NOT trimmed: a trailing space or newline from the developer portal's copy button is stored verbatim and reaches Fitbit as part of the id.",
-});
+// The BYO-key request bodies. Some providers trim their inputs and some do not
+// (Google Health / Withings take the string verbatim); the difference is real
+// and is stated per schema rather than averaged away.
 
 const googleHealthCredentialsRequest = googleHealthCredentialsSchema.meta({
   id: "GoogleHealthCredentialsRequest",
@@ -948,8 +942,8 @@ const providerProbeResponse = z
   });
 
 /**
- * The probe under `/api/integrations/<provider>/test` (Fitbit / Google Health /
- * WHOOP / Withings). Same idea, one field more.
+ * The probe under `/api/integrations/<provider>/test` (Google Health / WHOOP /
+ * Withings). Same idea, one field more.
  */
 const integrationProbeResponse = z
   .object({
@@ -970,8 +964,8 @@ const integrationProbeResponse = z
 /**
  * The 502 both probe families answer, with the error-code set they share.
  *
- * The set is identical across Fitbit / Google Health / Oura / Polar / Strava /
- * WHOOP / Withings. Two providers add one code of their own and say so on their
+ * The set is identical across Google Health / Oura / Polar / Strava / WHOOP /
+ * Withings. Two providers add one code of their own and say so on their
  * own path: Nightscout adds `url_not_public`, Withings adds
  * `upstream_invalid_json`.
  */
@@ -1087,9 +1081,9 @@ const resumeResponse = z
   });
 
 /**
- * The connection-row status shape Fitbit and Google Health share. WHOOP's is
- * the same minus nothing and plus nothing, but it is declared separately above
- * because it predates this batch and iOS reads it by its own component name.
+ * The connection-row status shape of Google Health. WHOOP's is the same minus
+ * nothing and plus nothing, but it is declared separately above because it
+ * predates this batch and iOS reads it by its own component name.
  */
 function connectionStatusShape() {
   return {
@@ -1127,12 +1121,6 @@ function connectionStatusShape() {
       ),
   };
 }
-
-const fitbitStatusResponse = z.object(connectionStatusShape()).meta({
-  id: "FitbitStatusResponse",
-  description:
-    "Fitbit connection status. When no connection row exists the body is exactly `{ connected: false, configured }` — every other field is absent, not null. Pure read.",
-});
 
 const googleHealthStatusResponse = z
   .object({
@@ -1215,7 +1203,6 @@ const integrationEnvelopeEntry = z
       .enum([
         "withings",
         "whoop",
-        "fitbit",
         "google-health",
         "polar",
         "oura",
@@ -1307,34 +1294,10 @@ const integrationEnvelopeEntry = z
       .nullable()
       .optional()
       .describe("Garmin only. Null when no key is stored."),
-    retirement: z
-      .object({
-        endsOn: z
-          .string()
-          .regex(/^\d{4}-\d{2}-\d{2}$/)
-          .describe("The day Google turns the legacy Fitbit Web API off."),
-        ended: z
-          .boolean()
-          .describe(
-            "The day has come: the connection no longer syncs, its imported data stays, and `health` is null.",
-          ),
-        successor: z
-          .enum(["google-health"])
-          .describe(
-            "The integration that reads the same Fitbit and Pixel devices. Moving needs a fresh consent; the Fitbit grant cannot be carried over.",
-          ),
-        offered: z
-          .boolean()
-          .describe(
-            "Whether the Fitbit card is shown. False once `ended` for an account that never connected Fitbit, has no Fitbit app of its own and holds no Fitbit data: there is nothing to explain the move for. True before the turndown and for every account that had Fitbit.",
-          ),
-      })
-      .optional()
-      .describe("Fitbit only. The end of the legacy Fitbit Web API."),
     health: connectionHealth
       .nullable()
       .describe(
-        "The unified connection state, null when the provider is not connected (and for Fitbit once `retirement.ended`). It supersedes `state`, `lastError`, `consecutiveFailuresByKind`, `syncHealth`, `tokenExpired`, `needsReauth`, `hasActivityScope`, `planUnavailable` and `scopeReconnect` on this entry; those nine are deprecated and still served for clients that predate `health`.",
+        "The unified connection state, null when the provider is not connected. It supersedes `state`, `lastError`, `consecutiveFailuresByKind`, `syncHealth`, `tokenExpired`, `needsReauth`, `hasActivityScope`, `planUnavailable` and `scopeReconnect` on this entry; those nine are deprecated and still served for clients that predate `health`.",
       ),
   })
   .meta({
@@ -1351,6 +1314,11 @@ const integrationStatusEnvelope = z
       .describe(
         "Consecutive persistent failures at which the operator is alerted. Operator-level, configurable via env.",
       ),
+    fitbitRemovalNotice: z
+      .boolean()
+      .describe(
+        "The account held a Fitbit connection when the Fitbit integration was removed (Google turned the Fitbit Web API off on 2026-10-30) and has not dismissed the note about it. Clients show the note while true; `POST /api/integrations/fitbit-removal-notice/dismiss` clears it.",
+      ),
     metricFreshnessDegraded: z
       .boolean()
       .describe(
@@ -1359,7 +1327,7 @@ const integrationStatusEnvelope = z
     integrations: z
       .array(integrationEnvelopeEntry)
       .describe(
-        "All ten providers, always, in the fixed order withings, whoop, fitbit, google-health, polar, oura, strava, nightscout, dawarich, garmin. A provider the user has never touched still appears, with `connected: false` and the ledger state `unknown` — absence from this list never means anything, because nothing is ever absent from it.",
+        "All nine providers, always, in the fixed order withings, whoop, google-health, polar, oura, strava, nightscout, dawarich, garmin. A provider the user has never touched still appears, with `connected: false` and the ledger state `unknown` — absence from this list never means anything, because nothing is ever absent from it.",
       ),
   })
   .meta({
@@ -2107,7 +2075,7 @@ export const integrationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Integrations"],
       summary: "Trigger a Withings sync",
       description:
-        "Incremental by default; `{ fullSync: true }` walks full history. Two limiters apply, matching the Fitbit / Google Health siblings: 5 requests / 60 s for any run, and additionally 1 per hour for a full one. Auth via cookie or Bearer.",
+        "Incremental by default; `{ fullSync: true }` walks full history. Two limiters apply, matching the Google Health sibling: 5 requests / 60 s for any run, and additionally 1 per hour for a full one. Auth via cookie or Bearer.",
       requestBody: {
         required: false,
         content: { "application/json": { schema: syncTriggerRequest } },
@@ -2152,7 +2120,7 @@ export const integrationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Integrations"],
       summary: "Trigger a WHOOP sync",
       description:
-        "Incremental by default; `{ fullSync: true }` walks full history across the four WHOOP resources. Two limiters apply, matching the Fitbit / Google Health siblings: 5 requests / 60 s for any run, and additionally 1 per hour for a full one. Auth via cookie or Bearer.",
+        "Incremental by default; `{ fullSync: true }` walks full history across the four WHOOP resources. Two limiters apply, matching the Google Health sibling: 5 requests / 60 s for any run, and additionally 1 per hour for a full one. Auth via cookie or Bearer.",
       requestBody: {
         required: false,
         content: { "application/json": { schema: syncTriggerRequest } },
@@ -2225,169 +2193,6 @@ export const integrationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...stdResponses,
         "429": {
           description: "More than 10 ticket mints in 60 s from this user.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-      },
-    },
-  },
-  "/api/fitbit/credentials": {
-    get: {
-      tags: ["Integrations"],
-      summary: "Check whether Fitbit BYO-key credentials are stored",
-      description: "Presence only. Auth via cookie or Bearer.",
-      responses: {
-        "200": {
-          description: "Credential presence.",
-          content: {
-            "application/json": {
-              schema: dataEnvelope(
-                credentialsPresenceResponse,
-                "FitbitCredentialsStatusEnvelope",
-              ),
-            },
-          },
-        },
-        ...stdResponses,
-      },
-    },
-    put: {
-      tags: ["Integrations"],
-      summary: "Store the caller's Fitbit BYO-key credentials",
-      description:
-        "Replaces both values; there is no partial update. Auth via cookie or Bearer.",
-      requestBody: {
-        required: true,
-        content: { "application/json": { schema: fitbitCredentialsRequest } },
-      },
-      responses: {
-        "200": {
-          description: "Credentials stored.",
-          content: {
-            "application/json": {
-              schema: dataEnvelope(
-                updatedAck,
-                "FitbitCredentialsUpdateEnvelope",
-              ),
-            },
-          },
-        },
-        ...jsonBody64k,
-        ...stdResponses,
-        ...credentialsRejected422,
-      },
-    },
-    delete: {
-      tags: ["Integrations"],
-      summary: "Delete the caller's Fitbit credentials and connection",
-      description:
-        "Deletes the connection row, clears both credential columns, audits the teardown and parks the `fitbit` ledger at `disconnected`. Idempotent — a missing connection row is a benign no-op, so a repeat call still answers 200. Auth via cookie or Bearer.",
-      responses: {
-        "200": {
-          description: "Credentials and connection removed.",
-          content: {
-            "application/json": {
-              schema: dataEnvelope(
-                deletedAck,
-                "FitbitCredentialsDeleteEnvelope",
-              ),
-            },
-          },
-        },
-        ...stdResponses,
-      },
-    },
-  },
-  "/api/fitbit/status": {
-    get: {
-      tags: ["Integrations"],
-      summary: "Read the caller's Fitbit connection status",
-      description:
-        "Reports the BYO-key marker plus the connection row's last sync, token expiry, granted scope and backfill progress. Pure read — no refresh, no ledger write. Auth via cookie or Bearer.",
-      responses: {
-        "200": {
-          description: "Connection status.",
-          content: {
-            "application/json": {
-              schema: dataEnvelope(
-                fitbitStatusResponse,
-                "FitbitStatusEnvelope",
-              ),
-            },
-          },
-        },
-        ...stdResponses,
-      },
-    },
-  },
-  "/api/fitbit/disconnect": {
-    post: {
-      tags: ["Integrations"],
-      summary: "Disconnect the caller's Fitbit account",
-      description:
-        "Deletes the connection row, audits the teardown and parks the `fitbit` ledger at `disconnected`. There is nothing to unsubscribe upstream — the integration polls. The BYO-key credentials are deliberately LEFT IN PLACE so a reconnect does not force the user to re-paste them; use the credentials DELETE to remove those too. No body. Auth via cookie or Bearer.",
-      responses: {
-        "200": {
-          description: "The connection was removed.",
-          content: {
-            "application/json": {
-              schema: dataEnvelope(disconnectedAck, "FitbitDisconnectEnvelope"),
-            },
-          },
-        },
-        "404": {
-          description:
-            "No Fitbit connection to remove. NOT an idempotent no-op: a second disconnect answers 404 rather than 200.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        ...stdResponses,
-      },
-    },
-  },
-  "/api/fitbit/sync": {
-    post: {
-      tags: ["Integrations"],
-      summary: "Trigger a Fitbit sync",
-      description:
-        "Incremental by default; `{ fullSync: true }` walks full history across four paginated resources. Two limiters apply: 5 requests / 60 s for any run, and additionally 1 per hour for a full one, because the classic Web API budget is 150 requests per hour per user. Auth via cookie or Bearer.",
-      requestBody: {
-        required: false,
-        content: { "application/json": { schema: syncTriggerRequest } },
-      },
-      responses: {
-        "200": {
-          description: "Sync run complete.",
-          content: {
-            "application/json": {
-              schema: dataEnvelope(
-                syncTriggerOutcome,
-                "FitbitSyncTriggerEnvelope",
-              ),
-            },
-          },
-        },
-        "400": {
-          description:
-            "Body is not parseable JSON. An ABSENT body is not this case — omit the body entirely for an incremental run.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        "413": {
-          description: "Body exceeds 64 KiB.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        ...stdResponses,
-        "422": {
-          description:
-            "The body was present and failed the schema — `fullSync` was not a boolean. Nothing was synced. Note that this is a behaviour change: such a body used to be read as `fullSync: false` and answered 200.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        "429": {
-          description:
-            "Either limiter tripped: more than 5 syncs in 60 s, or a second full sync within the hour. `meta.errorCode` = `rate_limited_self` for both; the message distinguishes them.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
-        "410": {
-          description:
-            "Google turned the legacy Fitbit Web API off on 2026-10-30; nothing is fetched. `meta.errorCode` = `provider_retired`. The data already imported stays; Google Health reads the same devices.",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },
@@ -2991,53 +2796,52 @@ export const integrationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       },
     },
   },
-  "/api/integrations/fitbit/resume": {
-    post: {
+  "/api/fitbit/status": {
+    get: {
       tags: ["Integrations"],
-      summary: "Clear a parked Fitbit integration",
+      summary: "The removed Fitbit integration, reported as not connected",
+      deprecated: true,
       description:
-        "A provider whose persistent-failure streak has run for more than 24 h is parked, and the sync entry point short-circuits until somebody clears it. This clears it; the next cron tick attempts again. No body, no upstream call. Rate-limited 5 requests / 60 s per user. Auth via cookie or Bearer.",
+        "Google turned the Fitbit Web API off on 2026-10-30 and the Fitbit integration was removed in v1.48.0. This status stays for app builds that read it on every open of their integrations screen: it always answers `connected: false`, `configured: false` and `retired: true`, in the shape it had before. The integration's other routes answer 410 `route.retired`. It will be removed once no supported app build reads it. Auth via cookie or Bearer.",
       responses: {
         "200": {
-          description: "Park cleared, or nothing to clear.",
-          content: {
-            "application/json": {
-              schema: dataEnvelope(resumeResponse, "FitbitResumeEnvelope"),
-            },
-          },
-        },
-        ...stdResponses,
-        ...selfRateLimited429,
-      },
-    },
-  },
-  "/api/integrations/fitbit/test": {
-    post: {
-      tags: ["Integrations"],
-      summary: "Probe the caller's Fitbit connection",
-      description:
-        "Resolves a valid access token (refreshing if needed) and fetches the profile endpoint. Returns the connection's `lastSyncedAt` alongside the probe result — the shape difference from the `/api/<provider>/test` family. No body, nothing written beyond whatever the token refresh persists. Rate-limited 5 requests / 60 s per user. Auth via cookie or Bearer.",
-      responses: {
-        "200": {
-          description: "The probe reached Fitbit.",
+          description: "Always not connected.",
           content: {
             "application/json": {
               schema: dataEnvelope(
-                integrationProbeResponse,
-                "FitbitIntegrationTestEnvelope",
+                z.object({
+                  connected: z.literal(false),
+                  configured: z.literal(false),
+                  retired: z.literal(true),
+                }),
+                "FitbitRetiredStatusEnvelope",
               ),
             },
           },
         },
-        ...probeFailure502,
         ...stdResponses,
-        ...probeNotConfigured422,
-        ...selfRateLimited429,
-        "410": {
-          description:
-            "Google turned the legacy Fitbit Web API off on 2026-10-30; nothing is probed. `meta.errorCode` = `provider_retired`.",
-          content: { "application/json": { schema: errorEnvelope } },
+      },
+    },
+  },
+  "/api/integrations/fitbit-removal-notice/dismiss": {
+    post: {
+      tags: ["Integrations"],
+      summary: "Dismiss the note that the Fitbit integration is gone",
+      description:
+        "Hides the note an account that held a Fitbit connection sees on the integrations surface after the integration was removed (`fitbitRemovalNotice` on `GET /api/integrations/status`). Auth via cookie or Bearer, takes no body, idempotent: dismissing twice, or with no note to dismiss, is a success.",
+      responses: {
+        "200": {
+          description: "Note dismissed.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ dismissed: z.literal(true) }),
+                "FitbitRemovalNoticeDismissEnvelope",
+              ),
+            },
+          },
         },
+        ...stdResponses,
       },
     },
   },
@@ -3046,7 +2850,7 @@ export const integrationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Integrations"],
       summary: "Clear a parked Google Health integration",
       description:
-        "Identical contract to the Fitbit / WHOOP / Withings resume endpoints — same body (none), same response, same limiter. Auth via cookie or Bearer.",
+        "Identical contract to the WHOOP / Withings resume endpoints — same body (none), same response, same limiter. Auth via cookie or Bearer.",
       responses: {
         "200": {
           description: "Park cleared, or nothing to clear.",
@@ -3069,7 +2873,7 @@ export const integrationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Integrations"],
       summary: "Probe the caller's Google Health connection",
       description:
-        'Two endpoints in one, selected by the body. With no body (or any body other than the one below) it behaves like its Fitbit / WHOOP / Withings siblings: fetch the profile endpoint and answer `{ ok, lastSyncedAt, latencyMs }`. With `{ "probe": "structure" }` it instead walks one page or window per Google Health data type and answers a per-type diagnostic map — a completely different response shape under the same status code, so a client MUST branch on what it sent. The structure map reduces every leaf to its type name and never carries a value, a timestamp or an identifier, so the output is safe to paste into a public support thread. Rate-limited 5 requests / 60 s per user. Auth via cookie or Bearer.',
+        'Two endpoints in one, selected by the body. With no body (or any body other than the one below) it behaves like its WHOOP / Withings siblings: fetch the profile endpoint and answer `{ ok, lastSyncedAt, latencyMs }`. With `{ "probe": "structure" }` it instead walks one page or window per Google Health data type and answers a per-type diagnostic map — a completely different response shape under the same status code, so a client MUST branch on what it sent. The structure map reduces every leaf to its type name and never carries a value, a timestamp or an identifier, so the output is safe to paste into a public support thread. Rate-limited 5 requests / 60 s per user. Auth via cookie or Bearer.',
       requestBody: {
         required: false,
         content: {
@@ -3129,7 +2933,7 @@ export const integrationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Integrations"],
       summary: "Clear a parked WHOOP integration",
       description:
-        "Identical contract to the Fitbit / Google Health / Withings resume endpoints — same body (none), same response, same limiter. Auth via cookie or Bearer.",
+        "Identical contract to the Google Health / Withings resume endpoints — same body (none), same response, same limiter. Auth via cookie or Bearer.",
       responses: {
         "200": {
           description: "Park cleared, or nothing to clear.",
@@ -3174,7 +2978,7 @@ export const integrationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Integrations"],
       summary: "Clear a parked Withings integration",
       description:
-        "Identical contract to the Fitbit / Google Health / WHOOP resume endpoints — same body (none), same response, same limiter. For Withings the park is typically reached through a run of contract-mismatch errors rather than an expired grant. Auth via cookie or Bearer.",
+        "Identical contract to the Google Health / WHOOP resume endpoints — same body (none), same response, same limiter. For Withings the park is typically reached through a run of contract-mismatch errors rather than an expired grant. Auth via cookie or Bearer.",
       responses: {
         "200": {
           description: "Park cleared, or nothing to clear.",

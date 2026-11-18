@@ -19,6 +19,11 @@ import {
   listLabResultsSchema,
   updateLabResultSchema,
 } from "@/lib/validations/labs";
+import {
+  FHIR_LAB_FAILURE_REASONS,
+  FHIR_LAB_SKIP_REASONS,
+} from "@/lib/labs/fhir-import/types";
+import { fhirLabBatchSchema } from "@/lib/validations/labs-fhir";
 
 import {
   dataEnvelope,
@@ -88,7 +93,10 @@ const labResultRow = z
     referenceOrigin: referenceOriginEnum,
     referenceDivergesFromCatalog: z.boolean(),
     takenAt: z.string(),
-    source: z.string(),
+    source: z.string().meta({
+      description:
+        "Where the reading came from: `MANUAL` (typed), `OCR` (a scanned report), `DOCUMENT` (a document import), `IMPORT` (a lab CSV) or `APPLE_HEALTH` (Apple Health's Health Records, from an export or `POST /api/labs/fhir-batch`). Open-ended: render an unknown value as-is.",
+    }),
     hasNote: z.boolean(),
     rangeStatus: rangeStatusEnum,
     createdAt: z.string(),
@@ -180,6 +188,37 @@ export const labOverviewResponse = z
   })
   .meta({ id: "LabOverviewResponse" });
 
+const fhirLabBatchRequest = fhirLabBatchSchema.meta({
+  id: "FhirLabBatchRequest",
+  description:
+    "1 to 200 Health Records lab results (`HKClinicalTypeIdentifierLabResultRecord`), each the FHIR resource as JSON plus the HealthKit fields its identity is built from. Send a panel and its members in the same batch so the members carry the panel's name. No `userId`: the owner is the caller.",
+});
+
+const fhirLabRecordResult = z
+  .object({
+    index: z.number().int(),
+    status: z.enum(["inserted", "duplicate", "skipped", "failed"]),
+    reason: z
+      .enum([...FHIR_LAB_SKIP_REASONS, ...FHIR_LAB_FAILURE_REASONS])
+      .optional(),
+  })
+  .meta({
+    id: "FhirLabRecordResult",
+    description:
+      "One record's outcome, by its position in the request. `inserted`: written. `duplicate`: the record already holds it, under the same identity (deleted readings included, also once the reading or its whole marker is gone, so a deleted result stays deleted) or as the same reading on the same day from another source. `skipped`: not a reading HealthLog keeps, with `reason` `not_observation` | `not_lab` (no category names a lab; a code, display or text containing `lab` in any case counts) | `not_final` (preliminary; it is taken once final) | `withdrawn` (entered in error or cancelled; a reading already stored from an earlier version of the result is not removed, delete it through `DELETE /api/labs/{id}`) | `panel_header` | `no_value` | `unsupported_value` | `no_date` | `future_date` | `invalid_date` | `too_large` (a resource over 256 KiB). `failed`: a reading that could not be stored, with `reason` `missing_unit` (a number without a unit; a specific gravity, a pH or an INR, known by its LOINC code, is read as the unity `1` instead) | `unit_mismatch` (the account's marker is in a unit this one does not convert into) | `text_too_long` | `write_failed` (transient: send it again).",
+  });
+
+const fhirLabBatchResponse = z
+  .object({
+    results: z.array(fhirLabRecordResult),
+    inserted: z.number().int(),
+    duplicate: z.number().int(),
+    skipped: z.number().int(),
+    failed: z.number().int(),
+    outcome: z.enum(["empty", "failed", "partial", "success"]),
+  })
+  .meta({ id: "FhirLabBatchResponse" });
+
 const notFound = {
   "404": {
     description: "Lab result not found (or owned by another user).",
@@ -236,6 +275,40 @@ export const labsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...recordWriteRateLimitResponse,
+      },
+    },
+  },
+  "/api/labs/fhir-batch": {
+    post: {
+      tags: ["Labs"],
+      summary: "Ingest lab results from Apple Health's Health Records",
+      description:
+        "Maps each FHIR lab result (DSTU2 or R4 Observation) to a lab reading and writes it: final results only (`final`, `amended`, `corrected`), the laboratory category, numeric values in their unit (UCUM codes are read), a value with a comparator (`<0.5 mg/L`) kept as text as printed, string and coded values as text, the report's own reference range, and the panel's name for its members. The name resolves to the caller's marker by its own name, an alias, or the catalog analyte its LOINC code names; a new analyte gets a new marker; a reading in another unit is converted when the conversion is known and refused otherwise. The identity is a digest of `sourceURL` and `identifier`, the same one an Apple Health export import builds, so a result already imported from an export is a `duplicate` here, and sending a batch again is safe. First write wins: an amended result under a held identity is a duplicate. Owner-only: a cookie session or a full-scope login token. The body is capped at 1 MiB (413 past it): a client splits a large sync by size as well as by count. Rate limit 60 batches a minute; Idempotency-Key supported. A response carrying `write_failed` is `Cache-Control: no-store` and is not replayed for its key. Audits as `labs.fhir.batch` with counts only.",
+      parameters: [idempotencyKeyParameter],
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: fhirLabBatchRequest } },
+      },
+      responses: {
+        ...idempotentWrite(),
+        "200": {
+          description:
+            "Batch processed; one result per record. `outcome` reads `inserted` against `failed` (skips and duplicates are information, not failure).",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                fhirLabBatchResponse,
+                "FhirLabBatchEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+        "422": {
+          description:
+            "Nothing was written. `meta.errorCode` = `labs.fhir_batch.invalid`: no records, more than 200, a record without a `resource` object, an over-long HealthKit field, or a field the request does not define (every issue under `details.issues`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
       },
     },
   },

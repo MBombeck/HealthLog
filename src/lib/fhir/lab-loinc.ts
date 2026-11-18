@@ -479,3 +479,49 @@ export function resolveLabCoding(
   const ucum = normaliseUnit(unit) === mapping.ucum ? mapping.ucum : null;
   return { loinc: mapping.loinc, display: mapping.display, ucum };
 }
+
+/**
+ * LOINC codes a FHIR import meets that this module does not export under, by
+ * the catalog slug they belong to. Each names the same analyte in the same
+ * kind of unit as the slug's own code, differing only in method or formula:
+ * LDL by calculation (13457-7) or by direct assay (18262-6); eGFR by MDRD
+ * (33914-3, 48642-3, 48643-1, 50044-7) or CKD-EPI (62238-1, 98979-8); HbA1c by
+ * HPLC (17856-6); TSH by a detection-limit method (11579-0). Import only: the
+ * exporter keeps its own method-less code.
+ */
+const IMPORT_ONLY_LOINC_TO_SLUG: Readonly<Record<string, string>> = {
+  "13457-7": "ldl",
+  "18262-6": "ldl",
+  "33914-3": "egfr",
+  "48642-3": "egfr",
+  "48643-1": "egfr",
+  "50044-7": "egfr",
+  "62238-1": "egfr",
+  "98979-8": "egfr",
+  "17856-6": "hba1c",
+  "11579-0": "tsh",
+};
+
+let loincToSlug: ReadonlyMap<string, string> | null = null;
+
+/**
+ * The labs-catalog slug a LOINC code names, or null. The inverse of
+ * {@link CATALOG_SLUG_TO_LOINC_KEY} over {@link LAB_LOINC_BY_KEY}, plus the
+ * import-only method variants above. A FHIR lab result carrying one of these
+ * codes is matched to the account's marker for that analyte whatever the
+ * sending system called it.
+ */
+export function catalogSlugForLoinc(code: string): string | null {
+  if (!loincToSlug) {
+    const map = new Map<string, string>();
+    for (const [slug, key] of Object.entries(CATALOG_SLUG_TO_LOINC_KEY)) {
+      const mapping = LAB_LOINC_BY_KEY[key];
+      if (mapping) map.set(mapping.loinc, slug);
+    }
+    for (const [loinc, slug] of Object.entries(IMPORT_ONLY_LOINC_TO_SLUG)) {
+      map.set(loinc, slug);
+    }
+    loincToSlug = map;
+  }
+  return loincToSlug.get(code.trim()) ?? null;
+}

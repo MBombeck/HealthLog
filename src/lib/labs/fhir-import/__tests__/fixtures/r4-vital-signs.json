@@ -1,0 +1,18 @@
+{
+  "resourceType": "Observation",
+  "id": "obs-bp",
+  "status": "final",
+  "category": [
+    {
+      "coding": [
+        {
+          "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+          "code": "vital-signs"
+        }
+      ]
+    }
+  ],
+  "code": { "text": "Body weight" },
+  "effectiveDateTime": "2025-02-01T07:30:00Z",
+  "valueQuantity": { "value": 72, "unit": "kg" }
+}

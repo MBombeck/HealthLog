@@ -1,7 +1,7 @@
 /**
  * Google Health hourly poll-cohort sync and OAuth-state cleanup handlers.
  *
- * Extracted alongside the Fitbit handlers; register-integration-sync.ts owns the
+ * register-integration-sync.ts owns the
  * queue names, cron schedules, and boss.work registrations.
  */
 import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
