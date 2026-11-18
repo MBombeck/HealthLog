@@ -2302,6 +2302,10 @@ model Measurement {
   // without this one the purge planned a sequential scan and could not finish
   // inside statement_timeout. Raw SQL only (partial predicate not expressible
   // in Prisma).
+  // `measurements_user_id_deleted_at_tombstone_idx` is a partial index over
+  // `(user_id, deleted_at) WHERE deleted_at IS NOT NULL` (migration 0505,
+  // v1.48.0): the sync handshake counts one account's tombstones through it
+  // instead of walking every account's. Raw SQL only, like the one above.
   // `measurements_noted_live_idx` is a partial index over `(user_id,
   // measured_at DESC, id DESC) WHERE deleted_at IS NULL AND (notes_encrypted
   // IS NOT NULL OR notes IS NOT NULL)` — see migration 0397 (v1.42.2). The

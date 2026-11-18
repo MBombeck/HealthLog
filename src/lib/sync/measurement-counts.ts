@@ -26,25 +26,20 @@ export async function countLiveMeasurements(userId: string): Promise<number> {
 
 /**
  * The account's soft-deleted measurements, exact, read through the partial
- * tombstone index (`measurements_tombstone_purge_idx`, `WHERE deleted_at IS
- * NOT NULL`), so the count walks the tombstones the retention keeps (75 days
- * of them, every account's), not the account's live history. The inner read
- * names no account and is ordered on `deleted_at`, which only that index
- * returns, under a limit the planner cannot see and that never binds: with
- * no statistics the planner takes nearly every row for a tombstone, and an
- * account filter inside let it read the account's every row and sort them.
+ * index `measurements_user_id_deleted_at_tombstone_idx` (`(user_id,
+ * deleted_at) WHERE deleted_at IS NOT NULL`, migration 0505): the count reads
+ * this account's tombstones and no other account's. The instance-wide purge
+ * index leads on `deleted_at` alone, and reading through it walked every
+ * account's tombstones on each handshake.
  */
 export async function countTombstonedMeasurements(
   userId: string,
 ): Promise<number> {
   const [row] = await prisma.$queryRaw<Array<{ n: bigint | number }>>`
-    SELECT COUNT(*) FILTER (WHERE x."user_id" = ${userId}) AS n FROM (
-      SELECT m."user_id"
-      FROM measurements m
-      WHERE m."deleted_at" IS NOT NULL
-      ORDER BY m."deleted_at"
-      LIMIT (SELECT 2147483647::int)
-    ) x
+    SELECT COUNT(*) AS n
+    FROM measurements m
+    WHERE m."user_id" = ${userId}
+      AND m."deleted_at" IS NOT NULL
   `;
   return Number(row?.n ?? 0);
 }
