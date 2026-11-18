@@ -3750,14 +3750,15 @@ model MedicationDoseChange {
 /// v1.48.0 — the client id of a GLP-1 titration step that was removed. A
 /// device that still holds the step as pending upload sends it again under
 /// the same id; this row makes that POST answer 410 instead of creating the
-/// step anew. Written by the step's DELETE, read by the step's POST, gone with
-/// the medication. Not in backups: a restore brings back the steps the backup
-/// holds on purpose.
+/// step anew. Written by the step's DELETE (`createdAt` is when the step was
+/// removed), read by the step's POST, gone with the medication. A record, not
+/// a soft delete: nothing purges it. Not in backups: a restore brings back
+/// the steps the backup holds on purpose.
 model MedicationDoseChangeTombstone {
   id           String   @id @default(cuid())
   medicationId String   @map("medication_id")
   clientId     String   @map("client_id")
-  deletedAt    DateTime @default(now()) @map("deleted_at")
+  createdAt    DateTime @default(now()) @map("created_at")
 
   medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
 

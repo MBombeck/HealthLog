@@ -18,7 +18,7 @@ BEGIN
         "id" TEXT NOT NULL,
         "medication_id" TEXT NOT NULL,
         "client_id" TEXT NOT NULL,
-        "deleted_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT "medication_dose_change_tombstones_pkey" PRIMARY KEY ("id")
     );
 
