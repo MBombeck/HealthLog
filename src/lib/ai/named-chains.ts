@@ -61,12 +61,6 @@ export interface NamedChainsConfig {
   attachments: Partial<Record<AiCapabilityKey, string>>;
 }
 
-export const EMPTY_NAMED_CHAINS: NamedChainsConfig = Object.freeze({
-  chains: [],
-  defaultChainId: null,
-  attachments: {},
-}) as NamedChainsConfig;
-
 function isProviderChainType(value: unknown): value is ProviderChainType {
   return (
     typeof value === "string" &&
@@ -156,11 +150,6 @@ export function serializeNamedChains(
     defaultChainId: config.defaultChainId,
     attachments,
   };
-}
-
-/** Whether the record has configured anything beyond the main chain. */
-export function hasNamedChains(config: NamedChainsConfig): boolean {
-  return config.chains.length > 0;
 }
 
 /**
