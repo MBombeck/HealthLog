@@ -69,6 +69,27 @@ vi.mock("@/lib/documents/describe", async (importOriginal) => ({
   })),
 }));
 
+// The credential loader: every stored provider key a request opens passes
+// through it. Wrapped, not replaced, so the read still resolves; what is kept
+// is a fingerprint of each key opened, never the key.
+const openedKeys = vi.hoisted(() => [] as string[]);
+vi.mock("@/lib/ai/stored-key", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/ai/stored-key")>();
+  const { createHash } = await import("node:crypto");
+  return {
+    ...actual,
+    openStoredKey: vi.fn((encrypted: string) => {
+      const opened = actual.openStoredKey(encrypted);
+      if (opened !== null) {
+        openedKeys.push(createHash("sha256").update(opened).digest("hex"));
+      }
+      return opened;
+    }),
+  };
+});
+
+import { createHash } from "node:crypto";
+
 import { runDocumentAssist } from "@/lib/documents/assist";
 import {
   runDocumentSummary,
@@ -85,6 +106,15 @@ const PNG = Buffer.from(
 let counter = 0;
 
 /** A person on their own Anthropic key with the full AI receipt. */
+/** A key's fingerprint, the only form a key is compared in here. */
+function fingerprint(key: string): string {
+  return createHash("sha256").update(key).digest("hex");
+}
+
+const OPERATOR_KEY = "sk-operator-integration-test";
+const GUARDIAN_KEY = "sk-ant-guardian-own-key";
+const PROFILE_KEY = "sk-ant-profile-own-key";
+
 async function makeUser(label: string) {
   const suffix = `${label}-${counter++}`;
   const user = await getPrismaClient().user.create({
@@ -97,7 +127,7 @@ async function makeUser(label: string) {
       onboardingCompletedAt: new Date(),
       aiProvider: "ANTHROPIC",
       aiModel: "claude-sonnet-4-6",
-      aiAnthropicKeyEncrypted: encrypt("sk-ant-guardian-own-key"),
+      aiAnthropicKeyEncrypted: encrypt(GUARDIAN_KEY),
       modulePreferencesJson: { inboundDocuments: true, labs: true },
     },
   });
@@ -122,7 +152,7 @@ async function setSwitches(values: Record<string, unknown>) {
 /** The operator's own provider: what a managed profile's reads go to. */
 async function operatorProvider() {
   await setSwitches({
-    adminAiKeyEncrypted: encrypt("sk-operator-integration-test"),
+    adminAiKeyEncrypted: encrypt(OPERATOR_KEY),
     adminAiModel: "gpt-4o",
   });
 }
@@ -283,12 +313,25 @@ beforeEach(async () => {
   headerJar.clear();
   counter = 0;
   for (const spy of SPIES) vi.mocked(spy).mockClear();
+  openedKeys.length = 0;
 });
 
 describe("a guardian's document AI runs under the profile's capability", () => {
-  it("reaches the operator's provider, never the guardian's own key", async () => {
+  it("opens the operator's key, never the guardian's or the profile's own", async () => {
+    // Three keys within reach: the operator's, the guardian's personal key,
+    // and a personal key on the profile's own row. A managed record's reads
+    // go to the operator; resolving the guardian's credentials, or treating
+    // the profile like an owner on its own key, would open one of the others.
     await operatorProvider();
     const { profile } = await guardianInside();
+    await getPrismaClient().user.update({
+      where: { id: profile.id },
+      data: {
+        aiProvider: "ANTHROPIC",
+        aiModel: "claude-sonnet-4-6",
+        aiAnthropicKeyEncrypted: encrypt(PROFILE_KEY),
+      },
+    });
     await grantConsent(profile.id, "ai_extraction");
     const document = await storeDocument(profile.id);
 
@@ -296,9 +339,14 @@ describe("a guardian's document AI runs under the profile's capability", () => {
 
     expect(status).toBe(200);
     expect(runDocumentAssist).toHaveBeenCalledTimes(1);
-    const args = vi.mocked(runDocumentAssist).mock.calls[0]![0];
-    expect(args.providerType).toBe("admin-openai");
-    expect(args.providerType).not.toBe("anthropic");
+    expect(vi.mocked(runDocumentAssist).mock.calls[0]![0].providerType).toBe(
+      "admin-openai",
+    );
+    // The loader saw the operator's key, and only that one.
+    expect(openedKeys.length).toBeGreaterThan(0);
+    expect(new Set(openedKeys)).toEqual(new Set([fingerprint(OPERATOR_KEY)]));
+    expect(openedKeys).not.toContain(fingerprint(GUARDIAN_KEY));
+    expect(openedKeys).not.toContain(fingerprint(PROFILE_KEY));
   });
 
   it("is refused without the profile's own receipt, whatever the guardian consented to", async () => {
