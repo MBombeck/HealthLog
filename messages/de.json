@@ -5904,7 +5904,7 @@
         },
         "import": {
           "heading": "Import",
-          "description": "Importiere Daten aus einem Apple-Health-Export oder einer JSON-Datei. Bereits vorhandene Einträge werden übersprungen, ein erneuter Import ist also unbedenklich.",
+          "description": "Importiere Daten aus Apple Health, Health Connect, der Aktivitätsdatei einer Uhr, einer JSON- oder einer CSV-Datei. Bereits vorhandene Einträge werden übersprungen, ein erneuter Import ist also unbedenklich.",
           "charCount": "{used} / {max} Zeichen",
           "appleHealth": {
             "title": "Apple Health",
@@ -5958,7 +5958,7 @@
             "fileInputLabel": "Eine JSON-Datei zum Import auswählen",
             "schemaHint": "Zwei Arrays: measurements und moodEntries.",
             "docsLink": "Schema und Beispiel ansehen.",
-            "uploadFile": "Datei hochladen",
+            "uploadFile": "Datei auswählen",
             "downloadExample": "Beispiel herunterladen",
             "import": "Importieren",
             "invalidJson": "Das ist kein gültiges JSON. Bitte die Syntax prüfen und erneut versuchen.",
@@ -5981,7 +5981,7 @@
             "fileInputLabel": "CSV-Datei zum Importieren auswählen",
             "schemaHint": "Spalten: type, value, unit, measuredAt (mit Zeitzonen-Offset) sowie optional glucoseContext, notes, externalId.",
             "docsLink": "Spaltenschema und Beispiel ansehen.",
-            "uploadFile": "Datei hochladen",
+            "uploadFile": "Datei auswählen",
             "downloadExample": "Beispiel herunterladen",
             "preview": "Vorschau",
             "import": "Importieren",
@@ -6024,7 +6024,7 @@
             "description": "Ein Einnahmeverlauf, wie ihn ein anderer Medikamenten-Tracker exportiert, direkt gelesen.",
             "pasteLabel": "Export einfügen",
             "fileInputLabel": "Datei mit Einnahmeverlauf wählen",
-            "uploadFile": "Datei wählen",
+            "uploadFile": "Datei auswählen",
             "preview": "Vorschau",
             "import": "Importieren",
             "empty": "Erst den Export einfügen oder eine Datei wählen.",
@@ -6078,7 +6078,7 @@
           "healthConnect": {
             "title": "Health-Connect-Export",
             "description": "Importiere die ZIP-Datei, die die Health-Connect-App auf Android beim Export deiner Daten schreibt.",
-            "choose": "ZIP-Datei wählen",
+            "choose": "Datei auswählen",
             "uploading": "Wird hochgeladen …",
             "uploadFailed": "Das Hochladen ist fehlgeschlagen. Bitte versuch es noch einmal.",
             "tooLarge": "Die Datei ist größer, als dieser Server annimmt.",
@@ -6121,7 +6121,7 @@
           "fit": {
             "title": "Aktivitätsdatei (FIT)",
             "description": "Ein Training aus der FIT-Datei einer Uhr oder eines Radcomputers importieren, etwa von Garmin, Wahoo oder Coros.",
-            "choose": "Aktivitätsdatei auswählen",
+            "choose": "Datei auswählen",
             "uploading": "Wird hochgeladen…",
             "uploadFailed": "Das Hochladen ist fehlgeschlagen. Bitte versuche es erneut.",
             "tooLarge": "Die Datei ist größer als 10 MB.",
@@ -6131,7 +6131,7 @@
             "doneSummary": "Die Aktivitätsdatei wurde importiert.",
             "doneNothing": "Der Import ist abgeschlossen, es gab aber nichts Neues hinzuzufügen.",
             "dropLabel": "Aktivitätsdatei hier ablegen",
-            "dropHint": "oder klicken, um sie auszuwählen. .fit, .fit.gz oder .zip, bis 10 MB.",
+            "dropHint": "oder klicken, um sie auszuwählen: eine .fit-, .fit.gz- oder .zip-Datei bis 10 MB.",
             "fileInputLabel": "Aktivitätsdatei",
             "privacyNote": "Die Datei wird vom Server gelöscht, sobald der Import endet. Ein Training, das schon von Garmin, Apple Health oder einer anderen App hier ist, wird nicht doppelt angelegt: Es bekommt den Herzfrequenzverlauf aus der Datei, wenn es noch keinen hatte. Der GPS-Verlauf wird nur gespeichert, wenn Trainingsrouten eingeschaltet sind. Dieselbe Datei erneut hochzuladen ändert nichts.",
             "steps": {

@@ -5904,7 +5904,7 @@
         },
         "import": {
           "heading": "Importeren",
-          "description": "Breng gegevens naar HealthLog vanuit een Apple Health-export, een JSON-bestand of een CSV. Bij het importeren worden rijen die al bestaan overgeslagen, dus een import opnieuw uitvoeren is veilig.",
+          "description": "Breng gegevens naar HealthLog vanuit Apple Health, Health Connect, het activiteitsbestand van een horloge, een JSON-bestand of een CSV. Bij het importeren worden rijen die al bestaan overgeslagen, dus een import opnieuw uitvoeren is veilig.",
           "charCount": "{used} / {max} tekens",
           "appleHealth": {
             "title": "Apple Health",
@@ -5958,7 +5958,7 @@
             "fileInputLabel": "Kies een JSON-bestand om te importeren",
             "schemaHint": "Twee arrays: measurements en moodEntries.",
             "docsLink": "Bekijk het schema en een voorbeeld.",
-            "uploadFile": "Bestand uploaden",
+            "uploadFile": "Bestand kiezen",
             "downloadExample": "Voorbeeld downloaden",
             "import": "Importeren",
             "invalidJson": "Dat is geen geldige JSON. Controleer de syntaxis en probeer het opnieuw.",
@@ -5981,7 +5981,7 @@
             "fileInputLabel": "Kies een CSV-bestand om te importeren",
             "schemaHint": "Kolommen: type, value, unit, measuredAt (met tijdzoneverschil), en optioneel glucoseContext, notes, externalId.",
             "docsLink": "Bekijk het kolomschema en een voorbeeld.",
-            "uploadFile": "Bestand uploaden",
+            "uploadFile": "Bestand kiezen",
             "downloadExample": "Voorbeeld downloaden",
             "preview": "Voorbeeld",
             "import": "Importeren",
@@ -6078,7 +6078,7 @@
           "healthConnect": {
             "title": "Health Connect-export",
             "description": "Importeer het ZIP-bestand dat de Health Connect-app op Android aanmaakt wanneer je je gegevens exporteert.",
-            "choose": "ZIP-bestand kiezen",
+            "choose": "Bestand kiezen",
             "uploading": "Uploaden…",
             "uploadFailed": "Het uploaden is mislukt. Probeer het opnieuw.",
             "tooLarge": "Het bestand is groter dan deze server accepteert.",
@@ -6121,7 +6121,7 @@
           "fit": {
             "title": "Activiteitsbestand (FIT)",
             "description": "Importeer een training uit het FIT-bestand van een horloge of fietscomputer, zoals Garmin, Wahoo, Coros of Polar.",
-            "choose": "Activiteitsbestand kiezen",
+            "choose": "Bestand kiezen",
             "uploading": "Uploaden…",
             "uploadFailed": "Het uploaden is mislukt. Probeer het opnieuw.",
             "tooLarge": "Het bestand is groter dan 10 MB.",
@@ -6131,7 +6131,7 @@
             "doneSummary": "Het activiteitsbestand is geïmporteerd.",
             "doneNothing": "De import is klaar, maar er was niets nieuws toe te voegen.",
             "dropLabel": "Zet het activiteitsbestand hier neer",
-            "dropHint": "of klik om het te kiezen. .fit, .fit.gz of .zip, tot 10 MB.",
+            "dropHint": "of klik om het te kiezen: een .fit-, .fit.gz- of .zip-bestand tot 10 MB.",
             "fileInputLabel": "Activiteitsbestand",
             "privacyNote": "Het bestand wordt van de server verwijderd zodra de import klaar is. Een training die hier al is via Garmin, Apple Gezondheid of een andere app wordt niet dubbel toegevoegd: die krijgt de hartslagcurve uit het bestand als hij er nog geen had. Het GPS-spoor wordt alleen bewaard als Trainingsroutes aan staat. Hetzelfde bestand opnieuw uploaden verandert niets.",
             "steps": {

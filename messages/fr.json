@@ -5904,7 +5904,7 @@
         },
         "import": {
           "heading": "Import",
-          "description": "Importez des données dans HealthLog depuis un export Apple Santé ou un fichier JSON. L'import ignore les lignes déjà présentes : le relancer est sans risque.",
+          "description": "Importez des données dans HealthLog depuis Apple Santé, Health Connect, le fichier d’activité d’une montre, un fichier JSON ou un CSV. L'import ignore les lignes déjà présentes : le relancer est sans risque.",
           "charCount": "{used} / {max} caractères",
           "appleHealth": {
             "title": "Apple Santé",
@@ -5958,7 +5958,7 @@
             "fileInputLabel": "Choisir un fichier JSON à importer",
             "schemaHint": "Deux tableaux : measurements et moodEntries.",
             "docsLink": "Voir le schéma et un exemple.",
-            "uploadFile": "Importer un fichier",
+            "uploadFile": "Choisir un fichier",
             "downloadExample": "Télécharger l'exemple",
             "import": "Importer",
             "invalidJson": "Ce n'est pas du JSON valide. Vérifiez la syntaxe et réessayez.",
@@ -5981,7 +5981,7 @@
             "fileInputLabel": "Choisir un fichier CSV à importer",
             "schemaHint": "Colonnes : type, value, unit, measuredAt (avec décalage horaire) et, en option, glucoseContext, notes, externalId.",
             "docsLink": "Voir le schéma des colonnes et un exemple.",
-            "uploadFile": "Téléverser un fichier",
+            "uploadFile": "Choisir un fichier",
             "downloadExample": "Télécharger un exemple",
             "preview": "Aperçu",
             "import": "Importer",
@@ -6078,7 +6078,7 @@
           "healthConnect": {
             "title": "Export Health Connect",
             "description": "Importez le fichier ZIP que l’app Health Connect sur Android crée lors de l’export de vos données.",
-            "choose": "Choisir le fichier ZIP",
+            "choose": "Choisir un fichier",
             "uploading": "Envoi en cours…",
             "uploadFailed": "L’envoi a échoué. Réessayez.",
             "tooLarge": "Le fichier dépasse la taille acceptée par ce serveur.",
@@ -6121,7 +6121,7 @@
           "fit": {
             "title": "Fichier d’activité (FIT)",
             "description": "Importer un entraînement depuis le fichier FIT d’une montre ou d’un compteur vélo, comme Garmin, Wahoo ou Coros.",
-            "choose": "Choisir un fichier d’activité",
+            "choose": "Choisir un fichier",
             "uploading": "Envoi en cours…",
             "uploadFailed": "L’envoi a échoué. Veuillez réessayer.",
             "tooLarge": "Le fichier dépasse 10 Mo.",
@@ -6131,7 +6131,7 @@
             "doneSummary": "Le fichier d’activité a été importé.",
             "doneNothing": "L’importation est terminée, mais il n’y avait rien de nouveau à ajouter.",
             "dropLabel": "Déposez le fichier d’activité ici",
-            "dropHint": "ou cliquez pour le choisir. .fit, .fit.gz ou .zip, jusqu’à 10 Mo.",
+            "dropHint": "ou cliquez pour le choisir : un fichier .fit, .fit.gz ou .zip jusqu’à 10 Mo.",
             "fileInputLabel": "Fichier d’activité",
             "privacyNote": "Le fichier est supprimé du serveur dès la fin de l’importation. Un entraînement déjà présent via Garmin, Apple Santé ou une autre app n’est pas ajouté deux fois : il reçoit la courbe de fréquence cardiaque du fichier s’il n’en avait pas. Le tracé GPS n’est conservé que si Parcours d’entraînement est activé. Renvoyer le même fichier ne change rien.",
             "steps": {
