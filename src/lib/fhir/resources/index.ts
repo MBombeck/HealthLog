@@ -39,7 +39,6 @@ export { conditionsFromReportData } from "@/lib/fhir/resources/conditions";
 export {
   seizureBundleResources,
   seizureCompositionSection,
-  seizureResourcesFromReportData,
 } from "@/lib/fhir/resources/seizures";
 export {
   medicationStatementsFromReportData,

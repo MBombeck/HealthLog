@@ -393,18 +393,6 @@ export async function readSeizureDiary(
   };
 }
 
-/** Whether `typeProfileId` names one of the record's own types. */
-export async function ownsSeizureType(
-  userId: string,
-  typeProfileId: string,
-): Promise<boolean> {
-  const row = await prisma.seizureTypeProfile.findFirst({
-    where: { id: typeProfileId, userId },
-    select: { id: true },
-  });
-  return row !== null;
-}
-
 export type RescueMedicationCheck =
   | { ok: true; medication: { id: string; name: string } }
   | { ok: false; errorCode: string; status: 404 | 422; message: string };

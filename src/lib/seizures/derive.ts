@@ -206,11 +206,6 @@ export function seizureFreeSummary(
   return { daysSinceLast, lastAt, longestFreeDays: Math.max(0, longest) };
 }
 
-/** `YYYY-MM` of an instant in `tz`. */
-export function monthKey(at: Date | string, tz: string): string {
-  return userDayKey(new Date(ms(at)), tz).slice(0, 7);
-}
-
 export interface MonthlyTypeRow {
   /** The type profile id, or null for events without one. */
   typeProfileId: string | null;
