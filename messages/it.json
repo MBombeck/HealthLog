@@ -3950,7 +3950,8 @@
         "sleepTrendsLink": "Andamento del sonno",
         "moodHistoryLink": "Cronologia dell'umore",
         "previousSessionLink": "Sessione precedente",
-        "insightTitle": "Analisi dell'attività"
+        "insightTitle": "Analisi dell'attività",
+        "sourceFitFile": "File FIT"
       },
       "sport": {
         "walking": "Camminata",
@@ -5083,7 +5084,8 @@
         "afternoon": "Un tratto elevato a riposo questo pomeriggio, forse un po' di tensione.",
         "evening": "Un tratto elevato a riposo stasera, forse un po' di tensione.",
         "night": "Un tratto elevato a riposo durante la notte, forse un po' di tensione."
-      }
+      },
+      "emptyOutsideWorkouts": "Fuori dagli allenamenti non ci sono abbastanza rilevazioni della frequenza cardiaca per mostrare l'andamento di questa giornata."
     },
     "navEcg": "ECG",
     "sectionLoadError": "Non è stato possibile caricare questa sezione.",

@@ -3950,7 +3950,8 @@
         "sleepTrendsLink": "Tendências de sono",
         "moodHistoryLink": "Histórico de humor",
         "previousSessionLink": "Sessão anterior",
-        "insightTitle": "Insight de atividade"
+        "insightTitle": "Insight de atividade",
+        "sourceFitFile": "Arquivo FIT"
       },
       "sport": {
         "walking": "Caminhada",
@@ -5083,7 +5084,8 @@
         "afternoon": "Um trecho sustentado de elevação em repouso nesta tarde, possivelmente alguma tensão.",
         "evening": "Um trecho sustentado de elevação em repouso nesta noite, possivelmente alguma tensão.",
         "night": "Um trecho sustentado de elevação em repouso durante a madrugada, possivelmente alguma tensão."
-      }
+      },
+      "emptyOutsideWorkouts": "Não há leituras de frequência cardíaca suficientes fora dos treinos para mostrar o padrão deste dia."
     },
     "navEcg": "ECG",
     "sectionLoadError": "Não foi possível carregar esta seção.",

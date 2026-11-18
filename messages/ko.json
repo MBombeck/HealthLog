@@ -3950,7 +3950,8 @@
         "sleepTrendsLink": "수면 추이",
         "moodHistoryLink": "기분 기록",
         "previousSessionLink": "이전 세션",
-        "insightTitle": "활동 인사이트"
+        "insightTitle": "활동 인사이트",
+        "sourceFitFile": "FIT 파일"
       },
       "sport": {
         "walking": "걷기",
@@ -5083,7 +5084,8 @@
         "afternoon": "오늘 오후에 안정 시 심박수가 높은 구간이 이어졌어요. 긴장이 있었을 수 있어요.",
         "evening": "오늘 저녁에 안정 시 심박수가 높은 구간이 이어졌어요. 긴장이 있었을 수 있어요.",
         "night": "밤사이 안정 시 심박수가 높은 구간이 이어졌어요. 긴장이 있었을 수 있어요."
-      }
+      },
+      "emptyOutsideWorkouts": "운동 외 시간의 심박수 기록이 부족해 이날의 흐름을 보여 줄 수 없어요."
     },
     "navEcg": "심전도",
     "sectionLoadError": "이 섹션을 불러오지 못했습니다.",

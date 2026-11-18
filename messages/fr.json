@@ -3950,7 +3950,8 @@
         "sleepTrendsLink": "Tendances du sommeil",
         "moodHistoryLink": "Historique d'humeur",
         "previousSessionLink": "Séance précédente",
-        "insightTitle": "Analyse de l'activité"
+        "insightTitle": "Analyse de l'activité",
+        "sourceFitFile": "Fichier FIT"
       },
       "sport": {
         "walking": "Marche",
@@ -5083,7 +5084,8 @@
         "afternoon": "Une période élevée au repos cet après-midi, peut-être un peu de tension.",
         "evening": "Une période élevée au repos ce soir, peut-être un peu de tension.",
         "night": "Une période élevée au repos cette nuit, peut-être un peu de tension."
-      }
+      },
+      "emptyOutsideWorkouts": "Pas assez de mesures de fréquence cardiaque en dehors des entraînements pour montrer l’allure de cette journée."
     },
     "navEcg": "ECG",
     "sectionLoadError": "Cette section n'a pas pu être chargée.",

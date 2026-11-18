@@ -3950,7 +3950,8 @@
         "sleepTrendsLink": "Sleep trends",
         "moodHistoryLink": "Mood history",
         "previousSessionLink": "Previous session",
-        "insightTitle": "Activity insight"
+        "insightTitle": "Activity insight",
+        "sourceFitFile": "FIT file"
       },
       "sport": {
         "walking": "Walking",
@@ -5083,7 +5084,8 @@
         "afternoon": "A sustained elevated-at-rest stretch this afternoon, possibly some tension.",
         "evening": "A sustained elevated-at-rest stretch this evening, possibly some tension.",
         "night": "A sustained elevated-at-rest stretch overnight, possibly some tension."
-      }
+      },
+      "emptyOutsideWorkouts": "Not enough heart-rate readings outside workouts for this day to show its shape."
     },
     "navEcg": "ECG",
     "sectionLoadError": "This section could not be loaded.",

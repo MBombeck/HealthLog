@@ -3950,7 +3950,8 @@
         "sleepTrendsLink": "Slaaptrends",
         "moodHistoryLink": "Stemmingsgeschiedenis",
         "previousSessionLink": "Vorige sessie",
-        "insightTitle": "Activiteitsinzicht"
+        "insightTitle": "Activiteitsinzicht",
+        "sourceFitFile": "FIT-bestand"
       },
       "sport": {
         "walking": "Wandelen",
@@ -5083,7 +5084,8 @@
         "afternoon": "Vanmiddag een aanhoudende periode met een verhoogde hartslag in rust, mogelijk wat spanning.",
         "evening": "Vanavond een aanhoudende periode met een verhoogde hartslag in rust, mogelijk wat spanning.",
         "night": "Afgelopen nacht een aanhoudende periode met een verhoogde hartslag in rust, mogelijk wat spanning."
-      }
+      },
+      "emptyOutsideWorkouts": "Buiten trainingen zijn er te weinig hartslagmetingen om het verloop van deze dag te tonen."
     },
     "navEcg": "ECG",
     "sectionLoadError": "Deze sectie kon niet worden geladen.",

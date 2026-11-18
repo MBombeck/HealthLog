@@ -3950,7 +3950,8 @@
         "sleepTrendsLink": "Schlaf-Trends",
         "moodHistoryLink": "Stimmungsverlauf",
         "previousSessionLink": "Vorherige Einheit",
-        "insightTitle": "Aktivitäts-Einblick"
+        "insightTitle": "Aktivitäts-Einblick",
+        "sourceFitFile": "FIT-Datei"
       },
       "sport": {
         "walking": "Gehen",
@@ -5083,7 +5084,8 @@
         "afternoon": "Eine anhaltend erhöhte Ruhephase heute Nachmittag, möglicherweise etwas Anspannung.",
         "evening": "Eine anhaltend erhöhte Ruhephase heute Abend, möglicherweise etwas Anspannung.",
         "night": "Eine anhaltend erhöhte Ruhephase in der Nacht, möglicherweise etwas Anspannung."
-      }
+      },
+      "emptyOutsideWorkouts": "Außerhalb von Trainings gibt es für diesen Tag zu wenige Pulswerte, um seinen Verlauf zu zeigen."
     },
     "navEcg": "EKG",
     "sectionLoadError": "Dieser Bereich konnte nicht geladen werden.",

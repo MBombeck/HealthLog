@@ -3950,7 +3950,8 @@
         "sleepTrendsLink": "Trendy snu",
         "moodHistoryLink": "Historia nastroju",
         "previousSessionLink": "Poprzedni trening",
-        "insightTitle": "Analiza aktywności"
+        "insightTitle": "Analiza aktywności",
+        "sourceFitFile": "Plik FIT"
       },
       "sport": {
         "walking": "Marsz",
@@ -5083,7 +5084,8 @@
         "afternoon": "Utrzymujący się podwyższony spoczynek po południu: możliwe napięcie.",
         "evening": "Utrzymujący się podwyższony spoczynek wieczorem: możliwe napięcie.",
         "night": "Utrzymujący się podwyższony spoczynek w nocy: możliwe napięcie."
-      }
+      },
+      "emptyOutsideWorkouts": "Poza treningami jest za mało pomiarów tętna, by pokazać przebieg tego dnia."
     },
     "navEcg": "EKG",
     "sectionLoadError": "Nie udało się wczytać tej sekcji.",
