@@ -135,10 +135,10 @@ describe("latest-per-type reads", () => {
       /\.measurement\s*\.\s*groupBy\s*\(/.test(readSourceText(join(SRC, file))),
     );
     // The tree groups measurements in several places; finding none means
-    // the walk read the wrong tree. Seven since the dense-stream counts
-    // (MCP discovery, doctor report, feature cache) moved to capped
-    // per-type descents.
-    expect(grouped.length).toBeGreaterThanOrEqual(7);
+    // the walk read the wrong tree. Six since the dense-stream counts (MCP
+    // discovery, doctor report, feature cache, status gate) moved to capped
+    // descents and the rollup tier.
+    expect(grouped.length).toBeGreaterThanOrEqual(6);
     const offenders = files
       .filter((file) => !(file in GROUPBY_ALLOWED))
       .flatMap((file) =>
