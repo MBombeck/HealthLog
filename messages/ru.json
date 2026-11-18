@@ -592,7 +592,9 @@
       "symptom": "Симптом",
       "symptomDescription": "Один из ваших симптомов с силой",
       "lifeEventDescription": "Переезд, рождение ребёнка, новая работа",
-      "lifeEvent": "Событие жизни"
+      "lifeEvent": "Событие жизни",
+      "seizure": "Приступ",
+      "seizureDescription": "Запустите таймер или запишите приступ без замера времени"
     },
     "cycle": "Цикл",
     "labs": "Анализы",
@@ -883,7 +885,8 @@
     },
     "greetingOnly": "{greeting}.",
     "welcomeNew": "Добро пожаловать.",
-    "welcomeNewWithName": "Добро пожаловать, {name}."
+    "welcomeNewWithName": "Добро пожаловать, {name}.",
+    "quickAddSeizure": "Записать приступ"
   },
   "measurements": {
     "title": "Измерения",
@@ -14713,7 +14716,9 @@
       "rescue": "Экстр.",
       "loggedByDelegate": "записано человеком с доступом",
       "showAll": "Показать все ({count})",
-      "truncated": "Показаны только последние приступы."
+      "truncated": "Показаны только последние приступы.",
+      "loggedByYou": "записано вами",
+      "loggedByName": "записано: {name}"
     },
     "certainty": {
       "CONFIRMED": "Приступ",

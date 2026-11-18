@@ -592,7 +592,9 @@
       "symptom": "Symptoom",
       "symptomDescription": "Een van je eigen symptomen, met de ernst",
       "lifeEventDescription": "Een verhuizing, een geboorte, een nieuwe baan",
-      "lifeEvent": "Levensgebeurtenis"
+      "lifeEvent": "Levensgebeurtenis",
+      "seizure": "Aanval",
+      "seizureDescription": "Start de timer of leg een niet getimede aanval vast"
     },
     "cycle": "Cyclus",
     "labs": "Labwaarden",
@@ -883,7 +885,8 @@
     },
     "greetingOnly": "{greeting}.",
     "welcomeNew": "Welkom.",
-    "welcomeNewWithName": "Welkom, {name}."
+    "welcomeNewWithName": "Welkom, {name}.",
+    "quickAddSeizure": "Aanval vastleggen"
   },
   "measurements": {
     "title": "Metingen",
@@ -14713,7 +14716,9 @@
       "rescue": "Noodmed.",
       "loggedByDelegate": "vastgelegd door iemand met toegang",
       "showAll": "Alle {count} tonen",
-      "truncated": "Alleen de meest recente aanvallen worden getoond."
+      "truncated": "Alleen de meest recente aanvallen worden getoond.",
+      "loggedByYou": "door jou vastgelegd",
+      "loggedByName": "vastgelegd door {name}"
     },
     "certainty": {
       "CONFIRMED": "Aanval",

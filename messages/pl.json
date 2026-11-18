@@ -592,7 +592,9 @@
       "symptom": "Objaw",
       "symptomDescription": "Jeden z twoich objawów, z nasileniem",
       "lifeEventDescription": "Przeprowadzka, narodziny, nowa praca",
-      "lifeEvent": "Wydarzenie życiowe"
+      "lifeEvent": "Wydarzenie życiowe",
+      "seizure": "Napad",
+      "seizureDescription": "Uruchom stoper lub zapisz napad, którego czasu nie mierzono"
     },
     "cycle": "Cykl",
     "labs": "Wyniki badań",
@@ -883,7 +885,8 @@
     },
     "greetingOnly": "{greeting}.",
     "welcomeNew": "Witaj.",
-    "welcomeNewWithName": "Witaj, {name}."
+    "welcomeNewWithName": "Witaj, {name}.",
+    "quickAddSeizure": "Zapisz napad"
   },
   "measurements": {
     "title": "Pomiary",
@@ -14713,7 +14716,9 @@
       "rescue": "Ratunkowy",
       "loggedByDelegate": "zapisane przez osobę z dostępem",
       "showAll": "Pokaż wszystkie ({count})",
-      "truncated": "Pokazano tylko najnowsze napady."
+      "truncated": "Pokazano tylko najnowsze napady.",
+      "loggedByYou": "zapisane przez ciebie",
+      "loggedByName": "zapisane przez: {name}"
     },
     "certainty": {
       "CONFIRMED": "Napad",

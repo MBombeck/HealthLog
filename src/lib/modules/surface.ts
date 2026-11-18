@@ -140,6 +140,7 @@ const STATIC_SURFACE_MODULE = {
   "capture:workout": "workouts",
   // v1.40 — an occurrence of a person-defined symptom rides the illness module.
   "capture:symptom": "illness",
+  "capture:seizure": "seizures",
   "capture:lifeEvent": "timeline",
 
   // ── Dashboard widgets ──

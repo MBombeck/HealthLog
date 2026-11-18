@@ -592,7 +592,9 @@
       "symptom": "증상",
       "symptomDescription": "직접 정한 증상과 강도",
       "lifeEventDescription": "이사, 출산, 새 직장",
-      "lifeEvent": "삶의 사건"
+      "lifeEvent": "삶의 사건",
+      "seizure": "발작",
+      "seizureDescription": "타이머를 시작하거나 시간을 재지 않은 발작을 기록"
     },
     "cycle": "생리 주기",
     "labs": "검사",
@@ -883,7 +885,8 @@
     },
     "greetingOnly": "{greeting}.",
     "welcomeNew": "환영합니다.",
-    "welcomeNewWithName": "{name}님, 환영합니다."
+    "welcomeNewWithName": "{name}님, 환영합니다.",
+    "quickAddSeizure": "발작 기록"
   },
   "measurements": {
     "title": "측정",
@@ -14713,7 +14716,9 @@
       "rescue": "응급약",
       "loggedByDelegate": "접근 권한이 있는 사람이 기록함",
       "showAll": "{count}건 모두 보기",
-      "truncated": "최근 발작만 표시해요."
+      "truncated": "최근 발작만 표시해요.",
+      "loggedByYou": "내가 기록함",
+      "loggedByName": "{name} 님이 기록함"
     },
     "certainty": {
       "CONFIRMED": "발작",

@@ -592,7 +592,9 @@
       "symptom": "Symptom",
       "symptomDescription": "Eines deiner eigenen Symptome, mit Stärke",
       "lifeEventDescription": "Umzug, Geburt, neue Stelle",
-      "lifeEvent": "Lebensereignis"
+      "lifeEvent": "Lebensereignis",
+      "seizure": "Anfall",
+      "seizureDescription": "Timer starten oder einen nicht gestoppten Anfall eintragen"
     },
     "cycle": "Zyklus",
     "labs": "Laborwerte",
@@ -883,7 +885,8 @@
     },
     "greetingOnly": "{greeting}.",
     "welcomeNew": "Willkommen.",
-    "welcomeNewWithName": "Willkommen, {name}."
+    "welcomeNewWithName": "Willkommen, {name}.",
+    "quickAddSeizure": "Anfall eintragen"
   },
   "measurements": {
     "title": "Messungen",
@@ -14713,7 +14716,9 @@
       "rescue": "Notfallmed.",
       "loggedByDelegate": "von einer Person mit Zugriff erfasst",
       "showAll": "Alle {count} anzeigen",
-      "truncated": "Nur die letzten Anfälle werden angezeigt."
+      "truncated": "Nur die letzten Anfälle werden angezeigt.",
+      "loggedByYou": "von dir eingetragen",
+      "loggedByName": "eingetragen von {name}"
     },
     "certainty": {
       "CONFIRMED": "Anfall",

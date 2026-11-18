@@ -592,7 +592,9 @@
       "symptom": "Síntoma",
       "symptomDescription": "Uno de tus propios síntomas, con su intensidad",
       "lifeEventDescription": "Una mudanza, un nacimiento, un nuevo trabajo",
-      "lifeEvent": "Acontecimiento vital"
+      "lifeEvent": "Acontecimiento vital",
+      "seizure": "Crisis",
+      "seizureDescription": "Inicia el cronómetro o registra una crisis no cronometrada"
     },
     "cycle": "Ciclo",
     "labs": "Análisis",
@@ -883,7 +885,8 @@
     },
     "greetingOnly": "{greeting}.",
     "welcomeNew": "Te damos la bienvenida.",
-    "welcomeNewWithName": "Te damos la bienvenida, {name}."
+    "welcomeNewWithName": "Te damos la bienvenida, {name}.",
+    "quickAddSeizure": "Registrar crisis"
   },
   "measurements": {
     "title": "Mediciones",
@@ -14713,7 +14716,9 @@
       "rescue": "Rescate",
       "loggedByDelegate": "registrada por una persona con acceso",
       "showAll": "Mostrar las {count}",
-      "truncated": "Solo se muestran las crisis más recientes."
+      "truncated": "Solo se muestran las crisis más recientes.",
+      "loggedByYou": "registrado por ti",
+      "loggedByName": "registrado por {name}"
     },
     "certainty": {
       "CONFIRMED": "Crisis",

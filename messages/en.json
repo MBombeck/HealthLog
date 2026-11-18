@@ -592,7 +592,9 @@
       "symptom": "Symptom",
       "symptomDescription": "One of your own symptoms, with how strong",
       "lifeEventDescription": "A move, a birth, a new job",
-      "lifeEvent": "Life event"
+      "lifeEvent": "Life event",
+      "seizure": "Seizure",
+      "seizureDescription": "Start the timer or record one that was not timed"
     },
     "cycle": "Cycle",
     "labs": "Labs",
@@ -883,7 +885,8 @@
     },
     "greetingOnly": "{greeting}.",
     "welcomeNew": "Welcome.",
-    "welcomeNewWithName": "Welcome, {name}."
+    "welcomeNewWithName": "Welcome, {name}.",
+    "quickAddSeizure": "Log seizure"
   },
   "measurements": {
     "title": "Measurements",
@@ -14713,7 +14716,9 @@
       "rescue": "Rescue",
       "loggedByDelegate": "recorded by someone with access",
       "showAll": "Show all {count}",
-      "truncated": "Only the most recent seizures are shown."
+      "truncated": "Only the most recent seizures are shown.",
+      "loggedByYou": "recorded by you",
+      "loggedByName": "recorded by {name}"
     },
     "certainty": {
       "CONFIRMED": "Seizure",

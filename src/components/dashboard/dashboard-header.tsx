@@ -14,6 +14,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Activity,
+  BrainCircuit,
   Flag,
   Footprints,
   Pill,
@@ -112,6 +113,7 @@ export function DashboardHeader({
   const canAddIntake = offered.includes("medication");
   const canAddMood = offered.includes("mood");
   const canAddSymptom = offered.includes("symptom");
+  const canAddSeizure = offered.includes("seizure");
   const canAddWorkout = offered.includes("workout");
   const canAddLifeEvent = offered.includes("lifeEvent");
   const canAddAnything = offered.length > 0;
@@ -273,6 +275,18 @@ export function DashboardHeader({
                   <DropdownMenuItem onClick={() => onQuickEntry("symptom")}>
                     <Stethoscope className="mr-2 h-4 w-4" aria-hidden="true" />
                     {t("dashboard.quickAddSymptom")}
+                  </DropdownMenuItem>
+                )}
+                {canAddSeizure && (
+                  // The diary's timer outlives any sheet, so this opens it.
+                  <DropdownMenuItem asChild>
+                    <Link href="/seizures">
+                      <BrainCircuit
+                        className="mr-2 h-4 w-4"
+                        aria-hidden="true"
+                      />
+                      {t("dashboard.quickAddSeizure")}
+                    </Link>
                   </DropdownMenuItem>
                 )}
                 {canAddWorkout && (
