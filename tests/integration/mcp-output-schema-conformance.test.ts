@@ -286,9 +286,29 @@ async function seedRecord(): Promise<string> {
   // v1.42 — a life event on a day the record also holds readings on, with
   // the timeline module on, so get_day reads a day where one exists and has
   // to leave it out under the strict validator.
+  // The seizure diary is on too, with one type and one seizure, so
+  // get_seizures answers with the full shape rather than its miss.
   await prisma.user.update({
     where: { id },
-    data: { modulePreferencesJson: { timeline: true } },
+    data: { modulePreferencesJson: { timeline: true, seizures: true } },
+  });
+  const seizureType = await prisma.seizureTypeProfile.create({
+    data: {
+      userId: id,
+      labelEncrypted: encryptToBytes("Zqx-seizure-type"),
+      ilaeType: "FOCAL_IMPAIRED",
+      usualDurationSec: 60,
+    },
+  });
+  await prisma.seizureEvent.create({
+    data: {
+      userId: id,
+      typeProfileId: seizureType.id,
+      onsetAt: daysAgo(2),
+      durationSec: 90,
+      durationSource: "TIMED",
+      loggedByUserId: id,
+    },
   });
   await prisma.lifeEvent.create({
     data: {
@@ -366,6 +386,7 @@ const CASES: Record<string, Array<Record<string, unknown>>> = {
   get_integration_status: [{}],
   get_preventive_care: [{}],
   get_nutrients: [{}, { nutrient: "water", days: 7 }],
+  get_seizures: [{}, { days: 30 }],
   get_intraday_pulse: [{ date: isoDay(daysAgo(1)) }, {}],
   get_ecg_recordings: [{}],
   get_visits: [{}, { months: 12 }],
