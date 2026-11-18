@@ -109,6 +109,12 @@ function metricCard(
     direction?: TrendDirectionSentiment;
     staleType?: string | null;
     valueAdornment?: ReactNode;
+    /**
+     * The R² the trend's fit must reach before the tile prints it. A day
+     * total someone eats or drinks swings from day to day, and a weak fit
+     * projected onto seven days read as a real drop ("2,147 (−476)").
+     */
+    trendConfidenceFloor?: number;
   },
 ): ReactNode {
   const s = "summary" in props ? props.summary : ctx.summaries?.[props.type];
@@ -116,6 +122,11 @@ function metricCard(
     props.display ? ctx.td(props.type, v) : (v ?? null);
   const delta = (v: number | null | undefined) =>
     props.display ? ctx.tdd(props.type, v) : v;
+  const trendSlope = s?.slope7 ?? s?.slope30 ?? null;
+  const trendTrusted =
+    props.trendConfidenceFloor === undefined ||
+    (trendSlope !== null &&
+      trendSlope.confidence >= props.trendConfidenceFloor);
   const hint =
     props.range === undefined
       ? undefined
@@ -147,7 +158,9 @@ function metricCard(
       avg7Hint={hint}
       avg30Hint={hint}
       slope30={s?.slope30 ?? null}
-      trend7Delta={delta(summaryToTrend7Delta(s)) as number | null}
+      trend7Delta={
+        trendTrusted ? (delta(summaryToTrend7Delta(s)) as number | null) : null
+      }
       icon={props.icon}
       directionSentiment={props.direction ?? ctx.directionOf(props.type)}
       compareBaseline={ctx.compareBaseline}
@@ -159,6 +172,12 @@ function metricCard(
     />
   );
 }
+
+/**
+ * How well a straight line must fit a week of daily intake before the tile
+ * prints its trend: below it the slope is mostly day-to-day noise.
+ */
+const NUTRIENT_TREND_CONFIDENCE_FLOOR = 0.7;
 
 /** A tile that paints one card under its own id. */
 function one(
@@ -379,6 +398,7 @@ export const STRIP_TILES: readonly StripTile[] = [
     icon: GlassWater,
     // Whole millilitres, as the nutrients page prints a day of water.
     fractionDigits: 0,
+    trendConfidenceFloor: NUTRIENT_TREND_CONFIDENCE_FLOOR,
   })),
   // Energy intake, opt-in: the day's total kcal, neutral like water (more is
   // not simply better or worse). Opens the nutrients page.
@@ -387,6 +407,7 @@ export const STRIP_TILES: readonly StripTile[] = [
     unit: "kcal",
     icon: Flame,
     fractionDigits: 0,
+    trendConfidenceFloor: NUTRIENT_TREND_CONFIDENCE_FLOOR,
   })),
   {
     // Blood pressure in target. Hidden while every window reads zero, so a
