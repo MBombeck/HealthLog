@@ -177,7 +177,9 @@
         "dawarichDays": 0,
         "ecgRecordings": 0,
         "symptomDefinitions": 0,
-        "lifeEvents": 0
+        "lifeEvents": 0,
+        "seizureTypes": 0,
+        "seizureEvents": 0
       }
     }
   },
@@ -394,7 +396,9 @@
           "dawarichDays": 0,
           "ecgRecordings": 0,
           "symptomDefinitions": 0,
-          "lifeEvents": 0
+          "lifeEvents": 0,
+          "seizureTypes": 0,
+          "seizureEvents": 0
         },
         "accountSettingsApplied": 4,
         "skipped": {
@@ -690,6 +694,10 @@
     "IllnessSymptomLink": [],
     "SymptomDefinition": [],
     "SymptomEvent": [],
+    "SeizureTypeProfile": [],
+    "SeizureEvent": [],
+    "SeizureRescueDose": [],
+    "SeizureDiarySettings": [],
     "LifeEvent": [],
     "UserHealthProfile": [],
     "HealthProfileFactRevision": [],
