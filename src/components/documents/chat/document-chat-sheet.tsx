@@ -47,6 +47,17 @@ interface ChatFrame {
   conversationId?: string;
 }
 
+/**
+ * The document endpoint names its stream errors `documents.chat.*` where the
+ * Coach's names them `coach.*`; the copy is the Coach's, so the codes are
+ * read in its vocabulary.
+ */
+export function coachErrorCode(code: string): string {
+  return code.startsWith("documents.chat.")
+    ? `coach.${code.slice("documents.chat.".length)}`
+    : code;
+}
+
 export function DocumentChatSheet({
   documentId,
   title,
@@ -193,7 +204,7 @@ export function DocumentChatSheet({
               role={turn.role}
               content={
                 turn.errorCode
-                  ? t(errorCodeToI18nKey(turn.errorCode))
+                  ? t(errorCodeToI18nKey(coachErrorCode(turn.errorCode)))
                   : turn.content
               }
               errorCode={turn.errorCode ?? null}
