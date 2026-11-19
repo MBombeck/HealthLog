@@ -38,6 +38,19 @@ export function keyboardInset(
 }
 
 export const KEYBOARD_INSET_PROPERTY = "--keyboard-inset";
+/**
+ * The visible height above the keyboard, published beside the inset.
+ *
+ * A bottom sheet stands on the keyboard (`bottom: --keyboard-inset`), so
+ * its top sits at its own height above the visual viewport's bottom edge.
+ * Capping that height at "layout viewport minus inset" is only right while
+ * the visual viewport starts at the top of the layout one. iOS pans it down
+ * (`offsetTop`) to keep a low field in view, and the sheet's header then
+ * sat above the visible area: a tall sheet (the symptom form, with its
+ * chips) went off screen as soon as its note field took focus. The visual
+ * viewport's own height is the cap that holds in both cases.
+ */
+export const KEYBOARD_VIEWPORT_PROPERTY = "--keyboard-viewport-height";
 export const KEYBOARD_ATTRIBUTE = "data-keyboard";
 
 /**
@@ -52,16 +65,20 @@ export function trackKeyboardInset(
   const viewport = win.visualViewport;
   if (!viewport) return () => {};
 
-  let current = -1;
+  let current = "";
   const update = () => {
     const inset = keyboardInset(win.innerHeight, viewport);
-    if (inset === current) return;
-    current = inset;
+    const visible = inset > 0 ? Math.round(viewport.height) : 0;
+    const key = `${inset}:${visible}`;
+    if (key === current) return;
+    current = key;
     if (inset > 0) {
       root.style.setProperty(KEYBOARD_INSET_PROPERTY, `${inset}px`);
+      root.style.setProperty(KEYBOARD_VIEWPORT_PROPERTY, `${visible}px`);
       root.setAttribute(KEYBOARD_ATTRIBUTE, "open");
     } else {
       root.style.removeProperty(KEYBOARD_INSET_PROPERTY);
+      root.style.removeProperty(KEYBOARD_VIEWPORT_PROPERTY);
       root.removeAttribute(KEYBOARD_ATTRIBUTE);
     }
   };
@@ -75,6 +92,7 @@ export function trackKeyboardInset(
     viewport.removeEventListener("resize", update);
     viewport.removeEventListener("scroll", update);
     root.style.removeProperty(KEYBOARD_INSET_PROPERTY);
+    root.style.removeProperty(KEYBOARD_VIEWPORT_PROPERTY);
     root.removeAttribute(KEYBOARD_ATTRIBUTE);
   };
 }

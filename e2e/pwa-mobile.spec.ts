@@ -45,16 +45,20 @@ const VISUAL_VIEWPORT_STAND_IN = () => {
   (window as unknown as { __viewport: typeof stand }).__viewport = stand;
 };
 
-async function setKeyboard(page: Page, covered: number) {
-  await page.evaluate((px) => {
-    const stand = (
-      window as unknown as {
-        __viewport: EventTarget & { height: number };
-      }
-    ).__viewport;
-    stand.height = window.innerHeight - px;
-    stand.dispatchEvent(new Event("resize"));
-  }, covered);
+async function setKeyboard(page: Page, covered: number, panned = 0) {
+  await page.evaluate(
+    ({ px, pan }) => {
+      const stand = (
+        window as unknown as {
+          __viewport: EventTarget & { height: number; offsetTop: number };
+        }
+      ).__viewport;
+      stand.height = window.innerHeight - px;
+      stand.offsetTop = pan;
+      stand.dispatchEvent(new Event("resize"));
+    },
+    { px: covered, pan: panned },
+  );
 }
 
 async function openCaptureForm(page: Page) {
@@ -173,6 +177,39 @@ test.describe("installed app on a phone", () => {
     await setKeyboard(page, 60);
     await expect(page.locator("html")).not.toHaveAttribute("data-keyboard");
     await expect.poll(bottomEdge).toBe(viewportHeight);
+  });
+
+  test("a tall bottom sheet stays inside a visual viewport iOS panned for a low field", async ({
+    page,
+  }) => {
+    // iOS pans the visual viewport down to keep a focused field near the
+    // bottom in view. A sheet capped at "window minus keyboard" then reached
+    // above the visible top by the pan, header first: the symptom form went
+    // off screen as soon as its note field took focus.
+    await page.addInitScript(VISUAL_VIEWPORT_STAND_IN);
+    // Short enough that every capture form is taller than what stays
+    // visible, so the cap is what decides where the sheet's top lands.
+    await page.setViewportSize({ width: 390, height: 700 });
+    const form = await openCaptureForm(page);
+    const viewportHeight = page.viewportSize()!.height;
+    const keyboard = 340;
+    const pan = 160;
+    await setKeyboard(page, keyboard, pan);
+    await expect(page.locator("html")).toHaveAttribute("data-keyboard", "open");
+
+    // In layout coordinates the visible area is [pan, pan + visible height].
+    const visibleBottom = viewportHeight - keyboard + pan;
+    await expect
+      .poll(async () => {
+        const b = (await form.boundingBox())!;
+        return Math.round(b.y + b.height);
+      })
+      .toBe(visibleBottom);
+    const box = (await form.boundingBox())!;
+    expect(box.y).toBeGreaterThanOrEqual(pan);
+    await expect(
+      form.locator('[data-slot="responsive-sheet-footer"]'),
+    ).toBeInViewport();
   });
 
   for (const viewport of [
