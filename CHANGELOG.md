@@ -10,9 +10,10 @@
   see or change a child's medication schedule at all. A guardian of a
   managed profile can now read all of it and create, change and end the
   schedule's courses and set the Effect tab's target; the activity log names
-  the guardian. Anyone the profile is shared with can read these parts;
-  shared adult accounts keep the schedule with its owner, at every access
-  level. Thanks to @elchrobert for the report with the log line that pointed
+  the guardian. A share that covers medications can read the schedule,
+  the compliance figure and the dose history; the Effect view also shows
+  readings and lab values, so it needs a share of the whole record. Shared
+  adult accounts keep the schedule with its owner, at every access level. Thanks to @elchrobert for the report with the log line that pointed
   straight at it. (#1408)
 - **Clearer dose fields in the medication wizard.** "Units per dose" and
   "Doses per unit" sat side by side and read almost the same. They are now
