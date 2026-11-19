@@ -6889,16 +6889,14 @@
       },
       "reasoning": {
         "label": "Raisonnement",
-        "hint": "Les modèles de raisonnement comme Gemma ou Qwen réfléchissent avant de répondre. Désactivé, tout le budget de réponse sert à la réponse elle-même.",
+        "hint": "Le Coach utilise le niveau sélectionné dans les réglages du Coach.",
         "options": {
           "default": "Par défaut",
           "none": "Désactivé",
           "low": "Faible",
           "medium": "Moyen",
           "high": "Élevé"
-        },
-        "coachNote": "Dans le Coach, c'est la profondeur de réflexion des réglages du Coach qui s'applique.",
-        "backgroundNote": "Les tâches de fond comme le briefing quotidien n'utilisent pas ce réglage : elles réfléchissent au plus en Moyen, moins si l'opérateur fixe une limite plus basse, et pas du tout au niveau Économe."
+        }
       },
       "providerCardDescription": "Configurez la clé et le modèle de chaque fournisseur ; l’ordre ci-dessous décide lequel HealthLog sollicite en premier.",
       "runtimeTitle": "Vérifier et actualiser",

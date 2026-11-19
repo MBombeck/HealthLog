@@ -6889,16 +6889,14 @@
       },
       "reasoning": {
         "label": "Ragionamento",
-        "hint": "I modelli di ragionamento come Gemma o Qwen pensano prima di rispondere. Se lo disattivi, tutto il budget della risposta resta per la risposta stessa.",
+        "hint": "Il Coach usa il livello selezionato nelle impostazioni del Coach.",
         "options": {
           "default": "Predefinito",
           "none": "Disattivato",
           "low": "Basso",
           "medium": "Medio",
           "high": "Alto"
-        },
-        "coachNote": "Nel Coach vale la profondità di ragionamento delle impostazioni del Coach.",
-        "backgroundNote": "Il lavoro in background, come il briefing giornaliero, non usa questa impostazione: ragiona al massimo su Medio, meno se l'operatore imposta un limite più basso, e per niente al livello Risparmio."
+        }
       },
       "providerCardDescription": "Configura chiave e modello di ogni fornitore; l’ordine qui sotto decide quale HealthLog interpella per primo.",
       "runtimeTitle": "Verifica e aggiorna",

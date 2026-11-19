@@ -6889,16 +6889,14 @@
       },
       "reasoning": {
         "label": "Razonamiento",
-        "hint": "Los modelos de razonamiento como Gemma o Qwen piensan antes de responder. Si lo desactivas, todo el presupuesto de respuesta se queda para la respuesta.",
+        "hint": "El Coach usa el nivel seleccionado en los ajustes del Coach.",
         "options": {
           "default": "Predeterminado",
           "none": "Desactivado",
           "low": "Bajo",
           "medium": "Medio",
           "high": "Alto"
-        },
-        "coachNote": "En el Coach se aplica la profundidad de pensamiento de los ajustes del Coach.",
-        "backgroundNote": "El trabajo en segundo plano, como el resumen diario, no usa este ajuste: piensa como máximo en Medio, menos si el operador fija un límite más bajo, y nada en el nivel Ahorro."
+        }
       },
       "providerCardDescription": "Configura la clave y el modelo de cada proveedor; el orden de abajo decide a cuál pregunta HealthLog primero.",
       "runtimeTitle": "Comprobar y actualizar",

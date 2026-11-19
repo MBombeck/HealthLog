@@ -409,7 +409,7 @@ When installing or updating the CLI via HealthLog:
 
 - **Symlink & Non-Regular File Rejection**: The installer inspects the extracted file using `lstat` before applying execution permissions (`chmod 0o755`) and before moving it into place (`rename`). Symbolic links and non-regular files (such as sockets, FIFOs, and directories) are strictly rejected with an error (`"Extracted antigravity binary must be a regular file"`).
 - **Checksum Verification**:
-  - **Pinned Base Version**: When installing the build-pinned version (`AGY_PINNED_VERSION` = 1.5.10), the installer strictly enforces the hardcoded SHA-256 digest (`AGY_SHA256_AMD64` or `AGY_SHA256_ARM64`).
+  - **Pinned Base Version**: When installing the build-pinned version (`AGY_PINNED_VERSION` = 1.5.12), the installer strictly enforces the hardcoded SHA-256 digest (`AGY_SHA256_AMD64` or `AGY_SHA256_ARM64`).
   - **Dynamic Releases**: When an administrator updates to a newer release discovered via GitHub releases, HealthLog strictly validates that the asset download URL belongs to `github.com/google-antigravity/antigravity-cli` over HTTPS (enforced in `src/lib/ai/antigravity-release.ts` and `src/lib/ai/antigravity-install-core.mjs`), retrieves the release asset SHA-256 digest published in official GitHub release metadata over HTTPS, and validates the downloaded archive against this digest before extraction.
 
 ### No Automatic Updates

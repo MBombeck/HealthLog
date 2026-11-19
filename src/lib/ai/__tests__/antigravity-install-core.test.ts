@@ -16,6 +16,8 @@ import {
   installAgy,
   isManagedAntigravityBinary,
   AGY_PINNED_VERSION,
+  AGY_SHA256_AMD64,
+  AGY_SHA256_ARM64,
 } from "../antigravity-install-core.mjs";
 
 describe("antigravity-install-core", () => {
@@ -105,7 +107,7 @@ describe("antigravity-install-core", () => {
     expect(calls).toBe(1);
     expect(requestedUrl).toMatch(
       new RegExp(
-        `/releases/download/v${AGY_PINNED_VERSION}/agy_cli_linux_(x64|arm64)\\.tar\\.gz$`,
+        `/releases/download/${AGY_PINNED_VERSION}/agy_cli_linux_(x64|arm64)\\.tar\\.gz$`,
       ),
     );
     expect(existsSync(antigravityBinaryPath(root))).toBe(false);
@@ -252,5 +254,32 @@ describe("antigravity-install-core", () => {
     await expect(
       installAgy({ profileRoot: root, download, release }),
     ).rejects.toThrow(/must use HTTPS protocol/);
+  });
+
+  it("fallback uses the correct official tag URL (no v prefix) and enforces pinned checksums for x64 and arm64", async () => {
+    // Regression: AGY_PINNED_VERSION tag on GitHub has no 'v' prefix.
+    // The fallback download URL must use the bare version, not 'v<version>'.
+
+    // Verify the pinned SHA-256 digests are well-formed 64-character hex strings.
+    expect(AGY_SHA256_AMD64).toMatch(/^[a-f0-9]{64}$/);
+    expect(AGY_SHA256_ARM64).toMatch(/^[a-f0-9]{64}$/);
+
+    // Derive the exact expected URL for this architecture (mirrors shaFor() in the source).
+    const archAsset = process.arch === "arm64" ? "arm64" : "x64";
+    const expectedUrl = `https://github.com/google-antigravity/antigravity-cli/releases/download/${AGY_PINNED_VERSION}/agy_cli_linux_${archAsset}.tar.gz`;
+
+    // Capture the actual URL the installer requests when no release is provided
+    // (the offline fallback path) and assert it is exactly the expected URL.
+    let capturedUrl = "";
+    const download = async (url: string) => {
+      capturedUrl = url;
+      return new Response("not the archive", { status: 200 });
+    };
+
+    await expect(installAgy({ profileRoot: root, download })).rejects.toThrow(
+      /SHA256 checksum mismatch/,
+    );
+
+    expect(capturedUrl).toBe(expectedUrl);
   });
 });

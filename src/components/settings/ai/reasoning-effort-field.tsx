@@ -67,23 +67,6 @@ export function ReasoningEffortField({
       <p id={`${id}-hint`} className="text-muted-foreground mt-1 text-xs">
         {t("settings.ai.reasoning.hint")}
       </p>
-      {/* v1.41 — the Coach has its own thinking depth; this select is the
-          default for everything else the provider does. */}
-      <p
-        data-slot="reasoning-effort-coach-note"
-        className="text-muted-foreground mt-1 text-xs"
-      >
-        {t("settings.ai.reasoning.coachNote")}
-      </p>
-      {/* #1267 — background jobs resolve their own level on the server
-          (`BACKGROUND_REASONING_LEVEL`, the operator's cap, the usage level);
-          this select never reaches them, so say so where it is set. */}
-      <p
-        data-slot="reasoning-effort-background-note"
-        className="text-muted-foreground mt-1 text-xs"
-      >
-        {t("settings.ai.reasoning.backgroundNote")}
-      </p>
     </div>
   );
 }

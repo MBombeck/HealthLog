@@ -43,11 +43,11 @@ function execFileAsync(file, args, options) {
   });
 }
 
-export const AGY_PINNED_VERSION = "1.5.10";
+export const AGY_PINNED_VERSION = "1.5.12";
 export const AGY_SHA256_AMD64 =
-  "72fb2946d6f5bee3d4e8928fb8a7901104361566619e69d40ae6dc03e094917b";
+  "0f0cb851cdc9fbedd50432570aa6ae9c4c398b9ea3f1e23e7776f707643c5b3e";
 export const AGY_SHA256_ARM64 =
-  "5ecb4e7763dc497a7d0157d5605a8c86ec55f24dc4efd8f597bc499d2ebca7c6";
+  "594046de1b91561f7fe16476365e3843038ecca56f5f59af45cf9d3091e43bd4";
 
 /** Where the image keeps the profiles and the binary when no root is set. */
 export const DEFAULT_PROFILE_ROOT = "/var/lib/healthlog/antigravity";
@@ -398,7 +398,7 @@ async function doInstall({
   } else {
     const { asset, sha256 } = shaFor(process.arch);
     expectedSha256 = sha256;
-    downloadUrl = `https://github.com/google-antigravity/antigravity-cli/releases/download/v${AGY_PINNED_VERSION}/agy_cli_linux_${asset}.tar.gz`;
+    downloadUrl = `https://github.com/google-antigravity/antigravity-cli/releases/download/${AGY_PINNED_VERSION}/agy_cli_linux_${asset}.tar.gz`;
   }
 
   mkdirSync(binDir, { recursive: true, mode: 0o755 });

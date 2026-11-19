@@ -99,10 +99,11 @@ describe.each([
     expect(select).toMatch(/<option value="" selected="">/);
   });
 
-  it("says the daily briefing does not follow this setting (#1267)", () => {
+  it("shows a single hint sentence referencing Coach settings", () => {
     const html = render(form(provider({})));
-    expect(html).toContain('data-slot="reasoning-effort-background-note"');
-    expect(html).toContain(en.settings.ai.reasoning.backgroundNote);
+    expect(html).toContain(en.settings.ai.reasoning.hint);
+    expect(html).not.toContain('data-slot="reasoning-effort-background-note"');
+    expect(html).not.toContain('data-slot="reasoning-effort-coach-note"');
   });
 
   it("seeds the stored value", () => {

@@ -6889,16 +6889,14 @@
       },
       "reasoning": {
         "label": "Rozumowanie",
-        "hint": "Modele rozumujące, takie jak Gemma czy Qwen, myślą przed odpowiedzią. Po wyłączeniu cały budżet odpowiedzi idzie na samą odpowiedź.",
+        "hint": "Coach korzysta z poziomu wybranego w ustawieniach Coacha.",
         "options": {
           "default": "Domyślnie",
           "none": "Wyłączone",
           "low": "Niskie",
           "medium": "Średnie",
           "high": "Wysokie"
-        },
-        "coachNote": "W Coachu obowiązuje głębokość myślenia z ustawień Coacha.",
-        "backgroundNote": "Praca w tle, taka jak codzienne podsumowanie, nie korzysta z tego ustawienia: myśli najwyżej na poziomie Średnie, niżej, gdy operator ustawi niższy limit, a na poziomie Oszczędny wcale."
+        }
       },
       "providerCardDescription": "Skonfiguruj klucz i model każdego dostawcy; kolejność poniżej decyduje, którego HealthLog pyta najpierw.",
       "runtimeTitle": "Sprawdź i odśwież",

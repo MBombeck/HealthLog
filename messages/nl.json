@@ -6889,16 +6889,14 @@
       },
       "reasoning": {
         "label": "Redeneren",
-        "hint": "Redeneermodellen zoals Gemma of Qwen denken na voordat ze antwoorden. Met Uit blijft het volledige antwoordbudget over voor het antwoord zelf.",
+        "hint": "De Coach gebruikt het niveau dat is geselecteerd in de Coach-instellingen.",
         "options": {
           "default": "Standaard",
           "none": "Uit",
           "low": "Laag",
           "medium": "Gemiddeld",
           "high": "Hoog"
-        },
-        "coachNote": "In de Coach geldt de denkdiepte uit de Coach-instellingen.",
-        "backgroundNote": "Achtergrondwerk zoals de dagelijkse briefing gebruikt deze instelling niet: het denkt hoogstens op Gemiddeld na, minder als de beheerder een lagere grens instelt, en helemaal niet op het niveau Zuinig."
+        }
       },
       "providerCardDescription": "Stel per provider de sleutel en het model in; de volgorde hieronder bepaalt welke HealthLog als eerste raadpleegt.",
       "runtimeTitle": "Controleren en vernieuwen",

@@ -6889,16 +6889,14 @@
       },
       "reasoning": {
         "label": "Raciocínio",
-        "hint": "Modelos de raciocínio, como Gemma ou Qwen, pensam antes de responder. Desligado deixa todo o orçamento de resposta para a resposta em si.",
+        "hint": "O Coach usa o nível selecionado nas configurações do Coach.",
         "options": {
           "default": "Padrão",
           "none": "Desligado",
           "low": "Baixo",
           "medium": "Médio",
           "high": "Alto"
-        },
-        "coachNote": "No Coach, aplica-se a profundidade de pensamento definida nas configurações do Coach.",
-        "backgroundNote": "O trabalho em segundo plano, como o resumo diário, não usa esta configuração: pensa no máximo em Médio, menos quando o operador define um limite menor, e nada no nível de uso Frugal."
+        }
       },
       "providerCardDescription": "Configure a chave e o modelo de cada provedor; a ordem abaixo decide qual deles o HealthLog consulta primeiro.",
       "runtimeTitle": "Verificar e atualizar",

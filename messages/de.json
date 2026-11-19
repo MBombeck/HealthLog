@@ -6889,16 +6889,14 @@
       },
       "reasoning": {
         "label": "Nachdenken",
-        "hint": "Reasoning-Modelle wie Gemma oder Qwen denken nach, bevor sie antworten. Schaltest du es aus, bleibt das ganze Antwortbudget für die Antwort selbst.",
+        "hint": "Der Coach verwendet die in den Coach-Einstellungen gewählte Stufe.",
         "options": {
           "default": "Standard",
           "none": "Aus",
           "low": "Niedrig",
           "medium": "Mittel",
           "high": "Hoch"
-        },
-        "coachNote": "Im Coach gilt die Denktiefe aus den Coach-Einstellungen.",
-        "backgroundNote": "Hintergrundarbeit wie das Tagesbriefing nutzt diese Einstellung nicht: Sie denkt höchstens auf Mittel nach, weniger, wenn der Betreiber eine niedrigere Grenze setzt, und gar nicht auf der Stufe Sparsam."
+        }
       },
       "providerCardDescription": "Richte Schlüssel und Modell je Anbieter ein; die Reihenfolge darunter bestimmt, welchen HealthLog zuerst fragt.",
       "runtimeTitle": "Prüfen und aktualisieren",
