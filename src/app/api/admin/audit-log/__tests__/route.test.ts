@@ -147,9 +147,9 @@ describe("GET /api/admin/audit-log — extended filters", () => {
   });
 
   it("matches `actor` against the acting account too", async () => {
-    vi.mocked(prisma.user.findMany).mockResolvedValue([
-      { id: "guardian-1" },
-    ] as never);
+    vi.mocked(prisma.user.findMany).mockResolvedValue(
+      users([{ id: "guardian-1" }]),
+    );
     await GET(req("actor=parent"));
     const call = vi.mocked(prisma.auditLog.findMany).mock.calls[0][0]!;
     const or = (call.where as { OR: Array<Record<string, unknown>> }).OR;
@@ -157,6 +157,32 @@ describe("GET /api/admin/audit-log — extended filters", () => {
     expect(or).toContainEqual({ actorUserId: { in: ["guardian-1"] } });
   });
 });
+
+/** The row shape the route selects; the mock returns exactly that. */
+interface SelectedAuditRow {
+  id: string;
+  action: string;
+  ipAddress: string | null;
+  location: string | null;
+  asn: number | null;
+  carrier: string | null;
+  details: string | null;
+  createdAt: Date;
+  actorUserId: string | null;
+  user: { id: string; username: string } | null;
+}
+
+// Prisma types `findMany` by its default payload, not by the `select` the
+// route passes, so the selected shape is narrowed back in one place.
+function auditRows(rows: SelectedAuditRow[]) {
+  return rows as unknown as Awaited<
+    ReturnType<typeof prisma.auditLog.findMany>
+  >;
+}
+
+function users(rows: Array<{ id: string; username?: string }>) {
+  return rows as unknown as Awaited<ReturnType<typeof prisma.user.findMany>>;
+}
 
 describe("GET /api/admin/audit-log — who acted (#1403)", () => {
   const base = {
@@ -169,32 +195,34 @@ describe("GET /api/admin/audit-log — who acted (#1403)", () => {
   };
 
   it("selects actorUserId and returns the resolved actor beside the record", async () => {
-    vi.mocked(prisma.auditLog.findMany).mockResolvedValue([
-      {
-        ...base,
-        id: "a1",
-        action: "documents.inbound.store",
-        actorUserId: "guardian-1",
-        user: { id: "profile-1", username: "managed-1" },
-      },
-      {
-        ...base,
-        id: "a2",
-        action: "auth.login",
-        actorUserId: null,
-        user: { id: "admin-1", username: "admin" },
-      },
-      {
-        ...base,
-        id: "a3",
-        action: "documents.inbound.discard",
-        actorUserId: "gone-1",
-        user: { id: "profile-1", username: "managed-1" },
-      },
-    ] as never);
-    vi.mocked(prisma.user.findMany).mockResolvedValue([
-      { id: "guardian-1", username: "parent" },
-    ] as never);
+    vi.mocked(prisma.auditLog.findMany).mockResolvedValue(
+      auditRows([
+        {
+          ...base,
+          id: "a1",
+          action: "documents.inbound.store",
+          actorUserId: "guardian-1",
+          user: { id: "profile-1", username: "managed-1" },
+        },
+        {
+          ...base,
+          id: "a2",
+          action: "auth.login",
+          actorUserId: null,
+          user: { id: "admin-1", username: "admin" },
+        },
+        {
+          ...base,
+          id: "a3",
+          action: "documents.inbound.discard",
+          actorUserId: "gone-1",
+          user: { id: "profile-1", username: "managed-1" },
+        },
+      ]),
+    );
+    vi.mocked(prisma.user.findMany).mockResolvedValue(
+      users([{ id: "guardian-1", username: "parent" }]),
+    );
 
     const res = await GET(req("filter=all"));
     const select = vi.mocked(prisma.auditLog.findMany).mock.calls[0][0]!
@@ -218,15 +246,17 @@ describe("GET /api/admin/audit-log — who acted (#1403)", () => {
   });
 
   it("skips the user lookup when no row has an actor", async () => {
-    vi.mocked(prisma.auditLog.findMany).mockResolvedValue([
-      {
-        ...base,
-        id: "a2",
-        action: "auth.login",
-        actorUserId: null,
-        user: { id: "admin-1", username: "admin" },
-      },
-    ] as never);
+    vi.mocked(prisma.auditLog.findMany).mockResolvedValue(
+      auditRows([
+        {
+          ...base,
+          id: "a2",
+          action: "auth.login",
+          actorUserId: null,
+          user: { id: "admin-1", username: "admin" },
+        },
+      ]),
+    );
     await GET(req());
     expect(prisma.user.findMany).not.toHaveBeenCalled();
   });
