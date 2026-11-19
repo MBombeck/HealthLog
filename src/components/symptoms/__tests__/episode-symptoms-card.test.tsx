@@ -83,6 +83,9 @@ function event(
     intensity: 5,
     note: null,
     episodeId,
+    endAt: null,
+    source: "MANUAL",
+    externalId: null,
     createdAt: "2026-10-10T09:00:00.000Z",
     updatedAt: "2026-10-10T09:00:00.000Z",
   };

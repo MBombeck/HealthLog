@@ -93,7 +93,10 @@ import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 import { dateOnlyKey } from "@/lib/tz/date-only";
 import { dayValueRows } from "@/lib/measurements/day-mean";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
-import { decryptSymptomText } from "@/lib/symptoms/server";
+import {
+  correlationSymptomIds,
+  decryptSymptomText,
+} from "@/lib/symptoms/server";
 import {
   MAX_ACTIVE_SYMPTOM_DEFINITIONS,
   SYMPTOM_CHANNEL_PREFIX,
@@ -474,14 +477,13 @@ export async function fetchSymptomEventSeries(
   since: Date,
 ): Promise<NamedSeries[]> {
   const definitions = await prisma.symptomDefinition.findMany({
-    where: { userId, isActive: true },
+    where: { userId, id: { in: await correlationSymptomIds(userId) } },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }, { id: "asc" }],
-    take: MAX_SYMPTOM_CORRELATION_CHANNELS,
     select: {
       id: true,
       labelEncrypted: true,
       events: {
-        where: { occurredAt: { gte: since } },
+        where: { deletedAt: null, occurredAt: { gte: since } },
         orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
         take: 5000,
         select: { occurredAt: true, intensity: true },

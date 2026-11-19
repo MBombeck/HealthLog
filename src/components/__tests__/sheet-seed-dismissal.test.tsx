@@ -114,6 +114,9 @@ describe("seeded edit sheets and the dismissal guard", () => {
           intensity: 6,
           note: "After screen time",
           episodeId: null,
+          endAt: null,
+          source: "MANUAL",
+          externalId: null,
           createdAt: "2026-11-09T08:30:00.000Z",
           updatedAt: "2026-11-09T08:30:00.000Z",
         }}
@@ -130,6 +133,7 @@ describe("seeded edit sheets and the dismissal guard", () => {
           icon: "Brain",
           sortOrder: 0,
           isActive: true,
+          code: null,
           recent: { count30d: 1, maxIntensity30d: 6, lastOccurredAt: null },
         }}
       />,

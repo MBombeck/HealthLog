@@ -106,6 +106,9 @@ function occurrence(
     intensity: 4,
     note: null,
     episodeId,
+    endAt: null,
+    source: "MANUAL",
+    externalId: null,
     createdAt: occurredAt,
     updatedAt: occurredAt,
   };

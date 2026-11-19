@@ -11,7 +11,9 @@
  *        open or that ran over `occurredAt`. The note is encrypted at rest.
  *
  * Module-gated on the record (`illness.disabled`). `userId` comes from auth
- * and is never a body field.
+ * and is never a body field. A create here is always `source = MANUAL`: the
+ * body schema has no `source` or `externalId`, so an imported occurrence can
+ * only come through `POST /api/symptoms/events/batch`.
  */
 import { NextRequest } from "next/server";
 
@@ -71,6 +73,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     prisma.symptomEvent.findMany({
       where: {
         userId: user.id,
+        deletedAt: null,
         ...(q.from || q.to ? { occurredAt } : {}),
         ...(q.definitionId ? { definitionId: q.definitionId } : {}),
         ...(q.episodeId ? { episodeId: q.episodeId } : {}),

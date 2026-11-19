@@ -449,7 +449,11 @@ async function symptomNoteCandidates(
     wanted: ctx.wanted,
     read: (cursor, take) =>
       prisma.symptomEvent.findMany({
-        where: { userId: ctx.recordId, noteEncrypted: { not: null } },
+        where: {
+          userId: ctx.recordId,
+          deletedAt: null,
+          noteEncrypted: { not: null },
+        },
         select: {
           id: true,
           definitionId: true,

@@ -237,7 +237,11 @@ const INDEX_READERS: Partial<
   },
   async symptoms(frame) {
     const rows = await prisma.symptomEvent.findMany({
-      where: { userId: frame.userId, occurredAt: instantWindow(frame) },
+      where: {
+        userId: frame.userId,
+        deletedAt: null,
+        occurredAt: instantWindow(frame),
+      },
       select: { occurredAt: true },
     });
     markInstants(

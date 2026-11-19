@@ -261,7 +261,7 @@ export async function readEntryDays(
       UNION
       SELECT to_char(("occurred_at" AT TIME ZONE 'UTC') AT TIME ZONE ${tz}, 'YYYY-MM-DD') AS day
       FROM "symptom_events"
-      WHERE "user_id" = ${userId}
+      WHERE "user_id" = ${userId} AND "deleted_at" IS NULL
         AND "occurred_at" >= ${from} AND "occurred_at" < ${to}
       UNION
       SELECT to_char(("started_at" AT TIME ZONE 'UTC') AT TIME ZONE ${tz}, 'YYYY-MM-DD') AS day

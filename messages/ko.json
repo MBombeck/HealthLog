@@ -13566,7 +13566,9 @@
       "seizureTypeCreate": "{name} 님이 발작 유형을 추가했어요",
       "seizureTypeUpdate": "{name} 님이 발작 유형을 수정했어요",
       "seizureTypeDelete": "{name} 님이 발작 유형을 삭제했어요",
-      "seizureSettingsUpdate": "{name} 님이 군집 발작 기준을 변경했어요"
+      "seizureSettingsUpdate": "{name} 님이 군집 발작 기준을 변경했어요",
+      "symptomBatchIngest": "{name}님이 Apple Health에서 증상을 가져왔습니다",
+      "symptomImportDelete": "{name}님이 가져온 증상 기록을 삭제했습니다"
     },
     "section": {
       "measurements": {
@@ -13907,7 +13909,10 @@
       "reset": "양식 초기화",
       "emptyHint": "첫 증상을 추가하세요. 예: 전조, 두통.",
       "emptyHintNoManage": "이 기록에는 아직 설정된 증상이 없습니다.",
-      "limitHint": "증상은 최대 {limit}개입니다. 질병 페이지에서 하나를 숨기면 새로 추가할 수 있습니다."
+      "limitHint": "증상은 최대 {limit}개입니다. 질병 페이지에서 하나를 숨기면 새로 추가할 수 있습니다.",
+      "intensityFor": "강도: {symptom}",
+      "partlySaved": "{total}개 중 {saved}개 저장됨, 나머지는 아직 선택되어 있습니다.",
+      "severalHint": "함께 나타났다면 여러 개를 선택하세요."
     },
     "section": {
       "title": "내 증상",
@@ -13937,7 +13942,50 @@
     "episode": {
       "title": "기록된 증상",
       "during": "{illness} 중"
-    }
+    },
+    "builtin": {
+      "ABDOMINAL_CRAMPS": "복부 경련",
+      "ACNE": "여드름",
+      "APPETITE_CHANGES": "식욕 변화",
+      "BLADDER_INCONTINENCE": "요실금",
+      "BLOATING": "복부 팽만",
+      "BREAST_PAIN": "유방 통증",
+      "CHEST_TIGHTNESS_OR_PAIN": "가슴 답답함 또는 통증",
+      "CHILLS": "오한",
+      "CONSTIPATION": "변비",
+      "COUGHING": "기침",
+      "DIARRHEA": "설사",
+      "DIZZINESS": "어지러움",
+      "DRY_SKIN": "건조한 피부",
+      "FAINTING": "실신",
+      "FATIGUE": "피로",
+      "FEVER": "발열",
+      "GENERALIZED_BODY_ACHE": "몸살",
+      "HAIR_LOSS": "탈모",
+      "HEADACHE": "두통",
+      "HEARTBURN": "속쓰림",
+      "HOT_FLASHES": "안면 홍조",
+      "LOSS_OF_SMELL": "후각 상실",
+      "LOSS_OF_TASTE": "미각 상실",
+      "LOWER_BACK_PAIN": "허리 통증",
+      "MEMORY_LAPSE": "기억력 저하",
+      "MOOD_CHANGES": "기분 변화",
+      "NAUSEA": "메스꺼움",
+      "NIGHT_SWEATS": "식은땀",
+      "PELVIC_PAIN": "골반 통증",
+      "RAPID_POUNDING_OR_FLUTTERING_HEARTBEAT": "빠른 심장 박동",
+      "RUNNY_NOSE": "콧물",
+      "SHORTNESS_OF_BREATH": "숨가쁨",
+      "SINUS_CONGESTION": "코막힘",
+      "SKIPPED_HEARTBEAT": "심장 박동 건너뜀",
+      "SLEEP_CHANGES": "수면 변화",
+      "SORE_THROAT": "인후통",
+      "VAGINAL_DRYNESS": "질 건조",
+      "VOMITING": "구토",
+      "WHEEZING": "쌕쌕거림"
+    },
+    "sourceAppleHealth": "Apple Health",
+    "timeRange": "{from}–{to}"
   },
   "day": {
     "scoreOfMax": "/ {max}",

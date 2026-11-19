@@ -13566,7 +13566,9 @@
       "seizureTypeCreate": "{name} heeft een aanvalstype toegevoegd",
       "seizureTypeUpdate": "{name} heeft een aanvalstype bewerkt",
       "seizureTypeDelete": "{name} heeft een aanvalstype verwijderd",
-      "seizureSettingsUpdate": "{name} heeft de clusterregel gewijzigd"
+      "seizureSettingsUpdate": "{name} heeft de clusterregel gewijzigd",
+      "symptomBatchIngest": "{name} heeft symptomen uit Apple Health overgenomen",
+      "symptomImportDelete": "{name} heeft overgenomen symptomen verwijderd"
     },
     "section": {
       "measurements": {
@@ -13907,7 +13909,10 @@
       "reset": "Formulier leegmaken",
       "emptyHint": "Voeg je eerste symptoom toe, bijvoorbeeld aura of hoofdpijn.",
       "emptyHintNoManage": "Voor dit dossier zijn nog geen symptomen ingesteld.",
-      "limitHint": "Maximaal {limit} symptomen. Verberg er een op de ziektepagina om een ander toe te voegen."
+      "limitHint": "Maximaal {limit} symptomen. Verberg er een op de ziektepagina om een ander toe te voegen.",
+      "intensityFor": "Intensiteit: {symptom}",
+      "partlySaved": "{saved} van {total} opgeslagen, de rest is nog gekozen.",
+      "severalHint": "Kies er meerdere als ze samen optraden."
     },
     "section": {
       "title": "Je symptomen",
@@ -13937,7 +13942,50 @@
     "episode": {
       "title": "Vastgelegde symptomen",
       "during": "tijdens {illness}"
-    }
+    },
+    "builtin": {
+      "ABDOMINAL_CRAMPS": "Buikkrampen",
+      "ACNE": "Acne",
+      "APPETITE_CHANGES": "Veranderde eetlust",
+      "BLADDER_INCONTINENCE": "Blaasincontinentie",
+      "BLOATING": "Opgeblazen gevoel",
+      "BREAST_PAIN": "Borstpijn",
+      "CHEST_TIGHTNESS_OR_PAIN": "Beklemming of pijn op de borst",
+      "CHILLS": "Koude rillingen",
+      "CONSTIPATION": "Verstopping",
+      "COUGHING": "Hoesten",
+      "DIARRHEA": "Diarree",
+      "DIZZINESS": "Duizeligheid",
+      "DRY_SKIN": "Droge huid",
+      "FAINTING": "Flauwvallen",
+      "FATIGUE": "Vermoeidheid",
+      "FEVER": "Koorts",
+      "GENERALIZED_BODY_ACHE": "Spierpijn",
+      "HAIR_LOSS": "Haaruitval",
+      "HEADACHE": "Hoofdpijn",
+      "HEARTBURN": "Brandend maagzuur",
+      "HOT_FLASHES": "Opvliegers",
+      "LOSS_OF_SMELL": "Reukverlies",
+      "LOSS_OF_TASTE": "Smaakverlies",
+      "LOWER_BACK_PAIN": "Lage rugpijn",
+      "MEMORY_LAPSE": "Geheugenproblemen",
+      "MOOD_CHANGES": "Stemmingswisselingen",
+      "NAUSEA": "Misselijkheid",
+      "NIGHT_SWEATS": "Nachtelijk zweten",
+      "PELVIC_PAIN": "Bekkenpijn",
+      "RAPID_POUNDING_OR_FLUTTERING_HEARTBEAT": "Hartkloppingen",
+      "RUNNY_NOSE": "Loopneus",
+      "SHORTNESS_OF_BREATH": "Kortademigheid",
+      "SINUS_CONGESTION": "Verstopte bijholten",
+      "SKIPPED_HEARTBEAT": "Overgeslagen hartslag",
+      "SLEEP_CHANGES": "Veranderde slaap",
+      "SORE_THROAT": "Keelpijn",
+      "VAGINAL_DRYNESS": "Vaginale droogheid",
+      "VOMITING": "Overgeven",
+      "WHEEZING": "Piepende ademhaling"
+    },
+    "sourceAppleHealth": "Apple Health",
+    "timeRange": "{from}–{to}"
   },
   "day": {
     "scoreOfMax": "van {max}",

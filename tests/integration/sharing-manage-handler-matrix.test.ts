@@ -280,7 +280,7 @@ const ROUTE_IMPORTS = import.meta.glob<Record<string, unknown>>(
 
 describe("the complete MANAGE handler matrix", () => {
   it("starts with a non-empty, exact handler inventory", () => {
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(105);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(107);
   });
 });
 
@@ -1638,6 +1638,73 @@ manageContract("DELETE /api/symptoms/events/[id]", {
     (await getPrismaClient().symptomEvent.findUnique({
       where: { id: row.id },
     })) === null,
+});
+
+writeEffectContract("POST /api/symptoms/events/batch", {
+  contract: ADMITTED_MUTATING_HANDLERS.find(
+    (entry) =>
+      entry.route === "/api/symptoms/events/batch" && entry.action === "POST",
+  )!,
+  prepare: async (ownerId) => ({ ownerId }),
+  act: async () => {
+    const { POST } = await import("@/app/api/symptoms/events/batch/route");
+    return call(POST as Handler, "POST", "/api/symptoms/events/batch", {
+      entries: [
+        {
+          code: "FEVER",
+          occurredAt: new Date(Date.now() - 3_600_000).toISOString(),
+          intensity: 6,
+          externalId: "6F1C2E4A-0000-4000-8000-000000000001",
+          source: "APPLE_HEALTH",
+        },
+      ],
+    });
+  },
+  ok: 200,
+  auditAction: "symptoms.batch.ingest",
+  applied: async ({ ownerId }) =>
+    (await getPrismaClient().symptomEvent.count({
+      where: { userId: ownerId, source: "APPLE_HEALTH" },
+    })) === 1,
+});
+
+manageContract("DELETE /api/symptoms/events/by-external-ids", {
+  contract: ADMITTED_MUTATING_HANDLERS.find(
+    (entry) =>
+      entry.route === "/api/symptoms/events/by-external-ids" &&
+      entry.action === "DELETE",
+  )!,
+  prepare: async (ownerId) => {
+    const definition = await makeSymptomDefinition(ownerId);
+    return getPrismaClient().symptomEvent.create({
+      data: {
+        userId: ownerId,
+        definitionId: definition.id,
+        occurredAt: new Date(Date.now() - 3_600_000),
+        intensity: 6,
+        source: "APPLE_HEALTH",
+        externalId: "6F1C2E4A-0000-4000-8000-000000000002",
+      },
+    });
+  },
+  act: async () => {
+    const { DELETE } =
+      await import("@/app/api/symptoms/events/by-external-ids/route");
+    return call(
+      DELETE as Handler,
+      "DELETE",
+      "/api/symptoms/events/by-external-ids",
+      { externalIds: ["6F1C2E4A-0000-4000-8000-000000000002"] },
+    );
+  },
+  ok: 200,
+  auditAction: "symptoms.delete.by_external_ids",
+  applied: async (row) =>
+    (
+      await getPrismaClient().symptomEvent.findUnique({
+        where: { id: row.id },
+      })
+    )?.deletedAt != null,
 });
 
 /* The seizure diary (#1368): opt-in, so every fixture turns it on first. */
@@ -3288,7 +3355,7 @@ describe("the conditions the admissions were granted on", () => {
 describe("the complete MANAGE handler matrix", () => {
   it("registers one strict actor-and-effect driver for every admission", () => {
     const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-    expect(STRICT_DRIVER_KEYS.size).toBe(105);
+    expect(STRICT_DRIVER_KEYS.size).toBe(107);
     expect([...STRICT_DRIVER_KEYS].sort()).toEqual(expected);
   });
 });
@@ -3300,6 +3367,6 @@ describe("the complete MANAGE handler matrix", () => {
 afterAll(() => {
   if (EFFECT_CASES_STARTED.size !== STRICT_DRIVER_KEYS.size) return;
   const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-  expect(REAL_EFFECT_KEYS.size).toBe(105);
+  expect(REAL_EFFECT_KEYS.size).toBe(107);
   expect([...REAL_EFFECT_KEYS].sort()).toEqual(expected);
 });

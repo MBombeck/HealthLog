@@ -21,12 +21,16 @@ import {
   symptomEventUpdateSchema,
 } from "@/lib/symptoms/shared";
 
+import { symptomBatchPayloadSchema } from "@/lib/symptoms/batch-schema";
+import { SYMPTOM_BUILTIN_CODES } from "@/lib/symptoms/builtin";
+
 import {
   dataEnvelope,
   errorEnvelope,
   idempotencyKeyParameter,
   idempotentWrite,
   recordRefusal,
+  recordWriteRateLimitResponse,
   stdResponses,
 } from "./shared";
 
@@ -36,7 +40,7 @@ const MODULE_OFF =
 const createSymptomDefinitionRequest = symptomDefinitionCreateSchema.meta({
   id: "CreateSymptomDefinitionRequest",
   description:
-    "Define a symptom of your own. `label` (1-40 characters) is encrypted at rest; `icon` is one of the cycle custom-symptom icon names, null for the default glyph. At most eight active definitions per account (422 `symptoms.definition.limitReached`).",
+    "Define a symptom of your own. `label` (1-40 characters) is encrypted at rest; `icon` is one of the cycle custom-symptom icon names, null for the default glyph. At most eight active definitions the person named per account (422 `symptoms.definition.limitReached`); the built-in ones Apple Health creates do not count.",
 });
 
 const updateSymptomDefinitionRequest = symptomDefinitionUpdateSchema.meta({
@@ -70,6 +74,12 @@ const symptomDefinition = z
     icon: z.string().nullable(),
     sortOrder: z.number().int(),
     isActive: z.boolean(),
+    code: z
+      .string()
+      .nullable()
+      .describe(
+        "Since v1.48.2. The built-in code an Apple Health symptom sample lands on (`FEVER`, `HEADACHE`, ...), or null for a symptom the person named. A built-in definition is created on the first sample of its code, labelled in the record owner's language; it may be renamed or hidden and keeps its code. It holds no slot of the active-definition cap. Decode unknown codes leniently.",
+      ),
     recent: z.object({
       count30d: z.number().int(),
       maxIntensity30d: z.number().int().nullable(),
@@ -101,6 +111,23 @@ const symptomEvent = z
     intensity: z.number().int(),
     note: z.string().nullable(),
     episodeId: z.string().nullable(),
+    endAt: z
+      .string()
+      .nullable()
+      .describe(
+        "Since v1.48.2. When it ended, for an occurrence imported with a duration; null for a moment and for every manual entry.",
+      ),
+    source: z
+      .string()
+      .describe(
+        "Since v1.48.2. `MANUAL` (logged in HealthLog) or `APPLE_HEALTH` (imported through `POST /api/symptoms/events/batch`). Never set by a manual write. Decode unknown values leniently.",
+      ),
+    externalId: z
+      .string()
+      .nullable()
+      .describe(
+        "Since v1.48.2. The HealthKit sample UUID of an imported occurrence; null for a manual one.",
+      ),
     createdAt: z.string(),
     updatedAt: z.string(),
   })
@@ -132,6 +159,49 @@ const deletedResponse = z
     id: "SymptomDefinitionDeleted",
     description:
       "`purged: false` means the definition was hidden and its history kept; `purged: true` means it and `eventsDeleted` occurrences were removed.",
+  });
+
+const symptomBatchRequest = symptomBatchPayloadSchema.meta({
+  id: "SymptomBatchRequest",
+  description: `Apple Health symptom samples, 1-500 per call. Per entry: \`code\` one of the built-in codes (${SYMPTOM_BUILTIN_CODES.join(", ")}), each the HealthKit category type \`HKCategoryTypeIdentifier<PascalCase of the code>\`; \`occurredAt\` the sample's start, \`endAt\` its end (omit when equal); \`intensity\` 0-10 (the app maps HKCategoryValueSeverity unspecified to 5, mild to 3, moderate to 6, severe to 9, and sends no entry for notPresent); \`externalId\` the HKSample UUID; \`source\` \`APPLE_HEALTH\`. Unknown keys are ignored.`,
+});
+
+const symptomBatchEntryResult = z
+  .object({
+    index: z.number().int().nonnegative(),
+    status: z
+      .enum(["inserted", "updated", "duplicate", "skipped", "failed"])
+      .describe(
+        "`inserted` and `duplicate` landed (advance the cursor); `updated` is never sent here but is part of the shared batch shape. `skipped` is permanent for the entry as sent, see `reason`. `failed` is transient: keep the entry and send it again; the response then carries `Cache-Control: no-store`.",
+      ),
+    reason: z
+      .string()
+      .optional()
+      .describe(
+        "Why an entry was `skipped`: `unsupported_source` (source other than `APPLE_HEALTH`), `unstable_external_id`, `unknown_code`, `value_out_of_range` (intensity not an integer 0-10), `implausible_timestamp` (in the future beyond five minutes, before 1900, or ending before it started). Decode unknown reasons leniently.",
+      ),
+  })
+  .meta({ id: "SymptomBatchEntryResult" });
+
+const symptomBatchResponse = z
+  .object({
+    processed: z.number().int().nonnegative(),
+    inserted: z.number().int().nonnegative(),
+    updated: z.number().int().nonnegative(),
+    duplicates: z.number().int().nonnegative(),
+    failed: z.number().int().nonnegative(),
+    skipped: z.array(
+      z.object({
+        index: z.number().int().nonnegative(),
+        reason: z.string(),
+      }),
+    ),
+    entries: z.array(symptomBatchEntryResult),
+  })
+  .meta({
+    id: "SymptomBatchResponse",
+    description:
+      "The `POST /api/measurements/batch` answer shape. Every sent index appears once in `entries`; `skipped` repeats the skipped ones with their reason.",
   });
 
 const pathId = { path: z.object({ id: z.string() }) };
@@ -318,12 +388,47 @@ export const symptomPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       },
     },
   },
+  "/api/symptoms/events/batch": {
+    post: {
+      tags: ["Symptoms"],
+      summary: "Import Apple Health symptom samples (v1.48.2)",
+      description:
+        "Each entry lands on the record's built-in definition for its code, created on first use and labelled in the record owner's language. A sample already stored, deleted ones included, answers `duplicate`, so a late re-post of a sample the app reported gone never brings it back. No note and no episode link from this route. Idempotent under `Idempotency-Key`. Cookie session or a wildcard Bearer token; a narrow-scope token is refused 403. Metered by the shared per-account write bucket. Audits as `symptoms.batch.ingest`. Served when `GET /api/auth/me` reports `features.appleHealthSymptoms: true`.",
+      parameters: [idempotencyKeyParameter],
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: symptomBatchRequest } },
+      },
+      responses: {
+        ...idempotentWrite(),
+        ...recordRefusal(MODULE_OFF),
+        "200": {
+          description: "Batch processed.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                symptomBatchResponse,
+                "SymptomBatchEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+        ...recordWriteRateLimitResponse,
+        "422": {
+          description:
+            "More than 500 entries (`symptoms.batch.too_large`) or a malformed body (`symptoms.batch.invalid`, every issue under `details.issues`, an entry's issues under `entries.<n>`). Nothing was written; both are permanent for the batch as sent.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+      },
+    },
+  },
   "/api/symptoms/events/{id}": {
     patch: {
       tags: ["Symptoms"],
       summary: "Edit a symptom occurrence (v1.40)",
       description:
-        "Partial edit. Audits as `symptoms.event.update`, naming a note change without quoting it.",
+        "Partial edit. An occurrence imported from Apple Health is edited like any other and keeps its source and externalId; a re-post of its sample never overwrites the edit. Audits as `symptoms.event.update`, naming a note change without quoting it.",
       requestParams: pathId,
       requestBody: {
         required: true,
@@ -348,7 +453,8 @@ export const symptomPaths: NonNullable<ZodOpenApiObject["paths"]> = {
     delete: {
       tags: ["Symptoms"],
       summary: "Delete a symptom occurrence (v1.40)",
-      description: "Removes the occurrence. Audits as `symptoms.event.delete`.",
+      description:
+        "Removes the occurrence. One imported from Apple Health is tombstoned instead, so a re-post of its sample answers `duplicate`. Audits as `symptoms.event.delete`.",
       requestParams: pathId,
       responses: {
         ...recordRefusal(MODULE_OFF),

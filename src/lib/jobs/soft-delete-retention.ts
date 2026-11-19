@@ -101,11 +101,6 @@ const live = (table: string, column: string): LiveReferrer => ({
   column,
   softDeletes: true,
 });
-const always = (table: string, column: string): LiveReferrer => ({
-  table,
-  column,
-  softDeletes: false,
-});
 
 export const SOFT_DELETE_RETENTION: Readonly<
   Record<string, SoftDeleteRetention>
@@ -156,9 +151,14 @@ export const SOFT_DELETE_RETENTION: Readonly<
   CoachReminder: standard("coach_reminders"),
   IllnessEpisode: standard("illness_episodes", [
     live("illness_episodes", "parent_condition_id"),
-    always("symptom_events", "episode_id"),
+    live("symptom_events", "episode_id"),
   ]),
   IllnessDayLog: standard("illness_day_logs"),
+  // Only an occurrence imported from Apple Health is tombstoned; the
+  // tombstone answers a late re-post of its sample `duplicate`. Past the
+  // horizon the phone has re-paired (its refresh token is long gone) and
+  // re-sends only what HealthKit still holds, which a deleted sample is not.
+  SymptomEvent: standard("symptom_events"),
   Allergy: standard("allergies"),
   FamilyHistoryEntry: standard("family_history_entries"),
   Encounter: standard("encounters", [

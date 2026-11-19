@@ -13566,7 +13566,9 @@
       "seizureTypeCreate": "{name} adicionou um tipo de crise",
       "seizureTypeUpdate": "{name} editou um tipo de crise",
       "seizureTypeDelete": "{name} excluiu um tipo de crise",
-      "seizureSettingsUpdate": "{name} alterou a regra de crises em salvas"
+      "seizureSettingsUpdate": "{name} alterou a regra de crises em salvas",
+      "symptomBatchIngest": "{name} importou sintomas do Apple Health",
+      "symptomImportDelete": "{name} removeu sintomas importados"
     },
     "section": {
       "measurements": {
@@ -13907,7 +13909,10 @@
       "reset": "Redefinir formulário",
       "emptyHint": "Adicione seu primeiro sintoma, por exemplo aura ou dor de cabeça.",
       "emptyHintNoManage": "Nenhum sintoma foi configurado para este registro ainda.",
-      "limitHint": "Até {limit} sintomas. Oculte um na página de doenças para adicionar outro."
+      "limitHint": "Até {limit} sintomas. Oculte um na página de doenças para adicionar outro.",
+      "intensityFor": "Intensidade: {symptom}",
+      "partlySaved": "{saved} de {total} salvos, o restante continua selecionado.",
+      "severalHint": "Escolha vários se apareceram juntos."
     },
     "section": {
       "title": "Seus sintomas",
@@ -13937,7 +13942,50 @@
     "episode": {
       "title": "Sintomas registrados",
       "during": "durante {illness}"
-    }
+    },
+    "builtin": {
+      "ABDOMINAL_CRAMPS": "Cólicas abdominais",
+      "ACNE": "Acne",
+      "APPETITE_CHANGES": "Alterações no apetite",
+      "BLADDER_INCONTINENCE": "Incontinência urinária",
+      "BLOATING": "Inchaço abdominal",
+      "BREAST_PAIN": "Dor nas mamas",
+      "CHEST_TIGHTNESS_OR_PAIN": "Aperto ou dor no peito",
+      "CHILLS": "Calafrios",
+      "CONSTIPATION": "Prisão de ventre",
+      "COUGHING": "Tosse",
+      "DIARRHEA": "Diarreia",
+      "DIZZINESS": "Tontura",
+      "DRY_SKIN": "Pele seca",
+      "FAINTING": "Desmaio",
+      "FATIGUE": "Cansaço",
+      "FEVER": "Febre",
+      "GENERALIZED_BODY_ACHE": "Dor no corpo",
+      "HAIR_LOSS": "Queda de cabelo",
+      "HEADACHE": "Dor de cabeça",
+      "HEARTBURN": "Azia",
+      "HOT_FLASHES": "Ondas de calor",
+      "LOSS_OF_SMELL": "Perda do olfato",
+      "LOSS_OF_TASTE": "Perda do paladar",
+      "LOWER_BACK_PAIN": "Dor lombar",
+      "MEMORY_LAPSE": "Lapsos de memória",
+      "MOOD_CHANGES": "Alterações de humor",
+      "NAUSEA": "Náusea",
+      "NIGHT_SWEATS": "Suores noturnos",
+      "PELVIC_PAIN": "Dor pélvica",
+      "RAPID_POUNDING_OR_FLUTTERING_HEARTBEAT": "Coração acelerado",
+      "RUNNY_NOSE": "Coriza",
+      "SHORTNESS_OF_BREATH": "Falta de ar",
+      "SINUS_CONGESTION": "Congestão nasal",
+      "SKIPPED_HEARTBEAT": "Batimento falhado",
+      "SLEEP_CHANGES": "Alterações no sono",
+      "SORE_THROAT": "Dor de garganta",
+      "VAGINAL_DRYNESS": "Secura vaginal",
+      "VOMITING": "Vômito",
+      "WHEEZING": "Chiado no peito"
+    },
+    "sourceAppleHealth": "Apple Health",
+    "timeRange": "{from}–{to}"
   },
   "day": {
     "scoreOfMax": "de {max}",

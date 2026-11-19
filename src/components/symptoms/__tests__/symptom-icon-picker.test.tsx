@@ -98,6 +98,7 @@ describe("symptom icon pickers", () => {
             icon: "Zap",
             sortOrder: 0,
             isActive: true,
+            code: null,
             recent: {
               count30d: 0,
               maxIntensity30d: null,

@@ -540,6 +540,7 @@ async function symptomsPart(frame: DayFrame): Promise<SectionPart> {
   const rows = await prisma.symptomEvent.findMany({
     where: {
       userId: frame.userId,
+      deletedAt: null,
       occurredAt: { gte: frame.dayStart, lt: frame.dayEnd },
     },
     select: {
