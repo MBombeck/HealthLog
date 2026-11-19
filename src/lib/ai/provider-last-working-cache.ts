@@ -46,8 +46,7 @@ export function forgetLastWorkingProvider(userId: string): void {
 export function rememberWorkingProvider(
   userId: string,
   candidate:
-    | { providerType: ProviderChainType; pinned?: boolean }
-    | ProviderChainType,
+    { providerType: ProviderChainType; pinned?: boolean } | ProviderChainType,
 ): void {
   if (typeof candidate === "object") {
     if (candidate.pinned) return;

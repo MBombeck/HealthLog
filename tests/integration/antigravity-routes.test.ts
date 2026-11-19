@@ -168,7 +168,10 @@ describe("POST /api/antigravity/install", () => {
 
 describe("POST /api/antigravity/test", () => {
   it("marks the account connected and stores what the CLI accepts", async () => {
-    const { user, session } = await signedIn({ profileId: READY });
+    const { user, session } = await signedIn({
+      profileId: READY,
+      connectionStatus: "connected",
+    });
 
     const result = await callRoute(testRoute.POST, {
       method: "POST",
@@ -187,7 +190,10 @@ describe("POST /api/antigravity/test", () => {
   });
 
   it("reports auth_required when the CLI has no login for the profile", async () => {
-    const { user, session } = await signedIn({ profileId: "logged-out-1" });
+    const { user, session } = await signedIn({
+      profileId: "logged-out-1",
+      connectionStatus: "connected",
+    });
 
     const result = await callRoute(testRoute.POST, {
       method: "POST",
@@ -222,7 +228,10 @@ describe("POST /api/antigravity/test", () => {
   });
 
   it("reports profile_missing when the profile folder is gone", async () => {
-    const { session } = await signedIn({ profileId: "prof-gone" });
+    const { session } = await signedIn({
+      profileId: "prof-gone",
+      connectionStatus: "connected",
+    });
 
     const result = await callRoute(testRoute.POST, {
       method: "POST",
@@ -234,6 +243,49 @@ describe("POST /api/antigravity/test", () => {
       status: "error",
       reason: "profile_missing",
     });
+  });
+
+  it("does not probe and reports disconnected when profile is retained but disconnected", async () => {
+    const { user, session } = await signedIn({
+      profileId: READY,
+      connectionStatus: "disconnected",
+    });
+
+    const result = await callRoute(testRoute.POST, {
+      method: "POST",
+      route: "/api/antigravity/test",
+      auth: session,
+    });
+
+    expect(result.data).toEqual({
+      status: "disconnected",
+      reason: "not_set_up",
+      capabilities: null,
+    });
+    const row = await stored(user.id);
+    expect(row.antigravityConnectionStatus).toBe("disconnected");
+    expect(row.antigravityConnectedAt).toBeNull();
+  });
+
+  it("does not probe and preserves auth_required when profile status is auth_required", async () => {
+    const { user, session } = await signedIn({
+      profileId: READY,
+      connectionStatus: "auth_required",
+    });
+
+    const result = await callRoute(testRoute.POST, {
+      method: "POST",
+      route: "/api/antigravity/test",
+      auth: session,
+    });
+
+    expect(result.data).toEqual({
+      status: "auth_required",
+      reason: "not_set_up",
+      capabilities: null,
+    });
+    const row = await stored(user.id);
+    expect(row.antigravityConnectionStatus).toBe("auth_required");
   });
 });
 

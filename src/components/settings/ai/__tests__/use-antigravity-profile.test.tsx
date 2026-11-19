@@ -467,7 +467,9 @@ describe("useAntigravityProfile updater flow and guards", () => {
       version: "1.5.11",
     });
     // Mock refresh to do nothing during test
-    vi.mocked(apiGet).mockResolvedValueOnce(null as never);
+    vi.mocked(apiGet).mockResolvedValueOnce(
+      null as unknown as Awaited<ReturnType<typeof apiGet>>,
+    );
 
     await profile.installCli();
 

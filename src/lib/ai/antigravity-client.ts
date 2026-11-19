@@ -37,7 +37,6 @@ import {
   mapToAgyThoughtLevel,
   resolveTargetThoughtLevel,
   modelOptionsOf,
-  AGY_LEVEL_ORDER,
   agyLevelRank,
   selectModel,
   selectThoughtLevel,

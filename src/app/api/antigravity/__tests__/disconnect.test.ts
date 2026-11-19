@@ -19,15 +19,6 @@ vi.mock("@/lib/rate-limit", () => ({
   checkRecordWriteRateLimit: vi.fn().mockResolvedValue({ allowed: true }),
 }));
 
-vi.mock("@/lib/db", () => ({
-  prisma: {
-    user: {
-      findUnique: vi.fn(),
-      updateMany: vi.fn(),
-    },
-  },
-}));
-
 vi.mock("@/lib/ai/antigravity-auth-session", () => ({
   cancelAntigravityLogin: vi.fn(),
 }));
@@ -42,6 +33,7 @@ vi.mock("@/lib/ai/antigravity-profile-cleanup", () => ({
 
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
+import type { Prisma } from "@/generated/prisma/client";
 import { cancelAntigravityLogin } from "@/lib/ai/antigravity-auth-session";
 import { forgetAntigravityCapabilities } from "@/lib/ai/antigravity-capability-cache";
 import { removeAntigravityProfile } from "@/lib/ai/antigravity-profile-cleanup";
@@ -53,18 +45,22 @@ const PROFILE_ID = "0123456789abcdef0123456789abcdef";
 describe("POST /api/antigravity/disconnect", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(prisma.user, "findUnique").mockImplementation(vi.fn());
+    vi.spyOn(prisma.user, "updateMany").mockImplementation(vi.fn());
     vi.mocked(getSession).mockResolvedValue({
       user: { id: USER_ID, email: "user@example.com", role: "USER" },
       session: { id: "sess-1", actingAsUserId: null },
-    } as never);
+    } as unknown as Awaited<ReturnType<typeof getSession>>);
   });
 
   it("deletes directory successfully before clearing profile pointer in DB", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       antigravityProfileId: PROFILE_ID,
-    } as never);
+    } as unknown as Awaited<ReturnType<typeof prisma.user.findUnique>>);
     vi.mocked(removeAntigravityProfile).mockResolvedValue(true);
-    vi.mocked(prisma.user.updateMany).mockResolvedValue({ count: 1 } as never);
+    vi.mocked(prisma.user.updateMany).mockResolvedValue({
+      count: 1,
+    } as Prisma.BatchPayload);
 
     const res = await POST();
     expect(res.status).toBe(200);
@@ -98,7 +94,7 @@ describe("POST /api/antigravity/disconnect", () => {
   it("does not clear profile pointer in DB when directory removal fails, retaining retry path", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       antigravityProfileId: PROFILE_ID,
-    } as never);
+    } as unknown as Awaited<ReturnType<typeof prisma.user.findUnique>>);
     vi.mocked(removeAntigravityProfile).mockResolvedValue(false);
 
     const res = await POST();
@@ -124,8 +120,10 @@ describe("POST /api/antigravity/disconnect", () => {
   it("succeeds cleanly when user has no profile configured", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       antigravityProfileId: null,
-    } as never);
-    vi.mocked(prisma.user.updateMany).mockResolvedValue({ count: 1 } as never);
+    } as unknown as Awaited<ReturnType<typeof prisma.user.findUnique>>);
+    vi.mocked(prisma.user.updateMany).mockResolvedValue({
+      count: 1,
+    } as Prisma.BatchPayload);
 
     const res = await POST();
     expect(res.status).toBe(200);

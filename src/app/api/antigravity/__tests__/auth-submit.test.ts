@@ -15,15 +15,6 @@ vi.mock("next/headers", () => ({
   })),
 }));
 
-vi.mock("@/lib/db", () => ({
-  prisma: {
-    user: {
-      findUnique: vi.fn(),
-      update: vi.fn(),
-    },
-  },
-}));
-
 vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi.fn().mockResolvedValue({ allowed: true }),
 }));
@@ -69,17 +60,19 @@ function mockUserSession() {
       role: "user",
     },
     session: { id: "s-1" },
-  } as never);
+  } as unknown as Awaited<ReturnType<typeof getSession>>);
 }
 
 describe("POST /api/antigravity/auth/submit", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUserSession();
+    vi.spyOn(prisma.user, "findUnique").mockImplementation(vi.fn());
+    vi.spyOn(prisma.user, "update").mockImplementation(vi.fn());
     vi.mocked(submitAntigravityAuthCode).mockResolvedValue(null);
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       antigravityProfileId: "0123456789abcdef0123456789abcdef",
-    } as never);
+    } as unknown as Awaited<ReturnType<typeof prisma.user.findUnique>>);
     vi.mocked(antigravityProfileLocation).mockReturnValue({
       geminiDir:
         "/var/lib/healthlog/antigravity/0123456789abcdef0123456789abcdef",
@@ -178,7 +171,7 @@ describe("POST /api/antigravity/auth/submit", () => {
   it("updates DB to error and clears capabilities cache when user has no profile configured", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       antigravityProfileId: null,
-    } as never);
+    } as unknown as Awaited<ReturnType<typeof prisma.user.findUnique>>);
 
     const req = new NextRequest(
       "http://localhost/api/antigravity/auth/submit",

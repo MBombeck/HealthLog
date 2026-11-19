@@ -72,8 +72,9 @@ export const POST = apiHandler(async () => {
       ? rawStatus
       : "disconnected";
 
-  // Retained profiles from failed wipes/cleanups cannot reconnect via test.
-  // With no profile configured, always return disconnected.
+  // Retained profiles from failed wipes/cleanups and disconnected/auth_required profiles
+  // cannot reconnect via test without completing sign-in. Only actively connected profiles
+  // can be re-probed. With no profile configured, always return disconnected.
   const result: AntigravityTestResponse =
     profileId && isConnected
       ? await probe(profileId)

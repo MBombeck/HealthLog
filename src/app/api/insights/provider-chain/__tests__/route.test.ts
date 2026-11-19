@@ -64,6 +64,7 @@ interface Envelope {
       providerType: string;
       enabled: boolean;
       available: boolean;
+      reasoningEffort?: string | null;
     }[];
   };
   error?: string;
@@ -101,8 +102,18 @@ describe("GET /api/insights/provider-chain", () => {
     const body = (await res.json()) as Envelope;
     expect(body.data?.activeProvider).toBe("codex");
     expect(body.data?.configuredChain).toEqual([
-      { providerType: "codex", enabled: true, available: true },
-      { providerType: "admin-openai", enabled: true, available: true },
+      {
+        providerType: "codex",
+        enabled: true,
+        available: true,
+        reasoningEffort: null,
+      },
+      {
+        providerType: "admin-openai",
+        enabled: true,
+        available: true,
+        reasoningEffort: null,
+      },
     ]);
   });
 
@@ -130,9 +141,24 @@ describe("GET /api/insights/provider-chain", () => {
     const res = await (GET as () => Promise<Response>)();
     const body = (await res.json()) as Envelope;
     expect(body.data?.configuredChain).toEqual([
-      { providerType: "codex", enabled: true, available: true },
-      { providerType: "openai", enabled: false, available: true },
-      { providerType: "admin-openai", enabled: true, available: true },
+      {
+        providerType: "codex",
+        enabled: true,
+        available: true,
+        reasoningEffort: null,
+      },
+      {
+        providerType: "openai",
+        enabled: false,
+        available: true,
+        reasoningEffort: null,
+      },
+      {
+        providerType: "admin-openai",
+        enabled: true,
+        available: true,
+        reasoningEffort: null,
+      },
     ]);
     // Active still reflects the resolver winner (enabled-only).
     expect(body.data?.activeProvider).toBe("codex");
@@ -209,10 +235,30 @@ describe("GET /api/insights/provider-chain", () => {
     const res = await (GET as () => Promise<Response>)();
     const body = (await res.json()) as Envelope;
     expect(body.data?.configuredChain).toEqual([
-      { providerType: "codex", enabled: true, available: true },
-      { providerType: "anthropic", enabled: true, available: false },
-      { providerType: "openai", enabled: false, available: true },
-      { providerType: "local", enabled: true, available: false },
+      {
+        providerType: "codex",
+        enabled: true,
+        available: true,
+        reasoningEffort: null,
+      },
+      {
+        providerType: "anthropic",
+        enabled: true,
+        available: false,
+        reasoningEffort: null,
+      },
+      {
+        providerType: "openai",
+        enabled: false,
+        available: true,
+        reasoningEffort: null,
+      },
+      {
+        providerType: "local",
+        enabled: true,
+        available: false,
+        reasoningEffort: null,
+      },
     ]);
   });
 });

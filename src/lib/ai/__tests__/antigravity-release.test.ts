@@ -267,7 +267,7 @@ describe("Antigravity Release Parsing & Validation", () => {
 
       let mockNow = 1000;
       const release1 = await getLatestAntigravityRelease({
-        fetchFn: mockFetch as never,
+        fetchFn: mockFetch as unknown as typeof fetch,
         now: () => mockNow,
         platform: "linux",
         arch: "x64",
@@ -292,7 +292,7 @@ describe("Antigravity Release Parsing & Validation", () => {
       // Second call within TTL should return cached release without another fetch
       mockNow += 60_000; // 1 minute later (< 5 minutes TTL)
       const release2 = await getLatestAntigravityRelease({
-        fetchFn: mockFetch as never,
+        fetchFn: mockFetch as unknown as typeof fetch,
         now: () => mockNow,
         platform: "linux",
         arch: "x64",
@@ -303,7 +303,7 @@ describe("Antigravity Release Parsing & Validation", () => {
 
       // forceFresh should bypass the cache
       const release3 = await getLatestAntigravityRelease({
-        fetchFn: mockFetch as never,
+        fetchFn: mockFetch as unknown as typeof fetch,
         now: () => mockNow,
         forceFresh: true,
         platform: "linux",
@@ -323,12 +323,12 @@ describe("Antigravity Release Parsing & Validation", () => {
       );
 
       const p1 = getLatestAntigravityRelease({
-        fetchFn: mockFetch as never,
+        fetchFn: mockFetch as unknown as typeof fetch,
         platform: "linux",
         arch: "x64",
       });
       const p2 = getLatestAntigravityRelease({
-        fetchFn: mockFetch as never,
+        fetchFn: mockFetch as unknown as typeof fetch,
         platform: "linux",
         arch: "x64",
       });
@@ -355,7 +355,7 @@ describe("Antigravity Release Parsing & Validation", () => {
 
       await expect(
         getLatestAntigravityRelease({
-          fetchFn: mockFetch as never,
+          fetchFn: mockFetch as unknown as typeof fetch,
           platform: "linux",
           arch: "x64",
         }),
@@ -364,7 +364,7 @@ describe("Antigravity Release Parsing & Validation", () => {
       // Verify upstream error body was not leaked in error message
       try {
         await getLatestAntigravityRelease({
-          fetchFn: mockFetch as never,
+          fetchFn: mockFetch as unknown as typeof fetch,
           platform: "linux",
           arch: "x64",
         });
@@ -382,7 +382,7 @@ describe("Antigravity Release Parsing & Validation", () => {
 
       await expect(
         getLatestAntigravityRelease({
-          fetchFn: mockFetch as never,
+          fetchFn: mockFetch as unknown as typeof fetch,
           platform: "linux",
           arch: "x64",
         }),
@@ -396,7 +396,7 @@ describe("Antigravity Release Parsing & Validation", () => {
 
       await expect(
         getLatestAntigravityRelease({
-          fetchFn: mockFetch as never,
+          fetchFn: mockFetch as unknown as typeof fetch,
           platform: "linux",
           arch: "x64",
         }),
@@ -412,7 +412,7 @@ describe("Antigravity Release Parsing & Validation", () => {
       // First call fails and caches the error
       await expect(
         getLatestAntigravityRelease({
-          fetchFn: mockFetch as never,
+          fetchFn: mockFetch as unknown as typeof fetch,
           now: () => mockNow,
           platform: "linux",
           arch: "x64",
@@ -424,7 +424,7 @@ describe("Antigravity Release Parsing & Validation", () => {
       mockNow += 60_000;
       await expect(
         getLatestAntigravityRelease({
-          fetchFn: mockFetch as never,
+          fetchFn: mockFetch as unknown as typeof fetch,
           now: () => mockNow,
           platform: "linux",
           arch: "x64",
@@ -435,7 +435,7 @@ describe("Antigravity Release Parsing & Validation", () => {
       // forceFresh should bypass the cached failure and attempt fetch again
       await expect(
         getLatestAntigravityRelease({
-          fetchFn: mockFetch as never,
+          fetchFn: mockFetch as unknown as typeof fetch,
           now: () => mockNow,
           forceFresh: true,
           platform: "linux",
@@ -448,7 +448,7 @@ describe("Antigravity Release Parsing & Validation", () => {
       mockNow += RELEASE_CACHE_TTL_MS + 1000;
       await expect(
         getLatestAntigravityRelease({
-          fetchFn: mockFetch as never,
+          fetchFn: mockFetch as unknown as typeof fetch,
           now: () => mockNow,
           platform: "linux",
           arch: "x64",
@@ -467,7 +467,7 @@ describe("Antigravity Release Parsing & Validation", () => {
       );
 
       await getLatestAntigravityRelease({
-        fetchFn: mockFetch as never,
+        fetchFn: mockFetch as unknown as typeof fetch,
         platform: "linux",
         arch: "x64",
       });

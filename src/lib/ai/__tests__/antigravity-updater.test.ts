@@ -3,7 +3,10 @@ import {
   chmodSync,
   mkdirSync,
   mkdtempSync,
-  readFileSync,
+  openSync,
+  readSync,
+  closeSync,
+  fstatSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -16,6 +19,22 @@ import {
   installAgy,
   compareSemver,
 } from "../antigravity-install-core.mjs";
+
+function readBytes(filePath: string): Buffer {
+  const fd = openSync(filePath, "r");
+  try {
+    const stat = fstatSync(fd);
+    const buf = Buffer.alloc(stat.size);
+    readSync(fd, buf, 0, stat.size, 0);
+    return buf;
+  } finally {
+    closeSync(fd);
+  }
+}
+
+function readText(filePath: string): string {
+  return readBytes(filePath).toString("utf8");
+}
 
 describe("Antigravity Updater Success and Integrity", () => {
   let root: string;
@@ -38,7 +57,7 @@ describe("Antigravity Updater Success and Integrity", () => {
 
     const archivePath = join(fixtureDir, "agy_cli_linux_x64.tar.gz");
     execFileSync("tar", ["-czf", archivePath, "-C", fixtureDir, "antigravity"]);
-    validArchive = readFileSync(archivePath);
+    validArchive = readBytes(archivePath);
     validSha256 = createHash("sha256").update(validArchive).digest("hex");
   });
 
@@ -52,7 +71,7 @@ describe("Antigravity Updater Success and Integrity", () => {
     writeFileSync(targetBinary, "#!/bin/sh\necho 'agy version 1.5.8'\n");
     chmodSync(targetBinary, 0o755);
 
-    const initialContent = readFileSync(targetBinary, "utf8");
+    const initialContent = readText(targetBinary);
     expect(initialContent).toContain("1.5.8");
 
     const release = {
@@ -82,7 +101,7 @@ describe("Antigravity Updater Success and Integrity", () => {
     expect(result.alreadyInstalled).toBe(false);
 
     // Verify binary was updated
-    const updatedContent = readFileSync(targetBinary, "utf8");
+    const updatedContent = readText(targetBinary);
     expect(updatedContent).toContain("1.5.11");
   });
 
@@ -113,7 +132,7 @@ describe("Antigravity Updater Success and Integrity", () => {
     ).rejects.toThrow(/Failed to download Antigravity CLI/);
 
     // Old binary must remain untouched
-    const currentContent = readFileSync(targetBinary, "utf8");
+    const currentContent = readText(targetBinary);
     expect(currentContent).toContain("1.5.8");
   });
 
@@ -144,7 +163,7 @@ describe("Antigravity Updater Success and Integrity", () => {
     ).rejects.toThrow(/SHA256 checksum mismatch/);
 
     // Old binary must remain completely untouched
-    const currentContent = readFileSync(targetBinary, "utf8");
+    const currentContent = readText(targetBinary);
     expect(currentContent).toContain("1.5.8");
   });
 
@@ -169,7 +188,7 @@ describe("Antigravity Updater Success and Integrity", () => {
         mismatchFixtureDir,
         "antigravity",
       ]);
-      const archiveBytes = readFileSync(archivePath);
+      const archiveBytes = readBytes(archivePath);
       const archiveSha256 = createHash("sha256")
         .update(archiveBytes)
         .digest("hex");
@@ -181,7 +200,8 @@ describe("Antigravity Updater Success and Integrity", () => {
         sha256: archiveSha256,
       };
 
-      const download = async () => new Response(archiveBytes, { status: 200 });
+      const download = async () =>
+        new Response(Uint8Array.from(archiveBytes), { status: 200 });
 
       await expect(
         installAgy({
@@ -193,7 +213,7 @@ describe("Antigravity Updater Success and Integrity", () => {
       ).rejects.toThrow(/version mismatch/i);
 
       // Old binary must remain completely untouched
-      const currentContent = readFileSync(targetBinary, "utf8");
+      const currentContent = readText(targetBinary);
       expect(currentContent).toContain("1.5.8");
     } finally {
       rmSync(mismatchFixtureDir, { recursive: true, force: true });
@@ -230,7 +250,7 @@ describe("Antigravity Updater Success and Integrity", () => {
     ).rejects.toThrow();
 
     // Old binary must remain completely untouched
-    const currentContent = readFileSync(targetBinary, "utf8");
+    const currentContent = readText(targetBinary);
     expect(currentContent).toContain("1.5.8");
   });
 

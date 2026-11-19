@@ -15,14 +15,6 @@ vi.mock("next/headers", () => ({
   })),
 }));
 
-vi.mock("@/lib/db", () => ({
-  prisma: {
-    user: {
-      findUnique: vi.fn(),
-    },
-  },
-}));
-
 vi.mock("@/lib/ai/antigravity-probe", () => ({
   probeCli: vi.fn(),
 }));
@@ -96,12 +88,13 @@ function installReq(body?: unknown): NextRequest {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.spyOn(prisma.user, "findUnique").mockImplementation(vi.fn());
   vi.mocked(prisma.user.findUnique).mockResolvedValue({
     antigravityProfileId: "prof-1",
     antigravityConnectionStatus: "connected",
     antigravityConnectedAt: new Date("2026-11-01T10:00:00Z"),
     antigravityCapabilitiesJson: null,
-  } as never);
+  } as unknown as Awaited<ReturnType<typeof prisma.user.findUnique>>);
 });
 
 describe("Admin Authorization Boundary", () => {
@@ -116,14 +109,18 @@ describe("Admin Authorization Boundary", () => {
   });
 
   it("refuses non-admin user on POST /install with 403", async () => {
-    vi.mocked(getSession).mockResolvedValue(USER_SESSION as never);
+    vi.mocked(getSession).mockResolvedValue(
+      USER_SESSION as unknown as Awaited<ReturnType<typeof getSession>>,
+    );
 
     const res = await installPOSTWithRequest(installReq({ action: "update" }));
     expect(res.status).toBe(403);
   });
 
   it("denies canInstallCli and canUpdateCli to non-admin user in GET /status", async () => {
-    vi.mocked(getSession).mockResolvedValue(USER_SESSION as never);
+    vi.mocked(getSession).mockResolvedValue(
+      USER_SESSION as unknown as Awaited<ReturnType<typeof getSession>>,
+    );
     vi.mocked(resolveAntigravityBinary).mockReturnValue(
       "/var/lib/healthlog/bin/agy",
     );
@@ -155,7 +152,9 @@ describe("Admin Authorization Boundary", () => {
 
 describe("GET /api/antigravity/status updater discovery", () => {
   beforeEach(() => {
-    vi.mocked(getSession).mockResolvedValue(ADMIN_SESSION as never);
+    vi.mocked(getSession).mockResolvedValue(
+      ADMIN_SESSION as unknown as Awaited<ReturnType<typeof getSession>>,
+    );
   });
 
   it("reports updateAvailable: true when installed version is older than GitHub release", async () => {
@@ -326,7 +325,9 @@ describe("GET /api/antigravity/status updater discovery", () => {
 
 describe("POST /api/antigravity/install updater flow", () => {
   beforeEach(() => {
-    vi.mocked(getSession).mockResolvedValue(ADMIN_SESSION as never);
+    vi.mocked(getSession).mockResolvedValue(
+      ADMIN_SESSION as unknown as Awaited<ReturnType<typeof getSession>>,
+    );
   });
 
   it("refuses update when binary is not installed", async () => {
@@ -486,7 +487,9 @@ describe("POST /api/antigravity/install updater flow", () => {
 
 describe("POST /api/antigravity/install Content-Type and forced reinstall handling", () => {
   beforeEach(() => {
-    vi.mocked(getSession).mockResolvedValue(ADMIN_SESSION as never);
+    vi.mocked(getSession).mockResolvedValue(
+      ADMIN_SESSION as unknown as Awaited<ReturnType<typeof getSession>>,
+    );
   });
 
   it("rejects missing Content-Type header with 415", async () => {

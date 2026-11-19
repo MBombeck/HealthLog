@@ -178,7 +178,7 @@ describe("antigravity-install-core", () => {
 
   it("rejects an archive where extracted binary is a symlink", async () => {
     const { execSync } = await import("node:child_process");
-    const { symlinkSync, readFileSync } = await import("node:fs");
+    const { symlinkSync } = await import("node:fs");
     const { createHash } = await import("node:crypto");
 
     const tarDir = mkdtempSync(join(tmpdir(), "tar-build-"));
@@ -189,7 +189,12 @@ describe("antigravity-install-core", () => {
 
     const archivePath = join(tarDir, "test.tar.gz");
     execSync(`tar -czf "${archivePath}" -C "${tarDir}" antigravity`);
-    const archiveBytes = readFileSync(archivePath);
+    const fsMod = await import("node:fs");
+    const fd = fsMod.openSync(archivePath, "r");
+    const stat = fsMod.fstatSync(fd);
+    const archiveBytes = Buffer.alloc(stat.size);
+    fsMod.readSync(fd, archiveBytes, 0, stat.size, 0);
+    fsMod.closeSync(fd);
     const sha256 = createHash("sha256").update(archiveBytes).digest("hex");
 
     const release = {

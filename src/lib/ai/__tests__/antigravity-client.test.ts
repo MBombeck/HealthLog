@@ -660,7 +660,9 @@ describe("agent thinking stream", () => {
     const client = new AntigravityClient({ profile: TEST_PROFILE });
 
     const result = await client.generateCompletion(
-      thinkingParams((event) => events.push(event as never)),
+      thinkingParams((event) =>
+        events.push(event as { kind: string; text: string }),
+      ),
     );
 
     expect(events).toEqual([
@@ -1569,7 +1571,7 @@ describe("end-to-end background job reasoning resolution through runner into Ant
     const setCalls1 = sentMessages(spawnedProcs[0].proc.stdin.write).filter(
       (m) =>
         m.method === "session/set_config_option" &&
-        (m.params as any)?.configId === "thought_level",
+        (m.params as Record<string, unknown>)?.configId === "thought_level",
     );
     expect(setCalls1.at(-1)?.params?.value).toBe("low");
 
@@ -1603,7 +1605,7 @@ describe("end-to-end background job reasoning resolution through runner into Ant
     const setCalls2 = sentMessages(spawnedProcs[1].proc.stdin.write).filter(
       (m) =>
         m.method === "session/set_config_option" &&
-        (m.params as any)?.configId === "thought_level",
+        (m.params as Record<string, unknown>)?.configId === "thought_level",
     );
     expect(setCalls2.at(-1)?.params?.value).toBe("low");
 
@@ -1627,7 +1629,7 @@ describe("end-to-end background job reasoning resolution through runner into Ant
     );
     const mockOpenAi = {
       providerType: "openai" as const,
-      generateCompletion: vi.fn(async (_params: any) => ({
+      generateCompletion: vi.fn(async (_params: unknown) => ({
         content: "OpenAI fallback reply",
         tokensUsed: 15,
       })),
@@ -1638,7 +1640,12 @@ describe("end-to-end background job reasoning resolution through runner into Ant
       surface: "job",
       providers: [
         { providerType: "antigravity", instance: failingAgy },
-        { providerType: "openai", instance: mockOpenAi as any },
+        {
+          providerType: "openai",
+          instance: mockOpenAi as unknown as Parameters<
+            typeof runRawCompletionWithFallback
+          >[0]["providers"][number]["instance"],
+        },
       ],
       params: {
         ...singleUserTurn({ system: "sys", user: "usr" }),
@@ -1647,7 +1654,10 @@ describe("end-to-end background job reasoning resolution through runner into Ant
     });
 
     expect(mockOpenAi.generateCompletion).toHaveBeenCalledTimes(1);
-    const openAiParams = mockOpenAi.generateCompletion.mock.calls[0][0];
+    const openAiParams = mockOpenAi.generateCompletion.mock.calls[0][0] as {
+      unattended?: boolean;
+      reasoning?: unknown;
+    };
     expect(openAiParams.unattended).toBe(true);
     expect(openAiParams.reasoning).toBeUndefined();
   });
@@ -1714,7 +1724,7 @@ describe("end-to-end background job reasoning resolution through runner into Ant
     const setCalls1 = sentMessages(spawnedProcs[0].proc.stdin.write).filter(
       (m) =>
         m.method === "session/set_config_option" &&
-        (m.params as any)?.configId === "thought_level",
+        (m.params as Record<string, unknown>)?.configId === "thought_level",
     );
     expect(setCalls1.at(-1)?.params?.value).toBe("low");
 
@@ -1748,7 +1758,7 @@ describe("end-to-end background job reasoning resolution through runner into Ant
     const setCalls2 = sentMessages(spawnedProcs[1].proc.stdin.write).filter(
       (m) =>
         m.method === "session/set_config_option" &&
-        (m.params as any)?.configId === "thought_level",
+        (m.params as Record<string, unknown>)?.configId === "thought_level",
     );
     expect(setCalls2.at(-1)?.params?.value).toBe("low");
 
@@ -1845,7 +1855,7 @@ describe("end-to-end background job reasoning resolution through runner into Ant
     const setCalls1 = sentMessages(spawnedProcs[0].proc.stdin.write).filter(
       (m) =>
         m.method === "session/set_config_option" &&
-        (m.params as any)?.configId === "thought_level",
+        (m.params as Record<string, unknown>)?.configId === "thought_level",
     );
     expect(setCalls1.at(-1)?.params?.value).toBe("low");
 
@@ -1867,7 +1877,7 @@ describe("end-to-end background job reasoning resolution through runner into Ant
     const setCalls2 = sentMessages(spawnedProcs[1].proc.stdin.write).filter(
       (m) =>
         m.method === "session/set_config_option" &&
-        (m.params as any)?.configId === "thought_level",
+        (m.params as Record<string, unknown>)?.configId === "thought_level",
     );
     expect(setCalls2.at(-1)?.params?.value).toBe("low");
 
@@ -1889,7 +1899,7 @@ describe("end-to-end background job reasoning resolution through runner into Ant
     const setCalls3 = sentMessages(spawnedProcs[2].proc.stdin.write).filter(
       (m) =>
         m.method === "session/set_config_option" &&
-        (m.params as any)?.configId === "thought_level",
+        (m.params as Record<string, unknown>)?.configId === "thought_level",
     );
     expect(setCalls3.at(-1)?.params?.value).toBe("low");
 
@@ -1927,7 +1937,7 @@ describe("end-to-end background job reasoning resolution through runner into Ant
     );
     const mockOpenAi = {
       providerType: "openai" as const,
-      generateCompletion: vi.fn(async (_params: any) => ({
+      generateCompletion: vi.fn(async (_params: unknown) => ({
         content: "OpenAI reply",
         tokensUsed: 10,
       })),
@@ -1939,13 +1949,21 @@ describe("end-to-end background job reasoning resolution through runner into Ant
       surface: "job",
       providers: [
         { providerType: "antigravity", instance: failingAgy },
-        { providerType: "openai", instance: mockOpenAi as any },
+        {
+          providerType: "openai",
+          instance: mockOpenAi as unknown as Parameters<
+            typeof runRawCompletionWithFallback
+          >[0]["providers"][number]["instance"],
+        },
       ],
       params: singleUserTurn({ system: "s", user: "u" }), // omitted reasoning
     });
 
     expect(mockOpenAi.generateCompletion).toHaveBeenCalledTimes(1);
-    const openAiParams = mockOpenAi.generateCompletion.mock.calls[0][0];
+    const openAiParams = mockOpenAi.generateCompletion.mock.calls[0][0] as {
+      unattended?: boolean;
+      reasoning?: unknown;
+    };
     expect(openAiParams.unattended).toBe(true);
     expect(openAiParams.reasoning).toBeUndefined();
   });

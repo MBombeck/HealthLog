@@ -31,14 +31,15 @@
  * little.
  */
 import { NextRequest } from "next/server";
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { z } from "zod";
 
 import { assertRecordContext, cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { seedContractAccount, type ContractFixture } from "./contract-seed";
+import { installFakeAgy, type FakeAgy } from "./antigravity-fake-agy";
 
 vi.mock("next/headers", async () => {
   const { cookieJar, headerJar } = await import("./mock-next-headers");
@@ -344,9 +345,17 @@ interface Finding {
   problem: string;
 }
 
+const ANTIGRAVITY_PROFILE_ID = "0123456789abcdef0123456789abcdef";
+
 let fixture: ContractFixture;
+let fake: FakeAgy | undefined;
 
 beforeAll(async () => {
+  fake = installFakeAgy();
+  mkdirSync(join(fake.profileRoot, ANTIGRAVITY_PROFILE_ID), {
+    recursive: true,
+  });
+
   // Web Push configured, so the VAPID key route answers with a key.
   const { generateVAPIDKeys } = await import("web-push");
   const keys = generateVAPIDKeys();
@@ -362,7 +371,18 @@ beforeAll(async () => {
   cookieJar.clear();
   headerJar.clear();
   fixture = await seedContractAccount(prisma);
+  await prisma.user.update({
+    where: { id: fixture.userId },
+    data: {
+      antigravityProfileId: ANTIGRAVITY_PROFILE_ID,
+      antigravityConnectionStatus: "connected",
+    },
+  });
 }, 300_000);
+
+afterAll(() => {
+  fake?.cleanup();
+});
 
 /** Put the cookie (and the record assertion) in place for one call. */
 function enter(path: string): void {

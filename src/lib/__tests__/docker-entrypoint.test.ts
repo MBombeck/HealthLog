@@ -1,15 +1,10 @@
-import {
-  chmodSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { readSource } from "../../__tests__/helpers/source-files";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const entrypoint = join(repoRoot, "docker-entrypoint.sh");
@@ -121,7 +116,7 @@ describe("docker entrypoint startup installation", () => {
   });
 
   it("never executes install-agy or attempts binary download on startup", () => {
-    const source = readFileSync(entrypoint, "utf8");
+    const source = readSource("docker-entrypoint.sh", "exec");
     expect(source).not.toContain("install-agy");
     expect(source).not.toContain("scripts/install-agy.mjs");
   });

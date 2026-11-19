@@ -47,6 +47,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     ],
     activity: ["activity.calendar.future_date", "activity.calendar.too_old"],
     admin: ["admin.users.delete.managed_profile", "admin.users.delete.self"],
+    admin_data_wipe: ["admin_data_wipe.antigravity_profile_cleanup_failed"],
     ai: [
       "ai.budget.exceeded",
       "ai.provider.none",
@@ -166,7 +167,10 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     ],
     "cycle-prefs": ["cycle-prefs.body.invalid_json", "cycle-prefs.invalid"],
     "disable-coach": ["disable-coach.body.invalid_json"],
-    data_wipe: ["data_wipe.copy_failed"],
+    data_wipe: [
+      "data_wipe.antigravity_profile_cleanup_failed",
+      "data_wipe.copy_failed",
+    ],
     dawarich: [
       "dawarich.credentials_rejected",
       "dawarich.home_place_unknown",

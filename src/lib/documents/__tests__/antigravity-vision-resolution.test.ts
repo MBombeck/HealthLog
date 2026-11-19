@@ -115,11 +115,11 @@ describe("Antigravity cold-cache vision provider resolution regression", () => {
       antigravityCapabilitiesJson: {
         promptCapabilities: { image: true, embeddedContext: true },
       },
-    } as never);
+    } as unknown as Awaited<ReturnType<typeof prisma.user.findUnique>>);
 
     vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
       adminAiModel: null,
-    } as never);
+    } as unknown as Awaited<ReturnType<typeof prisma.appSettings.findUnique>>);
 
     const resolved = await resolveDocumentVisionProvider(userId);
     expect(resolved.pick).not.toBeNull();
@@ -146,11 +146,11 @@ describe("Antigravity cold-cache vision provider resolution regression", () => {
       antigravityCapabilitiesJson: {
         promptCapabilities: { image: false, embeddedContext: false },
       },
-    } as never);
+    } as unknown as Awaited<ReturnType<typeof prisma.user.findUnique>>);
 
     vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
       adminAiModel: null,
-    } as never);
+    } as unknown as Awaited<ReturnType<typeof prisma.appSettings.findUnique>>);
 
     const resolved = await resolveDocumentVisionProvider(userId);
     expect(resolved.pick).toBeNull();
@@ -178,11 +178,11 @@ describe("Antigravity cold-cache vision provider resolution regression", () => {
       antigravityCapabilitiesJson: {
         promptCapabilities: { image: true, embeddedContext: true },
       },
-    } as never);
+    } as unknown as Awaited<ReturnType<typeof prisma.user.findUnique>>);
 
     vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
       adminAiModel: null,
-    } as never);
+    } as unknown as Awaited<ReturnType<typeof prisma.appSettings.findUnique>>);
 
     const runId = "run-summary-agy-1";
     vi.mocked(claimAiRun).mockResolvedValue({
@@ -205,7 +205,7 @@ describe("Antigravity cold-cache vision provider resolution regression", () => {
       createdAt: new Date(),
       expiresAt: new Date(Date.now() + 3600_000),
       claimedAt: new Date(),
-    } as never);
+    } as unknown as Awaited<ReturnType<typeof claimAiRun>>);
 
     const result = await runDocumentAiRun(runId, Date.now() + 3600_000);
     expect(result).toBe("succeeded");
@@ -235,11 +235,11 @@ describe("Antigravity cold-cache vision provider resolution regression", () => {
       antigravityCapabilitiesJson: {
         promptCapabilities: { image: false, embeddedContext: false },
       },
-    } as never);
+    } as unknown as Awaited<ReturnType<typeof prisma.user.findUnique>>);
 
     vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
       adminAiModel: null,
-    } as never);
+    } as unknown as Awaited<ReturnType<typeof prisma.appSettings.findUnique>>);
 
     const runId = "run-summary-agy-unsupported";
     vi.mocked(claimAiRun).mockResolvedValue({
@@ -262,7 +262,7 @@ describe("Antigravity cold-cache vision provider resolution regression", () => {
       createdAt: new Date(),
       expiresAt: new Date(Date.now() + 3600_000),
       claimedAt: new Date(),
-    } as never);
+    } as unknown as Awaited<ReturnType<typeof claimAiRun>>);
 
     const result = await runDocumentAiRun(runId, Date.now() + 3600_000);
     expect(result).toBe("failed");

@@ -10,6 +10,7 @@ import {
   resolveAntigravityBinary,
 } from "./antigravity-bin";
 import {
+  AGY_PINNED_VERSION,
   compareSemver,
   installAgy,
   isManagedAntigravityBinary,
@@ -20,6 +21,7 @@ import {
 } from "./antigravity-release";
 
 export {
+  AGY_PINNED_VERSION,
   compareSemver,
   resolveAntigravityBinary,
   type AntigravityReleaseInfo,

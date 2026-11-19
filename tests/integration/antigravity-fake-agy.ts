@@ -174,11 +174,11 @@ rl.on("line", (line) => {
 /** Install the fake `agy` on PATH and point ANTIGRAVITY_PROFILE_ROOT at a fresh folder. */
 export function installFakeAgy(): FakeAgy {
   const root = mkdtempSync(path.join(tmpdir(), "healthlog-fake-agy-"));
-  const binDir = path.join(root, "bin");
   const profileRoot = path.join(root, "profiles");
+  const binDir = path.join(profileRoot, "bin");
   const recordFile = path.join(root, "records.jsonl");
-  mkdirSync(binDir);
   mkdirSync(profileRoot);
+  mkdirSync(binDir);
 
   const agyPath = path.join(binDir, "agy");
   writeFileSync(agyPath, scriptFor(recordFile));
@@ -188,9 +188,9 @@ export function installFakeAgy(): FakeAgy {
   process.env.PATH = `${binDir}${path.delimiter}${originalPath ?? ""}`;
   const originalRoot = process.env.ANTIGRAVITY_PROFILE_ROOT;
   process.env.ANTIGRAVITY_PROFILE_ROOT = profileRoot;
-  // The app looks for the binary by path, not on PATH. Point it at the fake too.
+  // Managed binary lives inside profileRoot/bin/agy; ensure no external override is set.
   const originalBin = process.env.ANTIGRAVITY_BIN_PATH;
-  process.env.ANTIGRAVITY_BIN_PATH = agyPath;
+  delete process.env.ANTIGRAVITY_BIN_PATH;
 
   return {
     profileRoot,

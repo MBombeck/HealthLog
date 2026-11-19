@@ -63,7 +63,7 @@ export const reasoningEffortSchema = z
   .enum(REASONING_EFFORTS)
   .nullable()
   .describe(
-    "Reasoning setting for a Local, OpenAI-compatible, or Antigravity provider, sent as `reasoning_effort` in the `/chat/completions` body or mapped to CLI thought levels. `none` switches reasoning off, which stops a thinking model (Gemma, Qwen and the like) spending the answer budget on reasoning. `null` is Default: the key is not sent at all and the model decides.",
+    "Reasoning setting for a Local, OpenAI-compatible, or Antigravity provider, sent as `reasoning_effort` in the `/chat/completions` body or mapped to CLI thought levels. `none` switches reasoning off, which stops a thinking model (Gemma, Qwen and the like) spending the answer budget on reasoning. `null` is Default for supported providers (the key is not sent and the model decides). For other provider types (codex, anthropic, openai, admin-openai) where reasoning effort is not configurable through this field, this is always null.",
   );
 
 /**

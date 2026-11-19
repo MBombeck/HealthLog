@@ -122,6 +122,16 @@ describe("resolveJobReasoning by usage level", () => {
       expect(await resolveJobReasoning("daily_briefing", chain, "u1")).toEqual({
         effort: "medium",
         summaries: false,
+      });
+      expect(
+        await resolveJobReasoning(
+          "daily_briefing",
+          [{ providerType: "antigravity" as const }],
+          "u1",
+        ),
+      ).toEqual({
+        effort: "medium",
+        summaries: false,
         maxEffort: "high",
       });
     },
@@ -135,6 +145,16 @@ describe("resolveJobReasoning by usage level", () => {
       aiUsageDefaultLevel: "STANDARD",
     };
     expect(await resolveJobReasoning("daily_briefing", chain, "u1")).toEqual({
+      effort: "low",
+      summaries: false,
+    });
+    expect(
+      await resolveJobReasoning(
+        "daily_briefing",
+        [{ providerType: "antigravity" as const }],
+        "u1",
+      ),
+    ).toEqual({
       effort: "low",
       summaries: false,
       maxEffort: "low",

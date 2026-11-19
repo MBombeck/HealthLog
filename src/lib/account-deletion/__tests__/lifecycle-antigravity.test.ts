@@ -27,6 +27,7 @@ vi.mock("node:fs/promises", () => ({
 
 import { rm } from "node:fs/promises";
 import { prisma } from "@/lib/db";
+import type { Prisma } from "@/generated/prisma/client";
 import { cancelAntigravityLogin } from "@/lib/ai/antigravity-auth-session";
 import { forgetAntigravityCapabilities } from "@/lib/ai/antigravity-capability-cache";
 import { cleanAntigravityProfileOnLock } from "@/lib/ai/antigravity-profile-cleanup";
@@ -55,9 +56,11 @@ describe("Antigravity account deletion lifecycle", () => {
     it("cleans profile directory and clears DB pointer when removal succeeds", async () => {
       vi.mocked(prisma.user.findUnique).mockResolvedValue({
         antigravityProfileId: PROFILE_ID,
-      } as any);
+      } as unknown as Awaited<ReturnType<typeof prisma.user.findUnique>>);
       vi.mocked(rm).mockResolvedValue(undefined);
-      vi.mocked(prisma.user.updateMany).mockResolvedValue({ count: 1 } as any);
+      vi.mocked(prisma.user.updateMany).mockResolvedValue({
+        count: 1,
+      } as Prisma.BatchPayload);
 
       const result = await cleanAntigravityProfileOnLock(USER_ID);
 
@@ -80,7 +83,7 @@ describe("Antigravity account deletion lifecycle", () => {
     it("preserves profile ID in DB and disables profile use when removal fails so purgeAccount can retry", async () => {
       vi.mocked(prisma.user.findUnique).mockResolvedValue({
         antigravityProfileId: PROFILE_ID,
-      } as any);
+      } as unknown as Awaited<ReturnType<typeof prisma.user.findUnique>>);
       vi.mocked(rm).mockRejectedValue(new Error("EACCES: permission denied"));
 
       const result = await cleanAntigravityProfileOnLock(USER_ID);
@@ -106,7 +109,7 @@ describe("Antigravity account deletion lifecycle", () => {
     it("returns true and takes no action when user has no profile", async () => {
       vi.mocked(prisma.user.findUnique).mockResolvedValue({
         antigravityProfileId: null,
-      } as any);
+      } as unknown as Awaited<ReturnType<typeof prisma.user.findUnique>>);
 
       const result = await cleanAntigravityProfileOnLock(USER_ID);
 
@@ -127,7 +130,7 @@ describe("Antigravity account deletion lifecycle", () => {
             .mockResolvedValue({ antigravityProfileId: PROFILE_ID }),
           delete: vi.fn().mockResolvedValue({ id: USER_ID }),
         },
-      } as any;
+      } as unknown as Prisma.TransactionClient;
 
       vi.mocked(rm).mockResolvedValue(undefined);
 
@@ -152,7 +155,7 @@ describe("Antigravity account deletion lifecycle", () => {
             .mockResolvedValue({ antigravityProfileId: PROFILE_ID }),
           delete: vi.fn().mockResolvedValue({ id: USER_ID }),
         },
-      } as any;
+      } as unknown as Prisma.TransactionClient;
 
       vi.mocked(rm).mockRejectedValue(
         new Error("EPERM: operation not permitted"),
@@ -178,7 +181,7 @@ describe("Antigravity account deletion lifecycle", () => {
             .mockResolvedValue({ antigravityProfileId: PROFILE_ID }),
           delete: vi.fn().mockResolvedValue({ id: USER_ID }),
         },
-      } as any;
+      } as unknown as Prisma.TransactionClient;
 
       await expect(
         eraseAccount(tx, USER_ID, "account_deleted"),
@@ -197,7 +200,7 @@ describe("Antigravity account deletion lifecycle", () => {
           }),
           delete: vi.fn().mockResolvedValue({ id: USER_ID }),
         },
-      } as any;
+      } as unknown as Prisma.TransactionClient;
 
       vi.mocked(rm).mockResolvedValue(undefined);
 
@@ -220,7 +223,7 @@ describe("Antigravity account deletion lifecycle", () => {
           }),
           delete: vi.fn().mockResolvedValue({ id: USER_ID }),
         },
-      } as any;
+      } as unknown as Prisma.TransactionClient;
 
       await expect(
         eraseAccount(tx, USER_ID, "account_deleted"),
@@ -237,7 +240,7 @@ describe("Antigravity account deletion lifecycle", () => {
           findUnique: vi.fn().mockResolvedValue({ antigravityProfileId: null }),
           delete: vi.fn().mockResolvedValue({ id: USER_ID }),
         },
-      } as any;
+      } as unknown as Prisma.TransactionClient;
 
       await eraseAccount(tx, USER_ID, "account_deleted");
 

@@ -22,15 +22,6 @@ vi.mock("@/lib/rate-limit", () => ({
   checkRecordWriteRateLimit: vi.fn().mockResolvedValue({ allowed: true }),
 }));
 
-vi.mock("@/lib/db", () => ({
-  prisma: {
-    user: {
-      findUnique: vi.fn(),
-      updateMany: vi.fn(),
-    },
-  },
-}));
-
 vi.mock("@/lib/ai/antigravity-auth-session", () => ({
   cancelAntigravityLogin: vi.fn(),
   startAntigravityLogin: vi.fn(),
@@ -61,6 +52,7 @@ vi.mock("@/lib/ai/antigravity-profile-cleanup", () => ({
 
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
+import type { Prisma } from "@/generated/prisma/client";
 import {
   startAntigravityLogin,
   AntigravityLoginError,
@@ -82,8 +74,10 @@ describe("POST /api/antigravity/auth/start rollback and error safeguards", () =>
     vi.mocked(getSession).mockResolvedValue({
       user: { id: USER_ID, email: "user@example.com", role: "USER" },
       session: { id: "sess-1", actingAsUserId: null },
-    } as never);
+    } as unknown as Awaited<ReturnType<typeof getSession>>);
     vi.mocked(normalizeAntigravityProfileRoot).mockReturnValue(tempRoot);
+    vi.spyOn(prisma.user, "findUnique").mockImplementation(vi.fn());
+    vi.spyOn(prisma.user, "updateMany").mockImplementation(vi.fn());
   });
 
   afterEach(() => {
@@ -94,8 +88,10 @@ describe("POST /api/antigravity/auth/start rollback and error safeguards", () =>
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       antigravityProfileId: null,
       antigravityConnectionStatus: "connected",
-    } as never);
-    vi.mocked(prisma.user.updateMany).mockResolvedValue({ count: 1 } as never);
+    } as unknown as Awaited<ReturnType<typeof prisma.user.findUnique>>);
+    vi.mocked(prisma.user.updateMany).mockResolvedValue({
+      count: 1,
+    } as Prisma.BatchPayload);
 
     // startAntigravityLogin fails
     vi.mocked(startAntigravityLogin).mockRejectedValueOnce(
@@ -124,8 +120,10 @@ describe("POST /api/antigravity/auth/start rollback and error safeguards", () =>
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       antigravityProfileId: null,
       antigravityConnectionStatus: "disconnected",
-    } as never);
-    vi.mocked(prisma.user.updateMany).mockResolvedValue({ count: 1 } as never);
+    } as unknown as Awaited<ReturnType<typeof prisma.user.findUnique>>);
+    vi.mocked(prisma.user.updateMany).mockResolvedValue({
+      count: 1,
+    } as Prisma.BatchPayload);
 
     vi.mocked(startAntigravityLogin).mockRejectedValueOnce(
       new AntigravityLoginError("start_failed"),
@@ -153,11 +151,11 @@ describe("POST /api/antigravity/auth/start rollback and error safeguards", () =>
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       antigravityProfileId: null,
       antigravityConnectionStatus: "disconnected",
-    } as never);
+    } as unknown as Awaited<ReturnType<typeof prisma.user.findUnique>>);
     // CAS conflict: another request touched profile
     vi.mocked(prisma.user.updateMany).mockResolvedValueOnce({
       count: 0,
-    } as never);
+    } as Prisma.BatchPayload);
 
     const res = await POST();
     expect(res.status).toBe(409);
@@ -168,12 +166,12 @@ describe("POST /api/antigravity/auth/start rollback and error safeguards", () =>
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       antigravityProfileId: "prof-old",
       antigravityConnectionStatus: "connected",
-    } as never);
+    } as unknown as Awaited<ReturnType<typeof prisma.user.findUnique>>);
     vi.mocked(removeAntigravityProfile).mockResolvedValueOnce(true);
     // CAS conflict on new claim
     vi.mocked(prisma.user.updateMany).mockResolvedValueOnce({
       count: 0,
-    } as never);
+    } as Prisma.BatchPayload);
 
     const res = await POST();
     expect(res.status).toBe(409);

@@ -230,13 +230,16 @@ export async function resolveJobReasoning(
       ai_reasoning_source: resolved.source,
     },
   });
+  const hasAntigravity = chain.some((e) => e.providerType === "antigravity");
   if (resolved.effort === "off" || admin.enabled === false) {
-    if (chain.some((e) => e.providerType === "antigravity")) {
+    if (hasAntigravity) {
       return { effort: "off", summaries: false, maxEffort: "off" };
     }
     return undefined;
   }
-  return completionReasoning(resolved, job, admin, costOwner);
+  return hasAntigravity
+    ? completionReasoning(resolved, job, admin, costOwner)
+    : completionReasoning(resolved, job);
 }
 
 /**

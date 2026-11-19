@@ -25,6 +25,7 @@ import {
   namedChainSchema,
   namedChainsPutSchema,
   providerChainPutSchema,
+  reasoningEffortSchema,
 } from "@/lib/validations/ai-provider";
 import { PROVIDER_CHAIN_TYPES } from "@/lib/ai/provider-chain";
 import { AI_CAPABILITY_KEYS } from "@/lib/ai/capabilities/types";
@@ -2822,6 +2823,7 @@ export const providerChainResponse = z
             .describe(
               "Always `true` today. Reserved for rendering an unconfigured slot with a needs-setup pill; do not branch on it as if it reported credential presence.",
             ),
+          reasoningEffort: reasoningEffortSchema,
         }),
       )
       .describe(
