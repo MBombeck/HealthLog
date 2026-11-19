@@ -1149,4 +1149,60 @@ describe("the medications fact counts the whole day, names the next dose before 
       })?.value,
     ).toBe("2 of 5 taken");
   });
+
+  // A 12:00 to 22:00 window anchored at 17:00 is the day's only dose. Once
+  // the window has opened the dose is due now, though its anchor lies ahead.
+  it("counts a window dose as due once its window has opened", () => {
+    const candidate = {
+      medicationId: "med-1",
+      medicationName: "Window",
+      dueAt: at(17),
+      overdue: false,
+      availableFrom: at(11),
+      opensAt: at(12),
+    };
+    const block = meds({
+      scheduledToday: 1,
+      scheduledTodayAt: [at(17)],
+      nextDueAt: at(17),
+      dueCandidates: [candidate],
+    });
+    expect(
+      medsFact({
+        now: new Date(at(13)),
+        medsToday: block,
+        nextDoseTimeLabel: "12:00",
+      })?.value,
+    ).toBe("0 of 1 taken");
+    expect(
+      medsFact({
+        now: new Date(at(10)),
+        medsToday: block,
+        nextDoseTimeLabel: "12:00",
+      })?.value,
+    ).toBe("Next dose at 12:00");
+    // A candidate for another day opens early (a weekly dose) and is not
+    // today's business.
+    expect(
+      medsFact({
+        now: new Date(at(10)),
+        medsToday: meds({
+          scheduledToday: 1,
+          scheduledTodayAt: [at(17)],
+          nextDueAt: at(17),
+          dueCandidates: [
+            candidate,
+            {
+              ...candidate,
+              medicationId: "med-weekly",
+              dueAt: new Date(Date.UTC(2026, 10, 18, 9)).toISOString(),
+              availableFrom: at(8),
+              opensAt: at(8),
+            },
+          ],
+        }),
+        nextDoseTimeLabel: "12:00",
+      })?.value,
+    ).toBe("Next dose at 12:00");
+  });
 });

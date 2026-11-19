@@ -71532,10 +71532,12 @@ components:
               minimum: -9007199254740991
               maximum: 9007199254740991
             scheduledTodayAt:
-              description: "v1.48.0 — the slot instants (ISO 8601, ascending) of the doses `scheduledToday` counts. The Today
-                medications fact uses them to tell whether any dose was due yet (at or before now): before the first,
-                with nothing taken, it names the next dose; otherwise it counts taken against the whole day's
-                `scheduledToday`. Absent on a snapshot cached by an older server."
+              description: "v1.48.0 — the slot instants (ISO 8601, ascending) of the doses `scheduledToday` counts. Since v1.48.2 that
+                excludes as-needed intakes and the pending doses of a medication paused, or a course ended, earlier in
+                the day. The Today medications fact uses them to tell whether any dose was due yet (at or before now, or
+                a candidate for one of them whose `availableFrom` has passed): before the first, with nothing taken, it
+                names the next dose; otherwise it counts taken against the whole day's `scheduledToday`. Absent on a
+                snapshot cached by an older server."
               type: array
               items:
                 type: string
@@ -71567,6 +71569,10 @@ components:
                   overdue:
                     type: boolean
                   availableFrom:
+                    type: string
+                  opensAt:
+                    description: "v1.48.2 — when the dose's own window opens: the start of an explicit per-dose window, else `dueAt`. Absent
+                      on a snapshot cached by an older server."
                     type: string
                 required:
                   - medicationId

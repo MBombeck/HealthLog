@@ -44,7 +44,10 @@ import {
   toResolvedSlotMark,
   type ResolvedSlotMark,
 } from "@/lib/medications/scheduling/next-due";
-import { getUserTodayBounds } from "@/lib/tz/local-day";
+import { buildCanonicalSchedule } from "@/lib/medications/scheduling/worker-helpers";
+import type { WorkerScheduleRow } from "@/lib/medications/scheduling/worker-helpers";
+import { formatInUserTz } from "@/lib/tz/format";
+import { getUserTodayBounds, localHmAsUtc } from "@/lib/tz/local-day";
 import {
   TRACKED_INTAKE_EVENT_WHERE,
   TRACKED_INTAKE_WHERE,
@@ -59,6 +62,12 @@ export interface MedsTodayDueCandidate {
   overdue: boolean;
   /** Canonical attribution-band start for this slot (ISO8601). */
   availableFrom: string;
+  /**
+   * When the dose's own window opens (ISO8601): the start of an explicit
+   * per-dose window, else the slot instant itself. What "next dose at" names.
+   * Optional only so older cached snapshots remain valid.
+   */
+  opensAt?: string;
 }
 
 export interface MedsTodayBlock {
@@ -159,7 +168,15 @@ export async function buildMedsTodayBlock(
           scheduledFor: { gte: todayStart, lt: todayEndExclusive },
           ...TRACKED_INTAKE_EVENT_WHERE,
         },
-        select: { takenAt: true, skipped: true, scheduledFor: true },
+        select: {
+          takenAt: true,
+          skipped: true,
+          autoMissed: true,
+          scheduledFor: true,
+          medication: {
+            select: { asNeeded: true, active: true, endedAt: true },
+          },
+        },
       }),
       prisma.medicationIntakeEvent.groupBy({
         by: ["medicationId"],
@@ -197,10 +214,11 @@ export async function buildMedsTodayBlock(
       }),
     ]);
 
-  const takenToday = todayEvents.filter(
+  const scheduledEvents = todayEvents.filter(isScheduledDoseToday);
+  const takenToday = scheduledEvents.filter(
     (e) => e.takenAt !== null && !e.skipped,
   ).length;
-  const skippedToday = todayEvents.filter((e) => e.skipped).length;
+  const skippedToday = scheduledEvents.filter((e) => e.skipped).length;
 
   const lastTakenAtByMedId = new Map<string, Date | null>(
     latestIntakes.map((entry) => [entry.medicationId, entry._max.takenAt]),
@@ -248,6 +266,12 @@ export async function buildMedsTodayBlock(
       dueAt: display.at.toISOString(),
       overdue: display.overdue,
       availableFrom: (display.availableFrom ?? display.at).toISOString(),
+      opensAt: doseWindowOpening(
+        m.schedules,
+        display.scheduleId,
+        display.at,
+        userTz,
+      ).toISOString(),
     });
   }
   dueCandidates.sort(
@@ -261,10 +285,10 @@ export async function buildMedsTodayBlock(
 
   return {
     activeCount: medications.length,
-    scheduledToday: todayEvents.length,
+    scheduledToday: scheduledEvents.length,
     takenToday,
     skippedToday,
-    scheduledTodayAt: todayEvents
+    scheduledTodayAt: scheduledEvents
       .map((e) => e.scheduledFor.toISOString())
       .sort(),
     nextDueAt: next?.dueAt ?? null,
@@ -273,4 +297,59 @@ export async function buildMedsTodayBlock(
     nextDueMedicationId: next?.medicationId ?? null,
     dueCandidates,
   };
+}
+
+/**
+ * Whether a row of today's window is a scheduled dose of the day. An
+ * as-needed medication schedules nothing, so its intakes (ad-hoc rows,
+ * `scheduledFor === takenAt`) are not part of the day's total. A pending
+ * placeholder of a medication paused since it was minted, or one at or after
+ * the moment its course was ended, is no longer expected; an actioned row of
+ * either is history and stays.
+ */
+function isScheduledDoseToday(event: {
+  takenAt: Date | null;
+  skipped: boolean;
+  autoMissed?: boolean;
+  scheduledFor: Date;
+  medication?: { asNeeded: boolean; active: boolean; endedAt: Date | null };
+}): boolean {
+  const medication = event.medication;
+  if (!medication) return true;
+  if (medication.asNeeded) return false;
+  const pending =
+    event.takenAt === null && !event.skipped && event.autoMissed !== true;
+  if (!pending) return true;
+  if (!medication.active) return false;
+  return !(
+    medication.endedAt !== null &&
+    event.scheduledFor.getTime() >= medication.endedAt.getTime()
+  );
+}
+
+/**
+ * When the dose at `at` can first be taken on the person's clock, as they
+ * set it: the start of the schedule's explicit window for that time of day
+ * (a 17:00 dose with a 12:00 to 22:00 window opens at 12:00), else the slot
+ * instant itself. The engine's band start reaches an early grace further
+ * back, which is right for crediting a take but not what a person reads as
+ * the time of their dose.
+ */
+function doseWindowOpening(
+  schedules: readonly WorkerScheduleRow[],
+  scheduleId: string | undefined,
+  at: Date,
+  userTz: string,
+): Date {
+  const schedule =
+    schedules.find((row) => row.id === scheduleId) ??
+    (scheduleId === undefined ? schedules[0] : undefined);
+  if (!schedule) return at;
+  const windows = buildCanonicalSchedule(schedule).doseWindows ?? [];
+  const timeOfDay = formatInUserTz(at, userTz, "wall-clock");
+  const entry = windows.find((w) => w.timeOfDay === timeOfDay);
+  if (!entry) return at;
+  const [hour, minute] = entry.start.split(":").map(Number);
+  const opens = localHmAsUtc(at, userTz, hour, minute);
+  return opens.getTime() < at.getTime() ? opens : at;
 }

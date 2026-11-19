@@ -1397,7 +1397,7 @@ export const dashboardSnapshotResponse = z
           .array(z.string())
           .optional()
           .describe(
-            "v1.48.0 — the slot instants (ISO 8601, ascending) of the doses `scheduledToday` counts. The Today medications fact uses them to tell whether any dose was due yet (at or before now): before the first, with nothing taken, it names the next dose; otherwise it counts taken against the whole day's `scheduledToday`. Absent on a snapshot cached by an older server.",
+            "v1.48.0 — the slot instants (ISO 8601, ascending) of the doses `scheduledToday` counts. Since v1.48.2 that excludes as-needed intakes and the pending doses of a medication paused, or a course ended, earlier in the day. The Today medications fact uses them to tell whether any dose was due yet (at or before now, or a candidate for one of them whose `availableFrom` has passed): before the first, with nothing taken, it names the next dose; otherwise it counts taken against the whole day's `scheduledToday`. Absent on a snapshot cached by an older server.",
           ),
         nextDueAt: z.string().nullable(),
         nextDueOverdue: z.boolean(),
@@ -1411,6 +1411,12 @@ export const dashboardSnapshotResponse = z
               dueAt: z.string(),
               overdue: z.boolean(),
               availableFrom: z.string(),
+              opensAt: z
+                .string()
+                .optional()
+                .describe(
+                  "v1.48.2 — when the dose's own window opens: the start of an explicit per-dose window, else `dueAt`. Absent on a snapshot cached by an older server.",
+                ),
             }),
           )
           .optional(),

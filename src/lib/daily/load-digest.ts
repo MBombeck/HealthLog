@@ -927,6 +927,7 @@ export async function loadDailyDigest(
       }
     : null;
 
+  const nextOpensAt = nextDoseOpensAt(snapshot.medsToday);
   const digest = buildDailyDigest(
     {
       now,
@@ -950,9 +951,7 @@ export async function loadDailyDigest(
         : null,
       reactionLanguage: await resolveJobLocale(user.locale),
       firstName: firstNameFromDisplayName(user.displayName),
-      nextDoseTimeLabel: snapshot.medsToday.nextDueAt
-        ? localTime(new Date(snapshot.medsToday.nextDueAt))
-        : null,
+      nextDoseTimeLabel: nextOpensAt ? localTime(new Date(nextOpensAt)) : null,
       sleepLastSeenDaysAgo,
       morningRefreshedToday,
       syncIssues,
@@ -1010,4 +1009,18 @@ export async function loadDailyDigest(
   });
 
   return digest;
+}
+
+/**
+ * When the next dose can first be taken: the opening of its own window (a
+ * 17:00 dose in a 12:00 to 22:00 window reads 12:00), else its slot. A
+ * snapshot cached before the opening was kept falls back to the slot.
+ */
+function nextDoseOpensAt(meds: {
+  nextDueAt: string | null;
+  dueCandidates?: Array<{ dueAt: string; opensAt?: string }>;
+}): string | null {
+  if (!meds.nextDueAt) return null;
+  const candidate = meds.dueCandidates?.find((c) => c.dueAt === meds.nextDueAt);
+  return candidate?.opensAt ?? meds.nextDueAt;
 }

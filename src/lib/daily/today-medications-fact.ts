@@ -44,8 +44,18 @@ export function medicationsFact(
   // #173 — "0 of 5 taken" at seven in the morning reads like five missed
   // doses. Before the first dose is due, and with nothing taken or overdue,
   // say when the next one is instead.
+  // A dose is due from the moment its window opens, not only at its anchor:
+  // a 12:00 to 22:00 window anchored at 17:00 is takeable at 13:00. Only a
+  // candidate falling on one of today's slots counts, so a weekly dose whose
+  // early window reaches into today stays tomorrow's business.
   const now = input.now.getTime();
-  const anyDueSoFar = scheduledTodayAt.some((at) => Date.parse(at) <= now);
+  const todaySlots = new Set(scheduledTodayAt.map((at) => Date.parse(at)));
+  const anyWindowOpen = (input.medsToday.dueCandidates ?? []).some(
+    (c) =>
+      todaySlots.has(Date.parse(c.dueAt)) && Date.parse(c.availableFrom) <= now,
+  );
+  const anyDueSoFar =
+    anyWindowOpen || scheduledTodayAt.some((at) => Date.parse(at) <= now);
   const nextAt = nextDueAt ? Date.parse(nextDueAt) : NaN;
   if (
     !anyDueSoFar &&
