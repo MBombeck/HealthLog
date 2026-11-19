@@ -464,15 +464,6 @@ const HANDLER_BODY_MODULES: Record<string, readonly string[]> = {
   "app/api/documents/inbound/[id]/index/route.ts": [
     "lib/documents/ai-runs/index-run.ts",
   ],
-  // The Apple Health symptom import files `symptoms.batch.ingest` where the
-  // rows are written; the by-external-ids delete files its row through the
-  // shared delete envelope.
-  "app/api/symptoms/events/batch/route.ts": [
-    "lib/symptoms/apple-health-ingest.ts",
-  ],
-  "app/api/symptoms/events/by-external-ids/route.ts": [
-    "lib/sync/external-id-delete.ts",
-  ],
 };
 
 /** The route and the service modules carrying its handler bodies. */
@@ -1147,14 +1138,6 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "illness",
     why: "One symptom occurrence of the record, fetch-then-guard against the resolved user. Reached only through this module's MANAGE arm.",
   },
-  "app/api/symptoms/events/batch/route.ts": {
-    domain: "illness",
-    why: "The record's Apple Health symptom import. Module-gated on the record; every row and every built-in definition it creates is written under the resolved user, and the dedup lookup is scoped to that user, so a delegate's phone can neither read nor collide with another record's samples. A delegable write like the single create.",
-  },
-  "app/api/symptoms/events/by-external-ids/route.ts": {
-    domain: "illness",
-    why: "Tombstoning the record's own Apple Health symptom imports by sample id. Module-gated on the record; the update is scoped to the resolved user and `source = APPLE_HEALTH`, so an id of another record, or of a manual entry, matches nothing. Reached only through this module's MANAGE arm, like the single delete.",
-  },
   // The seizure diary rides the illness section. A
   // guardian logging for a managed child is the primary user.
   "app/api/seizures/route.ts": {
@@ -1784,8 +1767,6 @@ const DELEGABLE_WRITE_ROUTES: Record<string, string> = {
     "Adding an analyte to the record's catalogue. A name the record already tracks is the ordinary 409 from the same `(userId, name)` uniqueness the owner would hit themselves.",
   "app/api/illness/episodes/route.ts":
     "Opening an illness episode. The module gate runs against the RECORD before the write, so a delegate cannot create an episode inside a record whose owner switched the module off.",
-  "app/api/symptoms/events/batch/route.ts":
-    "Importing Apple Health symptom samples into the record. Each lands on the RECORD's built-in definition for its code, created under the record and labelled in the record owner's language; the duplicate check reads the record's own samples only. No note and no episode link travel through it.",
   "app/api/symptoms/events/route.ts":
     "Logging a symptom occurrence. The definition and the episode the body names are looked up under the RECORD, and an episode must still be open, so a delegate cannot attach an occurrence to an episode the owner closed or to another record's.",
   "app/api/seizures/events/route.ts":
@@ -1992,11 +1973,6 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
     domain: "illness",
     conditions: ["C1", "C3", "C4"],
     why: "Renaming, hiding and deleting a symptom. Hiding keeps the history; the purge is hard and takes the occurrences with it, so C3 names the definition and the count. C4 on the edit, over the plaintext fields only; a rename is named, never quoted. C1 on the bucket.",
-  },
-  "app/api/symptoms/events/by-external-ids/route.ts": {
-    domain: "illness",
-    conditions: [],
-    why: "Removing the record's Apple Health symptom imports the phone no longer finds in HealthKit. Nothing is destroyed: each is tombstoned, so the row and its time and intensity stay in the table, and the audit row counts what went.",
   },
   "app/api/symptoms/events/[id]/route.ts": {
     domain: "illness",
@@ -2588,12 +2564,8 @@ const ACTOR_ROUTES: Record<string, string> = {
  * history and Effect reads join the record list, and the course writes and
  * the Effect target join both the record list and the guardian literal.
  * 324 -> 333.
- *
- * Apple Health symptom samples: the batch import joins the record list and
- * the write literal, its by-external-ids delete the record list and the
- * manage literal. 333 -> 337.
  */
-const FROZEN_ENTRY_COUNT = 337;
+const FROZEN_ENTRY_COUNT = 333;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
@@ -3372,7 +3344,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
   it("keeps the admitted mutation inventory complete and discoverable", () => {
     expect(ADMITTED_MUTATING_HANDLERS.length).toBeGreaterThan(0);
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(107);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(105);
 
     const expected = ADMITTED_MUTATING_HANDLERS.map(
       ({ handlerModule, action, level }) =>

@@ -46,7 +46,7 @@ import type { RestoreSkipLog } from "@/lib/export/restore-skips";
 import { loadSymptomSeries } from "@/lib/timeline/symptom-series";
 
 import { cookieJar, headerJar } from "./mock-next-headers";
-import { getPrismaClient, truncateAllTables } from "./setup";
+import { getPrismaClient, switchSessionTo, truncateAllTables } from "./setup";
 
 vi.mock("next/headers", async () => {
   const { cookieJar, headerJar } = await import("./mock-next-headers");
@@ -583,6 +583,55 @@ describe("DELETE /api/symptoms/events/by-external-ids", () => {
       },
     });
     expect(series[0]?.points ?? []).toEqual([]);
+  });
+});
+
+describe("a session switched into another record", () => {
+  /**
+   * Apple Health sync belongs to the owner's own phone, like every other
+   * HealthKit ingest and delete route: a delegate or guardian holding a
+   * MANAGE grant is refused both routes, and nothing is written or
+   * tombstoned in the record they are switched into.
+   */
+  it("can neither import into nor delete from that record", async () => {
+    const id = "A0000000-0000-4000-8000-0000000000d1";
+    await ingest([sample(id)]);
+
+    const { inviteGrant, acceptGrant } = await import("@/lib/sharing/grants");
+    const invited = await inviteGrant({
+      grantorId: OWNER_ID,
+      granteeId: OTHER_ID,
+      access: "MANAGE",
+      scope: null,
+    });
+    await acceptGrant({ grantId: invited.id, granteeId: OTHER_ID });
+    cookieJar.clear();
+    const session = await getPrismaClient().session.create({
+      data: {
+        userId: OTHER_ID,
+        expiresAt: new Date(Date.now() + 86_400_000),
+        mfaVerifiedAt: new Date(),
+      },
+    });
+    cookieJar.set("healthlog_session", session.id);
+    await switchSessionTo(session.id, OWNER_ID);
+
+    const write = await postBatch([
+      sample("A0000000-0000-4000-8000-0000000000d2"),
+    ]);
+    expect(write.status).toBe(403);
+    const remove = await deleteByExternalIds([id]);
+    expect(remove.status).toBe(403);
+
+    const prisma = getPrismaClient();
+    expect(await prisma.symptomEvent.count()).toBe(1);
+    expect(
+      (
+        await prisma.symptomEvent.findFirstOrThrow({
+          where: { externalId: id },
+        })
+      ).deletedAt,
+    ).toBeNull();
   });
 });
 

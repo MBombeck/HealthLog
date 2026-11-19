@@ -12,8 +12,8 @@ import type { ZodOpenApiObject } from "zod-openapi";
 import {
   dataEnvelope,
   errorEnvelope,
-  recordRefusal,
   recordWriteRateLimitResponse,
+  SHARING_NOT_PERMITTED_DESCRIPTION,
   stdResponses,
 } from "./shared";
 
@@ -116,12 +116,13 @@ export const externalIdDeletePaths: ZodOpenApiObject["paths"] = {
     tag: "Symptoms",
     summary: "Delete Apple Health symptom occurrences by external ID",
     description:
-      "Tombstones the symptom occurrences posted through `POST /api/symptoms/events/batch` whose externalId is listed. One logged in HealthLog is never touched. A later re-post of a deleted externalId stays deleted: the batch answers `duplicate`. MANAGE on a shared record. Served when `GET /api/auth/me` reports `features.appleHealthSymptoms: true`.",
+      "Tombstones the symptom occurrences posted through `POST /api/symptoms/events/batch` whose externalId is listed. One logged in HealthLog is never touched. A later re-post of a deleted externalId stays deleted: the batch answers `duplicate`. Owner-only: a session switched into another record is refused 403 `sharing.not_permitted`. Served when `GET /api/auth/me` reports `features.appleHealthSymptoms: true`.",
     responseId: "SymptomEventsDeleteByExternalIdsResponse",
     extraResponses: {
-      ...recordRefusal(
-        "`illness.disabled`: the record has the illness module switched off (or the operator turned it off server-wide); symptoms ride that module.",
-      ),
+      "403": {
+        description: `\`illness.disabled\`: the account has the illness module switched off (or the operator turned it off server-wide); symptoms ride that module.\n\n${SHARING_NOT_PERMITTED_DESCRIPTION}`,
+        content: { "application/json": { schema: errorEnvelope } },
+      },
     },
   }),
   "/api/medications/intake/by-external-ids": operation({

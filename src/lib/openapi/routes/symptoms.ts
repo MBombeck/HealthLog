@@ -31,6 +31,7 @@ import {
   idempotentWrite,
   recordRefusal,
   recordWriteRateLimitResponse,
+  SHARING_NOT_PERMITTED_DESCRIPTION,
   stdResponses,
 } from "./shared";
 
@@ -393,7 +394,7 @@ export const symptomPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Symptoms"],
       summary: "Import Apple Health symptom samples (v1.48.2)",
       description:
-        "Each entry lands on the record's built-in definition for its code, created on first use and labelled in the record owner's language. A sample already stored, deleted ones included, answers `duplicate`, so a late re-post of a sample the app reported gone never brings it back. No note and no episode link from this route. Idempotent under `Idempotency-Key`. Cookie session or a wildcard Bearer token; a narrow-scope token is refused 403. Metered by the shared per-account write bucket. Audits as `symptoms.batch.ingest`. Served when `GET /api/auth/me` reports `features.appleHealthSymptoms: true`.",
+        "Each entry lands on the caller's built-in definition for its code, created on first use and labelled in the caller's language. Owner-only, like every Apple Health ingest route: a session switched into another record is refused 403 `sharing.not_permitted`. A sample already stored, deleted ones included, answers `duplicate`, so a late re-post of a sample the app reported gone never brings it back. No note and no episode link from this route. Idempotent under `Idempotency-Key`. Cookie session or a wildcard Bearer token; a narrow-scope token is refused 403. Metered by the shared per-account write bucket. Audits as `symptoms.batch.ingest`. Served when `GET /api/auth/me` reports `features.appleHealthSymptoms: true`.",
       parameters: [idempotencyKeyParameter],
       requestBody: {
         required: true,
@@ -401,7 +402,10 @@ export const symptomPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       },
       responses: {
         ...idempotentWrite(),
-        ...recordRefusal(MODULE_OFF),
+        "403": {
+          description: `${MODULE_OFF}\n\n${SHARING_NOT_PERMITTED_DESCRIPTION}`,
+          content: { "application/json": { schema: errorEnvelope } },
+        },
         "200": {
           description: "Batch processed.",
           content: {

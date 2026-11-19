@@ -12,13 +12,15 @@
  * entries is 422 `symptoms.batch.too_large`, a malformed body 422
  * `symptoms.batch.invalid`. Idempotent under `Idempotency-Key`.
  *
- * Module-gated on the record (403 `illness.disabled` for the whole call), a
- * delegable write like `POST /api/symptoms/events`, metered by the shared
- * per-account write bucket. A narrow-scope Bearer is refused.
+ * Module-gated (403 `illness.disabled` for the whole call) and owner-only,
+ * like every other Apple Health ingest route: the owner's own phone syncs its
+ * own samples, so a session switched into another record is refused 403.
+ * Metered by the shared per-account write bucket. A narrow-scope Bearer is
+ * refused.
  */
 import { NextRequest } from "next/server";
 
-import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
+import { apiHandler, requireAuth } from "@/lib/api-handler";
 import {
   apiError,
   apiSuccess,
@@ -43,8 +45,9 @@ const MAX_BODY_BYTES = 1024 * 1024;
 export const POST = apiHandler(withIdempotency<[NextRequest]>(postBatch));
 
 async function postBatch(request: NextRequest): Promise<Response> {
-  // WRITE, like logging one occurrence: an admitted delegated write.
-  const { user } = await requireRecordAuth("write", "illness");
+  // The owner's own device syncing its own samples, metered by the shared
+  // write bucket like the other Apple Health batch routes.
+  const { user } = await requireAuth(undefined, { writeBucket: "own" });
 
   const gate = await requireIllnessEnabled(user.id);
   if (!gate.enabled) return gate.response;

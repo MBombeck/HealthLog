@@ -9,12 +9,12 @@
  * answers `duplicate`; an id already deleted is not counted again. The envelope is shared with the other by-external-ids routes
  * (`src/lib/sync/external-id-delete.ts`).
  *
- * Module-gated on the record (403 `illness.disabled`), MANAGE on a shared
- * record like the single delete.
+ * Module-gated (403 `illness.disabled`) and owner-only, like every other
+ * by-external-ids route: a session switched into another record is refused.
  */
 import { NextRequest } from "next/server";
 
-import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
+import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
 import { prisma } from "@/lib/db";
 import { requireIllnessEnabled } from "@/lib/illness/gate";
@@ -27,7 +27,9 @@ import {
 export const dynamic = "force-dynamic";
 
 export const DELETE = apiHandler(async (request: NextRequest) => {
-  const { user } = await requireRecordAuth("manage", "illness");
+  // The owner's own device reconciling its own imports: a cookie session or
+  // the native client's wildcard token.
+  const { user } = await requireAuth();
 
   const gate = await requireIllnessEnabled(user.id);
   if (!gate.enabled) return gate.response;
