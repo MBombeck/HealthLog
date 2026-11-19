@@ -278,9 +278,19 @@ export const SPARSE_METRIC_TYPES: ReadonlySet<string> = new Set([
   "HIGH_HEART_RATE_EVENT",
   "LOW_HEART_RATE_EVENT",
   "HYPERTENSION_EVENT",
+  "LOW_CARDIO_FITNESS_EVENT",
   "WALKING_STEADINESS_EVENT",
   "BREATHING_DISTURBANCE_EVENT",
   "AUDIO_EXPOSURE_EVENT",
+  // Recorded only when somebody takes a reading, uses an inhaler or changes
+  // a state; a silent month is the normal case.
+  "MENOPAUSAL_STATE",
+  "BLEEDING_AFTER_MENOPAUSE",
+  "INSULIN_DELIVERY",
+  "INHALER_USAGE",
+  "FEV1",
+  "FVC",
+  "PEAK_EXPIRATORY_FLOW",
   // People train irregularly; a quiet training week is not a broken pipe.
   "WORKOUTS",
   // As-needed and paused medications leave weeks without a dose by design.

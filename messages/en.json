@@ -1007,6 +1007,14 @@
     "typeHighHeartRateEvent": "High heart rate notification",
     "typeLowHeartRateEvent": "Low heart rate notification",
     "typeHypertensionEvent": "Hypertension notification",
+    "typeLowCardioFitnessEvent": "Low cardio fitness notification",
+    "typeMenopausalState": "Menopausal state",
+    "typeBleedingAfterMenopause": "Bleeding after menopause",
+    "typeInsulinDelivery": "Insulin delivery",
+    "typeInhalerUsage": "Inhaler usage",
+    "typeFev1": "FEV1",
+    "typeFvc": "Forced vital capacity",
+    "typePeakExpiratoryFlow": "Peak expiratory flow",
     "typeWalkingSteadinessEvent": "Walking steadiness alert",
     "typeBreathingDisturbanceEvent": "Breathing disturbance",
     "typeRecoveryScore": "Recovery score",
@@ -3771,6 +3779,8 @@
       "years": "years",
       "breathingEvents": "events",
       "standHours": "hours",
+      "insulinUnits": "IU",
+      "puffs": "puffs",
       "respiratoryRate": "breaths/min"
     },
     "sleep": {
@@ -4844,6 +4854,7 @@
         "highHeartRate": "High heart rate notification",
         "lowHeartRate": "Low heart rate notification",
         "hypertension": "Hypertension notification",
+        "lowCardioFitness": "Low cardio fitness notification",
         "walkingSteadiness": "Walking steadiness alert",
         "breathingDisturbance": "Breathing disturbance during sleep"
       },
@@ -4853,7 +4864,8 @@
         "inconclusive": "Your device could not make a reading.",
         "low": "Your device flagged low walking steadiness.",
         "veryLow": "Your device flagged very low walking steadiness.",
-        "fired": "Your device flagged this event."
+        "fired": "Your device flagged this event.",
+        "lowFitness": "Your device flagged low cardio fitness."
       }
     },
     "trendDescriptor": {

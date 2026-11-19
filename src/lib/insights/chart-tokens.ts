@@ -160,6 +160,16 @@ export const ALLOWED_CHART_TOKENS = [
   "metric:PAIN_NRS",
   "metric:WAIST_CIRCUMFERENCE",
   "metric:WAIST_TO_HEIGHT",
+  // Apple Health ingest v2. Charted through the generic series
+  // renderer; the low-cardio-fitness notification is an EVENT class and
+  // carries no token.
+  "metric:MENOPAUSAL_STATE",
+  "metric:BLEEDING_AFTER_MENOPAUSE",
+  "metric:INSULIN_DELIVERY",
+  "metric:INHALER_USAGE",
+  "metric:FEV1",
+  "metric:FVC",
+  "metric:PEAK_EXPIRATORY_FLOW",
 ] as const;
 
 export type ChartToken = (typeof ALLOWED_CHART_TOKENS)[number];

@@ -174,6 +174,15 @@ export const measurementTypeEnum = z.enum([
   "BASAL_ENERGY_BURNED",
   // ── blood ketones (#1367), beta-hydroxybutyrate in mmol/L ──
   "BLOOD_KETONES",
+  // ── Apple Health ingest v2 (v1.48.2) ──
+  "LOW_CARDIO_FITNESS_EVENT",
+  "MENOPAUSAL_STATE",
+  "BLEEDING_AFTER_MENOPAUSE",
+  "INSULIN_DELIVERY",
+  "INHALER_USAGE",
+  "FEV1",
+  "FVC",
+  "PEAK_EXPIRATORY_FLOW",
 ]);
 
 /**
@@ -190,6 +199,7 @@ export const EVENT_MEASUREMENT_TYPES: ReadonlySet<string> = new Set<string>([
   "WALKING_STEADINESS_EVENT",
   "BREATHING_DISTURBANCE_EVENT",
   "HYPERTENSION_EVENT",
+  "LOW_CARDIO_FITNESS_EVENT",
 ]);
 
 export const glucoseContextEnum = z.enum([

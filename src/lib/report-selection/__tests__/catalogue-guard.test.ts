@@ -63,9 +63,9 @@ function resolves(key: string): boolean {
 
 describe("report selection catalogue", () => {
   it("carries every measurement type and every structured leaf", () => {
-    expect(MEASUREMENT_LEAF_IDS).toHaveLength(93);
+    expect(MEASUREMENT_LEAF_IDS).toHaveLength(101);
     expect(STRUCTURED_LEAF_IDS).toHaveLength(21);
-    expect(ALL_LEAF_IDS).toHaveLength(114);
+    expect(ALL_LEAF_IDS).toHaveLength(122);
   });
 
   it("resolves a label for every leaf", () => {
@@ -155,7 +155,7 @@ describe("template purity", () => {
     expect(unknown).toEqual([]);
   });
 
-  it("fences exactly the ten leaves the design names", () => {
+  it("fences exactly the twelve leaves the design names", () => {
     expect([...SENSITIVE_LEAF_IDS].sort()).toEqual(
       [
         "ANAMNESIS",
@@ -167,6 +167,9 @@ describe("template purity", () => {
         "MINDFUL_MINUTES",
         "STATE_OF_MIND_VALENCE",
         "MOOD",
+        // The menopause states sit with the cycle: reproductive health.
+        "MENOPAUSAL_STATE",
+        "BLEEDING_AFTER_MENOPAUSE",
         "PHQ9_SCORE",
         "SCI_SCORE",
         "WHO5_SCORE",

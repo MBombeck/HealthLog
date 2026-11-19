@@ -157,6 +157,22 @@ export const VALUE_RANGES: Record<string, { min: number; max: number }> = {
   HIGH_HEART_RATE_EVENT: { min: 1, max: 1 },
   LOW_HEART_RATE_EVENT: { min: 1, max: 1 },
   HYPERTENSION_EVENT: { min: 1, max: 1 },
+  LOW_CARDIO_FITNESS_EVENT: { min: 1, max: 1 },
+  // Category states, stored as the HealthKit codepoint: menopausal state
+  // 1 menopause / 2 perimenopause / 3 none; bleeding after menopause
+  // 1 unspecified / 2 light / 3 medium / 4 heavy / 5 none.
+  MENOPAUSAL_STATE: { min: 1, max: 3 },
+  BLEEDING_AFTER_MENOPAUSE: { min: 1, max: 5 },
+  // One delivered insulin dose in IU; a pump's largest bolus stays far
+  // below the ceiling.
+  INSULIN_DELIVERY: { min: 0, max: 300 },
+  // Inhaler puffs per sample.
+  INHALER_USAGE: { min: 0, max: 100 },
+  // Spirometry in litres and peak flow in L/min, wide enough for a small
+  // child and a tall athlete.
+  FEV1: { min: 0.2, max: 8 },
+  FVC: { min: 0.2, max: 10 },
+  PEAK_EXPIRATORY_FLOW: { min: 30, max: 1000 },
   WALKING_STEADINESS_EVENT: { min: 1, max: 1 },
   BREATHING_DISTURBANCE_EVENT: { min: 1, max: 1 },
   // Loud-listening event flag (env + headphone). One fired event per row, so

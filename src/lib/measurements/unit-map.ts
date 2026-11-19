@@ -104,6 +104,16 @@ const unitMap: Record<string, string> = {
   HIGH_HEART_RATE_EVENT: "event",
   LOW_HEART_RATE_EVENT: "event",
   HYPERTENSION_EVENT: "event",
+  LOW_CARDIO_FITNESS_EVENT: "event",
+  // Apple Health ingest v2: two category states and four respiratory or
+  // diabetes-care quantities.
+  MENOPAUSAL_STATE: "state",
+  BLEEDING_AFTER_MENOPAUSE: "flow",
+  INSULIN_DELIVERY: "IU",
+  INHALER_USAGE: "count",
+  FEV1: "L",
+  FVC: "L",
+  PEAK_EXPIRATORY_FLOW: "L/min",
   WALKING_STEADINESS_EVENT: "event",
   BREATHING_DISTURBANCE_EVENT: "event",
   // ── v1.10.0 — computed scores (WX-C) ──

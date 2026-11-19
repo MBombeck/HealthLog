@@ -158,6 +158,7 @@ export const MEASUREMENT_CATEGORIES: ReadonlyMap<
   ["HIGH_HEART_RATE_EVENT", "cardiovascular"],
   ["LOW_HEART_RATE_EVENT", "cardiovascular"],
   ["HYPERTENSION_EVENT", "cardiovascular"],
+  ["LOW_CARDIO_FITNESS_EVENT", "cardiovascular"],
   ["WALKING_STEADINESS_EVENT", "activity"],
   ["BREATHING_DISTURBANCE_EVENT", "sleep"],
 
@@ -242,6 +243,19 @@ export const MEASUREMENT_CATEGORIES: ReadonlyMap<
   ["STRESS_LEVEL", "scores"],
   ["TRAINING_READINESS", "scores"],
   ["ACUTE_TRAINING_LOAD", "scores"],
+  // ── Apple Health ingest v2 ──
+  // Spirometry, peak flow and inhaler use are respiratory point-in-time
+  // signals beside the respiratory rate.
+  ["FEV1", "vitals"],
+  ["FVC", "vitals"],
+  ["PEAK_EXPIRATORY_FLOW", "vitals"],
+  ["INHALER_USAGE", "vitals"],
+  // Insulin delivery sits with glucose and ketones.
+  ["INSULIN_DELIVERY", "metabolic"],
+  // The menopause states describe the body; the cycle is not a category of
+  // this overlay.
+  ["MENOPAUSAL_STATE", "body"],
+  ["BLEEDING_AFTER_MENOPAUSE", "body"],
 ]);
 
 /**

@@ -1007,6 +1007,14 @@
     "typeHighHeartRateEvent": "Уведомление о высокой ЧСС",
     "typeLowHeartRateEvent": "Уведомление о низкой ЧСС",
     "typeHypertensionEvent": "Уведомление о гипертонии",
+    "typeLowCardioFitnessEvent": "Уведомление о низкой кардиовыносливости",
+    "typeMenopausalState": "Менопаузальный статус",
+    "typeBleedingAfterMenopause": "Кровотечение после менопаузы",
+    "typeInsulinDelivery": "Введение инсулина",
+    "typeInhalerUsage": "Использование ингалятора",
+    "typeFev1": "ОФВ1",
+    "typeFvc": "Форсированная жизненная ёмкость",
+    "typePeakExpiratoryFlow": "Пиковая скорость выдоха",
     "typeWalkingSteadinessEvent": "Оповещение об устойчивости ходьбы",
     "typeBreathingDisturbanceEvent": "Нарушение дыхания",
     "typeRecoveryScore": "Балл восстановления",
@@ -3771,6 +3779,8 @@
       "years": "лет",
       "breathingEvents": "события",
       "standHours": "часы",
+      "insulinUnits": "МЕ",
+      "puffs": "вдохи",
       "respiratoryRate": "вдохов/мин"
     },
     "sleep": {
@@ -4844,6 +4854,7 @@
         "highHeartRate": "Уведомление о высокой ЧСС",
         "lowHeartRate": "Уведомление о низкой ЧСС",
         "hypertension": "Уведомление о гипертонии",
+        "lowCardioFitness": "Уведомление о низкой кардиовыносливости",
         "walkingSteadiness": "Оповещение об устойчивости ходьбы",
         "breathingDisturbance": "Нарушение дыхания во сне"
       },
@@ -4853,7 +4864,8 @@
         "inconclusive": "Ваше устройство не смогло сделать измерение.",
         "low": "Ваше устройство отметило низкую устойчивость ходьбы.",
         "veryLow": "Ваше устройство отметило очень низкую устойчивость ходьбы.",
-        "fired": "Ваше устройство отметило это событие."
+        "fired": "Ваше устройство отметило это событие.",
+        "lowFitness": "Устройство отметило низкую кардиовыносливость."
       }
     },
     "trendDescriptor": {

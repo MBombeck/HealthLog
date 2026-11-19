@@ -87,7 +87,7 @@ const batchEntrySchema = z
       .max(20)
       .optional()
       .describe(
-        "v1.10.0 — `HKCategoryValue` codepoint for an EVENT-class category sample (irregular-rhythm, high/low-HR, walking-steadiness, breathing-disturbance, hypertension). Carries the device's own classification verdict / severity, which the server resolves to a stored `rhythmClassification`. HealthLog stores ONLY the device's result — it never re-classifies. Ignored for non-event identifiers.",
+        "v1.10.0 — `HKCategoryValue` codepoint for an EVENT-class category sample (irregular-rhythm, high/low-HR, walking-steadiness, breathing-disturbance, hypertension, low cardio fitness). Carries the device's own classification verdict / severity, which the server resolves to a stored `rhythmClassification`. HealthLog stores ONLY the device's result — it never re-classifies. Since v1.48.2 it is also the stored value of the two category states, `HKCategoryTypeIdentifierMenopausalState` (1 menopause, 2 perimenopause, 3 none) and `HKCategoryTypeIdentifierBleedingAfterMenopause` (1 unspecified, 2 light, 3 medium, 4 heavy, 5 none): for those `value` is ignored, an entry without `categoryValue` is skipped `unmappable_identifier`, and a codepoint outside the list is skipped `value_out_of_range`. Ignored for every other identifier. Fields this schema does not name (`insulinDeliveryReason`, `metadata`) are ignored, never refused.",
       ),
     assessmentAnswers: z
       .array(z.number().finite())

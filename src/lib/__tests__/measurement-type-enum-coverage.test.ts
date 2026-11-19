@@ -134,6 +134,15 @@ const EXPECTED_TYPES = [
   "BASAL_ENERGY_BURNED",
   // ── blood ketones (#1367) ──
   "BLOOD_KETONES",
+  // ── Apple Health ingest v2 ──
+  "LOW_CARDIO_FITNESS_EVENT",
+  "MENOPAUSAL_STATE",
+  "BLEEDING_AFTER_MENOPAUSE",
+  "INSULIN_DELIVERY",
+  "INHALER_USAGE",
+  "FEV1",
+  "FVC",
+  "PEAK_EXPIRATORY_FLOW",
 ] as const;
 
 describe("measurementTypeEnum coverage", () => {

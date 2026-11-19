@@ -10,6 +10,7 @@ import {
   mapAppleHealthEntry,
 } from "../apple-health-mapping";
 import {
+  getUnitForType,
   measurementTypeEnum,
   validateMeasurementRange,
 } from "@/lib/validations/measurement";
@@ -154,6 +155,12 @@ describe("APPLE_HEALTH_TYPE_MAP", () => {
         "HKCategoryTypeIdentifierAppleWalkingSteadinessEvent",
         "HKCategoryTypeIdentifierSleepApneaEvent",
         "HKCategoryTypeIdentifierHypertensionEvent",
+        "HKCategoryTypeIdentifierLowCardioFitnessEvent",
+        // The menopause states are reproductive health, insulin
+        // delivery is diabetes care.
+        "HKCategoryTypeIdentifierMenopausalState",
+        "HKCategoryTypeIdentifierBleedingAfterMenopause",
+        "HKQuantityTypeIdentifierInsulinDelivery",
         // v1.44 — mindfulness and the State of Mind are mental-health
         // self-care and self-report; AFib burden is the AFib History
         // feature the person enabled on the watch.
@@ -236,22 +243,18 @@ describe("HK_QUANTITY_TYPE_DEFERRED", () => {
       // v1.4.30. In v1.10.0 both remaining identifiers moved in too:
       // `NumberOfTimesFallen` → FALL_COUNT and `AppleWalkingSteadinessEvent`
       // → WALKING_STEADINESS_EVENT, so neither stays deferred.
-      // Respiratory / pulmonary
-      "HKQuantityTypeIdentifierForcedExpiratoryVolume1",
-      "HKQuantityTypeIdentifierForcedVitalCapacity",
-      "HKQuantityTypeIdentifierPeakExpiratoryFlowRate",
-      "HKQuantityTypeIdentifierInhalerUsage",
+      // Respiratory / pulmonary and insulin delivery moved into the mapped
+      // set in v1.48.2 (FEV1, FVC, PEAK_EXPIRATORY_FLOW, INHALER_USAGE,
+      // INSULIN_DELIVERY).
       // Other quantity identifiers
-      "HKQuantityTypeIdentifierInsulinDelivery",
       "HKQuantityTypeIdentifierUVExposure",
       "HKQuantityTypeIdentifierElectrodermalActivity",
       "HKQuantityTypeIdentifierBloodAlcoholContent",
       "HKQuantityTypeIdentifierNikeFuel",
       // Heart-rhythm event flags — `LowHeartRateEvent`,
       // `HighHeartRateEvent` + `IrregularHeartRhythmEvent` moved into the
-      // mapped set in v1.10.0 as categorical events. `LowCardioFitnessEvent`
-      // stays deferred (no awareness surface yet).
-      "HKCategoryTypeIdentifierLowCardioFitnessEvent",
+      // mapped set in v1.10.0 as categorical events, `LowCardioFitnessEvent`
+      // in v1.48.2 as LOW_CARDIO_FITNESS_EVENT.
       // Audio-exposure events — environmental + headphone moved into
       // the mapped set in v1.4.30 (AUDIO_EXPOSURE_EVENT). The general
       // sound-reduction flag stays deferred.
@@ -1205,5 +1208,154 @@ describe("RMSSD HRV from HealthKit (#1110, iOS 27)", () => {
     expect(validateMeasurementRange("HRV_RMSSD", 250)).toBeNull();
     expect(validateMeasurementRange("HRV_RMSSD", 300)).toBeNull();
     expect(validateMeasurementRange("HRV_RMSSD", 301)).not.toBeNull();
+  });
+});
+
+describe("Apple Health ingest v2 types", () => {
+  const sample = {
+    unit: "event",
+    startDate: "2026-11-18T07:00:00.000Z",
+    endDate: "2026-11-18T07:00:00.000Z",
+  };
+
+  it("maps each new identifier to its type and canonical unit", () => {
+    const expected: Array<[string, string, string]> = [
+      [
+        "HKCategoryTypeIdentifierLowCardioFitnessEvent",
+        "LOW_CARDIO_FITNESS_EVENT",
+        "event",
+      ],
+      ["HKCategoryTypeIdentifierMenopausalState", "MENOPAUSAL_STATE", "state"],
+      [
+        "HKCategoryTypeIdentifierBleedingAfterMenopause",
+        "BLEEDING_AFTER_MENOPAUSE",
+        "flow",
+      ],
+      ["HKQuantityTypeIdentifierInsulinDelivery", "INSULIN_DELIVERY", "IU"],
+      ["HKQuantityTypeIdentifierInhalerUsage", "INHALER_USAGE", "count"],
+      ["HKQuantityTypeIdentifierForcedExpiratoryVolume1", "FEV1", "L"],
+      ["HKQuantityTypeIdentifierForcedVitalCapacity", "FVC", "L"],
+      [
+        "HKQuantityTypeIdentifierPeakExpiratoryFlowRate",
+        "PEAK_EXPIRATORY_FLOW",
+        "L/min",
+      ],
+    ];
+    for (const [hkId, type, unit] of expected) {
+      const mapping = APPLE_HEALTH_TYPE_MAP[hkId];
+      expect(mapping?.measurementType, hkId).toBe(type);
+      expect(mapping?.dbUnit, hkId).toBe(unit);
+      expect(getUnitForType(type), hkId).toBe(unit);
+      expect(HK_QUANTITY_TYPE_DEFERRED.has(hkId), hkId).toBe(false);
+    }
+  });
+
+  it("stores the low-cardio-fitness notification as one LOW_FITNESS event", () => {
+    // The app sends `value: 1`; an older build sent 0. Both pin to 1.
+    for (const value of [1, 0]) {
+      const out = mapAppleHealthEntry({
+        ...sample,
+        hkIdentifier: "HKCategoryTypeIdentifierLowCardioFitnessEvent",
+        value,
+        categoryValue: 1,
+      });
+      expect(out).toMatchObject({
+        type: "LOW_CARDIO_FITNESS_EVENT",
+        value: 1,
+        unit: "event",
+        rhythmClassification: "LOW_FITNESS",
+      });
+      expect(validateMeasurementRange(out!.type, out!.value)).toBeNull();
+    }
+  });
+
+  it("keeps accepting HYPERTENSION_EVENT with value 1 and value 0", () => {
+    for (const value of [1, 0]) {
+      const out = mapAppleHealthEntry({
+        ...sample,
+        hkIdentifier: "HKCategoryTypeIdentifierHypertensionEvent",
+        value,
+        categoryValue: 0,
+      });
+      expect(out).toMatchObject({ value: 1, rhythmClassification: "FIRED" });
+    }
+  });
+
+  it("stores a menopause state from categoryValue, never from value", () => {
+    for (const code of [1, 2, 3]) {
+      const out = mapAppleHealthEntry({
+        ...sample,
+        hkIdentifier: "HKCategoryTypeIdentifierMenopausalState",
+        value: 1,
+        categoryValue: code,
+      });
+      expect(out).toMatchObject({
+        type: "MENOPAUSAL_STATE",
+        value: code,
+        unit: "state",
+      });
+      expect(out!.rhythmClassification).toBeUndefined();
+      expect(validateMeasurementRange(out!.type, out!.value)).toBeNull();
+    }
+    const bleeding = mapAppleHealthEntry({
+      ...sample,
+      hkIdentifier: "HKCategoryTypeIdentifierBleedingAfterMenopause",
+      value: 1,
+      categoryValue: 4,
+    });
+    expect(bleeding).toMatchObject({
+      type: "BLEEDING_AFTER_MENOPAUSE",
+      value: 4,
+      unit: "flow",
+    });
+  });
+
+  it("does not map a menopause state without a codepoint", () => {
+    expect(
+      mapAppleHealthEntry({
+        ...sample,
+        hkIdentifier: "HKCategoryTypeIdentifierMenopausalState",
+        value: 1,
+      }),
+    ).toBeNull();
+  });
+
+  it("refuses a codepoint outside the category's range", () => {
+    expect(validateMeasurementRange("MENOPAUSAL_STATE", 4)).not.toBeNull();
+    expect(validateMeasurementRange("MENOPAUSAL_STATE", 0)).not.toBeNull();
+    expect(
+      validateMeasurementRange("BLEEDING_AFTER_MENOPAUSE", 6),
+    ).not.toBeNull();
+  });
+
+  it("holds the plausibility bands of the quantity types", () => {
+    const bands: Array<[string, number[], number[]]> = [
+      ["INSULIN_DELIVERY", [0, 0.5, 300], [-1, 300.5]],
+      ["INHALER_USAGE", [0, 2, 100], [101]],
+      ["FEV1", [0.2, 3.4, 8], [0.1, 8.1]],
+      ["FVC", [0.2, 4.6, 10], [0.1, 10.5]],
+      ["PEAK_EXPIRATORY_FLOW", [30, 450, 1000], [29, 1001]],
+    ];
+    for (const [type, inside, outside] of bands) {
+      for (const v of inside) {
+        expect(validateMeasurementRange(type, v), `${type} ${v}`).toBeNull();
+      }
+      for (const v of outside) {
+        expect(
+          validateMeasurementRange(type, v),
+          `${type} ${v}`,
+        ).not.toBeNull();
+      }
+    }
+  });
+
+  it("passes the quantity reading through unchanged", () => {
+    const out = mapAppleHealthEntry({
+      ...sample,
+      unit: "L/min",
+      hkIdentifier: "HKQuantityTypeIdentifierPeakExpiratoryFlowRate",
+      value: 455,
+    });
+    expect(out).toMatchObject({ value: 455, unit: "L/min" });
   });
 });
