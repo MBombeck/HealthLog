@@ -1807,11 +1807,11 @@
             "INJECTION": "주사",
             "OTHER": "기타"
           },
-          "dosesPerUnitLabel": "단위당 투여 횟수",
+          "dosesPerUnitLabel": "포장 크기",
           "dosesPerUnitPlaceholder": "예: 4",
-          "dosesPerUnitHint": "펜/바이알당 투여 횟수예요. 재고 추적이 필요 없으면 비워 두세요.",
+          "dosesPerUnitHint": "새 포장이나 펜 하나에 든 정제 또는 단위 수예요. 예: 정제 28개, 4회분 펜. 포장을 추가할 때 수량이 미리 채워져요. 포장마다 다르면 비워 두세요.",
           "short": "용량",
-          "unitsPerDoseLabel": "1회 복용 단위 수",
+          "unitsPerDoseLabel": "1회 복용 정제·단위 수",
           "unitsPerDoseHint": "예: 4mg 용량이면 2mg 2정, 반으로 나눠 먹으면 ½정"
         },
         "step4": {
@@ -2344,7 +2344,7 @@
         "packagingNoDefaultPack": "기본 포장 크기가 설정되지 않았어요",
         "packagingEdit": "편집",
         "packagingDescription": "1회분에 몇 개를 쓰는지, 새 포장이 보통 몇 개인지 설정해요. 예를 들어 제조사가 바뀌어 포장 크기가 달라졌을 때요.",
-        "packagingUnitsPerDoseLabel": "1회분당 개수",
+        "packagingUnitsPerDoseLabel": "1회 복용 정제·단위 수",
         "packagingUnitsPerDoseHelper": "예: 4mg 복용에 2mg 정제 2개, 한 알 반이면 1.5 (0 초과, 100 이하). 이미 기록된 복용은 그대로예요.",
         "packagingDefaultPackLabel": "기본 포장 크기 (개)",
         "packagingDefaultPackHelper": "새 포장을 등록할 때 수량을 미리 채워요 (1–1000). 해당 없으면 비워 두세요.",

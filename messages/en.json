@@ -1807,11 +1807,11 @@
             "INJECTION": "Injection",
             "OTHER": "Other"
           },
-          "dosesPerUnitLabel": "Doses per unit",
+          "dosesPerUnitLabel": "Pack size",
           "dosesPerUnitPlaceholder": "e.g. 4",
-          "dosesPerUnitHint": "Doses per pen / vial. Leave empty for no inventory tracking.",
+          "dosesPerUnitHint": "How many tablets or units one new pack or pen holds, e.g. 28 tablets or a 4-dose pen. Fills in the amount when you add a pack; leave empty if packs vary.",
           "short": "Dose",
-          "unitsPerDoseLabel": "Units per dose",
+          "unitsPerDoseLabel": "Tablets or units per dose",
           "unitsPerDoseHint": "e.g. 2 tablets of 2 mg for a 4 mg dose, or ½ a tablet for a split dose"
         },
         "step4": {
@@ -2344,7 +2344,7 @@
         "packagingNoDefaultPack": "No default pack size set",
         "packagingEdit": "Edit",
         "packagingDescription": "Set how many units one dose consumes and how large a new pack usually is, e.g. after a manufacturer switch with a different blister size.",
-        "packagingUnitsPerDoseLabel": "Units per dose",
+        "packagingUnitsPerDoseLabel": "Tablets or units per dose",
         "packagingUnitsPerDoseHelper": "E.g. two 2 mg tablets for a 4 mg dose, or 1.5 for one and a half (above 0, up to 100). Doses already recorded stay unchanged.",
         "packagingDefaultPackLabel": "Default pack size (units)",
         "packagingDefaultPackHelper": "Prefills the quantity when registering new packs (1–1000). Leave empty if none applies.",

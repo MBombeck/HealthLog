@@ -1807,11 +1807,11 @@
             "INJECTION": "Iniezione",
             "OTHER": "Altro"
           },
-          "dosesPerUnitLabel": "Dosi per unità",
+          "dosesPerUnitLabel": "Dimensione confezione",
           "dosesPerUnitPlaceholder": "es. 4",
-          "dosesPerUnitHint": "Dosi per penna / fiala. Lascia vuoto per non tracciare le scorte.",
+          "dosesPerUnitHint": "Quante compresse o unità contiene una nuova confezione o penna, ad es. 28 compresse o una penna da 4 dosi. Precompila la quantità quando aggiungi una confezione; lascia vuoto se le confezioni variano.",
           "short": "Dose",
-          "unitsPerDoseLabel": "Unità per dose",
+          "unitsPerDoseLabel": "Compresse o unità per dose",
           "unitsPerDoseHint": "ad es. 2 compresse da 2 mg per una dose da 4 mg, oppure ½ compressa per una dose divisa"
         },
         "step4": {
@@ -2344,7 +2344,7 @@
         "packagingNoDefaultPack": "Nessuna dimensione confezione predefinita",
         "packagingEdit": "Modifica",
         "packagingDescription": "Imposta quante unità consuma una dose e la dimensione abituale di una nuova confezione, ad es. dopo un cambio di produttore con blister diverso.",
-        "packagingUnitsPerDoseLabel": "Unità per dose",
+        "packagingUnitsPerDoseLabel": "Compresse o unità per dose",
         "packagingUnitsPerDoseHelper": "Ad es. due compresse da 2 mg per una dose da 4 mg, oppure 1,5 per una e mezza (oltre 0, fino a 100). Le assunzioni già registrate restano invariate.",
         "packagingDefaultPackLabel": "Dimensione confezione predefinita (unità)",
         "packagingDefaultPackHelper": "Precompila la quantità quando registri nuove confezioni (1–1000). Lascia vuoto se non applicabile.",

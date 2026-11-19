@@ -1807,11 +1807,11 @@
             "INJECTION": "Injeção",
             "OTHER": "Outra"
           },
-          "dosesPerUnitLabel": "Doses por unidade",
+          "dosesPerUnitLabel": "Tamanho da embalagem",
           "dosesPerUnitPlaceholder": "ex.: 4",
-          "dosesPerUnitHint": "Doses por caneta/frasco. Deixe em branco para não acompanhar estoque.",
+          "dosesPerUnitHint": "Quantos comprimidos ou unidades vêm em uma embalagem ou caneta nova, por ex. 28 comprimidos ou uma caneta de 4 doses. Preenche a quantidade ao registrar uma embalagem; deixe em branco se as embalagens variam.",
           "short": "Dose",
-          "unitsPerDoseLabel": "Unidades por dose",
+          "unitsPerDoseLabel": "Comprimidos ou unidades por dose",
           "unitsPerDoseHint": "ex.: 2 comprimidos de 2 mg para uma dose de 4 mg, ou ½ comprimido para uma dose dividida"
         },
         "step4": {
@@ -2344,7 +2344,7 @@
         "packagingNoDefaultPack": "Nenhum tamanho padrão de embalagem definido",
         "packagingEdit": "Editar",
         "packagingDescription": "Defina quantas unidades uma dose consome e quão grande uma nova embalagem costuma ser, ex.: após uma troca de fabricante com uma cartela de tamanho diferente.",
-        "packagingUnitsPerDoseLabel": "Unidades por dose",
+        "packagingUnitsPerDoseLabel": "Comprimidos ou unidades por dose",
         "packagingUnitsPerDoseHelper": "Ex.: dois comprimidos de 2 mg para uma dose de 4 mg, ou 1,5 para um e meio (acima de 0, até 100). As doses já registradas permanecem inalteradas.",
         "packagingDefaultPackLabel": "Tamanho padrão da embalagem (unidades)",
         "packagingDefaultPackHelper": "Pré-preenche a quantidade ao registrar novas embalagens (1–1000). Deixe em branco se nenhum se aplica.",
