@@ -114,12 +114,6 @@ export function useDocumentDetail({
   const episodes = useIllnessEpisodes(true);
 
   const [mutationError, setMutationError] = useState<string | null>(null);
-  /**
-   * Whether the last edit made in this sheet reached the server. Edits save
-   * on commit with no Save button, so without this line a person closing
-   * the sheet cannot tell whether anything was written (#1403).
-   */
-  const [saved, setSaved] = useState(false);
   /** Bumped on a failed write; remounts the link block onto server state. */
   const [linkResets, setLinkResets] = useState(0);
   const [shareOpen, setShareOpen] = useState(false);
@@ -147,15 +141,13 @@ export function useDocumentDetail({
     setEditingTitle(false);
     setShareOpen(false);
     setMutationError(null);
-    setSaved(false);
   }
 
-  const { patch, remove } = useDocumentWrites({
+  const { patch, remove, saved } = useDocumentWrites({
     documentId,
     onOpenChange,
     setMutationError,
     setLinkResets,
-    setSaved,
   });
 
   const commitTitle = () => {
@@ -214,9 +206,6 @@ export function useDocumentDetail({
   // narrow path is the point: a non-inline document (a large scan, a
   // download-only format) fetched nothing until somebody clicked, and it must
   // stay that way — this used to fetch for every document on open, twice.
-  //
-  // A PDF on a browser with no in-page viewer (Chrome on Android) is not
-  // going to render, so it is fetched at click like any download.
   const pdfViewerEnabled = usePdfViewerEnabled();
   const previewInline = doc ? rendersInline(doc, pdfViewerEnabled) : false;
   const { url: inlineSrc, failed: inlineFailed } = useFencedObjectUrl(
@@ -271,16 +260,20 @@ function useDocumentWrites({
   onOpenChange,
   setMutationError,
   setLinkResets,
-  setSaved,
 }: {
   documentId: string | null;
   onOpenChange: (open: boolean) => void;
   setMutationError: (message: string | null) => void;
   setLinkResets: (update: (n: number) => number) => void;
-  setSaved: (saved: boolean) => void;
 }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
+  // Whether the last edit made in this sheet reached the server. Edits save
+  // on commit with no Save button, so without it a person closing the sheet
+  // cannot tell whether anything was written (#1403). Per document.
+  const [savedFor, setSavedFor] = useState<string | null>(null);
+  const saved = savedFor !== null && savedFor === documentId;
+  const setSaved = (next: boolean) => setSavedFor(next ? documentId : null);
   const patch = useMutation({
     mutationFn: (input: PatchInput) =>
       apiPatch<InboundDocumentDetailDto>(
@@ -346,5 +339,5 @@ function useDocumentWrites({
     onError: () => setMutationError(t("documents.detail.deleteError")),
   });
 
-  return { patch, remove };
+  return { patch, remove, saved };
 }

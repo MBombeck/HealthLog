@@ -29,7 +29,6 @@ import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VaccinationDocumentSuggestion } from "@/components/vaccinations/vaccination-document-suggestion";
 import { DOCUMENT_PURGE_GRACE_DAYS } from "@/lib/documents/inbound-constants";
-import { formatBytes } from "@/lib/format/bytes";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { RelatedLink } from "@/lib/links/related";
 
@@ -39,7 +38,7 @@ import {
   DocumentDetailMeta,
   DocumentSaveStatus,
 } from "./detail/detail-sections";
-import { DocumentDownloadButton, InlinePreview } from "./detail/original-file";
+import { DocumentPreviewFallback, InlinePreview } from "./detail/original-file";
 import { useDocumentDetail } from "./detail/use-document-detail";
 import { useDocumentDetailAi } from "./detail/use-document-detail-ai";
 import { DocumentAiSection } from "./document-ai-section";
@@ -71,7 +70,7 @@ export function DocumentDetailSheet({
   /** Whether content indexing is available (from `usage.contentIndex.enabled`). */
   contentIndexEnabled?: boolean;
 }) {
-  const { t, locale } = useTranslations();
+  const { t } = useTranslations();
   const format = useFormatters();
   const detail = useDocumentDetail({ documentId, open, onOpenChange });
   const {
@@ -198,36 +197,7 @@ export function DocumentDetailSheet({
                 title={title}
               />
             ) : (
-              <div className="border-border flex flex-col items-center gap-2 rounded-lg border px-4 py-8 text-center">
-                {Icon ? (
-                  <Icon className="text-muted-foreground size-8" aria-hidden />
-                ) : null}
-                <p className="max-w-full truncate text-sm font-medium">
-                  {doc.filename ?? title}
-                </p>
-                <p
-                  className="text-muted-foreground text-xs"
-                  data-slot={
-                    doc.servingClass === "inline"
-                      ? "document-preview-not-on-device"
-                      : undefined
-                  }
-                >
-                  {doc.servingClass === "inline"
-                    ? t("documents.detail.previewNotOnDevice")
-                    : t("documents.detail.previewUnavailable")}
-                  , {formatBytes(doc.byteSize, locale)}
-                </p>
-                <DocumentDownloadButton
-                  documentId={doc.id}
-                  filename={doc.filename}
-                  readyUrl={null}
-                  unavailable={false}
-                  size="sm"
-                  className="mt-1"
-                  slot="document-download-inline"
-                />
-              </div>
+              <DocumentPreviewFallback doc={doc} title={title} Icon={Icon} />
             )}
 
             <DocumentSummaryBlock

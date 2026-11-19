@@ -6,6 +6,7 @@ import { Download, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { createFencedBlobLoader } from "@/hooks/use-fenced-object-url";
+import { formatBytes } from "@/lib/format/bytes";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
@@ -294,6 +295,61 @@ export function InlinePreview({
           )}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * What the sheet shows where it draws no preview: the type glyph, the file
+ * name, why there is no preview (a download-only type, or a PDF on a browser
+ * with no in-page viewer) and the size, then a Download that fetches at
+ * click.
+ */
+export function DocumentPreviewFallback({
+  doc,
+  title,
+  Icon,
+}: {
+  doc: {
+    id: string;
+    filename: string | null;
+    servingClass: string;
+    byteSize: number;
+  };
+  title: string;
+  Icon: React.ComponentType<{
+    className?: string;
+    "aria-hidden"?: boolean;
+  }> | null;
+}) {
+  const { t, locale } = useTranslations();
+  const notOnDevice = doc.servingClass === "inline";
+  return (
+    <div className="border-border flex flex-col items-center gap-2 rounded-lg border px-4 py-8 text-center">
+      {Icon ? (
+        <Icon className="text-muted-foreground size-8" aria-hidden />
+      ) : null}
+      <p className="max-w-full truncate text-sm font-medium">
+        {doc.filename ?? title}
+      </p>
+      <p
+        className="text-muted-foreground text-xs"
+        data-slot={notOnDevice ? "document-preview-not-on-device" : undefined}
+      >
+        {notOnDevice
+          ? t("documents.detail.previewNotOnDevice")
+          : t("documents.detail.previewUnavailable")}
+        , {formatBytes(doc.byteSize, locale)}
+      </p>
+      <DocumentDownloadButton
+        documentId={doc.id}
+        filename={doc.filename}
+        readyUrl={null}
+        unavailable={false}
+        size="sm"
+        className="mt-1"
+        slot="document-download-inline"
+      />
     </div>
   );
 }
