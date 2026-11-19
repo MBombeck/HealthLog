@@ -53,6 +53,7 @@ import {
   parseNamedChains,
   pinnedChains,
 } from "./named-chains";
+import { chainLabelFor, logChainCalls } from "./chain-call-log";
 import {
   everyEntry,
   type ProviderEntryPresence,
@@ -871,11 +872,21 @@ export async function resolveProviderChain(
   const named = parseNamedChains(userRow?.aiNamedChains ?? null);
   const selection = chainSelectionFor(named, capability);
   const pinned = selection.kind === "pinned";
+  // #1404 — every call an entry makes writes which chain and provider served
+  // it (`chain-call-log.ts`), whichever way the caller reaches the entry.
+  const label = chainLabelFor(selection, capability);
+  const logged = (providerType: ProviderChainType, provider: AIProvider) =>
+    logChainCalls(bind(provider), providerType, label);
   if (!pinned && policy === "operator-default") {
     const provider = await resolveAdminProvider();
     return provider.type === "none"
       ? []
-      : [{ providerType: "admin-openai", instance: bind(provider) }];
+      : [
+          {
+            providerType: "admin-openai",
+            instance: logged("admin-openai", provider),
+          },
+        ];
   }
 
   const resolved: ProviderChainResolved[] = [];
@@ -894,7 +905,7 @@ export async function resolveProviderChain(
             policy,
           });
     if (instance) {
-      const entry = { providerType, instance: bind(instance) };
+      const entry = { providerType, instance: logged(providerType, instance) };
       resolved.push(pinned ? { ...entry, pinned: true } : entry);
     }
   }
@@ -911,7 +922,7 @@ export async function resolveProviderChain(
     if (centralCodex) {
       resolved.push({
         providerType: "admin-codex",
-        instance: bind(centralCodex),
+        instance: logged("admin-codex", centralCodex),
       });
     }
   }
@@ -921,7 +932,7 @@ export async function resolveProviderChain(
     if (gateway) {
       resolved.push({
         providerType: "openai-compatible",
-        instance: bind(gateway),
+        instance: logged("openai-compatible", gateway),
       });
     }
   }
