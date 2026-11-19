@@ -8,8 +8,9 @@
 --      end instants: `workout:` + the first 28 hex characters of
 --      sha256(`activity|startMs|endMs`), the empty activity read as
 --      `Workout` (`workoutExternalId` in
---      src/lib/measurements/import-apple-health-export.ts; the two formulas
---      must stay equal). Here every export workout that carries its activity
+--      src/lib/measurements/apple-health-export-workouts.ts; the two formulas
+--      must stay equal, and a restore of an older backup collapses its
+--      copies by the same rule). Here every export workout that carries its activity
 --      type in `metadata` is grouped under that key per account. Each group
 --      keeps its oldest row; a route, a heart-rate series or an insight the
 --      kept row lacks moves over from the oldest copy that has one, an empty
