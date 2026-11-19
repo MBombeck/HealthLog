@@ -531,6 +531,10 @@ describe("GET /api/user/ai-provider — the gateway's fields (#470)", () => {
  * gateway used to clear Local's address, and the Local card, filled only while
  * Local was selected, then saved blanks over the rest.
  */
+/** A user row with just the columns the route reads. */
+type UserRow = NonNullable<Awaited<ReturnType<typeof prisma.user.findUnique>>>;
+const userRow = (row: Partial<UserRow>): UserRow => row as UserRow;
+
 describe("the Local provider's own base URL and model (#1417)", () => {
   const patch = PATCH as (req: Request) => Promise<Response>;
 
@@ -548,19 +552,21 @@ describe("the Local provider's own base URL and model (#1417)", () => {
   }
 
   it("reads Local's address and model while the gateway is selected", async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValue({
-      aiProvider: "OPENAI_COMPATIBLE",
-      aiModel: "gpt-4o",
-      aiLocalBaseUrl: "https://ollama.example.com/v1",
-      aiLocalModel: "gemma3:27b",
-      aiAnthropicKeyEncrypted: null,
-      aiLocalKeyEncrypted: "enc-local",
-      aiOpenaiKeyEncrypted: null,
-      aiCompatBaseUrl: "https://gateway.example.com/v1",
-      aiCompatKeyEncrypted: null,
-      aiCompatModel: "cloud",
-      aiResponseTimeoutSeconds: null,
-    } as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(
+      userRow({
+        aiProvider: "OPENAI_COMPATIBLE",
+        aiModel: "gpt-4o",
+        aiLocalBaseUrl: "https://ollama.example.com/v1",
+        aiLocalModel: "gemma3:27b",
+        aiAnthropicKeyEncrypted: null,
+        aiLocalKeyEncrypted: "enc-local",
+        aiOpenaiKeyEncrypted: null,
+        aiCompatBaseUrl: "https://gateway.example.com/v1",
+        aiCompatKeyEncrypted: null,
+        aiCompatModel: "cloud",
+        aiResponseTimeoutSeconds: null,
+      }),
+    );
     vi.mocked(resolveProviderAvailability).mockResolvedValue({
       aiAvailable: true,
       managedBy: "user",
@@ -576,12 +582,14 @@ describe("the Local provider's own base URL and model (#1417)", () => {
   });
 
   it("reports Local's model as `model` while Local is selected", async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValue({
-      aiProvider: "LOCAL",
-      aiModel: "gpt-4o",
-      aiLocalBaseUrl: "https://ollama.example.com/v1",
-      aiLocalModel: "gemma3:27b",
-    } as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(
+      userRow({
+        aiProvider: "LOCAL",
+        aiModel: "gpt-4o",
+        aiLocalBaseUrl: "https://ollama.example.com/v1",
+        aiLocalModel: "gemma3:27b",
+      }),
+    );
     vi.mocked(resolveProviderAvailability).mockResolvedValue({
       aiAvailable: true,
       managedBy: "local",
@@ -615,9 +623,11 @@ describe("the Local provider's own base URL and model (#1417)", () => {
   });
 
   it("routes a model without a provider by the saved provider", async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValue({
-      aiProvider: "LOCAL",
-    } as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(
+      userRow({
+        aiProvider: "LOCAL",
+      }),
+    );
     await patch(patchRequest({ model: "qwen2.5" }));
     expect(written()).toEqual({ aiLocalModel: "qwen2.5" });
   });

@@ -27,11 +27,15 @@ import {
   resolveProviderForTest,
 } from "../provider";
 
+/** A user row with just the columns the resolver reads. */
+type UserRow = NonNullable<Awaited<ReturnType<typeof prisma.user.findUnique>>>;
+const userRow = (row: Partial<UserRow>): UserRow => row as UserRow;
+
 const LAN_HOST = "192.168.1.20";
 const LOCAL_URL = `http://${LAN_HOST}:11434/v1`;
 
-function row(aiProvider: string, chain: string[]) {
-  return {
+function row(aiProvider: string, chain: string[]): UserRow {
+  return userRow({
     aiProvider,
     aiModel: "shared-model",
     aiLocalBaseUrl: LOCAL_URL,
@@ -52,10 +56,10 @@ function row(aiProvider: string, chain: string[]) {
     useCentralCodex: false,
     managedProfileAt: null,
     aiResponseTimeoutSeconds: null,
-    codexConnectionStatus: null,
+    codexConnectionStatus: "disconnected",
     codexAccessTokenEncrypted: null,
     codexRefreshTokenEncrypted: null,
-  };
+  });
 }
 
 /** Everything the client was built with, as one searchable string. */
@@ -69,7 +73,7 @@ afterEach(() => {
 
 beforeEach(() => {
   vi.resetAllMocks();
-  vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(null as never);
+  vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(null);
 });
 
 const CLOUD = [
@@ -83,7 +87,7 @@ describe("a cloud key never reaches Local's address", () => {
     "the provider in use, with %s selected",
     async (selected, chainType) => {
       vi.mocked(prisma.user.findUnique).mockResolvedValue(
-        row(selected, [chainType]) as never,
+        row(selected, [chainType]),
       );
       const provider = await resolveProvider("user-1");
       expect(provider.type).not.toBe("local");
@@ -99,7 +103,7 @@ describe("a cloud key never reaches Local's address", () => {
         "anthropic",
         "openai-compatible",
         "local",
-      ]) as never,
+      ]),
     );
     const chain = await resolveProviderChain("user-1", null);
     expect(chain.map((entry) => entry.providerType)).toEqual([
@@ -122,7 +126,7 @@ describe("a cloud key never reaches Local's address", () => {
 
   it.each(CLOUD)("the connection test of %s", async (selected, chainType) => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(
-      row("LOCAL", [chainType]) as never,
+      row("LOCAL", [chainType]),
     );
     const provider = await resolveProviderForTest("user-1", {
       provider: selected,
@@ -134,7 +138,7 @@ describe("a cloud key never reaches Local's address", () => {
   it("the Local test reads Local's own address and model", async () => {
     vi.stubEnv("AI_PRIVATE_ORIGINS", `http://${LAN_HOST}:11434`);
     vi.mocked(prisma.user.findUnique).mockResolvedValue(
-      row("OPENAI_COMPATIBLE", ["openai-compatible"]) as never,
+      row("OPENAI_COMPATIBLE", ["openai-compatible"]),
     );
     const provider = await resolveProviderForTest("user-1", {
       provider: "LOCAL",

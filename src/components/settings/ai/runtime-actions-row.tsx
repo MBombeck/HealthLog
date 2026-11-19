@@ -38,6 +38,46 @@ function testedProviderValue(provider: ProviderType): string | null {
     : uiToLegacyProviderEnum(provider);
 }
 
+type Translate = ReturnType<typeof useTranslations>["t"];
+
+/**
+ * #1417 — test the provider whose card is on screen, with what is saved for
+ * it. The test used to always probe the saved setup, so picking Local and
+ * pressing Test reported the gateway.
+ */
+function requestConnectionTest(tested: string | null): Promise<Response> {
+  return apiFetchRaw(
+    "/api/ai/test",
+    tested
+      ? {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ provider: tested }),
+        }
+      : { method: "POST" },
+  );
+}
+
+/** The Test button names the provider it tests. */
+function testButtonLabel(
+  t: Translate,
+  provider: ProviderType,
+  tested: string | null,
+): string {
+  return tested
+    ? t("settings.ai.testNamedProvider", {
+        provider: t(`settings.ai.providerSelect.${provider}` as const),
+      })
+    : t("settings.ai.testProvider");
+}
+
+/** A served provider type in words, or as sent when there are none. */
+function providerName(t: Translate, type: string): string {
+  return (
+    translateCodeOrNull(t, "settings.ai.providerChain.types", type) ?? type
+  );
+}
+
 export function RuntimeActionsRow({
   provider,
   userProvider,
@@ -78,19 +118,7 @@ export function RuntimeActionsRow({
     setTesting(true);
     setTestMsg(null);
     try {
-      // #1417 — test the provider whose card is on screen, with what is saved
-      // for it. The test used to always probe the saved setup, so picking
-      // Local and pressing Test reported the gateway.
-      const res = await apiFetchRaw(
-        "/api/ai/test",
-        testedValue
-          ? {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ provider: testedValue }),
-            }
-          : { method: "POST" },
-      );
+      const res = await requestConnectionTest(testedValue);
       // Guard against a non-JSON body. A reverse proxy / Cloudflare can
       // rewrite an origin error to its own HTML page; parsing that as JSON
       // throws `Unexpected token '<'` (Safari: "did not match the
@@ -156,15 +184,9 @@ export function RuntimeActionsRow({
         return;
       }
       setTestOk(true);
-      const servedBy = json.data?.providerType ?? "";
       setTestMsg(
         t("settings.ai.testSuccess", {
-          provider:
-            translateCodeOrNull(
-              t,
-              "settings.ai.providerChain.types",
-              servedBy,
-            ) ?? servedBy,
+          provider: providerName(t, json.data?.providerType ?? ""),
           model: json.data?.model ?? "",
         }),
       );
@@ -317,11 +339,7 @@ export function RuntimeActionsRow({
           ) : (
             <Sparkles className="h-4 w-4" />
           )}
-          {testedValue
-            ? t("settings.ai.testNamedProvider", {
-                provider: t(`settings.ai.providerSelect.${provider}` as const),
-              })
-            : t("settings.ai.testProvider")}
+          {testButtonLabel(t, provider, testedValue)}
         </Button>
         {showRegenerate && (
           <Button

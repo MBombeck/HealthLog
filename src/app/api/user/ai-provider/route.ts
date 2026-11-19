@@ -62,6 +62,28 @@ function isLocal(provider: string | null | undefined): boolean {
   return (provider ?? "").toUpperCase() === "LOCAL";
 }
 
+/**
+ * #1417 — the column `model` writes: the model of the provider this request
+ * saves, which is Local's own column when that is Local and the shared one
+ * otherwise. The provider is the one in the body, or the saved one when the
+ * body names none.
+ */
+async function modelColumn(
+  userId: string,
+  requested: string | null | undefined,
+): Promise<"aiLocalModel" | "aiModel"> {
+  const provider =
+    requested !== undefined
+      ? requested
+      : (
+          await prisma.user.findUnique({
+            where: { id: userId },
+            select: { aiProvider: true },
+          })
+        )?.aiProvider;
+  return isLocal(provider) ? "aiLocalModel" : "aiModel";
+}
+
 export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
   annotate({ action: { name: "user.ai-provider.get" } });
@@ -301,24 +323,9 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
       body.provider === null || body.provider === "" ? null : body.provider;
   }
 
-  // `model` is the model of the provider this request saves: Local's own
-  // column when that is Local, the shared one otherwise (#1417). The provider
-  // is the one in the body, or the saved one when the body names none.
   if (body.model !== undefined) {
-    const savesLocal =
-      body.provider !== undefined
-        ? isLocal(body.provider)
-        : isLocal(
-            (
-              await prisma.user.findUnique({
-                where: { id: user.id },
-                select: { aiProvider: true },
-              })
-            )?.aiProvider,
-          );
-    const model = body.model === null ? null : body.model.trim() || null;
-    if (savesLocal) updates.aiLocalModel = model;
-    else updates.aiModel = model;
+    updates[await modelColumn(user.id, body.provider)] =
+      body.model === null ? null : body.model.trim() || null;
   }
 
   if (body.baseUrl !== undefined) {

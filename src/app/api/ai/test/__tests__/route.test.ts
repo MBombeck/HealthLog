@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { NextRequest } from "next/server";
 
 // Mocks must be hoisted before importing the route.
 vi.mock("@/lib/api-handler", () => ({
@@ -338,7 +339,9 @@ describe("POST /api/ai/test — dropdown-aware override", () => {
         "local_base_url_missing",
       ),
     );
-    const response = await POST(jsonRequest({ provider: "LOCAL" }) as never);
+    const response = await POST(
+      new NextRequest(jsonRequest({ provider: "LOCAL" })),
+    );
     expect(response.status).toBe(422);
     const body = (await response.json()) as {
       meta?: { errorCode?: string };
