@@ -1007,6 +1007,14 @@
     "typeHighHeartRateEvent": "Hinweis auf hohe Herzfrequenz",
     "typeLowHeartRateEvent": "Hinweis auf niedrige Herzfrequenz",
     "typeHypertensionEvent": "Hinweis auf Bluthochdruck",
+    "typeLowCardioFitnessEvent": "Hinweis auf niedrige Cardiofitness",
+    "typeMenopausalState": "Menopausenstatus",
+    "typeBleedingAfterMenopause": "Blutung nach der Menopause",
+    "typeInsulinDelivery": "Insulinabgabe",
+    "typeInhalerUsage": "Inhalatornutzung",
+    "typeFev1": "FEV1",
+    "typeFvc": "Forcierte Vitalkapazität",
+    "typePeakExpiratoryFlow": "Peak-Flow",
     "typeWalkingSteadinessEvent": "Hinweis zur Gehstabilität",
     "typeBreathingDisturbanceEvent": "Atemstörung",
     "typeRecoveryScore": "Erholungs-Score",
@@ -3771,6 +3779,8 @@
       "years": "Jahre",
       "breathingEvents": "Ereignisse",
       "standHours": "Stunden",
+      "insulinUnits": "IE",
+      "puffs": "Hübe",
       "respiratoryRate": "Atemzüge/min"
     },
     "sleep": {
@@ -4844,6 +4854,7 @@
         "highHeartRate": "Hinweis auf hohe Herzfrequenz",
         "lowHeartRate": "Hinweis auf niedrige Herzfrequenz",
         "hypertension": "Hinweis auf Bluthochdruck",
+        "lowCardioFitness": "Hinweis auf niedrige Cardiofitness",
         "walkingSteadiness": "Hinweis zur Gehstabilität",
         "breathingDisturbance": "Atemstörung während des Schlafs"
       },
@@ -4853,7 +4864,8 @@
         "inconclusive": "Dein Gerät konnte keine Messung vornehmen.",
         "low": "Dein Gerät hat eine niedrige Gehstabilität erkannt.",
         "veryLow": "Dein Gerät hat eine sehr niedrige Gehstabilität erkannt.",
-        "fired": "Dein Gerät hat dieses Ereignis erkannt."
+        "fired": "Dein Gerät hat dieses Ereignis erkannt.",
+        "lowFitness": "Dein Gerät hat eine niedrige Cardiofitness erkannt."
       }
     },
     "trendDescriptor": {

@@ -224,7 +224,15 @@ export function getPRDirection(
     case "HIGH_HEART_RATE_EVENT":
     case "LOW_HEART_RATE_EVENT":
     case "HYPERTENSION_EVENT":
+    case "LOW_CARDIO_FITNESS_EVENT":
     case "WALKING_STEADINESS_EVENT":
+    case "MENOPAUSAL_STATE":
+    case "BLEEDING_AFTER_MENOPAUSE":
+    case "INSULIN_DELIVERY":
+    case "INHALER_USAGE":
+    case "FEV1":
+    case "FVC":
+    case "PEAK_EXPIRATORY_FLOW":
     case "BREATHING_DISTURBANCE_EVENT":
     // v1.10.0 — computed scores (WX-C). The server-derived wellness scores
     // are themselves derived composites recomputed nightly from the

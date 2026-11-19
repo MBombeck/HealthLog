@@ -1,6 +1,11 @@
 /**
  * The workout summaries, with both backup ends in one file. GPS routes and
  * per-sample series do not travel, and the file's manifest says so.
+ *
+ * The Apple Health deletion ledger rides here too (`AppleHealthTombstone`):
+ * the workout and ECG sample ids the phone reported deleted, so a late
+ * re-post stays deleted. Like a mood entry's `deletedAt`, it travels in a
+ * disaster-recovery file only; a portable export leaves deletions out.
  */
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { toJson } from "@/lib/db";
@@ -33,16 +38,39 @@ export interface WorkoutBackupEntry {
   externalSourceVersion?: string | null;
 }
 
-/** The workout slice of the records section: the summaries. */
+/** One Apple Health sample the phone reported deleted. */
+export interface AppleHealthTombstoneBackupEntry {
+  domain: string;
+  externalId: string;
+  /** When the phone reported the sample deleted. */
+  createdAt: string;
+}
+
+/**
+ * The workout slice of the records section: the summaries, and in a
+ * disaster-recovery file the Apple Health deletion ledger.
+ */
 export async function buildWorkoutsBackupSlice(
-  prisma: Pick<PrismaClient, "workout">,
+  prisma: Pick<PrismaClient, "workout" | "appleHealthTombstone">,
   userId: string,
   disasterRecovery: boolean,
-): Promise<{ workouts: WorkoutBackupEntry[] }> {
-  const workoutRows = await prisma.workout.findMany({
-    where: { userId },
-    orderBy: [{ startedAt: "desc" }, { id: "asc" }],
-  });
+): Promise<{
+  workouts: WorkoutBackupEntry[];
+  appleHealthTombstones?: AppleHealthTombstoneBackupEntry[];
+}> {
+  const [workoutRows, tombstoneRows] = await Promise.all([
+    prisma.workout.findMany({
+      where: { userId },
+      orderBy: [{ startedAt: "desc" }, { id: "asc" }],
+    }),
+    disasterRecovery
+      ? prisma.appleHealthTombstone.findMany({
+          where: { userId },
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+          select: { domain: true, externalId: true, createdAt: true },
+        })
+      : Promise.resolve(null),
+  ]);
 
   const workouts: WorkoutBackupEntry[] = workoutRows.map((w) => ({
     ...(disasterRecovery
@@ -69,7 +97,15 @@ export async function buildWorkoutsBackupSlice(
     source: w.source,
     externalId: w.externalId,
   }));
-  return { workouts };
+  if (!tombstoneRows) return { workouts };
+  return {
+    workouts,
+    appleHealthTombstones: tombstoneRows.map((t) => ({
+      domain: t.domain,
+      externalId: t.externalId,
+      createdAt: t.createdAt.toISOString(),
+    })),
+  };
 }
 
 // ── Restore ──────────────────────────────────────────────────────────────────
@@ -79,10 +115,26 @@ export async function clearWorkouts(ctx: RestoreContext): Promise<void> {
     where: { userId: ctx.ownerId },
   });
   ctx.cleared.workouts = workouts.count;
+  // The deletion ledger goes with the workouts it guards; the file's own
+  // ledger (a disaster-recovery file) is written back by the restore below.
+  await ctx.tx.appleHealthTombstone.deleteMany({
+    where: { userId: ctx.ownerId },
+  });
 }
 
 export async function restoreWorkouts(ctx: RestoreContext): Promise<void> {
   const { tx, ownerId, payload } = ctx;
+  if (payload.appleHealthTombstones.length > 0) {
+    await tx.appleHealthTombstone.createMany({
+      data: payload.appleHealthTombstones.map((t) => ({
+        userId: ownerId,
+        domain: t.domain,
+        externalId: t.externalId,
+        createdAt: new Date(t.createdAt),
+      })),
+      skipDuplicates: true,
+    });
+  }
   if (payload.workouts.length === 0) return;
   await tx.workout.createMany({
     data: payload.workouts.map((workout) => ({

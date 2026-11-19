@@ -51,12 +51,17 @@ export const INTEGER_VALUED_MEASUREMENT_TYPES: ReadonlySet<string> = new Set([
   "STAND_HOURS",
   "BREATHING_DISTURBANCES",
   "SLEEP_DISTURBANCE_COUNT",
+  "INHALER_USAGE",
+  // Category states — the row carries the HealthKit codepoint.
+  "MENOPAUSAL_STATE",
+  "BLEEDING_AFTER_MENOPAUSE",
   // Category events — the row carries a fixed `value = 1` (one fired event).
   "AUDIO_EXPOSURE_EVENT",
   "BREATHING_DISTURBANCE_EVENT",
   "HIGH_HEART_RATE_EVENT",
   "HYPERTENSION_EVENT",
   "IRREGULAR_RHYTHM_NOTIFICATION",
+  "LOW_CARDIO_FITNESS_EVENT",
   "LOW_HEART_RATE_EVENT",
   "WALKING_STEADINESS_EVENT",
   // Closed integer instrument scores — the questionnaire sums whole items.

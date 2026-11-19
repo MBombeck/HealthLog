@@ -1007,6 +1007,14 @@
     "typeHighHeartRateEvent": "Powiadomienie o wysokim tętnie",
     "typeLowHeartRateEvent": "Powiadomienie o niskim tętnie",
     "typeHypertensionEvent": "Powiadomienie o nadciśnieniu",
+    "typeLowCardioFitnessEvent": "Powiadomienie o niskiej wydolności",
+    "typeMenopausalState": "Stan menopauzalny",
+    "typeBleedingAfterMenopause": "Krwawienie po menopauzie",
+    "typeInsulinDelivery": "Podanie insuliny",
+    "typeInhalerUsage": "Użycie inhalatora",
+    "typeFev1": "FEV1",
+    "typeFvc": "Natężona pojemność życiowa",
+    "typePeakExpiratoryFlow": "Szczytowy przepływ wydechowy",
     "typeWalkingSteadinessEvent": "Alert stabilności chodu",
     "typeBreathingDisturbanceEvent": "Zaburzenie oddychania",
     "typeRecoveryScore": "Wynik regeneracji",
@@ -3771,6 +3779,8 @@
       "years": "lata",
       "breathingEvents": "zdarzenia",
       "standHours": "godz.",
+      "insulinUnits": "j.",
+      "puffs": "wdechy",
       "respiratoryRate": "oddechów/min"
     },
     "sleep": {
@@ -4844,6 +4854,7 @@
         "highHeartRate": "Powiadomienie o wysokim tętnie",
         "lowHeartRate": "Powiadomienie o niskim tętnie",
         "hypertension": "Powiadomienie o nadciśnieniu",
+        "lowCardioFitness": "Powiadomienie o niskiej wydolności",
         "walkingSteadiness": "Alert o stabilności chodu",
         "breathingDisturbance": "Zaburzenie oddychania podczas snu"
       },
@@ -4853,7 +4864,8 @@
         "inconclusive": "Twoje urządzenie nie mogło wykonać pomiaru.",
         "low": "Twoje urządzenie wykryło niską stabilność chodu.",
         "veryLow": "Twoje urządzenie wykryło bardzo niską stabilność chodu.",
-        "fired": "Twoje urządzenie zgłosiło to zdarzenie."
+        "fired": "Twoje urządzenie zgłosiło to zdarzenie.",
+        "lowFitness": "Twoje urządzenie wykryło niską wydolność krążeniową."
       }
     },
     "trendDescriptor": {

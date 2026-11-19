@@ -1051,7 +1051,7 @@
             "name": "Ferr.",
             "source": "IMPORT_CHOICE",
             "id": "<id:42>",
-            "createdAt": "2026-05-06T21:26:00.000Z"
+            "createdAt": "2026-05-06T23:06:00.000Z"
           }
         ]
       }
@@ -1064,7 +1064,7 @@
         "sourceBiomarkerId": "merged-away-marker",
         "sourceName": "Ferritin (Serum)",
         "readingCount": 3,
-        "mergedAt": "2026-05-06T23:06:00.000Z"
+        "mergedAt": "2026-05-07T00:46:00.000Z"
       }
     ],
     "labResultImportKeys": [
@@ -1264,6 +1264,13 @@
         "pauseDurationSec": 3,
         "source": "WITHINGS",
         "externalId": "rt-Workout-externalId"
+      }
+    ],
+    "appleHealthTombstones": [
+      {
+        "domain": "workout",
+        "externalId": "ABCDEF01-2345-6789-ABCD-EF0123456789",
+        "createdAt": "2026-06-30T08:00:00.000Z"
       }
     ],
     "documents": [
@@ -1543,8 +1550,8 @@
     ],
     "onboardingRecord": {
       "id": "<id:67>",
-      "createdAt": "2026-05-06T19:47:00.000Z",
-      "updatedAt": "2026-05-06T19:48:00.000Z",
+      "createdAt": "2026-05-06T21:27:00.000Z",
+      "updatedAt": "2026-05-06T21:28:00.000Z",
       "needs": {
         "recordTarget": "me",
         "areas": [
@@ -2487,35 +2494,35 @@
       {
         "labResultId": "<id:39>",
         "documentId": "<id:55>",
-        "createdAt": "2026-05-07T00:44:00.000Z"
+        "createdAt": "2026-05-07T02:24:00.000Z"
       }
     ],
     "encounterMedicationLinks": [
       {
         "encounterId": "<id:70>",
         "medicationId": "<id:6>",
-        "createdAt": "2026-05-07T02:24:00.000Z"
+        "createdAt": "2026-05-07T04:04:00.000Z"
       }
     ],
     "encounterVaccinationLinks": [
       {
         "encounterId": "<id:70>",
         "vaccinationId": "<id:75>",
-        "createdAt": "2026-05-07T04:04:00.000Z"
+        "createdAt": "2026-05-07T05:44:00.000Z"
       }
     ],
     "medicationDocumentLinks": [
       {
         "medicationId": "<id:6>",
         "documentId": "<id:55>",
-        "createdAt": "2026-05-07T05:44:00.000Z"
+        "createdAt": "2026-05-07T07:24:00.000Z"
       }
     ],
     "medicationConditionLinks": [
       {
         "medicationId": "<id:6>",
         "episodeId": "<id:46>",
-        "createdAt": "2026-05-07T07:24:00.000Z"
+        "createdAt": "2026-05-07T09:04:00.000Z"
       }
     ],
     "nutrientDays": [
@@ -3717,7 +3724,7 @@
             "id": "<id:42>",
             "name": "Ferr.",
             "source": "IMPORT_CHOICE",
-            "createdAt": "2026-05-06T21:26:00.000Z"
+            "createdAt": "2026-05-06T23:06:00.000Z"
           }
         ],
         "createdAt": "2026-05-02T14:10:00.000Z",
@@ -3732,7 +3739,7 @@
         "sourceBiomarkerId": "merged-away-marker",
         "sourceName": "Ferritin (Serum)",
         "readingCount": 3,
-        "mergedAt": "2026-05-06T23:06:00.000Z"
+        "mergedAt": "2026-05-07T00:46:00.000Z"
       }
     ],
     "labResultImportKeys": [
@@ -4144,6 +4151,13 @@
         "updatedAt": "2026-05-04T06:19:00.000Z"
       }
     ],
+    "appleHealthTombstones": [
+      {
+        "domain": "workout",
+        "externalId": "ABCDEF01-2345-6789-ABCD-EF0123456789",
+        "createdAt": "2026-06-30T08:00:00.000Z"
+      }
+    ],
     "documents": [
       {
         "id": "<id:55>",
@@ -4506,8 +4520,8 @@
       },
       "modulesDerivedAt": "2026-07-01T08:00:00.000Z",
       "completedAt": "2026-07-01T08:00:00.000Z",
-      "createdAt": "2026-05-06T19:47:00.000Z",
-      "updatedAt": "2026-05-06T19:48:00.000Z"
+      "createdAt": "2026-05-06T21:27:00.000Z",
+      "updatedAt": "2026-05-06T21:28:00.000Z"
     },
     "practitioners": [
       {
@@ -4668,35 +4682,35 @@
       {
         "labResultId": "<id:39>",
         "documentId": "<id:55>",
-        "createdAt": "2026-05-07T00:44:00.000Z"
+        "createdAt": "2026-05-07T02:24:00.000Z"
       }
     ],
     "encounterMedicationLinks": [
       {
         "encounterId": "<id:70>",
         "medicationId": "<id:6>",
-        "createdAt": "2026-05-07T02:24:00.000Z"
+        "createdAt": "2026-05-07T04:04:00.000Z"
       }
     ],
     "encounterVaccinationLinks": [
       {
         "encounterId": "<id:70>",
         "vaccinationId": "<id:75>",
-        "createdAt": "2026-05-07T04:04:00.000Z"
+        "createdAt": "2026-05-07T05:44:00.000Z"
       }
     ],
     "medicationDocumentLinks": [
       {
         "medicationId": "<id:6>",
         "documentId": "<id:55>",
-        "createdAt": "2026-05-07T05:44:00.000Z"
+        "createdAt": "2026-05-07T07:24:00.000Z"
       }
     ],
     "medicationConditionLinks": [
       {
         "medicationId": "<id:6>",
         "episodeId": "<id:46>",
-        "createdAt": "2026-05-07T07:24:00.000Z"
+        "createdAt": "2026-05-07T09:04:00.000Z"
       }
     ],
     "coachConversations": [

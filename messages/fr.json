@@ -1007,6 +1007,14 @@
     "typeHighHeartRateEvent": "Notification de fréquence cardiaque élevée",
     "typeLowHeartRateEvent": "Notification de fréquence cardiaque basse",
     "typeHypertensionEvent": "Notification d'hypertension",
+    "typeLowCardioFitnessEvent": "Notification de faible forme cardio",
+    "typeMenopausalState": "Statut ménopausique",
+    "typeBleedingAfterMenopause": "Saignement après la ménopause",
+    "typeInsulinDelivery": "Administration d'insuline",
+    "typeInhalerUsage": "Utilisation de l'inhalateur",
+    "typeFev1": "VEMS",
+    "typeFvc": "Capacité vitale forcée",
+    "typePeakExpiratoryFlow": "Débit expiratoire de pointe",
     "typeWalkingSteadinessEvent": "Alerte de stabilité de la marche",
     "typeBreathingDisturbanceEvent": "Trouble respiratoire",
     "typeRecoveryScore": "Score de récupération",
@@ -3771,6 +3779,8 @@
       "years": "ans",
       "breathingEvents": "événements",
       "standHours": "heures",
+      "insulinUnits": "UI",
+      "puffs": "bouffées",
       "respiratoryRate": "respirations/min"
     },
     "sleep": {
@@ -4844,6 +4854,7 @@
         "highHeartRate": "Notification de fréquence cardiaque élevée",
         "lowHeartRate": "Notification de fréquence cardiaque basse",
         "hypertension": "Notification d'hypertension",
+        "lowCardioFitness": "Notification de faible forme cardio",
         "walkingSteadiness": "Alerte de stabilité à la marche",
         "breathingDisturbance": "Trouble respiratoire pendant le sommeil"
       },
@@ -4853,7 +4864,8 @@
         "inconclusive": "Votre appareil n’a pas pu effectuer de mesure.",
         "low": "Votre appareil a détecté une faible stabilité à la marche.",
         "veryLow": "Votre appareil a détecté une très faible stabilité à la marche.",
-        "fired": "Votre appareil a signalé cet événement."
+        "fired": "Votre appareil a signalé cet événement.",
+        "lowFitness": "Votre appareil a signalé une faible forme cardio."
       }
     },
     "trendDescriptor": {

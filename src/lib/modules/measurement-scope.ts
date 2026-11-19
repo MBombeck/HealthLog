@@ -109,6 +109,8 @@ const METRIC_STATUS_MODULE_OWNERS: Partial<Record<MeasurementType, ModuleKey>> =
     // belong to the glucose module; they stay off the Coach snapshot, so the
     // scope token cannot reach them.
     BLOOD_KETONES: "glucose",
+    // Insulin doses belong with the glucose they are given against.
+    INSULIN_DELIVERY: "glucose",
     // The mental-wellbeing screenings: the score row a completed check-in
     // writes. Off the Coach snapshot and MCP by construction, so layer 1
     // never reaches them; a screening checkup follows the module too.

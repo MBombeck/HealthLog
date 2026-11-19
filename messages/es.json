@@ -1007,6 +1007,14 @@
     "typeHighHeartRateEvent": "Aviso de frecuencia cardíaca alta",
     "typeLowHeartRateEvent": "Aviso de frecuencia cardíaca baja",
     "typeHypertensionEvent": "Aviso de hipertensión",
+    "typeLowCardioFitnessEvent": "Aviso de baja forma cardiovascular",
+    "typeMenopausalState": "Estado menopáusico",
+    "typeBleedingAfterMenopause": "Sangrado tras la menopausia",
+    "typeInsulinDelivery": "Administración de insulina",
+    "typeInhalerUsage": "Uso del inhalador",
+    "typeFev1": "FEV1",
+    "typeFvc": "Capacidad vital forzada",
+    "typePeakExpiratoryFlow": "Flujo espiratorio máximo",
     "typeWalkingSteadinessEvent": "Aviso de estabilidad al caminar",
     "typeBreathingDisturbanceEvent": "Alteración respiratoria",
     "typeRecoveryScore": "Puntuación de recuperación",
@@ -3771,6 +3779,8 @@
       "years": "años",
       "breathingEvents": "eventos",
       "standHours": "horas",
+      "insulinUnits": "UI",
+      "puffs": "inhalaciones",
       "respiratoryRate": "respiraciones/min"
     },
     "sleep": {
@@ -4844,6 +4854,7 @@
         "highHeartRate": "Notificación de frecuencia cardíaca alta",
         "lowHeartRate": "Notificación de frecuencia cardíaca baja",
         "hypertension": "Aviso de hipertensión",
+        "lowCardioFitness": "Aviso de baja forma cardiovascular",
         "walkingSteadiness": "Alerta de estabilidad al caminar",
         "breathingDisturbance": "Alteración respiratoria durante el sueño"
       },
@@ -4853,7 +4864,8 @@
         "inconclusive": "Tu dispositivo no pudo realizar una medición.",
         "low": "Tu dispositivo detectó una estabilidad al caminar baja.",
         "veryLow": "Tu dispositivo detectó una estabilidad al caminar muy baja.",
-        "fired": "Tu dispositivo señaló este evento."
+        "fired": "Tu dispositivo señaló este evento.",
+        "lowFitness": "Tu dispositivo detectó una forma cardiovascular baja."
       }
     },
     "trendDescriptor": {

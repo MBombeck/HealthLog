@@ -1007,6 +1007,14 @@
     "typeHighHeartRateEvent": "Melding hoge hartslag",
     "typeLowHeartRateEvent": "Melding lage hartslag",
     "typeHypertensionEvent": "Melding hoge bloeddruk",
+    "typeLowCardioFitnessEvent": "Melding lage cardiofitheid",
+    "typeMenopausalState": "Menopauzestatus",
+    "typeBleedingAfterMenopause": "Bloeding na de menopauze",
+    "typeInsulinDelivery": "Insulinetoediening",
+    "typeInhalerUsage": "Inhalatorgebruik",
+    "typeFev1": "FEV1",
+    "typeFvc": "Geforceerde vitale capaciteit",
+    "typePeakExpiratoryFlow": "Piekstroom",
     "typeWalkingSteadinessEvent": "Waarschuwing loopstabiliteit",
     "typeBreathingDisturbanceEvent": "Ademhalingsstoornis",
     "typeRecoveryScore": "Herstelscore",
@@ -3771,6 +3779,8 @@
       "years": "jaar",
       "breathingEvents": "gebeurtenissen",
       "standHours": "uur",
+      "insulinUnits": "IE",
+      "puffs": "pufjes",
       "respiratoryRate": "ademhalingen/min"
     },
     "sleep": {
@@ -4844,6 +4854,7 @@
         "highHeartRate": "Melding hoge hartslag",
         "lowHeartRate": "Melding lage hartslag",
         "hypertension": "Melding hoge bloeddruk",
+        "lowCardioFitness": "Melding lage cardiofitheid",
         "walkingSteadiness": "Waarschuwing loopstabiliteit",
         "breathingDisturbance": "Ademhalingsstoornis tijdens de slaap"
       },
@@ -4853,7 +4864,8 @@
         "inconclusive": "Je apparaat kon geen meting uitvoeren.",
         "low": "Je apparaat heeft een lage loopstabiliteit gesignaleerd.",
         "veryLow": "Je apparaat heeft een zeer lage loopstabiliteit gesignaleerd.",
-        "fired": "Je apparaat heeft deze gebeurtenis gesignaleerd."
+        "fired": "Je apparaat heeft deze gebeurtenis gesignaleerd.",
+        "lowFitness": "Je apparaat heeft een lage cardiofitheid gemeld."
       }
     },
     "trendDescriptor": {

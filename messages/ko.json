@@ -1007,6 +1007,14 @@
     "typeHighHeartRateEvent": "높은 심박수 알림",
     "typeLowHeartRateEvent": "낮은 심박수 알림",
     "typeHypertensionEvent": "고혈압 알림",
+    "typeLowCardioFitnessEvent": "낮은 심폐 체력 알림",
+    "typeMenopausalState": "폐경 상태",
+    "typeBleedingAfterMenopause": "폐경 후 출혈",
+    "typeInsulinDelivery": "인슐린 투여",
+    "typeInhalerUsage": "흡입기 사용",
+    "typeFev1": "FEV1",
+    "typeFvc": "노력성 폐활량",
+    "typePeakExpiratoryFlow": "최대 호기 유량",
     "typeWalkingSteadinessEvent": "보행 안정성 경고",
     "typeBreathingDisturbanceEvent": "호흡 장애",
     "typeRecoveryScore": "회복 점수",
@@ -3771,6 +3779,8 @@
       "years": "세",
       "breathingEvents": "회",
       "standHours": "시간",
+      "insulinUnits": "IU",
+      "puffs": "회 흡입",
       "respiratoryRate": "회/분"
     },
     "sleep": {
@@ -4844,6 +4854,7 @@
         "highHeartRate": "높은 심박수 알림",
         "lowHeartRate": "낮은 심박수 알림",
         "hypertension": "고혈압 알림",
+        "lowCardioFitness": "낮은 심폐 체력 알림",
         "walkingSteadiness": "보행 안정성 알림",
         "breathingDisturbance": "수면 중 호흡 장애"
       },
@@ -4853,7 +4864,8 @@
         "inconclusive": "기기가 측정하지 못했어요.",
         "low": "기기가 낮은 보행 안정성을 표시했어요.",
         "veryLow": "기기가 매우 낮은 보행 안정성을 표시했어요.",
-        "fired": "기기가 이 이벤트를 표시했어요."
+        "fired": "기기가 이 이벤트를 표시했어요.",
+        "lowFitness": "기기가 낮은 심폐 체력을 감지했습니다."
       }
     },
     "trendDescriptor": {

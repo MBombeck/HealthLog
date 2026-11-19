@@ -34,6 +34,10 @@ import en from "../../../../messages/en.json";
 const NOT_HAND_ENTERED: Readonly<Record<string, string>> = {
   BODY_MASS_INDEX:
     "Derived from weight and height. A typed copy would be a second number that can disagree with the weight it came from.",
+  MENOPAUSAL_STATE:
+    "A HealthKit category state stored as its codepoint (1 menopause, 2 perimenopause, 3 none). A number field would ask the person to type a code, not a reading.",
+  BLEEDING_AFTER_MENOPAUSE:
+    "A HealthKit category stored as its bleeding codepoint (1 unspecified to 5 none). A number field would ask the person to type a code, not a reading.",
 };
 
 const BODY_COMPOSITION = [...MEASUREMENT_CATEGORIES.entries()]

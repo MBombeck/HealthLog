@@ -100,10 +100,11 @@ describe("GET /api/insights/rhythm-events", () => {
         "WALKING_STEADINESS_EVENT",
         "BREATHING_DISTURBANCE_EVENT",
         "HYPERTENSION_EVENT",
+        "LOW_CARDIO_FITNESS_EVENT",
       ]),
     );
     // Never a continuous metric — only the five event classes.
-    expect(where.type.in).toHaveLength(6);
+    expect(where.type.in).toHaveLength(7);
   });
 
   it("maps each row to the device verdict + occurrence timestamp", async () => {

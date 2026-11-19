@@ -80,14 +80,14 @@ export const externalIdDeletePaths: ZodOpenApiObject["paths"] = {
     tag: "Measurements",
     summary: "Delete Apple Health workouts by external ID",
     description:
-      "Removes the workouts whose externalId is listed, with the personal records they set; the records are re-derived afterwards. Workouts carry no tombstone, so the rows go outright and a later re-post of the same externalId inserts the workout again.",
+      "Removes the workouts whose externalId is listed, with the personal records they set; the records are re-derived afterwards. The rows go outright, and since v1.48.2 every listed id is remembered: a later re-post of the same externalId to `POST /api/workouts/batch` answers `duplicate` and writes nothing, including an id that had not landed yet when the delete arrived.",
     responseId: "WorkoutsDeleteByExternalIdsResponse",
   }),
   "/api/insights/ecg/by-external-ids": operation({
     tag: "Insights",
     summary: "Delete Apple Health ECG recordings by external ID",
     description:
-      "Removes the ECG recordings whose `externalRecordingId` (the id `POST /api/insights/ecg` stored) is listed, waveform included. A paired rhythm notification is a measurement of its own and stays. Recordings carry no tombstone, so a later re-post of the same id inserts the recording again.",
+      "Removes the ECG recordings whose `externalRecordingId` (the id `POST /api/insights/ecg` stored) is listed, waveform included. A paired rhythm notification is a measurement of its own and stays. The rows go outright, and since v1.48.2 every listed id is remembered: a later re-post of the same id to `POST /api/insights/ecg` answers `duplicate` and writes nothing.",
     responseId: "EcgDeleteByExternalIdsResponse",
   }),
   "/api/cycle/day-logs/by-external-ids": operation({
