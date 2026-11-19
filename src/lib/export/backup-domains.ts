@@ -426,6 +426,7 @@ export const RESTORE_STEPS: readonly RestoreStep[] = [
           ctx.payload,
           ctx.links.writtenReferencedMeasurementIds,
           ctx.skips,
+          ctx.links.workoutKeyByLegacyKey,
         ),
       );
     },
