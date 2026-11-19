@@ -5619,9 +5619,11 @@ paths:
       description: "Removes the workouts whose externalId is listed, with the personal records they set; the records are
         re-derived afterwards. The rows go outright, and since v1.48.2 every listed id is remembered: a later re-post of
         the same externalId to `POST /api/workouts/batch` answers `duplicate` and writes nothing, including an id that
-        had not landed yet when the delete arrived. Only the caller's own rows with `source = APPLE_HEALTH` are matched;
-        an id naming anything else is a no-op, never an error. Idempotent. Cookie session or a wildcard Bearer token
-        (the native login); a narrow-scope token is refused 403. Metered by the shared per-account write bucket."
+        had not landed yet when the delete arrived. An id is remembered for 75 days, the tombstone retention every Apple
+        Health delete shares; after that a re-post lands again. Only the caller's own rows with `source = APPLE_HEALTH`
+        are matched; an id naming anything else is a no-op, never an error. Idempotent. Cookie session or a wildcard
+        Bearer token (the native login); a narrow-scope token is refused 403. Metered by the shared per-account write
+        bucket."
       requestBody:
         required: true
         content:
@@ -5647,9 +5649,10 @@ paths:
       description: "Removes the ECG recordings whose `externalRecordingId` (the id `POST /api/insights/ecg` stored) is listed,
         waveform included. A paired rhythm notification is a measurement of its own and stays. The rows go outright, and
         since v1.48.2 every listed id is remembered: a later re-post of the same id to `POST /api/insights/ecg` answers
-        `duplicate` and writes nothing. Only the caller's own rows with `source = APPLE_HEALTH` are matched; an id
-        naming anything else is a no-op, never an error. Idempotent. Cookie session or a wildcard Bearer token (the
-        native login); a narrow-scope token is refused 403. Metered by the shared per-account write bucket."
+        `duplicate` and writes nothing. An id is remembered for 75 days, the tombstone retention every Apple Health
+        delete shares; after that a re-post lands again. Only the caller's own rows with `source = APPLE_HEALTH` are
+        matched; an id naming anything else is a no-op, never an error. Idempotent. Cookie session or a wildcard Bearer
+        token (the native login); a narrow-scope token is refused 403. Metered by the shared per-account write bucket."
       requestBody:
         required: true
         content:
@@ -5737,11 +5740,12 @@ paths:
       summary: Delete Apple Health symptom occurrences by external ID
       description: "Tombstones the symptom occurrences posted through `POST /api/symptoms/events/batch` whose externalId is
         listed. One logged in HealthLog is never touched. A later re-post of a deleted externalId stays deleted: the
-        batch answers `duplicate`. Owner-only: a session switched into another record is refused 403
-        `sharing.not_permitted`. Served when `GET /api/auth/me` reports `features.appleHealthSymptoms: true`. Only the
-        caller's own rows with `source = APPLE_HEALTH` are matched; an id naming anything else is a no-op, never an
-        error. Idempotent. Cookie session or a wildcard Bearer token (the native login); a narrow-scope token is refused
-        403. Metered by the shared per-account write bucket."
+        batch answers `duplicate`. The tombstone is kept for 75 days, the retention every Apple Health delete shares.
+        Owner-only: a session switched into another record is refused 403 `sharing.not_permitted`. Served when `GET
+        /api/auth/me` reports `features.appleHealthSymptoms: true`. Only the caller's own rows with `source =
+        APPLE_HEALTH` are matched; an id naming anything else is a no-op, never an error. Idempotent. Cookie session or
+        a wildcard Bearer token (the native login); a narrow-scope token is refused 403. Metered by the shared
+        per-account write bucket."
       requestBody:
         required: true
         content:
@@ -76015,7 +76019,10 @@ components:
       properties:
         id:
           type: string
-          description: The recording row's id (cuid).
+          description: "The recording row's id (cuid). Required and never null, so a client decoding it as a plain string keeps
+            working: on a `duplicate` for a recording deleted through `DELETE /api/insights/ecg/by-external-ids` it is
+            the id of the deletion record instead, which names no recording. Do not fetch or link it; treat it as
+            opaque."
         status:
           type: string
           enum:

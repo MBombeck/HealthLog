@@ -1866,7 +1866,11 @@ export const ecgIngestRequest = z
 
 export const ecgIngestResponse = z
   .object({
-    id: z.string().describe("The recording row's id (cuid)."),
+    id: z
+      .string()
+      .describe(
+        "The recording row's id (cuid). Required and never null, so a client decoding it as a plain string keeps working: on a `duplicate` for a recording deleted through `DELETE /api/insights/ecg/by-external-ids` it is the id of the deletion record instead, which names no recording. Do not fetch or link it; treat it as opaque.",
+      ),
     status: z
       .enum(["inserted", "updated", "duplicate"])
       .describe(
