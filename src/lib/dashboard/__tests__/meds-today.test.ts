@@ -242,7 +242,7 @@ describe("buildMedsTodayBlock — tally", () => {
     expect(block.scheduledToday).toBe(4);
     expect(block.takenToday).toBe(2);
     expect(block.skippedToday).toBe(1);
-    // The slot instants the Today fact counts "due so far" against (#173).
+    // The slot instants the Today fact checks against its own clock (#173).
     expect(block.scheduledTodayAt).toEqual([
       "2026-06-10T04:00:00.000Z",
       "2026-06-10T06:00:00.000Z",
