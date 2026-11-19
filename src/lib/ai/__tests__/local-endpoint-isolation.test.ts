@@ -97,8 +97,10 @@ describe("a cloud key never reaches Local's address", () => {
   );
 
   it("every chain entry but Local's own", async () => {
+    // Local selected, so the main chain may serve it (a kept address behind
+    // another selected provider stays out, see provider-chain tests).
     vi.mocked(prisma.user.findUnique).mockResolvedValue(
-      row("OPENAI_COMPATIBLE", [
+      row("LOCAL", [
         "openai",
         "anthropic",
         "openai-compatible",
