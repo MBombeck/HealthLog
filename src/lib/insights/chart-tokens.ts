@@ -161,10 +161,9 @@ export const ALLOWED_CHART_TOKENS = [
   "metric:WAIST_CIRCUMFERENCE",
   "metric:WAIST_TO_HEIGHT",
   // Apple Health ingest v2. Charted through the generic series
-  // renderer; the low-cardio-fitness notification is an EVENT class and
-  // carries no token.
-  "metric:MENOPAUSAL_STATE",
-  "metric:BLEEDING_AFTER_MENOPAUSE",
+  // renderer; the low-cardio-fitness notification is an EVENT class, and
+  // the two menopause category states (`STATE_MEASUREMENT_TYPES`) are
+  // codepoints rather than magnitudes, so neither carries a token.
   "metric:INSULIN_DELIVERY",
   "metric:INHALER_USAGE",
   "metric:FEV1",

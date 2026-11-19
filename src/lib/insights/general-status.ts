@@ -9,7 +9,10 @@ import type { BpTargets } from "@/lib/analytics/bp-targets";
 import { resolveEffectiveBpTargets } from "@/lib/analytics/effective-range";
 import { isBpReadingInTarget } from "@/lib/analytics/bp-in-target";
 import { getNoKeyGeneralStatusText } from "@/lib/insights/no-key-fallbacks";
-import { measurementTypeEnum } from "@/lib/validations/measurement";
+import {
+  measurementTypeEnum,
+  STATE_MEASUREMENT_TYPES,
+} from "@/lib/validations/measurement";
 import { applyPayloadBudget } from "@/lib/insights/bucket-series";
 import { buildGradedSeriesFromPoints } from "@/lib/insights/graded-series";
 import { round, summarizeSeries } from "@/lib/insights/status-shared";
@@ -32,7 +35,11 @@ import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 
 // Derived from canonical enum so a new measurement type is auto-included
 // in the AI general-status fetch (V3 audit: enum drift cousins).
-const MEASUREMENT_TYPES = measurementTypeEnum.options;
+// A category state (`STATE_MEASUREMENT_TYPES`) is a codepoint, not a
+// magnitude, so it is no numeric series for the model to summarise.
+const MEASUREMENT_TYPES = measurementTypeEnum.options.filter(
+  (type) => !STATE_MEASUREMENT_TYPES.has(type),
+);
 
 // The general overview folds its per-type graded series in memory from a
 // single bounded read (the latest 365 per type) rather than per-type rollup-tier

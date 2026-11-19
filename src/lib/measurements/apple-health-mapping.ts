@@ -768,7 +768,8 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     unitFixedReason: UNIT_FIXED_CATEGORY_STATE,
     dbUnit: "flow",
     convertToDbUnit: (v) => v,
-    aggregation: "max",
+    // A codepoint, not a magnitude (5 is "none"): the latest state stands.
+    aggregation: "latest",
     isPrivacySensitive: true,
     valueFromCategory: true,
   },

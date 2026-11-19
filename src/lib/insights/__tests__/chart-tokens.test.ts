@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { MeasurementType } from "@/generated/prisma/client";
-import { EVENT_MEASUREMENT_TYPES } from "@/lib/validations/measurement";
+import {
+  EVENT_MEASUREMENT_TYPES,
+  STATE_MEASUREMENT_TYPES,
+} from "@/lib/validations/measurement";
 import {
   ALLOWED_CHART_TOKENS,
   parseChartTokens,
@@ -229,11 +232,24 @@ describe("ALLOWED_CHART_TOKENS — drift guard", () => {
     const enumTokens = (Object.values(MeasurementType) as string[])
       .filter((value) => value !== "NOTE")
       .filter((value) => !EVENT_MEASUREMENT_TYPES.has(value))
+      .filter((value) => !STATE_MEASUREMENT_TYPES.has(value))
       .map((value) => `metric:${value}`);
 
     for (const token of enumTokens) {
       expect(ALLOWED_CHART_TOKENS, `missing ${token}`).toContain(token);
     }
+  });
+
+  it("charts no category state as a numeric line", () => {
+    // A codepoint (menopause 1, perimenopause 2, none 3) drawn as a line
+    // reads as a trend that is not there.
+    for (const type of STATE_MEASUREMENT_TYPES) {
+      expect(ALLOWED_CHART_TOKENS).not.toContain(`metric:${type}`);
+    }
+    expect([...STATE_MEASUREMENT_TYPES].sort()).toEqual([
+      "BLEEDING_AFTER_MENOPAUSE",
+      "MENOPAUSAL_STATE",
+    ]);
   });
 
   it("includes metric:MOOD now that <MoodChart> is wired into the renderer", () => {

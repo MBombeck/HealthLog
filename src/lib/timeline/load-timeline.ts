@@ -50,7 +50,10 @@ import {
   loadSymptomSeries,
 } from "@/lib/timeline/symptom-series";
 import { daysBetweenDateKeys, shiftDateKey, userDayKey } from "@/lib/tz/format";
-import { EVENT_MEASUREMENT_TYPES } from "@/lib/validations/measurement";
+import {
+  EVENT_MEASUREMENT_TYPES,
+  STATE_MEASUREMENT_TYPES,
+} from "@/lib/validations/measurement";
 
 /** The series sent when the request names none. */
 export const DEFAULT_TIMELINE_SERIES: readonly MeasurementType[] = [
@@ -202,6 +205,7 @@ export async function loadAvailableSeries(args: {
     ...types.filter(
       (type) =>
         !EVENT_MEASUREMENT_TYPES.has(type) &&
+        !STATE_MEASUREMENT_TYPES.has(type) &&
         measurementTypeVisible(type, access.modules),
     ),
     ...(mood ? [MOOD_SERIES_KEY] : []),

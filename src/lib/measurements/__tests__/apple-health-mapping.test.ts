@@ -1218,6 +1218,17 @@ describe("Apple Health ingest v2 types", () => {
     endDate: "2026-11-18T07:00:00.000Z",
   };
 
+  it("keeps the latest state for the menopause category states, never a max", () => {
+    // A codepoint is a state, not a magnitude: BLEEDING_AFTER_MENOPAUSE 5 is
+    // "none", which a max would rank above heavy (4).
+    for (const hkId of [
+      "HKCategoryTypeIdentifierMenopausalState",
+      "HKCategoryTypeIdentifierBleedingAfterMenopause",
+    ]) {
+      expect(APPLE_HEALTH_TYPE_MAP[hkId]?.aggregation, hkId).toBe("latest");
+    }
+  });
+
   it("maps each new identifier to its type and canonical unit", () => {
     const expected: Array<[string, string, string]> = [
       [

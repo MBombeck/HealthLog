@@ -202,6 +202,19 @@ export const EVENT_MEASUREMENT_TYPES: ReadonlySet<string> = new Set<string>([
   "LOW_CARDIO_FITNESS_EVENT",
 ]);
 
+/**
+ * Category STATE MeasurementTypes: the row carries a HealthKit codepoint
+ * (`MENOPAUSAL_STATE` 1 menopause / 2 perimenopause / 3 none,
+ * `BLEEDING_AFTER_MENOPAUSE` 1 unspecified to 4 heavy, 5 none), not a
+ * magnitude. Like an event, a state is never a numeric series: no trend
+ * chart, timeline line, correlation channel, baseline or numeric Coach
+ * series; the rollup keeps the latest state of a period.
+ */
+export const STATE_MEASUREMENT_TYPES: ReadonlySet<string> = new Set<string>([
+  "MENOPAUSAL_STATE",
+  "BLEEDING_AFTER_MENOPAUSE",
+]);
+
 export const glucoseContextEnum = z.enum([
   "FASTING",
   "POSTPRANDIAL",
