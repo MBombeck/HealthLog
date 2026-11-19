@@ -202,10 +202,16 @@ describe("<AiSection> — dropdown-driven UX (B2)", () => {
     expect(html).toContain('data-chain-row="anthropic"');
   });
 
-  it("exposes a Test active provider button", () => {
+  it("names the provider on screen on the Test button (#1417)", () => {
     activeProviderQuery = "codex";
     const html = render();
     expect(html).toContain('data-testid="ai-test-active-provider"');
+    expect(html).toContain("Test ChatGPT account (Codex)");
+  });
+
+  it("tests the provider in use when the operator's key is on screen", () => {
+    activeProviderQuery = "admin-openai";
+    const html = render();
     expect(html).toContain("Test active provider");
   });
 

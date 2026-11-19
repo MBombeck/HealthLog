@@ -52,7 +52,7 @@ describe("resolveProviderChain", () => {
       {
         aiProvider: null,
         aiModel: null,
-        aiBaseUrl: null,
+        aiLocalBaseUrl: null,
         aiAnthropicKeyEncrypted: null,
         aiLocalKeyEncrypted: null,
         aiOpenaiKeyEncrypted: null,
@@ -88,7 +88,7 @@ describe("resolveProviderChain", () => {
     userRows({
       aiProvider: null,
       aiModel: null,
-      aiBaseUrl: null,
+      aiLocalBaseUrl: null,
       aiAnthropicKeyEncrypted: "enc-anth",
       aiLocalKeyEncrypted: null,
       aiOpenaiKeyEncrypted: "enc-openai",
@@ -114,7 +114,7 @@ describe("resolveProviderChain", () => {
     userRows({
       aiProvider: null,
       aiModel: null,
-      aiBaseUrl: null,
+      aiLocalBaseUrl: null,
       aiAnthropicKeyEncrypted: null, // no anthropic key
       aiLocalKeyEncrypted: null,
       aiOpenaiKeyEncrypted: "enc-openai",
@@ -138,7 +138,7 @@ describe("resolveProviderChain", () => {
     userRows({
       aiProvider: null,
       aiModel: null,
-      aiBaseUrl: null,
+      aiLocalBaseUrl: null,
       aiAnthropicKeyEncrypted: null,
       aiLocalKeyEncrypted: null,
       aiOpenaiKeyEncrypted: "enc-openai",
@@ -163,7 +163,7 @@ describe("resolveProviderChain", () => {
       {
         aiProvider: null,
         aiModel: null,
-        aiBaseUrl: null,
+        aiLocalBaseUrl: null,
         aiAnthropicKeyEncrypted: null,
         aiLocalKeyEncrypted: null,
         aiOpenaiKeyEncrypted: null,
@@ -193,7 +193,7 @@ describe("resolveProviderChain", () => {
     userRows({
       aiProvider: "OPENAI",
       aiModel: null,
-      aiBaseUrl: null,
+      aiLocalBaseUrl: null,
       aiAnthropicKeyEncrypted: null,
       aiLocalKeyEncrypted: null,
       aiOpenaiKeyEncrypted: "enc-openai",
@@ -217,7 +217,7 @@ describe("resolveProviderChain and the picked gateway", () => {
   const gatewayRow = {
     aiProvider: "OPENAI_COMPATIBLE",
     aiModel: null,
-    aiBaseUrl: null,
+    aiLocalBaseUrl: null,
     aiAnthropicKeyEncrypted: null,
     aiLocalKeyEncrypted: null,
     aiOpenaiKeyEncrypted: null,

@@ -265,12 +265,15 @@ describe("GET /api/admin/ai-settings — deprecated private-host grant", () => {
       adminAiBaseUrl: "http://gateway.lan:4000/v1",
     } as never);
     vi.mocked(prisma.user.findMany).mockResolvedValue([
-      { aiBaseUrl: "http://10.0.0.5:11434/v1", aiCompatBaseUrl: null },
+      { aiLocalBaseUrl: "http://10.0.0.5:11434/v1", aiCompatBaseUrl: null },
       {
-        aiBaseUrl: "http://10.0.0.5:11434/v1/",
+        aiLocalBaseUrl: "http://10.0.0.5:11434/v1/",
         aiCompatBaseUrl: "https://openrouter.ai/api/v1",
       },
-      { aiBaseUrl: "http://169.254.169.254/latest", aiCompatBaseUrl: null },
+      {
+        aiLocalBaseUrl: "http://169.254.169.254/latest",
+        aiCompatBaseUrl: null,
+      },
     ] as never);
     vi.stubEnv("AI_PRIVATE_ORIGINS", "");
     vi.spyOn(console, "warn").mockImplementation(() => {});

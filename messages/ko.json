@@ -202,6 +202,16 @@
     "ai_provider": {
       "private_host": "이 주소는 사설 네트워크에 있어요. 운영자가 먼저 AI_PRIVATE_ORIGINS에 정확한 출처를 허용해야 해요."
     },
+    "ai_test": {
+      "anthropic_key_missing": "저장된 Anthropic API 키가 없어 아무것도 테스트하지 않았습니다. Anthropic 카드에 키를 입력하고 저장하세요.",
+      "local_base_url_missing": "로컬 모델에 저장된 기본 URL이 없어 아무것도 테스트하지 않았습니다. 로컬 모델 카드에 입력하고 저장하세요.",
+      "private_host": "이 주소는 운영자가 허용하지 않은 사설 네트워크에 있어 아무것도 테스트하지 않았습니다. 운영자가 AI_PRIVATE_ORIGINS에 정확한 오리진을 추가해야 합니다.",
+      "compat_base_url_missing": "OpenAI 호환 게이트웨이에 저장된 기본 URL이 없어 아무것도 테스트하지 않았습니다. 게이트웨이 카드에 입력하고 저장하세요.",
+      "compat_model_missing": "OpenAI 호환 게이트웨이에 저장된 모델이 없어 아무것도 테스트하지 않았습니다. 게이트웨이 카드에 모델을 입력하고 저장하세요.",
+      "codex_not_connected": "연결된 ChatGPT 계정이 없어 아무것도 테스트하지 않았습니다. ChatGPT 카드에서 연결하세요.",
+      "openai_key_missing": "사용자나 운영자가 저장한 OpenAI API 키가 없어 아무것도 테스트하지 않았습니다. OpenAI 카드에 키를 입력하고 저장하세요.",
+      "unknown_provider": "이 서버가 알지 못하는 제공자라서 아무것도 테스트하지 않았습니다."
+    },
     "encounter": {
       "invalid": "진료 정보를 확인하고 다시 시도해 주세요.",
       "practitioner-not-found": "이 병원 또는 의사가 더 이상 없어요. 다른 항목을 고르거나 '지정 안 함'을 선택해 주세요.",
@@ -6694,6 +6704,7 @@
         "notConfigured": "운영자가 이 인스턴스에 공용 OpenAI 키를 설정하지 않았어요."
       },
       "testProvider": "사용 중인 제공자 테스트",
+      "testNamedProvider": "{provider} 테스트",
       "testSuccess": "정상: {provider} ({model})",
       "testFailedShort": "테스트 실패: {message}",
       "testUnexpectedResponse": "AI 제공자 연결에 실패했어요. 서버에서 예상 밖의 응답이 왔어요.",

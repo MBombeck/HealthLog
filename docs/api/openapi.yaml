@@ -8900,9 +8900,10 @@ paths:
         back, only presence plus a four-character preview.
 
 
-        One implicit write is worth knowing about: switching `provider` to anything other than LOCAL, without naming
-        `baseUrl` in the same request, CLEARS the stored base URL. The column is shared across providers, so leaving it
-        would send a cloud key to a host that was configured for a self-hosted backend.
+        `baseUrl` is the LOCAL provider's base URL. It is kept when another provider is selected (until v1.48.2 it was
+        cleared, which wiped a working Local setup); only the Local resolution ever reads it, so a cloud key is never
+        sent to it. `model` is the model of the provider the request saves: Local's own model when `provider` (or, when
+        the body names none, the saved provider) is LOCAL, the shared OpenAI / Anthropic model otherwise.
 
 
         A base URL — for LOCAL or for the OpenAI-compatible gateway — runs the SSRF floor: a private or internal host is
@@ -45709,6 +45710,10 @@ components:
                   type:
                     - string
                     - "null"
+                aiLocalModel:
+                  type:
+                    - string
+                    - "null"
                 aiCompatBaseUrl:
                   type:
                     - string
@@ -63298,11 +63303,20 @@ components:
             - type: "null"
           description: The user's selected provider, or null when none is set.
         model:
+          description: "The selected provider's model: Local's own model when `provider` is LOCAL, the shared model of the OpenAI
+            and Anthropic providers otherwise."
           type:
             - string
             - "null"
         baseUrl:
-          description: Custom base URL (LOCAL provider only); null otherwise.
+          description: The LOCAL provider's base URL, whichever provider is selected (#1417). Read only for Local; no other
+            provider is ever sent to it.
+          type:
+            - string
+            - "null"
+        localModel:
+          description: The LOCAL provider's own model, whichever provider is selected (#1417). Null runs Local on its client
+            default.
           type:
             - string
             - "null"
@@ -63415,6 +63429,7 @@ components:
         - provider
         - model
         - baseUrl
+        - localModel
         - aiAvailable
         - managedBy
         - hasAnthropicKey

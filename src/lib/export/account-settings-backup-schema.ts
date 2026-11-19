@@ -79,7 +79,9 @@ export const accountSettingsBackupSchema = z
     moodReminderEnabled: z.boolean().optional(),
     aiProvider: z.string().nullable().optional(),
     aiModel: z.string().nullable().optional(),
+    // The Local provider's base URL (column `aiLocalBaseUrl`, #1417).
     aiBaseUrl: z.string().nullable().optional(),
+    aiLocalModel: z.string().nullable().optional(),
     aiCompatBaseUrl: z.string().nullable().optional(),
     aiCompatModel: z.string().nullable().optional(),
     aiProviderChain: z.unknown().optional(),

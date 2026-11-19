@@ -202,6 +202,16 @@
     "ai_provider": {
       "private_host": "Dit adres ligt in een privénetwerk. De beheerder moet de exacte origin eerst toestaan in AI_PRIVATE_ORIGINS."
     },
+    "ai_test": {
+      "anthropic_key_missing": "Er is geen Anthropic-API-sleutel opgeslagen, dus er is niets getest. Vul de sleutel in op de Anthropic-kaart en sla hem op.",
+      "local_base_url_missing": "Het lokale model heeft geen opgeslagen basis-URL, dus er is niets getest. Vul hem in op de kaart van het lokale model en sla hem op.",
+      "private_host": "Dit adres ligt in een privénetwerk dat de beheerder niet heeft toegestaan, dus er is niets getest. De beheerder moet de exacte origin toevoegen aan AI_PRIVATE_ORIGINS.",
+      "compat_base_url_missing": "De OpenAI-compatibele gateway heeft geen opgeslagen basis-URL, dus er is niets getest. Vul hem in op de gatewaykaart en sla hem op.",
+      "compat_model_missing": "De OpenAI-compatibele gateway heeft geen opgeslagen model, dus er is niets getest. Vul er een in op de gatewaykaart en sla het op.",
+      "codex_not_connected": "Er is geen ChatGPT-account gekoppeld, dus er is niets getest. Koppel het op de ChatGPT-kaart.",
+      "openai_key_missing": "Jij noch de beheerder heeft een OpenAI-API-sleutel opgeslagen, dus er is niets getest. Vul de sleutel in op de OpenAI-kaart en sla hem op.",
+      "unknown_provider": "Deze server kent deze aanbieder niet, dus er is niets getest."
+    },
     "encounter": {
       "invalid": "Controleer de gegevens van het bezoek en probeer het opnieuw.",
       "practitioner-not-found": "Deze praktijk of arts bestaat niet meer. Kies een andere of geen.",
@@ -6694,6 +6704,7 @@
         "notConfigured": "De beheerder heeft op deze instantie geen gedeelde OpenAI-sleutel ingesteld."
       },
       "testProvider": "Actieve provider testen",
+      "testNamedProvider": "{provider} testen",
       "testSuccess": "OK: {provider} ({model})",
       "testFailedShort": "Test mislukt: {message}",
       "testUnexpectedResponse": "Verbinding met AI-provider mislukt: onverwacht antwoord van de server.",

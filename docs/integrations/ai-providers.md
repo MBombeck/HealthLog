@@ -139,10 +139,9 @@ dollars per month. A lighter override drops this further.
    paste the key, optionally override the model.
 
 The default model is `claude-sonnet-4-6` (`src/lib/ai/provider.ts`).
-The Anthropic client refuses to forward an Anthropic key to a stale
-`aiBaseUrl` even if one is parked in the shared column — Anthropic
-has no per-tenant base URL the UI exposes; the SDK default is the
-only correct endpoint.
+Anthropic has no per-tenant base URL the UI exposes; the SDK default
+is the only endpoint an Anthropic key is sent to. The Local provider's
+base URL belongs to Local alone and is never read for Anthropic.
 
 **Cost expectation.** A current Sonnet runs at a higher per-token
 cost than a lightweight OpenAI model but produces noticeably stronger
@@ -177,6 +176,12 @@ vllm serve Qwen/Qwen2.5-14B-Instruct \
 Base URL `http://<vllm-host>:8000/v1`, API key `your-shared-secret`,
 model `Qwen/Qwen2.5-14B-Instruct`. The local-client encrypts the
 API key at rest like every other provider credential.
+
+The Local provider keeps its own base URL and model. Selecting and
+saving another provider leaves them in place, so a Local entry in a
+provider chain keeps working, and the Local card always shows what is
+saved for it. **Test** on the AI settings page probes the provider
+whose card is on screen and says which one it tested.
 
 **Private endpoints.** Any user of the instance can type a base URL,
 so HealthLog refuses one on a private address unless the operator has

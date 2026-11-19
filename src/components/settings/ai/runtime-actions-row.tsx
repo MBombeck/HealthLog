@@ -21,9 +21,22 @@ import { translateCodeOrNull } from "@/lib/i18n/translate-code";
 
 import {
   localiseTestReason,
+  uiToLegacyProviderEnum,
   type ProviderType,
   type UserAIProvider,
 } from "./shared";
+
+/**
+ * #1417 — the stored provider value the connection test is asked to probe for
+ * the provider card on screen, or null for the operator's key, which has no
+ * provider value of its own: the test then probes the saved chain's first
+ * entry, which is what serves the account.
+ */
+function testedProviderValue(provider: ProviderType): string | null {
+  return provider === "codex"
+    ? "CHATGPT_OAUTH"
+    : uiToLegacyProviderEnum(provider);
+}
 
 export function RuntimeActionsRow({
   provider,
@@ -53,6 +66,7 @@ export function RuntimeActionsRow({
   const briefing = useAiCapability("briefing");
   const showRegenerate = canRegenerate && briefing.available;
 
+  const testedValue = testedProviderValue(provider);
   const [testing, setTesting] = useState(false);
   const [testMsg, setTestMsg] = useState<string | null>(null);
   const [testOk, setTestOk] = useState(false);
@@ -64,7 +78,19 @@ export function RuntimeActionsRow({
     setTesting(true);
     setTestMsg(null);
     try {
-      const res = await apiFetchRaw("/api/ai/test", { method: "POST" });
+      // #1417 — test the provider whose card is on screen, with what is saved
+      // for it. The test used to always probe the saved setup, so picking
+      // Local and pressing Test reported the gateway.
+      const res = await apiFetchRaw(
+        "/api/ai/test",
+        testedValue
+          ? {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ provider: testedValue }),
+            }
+          : { method: "POST" },
+      );
       // Guard against a non-JSON body. A reverse proxy / Cloudflare can
       // rewrite an origin error to its own HTML page; parsing that as JSON
       // throws `Unexpected token '<'` (Safari: "did not match the
@@ -130,9 +156,15 @@ export function RuntimeActionsRow({
         return;
       }
       setTestOk(true);
+      const servedBy = json.data?.providerType ?? "";
       setTestMsg(
         t("settings.ai.testSuccess", {
-          provider: json.data?.providerType ?? "",
+          provider:
+            translateCodeOrNull(
+              t,
+              "settings.ai.providerChain.types",
+              servedBy,
+            ) ?? servedBy,
           model: json.data?.model ?? "",
         }),
       );
@@ -213,10 +245,8 @@ export function RuntimeActionsRow({
     ? `${t("settings.lastGeneratedAt")}: ${formatDateTime(lastInsightAt)}`
     : null;
 
-  // Reserved for a future iteration that gates the Test button per
-  // provider (e.g. disable when admin-openai is selected and no admin
-  // key is present). For v1.4.16 the API decides.
-  void provider;
+  // The API decides whether the provider is set up; `userProvider` stays
+  // unread here.
   void userProvider;
 
   return (
@@ -287,7 +317,11 @@ export function RuntimeActionsRow({
           ) : (
             <Sparkles className="h-4 w-4" />
           )}
-          {t("settings.ai.testProvider")}
+          {testedValue
+            ? t("settings.ai.testNamedProvider", {
+                provider: t(`settings.ai.providerSelect.${provider}` as const),
+              })
+            : t("settings.ai.testProvider")}
         </Button>
         {showRegenerate && (
           <Button

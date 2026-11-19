@@ -49,23 +49,27 @@ export function LocalProviderForm({
 
   const seededKey =
     userProvider != null
-      ? `${userProvider.provider ?? ""}|${userProvider.model ?? ""}|${userProvider.baseUrl ?? ""}|${userProvider.localReasoningEffort ?? ""}`
+      ? `${userProvider.localModel ?? ""}|${userProvider.baseUrl ?? ""}|${userProvider.localReasoningEffort ?? ""}`
       : null;
   const [previousSeed, setPreviousSeed] = useState<string | null>(null);
   if (seededKey && seededKey !== previousSeed) {
     setPreviousSeed(seededKey);
-    // Stored on the chain entry, so it seeds whichever provider is selected.
+    // #1417 — Local's base URL and model are its own, so the card shows
+    // what is saved for Local whichever provider is selected. It used to
+    // fill them only while Local was selected, and a Save on the blank card
+    // then cleared them.
     setReasoning(userProvider?.localReasoningEffort ?? null);
-    if (userProvider?.provider === "LOCAL") {
-      setBaseUrl(userProvider.baseUrl ?? "");
-      const saved = userProvider.model ?? "";
-      if (saved && (LOCAL_MODEL_PRESETS as readonly string[]).includes(saved)) {
-        setModelChoice(saved);
-        setCustomModel("");
-      } else if (saved) {
-        setModelChoice(CUSTOM_MODEL_SENTINEL);
-        setCustomModel(saved);
-      }
+    setBaseUrl(userProvider?.baseUrl ?? "");
+    const saved = userProvider?.localModel ?? "";
+    if (saved && (LOCAL_MODEL_PRESETS as readonly string[]).includes(saved)) {
+      setModelChoice(saved);
+      setCustomModel("");
+    } else if (saved) {
+      setModelChoice(CUSTOM_MODEL_SENTINEL);
+      setCustomModel(saved);
+    } else {
+      setModelChoice("");
+      setCustomModel("");
     }
   }
 
@@ -78,6 +82,7 @@ export function LocalProviderForm({
     mutationFn: async () => {
       const body: Record<string, unknown> = {
         provider: uiToLegacyProviderEnum("local"),
+        // With `provider: LOCAL`, `model` is Local's own model.
         baseUrl: baseUrl.trim() || null,
         model: effectiveModel || null,
         localReasoningEffort: reasoning,

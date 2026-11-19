@@ -658,11 +658,24 @@ function entries(user: Pick<User, "id">): Entry[] {
       },
       me: { pick: (me) => at(me, "avatarUrl") },
     },
+    // #1417 — Local's model is its own: saved from the Local card first, it
+    // survives the OpenAI card being saved after it.
+    {
+      columns: ["aiLocalModel"],
+      write: {
+        handler: aiProvider.PATCH,
+        method: "PATCH",
+        route: "/api/user/ai-provider",
+        body: { provider: "LOCAL", model: "llama3.1:8b" },
+      },
+      read: get(aiProvider.GET, "/api/user/ai-provider", "localModel"),
+      expected: "llama3.1:8b",
+    },
     {
       columns: [
         "aiProvider",
         "aiModel",
-        "aiBaseUrl",
+        "aiLocalBaseUrl",
         "aiCompatBaseUrl",
         "aiCompatModel",
         "aiResponseTimeoutSeconds",
@@ -672,8 +685,8 @@ function entries(user: Pick<User, "id">): Entry[] {
         method: "PATCH",
         route: "/api/user/ai-provider",
         body: {
-          provider: "LOCAL",
-          model: "llama3.1:8b",
+          provider: "OPENAI",
+          model: "gpt-4o",
           baseUrl: "https://ollama.example.com",
           compatBaseUrl: "https://gateway.example.com/v1",
           compatModel: "gpt-4o-mini",
@@ -690,15 +703,17 @@ function entries(user: Pick<User, "id">): Entry[] {
           provider: at(res.data, "provider"),
           model: at(res.data, "model"),
           baseUrl: at(res.data, "baseUrl"),
+          localModel: at(res.data, "localModel"),
           compatBaseUrl: at(res.data, "compatBaseUrl"),
           compatModel: at(res.data, "compatModel"),
           responseTimeoutSeconds: at(res.data, "responseTimeoutSeconds"),
         }),
       },
       expected: {
-        provider: "LOCAL",
-        model: "llama3.1:8b",
+        provider: "OPENAI",
+        model: "gpt-4o",
         baseUrl: "https://ollama.example.com",
+        localModel: "llama3.1:8b",
         compatBaseUrl: "https://gateway.example.com/v1",
         compatModel: "gpt-4o-mini",
         responseTimeoutSeconds: 120,

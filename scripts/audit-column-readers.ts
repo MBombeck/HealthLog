@@ -609,7 +609,7 @@ const KEY_RE = /(?<![\w$.])([A-Za-z_$][\w$]*)\s*:/g;
 const SHORTHAND_RE = /[{,]\s*([A-Za-z_$][\w$]*)\s*(?=[,}])/g;
 const ACCESS_RE = /\.\s*([A-Za-z_$][\w$]*)(?![\w$])(?!\s*=(?!=))/g;
 /**
- * `updates.aiBaseUrl = null` — a payload assembled into a variable before the
+ * `updates.aiLocalBaseUrl = null` — a payload assembled into a variable before the
  * Prisma call. Without this the whole settings layer, which builds its update
  * objects field by field precisely so it cannot mass-assign, reads as a tree
  * full of columns nothing ever writes.

@@ -43,7 +43,7 @@ function row(overrides: Record<string, unknown> = {}) {
     aiAnthropicKeyEncrypted: null,
     aiLocalKeyEncrypted: null,
     aiOpenaiKeyEncrypted: null,
-    aiBaseUrl: null,
+    aiLocalBaseUrl: null,
     aiCompatBaseUrl: null,
     aiCompatModel: null,
     aiModel: null,
@@ -113,7 +113,7 @@ describe("probeProviderChain", () => {
         ],
         aiAnthropicKeyEncrypted: "enc",
         aiOpenaiKeyEncrypted: "enc",
-        aiBaseUrl: "http://10.0.0.5:11434/v1",
+        aiLocalBaseUrl: "http://10.0.0.5:11434/v1",
         aiModel: "claude-sonnet-4-6",
       }),
     );
@@ -149,7 +149,7 @@ describe("probeProviderChain", () => {
           { providerType: "local", enabled: true, priority: 1 },
         ],
         aiOpenaiKeyEncrypted: "enc",
-        aiBaseUrl: "http://10.0.0.5:11434/v1",
+        aiLocalBaseUrl: "http://10.0.0.5:11434/v1",
         aiModel: "gpt-3.5-turbo",
       }),
     );

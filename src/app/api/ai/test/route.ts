@@ -128,7 +128,13 @@ export const POST = apiHandler(async (request: NextRequest) => {
     provider = await resolveProviderForTest(user.id, override);
   } catch (e) {
     if (e instanceof AITestConfigError) {
-      return apiError(e.message, e.status);
+      // #1417 — the code names what is missing; without it the page could
+      // only show the generic "some entries were not accepted" sentence.
+      annotate({
+        action: { name: "ai.test.config_refused" },
+        meta: { error_code: e.errorCode },
+      });
+      return apiError(e.message, e.status, { errorCode: e.errorCode });
     }
     throw e;
   }

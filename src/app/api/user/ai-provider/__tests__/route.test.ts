@@ -128,7 +128,7 @@ describe("GET /api/user/ai-provider availability", () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       aiProvider: "OPENAI",
       aiModel: "gpt-4o",
-      aiBaseUrl: null,
+      aiLocalBaseUrl: null,
       aiAnthropicKeyEncrypted: null,
       aiLocalKeyEncrypted: null,
       aiOpenaiKeyEncrypted: "enc-openai",
@@ -151,7 +151,7 @@ describe("GET /api/user/ai-provider availability", () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       aiProvider: null,
       aiModel: null,
-      aiBaseUrl: null,
+      aiLocalBaseUrl: null,
       aiAnthropicKeyEncrypted: null,
       aiLocalKeyEncrypted: null,
       aiOpenaiKeyEncrypted: null,
@@ -175,7 +175,7 @@ describe("GET /api/user/ai-provider availability", () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       aiProvider: null,
       aiModel: null,
-      aiBaseUrl: null,
+      aiLocalBaseUrl: null,
       aiAnthropicKeyEncrypted: null,
       aiLocalKeyEncrypted: null,
       aiOpenaiKeyEncrypted: null,
@@ -196,7 +196,7 @@ describe("GET /api/user/ai-provider availability", () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       aiProvider: "OPENAI",
       aiModel: "gpt-4o",
-      aiBaseUrl: null,
+      aiLocalBaseUrl: null,
       aiAnthropicKeyEncrypted: null,
       aiLocalKeyEncrypted: null,
       aiOpenaiKeyEncrypted: null,
@@ -383,17 +383,19 @@ describe("PATCH /api/user/ai-provider — the gateway's own columns (#470)", () 
     );
   });
 
-  it("leaves the gateway URL alone when the provider switches to OpenAI", async () => {
+  it("leaves the gateway URL and Local's URL alone when the provider switches to OpenAI", async () => {
     vi.mocked(isPublicUrl).mockReturnValue(true);
     await patch(patchRequest({ provider: "OPENAI" }));
     const data = vi.mocked(prisma.user.update).mock.calls[0][0].data as Record<
       string,
       unknown
     >;
-    // `aiBaseUrl` is the shared LOCAL column and IS cleared. The gateway's is
-    // untouched — it belongs to one provider, and that provider is not this
-    // one, so there is nothing for a stale value to redirect.
-    expect(data.aiBaseUrl).toBeNull();
+    // #1417 — each address belongs to one provider, and that provider is not
+    // this one. Local's used to be cleared here, which wiped a working Local
+    // setup; only the Local resolution reads it, so there is nothing for it
+    // to redirect.
+    expect(data).not.toHaveProperty("aiLocalBaseUrl");
+    expect(data).not.toHaveProperty("aiLocalModel");
     expect(data).not.toHaveProperty("aiCompatBaseUrl");
   });
 });
@@ -495,7 +497,7 @@ describe("GET /api/user/ai-provider — the gateway's fields (#470)", () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       aiProvider: "OPENAI_COMPATIBLE",
       aiModel: null,
-      aiBaseUrl: null,
+      aiLocalBaseUrl: null,
       aiAnthropicKeyEncrypted: null,
       aiLocalKeyEncrypted: null,
       aiOpenaiKeyEncrypted: null,
@@ -525,6 +527,115 @@ describe("GET /api/user/ai-provider — the gateway's fields (#470)", () => {
 });
 
 /**
+ * #1417 — the Local provider's base URL and model are its own. Saving the
+ * gateway used to clear Local's address, and the Local card, filled only while
+ * Local was selected, then saved blanks over the rest.
+ */
+describe("the Local provider's own base URL and model (#1417)", () => {
+  const patch = PATCH as (req: Request) => Promise<Response>;
+
+  beforeEach(() => {
+    vi.mocked(prisma.user.update).mockReset();
+    vi.mocked(prisma.user.findUnique).mockReset();
+    vi.mocked(isPublicUrl).mockReturnValue(true);
+  });
+
+  function written(): Record<string, unknown> {
+    return vi.mocked(prisma.user.update).mock.calls[0][0].data as Record<
+      string,
+      unknown
+    >;
+  }
+
+  it("reads Local's address and model while the gateway is selected", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      aiProvider: "OPENAI_COMPATIBLE",
+      aiModel: "gpt-4o",
+      aiLocalBaseUrl: "https://ollama.example.com/v1",
+      aiLocalModel: "gemma3:27b",
+      aiAnthropicKeyEncrypted: null,
+      aiLocalKeyEncrypted: "enc-local",
+      aiOpenaiKeyEncrypted: null,
+      aiCompatBaseUrl: "https://gateway.example.com/v1",
+      aiCompatKeyEncrypted: null,
+      aiCompatModel: "cloud",
+      aiResponseTimeoutSeconds: null,
+    } as never);
+    vi.mocked(resolveProviderAvailability).mockResolvedValue({
+      aiAvailable: true,
+      managedBy: "user",
+    });
+    const res = await (GET as () => Promise<Response>)();
+    const body = (await res.json()) as {
+      data: { model: string; baseUrl: string; localModel: string };
+    };
+    expect(body.data.baseUrl).toBe("https://ollama.example.com/v1");
+    expect(body.data.localModel).toBe("gemma3:27b");
+    // `model` stays the selected provider's.
+    expect(body.data.model).toBe("gpt-4o");
+  });
+
+  it("reports Local's model as `model` while Local is selected", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      aiProvider: "LOCAL",
+      aiModel: "gpt-4o",
+      aiLocalBaseUrl: "https://ollama.example.com/v1",
+      aiLocalModel: "gemma3:27b",
+    } as never);
+    vi.mocked(resolveProviderAvailability).mockResolvedValue({
+      aiAvailable: true,
+      managedBy: "local",
+    });
+    const res = await (GET as () => Promise<Response>)();
+    const body = (await res.json()) as { data: { model: string } };
+    expect(body.data.model).toBe("gemma3:27b");
+  });
+
+  it("saves the Local card's model into Local's column, not the shared one", async () => {
+    await patch(
+      patchRequest({
+        provider: "LOCAL",
+        baseUrl: "https://ollama.example.com/v1",
+        model: "gemma3:27b",
+      }),
+    );
+    expect(written()).toMatchObject({
+      aiProvider: "LOCAL",
+      aiLocalBaseUrl: "https://ollama.example.com/v1",
+      aiLocalModel: "gemma3:27b",
+    });
+    expect(written()).not.toHaveProperty("aiModel");
+  });
+
+  it("saves another provider's model into the shared column, leaving Local's alone", async () => {
+    await patch(patchRequest({ provider: "ANTHROPIC", model: "claude" }));
+    expect(written()).toMatchObject({ aiModel: "claude" });
+    expect(written()).not.toHaveProperty("aiLocalModel");
+    expect(written()).not.toHaveProperty("aiLocalBaseUrl");
+  });
+
+  it("routes a model without a provider by the saved provider", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      aiProvider: "LOCAL",
+    } as never);
+    await patch(patchRequest({ model: "qwen2.5" }));
+    expect(written()).toEqual({ aiLocalModel: "qwen2.5" });
+  });
+
+  it("keeps Local's address and model when the gateway is saved", async () => {
+    await patch(
+      patchRequest({
+        provider: "OPENAI_COMPATIBLE",
+        compatBaseUrl: "https://gateway.example.com/v1",
+        compatModel: "cloud",
+      }),
+    );
+    expect(written()).not.toHaveProperty("aiLocalBaseUrl");
+    expect(written()).not.toHaveProperty("aiLocalModel");
+  });
+});
+
+/**
  * v1.38.19 — the honest shared-provider offer.
  *
  * The setup flow's last screen used to promise that insights "work for you
@@ -539,7 +650,7 @@ describe("GET /api/user/ai-provider — the shared-provider offer", () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       aiProvider: null,
       aiModel: null,
-      aiBaseUrl: null,
+      aiLocalBaseUrl: null,
       aiAnthropicKeyEncrypted: null,
       aiLocalKeyEncrypted: null,
       aiOpenaiKeyEncrypted: null,
@@ -661,7 +772,7 @@ describe("GET /api/user/ai-provider — the shared-provider offer", () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       aiProvider: "OPENAI",
       aiModel: null,
-      aiBaseUrl: null,
+      aiLocalBaseUrl: null,
       aiAnthropicKeyEncrypted: null,
       aiLocalKeyEncrypted: null,
       aiOpenaiKeyEncrypted: "enc-openai",

@@ -57,6 +57,11 @@ async function saveProviderSettings(
   ]);
 }
 
+/** Whether a stored or requested provider value is the Local provider. */
+function isLocal(provider: string | null | undefined): boolean {
+  return (provider ?? "").toUpperCase() === "LOCAL";
+}
+
 export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
   annotate({ action: { name: "user.ai-provider.get" } });
@@ -66,7 +71,8 @@ export const GET = apiHandler(async () => {
     select: {
       aiProvider: true,
       aiModel: true,
-      aiBaseUrl: true,
+      aiLocalBaseUrl: true,
+      aiLocalModel: true,
       aiAnthropicKeyEncrypted: true,
       aiLocalKeyEncrypted: true,
       aiOpenaiKeyEncrypted: true,
@@ -157,8 +163,13 @@ export const GET = apiHandler(async () => {
 
   return apiSuccess({
     provider: u?.aiProvider ?? null,
-    model: u?.aiModel ?? null,
-    baseUrl: u?.aiBaseUrl ?? null,
+    // The selected provider's model: Local's own column when Local is
+    // selected, the shared one otherwise (#1417).
+    model: (isLocal(u?.aiProvider) ? u?.aiLocalModel : u?.aiModel) ?? null,
+    // The Local provider's base URL and model, whichever provider is
+    // selected, so the Local card always shows what is saved for it.
+    baseUrl: u?.aiLocalBaseUrl ?? null,
+    localModel: u?.aiLocalModel ?? null,
     aiAvailable,
     managedBy,
     hasAnthropicKey: Boolean(u?.aiAnthropicKeyEncrypted),
@@ -290,13 +301,29 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
       body.provider === null || body.provider === "" ? null : body.provider;
   }
 
+  // `model` is the model of the provider this request saves: Local's own
+  // column when that is Local, the shared one otherwise (#1417). The provider
+  // is the one in the body, or the saved one when the body names none.
   if (body.model !== undefined) {
-    updates.aiModel = body.model === null ? null : body.model.trim() || null;
+    const savesLocal =
+      body.provider !== undefined
+        ? isLocal(body.provider)
+        : isLocal(
+            (
+              await prisma.user.findUnique({
+                where: { id: user.id },
+                select: { aiProvider: true },
+              })
+            )?.aiProvider,
+          );
+    const model = body.model === null ? null : body.model.trim() || null;
+    if (savesLocal) updates.aiLocalModel = model;
+    else updates.aiModel = model;
   }
 
   if (body.baseUrl !== undefined) {
     if (body.baseUrl === null || body.baseUrl === "") {
-      updates.aiBaseUrl = null;
+      updates.aiLocalBaseUrl = null;
     } else {
       const trimmed = body.baseUrl.trim();
       // SSRF guard: by default reject private/internal hostnames so a
@@ -314,15 +341,14 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
           { errorCode: "ai_provider.private_host" },
         );
       }
-      updates.aiBaseUrl = trimmed;
+      updates.aiLocalBaseUrl = trimmed;
     }
   }
 
   // ── v1.33.1 (#470) — the OpenAI-compatible gateway's three fields ──
-  // Deliberately a separate block from `baseUrl` above: that column is shared
-  // with LOCAL and is cleared when the provider switches away from it. This
-  // one belongs to a single provider and to no other, which is what keeps the
-  // OpenAI key from ever being sendable to a user-supplied host.
+  // Deliberately a separate block from `baseUrl` above: each address belongs
+  // to a single provider and to no other, which is what keeps the OpenAI key
+  // from ever being sendable to a user-supplied host.
   if (body.compatBaseUrl !== undefined) {
     if (body.compatBaseUrl === null || body.compatBaseUrl === "") {
       updates.aiCompatBaseUrl = null;
@@ -401,19 +427,12 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     });
   }
 
-  // When the provider switches away from LOCAL, drop any stored
-  // `aiBaseUrl`. The column is shared across providers, so without
-  // this a user who once configured LOCAL → http://192.168.x.x and
-  // then switched to OPENAI/ANTHROPIC would have their cloud key
-  // sent to that URL on the next request. Only LOCAL legitimately
-  // uses a custom base URL.
-  if (
-    typeof updates.aiProvider === "string" &&
-    updates.aiProvider !== "LOCAL" &&
-    !("aiBaseUrl" in updates)
-  ) {
-    updates.aiBaseUrl = null;
-  }
+  // #1417 — Local's base URL and model are NOT cleared when another
+  // provider is selected. They used to be, because the URL column read as
+  // shared; that wiped a working Local setup whenever the gateway was saved,
+  // and a Local entry in a chain lost its address with it. A cloud key cannot
+  // reach the address: only the Local resolution reads `aiLocalBaseUrl`
+  // (`src/lib/ai/provider.ts`, frozen by `local-endpoint-isolation.test.ts`).
 
   // A stored provider key is a credential: setting or removing one is
   // audited like every other credential change, with the slot it went into

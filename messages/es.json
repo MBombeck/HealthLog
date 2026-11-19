@@ -202,6 +202,16 @@
     "ai_provider": {
       "private_host": "Esta dirección está en una red privada. El operador tiene que permitir antes su origen exacto en AI_PRIVATE_ORIGINS."
     },
+    "ai_test": {
+      "anthropic_key_missing": "No hay ninguna clave de API de Anthropic guardada, así que no se probó nada. Introduce la clave en la tarjeta de Anthropic y guárdala.",
+      "local_base_url_missing": "El modelo local no tiene URL base guardada, así que no se probó nada. Introdúcela en la tarjeta del modelo local y guárdala.",
+      "private_host": "Esta dirección está en una red privada que el operador no ha permitido, así que no se probó nada. El operador tiene que añadir su origen exacto a AI_PRIVATE_ORIGINS.",
+      "compat_base_url_missing": "La pasarela compatible con OpenAI no tiene URL base guardada, así que no se probó nada. Introdúcela en la tarjeta de la pasarela y guárdala.",
+      "compat_model_missing": "La pasarela compatible con OpenAI no tiene modelo guardado, así que no se probó nada. Introduce uno en la tarjeta de la pasarela y guárdalo.",
+      "codex_not_connected": "No hay ninguna cuenta de ChatGPT conectada, así que no se probó nada. Conéctala en la tarjeta de ChatGPT.",
+      "openai_key_missing": "Ni tú ni el operador habéis guardado una clave de API de OpenAI, así que no se probó nada. Introduce la clave en la tarjeta de OpenAI y guárdala.",
+      "unknown_provider": "Este servidor no conoce este proveedor, así que no se probó nada."
+    },
     "encounter": {
       "invalid": "Comprueba los datos de la cita e inténtalo de nuevo.",
       "practitioner-not-found": "Esta consulta o este médico ya no existe. Elige otro o ninguno.",
@@ -6694,6 +6704,7 @@
         "notConfigured": "El operador no ha configurado una clave de OpenAI compartida en esta instancia."
       },
       "testProvider": "Probar el proveedor activo",
+      "testNamedProvider": "Probar {provider}",
       "testSuccess": "OK: {provider} ({model})",
       "testFailedShort": "Prueba fallida: {message}",
       "testUnexpectedResponse": "Falló la conexión con el proveedor de IA: respuesta inesperada del servidor.",

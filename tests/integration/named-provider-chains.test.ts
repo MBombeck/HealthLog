@@ -197,7 +197,7 @@ async function makeRecord(overrides: Record<string, unknown> = {}) {
       aiModel: "claude-sonnet-4-6",
       aiAnthropicKeyEncrypted: encrypt("sk-ant-integration"),
       aiOpenaiKeyEncrypted: encrypt("sk-openai-integration"),
-      aiBaseUrl: "http://ollama.internal.test:11434/v1",
+      aiLocalBaseUrl: "http://ollama.internal.test:11434/v1",
       aiCompatBaseUrl: "https://gateway.example.test/v1",
       aiCompatModel: "gpt-4o-mini",
       aiProviderChain: MAIN_CHAIN,
@@ -440,7 +440,7 @@ describe("an attached chain", () => {
 
 describe("a one-entry chain is a binding", () => {
   it("refuses when its provider is not configured, while the default would serve", async () => {
-    const record = await makeRecord({ aiBaseUrl: null });
+    const record = await makeRecord({ aiLocalBaseUrl: null });
     await grant(record.id, "ai_full");
     await setNamedChains(record.id, {
       chains: [{ id: "home", name: "Home only", entries: ["local"] }],

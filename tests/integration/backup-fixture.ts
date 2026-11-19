@@ -1668,7 +1668,7 @@ export const USER_FILL_OVERRIDES: Readonly<Record<string, unknown>> = {
   "User.glucoseUnit": "mmol/L",
   "User.insightsPrivacyMode": "raw",
   "User.aiProvider": "LOCAL",
-  "User.aiBaseUrl": "https://llm.example.com/v1",
+  "User.aiLocalBaseUrl": "https://llm.example.com/v1",
   "User.aiCompatBaseUrl": "https://gateway.example.com/v1",
   "User.thresholdsJson": { WEIGHT: { min: 60, max: 80 } },
   // The restore admits goal by goal against the goals schema, so the generic

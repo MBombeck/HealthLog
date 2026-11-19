@@ -315,7 +315,11 @@ describe("POST /api/ai/test — dropdown-aware override", () => {
   it("surfaces config errors as the same status as the resolver throws", async () => {
     const { AITestConfigError } = await import("@/lib/ai/provider");
     vi.mocked(resolveProviderForTest).mockRejectedValueOnce(
-      new AITestConfigError(422, "Anthropic API key not configured"),
+      new AITestConfigError(
+        422,
+        "Anthropic API key not configured",
+        "anthropic_key_missing",
+      ),
     );
     const response = await POST(
       jsonRequest({ provider: "ANTHROPIC" }) as never,
@@ -323,6 +327,23 @@ describe("POST /api/ai/test — dropdown-aware override", () => {
     expect(response.status).toBe(422);
     const body = (await response.json()) as ApiErrorEnvelope;
     expect(body.error).toBe("Anthropic API key not configured");
+  });
+
+  it("names what is missing in the 422's errorCode (#1417)", async () => {
+    const { AITestConfigError } = await import("@/lib/ai/provider");
+    vi.mocked(resolveProviderForTest).mockRejectedValueOnce(
+      new AITestConfigError(
+        422,
+        "Local provider requires a base URL",
+        "local_base_url_missing",
+      ),
+    );
+    const response = await POST(jsonRequest({ provider: "LOCAL" }) as never);
+    expect(response.status).toBe(422);
+    const body = (await response.json()) as {
+      meta?: { errorCode?: string };
+    };
+    expect(body.meta?.errorCode).toBe("ai_test.local_base_url_missing");
   });
 });
 
