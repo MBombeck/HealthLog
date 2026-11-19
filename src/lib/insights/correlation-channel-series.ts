@@ -94,13 +94,10 @@ import { dateOnlyKey } from "@/lib/tz/date-only";
 import { dayValueRows } from "@/lib/measurements/day-mean";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 import {
-  correlationSymptomIds,
   decryptSymptomText,
+  pickCorrelationSymptoms,
 } from "@/lib/symptoms/server";
-import {
-  MAX_ACTIVE_SYMPTOM_DEFINITIONS,
-  SYMPTOM_CHANNEL_PREFIX,
-} from "@/lib/symptoms/shared";
+import { SYMPTOM_CHANNEL_PREFIX } from "@/lib/symptoms/shared";
 
 /**
  * v1.21.0 (FDREXTEND) — build the user's MEDICATION_COMPLIANCE daily series.
@@ -457,13 +454,6 @@ export async function fetchCustomMetricBehaviourSeries(
 }
 
 /**
- * Ceiling on `SYMPTOM:<id>` channels. The definition cap already holds the
- * active set at eight; restated here so the matrix bound does not depend on a
- * route check staying where it is.
- */
-export const MAX_SYMPTOM_CORRELATION_CHANNELS = MAX_ACTIVE_SYMPTOM_DEFINITIONS;
-
-/**
  * v1.40 — one OUTCOME series per active person-defined symptom, keyed
  * `SYMPTOM:<definitionId>` and labelled with the decrypted name (the data
  * label `interpret()` prefers over the key). Daily value = that day's highest
@@ -476,20 +466,34 @@ export async function fetchSymptomEventSeries(
   tz: string,
   since: Date,
 ): Promise<NamedSeries[]> {
-  const definitions = await prisma.symptomDefinition.findMany({
-    where: { userId, id: { in: await correlationSymptomIds(userId) } },
-    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }, { id: "asc" }],
-    select: {
-      id: true,
-      labelEncrypted: true,
-      events: {
-        where: { deletedAt: null, occurredAt: { gte: since } },
-        orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
-        take: 5000,
-        select: { occurredAt: true, intensity: true },
-      },
+  // Two statements: the active definitions, then the chosen ones' events.
+  const definitions = pickCorrelationSymptoms(
+    await prisma.symptomDefinition.findMany({
+      where: { userId, isActive: true },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }, { id: "asc" }],
+      select: { id: true, code: true, labelEncrypted: true },
+    }),
+  );
+  if (definitions.length === 0) return [];
+  const events = await prisma.symptomEvent.findMany({
+    where: {
+      userId,
+      definitionId: { in: definitions.map((d) => d.id) },
+      deletedAt: null,
+      occurredAt: { gte: since },
     },
+    orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
+    take: SYMPTOM_EVENT_READ_CAP * definitions.length,
+    select: { definitionId: true, occurredAt: true, intensity: true },
   });
+  const byDefinition = new Map<string, { at: Date; intensity: number }[]>();
+  for (const event of events) {
+    const list = byDefinition.get(event.definitionId) ?? [];
+    // Newest first, so each definition keeps its newest events under the cap.
+    if (list.length >= SYMPTOM_EVENT_READ_CAP) continue;
+    list.push({ at: event.occurredAt, intensity: event.intensity });
+    byDefinition.set(event.definitionId, list);
+  }
   const series: NamedSeries[] = [];
   for (const definition of definitions) {
     const label = decryptSymptomText(definition.labelEncrypted, "label");
@@ -498,16 +502,16 @@ export async function fetchSymptomEventSeries(
       buildSymptomEventDailySeries({
         key: `${SYMPTOM_CHANNEL_PREFIX}${definition.id}`,
         label,
-        events: definition.events.map((event) => ({
-          at: event.occurredAt,
-          intensity: event.intensity,
-        })),
+        events: byDefinition.get(definition.id) ?? [],
         tz,
       }),
     );
   }
   return series;
 }
+
+/** Per-definition ceiling on the events one symptom channel reads. */
+const SYMPTOM_EVENT_READ_CAP = 5000;
 
 /** Day key (YYYY-MM-DD) for an instant in the user's display timezone. */
 function tzDayKey(at: Date, tz: string): string {

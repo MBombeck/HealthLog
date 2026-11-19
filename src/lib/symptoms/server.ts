@@ -176,25 +176,19 @@ export function countCappedSymptomDefinitions(userId: string): Promise<number> {
 }
 
 /**
- * The definitions that are correlation channels, at most `max`: the active
- * ones the person named first, then the active built-in ones Apple Health
- * created, each in display order. A built-in one holds no slot of the cap,
- * so the matrix bound is applied here, and a symptom someone chose to track
- * is never pushed out by an imported one.
+ * The definitions that are correlation channels, at most `max`, from the
+ * active ones in display order: the ones the person named first, then the
+ * built-in ones Apple Health created. A built-in one holds no slot of the
+ * cap, so the matrix bound is applied here, and a symptom someone chose to
+ * track is never pushed out by an imported one. Pure, so the caller folds
+ * it into the read it already makes.
  */
-export async function correlationSymptomIds(
-  userId: string,
+export function pickCorrelationSymptoms<T extends { code: string | null }>(
+  activeInDisplayOrder: readonly T[],
   max: number = MAX_ACTIVE_SYMPTOM_DEFINITIONS,
-): Promise<string[]> {
-  const rows = await prisma.symptomDefinition.findMany({
-    where: { userId, isActive: true },
-    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }, { id: "asc" }],
-    select: { id: true, code: true },
-  });
+): T[] {
   return [
-    ...rows.filter((d) => d.code === null),
-    ...rows.filter((d) => d.code !== null),
-  ]
-    .slice(0, max)
-    .map((d) => d.id);
+    ...activeInDisplayOrder.filter((d) => d.code === null),
+    ...activeInDisplayOrder.filter((d) => d.code !== null),
+  ].slice(0, max);
 }

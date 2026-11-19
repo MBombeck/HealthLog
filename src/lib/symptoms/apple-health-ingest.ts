@@ -65,14 +65,6 @@ export interface SymptomBatchEntry {
 /** A batch answer: the measurement batch's shape exactly. */
 export type SymptomBatchResult = BatchIngestResult;
 
-export const SYMPTOM_BATCH_SKIP_REASONS = [
-  "unsupported_source",
-  UNSTABLE_EXTERNAL_ID_REASON,
-  "unknown_code",
-  "value_out_of_range",
-  "implausible_timestamp",
-] as const;
-
 /** What an accepted entry becomes. */
 interface PreparedSymptom {
   index: number;

@@ -87,7 +87,3 @@ export function isSymptomBuiltinCode(
 export function symptomBuiltinLabelKey(code: SymptomBuiltinCode): string {
   return `symptoms.builtin.${code}`;
 }
-
-/** The provenance values a symptom occurrence can carry. */
-export const SYMPTOM_EVENT_SOURCES = ["MANUAL", "APPLE_HEALTH"] as const;
-export type SymptomEventSource = (typeof SYMPTOM_EVENT_SOURCES)[number];
