@@ -159,6 +159,34 @@ worker container that start together wait for each other on an advisory lock
 and derive the same password. Going back to 1.46 runs as the owner, as 1.46
 always did, and finds nothing in the queue schema it did not create.
 
+### v1.48.3 notes
+
+The sequence above covers this release; no step by hand is needed, but take
+a database dump before upgrading: one migration deletes rows for good.
+
+- Migration `0512` adds `users.ai_local_model` and copies the model a Local
+  provider ran on into it. Additive; `ai_model` is left as it was.
+- Migration `0513` merges Apple Health export workout duplicates. Every
+  export workout that carries its activity type is keyed on that type and
+  its UTC start and end; of each group the oldest row is kept (a route, a
+  heart-rate series, an insight or an empty total it lacks moves over from a
+  copy, personal records follow it) and the copies are **hard-deleted**. It
+  also soft-deletes Apple Health lab results that duplicate a stored number
+  as a censored text (`<5` beside a 5 taken at the same instant in the same
+  unit); those come back by clearing `deleted_at`.
+
+Restoring a backup written before this release collapses the same workout
+copies on the way in, so they do not return.
+
+Rollback to v1.48.2: switch the image back. The app runs on the migrated
+schema; the new column is ignored. Two things do not undo themselves:
+
+- The v1.48.2 importer keys export workouts the old way, so re-importing an
+  export under it creates the workout duplicates again. Stay on v1.48.3 for
+  export imports, or expect to clean up after the next upgrade.
+- The deleted workout copies come back only from the dump or a backup taken
+  before the upgrade; the kept row holds the same session.
+
 ### v1.48.2 notes
 
 The sequence above covers this release; no step by hand is needed. Both
