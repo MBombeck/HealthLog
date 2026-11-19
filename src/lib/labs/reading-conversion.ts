@@ -127,10 +127,13 @@ export async function readingInMarkerUnit(
 /**
  * A marker minted from a text result ("SEE NOTE", "negative") has no unit,
  * and once it holds a reading its unit is locked, so the first number to
- * arrive was refused against an empty unit nothing had ever chosen. While
- * every reading the marker holds is text there is no number the unit could
- * contradict, so the first numeric reading gives the marker its unit, the
- * dimensionless "1" included. The update only matches a marker whose unit is
+ * arrive was refused against an empty unit nothing had ever chosen. The first
+ * reading that states a unit gives the marker that unit, the dimensionless
+ * "1" included. That holds too when the marker already holds numbers stored
+ * without a unit (a value typed before any unit was chosen, #1421): they were
+ * refused nothing then and stated nothing, and refusing every later reading
+ * that does state one left the marker unable to take any. Those numbers take
+ * the adopted unit with the marker. The update only matches a marker whose unit is
  * still empty, so two readings racing for it cannot both win; the loser reads
  * the winner's unit and is compared against it. `marker.unit` is set on the
  * caller's object, which writes the reading under it. The adoption is not in
@@ -154,10 +157,6 @@ async function adoptFirstNumericUnit(
 ): Promise<boolean> {
   const stated = unit.trim();
   if (marker.unit.trim() !== "" || stated === "") return false;
-  const numeric = await client.labResult.count({
-    where: { biomarkerId: marker.id, value: { not: null }, deletedAt: null },
-  });
-  if (numeric > 0) return false;
   const bounds = isDimensionlessUnit(stated)
     ? null
     : mintedBounds(printed.low, printed.high);
@@ -175,6 +174,13 @@ async function adoptFirstNumericUnit(
     if (current) marker.unit = current.unit;
     return false;
   }
+  // Numbers stored while the marker had no unit were stated in none. They
+  // take the unit with the marker, so every number it holds reads in one
+  // unit, which is how readers show them (from the marker) anyway.
+  await client.labResult.updateMany({
+    where: { biomarkerId: marker.id, unit: "", value: { not: null } },
+    data: { unit: stated },
+  });
   marker.unit = stated;
   if (bounds) {
     marker.lowerBound = bounds.lowerBound;
