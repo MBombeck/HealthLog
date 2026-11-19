@@ -154,10 +154,12 @@ function markerCatalogKeys(
  * unit, or one the conversion moves into it. No unit (a qualitative reading,
  * or none stated) always fits.
  *
- * A marker with an empty unit takes any unit: no reading has chosen its unit
- * yet, so the first numeric reading that states one gives it that unit when it
- * is written (`adoptFirstNumericUnit` in `./reading-conversion.ts`), numbers
- * it already holds without a unit included.
+ * A marker with an empty unit takes any unit: it was minted from a text
+ * result and no number has chosen its unit yet, so the first numeric reading
+ * gives it one when it is written (`adoptFirstNumericUnit` in
+ * `./reading-conversion.ts`). The write stays the authority: should the marker
+ * hold a number after all, the write refuses the reading as
+ * `marker_unit_unset`.
  */
 export function unitFitsMarker(
   marker: Pick<IndexedMarker, "unit" | "analyteKey">,

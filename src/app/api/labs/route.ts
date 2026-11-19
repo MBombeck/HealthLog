@@ -269,6 +269,20 @@ async function postLabResult(request: NextRequest) {
         action: { name: "labs.create.unit-mismatch" },
         meta: { biomarkerId: biomarker.id, reason: reading.reason },
       });
+      if (reading.reason === "marker_unit_unset") {
+        // The marker holds numbers stored without a unit; no unit can be
+        // chosen for them from this reading, so the person sets it first.
+        return apiError(
+          `${biomarker.name} has values saved without a unit. Set the marker's unit first, then add this reading.`,
+          422,
+          {
+            errorCode: "labs.unit.unset",
+            markerUnit: biomarker.unit,
+            readingUnit: unit,
+            reason: reading.reason,
+          },
+        );
+      }
       return apiError(
         unitMismatchMessage(unit, biomarker.name, biomarker.unit),
         422,

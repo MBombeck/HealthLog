@@ -108,6 +108,9 @@
         "qualitativeExpected": "Enter a text result for this qualitative reading.",
         "numericExpected": "Enter a number for this numeric reading.",
         "referenceRangeInvalid": "The lower reference value must not exceed the upper value."
+      },
+      "unit": {
+        "unset": "This marker has values saved without a unit. Set the marker's unit first, then add the reading."
       }
     },
     "onboarding": {
@@ -5978,6 +5981,7 @@
               "too_large": "too large",
               "missing_unit": "no unit",
               "unit_mismatch": "unit does not match the marker",
+              "marker_unit_unset": "marker has values without a unit, set its unit first",
               "text_too_long": "text too long",
               "write_failed": "could not be saved",
               "over_limit": "over the archive limit",

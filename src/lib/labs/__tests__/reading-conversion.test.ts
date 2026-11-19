@@ -185,3 +185,49 @@ describe("a refusal", () => {
     });
   });
 });
+
+describe("a marker without a unit", () => {
+  const unitless = (): ReadingMarker => ({
+    id: "bm-2",
+    name: "Haemoglobin",
+    unit: "",
+  });
+  function heldNumbers(count: number) {
+    return {
+      biomarker: {
+        updateMany: vi.fn(async () => ({ count: 1 })),
+        findUnique: vi.fn(async () => null),
+      },
+      labResult: {
+        count: vi.fn(async () => count),
+        updateMany: vi.fn(async () => ({ count: 0 })),
+      },
+    };
+  }
+
+  it("takes the unit of its first number while it holds none", async () => {
+    const c = heldNumbers(0);
+    const marker = unitless();
+    expect(await read(marker, 140, "g/L", null, null, c as never)).toEqual({
+      ok: true,
+      converted: false,
+      value: 140,
+      sourceReferenceLow: null,
+      sourceReferenceHigh: null,
+    });
+    expect(marker.unit).toBe("g/L");
+    expect(c.biomarker.updateMany).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses a number when it already holds numbers, and stamps no unit on them", async () => {
+    const c = heldNumbers(1);
+    const marker = unitless();
+    expect(await read(marker, 140, "g/L", null, null, c as never)).toEqual({
+      ok: false,
+      reason: "marker_unit_unset",
+    });
+    expect(marker.unit).toBe("");
+    expect(c.biomarker.updateMany).not.toHaveBeenCalled();
+    expect(c.labResult.updateMany).not.toHaveBeenCalled();
+  });
+});

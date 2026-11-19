@@ -4,9 +4,12 @@
  * A report that prints "SEE NOTE" for a ratio mints a marker with an empty
  * unit, and a marker with a reading has its unit locked. The next report
  * printed the ratio as a number with no unit, and the save was refused
- * against a unit nothing had ever chosen. The first number that states a
- * unit sets it, also over numbers stored without one. Once a number is
- * stored under a unit, the unit is locked as before.
+ * against a unit nothing had ever chosen. While every reading is text there
+ * is nothing the unit could contradict, so the first number sets it. A marker
+ * that already holds numbers stored without a unit is refused with its own
+ * reason instead (#1421): no unit can be guessed for those numbers, so the
+ * person sets the marker's unit first. Once a number is stored under a unit,
+ * the unit is locked as before.
  *
  * Through the real `POST /api/labs` against Postgres.
  */
@@ -136,11 +139,10 @@ describe("a marker whose readings are all text", () => {
     expect(stored.unit).toBe("1");
   });
 
-  it("takes the unit of a new number when the marker already holds a number without one", async () => {
-    // Older data: a number stored under a marker with no unit. Refusing
-    // every later reading that states a unit left the marker unable to take
-    // any (#1421); the stated unit is adopted and the unitless number takes
-    // it with the marker, which is how readers already showed it.
+  it("leaves an empty unit alone when the marker already holds a number", async () => {
+    // Older data: a number stored under a marker with no unit. That number
+    // is in some unit nobody recorded, so a new unit must not be guessed:
+    // stamping it on the stored number could change its magnitude.
     const marker = await prisma.biomarker.create({
       data: { userId: USER, name: "Legacy ratio", unit: "" },
     });
@@ -161,16 +163,24 @@ describe("a marker whose readings are all text", () => {
       unit: "mg/dL",
       takenAt: "2026-10-01T08:00:00.000Z",
     });
-    expect(res.status).toBe(201);
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.meta).toMatchObject({
+      errorCode: "labs.unit.unset",
+      reason: "marker_unit_unset",
+    });
     const stored = await prisma.biomarker.findUniqueOrThrow({
       where: { id: marker.id },
     });
-    expect(stored.unit).toBe("mg/dL");
+    expect(stored.unit).toBe("");
     const kept = await prisma.labResult.findUniqueOrThrow({
       where: { id: old.id },
     });
     expect(kept.value).toBe(12);
-    expect(kept.unit).toBe("mg/dL");
+    expect(kept.unit).toBe("");
+    expect(
+      await prisma.labResult.count({ where: { biomarkerId: marker.id } }),
+    ).toBe(1);
   });
 
   it("does not count a deleted number as holding the unit", async () => {

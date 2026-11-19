@@ -108,6 +108,9 @@
         "qualitativeExpected": "Voer een tekstuitslag in voor deze kwalitatieve meting.",
         "numericExpected": "Voer een getal in voor deze numerieke meting.",
         "referenceRangeInvalid": "De onderste referentiewaarde mag niet hoger zijn dan de bovenste."
+      },
+      "unit": {
+        "unset": "Deze marker heeft waarden zonder eenheid. Stel eerst de eenheid van de marker in en voeg daarna de uitslag toe."
       }
     },
     "onboarding": {
@@ -5978,6 +5981,7 @@
               "too_large": "te groot",
               "missing_unit": "geen eenheid",
               "unit_mismatch": "eenheid past niet bij de marker",
+              "marker_unit_unset": "marker heeft waarden zonder eenheid, stel eerst de eenheid in",
               "text_too_long": "tekst te lang",
               "write_failed": "kon niet worden opgeslagen",
               "over_limit": "boven de limiet van het archief",

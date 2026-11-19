@@ -108,6 +108,9 @@
         "qualitativeExpected": "Introduce un resultado de texto para esta lectura cualitativa.",
         "numericExpected": "Introduce un número para esta lectura numérica.",
         "referenceRangeInvalid": "El valor de referencia inferior no puede superar al superior."
+      },
+      "unit": {
+        "unset": "Este marcador tiene valores guardados sin unidad. Define primero la unidad del marcador y luego añade el resultado."
       }
     },
     "onboarding": {
@@ -5978,6 +5981,7 @@
               "too_large": "demasiado grande",
               "missing_unit": "sin unidad",
               "unit_mismatch": "la unidad no coincide con el marcador",
+              "marker_unit_unset": "el marcador tiene valores sin unidad, define primero su unidad",
               "text_too_long": "texto demasiado largo",
               "write_failed": "no se pudo guardar",
               "over_limit": "por encima del límite del archivo",

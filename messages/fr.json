@@ -108,6 +108,9 @@
         "qualitativeExpected": "Saisissez un résultat textuel pour cette mesure qualitative.",
         "numericExpected": "Saisissez un nombre pour cette mesure numérique.",
         "referenceRangeInvalid": "La valeur de référence basse ne doit pas dépasser la valeur haute."
+      },
+      "unit": {
+        "unset": "Ce marqueur contient des valeurs enregistrées sans unité. Définissez d'abord l'unité du marqueur, puis ajoutez le résultat."
       }
     },
     "onboarding": {
@@ -5978,6 +5981,7 @@
               "too_large": "trop volumineux",
               "missing_unit": "aucune unité",
               "unit_mismatch": "l’unité ne correspond pas au marqueur",
+              "marker_unit_unset": "le marqueur a des valeurs sans unité, définissez d'abord son unité",
               "text_too_long": "texte trop long",
               "write_failed": "enregistrement impossible",
               "over_limit": "au-delà de la limite de l’archive",
