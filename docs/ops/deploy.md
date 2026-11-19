@@ -159,6 +159,51 @@ worker container that start together wait for each other on an advisory lock
 and derive the same password. Going back to 1.46 runs as the owner, as 1.46
 always did, and finds nothing in the queue schema it did not create.
 
+### v1.48.2 notes
+
+The sequence above covers this release; no step by hand is needed. Both
+migrations are additive.
+
+- Migration `0510` adds `symptom_definitions.code` and four columns to
+  `symptom_events` (`source`, `external_id`, `end_at`, `deleted_at`), with a
+  unique index on `(user_id, code)` and one on `(user_id, source,
+external_id)`. Existing rows keep their meaning: `source` defaults to
+  `MANUAL`, the rest stay NULL.
+- Migration `0511` adds eight values to `measurement_type`
+  (`LOW_CARDIO_FITNESS_EVENT`, `MENOPAUSAL_STATE`, `BLEEDING_AFTER_MENOPAUSE`,
+  `INSULIN_DELIVERY`, `INHALER_USAGE`, `FEV1`, `FVC`, `PEAK_EXPIRATORY_FLOW`)
+  and `LOW_FITNESS` to `rhythm_classification`, re-creates the event-type
+  CHECK with the new event type in it, and creates the empty table
+  `apple_health_tombstones`.
+
+How the deletion ledger works: when the phone reports an Apple Health
+workout or ECG deleted (`DELETE /api/workouts/by-external-ids`,
+`DELETE /api/insights/ecg/by-external-ids`), the row goes and its HealthKit
+sample id gets a line in `apple_health_tombstones`. Each ingest reads that
+ledger inside the transaction that inserts, under a per-account advisory
+lock the delete also takes, so a late re-post of a deleted sample answers
+`duplicate` and writes nothing. Imported symptom occurrences keep their own
+tombstone instead (`symptom_events.deleted_at`). The nightly soft-delete
+purge removes ledger lines and symptom tombstones after the shared 75-day
+retention, so a deleted Apple Health sample stays deleted for 75 days.
+Disaster-recovery backups carry the ledger; portable files do not.
+
+Rollback to v1.48.1: switch the image back, with care on three points.
+
+- Symptom occurrences imported from Apple Health and deleted since
+  (`deleted_at` set) reappear in v1.48.1, which does not know the column.
+  A re-post after the next upgrade still answers `duplicate`.
+- The v1.48.1 definition cap counts every active definition, built-in ones
+  included, so an account with eight named symptoms plus imported built-ins
+  cannot add another named one until it hides some.
+- Rows of the new measurement types and the `LOW_FITNESS` verdict may not
+  decode in the v1.48.1 image, whose client does not know the enum values; a
+  read that meets one can fail. Before switching back, check
+  `SELECT type, count(*) FROM measurements WHERE type IN ('LOW_CARDIO_FITNESS_EVENT','MENOPAUSAL_STATE','BLEEDING_AFTER_MENOPAUSE','INSULIN_DELIVERY','INHALER_USAGE','FEV1','FVC','PEAK_EXPIRATORY_FLOW') GROUP BY type`.
+  If any exist, either stay on v1.48.2 or move those rows aside (copy them
+  to a side table, then delete them) and put them back after the next
+  upgrade. The ledger table and the new columns are ignored by the old image.
+
 ### v1.48.0 notes
 
 The sequence above covers this release; no step by hand is needed. Every
