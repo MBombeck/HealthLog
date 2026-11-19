@@ -28,6 +28,7 @@ export const MODEL_RUN_SITES: Readonly<Record<string, readonly string[]>> = {
   "lib/documents/index-document.ts": ["document-index", "document-ai-run"],
   "lib/documents/ai-runs/index-run.ts": ["document-ai-run"],
   "lib/documents/ai-runs/summary-run.ts": ["document-ai-run"],
+  "lib/documents/antigravity-extract.ts": ["document-ai-run"],
   "lib/documents/ai-runs/suggest-run.ts": ["document-ai-run"],
   "lib/labs/ocr-extract.ts": ["document-ai-run"],
   "lib/jobs/document-ai-run.ts": ["document-ai-run"],

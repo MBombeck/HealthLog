@@ -121,7 +121,27 @@ export function providerFailureKind(error: unknown): ProviderFailure {
   try {
     const chain = causeChain(error);
     const code = firstCode(chain);
-    const head = (error ?? {}) as { kind?: unknown; httpStatus?: unknown };
+    const head = (error ?? {}) as {
+      kind?: unknown;
+      httpStatus?: unknown;
+      name?: unknown;
+    };
+
+    // AntigravityError carries a `kind` tag that maps directly to our
+    // ProviderFailureKind vocabulary (timeout, aborted, unknown). Check it
+    // before the generic CLIENT_KINDS path so the agy error code drives the
+    // classification rather than falling through to "unknown".
+    if (head.name === "AntigravityError") {
+      const kindTag = typeof head.kind === "string" ? head.kind : "unknown";
+      const failure = CLIENT_KINDS.has(kindTag as never)
+        ? (kindTag as ProviderFailureKind)
+        : kindTag === "timeout"
+          ? "timeout"
+          : kindTag === "aborted"
+            ? "aborted"
+            : "unknown";
+      return { failure, code: null };
+    }
 
     if (typeof head.kind === "string" && CLIENT_KINDS.has(head.kind as never)) {
       return { failure: head.kind as ProviderFailureKind, code };

@@ -57,6 +57,15 @@ describe("chainRequiresServerManagedConsent", () => {
     ).toBe(true);
   });
 
+  it("is true for an Antigravity entry, which sends data to Google", () => {
+    expect(chainRequiresServerManagedConsent([entry("antigravity")])).toBe(
+      true,
+    );
+    expect(
+      chainRequiresServerManagedConsent([entry("local"), entry("antigravity")]),
+    ).toBe(true);
+  });
+
   it("is true for the operator-shared central Codex (admin-codex)", () => {
     expect(chainRequiresServerManagedConsent([entry("admin-codex")])).toBe(
       true,

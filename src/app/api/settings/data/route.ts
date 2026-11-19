@@ -1,5 +1,8 @@
 import { releaseUnbackedClientApps } from "@/lib/integrations/oauth-kit/connect-target";
 import { prisma } from "@/lib/db";
+import { removeAntigravityProfile } from "@/lib/ai/antigravity-profile-cleanup";
+import { cancelAntigravityLogin } from "@/lib/ai/antigravity-auth-session";
+import { forgetAntigravityCapabilities } from "@/lib/ai/antigravity-capability-cache";
 import { auditLog } from "@/lib/auth/audit";
 import {
   kickOffhostPurge,
@@ -114,6 +117,12 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
     }
   }
 
+  // The Antigravity profile is read before the wipe clears the pointer to it.
+  const antigravityProfile = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { antigravityProfileId: true },
+  });
+
   let counts: Record<string, number>;
   try {
     counts = await prisma.$transaction(
@@ -184,6 +193,31 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
 
   const deletedRows = Object.values(counts).reduce((sum, n) => sum + n, 0);
 
+  // The CLI login is a credential of the person, so it goes with the rest.
+  cancelAntigravityLogin(userId);
+  forgetAntigravityCapabilities(userId);
+
+  let profileCleanupFailed = false;
+  const profileId = antigravityProfile?.antigravityProfileId;
+  if (profileId) {
+    const ok = await removeAntigravityProfile(profileId);
+    if (ok) {
+      await prisma.user.updateMany({
+        where: { id: userId, antigravityProfileId: profileId },
+        data: { antigravityProfileId: null },
+      });
+    } else {
+      profileCleanupFailed = true;
+      await prisma.user.updateMany({
+        where: { id: userId, antigravityProfileId: profileId },
+        data: { antigravityConnectionStatus: "error" },
+      });
+      console.warn(
+        `Failed to remove Antigravity profile ${profileId} during user data wipe for user ${userId}; preserving ID for retry`,
+      );
+    }
+  }
+
   // Written after the transaction commits, so the row cannot be removed by the
   // AuditLog delete inside it. The person's whole audit history goes; this one
   // row stays as the receipt for the erasure they asked for. Account deletion
@@ -213,6 +247,14 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
   // hard-evict the user's buckets so no surface serves pre-wipe data.
   invalidateUserData(userId);
   await kickOffhostPurge();
+
+  if (profileCleanupFailed) {
+    return apiError(
+      "Your data was wiped, but removing the Antigravity profile directory failed. Please ask your administrator to remove it from the host.",
+      500,
+      { errorCode: "data_wipe.antigravity_profile_cleanup_failed" },
+    );
+  }
 
   // `restorableUntil`: until when an admin can bring the record back from
   // the copy taken first; null when there is no grace window.

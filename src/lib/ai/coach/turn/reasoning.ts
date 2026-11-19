@@ -22,16 +22,30 @@ export const OPERATOR_REASONING_CAP: ReasoningMaxEffort = "medium";
 export interface TurnReasoning {
   effort: ReasoningLevel;
   summaries: boolean;
+  maxEffort?: ReasoningLevel;
+  explicit?: boolean;
 }
 
 /** The turn's reasoning from the effective level and who pays. */
 export function reasoningForTurn(
   level: ReasoningLevel,
   payer: BudgetCostOwner,
+  adminCeiling?: ReasoningLevel,
+  explicit?: boolean,
 ): TurnReasoning {
-  const effort =
-    payer === "operator"
-      ? capReasoningLevel(level, OPERATOR_REASONING_CAP)
-      : level;
-  return { effort, summaries: effort !== "off" };
+  let ceiling: ReasoningLevel | undefined = adminCeiling;
+  if (payer === "operator") {
+    ceiling = ceiling
+      ? capReasoningLevel(ceiling, OPERATOR_REASONING_CAP)
+      : OPERATOR_REASONING_CAP;
+  }
+  const effort = ceiling
+    ? capReasoningLevel(level, ceiling as ReasoningMaxEffort)
+    : level;
+  return {
+    effort,
+    summaries: effort !== "off",
+    ...(ceiling ? { maxEffort: ceiling } : {}),
+    ...(explicit !== undefined ? { explicit } : {}),
+  };
 }

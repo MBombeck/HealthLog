@@ -17,6 +17,10 @@
  * ChatGPT-subscription OAuth paths are LAST (rank 3) — the user's own `codex`
  * AND the operator's shared `admin-codex`, both train on consumer content by
  * default and cannot be verified opted-out from here.
+ *
+ * `antigravity` (v1.48.0) is also rank 3 — it sends documents to an external
+ * Antigravity/Google service with potential training/interactions according
+ * to its terms of service.
  */
 export function documentProviderRank(providerType: string): number {
   switch (providerType) {
@@ -35,6 +39,7 @@ export function documentProviderRank(providerType: string): number {
       return 2;
     case "codex":
     case "admin-codex":
+    case "antigravity":
       return 3;
     default:
       return 2;

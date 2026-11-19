@@ -97,6 +97,14 @@ export const LEARN_GUIDES: readonly LearnGuide[] = [
  * Compact, token-light prompt block listing every guide as `topic — url`.
  * Injected into the Coach system prompt so the model can offer the relevant
  * link. One line per guide keeps it ~600 chars; the model picks at most one.
+ *
+ * NOTE: The prompt guidance below deliberately uses "learn-guide URL" rather
+ * than "/learn URL". The Antigravity CLI's ACP protocol interprets `/learn`
+ * when not followed by a slug path (e.g. standalone `/learn`, or after
+ * punctuation like `Polish./learn`) as a slash command, triggering an
+ * unwanted `<LEARN>` tool block and reasoning loop. Full guide URLs
+ * (`https://healthlog.dev/learn/<slug>`) include a valid slug path segment
+ * following `/learn/` and do not trigger command injection.
  */
 export function learnCatalogPromptBlock(): string {
   const lines = LEARN_GUIDES.map((g) => `- ${g.topic}: ${g.url}`).join("\n");
@@ -108,7 +116,7 @@ export function learnCatalogPromptBlock(): string {
   return [
     "LEARN GUIDES (public articles you MAY link when genuinely helpful):",
     lines,
-    "Only link a URL from this list — never invent a /learn URL or article",
+    "Only link a URL from this list — never invent a learn-guide URL or article",
     "content. Reference at most one guide, and only when it adds real value,",
     'e.g. "more on this: ' + exampleGuide.url + '".',
   ].join("\n");

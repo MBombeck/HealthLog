@@ -123,7 +123,7 @@ describe("GET /api/admin/support-report (integration)", () => {
     expect(text).toMatch(/- PostgreSQL: \d+/);
     expect(text).toMatch(/- Server time zone: \S+/);
     expect(text).toMatch(/- Size: \d+ MB/);
-    expect(text).toMatch(/- Last migration: \d{4}_\w+ \(/);
+    expect(text).toMatch(/- Last migration: \d+_\w+ \(/);
     expect(text).toContain("- Unfinished migrations: 0");
     expect(text).toContain(
       "- LOCAL: ok 0, failing 0, credential refused 1, paused 1",

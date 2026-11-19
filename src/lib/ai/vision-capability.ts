@@ -78,6 +78,7 @@ export type VisionProviderType =
   | "openai-compatible"
   | "codex"
   | "admin-codex"
+  | "antigravity"
   | "none";
 
 /**
@@ -99,6 +100,9 @@ export type VisionProviderType =
  *                           multimodal model (GPT-5.x, gpt-6, gpt-4o-class). Image
  *                           input rides the ChatGPT plan — no API key. A
  *                           non-multimodal slug (or unknown) → false.
+ *  - antigravity          → false. The CLI reports image support in its ACP
+ *                           initialize result, but no route sends images to it
+ *                           yet, so this stays off.
  *  - none                 → false (nothing configured).
  */
 export function supportsVisionForConfig(
@@ -120,6 +124,15 @@ export function supportsVisionForConfig(
     // a resolved Codex slug, so its vision capability is identical to `codex`.
     case "admin-codex":
       return model ? openAIFamilySupportsVision(model) : false;
+    case "antigravity":
+      // Antigravity's rich-media support is dynamic: the CLI reports what it
+      // accepts via `agentCapabilities.promptCapabilities` during the ACP
+      // `initialize` handshake, and the connection test persists that in the
+      // database. The in-process cache (antigravity-capability-cache.ts) is
+      // the read path; `chainEntryReadsImages` checks it for the `antigravity`
+      // case rather than delegating here. This static function therefore stays
+      // false and is not the source of truth for Antigravity.
+      return false;
     case "none":
     default:
       return false;
@@ -127,11 +140,15 @@ export function supportsVisionForConfig(
 }
 
 /**
- * Whether PDFs are supported for a given provider. Only Anthropic accepts a
- * native `document` block over the Messages API; OpenAI / local read images
- * only (a server-side rasterizer is a deferred follow-up). The route uses this
- * to reject a PDF upload with a clear "use a photo / configure Claude" message
- * on a non-Anthropic provider.
+ * Whether a provider takes a PDF whole, as a native document block. Only
+ * Anthropic does. Every other provider gets PDF pages as images, or, when the
+ * server cannot render them, the PDF's text layer.
+ *
+ * Antigravity is false here on purpose. agy 1.5.8 advertises
+ * `promptCapabilities.embeddedContext` but skips `application/pdf` blobs
+ * ("Skipping embedded resource ... unsupported blob type application/pdf").
+ * Its PDFs are read from the text layer when every page has one
+ * (antigravity-pdf-text.ts), and from page images otherwise.
  */
 export function supportsPdfForProvider(
   providerType: VisionProviderType,

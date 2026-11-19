@@ -152,6 +152,7 @@
     "pg_isready",
     "tsx",
     "cosign",
+    "agy",
     // The runtime GeoLite2 fetch extracts in pure Node, but its test builds a
     // MaxMind-shaped tar.gz fixture with the POSIX `tar` (present in CI + dev).
     "tar",

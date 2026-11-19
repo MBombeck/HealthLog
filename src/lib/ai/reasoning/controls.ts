@@ -11,7 +11,10 @@ import { annotate, getEvent } from "@/lib/logging/context";
 import { memoizePerRequest } from "@/lib/request-cache";
 import { isAnthropicBaseUrl } from "@/lib/ai/anthropic-host";
 import { probeProviderChain } from "@/lib/ai/provider";
-import { isOperatorFundedProvider } from "@/lib/ai/coach/budget";
+import {
+  isOperatorFundedProvider,
+  type BudgetSurface,
+} from "@/lib/ai/coach/budget";
 import type { ProviderChainType } from "@/lib/ai/provider-chain";
 import type { ProviderWorkAuthority } from "@/lib/sharing/provider-work-authority";
 import type { CompletionParams } from "@/lib/ai/types";
@@ -185,6 +188,9 @@ export async function resolveJobReasoning(
     try {
       level = await loadRecordUsageLevel(recordId);
     } catch {
+      if (chain.some((e) => e.providerType === "antigravity")) {
+        return { effort: "off", summaries: false, maxEffort: "off" };
+      }
       return undefined;
     }
     if (!AI_USAGE_LEVEL_EFFECTS[level].backgroundReasoning) {
@@ -195,17 +201,26 @@ export async function resolveJobReasoning(
           ai_reasoning_usage_level: level,
         },
       });
+      if (chain.some((e) => e.providerType === "antigravity")) {
+        return { effort: "off", summaries: false, maxEffort: "off" };
+      }
       return undefined;
     }
   }
   let resolved;
+  let admin: ReasoningAdminControls;
+  const costOwner = costOwnerOf(chain[0]?.providerType);
   try {
+    admin = await loadReasoningControls();
     resolved = resolveReasoning({
       surface: job,
-      admin: await loadReasoningControls(),
-      costOwner: costOwnerOf(chain[0]?.providerType),
+      admin,
+      costOwner,
     });
   } catch {
+    if (chain.some((e) => e.providerType === "antigravity")) {
+      return { effort: "off", summaries: false, maxEffort: "off" };
+    }
     return undefined;
   }
   annotate({
@@ -215,7 +230,16 @@ export async function resolveJobReasoning(
       ai_reasoning_source: resolved.source,
     },
   });
-  return completionReasoning(resolved, job);
+  const hasAntigravity = chain.some((e) => e.providerType === "antigravity");
+  if (resolved.effort === "off" || admin.enabled === false) {
+    if (hasAntigravity) {
+      return { effort: "off", summaries: false, maxEffort: "off" };
+    }
+    return undefined;
+  }
+  return hasAntigravity
+    ? completionReasoning(resolved, job, admin, costOwner)
+    : completionReasoning(resolved, job);
 }
 
 /**
@@ -239,4 +263,39 @@ export async function resolveCoachTurnReasoningLevel(
     admin: await loadReasoningControls(),
     costOwner: "user",
   }).effort;
+}
+
+/**
+ * Resolve the effective administrative/record reasoning cap for an account
+ * and surface.
+ *
+ * Fails closed:
+ *   - If reasoning is disabled by operator: returns "off".
+ *   - For background jobs (`surface === "job"`): on frugal AI usage level, returns "off".
+ *   - If reading usage level or admin controls fails (DB error), returns "off".
+ *   - Otherwise: returns admin.maxEffort (e.g. "low", "medium", "high").
+ */
+export async function resolveEffectivePolicyCap(
+  userId: string,
+  surface?: BudgetSurface,
+): Promise<ReasoningLevel> {
+  try {
+    const admin = await loadReasoningControls();
+    if (!admin.enabled) {
+      return "off";
+    }
+    if (surface === "job") {
+      try {
+        const level = await loadRecordUsageLevel(userId);
+        if (!AI_USAGE_LEVEL_EFFECTS[level].backgroundReasoning) {
+          return "off";
+        }
+      } catch {
+        return "off";
+      }
+    }
+    return admin.maxEffort;
+  } catch {
+    return "off";
+  }
 }

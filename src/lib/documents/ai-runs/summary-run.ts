@@ -10,6 +10,8 @@
  *
  * Every failure comes back as the outcome the route has always answered with.
  */
+import type { Buffer } from "node:buffer";
+
 import type { ProviderChainType } from "@/lib/ai/provider-chain";
 import type { OutboundReason } from "@/lib/ai/safety/outbound-screen";
 import { auditLog } from "@/lib/auth/audit";
@@ -26,7 +28,11 @@ import {
   transcribeDocument,
   type DescribeInput,
 } from "@/lib/documents/describe";
-import { encryptDocumentSummary } from "@/lib/documents/store";
+import {
+  encryptDocumentSummary,
+  decryptDocumentContent,
+} from "@/lib/documents/store";
+import { antigravityPdfTextIfComplete } from "@/lib/documents/antigravity-pdf-text";
 import { providerInputOf } from "@/lib/documents/vision-input";
 import type { Locale } from "@/lib/i18n/config";
 import { annotate } from "@/lib/logging/context";
@@ -177,12 +183,40 @@ export async function executeDocumentSummary(args: {
   const { pick, budget } = input;
   const servedBy = pick.entry.providerType as ProviderChainType;
 
+  // Antigravity reads a PDF whose pages all have a text layer from that text
+  // (see antigravity-pdf-text.ts). Its page images of an invisibly printed
+  // report come out blank, so the picture path is the fallback.
+  let antigravityText: string | null = null;
+  if (input.mode === "vision" && pick.providerType === "antigravity") {
+    let bytes: Buffer | null = null;
+    try {
+      bytes = decryptDocumentContent(
+        document.contentEncrypted,
+        document.contentCodec,
+      );
+    } catch {
+      // The picture path reports an unreadable copy with its own failure.
+    }
+    if (bytes) {
+      antigravityText = await antigravityPdfTextIfComplete(
+        bytes,
+        "documents.summary",
+      );
+    }
+  }
+
   let describeInput: DescribeInput;
   if (input.mode === "text") {
     describeInput = {
       provider: pick.entry.instance,
       providerType: pick.providerType,
       ocrText: input.text,
+    };
+  } else if (antigravityText !== null) {
+    describeInput = {
+      provider: pick.entry.instance,
+      providerType: pick.providerType,
+      ocrText: antigravityText,
     };
   } else {
     const vision = await prepareVisionInput(document, input.pick.pdfSupported);

@@ -37,8 +37,14 @@ import { coachChatRequestSchema } from "@/lib/ai/coach/types";
 import { listConversations } from "@/lib/ai/coach/persistence";
 import { detectRefusal } from "@/lib/ai/coach/refusal";
 import { runCoachTurn } from "@/lib/ai/coach/turn/pipeline";
-import type { ReasoningLevel } from "@/lib/ai/reasoning/levels";
-import { resolveCoachTurnReasoningLevel } from "@/lib/ai/reasoning/controls";
+import {
+  isReasoningLevel,
+  type ReasoningLevel,
+} from "@/lib/ai/reasoning/levels";
+import {
+  loadReasoningControls,
+  resolveCoachTurnReasoningLevel,
+} from "@/lib/ai/reasoning/controls";
 import { streamProviderError, streamRefusal } from "@/lib/ai/coach/turn/sse";
 import { TURN_LIMITS } from "@/lib/ai/coach/tools/turn-budget";
 
@@ -188,6 +194,15 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
   // is not known until the turn resolves its chain, so the turn applies the
   // operator-paid ceiling itself (`turn/reasoning.ts`); the provider's own
   // ability is left to its client.
+  const adminControls = await loadReasoningControls();
+  const adminCeiling: ReasoningLevel = adminControls.enabled
+    ? adminControls.maxEffort
+    : "off";
+  const storedCoachReasoning =
+    auth.user.coachPrefsJson && typeof auth.user.coachPrefsJson === "object"
+      ? (auth.user.coachPrefsJson as { reasoning?: unknown }).reasoning
+      : undefined;
+  const reasoningExplicit = isReasoningLevel(storedCoachReasoning);
   const reasoningLevel: ReasoningLevel = await resolveCoachTurnReasoningLevel(
     auth.user.coachPrefsJson,
   );
@@ -231,6 +246,8 @@ async function handleChatRequest(request: NextRequest): Promise<Response> {
     memoryDecision,
     planDecision,
     reasoningLevel,
+    adminCeiling,
+    reasoningExplicit,
     releaseSlot,
     recheckCapability: coachCapabilityRefusal,
   });

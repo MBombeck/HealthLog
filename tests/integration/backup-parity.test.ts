@@ -957,7 +957,17 @@ async function snapshotAccount(
       n.db(row),
     );
   }
-  out.User = n.db(await prisma.user.findUnique({ where: { id: userId } }));
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (user) {
+    // Instance-local Antigravity profile/credentials and ephemeral ACP capabilities
+    // are excluded from backup manifests and omitted from the parity snapshot projection.
+    delete (user as Record<string, unknown>).antigravityProfileId;
+    delete (user as Record<string, unknown>).antigravityModel;
+    delete (user as Record<string, unknown>).antigravityConnectionStatus;
+    delete (user as Record<string, unknown>).antigravityConnectedAt;
+    delete (user as Record<string, unknown>).antigravityCapabilitiesJson;
+  }
+  out.User = n.db(user);
   out.AppSettings = n.db(
     await prisma.appSettings.findUnique({ where: { id: "singleton" } }),
   );

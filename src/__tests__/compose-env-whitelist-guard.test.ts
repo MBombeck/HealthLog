@@ -126,6 +126,8 @@ const NOT_OPERATOR_CONFIGURABLE: Readonly<Record<string, string>> = {
   // --- Not an operator decision. ---
   CODEX_OAUTH_CLIENT_ID:
     "the ChatGPT OAuth application id is a fixed protocol constant, overridable only for development against a different app",
+  ANTIGRAVITY_AUTO_APPROVE_TOOLS:
+    "deprecated switch that is ignored at runtime to enforce strict security permissions for Antigravity tools",
 
   // --- Never executes inside the container. ---
   COACH_EVAL_API_KEY:

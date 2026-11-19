@@ -350,6 +350,17 @@ describe("schemas", () => {
     ).toBe(true);
   });
 
+  it("accepts reasoning effort on an antigravity entry", () => {
+    for (const reasoningEffort of VALUES) {
+      const result = providerChainEntrySchema.safeParse({
+        providerType: "antigravity",
+        enabled: true,
+        reasoningEffort,
+      });
+      expect(result.success).toBe(true);
+    }
+  });
+
   it("the provider PATCH accepts the five values for both entries", () => {
     for (const v of VALUES) {
       expect(

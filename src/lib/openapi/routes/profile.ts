@@ -39,6 +39,7 @@ import {
   useCentralCodexPatchSchema,
 } from "@/lib/validations/user-prefs";
 import {
+  AI_PROVIDER_KINDS,
   aiProviderPatchSchema,
   reasoningEffortSchema,
   aiTestOverrideSchema,
@@ -218,9 +219,9 @@ export const aiConsentState = z
       .array(
         z.object({
           via: z
-            .enum(["operator_key", "operator_chatgpt"])
+            .enum(["operator_key", "operator_chatgpt", "antigravity_cli"])
             .describe(
-              "`operator_key` — the operator's API key. `operator_chatgpt` — the operator's shared ChatGPT account.",
+              "`operator_key` — the operator's API key. `operator_chatgpt` — the operator's shared ChatGPT account. `antigravity_cli` — the person's own Antigravity login, through the local agy CLI.",
             ),
           name: z
             .string()
@@ -702,13 +703,7 @@ const profileUpdateResponse = z
 const aiProviderResponse = z
   .object({
     provider: z
-      .enum([
-        "OPENAI",
-        "ANTHROPIC",
-        "LOCAL",
-        "OPENAI_COMPATIBLE",
-        "CHATGPT_OAUTH",
-      ])
+      .enum(AI_PROVIDER_KINDS)
       .nullable()
       .describe("The user's selected provider, or null when none is set."),
     model: z.string().nullable(),
@@ -1289,7 +1284,7 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...stdResponses,
         "422": {
           description:
-            "Nothing was written. A body that failed validation carries the multi-issue list under `details.issues` with `meta.errorCode` = `ai_provider.invalid` — a wrongly-typed field, a `provider` outside the five, or a `responseTimeoutSeconds` that is not an integer in 10–600 all land there and name their path. Two single-message cases stay outside that list because they are not shape failures: no recognised field was present at all (`meta.errorCode` = `ai_provider.no_fields`), and a base URL pointing at an internal or private host the operator has not allowlisted.",
+            "Nothing was written. A body that failed validation carries the multi-issue list under `details.issues` with `meta.errorCode` = `ai_provider.invalid` — a wrongly-typed field, a `provider` outside the six, or a `responseTimeoutSeconds` that is not an integer in 10–600 all land there and name their path. Two single-message cases stay outside that list because they are not shape failures: no recognised field was present at all (`meta.errorCode` = `ai_provider.no_fields`), and a base URL pointing at an internal or private host the operator has not allowlisted.",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },

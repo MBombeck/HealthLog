@@ -60,6 +60,7 @@ describe("the Postgres 16 -> 18 move in docker-compose.yml", () => {
     expect(db.volumes).toEqual(["postgres-data:/var/lib/postgresql"]);
     // `backups` holds the app's database dumps, not database files.
     expect(Object.keys(compose.volumes).sort()).toEqual([
+      "antigravity-profiles",
       "backups",
       "pgdata",
       "postgres-data",

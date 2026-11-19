@@ -48,6 +48,10 @@ import {
  * own three columns and never the OpenAI ones — the OpenAI arm's pinned base
  * URL stays pinned.
  *
+ * `antigravity` (v1.48.0) is the Antigravity CLI provider. It is NOT part
+ * of `PROVIDER_CHAIN_DEFAULT` — users must explicitly enable it in the chain
+ * editor. It does NOT support HealthLog function calling (`supportsTools = false`).
+ *
  * Distinct from `ProviderType` (in `types.ts`) because that enum tags
  * the **runtime** provider instance — which has no notion of "admin
  * OpenAI" vs "user OpenAI" at the wire level (both are
@@ -60,6 +64,7 @@ export const PROVIDER_CHAIN_TYPES = [
   "anthropic",
   "local",
   "openai-compatible",
+  "antigravity",
   "admin-openai",
   "admin-codex",
 ] as const;

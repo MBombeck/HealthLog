@@ -4,6 +4,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { readSource } from "../../__tests__/helpers/source-files";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const entrypoint = join(repoRoot, "docker-entrypoint.sh");
@@ -95,5 +96,28 @@ describe("docker entrypoint crypto configuration", () => {
 
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("ENCRYPTION_ACTIVE_KEY_ID");
+  });
+});
+
+describe("docker entrypoint startup installation", () => {
+  it("does not auto-install Antigravity CLI and warns that ANTIGRAVITY_AUTO_INSTALL is ignored", () => {
+    const result = runEntrypoint({
+      ENCRYPTION_KEY: key,
+      ANTIGRAVITY_AUTO_INSTALL: "true",
+      ANTIGRAVITY_AUTO_DOWNLOAD: "true",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain(
+      "ANTIGRAVITY_AUTO_INSTALL is deprecated and ignored",
+    );
+    expect(result.stdout).not.toContain("install-agy");
+    expect(result.stderr).not.toContain("install-agy");
+  });
+
+  it("never executes install-agy or attempts binary download on startup", () => {
+    const source = readSource("docker-entrypoint.sh", "exec");
+    expect(source).not.toContain("install-agy");
+    expect(source).not.toContain("scripts/install-agy.mjs");
   });
 });

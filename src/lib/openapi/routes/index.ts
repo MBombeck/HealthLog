@@ -98,6 +98,7 @@ import { symptomPaths } from "./symptoms";
 import { seizurePaths } from "./seizures";
 import { syncPaths } from "./sync";
 import { workoutPaths } from "./workouts";
+import { antigravityPaths } from "./antigravity";
 import { externalIdDeletePaths } from "./external-id-deletes";
 import { coachPrefsSchema, withScopeRefusal } from "./shared";
 
@@ -212,6 +213,9 @@ const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   // The seizure diary, behind its own module (appended, spread order
   // is load-bearing).
   ...seizurePaths,
+  // Antigravity CLI provider routes (appended, spread order is
+  // load-bearing).
+  ...antigravityPaths,
   // The environmental-context overview. Its own module because nothing else
   // owns the surface (appended, spread order is load-bearing).
   //

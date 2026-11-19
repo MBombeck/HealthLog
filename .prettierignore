@@ -39,3 +39,6 @@ tests/fixtures/golden-backups/*.json
 # project settings when its CLI or SDK runs; only settings.json is tracked.
 project.inlang/*
 !project.inlang/settings.json
+
+# Local development notes and PoC scripts — not shipped, not checked.
+.local

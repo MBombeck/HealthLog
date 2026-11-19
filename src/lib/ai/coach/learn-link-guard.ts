@@ -3,7 +3,7 @@
  *
  * The Coach MAY point the user at a public `/learn/<slug>` guide, but only a
  * slug that appears in `learn-catalog.ts`. The system prompt instructs this
- * ("Only link a URL from this list — never invent a /learn URL"), but that is a
+ * ("Only link a URL from this list — never invent a learn-guide URL"), but that is a
  * prompt instruction, not enforcement: a model could still hallucinate
  * `/learn/lower-your-cortisol` and ship a dead/wrong link.
  *

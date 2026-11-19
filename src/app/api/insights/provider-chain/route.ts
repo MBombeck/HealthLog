@@ -78,6 +78,7 @@ export const GET = apiHandler(async () => {
       providerType: entry.providerType,
       enabled: entry.enabled,
       available: availableTypes.has(entry.providerType),
+      reasoningEffort: entry.reasoningEffort ?? null,
     })),
   });
 });

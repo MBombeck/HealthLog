@@ -23,6 +23,7 @@ import {
   supportsVisionForConfig,
   type VisionProviderType,
 } from "./vision-capability";
+import { antigravityReadsMedia } from "./antigravity-capability-cache";
 
 /**
  * Our preference order. With the account's model list in hand it is filtered
@@ -262,6 +263,9 @@ export function chainEntryReadsImages(
   }
   if (providerType === "admin-codex") {
     return codexSignInReadsImages(codexCredentialKey.central);
+  }
+  if (providerType === "antigravity") {
+    return antigravityReadsMedia(userId);
   }
   return supportsVisionForConfig(providerType as VisionProviderType, model);
 }

@@ -30,6 +30,7 @@ import {
 } from "@/lib/documents/ai-route-support";
 import {
   planInboundReads,
+  planInboundTextReads,
   runInboundExtraction,
   type InboundExtractionResult,
   type InboundReadSource,
@@ -39,7 +40,12 @@ import {
   SYNCHRONOUS_READ_SCHEDULE,
   type OcrSchedule,
 } from "@/lib/documents/ocr-plan";
-import { OcrExtractError } from "@/lib/documents/ocr-read";
+import {
+  OcrExtractError,
+  TEXT_LAYER_FALLBACK_TIMEOUT_MS,
+} from "@/lib/documents/ocr-read";
+import { runAntigravityTextExtraction } from "@/lib/documents/antigravity-extract";
+import { antigravityPdfTextIfComplete } from "@/lib/documents/antigravity-pdf-text";
 import {
   decryptDocumentContent,
   encryptFactData,
@@ -299,7 +305,22 @@ export async function executeDocumentExtract(args: {
   } else {
     source = { mode: "text", text: input.text };
   }
-  const plan = await planInboundReads(source, schedule);
+  // Antigravity reads a PDF whose pages all have a text layer from that text.
+  // Its page images of an invisibly printed report come out blank, so the
+  // picture path is the fallback, not the first attempt.
+  const antigravityText =
+    input.mode === "vision" &&
+    pick.providerType === "antigravity" &&
+    source.mode === "vision"
+      ? await antigravityPdfTextIfComplete(source.bytes, "documents.extract")
+      : null;
+  const plan =
+    antigravityText !== null
+      ? {
+          ok: true as const,
+          ...planInboundTextReads(antigravityText, schedule),
+        }
+      : await planInboundReads(source, schedule);
   if (!plan.ok) {
     return refused(
       plan.reason === "busy"
@@ -313,14 +334,25 @@ export async function executeDocumentExtract(args: {
 
   let result: InboundExtractionResult;
   try {
-    result = await runInboundExtraction({
-      userId,
-      provider: pick.entry.instance,
-      providerType: pick.providerType,
-      ...plan.args,
-      meter,
-      reserveRead,
-    });
+    result =
+      antigravityText !== null
+        ? await runAntigravityTextExtraction({
+            userId,
+            provider: pick.entry.instance,
+            providerType: pick.providerType,
+            ...plan.args,
+            meter,
+            reserveRead,
+            timeoutMs: TEXT_LAYER_FALLBACK_TIMEOUT_MS,
+          })
+        : await runInboundExtraction({
+            userId,
+            provider: pick.entry.instance,
+            providerType: pick.providerType,
+            ...plan.args,
+            meter,
+            reserveRead,
+          });
   } catch (err) {
     // Charged for the calls that were made, a failed read included.
     await settle(false);

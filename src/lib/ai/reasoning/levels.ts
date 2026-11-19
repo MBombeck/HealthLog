@@ -55,6 +55,28 @@ export function capReasoningLevel(
 }
 
 /**
+ * Pick the stricter (lower) of two reasoning caps / levels.
+ * "off" is strictest (0), then "low" (1), "medium" (2), "high" (3).
+ * If only one cap is provided, that cap is returned.
+ */
+export function stricterReasoningLevel(
+  a?: ReasoningLevel | null,
+  b?: ReasoningLevel | null,
+): ReasoningLevel | null {
+  if (!a) return b ?? null;
+  if (!b) return a;
+  const rank = (val: string): number => {
+    const lower = val.toLowerCase().trim();
+    if (lower === "off" || lower === "none") return 0;
+    if (lower === "low") return 1;
+    if (lower === "medium") return 2;
+    if (lower === "high") return 3;
+    return 3;
+  };
+  return rank(a) <= rank(b) ? a : b;
+}
+
+/**
  * Thinking tokens per level, for the providers that take a token budget
  * rather than a named effort (Anthropic's manual mode, gateways that accept
  * `max_tokens`). A round's output allowance is its answer budget plus this.

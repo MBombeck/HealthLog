@@ -32,13 +32,14 @@ import {
   REASONING_EFFORTS,
 } from "@/lib/ai/reasoning-effort";
 
-/** The five provider kinds a user may select. */
+/** The six provider kinds a user may select. */
 export const AI_PROVIDER_KINDS = [
   "OPENAI",
   "ANTHROPIC",
   "LOCAL",
   "OPENAI_COMPATIBLE",
   "CHATGPT_OAUTH",
+  "ANTIGRAVITY_CLI",
 ] as const;
 
 export const aiProviderKindSchema = z.enum(AI_PROVIDER_KINDS);
@@ -62,7 +63,7 @@ export const reasoningEffortSchema = z
   .enum(REASONING_EFFORTS)
   .nullable()
   .describe(
-    "Reasoning setting for a Local or OpenAI-compatible provider, sent as `reasoning_effort` in the `/chat/completions` body. `none` switches reasoning off, which stops a thinking model (Gemma, Qwen and the like) spending the answer budget on reasoning. `null` is Default: the key is not sent at all and the model decides.",
+    "Reasoning setting for a Local, OpenAI-compatible, or Antigravity provider, sent as `reasoning_effort` in the `/chat/completions` body or mapped to CLI thought levels. `none` switches reasoning off, which stops a thinking model (Gemma, Qwen and the like) spending the answer budget on reasoning. `null` is Default for supported providers (the key is not sent and the model decides). For other provider types (codex, anthropic, openai, admin-openai) where reasoning effort is not configurable through this field, this is always null.",
   );
 
 /**
@@ -191,7 +192,7 @@ export const providerChainEntrySchema = z
     reasoningEffort: reasoningEffortSchema
       .optional()
       .describe(
-        "Only on a `local` or `openai-compatible` entry; refused on any other. Omitted keeps the value already stored for that provider, `null` restores Default, `none` / `low` / `medium` / `high` are sent as `reasoning_effort`.",
+        "Only on a `local`, `openai-compatible` or `antigravity` entry; refused on any other. Omitted keeps the value already stored for that provider, `null` restores Default, `none` / `low` / `medium` / `high` are sent as reasoning effort.",
       ),
   })
   .strict()
@@ -204,7 +205,7 @@ export const providerChainEntrySchema = z
         code: "custom",
         path: ["reasoningEffort"],
         message:
-          "A reasoning setting applies to the local and openai-compatible providers only",
+          "A reasoning setting applies to the local, openai-compatible and antigravity providers only",
       });
     }
   });

@@ -23,6 +23,7 @@ import { isPinnedChain } from "@/lib/ai/named-chains";
 import type { ProviderChainResolved } from "@/lib/ai/provider-runner";
 import { resolveProviderChain } from "@/lib/ai/provider";
 import { chainEntryReadsImages } from "@/lib/ai/codex-slug-chain";
+import { setAntigravityCapabilities } from "@/lib/ai/antigravity-capability-cache";
 import { RASTERIZATION_AVAILABLE } from "@/lib/documents/rasterize-pdf";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
@@ -115,8 +116,15 @@ export async function resolveVisionProvider(
 ): Promise<VisionProviderPick> {
   const userRow = await prisma.user.findUnique({
     where: { id: userId },
-    select: { aiModel: true, labsLocalOcrEnabled: true },
+    select: {
+      aiModel: true,
+      labsLocalOcrEnabled: true,
+      antigravityCapabilitiesJson: true,
+    },
   });
+  if (userRow?.antigravityCapabilitiesJson !== undefined) {
+    setAntigravityCapabilities(userId, userRow.antigravityCapabilitiesJson);
+  }
   const settings = await prisma.appSettings.findUnique({
     where: { id: "singleton" },
     select: { adminAiModel: true },

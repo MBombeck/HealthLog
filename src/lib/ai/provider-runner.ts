@@ -26,6 +26,17 @@ import {
   resolveTotalCapFor,
   type BudgetSurface,
 } from "@/lib/ai/coach/budget";
+import {
+  getLastWorkingProvider,
+  rememberWorkingProvider,
+} from "./provider-last-working-cache";
+import { normalizeCandidateParams } from "./reasoning/normalize-candidate-params";
+
+export {
+  clearLastWorkingProviderCache,
+  forgetLastWorkingProvider,
+  getLastWorkingProvider,
+} from "./provider-last-working-cache";
 
 /**
  * The local model is the guaranteed floor (Epic B Pillar 4): a
@@ -50,72 +61,10 @@ const NEVER_SKIP: ReadonlySet<ProviderChainType> = new Set(["local"]);
  * unavailability and walking the chain. Every provider receives the same
  * enriched system prompt; `outcome.workingProvider.providerType` attributes
  * feedback per provider.
- *
- * The cache: a provider that worked on the last call gets first crack on the
- * next, so a user whose Codex sign-in lapsed doesn't re-burn the 401
- * round-trip on every request for the next hour. In-process (per worker),
- * keyed by `userId`, TTL 1h. It stays out of the durable Postgres health
- * ledger on purpose: the ledger already shares the load-bearing signal across
- * workers (the skip-hint reorder in `resolveChainOrder`), so the only thing
- * uncoordinated is a soft "tried this one last, put it first" reorder whose
- * worst case is one redundant first hop per worker per hour. Promoting it to
- * a per-request ledger write would add write amplification on the hot path;
- * revisit only if a multi-worker deploy shows measurable redundant-hop cost.
  */
-
-const LAST_WORKING_TTL_MS = 60 * 60 * 1000; // 1h
 
 /** The `failureReason` of a hop the operator cost cap refused unsent. */
 const OPERATOR_CAP_REFUSAL = "operator-cost-cap-exhausted";
-
-interface CacheEntry {
-  providerType: ProviderChainType;
-  expiresAt: number;
-}
-
-const lastWorkingCache = new Map<string, CacheEntry>();
-
-/** Test-only entry-point: empty the in-memory cache between cases. */
-export function clearLastWorkingProviderCache(): void {
-  lastWorkingCache.clear();
-}
-
-/**
- * Fetch the cached "last working provider" for the user, or null if
- * none is cached or the entry has expired. Reads consult `Date.now()`
- * so test code can manipulate `vi.useFakeTimers()` to exercise TTL.
- */
-export function getLastWorkingProvider(
-  userId: string,
-): ProviderChainType | null {
-  const entry = lastWorkingCache.get(userId);
-  if (!entry) return null;
-  if (entry.expiresAt < Date.now()) {
-    lastWorkingCache.delete(userId);
-    return null;
-  }
-  return entry.providerType;
-}
-
-/**
- * Drop one user's "last working provider" memo. Called when the person saves
- * a new chain: the memo reorders the chain they just arranged, and a provider
- * they removed or disabled must not keep leading it for up to an hour.
- */
-export function forgetLastWorkingProvider(userId: string): void {
-  lastWorkingCache.delete(userId);
-}
-
-function rememberWorkingProvider(
-  userId: string,
-  { providerType, pinned }: ProviderChainResolved,
-): void {
-  if (pinned) return;
-  lastWorkingCache.set(userId, {
-    providerType,
-    expiresAt: Date.now() + LAST_WORKING_TTL_MS,
-  });
-}
 
 /**
  * Classify whether an error from `generateCompletion()` is a "hard
@@ -509,7 +458,7 @@ function signalFailedHops(
 }
 
 /** What both raw runners take. */
-interface ChainWalkArgs {
+export interface ChainWalkArgs {
   userId: string;
   providers: ProviderChainResolved[];
   params: CompletionParams;
@@ -543,10 +492,10 @@ interface ChainWalkArgs {
  */
 async function runRawChain(
   args: ChainWalkArgs,
-  // v1.41 — `params` reaches every candidate unchanged, `reasoning` and
-  // `onReasoning` included. A fallback hop may see `providerState` another
-  // provider made on an earlier round; each client re-inserts only its own
-  // and drops the rest, so nothing is filtered here.
+  // v1.41 — params reaches each candidate normalized for the provider type:
+  // non-antigravity providers strip reasoning when omitted or turned off for jobs,
+  // while Antigravity receives the effective administrative/record reasoning cap
+  // for the actual surface. Each client re-inserts only its own providerState.
   invoke: (candidate: ProviderChainResolved) => Promise<CompletionResult>,
   successMeta?: (
     candidate: ProviderChainResolved,
@@ -748,10 +697,19 @@ export async function runStreamingRawCompletionWithFallback(
     args,
     // Prefer the provider's streaming wire; fall back to the buffered call for
     // providers (cloud clients today) that do not implement streaming.
-    (candidate) =>
-      candidate.instance.generateCompletionStream
-        ? candidate.instance.generateCompletionStream(params, args.onDelta)
-        : candidate.instance.generateCompletion(params),
+    async (candidate) => {
+      const candidateParams = await normalizeCandidateParams(
+        candidate,
+        params,
+        args,
+      );
+      return candidate.instance.generateCompletionStream
+        ? candidate.instance.generateCompletionStream(
+            candidateParams,
+            args.onDelta,
+          )
+        : candidate.instance.generateCompletion(candidateParams);
+    },
     (candidate) => ({
       ai_chain_streamed: Boolean(candidate.instance.generateCompletionStream),
     }),
@@ -792,7 +750,12 @@ export async function runRawCompletionWithFallback(
 ): Promise<RunRawWithFallbackResult> {
   const params: CompletionParams =
     args.surface === "job" ? { ...args.params, unattended: true } : args.params;
-  return runRawChain(args, (candidate) =>
-    candidate.instance.generateCompletion(params),
-  );
+  return runRawChain(args, async (candidate) => {
+    const candidateParams = await normalizeCandidateParams(
+      candidate,
+      params,
+      args,
+    );
+    return candidate.instance.generateCompletion(candidateParams);
+  });
 }

@@ -83,6 +83,15 @@ export const USER_COLUMNS_OUTSIDE_SETTINGS = {
   codexTokenExpiresAt: "CREDENTIAL",
   codexConnectedAt: "CREDENTIAL",
   codexConnectionStatus: "CREDENTIAL",
+  // Antigravity: the profile pointer and the test result it stands for. The
+  // model is a choice, but it only runs in the profile it was made for, so it
+  // does not travel to a host that has no such login.
+  antigravityProfileId: "CREDENTIAL",
+  antigravityModel: "CREDENTIAL",
+  antigravityConnectionStatus: "CREDENTIAL",
+  antigravityConnectedAt: "CREDENTIAL",
+  // The capability snapshot is what this host's CLI reported on its last test.
+  antigravityCapabilitiesJson: "OPERATIONAL",
   aiAnthropicKeyEncrypted: "CREDENTIAL",
   aiLocalKeyEncrypted: "CREDENTIAL",
   aiOpenaiKeyEncrypted: "CREDENTIAL",

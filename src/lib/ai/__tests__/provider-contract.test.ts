@@ -43,7 +43,7 @@ vi.mock("undici", async (importOriginal) => {
 function assertCompletionResult(result: CompletionResult): void {
   expect(typeof result.content).toBe("string");
   expect(result.content.length).toBeGreaterThan(0);
-  expect(["codex", "admin-key", "anthropic", "local"]).toContain(
+  expect(["codex", "admin-key", "anthropic", "local", "antigravity"]).toContain(
     result.providerType,
   );
   expect(typeof result.model).toBe("string");

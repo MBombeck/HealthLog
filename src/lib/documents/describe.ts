@@ -94,7 +94,7 @@ async function runDescribe(
   system: string,
   visionUser: string,
   textUser: (text: string) => string,
-  budget: { temperature: number; maxTokens: number },
+  budget: { temperature: number; maxTokens: number; timeoutMs?: number },
 ): Promise<string> {
   const isTextMode = typeof input.ocrText === "string";
   const params = isTextMode
@@ -103,12 +103,14 @@ async function runDescribe(
         user: textUser(input.ocrText ?? ""),
         temperature: budget.temperature,
         maxTokens: budget.maxTokens,
+        timeoutMs: budget.timeoutMs,
       })
     : singleUserTurn({
         system,
         user: visionUser,
         temperature: budget.temperature,
         maxTokens: budget.maxTokens,
+        timeoutMs: budget.timeoutMs,
         images: input.images,
         documents: input.documents,
       });

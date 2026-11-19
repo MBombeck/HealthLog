@@ -123,6 +123,10 @@ if [ -n "$app_database_url" ]; then
 fi
 unset app_database_url
 
+if [ -n "$ANTIGRAVITY_AUTO_INSTALL" ]; then
+  echo "HealthLog: WARNING — ANTIGRAVITY_AUTO_INSTALL is deprecated and ignored. CLI installation is available from the administrator panel only." >&2
+fi
+
 # ── Start application ────────────────────────────────────────
 echo "HealthLog: Starting application..."
 exec "$@"

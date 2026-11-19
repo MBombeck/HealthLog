@@ -112,8 +112,15 @@ export type InsightResult = z.infer<typeof insightResultSchema>;
 // the user owns, so it is a distinct runtime tag from `admin-key`: logs,
 // analytics and the budget classifier must be able to tell "the operator's
 // OpenAI key" from "an endpoint someone pointed us at".
+// `antigravity` is the Antigravity CLI (agy) ACP provider.
 export type ProviderType =
-  "codex" | "admin-key" | "openai-compatible" | "anthropic" | "local" | "none";
+  | "codex"
+  | "admin-key"
+  | "openai-compatible"
+  | "anthropic"
+  | "local"
+  | "antigravity"
+  | "none";
 
 export interface AIProvider {
   type: ProviderType;
@@ -295,7 +302,23 @@ export interface AiReasoningEvent {
   text: string;
 }
 
-export interface CompletionParams {
+export interface StandardReasoning {
+  effort: ReasoningLevel;
+  summaries: boolean;
+  maxEffort?: ReasoningLevel;
+  source?: import("./reasoning/resolve").ReasoningSource;
+  explicit?: boolean;
+}
+
+export interface CompletionParams<
+  R extends {
+    effort?: ReasoningLevel;
+    summaries: boolean;
+    maxEffort?: ReasoningLevel;
+    source?: import("./reasoning/resolve").ReasoningSource;
+    explicit?: boolean;
+  } = StandardReasoning,
+> {
   /**
    * Stable system prompt. Carries the brand-free reference grounding, persona
    * and instructions. Eligible for the provider cache prefix on every client;
@@ -382,7 +405,7 @@ export interface CompletionParams {
    * summaries where the provider offers them. Absent → today's behaviour: the
    * client sends exactly what it sent before the field existed.
    */
-  reasoning?: { effort: ReasoningLevel; summaries: boolean };
+  reasoning?: R;
   /**
    * #1276 — no person reads this reply as it streams: the call runs as
    * background work. Set by the chain runner for every `"job"` walk, never by

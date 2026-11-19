@@ -361,6 +361,12 @@ const PINNED_AFFORDANCES: Record<
   "src/components/settings/account-section/index.tsx": { "text-success": 1 },
   "src/components/settings/advanced-section.tsx": { "text-success": 2 },
   "src/components/settings/ai/ai-insights-card.tsx": { "text-success": 1 },
+  // The Antigravity card: the CLI installed mark and the connection state.
+  // They state what the CLI reported, not the result of a write.
+  "src/components/settings/ai/antigravity-status-rows.tsx": {
+    CheckCircle2: 2,
+    "text-success": 2,
+  },
   "src/components/settings/ai/anthropic-provider-form.tsx": {
     "text-success": 1,
   },

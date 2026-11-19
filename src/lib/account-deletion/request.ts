@@ -25,6 +25,7 @@ import {
   eraseAccount,
   lockAccountForDeletion,
 } from "@/lib/account-deletion/lifecycle";
+import { cleanAntigravityProfileOnLock } from "@/lib/ai/antigravity-profile-cleanup";
 
 type Tx = Prisma.TransactionClient;
 
@@ -76,6 +77,13 @@ export async function requestAccountDeletion(input: {
     { erasing: purgeAt === null },
   );
 
-  if (!purgeAt) await kickOffhostPurge();
+  if (!purgeAt) {
+    await kickOffhostPurge();
+  } else {
+    // When locking with a grace window, clean the Antigravity OAuth profile
+    // after the lock transaction commits. If cleanup fails, the profile ID
+    // remains on the user row so purgeAccount will retry it at purge time.
+    await cleanAntigravityProfileOnLock(input.userId);
+  }
   return { purgeAt };
 }

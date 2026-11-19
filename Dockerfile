@@ -206,6 +206,7 @@ RUN set -eux; \
       ca-certificates tzdata libgssapi-krb5-2 libldap2 libsasl2-2; \
     apt-get clean; \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* /root/.npm /root/.cache
+
 COPY --from=pgclient /out/bin/ /usr/lib/postgresql/18/bin/
 COPY --from=pgclient /out/lib/libpq.so.5 /usr/lib/postgresql/18/lib/libpq.so.5
 RUN echo /usr/lib/postgresql/18/lib > /etc/ld.so.conf.d/postgresql-18.conf && \
@@ -267,6 +268,14 @@ RUN groupadd --system --gid 1001 nodejs && \
 RUN mkdir -p /var/lib/healthlog/backups && \
     chown nextjs:nodejs /var/lib/healthlog/backups && \
     chmod 700 /var/lib/healthlog/backups
+
+# Antigravity profile directory (optional, used when ANTIGRAVITY_PROFILE_ROOT
+# is set). Each user gets a subdirectory under this path. Owned by the app
+# user so Docker can mount a named volume here. If no volume is mounted,
+# profiles stay in the container layer (acceptable for single-user deploys).
+RUN mkdir -p /var/lib/healthlog/antigravity && \
+    chown nextjs:nodejs /var/lib/healthlog/antigravity && \
+    chmod 755 /var/lib/healthlog/antigravity
 
 # Copy built assets
 COPY --from=builder /app/public ./public
@@ -410,6 +419,7 @@ COPY --from=builder /app/src/lib/jobs/retired-measurement-indexes.mjs ./src/lib/
 COPY --from=builder /app/src/lib/database-backup/dump-core.mjs ./src/lib/database-backup/dump-core.mjs
 COPY --from=builder /app/src/lib/auth/argon2-params.mjs ./src/lib/auth/argon2-params.mjs
 COPY --from=builder /app/scripts/repair-intake-anomalies.ts ./scripts/repair-intake-anomalies.ts
+COPY --from=builder /app/src/lib/ai/antigravity-install-core.mjs ./src/lib/ai/antigravity-install-core.mjs
 # Prove the reset CLI's imports resolve in this tree: with every import found
 # it stops at its own usage line; a missing module throws before reaching it.
 RUN node scripts/reset-password.mjs 2>&1 | grep -q "reset-password: usage:"

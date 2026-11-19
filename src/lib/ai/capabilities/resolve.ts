@@ -18,8 +18,8 @@ import {
   resolveEffectiveTimeoutMs,
 } from "@/lib/ai/effective-timeout";
 import {
+  isConsentGatedProvider,
   isExternalProvider,
-  isOperatorHeldProvider,
 } from "@/lib/ai/provider-egress";
 import { usageLevelAtLeast, type AiUsageLevel } from "@/lib/ai/usage-level";
 import type { ModuleKey } from "@/lib/modules/registry";
@@ -274,10 +274,11 @@ function consentNeeded(
   provider: ProviderPresence,
 ): boolean {
   if (def.consent.rule === "self-snapshot") {
-    // A cascade may fall through to any entry, so one operator-held entry
-    // anywhere in the chain is enough to need the receipt.
+    // A cascade may fall through to any entry, so one consent-gated entry
+    // anywhere in the chain is enough to need the receipt. That includes
+    // Antigravity, which sends data to Google.
     return capabilityEntries(def.key, provider).some((entry) =>
-      isOperatorHeldProvider(entry.providerType),
+      isConsentGatedProvider(entry.providerType),
     );
   }
   if (def.modality === "document") {
@@ -471,14 +472,16 @@ function operatorKeyServiceName(baseUrl: string | null | undefined): string {
 function consentRecipients(provider: ProviderPresence): AiConsentRecipient[] {
   const out: AiConsentRecipient[] = [];
   for (const entry of everyEntry(provider)) {
-    if (!isOperatorHeldProvider(entry.providerType)) continue;
+    if (!isConsentGatedProvider(entry.providerType)) continue;
     const recipient: AiConsentRecipient =
       entry.providerType === "admin-codex"
         ? { via: "operator_chatgpt", name: "ChatGPT (OpenAI)" }
-        : {
-            via: "operator_key",
-            name: operatorKeyServiceName(provider.operatorKeyBaseUrl),
-          };
+        : entry.providerType === "antigravity"
+          ? { via: "antigravity_cli", name: "Antigravity (Google)" }
+          : {
+              via: "operator_key",
+              name: operatorKeyServiceName(provider.operatorKeyBaseUrl),
+            };
     if (!out.some((seen) => seen.via === recipient.via)) out.push(recipient);
   }
   return out;

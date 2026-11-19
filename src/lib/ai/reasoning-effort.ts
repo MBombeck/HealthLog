@@ -26,7 +26,11 @@ export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
  * OpenAI, Anthropic and Codex pin their own model families and parameters,
  * so the setting is refused for them rather than silently dropped.
  */
-export const REASONING_PROVIDER_TYPES = ["local", "openai-compatible"] as const;
+export const REASONING_PROVIDER_TYPES = [
+  "local",
+  "openai-compatible",
+  "antigravity",
+] as const;
 
 export type ReasoningProviderType = (typeof REASONING_PROVIDER_TYPES)[number];
 

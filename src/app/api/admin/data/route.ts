@@ -1,4 +1,7 @@
 import { prisma } from "@/lib/db";
+import { removeAntigravityProfile } from "@/lib/ai/antigravity-profile-cleanup";
+import { cancelAntigravityLogin } from "@/lib/ai/antigravity-auth-session";
+import { forgetAntigravityCapabilities } from "@/lib/ai/antigravity-capability-cache";
 import {
   apiHandler,
   requireAdmin,
@@ -101,6 +104,12 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
     details: { confirm: "DELETE ALL" },
   });
 
+  // Every account's Antigravity profile is read before the wipe clears them.
+  const antigravityProfiles = await prisma.user.findMany({
+    where: { antigravityProfileId: { not: null } },
+    select: { id: true, antigravityProfileId: true },
+  });
+
   const counts = await prisma.$transaction(
     async (tx) => {
       const perModel: Record<string, number> = {};
@@ -129,6 +138,35 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
 
   const deletedRows = Object.values(counts).reduce((sum, n) => sum + n, 0);
 
+  let anyCleanupFailed = false;
+  for (const userRow of antigravityProfiles) {
+    if (!userRow.antigravityProfileId) continue;
+    cancelAntigravityLogin(userRow.id);
+    forgetAntigravityCapabilities(userRow.id);
+    const ok = await removeAntigravityProfile(userRow.antigravityProfileId);
+    if (ok) {
+      await prisma.user.updateMany({
+        where: {
+          id: userRow.id,
+          antigravityProfileId: userRow.antigravityProfileId,
+        },
+        data: { antigravityProfileId: null },
+      });
+    } else {
+      anyCleanupFailed = true;
+      await prisma.user.updateMany({
+        where: {
+          id: userRow.id,
+          antigravityProfileId: userRow.antigravityProfileId,
+        },
+        data: { antigravityConnectionStatus: "error" },
+      });
+      console.warn(
+        `Failed to remove Antigravity profile ${userRow.antigravityProfileId} during admin wipe for user ${userRow.id}; preserving ID for retry`,
+      );
+    }
+  }
+
   // Written after the transaction commits, so the row cannot be removed by the
   // AuditLog delete inside it. The instance's whole audit history goes; this
   // one row stays as the receipt for the erasure the operator asked for.
@@ -149,6 +187,14 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
   // v1.16.9 — the wipe touched every user's rows; clear every cache
   // bucket so no per-user payload survives the reset.
   invalidateAllCaches();
+
+  if (anyCleanupFailed) {
+    return apiError(
+      "All instance data was wiped, but one or more Antigravity profile directories could not be removed from the host.",
+      500,
+      { errorCode: "admin_data_wipe.antigravity_profile_cleanup_failed" },
+    );
+  }
 
   return apiSuccess({ cleared: true, deletedRows, models: counts });
 });

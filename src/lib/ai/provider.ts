@@ -14,6 +14,8 @@ import { chainEntryReadsImages } from "./codex-slug-chain";
 import { OpenAIClient } from "./openai-client";
 import { AnthropicClient } from "./anthropic-client";
 import { LocalOpenAICompatibleClient } from "./local-client";
+import { antigravityAvailable } from "./antigravity-client";
+import { setAntigravityCapabilities } from "./antigravity-capability-cache";
 import {
   refreshDeviceTokens,
   codexReconnectRequired,
@@ -848,6 +850,10 @@ export async function resolveProviderChain(
       aiCompatBaseUrl: true,
       aiCompatKeyEncrypted: true,
       aiCompatModel: true,
+      antigravityProfileId: true,
+      antigravityModel: true,
+      antigravityConnectionStatus: true,
+      antigravityCapabilitiesJson: true,
       role: true,
       aiProviderChain: true,
       aiNamedChains: true,
@@ -856,16 +862,16 @@ export async function resolveProviderChain(
       aiResponseTimeoutSeconds: true,
     },
   });
-  // Every instance carries the record's timeout and reasoning effort.
+  const policy = providerCredentialPolicy(
+    authority,
+    userRow?.managedProfileAt ?? null,
+  );
+  // Configured user chain instances carry the record's timeout and reasoning effort (operator-default binds timeout only).
   const bind = (provider: AIProvider): AIProvider =>
     bindReasoningEffort(
       bindResponseTimeout(provider, userRow?.aiResponseTimeoutSeconds),
       userRow?.aiProviderChain,
     );
-  const policy = providerCredentialPolicy(
-    authority,
-    userRow?.managedProfileAt ?? null,
-  );
   const named = parseNamedChains(userRow?.aiNamedChains ?? null);
   const selection = chainSelectionFor(named, capability);
   const pinned = selection.kind === "pinned";
@@ -873,13 +879,27 @@ export async function resolveProviderChain(
     const provider = await resolveAdminProvider();
     return provider.type === "none"
       ? []
-      : [{ providerType: "admin-openai", instance: bind(provider) }];
+      : [
+          {
+            providerType: "admin-openai",
+            instance: bindResponseTimeout(
+              provider,
+              userRow?.aiResponseTimeoutSeconds,
+            ),
+          },
+        ];
+  }
+
+  const candidateTypes = pinned
+    ? selection.entries
+    : defaultChainTypes(named, userRow?.aiProviderChain ?? null);
+
+  if (candidateTypes.includes("antigravity")) {
+    setAntigravityCapabilities(userId, userRow?.antigravityCapabilitiesJson);
   }
 
   const resolved: ProviderChainResolved[] = [];
-  for (const providerType of pinned
-    ? selection.entries
-    : defaultChainTypes(named, userRow?.aiProviderChain ?? null)) {
+  for (const providerType of candidateTypes) {
     // Only a pinned chain may list the central Codex, behind the same opt-in.
     const instance =
       pinned && providerType === "admin-codex"
@@ -986,6 +1006,9 @@ const PRESENCE_USER_SELECT = {
   aiCompatBaseUrl: true,
   aiCompatModel: true,
   aiModel: true,
+  antigravityProfileId: true,
+  antigravityConnectionStatus: true,
+  antigravityCapabilitiesJson: true,
   codexConnectionStatus: true,
   codexAccessTokenEncrypted: true,
   codexRefreshTokenEncrypted: true,
@@ -1056,6 +1079,10 @@ export function probeProviderChain(
         readOperatorRow(),
       ]);
       if (!row) return NO_PRESENCE;
+      // Populate the in-process capabilities cache so chainEntryReadsImages
+      // can answer for antigravity without an extra DB round-trip, mirroring
+      // how startCodexSignIn/forgetCodexSignIn keep Codex's working slug live.
+      setAntigravityCapabilities(recordId, row.antigravityCapabilitiesJson);
       const policy = providerCredentialPolicy(authority, row.managedProfileAt);
       const adminKey = !!settings?.adminAiKeyEncrypted;
       const adminModel = settings?.adminAiModel ?? null;
@@ -1104,6 +1131,17 @@ export function probeProviderChain(
             );
           case "admin-openai":
             return adminKey;
+          case "antigravity":
+            // Credentials stay in the CLI's profile folder, never in the DB.
+            // Without a profile for this user the CLI would run under the
+            // server's shared login, so the provider stays off.
+            return (
+              row.antigravityConnectionStatus === "connected" &&
+              antigravityAvailable(
+                row.antigravityProfileId,
+                row.antigravityConnectionStatus,
+              )
+            );
           default:
             // `admin-codex` is never resolved from a stored chain entry.
             return false;
@@ -1190,6 +1228,9 @@ async function resolveProviderForType(
       aiCompatBaseUrl: string | null;
       aiCompatKeyEncrypted: string | null;
       aiCompatModel: string | null;
+      antigravityProfileId: string | null;
+      antigravityModel: string | null;
+      antigravityConnectionStatus: string | null;
       role: string;
     } | null;
     policy: ProviderCredentialPolicy;
@@ -1254,6 +1295,14 @@ async function resolveProviderForType(
       // per-user `useCentralCodex` opt-in. Returning null here keeps a
       // hand-crafted `admin-codex` chain entry from bypassing that gate.
       return null;
+    case "antigravity": {
+      // Credentials stay in the CLI's profile folder, never in the DB. Without
+      // a profile for this user the CLI would run under the shared login, so
+      // no client is built.
+      if (!ctx.userRow) return null;
+      const { antigravityProviderFor } = await import("./antigravity-client");
+      return antigravityProviderFor(ctx.userRow);
+    }
     default:
       return null;
   }
@@ -1311,6 +1360,40 @@ export async function resolveProviderForTest(
   );
 }
 
+function isSameOrigin(url1?: string | null, url2?: string | null): boolean {
+  if (!url1 || !url2) return false;
+  try {
+    return new URL(url1).origin === new URL(url2).origin;
+  } catch {
+    return false;
+  }
+}
+
+function assertStoredKeyOriginAllowed(
+  overrideKey: string | null | undefined,
+  storedKey: string | null | undefined,
+  overrideUrl: string | null | undefined,
+  storedUrl: string | null | undefined,
+): void {
+  const isReusingStoredKey = !overrideKey?.trim() && !!storedKey;
+  if (
+    isReusingStoredKey &&
+    overrideUrl &&
+    !isSameOrigin(overrideUrl, storedUrl)
+  ) {
+    throw new AITestConfigError(
+      422,
+      "API key is required when testing a new base URL origin",
+    );
+  }
+}
+
+function hasAnyOverrideField(override: AITestOverride): boolean {
+  return Object.values(override).some(
+    (v) => typeof v === "string" && v.trim() !== "",
+  );
+}
+
 async function resolveProviderForTestUnbound(
   userId: string,
   override: AITestOverride,
@@ -1327,21 +1410,15 @@ async function resolveProviderForTestUnbound(
       aiCompatBaseUrl: true,
       aiCompatKeyEncrypted: true,
       aiCompatModel: true,
+      antigravityProfileId: true,
+      antigravityModel: true,
+      antigravityConnectionStatus: true,
       role: true,
     },
   });
   // v1.39.3 — an unsaved override is tested under the same owner rule as a
   // saved one: it belongs to the calling account.
   const owner = { operatorTrusted: isOperatorOwned(stored) };
-
-  const provider = (override.provider ?? stored?.aiProvider ?? "")
-    .toString()
-    .trim()
-    .toUpperCase();
-  const model = (override.model ?? stored?.aiModel ?? "").toString().trim();
-  const baseUrl = (override.baseUrl ?? stored?.aiBaseUrl ?? "")
-    .toString()
-    .trim();
 
   // Empty selection ("test my saved config" — the ai-section calls
   // /api/ai/test with an empty body): resolve via the SAME path generation
@@ -1350,10 +1427,26 @@ async function resolveProviderForTestUnbound(
   // (observed: test→admin-key while generation→codex), so a green test gave
   // no signal about whether overnight generation would work.
   // Nothing resolving is the route's `ai.provider.none`, not a refused entry.
-  if (!provider) {
+  if (!hasAnyOverrideField(override)) {
     const chain = await resolveProviderChain(userId, null);
     return chain.length > 0 ? chain[0].instance : new NoProvider();
   }
+
+  // Restore partial override on stored provider when provider is omitted in override.
+  const overrideProvider = (override.provider ?? "").trim().toUpperCase();
+  const provider =
+    overrideProvider || (stored?.aiProvider ?? "").trim().toUpperCase();
+  if (!provider) {
+    throw new AITestConfigError(
+      422,
+      "Select a provider to test these settings",
+    );
+  }
+
+  const model = (override.model ?? stored?.aiModel ?? "").toString().trim();
+  const baseUrl = (override.baseUrl ?? stored?.aiBaseUrl ?? "")
+    .toString()
+    .trim();
 
   switch (provider) {
     case "ANTHROPIC": {
@@ -1377,6 +1470,12 @@ async function resolveProviderForTestUnbound(
       if (!baseUrl) {
         throw new AITestConfigError(422, "Local provider requires a base URL");
       }
+      assertStoredKeyOriginAllowed(
+        override.localKey,
+        stored?.aiLocalKeyEncrypted,
+        override.baseUrl,
+        stored?.aiBaseUrl,
+      );
       // A private host only when the operator granted its origin
       // (`AI_PRIVATE_ORIGINS` or the legacy host list; v1.39.3).
       const allowPrivate = isLocalAiHostAllowed(baseUrl, owner);
@@ -1416,6 +1515,12 @@ async function resolveProviderForTestUnbound(
           "OpenAI-compatible provider requires a base URL",
         );
       }
+      assertStoredKeyOriginAllowed(
+        override.compatKey,
+        stored?.aiCompatKeyEncrypted,
+        override.compatBaseUrl,
+        stored?.aiCompatBaseUrl,
+      );
       if (
         !isLocalAiHostAllowed(compatBaseUrl, owner) &&
         !isPublicUrl(compatBaseUrl)
@@ -1452,6 +1557,25 @@ async function resolveProviderForTestUnbound(
       const codex = await resolveCodexProvider(userId);
       if (codex) return codex;
       throw new AITestConfigError(422, "ChatGPT OAuth is not connected");
+    }
+    case "ANTIGRAVITY":
+    case "ANTIGRAVITY_CLI": {
+      if (
+        !stored?.antigravityProfileId ||
+        stored.antigravityConnectionStatus !== "connected"
+      ) {
+        throw new AITestConfigError(422, "Antigravity is not connected");
+      }
+      const { antigravityProviderFor } = await import("./antigravity-client");
+      const client = antigravityProviderFor({
+        antigravityProfileId: stored.antigravityProfileId,
+        antigravityModel:
+          (override.model ?? stored.antigravityModel ?? "").toString().trim() ||
+          null,
+        antigravityConnectionStatus: stored.antigravityConnectionStatus,
+      });
+      if (client) return client;
+      throw new AITestConfigError(422, "Antigravity is not connected");
     }
     case "OPENAI": {
       // Test path mirrors the persistent resolution: user key first,

@@ -180,7 +180,12 @@ async function runTurn(
 
   // v1.41 — who pays fixes the turn's budget and caps its reasoning.
   const payer = resolveCostOwner(chain);
-  const reasoning = reasoningForTurn(input.reasoningLevel, payer);
+  const reasoning = reasoningForTurn(
+    input.reasoningLevel,
+    payer,
+    input.adminCeiling,
+    input.reasoningExplicit,
+  );
   // Round one and the room for the final answer, reserved before anything
   // runs; every further round is reserved right before it.
   const firstRoundInput = estimateFirstRoundInput(ctx);

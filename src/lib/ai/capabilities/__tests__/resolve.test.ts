@@ -356,6 +356,20 @@ describe("the consent layer", () => {
     );
   });
 
+  it("needs a receipt for an Antigravity chain on a self-snapshot capability", () => {
+    const inputs = baseline();
+    inputs.provider = {
+      ...inputs.provider,
+      entries: [{ providerType: "antigravity", vision: false }],
+    };
+    expect(resolveAiCapability("coach", inputs).reason).toBe(
+      "consent_required",
+    );
+    expect(resolveAiCapability("briefing", inputs).reason).toBe(
+      "consent_required",
+    );
+  });
+
   it("matches kinds to groups, with ai_full covering all of them", () => {
     const inputs = baseline();
     inputs.provider = {
