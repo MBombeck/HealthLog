@@ -227,6 +227,7 @@ describe("Apple Health export: lab results from Health Records", () => {
       failed: 1,
       // Hemoglobin is new to the account; LDL and Glucose already exist.
       markersCreated: 1,
+      reasons: { not_final: 1, panel_header: 1, unit_mismatch: 1 },
     });
     expect(result.clinical).toEqual({ skipped: 1 });
 
@@ -272,6 +273,7 @@ describe("Apple Health export: lab results from Health Records", () => {
       skipped: 2,
       failed: 1,
       markersCreated: 0,
+      reasons: { not_final: 1, panel_header: 1, unit_mismatch: 1 },
     });
     expect(
       await prisma.labResult.count({
@@ -433,6 +435,7 @@ ${records}
       skipped: 1,
       failed: 0,
       markersCreated: 3,
+      reasons: { not_lab: 1 },
     });
     // DiagnosticReport, MedicationRequest, Condition, Patient.
     expect(result.clinical).toEqual({ skipped: 4 });
