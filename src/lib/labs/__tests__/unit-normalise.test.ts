@@ -26,6 +26,12 @@ describe("sameLabUnit — spellings of one unit", () => {
     ["ng/mL", "NG/ML"],
     ["IU/L", "IU/l"],
     ["IU/L", "IU/L"],
+    // #1421: a power of ten with an asterisk, and the litre before a qualifier.
+    ["10^9/L", "10*9/L"],
+    ["10^12/L", "10*12/l"],
+    ["x10^3/µL", "x10*3/uL"],
+    ["ng/mL (FEU)", "ng/ml (FEU)"],
+    ["mg/L (FEU)", "mg/l (FEU)"],
   ])("%s = %s", (a, b) => {
     expect(sameLabUnit(a, b)).toBe(true);
     expect(sameLabUnit(b, a)).toBe(true);
@@ -54,6 +60,12 @@ describe("sameLabUnit — never merges units of different magnitude or kind", ()
     ["mg/dL", "mg/dl."],
     ["mg/dL", "mg per dL"],
     ["mg/dL", ""],
+    // The asterisk fold reads only a leading power of ten, and the qualifier
+    // stays part of the unit.
+    ["10^9/L", "10*3/L"],
+    ["ng/mL (FEU)", "ng/mL (DDU)"],
+    ["ng/mL (FEU)", "ng/mL"],
+    ["mIU/L", "mIU*/L"],
   ])("%s ≠ %s", (a, b) => {
     expect(sameLabUnit(a, b)).toBe(false);
     expect(sameLabUnit(b, a)).toBe(false);

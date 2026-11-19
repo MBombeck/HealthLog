@@ -12,6 +12,8 @@
  *   - whitespace around the slash (`mg / dL`),
  *   - the micro prefix (`µg/L`, `μg/L` with the Greek mu, `ug/L`, `mcg/L`),
  *   - the case of the litre in the denominator (`mmol/l`, `mg/dl`, `mg/DL`),
+ *     also before a bracketed qualifier (`ng/ml (FEU)`),
+ *   - an asterisk for the caret in a power of ten (`10*9/L` is `10^9/L`),
  *   - a unit printed entirely in capitals (`MG/DL`, `MMOL/L`), but only for the
  *     short list of units where capitals cannot denote another real unit.
  *
@@ -88,12 +90,26 @@ function foldMicro(text: string, lookahead: string): string {
   return unified.replace(prefix, "$1µ");
 }
 
-/** `/l`, `/dl`, `/ml`, `/µl` in any case → `/L`, `/dL`, `/mL`, `/µL`. */
+/**
+ * `/l`, `/dl`, `/ml`, `/µl` in any case → `/L`, `/dL`, `/mL`, `/µL`, also in
+ * front of a bracketed qualifier (`ng/ml (FEU)` reads `ng/mL (FEU)`). The
+ * qualifier itself is compared as written.
+ */
 function foldLitre(text: string): string {
   return text.replace(
-    /\/([dmµ]?)l$/i,
+    /\/([dmµ]?)l(?=$| \([^()]*\)$)/i,
     (_, prefix: string) => `/${prefix.toLowerCase()}L`,
   );
+}
+
+/**
+ * A power of ten written with an asterisk, as some lab systems print it
+ * (`10*9/L`, UCUM's own spelling), reads with a caret: `10^9/L`. Only a `10`
+ * that starts the unit (or follows an `x`) and is followed by digits is
+ * touched, so no other unit changes.
+ */
+function foldPowerOfTen(text: string): string {
+  return text.replace(/^(x?)10\*(\d+)/i, "$110^$2");
 }
 
 /**
@@ -111,7 +127,7 @@ export function normaliseLabUnit(raw: string): string {
     if (known) return known;
   }
 
-  return foldLitre(foldMicro(spaced, MICRO_BEFORE));
+  return foldLitre(foldMicro(foldPowerOfTen(spaced), MICRO_BEFORE));
 }
 
 /** Whether two strings name the same lab unit (see the module comment). */
