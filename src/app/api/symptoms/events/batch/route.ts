@@ -45,9 +45,10 @@ const MAX_BODY_BYTES = 1024 * 1024;
 export const POST = apiHandler(withIdempotency<[NextRequest]>(postBatch));
 
 async function postBatch(request: NextRequest): Promise<Response> {
-  // The owner's own device syncing its own samples, metered by the shared
-  // write bucket like the other Apple Health batch routes.
-  const { user } = await requireAuth(undefined, { writeBucket: "own" });
+  // The owner's own device syncing its own samples. Metered by the shared
+  // per-account write bucket, the 429 the wire contract names
+  // (`record_write.rate_limited`); this route keeps no bucket of its own.
+  const { user } = await requireAuth();
 
   const gate = await requireIllnessEnabled(user.id);
   if (!gate.enabled) return gate.response;
