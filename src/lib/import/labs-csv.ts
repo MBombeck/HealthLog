@@ -390,6 +390,7 @@ export async function importLabsCsv(args: {
           valueText: true,
           sourceValue: true,
           sourceUnit: true,
+          unit: true,
         },
       });
       for (const e of existing) {
