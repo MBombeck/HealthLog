@@ -31,6 +31,7 @@ vi.mock("@/lib/db", () => ({
     appleHealthTombstone: {
       findMany: vi.fn(),
     },
+    $queryRaw: vi.fn(async () => []),
     $transaction: vi.fn(async (fn: unknown) => {
       // Same shape as the real Prisma client — invoke the supplied
       // callback with the mocked client itself so `tx.workout.createMany`

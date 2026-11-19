@@ -30,6 +30,8 @@ const txClient = {
   workout: { createManyAndReturn: vi.fn() },
   workoutRoute: { createManyAndReturn: vi.fn() },
   workoutSamples: { createMany: vi.fn() },
+  appleHealthTombstone: { findMany: vi.fn(async () => []) },
+  $queryRaw: vi.fn(async () => []),
 };
 
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
