@@ -12354,7 +12354,8 @@
       "browse": "Escolher arquivos",
       "quotaAlmostFull": "Armazenamento quase cheio",
       "quotaUsed": "{used} de {quota} usados",
-      "queuedAnnouncement": "{count} arquivo(s) adicionados à fila de envio"
+      "queuedAnnouncement": "{count} arquivo(s) adicionados à fila de envio",
+      "storageUsed": "Armazenamento: {used} de {quota} em uso"
     },
     "selection": {
       "count": "{count} selecionados",

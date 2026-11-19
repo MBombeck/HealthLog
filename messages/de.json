@@ -12354,7 +12354,8 @@
       "browse": "Dateien auswählen",
       "quotaAlmostFull": "Speicher fast voll",
       "quotaUsed": "{used} von {quota} belegt",
-      "queuedAnnouncement": "{count} Datei(en) zur Upload-Warteschlange hinzugefügt"
+      "queuedAnnouncement": "{count} Datei(en) zur Upload-Warteschlange hinzugefügt",
+      "storageUsed": "Speicher: {used} von {quota} belegt"
     },
     "selection": {
       "count": "{count} ausgewählt",

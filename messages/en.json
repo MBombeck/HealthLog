@@ -12354,7 +12354,8 @@
       "browse": "Choose files",
       "quotaAlmostFull": "Storage almost full",
       "quotaUsed": "{used} of {quota} used",
-      "queuedAnnouncement": "{count} file(s) added to the upload queue"
+      "queuedAnnouncement": "{count} file(s) added to the upload queue",
+      "storageUsed": "Storage: {used} of {quota} used"
     },
     "selection": {
       "count": "{count} selected",

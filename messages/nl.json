@@ -12354,7 +12354,8 @@
       "browse": "Bestanden kiezen",
       "quotaAlmostFull": "Opslag bijna vol",
       "quotaUsed": "{used} van {quota} gebruikt",
-      "queuedAnnouncement": "{count} bestand(en) toegevoegd aan de uploadwachtrij"
+      "queuedAnnouncement": "{count} bestand(en) toegevoegd aan de uploadwachtrij",
+      "storageUsed": "Opslag: {used} van {quota} in gebruik"
     },
     "selection": {
       "count": "{count} geselecteerd",

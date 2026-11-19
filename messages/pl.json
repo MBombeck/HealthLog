@@ -12354,7 +12354,8 @@
       "browse": "Wybierz pliki",
       "quotaAlmostFull": "Miejsce prawie pełne",
       "quotaUsed": "Użyto {used} z {quota}",
-      "queuedAnnouncement": "Dodano pliki do kolejki przesyłania: {count}"
+      "queuedAnnouncement": "Dodano pliki do kolejki przesyłania: {count}",
+      "storageUsed": "Miejsce: {used} z {quota} zajęte"
     },
     "selection": {
       "count": "Zaznaczono: {count}",

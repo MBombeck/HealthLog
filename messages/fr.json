@@ -12354,7 +12354,8 @@
       "browse": "Choisir des fichiers",
       "quotaAlmostFull": "Stockage presque plein",
       "quotaUsed": "{used} sur {quota} utilisés",
-      "queuedAnnouncement": "{count} fichier(s) ajoutés à la file de téléversement"
+      "queuedAnnouncement": "{count} fichier(s) ajoutés à la file de téléversement",
+      "storageUsed": "Stockage : {used} sur {quota} utilisés"
     },
     "selection": {
       "count": "{count} sélectionnés",

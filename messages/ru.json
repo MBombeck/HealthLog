@@ -12354,7 +12354,8 @@
       "browse": "Выбрать файлы",
       "quotaAlmostFull": "Хранилище почти заполнено",
       "quotaUsed": "Использовано {used} из {quota}",
-      "queuedAnnouncement": "Файлов добавлено в очередь загрузки: {count}"
+      "queuedAnnouncement": "Файлов добавлено в очередь загрузки: {count}",
+      "storageUsed": "Хранилище: {used} из {quota} занято"
     },
     "selection": {
       "count": "Выбрано: {count}",

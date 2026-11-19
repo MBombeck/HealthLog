@@ -12354,7 +12354,8 @@
       "browse": "Scegli file",
       "quotaAlmostFull": "Spazio quasi pieno",
       "quotaUsed": "{used} di {quota} usati",
-      "queuedAnnouncement": "{count} file aggiunti alla coda di caricamento"
+      "queuedAnnouncement": "{count} file aggiunti alla coda di caricamento",
+      "storageUsed": "Spazio: {used} di {quota} in uso"
     },
     "selection": {
       "count": "{count} selezionati",

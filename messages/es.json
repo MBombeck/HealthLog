@@ -12354,7 +12354,8 @@
       "browse": "Elegir archivos",
       "quotaAlmostFull": "Almacenamiento casi lleno",
       "quotaUsed": "{used} de {quota} usados",
-      "queuedAnnouncement": "{count} archivo(s) añadidos a la cola de subida"
+      "queuedAnnouncement": "{count} archivo(s) añadidos a la cola de subida",
+      "storageUsed": "Almacenamiento: {used} de {quota} en uso"
     },
     "selection": {
       "count": "{count} seleccionados",
