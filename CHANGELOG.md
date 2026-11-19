@@ -1,5 +1,67 @@
 # Changelog
 
+## [1.48.3] — 2026-11-20
+
+### Fixed
+
+- **The Local AI provider keeps its address and model.** Switching the
+  active provider to a gateway or a cloud provider cleared the Local base
+  URL, and Local shared its model with OpenAI and Anthropic, so the Local
+  card came back empty. Local now has its own model and keeps its address;
+  a kept address is only used while Local is the active provider or sits in
+  a named chain. Test checks the provider on the card and says which one,
+  and a failed test gives a readable reason. Thanks to @ch3funio. (#1417)
+- **A pinned AI provider that fails says so.** A chain with one entry that
+  times out or can't be reached now ends the Coach or document chat with a
+  message naming the problem instead of an empty screen, and each AI call
+  logs the chain and provider that served it (`ai.chain.served`,
+  `ai.chain.failed`). The docs note that the hourly read and scan limits
+  count failed attempts. Thanks again to @ch3funio. (#1404)
+- **Re-importing an Apple Health export no longer duplicates workouts.** A
+  workout's identity came from the raw date and duration strings, which
+  differ between exports. It now comes from the activity type and the start
+  and end instants, and the update merges the copies already there (the
+  oldest stays, routes and heart rate move over if it had none). Distance,
+  energy and heart rate from `<WorkoutStatistics>` fill the fields the
+  workout left empty, without counting a multisport workout's parts twice,
+  and restoring a backup from before this version merges its copies the
+  same way. Thanks to @camiracode for the counts. (#1414)
+- **Lab results from Health Records come in more completely.** `10*9/L`
+  reads as `10^9/L`, `ng/ml (FEU)` as `ng/mL (FEU)`, and `x10E3/uL` and its
+  relatives convert to `10^9/L`. A reading that is already there counts as a
+  duplicate before its unit is checked, and a result like `<5` matches the
+  same value at the same time and unit, which removes the duplicates the
+  last import created. A reading for a marker without a unit that already
+  holds numbers is still refused, so nothing gets relabelled, but the import
+  now says that the marker's unit is missing instead of reporting a unit
+  mismatch. The import card shows why readings were skipped. Thanks again to @camiracode. (#1421)
+- **Documents in a managed profile.** The admin audit log names the account
+  that acted, so a guardian's upload shows the guardian; choosing an action
+  in the audit log no longer returns nothing because of a hidden default
+  filter. The document sheet says when an edit was saved, storage use is
+  always shown, and a browser without a built-in PDF viewer (Chrome on
+  Android) gets a download instead of a blocked frame. The docs say that
+  managed profiles use only the server's AI key. Thanks to @ch3funio. (#1403)
+- **Sheets stay above the iPhone keyboard**, also in the app added to the
+  home screen, and tapping a medication reminder opens the dose's card,
+  where you can take or skip it. Thanks to @2q2code.
+- **Document chats answer in the app's language**, not only in English or
+  German. Thanks to @ferges123 for the fix. (#1420)
+
+### Security
+
+- `effect` is raised to 3.22.1 or later (GHSA-7589-6fvf-x4pw), in the app
+  and in the migration CLI the image installs separately.
+
+### Updating
+
+Pull and restart. Two migrations run on the first start: 0512 gives the
+Local provider its own model column, and 0513 merges duplicate workouts
+from Apple Health exports and removes duplicate censored lab results. Take
+a backup first: going back to 1.48.2 works, but the merged copies come back
+only from a backup, and an older version re-importing an export would
+create duplicates again. The steps are in `docs/ops/deploy.md`.
+
 ## [1.48.2] — 2026-11-19
 
 ### Added
