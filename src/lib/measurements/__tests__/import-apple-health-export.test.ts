@@ -985,6 +985,7 @@ describe("streamParseExportXml — end-to-end", () => {
         sourceURL: "https://fhir.example-clinic.test/R4",
         sourceName: "Example Clinic",
         fhirVersion: "4.0.1",
+        labTyped: true,
       },
     ]);
     expect(result.clinical.skipped).toBe(1);
