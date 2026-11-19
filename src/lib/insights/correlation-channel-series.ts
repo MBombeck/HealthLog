@@ -466,34 +466,25 @@ export async function fetchSymptomEventSeries(
   tz: string,
   since: Date,
 ): Promise<NamedSeries[]> {
-  // Two statements: the active definitions, then the chosen ones' events.
+  // One read (two statements): every active definition with its events in
+  // the window; the channels are chosen from it in memory.
   const definitions = pickCorrelationSymptoms(
     await prisma.symptomDefinition.findMany({
       where: { userId, isActive: true },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }, { id: "asc" }],
-      select: { id: true, code: true, labelEncrypted: true },
+      select: {
+        id: true,
+        code: true,
+        labelEncrypted: true,
+        events: {
+          where: { deletedAt: null, occurredAt: { gte: since } },
+          orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
+          take: 5000,
+          select: { occurredAt: true, intensity: true },
+        },
+      },
     }),
   );
-  if (definitions.length === 0) return [];
-  const events = await prisma.symptomEvent.findMany({
-    where: {
-      userId,
-      definitionId: { in: definitions.map((d) => d.id) },
-      deletedAt: null,
-      occurredAt: { gte: since },
-    },
-    orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
-    take: SYMPTOM_EVENT_READ_CAP * definitions.length,
-    select: { definitionId: true, occurredAt: true, intensity: true },
-  });
-  const byDefinition = new Map<string, { at: Date; intensity: number }[]>();
-  for (const event of events) {
-    const list = byDefinition.get(event.definitionId) ?? [];
-    // Newest first, so each definition keeps its newest events under the cap.
-    if (list.length >= SYMPTOM_EVENT_READ_CAP) continue;
-    list.push({ at: event.occurredAt, intensity: event.intensity });
-    byDefinition.set(event.definitionId, list);
-  }
   const series: NamedSeries[] = [];
   for (const definition of definitions) {
     const label = decryptSymptomText(definition.labelEncrypted, "label");
@@ -502,16 +493,16 @@ export async function fetchSymptomEventSeries(
       buildSymptomEventDailySeries({
         key: `${SYMPTOM_CHANNEL_PREFIX}${definition.id}`,
         label,
-        events: byDefinition.get(definition.id) ?? [],
+        events: definition.events.map((event) => ({
+          at: event.occurredAt,
+          intensity: event.intensity,
+        })),
         tz,
       }),
     );
   }
   return series;
 }
-
-/** Per-definition ceiling on the events one symptom channel reads. */
-const SYMPTOM_EVENT_READ_CAP = 5000;
 
 /** Day key (YYYY-MM-DD) for an instant in the user's display timezone. */
 function tzDayKey(at: Date, tz: string): string {
