@@ -2,7 +2,10 @@
  * One person-defined symptom (v1.40).
  *
  *   PATCH  /api/symptoms/definitions/{id} — rename, change the icon, reorder,
- *          hide or show again. Showing a hidden one re-clears the cap.
+ *          hide or show again. Showing a hidden one re-clears the cap, unless
+ *          it is a built-in one (`code` set), which holds no slot. A built-in
+ *          one keeps its code through every edit, so Apple Health still lands
+ *          on it.
  *   DELETE /api/symptoms/definitions/{id} — hide by default (history kept);
  *          `?purge=true` deletes the definition and every event of it.
  *
@@ -25,6 +28,7 @@ import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { requireIllnessEnabled } from "@/lib/illness/gate";
 import {
+  countCappedSymptomDefinitions,
   encryptSymptomText,
   symptomDefinitionUpdateSchema,
   toSymptomDefinitionDTO,
@@ -66,15 +70,24 @@ export const PATCH = apiHandler(
 
     const existing = await prisma.symptomDefinition.findFirst({
       where: { id, userId: user.id },
-      select: { id: true, icon: true, isActive: true, sortOrder: true },
+      select: {
+        id: true,
+        icon: true,
+        isActive: true,
+        sortOrder: true,
+        code: true,
+      },
     });
     if (!existing) return notFound();
 
     // A hidden definition does not hold a slot; showing it again takes one.
-    if (parsed.data.isActive === true && !existing.isActive) {
-      const activeCount = await prisma.symptomDefinition.count({
-        where: { userId: user.id, isActive: true },
-      });
+    // A built-in one never holds a slot, hidden or shown.
+    if (
+      parsed.data.isActive === true &&
+      !existing.isActive &&
+      existing.code === null
+    ) {
+      const activeCount = await countCappedSymptomDefinitions(user.id);
       if (activeCount >= MAX_ACTIVE_SYMPTOM_DEFINITIONS) {
         return apiError(
           `Symptom limit reached (${MAX_ACTIVE_SYMPTOM_DEFINITIONS})`,
@@ -107,6 +120,7 @@ export const PATCH = apiHandler(
         icon: true,
         sortOrder: true,
         isActive: true,
+        code: true,
       },
     });
 
@@ -170,7 +184,8 @@ export const DELETE = apiHandler(
       select: {
         id: true,
         createdAt: true,
-        _count: { select: { events: true } },
+        // Live occurrences only: a tombstone is not one the person has.
+        _count: { select: { events: { where: { deletedAt: null } } } },
       },
     });
     if (!existing) return notFound();

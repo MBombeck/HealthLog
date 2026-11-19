@@ -851,6 +851,22 @@ export const ADMITTED_MUTATING_HANDLERS = [
     "delete",
   ),
   handler(
+    "app/api/symptoms/events/batch/route.ts",
+    "/api/symptoms/events/batch",
+    "POST",
+    "illness",
+    "write",
+    "create",
+  ),
+  handler(
+    "app/api/symptoms/events/by-external-ids/route.ts",
+    "/api/symptoms/events/by-external-ids",
+    "DELETE",
+    "illness",
+    "manage",
+    "delete",
+  ),
+  handler(
     "app/api/seizures/events/route.ts",
     "/api/seizures/events",
     "POST",

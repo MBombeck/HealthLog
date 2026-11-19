@@ -86,7 +86,11 @@ function useThirtyDayWindow(): { from: string; to: string } {
   return range;
 }
 
-/** One occurrence row: time, symptom, intensity, note, and its actions. */
+/**
+ * One occurrence row: time (and its end, for an imported one with a
+ * duration), symptom, intensity, note, its provenance when Apple Health
+ * brought it, and its actions.
+ */
 export function SymptomEventRow({
   event,
   definition,
@@ -121,8 +125,16 @@ export function SymptomEventRow({
             </TagChip>
           </div>
           <p className="text-muted-foreground text-xs">
-            {fmt.time(new Date(event.occurredAt))}
+            {event.endAt
+              ? t("symptoms.timeRange", {
+                  from: fmt.time(new Date(event.occurredAt)),
+                  to: fmt.time(new Date(event.endAt)),
+                })
+              : fmt.time(new Date(event.occurredAt))}
             {annotation ? ` · ${annotation}` : ""}
+            {event.source === "APPLE_HEALTH"
+              ? ` · ${t("symptoms.sourceAppleHealth")}`
+              : ""}
           </p>
           {event.note ? (
             <p className="text-sm break-words">{event.note}</p>

@@ -62,6 +62,11 @@ export interface SymptomEventBackupEntry {
   /** Ciphertext as base64; present on a disaster-recovery payload. */
   noteEncrypted?: string | null;
   episodeId: string | null;
+  endAt: string | null;
+  source: string;
+  externalId: string | null;
+  /** Present in a disaster-recovery payload: the tombstone of an import. */
+  deletedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -77,6 +82,7 @@ export interface SymptomDefinitionBackupEntry {
   icon: string | null;
   sortOrder: number;
   isActive: boolean;
+  code: string | null;
   createdAt: string;
   updatedAt: string;
   events: SymptomEventBackupEntry[];
@@ -109,9 +115,12 @@ function readTextForExport(buf: Uint8Array, field: string): string {
 }
 
 /**
- * Build the symptoms slice of a user's full backup. The tables carry no
- * tombstone, so both purposes read the same rows and differ only in how the
- * free text travels.
+ * Build the symptoms slice of a user's full backup. A disaster-recovery
+ * payload carries every occurrence, the tombstones of deleted Apple Health
+ * imports included, so a restored instance still answers a late re-post of
+ * such a sample `duplicate`. A portable export carries only the live ones,
+ * as it omits every other soft-deleted row. Otherwise the two purposes
+ * differ only in how the free text travels.
  */
 export async function buildSymptomsBackupSection(
   prisma: Pick<PrismaClient, "symptomDefinition">,
@@ -123,7 +132,10 @@ export async function buildSymptomsBackupSection(
     where: { userId },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }, { id: "asc" }],
     include: {
-      events: { orderBy: [{ occurredAt: "asc" }, { id: "asc" }] },
+      events: {
+        ...(disasterRecovery ? {} : { where: { deletedAt: null } }),
+        orderBy: [{ occurredAt: "asc" }, { id: "asc" }],
+      },
     },
   });
 
@@ -135,12 +147,14 @@ export async function buildSymptomsBackupSection(
       icon: row.icon,
       sortOrder: row.sortOrder,
       isActive: row.isActive,
+      code: row.code,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
       events: row.events.map((event) => ({
         ...(disasterRecovery
           ? {
               id: event.id,
+              deletedAt: event.deletedAt ? event.deletedAt.toISOString() : null,
               noteEncrypted: event.noteEncrypted
                 ? base64(event.noteEncrypted)
                 : null,
@@ -153,6 +167,9 @@ export async function buildSymptomsBackupSection(
         occurredAt: event.occurredAt.toISOString(),
         intensity: event.intensity,
         episodeId: event.episodeId,
+        endAt: event.endAt ? event.endAt.toISOString() : null,
+        source: event.source,
+        externalId: event.externalId,
         createdAt: event.createdAt.toISOString(),
         updatedAt: event.updatedAt.toISOString(),
       })),
@@ -190,6 +207,7 @@ export interface SymptomsRestoreInput {
     icon?: string | null | undefined;
     sortOrder: number;
     isActive: boolean;
+    code?: string | null | undefined;
     createdAt: string;
     updatedAt: string;
     events: Array<{
@@ -199,6 +217,10 @@ export interface SymptomsRestoreInput {
       note?: string | null | undefined;
       noteEncrypted?: string | null | undefined;
       episodeId?: string | null | undefined;
+      endAt?: string | null | undefined;
+      source?: string | undefined;
+      externalId?: string | null | undefined;
+      deletedAt?: string | null | undefined;
       createdAt: string;
       updatedAt: string;
     }>;
@@ -246,6 +268,7 @@ export async function restoreSymptomsData(
         icon: definition.icon ?? null,
         sortOrder: definition.sortOrder,
         isActive: definition.isActive,
+        code: definition.code ?? null,
         createdAt: new Date(definition.createdAt),
         updatedAt: new Date(definition.updatedAt),
         events: {
@@ -269,6 +292,10 @@ export async function restoreSymptomsData(
                     ? encryptToBytes(event.note)
                     : null,
               episodeId,
+              endAt: event.endAt ? new Date(event.endAt) : null,
+              source: event.source ?? "MANUAL",
+              externalId: event.externalId ?? null,
+              deletedAt: event.deletedAt ? new Date(event.deletedAt) : null,
               createdAt: new Date(event.createdAt),
               updatedAt: new Date(event.updatedAt),
             };

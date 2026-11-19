@@ -175,11 +175,25 @@ describe("soft-delete retention register", () => {
     expect(sql).toContain(
       `NOT EXISTS (SELECT 1 FROM "encounters" r WHERE r."practitioner_id" = t."id" AND r."deleted_at" IS NULL)`,
     );
+    // Symptom occurrences tombstone their Apple Health imports, so only a
+    // live one holds its episode back.
     const symptoms = SOFT_DELETE_RETENTION.IllnessEpisode;
     if (symptoms.kind !== "purge") throw new Error("IllnessEpisode is purged");
-    // A table without tombstones: every row is live.
     expect(purgeCondition(symptoms)).toContain(
-      `NOT EXISTS (SELECT 1 FROM "symptom_events" r WHERE r."episode_id" = t."id")`,
+      `NOT EXISTS (SELECT 1 FROM "symptom_events" r WHERE r."episode_id" = t."id" AND r."deleted_at" IS NULL)`,
+    );
+    // A table without tombstones: every row is live.
+    expect(
+      purgeCondition({
+        kind: "purge",
+        table: "widgets",
+        days: () => 1,
+        referencedBy: [
+          { table: "widget_uses", column: "widget_id", softDeletes: false },
+        ],
+      }),
+    ).toContain(
+      `NOT EXISTS (SELECT 1 FROM "widget_uses" r WHERE r."widget_id" = t."id")`,
     );
     expect(() =>
       purgeCondition({

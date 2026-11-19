@@ -1,10 +1,17 @@
 "use client";
 
 /**
- * Log one occurrence of a symptom the person defined (v1.40): which one, how
+ * Log an occurrence of a symptom the person defined (v1.40): which one, how
  * strong (0-10, the scale the pain score uses), when, an optional note, and
  * which illness episode it belongs to, offered whenever one ran at that time
  * (`EpisodeLinkField`).
+ *
+ * Several symptoms that came together (a flare where headache, nausea and
+ * dizziness arrive at once) are logged in one go: each chip toggles, every
+ * picked symptom gets its own intensity slider, and the time, note and
+ * episode are shared. Save writes one occurrence per symptom through the
+ * ordinary create route, one after the other; a failure part way keeps only
+ * the unsaved ones picked, so trying again never writes one twice.
  *
  * Built like the measurement and mood quick-entry forms it sits beside: the
  * `FieldGroup` rhythm, `SliderField` for the bounded scale, `DateTimeField`
@@ -51,7 +58,11 @@ import {
   linkableEpisodes,
 } from "./episode-link-field";
 import { SymptomIcon } from "./symptom-icons";
-import { useLogSymptomEvent, useSymptomDefinitions } from "./use-symptoms";
+import {
+  SymptomSaveError,
+  useLogSymptomEvents,
+  useSymptomDefinitions,
+} from "./use-symptoms";
 
 const NOTE_MAX_LENGTH = 500;
 
@@ -87,17 +98,16 @@ export function SymptomEntryForm({
   // Resolved ones too: a backdated occurrence may belong to an illness that
   // has since ended, as long as it happened while that one ran.
   const episodes = useIllnessEpisodes(true);
-  const log = useLogSymptomEvent();
+  const log = useLogSymptomEvents();
 
-  const [definitionId, setDefinitionId] = useState<string | null>(null);
-  const [intensity, setIntensity] = useState<number | null>(null);
+  const picks = useSymptomPicks();
+  const { picked } = picks;
   const [occurredAt, setOccurredAt] = useState(() =>
     localDateTimeValue(defaultDate),
   );
   const [note, setNote] = useState("");
   const [episodeId, setEpisodeId] = useState<string | null>(null);
   const [symptomError, setSymptomError] = useState<string | null>(null);
-  const [intensityError, setIntensityError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const formId = useId();
@@ -105,58 +115,77 @@ export function SymptomEntryForm({
 
   const list = definitions.data?.definitions ?? [];
   const limit = definitions.data?.limit ?? 0;
-  const atLimit = limit > 0 && list.length >= limit;
+  // Only the symptoms the person named hold a slot; a built-in one that Apple
+  // Health created does not.
+  const atLimit =
+    limit > 0 && list.filter((d) => d.code === null).length >= limit;
+  const labelById = new Map(list.map((d) => [d.id, d.label]));
+  const busy = log.isPending;
   // Exactly the episodes the server admits at the chosen time.
   const episodeOptions = linkableEpisodes(episodes.data ?? [], occurredAt);
   const linkedEpisodeId = effectiveEpisodeId(episodeId, episodeOptions);
 
+  function togglePick(id: string) {
+    setSymptomError(null);
+    picks.toggle(id);
+  }
+
   function resetForm() {
-    setDefinitionId(null);
-    setIntensity(null);
+    picks.reset();
     setOccurredAt(localDateTimeValue(defaultDate));
     setNote("");
     setEpisodeId(null);
     setSymptomError(null);
-    setIntensityError(null);
     setError(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    const missingSymptom = definitionId === null;
-    const missingIntensity = intensity === null;
-    setSymptomError(
-      missingSymptom ? t("symptoms.entry.symptomRequired") : null,
-    );
-    setIntensityError(
-      missingIntensity ? t("symptoms.entry.intensityRequired") : null,
-    );
-    if (missingSymptom || missingIntensity) return;
-
-    try {
-      await log.mutateAsync({
-        definitionId,
-        intensity,
-        occurredAt: new Date(occurredAt).toISOString(),
-        note: note.trim() ? note.trim() : undefined,
-        episodeId: linkedEpisodeId ?? undefined,
-      });
-      toast.success(
-        t("common.saved"),
-        recordName
-          ? {
-              description: t("recordSharing.toast.savedTo", {
-                name: recordName,
-              }),
-            }
-          : undefined,
-      );
-      resetForm();
-      onSuccess?.();
-    } catch (err) {
-      setError(localizedApiError(err, t, "symptoms.saveError"));
+    if (picked.length === 0) {
+      setSymptomError(t("symptoms.entry.symptomRequired"));
     }
+    if (!picks.validate()) return;
+
+    const occurredAtIso = new Date(occurredAt).toISOString();
+    try {
+      await log.mutateAsync(
+        picked.map((definitionId) => ({
+          definitionId,
+          intensity: picks.intensities[definitionId] ?? 0,
+          occurredAt: occurredAtIso,
+          note: note.trim() ? note.trim() : undefined,
+          episodeId: linkedEpisodeId ?? undefined,
+        })),
+      );
+    } catch (err) {
+      const saved = err instanceof SymptomSaveError ? err.saved : [];
+      // Keep only what did not land, so Save again writes the rest once.
+      picks.keepOnly(picked.filter((id) => !saved.includes(id)));
+      const reason = localizedApiError(
+        err instanceof SymptomSaveError ? err.cause : err,
+        t,
+        "symptoms.saveError",
+      );
+      setError(
+        saved.length > 0
+          ? `${t("symptoms.entry.partlySaved", { saved: saved.length, total: picked.length })} ${reason}`
+          : reason,
+      );
+      return;
+    }
+    toast.success(
+      t("common.saved"),
+      recordName
+        ? {
+            description: t("recordSharing.toast.savedTo", {
+              name: recordName,
+            }),
+          }
+        : undefined,
+    );
+    resetForm();
+    onSuccess?.();
   }
 
   const footerNode = (
@@ -168,7 +197,7 @@ export function SymptomEntryForm({
             variant="outline"
             size="icon"
             className="size-11"
-            disabled={log.isPending}
+            disabled={busy}
             aria-label={t("common.moreOptions")}
           >
             <MoreHorizontal className="size-4" />
@@ -188,13 +217,13 @@ export function SymptomEntryForm({
             type="button"
             variant="outline"
             onClick={onCancel}
-            disabled={log.isPending}
+            disabled={busy}
           >
             {t("common.cancel")}
           </Button>
         )}
-        <Button type="submit" form={formId} disabled={log.isPending}>
-          {log.isPending ? (
+        <Button type="submit" form={formId} disabled={busy}>
+          {busy ? (
             <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
           ) : (
             <Plus className="size-4" />
@@ -206,8 +235,6 @@ export function SymptomEntryForm({
   );
 
   const symptomGroupId = `${formId}-symptom`;
-  const low = t("symptoms.entry.anchorLow");
-  const high = t("symptoms.entry.anchorHigh");
 
   return (
     <form
@@ -229,58 +256,37 @@ export function SymptomEntryForm({
         ) : (
           <>
             <div
-              role="radiogroup"
+              role="group"
               aria-labelledby={symptomGroupId}
               aria-describedby={
                 symptomError ? `${symptomGroupId}-error` : undefined
               }
               className="flex flex-wrap gap-2"
             >
-              {list.map((definition) => {
-                const selected = definitionId === definition.id;
-                return (
-                  <button
-                    key={definition.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={selected}
-                    data-testid="symptom-chip"
-                    onClick={() => {
-                      setDefinitionId(selected ? null : definition.id);
-                      setSymptomError(null);
-                    }}
-                    className={cn(
-                      "focus-visible:ring-ring/50 inline-flex min-h-11 items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none sm:min-h-8",
-                      selected
-                        ? "border-primary bg-primary/10 text-foreground"
-                        : "border-border text-foreground hover:bg-accent",
-                    )}
-                  >
-                    <SymptomIcon name={definition.icon} className="size-4" />
-                    {definition.label ?? t("symptoms.unreadableLabel")}
-                  </button>
-                );
-              })}
+              {list.map((definition) => (
+                <SymptomChip
+                  key={definition.id}
+                  icon={definition.icon}
+                  label={definition.label ?? t("symptoms.unreadableLabel")}
+                  selected={picked.includes(definition.id)}
+                  onToggle={() => togglePick(definition.id)}
+                />
+              ))}
               {canDefine && !atLimit ? (
                 <AddSymptomChip
                   onCreated={(id) => {
-                    setDefinitionId(id);
-                    setSymptomError(null);
+                    if (!picked.includes(id)) togglePick(id);
                   }}
                 />
               ) : null}
             </div>
-            {list.length === 0 && !definitions.isLoading ? (
-              <p className="text-muted-foreground text-xs">
-                {canDefine
-                  ? t("symptoms.entry.emptyHint")
-                  : t("symptoms.entry.emptyHintNoManage")}
-              </p>
-            ) : atLimit && canDefine ? (
-              <p className="text-muted-foreground text-xs">
-                {t("symptoms.entry.limitHint", { limit })}
-              </p>
-            ) : null}
+            <PickerHint
+              count={list.length}
+              loading={definitions.isLoading}
+              canDefine={canDefine}
+              atLimit={atLimit}
+              limit={limit}
+            />
           </>
         )}
         {symptomError ? (
@@ -294,37 +300,22 @@ export function SymptomEntryForm({
         ) : null}
       </div>
 
-      <div className="space-y-2">
-        <SliderField
-          label={t("symptoms.entry.intensity")}
-          value={intensity}
-          onValueChange={(next) => {
-            setIntensity(next);
-            setIntensityError(null);
-          }}
-          min={SYMPTOM_INTENSITY_MIN}
-          max={SYMPTOM_INTENSITY_MAX}
-          step={1}
-          lowAnchor={low}
-          highAnchor={high}
-          emptyLabel={t("symptoms.entry.intensityUnset")}
-          valueText={
-            intensity === null
-              ? undefined
-              : t("symptoms.entry.intensityValueText", {
-                  value: intensity,
-                  max: SYMPTOM_INTENSITY_MAX,
-                  low,
-                  high,
+      {(picked.length === 0 ? [DRAFT] : picked).map((id) => (
+        <IntensitySlider
+          key={id}
+          testId={id === DRAFT ? undefined : "symptom-intensity"}
+          label={
+            picked.length > 1
+              ? t("symptoms.entry.intensityFor", {
+                  symptom: labelById.get(id) ?? t("symptoms.unreadableLabel"),
                 })
+              : t("symptoms.entry.intensity")
           }
+          value={picks.intensities[id] ?? null}
+          onChange={(next) => picks.setIntensity(id, next)}
+          showError={picks.missing.has(id)}
         />
-        {intensityError ? (
-          <p role="alert" className="text-destructive text-sm">
-            {intensityError}
-          </p>
-        ) : null}
-      </div>
+      ))}
 
       <FieldGroup
         htmlFor={`${formId}-occurred-at`}
@@ -389,4 +380,174 @@ export function SymptomEntryForm({
       {footerSlot ? createPortal(footerNode, footerSlot) : footerNode}
     </form>
   );
+}
+
+/** The slider shown before any symptom is picked; the first pick takes it. */
+const DRAFT = "";
+
+/**
+ * The picked symptoms in the order they were picked, each one's intensity,
+ * and which still lack one. The draft slider's value moves to the first pick.
+ */
+function useSymptomPicks() {
+  const [picked, setPicked] = useState<string[]>([]);
+  const [intensities, setIntensities] = useState<Record<string, number | null>>(
+    {},
+  );
+  const [missing, setMissing] = useState<Set<string>>(() => new Set());
+
+  function toggle(id: string) {
+    if (picked.includes(id)) {
+      setPicked(picked.filter((p) => p !== id));
+      return;
+    }
+    if (picked.length === 0 && (intensities[DRAFT] ?? null) !== null) {
+      setIntensities((prev) => ({ ...prev, [id]: prev[DRAFT] ?? null }));
+      setMissing(new Set());
+    }
+    setPicked([...picked, id]);
+  }
+
+  function setIntensity(id: string, value: number | null) {
+    setIntensities((prev) => ({ ...prev, [id]: value }));
+    setMissing((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  }
+
+  /** Marks every row without an intensity; true when none is missing. */
+  function validate(): boolean {
+    const rows = picked.length === 0 ? [DRAFT] : picked;
+    const unset = rows.filter((id) => (intensities[id] ?? null) === null);
+    setMissing(new Set(unset));
+    return picked.length > 0 && unset.length === 0;
+  }
+
+  function reset() {
+    setPicked([]);
+    setIntensities({});
+    setMissing(new Set());
+  }
+
+  return {
+    picked,
+    intensities,
+    missing,
+    toggle,
+    setIntensity,
+    validate,
+    reset,
+    keepOnly: setPicked,
+  };
+}
+
+/** One 0-10 intensity slider with its inline error. */
+function IntensitySlider({
+  label,
+  value,
+  onChange,
+  showError,
+  testId,
+}: {
+  label: string;
+  value: number | null;
+  onChange: (next: number | null) => void;
+  showError: boolean;
+  testId?: string;
+}) {
+  const { t } = useTranslations();
+  const low = t("symptoms.entry.anchorLow");
+  const high = t("symptoms.entry.anchorHigh");
+  return (
+    <div className="space-y-2" data-testid={testId}>
+      <SliderField
+        label={label}
+        value={value}
+        onValueChange={onChange}
+        min={SYMPTOM_INTENSITY_MIN}
+        max={SYMPTOM_INTENSITY_MAX}
+        step={1}
+        lowAnchor={low}
+        highAnchor={high}
+        emptyLabel={t("symptoms.entry.intensityUnset")}
+        valueText={
+          value === null
+            ? undefined
+            : t("symptoms.entry.intensityValueText", {
+                value,
+                max: SYMPTOM_INTENSITY_MAX,
+                low,
+                high,
+              })
+        }
+      />
+      {showError ? (
+        <p role="alert" className="text-destructive text-sm">
+          {t("symptoms.entry.intensityRequired")}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/** One symptom as a toggle chip; several may be picked at once. */
+function SymptomChip({
+  icon,
+  label,
+  selected,
+  onToggle,
+}: {
+  icon: string | null;
+  label: string;
+  selected: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={selected}
+      data-testid="symptom-chip"
+      onClick={onToggle}
+      className={cn(
+        "focus-visible:ring-ring/50 inline-flex min-h-11 items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none sm:min-h-8",
+        selected
+          ? "border-primary bg-primary/10 text-foreground"
+          : "border-border text-foreground hover:bg-accent",
+      )}
+    >
+      <SymptomIcon name={icon} className="size-4" />
+      {label}
+    </button>
+  );
+}
+
+/** The one muted line under the chips: how to pick, or why none can be added. */
+function PickerHint({
+  count,
+  loading,
+  canDefine,
+  atLimit,
+  limit,
+}: {
+  count: number;
+  loading: boolean;
+  canDefine: boolean;
+  atLimit: boolean;
+  limit: number;
+}) {
+  const { t } = useTranslations();
+  let text: string | null = null;
+  if (count === 0 && !loading) {
+    text = canDefine
+      ? t("symptoms.entry.emptyHint")
+      : t("symptoms.entry.emptyHintNoManage");
+  } else if (atLimit && canDefine) {
+    text = t("symptoms.entry.limitHint", { limit });
+  } else if (count > 1) {
+    text = t("symptoms.entry.severalHint");
+  }
+  return text ? <p className="text-muted-foreground text-xs">{text}</p> : null;
 }

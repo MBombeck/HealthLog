@@ -5721,6 +5721,53 @@ paths:
         "403": *a9
         "422": *a4
         "429": *a12
+  /api/symptoms/events/by-external-ids:
+    delete:
+      tags:
+        - Symptoms
+      summary: Delete Apple Health symptom occurrences by external ID
+      description: "Tombstones the symptom occurrences posted through `POST /api/symptoms/events/batch` whose externalId is
+        listed. One logged in HealthLog is never touched. A later re-post of a deleted externalId stays deleted: the
+        batch answers `duplicate`. MANAGE on a shared record. Served when `GET /api/auth/me` reports
+        `features.appleHealthSymptoms: true`. Only the caller's own rows with `source = APPLE_HEALTH` are matched; an id
+        naming anything else is a no-op, never an error. Idempotent. Cookie session or a wildcard Bearer token (the
+        native login); a narrow-scope token is refused 403. Metered by the shared per-account write bucket."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExternalIdDeleteRequest"
+      responses:
+        "200":
+          description: Delete batch processed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SymptomEventsDeleteByExternalIdsResponse"
+        "401": *a1
+        "403": &a75
+          description: >-
+            `meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
+            generic auth gate answers it before the route's own checks run. Otherwise: `illness.disabled`: the record
+            has the illness module switched off (or the operator turned it off server-wide); symptoms ride that module.
+
+
+            Refused: this request named a record the caller may not act on (`meta.errorCode` = `sharing.access.denied`).
+            Byte-identical for an account that does not exist, an account that granted nothing, a grant whose sections
+            do not reach this surface, and a read grant on a request that writes — the response carries no reason, so it
+            is not an account-enumeration oracle. The reason reaches the record owner's activity feed and the operator's
+            audit trail instead. On the cookie transport the same code answers one further case: a session that has
+            entered a shared record and sends a request without its record-context assertion, which is a client older
+            than the fence — leave the record and reload. A request that names no record but the caller's own never
+            reaches this response, so a client that never switches and never sends the per-request account selector will
+            not see it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a12
   /api/medications/intake/by-external-ids:
     delete:
       tags:
@@ -27123,26 +27170,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListSymptomDefinitionsEnvelope"
         "401": *a1
-        "403": &a75
-          description: >-
-            `meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
-            generic auth gate answers it before the route's own checks run. Otherwise: `illness.disabled`: the record
-            has the illness module switched off (or the operator turned it off server-wide); symptoms ride that module.
-
-
-            Refused: this request named a record the caller may not act on (`meta.errorCode` = `sharing.access.denied`).
-            Byte-identical for an account that does not exist, an account that granted nothing, a grant whose sections
-            do not reach this surface, and a read grant on a request that writes — the response carries no reason, so it
-            is not an account-enumeration oracle. The reason reaches the record owner's activity feed and the operator's
-            audit trail instead. On the cookie transport the same code answers one further case: a session that has
-            entered a shared record and sends a request without its record-context assertion, which is a client older
-            than the fence — leave the record and reload. A request that names no record but the caller's own never
-            reaches this response, so a client that never switches and never sends the per-request account selector will
-            not see it.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
+        "403": *a75
         "422": *a4
         "429": *a5
     post:
@@ -27313,12 +27341,52 @@ paths:
         "409": *a7
         "422": *a4
         "429": *a5
+  /api/symptoms/events/batch:
+    post:
+      tags:
+        - Symptoms
+      summary: Import Apple Health symptom samples (v1.48.2)
+      description: "Each entry lands on the record's built-in definition for its code, created on first use and labelled in
+        the record owner's language. A sample already stored, deleted ones included, answers `duplicate`, so a late
+        re-post of a sample the app reported gone never brings it back. No note and no episode link from this route.
+        Idempotent under `Idempotency-Key`. Cookie session or a wildcard Bearer token; a narrow-scope token is refused
+        403. Metered by the shared per-account write bucket. Audits as `symptoms.batch.ingest`. Served when `GET
+        /api/auth/me` reports `features.appleHealthSymptoms: true`."
+      parameters:
+        - *a6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SymptomBatchRequest"
+      responses:
+        "200":
+          description: Batch processed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SymptomBatchEnvelope"
+        "401": *a1
+        "403": *a75
+        "409": *a7
+        "422":
+          description: More than 500 entries (`symptoms.batch.too_large`) or a malformed body (`symptoms.batch.invalid`, every
+            issue under `details.issues`, an entry's issues under `entries.<n>`). Nothing was written; both are
+            permanent for the batch as sent.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429": *a12
   /api/symptoms/events/{id}:
     patch:
       tags:
         - Symptoms
       summary: Edit a symptom occurrence (v1.40)
-      description: Partial edit. Audits as `symptoms.event.update`, naming a note change without quoting it.
+      description: Partial edit. An occurrence imported from Apple Health is edited like any other and keeps its source and
+        externalId; a re-post of its sample never overwrites the edit. Audits as `symptoms.event.update`, naming a note
+        change without quoting it.
       parameters:
         - in: path
           name: id
@@ -27352,7 +27420,8 @@ paths:
       tags:
         - Symptoms
       summary: Delete a symptom occurrence (v1.40)
-      description: Removes the occurrence. Audits as `symptoms.event.delete`.
+      description: Removes the occurrence. One imported from Apple Health is tombstoned instead, so a re-post of its sample
+        answers `duplicate`. Audits as `symptoms.event.delete`.
       parameters:
         - in: path
           name: id
@@ -41189,8 +41258,8 @@ components:
       required:
         - label
       description: Define a symptom of your own. `label` (1-40 characters) is encrypted at rest; `icon` is one of the cycle
-        custom-symptom icon names, null for the default glyph. At most eight active definitions per account (422
-        `symptoms.definition.limitReached`).
+        custom-symptom icon names, null for the default glyph. At most eight active definitions the person named per
+        account (422 `symptoms.definition.limitReached`); the built-in ones Apple Health creates do not count.
     UpdateSymptomDefinitionRequest:
       type: object
       properties:
@@ -41243,6 +41312,56 @@ components:
         may not lie in the future beyond five minutes. `episodeId`, when given, must name one of the record's own
         illness episodes that is still open, or a resolved one whose onset-to-recovery span holds `occurredAt` (422
         `symptoms.episode.notOpen` otherwise). The note is encrypted at rest.
+    SymptomBatchRequest:
+      type: object
+      properties:
+        entries:
+          minItems: 1
+          maxItems: 500
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+                minLength: 1
+                maxLength: 80
+              occurredAt:
+                type: string
+                format: date-time
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              endAt:
+                type: string
+                format: date-time
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              intensity:
+                type: number
+              externalId:
+                type: string
+                minLength: 1
+                maxLength: 120
+              source:
+                type: string
+                minLength: 1
+                maxLength: 40
+            required:
+              - code
+              - occurredAt
+              - intensity
+              - externalId
+              - source
+      required:
+        - entries
+      description: "Apple Health symptom samples, 1-500 per call. Per entry: `code` one of the built-in codes
+        (ABDOMINAL_CRAMPS, ACNE, APPETITE_CHANGES, BLADDER_INCONTINENCE, BLOATING, BREAST_PAIN, CHEST_TIGHTNESS_OR_PAIN,
+        CHILLS, CONSTIPATION, COUGHING, DIARRHEA, DIZZINESS, DRY_SKIN, FAINTING, FATIGUE, FEVER, GENERALIZED_BODY_ACHE,
+        HAIR_LOSS, HEADACHE, HEARTBURN, HOT_FLASHES, LOSS_OF_SMELL, LOSS_OF_TASTE, LOWER_BACK_PAIN, MEMORY_LAPSE,
+        MOOD_CHANGES, NAUSEA, NIGHT_SWEATS, PELVIC_PAIN, RAPID_POUNDING_OR_FLUTTERING_HEARTBEAT, RUNNY_NOSE,
+        SHORTNESS_OF_BREATH, SINUS_CONGESTION, SKIPPED_HEARTBEAT, SLEEP_CHANGES, SORE_THROAT, VAGINAL_DRYNESS, VOMITING,
+        WHEEZING), each the HealthKit category type `HKCategoryTypeIdentifier<PascalCase of the code>`; `occurredAt` the
+        sample's start, `endAt` its end (omit when equal); `intensity` 0-10 (the app maps HKCategoryValueSeverity
+        unspecified to 5, mild to 3, moderate to 6, severe to 9, and sends no entry for notPresent); `externalId` the
+        HKSample UUID; `source` `APPLE_HEALTH`. Unknown keys are ignored."
     UpdateSymptomEventRequest:
       type: object
       properties:
@@ -42729,18 +42848,18 @@ components:
                 sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended, sharing.renounce.not_found,
                 sharing.revoke.already_ended, sharing.revoke.not_found, sharing.session.changed, sharing.switch.invalid,
                 sharing.switch.wrong_transport; source-priority — source-priority.body.invalid_json,
-                source-priority.body.invalid_shape; symptoms — symptoms.definition.limitReached,
-                symptoms.definition.notFound, symptoms.episode.notOpen, symptoms.event.notFound, symptoms.invalid;
-                timeline — timeline.invalid; tokens — tokens.documents.ceiling_reached,
-                tokens.measurements.ceiling_reached, tokens.mirror.not_measurement_token,
-                tokens.workouts.ceiling_reached; vaccination — vaccination.booster-invalid,
-                vaccination.booster-no-antigen, vaccination.booster-out-of-scope, vaccination.custom-vaccine-not-found,
-                vaccination.custom.invalid, vaccination.custom.name-taken, vaccination.custom.not-found,
-                vaccination.encounter-not-found, vaccination.identity-required, vaccination.invalid,
-                vaccination.link.invalid, vaccination.not-found, vaccination.practitioner-not-found; workout —
-                workout.batch.invalid, workout.batch.payload_too_large, workout.batch.source_not_permitted,
-                workout.batch.too_large, workout.delete.synced_source; (unprefixed) — about_me_conflict,
-                ai_response_truncated, coach_prefs_conflict, dashboard_layout_conflict, empty_file,
+                source-priority.body.invalid_shape; symptoms — symptoms.batch.invalid, symptoms.batch.too_large,
+                symptoms.definition.limitReached, symptoms.definition.notFound, symptoms.episode.notOpen,
+                symptoms.event.notFound, symptoms.invalid; timeline — timeline.invalid; tokens —
+                tokens.documents.ceiling_reached, tokens.measurements.ceiling_reached,
+                tokens.mirror.not_measurement_token, tokens.workouts.ceiling_reached; vaccination —
+                vaccination.booster-invalid, vaccination.booster-no-antigen, vaccination.booster-out-of-scope,
+                vaccination.custom-vaccine-not-found, vaccination.custom.invalid, vaccination.custom.name-taken,
+                vaccination.custom.not-found, vaccination.encounter-not-found, vaccination.identity-required,
+                vaccination.invalid, vaccination.link.invalid, vaccination.not-found,
+                vaccination.practitioner-not-found; workout — workout.batch.invalid, workout.batch.payload_too_large,
+                workout.batch.source_not_permitted, workout.batch.too_large, workout.delete.synced_source; (unprefixed)
+                — about_me_conflict, ai_response_truncated, coach_prefs_conflict, dashboard_layout_conflict, empty_file,
                 health_score_config_conflict, insights_layout_conflict, invalid_base_updated_at,
                 json_carries_no_intake_time, json_not_an_array, medication_layout_conflict, missing_required_columns,
                 modules_conflict, mood_tag_layout_conflict, not_configured, notification_prefs_conflict, oidc_only,
@@ -47885,6 +48004,12 @@ components:
                 maximum: 9007199254740991
               isActive:
                 type: boolean
+              code:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                    maxLength: 80
+                  - type: "null"
               createdAt:
                 type: string
                 minLength: 1
@@ -47917,6 +48042,26 @@ components:
                           minLength: 1
                         - type: "null"
                     episodeId:
+                      anyOf:
+                        - type: string
+                          minLength: 1
+                        - type: "null"
+                    endAt:
+                      anyOf:
+                        - type: string
+                          minLength: 1
+                        - type: "null"
+                    source:
+                      type: string
+                      minLength: 1
+                      maxLength: 40
+                    externalId:
+                      anyOf:
+                        - type: string
+                          minLength: 1
+                          maxLength: 120
+                        - type: "null"
+                    deletedAt:
                       anyOf:
                         - type: string
                           minLength: 1
@@ -56861,6 +57006,23 @@ components:
         - error
       additionalProperties: false
     MoodEntriesDeleteByExternalIdsResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ExternalIdDeleteResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    SymptomEventsDeleteByExternalIdsResponse:
       type: object
       properties:
         data:
@@ -97630,6 +97792,14 @@ components:
           maximum: 9007199254740991
         isActive:
           type: boolean
+        code:
+          description: Since v1.48.2. The built-in code an Apple Health symptom sample lands on (`FEVER`, `HEADACHE`, ...), or
+            null for a symptom the person named. A built-in definition is created on the first sample of its code,
+            labelled in the record owner's language; it may be renamed or hidden and keeps its code. It holds no slot of
+            the active-definition cap. Decode unknown codes leniently.
+          type:
+            - string
+            - "null"
         recent:
           type: object
           properties:
@@ -97658,6 +97828,7 @@ components:
         - icon
         - sortOrder
         - isActive
+        - code
         - recent
       additionalProperties: false
       description: "A symptom the person defined. `label` is decrypted (null only on an unreadable value). `recent` is
@@ -97791,6 +97962,21 @@ components:
           type:
             - string
             - "null"
+        endAt:
+          description: Since v1.48.2. When it ended, for an occurrence imported with a duration; null for a moment and for every
+            manual entry.
+          type:
+            - string
+            - "null"
+        source:
+          type: string
+          description: Since v1.48.2. `MANUAL` (logged in HealthLog) or `APPLE_HEALTH` (imported through `POST
+            /api/symptoms/events/batch`). Never set by a manual write. Decode unknown values leniently.
+        externalId:
+          description: Since v1.48.2. The HealthKit sample UUID of an imported occurrence; null for a manual one.
+          type:
+            - string
+            - "null"
         createdAt:
           type: string
         updatedAt:
@@ -97802,6 +97988,9 @@ components:
         - intensity
         - note
         - episodeId
+        - endAt
+        - source
+        - externalId
         - createdAt
         - updatedAt
       additionalProperties: false
@@ -97823,6 +98012,104 @@ components:
       required:
         - data
         - error
+      additionalProperties: false
+    SymptomBatchEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/SymptomBatchResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    SymptomBatchResponse:
+      type: object
+      properties:
+        processed:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        inserted:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        updated:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        duplicates:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        failed:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        skipped:
+          type: array
+          items:
+            type: object
+            properties:
+              index:
+                type: integer
+                minimum: 0
+                maximum: 9007199254740991
+              reason:
+                type: string
+            required:
+              - index
+              - reason
+            additionalProperties: false
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/SymptomBatchEntryResult"
+      required:
+        - processed
+        - inserted
+        - updated
+        - duplicates
+        - failed
+        - skipped
+        - entries
+      additionalProperties: false
+      description: The `POST /api/measurements/batch` answer shape. Every sent index appears once in `entries`; `skipped`
+        repeats the skipped ones with their reason.
+    SymptomBatchEntryResult:
+      type: object
+      properties:
+        index:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        status:
+          type: string
+          enum:
+            - inserted
+            - updated
+            - duplicate
+            - skipped
+            - failed
+          description: "`inserted` and `duplicate` landed (advance the cursor); `updated` is never sent here but is part of the
+            shared batch shape. `skipped` is permanent for the entry as sent, see `reason`. `failed` is transient: keep
+            the entry and send it again; the response then carries `Cache-Control: no-store`."
+        reason:
+          description: "Why an entry was `skipped`: `unsupported_source` (source other than `APPLE_HEALTH`),
+            `unstable_external_id`, `unknown_code`, `value_out_of_range` (intensity not an integer 0-10),
+            `implausible_timestamp` (in the future beyond five minutes, before 1900, or ending before it started).
+            Decode unknown reasons leniently."
+          type: string
+      required:
+        - index
+        - status
       additionalProperties: false
     UpdateSymptomEventEnvelope:
       type: object

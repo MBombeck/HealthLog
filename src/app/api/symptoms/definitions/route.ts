@@ -23,6 +23,7 @@ import { auditLog } from "@/lib/auth/audit";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { requireIllnessEnabled } from "@/lib/illness/gate";
 import {
+  countCappedSymptomDefinitions,
   encryptSymptomText,
   listSymptomDefinitions,
   symptomDefinitionCreateSchema,
@@ -80,9 +81,7 @@ async function postDefinition(request: NextRequest): Promise<Response> {
   });
   if (!parsed.ok) return parsed.error;
 
-  const activeCount = await prisma.symptomDefinition.count({
-    where: { userId: user.id, isActive: true },
-  });
+  const activeCount = await countCappedSymptomDefinitions(user.id);
   if (activeCount >= MAX_ACTIVE_SYMPTOM_DEFINITIONS) {
     return apiError(
       `Symptom limit reached (${MAX_ACTIVE_SYMPTOM_DEFINITIONS})`,
@@ -107,6 +106,7 @@ async function postDefinition(request: NextRequest): Promise<Response> {
       icon: true,
       sortOrder: true,
       isActive: true,
+      code: true,
     },
   });
 

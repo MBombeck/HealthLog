@@ -4,8 +4,13 @@
  *   PATCH  /api/symptoms/events/{id} — change the time, intensity, note or
  *          episode link. A new link must name an episode of the record that
  *          is open or ran over the occurrence's time; an unchanged link to an
- *          episode that has since resolved is kept.
- *   DELETE /api/symptoms/events/{id} — remove it.
+ *          episode that has since resolved is kept. An occurrence imported
+ *          from Apple Health is edited like any other: the edit is the
+ *          person's correction and stays, because a re-post of its sample
+ *          answers `duplicate` and never overwrites it.
+ *   DELETE /api/symptoms/events/{id} — remove it. An imported occurrence is
+ *          tombstoned rather than removed, so its sample cannot bring it
+ *          back.
  *
  * Owner-scoped (another account's id is a 404), module-gated on the record,
  * MANAGE on a shared record. The note is never logged.
@@ -57,7 +62,7 @@ export const PATCH = apiHandler(
     const entry = parsed.data;
 
     const existing = await prisma.symptomEvent.findFirst({
-      where: { id, userId: user.id },
+      where: { id, userId: user.id, deletedAt: null },
       select: {
         id: true,
         occurredAt: true,
@@ -147,17 +152,29 @@ export const DELETE = apiHandler(
 
     const { id } = await params;
     const existing = await prisma.symptomEvent.findFirst({
-      where: { id, userId: user.id },
+      where: { id, userId: user.id, deletedAt: null },
       select: {
         id: true,
         definitionId: true,
         occurredAt: true,
         intensity: true,
+        source: true,
       },
     });
     if (!existing) return notFound();
 
-    await prisma.symptomEvent.delete({ where: { id: existing.id } });
+    // An imported occurrence is tombstoned, so the phone re-sending its
+    // sample (a re-pair backfill) answers `duplicate` instead of bringing
+    // back what the person removed. A manual one has no sample and goes.
+    const imported = existing.source !== "MANUAL";
+    if (imported) {
+      await prisma.symptomEvent.update({
+        where: { id: existing.id },
+        data: { deletedAt: new Date() },
+      });
+    } else {
+      await prisma.symptomEvent.delete({ where: { id: existing.id } });
+    }
 
     await auditLog("symptoms.event.delete", {
       userId: user.id,
@@ -170,7 +187,7 @@ export const DELETE = apiHandler(
         id,
         label: existing.definitionId,
         effectiveAt: existing.occurredAt,
-        extra: { intensity: existing.intensity },
+        extra: { intensity: existing.intensity, tombstoned: imported },
       }),
     });
 

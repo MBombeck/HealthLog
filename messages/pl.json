@@ -13554,7 +13554,9 @@
       "seizureTypeCreate": "{name} dodał rodzaj napadu",
       "seizureTypeUpdate": "{name} edytował rodzaj napadu",
       "seizureTypeDelete": "{name} usunął rodzaj napadu",
-      "seizureSettingsUpdate": "{name} zmienił regułę napadów gromadnych"
+      "seizureSettingsUpdate": "{name} zmienił regułę napadów gromadnych",
+      "symptomBatchIngest": "{name} zaimportował(a) objawy z Apple Health",
+      "symptomImportDelete": "{name} usunął(-ęła) zaimportowane objawy"
     },
     "section": {
       "measurements": {
@@ -13895,7 +13897,10 @@
       "reset": "Wyczyść formularz",
       "emptyHint": "Dodaj swój pierwszy objaw, na przykład aurę lub ból głowy.",
       "emptyHintNoManage": "Dla tego profilu nie ma jeszcze objawów.",
-      "limitHint": "Do {limit} objawów. Ukryj jeden na stronie chorób, aby dodać kolejny."
+      "limitHint": "Do {limit} objawów. Ukryj jeden na stronie chorób, aby dodać kolejny.",
+      "intensityFor": "Nasilenie: {symptom}",
+      "partlySaved": "Zapisano {saved} z {total}, reszta jest nadal zaznaczona.",
+      "severalHint": "Wybierz kilka, jeśli wystąpiły razem."
     },
     "section": {
       "title": "Twoje objawy",
@@ -13925,7 +13930,50 @@
     "episode": {
       "title": "Zapisane objawy",
       "during": "podczas: {illness}"
-    }
+    },
+    "builtin": {
+      "ABDOMINAL_CRAMPS": "Skurcze brzucha",
+      "ACNE": "Trądzik",
+      "APPETITE_CHANGES": "Zmiany apetytu",
+      "BLADDER_INCONTINENCE": "Nietrzymanie moczu",
+      "BLOATING": "Wzdęcia",
+      "BREAST_PAIN": "Ból piersi",
+      "CHEST_TIGHTNESS_OR_PAIN": "Ucisk lub ból w klatce piersiowej",
+      "CHILLS": "Dreszcze",
+      "CONSTIPATION": "Zaparcia",
+      "COUGHING": "Kaszel",
+      "DIARRHEA": "Biegunka",
+      "DIZZINESS": "Zawroty głowy",
+      "DRY_SKIN": "Sucha skóra",
+      "FAINTING": "Omdlenie",
+      "FATIGUE": "Zmęczenie",
+      "FEVER": "Gorączka",
+      "GENERALIZED_BODY_ACHE": "Bóle ciała",
+      "HAIR_LOSS": "Wypadanie włosów",
+      "HEADACHE": "Ból głowy",
+      "HEARTBURN": "Zgaga",
+      "HOT_FLASHES": "Uderzenia gorąca",
+      "LOSS_OF_SMELL": "Utrata węchu",
+      "LOSS_OF_TASTE": "Utrata smaku",
+      "LOWER_BACK_PAIN": "Ból dolnej części pleców",
+      "MEMORY_LAPSE": "Luki w pamięci",
+      "MOOD_CHANGES": "Wahania nastroju",
+      "NAUSEA": "Nudności",
+      "NIGHT_SWEATS": "Nocne poty",
+      "PELVIC_PAIN": "Ból miednicy",
+      "RAPID_POUNDING_OR_FLUTTERING_HEARTBEAT": "Kołatanie serca",
+      "RUNNY_NOSE": "Katar",
+      "SHORTNESS_OF_BREATH": "Duszność",
+      "SINUS_CONGESTION": "Zatkane zatoki",
+      "SKIPPED_HEARTBEAT": "Przeskakujące bicie serca",
+      "SLEEP_CHANGES": "Zmiany snu",
+      "SORE_THROAT": "Ból gardła",
+      "VAGINAL_DRYNESS": "Suchość pochwy",
+      "VOMITING": "Wymioty",
+      "WHEEZING": "Świszczący oddech"
+    },
+    "sourceAppleHealth": "Apple Health",
+    "timeRange": "{from}–{to}"
   },
   "day": {
     "scoreOfMax": "z {max}",

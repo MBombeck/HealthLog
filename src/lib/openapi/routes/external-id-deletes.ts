@@ -12,6 +12,7 @@ import type { ZodOpenApiObject } from "zod-openapi";
 import {
   dataEnvelope,
   errorEnvelope,
+  recordRefusal,
   recordWriteRateLimitResponse,
   stdResponses,
 } from "./shared";
@@ -110,6 +111,18 @@ export const externalIdDeletePaths: ZodOpenApiObject["paths"] = {
     description:
       "Soft-deletes the mood entries posted with `source = APPLE_HEALTH` whose externalId is listed, each as `DELETE /api/mood-entries/{id}` does; the tombstone reaches `/api/sync/changes`. A mood logged in HealthLog itself is never touched. A later re-post of a deleted externalId stays deleted: `POST /api/mood-entries/bulk` answers `duplicate`.",
     responseId: "MoodEntriesDeleteByExternalIdsResponse",
+  }),
+  "/api/symptoms/events/by-external-ids": operation({
+    tag: "Symptoms",
+    summary: "Delete Apple Health symptom occurrences by external ID",
+    description:
+      "Tombstones the symptom occurrences posted through `POST /api/symptoms/events/batch` whose externalId is listed. One logged in HealthLog is never touched. A later re-post of a deleted externalId stays deleted: the batch answers `duplicate`. MANAGE on a shared record. Served when `GET /api/auth/me` reports `features.appleHealthSymptoms: true`.",
+    responseId: "SymptomEventsDeleteByExternalIdsResponse",
+    extraResponses: {
+      ...recordRefusal(
+        "`illness.disabled`: the record has the illness module switched off (or the operator turned it off server-wide); symptoms ride that module.",
+      ),
+    },
   }),
   "/api/medications/intake/by-external-ids": operation({
     tag: "Medications",

@@ -13554,7 +13554,9 @@
       "seizureTypeCreate": "{name} добавил(а) тип приступа",
       "seizureTypeUpdate": "{name} изменил(а) тип приступа",
       "seizureTypeDelete": "{name} удалил(а) тип приступа",
-      "seizureSettingsUpdate": "{name} изменил(а) правило серийных приступов"
+      "seizureSettingsUpdate": "{name} изменил(а) правило серийных приступов",
+      "symptomBatchIngest": "{name} импортировал(а) симптомы из Apple Health",
+      "symptomImportDelete": "{name} удалил(а) импортированные записи симптомов"
     },
     "section": {
       "measurements": {
@@ -13895,7 +13897,10 @@
       "reset": "Сбросить форму",
       "emptyHint": "Добавьте свой первый симптом, например ауру или головную боль.",
       "emptyHintNoManage": "Для этой записи пока не настроено ни одного симптома.",
-      "limitHint": "До {limit} симптомов. Скрывайте один на странице заболеваний, чтобы добавить другой."
+      "limitHint": "До {limit} симптомов. Скрывайте один на странице заболеваний, чтобы добавить другой.",
+      "intensityFor": "Интенсивность: {symptom}",
+      "partlySaved": "Сохранено {saved} из {total}, остальные всё ещё выбраны.",
+      "severalHint": "Выберите несколько, если они появились вместе."
     },
     "section": {
       "title": "Ваши симптомы",
@@ -13925,7 +13930,50 @@
     "episode": {
       "title": "Записанные симптомы",
       "during": "во время {illness}"
-    }
+    },
+    "builtin": {
+      "ABDOMINAL_CRAMPS": "Спазмы в животе",
+      "ACNE": "Акне",
+      "APPETITE_CHANGES": "Изменения аппетита",
+      "BLADDER_INCONTINENCE": "Недержание мочи",
+      "BLOATING": "Вздутие",
+      "BREAST_PAIN": "Боль в молочных железах",
+      "CHEST_TIGHTNESS_OR_PAIN": "Стеснение или боль в груди",
+      "CHILLS": "Озноб",
+      "CONSTIPATION": "Запор",
+      "COUGHING": "Кашель",
+      "DIARRHEA": "Диарея",
+      "DIZZINESS": "Головокружение",
+      "DRY_SKIN": "Сухость кожи",
+      "FAINTING": "Обморок",
+      "FATIGUE": "Усталость",
+      "FEVER": "Жар",
+      "GENERALIZED_BODY_ACHE": "Ломота в теле",
+      "HAIR_LOSS": "Выпадение волос",
+      "HEADACHE": "Головная боль",
+      "HEARTBURN": "Изжога",
+      "HOT_FLASHES": "Приливы",
+      "LOSS_OF_SMELL": "Потеря обоняния",
+      "LOSS_OF_TASTE": "Потеря вкуса",
+      "LOWER_BACK_PAIN": "Боль в пояснице",
+      "MEMORY_LAPSE": "Провалы в памяти",
+      "MOOD_CHANGES": "Перепады настроения",
+      "NAUSEA": "Тошнота",
+      "NIGHT_SWEATS": "Ночная потливость",
+      "PELVIC_PAIN": "Боль в области таза",
+      "RAPID_POUNDING_OR_FLUTTERING_HEARTBEAT": "Учащённое сердцебиение",
+      "RUNNY_NOSE": "Насморк",
+      "SHORTNESS_OF_BREATH": "Одышка",
+      "SINUS_CONGESTION": "Заложенность носа",
+      "SKIPPED_HEARTBEAT": "Перебои в сердце",
+      "SLEEP_CHANGES": "Изменения сна",
+      "SORE_THROAT": "Боль в горле",
+      "VAGINAL_DRYNESS": "Сухость влагалища",
+      "VOMITING": "Рвота",
+      "WHEEZING": "Свистящее дыхание"
+    },
+    "sourceAppleHealth": "Apple Health",
+    "timeRange": "{from}–{to}"
   },
   "day": {
     "scoreOfMax": "из {max}",

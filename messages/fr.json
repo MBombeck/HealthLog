@@ -13554,7 +13554,9 @@
       "seizureTypeCreate": "{name} a ajouté un type de crise",
       "seizureTypeUpdate": "{name} a modifié un type de crise",
       "seizureTypeDelete": "{name} a supprimé un type de crise",
-      "seizureSettingsUpdate": "{name} a modifié la règle des crises en salves"
+      "seizureSettingsUpdate": "{name} a modifié la règle des crises en salves",
+      "symptomBatchIngest": "{name} a importé des symptômes depuis Apple Health",
+      "symptomImportDelete": "{name} a supprimé des symptômes importés"
     },
     "section": {
       "measurements": {
@@ -13895,7 +13897,10 @@
       "reset": "Réinitialiser le formulaire",
       "emptyHint": "Ajoutez votre premier symptôme, par exemple aura ou mal de tête.",
       "emptyHintNoManage": "Aucun symptôme n'est encore configuré pour ce dossier.",
-      "limitHint": "Jusqu'à {limit} symptômes. Masquez-en un sur la page des maladies pour en ajouter un autre."
+      "limitHint": "Jusqu'à {limit} symptômes. Masquez-en un sur la page des maladies pour en ajouter un autre.",
+      "intensityFor": "Intensité : {symptom}",
+      "partlySaved": "{saved} sur {total} enregistrés, le reste est encore sélectionné.",
+      "severalHint": "Choisissez-en plusieurs s’ils sont survenus ensemble."
     },
     "section": {
       "title": "Vos symptômes",
@@ -13925,7 +13930,50 @@
     "episode": {
       "title": "Symptômes notés",
       "during": "pendant {illness}"
-    }
+    },
+    "builtin": {
+      "ABDOMINAL_CRAMPS": "Crampes abdominales",
+      "ACNE": "Acné",
+      "APPETITE_CHANGES": "Changements d’appétit",
+      "BLADDER_INCONTINENCE": "Incontinence urinaire",
+      "BLOATING": "Ballonnements",
+      "BREAST_PAIN": "Douleur mammaire",
+      "CHEST_TIGHTNESS_OR_PAIN": "Oppression ou douleur thoracique",
+      "CHILLS": "Frissons",
+      "CONSTIPATION": "Constipation",
+      "COUGHING": "Toux",
+      "DIARRHEA": "Diarrhée",
+      "DIZZINESS": "Vertiges",
+      "DRY_SKIN": "Peau sèche",
+      "FAINTING": "Évanouissement",
+      "FATIGUE": "Fatigue",
+      "FEVER": "Fièvre",
+      "GENERALIZED_BODY_ACHE": "Courbatures",
+      "HAIR_LOSS": "Perte de cheveux",
+      "HEADACHE": "Mal de tête",
+      "HEARTBURN": "Brûlures d’estomac",
+      "HOT_FLASHES": "Bouffées de chaleur",
+      "LOSS_OF_SMELL": "Perte de l’odorat",
+      "LOSS_OF_TASTE": "Perte du goût",
+      "LOWER_BACK_PAIN": "Douleur lombaire",
+      "MEMORY_LAPSE": "Trous de mémoire",
+      "MOOD_CHANGES": "Changements d’humeur",
+      "NAUSEA": "Nausées",
+      "NIGHT_SWEATS": "Sueurs nocturnes",
+      "PELVIC_PAIN": "Douleur pelvienne",
+      "RAPID_POUNDING_OR_FLUTTERING_HEARTBEAT": "Cœur qui s’emballe",
+      "RUNNY_NOSE": "Nez qui coule",
+      "SHORTNESS_OF_BREATH": "Essoufflement",
+      "SINUS_CONGESTION": "Congestion des sinus",
+      "SKIPPED_HEARTBEAT": "Battement de cœur manqué",
+      "SLEEP_CHANGES": "Changements du sommeil",
+      "SORE_THROAT": "Mal de gorge",
+      "VAGINAL_DRYNESS": "Sécheresse vaginale",
+      "VOMITING": "Vomissements",
+      "WHEEZING": "Respiration sifflante"
+    },
+    "sourceAppleHealth": "Apple Health",
+    "timeRange": "{from}–{to}"
   },
   "day": {
     "scoreOfMax": "sur {max}",

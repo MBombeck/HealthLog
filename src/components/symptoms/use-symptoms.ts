@@ -188,14 +188,43 @@ export function useDeleteSymptomDefinition() {
   });
 }
 
-/** Under one key for as long as the entry form that mounts it is open. */
-export function useLogSymptomEvent() {
+/**
+ * A save that stopped part way: the definitions whose occurrence landed
+ * before `cause` refused the next one.
+ */
+export class SymptomSaveError extends Error {
+  constructor(
+    readonly saved: string[],
+    readonly cause: unknown,
+  ) {
+    super("Symptom save stopped part way");
+  }
+}
+
+/**
+ * Log one occurrence per input, one after the other, through the ordinary
+ * create route. Each create runs under one `Idempotency-Key` until it is
+ * answered, so retrying after a timeout replays it instead of writing it
+ * twice. A refusal stops the run with a {@link SymptomSaveError} naming what
+ * already landed, so the form can keep only the rest.
+ */
+export function useLogSymptomEvents() {
   const invalidate = useInvalidateSymptoms();
   const post = useIdempotentPost();
   return useMutation({
-    mutationFn: (input: SymptomEventCreateInput) =>
-      post<SymptomEventDTO>("/api/symptoms/events", input),
-    onSuccess: invalidate,
+    mutationFn: async (inputs: SymptomEventCreateInput[]) => {
+      const saved: string[] = [];
+      try {
+        for (const input of inputs) {
+          await post<SymptomEventDTO>("/api/symptoms/events", input);
+          saved.push(input.definitionId);
+        }
+      } catch (cause) {
+        throw new SymptomSaveError(saved, cause);
+      }
+      return saved;
+    },
+    onSettled: invalidate,
   });
 }
 

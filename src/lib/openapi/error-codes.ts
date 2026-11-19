@@ -497,6 +497,8 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "source-priority.body.invalid_shape",
     ],
     symptoms: [
+      "symptoms.batch.invalid",
+      "symptoms.batch.too_large",
       "symptoms.definition.limitReached",
       "symptoms.definition.notFound",
       "symptoms.episode.notOpen",

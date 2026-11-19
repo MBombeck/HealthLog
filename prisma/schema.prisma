@@ -8889,12 +8889,19 @@ model SymptomDefinition {
   /// FALSE = hidden: not offered in the quick entry, not a correlation
   /// channel, history kept. Does not count toward the cap.
   isActive       Boolean  @default(true) @map("is_active")
+  /// NULL for a symptom the person named. Set for a built-in one: the code an
+  /// Apple Health symptom sample lands on (`SYMPTOM_BUILTIN_CODES`, e.g.
+  /// `FEVER`). Created on the first ingest of that code, labelled in the
+  /// person's language; renaming or hiding it keeps the code, so ingest
+  /// still finds it. Built-in definitions do not count toward the cap.
+  code           String?
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   events SymptomEvent[]
 
+  @@unique([userId, code])
   @@index([userId, sortOrder])
   @@map("symptom_definitions")
 }
@@ -8903,26 +8910,41 @@ model SymptomDefinition {
 /// same numeric rating scale the pain score uses), an optional note, and an
 /// optional link to the illness episode it happened during. v1.40.
 model SymptomEvent {
-  id            String   @id @default(cuid())
-  userId        String   @map("user_id")
-  definitionId  String   @map("definition_id")
+  id            String    @id @default(cuid())
+  userId        String    @map("user_id")
+  definitionId  String    @map("definition_id")
   /// The instant it happened (UTC). Day grouping is the reader's concern.
-  occurredAt    DateTime @map("occurred_at")
+  occurredAt    DateTime  @map("occurred_at")
   /// 0-10, CHECK-constrained in the migration.
   intensity     Int
   /// Optional free-text note, AES-256-GCM encrypted at rest.
-  noteEncrypted Bytes?   @map("note_encrypted")
+  noteEncrypted Bytes?    @map("note_encrypted")
   /// The episode the person said this happened during. Only an open episode
   /// of the same account can be linked (the route checks); deleting the
   /// episode row keeps the event and drops the link.
-  episodeId     String?  @map("episode_id")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  episodeId     String?   @map("episode_id")
+  /// When it ended, for an occurrence imported with a duration (an Apple
+  /// Health sample's `endDate`). NULL for a moment, and for every manual entry.
+  endAt         DateTime? @map("end_at")
+  /// `MANUAL` (logged in HealthLog) or `APPLE_HEALTH` (imported through
+  /// `POST /api/symptoms/events/batch`). Never settable by a manual write.
+  source        String    @default("MANUAL")
+  /// The HealthKit sample UUID of an imported occurrence; NULL for a manual
+  /// one. Half of the `(userId, source, externalId)` dedup key.
+  externalId    String?   @map("external_id")
+  /// Tombstone. Only an imported occurrence is ever soft-deleted (by the app's
+  /// deletion reconciliation or the person's own delete), so a late re-post of
+  /// its sample answers `duplicate` instead of bringing it back. Every reader
+  /// filters `deletedAt: null`.
+  deletedAt     DateTime? @map("deleted_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
 
   user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   definition SymptomDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
   episode    IllnessEpisode?   @relation(fields: [episodeId], references: [id], onDelete: SetNull)
 
+  @@unique([userId, source, externalId])
   @@index([userId, occurredAt])
   @@index([definitionId, occurredAt])
   @@index([episodeId])
