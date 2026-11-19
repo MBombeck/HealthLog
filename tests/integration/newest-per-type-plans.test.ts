@@ -411,11 +411,18 @@ function scanRowVisits(
       (alias === undefined || node.Alias === alias)
     ) {
       scans += 1;
-      own =
-        ((node["Actual Rows"] ?? 0) +
-          (node["Rows Removed by Filter"] ?? 0) +
-          (node["Rows Removed by Index Recheck"] ?? 0)) *
-        (node["Actual Loops"] ?? 1);
+      const loops = node["Actual Loops"] ?? 1;
+      const perLoop =
+        (node["Actual Rows"] ?? 0) +
+        (node["Rows Removed by Filter"] ?? 0) +
+        (node["Rows Removed by Index Recheck"] ?? 0);
+      // EXPLAIN prints these per-loop averages rounded to two decimals
+      // (Postgres 18), so a scan run once per enum value over a handful of
+      // rows multiplies the rounding by the loop count: four rows over 101
+      // probes print as 0.04 a loop and read back as 4.04. The true total is
+      // a whole number within half a hundredth a loop of the print; take the
+      // smallest one consistent with it, never less than the print allows.
+      own = Math.max(0, Math.ceil((perLoop - 0.005) * loops - 1e-9));
     }
     return own + (node.Plans ?? []).reduce((sum, p) => sum + walk(p), 0);
   };
