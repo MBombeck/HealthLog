@@ -210,6 +210,63 @@ describe("admitAccountSettings", () => {
     expect(cloud).not.toHaveProperty("aiLocalModel");
   });
 
+  it.each([
+    ["Local selected", { aiProvider: "LOCAL" }, "llama3.1:8b"],
+    [
+      "a Local address behind a gateway",
+      {
+        aiProvider: "OPENAI_COMPATIBLE",
+        aiBaseUrl: "https://llm.example.com/v1",
+      },
+      "llama3.1:8b",
+    ],
+    [
+      "a Local address behind Codex",
+      { aiProvider: "CHATGPT_OAUTH", aiBaseUrl: "https://llm.example.com/v1" },
+      "llama3.1:8b",
+    ],
+    [
+      "a Local address and no provider",
+      { aiProvider: null, aiBaseUrl: "https://llm.example.com/v1" },
+      "llama3.1:8b",
+    ],
+    [
+      "a Local address behind OpenAI",
+      { aiProvider: "OPENAI", aiBaseUrl: "https://llm.example.com/v1" },
+      undefined,
+    ],
+    [
+      "a Local address behind Anthropic",
+      { aiProvider: "ANTHROPIC", aiBaseUrl: "https://llm.example.com/v1" },
+      undefined,
+    ],
+    [
+      "a gateway without a Local address",
+      { aiProvider: "OPENAI_COMPATIBLE" },
+      undefined,
+    ],
+    ["no provider and no Local address", { aiProvider: null }, undefined],
+  ])(
+    "gives Local the file's model by the rule of migration 0512: %s",
+    (_case, entry, expected) => {
+      const { data } = admitAccountSettings(
+        { ...entry, aiModel: "llama3.1:8b" },
+        ctx,
+      );
+      expect(data.aiLocalModel).toBe(expected);
+    },
+  );
+
+  it("gives Local no blank model from a file before the column", () => {
+    for (const aiModel of [null, "", "  "]) {
+      const { data } = admitAccountSettings(
+        { aiProvider: "LOCAL", aiModel },
+        ctx,
+      );
+      expect(data).not.toHaveProperty("aiLocalModel");
+    }
+  });
+
   it("keeps the valid threshold bands and names the ones it drops", () => {
     const { data, refused } = admitAccountSettings(
       {

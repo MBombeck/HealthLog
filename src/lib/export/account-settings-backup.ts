@@ -236,23 +236,29 @@ function aiEndpoint(
 
 /**
  * #1417 — the Local provider's own model. A file written before the column
- * existed has none; Local ran on the shared `aiModel` then, so a file whose
- * provider is Local gives that model back to Local, as migration 0512 did for
- * the rows already on a host. Any other file leaves Local's model untouched.
+ * existed has none; the Local entry ran on the shared `aiModel` then, so the
+ * file gives that model to Local by the rule migration 0512 applied to the
+ * rows already on a host: when the file's provider is Local, or when it
+ * carries a Local address behind a provider that does not own `aiModel`
+ * (a gateway, Codex, none). A file on OpenAI or Anthropic keeps `aiModel`
+ * theirs and leaves Local's model untouched, and a blank model gives nothing.
  */
 const aiLocalModel: SettingCodec = {
   write: (row) => ({ aiLocalModel: row.aiLocalModel }),
   read: (entry) => {
     if (has(entry, "aiLocalModel")) return entry.aiLocalModel;
-    const provider = entry.aiProvider;
-    if (
-      typeof provider === "string" &&
-      provider.toUpperCase() === "LOCAL" &&
-      has(entry, "aiModel")
-    ) {
-      return entry.aiModel;
-    }
-    return undefined;
+    const model = entry.aiModel;
+    if (typeof model !== "string" || model.trim() === "") return undefined;
+    const provider =
+      typeof entry.aiProvider === "string"
+        ? entry.aiProvider.toUpperCase()
+        : "";
+    const localAddress =
+      typeof entry.aiBaseUrl === "string" && entry.aiBaseUrl.trim() !== "";
+    const ranOnAiModel =
+      provider === "LOCAL" ||
+      (localAddress && provider !== "OPENAI" && provider !== "ANTHROPIC");
+    return ranOnAiModel ? model : undefined;
   },
 };
 
@@ -728,7 +734,11 @@ export interface AdmittedAccountSettings {
  *
  * Local's address comes back whichever provider the file selects (#1417):
  * it is Local's own column, kept while another provider is selected, and no
- * other provider reads it, so a cloud key is never sent to it.
+ * other provider reads it, so a cloud key is never sent to it. Nor does the
+ * main chain dial it unless Local is the selected provider
+ * (`localServesMainChain`), so the address a file keeps behind another
+ * provider serves only a named chain that lists Local, as on a host where
+ * the person picked that provider in Settings.
  */
 export function admitAccountSettings(
   entry: AccountSettingsBackupEntry,
