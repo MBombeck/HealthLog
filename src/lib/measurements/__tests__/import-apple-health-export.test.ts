@@ -512,7 +512,7 @@ function makeFakePrisma(
               w.source === where.source &&
               where.externalId.in.includes(w.externalId as string),
           )
-          .map((w) => ({ externalId: w.externalId }));
+          .map((w) => ({ ...w }));
       },
       upsert: async ({
         where,
@@ -1709,5 +1709,72 @@ ${body}
     );
     expect(prisma._workouts[0].totalDistanceM).toBe(7000);
     expect(prisma._workouts[0].totalEnergyKcal).toBeCloseTo(239.006, 3);
+  });
+
+  it("counts only the workout's own statistics, not a multisport leg's", async () => {
+    const prisma = makeFakePrisma();
+    await parse(
+      writeExport(`<Workout workoutActivityType="HKWorkoutActivityTypeSwimBikeRun" duration="42" durationUnit="min" startDate="2026-05-14 18:00:00 +0200" endDate="2026-05-14 18:42:00 +0200">
+    <WorkoutActivity uuid="leg-1" startDate="2026-05-14 18:00:00 +0200" endDate="2026-05-14 18:20:00 +0200">
+      <WorkoutStatistics type="HKQuantityTypeIdentifierActiveEnergyBurned" sum="200" unit="Cal"/>
+      <WorkoutStatistics type="HKQuantityTypeIdentifierDistanceCycling" sum="10" unit="km"/>
+    </WorkoutActivity>
+    <WorkoutActivity uuid="leg-2" startDate="2026-05-14 18:20:00 +0200" endDate="2026-05-14 18:42:00 +0200">
+      <WorkoutStatistics type="HKQuantityTypeIdentifierActiveEnergyBurned" sum="300" unit="Cal"/>
+      <WorkoutStatistics type="HKQuantityTypeIdentifierDistanceWalkingRunning" sum="5" unit="km"/>
+    </WorkoutActivity>
+    <WorkoutStatistics type="HKQuantityTypeIdentifierActiveEnergyBurned" sum="500" unit="Cal"/>
+    <WorkoutStatistics type="HKQuantityTypeIdentifierDistanceCycling" sum="10" unit="km"/>
+    <WorkoutStatistics type="HKQuantityTypeIdentifierDistanceWalkingRunning" sum="5" unit="km"/>
+  </Workout>`),
+      prisma,
+    );
+    expect(prisma._workouts[0]).toMatchObject({
+      totalEnergyKcal: 500,
+      totalDistanceM: 15000,
+    });
+  });
+
+  it("fills only empty stored totals from a re-import's statistics", async () => {
+    const prisma = makeFakePrisma();
+    await parse(
+      writeExport(
+        `<Workout workoutActivityType="HKWorkoutActivityTypeRunning" duration="42" durationUnit="min" totalDistance="7" totalDistanceUnit="km" startDate="2026-05-14 18:00:00 +0200" endDate="2026-05-14 18:42:00 +0200"/>`,
+      ),
+      prisma,
+    );
+    const second = await parse(
+      writeExport(`<Workout workoutActivityType="HKWorkoutActivityTypeRunning" duration="42" durationUnit="min" startDate="2026-05-14 18:00:00 +0200" endDate="2026-05-14 18:42:00 +0200">
+    <WorkoutStatistics type="HKQuantityTypeIdentifierDistanceWalkingRunning" sum="6.5" unit="km"/>
+    <WorkoutStatistics type="HKQuantityTypeIdentifierActiveEnergyBurned" sum="412.5" unit="Cal"/>
+  </Workout>`),
+      prisma,
+    );
+    expect(second.workouts).toMatchObject({ inserted: 0, updated: 1 });
+    expect(prisma._workouts[0]).toMatchObject({
+      totalDistanceM: 7000,
+      totalEnergyKcal: 412.5,
+    });
+  });
+
+  it("takes a workout stated twice in one export once, without overwriting it", async () => {
+    const prisma = makeFakePrisma();
+    const result = await parse(
+      writeExport(`<Workout workoutActivityType="HKWorkoutActivityTypeRunning" duration="42" durationUnit="min" sourceName="Watch" sourceVersion="11.0" totalDistance="7" totalDistanceUnit="km" startDate="2026-05-14 18:00:00 +0200" endDate="2026-05-14 18:42:00 +0200"/>
+  <Workout workoutActivityType="HKWorkoutActivityTypeRunning" duration="42" durationUnit="min" sourceName="Running app" sourceVersion="3.2" totalDistance="6.8" totalDistanceUnit="km" startDate="2026-05-14 18:00:00 +0200" endDate="2026-05-14 18:42:00 +0200"/>`),
+      prisma,
+    );
+    expect(result.workouts).toMatchObject({
+      read: 2,
+      inserted: 1,
+      updated: 0,
+      duplicate: 1,
+    });
+    expect(prisma._workouts).toHaveLength(1);
+    expect(prisma._workouts[0]).toMatchObject({
+      externalSourceVersion: "11.0",
+      totalDistanceM: 7000,
+      metadata: expect.objectContaining({ sourceName: "Watch" }),
+    });
   });
 });

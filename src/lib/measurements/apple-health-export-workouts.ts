@@ -38,12 +38,28 @@ export interface PreparedWorkout {
   routePath?: string;
   /** Totals from the workout's `<WorkoutStatistics>` children. */
   statistics: WorkoutStatisticsTotals;
+  /**
+   * The totals `fillFromWorkoutStatistics` took from the statistics rather
+   * than the attributes. On a re-import they only fill a stored total that
+   * is empty; they never replace one.
+   */
+  filledFromStatistics?: WorkoutTotalField[];
 }
+
+export type WorkoutTotalField =
+  | "totalEnergyKcal"
+  | "totalDistanceM"
+  | "avgHeartRate"
+  | "minHeartRate"
+  | "maxHeartRate";
 
 /**
  * What a workout's `<WorkoutStatistics>` children add up to. Current iOS
  * exports carry the totals there rather than as attributes on `<Workout>`;
- * they fill a field only where the attributes left it empty.
+ * they fill a field only where the attributes left it empty. Only the
+ * workout's direct children count: a multisport workout repeats its
+ * statistics per leg inside `<WorkoutActivity>`, and adding those as well
+ * would count every leg twice (the parser skips them).
  */
 interface WorkoutStatisticsTotals {
   energyKcal: number | null;
@@ -153,14 +169,55 @@ export function addWorkoutStatistics(
   }
 }
 
-/** The statistics fill each field the `<Workout>` attributes left empty. */
+/**
+ * The statistics fill each field the `<Workout>` attributes left empty, and
+ * the workout notes which fields they filled.
+ */
 export function fillFromWorkoutStatistics(workout: PreparedWorkout): void {
   const stats = workout.statistics;
-  workout.totalEnergyKcal ??= stats.energyKcal;
-  workout.totalDistanceM ??= stats.distanceM;
-  workout.avgHeartRate ??= stats.avgHeartRate;
-  workout.minHeartRate ??= stats.minHeartRate;
-  workout.maxHeartRate ??= stats.maxHeartRate;
+  const filled: WorkoutTotalField[] = [];
+  const fill = (field: WorkoutTotalField, value: number | null) => {
+    if (workout[field] !== null || value === null) return;
+    workout[field] = value;
+    filled.push(field);
+  };
+  fill("totalEnergyKcal", stats.energyKcal);
+  fill("totalDistanceM", stats.distanceM);
+  fill("avgHeartRate", stats.avgHeartRate);
+  fill("minHeartRate", stats.minHeartRate);
+  fill("maxHeartRate", stats.maxHeartRate);
+  workout.filledFromStatistics = filled;
+}
+
+const WORKOUT_TOTAL_FIELDS: readonly WorkoutTotalField[] = [
+  "totalEnergyKcal",
+  "totalDistanceM",
+  "avgHeartRate",
+  "minHeartRate",
+  "maxHeartRate",
+];
+
+/**
+ * What a re-import writes over a stored workout's totals. A total the export
+ * does not state leaves the stored one. One taken from the statistics only
+ * fills a stored total that is empty: a total stored earlier (from an older
+ * export's attributes, or entered by hand) is not replaced by a sum.
+ */
+export function workoutTotalsUpdate(
+  row: PreparedWorkout,
+  stored: Record<WorkoutTotalField, number | null> | undefined,
+): Partial<Record<WorkoutTotalField, number>> {
+  const fromStatistics = new Set(row.filledFromStatistics ?? []);
+  const out: Partial<Record<WorkoutTotalField, number>> = {};
+  for (const field of WORKOUT_TOTAL_FIELDS) {
+    const value = row[field];
+    if (value === null) continue;
+    if (fromStatistics.has(field) && (stored?.[field] ?? null) !== null) {
+      continue;
+    }
+    out[field] = value;
+  }
+  return out;
 }
 
 /**
