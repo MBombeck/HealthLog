@@ -157,7 +157,7 @@ export interface TodayOverviewInput {
   sleep: TodaySleep | null;
   vitals: readonly TodayVital[];
   cycle: TodayCycle | null;
-  /** The instant the overview is built for, for the doses due so far. */
+  /** The instant the overview is built for, to tell whether a dose was due yet. */
   now: Date;
   /** The first name the briefing may use; a lead drops it (#173). */
   firstName: string | null;

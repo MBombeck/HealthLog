@@ -1397,7 +1397,7 @@ export const dashboardSnapshotResponse = z
           .array(z.string())
           .optional()
           .describe(
-            "v1.48.0 — the slot instants (ISO 8601, ascending) of the doses `scheduledToday` counts. The Today medications fact counts the ones already due (at or before now) instead of the whole day. Absent on a snapshot cached by an older server.",
+            "v1.48.0 — the slot instants (ISO 8601, ascending) of the doses `scheduledToday` counts. The Today medications fact uses them to tell whether any dose was due yet (at or before now): before the first, with nothing taken, it names the next dose; otherwise it counts taken against the whole day's `scheduledToday`. Absent on a snapshot cached by an older server.",
           ),
         nextDueAt: z.string().nullable(),
         nextDueOverdue: z.boolean(),

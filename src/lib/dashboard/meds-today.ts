@@ -72,10 +72,11 @@ export interface MedsTodayBlock {
   skippedToday: number;
   /**
    * The slot instants (ISO8601, ascending) of the rows `scheduledToday`
-   * counts. Kept as instants rather than a "due so far" count so a cached
-   * snapshot still answers correctly later in the day: the Today fact counts
-   * the ones at or before its own `now` (#173). Optional only so snapshots
-   * cached before it stay valid; the live builder always emits it.
+   * counts. Kept as instants rather than a "due so far" flag so a cached
+   * snapshot still answers correctly later in the day: the Today fact checks
+   * them against its own `now` to tell whether any dose was due yet (#173).
+   * Optional only so snapshots cached before it stay valid; the live builder
+   * always emits it.
    */
   scheduledTodayAt?: string[];
   /**

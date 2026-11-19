@@ -71202,9 +71202,10 @@ components:
               minimum: -9007199254740991
               maximum: 9007199254740991
             scheduledTodayAt:
-              description: v1.48.0 — the slot instants (ISO 8601, ascending) of the doses `scheduledToday` counts. The Today
-                medications fact counts the ones already due (at or before now) instead of the whole day. Absent on a
-                snapshot cached by an older server.
+              description: "v1.48.0 — the slot instants (ISO 8601, ascending) of the doses `scheduledToday` counts. The Today
+                medications fact uses them to tell whether any dose was due yet (at or before now): before the first,
+                with nothing taken, it names the next dose; otherwise it counts taken against the whole day's
+                `scheduledToday`. Absent on a snapshot cached by an older server."
               type: array
               items:
                 type: string
@@ -91772,10 +91773,11 @@ components:
           items:
             $ref: "#/components/schemas/DailyTodayFact"
           description: "The Today overview: up to 5 statements about the day in priority order (Rest Mode, medications taken today
-            counted against the doses due so far, or, before the first is due with nothing taken, when the next dose is
-            (since v1.48.0), an appointment today or tomorrow that is not already on the rail, last night's sleep,
-            vitals against their personal range, cycle day), never padded. A fact about a switched-off module is absent.
-            A narrow surface shows the first 4. Additive since v1.40."
+            counted against every dose scheduled for the local day (since v1.48.2; v1.48.0 and v1.48.1 counted only the
+            doses due so far), or, before the first is due with nothing taken, when the next dose is (since v1.48.0), an
+            appointment today or tomorrow that is not already on the rail, last night's sleep, vitals against their
+            personal range, cycle day), never padded. A fact about a switched-off module is absent. A narrow surface
+            shows the first 4. Additive since v1.40."
         restMode:
           anyOf:
             - type: object

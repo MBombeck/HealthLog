@@ -1,7 +1,7 @@
 /**
- * The Today overview's medications fact (#173): the doses taken against the
- * doses due so far, or, before the first one is due with nothing taken, when
- * the next one is.
+ * The Today overview's medications fact: the doses taken against every dose
+ * scheduled for the person's local day (#1412), or, before the first one is
+ * due with nothing taken, when the next one is (#173).
  */
 import type { TodayFact, TodayOverviewInput } from "@/lib/daily/today-overview";
 
@@ -28,26 +28,27 @@ export function medicationsFact(
     href: "/medications",
     moduleKey: "medications",
   });
-  const count = (taken: number, due: number) =>
-    fact(
-      t("daily.todayFact.medications.value", {
-        taken: Math.min(taken, due),
-        scheduled: due,
-      }),
-    );
-  // A snapshot cached before the slot times were kept counts the whole day.
-  if (!scheduledTodayAt) return count(takenToday, scheduledToday);
+  // The total is the whole day: every dose the projection scheduled for
+  // today, whether its time has come or not. A window dose that is open to
+  // take, or an evening dose, still belongs to today's count (#1412).
+  const dayCount = fact(
+    t("daily.todayFact.medications.value", {
+      taken: Math.min(takenToday, scheduledToday),
+      scheduled: scheduledToday,
+    }),
+  );
+  // A snapshot cached before the slot times were kept cannot tell whether a
+  // dose was due yet.
+  if (!scheduledTodayAt) return dayCount;
 
   // #173 — "0 of 5 taken" at seven in the morning reads like five missed
-  // doses. Count only the doses due so far; before the first one is due,
-  // and with nothing taken or overdue, say when the next one is.
+  // doses. Before the first dose is due, and with nothing taken or overdue,
+  // say when the next one is instead.
   const now = input.now.getTime();
-  const dueSoFar = scheduledTodayAt.filter(
-    (at) => Date.parse(at) <= now,
-  ).length;
+  const anyDueSoFar = scheduledTodayAt.some((at) => Date.parse(at) <= now);
   const nextAt = nextDueAt ? Date.parse(nextDueAt) : NaN;
   if (
-    dueSoFar === 0 &&
+    !anyDueSoFar &&
     takenToday === 0 &&
     !input.medsToday.nextDueOverdue &&
     input.nextDoseTimeLabel &&
@@ -60,7 +61,5 @@ export function medicationsFact(
       }),
     );
   }
-  // A dose taken before its time counts as due: never "1 of 0".
-  const due = Math.max(dueSoFar, Math.min(takenToday, scheduledToday));
-  return due > 0 ? count(takenToday, due) : count(takenToday, scheduledToday);
+  return dayCount;
 }

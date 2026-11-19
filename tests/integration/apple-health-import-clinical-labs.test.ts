@@ -9,7 +9,10 @@
  *     the import, a non-lab clinical record stays in the clinical skips;
  *   - a reading already typed by hand is a duplicate;
  *   - uploading the same archive again writes nothing, and a deleted result
- *     stays deleted.
+ *     stays deleted;
+ *   - a current export, whose `type` attribute holds the FHIR resource type
+ *     instead of the HealthKit identifier, imports its R4 and DSTU2 lab
+ *     Observations the same way and leaves every other resource skipped.
  *
  * Every fixture is synthetic.
  */
@@ -110,9 +113,7 @@ ${records}
 </HealthData>`;
 }
 
-function createArchive(): { path: string; bytes: Buffer } {
-  const dir = mkdtempSync(join(tmpdir(), "healthlog-clinical-integration-"));
-  const path = join(dir, "export.zip");
+function defaultFiles(): Record<string, Uint8Array> {
   const files: Record<string, Uint8Array> = {
     "apple_health_export/export.xml": strToU8(exportXml()),
     "apple_health_export/clinical-records/Condition-cond-1.json": strToU8(
@@ -123,18 +124,30 @@ function createArchive(): { path: string; bytes: Buffer } {
     files[`apple_health_export/clinical-records/Observation-${id}.json`] =
       strToU8(JSON.stringify(resource));
   }
+  return files;
+}
+
+function createArchive(files: Record<string, Uint8Array>): {
+  path: string;
+  bytes: Buffer;
+} {
+  const dir = mkdtempSync(join(tmpdir(), "healthlog-clinical-integration-"));
+  const path = join(dir, "export.zip");
   const bytes = Buffer.from(zipSync(files, { level: 6 }));
   writeFileSync(path, bytes);
   return { path, bytes };
 }
 
-async function runArchive(): Promise<Record<string, unknown>> {
-  const archive = createArchive();
+async function runArchive(
+  userId: string = USER_ID,
+  files: Record<string, Uint8Array> = defaultFiles(),
+): Promise<Record<string, unknown>> {
+  const archive = createArchive(files);
   jobSequence += 1;
   const jobId = `apple-clinical-job-${jobSequence}`;
   const mirror = await prisma.importJob.create({
     data: {
-      userId: USER_ID,
+      userId,
       pgBossJobId: jobId,
       status: "queued",
       uploadBytes: archive.bytes.length,
@@ -143,7 +156,7 @@ async function runArchive(): Promise<Record<string, unknown>> {
     },
   });
   const data: AppleHealthImportPayload = {
-    userId: USER_ID,
+    userId,
     uploadPath: archive.path,
     uploadBytes: archive.bytes.length,
     enqueuedAt: "2025-03-06T09:00:00.000Z",
@@ -287,5 +300,152 @@ describe("Apple Health export: lab results from Health Records", () => {
         where: { userId: USER_ID, analyte: "Hemoglobin", deletedAt: null },
       }),
     ).toBe(0);
+  });
+});
+
+describe("Apple Health export: Health Records named by FHIR resource type", () => {
+  const CURRENT_USER = "user-apple-clinical-current";
+  const DSTU2_URL = "https://fhir.example-clinic.test/api/FHIR/DSTU2";
+
+  // The form a 2026 export writes: `type` holds the resource type, and the
+  // institution may serve R4 or DSTU2.
+  const current: Record<
+    string,
+    { type?: string; fhirVersion: string; resource: Record<string, unknown> }
+  > = {
+    "Observation-sodium": {
+      type: "Observation",
+      fhirVersion: "4.0.1",
+      resource: lab("sodium", {
+        code: { text: "Sodium" },
+        valueQuantity: { value: 140, unit: "mmol/L" },
+      }),
+    },
+    "Observation-hba1c": {
+      type: "Observation",
+      fhirVersion: "1.0.2",
+      // DSTU2: one category object, not a list.
+      resource: {
+        resourceType: "Observation",
+        id: "hba1c",
+        status: "final",
+        category: {
+          coding: [
+            {
+              system: "http://hl7.org/fhir/observation-category",
+              code: "laboratory",
+            },
+          ],
+        },
+        code: { text: "Hemoglobin A1c" },
+        effectiveDateTime: "2025-03-04T08:15:00+01:00",
+        valueQuantity: { value: 5.4, unit: "%" },
+      },
+    },
+    "Observation-pulse": {
+      type: "Observation",
+      fhirVersion: "1.0.2",
+      resource: {
+        resourceType: "Observation",
+        id: "pulse",
+        status: "final",
+        category: { coding: [{ code: "vital-signs" }] },
+        code: { text: "Heart rate" },
+        effectiveDateTime: "2025-03-04T08:15:00+01:00",
+        valueQuantity: { value: 61, unit: "/min" },
+      },
+    },
+    // No type attribute at all: the file name says what it is.
+    "Observation-ferritin": {
+      fhirVersion: "4.0.1",
+      resource: lab("ferritin", {
+        code: { text: "Ferritin" },
+        valueQuantity: { value: 80, unit: "ng/mL" },
+      }),
+    },
+    "DiagnosticReport-panel": {
+      type: "DiagnosticReport",
+      fhirVersion: "4.0.1",
+      resource: { resourceType: "DiagnosticReport", id: "panel" },
+    },
+    "MedicationRequest-mr": {
+      type: "MedicationRequest",
+      fhirVersion: "4.0.1",
+      resource: { resourceType: "MedicationRequest", id: "mr" },
+    },
+    "Condition-cond": {
+      type: "Condition",
+      fhirVersion: "1.0.2",
+      resource: { resourceType: "Condition", id: "cond" },
+    },
+    "Patient-pt": {
+      type: "Patient",
+      fhirVersion: "1.0.2",
+      resource: { resourceType: "Patient", id: "pt" },
+    },
+  };
+
+  function currentFiles(): Record<string, Uint8Array> {
+    const records = Object.entries(current)
+      .map(([file, entry]) => {
+        const type = entry.type ? ` type="${entry.type}"` : "";
+        const url = entry.fhirVersion === "1.0.2" ? DSTU2_URL : SOURCE_URL;
+        return `  <ClinicalRecord${type} identifier="${entry.resource.id}"
+    sourceName="Example Clinic" sourceURL="${url}"
+    fhirVersion="${entry.fhirVersion}" receivedDate="2026-11-18 10:00:00 +0100"
+    resourceFilePath="/clinical-records/${file}.json"/>`;
+      })
+      .join("\n");
+    const files: Record<string, Uint8Array> = {
+      "apple_health_export/export.xml":
+        strToU8(`<?xml version="1.0" encoding="UTF-8"?>
+<HealthData locale="en_US">
+  <ExportDate value="2026-11-18 10:00:00 +0100"/>
+${records}
+</HealthData>`),
+    };
+    for (const [file, entry] of Object.entries(current)) {
+      files[`apple_health_export/clinical-records/${file}.json`] = strToU8(
+        JSON.stringify(entry.resource),
+      );
+    }
+    return files;
+  }
+
+  beforeAll(async () => {
+    await prisma.user.create({
+      data: {
+        id: CURRENT_USER,
+        username: "apple-clinical-current",
+        email: "apple-clinical-current@example.test",
+        timezone: "Europe/Berlin",
+      },
+    });
+  });
+
+  it("imports the R4 and DSTU2 lab results and skips the rest", async () => {
+    const result = await runArchive(CURRENT_USER, currentFiles());
+    expect(result.labs).toEqual({
+      discovered: 4,
+      imported: 3,
+      duplicate: 0,
+      // The DSTU2 heart rate is a vital sign, not a lab result.
+      skipped: 1,
+      failed: 0,
+      markersCreated: 3,
+    });
+    // DiagnosticReport, MedicationRequest, Condition, Patient.
+    expect(result.clinical).toEqual({ skipped: 4 });
+
+    const rows = await prisma.labResult.findMany({
+      where: { userId: CURRENT_USER, source: "APPLE_HEALTH" },
+      orderBy: { analyte: "asc" },
+      select: { analyte: true, value: true, unit: true },
+    });
+    expect(rows).toEqual([
+      { analyte: "Ferritin", value: 80, unit: "ng/mL" },
+      { analyte: "Hemoglobin A1c", value: 5.4, unit: "%" },
+      { analyte: "Sodium", value: 140, unit: "mmol/L" },
+    ]);
   });
 });
