@@ -10,6 +10,7 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { toJson } from "@/lib/db";
 import type { RestoreContext } from "@/lib/export/restore-context";
+import type { AppleHealthTombstoneDomain } from "@/lib/sync/apple-health-tombstones";
 
 // ── Export ───────────────────────────────────────────────────────────────────
 
@@ -115,26 +116,50 @@ export async function clearWorkouts(ctx: RestoreContext): Promise<void> {
     where: { userId: ctx.ownerId },
   });
   ctx.cleared.workouts = workouts.count;
-  // The deletion ledger goes with the workouts it guards; the file's own
-  // ledger (a disaster-recovery file) is written back by the restore below.
+  // The workout lines of the deletion ledger go with the workouts they
+  // guard; the ECG lines belong to the ECG section, which replaces them with
+  // the recordings (`restoreAppleHealthTombstones`).
   await ctx.tx.appleHealthTombstone.deleteMany({
-    where: { userId: ctx.ownerId },
+    where: { userId: ctx.ownerId, domain: "workout" },
+  });
+}
+
+/**
+ * Replace one domain's lines of the deletion ledger with the file's (a
+ * disaster-recovery file carries them; a portable one none, which leaves the
+ * domain empty, as its rows are replaced from the file too). Each section
+ * calls it for its own domain, so neither wipes what guards the other.
+ */
+export async function restoreAppleHealthTombstones(
+  tx: Prisma.TransactionClient,
+  ownerId: string,
+  entries: readonly AppleHealthTombstoneBackupEntry[],
+  domain: AppleHealthTombstoneDomain,
+): Promise<void> {
+  await tx.appleHealthTombstone.deleteMany({
+    where: { userId: ownerId, domain },
+  });
+  const lines = entries.filter((t) => t.domain === domain);
+  if (lines.length === 0) return;
+  await tx.appleHealthTombstone.createMany({
+    data: lines.map((t) => ({
+      userId: ownerId,
+      domain,
+      externalId: t.externalId,
+      createdAt: new Date(t.createdAt),
+    })),
+    skipDuplicates: true,
   });
 }
 
 export async function restoreWorkouts(ctx: RestoreContext): Promise<void> {
   const { tx, ownerId, payload } = ctx;
-  if (payload.appleHealthTombstones.length > 0) {
-    await tx.appleHealthTombstone.createMany({
-      data: payload.appleHealthTombstones.map((t) => ({
-        userId: ownerId,
-        domain: t.domain,
-        externalId: t.externalId,
-        createdAt: new Date(t.createdAt),
-      })),
-      skipDuplicates: true,
-    });
-  }
+  await restoreAppleHealthTombstones(
+    tx,
+    ownerId,
+    payload.appleHealthTombstones,
+    "workout",
+  );
   if (payload.workouts.length === 0) return;
   await tx.workout.createMany({
     data: payload.workouts.map((workout) => ({
