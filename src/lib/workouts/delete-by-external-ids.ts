@@ -20,7 +20,10 @@ import { annotate } from "@/lib/logging/context";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { enqueuePrDetection } from "@/lib/jobs/pr-detection";
 import { lockPersonalRecordsForUser } from "@/lib/personal-records/pr-detection-worker";
-import { recordAppleHealthTombstones } from "@/lib/sync/apple-health-tombstones";
+import {
+  lockAppleHealthTombstones,
+  recordAppleHealthTombstones,
+} from "@/lib/sync/apple-health-tombstones";
 import { APP_MINTED_SOURCE } from "@/lib/sync/external-id-delete";
 
 export async function deleteAppleHealthWorkouts(
@@ -36,6 +39,7 @@ export async function deleteAppleHealthWorkouts(
       // same lock, so it either wrote before this delete (and the record goes
       // below) or reads after it (and never sees the workout).
       await lockPersonalRecordsForUser(tx, userId);
+      await lockAppleHealthTombstones(tx, userId, "workout");
       await recordAppleHealthTombstones(tx, userId, "workout", externalIds);
       const rows = await tx.workout.findMany({
         where: {

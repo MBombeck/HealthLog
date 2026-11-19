@@ -19,6 +19,8 @@ function fakeDb() {
       await fn({
         ecgRecording: { findUnique, upsert },
         appleHealthTombstone: { findUnique: tombstoneFind },
+        // The ledger lock (`lockAppleHealthTombstones`).
+        $queryRaw: vi.fn(async () => [{ locked: "" }]),
       }),
   );
   const db = { $transaction };

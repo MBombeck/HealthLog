@@ -21,6 +21,27 @@ export const APPLE_HEALTH_TOMBSTONE_DOMAINS = ["workout", "ecg"] as const;
 export type AppleHealthTombstoneDomain =
   (typeof APPLE_HEALTH_TOMBSTONE_DOMAINS)[number];
 
+/**
+ * Serialise a domain's ledger for one account, for the rest of the
+ * transaction. The delete takes it before it writes its lines and removes the
+ * rows; the ingest takes it before it reads the ledger and inserts. So an
+ * insert either commits before the delete looks for rows (and is removed) or
+ * reads the ledger after the delete committed (and writes nothing): a post
+ * racing its own delete cannot outlive it.
+ */
+export async function lockAppleHealthTombstones(
+  tx: Pick<Prisma.TransactionClient, "$queryRaw">,
+  userId: string,
+  domain: AppleHealthTombstoneDomain,
+): Promise<void> {
+  await tx.$queryRaw`
+    SELECT pg_advisory_xact_lock(
+      hashtext(${`apple-health-tombstone:${domain}`}),
+      hashtext(${userId})
+    )::text AS locked
+  `;
+}
+
 type TombstoneClient =
   | Pick<PrismaClient, "appleHealthTombstone">
   | Pick<Prisma.TransactionClient, "appleHealthTombstone">;

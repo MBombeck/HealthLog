@@ -41,6 +41,7 @@ import type {
   PrismaClient,
   RhythmClassification,
 } from "@/generated/prisma/client";
+import { lockAppleHealthTombstones } from "@/lib/sync/apple-health-tombstones";
 import { encryptWaveformToBytes } from "@/lib/withings/ecg-waveform-codec";
 
 /**
@@ -151,7 +152,10 @@ export async function persistEcgRecording(
     return await db.$transaction(async (tx) => {
       // A recording the phone reported deleted stays deleted: a late re-post
       // of its sample id writes nothing (see `apple-health-tombstones.ts`).
+      // Under the ledger lock, so a delete in flight is either seen here or
+      // finds this row once it commits (`lockAppleHealthTombstones`).
       if (source === "APPLE_HEALTH") {
+        await lockAppleHealthTombstones(tx, userId, "ecg");
         const tombstone = await tx.appleHealthTombstone.findUnique({
           where: {
             userId_domain_externalId: {

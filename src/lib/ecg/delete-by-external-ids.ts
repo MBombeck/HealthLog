@@ -11,7 +11,10 @@
  * (`src/lib/sync/apple-health-tombstones.ts`).
  */
 import { prisma } from "@/lib/db";
-import { recordAppleHealthTombstones } from "@/lib/sync/apple-health-tombstones";
+import {
+  lockAppleHealthTombstones,
+  recordAppleHealthTombstones,
+} from "@/lib/sync/apple-health-tombstones";
 import { APP_MINTED_SOURCE } from "@/lib/sync/external-id-delete";
 
 export async function deleteAppleHealthEcgRecordings(
@@ -20,6 +23,7 @@ export async function deleteAppleHealthEcgRecordings(
 ): Promise<number> {
   if (externalIds.length === 0) return 0;
   return prisma.$transaction(async (tx) => {
+    await lockAppleHealthTombstones(tx, userId, "ecg");
     await recordAppleHealthTombstones(tx, userId, "ecg", externalIds);
     const { count } = await tx.ecgRecording.deleteMany({
       where: {
