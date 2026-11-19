@@ -193,7 +193,9 @@ async function makeRecord(overrides: Record<string, unknown> = {}) {
       timezone: "UTC",
       locale: "en",
       onboardingCompletedAt: new Date(),
-      aiProvider: "ANTHROPIC",
+      // Local picked: the main chain's Local entry serves only then (#1417),
+      // and this record has every provider able to answer.
+      aiProvider: "LOCAL",
       aiModel: "claude-sonnet-4-6",
       aiAnthropicKeyEncrypted: encrypt("sk-ant-integration"),
       aiOpenaiKeyEncrypted: encrypt("sk-openai-integration"),

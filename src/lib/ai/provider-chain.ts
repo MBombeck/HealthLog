@@ -232,3 +232,25 @@ export function servesPickedGateway(row: {
   );
   return !gateway || gateway.enabled || gateway.reasoningEffort !== undefined;
 }
+
+/**
+ * #1417 — whether the main chain's `local` entry may serve. Local's base URL
+ * is kept when another provider is picked, so the Local card keeps what was
+ * saved for it and a named chain that lists Local still reaches it. The main
+ * chain lists `local` by default, though, and a person who picked another
+ * provider must not keep sending health data to the Local host they left (or
+ * wait on it once it is gone). So in the main chain Local serves only while
+ * Local is the picked provider, or while nothing is picked: the settings
+ * route never cleared the address on a move to no provider, so such an
+ * account kept its Local entry before the address was kept everywhere.
+ *
+ * A named chain is the person's explicit list and is not gated. Resolution,
+ * the presence probe and the chain editor's availability read this, so they
+ * cannot disagree about it.
+ */
+export function localServesMainChain(row: {
+  aiProvider: string | null;
+}): boolean {
+  const picked = row.aiProvider?.toUpperCase() ?? "";
+  return picked === "" || picked === "LOCAL";
+}

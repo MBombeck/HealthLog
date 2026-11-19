@@ -273,6 +273,51 @@ describe("probeProviderChain", () => {
     });
   });
 
+  it("counts Local's retained address in the main chain only while Local is picked", async () => {
+    // #1417 — the address outlives a move to another provider. The main chain
+    // must not find it again; a named chain that lists Local still does.
+    const local = { aiLocalBaseUrl: "https://llm.example.org/v1" };
+    const mainTypes = async (overrides: Record<string, unknown>) => {
+      load(row({ ...local, ...overrides }));
+      return (await probeProviderChain("u1", OWNER)).entries.map(
+        (e) => e.providerType,
+      );
+    };
+    expect(
+      await mainTypes({
+        aiProvider: "OPENAI_COMPATIBLE",
+        aiCompatBaseUrl: "https://gateway.example/v1",
+        aiCompatModel: "llama-3",
+      }),
+    ).toEqual(["openai-compatible"]);
+    expect(
+      await mainTypes({ aiProvider: "OPENAI", aiOpenaiKeyEncrypted: "enc" }),
+    ).toEqual(["openai"]);
+    expect(await mainTypes({ aiProvider: "ANTHROPIC" })).toEqual([]);
+    expect(await mainTypes({ aiProvider: "LOCAL" })).toEqual(["local"]);
+
+    load(
+      row({
+        ...local,
+        aiProvider: "ANTHROPIC",
+        aiNamedChains: {
+          chains: [{ id: "lan", name: "LAN", entries: ["local"] }],
+          defaultChainId: null,
+          attachments: { coach: "lan" },
+        },
+      }),
+    );
+    const presence = await probeProviderChain("u1", OWNER);
+    expect(presence.entries).toEqual([]);
+    expect(presence.pinned?.coach?.map((e) => e.providerType)).toEqual([
+      "local",
+    ]);
+    // The named-chain editor may still offer it.
+    expect(presence.availableTypes).toContain("local");
+    expect(await probeProviderPresence("u1", "text", "coach")).toBe(true);
+    expect(await probeProviderPresence("u1", "text", "briefing")).toBe(false);
+  });
+
   it("carries the person's in-browser OCR opt-in", async () => {
     load(row({ labsLocalOcrEnabled: true }));
     expect((await probeProviderChain("u1", OWNER)).localOcrEnabled).toBe(true);
