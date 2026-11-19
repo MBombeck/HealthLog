@@ -492,7 +492,7 @@ export function DocumentSaveStatus({
       className="text-muted-foreground flex items-center gap-1.5 text-xs"
       data-slot="document-detail-saved"
     >
-      <Check className="text-success size-3.5" aria-hidden />
+      <Check className="size-3.5" aria-hidden />
       {t("documents.detail.saved")}
     </p>
   );
