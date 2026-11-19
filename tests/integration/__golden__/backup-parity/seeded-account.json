@@ -838,8 +838,9 @@
         "icon": "Zap",
         "sortOrder": 0,
         "isActive": true,
-        "createdAt": "2026-05-03T00:06:00.000Z",
-        "updatedAt": "2026-05-03T00:07:00.000Z"
+        "code": "rt-SymptomDefinition-code",
+        "createdAt": "2026-05-03T00:07:00.000Z",
+        "updatedAt": "2026-05-03T00:08:00.000Z"
       },
       {
         "id": "<id:43>",
@@ -848,8 +849,9 @@
         "icon": "Brain",
         "sortOrder": 1,
         "isActive": false,
-        "createdAt": "2026-05-03T00:06:01.000Z",
-        "updatedAt": "2026-05-03T00:07:01.000Z"
+        "code": null,
+        "createdAt": "2026-05-03T00:07:01.000Z",
+        "updatedAt": "2026-05-03T00:08:01.000Z"
       }
     ],
     "SymptomEvent": [
@@ -861,8 +863,12 @@
         "intensity": 4,
         "noteEncrypted": null,
         "episodeId": "<id:35>",
-        "createdAt": "2026-05-03T01:47:00.000Z",
-        "updatedAt": "2026-05-03T01:48:00.000Z"
+        "endAt": "2026-06-30T12:34:56.789Z",
+        "source": "rt-SymptomEvent-source",
+        "externalId": "rt-SymptomEvent-externalId",
+        "deletedAt": null,
+        "createdAt": "2026-05-03T01:51:00.000Z",
+        "updatedAt": "2026-05-03T01:52:00.000Z"
       },
       {
         "id": "<id:45>",
@@ -872,8 +878,12 @@
         "intensity": 8,
         "noteEncrypted": "<sealed:v1:left side, behind the eye>",
         "episodeId": null,
-        "createdAt": "2026-05-03T01:47:01.000Z",
-        "updatedAt": "2026-05-03T01:48:01.000Z"
+        "endAt": null,
+        "source": "MANUAL",
+        "externalId": null,
+        "deletedAt": null,
+        "createdAt": "2026-05-03T01:51:01.000Z",
+        "updatedAt": "2026-05-03T01:52:01.000Z"
       },
       {
         "id": "<id:46>",
@@ -883,8 +893,12 @@
         "intensity": 2,
         "noteEncrypted": null,
         "episodeId": null,
-        "createdAt": "2026-05-03T01:47:02.000Z",
-        "updatedAt": "2026-05-03T01:48:02.000Z"
+        "endAt": null,
+        "source": "MANUAL",
+        "externalId": null,
+        "deletedAt": null,
+        "createdAt": "2026-05-03T01:51:02.000Z",
+        "updatedAt": "2026-05-03T01:52:02.000Z"
       }
     ],
     "SeizureTypeProfile": [
