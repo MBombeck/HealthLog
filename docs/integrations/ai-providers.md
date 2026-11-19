@@ -94,6 +94,13 @@ to one task.
 - **One entry is a binding.** If that provider has no credential, the
   capability reports `no_provider` in the `ai` block on `/api/auth/me`
   and refuses; if it fails at call time there is nothing to fall back to.
+  The Coach and the document chat then say why: the provider timed out,
+  could not be reached, or answered with nothing.
+- **Every call is logged with its chain.** Each AI call writes
+  `ai.chain.served` (info) or `ai.chain.failed` (warn, with the failure
+  kind) carrying `chain` (`main`, `default:<id>` or `pinned:<id>`, the
+  chain's id, never its name), `capability` and `provider`, so the app's
+  own log answers which chain and provider served a call.
 - **Guardrails apply per chain.** Entries resolve under the same
   credential policy (a delegate gets nothing, a guardian only the
   operator's key, so a managed profile's local-only binding refuses
@@ -481,7 +488,11 @@ the document-AI actions per user per hour. Read/index, extract,
 suggest and summarise share one bucket, and a slot is only consumed
 when a request actually reaches the provider — a request that fails
 during input preparation (unreadable file, exhausted daily budget,
-malformed body) hands its slot back. Raise it when users batch-read
+malformed body) hands its slot back. A request that reaches the
+provider keeps its slot even when the provider fails, times out or
+answers with nothing, so diagnosing a broken local model can use up the
+hour's slots; while you do, use **Test** under Settings > AI, which
+draws on its own allowance. Raise it when users batch-read
 many documents against a generous provider budget; lower it on a
 tight one. The 429 names the actual wait (the window is an hour) and
 carries the reset instant in `X-RateLimit-Reset`.
@@ -516,7 +527,8 @@ same for lab-report scans. The photo or PDF scan and the browser-OCR
 text scan share one bucket per user, and a scan that fails before the
 provider is called (malformed body, file too large or not an image or
 PDF, a PDF that cannot be rendered, exhausted daily budget) hands its
-slot back. Raise it when users scan a stack of reports at once; the
+slot back; a scan that reached the provider keeps it, failed or not.
+Raise it when users scan a stack of reports at once; the
 daily AI budget still bounds the cost.
 
 All four variables must also be listed in the compose
