@@ -17,6 +17,7 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     user: { findUnique: vi.fn() },
     workout: { findMany: vi.fn(), createManyAndReturn: vi.fn() },
+    appleHealthTombstone: { findMany: vi.fn(async () => []) },
     $transaction: vi.fn(async (fn: unknown) => {
       if (typeof fn === "function") {
         return (fn as (tx: unknown) => unknown)(txClient);

@@ -1122,6 +1122,9 @@ model User {
   // The paired AFib verdict still lands as an IRREGULAR_RHYTHM_NOTIFICATION
   // Measurement EVENT row (v1.18.11); this holds the raw signal samples.
   ecgRecordings                             EcgRecording[]
+  // The Apple Health workouts and ECG recordings the phone reported
+  // deleted, so a late re-post of the same sample stays deleted.
+  appleHealthTombstones                     AppleHealthTombstone[]
   // v1.38.0 — visits. `Encounter` is one contact with the healthcare
   // system (happened or booked), `Practitioner` the account's own address
   // book, and the three link tables are what the visit produced. No
@@ -2412,6 +2415,36 @@ model EcgRecording {
   @@map("ecg_recordings")
 }
 
+/// The Apple Health samples the phone reported deleted through
+/// `DELETE /api/workouts/by-external-ids` and
+/// `DELETE /api/insights/ecg/by-external-ids`.
+///
+/// Neither `Workout` nor `EcgRecording` has a tombstone column, and adding one
+/// would put a `deletedAt: null` on every reader of two widely read tables. The
+/// rows therefore still go outright, and this ledger remembers the HealthKit
+/// sample id instead, so a late re-post of a deleted sample answers
+/// `duplicate` and writes nothing: the rule mood entries keep with their
+/// `deletedAt`. Only `source = APPLE_HEALTH` rows are ever recorded, and no
+/// reader of workouts or recordings looks here.
+///
+/// `domain` is a closed set in app code: "workout" | "ecg"
+/// (`src/lib/sync/apple-health-tombstones.ts`).
+model AppleHealthTombstone {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  domain     String
+  /// The HealthKit sample UUID: `Workout.externalId` or
+  /// `EcgRecording.externalRecordingId` of the deleted row.
+  externalId String   @map("external_id")
+  /// When the phone reported the sample deleted. Named `createdAt` because
+  /// the row is the record of that deletion, not a soft-deleted row.
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, domain, externalId])
+  @@map("apple_health_tombstones")
+}
 
 // ─── Measurement rollups (v1.5.0) ──────────────────────────
 //

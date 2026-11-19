@@ -939,6 +939,7 @@
     "MedicationScheduleRevision": [],
     "MedicationEfficacyTarget": [],
     "EcgRecording": [],
+    "AppleHealthTombstone": [],
     "OnboardingRecord": [],
     "BiomarkerAlias": [],
     "BiomarkerMerge": [],
@@ -1782,6 +1783,7 @@
         "externalId": null
       }
     ],
+    "appleHealthTombstones": [],
     "documents": [],
     "manifest": {
       "documents": {

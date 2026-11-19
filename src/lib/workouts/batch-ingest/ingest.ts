@@ -14,6 +14,8 @@ import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { emitDataArrival } from "@/lib/arrivals/emit-shared";
 import { unstableExternalIdMeta } from "@/lib/validations/external-id";
 import { batchWorkoutIndicesToKeep } from "@/lib/workouts/batch-dedup";
+import { prisma } from "@/lib/db";
+import { findAppleHealthTombstones } from "@/lib/sync/apple-health-tombstones";
 
 import {
   prepareWorkouts,
@@ -89,7 +91,11 @@ export async function ingestWorkoutBatch(
   input: WorkoutBatchInput,
 ): Promise<WorkoutBatchResult> {
   const { userId, workouts, keepRoutes } = input;
-  const { prepared, results, unstableShapes } = prepareWorkouts(input);
+  const {
+    prepared: admitted,
+    results,
+    unstableShapes,
+  } = prepareWorkouts(input);
   const auditAction = input.auditAction ?? "workout.batch.ingest";
 
   if (unstableShapes.length > 0) {
@@ -97,6 +103,29 @@ export async function ingestWorkoutBatch(
       meta: unstableExternalIdMeta("workout.batch", unstableShapes),
     });
   }
+
+  // A workout the phone reported deleted stays deleted: a late re-post of its
+  // Apple Health sample id answers `duplicate` and writes nothing, the rule a
+  // mood entry keeps with its tombstone (see `apple-health-tombstones.ts`).
+  const deletedIds = await findAppleHealthTombstones(
+    prisma,
+    userId,
+    "workout",
+    admitted
+      .filter((p) => p.dedupKey?.source === "APPLE_HEALTH")
+      .map((p) => p.dedupKey!.externalId),
+  );
+  let duplicateCount = 0;
+  const prepared = admitted.filter((p) => {
+    const deleted =
+      p.dedupKey?.source === "APPLE_HEALTH" &&
+      deletedIds.has(p.dedupKey.externalId);
+    if (deleted) {
+      results[p.index] = { index: p.index, status: "duplicate" };
+      duplicateCount += 1;
+    }
+    return !deleted;
+  });
 
   // Write-time cross-source dedup through the one workout clustering the
   // reads use (see `batchWorkoutIndicesToKeep`): one logical workout from two
@@ -108,7 +137,6 @@ export async function ingestWorkoutBatch(
     prepared,
     input.sourcePriorityJson ?? null,
   );
-  let duplicateCount = 0;
   for (const p of prepared) {
     if (!survivingIndices.has(p.index)) {
       results[p.index] = { index: p.index, status: "duplicate" };

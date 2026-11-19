@@ -121,6 +121,8 @@ export const BACKED_UP_MODELS = [
   // person and held nowhere else.
   "LifeEvent",
   "EcgRecording",
+  // Apple Health deletions; without them a late re-post comes back in.
+  "AppleHealthTombstone",
   "UserHealthProfile",
   "HealthProfileFactRevision",
   "MeasurementReminder",
@@ -590,6 +592,8 @@ export const TWO_ENDED_MODELS = [
   // theoretical. The reference is resolved against what the restore wrote,
   // nulled when it cannot be, and reported either way.
   "EcgRecording",
+  // Disaster-recovery files only, beside the workouts, as mood's `deletedAt`.
+  "AppleHealthTombstone",
   // The setup answers, carried from the release that introduces them. There is
   // no debt entry to write instead: the row is one small object with no
   // reference to resolve, so "carried" and "owed" would have cost the same

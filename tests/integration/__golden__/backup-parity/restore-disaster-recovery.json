@@ -2721,9 +2721,18 @@
         "updatedAt": "2026-05-06T18:14:00.000Z"
       }
     ],
-    "OnboardingRecord": [
+    "AppleHealthTombstone": [
       {
         "id": "<id:126>",
+        "userId": "round-trip-owner",
+        "domain": "workout",
+        "externalId": "ABCDEF01-2345-6789-ABCD-EF0123456789",
+        "createdAt": "2026-06-30T08:00:00.000Z"
+      }
+    ],
+    "OnboardingRecord": [
+      {
+        "id": "<id:127>",
         "userId": "round-trip-owner",
         "needsJson": {
           "areas": [
@@ -2786,80 +2795,80 @@
         },
         "modulesDerivedAt": "2026-07-01T08:00:00.000Z",
         "completedAt": "2026-07-01T08:00:00.000Z",
-        "createdAt": "2026-05-06T19:47:00.000Z",
-        "updatedAt": "2026-05-06T19:48:00.000Z"
+        "createdAt": "2026-05-06T21:27:00.000Z",
+        "updatedAt": "2026-05-06T21:28:00.000Z"
       }
     ],
     "BiomarkerAlias": [
       {
-        "id": "<id:127>",
+        "id": "<id:128>",
         "userId": "round-trip-owner",
         "biomarkerId": "<id:28>",
         "name": "Ferr.",
         "nameFolded": "ferr.",
         "source": "IMPORT_CHOICE",
-        "createdAt": "2026-05-06T21:26:00.000Z"
+        "createdAt": "2026-05-06T23:06:00.000Z"
       }
     ],
     "BiomarkerMerge": [
       {
-        "id": "<id:128>",
+        "id": "<id:129>",
         "userId": "round-trip-owner",
         "targetBiomarkerId": "<id:28>",
         "sourceBiomarkerId": "merged-away-marker",
         "sourceName": "Ferritin (Serum)",
         "readingCount": 3,
-        "mergedAt": "2026-05-06T23:06:00.000Z"
+        "mergedAt": "2026-05-07T00:46:00.000Z"
       }
     ],
     "LabResultDocumentLink": [
       {
-        "id": "<id:129>",
+        "id": "<id:130>",
         "labResultId": "<id:27>",
         "documentId": "<id:72>",
-        "userId": "round-trip-owner",
-        "createdAt": "2026-05-07T00:44:00.000Z"
-      }
-    ],
-    "EncounterMedicationLink": [
-      {
-        "id": "<id:130>",
-        "encounterId": "<id:76>",
-        "medicationId": "<id:8>",
         "userId": "round-trip-owner",
         "createdAt": "2026-05-07T02:24:00.000Z"
       }
     ],
-    "EncounterVaccinationLink": [
+    "EncounterMedicationLink": [
       {
         "id": "<id:131>",
         "encounterId": "<id:76>",
-        "vaccinationId": "<id:82>",
+        "medicationId": "<id:8>",
         "userId": "round-trip-owner",
         "createdAt": "2026-05-07T04:04:00.000Z"
       }
     ],
-    "MedicationDocumentLink": [
+    "EncounterVaccinationLink": [
       {
         "id": "<id:132>",
-        "medicationId": "<id:8>",
-        "documentId": "<id:72>",
+        "encounterId": "<id:76>",
+        "vaccinationId": "<id:82>",
         "userId": "round-trip-owner",
         "createdAt": "2026-05-07T05:44:00.000Z"
       }
     ],
-    "MedicationConditionLink": [
+    "MedicationDocumentLink": [
       {
         "id": "<id:133>",
         "medicationId": "<id:8>",
-        "episodeId": "<id:35>",
+        "documentId": "<id:72>",
         "userId": "round-trip-owner",
         "createdAt": "2026-05-07T07:24:00.000Z"
       }
     ],
-    "AccountGrant": [
+    "MedicationConditionLink": [
       {
         "id": "<id:134>",
+        "medicationId": "<id:8>",
+        "episodeId": "<id:35>",
+        "userId": "round-trip-owner",
+        "createdAt": "2026-05-07T09:04:00.000Z"
+      }
+    ],
+    "AccountGrant": [
+      {
+        "id": "<id:135>",
         "grantorId": "round-trip-owner",
         "granteeId": "parity-delegate",
         "access": "READ",
@@ -4190,7 +4199,7 @@
             "name": "Ferr.",
             "source": "IMPORT_CHOICE",
             "id": "<id:42>",
-            "createdAt": "2026-05-06T21:26:00.000Z"
+            "createdAt": "2026-05-06T23:06:00.000Z"
           }
         ]
       }
@@ -4203,7 +4212,7 @@
         "sourceBiomarkerId": "merged-away-marker",
         "sourceName": "Ferritin (Serum)",
         "readingCount": 3,
-        "mergedAt": "2026-05-06T23:06:00.000Z"
+        "mergedAt": "2026-05-07T00:46:00.000Z"
       }
     ],
     "labResultImportKeys": [
@@ -4403,6 +4412,13 @@
         "pauseDurationSec": 3,
         "source": "WITHINGS",
         "externalId": "rt-Workout-externalId"
+      }
+    ],
+    "appleHealthTombstones": [
+      {
+        "domain": "workout",
+        "externalId": "ABCDEF01-2345-6789-ABCD-EF0123456789",
+        "createdAt": "2026-06-30T08:00:00.000Z"
       }
     ],
     "documents": [
@@ -4682,8 +4698,8 @@
     ],
     "onboardingRecord": {
       "id": "<id:67>",
-      "createdAt": "2026-05-06T19:47:00.000Z",
-      "updatedAt": "2026-05-06T19:48:00.000Z",
+      "createdAt": "2026-05-06T21:27:00.000Z",
+      "updatedAt": "2026-05-06T21:28:00.000Z",
       "needs": {
         "recordTarget": "me",
         "areas": [
@@ -5626,35 +5642,35 @@
       {
         "labResultId": "<id:39>",
         "documentId": "<id:55>",
-        "createdAt": "2026-05-07T00:44:00.000Z"
+        "createdAt": "2026-05-07T02:24:00.000Z"
       }
     ],
     "encounterMedicationLinks": [
       {
         "encounterId": "<id:70>",
         "medicationId": "<id:6>",
-        "createdAt": "2026-05-07T02:24:00.000Z"
+        "createdAt": "2026-05-07T04:04:00.000Z"
       }
     ],
     "encounterVaccinationLinks": [
       {
         "encounterId": "<id:70>",
         "vaccinationId": "<id:75>",
-        "createdAt": "2026-05-07T04:04:00.000Z"
+        "createdAt": "2026-05-07T05:44:00.000Z"
       }
     ],
     "medicationDocumentLinks": [
       {
         "medicationId": "<id:6>",
         "documentId": "<id:55>",
-        "createdAt": "2026-05-07T05:44:00.000Z"
+        "createdAt": "2026-05-07T07:24:00.000Z"
       }
     ],
     "medicationConditionLinks": [
       {
         "medicationId": "<id:6>",
         "episodeId": "<id:46>",
-        "createdAt": "2026-05-07T07:24:00.000Z"
+        "createdAt": "2026-05-07T09:04:00.000Z"
       }
     ],
     "nutrientDays": [
