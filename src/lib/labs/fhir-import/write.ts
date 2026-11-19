@@ -42,7 +42,7 @@ import {
   labReadingDay,
   labReadingDaySearchRange,
 } from "@/lib/labs/reading-day";
-import { readingKeys } from "@/lib/labs/reading-keys";
+import { READING_KEY_SELECT, readingKeys } from "@/lib/labs/reading-keys";
 import { encryptNoteToBytes } from "@/lib/labs/store";
 
 import { heldLabImportKeys } from "./import-keys";
@@ -293,16 +293,7 @@ async function liveReadingKeys(
       },
       OR: [{ biomarkerId: { in: ids } }, { analyte: { in: names } }],
     },
-    select: {
-      biomarkerId: true,
-      analyte: true,
-      takenAt: true,
-      value: true,
-      valueText: true,
-      sourceValue: true,
-      sourceUnit: true,
-      unit: true,
-    },
+    select: READING_KEY_SELECT,
   });
   for (const e of existing) {
     for (const k of readingKeys(e, tz)) keys.add(k);

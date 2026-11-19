@@ -69,12 +69,11 @@ import {
 } from "@/lib/export/measurement-bulk-insert";
 import { resolveHkWorkoutSportType } from "@/lib/measurements/hk-workout-activity-type-map";
 import {
-  addWorkoutStatistics,
   adoptLegacyWorkoutKeys,
   exportWorkoutFigures,
-  fillFromWorkoutStatistics,
+  exportWorkoutTracker,
+  storedWorkoutTotals,
   workoutTotalsUpdate,
-  type WorkoutTotalField,
   workoutExternalId,
   type PreparedWorkout,
 } from "@/lib/measurements/apple-health-export-workouts";
@@ -137,12 +136,8 @@ export interface ImportJobResult {
     read: number;
     inserted: number;
     updated: number;
-    /**
-     * Workouts the export states twice (the same activity, start and end,
-     * written by the watch and by another app): the first is kept, the
-     * repeat counted here and not written.
-     */
-    duplicate: number;
+    duplicate: number; // repeats of a workout the export already stated
+
     unknownActivityType: number;
     routesAttached: number;
     durationMs: number;
@@ -1003,35 +998,11 @@ export async function streamParseExportXml(
       else createdByExternalId.set(created.externalId, [created]);
     }
 
-    // The stored totals of the rows that were not inserted, so a total the
-    // statistics supplied only fills an empty one.
-    const updatedKeys = chunk
-      .filter((row) => !createdByExternalId.has(row.externalId))
-      .map((row) => row.externalId);
-    const storedTotals = new Map<
-      string,
-      Record<WorkoutTotalField, number | null>
-    >();
-    if (updatedKeys.length > 0) {
-      for (const held of await prisma.workout.findMany({
-        where: {
-          userId,
-          source: "APPLE_HEALTH",
-          externalId: { in: updatedKeys },
-        },
-        select: {
-          externalId: true,
-          totalEnergyKcal: true,
-          totalDistanceM: true,
-          avgHeartRate: true,
-          minHeartRate: true,
-          maxHeartRate: true,
-        },
-      })) {
-        if (held.externalId) storedTotals.set(held.externalId, held);
-      }
-    }
-
+    const storedTotals = await storedWorkoutTotals(
+      prisma,
+      userId,
+      chunk.filter((row) => !createdByExternalId.has(row.externalId)),
+    );
     for (const row of chunk) {
       const rowStart = Date.now();
       const inserted = createdByExternalId.get(row.externalId)?.shift();
@@ -1052,9 +1023,7 @@ export async function streamParseExportXml(
             startedAt: row.startedAt,
             endedAt: row.endedAt,
             durationSec: row.durationSec,
-            // An export that does not state a total leaves the stored one,
-            // and a total summed from the statistics only fills an empty
-            // one (`workoutTotalsUpdate`).
+            // Fills or replaces only what it may (`workoutTotalsUpdate`).
             ...workoutTotalsUpdate(row, storedTotals.get(row.externalId)),
             externalSourceVersion: row.externalSourceVersion,
             metadata: row.metadata ?? undefined,
@@ -1219,12 +1188,7 @@ export async function streamParseExportXml(
   const parser = sax.parser(true, { trim: true });
   let pendingError: Error | null = null;
   let currentWorkout: PreparedWorkout | null = null;
-  // How deep the parser is inside a `<WorkoutActivity>` of the current
-  // workout. A multisport workout (iOS 16+) repeats its statistics per
-  // activity there; only the workout's own `<WorkoutStatistics>` count.
-  let workoutActivityDepth = 0;
-  // Identities of the workouts this export has already stated.
-  const seenWorkoutKeys = new Set<string>();
+  const exportWorkouts = exportWorkoutTracker();
 
   // Apple stamps the archive with its own export instant as the first
   // child of `<HealthData>`. The element used to be on the ignore list,
@@ -1473,15 +1437,8 @@ export async function streamParseExportXml(
       return;
     }
 
-    if (name === "WorkoutActivity" && currentWorkout) {
-      workoutActivityDepth += 1;
-      return;
-    }
-
-    if (name === "WorkoutStatistics" && currentWorkout) {
-      if (workoutActivityDepth === 0) {
-        addWorkoutStatistics(currentWorkout.statistics, attrs);
-      }
+    // A workout's `<WorkoutStatistics>` and `<WorkoutActivity>` children.
+    if (currentWorkout && exportWorkouts.open(name, currentWorkout, attrs)) {
       return;
     }
 
@@ -1583,26 +1540,11 @@ export async function streamParseExportXml(
         );
       }
     }
-    if (tagName === "WorkoutActivity" && workoutActivityDepth > 0) {
-      workoutActivityDepth -= 1;
-    }
+    if (tagName === "WorkoutActivity") exportWorkouts.leaveActivity();
     if (tagName === "Workout" && currentWorkout) {
-      workoutActivityDepth = 0;
-      if (seenWorkoutKeys.has(currentWorkout.externalId)) {
-        // The same workout stated twice in one export (the watch and another
-        // app): the first stands, the repeat neither inserts nor updates.
-        workouts.duplicate += 1;
-      } else {
-        seenWorkoutKeys.add(currentWorkout.externalId);
-        fillFromWorkoutStatistics(currentWorkout);
-        if (currentWorkout.routePath && onWorkoutRoute) {
-          onWorkoutRoute({
-            externalId: currentWorkout.externalId,
-            path: currentWorkout.routePath,
-          });
-        }
+      if (exportWorkouts.admit(currentWorkout, onWorkoutRoute)) {
         workoutBatch.push(currentWorkout);
-      }
+      } else workouts.duplicate += 1;
       currentWorkout = null;
     }
     if (tagName === "Record" && currentCycleRecord) {

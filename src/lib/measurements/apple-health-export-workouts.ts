@@ -140,7 +140,7 @@ function bpm(raw: string | undefined, unit: string): number | null {
  * active energy and every distance type as sums in the canonical units, the
  * heart rate's average, minimum and maximum. Other types are ignored.
  */
-export function addWorkoutStatistics(
+function addWorkoutStatistics(
   totals: WorkoutStatisticsTotals,
   attrs: Record<string, string>,
 ): void {
@@ -173,7 +173,7 @@ export function addWorkoutStatistics(
  * The statistics fill each field the `<Workout>` attributes left empty, and
  * the workout notes which fields they filled.
  */
-export function fillFromWorkoutStatistics(workout: PreparedWorkout): void {
+function fillFromWorkoutStatistics(workout: PreparedWorkout): void {
   const stats = workout.statistics;
   const filled: WorkoutTotalField[] = [];
   const fill = (field: WorkoutTotalField, value: number | null) => {
@@ -288,4 +288,87 @@ export async function adoptLegacyWorkoutKeys(
     keys.delete(row.legacyExternalId);
     keys.add(row.externalId);
   }
+}
+
+/**
+ * Where the parser stands among a workout's children, and the workouts the
+ * export has already stated.
+ *
+ * A multisport workout (iOS 16+) repeats its `<WorkoutStatistics>` per leg
+ * inside `<WorkoutActivity>`; only the workout's direct children count, or
+ * every leg would be added twice. A workout stated twice in one export (the
+ * same activity, start and end, from the watch and from another app) is
+ * admitted once: the first stands, the repeat neither inserts nor updates.
+ */
+export function exportWorkoutTracker() {
+  let activityDepth = 0;
+  const seen = new Set<string>();
+  return {
+    /**
+     * An element opening inside the current workout. True when it was a
+     * `<WorkoutActivity>` or a `<WorkoutStatistics>` (folded in when it is
+     * the workout's own), so the parser has nothing left to do with it.
+     */
+    open(
+      name: string,
+      workout: PreparedWorkout,
+      attrs: Record<string, string>,
+    ): boolean {
+      if (name === "WorkoutActivity") {
+        activityDepth += 1;
+        return true;
+      }
+      if (name !== "WorkoutStatistics") return false;
+      if (activityDepth === 0) addWorkoutStatistics(workout.statistics, attrs);
+      return true;
+    },
+    leaveActivity(): void {
+      if (activityDepth > 0) activityDepth -= 1;
+    },
+    /**
+     * At `</Workout>`: false for a repeat. Otherwise the statistics fill the
+     * totals, the route is handed on, and the workout is to be written.
+     */
+    admit(
+      workout: PreparedWorkout,
+      onRoute:
+        ((ref: { externalId: string; path: string }) => void) | undefined,
+    ): boolean {
+      activityDepth = 0;
+      if (seen.has(workout.externalId)) return false;
+      seen.add(workout.externalId);
+      fillFromWorkoutStatistics(workout);
+      if (workout.routePath && onRoute) {
+        onRoute({ externalId: workout.externalId, path: workout.routePath });
+      }
+      return true;
+    },
+  };
+}
+
+/** The stored totals of the given export workouts, by key. */
+export async function storedWorkoutTotals(
+  prisma: Pick<PrismaClient, "workout">,
+  userId: string,
+  rows: readonly PreparedWorkout[],
+): Promise<Map<string, Record<WorkoutTotalField, number | null>>> {
+  const out = new Map<string, Record<WorkoutTotalField, number | null>>();
+  if (rows.length === 0) return out;
+  const held = await prisma.workout.findMany({
+    where: {
+      userId,
+      source: "APPLE_HEALTH",
+      externalId: { in: rows.map((row) => row.externalId) },
+    },
+    select: {
+      externalId: true,
+      totalEnergyKcal: true,
+      totalDistanceM: true,
+      avgHeartRate: true,
+      minHeartRate: true,
+      maxHeartRate: true,
+    },
+  });
+  for (const row of held) if (row.externalId) out.set(row.externalId, row);
+  return out;
 }

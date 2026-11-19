@@ -46,7 +46,11 @@ import {
   labReadingDay,
   labReadingDaySearchRange,
 } from "@/lib/labs/reading-day";
-import { LAB_TEXT_LIMITS, readingKeys } from "@/lib/labs/reading-keys";
+import {
+  LAB_TEXT_LIMITS,
+  READING_KEY_SELECT,
+  readingKeys,
+} from "@/lib/labs/reading-keys";
 import { encryptNoteToBytes } from "@/lib/labs/store";
 import type {
   LabsCsvQuery,
@@ -382,16 +386,7 @@ export async function importLabsCsv(args: {
           takenAt: { gte: from, lt: to },
           OR: [{ biomarkerId: { in: ids } }, { analyte: { in: names } }],
         },
-        select: {
-          biomarkerId: true,
-          analyte: true,
-          takenAt: true,
-          value: true,
-          valueText: true,
-          sourceValue: true,
-          sourceUnit: true,
-          unit: true,
-        },
+        select: READING_KEY_SELECT,
       });
       for (const e of existing) {
         for (const k of readingKeys(e, timezone)) existingKeys.add(k);

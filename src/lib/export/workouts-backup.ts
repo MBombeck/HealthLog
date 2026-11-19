@@ -175,9 +175,7 @@ const COPY_FILLED_TOTALS = [
  * Every old key of a group maps to the new one, so a personal record that
  * names a copy follows the kept row (`workoutKeyByLegacyKey`).
  */
-export function collapseExportWorkoutCopies(
-  workouts: readonly RestorableWorkout[],
-): {
+function collapseExportWorkoutCopies(workouts: readonly RestorableWorkout[]): {
   workouts: RestorableWorkout[];
   keyByLegacyKey: Map<string, string>;
 } {

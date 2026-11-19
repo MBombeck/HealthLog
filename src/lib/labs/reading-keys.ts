@@ -52,6 +52,18 @@ function effectiveInstant(takenAt: Date): string {
     : `t:${ms}`;
 }
 
+/** The columns of a stored reading `readingKeys` reads. */
+export const READING_KEY_SELECT = {
+  biomarkerId: true,
+  analyte: true,
+  takenAt: true,
+  value: true,
+  valueText: true,
+  sourceValue: true,
+  sourceUnit: true,
+  unit: true,
+} as const;
+
 /**
  * The keys a reading is a duplicate under, mirroring the scan commit's
  * `isDuplicate`: the marker (or the name, for a reading filed without one),

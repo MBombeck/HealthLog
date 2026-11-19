@@ -18,7 +18,10 @@ import { enqueueReminderSatisfy } from "@/lib/jobs/reminder-satisfy";
 import { emitDataArrival } from "@/lib/arrivals/emit-shared";
 import { resolveOrMintBiomarker } from "@/lib/labs/biomarker-store";
 import { isDimensionlessUnit } from "@/lib/labs/dimensionless";
-import { readingInMarkerUnit } from "@/lib/labs/reading-conversion";
+import {
+  readingInMarkerUnit,
+  type ReadingRefusal,
+} from "@/lib/labs/reading-conversion";
 import {
   type ResolvedBiomarker,
   serialiseLabResult,
@@ -269,30 +272,7 @@ async function postLabResult(request: NextRequest) {
         action: { name: "labs.create.unit-mismatch" },
         meta: { biomarkerId: biomarker.id, reason: reading.reason },
       });
-      if (reading.reason === "marker_unit_unset") {
-        // The marker holds numbers stored without a unit; no unit can be
-        // chosen for them from this reading, so the person sets it first.
-        return apiError(
-          `${biomarker.name} has values saved without a unit. Set the marker's unit first, then add this reading.`,
-          422,
-          {
-            errorCode: "labs.unit.unset",
-            markerUnit: biomarker.unit,
-            readingUnit: unit,
-            reason: reading.reason,
-          },
-        );
-      }
-      return apiError(
-        unitMismatchMessage(unit, biomarker.name, biomarker.unit),
-        422,
-        {
-          errorCode: "labs.unit.mismatch",
-          markerUnit: biomarker.unit,
-          readingUnit: unit,
-          reason: reading.reason,
-        },
-      );
+      return unitRefusal(reading.reason, unit, biomarker);
     }
     storedValue = reading.value;
     storedSourceLow = reading.sourceReferenceLow;
@@ -408,6 +388,31 @@ async function postLabResult(request: NextRequest) {
 }
 
 /** The refusal for a reading whose unit differs from its marker's. */
+/**
+ * The 422 for a reading its marker cannot take. A marker without a unit that
+ * holds numbers stored without one gets its own code: no unit can be chosen
+ * for those numbers from this reading, so the person sets it first.
+ */
+function unitRefusal(
+  reason: ReadingRefusal,
+  readingUnit: string | undefined,
+  marker: { name: string; unit: string },
+) {
+  const meta = { markerUnit: marker.unit, readingUnit, reason };
+  if (reason === "marker_unit_unset") {
+    return apiError(
+      `${marker.name} has values saved without a unit. Set the marker's unit first, then add this reading.`,
+      422,
+      { errorCode: "labs.unit.unset", ...meta },
+    );
+  }
+  return apiError(
+    unitMismatchMessage(readingUnit, marker.name, marker.unit),
+    422,
+    { errorCode: "labs.unit.mismatch", ...meta },
+  );
+}
+
 function unitMismatchMessage(
   readingUnit: string | undefined,
   markerName: string,
