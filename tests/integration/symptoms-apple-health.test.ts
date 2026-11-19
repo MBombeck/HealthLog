@@ -586,6 +586,58 @@ describe("DELETE /api/symptoms/events/by-external-ids", () => {
   });
 });
 
+describe("purging a built-in definition", () => {
+  it("tombstones its imports and hides it, so a re-sync brings nothing back", async () => {
+    const id = "A0000000-0000-4000-8000-0000000000e1";
+    await ingest([sample(id)]);
+    const prisma = getPrismaClient();
+    const fever = await prisma.symptomDefinition.findFirstOrThrow({
+      where: { userId: OWNER_ID, code: "FEVER" },
+    });
+
+    const { DELETE } =
+      await import("@/app/api/symptoms/definitions/[id]/route");
+    const response = await call(
+      DELETE,
+      "DELETE",
+      `/api/symptoms/definitions/${fever.id}?purge=true`,
+      undefined,
+      { id: fever.id },
+    );
+    expect(response.status).toBe(200);
+    expect(
+      (
+        await json<Envelope<{ purged: boolean; eventsDeleted: number }>>(
+          response,
+        )
+      ).data,
+    ).toMatchObject({ purged: true, eventsDeleted: 1 });
+
+    const kept = await prisma.symptomDefinition.findUniqueOrThrow({
+      where: { id: fever.id },
+    });
+    expect(kept.isActive).toBe(false);
+    const event = await prisma.symptomEvent.findFirstOrThrow({
+      where: { externalId: id },
+    });
+    expect(event.deletedAt).not.toBeNull();
+    expect(event.source).toBe("APPLE_HEALTH");
+
+    // The phone re-sends the same sample: it stays deleted, and the
+    // definition stays hidden.
+    const replay = await ingest([sample(id)]);
+    expect(replay.entries).toEqual([{ index: 0, status: "duplicate" }]);
+    expect(
+      (
+        await prisma.symptomDefinition.findUniqueOrThrow({
+          where: { id: fever.id },
+        })
+      ).isActive,
+    ).toBe(false);
+    expect(await listEvents()).toEqual([]);
+  });
+});
+
 describe("a session switched into another record", () => {
   /**
    * Apple Health sync belongs to the owner's own phone, like every other

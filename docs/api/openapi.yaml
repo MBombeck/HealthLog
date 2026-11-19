@@ -27278,7 +27278,9 @@ paths:
       tags:
         - Symptoms
       summary: Hide or delete a symptom (v1.40)
-      description: Hides the definition and keeps its history. `?purge=true` deletes it and every occurrence of it.
+      description: "Hides the definition and keeps its history. `?purge=true` deletes it and every occurrence of it. A
+        built-in definition (`code` set) is not deleted: its occurrences are tombstoned and it stays hidden, so a later
+        Apple Health sync neither recreates it nor re-imports what was removed (a re-post answers `duplicate`)."
       parameters:
         - in: path
           name: id
@@ -98100,8 +98102,8 @@ components:
         - purged
         - eventsDeleted
       additionalProperties: false
-      description: "`purged: false` means the definition was hidden and its history kept; `purged: true` means it and
-        `eventsDeleted` occurrences were removed."
+      description: "`purged: false` means the definition was hidden and its history kept; `purged: true` means `eventsDeleted`
+        occurrences were removed, and the definition with them unless it is built-in (`code` set), which stays hidden."
     ListSymptomEventsEnvelope:
       type: object
       properties:

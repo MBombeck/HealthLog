@@ -159,7 +159,7 @@ const deletedResponse = z
   .meta({
     id: "SymptomDefinitionDeleted",
     description:
-      "`purged: false` means the definition was hidden and its history kept; `purged: true` means it and `eventsDeleted` occurrences were removed.",
+      "`purged: false` means the definition was hidden and its history kept; `purged: true` means `eventsDeleted` occurrences were removed, and the definition with them unless it is built-in (`code` set), which stays hidden.",
   });
 
 const symptomBatchRequest = symptomBatchPayloadSchema.meta({
@@ -315,7 +315,7 @@ export const symptomPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Symptoms"],
       summary: "Hide or delete a symptom (v1.40)",
       description:
-        "Hides the definition and keeps its history. `?purge=true` deletes it and every occurrence of it.",
+        "Hides the definition and keeps its history. `?purge=true` deletes it and every occurrence of it. A built-in definition (`code` set) is not deleted: its occurrences are tombstoned and it stays hidden, so a later Apple Health sync neither recreates it nor re-imports what was removed (a re-post answers `duplicate`).",
       requestParams: {
         ...pathId,
         query: z.object({ purge: z.enum(["true", "false"]).optional() }),

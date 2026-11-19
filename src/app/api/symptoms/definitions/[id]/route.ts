@@ -7,7 +7,8 @@
  *          one keeps its code through every edit, so Apple Health still lands
  *          on it.
  *   DELETE /api/symptoms/definitions/{id} — hide by default (history kept);
- *          `?purge=true` deletes the definition and every event of it.
+ *          `?purge=true` deletes the definition and every event of it; a
+ *          built-in one is hidden instead and its events tombstoned.
  *
  * Owner-scoped: another account's id is a 404. Module-gated on the record.
  * The label is never logged.
@@ -183,6 +184,7 @@ export const DELETE = apiHandler(
       where: { id, userId: user.id },
       select: {
         id: true,
+        code: true,
         createdAt: true,
         // Live occurrences only: a tombstone is not one the person has.
         _count: { select: { events: { where: { deletedAt: null } } } },
@@ -191,7 +193,29 @@ export const DELETE = apiHandler(
     if (!existing) return notFound();
 
     const purge = request.nextUrl.searchParams.get("purge") === "true";
-    if (purge) {
+    // A built-in definition is never removed: Apple Health would recreate it
+    // on the next sample and re-import every occurrence the person removed.
+    // Its occurrences are tombstoned instead (source and externalId kept, so a
+    // re-post answers `duplicate`) and the definition is hidden, which ingest
+    // never undoes.
+    const builtIn = existing.code !== null;
+    if (purge && builtIn) {
+      const now = new Date();
+      await prisma.$transaction([
+        prisma.symptomEvent.updateMany({
+          where: {
+            userId: user.id,
+            definitionId: existing.id,
+            deletedAt: null,
+          },
+          data: { deletedAt: now },
+        }),
+        prisma.symptomDefinition.update({
+          where: { id: existing.id },
+          data: { isActive: false },
+        }),
+      ]);
+    } else if (purge) {
       // The FK cascade removes the events with it.
       await prisma.symptomDefinition.delete({ where: { id: existing.id } });
     } else {
@@ -206,15 +230,23 @@ export const DELETE = apiHandler(
       ipAddress: getClientIp(request),
       // C3 on the purge arm: the definition and its events are gone, so the
       // audit row names what went. The label stays out (the person's words).
-      details: purge
-        ? destroyedDetails({
-            model: "SymptomDefinition",
-            id,
-            label: null,
-            effectiveAt: existing.createdAt,
-            extra: { eventsDeleted: existing._count.events },
-          })
-        : { definitionId: id, purge },
+      details:
+        purge && builtIn
+          ? {
+              definitionId: id,
+              purge,
+              builtIn,
+              eventsTombstoned: existing._count.events,
+            }
+          : purge
+            ? destroyedDetails({
+                model: "SymptomDefinition",
+                id,
+                label: null,
+                effectiveAt: existing.createdAt,
+                extra: { eventsDeleted: existing._count.events },
+              })
+            : { definitionId: id, purge },
     });
 
     invalidateUserHealthContext(user.id);
@@ -225,7 +257,7 @@ export const DELETE = apiHandler(
         entity_type: "symptom_definition",
         entity_id: id,
       },
-      meta: { purge },
+      meta: { purge, built_in: builtIn },
     });
 
     return apiSuccess({
