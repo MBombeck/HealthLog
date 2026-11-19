@@ -69,9 +69,13 @@ import {
 } from "@/lib/export/measurement-bulk-insert";
 import { resolveHkWorkoutSportType } from "@/lib/measurements/hk-workout-activity-type-map";
 import {
-  convertHkValue,
-  hkDistanceToMetres,
-} from "@/lib/measurements/hk-units";
+  addWorkoutStatistics,
+  adoptLegacyWorkoutKeys,
+  exportWorkoutFigures,
+  fillFromWorkoutStatistics,
+  workoutExternalId,
+  type PreparedWorkout,
+} from "@/lib/measurements/apple-health-export-workouts";
 import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit";
 import { maybeEnqueueMorningRefresh } from "@/lib/daily/morning-refresh-trigger";
 import { emitDataArrival } from "@/lib/arrivals/emit-shared";
@@ -226,46 +230,6 @@ function kindOf(type: MeasurementType): string {
     : type;
 }
 
-/** Flush row written to the `Workout` table. */
-interface PreparedWorkout {
-  userId: string;
-  sportType: string;
-  startedAt: Date;
-  endedAt: Date;
-  durationSec: number;
-  totalEnergyKcal: number | null;
-  totalDistanceM: number | null;
-  avgHeartRate: number | null;
-  minHeartRate: number | null;
-  maxHeartRate: number | null;
-  externalId: string;
-  /**
-   * The key this workout was stored under before #1414
-   * (`hashSampleKey` over the raw attribute strings). A row still carrying
-   * it takes the new key instead of gaining a twin.
-   */
-  legacyExternalId: string;
-  externalSourceVersion: string | null;
-  metadata: Prisma.JsonValue | null;
-  /** The `<FileReference path>` of the workout's GPS track, when it has one. */
-  routePath?: string;
-  /** Totals from the workout's `<WorkoutStatistics>` children. */
-  statistics: WorkoutStatisticsTotals;
-}
-
-/**
- * What a workout's `<WorkoutStatistics>` children add up to. Current iOS
- * exports carry the totals there rather than as attributes on `<Workout>`;
- * they fill a field only where the attributes left it empty.
- */
-interface WorkoutStatisticsTotals {
-  energyKcal: number | null;
-  distanceM: number | null;
-  avgHeartRate: number | null;
-  minHeartRate: number | null;
-  maxHeartRate: number | null;
-}
-
 type CumulativeSourceSubtotals = Map<string, number>;
 
 /** Per-type running stats accumulator. */
@@ -274,69 +238,6 @@ interface MutableTypeStat {
   inserted: number;
   updated: number;
   durationMs: number;
-}
-
-const HK_ACTIVE_ENERGY = "HKQuantityTypeIdentifierActiveEnergyBurned";
-const HK_HEART_RATE = "HKQuantityTypeIdentifierHeartRate";
-const HK_DISTANCE_PREFIX = "HKQuantityTypeIdentifierDistance";
-
-function finiteAttr(raw: string | undefined): number | null {
-  if (raw === undefined) return null;
-  const value = Number.parseFloat(raw);
-  return Number.isFinite(value) ? value : null;
-}
-
-/** A heart rate in beats per minute, rounded; null when it is not one. */
-function bpm(raw: string | undefined, unit: string): number | null {
-  const value = finiteAttr(raw);
-  if (value === null || value < 0) return null;
-  // Apple writes `count/min`; any other unit is not read as a rate.
-  if (unit !== "count/min") return null;
-  return Math.round(value);
-}
-
-/**
- * Fold one `<WorkoutStatistics>` element into the workout's totals: the
- * active energy and every distance type as sums in the canonical units, the
- * heart rate's average, minimum and maximum. Other types are ignored.
- */
-function addWorkoutStatistics(
-  totals: WorkoutStatisticsTotals,
-  attrs: Record<string, string>,
-): void {
-  const type = attrs.type ?? "";
-  const unit = (attrs.unit ?? "").trim();
-  if (type === HK_ACTIVE_ENERGY) {
-    const sum = finiteAttr(attrs.sum);
-    if (sum === null || sum < 0) return;
-    const kcal = convertHkValue(sum, unit, "kcal");
-    if (kcal === null) return;
-    totals.energyKcal = (totals.energyKcal ?? 0) + kcal;
-    return;
-  }
-  if (type.startsWith(HK_DISTANCE_PREFIX)) {
-    const sum = finiteAttr(attrs.sum);
-    if (sum === null || sum < 0) return;
-    const metres = convertHkValue(sum, unit, "m");
-    if (metres === null) return;
-    totals.distanceM = (totals.distanceM ?? 0) + metres;
-    return;
-  }
-  if (type === HK_HEART_RATE) {
-    totals.avgHeartRate = bpm(attrs.average, unit) ?? totals.avgHeartRate;
-    totals.minHeartRate = bpm(attrs.minimum, unit) ?? totals.minHeartRate;
-    totals.maxHeartRate = bpm(attrs.maximum, unit) ?? totals.maxHeartRate;
-  }
-}
-
-/** The statistics fill each field the `<Workout>` attributes left empty. */
-function fillFromWorkoutStatistics(workout: PreparedWorkout): void {
-  const stats = workout.statistics;
-  workout.totalEnergyKcal ??= stats.energyKcal;
-  workout.totalDistanceM ??= stats.distanceM;
-  workout.avgHeartRate ??= stats.avgHeartRate;
-  workout.minHeartRate ??= stats.minHeartRate;
-  workout.maxHeartRate ??= stats.maxHeartRate;
 }
 
 /** Tick frequency for the live `ImportJob.progress` write. */
@@ -361,32 +262,6 @@ export function hashSampleKey(
     "sample:" +
     createHash("sha256")
       .update(`${hkIdentifier}|${value}|${startDate}|${endDate}`)
-      .digest("hex")
-      .slice(0, 28)
-  );
-}
-
-/**
- * The identity of a workout read from an export (#1414): its activity type
- * and its start and end as UTC instants. The raw attribute strings it used to
- * hash are not stable across exports: the same workout comes back with its
- * dates written in another offset and its duration at another precision, and
- * each new spelling inserted it again. Migration 0513 moved the stored rows
- * onto this key with the same formula in SQL (`sha256` over
- * `activity|startMs|endMs`, the empty activity read as `Workout`); the two
- * must not drift apart.
- */
-export function workoutExternalId(
-  activityType: string,
-  startedAt: Date,
-  endedAt: Date,
-): string {
-  return (
-    "workout:" +
-    createHash("sha256")
-      .update(
-        `${activityType || "Workout"}|${startedAt.getTime()}|${endedAt.getTime()}`,
-      )
       .digest("hex")
       .slice(0, 28)
   );
@@ -1079,52 +954,10 @@ export async function streamParseExportXml(
     }
   };
 
-  /**
-   * A row stored under a workout's pre-#1414 key takes the new key, so the
-   * insert below finds it and updates it instead of adding a twin. Migration
-   * 0513 moved every row it could place; this catches a row it could not
-   * (one stored without its activity type). Where a row already holds the
-   * new key, the old one is left alone.
-   */
-  const adoptLegacyWorkoutKeys = async (
-    chunk: readonly PreparedWorkout[],
-  ): Promise<void> => {
-    const legacy = chunk
-      .filter((row) => row.legacyExternalId !== row.externalId)
-      .map((row) => row.legacyExternalId);
-    if (legacy.length === 0) return;
-    const held = await prisma.workout.findMany({
-      where: {
-        userId,
-        source: "APPLE_HEALTH",
-        externalId: { in: [...legacy, ...chunk.map((row) => row.externalId)] },
-      },
-      select: { externalId: true },
-    });
-    const keys = new Set(held.map((row) => row.externalId));
-    for (const row of chunk) {
-      if (!keys.has(row.legacyExternalId) || keys.has(row.externalId)) {
-        continue;
-      }
-      await prisma.workout.update({
-        where: {
-          userId_source_externalId: {
-            userId,
-            source: "APPLE_HEALTH",
-            externalId: row.legacyExternalId,
-          },
-        },
-        data: { externalId: row.externalId },
-      });
-      keys.delete(row.legacyExternalId);
-      keys.add(row.externalId);
-    }
-  };
-
   const flushWorkoutBatch = async (): Promise<void> => {
     if (workoutBatch.length === 0) return;
     const chunk = workoutBatch.splice(0, workoutBatch.length);
-    await adoptLegacyWorkoutKeys(chunk);
+    await adoptLegacyWorkoutKeys(prisma, userId, chunk);
     const insertedArrivals: Array<{ id: string; startedAt: Date }> = [];
     const createData: Prisma.WorkoutCreateManyInput[] = chunk.map((row) => ({
       userId,
@@ -1571,18 +1404,6 @@ export async function streamParseExportXml(
         Math.round((endDate.getTime() - startDate.getTime()) / 1000),
       );
 
-      const totalDistance = Number.parseFloat(attrs.totalDistance ?? "");
-      const totalEnergy = Number.parseFloat(attrs.totalEnergyBurned ?? "");
-      const distanceUnit = attrs.totalDistanceUnit ?? "";
-      const energyUnit = attrs.totalEnergyBurnedUnit ?? "";
-      // Apple ships the ACCOUNT's own length unit on HKWorkout.totalDistance
-      // (km for a metric account, mi for an imperial one); metres is the
-      // canonical DB unit. issue #944 — the same conversion the `<Record>`
-      // path now runs, so the two can never drift apart again.
-      const distanceM = Number.isFinite(totalDistance)
-        ? hkDistanceToMetres(totalDistance, distanceUnit)
-        : null;
-
       const externalId = workoutExternalId(activityType, startDate, endDate);
       const legacyExternalId = hashSampleKey(
         activityType || "Workout",
@@ -1597,17 +1418,7 @@ export async function streamParseExportXml(
         startedAt: startDate,
         endedAt: endDate,
         durationSec,
-        totalEnergyKcal: Number.isFinite(totalEnergy)
-          ? // issue #944 — the energy attribute carries the account's own
-            // unit too: a Health app set to kilojoules writes `kJ` here, and
-            // the column is kilocalories. Same shared conversion; an unknown
-            // unit leaves the number alone.
-            (convertHkValue(totalEnergy, energyUnit, "kcal") ?? totalEnergy)
-          : null,
-        totalDistanceM: distanceM,
-        avgHeartRate: null,
-        minHeartRate: null,
-        maxHeartRate: null,
+        ...exportWorkoutFigures(attrs),
         externalId,
         legacyExternalId,
         externalSourceVersion: attrs.sourceVersion ?? null,
@@ -1615,16 +1426,9 @@ export async function streamParseExportXml(
           activityType,
           sourceName: attrs.sourceName ?? null,
           durationUnit: attrs.durationUnit ?? null,
-          totalDistanceUnit: distanceUnit || null,
+          totalDistanceUnit: attrs.totalDistanceUnit || null,
           totalEnergyBurnedUnit: attrs.totalEnergyBurnedUnit ?? null,
         } as Prisma.JsonValue,
-        statistics: {
-          energyKcal: null,
-          distanceM: null,
-          avgHeartRate: null,
-          minHeartRate: null,
-          maxHeartRate: null,
-        },
       };
       return;
     }

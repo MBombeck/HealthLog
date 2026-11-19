@@ -45,9 +45,9 @@ vi.mock("@/lib/cycle/gate", () => ({
 }));
 
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
+import { workoutExternalId } from "../apple-health-export-workouts";
 import {
   hashSampleKey,
-  workoutExternalId,
   parseRecordValue,
   streamParseExportXml,
   SLEEP_STAGE_NAME_TO_CODEPOINT,

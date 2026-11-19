@@ -20,10 +20,10 @@ import { join, resolve } from "node:path";
 
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { workoutExternalId } from "@/lib/measurements/apple-health-export-workouts";
 import {
   hashSampleKey,
   streamParseExportXml,
-  workoutExternalId,
 } from "@/lib/measurements/import-apple-health-export";
 
 import { makeUser } from "../kit/factories";
