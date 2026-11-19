@@ -9,7 +9,7 @@
  * converted when the conversion is known and kept beside what the report
  * said, and a unit that does not convert is refused.
  *
- * Two duplicate checks, in this order:
+ * Two duplicate checks, in this order, both before a unit is refused:
  *   1. the identity (`externalId`) under `source = APPLE_HEALTH`, against
  *      every row including the deleted ones and against the import ledger
  *      that keeps a deleted reading's identity once its row is gone
@@ -75,6 +75,8 @@ interface Pending {
   at: number;
   reading: MappedFhirLab;
   markerId: string | null;
+  /** False when the marker's unit cannot take the reading's. */
+  unitFits: boolean;
 }
 
 export async function writeFhirLabReadings(args: {
@@ -149,7 +151,9 @@ export async function writeFhirLabReadings(args: {
       held.add(id);
     }
 
-    // 2. The marker, and whether the unit fits it.
+    // 2. The marker, and whether the unit fits it. A misfit is refused only
+    //    after the live-record check below, so a reading already held under
+    //    another spelling of its unit counts as a duplicate.
     const planned: Pending[] = [];
     for (const { at, reading } of fresh) {
       if (held.has(reading.externalId)) {
@@ -162,10 +166,10 @@ export async function writeFhirLabReadings(args: {
         reading.valueText === null ? reading.unit : null,
         { catalogKey: reading.catalogKey },
       );
-      if (
-        hit &&
-        reading.value !== null &&
-        !unitFitsMarker(
+      const unitFits =
+        !hit ||
+        reading.value === null ||
+        unitFitsMarker(
           {
             unit: hit.marker.unit,
             analyteKey:
@@ -176,15 +180,12 @@ export async function writeFhirLabReadings(args: {
           },
           reading.unit,
           reading.catalogKey,
-        )
-      ) {
-        failed(at, "unit_mismatch");
-        continue;
-      }
+        );
       planned.push({
         at,
         reading,
         markerId: hit?.marker.id ?? null,
+        unitFits,
       });
     }
 
@@ -209,8 +210,15 @@ export async function writeFhirLabReadings(args: {
         ...readingKeys(probe, tz),
         ...readingKeys({ ...probe, biomarkerId: null }, tz),
       ];
+      // A reading the record already holds is a duplicate even when its unit
+      // is spelled in a way the marker's does not match: nothing is missing,
+      // so it is not reported as a failure (#1421).
       if (keys.some((k) => existingKeys.has(k) || seenKeys.has(k))) {
         duplicate(plan.at);
+        continue;
+      }
+      if (!plan.unitFits) {
+        failed(plan.at, "unit_mismatch");
         continue;
       }
 

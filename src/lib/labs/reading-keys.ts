@@ -18,9 +18,30 @@ export const LAB_TEXT_LIMITS = {
 } as const;
 
 /**
+ * A censored result (`<5`, `>= 90 mL/min`): the number it is bounded by, and
+ * the unit printed after it, lower-cased, when there is one. Null for any
+ * other text. Migration 0513 reads the same shape in SQL.
+ */
+const CENSORED = /^\s*(?:<=|>=|≤|≥|<|>)\s*(-?\d+(?:\.\d+)?)(?:\s+(\S.*?))?\s*$/;
+
+export function censoredBound(
+  text: string,
+): { value: number; unit: string | null } | null {
+  const match = CENSORED.exec(text);
+  if (!match) return null;
+  const value = Number.parseFloat(match[1]);
+  if (!Number.isFinite(value)) return null;
+  return { value, unit: match[2] ? match[2].trim().toLowerCase() : null };
+}
+
+/**
  * The keys a reading is a duplicate under, mirroring the scan commit's
  * `isDuplicate`: the marker (or the name, for a reading filed without one),
  * the reading's calendar day, and the value as stored, as printed, or as text.
+ *
+ * A censored text result also answers to the number it is bounded by (#1421):
+ * a report's `<5` and the 5 already typed from the same report are one
+ * reading, whichever arrived first.
  */
 export function readingKeys(
   reading: {
@@ -52,6 +73,11 @@ export function readingKeys(
   }
   if (reading.valueText !== null) {
     keys.push(`${who}|${day}|t:${reading.valueText.trim().toLowerCase()}`);
+    const bound = censoredBound(reading.valueText);
+    if (bound) {
+      keys.push(`${who}|${day}|n:${bound.value}`);
+      if (bound.unit) keys.push(`${who}|${day}|s:${bound.value}:${bound.unit}`);
+    }
   }
   return keys;
 }
