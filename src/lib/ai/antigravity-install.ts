@@ -21,7 +21,6 @@ import {
 } from "./antigravity-release";
 
 export {
-  AGY_PINNED_VERSION,
   compareSemver,
   resolveAntigravityBinary,
   type AntigravityReleaseInfo,
