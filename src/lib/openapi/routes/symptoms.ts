@@ -432,7 +432,7 @@ export const symptomPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Symptoms"],
       summary: "Edit a symptom occurrence (v1.40)",
       description:
-        "Partial edit. An occurrence imported from Apple Health is edited like any other and keeps its source and externalId; a re-post of its sample never overwrites the edit. Audits as `symptoms.event.update`, naming a note change without quoting it.",
+        "Partial edit. An occurrence imported from Apple Health is edited like any other and keeps its source and externalId; a re-post of its sample never overwrites the edit. An `occurredAt` moved past the stored `endAt` clears `endAt`. Audits as `symptoms.event.update`, naming a note change without quoting it.",
       requestParams: pathId,
       requestBody: {
         required: true,

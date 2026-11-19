@@ -66,11 +66,19 @@ export const PATCH = apiHandler(
       select: {
         id: true,
         occurredAt: true,
+        endAt: true,
         intensity: true,
         episodeId: true,
       },
     });
     if (!existing) return notFound();
+
+    // A new start past the stored end would leave the span running backwards;
+    // the end then no longer describes the occurrence and is cleared.
+    const endPassed =
+      entry.occurredAt !== undefined &&
+      existing.endAt !== null &&
+      entry.occurredAt.getTime() > existing.endAt.getTime();
 
     // A new link is checked against the time the occurrence will have after
     // this edit, so moving it and filing it in one save is judged as a whole.
@@ -94,6 +102,7 @@ export const PATCH = apiHandler(
         ...(entry.occurredAt !== undefined
           ? { occurredAt: entry.occurredAt }
           : {}),
+        ...(endPassed ? { endAt: null } : {}),
         ...(entry.intensity !== undefined
           ? { intensity: entry.intensity }
           : {}),

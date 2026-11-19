@@ -586,6 +586,46 @@ describe("DELETE /api/symptoms/events/by-external-ids", () => {
   });
 });
 
+describe("editing an imported occurrence's time", () => {
+  it("clears an end the new start has moved past, and keeps one still after it", async () => {
+    const id = "A0000000-0000-4000-8000-0000000000f1";
+    const start = Date.now() - 6 * HOUR;
+    await ingest([
+      sample(id, {
+        occurredAt: new Date(start).toISOString(),
+        endAt: new Date(start + 2 * HOUR).toISOString(),
+      }),
+    ]);
+    const prisma = getPrismaClient();
+    const row = await prisma.symptomEvent.findFirstOrThrow({
+      where: { externalId: id },
+    });
+    const { PATCH } = await import("@/app/api/symptoms/events/[id]/route");
+    const patch = (occurredAt: number) =>
+      call(
+        PATCH,
+        "PATCH",
+        `/api/symptoms/events/${row.id}`,
+        { occurredAt: new Date(occurredAt).toISOString() },
+        { id: row.id },
+      );
+
+    // Still before the end: the end stays.
+    expect((await patch(start + HOUR)).status).toBe(200);
+    expect(
+      (await prisma.symptomEvent.findUniqueOrThrow({ where: { id: row.id } }))
+        .endAt,
+    ).toEqual(new Date(start + 2 * HOUR));
+
+    // Past the end: the end goes, so the span never runs backwards.
+    expect((await patch(start + 3 * HOUR)).status).toBe(200);
+    expect(
+      (await prisma.symptomEvent.findUniqueOrThrow({ where: { id: row.id } }))
+        .endAt,
+    ).toBeNull();
+  });
+});
+
 describe("purging a built-in definition", () => {
   it("tombstones its imports and hides it, so a re-sync brings nothing back", async () => {
     const id = "A0000000-0000-4000-8000-0000000000e1";
