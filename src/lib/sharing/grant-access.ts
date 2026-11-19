@@ -289,3 +289,30 @@ export async function grantIdAllows(
   if (!grant) return false;
   return grantAllows(grant, need, now) && grantCoversDomain(grant, domain);
 }
+
+/**
+ * #1408 — whether the request resolved under `grantId` would be admitted by a
+ * route declaring `requireRecordAuth("guardian", domain)`: the record's owner
+ * (`null`), or a live MANAGE grant over `domain` on a record that carries the
+ * managed-profile marker. The same three facts the resolver's guardian arm
+ * reads, re-read here for the reason {@link grantIdAllows} gives: a READ that
+ * advertises a guardian action must answer as that action's route would.
+ */
+export async function grantIdAllowsGuardian(
+  grantId: string | null,
+  domain: ShareScope,
+  db: GrantDb = prisma,
+  now: Date = new Date(),
+): Promise<boolean> {
+  if (grantId === null) return true;
+  const grant = await db.accountGrant.findUnique({
+    where: { id: grantId },
+    include: { grantor: { select: { managedProfileAt: true } } },
+  });
+  if (!grant) return false;
+  return (
+    grantAllows(grant, "manage", now) &&
+    grant.grantor.managedProfileAt !== null &&
+    grantCoversDomain(grant, domain)
+  );
+}

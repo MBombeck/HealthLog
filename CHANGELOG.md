@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.48.1] — 2026-11-19
+
+### Fixed
+
+- **A managed profile's medication page works for its guardian.** The
+  compliance figure, the dose history, the Effect tab and the schedule
+  answered 403 while you acted on another profile, so a guardian could not
+  see or change a child's medication schedule at all. A guardian of a
+  managed profile can now read all of it and create, change and end the
+  schedule's courses and set the Effect tab's target; the activity log names
+  the guardian. A share that covers medications can read the schedule,
+  the compliance figure and the dose history; the Effect view also shows
+  readings and lab values, so it needs a share of the whole record. Shared
+  adult accounts keep the schedule with its owner, at every access level. Thanks to @elchrobert for the report with the log line that pointed
+  straight at it. (#1408)
+- **Clearer dose fields in the medication wizard.** "Units per dose" and
+  "Doses per unit" sat side by side and read almost the same. They are now
+  "Tablets or units per dose" and "Pack size", with a hint that says what
+  each one does, in the wizard and in the packaging dialog alike.
+
 ## [1.48.0] — 2026-11-18
 
 ### Added

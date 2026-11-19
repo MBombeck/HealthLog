@@ -22,6 +22,7 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
@@ -29,6 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { MedicationDetailSection } from "@/components/medications/medication-detail-section";
 import { useAuth } from "@/hooks/use-auth";
+import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useTranslations } from "@/lib/i18n/context";
 import {
   invalidateKeys,
@@ -94,6 +96,13 @@ export function NotificationsBody({
 }: NotificationsSectionProps) {
   const { t } = useTranslations();
   const { isAuthenticated } = useAuth();
+  // #1408 — a managed profile's guardian reaches this switch (it writes the
+  // record's medication), but both reads below describe the CALLER: their
+  // delivery channels and their own iPhone opt-in. Inside somebody else's
+  // record they are not this medication's facts, and the status route refuses
+  // a switched session, so neither is asked there.
+  const { inSharedRecord } = useRecordCapabilities();
+  const readsCallerPrefs = isAuthenticated && !inSharedRecord;
   const queryClient = useQueryClient();
   const [localEnabled, setLocalEnabled] = useState(notificationsEnabled);
   const [submitting, setSubmitting] = useState(false);
@@ -107,7 +116,7 @@ export function NotificationsBody({
     queryFn: async () => {
       return apiGet<NotificationStatusResponse>("/api/notifications/status");
     },
-    enabled: isAuthenticated,
+    enabled: readsCallerPrefs,
     staleTime: 60_000,
   });
 
@@ -116,11 +125,14 @@ export function NotificationsBody({
     queryFn: async () => {
       return apiGet<UserPrefsResponse>("/api/auth/me");
     },
-    enabled: isAuthenticated,
+    enabled: readsCallerPrefs,
     staleTime: 60_000,
   });
 
+  // Gated on the same flag, not only the queries: the `/me` cache cell is
+  // shared with the rest of the app and may already hold the caller's row.
   const clientManaged =
+    readsCallerPrefs &&
     prefs?.notificationPrefs?.medication?.clientManaged === true;
 
   async function flip(next: boolean) {
@@ -200,19 +212,41 @@ export function NotificationsBody({
         </label>
       )}
 
-      {Array.isArray(status?.channels) && status.channels.length > 0 && (
-        <div
-          className="flex flex-wrap gap-1.5"
-          aria-hidden="true"
-          data-slot="notifications-channels-chips"
-        >
-          {status.channels.map((channel) => (
-            <Badge key={channel.type} variant="outline" className="text-xs">
-              {channel.type}
-            </Badge>
-          ))}
-        </div>
-      )}
+      {readsCallerPrefs &&
+        Array.isArray(status?.channels) &&
+        status.channels.length > 0 && (
+          <div
+            className="flex flex-wrap gap-1.5"
+            aria-hidden="true"
+            data-slot="notifications-channels-chips"
+          >
+            {status.channels.map((channel) => (
+              <Badge key={channel.type} variant="outline" className="text-xs">
+                {channel.type}
+              </Badge>
+            ))}
+          </div>
+        )}
     </div>
+  );
+}
+
+/**
+ * Quiet cross-link: WHICH channels deliver the reminder (push / Telegram /
+ * ntfy, quiet hours) is configured globally, not per medication. Those are the
+ * caller's own settings, so the page leaves it out of a shared record.
+ */
+export function ManageChannelsLink() {
+  const { t } = useTranslations();
+  return (
+    <p className="text-muted-foreground text-xs">
+      <Link
+        href="/settings/notifications"
+        className="focus-visible:ring-ring rounded-sm underline underline-offset-2 focus-visible:ring-2 focus-visible:outline-none"
+        data-slot="zeitplan-manage-channels-link"
+      >
+        {t("medications.detail.zeitplan.manageChannels")}
+      </Link>
+    </p>
   );
 }

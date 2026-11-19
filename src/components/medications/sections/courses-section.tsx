@@ -11,7 +11,7 @@
  * Every figure is the server's (`courses`, `canStartCourse`); this file
  * renders them and computes nothing.
  */
-import { useState } from "react";
+import { useState, type ComponentProps } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { CalendarPlus, Loader2, Pencil, Trash2 } from "lucide-react";
 import { showErrorToast } from "@/lib/errors/error-toast";
@@ -38,6 +38,7 @@ import { formatDate } from "@/lib/date-format";
 import { useDateFormatPreference, useTranslations } from "@/lib/i18n/context";
 import { invalidateMedicationReads } from "@/lib/query-keys";
 import { EmptyState } from "@/components/ui/empty-state";
+import { MedicationDetailSection } from "@/components/medications/medication-detail-section";
 
 /** The refusal codes the course routes answer, mapped to their copy. */
 const REFUSAL_KEYS: Record<string, string> = {
@@ -202,12 +203,18 @@ export function CoursesRow({
   courses,
   canStartCourse,
   canEdit,
+  showTitle = true,
 }: {
   medicationId: string;
   courses: MedicationCourseWire[];
   canStartCourse: boolean;
-  /** Course writes are the owner's; a shared record shows the list only. */
+  /**
+   * Course writes are the owner's and, since #1408, a managed profile's
+   * guardian's; an adult's delegate is shown the list only.
+   */
   canEdit: boolean;
+  /** False when a surrounding section already carries the heading. */
+  showTitle?: boolean;
 }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
@@ -241,9 +248,11 @@ export function CoursesRow({
     <div className="space-y-3" data-slot="medication-courses-row">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1">
-          <p className="text-foreground text-sm font-medium">
-            {t("medications.course.title")}
-          </p>
+          {showTitle && (
+            <p className="text-foreground text-sm font-medium">
+              {t("medications.course.title")}
+            </p>
+          )}
           <p className="text-muted-foreground text-xs">
             {t("medications.course.helper")}
           </p>
@@ -381,5 +390,25 @@ export function CoursesRow({
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+/**
+ * #1408 — the courses for a managed profile's guardian. They live under
+ * Erweitert, which stays the owner's, so the guardian finds them on the
+ * schedule tab they run.
+ */
+export function GuardianCoursesSection(
+  props: Omit<ComponentProps<typeof CoursesRow>, "canEdit" | "showTitle">,
+) {
+  const { t } = useTranslations();
+  return (
+    <MedicationDetailSection
+      titleId="medication-zeitplan-courses-heading"
+      title={t("medications.course.title")}
+      dataSlot="medication-zeitplan-courses"
+    >
+      <CoursesRow {...props} canEdit showTitle={false} />
+    </MedicationDetailSection>
   );
 }

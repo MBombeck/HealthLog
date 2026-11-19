@@ -32,7 +32,10 @@
  */
 
 import type { MedicationCourseWire } from "@/components/medications/course-fields";
-import { CoursesRow } from "@/components/medications/sections/courses-section";
+import {
+  CoursesRow,
+  GuardianCoursesSection,
+} from "@/components/medications/sections/courses-section";
 import {
   COMPOSITION_CATEGORIES,
   CompositionRow,
@@ -40,7 +43,10 @@ import {
 } from "@/components/medications/sections/composition-section";
 import type { MedicationIngredientDto } from "@/components/medications/sections/use-composition";
 import { useAuth } from "@/hooks/use-auth";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import {
+  holdsGuardianSurfaces,
+  useRecordCapabilities,
+} from "@/hooks/use-record-capabilities";
 import {
   useCallback,
   useEffect,
@@ -71,7 +77,10 @@ import { ScheduleHistoryTimeline } from "@/components/medications/scheduling/sch
 import type { DoseWindowEntry } from "@/components/medications/scheduling/dose-window";
 import { IntakeImportDialog } from "@/components/medications/intake-import-dialog";
 import { InventorySection } from "@/components/medications/sections/inventory-section";
-import { NotificationsBody } from "@/components/medications/sections/notifications-section";
+import {
+  ManageChannelsLink,
+  NotificationsBody,
+} from "@/components/medications/sections/notifications-section";
 import {
   DrugCodingRow,
   GraceRow,
@@ -218,7 +227,10 @@ export interface MedicationDetailSnapshot {
  */
 const OWNER_ONLY_TABS: ReadonlySet<TabSlug> = new Set([
   // Schedule times are a MANAGE route, but the tab also carries the reminder
-  // and notification settings, which resolve the caller.
+  // and notification settings, which resolve the caller. #1408 — a managed
+  // profile's guardian is the exception: they run the profile's schedule, the
+  // tab's writes are MANAGE or `"guardian"` routes, and the caller-resolving
+  // reads inside it stay quiet in a shared record. See `runsSchedule`.
   "schedule",
   // Phase config, export and the per-medication tokens (a credential
   // surface, never delegated) resolve the caller.
@@ -290,8 +302,11 @@ export function MedicationDetailTabs({
   );
   const { t } = useTranslations();
   const fmt = useFormatters();
-  const { canManageDomain, inSharedRecord } = useRecordCapabilities();
+  const recordCaps = useRecordCapabilities();
+  const { canManageDomain, inSharedRecord } = recordCaps;
   const canManageMedications = canManageDomain("medications");
+  // #1408 — the owner or a managed profile's guardian; no adult delegate.
+  const runsSchedule = holdsGuardianSurfaces(recordCaps);
   // Read live (`@/lib/url-state`): the tab is written here.
   const searchParams = useUrlSearch();
 
@@ -366,7 +381,9 @@ export function MedicationDetailTabs({
           (slug !== "injection" || isInjectable) &&
           (slug !== "schedule" || !asNeeded) &&
           (slug !== "effect" || hasEfficacyTarget) &&
-          (!inSharedRecord || !OWNER_ONLY_TABS.has(slug)) &&
+          (!inSharedRecord ||
+            !OWNER_ONLY_TABS.has(slug) ||
+            (slug === "schedule" && runsSchedule)) &&
           (canManageMedications || !MANAGE_TABS.has(slug)),
       ),
     [
@@ -374,6 +391,7 @@ export function MedicationDetailTabs({
       asNeeded,
       hasEfficacyTarget,
       inSharedRecord,
+      runsSchedule,
       canManageMedications,
     ],
   );
@@ -394,6 +412,13 @@ export function MedicationDetailTabs({
     // write keeps the viewport pinned to the tab strip on switch.
     writeUrlState((params) => params.set("tab", next));
   }, []);
+
+  // No jump link into a tab this viewer is not offered.
+  const jumpTo = useCallback(
+    (slug: TabSlug): (() => void) | undefined =>
+      availableTabs.includes(slug) ? () => onTabChange(slug) : undefined,
+    [availableTabs, onTabChange],
+  );
 
   const { data: compliance } = useQuery({
     queryKey: queryKeys.medicationCompliance(id),
@@ -559,7 +584,7 @@ export function MedicationDetailTabs({
                     ? t("medications.detail.uebersicht.jumpToVerlauf")
                     : t("medications.detail.uebersicht.jumpToZeitplan")
                 }
-                onJump={() => onTabChange(asNeeded ? "history" : "schedule")}
+                onJump={jumpTo(asNeeded ? "history" : "schedule")}
                 dataSlot="uebersicht-next-dose"
               />
               {/* v1.16.11 — as-needed never reminds; the row would only
@@ -573,7 +598,7 @@ export function MedicationDetailTabs({
                       : t("medications.detail.uebersicht.reminderOff")
                   }
                   jumpLabel={t("medications.detail.uebersicht.jumpToZeitplan")}
-                  onJump={() => onTabChange("schedule")}
+                  onJump={jumpTo("schedule")}
                   dataSlot="uebersicht-reminder"
                 />
               )}
@@ -615,7 +640,7 @@ export function MedicationDetailTabs({
                     </>
                   }
                   jumpLabel={t("medications.detail.uebersicht.jumpToBestand")}
-                  onJump={() => onTabChange("supply")}
+                  onJump={jumpTo("supply")}
                   dataSlot="uebersicht-supply"
                 />
               )}
@@ -767,20 +792,19 @@ export function MedicationDetailTabs({
                     doseWindows: s.doseWindows,
                   }))}
                 />
-                {/* Quiet cross-link: WHICH channels deliver the reminder
-                  (push / Telegram / ntfy, quiet hours) is configured
-                  globally, not per medication. */}
-                <p className="text-muted-foreground text-xs">
-                  <Link
-                    href="/settings/notifications"
-                    className="focus-visible:ring-ring rounded-sm underline underline-offset-2 focus-visible:ring-2 focus-visible:outline-none"
-                    data-slot="zeitplan-manage-channels-link"
-                  >
-                    {t("medications.detail.zeitplan.manageChannels")}
-                  </Link>
-                </p>
+                {!inSharedRecord && <ManageChannelsLink />}
               </div>
             </MedicationDetailSection>
+          )}
+
+          {/* #1408 — Erweitert stays the owner's, so a guardian's courses
+              ride on this tab. */}
+          {inSharedRecord && runsSchedule && (
+            <GuardianCoursesSection
+              medicationId={id}
+              courses={medication.courses ?? []}
+              canStartCourse={medication.canStartCourse === true}
+            />
           )}
 
           {/* PLANHISTORIE — archived schedule eras (v1.16.3 effective
@@ -1047,7 +1071,8 @@ function StatusRow({
   label: string;
   value: ReactNode;
   jumpLabel: string;
-  onJump: () => void;
+  /** Absent when the tab it would open is not offered to this viewer. */
+  onJump?: () => void;
   dataSlot: string;
 }) {
   return (
@@ -1059,13 +1084,15 @@ function StatusRow({
         <p className="text-muted-foreground text-xs font-medium">{label}</p>
         <p className="text-foreground text-sm">{value}</p>
       </div>
-      <InlineAction
-        onClick={onJump}
-        className="shrink-0"
-        data-slot={`${dataSlot}-jump`}
-      >
-        {jumpLabel}
-      </InlineAction>
+      {onJump && (
+        <InlineAction
+          onClick={onJump}
+          className="shrink-0"
+          data-slot={`${dataSlot}-jump`}
+        >
+          {jumpLabel}
+        </InlineAction>
+      )}
     </li>
   );
 }

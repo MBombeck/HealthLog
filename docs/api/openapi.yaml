@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.48.0
+  version: 1.48.1
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -7438,7 +7438,8 @@ paths:
       tags:
         - Medications
       summary: Read a medication's courses
-      description: v1.40 (#1024) — the same resolved course fields the list and detail reads carry. Owner-only.
+      description: v1.40 (#1024) — the same resolved course fields the list and detail reads carry. Readable by the record's
+        owner and by any delegate whose grant opens its medications.
       parameters:
         - in: path
           name: id
@@ -7453,7 +7454,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MedicationCoursesResponse"
         "401": *a1
-        "403": *a9
+        "403": *a20
         "404":
           description: Medication not found (or another user's).
           content:
@@ -7469,7 +7470,8 @@ paths:
       description: "v1.40 (#1024) — adds a course and, in the same transaction, rewrites the medication's `startsOn`/`endsOn`
         to the latest course, so reminders and `intakeActionable` follow with no further write. Refusals: 422
         `medications.course.overlap`, `medications.course.currentOpen`, `medications.course.oneShot`,
-        `medications.course.invalidRange`, `medications.course.invalid` (body). Owner-only."
+        `medications.course.invalidRange`, `medications.course.invalid` (body). The record's owner, or the guardian of a
+        managed profile (#1408); an adult's delegate is refused with 403 at every level."
       parameters:
         - in: path
           name: id
@@ -7491,7 +7493,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateMedicationCourseResponse"
         "401": *a1
-        "403": *a9
+        "403": *a20
         "404":
           description: Medication not found (or another user's).
           content:
@@ -7551,7 +7553,7 @@ paths:
         - Medications
       summary: Edit a course
       description: v1.40 (#1024) — field by field; the medication's window is re-projected in the same transaction. Same
-        refusals as the create. Owner-only.
+        refusals and the same callers as the create.
       parameters:
         - in: path
           name: id
@@ -7577,7 +7579,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateMedicationCourseResponse"
         "401": *a1
-        "403": *a9
+        "403": *a20
         "404":
           description: Course not found (`medications.course.notFound`), or another user's.
           content:
@@ -7591,7 +7593,8 @@ paths:
         - Medications
       summary: Delete a course
       description: v1.40 (#1024) — deletes the course and re-projects the medication's window. Deleting the only course makes
-        the medication continuous again (both window columns cleared). Intakes are not touched. Owner-only.
+        the medication continuous again (both window columns cleared). Intakes are not touched. Same callers as the
+        create.
       parameters:
         - in: path
           name: id
@@ -7611,7 +7614,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteMedicationCourseResponse"
         "401": *a1
-        "403": *a9
+        "403": *a20
         "404":
           description: Course not found (`medications.course.notFound`), or another user's.
           content:
@@ -8237,7 +8240,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetMedicationComplianceResponse"
         "401": *a1
-        "403": *a9
+        "403": *a20
         "404":
           description: Medication not found (or owned by another user).
           content:
@@ -8270,7 +8273,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetMedicationEfficacyResponse"
         "401": *a1
-        "403": *a9
+        "403": *a20
         "404":
           description: Medication not found (or owned by another user).
           content:
@@ -8286,7 +8289,8 @@ paths:
       summary: Set or clear the efficacy-target override
       description: Persists the user's explicit efficacy target for a medication (the only thing the view stores; everything
         else is derived each read). Pin exactly one of `measurementType` / `biomarkerId`, or pass `clear:true` to revert
-        to the derived target.
+        to the derived target. The record's owner, or the guardian of a managed profile (#1408); an adult's delegate is
+        refused with 403 at every level.
       parameters:
         - in: path
           name: id
@@ -8307,7 +8311,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/SetMedicationEfficacyTargetResponse"
         "401": *a1
-        "403": *a9
+        "403": *a20
         "404":
           description: Medication or biomarker not found.
           content:
@@ -8325,7 +8329,8 @@ paths:
         (taken on-time / taken late / skipped / missed / upcoming) plus every off-schedule intake tagged ad-hoc. Built
         from the SAME band minter + `reconstructDoseHistory` the compliance % consumes, so the history view and the rate
         can never disagree. v1.32.8 (iOS #64) surfaces `intake.source` so a client can label how each dose was recorded.
-        Ownership-scoped; rate-limited 60/min/user; reads only non-deleted rows. Auth via cookie or Bearer."
+        Ownership-scoped to the record the request resolves (a delegate whose grant opens the medications reads the
+        owner's ledger); rate-limited 60/min per caller; reads only non-deleted rows. Auth via cookie or Bearer."
       parameters:
         - in: path
           name: id
@@ -8364,7 +8369,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetDoseHistoryResponse"
         "401": *a1
-        "403": *a9
+        "403": *a20
         "404":
           description: Medication not found (or owned by another user).
           content:
@@ -59402,8 +59407,8 @@ components:
           description: "v1.40 — whether `POST /api/medications/{id}/courses` may start a new course now: the medication is active,
             not one-time, has a course and every course's last day is before today (a course ended today with `POST
             /api/medications/{id}/courses/end` is over, but a course starting today would share its last day, so the
-            start is offered from the next day), and the caller is the record's owner (starting a course is not
-            delegable, so a delegate always reads false)."
+            start is offered from the next day), and the caller may start one: the record's owner or the guardian of a
+            managed profile (#1408). Any other delegate always reads false."
         nextDueScheduleId:
           description: The schedule `nextDueAt` belongs to; null when nothing is due.
           type:
@@ -59874,8 +59879,8 @@ components:
           description: "v1.40 — whether `POST /api/medications/{id}/courses` may start a new course now: the medication is active,
             not one-time, has a course and every course's last day is before today (a course ended today with `POST
             /api/medications/{id}/courses/end` is over, but a course starting today would share its last day, so the
-            start is offered from the next day), and the caller is the record's owner (starting a course is not
-            delegable, so a delegate always reads false)."
+            start is offered from the next day), and the caller may start one: the record's owner or the guardian of a
+            managed profile (#1408). Any other delegate always reads false."
         courseStatus:
           type: string
           enum:

@@ -11,7 +11,9 @@
  * compliance % and the write/edit attribution consume, so the history view and
  * the rate can never contradict each other. Additive (a new GET) → iOS-safe.
  *
- * Ownership-scoped via `assertMedicationOwnership`; rate-limited; reads only
+ * Ownership-scoped via `assertMedicationOwnership` against the record the
+ * request resolves (a guardian or a delegate reads the owner's ledger);
+ * rate-limited per actor; reads only
  * `deletedAt: null` rows.
  */
 import {
@@ -23,7 +25,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
 import { prisma } from "@/lib/db";
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { apiError, apiSuccess, returnAllZodIssues } from "@/lib/api-response";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
@@ -158,14 +160,14 @@ async function readWindowIntakes(
 
 export const GET = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireAuth();
+    const { user, actor } = await requireRecordAuth("read", "medications");
 
     const { id } = await params;
     const guard = await assertMedicationOwnership(id, user.id);
     if (guard) return guard;
 
     const rl = await checkRateLimit(
-      `medication-dose-history:${user.id}`,
+      `medication-dose-history:${actor.id}`,
       RATE_LIMIT,
       RATE_WINDOW_MS,
     );

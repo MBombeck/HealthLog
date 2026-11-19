@@ -20,6 +20,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  holdsGuardianSurfaces,
   recordContextIsUnproven,
   resolveRecordCapabilities,
 } from "@/hooks/use-record-capabilities";
@@ -347,5 +348,45 @@ describe("an unprovable record context withholds every control", () => {
       canWriteDomain: expect.any(Function),
       canManageDomain: expect.any(Function),
     });
+  });
+});
+
+describe("holdsGuardianSurfaces (#1408)", () => {
+  const GUARDIAN: AccountAccessEntry = {
+    ...MANAGING,
+    recordKind: "managed",
+    writableDomains: delegatedDomains("manage", null, "write", "managed"),
+    manageableDomains: delegatedDomains("manage", null, "manage", "managed"),
+  };
+
+  it("answers yes in one's own record and for a managed profile's guardian", () => {
+    expect(holdsGuardianSurfaces(resolveRecordCapabilities(null))).toBe(true);
+    expect(holdsGuardianSurfaces(resolveRecordCapabilities(GUARDIAN))).toBe(
+      true,
+    );
+  });
+
+  it("answers no for an adult's delegate at every level, MANAGE included", () => {
+    // MANAGE on an adult's record lists medications as manageable, which is
+    // exactly why the per-section list cannot answer this question.
+    expect(
+      resolveRecordCapabilities(MANAGING).canManageDomain("medications"),
+    ).toBe(true);
+    for (const entry of [READ_ONLY, WRITABLE, MANAGING]) {
+      expect(holdsGuardianSurfaces(resolveRecordCapabilities(entry))).toBe(
+        false,
+      );
+    }
+  });
+
+  it("answers no for a managed profile below MANAGE and for a refused context", () => {
+    expect(
+      holdsGuardianSurfaces(
+        resolveRecordCapabilities({ ...READ_ONLY, recordKind: "managed" }),
+      ),
+    ).toBe(false);
+    expect(
+      holdsGuardianSurfaces(resolveRecordCapabilities(GUARDIAN, true)),
+    ).toBe(false);
   });
 });

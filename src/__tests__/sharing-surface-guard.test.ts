@@ -1260,7 +1260,36 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   },
   "app/api/medications/[id]/courses/end/route.ts": {
     domain: "medications",
-    why: "Ending one medication's running course now (#1280), behind the course write's own ownership check against the resolved record. The POST is the route's only verb and is manage-level, the level the medication's PUT carried the end date at; starting, editing and removing courses stay owner-only.",
+    why: "Ending one medication's running course now (#1280), behind the course write's own ownership check against the resolved record. The POST is the route's only verb and is manage-level, the level the medication's PUT carried the end date at; starting, editing and removing courses are owner or managed-profile guardian only, in the two course modules below.",
+  },
+  // #1408 -- the detail page of a managed profile's medication. Its landing
+  // read, the dose history, the Effect view and the course list all refused
+  // a guardian, so the page showed a cabinet it could not open. The reads are
+  // record reads like the cadence sibling; the course writes and the Effect
+  // target declare `"guardian"` and are frozen again in the guardian literal.
+  "app/api/medications/[id]/compliance/route.ts": {
+    domain: "medications",
+    why: "One medication's compliance for the detail page. The cache cell keys on the resolved record id, the ownership check runs inside the builder against the same id, and the rate bucket keys on the ACTOR, like the batched sibling.",
+  },
+  "app/api/medications/[id]/dose-history/route.ts": {
+    domain: "medications",
+    why: "One medication's dose ledger, behind `assertMedicationOwnership` against the resolved record; every intake query carries the record id. No cache. The rate bucket keys on the ACTOR.",
+  },
+  "app/api/medications/[id]/efficacy/route.ts": {
+    domain: "record",
+    why: "One medication's Effect view: the builder's own `findFirst({ id, userId })` is the ownership gate, and the series, labs, unit preferences and target bands it reads all belong to the resolved record. Declared at the whole record because it returns measurement series, lab history and the biomarker catalogue, which a medications-only grant does not cover. Descriptive numbers only, no model call, no cache. The rate bucket keys on the ACTOR.",
+  },
+  "app/api/medications/[id]/efficacy/target/route.ts": {
+    domain: "record",
+    why: "Which metric or lab the Effect view follows, behind the ownership guard; a pinned biomarker is looked up under the resolved record. Declares `\"guardian\"`: the owner or a managed profile's guardian, never an adult's delegate.",
+  },
+  "app/api/medications/[id]/courses/route.ts": {
+    domain: "medications",
+    why: "A medication's courses: the GET is a record read under the resolved id. Starting a course declares `\"guardian\"`: a managed profile's guardian runs its schedule, an adult's delegate edits the current window through the medication's PUT as before.",
+  },
+  "app/api/medications/[id]/courses/[courseId]/route.ts": {
+    domain: "medications",
+    why: 'Editing or removing one course, through the course service\'s ownership check against the resolved record. Both verbs declare `"guardian"`.',
   },
   "app/api/medications/[id]/ingredients/route.ts": {
     domain: "medications",
@@ -2354,6 +2383,13 @@ const DELEGABLE_GUARDIAN_ROUTES: Record<string, string> = {
     "The AI transport probe the vault needs to offer the actions. Read only.",
   "app/api/ai-runs/[id]/route.ts":
     "Polling a background run the guardian queued. Read only.",
+  // #1408 -- a managed profile's guardian runs its medication schedule.
+  "app/api/medications/[id]/courses/route.ts":
+    "Starting a course on the resolved record, through the course service that re-projects the medication's window in the same transaction. Audited; the row names the guardian.",
+  "app/api/medications/[id]/courses/[courseId]/route.ts":
+    "Editing or removing one course, the same service and the same audit as the start.",
+  "app/api/medications/[id]/efficacy/target/route.ts":
+    "Pinning or clearing what the Effect view follows. Audited on both arms; the row names the guardian.",
 };
 
 /**
@@ -2523,8 +2559,13 @@ const ACTOR_ROUTES: Record<string, string> = {
  * 287 -> 307.
  *
  * Together, the diary, the dose step and the vault: 279 -> 324.
+ *
+ * #1408 -- a managed profile's medication detail page: the compliance, dose
+ * history and Effect reads join the record list, and the course writes and
+ * the Effect target join both the record list and the guardian literal.
+ * 324 -> 333.
  */
-const FROZEN_ENTRY_COUNT = 324;
+const FROZEN_ENTRY_COUNT = 333;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

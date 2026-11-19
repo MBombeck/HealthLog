@@ -215,6 +215,23 @@ export function resolveRecordCapabilities(
 }
 
 /**
+ * #1408 — may the person at the keyboard reach a section's `"guardian"`
+ * routes: the record's owner, or the guardian of a managed profile (a MANAGE
+ * grant on a record of kind `"managed"`). An adult's delegate never does, at
+ * any level, which is why `canManageDomain` cannot answer it: a MANAGE grant
+ * on an adult's record lists the same sections.
+ *
+ * Read off the resolved level and record kind, both bound from the server, the
+ * same two facts `requireRecordAuth("guardian", …)` admits on.
+ */
+export function holdsGuardianSurfaces(
+  caps: Pick<RecordCapabilities, "inSharedRecord" | "recordKind" | "level">,
+): boolean {
+  if (!caps.inSharedRecord) return true;
+  return caps.recordKind === "managed" && caps.level === "manage";
+}
+
+/**
  * The record on screen, and what may be done to it.
  *
  * Reads the same resolved block the banner and the switcher read, so the

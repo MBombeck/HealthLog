@@ -1,13 +1,15 @@
 /**
  * v1.40 (#1024) — edit or delete one course. Both re-project the
  * medication's window in the same transaction. Deleting the only course
- * makes the medication chronic again; the UI asks first. Owner-only.
+ * makes the medication chronic again; the UI asks first. Both declare
+ * `"guardian"` (#1408): the owner, or the guardian of a managed profile;
+ * never an adult's delegate. The audit row names the guardian.
  */
 import { NextRequest } from "next/server";
 
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { annotate } from "@/lib/logging/context";
@@ -36,7 +38,7 @@ function refused(err: unknown): Response {
 
 export const PATCH = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireAuth();
+    const { user } = await requireRecordAuth("guardian", "medications");
     const { id, courseId } = await params;
 
     const parsed = await parseJsonBody(request, updateMedicationCourseSchema, {
@@ -82,7 +84,7 @@ export const PATCH = apiHandler(
 
 export const DELETE = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireAuth();
+    const { user } = await requireRecordAuth("guardian", "medications");
     const { id, courseId } = await params;
     try {
       await deleteCourse({
