@@ -9106,7 +9106,10 @@
         "recovery_kit": "O kit de recuperação está confirmado novamente.",
         "dump_retention": "Agora uma regra de ciclo de vida do bucket cobre os dumps do banco."
       }
-    }
+    },
+    "auditActedBy": "por {name}",
+    "auditActorDeleted": "uma conta excluída",
+    "auditActedByColumn": "Realizado por"
   },
   "achievements": {
     "title": "Conquistas",

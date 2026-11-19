@@ -9106,7 +9106,10 @@
         "recovery_kit": "Il kit di recupero è di nuovo confermato.",
         "dump_retention": "Ora una regola di ciclo di vita del bucket copre i dump del database."
       }
-    }
+    },
+    "auditActedBy": "da {name}",
+    "auditActorDeleted": "un account eliminato",
+    "auditActedByColumn": "Eseguito da"
   },
   "achievements": {
     "title": "Obiettivi",

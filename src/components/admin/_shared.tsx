@@ -9,6 +9,7 @@ import { Cpu, Fingerprint, Globe, KeyRound } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useTranslations } from "@/lib/i18n/context";
+import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/query-keys";
 import { PasswordInput as SharedPasswordInput } from "@/components/ui/password-input";
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
@@ -164,7 +165,52 @@ export interface AdminAuditEntry {
   carrier: string | null;
   details: string | null;
   createdAt: string;
+  /** The record the row is filed under. */
   user: { id: string; username: string } | null;
+  /**
+   * Who acted, when that is not the record's own account (a guardian inside
+   * a managed profile, a delegate on a shared record). `username` is null
+   * when the acting account has since been deleted.
+   */
+  actor: AuditActor | null;
+}
+
+export interface AuditActor {
+  id: string;
+  username: string | null;
+}
+
+/** The acting account as one display string, or null for a self-action. */
+export function auditActorName(
+  actor: AuditActor | null | undefined,
+  deletedLabel: string,
+): string | null {
+  if (!actor) return null;
+  return actor.username ?? deletedLabel;
+}
+
+/**
+ * "by <account>" under the record name, for a row somebody else wrote
+ * inside that record. Renders nothing for a self-action.
+ */
+export function AuditActedBy({
+  actor,
+  className,
+}: {
+  actor: AuditActor | null | undefined;
+  className?: string;
+}) {
+  const { t } = useTranslations();
+  const name = auditActorName(actor, t("admin.auditActorDeleted"));
+  if (name === null) return null;
+  return (
+    <span
+      data-slot="audit-acted-by"
+      className={cn("text-muted-foreground", className)}
+    >
+      {t("admin.auditActedBy", { name })}
+    </span>
+  );
 }
 
 export interface ApiTokenInfo {
@@ -485,6 +531,11 @@ export function carrierShortLabel(rawAsnOrg: string): string {
  * v1.4.27: the `carrier` column lands between `location` and
  * `provider` so the geo-derived fields stay grouped.
  *
+ * `actedBy` follows `user` (#1403): a row written inside another account's
+ * record (a guardian in a managed profile) is filed under that record, and
+ * without the acting account beside it the export read as the record's own
+ * action. Empty for a self-action.
+ *
  * `formatTimestamp` is injected (not imported) so the production
  * callsite passes the user-tz formatter (`formatInUserTz`) while the
  * unit test passes a deterministic stub.
@@ -500,11 +551,14 @@ export interface AuditCsvEntry {
   asn?: number | null;
   details: string | null;
   user: { id: string; username: string } | null;
+  actor?: AuditActor | null;
 }
 
 export interface AuditCsvLabels {
   timestamp: string;
   user: string;
+  actedBy: string;
+  deletedAccount: string;
   ip: string;
   location: string;
   carrier: string;
@@ -521,6 +575,7 @@ export interface AuditCsvLabels {
 export interface AuditCsvRecord {
   timestamp: string;
   user: string;
+  actedBy: string;
   ip: string;
   location: string;
   carrier: string;
@@ -548,6 +603,7 @@ export function buildAuditLogCsvRecords(
     return {
       timestamp: formatTimestamp(entry.createdAt),
       user: entry.user?.username ?? labels.unknownUser,
+      actedBy: auditActorName(entry.actor, labels.deletedAccount) ?? "",
       ip: entry.ipAddress ?? "",
       location: entry.location ?? "",
       carrier: entry.carrier ? carrierShortLabel(entry.carrier) : "",
@@ -565,6 +621,7 @@ export function auditLogCsvHeaderLabels(
   return {
     timestamp: labels.timestamp,
     user: labels.user,
+    actedBy: labels.actedBy,
     ip: labels.ip,
     location: labels.location,
     carrier: labels.carrier,

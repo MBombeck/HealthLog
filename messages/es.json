@@ -9106,7 +9106,10 @@
         "recovery_kit": "El kit de recuperación vuelve a estar confirmado.",
         "dump_retention": "Ahora una regla de ciclo de vida del bucket cubre los volcados de la base de datos."
       }
-    }
+    },
+    "auditActedBy": "por {name}",
+    "auditActorDeleted": "una cuenta eliminada",
+    "auditActedByColumn": "Realizado por"
   },
   "achievements": {
     "title": "Logros",

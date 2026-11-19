@@ -9106,7 +9106,10 @@
         "recovery_kit": "Zestaw odzyskiwania jest znów potwierdzony.",
         "dump_retention": "Reguła cyklu życia w buckecie obejmuje teraz zrzuty bazy."
       }
-    }
+    },
+    "auditActedBy": "przez {name}",
+    "auditActorDeleted": "usunięte konto",
+    "auditActedByColumn": "Wykonane przez"
   },
   "achievements": {
     "title": "Osiągnięcia",

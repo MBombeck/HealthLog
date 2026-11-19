@@ -9106,7 +9106,10 @@
         "recovery_kit": "Комплект восстановления снова подтверждён.",
         "dump_retention": "Правило жизненного цикла в бакете теперь покрывает дампы базы данных."
       }
-    }
+    },
+    "auditActedBy": "от {name}",
+    "auditActorDeleted": "удалённый аккаунт",
+    "auditActedByColumn": "Выполнено"
   },
   "achievements": {
     "title": "Достижения",

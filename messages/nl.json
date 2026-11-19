@@ -9106,7 +9106,10 @@
         "recovery_kit": "De herstelkit is weer bevestigd.",
         "dump_retention": "Een levenscyclusregel in de bucket dekt nu de databasedumps."
       }
-    }
+    },
+    "auditActedBy": "door {name}",
+    "auditActorDeleted": "een verwijderd account",
+    "auditActedByColumn": "Uitgevoerd door"
   },
   "achievements": {
     "title": "Prestaties",

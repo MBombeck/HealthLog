@@ -9106,7 +9106,10 @@
         "recovery_kit": "The recovery kit is confirmed again.",
         "dump_retention": "A lifecycle rule in the bucket covers the database dumps now."
       }
-    }
+    },
+    "auditActedBy": "by {name}",
+    "auditActorDeleted": "a deleted account",
+    "auditActedByColumn": "Acted by"
   },
   "achievements": {
     "title": "Achievements",

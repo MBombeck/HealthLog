@@ -9106,7 +9106,10 @@
         "recovery_kit": "복구 키트가 다시 확인되었습니다.",
         "dump_retention": "이제 버킷의 수명 주기 규칙이 데이터베이스 덤프를 포함합니다."
       }
-    }
+    },
+    "auditActedBy": "{name} 님이 수행",
+    "auditActorDeleted": "삭제된 계정",
+    "auditActedByColumn": "수행한 사람"
   },
   "achievements": {
     "title": "업적",

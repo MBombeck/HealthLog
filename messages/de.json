@@ -9106,7 +9106,10 @@
         "recovery_kit": "Das Wiederherstellungs-Kit ist wieder bestätigt.",
         "dump_retention": "Eine Lebenszyklus-Regel im Bucket erfasst jetzt die Datenbank-Dumps."
       }
-    }
+    },
+    "auditActedBy": "durch {name}",
+    "auditActorDeleted": "ein gelöschtes Konto",
+    "auditActedByColumn": "Ausgeführt von"
   },
   "achievements": {
     "title": "Erfolge",
