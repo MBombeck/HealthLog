@@ -9,8 +9,10 @@
  * prominent Download button.
  *
  * Metadata edits save on commit (title on Enter/blur, kind and filing date
- * on change, condition links on toggle — replace-set PATCH). Mutation
- * errors surface inline (`role="alert"`), never as a QueryErrorCard.
+ * on change, condition links on toggle — replace-set PATCH). A quiet status
+ * line says "Saving…" and then "Saved", since there is no Save button to
+ * confirm the write. Mutation errors surface inline (`role="alert"`), never
+ * as a QueryErrorCard.
  * Delete soft-deletes with an Undo toast (restore endpoint); a restore
  * refusal maps `meta.reason` (`purged`, `duplicateExists`) to translated
  * copy. A Share action in the footer opens the clinician share-link create
@@ -35,6 +37,7 @@ import {
   DocumentDetailFields,
   DocumentDetailFooter,
   DocumentDetailMeta,
+  DocumentSaveStatus,
 } from "./detail/detail-sections";
 import { DocumentDownloadButton, InlinePreview } from "./detail/original-file";
 import { useDocumentDetail } from "./detail/use-document-detail";
@@ -78,6 +81,7 @@ export function DocumentDetailSheet({
     canManageDocuments,
     labsModuleEnabled,
     mutationError,
+    saved,
     linkResets,
     shareOpen,
     setShareOpen,
@@ -281,11 +285,11 @@ export function DocumentDetailSheet({
               />
             )}
 
-            {mutationError ? (
-              <p role="alert" className="text-destructive text-sm">
-                {mutationError}
-              </p>
-            ) : null}
+            <DocumentSaveStatus
+              error={mutationError}
+              pending={patch.isPending}
+              saved={saved}
+            />
 
             <div className="space-y-4">
               <DocumentDetailFields doc={doc} detail={detail} />

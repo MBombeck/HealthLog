@@ -12417,7 +12417,9 @@
       "visitsLabel": "Należy do wizyty",
       "vaccinationsLabel": "Szczepienia",
       "noVisitsToLink": "Nie zapisano jeszcze żadnych wizyt.",
-      "noVaccinationsToLink": "Nie zapisano jeszcze żadnych szczepień."
+      "noVaccinationsToLink": "Nie zapisano jeszcze żadnych szczepień.",
+      "saved": "Zmiany zapisane",
+      "saving": "Zapisywanie…"
     },
     "dropOverlay": {
       "title": "Upuść pliki, aby je przesłać",

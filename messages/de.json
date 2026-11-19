@@ -12417,7 +12417,9 @@
       "visitsLabel": "Gehört zu Termin",
       "vaccinationsLabel": "Impfungen",
       "noVisitsToLink": "Noch keine Termine erfasst.",
-      "noVaccinationsToLink": "Noch keine Impfungen erfasst."
+      "noVaccinationsToLink": "Noch keine Impfungen erfasst.",
+      "saved": "Änderungen gespeichert",
+      "saving": "Wird gespeichert…"
     },
     "dropOverlay": {
       "title": "Zum Hochladen ablegen",

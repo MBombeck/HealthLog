@@ -12417,7 +12417,9 @@
       "visitsLabel": "Относится к визиту",
       "vaccinationsLabel": "Вакцинации",
       "noVisitsToLink": "Визиты ещё не записаны.",
-      "noVaccinationsToLink": "Вакцинации ещё не записаны."
+      "noVaccinationsToLink": "Вакцинации ещё не записаны.",
+      "saved": "Изменения сохранены",
+      "saving": "Сохранение…"
     },
     "dropOverlay": {
       "title": "Перетащите файлы для загрузки",

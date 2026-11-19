@@ -113,6 +113,12 @@ export function useDocumentDetail({
   const episodes = useIllnessEpisodes(true);
 
   const [mutationError, setMutationError] = useState<string | null>(null);
+  /**
+   * Whether the last edit made in this sheet reached the server. Edits save
+   * on commit with no Save button, so without this line a person closing
+   * the sheet cannot tell whether anything was written (#1403).
+   */
+  const [saved, setSaved] = useState(false);
   /** Bumped on a failed write; remounts the link block onto server state. */
   const [linkResets, setLinkResets] = useState(0);
   const [shareOpen, setShareOpen] = useState(false);
@@ -140,6 +146,7 @@ export function useDocumentDetail({
     setEditingTitle(false);
     setShareOpen(false);
     setMutationError(null);
+    setSaved(false);
   }
 
   const { patch, remove } = useDocumentWrites({
@@ -147,6 +154,7 @@ export function useDocumentDetail({
     onOpenChange,
     setMutationError,
     setLinkResets,
+    setSaved,
   });
 
   const commitTitle = () => {
@@ -221,6 +229,7 @@ export function useDocumentDetail({
     labsModuleEnabled,
     episodes,
     mutationError,
+    saved,
     linkResets,
     shareOpen,
     setShareOpen,
@@ -257,11 +266,13 @@ function useDocumentWrites({
   onOpenChange,
   setMutationError,
   setLinkResets,
+  setSaved,
 }: {
   documentId: string | null;
   onOpenChange: (open: boolean) => void;
   setMutationError: (message: string | null) => void;
   setLinkResets: (update: (n: number) => number) => void;
+  setSaved: (saved: boolean) => void;
 }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
@@ -271,8 +282,10 @@ function useDocumentWrites({
         `/api/documents/inbound/${documentId}`,
         input,
       ),
+    onMutate: () => setSaved(false),
     onSuccess: (_data, input) => {
       setMutationError(null);
+      setSaved(true);
       // A link written from this side changes what the visit's and the
       // dose's own views list, so their reads refresh with the vault's.
       void invalidateKeys(queryClient, [

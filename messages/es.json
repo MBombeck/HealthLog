@@ -12417,7 +12417,9 @@
       "visitsLabel": "Pertenece a la cita",
       "vaccinationsLabel": "Vacunas",
       "noVisitsToLink": "Aún no hay consultas registradas.",
-      "noVaccinationsToLink": "Aún no hay vacunas registradas."
+      "noVaccinationsToLink": "Aún no hay vacunas registradas.",
+      "saved": "Cambios guardados",
+      "saving": "Guardando…"
     },
     "dropOverlay": {
       "title": "Suelta los archivos para subirlos",

@@ -531,6 +531,36 @@ test.describe("document vault", () => {
     await expect(openButton(page, `${title}.pdf`)).toBeVisible();
   });
 
+  test("a renamed title says it was saved", async ({ page }, testInfo) => {
+    // #1403 — the sheet saves on commit with no Save button; the status line
+    // is the only thing telling a person that closing loses nothing.
+    const title = `saved-probe-${testInfo.project.name}-${Date.now()}`;
+    await page.goto("/documents");
+    await uploadViaPicker(page, `${title}.pdf`, uniquePdf(title));
+    await page.getByRole("searchbox", { name: "Search documents" }).fill(title);
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get("q"))
+      .toBe(title);
+    await openButton(page, `${title}.pdf`).click();
+    const sheet = page.getByRole("dialog", { name: `${title}.pdf` });
+    await expect(sheet).toBeVisible();
+    await expect(
+      sheet.locator('[data-slot="document-detail-saved"]'),
+    ).toHaveCount(0);
+
+    await sheet.locator("#document-title-input").click();
+    const input = page.locator("input#document-title-input");
+    await input.fill(`${title} renamed`);
+    await input.press("Enter");
+
+    // The sheet's accessible name follows the new title, so the renamed
+    // sheet is found by its new name.
+    const renamed = page.getByRole("dialog", { name: `${title} renamed` });
+    await expect(
+      renamed.locator('[data-slot="document-detail-saved"]'),
+    ).toBeVisible();
+  });
+
   // ── Bulk flows (desktop-only: shift-click ranges are a pointer flow) ──
 
   test("bulk: 50-item kind change round-trips", async ({ page, isMobile }) => {

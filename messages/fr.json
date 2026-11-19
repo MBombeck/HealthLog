@@ -12417,7 +12417,9 @@
       "visitsLabel": "Rattaché au rendez-vous",
       "vaccinationsLabel": "Vaccinations",
       "noVisitsToLink": "Aucune consultation enregistrée pour l’instant.",
-      "noVaccinationsToLink": "Aucune vaccination enregistrée pour l’instant."
+      "noVaccinationsToLink": "Aucune vaccination enregistrée pour l’instant.",
+      "saved": "Modifications enregistrées",
+      "saving": "Enregistrement…"
     },
     "dropOverlay": {
       "title": "Déposez les fichiers pour les téléverser",

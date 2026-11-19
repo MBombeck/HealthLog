@@ -12417,7 +12417,9 @@
       "visitsLabel": "Pertence à consulta",
       "vaccinationsLabel": "Vacinas",
       "noVisitsToLink": "Nenhuma consulta registrada ainda.",
-      "noVaccinationsToLink": "Nenhuma vacina registrada ainda."
+      "noVaccinationsToLink": "Nenhuma vacina registrada ainda.",
+      "saved": "Alterações salvas",
+      "saving": "Salvando…"
     },
     "dropOverlay": {
       "title": "Solte arquivos para enviar",

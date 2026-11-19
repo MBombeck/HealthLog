@@ -12417,7 +12417,9 @@
       "visitsLabel": "Hoort bij bezoek",
       "vaccinationsLabel": "Vaccinaties",
       "noVisitsToLink": "Nog geen bezoeken vastgelegd.",
-      "noVaccinationsToLink": "Nog geen vaccinaties vastgelegd."
+      "noVaccinationsToLink": "Nog geen vaccinaties vastgelegd.",
+      "saved": "Wijzigingen opgeslagen",
+      "saving": "Opslaan…"
     },
     "dropOverlay": {
       "title": "Zet bestanden neer om te uploaden",

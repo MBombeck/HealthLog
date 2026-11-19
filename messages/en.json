@@ -12417,7 +12417,9 @@
       "visitsLabel": "Belongs to visit",
       "vaccinationsLabel": "Vaccinations",
       "noVisitsToLink": "No visits recorded yet.",
-      "noVaccinationsToLink": "No vaccinations recorded yet."
+      "noVaccinationsToLink": "No vaccinations recorded yet.",
+      "saved": "Changes saved",
+      "saving": "Saving…"
     },
     "dropOverlay": {
       "title": "Drop files to upload",

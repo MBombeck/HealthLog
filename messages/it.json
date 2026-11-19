@@ -12417,7 +12417,9 @@
       "visitsLabel": "Appartiene all'appuntamento",
       "vaccinationsLabel": "Vaccinazioni",
       "noVisitsToLink": "Nessuna visita registrata finora.",
-      "noVaccinationsToLink": "Nessuna vaccinazione registrata finora."
+      "noVaccinationsToLink": "Nessuna vaccinazione registrata finora.",
+      "saved": "Modifiche salvate",
+      "saving": "Salvataggio…"
     },
     "dropOverlay": {
       "title": "Rilascia i file per caricarli",
