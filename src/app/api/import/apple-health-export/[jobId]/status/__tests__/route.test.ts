@@ -110,7 +110,13 @@ describe("GET /api/import/apple-health-export/[jobId]/status", () => {
             skipped: "x",
             failed: 1.5,
             markersCreated: 4,
-            reasons: { leaked: "content" },
+            reasons: {
+              leaked: "content",
+              unit_mismatch: 103,
+              not_lab: -2,
+              missing_unit: 1.5,
+              no_value: 0,
+            },
           },
         },
       }),
@@ -129,6 +135,7 @@ describe("GET /api/import/apple-health-export/[jobId]/status", () => {
       skipped: 0,
       failed: 0,
       markersCreated: 4,
+      reasons: { unit_mismatch: 103 },
     });
   });
 

@@ -40,6 +40,7 @@ import {
 import {
   emptyFhirLabCounts,
   type FhirLabCounts,
+  type FhirLabImportReason,
 } from "@/lib/labs/fhir-import/types";
 import { writeFhirLabReadings } from "@/lib/labs/fhir-import/write";
 import { annotate } from "@/lib/logging/context";
@@ -96,9 +97,10 @@ export async function importAppleHealthClinicalLabs(input: {
   counts.discovered = input.references.length + dropped;
   if (counts.discovered === 0) return counts;
 
-  const tally: Record<string, number> = {};
-  const note = (reason: string) => {
-    tally[reason] = (tally[reason] ?? 0) + 1;
+  // The job result keeps this tally (#1421); the status route serves it.
+  const tally = counts.reasons;
+  const note = (reason: FhirLabImportReason, by = 1) => {
+    tally[reason] = (tally[reason] ?? 0) + by;
   };
 
   // More references than the archive may hold clinical files: the overflow
@@ -107,7 +109,7 @@ export async function importAppleHealthClinicalLabs(input: {
   const usable = input.references.slice(0, limits.maxClinicalMembers);
   const overflow = input.references.length - usable.length + dropped;
   counts.failed += overflow;
-  if (overflow > 0) tally.over_limit = overflow;
+  if (overflow > 0) note("over_limit", overflow);
 
   const byMember = new Map<string, ClinicalLabReference>();
   const byId = new Map<string, ClinicalLabReference>();
@@ -139,7 +141,7 @@ export async function importAppleHealthClinicalLabs(input: {
         if (byPath) {
           handled += 1;
           counts.failed += 1;
-          note(`member_${member.refused}`);
+          note(`member_${member.refused}` as const);
         }
         continue;
       }
@@ -190,7 +192,7 @@ export async function importAppleHealthClinicalLabs(input: {
   }
   const missing = Math.max(0, expected - handled);
   counts.failed += missing;
-  if (missing > 0) tally.missing_member = (tally.missing_member ?? 0) + missing;
+  if (missing > 0) note("missing_member", missing);
 
   assignPanels(mapped);
   const readings = mapped.flatMap((m) =>

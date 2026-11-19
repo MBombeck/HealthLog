@@ -4,6 +4,10 @@ import Link from "next/link";
 
 import { InlineAction } from "@/components/ui/inline-action";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import {
+  FHIR_LAB_IMPORT_REASONS,
+  type FhirLabImportReason,
+} from "@/lib/labs/fhir-import/types";
 
 export interface AppleHealthEcgCounts {
   discovered?: number;
@@ -21,6 +25,21 @@ export interface AppleHealthLabCounts {
   failed?: number;
   /** Markers the import added to Labs because no existing one took a reading. */
   markersCreated?: number;
+  /** The skipped and failed results by closed reason. */
+  reasons?: Partial<Record<string, number>>;
+}
+
+/** The reasons with a label, largest count first. */
+function labReasonEntries(
+  reasons: Partial<Record<string, number>> | undefined,
+): Array<[FhirLabImportReason, number]> {
+  if (!reasons) return [];
+  return FHIR_LAB_IMPORT_REASONS.flatMap((reason) => {
+    const count = reasons[reason];
+    return typeof count === "number" && count > 0
+      ? [[reason, count] as [FhirLabImportReason, number]]
+      : [];
+  }).sort((a, b) => b[1] - a[1]);
 }
 
 const KEY = "settings.sections.export.import.appleHealth";
@@ -30,7 +49,7 @@ const KEY = "settings.sections.export.import.appleHealth";
  * recordings and the lab results from health records. A line shows only when
  * the archive held something of its kind. The counts read like the lab CSV
  * import's summary: localised, the reassurance about a failure only when
- * something failed, and the markers the import added named as a count with
+ * something failed, what the skipped and failed counts are made of, and the markers the import added named as a count with
  * the way to them (the job result keeps counts only, never a marker name).
  */
 export function AppleHealthAuxiliaryLines({
@@ -45,6 +64,7 @@ export function AppleHealthAuxiliaryLines({
   const n = (value: number | undefined) => fmt.integer(value ?? 0);
   const markersCreated = labs?.markersCreated ?? 0;
   const labsLanded = (labs?.imported ?? 0) + (labs?.duplicate ?? 0) > 0;
+  const reasons = labReasonEntries(labs?.reasons);
   return (
     <>
       {(ecg?.discovered ?? 0) > 0 && (
@@ -77,6 +97,18 @@ export function AppleHealthAuxiliaryLines({
             })}
             {(labs?.failed ?? 0) > 0 ? ` ${t(`${KEY}.labsFailedNote`)}` : null}
           </p>
+          {reasons.length > 0 ? (
+            <p data-slot="import-apple-health-labs-reasons">
+              {t(`${KEY}.labsReasons`, {
+                reasons: reasons
+                  .map(
+                    ([reason, count]) =>
+                      `${t(`${KEY}.labsReason.${reason}`)} (${n(count)})`,
+                  )
+                  .join(", "),
+              })}
+            </p>
+          ) : null}
           {markersCreated > 0 ? (
             <p data-slot="import-apple-health-labs-markers">
               {tCount(`${KEY}.labsMarkersCreated`, markersCreated, {

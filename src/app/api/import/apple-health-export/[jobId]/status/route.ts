@@ -16,6 +16,7 @@ import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess } from "@/lib/api-response";
+import { FHIR_LAB_IMPORT_REASONS } from "@/lib/labs/fhir-import/types";
 import { annotate } from "@/lib/logging/context";
 
 export const dynamic = "force-dynamic";
@@ -68,8 +69,24 @@ function privacySafeResult(
       skipped: boundedCount(labs.skipped),
       failed: boundedCount(labs.failed),
       markersCreated: boundedCount(labs.markersCreated),
+      reasons: labReasons(labs.reasons),
     },
   };
+}
+
+/**
+ * The skipped and failed lab results by reason: only the closed reasons, each
+ * a bounded positive count, so nothing else a stored result might hold is
+ * served.
+ */
+function labReasons(value: unknown): Partial<Record<string, number>> {
+  const out: Partial<Record<string, number>> = {};
+  if (typeof value !== "object" || value === null) return out;
+  for (const reason of FHIR_LAB_IMPORT_REASONS) {
+    const count = boundedCount((value as Record<string, unknown>)[reason]);
+    if (count > 0) out[reason] = count;
+  }
+  return out;
 }
 
 export const GET = apiHandler(

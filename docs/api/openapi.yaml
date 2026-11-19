@@ -80991,7 +80991,9 @@ components:
                 counters (`ecg`: `discovered` / `imported` / `updated` / `skipped` / `failed`; `labs`, the lab results
                 from Health Records: `discovered` / `imported` / `duplicate` / `skipped` / `failed`, plus
                 `markersCreated`, the markers the import added to Labs) are normalised to bounded non-negative integers
-                before serving."
+                before serving. `labs.reasons` breaks the skipped and failed lab results down by closed reason (for
+                example `not_lab`, `missing_unit`, `unit_mismatch`), one positive count per reason that occurred; any
+                other key is dropped."
             failureReason:
               description: Free text on `failed`; null otherwise.
               type:
