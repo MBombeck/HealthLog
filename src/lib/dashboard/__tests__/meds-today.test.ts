@@ -35,8 +35,6 @@ interface FakeIntakeRow {
   scheduledFor?: Date;
   takenAt: Date | null;
   skipped: boolean;
-  autoMissed?: boolean;
-  medication?: { asNeeded: boolean; active: boolean; endedAt: Date | null };
 }
 
 function dailySchedule(
@@ -253,68 +251,23 @@ describe("buildMedsTodayBlock — tally", () => {
     ]);
   });
 
-  it("leaves as-needed intakes out of the scheduled day", async () => {
-    const at = new Date("2026-06-10T07:30:00.000Z");
-    todayRows = [
-      {
-        takenAt: new Date("2026-06-10T06:05:00.000Z"),
-        skipped: false,
-        scheduledFor: new Date("2026-06-10T06:00:00.000Z"),
-        medication: { asNeeded: false, active: true, endedAt: null },
-      },
-      // An ad-hoc take of an as-needed medication: never scheduled.
-      {
-        takenAt: at,
-        skipped: false,
-        scheduledFor: at,
-        medication: { asNeeded: true, active: true, endedAt: null },
-      },
-    ];
-    const block = await buildMedsTodayBlock(fakePrisma, "user-1", BERLIN, NOW);
-    expect(block.scheduledToday).toBe(1);
-    expect(block.takenToday).toBe(1);
-    expect(block.scheduledTodayAt).toEqual(["2026-06-10T06:00:00.000Z"]);
-  });
-
-  it("drops the pending doses of a medication stopped earlier today", async () => {
-    const endedAt = new Date("2026-06-10T09:00:00.000Z");
-    todayRows = [
-      // Taken before the stop: history, still counted.
-      {
-        takenAt: new Date("2026-06-10T06:05:00.000Z"),
-        skipped: false,
-        scheduledFor: new Date("2026-06-10T06:00:00.000Z"),
-        medication: { asNeeded: false, active: false, endedAt: null },
-      },
-      // Pending dose of the paused medication.
-      {
-        takenAt: null,
-        skipped: false,
-        scheduledFor: new Date("2026-06-10T18:00:00.000Z"),
-        medication: { asNeeded: false, active: false, endedAt: null },
-      },
-      // Pending dose after an ended course's moment.
-      {
-        takenAt: null,
-        skipped: false,
-        scheduledFor: new Date("2026-06-10T16:00:00.000Z"),
-        medication: { asNeeded: false, active: true, endedAt },
-      },
-      // Pending dose of a running medication.
-      {
-        takenAt: null,
-        skipped: false,
-        scheduledFor: new Date("2026-06-10T17:00:00.000Z"),
-        medication: { asNeeded: false, active: true, endedAt: null },
-      },
-    ];
-    const block = await buildMedsTodayBlock(fakePrisma, "user-1", BERLIN, NOW);
-    expect(block.scheduledToday).toBe(2);
-    expect(block.takenToday).toBe(1);
-    expect(block.scheduledTodayAt).toEqual([
-      "2026-06-10T06:00:00.000Z",
-      "2026-06-10T17:00:00.000Z",
-    ]);
+  it("tallies only the scheduled doses of tracked medications", async () => {
+    // The row-level cases run against Postgres in
+    // tests/integration/meds-today-scheduled-total.test.ts.
+    await buildMedsTodayBlock(fakePrisma, "user-1", BERLIN, NOW);
+    expect(capturedTodayWhere).toMatchObject({
+      medication: { trackIntake: true, asNeeded: false },
+      AND: [
+        {
+          OR: [
+            { takenAt: { not: null } },
+            { skipped: true },
+            { autoMissed: true },
+            { medication: { active: true } },
+          ],
+        },
+      ],
+    });
   });
 
   it("returns a zeroed block for an account with no medications", async () => {

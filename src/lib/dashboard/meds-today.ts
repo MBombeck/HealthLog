@@ -34,7 +34,7 @@
  * anchor passed AFTER the block was built — render the plain day
  * summary, never an overdue state, until a fresh block arrives.
  */
-import type { PrismaClient } from "@/generated/prisma/client";
+import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { medicationWindow } from "@/lib/medications/course-window";
 import { projectTodayIntakesAndRecompute } from "@/lib/medications/scheduling/project-today-intakes";
 import { loadAutoTakeRollingAnchors } from "@/lib/medications/auto-take";
@@ -69,6 +69,29 @@ export interface MedsTodayDueCandidate {
    */
   opensAt?: string;
 }
+
+/**
+ * Which of today's intake rows are scheduled doses of the day, as one filter
+ * on the tally read. Only tracked medications (#1033). An as-needed
+ * medication schedules nothing, so its intakes (ad-hoc rows, `scheduledFor
+ * === takenAt`) are not part of the day's total. A still-pending placeholder
+ * of a medication paused since it was minted is no longer expected; an
+ * actioned row of it is history and stays. (Ending a course tombstones the
+ * placeholders after its moment, so `deletedAt` already takes those.)
+ */
+const SCHEDULED_DOSE_TODAY_WHERE = {
+  medication: { ...TRACKED_INTAKE_EVENT_WHERE.medication, asNeeded: false },
+  AND: [
+    {
+      OR: [
+        { takenAt: { not: null } },
+        { skipped: true },
+        { autoMissed: true },
+        { medication: { active: true } },
+      ],
+    },
+  ],
+} satisfies Prisma.MedicationIntakeEventWhereInput;
 
 export interface MedsTodayBlock {
   /** Active medications (paused courses excluded). */
@@ -166,17 +189,9 @@ export async function buildMedsTodayBlock(
           userId,
           deletedAt: null,
           scheduledFor: { gte: todayStart, lt: todayEndExclusive },
-          ...TRACKED_INTAKE_EVENT_WHERE,
+          ...SCHEDULED_DOSE_TODAY_WHERE,
         },
-        select: {
-          takenAt: true,
-          skipped: true,
-          autoMissed: true,
-          scheduledFor: true,
-          medication: {
-            select: { asNeeded: true, active: true, endedAt: true },
-          },
-        },
+        select: { takenAt: true, skipped: true, scheduledFor: true },
       }),
       prisma.medicationIntakeEvent.groupBy({
         by: ["medicationId"],
@@ -214,11 +229,10 @@ export async function buildMedsTodayBlock(
       }),
     ]);
 
-  const scheduledEvents = todayEvents.filter(isScheduledDoseToday);
-  const takenToday = scheduledEvents.filter(
+  const takenToday = todayEvents.filter(
     (e) => e.takenAt !== null && !e.skipped,
   ).length;
-  const skippedToday = scheduledEvents.filter((e) => e.skipped).length;
+  const skippedToday = todayEvents.filter((e) => e.skipped).length;
 
   const lastTakenAtByMedId = new Map<string, Date | null>(
     latestIntakes.map((entry) => [entry.medicationId, entry._max.takenAt]),
@@ -285,10 +299,10 @@ export async function buildMedsTodayBlock(
 
   return {
     activeCount: medications.length,
-    scheduledToday: scheduledEvents.length,
+    scheduledToday: todayEvents.length,
     takenToday,
     skippedToday,
-    scheduledTodayAt: scheduledEvents
+    scheduledTodayAt: todayEvents
       .map((e) => e.scheduledFor.toISOString())
       .sort(),
     nextDueAt: next?.dueAt ?? null,
@@ -297,34 +311,6 @@ export async function buildMedsTodayBlock(
     nextDueMedicationId: next?.medicationId ?? null,
     dueCandidates,
   };
-}
-
-/**
- * Whether a row of today's window is a scheduled dose of the day. An
- * as-needed medication schedules nothing, so its intakes (ad-hoc rows,
- * `scheduledFor === takenAt`) are not part of the day's total. A pending
- * placeholder of a medication paused since it was minted, or one at or after
- * the moment its course was ended, is no longer expected; an actioned row of
- * either is history and stays.
- */
-function isScheduledDoseToday(event: {
-  takenAt: Date | null;
-  skipped: boolean;
-  autoMissed?: boolean;
-  scheduledFor: Date;
-  medication?: { asNeeded: boolean; active: boolean; endedAt: Date | null };
-}): boolean {
-  const medication = event.medication;
-  if (!medication) return true;
-  if (medication.asNeeded) return false;
-  const pending =
-    event.takenAt === null && !event.skipped && event.autoMissed !== true;
-  if (!pending) return true;
-  if (!medication.active) return false;
-  return !(
-    medication.endedAt !== null &&
-    event.scheduledFor.getTime() >= medication.endedAt.getTime()
-  );
 }
 
 /**
