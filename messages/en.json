@@ -202,6 +202,16 @@
     "ai_provider": {
       "private_host": "This address is on a private network. The operator has to allow its exact origin in AI_PRIVATE_ORIGINS before it can be used."
     },
+    "ai_test": {
+      "anthropic_key_missing": "No Anthropic API key is saved, so nothing was tested. Enter the key on the Anthropic card and save it.",
+      "local_base_url_missing": "The local model has no base URL saved, so nothing was tested. Enter it on the Local model card and save it.",
+      "private_host": "This address is on a private network the operator has not allowed, so nothing was tested. The operator has to add its exact origin to AI_PRIVATE_ORIGINS.",
+      "compat_base_url_missing": "The OpenAI-compatible gateway has no base URL saved, so nothing was tested. Enter it on the gateway card and save it.",
+      "compat_model_missing": "The OpenAI-compatible gateway has no model saved, so nothing was tested. Enter one on the gateway card and save it.",
+      "codex_not_connected": "No ChatGPT account is connected, so nothing was tested. Connect it on the ChatGPT card.",
+      "openai_key_missing": "No OpenAI API key is saved here or by the operator, so nothing was tested. Enter the key on the OpenAI card and save it.",
+      "unknown_provider": "This provider is not known to this server, so nothing was tested."
+    },
     "encounter": {
       "invalid": "Check the visit details and try again.",
       "practitioner-not-found": "This practice or doctor no longer exists. Choose another or none.",
@@ -3139,6 +3149,9 @@
       "errorBudget": "You've reached today's Coach usage limit. The budget refreshes at midnight in your time zone.",
       "errorProvider": "The Coach could not reach an Insights provider just now. Please try again in a moment.",
       "errorReasoningOnly": "The model only reasoned and never wrote an answer. Try again, or choose a different model in your AI settings.",
+      "errorTimeout": "The AI provider did not answer in time, so the Coach has no reply. A slow local model may need a longer response timeout in your AI settings; a task bound to one provider tries no other.",
+      "errorUnreachable": "The AI provider could not be reached, so the Coach has no reply. Check that it is running and reachable; a task bound to one provider tries no other.",
+      "errorEmptyReply": "The AI provider answered with nothing, so the Coach has no reply. Try again, or choose a different model in your AI settings.",
       "errorDemo": "The Coach doesn't answer in the demo.",
       "errorNoProvider": "The Coach reads your logged health data and answers questions about it (not medical advice). HealthLog needs an AI provider for that. Connect your own key or a local model.",
       "errorNoProviderAction": "Connect an AI provider",
@@ -6694,6 +6707,7 @@
         "notConfigured": "The operator has not configured a shared OpenAI key on this instance."
       },
       "testProvider": "Test active provider",
+      "testNamedProvider": "Test {provider}",
       "testSuccess": "OK: {provider} ({model})",
       "testFailedShort": "Test failed: {message}",
       "testUnexpectedResponse": "AI provider connection failed: unexpected response from the server.",

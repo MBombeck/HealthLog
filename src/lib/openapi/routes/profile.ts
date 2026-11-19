@@ -711,11 +711,24 @@ const aiProviderResponse = z
       ])
       .nullable()
       .describe("The user's selected provider, or null when none is set."),
-    model: z.string().nullable(),
+    model: z
+      .string()
+      .nullable()
+      .describe(
+        "The selected provider's model: Local's own model when `provider` is LOCAL, the shared model of the OpenAI and Anthropic providers otherwise.",
+      ),
     baseUrl: z
       .string()
       .nullable()
-      .describe("Custom base URL (LOCAL provider only); null otherwise."),
+      .describe(
+        "The LOCAL provider's base URL, whichever provider is selected (#1417). Read only for Local; no other provider is ever sent to it.",
+      ),
+    localModel: z
+      .string()
+      .nullable()
+      .describe(
+        "The LOCAL provider's own model, whichever provider is selected (#1417). Null runs Local on its client default.",
+      ),
     aiAvailable: z
       .boolean()
       .describe(
@@ -1260,7 +1273,7 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Auth"],
       summary: "Update the calling user's AI-provider configuration",
       description:
-        "Partial update — an omitted key is left untouched, an explicit `null` (or an empty string, on the string fields) clears the column. Key material is write-only: it is encrypted at rest on the way in and the read never gives it back, only presence plus a four-character preview.\n\nOne implicit write is worth knowing about: switching `provider` to anything other than LOCAL, without naming `baseUrl` in the same request, CLEARS the stored base URL. The column is shared across providers, so leaving it would send a cloud key to a host that was configured for a self-hosted backend.\n\nA base URL — for LOCAL or for the OpenAI-compatible gateway — runs the SSRF floor: a private or internal host is refused unless the operator allowlisted that exact hostname on this instance.\n\nThe response is a bare `{ updated: true }` acknowledgement. It does not echo the resolved configuration, so a client that needs the new state re-reads the GET.\n\nA wrongly-typed value is refused, not skipped. Until this release the route inspected the body field by field with `typeof` guards, so a numeric `model` or a boolean `baseUrl` was dropped in silence and the write went ahead without it; a body of nothing but such keys came back as 'No valid fields' naming none of them. It runs the standard Zod parse now and answers the multi-issue 422 with the offending path.",
+        "Partial update — an omitted key is left untouched, an explicit `null` (or an empty string, on the string fields) clears the column. Key material is write-only: it is encrypted at rest on the way in and the read never gives it back, only presence plus a four-character preview.\n\n`baseUrl` is the LOCAL provider's base URL. It is kept when another provider is selected (until v1.48.2 it was cleared, which wiped a working Local setup); only the Local resolution ever reads it, so a cloud key is never sent to it. `model` is the model of the provider the request saves: Local's own model when `provider` (or, when the body names none, the saved provider) is LOCAL, the shared OpenAI / Anthropic model otherwise.\n\nA base URL — for LOCAL or for the OpenAI-compatible gateway — runs the SSRF floor: a private or internal host is refused unless the operator allowlisted that exact hostname on this instance.\n\nThe response is a bare `{ updated: true }` acknowledgement. It does not echo the resolved configuration, so a client that needs the new state re-reads the GET.\n\nA wrongly-typed value is refused, not skipped. Until this release the route inspected the body field by field with `typeof` guards, so a numeric `model` or a boolean `baseUrl` was dropped in silence and the write went ahead without it; a body of nothing but such keys came back as 'No valid fields' naming none of them. It runs the standard Zod parse now and answers the multi-issue 422 with the offending path.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: aiProviderPatchRequest } },

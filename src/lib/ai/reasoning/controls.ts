@@ -120,7 +120,12 @@ export async function loadCoachReasoningState(args: {
     const [row, settings] = await Promise.all([
       prisma.user.findUnique({
         where: { id: args.recordId },
-        select: { aiModel: true, aiCompatModel: true, aiCompatBaseUrl: true },
+        select: {
+          aiModel: true,
+          aiLocalModel: true,
+          aiCompatModel: true,
+          aiCompatBaseUrl: true,
+        },
       }),
       primary === "admin-openai"
         ? prisma.appSettings.findUnique({
@@ -131,6 +136,7 @@ export async function loadCoachReasoningState(args: {
     ]);
     support = reasoningSupportForChainEntry(primary, {
       model: row?.aiModel,
+      localModel: row?.aiLocalModel,
       compatModel: row?.aiCompatModel,
       compatBaseUrl: row?.aiCompatBaseUrl,
       adminModel: settings?.adminAiModel,

@@ -83,7 +83,6 @@ export const SESSION_USER_SELECT = {
   dateFormat: true,
   aiProvider: true,
   aiModel: true,
-  aiBaseUrl: true,
   aiCompatBaseUrl: true,
   aiCompatModel: true,
   aiProviderChain: true,

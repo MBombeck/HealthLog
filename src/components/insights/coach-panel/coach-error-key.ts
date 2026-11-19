@@ -46,8 +46,17 @@ export function errorCodeToI18nKey(code: string): string {
       // only, even after being asked once more. "Try again in a moment"
       // would be the wrong advice; the copy names what happened.
       return "insights.coach.errorReasoningOnly";
-    case "coach.provider.unavailable":
+    // #1404 — why the provider gave no answer, when the chain knows: it ran
+    // out of time, could not be reached, or answered with nothing. A task
+    // bound to one provider has no fallback, so these name the stop instead
+    // of "try again in a moment".
+    case "coach.provider.timeout":
+      return "insights.coach.errorTimeout";
+    case "coach.provider.unreachable":
+      return "insights.coach.errorUnreachable";
     case "coach.provider.empty":
+      return "insights.coach.errorEmptyReply";
+    case "coach.provider.unavailable":
     case "coach.stream":
       return "insights.coach.errorProvider";
     // The capability refusals (`meta.errorCode` on a 403/422/503

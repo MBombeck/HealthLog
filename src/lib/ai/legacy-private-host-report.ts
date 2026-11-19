@@ -29,14 +29,17 @@ export async function legacyPrivateHostReport(
   if (!legacyAnyHostConfigured()) return null;
   const rows = await prisma.user.findMany({
     where: {
-      OR: [{ aiBaseUrl: { not: null } }, { aiCompatBaseUrl: { not: null } }],
+      OR: [
+        { aiLocalBaseUrl: { not: null } },
+        { aiCompatBaseUrl: { not: null } },
+      ],
     },
-    select: { aiBaseUrl: true, aiCompatBaseUrl: true },
+    select: { aiLocalBaseUrl: true, aiCompatBaseUrl: true },
   });
   const origins = new Set<string>();
   for (const url of [
     adminBaseUrl,
-    ...rows.flatMap((r) => [r.aiBaseUrl, r.aiCompatBaseUrl]),
+    ...rows.flatMap((r) => [r.aiLocalBaseUrl, r.aiCompatBaseUrl]),
   ]) {
     if (!url) continue;
     const origin = originNeedingAiGrant(url);

@@ -9,6 +9,7 @@
 import { annotate, getEvent } from "@/lib/logging/context";
 import { redactOptional, redactSecrets } from "@/lib/logging/redact";
 import type { AllProvidersFailedError } from "@/lib/ai/provider-runner";
+import type { ProviderFailureKind } from "@/lib/ai/failure-kind";
 
 import type { TurnEmitter } from "./types";
 
@@ -24,6 +25,11 @@ import type { TurnEmitter } from "./types";
  *    client already asked once more (`reasoning_only`). The provider was
  *    reached; "try again in a moment" is the wrong advice, and the thought
  *    itself is never shown as the answer.
+ *  - #1404 — every hop ran out of time (`timeout`), every hop could not be
+ *    reached at all (`unreachable`: refused, DNS, reset, TLS, a host the
+ *    policy refused), or every hop answered with nothing (`empty`). A chain
+ *    bound to one provider has exactly one hop, so a stopped local model
+ *    now says so instead of the generic "try again in a moment".
  *  - Anything else: `unavailable`.
  */
 export function chainFailureCode(
@@ -40,7 +46,46 @@ export function chainFailureCode(
   ) {
     return "coach.provider.reasoning_only";
   }
+  const kinds = attempts.map((a) => a.failureKind);
+  if (attempts.length > 0 && kinds.every((k) => k === "empty_response")) {
+    return "coach.provider.empty";
+  }
+  if (attempts.length > 0 && kinds.every(isTimeout)) {
+    return "coach.provider.timeout";
+  }
+  if (
+    attempts.length > 0 &&
+    kinds.every((k) => isTimeout(k) || isUnreachable(k))
+  ) {
+    return "coach.provider.unreachable";
+  }
   return "coach.provider.unavailable";
+}
+
+const TIMEOUT_KINDS: ReadonlySet<ProviderFailureKind> = new Set([
+  "timeout",
+  "connect_timeout",
+  "headers_timeout",
+  "body_timeout",
+]);
+
+const UNREACHABLE_KINDS: ReadonlySet<ProviderFailureKind> = new Set([
+  "private_host",
+  "dns",
+  "refused",
+  "unreachable",
+  "reset",
+  "socket",
+  "tls",
+  "network",
+]);
+
+function isTimeout(kind: ProviderFailureKind | undefined): boolean {
+  return kind !== undefined && TIMEOUT_KINDS.has(kind);
+}
+
+function isUnreachable(kind: ProviderFailureKind | undefined): boolean {
+  return kind !== undefined && UNREACHABLE_KINDS.has(kind);
 }
 
 /**
@@ -56,7 +101,11 @@ export function chainFailureCode(
  */
 export function classifyBubblingProviderError(err: unknown): {
   code:
-    "credential_expired" | "rate_limited" | "reasoning_only" | "unavailable";
+    | "credential_expired"
+    | "rate_limited"
+    | "reasoning_only"
+    | "empty"
+    | "unavailable";
   httpStatus: number | null;
 } | null {
   if (err === null || typeof err !== "object") return null;
@@ -73,6 +122,10 @@ export function classifyBubblingProviderError(err: unknown): {
   // #1276 — the empty-reply sentinel of a reply that was reasoning only.
   if (e.kind === "reasoning_only") {
     return { code: "reasoning_only", httpStatus: status };
+  }
+  // #1404 — and of a reply that held nothing at all.
+  if (e.kind === "empty_response") {
+    return { code: "empty", httpStatus: status };
   }
   return { code: "unavailable", httpStatus: status };
 }

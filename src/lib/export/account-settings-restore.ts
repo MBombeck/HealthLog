@@ -59,16 +59,13 @@ export async function restoreAccountSettings(
     where: { id: ownerId },
     select: {
       role: true,
-      aiProvider: true,
       unitPreference: true,
       glucoseUnit: true,
     },
   });
-  const { data, refused } = admitAccountSettings(
-    entry,
-    { operatorTrusted: !source.retargeted && current.role === "ADMIN" },
-    current.aiProvider,
-  );
+  const { data, refused } = admitAccountSettings(entry, {
+    operatorTrusted: !source.retargeted && current.role === "ADMIN",
+  });
 
   const columns = Object.keys(data);
   if (columns.length > 0) {

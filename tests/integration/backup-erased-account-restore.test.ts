@@ -589,9 +589,9 @@ describe("restoring the backup of an erased account into a chosen account", () =
       expect(
         await prisma.user.findUniqueOrThrow({
           where: { id: person.id },
-          select: { aiProvider: true, aiBaseUrl: true },
+          select: { aiProvider: true, aiLocalBaseUrl: true },
         }),
-      ).toEqual({ aiProvider: "LOCAL", aiBaseUrl: null });
+      ).toEqual({ aiProvider: "LOCAL", aiLocalBaseUrl: null });
     },
     SLOW,
   );

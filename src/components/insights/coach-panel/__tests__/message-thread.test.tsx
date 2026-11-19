@@ -791,13 +791,23 @@ describe("errorCodeToI18nKey", () => {
   });
 
   it("maps every other provider failure to the generic copy", () => {
-    for (const code of [
-      "coach.provider.unavailable",
-      "coach.provider.empty",
-      "coach.stream",
-    ]) {
+    for (const code of ["coach.provider.unavailable", "coach.stream"]) {
       expect(errorCodeToI18nKey(code)).toBe("insights.coach.errorProvider");
     }
+  });
+
+  // #1404 — a provider that timed out, could not be reached or answered with
+  // nothing says so; a task bound to one provider has no fallback to hide it.
+  it("names a timeout, an unreachable provider and an empty reply", () => {
+    expect(errorCodeToI18nKey("coach.provider.timeout")).toBe(
+      "insights.coach.errorTimeout",
+    );
+    expect(errorCodeToI18nKey("coach.provider.unreachable")).toBe(
+      "insights.coach.errorUnreachable",
+    );
+    expect(errorCodeToI18nKey("coach.provider.empty")).toBe(
+      "insights.coach.errorEmptyReply",
+    );
   });
 
   // v1.18.6 — a "no provider configured anywhere" turn is a setup gap,

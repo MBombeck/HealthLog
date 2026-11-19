@@ -53,6 +53,7 @@ import {
   parseNamedChains,
   pinnedChains,
 } from "./named-chains";
+import { chainLabelFor, logChainCalls } from "./chain-call-log";
 import {
   everyEntry,
   type ProviderEntryPresence,
@@ -359,7 +360,8 @@ class NoProvider implements AIProvider {
 type UserAIRow = {
   aiProvider: string | null;
   aiModel: string | null;
-  aiBaseUrl: string | null;
+  aiLocalBaseUrl: string | null;
+  aiLocalModel: string | null;
   aiAnthropicKeyEncrypted: string | null;
   aiLocalKeyEncrypted: string | null;
   aiOpenaiKeyEncrypted: string | null;
@@ -383,7 +385,7 @@ function isOperatorOwned(row: { role: string } | null | undefined): boolean {
 /**
  * v1.33.1 (#470) — build the OpenAI-compatible gateway client from the user's
  * three dedicated columns. The signature names every column this provider is
- * allowed to read: the OpenAI key and `aiBaseUrl` are absent on purpose, so a
+ * allowed to read: the OpenAI key and Local's base URL are absent on purpose, so a
  * future edit that wants to hand it either has to widen this shape first and
  * answer for it.
  *
@@ -434,10 +436,10 @@ function buildUserProvider(row: UserAIRow): AIProvider | null {
   switch (choice) {
     case "ANTHROPIC": {
       if (!row.aiAnthropicKeyEncrypted) return null;
-      // Belt-and-braces: even if a stale `aiBaseUrl` from a prior LOCAL
-      // configuration survived in the row, refuse to forward an Anthropic
-      // key to it. Anthropic has no per-tenant base URL the UI exposes;
-      // the SDK default is correct.
+      // Never `aiLocalBaseUrl`: that is Local's address and stays set while
+      // another provider is selected (#1417), so an Anthropic key must not
+      // be able to reach it. Anthropic has no per-tenant base URL the UI
+      // exposes; the SDK default is correct.
       const apiKey = openStoredKey(row.aiAnthropicKeyEncrypted);
       if (apiKey === null) return null;
       return new AnthropicClient({
@@ -446,15 +448,15 @@ function buildUserProvider(row: UserAIRow): AIProvider | null {
       });
     }
     case "LOCAL": {
-      if (!row.aiBaseUrl) return null;
+      if (!row.aiLocalBaseUrl) return null;
       const apiKey = row.aiLocalKeyEncrypted
         ? openStoredKey(row.aiLocalKeyEncrypted)
         : null;
       if (row.aiLocalKeyEncrypted && apiKey === null) return null;
       return new LocalOpenAICompatibleClient({
         apiKey,
-        model: row.aiModel ?? "local-model",
-        baseUrl: row.aiBaseUrl,
+        model: row.aiLocalModel ?? "local-model",
+        baseUrl: row.aiLocalBaseUrl,
         operatorTrusted: isOperatorOwned(row),
       });
     }
@@ -469,9 +471,8 @@ function buildUserProvider(row: UserAIRow): AIProvider | null {
       // model-default mirrors the admin path for consistency so a saved
       // user "OPENAI" without an explicit model still produces an
       // OpenAIClient with the current full-size default `gpt-4o`.
-      // Belt-and-braces: ignore any persisted `aiBaseUrl`. The column is
-      // shared with LOCAL, so a stale LAN URL there would otherwise
-      // redirect the user's OpenAI key to a private host.
+      // Pinned host, never `aiLocalBaseUrl`: Local's address stays set while
+      // OpenAI is selected (#1417), and the OpenAI key must not reach it.
       const apiKey = row.aiOpenaiKeyEncrypted
         ? openStoredKey(row.aiOpenaiKeyEncrypted)
         : null;
@@ -741,7 +742,8 @@ export async function resolveProvider(userId: string): Promise<AIProvider> {
     select: {
       aiProvider: true,
       aiModel: true,
-      aiBaseUrl: true,
+      aiLocalBaseUrl: true,
+      aiLocalModel: true,
       aiAnthropicKeyEncrypted: true,
       aiLocalKeyEncrypted: true,
       aiOpenaiKeyEncrypted: true,
@@ -841,7 +843,8 @@ export async function resolveProviderChain(
     select: {
       aiProvider: true,
       aiModel: true,
-      aiBaseUrl: true,
+      aiLocalBaseUrl: true,
+      aiLocalModel: true,
       aiAnthropicKeyEncrypted: true,
       aiLocalKeyEncrypted: true,
       aiOpenaiKeyEncrypted: true,
@@ -869,11 +872,21 @@ export async function resolveProviderChain(
   const named = parseNamedChains(userRow?.aiNamedChains ?? null);
   const selection = chainSelectionFor(named, capability);
   const pinned = selection.kind === "pinned";
+  // #1404 — every call an entry makes writes which chain and provider served
+  // it (`chain-call-log.ts`), whichever way the caller reaches the entry.
+  const label = chainLabelFor(selection, capability);
+  const logged = (providerType: ProviderChainType, provider: AIProvider) =>
+    logChainCalls(bind(provider), providerType, label);
   if (!pinned && policy === "operator-default") {
     const provider = await resolveAdminProvider();
     return provider.type === "none"
       ? []
-      : [{ providerType: "admin-openai", instance: bind(provider) }];
+      : [
+          {
+            providerType: "admin-openai",
+            instance: logged("admin-openai", provider),
+          },
+        ];
   }
 
   const resolved: ProviderChainResolved[] = [];
@@ -892,7 +905,7 @@ export async function resolveProviderChain(
             policy,
           });
     if (instance) {
-      const entry = { providerType, instance: bind(instance) };
+      const entry = { providerType, instance: logged(providerType, instance) };
       resolved.push(pinned ? { ...entry, pinned: true } : entry);
     }
   }
@@ -909,7 +922,7 @@ export async function resolveProviderChain(
     if (centralCodex) {
       resolved.push({
         providerType: "admin-codex",
-        instance: bind(centralCodex),
+        instance: logged("admin-codex", centralCodex),
       });
     }
   }
@@ -919,7 +932,7 @@ export async function resolveProviderChain(
     if (gateway) {
       resolved.push({
         providerType: "openai-compatible",
-        instance: bind(gateway),
+        instance: logged("openai-compatible", gateway),
       });
     }
   }
@@ -982,7 +995,8 @@ const PRESENCE_USER_SELECT = {
   aiAnthropicKeyEncrypted: true,
   aiLocalKeyEncrypted: true,
   aiOpenaiKeyEncrypted: true,
-  aiBaseUrl: true,
+  aiLocalBaseUrl: true,
+  aiLocalModel: true,
   aiCompatBaseUrl: true,
   aiCompatModel: true,
   aiModel: true,
@@ -1005,16 +1019,24 @@ const NO_PRESENCE: ProviderPresence = Object.freeze({
 /**
  * Whether one chain entry's model can read an image. Mirrors the model each
  * entry runs on (`src/lib/labs/ocr-capability.ts`): each Codex path asks its
- * own sign-in, the operator's slot uses the operator's model, every other
- * entry the person's own.
+ * own sign-in, the operator's slot uses the operator's model, Local its own
+ * (`aiLocalModel`), every other entry the person's shared `aiModel`.
  */
 function entryVision(
   providerType: string,
   recordId: string,
-  userModel: string | null,
-  adminModel: string | null,
+  models: {
+    user: string | null;
+    local: string | null;
+    admin: string | null;
+  },
 ): boolean {
-  const model = providerType === "admin-openai" ? adminModel : userModel;
+  const model =
+    providerType === "admin-openai"
+      ? models.admin
+      : providerType === "local"
+        ? models.local
+        : models.user;
   return chainEntryReadsImages(providerType, recordId, model);
 }
 
@@ -1061,7 +1083,11 @@ export function probeProviderChain(
       const adminModel = settings?.adminAiModel ?? null;
       const vision = (providerType: string): ProviderEntryPresence => ({
         providerType,
-        vision: entryVision(providerType, recordId, row.aiModel, adminModel),
+        vision: entryVision(providerType, recordId, {
+          user: row.aiModel,
+          local: row.aiLocalModel,
+          admin: adminModel,
+        }),
       });
 
       if (policy === "deny") return NO_PRESENCE;
@@ -1096,7 +1122,7 @@ export function probeProviderChain(
           case "anthropic":
             return !!row.aiAnthropicKeyEncrypted;
           case "local":
-            return !!row.aiBaseUrl;
+            return !!row.aiLocalBaseUrl;
           case "openai-compatible":
             return !!(
               row.aiCompatBaseUrl &&
@@ -1185,7 +1211,8 @@ async function resolveProviderForType(
       aiAnthropicKeyEncrypted: string | null;
       aiLocalKeyEncrypted: string | null;
       aiOpenaiKeyEncrypted: string | null;
-      aiBaseUrl: string | null;
+      aiLocalBaseUrl: string | null;
+      aiLocalModel: string | null;
       aiModel: string | null;
       aiCompatBaseUrl: string | null;
       aiCompatKeyEncrypted: string | null;
@@ -1225,21 +1252,21 @@ async function resolveProviderForType(
       });
     }
     case "local": {
-      if (!ctx.userRow?.aiBaseUrl) return null;
+      if (!ctx.userRow?.aiLocalBaseUrl) return null;
       const apiKey = ctx.userRow.aiLocalKeyEncrypted
         ? openStoredKey(ctx.userRow.aiLocalKeyEncrypted)
         : null;
       if (ctx.userRow.aiLocalKeyEncrypted && apiKey === null) return null;
       return new LocalOpenAICompatibleClient({
         apiKey,
-        model: ctx.userRow.aiModel ?? "local-model",
-        baseUrl: ctx.userRow.aiBaseUrl,
+        model: ctx.userRow.aiLocalModel ?? "local-model",
+        baseUrl: ctx.userRow.aiLocalBaseUrl,
         operatorTrusted: isOperatorOwned(ctx.userRow),
       });
     }
     case "openai-compatible": {
       // v1.33.1 (#470) — the user's gateway. Note what is NOT read here:
-      // `aiOpenaiKeyEncrypted` and `aiBaseUrl`. The gateway gets the
+      // `aiOpenaiKeyEncrypted` and `aiLocalBaseUrl`. The gateway gets the
       // credential the user issued for it, or none at all.
       if (!ctx.userRow) return null;
       return buildCompatProvider(ctx.userRow);
@@ -1280,12 +1307,31 @@ export type AITestOverride = {
   compatModel?: string | null;
 };
 
+/**
+ * #1417 — why a connection test could not even be attempted, as a stable code
+ * the settings page translates (`apiErrors.ai_test.<code>`). Before the code a
+ * missing Local base URL arrived as the generic "some entries were not
+ * accepted" sentence, which named nothing.
+ */
+export type AITestConfigErrorCode =
+  | "anthropic_key_missing"
+  | "local_base_url_missing"
+  | "private_host"
+  | "compat_base_url_missing"
+  | "compat_model_missing"
+  | "codex_not_connected"
+  | "openai_key_missing"
+  | "unknown_provider";
+
 export class AITestConfigError extends Error {
   readonly status: number;
-  constructor(status: number, message: string) {
+  /** `ai_test.<code>`, the envelope's `meta.errorCode`. */
+  readonly errorCode: `ai_test.${AITestConfigErrorCode}`;
+  constructor(status: number, message: string, code: AITestConfigErrorCode) {
     super(message);
     this.name = "AITestConfigError";
     this.status = status;
+    this.errorCode = `ai_test.${code}`;
   }
 }
 
@@ -1320,7 +1366,8 @@ async function resolveProviderForTestUnbound(
     select: {
       aiProvider: true,
       aiModel: true,
-      aiBaseUrl: true,
+      aiLocalBaseUrl: true,
+      aiLocalModel: true,
       aiAnthropicKeyEncrypted: true,
       aiLocalKeyEncrypted: true,
       aiOpenaiKeyEncrypted: true,
@@ -1338,10 +1385,10 @@ async function resolveProviderForTestUnbound(
     .toString()
     .trim()
     .toUpperCase();
+  // The shared model of the OpenAI and Anthropic arms (and the gateway's
+  // fallback). Local reads its own model and base URL in its arm below, so no
+  // other arm can see Local's address.
   const model = (override.model ?? stored?.aiModel ?? "").toString().trim();
-  const baseUrl = (override.baseUrl ?? stored?.aiBaseUrl ?? "")
-    .toString()
-    .trim();
 
   // Empty selection ("test my saved config" — the ai-section calls
   // /api/ai/test with an empty body): resolve via the SAME path generation
@@ -1363,19 +1410,32 @@ async function resolveProviderForTestUnbound(
           ? (openStoredKey(stored.aiAnthropicKeyEncrypted) ?? "")
           : "");
       if (!apiKey) {
-        throw new AITestConfigError(422, "Anthropic API key not configured");
+        throw new AITestConfigError(
+          422,
+          "Anthropic API key not configured",
+          "anthropic_key_missing",
+        );
       }
-      // Anthropic has no UI base-URL input. Ignore the merged value to
-      // avoid leaking the key to a stale LOCAL URL still parked in the
-      // shared column.
+      // Anthropic has no UI base-URL input, and Local's address is never
+      // read here, so the key cannot leave for it.
       return new AnthropicClient({
         apiKey,
         model: model || "claude-sonnet-4-6",
       });
     }
     case "LOCAL": {
+      const baseUrl = (override.baseUrl ?? stored?.aiLocalBaseUrl ?? "")
+        .toString()
+        .trim();
+      const localModel = (override.model ?? stored?.aiLocalModel ?? "")
+        .toString()
+        .trim();
       if (!baseUrl) {
-        throw new AITestConfigError(422, "Local provider requires a base URL");
+        throw new AITestConfigError(
+          422,
+          "Local provider requires a base URL",
+          "local_base_url_missing",
+        );
       }
       // A private host only when the operator granted its origin
       // (`AI_PRIVATE_ORIGINS` or the legacy host list; v1.39.3).
@@ -1384,6 +1444,7 @@ async function resolveProviderForTestUnbound(
         throw new AITestConfigError(
           422,
           "Base URL points to an internal/private host",
+          "private_host",
         );
       }
       const apiKey =
@@ -1393,15 +1454,14 @@ async function resolveProviderForTestUnbound(
           : null);
       return new LocalOpenAICompatibleClient({
         apiKey,
-        model: model || "local-model",
+        model: localModel || "local-model",
         baseUrl,
         ...owner,
       });
     }
     case "OPENAI_COMPATIBLE": {
-      // v1.33.1 (#470) — the gateway. Reads `aiCompatBaseUrl`, never the
-      // merged `baseUrl` above (which can carry a stale LOCAL URL) and never
-      // the OpenAI key. Same host policy as LOCAL: public always, private
+      // v1.33.1 (#470) — the gateway. Reads `aiCompatBaseUrl`, never Local's
+      // address and never the OpenAI key. Same host policy as LOCAL: public always, private
       // only when the operator allowlisted it.
       const compatBaseUrl = (
         override.compatBaseUrl ??
@@ -1414,6 +1474,7 @@ async function resolveProviderForTestUnbound(
         throw new AITestConfigError(
           422,
           "OpenAI-compatible provider requires a base URL",
+          "compat_base_url_missing",
         );
       }
       if (
@@ -1423,6 +1484,7 @@ async function resolveProviderForTestUnbound(
         throw new AITestConfigError(
           422,
           "Base URL points to an internal/private host",
+          "private_host",
         );
       }
       const compatModel =
@@ -1433,6 +1495,7 @@ async function resolveProviderForTestUnbound(
         throw new AITestConfigError(
           422,
           "OpenAI-compatible provider requires a model name",
+          "compat_model_missing",
         );
       }
       const apiKey =
@@ -1451,15 +1514,18 @@ async function resolveProviderForTestUnbound(
     case "CHATGPT_OAUTH": {
       const codex = await resolveCodexProvider(userId);
       if (codex) return codex;
-      throw new AITestConfigError(422, "ChatGPT OAuth is not connected");
+      throw new AITestConfigError(
+        422,
+        "ChatGPT OAuth is not connected",
+        "codex_not_connected",
+      );
     }
     case "OPENAI": {
       // Test path mirrors the persistent resolution: user key first,
       // admin fallback if absent. We accept an `openaiKey` override
       // from the test endpoint so a user can verify a not-yet-saved
       // key dropdown change without persisting anything. Always use
-      // the canonical OpenAI base URL — the merged `baseUrl` may carry
-      // a stale LOCAL URL through `stored.aiBaseUrl`.
+      // the canonical OpenAI base URL, never Local's address.
       const userKey =
         override.openaiKey?.trim() ||
         (stored?.aiOpenaiKeyEncrypted
@@ -1477,11 +1543,16 @@ async function resolveProviderForTestUnbound(
         throw new AITestConfigError(
           422,
           "OpenAI key not configured (neither user nor admin)",
+          "openai_key_missing",
         );
       }
       return admin;
     }
     default:
-      throw new AITestConfigError(422, `Unknown provider: ${provider}`);
+      throw new AITestConfigError(
+        422,
+        `Unknown provider: ${provider}`,
+        "unknown_provider",
+      );
   }
 }

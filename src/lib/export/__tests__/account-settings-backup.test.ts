@@ -50,7 +50,7 @@ afterEach(() => {
 });
 
 describe("buildAccountSettingsBackupSection", () => {
-  it("writes only setting columns, plus the readable insurance number alias", async () => {
+  it("writes only setting columns, plus the insurance number and Local address aliases", async () => {
     const { accountSettings } = await buildAccountSettingsBackupSection(
       prismaReturning(rowWith()),
       "u1",
@@ -59,6 +59,8 @@ describe("buildAccountSettingsBackupSection", () => {
     const allowed = new Set<string>([
       ...ACCOUNT_SETTING_COLUMNS,
       "insuranceNumber",
+      // `aiLocalBaseUrl` travels under its old name.
+      "aiBaseUrl",
     ]);
     expect(
       Object.keys(accountSettings!).filter((key) => !allowed.has(key)),
@@ -173,26 +175,39 @@ describe("admitAccountSettings", () => {
       ctx,
     );
     expect(refused).toEqual([]);
-    expect(data.aiBaseUrl).toBe("http://ollama.lan:11434");
+    expect(data.aiLocalBaseUrl).toBe("http://ollama.lan:11434");
   });
 
-  it("does not attach a base URL to a provider other than Local", () => {
+  it("keeps Local's address and model while another provider is selected (#1417)", () => {
     const { data, refused } = admitAccountSettings(
-      { aiProvider: "OPENAI", aiBaseUrl: "https://llm.example.com/v1" },
+      {
+        aiProvider: "OPENAI_COMPATIBLE",
+        aiModel: "gpt-4o",
+        aiBaseUrl: "https://llm.example.com/v1",
+        aiLocalModel: "qwen2.5",
+      },
       ctx,
     );
-    expect(refused).toEqual(["aiBaseUrl"]);
-    expect(data).toEqual({ aiProvider: "OPENAI" });
+    expect(refused).toEqual([]);
+    expect(data).toEqual({
+      aiProvider: "OPENAI_COMPATIBLE",
+      aiModel: "gpt-4o",
+      aiLocalBaseUrl: "https://llm.example.com/v1",
+      aiLocalModel: "qwen2.5",
+    });
   });
 
-  it("reads the provider the account already has when the file names none", () => {
-    expect(
-      admitAccountSettings(
-        { aiBaseUrl: "https://llm.example.com/v1" },
-        ctx,
-        "LOCAL",
-      ).data,
-    ).toEqual({ aiBaseUrl: "https://llm.example.com/v1" });
+  it("gives a Local file from before the column its model back (#1417)", () => {
+    const local = admitAccountSettings(
+      { aiProvider: "LOCAL", aiModel: "llama3.1:8b" },
+      ctx,
+    ).data;
+    expect(local.aiLocalModel).toBe("llama3.1:8b");
+    const cloud = admitAccountSettings(
+      { aiProvider: "OPENAI", aiModel: "gpt-4o" },
+      ctx,
+    ).data;
+    expect(cloud).not.toHaveProperty("aiLocalModel");
   });
 
   it("keeps the valid threshold bands and names the ones it drops", () => {

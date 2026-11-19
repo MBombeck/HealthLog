@@ -174,7 +174,7 @@ describe("429 rate-limit headers (real Postgres)", () => {
       where: { id: TEST_USER_ID },
       // A self-hosted local endpoint resolves as the chain's primary, which
       // keeps the request on the user-plan ceiling and off the consent gate.
-      data: { aiBaseUrl: "http://127.0.0.1:11434/v1" },
+      data: { aiLocalBaseUrl: "http://127.0.0.1:11434/v1" },
     });
     const { buildDateKey, USER_PLAN_CAP } =
       await import("@/lib/ai/coach/budget");

@@ -35,6 +35,8 @@ import type { OcrCapabilityDto } from "@/lib/validations/labs-ocr";
 interface ModelContext {
   /** The user's selected model (per-user provider entries). */
   userModel: string | null;
+  /** The Local provider's own model (#1417). */
+  localModel: string | null;
   /** The operator's admin-key model (the `admin-openai` chain entry). */
   adminModel: string | null;
 }
@@ -50,7 +52,11 @@ function entryReadsImages(
   // Each Codex path asks its own sign-in: the person's connection, or the
   // operator-shared central one (`admin-codex`).
   const model =
-    providerType === "admin-openai" ? ctx.adminModel : ctx.userModel;
+    providerType === "admin-openai"
+      ? ctx.adminModel
+      : providerType === "local"
+        ? ctx.localModel
+        : ctx.userModel;
   return chainEntryReadsImages(providerType, userId, model);
 }
 
@@ -115,7 +121,7 @@ export async function resolveVisionProvider(
 ): Promise<VisionProviderPick> {
   const userRow = await prisma.user.findUnique({
     where: { id: userId },
-    select: { aiModel: true, labsLocalOcrEnabled: true },
+    select: { aiModel: true, aiLocalModel: true, labsLocalOcrEnabled: true },
   });
   const settings = await prisma.appSettings.findUnique({
     where: { id: "singleton" },
@@ -128,6 +134,7 @@ export async function resolveVisionProvider(
   // model drives the vision allowlist.
   const ctx: ModelContext = {
     userModel: userRow?.aiModel ?? null,
+    localModel: userRow?.aiLocalModel ?? null,
     adminModel: settings?.adminAiModel ?? null,
   };
 

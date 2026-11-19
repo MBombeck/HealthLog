@@ -202,6 +202,16 @@
     "ai_provider": {
       "private_host": "Diese Adresse liegt in einem privaten Netz. Der Betreiber muss ihren genauen Ursprung erst in AI_PRIVATE_ORIGINS freigeben."
     },
+    "ai_test": {
+      "anthropic_key_missing": "Es ist kein Anthropic-API-Schlüssel gespeichert, deshalb wurde nichts getestet. Trag den Schlüssel in der Anthropic-Karte ein und speichere.",
+      "local_base_url_missing": "Für das lokale Modell ist keine Basis-URL gespeichert, deshalb wurde nichts getestet. Trag sie in der Karte „Lokales Modell“ ein und speichere.",
+      "private_host": "Diese Adresse liegt in einem privaten Netz, das der Betreiber nicht freigegeben hat, deshalb wurde nichts getestet. Der Betreiber muss ihren genauen Origin in AI_PRIVATE_ORIGINS eintragen.",
+      "compat_base_url_missing": "Für das OpenAI-kompatible Gateway ist keine Basis-URL gespeichert, deshalb wurde nichts getestet. Trag sie in der Gateway-Karte ein und speichere.",
+      "compat_model_missing": "Für das OpenAI-kompatible Gateway ist kein Modell gespeichert, deshalb wurde nichts getestet. Trag eines in der Gateway-Karte ein und speichere.",
+      "codex_not_connected": "Es ist kein ChatGPT-Konto verbunden, deshalb wurde nichts getestet. Verbinde es in der ChatGPT-Karte.",
+      "openai_key_missing": "Weder du noch der Betreiber haben einen OpenAI-API-Schlüssel gespeichert, deshalb wurde nichts getestet. Trag den Schlüssel in der OpenAI-Karte ein und speichere.",
+      "unknown_provider": "Diesen Anbieter kennt der Server nicht, deshalb wurde nichts getestet."
+    },
     "encounter": {
       "invalid": "Prüfe die Angaben zum Termin und versuche es erneut.",
       "practitioner-not-found": "Diese Praxis bzw. dieser Arzt existiert nicht mehr. Wähle einen anderen Eintrag oder keinen.",
@@ -3139,6 +3149,9 @@
       "errorBudget": "Du hast das heutige Coach-Limit erreicht. Das Budget setzt sich um Mitternacht in deiner Zeitzone zurück.",
       "errorProvider": "Der Coach konnte gerade keinen Auswertungs-Anbieter erreichen. Bitte versuche es in einem Moment erneut.",
       "errorReasoningOnly": "Das Modell hat nur nachgedacht und keine Antwort geschrieben. Versuche es noch einmal oder wähle in den KI-Einstellungen ein anderes Modell.",
+      "errorTimeout": "Der KI-Anbieter hat nicht rechtzeitig geantwortet, deshalb hat der Coach keine Antwort. Ein langsames lokales Modell braucht vielleicht eine längere Antwortzeit in den KI-Einstellungen; eine Aufgabe, die an einen Anbieter gebunden ist, versucht keinen anderen.",
+      "errorUnreachable": "Der KI-Anbieter war nicht erreichbar, deshalb hat der Coach keine Antwort. Prüfe, ob er läuft und erreichbar ist; eine Aufgabe, die an einen Anbieter gebunden ist, versucht keinen anderen.",
+      "errorEmptyReply": "Der KI-Anbieter hat eine leere Antwort geschickt, deshalb hat der Coach keine Antwort. Versuche es noch einmal oder wähle in den KI-Einstellungen ein anderes Modell.",
       "errorDemo": "In der Demo antwortet der Coach nicht.",
       "errorNoProvider": "Der Coach liest deine erfassten Gesundheitsdaten und beantwortet Fragen dazu (keine medizinische Beratung). Dafür braucht HealthLog einen KI-Anbieter. Verbinde deinen eigenen Schlüssel oder ein lokales Modell.",
       "errorNoProviderAction": "KI-Anbieter verbinden",
@@ -6694,6 +6707,7 @@
         "notConfigured": "Der Betreiber hat keinen geteilten OpenAI-Key auf dieser Instanz konfiguriert."
       },
       "testProvider": "Aktiven Anbieter testen",
+      "testNamedProvider": "{provider} testen",
       "testSuccess": "OK: {provider} ({model})",
       "testFailedShort": "Test fehlgeschlagen: {message}",
       "testUnexpectedResponse": "Verbindung zum KI-Anbieter fehlgeschlagen: unerwartete Antwort vom Server.",

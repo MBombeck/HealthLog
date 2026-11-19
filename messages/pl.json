@@ -202,6 +202,16 @@
     "ai_provider": {
       "private_host": "Ten adres jest w sieci prywatnej. Operator musi najpierw dopuścić jego dokładne źródło w AI_PRIVATE_ORIGINS."
     },
+    "ai_test": {
+      "anthropic_key_missing": "Nie zapisano klucza API Anthropic, więc niczego nie przetestowano. Wpisz klucz na karcie Anthropic i zapisz go.",
+      "local_base_url_missing": "Model lokalny nie ma zapisanego bazowego adresu URL, więc niczego nie przetestowano. Wpisz go na karcie modelu lokalnego i zapisz.",
+      "private_host": "Ten adres jest w sieci prywatnej, na którą operator nie zezwolił, więc niczego nie przetestowano. Operator musi dodać jego dokładny origin do AI_PRIVATE_ORIGINS.",
+      "compat_base_url_missing": "Bramka zgodna z OpenAI nie ma zapisanego bazowego adresu URL, więc niczego nie przetestowano. Wpisz go na karcie bramki i zapisz.",
+      "compat_model_missing": "Bramka zgodna z OpenAI nie ma zapisanego modelu, więc niczego nie przetestowano. Wpisz model na karcie bramki i zapisz.",
+      "codex_not_connected": "Nie połączono konta ChatGPT, więc niczego nie przetestowano. Połącz je na karcie ChatGPT.",
+      "openai_key_missing": "Ani Ty, ani operator nie zapisaliście klucza API OpenAI, więc niczego nie przetestowano. Wpisz klucz na karcie OpenAI i zapisz go.",
+      "unknown_provider": "Ten serwer nie zna tego dostawcy, więc niczego nie przetestowano."
+    },
     "encounter": {
       "invalid": "Sprawdź dane wizyty i spróbuj ponownie.",
       "practitioner-not-found": "Ten gabinet lub lekarz już nie istnieje. Wybierz inny wpis albo „Nie podano”.",
@@ -3139,6 +3149,9 @@
       "errorBudget": "Osiągnięto dzienny limit coacha. Limit resetuje się o północy w Twojej strefie czasowej.",
       "errorProvider": "Coach nie mógł teraz skontaktować się z dostawcą analizy. Spróbuj za chwilę.",
       "errorReasoningOnly": "Model tylko rozumował i nie napisał odpowiedzi. Spróbuj ponownie albo wybierz inny model w ustawieniach AI.",
+      "errorTimeout": "Dostawca AI nie odpowiedział na czas, więc Coach nie ma odpowiedzi. Wolny model lokalny może potrzebować dłuższego czasu odpowiedzi w ustawieniach AI; zadanie przypisane do jednego dostawcy nie próbuje innego.",
+      "errorUnreachable": "Nie udało się połączyć z dostawcą AI, więc Coach nie ma odpowiedzi. Sprawdź, czy działa i jest osiągalny; zadanie przypisane do jednego dostawcy nie próbuje innego.",
+      "errorEmptyReply": "Dostawca AI odpowiedział pustą treścią, więc Coach nie ma odpowiedzi. Spróbuj ponownie albo wybierz inny model w ustawieniach AI.",
       "errorDemo": "W wersji demo Coach nie odpowiada.",
       "errorNoProvider": "Coach czyta Twoje zapisane dane zdrowotne i odpowiada na pytania o nie (to nie porada medyczna). HealthLog potrzebuje do tego dostawcy AI: połącz własny klucz lub model lokalny.",
       "errorNoProviderAction": "Połącz dostawcę AI",
@@ -6694,6 +6707,7 @@
         "notConfigured": "Operator nie skonfigurował współdzielonego klucza OpenAI w tej instancji."
       },
       "testProvider": "Przetestuj aktywnego dostawcę",
+      "testNamedProvider": "Testuj: {provider}",
       "testSuccess": "OK: {provider} ({model})",
       "testFailedShort": "Test nie powiódł się: {message}",
       "testUnexpectedResponse": "Połączenie z dostawcą AI nie powiodło się: nieoczekiwana odpowiedź serwera.",

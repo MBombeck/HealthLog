@@ -202,6 +202,16 @@
     "ai_provider": {
       "private_host": "Este endereço está em uma rede privada. O operador precisa primeiro permitir a origem exata em AI_PRIVATE_ORIGINS."
     },
+    "ai_test": {
+      "anthropic_key_missing": "Nenhuma chave de API da Anthropic está salva, então nada foi testado. Informe a chave no cartão da Anthropic e salve.",
+      "local_base_url_missing": "O modelo local não tem URL base salva, então nada foi testado. Informe-a no cartão do modelo local e salve.",
+      "private_host": "Este endereço está numa rede privada que o operador não permitiu, então nada foi testado. O operador precisa adicionar a origem exata em AI_PRIVATE_ORIGINS.",
+      "compat_base_url_missing": "O gateway compatível com OpenAI não tem URL base salva, então nada foi testado. Informe-a no cartão do gateway e salve.",
+      "compat_model_missing": "O gateway compatível com OpenAI não tem modelo salvo, então nada foi testado. Informe um no cartão do gateway e salve.",
+      "codex_not_connected": "Nenhuma conta do ChatGPT está conectada, então nada foi testado. Conecte-a no cartão do ChatGPT.",
+      "openai_key_missing": "Nem você nem o operador salvaram uma chave de API da OpenAI, então nada foi testado. Informe a chave no cartão da OpenAI e salve.",
+      "unknown_provider": "Este servidor não conhece este provedor, então nada foi testado."
+    },
     "encounter": {
       "invalid": "Verifique os dados da consulta e tente novamente.",
       "practitioner-not-found": "Esta clínica ou médico não existe mais. Escolha outro ou nenhum.",
@@ -3139,6 +3149,9 @@
       "errorBudget": "Você atingiu o limite de uso do Coach hoje. O orçamento é renovado à meia-noite no seu fuso horário.",
       "errorProvider": "O Coach não conseguiu alcançar um provedor de Insights agora. Tente novamente em instantes.",
       "errorReasoningOnly": "O modelo apenas raciocinou e não escreveu uma resposta. Tente novamente ou escolha outro modelo nas configurações de IA.",
+      "errorTimeout": "O provedor de IA não respondeu a tempo, então o Coach ficou sem resposta. Um modelo local lento pode precisar de um tempo de resposta maior nas configurações de IA; uma tarefa vinculada a um provedor não tenta outro.",
+      "errorUnreachable": "Não foi possível alcançar o provedor de IA, então o Coach ficou sem resposta. Verifique se ele está rodando e acessível; uma tarefa vinculada a um provedor não tenta outro.",
+      "errorEmptyReply": "O provedor de IA respondeu sem conteúdo, então o Coach ficou sem resposta. Tente de novo ou escolha outro modelo nas configurações de IA.",
       "errorDemo": "O Coach não responde na demonstração.",
       "errorNoProvider": "O Coach lê seus dados de saúde registrados e responde perguntas sobre eles (não é aconselhamento médico). O HealthLog precisa de um provedor de IA para isso. Conecte sua própria chave ou um modelo local.",
       "errorNoProviderAction": "Conectar um provedor de IA",
@@ -6694,6 +6707,7 @@
         "notConfigured": "A administração não configurou uma chave compartilhada da OpenAI nesta instância."
       },
       "testProvider": "Testar provedor ativo",
+      "testNamedProvider": "Testar {provider}",
       "testSuccess": "OK: {provider} ({model})",
       "testFailedShort": "Teste falhou: {message}",
       "testUnexpectedResponse": "Falha na conexão com o provedor de IA: resposta inesperada do servidor.",

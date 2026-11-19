@@ -70,7 +70,7 @@ describe("resolveProvider", () => {
       .mockResolvedValueOnce({
         aiProvider: null,
         aiModel: null,
-        aiBaseUrl: null,
+        aiLocalBaseUrl: null,
         aiAnthropicKeyEncrypted: null,
         aiLocalKeyEncrypted: null,
       } as never)
@@ -91,7 +91,7 @@ describe("resolveProvider", () => {
       .mockResolvedValueOnce({
         aiProvider: null,
         aiModel: null,
-        aiBaseUrl: null,
+        aiLocalBaseUrl: null,
         aiAnthropicKeyEncrypted: null,
         aiLocalKeyEncrypted: null,
       } as never)
@@ -117,7 +117,7 @@ describe("resolveProvider", () => {
       .mockResolvedValueOnce({
         aiProvider: null,
         aiModel: null,
-        aiBaseUrl: null,
+        aiLocalBaseUrl: null,
         aiAnthropicKeyEncrypted: null,
         aiLocalKeyEncrypted: null,
       } as never)
@@ -141,7 +141,7 @@ describe("resolveProvider", () => {
       .mockResolvedValueOnce({
         aiProvider: null,
         aiModel: null,
-        aiBaseUrl: null,
+        aiLocalBaseUrl: null,
         aiAnthropicKeyEncrypted: null,
         aiLocalKeyEncrypted: null,
       } as never)
@@ -166,7 +166,7 @@ describe("resolveProvider", () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
       aiProvider: "ANTHROPIC",
       aiModel: "claude-3-5-sonnet-latest",
-      aiBaseUrl: null,
+      aiLocalBaseUrl: null,
       aiAnthropicKeyEncrypted: "enc-anthropic-key",
       aiLocalKeyEncrypted: null,
     } as never);
@@ -182,7 +182,7 @@ describe("resolveProvider", () => {
       .mockResolvedValueOnce({
         aiProvider: "ANTHROPIC",
         aiModel: "claude-3-5-sonnet-latest",
-        aiBaseUrl: null,
+        aiLocalBaseUrl: null,
         aiAnthropicKeyEncrypted: null,
         aiLocalKeyEncrypted: null,
       } as never)
@@ -206,7 +206,7 @@ describe("resolveProvider", () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
       aiProvider: "LOCAL",
       aiModel: "llama3:8b",
-      aiBaseUrl: "http://localhost:11434/v1",
+      aiLocalBaseUrl: "http://localhost:11434/v1",
       aiAnthropicKeyEncrypted: null,
       aiLocalKeyEncrypted: null,
     } as never);
@@ -219,7 +219,7 @@ describe("resolveProvider", () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
       aiProvider: "OPENAI",
       aiModel: null,
-      aiBaseUrl: null,
+      aiLocalBaseUrl: null,
       aiAnthropicKeyEncrypted: null,
       aiLocalKeyEncrypted: null,
     } as never);
@@ -234,16 +234,16 @@ describe("resolveProvider", () => {
     expect(provider.type).toBe("admin-key");
   });
 
-  it("OPENAI with user key ignores stored aiBaseUrl (provider-leak guard)", async () => {
+  it("OPENAI with user key ignores stored aiLocalBaseUrl (provider-leak guard)", async () => {
     // Regression for v1.4.6 T4: a user who had configured LOCAL with a
     // private LAN URL and later switched to OPENAI must NOT have their
-    // OpenAI key forwarded to that URL. The persisted `aiBaseUrl` is
+    // OpenAI key forwarded to that URL. The persisted `aiLocalBaseUrl` is
     // shared across providers, so `buildUserProvider` hardcodes
     // api.openai.com for OPENAI regardless of what the column carries.
     vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
       aiProvider: "OPENAI",
       aiModel: null,
-      aiBaseUrl: "http://192.168.0.42/v1", // stale LOCAL value
+      aiLocalBaseUrl: "http://192.168.0.42/v1", // stale LOCAL value
       aiAnthropicKeyEncrypted: null,
       aiLocalKeyEncrypted: null,
       aiOpenaiKeyEncrypted: "enc-user-openai-key",
@@ -257,11 +257,11 @@ describe("resolveProvider", () => {
     expect(inspect.config.baseUrl).toBe("https://api.openai.com/v1");
   });
 
-  it("ANTHROPIC ignores stored aiBaseUrl (provider-leak guard)", async () => {
+  it("ANTHROPIC ignores stored aiLocalBaseUrl (provider-leak guard)", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
       aiProvider: "ANTHROPIC",
       aiModel: "claude-3-5-sonnet-latest",
-      aiBaseUrl: "http://192.168.0.42/v1", // stale LOCAL value
+      aiLocalBaseUrl: "http://192.168.0.42/v1", // stale LOCAL value
       aiAnthropicKeyEncrypted: "enc-user-anthropic-key",
       aiLocalKeyEncrypted: null,
       aiOpenaiKeyEncrypted: null,
@@ -288,7 +288,7 @@ describe("resolveProvider", () => {
       .mockResolvedValueOnce({
         aiProvider: "CHATGPT_OAUTH",
         aiModel: null,
-        aiBaseUrl: null,
+        aiLocalBaseUrl: null,
         aiAnthropicKeyEncrypted: null,
         aiLocalKeyEncrypted: null,
       } as never)
@@ -325,7 +325,7 @@ describe("resolveProviderForTest — empty override resolves via the chain", () 
       .mockResolvedValueOnce({
         aiProvider: null,
         aiModel: null,
-        aiBaseUrl: null,
+        aiLocalBaseUrl: null,
         aiAnthropicKeyEncrypted: null,
         aiLocalKeyEncrypted: null,
         aiOpenaiKeyEncrypted: "enc-user-openai",
@@ -334,7 +334,7 @@ describe("resolveProviderForTest — empty override resolves via the chain", () 
       .mockResolvedValueOnce({
         aiProvider: null,
         aiModel: null,
-        aiBaseUrl: null,
+        aiLocalBaseUrl: null,
         aiAnthropicKeyEncrypted: null,
         aiLocalKeyEncrypted: null,
         aiOpenaiKeyEncrypted: "enc-user-openai",
@@ -357,7 +357,7 @@ describe("resolveProviderForTest — empty override resolves via the chain", () 
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       aiProvider: null,
       aiModel: null,
-      aiBaseUrl: null,
+      aiLocalBaseUrl: null,
       aiAnthropicKeyEncrypted: null,
       aiLocalKeyEncrypted: null,
       aiOpenaiKeyEncrypted: null,
@@ -380,7 +380,7 @@ describe("resolveProviderAvailability", () => {
     aiAnthropicKeyEncrypted: null,
     aiLocalKeyEncrypted: null,
     aiOpenaiKeyEncrypted: null,
-    aiBaseUrl: null,
+    aiLocalBaseUrl: null,
     codexConnectionStatus: null,
     codexAccessTokenEncrypted: null,
     codexRefreshTokenEncrypted: null,
@@ -415,7 +415,7 @@ describe("resolveProviderAvailability", () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       ...emptyUserRow,
       aiProvider: "LOCAL",
-      aiBaseUrl: "https://ollama.example/v1",
+      aiLocalBaseUrl: "https://ollama.example/v1",
     } as never);
     vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
       adminAiKeyEncrypted: null,
