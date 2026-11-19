@@ -249,3 +249,35 @@ describe("loadFencedDocuments — owner-scoped, fail-closed", () => {
     if (!out.ok) expect(out.unavailableDocId).toBe("gone");
   });
 });
+
+describe("streamFencedReply — assistant reply language instruction", () => {
+  it.each([
+    ["pl", "Polish"],
+    ["fr", "French"],
+    ["pt-BR", "Brazilian Portuguese"],
+    ["de", "German"],
+  ] as const)(
+    "names %s as %s in the reply directive under the English contract",
+    async (locale, languageName) => {
+      await drain(
+        await streamFencedReply({
+          ...baseArgs,
+          locale,
+          contractLocale: "en",
+          docs: [doc(`doc-${locale}`, "document text")],
+        }),
+      );
+      const call = vi.mocked(runStreamingRawCompletionWithFallback).mock
+        .calls[0][0];
+      const userPrompt = (call.params.messages[0] as { content: string })
+        .content;
+      expect(userPrompt).toContain(
+        `Reply now as the assistant, grounded ONLY in the documents above, in ${languageName}.`,
+      );
+      // The contract language stays independent of the reply language.
+      expect(call.params.system).toContain(
+        "GROUND EVERY ANSWER IN THE FENCED DOCUMENTS.",
+      );
+    },
+  );
+});

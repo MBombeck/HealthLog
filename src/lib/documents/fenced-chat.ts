@@ -52,7 +52,7 @@ import {
   resolveDailyCap,
 } from "@/lib/ai/coach/budget";
 import { detectRefusal, type CoachRefusalReason } from "@/lib/ai/coach/refusal";
-import type { Locale } from "@/lib/i18n/config";
+import { type Locale, localeLanguageNames } from "@/lib/i18n/config";
 import {
   coachOutboundFallback,
   screenCoachReply,
@@ -260,9 +260,9 @@ export interface StreamFencedReplyArgs {
   docs: FencedDocContext[];
   priorTurns: FencedTurn[];
   message: string;
-  /** Reply language contract ("en" | "de"). */
+  /** System-prompt contract language ("en" | "de"); the reply language comes from `locale`. */
   contractLocale: "en" | "de";
-  /** i18n locale for outbound-guard fallbacks. */
+  /** The user's UI locale — drives the reply directive and outbound-guard fallbacks. */
   locale: Locale;
   signal: AbortSignal;
   /**
@@ -360,9 +360,7 @@ export async function streamFencedReply(
   const userPrompt = `CONVERSATION
 ${transcript}
 
-Reply now as the assistant, grounded ONLY in the documents above, in ${
-    contractLocale === "de" ? "German" : "English"
-  }.`;
+Reply now as the assistant, grounded ONLY in the documents above, in ${localeLanguageNames[locale]}.`;
 
   // The grounding set: the LIVE attachments' texts only, recomputed this turn.
   const groundingSources = docs.map((d) => d.text);
