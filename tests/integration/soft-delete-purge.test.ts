@@ -38,7 +38,11 @@ beforeEach(async () => {
 describe("soft-delete purge", () => {
   it("runs every table's purge against the real schema", async () => {
     const legs = await purgeSoftDeletedRows(prisma, NOW);
-    expect(legs.map((leg) => leg.model)).toEqual(purgeModels());
+    // The register's tables, then the Apple Health tombstone ledger.
+    expect(legs.map((leg) => leg.model)).toEqual([
+      ...purgeModels(),
+      "AppleHealthTombstone",
+    ]);
     expect(legs.length).toBeGreaterThanOrEqual(19);
     for (const leg of legs) {
       expect(leg, leg.model).toMatchObject({ deleted: 0, drained: true });
@@ -70,6 +74,30 @@ describe("soft-delete purge", () => {
       orderBy: { id: "asc" },
     });
     expect(left.map((r) => r.id)).toEqual(["lab-live", "lab-recent"]);
+  });
+
+  it("forgets a deleted Apple Health workout or ECG after the same 75 days", async () => {
+    expect(TOMBSTONE_RETENTION_DAYS).toBe(75);
+    const line = (externalId: string, domain: string, createdAt: Date) =>
+      prisma.appleHealthTombstone.create({
+        data: { userId: USER, domain, externalId, createdAt },
+      });
+    await line("wk-expired", "workout", EXPIRED);
+    await line("ecg-expired", "ecg", EXPIRED);
+    await line("wk-recent", "workout", RECENT);
+
+    const legs = await purgeSoftDeletedRows(prisma, NOW);
+
+    expect(legs.at(-1)).toMatchObject({
+      model: "AppleHealthTombstone",
+      table: "apple_health_tombstones",
+      deleted: 2,
+      drained: true,
+    });
+    const left = await prisma.appleHealthTombstone.findMany({
+      select: { externalId: true },
+    });
+    expect(left.map((r) => r.externalId)).toEqual(["wk-recent"]);
   });
 
   it("keeps a deleted practitioner a live visit still names", async () => {

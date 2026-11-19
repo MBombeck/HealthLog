@@ -18,6 +18,7 @@ import type {
 
 import {
   isEpisodeLinkableAt,
+  MAX_ACTIVE_SYMPTOM_DEFINITIONS,
   type SymptomDefinitionDTO,
   type SymptomEventDTO,
 } from "./shared";
@@ -63,7 +64,7 @@ const EMPTY_RECENT: SymptomRecentSummary = {
 export function toSymptomDefinitionDTO(
   row: Pick<
     SymptomDefinition,
-    "id" | "labelEncrypted" | "icon" | "sortOrder" | "isActive"
+    "id" | "labelEncrypted" | "icon" | "sortOrder" | "isActive" | "code"
   >,
   recent: SymptomRecentSummary = EMPTY_RECENT,
 ): SymptomDefinitionDTO {
@@ -73,6 +74,7 @@ export function toSymptomDefinitionDTO(
     icon: row.icon,
     sortOrder: row.sortOrder,
     isActive: row.isActive,
+    code: row.code,
     recent,
   };
 }
@@ -85,6 +87,9 @@ export function toSymptomEventDTO(row: SymptomEvent): SymptomEventDTO {
     intensity: row.intensity,
     note: decryptSymptomText(row.noteEncrypted, "note"),
     episodeId: row.episodeId,
+    endAt: row.endAt ? row.endAt.toISOString() : null,
+    source: row.source,
+    externalId: row.externalId,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -113,17 +118,18 @@ export async function listSymptomDefinitions(
         icon: true,
         sortOrder: true,
         isActive: true,
+        code: true,
       },
     }),
     prisma.symptomEvent.groupBy({
       by: ["definitionId"],
-      where: { userId, occurredAt: { gte: since, lte: now } },
+      where: { userId, deletedAt: null, occurredAt: { gte: since, lte: now } },
       _count: { _all: true },
       _max: { intensity: true },
     }),
     prisma.symptomEvent.groupBy({
       by: ["definitionId"],
-      where: { userId },
+      where: { userId, deletedAt: null },
       _max: { occurredAt: true },
     }),
   ]);
@@ -156,4 +162,33 @@ export async function isLinkableEpisode(
     select: { onsetAt: true, resolvedAt: true },
   });
   return episode !== null && isEpisodeLinkableAt(episode, occurredAt);
+}
+
+/**
+ * The definitions that hold a slot of `MAX_ACTIVE_SYMPTOM_DEFINITIONS`: the
+ * active ones the person named. A built-in one (`code` set) never does; Apple
+ * Health creates it on demand, and refusing it would drop the sample.
+ */
+export function countCappedSymptomDefinitions(userId: string): Promise<number> {
+  return prisma.symptomDefinition.count({
+    where: { userId, isActive: true, code: null },
+  });
+}
+
+/**
+ * The definitions that are correlation channels, at most `max`, from the
+ * active ones in display order: the ones the person named first, then the
+ * built-in ones Apple Health created. A built-in one holds no slot of the
+ * cap, so the matrix bound is applied here, and a symptom someone chose to
+ * track is never pushed out by an imported one. Pure, so the caller folds
+ * it into the read it already makes.
+ */
+export function pickCorrelationSymptoms<T extends { code: string | null }>(
+  activeInDisplayOrder: readonly T[],
+  max: number = MAX_ACTIVE_SYMPTOM_DEFINITIONS,
+): T[] {
+  return [
+    ...activeInDisplayOrder.filter((d) => d.code === null),
+    ...activeInDisplayOrder.filter((d) => d.code !== null),
+  ].slice(0, max);
 }

@@ -28,6 +28,10 @@ vi.mock("@/lib/db", () => ({
     user: {
       findUnique: vi.fn(),
     },
+    appleHealthTombstone: {
+      findMany: vi.fn(),
+    },
+    $queryRaw: vi.fn(async () => []),
     $transaction: vi.fn(async (fn: unknown) => {
       // Same shape as the real Prisma client — invoke the supplied
       // callback with the mocked client itself so `tx.workout.createMany`
@@ -173,6 +177,7 @@ beforeEach(() => {
     resetAt: Date.now() + 60_000,
   });
   vi.mocked(prisma.workout.findMany).mockResolvedValue([]);
+  vi.mocked(prisma.appleHealthTombstone.findMany).mockResolvedValue([]);
   vi.mocked(prisma.workout.createMany).mockResolvedValue({ count: 0 });
   vi.mocked(prisma.workout.createManyAndReturn).mockImplementation(
     (async (args: {

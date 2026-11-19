@@ -112,6 +112,7 @@ export async function loadSymptomSeries(args: {
   const rows = await prisma.symptomEvent.findMany({
     where: {
       userId: recordId,
+      deletedAt: null,
       definitionId: { in: definitions.map((d) => d.id) },
       occurredAt: {
         gte: startOfLocalDayKey(from, tz),
@@ -162,7 +163,11 @@ export async function firstSymptomDay(args: {
   const { recordId, ids, tz, access } = args;
   if (ids.length === 0 || !laneVisible("illness", access)) return null;
   const first = await prisma.symptomEvent.findFirst({
-    where: { userId: recordId, definitionId: { in: [...ids] } },
+    where: {
+      userId: recordId,
+      deletedAt: null,
+      definitionId: { in: [...ids] },
+    },
     orderBy: { occurredAt: "asc" },
     select: { occurredAt: true },
   });
@@ -182,7 +187,7 @@ export async function loadAvailableSymptoms(args: {
   const { recordId, access } = args;
   if (!laneVisible("illness", access)) return [];
   const definitions = await prisma.symptomDefinition.findMany({
-    where: { userId: recordId, events: { some: {} } },
+    where: { userId: recordId, events: { some: { deletedAt: null } } },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }, { id: "asc" }],
     select: DEFINITION_SELECT,
   });

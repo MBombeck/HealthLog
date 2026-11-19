@@ -77,7 +77,8 @@ vi.mock("../use-symptoms", () => ({
             ],
           },
         },
-  useLogSymptomEvent: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useLogSymptomEvents: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  SymptomSaveError: class extends Error {},
   useCreateSymptomDefinition: () => ({
     mutateAsync: vi.fn(),
     reset: vi.fn(),
@@ -107,6 +108,9 @@ describe("<SymptomEntryForm>", () => {
     expect(html).toContain("Aura");
     expect(html).toContain("Headache");
     expect(html).not.toContain('aria-checked="true"');
+    // Several may be picked: each chip is a checkbox in a group.
+    expect(html).toContain('role="checkbox"');
+    expect(html).toContain("Pick several if they came together.");
     expect(html).toContain('data-testid="symptom-add-chip"');
     // The intensity is a slider on the 0-10 scale.
     expect(html).toContain('data-slot="slider-field"');

@@ -1122,6 +1122,9 @@ model User {
   // The paired AFib verdict still lands as an IRREGULAR_RHYTHM_NOTIFICATION
   // Measurement EVENT row (v1.18.11); this holds the raw signal samples.
   ecgRecordings                             EcgRecording[]
+  // The Apple Health workouts and ECG recordings the phone reported
+  // deleted, so a late re-post of the same sample stays deleted.
+  appleHealthTombstones                     AppleHealthTombstone[]
   // v1.38.0 — visits. `Encounter` is one contact with the healthcare
   // system (happened or booked), `Practitioner` the account's own address
   // book, and the three link tables are what the visit produced. No
@@ -1852,6 +1855,15 @@ enum MeasurementType {
   // meter, typed by hand. The glucose-ketone index is derived from this and
   // BLOOD_GLUCOSE at read time and never stored.
   BLOOD_KETONES // mmol/L — capillary or venous beta-hydroxybutyrate (BHB); spot reading, never summed.
+  // Apple Health ingest v2. Each arrives over POST /api/measurements/batch.
+  LOW_CARDIO_FITNESS_EVENT // HealthKit `HKCategoryTypeIdentifierLowCardioFitnessEvent`. The phone flagged a VO2 max below the low-fitness threshold for the person's age and sex. A notification like the heart-rate events: value 1, verdict LOW_FITNESS. AWARENESS ONLY — never a HealthLog diagnosis.
+  MENOPAUSAL_STATE // state — HealthKit `HKCategoryTypeIdentifierMenopausalState` (iOS 27). The stored value is the category codepoint: 1 menopause, 2 perimenopause, 3 none. A self-reported state, never a cycle record.
+  BLEEDING_AFTER_MENOPAUSE // flow — HealthKit `HKCategoryTypeIdentifierBleedingAfterMenopause` (iOS 27). The stored value is the `HKCategoryValueVaginalBleeding` codepoint: 1 unspecified, 2 light, 3 medium, 4 heavy, 5 none. Kept apart from the cycle on purpose: it never opens or extends a period.
+  INSULIN_DELIVERY // IU — HealthKit `insulinDelivery`. One delivered dose (basal or bolus) per row; daily SUM.
+  INHALER_USAGE // count — HealthKit `inhalerUsage`. Inhaler puffs per sample; daily SUM.
+  FEV1 // litres — HealthKit `forcedExpiratoryVolume1`. Forced expiratory volume in the first second of a spirometry manoeuvre; spot reading.
+  FVC // litres — HealthKit `forcedVitalCapacity`. Forced vital capacity from a spirometry manoeuvre; spot reading.
+  PEAK_EXPIRATORY_FLOW // L/min — HealthKit `peakExpiratoryFlowRate`. Peak flow from a peak-flow meter or spirometer; spot reading.
 
   @@map("measurement_type")
 }
@@ -1949,7 +1961,8 @@ model MentalHealthAssessment {
 /// The device's own classification RESULT / severity for an EVENT row.
 /// Non-NULL only for the categorical EVENT `MeasurementType`s
 /// (IRREGULAR_RHYTHM_NOTIFICATION, HIGH/LOW_HEART_RATE_EVENT,
-/// WALKING_STEADINESS_EVENT, BREATHING_DISTURBANCE_EVENT, HYPERTENSION_EVENT), NULL for every
+/// WALKING_STEADINESS_EVENT, BREATHING_DISTURBANCE_EVENT, HYPERTENSION_EVENT,
+/// LOW_CARDIO_FITNESS_EVENT), NULL for every
 /// continuous measurement — mirroring the `GlucoseContext` / `SleepStage`
 /// nullable-context precedent.
 ///
@@ -1961,7 +1974,8 @@ model MentalHealthAssessment {
 /// awareness timeline can be honest rather than only ever showing alarms.
 /// `LOW` / `VERY_LOW` carry the walking-steadiness severity; `FIRED` is the
 /// neutral "this event occurred" verdict for the high/low-HR + breathing
-/// events that have no finer device-side grading.
+/// events that have no finer device-side grading; `LOW_FITNESS` is the one
+/// verdict of the low-cardio-fitness notification.
 enum RhythmClassification {
   IRREGULAR // device flagged a possible irregular rhythm (AFib screening)
   NOT_DETECTED // device's algorithm ran and did not flag an irregular rhythm
@@ -1969,6 +1983,7 @@ enum RhythmClassification {
   LOW // walking-steadiness: low
   VERY_LOW // walking-steadiness: very low
   FIRED // neutral "event occurred" verdict (high/low-HR, breathing disturbance)
+  LOW_FITNESS // low cardio fitness: the VO2 max fell below the threshold for the person's age and sex
 
   @@map("rhythm_classification")
 }
@@ -2398,6 +2413,37 @@ model EcgRecording {
   // per deleted row (migration 0362).
   @@index([measurementId])
   @@map("ecg_recordings")
+}
+
+/// The Apple Health samples the phone reported deleted through
+/// `DELETE /api/workouts/by-external-ids` and
+/// `DELETE /api/insights/ecg/by-external-ids`.
+///
+/// Neither `Workout` nor `EcgRecording` has a tombstone column, and adding one
+/// would put a `deletedAt: null` on every reader of two widely read tables. The
+/// rows therefore still go outright, and this ledger remembers the HealthKit
+/// sample id instead, so a late re-post of a deleted sample answers
+/// `duplicate` and writes nothing: the rule mood entries keep with their
+/// `deletedAt`. Only `source = APPLE_HEALTH` rows are ever recorded, and no
+/// reader of workouts or recordings looks here.
+///
+/// `domain` is a closed set in app code: "workout" | "ecg"
+/// (`src/lib/sync/apple-health-tombstones.ts`).
+model AppleHealthTombstone {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  domain     String
+  /// The HealthKit sample UUID: `Workout.externalId` or
+  /// `EcgRecording.externalRecordingId` of the deleted row.
+  externalId String   @map("external_id")
+  /// When the phone reported the sample deleted. Named `createdAt` because
+  /// the row is the record of that deletion, not a soft-deleted row.
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, domain, externalId])
+  @@map("apple_health_tombstones")
 }
 
 // ─── Measurement rollups (v1.5.0) ──────────────────────────
@@ -8889,12 +8935,19 @@ model SymptomDefinition {
   /// FALSE = hidden: not offered in the quick entry, not a correlation
   /// channel, history kept. Does not count toward the cap.
   isActive       Boolean  @default(true) @map("is_active")
+  /// NULL for a symptom the person named. Set for a built-in one: the code an
+  /// Apple Health symptom sample lands on (`SYMPTOM_BUILTIN_CODES`, e.g.
+  /// `FEVER`). Created on the first ingest of that code, labelled in the
+  /// person's language; renaming or hiding it keeps the code, so ingest
+  /// still finds it. Built-in definitions do not count toward the cap.
+  code           String?
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   events SymptomEvent[]
 
+  @@unique([userId, code])
   @@index([userId, sortOrder])
   @@map("symptom_definitions")
 }
@@ -8903,26 +8956,41 @@ model SymptomDefinition {
 /// same numeric rating scale the pain score uses), an optional note, and an
 /// optional link to the illness episode it happened during. v1.40.
 model SymptomEvent {
-  id            String   @id @default(cuid())
-  userId        String   @map("user_id")
-  definitionId  String   @map("definition_id")
+  id            String    @id @default(cuid())
+  userId        String    @map("user_id")
+  definitionId  String    @map("definition_id")
   /// The instant it happened (UTC). Day grouping is the reader's concern.
-  occurredAt    DateTime @map("occurred_at")
+  occurredAt    DateTime  @map("occurred_at")
   /// 0-10, CHECK-constrained in the migration.
   intensity     Int
   /// Optional free-text note, AES-256-GCM encrypted at rest.
-  noteEncrypted Bytes?   @map("note_encrypted")
+  noteEncrypted Bytes?    @map("note_encrypted")
   /// The episode the person said this happened during. Only an open episode
   /// of the same account can be linked (the route checks); deleting the
   /// episode row keeps the event and drops the link.
-  episodeId     String?  @map("episode_id")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  episodeId     String?   @map("episode_id")
+  /// When it ended, for an occurrence imported with a duration (an Apple
+  /// Health sample's `endDate`). NULL for a moment, and for every manual entry.
+  endAt         DateTime? @map("end_at")
+  /// `MANUAL` (logged in HealthLog) or `APPLE_HEALTH` (imported through
+  /// `POST /api/symptoms/events/batch`). Never settable by a manual write.
+  source        String    @default("MANUAL")
+  /// The HealthKit sample UUID of an imported occurrence; NULL for a manual
+  /// one. Half of the `(userId, source, externalId)` dedup key.
+  externalId    String?   @map("external_id")
+  /// Tombstone. Only an imported occurrence is ever soft-deleted (by the app's
+  /// deletion reconciliation or the person's own delete), so a late re-post of
+  /// its sample answers `duplicate` instead of bringing it back. Every reader
+  /// filters `deletedAt: null`.
+  deletedAt     DateTime? @map("deleted_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
 
   user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   definition SymptomDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
   episode    IllnessEpisode?   @relation(fields: [episodeId], references: [id], onDelete: SetNull)
 
+  @@unique([userId, source, externalId])
   @@index([userId, occurredAt])
   @@index([definitionId, occurredAt])
   @@index([episodeId])

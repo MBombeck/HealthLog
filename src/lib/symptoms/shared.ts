@@ -16,10 +16,12 @@ import { isoDateTime } from "@/lib/validations/datetime";
  */
 
 /**
- * Active definitions per account. The same eight the custom-metric channels
+ * Active definitions per account the person named. The same eight the custom-metric channels
  * are capped at, and for the same reason: every active definition is its own
  * correlation channel, so the cap bounds the discovery matrix as well as the
- * chip row. A hidden definition does not count.
+ * chip row. A hidden definition does not count, and neither does a built-in
+ * one (`code` set), which Apple Health creates on demand; the matrix takes at
+ * most this many channels whatever the mix.
  */
 export const MAX_ACTIVE_SYMPTOM_DEFINITIONS = 8;
 
@@ -50,6 +52,12 @@ export interface SymptomDefinitionDTO {
   icon: string | null;
   sortOrder: number;
   isActive: boolean;
+  /**
+   * The built-in code an Apple Health symptom lands on (`FEVER`), or null
+   * for a symptom the person named. A built-in one does not count toward
+   * the cap.
+   */
+  code: string | null;
   /** Server-computed over the last 30 days, for the section header line. */
   recent: {
     count30d: number;
@@ -66,6 +74,12 @@ export interface SymptomEventDTO {
   intensity: number;
   note: string | null;
   episodeId: string | null;
+  /** When it ended, for an imported occurrence with a duration; else null. */
+  endAt: string | null;
+  /** `MANUAL` or `APPLE_HEALTH`. */
+  source: string;
+  /** The HealthKit sample UUID of an imported occurrence; else null. */
+  externalId: string | null;
   createdAt: string;
   updatedAt: string;
 }

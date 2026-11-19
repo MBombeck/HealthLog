@@ -1007,6 +1007,14 @@
     "typeHighHeartRateEvent": "Aviso de frecuencia cardíaca alta",
     "typeLowHeartRateEvent": "Aviso de frecuencia cardíaca baja",
     "typeHypertensionEvent": "Aviso de hipertensión",
+    "typeLowCardioFitnessEvent": "Aviso de baja forma cardiovascular",
+    "typeMenopausalState": "Estado menopáusico",
+    "typeBleedingAfterMenopause": "Sangrado tras la menopausia",
+    "typeInsulinDelivery": "Administración de insulina",
+    "typeInhalerUsage": "Uso del inhalador",
+    "typeFev1": "FEV1",
+    "typeFvc": "Capacidad vital forzada",
+    "typePeakExpiratoryFlow": "Flujo espiratorio máximo",
     "typeWalkingSteadinessEvent": "Aviso de estabilidad al caminar",
     "typeBreathingDisturbanceEvent": "Alteración respiratoria",
     "typeRecoveryScore": "Puntuación de recuperación",
@@ -3771,6 +3779,8 @@
       "years": "años",
       "breathingEvents": "eventos",
       "standHours": "horas",
+      "insulinUnits": "UI",
+      "puffs": "inhalaciones",
       "respiratoryRate": "respiraciones/min"
     },
     "sleep": {
@@ -4844,6 +4854,7 @@
         "highHeartRate": "Notificación de frecuencia cardíaca alta",
         "lowHeartRate": "Notificación de frecuencia cardíaca baja",
         "hypertension": "Aviso de hipertensión",
+        "lowCardioFitness": "Aviso de baja forma cardiovascular",
         "walkingSteadiness": "Alerta de estabilidad al caminar",
         "breathingDisturbance": "Alteración respiratoria durante el sueño"
       },
@@ -4853,7 +4864,8 @@
         "inconclusive": "Tu dispositivo no pudo realizar una medición.",
         "low": "Tu dispositivo detectó una estabilidad al caminar baja.",
         "veryLow": "Tu dispositivo detectó una estabilidad al caminar muy baja.",
-        "fired": "Tu dispositivo señaló este evento."
+        "fired": "Tu dispositivo señaló este evento.",
+        "lowFitness": "Tu dispositivo detectó una forma cardiovascular baja."
       }
     },
     "trendDescriptor": {
@@ -8628,6 +8640,7 @@
         "restoreFailureRowsElsewhere": "Los registros de este archivo ya están en otra cuenta de este servidor: el mismo archivo ya se restauró allí. Un archivo solo puede restaurarse en una cuenta. No se escribió nada.",
         "previewKeyMissing": "Esta copia no se puede restaurar en este servidor: necesita la clave de cifrado {keys}. Vuelve a añadir la clave a ENCRYPTION_KEYS y reinicia primero.",
         "restoreSkippedSymptomEpisodeReference": "Entrada de síntoma vinculada a una enfermedad que el archivo no contiene (se conserva sin el vínculo)",
+        "restoreSkippedSymptomDuplicate": "Código de síntoma o muestra de Apple Salud repetidos en el archivo (se conserva el primero; un síntoma repetido se conserva sin el código)",
         "restoreSkippedCycleCiphertext": "Nota o etiqueta del ciclo cifrada con una clave que este servidor no tiene (el día o el síntoma se conserva sin ella)",
         "restoreSkippedMoodLabelCiphertext": "Nombre de etiqueta o grupo de ánimo cifrado con una clave que este servidor no tiene (se conserva sin el nombre)",
         "restoreSkippedVisitCiphertext": "Texto de visita o profesional cifrado con una clave que este servidor no tiene (se conserva sin él)",
@@ -13554,7 +13567,9 @@
       "seizureTypeCreate": "{name} añadió un tipo de crisis",
       "seizureTypeUpdate": "{name} editó un tipo de crisis",
       "seizureTypeDelete": "{name} eliminó un tipo de crisis",
-      "seizureSettingsUpdate": "{name} cambió la regla de crisis en racimo"
+      "seizureSettingsUpdate": "{name} cambió la regla de crisis en racimo",
+      "symptomBatchIngest": "{name} importó síntomas de Apple Health",
+      "symptomImportDelete": "{name} eliminó síntomas importados"
     },
     "section": {
       "measurements": {
@@ -13895,7 +13910,10 @@
       "reset": "Restablecer formulario",
       "emptyHint": "Añade tu primer síntoma, por ejemplo aura o dolor de cabeza.",
       "emptyHintNoManage": "Este registro aún no tiene síntomas configurados.",
-      "limitHint": "Hasta {limit} síntomas. Oculta uno en la página de enfermedades para añadir otro."
+      "limitHint": "Hasta {limit} síntomas. Oculta uno en la página de enfermedades para añadir otro.",
+      "intensityFor": "Intensidad: {symptom}",
+      "partlySaved": "{saved} de {total} guardados, el resto sigue seleccionado.",
+      "severalHint": "Elige varios si aparecieron juntos."
     },
     "section": {
       "title": "Tus síntomas",
@@ -13925,7 +13943,50 @@
     "episode": {
       "title": "Síntomas registrados",
       "during": "durante {illness}"
-    }
+    },
+    "builtin": {
+      "ABDOMINAL_CRAMPS": "Calambres abdominales",
+      "ACNE": "Acné",
+      "APPETITE_CHANGES": "Cambios en el apetito",
+      "BLADDER_INCONTINENCE": "Incontinencia urinaria",
+      "BLOATING": "Hinchazón",
+      "BREAST_PAIN": "Dolor mamario",
+      "CHEST_TIGHTNESS_OR_PAIN": "Opresión o dolor en el pecho",
+      "CHILLS": "Escalofríos",
+      "CONSTIPATION": "Estreñimiento",
+      "COUGHING": "Tos",
+      "DIARRHEA": "Diarrea",
+      "DIZZINESS": "Mareo",
+      "DRY_SKIN": "Piel seca",
+      "FAINTING": "Desmayo",
+      "FATIGUE": "Cansancio",
+      "FEVER": "Fiebre",
+      "GENERALIZED_BODY_ACHE": "Dolor corporal",
+      "HAIR_LOSS": "Caída del cabello",
+      "HEADACHE": "Dolor de cabeza",
+      "HEARTBURN": "Acidez",
+      "HOT_FLASHES": "Sofocos",
+      "LOSS_OF_SMELL": "Pérdida del olfato",
+      "LOSS_OF_TASTE": "Pérdida del gusto",
+      "LOWER_BACK_PAIN": "Dolor lumbar",
+      "MEMORY_LAPSE": "Lapsus de memoria",
+      "MOOD_CHANGES": "Cambios de humor",
+      "NAUSEA": "Náuseas",
+      "NIGHT_SWEATS": "Sudores nocturnos",
+      "PELVIC_PAIN": "Dolor pélvico",
+      "RAPID_POUNDING_OR_FLUTTERING_HEARTBEAT": "Corazón acelerado",
+      "RUNNY_NOSE": "Secreción nasal",
+      "SHORTNESS_OF_BREATH": "Falta de aire",
+      "SINUS_CONGESTION": "Congestión nasal",
+      "SKIPPED_HEARTBEAT": "Latido saltado",
+      "SLEEP_CHANGES": "Cambios en el sueño",
+      "SORE_THROAT": "Dolor de garganta",
+      "VAGINAL_DRYNESS": "Sequedad vaginal",
+      "VOMITING": "Vómitos",
+      "WHEEZING": "Sibilancias"
+    },
+    "sourceAppleHealth": "Apple Health",
+    "timeRange": "{from}–{to}"
   },
   "day": {
     "scoreOfMax": "de {max}",

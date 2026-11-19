@@ -1007,6 +1007,14 @@
     "typeHighHeartRateEvent": "Notification de fréquence cardiaque élevée",
     "typeLowHeartRateEvent": "Notification de fréquence cardiaque basse",
     "typeHypertensionEvent": "Notification d'hypertension",
+    "typeLowCardioFitnessEvent": "Notification de faible forme cardio",
+    "typeMenopausalState": "Statut ménopausique",
+    "typeBleedingAfterMenopause": "Saignement après la ménopause",
+    "typeInsulinDelivery": "Administration d'insuline",
+    "typeInhalerUsage": "Utilisation de l'inhalateur",
+    "typeFev1": "VEMS",
+    "typeFvc": "Capacité vitale forcée",
+    "typePeakExpiratoryFlow": "Débit expiratoire de pointe",
     "typeWalkingSteadinessEvent": "Alerte de stabilité de la marche",
     "typeBreathingDisturbanceEvent": "Trouble respiratoire",
     "typeRecoveryScore": "Score de récupération",
@@ -3771,6 +3779,8 @@
       "years": "ans",
       "breathingEvents": "événements",
       "standHours": "heures",
+      "insulinUnits": "UI",
+      "puffs": "bouffées",
       "respiratoryRate": "respirations/min"
     },
     "sleep": {
@@ -4844,6 +4854,7 @@
         "highHeartRate": "Notification de fréquence cardiaque élevée",
         "lowHeartRate": "Notification de fréquence cardiaque basse",
         "hypertension": "Notification d'hypertension",
+        "lowCardioFitness": "Notification de faible forme cardio",
         "walkingSteadiness": "Alerte de stabilité à la marche",
         "breathingDisturbance": "Trouble respiratoire pendant le sommeil"
       },
@@ -4853,7 +4864,8 @@
         "inconclusive": "Votre appareil n’a pas pu effectuer de mesure.",
         "low": "Votre appareil a détecté une faible stabilité à la marche.",
         "veryLow": "Votre appareil a détecté une très faible stabilité à la marche.",
-        "fired": "Votre appareil a signalé cet événement."
+        "fired": "Votre appareil a signalé cet événement.",
+        "lowFitness": "Votre appareil a signalé une faible forme cardio."
       }
     },
     "trendDescriptor": {
@@ -8628,6 +8640,7 @@
         "restoreFailureRowsElsewhere": "Les enregistrements de ce fichier se trouvent déjà dans un autre compte de ce serveur : le même fichier y a déjà été restauré. Un fichier ne peut être restauré que dans un seul compte. Rien n’a été écrit.",
         "previewKeyMissing": "Cette sauvegarde ne peut pas être restaurée sur ce serveur : elle a besoin de la clé de chiffrement {keys}. Remettez d'abord la clé dans ENCRYPTION_KEYS et redémarrez.",
         "restoreSkippedSymptomEpisodeReference": "Entrée de symptôme liée à une maladie absente du fichier (conservée sans le lien)",
+        "restoreSkippedSymptomDuplicate": "Code de symptôme ou échantillon Apple Santé répété dans le fichier (le premier conservé, un symptôme répété conservé sans le code)",
         "restoreSkippedCycleCiphertext": "Note ou libellé du cycle chiffré avec une clé que ce serveur ne possède pas (jour ou symptôme conservé sans)",
         "restoreSkippedMoodLabelCiphertext": "Nom d’étiquette ou de groupe d’humeur chiffré avec une clé que ce serveur ne possède pas (conservé sans son nom)",
         "restoreSkippedVisitCiphertext": "Texte de consultation ou de praticien chiffré avec une clé que ce serveur ne possède pas (conservé sans)",
@@ -13554,7 +13567,9 @@
       "seizureTypeCreate": "{name} a ajouté un type de crise",
       "seizureTypeUpdate": "{name} a modifié un type de crise",
       "seizureTypeDelete": "{name} a supprimé un type de crise",
-      "seizureSettingsUpdate": "{name} a modifié la règle des crises en salves"
+      "seizureSettingsUpdate": "{name} a modifié la règle des crises en salves",
+      "symptomBatchIngest": "{name} a importé des symptômes depuis Apple Health",
+      "symptomImportDelete": "{name} a supprimé des symptômes importés"
     },
     "section": {
       "measurements": {
@@ -13895,7 +13910,10 @@
       "reset": "Réinitialiser le formulaire",
       "emptyHint": "Ajoutez votre premier symptôme, par exemple aura ou mal de tête.",
       "emptyHintNoManage": "Aucun symptôme n'est encore configuré pour ce dossier.",
-      "limitHint": "Jusqu'à {limit} symptômes. Masquez-en un sur la page des maladies pour en ajouter un autre."
+      "limitHint": "Jusqu'à {limit} symptômes. Masquez-en un sur la page des maladies pour en ajouter un autre.",
+      "intensityFor": "Intensité : {symptom}",
+      "partlySaved": "{saved} sur {total} enregistrés, le reste est encore sélectionné.",
+      "severalHint": "Choisissez-en plusieurs s’ils sont survenus ensemble."
     },
     "section": {
       "title": "Vos symptômes",
@@ -13925,7 +13943,50 @@
     "episode": {
       "title": "Symptômes notés",
       "during": "pendant {illness}"
-    }
+    },
+    "builtin": {
+      "ABDOMINAL_CRAMPS": "Crampes abdominales",
+      "ACNE": "Acné",
+      "APPETITE_CHANGES": "Changements d’appétit",
+      "BLADDER_INCONTINENCE": "Incontinence urinaire",
+      "BLOATING": "Ballonnements",
+      "BREAST_PAIN": "Douleur mammaire",
+      "CHEST_TIGHTNESS_OR_PAIN": "Oppression ou douleur thoracique",
+      "CHILLS": "Frissons",
+      "CONSTIPATION": "Constipation",
+      "COUGHING": "Toux",
+      "DIARRHEA": "Diarrhée",
+      "DIZZINESS": "Vertiges",
+      "DRY_SKIN": "Peau sèche",
+      "FAINTING": "Évanouissement",
+      "FATIGUE": "Fatigue",
+      "FEVER": "Fièvre",
+      "GENERALIZED_BODY_ACHE": "Courbatures",
+      "HAIR_LOSS": "Perte de cheveux",
+      "HEADACHE": "Mal de tête",
+      "HEARTBURN": "Brûlures d’estomac",
+      "HOT_FLASHES": "Bouffées de chaleur",
+      "LOSS_OF_SMELL": "Perte de l’odorat",
+      "LOSS_OF_TASTE": "Perte du goût",
+      "LOWER_BACK_PAIN": "Douleur lombaire",
+      "MEMORY_LAPSE": "Trous de mémoire",
+      "MOOD_CHANGES": "Changements d’humeur",
+      "NAUSEA": "Nausées",
+      "NIGHT_SWEATS": "Sueurs nocturnes",
+      "PELVIC_PAIN": "Douleur pelvienne",
+      "RAPID_POUNDING_OR_FLUTTERING_HEARTBEAT": "Cœur qui s’emballe",
+      "RUNNY_NOSE": "Nez qui coule",
+      "SHORTNESS_OF_BREATH": "Essoufflement",
+      "SINUS_CONGESTION": "Congestion des sinus",
+      "SKIPPED_HEARTBEAT": "Battement de cœur manqué",
+      "SLEEP_CHANGES": "Changements du sommeil",
+      "SORE_THROAT": "Mal de gorge",
+      "VAGINAL_DRYNESS": "Sécheresse vaginale",
+      "VOMITING": "Vomissements",
+      "WHEEZING": "Respiration sifflante"
+    },
+    "sourceAppleHealth": "Apple Health",
+    "timeRange": "{from}–{to}"
   },
   "day": {
     "scoreOfMax": "sur {max}",

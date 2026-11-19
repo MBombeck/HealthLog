@@ -76,6 +76,7 @@ function archive(files: Record<string, string>, zip64 = false): string {
 function ref(
   path: string | null,
   identifier: string | null = null,
+  labTyped = false,
 ): ClinicalLabReference {
   return {
     path,
@@ -83,6 +84,7 @@ function ref(
     sourceURL: "https://fhir.example.test",
     sourceName: "Example",
     fhirVersion: "4.0.1",
+    labTyped,
   };
 }
 
@@ -138,6 +140,28 @@ describe("importAppleHealthClinicalLabs", () => {
     expect(mocks.after).toHaveBeenCalledWith(
       expect.objectContaining({ userId: "user-1", inserted: 1 }),
     );
+  });
+
+  it("skips an uncategorised Observation unless the record was typed a lab result", async () => {
+    const heartRate = observation("hr", {
+      category: undefined,
+      code: { text: "Heart rate" },
+      valueQuantity: { value: 62, unit: "/min" },
+    });
+    const path = archive({
+      [`${ROOT}Observation-hr.json`]: heartRate,
+      [`${ROOT}Observation-lab.json`]: observation("lab", {
+        category: undefined,
+      }),
+    });
+    const counts = await run(path, [
+      ref("/clinical-records/Observation-hr.json", "hr"),
+      ref("/clinical-records/Observation-lab.json", "lab", true),
+    ]);
+    expect(counts).toMatchObject({ discovered: 2, imported: 1, skipped: 1 });
+    expect(mocks.write.mock.calls[0][0].readings).toEqual([
+      expect.objectContaining({ analyte: "Analyte lab" }),
+    ]);
   });
 
   it("works on a ZIP64 archive", async () => {

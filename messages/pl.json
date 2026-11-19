@@ -1007,6 +1007,14 @@
     "typeHighHeartRateEvent": "Powiadomienie o wysokim tętnie",
     "typeLowHeartRateEvent": "Powiadomienie o niskim tętnie",
     "typeHypertensionEvent": "Powiadomienie o nadciśnieniu",
+    "typeLowCardioFitnessEvent": "Powiadomienie o niskiej wydolności",
+    "typeMenopausalState": "Stan menopauzalny",
+    "typeBleedingAfterMenopause": "Krwawienie po menopauzie",
+    "typeInsulinDelivery": "Podanie insuliny",
+    "typeInhalerUsage": "Użycie inhalatora",
+    "typeFev1": "FEV1",
+    "typeFvc": "Natężona pojemność życiowa",
+    "typePeakExpiratoryFlow": "Szczytowy przepływ wydechowy",
     "typeWalkingSteadinessEvent": "Alert stabilności chodu",
     "typeBreathingDisturbanceEvent": "Zaburzenie oddychania",
     "typeRecoveryScore": "Wynik regeneracji",
@@ -3771,6 +3779,8 @@
       "years": "lata",
       "breathingEvents": "zdarzenia",
       "standHours": "godz.",
+      "insulinUnits": "j.",
+      "puffs": "wdechy",
       "respiratoryRate": "oddechów/min"
     },
     "sleep": {
@@ -4844,6 +4854,7 @@
         "highHeartRate": "Powiadomienie o wysokim tętnie",
         "lowHeartRate": "Powiadomienie o niskim tętnie",
         "hypertension": "Powiadomienie o nadciśnieniu",
+        "lowCardioFitness": "Powiadomienie o niskiej wydolności",
         "walkingSteadiness": "Alert o stabilności chodu",
         "breathingDisturbance": "Zaburzenie oddychania podczas snu"
       },
@@ -4853,7 +4864,8 @@
         "inconclusive": "Twoje urządzenie nie mogło wykonać pomiaru.",
         "low": "Twoje urządzenie wykryło niską stabilność chodu.",
         "veryLow": "Twoje urządzenie wykryło bardzo niską stabilność chodu.",
-        "fired": "Twoje urządzenie zgłosiło to zdarzenie."
+        "fired": "Twoje urządzenie zgłosiło to zdarzenie.",
+        "lowFitness": "Twoje urządzenie wykryło niską wydolność krążeniową."
       }
     },
     "trendDescriptor": {
@@ -8628,6 +8640,7 @@
         "restoreFailureRowsElsewhere": "Rekordy z tego pliku są już na innym koncie na tym serwerze: ten sam plik został tam wcześniej przywrócony. Plik można przywrócić tylko na jedno konto. Nic nie zostało zapisane.",
         "previewKeyMissing": "Tej kopii nie da się przywrócić na tym serwerze: wymaga klucza szyfrowania {keys}. Najpierw dodaj klucz z powrotem do ENCRYPTION_KEYS i uruchom ponownie.",
         "restoreSkippedSymptomEpisodeReference": "Wpis objawu powiązany z chorobą, której nie ma w pliku (zachowany bez powiązania)",
+        "restoreSkippedSymptomDuplicate": "Kod objawu lub próbka Apple Zdrowie powtórzone w pliku (pierwsze zachowane, powtórzony objaw zachowany bez kodu)",
         "restoreSkippedCycleCiphertext": "Notatka lub etykieta cyklu zaszyfrowana kluczem, którego ten serwer nie ma (dzień lub objaw zachowany bez niej)",
         "restoreSkippedMoodLabelCiphertext": "Nazwa tagu lub grupy nastroju zaszyfrowana kluczem, którego ten serwer nie ma (zachowana bez nazwy)",
         "restoreSkippedVisitCiphertext": "Tekst wizyty lub lekarza zaszyfrowany kluczem, którego ten serwer nie ma (zachowany bez niego)",
@@ -13554,7 +13567,9 @@
       "seizureTypeCreate": "{name} dodał rodzaj napadu",
       "seizureTypeUpdate": "{name} edytował rodzaj napadu",
       "seizureTypeDelete": "{name} usunął rodzaj napadu",
-      "seizureSettingsUpdate": "{name} zmienił regułę napadów gromadnych"
+      "seizureSettingsUpdate": "{name} zmienił regułę napadów gromadnych",
+      "symptomBatchIngest": "{name} zaimportował(a) objawy z Apple Health",
+      "symptomImportDelete": "{name} usunął(-ęła) zaimportowane objawy"
     },
     "section": {
       "measurements": {
@@ -13895,7 +13910,10 @@
       "reset": "Wyczyść formularz",
       "emptyHint": "Dodaj swój pierwszy objaw, na przykład aurę lub ból głowy.",
       "emptyHintNoManage": "Dla tego profilu nie ma jeszcze objawów.",
-      "limitHint": "Do {limit} objawów. Ukryj jeden na stronie chorób, aby dodać kolejny."
+      "limitHint": "Do {limit} objawów. Ukryj jeden na stronie chorób, aby dodać kolejny.",
+      "intensityFor": "Nasilenie: {symptom}",
+      "partlySaved": "Zapisano {saved} z {total}, reszta jest nadal zaznaczona.",
+      "severalHint": "Wybierz kilka, jeśli wystąpiły razem."
     },
     "section": {
       "title": "Twoje objawy",
@@ -13925,7 +13943,50 @@
     "episode": {
       "title": "Zapisane objawy",
       "during": "podczas: {illness}"
-    }
+    },
+    "builtin": {
+      "ABDOMINAL_CRAMPS": "Skurcze brzucha",
+      "ACNE": "Trądzik",
+      "APPETITE_CHANGES": "Zmiany apetytu",
+      "BLADDER_INCONTINENCE": "Nietrzymanie moczu",
+      "BLOATING": "Wzdęcia",
+      "BREAST_PAIN": "Ból piersi",
+      "CHEST_TIGHTNESS_OR_PAIN": "Ucisk lub ból w klatce piersiowej",
+      "CHILLS": "Dreszcze",
+      "CONSTIPATION": "Zaparcia",
+      "COUGHING": "Kaszel",
+      "DIARRHEA": "Biegunka",
+      "DIZZINESS": "Zawroty głowy",
+      "DRY_SKIN": "Sucha skóra",
+      "FAINTING": "Omdlenie",
+      "FATIGUE": "Zmęczenie",
+      "FEVER": "Gorączka",
+      "GENERALIZED_BODY_ACHE": "Bóle ciała",
+      "HAIR_LOSS": "Wypadanie włosów",
+      "HEADACHE": "Ból głowy",
+      "HEARTBURN": "Zgaga",
+      "HOT_FLASHES": "Uderzenia gorąca",
+      "LOSS_OF_SMELL": "Utrata węchu",
+      "LOSS_OF_TASTE": "Utrata smaku",
+      "LOWER_BACK_PAIN": "Ból dolnej części pleców",
+      "MEMORY_LAPSE": "Luki w pamięci",
+      "MOOD_CHANGES": "Wahania nastroju",
+      "NAUSEA": "Nudności",
+      "NIGHT_SWEATS": "Nocne poty",
+      "PELVIC_PAIN": "Ból miednicy",
+      "RAPID_POUNDING_OR_FLUTTERING_HEARTBEAT": "Kołatanie serca",
+      "RUNNY_NOSE": "Katar",
+      "SHORTNESS_OF_BREATH": "Duszność",
+      "SINUS_CONGESTION": "Zatkane zatoki",
+      "SKIPPED_HEARTBEAT": "Przeskakujące bicie serca",
+      "SLEEP_CHANGES": "Zmiany snu",
+      "SORE_THROAT": "Ból gardła",
+      "VAGINAL_DRYNESS": "Suchość pochwy",
+      "VOMITING": "Wymioty",
+      "WHEEZING": "Świszczący oddech"
+    },
+    "sourceAppleHealth": "Apple Health",
+    "timeRange": "{from}–{to}"
   },
   "day": {
     "scoreOfMax": "z {max}",

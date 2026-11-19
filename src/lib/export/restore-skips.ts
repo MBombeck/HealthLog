@@ -153,6 +153,11 @@
  * unlinked. A portable export omits soft-deleted episodes, which is the
  * ordinary way an occurrence ends up naming one the file does not carry.
  *
+ * `symptomDuplicate` names what a file repeated that the account can hold
+ * once: a built-in symptom code (`symptomDefinitions.code.<CODE>`), whose
+ * later definitions restore as named symptoms without it, or an imported
+ * sample (`symptomEvents.<source>.<externalId>`), whose repeats are left out.
+ *
  * The sixteenth, `cycleCiphertext`, is not a reference at all. It names a
  * sealed cycle value (a day-log note, the sensitive-category envelope, a
  * custom symptom's label) the file carried as ciphertext this host's keys do
@@ -205,6 +210,7 @@ export type SkippedCatalogue =
   | "checkupClosure"
   | "accountSetting"
   | "symptomEpisodeReference"
+  | "symptomDuplicate"
   | "seizureMedicationReference"
   | "seizureTypeReference"
   | "cycleCiphertext"

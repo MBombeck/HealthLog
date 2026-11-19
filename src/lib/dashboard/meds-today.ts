@@ -34,7 +34,7 @@
  * anchor passed AFTER the block was built — render the plain day
  * summary, never an overdue state, until a fresh block arrives.
  */
-import type { PrismaClient } from "@/generated/prisma/client";
+import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { medicationWindow } from "@/lib/medications/course-window";
 import { projectTodayIntakesAndRecompute } from "@/lib/medications/scheduling/project-today-intakes";
 import { loadAutoTakeRollingAnchors } from "@/lib/medications/auto-take";
@@ -44,7 +44,10 @@ import {
   toResolvedSlotMark,
   type ResolvedSlotMark,
 } from "@/lib/medications/scheduling/next-due";
-import { getUserTodayBounds } from "@/lib/tz/local-day";
+import { buildCanonicalSchedule } from "@/lib/medications/scheduling/worker-helpers";
+import type { WorkerScheduleRow } from "@/lib/medications/scheduling/worker-helpers";
+import { formatInUserTz } from "@/lib/tz/format";
+import { getUserTodayBounds, localHmAsUtc } from "@/lib/tz/local-day";
 import {
   TRACKED_INTAKE_EVENT_WHERE,
   TRACKED_INTAKE_WHERE,
@@ -59,7 +62,36 @@ export interface MedsTodayDueCandidate {
   overdue: boolean;
   /** Canonical attribution-band start for this slot (ISO8601). */
   availableFrom: string;
+  /**
+   * When the dose's own window opens (ISO8601): the start of an explicit
+   * per-dose window, else the slot instant itself. What "next dose at" names.
+   * Optional only so older cached snapshots remain valid.
+   */
+  opensAt?: string;
 }
+
+/**
+ * Which of today's intake rows are scheduled doses of the day, as one filter
+ * on the tally read. Only tracked medications (#1033). An as-needed
+ * medication schedules nothing, so its intakes (ad-hoc rows, `scheduledFor
+ * === takenAt`) are not part of the day's total. A still-pending placeholder
+ * of a medication paused since it was minted is no longer expected; an
+ * actioned row of it is history and stays. (Ending a course tombstones the
+ * placeholders after its moment, so `deletedAt` already takes those.)
+ */
+const SCHEDULED_DOSE_TODAY_WHERE = {
+  medication: { ...TRACKED_INTAKE_EVENT_WHERE.medication, asNeeded: false },
+  AND: [
+    {
+      OR: [
+        { takenAt: { not: null } },
+        { skipped: true },
+        { autoMissed: true },
+        { medication: { active: true } },
+      ],
+    },
+  ],
+} satisfies Prisma.MedicationIntakeEventWhereInput;
 
 export interface MedsTodayBlock {
   /** Active medications (paused courses excluded). */
@@ -72,10 +104,11 @@ export interface MedsTodayBlock {
   skippedToday: number;
   /**
    * The slot instants (ISO8601, ascending) of the rows `scheduledToday`
-   * counts. Kept as instants rather than a "due so far" count so a cached
-   * snapshot still answers correctly later in the day: the Today fact counts
-   * the ones at or before its own `now` (#173). Optional only so snapshots
-   * cached before it stay valid; the live builder always emits it.
+   * counts. Kept as instants rather than a "due so far" flag so a cached
+   * snapshot still answers correctly later in the day: the Today fact checks
+   * them against its own `now` to tell whether any dose was due yet (#173).
+   * Optional only so snapshots cached before it stay valid; the live builder
+   * always emits it.
    */
   scheduledTodayAt?: string[];
   /**
@@ -156,7 +189,7 @@ export async function buildMedsTodayBlock(
           userId,
           deletedAt: null,
           scheduledFor: { gte: todayStart, lt: todayEndExclusive },
-          ...TRACKED_INTAKE_EVENT_WHERE,
+          ...SCHEDULED_DOSE_TODAY_WHERE,
         },
         select: { takenAt: true, skipped: true, scheduledFor: true },
       }),
@@ -247,6 +280,12 @@ export async function buildMedsTodayBlock(
       dueAt: display.at.toISOString(),
       overdue: display.overdue,
       availableFrom: (display.availableFrom ?? display.at).toISOString(),
+      opensAt: doseWindowOpening(
+        m.schedules,
+        display.scheduleId,
+        display.at,
+        userTz,
+      ).toISOString(),
     });
   }
   dueCandidates.sort(
@@ -272,4 +311,31 @@ export async function buildMedsTodayBlock(
     nextDueMedicationId: next?.medicationId ?? null,
     dueCandidates,
   };
+}
+
+/**
+ * When the dose at `at` can first be taken on the person's clock, as they
+ * set it: the start of the schedule's explicit window for that time of day
+ * (a 17:00 dose with a 12:00 to 22:00 window opens at 12:00), else the slot
+ * instant itself. The engine's band start reaches an early grace further
+ * back, which is right for crediting a take but not what a person reads as
+ * the time of their dose.
+ */
+function doseWindowOpening(
+  schedules: readonly WorkerScheduleRow[],
+  scheduleId: string | undefined,
+  at: Date,
+  userTz: string,
+): Date {
+  const schedule =
+    schedules.find((row) => row.id === scheduleId) ??
+    (scheduleId === undefined ? schedules[0] : undefined);
+  if (!schedule) return at;
+  const windows = buildCanonicalSchedule(schedule).doseWindows ?? [];
+  const timeOfDay = formatInUserTz(at, userTz, "wall-clock");
+  const entry = windows.find((w) => w.timeOfDay === timeOfDay);
+  if (!entry) return at;
+  const [hour, minute] = entry.start.split(":").map(Number);
+  const opens = localHmAsUtc(at, userTz, hour, minute);
+  return opens.getTime() < at.getTime() ? opens : at;
 }

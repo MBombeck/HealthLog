@@ -7,7 +7,9 @@
  * has no tombstone, tombstoned where it has one, with the same follow-up
  * work), answers `{ deletedCount }`, and is idempotent. The re-post legs pin
  * the answer a late outbox replay of a deleted id gets, which is what the
- * iPhone app needs to know.
+ * iPhone app needs to know: workouts and ECG recordings stay deleted through
+ * the Apple Health deletion ledger, as mood entries do through their own
+ * tombstone.
  */
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -84,6 +86,39 @@ async function deletedCount(res: Response): Promise<number> {
 
 const at = new Date("2026-10-10T07:00:00.000Z");
 
+/**
+ * Open a by-external-ids delete's transaction up to its tombstone and hold it
+ * there: the ledger lock taken and the line written, nothing committed. The
+ * caller commits it.
+ */
+async function holdTombstone(
+  domain: "workout" | "ecg",
+  externalId: string,
+): Promise<{ commit: () => Promise<void> }> {
+  const { lockAppleHealthTombstones, recordAppleHealthTombstones } =
+    await import("@/lib/sync/apple-health-tombstones");
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => (release = resolve));
+  let ready!: () => void;
+  const locked = new Promise<void>((resolve) => (ready = resolve));
+  const done = getPrismaClient().$transaction(
+    async (tx) => {
+      await lockAppleHealthTombstones(tx, OWNER, domain);
+      await recordAppleHealthTombstones(tx, OWNER, domain, [externalId]);
+      ready();
+      await gate;
+    },
+    { timeout: 30_000 },
+  );
+  await locked;
+  return {
+    commit: async () => {
+      release();
+      await done;
+    },
+  };
+}
+
 describe("DELETE /api/workouts/by-external-ids", () => {
   it("removes the caller's Apple Health workouts and the records they set, nothing else", async () => {
     const prisma = getPrismaClient();
@@ -150,6 +185,91 @@ describe("DELETE /api/workouts/by-external-ids", () => {
         ),
       ),
     ).toBe(0);
+  });
+
+  it("keeps a deleted Apple Health workout deleted when the sample is posted again", async () => {
+    const prisma = getPrismaClient();
+    const { POST } = await import("@/app/api/workouts/batch/route");
+    const { DELETE } = await import("@/app/api/workouts/by-external-ids/route");
+    const run = (externalId: string, source = "APPLE_HEALTH") => ({
+      sportType: "running",
+      startedAt: at.toISOString(),
+      endedAt: new Date(at.getTime() + 1_800_000).toISOString(),
+      externalId,
+      source,
+    });
+    const statuses = async (res: Response) =>
+      (
+        (await res.json()) as {
+          data: { entries: Array<{ status: string }> };
+        }
+      ).data.entries.map((e) => e.status);
+
+    expect(
+      await statuses(
+        await POST(post("/api/workouts/batch", { workouts: [run("WK-2")] })),
+      ),
+    ).toEqual(["inserted"]);
+    expect(
+      await deletedCount(
+        await DELETE(
+          del("/api/workouts/by-external-ids", {
+            externalIds: ["WK-2", "WK-in-flight"],
+          }),
+        ),
+      ),
+    ).toBe(1);
+
+    // The late replay of the deleted sample, and a post of one the phone
+    // reported deleted before it ever landed: both stay out.
+    const replay = await POST(
+      post("/api/workouts/batch", {
+        workouts: [run("WK-2"), run("WK-in-flight")],
+      }),
+    );
+    expect(replay.status).toBe(200);
+    expect(await statuses(replay)).toEqual(["duplicate", "duplicate"]);
+    expect(await prisma.workout.count({ where: { userId: OWNER } })).toBe(0);
+
+    // The ledger is the Apple Health namespace only: a hand-entered workout
+    // under the same id still lands.
+    expect(
+      await statuses(
+        await POST(
+          post("/api/workouts/batch", { workouts: [run("WK-2", "MANUAL")] }),
+        ),
+      ),
+    ).toEqual(["inserted"]);
+  });
+
+  it("keeps a workout posted while its delete is in flight out", async () => {
+    const prisma = getPrismaClient();
+    const { POST } = await import("@/app/api/workouts/batch/route");
+    // The delete has recorded its tombstone and not committed yet.
+    const held = await holdTombstone("workout", "WK-race");
+    const posting = POST(
+      post("/api/workouts/batch", {
+        workouts: [
+          {
+            sportType: "running",
+            startedAt: at.toISOString(),
+            endedAt: new Date(at.getTime() + 1_800_000).toISOString(),
+            externalId: "WK-race",
+            source: "APPLE_HEALTH",
+          },
+        ],
+      }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    await held.commit();
+    const res = await posting;
+    expect(res.status).toBe(200);
+    expect(
+      (
+        (await res.json()) as { data: { entries: Array<{ status: string }> } }
+      ).data.entries.map((e) => e.status),
+    ).toEqual(["duplicate"]);
+    expect(await prisma.workout.count({ where: { userId: OWNER } })).toBe(0);
   });
 
   it("refuses more than 500 ids and a malformed body", async () => {
@@ -221,6 +341,70 @@ describe("DELETE /api/insights/ecg/by-external-ids", () => {
       { userId: OTHER, source: "APPLE_HEALTH" },
       { userId: OWNER, source: "WITHINGS" },
     ]);
+  });
+
+  it("keeps a deleted Apple Health recording deleted when it is posted again", async () => {
+    const prisma = getPrismaClient();
+    const { POST } = await import("@/app/api/insights/ecg/route");
+    const { DELETE } =
+      await import("@/app/api/insights/ecg/by-external-ids/route");
+    const strip = {
+      externalRecordingId: "ECG-2",
+      recordedAt: at.toISOString(),
+      samplingFrequency: 512,
+      samples: [1, 2, 3, 4],
+      averageHeartRate: 61,
+      classification: "NOT_DETECTED",
+      source: "APPLE_HEALTH",
+    };
+
+    const first = await POST(post("/api/insights/ecg", strip));
+    expect(first.status).toBe(201);
+    expect(
+      await deletedCount(
+        await DELETE(
+          del("/api/insights/ecg/by-external-ids", { externalIds: ["ECG-2"] }),
+        ),
+      ),
+    ).toBe(1);
+
+    const replay = await POST(post("/api/insights/ecg", strip));
+    expect(replay.status).toBe(200);
+    expect(
+      ((await replay.json()) as { data: { status: string } }).data.status,
+    ).toBe("duplicate");
+    expect(await prisma.ecgRecording.count({ where: { userId: OWNER } })).toBe(
+      0,
+    );
+  });
+});
+
+describe("an ECG posted while its delete is in flight", () => {
+  it("stays out", async () => {
+    const prisma = getPrismaClient();
+    const { POST } = await import("@/app/api/insights/ecg/route");
+    const held = await holdTombstone("ecg", "ECG-race");
+    const posting = POST(
+      post("/api/insights/ecg", {
+        externalRecordingId: "ECG-race",
+        recordedAt: at.toISOString(),
+        samplingFrequency: 512,
+        samples: [1, 2, 3, 4],
+        averageHeartRate: 61,
+        classification: "NOT_DETECTED",
+        source: "APPLE_HEALTH",
+      }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    await held.commit();
+    const res = await posting;
+    expect(res.status).toBe(200);
+    expect(
+      ((await res.json()) as { data: { status: string } }).data.status,
+    ).toBe("duplicate");
+    expect(await prisma.ecgRecording.count({ where: { userId: OWNER } })).toBe(
+      0,
+    );
   });
 });
 

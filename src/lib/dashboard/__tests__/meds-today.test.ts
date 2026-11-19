@@ -242,13 +242,32 @@ describe("buildMedsTodayBlock — tally", () => {
     expect(block.scheduledToday).toBe(4);
     expect(block.takenToday).toBe(2);
     expect(block.skippedToday).toBe(1);
-    // The slot instants the Today fact counts "due so far" against (#173).
+    // The slot instants the Today fact checks against its own clock (#173).
     expect(block.scheduledTodayAt).toEqual([
       "2026-06-10T04:00:00.000Z",
       "2026-06-10T06:00:00.000Z",
       "2026-06-10T08:00:00.000Z",
       "2026-06-10T12:00:00.000Z",
     ]);
+  });
+
+  it("tallies only the scheduled doses of tracked medications", async () => {
+    // The row-level cases run against Postgres in
+    // tests/integration/meds-today-scheduled-total.test.ts.
+    await buildMedsTodayBlock(fakePrisma, "user-1", BERLIN, NOW);
+    expect(capturedTodayWhere).toMatchObject({
+      medication: { trackIntake: true, asNeeded: false },
+      AND: [
+        {
+          OR: [
+            { takenAt: { not: null } },
+            { skipped: true },
+            { autoMissed: true },
+            { medication: { active: true } },
+          ],
+        },
+      ],
+    });
   });
 
   it("returns a zeroed block for an account with no medications", async () => {
@@ -420,6 +439,7 @@ describe("buildMedsTodayBlock — next due (real engine)", () => {
         dueAt: "2026-06-10T09:00:00.000Z",
         overdue: true,
         availableFrom: "2026-06-09T08:00:00.000Z",
+        opensAt: "2026-06-10T09:00:00.000Z",
       },
       {
         medicationId: "med-ramipril",
@@ -427,12 +447,59 @@ describe("buildMedsTodayBlock — next due (real engine)", () => {
         dueAt: "2026-06-10T09:00:00.000Z",
         overdue: true,
         availableFrom: "2026-06-10T07:00:00.000Z",
+        opensAt: "2026-06-10T09:00:00.000Z",
       },
     ]);
     expect(block.nextDueAt).toBe("2026-06-10T09:00:00.000Z");
     expect(block.nextDueOverdue).toBe(true);
     expect(block.nextDueMedicationName).toBe("Mounjaro");
     expect(block.nextDueMedicationId).toBe("med-mounjaro");
+  });
+
+  it("names when a dose window opens, and the anchor when there is none", async () => {
+    // 10:00Z is 12:00 Berlin; a 17:00 dose with a 15:00 to 22:00 window, and
+    // a plain 20:00 dose.
+    medications = [
+      medication({
+        id: "med-window",
+        name: "Window",
+        schedules: [
+          dailySchedule({
+            id: "sched-window",
+            medicationId: "med-window",
+            windowStart: "17:00",
+            windowEnd: "18:00",
+            timesOfDay: ["17:00"],
+            doseWindows: [{ timeOfDay: "17:00", start: "15:00", end: "22:00" }],
+          }),
+        ],
+      }),
+      medication({
+        id: "med-plain",
+        name: "Plain",
+        schedules: [
+          dailySchedule({
+            id: "sched-plain",
+            medicationId: "med-plain",
+            windowStart: "20:00",
+            windowEnd: "21:00",
+            timesOfDay: ["20:00"],
+          }),
+        ],
+      }),
+    ];
+    const block = await buildMedsTodayBlock(fakePrisma, "user-1", BERLIN, NOW);
+    const byId = new Map(
+      (block.dueCandidates ?? []).map((c) => [c.medicationId, c]),
+    );
+    expect(byId.get("med-window")).toMatchObject({
+      dueAt: "2026-06-10T15:00:00.000Z",
+      opensAt: "2026-06-10T13:00:00.000Z",
+    });
+    expect(byId.get("med-plain")).toMatchObject({
+      dueAt: "2026-06-10T18:00:00.000Z",
+      opensAt: "2026-06-10T18:00:00.000Z",
+    });
   });
 
   it("returns null next-due when no schedule has an upcoming slot", async () => {

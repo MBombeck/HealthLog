@@ -1011,7 +1011,7 @@ describe("the lead never opens with the first name (#173)", () => {
   });
 });
 
-describe("the medications fact counts only what was due so far (#173)", () => {
+describe("the medications fact counts the whole day, names the next dose before the first (#173, #1412)", () => {
   const at = (h: number, m = 0) =>
     new Date(Date.UTC(2026, 10, 17, h, m)).toISOString();
   const slots = [at(8), at(13), at(20)];
@@ -1055,7 +1055,7 @@ describe("the medications fact counts only what was due so far (#173)", () => {
     );
   });
 
-  it("counts against the doses due so far once one was due", () => {
+  it("counts against every dose of the day once one was due", () => {
     expect(
       medsFact({
         now: new Date(at(9)),
@@ -1067,10 +1067,10 @@ describe("the medications fact counts only what was due so far (#173)", () => {
         }),
         nextDoseTimeLabel: "13:00",
       })?.value,
-    ).toBe("1 of 1 taken");
+    ).toBe("1 of 3 taken");
   });
 
-  it("counts an open overdue dose as not taken yet", () => {
+  it("counts an open overdue dose against the whole day", () => {
     expect(
       medsFact({
         now: new Date(at(8, 30)),
@@ -1082,10 +1082,10 @@ describe("the medications fact counts only what was due so far (#173)", () => {
         }),
         nextDoseTimeLabel: "08:00",
       })?.value,
-    ).toBe("0 of 1 taken");
+    ).toBe("0 of 3 taken");
   });
 
-  it("never reads more taken than due when a dose was taken early", () => {
+  it("counts a dose taken before its time against the whole day", () => {
     expect(
       medsFact({
         now: new Date(at(7, 30)),
@@ -1097,7 +1097,7 @@ describe("the medications fact counts only what was due so far (#173)", () => {
         }),
         nextDoseTimeLabel: "13:00",
       })?.value,
-    ).toBe("1 of 1 taken");
+    ).toBe("1 of 3 taken");
   });
 
   it("counts the whole day once every dose was due", () => {
@@ -1121,5 +1121,88 @@ describe("the medications fact counts only what was due so far (#173)", () => {
         nextDoseTimeLabel: "08:00",
       })?.value,
     ).toBe("0 of 3 taken");
+  });
+
+  // #1412 — Berlin (CET, UTC+1) on a weekday at 13:30 local: two doses at
+  // 08:00 taken, two window doses anchored inside a 12:00 to 22:00 window
+  // and open to take, one dose at 20:00. The window anchors and the evening
+  // dose lie after `now`, and the day's total must still count them.
+  it("counts the doses still ahead today, window doses included", () => {
+    const local = (h: number, m = 0) =>
+      new Date(Date.UTC(2026, 10, 18, h - 1, m)).toISOString();
+    expect(
+      medsFact({
+        now: new Date(local(13, 30)),
+        medsToday: meds({
+          scheduledToday: 5,
+          takenToday: 2,
+          scheduledTodayAt: [
+            local(8),
+            local(8),
+            local(17),
+            local(17),
+            local(20),
+          ],
+          nextDueAt: local(17),
+        }),
+        nextDoseTimeLabel: "17:00",
+      })?.value,
+    ).toBe("2 of 5 taken");
+  });
+
+  // A 12:00 to 22:00 window anchored at 17:00 is the day's only dose. Once
+  // the window has opened the dose is due now, though its anchor lies ahead.
+  it("counts a window dose as due once its window has opened", () => {
+    const candidate = {
+      medicationId: "med-1",
+      medicationName: "Window",
+      dueAt: at(17),
+      overdue: false,
+      availableFrom: at(11),
+      opensAt: at(12),
+    };
+    const block = meds({
+      scheduledToday: 1,
+      scheduledTodayAt: [at(17)],
+      nextDueAt: at(17),
+      dueCandidates: [candidate],
+    });
+    expect(
+      medsFact({
+        now: new Date(at(13)),
+        medsToday: block,
+        nextDoseTimeLabel: "12:00",
+      })?.value,
+    ).toBe("0 of 1 taken");
+    expect(
+      medsFact({
+        now: new Date(at(10)),
+        medsToday: block,
+        nextDoseTimeLabel: "12:00",
+      })?.value,
+    ).toBe("Next dose at 12:00");
+    // A candidate for another day opens early (a weekly dose) and is not
+    // today's business.
+    expect(
+      medsFact({
+        now: new Date(at(10)),
+        medsToday: meds({
+          scheduledToday: 1,
+          scheduledTodayAt: [at(17)],
+          nextDueAt: at(17),
+          dueCandidates: [
+            candidate,
+            {
+              ...candidate,
+              medicationId: "med-weekly",
+              dueAt: new Date(Date.UTC(2026, 10, 18, 9)).toISOString(),
+              availableFrom: at(8),
+              opensAt: at(8),
+            },
+          ],
+        }),
+        nextDoseTimeLabel: "12:00",
+      })?.value,
+    ).toBe("Next dose at 12:00");
   });
 });

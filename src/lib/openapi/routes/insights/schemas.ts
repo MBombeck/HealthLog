@@ -1397,7 +1397,7 @@ export const dashboardSnapshotResponse = z
           .array(z.string())
           .optional()
           .describe(
-            "v1.48.0 — the slot instants (ISO 8601, ascending) of the doses `scheduledToday` counts. The Today medications fact counts the ones already due (at or before now) instead of the whole day. Absent on a snapshot cached by an older server.",
+            "v1.48.0 — the slot instants (ISO 8601, ascending) of the doses `scheduledToday` counts. Since v1.48.2 that excludes as-needed intakes and the pending doses of a medication paused, or a course ended, earlier in the day. The Today medications fact uses them to tell whether any dose was due yet (at or before now, or a candidate for one of them whose `availableFrom` has passed): before the first, with nothing taken, it names the next dose; otherwise it counts taken against the whole day's `scheduledToday`. Absent on a snapshot cached by an older server.",
           ),
         nextDueAt: z.string().nullable(),
         nextDueOverdue: z.boolean(),
@@ -1411,6 +1411,12 @@ export const dashboardSnapshotResponse = z
               dueAt: z.string(),
               overdue: z.boolean(),
               availableFrom: z.string(),
+              opensAt: z
+                .string()
+                .optional()
+                .describe(
+                  "v1.48.2 — when the dose's own window opens: the start of an explicit per-dose window, else `dueAt`. Absent on a snapshot cached by an older server.",
+                ),
             }),
           )
           .optional(),
@@ -1860,11 +1866,15 @@ export const ecgIngestRequest = z
 
 export const ecgIngestResponse = z
   .object({
-    id: z.string().describe("The recording row's id (cuid)."),
+    id: z
+      .string()
+      .describe(
+        "The recording row's id (cuid). Required and never null, so a client decoding it as a plain string keeps working: on a `duplicate` for a recording deleted through `DELETE /api/insights/ecg/by-external-ids` it is the id of the deletion record instead, which names no recording. Do not fetch or link it; treat it as opaque.",
+      ),
     status: z
       .enum(["inserted", "updated", "duplicate"])
       .describe(
-        "What the write did. `inserted` — a new recording landed (HTTP 201). `updated` — this `externalRecordingId` was already stored and the row was overwritten in place (HTTP 200); a retry is safe and creates nothing. `duplicate` — this exact recording is already stored under a DIFFERENT id, i.e. it arrived earlier through the `export.zip` importer (HTTP 200); nothing was written and `id` names the row that already holds it. A recording is the same recording when `(source, recordedAt, samplingFrequency)` match, which is enforced by a unique index rather than by convention. All three statuses mean the recording is stored and the client may advance its cursor.",
+        "What the write did. `inserted` — a new recording landed (HTTP 201). `updated` — this `externalRecordingId` was already stored and the row was overwritten in place (HTTP 200); a retry is safe and creates nothing. `duplicate` — this exact recording is already stored under a DIFFERENT id, i.e. it arrived earlier through the `export.zip` importer (HTTP 200); nothing was written and `id` names the row that already holds it. A recording is the same recording when `(source, recordedAt, samplingFrequency)` match, which is enforced by a unique index rather than by convention. Since v1.48.2 `duplicate` is also the answer for an `APPLE_HEALTH` recording deleted through `DELETE /api/insights/ecg/by-external-ids`: it stays deleted, nothing is written, and `id` names the deletion record rather than a recording. All three statuses mean the client may advance its cursor.",
       ),
     recordedAt: isoDateTime().describe(
       "The `recordedAt` that was submitted, echoed back.",
@@ -1899,9 +1909,10 @@ const rhythmEventType = z
     "WALKING_STEADINESS_EVENT",
     "BREATHING_DISTURBANCE_EVENT",
     "HYPERTENSION_EVENT",
+    "LOW_CARDIO_FITNESS_EVENT",
   ])
   .describe(
-    "The HealthKit category the device flagged. IRREGULAR_RHYTHM_NOTIFICATION (`HKCategoryTypeIdentifierIrregularHeartRhythmEvent` + ScanWatch AFib screening), HIGH_HEART_RATE_EVENT / LOW_HEART_RATE_EVENT (a sustained heart rate above / below the user's configured threshold while apparently inactive), WALKING_STEADINESS_EVENT (`HKCategoryTypeIdentifierAppleWalkingSteadinessEvent`; the severity rides in `classification`), BREATHING_DISTURBANCE_EVENT (`HKCategoryTypeIdentifierSleepApneaEvent` + `AppleSleepingBreathingDisturbances`, an elevated breathing-disturbance / possible sleep-apnea screening signal), HYPERTENSION_EVENT (`HKCategoryTypeIdentifierHypertensionEvent`, iOS 26: the watch flagged signs of possible hypertension over a 30-day window; a notification, not a blood-pressure reading). Decode unknown values leniently: the set grows.",
+    "The HealthKit category the device flagged. IRREGULAR_RHYTHM_NOTIFICATION (`HKCategoryTypeIdentifierIrregularHeartRhythmEvent` + ScanWatch AFib screening), HIGH_HEART_RATE_EVENT / LOW_HEART_RATE_EVENT (a sustained heart rate above / below the user's configured threshold while apparently inactive), WALKING_STEADINESS_EVENT (`HKCategoryTypeIdentifierAppleWalkingSteadinessEvent`; the severity rides in `classification`), BREATHING_DISTURBANCE_EVENT (`HKCategoryTypeIdentifierSleepApneaEvent` + `AppleSleepingBreathingDisturbances`, an elevated breathing-disturbance / possible sleep-apnea screening signal), HYPERTENSION_EVENT (`HKCategoryTypeIdentifierHypertensionEvent`, iOS 26: the watch flagged signs of possible hypertension over a 30-day window; a notification, not a blood-pressure reading), LOW_CARDIO_FITNESS_EVENT (`HKCategoryTypeIdentifierLowCardioFitnessEvent`, since v1.48.2: the phone flagged a VO2 max below the low-fitness threshold for the person's age and sex). Decode unknown values leniently: the set grows.",
   );
 
 const rhythmEventClassification = z
@@ -1912,10 +1923,11 @@ const rhythmEventClassification = z
     "LOW",
     "VERY_LOW",
     "FIRED",
+    "LOW_FITNESS",
   ])
   .nullable()
   .describe(
-    "The RECORDING DEVICE's own verdict, surfaced verbatim. IRREGULAR / NOT_DETECTED / INCONCLUSIVE are the ECG-style rhythm verdicts (device flagged a possible irregular rhythm / algorithm ran and found nothing / signal too poor to classify) and occur on an `IRREGULAR_RHYTHM_NOTIFICATION` row. LOW / VERY_LOW are walking-steadiness severities and occur on a `WALKING_STEADINESS_EVENT` row. FIRED is the neutral \"event occurred\" verdict with no severity gradient, and occurs on a `HIGH_HEART_RATE_EVENT` / `LOW_HEART_RATE_EVENT` / `BREATHING_DISTURBANCE_EVENT` / `HYPERTENSION_EVENT` row. Null when the source reported none. HealthLog never re-classifies — this is the device's certified on-device result. Distinct from `EcgRecordingListItem.classification` / `EcgDetailResponse.classification` above, which are scoped to the three ECG-only values.",
+    "The RECORDING DEVICE's own verdict, surfaced verbatim. IRREGULAR / NOT_DETECTED / INCONCLUSIVE are the ECG-style rhythm verdicts (device flagged a possible irregular rhythm / algorithm ran and found nothing / signal too poor to classify) and occur on an `IRREGULAR_RHYTHM_NOTIFICATION` row. LOW / VERY_LOW are walking-steadiness severities and occur on a `WALKING_STEADINESS_EVENT` row. FIRED is the neutral \"event occurred\" verdict with no severity gradient, and occurs on a `HIGH_HEART_RATE_EVENT` / `LOW_HEART_RATE_EVENT` / `BREATHING_DISTURBANCE_EVENT` / `HYPERTENSION_EVENT` row. LOW_FITNESS (since v1.48.2) is the one verdict of a `LOW_CARDIO_FITNESS_EVENT` row. Null when the source reported none. HealthLog never re-classifies — this is the device's certified on-device result. Distinct from `EcgRecordingListItem.classification` / `EcgDetailResponse.classification` above, which are scoped to the three ECG-only values.",
   );
 
 const rhythmEventListItem = z

@@ -26,6 +26,7 @@ const TYPE_UNIT_LABEL_KEYS: Readonly<Record<string, string>> = {
   BREATHING_DISTURBANCES: "insights.units.breathingEvents",
   RESPIRATORY_RATE: "insights.units.respiratoryRate",
   STAND_HOURS: "insights.units.standHours",
+  INHALER_USAGE: "insights.units.puffs",
 };
 
 /** Word-shaped tokens that read the same whatever the type. */
@@ -35,6 +36,8 @@ const TOKEN_UNIT_LABEL_KEYS: Readonly<Record<string, string>> = {
   flights: "insights.units.flights",
   years: "insights.units.years",
   minutes: "insights.deviceScore.unitMinutes",
+  // International Units: "IE" in German, "UI" in French, "МЕ" in Russian.
+  IU: "insights.units.insulinUnits",
 };
 
 /** Spelled-out tokens whose symbol every locale reads. */
@@ -57,6 +60,9 @@ const UNITLESS_UNIT_TOKENS: ReadonlySet<string> = new Set([
   "load",
   // State of Mind valence: a bare −1..1 number.
   "valence",
+  // The menopause states: the stored value is a HealthKit category codepoint.
+  "state",
+  "flow",
   "unknown",
 ]);
 

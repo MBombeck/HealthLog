@@ -1250,8 +1250,9 @@
         "icon": "Zap",
         "sortOrder": 0,
         "isActive": true,
-        "createdAt": "2026-05-03T00:06:00.000Z",
-        "updatedAt": "2026-05-03T00:07:00.000Z"
+        "code": "FEVER",
+        "createdAt": "2026-05-03T00:07:00.000Z",
+        "updatedAt": "2026-05-03T00:08:00.000Z"
       },
       {
         "id": "<id:43>",
@@ -1260,8 +1261,9 @@
         "icon": "Brain",
         "sortOrder": 1,
         "isActive": false,
-        "createdAt": "2026-05-03T00:06:01.000Z",
-        "updatedAt": "2026-05-03T00:07:01.000Z"
+        "code": null,
+        "createdAt": "2026-05-03T00:07:01.000Z",
+        "updatedAt": "2026-05-03T00:08:01.000Z"
       }
     ],
     "SymptomEvent": [
@@ -1273,8 +1275,12 @@
         "intensity": 4,
         "noteEncrypted": null,
         "episodeId": "<id:35>",
-        "createdAt": "2026-05-03T01:47:00.000Z",
-        "updatedAt": "2026-05-03T01:48:00.000Z"
+        "endAt": "2026-06-30T12:34:56.789Z",
+        "source": "rt-SymptomEvent-source",
+        "externalId": "rt-SymptomEvent-externalId",
+        "deletedAt": null,
+        "createdAt": "2026-05-03T01:51:00.000Z",
+        "updatedAt": "2026-05-03T01:52:00.000Z"
       },
       {
         "id": "<id:45>",
@@ -1284,8 +1290,12 @@
         "intensity": 8,
         "noteEncrypted": "<sealed:v1:left side, behind the eye>",
         "episodeId": null,
-        "createdAt": "2026-05-03T01:47:01.000Z",
-        "updatedAt": "2026-05-03T01:48:01.000Z"
+        "endAt": null,
+        "source": "MANUAL",
+        "externalId": null,
+        "deletedAt": null,
+        "createdAt": "2026-05-03T01:51:01.000Z",
+        "updatedAt": "2026-05-03T01:52:01.000Z"
       },
       {
         "id": "<id:46>",
@@ -1295,8 +1305,12 @@
         "intensity": 2,
         "noteEncrypted": null,
         "episodeId": null,
-        "createdAt": "2026-05-03T01:47:02.000Z",
-        "updatedAt": "2026-05-03T01:48:02.000Z"
+        "endAt": null,
+        "source": "MANUAL",
+        "externalId": null,
+        "deletedAt": null,
+        "createdAt": "2026-05-03T01:51:02.000Z",
+        "updatedAt": "2026-05-03T01:52:02.000Z"
       }
     ],
     "SeizureTypeProfile": [
@@ -2721,9 +2735,18 @@
         "updatedAt": "2026-05-06T18:14:00.000Z"
       }
     ],
-    "OnboardingRecord": [
+    "AppleHealthTombstone": [
       {
         "id": "<id:126>",
+        "userId": "round-trip-owner",
+        "domain": "workout",
+        "externalId": "ABCDEF01-2345-6789-ABCD-EF0123456789",
+        "createdAt": "2026-06-30T08:00:00.000Z"
+      }
+    ],
+    "OnboardingRecord": [
+      {
+        "id": "<id:127>",
         "userId": "round-trip-owner",
         "needsJson": {
           "areas": [
@@ -2786,80 +2809,80 @@
         },
         "modulesDerivedAt": "2026-07-01T08:00:00.000Z",
         "completedAt": "2026-07-01T08:00:00.000Z",
-        "createdAt": "2026-05-06T19:47:00.000Z",
-        "updatedAt": "2026-05-06T19:48:00.000Z"
+        "createdAt": "2026-05-06T21:27:00.000Z",
+        "updatedAt": "2026-05-06T21:28:00.000Z"
       }
     ],
     "BiomarkerAlias": [
       {
-        "id": "<id:127>",
+        "id": "<id:128>",
         "userId": "round-trip-owner",
         "biomarkerId": "<id:28>",
         "name": "Ferr.",
         "nameFolded": "ferr.",
         "source": "IMPORT_CHOICE",
-        "createdAt": "2026-05-06T21:26:00.000Z"
+        "createdAt": "2026-05-06T23:06:00.000Z"
       }
     ],
     "BiomarkerMerge": [
       {
-        "id": "<id:128>",
+        "id": "<id:129>",
         "userId": "round-trip-owner",
         "targetBiomarkerId": "<id:28>",
         "sourceBiomarkerId": "merged-away-marker",
         "sourceName": "Ferritin (Serum)",
         "readingCount": 3,
-        "mergedAt": "2026-05-06T23:06:00.000Z"
+        "mergedAt": "2026-05-07T00:46:00.000Z"
       }
     ],
     "LabResultDocumentLink": [
       {
-        "id": "<id:129>",
+        "id": "<id:130>",
         "labResultId": "<id:27>",
         "documentId": "<id:72>",
-        "userId": "round-trip-owner",
-        "createdAt": "2026-05-07T00:44:00.000Z"
-      }
-    ],
-    "EncounterMedicationLink": [
-      {
-        "id": "<id:130>",
-        "encounterId": "<id:76>",
-        "medicationId": "<id:8>",
         "userId": "round-trip-owner",
         "createdAt": "2026-05-07T02:24:00.000Z"
       }
     ],
-    "EncounterVaccinationLink": [
+    "EncounterMedicationLink": [
       {
         "id": "<id:131>",
         "encounterId": "<id:76>",
-        "vaccinationId": "<id:82>",
+        "medicationId": "<id:8>",
         "userId": "round-trip-owner",
         "createdAt": "2026-05-07T04:04:00.000Z"
       }
     ],
-    "MedicationDocumentLink": [
+    "EncounterVaccinationLink": [
       {
         "id": "<id:132>",
-        "medicationId": "<id:8>",
-        "documentId": "<id:72>",
+        "encounterId": "<id:76>",
+        "vaccinationId": "<id:82>",
         "userId": "round-trip-owner",
         "createdAt": "2026-05-07T05:44:00.000Z"
       }
     ],
-    "MedicationConditionLink": [
+    "MedicationDocumentLink": [
       {
         "id": "<id:133>",
         "medicationId": "<id:8>",
-        "episodeId": "<id:35>",
+        "documentId": "<id:72>",
         "userId": "round-trip-owner",
         "createdAt": "2026-05-07T07:24:00.000Z"
       }
     ],
-    "AccountGrant": [
+    "MedicationConditionLink": [
       {
         "id": "<id:134>",
+        "medicationId": "<id:8>",
+        "episodeId": "<id:35>",
+        "userId": "round-trip-owner",
+        "createdAt": "2026-05-07T09:04:00.000Z"
+      }
+    ],
+    "AccountGrant": [
+      {
+        "id": "<id:135>",
         "grantorId": "round-trip-owner",
         "granteeId": "parity-delegate",
         "access": "READ",
@@ -4190,7 +4213,7 @@
             "name": "Ferr.",
             "source": "IMPORT_CHOICE",
             "id": "<id:42>",
-            "createdAt": "2026-05-06T21:26:00.000Z"
+            "createdAt": "2026-05-06T23:06:00.000Z"
           }
         ]
       }
@@ -4203,7 +4226,7 @@
         "sourceBiomarkerId": "merged-away-marker",
         "sourceName": "Ferritin (Serum)",
         "readingCount": 3,
-        "mergedAt": "2026-05-06T23:06:00.000Z"
+        "mergedAt": "2026-05-07T00:46:00.000Z"
       }
     ],
     "labResultImportKeys": [
@@ -4403,6 +4426,13 @@
         "pauseDurationSec": 3,
         "source": "WITHINGS",
         "externalId": "rt-Workout-externalId"
+      }
+    ],
+    "appleHealthTombstones": [
+      {
+        "domain": "workout",
+        "externalId": "ABCDEF01-2345-6789-ABCD-EF0123456789",
+        "createdAt": "2026-06-30T08:00:00.000Z"
       }
     ],
     "documents": [
@@ -4682,8 +4712,8 @@
     ],
     "onboardingRecord": {
       "id": "<id:67>",
-      "createdAt": "2026-05-06T19:47:00.000Z",
-      "updatedAt": "2026-05-06T19:48:00.000Z",
+      "createdAt": "2026-05-06T21:27:00.000Z",
+      "updatedAt": "2026-05-06T21:28:00.000Z",
       "needs": {
         "recordTarget": "me",
         "areas": [
@@ -5419,26 +5449,35 @@
         "icon": "Zap",
         "sortOrder": 0,
         "isActive": true,
-        "createdAt": "2026-05-03T00:06:00.000Z",
-        "updatedAt": "2026-05-03T00:07:00.000Z",
+        "code": "FEVER",
+        "createdAt": "2026-05-03T00:07:00.000Z",
+        "updatedAt": "2026-05-03T00:08:00.000Z",
         "events": [
           {
             "id": "<id:98>",
+            "deletedAt": null,
             "noteEncrypted": null,
             "occurredAt": "2026-06-21T09:00:00.000Z",
             "intensity": 4,
             "episodeId": "<id:46>",
-            "createdAt": "2026-05-03T01:47:00.000Z",
-            "updatedAt": "2026-05-03T01:48:00.000Z"
+            "endAt": "2026-06-30T12:34:56.789Z",
+            "source": "rt-SymptomEvent-source",
+            "externalId": "rt-SymptomEvent-externalId",
+            "createdAt": "2026-05-03T01:51:00.000Z",
+            "updatedAt": "2026-05-03T01:52:00.000Z"
           },
           {
             "id": "<id:99>",
+            "deletedAt": null,
             "noteEncrypted": null,
             "occurredAt": "2026-07-10T18:30:00.000Z",
             "intensity": 2,
             "episodeId": null,
-            "createdAt": "2026-05-03T01:47:02.000Z",
-            "updatedAt": "2026-05-03T01:48:02.000Z"
+            "endAt": null,
+            "source": "MANUAL",
+            "externalId": null,
+            "createdAt": "2026-05-03T01:51:02.000Z",
+            "updatedAt": "2026-05-03T01:52:02.000Z"
           }
         ]
       },
@@ -5448,17 +5487,22 @@
         "icon": "Brain",
         "sortOrder": 1,
         "isActive": false,
-        "createdAt": "2026-05-03T00:06:01.000Z",
-        "updatedAt": "2026-05-03T00:07:01.000Z",
+        "code": null,
+        "createdAt": "2026-05-03T00:07:01.000Z",
+        "updatedAt": "2026-05-03T00:08:01.000Z",
         "events": [
           {
             "id": "<id:101>",
+            "deletedAt": null,
             "noteEncrypted": "<sealed:v1:left side, behind the eye>",
             "occurredAt": "2026-06-21T11:00:00.000Z",
             "intensity": 8,
             "episodeId": null,
-            "createdAt": "2026-05-03T01:47:01.000Z",
-            "updatedAt": "2026-05-03T01:48:01.000Z"
+            "endAt": null,
+            "source": "MANUAL",
+            "externalId": null,
+            "createdAt": "2026-05-03T01:51:01.000Z",
+            "updatedAt": "2026-05-03T01:52:01.000Z"
           }
         ]
       }
@@ -5626,35 +5670,35 @@
       {
         "labResultId": "<id:39>",
         "documentId": "<id:55>",
-        "createdAt": "2026-05-07T00:44:00.000Z"
+        "createdAt": "2026-05-07T02:24:00.000Z"
       }
     ],
     "encounterMedicationLinks": [
       {
         "encounterId": "<id:70>",
         "medicationId": "<id:6>",
-        "createdAt": "2026-05-07T02:24:00.000Z"
+        "createdAt": "2026-05-07T04:04:00.000Z"
       }
     ],
     "encounterVaccinationLinks": [
       {
         "encounterId": "<id:70>",
         "vaccinationId": "<id:75>",
-        "createdAt": "2026-05-07T04:04:00.000Z"
+        "createdAt": "2026-05-07T05:44:00.000Z"
       }
     ],
     "medicationDocumentLinks": [
       {
         "medicationId": "<id:6>",
         "documentId": "<id:55>",
-        "createdAt": "2026-05-07T05:44:00.000Z"
+        "createdAt": "2026-05-07T07:24:00.000Z"
       }
     ],
     "medicationConditionLinks": [
       {
         "medicationId": "<id:6>",
         "episodeId": "<id:46>",
-        "createdAt": "2026-05-07T07:24:00.000Z"
+        "createdAt": "2026-05-07T09:04:00.000Z"
       }
     ],
     "nutrientDays": [

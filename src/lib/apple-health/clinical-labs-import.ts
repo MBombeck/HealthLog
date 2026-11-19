@@ -168,6 +168,7 @@ export async function importAppleHealthClinicalLabs(input: {
         identifier: ref.identifier,
         sourceURL: ref.sourceURL,
         sourceName: ref.sourceName,
+        requireLabCategory: !ref.labTyped,
       });
       resource = null;
       if (result.kind === "reading") {

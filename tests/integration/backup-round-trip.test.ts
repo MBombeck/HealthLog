@@ -233,6 +233,8 @@ const COUNT_BACK: Record<
   HealthScoreRecord: (p, userId) =>
     p.healthScoreRecord.count({ where: { userId } }),
   Workout: (p, userId) => p.workout.count({ where: { userId } }),
+  AppleHealthTombstone: (p, userId) =>
+    p.appleHealthTombstone.count({ where: { userId } }),
   NutrientIntakeDay: (p, userId) =>
     p.nutrientIntakeDay.count({ where: { userId } }),
   InboundDocument: (p, userId) =>

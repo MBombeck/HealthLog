@@ -93,11 +93,11 @@ import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 import { dateOnlyKey } from "@/lib/tz/date-only";
 import { dayValueRows } from "@/lib/measurements/day-mean";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
-import { decryptSymptomText } from "@/lib/symptoms/server";
 import {
-  MAX_ACTIVE_SYMPTOM_DEFINITIONS,
-  SYMPTOM_CHANNEL_PREFIX,
-} from "@/lib/symptoms/shared";
+  decryptSymptomText,
+  pickCorrelationSymptoms,
+} from "@/lib/symptoms/server";
+import { SYMPTOM_CHANNEL_PREFIX } from "@/lib/symptoms/shared";
 
 /**
  * v1.21.0 (FDREXTEND) — build the user's MEDICATION_COMPLIANCE daily series.
@@ -454,13 +454,6 @@ export async function fetchCustomMetricBehaviourSeries(
 }
 
 /**
- * Ceiling on `SYMPTOM:<id>` channels. The definition cap already holds the
- * active set at eight; restated here so the matrix bound does not depend on a
- * route check staying where it is.
- */
-export const MAX_SYMPTOM_CORRELATION_CHANNELS = MAX_ACTIVE_SYMPTOM_DEFINITIONS;
-
-/**
  * v1.40 — one OUTCOME series per active person-defined symptom, keyed
  * `SYMPTOM:<definitionId>` and labelled with the decrypted name (the data
  * label `interpret()` prefers over the key). Daily value = that day's highest
@@ -473,21 +466,25 @@ export async function fetchSymptomEventSeries(
   tz: string,
   since: Date,
 ): Promise<NamedSeries[]> {
-  const definitions = await prisma.symptomDefinition.findMany({
-    where: { userId, isActive: true },
-    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }, { id: "asc" }],
-    take: MAX_SYMPTOM_CORRELATION_CHANNELS,
-    select: {
-      id: true,
-      labelEncrypted: true,
-      events: {
-        where: { occurredAt: { gte: since } },
-        orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
-        take: 5000,
-        select: { occurredAt: true, intensity: true },
+  // One read (two statements): every active definition with its events in
+  // the window; the channels are chosen from it in memory.
+  const definitions = pickCorrelationSymptoms(
+    await prisma.symptomDefinition.findMany({
+      where: { userId, isActive: true },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }, { id: "asc" }],
+      select: {
+        id: true,
+        code: true,
+        labelEncrypted: true,
+        events: {
+          where: { deletedAt: null, occurredAt: { gte: since } },
+          orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
+          take: 5000,
+          select: { occurredAt: true, intensity: true },
+        },
       },
-    },
-  });
+    }),
+  );
   const series: NamedSeries[] = [];
   for (const definition of definitions) {
     const label = decryptSymptomText(definition.labelEncrypted, "label");

@@ -1007,6 +1007,14 @@
     "typeHighHeartRateEvent": "High heart rate notification",
     "typeLowHeartRateEvent": "Low heart rate notification",
     "typeHypertensionEvent": "Hypertension notification",
+    "typeLowCardioFitnessEvent": "Low cardio fitness notification",
+    "typeMenopausalState": "Menopausal state",
+    "typeBleedingAfterMenopause": "Bleeding after menopause",
+    "typeInsulinDelivery": "Insulin delivery",
+    "typeInhalerUsage": "Inhaler usage",
+    "typeFev1": "FEV1",
+    "typeFvc": "Forced vital capacity",
+    "typePeakExpiratoryFlow": "Peak expiratory flow",
     "typeWalkingSteadinessEvent": "Walking steadiness alert",
     "typeBreathingDisturbanceEvent": "Breathing disturbance",
     "typeRecoveryScore": "Recovery score",
@@ -3771,6 +3779,8 @@
       "years": "years",
       "breathingEvents": "events",
       "standHours": "hours",
+      "insulinUnits": "IU",
+      "puffs": "puffs",
       "respiratoryRate": "breaths/min"
     },
     "sleep": {
@@ -4844,6 +4854,7 @@
         "highHeartRate": "High heart rate notification",
         "lowHeartRate": "Low heart rate notification",
         "hypertension": "Hypertension notification",
+        "lowCardioFitness": "Low cardio fitness notification",
         "walkingSteadiness": "Walking steadiness alert",
         "breathingDisturbance": "Breathing disturbance during sleep"
       },
@@ -4853,7 +4864,8 @@
         "inconclusive": "Your device could not make a reading.",
         "low": "Your device flagged low walking steadiness.",
         "veryLow": "Your device flagged very low walking steadiness.",
-        "fired": "Your device flagged this event."
+        "fired": "Your device flagged this event.",
+        "lowFitness": "Your device flagged low cardio fitness."
       }
     },
     "trendDescriptor": {
@@ -8628,6 +8640,7 @@
         "restoreFailureRowsElsewhere": "The records in this file are already in another account on this server: the same file was restored there before. A file can be restored into one account only. Nothing was written.",
         "previewKeyMissing": "This backup cannot be restored on this server: it needs encryption key {keys}. Add the key back to ENCRYPTION_KEYS and restart first.",
         "restoreSkippedSymptomEpisodeReference": "Symptom entry linked to an illness the file does not contain (kept without the link)",
+        "restoreSkippedSymptomDuplicate": "Symptom code or Apple Health sample the file repeats (the first kept, a repeated symptom kept without the code)",
         "restoreSkippedCycleCiphertext": "Cycle note or label sealed with a key this server does not hold (day or symptom kept without it)",
         "restoreSkippedMoodLabelCiphertext": "Mood tag or group name sealed with a key this server does not hold (kept without its name)",
         "restoreSkippedVisitCiphertext": "Visit or practitioner text sealed with a key this server does not hold (kept without it)",
@@ -13554,7 +13567,9 @@
       "seizureTypeCreate": "{name} added a seizure type",
       "seizureTypeUpdate": "{name} edited a seizure type",
       "seizureTypeDelete": "{name} deleted a seizure type",
-      "seizureSettingsUpdate": "{name} changed the seizure cluster rule"
+      "seizureSettingsUpdate": "{name} changed the seizure cluster rule",
+      "symptomBatchIngest": "{name} imported symptoms from Apple Health",
+      "symptomImportDelete": "{name} removed imported symptom entries"
     },
     "section": {
       "measurements": {
@@ -13895,7 +13910,10 @@
       "reset": "Reset form",
       "emptyHint": "Add your first symptom, for example aura or headache.",
       "emptyHintNoManage": "No symptoms have been set up for this record yet.",
-      "limitHint": "Up to {limit} symptoms. Hide one on the illness page to add another."
+      "limitHint": "Up to {limit} symptoms. Hide one on the illness page to add another.",
+      "intensityFor": "Intensity: {symptom}",
+      "partlySaved": "{saved} of {total} saved, the rest is still picked.",
+      "severalHint": "Pick several if they came together."
     },
     "section": {
       "title": "Your symptoms",
@@ -13925,7 +13943,50 @@
     "episode": {
       "title": "Symptoms logged",
       "during": "during {illness}"
-    }
+    },
+    "builtin": {
+      "ABDOMINAL_CRAMPS": "Abdominal cramps",
+      "ACNE": "Acne",
+      "APPETITE_CHANGES": "Appetite changes",
+      "BLADDER_INCONTINENCE": "Bladder incontinence",
+      "BLOATING": "Bloating",
+      "BREAST_PAIN": "Breast pain",
+      "CHEST_TIGHTNESS_OR_PAIN": "Chest tightness or pain",
+      "CHILLS": "Chills",
+      "CONSTIPATION": "Constipation",
+      "COUGHING": "Coughing",
+      "DIARRHEA": "Diarrhea",
+      "DIZZINESS": "Dizziness",
+      "DRY_SKIN": "Dry skin",
+      "FAINTING": "Fainting",
+      "FATIGUE": "Fatigue",
+      "FEVER": "Fever",
+      "GENERALIZED_BODY_ACHE": "Body ache",
+      "HAIR_LOSS": "Hair loss",
+      "HEADACHE": "Headache",
+      "HEARTBURN": "Heartburn",
+      "HOT_FLASHES": "Hot flashes",
+      "LOSS_OF_SMELL": "Loss of smell",
+      "LOSS_OF_TASTE": "Loss of taste",
+      "LOWER_BACK_PAIN": "Lower back pain",
+      "MEMORY_LAPSE": "Memory lapse",
+      "MOOD_CHANGES": "Mood changes",
+      "NAUSEA": "Nausea",
+      "NIGHT_SWEATS": "Night sweats",
+      "PELVIC_PAIN": "Pelvic pain",
+      "RAPID_POUNDING_OR_FLUTTERING_HEARTBEAT": "Racing heartbeat",
+      "RUNNY_NOSE": "Runny nose",
+      "SHORTNESS_OF_BREATH": "Shortness of breath",
+      "SINUS_CONGESTION": "Sinus congestion",
+      "SKIPPED_HEARTBEAT": "Skipped heartbeat",
+      "SLEEP_CHANGES": "Sleep changes",
+      "SORE_THROAT": "Sore throat",
+      "VAGINAL_DRYNESS": "Vaginal dryness",
+      "VOMITING": "Vomiting",
+      "WHEEZING": "Wheezing"
+    },
+    "sourceAppleHealth": "Apple Health",
+    "timeRange": "{from}–{to}"
   },
   "day": {
     "scoreOfMax": "of {max}",

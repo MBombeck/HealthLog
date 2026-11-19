@@ -318,6 +318,48 @@ describe("loadDailyDigest — Today texts (#173)", () => {
       digest.today.find((fact) => fact.kind === "medications")?.value,
     ).toMatch(/^daily\.todayFact\.medications\.next 12:00/);
   });
+
+  it("names the time a dose window opens, not its anchor", async () => {
+    const t = vi.fn(
+      (key: string, params?: Record<string, string | number>) =>
+        `${key}${params?.time ? ` ${params.time}` : ""}`,
+    );
+    const { getServerTranslator } =
+      await import("@/lib/i18n/server-translator");
+    vi.mocked(getServerTranslator).mockReturnValueOnce({
+      t,
+    } as unknown as ReturnType<typeof getServerTranslator>);
+    vi.mocked(readDashboardSnapshotCached).mockResolvedValueOnce({
+      ...SNAPSHOT,
+      body: {
+        ...SNAPSHOT.body,
+        medsToday: {
+          ...SNAPSHOT.body.medsToday,
+          scheduledToday: 1,
+          // A 17:00 dose in a 12:00 to 22:00 window, Berlin; NOW is 11:00
+          // there, before the window opens.
+          scheduledTodayAt: ["2026-07-17T15:00:00.000Z"],
+          nextDueAt: "2026-07-17T15:00:00.000Z",
+          dueCandidates: [
+            {
+              medicationId: "med-1",
+              medicationName: "Window",
+              dueAt: "2026-07-17T15:00:00.000Z",
+              overdue: false,
+              availableFrom: "2026-07-17T09:30:00.000Z",
+              opensAt: "2026-07-17T10:00:00.000Z",
+            },
+          ],
+        },
+      },
+    } as unknown as Awaited<ReturnType<typeof readDashboardSnapshotCached>>);
+
+    const digest = await loadDailyDigest(USER as User, NOW);
+
+    expect(
+      digest.today.find((fact) => fact.kind === "medications")?.value,
+    ).toMatch(/^daily\.todayFact\.medications\.next 12:00/);
+  });
 });
 
 describe("loadDailyDigest — AI parts", () => {

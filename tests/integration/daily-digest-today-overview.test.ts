@@ -9,7 +9,7 @@
  * AI provider is the subject on purpose: the overview has to be whole
  * without one.
  */
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Prisma } from "@/generated/prisma/client";
 import { loadDailyDigest } from "@/lib/daily/load-digest";
@@ -213,6 +213,126 @@ describe("the Today overview on a real record", () => {
     expect(digest.lead).toBeNull();
     expect(digest.today).toEqual([]);
     expect(digest.restMode).toBeNull();
+    expect(
+      dailyDigestResponse.safeParse(JSON.parse(JSON.stringify(digest))).success,
+    ).toBe(true);
+  });
+});
+
+describe("the medications line counts the whole local day (#1412)", () => {
+  // Wednesday 2026-11-18, 13:30 in Berlin (CET, UTC+1).
+  const MIDDAY = new Date("2026-11-18T12:30:00.000Z");
+  const CREATED = new Date("2026-10-01T08:00:00.000Z");
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  async function seedMedication(
+    userId: string,
+    name: string,
+    schedule: Partial<Prisma.MedicationScheduleCreateWithoutMedicationInput>,
+    extra: Partial<Prisma.MedicationCreateInput> = {},
+  ): Promise<string> {
+    const med = await getPrismaClient().medication.create({
+      data: {
+        user: { connect: { id: userId } },
+        name,
+        dose: "1",
+        createdAt: CREATED,
+        ...extra,
+        schedules: {
+          create: {
+            windowStart: "08:00",
+            windowEnd: "08:00",
+            timesOfDay: ["08:00"],
+            rrule: "FREQ=DAILY",
+            scheduleType: "SCHEDULED",
+            ...schedule,
+          },
+        },
+      },
+      select: { id: true },
+    });
+    return med.id;
+  }
+
+  async function take(userId: string, medicationId: string, at: string) {
+    await getPrismaClient().medicationIntakeEvent.create({
+      data: {
+        userId,
+        medicationId,
+        scheduledFor: new Date(at),
+        takenAt: new Date(at),
+        source: "WEB",
+      },
+    });
+  }
+
+  it("reads 2 of 5 at midday with window and evening doses still ahead", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(MIDDAY);
+    const prisma = getPrismaClient();
+    const user = await seedUser("today-meds-day");
+
+    // Two morning doses, both taken at 08:00.
+    const morningA = await seedMedication(user.id, "Morning A", {});
+    const morningB = await seedMedication(user.id, "Morning B", {});
+    await take(user.id, morningA, "2026-11-18T07:00:00.000Z");
+    await take(user.id, morningB, "2026-11-18T07:00:00.000Z");
+    // Two doses with an explicit 12:00 to 22:00 window, open now, not taken.
+    for (const name of ["Window A", "Window B"]) {
+      await seedMedication(user.id, name, {
+        windowStart: "12:00",
+        windowEnd: "22:00",
+        timesOfDay: ["17:00"],
+        doseWindows: [{ timeOfDay: "17:00", start: "12:00", end: "22:00" }],
+      });
+    }
+    // One evening dose.
+    await seedMedication(user.id, "Evening", {
+      windowStart: "20:00",
+      windowEnd: "20:00",
+      timesOfDay: ["20:00"],
+    });
+    // Every other day, last taken yesterday 22:00: next due tomorrow.
+    const alternate = await seedMedication(user.id, "Alternate days", {
+      windowStart: "22:00",
+      windowEnd: "22:00",
+      timesOfDay: ["22:00"],
+      rrule: null,
+      rollingIntervalDays: 2,
+    });
+    await take(user.id, alternate, "2026-11-17T21:00:00.000Z");
+    // Mondays only: not today.
+    await seedMedication(user.id, "Mondays", { rrule: "FREQ=WEEKLY;BYDAY=MO" });
+    // Two courses that ended earlier this month.
+    await seedMedication(
+      user.id,
+      "Ended A",
+      {},
+      { endedAt: new Date("2026-11-07T10:00:00.000Z") },
+    );
+    await seedMedication(
+      user.id,
+      "Ended B",
+      {},
+      { endedAt: new Date("2026-10-25T10:00:00.000Z") },
+    );
+    // As needed: never part of the count.
+    await seedMedication(
+      user.id,
+      "As needed",
+      { scheduleType: "PRN" },
+      { asNeeded: true },
+    );
+
+    const full = await prisma.user.findUniqueOrThrow({
+      where: { id: user.id },
+    });
+    const digest = await loadDailyDigest(full, MIDDAY, { locale: "en" });
+    const meds = digest.today.find((f) => f.kind === "medications");
+    expect(meds?.value).toBe("2 of 5 taken");
     expect(
       dailyDigestResponse.safeParse(JSON.parse(JSON.stringify(digest))).success,
     ).toBe(true);

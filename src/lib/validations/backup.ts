@@ -116,7 +116,10 @@ import {
   encounterLinkBackupSchema,
   practitionerBackupSchema,
 } from "@/lib/export/visits-backup-schema";
-import { workoutBackupSchema } from "@/lib/export/workouts-backup-schema";
+import {
+  appleHealthTombstoneBackupSchema,
+  workoutBackupSchema,
+} from "@/lib/export/workouts-backup-schema";
 import {
   BACKUP_SCHEMA_VERSION,
   LEGACY_BACKUP_SCHEMA_VERSION,
@@ -188,6 +191,12 @@ export const backupPayloadSchema = z
     allergies: z.array(allergyBackupSchema).default([]),
     familyHistory: z.array(familyHistoryBackupSchema).default([]),
     workouts: z.array(workoutBackupSchema).default([]),
+    // The Apple Health workouts and ECGs the phone reported deleted. Written
+    // by a disaster-recovery file only; defaulted, so a portable file and one
+    // written before v1.48.2 restore with no deletion remembered.
+    appleHealthTombstones: z
+      .array(appleHealthTombstoneBackupSchema)
+      .default([]),
     documents: z.array(documentBackupSchema).default([]),
     // What a document was filed against, and what was read out of it. Defaulted
     // for the same reason as the sections below: a file written before the

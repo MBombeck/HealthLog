@@ -104,6 +104,10 @@ export const MEASUREMENT_LEAF_GROUP: Record<MeasurementType, ReportGroupId> = {
   PULSE: "vitals",
   OXYGEN_SATURATION: "vitals",
   RESPIRATORY_RATE: "vitals",
+  FEV1: "vitals",
+  FVC: "vitals",
+  PEAK_EXPIRATORY_FLOW: "vitals",
+  INHALER_USAGE: "vitals",
   BODY_TEMPERATURE: "vitals",
   PAIN_NRS: "vitals",
 
@@ -124,6 +128,7 @@ export const MEASUREMENT_LEAF_GROUP: Record<MeasurementType, ReportGroupId> = {
   HIGH_HEART_RATE_EVENT: "cardio",
   LOW_HEART_RATE_EVENT: "cardio",
   HYPERTENSION_EVENT: "cardio",
+  LOW_CARDIO_FITNESS_EVENT: "cardio",
   AFIB_BURDEN: "cardio",
 
   // ── body ──
@@ -200,6 +205,7 @@ export const MEASUREMENT_LEAF_GROUP: Record<MeasurementType, ReportGroupId> = {
   // ── glucose ──
   BLOOD_GLUCOSE: "glucose",
   BLOOD_KETONES: "glucose",
+  INSULIN_DELIVERY: "glucose",
 
   // ── fenced ──
   // Mindful minutes and the State of Mind valence are mental-health
@@ -207,6 +213,9 @@ export const MEASUREMENT_LEAF_GROUP: Record<MeasurementType, ReportGroupId> = {
   // reach a report only when the person picks them.
   MINDFUL_MINUTES: "sensitive",
   STATE_OF_MIND_VALENCE: "sensitive",
+  // The menopause states are reproductive health: fenced too.
+  MENOPAUSAL_STATE: "sensitive",
+  BLEEDING_AFTER_MENOPAUSE: "sensitive",
   PHQ9_SCORE: "sensitive",
   GAD7_SCORE: "sensitive",
   WHO5_SCORE: "sensitive",
@@ -343,6 +352,7 @@ export const LEAF_MODULE: Partial<Record<ReportLeafId, ModuleKey>> = {
   // Glucose: the raw series and the derived panel.
   BLOOD_GLUCOSE: "glucose",
   BLOOD_KETONES: "glucose",
+  INSULIN_DELIVERY: "glucose",
   GLUCOSE_PANEL: "glucose",
   // The screening totals ride the mental-health module as well as being
   // fenced in the panel. Item-level answers are never a Measurement, so only

@@ -13,6 +13,7 @@ import {
   dataEnvelope,
   errorEnvelope,
   recordWriteRateLimitResponse,
+  SHARING_NOT_PERMITTED_DESCRIPTION,
   stdResponses,
 } from "./shared";
 
@@ -80,14 +81,14 @@ export const externalIdDeletePaths: ZodOpenApiObject["paths"] = {
     tag: "Measurements",
     summary: "Delete Apple Health workouts by external ID",
     description:
-      "Removes the workouts whose externalId is listed, with the personal records they set; the records are re-derived afterwards. Workouts carry no tombstone, so the rows go outright and a later re-post of the same externalId inserts the workout again.",
+      "Removes the workouts whose externalId is listed, with the personal records they set; the records are re-derived afterwards. The rows go outright, and since v1.48.2 every listed id is remembered: a later re-post of the same externalId to `POST /api/workouts/batch` answers `duplicate` and writes nothing, including an id that had not landed yet when the delete arrived. An id is remembered for 75 days, the tombstone retention every Apple Health delete shares; after that a re-post lands again.",
     responseId: "WorkoutsDeleteByExternalIdsResponse",
   }),
   "/api/insights/ecg/by-external-ids": operation({
     tag: "Insights",
     summary: "Delete Apple Health ECG recordings by external ID",
     description:
-      "Removes the ECG recordings whose `externalRecordingId` (the id `POST /api/insights/ecg` stored) is listed, waveform included. A paired rhythm notification is a measurement of its own and stays. Recordings carry no tombstone, so a later re-post of the same id inserts the recording again.",
+      "Removes the ECG recordings whose `externalRecordingId` (the id `POST /api/insights/ecg` stored) is listed, waveform included. A paired rhythm notification is a measurement of its own and stays. The rows go outright, and since v1.48.2 every listed id is remembered: a later re-post of the same id to `POST /api/insights/ecg` answers `duplicate` and writes nothing. An id is remembered for 75 days, the tombstone retention every Apple Health delete shares; after that a re-post lands again.",
     responseId: "EcgDeleteByExternalIdsResponse",
   }),
   "/api/cycle/day-logs/by-external-ids": operation({
@@ -110,6 +111,19 @@ export const externalIdDeletePaths: ZodOpenApiObject["paths"] = {
     description:
       "Soft-deletes the mood entries posted with `source = APPLE_HEALTH` whose externalId is listed, each as `DELETE /api/mood-entries/{id}` does; the tombstone reaches `/api/sync/changes`. A mood logged in HealthLog itself is never touched. A later re-post of a deleted externalId stays deleted: `POST /api/mood-entries/bulk` answers `duplicate`.",
     responseId: "MoodEntriesDeleteByExternalIdsResponse",
+  }),
+  "/api/symptoms/events/by-external-ids": operation({
+    tag: "Symptoms",
+    summary: "Delete Apple Health symptom occurrences by external ID",
+    description:
+      "Tombstones the symptom occurrences posted through `POST /api/symptoms/events/batch` whose externalId is listed. One logged in HealthLog is never touched. A later re-post of a deleted externalId stays deleted: the batch answers `duplicate`. The tombstone is kept for 75 days, the retention every Apple Health delete shares. Owner-only: a session switched into another record is refused 403 `sharing.not_permitted`. Served when `GET /api/auth/me` reports `features.appleHealthSymptoms: true`.",
+    responseId: "SymptomEventsDeleteByExternalIdsResponse",
+    extraResponses: {
+      "403": {
+        description: `\`illness.disabled\`: the account has the illness module switched off (or the operator turned it off server-wide); symptoms ride that module.\n\n${SHARING_NOT_PERMITTED_DESCRIPTION}`,
+        content: { "application/json": { schema: errorEnvelope } },
+      },
+    },
   }),
   "/api/medications/intake/by-external-ids": operation({
     tag: "Medications",

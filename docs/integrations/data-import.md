@@ -167,6 +167,11 @@ hand-authored.
 | `OXYGEN_SATURATION`             | percent (0–100)      |
 | `BLOOD_GLUCOSE`                 | mg/dL                |
 | `BLOOD_KETONES`                 | mmol/L               |
+| `INSULIN_DELIVERY`              | IU                   |
+| `FEV1`                          | L                    |
+| `FVC`                           | L                    |
+| `PEAK_EXPIRATORY_FLOW`          | L/min                |
+| `INHALER_USAGE`                 | count                |
 | `BODY_FAT`                      | percent (0–100)      |
 | `FAT_MASS`                      | kg                   |
 | `FAT_FREE_MASS`                 | kg                   |
@@ -219,6 +224,9 @@ hand-authored.
 | `WALKING_STEADINESS_EVENT`      | event                |
 | `BREATHING_DISTURBANCE_EVENT`   | event                |
 | `HYPERTENSION_EVENT`            | event                |
+| `LOW_CARDIO_FITNESS_EVENT`      | event                |
+| `MENOPAUSAL_STATE`              | state (1–3)          |
+| `BLEEDING_AFTER_MENOPAUSE`      | flow (1–5)           |
 
 The table is a curated subset and lags the enum by a few
 device-derived types. The live, machine-readable list of writable

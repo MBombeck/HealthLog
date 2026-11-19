@@ -797,6 +797,7 @@
       }
     ],
     "EcgRecording": [],
+    "AppleHealthTombstone": [],
     "OnboardingRecord": [],
     "BiomarkerAlias": [],
     "BiomarkerMerge": [],

@@ -1007,6 +1007,14 @@
     "typeHighHeartRateEvent": "Hinweis auf hohe Herzfrequenz",
     "typeLowHeartRateEvent": "Hinweis auf niedrige Herzfrequenz",
     "typeHypertensionEvent": "Hinweis auf Bluthochdruck",
+    "typeLowCardioFitnessEvent": "Hinweis auf niedrige Cardiofitness",
+    "typeMenopausalState": "Menopausenstatus",
+    "typeBleedingAfterMenopause": "Blutung nach der Menopause",
+    "typeInsulinDelivery": "Insulinabgabe",
+    "typeInhalerUsage": "Inhalatornutzung",
+    "typeFev1": "FEV1",
+    "typeFvc": "Forcierte Vitalkapazität",
+    "typePeakExpiratoryFlow": "Peak-Flow",
     "typeWalkingSteadinessEvent": "Hinweis zur Gehstabilität",
     "typeBreathingDisturbanceEvent": "Atemstörung",
     "typeRecoveryScore": "Erholungs-Score",
@@ -3771,6 +3779,8 @@
       "years": "Jahre",
       "breathingEvents": "Ereignisse",
       "standHours": "Stunden",
+      "insulinUnits": "IE",
+      "puffs": "Hübe",
       "respiratoryRate": "Atemzüge/min"
     },
     "sleep": {
@@ -4844,6 +4854,7 @@
         "highHeartRate": "Hinweis auf hohe Herzfrequenz",
         "lowHeartRate": "Hinweis auf niedrige Herzfrequenz",
         "hypertension": "Hinweis auf Bluthochdruck",
+        "lowCardioFitness": "Hinweis auf niedrige Cardiofitness",
         "walkingSteadiness": "Hinweis zur Gehstabilität",
         "breathingDisturbance": "Atemstörung während des Schlafs"
       },
@@ -4853,7 +4864,8 @@
         "inconclusive": "Dein Gerät konnte keine Messung vornehmen.",
         "low": "Dein Gerät hat eine niedrige Gehstabilität erkannt.",
         "veryLow": "Dein Gerät hat eine sehr niedrige Gehstabilität erkannt.",
-        "fired": "Dein Gerät hat dieses Ereignis erkannt."
+        "fired": "Dein Gerät hat dieses Ereignis erkannt.",
+        "lowFitness": "Dein Gerät hat eine niedrige Cardiofitness erkannt."
       }
     },
     "trendDescriptor": {
@@ -8628,6 +8640,7 @@
         "restoreFailureRowsElsewhere": "Die Datensätze dieser Datei liegen schon in einem anderen Konto auf diesem Server: Dieselbe Datei wurde dort bereits wiederhergestellt. Eine Datei lässt sich nur in ein Konto wiederherstellen. Es wurde nichts geschrieben.",
         "previewKeyMissing": "Diese Sicherung lässt sich auf diesem Server nicht wiederherstellen: Sie braucht den Verschlüsselungsschlüssel {keys}. Nimm den Schlüssel zuerst wieder in ENCRYPTION_KEYS auf und starte neu.",
         "restoreSkippedSymptomEpisodeReference": "Symptom-Eintrag mit Verknüpfung zu einer Erkrankung, die die Datei nicht enthält (ohne Verknüpfung behalten)",
+        "restoreSkippedSymptomDuplicate": "Symptom-Code oder Apple-Health-Eintrag, den die Datei doppelt enthält (der erste behalten, ein doppeltes Symptom ohne Code behalten)",
         "restoreSkippedCycleCiphertext": "Zyklus-Notiz oder -Bezeichnung mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (Tag oder Symptom ohne sie behalten)",
         "restoreSkippedMoodLabelCiphertext": "Name eines Stimmungs-Tags oder einer Gruppe mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (ohne Namen behalten)",
         "restoreSkippedVisitCiphertext": "Text zu Arztbesuch oder Praxis mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (ohne ihn behalten)",
@@ -13554,7 +13567,9 @@
       "seizureTypeCreate": "{name} hat eine Anfallsart angelegt",
       "seizureTypeUpdate": "{name} hat eine Anfallsart bearbeitet",
       "seizureTypeDelete": "{name} hat eine Anfallsart gelöscht",
-      "seizureSettingsUpdate": "{name} hat die Regel für Anfallsserien geändert"
+      "seizureSettingsUpdate": "{name} hat die Regel für Anfallsserien geändert",
+      "symptomBatchIngest": "{name} hat Symptome aus Apple Health übernommen",
+      "symptomImportDelete": "{name} hat übernommene Symptomeinträge entfernt"
     },
     "section": {
       "measurements": {
@@ -13895,7 +13910,10 @@
       "reset": "Formular zurücksetzen",
       "emptyHint": "Leg dein erstes Symptom an, zum Beispiel Aura oder Kopfschmerz.",
       "emptyHintNoManage": "Für diesen Datensatz sind noch keine Symptome angelegt.",
-      "limitHint": "Bis zu {limit} Symptome. Blende auf der Krankheitsseite eins aus, um ein neues anzulegen."
+      "limitHint": "Bis zu {limit} Symptome. Blende auf der Krankheitsseite eins aus, um ein neues anzulegen.",
+      "intensityFor": "Stärke: {symptom}",
+      "partlySaved": "{saved} von {total} gespeichert, der Rest ist noch ausgewählt.",
+      "severalHint": "Wähle mehrere, wenn sie zusammen auftraten."
     },
     "section": {
       "title": "Deine Symptome",
@@ -13925,7 +13943,50 @@
     "episode": {
       "title": "Erfasste Symptome",
       "during": "bei {illness}"
-    }
+    },
+    "builtin": {
+      "ABDOMINAL_CRAMPS": "Bauchkrämpfe",
+      "ACNE": "Akne",
+      "APPETITE_CHANGES": "Appetitveränderungen",
+      "BLADDER_INCONTINENCE": "Blasenschwäche",
+      "BLOATING": "Blähungen",
+      "BREAST_PAIN": "Brustschmerzen",
+      "CHEST_TIGHTNESS_OR_PAIN": "Engegefühl oder Schmerz in der Brust",
+      "CHILLS": "Schüttelfrost",
+      "CONSTIPATION": "Verstopfung",
+      "COUGHING": "Husten",
+      "DIARRHEA": "Durchfall",
+      "DIZZINESS": "Schwindel",
+      "DRY_SKIN": "Trockene Haut",
+      "FAINTING": "Ohnmacht",
+      "FATIGUE": "Erschöpfung",
+      "FEVER": "Fieber",
+      "GENERALIZED_BODY_ACHE": "Gliederschmerzen",
+      "HAIR_LOSS": "Haarausfall",
+      "HEADACHE": "Kopfschmerzen",
+      "HEARTBURN": "Sodbrennen",
+      "HOT_FLASHES": "Hitzewallungen",
+      "LOSS_OF_SMELL": "Geruchsverlust",
+      "LOSS_OF_TASTE": "Geschmacksverlust",
+      "LOWER_BACK_PAIN": "Schmerzen im unteren Rücken",
+      "MEMORY_LAPSE": "Gedächtnislücken",
+      "MOOD_CHANGES": "Stimmungsschwankungen",
+      "NAUSEA": "Übelkeit",
+      "NIGHT_SWEATS": "Nachtschweiß",
+      "PELVIC_PAIN": "Beckenschmerzen",
+      "RAPID_POUNDING_OR_FLUTTERING_HEARTBEAT": "Herzrasen",
+      "RUNNY_NOSE": "Laufende Nase",
+      "SHORTNESS_OF_BREATH": "Kurzatmigkeit",
+      "SINUS_CONGESTION": "Verstopfte Nebenhöhlen",
+      "SKIPPED_HEARTBEAT": "Herzstolpern",
+      "SLEEP_CHANGES": "Schlafveränderungen",
+      "SORE_THROAT": "Halsschmerzen",
+      "VAGINAL_DRYNESS": "Scheidentrockenheit",
+      "VOMITING": "Erbrechen",
+      "WHEEZING": "Pfeifende Atmung"
+    },
+    "sourceAppleHealth": "Apple Health",
+    "timeRange": "{from}–{to}"
   },
   "day": {
     "scoreOfMax": "von {max}",

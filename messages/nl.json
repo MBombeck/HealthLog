@@ -1007,6 +1007,14 @@
     "typeHighHeartRateEvent": "Melding hoge hartslag",
     "typeLowHeartRateEvent": "Melding lage hartslag",
     "typeHypertensionEvent": "Melding hoge bloeddruk",
+    "typeLowCardioFitnessEvent": "Melding lage cardiofitheid",
+    "typeMenopausalState": "Menopauzestatus",
+    "typeBleedingAfterMenopause": "Bloeding na de menopauze",
+    "typeInsulinDelivery": "Insulinetoediening",
+    "typeInhalerUsage": "Inhalatorgebruik",
+    "typeFev1": "FEV1",
+    "typeFvc": "Geforceerde vitale capaciteit",
+    "typePeakExpiratoryFlow": "Piekstroom",
     "typeWalkingSteadinessEvent": "Waarschuwing loopstabiliteit",
     "typeBreathingDisturbanceEvent": "Ademhalingsstoornis",
     "typeRecoveryScore": "Herstelscore",
@@ -3771,6 +3779,8 @@
       "years": "jaar",
       "breathingEvents": "gebeurtenissen",
       "standHours": "uur",
+      "insulinUnits": "IE",
+      "puffs": "pufjes",
       "respiratoryRate": "ademhalingen/min"
     },
     "sleep": {
@@ -4844,6 +4854,7 @@
         "highHeartRate": "Melding hoge hartslag",
         "lowHeartRate": "Melding lage hartslag",
         "hypertension": "Melding hoge bloeddruk",
+        "lowCardioFitness": "Melding lage cardiofitheid",
         "walkingSteadiness": "Waarschuwing loopstabiliteit",
         "breathingDisturbance": "Ademhalingsstoornis tijdens de slaap"
       },
@@ -4853,7 +4864,8 @@
         "inconclusive": "Je apparaat kon geen meting uitvoeren.",
         "low": "Je apparaat heeft een lage loopstabiliteit gesignaleerd.",
         "veryLow": "Je apparaat heeft een zeer lage loopstabiliteit gesignaleerd.",
-        "fired": "Je apparaat heeft deze gebeurtenis gesignaleerd."
+        "fired": "Je apparaat heeft deze gebeurtenis gesignaleerd.",
+        "lowFitness": "Je apparaat heeft een lage cardiofitheid gemeld."
       }
     },
     "trendDescriptor": {
@@ -8628,6 +8640,7 @@
         "restoreFailureRowsElsewhere": "De records in dit bestand staan al in een ander account op deze server: hetzelfde bestand is daar al teruggezet. Een bestand kan maar in één account worden teruggezet. Er is niets geschreven.",
         "previewKeyMissing": "Deze back-up kan niet op deze server worden teruggezet: er is versleutelingssleutel {keys} voor nodig. Voeg de sleutel eerst weer toe aan ENCRYPTION_KEYS en herstart.",
         "restoreSkippedSymptomEpisodeReference": "Symptoomregistratie gekoppeld aan een ziekte die niet in het bestand staat (behouden zonder de koppeling)",
+        "restoreSkippedSymptomDuplicate": "Symptoomcode of Apple Health-meting die het bestand herhaalt (de eerste behouden, een herhaald symptoom zonder code behouden)",
         "restoreSkippedCycleCiphertext": "Cyclusnotitie of -label versleuteld met een sleutel die deze server niet heeft (dag of symptoom behouden zonder)",
         "restoreSkippedMoodLabelCiphertext": "Stemmingslabel of groepsnaam versleuteld met een sleutel die deze server niet heeft (behouden zonder naam)",
         "restoreSkippedVisitCiphertext": "Tekst van bezoek of zorgverlener versleuteld met een sleutel die deze server niet heeft (behouden zonder)",
@@ -13554,7 +13567,9 @@
       "seizureTypeCreate": "{name} heeft een aanvalstype toegevoegd",
       "seizureTypeUpdate": "{name} heeft een aanvalstype bewerkt",
       "seizureTypeDelete": "{name} heeft een aanvalstype verwijderd",
-      "seizureSettingsUpdate": "{name} heeft de clusterregel gewijzigd"
+      "seizureSettingsUpdate": "{name} heeft de clusterregel gewijzigd",
+      "symptomBatchIngest": "{name} heeft symptomen uit Apple Health overgenomen",
+      "symptomImportDelete": "{name} heeft overgenomen symptomen verwijderd"
     },
     "section": {
       "measurements": {
@@ -13895,7 +13910,10 @@
       "reset": "Formulier leegmaken",
       "emptyHint": "Voeg je eerste symptoom toe, bijvoorbeeld aura of hoofdpijn.",
       "emptyHintNoManage": "Voor dit dossier zijn nog geen symptomen ingesteld.",
-      "limitHint": "Maximaal {limit} symptomen. Verberg er een op de ziektepagina om een ander toe te voegen."
+      "limitHint": "Maximaal {limit} symptomen. Verberg er een op de ziektepagina om een ander toe te voegen.",
+      "intensityFor": "Intensiteit: {symptom}",
+      "partlySaved": "{saved} van {total} opgeslagen, de rest is nog gekozen.",
+      "severalHint": "Kies er meerdere als ze samen optraden."
     },
     "section": {
       "title": "Je symptomen",
@@ -13925,7 +13943,50 @@
     "episode": {
       "title": "Vastgelegde symptomen",
       "during": "tijdens {illness}"
-    }
+    },
+    "builtin": {
+      "ABDOMINAL_CRAMPS": "Buikkrampen",
+      "ACNE": "Acne",
+      "APPETITE_CHANGES": "Veranderde eetlust",
+      "BLADDER_INCONTINENCE": "Blaasincontinentie",
+      "BLOATING": "Opgeblazen gevoel",
+      "BREAST_PAIN": "Borstpijn",
+      "CHEST_TIGHTNESS_OR_PAIN": "Beklemming of pijn op de borst",
+      "CHILLS": "Koude rillingen",
+      "CONSTIPATION": "Verstopping",
+      "COUGHING": "Hoesten",
+      "DIARRHEA": "Diarree",
+      "DIZZINESS": "Duizeligheid",
+      "DRY_SKIN": "Droge huid",
+      "FAINTING": "Flauwvallen",
+      "FATIGUE": "Vermoeidheid",
+      "FEVER": "Koorts",
+      "GENERALIZED_BODY_ACHE": "Spierpijn",
+      "HAIR_LOSS": "Haaruitval",
+      "HEADACHE": "Hoofdpijn",
+      "HEARTBURN": "Brandend maagzuur",
+      "HOT_FLASHES": "Opvliegers",
+      "LOSS_OF_SMELL": "Reukverlies",
+      "LOSS_OF_TASTE": "Smaakverlies",
+      "LOWER_BACK_PAIN": "Lage rugpijn",
+      "MEMORY_LAPSE": "Geheugenproblemen",
+      "MOOD_CHANGES": "Stemmingswisselingen",
+      "NAUSEA": "Misselijkheid",
+      "NIGHT_SWEATS": "Nachtelijk zweten",
+      "PELVIC_PAIN": "Bekkenpijn",
+      "RAPID_POUNDING_OR_FLUTTERING_HEARTBEAT": "Hartkloppingen",
+      "RUNNY_NOSE": "Loopneus",
+      "SHORTNESS_OF_BREATH": "Kortademigheid",
+      "SINUS_CONGESTION": "Verstopte bijholten",
+      "SKIPPED_HEARTBEAT": "Overgeslagen hartslag",
+      "SLEEP_CHANGES": "Veranderde slaap",
+      "SORE_THROAT": "Keelpijn",
+      "VAGINAL_DRYNESS": "Vaginale droogheid",
+      "VOMITING": "Overgeven",
+      "WHEEZING": "Piepende ademhaling"
+    },
+    "sourceAppleHealth": "Apple Health",
+    "timeRange": "{from}–{to}"
   },
   "day": {
     "scoreOfMax": "van {max}",

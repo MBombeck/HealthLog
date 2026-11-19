@@ -12,9 +12,11 @@
  * The rules, in brief:
  *   - a result counts when it is final (`final`, `amended`, `corrected`);
  *     a preliminary one is skipped and a withdrawn one never written;
- *   - a category other than laboratory (a vital sign, a survey) is skipped;
- *     a resource with no category at all is taken, as Health Records only
- *     hands lab-result records to this path;
+ *   - a category other than laboratory (a vital sign, a survey) is skipped,
+ *     matched on the whole word (`laboratory`, `LAB`), never a substring;
+ *     a resource with no category at all is taken only when the record was
+ *     typed as a lab result (`requireLabCategory` unset), and skipped
+ *     `not_lab` when it was handed on for its resource type alone;
  *   - the name is the code's text, else the LOINC coding's display, else any
  *     coding's display; the LOINC code is a matching hint;
  *   - a number with a comparator ("<0.5 mg/L") is kept as text, as the report
@@ -149,12 +151,29 @@ function memberRefs(resource: Json): string[] {
  * naming a lab counts; a record whose categories are all something else (vital
  * signs, say) is still left out.
  */
+/**
+ * The spellings of the laboratory category, matched whole and case-blind: the
+ * R4 code `laboratory`, the DSTU2 / HL7 v2 `LAB`, and the displays and texts
+ * sources print beside them. A word that merely contains "lab" ("available",
+ * "collaborative") is not one.
+ */
+const LABORATORY_NAMES: ReadonlySet<string> = new Set([
+  "laboratory",
+  "lab",
+  "laboratory result",
+  "laboratory results",
+  "lab result",
+  "lab results",
+]);
+
 function isLaboratory(concept: Json): boolean {
   const names = [
     str(concept.text),
     ...codings(concept).flatMap((c) => [str(c.code), str(c.display)]),
   ];
-  return names.some((name) => name !== null && /lab/i.test(name));
+  return names.some(
+    (name) => name !== null && LABORATORY_NAMES.has(name.trim().toLowerCase()),
+  );
 }
 
 function analyteName(code: Json | null): string | null {
@@ -387,8 +406,14 @@ export function mapFhirLabRecord(
   if (WITHDRAWN.has(status)) return skip("withdrawn");
   if (NOT_YET.has(status) || !FINAL.has(status)) return skip("not_final");
 
+  // No category is taken only from a record typed as a lab result; one handed
+  // on for its FHIR resource type alone may be a vital sign or a survey.
   const categories = list(resource.category);
-  if (categories.length > 0 && !categories.some(isLaboratory)) {
+  if (
+    categories.length > 0
+      ? !categories.some(isLaboratory)
+      : input.requireLabCategory === true
+  ) {
     return skip("not_lab");
   }
 

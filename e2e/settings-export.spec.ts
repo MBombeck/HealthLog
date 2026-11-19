@@ -141,7 +141,7 @@ test.describe("Settings → Export & Import", () => {
     await expect(generate).toBeDisabled();
     await expect(
       page.getByTestId("report-group-row-vitals-export"),
-    ).toContainText("0/7");
+    ).toContainText("0/11");
     await expect(page.getByTestId("report-scope-summary-export")).toContainText(
       "Nothing selected yet",
     );
@@ -154,13 +154,13 @@ test.describe("Settings → Export & Import", () => {
     // template leaves alone.
     await expect(
       page.getByTestId("report-group-row-vitals-export"),
-    ).toContainText("3/7");
+    ).toContainText("3/11");
     await expect(
       page.getByTestId("report-group-row-body-export"),
     ).toContainText("2/12");
     await expect(
       page.getByTestId("report-group-row-cardio-export"),
-    ).toContainText("2/17");
+    ).toContainText("2/18");
     await expect(
       page.getByTestId("report-group-row-mobility-export"),
     ).toContainText("0/11");

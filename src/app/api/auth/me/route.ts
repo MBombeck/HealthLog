@@ -91,6 +91,15 @@ const SERVER_FEATURES = {
   syncTriggerBackfill: true,
   biomarkerMerge: true,
   lifeCircumstances: true,
+  // Apple Health ingest v2. The symptom batch, the built-in
+  // symptom codes and the symptom delete route.
+  appleHealthSymptoms: true,
+  // The by-external-ids deletes for workouts, ECGs, cycle day-logs, mood
+  // entries and doses, and `source: "APPLE_HEALTH"` + `externalId` on mood
+  // writes. The routes shipped in 1.48.0; the flag names them.
+  appleHealthDeletes: true,
+  // The macro codes on `POST /api/nutrients/batch` (shipped in 1.48.0).
+  nutrientMacros: true,
 } as const;
 
 /**

@@ -985,9 +985,51 @@ describe("streamParseExportXml — end-to-end", () => {
         sourceURL: "https://fhir.example-clinic.test/R4",
         sourceName: "Example Clinic",
         fhirVersion: "4.0.1",
+        labTyped: true,
       },
     ]);
     expect(result.clinical.skipped).toBe(1);
+  });
+
+  it("hands on Observations when the type attribute holds the FHIR resource type", async () => {
+    const tmp = mkdtempSync(join(tmpdir(), "healthlog-parser-test-"));
+    const xmlPath = join(tmp, "export.xml");
+    writeFileSync(
+      xmlPath,
+      `<?xml version="1.0" encoding="UTF-8"?>
+<HealthData locale="en_US">
+  <ClinicalRecord type="Observation" identifier="obs-r4"
+    sourceName="Example Clinic" fhirVersion="4.0.1"
+    receivedDate="2026-11-18 10:00:00 +0100"
+    resourceFilePath="/clinical-records/Observation-obs-r4.json"/>
+  <ClinicalRecord type="Observation" identifier="obs-dstu2"
+    sourceName="Example Clinic" fhirVersion="1.0.2"
+    resourceFilePath="/clinical-records/Observation-obs-dstu2.json"/>
+  <ClinicalRecord type="DiagnosticReport" identifier="dr-1" fhirVersion="4.0.1"
+    resourceFilePath="/clinical-records/DiagnosticReport-dr-1.json"/>
+  <ClinicalRecord type="MedicationRequest" identifier="mr-1" fhirVersion="4.0.1"
+    resourceFilePath="/clinical-records/MedicationRequest-mr-1.json"/>
+  <ClinicalRecord type="Patient" identifier="pt-1" fhirVersion="1.0.2"
+    resourceFilePath="/clinical-records/Patient-pt-1.json"/>
+</HealthData>`,
+    );
+    const refs: Array<{
+      identifier: string | null;
+      fhirVersion: string | null;
+    }> = [];
+    const result = await streamParseExportXml({
+      xmlPath,
+      userId: "user-1",
+      userTimezone: "Europe/Berlin",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      prisma: makeFakePrisma() as any,
+      onClinicalLabRecord: (ref) => void refs.push(ref),
+    });
+    expect(refs.map((r) => [r.identifier, r.fhirVersion])).toEqual([
+      ["obs-r4", "4.0.1"],
+      ["obs-dstu2", "1.0.2"],
+    ]);
+    expect(result.clinical.skipped).toBe(3);
   });
 
   it("re-importing the same export reports 0 inserts and N updates", async () => {

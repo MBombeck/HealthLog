@@ -71,6 +71,9 @@ const SHARED_SYMBOLS: ReadonlySet<string> = new Set([
   "mL/(kg·min)",
   "kg/m²",
   "mL",
+  // Litres and litres per minute (spirometry), SI symbols every locale reads.
+  "L",
+  "L/min",
   "h",
   "min",
   "/ 5",

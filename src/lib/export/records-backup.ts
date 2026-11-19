@@ -43,6 +43,7 @@ import {
 } from "@/lib/export/labs-backup";
 import {
   buildWorkoutsBackupSlice,
+  type AppleHealthTombstoneBackupEntry,
   type WorkoutBackupEntry,
 } from "@/lib/export/workouts-backup";
 
@@ -77,6 +78,8 @@ export interface RecordsBackupSection {
   allergies: CanonicalAllergy[];
   familyHistory: FamilyHistoryEntryDTO[];
   workouts: WorkoutBackupEntry[];
+  /** Disaster-recovery files only: the Apple Health deletion ledger. */
+  appleHealthTombstones?: AppleHealthTombstoneBackupEntry[];
   documents: DocumentBackupEntry[];
   manifest: {
     documents: {
@@ -115,6 +118,7 @@ export async function buildRecordsBackupSection(
     | "allergy"
     | "familyHistoryEntry"
     | "workout"
+    | "appleHealthTombstone"
     | "inboundDocument"
   >,
   userId: string,

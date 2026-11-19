@@ -174,6 +174,15 @@ export const measurementTypeEnum = z.enum([
   "BASAL_ENERGY_BURNED",
   // ── blood ketones (#1367), beta-hydroxybutyrate in mmol/L ──
   "BLOOD_KETONES",
+  // ── Apple Health ingest v2 (v1.48.2) ──
+  "LOW_CARDIO_FITNESS_EVENT",
+  "MENOPAUSAL_STATE",
+  "BLEEDING_AFTER_MENOPAUSE",
+  "INSULIN_DELIVERY",
+  "INHALER_USAGE",
+  "FEV1",
+  "FVC",
+  "PEAK_EXPIRATORY_FLOW",
 ]);
 
 /**
@@ -190,6 +199,20 @@ export const EVENT_MEASUREMENT_TYPES: ReadonlySet<string> = new Set<string>([
   "WALKING_STEADINESS_EVENT",
   "BREATHING_DISTURBANCE_EVENT",
   "HYPERTENSION_EVENT",
+  "LOW_CARDIO_FITNESS_EVENT",
+]);
+
+/**
+ * Category STATE MeasurementTypes: the row carries a HealthKit codepoint
+ * (`MENOPAUSAL_STATE` 1 menopause / 2 perimenopause / 3 none,
+ * `BLEEDING_AFTER_MENOPAUSE` 1 unspecified to 4 heavy, 5 none), not a
+ * magnitude. Like an event, a state is never a numeric series: no trend
+ * chart, timeline line, correlation channel, baseline or numeric Coach
+ * series; the rollup keeps the latest state of a period.
+ */
+export const STATE_MEASUREMENT_TYPES: ReadonlySet<string> = new Set<string>([
+  "MENOPAUSAL_STATE",
+  "BLEEDING_AFTER_MENOPAUSE",
 ]);
 
 export const glucoseContextEnum = z.enum([

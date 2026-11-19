@@ -100,6 +100,7 @@ import type {
   TodaySleep,
   TodayVital,
 } from "@/lib/daily/today-overview";
+import { nextDoseOpensAt } from "@/lib/daily/today-medications-fact";
 import { translateOrNull } from "@/lib/i18n/translate-code";
 
 /** Integration states that mean "your action is needed to keep data flowing". */
@@ -927,6 +928,7 @@ export async function loadDailyDigest(
       }
     : null;
 
+  const nextOpensAt = nextDoseOpensAt(snapshot.medsToday);
   const digest = buildDailyDigest(
     {
       now,
@@ -950,9 +952,7 @@ export async function loadDailyDigest(
         : null,
       reactionLanguage: await resolveJobLocale(user.locale),
       firstName: firstNameFromDisplayName(user.displayName),
-      nextDoseTimeLabel: snapshot.medsToday.nextDueAt
-        ? localTime(new Date(snapshot.medsToday.nextDueAt))
-        : null,
+      nextDoseTimeLabel: nextOpensAt ? localTime(new Date(nextOpensAt)) : null,
       sleepLastSeenDaysAgo,
       morningRefreshedToday,
       syncIssues,

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.48.1
+  version: 1.48.2
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -4859,6 +4859,14 @@ paths:
               - ACUTE_TRAINING_LOAD
               - BASAL_ENERGY_BURNED
               - BLOOD_KETONES
+              - LOW_CARDIO_FITNESS_EVENT
+              - MENOPAUSAL_STATE
+              - BLEEDING_AFTER_MENOPAUSE
+              - INSULIN_DELIVERY
+              - INHALER_USAGE
+              - FEV1
+              - FVC
+              - PEAK_EXPIRATORY_FLOW
         - in: query
           name: from
           schema:
@@ -5608,11 +5616,14 @@ paths:
       tags:
         - Measurements
       summary: Delete Apple Health workouts by external ID
-      description: Removes the workouts whose externalId is listed, with the personal records they set; the records are
-        re-derived afterwards. Workouts carry no tombstone, so the rows go outright and a later re-post of the same
-        externalId inserts the workout again. Only the caller's own rows with `source = APPLE_HEALTH` are matched; an id
-        naming anything else is a no-op, never an error. Idempotent. Cookie session or a wildcard Bearer token (the
-        native login); a narrow-scope token is refused 403. Metered by the shared per-account write bucket.
+      description: "Removes the workouts whose externalId is listed, with the personal records they set; the records are
+        re-derived afterwards. The rows go outright, and since v1.48.2 every listed id is remembered: a later re-post of
+        the same externalId to `POST /api/workouts/batch` answers `duplicate` and writes nothing, including an id that
+        had not landed yet when the delete arrived. An id is remembered for 75 days, the tombstone retention every Apple
+        Health delete shares; after that a re-post lands again. Only the caller's own rows with `source = APPLE_HEALTH`
+        are matched; an id naming anything else is a no-op, never an error. Idempotent. Cookie session or a wildcard
+        Bearer token (the native login); a narrow-scope token is refused 403. Metered by the shared per-account write
+        bucket."
       requestBody:
         required: true
         content:
@@ -5635,12 +5646,13 @@ paths:
       tags:
         - Insights
       summary: Delete Apple Health ECG recordings by external ID
-      description: Removes the ECG recordings whose `externalRecordingId` (the id `POST /api/insights/ecg` stored) is listed,
-        waveform included. A paired rhythm notification is a measurement of its own and stays. Recordings carry no
-        tombstone, so a later re-post of the same id inserts the recording again. Only the caller's own rows with
-        `source = APPLE_HEALTH` are matched; an id naming anything else is a no-op, never an error. Idempotent. Cookie
-        session or a wildcard Bearer token (the native login); a narrow-scope token is refused 403. Metered by the
-        shared per-account write bucket.
+      description: "Removes the ECG recordings whose `externalRecordingId` (the id `POST /api/insights/ecg` stored) is listed,
+        waveform included. A paired rhythm notification is a measurement of its own and stays. The rows go outright, and
+        since v1.48.2 every listed id is remembered: a later re-post of the same id to `POST /api/insights/ecg` answers
+        `duplicate` and writes nothing. An id is remembered for 75 days, the tombstone retention every Apple Health
+        delete shares; after that a re-post lands again. Only the caller's own rows with `source = APPLE_HEALTH` are
+        matched; an id naming anything else is a no-op, never an error. Idempotent. Cookie session or a wildcard Bearer
+        token (the native login); a narrow-scope token is refused 403. Metered by the shared per-account write bucket."
       requestBody:
         required: true
         content:
@@ -5719,6 +5731,50 @@ paths:
                 $ref: "#/components/schemas/MoodEntriesDeleteByExternalIdsResponse"
         "401": *a1
         "403": *a9
+        "422": *a4
+        "429": *a12
+  /api/symptoms/events/by-external-ids:
+    delete:
+      tags:
+        - Symptoms
+      summary: Delete Apple Health symptom occurrences by external ID
+      description: "Tombstones the symptom occurrences posted through `POST /api/symptoms/events/batch` whose externalId is
+        listed. One logged in HealthLog is never touched. A later re-post of a deleted externalId stays deleted: the
+        batch answers `duplicate`. The tombstone is kept for 75 days, the retention every Apple Health delete shares.
+        Owner-only: a session switched into another record is refused 403 `sharing.not_permitted`. Served when `GET
+        /api/auth/me` reports `features.appleHealthSymptoms: true`. Only the caller's own rows with `source =
+        APPLE_HEALTH` are matched; an id naming anything else is a no-op, never an error. Idempotent. Cookie session or
+        a wildcard Bearer token (the native login); a narrow-scope token is refused 403. Metered by the shared
+        per-account write bucket."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExternalIdDeleteRequest"
+      responses:
+        "200":
+          description: Delete batch processed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SymptomEventsDeleteByExternalIdsResponse"
+        "401": *a1
+        "403":
+          description: >-
+            `meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
+            generic auth gate answers it before the route's own checks run. Otherwise: `illness.disabled`: the account
+            has the illness module switched off (or the operator turned it off server-wide); symptoms ride that module.
+
+
+            Refused: the request was made while the session is acting on another account (`meta.errorCode` =
+            `sharing.not_permitted`). This operation resolves the CALLER and never a named record, so under a switch it
+            refuses instead of quietly answering with the caller's own — leave the shared record first. No grant at any
+            level opens it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a12
   /api/medications/intake/by-external-ids:
@@ -5945,6 +6001,14 @@ paths:
               - ACUTE_TRAINING_LOAD
               - BASAL_ENERGY_BURNED
               - BLOOD_KETONES
+              - LOW_CARDIO_FITNESS_EVENT
+              - MENOPAUSAL_STATE
+              - BLEEDING_AFTER_MENOPAUSE
+              - INSULIN_DELIVERY
+              - INHALER_USAGE
+              - FEV1
+              - FVC
+              - PEAK_EXPIRATORY_FLOW
             description: The metric.
           required: true
           description: The metric.
@@ -6077,6 +6141,14 @@ paths:
               - ACUTE_TRAINING_LOAD
               - BASAL_ENERGY_BURNED
               - BLOOD_KETONES
+              - LOW_CARDIO_FITNESS_EVENT
+              - MENOPAUSAL_STATE
+              - BLEEDING_AFTER_MENOPAUSE
+              - INSULIN_DELIVERY
+              - INHALER_USAGE
+              - FEV1
+              - FVC
+              - PEAK_EXPIRATORY_FLOW
             description: The metric.
           required: true
           description: The metric.
@@ -27210,7 +27282,9 @@ paths:
       tags:
         - Symptoms
       summary: Hide or delete a symptom (v1.40)
-      description: Hides the definition and keeps its history. `?purge=true` deletes it and every occurrence of it.
+      description: "Hides the definition and keeps its history. `?purge=true` deletes it and every occurrence of it. A
+        built-in definition (`code` set) is not deleted: its occurrences are tombstoned and it stays hidden, so a later
+        Apple Health sync neither recreates it nor re-imports what was removed (a re-post answers `duplicate`)."
       parameters:
         - in: path
           name: id
@@ -27313,12 +27387,67 @@ paths:
         "409": *a7
         "422": *a4
         "429": *a5
+  /api/symptoms/events/batch:
+    post:
+      tags:
+        - Symptoms
+      summary: Import Apple Health symptom samples (v1.48.2)
+      description: "Each entry lands on the caller's built-in definition for its code, created on first use and labelled in
+        the caller's language. Owner-only, like every Apple Health ingest route: a session switched into another record
+        is refused 403 `sharing.not_permitted`. A sample already stored, deleted ones included, answers `duplicate`, so
+        a late re-post of a sample the app reported gone never brings it back. No note and no episode link from this
+        route. Idempotent under `Idempotency-Key`. Cookie session or a wildcard Bearer token; a narrow-scope token is
+        refused 403. Metered by the shared per-account write bucket. Audits as `symptoms.batch.ingest`. Served when `GET
+        /api/auth/me` reports `features.appleHealthSymptoms: true`."
+      parameters:
+        - *a6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SymptomBatchRequest"
+      responses:
+        "200":
+          description: Batch processed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SymptomBatchEnvelope"
+        "401": *a1
+        "403":
+          description: >-
+            `meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
+            generic auth gate answers it before the route's own checks run. Otherwise: `illness.disabled`: the record
+            has the illness module switched off (or the operator turned it off server-wide); symptoms ride that module.
+
+
+            Refused: the request was made while the session is acting on another account (`meta.errorCode` =
+            `sharing.not_permitted`). This operation resolves the CALLER and never a named record, so under a switch it
+            refuses instead of quietly answering with the caller's own — leave the shared record first. No grant at any
+            level opens it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409": *a7
+        "422":
+          description: More than 500 entries (`symptoms.batch.too_large`) or a malformed body (`symptoms.batch.invalid`, every
+            issue under `details.issues`, an entry's issues under `entries.<n>`). Nothing was written; both are
+            permanent for the batch as sent.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429": *a12
   /api/symptoms/events/{id}:
     patch:
       tags:
         - Symptoms
       summary: Edit a symptom occurrence (v1.40)
-      description: Partial edit. Audits as `symptoms.event.update`, naming a note change without quoting it.
+      description: Partial edit. An occurrence imported from Apple Health is edited like any other and keeps its source and
+        externalId; a re-post of its sample never overwrites the edit. An `occurredAt` moved past the stored `endAt`
+        clears `endAt`. Audits as `symptoms.event.update`, naming a note change without quoting it.
       parameters:
         - in: path
           name: id
@@ -27352,7 +27481,8 @@ paths:
       tags:
         - Symptoms
       summary: Delete a symptom occurrence (v1.40)
-      description: Removes the occurrence. Audits as `symptoms.event.delete`.
+      description: Removes the occurrence. One imported from Apple Health is tombstoned instead, so a re-post of its sample
+        answers `duplicate`. Audits as `symptoms.event.delete`.
       parameters:
         - in: path
           name: id
@@ -29876,7 +30006,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 114
+              maxItems: 122
               type: array
               items:
                 type: string
@@ -29938,7 +30068,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 114
+              maxItems: 122
               type: array
               items:
                 type: string
@@ -30820,6 +30950,14 @@ components:
             - ACUTE_TRAINING_LOAD
             - BASAL_ENERGY_BURNED
             - BLOOD_KETONES
+            - LOW_CARDIO_FITNESS_EVENT
+            - MENOPAUSAL_STATE
+            - BLEEDING_AFTER_MENOPAUSE
+            - INSULIN_DELIVERY
+            - INHALER_USAGE
+            - FEV1
+            - FVC
+            - PEAK_EXPIRATORY_FLOW
         value:
           type: number
         measuredAt:
@@ -30995,10 +31133,15 @@ components:
           minimum: 0
           maximum: 20
         categoryValue:
-          description: v1.10.0 — `HKCategoryValue` codepoint for an EVENT-class category sample (irregular-rhythm, high/low-HR,
-            walking-steadiness, breathing-disturbance, hypertension). Carries the device's own classification verdict /
-            severity, which the server resolves to a stored `rhythmClassification`. HealthLog stores ONLY the device's
-            result — it never re-classifies. Ignored for non-event identifiers.
+          description: "v1.10.0 — `HKCategoryValue` codepoint for an EVENT-class category sample (irregular-rhythm, high/low-HR,
+            walking-steadiness, breathing-disturbance, hypertension, low cardio fitness). Carries the device's own
+            classification verdict / severity, which the server resolves to a stored `rhythmClassification`. HealthLog
+            stores ONLY the device's result — it never re-classifies. Since v1.48.2 it is also the stored value of the
+            two category states, `HKCategoryTypeIdentifierMenopausalState` (1 menopause, 2 perimenopause, 3 none) and
+            `HKCategoryTypeIdentifierBleedingAfterMenopause` (1 unspecified, 2 light, 3 medium, 4 heavy, 5 none): for
+            those `value` is ignored, an entry without `categoryValue` is skipped `unmappable_identifier`, and a
+            codepoint outside the list is skipped `value_out_of_range`. Ignored for every other identifier. Fields this
+            schema does not name (`insulinDeliveryReason`, `metadata`) are ignored, never refused."
           type: integer
           minimum: 0
           maximum: 20
@@ -32651,6 +32794,14 @@ components:
             - ACUTE_TRAINING_LOAD
             - BASAL_ENERGY_BURNED
             - BLOOD_KETONES
+            - LOW_CARDIO_FITNESS_EVENT
+            - MENOPAUSAL_STATE
+            - BLEEDING_AFTER_MENOPAUSE
+            - INSULIN_DELIVERY
+            - INHALER_USAGE
+            - FEV1
+            - FVC
+            - PEAK_EXPIRATORY_FLOW
         biomarkerId:
           type: string
           minLength: 1
@@ -33152,7 +33303,7 @@ components:
           type: number
           const: 2
         leaves:
-          maxItems: 114
+          maxItems: 122
           type: array
           items:
             type: string
@@ -34433,6 +34584,14 @@ components:
         - ACUTE_TRAINING_LOAD
         - BASAL_ENERGY_BURNED
         - BLOOD_KETONES
+        - LOW_CARDIO_FITNESS_EVENT
+        - MENOPAUSAL_STATE
+        - BLEEDING_AFTER_MENOPAUSE
+        - INSULIN_DELIVERY
+        - INHALER_USAGE
+        - FEV1
+        - FVC
+        - PEAK_EXPIRATORY_FLOW
       description: DB-stored measurement category. v1.4.23 added 7 Apple Health values (HRV, resting HR, active energy,
         flights, walking/running distance, VO2 max, body temperature).
     InsightsSettingsPutRequest:
@@ -35768,6 +35927,7 @@ components:
             - LOW
             - VERY_LOW
             - FIRED
+            - LOW_FITNESS
         deviceType:
           description: The writer of the reading (watch, phone).
           type: string
@@ -41189,8 +41349,8 @@ components:
       required:
         - label
       description: Define a symptom of your own. `label` (1-40 characters) is encrypted at rest; `icon` is one of the cycle
-        custom-symptom icon names, null for the default glyph. At most eight active definitions per account (422
-        `symptoms.definition.limitReached`).
+        custom-symptom icon names, null for the default glyph. At most eight active definitions the person named per
+        account (422 `symptoms.definition.limitReached`); the built-in ones Apple Health creates do not count.
     UpdateSymptomDefinitionRequest:
       type: object
       properties:
@@ -41243,6 +41403,56 @@ components:
         may not lie in the future beyond five minutes. `episodeId`, when given, must name one of the record's own
         illness episodes that is still open, or a resolved one whose onset-to-recovery span holds `occurredAt` (422
         `symptoms.episode.notOpen` otherwise). The note is encrypted at rest.
+    SymptomBatchRequest:
+      type: object
+      properties:
+        entries:
+          minItems: 1
+          maxItems: 500
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+                minLength: 1
+                maxLength: 80
+              occurredAt:
+                type: string
+                format: date-time
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              endAt:
+                type: string
+                format: date-time
+                pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              intensity:
+                type: number
+              externalId:
+                type: string
+                minLength: 1
+                maxLength: 120
+              source:
+                type: string
+                minLength: 1
+                maxLength: 40
+            required:
+              - code
+              - occurredAt
+              - intensity
+              - externalId
+              - source
+      required:
+        - entries
+      description: "Apple Health symptom samples, 1-500 per call. Per entry: `code` one of the built-in codes
+        (ABDOMINAL_CRAMPS, ACNE, APPETITE_CHANGES, BLADDER_INCONTINENCE, BLOATING, BREAST_PAIN, CHEST_TIGHTNESS_OR_PAIN,
+        CHILLS, CONSTIPATION, COUGHING, DIARRHEA, DIZZINESS, DRY_SKIN, FAINTING, FATIGUE, FEVER, GENERALIZED_BODY_ACHE,
+        HAIR_LOSS, HEADACHE, HEARTBURN, HOT_FLASHES, LOSS_OF_SMELL, LOSS_OF_TASTE, LOWER_BACK_PAIN, MEMORY_LAPSE,
+        MOOD_CHANGES, NAUSEA, NIGHT_SWEATS, PELVIC_PAIN, RAPID_POUNDING_OR_FLUTTERING_HEARTBEAT, RUNNY_NOSE,
+        SHORTNESS_OF_BREATH, SINUS_CONGESTION, SKIPPED_HEARTBEAT, SLEEP_CHANGES, SORE_THROAT, VAGINAL_DRYNESS, VOMITING,
+        WHEEZING), each the HealthKit category type `HKCategoryTypeIdentifier<PascalCase of the code>`; `occurredAt` the
+        sample's start, `endAt` its end (omit when equal); `intensity` 0-10 (the app maps HKCategoryValueSeverity
+        unspecified to 5, mild to 3, moderate to 6, severe to 9, and sends no entry for notPresent); `externalId` the
+        HKSample UUID; `source` `APPLE_HEALTH`. Unknown keys are ignored."
     UpdateSymptomEventRequest:
       type: object
       properties:
@@ -42729,18 +42939,18 @@ components:
                 sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended, sharing.renounce.not_found,
                 sharing.revoke.already_ended, sharing.revoke.not_found, sharing.session.changed, sharing.switch.invalid,
                 sharing.switch.wrong_transport; source-priority — source-priority.body.invalid_json,
-                source-priority.body.invalid_shape; symptoms — symptoms.definition.limitReached,
-                symptoms.definition.notFound, symptoms.episode.notOpen, symptoms.event.notFound, symptoms.invalid;
-                timeline — timeline.invalid; tokens — tokens.documents.ceiling_reached,
-                tokens.measurements.ceiling_reached, tokens.mirror.not_measurement_token,
-                tokens.workouts.ceiling_reached; vaccination — vaccination.booster-invalid,
-                vaccination.booster-no-antigen, vaccination.booster-out-of-scope, vaccination.custom-vaccine-not-found,
-                vaccination.custom.invalid, vaccination.custom.name-taken, vaccination.custom.not-found,
-                vaccination.encounter-not-found, vaccination.identity-required, vaccination.invalid,
-                vaccination.link.invalid, vaccination.not-found, vaccination.practitioner-not-found; workout —
-                workout.batch.invalid, workout.batch.payload_too_large, workout.batch.source_not_permitted,
-                workout.batch.too_large, workout.delete.synced_source; (unprefixed) — about_me_conflict,
-                ai_response_truncated, coach_prefs_conflict, dashboard_layout_conflict, empty_file,
+                source-priority.body.invalid_shape; symptoms — symptoms.batch.invalid, symptoms.batch.too_large,
+                symptoms.definition.limitReached, symptoms.definition.notFound, symptoms.episode.notOpen,
+                symptoms.event.notFound, symptoms.invalid; timeline — timeline.invalid; tokens —
+                tokens.documents.ceiling_reached, tokens.measurements.ceiling_reached,
+                tokens.mirror.not_measurement_token, tokens.workouts.ceiling_reached; vaccination —
+                vaccination.booster-invalid, vaccination.booster-no-antigen, vaccination.booster-out-of-scope,
+                vaccination.custom-vaccine-not-found, vaccination.custom.invalid, vaccination.custom.name-taken,
+                vaccination.custom.not-found, vaccination.encounter-not-found, vaccination.identity-required,
+                vaccination.invalid, vaccination.link.invalid, vaccination.not-found,
+                vaccination.practitioner-not-found; workout — workout.batch.invalid, workout.batch.payload_too_large,
+                workout.batch.source_not_permitted, workout.batch.too_large, workout.delete.synced_source; (unprefixed)
+                — about_me_conflict, ai_response_truncated, coach_prefs_conflict, dashboard_layout_conflict, empty_file,
                 health_score_config_conflict, insights_layout_conflict, invalid_base_updated_at,
                 json_carries_no_intake_time, json_not_an_array, medication_layout_conflict, missing_required_columns,
                 modules_conflict, mood_tag_layout_conflict, not_configured, notification_prefs_conflict, oidc_only,
@@ -45662,6 +45872,14 @@ components:
                   - ACUTE_TRAINING_LOAD
                   - BASAL_ENERGY_BURNED
                   - BLOOD_KETONES
+                  - LOW_CARDIO_FITNESS_EVENT
+                  - MENOPAUSAL_STATE
+                  - BLEEDING_AFTER_MENOPAUSE
+                  - INSULIN_DELIVERY
+                  - INHALER_USAGE
+                  - FEV1
+                  - FVC
+                  - PEAK_EXPIRATORY_FLOW
               value:
                 type: number
               valueMin:
@@ -45753,6 +45971,7 @@ components:
                       - LOW
                       - VERY_LOW
                       - FIRED
+                      - LOW_FITNESS
                   - type: "null"
               deviceType:
                 type:
@@ -46448,6 +46667,14 @@ components:
                             - ACUTE_TRAINING_LOAD
                             - BASAL_ENERGY_BURNED
                             - BLOOD_KETONES
+                            - LOW_CARDIO_FITNESS_EVENT
+                            - MENOPAUSAL_STATE
+                            - BLEEDING_AFTER_MENOPAUSE
+                            - INSULIN_DELIVERY
+                            - INHALER_USAGE
+                            - FEV1
+                            - FVC
+                            - PEAK_EXPIRATORY_FLOW
                         - type: "null"
                     biomarkerName:
                       anyOf:
@@ -47885,6 +48112,12 @@ components:
                 maximum: 9007199254740991
               isActive:
                 type: boolean
+              code:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                    maxLength: 80
+                  - type: "null"
               createdAt:
                 type: string
                 minLength: 1
@@ -47917,6 +48150,26 @@ components:
                           minLength: 1
                         - type: "null"
                     episodeId:
+                      anyOf:
+                        - type: string
+                          minLength: 1
+                        - type: "null"
+                    endAt:
+                      anyOf:
+                        - type: string
+                          minLength: 1
+                        - type: "null"
+                    source:
+                      type: string
+                      minLength: 1
+                      maxLength: 40
+                    externalId:
+                      anyOf:
+                        - type: string
+                          minLength: 1
+                          maxLength: 120
+                        - type: "null"
+                    deletedAt:
                       anyOf:
                         - type: string
                           minLength: 1
@@ -48764,6 +49017,29 @@ components:
               - durationSec
               - source
             additionalProperties: {}
+        appleHealthTombstones:
+          default: []
+          type: array
+          items:
+            type: object
+            properties:
+              domain:
+                type: string
+                enum:
+                  - workout
+                  - ecg
+              externalId:
+                type: string
+                minLength: 1
+                maxLength: 120
+              createdAt:
+                type: string
+                minLength: 1
+            required:
+              - domain
+              - externalId
+              - createdAt
+            additionalProperties: {}
         documents:
           default: []
           type: array
@@ -49587,6 +49863,14 @@ components:
                   - ACUTE_TRAINING_LOAD
                   - BASAL_ENERGY_BURNED
                   - BLOOD_KETONES
+                  - LOW_CARDIO_FITNESS_EVENT
+                  - MENOPAUSAL_STATE
+                  - BLEEDING_AFTER_MENOPAUSE
+                  - INSULIN_DELIVERY
+                  - INHALER_USAGE
+                  - FEV1
+                  - FVC
+                  - PEAK_EXPIRATORY_FLOW
               dateKey:
                 type: string
                 pattern: ^\d{4}-\d{2}-\d{2}$
@@ -50789,6 +51073,14 @@ components:
                       - ACUTE_TRAINING_LOAD
                       - BASAL_ENERGY_BURNED
                       - BLOOD_KETONES
+                      - LOW_CARDIO_FITNESS_EVENT
+                      - MENOPAUSAL_STATE
+                      - BLEEDING_AFTER_MENOPAUSE
+                      - INSULIN_DELIVERY
+                      - INHALER_USAGE
+                      - FEV1
+                      - FVC
+                      - PEAK_EXPIRATORY_FLOW
                   - type: "null"
               intervalDays:
                 anyOf:
@@ -51017,6 +51309,14 @@ components:
                   - ACUTE_TRAINING_LOAD
                   - BASAL_ENERGY_BURNED
                   - BLOOD_KETONES
+                  - LOW_CARDIO_FITNESS_EVENT
+                  - MENOPAUSAL_STATE
+                  - BLEEDING_AFTER_MENOPAUSE
+                  - INSULIN_DELIVERY
+                  - INHALER_USAGE
+                  - FEV1
+                  - FVC
+                  - PEAK_EXPIRATORY_FLOW
               metricSlot:
                 type:
                   - string
@@ -51465,6 +51765,7 @@ components:
                       - LOW
                       - VERY_LOW
                       - FIRED
+                      - LOW_FITNESS
                   - type: "null"
               measurementId:
                 anyOf:
@@ -51558,6 +51859,7 @@ components:
         - allergies
         - familyHistory
         - workouts
+        - appleHealthTombstones
         - documents
         - documentConditionLinks
         - extractedFacts
@@ -56780,15 +57082,16 @@ components:
             - enriched
             - updated
             - skipped
-          description: "`inserted`: a new workout row. `duplicate`: the workout was already stored and nothing was written.
-            `enriched`: the workout was already stored and the heart-rate series or GPS track this entry carried (or
-            both) was attached because the stored workout had none; no workout row was inserted, and the entry also
-            counts towards the top-level `duplicates`. A track is attached only while the account keeps tracks
-            (`storeWorkoutRoutes`), and when the stored workout had no elevation, the climb derived from the attached
-            track fills `elevationM`; no other column of the workout row is written. `updated` (since v1.40.0): a
-            workout entered by hand (`source: MANUAL`, `externalId` starting `manual:`) was sent again with different
-            values and the stored row now carries them; no row was inserted, so it also counts towards `duplicates`.
-            `skipped`: the server refused the entry, see `reason`."
+          description: "`inserted`: a new workout row. `duplicate`: the workout was already stored and nothing was written; since
+            v1.48.2 also an `APPLE_HEALTH` workout whose externalId was deleted through `DELETE
+            /api/workouts/by-external-ids`, which stays deleted. `enriched`: the workout was already stored and the
+            heart-rate series or GPS track this entry carried (or both) was attached because the stored workout had
+            none; no workout row was inserted, and the entry also counts towards the top-level `duplicates`. A track is
+            attached only while the account keeps tracks (`storeWorkoutRoutes`), and when the stored workout had no
+            elevation, the climb derived from the attached track fills `elevationM`; no other column of the workout row
+            is written. `updated` (since v1.40.0): a workout entered by hand (`source: MANUAL`, `externalId` starting
+            `manual:`) was sent again with different values and the stored row now carries them; no row was inserted, so
+            it also counts towards `duplicates`. `skipped`: the server refused the entry, see `reason`."
         reason:
           description: "Why a `skipped` entry was refused: `unstable_external_id` for an id that does not survive a client
             restart, `invalid_samples` for a heart-rate series that failed validation."
@@ -56861,6 +57164,23 @@ components:
         - error
       additionalProperties: false
     MoodEntriesDeleteByExternalIdsResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ExternalIdDeleteResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    SymptomEventsDeleteByExternalIdsResponse:
       type: object
       properties:
         data:
@@ -57478,6 +57798,14 @@ components:
             - ACUTE_TRAINING_LOAD
             - BASAL_ENERGY_BURNED
             - BLOOD_KETONES
+            - LOW_CARDIO_FITNESS_EVENT
+            - MENOPAUSAL_STATE
+            - BLEEDING_AFTER_MENOPAUSE
+            - INSULIN_DELIVERY
+            - INHALER_USAGE
+            - FEV1
+            - FVC
+            - PEAK_EXPIRATORY_FLOW
         date:
           type: string
           format: date
@@ -57760,6 +58088,14 @@ components:
             - ACUTE_TRAINING_LOAD
             - BASAL_ENERGY_BURNED
             - BLOOD_KETONES
+            - LOW_CARDIO_FITNESS_EVENT
+            - MENOPAUSAL_STATE
+            - BLEEDING_AFTER_MENOPAUSE
+            - INSULIN_DELIVERY
+            - INHALER_USAGE
+            - FEV1
+            - FVC
+            - PEAK_EXPIRATORY_FLOW
         from:
           type: string
           format: date
@@ -71202,9 +71538,12 @@ components:
               minimum: -9007199254740991
               maximum: 9007199254740991
             scheduledTodayAt:
-              description: v1.48.0 — the slot instants (ISO 8601, ascending) of the doses `scheduledToday` counts. The Today
-                medications fact counts the ones already due (at or before now) instead of the whole day. Absent on a
-                snapshot cached by an older server.
+              description: "v1.48.0 — the slot instants (ISO 8601, ascending) of the doses `scheduledToday` counts. Since v1.48.2 that
+                excludes as-needed intakes and the pending doses of a medication paused, or a course ended, earlier in
+                the day. The Today medications fact uses them to tell whether any dose was due yet (at or before now, or
+                a candidate for one of them whose `availableFrom` has passed): before the first, with nothing taken, it
+                names the next dose; otherwise it counts taken against the whole day's `scheduledToday`. Absent on a
+                snapshot cached by an older server."
               type: array
               items:
                 type: string
@@ -71236,6 +71575,10 @@ components:
                   overdue:
                     type: boolean
                   availableFrom:
+                    type: string
+                  opensAt:
+                    description: "v1.48.2 — when the dose's own window opens: the start of an explicit per-dose window, else `dueAt`. Absent
+                      on a snapshot cached by an older server."
                     type: string
                 required:
                   - medicationId
@@ -75676,20 +76019,25 @@ components:
       properties:
         id:
           type: string
-          description: The recording row's id (cuid).
+          description: "The recording row's id (cuid). Required and never null, so a client decoding it as a plain string keeps
+            working: on a `duplicate` for a recording deleted through `DELETE /api/insights/ecg/by-external-ids` it is
+            the id of the deletion record instead, which names no recording. Do not fetch or link it; treat it as
+            opaque."
         status:
           type: string
           enum:
             - inserted
             - updated
             - duplicate
-          description: What the write did. `inserted` — a new recording landed (HTTP 201). `updated` — this `externalRecordingId`
+          description: "What the write did. `inserted` — a new recording landed (HTTP 201). `updated` — this `externalRecordingId`
             was already stored and the row was overwritten in place (HTTP 200); a retry is safe and creates nothing.
             `duplicate` — this exact recording is already stored under a DIFFERENT id, i.e. it arrived earlier through
             the `export.zip` importer (HTTP 200); nothing was written and `id` names the row that already holds it. A
             recording is the same recording when `(source, recordedAt, samplingFrequency)` match, which is enforced by a
-            unique index rather than by convention. All three statuses mean the recording is stored and the client may
-            advance its cursor.
+            unique index rather than by convention. Since v1.48.2 `duplicate` is also the answer for an `APPLE_HEALTH`
+            recording deleted through `DELETE /api/insights/ecg/by-external-ids`: it stays deleted, nothing is written,
+            and `id` names the deletion record rather than a recording. All three statuses mean the client may advance
+            its cursor."
         recordedAt:
           type: string
           format: date-time
@@ -75867,6 +76215,7 @@ components:
             - WALKING_STEADINESS_EVENT
             - BREATHING_DISTURBANCE_EVENT
             - HYPERTENSION_EVENT
+            - LOW_CARDIO_FITNESS_EVENT
           description: "The HealthKit category the device flagged. IRREGULAR_RHYTHM_NOTIFICATION
             (`HKCategoryTypeIdentifierIrregularHeartRhythmEvent` + ScanWatch AFib screening), HIGH_HEART_RATE_EVENT /
             LOW_HEART_RATE_EVENT (a sustained heart rate above / below the user's configured threshold while apparently
@@ -75874,8 +76223,10 @@ components:
             rides in `classification`), BREATHING_DISTURBANCE_EVENT (`HKCategoryTypeIdentifierSleepApneaEvent` +
             `AppleSleepingBreathingDisturbances`, an elevated breathing-disturbance / possible sleep-apnea screening
             signal), HYPERTENSION_EVENT (`HKCategoryTypeIdentifierHypertensionEvent`, iOS 26: the watch flagged signs of
-            possible hypertension over a 30-day window; a notification, not a blood-pressure reading). Decode unknown
-            values leniently: the set grows."
+            possible hypertension over a 30-day window; a notification, not a blood-pressure reading),
+            LOW_CARDIO_FITNESS_EVENT (`HKCategoryTypeIdentifierLowCardioFitnessEvent`, since v1.48.2: the phone flagged
+            a VO2 max below the low-fitness threshold for the person's age and sex). Decode unknown values leniently:
+            the set grows."
         classification:
           anyOf:
             - type: string
@@ -75886,16 +76237,18 @@ components:
                 - LOW
                 - VERY_LOW
                 - FIRED
+                - LOW_FITNESS
             - type: "null"
           description: The RECORDING DEVICE's own verdict, surfaced verbatim. IRREGULAR / NOT_DETECTED / INCONCLUSIVE are the
             ECG-style rhythm verdicts (device flagged a possible irregular rhythm / algorithm ran and found nothing /
             signal too poor to classify) and occur on an `IRREGULAR_RHYTHM_NOTIFICATION` row. LOW / VERY_LOW are
             walking-steadiness severities and occur on a `WALKING_STEADINESS_EVENT` row. FIRED is the neutral "event
             occurred" verdict with no severity gradient, and occurs on a `HIGH_HEART_RATE_EVENT` /
-            `LOW_HEART_RATE_EVENT` / `BREATHING_DISTURBANCE_EVENT` / `HYPERTENSION_EVENT` row. Null when the source
-            reported none. HealthLog never re-classifies — this is the device's certified on-device result. Distinct
-            from `EcgRecordingListItem.classification` / `EcgDetailResponse.classification` above, which are scoped to
-            the three ECG-only values.
+            `LOW_HEART_RATE_EVENT` / `BREATHING_DISTURBANCE_EVENT` / `HYPERTENSION_EVENT` row. LOW_FITNESS (since
+            v1.48.2) is the one verdict of a `LOW_CARDIO_FITNESS_EVENT` row. Null when the source reported none.
+            HealthLog never re-classifies — this is the device's certified on-device result. Distinct from
+            `EcgRecordingListItem.classification` / `EcgDetailResponse.classification` above, which are scoped to the
+            three ECG-only values.
         occurredAt:
           type: string
           format: date-time
@@ -91772,10 +92125,11 @@ components:
           items:
             $ref: "#/components/schemas/DailyTodayFact"
           description: "The Today overview: up to 5 statements about the day in priority order (Rest Mode, medications taken today
-            counted against the doses due so far, or, before the first is due with nothing taken, when the next dose is
-            (since v1.48.0), an appointment today or tomorrow that is not already on the rail, last night's sleep,
-            vitals against their personal range, cycle day), never padded. A fact about a switched-off module is absent.
-            A narrow surface shows the first 4. Additive since v1.40."
+            counted against every dose scheduled for the local day (since v1.48.2; v1.48.0 and v1.48.1 counted only the
+            doses due so far), or, before the first is due with nothing taken, when the next dose is (since v1.48.0), an
+            appointment today or tomorrow that is not already on the rail, last night's sleep, vitals against their
+            personal range, cycle day), never padded. A fact about a switched-off module is absent. A narrow surface
+            shows the first 4. Additive since v1.40."
         restMode:
           anyOf:
             - type: object
@@ -93160,6 +93514,21 @@ components:
             lifeCircumstances:
               description: v1.43 — the life-circumstances routes under `/api/anamnesis/life-circumstances` and
                 `/api/anamnesis/audit-c` are available.
+              type: boolean
+            appleHealthSymptoms:
+              description: v1.48.2 — `POST /api/symptoms/events/batch` with the built-in symptom codes and `DELETE
+                /api/symptoms/events/by-external-ids` are available. Send Apple Health symptoms only when this is
+                `true`.
+              type: boolean
+            appleHealthDeletes:
+              description: 'v1.48.2 — the by-external-ids deletes for workouts, ECG recordings, cycle day-logs, mood entries and
+                medication doses are available, and mood-entry writes take `source: "APPLE_HEALTH"` with an
+                `externalId`. The routes shipped in v1.48.0; since v1.48.2 a deleted Apple Health workout or ECG
+                recording also stays deleted when the same sample is posted again (`duplicate`).'
+              type: boolean
+            nutrientMacros:
+              description: v1.48.2 — `POST /api/nutrients/batch` takes the macro codes (energy, protein, carbohydrates, the fats,
+                sugar, fibre, cholesterol, sodium, potassium). The codes shipped in v1.48.0.
               type: boolean
           required:
             - trackIntake
@@ -97630,6 +97999,14 @@ components:
           maximum: 9007199254740991
         isActive:
           type: boolean
+        code:
+          description: Since v1.48.2. The built-in code an Apple Health symptom sample lands on (`FEVER`, `HEADACHE`, ...), or
+            null for a symptom the person named. A built-in definition is created on the first sample of its code,
+            labelled in the record owner's language; it may be renamed or hidden and keeps its code. It holds no slot of
+            the active-definition cap. Decode unknown codes leniently.
+          type:
+            - string
+            - "null"
         recent:
           type: object
           properties:
@@ -97658,6 +98035,7 @@ components:
         - icon
         - sortOrder
         - isActive
+        - code
         - recent
       additionalProperties: false
       description: "A symptom the person defined. `label` is decrypted (null only on an unreadable value). `recent` is
@@ -97731,8 +98109,8 @@ components:
         - purged
         - eventsDeleted
       additionalProperties: false
-      description: "`purged: false` means the definition was hidden and its history kept; `purged: true` means it and
-        `eventsDeleted` occurrences were removed."
+      description: "`purged: false` means the definition was hidden and its history kept; `purged: true` means `eventsDeleted`
+        occurrences were removed, and the definition with them unless it is built-in (`code` set), which stays hidden."
     ListSymptomEventsEnvelope:
       type: object
       properties:
@@ -97791,6 +98169,21 @@ components:
           type:
             - string
             - "null"
+        endAt:
+          description: Since v1.48.2. When it ended, for an occurrence imported with a duration; null for a moment and for every
+            manual entry.
+          type:
+            - string
+            - "null"
+        source:
+          type: string
+          description: Since v1.48.2. `MANUAL` (logged in HealthLog) or `APPLE_HEALTH` (imported through `POST
+            /api/symptoms/events/batch`). Never set by a manual write. Decode unknown values leniently.
+        externalId:
+          description: Since v1.48.2. The HealthKit sample UUID of an imported occurrence; null for a manual one.
+          type:
+            - string
+            - "null"
         createdAt:
           type: string
         updatedAt:
@@ -97802,6 +98195,9 @@ components:
         - intensity
         - note
         - episodeId
+        - endAt
+        - source
+        - externalId
         - createdAt
         - updatedAt
       additionalProperties: false
@@ -97823,6 +98219,104 @@ components:
       required:
         - data
         - error
+      additionalProperties: false
+    SymptomBatchEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/SymptomBatchResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    SymptomBatchResponse:
+      type: object
+      properties:
+        processed:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        inserted:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        updated:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        duplicates:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        failed:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        skipped:
+          type: array
+          items:
+            type: object
+            properties:
+              index:
+                type: integer
+                minimum: 0
+                maximum: 9007199254740991
+              reason:
+                type: string
+            required:
+              - index
+              - reason
+            additionalProperties: false
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/SymptomBatchEntryResult"
+      required:
+        - processed
+        - inserted
+        - updated
+        - duplicates
+        - failed
+        - skipped
+        - entries
+      additionalProperties: false
+      description: The `POST /api/measurements/batch` answer shape. Every sent index appears once in `entries`; `skipped`
+        repeats the skipped ones with their reason.
+    SymptomBatchEntryResult:
+      type: object
+      properties:
+        index:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        status:
+          type: string
+          enum:
+            - inserted
+            - updated
+            - duplicate
+            - skipped
+            - failed
+          description: "`inserted` and `duplicate` landed (advance the cursor); `updated` is never sent here but is part of the
+            shared batch shape. `skipped` is permanent for the entry as sent, see `reason`. `failed` is transient: keep
+            the entry and send it again; the response then carries `Cache-Control: no-store`."
+        reason:
+          description: "Why an entry was `skipped`: `unsupported_source` (source other than `APPLE_HEALTH`),
+            `unstable_external_id`, `unknown_code`, `value_out_of_range` (intensity not an integer 0-10),
+            `implausible_timestamp` (in the future beyond five minutes, before 1900, or ending before it started).
+            Decode unknown reasons leniently."
+          type: string
+      required:
+        - index
+        - status
       additionalProperties: false
     UpdateSymptomEventEnvelope:
       type: object

@@ -1449,6 +1449,16 @@ export async function seedEveryTwoEndedModel(
       },
     ],
   });
+
+  // Last, so the rows above keep the stamps the golden copies hold.
+  await prisma.appleHealthTombstone.create({
+    data: {
+      userId: OWNER_ID,
+      domain: "workout",
+      externalId: "ABCDEF01-2345-6789-ABCD-EF0123456789",
+      createdAt: AT("2026-06-30T08:00:00.000Z"),
+    },
+  });
 }
 
 export async function createOwner(prisma: PrismaClient) {
@@ -1511,6 +1521,8 @@ export const FILL_OVERRIDES: Readonly<Record<string, unknown>> = {
   "Biomarker.contextEncrypted": () =>
     encryptContextToBytes("fasted, morning draw"),
   "MoodEntry.tags": JSON.stringify(["round-trip-tag"]),
+  // A closed set (SYMPTOM_BUILTIN_CODES); the restore keeps no other code.
+  "SymptomDefinition.code": "FEVER",
   // A closed set (ASSESSMENT_WORDINGS); the export carries nothing else.
   "MentalHealthAssessment.wording": "unvalidated_translation",
   "CorrelationPattern.qValue": 0.04,

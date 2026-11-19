@@ -13,11 +13,26 @@ import {
 function fakeDb() {
   const findUnique = vi.fn();
   const upsert = vi.fn();
+  const tombstoneFind = vi.fn(async () => null as { id: string } | null);
   const $transaction = vi.fn(
     async (fn: (tx: unknown) => unknown) =>
-      await fn({ ecgRecording: { findUnique, upsert } }),
+      await fn({
+        ecgRecording: { findUnique, upsert },
+        appleHealthTombstone: { findUnique: tombstoneFind },
+        // The ledger lock (`lockAppleHealthTombstones`).
+        $queryRaw: vi.fn(async () => [{ locked: "" }]),
+      }),
   );
-  return { db: { $transaction }, findUnique, upsert, $transaction };
+  const db = { $transaction };
+  return {
+    db,
+    // The one transactional seam the function takes, typed once here.
+    client: db as unknown as Parameters<typeof persistEcgRecording>[1],
+    findUnique,
+    upsert,
+    tombstoneFind,
+    $transaction,
+  };
 }
 
 function input(overrides: Record<string, unknown> = {}) {
@@ -102,6 +117,44 @@ describe("persistEcgRecording", () => {
     expect(result.outcome).toBe("duplicate");
     expect(result.id).toBe("row-from-the-archive");
     expect(upsert).not.toHaveBeenCalled();
+  });
+
+  it("keeps an Apple Health recording the phone reported deleted deleted", async () => {
+    const { client, findUnique, upsert, tombstoneFind } = fakeDb();
+    tombstoneFind.mockResolvedValue({ id: "tombstone-1" });
+
+    const result = await persistEcgRecording(input(), client);
+
+    expect(result.outcome).toBe("duplicate");
+    expect(result.id).toBe("tombstone-1");
+    expect(tombstoneFind.mock.calls[0]).toEqual([
+      {
+        where: {
+          userId_domain_externalId: {
+            userId: "user-1",
+            domain: "ecg",
+            externalId: "hk-uuid-1",
+          },
+        },
+        select: { id: true },
+      },
+    ]);
+    expect(findUnique).not.toHaveBeenCalled();
+    expect(upsert).not.toHaveBeenCalled();
+  });
+
+  it("never consults the deletion ledger for another source", async () => {
+    const { client, findUnique, upsert, tombstoneFind } = fakeDb();
+    findUnique.mockResolvedValue(null);
+    upsert.mockResolvedValue({ id: "row-new" });
+
+    const result = await persistEcgRecording(
+      input({ source: "WITHINGS" }),
+      client,
+    );
+
+    expect(result.outcome).toBe("inserted");
+    expect(tombstoneFind).not.toHaveBeenCalled();
   });
 
   it("looks the twin up by the recording's own identity, not by the source id", async () => {

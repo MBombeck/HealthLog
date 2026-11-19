@@ -271,8 +271,54 @@ describe("mapFhirLabRecord — R4", () => {
     [{ coding: [{ code: "lab" }] }],
     [{ coding: [{ code: "x", display: "Lab Results" }] }],
     [{ text: "Laboratory results" }],
+    [{ text: " laboratory " }],
   ])("reads a lab category however the source spells it: %j", (category) => {
     expect(map(base({ category: [category] })).kind).toBe("reading");
+  });
+
+  it.each([
+    [{ text: "Available" }],
+    [{ coding: [{ code: "x", display: "Collaborative care" }] }],
+    [{ coding: [{ code: "lab-adjacent" }] }],
+  ])('does not take a word that only contains "lab": %j', (category) => {
+    expect(map(base({ category: [category] }))).toMatchObject({
+      kind: "skip",
+      reason: "not_lab",
+    });
+  });
+
+  describe("when the record was not typed as a lab result", () => {
+    const heartRate = base({
+      category: undefined,
+      code: {
+        text: "Heart rate",
+        coding: [{ system: "http://loinc.org", code: "8867-4" }],
+      },
+      valueQuantity: { value: 62, unit: "/min" },
+    });
+
+    it("skips an uncategorised Observation as not_lab", () => {
+      expect(map(heartRate, { requireLabCategory: true })).toMatchObject({
+        kind: "skip",
+        reason: "not_lab",
+      });
+    });
+
+    it("skips an uncategorised DSTU2 Observation as not_lab", () => {
+      expect(
+        map(heartRate, { requireLabCategory: true, fhirVersion: "1.0.2" }),
+      ).toMatchObject({ kind: "skip", reason: "not_lab" });
+    });
+
+    it("still takes one categorised as laboratory", () => {
+      expect(map(base(), { requireLabCategory: true }).kind).toBe("reading");
+      expect(
+        map(base({ category: { coding: [{ code: "LAB" }] } }), {
+          requireLabCategory: true,
+          fhirVersion: "1.0.2",
+        }).kind,
+      ).toBe("reading");
+    });
   });
 
   it("still skips a category that is not a lab", () => {
@@ -281,7 +327,7 @@ describe("mapFhirLabRecord — R4", () => {
     ).toMatchObject({ kind: "skip", reason: "not_lab" });
   });
 
-  it("accepts a resource with no category", () => {
+  it("accepts a resource with no category from a lab-result record", () => {
     expect(map(base({ category: undefined })).kind).toBe("reading");
   });
 

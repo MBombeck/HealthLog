@@ -1185,8 +1185,9 @@
         "icon": "Zap",
         "sortOrder": 0,
         "isActive": true,
-        "createdAt": "2026-05-03T00:06:00.000Z",
-        "updatedAt": "2026-05-03T00:07:00.000Z"
+        "code": "FEVER",
+        "createdAt": "2026-05-03T00:07:00.000Z",
+        "updatedAt": "2026-05-03T00:08:00.000Z"
       },
       {
         "id": "<id:35>",
@@ -1195,8 +1196,9 @@
         "icon": "Brain",
         "sortOrder": 1,
         "isActive": false,
-        "createdAt": "2026-05-03T00:06:01.000Z",
-        "updatedAt": "2026-05-03T00:07:01.000Z"
+        "code": null,
+        "createdAt": "2026-05-03T00:07:01.000Z",
+        "updatedAt": "2026-05-03T00:08:01.000Z"
       }
     ],
     "SymptomEvent": [
@@ -1208,8 +1210,12 @@
         "intensity": 4,
         "noteEncrypted": null,
         "episodeId": "<id:29>",
-        "createdAt": "2026-05-03T01:47:00.000Z",
-        "updatedAt": "2026-05-03T01:48:00.000Z"
+        "endAt": "2026-06-30T12:34:56.789Z",
+        "source": "rt-SymptomEvent-source",
+        "externalId": "rt-SymptomEvent-externalId",
+        "deletedAt": null,
+        "createdAt": "2026-05-03T01:51:00.000Z",
+        "updatedAt": "2026-05-03T01:52:00.000Z"
       },
       {
         "id": "<id:37>",
@@ -1219,8 +1225,12 @@
         "intensity": 8,
         "noteEncrypted": "<sealed:v2:left side, behind the eye>",
         "episodeId": null,
-        "createdAt": "2026-05-03T01:47:01.000Z",
-        "updatedAt": "2026-05-03T01:48:01.000Z"
+        "endAt": null,
+        "source": "MANUAL",
+        "externalId": null,
+        "deletedAt": null,
+        "createdAt": "2026-05-03T01:51:01.000Z",
+        "updatedAt": "2026-05-03T01:52:01.000Z"
       },
       {
         "id": "<id:38>",
@@ -1230,8 +1240,12 @@
         "intensity": 2,
         "noteEncrypted": null,
         "episodeId": null,
-        "createdAt": "2026-05-03T01:47:02.000Z",
-        "updatedAt": "2026-05-03T01:48:02.000Z"
+        "endAt": null,
+        "source": "MANUAL",
+        "externalId": null,
+        "deletedAt": null,
+        "createdAt": "2026-05-03T01:51:02.000Z",
+        "updatedAt": "2026-05-03T01:52:02.000Z"
       }
     ],
     "SeizureTypeProfile": [
@@ -2230,6 +2244,7 @@
         "updatedAt": "2026-05-06T18:14:00.000Z"
       }
     ],
+    "AppleHealthTombstone": [],
     "OnboardingRecord": [
       {
         "id": "<id:91>",
@@ -2318,7 +2333,7 @@
         "sourceBiomarkerId": "merged-away-marker",
         "sourceName": "Ferritin (Serum)",
         "readingCount": 3,
-        "mergedAt": "2026-05-06T23:06:00.000Z"
+        "mergedAt": "2026-05-07T00:46:00.000Z"
       }
     ],
     "LabResultDocumentLink": [],
@@ -2328,7 +2343,7 @@
         "encounterId": "<id:56>",
         "medicationId": "<id:7>",
         "userId": "round-trip-owner",
-        "createdAt": "2026-05-07T02:24:00.000Z"
+        "createdAt": "2026-05-07T04:04:00.000Z"
       }
     ],
     "EncounterVaccinationLink": [
@@ -2337,7 +2352,7 @@
         "encounterId": "<id:56>",
         "vaccinationId": "<id:59>",
         "userId": "round-trip-owner",
-        "createdAt": "2026-05-07T04:04:00.000Z"
+        "createdAt": "2026-05-07T05:44:00.000Z"
       }
     ],
     "MedicationDocumentLink": [],
@@ -2347,7 +2362,7 @@
         "medicationId": "<id:7>",
         "episodeId": "<id:29>",
         "userId": "round-trip-owner",
-        "createdAt": "2026-05-07T07:24:00.000Z"
+        "createdAt": "2026-05-07T09:04:00.000Z"
       }
     ],
     "AccountGrant": [
@@ -3253,7 +3268,7 @@
         "sourceBiomarkerId": "merged-away-marker",
         "sourceName": "Ferritin (Serum)",
         "readingCount": 3,
-        "mergedAt": "2026-05-06T23:06:00.000Z"
+        "mergedAt": "2026-05-07T00:46:00.000Z"
       }
     ],
     "labResultImportKeys": [
@@ -4041,24 +4056,31 @@
         "icon": "Zap",
         "sortOrder": 0,
         "isActive": true,
-        "createdAt": "2026-05-03T00:06:00.000Z",
-        "updatedAt": "2026-05-03T00:07:00.000Z",
+        "code": "FEVER",
+        "createdAt": "2026-05-03T00:07:00.000Z",
+        "updatedAt": "2026-05-03T00:08:00.000Z",
         "events": [
           {
             "note": null,
             "occurredAt": "2026-06-21T09:00:00.000Z",
             "intensity": 4,
             "episodeId": "<id:12>",
-            "createdAt": "2026-05-03T01:47:00.000Z",
-            "updatedAt": "2026-05-03T01:48:00.000Z"
+            "endAt": "2026-06-30T12:34:56.789Z",
+            "source": "rt-SymptomEvent-source",
+            "externalId": "rt-SymptomEvent-externalId",
+            "createdAt": "2026-05-03T01:51:00.000Z",
+            "updatedAt": "2026-05-03T01:52:00.000Z"
           },
           {
             "note": null,
             "occurredAt": "2026-07-10T18:30:00.000Z",
             "intensity": 2,
             "episodeId": null,
-            "createdAt": "2026-05-03T01:47:02.000Z",
-            "updatedAt": "2026-05-03T01:48:02.000Z"
+            "endAt": null,
+            "source": "MANUAL",
+            "externalId": null,
+            "createdAt": "2026-05-03T01:51:02.000Z",
+            "updatedAt": "2026-05-03T01:52:02.000Z"
           }
         ]
       },
@@ -4067,16 +4089,20 @@
         "icon": "Brain",
         "sortOrder": 1,
         "isActive": false,
-        "createdAt": "2026-05-03T00:06:01.000Z",
-        "updatedAt": "2026-05-03T00:07:01.000Z",
+        "code": null,
+        "createdAt": "2026-05-03T00:07:01.000Z",
+        "updatedAt": "2026-05-03T00:08:01.000Z",
         "events": [
           {
             "note": "left side, behind the eye",
             "occurredAt": "2026-06-21T11:00:00.000Z",
             "intensity": 8,
             "episodeId": null,
-            "createdAt": "2026-05-03T01:47:01.000Z",
-            "updatedAt": "2026-05-03T01:48:01.000Z"
+            "endAt": null,
+            "source": "MANUAL",
+            "externalId": null,
+            "createdAt": "2026-05-03T01:51:01.000Z",
+            "updatedAt": "2026-05-03T01:52:01.000Z"
           }
         ]
       }
@@ -4226,14 +4252,14 @@
       {
         "encounterId": "<id:17>",
         "medicationId": "<id:5>",
-        "createdAt": "2026-05-07T02:24:00.000Z"
+        "createdAt": "2026-05-07T04:04:00.000Z"
       }
     ],
     "encounterVaccinationLinks": [
       {
         "encounterId": "<id:17>",
         "vaccinationId": "<id:20>",
-        "createdAt": "2026-05-07T04:04:00.000Z"
+        "createdAt": "2026-05-07T05:44:00.000Z"
       }
     ],
     "medicationDocumentLinks": [],
@@ -4241,7 +4267,7 @@
       {
         "medicationId": "<id:5>",
         "episodeId": "<id:12>",
-        "createdAt": "2026-05-07T07:24:00.000Z"
+        "createdAt": "2026-05-07T09:04:00.000Z"
       }
     ],
     "nutrientDays": [

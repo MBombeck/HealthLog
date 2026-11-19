@@ -109,6 +109,14 @@ export interface AppleHealthMapping {
    * they rely on this fallback rather than enumerating the codepoint.
    */
   fallbackClassification?: RhythmClassification;
+  /**
+   * A category STATE rather than a fired event (menopausal state,
+   * bleeding after menopause). The stored value is the inbound
+   * `HKCategoryValue` codepoint (`categoryValue`, falling back to the legacy
+   * `sleepStage` slot), never the wire `value`, which the client sends as the
+   * event placeholder 1. An entry without a codepoint does not map.
+   */
+  valueFromCategory?: boolean;
 }
 
 /**
@@ -251,6 +259,14 @@ const UNIT_FIXED_VALENCE =
   "State of Mind valence is a dimensionless −1..1 self-report; HealthKit has no unit for it and nothing to convert from.";
 const UNIT_FIXED_AFIB_FRACTION =
   "Apple writes the percent unit but the value rides as a 0..1 fraction, scaled ×100 in `convertToDbUnit`; branching on the record unit would double-scale it.";
+const UNIT_FIXED_CATEGORY_STATE =
+  "Category state: the stored value is the HealthKit category codepoint read from `categoryValue`, not a quantity, so no unit attribute can move it.";
+const UNIT_FIXED_LITRES =
+  "Lung volume: Apple emits `L` for spirometry volumes in every locale and the Health app offers no other display unit, so there is nothing to convert from.";
+const UNIT_FIXED_LITRES_PER_MINUTE =
+  "Compound flow rate Apple emits verbatim as `L/min`; the Health app exposes no other spelling and the compound has no sibling unit to convert from.";
+const UNIT_FIXED_INSULIN_IU =
+  "Insulin rides in International Units (`IU`), a biological-activity unit with no factor to any mass or volume, so no record unit can rescale it.";
 const UNIT_FIXED_SLEEP_CATEGORY =
   "Sleep samples carry a symbolic category value, not a quantity: the importer derives the duration in minutes from the sample's own dates, so the record's unit attribute (empty in Apple's archive) says nothing about the reading.";
 
@@ -707,6 +723,107 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     aggregation: "sum",
     isPrivacySensitive: true,
     fallbackClassification: "FIRED",
+  },
+  // Low cardio fitness notification — the phone flagged a VO2 max below the
+  // low-fitness threshold for the person's age and sex. Its one category
+  // value (1, `lowFitness`) is the verdict LOW_FITNESS. The threshold the
+  // phone compared against (`HKMetadataKeyLowCardioFitnessEventThreshold`)
+  // has no column on a measurement row and is not kept; the VO2 max readings
+  // themselves arrive as VO2_MAX.
+  HKCategoryTypeIdentifierLowCardioFitnessEvent: {
+    hkIdentifier: "HKCategoryTypeIdentifierLowCardioFitnessEvent",
+    measurementType: "LOW_CARDIO_FITNESS_EVENT",
+    hkUnit: "event",
+    unitFixedReason: UNIT_FIXED_EVENT_PIN,
+    dbUnit: "event",
+    convertToDbUnit: () => 1,
+    aggregation: "sum",
+    isPrivacySensitive: true,
+    eventClassificationMap: { 1: "LOW_FITNESS" },
+    fallbackClassification: "LOW_FITNESS",
+  },
+
+  // ── Apple Health ingest v2 ──────────────────────────
+  // Menopausal state (iOS 27). A self-reported state, stored as its
+  // codepoint: 1 menopause, 2 perimenopause, 3 none. Never a cycle record.
+  HKCategoryTypeIdentifierMenopausalState: {
+    hkIdentifier: "HKCategoryTypeIdentifierMenopausalState",
+    measurementType: "MENOPAUSAL_STATE",
+    hkUnit: "state",
+    unitFixedReason: UNIT_FIXED_CATEGORY_STATE,
+    dbUnit: "state",
+    convertToDbUnit: (v) => v,
+    aggregation: "latest",
+    isPrivacySensitive: true,
+    valueFromCategory: true,
+  },
+  // Bleeding after menopause (iOS 27), stored as its
+  // `HKCategoryValueVaginalBleeding` codepoint: 1 unspecified, 2 light,
+  // 3 medium, 4 heavy, 5 none. Deliberately NOT routed to the cycle
+  // day-log: it must never open or extend a period.
+  HKCategoryTypeIdentifierBleedingAfterMenopause: {
+    hkIdentifier: "HKCategoryTypeIdentifierBleedingAfterMenopause",
+    measurementType: "BLEEDING_AFTER_MENOPAUSE",
+    hkUnit: "flow",
+    unitFixedReason: UNIT_FIXED_CATEGORY_STATE,
+    dbUnit: "flow",
+    convertToDbUnit: (v) => v,
+    // A codepoint, not a magnitude (5 is "none"): the latest state stands.
+    aggregation: "latest",
+    isPrivacySensitive: true,
+    valueFromCategory: true,
+  },
+  // Insulin delivery — one delivered dose in IU from a pump or pen. Basal
+  // and bolus share the type; the wire's `insulinDeliveryReason` has no
+  // column on a measurement row and is ignored.
+  HKQuantityTypeIdentifierInsulinDelivery: {
+    hkIdentifier: "HKQuantityTypeIdentifierInsulinDelivery",
+    measurementType: "INSULIN_DELIVERY",
+    hkUnit: "IU",
+    unitFixedReason: UNIT_FIXED_INSULIN_IU,
+    dbUnit: "IU",
+    convertToDbUnit: (v) => v,
+    aggregation: "sum",
+    isPrivacySensitive: true,
+  },
+  // Inhaler usage — puffs per sample from a connected inhaler.
+  HKQuantityTypeIdentifierInhalerUsage: {
+    hkIdentifier: "HKQuantityTypeIdentifierInhalerUsage",
+    measurementType: "INHALER_USAGE",
+    hkUnit: "count",
+    unitFixedReason: UNIT_FIXED_DIMENSIONLESS_COUNT,
+    dbUnit: "count",
+    convertToDbUnit: (v) => v,
+    aggregation: "sum",
+  },
+  // Spirometry: FEV1 and FVC in litres, peak flow in litres per minute.
+  // Spot readings from a spirometer or peak-flow meter.
+  HKQuantityTypeIdentifierForcedExpiratoryVolume1: {
+    hkIdentifier: "HKQuantityTypeIdentifierForcedExpiratoryVolume1",
+    measurementType: "FEV1",
+    hkUnit: "L",
+    unitFixedReason: UNIT_FIXED_LITRES,
+    dbUnit: "L",
+    convertToDbUnit: (v) => v,
+    aggregation: "latest",
+  },
+  HKQuantityTypeIdentifierForcedVitalCapacity: {
+    hkIdentifier: "HKQuantityTypeIdentifierForcedVitalCapacity",
+    measurementType: "FVC",
+    hkUnit: "L",
+    unitFixedReason: UNIT_FIXED_LITRES,
+    dbUnit: "L",
+    convertToDbUnit: (v) => v,
+    aggregation: "latest",
+  },
+  HKQuantityTypeIdentifierPeakExpiratoryFlowRate: {
+    hkIdentifier: "HKQuantityTypeIdentifierPeakExpiratoryFlowRate",
+    measurementType: "PEAK_EXPIRATORY_FLOW",
+    hkUnit: "L/min",
+    unitFixedReason: UNIT_FIXED_LITRES_PER_MINUTE,
+    dbUnit: "L/min",
+    convertToDbUnit: (v) => v,
+    aggregation: "max",
   },
 
   // ── v1.5.5 iOS-coord — six previously-deferred identifiers ───
@@ -1309,14 +1426,11 @@ export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
   // → FALL_COUNT (the continuous count), and
   // `AppleWalkingSteadinessEvent` → WALKING_STEADINESS_EVENT (the fired
   // severity event).
-  // Respiratory / pulmonary clinical (iOS 17) — pair with FHIR clinical
-  // bucket; no Measurement enum mapping today.
-  "HKQuantityTypeIdentifierForcedExpiratoryVolume1",
-  "HKQuantityTypeIdentifierForcedVitalCapacity",
-  "HKQuantityTypeIdentifierPeakExpiratoryFlowRate",
-  "HKQuantityTypeIdentifierInhalerUsage",
+  // `ForcedExpiratoryVolume1`, `ForcedVitalCapacity`,
+  // `PeakExpiratoryFlowRate`, `InhalerUsage` and `InsulinDelivery` moved into
+  // the mapping table (FEV1 / FVC / PEAK_EXPIRATORY_FLOW / INHALER_USAGE /
+  // INSULIN_DELIVERY).
   // Other quantity identifiers — explicit hold (privacy / not in scope).
-  "HKQuantityTypeIdentifierInsulinDelivery",
   "HKQuantityTypeIdentifierUVExposure",
   "HKQuantityTypeIdentifierElectrodermalActivity",
   "HKQuantityTypeIdentifierBloodAlcoholContent",
@@ -1326,8 +1440,8 @@ export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
   // `HighHeartRateEvent` + `IrregularHeartRhythmEvent` moved into the
   // mapping table as the LOW/HIGH_HEART_RATE_EVENT +
   // IRREGULAR_RHYTHM_NOTIFICATION categorical events.
-  // `LowCardioFitnessEvent` stays deferred (no awareness surface yet).
-  "HKCategoryTypeIdentifierLowCardioFitnessEvent",
+  // `LowCardioFitnessEvent` moved into the mapping table as
+  // LOW_CARDIO_FITNESS_EVENT.
   // Audio-exposure events (iOS 13+) — Environmental + Headphone
   // moved into the mapping table in v1.4.30 (R-F T1.4) as
   // AUDIO_EXPOSURE_EVENT. The general "sound reduction" flag stays
@@ -1505,6 +1619,14 @@ export function mapAppleHealthEntry(
   }
   if (typeof input.valueMax === "number" && Number.isFinite(input.valueMax)) {
     out.valueMax = mapping.convertToDbUnit(toHkUnit(input.valueMax));
+  }
+
+  // A category state stores its codepoint, never the wire value
+  // (the client sends the event placeholder 1 there).
+  if (mapping.valueFromCategory) {
+    const codepoint = input.categoryValue ?? input.sleepStage;
+    if (codepoint === undefined) return null;
+    out.value = mapping.convertToDbUnit(codepoint);
   }
 
   if (mapping.sleepStageMap) {

@@ -159,7 +159,7 @@ async function readRecentSymptoms(
   );
   const grouped = await prisma.symptomEvent.groupBy({
     by: ["definitionId"],
-    where: { userId, occurredAt: { gte: since, lte: now } },
+    where: { userId, deletedAt: null, occurredAt: { gte: since, lte: now } },
     _count: { _all: true },
     _max: { intensity: true, occurredAt: true },
   });

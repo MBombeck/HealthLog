@@ -167,6 +167,8 @@ const STATIC_SURFACE_MODULE = {
   "summary:BLOOD_GLUCOSE": "glucose",
   // Blood ketones sit beside glucose: same meter, same module.
   "summary:BLOOD_KETONES": "glucose",
+  // Insulin doses belong with the glucose they are given against.
+  "summary:INSULIN_DELIVERY": "glucose",
   "summary:CARDIO_RECOVERY": "recovery",
   // The recovery module owns the resting_hr domain (`measurement-scope.ts`),
   // so the server gates the type on it; the form and the dashboard follow.

@@ -54,6 +54,7 @@ const EVENT_ICONS: Record<string, LucideIcon> = {
   HIGH_HEART_RATE_EVENT: HeartPulse,
   LOW_HEART_RATE_EVENT: HeartPulse,
   HYPERTENSION_EVENT: HeartPulse,
+  LOW_CARDIO_FITNESS_EVENT: HeartPulse,
   WALKING_STEADINESS_EVENT: Footprints,
   BREATHING_DISTURBANCE_EVENT: Wind,
 };
@@ -63,6 +64,7 @@ const EVENT_LABEL_KEYS: Record<string, string> = {
   HIGH_HEART_RATE_EVENT: "insights.rhythmEvents.event.highHeartRate",
   LOW_HEART_RATE_EVENT: "insights.rhythmEvents.event.lowHeartRate",
   HYPERTENSION_EVENT: "insights.rhythmEvents.event.hypertension",
+  LOW_CARDIO_FITNESS_EVENT: "insights.rhythmEvents.event.lowCardioFitness",
   WALKING_STEADINESS_EVENT: "insights.rhythmEvents.event.walkingSteadiness",
   BREATHING_DISTURBANCE_EVENT:
     "insights.rhythmEvents.event.breathingDisturbance",
@@ -79,6 +81,7 @@ const CLASSIFICATION_LABEL_KEYS: Record<string, string> = {
   LOW: "insights.rhythmEvents.verdict.low",
   VERY_LOW: "insights.rhythmEvents.verdict.veryLow",
   FIRED: "insights.rhythmEvents.verdict.fired",
+  LOW_FITNESS: "insights.rhythmEvents.verdict.lowFitness",
 };
 
 interface RhythmEventsCardProps {

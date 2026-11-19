@@ -25,6 +25,12 @@ export const symptomEventBackupSchema = z
     note: z.string().nullable().optional(),
     noteEncrypted: base64BytesSchema.nullable().optional(),
     episodeId: z.string().min(1).nullable().optional(),
+    // Apple Health provenance (v1.48.2). Absent on an older file: a manual
+    // occurrence with no end and no tombstone.
+    endAt: isoDateTime.nullable().optional(),
+    source: z.string().min(1).max(40).optional(),
+    externalId: z.string().min(1).max(120).nullable().optional(),
+    deletedAt: isoDateTime.nullable().optional(),
     createdAt: isoDateTime,
     updatedAt: isoDateTime,
   })
@@ -37,6 +43,9 @@ export const symptomDefinitionBackupSchema = z
     icon: z.string().nullable().optional(),
     sortOrder: z.number().int(),
     isActive: z.boolean(),
+    // The built-in code (v1.48.2); absent on an older file, null for a
+    // symptom the person named.
+    code: z.string().min(1).max(80).nullable().optional(),
     createdAt: isoDateTime,
     updatedAt: isoDateTime,
     events: z.array(symptomEventBackupSchema).default([]),
