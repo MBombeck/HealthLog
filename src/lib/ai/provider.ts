@@ -818,7 +818,9 @@ async function readBoundSettings(userId: string): Promise<{
  *
  * Steps:
  *   1. Read the default chain (`defaultChainTypes`): `User.aiProviderChain`
- *      (or `PROVIDER_CHAIN_DEFAULT`), or a named chain marked default.
+ *      (or `PROVIDER_CHAIN_DEFAULT`), or a named chain marked default. The
+ *      main chain's `local` entry counts only while Local is the picked
+ *      provider (`localServesMainChain`, #1417).
  *   2. For each enabled entry, attempt to materialise the provider
  *      from the user's saved credentials. Drop entries that have no
  *      usable credential (e.g. chain says `anthropic` but
@@ -892,7 +894,7 @@ export async function resolveProviderChain(
   const resolved: ProviderChainResolved[] = [];
   for (const providerType of pinned
     ? selection.entries
-    : defaultChainTypes(named, userRow?.aiProviderChain ?? null)) {
+    : defaultChainTypes(named, userRow ?? null)) {
     // Only a pinned chain may list the central Codex, behind the same opt-in.
     const instance =
       pinned && providerType === "admin-codex"
@@ -1137,10 +1139,7 @@ export function probeProviderChain(
       };
       const centralCodex =
         row.useCentralCodex && appSettingsCentralCodexConnected(settings);
-      const entries: ProviderEntryPresence[] = defaultChainTypes(
-        named,
-        row.aiProviderChain ?? null,
-      )
+      const entries: ProviderEntryPresence[] = defaultChainTypes(named, row)
         .filter(credentialPresent)
         .map(vision);
       if (centralCodex) {

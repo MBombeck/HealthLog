@@ -33,6 +33,7 @@ import {
 } from "@/lib/ai/capabilities/types";
 
 import {
+  localServesMainChain,
   parseProviderChain,
   PROVIDER_CHAIN_TYPES,
   type ProviderChainType,
@@ -218,17 +219,23 @@ export function isPinnedChain(
  * of the main chain, or the entries of the named chain marked default. The
  * central Codex is never listed here; for an unattached capability it is
  * appended behind the person's opt-in, exactly as before.
+ *
+ * The main chain's `local` entry counts only while Local is the picked
+ * provider (`localServesMainChain`, #1417); a named chain marked default
+ * keeps it.
  */
 export function defaultChainTypes(
   config: NamedChainsConfig,
-  rawMainChain: unknown,
+  row: { aiProvider: string | null; aiProviderChain: unknown } | null,
 ): ProviderChainType[] {
   const selection = chainSelectionFor(config, null);
   if (selection.kind === "default") {
     return selection.entries.filter((type) => type !== "admin-codex");
   }
-  return parseProviderChain(rawMainChain)
+  const localServes = !!row && localServesMainChain(row);
+  return parseProviderChain(row?.aiProviderChain ?? null)
     .filter((entry) => entry.enabled)
+    .filter((entry) => localServes || entry.providerType !== "local")
     .map((entry) => entry.providerType);
 }
 

@@ -9,7 +9,10 @@ import {
   getLastWorkingProvider,
 } from "@/lib/ai/provider-runner";
 import { prisma } from "@/lib/db";
-import { parseProviderChain } from "@/lib/ai/provider-chain";
+import {
+  localServesMainChain,
+  parseProviderChain,
+} from "@/lib/ai/provider-chain";
 import { isReasoningProviderType } from "@/lib/ai/reasoning-effort";
 import { providerChainPutSchema } from "@/lib/validations/ai-provider";
 
@@ -50,7 +53,7 @@ export const GET = apiHandler(async () => {
   // matches the actual runner ordering (enabled entries only).
   const userRow = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { aiProviderChain: true },
+    select: { aiProviderChain: true, aiProvider: true },
   });
   const persisted = parseProviderChain(userRow?.aiProviderChain ?? null);
 
@@ -59,6 +62,11 @@ export const GET = apiHandler(async () => {
     probeProviderChain(user.id),
   ]);
   const availableTypes = new Set(presence.availableTypes ?? []);
+  // #1417 — Local's address outlives a move to another provider, but this is
+  // the main chain, where Local serves only while it is the picked provider.
+  if (!localServesMainChain({ aiProvider: userRow?.aiProvider ?? null })) {
+    availableTypes.delete("local");
+  }
   const cached = getLastWorkingProvider(user.id);
 
   annotate({

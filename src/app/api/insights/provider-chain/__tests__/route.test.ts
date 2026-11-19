@@ -215,4 +215,36 @@ describe("GET /api/insights/provider-chain", () => {
       { providerType: "local", enabled: true, available: false },
     ]);
   });
+
+  it.each([
+    ["OPENAI_COMPATIBLE", false],
+    ["OPENAI", false],
+    ["LOCAL", true],
+    [null, true],
+  ])(
+    "offers Local in the main chain with %s picked: %s",
+    async (aiProvider, available) => {
+      // #1417 — Local's address outlives a move to another provider; the main
+      // chain still serves Local only while it is the picked one.
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        aiProvider,
+        aiProviderChain: null,
+      } as unknown as Awaited<ReturnType<typeof prisma.user.findUnique>>);
+      vi.mocked(probeProviderChain).mockResolvedValueOnce({
+        entries: [],
+        localOcrEnabled: false,
+        managedBy: null,
+        availableTypes: ["local"],
+      });
+      vi.mocked(resolveProviderChain).mockResolvedValue([]);
+      vi.mocked(getLastWorkingProvider).mockReturnValue(null);
+
+      const res = await (GET as () => Promise<Response>)();
+      const body = (await res.json()) as Envelope;
+      expect(
+        body.data?.configuredChain.find((e) => e.providerType === "local")
+          ?.available,
+      ).toBe(available);
+    },
+  );
 });

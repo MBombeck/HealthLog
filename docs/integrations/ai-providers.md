@@ -185,9 +185,12 @@ model `Qwen/Qwen2.5-14B-Instruct`. The local-client encrypts the
 API key at rest like every other provider credential.
 
 The Local provider keeps its own base URL and model. Selecting and
-saving another provider leaves them in place, so a Local entry in a
-provider chain keeps working, and the Local card always shows what is
-saved for it. **Test** on the AI settings page probes the provider
+saving another provider leaves them in place, so a named chain that
+lists Local keeps working, and the Local card always shows what is
+saved for it. The main chain is different: its `local` entry serves
+only while Local is the selected provider (or none is selected), so
+picking a gateway or a cloud provider stops requests to the Local
+host there, and the chain editor shows Local as unavailable. **Test** on the AI settings page probes the provider
 whose card is on screen and says which one it tested.
 
 **Private endpoints.** Any user of the instance can type a base URL,
