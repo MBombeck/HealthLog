@@ -553,6 +553,24 @@ const accountPayload = z
           .describe(
             "v1.43 — the life-circumstances routes under `/api/anamnesis/life-circumstances` and `/api/anamnesis/audit-c` are available.",
           ),
+        appleHealthSymptoms: z
+          .boolean()
+          .optional()
+          .describe(
+            "v1.48.2 — `POST /api/symptoms/events/batch` with the built-in symptom codes and `DELETE /api/symptoms/events/by-external-ids` are available. Send Apple Health symptoms only when this is `true`.",
+          ),
+        appleHealthDeletes: z
+          .boolean()
+          .optional()
+          .describe(
+            'v1.48.2 — the by-external-ids deletes for workouts, ECG recordings, cycle day-logs, mood entries and medication doses are available, and mood-entry writes take `source: "APPLE_HEALTH"` with an `externalId`. The routes shipped in v1.48.0; since v1.48.2 a deleted Apple Health workout or ECG recording also stays deleted when the same sample is posted again (`duplicate`).',
+          ),
+        nutrientMacros: z
+          .boolean()
+          .optional()
+          .describe(
+            "v1.48.2 — `POST /api/nutrients/batch` takes the macro codes (energy, protein, carbohydrates, the fats, sugar, fibre, cholesterol, sodium, potassium). The codes shipped in v1.48.0.",
+          ),
       })
       .describe(
         "What this server understands, for a client released apart from it. Constant across accounts. A flag that is absent or `false` means this server does not have the feature; a client checks for `true` before it calls a route or sends a request form the flag names. Absent on servers older than v1.42.0. A client that meets a flag it does not know ignores it.",
