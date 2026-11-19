@@ -28,7 +28,7 @@ type RouteParams = { params: Promise<{ id: string }> };
  */
 export const PUT = apiHandler(
   async (request: Request, { params }: RouteParams) => {
-    const { user } = await requireRecordAuth("guardian", "medications");
+    const { user } = await requireRecordAuth("guardian", "record");
     const { id } = await params;
 
     const guard = await assertMedicationOwnership(id, user.id);

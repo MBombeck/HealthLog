@@ -16,6 +16,7 @@
  *   5. the compliance cache cell belongs to the record: a cell warmed inside
  *      one profile is never served inside another.
  */
+import type { ShareDomain } from "@/lib/sharing/scope";
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -95,7 +96,10 @@ async function guardianInside() {
 }
 
 /** An adult delegate signed in and switched into an adult owner's record. */
-async function adultInside(access: "READ" | "WRITE" | "MANAGE") {
+async function adultInside(
+  access: "READ" | "WRITE" | "MANAGE",
+  scope: ShareDomain[] | null = null,
+) {
   const owner = await makeUser("owner");
   const delegate = await makeUser("delegate");
   const { inviteGrant, acceptGrant } = await import("@/lib/sharing/grants");
@@ -103,7 +107,7 @@ async function adultInside(access: "READ" | "WRITE" | "MANAGE") {
     grantorId: owner.id,
     granteeId: delegate.id,
     access,
-    scope: null,
+    scope,
   });
   await acceptGrant({ grantId: invited.id, granteeId: delegate.id });
   const session = await signIn(delegate.id);
@@ -395,6 +399,10 @@ describe("an adult's share", () => {
     const read = await r.detail(med.id);
     expect(read.status).toBe(200);
     expect((await read.json()).data.canStartCourse).toBe(false);
+    // The courses read narrows the same flag to the caller.
+    const listed = await r.listCourses(med.id);
+    expect(listed.status).toBe(200);
+    expect((await listed.json()).data.canStartCourse).toBe(false);
 
     expect(
       (await r.startCourse(med.id, { startsOn: "2026-02-05" })).status,
@@ -417,6 +425,19 @@ describe("an adult's share", () => {
         where: { medicationId: med.id },
       }),
     ).toBe(0);
+  });
+});
+
+describe("a share scoped to medications alone", () => {
+  it("reads the schedule but not the Effect view, which carries readings and labs", async () => {
+    const { owner } = await adultInside("READ", ["medications"]);
+    const med = await seedMedication(owner.id);
+    const r = await routes();
+
+    expect((await r.compliance(med.id)).status).toBe(200);
+    expect((await r.doseHistory(med.id)).status).toBe(200);
+    expect((await r.listCourses(med.id)).status).toBe(200);
+    expect((await r.efficacy(med.id)).status).toBe(403);
   });
 });
 

@@ -18,13 +18,15 @@ type RouteParams = { params: Promise<{ id: string }> };
  * a missing or foreign id yields the sealed "Medication not found" 404, the
  * same shape `assertMedicationOwnership` mints.
  *
- * Delegable read (#1408). `user` is the record on screen: the builder reads
- * its medication, series, labs, unit preferences and target bands, all keyed
- * on that id, and caches nothing. Only the rate bucket keys on the actor.
+ * Delegable read (#1408) at the whole record, not the medications section:
+ * the builder returns measurement series, lab history and the biomarker
+ * catalogue beside the medication, so a grant scoped to medications alone
+ * must not reach it. `user` is the record on screen; every read is keyed on
+ * that id and nothing is cached. Only the rate bucket keys on the actor.
  */
 export const GET = apiHandler(
   async (_request: Request, { params }: RouteParams) => {
-    const { user, actor } = await requireRecordAuth("read", "medications");
+    const { user, actor } = await requireRecordAuth("read", "record");
     const { id } = await params;
 
     const rl = await checkRateLimit(

@@ -1276,11 +1276,11 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     why: "One medication's dose ledger, behind `assertMedicationOwnership` against the resolved record; every intake query carries the record id. No cache. The rate bucket keys on the ACTOR.",
   },
   "app/api/medications/[id]/efficacy/route.ts": {
-    domain: "medications",
-    why: "One medication's Effect view: the builder's own `findFirst({ id, userId })` is the ownership gate, and the series, labs, unit preferences and target bands it reads all belong to the resolved record. Descriptive numbers only, no model call, no cache. The rate bucket keys on the ACTOR.",
+    domain: "record",
+    why: "One medication's Effect view: the builder's own `findFirst({ id, userId })` is the ownership gate, and the series, labs, unit preferences and target bands it reads all belong to the resolved record. Declared at the whole record because it returns measurement series, lab history and the biomarker catalogue, which a medications-only grant does not cover. Descriptive numbers only, no model call, no cache. The rate bucket keys on the ACTOR.",
   },
   "app/api/medications/[id]/efficacy/target/route.ts": {
-    domain: "medications",
+    domain: "record",
     why: "Which metric or lab the Effect view follows, behind the ownership guard; a pinned biomarker is looked up under the resolved record. Declares `\"guardian\"`: the owner or a managed profile's guardian, never an adult's delegate.",
   },
   "app/api/medications/[id]/courses/route.ts": {
