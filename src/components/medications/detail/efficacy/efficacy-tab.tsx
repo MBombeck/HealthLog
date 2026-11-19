@@ -36,7 +36,10 @@ import { queryKeys } from "@/lib/query-keys";
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { useAuth } from "@/hooks/use-auth";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import {
+  holdsGuardianSurfaces,
+  useRecordCapabilities,
+} from "@/hooks/use-record-capabilities";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import type {
   MedicationEfficacyDTO,
@@ -409,12 +412,11 @@ function RetargetControl({
 }) {
   const { t } = useTranslations();
   // Repointing what a medication is judged against rewrites a setting the
-  // owner chose — not an admitted create, and `PUT .../efficacy/target`
-  // resolves the caller, so it is refused at both grant levels. The Wirkung
-  // tab itself stays readable; only the dial goes.
-  // `PUT /api/medications/[id]/efficacy/target` resolves the caller, not the
-  // record: no grant reaches it, so the editor belongs to the owner alone.
-  const { inSharedRecord } = useRecordCapabilities();
+  // owner chose. `PUT .../efficacy/target` declares `"guardian"` (#1408): the
+  // owner and a managed profile's guardian reach it, an adult's delegate does
+  // not at any level. The Wirkung tab itself stays readable; only the dial
+  // goes.
+  const mayRetarget = holdsGuardianSurfaces(useRecordCapabilities());
   const [value, setValue] = useState<string>("");
   const [busy, setBusy] = useState(false);
 
@@ -466,7 +468,7 @@ function RetargetControl({
     }
   };
 
-  if (inSharedRecord || items.length === 0) return null;
+  if (!mayRetarget || items.length === 0) return null;
 
   return (
     <div

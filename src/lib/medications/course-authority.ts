@@ -6,7 +6,8 @@
  * (`intake-actionable.ts`, `courses.ts`), and the course is the record's.
  * The routes behind them are not open to everyone who can read the record:
  * End is a MANAGE write (`POST /courses/end`), and starting, editing or
- * removing a course stays with the owner (`/courses`, `/courses/{courseId}`).
+ * removing a course (`/courses`, `/courses/{courseId}`) declares `"guardian"`
+ * (#1408): the owner, or the guardian of a managed profile.
  * A read that served the course's answer to a viewer would paint a button
  * whose press is refused, so every read that publishes the two flags passes
  * them through here with the caller's authority.
@@ -14,12 +15,15 @@
  * The record-wide list is cached per record, never per caller, so the
  * narrowing runs after the cache and never lands in it.
  */
-import { grantIdAllows } from "@/lib/sharing/grant-access";
+import {
+  grantIdAllows,
+  grantIdAllowsGuardian,
+} from "@/lib/sharing/grant-access";
 
 export interface CourseActionAuthority {
   /** The caller may end the running course (MANAGE over medications). */
   mayEnd: boolean;
-  /** The caller may start a course (the record's owner). */
+  /** The caller may start a course (the owner, or a managed profile's guardian). */
   mayStart: boolean;
 }
 
@@ -28,10 +32,11 @@ export async function courseActionAuthority(
   grantId: string | null,
 ): Promise<CourseActionAuthority> {
   if (grantId === null) return { mayEnd: true, mayStart: true };
-  return {
-    mayEnd: await grantIdAllows(grantId, "manage", "medications"),
-    mayStart: false,
-  };
+  const [mayEnd, mayStart] = await Promise.all([
+    grantIdAllows(grantId, "manage", "medications"),
+    grantIdAllowsGuardian(grantId, "medications"),
+  ]);
+  return { mayEnd, mayStart };
 }
 
 /** The read row with its course actions narrowed to the caller's authority. */

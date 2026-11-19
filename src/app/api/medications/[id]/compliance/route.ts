@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { COURSES_COMPLIANCE_SELECT } from "@/lib/analytics/compliance";
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import {
@@ -31,15 +31,20 @@ class MedicationNotFoundError extends Error {
 
 export const GET = apiHandler(
   async (_request: Request, { params }: RouteParams) => {
-    const { user } = await requireAuth();
+    // A delegable read (#1408): `user` is the record on screen, `actor` the
+    // person at the keyboard. Everything below scopes to the record; only
+    // the rate bucket keys on the actor.
+    const { user, actor } = await requireRecordAuth("read", "medications");
 
     const { id } = await params;
 
     // The per-user budget is generous — it only caps a runaway client
     // loop (the cards read the batched `/api/medications/compliance`
-    // sibling; this endpoint serves the detail page).
+    // sibling; this endpoint serves the detail page). Keyed on the ACTOR,
+    // like the batched sibling: a delegate burns their own allowance, not
+    // the owner's, and switching records does not hand out a fresh one.
     const rl = await checkRateLimit(
-      `medication-compliance:${user.id}`,
+      `medication-compliance:${actor.id}`,
       60,
       60_000,
     );

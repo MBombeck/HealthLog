@@ -471,6 +471,20 @@ function medicationManageVerb(
       return t("recordSharing.activityVerb.medicationUpdate", { name });
     case "medication.course.end":
       return t("recordSharing.activityVerb.medicationCourseEnd", { name });
+    case "medication.course.create":
+      return t("recordSharing.activityVerb.medicationCourseCreate", { name });
+    case "medication.course.update":
+      return t("recordSharing.activityVerb.medicationCourseUpdate", { name });
+    case "medication.course.delete":
+      return t("recordSharing.activityVerb.medicationCourseDelete", { name });
+    case "medication.efficacy.target.set":
+      return t("recordSharing.activityVerb.medicationEfficacyTargetSet", {
+        name,
+      });
+    case "medication.efficacy.target.clear":
+      return t("recordSharing.activityVerb.medicationEfficacyTargetClear", {
+        name,
+      });
     case "medication.category.custom.create":
       return t("recordSharing.activityVerb.medicationCategoryCreate", {
         name,

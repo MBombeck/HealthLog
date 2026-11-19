@@ -56,7 +56,7 @@ export const DOMAIN_WRITE_SUPPORT: Readonly<
   Record<ShareDomain, DomainWriteSupport>
 > = {
   measurements: { write: true, manage: true, guardian: false },
-  medications: { write: true, manage: true, guardian: false },
+  medications: { write: true, manage: true, guardian: true },
   labs: { write: true, manage: true, guardian: false },
   profile: { write: true, manage: true, guardian: false },
   illness: { write: true, manage: true, guardian: false },

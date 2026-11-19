@@ -8,14 +8,16 @@
  *        rewritten to the latest course in the same transaction, so reminders
  *        and the dose actions follow without another write.
  *
- * Owner-only for now: a delegate edits the current window through the
- * medication's own PUT, as before.
+ * The GET is a delegable read. Starting a course declares `"guardian"`
+ * (#1408): the owner, or the guardian of a managed profile who runs its
+ * schedule; an adult's delegate still edits the current window through the
+ * medication's own PUT, as before. The audit row names the guardian.
  */
 import { NextRequest } from "next/server";
 
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { prisma } from "@/lib/db";
@@ -37,7 +39,7 @@ type RouteParams = { params: Promise<{ id: string }> };
 
 export const GET = apiHandler(
   async (_request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireAuth();
+    const { user } = await requireRecordAuth("read", "medications");
     const { id } = await params;
     const medication = await prisma.medication.findFirst({
       where: { id, userId: user.id },
@@ -63,7 +65,7 @@ async function postCourse(
   request: NextRequest,
   { params }: RouteParams,
 ): Promise<Response> {
-  const { user } = await requireAuth();
+  const { user } = await requireRecordAuth("guardian", "medications");
   const { id } = await params;
 
   const parsed = await parseJsonBody(request, createMedicationCourseSchema, {

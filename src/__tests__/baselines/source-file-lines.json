@@ -12,7 +12,7 @@
     "components/insights/derived/vitals-dashboard.tsx": 1033,
     "components/insights/health-score-card.tsx": 1023,
     "components/insights/insights-tab-strip.tsx": 1084,
-    "components/medications/detail/medication-detail-tabs.tsx": 1133,
+    "components/medications/detail/medication-detail-tabs.tsx": 1160,
     "components/medications/medication-table.tsx": 853,
     "components/medications/wizard/wizard-payload.ts": 1431,
     "components/mood/mood-list.tsx": 1408,

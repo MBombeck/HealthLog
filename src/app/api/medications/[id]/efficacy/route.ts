@@ -1,4 +1,4 @@
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { buildMedicationEfficacy } from "@/lib/medications/efficacy/build-efficacy";
@@ -17,14 +17,18 @@ type RouteParams = { params: Promise<{ id: string }> };
  * The builder's `findFirst({ where: { id, userId } })` is the ownership gate;
  * a missing or foreign id yields the sealed "Medication not found" 404, the
  * same shape `assertMedicationOwnership` mints.
+ *
+ * Delegable read (#1408). `user` is the record on screen: the builder reads
+ * its medication, series, labs, unit preferences and target bands, all keyed
+ * on that id, and caches nothing. Only the rate bucket keys on the actor.
  */
 export const GET = apiHandler(
   async (_request: Request, { params }: RouteParams) => {
-    const { user } = await requireAuth();
+    const { user, actor } = await requireRecordAuth("read", "medications");
     const { id } = await params;
 
     const rl = await checkRateLimit(
-      `medication-efficacy:${user.id}`,
+      `medication-efficacy:${actor.id}`,
       60,
       60_000,
     );

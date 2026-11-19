@@ -1203,7 +1203,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Medications"],
       summary: "Read a medication's courses",
       description:
-        "v1.40 (#1024) — the same resolved course fields the list and detail reads carry. Owner-only.",
+        "v1.40 (#1024) — the same resolved course fields the list and detail reads carry. Readable by the record's owner and by any delegate whose grant opens its medications.",
       requestParams: { path: z.object({ id: z.string() }) },
       responses: {
         "200": {
@@ -1226,6 +1226,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "Medication not found (or another user's).",
           content: { "application/json": { schema: errorEnvelope } },
         },
+        ...recordRefusal(),
         ...stdResponses,
       },
     },
@@ -1234,7 +1235,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Medications"],
       summary: "Start a course",
       description:
-        "v1.40 (#1024) — adds a course and, in the same transaction, rewrites the medication's `startsOn`/`endsOn` to the latest course, so reminders and `intakeActionable` follow with no further write. Refusals: 422 `medications.course.overlap`, `medications.course.currentOpen`, `medications.course.oneShot`, `medications.course.invalidRange`, `medications.course.invalid` (body). Owner-only.",
+        "v1.40 (#1024) — adds a course and, in the same transaction, rewrites the medication's `startsOn`/`endsOn` to the latest course, so reminders and `intakeActionable` follow with no further write. Refusals: 422 `medications.course.overlap`, `medications.course.currentOpen`, `medications.course.oneShot`, `medications.course.invalidRange`, `medications.course.invalid` (body). The record's owner, or the guardian of a managed profile (#1408); an adult's delegate is refused with 403 at every level.",
       requestParams: { path: z.object({ id: z.string() }) },
       requestBody: {
         required: true,
@@ -1263,6 +1264,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "Medication not found (or another user's).",
           content: { "application/json": { schema: errorEnvelope } },
         },
+        ...recordRefusal(),
         ...stdResponses,
       },
     },
@@ -1312,7 +1314,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Medications"],
       summary: "Edit a course",
       description:
-        "v1.40 (#1024) — field by field; the medication's window is re-projected in the same transaction. Same refusals as the create. Owner-only.",
+        "v1.40 (#1024) — field by field; the medication's window is re-projected in the same transaction. Same refusals and the same callers as the create.",
       requestParams: {
         path: z.object({ id: z.string(), courseId: z.string() }),
       },
@@ -1343,6 +1345,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             "Course not found (`medications.course.notFound`), or another user's.",
           content: { "application/json": { schema: errorEnvelope } },
         },
+        ...recordRefusal(),
         ...stdResponses,
       },
     },
@@ -1350,7 +1353,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Medications"],
       summary: "Delete a course",
       description:
-        "v1.40 (#1024) — deletes the course and re-projects the medication's window. Deleting the only course makes the medication continuous again (both window columns cleared). Intakes are not touched. Owner-only.",
+        "v1.40 (#1024) — deletes the course and re-projects the medication's window. Deleting the only course makes the medication continuous again (both window columns cleared). Intakes are not touched. Same callers as the create.",
       requestParams: {
         path: z.object({ id: z.string(), courseId: z.string() }),
       },
@@ -1371,6 +1374,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             "Course not found (`medications.course.notFound`), or another user's.",
           content: { "application/json": { schema: errorEnvelope } },
         },
+        ...recordRefusal(),
         ...stdResponses,
       },
     },
@@ -1928,6 +1932,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "Medication not found (or owned by another user).",
           content: { "application/json": { schema: errorEnvelope } },
         },
+        ...recordRefusal(),
         ...stdResponses,
       },
     },
@@ -1957,6 +1962,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "Medication not found (or owned by another user).",
           content: { "application/json": { schema: errorEnvelope } },
         },
+        ...recordRefusal(),
         ...stdResponses,
       },
     },
@@ -1966,7 +1972,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Medications"],
       summary: "Set or clear the efficacy-target override",
       description:
-        "Persists the user's explicit efficacy target for a medication (the only thing the view stores; everything else is derived each read). Pin exactly one of `measurementType` / `biomarkerId`, or pass `clear:true` to revert to the derived target.",
+        "Persists the user's explicit efficacy target for a medication (the only thing the view stores; everything else is derived each read). Pin exactly one of `measurementType` / `biomarkerId`, or pass `clear:true` to revert to the derived target. The record's owner, or the guardian of a managed profile (#1408); an adult's delegate is refused with 403 at every level.",
       requestParams: {
         path: z.object({ id: z.string() }),
       },
@@ -1995,6 +2001,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "Medication or biomarker not found.",
           content: { "application/json": { schema: errorEnvelope } },
         },
+        ...recordRefusal(),
         ...stdResponses,
       },
     },
@@ -2004,7 +2011,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Medications"],
       summary: "Per-slot dose-history ledger (Verlauf tab)",
       description:
-        "Returns the full per-slot ledger for the medication over [from, to]: every expected slot with a status (taken on-time / taken late / skipped / missed / upcoming) plus every off-schedule intake tagged ad-hoc. Built from the SAME band minter + `reconstructDoseHistory` the compliance % consumes, so the history view and the rate can never disagree. v1.32.8 (iOS #64) surfaces `intake.source` so a client can label how each dose was recorded. Ownership-scoped; rate-limited 60/min/user; reads only non-deleted rows. Auth via cookie or Bearer.",
+        "Returns the full per-slot ledger for the medication over [from, to]: every expected slot with a status (taken on-time / taken late / skipped / missed / upcoming) plus every off-schedule intake tagged ad-hoc. Built from the SAME band minter + `reconstructDoseHistory` the compliance % consumes, so the history view and the rate can never disagree. v1.32.8 (iOS #64) surfaces `intake.source` so a client can label how each dose was recorded. Ownership-scoped to the record the request resolves (a delegate whose grant opens the medications reads the owner's ledger); rate-limited 60/min per caller; reads only non-deleted rows. Auth via cookie or Bearer.",
       requestParams: {
         path: z.object({ id: z.string() }),
         query: doseHistoryQuery,
@@ -2025,6 +2032,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "Medication not found (or owned by another user).",
           content: { "application/json": { schema: errorEnvelope } },
         },
+        ...recordRefusal(),
         ...stdResponses,
       },
     },
