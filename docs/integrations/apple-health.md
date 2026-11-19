@@ -109,13 +109,13 @@ they triggered.
 The parser folds four XML element types and supported auxiliary ECG
 CSVs into the existing HealthLog schema (CHANGELOG v1.4.34):
 
-| XML element        | Maps to                             | Notes                                                                                                                                                                                            |
-| ------------------ | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `<Record>`         | `Measurement` rows                  | One row per spot sample. Keyed by `HKMetadataKeyExternalUUID` when present, otherwise a deterministic `sample:<sha256-of-attributes>` fallback so re-imports stay idempotent.                    |
-| `<Workout>`        | `Workout` rows                      | Activity type + duration + energy + distance.                                                                                                                                                    |
-| `<Correlation>`    | `Measurement` rows                  | Compound samples like blood pressure (systolic + diastolic) explode into their per-metric children.                                                                                              |
-| `<ClinicalRecord>` | `LabResult` rows (lab results only) | `HKClinicalTypeIdentifierLabResultRecord` entries: the referenced FHIR Observation (DSTU2 or R4) becomes a lab reading under source `APPLE_HEALTH`. Other clinical types are counted as skipped. |
-| ECG CSV            | `EcgRecording` rows                 | The source-provided waveform is encrypted before persistence; descriptors and the device's classification are stored without diagnostic inference.                                               |
+| XML element        | Maps to                             | Notes                                                                                                                                                                                                                                                                          |
+| ------------------ | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `<Record>`         | `Measurement` rows                  | One row per spot sample. Keyed by `HKMetadataKeyExternalUUID` when present, otherwise a deterministic `sample:<sha256-of-attributes>` fallback so re-imports stay idempotent.                                                                                                  |
+| `<Workout>`        | `Workout` rows                      | Activity type + duration + energy + distance.                                                                                                                                                                                                                                  |
+| `<Correlation>`    | `Measurement` rows                  | Compound samples like blood pressure (systolic + diastolic) explode into their per-metric children.                                                                                                                                                                            |
+| `<ClinicalRecord>` | `LabResult` rows (lab results only) | Lab-result entries (`type="HKClinicalTypeIdentifierLabResultRecord"`, or `type="Observation"` in current exports): the referenced FHIR Observation (DSTU2 or R4) becomes a lab reading under source `APPLE_HEALTH`. Other clinical types and resources are counted as skipped. |
+| ECG CSV            | `EcgRecording` rows                 | The source-provided waveform is encrypted before persistence; descriptors and the device's classification are stored without diagnostic inference.                                                                                                                             |
 
 The HK quantity types that map to HealthLog metric types live in
 `src/lib/measurements/apple-health-mapping.ts`. Anything outside the
@@ -173,9 +173,16 @@ does not inspect the waveform to infer AFib or make a diagnosis.
 ### Lab results from Health Records
 
 When the Health app holds lab results downloaded from a provider
-(Health Records), `export.xml` lists each one as a
-`<ClinicalRecord type="HKClinicalTypeIdentifierLabResultRecord">` whose
-`resourceFilePath` names a FHIR JSON file under `clinical-records/`.
+(Health Records), `export.xml` lists each one as a `<ClinicalRecord>`
+whose `resourceFilePath` names a FHIR JSON file under `clinical-records/`.
+Older exports name the lab results by HealthKit type
+(`type="HKClinicalTypeIdentifierLabResultRecord"`); current ones write the
+FHIR resource type (`type="Observation"`, FHIR 4.0.1 or 1.0.2), and an entry
+without a `type` is read by its file name (`Observation-….json`). Every
+Observation is read; one that is not a lab result (a vital sign, a survey)
+is skipped by its category below. Other resources (`DiagnosticReport`,
+`Condition`, `MedicationRequest`, `Immunization`, `Patient`, …) are counted
+as skipped clinical records.
 After the `export.xml` rows are written, the importer reads those files
 one at a time (at most 50,000 files, 2 MiB each, 256 MiB together) and
 turns each final laboratory Observation into a lab reading:
