@@ -100,6 +100,7 @@ import type {
   TodaySleep,
   TodayVital,
 } from "@/lib/daily/today-overview";
+import { nextDoseOpensAt } from "@/lib/daily/today-medications-fact";
 import { translateOrNull } from "@/lib/i18n/translate-code";
 
 /** Integration states that mean "your action is needed to keep data flowing". */
@@ -1009,18 +1010,4 @@ export async function loadDailyDigest(
   });
 
   return digest;
-}
-
-/**
- * When the next dose can first be taken: the opening of its own window (a
- * 17:00 dose in a 12:00 to 22:00 window reads 12:00), else its slot. A
- * snapshot cached before the opening was kept falls back to the slot.
- */
-function nextDoseOpensAt(meds: {
-  nextDueAt: string | null;
-  dueCandidates?: Array<{ dueAt: string; opensAt?: string }>;
-}): string | null {
-  if (!meds.nextDueAt) return null;
-  const candidate = meds.dueCandidates?.find((c) => c.dueAt === meds.nextDueAt);
-  return candidate?.opensAt ?? meds.nextDueAt;
 }
