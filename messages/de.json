@@ -8640,6 +8640,7 @@
         "restoreFailureRowsElsewhere": "Die Datensätze dieser Datei liegen schon in einem anderen Konto auf diesem Server: Dieselbe Datei wurde dort bereits wiederhergestellt. Eine Datei lässt sich nur in ein Konto wiederherstellen. Es wurde nichts geschrieben.",
         "previewKeyMissing": "Diese Sicherung lässt sich auf diesem Server nicht wiederherstellen: Sie braucht den Verschlüsselungsschlüssel {keys}. Nimm den Schlüssel zuerst wieder in ENCRYPTION_KEYS auf und starte neu.",
         "restoreSkippedSymptomEpisodeReference": "Symptom-Eintrag mit Verknüpfung zu einer Erkrankung, die die Datei nicht enthält (ohne Verknüpfung behalten)",
+        "restoreSkippedSymptomDuplicate": "Symptom-Code oder Apple-Health-Eintrag, den die Datei doppelt enthält (der erste behalten, ein doppeltes Symptom ohne Code behalten)",
         "restoreSkippedCycleCiphertext": "Zyklus-Notiz oder -Bezeichnung mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (Tag oder Symptom ohne sie behalten)",
         "restoreSkippedMoodLabelCiphertext": "Name eines Stimmungs-Tags oder einer Gruppe mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (ohne Namen behalten)",
         "restoreSkippedVisitCiphertext": "Text zu Arztbesuch oder Praxis mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (ohne ihn behalten)",

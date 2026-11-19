@@ -8640,6 +8640,7 @@
         "restoreFailureRowsElsewhere": "De records in dit bestand staan al in een ander account op deze server: hetzelfde bestand is daar al teruggezet. Een bestand kan maar in één account worden teruggezet. Er is niets geschreven.",
         "previewKeyMissing": "Deze back-up kan niet op deze server worden teruggezet: er is versleutelingssleutel {keys} voor nodig. Voeg de sleutel eerst weer toe aan ENCRYPTION_KEYS en herstart.",
         "restoreSkippedSymptomEpisodeReference": "Symptoomregistratie gekoppeld aan een ziekte die niet in het bestand staat (behouden zonder de koppeling)",
+        "restoreSkippedSymptomDuplicate": "Symptoomcode of Apple Health-meting die het bestand herhaalt (de eerste behouden, een herhaald symptoom zonder code behouden)",
         "restoreSkippedCycleCiphertext": "Cyclusnotitie of -label versleuteld met een sleutel die deze server niet heeft (dag of symptoom behouden zonder)",
         "restoreSkippedMoodLabelCiphertext": "Stemmingslabel of groepsnaam versleuteld met een sleutel die deze server niet heeft (behouden zonder naam)",
         "restoreSkippedVisitCiphertext": "Tekst van bezoek of zorgverlener versleuteld met een sleutel die deze server niet heeft (behouden zonder)",

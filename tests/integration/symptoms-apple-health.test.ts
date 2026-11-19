@@ -805,4 +805,77 @@ describe("the backup", () => {
     ]);
     expect(replay.entries[0].status).toBe("duplicate");
   });
+
+  it("restores a file with a repeated code or sample without aborting, and an unknown code as a named symptom", async () => {
+    await ingest([sample("A0000000-0000-4000-8000-000000000130")]);
+    const prisma = getPrismaClient();
+    const section = await buildSymptomsBackupSection(prisma, OWNER_ID, {
+      purpose: "disaster-recovery",
+    });
+    const [fever] = section.symptomDefinitions;
+    const copy = (code: string | null, id: string, eventId: string) => ({
+      ...fever,
+      id,
+      code,
+      events: fever.events.map((e) => ({ ...e, id: eventId })),
+    });
+    // A hand-edited or merged file: the FEVER built-in twice (same sample in
+    // both), and a code this instance does not know.
+    const file = {
+      ...section,
+      symptomDefinitions: [
+        fever,
+        copy("FEVER", "def-fever-twin", "event-twin"),
+        copy("NOT_A_CODE", "def-unknown", "event-unknown"),
+      ],
+    };
+    file.symptomDefinitions[2].events = file.symptomDefinitions[2].events.map(
+      (e) => ({ ...e, externalId: "A0000000-0000-4000-8000-000000000131" }),
+    );
+
+    const skips: RestoreSkipLog = [];
+    await prisma.$transaction((tx) =>
+      restoreSymptomsData(tx, OWNER_ID, file, new Set(), skips),
+    );
+
+    const definitions = await prisma.symptomDefinition.findMany({
+      where: { userId: OWNER_ID },
+      orderBy: { id: "asc" },
+      select: { id: true, code: true },
+    });
+    // The first FEVER keeps the code; the twin and the unknown code restore
+    // as symptoms the person named, so nothing they held is lost.
+    expect(definitions).toEqual(
+      expect.arrayContaining([
+        { id: fever.id!, code: "FEVER" },
+        { id: "def-fever-twin", code: null },
+        { id: "def-unknown", code: null },
+      ]),
+    );
+    // The repeated sample lands once.
+    expect(
+      await prisma.symptomEvent.count({
+        where: { externalId: "A0000000-0000-4000-8000-000000000130" },
+      }),
+    ).toBe(1);
+    expect(
+      await prisma.symptomEvent.count({
+        where: { externalId: "A0000000-0000-4000-8000-000000000131" },
+      }),
+    ).toBe(1);
+    expect(skips).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          catalogue: "symptomDuplicate",
+          key: "symptomDefinitions.code.FEVER",
+          links: 1,
+        }),
+        expect.objectContaining({
+          catalogue: "symptomDuplicate",
+          key: "symptomEvents.APPLE_HEALTH.A0000000-0000-4000-8000-000000000130",
+          links: 1,
+        }),
+      ]),
+    );
+  });
 });

@@ -40,6 +40,7 @@ import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 
 import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { getEvent } from "@/lib/logging/context";
+import { isSymptomBuiltinCode } from "@/lib/symptoms/builtin";
 import {
   recordUnknownKeys,
   type RestoreSkipLog,
@@ -255,7 +256,38 @@ export async function restoreSymptomsData(
   });
 
   const droppedEpisodeRefs: string[] = [];
+  // A file can repeat what the unique indexes allow once: a built-in code
+  // (`userId, code`) or an imported sample (`userId, source, externalId`), a
+  // merged or hand-edited file most likely. One such row must not abort the
+  // whole restore, so the first one keeps the code or the sample and the rest
+  // are counted. A repeated code's definition still restores, as a symptom
+  // the person named (code null), with its occurrences; a repeated sample is
+  // the same occurrence again and is left out. A code this instance does not
+  // know restores the same way, as a named symptom.
+  const seenCodes = new Set<string>();
+  const seenSamples = new Set<string>();
+  const repeated: string[] = [];
   for (const definition of payload.symptomDefinitions) {
+    let code = definition.code ?? null;
+    if (code !== null && !isSymptomBuiltinCode(code)) code = null;
+    if (code !== null) {
+      if (seenCodes.has(code)) {
+        repeated.push(`symptomDefinitions.code.${code}`);
+        code = null;
+      } else {
+        seenCodes.add(code);
+      }
+    }
+    const events = definition.events.filter((event) => {
+      if (!event.externalId) return true;
+      const key = `symptomEvents.${event.source ?? "MANUAL"}.${event.externalId}`;
+      if (seenSamples.has(key)) {
+        repeated.push(key);
+        return false;
+      }
+      seenSamples.add(key);
+      return true;
+    });
     const labelEncrypted =
       definition.labelEncrypted !== undefined
         ? decodeBytes(definition.labelEncrypted)
@@ -268,11 +300,11 @@ export async function restoreSymptomsData(
         icon: definition.icon ?? null,
         sortOrder: definition.sortOrder,
         isActive: definition.isActive,
-        code: definition.code ?? null,
+        code,
         createdAt: new Date(definition.createdAt),
         updatedAt: new Date(definition.updatedAt),
         events: {
-          create: definition.events.map((event) => {
+          create: events.map((event) => {
             let episodeId = event.episodeId ?? null;
             if (episodeId && !episodeIds.has(episodeId)) {
               droppedEpisodeRefs.push(episodeId);
@@ -310,6 +342,12 @@ export async function restoreSymptomsData(
     "symptomEpisodeReference",
     [...new Set(droppedEpisodeRefs)],
     droppedEpisodeRefs,
+  );
+  recordUnknownKeys(
+    skips,
+    "symptomDuplicate",
+    [...new Set(repeated)],
+    repeated,
   );
 
   return { symptomDefinitions: cleared.count };

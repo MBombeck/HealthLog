@@ -8640,6 +8640,7 @@
         "restoreFailureRowsElsewhere": "Rekordy z tego pliku są już na innym koncie na tym serwerze: ten sam plik został tam wcześniej przywrócony. Plik można przywrócić tylko na jedno konto. Nic nie zostało zapisane.",
         "previewKeyMissing": "Tej kopii nie da się przywrócić na tym serwerze: wymaga klucza szyfrowania {keys}. Najpierw dodaj klucz z powrotem do ENCRYPTION_KEYS i uruchom ponownie.",
         "restoreSkippedSymptomEpisodeReference": "Wpis objawu powiązany z chorobą, której nie ma w pliku (zachowany bez powiązania)",
+        "restoreSkippedSymptomDuplicate": "Kod objawu lub próbka Apple Zdrowie powtórzone w pliku (pierwsze zachowane, powtórzony objaw zachowany bez kodu)",
         "restoreSkippedCycleCiphertext": "Notatka lub etykieta cyklu zaszyfrowana kluczem, którego ten serwer nie ma (dzień lub objaw zachowany bez niej)",
         "restoreSkippedMoodLabelCiphertext": "Nazwa tagu lub grupy nastroju zaszyfrowana kluczem, którego ten serwer nie ma (zachowana bez nazwy)",
         "restoreSkippedVisitCiphertext": "Tekst wizyty lub lekarza zaszyfrowany kluczem, którego ten serwer nie ma (zachowany bez niego)",

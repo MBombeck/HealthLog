@@ -8640,6 +8640,7 @@
         "restoreFailureRowsElsewhere": "I record di questo file sono già in un altro account di questo server: lo stesso file è già stato ripristinato lì. Un file può essere ripristinato in un solo account. Non è stato scritto nulla.",
         "previewKeyMissing": "Questo backup non può essere ripristinato su questo server: richiede la chiave di cifratura {keys}. Aggiungi prima di nuovo la chiave a ENCRYPTION_KEYS e riavvia.",
         "restoreSkippedSymptomEpisodeReference": "Voce di sintomo collegata a una malattia assente dal file (mantenuta senza collegamento)",
+        "restoreSkippedSymptomDuplicate": "Codice di sintomo o campione di Apple Salute ripetuto nel file (il primo mantenuto, un sintomo ripetuto mantenuto senza codice)",
         "restoreSkippedCycleCiphertext": "Nota o etichetta del ciclo cifrata con una chiave che questo server non possiede (giorno o sintomo mantenuto senza)",
         "restoreSkippedMoodLabelCiphertext": "Nome di tag o gruppo dell’umore cifrato con una chiave che questo server non possiede (mantenuto senza nome)",
         "restoreSkippedVisitCiphertext": "Testo di visita o professionista cifrato con una chiave che questo server non possiede (mantenuto senza)",

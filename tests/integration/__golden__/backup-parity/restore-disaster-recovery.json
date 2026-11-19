@@ -1250,7 +1250,7 @@
         "icon": "Zap",
         "sortOrder": 0,
         "isActive": true,
-        "code": "rt-SymptomDefinition-code",
+        "code": "FEVER",
         "createdAt": "2026-05-03T00:07:00.000Z",
         "updatedAt": "2026-05-03T00:08:00.000Z"
       },
@@ -5449,7 +5449,7 @@
         "icon": "Zap",
         "sortOrder": 0,
         "isActive": true,
-        "code": "rt-SymptomDefinition-code",
+        "code": "FEVER",
         "createdAt": "2026-05-03T00:07:00.000Z",
         "updatedAt": "2026-05-03T00:08:00.000Z",
         "events": [
