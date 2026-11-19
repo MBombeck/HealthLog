@@ -1,5 +1,62 @@
 # Changelog
 
+## [1.48.2] — 2026-11-19
+
+### Added
+
+- **Symptoms from Apple Health.** Headache, fever, coughing, dizziness and
+  the other 35 symptom types Apple Health knows now reach the symptom diary
+  and the timeline, with their intensity taken from the severity you chose
+  in Health. Each type gets its own built-in symptom the first time one
+  arrives; it does not count toward the limit of active symptoms, and you
+  can rename or hide it like your own. A symptom you delete in Health is
+  removed here too. The iPhone app sends them from its next release, through
+  `POST /api/symptoms/events/batch` and
+  `DELETE /api/symptoms/events/by-external-ids`, which only the account
+  owner can call. Thanks to @2q2code for
+  asking for headaches in particular.
+- **Several symptoms at once.** The symptom sheet takes more than one symptom
+  for the same moment, each with its own intensity, for the flare where
+  headache, nausea and dizziness come together. Thanks again to @2q2code.
+- **More from Apple Health.** Low cardio fitness notifications join the other
+  heart notifications; menopausal state and bleeding after menopause,
+  insulin delivery, inhaler use, FEV1, FVC and peak expiratory flow arrive as
+  readings once the iPhone app sends them. The menopause readings never
+  touch the cycle or the charts (each shows its latest state), and insulin
+  follows the glucose module.
+- **What the server accepts, for clients.** `GET /api/auth/me` lists
+  `appleHealthSymptoms`, `appleHealthDeletes` and `nutrientMacros` under
+  `features`, so the app can tell what it may send.
+
+### Changed
+
+- **A deleted Apple Health workout or ECG stays deleted.** If the phone sends
+  it again later, from a queue that was still waiting, the server answers
+  `duplicate` instead of adding it back, as it already did for State of
+  Mind. A deletion is remembered for 75 days, for symptoms, workouts and ECGs
+  alike.
+
+### Fixed
+
+- **The dashboard counts every dose of the day.** Since 1.48.0 the Today line
+  counted only doses whose time had already passed, so a day with five
+  doses read "2 of 2 taken" at noon. It counts the whole day again, a dose
+  whose window is already open is shown as due now, and as-needed intakes or
+  doses of a medication paused today no longer count toward the day. Thanks
+  to @mills1975 for the screenshots. (#1412)
+- **Lab results from Health Records in an Apple Health export.** Exports that
+  name the FHIR resource type in their records (`type="Observation"`) were
+  skipped completely, so no lab results came in. Both forms are read now,
+  for FHIR R4 and DSTU2, and vital signs without a lab category stay out of
+  Labs. Thanks to @camiracode for tracing it to the attribute. (#1400)
+
+### Updating
+
+Pull and restart. Two migrations run on the first start (0510 and 0511:
+symptom identities for Apple Health, the new reading types and the list of
+deleted Apple Health records). Going back to 1.48.1 works; the steps are in
+`docs/ops/deploy.md`.
+
 ## [1.48.1] — 2026-11-19
 
 ### Fixed
