@@ -54,7 +54,15 @@ export type ReadingInMarkerUnit =
       /** The unit as the report printed it, trimmed. */
       sourceUnit: string;
     }
-  | { ok: false; reason: ConversionRefusal };
+  | { ok: false; reason: ReadingRefusal };
+
+/**
+ * Why a reading cannot be written under its marker: a conversion the registry
+ * cannot make, or `marker_unit_unset`, a marker with no unit that already
+ * holds numbers. Those numbers were stored stating no unit, so no unit can be
+ * chosen for them after the fact; the person sets the marker's unit first.
+ */
+export type ReadingRefusal = ConversionRefusal | "marker_unit_unset";
 
 export async function readingInMarkerUnit(
   client: Pick<PrismaClient, "biomarker" | "labResult">,
@@ -69,13 +77,15 @@ export async function readingInMarkerUnit(
 ): Promise<ReadingInMarkerUnit> {
   const { marker, value, unit, sourceReferenceLow, sourceReferenceHigh } =
     input;
-  if (
-    unit !== undefined &&
-    (await adoptFirstNumericUnit(client, marker, unit, {
-      low: sourceReferenceLow,
-      high: sourceReferenceHigh,
-    }))
-  ) {
+  const adoption =
+    unit === undefined
+      ? "kept"
+      : await adoptFirstNumericUnit(client, marker, unit, {
+          low: sourceReferenceLow,
+          high: sourceReferenceHigh,
+        });
+  if (adoption === "unset") return { ok: false, reason: "marker_unit_unset" };
+  if (adoption === "adopted") {
     return {
       ok: true,
       converted: false,
@@ -127,18 +137,23 @@ export async function readingInMarkerUnit(
 /**
  * A marker minted from a text result ("SEE NOTE", "negative") has no unit,
  * and once it holds a reading its unit is locked, so the first number to
- * arrive was refused against an empty unit nothing had ever chosen. The first
- * reading that states a unit gives the marker that unit, the dimensionless
- * "1" included. That holds too when the marker already holds numbers stored
- * without a unit (a value typed before any unit was chosen, #1421): they were
- * refused nothing then and stated nothing, and refusing every later reading
- * that does state one left the marker unable to take any. Those numbers take
- * the adopted unit with the marker. The update only matches a marker whose unit is
+ * arrive was refused against an empty unit nothing had ever chosen. While
+ * every reading the marker holds is text there is no number the unit could
+ * contradict, so the first numeric reading gives the marker its unit, the
+ * dimensionless "1" included. The update only matches a marker whose unit is
  * still empty, so two readings racing for it cannot both win; the loser reads
  * the winner's unit and is compared against it. `marker.unit` is set on the
  * caller's object, which writes the reading under it. The adoption is not in
  * the reading's transaction: if the write fails after it, the marker keeps
  * the unit the reading stated, which is the unit its next reading will state.
+ *
+ * A marker without a unit that already holds numbers (a value typed before
+ * any unit was chosen) does not take one from the next reading (#1421). Those
+ * numbers stated no unit, and stamping the incoming one on them could change
+ * their magnitude: a haemoglobin typed as 14 (meaning g/dL) would read as
+ * 14 g/L once a 140 g/L arrived. The reading is refused as
+ * `marker_unit_unset` instead, and the person sets the marker's unit, which
+ * is a decision about the numbers already held, before it is written.
  *
  * The range the marker holds came with no unit: the text result it was minted
  * from stated none. Numbers stated without a unit are dimensionless, so they
@@ -154,9 +169,13 @@ async function adoptFirstNumericUnit(
   marker: ReadingMarker,
   unit: string,
   printed: { low: number | null; high: number | null },
-): Promise<boolean> {
+): Promise<"adopted" | "kept" | "unset"> {
   const stated = unit.trim();
-  if (marker.unit.trim() !== "" || stated === "") return false;
+  if (marker.unit.trim() !== "" || stated === "") return "kept";
+  const numeric = await client.labResult.count({
+    where: { biomarkerId: marker.id, value: { not: null }, deletedAt: null },
+  });
+  if (numeric > 0) return "unset";
   const bounds = isDimensionlessUnit(stated)
     ? null
     : mintedBounds(printed.low, printed.high);
@@ -172,19 +191,12 @@ async function adoptFirstNumericUnit(
       select: { unit: true },
     });
     if (current) marker.unit = current.unit;
-    return false;
+    return "kept";
   }
-  // Numbers stored while the marker had no unit were stated in none. They
-  // take the unit with the marker, so every number it holds reads in one
-  // unit, which is how readers show them (from the marker) anyway.
-  await client.labResult.updateMany({
-    where: { biomarkerId: marker.id, unit: "", value: { not: null } },
-    data: { unit: stated },
-  });
   marker.unit = stated;
   if (bounds) {
     marker.lowerBound = bounds.lowerBound;
     marker.upperBound = bounds.upperBound;
   }
-  return true;
+  return "adopted";
 }

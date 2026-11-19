@@ -71,6 +71,7 @@ export type FhirLabSkipReason = (typeof FHIR_LAB_SKIP_REASONS)[number];
 export const FHIR_LAB_FAILURE_REASONS = [
   "missing_unit",
   "unit_mismatch",
+  "marker_unit_unset",
   "text_too_long",
   "write_failed",
 ] as const;
@@ -97,12 +98,6 @@ export const FHIR_LAB_IMPORT_REASONS = [
   ...FHIR_LAB_ARCHIVE_REASONS,
 ] as const;
 export type FhirLabImportReason = (typeof FHIR_LAB_IMPORT_REASONS)[number];
-
-export function isFhirLabImportReason(
-  value: string,
-): value is FhirLabImportReason {
-  return (FHIR_LAB_IMPORT_REASONS as readonly string[]).includes(value);
-}
 
 /** Bounded outcome counts, the only thing an import reports. */
 export interface FhirLabCounts {

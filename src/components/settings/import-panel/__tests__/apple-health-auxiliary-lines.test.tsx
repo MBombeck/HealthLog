@@ -61,6 +61,17 @@ describe("<AppleHealthAuxiliaryLines>", () => {
       "Not imported: unit does not match the marker (4), not a lab result (3).",
     );
     expect(html).not.toContain("bogus");
+    expect(
+      render({
+        labs: {
+          discovered: 2,
+          failed: 2,
+          reasons: { marker_unit_unset: 2 },
+        },
+      }),
+    ).toContain(
+      "Not imported: marker has values without a unit, set its unit first (2).",
+    );
     expect(render({ labs: { discovered: 1, imported: 1 } })).not.toContain(
       "Not imported",
     );

@@ -108,6 +108,9 @@
         "qualitativeExpected": "Gib für diesen qualitativen Laborwert ein Textergebnis ein.",
         "numericExpected": "Gib für diesen numerischen Laborwert eine Zahl ein.",
         "referenceRangeInvalid": "Der untere Referenzwert darf den oberen Wert nicht überschreiten."
+      },
+      "unit": {
+        "unset": "Dieser Marker hat Werte ohne Einheit. Lege zuerst die Einheit des Markers fest und trage den Wert dann ein."
       }
     },
     "onboarding": {
@@ -5978,6 +5981,7 @@
               "too_large": "zu groß",
               "missing_unit": "keine Einheit",
               "unit_mismatch": "Einheit passt nicht zum Marker",
+              "marker_unit_unset": "Marker hat Werte ohne Einheit, zuerst Einheit festlegen",
               "text_too_long": "Text zu lang",
               "write_failed": "konnte nicht gespeichert werden",
               "over_limit": "über der Grenze des Archivs",

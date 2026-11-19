@@ -8,8 +8,9 @@
 --      end instants: `workout:` + the first 28 hex characters of
 --      sha256(`activity|startMs|endMs`), the empty activity read as
 --      `Workout` (`workoutExternalId` in
---      src/lib/measurements/import-apple-health-export.ts; the two formulas
---      must stay equal). Here every export workout that carries its activity
+--      src/lib/measurements/apple-health-export-workouts.ts; the two formulas
+--      must stay equal, and a restore of an older backup collapses its
+--      copies by the same rule). Here every export workout that carries its activity
 --      type in `metadata` is grouped under that key per account. Each group
 --      keeps its oldest row; a route, a heart-rate series or an insight the
 --      kept row lacks moves over from the oldest copy that has one, an empty
@@ -24,11 +25,16 @@
 --      Records as text while the record held the same reading as the number,
 --      and the duplicate check compared text with text and number with number,
 --      so the export wrote it a second time. Of each such pair on one marker
---      and one reading day the newer row is soft-deleted when Apple Health
---      wrote it; its tombstone keeps its identity, so the next export does not
---      write it again. The reading day follows `labReadingDay`: a date-only
---      reading (stored at UTC midnight or noon) is its UTC date, any other is
---      the day in the account's time zone.
+--      the newer row is soft-deleted when Apple Health wrote it; its tombstone
+--      keeps its identity, so the next export does not write it again. A pair
+--      is one reading only when both were taken at the same effective instant
+--      (the same date when both state a date only, stored at UTC midnight or
+--      noon; the same moment otherwise) and state the number in the same unit:
+--      the text's printed unit, or the row's own when it prints none, against
+--      the number's stored unit or the unit it was printed in (compared here
+--      trimmed and case-folded). Serial draws on one day (a troponin at 0 h
+--      `<5`, at 3 h `5`) stay two readings. This is the rule `readingKeys` in
+--      src/lib/labs/reading-keys.ts applies.
 --
 -- Each part is one DO block, so it applies whole or not at all, and a second
 -- run finds nothing left to change. Marked for the boot's lock-timeout retry.
@@ -174,7 +180,7 @@ DO $migration$
 BEGIN
     PERFORM set_config('lock_timeout', '5s', true);
 
-    CREATE TEMP TABLE "_lab_reading_days" ON COMMIT DROP AS
+    CREATE TEMP TABLE "_lab_reading_instants" ON COMMIT DROP AS
     SELECT
         r."id",
         r."user_id",
@@ -182,6 +188,7 @@ BEGIN
         r."source",
         r."created_at",
         r."value",
+        lower(trim(r."unit")) AS "unit",
         r."source_value",
         lower(trim(r."source_unit")) AS "source_unit",
         CASE
@@ -190,16 +197,17 @@ BEGIN
         END AS "censored",
         CASE
             WHEN r."value" IS NULL THEN
-                lower(trim(substring(r."value_text" FROM '^\s*(?:<=|>=|≤|≥|<|>)\s*-?[0-9]+(?:\.[0-9]+)?\s+(.+)$')))
+                coalesce(
+                    lower(trim(substring(r."value_text" FROM '^\s*(?:<=|>=|≤|≥|<|>)\s*-?[0-9]+(?:\.[0-9]+)?\s+(.+)$'))),
+                    lower(trim(r."unit"))
+                )
         END AS "censored_unit",
         CASE
-            WHEN r."taken_at"::time IN (TIME '00:00', TIME '12:00') THEN r."taken_at"::date
-            ELSE (r."taken_at" AT TIME ZONE 'UTC' AT TIME ZONE coalesce(
-                (SELECT z."name" FROM pg_timezone_names z WHERE z."name" = u."timezone" LIMIT 1),
-                'Europe/Berlin'))::date
-        END AS "day"
+            WHEN r."taken_at"::time IN (TIME '00:00', TIME '12:00')
+                THEN 'd:' || r."taken_at"::date::text
+            ELSE 't:' || r."taken_at"::text
+        END AS "instant"
     FROM "lab_results" r
-    JOIN "users" u ON u."id" = r."user_id"
     WHERE r."deleted_at" IS NULL
       AND r."biomarker_id" IS NOT NULL
       AND r."user_id" IN (
@@ -223,18 +231,17 @@ BEGIN
                 WHEN (t."created_at", t."id") > (n."created_at", n."id") THEN t."source"
                 ELSE n."source"
             END AS "source"
-        FROM "_lab_reading_days" t
-        JOIN "_lab_reading_days" n
+        FROM "_lab_reading_instants" t
+        JOIN "_lab_reading_instants" n
           ON n."user_id" = t."user_id"
          AND n."biomarker_id" = t."biomarker_id"
-         AND n."day" = t."day"
+         AND n."instant" = t."instant"
          AND n."id" <> t."id"
          AND n."value" IS NOT NULL
          AND (
-             n."value" = t."censored"
+             (n."value" = t."censored" AND n."unit" = t."censored_unit")
              OR (
                  n."source_value" = t."censored"
-                 AND t."censored_unit" IS NOT NULL
                  AND n."source_unit" = t."censored_unit"
              )
          )

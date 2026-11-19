@@ -184,6 +184,7 @@ describe("lab rows", () => {
     expect(keys).toEqual([
       "bm:bm1|2025-03-01|n:39",
       "bm:bm1|2025-03-01|s:5.7:%",
+      "bm:bm1|d:2025-03-01|c:5.7:%",
     ]);
   });
 });

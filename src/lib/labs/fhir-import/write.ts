@@ -42,12 +42,13 @@ import {
   labReadingDay,
   labReadingDaySearchRange,
 } from "@/lib/labs/reading-day";
-import { readingKeys } from "@/lib/labs/reading-keys";
+import { READING_KEY_SELECT, readingKeys } from "@/lib/labs/reading-keys";
 import { encryptNoteToBytes } from "@/lib/labs/store";
 
 import { heldLabImportKeys } from "./import-keys";
 import {
   APPLE_HEALTH_LAB_SOURCE,
+  type FhirLabFailureReason,
   type FhirLabWriteStatus,
   type MappedFhirLab,
 } from "./types";
@@ -109,7 +110,7 @@ export async function writeFhirLabReadings(args: {
     statuses[at] = { status: "duplicate" };
     result.duplicate += 1;
   };
-  const failed = (at: number, reason: "unit_mismatch" | "write_failed") => {
+  const failed = (at: number, reason: FhirLabFailureReason) => {
     statuses[at] = { status: "failed", reason };
     result.failed += 1;
   };
@@ -224,7 +225,7 @@ export async function writeFhirLabReadings(args: {
 
       const built = await buildRow(client, userId, reading, index);
       if (!built.ok) {
-        failed(plan.at, "unit_mismatch");
+        failed(plan.at, built.reason);
         continue;
       }
       rows.push(built.row);
@@ -292,15 +293,7 @@ async function liveReadingKeys(
       },
       OR: [{ biomarkerId: { in: ids } }, { analyte: { in: names } }],
     },
-    select: {
-      biomarkerId: true,
-      analyte: true,
-      takenAt: true,
-      value: true,
-      valueText: true,
-      sourceValue: true,
-      sourceUnit: true,
-    },
+    select: READING_KEY_SELECT,
   });
   for (const e of existing) {
     for (const k of readingKeys(e, tz)) keys.add(k);
@@ -323,7 +316,7 @@ async function buildRow(
   index: MarkerIndex,
 ): Promise<
   | { ok: true; row: Prisma.LabResultCreateManyInput; markerId: string }
-  | { ok: false }
+  | { ok: false; reason: "unit_mismatch" | "marker_unit_unset" }
 > {
   const marker = await resolveOrMintBiomarker(
     userId,
@@ -353,7 +346,15 @@ async function buildRow(
       sourceReferenceLow: storedLow,
       sourceReferenceHigh: storedHigh,
     });
-    if (!converted.ok) return { ok: false };
+    if (!converted.ok) {
+      return {
+        ok: false,
+        reason:
+          converted.reason === "marker_unit_unset"
+            ? "marker_unit_unset"
+            : "unit_mismatch",
+      };
+    }
     storedValue = converted.value;
     storedLow = converted.sourceReferenceLow;
     storedHigh = converted.sourceReferenceHigh;

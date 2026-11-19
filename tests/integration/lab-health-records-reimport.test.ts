@@ -9,9 +9,12 @@
  *   - a reading already held under a unit the marker does not take is a
  *     duplicate, not a failure; a new one in that unit still fails;
  *   - a censored text result and the stored number it is bounded by are one
- *     reading, in both directions;
- *   - a marker with no unit that holds numbers takes the unit of the next
- *     reading instead of refusing it;
+ *     reading, in both directions, when both were taken at the same instant
+ *     and state the number in the same unit; serial draws on one day stay
+ *     two readings;
+ *   - a marker with no unit takes the unit of its first number while it
+ *     holds none; once it holds numbers stored without a unit, the next one
+ *     is refused as `marker_unit_unset` and nothing stored is relabelled;
  *   - `10^9/L` against `10*9/L` or `x10E3/uL`, and `ng/ml (FEU)` against
  *     `ng/mL (FEU)`, write without a refusal;
  *   - migration 0513 soft-deletes the censored copies the old check let in.
@@ -75,7 +78,12 @@ async function stored(
   name: string,
   value: { value?: number; valueText?: string },
   unit: string,
-  extra: { source?: string; createdAt?: Date; externalId?: string } = {},
+  extra: {
+    source?: string;
+    createdAt?: Date;
+    externalId?: string;
+    takenAt?: Date;
+  } = {},
 ) {
   return prisma.labResult.create({
     data: {
@@ -85,7 +93,7 @@ async function stored(
       value: value.value ?? null,
       valueText: value.valueText ?? null,
       unit,
-      takenAt: DAY,
+      takenAt: extra.takenAt ?? DAY,
       source: extra.source ?? "MANUAL",
       externalId: extra.externalId ?? null,
       createdAt: extra.createdAt,
@@ -112,7 +120,7 @@ describe("a reading the record already holds", () => {
 
   it("matches a censored text result against the stored number", async () => {
     const crp = await marker("CRP", "mg/L");
-    await stored(crp.id, "CRP", { value: 5 }, "mg/L");
+    await stored(crp.id, "CRP", { value: 5 }, "mg/L", { takenAt: DRAW });
     const result = await write([
       reading(1, {
         analyte: "CRP",
@@ -126,7 +134,9 @@ describe("a reading the record already holds", () => {
 
   it("matches a number against a stored censored text result", async () => {
     const ige = await marker("IgE", "kU/L");
-    await stored(ige.id, "IgE", { valueText: "<0.1" }, "kU/L");
+    await stored(ige.id, "IgE", { valueText: "<0.1" }, "kU/L", {
+      takenAt: DRAW,
+    });
     const result = await write([
       reading(1, { analyte: "IgE", value: 0.1, unit: "kU/L" }),
       reading(2, { analyte: "IgE", value: 0.2, unit: "kU/L" }),
@@ -138,22 +148,74 @@ describe("a reading the record already holds", () => {
   });
 });
 
-describe("a new reading", () => {
-  it("gives a marker without a unit the unit it states, numbers held included", async () => {
-    const b12 = await marker("Vitamin B12", "");
-    const old = await stored(b12.id, "Vitamin B12", { value: 900 }, "");
+describe("a censored result that is another reading", () => {
+  it("keeps serial draws on one day apart", async () => {
+    // A high-sensitivity troponin at 0 h below the limit, at 3 h at it.
+    const troponin = await marker("Troponin T hs", "ng/L");
+    await stored(troponin.id, "Troponin T hs", { value: 5 }, "ng/L", {
+      takenAt: new Date("2026-06-10T11:30:00.000Z"),
+    });
     const result = await write([
-      reading(1, { analyte: "Vitamin B12", value: 905, unit: "pg/mL" }),
+      reading(1, {
+        analyte: "Troponin T hs",
+        value: null,
+        valueText: "<5",
+        unit: "ng/L",
+        takenAt: new Date("2026-06-10T08:30:00.000Z"),
+      }),
+    ]);
+    expect(result.statuses).toEqual([{ status: "inserted" }]);
+  });
+
+  it("does not meet a number stored in another unit", async () => {
+    const crp = await marker("CRP", "mg/L");
+    await stored(crp.id, "CRP", { value: 5 }, "mg/L", { takenAt: DRAW });
+    const result = await write([
+      reading(1, {
+        analyte: "CRP",
+        value: null,
+        valueText: "<5 mg/dL",
+        unit: "mg/dL",
+      }),
+    ]);
+    expect(result.statuses).toEqual([{ status: "inserted" }]);
+  });
+});
+
+describe("a new reading", () => {
+  it("gives a marker without a unit the unit it states while it holds no number", async () => {
+    const ratio = await marker("Albumin/creatinine", "");
+    await stored(ratio.id, "Albumin/creatinine", { valueText: "SEE NOTE" }, "");
+    const result = await write([
+      reading(1, { analyte: "Albumin/creatinine", value: 12, unit: "mg/g" }),
     ]);
     expect(result.statuses).toEqual([{ status: "inserted" }]);
     expect(
-      (await prisma.biomarker.findUniqueOrThrow({ where: { id: b12.id } }))
+      (await prisma.biomarker.findUniqueOrThrow({ where: { id: ratio.id } }))
         .unit,
-    ).toBe("pg/mL");
+    ).toBe("mg/g");
+  });
+
+  it("refuses a number under a marker without a unit that holds numbers", async () => {
+    const hb = await marker("Haemoglobin", "");
+    const old = await stored(hb.id, "Haemoglobin", { value: 14 }, "");
+    const result = await write([
+      reading(1, { analyte: "Haemoglobin", value: 140, unit: "g/L" }),
+    ]);
+    expect(result.statuses).toEqual([
+      { status: "failed", reason: "marker_unit_unset" },
+    ]);
     expect(
-      (await prisma.labResult.findUniqueOrThrow({ where: { id: old.id } }))
-        .unit,
-    ).toBe("pg/mL");
+      (await prisma.biomarker.findUniqueOrThrow({ where: { id: hb.id } })).unit,
+    ).toBe("");
+    const kept = await prisma.labResult.findUniqueOrThrow({
+      where: { id: old.id },
+    });
+    expect(kept.unit).toBe("");
+    expect(kept.value).toBe(14);
+    expect(
+      await prisma.labResult.count({ where: { biomarkerId: hb.id } }),
+    ).toBe(1);
   });
 
   it("writes under a marker that spells its count unit another way", async () => {
@@ -204,6 +266,49 @@ describe("migration 0513 on stored censored copies", () => {
     const egfr = await marker("eGFR", "mL/min");
     const number = await stored(crp.id, "CRP", { value: 5 }, "mg/L", {
       createdAt: new Date("2026-06-11T00:00:00Z"),
+      takenAt: DRAW,
+    });
+    // Serial draws on one day: 0 h below the limit, 3 h at it. Both stay.
+    const troponin = await marker("Troponin T hs", "ng/L");
+    const firstDraw = await prisma.labResult.create({
+      data: {
+        userId: USER,
+        biomarkerId: troponin.id,
+        analyte: "Troponin T hs",
+        valueText: "<5",
+        unit: "ng/L",
+        takenAt: new Date("2026-06-10T08:30:00.000Z"),
+        source: "APPLE_HEALTH",
+        externalId: "fhir:clinic:tnt-0h",
+        createdAt: new Date("2026-11-18T00:00:00Z"),
+      },
+    });
+    const secondDraw = await prisma.labResult.create({
+      data: {
+        userId: USER,
+        biomarkerId: troponin.id,
+        analyte: "Troponin T hs",
+        value: 5,
+        unit: "ng/L",
+        takenAt: new Date("2026-06-10T11:30:00.000Z"),
+        source: "APPLE_HEALTH",
+        externalId: "fhir:clinic:tnt-3h",
+        createdAt: new Date("2026-11-18T00:00:01Z"),
+      },
+    });
+    // The same instant, but the bound is printed in another unit: stays.
+    const otherUnit = await prisma.labResult.create({
+      data: {
+        userId: USER,
+        biomarkerId: crp.id,
+        analyte: "CRP",
+        valueText: "<5 mg/dL",
+        unit: "mg/L",
+        takenAt: DRAW,
+        source: "APPLE_HEALTH",
+        externalId: "fhir:clinic:crp-dl",
+        createdAt: new Date("2026-11-18T00:00:00Z"),
+      },
     });
     const copy = await prisma.labResult.create({
       data: {
@@ -251,6 +356,9 @@ describe("migration 0513 on stored censored copies", () => {
     expect(await deletedAt(otherDay.id)).toBeNull();
     expect(await deletedAt(otherValue.id)).toBeNull();
     expect(await deletedAt(typed.id)).toBeNull();
+    expect(await deletedAt(firstDraw.id)).toBeNull();
+    expect(await deletedAt(secondDraw.id)).toBeNull();
+    expect(await deletedAt(otherUnit.id)).toBeNull();
 
     // A second application changes nothing.
     const before = await prisma.labResult.findMany({ orderBy: { id: "asc" } });

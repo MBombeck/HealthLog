@@ -108,6 +108,9 @@
         "qualitativeExpected": "Wprowadź wynik tekstowy dla tego odczytu jakościowego.",
         "numericExpected": "Wprowadź liczbę dla tego odczytu ilościowego.",
         "referenceRangeInvalid": "Dolna wartość referencyjna nie może przekraczać górnej."
+      },
+      "unit": {
+        "unset": "Ten marker ma wartości zapisane bez jednostki. Najpierw ustaw jednostkę markera, a potem dodaj wynik."
       }
     },
     "onboarding": {
@@ -5978,6 +5981,7 @@
               "too_large": "za duży",
               "missing_unit": "brak jednostki",
               "unit_mismatch": "jednostka nie pasuje do markera",
+              "marker_unit_unset": "marker ma wartości bez jednostki, najpierw ustaw jednostkę",
               "text_too_long": "za długi tekst",
               "write_failed": "nie udało się zapisać",
               "over_limit": "ponad limit archiwum",

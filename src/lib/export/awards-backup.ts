@@ -286,6 +286,8 @@ export async function restoreAwardsData(
   payload: AwardsRestoreInput,
   measurementIds: ReadonlySet<string>,
   skips: RestoreSkipLog,
+  /** Workout keys the workout step changed (old key to new key). */
+  workoutKeyByLegacyKey: ReadonlyMap<string, string> = new Map(),
 ): Promise<AwardsRestoreCleared> {
   const [clearedRecords, clearedAchievements] = await Promise.all([
     tx.personalRecord.deleteMany({ where: { userId: ownerId } }),
@@ -324,7 +326,13 @@ export async function restoreAwardsData(
           // A file written before the column existed says nothing about it,
           // and the schema default is what those rows were living as.
           source: entry.source ?? "MANUAL",
-          externalId: entry.externalId ?? null,
+          // A best set by an export workout the restore collapsed names the
+          // row that was kept.
+          externalId:
+            entry.source === "APPLE_HEALTH" && entry.externalId
+              ? (workoutKeyByLegacyKey.get(entry.externalId) ??
+                entry.externalId)
+              : (entry.externalId ?? null),
           ...(entry.createdAt ? { createdAt: new Date(entry.createdAt) } : {}),
         };
       }),

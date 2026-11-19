@@ -38,12 +38,28 @@ export interface PreparedWorkout {
   routePath?: string;
   /** Totals from the workout's `<WorkoutStatistics>` children. */
   statistics: WorkoutStatisticsTotals;
+  /**
+   * The totals `fillFromWorkoutStatistics` took from the statistics rather
+   * than the attributes. On a re-import they only fill a stored total that
+   * is empty; they never replace one.
+   */
+  filledFromStatistics?: WorkoutTotalField[];
 }
+
+export type WorkoutTotalField =
+  | "totalEnergyKcal"
+  | "totalDistanceM"
+  | "avgHeartRate"
+  | "minHeartRate"
+  | "maxHeartRate";
 
 /**
  * What a workout's `<WorkoutStatistics>` children add up to. Current iOS
  * exports carry the totals there rather than as attributes on `<Workout>`;
- * they fill a field only where the attributes left it empty.
+ * they fill a field only where the attributes left it empty. Only the
+ * workout's direct children count: a multisport workout repeats its
+ * statistics per leg inside `<WorkoutActivity>`, and adding those as well
+ * would count every leg twice (the parser skips them).
  */
 interface WorkoutStatisticsTotals {
   energyKcal: number | null;
@@ -124,7 +140,7 @@ function bpm(raw: string | undefined, unit: string): number | null {
  * active energy and every distance type as sums in the canonical units, the
  * heart rate's average, minimum and maximum. Other types are ignored.
  */
-export function addWorkoutStatistics(
+function addWorkoutStatistics(
   totals: WorkoutStatisticsTotals,
   attrs: Record<string, string>,
 ): void {
@@ -153,14 +169,55 @@ export function addWorkoutStatistics(
   }
 }
 
-/** The statistics fill each field the `<Workout>` attributes left empty. */
-export function fillFromWorkoutStatistics(workout: PreparedWorkout): void {
+/**
+ * The statistics fill each field the `<Workout>` attributes left empty, and
+ * the workout notes which fields they filled.
+ */
+function fillFromWorkoutStatistics(workout: PreparedWorkout): void {
   const stats = workout.statistics;
-  workout.totalEnergyKcal ??= stats.energyKcal;
-  workout.totalDistanceM ??= stats.distanceM;
-  workout.avgHeartRate ??= stats.avgHeartRate;
-  workout.minHeartRate ??= stats.minHeartRate;
-  workout.maxHeartRate ??= stats.maxHeartRate;
+  const filled: WorkoutTotalField[] = [];
+  const fill = (field: WorkoutTotalField, value: number | null) => {
+    if (workout[field] !== null || value === null) return;
+    workout[field] = value;
+    filled.push(field);
+  };
+  fill("totalEnergyKcal", stats.energyKcal);
+  fill("totalDistanceM", stats.distanceM);
+  fill("avgHeartRate", stats.avgHeartRate);
+  fill("minHeartRate", stats.minHeartRate);
+  fill("maxHeartRate", stats.maxHeartRate);
+  workout.filledFromStatistics = filled;
+}
+
+const WORKOUT_TOTAL_FIELDS: readonly WorkoutTotalField[] = [
+  "totalEnergyKcal",
+  "totalDistanceM",
+  "avgHeartRate",
+  "minHeartRate",
+  "maxHeartRate",
+];
+
+/**
+ * What a re-import writes over a stored workout's totals. A total the export
+ * does not state leaves the stored one. One taken from the statistics only
+ * fills a stored total that is empty: a total stored earlier (from an older
+ * export's attributes, or entered by hand) is not replaced by a sum.
+ */
+export function workoutTotalsUpdate(
+  row: PreparedWorkout,
+  stored: Record<WorkoutTotalField, number | null> | undefined,
+): Partial<Record<WorkoutTotalField, number>> {
+  const fromStatistics = new Set(row.filledFromStatistics ?? []);
+  const out: Partial<Record<WorkoutTotalField, number>> = {};
+  for (const field of WORKOUT_TOTAL_FIELDS) {
+    const value = row[field];
+    if (value === null) continue;
+    if (fromStatistics.has(field) && (stored?.[field] ?? null) !== null) {
+      continue;
+    }
+    out[field] = value;
+  }
+  return out;
 }
 
 /**
@@ -231,4 +288,87 @@ export async function adoptLegacyWorkoutKeys(
     keys.delete(row.legacyExternalId);
     keys.add(row.externalId);
   }
+}
+
+/**
+ * Where the parser stands among a workout's children, and the workouts the
+ * export has already stated.
+ *
+ * A multisport workout (iOS 16+) repeats its `<WorkoutStatistics>` per leg
+ * inside `<WorkoutActivity>`; only the workout's direct children count, or
+ * every leg would be added twice. A workout stated twice in one export (the
+ * same activity, start and end, from the watch and from another app) is
+ * admitted once: the first stands, the repeat neither inserts nor updates.
+ */
+export function exportWorkoutTracker() {
+  let activityDepth = 0;
+  const seen = new Set<string>();
+  return {
+    /**
+     * An element opening inside the current workout. True when it was a
+     * `<WorkoutActivity>` or a `<WorkoutStatistics>` (folded in when it is
+     * the workout's own), so the parser has nothing left to do with it.
+     */
+    open(
+      name: string,
+      workout: PreparedWorkout,
+      attrs: Record<string, string>,
+    ): boolean {
+      if (name === "WorkoutActivity") {
+        activityDepth += 1;
+        return true;
+      }
+      if (name !== "WorkoutStatistics") return false;
+      if (activityDepth === 0) addWorkoutStatistics(workout.statistics, attrs);
+      return true;
+    },
+    leaveActivity(): void {
+      if (activityDepth > 0) activityDepth -= 1;
+    },
+    /**
+     * At `</Workout>`: false for a repeat. Otherwise the statistics fill the
+     * totals, the route is handed on, and the workout is to be written.
+     */
+    admit(
+      workout: PreparedWorkout,
+      onRoute:
+        ((ref: { externalId: string; path: string }) => void) | undefined,
+    ): boolean {
+      activityDepth = 0;
+      if (seen.has(workout.externalId)) return false;
+      seen.add(workout.externalId);
+      fillFromWorkoutStatistics(workout);
+      if (workout.routePath && onRoute) {
+        onRoute({ externalId: workout.externalId, path: workout.routePath });
+      }
+      return true;
+    },
+  };
+}
+
+/** The stored totals of the given export workouts, by key. */
+export async function storedWorkoutTotals(
+  prisma: Pick<PrismaClient, "workout">,
+  userId: string,
+  rows: readonly PreparedWorkout[],
+): Promise<Map<string, Record<WorkoutTotalField, number | null>>> {
+  const out = new Map<string, Record<WorkoutTotalField, number | null>>();
+  if (rows.length === 0) return out;
+  const held = await prisma.workout.findMany({
+    where: {
+      userId,
+      source: "APPLE_HEALTH",
+      externalId: { in: rows.map((row) => row.externalId) },
+    },
+    select: {
+      externalId: true,
+      totalEnergyKcal: true,
+      totalDistanceM: true,
+      avgHeartRate: true,
+      minHeartRate: true,
+      maxHeartRate: true,
+    },
+  });
+  for (const row of held) if (row.externalId) out.set(row.externalId, row);
+  return out;
 }

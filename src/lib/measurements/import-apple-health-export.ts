@@ -69,10 +69,11 @@ import {
 } from "@/lib/export/measurement-bulk-insert";
 import { resolveHkWorkoutSportType } from "@/lib/measurements/hk-workout-activity-type-map";
 import {
-  addWorkoutStatistics,
   adoptLegacyWorkoutKeys,
   exportWorkoutFigures,
-  fillFromWorkoutStatistics,
+  exportWorkoutTracker,
+  storedWorkoutTotals,
+  workoutTotalsUpdate,
   workoutExternalId,
   type PreparedWorkout,
 } from "@/lib/measurements/apple-health-export-workouts";
@@ -135,6 +136,8 @@ export interface ImportJobResult {
     read: number;
     inserted: number;
     updated: number;
+    duplicate: number; // repeats of a workout the export already stated
+
     unknownActivityType: number;
     routesAttached: number;
     durationMs: number;
@@ -491,6 +494,7 @@ export async function streamParseExportXml(
     read: 0,
     inserted: 0,
     updated: 0,
+    duplicate: 0,
     unknownActivityType: 0,
     routesAttached: 0,
     durationMs: 0,
@@ -994,6 +998,11 @@ export async function streamParseExportXml(
       else createdByExternalId.set(created.externalId, [created]);
     }
 
+    const storedTotals = await storedWorkoutTotals(
+      prisma,
+      userId,
+      chunk.filter((row) => !createdByExternalId.has(row.externalId)),
+    );
     for (const row of chunk) {
       const rowStart = Date.now();
       const inserted = createdByExternalId.get(row.externalId)?.shift();
@@ -1014,14 +1023,8 @@ export async function streamParseExportXml(
             startedAt: row.startedAt,
             endedAt: row.endedAt,
             durationSec: row.durationSec,
-            // An export that does not state a total leaves the stored one:
-            // an older export's attributes, or the statistics a newer one
-            // carried, are not erased by a file that lacks them.
-            totalEnergyKcal: row.totalEnergyKcal ?? undefined,
-            totalDistanceM: row.totalDistanceM ?? undefined,
-            avgHeartRate: row.avgHeartRate ?? undefined,
-            minHeartRate: row.minHeartRate ?? undefined,
-            maxHeartRate: row.maxHeartRate ?? undefined,
+            // Fills or replaces only what it may (`workoutTotalsUpdate`).
+            ...workoutTotalsUpdate(row, storedTotals.get(row.externalId)),
             externalSourceVersion: row.externalSourceVersion,
             metadata: row.metadata ?? undefined,
           },
@@ -1185,6 +1188,7 @@ export async function streamParseExportXml(
   const parser = sax.parser(true, { trim: true });
   let pendingError: Error | null = null;
   let currentWorkout: PreparedWorkout | null = null;
+  const exportWorkouts = exportWorkoutTracker();
 
   // Apple stamps the archive with its own export instant as the first
   // child of `<HealthData>`. The element used to be on the ignore list,
@@ -1433,8 +1437,8 @@ export async function streamParseExportXml(
       return;
     }
 
-    if (name === "WorkoutStatistics" && currentWorkout) {
-      addWorkoutStatistics(currentWorkout.statistics, attrs);
+    // A workout's `<WorkoutStatistics>` and `<WorkoutActivity>` children.
+    if (currentWorkout && exportWorkouts.open(name, currentWorkout, attrs)) {
       return;
     }
 
@@ -1536,15 +1540,11 @@ export async function streamParseExportXml(
         );
       }
     }
+    if (tagName === "WorkoutActivity") exportWorkouts.leaveActivity();
     if (tagName === "Workout" && currentWorkout) {
-      fillFromWorkoutStatistics(currentWorkout);
-      if (currentWorkout.routePath && onWorkoutRoute) {
-        onWorkoutRoute({
-          externalId: currentWorkout.externalId,
-          path: currentWorkout.routePath,
-        });
-      }
-      workoutBatch.push(currentWorkout);
+      if (exportWorkouts.admit(currentWorkout, onWorkoutRoute)) {
+        workoutBatch.push(currentWorkout);
+      } else workouts.duplicate += 1;
       currentWorkout = null;
     }
     if (tagName === "Record" && currentCycleRecord) {
