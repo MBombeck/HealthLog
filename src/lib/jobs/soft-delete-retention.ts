@@ -259,7 +259,10 @@ export function purgeModels(): string[] {
     .map(([model]) => model);
 }
 
-/** Run every `purge` entry, one table after the other. */
+/**
+ * Run every `purge` entry, one table after the other, then the Apple Health
+ * tombstone ledger.
+ */
 export async function purgeSoftDeletedRows(
   prisma: PrismaClient,
   now: Date = new Date(),
@@ -268,5 +271,41 @@ export async function purgeSoftDeletedRows(
   for (const model of purgeModels()) {
     legs.push(await purgeSoftDeletedTable(prisma, model, now));
   }
+  legs.push(await purgeAppleHealthTombstoneLedger(prisma, now));
   return legs;
+}
+
+/**
+ * The ledger of Apple Health workouts and ECGs the phone reported deleted
+ * (`apple-health-tombstones.ts`) holds no soft-deleted rows, so it is not in
+ * the register; its line is the deletion, dated by `created_at`. It is kept
+ * exactly as long as a soft-delete tombstone, so the rule is one: a deleted
+ * Apple Health sample stays deleted for `TOMBSTONE_RETENTION_DAYS`, past
+ * which the phone has re-paired and re-sends only what HealthKit still holds.
+ */
+async function purgeAppleHealthTombstoneLedger(
+  prisma: PrismaClient,
+  now: Date,
+): Promise<SoftDeletePurgeLeg> {
+  const cutoff = new Date(now.getTime() - TOMBSTONE_RETENTION_DAYS * DAY_MS);
+  const outcome = await purgeTombstonesByAccount({
+    prisma,
+    findRows: (take, skipUserIds) =>
+      prisma.appleHealthTombstone.findMany({
+        where: { createdAt: { lt: cutoff }, userId: { notIn: skipUserIds } },
+        select: { id: true, userId: true },
+        take,
+      }),
+    deleteIds: async (tx, ids, userId) =>
+      (
+        await tx.appleHealthTombstone.deleteMany({
+          where: { id: { in: ids }, userId, createdAt: { lt: cutoff } },
+        })
+      ).count,
+  });
+  return {
+    ...outcome,
+    model: "AppleHealthTombstone",
+    table: "apple_health_tombstones",
+  };
 }
