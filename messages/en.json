@@ -12420,7 +12420,8 @@
       "noVisitsToLink": "No visits recorded yet.",
       "noVaccinationsToLink": "No vaccinations recorded yet.",
       "saved": "Changes saved",
-      "saving": "Saving…"
+      "saving": "Saving…",
+      "previewNotOnDevice": "This browser cannot show PDFs inside the page"
     },
     "dropOverlay": {
       "title": "Drop files to upload",

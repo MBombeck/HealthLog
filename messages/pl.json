@@ -12420,7 +12420,8 @@
       "noVisitsToLink": "Nie zapisano jeszcze żadnych wizyt.",
       "noVaccinationsToLink": "Nie zapisano jeszcze żadnych szczepień.",
       "saved": "Zmiany zapisane",
-      "saving": "Zapisywanie…"
+      "saving": "Zapisywanie…",
+      "previewNotOnDevice": "Ta przeglądarka nie wyświetla plików PDF na stronie"
     },
     "dropOverlay": {
       "title": "Upuść pliki, aby je przesłać",

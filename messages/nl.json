@@ -12420,7 +12420,8 @@
       "noVisitsToLink": "Nog geen bezoeken vastgelegd.",
       "noVaccinationsToLink": "Nog geen vaccinaties vastgelegd.",
       "saved": "Wijzigingen opgeslagen",
-      "saving": "Opslaan…"
+      "saving": "Opslaan…",
+      "previewNotOnDevice": "Deze browser kan pdf's niet in de pagina tonen"
     },
     "dropOverlay": {
       "title": "Zet bestanden neer om te uploaden",

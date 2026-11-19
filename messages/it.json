@@ -12420,7 +12420,8 @@
       "noVisitsToLink": "Nessuna visita registrata finora.",
       "noVaccinationsToLink": "Nessuna vaccinazione registrata finora.",
       "saved": "Modifiche salvate",
-      "saving": "Salvataggio…"
+      "saving": "Salvataggio…",
+      "previewNotOnDevice": "Questo browser non può mostrare i PDF nella pagina"
     },
     "dropOverlay": {
       "title": "Rilascia i file per caricarli",

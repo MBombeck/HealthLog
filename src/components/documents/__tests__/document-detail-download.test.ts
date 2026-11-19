@@ -37,8 +37,14 @@ describe("the detail sheet's original-document transport", () => {
   it("only fetches eagerly for a document it is going to render inline", () => {
     // The whole point of the single loader: a non-inline document — a large
     // scan, a download-only format — fetches and decrypts nothing on open.
+    // A PDF on a browser with no in-page viewer counts as not inline
+    // (#1403), so it too waits for the click.
     expect(SHEET).toMatch(
-      /useFencedObjectUrl\(\s*\n?\s*doc && doc\.servingClass === "inline"/,
+      /const previewInline = doc \? rendersInline\(doc, pdfViewerEnabled\) : false;/,
+    );
+    expect(SHEET).toMatch(/useFencedObjectUrl\(\s*\n?\s*doc && previewInline/);
+    expect(SHEET).toMatch(
+      /if \(doc\.servingClass !== "inline"\) return false;/,
     );
   });
 
@@ -99,7 +105,7 @@ describe("the detail sheet's open-in-new-tab control", () => {
 
   it("renders only for the inline serving class", () => {
     expect(SHEET).toMatch(
-      /doc\.servingClass === "inline" \? \(\s*\n\s*<DocumentOpenInTabButton\s+readyUrl=\{inlineSrc\}/,
+      /detail\.previewInline \? \(\s*\n\s*<DocumentOpenInTabButton\s+readyUrl=\{inlineSrc\}/,
     );
     expect([...SHEET.matchAll(/<DocumentOpenInTabButton\s/g)]).toHaveLength(1);
   });

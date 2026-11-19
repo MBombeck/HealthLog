@@ -147,6 +147,16 @@ test.describe("document vault", () => {
   // mocked AI routes below are what the surfaces talk to.
   test.beforeEach(async ({ page }) => {
     await serveAiBlock(page, aiBlockAvailable());
+    // The sheet frames a PDF only where the browser reports an in-page PDF
+    // viewer. Headless Chromium reports none, so the suite stands in for the
+    // desktop browser the preview tests are about; the test for a browser
+    // without a viewer overrides it.
+    await page.addInitScript(() => {
+      Object.defineProperty(Navigator.prototype, "pdfViewerEnabled", {
+        configurable: true,
+        get: () => true,
+      });
+    });
   });
 
   test.use({ storageState: VAULT_STORAGE_STATE_PATH });
@@ -273,6 +283,33 @@ test.describe("document vault", () => {
     expect(opened).toEqual([[previewSrc, "_blank", "noopener"]]);
     // The sheet stays where it was.
     await expect(sheet).toBeVisible();
+  });
+
+  test("a browser without a PDF viewer gets the download block, not a frame", async ({
+    page,
+  }) => {
+    // #1403 — Chrome on Android has no in-page PDF viewer; the framed PDF
+    // went down the download path and, on a plain-http origin, painted
+    // Chrome's "This content is blocked" page inside the sheet.
+    await page.addInitScript(() => {
+      Object.defineProperty(Navigator.prototype, "pdfViewerEnabled", {
+        configurable: true,
+        get: () => false,
+      });
+    });
+    await page.goto(`/documents?episode=${KNIE_EPISODE_ID}&view=compact&q=MRT`);
+    await openButton(page, "MRT Knie").click();
+    const sheet = page.getByRole("dialog", { name: "MRT Knie" });
+    await expect(
+      sheet.locator('[data-slot="document-preview-not-on-device"]'),
+    ).toBeVisible();
+    await expect(sheet.locator("iframe")).toHaveCount(0);
+    await expect(
+      sheet.locator('[data-slot="document-open-in-tab"]'),
+    ).toHaveCount(0);
+    await expect(
+      sheet.locator('[data-slot="document-download-inline"]'),
+    ).toBeEnabled();
   });
 
   test("doctor flow B: the condition filter reaches the MRT report", async ({

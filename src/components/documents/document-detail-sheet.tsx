@@ -93,6 +93,7 @@ export function DocumentDetailSheet({
     setSuggestedEncounter,
     title,
     Icon,
+    previewInline,
     inlineSrc,
     inlineFailed,
   } = detail;
@@ -189,7 +190,7 @@ export function DocumentDetailSheet({
 
         {doc ? (
           <div className="space-y-6">
-            {doc.servingClass === "inline" ? (
+            {previewInline ? (
               <InlinePreview
                 src={inlineSrc}
                 failed={inlineFailed}
@@ -204,9 +205,18 @@ export function DocumentDetailSheet({
                 <p className="max-w-full truncate text-sm font-medium">
                   {doc.filename ?? title}
                 </p>
-                <p className="text-muted-foreground text-xs">
-                  {t("documents.detail.previewUnavailable")},{" "}
-                  {formatBytes(doc.byteSize, locale)}
+                <p
+                  className="text-muted-foreground text-xs"
+                  data-slot={
+                    doc.servingClass === "inline"
+                      ? "document-preview-not-on-device"
+                      : undefined
+                  }
+                >
+                  {doc.servingClass === "inline"
+                    ? t("documents.detail.previewNotOnDevice")
+                    : t("documents.detail.previewUnavailable")}
+                  , {formatBytes(doc.byteSize, locale)}
                 </p>
                 <DocumentDownloadButton
                   documentId={doc.id}

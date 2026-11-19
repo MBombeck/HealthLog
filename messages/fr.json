@@ -12420,7 +12420,8 @@
       "noVisitsToLink": "Aucune consultation enregistrée pour l’instant.",
       "noVaccinationsToLink": "Aucune vaccination enregistrée pour l’instant.",
       "saved": "Modifications enregistrées",
-      "saving": "Enregistrement…"
+      "saving": "Enregistrement…",
+      "previewNotOnDevice": "Ce navigateur ne peut pas afficher les PDF dans la page"
     },
     "dropOverlay": {
       "title": "Déposez les fichiers pour les téléverser",

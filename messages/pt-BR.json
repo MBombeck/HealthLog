@@ -12420,7 +12420,8 @@
       "noVisitsToLink": "Nenhuma consulta registrada ainda.",
       "noVaccinationsToLink": "Nenhuma vacina registrada ainda.",
       "saved": "Alterações salvas",
-      "saving": "Salvando…"
+      "saving": "Salvando…",
+      "previewNotOnDevice": "Este navegador não consegue exibir PDFs dentro da página"
     },
     "dropOverlay": {
       "title": "Solte arquivos para enviar",

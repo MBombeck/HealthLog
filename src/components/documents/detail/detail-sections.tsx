@@ -173,7 +173,9 @@ export function DocumentDetailFooter({
             </span>
           </Button>
         )}
-        {doc.servingClass === "inline" ? (
+        {/* A blob tab on a browser with no PDF viewer would only start the
+            same download the button beside it offers. */}
+        {detail.previewInline ? (
           <DocumentOpenInTabButton
             readyUrl={inlineSrc}
             unavailable={inlineFailed}

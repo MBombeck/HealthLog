@@ -30,6 +30,7 @@ import type {
 } from "@/lib/validations/inbound-documents";
 
 import { DOCUMENT_KIND_ICONS } from "../document-kind-meta";
+import { rendersInline, usePdfViewerEnabled } from "./original-file";
 
 export type PatchInput = {
   title?: string | null;
@@ -213,10 +214,13 @@ export function useDocumentDetail({
   // narrow path is the point: a non-inline document (a large scan, a
   // download-only format) fetched nothing until somebody clicked, and it must
   // stay that way — this used to fetch for every document on open, twice.
+  //
+  // A PDF on a browser with no in-page viewer (Chrome on Android) is not
+  // going to render, so it is fetched at click like any download.
+  const pdfViewerEnabled = usePdfViewerEnabled();
+  const previewInline = doc ? rendersInline(doc, pdfViewerEnabled) : false;
   const { url: inlineSrc, failed: inlineFailed } = useFencedObjectUrl(
-    doc && doc.servingClass === "inline"
-      ? `/api/documents/inbound/${doc.id}/original`
-      : null,
+    doc && previewInline ? `/api/documents/inbound/${doc.id}/original` : null,
   );
 
   return {
@@ -248,6 +252,7 @@ export function useDocumentDetail({
     title,
     sourceSystemName,
     Icon,
+    previewInline,
     inlineSrc,
     inlineFailed,
   };
