@@ -2912,9 +2912,13 @@ describe("the account's own settings survive a real restore", () => {
     // Nothing but setting columns reaches the file, and no secret at all.
     const section = (JSON.parse(json) as { accountSettings: object })
       .accountSettings;
+    // The Local address keeps its pre-1.48.3 key in the file, so a file
+    // written here still restores on an older image.
+    const wireAliases: Record<string, string> = { aiBaseUrl: "aiLocalBaseUrl" };
     expect(
       Object.keys(section).filter(
-        (key) => !settings.has(key) && key !== "insuranceNumber",
+        (key) =>
+          !settings.has(wireAliases[key] ?? key) && key !== "insuranceNumber",
       ),
     ).toEqual([]);
 
