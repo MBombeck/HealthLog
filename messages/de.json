@@ -9145,7 +9145,10 @@
         "recovery_kit": "Das Wiederherstellungs-Kit ist wieder bestätigt.",
         "dump_retention": "Eine Lebenszyklus-Regel im Bucket erfasst jetzt die Datenbank-Dumps."
       }
-    }
+    },
+    "auditActedBy": "durch {name}",
+    "auditActorDeleted": "ein gelöschtes Konto",
+    "auditActedByColumn": "Ausgeführt von"
   },
   "achievements": {
     "title": "Erfolge",
@@ -12390,7 +12393,8 @@
       "browse": "Dateien auswählen",
       "quotaAlmostFull": "Speicher fast voll",
       "quotaUsed": "{used} von {quota} belegt",
-      "queuedAnnouncement": "{count} Datei(en) zur Upload-Warteschlange hinzugefügt"
+      "queuedAnnouncement": "{count} Datei(en) zur Upload-Warteschlange hinzugefügt",
+      "storageUsed": "Speicher: {used} von {quota} belegt"
     },
     "selection": {
       "count": "{count} ausgewählt",
@@ -12453,7 +12457,10 @@
       "visitsLabel": "Gehört zu Termin",
       "vaccinationsLabel": "Impfungen",
       "noVisitsToLink": "Noch keine Termine erfasst.",
-      "noVaccinationsToLink": "Noch keine Impfungen erfasst."
+      "noVaccinationsToLink": "Noch keine Impfungen erfasst.",
+      "saved": "Änderungen gespeichert",
+      "saving": "Wird gespeichert…",
+      "previewNotOnDevice": "Dieser Browser kann PDFs nicht in der Seite anzeigen"
     },
     "dropOverlay": {
       "title": "Zum Hochladen ablegen",

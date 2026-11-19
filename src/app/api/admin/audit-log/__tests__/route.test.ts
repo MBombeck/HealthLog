@@ -8,6 +8,9 @@ vi.mock("@/lib/db", () => ({
       count: vi.fn(),
       groupBy: vi.fn(),
     },
+    user: {
+      findMany: vi.fn(),
+    },
   },
 }));
 
@@ -52,6 +55,7 @@ beforeEach(() => {
   vi.mocked(prisma.auditLog.findMany).mockResolvedValue([]);
   vi.mocked(prisma.auditLog.count).mockResolvedValue(0);
   vi.mocked(prisma.auditLog.groupBy).mockResolvedValue([]);
+  vi.mocked(prisma.user.findMany).mockResolvedValue([]);
 });
 
 describe("GET /api/admin/audit-log — extended filters", () => {
@@ -140,5 +144,120 @@ describe("GET /api/admin/audit-log — extended filters", () => {
     const where = call.where as Record<string, unknown>;
     // startsWith "auth." is the legacy contract
     expect(JSON.stringify(where.action)).toContain("auth.");
+  });
+
+  it("matches `actor` against the acting account too", async () => {
+    vi.mocked(prisma.user.findMany).mockResolvedValue(
+      users([{ id: "guardian-1" }]),
+    );
+    await GET(req("actor=parent"));
+    const call = vi.mocked(prisma.auditLog.findMany).mock.calls[0][0]!;
+    const or = (call.where as { OR: Array<Record<string, unknown>> }).OR;
+    expect(or).toContainEqual({ actorUserId: "parent" });
+    expect(or).toContainEqual({ actorUserId: { in: ["guardian-1"] } });
+  });
+});
+
+/** The row shape the route selects; the mock returns exactly that. */
+interface SelectedAuditRow {
+  id: string;
+  action: string;
+  ipAddress: string | null;
+  location: string | null;
+  asn: number | null;
+  carrier: string | null;
+  details: string | null;
+  createdAt: Date;
+  actorUserId: string | null;
+  user: { id: string; username: string } | null;
+}
+
+// Prisma types `findMany` by its default payload, not by the `select` the
+// route passes, so the selected shape is narrowed back in one place.
+function auditRows(rows: SelectedAuditRow[]) {
+  return rows as unknown as Awaited<
+    ReturnType<typeof prisma.auditLog.findMany>
+  >;
+}
+
+function users(rows: Array<{ id: string; username?: string }>) {
+  return rows as unknown as Awaited<ReturnType<typeof prisma.user.findMany>>;
+}
+
+describe("GET /api/admin/audit-log — who acted (#1403)", () => {
+  const base = {
+    ipAddress: null,
+    location: null,
+    asn: null,
+    carrier: null,
+    details: null,
+    createdAt: new Date("2026-11-19T10:00:00Z"),
+  };
+
+  it("selects actorUserId and returns the resolved actor beside the record", async () => {
+    vi.mocked(prisma.auditLog.findMany).mockResolvedValue(
+      auditRows([
+        {
+          ...base,
+          id: "a1",
+          action: "documents.inbound.store",
+          actorUserId: "guardian-1",
+          user: { id: "profile-1", username: "managed-1" },
+        },
+        {
+          ...base,
+          id: "a2",
+          action: "auth.login",
+          actorUserId: null,
+          user: { id: "admin-1", username: "admin" },
+        },
+        {
+          ...base,
+          id: "a3",
+          action: "documents.inbound.discard",
+          actorUserId: "gone-1",
+          user: { id: "profile-1", username: "managed-1" },
+        },
+      ]),
+    );
+    vi.mocked(prisma.user.findMany).mockResolvedValue(
+      users([{ id: "guardian-1", username: "parent" }]),
+    );
+
+    const res = await GET(req("filter=all"));
+    const select = vi.mocked(prisma.auditLog.findMany).mock.calls[0][0]!
+      .select as Record<string, unknown>;
+    expect(select.actorUserId).toBe(true);
+
+    const lookup = vi.mocked(prisma.user.findMany).mock.calls[0][0]!;
+    expect(lookup.where).toEqual({ id: { in: ["guardian-1", "gone-1"] } });
+    expect(lookup.select).toEqual({ id: true, username: true });
+
+    const entries = ((await res.json()) as { data: { entries: unknown[] } })
+      .data.entries as Array<Record<string, unknown>>;
+    expect(entries[0].actor).toEqual({ id: "guardian-1", username: "parent" });
+    expect(entries[0].user).toEqual({ id: "profile-1", username: "managed-1" });
+    expect(entries[1].actor).toBeNull();
+    // A deleted acting account keeps its id; it never collapses into a
+    // self-action.
+    expect(entries[2].actor).toEqual({ id: "gone-1", username: null });
+    // The raw column does not ride the wire beside the resolved actor.
+    expect(entries[0]).not.toHaveProperty("actorUserId");
+  });
+
+  it("skips the user lookup when no row has an actor", async () => {
+    vi.mocked(prisma.auditLog.findMany).mockResolvedValue(
+      auditRows([
+        {
+          ...base,
+          id: "a2",
+          action: "auth.login",
+          actorUserId: null,
+          user: { id: "admin-1", username: "admin" },
+        },
+      ]),
+    );
+    await GET(req());
+    expect(prisma.user.findMany).not.toHaveBeenCalled();
   });
 });

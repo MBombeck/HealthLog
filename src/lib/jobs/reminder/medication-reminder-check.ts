@@ -751,10 +751,10 @@ export async function handleReminderCheck(
                     // replaces/closes this reminder when the dose is logged
                     // (the PWA equivalent of ending a Live Activity), and a
                     // re-fired reminder for the same slot coalesces instead
-                    // of stacking on the lock screen. Deep-link clicks land
-                    // on the dose's medication page.
+                    // of stacking on the lock screen. A tap opens the card in
+                    // the list, where the open dose offers Take and Skip.
                     webPushTag: medicationDoseTag(med.id, scheduledAtIso),
-                    url: `/medications/${med.id}`,
+                    url: `/medications?highlight=${encodeURIComponent(med.id)}`,
                   },
                 });
                 notificationsDispatched++;

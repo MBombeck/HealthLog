@@ -9145,7 +9145,10 @@
         "recovery_kit": "El kit de recuperación vuelve a estar confirmado.",
         "dump_retention": "Ahora una regla de ciclo de vida del bucket cubre los volcados de la base de datos."
       }
-    }
+    },
+    "auditActedBy": "por {name}",
+    "auditActorDeleted": "una cuenta eliminada",
+    "auditActedByColumn": "Realizado por"
   },
   "achievements": {
     "title": "Logros",
@@ -12390,7 +12393,8 @@
       "browse": "Elegir archivos",
       "quotaAlmostFull": "Almacenamiento casi lleno",
       "quotaUsed": "{used} de {quota} usados",
-      "queuedAnnouncement": "{count} archivo(s) añadidos a la cola de subida"
+      "queuedAnnouncement": "{count} archivo(s) añadidos a la cola de subida",
+      "storageUsed": "Almacenamiento: {used} de {quota} en uso"
     },
     "selection": {
       "count": "{count} seleccionados",
@@ -12453,7 +12457,10 @@
       "visitsLabel": "Pertenece a la cita",
       "vaccinationsLabel": "Vacunas",
       "noVisitsToLink": "Aún no hay consultas registradas.",
-      "noVaccinationsToLink": "Aún no hay vacunas registradas."
+      "noVaccinationsToLink": "Aún no hay vacunas registradas.",
+      "saved": "Cambios guardados",
+      "saving": "Guardando…",
+      "previewNotOnDevice": "Este navegador no puede mostrar PDF dentro de la página"
     },
     "dropOverlay": {
       "title": "Suelta los archivos para subirlos",

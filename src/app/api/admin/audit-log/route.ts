@@ -16,6 +16,7 @@ import { isoDateTime } from "@/lib/validations/datetime";
  * the deepened admin viewer.
  */
 const ALLOWED_PER_PAGE = [25, 50, 100] as const;
+const ACTOR_MATCH_CAP = 100;
 
 const querySchema = z.object({
   // Legacy
@@ -38,7 +39,8 @@ export const dynamic = "force-dynamic";
  * Admin endpoint: list audit log entries.
  *
  * Filters (all optional, AND-combined):
- *   - actor    — substring match against `userId` OR `user.username`
+ *   - actor    — substring match against `userId` OR `user.username`, and
+ *                the same against the acting account (`actorUserId`)
  *   - action   — exact match (e.g. `auth.login.failed`)
  *   - target   — substring match against the JSON-encoded `details` field
  *   - since    — ISO-8601 lower bound on `createdAt`. Absent, the scan
@@ -52,6 +54,9 @@ export const dynamic = "force-dynamic";
  *     falls back to the default rather than 400-ing so a stale UI never
  *     gets stuck on a request the server refuses.
  *   - Legacy `limit` + `offset` honored when present.
+ *
+ * Each entry carries `user` (the record the row is filed under) and `actor`
+ * (who acted, when that is somebody else; null for a self-action).
  *
  * Response: `{ entries, meta: { total, page, perPage, limit, offset } }`.
  */
@@ -103,6 +108,14 @@ export const GET = apiHandler(async (request: NextRequest) => {
   }
 
   if (parsed.actor) {
+    // `actorUserId` is not a relation (see the schema comment), so a
+    // username match on the acting account resolves to ids first. Capped:
+    // a one-letter search must not turn into an unbounded IN list.
+    const actingMatches = await prisma.user.findMany({
+      where: { username: { contains: parsed.actor, mode: "insensitive" } },
+      select: { id: true },
+      take: ACTOR_MATCH_CAP,
+    });
     ands.push({
       OR: [
         { userId: parsed.actor },
@@ -111,6 +124,10 @@ export const GET = apiHandler(async (request: NextRequest) => {
             username: { contains: parsed.actor, mode: "insensitive" },
           },
         },
+        { actorUserId: parsed.actor },
+        ...(actingMatches.length > 0
+          ? [{ actorUserId: { in: actingMatches.map((u) => u.id) } }]
+          : []),
       ],
     });
   }
@@ -159,6 +176,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
         carrier: true,
         details: true,
         createdAt: true,
+        actorUserId: true,
         user: {
           select: { id: true, username: true },
         },
@@ -173,9 +191,37 @@ export const GET = apiHandler(async (request: NextRequest) => {
   // and a typo'd "Bearer hlk_..." in a username field would otherwise be
   // shown verbatim in the admin viewer + CSV export. Run the redaction
   // pass at egress so already-persisted rows are scrubbed too.
-  const redactedEntries = entries.map((entry) => ({
+  //
+  // #1403 — a row a guardian (or any delegate) wrote inside another record
+  // is filed under that record, with the person who acted in `actorUserId`.
+  // Without it the viewer named only the record, so a guardian's upload
+  // read as the profile's own. The actor is resolved to the same
+  // `{ id, username }` the row already shows for `user`, nothing more; an
+  // id that no longer resolves (the account was deleted) keeps its id with
+  // a null username so the viewer can say so instead of dropping the actor.
+  const actorIds = [
+    ...new Set(
+      entries
+        .map((entry) => entry.actorUserId)
+        .filter((id): id is string => id !== null),
+    ),
+  ];
+  const actors =
+    actorIds.length === 0
+      ? []
+      : await prisma.user.findMany({
+          where: { id: { in: actorIds } },
+          select: { id: true, username: true },
+        });
+  const usernameById = new Map(actors.map((u) => [u.id, u.username]));
+
+  const redactedEntries = entries.map(({ actorUserId, ...entry }) => ({
     ...entry,
     details: entry.details ? redactSecrets(entry.details) : entry.details,
+    actor:
+      actorUserId === null
+        ? null
+        : { id: actorUserId, username: usernameById.get(actorUserId) ?? null },
   }));
 
   return apiSuccess({

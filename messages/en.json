@@ -9145,7 +9145,10 @@
         "recovery_kit": "The recovery kit is confirmed again.",
         "dump_retention": "A lifecycle rule in the bucket covers the database dumps now."
       }
-    }
+    },
+    "auditActedBy": "by {name}",
+    "auditActorDeleted": "a deleted account",
+    "auditActedByColumn": "Acted by"
   },
   "achievements": {
     "title": "Achievements",
@@ -12390,7 +12393,8 @@
       "browse": "Choose files",
       "quotaAlmostFull": "Storage almost full",
       "quotaUsed": "{used} of {quota} used",
-      "queuedAnnouncement": "{count} file(s) added to the upload queue"
+      "queuedAnnouncement": "{count} file(s) added to the upload queue",
+      "storageUsed": "Storage: {used} of {quota} used"
     },
     "selection": {
       "count": "{count} selected",
@@ -12453,7 +12457,10 @@
       "visitsLabel": "Belongs to visit",
       "vaccinationsLabel": "Vaccinations",
       "noVisitsToLink": "No visits recorded yet.",
-      "noVaccinationsToLink": "No vaccinations recorded yet."
+      "noVaccinationsToLink": "No vaccinations recorded yet.",
+      "saved": "Changes saved",
+      "saving": "Saving…",
+      "previewNotOnDevice": "This browser cannot show PDFs inside the page"
     },
     "dropOverlay": {
       "title": "Drop files to upload",

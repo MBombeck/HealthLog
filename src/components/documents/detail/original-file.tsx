@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Download, ExternalLink } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { createFencedBlobLoader } from "@/hooks/use-fenced-object-url";
+import { formatBytes } from "@/lib/format/bytes";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
@@ -136,6 +137,42 @@ export function DocumentOpenInTabButton({
   );
 }
 
+const subscribeNever = () => () => {};
+
+/**
+ * Whether this browser can show a PDF inside the page.
+ *
+ * Chrome on Android has no in-page PDF viewer: a PDF loaded into a frame is
+ * handed to the download path instead of being drawn, and on a plain-http
+ * origin that download is refused as insecure, so the frame paints Chrome's
+ * "This content is blocked. Contact the site owner to fix the issue." page.
+ * Over HTTPS the same frame would only start a download. Either way there is
+ * no preview to show, and `navigator.pdfViewerEnabled` is the standard way
+ * the browser says so. The server render assumes a viewer, which is what
+ * every browser that reports nothing has.
+ */
+export function usePdfViewerEnabled(): boolean {
+  return useSyncExternalStore(
+    subscribeNever,
+    () =>
+      typeof navigator === "undefined" || navigator.pdfViewerEnabled !== false,
+    () => true,
+  );
+}
+
+/**
+ * Whether a document is drawn inside the sheet: an inline-class type, and,
+ * for a PDF, a browser that can draw one. Everything else gets the download
+ * block, never an empty or blocked frame.
+ */
+export function rendersInline(
+  doc: { servingClass: string; mimeType: string },
+  pdfViewerEnabled: boolean,
+): boolean {
+  if (doc.servingClass !== "inline") return false;
+  return doc.mimeType !== "application/pdf" || pdfViewerEnabled;
+}
+
 /** Inline preview for Class A documents; skeleton until the blob paints. */
 export function InlinePreview({
   src,
@@ -258,6 +295,61 @@ export function InlinePreview({
           )}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * What the sheet shows where it draws no preview: the type glyph, the file
+ * name, why there is no preview (a download-only type, or a PDF on a browser
+ * with no in-page viewer) and the size, then a Download that fetches at
+ * click.
+ */
+export function DocumentPreviewFallback({
+  doc,
+  title,
+  Icon,
+}: {
+  doc: {
+    id: string;
+    filename: string | null;
+    servingClass: string;
+    byteSize: number;
+  };
+  title: string;
+  Icon: React.ComponentType<{
+    className?: string;
+    "aria-hidden"?: boolean;
+  }> | null;
+}) {
+  const { t, locale } = useTranslations();
+  const notOnDevice = doc.servingClass === "inline";
+  return (
+    <div className="border-border flex flex-col items-center gap-2 rounded-lg border px-4 py-8 text-center">
+      {Icon ? (
+        <Icon className="text-muted-foreground size-8" aria-hidden />
+      ) : null}
+      <p className="max-w-full truncate text-sm font-medium">
+        {doc.filename ?? title}
+      </p>
+      <p
+        className="text-muted-foreground text-xs"
+        data-slot={notOnDevice ? "document-preview-not-on-device" : undefined}
+      >
+        {notOnDevice
+          ? t("documents.detail.previewNotOnDevice")
+          : t("documents.detail.previewUnavailable")}
+        , {formatBytes(doc.byteSize, locale)}
+      </p>
+      <DocumentDownloadButton
+        documentId={doc.id}
+        filename={doc.filename}
+        readyUrl={null}
+        unavailable={false}
+        size="sm"
+        className="mt-1"
+        slot="document-download-inline"
+      />
     </div>
   );
 }

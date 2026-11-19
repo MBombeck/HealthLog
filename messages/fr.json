@@ -9145,7 +9145,10 @@
         "recovery_kit": "Le kit de récupération est de nouveau confirmé.",
         "dump_retention": "Une règle de cycle de vie du bucket couvre désormais les dumps de la base."
       }
-    }
+    },
+    "auditActedBy": "par {name}",
+    "auditActorDeleted": "un compte supprimé",
+    "auditActedByColumn": "Effectué par"
   },
   "achievements": {
     "title": "Réussites",
@@ -12390,7 +12393,8 @@
       "browse": "Choisir des fichiers",
       "quotaAlmostFull": "Stockage presque plein",
       "quotaUsed": "{used} sur {quota} utilisés",
-      "queuedAnnouncement": "{count} fichier(s) ajoutés à la file de téléversement"
+      "queuedAnnouncement": "{count} fichier(s) ajoutés à la file de téléversement",
+      "storageUsed": "Stockage : {used} sur {quota} utilisés"
     },
     "selection": {
       "count": "{count} sélectionnés",
@@ -12453,7 +12457,10 @@
       "visitsLabel": "Rattaché au rendez-vous",
       "vaccinationsLabel": "Vaccinations",
       "noVisitsToLink": "Aucune consultation enregistrée pour l’instant.",
-      "noVaccinationsToLink": "Aucune vaccination enregistrée pour l’instant."
+      "noVaccinationsToLink": "Aucune vaccination enregistrée pour l’instant.",
+      "saved": "Modifications enregistrées",
+      "saving": "Enregistrement…",
+      "previewNotOnDevice": "Ce navigateur ne peut pas afficher les PDF dans la page"
     },
     "dropOverlay": {
       "title": "Déposez les fichiers pour les téléverser",

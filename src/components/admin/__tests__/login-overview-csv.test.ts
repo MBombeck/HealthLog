@@ -29,6 +29,8 @@ import { toCSV } from "@/lib/export";
 const LABELS_EN: AuditCsvLabels = {
   timestamp: "Time",
   user: "Users",
+  actedBy: "Acted by",
+  deletedAccount: "a deleted account",
   ip: "IP",
   location: "Location",
   // v1.4.27 — `admin.carrier` is shipped by bucket B6; the test
@@ -54,6 +56,8 @@ const LABELS_DE: AuditCsvLabels = {
   ...LABELS_EN,
   timestamp: "Zeitpunkt",
   user: "Benutzer",
+  actedBy: "Ausgeführt von",
+  deletedAccount: "ein gelöschtes Konto",
   ip: "IP",
   location: "Standort",
   carrier: "Mobilfunkanbieter",
@@ -101,6 +105,7 @@ describe("buildAuditLogCsvRecords", () => {
     expect(Object.keys(record)).toEqual([
       "timestamp",
       "user",
+      "actedBy",
       "ip",
       "location",
       "carrier",
@@ -194,12 +199,42 @@ describe("buildAuditLogCsvRecords", () => {
   });
 });
 
+describe("buildAuditLogCsvRecords — acting account (#1403)", () => {
+  it("names who acted beside the record, and leaves a self-action empty", () => {
+    const row = {
+      createdAt: "2026-11-19T09:05:00.000Z",
+      action: "documents.inbound.store",
+      ipAddress: null,
+      location: null,
+      details: null,
+      user: { id: "p1", username: "managed-1" },
+    };
+    const records = buildAuditLogCsvRecords(
+      [
+        { ...row, actor: { id: "g1", username: "parent" } },
+        { ...row, actor: { id: "g2", username: null } },
+        { ...row, actor: null },
+        row,
+      ],
+      LABELS_EN,
+      deterministicFormatter,
+    );
+    expect(records.map((r) => [r.user, r.actedBy])).toEqual([
+      ["managed-1", "parent"],
+      ["managed-1", "a deleted account"],
+      ["managed-1", ""],
+      ["managed-1", ""],
+    ]);
+  });
+});
+
 describe("auditLogCsvHeaderLabels", () => {
   it("returns translated headers keyed by the record-key contract", () => {
     const headers = auditLogCsvHeaderLabels(LABELS_EN);
     expect(headers).toEqual({
       timestamp: "Time",
       user: "Users",
+      actedBy: "Acted by",
       ip: "IP",
       location: "Location",
       carrier: "Carrier",
@@ -231,10 +266,10 @@ describe("toCSV(records, headerLabels) — audit-log integration", () => {
     const csv = toCSV(records, auditLogCsvHeaderLabels(LABELS_DE));
     const lines = csv.split("\n");
     expect(lines[0]).toBe(
-      "Zeitpunkt,Benutzer,IP,Standort,Mobilfunkanbieter,Anbieter,Ergebnis,Aktion,Details",
+      "Zeitpunkt,Benutzer,Ausgeführt von,IP,Standort,Mobilfunkanbieter,Anbieter,Ergebnis,Aktion,Details",
     );
     expect(lines[1]).toBe(
-      '2026-05-11T09:05:00+00:00,testuser,203.0.113.7,"Berlin, DE",,Passkey,Erfolgreich,auth.login.passkey,',
+      '2026-05-11T09:05:00+00:00,testuser,,203.0.113.7,"Berlin, DE",,Passkey,Erfolgreich,auth.login.passkey,',
     );
   });
 

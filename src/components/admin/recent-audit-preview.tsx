@@ -25,7 +25,11 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
-import { type AdminAuditEntry, useAuthActionLabels } from "./_shared";
+import {
+  type AdminAuditEntry,
+  AuditActedBy,
+  useAuthActionLabels,
+} from "./_shared";
 import { apiGet } from "@/lib/api/api-fetch";
 import { InlineAction } from "@/components/ui/inline-action";
 
@@ -126,6 +130,10 @@ export function RecentAuditPreview() {
                       className={`min-w-0 flex-1 truncate font-medium ${isFailed ? "text-destructive" : ""}`}
                     >
                       {entry.user?.username ?? t("common.unknown")}
+                      <AuditActedBy
+                        actor={entry.actor}
+                        className="ml-1.5 text-xs font-normal"
+                      />
                     </span>
                     <span
                       className={`hidden truncate sm:inline ${isFailed ? "text-destructive" : "text-muted-foreground"}`}

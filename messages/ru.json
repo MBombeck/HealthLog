@@ -9145,7 +9145,10 @@
         "recovery_kit": "Комплект восстановления снова подтверждён.",
         "dump_retention": "Правило жизненного цикла в бакете теперь покрывает дампы базы данных."
       }
-    }
+    },
+    "auditActedBy": "от {name}",
+    "auditActorDeleted": "удалённый аккаунт",
+    "auditActedByColumn": "Выполнено"
   },
   "achievements": {
     "title": "Достижения",
@@ -12390,7 +12393,8 @@
       "browse": "Выбрать файлы",
       "quotaAlmostFull": "Хранилище почти заполнено",
       "quotaUsed": "Использовано {used} из {quota}",
-      "queuedAnnouncement": "Файлов добавлено в очередь загрузки: {count}"
+      "queuedAnnouncement": "Файлов добавлено в очередь загрузки: {count}",
+      "storageUsed": "Хранилище: {used} из {quota} занято"
     },
     "selection": {
       "count": "Выбрано: {count}",
@@ -12453,7 +12457,10 @@
       "visitsLabel": "Относится к визиту",
       "vaccinationsLabel": "Вакцинации",
       "noVisitsToLink": "Визиты ещё не записаны.",
-      "noVaccinationsToLink": "Вакцинации ещё не записаны."
+      "noVaccinationsToLink": "Вакцинации ещё не записаны.",
+      "saved": "Изменения сохранены",
+      "saving": "Сохранение…",
+      "previewNotOnDevice": "Этот браузер не показывает PDF внутри страницы"
     },
     "dropOverlay": {
       "title": "Перетащите файлы для загрузки",

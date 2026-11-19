@@ -9145,7 +9145,10 @@
         "recovery_kit": "Zestaw odzyskiwania jest znów potwierdzony.",
         "dump_retention": "Reguła cyklu życia w buckecie obejmuje teraz zrzuty bazy."
       }
-    }
+    },
+    "auditActedBy": "przez {name}",
+    "auditActorDeleted": "usunięte konto",
+    "auditActedByColumn": "Wykonane przez"
   },
   "achievements": {
     "title": "Osiągnięcia",
@@ -12390,7 +12393,8 @@
       "browse": "Wybierz pliki",
       "quotaAlmostFull": "Miejsce prawie pełne",
       "quotaUsed": "Użyto {used} z {quota}",
-      "queuedAnnouncement": "Dodano pliki do kolejki przesyłania: {count}"
+      "queuedAnnouncement": "Dodano pliki do kolejki przesyłania: {count}",
+      "storageUsed": "Miejsce: {used} z {quota} zajęte"
     },
     "selection": {
       "count": "Zaznaczono: {count}",
@@ -12453,7 +12457,10 @@
       "visitsLabel": "Należy do wizyty",
       "vaccinationsLabel": "Szczepienia",
       "noVisitsToLink": "Nie zapisano jeszcze żadnych wizyt.",
-      "noVaccinationsToLink": "Nie zapisano jeszcze żadnych szczepień."
+      "noVaccinationsToLink": "Nie zapisano jeszcze żadnych szczepień.",
+      "saved": "Zmiany zapisane",
+      "saving": "Zapisywanie…",
+      "previewNotOnDevice": "Ta przeglądarka nie wyświetla plików PDF na stronie"
     },
     "dropOverlay": {
       "title": "Upuść pliki, aby je przesłać",

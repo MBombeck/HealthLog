@@ -9145,7 +9145,10 @@
         "recovery_kit": "복구 키트가 다시 확인되었습니다.",
         "dump_retention": "이제 버킷의 수명 주기 규칙이 데이터베이스 덤프를 포함합니다."
       }
-    }
+    },
+    "auditActedBy": "{name} 님이 수행",
+    "auditActorDeleted": "삭제된 계정",
+    "auditActedByColumn": "수행한 사람"
   },
   "achievements": {
     "title": "업적",
@@ -12390,7 +12393,8 @@
       "browse": "파일 선택",
       "quotaAlmostFull": "저장 공간이 거의 찼어요",
       "quotaUsed": "{quota} 중 {used} 사용",
-      "queuedAnnouncement": "{count}개 파일을 업로드 대기열에 추가했어요"
+      "queuedAnnouncement": "{count}개 파일을 업로드 대기열에 추가했어요",
+      "storageUsed": "저장 공간: {quota} 중 {used} 사용"
     },
     "selection": {
       "count": "{count}개 선택함",
@@ -12453,7 +12457,10 @@
       "visitsLabel": "연결된 진료",
       "vaccinationsLabel": "예방접종",
       "noVisitsToLink": "아직 기록된 진료가 없습니다.",
-      "noVaccinationsToLink": "아직 기록된 예방접종이 없습니다."
+      "noVaccinationsToLink": "아직 기록된 예방접종이 없습니다.",
+      "saved": "변경 사항이 저장됨",
+      "saving": "저장 중…",
+      "previewNotOnDevice": "이 브라우저는 페이지 안에서 PDF를 표시할 수 없습니다"
     },
     "dropOverlay": {
       "title": "파일을 놓아 업로드",

@@ -751,10 +751,19 @@ body,
   [data-sheet-side="bottom"] {
     bottom: var(--keyboard-inset, 0px);
   }
+  /*
+   * The cap is the visible height above the keyboard, not "the window minus
+   * the keyboard": iOS pans the visual viewport down to keep a low field in
+   * view, and a sheet capped at the window minus the keyboard then reached
+   * above the visible top by exactly that pan, header first.
+   */
   html[data-keyboard="open"] [data-sheet-side="bottom"] {
     max-height: calc(
-      100dvh - var(--keyboard-inset, 0px) - env(safe-area-inset-top, 0px) -
-        0.5rem
+      var(
+          --keyboard-viewport-height,
+          calc(100dvh - var(--keyboard-inset, 0px))
+        ) -
+        env(safe-area-inset-top, 0px) - 0.5rem
     ) !important;
   }
   html[data-keyboard="open"] [data-keyboard-hide] {

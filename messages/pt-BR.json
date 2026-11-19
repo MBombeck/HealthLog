@@ -9145,7 +9145,10 @@
         "recovery_kit": "O kit de recuperação está confirmado novamente.",
         "dump_retention": "Agora uma regra de ciclo de vida do bucket cobre os dumps do banco."
       }
-    }
+    },
+    "auditActedBy": "por {name}",
+    "auditActorDeleted": "uma conta excluída",
+    "auditActedByColumn": "Realizado por"
   },
   "achievements": {
     "title": "Conquistas",
@@ -12390,7 +12393,8 @@
       "browse": "Escolher arquivos",
       "quotaAlmostFull": "Armazenamento quase cheio",
       "quotaUsed": "{used} de {quota} usados",
-      "queuedAnnouncement": "{count} arquivo(s) adicionados à fila de envio"
+      "queuedAnnouncement": "{count} arquivo(s) adicionados à fila de envio",
+      "storageUsed": "Armazenamento: {used} de {quota} em uso"
     },
     "selection": {
       "count": "{count} selecionados",
@@ -12453,7 +12457,10 @@
       "visitsLabel": "Pertence à consulta",
       "vaccinationsLabel": "Vacinas",
       "noVisitsToLink": "Nenhuma consulta registrada ainda.",
-      "noVaccinationsToLink": "Nenhuma vacina registrada ainda."
+      "noVaccinationsToLink": "Nenhuma vacina registrada ainda.",
+      "saved": "Alterações salvas",
+      "saving": "Salvando…",
+      "previewNotOnDevice": "Este navegador não consegue exibir PDFs dentro da página"
     },
     "dropOverlay": {
       "title": "Solte arquivos para enviar",

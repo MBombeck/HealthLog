@@ -89,7 +89,7 @@
     "components/day/day-view.tsx :: DayView": 309,
     "components/documents/document-ai-section.tsx :: DocumentAiSection": 262,
     "components/documents/document-card.tsx :: DocumentCard": 354,
-    "components/documents/document-detail-sheet.tsx :: DocumentDetailSheet": 324,
+    "components/documents/document-detail-sheet.tsx :: DocumentDetailSheet": 306,
     "components/documents/document-facts-review.tsx :: DocumentFactsSection": 242,
     "components/documents/document-facts-review.tsx :: FactRow": 261,
     "components/documents/document-filter-bar.tsx :: DocumentFilterBar": 348,

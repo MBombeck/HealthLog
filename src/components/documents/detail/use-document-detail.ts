@@ -30,6 +30,7 @@ import type {
 } from "@/lib/validations/inbound-documents";
 
 import { DOCUMENT_KIND_ICONS } from "../document-kind-meta";
+import { rendersInline, usePdfViewerEnabled } from "./original-file";
 
 export type PatchInput = {
   title?: string | null;
@@ -142,7 +143,7 @@ export function useDocumentDetail({
     setMutationError(null);
   }
 
-  const { patch, remove } = useDocumentWrites({
+  const { patch, remove, saved } = useDocumentWrites({
     documentId,
     onOpenChange,
     setMutationError,
@@ -205,10 +206,10 @@ export function useDocumentDetail({
   // narrow path is the point: a non-inline document (a large scan, a
   // download-only format) fetched nothing until somebody clicked, and it must
   // stay that way — this used to fetch for every document on open, twice.
+  const pdfViewerEnabled = usePdfViewerEnabled();
+  const previewInline = doc ? rendersInline(doc, pdfViewerEnabled) : false;
   const { url: inlineSrc, failed: inlineFailed } = useFencedObjectUrl(
-    doc && doc.servingClass === "inline"
-      ? `/api/documents/inbound/${doc.id}/original`
-      : null,
+    doc && previewInline ? `/api/documents/inbound/${doc.id}/original` : null,
   );
 
   return {
@@ -221,6 +222,7 @@ export function useDocumentDetail({
     labsModuleEnabled,
     episodes,
     mutationError,
+    saved,
     linkResets,
     shareOpen,
     setShareOpen,
@@ -239,6 +241,7 @@ export function useDocumentDetail({
     title,
     sourceSystemName,
     Icon,
+    previewInline,
     inlineSrc,
     inlineFailed,
   };
@@ -265,14 +268,22 @@ function useDocumentWrites({
 }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
+  // Whether the last edit made in this sheet reached the server. Edits save
+  // on commit with no Save button, so without it a person closing the sheet
+  // cannot tell whether anything was written (#1403). Per document.
+  const [savedFor, setSavedFor] = useState<string | null>(null);
+  const saved = savedFor !== null && savedFor === documentId;
+  const setSaved = (next: boolean) => setSavedFor(next ? documentId : null);
   const patch = useMutation({
     mutationFn: (input: PatchInput) =>
       apiPatch<InboundDocumentDetailDto>(
         `/api/documents/inbound/${documentId}`,
         input,
       ),
+    onMutate: () => setSaved(false),
     onSuccess: (_data, input) => {
       setMutationError(null);
+      setSaved(true);
       // A link written from this side changes what the visit's and the
       // dose's own views list, so their reads refresh with the vault's.
       void invalidateKeys(queryClient, [
@@ -328,5 +339,5 @@ function useDocumentWrites({
     onError: () => setMutationError(t("documents.detail.deleteError")),
   });
 
-  return { patch, remove };
+  return { patch, remove, saved };
 }

@@ -7,6 +7,7 @@ import {
   ArrowRight,
   Check,
   FlaskConical,
+  Loader2,
   Pencil,
   Plus,
   Share2,
@@ -172,7 +173,9 @@ export function DocumentDetailFooter({
             </span>
           </Button>
         )}
-        {doc.servingClass === "inline" ? (
+        {/* A blob tab on a browser with no PDF viewer would only start the
+            same download the button beside it offers. */}
+        {detail.previewInline ? (
           <DocumentOpenInTabButton
             readyUrl={inlineSrc}
             unavailable={inlineFailed}
@@ -441,5 +444,56 @@ export function DocumentDetailMeta({
         </p>
       ) : null}
     </>
+  );
+}
+
+/**
+ * The sheet's one line about its own writes: the error when the last edit
+ * failed, "Saving…" while one is in flight, and "Changes saved" once the
+ * server took it. Edits save on commit with no Save button, so this line is
+ * the only sign that closing the sheet loses nothing (#1403).
+ */
+export function DocumentSaveStatus({
+  error,
+  pending,
+  saved,
+}: {
+  error: string | null;
+  pending: boolean;
+  saved: boolean;
+}) {
+  const { t } = useTranslations();
+  if (error) {
+    return (
+      <p role="alert" className="text-destructive text-sm">
+        {error}
+      </p>
+    );
+  }
+  if (pending) {
+    return (
+      <p
+        role="status"
+        className="text-muted-foreground flex items-center gap-1.5 text-xs"
+        data-slot="document-detail-saving"
+      >
+        <Loader2
+          className="size-3.5 animate-spin motion-reduce:animate-none"
+          aria-hidden
+        />
+        {t("documents.detail.saving")}
+      </p>
+    );
+  }
+  if (!saved) return null;
+  return (
+    <p
+      role="status"
+      className="text-muted-foreground flex items-center gap-1.5 text-xs"
+      data-slot="document-detail-saved"
+    >
+      <Check className="size-3.5" aria-hidden />
+      {t("documents.detail.saved")}
+    </p>
   );
 }
