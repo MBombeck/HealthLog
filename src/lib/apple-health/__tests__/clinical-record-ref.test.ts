@@ -46,6 +46,7 @@ describe("routeClinicalRecord", () => {
         sourceURL: "https://fhir.example-clinic.test/R4",
         sourceName: "Example Clinic",
         fhirVersion: "4.0.1",
+        labTyped: true,
       },
     ]);
   });
@@ -63,6 +64,8 @@ describe("routeClinicalRecord", () => {
       expect(refs).toHaveLength(1);
       expect(refs[0].fhirVersion).toBe(fhirVersion);
       expect(refs[0].path).toBe("/clinical-records/Observation-obs-1.json");
+      // Not typed a lab result: the mapper wants a laboratory category.
+      expect(refs[0].labTyped).toBe(false);
     },
   );
 

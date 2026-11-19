@@ -203,6 +203,7 @@ describe("POST /api/labs/fhir-batch", () => {
           sourceURL: `${SOURCE_URL}/`,
           sourceName: "Example Clinic",
           fhirVersion: "4.0.1",
+          labTyped: true,
         },
       ],
     });

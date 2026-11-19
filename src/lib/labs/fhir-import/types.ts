@@ -25,6 +25,12 @@ export interface FhirLabRecordInput {
   sourceURL?: string | null;
   /** The institution as the Health app names it. */
   sourceName?: string | null;
+  /**
+   * The record reached the mapper for its FHIR resource type or file name,
+   * not as a HealthKit lab-result record: an Observation without a category
+   * is then skipped `not_lab` instead of taken.
+   */
+  requireLabCategory?: boolean;
 }
 
 /** A lab reading a FHIR Observation maps to, before any marker is chosen. */

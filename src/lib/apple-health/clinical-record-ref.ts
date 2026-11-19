@@ -16,8 +16,9 @@
  * Both forms are read. A HealthKit identifier decides on its own (only the
  * lab-result type is handed on, so a vital-sign record is never opened). A
  * FHIR resource type hands on every `Observation`, DSTU2 (1.0.2) and R4
- * alike; the lab mapper then keeps the laboratory ones and counts the rest
- * (vital signs, surveys) as skipped. Without a `type`, the file name's
+ * alike, marked `labTyped: false`; the lab mapper then keeps only the ones
+ * whose category says laboratory and counts the rest (vital signs, surveys,
+ * an Observation with no category) as skipped `not_lab`. Without a `type`, the file name's
  * resource-type prefix stands in for it. A `DiagnosticReport` is not handed
  * on: panels come from an Observation's own members, and the mapper reads
  * nothing else. Every other resource (conditions, medications, immunisations,
@@ -38,6 +39,12 @@ export interface ClinicalLabReference {
   sourceURL: string | null;
   sourceName: string | null;
   fhirVersion: string | null;
+  /**
+   * Apple typed the record a lab result (`HKClinicalTypeIdentifierLabResultRecord`).
+   * False when it was handed on for its FHIR resource type or file name, so
+   * the mapper requires a laboratory category.
+   */
+  labTyped: boolean;
 }
 
 const CAPS = {
@@ -88,6 +95,7 @@ export function routeClinicalRecord(
     sourceURL: withinCap(attrs.sourceURL, CAPS.sourceURL),
     sourceName: withinCap(attrs.sourceName, CAPS.sourceName),
     fhirVersion: withinCap(attrs.fhirVersion, CAPS.fhirVersion),
+    labTyped: attrs.type?.trim() === HK_LAB_RESULT_RECORD,
   });
   return true;
 }
