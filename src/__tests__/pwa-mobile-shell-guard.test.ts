@@ -38,7 +38,7 @@ describe("the shell owns the safe area", () => {
     const shell = code(read("src/components/layout/auth-shell.tsx"));
     expect(shell).toMatch(/<div className=\{SHELL_ROOT_CLASS\}>/);
     expect(read("src/components/layout/shell-metrics.ts")).toMatch(
-      /SHELL_ROOT_CLASS =\s*"shell-safe-area absolute inset-0 flex flex-col"/,
+      /SHELL_ROOT_CLASS =\s*"shell-safe-area absolute inset-x-0 top-0 bottom-\(--viewport-bottom\) flex flex-col"/,
     );
   });
 
@@ -58,7 +58,10 @@ describe("the shell owns the safe area", () => {
       /\.shell-safe-area\s*\{[^}]*padding-top:\s*env\(safe-area-inset-top/,
     );
     expect(css).toMatch(
-      /\[data-sheet-side="bottom"\]\s*\{\s*bottom:\s*var\(--keyboard-inset/,
+      /\n\s*\[data-sheet-side="bottom"\]\s*\{\s*bottom:\s*calc\(var\(--keyboard-inset, 0px\) \+ var\(--viewport-bottom, 0px\)\)/,
+    );
+    expect(css).toMatch(
+      /html\[data-keyboard="open"\] \[data-sheet-side="bottom"\]\s*\{\s*bottom:\s*var\(--keyboard-inset/,
     );
     expect(css).toMatch(
       /html\[data-keyboard="open"\] \[data-keyboard-hide\]\s*\{\s*display:\s*none/,
@@ -66,12 +69,29 @@ describe("the shell owns the safe area", () => {
     expect(css).toMatch(/@custom-variant pointer-fine/);
   });
 
+  it("what owns the bottom edge extends over an installed app's short viewport", () => {
+    // `standalone-viewport-gap.ts` measures the strip; these are its readers.
+    const css = code(read("src/app/globals.css"), "globals.css");
+    expect(css).toMatch(
+      /--viewport-bottom:\s*calc\(var\(--viewport-bottom-gap\) \* -1\)/,
+    );
+    expect(css).toMatch(
+      /\[data-slot="sheet-overlay"\],\s*\[data-slot="dialog-overlay"\],\s*\[data-slot="alert-dialog-overlay"\]\s*\{\s*bottom:\s*var\(--viewport-bottom/,
+    );
+    const nav = code(read("src/components/layout/bottom-nav.tsx"));
+    expect(nav).toContain("fixed bottom-(--viewport-bottom) left-0");
+    expect(nav).not.toMatch(/\bfixed bottom-0\b/);
+    expect(code(read("src/components/keyboard-inset-bridge.tsx"))).toMatch(
+      /trackStandaloneViewportGap\(window, root\)/,
+    );
+  });
+
   it("bottom toasts clear the bar under the same query the bar follows", () => {
     // Sonner's own mobile offset stops at 600 px; the bar shows up to `md`
     // and on a phone held sideways, so the lift keys on `shell-mobile`.
     const css = code(read("src/app/globals.css"), "globals.css");
     expect(css).toMatch(
-      /html \[data-sonner-toaster\]\[data-y-position="bottom"\]\s*\{\s*@variant shell-mobile\s*\{\s*bottom:\s*calc\(4rem \+ env\(safe-area-inset-bottom/,
+      /html \[data-sonner-toaster\]\[data-y-position="bottom"\]\s*\{\s*@variant shell-mobile\s*\{\s*bottom:\s*calc\(\s*var\(--viewport-bottom, 0px\) \+ 4rem \+ env\(safe-area-inset-bottom/,
     );
   });
 
