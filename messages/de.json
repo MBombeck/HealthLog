@@ -169,7 +169,7 @@
     },
     "symptoms": {
       "definition": {
-        "limitReached": "Du hast 8 Symptome. Blende eins aus, um ein neues anzulegen.",
+        "limitReached": "Du hast die Höchstzahl an Symptomen erreicht. Blende eins aus, um ein neues anzulegen.",
         "notFound": "Dieses Symptom gibt es nicht mehr."
       },
       "episode": {
@@ -12455,6 +12455,7 @@
       "uploadedMeta": "Hinzugefügt am {date}, {size}",
       "importedFrom": "Importiert aus {system}",
       "importedFromWithId": "Importiert aus {system}, ID {id}",
+      "openInSource": "In {system} öffnen",
       "sourceOther": "einem anderen System",
       "share": "Teilen",
       "labValuesLink": "{count} Laborwerte ansehen",
@@ -13937,7 +13938,7 @@
       "Thermometer": "Fieberthermometer",
       "Stethoscope": "Stethoskop"
     },
-    "limitReached": "Du hast 8 Symptome. Blende eins aus, um ein neues anzulegen.",
+    "limitReached": "Du hast {limit} Symptome. Blende eins aus, um ein neues anzulegen.",
     "saveError": "Das Symptom konnte nicht gespeichert werden. Bitte versuch es noch einmal.",
     "nameRequired": "Gib dem Symptom einen Namen.",
     "unreadableLabel": "Unlesbares Symptom",
@@ -13963,7 +13964,9 @@
       "limitHint": "Bis zu {limit} Symptome. Blende auf der Krankheitsseite eins aus, um ein neues anzulegen.",
       "intensityFor": "Stärke: {symptom}",
       "partlySaved": "{saved} von {total} gespeichert, der Rest ist noch ausgewählt.",
-      "severalHint": "Wähle mehrere, wenn sie zusammen auftraten."
+      "severalHint": "Wähle mehrere, wenn sie zusammen auftraten.",
+      "filterPlaceholder": "Symptom suchen",
+      "filterEmpty": "Kein Symptom passt."
     },
     "section": {
       "title": "Deine Symptome",

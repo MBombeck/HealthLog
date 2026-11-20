@@ -4,7 +4,8 @@
  *   GET  /api/symptoms/definitions — the record's own symptom list with a
  *        30-day summary per symptom. `?includeHidden=true` adds hidden ones.
  *   POST /api/symptoms/definitions — define one (`{ label, icon? }`). At most
- *        eight active definitions; the label is encrypted at rest.
+ *        `MAX_ACTIVE_SYMPTOM_DEFINITIONS` active ones the person named; the
+ *        label is encrypted at rest.
  *
  * Rides the illness module: an account (or instance) with it off answers 403
  * `illness.disabled` even to a valid Bearer token. The label is the person's
@@ -54,7 +55,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
 /**
  * Wrapped in `withIdempotency`: the label is ciphertext under a fresh IV, so
  * no unique index can catch a replayed create, and a retry after a lost
- * response would otherwise mint a second "aura" and burn a slot of eight.
+ * response would otherwise mint a second "aura" and burn a slot of the cap.
  */
 export const POST = apiHandler(withIdempotency<[NextRequest]>(postDefinition));
 

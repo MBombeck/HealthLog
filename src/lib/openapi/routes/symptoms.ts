@@ -14,6 +14,7 @@ import type { ZodOpenApiObject } from "zod-openapi";
 import { z } from "zod/v4";
 
 import {
+  MAX_ACTIVE_SYMPTOM_DEFINITIONS,
   symptomDefinitionCreateSchema,
   symptomDefinitionUpdateSchema,
   symptomEventCreateSchema,
@@ -40,8 +41,7 @@ const MODULE_OFF =
 
 const createSymptomDefinitionRequest = symptomDefinitionCreateSchema.meta({
   id: "CreateSymptomDefinitionRequest",
-  description:
-    "Define a symptom of your own. `label` (1-40 characters) is encrypted at rest; `icon` is one of the cycle custom-symptom icon names, null for the default glyph. At most eight active definitions the person named per account (422 `symptoms.definition.limitReached`); the built-in ones Apple Health creates do not count.",
+  description: `Define a symptom of your own. \`label\` (1-40 characters) is encrypted at rest; \`icon\` is one of the cycle custom-symptom icon names, null for the default glyph. At most ${MAX_ACTIVE_SYMPTOM_DEFINITIONS} active definitions the person named per account (\`limit\` on the list; 422 \`symptoms.definition.limitReached\` past it); the built-in ones Apple Health creates do not count. Until v1.48.4 the cap was eight.`,
 });
 
 const updateSymptomDefinitionRequest = symptomDefinitionUpdateSchema.meta({
@@ -100,8 +100,7 @@ const symptomDefinitionList = z
   })
   .meta({
     id: "SymptomDefinitionList",
-    description:
-      "The record's symptom definitions in display order, and the active-definition cap.",
+    description: `The record's symptom definitions in display order, and \`limit\`, the cap on active definitions the person named (${MAX_ACTIVE_SYMPTOM_DEFINITIONS} since v1.48.4, eight before). Read it rather than assuming a number.`,
   });
 
 const symptomEvent = z

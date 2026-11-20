@@ -256,6 +256,9 @@ export function serialiseDocument(
     hasThumbnail,
     sourceSystem: toDocumentSourceSystem(doc.sourceSystem),
     sourceId: doc.sourceSystem ? doc.sourceId : null,
+    // Filled for the owner alone by `attachOwnerSourceUrls`; null everywhere
+    // else by construction.
+    sourceUrl: null,
     createdAt: doc.createdAt.toISOString(),
     updatedAt: doc.updatedAt.toISOString(),
   };

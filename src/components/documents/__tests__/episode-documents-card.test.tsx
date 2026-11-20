@@ -59,6 +59,7 @@ function doc(id: string, title: string): InboundDocumentDto {
     hasThumbnail: false,
     sourceSystem: null,
     sourceId: null,
+    sourceUrl: null,
     createdAt: "2025-10-05T08:00:00.000Z",
     updatedAt: "2025-10-05T08:00:00.000Z",
   };

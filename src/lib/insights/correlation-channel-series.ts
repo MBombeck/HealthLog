@@ -93,10 +93,8 @@ import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 import { dateOnlyKey } from "@/lib/tz/date-only";
 import { dayValueRows } from "@/lib/measurements/day-mean";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
-import {
-  decryptSymptomText,
-  pickCorrelationSymptoms,
-} from "@/lib/symptoms/server";
+import { decryptSymptomText } from "@/lib/symptoms/server";
+import { readCorrelationSymptomEvents } from "@/lib/symptoms/correlation-channel-read";
 import { SYMPTOM_CHANNEL_PREFIX } from "@/lib/symptoms/shared";
 
 /**
@@ -454,37 +452,21 @@ export async function fetchCustomMetricBehaviourSeries(
 }
 
 /**
- * v1.40 — one OUTCOME series per active person-defined symptom, keyed
+ * v1.40 — one OUTCOME series per active symptom channel, keyed
  * `SYMPTOM:<definitionId>` and labelled with the decrypted name (the data
  * label `interpret()` prefers over the key). Daily value = that day's highest
  * intensity; see `buildSymptomEventDailySeries` for the zero-fill rule. Hidden
- * definitions are not channels. A symptom whose name cannot be decrypted is
- * left out rather than shown under its database id.
+ * definitions are not channels, and of the active ones the matrix takes the
+ * most logged in the window (`pickCorrelationSymptoms`), at most
+ * `MAX_SYMPTOM_CORRELATION_CHANNELS`, in that order. A symptom whose name
+ * cannot be decrypted is left out rather than shown under its database id.
  */
 export async function fetchSymptomEventSeries(
   userId: string,
   tz: string,
   since: Date,
 ): Promise<NamedSeries[]> {
-  // One read (two statements): every active definition with its events in
-  // the window; the channels are chosen from it in memory.
-  const definitions = pickCorrelationSymptoms(
-    await prisma.symptomDefinition.findMany({
-      where: { userId, isActive: true },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }, { id: "asc" }],
-      select: {
-        id: true,
-        code: true,
-        labelEncrypted: true,
-        events: {
-          where: { deletedAt: null, occurredAt: { gte: since } },
-          orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
-          take: 5000,
-          select: { occurredAt: true, intensity: true },
-        },
-      },
-    }),
-  );
+  const definitions = await readCorrelationSymptomEvents(userId, since);
   const series: NamedSeries[] = [];
   for (const definition of definitions) {
     const label = decryptSymptomText(definition.labelEncrypted, "label");

@@ -38,6 +38,7 @@ import type {
   CodexCatalogFailure,
   CodexOfferedModel,
 } from "./codex-model-catalog";
+import { codexModelsClientVersion } from "./codex-client-version";
 
 /** How long a working model stays first in line (spec §7b). */
 export const CODEX_SLUG_CACHE_TTL_MS = 60 * 60 * 1000;
@@ -74,6 +75,11 @@ interface CredentialEntry {
   working: { slug: string; at: number } | null;
   rejected: Map<string, number>;
   catalog: CodexCatalogState | null;
+  /**
+   * The `client_version` the list was read under. The backend hides models
+   * by client version, so a list read under another version is not trusted.
+   */
+  catalogClientVersion: string | null;
   /** Whether the current unreadable stretch has been reported. */
   unreadableReported: boolean;
 }
@@ -109,6 +115,7 @@ function bind(credential: CodexCredential): CredentialEntry {
     working: null,
     rejected: new Map(),
     catalog: null,
+    catalogClientVersion: null,
     unreadableReported: false,
   };
   entries.set(credential.key, fresh);
@@ -161,6 +168,14 @@ function liveCatalog(
 ): CodexCatalogState | null {
   const state = entry?.catalog;
   if (!entry || !state) return null;
+  if (entry.catalogClientVersion !== codexModelsClientVersion()) {
+    // Read under another client version (the operator changed
+    // CODEX_CLIENT_VERSION): the next request reads the list again.
+    entry.catalog = null;
+    entry.catalogClientVersion = null;
+    entry.unreadableReported = false;
+    return null;
+  }
   const ttl =
     state.kind === "offered" ? CODEX_CATALOG_TTL_MS : CODEX_CATALOG_RETRY_MS;
   if (now - state.at > ttl) {
@@ -260,16 +275,19 @@ export function forgetCodexSignIn(key: string): void {
 }
 
 /**
- * Store a read of the account's model list. Returns true when this is the
- * first unreadable result since the list last answered, which is the one
- * the caller reports; a later failure in the same stretch returns false.
+ * Store a read of the account's model list, made under `clientVersion`.
+ * Returns true when this is the first unreadable result since the list last
+ * answered, which is the one the caller reports; a later failure in the same
+ * stretch returns false.
  */
 export function setCodexCatalogState(
   credential: CodexCredential,
   state: CodexCatalogState,
+  clientVersion: string = codexModelsClientVersion(),
 ): boolean {
   const entry = bind(credential);
   entry.catalog = state;
+  entry.catalogClientVersion = clientVersion;
   if (state.kind === "offered") {
     entry.unreadableReported = false;
     return false;

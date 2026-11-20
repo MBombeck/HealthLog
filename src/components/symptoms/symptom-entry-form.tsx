@@ -35,8 +35,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { FieldGroup } from "@/components/ui/field-group";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { SliderField } from "@/components/ui/slider";
 import {
   useActiveRecordName,
@@ -48,16 +46,14 @@ import {
   SYMPTOM_INTENSITY_MAX,
   SYMPTOM_INTENSITY_MIN,
 } from "@/lib/symptoms/shared";
-import { cn } from "@/lib/utils";
 import { useIllnessEpisodes } from "@/components/illness/use-illness";
 
-import { AddSymptomChip } from "./add-symptom-chip";
 import {
   effectiveEpisodeId,
   EpisodeLinkField,
   linkableEpisodes,
 } from "./episode-link-field";
-import { SymptomIcon } from "./symptom-icons";
+import { SymptomPicker } from "./symptom-picker";
 import {
   SymptomSaveError,
   useLogSymptomEvents,
@@ -108,6 +104,8 @@ export function SymptomEntryForm({
   const [note, setNote] = useState("");
   const [episodeId, setEpisodeId] = useState<string | null>(null);
   const [symptomError, setSymptomError] = useState<string | null>(null);
+  // Bumped on reset, so the picker starts over with an empty filter.
+  const [pickerKey, setPickerKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const formId = useId();
@@ -132,6 +130,7 @@ export function SymptomEntryForm({
 
   function resetForm() {
     picks.reset();
+    setPickerKey((k) => k + 1);
     setOccurredAt(localDateTimeValue(defaultDate));
     setNote("");
     setEpisodeId(null);
@@ -243,62 +242,17 @@ export function SymptomEntryForm({
       className="space-y-4"
       data-testid="symptom-entry-form"
     >
-      <div className="space-y-2">
-        <Label id={symptomGroupId}>{t("symptoms.entry.symptom")}</Label>
-        {definitions.isError ? (
-          // A failed read is not an empty list: the empty hint would invite
-          // the person to define a symptom they may already have.
-          <QueryErrorRow
-            error={definitions.error}
-            message={t("symptoms.section.loadError")}
-            onRetry={() => void definitions.refetch()}
-          />
-        ) : (
-          <>
-            <div
-              role="group"
-              aria-labelledby={symptomGroupId}
-              aria-describedby={
-                symptomError ? `${symptomGroupId}-error` : undefined
-              }
-              className="flex flex-wrap gap-2"
-            >
-              {list.map((definition) => (
-                <SymptomChip
-                  key={definition.id}
-                  icon={definition.icon}
-                  label={definition.label ?? t("symptoms.unreadableLabel")}
-                  selected={picked.includes(definition.id)}
-                  onToggle={() => togglePick(definition.id)}
-                />
-              ))}
-              {canDefine && !atLimit ? (
-                <AddSymptomChip
-                  onCreated={(id) => {
-                    if (!picked.includes(id)) togglePick(id);
-                  }}
-                />
-              ) : null}
-            </div>
-            <PickerHint
-              count={list.length}
-              loading={definitions.isLoading}
-              canDefine={canDefine}
-              atLimit={atLimit}
-              limit={limit}
-            />
-          </>
-        )}
-        {symptomError ? (
-          <p
-            id={`${symptomGroupId}-error`}
-            role="alert"
-            className="text-destructive text-sm"
-          >
-            {symptomError}
-          </p>
-        ) : null}
-      </div>
+      <SymptomPicker
+        key={pickerKey}
+        groupId={symptomGroupId}
+        definitions={definitions}
+        picked={picked}
+        onToggle={togglePick}
+        canDefine={canDefine}
+        atLimit={atLimit}
+        limit={limit}
+        error={symptomError}
+      />
 
       {(picked.length === 0 ? [DRAFT] : picked).map((id) => (
         <IntensitySlider
@@ -490,64 +444,4 @@ function IntensitySlider({
       ) : null}
     </div>
   );
-}
-
-/** One symptom as a toggle chip; several may be picked at once. */
-function SymptomChip({
-  icon,
-  label,
-  selected,
-  onToggle,
-}: {
-  icon: string | null;
-  label: string;
-  selected: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      role="checkbox"
-      aria-checked={selected}
-      data-testid="symptom-chip"
-      onClick={onToggle}
-      className={cn(
-        "focus-visible:ring-ring/50 inline-flex min-h-11 items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none sm:min-h-8",
-        selected
-          ? "border-primary bg-primary/10 text-foreground"
-          : "border-border text-foreground hover:bg-accent",
-      )}
-    >
-      <SymptomIcon name={icon} className="size-4" />
-      {label}
-    </button>
-  );
-}
-
-/** The one muted line under the chips: how to pick, or why none can be added. */
-function PickerHint({
-  count,
-  loading,
-  canDefine,
-  atLimit,
-  limit,
-}: {
-  count: number;
-  loading: boolean;
-  canDefine: boolean;
-  atLimit: boolean;
-  limit: number;
-}) {
-  const { t } = useTranslations();
-  let text: string | null = null;
-  if (count === 0 && !loading) {
-    text = canDefine
-      ? t("symptoms.entry.emptyHint")
-      : t("symptoms.entry.emptyHintNoManage");
-  } else if (atLimit && canDefine) {
-    text = t("symptoms.entry.limitHint", { limit });
-  } else if (count > 1) {
-    text = t("symptoms.entry.severalHint");
-  }
-  return text ? <p className="text-muted-foreground text-xs">{text}</p> : null;
 }

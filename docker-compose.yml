@@ -359,6 +359,10 @@ x-healthlog-env: &healthlog_env
   # outright; the account's list is then not read.
   CODEX_MODEL: "${CODEX_MODEL:-}"
   CODEX_MODEL_FALLBACK_CHAIN: "${CODEX_MODEL_FALLBACK_CHAIN:-}"
+  # The Codex client version named when the account's model list is read
+  # (plain x.y.z; default built in). The provider hides models that need a
+  # newer client, so raise it to follow a new Codex release.
+  CODEX_CLIENT_VERSION: "${CODEX_CLIENT_VERSION:-}"
   # Daily-briefing output-token ceiling (optional; default 2500, clamped
   # 500-8000). Raise when a verbose model's briefing JSON is cut off.
   # Listed here so an operator value in .env reaches the container (the

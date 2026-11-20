@@ -329,6 +329,14 @@ UI setup:
    on 401 and persists the new tokens transparently
    (`src/lib/ai/provider.ts`).
 
+Which models a sign-in can use comes from the account's own model list,
+read the way the Codex CLI reads it. That read names a Codex client
+version, and the provider leaves out models that need a newer client.
+HealthLog sends `0.170.0` by default. When a new Codex release brings
+models that need a newer version, set `CODEX_CLIENT_VERSION` (plain
+`x.y.z`, e.g. `0.172.0`) and restart; the cached list is read again on
+the next request. An invalid value is ignored with a warning in the log.
+
 Disconnect cleanly from `/settings/ai` — `POST /api/auth/codex/disconnect`
 clears the encrypted token columns. The wire-level protocol is
 documented in `docs/codex-protocol-spec.md` for anyone who wants to

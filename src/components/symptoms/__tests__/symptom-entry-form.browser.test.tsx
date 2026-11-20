@@ -8,17 +8,21 @@
  *     unsaved symptom stays picked, so Save again writes it alone and never
  *     writes the first twice.
  *   - Nothing picked: Save asks for a symptom and writes nothing.
+ *   - Thirty symptoms on a 390 px phone: the row wraps without a sideways
+ *     scroll, and the filter narrows it by name while a picked symptom stays.
  *
  * Mutation checks (each run, each seen red):
  *   - post only the first picked symptom → "writes one occurrence per picked
  *     symptom" goes red;
  *   - keep every pick after a partial failure → "keeps only the unsaved
- *     symptom" goes red (the retry posts Headache again).
+ *     symptom" goes red (the retry posts Headache again);
+ *   - render every chip instead of the filtered ones → "narrows thirty
+ *     symptoms by name" goes red.
  *
  * All data invented.
  */
-import { beforeEach, describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { page, userEvent } from "vitest/browser";
 
 import {
   stubFetch,
@@ -45,7 +49,7 @@ beforeEach(() => {
   api = stubFetch()
     .on("GET", "/api/symptoms/definitions", {
       data: {
-        limit: 8,
+        limit: 30,
         definitions: [
           definition("sd-headache", "Headache", "Brain"),
           definition("sd-nausea", "Nausea", "Frown"),
@@ -157,5 +161,55 @@ describe("<SymptomEntryForm> with several symptoms", () => {
     await screen.getByRole("button", { name: "Save" }).click();
     await expect.element(screen.getByText("Choose a symptom.")).toBeVisible();
     expect(api.calls("POST", "/api/symptoms/events")).toHaveLength(0);
+  });
+
+  describe("with thirty symptoms on a phone", () => {
+    beforeEach(async () => {
+      await page.viewport(390, 844);
+      api.on("GET", "/api/symptoms/definitions", {
+        data: {
+          limit: 30,
+          definitions: Array.from({ length: 30 }, (_, i) =>
+            definition(
+              `sd-${i}`,
+              i === 7 ? "Brain fog" : `Symptom number ${i}`,
+              "Tag",
+            ),
+          ),
+        },
+      });
+    });
+    afterEach(async () => {
+      await page.viewport(1280, 900);
+    });
+
+    it("narrows thirty symptoms by name, keeping a picked one", async () => {
+      const { screen } = await renderWithApp(<SymptomEntryForm />);
+      await expect
+        .element(screen.getByRole("checkbox", { name: "Symptom number 29" }))
+        .toBeVisible();
+      expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(390);
+      // At the cap: nothing to add, and the hint says why.
+      expect(
+        document.querySelector('[data-testid="symptom-add-chip"]'),
+      ).toBeNull();
+
+      await screen.getByRole("checkbox", { name: "Symptom number 3" }).click();
+      await screen
+        .getByRole("searchbox", { name: "Find a symptom" })
+        .fill("fog");
+      await expect
+        .element(screen.getByRole("checkbox", { name: "Brain fog" }))
+        .toBeVisible();
+      await expect
+        .poll(
+          () =>
+            document.querySelectorAll('[data-testid="symptom-chip"]').length,
+        )
+        .toBe(2);
+      await expect
+        .element(screen.getByRole("checkbox", { name: "Symptom number 3" }))
+        .toHaveAttribute("aria-checked", "true");
+    });
   });
 });

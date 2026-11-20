@@ -16,14 +16,23 @@ import { isoDateTime } from "@/lib/validations/datetime";
  */
 
 /**
- * Active definitions per account the person named. The same eight the custom-metric channels
- * are capped at, and for the same reason: every active definition is its own
- * correlation channel, so the cap bounds the discovery matrix as well as the
- * chip row. A hidden definition does not count, and neither does a built-in
- * one (`code` set), which Apple Health creates on demand; the matrix takes at
- * most this many channels whatever the mix.
+ * Active definitions per account the person named. It bounds the chip row
+ * and nothing else: someone tracking several conditions needs more symptoms
+ * than the correlations can sensibly pair, so the matrix has its own bound
+ * (`MAX_SYMPTOM_CORRELATION_CHANNELS`). A hidden definition does not count,
+ * and neither does a built-in one (`code` set), which Apple Health creates on
+ * demand.
  */
-export const MAX_ACTIVE_SYMPTOM_DEFINITIONS = 8;
+export const MAX_ACTIVE_SYMPTOM_DEFINITIONS = 30;
+
+/**
+ * Symptom channels the correlation / discovery matrix takes, whatever the mix
+ * of built-in and own ones: the same eight the custom-metric channels are
+ * capped at, and for the same reason, since every channel is paired with
+ * every other one. Which eight is `pickCorrelationSymptoms`: the most logged
+ * in the analysis window.
+ */
+export const MAX_SYMPTOM_CORRELATION_CHANNELS = 8;
 
 /** The intensity scale: 0 none, 10 the worst imaginable (NRS). */
 export const SYMPTOM_INTENSITY_MIN = 0;

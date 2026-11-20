@@ -30,6 +30,7 @@ import {
   markerIndexForFacts,
   serialiseDocumentDetail,
 } from "@/lib/documents/store";
+import { attachOwnerSourceUrls } from "@/lib/documents/source-url";
 import { annotate } from "@/lib/logging/context";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
@@ -89,7 +90,8 @@ async function enforceWriteRateLimit(
  */
 export const GET = apiHandler(
   async (_request: NextRequest, { params }: RouteParams) => {
-    const { user, grantId } = await requireRecordAuth("read", "documents");
+    const auth = await requireRecordAuth("read", "documents");
+    const { user, grantId } = auth;
     const gate = await requireModuleEnabled(user.id, "inboundDocuments");
     if (!gate.enabled) return gate.response;
 
@@ -131,33 +133,36 @@ export const GET = apiHandler(
       meta: { documentId: id, facts: document.facts.length },
     });
 
+    const detail = serialiseDocumentDetail(
+      document,
+      document.facts,
+      links.get(document.id) ?? [],
+      contentIndex !== null,
+      toContentIndexSource(contentIndex?.source),
+      thumbnail !== null,
+      visitLinks.get(document.id) ?? [],
+      doseLinks === null ? null : (doseLinks.get(document.id) ?? []),
+      // v1.43 — the marker each pending lab value resolves to, or choices.
+      await markerIndexForFacts(user.id, document.facts),
+    );
+    // #1394 — the archive link, for the owner on their own record only.
+    await attachOwnerSourceUrls(auth, [{ dto: detail, row: document }]);
+
     return apiSuccess(
-      await withRelated(
-        prisma,
-        serialiseDocumentDetail(
-          document,
-          document.facts,
-          links.get(document.id) ?? [],
-          contentIndex !== null,
-          toContentIndexSource(contentIndex?.source),
-          thumbnail !== null,
-          visitLinks.get(document.id) ?? [],
-          doseLinks === null ? null : (doseLinks.get(document.id) ?? []),
-          // v1.43 — the marker each pending lab value resolves to, or choices.
-          await markerIndexForFacts(user.id, document.facts),
-        ),
-        { userId: user.id, grantId, kind: "document", id: document.id },
-      ),
+      await withRelated(prisma, detail, {
+        userId: user.id,
+        grantId,
+        kind: "document",
+        id: document.id,
+      }),
     );
   },
 );
 
 export const PATCH = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user, actor, grantId } = await requireRecordAuth(
-      "guardian",
-      "documents",
-    );
+    const auth = await requireRecordAuth("guardian", "documents");
+    const { user, actor, grantId } = auth;
     const gate = await requireModuleEnabled(user.id, "inboundDocuments");
     if (!gate.enabled) return gate.response;
 
@@ -333,18 +338,18 @@ export const PATCH = apiHandler(
       meta: { documentId: existing.id, fields: touched.join(",") },
     });
 
-    return apiSuccess(
-      serialiseDocumentDetail(
-        document,
-        document.facts,
-        links.get(document.id) ?? [],
-        contentIndex !== null,
-        toContentIndexSource(contentIndex?.source),
-        thumbnail !== null,
-        visitLinks.get(document.id) ?? [],
-        doseLinks === null ? null : (doseLinks.get(document.id) ?? []),
-      ),
+    const detail = serialiseDocumentDetail(
+      document,
+      document.facts,
+      links.get(document.id) ?? [],
+      contentIndex !== null,
+      toContentIndexSource(contentIndex?.source),
+      thumbnail !== null,
+      visitLinks.get(document.id) ?? [],
+      doseLinks === null ? null : (doseLinks.get(document.id) ?? []),
     );
+    await attachOwnerSourceUrls(auth, [{ dto: detail, row: document }]);
+    return apiSuccess(detail);
   },
 );
 
