@@ -2,7 +2,7 @@
 
 import type { MedicationCourseFields } from "@/components/medications/course-fields";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
-import { useEffect, useReducer, useState } from "react";
+import { Fragment, useEffect, useMemo, useReducer, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -49,6 +49,17 @@ import {
 } from "@/lib/queries/use-medication-compliance-summary";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
+import {
+  buildDoseStatusById,
+  groupMedications,
+  useMedicationGroupsOpen,
+  MedicationGroupHeader,
+  type MedicationGroup,
+} from "@/components/medications/medication-list-groups";
+import type {
+  MedicationGroupBy,
+  MedicationGroupsOpen,
+} from "@/lib/medication-list-layout";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
 /**
@@ -87,6 +98,8 @@ export interface TableMedication {
   id: string;
   name: string;
   dose: string;
+  category?: string;
+  categoryLabel?: string | null;
   treatmentClass?: string;
   active: boolean;
   pausedAt: string | null;
@@ -202,6 +215,11 @@ interface MedicationTableProps {
    * mirroring the card grid's `<MedicationCard highlighted>`.
    */
   highlightId?: string | null;
+  groupBy?: MedicationGroupBy;
+  groupsOpen?: MedicationGroupsOpen;
+  categoryOrder?: readonly string[];
+  isFiltered?: boolean;
+  customCategories?: readonly { key: string; label: string }[];
 }
 
 export function MedicationTable({
@@ -209,6 +227,11 @@ export function MedicationTable({
   inactiveMedications,
   initialSort = null,
   highlightId = null,
+  groupBy = "none",
+  groupsOpen = "expanded",
+  categoryOrder = [],
+  isFiltered = false,
+  customCategories = [],
 }: MedicationTableProps) {
   const { t, locale } = useTranslations();
   const { user } = useAuth();
@@ -269,6 +292,40 @@ export function MedicationTable({
     locale,
   );
 
+  const activeWithCategory = sortedActive.map((m) => ({
+    ...m,
+    category: m.category ?? "OTHER",
+  }));
+  const inactiveWithCategory = sortedInactive.map((m) => ({
+    ...m,
+    category: m.category ?? "OTHER",
+  }));
+
+  const activeGroups = groupMedications(
+    activeWithCategory,
+    categoryOrder,
+    t,
+    customCategories,
+    "active",
+  );
+  const inactiveGroups = groupMedications(
+    inactiveWithCategory,
+    categoryOrder,
+    t,
+    customCategories,
+    "inactive",
+  );
+
+  const doseStatusById = useMemo(
+    () => buildDoseStatusById(complianceRows),
+    [complianceRows],
+  );
+
+  const { isOpen, toggle } = useMedicationGroupsOpen(groupsOpen, isFiltered, {
+    doseStatusById,
+    highlightId,
+  });
+
   const lateMinutes = thresholds?.lateMinutes ?? 120;
   const missedMinutes = thresholds?.missedMinutes ?? 240;
   // Per-user low-stock runway threshold: explicit `null` = the alert is
@@ -316,6 +373,39 @@ export function MedicationTable({
     if (!sort || sort.column !== column) return "none";
     return sort.direction === "asc" ? "ascending" : "descending";
   }
+
+  const renderMedicationRows = (medications: readonly TableMedication[]) =>
+    medications.map((med) => (
+      <MedicationTableRowItem
+        key={med.id}
+        medication={med}
+        userTz={userTz}
+        lateMinutes={lateMinutes}
+        missedMinutes={missedMinutes}
+        lowStockRunwayDays={lowStockRunwayDays}
+        highlighted={highlightId === med.id}
+      />
+    ));
+
+  const renderGroupedRows = (groups: MedicationGroup<TableMedication>[]) =>
+    groups.map((group) => {
+      const open = isOpen(group);
+      return (
+        <Fragment key={group.category.key}>
+          <TableRow className="bg-muted/40 hover:bg-transparent">
+            <TableCell colSpan={columns.length} className="px-4 py-1.5">
+              <MedicationGroupHeader
+                category={group.category}
+                count={group.medications.length}
+                open={open}
+                onToggle={() => toggle(group)}
+              />
+            </TableCell>
+          </TableRow>
+          {open && renderMedicationRows(group.medications)}
+        </Fragment>
+      );
+    });
 
   return (
     // `overflow-hidden` is load-bearing: the sticky name column paints
@@ -375,28 +465,12 @@ export function MedicationTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sortedActive.map((med) => (
-            <MedicationTableRowItem
-              key={med.id}
-              medication={med}
-              userTz={userTz}
-              lateMinutes={lateMinutes}
-              missedMinutes={missedMinutes}
-              lowStockRunwayDays={lowStockRunwayDays}
-              highlighted={highlightId === med.id}
-            />
-          ))}
-          {sortedInactive.map((med) => (
-            <MedicationTableRowItem
-              key={med.id}
-              medication={med}
-              userTz={userTz}
-              lateMinutes={lateMinutes}
-              missedMinutes={missedMinutes}
-              lowStockRunwayDays={lowStockRunwayDays}
-              highlighted={highlightId === med.id}
-            />
-          ))}
+          {groupBy === "category"
+            ? renderGroupedRows(activeGroups)
+            : renderMedicationRows(sortedActive)}
+          {groupBy === "category"
+            ? renderGroupedRows(inactiveGroups)
+            : renderMedicationRows(sortedInactive)}
         </TableBody>
       </Table>
     </div>

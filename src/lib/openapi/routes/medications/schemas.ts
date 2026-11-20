@@ -19,8 +19,11 @@ import {
 import { medicationExtractionSchema } from "@/lib/ai/coach/medication-extract-prompt";
 import {
   MEDICATION_LIST_VIEWS,
+  MEDICATION_GROUP_BYS,
+  MEDICATION_GROUPS_OPEN,
   MEDICATION_ORDER_ID_MAX_LENGTH,
   MEDICATION_ORDER_MAX_ENTRIES,
+  MEDICATION_CATEGORY_ORDER_MAX,
 } from "@/lib/medication-list-layout";
 import { MEDICATION_IMPORT_SKIP_REASONS } from "@/lib/jobs/medication-intake-import";
 import { isoDateTime } from "@/lib/validations/datetime";
@@ -1303,11 +1306,26 @@ export const medicationListLayoutSchema = z
       .describe(
         "User-defined manual medication order (medication ids, first = top), shared by both views. Display-only — unknown / deleted ids are ignored at render time, never 422. Optional on PUT (preserve-when-absent); always present on responses.",
       ),
+    groupBy: z
+      .enum(MEDICATION_GROUP_BYS)
+      .optional()
+      .describe('Grouping mode ("none" or "category"). Default "none".'),
+    groupsOpen: z
+      .enum(MEDICATION_GROUPS_OPEN)
+      .optional()
+      .describe(
+        'Which groups open by default ("expanded", "flagged", "collapsed"). Default "expanded".',
+      ),
+    categoryOrder: z
+      .array(z.string().min(1).max(MEDICATION_ORDER_ID_MAX_LENGTH))
+      .max(MEDICATION_CATEGORY_ORDER_MAX)
+      .optional()
+      .describe("User-defined category order allow-list."),
   })
   .meta({
     id: "MedicationListLayout",
     description:
-      "Per-user /medications presentation: the card/table view choice plus the manual medication order shared by both views. Mirrors the dashboard-widgets / insights-layout contract.",
+      "Per-user /medications presentation: the card/table view choice plus the manual medication order, category grouping and ordering. Mirrors the dashboard-widgets / insights-layout contract.",
   });
 
 // v1.32.21 — the PUT body additionally carries the optional

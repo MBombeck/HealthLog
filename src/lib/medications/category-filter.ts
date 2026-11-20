@@ -54,13 +54,3 @@ export function effectiveCategoryFilter(
     ? stored
     : ALL_MEDICATION_CATEGORIES;
 }
-
-/** Keep the medications the filter admits, in their order. */
-export function filterMedicationsByCategory<T extends CategorisedMedication>(
-  medications: readonly T[],
-  filter: string,
-): T[] {
-  return filter === ALL_MEDICATION_CATEGORIES
-    ? [...medications]
-    : medications.filter((m) => m.category === filter);
-}

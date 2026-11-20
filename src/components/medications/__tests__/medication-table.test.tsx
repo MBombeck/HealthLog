@@ -387,6 +387,28 @@ describe("<MedicationTable> — structure + shared payloads", () => {
     expect(html).not.toContain("ring-primary");
   });
 
+  it("temporarily reveals only the matching group and mounts its row when collapsed with highlightId", () => {
+    const client = makeClient();
+    const rows = [
+      med({ id: "m1", name: "Ramipril", category: "HEART" }),
+      med({ id: "m2", name: "Aspirin", category: "PAIN" }),
+    ];
+    const html = render(
+      <MedicationTable
+        activeMedications={rows}
+        inactiveMedications={[]}
+        groupBy="category"
+        groupsOpen="collapsed"
+        highlightId="m2"
+      />,
+      client,
+    );
+
+    expect(html).toContain('data-medication-id="m2"');
+    expect(html).toContain("ring-primary");
+    expect(html).not.toContain('data-medication-id="m1"');
+  });
+
   it("renders a GLP-1 medication like any other row", () => {
     const client = makeClient();
     seedCompliance(client, "g1", 100, 100);

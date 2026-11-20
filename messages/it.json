@@ -2680,6 +2680,31 @@
       "saveError": "Non è stato possibile salvare la composizione",
       "catalogError": "Non è stato possibile caricare l'elenco dei nutrienti",
       "invalidRow": "Scegli un nutriente e inserisci una quantità maggiore di zero in ogni riga."
+    },
+    "filter": {
+      "searchPlaceholder": "Cerca farmaco…",
+      "searchLabel": "Cerca farmaci",
+      "clearSearch": "Cancella ricerca",
+      "treatmentPeriod": "Periodo di trattamento",
+      "noMatchesTitle": "Nessun farmaco trovato",
+      "noMatchesDescription": "Prova a modificare i termini di ricerca o i filtri.",
+      "countOne": "{count} farmaco",
+      "countFew": "{count} farmaci",
+      "countOther": "{count} farmaci"
+    },
+    "groups": {
+      "heading": "Categorie",
+      "description": "Raggruppa i farmaci per categoria.",
+      "label": "Raggruppamento",
+      "none": "Nessuno",
+      "category": "Per categoria",
+      "openLabel": "Aperte al caricamento",
+      "openExpanded": "Tutte",
+      "openFlagged": "Solo da assumere",
+      "openCollapsed": "Nessuna",
+      "orderWithinGroups": "L’ordine vale all’interno di ogni categoria.",
+      "orderHeading": "Ordine delle categorie",
+      "orderDefault": "Finché non ne sposti una, le categorie predefinite seguono un ordine fisso, le tue l’ordine alfabetico e {other} viene per ultima."
     }
   },
   "charts": {
