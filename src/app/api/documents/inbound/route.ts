@@ -417,7 +417,8 @@ export const POST = apiHandler(withIdempotency<[Request]>(postUpload));
  * people: every reading grant lists, one relationship uploads.
  */
 export const GET = apiHandler(async (request: Request) => {
-  const { user } = await requireRecordAuth("read", "documents");
+  const auth = await requireRecordAuth("read", "documents");
+  const { user } = auth;
 
   const gate = await requireModuleEnabled(user.id, "inboundDocuments");
   if (!gate.enabled) return gate.response;
@@ -445,5 +446,5 @@ export const GET = apiHandler(async (request: Request) => {
     );
   }
 
-  return apiSuccess(await listVaultDocuments(user.id, parsed.data));
+  return apiSuccess(await listVaultDocuments(user.id, parsed.data, auth));
 });

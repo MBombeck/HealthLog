@@ -12455,6 +12455,7 @@
       "uploadedMeta": "Добавлено {date}, {size}",
       "importedFrom": "Импортировано из {system}",
       "importedFromWithId": "Импортировано из {system}, ID {id}",
+      "openInSource": "Открыть в {system}",
       "sourceOther": "другой системы",
       "share": "Поделиться",
       "labValuesLink": "Показать результаты анализов ({count})",

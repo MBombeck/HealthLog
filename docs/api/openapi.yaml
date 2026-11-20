@@ -86648,6 +86648,11 @@ components:
           type:
             - string
             - "null"
+        sourceUrl:
+          anyOf:
+            - type: string
+              format: uri
+            - type: "null"
         createdAt:
           type: string
         updatedAt:
@@ -86676,6 +86681,7 @@ components:
         - hasThumbnail
         - sourceSystem
         - sourceId
+        - sourceUrl
         - createdAt
         - updatedAt
       additionalProperties: false
@@ -86692,7 +86698,12 @@ components:
         been rendered in the background (fetch it from `/api/documents/inbound/{id}/thumbnail`); false means no preview
         yet or an unsupported type — show a placeholder. `sourceSystem` / `sourceId` say where an imported document came
         from and its id there (both null for a document added in HealthLog); treat an unknown `sourceSystem` as OTHER
-        when decoding. Treat an unknown `kind` value as OTHER when decoding.
+        when decoding. `sourceUrl` is the document's page in the Paperless-ngx or Papra archive the owner has connected
+        (http or https), built by the server from that connection; it is filled on the list (`GET
+        /api/documents/inbound`) and on the detail read and edit (`GET` / `PATCH /api/documents/inbound/{id}`), only for
+        the owner acting on their own record and only while the connection, the id and the operator's origin list allow
+        it; it is null for a delegate or a guardian and in every other response. Open it in a browser; never send
+        credentials to it. Treat an unknown `kind` value as OTHER when decoding.
     DocumentConditionLink:
       type: object
       properties:
@@ -87221,6 +87232,11 @@ components:
           type:
             - string
             - "null"
+        sourceUrl:
+          anyOf:
+            - type: string
+              format: uri
+            - type: "null"
         createdAt:
           type: string
         updatedAt:
@@ -87285,6 +87301,7 @@ components:
         - hasThumbnail
         - sourceSystem
         - sourceId
+        - sourceUrl
         - createdAt
         - updatedAt
         - facts

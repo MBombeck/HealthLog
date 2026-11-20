@@ -12455,6 +12455,7 @@
       "uploadedMeta": "Aggiunto il {date}, {size}",
       "importedFrom": "Importato da {system}",
       "importedFromWithId": "Importato da {system}, ID {id}",
+      "openInSource": "Apri in {system}",
       "sourceOther": "un altro sistema",
       "share": "Condividi",
       "labValuesLink": "Vedi {count} valori di laboratorio",

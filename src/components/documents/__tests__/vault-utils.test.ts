@@ -50,6 +50,7 @@ function doc(overrides: Partial<InboundDocumentDto> = {}): InboundDocumentDto {
     hasThumbnail: false,
     sourceSystem: null,
     sourceId: null,
+    sourceUrl: null,
     createdAt: "2026-03-11T08:00:00.000Z",
     updatedAt: "2026-03-11T08:00:00.000Z",
     ...overrides,

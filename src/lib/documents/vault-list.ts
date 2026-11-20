@@ -18,6 +18,10 @@ import {
 } from "@/lib/documents/links";
 import { serialiseDocument } from "@/lib/documents/store";
 import {
+  attachOwnerSourceUrls,
+  type SourceUrlCaller,
+} from "@/lib/documents/source-url";
+import {
   toContentIndexSource,
   type documentListQuerySchema,
 } from "@/lib/validations/inbound-documents";
@@ -123,6 +127,8 @@ async function pageFactCounts(
 export async function listVaultDocuments(
   userId: string,
   query: VaultListQuery,
+  /** Who reads the list; the archive link is filled for the owner only. */
+  caller: SourceUrlCaller | null = null,
 ) {
   const { q, kind, episodeId, encounterId, year, sort, order, cursor } = query;
   const where = listWhere(userId, query);
@@ -192,18 +198,22 @@ export async function listVaultDocuments(
     },
   });
 
-  return {
-    documents: page.map((doc) =>
-      serialiseDocument(
-        doc,
-        factCounts.get(doc.id) ?? { factCount: 0, pendingCount: 0 },
-        linkMap.get(doc.id) ?? [],
-        indexSources.has(doc.id),
-        toContentIndexSource(indexSources.get(doc.id)),
-        thumbnailIds.has(doc.id),
-        visitLinkMap.get(doc.id) ?? [],
-      ),
+  const documents = page.map((doc) =>
+    serialiseDocument(
+      doc,
+      factCounts.get(doc.id) ?? { factCount: 0, pendingCount: 0 },
+      linkMap.get(doc.id) ?? [],
+      indexSources.has(doc.id),
+      toContentIndexSource(indexSources.get(doc.id)),
+      thumbnailIds.has(doc.id),
+      visitLinkMap.get(doc.id) ?? [],
     ),
-    nextCursor,
-  };
+  );
+  if (caller) {
+    await attachOwnerSourceUrls(
+      caller,
+      documents.map((dto, i) => ({ dto, row: page[i] })),
+    );
+  }
+  return { documents, nextCursor };
 }

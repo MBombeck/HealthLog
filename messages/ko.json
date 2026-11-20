@@ -12455,6 +12455,7 @@
       "uploadedMeta": "{date} 추가, {size}",
       "importedFrom": "{system}에서 가져옴",
       "importedFromWithId": "{system}에서 가져옴, ID {id}",
+      "openInSource": "{system}에서 열기",
       "sourceOther": "다른 시스템",
       "share": "공유",
       "labValuesLink": "검사 수치 {count}개 보기",
