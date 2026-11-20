@@ -41351,8 +41351,9 @@ components:
       required:
         - label
       description: Define a symptom of your own. `label` (1-40 characters) is encrypted at rest; `icon` is one of the cycle
-        custom-symptom icon names, null for the default glyph. At most eight active definitions the person named per
-        account (422 `symptoms.definition.limitReached`); the built-in ones Apple Health creates do not count.
+        custom-symptom icon names, null for the default glyph. At most 30 active definitions the person named per
+        account (`limit` on the list; 422 `symptoms.definition.limitReached` past it); the built-in ones Apple Health
+        creates do not count. Until v1.48.4 the cap was eight.
     UpdateSymptomDefinitionRequest:
       type: object
       properties:
@@ -98016,7 +98017,8 @@ components:
         - definitions
         - limit
       additionalProperties: false
-      description: The record's symptom definitions in display order, and the active-definition cap.
+      description: The record's symptom definitions in display order, and `limit`, the cap on active definitions the person
+        named (30 since v1.48.4, eight before). Read it rather than assuming a number.
     SymptomDefinition:
       type: object
       properties:

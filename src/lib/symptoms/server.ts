@@ -18,7 +18,7 @@ import type {
 
 import {
   isEpisodeLinkableAt,
-  MAX_ACTIVE_SYMPTOM_DEFINITIONS,
+  MAX_SYMPTOM_CORRELATION_CHANNELS,
   type SymptomDefinitionDTO,
   type SymptomEventDTO,
 } from "./shared";
@@ -175,20 +175,37 @@ export function countCappedSymptomDefinitions(userId: string): Promise<number> {
   });
 }
 
+/** One active definition as the correlation pick sees it. */
+export interface CorrelationSymptomCandidate {
+  id: string;
+  createdAt: Date;
+  /** Live occurrences in the analysis window. */
+  eventCount: number;
+  /** The newest of them, or null when there are none. */
+  lastOccurredAt: Date | null;
+}
+
 /**
- * The definitions that are correlation channels, at most `max`, from the
- * active ones in display order: the ones the person named first, then the
- * built-in ones Apple Health created. A built-in one holds no slot of the
- * cap, so the matrix bound is applied here, and a symptom someone chose to
- * track is never pushed out by an imported one. Pure, so the caller folds
- * it into the read it already makes.
+ * The definitions that are correlation channels, at most `max` of the
+ * active ones, built-in and own alike: the most logged in the analysis
+ * window first; on a tie the one felt most recently, then the older
+ * definition, then the id, so the same data always yields the same channels.
+ * The chip-row cap no longer bounds the matrix (an account may keep many
+ * more symptoms active than the matrix pairs), so this is where that bound
+ * lives. Pure, so the caller folds it into the read it already makes.
  */
-export function pickCorrelationSymptoms<T extends { code: string | null }>(
-  activeInDisplayOrder: readonly T[],
-  max: number = MAX_ACTIVE_SYMPTOM_DEFINITIONS,
+export function pickCorrelationSymptoms<T extends CorrelationSymptomCandidate>(
+  active: readonly T[],
+  max: number = MAX_SYMPTOM_CORRELATION_CHANNELS,
 ): T[] {
-  return [
-    ...activeInDisplayOrder.filter((d) => d.code === null),
-    ...activeInDisplayOrder.filter((d) => d.code !== null),
-  ].slice(0, max);
+  return [...active]
+    .sort(
+      (a, b) =>
+        b.eventCount - a.eventCount ||
+        (b.lastOccurredAt?.getTime() ?? -Infinity) -
+          (a.lastOccurredAt?.getTime() ?? -Infinity) ||
+        a.createdAt.getTime() - b.createdAt.getTime() ||
+        (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+    )
+    .slice(0, max);
 }

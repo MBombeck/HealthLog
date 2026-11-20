@@ -22,7 +22,7 @@
 import { localDateTimeValue } from "@/components/day/prefill";
 import { useId, useState } from "react";
 import { createPortal } from "react-dom";
-import { Loader2, MoreHorizontal, Plus, RotateCcw } from "lucide-react";
+import { Loader2, MoreHorizontal, Plus, RotateCcw, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -57,6 +57,10 @@ import {
   EpisodeLinkField,
   linkableEpisodes,
 } from "./episode-link-field";
+import {
+  filterSymptomChips,
+  SYMPTOM_FILTER_THRESHOLD,
+} from "./symptom-chip-filter";
 import { SymptomIcon } from "./symptom-icons";
 import {
   SymptomSaveError,
@@ -108,6 +112,7 @@ export function SymptomEntryForm({
   const [note, setNote] = useState("");
   const [episodeId, setEpisodeId] = useState<string | null>(null);
   const [symptomError, setSymptomError] = useState<string | null>(null);
+  const [chipFilter, setChipFilter] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const formId = useId();
@@ -120,6 +125,10 @@ export function SymptomEntryForm({
   const atLimit =
     limit > 0 && list.filter((d) => d.code === null).length >= limit;
   const labelById = new Map(list.map((d) => [d.id, d.label]));
+  const filterable = list.length > SYMPTOM_FILTER_THRESHOLD;
+  const shown = filterable
+    ? filterSymptomChips(list, chipFilter, picked)
+    : list;
   const busy = log.isPending;
   // Exactly the episodes the server admits at the chosen time.
   const episodeOptions = linkableEpisodes(episodes.data ?? [], occurredAt);
@@ -132,6 +141,7 @@ export function SymptomEntryForm({
 
   function resetForm() {
     picks.reset();
+    setChipFilter("");
     setOccurredAt(localDateTimeValue(defaultDate));
     setNote("");
     setEpisodeId(null);
@@ -255,6 +265,23 @@ export function SymptomEntryForm({
           />
         ) : (
           <>
+            {filterable ? (
+              <div className="relative">
+                <Search
+                  className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+                  aria-hidden
+                />
+                <Input
+                  type="search"
+                  value={chipFilter}
+                  onChange={(e) => setChipFilter(e.target.value)}
+                  placeholder={t("symptoms.entry.filterPlaceholder")}
+                  aria-label={t("symptoms.entry.filterPlaceholder")}
+                  data-testid="symptom-chip-filter"
+                  className="pl-9"
+                />
+              </div>
+            ) : null}
             <div
               role="group"
               aria-labelledby={symptomGroupId}
@@ -263,7 +290,7 @@ export function SymptomEntryForm({
               }
               className="flex flex-wrap gap-2"
             >
-              {list.map((definition) => (
+              {shown.map((definition) => (
                 <SymptomChip
                   key={definition.id}
                   icon={definition.icon}
@@ -280,6 +307,11 @@ export function SymptomEntryForm({
                 />
               ) : null}
             </div>
+            {shown.length === 0 && list.length > 0 ? (
+              <p className="text-muted-foreground text-xs">
+                {t("symptoms.entry.filterEmpty")}
+              </p>
+            ) : null}
             <PickerHint
               count={list.length}
               loading={definitions.isLoading}

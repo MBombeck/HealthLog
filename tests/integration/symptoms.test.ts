@@ -6,8 +6,9 @@
  *
  *   - the two tables exist, the label and the note are ciphertext on disk, and
  *     the intensity CHECK holds;
- *   - the eight-definition cap counts active definitions only, and showing a
- *     hidden one again re-checks it;
+ *   - the cap of 30 named definitions counts active ones only (the ninth to
+ *     the thirtieth land, the thirty-first is refused with the cap in its
+ *     `meta`), and showing a hidden one again re-checks it;
  *   - an occurrence can be filed against the record's own episode while it is
  *     open, or a resolved one it happened during, and against nothing else:
  *     not a resolved one it fell outside of, not another account's;
@@ -16,10 +17,13 @@
  *     clears the link, and the day view opens a link only to a live episode;
  *   - each active definition reaches the discovery matrix as its own
  *     `SYMPTOM:<id>` channel, labelled with its name, and leaves it when the
- *     illness module is off;
+ *     illness module is off; of more than eight, the matrix takes the eight
+ *     most logged in its window, built-in and own alike, the same eight on
+ *     every read;
  *   - a portable export carries the names readable and restores them under
  *     the instance's key, dropping (and naming) a link to an episode the file
- *     does not carry.
+ *     does not carry; an account with more than eight active symptoms
+ *     restores whole.
  *
  * Mutation checks (each run, each seen red):
  *   - make `isEpisodeLinkableAt` admit every episode → "refuses a resolved
@@ -30,8 +34,10 @@
  *     "opens a link from the day view only to a live episode" goes red;
  *   - drop `userId` from the same lookup → "refuses another account's episode"
  *     goes red;
- *   - remove the cap check in the definitions POST → "holds eight active
- *     definitions" goes red.
+ *   - remove the cap check in the definitions POST → "holds thirty active
+ *     definitions" goes red;
+ *   - pick the channels in display order again (the pre-v1.48.4 rule) →
+ *     "takes the eight most logged" goes red.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -41,6 +47,7 @@ process.env.ENCRYPTION_KEY ??=
 import { NextRequest } from "next/server";
 
 import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
+import { MAX_ACTIVE_SYMPTOM_DEFINITIONS } from "@/lib/symptoms/shared";
 import { assembleDiscoveryMatrix } from "@/lib/insights/discovery-matrix";
 import { buildSymptomsBackupSection } from "@/lib/export/symptoms-backup";
 import { restoreSymptomsData } from "@/lib/export/symptoms-backup";
@@ -173,24 +180,51 @@ describe("symptom definitions", () => {
         limit: number;
       }>
     >(await call(GET, "GET", "/api/symptoms/definitions"));
-    expect(listed.data.limit).toBe(8);
+    expect(listed.data.limit).toBe(30);
     expect(listed.data.definitions).toMatchObject([
       { id, label: "Aura", recent: { count30d: 2, maxIntensity30d: 7 } },
     ]);
   });
 
-  it("holds eight active definitions, and a hidden one frees its slot", async () => {
+  it("holds thirty active definitions, and a hidden one frees its slot", async () => {
+    expect(MAX_ACTIVE_SYMPTOM_DEFINITIONS).toBe(30);
+    // The first eight straight into the table, so the route calls below stay
+    // inside the definitions rate limit; the ninth to the thirtieth through
+    // the route, each one past the old cap of eight.
+    const prisma = getPrismaClient();
     const ids: string[] = [];
-    for (let i = 0; i < 8; i += 1) ids.push(await defineSymptom(`S${i}`));
+    for (let i = 0; i < 8; i += 1) {
+      const row = await prisma.symptomDefinition.create({
+        data: {
+          userId: OWNER_ID,
+          labelEncrypted: encryptToBytes(`S${i}`),
+          sortOrder: i,
+        },
+      });
+      ids.push(row.id);
+    }
+    // A built-in one still holds no slot.
+    await prisma.symptomDefinition.create({
+      data: {
+        userId: OWNER_ID,
+        labelEncrypted: encryptToBytes("Fever"),
+        code: "FEVER",
+      },
+    });
+    for (let i = 8; i < 30; i += 1) ids.push(await defineSymptom(`S${i}`));
 
     const { POST } = await import("@/app/api/symptoms/definitions/route");
-    const ninth = await call(POST, "POST", "/api/symptoms/definitions", {
-      label: "Ninth",
+    const extra = await call(POST, "POST", "/api/symptoms/definitions", {
+      label: "One more",
     });
-    expect(ninth.status).toBe(422);
-    expect((await json<Envelope<null>>(ninth)).meta?.errorCode).toBe(
-      "symptoms.definition.limitReached",
-    );
+    expect(extra.status).toBe(422);
+    const refused = await json<
+      Envelope<null> & { meta?: { errorCode?: string; limit?: number } }
+    >(extra);
+    expect(refused.meta).toMatchObject({
+      errorCode: "symptoms.definition.limitReached",
+      limit: 30,
+    });
 
     const { DELETE, PATCH } =
       await import("@/app/api/symptoms/definitions/[id]/route");
@@ -202,9 +236,9 @@ describe("symptom definitions", () => {
       { id: ids[0] },
     );
     expect(hidden.status).toBe(200);
-    expect(await defineSymptom("Ninth")).toBeTruthy();
+    expect(await defineSymptom("One more")).toBeTruthy();
 
-    // Showing the hidden one again would make nine.
+    // Showing the hidden one again would make thirty-one.
     const reshown = await call(
       PATCH,
       "PATCH",
@@ -772,9 +806,138 @@ describe("the SYMPTOM:<id> correlation channel", () => {
     });
     expect(off.series.some((s) => s.key.startsWith("SYMPTOM:"))).toBe(false);
   });
+
+  it("takes the eight most logged of twelve active ones, built-in and own alike, the same eight every read", async () => {
+    const prisma = getPrismaClient();
+    // Twelve active symptoms, logged 0..11 times in the window. The most
+    // logged come last in display order, were defined last and were felt
+    // longest ago, so no pick but the count finds them. One built-
+    // in symptom is among the most logged; a hidden one, logged most of all,
+    // is no channel; a tie on the count is broken by the latest occurrence.
+    const ids: string[] = [];
+    for (let i = 0; i < 12; i += 1) {
+      const row = await prisma.symptomDefinition.create({
+        data: {
+          userId: OWNER_ID,
+          labelEncrypted: encryptToBytes(`S${i}`),
+          sortOrder: i,
+          code: i === 10 ? "FEVER" : null,
+          createdAt: new Date(Date.UTC(2026, 0, 1 + i)),
+        },
+      });
+      ids.push(row.id);
+    }
+    const hidden = await prisma.symptomDefinition.create({
+      data: {
+        userId: OWNER_ID,
+        labelEncrypted: encryptToBytes("Hidden"),
+        isActive: false,
+      },
+    });
+    const events: Array<{
+      userId: string;
+      definitionId: string;
+      occurredAt: Date;
+      intensity: number;
+    }> = [];
+    // S3 and S4 both get 4; S4's last one is later, so S4 wins the tie and
+    // S3 is the one left out with S0..S2.
+    const counts = [0, 1, 2, 4, 4, 5, 6, 7, 8, 9, 10, 11];
+    counts.forEach((count, i) => {
+      for (let n = 0; n < count; n += 1) {
+        events.push({
+          userId: OWNER_ID,
+          definitionId: ids[i],
+          // The more often logged, the earlier the last time, so a pick by
+          // the latest occurrence would miss them too.
+          occurredAt: new Date(
+            Date.UTC(2026, 8, 25 - 2 * count + n, i === 4 ? 12 : 8, 0, 0),
+          ),
+          intensity: 3,
+        });
+      }
+    });
+    for (let n = 0; n < 20; n += 1) {
+      events.push({
+        userId: OWNER_ID,
+        definitionId: hidden.id,
+        occurredAt: new Date(Date.UTC(2026, 8, 1 + n, 8)),
+        intensity: 5,
+      });
+    }
+    // Outside the window: would make S0 the most logged if it counted.
+    for (let n = 0; n < 30; n += 1) {
+      events.push({
+        userId: OWNER_ID,
+        definitionId: ids[0],
+        occurredAt: new Date(Date.UTC(2026, 5, 1, 0, n)),
+        intensity: 2,
+      });
+    }
+    await prisma.symptomEvent.createMany({ data: events });
+
+    const read = async () =>
+      (
+        await assembleDiscoveryMatrix(OWNER_ID, {
+          tz: "Europe/Berlin",
+          since: new Date("2026-08-01T00:00:00.000Z"),
+          fetchMode: "raw" as const,
+          modules: {},
+        })
+      ).series
+        .filter((s) => s.key.startsWith("SYMPTOM:"))
+        .map((s) => s.label);
+
+    const first = await read();
+    expect(first).toEqual(["S11", "S10", "S9", "S8", "S7", "S6", "S5", "S4"]);
+    expect(await read()).toEqual(first);
+  });
 });
 
 describe("the portable backup", () => {
+  it("restores an account with twelve active symptoms whole", async () => {
+    const prisma = getPrismaClient();
+    for (let i = 0; i < 12; i += 1) {
+      const definition = await prisma.symptomDefinition.create({
+        data: {
+          userId: OWNER_ID,
+          labelEncrypted: encryptToBytes(`Symptom ${i}`),
+          sortOrder: i,
+        },
+      });
+      await prisma.symptomEvent.create({
+        data: {
+          userId: OWNER_ID,
+          definitionId: definition.id,
+          occurredAt: new Date(Date.UTC(2026, 6, 1 + i, 8)),
+          intensity: i % 11,
+        },
+      });
+    }
+
+    const section = await buildSymptomsBackupSection(prisma, OWNER_ID);
+    const text = JSON.stringify(section);
+    await prisma.symptomDefinition.deleteMany({ where: { userId: OWNER_ID } });
+
+    await prisma.$transaction((tx) =>
+      restoreSymptomsData(tx, OWNER_ID, JSON.parse(text), new Set(), []),
+    );
+
+    const restored = await prisma.symptomDefinition.findMany({
+      where: { userId: OWNER_ID },
+      orderBy: { sortOrder: "asc" },
+      include: { events: true },
+    });
+    expect(restored).toHaveLength(12);
+    expect(restored.every((d) => d.isActive)).toBe(true);
+    expect(restored.map((d) => decryptFromBytes(d.labelEncrypted))).toEqual(
+      Array.from({ length: 12 }, (_, i) => `Symptom ${i}`),
+    );
+    expect(restored.map((d) => d.events[0]?.intensity)).toEqual(
+      Array.from({ length: 12 }, (_, i) => i % 11),
+    );
+  });
+
   it("carries the names readable and restores them, dropping a link to an episode the file lacks", async () => {
     const prisma = getPrismaClient();
     const kept = await prisma.illnessEpisode.create({

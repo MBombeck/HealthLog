@@ -169,7 +169,7 @@
     },
     "symptoms": {
       "definition": {
-        "limitReached": "Hai 8 sintomi. Nascondine uno per aggiungerne un altro.",
+        "limitReached": "Hai raggiunto il numero massimo di sintomi. Nascondine uno per aggiungerne un altro.",
         "notFound": "Questo sintomo non esiste più."
       },
       "episode": {
@@ -13938,7 +13938,7 @@
       "Thermometer": "Termometro",
       "Stethoscope": "Stetoscopio"
     },
-    "limitReached": "Hai 8 sintomi. Nascondine uno per aggiungerne un altro.",
+    "limitReached": "Hai {limit} sintomi. Nascondine uno per aggiungerne un altro.",
     "saveError": "Impossibile salvare il sintomo. Riprova.",
     "nameRequired": "Dai un nome al sintomo.",
     "unreadableLabel": "Sintomo illeggibile",
@@ -13964,7 +13964,9 @@
       "limitHint": "Fino a {limit} sintomi. Nascondine uno nella pagina delle malattie per aggiungerne un altro.",
       "intensityFor": "Intensità: {symptom}",
       "partlySaved": "{saved} di {total} salvati, il resto è ancora selezionato.",
-      "severalHint": "Scegline più di uno se sono comparsi insieme."
+      "severalHint": "Scegline più di uno se sono comparsi insieme.",
+      "filterPlaceholder": "Cerca un sintomo",
+      "filterEmpty": "Nessun sintomo corrisponde."
     },
     "section": {
       "title": "I tuoi sintomi",

@@ -169,7 +169,7 @@
     },
     "symptoms": {
       "definition": {
-        "limitReached": "증상이 8개입니다. 하나를 숨기면 새로 추가할 수 있습니다.",
+        "limitReached": "증상 개수 한도에 도달했습니다. 하나를 숨기면 새로 추가할 수 있습니다.",
         "notFound": "이 증상은 더 이상 없습니다."
       },
       "episode": {
@@ -13938,7 +13938,7 @@
       "Thermometer": "체온계",
       "Stethoscope": "청진기"
     },
-    "limitReached": "증상이 8개입니다. 하나를 숨기면 새로 추가할 수 있습니다.",
+    "limitReached": "증상이 {limit}개입니다. 하나를 숨기면 새로 추가할 수 있습니다.",
     "saveError": "증상을 저장하지 못했습니다. 다시 시도하세요.",
     "nameRequired": "증상 이름을 입력하세요.",
     "unreadableLabel": "읽을 수 없는 증상",
@@ -13964,7 +13964,9 @@
       "limitHint": "증상은 최대 {limit}개입니다. 질병 페이지에서 하나를 숨기면 새로 추가할 수 있습니다.",
       "intensityFor": "강도: {symptom}",
       "partlySaved": "{total}개 중 {saved}개 저장됨, 나머지는 아직 선택되어 있습니다.",
-      "severalHint": "함께 나타났다면 여러 개를 선택하세요."
+      "severalHint": "함께 나타났다면 여러 개를 선택하세요.",
+      "filterPlaceholder": "증상 찾기",
+      "filterEmpty": "일치하는 증상이 없습니다."
     },
     "section": {
       "title": "내 증상",
