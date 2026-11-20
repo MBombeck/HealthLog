@@ -481,8 +481,22 @@ model User {
   dateFormat               DateFormatPreference @default(AUTO) @map("date_format")
   // AI provider selection for insights. Null = OPENAI fallback.
   aiProvider               String?              @map("ai_provider") // "OPENAI" | "ANTHROPIC" | "LOCAL" | "CHATGPT_OAUTH"
+  /// The model of the OpenAI and Anthropic providers (and the gateway's
+  /// fallback when `aiCompatModel` is empty). Not read for Local, which has
+  /// `aiLocalModel`.
   aiModel                  String?              @map("ai_model")
-  aiBaseUrl                String?              @map("ai_base_url")
+  /// #1417 — the Local provider's base URL, and nothing else's. The column is
+  /// the former `aiBaseUrl` (kept as `ai_base_url`, so no copy and a rollback
+  /// finds it): it was only ever read for Local, but the field name read as
+  /// shared and the settings route cleared it whenever another provider was
+  /// saved, which wiped a working Local setup. It is no longer cleared on a
+  /// provider switch. A cloud key can never reach it because no other
+  /// provider's resolution reads this field: OpenAI pins api.openai.com,
+  /// Anthropic takes no base URL, the gateway reads `aiCompatBaseUrl`.
+  aiLocalBaseUrl           String?              @map("ai_base_url")
+  /// #1417 — the Local provider's own model (migration 0512 copied it out of
+  /// the shared `aiModel`), so saving another provider never changes it.
+  aiLocalModel             String?              @map("ai_local_model")
   aiAnthropicKeyEncrypted  String?              @map("ai_anthropic_key_encrypted")
   aiLocalKeyEncrypted      String?              @map("ai_local_key_encrypted")
   // v1.4.3: per-user OpenAI API key for the OPENAI provider — previously
@@ -493,7 +507,7 @@ model User {
 
   // v1.33.1 (#470) — the OpenAI-compatible gateway provider (LiteLLM,
   // OpenRouter, vLLM, any endpoint speaking `/v1/chat/completions`).
-  // Three DEDICATED columns rather than a reuse of `aiBaseUrl` /
+  // Three DEDICATED columns rather than a reuse of `aiLocalBaseUrl` /
   // `aiOpenaiKeyEncrypted`: the OpenAI arm pins `api.openai.com` and must
   // never be able to read a user-supplied host, and the gateway credential
   // must never be the OpenAI key. Separate columns make that structural

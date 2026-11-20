@@ -46,7 +46,7 @@ describe("restoring an admin account's settings", () => {
     expect(result.refused).toEqual([]);
     expect(update).toHaveBeenCalledWith({
       where: { id: "admin-1" },
-      data: { aiProvider: "LOCAL", aiBaseUrl: PRIVATE_ENDPOINT },
+      data: { aiProvider: "LOCAL", aiLocalBaseUrl: PRIVATE_ENDPOINT },
     });
   });
 

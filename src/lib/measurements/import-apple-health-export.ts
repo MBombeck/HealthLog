@@ -69,9 +69,14 @@ import {
 } from "@/lib/export/measurement-bulk-insert";
 import { resolveHkWorkoutSportType } from "@/lib/measurements/hk-workout-activity-type-map";
 import {
-  convertHkValue,
-  hkDistanceToMetres,
-} from "@/lib/measurements/hk-units";
+  adoptLegacyWorkoutKeys,
+  exportWorkoutFigures,
+  exportWorkoutTracker,
+  storedWorkoutTotals,
+  workoutTotalsUpdate,
+  workoutExternalId,
+  type PreparedWorkout,
+} from "@/lib/measurements/apple-health-export-workouts";
 import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit";
 import { maybeEnqueueMorningRefresh } from "@/lib/daily/morning-refresh-trigger";
 import { emitDataArrival } from "@/lib/arrivals/emit-shared";
@@ -131,6 +136,8 @@ export interface ImportJobResult {
     read: number;
     inserted: number;
     updated: number;
+    duplicate: number; // repeats of a workout the export already stated
+
     unknownActivityType: number;
     routesAttached: number;
     durationMs: number;
@@ -224,22 +231,6 @@ function kindOf(type: MeasurementType): string {
   return type === "BLOOD_PRESSURE_SYS" || type === "BLOOD_PRESSURE_DIA"
     ? "BLOOD_PRESSURE"
     : type;
-}
-
-/** Flush row written to the `Workout` table. */
-interface PreparedWorkout {
-  userId: string;
-  sportType: string;
-  startedAt: Date;
-  endedAt: Date;
-  durationSec: number;
-  totalEnergyKcal: number | null;
-  totalDistanceM: number | null;
-  externalId: string;
-  externalSourceVersion: string | null;
-  metadata: Prisma.JsonValue | null;
-  /** The `<FileReference path>` of the workout's GPS track, when it has one. */
-  routePath?: string;
 }
 
 type CumulativeSourceSubtotals = Map<string, number>;
@@ -503,6 +494,7 @@ export async function streamParseExportXml(
     read: 0,
     inserted: 0,
     updated: 0,
+    duplicate: 0,
     unknownActivityType: 0,
     routesAttached: 0,
     durationMs: 0,
@@ -969,6 +961,7 @@ export async function streamParseExportXml(
   const flushWorkoutBatch = async (): Promise<void> => {
     if (workoutBatch.length === 0) return;
     const chunk = workoutBatch.splice(0, workoutBatch.length);
+    await adoptLegacyWorkoutKeys(prisma, userId, chunk);
     const insertedArrivals: Array<{ id: string; startedAt: Date }> = [];
     const createData: Prisma.WorkoutCreateManyInput[] = chunk.map((row) => ({
       userId,
@@ -978,6 +971,9 @@ export async function streamParseExportXml(
       durationSec: row.durationSec,
       totalEnergyKcal: row.totalEnergyKcal,
       totalDistanceM: row.totalDistanceM,
+      avgHeartRate: row.avgHeartRate,
+      minHeartRate: row.minHeartRate,
+      maxHeartRate: row.maxHeartRate,
       source: "APPLE_HEALTH",
       externalId: row.externalId,
       externalSourceVersion: row.externalSourceVersion,
@@ -1002,6 +998,11 @@ export async function streamParseExportXml(
       else createdByExternalId.set(created.externalId, [created]);
     }
 
+    const storedTotals = await storedWorkoutTotals(
+      prisma,
+      userId,
+      chunk.filter((row) => !createdByExternalId.has(row.externalId)),
+    );
     for (const row of chunk) {
       const rowStart = Date.now();
       const inserted = createdByExternalId.get(row.externalId)?.shift();
@@ -1022,8 +1023,8 @@ export async function streamParseExportXml(
             startedAt: row.startedAt,
             endedAt: row.endedAt,
             durationSec: row.durationSec,
-            totalEnergyKcal: row.totalEnergyKcal,
-            totalDistanceM: row.totalDistanceM,
+            // Fills or replaces only what it may (`workoutTotalsUpdate`).
+            ...workoutTotalsUpdate(row, storedTotals.get(row.externalId)),
             externalSourceVersion: row.externalSourceVersion,
             metadata: row.metadata ?? undefined,
           },
@@ -1187,6 +1188,7 @@ export async function streamParseExportXml(
   const parser = sax.parser(true, { trim: true });
   let pendingError: Error | null = null;
   let currentWorkout: PreparedWorkout | null = null;
+  const exportWorkouts = exportWorkoutTracker();
 
   // Apple stamps the archive with its own export instant as the first
   // child of `<HealthData>`. The element used to be on the ignore list,
@@ -1406,19 +1408,8 @@ export async function streamParseExportXml(
         Math.round((endDate.getTime() - startDate.getTime()) / 1000),
       );
 
-      const totalDistance = Number.parseFloat(attrs.totalDistance ?? "");
-      const totalEnergy = Number.parseFloat(attrs.totalEnergyBurned ?? "");
-      const distanceUnit = attrs.totalDistanceUnit ?? "";
-      const energyUnit = attrs.totalEnergyBurnedUnit ?? "";
-      // Apple ships the ACCOUNT's own length unit on HKWorkout.totalDistance
-      // (km for a metric account, mi for an imperial one); metres is the
-      // canonical DB unit. issue #944 — the same conversion the `<Record>`
-      // path now runs, so the two can never drift apart again.
-      const distanceM = Number.isFinite(totalDistance)
-        ? hkDistanceToMetres(totalDistance, distanceUnit)
-        : null;
-
-      const externalId = hashSampleKey(
+      const externalId = workoutExternalId(activityType, startDate, endDate);
+      const legacyExternalId = hashSampleKey(
         activityType || "Workout",
         attrs.duration ?? "",
         attrs.startDate,
@@ -1431,24 +1422,23 @@ export async function streamParseExportXml(
         startedAt: startDate,
         endedAt: endDate,
         durationSec,
-        totalEnergyKcal: Number.isFinite(totalEnergy)
-          ? // issue #944 — the energy attribute carries the account's own
-            // unit too: a Health app set to kilojoules writes `kJ` here, and
-            // the column is kilocalories. Same shared conversion; an unknown
-            // unit leaves the number alone.
-            (convertHkValue(totalEnergy, energyUnit, "kcal") ?? totalEnergy)
-          : null,
-        totalDistanceM: distanceM,
+        ...exportWorkoutFigures(attrs),
         externalId,
+        legacyExternalId,
         externalSourceVersion: attrs.sourceVersion ?? null,
         metadata: {
           activityType,
           sourceName: attrs.sourceName ?? null,
           durationUnit: attrs.durationUnit ?? null,
-          totalDistanceUnit: distanceUnit || null,
+          totalDistanceUnit: attrs.totalDistanceUnit || null,
           totalEnergyBurnedUnit: attrs.totalEnergyBurnedUnit ?? null,
         } as Prisma.JsonValue,
       };
+      return;
+    }
+
+    // A workout's `<WorkoutStatistics>` and `<WorkoutActivity>` children.
+    if (currentWorkout && exportWorkouts.open(name, currentWorkout, attrs)) {
       return;
     }
 
@@ -1550,14 +1540,11 @@ export async function streamParseExportXml(
         );
       }
     }
+    if (tagName === "WorkoutActivity") exportWorkouts.leaveActivity();
     if (tagName === "Workout" && currentWorkout) {
-      if (currentWorkout.routePath && onWorkoutRoute) {
-        onWorkoutRoute({
-          externalId: currentWorkout.externalId,
-          path: currentWorkout.routePath,
-        });
-      }
-      workoutBatch.push(currentWorkout);
+      if (exportWorkouts.admit(currentWorkout, onWorkoutRoute)) {
+        workoutBatch.push(currentWorkout);
+      } else workouts.duplicate += 1;
       currentWorkout = null;
     }
     if (tagName === "Record" && currentCycleRecord) {

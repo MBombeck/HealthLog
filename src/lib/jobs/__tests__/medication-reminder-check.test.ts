@@ -231,6 +231,9 @@ describe("handleReminderCheck per-slot reminder windows", () => {
           phase: "ORANGE",
           timeOfDay: "08:00",
           followUp: true,
+          // A tap opens the medication's card in the list, where the open
+          // dose offers Take and Skip, not the detail page without them.
+          url: "/medications?highlight=medication-1",
         }),
       }),
     );

@@ -148,6 +148,12 @@ export interface RestoreLinks {
   labResultIdBySourceId: Map<string, string>;
   /** Illness: the episode ids the file carries, all of which are written. */
   episodeIds: Set<string>;
+  /**
+   * Workouts: the key each Apple Health export workout of the file was
+   * stored under to the key it got (`collapseExportWorkoutCopies`), so a
+   * personal record naming a collapsed copy follows the kept row.
+   */
+  workoutKeyByLegacyKey: Map<string, string>;
 }
 
 /**
@@ -209,6 +215,7 @@ export function emptyRestoreLinks(): RestoreLinks {
     restoredLabResultIds: new Set(),
     labResultIdBySourceId: new Map(),
     episodeIds: new Set(),
+    workoutKeyByLegacyKey: new Map(),
   };
 }
 

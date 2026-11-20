@@ -342,7 +342,7 @@
           "seizureTypes": 0,
           "seizureEvents": 0
         },
-        "accountSettingsApplied": 63,
+        "accountSettingsApplied": 64,
         "skipped": {
           "catalogueKeys": [],
           "links": 0
@@ -3033,7 +3033,8 @@
       "dateFormat": "DMY",
       "aiProvider": "LOCAL",
       "aiModel": "rt-User-aiModel",
-      "aiBaseUrl": "https://llm.example.com/v1",
+      "aiLocalBaseUrl": "https://llm.example.com/v1",
+      "aiLocalModel": "rt-User-aiLocalModel",
       "aiAnthropicKeyEncrypted": null,
       "aiLocalKeyEncrypted": null,
       "aiOpenaiKeyEncrypted": null,
@@ -3312,6 +3313,7 @@
       "aiProvider": "LOCAL",
       "aiModel": "rt-User-aiModel",
       "aiBaseUrl": "https://llm.example.com/v1",
+      "aiLocalModel": "rt-User-aiLocalModel",
       "aiCompatBaseUrl": "https://gateway.example.com/v1",
       "aiCompatModel": "rt-User-aiCompatModel",
       "aiProviderChain": {

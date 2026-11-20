@@ -128,6 +128,7 @@ describe("importAppleHealthClinicalLabs", () => {
       skipped: 1,
       failed: 0,
       markersCreated: 0,
+      reasons: { panel_header: 1 },
     });
     const [{ readings, tz, userId }] = mocks.write.mock.calls[0];
     expect(userId).toBe("user-1");
@@ -256,14 +257,17 @@ describe("importAppleHealthClinicalLabs", () => {
     );
   });
 
-  it("annotates counts and closed reasons only", async () => {
+  it("annotates counts and closed reasons only, and keeps the reasons in the result", async () => {
     const path = archive({
       [`${ROOT}Observation-a.json`]: observation("a", {
         code: { text: "Secret analyte name" },
         status: "preliminary",
       }),
     });
-    await run(path, [ref("/clinical-records/Observation-a.json")]);
+    const counts = await run(path, [
+      ref("/clinical-records/Observation-a.json"),
+    ]);
+    expect(counts.reasons).toEqual({ not_final: 1 });
     const serialised = JSON.stringify(mocks.annotate.mock.calls);
     expect(serialised).not.toContain("Secret analyte name");
     expect(serialised).not.toContain("fhir.example.test");

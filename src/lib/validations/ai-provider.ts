@@ -91,12 +91,18 @@ export const aiProviderPatchSchema = z.object({
     .union([aiProviderKindSchema, z.literal("")])
     .nullable()
     .optional(),
-  /** Trimmed on write; whitespace-only clears, like `""`. */
+  /**
+   * The model of the provider this request saves: Local's own column when the
+   * body's `provider` (or, absent, the saved one) is LOCAL, the shared
+   * OpenAI / Anthropic column otherwise. Trimmed on write; whitespace-only
+   * clears, like `""`.
+   */
   model: clearableString.optional(),
   /**
-   * Custom base URL for the LOCAL provider. Trimmed, then run through the
-   * SSRF floor at the route — a private host is refused there, not here,
-   * because the allowlist is operator state rather than a shape rule.
+   * The LOCAL provider's base URL, kept when another provider is selected.
+   * Trimmed, then run through the SSRF floor at the route — a private host is
+   * refused there, not here, because the allowlist is operator state rather
+   * than a shape rule.
    */
   baseUrl: clearableString.optional(),
   /** The OpenAI-compatible gateway's own base URL. Same SSRF floor. */

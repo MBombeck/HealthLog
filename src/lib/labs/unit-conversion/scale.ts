@@ -85,6 +85,14 @@ const SCALE_UNITS: ReadonlyMap<string, readonly [FamilyName, number]> = new Map<
   ["T/L", ["count", 12]] as const,
   ["10⁶/µL", ["count", 6 - VOLUME.µL]] as const,
   ["10^6/µL", ["count", 6 - VOLUME.µL]] as const,
+  // The US lab spellings of the same counts: thousands and millions per
+  // microlitre, `E` for the power of ten.
+  ["x10E3/µL", ["count", 3 - VOLUME.µL]] as const,
+  ["10E3/µL", ["count", 3 - VOLUME.µL]] as const,
+  ["K/µL", ["count", 3 - VOLUME.µL]] as const,
+  ["x10E6/µL", ["count", 6 - VOLUME.µL]] as const,
+  ["10E6/µL", ["count", 6 - VOLUME.µL]] as const,
+  ["M/µL", ["count", 6 - VOLUME.µL]] as const,
 ]);
 
 export interface ScaleUnit {

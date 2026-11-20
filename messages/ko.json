@@ -108,6 +108,9 @@
         "qualitativeExpected": "이 정성 측정값은 텍스트로 입력해 주세요.",
         "numericExpected": "이 수치 측정값은 숫자로 입력해 주세요.",
         "referenceRangeInvalid": "참고 범위의 하한이 상한보다 클 수 없어요."
+      },
+      "unit": {
+        "unset": "이 표지자에는 단위 없이 저장된 값이 있습니다. 먼저 표지자의 단위를 설정한 다음 결과를 추가하세요."
       }
     },
     "onboarding": {
@@ -201,6 +204,16 @@
     },
     "ai_provider": {
       "private_host": "이 주소는 사설 네트워크에 있어요. 운영자가 먼저 AI_PRIVATE_ORIGINS에 정확한 출처를 허용해야 해요."
+    },
+    "ai_test": {
+      "anthropic_key_missing": "저장된 Anthropic API 키가 없어 아무것도 테스트하지 않았습니다. Anthropic 카드에 키를 입력하고 저장하세요.",
+      "local_base_url_missing": "로컬 모델에 저장된 기본 URL이 없어 아무것도 테스트하지 않았습니다. 로컬 모델 카드에 입력하고 저장하세요.",
+      "private_host": "이 주소는 운영자가 허용하지 않은 사설 네트워크에 있어 아무것도 테스트하지 않았습니다. 운영자가 AI_PRIVATE_ORIGINS에 정확한 오리진을 추가해야 합니다.",
+      "compat_base_url_missing": "OpenAI 호환 게이트웨이에 저장된 기본 URL이 없어 아무것도 테스트하지 않았습니다. 게이트웨이 카드에 입력하고 저장하세요.",
+      "compat_model_missing": "OpenAI 호환 게이트웨이에 저장된 모델이 없어 아무것도 테스트하지 않았습니다. 게이트웨이 카드에 모델을 입력하고 저장하세요.",
+      "codex_not_connected": "연결된 ChatGPT 계정이 없어 아무것도 테스트하지 않았습니다. ChatGPT 카드에서 연결하세요.",
+      "openai_key_missing": "사용자나 운영자가 저장한 OpenAI API 키가 없어 아무것도 테스트하지 않았습니다. OpenAI 카드에 키를 입력하고 저장하세요.",
+      "unknown_provider": "이 서버가 알지 못하는 제공자라서 아무것도 테스트하지 않았습니다."
     },
     "encounter": {
       "invalid": "진료 정보를 확인하고 다시 시도해 주세요.",
@@ -3139,6 +3152,9 @@
       "errorBudget": "오늘 코치 사용 한도에 도달했어요. 사용량은 내 시간대의 자정에 초기화돼요.",
       "errorProvider": "지금은 코치가 인사이트 제공자에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.",
       "errorReasoningOnly": "모델이 생각만 하고 답변을 쓰지 않았어요. 다시 시도하거나 AI 설정에서 다른 모델을 선택해 주세요.",
+      "errorTimeout": "AI 제공자가 제시간에 응답하지 않아 코치가 답변하지 못했습니다. 느린 로컬 모델은 AI 설정에서 응답 시간을 늘려야 할 수 있습니다. 하나의 제공자에 묶인 작업은 다른 제공자를 시도하지 않습니다.",
+      "errorUnreachable": "AI 제공자에 연결할 수 없어 코치가 답변하지 못했습니다. 실행 중이고 접근 가능한지 확인하세요. 하나의 제공자에 묶인 작업은 다른 제공자를 시도하지 않습니다.",
+      "errorEmptyReply": "AI 제공자가 빈 응답을 보내 코치가 답변하지 못했습니다. 다시 시도하거나 AI 설정에서 다른 모델을 선택하세요.",
       "errorDemo": "데모에서는 코치가 답하지 않아요.",
       "errorNoProvider": "코치는 기록된 건강 데이터를 읽고 그에 대한 질문에 답해요(의학적 조언은 아니에요). 그러려면 HealthLog에 AI 제공자가 필요해요. 직접 발급한 키나 로컬 모델을 연결해 주세요.",
       "errorNoProviderAction": "AI 제공자 연결",
@@ -5950,6 +5966,32 @@
             "ecgFailedNote": "심전도가 실패해도 export.xml에서 불러온 지원 기록은 그대로 남아요.",
             "labsResult": "건강 기록의 검사 결과: 발견 {discovered}개, 불러옴 {imported}개, 이미 있음 {duplicate}개, 건너뜀 {skipped}개, 실패 {failed}개.",
             "labsFailedNote": "검사 결과가 실패해도 아카이브의 다른 기록은 그대로 남아요.",
+            "labsReasons": "가져오지 않음: {reasons}.",
+            "labsReason": {
+              "not_observation": "관찰 기록 아님",
+              "not_lab": "검사 결과 아님",
+              "not_final": "아직 최종 아님",
+              "withdrawn": "검사실에서 철회함",
+              "panel_header": "패널 제목",
+              "no_value": "값 없음",
+              "unsupported_value": "지원하지 않는 값 형식",
+              "no_date": "날짜 없음",
+              "future_date": "미래 날짜",
+              "invalid_date": "읽을 수 없는 날짜",
+              "too_large": "너무 큼",
+              "missing_unit": "단위 없음",
+              "unit_mismatch": "단위가 지표와 맞지 않음",
+              "marker_unit_unset": "표지자에 단위 없는 값이 있음, 먼저 단위 설정",
+              "text_too_long": "텍스트가 너무 김",
+              "write_failed": "저장할 수 없음",
+              "over_limit": "아카이브 한도 초과",
+              "bad_reference": "읽을 수 없는 파일 참조",
+              "member_too_large": "파일이 너무 큼",
+              "member_unsupported": "지원하지 않는 파일 형식",
+              "malformed_json": "읽을 수 없는 파일",
+              "archive_unreadable": "아카이브를 읽을 수 없음",
+              "missing_member": "아카이브에 파일 없음"
+            },
             "labsMarkersCreatedOne": "검사에 새 항목 {count}개가 추가됐어요.",
             "labsMarkersCreatedOther": "검사에 새 항목 {count}개가 추가됐어요.",
             "labsMarkersCreatedFew": "검사에 새 항목 {count}개가 추가됐어요.",
@@ -6694,6 +6736,7 @@
         "notConfigured": "운영자가 이 인스턴스에 공용 OpenAI 키를 설정하지 않았어요."
       },
       "testProvider": "사용 중인 제공자 테스트",
+      "testNamedProvider": "{provider} 테스트",
       "testSuccess": "정상: {provider} ({model})",
       "testFailedShort": "테스트 실패: {message}",
       "testUnexpectedResponse": "AI 제공자 연결에 실패했어요. 서버에서 예상 밖의 응답이 왔어요.",
@@ -9106,7 +9149,10 @@
         "recovery_kit": "복구 키트가 다시 확인되었습니다.",
         "dump_retention": "이제 버킷의 수명 주기 규칙이 데이터베이스 덤프를 포함합니다."
       }
-    }
+    },
+    "auditActedBy": "{name} 님이 수행",
+    "auditActorDeleted": "삭제된 계정",
+    "auditActedByColumn": "수행한 사람"
   },
   "achievements": {
     "title": "업적",
@@ -12351,7 +12397,8 @@
       "browse": "파일 선택",
       "quotaAlmostFull": "저장 공간이 거의 찼어요",
       "quotaUsed": "{quota} 중 {used} 사용",
-      "queuedAnnouncement": "{count}개 파일을 업로드 대기열에 추가했어요"
+      "queuedAnnouncement": "{count}개 파일을 업로드 대기열에 추가했어요",
+      "storageUsed": "저장 공간: {quota} 중 {used} 사용"
     },
     "selection": {
       "count": "{count}개 선택함",
@@ -12414,7 +12461,10 @@
       "visitsLabel": "연결된 진료",
       "vaccinationsLabel": "예방접종",
       "noVisitsToLink": "아직 기록된 진료가 없습니다.",
-      "noVaccinationsToLink": "아직 기록된 예방접종이 없습니다."
+      "noVaccinationsToLink": "아직 기록된 예방접종이 없습니다.",
+      "saved": "변경 사항이 저장됨",
+      "saving": "저장 중…",
+      "previewNotOnDevice": "이 브라우저는 페이지 안에서 PDF를 표시할 수 없습니다"
     },
     "dropOverlay": {
       "title": "파일을 놓아 업로드",

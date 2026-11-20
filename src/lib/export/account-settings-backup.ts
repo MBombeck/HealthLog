@@ -212,24 +212,55 @@ function timeZone(column: string, nullable: boolean): SettingCodec {
  * allowed for this account. The address arrived from a file, so it has never
  * been through that check here.
  */
-function aiEndpoint(column: "aiBaseUrl" | "aiCompatBaseUrl"): SettingCodec {
+function aiEndpoint(
+  column: "aiLocalBaseUrl" | "aiCompatBaseUrl",
+  key: "aiBaseUrl" | "aiCompatBaseUrl",
+): SettingCodec {
   return {
-    write: (row) => ({ [column]: row[column] }),
+    write: (row) => ({ [key]: row[column] }),
     read: (entry, ctx) => {
-      if (!has(entry, column)) return undefined;
-      const value = entry[column];
+      if (!has(entry, key)) return undefined;
+      const value = entry[key];
       if (value === null) return null;
-      if (typeof value !== "string") return new Refused(column);
+      if (typeof value !== "string") return new Refused(key);
       const trimmed = value.trim();
       if (trimmed === "") return null;
       const allowed =
         isLocalAiHostAllowed(trimmed, {
           operatorTrusted: ctx.operatorTrusted,
         }) || isPublicUrl(trimmed);
-      return allowed ? trimmed : new Refused(column);
+      return allowed ? trimmed : new Refused(key);
     },
   };
 }
+
+/**
+ * #1417 — the Local provider's own model. A file written before the column
+ * existed has none; the Local entry ran on the shared `aiModel` then, so the
+ * file gives that model to Local by the rule migration 0512 applied to the
+ * rows already on a host: when the file's provider is Local, or when it
+ * carries a Local address behind a provider that does not own `aiModel`
+ * (a gateway, Codex, none). A file on OpenAI or Anthropic keeps `aiModel`
+ * theirs and leaves Local's model untouched, and a blank model gives nothing.
+ */
+const aiLocalModel: SettingCodec = {
+  write: (row) => ({ aiLocalModel: row.aiLocalModel }),
+  read: (entry) => {
+    if (has(entry, "aiLocalModel")) return entry.aiLocalModel;
+    const model = entry.aiModel;
+    if (typeof model !== "string" || model.trim() === "") return undefined;
+    const provider =
+      typeof entry.aiProvider === "string"
+        ? entry.aiProvider.toUpperCase()
+        : "";
+    const localAddress =
+      typeof entry.aiBaseUrl === "string" && entry.aiBaseUrl.trim() !== "";
+    const ranOnAiModel =
+      provider === "LOCAL" ||
+      (localAddress && provider !== "OPENAI" && provider !== "ANTHROPIC");
+    return ranOnAiModel ? model : undefined;
+  },
+};
 
 /**
  * The threshold overrides, metric by metric. The readers that apply a band
@@ -589,8 +620,12 @@ const ACCOUNT_SETTING_CODECS = {
   // key is removed in Settings.
   aiProvider: plain("aiProvider"),
   aiModel: plain("aiModel"),
-  aiBaseUrl: aiEndpoint("aiBaseUrl"),
-  aiCompatBaseUrl: aiEndpoint("aiCompatBaseUrl"),
+  // Local's address travels under its old name, `aiBaseUrl`: the column is
+  // the same one and has only ever held Local's address, so files from every
+  // release read the same.
+  aiLocalBaseUrl: aiEndpoint("aiLocalBaseUrl", "aiBaseUrl"),
+  aiLocalModel,
+  aiCompatBaseUrl: aiEndpoint("aiCompatBaseUrl", "aiCompatBaseUrl"),
   aiCompatModel: plain("aiCompatModel"),
   aiProviderChain: json("aiProviderChain"),
   // #1404 — the named chains and which capability is attached to which.
@@ -697,15 +732,17 @@ export interface AdmittedAccountSettings {
  * Decide, without writing, what the file's settings section may put on the
  * account. Pure, so every refusal rule is testable without a database.
  *
- * `currentAiProvider` is the account's provider before the restore, for the
- * one rule that spans two columns: only the Local provider uses
- * `aiBaseUrl`, and the settings route clears the address whenever the
- * provider moves away from Local so that a cloud key is never sent to it.
+ * Local's address comes back whichever provider the file selects (#1417):
+ * it is Local's own column, kept while another provider is selected, and no
+ * other provider reads it, so a cloud key is never sent to it. Nor does the
+ * main chain dial it unless Local is the selected provider
+ * (`localServesMainChain`), so the address a file keeps behind another
+ * provider serves only a named chain that lists Local, as on a host where
+ * the person picked that provider in Settings.
  */
 export function admitAccountSettings(
   entry: AccountSettingsBackupEntry,
   ctx: AccountSettingsRestoreContext,
-  currentAiProvider: string | null = null,
 ): AdmittedAccountSettings {
   const data: Partial<Record<AccountSettingColumn, unknown>> = {};
   const refused: string[] = [];
@@ -729,15 +766,6 @@ export function admitAccountSettings(
       continue;
     }
     data[column] = value;
-  }
-
-  const provider =
-    "aiProvider" in data
-      ? (data.aiProvider as string | null)
-      : currentAiProvider;
-  if (typeof data.aiBaseUrl === "string" && provider !== "LOCAL") {
-    delete data.aiBaseUrl;
-    refused.push("aiBaseUrl");
   }
 
   return { data, refused };

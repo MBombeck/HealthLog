@@ -2,13 +2,21 @@ import { describe, expect, it, vi } from "vitest";
 
 import { readingInMarkerUnit, type ReadingMarker } from "../reading-conversion";
 
-/** A client whose `updateMany` records what the fill wrote. */
-function client(current: string | null = null) {
+/**
+ * A client whose `updateMany` records what the fill wrote; `labResult`, when
+ * given, answers how many numbers the marker holds.
+ */
+function client(
+  current: string | null = null,
+  labResult?: { count: () => Promise<number>; updateMany: () => unknown },
+  biomarkerUpdate = vi.fn(async () => ({ count: 1 })),
+) {
   return {
     biomarker: {
-      updateMany: vi.fn(async () => ({ count: 1 })),
+      updateMany: biomarkerUpdate,
       findUnique: vi.fn(async () => ({ analyteKey: current })),
     },
+    labResult,
   } as never;
 }
 
@@ -183,5 +191,60 @@ describe("a refusal", () => {
       ok: false,
       reason: "not_finite",
     });
+  });
+});
+
+describe("a marker without a unit", () => {
+  const unitless = (): ReadingMarker => ({
+    id: "bm-2",
+    name: "Haemoglobin",
+    unit: "",
+  });
+  const held = (numbers: number) => ({
+    count: vi.fn(async () => numbers),
+    updateMany: vi.fn(async () => ({ count: 0 })),
+  });
+
+  it("takes the unit of its first number while it holds none", async () => {
+    const labResult = held(0);
+    const adopt = vi.fn(async () => ({ count: 1 }));
+    const marker = unitless();
+    expect(
+      await read(
+        marker,
+        140,
+        "g/L",
+        null,
+        null,
+        client(null, labResult, adopt),
+      ),
+    ).toEqual({
+      ok: true,
+      converted: false,
+      value: 140,
+      sourceReferenceLow: null,
+      sourceReferenceHigh: null,
+    });
+    expect(marker.unit).toBe("g/L");
+    expect(adopt).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses a number when it already holds numbers, and stamps no unit on them", async () => {
+    const labResult = held(1);
+    const adopt = vi.fn(async () => ({ count: 1 }));
+    const marker = unitless();
+    expect(
+      await read(
+        marker,
+        140,
+        "g/L",
+        null,
+        null,
+        client(null, labResult, adopt),
+      ),
+    ).toEqual({ ok: false, reason: "marker_unit_unset" });
+    expect(marker.unit).toBe("");
+    expect(adopt).not.toHaveBeenCalled();
+    expect(labResult.updateMany).not.toHaveBeenCalled();
   });
 });

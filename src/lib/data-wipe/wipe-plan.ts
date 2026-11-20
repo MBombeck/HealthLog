@@ -444,7 +444,8 @@ export const USER_RESET = {
   // AI provider configuration and keys
   aiProvider: null,
   aiModel: null,
-  aiBaseUrl: null,
+  aiLocalBaseUrl: null,
+  aiLocalModel: null,
   aiAnthropicKeyEncrypted: null,
   aiLocalKeyEncrypted: null,
   aiOpenaiKeyEncrypted: null,

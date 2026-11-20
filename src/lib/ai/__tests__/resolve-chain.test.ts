@@ -52,7 +52,7 @@ describe("resolveProviderChain", () => {
       {
         aiProvider: null,
         aiModel: null,
-        aiBaseUrl: null,
+        aiLocalBaseUrl: null,
         aiAnthropicKeyEncrypted: null,
         aiLocalKeyEncrypted: null,
         aiOpenaiKeyEncrypted: null,
@@ -88,7 +88,7 @@ describe("resolveProviderChain", () => {
     userRows({
       aiProvider: null,
       aiModel: null,
-      aiBaseUrl: null,
+      aiLocalBaseUrl: null,
       aiAnthropicKeyEncrypted: "enc-anth",
       aiLocalKeyEncrypted: null,
       aiOpenaiKeyEncrypted: "enc-openai",
@@ -114,7 +114,7 @@ describe("resolveProviderChain", () => {
     userRows({
       aiProvider: null,
       aiModel: null,
-      aiBaseUrl: null,
+      aiLocalBaseUrl: null,
       aiAnthropicKeyEncrypted: null, // no anthropic key
       aiLocalKeyEncrypted: null,
       aiOpenaiKeyEncrypted: "enc-openai",
@@ -138,7 +138,7 @@ describe("resolveProviderChain", () => {
     userRows({
       aiProvider: null,
       aiModel: null,
-      aiBaseUrl: null,
+      aiLocalBaseUrl: null,
       aiAnthropicKeyEncrypted: null,
       aiLocalKeyEncrypted: null,
       aiOpenaiKeyEncrypted: "enc-openai",
@@ -163,7 +163,7 @@ describe("resolveProviderChain", () => {
       {
         aiProvider: null,
         aiModel: null,
-        aiBaseUrl: null,
+        aiLocalBaseUrl: null,
         aiAnthropicKeyEncrypted: null,
         aiLocalKeyEncrypted: null,
         aiOpenaiKeyEncrypted: null,
@@ -193,7 +193,7 @@ describe("resolveProviderChain", () => {
     userRows({
       aiProvider: "OPENAI",
       aiModel: null,
-      aiBaseUrl: null,
+      aiLocalBaseUrl: null,
       aiAnthropicKeyEncrypted: null,
       aiLocalKeyEncrypted: null,
       aiOpenaiKeyEncrypted: "enc-openai",
@@ -217,7 +217,7 @@ describe("resolveProviderChain and the picked gateway", () => {
   const gatewayRow = {
     aiProvider: "OPENAI_COMPATIBLE",
     aiModel: null,
-    aiBaseUrl: null,
+    aiLocalBaseUrl: null,
     aiAnthropicKeyEncrypted: null,
     aiLocalKeyEncrypted: null,
     aiOpenaiKeyEncrypted: null,
@@ -275,5 +275,111 @@ describe("resolveProviderChain and the picked gateway", () => {
         { providerType: "openai-compatible", priority: 6, enabled: false },
       ]),
     ).toEqual([]);
+  });
+});
+
+describe("resolveProviderChain and Local's retained address (#1417)", () => {
+  // Local's base URL is kept when another provider is picked. The main chain
+  // lists `local` by default, so it must not pick that address back up.
+  const base = {
+    aiModel: null,
+    aiLocalBaseUrl: "https://llm.example.org/v1",
+    aiLocalModel: "llama3",
+    aiAnthropicKeyEncrypted: null,
+    aiLocalKeyEncrypted: null,
+    aiOpenaiKeyEncrypted: null,
+    aiCompatBaseUrl: null,
+    aiCompatKeyEncrypted: null,
+    aiCompatModel: null,
+    role: "USER",
+    aiProviderChain: null,
+    aiNamedChains: null,
+    useCentralCodex: false,
+    managedProfileAt: null,
+    aiResponseTimeoutSeconds: null,
+  };
+  const gateway = {
+    aiProvider: "OPENAI_COMPATIBLE",
+    aiCompatBaseUrl: "https://gateway.example/v1",
+    aiCompatModel: "llama-3",
+  };
+
+  /** Serve `row` as the record; Codex is not connected. */
+  async function resolveFor(
+    row: Record<string, unknown>,
+    capability: Parameters<typeof resolveProviderChain>[1] = null,
+    adminKey: string | null = null,
+  ) {
+    const read = async (args: { select?: Record<string, unknown> }) =>
+      args.select?.codexAccessTokenEncrypted
+        ? {
+            codexAccessTokenEncrypted: null,
+            codexRefreshTokenEncrypted: null,
+            codexTokenExpiresAt: null,
+            codexConnectionStatus: "disconnected",
+          }
+        : { ...base, ...row };
+    vi.mocked(prisma.user.findUnique).mockImplementation(
+      read as unknown as typeof prisma.user.findUnique,
+    );
+    operator({
+      adminAiKeyEncrypted: adminKey,
+      adminAiModel: "gpt-4o-mini",
+      adminAiBaseUrl: "https://api.openai.com/v1",
+    });
+    return (await resolveProviderChain("user-1", capability)).map(
+      (c) => c.providerType,
+    );
+  }
+
+  it("serves the picked gateway, not Local, on a chain never saved", async () => {
+    expect(await resolveFor(gateway)).toEqual(["openai-compatible"]);
+  });
+
+  it("serves the gateway the form enabled, not Local ahead of it", async () => {
+    expect(
+      await resolveFor({
+        ...gateway,
+        aiProviderChain: chainWithReasoningEffort(
+          null,
+          "openai-compatible",
+          "low",
+          true,
+        ),
+      }),
+    ).toEqual(["openai-compatible"]);
+  });
+
+  it.each(["OPENAI", "ANTHROPIC", "CHATGPT_OAUTH"])(
+    "never falls back to Local with %s picked",
+    async (aiProvider) => {
+      const types = await resolveFor(
+        {
+          aiProvider,
+          aiOpenaiKeyEncrypted: "enc-openai",
+          aiAnthropicKeyEncrypted: "enc-anth",
+        },
+        null,
+        "enc-admin",
+      );
+      expect(types).toEqual(["openai", "anthropic", "admin-openai"]);
+    },
+  );
+
+  it("serves Local while Local is the picked provider", async () => {
+    expect(await resolveFor({ aiProvider: "LOCAL" })).toEqual(["local"]);
+  });
+
+  it("serves Local from a named chain that lists it, whatever is picked", async () => {
+    const aiNamedChains = {
+      chains: [{ id: "lan", name: "LAN", entries: ["local"] }],
+      defaultChainId: "lan",
+      attachments: { coach: "lan" },
+    };
+    // Marked default, and attached to a capability.
+    expect(await resolveFor({ ...gateway, aiNamedChains })).toEqual(["local"]);
+    expect(await resolveFor({ ...gateway, aiNamedChains }, "coach")).toEqual([
+      "local",
+    ]);
   });
 });

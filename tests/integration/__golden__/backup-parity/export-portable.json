@@ -93,6 +93,7 @@
       "aiProvider": "LOCAL",
       "aiModel": "rt-User-aiModel",
       "aiBaseUrl": "https://llm.example.com/v1",
+      "aiLocalModel": "rt-User-aiLocalModel",
       "aiCompatBaseUrl": "https://gateway.example.com/v1",
       "aiCompatModel": "rt-User-aiCompatModel",
       "aiProviderChain": {
@@ -1954,6 +1955,7 @@
       "aiProvider": "LOCAL",
       "aiModel": "rt-User-aiModel",
       "aiBaseUrl": "https://llm.example.com/v1",
+      "aiLocalModel": "rt-User-aiLocalModel",
       "aiCompatBaseUrl": "https://gateway.example.com/v1",
       "aiCompatModel": "rt-User-aiCompatModel",
       "aiProviderChain": {

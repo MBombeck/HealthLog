@@ -47,6 +47,36 @@ describe("<AppleHealthAuxiliaryLines>", () => {
     expect(html).not.toContain("import-apple-health-ecg-result");
   });
 
+  it("names what the skipped and failed results are made of", () => {
+    const html = render({
+      labs: {
+        discovered: 9,
+        imported: 2,
+        skipped: 3,
+        failed: 4,
+        reasons: { not_lab: 3, unit_mismatch: 4, bogus: 7 },
+      },
+    });
+    expect(html).toContain(
+      "Not imported: unit does not match the marker (4), not a lab result (3).",
+    );
+    expect(html).not.toContain("bogus");
+    expect(
+      render({
+        labs: {
+          discovered: 2,
+          failed: 2,
+          reasons: { marker_unit_unset: 2 },
+        },
+      }),
+    ).toContain(
+      "Not imported: marker has values without a unit, set its unit first (2).",
+    );
+    expect(render({ labs: { discovered: 1, imported: 1 } })).not.toContain(
+      "Not imported",
+    );
+  });
+
   it("keeps the failure reassurance off a clean run and links to Labs", () => {
     const html = render({
       labs: { discovered: 3, imported: 3, markersCreated: 2 },

@@ -108,6 +108,9 @@
         "qualitativeExpected": "Voer een tekstuitslag in voor deze kwalitatieve meting.",
         "numericExpected": "Voer een getal in voor deze numerieke meting.",
         "referenceRangeInvalid": "De onderste referentiewaarde mag niet hoger zijn dan de bovenste."
+      },
+      "unit": {
+        "unset": "Deze marker heeft waarden zonder eenheid. Stel eerst de eenheid van de marker in en voeg daarna de uitslag toe."
       }
     },
     "onboarding": {
@@ -201,6 +204,16 @@
     },
     "ai_provider": {
       "private_host": "Dit adres ligt in een privénetwerk. De beheerder moet de exacte origin eerst toestaan in AI_PRIVATE_ORIGINS."
+    },
+    "ai_test": {
+      "anthropic_key_missing": "Er is geen Anthropic-API-sleutel opgeslagen, dus er is niets getest. Vul de sleutel in op de Anthropic-kaart en sla hem op.",
+      "local_base_url_missing": "Het lokale model heeft geen opgeslagen basis-URL, dus er is niets getest. Vul hem in op de kaart van het lokale model en sla hem op.",
+      "private_host": "Dit adres ligt in een privénetwerk dat de beheerder niet heeft toegestaan, dus er is niets getest. De beheerder moet de exacte origin toevoegen aan AI_PRIVATE_ORIGINS.",
+      "compat_base_url_missing": "De OpenAI-compatibele gateway heeft geen opgeslagen basis-URL, dus er is niets getest. Vul hem in op de gatewaykaart en sla hem op.",
+      "compat_model_missing": "De OpenAI-compatibele gateway heeft geen opgeslagen model, dus er is niets getest. Vul er een in op de gatewaykaart en sla het op.",
+      "codex_not_connected": "Er is geen ChatGPT-account gekoppeld, dus er is niets getest. Koppel het op de ChatGPT-kaart.",
+      "openai_key_missing": "Jij noch de beheerder heeft een OpenAI-API-sleutel opgeslagen, dus er is niets getest. Vul de sleutel in op de OpenAI-kaart en sla hem op.",
+      "unknown_provider": "Deze server kent deze aanbieder niet, dus er is niets getest."
     },
     "encounter": {
       "invalid": "Controleer de gegevens van het bezoek en probeer het opnieuw.",
@@ -3139,6 +3152,9 @@
       "errorBudget": "Je hebt de gebruikslimiet van de Coach voor vandaag bereikt. Het budget wordt om middernacht in jouw tijdzone vernieuwd.",
       "errorProvider": "De Coach kan op dit moment geen provider voor Inzichten bereiken. Probeer het zo opnieuw.",
       "errorReasoningOnly": "Het model heeft alleen nagedacht en geen antwoord geschreven. Probeer het opnieuw of kies een ander model in de AI-instellingen.",
+      "errorTimeout": "De AI-aanbieder antwoordde niet op tijd, dus de Coach heeft geen antwoord. Een traag lokaal model heeft misschien een langere antwoordtijd nodig in de AI-instellingen; een taak die aan één aanbieder is gebonden, probeert geen andere.",
+      "errorUnreachable": "De AI-aanbieder was niet bereikbaar, dus de Coach heeft geen antwoord. Controleer of hij draait en bereikbaar is; een taak die aan één aanbieder is gebonden, probeert geen andere.",
+      "errorEmptyReply": "De AI-aanbieder antwoordde zonder inhoud, dus de Coach heeft geen antwoord. Probeer het opnieuw of kies een ander model in de AI-instellingen.",
       "errorDemo": "De Coach geeft in de demo geen antwoord.",
       "errorNoProvider": "De Coach leest je vastgelegde gezondheidsgegevens en beantwoordt vragen daarover (geen medisch advies). Daarvoor heeft HealthLog een AI-provider nodig. Koppel je eigen sleutel of een lokaal model.",
       "errorNoProviderAction": "AI-provider koppelen",
@@ -5950,6 +5966,32 @@
             "ecgFailedNote": "Mislukte ECG's maken ondersteunde records die uit export.xml zijn geïmporteerd niet ongedaan.",
             "labsResult": "Labuitslagen uit medische dossiers: {discovered} gevonden, {imported} geïmporteerd, {duplicate} al aanwezig, {skipped} overgeslagen, {failed} mislukt.",
             "labsFailedNote": "Een mislukte uitslag gooit verder niets uit het archief weg.",
+            "labsReasons": "Niet geïmporteerd: {reasons}.",
+            "labsReason": {
+              "not_observation": "geen observatie",
+              "not_lab": "geen labuitslag",
+              "not_final": "nog niet definitief",
+              "withdrawn": "door het lab ingetrokken",
+              "panel_header": "kop van een panel",
+              "no_value": "geen waarde",
+              "unsupported_value": "waardetype niet ondersteund",
+              "no_date": "geen datum",
+              "future_date": "datum in de toekomst",
+              "invalid_date": "onleesbare datum",
+              "too_large": "te groot",
+              "missing_unit": "geen eenheid",
+              "unit_mismatch": "eenheid past niet bij de marker",
+              "marker_unit_unset": "marker heeft waarden zonder eenheid, stel eerst de eenheid in",
+              "text_too_long": "tekst te lang",
+              "write_failed": "kon niet worden opgeslagen",
+              "over_limit": "boven de limiet van het archief",
+              "bad_reference": "onleesbare bestandsverwijzing",
+              "member_too_large": "bestand te groot",
+              "member_unsupported": "bestandsformaat niet ondersteund",
+              "malformed_json": "onleesbaar bestand",
+              "archive_unreadable": "archief kon niet worden gelezen",
+              "missing_member": "bestand ontbreekt in het archief"
+            },
             "labsMarkersCreatedOne": "{count} nieuwe marker toegevoegd aan Labwaarden.",
             "labsMarkersCreatedOther": "{count} nieuwe markers toegevoegd aan Labwaarden.",
             "labsMarkersCreatedFew": "{count} nieuwe markers toegevoegd aan Labwaarden.",
@@ -6694,6 +6736,7 @@
         "notConfigured": "De beheerder heeft op deze instantie geen gedeelde OpenAI-sleutel ingesteld."
       },
       "testProvider": "Actieve provider testen",
+      "testNamedProvider": "{provider} testen",
       "testSuccess": "OK: {provider} ({model})",
       "testFailedShort": "Test mislukt: {message}",
       "testUnexpectedResponse": "Verbinding met AI-provider mislukt: onverwacht antwoord van de server.",
@@ -9106,7 +9149,10 @@
         "recovery_kit": "De herstelkit is weer bevestigd.",
         "dump_retention": "Een levenscyclusregel in de bucket dekt nu de databasedumps."
       }
-    }
+    },
+    "auditActedBy": "door {name}",
+    "auditActorDeleted": "een verwijderd account",
+    "auditActedByColumn": "Uitgevoerd door"
   },
   "achievements": {
     "title": "Prestaties",
@@ -12351,7 +12397,8 @@
       "browse": "Bestanden kiezen",
       "quotaAlmostFull": "Opslag bijna vol",
       "quotaUsed": "{used} van {quota} gebruikt",
-      "queuedAnnouncement": "{count} bestand(en) toegevoegd aan de uploadwachtrij"
+      "queuedAnnouncement": "{count} bestand(en) toegevoegd aan de uploadwachtrij",
+      "storageUsed": "Opslag: {used} van {quota} in gebruik"
     },
     "selection": {
       "count": "{count} geselecteerd",
@@ -12414,7 +12461,10 @@
       "visitsLabel": "Hoort bij bezoek",
       "vaccinationsLabel": "Vaccinaties",
       "noVisitsToLink": "Nog geen bezoeken vastgelegd.",
-      "noVaccinationsToLink": "Nog geen vaccinaties vastgelegd."
+      "noVaccinationsToLink": "Nog geen vaccinaties vastgelegd.",
+      "saved": "Wijzigingen opgeslagen",
+      "saving": "Opslaan…",
+      "previewNotOnDevice": "Deze browser kan pdf's niet in de pagina tonen"
     },
     "dropOverlay": {
       "title": "Zet bestanden neer om te uploaden",

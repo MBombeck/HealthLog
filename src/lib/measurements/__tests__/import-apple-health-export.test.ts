@@ -45,6 +45,7 @@ vi.mock("@/lib/cycle/gate", () => ({
 }));
 
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
+import { workoutExternalId } from "../apple-health-export-workouts";
 import {
   hashSampleKey,
   parseRecordValue,
@@ -511,7 +512,7 @@ function makeFakePrisma(
               w.source === where.source &&
               where.externalId.in.includes(w.externalId as string),
           )
-          .map((w) => ({ externalId: w.externalId }));
+          .map((w) => ({ ...w }));
       },
       upsert: async ({
         where,
@@ -1138,17 +1139,15 @@ describe("streamParseExportXml — statement-level insertion identity", () => {
   <Workout workoutActivityType="${second.activity}" duration="${second.duration}" durationUnit="min" startDate="${second.start}" endDate="${second.end}"/>
 </HealthData>`,
     );
-    const racedExternalId = hashSampleKey(
+    const racedExternalId = workoutExternalId(
       first.activity,
-      first.duration,
-      first.start,
-      first.end,
+      new Date(first.start),
+      new Date(first.end),
     );
-    const insertedExternalId = hashSampleKey(
+    const insertedExternalId = workoutExternalId(
       second.activity,
-      second.duration,
-      second.start,
-      second.end,
+      new Date(second.start),
+      new Date(second.end),
     );
     const prisma = makeFakePrisma({
       workoutRaceExternalIds: [racedExternalId],
@@ -1576,5 +1575,206 @@ describe("streamParseExportXml — the record's own unit (issue #944)", () => {
 
     expect(prisma._measurements).toHaveLength(1);
     expect(prisma._measurements[0].value).toBeCloseTo(2483.217792, 6);
+  });
+});
+
+describe("streamParseExportXml — export workouts (#1414)", () => {
+  const writeExport = (body: string): string => {
+    const xmlPath = join(
+      mkdtempSync(join(tmpdir(), "healthlog-parser-test-")),
+      "export.xml",
+    );
+    writeFileSync(
+      xmlPath,
+      `<?xml version="1.0" encoding="UTF-8"?>
+<HealthData locale="en_US">
+${body}
+</HealthData>`,
+    );
+    return xmlPath;
+  };
+  const parse = (xmlPath: string, prisma: ReturnType<typeof makeFakePrisma>) =>
+    streamParseExportXml({
+      xmlPath,
+      userId: "user-1",
+      userTimezone: "Europe/Berlin",
+      workoutBatchSize: 1,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      prisma: prisma as any,
+    });
+
+  it("keys a workout on its instants, not on how the export spelled them", () => {
+    const a = workoutExternalId(
+      "HKWorkoutActivityTypeRunning",
+      new Date("2026-05-14 18:00:00 +0200"),
+      new Date("2026-05-14 18:42:00 +0200"),
+    );
+    const b = workoutExternalId(
+      "HKWorkoutActivityTypeRunning",
+      new Date("2026-05-14T16:00:00Z"),
+      new Date("2026-05-14T17:42:00.000+01:00"),
+    );
+    expect(a).toBe(b);
+    expect(a).toMatch(/^workout:[0-9a-f]{28}$/);
+    expect(
+      workoutExternalId(
+        "HKWorkoutActivityTypeCycling",
+        new Date("2026-05-14T16:00:00Z"),
+        new Date("2026-05-14T16:42:00Z"),
+      ),
+    ).not.toBe(a);
+  });
+
+  it("updates the workout a second export writes with another offset and duration precision", async () => {
+    const prisma = makeFakePrisma();
+    await parse(
+      writeExport(
+        `<Workout workoutActivityType="HKWorkoutActivityTypeRunning" duration="42" durationUnit="min" startDate="2026-05-14 18:00:00 +0200" endDate="2026-05-14 18:42:00 +0200"/>`,
+      ),
+      prisma,
+    );
+    const second = await parse(
+      writeExport(
+        `<Workout workoutActivityType="HKWorkoutActivityTypeRunning" duration="42.00000166893005" durationUnit="min" startDate="2026-05-14 17:00:00 +0100" endDate="2026-05-14 17:42:00 +0100"/>`,
+      ),
+      prisma,
+    );
+    expect(second.workouts).toMatchObject({ inserted: 0, updated: 1 });
+    expect(prisma._workouts).toHaveLength(1);
+  });
+
+  it("moves a row stored under the old key onto the new one instead of adding a twin", async () => {
+    const prisma = makeFakePrisma();
+    const legacy = hashSampleKey(
+      "HKWorkoutActivityTypeRunning",
+      "42",
+      "2026-05-14 18:00:00 +0200",
+      "2026-05-14 18:42:00 +0200",
+    );
+    prisma._workouts.push({
+      id: "w-old",
+      userId: "user-1",
+      source: "APPLE_HEALTH",
+      externalId: legacy,
+    });
+    const result = await parse(
+      writeExport(
+        `<Workout workoutActivityType="HKWorkoutActivityTypeRunning" duration="42" durationUnit="min" startDate="2026-05-14 18:00:00 +0200" endDate="2026-05-14 18:42:00 +0200"/>`,
+      ),
+      prisma,
+    );
+    expect(result.workouts).toMatchObject({ inserted: 0, updated: 1 });
+    expect(prisma._workouts).toHaveLength(1);
+    expect(prisma._workouts[0]).toMatchObject({
+      id: "w-old",
+      externalId: workoutExternalId(
+        "HKWorkoutActivityTypeRunning",
+        new Date("2026-05-14T16:00:00Z"),
+        new Date("2026-05-14T16:42:00Z"),
+      ),
+    });
+  });
+
+  it("reads the totals a current export keeps in <WorkoutStatistics>", async () => {
+    const prisma = makeFakePrisma();
+    const result = await parse(
+      writeExport(`<Workout workoutActivityType="HKWorkoutActivityTypeRunning" duration="42" durationUnit="min" startDate="2026-05-14 18:00:00 +0200" endDate="2026-05-14 18:42:00 +0200">
+    <MetadataEntry key="HKIndoorWorkout" value="0"/>
+    <WorkoutStatistics type="HKQuantityTypeIdentifierActiveEnergyBurned" startDate="2026-05-14 18:00:00 +0200" endDate="2026-05-14 18:42:00 +0200" sum="412.5" unit="Cal"/>
+    <WorkoutStatistics type="HKQuantityTypeIdentifierBasalEnergyBurned" startDate="2026-05-14 18:00:00 +0200" endDate="2026-05-14 18:42:00 +0200" sum="70" unit="Cal"/>
+    <WorkoutStatistics type="HKQuantityTypeIdentifierDistanceWalkingRunning" startDate="2026-05-14 18:00:00 +0200" endDate="2026-05-14 18:42:00 +0200" sum="6.5" unit="km"/>
+    <WorkoutStatistics type="HKQuantityTypeIdentifierHeartRate" startDate="2026-05-14 18:00:00 +0200" endDate="2026-05-14 18:42:00 +0200" average="151.6" minimum="98" maximum="178" unit="count/min"/>
+  </Workout>`),
+      prisma,
+    );
+    expect(result.workouts.inserted).toBe(1);
+    expect(result.unknown["element::WorkoutStatistics"]).toBeUndefined();
+    expect(prisma._workouts[0]).toMatchObject({
+      totalEnergyKcal: 412.5,
+      totalDistanceM: 6500,
+      avgHeartRate: 152,
+      minHeartRate: 98,
+      maxHeartRate: 178,
+    });
+  });
+
+  it("keeps a total the <Workout> attributes state over the statistics", async () => {
+    const prisma = makeFakePrisma();
+    await parse(
+      writeExport(`<Workout workoutActivityType="HKWorkoutActivityTypeRunning" duration="42" durationUnit="min" totalDistance="7" totalDistanceUnit="km" startDate="2026-05-14 18:00:00 +0200" endDate="2026-05-14 18:42:00 +0200">
+    <WorkoutStatistics type="HKQuantityTypeIdentifierDistanceWalkingRunning" sum="6.5" unit="km"/>
+    <WorkoutStatistics type="HKQuantityTypeIdentifierActiveEnergyBurned" sum="1000" unit="kJ"/>
+  </Workout>`),
+      prisma,
+    );
+    expect(prisma._workouts[0].totalDistanceM).toBe(7000);
+    expect(prisma._workouts[0].totalEnergyKcal).toBeCloseTo(239.006, 3);
+  });
+
+  it("counts only the workout's own statistics, not a multisport leg's", async () => {
+    const prisma = makeFakePrisma();
+    await parse(
+      writeExport(`<Workout workoutActivityType="HKWorkoutActivityTypeSwimBikeRun" duration="42" durationUnit="min" startDate="2026-05-14 18:00:00 +0200" endDate="2026-05-14 18:42:00 +0200">
+    <WorkoutActivity uuid="leg-1" startDate="2026-05-14 18:00:00 +0200" endDate="2026-05-14 18:20:00 +0200">
+      <WorkoutStatistics type="HKQuantityTypeIdentifierActiveEnergyBurned" sum="200" unit="Cal"/>
+      <WorkoutStatistics type="HKQuantityTypeIdentifierDistanceCycling" sum="10" unit="km"/>
+    </WorkoutActivity>
+    <WorkoutActivity uuid="leg-2" startDate="2026-05-14 18:20:00 +0200" endDate="2026-05-14 18:42:00 +0200">
+      <WorkoutStatistics type="HKQuantityTypeIdentifierActiveEnergyBurned" sum="300" unit="Cal"/>
+      <WorkoutStatistics type="HKQuantityTypeIdentifierDistanceWalkingRunning" sum="5" unit="km"/>
+    </WorkoutActivity>
+    <WorkoutStatistics type="HKQuantityTypeIdentifierActiveEnergyBurned" sum="500" unit="Cal"/>
+    <WorkoutStatistics type="HKQuantityTypeIdentifierDistanceCycling" sum="10" unit="km"/>
+    <WorkoutStatistics type="HKQuantityTypeIdentifierDistanceWalkingRunning" sum="5" unit="km"/>
+  </Workout>`),
+      prisma,
+    );
+    expect(prisma._workouts[0]).toMatchObject({
+      totalEnergyKcal: 500,
+      totalDistanceM: 15000,
+    });
+  });
+
+  it("fills only empty stored totals from a re-import's statistics", async () => {
+    const prisma = makeFakePrisma();
+    await parse(
+      writeExport(
+        `<Workout workoutActivityType="HKWorkoutActivityTypeRunning" duration="42" durationUnit="min" totalDistance="7" totalDistanceUnit="km" startDate="2026-05-14 18:00:00 +0200" endDate="2026-05-14 18:42:00 +0200"/>`,
+      ),
+      prisma,
+    );
+    const second = await parse(
+      writeExport(`<Workout workoutActivityType="HKWorkoutActivityTypeRunning" duration="42" durationUnit="min" startDate="2026-05-14 18:00:00 +0200" endDate="2026-05-14 18:42:00 +0200">
+    <WorkoutStatistics type="HKQuantityTypeIdentifierDistanceWalkingRunning" sum="6.5" unit="km"/>
+    <WorkoutStatistics type="HKQuantityTypeIdentifierActiveEnergyBurned" sum="412.5" unit="Cal"/>
+  </Workout>`),
+      prisma,
+    );
+    expect(second.workouts).toMatchObject({ inserted: 0, updated: 1 });
+    expect(prisma._workouts[0]).toMatchObject({
+      totalDistanceM: 7000,
+      totalEnergyKcal: 412.5,
+    });
+  });
+
+  it("takes a workout stated twice in one export once, without overwriting it", async () => {
+    const prisma = makeFakePrisma();
+    const result = await parse(
+      writeExport(`<Workout workoutActivityType="HKWorkoutActivityTypeRunning" duration="42" durationUnit="min" sourceName="Watch" sourceVersion="11.0" totalDistance="7" totalDistanceUnit="km" startDate="2026-05-14 18:00:00 +0200" endDate="2026-05-14 18:42:00 +0200"/>
+  <Workout workoutActivityType="HKWorkoutActivityTypeRunning" duration="42" durationUnit="min" sourceName="Running app" sourceVersion="3.2" totalDistance="6.8" totalDistanceUnit="km" startDate="2026-05-14 18:00:00 +0200" endDate="2026-05-14 18:42:00 +0200"/>`),
+      prisma,
+    );
+    expect(result.workouts).toMatchObject({
+      read: 2,
+      inserted: 1,
+      updated: 0,
+      duplicate: 1,
+    });
+    expect(prisma._workouts).toHaveLength(1);
+    expect(prisma._workouts[0]).toMatchObject({
+      externalSourceVersion: "11.0",
+      totalDistanceM: 7000,
+      metadata: expect.objectContaining({ sourceName: "Watch" }),
+    });
   });
 });

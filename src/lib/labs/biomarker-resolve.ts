@@ -158,7 +158,8 @@ function markerCatalogKeys(
  * result and no number has chosen its unit yet, so the first numeric reading
  * gives it one when it is written (`adoptFirstNumericUnit` in
  * `./reading-conversion.ts`). The write stays the authority: should the marker
- * hold a number after all, the conversion there refuses the reading.
+ * hold a number after all, the write refuses the reading as
+ * `marker_unit_unset`.
  */
 export function unitFitsMarker(
   marker: Pick<IndexedMarker, "unit" | "analyteKey">,

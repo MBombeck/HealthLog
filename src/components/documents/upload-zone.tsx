@@ -2,8 +2,10 @@
 
 /**
  * The vault's upload plumbing: the hidden file input the page header's
- * Upload button opens, plus a quota bar that appears only above 80 %
- * usage. There is no standing drop-target card — it took a full band of
+ * Upload button opens, plus the record's storage use. The use is always
+ * shown as one quiet meta line, so "counts against this record" is a number
+ * a person can read (#1403); from 80 % of the quota on it becomes the
+ * warning block with a bar. There is no standing drop-target card — it took a full band of
  * vertical space on every visit for an affordance the header button and
  * the page-wide drag-and-drop overlay already cover. Dropping a file
  * anywhere on the page is caught by that overlay; the header button opens
@@ -83,6 +85,16 @@ export function UploadZone({
             })}
           />
         </div>
+      ) : usage ? (
+        <p
+          data-slot="document-storage-used"
+          className="text-muted-foreground text-xs tabular-nums"
+        >
+          {t("documents.upload.storageUsed", {
+            used: formatBytes(usage.usedBytes, locale),
+            quota: formatBytes(usage.quotaBytes, locale),
+          })}
+        </p>
       ) : null}
     </div>
   );

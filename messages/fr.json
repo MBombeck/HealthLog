@@ -108,6 +108,9 @@
         "qualitativeExpected": "Saisissez un résultat textuel pour cette mesure qualitative.",
         "numericExpected": "Saisissez un nombre pour cette mesure numérique.",
         "referenceRangeInvalid": "La valeur de référence basse ne doit pas dépasser la valeur haute."
+      },
+      "unit": {
+        "unset": "Ce marqueur contient des valeurs enregistrées sans unité. Définissez d'abord l'unité du marqueur, puis ajoutez le résultat."
       }
     },
     "onboarding": {
@@ -201,6 +204,16 @@
     },
     "ai_provider": {
       "private_host": "Cette adresse se trouve sur un réseau privé. L’opérateur doit d’abord autoriser son origine exacte dans AI_PRIVATE_ORIGINS."
+    },
+    "ai_test": {
+      "anthropic_key_missing": "Aucune clé d'API Anthropic n'est enregistrée, rien n'a donc été testé. Saisissez la clé dans la carte Anthropic et enregistrez-la.",
+      "local_base_url_missing": "Le modèle local n'a pas d'URL de base enregistrée, rien n'a donc été testé. Saisissez-la dans la carte du modèle local et enregistrez-la.",
+      "private_host": "Cette adresse se trouve sur un réseau privé que l'opérateur n'a pas autorisé, rien n'a donc été testé. L'opérateur doit ajouter son origine exacte à AI_PRIVATE_ORIGINS.",
+      "compat_base_url_missing": "La passerelle compatible OpenAI n'a pas d'URL de base enregistrée, rien n'a donc été testé. Saisissez-la dans la carte de la passerelle et enregistrez-la.",
+      "compat_model_missing": "La passerelle compatible OpenAI n'a pas de modèle enregistré, rien n'a donc été testé. Saisissez-en un dans la carte de la passerelle et enregistrez-le.",
+      "codex_not_connected": "Aucun compte ChatGPT n'est connecté, rien n'a donc été testé. Connectez-le dans la carte ChatGPT.",
+      "openai_key_missing": "Ni vous ni l'opérateur n'avez enregistré de clé d'API OpenAI, rien n'a donc été testé. Saisissez la clé dans la carte OpenAI et enregistrez-la.",
+      "unknown_provider": "Ce serveur ne connaît pas ce fournisseur, rien n'a donc été testé."
     },
     "encounter": {
       "invalid": "Vérifiez les informations du rendez-vous et réessayez.",
@@ -3139,6 +3152,9 @@
       "errorBudget": "Vous avez atteint la limite quotidienne du coach. Le quota se réinitialise à minuit dans votre fuseau horaire.",
       "errorProvider": "Le coach n’a pas pu joindre un fournisseur d’analyse maintenant. Réessayez dans un instant.",
       "errorReasoningOnly": "Le modèle a seulement réfléchi, sans écrire de réponse. Réessayez ou choisissez un autre modèle dans les réglages IA.",
+      "errorTimeout": "Le fournisseur d'IA n'a pas répondu à temps, le Coach n'a donc pas de réponse. Un modèle local lent peut demander un délai de réponse plus long dans les réglages d'IA ; une tâche liée à un seul fournisseur n'en essaie pas d'autre.",
+      "errorUnreachable": "Le fournisseur d'IA est injoignable, le Coach n'a donc pas de réponse. Vérifiez qu'il fonctionne et qu'il est accessible ; une tâche liée à un seul fournisseur n'en essaie pas d'autre.",
+      "errorEmptyReply": "Le fournisseur d'IA a répondu sans contenu, le Coach n'a donc pas de réponse. Réessayez ou choisissez un autre modèle dans les réglages d'IA.",
       "errorDemo": "Dans la démo, le Coach ne répond pas.",
       "errorNoProvider": "Le coach lit vos données de santé enregistrées et répond aux questions à leur sujet (pas un avis médical). HealthLog a besoin d'un fournisseur d'IA pour cela : connectez votre propre clé ou un modèle local.",
       "errorNoProviderAction": "Connecter un fournisseur d'IA",
@@ -5950,6 +5966,32 @@
             "ecgFailedNote": "Les erreurs d’ECG n’annulent pas les enregistrements compatibles importés depuis export.xml.",
             "labsResult": "Résultats d’analyses des dossiers médicaux : {discovered} détectés, {imported} importés, {duplicate} déjà enregistrés, {skipped} ignorés et {failed} échoués.",
             "labsFailedNote": "Un résultat en échec n’annule rien d’autre dans l’archive.",
+            "labsReasons": "Non importés : {reasons}.",
+            "labsReason": {
+              "not_observation": "pas une observation",
+              "not_lab": "pas un résultat d’analyse",
+              "not_final": "pas encore définitif",
+              "withdrawn": "retiré par le laboratoire",
+              "panel_header": "en-tête de bilan",
+              "no_value": "aucune valeur",
+              "unsupported_value": "type de valeur non pris en charge",
+              "no_date": "aucune date",
+              "future_date": "date dans le futur",
+              "invalid_date": "date illisible",
+              "too_large": "trop volumineux",
+              "missing_unit": "aucune unité",
+              "unit_mismatch": "l’unité ne correspond pas au marqueur",
+              "marker_unit_unset": "le marqueur a des valeurs sans unité, définissez d'abord son unité",
+              "text_too_long": "texte trop long",
+              "write_failed": "enregistrement impossible",
+              "over_limit": "au-delà de la limite de l’archive",
+              "bad_reference": "référence de fichier illisible",
+              "member_too_large": "fichier trop volumineux",
+              "member_unsupported": "format de fichier non pris en charge",
+              "malformed_json": "fichier illisible",
+              "archive_unreadable": "archive illisible",
+              "missing_member": "fichier absent de l’archive"
+            },
             "labsMarkersCreatedOne": "{count} nouveau marqueur a été ajouté aux Analyses.",
             "labsMarkersCreatedOther": "{count} nouveaux marqueurs ont été ajoutés aux Analyses.",
             "labsMarkersCreatedFew": "{count} nouveaux marqueurs ont été ajoutés aux Analyses.",
@@ -6694,6 +6736,7 @@
         "notConfigured": "L’opérateur n’a pas configuré de clé OpenAI partagée sur cette instance."
       },
       "testProvider": "Tester le fournisseur actif",
+      "testNamedProvider": "Tester {provider}",
       "testSuccess": "OK : {provider} ({model})",
       "testFailedShort": "Échec du test : {message}",
       "testUnexpectedResponse": "Échec de la connexion au fournisseur d’IA : réponse inattendue du serveur.",
@@ -9106,7 +9149,10 @@
         "recovery_kit": "Le kit de récupération est de nouveau confirmé.",
         "dump_retention": "Une règle de cycle de vie du bucket couvre désormais les dumps de la base."
       }
-    }
+    },
+    "auditActedBy": "par {name}",
+    "auditActorDeleted": "un compte supprimé",
+    "auditActedByColumn": "Effectué par"
   },
   "achievements": {
     "title": "Réussites",
@@ -12351,7 +12397,8 @@
       "browse": "Choisir des fichiers",
       "quotaAlmostFull": "Stockage presque plein",
       "quotaUsed": "{used} sur {quota} utilisés",
-      "queuedAnnouncement": "{count} fichier(s) ajoutés à la file de téléversement"
+      "queuedAnnouncement": "{count} fichier(s) ajoutés à la file de téléversement",
+      "storageUsed": "Stockage : {used} sur {quota} utilisés"
     },
     "selection": {
       "count": "{count} sélectionnés",
@@ -12414,7 +12461,10 @@
       "visitsLabel": "Rattaché au rendez-vous",
       "vaccinationsLabel": "Vaccinations",
       "noVisitsToLink": "Aucune consultation enregistrée pour l’instant.",
-      "noVaccinationsToLink": "Aucune vaccination enregistrée pour l’instant."
+      "noVaccinationsToLink": "Aucune vaccination enregistrée pour l’instant.",
+      "saved": "Modifications enregistrées",
+      "saving": "Enregistrement…",
+      "previewNotOnDevice": "Ce navigateur ne peut pas afficher les PDF dans la page"
     },
     "dropOverlay": {
       "title": "Déposez les fichiers pour les téléverser",

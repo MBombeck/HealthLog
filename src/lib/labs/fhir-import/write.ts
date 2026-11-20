@@ -9,7 +9,7 @@
  * converted when the conversion is known and kept beside what the report
  * said, and a unit that does not convert is refused.
  *
- * Two duplicate checks, in this order:
+ * Two duplicate checks, in this order, both before a unit is refused:
  *   1. the identity (`externalId`) under `source = APPLE_HEALTH`, against
  *      every row including the deleted ones and against the import ledger
  *      that keeps a deleted reading's identity once its row is gone
@@ -42,12 +42,13 @@ import {
   labReadingDay,
   labReadingDaySearchRange,
 } from "@/lib/labs/reading-day";
-import { readingKeys } from "@/lib/labs/reading-keys";
+import { READING_KEY_SELECT, readingKeys } from "@/lib/labs/reading-keys";
 import { encryptNoteToBytes } from "@/lib/labs/store";
 
 import { heldLabImportKeys } from "./import-keys";
 import {
   APPLE_HEALTH_LAB_SOURCE,
+  type FhirLabFailureReason,
   type FhirLabWriteStatus,
   type MappedFhirLab,
 } from "./types";
@@ -75,6 +76,8 @@ interface Pending {
   at: number;
   reading: MappedFhirLab;
   markerId: string | null;
+  /** False when the marker's unit cannot take the reading's. */
+  unitFits: boolean;
 }
 
 export async function writeFhirLabReadings(args: {
@@ -107,7 +110,7 @@ export async function writeFhirLabReadings(args: {
     statuses[at] = { status: "duplicate" };
     result.duplicate += 1;
   };
-  const failed = (at: number, reason: "unit_mismatch" | "write_failed") => {
+  const failed = (at: number, reason: FhirLabFailureReason) => {
     statuses[at] = { status: "failed", reason };
     result.failed += 1;
   };
@@ -149,7 +152,9 @@ export async function writeFhirLabReadings(args: {
       held.add(id);
     }
 
-    // 2. The marker, and whether the unit fits it.
+    // 2. The marker, and whether the unit fits it. A misfit is refused only
+    //    after the live-record check below, so a reading already held under
+    //    another spelling of its unit counts as a duplicate.
     const planned: Pending[] = [];
     for (const { at, reading } of fresh) {
       if (held.has(reading.externalId)) {
@@ -162,10 +167,10 @@ export async function writeFhirLabReadings(args: {
         reading.valueText === null ? reading.unit : null,
         { catalogKey: reading.catalogKey },
       );
-      if (
-        hit &&
-        reading.value !== null &&
-        !unitFitsMarker(
+      const unitFits =
+        !hit ||
+        reading.value === null ||
+        unitFitsMarker(
           {
             unit: hit.marker.unit,
             analyteKey:
@@ -176,15 +181,12 @@ export async function writeFhirLabReadings(args: {
           },
           reading.unit,
           reading.catalogKey,
-        )
-      ) {
-        failed(at, "unit_mismatch");
-        continue;
-      }
+        );
       planned.push({
         at,
         reading,
         markerId: hit?.marker.id ?? null,
+        unitFits,
       });
     }
 
@@ -209,14 +211,21 @@ export async function writeFhirLabReadings(args: {
         ...readingKeys(probe, tz),
         ...readingKeys({ ...probe, biomarkerId: null }, tz),
       ];
+      // A reading the record already holds is a duplicate even when its unit
+      // is spelled in a way the marker's does not match: nothing is missing,
+      // so it is not reported as a failure (#1421).
       if (keys.some((k) => existingKeys.has(k) || seenKeys.has(k))) {
         duplicate(plan.at);
+        continue;
+      }
+      if (!plan.unitFits) {
+        failed(plan.at, "unit_mismatch");
         continue;
       }
 
       const built = await buildRow(client, userId, reading, index);
       if (!built.ok) {
-        failed(plan.at, "unit_mismatch");
+        failed(plan.at, built.reason);
         continue;
       }
       rows.push(built.row);
@@ -284,15 +293,7 @@ async function liveReadingKeys(
       },
       OR: [{ biomarkerId: { in: ids } }, { analyte: { in: names } }],
     },
-    select: {
-      biomarkerId: true,
-      analyte: true,
-      takenAt: true,
-      value: true,
-      valueText: true,
-      sourceValue: true,
-      sourceUnit: true,
-    },
+    select: READING_KEY_SELECT,
   });
   for (const e of existing) {
     for (const k of readingKeys(e, tz)) keys.add(k);
@@ -315,7 +316,7 @@ async function buildRow(
   index: MarkerIndex,
 ): Promise<
   | { ok: true; row: Prisma.LabResultCreateManyInput; markerId: string }
-  | { ok: false }
+  | { ok: false; reason: "unit_mismatch" | "marker_unit_unset" }
 > {
   const marker = await resolveOrMintBiomarker(
     userId,
@@ -345,7 +346,15 @@ async function buildRow(
       sourceReferenceLow: storedLow,
       sourceReferenceHigh: storedHigh,
     });
-    if (!converted.ok) return { ok: false };
+    if (!converted.ok) {
+      return {
+        ok: false,
+        reason:
+          converted.reason === "marker_unit_unset"
+            ? "marker_unit_unset"
+            : "unit_mismatch",
+      };
+    }
     storedValue = converted.value;
     storedLow = converted.sourceReferenceLow;
     storedHigh = converted.sourceReferenceHigh;

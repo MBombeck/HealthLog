@@ -82,16 +82,22 @@ describe("trackKeyboardInset", () => {
     viewport.height = 508;
     viewport.dispatchEvent(new Event("resize"));
     expect(root.props.get("--keyboard-inset")).toBe("336px");
+    expect(root.props.get("--keyboard-viewport-height")).toBe("508px");
     expect(root.attrs.get("data-keyboard")).toBe("open");
 
     viewport.offsetTop = 100;
     viewport.dispatchEvent(new Event("scroll"));
     expect(root.props.get("--keyboard-inset")).toBe("236px");
+    // The visible height stays the visual viewport's, whatever the pan: a
+    // sheet capped at "window minus inset" (608 px here) would reach 100 px
+    // above the visible top.
+    expect(root.props.get("--keyboard-viewport-height")).toBe("508px");
 
     viewport.height = 844;
     viewport.offsetTop = 0;
     viewport.dispatchEvent(new Event("resize"));
     expect(root.props.has("--keyboard-inset")).toBe(false);
+    expect(root.props.has("--keyboard-viewport-height")).toBe(false);
     expect(root.attrs.has("data-keyboard")).toBe(false);
 
     viewport.height = 508;

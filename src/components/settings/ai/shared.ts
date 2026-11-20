@@ -27,8 +27,15 @@ export interface InsightsSettings {
 
 export interface UserAIProvider {
   provider: string | null;
+  /** The selected provider's model (Local's own when Local is selected). */
   model: string | null;
+  /** The Local provider's base URL, whichever provider is selected. */
   baseUrl: string | null;
+  /**
+   * #1417 — the Local provider's own model, whichever provider is selected.
+   * Absent on a payload from a server older than the field.
+   */
+  localModel?: string | null;
   hasAnthropicKey: boolean;
   anthropicKeyPreview: string | null;
   hasLocalKey: boolean;

@@ -27,7 +27,7 @@ import {
 const LOCAL_ROW = {
   aiProvider: "LOCAL",
   aiModel: "llama",
-  aiBaseUrl: "https://llm.example.org/v1",
+  aiLocalBaseUrl: "https://llm.example.org/v1",
   aiAnthropicKeyEncrypted: null,
   aiLocalKeyEncrypted: null,
   aiOpenaiKeyEncrypted: null,

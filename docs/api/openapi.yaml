@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.48.2
+  version: 1.48.3
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -8900,9 +8900,10 @@ paths:
         back, only presence plus a four-character preview.
 
 
-        One implicit write is worth knowing about: switching `provider` to anything other than LOCAL, without naming
-        `baseUrl` in the same request, CLEARS the stored base URL. The column is shared across providers, so leaving it
-        would send a cloud key to a host that was configured for a self-hosted backend.
+        `baseUrl` is the LOCAL provider's base URL. It is kept when another provider is selected (until v1.48.2 it was
+        cleared, which wiped a working Local setup); only the Local resolution ever reads it, so a cloud key is never
+        sent to it. `model` is the model of the provider the request saves: Local's own model when `provider` (or, when
+        the body names none, the saved provider) is LOCAL, the shared OpenAI / Anthropic model otherwise.
 
 
         A base URL — for LOCAL or for the OpenAI-compatible gateway — runs the SSRF floor: a private or internal host is
@@ -17935,13 +17936,14 @@ paths:
         "409": *a7
         "422":
           description: "Nothing was written. `meta.errorCode` = `labs.create.invalid` when the body failed validation (every issue
-            under `details.issues`), or `labs.unit.mismatch` when a numeric reading states a `unit` other than the one
-            its marker is tracked in AND the pair cannot be converted (`meta.markerUnit`, `meta.readingUnit`,
-            `meta.reason` = `unknown_analyte` | `unknown_unit` | `not_finite`). A unit is compared only when one is
-            sent; with a `biomarkerId` it may be omitted and the marker's unit is then the stated one. Spelling is
-            forgiven (`mmol/l`, `ug/L` for `µg/L`); a different unit is converted when the marker's analyte is known and
-            the pair is in the unit-conversion registry (the 201 response then carries `converted: true`), and refused
-            otherwise, never relabelled."
+            under `details.issues`), `labs.unit.unset` when the marker has no unit and already holds numbers stored
+            without one (set the marker's unit first; `meta.reason` = `marker_unit_unset`), or `labs.unit.mismatch` when
+            a numeric reading states a `unit` other than the one its marker is tracked in AND the pair cannot be
+            converted (`meta.markerUnit`, `meta.readingUnit`, `meta.reason` = `unknown_analyte` | `unknown_unit` |
+            `not_finite`). A unit is compared only when one is sent; with a `biomarkerId` it may be omitted and the
+            marker's unit is then the stated one. Spelling is forgiven (`mmol/l`, `ug/L` for `µg/L`); a different unit
+            is converted when the marker's analyte is known and the pair is in the unit-conversion registry (the 201
+            response then carries `converted: true`), and refused otherwise, never relabelled."
           content:
             application/json:
               schema:
@@ -42883,7 +42885,7 @@ components:
                 labs.ocr.extractFailed, labs.ocr.fileTooLarge, labs.ocr.fileType, labs.ocr.localOcrDisabled,
                 labs.ocr.outputLimit, labs.ocr.pdfRendererUnavailable, labs.ocr.providerUnsupported,
                 labs.ocr.rateLimited, labs.ocr.tooLarge, labs.restore.invalid, labs.result.notFound, labs.unit.mismatch,
-                labs.update.invalid, labs.update.linkedFieldsImmutable, labs.update.numericExpected,
+                labs.unit.unset, labs.update.invalid, labs.update.linkedFieldsImmutable, labs.update.numericExpected,
                 labs.update.qualitativeExpected, labs.update.referenceRangeInvalid,
                 labs.update.sourceReferenceRangeInvalid; life_event — life_event.invalid, life_event.not_found;
                 managed_profile — managed_profile.guardian.duplicate, managed_profile.guardian.managed_invitee,
@@ -45706,6 +45708,10 @@ components:
                     - string
                     - "null"
                 aiBaseUrl:
+                  type:
+                    - string
+                    - "null"
+                aiLocalModel:
                   type:
                     - string
                     - "null"
@@ -63298,11 +63304,20 @@ components:
             - type: "null"
           description: The user's selected provider, or null when none is set.
         model:
+          description: "The selected provider's model: Local's own model when `provider` is LOCAL, the shared model of the OpenAI
+            and Anthropic providers otherwise."
           type:
             - string
             - "null"
         baseUrl:
-          description: Custom base URL (LOCAL provider only); null otherwise.
+          description: The LOCAL provider's base URL, whichever provider is selected (#1417). Read only for Local; no other
+            provider is ever sent to it.
+          type:
+            - string
+            - "null"
+        localModel:
+          description: The LOCAL provider's own model, whichever provider is selected (#1417). Null runs Local on its client
+            default.
           type:
             - string
             - "null"
@@ -63415,6 +63430,7 @@ components:
         - provider
         - model
         - baseUrl
+        - localModel
         - aiAvailable
         - managedBy
         - hasAnthropicKey
@@ -80976,7 +80992,9 @@ components:
                 counters (`ecg`: `discovered` / `imported` / `updated` / `skipped` / `failed`; `labs`, the lab results
                 from Health Records: `discovered` / `imported` / `duplicate` / `skipped` / `failed`, plus
                 `markersCreated`, the markers the import added to Labs) are normalised to bounded non-negative integers
-                before serving."
+                before serving. `labs.reasons` breaks the skipped and failed lab results down by closed reason (for
+                example `not_lab`, `missing_unit`, `unit_mismatch`), one positive count per reason that occurred; any
+                other key is dropped."
             failureReason:
               description: Free text on `failed`; null otherwise.
               type:
@@ -81704,6 +81722,7 @@ components:
             - too_large
             - missing_unit
             - unit_mismatch
+            - marker_unit_unset
             - text_too_long
             - write_failed
       required:
@@ -81720,7 +81739,8 @@ components:
         `future_date` | `invalid_date` | `too_large` (a resource over 256 KiB). `failed`: a reading that could not be
         stored, with `reason` `missing_unit` (a number without a unit; a specific gravity, a pH or an INR, known by its
         LOINC code, is read as the unity `1` instead) | `unit_mismatch` (the account's marker is in a unit this one does
-        not convert into) | `text_too_long` | `write_failed` (transient: send it again)."
+        not convert into) | `marker_unit_unset` (the account's marker has no unit and already holds numbers; set the
+        marker's unit, then send it again) | `text_too_long` | `write_failed` (transient: send it again)."
     LabOverviewEnvelope:
       type: object
       properties:

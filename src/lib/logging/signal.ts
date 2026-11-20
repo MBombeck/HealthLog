@@ -23,8 +23,9 @@ import { emitIfSampled } from "./transports";
  * Levels: `error` for a real failure nobody downstream recovered from, `warn`
  * for one the code recovered from (a fallback answered, a degraded result was
  * served) or a refusal by design that an operator should still be able to
- * count. Nothing here is for `info`: an expected outcome belongs on the
- * request's own line.
+ * count. `emitSignal` is never `info`: an expected outcome belongs on the
+ * request's own line, or, when it has to be findable on its own, on an
+ * `emitOutcome` line.
  *
  * Never throws. A log line must not break the work it describes.
  */
@@ -42,6 +43,24 @@ export interface SignalInput {
 const MAX_MESSAGE_CHARS = 240;
 
 export function emitSignal(input: SignalInput): void {
+  emitLine(input);
+}
+
+/**
+ * One `info` line for an outcome an operator has to be able to find on its
+ * own, under its own action name: which provider and chain served an AI call
+ * (#1404). On the request's own line it sits beside whatever the request did
+ * last, under that action, and a sampled request line may not be written at
+ * all; a background-kind line always is (`sampler.ts`). Same shape and
+ * redaction as `emitSignal`, and it never throws either.
+ */
+export function emitOutcome(input: Omit<SignalInput, "level" | "error">): void {
+  emitLine({ ...input, level: "info" });
+}
+
+function emitLine(
+  input: Omit<SignalInput, "level"> & { level: SignalInput["level"] | "info" },
+): void {
   try {
     const event = new WideEventBuilder("background");
     const parent = getEvent();
@@ -63,7 +82,7 @@ export function emitSignal(input: SignalInput): void {
       const message = err instanceof Error ? err.message : String(err);
       event.addMeta("error_message", message.slice(0, MAX_MESSAGE_CHARS));
     }
-    event.elevateLevel(input.level);
+    if (input.level !== "info") event.elevateLevel(input.level);
     event.finish();
     emitIfSampled(event.toJSON());
   } catch {

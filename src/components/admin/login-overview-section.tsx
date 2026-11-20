@@ -36,6 +36,7 @@ import { formatInUserTz, DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { useAuth } from "@/hooks/use-auth";
 import {
   type AdminAuditEntry,
+  AuditActedBy,
   auditLogCsvHeaderLabels,
   buildAuditLogCsvRecords,
   carrierShortLabel,
@@ -67,6 +68,41 @@ function rangeToSince(range: DateRangePreset): string | undefined {
   const now = Date.now();
   const ms = range === "24h" ? 24 : range === "7d" ? 24 * 7 : 24 * 30;
   return new Date(now - ms * 60 * 60 * 1000).toISOString();
+}
+
+/**
+ * The audit-log query for the viewer's filter state.
+ *
+ * F-02 (v1.4.19): the page is the auth/admin "Login Overview", so with no
+ * action chosen it restricts to `auth.*` (`filter=auth`) and insights or
+ * data events stay out of the default view. An action picked from the
+ * dropdown is an explicit choice and replaces that default: the server ANDs
+ * the two, so keeping `filter=auth` beside a non-auth action (a document
+ * upload a guardian made inside a managed profile, #1403) answered zero rows
+ * for an action the same dropdown had just offered.
+ */
+export function buildAuditLogQueryParams(state: {
+  page: number;
+  perPage: number;
+  actor: string;
+  actionFilter: string;
+  target: string;
+  range: DateRangePreset;
+}): URLSearchParams {
+  const params = new URLSearchParams();
+  params.set("page", String(state.page));
+  params.set("perPage", String(state.perPage));
+  const action =
+    state.actionFilter && state.actionFilter !== "__all__"
+      ? state.actionFilter
+      : null;
+  if (action) params.set("action", action);
+  else params.set("filter", "auth");
+  if (state.actor.trim()) params.set("actor", state.actor.trim());
+  if (state.target.trim()) params.set("target", state.target.trim());
+  const since = rangeToSince(state.range);
+  if (since) params.set("since", since);
+  return params;
 }
 
 export function LoginOverviewSection() {
@@ -121,26 +157,18 @@ export function LoginOverviewSection() {
 
   // Build the query string once so it's reused by the data-query key, the
   // export download, and the next-/prev- buttons.
-  const queryParams = useMemo(() => {
-    const params = new URLSearchParams();
-    params.set("page", String(page));
-    params.set("perPage", String(perPage));
-    // F-02 (v1.4.19): The page is the auth/admin "Login Overview" — restrict
-    // to `auth.*` actions so insights/admin/data events don't leak into the
-    // viewer (the previous behaviour rendered rows like
-    // `insights.weight-status.en` next to "Passkey login"). When the user
-    // picks a specific action below we trust their explicit choice and let
-    // it overwrite this default.
-    params.set("filter", "auth");
-    if (actor.trim()) params.set("actor", actor.trim());
-    if (actionFilter && actionFilter !== "__all__") {
-      params.set("action", actionFilter);
-    }
-    if (target.trim()) params.set("target", target.trim());
-    const since = rangeToSince(range);
-    if (since) params.set("since", since);
-    return params;
-  }, [page, perPage, actor, actionFilter, target, range]);
+  const queryParams = useMemo(
+    () =>
+      buildAuditLogQueryParams({
+        page,
+        perPage,
+        actor,
+        actionFilter,
+        target,
+        range,
+      }),
+    [page, perPage, actor, actionFilter, target, range],
+  );
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.adminAuditLogFiltered({
@@ -182,6 +210,8 @@ export function LoginOverviewSection() {
     const labels = {
       timestamp: t("admin.timestamp"),
       user: t("admin.userColumn"),
+      actedBy: t("admin.auditActedByColumn"),
+      deletedAccount: t("admin.auditActorDeleted"),
       ip: t("admin.ip"),
       location: t("admin.location"),
       // v1.4.27 — `admin.carrier` is shipped by bucket B6. The
@@ -476,6 +506,10 @@ export function LoginOverviewSection() {
                           className={`px-3 py-2 font-medium ${isFailed ? "text-destructive" : ""}`}
                         >
                           {entry.user?.username ?? t("common.unknown")}
+                          <AuditActedBy
+                            actor={entry.actor}
+                            className="block text-xs font-normal"
+                          />
                         </td>
                         <td
                           className={`px-3 py-2 text-xs ${isFailed ? "text-destructive" : "text-muted-foreground"}`}

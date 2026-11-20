@@ -37,7 +37,7 @@ import { singleUserTurn, type AIProvider } from "../types";
 const ROW = {
   aiProvider: "LOCAL",
   aiModel: "gemma4:12b",
-  aiBaseUrl: "https://ollama.example.org/v1",
+  aiLocalBaseUrl: "https://ollama.example.org/v1",
   aiAnthropicKeyEncrypted: null,
   aiLocalKeyEncrypted: null,
   aiOpenaiKeyEncrypted: "openai-key",

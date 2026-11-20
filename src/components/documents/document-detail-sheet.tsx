@@ -9,8 +9,10 @@
  * prominent Download button.
  *
  * Metadata edits save on commit (title on Enter/blur, kind and filing date
- * on change, condition links on toggle — replace-set PATCH). Mutation
- * errors surface inline (`role="alert"`), never as a QueryErrorCard.
+ * on change, condition links on toggle — replace-set PATCH). A quiet status
+ * line says "Saving…" and then "Saved", since there is no Save button to
+ * confirm the write. Mutation errors surface inline (`role="alert"`), never
+ * as a QueryErrorCard.
  * Delete soft-deletes with an Undo toast (restore endpoint); a restore
  * refusal maps `meta.reason` (`purged`, `duplicateExists`) to translated
  * copy. A Share action in the footer opens the clinician share-link create
@@ -27,7 +29,6 @@ import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VaccinationDocumentSuggestion } from "@/components/vaccinations/vaccination-document-suggestion";
 import { DOCUMENT_PURGE_GRACE_DAYS } from "@/lib/documents/inbound-constants";
-import { formatBytes } from "@/lib/format/bytes";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { RelatedLink } from "@/lib/links/related";
 
@@ -35,8 +36,9 @@ import {
   DocumentDetailFields,
   DocumentDetailFooter,
   DocumentDetailMeta,
+  DocumentSaveStatus,
 } from "./detail/detail-sections";
-import { DocumentDownloadButton, InlinePreview } from "./detail/original-file";
+import { DocumentPreviewFallback, InlinePreview } from "./detail/original-file";
 import { useDocumentDetail } from "./detail/use-document-detail";
 import { useDocumentDetailAi } from "./detail/use-document-detail-ai";
 import { DocumentAiSection } from "./document-ai-section";
@@ -68,7 +70,7 @@ export function DocumentDetailSheet({
   /** Whether content indexing is available (from `usage.contentIndex.enabled`). */
   contentIndexEnabled?: boolean;
 }) {
-  const { t, locale } = useTranslations();
+  const { t } = useTranslations();
   const format = useFormatters();
   const detail = useDocumentDetail({ documentId, open, onOpenChange });
   const {
@@ -78,6 +80,7 @@ export function DocumentDetailSheet({
     canManageDocuments,
     labsModuleEnabled,
     mutationError,
+    saved,
     linkResets,
     shareOpen,
     setShareOpen,
@@ -89,6 +92,7 @@ export function DocumentDetailSheet({
     setSuggestedEncounter,
     title,
     Icon,
+    previewInline,
     inlineSrc,
     inlineFailed,
   } = detail;
@@ -185,7 +189,7 @@ export function DocumentDetailSheet({
 
         {doc ? (
           <div className="space-y-6">
-            {doc.servingClass === "inline" ? (
+            {previewInline ? (
               <InlinePreview
                 src={inlineSrc}
                 failed={inlineFailed}
@@ -193,27 +197,7 @@ export function DocumentDetailSheet({
                 title={title}
               />
             ) : (
-              <div className="border-border flex flex-col items-center gap-2 rounded-lg border px-4 py-8 text-center">
-                {Icon ? (
-                  <Icon className="text-muted-foreground size-8" aria-hidden />
-                ) : null}
-                <p className="max-w-full truncate text-sm font-medium">
-                  {doc.filename ?? title}
-                </p>
-                <p className="text-muted-foreground text-xs">
-                  {t("documents.detail.previewUnavailable")},{" "}
-                  {formatBytes(doc.byteSize, locale)}
-                </p>
-                <DocumentDownloadButton
-                  documentId={doc.id}
-                  filename={doc.filename}
-                  readyUrl={null}
-                  unavailable={false}
-                  size="sm"
-                  className="mt-1"
-                  slot="document-download-inline"
-                />
-              </div>
+              <DocumentPreviewFallback doc={doc} title={title} Icon={Icon} />
             )}
 
             <DocumentSummaryBlock
@@ -281,11 +265,11 @@ export function DocumentDetailSheet({
               />
             )}
 
-            {mutationError ? (
-              <p role="alert" className="text-destructive text-sm">
-                {mutationError}
-              </p>
-            ) : null}
+            <DocumentSaveStatus
+              error={mutationError}
+              pending={patch.isPending}
+              saved={saved}
+            />
 
             <div className="space-y-4">
               <DocumentDetailFields doc={doc} detail={detail} />

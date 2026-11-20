@@ -260,6 +260,19 @@ as something to log in as.
   on the level: an adult who shares their record at manage still keeps the
   vault to themselves.
 
+  **A managed profile has AI only where the instance has a server key.**
+  Everything a model does for a profile, document reads and the Coach
+  included, runs on the operator's instance-wide provider (the AI server
+  key under **Admin → AI**) and on nothing else: not the guardian's own key
+  or local model, and not a key or gateway entered inside the profile. On an
+  install where every account brings its own key and no server key is set,
+  profiles therefore have no AI at all; the profile's AI settings and its
+  document list say so, and the switch for automatic reading stays off.
+  Setting a server key is an instance-wide decision, not a per-profile one:
+  it also becomes the last fallback of every other account's default chain
+  (see [AI providers](../integrations/ai-providers.md#byok-vs-admin-shared)),
+  so weigh it as that rather than as a way to switch one profile on.
+
 - **Its reminders go to its guardians.** A record with no login has no
   channels of its own, so medication reminders, measurement reminders,
   safety-floor alerts and low-stock alerts fan out to every active

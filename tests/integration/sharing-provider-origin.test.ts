@@ -299,7 +299,7 @@ describe("sharing provider origin", () => {
         role: "USER",
         managedProfileAt: new Date(),
         aiProvider: "LOCAL",
-        aiBaseUrl: "https://guardian-byok.example.test/v1",
+        aiLocalBaseUrl: "https://guardian-byok.example.test/v1",
       },
     });
     await createUser("guardian-actor");
@@ -324,7 +324,7 @@ describe("sharing provider origin", () => {
         email: "provider-read-record@example.test",
         role: "USER",
         aiProvider: "LOCAL",
-        aiBaseUrl: "https://llm.example.test/v1",
+        aiLocalBaseUrl: "https://llm.example.test/v1",
       },
     });
     await createUser("provider-read-delegate");
@@ -386,7 +386,7 @@ describe("sharing provider origin", () => {
         role: "USER",
         managedProfileAt: new Date(),
         aiProvider: "LOCAL",
-        aiBaseUrl: "https://stale-managed-provider.example.test/v1",
+        aiLocalBaseUrl: "https://stale-managed-provider.example.test/v1",
       },
     });
     const system = authority({

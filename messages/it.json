@@ -108,6 +108,9 @@
         "qualitativeExpected": "Inserisci un risultato testuale per questa lettura qualitativa.",
         "numericExpected": "Inserisci un numero per questa lettura numerica.",
         "referenceRangeInvalid": "Il valore di riferimento inferiore non può superare quello superiore."
+      },
+      "unit": {
+        "unset": "Questo marcatore ha valori salvati senza unità. Imposta prima l'unità del marcatore, poi aggiungi il risultato."
       }
     },
     "onboarding": {
@@ -201,6 +204,16 @@
     },
     "ai_provider": {
       "private_host": "Questo indirizzo si trova in una rete privata. L’operatore deve prima consentirne l’origine esatta in AI_PRIVATE_ORIGINS."
+    },
+    "ai_test": {
+      "anthropic_key_missing": "Non è salvata alcuna chiave API di Anthropic, quindi non è stato provato nulla. Inserisci la chiave nella scheda Anthropic e salvala.",
+      "local_base_url_missing": "Il modello locale non ha un URL di base salvato, quindi non è stato provato nulla. Inseriscilo nella scheda del modello locale e salvalo.",
+      "private_host": "Questo indirizzo si trova in una rete privata che l'operatore non ha consentito, quindi non è stato provato nulla. L'operatore deve aggiungere la sua origine esatta ad AI_PRIVATE_ORIGINS.",
+      "compat_base_url_missing": "Il gateway compatibile con OpenAI non ha un URL di base salvato, quindi non è stato provato nulla. Inseriscilo nella scheda del gateway e salvalo.",
+      "compat_model_missing": "Il gateway compatibile con OpenAI non ha un modello salvato, quindi non è stato provato nulla. Inseriscine uno nella scheda del gateway e salvalo.",
+      "codex_not_connected": "Nessun account ChatGPT è collegato, quindi non è stato provato nulla. Collegalo nella scheda ChatGPT.",
+      "openai_key_missing": "Né tu né l'operatore avete salvato una chiave API di OpenAI, quindi non è stato provato nulla. Inserisci la chiave nella scheda OpenAI e salvala.",
+      "unknown_provider": "Questo server non conosce questo provider, quindi non è stato provato nulla."
     },
     "encounter": {
       "invalid": "Controlla i dati dell'appuntamento e riprova.",
@@ -3139,6 +3152,9 @@
       "errorBudget": "Hai raggiunto il limite giornaliero del coach. Il budget si reimposta a mezzanotte nel tuo fuso orario.",
       "errorProvider": "Il coach non è riuscito a contattare un provider di analisi ora. Riprova fra poco.",
       "errorReasoningOnly": "Il modello ha solo ragionato senza scrivere una risposta. Riprova oppure scegli un altro modello nelle impostazioni IA.",
+      "errorTimeout": "Il provider di IA non ha risposto in tempo, quindi il Coach non ha una risposta. Un modello locale lento può richiedere un tempo di risposta più lungo nelle impostazioni IA; un'attività vincolata a un provider non ne prova altri.",
+      "errorUnreachable": "Il provider di IA non è raggiungibile, quindi il Coach non ha una risposta. Controlla che sia in funzione e raggiungibile; un'attività vincolata a un provider non ne prova altri.",
+      "errorEmptyReply": "Il provider di IA ha risposto senza contenuto, quindi il Coach non ha una risposta. Riprova o scegli un altro modello nelle impostazioni IA.",
       "errorDemo": "Nella demo il Coach non risponde.",
       "errorNoProvider": "Il coach legge i tuoi dati di salute registrati e risponde a domande su di essi (non è consulenza medica). HealthLog ha bisogno di un provider IA per questo: collega la tua chiave o un modello locale.",
       "errorNoProviderAction": "Collega un provider IA",
@@ -5950,6 +5966,32 @@
             "ecgFailedNote": "Gli errori ECG non eliminano i record supportati importati da export.xml.",
             "labsResult": "Esami di laboratorio dalle cartelle cliniche: {discovered} rilevati, {imported} importati, {duplicate} già presenti, {skipped} ignorati e {failed} non riusciti.",
             "labsFailedNote": "Un esame non riuscito non elimina nient’altro dall’archivio.",
+            "labsReasons": "Non importati: {reasons}.",
+            "labsReason": {
+              "not_observation": "non è un’osservazione",
+              "not_lab": "non è un esame di laboratorio",
+              "not_final": "non ancora definitivo",
+              "withdrawn": "ritirato dal laboratorio",
+              "panel_header": "intestazione di un pannello",
+              "no_value": "nessun valore",
+              "unsupported_value": "tipo di valore non supportato",
+              "no_date": "nessuna data",
+              "future_date": "data nel futuro",
+              "invalid_date": "data illeggibile",
+              "too_large": "troppo grande",
+              "missing_unit": "nessuna unità",
+              "unit_mismatch": "l’unità non corrisponde al marcatore",
+              "marker_unit_unset": "il marcatore ha valori senza unità, impostane prima l'unità",
+              "text_too_long": "testo troppo lungo",
+              "write_failed": "impossibile salvare",
+              "over_limit": "oltre il limite dell’archivio",
+              "bad_reference": "riferimento al file illeggibile",
+              "member_too_large": "file troppo grande",
+              "member_unsupported": "formato di file non supportato",
+              "malformed_json": "file illeggibile",
+              "archive_unreadable": "archivio illeggibile",
+              "missing_member": "file mancante nell’archivio"
+            },
             "labsMarkersCreatedOne": "{count} nuovo marcatore è stato aggiunto a Esami.",
             "labsMarkersCreatedOther": "{count} nuovi marcatori sono stati aggiunti a Esami.",
             "labsMarkersCreatedFew": "{count} nuovi marcatori sono stati aggiunti a Esami.",
@@ -6694,6 +6736,7 @@
         "notConfigured": "L’operatore non ha configurato una chiave OpenAI condivisa su questa istanza."
       },
       "testProvider": "Prova il provider attivo",
+      "testNamedProvider": "Prova {provider}",
       "testSuccess": "OK: {provider} ({model})",
       "testFailedShort": "Prova non riuscita: {message}",
       "testUnexpectedResponse": "Connessione al provider IA non riuscita: risposta inattesa dal server.",
@@ -9106,7 +9149,10 @@
         "recovery_kit": "Il kit di recupero è di nuovo confermato.",
         "dump_retention": "Ora una regola di ciclo di vita del bucket copre i dump del database."
       }
-    }
+    },
+    "auditActedBy": "da {name}",
+    "auditActorDeleted": "un account eliminato",
+    "auditActedByColumn": "Eseguito da"
   },
   "achievements": {
     "title": "Obiettivi",
@@ -12351,7 +12397,8 @@
       "browse": "Scegli file",
       "quotaAlmostFull": "Spazio quasi pieno",
       "quotaUsed": "{used} di {quota} usati",
-      "queuedAnnouncement": "{count} file aggiunti alla coda di caricamento"
+      "queuedAnnouncement": "{count} file aggiunti alla coda di caricamento",
+      "storageUsed": "Spazio: {used} di {quota} in uso"
     },
     "selection": {
       "count": "{count} selezionati",
@@ -12414,7 +12461,10 @@
       "visitsLabel": "Appartiene all'appuntamento",
       "vaccinationsLabel": "Vaccinazioni",
       "noVisitsToLink": "Nessuna visita registrata finora.",
-      "noVaccinationsToLink": "Nessuna vaccinazione registrata finora."
+      "noVaccinationsToLink": "Nessuna vaccinazione registrata finora.",
+      "saved": "Modifiche salvate",
+      "saving": "Salvataggio…",
+      "previewNotOnDevice": "Questo browser non può mostrare i PDF nella pagina"
     },
     "dropOverlay": {
       "title": "Rilascia i file per caricarli",

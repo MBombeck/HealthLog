@@ -900,7 +900,7 @@ export const importPaths: NonNullable<ZodOpenApiObject["paths"]> = {
                     .record(z.string(), z.unknown())
                     .nullable()
                     .describe(
-                      "The worker's outcome summary, null until it finishes. Free-form except for `ecg` and `labs`, whose counters (`ecg`: `discovered` / `imported` / `updated` / `skipped` / `failed`; `labs`, the lab results from Health Records: `discovered` / `imported` / `duplicate` / `skipped` / `failed`, plus `markersCreated`, the markers the import added to Labs) are normalised to bounded non-negative integers before serving.",
+                      "The worker's outcome summary, null until it finishes. Free-form except for `ecg` and `labs`, whose counters (`ecg`: `discovered` / `imported` / `updated` / `skipped` / `failed`; `labs`, the lab results from Health Records: `discovered` / `imported` / `duplicate` / `skipped` / `failed`, plus `markersCreated`, the markers the import added to Labs) are normalised to bounded non-negative integers before serving. `labs.reasons` breaks the skipped and failed lab results down by closed reason (for example `not_lab`, `missing_unit`, `unit_mismatch`), one positive count per reason that occurred; any other key is dropped.",
                     ),
                   failureReason: z
                     .string()

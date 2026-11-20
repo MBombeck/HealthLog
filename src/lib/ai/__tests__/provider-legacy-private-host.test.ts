@@ -49,7 +49,7 @@ function row(role: "ADMIN" | "USER", overrides: Record<string, unknown>) {
   return {
     aiProvider: null,
     aiModel: "m",
-    aiBaseUrl: null,
+    aiLocalBaseUrl: null,
     aiAnthropicKeyEncrypted: null,
     aiLocalKeyEncrypted: null,
     aiOpenaiKeyEncrypted: null,
@@ -97,7 +97,10 @@ afterEach(() => {
 
 describe("ALLOW_LOCAL_AI_PRIVATE_HOSTS=true at dial time", () => {
   it.each([
-    ["LOCAL", { aiProvider: "LOCAL", aiBaseUrl: "http://10.0.0.5:11434/v1" }],
+    [
+      "LOCAL",
+      { aiProvider: "LOCAL", aiLocalBaseUrl: "http://10.0.0.5:11434/v1" },
+    ],
     [
       "OPENAI_COMPATIBLE",
       {
@@ -121,7 +124,10 @@ describe("ALLOW_LOCAL_AI_PRIVATE_HOSTS=true at dial time", () => {
   );
 
   it.each([
-    ["LOCAL", { aiProvider: "LOCAL", aiBaseUrl: "http://10.0.0.5:11434/v1" }],
+    [
+      "LOCAL",
+      { aiProvider: "LOCAL", aiLocalBaseUrl: "http://10.0.0.5:11434/v1" },
+    ],
     [
       "OPENAI_COMPATIBLE",
       {
@@ -146,7 +152,7 @@ describe("ALLOW_LOCAL_AI_PRIVATE_HOSTS=true at dial time", () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(
       row("ADMIN", {
         aiProvider: "LOCAL",
-        aiBaseUrl: "http://169.254.169.254/latest/v1",
+        aiLocalBaseUrl: "http://169.254.169.254/latest/v1",
       }),
     );
     const opts = await dialOptions();
@@ -175,7 +181,7 @@ describe("the connection test under ALLOW_LOCAL_AI_PRIVATE_HOSTS=true", () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(
       row("USER", {
         aiProvider: "LOCAL",
-        aiBaseUrl: "http://10.0.0.5:11434/v1",
+        aiLocalBaseUrl: "http://10.0.0.5:11434/v1",
       }),
     );
     await expect(resolveProviderForTest("u-1")).rejects.toBeInstanceOf(
@@ -187,7 +193,7 @@ describe("the connection test under ALLOW_LOCAL_AI_PRIVATE_HOSTS=true", () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(
       row("ADMIN", {
         aiProvider: "LOCAL",
-        aiBaseUrl: "http://10.0.0.5:11434/v1",
+        aiLocalBaseUrl: "http://10.0.0.5:11434/v1",
       }),
     );
     await expect(

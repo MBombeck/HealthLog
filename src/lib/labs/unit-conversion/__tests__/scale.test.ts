@@ -51,6 +51,18 @@ describe("scale families", () => {
     expect(convertByScale(1, "G/L", "g/L")).toBeNull();
   });
 
+  it("reads the US spellings of a blood count as the same count (#1421)", () => {
+    for (const unit of ["x10E3/uL", "10E3/uL", "K/uL", "10*9/L"]) {
+      expect(convertByScale(5.2, unit, "10^9/L")).toBe(5.2);
+      expect(convertByScale(5.2, "10^9/L", unit)).toBe(5.2);
+    }
+    for (const unit of ["x10E6/uL", "10E6/uL", "M/uL", "10*12/L"]) {
+      expect(convertByScale(4.6, unit, "10^12/L")).toBe(4.6);
+    }
+    // Thousands are not millions.
+    expect(convertByScale(1, "x10E3/uL", "10^12/L")).toBe(0.001);
+  });
+
   it("lists every unit of a family, in its own spelling", () => {
     const amount = scaleUnitsInFamilyOf("mmol/L");
     expect(amount).toEqual(

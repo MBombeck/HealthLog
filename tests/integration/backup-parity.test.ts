@@ -1619,7 +1619,8 @@ function partlyPlaceableFile(): Record<string, unknown> {
       },
       globalExcludedInjectionSites: ["THIGH_LEFT", "NOWHERE"],
       aiProvider: "OPENAI",
-      aiBaseUrl: "https://llm.example.com/v1",
+      // Refused by the host policy: a metadata address is never allowed.
+      aiBaseUrl: "http://169.254.169.254/latest",
     },
     measurements: [
       {

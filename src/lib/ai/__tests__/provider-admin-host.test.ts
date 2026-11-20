@@ -52,7 +52,7 @@ function emptyUserRow() {
   return {
     aiProvider: null,
     aiModel: null,
-    aiBaseUrl: null,
+    aiLocalBaseUrl: null,
     aiAnthropicKeyEncrypted: null,
     aiLocalKeyEncrypted: null,
     aiOpenaiKeyEncrypted: null,

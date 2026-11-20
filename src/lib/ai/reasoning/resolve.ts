@@ -236,6 +236,8 @@ export function reasoningSupportForChainEntry(
   providerType: ProviderChainType,
   config: {
     model?: string | null;
+    /** The Local provider's own model (#1417). */
+    localModel?: string | null;
     compatModel?: string | null;
     compatBaseUrl?: string | null;
     adminModel?: string | null;
@@ -251,7 +253,7 @@ export function reasoningSupportForChainEntry(
     case "anthropic":
       return reasoningSupport("anthropic", config.model ?? "claude-sonnet-4-6");
     case "local":
-      return reasoningSupport("local", config.model ?? "");
+      return reasoningSupport("local", config.localModel ?? "");
     case "openai-compatible":
       return reasoningSupport(
         "openai-compatible",

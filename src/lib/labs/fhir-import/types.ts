@@ -71,10 +71,33 @@ export type FhirLabSkipReason = (typeof FHIR_LAB_SKIP_REASONS)[number];
 export const FHIR_LAB_FAILURE_REASONS = [
   "missing_unit",
   "unit_mismatch",
+  "marker_unit_unset",
   "text_too_long",
   "write_failed",
 ] as const;
 export type FhirLabFailureReason = (typeof FHIR_LAB_FAILURE_REASONS)[number];
+
+/**
+ * Why an archive's Health Records file was not read: a reference that names
+ * no safe file, a file over a limit, an unreadable file or archive.
+ */
+export const FHIR_LAB_ARCHIVE_REASONS = [
+  "over_limit",
+  "bad_reference",
+  "member_too_large",
+  "member_unsupported",
+  "malformed_json",
+  "archive_unreadable",
+  "missing_member",
+] as const;
+
+/** Every reason an import counts a result as skipped or failed. */
+export const FHIR_LAB_IMPORT_REASONS = [
+  ...FHIR_LAB_SKIP_REASONS,
+  ...FHIR_LAB_FAILURE_REASONS,
+  ...FHIR_LAB_ARCHIVE_REASONS,
+] as const;
+export type FhirLabImportReason = (typeof FHIR_LAB_IMPORT_REASONS)[number];
 
 /** Bounded outcome counts, the only thing an import reports. */
 export interface FhirLabCounts {
@@ -91,6 +114,11 @@ export interface FhirLabCounts {
   failed: number;
   /** Markers added to Labs because no existing marker took the reading. */
   markersCreated: number;
+  /**
+   * The skipped and failed results by reason (#1421), so the person can see
+   * what the two counts are made of. Closed reasons only, never content.
+   */
+  reasons: Partial<Record<FhirLabImportReason, number>>;
 }
 
 export function emptyFhirLabCounts(): FhirLabCounts {
@@ -101,6 +129,7 @@ export function emptyFhirLabCounts(): FhirLabCounts {
     skipped: 0,
     failed: 0,
     markersCreated: 0,
+    reasons: {},
   };
 }
 
