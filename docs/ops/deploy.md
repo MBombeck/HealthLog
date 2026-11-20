@@ -159,6 +159,20 @@ worker container that start together wait for each other on an advisory lock
 and derive the same password. Going back to 1.46 runs as the owner, as 1.46
 always did, and finds nothing in the queue schema it did not create.
 
+### v1.48.4 notes
+
+No migration and no step by hand for the symptom change. The cap on active
+symptoms a person named rises from 8 to 30 (`limit` on
+`GET /api/symptoms/definitions` says so), and the correlations take at most
+eight symptom channels: the active symptoms with the most occurrences in the
+analysis window, built-in and own alike.
+
+Rollback to v1.48.3: switch the image back. An account that keeps more than
+eight named symptoms active keeps them and can log against all of them, but
+cannot add or show another named one until it hides enough to fall below
+eight, and its correlations go back to the first eight in display order,
+own symptoms before built-in ones.
+
 ### v1.48.3 notes
 
 The sequence above covers this release; no step by hand is needed, but take

@@ -454,37 +454,66 @@ export async function fetchCustomMetricBehaviourSeries(
 }
 
 /**
- * v1.40 — one OUTCOME series per active person-defined symptom, keyed
+ * v1.40 — one OUTCOME series per active symptom channel, keyed
  * `SYMPTOM:<definitionId>` and labelled with the decrypted name (the data
  * label `interpret()` prefers over the key). Daily value = that day's highest
  * intensity; see `buildSymptomEventDailySeries` for the zero-fill rule. Hidden
- * definitions are not channels. A symptom whose name cannot be decrypted is
- * left out rather than shown under its database id.
+ * definitions are not channels, and of the active ones the matrix takes the
+ * most logged in the window (`pickCorrelationSymptoms`), at most
+ * `MAX_SYMPTOM_CORRELATION_CHANNELS`, in that order. A symptom whose name
+ * cannot be decrypted is left out rather than shown under its database id.
  */
 export async function fetchSymptomEventSeries(
   userId: string,
   tz: string,
   since: Date,
 ): Promise<NamedSeries[]> {
-  // One read (two statements): every active definition with its events in
-  // the window; the channels are chosen from it in memory.
-  const definitions = pickCorrelationSymptoms(
-    await prisma.symptomDefinition.findMany({
-      where: { userId, isActive: true },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }, { id: "asc" }],
-      select: {
-        id: true,
-        code: true,
-        labelEncrypted: true,
-        events: {
-          where: { deletedAt: null, occurredAt: { gte: since } },
-          orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
-          take: 5000,
-          select: { occurredAt: true, intensity: true },
-        },
+  const inWindow = { deletedAt: null, occurredAt: { gte: since } };
+  // Two reads: every active definition with its count and newest occurrence
+  // in the window, to choose the channels; then the occurrences of the chosen
+  // ones only, so an account with many active symptoms reads no more rows
+  // than one at the channel bound.
+  const candidates = await prisma.symptomDefinition.findMany({
+    where: { userId, isActive: true },
+    select: {
+      id: true,
+      createdAt: true,
+      _count: { select: { events: { where: inWindow } } },
+      events: {
+        where: inWindow,
+        orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
+        take: 1,
+        select: { occurredAt: true },
       },
-    }),
+    },
+  });
+  const picked = pickCorrelationSymptoms(
+    candidates.map((candidate) => ({
+      id: candidate.id,
+      createdAt: candidate.createdAt,
+      eventCount: candidate._count.events,
+      lastOccurredAt: candidate.events[0]?.occurredAt ?? null,
+    })),
   );
+  if (picked.length === 0) return [];
+  const rows = await prisma.symptomDefinition.findMany({
+    where: { userId, id: { in: picked.map((p) => p.id) } },
+    select: {
+      id: true,
+      labelEncrypted: true,
+      events: {
+        where: inWindow,
+        orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
+        take: 5000,
+        select: { occurredAt: true, intensity: true },
+      },
+    },
+  });
+  const rowById = new Map(rows.map((row) => [row.id, row]));
+  const definitions = picked.flatMap((p) => {
+    const row = rowById.get(p.id);
+    return row ? [row] : [];
+  });
   const series: NamedSeries[] = [];
   for (const definition of definitions) {
     const label = decryptSymptomText(definition.labelEncrypted, "label");

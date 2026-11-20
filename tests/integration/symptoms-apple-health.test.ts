@@ -8,7 +8,7 @@
  *   - a first sample creates the built-in definition for its code, labelled
  *     in the record owner's language, and lands on it; a renamed or hidden
  *     built-in still takes the next sample;
- *   - built-in definitions hold no slot of the eight-definition cap, in
+ *   - built-in definitions hold no slot of the cap on named definitions, in
  *     either direction;
  *   - the `(userId, source, externalId)` key answers a re-post `duplicate`,
  *     and so does a re-post of a deleted sample: the tombstone keeps it out;
@@ -37,12 +37,13 @@ process.env.ENCRYPTION_KEY ??=
 
 import { NextRequest } from "next/server";
 
-import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
+import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import {
   buildSymptomsBackupSection,
   restoreSymptomsData,
 } from "@/lib/export/symptoms-backup";
 import type { RestoreSkipLog } from "@/lib/export/restore-skips";
+import { MAX_ACTIVE_SYMPTOM_DEFINITIONS } from "@/lib/symptoms/shared";
 import { loadSymptomSeries } from "@/lib/timeline/symptom-series";
 
 import { cookieJar, headerJar } from "./mock-next-headers";
@@ -377,12 +378,21 @@ describe("POST /api/symptoms/events/batch", () => {
 
   it("holds no slot of the cap, in either direction", async () => {
     const { POST } = await import("@/app/api/symptoms/definitions/route");
-    for (let i = 0; i < 8; i += 1) {
-      const created = await call(POST, "POST", "/api/symptoms/definitions", {
-        label: `Own ${i}`,
+    // Straight into the table up to one short of the cap, so the route call
+    // that fills it stays inside the definitions rate limit.
+    for (let i = 0; i < MAX_ACTIVE_SYMPTOM_DEFINITIONS - 1; i += 1) {
+      await getPrismaClient().symptomDefinition.create({
+        data: {
+          userId: OWNER_ID,
+          labelEncrypted: encryptToBytes(`Own ${i}`),
+          sortOrder: i,
+        },
       });
-      expect(created.status).toBe(201);
     }
+    const last = await call(POST, "POST", "/api/symptoms/definitions", {
+      label: "Own last",
+    });
+    expect(last.status).toBe(201);
     // At the cap, a sample of a new code still lands.
     const result = await ingest([
       sample("A0000000-0000-4000-8000-000000000050", { code: "HEADACHE" }),
@@ -409,11 +419,11 @@ describe("POST /api/symptoms/events/batch", () => {
       { id: own.id },
     );
     expect(show.status).toBe(200);
-    // A ninth own one is still refused.
-    const ninth = await call(POST, "POST", "/api/symptoms/definitions", {
-      label: "Ninth",
+    // One more own one is still refused.
+    const extra = await call(POST, "POST", "/api/symptoms/definitions", {
+      label: "One more",
     });
-    expect(ninth.status).toBe(422);
+    expect(extra.status).toBe(422);
   });
 
   it("keeps another account's sample of the same id apart", async () => {
