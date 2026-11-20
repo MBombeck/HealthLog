@@ -18,6 +18,8 @@ import { queryKeys } from "@/lib/query-keys";
 import { useTranslations } from "@/lib/i18n/context";
 import {
   DEFAULT_MEDICATION_LIST_LAYOUT,
+  type MedicationGroupBy,
+  type MedicationGroupsOpen,
   type MedicationListLayoutWithToken,
   type MedicationListView,
 } from "@/lib/medication-list-layout";
@@ -28,13 +30,15 @@ type Translator = (
 ) => string;
 
 /**
- * v1.16.10 — the /medications presentation preference (cards/table view
- * + manual order), persisted per user through
- * `GET`/`PUT /api/medications/layout`.
+ * The /medications presentation preference (cards/table view,
+ * manual order, category grouping, open preference, category ordering),
+ * persisted per user through `GET`/`PUT /api/medications/layout`.
  *
- * The PUT is field-scoped: the server preserves whichever of `view` /
- * `order` the body omits, so the two writers below each send only the
- * field they own and can never wipe the other one.
+ * The PUT is field-scoped: the server preserves whichever fields the body
+ * omits (preserve-when-absent). Immediate view/grouping toggles write
+ * optimistically with rollback on failure, while order edits (medication
+ * order, category order) use explicit Save with local draft, echoing the
+ * optimistic-concurrency base token to prevent clobbering concurrent writes.
  *
  * The orchestration lives in dependency-injected `run*` functions (the
  * repo convention from `use-medication-intake.ts`) so the optimistic
@@ -80,11 +84,122 @@ export async function runSetMedicationListView(deps: {
 }
 
 /**
- * Persist a manual medication order (the reorder dialog's Save). Not
- * optimistic — the dialog stays open until the PUT resolves, mirroring
- * the dashboard layout section's explicit Save. Returns whether the
- * save landed so the dialog knows to close.
+ * Set groupBy optimistically ("none" or "category"), then persist.
  */
+export async function runSetMedicationListGroupBy(deps: {
+  groupBy: MedicationGroupBy;
+  queryClient: QueryClient;
+  t: Translator;
+}): Promise<void> {
+  const { groupBy, queryClient, t } = deps;
+  const key = queryKeys.medicationListLayout();
+  const previous = queryClient.getQueryData<MedicationListLayoutWithToken>(key);
+  queryClient.setQueryData<MedicationListLayoutWithToken>(key, {
+    ...(previous ?? DEFAULT_MEDICATION_LIST_LAYOUT),
+    groupBy,
+  });
+  try {
+    // Echo the base token so a concurrent order Save can't be clobbered.
+    const saved = await apiPut<MedicationListLayoutWithToken>(
+      "/api/medications/layout",
+      withBaseToken(
+        { version: 1, groupBy },
+        readUpdatedAtToken(queryClient, key),
+      ),
+    );
+    if (saved) queryClient.setQueryData(key, saved);
+  } catch (err) {
+    // Instant-write disposition: roll back on failure and advance token on 409.
+    queryClient.setQueryData(key, previous);
+    if (isConflict(err)) {
+      void queryClient.invalidateQueries({ queryKey: key });
+      toast.message(t("common.conflictReloaded"));
+      return;
+    }
+    showErrorToast(t("settings.savingError"), { cause: err });
+  }
+}
+
+/**
+ * Set groupsOpen optimistically ("expanded", "flagged", "collapsed"), then persist.
+ */
+export async function runSetMedicationListGroupsOpen(deps: {
+  groupsOpen: MedicationGroupsOpen;
+  queryClient: QueryClient;
+  t: Translator;
+}): Promise<void> {
+  const { groupsOpen, queryClient, t } = deps;
+  const key = queryKeys.medicationListLayout();
+  const previous = queryClient.getQueryData<MedicationListLayoutWithToken>(key);
+  queryClient.setQueryData<MedicationListLayoutWithToken>(key, {
+    ...(previous ?? DEFAULT_MEDICATION_LIST_LAYOUT),
+    groupsOpen,
+  });
+  try {
+    // Echo the base token so a concurrent order Save can't be clobbered.
+    const saved = await apiPut<MedicationListLayoutWithToken>(
+      "/api/medications/layout",
+      withBaseToken(
+        { version: 1, groupsOpen },
+        readUpdatedAtToken(queryClient, key),
+      ),
+    );
+    if (saved) queryClient.setQueryData(key, saved);
+  } catch (err) {
+    // Instant-write disposition: roll back on failure and advance token on 409.
+    queryClient.setQueryData(key, previous);
+    if (isConflict(err)) {
+      void queryClient.invalidateQueries({ queryKey: key });
+      toast.message(t("common.conflictReloaded"));
+      return;
+    }
+    showErrorToast(t("settings.savingError"), { cause: err });
+  }
+}
+
+/**
+ * Persist category ordering (the category reorder editor's Save). Not
+ * optimistic — the editor stays open until the PUT resolves, mirroring
+ * the medication order editor's explicit Save. Returns whether the
+ * save landed so the caller knows to clear the draft.
+ */
+export async function runSaveMedicationListCategoryOrder(deps: {
+  categoryOrder: string[];
+  queryClient: QueryClient;
+  t: Translator;
+}): Promise<boolean> {
+  const { categoryOrder, queryClient, t } = deps;
+  const key = queryKeys.medicationListLayout();
+  try {
+    // Echo the base token so this category order Save 409s rather than
+    // clobbering a concurrent write that committed since loaded.
+    const saved = await apiPut<MedicationListLayoutWithToken>(
+      "/api/medications/layout",
+      withBaseToken(
+        { version: 1, categoryOrder },
+        readUpdatedAtToken(queryClient, key),
+      ),
+    );
+    if (saved) {
+      queryClient.setQueryData<MedicationListLayoutWithToken>(key, (prev) =>
+        prev ? { ...prev, ...saved } : saved,
+      );
+    }
+    toast.success(t("medications.reorderSaved"));
+    return true;
+  } catch (err) {
+    // Explicit-Save disposition: on a 409 refetch so the token advances, keep
+    // the draft open (return false), nudge gently.
+    if (isConflict(err)) {
+      void queryClient.invalidateQueries({ queryKey: key });
+      toast.message(t("common.conflictReloaded"));
+      return false;
+    }
+    showErrorToast(t("medications.reorderSaveFailed"), { cause: err });
+    return false;
+  }
+}
+
 export async function runSaveMedicationListOrder(deps: {
   order: string[];
   queryClient: QueryClient;
@@ -103,7 +218,9 @@ export async function runSaveMedicationListOrder(deps: {
       ),
     );
     if (saved) {
-      queryClient.setQueryData(key, saved);
+      queryClient.setQueryData<MedicationListLayoutWithToken>(key, (prev) =>
+        prev ? { ...prev, ...saved } : saved,
+      );
     }
     toast.success(t("medications.reorderSaved"));
     return true;
@@ -126,6 +243,9 @@ export function useMedicationListLayout(enabled: boolean = true): {
   /** True while the preference GET is in flight (first load only). */
   isLayoutLoading: boolean;
   setView: (view: MedicationListView) => Promise<void>;
+  setGroupBy: (groupBy: MedicationGroupBy) => Promise<void>;
+  setGroupsOpen: (groupsOpen: MedicationGroupsOpen) => Promise<void>;
+  saveCategoryOrder: (categoryOrder: string[]) => Promise<boolean>;
   saveOrder: (order: string[]) => Promise<boolean>;
 } {
   const queryClient = useQueryClient();
@@ -143,6 +263,12 @@ export function useMedicationListLayout(enabled: boolean = true): {
     layout: data ?? DEFAULT_MEDICATION_LIST_LAYOUT,
     isLayoutLoading: enabled && isLoading,
     setView: (view) => runSetMedicationListView({ view, queryClient, t }),
+    setGroupBy: (groupBy) =>
+      runSetMedicationListGroupBy({ groupBy, queryClient, t }),
+    setGroupsOpen: (groupsOpen) =>
+      runSetMedicationListGroupsOpen({ groupsOpen, queryClient, t }),
+    saveCategoryOrder: (categoryOrder) =>
+      runSaveMedicationListCategoryOrder({ categoryOrder, queryClient, t }),
     saveOrder: (order) => runSaveMedicationListOrder({ order, queryClient, t }),
   };
 }

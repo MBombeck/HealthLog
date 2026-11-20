@@ -27,6 +27,7 @@ import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { buildLocalisedLabelIndex } from "@/lib/i18n/localised-label-index";
 import type { Locale } from "@/lib/i18n/config";
 import { resolveIntlLocale } from "@/lib/format-locale";
+import { applyCategoryOrder } from "@/lib/settings/module-list-layout";
 import {
   priorityReferenceRangeStatus,
   type ReferenceRangeStatus,
@@ -191,35 +192,6 @@ export interface CategorisableMarker {
 }
 
 /**
- * The person's category order (`categoryOrder` in the labs list layout)
- * over categories already in the default order.
- *
- * Listed keys come first, in the listed order; a key the data does not have
- * is skipped. A category the list does not name (a panel added since the
- * person arranged the list) follows the listed ones in the default order.
- * "other" is the one exception: left at the end of the listed categories it
- * stays last, after any category added later, because a catch-all belongs
- * at the bottom unless the person moved it up. An empty order is the
- * default order.
- */
-export function applyCategoryOrder<T extends { key: string }>(
-  categories: readonly T[],
-  order: readonly string[],
-): T[] {
-  if (order.length === 0) return [...categories];
-  const present = new Set(categories.map((category) => category.key));
-  const listed = order.filter((key) => present.has(key));
-  const rank = new Map(listed.map((key, index) => [key, index]));
-  const ordered = categories
-    .filter((category) => rank.has(category.key))
-    .sort((a, b) => rank.get(a.key)! - rank.get(b.key)!);
-  const rest = categories.filter((category) => !rank.has(category.key));
-  const otherLast = ordered.at(-1)?.key === OTHER_CATEGORY;
-  if (!otherLast || rest.length === 0) return [...ordered, ...rest];
-  return [...ordered.slice(0, -1), ...rest, ordered.at(-1)!];
-}
-
-/**
  * Every category of an overview, in display order, and whether the list
  * groups at all: it does when there are two categories or more and at least
  * one is not "other". One category, or only "other", stays a flat list.
@@ -297,5 +269,8 @@ export function categoriseOverview(
   const grouped =
     categories.length >= 2 &&
     categories.some((category) => category.key !== OTHER_CATEGORY);
-  return { categories: applyCategoryOrder(categories, categoryOrder), grouped };
+  return {
+    categories: applyCategoryOrder(categories, categoryOrder, OTHER_CATEGORY),
+    grouped,
+  };
 }
