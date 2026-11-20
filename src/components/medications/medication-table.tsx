@@ -53,8 +53,6 @@ import {
   buildDoseStatusById,
   groupMedications,
   useMedicationGroupsOpen,
-  MedicationGroupHeader,
-  type MedicationGroup,
 } from "@/components/medications/medication-list-groups";
 import type {
   MedicationGroupBy,
@@ -135,72 +133,19 @@ export interface TableMedication {
   schedules: TableSchedule[];
 }
 
-export type MedicationTableSortColumn =
-  "name" | "nextDue" | "compliance" | "stock";
-
-export interface MedicationTableSort {
-  column: MedicationTableSortColumn;
-  direction: "asc" | "desc";
-}
-
-/**
- * Tri-state header click cycle: none → ascending → descending → none.
- * `null` = the manual (user-defined) order the page passed in.
- */
-export function nextSortState(
-  current: MedicationTableSort | null,
-  column: MedicationTableSortColumn,
-): MedicationTableSort | null {
-  if (!current || current.column !== column) {
-    return { column, direction: "asc" };
-  }
-  if (current.direction === "asc") return { column, direction: "desc" };
-  return null;
-}
-
-/**
- * Client-side sort over the loaded list. Rows without a value for the
- * chosen column (no next due, no compliance row yet, inventory tracking
- * off) sort last in BOTH directions — an unknown must never outrank a
- * known value. `null` sort returns the input order untouched (the
- * manual order).
- */
-export function sortMedicationRows<T extends TableMedication>(
-  rows: readonly T[],
-  sort: MedicationTableSort | null,
-  shortRateById?: ReadonlyMap<string, number>,
-  /** Active UI locale for name collation; omitted = runtime default. */
-  locale?: string,
-): T[] {
-  if (!sort) return [...rows];
-  const dir = sort.direction === "asc" ? 1 : -1;
-  const value = (m: T): number | string | null => {
-    switch (sort.column) {
-      case "name":
-        return m.name;
-      case "nextDue": {
-        if (!m.nextDueAt) return null;
-        const ms = new Date(m.nextDueAt).getTime();
-        return Number.isFinite(ms) ? ms : null;
-      }
-      case "compliance":
-        return shortRateById?.get(m.id) ?? null;
-      case "stock":
-        return m.stockDosesRemaining ?? null;
-    }
-  };
-  return [...rows].sort((a, b) => {
-    const va = value(a);
-    const vb = value(b);
-    if (va === null && vb === null) return 0;
-    if (va === null) return 1;
-    if (vb === null) return -1;
-    if (typeof va === "string" && typeof vb === "string") {
-      return va.localeCompare(vb, locale, { sensitivity: "base" }) * dir;
-    }
-    return ((va as number) - (vb as number)) * dir;
-  });
-}
+export {
+  nextSortState,
+  sortMedicationRows,
+  type MedicationTableSort,
+  type MedicationTableSortColumn,
+} from "./medication-table-sort";
+import {
+  nextSortState,
+  sortMedicationRows,
+  type MedicationTableSort,
+  type MedicationTableSortColumn,
+} from "./medication-table-sort";
+import { MedicationTableGroupedRows } from "./medication-table-grouped-rows";
 
 interface MedicationTableProps {
   /** Active medications, already in the page's manual order. */
@@ -334,12 +279,76 @@ export function MedicationTable({
   const lowStockRunwayDays =
     thresholds == null ? 7 : thresholds.lowStockRunwayDays;
 
-  const columns: Array<{
-    key: MedicationTableSortColumn | "status" | "actions";
-    label: string;
-    sortable: boolean;
-    className?: string;
-  }> = [
+  const columns = getMedicationTableColumns(t);
+
+  const renderMedicationRows = (medications: readonly TableMedication[]) =>
+    medications.map((med) => (
+      <MedicationTableRowItem
+        key={med.id}
+        medication={med}
+        userTz={userTz}
+        lateMinutes={lateMinutes}
+        missedMinutes={missedMinutes}
+        lowStockRunwayDays={lowStockRunwayDays}
+        highlighted={highlightId === med.id}
+      />
+    ));
+
+  return (
+    // `overflow-hidden` is load-bearing: the sticky name column paints
+    // an opaque `bg-card` cell background that would otherwise square
+    // off the wrapper's rounded corners on the left edge. Horizontal
+    // scrolling lives on the inner table-container (`overflow-x-auto`),
+    // so clipping here costs nothing.
+    <div className="bg-card border-border overflow-hidden rounded-xl border">
+      <Table>
+        <caption className="sr-only">{t("medications.tableCaption")}</caption>
+        <TableHeader>
+          <MedicationTableHeaderRow
+            columns={columns}
+            sort={sort}
+            onSort={(column) =>
+              setSort((current) => nextSortState(current, column))
+            }
+            t={t}
+          />
+        </TableHeader>
+        <TableBody>
+          {groupBy === "category" ? (
+            <MedicationTableGroupedRows
+              groups={activeGroups}
+              isOpen={isOpen}
+              toggle={toggle}
+              colSpan={columns.length}
+              renderRows={renderMedicationRows}
+            />
+          ) : (
+            renderMedicationRows(sortedActive)
+          )}
+          {groupBy === "category" ? (
+            <MedicationTableGroupedRows
+              groups={inactiveGroups}
+              isOpen={isOpen}
+              toggle={toggle}
+              colSpan={columns.length}
+              renderRows={renderMedicationRows}
+            />
+          ) : (
+            renderMedicationRows(sortedInactive)
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function getMedicationTableColumns(t: (key: string) => string): Array<{
+  key: MedicationTableSortColumn | "status" | "actions";
+  label: string;
+  sortable: boolean;
+  className?: string;
+}> {
+  return [
     {
       key: "name",
       label: t("medications.tableColName"),
@@ -366,114 +375,70 @@ export function MedicationTable({
       sortable: false,
     },
   ];
+}
 
-  function ariaSort(
-    column: MedicationTableSortColumn,
-  ): "ascending" | "descending" | "none" {
-    if (!sort || sort.column !== column) return "none";
-    return sort.direction === "asc" ? "ascending" : "descending";
-  }
-
-  const renderMedicationRows = (medications: readonly TableMedication[]) =>
-    medications.map((med) => (
-      <MedicationTableRowItem
-        key={med.id}
-        medication={med}
-        userTz={userTz}
-        lateMinutes={lateMinutes}
-        missedMinutes={missedMinutes}
-        lowStockRunwayDays={lowStockRunwayDays}
-        highlighted={highlightId === med.id}
-      />
-    ));
-
-  const renderGroupedRows = (groups: MedicationGroup<TableMedication>[]) =>
-    groups.map((group) => {
-      const open = isOpen(group);
-      return (
-        <Fragment key={group.category.key}>
-          <TableRow className="bg-muted/40 hover:bg-transparent">
-            <TableCell colSpan={columns.length} className="px-4 py-1.5">
-              <MedicationGroupHeader
-                category={group.category}
-                count={group.medications.length}
-                open={open}
-                onToggle={() => toggle(group)}
-              />
-            </TableCell>
-          </TableRow>
-          {open && renderMedicationRows(group.medications)}
-        </Fragment>
-      );
-    });
-
+function MedicationTableHeaderRow({
+  columns,
+  sort,
+  onSort,
+  t,
+}: {
+  columns: Array<{
+    key: MedicationTableSortColumn | "status" | "actions";
+    label: string;
+    sortable: boolean;
+    className?: string;
+  }>;
+  sort: MedicationTableSort | null;
+  onSort: (column: MedicationTableSortColumn) => void;
+  t: (key: string, params?: Record<string, string | number>) => string;
+}) {
   return (
-    // `overflow-hidden` is load-bearing: the sticky name column paints
-    // an opaque `bg-card` cell background that would otherwise square
-    // off the wrapper's rounded corners on the left edge. Horizontal
-    // scrolling lives on the inner table-container (`overflow-x-auto`),
-    // so clipping here costs nothing.
-    <div className="bg-card border-border overflow-hidden rounded-xl border">
-      <Table>
-        <caption className="sr-only">{t("medications.tableCaption")}</caption>
-        <TableHeader>
-          <TableRow>
-            {columns.map((col) =>
-              col.sortable ? (
-                <TableHead
-                  key={col.key}
-                  scope="col"
-                  aria-sort={ariaSort(col.key as MedicationTableSortColumn)}
-                  className={col.className}
-                >
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setSort((current) =>
-                        nextSortState(
-                          current,
-                          col.key as MedicationTableSortColumn,
-                        ),
-                      )
-                    }
-                    aria-label={t("medications.tableSortBy", {
-                      column: col.label,
-                    })}
-                    className="hover:text-foreground focus-visible:ring-ring inline-flex min-h-8 items-center gap-1 rounded font-medium focus-visible:ring-2 focus-visible:outline-none"
-                  >
-                    {col.label}
-                    {sort?.column === col.key ? (
-                      sort.direction === "asc" ? (
-                        <ArrowUp className="size-3.5" aria-hidden="true" />
-                      ) : (
-                        <ArrowDown className="size-3.5" aria-hidden="true" />
-                      )
-                    ) : (
-                      <ChevronsUpDown
-                        className="text-muted-foreground size-3.5"
-                        aria-hidden="true"
-                      />
-                    )}
-                  </button>
-                </TableHead>
+    <TableRow>
+      {columns.map((col) =>
+        col.sortable ? (
+          <TableHead
+            key={col.key}
+            scope="col"
+            aria-sort={
+              !sort || sort.column !== col.key
+                ? "none"
+                : sort.direction === "asc"
+                  ? "ascending"
+                  : "descending"
+            }
+            className={col.className}
+          >
+            <button
+              type="button"
+              onClick={() => onSort(col.key as MedicationTableSortColumn)}
+              aria-label={t("medications.tableSortBy", {
+                column: col.label,
+              })}
+              className="hover:text-foreground focus-visible:ring-ring inline-flex min-h-8 items-center gap-1 rounded font-medium focus-visible:ring-2 focus-visible:outline-none"
+            >
+              {col.label}
+              {sort?.column === col.key ? (
+                sort.direction === "asc" ? (
+                  <ArrowUp className="size-3.5" aria-hidden="true" />
+                ) : (
+                  <ArrowDown className="size-3.5" aria-hidden="true" />
+                )
               ) : (
-                <TableHead key={col.key} scope="col" className={col.className}>
-                  {col.label}
-                </TableHead>
-              ),
-            )}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {groupBy === "category"
-            ? renderGroupedRows(activeGroups)
-            : renderMedicationRows(sortedActive)}
-          {groupBy === "category"
-            ? renderGroupedRows(inactiveGroups)
-            : renderMedicationRows(sortedInactive)}
-        </TableBody>
-      </Table>
-    </div>
+                <ChevronsUpDown
+                  className="text-muted-foreground size-3.5"
+                  aria-hidden="true"
+                />
+              )}
+            </button>
+          </TableHead>
+        ) : (
+          <TableHead key={col.key} scope="col" className={col.className}>
+            {col.label}
+          </TableHead>
+        ),
+      )}
+    </TableRow>
   );
 }
 
@@ -866,62 +831,4 @@ function MedicationTableRowItem({
   );
 }
 
-/**
- * Loading placeholder for the table view. Mirrors the loaded table's
- * shell (same container, same column count, same row height) so the
- * page reserves the footprint and does not jump when the rows resolve —
- * the table-view counterpart of `MedicationCardSkeleton`.
- */
-export function MedicationTableSkeleton({ rows = 4 }: { rows?: number }) {
-  return (
-    <div
-      className="bg-card border-border overflow-hidden rounded-xl border"
-      aria-hidden="true"
-    >
-      <Table>
-        <TableHeader>
-          <TableRow>
-            {Array.from({ length: 6 }).map((_, i) => (
-              <TableHead key={i}>
-                <Skeleton className="h-4 w-16" />
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {Array.from({ length: rows }).map((_, i) => (
-            <TableRow key={i}>
-              <TableCell>
-                <div className="space-y-1.5">
-                  <Skeleton className="h-4 w-28" />
-                  <Skeleton className="h-3 w-16" />
-                </div>
-              </TableCell>
-              <TableCell>
-                <Skeleton className="h-4 w-24" />
-              </TableCell>
-              <TableCell>
-                <Skeleton className="h-4 w-24" />
-              </TableCell>
-              <TableCell>
-                <div className="space-y-1.5">
-                  <Skeleton className="h-3.5 w-28" />
-                  <Skeleton className="h-3.5 w-28" />
-                </div>
-              </TableCell>
-              <TableCell>
-                <Skeleton className="h-4 w-14" />
-              </TableCell>
-              <TableCell>
-                <div className="flex gap-1.5">
-                  <Skeleton className="size-11 rounded-md sm:size-9" />
-                  <Skeleton className="size-11 rounded-md sm:size-9" />
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
-}
+export { MedicationTableSkeleton } from "./medication-table-skeleton";

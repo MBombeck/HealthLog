@@ -14,7 +14,7 @@
  * same preserve-when-absent PUT contract (see the route).
  */
 
-import { MEDICATION_CATEGORY_VALUES } from "@/lib/validations/medication";
+import { MEDICATION_CATEGORY_VALUES } from "@/lib/medications/category-values";
 
 /** The two list presentations /medications can render. */
 export const MEDICATION_LIST_VIEWS = ["cards", "table"] as const;

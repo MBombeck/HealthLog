@@ -2,14 +2,7 @@
 
 import type { MedicationCourseFields } from "@/components/medications/course-fields";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -23,8 +16,6 @@ import {
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { PullToRefreshIndicator } from "@/components/ui/pull-to-refresh-indicator";
 import { MedicationWizardDialog } from "@/components/medications/wizard/medication-wizard-dialog";
-import { MedicationCard } from "@/components/medications/medication-card";
-import { Glp1MedicationCard } from "@/components/medications/glp1-medication-card";
 import { LogIntakeDialog } from "@/components/medications/log-intake-dialog";
 import { TakeAllDueDialog } from "@/components/medications/take-all-due-dialog";
 import { deriveDueMedications } from "@/components/medications/take-all-due";
@@ -32,8 +23,12 @@ import {
   MedicationTable,
   MedicationTableSkeleton,
 } from "@/components/medications/medication-table";
+import {
+  MedicationCardsView,
+  MedicationCardSkeleton,
+} from "@/components/medications/medication-cards-view";
+import { useMedicationListFilters } from "@/components/medications/use-medication-list-filters";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,24 +41,11 @@ import { MedicationFilterRail } from "@/components/medications/medication-filter
 import {
   buildDoseStatusById,
   groupMedications,
-  MedicationGroupHeader,
   useMedicationGroupsOpen,
-  type MedicationGroup,
 } from "@/components/medications/medication-list-groups";
 import { useMedicationCategories } from "@/components/medications/use-medication-categories";
-import {
-  ALL_MEDICATION_CATEGORIES,
-  effectiveCategoryFilter as resolveCategoryFilter,
-  medicationCategoryOptions,
-} from "@/lib/medications/category-filter";
-import {
-  filterMedications,
-  type MedicationListFilters,
-} from "@/lib/medications/medication-list-filters";
-import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   CheckCheck,
   CheckCircle2,
@@ -173,99 +155,17 @@ interface Medication {
   schedules: Schedule[];
 }
 
-/**
- * v1.11.3 — loading placeholder for one medication card. Renders the
- * real `Card`/`CardContent` shell (so padding, radius and gap match the
- * loaded card exactly) with the shared `Skeleton` primitive standing in
- * for each populated slot: header title + dose, status pill, next / last
- * line, the two compliance bars and the action row. Replacing the bare
- * centred spinner with a grid of these stops the layout jump when the
- * cards resolve.
- */
-function MedicationCardSkeleton() {
-  return (
-    <Card className="h-full" aria-hidden="true">
-      <div className="flex items-start justify-between gap-2 px-4 md:px-6">
-        <div className="space-y-2">
-          <Skeleton className="h-5 w-32" />
-          <Skeleton className="h-3.5 w-20" />
-        </div>
-        <Skeleton className="size-8 rounded-md" />
-      </div>
-      <CardContent className="flex flex-col space-y-3.5">
-        <Skeleton className="h-6 w-40 rounded-full" />
-        <div className="space-y-2">
-          <Skeleton className="h-3.5 w-48" />
-          <Skeleton className="h-3.5 w-36" />
-        </div>
-        <div className="space-y-2">
-          <Skeleton className="h-3.5 w-full" />
-          <Skeleton className="h-3.5 w-full" />
-        </div>
-        <div className="flex gap-2 pt-1">
-          <Skeleton className="h-9 flex-1" />
-          <Skeleton className="h-9 flex-1" />
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-/**
- * v1.40 (#1041) — the category filter is remembered for the browser session
- * only, by design: no preference column, and a new visit starts on All.
- */
-const CATEGORY_FILTER_STORAGE_KEY = "healthlog.medications.categoryFilter";
-const ALL_CATEGORIES = ALL_MEDICATION_CATEGORIES;
-
-const CATEGORY_FILTER_EVENT = "healthlog:medication-category-filter";
-
-function readStoredCategoryFilter(): string {
-  try {
-    return (
-      window.sessionStorage.getItem(CATEGORY_FILTER_STORAGE_KEY) ??
-      ALL_CATEGORIES
-    );
-  } catch {
-    return ALL_CATEGORIES;
-  }
-}
-
-function storeCategoryFilter(value: string) {
-  try {
-    if (value === ALL_CATEGORIES) {
-      window.sessionStorage.removeItem(CATEGORY_FILTER_STORAGE_KEY);
-    } else {
-      window.sessionStorage.setItem(CATEGORY_FILTER_STORAGE_KEY, value);
-    }
-  } catch {
-    // Storage blocked: the pick still applies until the page unmounts.
-  }
-  window.dispatchEvent(new Event(CATEGORY_FILTER_EVENT));
-}
-
-function subscribeCategoryFilter(onChange: () => void): () => void {
-  window.addEventListener(CATEGORY_FILTER_EVENT, onChange);
-  return () => window.removeEventListener(CATEGORY_FILTER_EVENT, onChange);
-}
-
-/**
- * The stored pick, read through `useSyncExternalStore` so the server render
- * (and the first client render) is All and the stored pick follows without a
- * hydration mismatch. Blocked storage degrades to a per-view filter.
- */
-function useCategoryFilter(): [string, (value: string) => void] {
-  const [fallback, setFallback] = useState<string | null>(null);
-  const stored = useSyncExternalStore(
-    subscribeCategoryFilter,
-    readStoredCategoryFilter,
-    () => ALL_CATEGORIES,
-  );
-  const set = useCallback((value: string) => {
-    setFallback(value);
-    storeCategoryFilter(value);
-  }, []);
-  return [fallback ?? stored, set];
+// v1.15.20 — seed the detail page's query from the list row before
+// navigating. The list response is a superset of the detail GET
+// (`{...medication, category, nextDueAt}` plus the list-only
+// `lastTakenAt` / `todayEventCount`), so the detail shell paints
+// instantly from the seeded cache while its own un-gated query
+// refetches the authoritative row in the background.
+function seedMedicationDetail(
+  queryClient: ReturnType<typeof useQueryClient>,
+  med: Medication,
+) {
+  queryClient.setQueryData(queryKeys.medicationDetail(med.id), med);
 }
 
 export default function MedicationsPageClient() {
@@ -312,55 +212,7 @@ export default function MedicationsPageClient() {
   // v1.16.11 (#316) — "Alle fälligen einnehmen" confirm dialog. The header
   // button earns its slot only while ≥ 2 medications are currently due.
   const [takeAllOpen, setTakeAllOpen] = useState(false);
-  // v1.40 (#1041) — the category filter and the manage sheet it opens.
-  const [categoryFilter, setCategoryFilter] = useCategoryFilter();
   const [manageCategoriesOpen, setManageCategoriesOpen] = useState(false);
-  const [searchText, setSearchText] = useState("");
-  const searchInputRef = useRef<HTMLInputElement | null>(null);
-  const [fromDay, setFromDay] = useState("");
-  const [toDay, setToDay] = useState("");
-
-  const resetAllFilters = useCallback(() => {
-    setSearchText("");
-    setCategoryFilter(ALL_CATEGORIES);
-    setFromDay("");
-    setToDay("");
-  }, [setCategoryFilter]);
-
-  // "/" focuses the search field unless typing in an input/textarea or open dialog
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (
-        event.key !== "/" ||
-        event.metaKey ||
-        event.ctrlKey ||
-        event.altKey ||
-        event.defaultPrevented ||
-        event.isComposing
-      ) {
-        return;
-      }
-      const target = event.target as HTMLElement | null;
-      if (
-        target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.tagName === "SELECT" ||
-          target.isContentEditable ||
-          target.closest(
-            '[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]',
-          ))
-      ) {
-        return;
-      }
-      const input = searchInputRef.current;
-      if (!input || !input.isConnected) return;
-      event.preventDefault();
-      input.focus();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
   // Renaming, hiding and deleting a category stay with the owner (the edit
   // route is owner-only, like the cycle symptom vocabulary's).
   const canManageCategories = !inSharedRecord;
@@ -491,51 +343,60 @@ export default function MedicationsPageClient() {
     setDialogOpen(true);
   }
 
-  // v1.15.20 — seed the detail page's query from the list row before
-  // navigating. The list response is a superset of the detail GET
-  // (`{...medication, category, nextDueAt}` plus the list-only
-  // `lastTakenAt` / `todayEventCount`), so the detail shell paints
-  // instantly from the seeded cache while its own un-gated query
-  // refetches the authoritative row in the background.
-  function seedDetail(med: Medication) {
-    queryClient.setQueryData(queryKeys.medicationDetail(med.id), med);
-  }
-
   // v1.16.1 — the kebab's Edit lands on the detail page's Übersicht tab,
   // exactly like tapping the medication name. Every everyday edit lives
   // inline in the tabs there; the structural wizard is reachable via
   // Erweitert → Lebenszyklus (and still answers `?edit=1` deep-links).
   // History still lands on the Verlauf tab.
   function openEdit(med: Medication) {
-    seedDetail(med);
+    seedMedicationDetail(queryClient, med);
     router.push(`/medications/${med.id}`);
   }
 
   function openHistory(med: Medication) {
-    seedDetail(med);
+    seedMedicationDetail(queryClient, med);
     router.push(`/medications/${med.id}?tab=history`);
-  }
-
-  function closeDialog() {
-    setDialogOpen(false);
   }
 
   // Defensive against stale service-worker responses or any future API
   // shape change: only filter when we actually have an array.
   const medsArray = Array.isArray(medications) ? medications : [];
-  // v1.40 (#1041) — the categories in use, each once, labelled the way the
-  // card badge labels it. The filter offers only these, so a pick can never
-  // empty the list.
-  const categoriesInUse = medicationCategoryOptions(medsArray, t);
-  const effectiveCategoryFilter = resolveCategoryFilter(
-    categoryFilter,
-    categoriesInUse,
+
+  // v1.16.10 — the user-defined manual order applies to BOTH views
+  // (cards and table). Medications not in the saved order keep the
+  // alphabetical default, appended after the ordered block.
+  const activeMeds = applyMedicationOrder(
+    medsArray.filter((m) => m.active),
+    layout.order,
   );
-  const isFiltered =
-    searchText.trim() !== "" ||
-    effectiveCategoryFilter !== ALL_CATEGORIES ||
-    fromDay !== "" ||
-    toDay !== "";
+  const inactiveMeds = applyMedicationOrder(
+    medsArray.filter((m) => !m.active),
+    layout.order,
+  );
+
+  const {
+    setCategoryFilter,
+    searchText,
+    setSearchText,
+    searchInputRef,
+    fromDay,
+    setFromDay,
+    toDay,
+    setToDay,
+    resetAllFilters,
+    categoriesInUse,
+    effectiveCategoryFilter,
+    isFiltered,
+    shownActiveMeds,
+    shownInactiveMeds,
+    totalMatches,
+  } = useMedicationListFilters({
+    medications,
+    activeMeds,
+    inactiveMeds,
+    t,
+  });
+
   // Groups open by default per the saved mode, and every group with a match
   // is open while a filter is active. The dose status feeds "flagged" mode,
   // which opens only groups with a dose due.
@@ -580,29 +441,7 @@ export default function MedicationsPageClient() {
     medsArray.length > 0 &&
     (categoriesInUse.length >= 2 || hasCustomCategories);
 
-  // v1.16.10 — the user-defined manual order applies to BOTH views
-  // (cards and table). Medications not in the saved order keep the
-  // alphabetical default, appended after the ordered block.
-  const activeMeds = applyMedicationOrder(
-    medsArray.filter((m) => m.active),
-    layout.order,
-  );
-  const inactiveMeds = applyMedicationOrder(
-    medsArray.filter((m) => !m.active),
-    layout.order,
-  );
   const tableView = layout.view === "table";
-  // The filter narrows what the list shows; the due set and the log-intake
-  // dialog below keep reading every medication.
-  const filters: MedicationListFilters = {
-    q: searchText,
-    category: effectiveCategoryFilter,
-    fromDay,
-    toDay,
-  };
-  const shownActiveMeds = filterMedications(activeMeds, filters);
-  const shownInactiveMeds = filterMedications(inactiveMeds, filters);
-  const totalMatches = shownActiveMeds.length + shownInactiveMeds.length;
   const activeGroups = groupMedications(
     shownActiveMeds,
     layout.categoryOrder ?? [],
@@ -629,55 +468,6 @@ export default function MedicationsPageClient() {
     thresholds: thresholds ?? undefined,
     doseStatusById,
   });
-
-  // An as-needed medication always renders the generic card: the GLP-1
-  // variant is built around the rolling injection cadence an as-needed med
-  // doesn't have.
-  const renderCard = (med: (typeof shownActiveMeds)[number]) =>
-    med.treatmentClass === "GLP1" && !med.asNeeded ? (
-      <Glp1MedicationCard
-        key={med.id}
-        medication={med}
-        onEdit={openEdit}
-        onOpenHistory={openHistory}
-        highlighted={highlightId === med.id}
-      />
-    ) : (
-      <MedicationCard
-        key={med.id}
-        medication={med}
-        onEdit={openEdit}
-        onOpenHistory={openHistory}
-        highlighted={highlightId === med.id}
-      />
-    );
-
-  const renderGroups = (
-    groups: MedicationGroup<(typeof shownActiveMeds)[number]>[],
-    section: "active" | "inactive",
-  ) =>
-    groups.map((group) => {
-      const open = isOpen(group);
-      const panelId = `med-group-${section}-${group.category.key}`;
-      return (
-        <section key={group.category.key} className="space-y-3.5">
-          <MedicationGroupHeader
-            category={group.category}
-            count={group.medications.length}
-            open={open}
-            onToggle={() => toggle(group)}
-            panelId={panelId}
-          />
-          <div
-            id={panelId}
-            hidden={!open}
-            className={cn("grid gap-4 sm:grid-cols-2", !open && "hidden")}
-          >
-            {open && group.medications.map(renderCard)}
-          </div>
-        </section>
-      );
-    });
 
   const listEmpty = !isLoading && !isError && !medications?.length;
 
@@ -853,45 +643,20 @@ export default function MedicationsPageClient() {
           isFiltered={isFiltered}
           customCategories={customCategories.data}
         />
-      ) : layout.groupBy === "category" ? (
-        <div className="space-y-6">
-          {activeGroups.length > 0 && (
-            <div className="space-y-4">
-              {renderGroups(activeGroups, "active")}
-            </div>
-          )}
-          {inactiveGroups.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-muted-foreground text-sm font-medium">
-                {t("common.inactive")} ({shownInactiveMeds.length})
-              </h2>
-              {renderGroups(inactiveGroups, "inactive")}
-            </div>
-          )}
-        </div>
       ) : (
-        <div className="space-y-6">
-          {/* Active medications */}
-          {shownActiveMeds.length > 0 && (
-            <div className="space-y-3.5">
-              <div className="grid gap-4 sm:grid-cols-2">
-                {shownActiveMeds.map(renderCard)}
-              </div>
-            </div>
-          )}
-
-          {/* Inactive medications */}
-          {shownInactiveMeds.length > 0 && (
-            <div className="space-y-3.5">
-              <h2 className="text-muted-foreground text-sm font-medium">
-                {t("common.inactive")} ({shownInactiveMeds.length})
-              </h2>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {shownInactiveMeds.map(renderCard)}
-              </div>
-            </div>
-          )}
-        </div>
+        <MedicationCardsView
+          activeMeds={shownActiveMeds}
+          inactiveMeds={shownInactiveMeds}
+          activeGroups={activeGroups}
+          inactiveGroups={inactiveGroups}
+          groupBy={layout.groupBy ?? "none"}
+          highlightId={highlightId}
+          isOpen={isOpen}
+          toggle={toggle}
+          openEdit={openEdit}
+          openHistory={openHistory}
+          inactiveLabel={t("common.inactive")}
+        />
       )}
 
       {/* v1.5.5 — the per-card kebab triggers used to open inline
@@ -916,7 +681,7 @@ export default function MedicationsPageClient() {
         open={dialogOpen && canAddMedication}
         onOpenChange={setDialogOpen}
         mode="create"
-        onSuccess={closeDialog}
+        onSuccess={() => setDialogOpen(false)}
       />
 
       {/* v1.14.0 — log-intake path of the "Add" choice. Lists the active

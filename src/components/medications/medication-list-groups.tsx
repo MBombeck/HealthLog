@@ -12,7 +12,7 @@ import {
 } from "@/lib/medication-list-layout";
 import { applyCategoryOrder } from "@/lib/settings/module-list-layout";
 import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
-import { MEDICATION_CATEGORY_VALUES } from "@/lib/validations/medication";
+import { MEDICATION_CATEGORY_VALUES } from "@/lib/medications/category-values";
 import type { DoseStatus } from "@/lib/analytics/compliance/dose-status";
 import type { MedicationComplianceSummaryEntry } from "@/lib/queries/use-medication-compliance-summary";
 
@@ -293,7 +293,7 @@ export function useMedicationGroupsOpen<
     }
     const hasHighlight = Boolean(
       options?.highlightId &&
-        group.medications.some((m) => m.id === options.highlightId),
+      group.medications.some((m) => m.id === options.highlightId),
     );
     if (hasHighlight) {
       return true;

@@ -38,7 +38,7 @@ import {
   applyCategoryOrder,
   mergeCategoryOrder,
 } from "@/lib/settings/module-list-layout";
-import { MEDICATION_CATEGORY_VALUES } from "@/lib/validations/medication";
+import { MEDICATION_CATEGORY_VALUES } from "@/lib/medications/category-values";
 import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
 import { useMedicationCategories } from "@/components/medications/use-medication-categories";
 

@@ -10,11 +10,22 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
+interface UserLayoutSelectPayload {
+  medicationListLayoutJson: unknown;
+  updatedAt?: Date;
+}
+
+const { mockUserFindUnique, mockUserUpdate } = vi.hoisted(() => ({
+  mockUserFindUnique:
+    vi.fn<(args?: unknown) => Promise<UserLayoutSelectPayload | null>>(),
+  mockUserUpdate: vi.fn<(args?: unknown) => Promise<unknown>>(),
+}));
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     user: {
-      findUnique: vi.fn(),
-      update: vi.fn(),
+      findUnique: mockUserFindUnique,
+      update: mockUserUpdate,
       updateMany: vi.fn(),
     },
     auditLog: {
@@ -220,7 +231,7 @@ describe("PUT /api/medications/layout — preserve-when-absent", () => {
   });
 
   it("a groupBy-only PUT preserves stored view and order", async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+    mockUserFindUnique.mockResolvedValue({
       medicationListLayoutJson: {
         version: 1,
         view: "table",
@@ -229,8 +240,9 @@ describe("PUT /api/medications/layout — preserve-when-absent", () => {
         groupsOpen: "expanded",
         categoryOrder: [],
       },
-    } as never);
-    vi.mocked(prisma.user.update).mockResolvedValue({} as never);
+      updatedAt: new Date("2026-07-24T10:00:00.000Z"),
+    });
+    mockUserUpdate.mockResolvedValue({});
 
     const res = await callPut(makeReq({ version: 1, groupBy: "category" }));
     expect(res.status).toBe(200);
@@ -267,7 +279,7 @@ describe("PUT /api/medications/layout — preserve-when-absent", () => {
   });
 
   it("a categoryOrder-only PUT preserves stored medication order, view, and grouping", async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+    mockUserFindUnique.mockResolvedValue({
       medicationListLayoutJson: {
         version: 1,
         view: "table",
@@ -276,8 +288,9 @@ describe("PUT /api/medications/layout — preserve-when-absent", () => {
         groupsOpen: "flagged",
         categoryOrder: ["PAIN"],
       },
-    } as never);
-    vi.mocked(prisma.user.update).mockResolvedValue({} as never);
+      updatedAt: new Date("2026-07-24T10:00:00.000Z"),
+    });
+    mockUserUpdate.mockResolvedValue({});
 
     const res = await callPut(
       makeReq({ version: 1, categoryOrder: ["HEART", "PAIN"] }),

@@ -139,7 +139,7 @@ describe("runSetMedicationListGroupBy", () => {
       order: [],
       groupBy: "category",
     };
-    vi.mocked(apiPut).mockResolvedValue(saved as never);
+    vi.mocked(apiPut).mockResolvedValue(saved);
 
     await runSetMedicationListGroupBy({ groupBy: "category", queryClient, t });
 
@@ -185,7 +185,7 @@ describe("runSetMedicationListGroupsOpen", () => {
       order: [],
       groupsOpen: "collapsed",
     };
-    vi.mocked(apiPut).mockResolvedValue(saved as never);
+    vi.mocked(apiPut).mockResolvedValue(saved);
 
     await runSetMedicationListGroupsOpen({
       groupsOpen: "collapsed",
@@ -239,7 +239,7 @@ describe("runSaveMedicationListCategoryOrder", () => {
       order: ["med-1"],
       categoryOrder: ["PAIN", "HEART"],
     };
-    vi.mocked(apiPut).mockResolvedValue(saved as never);
+    vi.mocked(apiPut).mockResolvedValue(saved);
 
     const ok = await runSaveMedicationListCategoryOrder({
       categoryOrder: ["PAIN", "HEART"],
@@ -274,7 +274,7 @@ describe("runSaveMedicationListCategoryOrder", () => {
       version: 1,
       categoryOrder: ["NEW_CAT"],
     };
-    vi.mocked(apiPut).mockResolvedValue(partialSaved as never);
+    vi.mocked(apiPut).mockResolvedValue(partialSaved);
 
     const ok = await runSaveMedicationListCategoryOrder({
       categoryOrder: ["NEW_CAT"],
@@ -476,7 +476,7 @@ describe("medications layout — optimistic concurrency (client)", () => {
       order: ["med-1"],
       categoryOrder: ["HEART", "PAIN"],
       updatedAt: "2026-07-24T10:05:00.000Z",
-    } as never);
+    });
 
     await runSaveMedicationListCategoryOrder({
       categoryOrder: ["HEART", "PAIN"],
@@ -509,7 +509,7 @@ describe("medications layout — optimistic concurrency (client)", () => {
       order: ["med-1"],
       categoryOrder: ["CAT_3", "CAT_1", "CAT_2"],
       updatedAt: "2026-07-24T10:05:00.000Z",
-    } as never);
+    });
 
     // Simulate multiple local moves in editor before clicking Save:
     // Move 1: ["CAT_2", "CAT_1", "CAT_3"]
@@ -586,7 +586,7 @@ describe("medications layout — optimistic concurrency (client)", () => {
       categoryOrder: ["HEART", "PAIN"],
       updatedAt: "2026-07-24T09:06:00.000Z",
     };
-    vi.mocked(apiPut).mockResolvedValueOnce(savedLayout as never);
+    vi.mocked(apiPut).mockResolvedValueOnce(savedLayout);
 
     const okRetry = await runSaveMedicationListCategoryOrder({
       categoryOrder: ["HEART", "PAIN"],
