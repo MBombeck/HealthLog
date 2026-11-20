@@ -105,9 +105,11 @@ export function trackStandaloneViewportGap(
   if (!standalone) return () => {};
 
   let current = -1;
-  // The inset is read once and again only on rotation: reading it forces a
-  // style recalculation, and `visualViewport` fires `resize` on every frame of
-  // the keyboard animation and of a pinch, where that would stutter.
+  // The inset is read at start, on rotation and on a window resize, never on a
+  // `visualViewport` resize: reading it forces a style recalculation, and
+  // `visualViewport` fires `resize` on every frame of the keyboard animation
+  // and of a pinch, where that would stutter. iOS keeps the layout viewport
+  // still while the keyboard moves, so the window's own `resize` stays rare.
   let inset = safeAreaTop();
   const update = () => {
     const gap = standaloneViewportGap({
@@ -124,18 +126,18 @@ export function trackStandaloneViewportGap(
     else root.style.removeProperty(VIEWPORT_GAP_PROPERTY);
   };
 
-  const rotate = () => {
+  const remeasure = () => {
     inset = safeAreaTop();
     update();
   };
 
   update();
-  win.addEventListener("resize", update);
-  win.addEventListener("orientationchange", rotate);
+  win.addEventListener("resize", remeasure);
+  win.addEventListener("orientationchange", remeasure);
   win.visualViewport?.addEventListener("resize", update);
   return () => {
-    win.removeEventListener("resize", update);
-    win.removeEventListener("orientationchange", rotate);
+    win.removeEventListener("resize", remeasure);
+    win.removeEventListener("orientationchange", remeasure);
     win.visualViewport?.removeEventListener("resize", update);
     root.style.removeProperty(VIEWPORT_GAP_PROPERTY);
   };

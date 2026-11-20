@@ -76,7 +76,7 @@ class FakeWindow extends EventTarget {
   innerHeight = 894;
   screen = { width: 440, height: 956 } as Screen;
   navigator = { standalone: true } as unknown as Navigator;
-  visualViewport = null;
+  visualViewport: VisualViewport | null = null;
 }
 
 function fakeRoot() {
@@ -116,8 +116,10 @@ describe("trackStandaloneViewportGap", () => {
     expect(root.props.has("--viewport-bottom-gap")).toBe(false);
   });
 
-  it("reads the inset once, and again only on rotation", () => {
+  it("reads the inset on a window resize and a rotation, never per visualViewport frame", () => {
     const win = new FakeWindow();
+    const viewport = new EventTarget();
+    win.visualViewport = viewport as unknown as VisualViewport;
     const root = fakeRoot();
     let reads = 0;
     const stop = trackStandaloneViewportGap(
@@ -128,11 +130,36 @@ describe("trackStandaloneViewportGap", () => {
         return 62;
       },
     );
-    for (let i = 0; i < 5; i += 1) win.dispatchEvent(new Event("resize"));
+    expect(reads).toBe(1);
+    // The keyboard animation and a pinch: one event per frame.
+    for (let i = 0; i < 5; i += 1) viewport.dispatchEvent(new Event("resize"));
     expect(reads).toBe(1);
 
-    win.dispatchEvent(new Event("orientationchange"));
+    win.dispatchEvent(new Event("resize"));
     expect(reads).toBe(2);
+    win.dispatchEvent(new Event("orientationchange"));
+    expect(reads).toBe(3);
+
+    stop();
+    viewport.dispatchEvent(new Event("resize"));
+    win.dispatchEvent(new Event("resize"));
+    expect(reads).toBe(3);
+  });
+
+  it("picks up an inset that resolves after start on the next window resize", () => {
+    const win = new FakeWindow();
+    const root = fakeRoot();
+    let inset = 0;
+    const stop = trackStandaloneViewportGap(
+      win as unknown as Window,
+      root.el,
+      () => inset,
+    );
+    expect(root.props.has("--viewport-bottom-gap")).toBe(false);
+
+    inset = 62;
+    win.dispatchEvent(new Event("resize"));
+    expect(root.props.get("--viewport-bottom-gap")).toBe("62px");
     stop();
   });
 

@@ -76,8 +76,15 @@ describe("the shell owns the safe area", () => {
       /--viewport-bottom:\s*calc\(var\(--viewport-bottom-gap\) \* -1\)/,
     );
     expect(css).toMatch(
-      /\[data-slot="sheet-overlay"\],\s*\[data-slot="dialog-overlay"\],\s*\[data-slot="alert-dialog-overlay"\]\s*\{\s*bottom:\s*var\(--viewport-bottom/,
+      /\[data-slot="sheet-overlay"\],\s*\[data-slot="dialog-overlay"\],\s*\[data-slot="alert-dialog-overlay"\],\s*\[data-viewport-overlay\]\s*\{\s*bottom:\s*var\(--viewport-bottom/,
     );
+    // Full-screen layers that are not a Radix overlay opt in by attribute.
+    for (const file of [
+      "src/components/documents/vault/vault-drop-overlay.tsx",
+      "src/components/onboarding/tour.tsx",
+    ]) {
+      expect(read(file)).toContain('data-viewport-overlay=""');
+    }
     const nav = code(read("src/components/layout/bottom-nav.tsx"));
     expect(nav).toContain("fixed bottom-(--viewport-bottom) left-0");
     expect(nav).not.toMatch(/\bfixed bottom-0\b/);
