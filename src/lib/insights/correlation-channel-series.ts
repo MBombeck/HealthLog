@@ -93,10 +93,8 @@ import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 import { dateOnlyKey } from "@/lib/tz/date-only";
 import { dayValueRows } from "@/lib/measurements/day-mean";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
-import {
-  decryptSymptomText,
-  pickCorrelationSymptoms,
-} from "@/lib/symptoms/server";
+import { decryptSymptomText } from "@/lib/symptoms/server";
+import { readCorrelationSymptomEvents } from "@/lib/symptoms/correlation-channel-read";
 import { SYMPTOM_CHANNEL_PREFIX } from "@/lib/symptoms/shared";
 
 /**
@@ -468,52 +466,7 @@ export async function fetchSymptomEventSeries(
   tz: string,
   since: Date,
 ): Promise<NamedSeries[]> {
-  const inWindow = { deletedAt: null, occurredAt: { gte: since } };
-  // Two reads: every active definition with its count and newest occurrence
-  // in the window, to choose the channels; then the occurrences of the chosen
-  // ones only, so an account with many active symptoms reads no more rows
-  // than one at the channel bound.
-  const candidates = await prisma.symptomDefinition.findMany({
-    where: { userId, isActive: true },
-    select: {
-      id: true,
-      createdAt: true,
-      _count: { select: { events: { where: inWindow } } },
-      events: {
-        where: inWindow,
-        orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
-        take: 1,
-        select: { occurredAt: true },
-      },
-    },
-  });
-  const picked = pickCorrelationSymptoms(
-    candidates.map((candidate) => ({
-      id: candidate.id,
-      createdAt: candidate.createdAt,
-      eventCount: candidate._count.events,
-      lastOccurredAt: candidate.events[0]?.occurredAt ?? null,
-    })),
-  );
-  if (picked.length === 0) return [];
-  const rows = await prisma.symptomDefinition.findMany({
-    where: { userId, id: { in: picked.map((p) => p.id) } },
-    select: {
-      id: true,
-      labelEncrypted: true,
-      events: {
-        where: inWindow,
-        orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
-        take: 5000,
-        select: { occurredAt: true, intensity: true },
-      },
-    },
-  });
-  const rowById = new Map(rows.map((row) => [row.id, row]));
-  const definitions = picked.flatMap((p) => {
-    const row = rowById.get(p.id);
-    return row ? [row] : [];
-  });
+  const definitions = await readCorrelationSymptomEvents(userId, since);
   const series: NamedSeries[] = [];
   for (const definition of definitions) {
     const label = decryptSymptomText(definition.labelEncrypted, "label");
