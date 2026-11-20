@@ -1,0 +1,40 @@
+{
+  "samples": [
+    {
+      "hkIdentifier": "HKQuantityTypeIdentifierWorkoutEffortScore",
+      "value": 7,
+      "unit": "count",
+      "startDate": "2026-06-01T07:00:00.000Z",
+      "endDate": "2026-06-01T08:00:00.000Z",
+      "expected": {
+        "type": "WORKOUT_EFFORT_SCORE",
+        "value": 7,
+        "unit": "score"
+      }
+    },
+    {
+      "hkIdentifier": "HKQuantityTypeIdentifierEstimatedWorkoutEffortScore",
+      "value": 6.4,
+      "unit": "count",
+      "startDate": "2026-06-01T07:00:00.000Z",
+      "endDate": "2026-06-01T08:00:00.000Z",
+      "expected": {
+        "type": "ESTIMATED_WORKOUT_EFFORT_SCORE",
+        "value": 6.4,
+        "unit": "score"
+      }
+    },
+    {
+      "hkIdentifier": "HKQuantityTypeIdentifierPhysicalEffort",
+      "value": 8.5,
+      "unit": "kcal/(hr*kg)",
+      "startDate": "2026-06-01T07:10:00.000Z",
+      "endDate": "2026-06-01T07:11:00.000Z",
+      "expected": {
+        "type": "PHYSICAL_EFFORT",
+        "value": 8.5,
+        "unit": "kcal/(hr·kg)"
+      }
+    }
+  ]
+}

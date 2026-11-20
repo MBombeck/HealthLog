@@ -183,6 +183,11 @@ export const measurementTypeEnum = z.enum([
   "FEV1",
   "FVC",
   "PEAK_EXPIRATORY_FLOW",
+  // Apple effort. The logged score and the watch's estimate are separate
+  // types so a day mean of one cannot blend them.
+  "WORKOUT_EFFORT_SCORE",
+  "ESTIMATED_WORKOUT_EFFORT_SCORE",
+  "PHYSICAL_EFFORT",
 ]);
 
 /**

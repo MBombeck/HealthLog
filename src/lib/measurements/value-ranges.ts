@@ -254,6 +254,14 @@ export const VALUE_RANGES: Record<string, { min: number; max: number }> = {
   // AFib burden as a percent of the week, after the ×100 scaling. A client
   // that already scaled sends 2 for 2 %, which lands at 200 and is refused.
   AFIB_BURDEN: { min: 0, max: 100 },
+  // Apple's workout-effort scale is 1–10, for both the logged score and the
+  // watch's estimate. The band starts at 0 so a client that sends a zero is
+  // kept, and stops at 10 so a slipped unit is refused.
+  WORKOUT_EFFORT_SCORE: { min: 0, max: 10 },
+  ESTIMATED_WORKOUT_EFFORT_SCORE: { min: 0, max: 10 },
+  // Physical effort is a MET-like rate. Rest sits near 1 and a hard effort
+  // in the teens; 50 still refuses a reading that arrived as kilocalories.
+  PHYSICAL_EFFORT: { min: 0, max: 50 },
   // ── v1.44 — room climate. CO2: outdoor air sits near 420 ppm and a closed
   // bedroom can pass 3000; consumer sensors top out at 5000–10000 ppm.
   INDOOR_CO2: { min: 0, max: 10000 },

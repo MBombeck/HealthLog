@@ -69,6 +69,8 @@ const SHARED_SYMBOLS: ReadonlySet<string> = new Set([
   "dBA",
   "ppm",
   "mL/(kg·min)",
+  // Apple physical effort, a MET-like rate. The symbol is the unit.
+  "kcal/(hr·kg)",
   "kg/m²",
   "mL",
   // Litres and litres per minute (spirometry), SI symbols every locale reads.

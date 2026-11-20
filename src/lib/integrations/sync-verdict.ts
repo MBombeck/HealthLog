@@ -293,6 +293,9 @@ export const SPARSE_METRIC_TYPES: ReadonlySet<string> = new Set([
   "PEAK_EXPIRATORY_FLOW",
   // People train irregularly; a quiet training week is not a broken pipe.
   "WORKOUTS",
+  "WORKOUT_EFFORT_SCORE",
+  "ESTIMATED_WORKOUT_EFFORT_SCORE",
+  "PHYSICAL_EFFORT",
   // As-needed and paused medications leave weeks without a dose by design.
   "MEDICATION_DOSE",
   // A period comes once a month, and not at all in a pregnancy.

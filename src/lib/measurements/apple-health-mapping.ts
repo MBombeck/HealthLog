@@ -253,6 +253,8 @@ const UNIT_FIXED_AUDIO_SPL =
   "Sound-pressure level: Apple emits `dBASPL` only, and a decibel is logarithmic — a sibling unit would need its own formula, never a factor.";
 const UNIT_FIXED_COMPOSITE_VO2 =
   "Compound rate Apple emits verbatim as `mL/(kg*min)`; the Health app exposes no other spelling and the compound has no sibling unit to convert from.";
+const UNIT_FIXED_PHYSICAL_EFFORT =
+  "Compound intensity Apple emits verbatim as `kcal/(hr*kg)` (METs-like); the Health app offers no sibling spelling, so there is nothing to convert from.";
 const UNIT_FIXED_STAND_HOUR =
   "Stand hours are a tally of hour samples: the importer maps `Stood` to 1 and drops `Idle`, and a daily row carries the count, so no record unit can rescale it.";
 const UNIT_FIXED_VALENCE =
@@ -406,6 +408,39 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     dbUnit: "kcal",
     convertToDbUnit: (v) => v,
     aggregation: "sum",
+  },
+  // Workout effort (iOS 18). The person's own rating and the watch's
+  // estimate are the same 0–10 scale but different readings, so they are
+  // different types: a day mean of one cannot blend the other in. A mean,
+  // never a sum.
+  HKQuantityTypeIdentifierWorkoutEffortScore: {
+    hkIdentifier: "HKQuantityTypeIdentifierWorkoutEffortScore",
+    measurementType: "WORKOUT_EFFORT_SCORE",
+    hkUnit: "count",
+    unitFixedReason: UNIT_FIXED_DIMENSIONLESS_COUNT,
+    dbUnit: "score",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
+  },
+  HKQuantityTypeIdentifierEstimatedWorkoutEffortScore: {
+    hkIdentifier: "HKQuantityTypeIdentifierEstimatedWorkoutEffortScore",
+    measurementType: "ESTIMATED_WORKOUT_EFFORT_SCORE",
+    hkUnit: "count",
+    unitFixedReason: UNIT_FIXED_DIMENSIONLESS_COUNT,
+    dbUnit: "score",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
+  },
+  // Physical effort (iOS 17+). A rate of energy per hour per kilogram,
+  // kept apart from active and resting energy, which are kilocalories.
+  HKQuantityTypeIdentifierPhysicalEffort: {
+    hkIdentifier: "HKQuantityTypeIdentifierPhysicalEffort",
+    measurementType: "PHYSICAL_EFFORT",
+    hkUnit: "kcal/(hr*kg)",
+    unitFixedReason: UNIT_FIXED_PHYSICAL_EFFORT,
+    dbUnit: "kcal/(hr·kg)",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
   },
   HKQuantityTypeIdentifierFlightsClimbed: {
     hkIdentifier: "HKQuantityTypeIdentifierFlightsClimbed",
@@ -1329,7 +1364,9 @@ export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
   // v1.10.0 — `HeartRateRecoveryOneMinute` + `AppleSleepingWristTemperature`
   // moved into the mapping table (CARDIO_RECOVERY + WRIST_TEMPERATURE).
   // `BasalEnergyBurned` moved into the mapping table as BASAL_ENERGY_BURNED
-  // (#1340).
+  // (#1340). `WorkoutEffortScore`, `EstimatedWorkoutEffortScore` and
+  // `PhysicalEffort` moved into the mapping table as WORKOUT_EFFORT_SCORE,
+  // ESTIMATED_WORKOUT_EFFORT_SCORE and PHYSICAL_EFFORT.
   // Running / walking form — v1.5+
   // v1.5.5 — `WalkingStepLength` + `WalkingSpeed` moved into the
   // mapping table (raw SI on the wire — metres and m/s respectively).
@@ -1357,10 +1394,6 @@ export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
   "HKQuantityTypeIdentifierDistanceSkatingSports",
   "HKQuantityTypeIdentifierDistanceSwimming",
   "HKQuantityTypeIdentifierSwimmingStrokeCount",
-  // Workout-effort scores (iOS 18) — v1.5+
-  "HKQuantityTypeIdentifierEstimatedWorkoutEffortScore",
-  "HKQuantityTypeIdentifierWorkoutEffortScore",
-  "HKQuantityTypeIdentifierPhysicalEffort",
   // Sleep apnea + breathing (iOS 18) — v1.5+
   // v1.10.0 — both signals now mapped, so neither stays deferred:
   // `AppleSleepingBreathingDisturbances` (the per-night quantity) →

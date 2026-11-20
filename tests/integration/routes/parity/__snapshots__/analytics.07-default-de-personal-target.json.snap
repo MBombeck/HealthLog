@@ -1319,6 +1319,48 @@
           "slope30": null,
           "avg30LastMonth": null,
           "avg30LastYear": null
+        },
+        "WORKOUT_EFFORT_SCORE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "ESTIMATED_WORKOUT_EFFORT_SCORE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "PHYSICAL_EFFORT": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
         }
       },
       "bmi": 25.9,
@@ -2284,7 +2326,10 @@
         "INHALER_USAGE": null,
         "FEV1": null,
         "FVC": null,
-        "PEAK_EXPIRATORY_FLOW": null
+        "PEAK_EXPIRATORY_FLOW": null,
+        "WORKOUT_EFFORT_SCORE": null,
+        "ESTIMATED_WORKOUT_EFFORT_SCORE": null,
+        "PHYSICAL_EFFORT": null
       }
     },
     "error": null

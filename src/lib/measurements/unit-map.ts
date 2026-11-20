@@ -188,6 +188,11 @@ const unitMap: Record<string, string> = {
   STRESS_LEVEL: "score",
   TRAINING_READINESS: "score",
   ACUTE_TRAINING_LOAD: "load",
+  // Apple effort. The scores are dimensionless; physical effort is the
+  // kcal/(hr·kg) rate Apple writes (METs-like), not a kilocalorie total.
+  WORKOUT_EFFORT_SCORE: "score",
+  ESTIMATED_WORKOUT_EFFORT_SCORE: "score",
+  PHYSICAL_EFFORT: "kcal/(hr·kg)",
 };
 
 export function getUnitForType(type: string): string {

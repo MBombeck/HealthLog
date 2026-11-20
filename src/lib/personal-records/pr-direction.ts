@@ -251,6 +251,10 @@ export function getPRDirection(
     case "HRV_RMSSD":
     case "DAY_STRAIN":
     case "WORKOUT_STRAIN":
+    // Apple effort is intensity in a session, not a goal axis.
+    case "WORKOUT_EFFORT_SCORE":
+    case "ESTIMATED_WORKOUT_EFFORT_SCORE":
+    case "PHYSICAL_EFFORT":
     case "SLEEP_PERFORMANCE":
     case "SLEEP_EFFICIENCY":
     case "SLEEP_CONSISTENCY":
