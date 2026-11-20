@@ -107,19 +107,12 @@ vi.mock("next/headers", () => ({
   })),
 }));
 
-// The record-auth resolver runs for real; one case swaps in a delegate's
-// context to prove the archive link stays the owner's.
-vi.mock("@/lib/api-handler", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/api-handler")>();
-  return { ...actual, requireRecordAuth: vi.fn(actual.requireRecordAuth) };
-});
 const listConnections = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/documents/sources/connections", () => ({
   listConnections: (...a: unknown[]) => listConnections(...a),
 }));
 
 import { GET, PATCH } from "../route";
-import { requireRecordAuth } from "@/lib/api-handler";
 import { actingDomainVisibility } from "@/lib/sharing/acting-domains";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
@@ -213,8 +206,8 @@ describe("PATCH /api/documents/inbound/[id]", () => {
     );
 
     const res = await PATCH(
-      mkReq("foreign-doc", { title: "hijack" }) as never,
-      ctx("foreign-doc") as never,
+      mkReq("foreign-doc", { title: "hijack" }),
+      ctx("foreign-doc"),
     );
     expect(res.status).toBe(404);
     expect(prisma.inboundDocument.update).not.toHaveBeenCalled();
@@ -237,8 +230,8 @@ describe("PATCH /api/documents/inbound/[id]", () => {
     );
 
     const res = await PATCH(
-      mkReq("doc-1", { title: "Renamed", kind: "IMAGING" }) as never,
-      ctx("doc-1") as never,
+      mkReq("doc-1", { title: "Renamed", kind: "IMAGING" }),
+      ctx("doc-1"),
     );
     expect(res.status).toBe(200);
 
@@ -262,8 +255,8 @@ describe("PATCH /api/documents/inbound/[id]", () => {
     );
 
     const res = await PATCH(
-      mkReq("doc-1", { documentDate: "2026-05-03" }) as never,
-      ctx("doc-1") as never,
+      mkReq("doc-1", { documentDate: "2026-05-03" }),
+      ctx("doc-1"),
     );
     expect(res.status).toBe(200);
     const arg = vi.mocked(prisma.inboundDocument.update).mock.calls[0][0];
@@ -274,7 +267,7 @@ describe("PATCH /api/documents/inbound/[id]", () => {
   });
 
   it("422s on an empty update", async () => {
-    const res = await PATCH(mkReq("doc-1", {}) as never, ctx("doc-1") as never);
+    const res = await PATCH(mkReq("doc-1", {}), ctx("doc-1"));
     expect(res.status).toBe(422);
     expect(prisma.inboundDocument.findFirst).not.toHaveBeenCalled();
   });
@@ -292,8 +285,8 @@ describe("PATCH /api/documents/inbound/[id]", () => {
     );
 
     const res = await PATCH(
-      mkReq("doc-1", { episodeIds: ["ep-1", "ep-2"] }) as never,
-      ctx("doc-1") as never,
+      mkReq("doc-1", { episodeIds: ["ep-1", "ep-2"] }),
+      ctx("doc-1"),
     );
     expect(res.status).toBe(200);
 
@@ -324,8 +317,8 @@ describe("PATCH /api/documents/inbound/[id]", () => {
     vi.mocked(prisma.illnessEpisode.findMany).mockResolvedValue([] as never);
 
     const res = await PATCH(
-      mkReq("doc-1", { episodeIds: ["ep-foreign"] }) as never,
-      ctx("doc-1") as never,
+      mkReq("doc-1", { episodeIds: ["ep-foreign"] }),
+      ctx("doc-1"),
     );
     expect(res.status).toBe(404);
     expect(prisma.documentConditionLink.deleteMany).not.toHaveBeenCalled();
@@ -345,8 +338,8 @@ describe("PATCH /api/documents/inbound/[id]", () => {
     );
 
     const res = await PATCH(
-      mkReq("doc-1", { vaccinationIds: ["dose-1", "dose-2"] }) as never,
-      ctx("doc-1") as never,
+      mkReq("doc-1", { vaccinationIds: ["dose-1", "dose-2"] }),
+      ctx("doc-1"),
     );
     expect(res.status).toBe(200);
     // The owner-narrowing read is scoped by the session user and the
@@ -386,8 +379,8 @@ describe("PATCH /api/documents/inbound/[id]", () => {
     vi.mocked(prisma.vaccinationRecord.findMany).mockResolvedValue([] as never);
 
     const res = await PATCH(
-      mkReq("doc-1", { vaccinationIds: ["dose-foreign"] }) as never,
-      ctx("doc-1") as never,
+      mkReq("doc-1", { vaccinationIds: ["dose-foreign"] }),
+      ctx("doc-1"),
     );
     expect(res.status).toBe(404);
     expect(prisma.vaccinationDocumentLink.deleteMany).not.toHaveBeenCalled();
@@ -397,8 +390,8 @@ describe("PATCH /api/documents/inbound/[id]", () => {
   it("refuses more dose links than one request may carry", async () => {
     const ids = Array.from({ length: 101 }, (_, i) => `dose-${i}`);
     const res = await PATCH(
-      mkReq("doc-1", { vaccinationIds: ids }) as never,
-      ctx("doc-1") as never,
+      mkReq("doc-1", { vaccinationIds: ids }),
+      ctx("doc-1"),
     );
     expect(res.status).toBe(422);
     expect(prisma.inboundDocument.findFirst).not.toHaveBeenCalled();
@@ -439,7 +432,7 @@ describe("GET /api/documents/inbound/[id] — vaccination links", () => {
   });
 
   it("lists every dose the page is filed against, named for the reader's bundle", async () => {
-    const res = await GET(getReq("doc-1") as never, ctx("doc-1") as never);
+    const res = await GET(getReq("doc-1"), ctx("doc-1"));
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.data.vaccinationLinks).toEqual([
@@ -462,7 +455,7 @@ describe("GET /api/documents/inbound/[id] — vaccination links", () => {
     vi.mocked(actingDomainVisibility).mockResolvedValueOnce(
       (domain) => domain !== "profile",
     );
-    const res = await GET(getReq("doc-1") as never, ctx("doc-1") as never);
+    const res = await GET(getReq("doc-1"), ctx("doc-1"));
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.data.vaccinationLinks).toBeNull();
@@ -470,6 +463,9 @@ describe("GET /api/documents/inbound/[id] — vaccination links", () => {
   });
 });
 
+// A delegate, a guardian and a managed profile getting no link is proved
+// against the real grant resolution in
+// `tests/integration/guardian-document-vault.test.ts`.
 describe("GET /api/documents/inbound/[id] — link to the archive original (#1394)", () => {
   function getReq(id: string): NextRequest {
     return new NextRequest(
@@ -508,7 +504,7 @@ describe("GET /api/documents/inbound/[id] — link to the archive original (#139
         sourceInstance: "https://paperless.example.com",
       }) as never,
     );
-    const res = await GET(getReq("doc-1") as never, ctx("doc-1") as never);
+    const res = await GET(getReq("doc-1"), ctx("doc-1"));
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.data.sourceUrl).toBe(
@@ -525,9 +521,7 @@ describe("GET /api/documents/inbound/[id] — link to the archive original (#139
         sourceInstance: null,
       }) as never,
     );
-    const body = await (
-      await GET(getReq("doc-1") as never, ctx("doc-1") as never)
-    ).json();
+    const body = await (await GET(getReq("doc-1"), ctx("doc-1"))).json();
     expect(body.data.sourceUrl).toBe(
       `http://papra.lan:1221/organizations/${ORG}/documents/doc_x`,
     );
@@ -541,32 +535,7 @@ describe("GET /api/documents/inbound/[id] — link to the archive original (#139
         sourceInstance: null,
       }) as never,
     );
-    const body = await (
-      await GET(getReq("doc-1") as never, ctx("doc-1") as never)
-    ).json();
+    const body = await (await GET(getReq("doc-1"), ctx("doc-1"))).json();
     expect(body.data.sourceUrl).toBeNull();
-  });
-
-  it("gives a delegate reading the shared vault null, and reads no connection", async () => {
-    vi.mocked(requireRecordAuth).mockResolvedValueOnce({
-      ...SESSION_OK,
-      user: { ...SESSION_OK.user, id: "owner-9" },
-      actor: SESSION_OK.user,
-      grantId: "grant-1",
-    } as never);
-    vi.mocked(prisma.inboundDocument.findFirst).mockResolvedValue(
-      docRow({
-        userId: "owner-9",
-        sourceSystem: "PAPERLESS",
-        sourceId: "42",
-        sourceInstance: null,
-      }) as never,
-    );
-    const res = await GET(getReq("doc-1") as never, ctx("doc-1") as never);
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.data.sourceId).toBe("42");
-    expect(body.data.sourceUrl).toBeNull();
-    expect(listConnections).not.toHaveBeenCalled();
   });
 });
