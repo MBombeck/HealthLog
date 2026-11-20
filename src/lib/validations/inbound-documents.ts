@@ -376,6 +376,14 @@ export interface InboundDocumentDto {
    */
   sourceSystem: DocumentSourceSystemValue | null;
   sourceId: string | null;
+  /**
+   * #1394 — the document's page in the Paperless-ngx or Papra archive the
+   * owner has connected, built on the server from that connection
+   * (`src/lib/documents/source-url.ts`). Null for anyone but the owner acting
+   * on their own record, and whenever the connection, the id or the
+   * operator's origin list does not support a link.
+   */
+  sourceUrl: string | null;
   createdAt: string;
   updatedAt: string;
 }

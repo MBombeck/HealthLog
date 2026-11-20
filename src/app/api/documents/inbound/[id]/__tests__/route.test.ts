@@ -107,7 +107,19 @@ vi.mock("next/headers", () => ({
   })),
 }));
 
+// The record-auth resolver runs for real; one case swaps in a delegate's
+// context to prove the archive link stays the owner's.
+vi.mock("@/lib/api-handler", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/api-handler")>();
+  return { ...actual, requireRecordAuth: vi.fn(actual.requireRecordAuth) };
+});
+const listConnections = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/documents/sources/connections", () => ({
+  listConnections: (...a: unknown[]) => listConnections(...a),
+}));
+
 import { GET, PATCH } from "../route";
+import { requireRecordAuth } from "@/lib/api-handler";
 import { actingDomainVisibility } from "@/lib/sharing/acting-domains";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
@@ -455,5 +467,106 @@ describe("GET /api/documents/inbound/[id] — vaccination links", () => {
     const body = await res.json();
     expect(body.data.vaccinationLinks).toBeNull();
     expect(prisma.vaccinationDocumentLink.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("GET /api/documents/inbound/[id] — link to the archive original (#1394)", () => {
+  function getReq(id: string): NextRequest {
+    return new NextRequest(
+      new URL(`http://localhost/api/documents/inbound/${id}`),
+    );
+  }
+  const ORG = "org_abcdefghijklmnopqrstuvwx";
+
+  beforeEach(() => {
+    vi.stubEnv(
+      "DOCUMENT_SOURCE_ORIGINS",
+      "https://paperless.example.com,http://papra.lan:1221",
+    );
+    listConnections.mockReset();
+    listConnections.mockResolvedValue([
+      {
+        system: "PAPERLESS",
+        baseUrl: "https://paperless.example.com/archive",
+        organizationId: null,
+        lastVerifiedAt: null,
+      },
+      {
+        system: "PAPRA",
+        baseUrl: "http://papra.lan:1221",
+        organizationId: ORG,
+        lastVerifiedAt: null,
+      },
+    ]);
+  });
+
+  it("gives the owner the Paperless-ngx page, built from their connection", async () => {
+    vi.mocked(prisma.inboundDocument.findFirst).mockResolvedValue(
+      docRow({
+        sourceSystem: "PAPERLESS",
+        sourceId: "42",
+        sourceInstance: "https://paperless.example.com",
+      }) as never,
+    );
+    const res = await GET(getReq("doc-1") as never, ctx("doc-1") as never);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data.sourceUrl).toBe(
+      "https://paperless.example.com/archive/documents/42/details",
+    );
+    expect(listConnections).toHaveBeenCalledWith("user-1");
+  });
+
+  it("gives the owner the Papra page under the connection's organization", async () => {
+    vi.mocked(prisma.inboundDocument.findFirst).mockResolvedValue(
+      docRow({
+        sourceSystem: "PAPRA",
+        sourceId: "doc_x",
+        sourceInstance: null,
+      }) as never,
+    );
+    const body = await (
+      await GET(getReq("doc-1") as never, ctx("doc-1") as never)
+    ).json();
+    expect(body.data.sourceUrl).toBe(
+      `http://papra.lan:1221/organizations/${ORG}/documents/doc_x`,
+    );
+  });
+
+  it("gives null for a document without a source key", async () => {
+    vi.mocked(prisma.inboundDocument.findFirst).mockResolvedValue(
+      docRow({
+        sourceSystem: null,
+        sourceId: null,
+        sourceInstance: null,
+      }) as never,
+    );
+    const body = await (
+      await GET(getReq("doc-1") as never, ctx("doc-1") as never)
+    ).json();
+    expect(body.data.sourceUrl).toBeNull();
+  });
+
+  it("gives a delegate reading the shared vault null, and reads no connection", async () => {
+    vi.mocked(requireRecordAuth).mockResolvedValueOnce({
+      ...SESSION_OK,
+      user: { ...SESSION_OK.user, id: "owner-9" },
+      actor: SESSION_OK.user,
+      grantId: "grant-1",
+    } as never);
+    vi.mocked(prisma.inboundDocument.findFirst).mockResolvedValue(
+      docRow({
+        userId: "owner-9",
+        sourceSystem: "PAPERLESS",
+        sourceId: "42",
+        sourceInstance: null,
+      }) as never,
+    );
+    const res = await GET(getReq("doc-1") as never, ctx("doc-1") as never);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data.sourceId).toBe("42");
+    expect(body.data.sourceUrl).toBeNull();
+    expect(listConnections).not.toHaveBeenCalled();
   });
 });

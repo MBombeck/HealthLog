@@ -91,6 +91,7 @@ function doc(
     hasThumbnail: false,
     sourceSystem: null,
     sourceId: null,
+    sourceUrl: null,
     createdAt: "2026-08-01T10:00:00.000Z",
     updatedAt: "2026-08-01T10:00:00.000Z",
     facts: [fact()],

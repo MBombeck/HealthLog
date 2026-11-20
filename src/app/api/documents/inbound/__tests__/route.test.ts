@@ -142,6 +142,11 @@ vi.mock("next/headers", () => ({
   })),
 }));
 
+const listConnections = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/documents/sources/connections", () => ({
+  listConnections: (...a: unknown[]) => listConnections(...a),
+}));
+
 import { createHash } from "node:crypto";
 
 import { POST, GET } from "../route";
@@ -485,6 +490,39 @@ describe("POST /api/documents/inbound (vault upload)", () => {
 });
 
 describe("GET /api/documents/inbound (list)", () => {
+  it("links the owner's imported documents to their archive pages (#1394)", async () => {
+    vi.stubEnv("DOCUMENT_SOURCE_ORIGINS", "https://paperless.example.com");
+    listConnections.mockResolvedValueOnce([
+      {
+        system: "PAPERLESS",
+        baseUrl: "https://paperless.example.com/",
+        organizationId: null,
+        lastVerifiedAt: null,
+      },
+    ]);
+    vi.mocked(prisma.inboundDocument.findMany).mockResolvedValue([
+      docRow({
+        id: "d1",
+        sourceSystem: "PAPERLESS",
+        sourceId: "77",
+        sourceInstance: null,
+      }),
+      docRow({ id: "d2", sourceSystem: null, sourceId: null }),
+    ] as never);
+
+    const res = await get(
+      new Request("http://localhost/api/documents/inbound"),
+    );
+    expect(res.status).toBe(200);
+    const [d1, d2] = (await res.json()).data.documents;
+    expect(d1.sourceUrl).toBe(
+      "https://paperless.example.com/documents/77/details",
+    );
+    expect(d2.sourceUrl).toBeNull();
+    expect(listConnections).toHaveBeenCalledTimes(1);
+    vi.unstubAllEnvs();
+  });
+
   it("never selects the encrypted blob column (omit hardening)", async () => {
     vi.mocked(prisma.inboundDocument.findMany).mockResolvedValue([] as never);
 

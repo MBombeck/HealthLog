@@ -25,7 +25,10 @@ vi.mock("@/lib/logging/signal", () => ({
 
 import { SafeFetchError } from "@/lib/safe-fetch";
 import {
-  CODEX_MODELS_CLIENT_VERSION,
+  CODEX_DEFAULT_CLIENT_VERSION,
+  resetCodexClientVersionWarning,
+} from "../codex-client-version";
+import {
   cachedCodexModels,
   fetchCodexModelList,
   parseCodexModelList,
@@ -57,10 +60,13 @@ beforeEach(() => {
   safeFetch.mockReset();
   emitSignal.mockReset();
   clearCodexSlugCache();
+  resetCodexClientVersionWarning();
+  vi.stubEnv("CODEX_CLIENT_VERSION", "");
 });
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllEnvs();
 });
 
 describe("parseCodexModelList", () => {
@@ -165,7 +171,7 @@ describe("fetchCodexModelList", () => {
     expect(result.ok).toBe(true);
     const [url, init, options] = safeFetch.mock.calls[0];
     expect(url).toBe(
-      `https://chatgpt.com/backend-api/codex/models?client_version=${CODEX_MODELS_CLIENT_VERSION}`,
+      `https://chatgpt.com/backend-api/codex/models?client_version=${CODEX_DEFAULT_CLIENT_VERSION}`,
     );
     expect(init.method).toBe("GET");
     expect(init.headers.Authorization).toBe("Bearer access-token");
@@ -370,5 +376,75 @@ describe("readCodexModelCatalog", () => {
       "gpt-6-sol",
       "gpt-6-luna",
     ]);
+  });
+});
+
+describe("client version", () => {
+  const MODELS_URL = "https://chatgpt.com/backend-api/codex/models";
+
+  it("names 0.170.0 by default, so the gpt-6.2 line is not hidden", async () => {
+    safeFetch.mockResolvedValue(jsonResponse(FIXTURE));
+    await fetchCodexModelList(AUTH);
+    expect(CODEX_DEFAULT_CLIENT_VERSION).toBe("0.170.0");
+    expect(safeFetch.mock.calls[0][0]).toBe(
+      `${MODELS_URL}?client_version=0.170.0`,
+    );
+  });
+
+  it("sends CODEX_CLIENT_VERSION when it is a plain x.y.z", async () => {
+    vi.stubEnv("CODEX_CLIENT_VERSION", " 0.181.2 ");
+    safeFetch.mockResolvedValue(jsonResponse(FIXTURE));
+    await readCodexModelCatalog(PERSONAL, AUTH);
+    expect(safeFetch.mock.calls[0][0]).toBe(
+      `${MODELS_URL}?client_version=0.181.2`,
+    );
+  });
+
+  it.each(["latest", "0.181", "v0.181.0", "0.181.0-beta.1", "0.1.0&x=1"])(
+    "ignores the invalid value %j, falls back and warns once",
+    async (value) => {
+      vi.stubEnv("CODEX_CLIENT_VERSION", value);
+      safeFetch.mockResolvedValue(jsonResponse(FIXTURE));
+      await fetchCodexModelList(AUTH);
+      await fetchCodexModelList(AUTH);
+      for (const call of safeFetch.mock.calls) {
+        expect(call[0]).toBe(`${MODELS_URL}?client_version=0.170.0`);
+      }
+      const warnings = emitSignal.mock.calls.filter(
+        ([s]) => s.action === "ai.codex.client_version_invalid",
+      );
+      expect(warnings).toHaveLength(1);
+      // The operator's value itself never reaches the log line.
+      expect(JSON.stringify(warnings[0][0])).not.toContain(value);
+    },
+  );
+
+  it("reads the list again after the version changes", async () => {
+    safeFetch.mockImplementation(async () => jsonResponse(FIXTURE));
+    await readCodexModelCatalog(PERSONAL, AUTH);
+    expect((await readCodexModelCatalog(PERSONAL, AUTH)).from).toBe("cache");
+    expect(safeFetch).toHaveBeenCalledTimes(1);
+
+    vi.stubEnv("CODEX_CLIENT_VERSION", "0.175.0");
+    // A list read under the old version is not served, not even offline.
+    expect(cachedCodexModels(PERSONAL)).toBeNull();
+    const after = await readCodexModelCatalog(PERSONAL, AUTH);
+    expect(after.from).toBe("live");
+    expect(safeFetch).toHaveBeenCalledTimes(2);
+    expect(safeFetch.mock.calls[1][0]).toBe(
+      `${MODELS_URL}?client_version=0.175.0`,
+    );
+    expect((await readCodexModelCatalog(PERSONAL, AUTH)).from).toBe("cache");
+  });
+
+  it("does not keep a failed read made under the old version", async () => {
+    safeFetch.mockImplementationOnce(async () => jsonResponse("down", 503));
+    await readCodexModelCatalog(PERSONAL, AUTH);
+    expect((await readCodexModelCatalog(PERSONAL, AUTH)).from).toBe("cache");
+
+    vi.stubEnv("CODEX_CLIENT_VERSION", "0.175.0");
+    safeFetch.mockImplementation(async () => jsonResponse(FIXTURE));
+    const after = await readCodexModelCatalog(PERSONAL, AUTH);
+    expect(after).toMatchObject({ from: "live", failure: null });
   });
 });
