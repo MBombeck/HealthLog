@@ -1,5 +1,47 @@
 # Changelog
 
+## [1.48.4] — 2026-11-20
+
+### Fixed
+
+- **An installed iOS web app reaches the bottom of the screen again.** iOS 26
+  gives a web app added to the home screen a layout that ends short by the
+  height of the status bar, so the bottom bar and every bottom sheet sat a
+  strip above the screen's edge. The app now measures that strip on an
+  installed iPhone app only and extends the page, the bottom bar, the sheets
+  and the overlays over it. Everywhere else, Safari included, nothing moves,
+  and sheets still stand on the keyboard. Thanks to @2q2code.
+- **Codex sees the newest models.** The model catalogue hides models that need
+  a newer Codex client than the one HealthLog names, so the GPT-6.2 models
+  never appeared. HealthLog now names client 0.170.0, an operator can set
+  `CODEX_CLIENT_VERSION` to follow a newer release, and a changed version
+  reads the catalogue again. Nothing is fetched from anywhere new. Thanks to
+  @ferges123. (#1287)
+
+### Changed
+
+- **Up to 30 symptoms of your own.** The symptom diary allowed 8 active
+  symptoms you named yourself, because each one was also a channel in the
+  correlations. The two are separate now: you can keep 30 active, and the
+  correlations take the 8 you log most often, Apple Health symptoms and your
+  own alike. A symptom row longer than 12 gets a filter. Thanks to @2q2code.
+
+### Added
+
+- **Open an imported document in its archive.** A document imported from
+  Paperless-ngx or Papra shows "Open in Paperless-ngx" or "Open in Papra" on
+  its detail sheet when that archive is connected. The server builds the link
+  from your connection, and only you see it: shared readers, guardians,
+  clinician share links and the MCP server get none. Thanks to @mbreitkreuz
+  for the design. (#1394)
+
+### Updating
+
+Pull and restart. No migration. `CODEX_CLIENT_VERSION` is optional and listed
+in `docker-compose.yml` and `.env.production.example`. Going back to 1.48.3
+works; an account with more than 8 active symptoms keeps them, and 1.48.3
+simply correlates the first 8. The steps are in `docs/ops/deploy.md`.
+
 ## [1.48.3] — 2026-11-20
 
 ### Fixed
