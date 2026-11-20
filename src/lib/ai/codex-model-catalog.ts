@@ -23,6 +23,9 @@
  *                   "input_modalities": ["text", "image"],
  *                   "model_specialty": null, ... } ] }
  *
+ * The version sent is `codexModelsClientVersion()` (`codex-client-version.ts`),
+ * and a cached list is trusted only under the version it was read with.
+ *
  * Only the fields read below matter here; everything else in an entry (the
  * instruction templates make up most of a ~500 KB body) is ignored.
  *
@@ -42,18 +45,9 @@ import {
   type CodexCatalogState,
   type CodexCredential,
 } from "./codex-slug-cache";
+import { codexModelsClientVersion } from "./codex-client-version";
 
 const CODEX_MODELS_ENDPOINT = "https://chatgpt.com/backend-api/codex/models";
-
-/**
- * The `client_version` sent with the read. The backend leaves out models
- * whose `minimal_client_version` is above it (every gpt-6 entry in the
- * upstream `models-manager/models.json` names 0.153.0 or later), so a version
- * far behind the current Codex CLI hides the models an account actually has.
- * This is the Codex CLI release current when it was last checked
- * (rust-v0.165.0, 2026-10-27); move it when a new line needs a newer client.
- */
-export const CODEX_MODELS_CLIENT_VERSION = "0.165.0";
 
 /** Same bound as the Codex CLI's model refresh. */
 const MODELS_TIMEOUT_MS = 5_000;
@@ -145,6 +139,7 @@ export function parseCodexModelList(body: unknown): CodexOfferedModel[] | null {
 /** One read of the backend, never cached and never thrown out of. */
 export async function fetchCodexModelList(
   auth: CodexCatalogAuth,
+  clientVersion: string = codexModelsClientVersion(),
 ): Promise<
   | { ok: true; models: CodexOfferedModel[] }
   | { ok: false; reason: CodexCatalogFailure; status: number | null }
@@ -152,7 +147,7 @@ export async function fetchCodexModelList(
   let res: Response;
   try {
     res = await safeFetch(
-      `${CODEX_MODELS_ENDPOINT}?client_version=${CODEX_MODELS_CLIENT_VERSION}`,
+      `${CODEX_MODELS_ENDPOINT}?client_version=${encodeURIComponent(clientVersion)}`,
       {
         method: "GET",
         headers: {
@@ -244,24 +239,26 @@ export function readCodexModelCatalog(
       failure: state.reason,
     });
   }
-  const pending = inflight.get(credential.key);
+  const clientVersion = codexModelsClientVersion();
+  const inflightKey = `${credential.key}|${clientVersion}`;
+  const pending = inflight.get(inflightKey);
   if (pending) return pending;
-  const read = fetchCodexModelList(auth)
+  const read = fetchCodexModelList(auth, clientVersion)
     .then((result): CodexCatalogRead => {
       if (result.ok) {
-        setCodexCatalogState(credential, {
-          kind: "offered",
-          models: result.models,
-          at: Date.now(),
-        });
+        setCodexCatalogState(
+          credential,
+          { kind: "offered", models: result.models, at: Date.now() },
+          clientVersion,
+        );
         return { models: result.models, from: "live", failure: null };
       }
       if (result.status !== 401) {
-        const first = setCodexCatalogState(credential, {
-          kind: "unreadable",
-          reason: result.reason,
-          at: Date.now(),
-        });
+        const first = setCodexCatalogState(
+          credential,
+          { kind: "unreadable", reason: result.reason, at: Date.now() },
+          clientVersion,
+        );
         if (first) {
           emitSignal({
             action: "ai.codex.models_unreadable",
@@ -280,11 +277,11 @@ export function readCodexModelCatalog(
       return { models: null, from: "live", failure: result.reason };
     })
     .finally(() => {
-      if (inflight.get(credential.key) === read) {
-        inflight.delete(credential.key);
+      if (inflight.get(inflightKey) === read) {
+        inflight.delete(inflightKey);
       }
     });
-  inflight.set(credential.key, read);
+  inflight.set(inflightKey, read);
   return read;
 }
 
