@@ -105,6 +105,10 @@ export function trackStandaloneViewportGap(
   if (!standalone) return () => {};
 
   let current = -1;
+  // The inset is read once and again only on rotation: reading it forces a
+  // style recalculation, and `visualViewport` fires `resize` on every frame of
+  // the keyboard animation and of a pinch, where that would stutter.
+  let inset = safeAreaTop();
   const update = () => {
     const gap = standaloneViewportGap({
       standalone,
@@ -112,7 +116,7 @@ export function trackStandaloneViewportGap(
       innerHeight: win.innerHeight,
       screenWidth: win.screen.width,
       screenHeight: win.screen.height,
-      safeAreaTop: safeAreaTop(),
+      safeAreaTop: inset,
     });
     if (gap === current) return;
     current = gap;
@@ -120,13 +124,18 @@ export function trackStandaloneViewportGap(
     else root.style.removeProperty(VIEWPORT_GAP_PROPERTY);
   };
 
+  const rotate = () => {
+    inset = safeAreaTop();
+    update();
+  };
+
   update();
   win.addEventListener("resize", update);
-  win.addEventListener("orientationchange", update);
+  win.addEventListener("orientationchange", rotate);
   win.visualViewport?.addEventListener("resize", update);
   return () => {
     win.removeEventListener("resize", update);
-    win.removeEventListener("orientationchange", update);
+    win.removeEventListener("orientationchange", rotate);
     win.visualViewport?.removeEventListener("resize", update);
     root.style.removeProperty(VIEWPORT_GAP_PROPERTY);
   };

@@ -116,6 +116,26 @@ describe("trackStandaloneViewportGap", () => {
     expect(root.props.has("--viewport-bottom-gap")).toBe(false);
   });
 
+  it("reads the inset once, and again only on rotation", () => {
+    const win = new FakeWindow();
+    const root = fakeRoot();
+    let reads = 0;
+    const stop = trackStandaloneViewportGap(
+      win as unknown as Window,
+      root.el,
+      () => {
+        reads += 1;
+        return 62;
+      },
+    );
+    for (let i = 0; i < 5; i += 1) win.dispatchEvent(new Event("resize"));
+    expect(reads).toBe(1);
+
+    win.dispatchEvent(new Event("orientationchange"));
+    expect(reads).toBe(2);
+    stop();
+  });
+
   it("does nothing outside an installed iOS app", () => {
     const win = new FakeWindow();
     win.navigator = {} as Navigator;

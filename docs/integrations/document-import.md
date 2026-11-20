@@ -261,6 +261,12 @@ imported from another organization opens Papra's not-found page. The link
 also assumes the connection's address opens in your browser; an archive the
 server reaches under an internal name will not.
 
+A document imported without `sourceInstance` (an older import, or a script
+that did not send it) is linked to whichever archive is connected now. If you
+have since connected a different Paperless-ngx or Papra, its link opens the
+document with the same id there, which may be another document. Sending
+`sourceInstance` with each import avoids that.
+
 ## Source ids
 
 Documents are recognised by the pair of source system and document id:

@@ -631,6 +631,7 @@ export function OnboardingTour({
       // the underlying page — both inside AND outside the spotlight —
       // passes pointer events through normally; the tour is purely a
       // visual overlay with its own self-contained controls.
+      data-viewport-overlay=""
       className="pointer-events-none fixed inset-0 z-[200]"
     >
       {/* Spotlight outline — purely visual ring around the highlighted
