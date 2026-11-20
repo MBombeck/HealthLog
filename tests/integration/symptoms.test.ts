@@ -749,6 +749,19 @@ describe("symptom occurrences", () => {
 });
 
 describe("the SYMPTOM:<id> correlation channel", () => {
+  const DAY_MS = 86_400_000;
+  // The window opens ninety days back at midnight UTC, so every fixture day
+  // below stays inside it whatever the date the suite runs on.
+  const windowStart = (): Date => {
+    const start = new Date(Date.now() - 90 * DAY_MS);
+    start.setUTCHours(0, 0, 0, 0);
+    return start;
+  };
+  const at = (start: Date, day: number, hour: number, minute = 0): Date =>
+    new Date(start.getTime() + day * DAY_MS + (hour * 60 + minute) * 60_000);
+  const dayKey = (start: Date, day: number): string =>
+    at(start, day, 0).toISOString().slice(0, 10);
+
   it("reaches the matrix labelled with its name, and leaves it with the module off", async () => {
     const prisma = getPrismaClient();
     const definition = await prisma.symptomDefinition.create({
@@ -761,17 +774,18 @@ describe("the SYMPTOM:<id> correlation channel", () => {
         isActive: false,
       },
     });
-    for (const [id, at, intensity] of [
-      [definition.id, "2026-09-01T08:00:00.000Z", 3],
-      [definition.id, "2026-09-01T18:00:00.000Z", 6],
-      [definition.id, "2026-09-03T08:00:00.000Z", 2],
-      [hidden.id, "2026-09-02T08:00:00.000Z", 9],
+    const start = windowStart();
+    for (const [id, occurredAt, intensity] of [
+      [definition.id, at(start, 31, 8), 3],
+      [definition.id, at(start, 31, 18), 6],
+      [definition.id, at(start, 33, 8), 2],
+      [hidden.id, at(start, 32, 8), 9],
     ] as const) {
       await prisma.symptomEvent.create({
         data: {
           userId: OWNER_ID,
           definitionId: id,
-          occurredAt: new Date(at),
+          occurredAt,
           intensity,
         },
       });
@@ -779,7 +793,7 @@ describe("the SYMPTOM:<id> correlation channel", () => {
 
     const options = {
       tz: "Europe/Berlin",
-      since: new Date("2026-08-01T00:00:00.000Z"),
+      since: start,
       fetchMode: "raw" as const,
     };
     const on = await assembleDiscoveryMatrix(OWNER_ID, {
@@ -793,9 +807,9 @@ describe("the SYMPTOM:<id> correlation channel", () => {
         label: "Aura",
         role: "outcome",
         points: [
-          { day: "2026-09-01", value: 6 },
-          { day: "2026-09-02", value: 0 },
-          { day: "2026-09-03", value: 2 },
+          { day: dayKey(start, 31), value: 6 },
+          { day: dayKey(start, 32), value: 0 },
+          { day: dayKey(start, 33), value: 2 },
         ],
       },
     ]);
@@ -814,6 +828,7 @@ describe("the SYMPTOM:<id> correlation channel", () => {
     // longest ago, so no pick but the count finds them. One built-
     // in symptom is among the most logged; a hidden one, logged most of all,
     // is no channel; a tie on the count is broken by the latest occurrence.
+    const start = windowStart();
     const ids: string[] = [];
     for (let i = 0; i < 12; i += 1) {
       const row = await prisma.symptomDefinition.create({
@@ -850,9 +865,7 @@ describe("the SYMPTOM:<id> correlation channel", () => {
           definitionId: ids[i],
           // The more often logged, the earlier the last time, so a pick by
           // the latest occurrence would miss them too.
-          occurredAt: new Date(
-            Date.UTC(2026, 8, 25 - 2 * count + n, i === 4 ? 12 : 8, 0, 0),
-          ),
+          occurredAt: at(start, 55 - 2 * count + n, i === 4 ? 12 : 8),
           intensity: 3,
         });
       }
@@ -861,7 +874,7 @@ describe("the SYMPTOM:<id> correlation channel", () => {
       events.push({
         userId: OWNER_ID,
         definitionId: hidden.id,
-        occurredAt: new Date(Date.UTC(2026, 8, 1 + n, 8)),
+        occurredAt: at(start, 31 + n, 8),
         intensity: 5,
       });
     }
@@ -870,7 +883,7 @@ describe("the SYMPTOM:<id> correlation channel", () => {
       events.push({
         userId: OWNER_ID,
         definitionId: ids[0],
-        occurredAt: new Date(Date.UTC(2026, 5, 1, 0, n)),
+        occurredAt: at(start, -61, 0, n),
         intensity: 2,
       });
     }
@@ -880,7 +893,7 @@ describe("the SYMPTOM:<id> correlation channel", () => {
       (
         await assembleDiscoveryMatrix(OWNER_ID, {
           tz: "Europe/Berlin",
-          since: new Date("2026-08-01T00:00:00.000Z"),
+          since: start,
           fetchMode: "raw" as const,
           modules: {},
         })
