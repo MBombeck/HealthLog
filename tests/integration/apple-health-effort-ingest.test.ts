@@ -146,8 +146,12 @@ describe("Apple effort ingest", () => {
       orderBy: { type: "asc" },
       select,
     });
+    // Prisma orders an enum column by the enum's declaration order in
+    // PostgreSQL, not alphabetically, so sort by name before comparing.
     expect(
-      stored.map(({ type, value, unit }) => ({ type, value, unit })),
+      stored
+        .map(({ type, value, unit }) => ({ type, value, unit }))
+        .sort((a, b) => a.type.localeCompare(b.type)),
     ).toEqual([
       {
         type: "ESTIMATED_WORKOUT_EFFORT_SCORE",
