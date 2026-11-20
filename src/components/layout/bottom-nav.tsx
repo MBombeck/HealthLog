@@ -200,13 +200,9 @@ export function BottomNav() {
           `bg-card` + `border-t` give the bar a clean visual edge so page
           content that scrolls under the bar is occluded, not bleeding
           through. */}
-      {/* The side insets keep the outer tabs clear of the notch on a phone
-          held sideways. `data-keyboard-hide`: while the on-screen keyboard
-          is open the bar steps aside (globals.css) instead of floating
-          over the field being typed into. `bottom-(--viewport-bottom)`
-          rather than `bottom-0`: an installed iOS app can lay out short of
-          the screen's bottom edge, and the bar belongs on that edge
-          (globals.css). */}
+      {/* Side insets: clear of the notch held sideways. Keyboard open: the
+          bar steps aside, not over the field. `--viewport-bottom`: on the
+          screen's edge, where an installed iOS app lays out short of it. */}
       <nav
         aria-label={t("nav.mobileNavigation")}
         data-slot="bottom-nav"

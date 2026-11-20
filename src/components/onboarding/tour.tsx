@@ -626,11 +626,10 @@ export function OnboardingTour({
       aria-modal="true"
       aria-labelledby="onboarding-tour-title"
       // `pointer-events-none` on the root: the outer container does NOT
-      // capture clicks. Only the tooltip card opts back in via
-      // `pointer-events-auto` below. This guarantees that every pixel of
-      // the underlying page — both inside AND outside the spotlight —
-      // passes pointer events through normally; the tour is purely a
-      // visual overlay with its own self-contained controls.
+      // capture clicks; only the tooltip card opts back in below. Every
+      // pixel of the page, inside AND outside the spotlight, passes pointer
+      // events through; the tour is a visual overlay with its own controls.
+      // `data-viewport-overlay`: reaches an installed app's bottom edge.
       data-viewport-overlay=""
       className="pointer-events-none fixed inset-0 z-[200]"
     >
