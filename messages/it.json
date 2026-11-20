@@ -2680,6 +2680,17 @@
       "saveError": "Non è stato possibile salvare la composizione",
       "catalogError": "Non è stato possibile caricare l'elenco dei nutrienti",
       "invalidRow": "Scegli un nutriente e inserisci una quantità maggiore di zero in ogni riga."
+    },
+    "filter": {
+      "searchPlaceholder": "Cerca farmaco…",
+      "searchLabel": "Cerca farmaci",
+      "clearSearch": "Cancella ricerca",
+      "treatmentPeriod": "Periodo di trattamento",
+      "noMatchesTitle": "Nessun farmaco trovato",
+      "noMatchesDescription": "Prova a modificare i termini di ricerca o i filtri.",
+      "countOne": "{count} farmaco",
+      "countFew": "{count} farmaci",
+      "countOther": "{count} farmaci"
     }
   },
   "charts": {

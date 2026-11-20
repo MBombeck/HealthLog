@@ -2680,6 +2680,17 @@
       "saveError": "Nie udało się zapisać składu",
       "catalogError": "Nie udało się wczytać listy składników",
       "invalidRow": "W każdej linii wybierz składnik i wpisz ilość większą od zera."
+    },
+    "filter": {
+      "searchPlaceholder": "Szukaj leku…",
+      "searchLabel": "Szukaj leków",
+      "clearSearch": "Wyczyść wyszukiwanie",
+      "treatmentPeriod": "Okres leczenia",
+      "noMatchesTitle": "Brak pasujących leków",
+      "noMatchesDescription": "Spróbuj zmienić zapytanie lub zresetować filtry.",
+      "countOne": "{count} lek",
+      "countFew": "{count} leki",
+      "countOther": "{count} leków"
     }
   },
   "charts": {

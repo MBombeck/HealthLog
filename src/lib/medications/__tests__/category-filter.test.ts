@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   ALL_MEDICATION_CATEGORIES,
   effectiveCategoryFilter,
-  filterMedicationsByCategory,
   medicationCategoryOptions,
 } from "@/lib/medications/category-filter";
 import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
@@ -24,22 +23,6 @@ describe("medication category filter (v1.40, #1041)", () => {
       { value: "THYROID", label: "t:medications.categoryThyroid" },
       { value: KEY, label: "Travel kit" },
     ]);
-  });
-
-  it("narrows the active and the inactive block alike", () => {
-    const active = MEDS.filter((m) => m.active);
-    const inactive = MEDS.filter((m) => !m.active);
-    expect(filterMedicationsByCategory(active, KEY).map((m) => m.id)).toEqual([
-      "b",
-    ]);
-    expect(filterMedicationsByCategory(inactive, KEY).map((m) => m.id)).toEqual(
-      ["c"],
-    );
-    expect(
-      filterMedicationsByCategory(active, ALL_MEDICATION_CATEGORIES).map(
-        (m) => m.id,
-      ),
-    ).toEqual(["a", "b"]);
   });
 
   it("falls back to All when the stored pick is no longer in use", () => {

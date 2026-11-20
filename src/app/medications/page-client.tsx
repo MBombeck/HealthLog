@@ -2,7 +2,13 @@
 
 import type { MedicationCourseFields } from "@/components/medications/course-fields";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -34,15 +40,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/ui/empty-state";
-import { FilterBar, FilterBarSelect } from "@/components/ui/filter-bar";
 import { MedicationCategoriesSheet } from "@/components/medications/medication-categories-sheet";
+import { MedicationFilterRail } from "@/components/medications/medication-filter-rail";
 import { useMedicationCategories } from "@/components/medications/use-medication-categories";
 import {
   ALL_MEDICATION_CATEGORIES,
   effectiveCategoryFilter as resolveCategoryFilter,
-  filterMedicationsByCategory,
   medicationCategoryOptions,
 } from "@/lib/medications/category-filter";
+import {
+  filterMedications,
+  type MedicationListFilters,
+} from "@/lib/medications/medication-list-filters";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -52,6 +61,7 @@ import {
   Loader2,
   Pill,
   Plus,
+  Search,
   Wrench,
 } from "lucide-react";
 import { apiGet } from "@/lib/api/api-fetch";
@@ -296,6 +306,52 @@ export default function MedicationsPageClient() {
   // v1.40 (#1041) — the category filter and the manage sheet it opens.
   const [categoryFilter, setCategoryFilter] = useCategoryFilter();
   const [manageCategoriesOpen, setManageCategoriesOpen] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const [fromDay, setFromDay] = useState("");
+  const [toDay, setToDay] = useState("");
+
+  const resetAllFilters = useCallback(() => {
+    setSearchText("");
+    setCategoryFilter(ALL_CATEGORIES);
+    setFromDay("");
+    setToDay("");
+  }, [setCategoryFilter]);
+
+  // "/" focuses the search field unless typing in an input/textarea or open dialog
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.key !== "/" ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey ||
+        event.defaultPrevented ||
+        event.isComposing
+      ) {
+        return;
+      }
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable ||
+          target.closest(
+            '[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]',
+          ))
+      ) {
+        return;
+      }
+      const input = searchInputRef.current;
+      if (!input || !input.isConnected) return;
+      event.preventDefault();
+      input.focus();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
   // Renaming, hiding and deleting a category stay with the owner (the edit
   // route is owner-only, like the cycle symptom vocabulary's).
   const canManageCategories = !inSharedRecord;
@@ -500,14 +556,20 @@ export default function MedicationsPageClient() {
   const tableView = layout.view === "table";
   // The filter narrows what the list shows; the due set and the log-intake
   // dialog below keep reading every medication.
-  const shownActiveMeds = filterMedicationsByCategory(
-    activeMeds,
-    effectiveCategoryFilter,
-  );
-  const shownInactiveMeds = filterMedicationsByCategory(
-    inactiveMeds,
-    effectiveCategoryFilter,
-  );
+  const filters: MedicationListFilters = {
+    q: searchText,
+    category: effectiveCategoryFilter,
+    fromDay,
+    toDay,
+  };
+  const isFiltered =
+    searchText.trim() !== "" ||
+    effectiveCategoryFilter !== ALL_CATEGORIES ||
+    fromDay !== "" ||
+    toDay !== "";
+  const shownActiveMeds = filterMedications(activeMeds, filters);
+  const shownInactiveMeds = filterMedications(inactiveMeds, filters);
+  const totalMatches = shownActiveMeds.length + shownInactiveMeds.length;
 
   // v1.16.11 (#316) — the currently-due set, derived from the list payload
   // the page already holds via the SAME pipeline a card's pill runs (band
@@ -611,32 +673,25 @@ export default function MedicationsPageClient() {
         }
       />
 
-      {showCategoryFilter && !isLoading && !isError && (
-        <FilterBar
-          isFiltered={effectiveCategoryFilter !== ALL_CATEGORIES}
-          onReset={() => setCategoryFilter(ALL_CATEGORIES)}
-        >
-          <FilterBarSelect
-            label={t("medications.category.filter.label")}
-            value={effectiveCategoryFilter}
-            onValueChange={setCategoryFilter}
-            options={categoriesInUse}
-            allValue={ALL_CATEGORIES}
-            allLabel={t("medications.category.filter.all")}
-          />
-          {canManageCategories && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-foreground min-h-11 shrink-0 rounded-full sm:min-h-9"
-              onClick={() => setManageCategoriesOpen(true)}
-              data-slot="medication-categories-manage"
-            >
-              {t("medications.category.custom.manage")}
-            </Button>
-          )}
-        </FilterBar>
+      {medsArray.length > 0 && !isLoading && !isError && (
+        <MedicationFilterRail
+          searchText={searchText}
+          onSearchChange={setSearchText}
+          searchInputRef={searchInputRef}
+          category={effectiveCategoryFilter}
+          onCategoryChange={setCategoryFilter}
+          categoryOptions={categoriesInUse}
+          canManageCategories={canManageCategories}
+          onOpenManageCategories={() => setManageCategoriesOpen(true)}
+          showCategoryFilter={showCategoryFilter}
+          fromDay={fromDay}
+          toDay={toDay}
+          onFromDayChange={setFromDay}
+          onToDayChange={setToDay}
+          onResetFilters={resetAllFilters}
+          isFiltered={isFiltered}
+          total={totalMatches}
+        />
       )}
 
       {isLoading || isLayoutLoading ? (
@@ -680,6 +735,17 @@ export default function MedicationsPageClient() {
                 {t("medications.firstMedication")}
               </Button>
             ) : undefined
+          }
+        />
+      ) : totalMatches === 0 ? (
+        <EmptyState
+          icon={<Search className="size-6" />}
+          title={t("medications.filter.noMatchesTitle")}
+          description={t("medications.filter.noMatchesDescription")}
+          action={
+            <Button variant="outline" size="sm" onClick={resetAllFilters}>
+              {t("dataList.resetFilters")}
+            </Button>
           }
         />
       ) : tableView ? (

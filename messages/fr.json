@@ -2680,6 +2680,17 @@
       "saveError": "La composition n’a pas pu être enregistrée",
       "catalogError": "La liste des nutriments n’a pas pu être chargée",
       "invalidRow": "Choisissez un nutriment et saisissez une quantité supérieure à zéro sur chaque ligne."
+    },
+    "filter": {
+      "searchPlaceholder": "Rechercher un médicament…",
+      "searchLabel": "Rechercher des médicaments",
+      "clearSearch": "Effacer la recherche",
+      "treatmentPeriod": "Période de traitement",
+      "noMatchesTitle": "Aucun médicament trouvé",
+      "noMatchesDescription": "Essayez d'ajuster votre recherche ou vos filtres.",
+      "countOne": "{count} médicament",
+      "countFew": "{count} médicaments",
+      "countOther": "{count} médicaments"
     }
   },
   "charts": {

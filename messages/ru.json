@@ -2680,6 +2680,17 @@
       "saveError": "Не удалось сохранить состав",
       "catalogError": "Не удалось загрузить список нутриентов",
       "invalidRow": "Выберите нутриент и укажите количество больше нуля в каждой строке."
+    },
+    "filter": {
+      "searchPlaceholder": "Поиск лекарства…",
+      "searchLabel": "Поиск лекарств",
+      "clearSearch": "Очистить поиск",
+      "treatmentPeriod": "Период лечения",
+      "noMatchesTitle": "Лекарства не найдены",
+      "noMatchesDescription": "Попробуйте изменить поисковый запрос или фильтры.",
+      "countOne": "{count} лекарство",
+      "countFew": "{count} лекарства",
+      "countOther": "{count} лекарств"
     }
   },
   "charts": {

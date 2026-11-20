@@ -108,7 +108,7 @@ describe("/medications — category filter", () => {
       med("m2", "Tamiflu", KEY, "Travel kit"),
     ]);
     expect(html).toContain('data-slot="filter-bar"');
-    expect(html).toContain('data-slot="filter-bar-pill"');
+    expect(html).toContain('aria-label="Category"');
     // The card badge reads the person's own label, not "Other".
     expect(html).toContain("Travel kit");
   });
@@ -118,7 +118,8 @@ describe("/medications — category filter", () => {
       med("m1", "Levothyroxine", "THYROID"),
       med("m2", "Liothyronine", "THYROID"),
     ]);
-    expect(html).not.toContain('data-slot="filter-bar"');
+    expect(html).not.toContain('aria-label="Category"');
+    expect(html).not.toContain('data-slot="medication-categories-manage"');
   });
 
   it("shows the filter, with its manage entry, when the record has categories of its own", () => {

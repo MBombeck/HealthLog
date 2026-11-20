@@ -2680,6 +2680,17 @@
       "saveError": "De samenstelling kan niet worden opgeslagen",
       "catalogError": "De lijst met voedingsstoffen kan niet worden geladen",
       "invalidRow": "Kies in elke regel een voedingsstof en voer een hoeveelheid groter dan nul in."
+    },
+    "filter": {
+      "searchPlaceholder": "Medicijn zoeken…",
+      "searchLabel": "Medicijnen zoeken",
+      "clearSearch": "Zoekopdracht wissen",
+      "treatmentPeriod": "Behandelperiode",
+      "noMatchesTitle": "Geen passende medicijnen",
+      "noMatchesDescription": "Probeer je zoekopdracht of filters aan te passen.",
+      "countOne": "{count} medicijn",
+      "countFew": "{count} medicijnen",
+      "countOther": "{count} medicijnen"
     }
   },
   "charts": {

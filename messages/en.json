@@ -2680,6 +2680,17 @@
       "saveError": "The composition could not be saved",
       "catalogError": "The list of nutrients could not be loaded",
       "invalidRow": "Choose a nutrient and enter an amount above zero in every line."
+    },
+    "filter": {
+      "searchPlaceholder": "Search medication…",
+      "searchLabel": "Search medications",
+      "clearSearch": "Clear search",
+      "treatmentPeriod": "Treatment period",
+      "noMatchesTitle": "No matching medications",
+      "noMatchesDescription": "Try adjusting your search query or filters.",
+      "countOne": "{count} medication",
+      "countFew": "{count} medications",
+      "countOther": "{count} medications"
     }
   },
   "charts": {

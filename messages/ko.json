@@ -2680,6 +2680,17 @@
       "saveError": "성분을 저장하지 못했어요",
       "catalogError": "영양소 목록을 불러오지 못했어요",
       "invalidRow": "모든 줄에서 영양소를 고르고 0보다 큰 함량을 입력하세요."
+    },
+    "filter": {
+      "searchPlaceholder": "약물 검색…",
+      "searchLabel": "약물 검색",
+      "clearSearch": "검색어 지우기",
+      "treatmentPeriod": "치료 기간",
+      "noMatchesTitle": "일치하는 약물 없음",
+      "noMatchesDescription": "검색어 또는 필터를 조정해 보세요.",
+      "countOne": "{count}개 약물",
+      "countFew": "{count}개 약물",
+      "countOther": "{count}개 약물"
     }
   },
   "charts": {
