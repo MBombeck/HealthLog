@@ -66,7 +66,10 @@ vi.mock("@/hooks/use-auth", () => ({
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { SettingsSectionFrame } from "./section-frame-harness";
-import { MedicationsSection } from "../medications-section";
+import {
+  MedicationsSection,
+  clearSubmittedDraft,
+} from "../medications-section";
 import { primeLocales } from "@/__tests__/helpers/prime-locales";
 
 primeLocales("de");
@@ -161,6 +164,24 @@ describe("<MedicationsSection> — SSR smoke", () => {
     expect(grouped).toContain("innerhalb jeder Kategorie");
   });
 
+  it("renders the category order card when grouping is on, with the order description", () => {
+    queryState.layout = {
+      version: 1,
+      view: "cards",
+      order: [],
+      groupBy: "category",
+      groupsOpen: "expanded",
+      categoryOrder: [],
+    };
+    const html = render("de");
+    expect(html).toContain('id="medications-category-order"');
+    expect(html).toContain('data-slot="medications-category-order-editor"');
+    expect(html).toContain("innerhalb jeder Kategorie");
+    // A clean draft shows no Save or Cancel button.
+    expect(html).not.toContain(">Speichern<");
+    expect(html).not.toContain(">Abbrechen<");
+  });
+
   it("feeds the editor the saved order (active block re-sorted by layout.order)", () => {
     // Alphabetical default would put Aspirin first; the saved order pins
     // Ramipril to the top — the editor must open showing exactly what
@@ -168,5 +189,17 @@ describe("<MedicationsSection> — SSR smoke", () => {
     queryState.layout = { version: 1, view: "cards", order: ["a1", "a2"] };
     const html = render();
     expect(html.indexOf("Ramipril")).toBeLessThan(html.indexOf("Aspirin"));
+  });
+});
+
+describe("clearSubmittedDraft", () => {
+  it("clears the draft that was saved, but keeps edits made while the save was in flight", () => {
+    const saved = ["BLOOD_PRESSURE", "PAIN_RELIEF"];
+    const editedDuringSave = ["PAIN_RELIEF", "BLOOD_PRESSURE"];
+
+    expect(clearSubmittedDraft(saved, saved)).toBeNull();
+    expect(clearSubmittedDraft(editedDuringSave, saved)).toEqual(
+      editedDuringSave,
+    );
   });
 });

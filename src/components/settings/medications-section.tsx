@@ -1,7 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { FolderTree, LayoutGrid, ListOrdered } from "lucide-react";
+import {
+  FolderTree,
+  Layers,
+  LayoutGrid,
+  ListOrdered,
+  Loader2,
+} from "lucide-react";
 
 import {
   MedicationOrderEditor,
@@ -9,6 +16,11 @@ import {
 } from "@/components/medications/medication-order-editor";
 import { MedicationViewToggle } from "@/components/medications/medication-view-toggle";
 import { SettingsCard } from "@/components/settings/settings-card";
+import {
+  ModuleOrderEditor,
+  type ReorderItem,
+} from "@/components/module-list/module-order-editor";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Segmented } from "@/components/ui/segmented";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
@@ -17,10 +29,18 @@ import { useTranslations } from "@/lib/i18n/context";
 import { applyMedicationOrder } from "@/lib/medications/medication-order";
 import { queryKeys } from "@/lib/query-keys";
 import { useMedicationListLayout } from "@/lib/queries/use-medication-list-layout";
-import type {
-  MedicationGroupBy,
-  MedicationGroupsOpen,
+import {
+  sortMedicationCategoriesByDefault,
+  type MedicationGroupBy,
+  type MedicationGroupsOpen,
 } from "@/lib/medication-list-layout";
+import {
+  applyCategoryOrder,
+  mergeCategoryOrder,
+} from "@/lib/settings/module-list-layout";
+import { MEDICATION_CATEGORY_VALUES } from "@/lib/validations/medication";
+import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
+import { useMedicationCategories } from "@/components/medications/use-medication-categories";
 
 /**
  * v1.16.10 — the "Medikamente" settings section. v1.18.0 (S5) promoted it
@@ -54,8 +74,14 @@ interface MedicationListEntry {
 
 export function MedicationsSection() {
   const { t } = useTranslations();
-  const { layout, isLayoutLoading, setView, setGroupBy, setGroupsOpen } =
-    useMedicationListLayout();
+  const {
+    layout,
+    isLayoutLoading,
+    setView,
+    setGroupBy,
+    setGroupsOpen,
+    saveCategoryOrder,
+  } = useMedicationListLayout();
 
   const { data: medications, isLoading } = useQuery({
     queryKey: queryKeys.medications(),
@@ -109,6 +135,14 @@ export function MedicationsSection() {
         onGroupBy={setGroupBy}
         onGroupsOpen={setGroupsOpen}
       />
+
+      {/* Category ordering for built-in and custom categories */}
+      {(layout.groupBy ?? "none") === "category" ? (
+        <MedicationsCategoryOrderCard
+          savedCategoryOrder={layout.categoryOrder ?? []}
+          onSave={saveCategoryOrder}
+        />
+      ) : null}
 
       {/* Manual order — applies to both list views. */}
       <SettingsCard id="medications-order" className="scroll-mt-28">
@@ -202,6 +236,138 @@ function MedicationsGroupingCard({
           />
         </div>
       ) : null}
+    </SettingsCard>
+  );
+}
+
+/**
+ * Resolves the draft after a save attempt: if successful, clears only the
+ * exact submitted snapshot. Any in-flight reorders made while the PUT was
+ * pending are preserved in the current draft.
+ */
+export function clearSubmittedDraft(
+  current: string[] | null,
+  submitted: string[],
+): string[] | null {
+  return current === submitted ? null : current;
+}
+
+export function MedicationsCategoryOrderCard({
+  savedCategoryOrder,
+  onSave,
+}: {
+  savedCategoryOrder: readonly string[];
+  onSave: (categoryOrder: string[]) => Promise<boolean>;
+}) {
+  const { t } = useTranslations();
+  const customCategories = useMedicationCategories();
+  const [saving, setSaving] = useState(false);
+  const [draftOrder, setDraftOrder] = useState<string[] | null>(null);
+
+  // Built-in categories:
+  // Default order follows Labs patterns: built-ins (excluding OTHER), then custom categories, then OTHER last.
+  const builtInsWithoutOther = MEDICATION_CATEGORY_VALUES.filter(
+    (c) => c !== "OTHER",
+  ).map((c) => ({
+    key: c,
+    label: getMedicationCategoryLabel(c, t),
+  }));
+
+  const customItems = (customCategories.data ?? []).map((c) => ({
+    key: c.key,
+    label: c.label,
+  }));
+
+  const otherItem = {
+    key: "OTHER",
+    label: getMedicationCategoryLabel("OTHER", t),
+  };
+
+  const defaultCategories = sortMedicationCategoriesByDefault([
+    ...builtInsWithoutOther,
+    ...customItems,
+    otherItem,
+  ]);
+
+  const effectiveOrder = draftOrder ?? savedCategoryOrder;
+  const orderedCategories = applyCategoryOrder(
+    defaultCategories,
+    effectiveOrder,
+    "OTHER",
+  );
+
+  const reorderItems: ReorderItem[] = orderedCategories.map((c) => ({
+    id: c.key,
+    name: c.label,
+  }));
+
+  const dirty = draftOrder !== null;
+
+  async function handleSave() {
+    if (saving || !draftOrder) return;
+    const submitted = draftOrder;
+    setSaving(true);
+    const merged = mergeCategoryOrder(submitted, savedCategoryOrder);
+    let ok = false;
+    try {
+      ok = await onSave(merged);
+    } finally {
+      setSaving(false);
+    }
+    if (ok) {
+      setDraftOrder((current) => clearSubmittedDraft(current, submitted));
+    }
+  }
+
+  function handleCancel() {
+    setDraftOrder(null);
+  }
+
+  return (
+    <SettingsCard id="medications-category-order" className="scroll-mt-28">
+      <SettingsCardHeader
+        icon={Layers}
+        title={t("medications.groups.orderHeading")}
+        description={t("medications.groups.orderDefault", {
+          other: t("medications.categoryOther"),
+        })}
+      />
+      {customCategories.isLoading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 3 }, (_, i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
+        </div>
+      ) : (
+        <div
+          className="space-y-4"
+          data-slot="medications-category-order-editor"
+        >
+          <ModuleOrderEditor items={reorderItems} onChange={setDraftOrder} />
+          {dirty && (
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancel}
+                disabled={saving}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => void handleSave()}
+                disabled={saving}
+              >
+                {saving && (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+                )}
+                {t("common.save")}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
     </SettingsCard>
   );
 }

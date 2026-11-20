@@ -2702,7 +2702,9 @@
       "openExpanded": "Todas",
       "openFlagged": "Solo pendientes",
       "openCollapsed": "Ninguna",
-      "orderWithinGroups": "El orden se aplica dentro de cada categoría."
+      "orderWithinGroups": "El orden se aplica dentro de cada categoría.",
+      "orderHeading": "Orden de las categorías",
+      "orderDefault": "Hasta que muevas una, las categorías integradas siguen un orden fijo, las tuyas van por orden alfabético y {other} al final."
     }
   },
   "charts": {
