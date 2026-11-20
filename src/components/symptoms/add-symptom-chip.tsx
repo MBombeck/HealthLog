@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/popover";
 import { ApiError } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
+import { MAX_ACTIVE_SYMPTOM_DEFINITIONS } from "@/lib/symptoms/shared";
 
 import { SymptomIconPicker } from "./symptom-icon-picker";
 import { useCreateSymptomDefinition } from "./use-symptoms";
@@ -58,6 +59,13 @@ export function AddSymptomChip({
   const limitReached =
     create.error instanceof ApiError &&
     create.error.meta?.errorCode === "symptoms.definition.limitReached";
+  // The server names its cap on the refusal; the constant is the same number.
+  const refusedLimit =
+    create.error instanceof ApiError ? create.error.meta?.limit : undefined;
+  const refusedAt =
+    typeof refusedLimit === "number"
+      ? refusedLimit
+      : MAX_ACTIVE_SYMPTOM_DEFINITIONS;
 
   return (
     <Popover
@@ -108,7 +116,7 @@ export function AddSymptomChip({
         {create.isError ? (
           <p className="text-destructive text-sm" role="alert">
             {limitReached
-              ? t("symptoms.limitReached")
+              ? t("symptoms.limitReached", { limit: refusedAt })
               : t("symptoms.saveError")}
           </p>
         ) : null}

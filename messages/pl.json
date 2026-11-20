@@ -169,7 +169,7 @@
     },
     "symptoms": {
       "definition": {
-        "limitReached": "Masz 8 objawów. Ukryj jeden, aby dodać kolejny.",
+        "limitReached": "Osiągnięto limit objawów. Ukryj jeden, aby dodać kolejny.",
         "notFound": "Ten objaw już nie istnieje."
       },
       "episode": {
@@ -13937,7 +13937,7 @@
       "Thermometer": "Termometr",
       "Stethoscope": "Stetoskop"
     },
-    "limitReached": "Masz 8 objawów. Ukryj jeden, aby dodać kolejny.",
+    "limitReached": "Masz {limit} objawów. Ukryj jeden, aby dodać kolejny.",
     "saveError": "Nie udało się zapisać objawu. Spróbuj ponownie.",
     "nameRequired": "Nadaj objawowi nazwę.",
     "unreadableLabel": "Nieczytelny objaw",
@@ -13963,7 +13963,9 @@
       "limitHint": "Do {limit} objawów. Ukryj jeden na stronie chorób, aby dodać kolejny.",
       "intensityFor": "Nasilenie: {symptom}",
       "partlySaved": "Zapisano {saved} z {total}, reszta jest nadal zaznaczona.",
-      "severalHint": "Wybierz kilka, jeśli wystąpiły razem."
+      "severalHint": "Wybierz kilka, jeśli wystąpiły razem.",
+      "filterPlaceholder": "Szukaj objawu",
+      "filterEmpty": "Żaden objaw nie pasuje."
     },
     "section": {
       "title": "Twoje objawy",
