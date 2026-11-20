@@ -51,9 +51,14 @@ export const SUB_SHELL_GRID_FLOOR =
  * re-rasterised the text of every page (the antialiasing moved on every
  * screen), and forms a stacking context that would trap the bottom bar's
  * z-index under the Coach button and the toasts.
+ *
+ * The bottom edge is `--viewport-bottom` rather than 0: an installed iOS app
+ * can be handed a layout viewport that ends short of the screen by the status
+ * bar's height, and the shell then stopped short with it
+ * (`src/lib/pwa/standalone-viewport-gap.ts`). Everywhere else it is 0.
  */
 export const SHELL_ROOT_CLASS =
-  "shell-safe-area absolute inset-0 flex flex-col";
+  "shell-safe-area absolute inset-x-0 top-0 bottom-(--viewport-bottom) flex flex-col";
 
 /**
  * `<main>`, the shell's one vertical scroller. Phone shell: it clears the
