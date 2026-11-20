@@ -78,11 +78,6 @@ const ALLOWLIST: Record<string, { max: number; reason: string }> = {
     reason:
       "the cases pin the clock with fake timers; the history read starts on the fixed day the course was ended",
   },
-  "tests/integration/symptoms.test.ts": {
-    max: 1,
-    reason:
-      "the discovery matrix reads from a fixed since forward; the fixture days stay inside it as now moves on",
-  },
   "tests/integration/dense-series-dst-hour.test.ts": {
     max: 1,
     reason:

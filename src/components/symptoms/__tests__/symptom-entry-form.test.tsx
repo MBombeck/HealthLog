@@ -11,6 +11,9 @@
  *     episode that ran on the chosen day" goes red;
  *   - render the add chip unconditionally → "a delegate who may log but not
  *     manage gets no add chip" goes red;
+ *   - offer the filter field at any length → "offers no filter on a short
+ *     row" goes red; never offer it → "offers a filter once the row is long,
+ *     and keeps every chip until something is typed" goes red;
  *   - drop the `definitions.isError` branch → "a failed read shows the error
  *     row, not the empty hint" goes red (the empty hint renders instead).
  */
@@ -20,6 +23,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 const state = vi.hoisted(() => ({
   canManage: true,
   definitionsFailed: false,
+  /** Further symptoms after Aura and Headache, to grow the chip row. */
+  extra: 0,
   episodes: [] as Array<{
     id: string;
     label: string;
@@ -48,7 +53,7 @@ vi.mock("../use-symptoms", () => ({
           isLoading: false,
           isError: false,
           data: {
-            limit: 8,
+            limit: 30,
             definitions: [
               {
                 id: "d1",
@@ -56,6 +61,7 @@ vi.mock("../use-symptoms", () => ({
                 icon: "Zap",
                 sortOrder: 0,
                 isActive: true,
+                code: null,
                 recent: {
                   count30d: 0,
                   maxIntensity30d: null,
@@ -68,12 +74,26 @@ vi.mock("../use-symptoms", () => ({
                 icon: "Brain",
                 sortOrder: 1,
                 isActive: true,
+                code: null,
                 recent: {
                   count30d: 0,
                   maxIntensity30d: null,
                   lastOccurredAt: null,
                 },
               },
+              ...Array.from({ length: state.extra }, (_, i) => ({
+                id: `x${i}`,
+                label: `Extra ${i}`,
+                icon: "Tag",
+                sortOrder: 2 + i,
+                isActive: true,
+                code: null,
+                recent: {
+                  count30d: 0,
+                  maxIntensity30d: null,
+                  lastOccurredAt: null,
+                },
+              })),
             ],
           },
         },
@@ -172,6 +192,28 @@ describe("<SymptomEntryForm>", () => {
       expect(html).not.toContain('data-testid="symptom-add-chip"');
     } finally {
       state.definitionsFailed = false;
+    }
+  });
+
+  it("offers no filter on a short row", () => {
+    state.canManage = true;
+    state.extra = 0;
+    expect(render()).not.toContain('data-testid="symptom-chip-filter"');
+  });
+
+  it("offers a filter once the row is long, and keeps every chip until something is typed", () => {
+    state.canManage = true;
+    state.extra = 28;
+    try {
+      const html = render();
+      expect(html).toContain('data-testid="symptom-chip-filter"');
+      expect(html).toContain('placeholder="Find a symptom"');
+      expect(html.match(/data-testid="symptom-chip"/g)).toHaveLength(30);
+      // Thirty named symptoms is the cap: no add chip, and the hint names it.
+      expect(html).not.toContain('data-testid="symptom-add-chip"');
+      expect(html).toContain("Up to 30 symptoms.");
+    } finally {
+      state.extra = 0;
     }
   });
 });

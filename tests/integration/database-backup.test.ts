@@ -391,7 +391,10 @@ describe("the nightly database dump", { shuffle: false }, () => {
       directoryStatus: layer,
     });
     vi.unstubAllEnvs();
+    // `error` first in the shape: a failed upload then prints its reason in
+    // the diff instead of only "failed".
     expect(uploaded).toMatchObject({
+      error: null,
       status: "succeeded",
       local: "not_persistent",
       offhost: "uploaded",

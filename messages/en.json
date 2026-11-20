@@ -169,7 +169,7 @@
     },
     "symptoms": {
       "definition": {
-        "limitReached": "You have 8 symptoms. Hide one to add another.",
+        "limitReached": "You have reached the symptom limit. Hide one to add another.",
         "notFound": "This symptom no longer exists."
       },
       "episode": {
@@ -12458,6 +12458,7 @@
       "uploadedMeta": "Added {date}, {size}",
       "importedFrom": "Imported from {system}",
       "importedFromWithId": "Imported from {system}, ID {id}",
+      "openInSource": "Open in {system}",
       "sourceOther": "another system",
       "share": "Share",
       "labValuesLink": "View {count} lab values",
@@ -13940,7 +13941,7 @@
       "Thermometer": "Thermometer",
       "Stethoscope": "Stethoscope"
     },
-    "limitReached": "You have 8 symptoms. Hide one to add another.",
+    "limitReached": "You have {limit} symptoms. Hide one to add another.",
     "saveError": "Couldn't save the symptom. Please try again.",
     "nameRequired": "Give the symptom a name.",
     "unreadableLabel": "Unreadable symptom",
@@ -13966,7 +13967,9 @@
       "limitHint": "Up to {limit} symptoms. Hide one on the illness page to add another.",
       "intensityFor": "Intensity: {symptom}",
       "partlySaved": "{saved} of {total} saved, the rest is still picked.",
-      "severalHint": "Pick several if they came together."
+      "severalHint": "Pick several if they came together.",
+      "filterPlaceholder": "Find a symptom",
+      "filterEmpty": "No symptom matches."
     },
     "section": {
       "title": "Your symptoms",

@@ -39,7 +39,7 @@ vi.mock("../use-symptoms", () => ({
     isError: false,
     refetch: vi.fn(),
     data: {
-      limit: 8,
+      limit: 30,
       definitions: [
         { id: "aura", label: "Aura", icon: "Zap", isActive: true },
         { id: "headache", label: "Headache", icon: "Brain", isActive: true },

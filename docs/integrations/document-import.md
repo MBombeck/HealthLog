@@ -1,17 +1,27 @@
 # Importing documents from Paperless-ngx or Papra
 
 HealthLog's document vault can take documents from another document system
-without you uploading them one by one. There are two ways in, and both use
-the same kind of credential: a **document token**.
+without you uploading them one by one. There are three ways in.
 
+- The **archive picker** searches your Paperless-ngx or Papra from inside
+  HealthLog and imports the documents you tick. You connect the archive once
+  under **Settings → Integrations → Document archives**; the operator has to
+  allow its address first. See
+  [the document picker](../self-hosting/document-sources.md).
 - **Paperless-ngx** can send each newly tagged document to HealthLog by
   itself, through a workflow. Good for new documents as they arrive.
 - The **import script** copies documents from Paperless-ngx or Papra in one
   go. Good for the archive you already have, and, run on a schedule, for
   keeping Papra in step.
 
-HealthLog never holds a password or token for Paperless-ngx or Papra. They
-push into HealthLog; HealthLog does not reach into them.
+The workflow and the import script push into HealthLog with a **document
+token** and give HealthLog no credential for the archive. The archive picker
+works the other way round: the connection stores an API token for your
+Paperless-ngx or Papra, encrypted at rest, and HealthLog uses it to search
+the archive and fetch the documents you pick. Delete the connection under
+Settings to remove that token.
+
+The rest of this page covers the workflow and the import script.
 
 ## 1. Turn on Documents and create a document token
 
@@ -222,13 +232,40 @@ adds what is new. `--since` keeps each run short.
 HealthLog keeps its own encrypted copy of each document, so an imported
 archive takes space in both systems. The preview, text search, lab import,
 the doctor report and sharing all need the file itself, which is why
-HealthLog does not link to documents stored elsewhere.
+HealthLog keeps a copy instead of only linking to documents stored elsewhere.
 
 The default storage limit is 1 GB per person, counting deleted documents
 until they are removed for good 30 days later. Run the script with
 `--dry-run` to see how much an import needs. An admin can raise the limit in
 the admin area, for everyone or for one account. If storage runs out during
 an import, the script stops and says so; raise the limit and run it again.
+
+## Opening the original
+
+An imported document's detail sheet says where it came from, for example
+"Imported from Paperless-ngx, ID 123". When you have connected that archive
+under **Settings → Integrations → Document archives**, the sheet also shows
+**Open in Paperless-ngx** (or **Open in Papra**), which opens the document's
+page in the archive in a new tab. The link is built by the server from your
+connection, not from anything the import sent:
+
+- Paperless-ngx: `<base address>/documents/<id>/details`
+- Papra: `<base address>/organizations/<organization>/documents/<id>`
+
+It is shown only when the document's system matches the connection, the id
+has that system's shape, the document's stored instance (if any) is the
+connection's address, and the operator still allows that address. It is
+shown to you alone: a person you share your record with, a guardian, a
+clinician share link and the MCP server never get it. For Papra the link uses the connection's organization, so a copy
+imported from another organization opens Papra's not-found page. The link
+also assumes the connection's address opens in your browser; an archive the
+server reaches under an internal name will not.
+
+A document imported without `sourceInstance` (an older import, or a script
+that did not send it) is linked to whichever archive is connected now. If you
+have since connected a different Paperless-ngx or Papra, its link opens the
+document with the same id there, which may be another document. Sending
+`sourceInstance` with each import avoids that.
 
 ## Source ids
 

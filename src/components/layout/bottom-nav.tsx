@@ -200,15 +200,14 @@ export function BottomNav() {
           `bg-card` + `border-t` give the bar a clean visual edge so page
           content that scrolls under the bar is occluded, not bleeding
           through. */}
-      {/* The side insets keep the outer tabs clear of the notch on a phone
-          held sideways. `data-keyboard-hide`: while the on-screen keyboard
-          is open the bar steps aside (globals.css) instead of floating
-          over the field being typed into. */}
+      {/* Side insets: clear of the notch held sideways. Keyboard open: the
+          bar steps aside, not over the field. `--viewport-bottom`: on the
+          screen's edge, where an installed iOS app lays out short of it. */}
       <nav
         aria-label={t("nav.mobileNavigation")}
         data-slot="bottom-nav"
         data-keyboard-hide=""
-        className="bg-card border-border shell-desktop:hidden fixed bottom-0 left-0 z-50 min-h-16 w-full border-t pr-[env(safe-area-inset-right)] pb-(--safe-area-bottom) pl-[env(safe-area-inset-left)] backdrop-blur-md"
+        className="bg-card border-border shell-desktop:hidden fixed bottom-(--viewport-bottom) left-0 z-50 min-h-16 w-full border-t pr-[env(safe-area-inset-right)] pb-(--safe-area-bottom) pl-[env(safe-area-inset-left)] backdrop-blur-md"
       >
         <div className="mx-auto flex h-16 max-w-lg items-stretch justify-around px-1">
           {primaryLeft.map(renderPrimary)}

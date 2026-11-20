@@ -142,6 +142,11 @@ vi.mock("next/headers", () => ({
   })),
 }));
 
+const listConnections = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/documents/sources/connections", () => ({
+  listConnections: (...a: unknown[]) => listConnections(...a),
+}));
+
 import { createHash } from "node:crypto";
 
 import { POST, GET } from "../route";
@@ -221,39 +226,29 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
   vi.mocked(requireModuleEnabled).mockResolvedValue({ enabled: true } as never);
-  vi.mocked(prisma.extractedFact.groupBy).mockResolvedValue([] as never);
-  vi.mocked(prisma.encounterDocumentLink.findMany).mockResolvedValue(
-    [] as never,
-  );
-  vi.mocked(prisma.encounter.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.extractedFact.groupBy).mockResolvedValue([]);
+  vi.mocked(prisma.encounterDocumentLink.findMany).mockResolvedValue([]);
+  vi.mocked(prisma.encounter.findMany).mockResolvedValue([]);
   txEncounterFindMany.mockResolvedValue([]);
   txEncounterLinkCreateMany.mockResolvedValue({ count: 0 });
-  vi.mocked(prisma.documentConditionLink.findMany).mockResolvedValue(
-    [] as never,
-  );
-  vi.mocked(prisma.documentThumbnail.findMany).mockResolvedValue([] as never);
-  vi.mocked(prisma.documentContentIndex.findMany).mockResolvedValue(
-    [] as never,
-  );
-  vi.mocked(prisma.inboundDocument.findFirst).mockResolvedValue(null as never);
-  vi.mocked(prisma.documentImportKey.findFirst).mockResolvedValue(
-    null as never,
-  );
-  vi.mocked(prisma.documentSourceAlias.findFirst).mockResolvedValue(
-    null as never,
-  );
+  vi.mocked(prisma.documentConditionLink.findMany).mockResolvedValue([]);
+  vi.mocked(prisma.documentThumbnail.findMany).mockResolvedValue([]);
+  vi.mocked(prisma.documentContentIndex.findMany).mockResolvedValue([]);
+  vi.mocked(prisma.inboundDocument.findFirst).mockResolvedValue(null);
+  vi.mocked(prisma.documentImportKey.findFirst).mockResolvedValue(null);
+  vi.mocked(prisma.documentSourceAlias.findFirst).mockResolvedValue(null);
   vi.mocked(prisma.documentSourceAlias.createMany).mockResolvedValue({
     count: 1,
   } as never);
-  vi.mocked(prisma.documentSourceAlias.count).mockResolvedValue(0 as never);
+  vi.mocked(prisma.documentSourceAlias.count).mockResolvedValue(0);
   // No settings row / no user override → policy defaults (25 MiB / 1 GiB).
-  vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(null as never);
-  vi.mocked(prisma.user.findUnique).mockResolvedValue(null as never);
+  vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(null);
+  vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
   txQueryRaw.mockResolvedValue([{ used: BigInt(0) }]);
   txCreate.mockResolvedValue(docRow() as never);
   txCreateMany.mockResolvedValue({ count: 0 } as never);
   txDocumentFindMany.mockResolvedValue([{ id: "doc-1" }] as never);
-  txEpisodeFindMany.mockResolvedValue([] as never);
+  txEpisodeFindMany.mockResolvedValue([]);
 });
 
 describe("POST /api/documents/inbound (vault upload)", () => {
@@ -378,12 +373,10 @@ describe("POST /api/documents/inbound (vault upload)", () => {
     vi.mocked(requireModuleEnabled).mockResolvedValue({
       enabled: true,
     } as never);
-    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(null as never);
-    vi.mocked(prisma.user.findUnique).mockResolvedValue(null as never);
-    vi.mocked(prisma.inboundDocument.findFirst).mockResolvedValue(
-      null as never,
-    );
-    vi.mocked(prisma.illnessEpisode.findMany).mockResolvedValue([] as never);
+    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(null);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+    vi.mocked(prisma.inboundDocument.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.illnessEpisode.findMany).mockResolvedValue([]);
     res = await post(mkUpload({ episodeIds: ["ep-foreign"] }));
     expect(res.status).toBe(404);
     expect(txCreate).not.toHaveBeenCalled();
@@ -485,8 +478,41 @@ describe("POST /api/documents/inbound (vault upload)", () => {
 });
 
 describe("GET /api/documents/inbound (list)", () => {
+  it("links the owner's imported documents to their archive pages (#1394)", async () => {
+    vi.stubEnv("DOCUMENT_SOURCE_ORIGINS", "https://paperless.example.com");
+    listConnections.mockResolvedValueOnce([
+      {
+        system: "PAPERLESS",
+        baseUrl: "https://paperless.example.com/",
+        organizationId: null,
+        lastVerifiedAt: null,
+      },
+    ]);
+    vi.mocked(prisma.inboundDocument.findMany).mockResolvedValue([
+      docRow({
+        id: "d1",
+        sourceSystem: "PAPERLESS",
+        sourceId: "77",
+        sourceInstance: null,
+      }),
+      docRow({ id: "d2", sourceSystem: null, sourceId: null }),
+    ] as never);
+
+    const res = await get(
+      new Request("http://localhost/api/documents/inbound"),
+    );
+    expect(res.status).toBe(200);
+    const [d1, d2] = (await res.json()).data.documents;
+    expect(d1.sourceUrl).toBe(
+      "https://paperless.example.com/documents/77/details",
+    );
+    expect(d2.sourceUrl).toBeNull();
+    expect(listConnections).toHaveBeenCalledTimes(1);
+    vi.unstubAllEnvs();
+  });
+
   it("never selects the encrypted blob column (omit hardening)", async () => {
-    vi.mocked(prisma.inboundDocument.findMany).mockResolvedValue([] as never);
+    vi.mocked(prisma.inboundDocument.findMany).mockResolvedValue([]);
 
     const res = await get(
       new Request("http://localhost/api/documents/inbound"),
@@ -556,7 +582,7 @@ describe("GET /api/documents/inbound (list)", () => {
   });
 
   it("maps the year filter to a UTC calendar-year documentDate range", async () => {
-    vi.mocked(prisma.inboundDocument.findMany).mockResolvedValue([] as never);
+    vi.mocked(prisma.inboundDocument.findMany).mockResolvedValue([]);
     const res = await get(
       new Request("http://localhost/api/documents/inbound?year=2025"),
     );
@@ -601,7 +627,7 @@ describe("GET /api/documents/inbound (list)", () => {
   });
 
   it("AND-combines the procedure filter with kind, year and condition", async () => {
-    vi.mocked(prisma.inboundDocument.findMany).mockResolvedValue([] as never);
+    vi.mocked(prisma.inboundDocument.findMany).mockResolvedValue([]);
     const res = await get(
       new Request(
         "http://localhost/api/documents/inbound?encounterId=enc-1&kind=IMAGING&year=2025&episodeId=ep-1",
@@ -698,7 +724,7 @@ describe("POST /api/documents/inbound — document import", () => {
   const TOKEN = "hlk_" + "d".repeat(64);
 
   function armToken(permissions: string[]) {
-    vi.mocked(getSession).mockResolvedValue(null as never);
+    vi.mocked(getSession).mockResolvedValue(null);
     vi.mocked(headers).mockResolvedValue({
       get: (name: string) =>
         name.toLowerCase() === "authorization" ? `Bearer ${TOKEN}` : null,
@@ -974,7 +1000,7 @@ describe("POST /api/documents/inbound — document import", () => {
   it("remembers the key when keyed bytes are already stored, and keeps the slot charged", async () => {
     // Own-key lookup misses; the content lookup finds a live row.
     vi.mocked(prisma.inboundDocument.findFirst)
-      .mockResolvedValueOnce(null as never)
+      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(docRow({ id: "doc-manual" }) as never);
     const res = await post(
       mkUpload({ sourceSystem: "PAPRA", sourceId: "doc_9" }),
@@ -1001,9 +1027,9 @@ describe("POST /api/documents/inbound — document import", () => {
 
   it("refuses a further id for bytes already held under the maximum", async () => {
     vi.mocked(prisma.inboundDocument.findFirst)
-      .mockResolvedValueOnce(null as never)
+      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(docRow({ id: "doc-manual" }) as never);
-    vi.mocked(prisma.documentSourceAlias.count).mockResolvedValue(20 as never);
+    vi.mocked(prisma.documentSourceAlias.count).mockResolvedValue(20);
     const res = await post(
       mkUpload({ sourceSystem: "PAPRA", sourceId: "doc_21" }),
     );

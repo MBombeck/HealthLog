@@ -169,7 +169,7 @@
     },
     "symptoms": {
       "definition": {
-        "limitReached": "Vous avez 8 symptômes. Masquez-en un pour en ajouter un autre.",
+        "limitReached": "Vous avez atteint le nombre maximal de symptômes. Masquez-en un pour en ajouter un autre.",
         "notFound": "Ce symptôme n'existe plus."
       },
       "episode": {
@@ -12458,6 +12458,7 @@
       "uploadedMeta": "Ajouté le {date}, {size}",
       "importedFrom": "Importé depuis {system}",
       "importedFromWithId": "Importé depuis {system}, ID {id}",
+      "openInSource": "Ouvrir dans {system}",
       "sourceOther": "un autre système",
       "share": "Partager",
       "labValuesLink": "Voir {count} valeurs de laboratoire",
@@ -13940,7 +13941,7 @@
       "Thermometer": "Thermomètre",
       "Stethoscope": "Stéthoscope"
     },
-    "limitReached": "Vous avez 8 symptômes. Masquez-en un pour en ajouter un autre.",
+    "limitReached": "Vous avez {limit} symptômes. Masquez-en un pour en ajouter un autre.",
     "saveError": "Impossible d'enregistrer le symptôme. Réessayez.",
     "nameRequired": "Donnez un nom au symptôme.",
     "unreadableLabel": "Symptôme illisible",
@@ -13966,7 +13967,9 @@
       "limitHint": "Jusqu'à {limit} symptômes. Masquez-en un sur la page des maladies pour en ajouter un autre.",
       "intensityFor": "Intensité : {symptom}",
       "partlySaved": "{saved} sur {total} enregistrés, le reste est encore sélectionné.",
-      "severalHint": "Choisissez-en plusieurs s’ils sont survenus ensemble."
+      "severalHint": "Choisissez-en plusieurs s’ils sont survenus ensemble.",
+      "filterPlaceholder": "Chercher un symptôme",
+      "filterEmpty": "Aucun symptôme ne correspond."
     },
     "section": {
       "title": "Vos symptômes",

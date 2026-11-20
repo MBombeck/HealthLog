@@ -32,6 +32,7 @@
           "hasThumbnail": false,
           "sourceSystem": null,
           "sourceId": null,
+          "sourceUrl": null,
           "createdAt": "<createdAt>",
           "updatedAt": "<updatedAt>"
         },
@@ -59,6 +60,7 @@
           "hasThumbnail": false,
           "sourceSystem": null,
           "sourceId": null,
+          "sourceUrl": null,
           "createdAt": "<createdAt>",
           "updatedAt": "<updatedAt>"
         }

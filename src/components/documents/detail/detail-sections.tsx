@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   Check,
+  ExternalLink,
   FlaskConical,
   Loader2,
   Pencil,
@@ -17,6 +18,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { DateField } from "@/components/ui/date-field";
+import { InlineAction } from "@/components/ui/inline-action";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -443,8 +445,31 @@ export function DocumentDetailMeta({
               })}
         </p>
       ) : null}
+      {/* The way back to the original (#1394). The server fills the link
+          for the owner alone, from their own archive connection; every
+          other view gets null and this stays absent. */}
+      {doc.sourceSystem && isWebUrl(doc.sourceUrl) ? (
+        <InlineAction asChild tone="muted" className="self-start text-xs">
+          <a
+            href={doc.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-slot="document-detail-source-link"
+          >
+            {t("documents.detail.openInSource", {
+              system: sourceSystemName(doc.sourceSystem),
+            })}
+            <ExternalLink className="size-3" aria-hidden="true" />
+          </a>
+        </InlineAction>
+      ) : null}
     </>
   );
+}
+
+/** Only an http(s) address becomes a link; anything else renders nothing. */
+function isWebUrl(value: string | null): value is string {
+  return value !== null && /^https?:\/\//i.test(value);
 }
 
 /**

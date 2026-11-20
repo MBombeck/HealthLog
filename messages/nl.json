@@ -169,7 +169,7 @@
     },
     "symptoms": {
       "definition": {
-        "limitReached": "Je hebt 8 symptomen. Verberg er een om een ander toe te voegen.",
+        "limitReached": "Je hebt het maximale aantal symptomen bereikt. Verberg er een om een nieuw symptoom toe te voegen.",
         "notFound": "Dit symptoom bestaat niet meer."
       },
       "episode": {
@@ -12458,6 +12458,7 @@
       "uploadedMeta": "Toegevoegd op {date}, {size}",
       "importedFrom": "Geïmporteerd uit {system}",
       "importedFromWithId": "Geïmporteerd uit {system}, ID {id}",
+      "openInSource": "Openen in {system}",
       "sourceOther": "een ander systeem",
       "share": "Delen",
       "labValuesLink": "{count} labwaarden bekijken",
@@ -13940,7 +13941,7 @@
       "Thermometer": "Thermometer",
       "Stethoscope": "Stethoscoop"
     },
-    "limitReached": "Je hebt 8 symptomen. Verberg er een om een nieuw symptoom toe te voegen.",
+    "limitReached": "Je hebt {limit} symptomen. Verberg er een om een nieuw symptoom toe te voegen.",
     "saveError": "Het symptoom kon niet worden opgeslagen. Probeer het opnieuw.",
     "nameRequired": "Geef het symptoom een naam.",
     "unreadableLabel": "Onleesbaar symptoom",
@@ -13966,7 +13967,9 @@
       "limitHint": "Maximaal {limit} symptomen. Verberg er een op de ziektepagina om een ander toe te voegen.",
       "intensityFor": "Intensiteit: {symptom}",
       "partlySaved": "{saved} van {total} opgeslagen, de rest is nog gekozen.",
-      "severalHint": "Kies er meerdere als ze samen optraden."
+      "severalHint": "Kies er meerdere als ze samen optraden.",
+      "filterPlaceholder": "Symptoom zoeken",
+      "filterEmpty": "Geen symptoom komt overeen."
     },
     "section": {
       "title": "Je symptomen",

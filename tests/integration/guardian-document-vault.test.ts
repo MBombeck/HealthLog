@@ -680,3 +680,82 @@ describe("Bearer tokens follow the existing scope rules", () => {
     ).toBe(0);
   });
 });
+
+describe("the link to the archive original stays the owner's (#1394)", () => {
+  async function importedFromPaperless(userId: string) {
+    const prisma = getPrismaClient();
+    const { encrypt } = await import("@/lib/crypto");
+    await prisma.documentSourceConnection.create({
+      data: {
+        userId,
+        system: "PAPERLESS",
+        baseUrl: "https://paperless.example.com/archive",
+        tokenEncrypted: encrypt("paperless-token"),
+      },
+    });
+    const doc = await seedDocument(userId, "Imported letter");
+    await prisma.inboundDocument.update({
+      where: { id: doc.id },
+      data: { sourceSystem: "PAPERLESS", sourceId: "42" },
+    });
+    return doc.id;
+  }
+
+  async function linksSeen(id: string) {
+    const r = await routes();
+    const listed = (await (await r.list()).json()).data.documents as Array<{
+      id: string;
+      sourceUrl: string | null;
+    }>;
+    const detail = (await (await r.detail(id)).json()).data;
+    const patched = (await (await r.rename(id, "Renamed")).json()).data;
+    return {
+      list: listed.find((d) => d.id === id)?.sourceUrl,
+      detail: detail.sourceUrl as string | null,
+      detailSourceId: detail.sourceId as string | null,
+      patch: patched?.sourceUrl as string | null | undefined,
+    };
+  }
+
+  beforeEach(() => {
+    vi.stubEnv("DOCUMENT_SOURCE_ORIGINS", "https://paperless.example.com");
+  });
+
+  it("gives the owner the page in their own archive", async () => {
+    const owner = await makeUser("archive-owner");
+    await signIn(owner.id);
+    const id = await importedFromPaperless(owner.id);
+    const url = "https://paperless.example.com/archive/documents/42/details";
+    expect(await linksSeen(id)).toEqual({
+      list: url,
+      detail: url,
+      detailSourceId: "42",
+      patch: url,
+    });
+  });
+
+  it("gives a guardian inside a managed profile none", async () => {
+    const { profile } = await guardianInside();
+    const id = await importedFromPaperless(profile.id);
+    expect(await linksSeen(id)).toEqual({
+      list: null,
+      detail: null,
+      detailSourceId: "42",
+      patch: null,
+    });
+  });
+
+  it("gives an adult's MANAGE delegate none", async () => {
+    const { owner } = await adultInside("MANAGE");
+    const id = await importedFromPaperless(owner.id);
+    const r = await routes();
+    const listed = (await (await r.list()).json()).data.documents as Array<{
+      id: string;
+      sourceUrl: string | null;
+    }>;
+    expect(listed.find((d) => d.id === id)?.sourceUrl).toBeNull();
+    const detail = (await (await r.detail(id)).json()).data;
+    expect(detail.sourceId).toBe("42");
+    expect(detail.sourceUrl).toBeNull();
+  });
+});
