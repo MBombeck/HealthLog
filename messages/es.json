@@ -2691,6 +2691,18 @@
       "countOne": "{count} medicamento",
       "countFew": "{count} medicamentos",
       "countOther": "{count} medicamentos"
+    },
+    "groups": {
+      "heading": "Categorías",
+      "description": "Agrupa los medicamentos por categoría.",
+      "label": "Agrupación",
+      "none": "Ninguna",
+      "category": "Por categoría",
+      "openLabel": "Abiertas al cargar",
+      "openExpanded": "Todas",
+      "openFlagged": "Solo pendientes",
+      "openCollapsed": "Ninguna",
+      "orderWithinGroups": "El orden se aplica dentro de cada categoría."
     }
   },
   "charts": {

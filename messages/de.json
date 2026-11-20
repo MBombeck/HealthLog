@@ -2691,6 +2691,18 @@
       "countOne": "{count} Medikament",
       "countFew": "{count} Medikamente",
       "countOther": "{count} Medikamente"
+    },
+    "groups": {
+      "heading": "Kategorien",
+      "description": "Gruppiert die Medikamente nach Kategorie.",
+      "label": "Gruppierung",
+      "none": "Keine",
+      "category": "Nach Kategorie",
+      "openLabel": "Beim Öffnen aufgeklappt",
+      "openExpanded": "Alle",
+      "openFlagged": "Nur fällige",
+      "openCollapsed": "Keine",
+      "orderWithinGroups": "Die Reihenfolge gilt innerhalb jeder Kategorie."
     }
   },
   "charts": {

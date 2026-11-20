@@ -2691,6 +2691,18 @@
       "countOne": "{count} medicijn",
       "countFew": "{count} medicijnen",
       "countOther": "{count} medicijnen"
+    },
+    "groups": {
+      "heading": "Categorieën",
+      "description": "Groepeert de medicijnen per categorie.",
+      "label": "Groepering",
+      "none": "Niet",
+      "category": "Per categorie",
+      "openLabel": "Open bij laden",
+      "openExpanded": "Alle",
+      "openFlagged": "Alleen te nemen",
+      "openCollapsed": "Geen",
+      "orderWithinGroups": "De volgorde geldt binnen elke categorie."
     }
   },
   "charts": {

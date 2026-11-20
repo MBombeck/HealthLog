@@ -2691,6 +2691,18 @@
       "countOne": "{count} lek",
       "countFew": "{count} leki",
       "countOther": "{count} leków"
+    },
+    "groups": {
+      "heading": "Kategorie",
+      "description": "Grupuje leki według kategorii.",
+      "label": "Grupowanie",
+      "none": "Brak",
+      "category": "Według kategorii",
+      "openLabel": "Rozwinięte po otwarciu",
+      "openExpanded": "Wszystkie",
+      "openFlagged": "Tylko należne",
+      "openCollapsed": "Żadne",
+      "orderWithinGroups": "Kolejność obowiązuje w obrębie każdej kategorii."
     }
   },
   "charts": {

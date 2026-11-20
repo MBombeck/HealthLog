@@ -2691,6 +2691,18 @@
       "countOne": "{count} farmaco",
       "countFew": "{count} farmaci",
       "countOther": "{count} farmaci"
+    },
+    "groups": {
+      "heading": "Categorie",
+      "description": "Raggruppa i farmaci per categoria.",
+      "label": "Raggruppamento",
+      "none": "Nessuno",
+      "category": "Per categoria",
+      "openLabel": "Aperte al caricamento",
+      "openExpanded": "Tutte",
+      "openFlagged": "Solo da assumere",
+      "openCollapsed": "Nessuna",
+      "orderWithinGroups": "L’ordine vale all’interno di ogni categoria."
     }
   },
   "charts": {

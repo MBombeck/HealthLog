@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { LayoutGrid, ListOrdered } from "lucide-react";
+import { FolderTree, LayoutGrid, ListOrdered } from "lucide-react";
 
 import {
   MedicationOrderEditor,
@@ -10,24 +10,30 @@ import {
 import { MedicationViewToggle } from "@/components/medications/medication-view-toggle";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Segmented } from "@/components/ui/segmented";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { apiGet } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
 import { applyMedicationOrder } from "@/lib/medications/medication-order";
 import { queryKeys } from "@/lib/query-keys";
 import { useMedicationListLayout } from "@/lib/queries/use-medication-list-layout";
+import type {
+  MedicationGroupBy,
+  MedicationGroupsOpen,
+} from "@/lib/medication-list-layout";
 
 /**
  * v1.16.10 — the "Medikamente" settings section. v1.18.0 (S5) promoted it
  * from a Layout-hub child to its own standalone nav entry and gathered the
  * medication-specific preferences here. v1.18.1 (D3) made medications a
  * toggleable fail-open module, so this nav entry hides when the account
- * turns the module off (the medication data routes stay live). Hosts two
- * blocks:
+ * turns the module off (the medication data routes stay live). Hosts:
  *   1. The list VIEW preference — cards vs table, written optimistically
  *      through the same `PUT /api/medications/layout` the page header
  *      toggle uses (the toggle component is shared).
- *   2. The manual ORDER editor — two grouped lists (Aktiv / Inaktiv)
+ *   2. Grouping and default open preferences — the category grouping toggle
+ *      and the open mode (expanded / flagged / collapsed), written optimistically.
+ *   3. The manual ORDER editor — two grouped lists (Aktiv / Inaktiv)
  *      with drag + arrow reordering, flushed by an explicit Save,
  *      persisted as active-ids-then-inactive-ids on the same layout row.
  *
@@ -48,7 +54,8 @@ interface MedicationListEntry {
 
 export function MedicationsSection() {
   const { t } = useTranslations();
-  const { layout, isLayoutLoading, setView } = useMedicationListLayout();
+  const { layout, isLayoutLoading, setView, setGroupBy, setGroupsOpen } =
+    useMedicationListLayout();
 
   const { data: medications, isLoading } = useQuery({
     queryKey: queryKeys.medications(),
@@ -95,12 +102,24 @@ export function MedicationsSection() {
         />
       </SettingsCard>
 
+      {/* Category grouping on/off & default open preference */}
+      <MedicationsGroupingCard
+        groupBy={layout.groupBy ?? "none"}
+        groupsOpen={layout.groupsOpen ?? "expanded"}
+        onGroupBy={setGroupBy}
+        onGroupsOpen={setGroupsOpen}
+      />
+
       {/* Manual order — applies to both list views. */}
       <SettingsCard id="medications-order" className="scroll-mt-28">
         <SettingsCardHeader
           icon={ListOrdered}
           title={t("moduleList.reorder.heading")}
-          description={t("medications.reorderDescription")}
+          description={
+            (layout.groupBy ?? "none") === "category"
+              ? t("medications.groups.orderWithinGroups")
+              : t("medications.reorderDescription")
+          }
         />
         {isLoading || isLayoutLoading ? (
           // Row-shaped placeholders instead of a one-line spinner, so the
@@ -119,5 +138,70 @@ export function MedicationsSection() {
         )}
       </SettingsCard>
     </div>
+  );
+}
+
+function MedicationsGroupingCard({
+  groupBy,
+  groupsOpen,
+  onGroupBy,
+  onGroupsOpen,
+}: {
+  groupBy: MedicationGroupBy;
+  groupsOpen: MedicationGroupsOpen;
+  onGroupBy: (value: MedicationGroupBy) => void;
+  onGroupsOpen: (value: MedicationGroupsOpen) => void;
+}) {
+  const { t } = useTranslations();
+  return (
+    <SettingsCard id="medications-groups" className="scroll-mt-28">
+      <SettingsCardHeader
+        icon={FolderTree}
+        title={t("medications.groups.heading")}
+        description={t("medications.groups.description")}
+      />
+      <div className="space-y-2">
+        <p className="text-sm font-medium">{t("medications.groups.label")}</p>
+        <Segmented
+          mode="toggle"
+          value={groupBy}
+          onChange={onGroupBy}
+          label={t("medications.groups.label")}
+          optionSlot={(value) => `medications-group-by-${value}`}
+          options={[
+            { value: "none", label: t("medications.groups.none") },
+            { value: "category", label: t("medications.groups.category") },
+          ]}
+        />
+      </div>
+      {groupBy === "category" ? (
+        <div className="space-y-2" data-slot="medications-groups-open">
+          <p className="text-sm font-medium">
+            {t("medications.groups.openLabel")}
+          </p>
+          <Segmented
+            mode="toggle"
+            value={groupsOpen}
+            onChange={onGroupsOpen}
+            label={t("medications.groups.openLabel")}
+            optionSlot={(value) => `medications-groups-open-${value}`}
+            options={[
+              {
+                value: "expanded",
+                label: t("medications.groups.openExpanded"),
+              },
+              {
+                value: "flagged",
+                label: t("medications.groups.openFlagged"),
+              },
+              {
+                value: "collapsed",
+                label: t("medications.groups.openCollapsed"),
+              },
+            ]}
+          />
+        </div>
+      ) : null}
+    </SettingsCard>
   );
 }

@@ -2691,6 +2691,18 @@
       "countOne": "{count} лекарство",
       "countFew": "{count} лекарства",
       "countOther": "{count} лекарств"
+    },
+    "groups": {
+      "heading": "Категории",
+      "description": "Группирует лекарства по категориям.",
+      "label": "Группировка",
+      "none": "Нет",
+      "category": "По категориям",
+      "openLabel": "Раскрыто при открытии",
+      "openExpanded": "Все",
+      "openFlagged": "Только к приему",
+      "openCollapsed": "Ни одной",
+      "orderWithinGroups": "Порядок действует внутри каждой категории."
     }
   },
   "charts": {

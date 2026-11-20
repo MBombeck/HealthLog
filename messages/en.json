@@ -2691,6 +2691,18 @@
       "countOne": "{count} medication",
       "countFew": "{count} medications",
       "countOther": "{count} medications"
+    },
+    "groups": {
+      "heading": "Categories",
+      "description": "Group medications by category.",
+      "label": "Grouping",
+      "none": "None",
+      "category": "By category",
+      "openLabel": "Open on load",
+      "openExpanded": "All",
+      "openFlagged": "Due only",
+      "openCollapsed": "None",
+      "orderWithinGroups": "The order applies within each category."
     }
   },
   "charts": {

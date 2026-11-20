@@ -144,6 +144,23 @@ describe("<MedicationsSection> — SSR smoke", () => {
     expect(html).not.toContain("Globally excluded injection sites");
   });
 
+  it("shows the grouping card, and its open-mode control only while grouping is on", () => {
+    const flat = render();
+    expect(flat).toContain('id="medications-groups"');
+    expect(flat).not.toContain('data-slot="medications-groups-open"');
+
+    queryState.layout = {
+      version: 1,
+      view: "cards",
+      order: [],
+      groupBy: "category",
+      groupsOpen: "expanded",
+    };
+    const grouped = render("de");
+    expect(grouped).toContain('data-slot="medications-groups-open"');
+    expect(grouped).toContain("innerhalb jeder Kategorie");
+  });
+
   it("feeds the editor the saved order (active block re-sorted by layout.order)", () => {
     // Alphabetical default would put Aspirin first; the saved order pins
     // Ramipril to the top — the editor must open showing exactly what

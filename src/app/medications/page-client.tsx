@@ -5,6 +5,7 @@ import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -42,6 +43,13 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import { MedicationCategoriesSheet } from "@/components/medications/medication-categories-sheet";
 import { MedicationFilterRail } from "@/components/medications/medication-filter-rail";
+import {
+  buildDoseStatusById,
+  groupMedications,
+  MedicationGroupHeader,
+  useMedicationGroupsOpen,
+  type MedicationGroup,
+} from "@/components/medications/medication-list-groups";
 import { useMedicationCategories } from "@/components/medications/use-medication-categories";
 import {
   ALL_MEDICATION_CATEGORIES,
@@ -52,6 +60,7 @@ import {
   filterMedications,
   type MedicationListFilters,
 } from "@/lib/medications/medication-list-filters";
+import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -423,20 +432,31 @@ export default function MedicationsPageClient() {
   );
   const pull = usePullToRefresh({ onRefresh: refreshMedications });
 
-  // v1.29.x — once the highlighted card is in the DOM, scroll it into view
+  // v1.29.x — once the highlighted card or row is in the DOM, scroll it into view
   // and clear the highlight state after a few seconds so the ring is a
   // one-time "you tapped here" cue, not a permanent tint (mirrors the
   // vault's upload-duplicate flash-highlight, `HIGHLIGHT_MS` in
   // `use-document-upload.ts`).
   useEffect(() => {
-    if (!highlightId || !medications?.length) return;
-    const card = document.querySelector(
+    if (!highlightId || isLoading || isLayoutLoading || !medications?.length) {
+      return;
+    }
+
+    const target = document.querySelector(
       `[data-medication-id="${highlightId}"]`,
     );
-    card?.scrollIntoView({ behavior: "smooth", block: "center" });
+    target?.scrollIntoView?.({ behavior: "smooth", block: "center" });
     const timer = setTimeout(() => setHighlightId(null), 3000);
     return () => clearTimeout(timer);
-  }, [highlightId, medications]);
+  }, [
+    highlightId,
+    medications,
+    isLoading,
+    isLayoutLoading,
+    layout.view,
+    layout.groupBy,
+    layout.groupsOpen,
+  ]);
 
   // v1.16.11 — the same reminder-thresholds read the cards make (shared
   // key + cache), so the header's due-set derivation tiers late /
@@ -500,6 +520,35 @@ export default function MedicationsPageClient() {
     setDialogOpen(false);
   }
 
+  // Defensive against stale service-worker responses or any future API
+  // shape change: only filter when we actually have an array.
+  const medsArray = Array.isArray(medications) ? medications : [];
+  // v1.40 (#1041) — the categories in use, each once, labelled the way the
+  // card badge labels it. The filter offers only these, so a pick can never
+  // empty the list.
+  const categoriesInUse = medicationCategoryOptions(medsArray, t);
+  const effectiveCategoryFilter = resolveCategoryFilter(
+    categoryFilter,
+    categoriesInUse,
+  );
+  const isFiltered =
+    searchText.trim() !== "" ||
+    effectiveCategoryFilter !== ALL_CATEGORIES ||
+    fromDay !== "" ||
+    toDay !== "";
+  // Groups open by default per the saved mode, and every group with a match
+  // is open while a filter is active. The dose status feeds "flagged" mode,
+  // which opens only groups with a dose due.
+  const doseStatusById = useMemo(
+    () => buildDoseStatusById(complianceRows),
+    [complianceRows],
+  );
+  const { isOpen, toggle } = useMedicationGroupsOpen(
+    layout.groupsOpen ?? "expanded",
+    isFiltered,
+    { doseStatusById, highlightId },
+  );
+
   if (authLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -526,17 +575,6 @@ export default function MedicationsPageClient() {
     );
   }
 
-  // Defensive against stale service-worker responses or any future API
-  // shape change: only filter when we actually have an array.
-  const medsArray = Array.isArray(medications) ? medications : [];
-  // v1.40 (#1041) — the categories in use, each once, labelled the way the
-  // card badge labels it. The filter offers only these, so a pick can never
-  // empty the list.
-  const categoriesInUse = medicationCategoryOptions(medsArray, t);
-  const effectiveCategoryFilter = resolveCategoryFilter(
-    categoryFilter,
-    categoriesInUse,
-  );
   const hasCustomCategories = (customCategories.data ?? []).length > 0;
   const showCategoryFilter =
     medsArray.length > 0 &&
@@ -562,14 +600,23 @@ export default function MedicationsPageClient() {
     fromDay,
     toDay,
   };
-  const isFiltered =
-    searchText.trim() !== "" ||
-    effectiveCategoryFilter !== ALL_CATEGORIES ||
-    fromDay !== "" ||
-    toDay !== "";
   const shownActiveMeds = filterMedications(activeMeds, filters);
   const shownInactiveMeds = filterMedications(inactiveMeds, filters);
   const totalMatches = shownActiveMeds.length + shownInactiveMeds.length;
+  const activeGroups = groupMedications(
+    shownActiveMeds,
+    layout.categoryOrder ?? [],
+    t,
+    customCategories.data,
+    "active",
+  );
+  const inactiveGroups = groupMedications(
+    shownInactiveMeds,
+    layout.categoryOrder ?? [],
+    t,
+    customCategories.data,
+    "inactive",
+  );
 
   // v1.16.11 (#316) — the currently-due set, derived from the list payload
   // the page already holds via the SAME pipeline a card's pill runs (band
@@ -580,13 +627,57 @@ export default function MedicationsPageClient() {
   const dueMeds = deriveDueMedications(activeMeds, {
     tz: user?.timezone || DEFAULT_TIMEZONE,
     thresholds: thresholds ?? undefined,
-    doseStatusById: new Map(
-      (complianceRows ?? []).map((row) => [
-        row.medicationId,
-        row.complianceDisplay?.currentDose.status ?? "upcoming",
-      ]),
-    ),
+    doseStatusById,
   });
+
+  // An as-needed medication always renders the generic card: the GLP-1
+  // variant is built around the rolling injection cadence an as-needed med
+  // doesn't have.
+  const renderCard = (med: (typeof shownActiveMeds)[number]) =>
+    med.treatmentClass === "GLP1" && !med.asNeeded ? (
+      <Glp1MedicationCard
+        key={med.id}
+        medication={med}
+        onEdit={openEdit}
+        onOpenHistory={openHistory}
+        highlighted={highlightId === med.id}
+      />
+    ) : (
+      <MedicationCard
+        key={med.id}
+        medication={med}
+        onEdit={openEdit}
+        onOpenHistory={openHistory}
+        highlighted={highlightId === med.id}
+      />
+    );
+
+  const renderGroups = (
+    groups: MedicationGroup<(typeof shownActiveMeds)[number]>[],
+    section: "active" | "inactive",
+  ) =>
+    groups.map((group) => {
+      const open = isOpen(group);
+      const panelId = `med-group-${section}-${group.category.key}`;
+      return (
+        <section key={group.category.key} className="space-y-3.5">
+          <MedicationGroupHeader
+            category={group.category}
+            count={group.medications.length}
+            open={open}
+            onToggle={() => toggle(group)}
+            panelId={panelId}
+          />
+          <div
+            id={panelId}
+            hidden={!open}
+            className={cn("grid gap-4 sm:grid-cols-2", !open && "hidden")}
+          >
+            {open && group.medications.map(renderCard)}
+          </div>
+        </section>
+      );
+    });
 
   const listEmpty = !isLoading && !isError && !medications?.length;
 
@@ -756,35 +847,35 @@ export default function MedicationsPageClient() {
           activeMedications={shownActiveMeds}
           inactiveMedications={shownInactiveMeds}
           highlightId={highlightId}
+          groupBy={layout.groupBy ?? "none"}
+          groupsOpen={layout.groupsOpen ?? "expanded"}
+          categoryOrder={layout.categoryOrder ?? []}
+          isFiltered={isFiltered}
+          customCategories={customCategories.data}
         />
+      ) : layout.groupBy === "category" ? (
+        <div className="space-y-6">
+          {activeGroups.length > 0 && (
+            <div className="space-y-4">
+              {renderGroups(activeGroups, "active")}
+            </div>
+          )}
+          {inactiveGroups.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-muted-foreground text-sm font-medium">
+                {t("common.inactive")} ({shownInactiveMeds.length})
+              </h2>
+              {renderGroups(inactiveGroups, "inactive")}
+            </div>
+          )}
+        </div>
       ) : (
         <div className="space-y-6">
           {/* Active medications */}
           {shownActiveMeds.length > 0 && (
             <div className="space-y-3.5">
               <div className="grid gap-4 sm:grid-cols-2">
-                {shownActiveMeds.map((med) =>
-                  // v1.16.11 — an as-needed medication always renders the
-                  // generic card: the GLP-1 variant is built around the
-                  // rolling injection cadence an as-needed med doesn't have.
-                  med.treatmentClass === "GLP1" && !med.asNeeded ? (
-                    <Glp1MedicationCard
-                      key={med.id}
-                      medication={med}
-                      onEdit={openEdit}
-                      onOpenHistory={openHistory}
-                      highlighted={highlightId === med.id}
-                    />
-                  ) : (
-                    <MedicationCard
-                      key={med.id}
-                      medication={med}
-                      onEdit={openEdit}
-                      onOpenHistory={openHistory}
-                      highlighted={highlightId === med.id}
-                    />
-                  ),
-                )}
+                {shownActiveMeds.map(renderCard)}
               </div>
             </div>
           )}
@@ -796,25 +887,7 @@ export default function MedicationsPageClient() {
                 {t("common.inactive")} ({shownInactiveMeds.length})
               </h2>
               <div className="grid gap-4 sm:grid-cols-2">
-                {shownInactiveMeds.map((med) =>
-                  med.treatmentClass === "GLP1" && !med.asNeeded ? (
-                    <Glp1MedicationCard
-                      key={med.id}
-                      medication={med}
-                      onEdit={openEdit}
-                      onOpenHistory={openHistory}
-                      highlighted={highlightId === med.id}
-                    />
-                  ) : (
-                    <MedicationCard
-                      key={med.id}
-                      medication={med}
-                      onEdit={openEdit}
-                      onOpenHistory={openHistory}
-                      highlighted={highlightId === med.id}
-                    />
-                  ),
-                )}
+                {shownInactiveMeds.map(renderCard)}
               </div>
             </div>
           )}
