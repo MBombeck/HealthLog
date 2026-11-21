@@ -1,18 +1,19 @@
 # Diagrams
 
-Five SVG diagrams that anchor the architecture story. Hand-drawn-style,
+Six SVG diagrams that anchor the architecture story. Hand-drawn-style,
 Dracula palette, no external dependencies. Embed in README and doc-site
 pages as `<img>` tags. Mirrored into `healthlog-docs/src/assets/diagrams/`
 and `healthlog-landing/public/diagrams/` so each surface ships its own
 copy.
 
-| File                           | Story it tells                                                                                                                                                                                                                                        |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `01-data-flow.svg`             | Sources (Withings, Apple Health export.zip, iPhone HealthKit, manual, Nightscout) → ingest endpoints → Measurement + MeasurementRollup → reads (rollup probe / live SQL fallback / cache) → surfaces (dashboard, insights, Coach, doctor PDF).        |
-| `02-coach-pipeline.svg`        | User question → snapshot builder → prompt assembler → provider chain (ChatGPT OAuth / OpenAI / Anthropic / local / admin-shared) → response parser → cited reply with mini-charts.                                                                    |
-| `03-self-hosting-topology.svg` | Internet → reverse proxy (TLS) → Next.js app (port 3000) ↔ pg-boss worker ↔ Postgres 18, plus GHCR image pull, optional Coolify autodeploy, optional S3 off-host backup.                                                                              |
-| `04-source-priority.svg`       | Three sources for the same metric on the same day → resolver picks one canonical row per (cumulative vs point) ladder. Losing rows stay in the audit trail.                                                                                           |
-| `05-security-model.svg`        | Three concentric layers — auth perimeter (passkey + password fallback), session perimeter (HttpOnly cookie + Postgres sessions), encrypted core (AES-256-GCM versioned keys). Side rails: rate limiter, audit log, HMAC tokens, CSP/HSTS, SSRF guard. |
+| File                           | Story it tells                                                                                                                                                                                                                                                                                                             |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `01-data-flow.svg`             | Sources (Withings, Apple Health export.zip, iPhone HealthKit, manual, Nightscout) → ingest endpoints → Measurement + MeasurementRollup → reads (rollup probe / live SQL fallback / cache) → surfaces (dashboard, insights, Coach, doctor PDF).                                                                             |
+| `02-coach-pipeline.svg`        | User question → snapshot builder → prompt assembler → provider chain (ChatGPT OAuth / OpenAI / Anthropic / local / admin-shared) → response parser → cited reply with mini-charts.                                                                                                                                         |
+| `03-self-hosting-topology.svg` | Internet → reverse proxy (TLS) → Next.js app (port 3000) ↔ pg-boss worker ↔ Postgres 18, plus GHCR image pull, optional Coolify autodeploy, optional S3 off-host backup.                                                                                                                                                   |
+| `04-source-priority.svg`       | Three sources for the same metric on the same day → resolver picks one canonical row per (cumulative vs point) ladder. Losing rows stay in the audit trail.                                                                                                                                                                |
+| `05-security-model.svg`        | Three concentric layers — auth perimeter (passkey + password fallback), session perimeter (HttpOnly cookie + Postgres sessions), encrypted core (AES-256-GCM versioned keys). Side rails: rate limiter, audit log, HMAC tokens, CSP/HSTS, SSRF guard.                                                                      |
+| `06-push-relay.svg`            | Your server seals each push with HPKE (RFC 9180, auth mode, X25519, ChaCha20-Poly1305) for one iPhone; the push relay and Apple APNs carry the sealed envelope; the Notification Service Extension opens it with a CryptoKit key kept in the keychain. Device-signed Ed25519 binding, direct revoke, signed relay answers. |
 
 ## Editing
 
