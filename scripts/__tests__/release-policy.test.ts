@@ -54,19 +54,19 @@ function judge(overrides: Partial<ReleaseInput> & { tag: string; now: Date }) {
 
 describe("release windows", () => {
   it.each([
-    ["2026-12-15T00:00:00+01:00", "2026-12-15"],
-    ["2026-12-15T23:59:00+01:00", "2026-12-15"],
-    ["2026-12-16T05:59:00+01:00", "2026-12-15"],
+    ["2026-12-19T00:00:00+01:00", "2026-12-19"],
+    ["2026-12-19T23:59:00+01:00", "2026-12-19"],
+    ["2026-12-20T05:59:00+01:00", "2026-12-19"],
     // Summer time: the window still follows the Berlin wall clock.
-    ["2027-04-13T00:30:00+02:00", "2027-04-13"],
+    ["2027-04-10T00:30:00+02:00", "2027-04-10"],
   ])("puts %s in the window of %s", (iso, expected) => {
     const window = releaseWindow(at(iso));
     expect(window && formatDay(window)).toBe(expected);
   });
 
   it.each([
-    "2026-12-14T23:59:00+01:00",
-    "2026-12-16T06:00:00+01:00",
+    "2026-12-18T23:59:00+01:00",
+    "2026-12-20T06:00:00+01:00",
     "2026-12-17T12:00:00+01:00",
   ])("finds no window at %s", (iso) => {
     expect(releaseWindow(at(iso))).toBeNull();
@@ -74,14 +74,14 @@ describe("release windows", () => {
 
   it.each([
     // An early-December 1.49.0 leaves room for a January minor.
-    ["2026-12-08T20:00:00+01:00", "2027-01-05"],
+    ["2026-12-08T20:00:00+01:00", "2027-01-02"],
     // A mid-December one is too close to January: the first minor is February.
-    ["2026-12-15T20:00:00+01:00", "2027-02-02"],
-    // A regular minor on a first Tuesday is followed by next month's.
-    ["2027-01-05T20:00:00+01:00", "2027-02-02"],
-    ["2027-07-06T20:00:00+02:00", "2027-08-03"],
+    ["2026-12-19T20:00:00+01:00", "2027-02-06"],
+    // A regular minor on a first Saturday is followed by next month's.
+    ["2027-01-02T20:00:00+01:00", "2027-02-06"],
+    ["2027-07-03T20:00:00+02:00", "2027-08-07"],
     // Exactly three weeks before the 1st still counts.
-    ["2027-03-11T12:00:00+01:00", "2027-04-06"],
+    ["2027-03-11T12:00:00+01:00", "2027-04-03"],
   ])("dates the minor after one shipped at %s to %s", (iso, expected) => {
     expect(formatDay(earliestMinorDay(at(iso)))).toBe(expected);
   });
@@ -116,7 +116,7 @@ describe("release calendar", () => {
   it("fails when there is no earlier tag to compare against", () => {
     const result = evaluateRelease({
       tag: "v1.50.0",
-      now: at("2027-01-05T20:00:00+01:00"),
+      now: at("2027-01-02T20:00:00+01:00"),
       tags: [],
       changelog: changelog({ "1.50.0": ["Added"] }),
       commitSubjects: [],
@@ -128,7 +128,7 @@ describe("release calendar", () => {
   it("fails when there is no earlier minor to date the next one from", () => {
     const result = evaluateRelease({
       tag: "v1.50.1",
-      now: at("2027-01-12T20:00:00+01:00"),
+      now: at("2027-01-09T20:00:00+01:00"),
       tags: [tag("v1.49.9", "2027-01-01T12:00:00+01:00")],
       changelog: changelog({ "1.50.1": ["Fixed"] }),
       commitSubjects: [],
@@ -137,10 +137,10 @@ describe("release calendar", () => {
     expect(result.errors[0]).toContain("No minor release tag");
   });
 
-  it("accepts a minor on its first Tuesday", () => {
+  it("accepts a minor on its first Saturday", () => {
     const result = judge({
       tag: "v1.50.0",
-      now: at("2027-01-05T20:00:00+01:00"),
+      now: at("2027-01-02T20:00:00+01:00"),
       changelog: changelog({ "1.50.0": ["Added", "Changed", "Fixed"] }),
       commitSubjects: ["feat(x): something new"],
     });
@@ -148,30 +148,30 @@ describe("release calendar", () => {
     expect(result.errors).toEqual([]);
   });
 
-  it("flags a minor on a later Tuesday", () => {
+  it("flags a minor on a later Saturday", () => {
     const result = judge({
       tag: "v1.50.0",
-      now: at("2027-01-12T20:00:00+01:00"),
+      now: at("2027-01-09T20:00:00+01:00"),
     });
-    expect(result.violations[0]).toContain("first Tuesday");
+    expect(result.violations[0]).toContain("first Saturday");
   });
 
   it("flags a minor before three weeks have passed since the last one", () => {
     const result = judge({
       tag: "v1.50.0",
-      now: at("2027-01-05T20:00:00+01:00"),
+      now: at("2027-01-02T20:00:00+01:00"),
       tags: [
         tag("v1.48.5", "2026-11-21T09:44:00+01:00"),
         tag("v1.49.0", "2026-12-15T18:00:00+01:00"),
       ],
     });
-    expect(result.violations[0]).toContain("due on 2027-02-02");
+    expect(result.violations[0]).toContain("due on 2027-02-06");
   });
 
-  it("accepts a patch on a later Tuesday, until Wednesday 06:00", () => {
+  it("accepts a patch on a later Saturday, until Sunday 06:00", () => {
     for (const now of [
-      "2026-12-15T20:00:00+01:00",
-      "2026-12-16T05:30:00+01:00",
+      "2026-12-19T20:00:00+01:00",
+      "2026-12-20T05:30:00+01:00",
     ]) {
       const result = judge({ tag: "v1.49.1", now: at(now) });
       expect(result.violations, now).toEqual([]);
@@ -179,26 +179,26 @@ describe("release calendar", () => {
     }
   });
 
-  it("flags a patch outside a Tuesday window", () => {
+  it("flags a patch outside a Saturday window", () => {
     const result = judge({
       tag: "v1.49.1",
       now: at("2026-12-17T12:00:00+01:00"),
     });
-    expect(result.violations[0]).toContain("not inside a Tuesday");
+    expect(result.violations[0]).toContain("not inside a Saturday");
   });
 
-  it("flags a patch on the minor's Tuesday", () => {
+  it("flags a patch on the minor's Saturday", () => {
     const result = judge({
       tag: "v1.49.3",
-      now: at("2027-01-05T20:00:00+01:00"),
+      now: at("2027-01-02T20:00:00+01:00"),
     });
-    expect(result.violations[0]).toContain("minor release's Tuesday");
+    expect(result.violations[0]).toContain("minor release's Saturday");
   });
 
-  it("allows a patch on a first Tuesday that no minor claims", () => {
+  it("allows a patch on a first Saturday that no minor claims", () => {
     const result = judge({
       tag: "v1.49.3",
-      now: at("2027-01-05T20:00:00+01:00"),
+      now: at("2027-01-02T20:00:00+01:00"),
       tags: [
         tag("v1.48.5", "2026-11-21T09:44:00+01:00"),
         tag("v1.49.0", "2026-12-15T18:00:00+01:00"),
@@ -210,20 +210,20 @@ describe("release calendar", () => {
   it("flags a second release in the same window", () => {
     const result = judge({
       tag: "v1.49.2",
-      now: at("2026-12-15T22:00:00+01:00"),
-      tags: [...HISTORY, tag("v1.49.1", "2026-12-15T19:00:00+01:00")],
+      now: at("2026-12-19T22:00:00+01:00"),
+      tags: [...HISTORY, tag("v1.49.1", "2026-12-19T19:00:00+01:00")],
     });
     expect(result.violations[0]).toContain("v1.49.1 already shipped");
   });
 });
 
 describe("patch content", () => {
-  const tuesday = at("2026-12-15T20:00:00+01:00");
+  const saturday = at("2026-12-19T20:00:00+01:00");
 
   it("flags a feat commit in a patch", () => {
     const result = judge({
       tag: "v1.49.1",
-      now: tuesday,
+      now: saturday,
       commitSubjects: ["fix(a): b", "feat(sleep): add a chart", "feat!: drop"],
     });
     expect(result.violations).toHaveLength(1);
@@ -233,7 +233,7 @@ describe("patch content", () => {
   it("does not take a subject that merely mentions a feature for feat", () => {
     const result = judge({
       tag: "v1.49.1",
-      now: tuesday,
+      now: saturday,
       commitSubjects: ["fix(feat-flags): read the feature list again"],
     });
     expect(result.violations).toEqual([]);
@@ -244,7 +244,7 @@ describe("patch content", () => {
     (heading) => {
       const result = judge({
         tag: "v1.49.1",
-        now: tuesday,
+        now: saturday,
         changelog: changelog({ "1.49.1": ["Fixed", heading] }),
       });
       expect(result.violations[0]).toContain(`### ${heading}`);
@@ -254,7 +254,7 @@ describe("patch content", () => {
   it("accepts every heading a patch may carry", () => {
     const result = judge({
       tag: "v1.49.1",
-      now: tuesday,
+      now: saturday,
       changelog: changelog({ "1.49.1": PATCH_HEADINGS }),
     });
     expect(result.violations).toEqual([]);
@@ -263,7 +263,7 @@ describe("patch content", () => {
   it("does not hold a minor to the patch rules", () => {
     const result = judge({
       tag: "v1.50.0",
-      now: at("2027-01-05T20:00:00+01:00"),
+      now: at("2027-01-02T20:00:00+01:00"),
       changelog: changelog({ "1.50.0": ["Added", "Removed"] }),
       commitSubjects: ["feat(a): b"],
     });
@@ -273,7 +273,7 @@ describe("patch content", () => {
   it("fails when the changelog has no section for the version", () => {
     const result = judge({
       tag: "v1.49.1",
-      now: tuesday,
+      now: saturday,
       changelog: changelog({ "1.49.0": ["Fixed"] }),
     });
     expect(result.errors[0]).toContain('no "## [1.49.1]" section');
@@ -282,7 +282,7 @@ describe("patch content", () => {
   it("reads only its own section", () => {
     const result = judge({
       tag: "v1.49.1",
-      now: tuesday,
+      now: saturday,
       changelog: changelog({ "1.49.1": ["Fixed"], "1.49.0": ["Added"] }),
     });
     expect(result.violations).toEqual([]);
@@ -400,15 +400,15 @@ describe("release:next", () => {
       tags: HISTORY,
       changelog: changelog({ Unreleased: ["Fixed"], "1.49.0": ["Added"] }),
     }).join("\n");
-    expect(lines).toContain("Next patch: v1.49.1 on Tuesday 2026-12-15");
+    expect(lines).toContain("Next patch: v1.49.1 on Saturday 2026-12-12");
     expect(lines).toContain("1 entry under Unreleased");
-    expect(lines).toContain("Next minor: v1.50.0 on Tuesday 2027-01-05");
+    expect(lines).toContain("Next minor: v1.50.0 on Saturday 2027-01-02");
     expect(lines).toContain("not a release day");
   });
 
   it("says when today is the day", () => {
     const lines = describeNext({
-      now: at("2026-12-15T20:00:00+01:00"),
+      now: at("2026-12-19T20:00:00+01:00"),
       tags: HISTORY,
       changelog: changelog({ Unreleased: ["Fixed"] }),
     }).join("\n");
@@ -417,7 +417,7 @@ describe("release:next", () => {
 
   it("finds no patch to ship with nothing under Unreleased", () => {
     const lines = describeNext({
-      now: at("2026-12-15T20:00:00+01:00"),
+      now: at("2026-12-19T20:00:00+01:00"),
       tags: HISTORY,
       changelog: changelog({ "1.49.0": ["Added"] }),
     }).join("\n");
@@ -425,13 +425,13 @@ describe("release:next", () => {
     expect(lines).toContain("not a release day");
   });
 
-  it("does not offer the minor's Tuesday for a patch", () => {
+  it("does not offer the minor's Saturday for a patch", () => {
     const lines = describeNext({
       now: at("2026-12-30T12:00:00+01:00"),
       tags: HISTORY,
       changelog: changelog({ Unreleased: ["Fixed"] }),
     }).join("\n");
-    expect(lines).toContain("Next patch: v1.49.1 on Tuesday 2027-01-12");
+    expect(lines).toContain("Next patch: v1.49.1 on Saturday 2027-01-09");
   });
 });
 
@@ -483,12 +483,12 @@ describe("command line against a real repository", () => {
     const { cwd, run, commit } = repository();
     commit(
       "chore(release): v1.50.0",
-      "2027-01-05T19:00:00+01:00",
+      "2027-01-02T19:00:00+01:00",
       changelog({ "1.50.0": ["Added"] }),
     );
     run(["tag", "v1.50.0"]);
     const result = capture(
-      ["check", "v1.50.0", "--now", "2027-01-05T20:00:00+01:00"],
+      ["check", "v1.50.0", "--now", "2027-01-02T20:00:00+01:00"],
       cwd,
     );
     expect(result.code).toBe(1);
@@ -510,7 +510,7 @@ describe("command line against a real repository", () => {
     commit("feat(sleep): a chart", "2026-12-12T10:00:00+01:00");
     commit(
       "chore(release): v1.49.1",
-      "2026-12-15T19:00:00+01:00",
+      "2026-12-19T19:00:00+01:00",
       changelog({ "1.49.1": ["Fixed"], "1.49.0": ["Added"] }),
     );
     run(["tag", "v1.49.1"]);
@@ -520,7 +520,7 @@ describe("command line against a real repository", () => {
         "check",
         "v1.49.1",
         "--now",
-        String(Date.parse("2026-12-15T20:00:00+01:00") / 1000),
+        String(Date.parse("2026-12-19T20:00:00+01:00") / 1000),
         "--github-output",
         output,
       ],

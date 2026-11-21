@@ -1,7 +1,7 @@
 name: Edge image
 
 # Every push to `main` publishes `:edge` and `:edge-<sha>` (amd64 only).
-# `main` is the fix line between the Tuesday releases
+# `main` is the fix line between the Saturday releases
 # (docs/contributing/release-policy.md), and `:edge` is how a fix can be
 # checked before it is released. It is not a release: no `:latest`, no
 # semver tags, no signature, no promotion. Release images come from

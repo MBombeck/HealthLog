@@ -22,7 +22,9 @@ export const SCHEDULE_STARTS_AFTER = "1.49.0";
 /** A minor's month starts at least this many days after the previous minor. */
 export const MINOR_GAP_DAYS = 21;
 export const TIME_ZONE = "Europe/Berlin";
-/** A Tuesday window runs until this hour on Wednesday morning. */
+/** Releases ship on Saturday, when self-hosters have time to update. */
+export const RELEASE_WEEKDAY = 6;
+/** A Saturday window runs until this hour on Sunday morning. */
 export const WINDOW_CLOSES_HOUR = 6;
 export const OUT_OF_SCHEDULE_REASONS = [
   "security",
@@ -114,30 +116,30 @@ export function berlinDay(date) {
 }
 
 /**
- * The Tuesday whose release window contains `date`, or null. A window runs
- * from Tuesday 00:00 to Wednesday 06:00 Europe/Berlin.
+ * The Saturday whose release window contains `date`, or null. A window runs
+ * from Saturday 00:00 to Sunday 06:00 Europe/Berlin.
  */
 export function releaseWindow(date) {
   const p = berlinParts(date);
-  if (p.weekday === 2) return day(p.year, p.month, p.day);
-  if (p.weekday === 3 && p.hour < WINDOW_CLOSES_HOUR) {
+  if (p.weekday === RELEASE_WEEKDAY) return day(p.year, p.month, p.day);
+  if (p.weekday === (RELEASE_WEEKDAY + 1) % 7 && p.hour < WINDOW_CLOSES_HOUR) {
     return day(p.year, p.month, p.day - 1);
   }
   return null;
 }
 
-export function isFirstTuesday(d) {
-  return d.weekday === 2 && d.day <= 7;
+export function isFirstSaturday(d) {
+  return d.weekday === RELEASE_WEEKDAY && d.day <= 7;
 }
 
-export function firstTuesdayOf(year, month) {
+export function firstSaturdayOf(year, month) {
   const first = day(year, month, 1);
-  return addDays(first, (2 - first.weekday + 7) % 7);
+  return addDays(first, (RELEASE_WEEKDAY - first.weekday + 7) % 7);
 }
 
 /**
- * The first Tuesday of the first month that starts at least MINOR_GAP_DAYS
- * after the previous minor. For a minor on a first Tuesday that is always the
+ * The first Saturday of the first month that starts at least MINOR_GAP_DAYS
+ * after the previous minor. For a minor on a first Saturday that is always the
  * next month; after the transition release it can be the month after.
  */
 export function earliestMinorDay(previousMinorDate) {
@@ -146,11 +148,11 @@ export function earliestMinorDay(previousMinorDate) {
     threshold.day === 1
       ? threshold
       : day(threshold.year, threshold.month + 1, 1);
-  return firstTuesdayOf(monthStart.year, monthStart.month);
+  return firstSaturdayOf(monthStart.year, monthStart.month);
 }
 
-export function nextTuesday(fromDay) {
-  return addDays(fromDay, (2 - fromDay.weekday + 7) % 7);
+export function nextSaturday(fromDay) {
+  return addDays(fromDay, (RELEASE_WEEKDAY - fromDay.weekday + 7) % 7);
 }
 
 // ── Changelog ───────────────────────────────────────────────────────────
@@ -276,21 +278,21 @@ export function evaluateRelease({
 
   if (!window) {
     violations.push(
-      `${formatDay(berlinDay(now))} is not inside a Tuesday release window (Tuesday 00:00 to Wednesday 0${WINDOW_CLOSES_HOUR}:00 ${TIME_ZONE}).`,
+      `${formatDay(berlinDay(now))} is not inside a Saturday release window (Saturday 00:00 to Sunday 0${WINDOW_CLOSES_HOUR}:00 ${TIME_ZONE}).`,
     );
   } else if (isMinor) {
-    if (!isFirstTuesday(window)) {
+    if (!isFirstSaturday(window)) {
       violations.push(
-        `A minor release ships on the first Tuesday of a month; ${formatDay(window)} is not one.`,
+        `A minor release ships on the first Saturday of a month; ${formatDay(window)} is not one.`,
       );
     } else if (compareDays(window, minorDue) < 0) {
       violations.push(
         `The next minor after ${previousMinor.tag} is due on ${formatDay(minorDue)}, not ${formatDay(window)}.`,
       );
     }
-  } else if (isFirstTuesday(window) && compareDays(window, minorDue) >= 0) {
+  } else if (isFirstSaturday(window) && compareDays(window, minorDue) >= 0) {
     violations.push(
-      `${formatDay(window)} is the minor release's Tuesday; a patch takes another Tuesday.`,
+      `${formatDay(window)} is the minor release's Saturday; a patch takes another Saturday.`,
     );
   }
 
@@ -301,7 +303,7 @@ export function evaluateRelease({
     });
     if (sameWindow.length > 0) {
       violations.push(
-        `${sameWindow.map((t) => t.tag).join(", ")} already shipped in the window of ${formatDay(window)}; one release per Tuesday.`,
+        `${sameWindow.map((t) => t.tag).join(", ")} already shipped in the window of ${formatDay(window)}; one release per Saturday.`,
       );
     }
   }
@@ -387,7 +389,7 @@ export function describeNext({ now, tags, changelog }) {
       `Next release: v${SCHEDULE_STARTS_AFTER}, the last one before the calendar. It ships when its planned work is done and green, on any day.`,
     );
     lines.push(
-      `After it, the first minor is on the first Tuesday of the first month that starts at least ${MINOR_GAP_DAYS} days later.`,
+      `After it, the first minor is on the first Saturday of the first month that starts at least ${MINOR_GAP_DAYS} days later.`,
     );
     return lines;
   }
@@ -405,18 +407,18 @@ export function describeNext({ now, tags, changelog }) {
     });
   const searchFrom =
     window && !shippedThisWindow ? window : addDays(window ?? today, 1);
-  let patchDay = nextTuesday(searchFrom);
+  let patchDay = nextSaturday(searchFrom);
   if (compareDays(patchDay, minorDue) === 0) patchDay = addDays(patchDay, 7);
 
   const entries = unreleasedEntries(changelog);
   const nextPatch = `v${latest.major}.${latest.minor}.${latest.patch + 1}`;
   lines.push(
     entries > 0
-      ? `Next patch: ${nextPatch} on Tuesday ${formatDay(patchDay)}, ${entries} entr${entries === 1 ? "y" : "ies"} under Unreleased.`
-      : `Next patch: nothing under Unreleased, so no patch is due (earliest Tuesday ${formatDay(patchDay)}).`,
+      ? `Next patch: ${nextPatch} on Saturday ${formatDay(patchDay)}, ${entries} entr${entries === 1 ? "y" : "ies"} under Unreleased.`
+      : `Next patch: nothing under Unreleased, so no patch is due (earliest Saturday ${formatDay(patchDay)}).`,
   );
   lines.push(
-    `Next minor: ${nextMinor} on Tuesday ${formatDay(minorDue)}, with whatever is done and green on release/${nextMinor} by then.`,
+    `Next minor: ${nextMinor} on Saturday ${formatDay(minorDue)}, with whatever is done and green on release/${nextMinor} by then.`,
   );
 
   if (window && !shippedThisWindow && compareDays(window, minorDue) === 0) {

@@ -363,7 +363,7 @@ describe("release calendar and approval", () => {
     expect(step?.["continue-on-error"]).not.toBe(true);
     expect(step?.run).toContain("node scripts/release-policy.mjs check");
     expect(step?.run).toContain('--github-output "$GITHUB_OUTPUT"');
-    // Judged by the push time, so a re-run does not turn a Tuesday tag
+    // Judged by the push time, so a re-run does not turn a Saturday tag
     // into an off-schedule one.
     expect(step?.env?.PUSHED_AT).toBe(
       "${{ github.event.repository.pushed_at }}",
