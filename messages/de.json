@@ -9651,6 +9651,13 @@
     "seizureCluster": {
       "title": "Anfallsserie",
       "body": "{count} Anfälle innerhalb von {hours} h, eingetragen von {name}. Der Notfallplan steht im Anfallstagebuch."
+    },
+    "eventMeasurementAnomaly": "Anhaltende Veränderung eines Vitalwerts",
+    "eventMeasurementAnomalyDesc": "Wenn ein Vitalwert wie Ruhepuls oder Blutdruck seit mindestens zehn Tagen auf einem neuen Niveau bleibt. Höchstens einmal pro Woche, morgens, nie während einer offenen Erkrankung.",
+    "measurementAnomaly": {
+      "title": "Eine anhaltende Veränderung",
+      "bodyUp": "Dein Wert {metric} liegt seit {date} höher. Insights zeigt vorher und nachher.",
+      "bodyDown": "Dein Wert {metric} liegt seit {date} niedriger. Insights zeigt vorher und nachher."
     }
   },
   "i18n": {

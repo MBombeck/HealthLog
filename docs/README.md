@@ -51,6 +51,8 @@ notes, and machine-readable specs that ship alongside the source:
   booked visits, check-ups and vaccination boosters coming due.
   [`using/energy-balance.md`](./using/energy-balance.md) explains the daily
   energy balance and when a day has none.
+  [`using/lasting-change-notification.md`](./using/lasting-change-notification.md)
+  covers the opt-in notification about a vital that settled at a new level.
 - [`migration/`](./migration/) — migration notes. Currently only
   v1.3 to v1.4; later releases are covered by `CHANGELOG.md` and
   <https://docs.healthlog.dev>.

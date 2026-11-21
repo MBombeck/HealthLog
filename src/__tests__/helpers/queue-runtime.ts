@@ -314,6 +314,9 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "medication-reminder-check": short("The due slots of the current minute."),
   "mood-reminder-check": short("Accounts whose local reminder hour is now."),
   "cycle-reminder-check": short("Accounts whose local reminder hour is now."),
+  "measurement-anomaly-check": short(
+    "Opted-in accounts whose local push hour is now: a bounded day-mean read per vital, no provider call.",
+  ),
   "measurement-reminder-check": short(
     "Accounts whose local reminder hour is now.",
   ),

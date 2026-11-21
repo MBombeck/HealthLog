@@ -9651,6 +9651,13 @@
     "seizureCluster": {
       "title": "Crises em salva",
       "body": "{count} crises em {hours} h, registradas por {name}. O plano de resgate está no diário de crises."
+    },
+    "eventMeasurementAnomaly": "Mudança persistente em um sinal vital",
+    "eventMeasurementAnomalyDesc": "Quando um sinal vital como a frequência cardíaca em repouso ou a pressão se mantém em um novo nível há pelo menos dez dias. No máximo uma vez por semana, de manhã, nunca durante uma doença em aberto.",
+    "measurementAnomaly": {
+      "title": "Uma mudança persistente",
+      "bodyUp": "Seu {metric} se manteve mais alto desde {date}. Insights mostra o antes e o depois.",
+      "bodyDown": "Seu {metric} se manteve mais baixo desde {date}. Insights mostra o antes e o depois."
     }
   },
   "i18n": {

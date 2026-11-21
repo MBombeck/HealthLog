@@ -29,9 +29,12 @@ export type ChannelType = (typeof CHANNEL_TYPES)[number];
 
 export const EVENT_TYPES = [
   "MEDICATION_REMINDER",
-  // The next three and PERSONAL_RECORD are never sent; see
-  // `UNSENT_EVENT_TYPES`.
+  // A sustained level shift in a stable vital, from the health-status
+  // changepoint scan (`src/lib/jobs/measurement-anomaly-check.ts`). Default
+  // OFF, at most once a week, once per shift, in the local morning.
   "MEASUREMENT_ANOMALY",
+  // The next two and PERSONAL_RECORD are never sent; see
+  // `UNSENT_EVENT_TYPES`.
   "COMPLIANCE_LOW",
   "WITHINGS_SYNC_FAILED",
   "SYSTEM_ALERT",
@@ -164,7 +167,9 @@ export type ManagedGuardianFanoutEvent =
  */
 export const EVENT_DEFAULT_ENABLED: Record<EventType, boolean> = {
   MEDICATION_REMINDER: true,
-  MEASUREMENT_ANOMALY: true,
+  // OFF by default (the PERSONAL_RECORD precedent): a push about one's own
+  // vitals is something a person asks for, per channel, or never gets.
+  MEASUREMENT_ANOMALY: false,
   COMPLIANCE_LOW: true,
   WITHINGS_SYNC_FAILED: true,
   SYSTEM_ALERT: true,
@@ -243,7 +248,6 @@ export const ADMIN_ONLY_EVENT_TYPES: readonly EventType[] = ["BACKUP_HEALTH"];
  * `SYSTEM_ALERT`.
  */
 export const UNSENT_EVENT_TYPES = [
-  "MEASUREMENT_ANOMALY",
   "COMPLIANCE_LOW",
   "WITHINGS_SYNC_FAILED",
   "PERSONAL_RECORD",

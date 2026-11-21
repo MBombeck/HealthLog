@@ -9651,6 +9651,13 @@
     "seizureCluster": {
       "title": "Napady gromadne",
       "body": "Napady: {count} w ciągu {hours} h, zapisane przez: {name}. Plan ratunkowy jest w dzienniczku napadów."
+    },
+    "eventMeasurementAnomaly": "Trwała zmiana parametru życiowego",
+    "eventMeasurementAnomalyDesc": "Gdy parametr życiowy, taki jak tętno spoczynkowe lub ciśnienie, utrzymuje nowy poziom od co najmniej dziesięciu dni. Najwyżej raz w tygodniu, rano, nigdy w trakcie trwającej choroby.",
+    "measurementAnomaly": {
+      "title": "Trwała zmiana",
+      "bodyUp": "Twój parametr {metric} utrzymuje się wyżej od {date}. Insights pokazuje stan przed i po.",
+      "bodyDown": "Twój parametr {metric} utrzymuje się niżej od {date}. Insights pokazuje stan przed i po."
     }
   },
   "i18n": {

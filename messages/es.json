@@ -9651,6 +9651,13 @@
     "seizureCluster": {
       "title": "Racimo de crisis",
       "body": "{count} crisis en {hours} h, registradas por {name}. El plan de rescate está en el diario de crisis."
+    },
+    "eventMeasurementAnomaly": "Cambio sostenido en un signo vital",
+    "eventMeasurementAnomalyDesc": "Cuando un signo vital como la frecuencia cardíaca en reposo o la presión arterial se mantiene en un nuevo nivel durante al menos diez días. Como mucho una vez por semana, por la mañana, nunca durante una enfermedad abierta.",
+    "measurementAnomaly": {
+      "title": "Un cambio sostenido",
+      "bodyUp": "Tu {metric} se mantiene más alto desde el {date}. Insights muestra el antes y el después.",
+      "bodyDown": "Tu {metric} se mantiene más bajo desde el {date}. Insights muestra el antes y el después."
     }
   },
   "i18n": {

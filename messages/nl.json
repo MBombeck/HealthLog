@@ -9651,6 +9651,13 @@
     "seizureCluster": {
       "title": "Clusteraanvallen",
       "body": "{count} aanvallen binnen {hours} u, vastgelegd door {name}. Het noodplan staat in het aanvallendagboek."
+    },
+    "eventMeasurementAnomaly": "Blijvende verandering in een vitale waarde",
+    "eventMeasurementAnomalyDesc": "Wanneer een vitale waarde zoals rusthartslag of bloeddruk al minstens tien dagen op een nieuw niveau blijft. Hooguit één keer per week, 's ochtends, nooit tijdens een lopende ziekte.",
+    "measurementAnomaly": {
+      "title": "Een blijvende verandering",
+      "bodyUp": "Je {metric} is sinds {date} hoger gebleven. Insights toont het voor en na.",
+      "bodyDown": "Je {metric} is sinds {date} lager gebleven. Insights toont het voor en na."
     }
   },
   "i18n": {

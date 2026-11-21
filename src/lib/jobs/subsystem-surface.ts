@@ -86,6 +86,7 @@ const subsystemSurface = {
   "mood-reminder-check": { audience: "system" },
   "cycle-reminder-check": { audience: "system" },
   "measurement-reminder-check": { audience: "system" },
+  "measurement-anomaly-check": { audience: "system" },
   "reminder-satisfy": { audience: "system" },
 
   // register-maintenance.ts

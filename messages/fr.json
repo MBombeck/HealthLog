@@ -9651,6 +9651,13 @@
     "seizureCluster": {
       "title": "Crises en série",
       "body": "{count} crises en {hours} h, enregistrées par {name}. Le plan d'urgence est dans le journal des crises."
+    },
+    "eventMeasurementAnomaly": "Changement durable d'un signe vital",
+    "eventMeasurementAnomalyDesc": "Quand un signe vital comme la fréquence cardiaque au repos ou la tension reste à un nouveau niveau depuis au moins dix jours. Au plus une fois par semaine, le matin, jamais pendant une maladie en cours.",
+    "measurementAnomaly": {
+      "title": "Un changement durable",
+      "bodyUp": "Ta valeur {metric} reste plus haute depuis le {date}. Insights montre l'avant et l'après.",
+      "bodyDown": "Ta valeur {metric} reste plus basse depuis le {date}. Insights montre l'avant et l'après."
     }
   },
   "i18n": {

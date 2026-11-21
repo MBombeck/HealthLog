@@ -9651,6 +9651,13 @@
     "seizureCluster": {
       "title": "군집 발작",
       "body": "{hours}시간 안에 발작 {count}회, {name} 님이 기록함. 응급 계획은 발작 일지에 있습니다."
+    },
+    "eventMeasurementAnomaly": "활력 징후의 지속적 변화",
+    "eventMeasurementAnomalyDesc": "안정 시 심박수나 혈압 같은 활력 징후가 최소 열흘 동안 새로운 수준을 유지할 때. 일주일에 한 번 이하, 아침에만, 진행 중인 질병 기간에는 보내지 않습니다.",
+    "measurementAnomaly": {
+      "title": "지속적인 변화",
+      "bodyUp": "{date} 이후 {metric} 값이 더 높게 유지되고 있습니다. 인사이트에서 전후를 확인하세요.",
+      "bodyDown": "{date} 이후 {metric} 값이 더 낮게 유지되고 있습니다. 인사이트에서 전후를 확인하세요."
     }
   },
   "i18n": {

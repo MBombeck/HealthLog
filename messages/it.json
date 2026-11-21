@@ -9651,6 +9651,13 @@
     "seizureCluster": {
       "title": "Crisi a grappolo",
       "body": "{count} crisi in {hours} h, registrate da {name}. Il piano di soccorso è nel diario delle crisi."
+    },
+    "eventMeasurementAnomaly": "Cambiamento duraturo di un parametro vitale",
+    "eventMeasurementAnomalyDesc": "Quando un parametro vitale come la frequenza cardiaca a riposo o la pressione resta su un nuovo livello da almeno dieci giorni. Al massimo una volta a settimana, al mattino, mai durante una malattia in corso.",
+    "measurementAnomaly": {
+      "title": "Un cambiamento duraturo",
+      "bodyUp": "Il tuo valore {metric} è rimasto più alto dal {date}. Insights mostra il prima e il dopo.",
+      "bodyDown": "Il tuo valore {metric} è rimasto più basso dal {date}. Insights mostra il prima e il dopo."
     }
   },
   "i18n": {

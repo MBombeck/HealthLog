@@ -9651,6 +9651,13 @@
     "seizureCluster": {
       "title": "Seizure cluster",
       "body": "{count} seizures within {hours} h, logged by {name}. The rescue plan is in the seizure diary."
+    },
+    "eventMeasurementAnomaly": "Lasting change in a vital",
+    "eventMeasurementAnomalyDesc": "When a vital such as resting heart rate or blood pressure has held a new level for at least ten days. At most once a week, in the morning, never during an open illness.",
+    "measurementAnomaly": {
+      "title": "A lasting change",
+      "bodyUp": "{metric} has stayed higher since {date}. Insights shows the before and after.",
+      "bodyDown": "{metric} has stayed lower since {date}. Insights shows the before and after."
     }
   },
   "i18n": {
