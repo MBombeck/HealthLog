@@ -7538,23 +7538,27 @@ paths:
         - in: query
           name: expectedSyncVersion
           schema:
-            description: The row's `syncVersion` as this client last saw it (the take's response carries it). When the row has
-              changed since, the undo is refused with 409 and nothing is deleted.
+            description: "The row's `syncVersion` as this client last saw it (the take's response carries it). When the row has
+              changed since, the undo is refused with 409 and nothing is deleted. Sent but not a whole number from 0
+              (e.g. `-1`, `1.5`, empty): 422 `medications.intake.invalidPrecondition`, nothing deleted."
             type: string
             pattern: ^\d{1,9}$
-          description: The row's `syncVersion` as this client last saw it (the take's response carries it). When the row has
-            changed since, the undo is refused with 409 and nothing is deleted.
+          description: "The row's `syncVersion` as this client last saw it (the take's response carries it). When the row has
+            changed since, the undo is refused with 409 and nothing is deleted. Sent but not a whole number from 0 (e.g.
+            `-1`, `1.5`, empty): 422 `medications.intake.invalidPrecondition`, nothing deleted."
         - in: query
           name: expectedIdempotencyKey
           schema:
-            description: The idempotency key of the take this client recorded. When the row carries another key it holds someone
+            description: "The idempotency key of the take this client recorded. When the row carries another key it holds someone
               else's take (a take that answered `alreadyTaken` keeps the first writer's key), so the undo is refused
-              with 409.
+              with 409. Sent but empty or over 128 characters: 422 `medications.intake.invalidPrecondition`, nothing
+              deleted."
             type: string
+            minLength: 1
             maxLength: 128
-          description: The idempotency key of the take this client recorded. When the row carries another key it holds someone
+          description: "The idempotency key of the take this client recorded. When the row carries another key it holds someone
             else's take (a take that answered `alreadyTaken` keeps the first writer's key), so the undo is refused with
-            409.
+            409. Sent but empty or over 128 characters: 422 `medications.intake.invalidPrecondition`, nothing deleted."
       responses:
         "200":
           description: The dose was tombstoned and its inventory refunded.
@@ -7577,7 +7581,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a4
+        "422":
+          description: "`medications.intake.invalidPrecondition`: `expectedSyncVersion` or `expectedIdempotencyKey` was sent but
+            is not readable. Nothing was deleted; an absent precondition is allowed, a broken one never skips the
+            check."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
   /api/medications/{id}/intake/bulk-delete:
     post:
@@ -27914,6 +27925,35 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a12
   /api/symptoms/events/{id}:
+    get:
+      tags:
+        - Symptoms
+      summary: Read one symptom occurrence
+      description: The occurrence as the list reads it, for a client that opens one entry by id (the web's save receipt opens
+        its edit sheet from it).
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: The occurrence.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetSymptomEventEnvelope"
+        "401": *a1
+        "403": *a77
+        "404": &a79
+          description: "`symptoms.event.notFound`: no occurrence with this id on the record."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
     patch:
       tags:
         - Symptoms
@@ -27942,12 +27982,7 @@ paths:
                 $ref: "#/components/schemas/UpdateSymptomEventEnvelope"
         "401": *a1
         "403": *a77
-        "404": &a79
-          description: "`symptoms.event.notFound`: no occurrence with this id on the record."
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
+        "404": *a79
         "422": *a4
         "429": *a5
     delete:
@@ -43686,19 +43721,19 @@ components:
                 medications.ingredients.extract.rateLimited, medications.ingredients.invalid,
                 medications.ingredients.unitMismatch, medications.intake.bulk.apple_health_not_mirrored,
                 medications.intake.bulk.invalid, medications.intake.bulk.too_large, medications.intake.changedSinceSeen,
-                medications.intake.force_slot.invalid, medications.intake.force_slot.occupied,
-                medications.intake.injection_site.disallowed, medications.intake.taken_at.before_start,
-                medications.mirror.limit_exceeded, medications.notFound; mentalHealth — mentalHealth.rateLimited; module
-                — module.disabled; modules — modules.body.invalid_json, modules.invalid; mood —
-                mood.bulk-delete.invalid, mood.bulk.invalid, mood.bulk.too_large, mood.create.external_id_not_delegable,
-                mood.create.invalid, mood.duplicate_timestamp, mood.linkedContext.invalid, mood.list.invalid,
-                mood.not_found, mood.ratedFactor.out_of_range, mood.restore.invalid, mood.update.invalid;
-                notification-prefs — notification-prefs.body.invalid_json; notification —
-                notification.action.already_used, notification.action.expired, notification.action.invalid,
-                notification.action.module_disabled; nutrient — nutrient.batch.invalid, nutrient.batch.too_large,
-                nutrient.daily.invalid, nutrient.energyBalance.invalid, nutrient.read.invalid, nutrient.water.invalid,
-                nutrient.water.invalid_day; onboarding — onboarding.answers.invalid, onboarding.answers.rateLimited,
-                onboarding.complete.invalid, onboarding.complete.recordNotFound,
+                medications.intake.invalidPrecondition, medications.intake.force_slot.invalid,
+                medications.intake.force_slot.occupied, medications.intake.injection_site.disallowed,
+                medications.intake.taken_at.before_start, medications.mirror.limit_exceeded, medications.notFound;
+                mentalHealth — mentalHealth.rateLimited; module — module.disabled; modules — modules.body.invalid_json,
+                modules.invalid; mood — mood.bulk-delete.invalid, mood.bulk.invalid, mood.bulk.too_large,
+                mood.create.external_id_not_delegable, mood.create.invalid, mood.duplicate_timestamp,
+                mood.linkedContext.invalid, mood.list.invalid, mood.not_found, mood.ratedFactor.out_of_range,
+                mood.restore.invalid, mood.update.invalid; notification-prefs — notification-prefs.body.invalid_json;
+                notification — notification.action.already_used, notification.action.expired,
+                notification.action.invalid, notification.action.module_disabled; nutrient — nutrient.batch.invalid,
+                nutrient.batch.too_large, nutrient.daily.invalid, nutrient.energyBalance.invalid, nutrient.read.invalid,
+                nutrient.water.invalid, nutrient.water.invalid_day; onboarding — onboarding.answers.invalid,
+                onboarding.answers.rateLimited, onboarding.complete.invalid, onboarding.complete.recordNotFound,
                 onboarding.complete.recordTargetMismatch, onboarding.disclaimer.invalid, onboarding.restart.invalid,
                 onboarding.restart.rateLimited, onboarding.tour.invalid; passkey — passkey.challenge.expired,
                 passkey.response.invalid, passkey.unknown, passkey.verification.failed; personal_records —
@@ -46102,6 +46137,8 @@ components:
               - apple-health.types-2026-11
               - medication.snooze-setting
               - apple-health.effort-scores
+              - medication.intake-sync-version
+              - medication.current-dose-open-slot
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices.
@@ -46123,7 +46160,10 @@ components:
             (5–240, default 30); a snooze without snoozedUntil and Telegram's Remind me later button defer by it.
             `apple-health.effort-scores`: The batch ingest accepts HealthKit workoutEffortScore,
             estimatedWorkoutEffortScore and physicalEffort as WORKOUT_EFFORT_SCORE, ESTIMATED_WORKOUT_EFFORT_SCORE and
-            PHYSICAL_EFFORT."
+            PHYSICAL_EFFORT. `medication.intake-sync-version`: Today rows, the single take answers and every landed bulk
+            entry carry the row's syncVersion, the value expectedSyncVersion compares.
+            `medication.current-dose-open-slot`: complianceDisplay.currentDose names the earliest slot still due or
+            overdue, so a dose whose time has passed stays current until it is recorded or missed."
       required:
         - version
         - buildSha
@@ -60129,6 +60169,13 @@ components:
               format: date-time
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
+        syncVersion:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: The row's current version. Send it as `expectedSyncVersion` on `DELETE
+            /api/medications/{id}/intake/{eventId}` to undo this dose only if nothing changed it since; a changed row
+            answers 409 `medications.intake.changedSinceSeen`.
         source:
           type: string
           enum:
@@ -60239,6 +60286,7 @@ components:
         - medicationId
         - scheduledAt
         - takenAt
+        - syncVersion
         - source
         - takenVia
         - status
@@ -61273,6 +61321,13 @@ components:
         id:
           description: The landed row id (absent on skips).
           type: string
+        syncVersion:
+          description: The landed row's version after the batch settled (absent on skips). Send it as `expectedSyncVersion` to
+            undo the entry; a row changed since answers 409 `medications.intake.changedSinceSeen`. The `intake` row on
+            `alreadyTaken` carries the same value.
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
         intake:
           description: "On `alreadyTaken`: the recorded row the slot already holds."
           $ref: "#/components/schemas/MedicationIntakeEvent"
@@ -63663,7 +63718,9 @@ components:
                   format: date-time
                   pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
                 - type: "null"
-              description: Target instant of the open dose. Null when no dose is open.
+              description: "Target instant of the open dose: the earliest slot still due or overdue, before any upcoming one, so a
+                dose whose clock time has passed stays the current dose until it is recorded or missed. Null when no
+                dose is open."
             state:
               anyOf:
                 - type: string
@@ -100775,6 +100832,23 @@ components:
       required:
         - index
         - status
+      additionalProperties: false
+    GetSymptomEventEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/SymptomEvent"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
       additionalProperties: false
     UpdateSymptomEventEnvelope:
       type: object
