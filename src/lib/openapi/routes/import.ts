@@ -142,6 +142,14 @@ const jsonImportMeasurement = z
       .max(32)
       .optional()
       .describe("The writer of the reading (watch, phone)."),
+    timeZone: z
+      .string()
+      .min(1)
+      .max(64)
+      .optional()
+      .describe(
+        "The IANA zone the reading was taken in, as `POST /api/measurements/batch` stores it. A name the server cannot read is stored as null (the profile zone), never a refusal.",
+      ),
     notes: z.string().optional().describe("Encrypted at rest."),
     externalId: z
       .string()

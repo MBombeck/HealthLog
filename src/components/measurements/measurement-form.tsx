@@ -45,7 +45,7 @@ import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import { MEASUREMENT_NOTES_MAX_LENGTH } from "@/lib/measurements/notes-limit";
 
 import { DurationReadAs } from "./duration-read-as";
-import { useRecentEntryTypes } from "./entry/use-entry-recall";
+import { useEntryType } from "./entry/use-entry-type";
 import { LastValueLine, lastValuePlaceholder } from "./entry/last-value-line";
 import {
   canonicalEntryValue,
@@ -143,34 +143,16 @@ export function MeasurementForm({
   // Only types whose module is on. A default, a deep link or the last-used
   // type that is switched off falls back to the first offered type.
   const moduleTypes = measurementFormTypes(user?.modules);
-  // A deep-link default wins, else the type the person last saved by hand,
-  // read from their own readings (the same answer on every device, and
-  // nothing about their health kept in browser storage), else blood
-  // pressure. `null` until a type is picked.
-  const recentTypes = useRecentEntryTypes(
-    moduleTypes.map((mt) => mt.value),
-    true,
-  );
-  const [pickedType, setType] = useState<string | null>(
-    normalizedDefault || null,
-  );
-  const selectedType = pickedType ?? recentTypes[0] ?? "BLOOD_PRESSURE";
-  const type = moduleTypes.some((mt) => mt.value === selectedType)
-    ? selectedType
-    : (moduleTypes[0]?.value ?? "BLOOD_PRESSURE");
   const [value, setValue] = useState("");
   const [valueError, setValueError] = useState<string | null>(null);
   const [sysBp, setSysBp] = useState("");
   const [diaBp, setDiaBp] = useState("");
   const [pulse, setPulse] = useState("");
-  // Once something is typed, the shown type stays put: the readings that
-  // pick the default may arrive after the first keystroke.
-  if (
-    pickedType === null &&
-    (value !== "" || sysBp !== "" || diaBp !== "" || pulse !== "")
-  ) {
-    setType(type);
-  }
+  const { type, setType } = useEntryType(
+    moduleTypes.map((mt) => mt.value),
+    normalizedDefault,
+    value !== "" || sysBp !== "" || diaBp !== "" || pulse !== "",
+  );
   // The glucose of a fingerstick entered with its ketones; optional.
   const [pairedGlucose, setPairedGlucose] = useState("");
   const [notes, setNotes] = useState("");

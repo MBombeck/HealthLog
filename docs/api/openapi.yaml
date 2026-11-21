@@ -37482,6 +37482,12 @@ components:
           type: string
           minLength: 1
           maxLength: 32
+        timeZone:
+          description: The IANA zone the reading was taken in, as `POST /api/measurements/batch` stores it. A name the server
+            cannot read is stored as null (the profile zone), never a refusal.
+          type: string
+          minLength: 1
+          maxLength: 64
         notes:
           description: Encrypted at rest.
           type: string
