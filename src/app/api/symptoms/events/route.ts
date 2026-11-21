@@ -3,7 +3,9 @@
  *
  *   GET  /api/symptoms/events — newest first, optionally narrowed by
  *        `from` / `to` (ISO instants), `definitionId` and `episodeId`; at most
- *        500 per page.
+ *        500 per page. An occurrence on a local day with a timed dose
+ *        carries `doseOffset`, from the same rule as the day view
+ *        (`symptomDoseOffsets`), while the medications section is readable.
  *   POST /api/symptoms/events — log one (`{ definitionId, intensity,
  *        occurredAt?, note?, episodeId? }`). `occurredAt` defaults to now and
  *        may not lie in the future beyond the shared five-minute skew;
@@ -33,6 +35,13 @@ import { withIdempotency } from "@/lib/idempotency";
 import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
 import { requireIllnessEnabled } from "@/lib/illness/gate";
+import { resolveDayAccess } from "@/lib/day/sections";
+import {
+  symptomDoseOffsets,
+  type SymptomDoseOffset,
+} from "@/lib/day/symptom-dose-offsets";
+import { actingDomainVisibility } from "@/lib/sharing/acting-domains";
+import { resolveUserTimezone } from "@/lib/tz/resolver";
 import type { Prisma } from "@/generated/prisma/client";
 import {
   encryptSymptomText,
@@ -45,7 +54,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export const GET = apiHandler(async (request: NextRequest) => {
-  const { user } = await requireRecordAuth("read", "illness");
+  const { user, grantId } = await requireRecordAuth("read", "illness");
 
   const gate = await requireIllnessEnabled(user.id);
   if (!gate.enabled) return gate.response;
@@ -83,13 +92,32 @@ export const GET = apiHandler(async (request: NextRequest) => {
     }),
   );
 
+  // The offset names a dose, so it is read only where the day would show
+  // the medications section: module on, and the grant covering it.
+  const access = await resolveDayAccess({
+    recordId: user.id,
+    domainVisible: await actingDomainVisibility(prisma, grantId),
+    owner: grantId === null,
+  });
+  const offsets = access.readable.has("medications")
+    ? await symptomDoseOffsets({
+        userId: user.id,
+        tz: await resolveUserTimezone(user.id),
+        occurrences: rows,
+      })
+    : new Map<string, SymptomDoseOffset>();
+
   annotate({
     action: { name: "symptoms.event.list" },
-    meta: { count: rows.length, limit: q.limit },
+    meta: { count: rows.length, limit: q.limit, dose_offsets: offsets.size },
   });
 
   return apiSuccess({
-    events: rows.map(toSymptomEventDTO),
+    events: rows.map((row) => {
+      const dto = toSymptomEventDTO(row);
+      const doseOffset = offsets.get(row.id);
+      return doseOffset ? { ...dto, doseOffset } : dto;
+    }),
     limit: q.limit,
     // Exact: true only when a row past this page exists. `rows.length ===
     // limit` said true on a page that was exactly full, and the client then
