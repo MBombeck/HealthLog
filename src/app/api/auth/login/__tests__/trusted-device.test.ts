@@ -3,6 +3,12 @@ import { NextRequest } from "next/server";
 
 // The per-account throttle has its own suite (login-throttle.test.ts); here
 // it lets every attempt through and counts nothing.
+// The exact, case-blind lookup (`@/lib/auth/identity-lookup`) answers with an
+// id; the row read by that id is what each case below decides.
+vi.mock("@/lib/auth/identity-lookup", () => ({
+  findUserIdBySignInName: vi.fn(async () => "matched-account"),
+}));
+
 vi.mock("@/lib/auth/login-throttle", () => ({
   beginAccountLoginAttempt: vi.fn(async () => ({
     waiting: null,
@@ -13,7 +19,7 @@ vi.mock("@/lib/auth/login-throttle", () => ({
 }));
 vi.mock("@/lib/db", () => ({
   prisma: {
-    user: { findFirst: vi.fn() },
+    user: { findUnique: vi.fn() },
     webauthnMfaCredential: { count: vi.fn().mockResolvedValue(0) },
   },
 }));
@@ -89,7 +95,7 @@ function req() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(prisma.user.findFirst).mockResolvedValue(MFA_USER as never);
+  vi.mocked(prisma.user.findUnique).mockResolvedValue(MFA_USER as never);
   vi.mocked(prisma.webauthnMfaCredential.count).mockResolvedValue(0 as never);
 });
 

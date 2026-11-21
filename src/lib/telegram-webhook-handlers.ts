@@ -1,3 +1,4 @@
+import { likeLiteral } from "@/lib/db-like";
 import { activeAccount } from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
 import { isP2025 } from "@/lib/prisma-errors";
@@ -879,7 +880,7 @@ export async function handleTextMessage(update: TelegramUpdate) {
   let medicationId: string | null = null;
   if (nameInput) {
     const med = await findTelegramDoseMedication(user.id, user.timezone, {
-      name: { equals: nameInput, mode: "insensitive" },
+      name: { equals: likeLiteral(nameInput), mode: "insensitive" },
     });
     medicationId = med?.id ?? null;
   } else {

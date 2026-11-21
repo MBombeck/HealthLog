@@ -1,3 +1,4 @@
+import { likeLiteral } from "@/lib/db-like";
 import { z } from "zod/v4";
 
 import { prisma } from "@/lib/db";
@@ -119,7 +120,10 @@ export const getVisitsTool: McpToolDefinition = {
             ? {
                 practitioner: {
                   is: {
-                    name: { contains: practitioner, mode: "insensitive" },
+                    name: {
+                      contains: likeLiteral(practitioner),
+                      mode: "insensitive",
+                    },
                     deletedAt: null,
                   },
                 },

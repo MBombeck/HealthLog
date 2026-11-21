@@ -15,6 +15,7 @@
  * confirmed row turned out to be a duplicate reported "saved 0 readings" under
  * a tick. The verdict is the server's to compute; the dialog only renders it.
  */
+import { likeLiteral } from "@/lib/db-like";
 import { NextRequest } from "next/server";
 import { fireAndForget } from "@/lib/logging/fire-and-forget";
 
@@ -80,7 +81,12 @@ async function isDuplicate(
       // The printed name, or a reading already filed under the marker this
       // name resolves to: an earlier report may have spelled it another way.
       OR: [
-        { analyte: { equals: row.analyte.trim(), mode: "insensitive" } },
+        {
+          analyte: {
+            equals: likeLiteral(row.analyte.trim()),
+            mode: "insensitive",
+          },
+        },
         ...(biomarkerId ? [{ biomarkerId }] : []),
       ],
       takenAt: labReadingDaySearchRange(day),

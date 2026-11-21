@@ -22,7 +22,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 vi.mock("@/lib/db", () => ({
-  prisma: { user: { findFirst: vi.fn() } },
+  // The identity lookup is raw SQL (`@/lib/auth/identity-lookup`); its rows
+  // are what decides "taken".
+  prisma: { $queryRaw: vi.fn() },
 }));
 vi.mock("@/lib/auth/session", () => ({
   createSession: vi.fn(),
@@ -135,7 +137,7 @@ beforeEach(() => {
     allowed: true,
     ip: "203.0.113.7",
   } as never);
-  vi.mocked(prisma.user.findFirst).mockResolvedValue(null as never);
+  vi.mocked(prisma.$queryRaw).mockResolvedValue([] as never);
   vi.mocked(checkPasswordStrength).mockReturnValue({
     isAcceptable: true,
     feedback: [],
@@ -245,18 +247,16 @@ describe.each([
 describe("POST /api/auth/claim", () => {
   it("checks the link before the username and email probe", async () => {
     vi.mocked(previewHandover).mockResolvedValue(null);
-    vi.mocked(prisma.user.findFirst).mockResolvedValue({ id: "x" } as never);
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ id: "x" }] as never);
     const res = await claim(post("/api/auth/claim", BODY));
     // A taken name would be a 409; the link is checked first, so 404.
     expect(res.status).toBe(404);
-    expect(prisma.user.findFirst).not.toHaveBeenCalled();
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
     expect(hashPassword).not.toHaveBeenCalled();
   });
 
   it("answers 409 profile_claim.taken for a name in use, before hashing", async () => {
-    vi.mocked(prisma.user.findFirst).mockResolvedValueOnce({
-      id: "x",
-    } as never);
+    vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([{ id: "x" }] as never);
     const res = await claim(post("/api/auth/claim", BODY));
     expect(res.status).toBe(409);
     expect(await errorCode(res)).toBe("profile_claim.taken");
@@ -373,16 +373,16 @@ describe("POST /api/auth/claim/sso", () => {
 
   it("checks the link before the username probe", async () => {
     vi.mocked(usableHandoverForToken).mockResolvedValue(null);
-    vi.mocked(prisma.user.findFirst).mockResolvedValue({ id: "x" } as never);
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ id: "x" }] as never);
     const res = await claimSso(post("/api/auth/claim/sso", SSO_BODY));
     expect(res.status).toBe(404);
     expect(await errorCode(res)).toBe("profile_claim.invalid");
-    expect(prisma.user.findFirst).not.toHaveBeenCalled();
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
     expect(res.headers.get("set-cookie")).toBeNull();
   });
 
   it("answers 409 taken for a username in use, and sets no cookie", async () => {
-    vi.mocked(prisma.user.findFirst).mockResolvedValue({ id: "x" } as never);
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ id: "x" }] as never);
     const res = await claimSso(post("/api/auth/claim/sso", SSO_BODY));
     expect(res.status).toBe(409);
     expect(await errorCode(res)).toBe("profile_claim.taken");

@@ -24,7 +24,7 @@ import { apiError, apiSuccess } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { getSession } from "@/lib/auth/session";
-import { prisma } from "@/lib/db";
+import { findUserIdByUsername } from "@/lib/auth/identity-lookup";
 import { annotate } from "@/lib/logging/context";
 import {
   CLAIM_SSO_REDIRECT,
@@ -57,11 +57,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return claimInvalid();
   }
 
-  const existing = await prisma.user.findFirst({
-    where: { username: { equals: username, mode: "insensitive" } },
-    select: { id: true },
-  });
-  if (existing) {
+  if ((await findUserIdByUsername(username)) !== null) {
     return apiError("Username already taken", 409, {
       errorCode: "profile_claim.taken",
     });

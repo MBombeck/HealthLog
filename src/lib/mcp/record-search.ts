@@ -38,6 +38,7 @@
  * labels) are scrubbed of forged markers instead, as the existing search
  * titles are, because a host renders them in a list.
  */
+import { likeLiteral } from "@/lib/db-like";
 import type {
   EncounterKind,
   IllnessLifecycle,
@@ -640,8 +641,18 @@ async function documentCandidates(
             userId,
             deletedAt: null,
             OR: nameTerms.flatMap((term) => [
-              { title: { contains: term, mode: "insensitive" as const } },
-              { filename: { contains: term, mode: "insensitive" as const } },
+              {
+                title: {
+                  contains: likeLiteral(term),
+                  mode: "insensitive" as const,
+                },
+              },
+              {
+                filename: {
+                  contains: likeLiteral(term),
+                  mode: "insensitive" as const,
+                },
+              },
             ]),
           },
           select: { id: true },

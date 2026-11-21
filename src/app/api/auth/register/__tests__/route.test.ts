@@ -201,15 +201,21 @@ describe("POST /api/auth/register — first-admin atomicity (M1)", () => {
     expect(createArgs.data.email).toBe("new.person@example.com");
     // The chosen spelling of the name is kept; only its uniqueness ignores case.
     expect(createArgs.data.username).toBe("NewUser");
-    expect(vi.mocked(prisma.user.findFirst)).toHaveBeenCalledWith({
-      where: {
-        email: { equals: "new.person@example.com", mode: "insensitive" },
-      },
-      select: { id: true },
+    // Both names go through the exact, case-blind lookup: `lower(col) =
+    // lower($1)`, never a pattern match.
+    const lookups = vi
+      .mocked(prisma.$queryRaw)
+      .mock.calls.map(([strings, ...values]) => ({
+        sql: (strings as unknown as string[]).join("$"),
+        values,
+      }));
+    expect(lookups).toContainEqual({
+      sql: expect.stringContaining('lower("email") = lower($)'),
+      values: ["new.person@example.com"],
     });
-    expect(vi.mocked(prisma.user.findFirst)).toHaveBeenCalledWith({
-      where: { username: { equals: "NewUser", mode: "insensitive" } },
-      select: { id: true },
+    expect(lookups).toContainEqual({
+      sql: expect.stringContaining('lower("username") = lower($)'),
+      values: ["NewUser"],
     });
   });
 

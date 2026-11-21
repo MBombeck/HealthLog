@@ -18,6 +18,7 @@
  * Token budget (R-DEL-2): the prompt SUMMARISES (latest + aggregate per metric,
  * latest reading per analyte) — it never dumps the full per-reading history.
  */
+import { likeLiteral } from "@/lib/db-like";
 import { z } from "zod/v4";
 
 import { prisma } from "@/lib/db";
@@ -204,7 +205,12 @@ async function collectLabTrajectories(
       userId,
       deletedAt: null,
       ...(analyteFilter
-        ? { analyte: { contains: analyteFilter, mode: "insensitive" } }
+        ? {
+            analyte: {
+              contains: likeLiteral(analyteFilter),
+              mode: "insensitive",
+            },
+          }
         : {}),
     },
     select: {

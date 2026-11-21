@@ -4,6 +4,7 @@
  * year / date-range filters, sort, and keyset pagination. It NEVER selects
  * the encrypted blob column.
  */
+import { likeLiteral } from "@/lib/db-like";
 import type { z } from "zod/v4";
 
 import { prisma } from "@/lib/db";
@@ -58,8 +59,8 @@ function listWhere(
   if (q) {
     // Substring match on the short plaintext fields …
     const or: Prisma.InboundDocumentWhereInput[] = [
-      { title: { contains: q, mode: "insensitive" } },
-      { filename: { contains: q, mode: "insensitive" } },
+      { title: { contains: likeLiteral(q), mode: "insensitive" } },
+      { filename: { contains: likeLiteral(q), mode: "insensitive" } },
     ];
     // … unioned with a WHOLE-WORD content match over the blind token index.
     // The query is tokenised + HMAC'd the same way the index was built, then

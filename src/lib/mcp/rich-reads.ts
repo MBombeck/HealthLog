@@ -28,6 +28,7 @@
  * the session-narrowed id passed by the caller, never a tool argument
  * (REQ-SEC-5). All reads are read-only.
  */
+import { likeLiteral } from "@/lib/db-like";
 import type { MeasurementType } from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/db";
@@ -1375,14 +1376,21 @@ export async function getLabHistory(
           userId,
           deletedAt: null,
           OR: [
-            { analyte: { contains: needle, mode: "insensitive" } },
+            { analyte: { contains: likeLiteral(needle), mode: "insensitive" } },
             {
-              biomarker: { name: { contains: needle, mode: "insensitive" } },
+              biomarker: {
+                name: { contains: likeLiteral(needle), mode: "insensitive" },
+              },
             },
             {
               biomarker: {
                 aliases: {
-                  some: { name: { contains: needle, mode: "insensitive" } },
+                  some: {
+                    name: {
+                      contains: likeLiteral(needle),
+                      mode: "insensitive",
+                    },
+                  },
                 },
               },
             },
