@@ -3833,6 +3833,18 @@
         "napCount": "{count} cochilos",
         "unavailable": "Ainda não há dados de estágio. Os estágios do sono aparecem aqui assim que uma fonte conectada os entregar."
       },
+      "hypnogram": {
+        "title": "Linha do tempo da noite",
+        "wokeOn": "Acordou em {date}",
+        "summary": "{asleep} dormindo, {awakenings} despertares",
+        "source": "de {source}",
+        "previous": "Noite anterior",
+        "next": "Próxima noite",
+        "empty": "Nenhuma noite registrada para este dia.",
+        "estimateNote": "Esta fonte informa totais por fase sem horários, então não há linha do tempo para esta noite.",
+        "noStages": "Esta noite não tem horários das fases.",
+        "ariaLabel": "Fases do sono ao longo da noite: {asleep} dormindo, {awakenings} despertares"
+      },
       "empty": {
         "title": "Ainda não há dados de sono",
         "description": "Conecte uma fonte como o Apple Health ou um wearable, ou registre o sono manualmente, e esta visão será preenchida automaticamente.",

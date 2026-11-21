@@ -3833,6 +3833,18 @@
         "napCount": "{count} naps",
         "unavailable": "No stage data yet. Sleep stages appear here as soon as a connected source delivers them."
       },
+      "hypnogram": {
+        "title": "Night timeline",
+        "wokeOn": "Woke on {date}",
+        "summary": "{asleep} asleep, {awakenings} awakenings",
+        "source": "from {source}",
+        "previous": "Previous night",
+        "next": "Next night",
+        "empty": "No night recorded for this day.",
+        "estimateNote": "This source reports stage totals without times, so there is no timeline for this night.",
+        "noStages": "This night has no stage times.",
+        "ariaLabel": "Sleep stages over the night: {asleep} asleep, {awakenings} awakenings"
+      },
       "empty": {
         "title": "No sleep data yet",
         "description": "Connect a source like Apple Health or a wearable, or log sleep manually, and this view fills in automatically.",

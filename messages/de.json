@@ -3833,6 +3833,18 @@
         "napCount": "{count} Nickerchen",
         "unavailable": "Noch keine Phasen-Daten. Schlafphasen erscheinen hier, sobald eine verbundene Quelle sie liefert."
       },
+      "hypnogram": {
+        "title": "Nachtverlauf",
+        "wokeOn": "Aufgewacht am {date}",
+        "summary": "{asleep} Schlaf, {awakenings}× wach",
+        "source": "von {source}",
+        "previous": "Vorherige Nacht",
+        "next": "Nächste Nacht",
+        "empty": "Für diesen Tag ist keine Nacht erfasst.",
+        "estimateNote": "Diese Quelle meldet Phasensummen ohne Uhrzeiten, deshalb gibt es für diese Nacht keinen Verlauf.",
+        "noStages": "Diese Nacht hat keine Phasenzeiten.",
+        "ariaLabel": "Schlafphasen über die Nacht: {asleep} Schlaf, {awakenings}× wach"
+      },
       "empty": {
         "title": "Noch keine Schlafdaten",
         "description": "Verbinde eine Quelle wie Apple Health oder ein Wearable (oder erfasse Schlaf manuell), und diese Ansicht füllt sich automatisch.",

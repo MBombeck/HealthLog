@@ -3833,6 +3833,18 @@
         "napCount": "{count} siestes",
         "unavailable": "Pas encore de données de phases. Les phases de sommeil apparaîtront ici dès qu’une source connectée les fournira."
       },
+      "hypnogram": {
+        "title": "Déroulé de la nuit",
+        "wokeOn": "Réveil le {date}",
+        "summary": "{asleep} de sommeil, {awakenings} réveils",
+        "source": "depuis {source}",
+        "previous": "Nuit précédente",
+        "next": "Nuit suivante",
+        "empty": "Aucune nuit enregistrée pour ce jour.",
+        "estimateNote": "Cette source fournit des totaux par phase sans horaires, il n'y a donc pas de déroulé pour cette nuit.",
+        "noStages": "Cette nuit n'a pas d'horaires de phases.",
+        "ariaLabel": "Phases de sommeil sur la nuit : {asleep} de sommeil, {awakenings} réveils"
+      },
       "empty": {
         "title": "Pas encore de données de sommeil",
         "description": "Connectez une source comme Apple Health ou un objet connecté (ou enregistrez votre sommeil manuellement) et cette vue se remplira automatiquement.",

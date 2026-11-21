@@ -3833,6 +3833,18 @@
         "napCount": "{count} drzemki/ek",
         "unavailable": "Brak danych o fazach. Fazy snu pojawią się tutaj, gdy tylko dostarczy je połączone źródło."
       },
+      "hypnogram": {
+        "title": "Przebieg nocy",
+        "wokeOn": "Pobudka {date}",
+        "summary": "{asleep} snu, wybudzenia: {awakenings}",
+        "source": "z {source}",
+        "previous": "Poprzednia noc",
+        "next": "Następna noc",
+        "empty": "Brak zapisanej nocy dla tego dnia.",
+        "estimateNote": "To źródło podaje sumy faz bez godzin, więc dla tej nocy nie ma przebiegu.",
+        "noStages": "Ta noc nie ma godzin faz.",
+        "ariaLabel": "Fazy snu w ciągu nocy: {asleep} snu, wybudzenia: {awakenings}"
+      },
       "empty": {
         "title": "Brak danych o śnie",
         "description": "Połącz źródło takie jak Apple Health lub urządzenie noszone albo zapisuj sen ręcznie, a ten widok wypełni się automatycznie.",

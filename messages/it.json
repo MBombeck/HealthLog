@@ -3833,6 +3833,18 @@
         "napCount": "{count} pisolini",
         "unavailable": "Ancora nessun dato sulle fasi. Le fasi del sonno appariranno qui non appena una fonte collegata le fornirà."
       },
+      "hypnogram": {
+        "title": "Andamento della notte",
+        "wokeOn": "Risveglio il {date}",
+        "summary": "{asleep} di sonno, {awakenings} risvegli",
+        "source": "da {source}",
+        "previous": "Notte precedente",
+        "next": "Notte successiva",
+        "empty": "Nessuna notte registrata per questo giorno.",
+        "estimateNote": "Questa fonte riporta i totali per fase senza orari, quindi per questa notte non c'è un andamento.",
+        "noStages": "Questa notte non ha orari delle fasi.",
+        "ariaLabel": "Fasi del sonno nella notte: {asleep} di sonno, {awakenings} risvegli"
+      },
       "empty": {
         "title": "Ancora nessun dato sul sonno",
         "description": "Collega una fonte come Apple Health o un wearable, oppure registra il sonno manualmente, e questa vista si riempirà in automatico.",

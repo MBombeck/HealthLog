@@ -3833,6 +3833,18 @@
         "napCount": "{count} siestas",
         "unavailable": "Aún no hay datos de fases. Las fases de sueño aparecerán aquí en cuanto una fuente conectada las proporcione."
       },
+      "hypnogram": {
+        "title": "Evolución de la noche",
+        "wokeOn": "Despertar el {date}",
+        "summary": "{asleep} dormido, {awakenings} despertares",
+        "source": "de {source}",
+        "previous": "Noche anterior",
+        "next": "Noche siguiente",
+        "empty": "No hay ninguna noche registrada para este día.",
+        "estimateNote": "Esta fuente da totales por fase sin horas, así que no hay evolución para esta noche.",
+        "noStages": "Esta noche no tiene horas por fase.",
+        "ariaLabel": "Fases del sueño durante la noche: {asleep} dormido, {awakenings} despertares"
+      },
       "empty": {
         "title": "Aún no hay datos de sueño",
         "description": "Conecta una fuente como Apple Health o un wearable (o registra el sueño manualmente) y esta vista se llenará automáticamente.",
