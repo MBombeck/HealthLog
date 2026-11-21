@@ -165,6 +165,7 @@ async function setUp() {
   });
   const relayCap = me.data.push.relay;
   expect(relayCap.offered).toBe(true);
+  expect(relayCap.host).toBe(RELAY_HOST);
   expect(relayCap.instanceId).toBe(on.data.instanceId);
   expect(relayCap.envelopeVersions).toEqual([1]);
   expect(relayCap.senderKeys[0].status).toBe("current");

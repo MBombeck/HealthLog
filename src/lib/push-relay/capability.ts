@@ -4,6 +4,7 @@
  * `POST /api/devices` answers with. The app gates on these fields only.
  *
  * `push.relay`:
+ * - `host`: the relay host the app's signed statements name.
  * - `available`: this server can use a relay (`PUSH_RELAY_MODE`, pinned
  *   relay keys); `offered`: the operator turned it on.
  * - `state` (`ok` | `degraded` | `down` | `off`), `since`, `reason`.
@@ -43,6 +44,8 @@ const INTAKE_RECORDED_EVENT = "MEDICATION_INTAKE_RECORDED";
 export type RelayHealth = "ok" | "degraded" | "down" | "off";
 
 export interface RelayCapability {
+  /** The relay host every statement the app signs names. */
+  host: string | null;
   available: boolean;
   offered: boolean;
   state: RelayHealth;
@@ -107,6 +110,7 @@ export async function relayCapability(
   const docs = config.origin ? relayDocumentUrls(config.origin) : null;
   const sealing = sealsEnvelopes(row);
   return {
+    host: config.host || null,
     available: config.available,
     offered: row !== null,
     state: health.state,

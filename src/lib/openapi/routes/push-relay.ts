@@ -29,6 +29,12 @@ const senderKey = z
 
 export const relayCapabilityBlock = z
   .object({
+    host: z
+      .string()
+      .nullable()
+      .describe(
+        "The relay host, lower case, without scheme or port: the `host` field of every statement the app signs (`hl-bind-v1`, `hl-activity-v1`) and of the relay's response signatures.",
+      ),
     available: z
       .boolean()
       .describe(
