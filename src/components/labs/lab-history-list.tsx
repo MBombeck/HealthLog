@@ -1,6 +1,5 @@
 "use client";
 
-import { DayLinkStated } from "@/components/day/day-link";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -34,8 +33,7 @@ import { formatLabReading } from "@/lib/labs/format-value";
 import { LabConvertedNote } from "./lab-converted-note";
 import { resolveNoteForUpdate } from "@/lib/labs/note-update";
 import { resolveValueForUpdate, valueEditSeed } from "@/lib/labs/value-update";
-import { useDisplayTimezone, useTranslations } from "@/lib/i18n/context";
-import { labReadingDay } from "@/lib/labs/reading-day";
+import { useTranslations } from "@/lib/i18n/context";
 import { invalidateKeys, labDependentKeys, queryKeys } from "@/lib/query-keys";
 
 import { ReferenceRangeBadge } from "./reference-range-badge";
@@ -47,7 +45,7 @@ import {
   LabResultRelatedLinks,
 } from "./lab-result-related-links";
 import type { LabResultDto } from "./types";
-import { useLabDate, useLabNumber } from "./use-lab-format";
+import { LabDayLink, useLabDate, useLabNumber } from "./use-lab-format";
 import { labUnitText } from "@/lib/labs/dimensionless";
 
 const NOTE_MAX_LENGTH = 2000;
@@ -90,7 +88,6 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
   const { t } = useTranslations();
   const labNumber = useLabNumber();
   const labDate = useLabDate();
-  const displayTz = useDisplayTimezone();
   const { canManageDomain } = useRecordCapabilities();
   // What the day shows at its top when opened from a reading: the value and
   // the reading before it, the comparison a draw is read against.
@@ -413,13 +410,13 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
                 unit={r.unit}
               />
               <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                <DayLinkStated
-                  at={labReadingDay(r.takenAt, displayTz)}
+                <LabDayLink
+                  takenAt={r.takenAt}
                   focus={labDayFocus(r)}
                   className="whitespace-nowrap"
                 >
                   {labDate(r.takenAt)}
-                </DayLinkStated>
+                </LabDayLink>
                 <ReferenceRangeBadge status={r.rangeStatus} />
                 {r.hasNote ? (
                   <span className="text-xs">{t("labs.hasNote")}</span>
@@ -494,12 +491,9 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
                 <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
                   {/* v1.42 — the draw date opens the day; the row keeps its
                       edit and delete. A draw day is often a visit day. */}
-                  <DayLinkStated
-                    at={labReadingDay(r.takenAt, displayTz)}
-                    focus={labDayFocus(r)}
-                  >
+                  <LabDayLink takenAt={r.takenAt} focus={labDayFocus(r)}>
                     {labDate(r.takenAt)}
-                  </DayLinkStated>
+                  </LabDayLink>
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col items-start gap-1">

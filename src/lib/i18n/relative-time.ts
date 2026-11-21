@@ -148,7 +148,7 @@ export function formatUpdatedLabel(
 }
 
 /**
- * v1.4.43 — render a timestamp as a relative phrase when it
+ * Render a timestamp as a relative phrase when it
  * happened within the last 24 hours, otherwise fall back to the
  * absolute locale-aware date+time. Closes the visual inconsistency
  * the measurement-list surfaced: the same screen could show "vor 3
@@ -186,16 +186,9 @@ export function formatDateOrRelative(
   // model them and "in 3 min" would mislead in a health-log context.
   if (diffMs < 0) return fmt.dateTime(iso);
   if (diffMs < 60_000) return t("insights.relativeJustNow");
-  // v1.4.49.2 — One/Other pluralisation. Mirrors the
-  // `src/lib/i18n/relative-time.ts:24-48` pattern (which got this fix in
-  // v1.4.43 H6 for the "vor 1 Minuten" bug). This twin helper was missed
-  // in the v1.4.43 sweep, so the bare `t("insights.relativeMinutesAgo",
-  // { count })` and `t("insights.relativeHoursAgo", { count })` calls
-  // returned the key itself — the translation bundle only carries the
-  // pluralised `*One` / `*Other` variants. Reported by the maintainer as raw
-  // `insights.relativeHoursAgo` leaking onto medication cards, recent-
-  // achievements, admin sections, and every other consumer of
-  // `formatDateOrRelative`.
+  // One/Other pluralisation, as in `formatRelativeTime` above: the bundle
+  // carries only the `*One` / `*Other` variants, so a bare key would print
+  // itself.
   const minutes = Math.floor(diffMs / 60_000);
   if (minutes < 60) {
     return t(

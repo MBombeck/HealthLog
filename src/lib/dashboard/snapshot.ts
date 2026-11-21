@@ -648,12 +648,7 @@ async function buildExtras(
   let bpEnvelopePriorTwoWeeks: BpInTargetEnvelope | null = null;
 
   const bpTargets = resolveEffectiveBpTargets(
-    {
-      dateOfBirth: user.dateOfBirth,
-      gender: user.gender,
-      heightCm: user.heightCm ?? null,
-      timezone: userTz,
-    },
+    { ...user, timezone: userTz },
     user.thresholdsJson,
   );
   const clinicalBpTargets = getBpTargets(user.dateOfBirth, userTz, now);
@@ -1453,12 +1448,7 @@ export async function buildDashboardSnapshot(
         weightTrendReferenceKg(slim.summaries.WEIGHT),
       ),
       directions: resolveSummaryVerdicts(slim.summaries, {
-        profile: {
-          dateOfBirth: user.dateOfBirth,
-          gender: user.gender,
-          heightCm: user.heightCm ?? null,
-          timezone: userTz,
-        },
+        profile: { ...user, timezone: userTz },
         thresholdsJson: user.thresholdsJson,
       }),
     },

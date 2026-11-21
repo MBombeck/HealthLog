@@ -531,12 +531,7 @@ export async function findTriggerForUser(
   ) =>
     getEffectiveRange(
       metric,
-      {
-        heightCm: user.heightCm,
-        dateOfBirth: user.dateOfBirth,
-        gender: user.gender,
-        timezone: user.timezone ?? undefined,
-      },
+      user,
       (user.thresholdsJson ?? null) as ThresholdOverridesJson | null,
     ).range;
 

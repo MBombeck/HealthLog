@@ -58,7 +58,7 @@ export interface UserProfileForRange {
    * The owner's zone: the day their birthday turns over in. Every caller in
    * the tree passes it; absent reads the birthday on the default zone.
    */
-  timezone?: string;
+  timezone?: string | null;
 }
 
 /**

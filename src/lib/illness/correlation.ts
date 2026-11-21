@@ -407,9 +407,8 @@ export interface IllnessRedFlag {
 
 /* ── red-flag thresholds (clinical floors, conservative) ─────────────── */
 
-// D3-H1: sustained-fever + sustained-low-SpO2 escalation floors come from the
-// one source of truth so the illness engine, the status registry's fever band,
-// and the hero/Coach never carry divergent magic numbers.
+// The sustained-fever and sustained-low-SpO2 escalation floors have one source,
+// shared by the illness engine, the status fever band and the hero and Coach.
 /** SpO2 at/below this for ≥ RED_FLAG_RUN_DAYS escalates. */
 const SPO2_RED_FLAG = SPO2_RED_FLAG_PCT;
 /** Body temperature at/above this (°C) for ≥ RED_FLAG_RUN_DAYS escalates. */

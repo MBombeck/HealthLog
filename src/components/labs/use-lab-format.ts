@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback } from "react";
+import { createElement, useCallback, type ComponentProps } from "react";
+
+import { DayLinkStated } from "@/components/day/day-link";
 
 import { useCalendarDate } from "@/hooks/use-calendar-date";
-import { useFormatters } from "@/lib/i18n/context";
+import { useDisplayTimezone, useFormatters } from "@/lib/i18n/context";
 import { formatLabValue, type LabNumberFormat } from "@/lib/labs/format-value";
-import { isLabDateOnly } from "@/lib/labs/reading-day";
+import { isLabDateOnly, labReadingDay } from "@/lib/labs/reading-day";
 
 /**
  * A lab value in the reader's number format, with every digit the reading
@@ -38,4 +40,19 @@ export function useLabDate(): (takenAt: string) => string {
     },
     [fmt, calendarDate],
   );
+}
+
+/**
+ * A link that opens the day a lab reading belongs to, by the same rule the
+ * server files it under (`labReadingDay`).
+ */
+export function LabDayLink({
+  takenAt,
+  ...props
+}: Omit<ComponentProps<typeof DayLinkStated>, "at"> & { takenAt: string }) {
+  const timeZone = useDisplayTimezone();
+  return createElement(DayLinkStated, {
+    ...props,
+    at: labReadingDay(takenAt, timeZone),
+  });
 }

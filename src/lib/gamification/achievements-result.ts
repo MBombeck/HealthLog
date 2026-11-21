@@ -57,9 +57,8 @@ export type AchievementsResult = Awaited<
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ROLLING_WINDOW_DAYS = 30;
 
-// v1.16.1 — weekly measurement-consistency badge: 4 consecutive weeks
-// with at least 5 distinct active vitals days each. Mirrors the
-// `measurement-weeks-4` definition's target.
+// The weekly measurement-consistency badge: 4 consecutive weeks with at least
+// 5 distinct active vitals days each, the `measurement-weeks-4` target.
 const MEASUREMENT_CONSISTENCY_MIN_DAYS_PER_WEEK = 5;
 const MEASUREMENT_CONSISTENCY_TARGET_WEEKS = 4;
 

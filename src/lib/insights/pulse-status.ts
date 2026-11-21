@@ -79,6 +79,7 @@ async function buildPulseSnapshot(
       dateOfBirth: true,
       gender: true,
       thresholdsJson: true,
+      timezone: true,
     },
   });
 
@@ -159,11 +160,7 @@ async function buildPulseSnapshot(
   const ownPulse = resolveThresholdOverride(user?.thresholdsJson, "PULSE");
   const pulseTarget =
     (user && ownPulse
-      ? getEffectiveRange(
-          "PULSE",
-          { ...user, timezone: userTz },
-          { PULSE: ownPulse },
-        ).range
+      ? getEffectiveRange("PULSE", user, { PULSE: ownPulse }).range
       : null) ??
     getPersonalizedPulseTarget(
       ageInYears(user?.dateOfBirth, userTz),
