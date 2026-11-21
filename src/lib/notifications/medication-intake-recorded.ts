@@ -16,7 +16,8 @@
  * `aps.thread-id` per medication, and a neutral localised alert with no
  * medication name, like every medication push without a name. Custom keys
  * beside `aps`: `eventType`, `medicationId`, `intakeId`, `slotInstant`,
- * `outcome` (`taken` | `skipped`), `takenAt` (null on a skip), `takenVia`.
+ * `outcome` (`taken` | `skipped`), `takenAt` and `takenVia` (both null on a
+ * skip).
  *
  * Gating: the APNs channel must be enabled; an explicit per-channel
  * preference row for this event wins; without one the confirmation is on
@@ -53,7 +54,7 @@ export function recordedEventOf(
     takenAt: Date | null;
     skipped: boolean;
   },
-  takenVia: IntakeRecordedEvent["takenVia"],
+  takenVia: NonNullable<IntakeRecordedEvent["takenVia"]>,
 ): IntakeRecordedEvent | undefined {
   if (!row.skipped && row.takenAt === null) return undefined;
   return {
@@ -62,7 +63,8 @@ export function recordedEventOf(
     slotInstant: row.scheduledFor,
     outcome: row.skipped ? "skipped" : "taken",
     takenAt: row.skipped ? null : row.takenAt,
-    takenVia,
+    // A skip has no origin of a take (#191: null on a skip).
+    takenVia: row.skipped ? null : takenVia,
   };
 }
 
@@ -82,7 +84,8 @@ export interface IntakeRecordedEvent {
     | "TELEGRAM"
     | "APPLE_HEALTH"
     | "IMPORT"
-    | "AUTO";
+    | "AUTO"
+    | null;
 }
 
 interface Pending {

@@ -51,7 +51,7 @@ export const ingestPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "200": {
           description:
-            "Replay: a row with this `idempotencyKey` already exists for the token's owner and is returned unchanged. Or a repeat: the slot this take binds to already holds a take recorded within two hours of it, and the body is that row with `alreadyTaken: true`. Either way nothing was written and no inventory was consumed.",
+            "Replay: a row with this `idempotencyKey` already exists for the token's owner and is returned unchanged. Or a repeat: the slot this take binds to already holds a take recorded within two hours of it, and the body is that row with `alreadyTaken: true`. A take further from the recorded one is a dose of its own: it answers the nearest open slot within six hours (201), or is recorded ad hoc. Either way nothing was written and no inventory was consumed.",
           content: {
             "application/json": {
               schema: dataEnvelope(

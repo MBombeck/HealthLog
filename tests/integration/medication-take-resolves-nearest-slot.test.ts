@@ -202,6 +202,52 @@ describe("a take outside every window answers the nearest open slot", () => {
     expect(wrong.status).toBeLessThan(300);
   });
 
+  it("a further dose after a taken slot answers the next open slot, not alreadyTaken", async () => {
+    const { medId, raw } = await setup();
+    const prisma = getPrismaClient();
+    // A second dose time at 08:00 Berlin, taken by the box at 08:05.
+    await prisma.medicationSchedule.create({
+      data: {
+        medicationId: medId,
+        windowStart: "08:00",
+        windowEnd: "08:00",
+        timesOfDay: ["08:00"],
+        daysOfWeek: null,
+        scheduleType: "SCHEDULED",
+      },
+    });
+    const morning = new Date("2026-11-21T07:00:00.000Z");
+    const user = await prisma.user.findFirstOrThrow();
+    await prisma.medicationIntakeEvent.create({
+      data: {
+        userId: user.id,
+        medicationId: medId,
+        scheduledFor: morning,
+        takenAt: new Date("2026-11-21T07:05:00.000Z"),
+        source: "API",
+        takenVia: "INTEGRATION",
+        idempotencyKey: "box-morning",
+      },
+    });
+    // 10:20 Berlin: nearer to 08:00 than to 13:00, but more than two hours
+    // after the morning take. It is the midday dose, opened early.
+    vi.setSystemTime(new Date("2026-11-21T09:20:00.000Z"));
+    const res = await ingest(raw, "box-midday");
+    expect(res.status).toBe(201);
+    const midday = (await liveRows(medId)).find(
+      (r) => r.scheduledFor.getTime() === SLOT.getTime(),
+    );
+    expect(midday?.takenAt?.toISOString()).toBe("2026-11-21T09:20:00.000Z");
+    expect(midday?.attributionSource).toBe("USER_PIN");
+
+    // Within two hours of the morning take it is the same dose again.
+    vi.setSystemTime(new Date("2026-11-21T08:30:00.000Z"));
+    const repeat = await ingest(raw, "box-again");
+    expect(repeat.status).toBe(200);
+    const body = (await repeat.json()) as { data: { alreadyTaken?: boolean } };
+    expect(body.data.alreadyTaken).toBe(true);
+  });
+
   it("a take beyond six hours of any slot stays ad hoc", async () => {
     const { medId, raw } = await setup();
     // 05:00 Berlin, eight hours before the slot.

@@ -118,9 +118,11 @@ async function writeOntoSlot(
   });
   if (applied.outcomeChangeRefused) return { kind: "outcome_change_refused" };
   if (applied.alreadyTaken) return { kind: "alreadyTaken", row: applied.row };
-  // Reset the snooze when a dose is actually recorded (not on a
-  // no-downgrade no-op, which left the prior taken row untouched).
-  if (!skipped && !applied.noDowngradeNoOp) {
+  // A no-op (a replayed decision) wrote nothing: no audit row, no push, no
+  // guardian notice, no stock movement.
+  if (applied.noDowngradeNoOp) return { kind: "existing", row: applied.row };
+  // Reset the snooze when a dose is actually recorded.
+  if (!skipped) {
     await prisma.medication.update({
       where: { id },
       data: { snoozedUntil: null },

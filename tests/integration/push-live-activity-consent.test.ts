@@ -90,6 +90,22 @@ async function relayBlock(session: SessionFixture) {
   return me.data.push.relay;
 }
 
+async function startedOnMe(session: SessionFixture) {
+  const { GET } = await import("@/app/api/auth/me/route");
+  const me = await callRoute<{
+    push: { device: { liveActivityStarted: unknown } | null };
+  }>(GET, {
+    method: "GET",
+    route: "/api/auth/me",
+    auth: session,
+    headers: { "x-device-id": `device-${TOKEN.slice(0, 6)}` },
+    contract: {
+      skip: "the account payload's features block predates this check",
+    },
+  });
+  return me.data.push.device?.liveActivityStarted;
+}
+
 async function setUp() {
   const { instanceId } = await enableRelay();
   const bound = await bindDevice(instanceId, TOKEN);
@@ -285,12 +301,42 @@ describe("start and update", () => {
     expect(laPushes()).toHaveLength(1);
 
     // The app registers the started Activity without knowing its dose.
-    await t.reg({
+    const registered = await t.reg({
       liveActivityTokens: [t.activityEntry({ relayStart: true })],
     });
     const row = await getPrismaClient().liveActivityToken.findFirstOrThrow({});
     expect(row.medicationId).toBe(medication.id);
     expect(row.slotInstant?.getTime()).toBe(slot.getTime());
+    // The dose reaches the app over the authenticated channel only: in the
+    // registration answer and on /api/auth/me for the calling device.
+    const started = {
+      medicationId: medication.id,
+      slotInstant: slot.toISOString(),
+    };
+    expect(registered.data.push.liveActivityStarted).toEqual(started);
+    expect(await startedOnMe(t.session)).toEqual(started);
+    // Once the slot is answered there is nothing left to show.
+    await getPrismaClient().medicationIntakeEvent.updateMany({
+      where: { medicationId: medication.id, scheduledFor: slot },
+      data: { takenAt: new Date() },
+    });
+    expect(await startedOnMe(t.session)).toBeNull();
+  });
+
+  it("never start a dose of a paused medication", async () => {
+    const t = await setUp();
+    await t.reg({
+      liveActivityConsent: t.consent(),
+      liveActivityStart: t.startField(),
+    });
+    const { medication } = await dueDose(t.session.userId, 30);
+    await getPrismaClient().medication.update({
+      where: { id: medication.id },
+      data: { pausedAt: new Date() },
+    });
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 0 });
+    expect(laPushes()).toHaveLength(0);
+    expect(await startedOnMe(t.session)).toBeNull();
   });
 
   it("update a running Activity only when its state changed", async () => {

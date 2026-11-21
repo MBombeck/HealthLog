@@ -10,6 +10,8 @@ vi.mock("@/lib/db", () => ({
     medicationIntakeEvent: {
       findUnique: vi.fn(),
       update: vi.fn(),
+      // A slot move tombstones only a live row, under the slot locks.
+      updateMany: vi.fn(),
       delete: vi.fn(),
       findFirst: vi.fn(),
       // v1.15.18 — the band resolver + the canonical slot upsert read these.
@@ -23,6 +25,8 @@ vi.mock("@/lib/db", () => ({
       update: vi.fn(),
     },
     auditLog: { create: vi.fn() },
+    $transaction: vi.fn(),
+    $queryRaw: vi.fn(),
   },
 }));
 
@@ -84,6 +88,14 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
+  // The move runs in one transaction against the same mocked client.
+  vi.mocked(prisma.$transaction).mockImplementation((async (fn: unknown) =>
+    (fn as (c: unknown) => unknown)(
+      prisma,
+    )) as unknown as typeof prisma.$transaction);
+  vi.mocked(prisma.medicationIntakeEvent.updateMany).mockResolvedValue({
+    count: 1,
+  });
   // v1.37.0 — `resetAllMocks` clears the factory's resolved value and the
   // route chains `.catch()` on this fire-and-forget call.
   vi.mocked(auditLog).mockResolvedValue(undefined as never);
@@ -374,7 +386,7 @@ describe("PUT — v1.15.18 band re-attribution", () => {
 
     // The original row was tombstoned (deletedAt set).
     const tombstone = vi
-      .mocked(prisma.medicationIntakeEvent.update)
+      .mocked(prisma.medicationIntakeEvent.updateMany)
       .mock.calls.find((c) => "deletedAt" in (c[0]?.data ?? {}));
     expect(tombstone).toBeTruthy();
     // The corrected dose was written onto the 19:00 anchor.
@@ -706,7 +718,7 @@ describe("PUT / DELETE — v1.16.10 inventory consumption", () => {
     expect(consumeForIntake).not.toHaveBeenCalled();
   });
 
-  it("a slot-moving taken edit refunds the old row before tombstoning and consumes the converged row — net one", async () => {
+  it("a slot-moving taken edit tombstones and refunds the old row and consumes the converged row — net one", async () => {
     const { consumeForIntake, restoreForIntake } =
       await import("@/lib/medications/inventory/consumption");
     vi.mocked(prisma.medicationIntakeEvent.findFirst)
@@ -747,12 +759,13 @@ describe("PUT / DELETE — v1.16.10 inventory consumption", () => {
     expect(consumeForIntake).toHaveBeenCalledWith(
       expect.objectContaining({ eventId: "e2" }),
     );
-    // The refund runs BEFORE the tombstone write.
+    // One transaction: the refund follows the target write, so a refused
+    // move refunds nothing.
     const restoreOrder =
       vi.mocked(restoreForIntake).mock.invocationCallOrder[0];
-    const tombstoneOrder = vi.mocked(prisma.medicationIntakeEvent.update).mock
+    const createOrder = vi.mocked(prisma.medicationIntakeEvent.create).mock
       .invocationCallOrder[0];
-    expect(restoreOrder).toBeLessThan(tombstoneOrder);
+    expect(createOrder).toBeLessThan(restoreOrder);
   });
 
   it("DELETE refunds the row's stamp before the tombstone", async () => {

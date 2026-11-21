@@ -273,22 +273,22 @@ export async function handleCallback(update: TelegramUpdate) {
       return;
     }
 
-    await markMedicationSkipped({
+    const skip = await markMedicationSkipped({
       userId: user.id,
       userTz: user.timezone,
       medicationId: medication.id,
       chatId,
       messageId,
     });
-
+    const name = medication.name;
     await answerTelegramCallbackQuery(
       botToken,
       callback.id,
-      t("telegram.skipped", { name: medication.name }),
+      skip === "alreadyTaken"
+        ? t("telegram.alreadyRecorded", { name })
+        : t("telegram.skipped", { name }),
     );
-    if (messageId) {
-      await deleteMessage(botToken, chatId, messageId);
-    }
+    if (messageId) await deleteMessage(botToken, chatId, messageId);
     await cleanupReminderTracking(user.id, medicationId);
   } else if (data.startsWith("ack:")) {
     const medicationId = data.slice("ack:".length).trim();

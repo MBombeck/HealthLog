@@ -218,7 +218,7 @@ const bulkIntakeEntryResult = z
     status: z
       .enum(["inserted", "updated", "duplicate", "alreadyTaken", "skipped"])
       .describe(
-        "`inserted`/`updated`/`duplicate` — the row landed (advance the cursor); `duplicate` is an idempotent replay of an entry already stored, nothing else. `alreadyTaken` — the slot already holds a take recorded by another writer or another key: nothing was written, no stock consumed; `intake` is the recorded row, `takenAt` and `takenVia` say when and how it was taken. Advance the cursor and warn before a second dose. `skipped` — not stored; see `reason`.",
+        "`inserted`/`updated`/`duplicate` — the row landed (advance the cursor); `duplicate` is an idempotent replay of an entry already stored, nothing else. `alreadyTaken` — the slot already holds a take recorded by another writer or another key, and this entry was a take or a skip: nothing was written, no stock consumed or refunded; `intake` is the recorded row, `takenAt` and `takenVia` say when and how it was taken. Advance the cursor and warn before a second dose. `skipped` — not stored; see `reason`.",
       ),
     reason: z
       .string()
@@ -361,7 +361,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "422": {
           description:
-            "Body validation failed (multi-issue envelope, breadcrumbed as `medications.intake.update.validation-failed`), or `meta.errorCode` = `medications.intake.injection_site.disallowed` when the site is outside the medication's effective allowed set, or `medications.intake.force_slot.invalid` when `forceSlotInstant` is not a real slot of the medication, or (v1.42.0) `medication.intake.notTracked` when the event is still open and its medication is kept as a record only (`trackIntake: false`): resolving or snoozing it would record a new dose that is counted nowhere. Correcting an event that is already taken or skipped stays open. The coded refusals carry no issue list — branch on the code.",
+            "Body validation failed (multi-issue envelope, breadcrumbed as `medications.intake.update.validation-failed`), or `meta.errorCode` = `medications.intake.injection_site.disallowed` when the site is outside the medication's effective allowed set, or `medications.intake.force_slot.invalid` when `forceSlotInstant` is not a real slot of the medication, or `medications.intake.force_slot.occupied` when a take would move onto a slot that already holds a take (nothing changes; the dose stays on its row), or (v1.42.0) `medication.intake.notTracked` when the event is still open and its medication is kept as a record only (`trackIntake: false`): resolving or snoozing it would record a new dose that is counted nowhere. Correcting an event that is already taken or skipped stays open. The coded refusals carry no issue list — branch on the code.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "401": stdResponses["401"],
@@ -844,7 +844,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "422": {
           description:
-            "Body validation failed (multi-issue), or one of three coded refusals: `medications.intake.taken_at.before_start` when the edited take predates the medication's start day in the record's timezone, `medications.intake.force_slot.invalid` when the pinned instant is not a real slot, and `medications.intake.force_slot.occupied` when it is a real slot that another live dose already holds.",
+            "Body validation failed (multi-issue), or one of three coded refusals: `medications.intake.taken_at.before_start` when the edited take predates the medication's start day in the record's timezone, `medications.intake.force_slot.invalid` when the pinned instant is not a real slot, and `medications.intake.force_slot.occupied` when it is a real slot that another live dose already holds, or when the corrected dose would move onto a slot that already holds a take (nothing changes; the dose stays where it was).",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "401": stdResponses["401"],
@@ -1631,7 +1631,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "200": {
           description:
-            "Idempotent replay — the original event is returned without creating a new row. Also a repeat: a take that names no slot, for a slot already holding a take recorded within two hours, returns that row with `alreadyTaken: true` and writes nothing.",
+            "Idempotent replay — the original event is returned without creating a new row. Also a repeat: a take that names no slot, for a slot already holding a take recorded within two hours, returns that row with `alreadyTaken: true` and writes nothing (one further away is a dose of its own and answers the nearest open slot, 201). A take or a skip that names a slot already holding a take answers the same way: the first take is never overwritten from here, and a deliberate change of a recorded take goes through the row (`POST /api/medications/intake`, `PUT /api/medications/{id}/intake/{eventId}`).",
           content: {
             "application/json": {
               schema: dataEnvelope(

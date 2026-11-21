@@ -12,15 +12,22 @@
  *
  *   1. Nearest slot. The take answers the slot nearest to it on the same
  *      local day, within {@link NEAREST_SLOT_REACH_MS} either side, when that
- *      slot is still open. When the nearest slot is already answered the take
- *      does not reach past it to a further one: a second morning dose never
- *      consumes the evening slot. The binding is USER_PIN, so every reader
- *      binds it by anchor rather than by clock.
- *   2. Repeat. A take of a slot that already holds a take is the same dose
- *      reported twice (a sensor and a tap, a tap on two devices). Nothing is
- *      written; the writer answers with the recorded row and
- *      `alreadyTaken: true`. A band slot is checked by the shared slot write
- *      under the slot lock; the nearest-slot case here.
+ *      slot is still open. The binding is USER_PIN, so every reader binds it
+ *      by anchor rather than by clock.
+ *   2. Repeat. A take within {@link REPEAT_WINDOW_MS} of a take the nearest
+ *      slot already holds is the same dose reported twice (a sensor and a
+ *      tap, a lid closed and opened again). Nothing is written; the writer
+ *      answers with the recorded row and `alreadyTaken: true`. A band slot is
+ *      checked by the shared slot write under the slot lock; the nearest-slot
+ *      case here. The same window applies to a band slot: bands split the
+ *      day between two dose times, so a take far from a band's recorded take
+ *      is treated as rule 3.
+ *   3. A further dose. A take further from the recorded one is a dose of its
+ *      own (the pill box opened at 10:20 for the 13:00 dose after the 08:00
+ *      dose was taken at 08:05). It answers the nearest OPEN slot within
+ *      reach, so that slot's reminder never asks for the dose again, the way
+ *      a double dose happens; with no open slot in reach it is recorded ad
+ *      hoc. It is never dropped: a pill box has no screen to warn on.
  *
  * Slots are the medication's live rows on that day whose anchor is a real
  * slot of its schedule; today's are projected first so a slot nobody has
@@ -36,6 +43,8 @@ import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 
 /** How far from its slot a take still answers it: six hours either side. */
 export const NEAREST_SLOT_REACH_MS = 6 * 60 * 60 * 1000;
+/** How close to a recorded take a second one is the same dose: two hours. */
+export const REPEAT_WINDOW_MS = 2 * 60 * 60 * 1000;
 
 export interface NearestSlot {
   slot: Date;
@@ -43,13 +52,13 @@ export interface NearestSlot {
   answered: MedicationIntakeEvent | null;
 }
 
-/** The slot nearest to `takenAt` on its local day, within reach, or null. */
-export async function findNearestSlot(input: {
+/** The real slots within reach of `takenAt` on its local day, nearest first. */
+export async function findSlotsNearTake(input: {
   userId: string;
   medicationId: string;
   userTz: string;
   takenAt: Date;
-}): Promise<NearestSlot | null> {
+}): Promise<NearestSlot[]> {
   const { userId, medicationId, userTz, takenAt } = input;
   // An as-needed, record-only or schedule-less medication has no slot.
   const medication = await prisma.medication.findFirst({
@@ -61,7 +70,7 @@ export async function findNearestSlot(input: {
     },
     select: { schedules: { select: { id: true }, take: 1 } },
   });
-  if (!medication || medication.schedules.length === 0) return null;
+  if (!medication || medication.schedules.length === 0) return [];
   const day = getUserTodayBounds(takenAt, userTz);
   const today = getUserTodayBounds(new Date(), userTz);
   if (day.start.getTime() === today.start.getTime()) {
@@ -103,6 +112,7 @@ export async function findNearestSlot(input: {
   const instants = [...byInstant.keys()].sort(
     (a, b) => Math.abs(a - takenAt.getTime()) - Math.abs(b - takenAt.getTime()),
   );
+  const slots: NearestSlot[] = [];
   for (const instant of instants) {
     const real = await resolveForcedSlotForWrite({
       userId,
@@ -114,9 +124,9 @@ export async function findNearestSlot(input: {
     const answered =
       byInstant.get(instant)?.find((r) => r.takenAt !== null || r.skipped) ??
       null;
-    return { slot: real, answered };
+    slots.push({ slot: real, answered });
   }
-  return null;
+  return slots;
 }
 
 export type TakeResolution =
@@ -126,8 +136,9 @@ export type TakeResolution =
 
 /**
  * The binding of a new take that names no slot: the band's slot when it has
- * one, else the nearest open slot, else ad hoc; a repeat of a recorded take
- * on the slot it would bind to answers `alreadyTaken`.
+ * one, else the nearest slot when it is open; a repeat of the take the
+ * nearest slot holds answers `alreadyTaken`, a further dose the nearest open
+ * slot, else ad hoc.
  */
 export async function resolveNewTake(input: {
   userId: string;
@@ -137,18 +148,50 @@ export async function resolveNewTake(input: {
   bandSlot: Date | null;
 }): Promise<TakeResolution> {
   const { bandSlot } = input;
-  // A band slot that already holds a take answers `alreadyTaken` in the
-  // shared slot write itself, under the slot lock.
   if (bandSlot !== null) {
-    return { kind: "slot", slot: bandSlot, attributionSource: "AUTO" };
+    // A band slot that holds a take recorded within the repeat window
+    // answers `alreadyTaken` in the shared slot write itself, under the slot
+    // lock. One whose take lies further back is a further dose (bands split
+    // the day between two dose times, so 10:20 still falls in the 08:00
+    // band): it goes to the nearest open slot like a take outside every band.
+    const held = await prisma.medicationIntakeEvent.findFirst({
+      where: {
+        userId: input.userId,
+        medicationId: input.medicationId,
+        scheduledFor: bandSlot,
+        deletedAt: null,
+        skipped: false,
+        takenAt: { not: null },
+      },
+      select: { takenAt: true },
+    });
+    if (!held?.takenAt || isRepeatOf(held.takenAt, input.takenAt)) {
+      return { kind: "slot", slot: bandSlot, attributionSource: "AUTO" };
+    }
+    return furtherDose(await findSlotsNearTake(input));
   }
-  const nearest = await findNearestSlot(input);
-  if (nearest === null) return { kind: "adHoc" };
+  const slots = await findSlotsNearTake(input);
+  const nearest = slots[0];
+  if (nearest === undefined) return { kind: "adHoc" };
   if (nearest.answered === null) {
     return { kind: "slot", slot: nearest.slot, attributionSource: "USER_PIN" };
   }
-  if (nearest.answered.takenAt !== null && !nearest.answered.skipped) {
+  const recorded = nearest.answered.takenAt;
+  if (recorded === null || nearest.answered.skipped) return { kind: "adHoc" };
+  if (isRepeatOf(recorded, input.takenAt)) {
     return { kind: "alreadyTaken", row: nearest.answered };
   }
-  return { kind: "adHoc" };
+  return furtherDose(slots);
+}
+
+function isRepeatOf(recorded: Date, takenAt: Date): boolean {
+  return Math.abs(recorded.getTime() - takenAt.getTime()) <= REPEAT_WINDOW_MS;
+}
+
+/** A dose of its own: the nearest open slot in reach, else ad hoc. */
+function furtherDose(slots: NearestSlot[]): TakeResolution {
+  const open = slots.find((s) => s.answered === null);
+  return open
+    ? { kind: "slot", slot: open.slot, attributionSource: "USER_PIN" }
+    : { kind: "adHoc" };
 }

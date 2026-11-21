@@ -368,20 +368,28 @@ async function applyToExisting(
 
   const existingActioned = existing.takenAt !== null || existing.skipped;
   const incomingIsPendingEcho = !isExplicitTaken && !isExplicitSkip;
+  const existingTaken = existing.takenAt !== null && !existing.skipped;
+
+  // A take onto a slot that already holds a take writes nothing and answers
+  // `alreadyTaken` (the same key again: a replay). Checked before the
+  // delegate branch, so a guardian's take on a taken slot answers
+  // `alreadyTaken` too. An Apple Health record keeps last-write-wins: bulk
+  // told it apart from another dose, and an edit in Health moves it.
+  const keepsTake = externalId === null && existingTaken;
+  if (isExplicitTaken && keepsTake) {
+    const replay =
+      idempotencyKey !== null && idempotencyKey === existing.idempotencyKey;
+    return { ...NO_OP, row: existing, alreadyTaken: !replay };
+  }
 
   // v1.36.x — a delegate may record a decision on a slot that is still open;
-  // they may not overturn one the owner already made. Compare the OUTCOMES
-  // rather than refusing every write onto an actioned slot: re-posting the
-  // same decision is a replay (double tap, offline catch-up, a retry after a
-  // partial batch), and those have to keep working.
-  //
-  // Ordered before the C2 echo branch on purpose — an echo carries no
-  // decision, so it can never be an overturn, and letting it fall through
-  // keeps the sync cursor advancing exactly as before.
+  // they may not overturn one the owner already made. Re-posting the same
+  // decision is a replay (double tap, offline catch-up, a retry after a
+  // partial batch) and stays a no-op. An echo carries no decision, so it
+  // falls through to the C2 branch and the sync cursor advances as before.
   if (refuseOutcomeChange && existingActioned && !incomingIsPendingEcho) {
-    // A different decision is refused outright. Taken to skipped and back
-    // rewrites the owner's compliance history and refunds the inventory the
-    // take consumed, and the consent screen promises that stays with them.
+    // Taken to skipped and back rewrites the owner's compliance history and
+    // refunds the inventory the take consumed; that stays with the owner.
     if (existing.skipped !== isExplicitSkip) {
       return {
         row: existing,
@@ -391,30 +399,15 @@ async function applyToExisting(
         outcomeChangeRefused: true,
       };
     }
-
-    // A same-outcome replay is a no-op: it must preserve the facts already
-    // recorded for the owner's slot rather than falling through to the update.
-    return {
-      row: existing,
-      outcome: "updated",
-      consumedTransition: false,
-      noDowngradeNoOp: true,
-      outcomeChangeRefused: false,
-    };
+    return { ...NO_OP, row: existing };
   }
 
-  // A take on a taken slot writes nothing and answers `alreadyTaken` (the
-  // same key again: a replay). An Apple Health record keeps last-write-wins:
-  // bulk told it apart from another dose, and an edit in Health moves it.
-  if (
-    isExplicitTaken &&
-    externalId === null &&
-    existing.takenAt !== null &&
-    !existing.skipped
-  ) {
-    const replay =
-      idempotencyKey !== null && idempotencyKey === existing.idempotencyKey;
-    return { ...NO_OP, row: existing, alreadyTaken: !replay };
+  // A skip onto a taken slot is stale (an old Telegram button, a queued web
+  // or bulk entry): it must not erase a dose recorded elsewhere or refund
+  // its stock. Changing a recorded take on purpose goes through the row id
+  // (the status and edit routes), which never comes here.
+  if (isExplicitSkip && keepsTake) {
+    return { ...NO_OP, row: existing, alreadyTaken: true };
   }
 
   // Never clear a recorded dose with a pending projection echo. An

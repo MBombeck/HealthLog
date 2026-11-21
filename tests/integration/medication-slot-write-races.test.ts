@@ -197,18 +197,11 @@ describe("undo against takes", () => {
     const id = await med();
     const first = await take(id, SLOT, "WEB", "web-v");
     const seen = first.row.syncVersion;
-    // Another writer changes the row: a skip is a new decision.
-    await applyCanonicalSlotWrite({
-      client: getPrismaClient(),
-      userId: USER,
-      medicationId: id,
-      canonicalSlot: SLOT,
-      takenAt: null,
-      skipped: true,
-      isExplicitTaken: false,
-      isExplicitSkip: true,
-      idempotencyKey: null,
-      createSource: "REMINDER",
+    // Another writer changes the row: a correction through the row id (a
+    // stale skip through the slot answers alreadyTaken and changes nothing).
+    await getPrismaClient().medicationIntakeEvent.update({
+      where: { id: first.row.id },
+      data: { takenAt: null, skipped: true, syncVersion: { increment: 1 } },
     });
     expect(await undo(id, first.row.id, { expectedSyncVersion: seen })).toBe(
       "changedSinceSeen",

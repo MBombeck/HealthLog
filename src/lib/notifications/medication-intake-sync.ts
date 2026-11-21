@@ -79,6 +79,7 @@ import {
 import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 import {
   queueIntakeRecorded,
+  recordedConfirmationEnabled,
   type IntakeRecordedEvent,
 } from "@/lib/notifications/medication-intake-recorded";
 import { loadPushContext, routeOf } from "@/lib/push-relay/route-device";
@@ -324,12 +325,18 @@ async function flushIntakeSync(
       return;
     }
 
+    // A relay device may skip the silent sync only when the confirmation that
+    // stands in for it actually goes out. It is opt-in (off by default), so a
+    // dose recorded on another surface would otherwise reach the device as
+    // neither.
+    const confirmationInFlush =
+      opts.recordedInFlush && (await recordedConfirmationEnabled(userId));
     await fanOutIntakeSyncApns({
       userId,
       recipients,
       bundleId: config?.bundleId ?? null,
       liveActivityEnd: memoEndState(userId),
-      recordedInFlush: opts.recordedInFlush,
+      confirmationInFlush,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -375,8 +382,11 @@ async function fanOutIntakeSyncApns(args: {
   recipients: SyncRecipient[];
   /** This server's own APNs topic, or null when it has no APNs key. */
   bundleId: string | null;
-  /** The flush also confirms a recorded dose (sealed devices skip the sync). */
-  recordedInFlush: boolean;
+  /**
+   * The flush also sends the recorded-dose confirmation to these devices, so
+   * relay devices skip the silent sync (the alert triggers it).
+   */
+  confirmationInFlush: boolean;
   /**
    * The final content-state to end an Activity showing this dose with, or
    * null to leave it running.
@@ -407,7 +417,7 @@ async function fanOutIntakeSyncApns(args: {
   const ctx = sealedDevices.length > 0 ? await loadPushContext() : null;
   if (ctx) {
     const sealed = await sendSealedIntakeSync(sealedDevices, ctx, {
-      recordedInFlush: args.recordedInFlush,
+      confirmationInFlush: args.confirmationInFlush,
     });
     if (sealed.anyAccepted) anySuccess = true;
     else if (sealed.lastFailure) lastFailureReason = sealed.lastFailure;

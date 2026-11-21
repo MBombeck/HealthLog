@@ -40,13 +40,17 @@ describe("MEDICATION_INTAKE_RECORDED", () => {
     expect(payload.aps.alert.body).not.toMatch(/notifications\./);
   });
 
-  it("names a skip as a skip, with no take time", () => {
+  it("names a skip as a skip, with no take time and no origin", () => {
     const event = recordedEventOf(
       { ...ROW, takenAt: null, skipped: true },
       "TELEGRAM",
     )!;
     const payload = intakeRecordedPayload(event, "de");
-    expect(payload).toMatchObject({ outcome: "skipped", takenAt: null });
+    expect(payload).toMatchObject({
+      outcome: "skipped",
+      takenAt: null,
+      takenVia: null,
+    });
   });
 
   it("sends nothing for a row that records no outcome", () => {

@@ -19,7 +19,7 @@
  *     measurements: { lastUpdatedAt, liveCount, tombstonedCount },
  *     mood:         { lastUpdatedAt, liveCount, tombstonedCount },
  *     intakes:      { lastUpdatedAt, liveCount, tombstonedCount },
- *     medications:  { lastUpdatedAt },  — newest medication-row write
+ *     medications:  { lastUpdatedAt },  — newest medication-row write or deletion
  *                                         (snooze, pause, schedule)
  *     sync:         { incrementalWindowDays, tombstoneRetentionDays },
  *     push:         { receiptsRecorded }  — whether `openedAlert` /
@@ -88,6 +88,7 @@ export const GET = apiHandler(async (request?: NextRequest) => {
     intakeTomb,
     currentUser,
     medicationLatest,
+    medicationDeleted,
   ] = await Promise.all([
     prisma.measurement.findFirst({
       where: { userId: user.id, deletedAt: null },
@@ -125,7 +126,21 @@ export const GET = apiHandler(async (request?: NextRequest) => {
       orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
       select: { updatedAt: true },
     }),
+    // A deleted medication leaves no row whose `updatedAt` could move, so
+    // its deletion (always audited) counts as the newest medication write.
+    prisma.auditLog.findFirst({
+      where: { userId: user.id, action: "medication.delete" },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true },
+    }),
   ]);
+  const medicationsUpdatedAt = [
+    medicationLatest?.updatedAt,
+    medicationDeleted?.createdAt,
+  ].reduce<Date | undefined>(
+    (latest, at) => (at && (!latest || at > latest) ? at : latest),
+    undefined,
+  );
 
   // The handshake reports the checkpoint; it does not set it. The column is
   // stamped by the ingest boundaries that actually move data (see
@@ -175,7 +190,7 @@ export const GET = apiHandler(async (request?: NextRequest) => {
     // touching an intake row. Each writes the medication row, so its
     // newest `updatedAt` is the second half of "is my dose list stale".
     medications: {
-      lastUpdatedAt: medicationLatest?.updatedAt?.toISOString() ?? null,
+      lastUpdatedAt: medicationsUpdatedAt?.toISOString() ?? null,
     },
     // v1.7.0 — the sync window iOS should derive its incremental-delta
     // horizon from, rather than hardcoding a constant. `incrementalWindowDays`

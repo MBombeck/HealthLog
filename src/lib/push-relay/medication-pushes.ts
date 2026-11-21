@@ -42,7 +42,8 @@ export interface RecordedFields {
   slotInstant: Date;
   outcome: "taken" | "skipped";
   takenAt: Date | null;
-  takenVia: string;
+  /** Null on a skip. */
+  takenVia: string | null;
 }
 
 /** The sealed confirmation of one recorded dose. */
@@ -112,20 +113,22 @@ export async function silentBudgetLeft(
 
 /**
  * Send the silent sync sealed. A relay device is skipped when the flush also
- * carries a recorded confirmation (that alert triggers the sync in the
- * extension) or when its hourly silent budget is spent.
+ * sends it the recorded confirmation (that alert triggers the sync in the
+ * extension) or when its hourly silent budget is spent. `confirmationInFlush`
+ * means the confirmation is enabled for the account, not merely that a dose
+ * was recorded: the confirmation is opt-in, and the sync must not depend on it.
  */
 export async function sendSealedIntakeSync(
   devices: RoutableDevice[],
   ctx: PushContext,
-  options: { recordedInFlush: boolean },
+  options: { confirmationInFlush: boolean },
 ): Promise<SealedSendResult> {
   const now = new Date();
   const message = intakeSyncMessage(now);
   const targets = [];
   for (const device of devices) {
     if (routeOf(device, ctx) === "relay") {
-      if (options.recordedInFlush) continue;
+      if (options.confirmationInFlush) continue;
       if (!(await silentBudgetLeft(device.id, now))) continue;
     }
     targets.push({ device, message, collapseKey: "intake-sync" });
@@ -180,6 +183,17 @@ export async function endActivitiesOverRelay(
     ];
   });
   if (items.length === 0) return [];
+  // The ref is fixed per Activity, so one end is in flight at a time. An end
+  // that already failed or was dropped (a relay outage past its deadline)
+  // would make the outbox skip the new one as a duplicate and the Activity
+  // would never end: its final row goes, and this flush sends afresh.
+  await prisma.pushRelayDelivery.deleteMany({
+    where: {
+      deviceId: device.id,
+      ref: { in: items.map((i) => i.ref) },
+      status: { in: ["failed", "dropped"] },
+    },
+  });
   const summary = await sendRelayItems(items, ctx.config);
   const settled = await prisma.pushRelayDelivery.findMany({
     where: {

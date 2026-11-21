@@ -22,7 +22,9 @@
  * at least {@link MIN_SPACING_MS} apart, and inside the shared silent budget
  * of every wake (`wakes.ts`).
  */
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
+import { passPageOffset } from "@/lib/push-relay/pass-window";
 import { sendWake, wakeableDevices } from "@/lib/push-relay/wakes";
 
 const HOUR_MS = 3600_000;
@@ -36,8 +38,9 @@ export const RECENT_FOREGROUND_MS = 3 * 24 * HOUR_MS;
 export const PER_DEVICE_DAY = 3;
 /** The least spacing between two catch-ups to one device. */
 export const MIN_SPACING_MS = 4 * HOUR_MS;
-/** Accounts looked at per pass. */
-const PASS_LIMIT = 500;
+/** Accounts looked at per pass, and the pass period (hourly). */
+export const PASS_LIMIT = 500;
+const PASS_PERIOD_MS = HOUR_MS;
 
 export interface CatchUpFacts {
   candidates: number;
@@ -45,13 +48,18 @@ export interface CatchUpFacts {
   limited: number;
 }
 
-/** The accounts whose live Apple Health upload is behind, oldest first. */
+/**
+ * The accounts whose live Apple Health upload is behind, one page of them.
+ * Ordered by account, and the page rotates with the hour (`pass-window.ts`):
+ * accounts the per-device limits keep stale must not hold every later one
+ * off the first page for good.
+ */
 async function staleAccounts(
   now: Date,
 ): Promise<Array<{ user_id: string; last_upload: Date }>> {
   const staleBefore = new Date(now.getTime() - STALE_AFTER_MS).toISOString();
   const floor = new Date(now.getTime() - GIVE_UP_AFTER_MS).toISOString();
-  return prisma.$queryRaw<Array<{ user_id: string; last_upload: Date }>>`
+  const stale = Prisma.sql`
     SELECT "user_id",
            max(greatest("last_received_at",
                         coalesce("last_seen_duplicate_at", "last_received_at")))
@@ -64,9 +72,19 @@ async function staleAccounts(
              < ${staleBefore}::timestamp(3)
        AND max(greatest("last_received_at",
                         coalesce("last_seen_duplicate_at", "last_received_at")))
-             > ${floor}::timestamp(3)
-     ORDER BY 2 ASC
-     LIMIT ${PASS_LIMIT}`;
+             > ${floor}::timestamp(3)`;
+  const [{ total }] = await prisma.$queryRaw<Array<{ total: number }>>`
+    SELECT count(*)::int AS "total" FROM (${stale}) AS stale`;
+  const offset = passPageOffset({
+    total,
+    pageSize: PASS_LIMIT,
+    now,
+    periodMs: PASS_PERIOD_MS,
+  });
+  return prisma.$queryRaw<Array<{ user_id: string; last_upload: Date }>>`
+    ${stale}
+     ORDER BY 1 ASC
+     LIMIT ${PASS_LIMIT} OFFSET ${offset}`;
 }
 
 /** Whether `deviceId` may get one more catch-up now. */

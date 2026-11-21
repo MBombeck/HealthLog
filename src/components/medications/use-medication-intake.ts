@@ -347,12 +347,19 @@ export async function runLogIntake(deps: {
     const created = (await post(
       `/api/medications/${medication.id}/intake`,
       body,
-    )) as { id?: string } | undefined;
+    )) as { id?: string; alreadyTaken?: boolean } | undefined;
     const eventId = created?.id;
     // Started, not awaited: the dialog closes on this answer. A scheduled
     // dose lands on its slot, so a stale card tapped meanwhile only repeats
     // it.
     void invalidateMedicationReads(queryClient);
+    // The slot already held a take: nothing of this entry was recorded.
+    if (created?.alreadyTaken) {
+      toast.info(
+        t("medications.intakeAlreadyTaken", { name: medication.name }),
+      );
+      return true;
+    }
     const message = intakeToastMessage({
       t,
       name: medication.name,

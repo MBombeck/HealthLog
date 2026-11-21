@@ -7,7 +7,6 @@
  * time and slot untouched. `forceSlotInstant` pins onto a named real slot
  * (422 if it is not one). Mirrors the per-event PUT route.
  */
-import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import {
   applyCanonicalSlotWrite,
@@ -18,6 +17,12 @@ import {
   consumeForIntake,
   restoreForIntake,
 } from "@/lib/medications/inventory/consumption";
+import {
+  isRowWriteRefusal,
+  moveRowToSlot,
+  updateLiveRow,
+  type RowWriteRefusal,
+} from "@/lib/medications/scheduling/slot-move";
 import type { InjectionSiteValue } from "@/lib/validations/medication";
 import type { IntakeStatusRefusal, StatusUpdateEvent } from "./admission";
 
@@ -83,6 +88,23 @@ async function targetSlotOf(
   };
 }
 
+/** The refusal of a by-id write that found its row gone or its slot taken. */
+export function rowWriteRefused(reason: RowWriteRefusal): IntakeStatusRefusal {
+  return reason === "gone"
+    ? {
+        kind: "refused",
+        message: "Intake event not found",
+        status: 404,
+        errorCode: "medications.notFound",
+      }
+    : {
+        kind: "refused",
+        message: "The slot the dose would move to already holds a take",
+        status: 422,
+        errorCode: "medications.intake.force_slot.occupied",
+      };
+}
+
 async function takeInPlace(
   input: TakeInput,
   resolvedTakenAt: Date,
@@ -90,55 +112,57 @@ async function takeInPlace(
   attributionSource: TargetSlot["attributionSource"],
 ) {
   const { userId, intakeId, existing, resolvedInjectionSite } = input;
-  const [updated] = await prisma.$transaction([
-    prisma.medicationIntakeEvent.update({
-      where: { id: intakeId },
-      // Bump the reconciliation counter on every
-      // server-side mutation so the delta feed echoes a monotonic value.
-      data: {
-        takenAt: resolvedTakenAt,
-        skipped: false,
-        // The person confirmed it; no longer automatic, and no longer a miss.
-        autoRecorded: false,
-        autoMissed: false,
-        ...(!wasTaken && { takenVia: input.takenVia }),
-        ...(attributionSource !== undefined && { attributionSource }),
-        syncVersion: { increment: 1 },
-        // Persist the resolved site on the taken branch.
-        ...(resolvedInjectionSite !== null && {
-          injectionSite: resolvedInjectionSite,
-        }),
-      },
-    }),
-    prisma.medication.update({
-      where: { id: existing.medicationId },
-      data: { snoozedUntil: null },
-    }),
-  ]);
-  // The toggle recorded a take; consume inventory units
-  // on the genuine pending→taken (or skipped→taken) transition. The
-  // stamp additionally keeps a racing replay exactly-once.
-  if (!wasTaken) {
-    await consumeForIntake({
-      client: prisma,
+  // Under the slot lock and only on a live row, so a take racing an undo
+  // never lands on the tombstone.
+  return updateLiveRow(
+    {
       userId,
       medicationId: existing.medicationId,
-      eventId: intakeId,
-      intakeAt: resolvedTakenAt,
-    });
-  }
-  return updated;
+      id: intakeId,
+      slot: existing.scheduledFor,
+    },
+    {
+      takenAt: resolvedTakenAt,
+      skipped: false,
+      // The person confirmed it; no longer automatic, and no longer a miss.
+      autoRecorded: false,
+      autoMissed: false,
+      ...(!wasTaken && { takenVia: input.takenVia }),
+      ...(attributionSource !== undefined && { attributionSource }),
+      syncVersion: { increment: 1 },
+      ...(resolvedInjectionSite !== null && {
+        injectionSite: resolvedInjectionSite,
+      }),
+    },
+    async (tx) => {
+      await tx.medication.update({
+        where: { id: existing.medicationId },
+        data: { snoozedUntil: null },
+      });
+      // Consume on the genuine pending→taken (or skipped→taken)
+      // transition; the stamp keeps a racing replay exactly-once.
+      if (!wasTaken) {
+        await consumeForIntake({
+          client: tx,
+          userId,
+          medicationId: existing.medicationId,
+          eventId: intakeId,
+          intakeAt: resolvedTakenAt,
+        });
+      }
+    },
+  );
 }
 
 /**
- * The take re-attributed to a different slot. Tombstone the source row and
- * route the dose through the shared canonical-slot upsert, which converges
- * onto any row already at the target slot rather than bare-updating into an
- * occupied slot (P2002-safe).
+ * The take re-attributed to a different slot: tombstone the source row and
+ * route the dose through the shared canonical-slot upsert, in one locked
+ * transaction (`slot-move.ts`). A target slot that already holds a take
+ * refuses the move and leaves the source row as it was.
  *
- * Refund the source row's consumption stamp BEFORE the tombstone, then
- * consume on the converged row below: a slot move is a re-binding of one
- * real dose, so the stock nets exactly one consumption.
+ * The source row's consumption stamp is refunded and the converged row
+ * consumes: a slot move is a re-binding of one real dose, so the stock nets
+ * exactly one consumption.
  */
 async function moveTake(
   input: TakeInput,
@@ -148,56 +172,57 @@ async function moveTake(
   attributionSource: TargetSlot["attributionSource"],
 ) {
   const { userId, intakeId, existing, resolvedInjectionSite } = input;
-  await restoreForIntake({
-    client: prisma,
-    userId,
-    eventId: intakeId,
-  });
-  await prisma.medicationIntakeEvent.update({
-    where: { id: intakeId },
-    data: { deletedAt: new Date(), syncVersion: { increment: 1 } },
-  });
-  const applied = await applyCanonicalSlotWrite({
-    client: prisma,
-    userId,
-    medicationId: existing.medicationId,
-    canonicalSlot: targetScheduledFor,
-    takenAt: resolvedTakenAt,
-    skipped: false,
-    isExplicitTaken: true,
-    isExplicitSkip: false,
-    idempotencyKey: null,
-    createSource: "WEB",
-    attributionSource,
-    takenVia: input.takenVia,
-    // Carry the recorded site / dose override across the
-    // tombstone + re-insert: a slot move is a re-binding, not a new
-    // dose, so the original row's documentation must survive when the
-    // toggle write itself carries none.
-    injectionSite:
-      resolvedInjectionSite ??
-      (existing.injectionSite as InjectionSiteValue | null),
-    doseTaken: existing.doseTaken,
-  });
-  await prisma.medication.update({
-    where: { id: existing.medicationId },
-    data: { snoozedUntil: null },
-  });
-  // Consume on the converged row (the old row's stamp
-  // was refunded above, so the move nets one consumption). A taken
-  // source WITHOUT a stamp is a pre-v1.16.10 row whose stock moved
-  // through the legacy hook: the refund above was a no-op, so
-  // consuming on the target would double-charge — skip it.
-  if (!wasTaken || existing.inventoryConsumption !== null) {
-    await consumeForIntake({
-      client: prisma,
+  const medicationId = existing.medicationId;
+  return moveRowToSlot(
+    {
       userId,
-      medicationId: existing.medicationId,
-      eventId: applied.row.id,
-      intakeAt: resolvedTakenAt,
-    });
-  }
-  return applied.row;
+      medicationId,
+      id: intakeId,
+      slot: existing.scheduledFor,
+      target: targetScheduledFor,
+    },
+    (tx) =>
+      applyCanonicalSlotWrite({
+        client: tx,
+        userId,
+        medicationId,
+        canonicalSlot: targetScheduledFor,
+        takenAt: resolvedTakenAt,
+        skipped: false,
+        isExplicitTaken: true,
+        isExplicitSkip: false,
+        idempotencyKey: null,
+        createSource: "WEB",
+        attributionSource,
+        takenVia: input.takenVia,
+        // A slot move is a re-binding, not a new dose: the original row's
+        // site and dose override survive when the toggle carries none.
+        injectionSite:
+          resolvedInjectionSite ??
+          (existing.injectionSite as InjectionSiteValue | null),
+        doseTaken: existing.doseTaken,
+      }),
+    async (tx, applied) => {
+      await restoreForIntake({ client: tx, userId, eventId: intakeId });
+      await tx.medication.update({
+        where: { id: medicationId },
+        data: { snoozedUntil: null },
+      });
+      // A taken source WITHOUT a stamp is a pre-v1.16.10 row whose stock
+      // moved through the legacy hook: the refund was a no-op, so consuming
+      // on the target would double-charge.
+      if (!wasTaken || existing.inventoryConsumption !== null) {
+        await consumeForIntake({
+          client: tx,
+          userId,
+          medicationId,
+          eventId: applied.row.id,
+          intakeAt: resolvedTakenAt,
+        });
+      }
+      return applied.row;
+    },
+  );
 }
 
 /** Record the take, in place or on the slot it now binds to. */
@@ -228,7 +253,7 @@ export async function applyTakenStatus(input: TakeInput) {
   const slotMoved =
     targetScheduledFor.getTime() !== input.existing.scheduledFor.getTime();
 
-  const updated = !slotMoved
+  const written = !slotMoved
     ? await takeInPlace(
         input,
         resolvedTakenAt,
@@ -242,5 +267,6 @@ export async function applyTakenStatus(input: TakeInput) {
         wasTaken,
         target.attributionSource,
       );
-  return { kind: "updated" as const, row: updated };
+  if (isRowWriteRefusal(written)) return rowWriteRefused(written);
+  return { kind: "updated" as const, row: written };
 }

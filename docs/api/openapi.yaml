@@ -7012,10 +7012,11 @@ paths:
             `medications.intake.update.validation-failed`), or `meta.errorCode` =
             `medications.intake.injection_site.disallowed` when the site is outside the medication's effective allowed
             set, or `medications.intake.force_slot.invalid` when `forceSlotInstant` is not a real slot of the
-            medication, or (v1.42.0) `medication.intake.notTracked` when the event is still open and its medication is
-            kept as a record only (`trackIntake: false`): resolving or snoozing it would record a new dose that is
-            counted nowhere. Correcting an event that is already taken or skipped stays open. The coded refusals carry
-            no issue list — branch on the code."
+            medication, or `medications.intake.force_slot.occupied` when a take would move onto a slot that already
+            holds a take (nothing changes; the dose stays on its row), or (v1.42.0) `medication.intake.notTracked` when
+            the event is still open and its medication is kept as a record only (`trackIntake: false`): resolving or
+            snoozing it would record a new dose that is counted nowhere. Correcting an event that is already taken or
+            skipped stays open. The coded refusals carry no issue list — branch on the code."
           content:
             application/json:
               schema:
@@ -7650,7 +7651,9 @@ paths:
           description: "Body validation failed (multi-issue), or one of three coded refusals:
             `medications.intake.taken_at.before_start` when the edited take predates the medication's start day in the
             record's timezone, `medications.intake.force_slot.invalid` when the pinned instant is not a real slot, and
-            `medications.intake.force_slot.occupied` when it is a real slot that another live dose already holds."
+            `medications.intake.force_slot.occupied` when it is a real slot that another live dose already holds, or
+            when the corrected dose would move onto a slot that already holds a take (nothing changes; the dose stays
+            where it was)."
           content:
             application/json:
               schema:
@@ -8489,7 +8492,10 @@ paths:
         "200":
           description: "Idempotent replay — the original event is returned without creating a new row. Also a repeat: a take that
             names no slot, for a slot already holding a take recorded within two hours, returns that row with
-            `alreadyTaken: true` and writes nothing."
+            `alreadyTaken: true` and writes nothing (one further away is a dose of its own and answers the nearest open
+            slot, 201). A take or a skip that names a slot already holding a take answers the same way: the first take
+            is never overwritten from here, and a deliberate change of a recorded take goes through the row (`POST
+            /api/medications/intake`, `PUT /api/medications/{id}/intake/{eventId}`)."
           content:
             application/json:
               schema:
@@ -27358,7 +27364,9 @@ paths:
         "200":
           description: "Replay: a row with this `idempotencyKey` already exists for the token's owner and is returned unchanged.
             Or a repeat: the slot this take binds to already holds a take recorded within two hours of it, and the body
-            is that row with `alreadyTaken: true`. Either way nothing was written and no inventory was consumed."
+            is that row with `alreadyTaken: true`. A take further from the recorded one is a dose of its own: it answers
+            the nearest open slot within six hours (201), or is recorded ad hoc. Either way nothing was written and no
+            inventory was consumed."
           content:
             application/json:
               schema:
@@ -47246,6 +47254,7 @@ components:
               - push.healthkit-catch-up
               - push.security-alert-relay
               - push.live-activity-relay
+              - push.live-activity-started
               - day.dose-offset
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
@@ -47288,9 +47297,12 @@ components:
             liveActivityWithdraw (hl-la-withdraw-v1), liveActivityStart (push-to-start token with hl-la-start-v1) and
             liveActivityTokens[].relayStart; the server starts and updates medication Live Activities over the relay
             with the closed content state while push.relay.liveActivity lists start and update (operator switch
-            PUSH_RELAY_LIVE_ACTIVITY, off by default). `day.dose-offset`: GET /api/day/{date} symptom events and every
-            GET /api/symptoms/events occurrence carry doseOffset (intakeId, title, minutes) from one rule: the nearest
-            dose taken at or before it on the same local day of the record's zone, else the nearest after it (negative
+            PUSH_RELAY_LIVE_ACTIVITY, off by default). `push.live-activity-started`: push.device.liveActivityStarted on
+            /api/auth/me and in the POST /api/devices answer names the dose ({ medicationId, slotInstant }) of the Live
+            Activity the server started on the calling device; null once that slot is answered, its medication paused or
+            ended, or nothing was started. `day.dose-offset`: GET /api/day/{date} symptom events and every GET
+            /api/symptoms/events occurrence carry doseOffset (intakeId, title, minutes) from one rule: the nearest dose
+            taken at or before it on the same local day of the record's zone, else the nearest after it (negative
             minutes); absent without a timed dose that day or when medications are not readable."
       required:
         - version
@@ -60970,6 +60982,25 @@ components:
           type: boolean
           description: "The relay holds the device's Live Activity consent: start and update over the relay. Withdrawn with the
             relay consent."
+        liveActivityStarted:
+          anyOf:
+            - type: object
+              properties:
+                medicationId:
+                  type: string
+                slotInstant:
+                  type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              required:
+                - medicationId
+                - slotInstant
+              additionalProperties: false
+            - type: "null"
+          description: "The dose the Live Activity the server started on this device (over the relay) shows. The start push never
+            carries it, so the app reads it here, and in the `POST /api/devices` answer right after it registers the
+            started Activity's token (`relayStart: true`). Null when no server start is pending or running, or once that
+            slot is taken, skipped or missed, its medication paused, ended or deleted, or the Activity ended."
       required:
         - transport
         - envelope
@@ -60979,6 +61010,7 @@ components:
         - senderKeys
         - relayInstanceId
         - liveActivityConsent
+        - liveActivityStarted
       additionalProperties: false
     PushSenderKey:
       type: object
@@ -62505,9 +62537,9 @@ components:
             - skipped
           description: "`inserted`/`updated`/`duplicate` — the row landed (advance the cursor); `duplicate` is an idempotent
             replay of an entry already stored, nothing else. `alreadyTaken` — the slot already holds a take recorded by
-            another writer or another key: nothing was written, no stock consumed; `intake` is the recorded row,
-            `takenAt` and `takenVia` say when and how it was taken. Advance the cursor and warn before a second dose.
-            `skipped` — not stored; see `reason`."
+            another writer or another key, and this entry was a take or a skip: nothing was written, no stock consumed
+            or refunded; `intake` is the recorded row, `takenAt` and `takenVia` say when and how it was taken. Advance
+            the cursor and warn before a second dose. `skipped` — not stored; see `reason`."
         reason:
           description: "Why a `skipped` entry was not stored. Among others: `medication_not_found`, `unstable_external_id`,
             `force_slot_invalid`, `force_slot_occupied`, `injection_site_not_allowed`, and (v1.42.0)
@@ -64058,9 +64090,9 @@ components:
             propagate deletions.
         alreadyTaken:
           type: boolean
-          description: "True when this POST reported a dose already recorded: the slot it binds to already holds a take. Nothing
-            was written and no stock was consumed; the body is the recorded row, so `takenAt` and `takenVia` say when
-            and how. False on a fresh dose (201) and on an idempotency replay (200)."
+          description: "True when this POST reported a dose already recorded, or skipped one: the slot it binds to already holds a
+            take. Nothing was written and no stock was consumed; the body is the recorded row, so `takenAt` and
+            `takenVia` say when and how. False on a fresh dose (201) and on an idempotency replay (200)."
       required:
         - id
         - userId

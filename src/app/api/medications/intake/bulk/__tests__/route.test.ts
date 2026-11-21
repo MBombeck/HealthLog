@@ -1130,7 +1130,7 @@ describe("POST /api/medications/intake/bulk — v1.16.10 inventory consumption",
     expect(restoreForIntake).not.toHaveBeenCalled();
   });
 
-  it("an explicit skip entry restores the slot row's stamp instead of consuming", async () => {
+  it("a stale skip entry onto a taken slot neither refunds nor consumes", async () => {
     vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValueOnce([
       {
         id: "row-taken",
@@ -1159,10 +1159,11 @@ describe("POST /api/medications/intake/bulk — v1.16.10 inventory consumption",
     );
     expect(res.status).toBe(200);
     expect(consumeForIntake).not.toHaveBeenCalled();
-    expect(restoreForIntake).toHaveBeenCalledTimes(1);
-    expect(restoreForIntake).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: "user-1", eventId: "row-taken" }),
-    );
+    expect(restoreForIntake).not.toHaveBeenCalled();
+    const body = (await res.json()) as {
+      data: { entries: Array<{ status: string }> };
+    };
+    expect(body.data.entries[0].status).toBe("alreadyTaken");
   });
 
   it("an idempotency-key replay (duplicate) never consumes again", async () => {
