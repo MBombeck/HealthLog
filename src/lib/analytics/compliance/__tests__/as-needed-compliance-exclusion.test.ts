@@ -23,7 +23,7 @@ const CALL_SITES: Array<{ file: string; surface: string }> = [
     surface: "nightly medication-compliance status",
   },
   {
-    file: "src/lib/insights/features.ts",
+    file: "src/lib/insights/feature-medications.ts",
     surface: "insight feature extraction (c7/c30/c90)",
   },
   {
@@ -35,7 +35,7 @@ const CALL_SITES: Array<{ file: string; surface: string }> = [
     surface: "comprehensive insight",
   },
   {
-    file: "src/lib/ai/coach/snapshot.ts",
+    file: "src/lib/ai/coach/snapshot-blocks/snapshot-reads.ts",
     surface: "Coach prompt compliance context",
   },
   {

@@ -109,7 +109,7 @@ const ALLOWED: Record<string, string> = {
     "Daily computed / provider scores (recovery, strain, readiness), one row per day.",
   "lib/jobs/step-consolidation-repair.ts::STEP_TYPE":
     "Repair job over one user's step rows for a bounded day range; runs once per repair, not per status refresh.",
-  'lib/ai/coach/snapshot.ts::"BLOOD_GLUCOSE" as never':
+  'lib/ai/coach/snapshot-blocks/snapshot-reads.ts::"BLOOD_GLUCOSE" as never':
     "Clinical CGM metrics (time in range, SD / CV, J-index, LBGI / HBGI, reading span) are functions of the individual readings, which a per-day aggregate cannot reproduce. 30 days at a sensor's fixed rate (at most one a minute) stays below 45 000 rows.",
   'lib/dashboard/snapshot.ts::"BLOOD_GLUCOSE"':
     "Same 30-day clinical glucose panel as the coach snapshot (per-reading metrics), grouped by meal context.",

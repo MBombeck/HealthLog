@@ -40,6 +40,7 @@ const GUARDED_FILES = [
   ...TURN_PIPELINE_FILES,
   "app/api/insights/narrative/route.ts",
   "lib/ai/coach/snapshot.ts",
+  "lib/ai/coach/snapshot-blocks/snapshot-reads.ts",
   "lib/ai/coach/memory-snapshot.ts",
   "lib/ai/coach/coach-memory-refresh-worker.ts",
   "lib/dashboard/snapshot.ts",
