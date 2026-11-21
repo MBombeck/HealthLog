@@ -13,7 +13,9 @@
  *   committing on its own: a failure leaves the earlier statements applied.
  *
  * Both are proven here through `prisma migrate deploy` itself, in a schema of
- * their own. A multi-statement `pg` query would show the first behaviour for
+ * their own, and so is where a `statement_timeout` has to be set to bound a
+ * block's work: as a statement of its own before the block, since the timeout
+ * is armed when a statement starts. A multi-statement `pg` query would show the first behaviour for
  * every file and prove nothing about the split.
  */
 import { spawn } from "node:child_process";
@@ -186,5 +188,36 @@ describe("prisma migrate deploy, one file", () => {
     } finally {
       await again.end();
     }
+  });
+
+  it("bounds a block's run time by SET LOCAL statement_timeout before it", async () => {
+    const result = await deploy(
+      probe(
+        [
+          "SET LOCAL statement_timeout = '1s';",
+          "DO $m$ BEGIN PERFORM pg_sleep(3); END $m$;",
+          "",
+        ].join("\n"),
+      ),
+    );
+    expect(result.code).not.toBe(0);
+    expect(result.output).toContain("Database error code: 57014");
+  });
+
+  it("does not bound a block by set_config('statement_timeout') inside it", async () => {
+    // The shape the migrations guard refuses: the block runs past the bound
+    // it sets for itself, and the file applies.
+    const result = await deploy(
+      probe(
+        [
+          "DO $m$ BEGIN",
+          "  PERFORM set_config('statement_timeout', '1s', true);",
+          "  PERFORM pg_sleep(2);",
+          "END $m$;",
+          "",
+        ].join("\n"),
+      ),
+    );
+    expect(result.code, result.output).toBe(0);
   });
 });
