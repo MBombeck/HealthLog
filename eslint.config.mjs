@@ -214,7 +214,8 @@ const eslintConfig = defineConfig([
       // they sit inside the same chart-runtime graph.
       "src/components/charts/health-chart/chart-layers.tsx",
       "src/components/charts/medication-compliance-chart.tsx",
-      "src/components/charts/mood-chart.tsx",
+      // MoodChart's plot, imported by mood-chart.tsx alone.
+      "src/components/charts/mood-chart-plot.tsx",
       "src/components/charts/nutrient-daily-bar-chart.tsx",
       "src/components/charts/scatter-correlation-chart.tsx",
       "src/components/custom-metrics/custom-metric-chart.tsx",
