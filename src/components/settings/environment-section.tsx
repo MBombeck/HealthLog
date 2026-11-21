@@ -32,7 +32,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/use-auth";
 import { ConfirmButton } from "@/components/ui/confirm-button";
-import { formatDateTime } from "@/lib/format";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import {
   apiDelete,
@@ -630,7 +629,7 @@ export function EnvironmentSection() {
               data.lastFetchFailure.failures,
               {
                 count: data.lastFetchFailure.failures,
-                when: formatDateTime(data.lastFetchFailure.lastFailedAt),
+                when: fmt.dateTime(data.lastFetchFailure.lastFailedAt),
               },
             )}
           </p>

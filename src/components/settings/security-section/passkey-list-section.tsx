@@ -33,8 +33,7 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { EmptyState } from "@/components/ui/empty-state";
-import { formatDate } from "@/lib/format";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import {
   ApiError,
@@ -171,7 +170,7 @@ export function PasskeyListSection({
   /** `proofMethods` from `GET /api/auth/me/mfa`. */
   proofMethods?: readonly string[];
 }) {
-  const { t } = useTranslations();
+  const [{ t }, fmt] = [useTranslations(), useFormatters()];
   const queryClient = useQueryClient();
   const [msg, setMsg] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -360,7 +359,7 @@ export function PasskeyListSection({
                           <span className="text-muted-foreground">
                             {pk.lastUsedAt
                               ? t("settings.security.keys.lastUsed", {
-                                  date: formatDate(pk.lastUsedAt),
+                                  date: fmt.date(pk.lastUsedAt),
                                 })
                               : t("settings.security.keys.neverUsed")}
                           </span>

@@ -14,9 +14,8 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { apiFetchRaw, apiPut } from "@/lib/api/api-fetch";
-import { formatDateTime } from "@/lib/format";
 import { useAiCapability } from "@/hooks/use-ai-capability";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { translateCodeOrNull } from "@/lib/i18n/translate-code";
 
 import {
@@ -98,7 +97,7 @@ export function RuntimeActionsRow({
   /** A closing statement rendered above the action row (the data posture). */
   footnote?: ReactNode;
 }) {
-  const { t } = useTranslations();
+  const [{ t }, fmt] = [useTranslations(), useFormatters()];
   // "Regenerate" writes the daily briefing, so it is offered only while the
   // `briefing` capability is available (operator switch, AI analysis opt-out,
   // provider, consent). The connection test stays: it is how a provider gets
@@ -264,7 +263,7 @@ export function RuntimeActionsRow({
   }
 
   const lastInsightLine = lastInsightAt
-    ? `${t("settings.lastGeneratedAt")}: ${formatDateTime(lastInsightAt)}`
+    ? `${t("settings.lastGeneratedAt")}: ${fmt.dateTime(lastInsightAt)}`
     : null;
 
   // The API decides whether the provider is set up; `userProvider` stays

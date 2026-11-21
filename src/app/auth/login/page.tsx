@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { describePasskeyError } from "@/lib/passkey-errors";
-import { useTranslations } from "@/lib/i18n/context";
+import type { Formatters } from "@/lib/format-locale";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import {
   ApiError,
@@ -26,7 +27,6 @@ import { clearOfflineCachesForSessionEnd } from "@/lib/pwa/query-persister";
 import { clearOfflineCachesBeforeLeaving } from "@/lib/pwa/clear-before-leaving";
 import { sanitizeSameOriginPath } from "@/lib/url-safety";
 import { localizedSignInError } from "@/lib/api/localized-error";
-import { formatDate } from "@/lib/format";
 import {
   InsecureTransportBanner,
   useClientTransport,
@@ -45,9 +45,13 @@ type Translate = (key: string, params?: Record<string, string>) => string;
  * An account pending deletion: the date it is erased, when the server named
  * one, and who can still stop it.
  */
-function deletionPendingMessage(t: Translate, purgeAt: unknown): string {
+function deletionPendingMessage(
+  t: Translate,
+  fmt: Formatters,
+  purgeAt: unknown,
+): string {
   return typeof purgeAt === "string" && !Number.isNaN(Date.parse(purgeAt))
-    ? t("auth.deletionPending", { date: formatDate(purgeAt) })
+    ? t("auth.deletionPending", { date: fmt.date(purgeAt) })
     : t("auth.deletionPendingNoDate");
 }
 
@@ -55,12 +59,13 @@ function deletionPendingMessage(t: Translate, purgeAt: unknown): string {
 function signInRedirectError(
   searchParams: URLSearchParams,
   t: Translate,
+  fmt: Formatters,
 ): string | null {
   const oidcError = searchParams.get("error");
   // The SSO start refused a page on plain http://; the banner says why.
   if (!oidcError || oidcError === "insecure_transport") return null;
   if (oidcError === "account_deletion_pending") {
-    return deletionPendingMessage(t, searchParams.get("purgeAt"));
+    return deletionPendingMessage(t, fmt, searchParams.get("purgeAt"));
   }
   const key: Record<string, string> = {
     oidc_denied: "auth.oidc.errorDenied",
@@ -77,7 +82,7 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const { t } = useTranslations();
+  const [{ t }, fmt] = [useTranslations(), useFormatters()];
   // The SSO callback sends a browser here when its email matches an account
   // that exists but is not linked yet: the person signs in to that account
   // once with its own credential, which links it. Under an SSO-only policy
@@ -89,7 +94,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(() =>
-    signInRedirectError(searchParams, t),
+    signInRedirectError(searchParams, t, fmt),
   );
   const [loading, setLoading] = useState(false);
   // v1.23 — second step of login when the password response carries
@@ -155,7 +160,7 @@ export default function LoginPage() {
       return true;
     }
     if (err instanceof ApiError && err.meta?.errorCode === DELETION_PENDING) {
-      setError(deletionPendingMessage(t, err.meta?.purgeAt));
+      setError(deletionPendingMessage(t, fmt, err.meta?.purgeAt));
       return true;
     }
     return false;

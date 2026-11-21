@@ -9,8 +9,7 @@ import { ConfirmButton } from "@/components/ui/confirm-button";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { apiPost } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
-import { formatDate } from "@/lib/format";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import type { AdminUser } from "./_shared";
 
@@ -31,6 +30,7 @@ const UNDO_BODY_KEYS = {
  */
 export function PendingDeletionControls({ user }: { user: AdminUser }) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const queryClient = useQueryClient();
   const undo = useMutation({
     mutationFn: () => apiPost(`/api/admin/users/${user.id}/undo-deletion`),
@@ -57,7 +57,7 @@ export function PendingDeletionControls({ user }: { user: AdminUser }) {
       <Badge variant="destructive" className="text-xs">
         {user.deletion.purgeAt
           ? t("admin.section.users.deletionPending", {
-              date: formatDate(user.deletion.purgeAt),
+              date: fmt.date(user.deletion.purgeAt),
             })
           : t("admin.section.users.deletionPendingNoDate")}
       </Badge>

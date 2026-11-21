@@ -45,10 +45,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { formatDateTime } from "@/lib/format";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import type { WideEvent, LogLevel } from "@/lib/logging/types";
 import { apiGet } from "@/lib/api/api-fetch";
@@ -93,7 +92,7 @@ function levelIcon(level: LogLevel) {
 }
 
 export function AppLogPreviewSection() {
-  const { t } = useTranslations();
+  const [{ t }, fmt] = [useTranslations(), useFormatters()];
 
   const [requestId, setRequestId] = useState("");
   const [traceId, setTraceId] = useState("");
@@ -323,7 +322,7 @@ export function AppLogPreviewSection() {
                     >
                       <td className="px-2 py-2">{levelIcon(event.level)}</td>
                       <td className="text-muted-foreground px-2 py-2 text-xs whitespace-nowrap">
-                        {formatDateTime(event.timestamp)}
+                        {fmt.dateTime(event.timestamp)}
                       </td>
                       <td className="px-2 py-2 text-xs">
                         <button
@@ -332,7 +331,7 @@ export function AppLogPreviewSection() {
                           className="focus-visible:ring-ring w-full rounded text-left underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:outline-none"
                           aria-label={t("admin.section.app-logs.viewDetails", {
                             action: actionLabel,
-                            timestamp: formatDateTime(event.timestamp),
+                            timestamp: fmt.dateTime(event.timestamp),
                           })}
                         >
                           {actionLabel}

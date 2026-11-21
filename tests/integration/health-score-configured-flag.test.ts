@@ -63,7 +63,6 @@ vi.mock("next/headers", async () => {
 // production schema in this environment, and no surface under test needs
 // a provider: the digest lifts a cached briefing, it never generates one.
 vi.mock("@/lib/ai/provider", () => ({
-  resolveProvider: vi.fn().mockResolvedValue({ type: "none" }),
   hasAnyConfiguredProvider: vi.fn().mockResolvedValue(false),
   // The AI capability loader's presence probe, answering the same "no
   // provider". Without it the loader throws and every capability on the

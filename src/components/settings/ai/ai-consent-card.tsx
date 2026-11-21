@@ -45,8 +45,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAiConsent } from "@/hooks/use-ai-capability";
 import { useAuth } from "@/hooks/use-auth";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
-import { formatDateTime } from "@/lib/format";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import {
   aiInputDependentKeys,
   invalidateKeys,
@@ -66,6 +65,7 @@ export function AiConsentCard({
   isAuthenticated: boolean;
 }) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState(false);
   // The standing decision comes off the account payload, resolved on the
@@ -128,11 +128,11 @@ export function AiConsentCard({
   const description = consent.since
     ? providers
       ? t("settings.ai.consent.activeSinceNamed", {
-          date: formatDateTime(consent.since),
+          date: fmt.dateTime(consent.since),
           providers,
         })
       : t("settings.ai.consent.activeSince", {
-          date: formatDateTime(consent.since),
+          date: fmt.dateTime(consent.since),
         })
     : t("settings.ai.consent.activeUndated");
 
@@ -221,6 +221,7 @@ function DocumentReadingConsentRow({
   isAuthenticated: boolean;
 }) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState(false);
 
@@ -264,7 +265,7 @@ function DocumentReadingConsentRow({
         icon={ShieldCheck}
         title={t("settings.ai.consent.documentReading.title")}
         description={t("settings.ai.consent.documentReading.activeSince", {
-          date: formatDateTime(active.signedAt),
+          date: fmt.dateTime(active.signedAt),
         })}
       />
       {confirming ? (

@@ -39,10 +39,10 @@ import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { formatDateOrRelative } from "@/lib/format";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
-import { useTranslations } from "@/lib/i18n/context";
+import { formatDateOrRelative } from "@/lib/i18n/relative-time";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
@@ -108,6 +108,7 @@ function FactRow({
   onForget: () => void;
 }) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(fact.text);
   const edit = useEditCoachFact({
@@ -183,7 +184,7 @@ function FactRow({
             <p className="text-sm break-words">{fact.text}</p>
             <p className="text-muted-foreground mt-1 text-xs">
               {t("settings.ai.coachMemory.learnedPrefix", {
-                when: formatDateOrRelative(fact.createdAt, t),
+                when: formatDateOrRelative(fact.createdAt, t, fmt),
               })}
               {sourceKey ? (
                 <span data-slot="settings-coach-memory-source">

@@ -30,8 +30,7 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { apiDelete, apiGet, apiPost } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
-import { formatDateTime } from "@/lib/format";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import {
   aiInputDependentKeys,
   invalidateKeys,
@@ -45,7 +44,7 @@ interface CentralCodexStatus {
 }
 
 export function CentralCodexSection() {
-  const { t } = useTranslations();
+  const [{ t }, fmt] = [useTranslations(), useFormatters()];
   const queryClient = useQueryClient();
 
   const { data } = useQuery({
@@ -175,7 +174,7 @@ export function CentralCodexSection() {
         {data?.connectedAt && isConnected && (
           <p className="text-muted-foreground text-xs">
             {t("admin.centralCodex.connectedSince", {
-              when: formatDateTime(data.connectedAt),
+              when: fmt.dateTime(data.connectedAt),
             })}
           </p>
         )}

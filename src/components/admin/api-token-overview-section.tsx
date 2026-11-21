@@ -9,7 +9,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { formatDate, formatDateTime } from "@/lib/format";
 import type { Formatters } from "@/lib/format-locale";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
@@ -268,11 +267,11 @@ export function ApiTokenOverviewSection() {
                             one row of height but eliminates the bar. */}
                         <td className="text-muted-foreground px-3 py-2 text-right text-xs">
                           {token.lastUsedAt
-                            ? formatDateTime(token.lastUsedAt)
+                            ? fmt.dateTime(token.lastUsedAt)
                             : t("admin.tokenNeverUsed")}
                         </td>
                         <td className="text-muted-foreground px-3 py-2 text-right text-xs">
-                          {formatDate(token.createdAt)}
+                          {fmt.date(token.createdAt)}
                         </td>
                       </tr>
                     );
@@ -331,11 +330,11 @@ export function ApiTokenOverviewSection() {
                       <p className="text-muted-foreground mt-2 text-xs">
                         {t("admin.tokenLastUsed")}:{" "}
                         {token.lastUsedAt
-                          ? formatDateTime(token.lastUsedAt)
+                          ? fmt.dateTime(token.lastUsedAt)
                           : t("admin.tokenNeverUsed")}
                       </p>
                       <p className="text-muted-foreground text-xs">
-                        {t("admin.tokenCreated")}: {formatDate(token.createdAt)}
+                        {t("admin.tokenCreated")}: {fmt.date(token.createdAt)}
                       </p>
                     </li>
                   </ListRow>

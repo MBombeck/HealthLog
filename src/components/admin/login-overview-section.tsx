@@ -26,10 +26,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatDateTime } from "@/lib/format";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { toCSV } from "@/lib/export";
 import { formatInUserTz, DEFAULT_TIMEZONE } from "@/lib/tz/format";
@@ -106,7 +105,7 @@ export function buildAuditLogQueryParams(state: {
 }
 
 export function LoginOverviewSection() {
-  const { t } = useTranslations();
+  const [{ t }, fmt] = [useTranslations(), useFormatters()];
   const { user } = useAuth();
   // v1.4.25 — every CSV-emitted timestamp uses the admin's display
   // timezone so the resulting `2026-05-11T11:05:00+02:00` cell stays
@@ -557,7 +556,7 @@ export function LoginOverviewSection() {
                             : "—"}
                         </td>
                         <td className="text-muted-foreground px-3 py-2 text-right text-xs whitespace-nowrap">
-                          {formatDateTime(entry.createdAt)}
+                          {fmt.dateTime(entry.createdAt)}
                         </td>
                       </tr>
                     );

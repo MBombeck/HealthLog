@@ -6,10 +6,9 @@ import { Activity } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet } from "@/lib/api/api-fetch";
-import { formatDateTime } from "@/lib/format";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { EmptyState } from "@/components/ui/empty-state";
 
@@ -63,6 +62,7 @@ interface ProviderHealthRow {
 
 export function ProviderHealthSection() {
   const { t, locale } = useTranslations();
+  const fmt = useFormatters();
   // Seven-digit token counts are the point of this readout; ungrouped digits
   // are what made the mixed figure unreadable in the first place.
   const groupDigits = (value: number): string =>
@@ -167,12 +167,12 @@ export function ProviderHealthSection() {
                   })}
                   {p.lastOkAt
                     ? ` · ${t("admin.providerHealth.lastOk", {
-                        at: formatDateTime(p.lastOkAt),
+                        at: fmt.dateTime(p.lastOkAt),
                       })}`
                     : ""}
                   {p.failing > 0 && p.lastFailureAt
                     ? ` · ${t("admin.providerHealth.lastFailure", {
-                        at: formatDateTime(p.lastFailureAt),
+                        at: fmt.dateTime(p.lastFailureAt),
                       })}`
                     : ""}
                   {p.failing > 0 &&
@@ -190,7 +190,7 @@ export function ProviderHealthSection() {
                   >
                     {t("admin.providerHealth.pausedHint", {
                       count: p.pausedUsers,
-                      at: formatDateTime(p.pausedUntil),
+                      at: fmt.dateTime(p.pausedUntil),
                     })}
                   </span>
                 ) : null}
