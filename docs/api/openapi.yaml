@@ -6499,10 +6499,13 @@ paths:
       tags:
         - Devices
       summary: Register native device + APNs token
-      description: Idempotent upsert by `token`. APNs token + environment are paired — supplying one without the other returns
-        422. Cross-user re-registration of either identifier returns 409. A refused push field (push key, relay binding,
-        consent) returns 422 with `meta.errorCode` `devices.push.<reason>` and changes nothing. The answer's `push`
-        block is the device's push state after the call.
+      description: "Idempotent upsert by `token`. APNs token + environment are paired — supplying one without the other
+        returns 422. Cross-user re-registration of either identifier returns 409. A refused push field (push key, relay
+        binding, consent) returns 422 with `meta.errorCode` `devices.push.<reason>` and changes nothing; more than 10
+        new relay bindings for one account in 24 hours return 429 `devices.push.relay_daily_limit`. When the device's
+        APNs token changes, the old token's relay binding is removed and the device has to bind the new token
+        (`relayState: rebind_needed` unless the request carries the new `relayBinding`). The answer's `push` block is
+        the device's push state after the call."
       requestBody:
         required: true
         content:
@@ -6666,6 +6669,31 @@ paths:
         "403": *a24
         "409":
           description: The relay is not registered on this server.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+  /api/admin/push-relay/rotate-sender-key:
+    post:
+      tags:
+        - Admin
+      summary: Emergency rotation of the envelope sender key
+      description: "For a sender key known to be exposed: a new current key at once, without the 7-day announcement, and the
+        previous key dropped. Devices that have not fetched the new key show the neutral placeholder until the app is
+        opened. Admin-only, cookie-only, fresh second factor, audit-logged."
+      responses:
+        "200":
+          description: Rotated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminPushRelaySenderRotateEnvelope"
+        "401": *a1
+        "403": *a24
+        "409":
+          description: This server seals no envelopes yet.
           content:
             application/json:
               schema:
@@ -43557,9 +43585,10 @@ components:
                 account.deletion.already_pending, account.deletion.no_guardian, account.deletion.not_pending; activity —
                 activity.calendar.future_date, activity.calendar.too_old; devices — devices.push.apns_token_required,
                 devices.push.bad_signature, devices.push.consent_required, devices.push.instance_mismatch,
-                devices.push.invalid_push_key, devices.push.push_key_required, devices.push.relay_device_limit,
-                devices.push.relay_not_offered, devices.push.token_mismatch, devices.push.unsupported_suite; admin —
-                admin.pushRelay.confirmationsRequired, admin.pushRelay.notRegistered, admin.pushRelay.unavailable,
+                devices.push.invalid_push_key, devices.push.push_key_required, devices.push.relay_daily_limit,
+                devices.push.relay_device_limit, devices.push.relay_not_offered, devices.push.token_mismatch,
+                devices.push.unsupported_suite; admin — admin.pushRelay.confirmationsRequired,
+                admin.pushRelay.noSenderKey, admin.pushRelay.notRegistered, admin.pushRelay.unavailable,
                 admin.users.delete.managed_profile, admin.users.delete.self; ai — ai.budget.exceeded, ai.provider.none,
                 ai.record.notPermitted, ai.unavailable, ai.usage.aboveCeiling, ai.usage.defaultAboveCeiling,
                 ai.usage.invalid, ai.usage.levelTooLow, ai.usage.rateLimited; ai_provider — ai_provider.invalid,
@@ -59723,6 +59752,7 @@ components:
         status:
           type: string
           enum:
+            - next
             - current
             - previous
       required:
@@ -60020,6 +60050,30 @@ components:
                 - not_registered
           required:
             - outcome
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AdminPushRelaySenderRotateEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            rotated:
+              type: boolean
+              const: true
+          required:
+            - rotated
           additionalProperties: false
         error:
           type: "null"
@@ -95911,6 +95965,12 @@ components:
     PushRelayCapability:
       type: object
       properties:
+        host:
+          description: "The relay host, lower case, without scheme or port: the `host` field of every statement the app signs
+            (`hl-bind-v1`, `hl-activity-v1`) and of the relay's response signatures."
+          type:
+            - string
+            - "null"
         available:
           type: boolean
           description: This server can use a relay at all (`PUSH_RELAY_MODE` is not `off` and the relay's identity keys are pinned).
@@ -95946,8 +96006,9 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PushSenderKey"
-          description: "The keys to pin for this account: `current`, and `previous` for 30 days after a rotation. Present whenever
-            this server seals envelopes, over the relay or over its own APNs key; a sealed push opens with one of them."
+          description: "The keys to pin for this account, at most three: `next` (announced at least 7 days before it seals
+            anything), `current`, and `previous` for 30 days after it retired. Pin all of them and try each. Present
+            whenever this server seals envelopes, over the relay or over its own APNs key."
         envelopeVersions:
           type: array
           items:
@@ -95972,6 +96033,7 @@ components:
           type: string
           description: The consent text version the card shows; sent back as `relayConsent.textVersion`.
       required:
+        - host
         - available
         - offered
         - state
