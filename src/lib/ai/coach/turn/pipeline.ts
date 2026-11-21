@@ -114,8 +114,7 @@ async function runTurn(
     priorResults: conversation.priorResults,
     latest: conversation.latestMessages,
   });
-  // v1.41 — a tap on "Yes, remember it" / "Take on this plan" (or their
-  // "No"): answered by the memory contract with a catalog line, no model.
+  // v1.41 — "Yes, remember it" / "Take on this plan" (or "No"): no model.
   if (input.memoryDecision || input.planDecision) {
     const decided = await runDecisionTurn({ input, conversation });
     if (decided) return decided;
@@ -134,8 +133,7 @@ async function runTurn(
     clarification: input.clarification,
     latest: conversation.latestMessages,
   });
-  // v1.39.4 — "keep looking": the unfinished question and what the forced
-  // turn already read, so the continued turn does not fetch it again.
+  // v1.39.4 — "keep looking": the continued turn does not fetch again.
   const continuation = await resolveContinuation({
     userId,
     conversationId: input.conversationId,
@@ -154,6 +152,11 @@ async function runTurn(
     message,
   );
 
+  // ── Provider chain, before the context: it sizes the snapshot ─
+  const chainResult = await resolveTurnChain(userId);
+  if (!chainResult.ok) return chainResult.response;
+  const { chain, toolMode, limits } = chainResult;
+
   const ctx = await assembleTurnContext({
     userId,
     locale,
@@ -162,19 +165,14 @@ async function runTurn(
     guidedQuestion: input.guidedQuestion,
     workoutId: input.workoutId,
     conversation,
+    snapshotChars: limits.snapshotChars,
   });
-
-  // ── Provider chain ──────────────────────────────────────────
-  const chainResult = await resolveTurnChain(userId);
-  if (!chainResult.ok) return chainResult.response;
-  const { chain, toolMode } = chainResult;
 
   // The last check before the budget reservation and the provider call: the
   // `coach` capability again, at the egress site, so the call site names its
-  // capability whatever happens to the gate at the top. Inside one request
-  // the capability inputs are memoised, so this answers from the same
-  // resolution as the top gate; a fresh read at the wire belongs to the
-  // provider chokepoints, not to this route.
+  // capability whatever happens to the gate at the top. The inputs are
+  // memoised per request, so this answers from the top gate's resolution; a
+  // fresh read at the wire belongs to the provider chokepoints.
   const refusedAtEgress = await input.recheckCapability();
   if (refusedAtEgress) return refusedAtEgress;
 
@@ -186,6 +184,7 @@ async function runTurn(
   const firstRoundInput = estimateFirstRoundInput(ctx);
   const estimate = createTurnBudget({
     payer,
+    limits: limits.turn,
     effort: reasoning.effort,
     initialInputTokens: firstRoundInput,
   });
@@ -225,6 +224,7 @@ async function runTurn(
       userMessageId,
       reasoning,
       payer,
+      turnLimits: limits.turn,
       conversationWindowSet: input.scope?.window !== undefined,
     });
     // Every round that ran is settled; whatever is still reserved goes back.

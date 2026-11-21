@@ -6938,7 +6938,18 @@
         "confirm": "Supprimer la clé API",
         "done": "Clé API supprimée.",
         "failed": "Impossible de supprimer la clé API."
-      }
+      },
+      "coachBudgetHeading": "Budget du Coach pour les modèles auto-hébergés",
+      "coachBudgetBody": "La quantité de tes données que le Coach place dans le prompt et la durée de travail d'une réponse, pour le modèle local et la passerelle. Réduis la taille de l'instantané pour un modèle à petite fenêtre de contexte ; augmente-la avec les limites par réponse pour un grand modèle sur ton propre matériel. Les champs vides gardent les valeurs par défaut affichées. Une réponse du fournisseur partagé du serveur garde toujours les limites par défaut.",
+      "coachBudgetProvider": "Fournisseur",
+      "coachBudgetLocal": "Modèle local",
+      "coachBudgetCompat": "Passerelle",
+      "coachBudgetSnapshotChars": "Taille de l'instantané (caractères)",
+      "coachBudgetTurnTokens": "Jetons par réponse",
+      "coachBudgetMaxRounds": "Tours d'outils par réponse",
+      "coachBudgetTurnSeconds": "Secondes par réponse",
+      "coachBudgetRange": "De {min} à {max}",
+      "coachBudgetInvalid": "Chaque valeur doit être un nombre entier dans sa plage, ou rester vide."
     },
     "dashboard": {
       "units": {

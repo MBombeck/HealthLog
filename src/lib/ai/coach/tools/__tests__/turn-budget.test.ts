@@ -55,9 +55,11 @@ describe("TURN_LIMITS", () => {
       `${process.cwd()}/src/app/api/insights/chat/route.ts`,
       "utf8",
     );
-    expect(route).toMatch(
-      /COACH_TURN_SLOT_MS = TURN_LIMITS\.user\.wallMs \+ \d/,
-    );
+    // The window is sized from the ceiling of a person's own Coach budget,
+    // which is never below the built-in wall time.
+    expect(route).toMatch(/COACH_TURN_SLOT_MS = COACH_MAX_TURN_MS \+ \d/);
+    const { COACH_MAX_TURN_MS } = await import("../../coach-budgets");
+    expect(COACH_MAX_TURN_MS).toBeGreaterThanOrEqual(TURN_LIMITS.user.wallMs);
   });
 });
 

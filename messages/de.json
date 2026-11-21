@@ -6938,7 +6938,18 @@
         "confirm": "API-Schlüssel entfernen",
         "done": "API-Schlüssel entfernt.",
         "failed": "Der API-Schlüssel konnte nicht entfernt werden."
-      }
+      },
+      "coachBudgetHeading": "Coach-Budget für selbst betriebene Modelle",
+      "coachBudgetBody": "Wie viel deiner Daten der Coach in den Prompt legt und wie lange eine Antwort arbeiten darf, für das lokale Modell und das Gateway. Verkleinere den Snapshot für ein Modell mit kleinem Kontextfenster; vergrößere ihn und die Grenzen pro Antwort für ein großes Modell auf eigener Hardware. Leere Felder behalten die angezeigten Standardwerte. Eine Antwort über den gemeinsamen Anbieter des Servers behält immer die Standardgrenzen.",
+      "coachBudgetProvider": "Anbieter",
+      "coachBudgetLocal": "Lokales Modell",
+      "coachBudgetCompat": "Gateway",
+      "coachBudgetSnapshotChars": "Snapshot-Größe (Zeichen)",
+      "coachBudgetTurnTokens": "Tokens pro Antwort",
+      "coachBudgetMaxRounds": "Werkzeugrunden pro Antwort",
+      "coachBudgetTurnSeconds": "Sekunden pro Antwort",
+      "coachBudgetRange": "{min} bis {max}",
+      "coachBudgetInvalid": "Jeder Wert muss eine ganze Zahl in seinem Bereich sein oder leer bleiben."
     },
     "dashboard": {
       "units": {

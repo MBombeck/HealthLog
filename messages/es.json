@@ -6938,7 +6938,18 @@
         "confirm": "Quitar clave de API",
         "done": "Clave de API quitada.",
         "failed": "No se pudo quitar la clave de API."
-      }
+      },
+      "coachBudgetHeading": "Presupuesto del Coach para modelos autoalojados",
+      "coachBudgetBody": "Cuántos de tus datos pone el Coach en el prompt y cuánto tiempo puede trabajar una respuesta, para el modelo local y la pasarela. Reduce el tamaño del snapshot para un modelo con una ventana de contexto pequeña; auméntalo junto con los límites por respuesta para un modelo grande en tu propio hardware. Los campos vacíos mantienen los valores predeterminados mostrados. Una respuesta del proveedor compartido del servidor siempre mantiene los límites predeterminados.",
+      "coachBudgetProvider": "Proveedor",
+      "coachBudgetLocal": "Modelo local",
+      "coachBudgetCompat": "Pasarela",
+      "coachBudgetSnapshotChars": "Tamaño del snapshot (caracteres)",
+      "coachBudgetTurnTokens": "Tokens por respuesta",
+      "coachBudgetMaxRounds": "Rondas de herramientas por respuesta",
+      "coachBudgetTurnSeconds": "Segundos por respuesta",
+      "coachBudgetRange": "De {min} a {max}",
+      "coachBudgetInvalid": "Cada valor debe ser un número entero dentro de su rango, o estar vacío."
     },
     "dashboard": {
       "units": {

@@ -541,6 +541,13 @@ model User {
   // default timed the Coach out before the first token landed.
   aiResponseTimeoutSeconds Int? @map("ai_response_timeout_seconds")
 
+  /// The Coach budget of each self-hosted provider (Local and the
+  /// OpenAI-compatible gateway): snapshot characters, tokens, rounds and
+  /// seconds per turn, as `{ "local": {...}, "openai-compatible": {...} }`.
+  /// Parsed and clamped by `parseCoachBudgets`
+  /// (`src/lib/ai/coach/coach-budgets.ts`); null = the built-in limits.
+  aiCoachBudgets Json? @map("ai_coach_budgets")
+
   // Automatic AI reading of uploaded vault documents. OFF by default: the vault
   // stays local-first — a newly stored document is only read externally when the
   // user explicitly taps a per-document AI action (which still needs an active

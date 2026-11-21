@@ -6938,7 +6938,18 @@
         "confirm": "Usuń klucz API",
         "done": "Usunięto klucz API.",
         "failed": "Nie udało się usunąć klucza API."
-      }
+      },
+      "coachBudgetHeading": "Budżet Coacha dla modeli hostowanych samodzielnie",
+      "coachBudgetBody": "Ile Twoich danych Coach umieszcza w prompcie i jak długo może pracować jedna odpowiedź, osobno dla modelu lokalnego i bramy. Zmniejsz rozmiar migawki dla modelu z małym oknem kontekstu; zwiększ go razem z limitami na odpowiedź dla dużego modelu na własnym sprzęcie. Puste pola zachowują pokazane wartości domyślne. Odpowiedź od wspólnego dostawcy serwera zawsze zachowuje limity domyślne.",
+      "coachBudgetProvider": "Dostawca",
+      "coachBudgetLocal": "Model lokalny",
+      "coachBudgetCompat": "Brama",
+      "coachBudgetSnapshotChars": "Rozmiar migawki (znaki)",
+      "coachBudgetTurnTokens": "Tokeny na odpowiedź",
+      "coachBudgetMaxRounds": "Rundy narzędzi na odpowiedź",
+      "coachBudgetTurnSeconds": "Sekundy na odpowiedź",
+      "coachBudgetRange": "Od {min} do {max}",
+      "coachBudgetInvalid": "Każda wartość musi być liczbą całkowitą w swoim zakresie albo pozostać pusta."
     },
     "dashboard": {
       "units": {

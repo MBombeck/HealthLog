@@ -301,6 +301,34 @@ describe("buildCoachSnapshot — budgeting + progressive degradation", () => {
     expect(out.snapshotJson.length).toBeLessThanOrEqual(24_500);
   });
 
+  it("honours a smaller cap a Coach budget sets", async () => {
+    const full = await buildCoachSnapshot("user-1", {
+      sources: ALL_SOURCES,
+      window: "allTime",
+    });
+    const small = await buildCoachSnapshot(
+      "user-1",
+      { sources: ALL_SOURCES, window: "allTime" },
+      { maxChars: 6_000 },
+    );
+    // A cache hit on the default-cap build would hand back the full one.
+    expect(small.snapshotJson.length).toBeLessThan(full.snapshotJson.length);
+    expect(small.snapshotJson.length).toBeLessThanOrEqual(6_500);
+  });
+
+  it("keeps more under a larger cap a Coach budget sets", async () => {
+    const full = await buildCoachSnapshot("user-1", {
+      sources: ALL_SOURCES,
+      window: "allTime",
+    });
+    const large = await buildCoachSnapshot(
+      "user-1",
+      { sources: ALL_SOURCES, window: "allTime" },
+      { maxChars: 120_000 },
+    );
+    expect(large.snapshotJson.length).toBeGreaterThan(full.snapshotJson.length);
+  });
+
   it("fires coach.snapshot.truncated when the cap is exceeded", async () => {
     await buildCoachSnapshot("user-1", {
       sources: ALL_SOURCES,

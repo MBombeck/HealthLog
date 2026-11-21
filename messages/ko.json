@@ -6938,7 +6938,18 @@
         "confirm": "API 키 삭제",
         "done": "API 키를 삭제했어요.",
         "failed": "API 키를 삭제하지 못했어요."
-      }
+      },
+      "coachBudgetHeading": "자체 호스팅 모델용 코치 예산",
+      "coachBudgetBody": "코치가 프롬프트에 넣는 데이터의 양과 한 번의 답변이 작업할 수 있는 시간을 로컬 모델과 게이트웨이별로 정합니다. 컨텍스트 창이 작은 모델이면 스냅샷 크기를 줄이고, 자체 하드웨어의 큰 모델이면 스냅샷과 답변당 한도를 늘리세요. 빈 칸은 표시된 기본값을 유지합니다. 서버의 공용 제공자를 통한 답변은 항상 기본 한도를 유지합니다.",
+      "coachBudgetProvider": "제공자",
+      "coachBudgetLocal": "로컬 모델",
+      "coachBudgetCompat": "게이트웨이",
+      "coachBudgetSnapshotChars": "스냅샷 크기(문자)",
+      "coachBudgetTurnTokens": "답변당 토큰",
+      "coachBudgetMaxRounds": "답변당 도구 라운드",
+      "coachBudgetTurnSeconds": "답변당 초",
+      "coachBudgetRange": "{min}~{max}",
+      "coachBudgetInvalid": "각 값은 범위 안의 정수이거나 비워 두어야 합니다."
     },
     "dashboard": {
       "units": {

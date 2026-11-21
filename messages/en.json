@@ -6938,7 +6938,18 @@
         "confirm": "Remove API key",
         "done": "API key removed.",
         "failed": "Could not remove the API key."
-      }
+      },
+      "coachBudgetHeading": "Coach budget for self-hosted models",
+      "coachBudgetBody": "How much of your data the Coach puts into the prompt, and how long one answer may work, for the local model and the gateway. Lower the snapshot size for a model with a small context window; raise it and the per-answer limits for a large model on your own hardware. Empty fields keep the built-in values shown. An answer from the server's shared provider always keeps the built-in limits.",
+      "coachBudgetProvider": "Provider",
+      "coachBudgetLocal": "Local model",
+      "coachBudgetCompat": "Gateway",
+      "coachBudgetSnapshotChars": "Snapshot size (characters)",
+      "coachBudgetTurnTokens": "Tokens per answer",
+      "coachBudgetMaxRounds": "Tool rounds per answer",
+      "coachBudgetTurnSeconds": "Seconds per answer",
+      "coachBudgetRange": "{min} to {max}",
+      "coachBudgetInvalid": "Each value must be a whole number within its range, or empty."
     },
     "dashboard": {
       "units": {

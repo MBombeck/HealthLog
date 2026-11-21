@@ -89,7 +89,16 @@ function modelPath(forcedFinal: boolean) {
     coachPrefs: DEFAULT_COACH_PREFS,
     snapshot: { provenance: { windows: [], metrics: [] } },
   });
-  m.resolveTurnChain.mockResolvedValue({ ok: true, chain: [], toolMode: true });
+  m.resolveTurnChain.mockResolvedValue({
+    ok: true,
+    chain: [],
+    toolMode: true,
+    limits: {
+      snapshotChars: 14_000,
+      turn: { tokens: 165_000, wallMs: 200_000, maxRounds: 16 },
+      custom: false,
+    },
+  });
   m.reserveTurnBudget.mockResolvedValue({ ok: true, ledger: stubLedger() });
   m.runTurnModel.mockResolvedValue({
     ...modelExtras(),
@@ -213,6 +222,28 @@ describe("the continued turn", () => {
     // The question itself stays in the transcript, never in the hint.
     expect(turnHints[0]).not.toContain("Why is my pulse up?");
     expect(persistedProvenance().continuationOf).toBe("m-forced");
+  });
+
+  it("sizes the snapshot and the turn by the chain's Coach budget", async () => {
+    const limits = {
+      snapshotChars: 6_000,
+      turn: { tokens: 40_000, wallMs: 90_000, maxRounds: 4 },
+      custom: true,
+    };
+    modelPath(false);
+    m.resolveTurnChain.mockResolvedValue({
+      ok: true,
+      chain: [],
+      toolMode: true,
+      limits,
+    });
+    await frames(
+      await runCoachTurn(
+        input({ followUp: { messageId: "m-forced", id: "f1" } }),
+      ),
+    );
+    expect(m.assembleTurnContext.mock.lastCall?.[0].snapshotChars).toBe(6_000);
+    expect(m.runTurnModel.mock.lastCall?.[0].turnLimits).toEqual(limits.turn);
   });
 
   it("offers no second 'keep looking' when forced again", async () => {

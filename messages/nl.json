@@ -6938,7 +6938,18 @@
         "confirm": "API-sleutel verwijderen",
         "done": "API-sleutel verwijderd.",
         "failed": "De API-sleutel kon niet worden verwijderd."
-      }
+      },
+      "coachBudgetHeading": "Coachbudget voor zelf gehoste modellen",
+      "coachBudgetBody": "Hoeveel van je gegevens de Coach in de prompt zet en hoe lang één antwoord mag werken, voor het lokale model en de gateway. Verklein de snapshot voor een model met een klein contextvenster; vergroot hem en de grenzen per antwoord voor een groot model op je eigen hardware. Lege velden houden de getoonde standaardwaarden. Een antwoord via de gedeelde provider van de server houdt altijd de standaardgrenzen.",
+      "coachBudgetProvider": "Provider",
+      "coachBudgetLocal": "Lokaal model",
+      "coachBudgetCompat": "Gateway",
+      "coachBudgetSnapshotChars": "Snapshotgrootte (tekens)",
+      "coachBudgetTurnTokens": "Tokens per antwoord",
+      "coachBudgetMaxRounds": "Toolrondes per antwoord",
+      "coachBudgetTurnSeconds": "Seconden per antwoord",
+      "coachBudgetRange": "{min} tot {max}",
+      "coachBudgetInvalid": "Elke waarde moet een geheel getal binnen het bereik zijn, of leeg blijven."
     },
     "dashboard": {
       "units": {

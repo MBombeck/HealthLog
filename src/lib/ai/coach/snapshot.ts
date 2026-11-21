@@ -149,11 +149,18 @@ export async function buildCoachSnapshot(
      * output is what it always was.
      */
     condenseRequested?: boolean;
+    /**
+     * The size cap, in compact JSON characters. A Coach turn passes the cap
+     * its provider chain allows (`coach-budgets.ts`); every other caller
+     * keeps `MAX_SNAPSHOT_CHARS`.
+     */
+    maxChars?: number;
   },
 ): Promise<CoachSnapshotResult> {
   const reach = options?.reach ?? UNBOUNDED_REACH;
   const condenseRequested = options?.condenseRequested === true;
-  const key = `${snapshotCacheKey(userId, scope, reach)}${condenseRequested ? "|condense" : ""}`;
+  const maxChars = options?.maxChars ?? MAX_SNAPSHOT_CHARS;
+  const key = `${snapshotCacheKey(userId, scope, reach)}${condenseRequested ? "|condense" : ""}${maxChars === MAX_SNAPSHOT_CHARS ? "" : `|chars:${maxChars}`}`;
   const cached = readSnapshotCache(key);
   if (cached) return cached;
   const result = await buildCoachSnapshotImpl(
@@ -161,6 +168,7 @@ export async function buildCoachSnapshot(
     scope,
     reach,
     condenseRequested,
+    maxChars,
   );
   writeSnapshotCache(key, result);
   return result;
@@ -171,6 +179,7 @@ async function buildCoachSnapshotImpl(
   scope: CoachScope | undefined,
   reach: CoachHistoryReach,
   condenseRequested: boolean,
+  maxChars: number,
 ): Promise<CoachSnapshotResult> {
   // Prefs, module gates and the admitted sources — see `snapshot-prelude.ts`.
   // The lookback limit caps the narration window there, whatever the caller
@@ -333,6 +342,7 @@ async function buildCoachSnapshotImpl(
     snapshot: acc.snapshot,
     scope,
     condenseRequested,
+    maxChars,
     registry: acc.registry,
     groundingValues: acc.groundingValues,
     hasDiabetes: prefsRow?.hasDiabetes ?? false,
@@ -351,6 +361,7 @@ function finaliseSnapshot(input: {
   snapshot: Record<string, unknown>;
   scope: CoachScope | undefined;
   condenseRequested: boolean;
+  maxChars: number;
   registry: SnapshotBlockRegistry;
   groundingValues: Map<ReferenceMetric, number>;
   hasDiabetes: boolean;
@@ -418,6 +429,7 @@ function finaliseSnapshot(input: {
     registry.blockClusters,
     requestedBlocks,
     (key) => registry.blockDaily.get(key)?.(),
+    input.maxChars,
   );
 
   // v1.18.6 — build the citation-aware reference-grounding block from the
@@ -486,6 +498,8 @@ export function degradeToBudget(
   requested: ReadonlySet<string> = new Set(),
   /** A requested block's daily values, for its condensed summary. */
   dailyOf: (key: string) => DailySeries | undefined = () => undefined,
+  /** The cap; the built-in one unless a Coach budget set another. */
+  maxChars: number = MAX_SNAPSHOT_CHARS,
 ): Array<{ key: string; cluster: CoachDataCluster; pass: number }> {
   const degraded: Array<{
     key: string;
@@ -495,7 +509,7 @@ export function degradeToBudget(
   // Measure against the SAME compact form the prompt ships
   // (`JSON.stringify(snapshot)`), so the cap counts what the model reads.
   const size = () => JSON.stringify(snapshot).length;
-  if (size() <= MAX_SNAPSHOT_CHARS) return degraded;
+  if (size() <= maxChars) return degraded;
 
   // Build a degrade order: blocks grouped by cluster, lowest priority
   // first. A block with no registered cluster (e.g. anthropometrics,
@@ -641,13 +655,13 @@ export function degradeToBudget(
   // prompt still exceeds the cap, so the clinical core keeps its detail
   // until it is genuinely the last lever left.
   for (const [key, cluster] of orderedKeys) {
-    if (size() <= MAX_SNAPSHOT_CHARS) break;
+    if (size() <= maxChars) break;
     // A requested series is condensed step by step and keeps its numbers
     // (`series-condense.ts`); it is never swapped for the `omitted` marker.
     if (requested.has(key) && isCondensable(key, snapshot[key])) {
       const daily = dailyOf(key);
       for (const step of [1, 2, 3] as const) {
-        if (size() <= MAX_SNAPSHOT_CHARS) break;
+        if (size() <= maxChars) break;
         if (condenseSeriesBlock(snapshot[key], step, key, daily)) {
           degraded.push({ key, cluster, pass: step });
         }
@@ -655,9 +669,9 @@ export function degradeToBudget(
       continue;
     }
     if (dropRecent(key)) degraded.push({ key, cluster, pass: 1 });
-    if (size() <= MAX_SNAPSHOT_CHARS) break;
+    if (size() <= maxChars) break;
     if (dropWeekly(key)) degraded.push({ key, cluster, pass: 2 });
-    if (size() <= MAX_SNAPSHOT_CHARS) break;
+    if (size() <= maxChars) break;
     if (requested.has(key)) continue;
     if (dropBlock(key)) degraded.push({ key, cluster, pass: 3 });
   }

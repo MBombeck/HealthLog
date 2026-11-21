@@ -258,6 +258,58 @@ describe("PATCH /api/user/ai-provider — v1.22 fields", () => {
   });
 });
 
+describe("PATCH /api/user/ai-provider — Coach budgets", () => {
+  const patch = PATCH as (req: Request) => Promise<Response>;
+
+  it("merges a provider's budget into what is stored", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      aiCoachBudgets: { "openai-compatible": { maxRounds: 6 } },
+    } as never);
+    const res = await patch(
+      patchRequest({ localCoachBudget: { snapshotChars: 6000 } }),
+    );
+    expect(res.status).toBe(200);
+    expect(vi.mocked(prisma.user.update)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          aiCoachBudgets: {
+            local: { snapshotChars: 6000 },
+            "openai-compatible": { maxRounds: 6 },
+          },
+        }),
+      }),
+    );
+  });
+
+  it("refuses a budget outside its bounds", async () => {
+    const res = await patch(
+      patchRequest({ compatCoachBudget: { turnSeconds: 5 } }),
+    );
+    expect(res.status).toBe(422);
+    expect(vi.mocked(prisma.user.update)).not.toHaveBeenCalled();
+  });
+
+  it("returns each provider's stored budget, clamped", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      aiProvider: "LOCAL",
+      aiCoachBudgets: { local: { snapshotChars: 1 } },
+    } as never);
+    vi.mocked(resolveProviderAvailability).mockResolvedValue({
+      aiAvailable: true,
+      managedBy: "user",
+    } as never);
+    const res = await GET();
+    const body = (await res.json()) as {
+      data: {
+        localCoachBudget: { snapshotChars?: number } | null;
+        compatCoachBudget: unknown;
+      };
+    };
+    expect(body.data.localCoachBudget).toEqual({ snapshotChars: 4000 });
+    expect(body.data.compatCoachBudget).toBeNull();
+  });
+});
+
 describe("PATCH /api/user/ai-provider — key changes are audited", () => {
   const patch = PATCH as (req: Request) => Promise<Response>;
 

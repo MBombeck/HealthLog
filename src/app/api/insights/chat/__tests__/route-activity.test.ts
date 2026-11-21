@@ -335,9 +335,9 @@ describe("concurrent turns", () => {
     expect(m.checkRateLimit).toHaveBeenCalledWith(
       "coach-turn-active:u1",
       2,
-      // The longest turn's wall time (200 s since v1.41.2) plus 30 s for
-      // its reply to stream.
-      230_000,
+      // The longest wall time a person's Coach budget allows (600 s) plus
+      // 30 s for its reply to stream.
+      630_000,
     );
   });
 });
