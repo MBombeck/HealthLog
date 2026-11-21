@@ -90,34 +90,35 @@ Always include the migration file in your PR.
 
 ## Branch Model
 
-HealthLog is trunk-based: `main` is the single long-lived branch and is always releasable. There is no `develop` branch.
+HealthLog is trunk-based: `main` is the single long-lived branch and is always releasable. There is no `develop` branch. Releases follow a calendar, described in [docs/contributing/release-policy.md](docs/contributing/release-policy.md): a minor on the first Tuesday of the month, patches with fixes only on the other Tuesdays.
 
 ```
-   feature/* ──┐
-   fix/*    ──┼──► PR ──► main ──► tag vX.Y.Z ──► GHCR build ──► deploy
-              │
-   release/vX.Y.Z ──► PR (merge-commit) ──► main ──► tag vX.Y.Z ──► GHCR build ──► deploy
+   fix/*  ──► PR ──► main ──► tag vX.Y.Z on a Tuesday ──► GHCR build
+                      │
+                      └──► every push: :edge image
+
+   feat/* ──► PR ──► release/vX.Y.0 ──► PR (merge commit) on the first Tuesday ──► main ──► tag vX.Y.0
 ```
 
 The rules:
 
-- **`main` always builds, passes CI, and is deployable.** Every commit on it is a release commit (`chore(release): vX.Y.Z`), a release-branch merge, or a maintenance commit (docs, gitignore, audit findings) applied directly.
-- **A release** is built on a short-lived `release/vX.Y.Z` branch cut off `main`, then opened as a PR `release/vX.Y.Z` → `main` with green CI, merged as a merge-commit, and tagged `vX.Y.Z`. The tag push triggers the GHCR multi-arch image build (and `:latest`). Deploy is manual. Delete the release branch after merge.
-- **Small standalone changes** (a single fix, a docs touch) go through a short-lived `fix/X` / `feat/X` branch + PR targeting `main`.
-- **Hotfixes** branch from `main` and merge straight back to `main`. There is no second long-lived line to forward-port to.
+- **`main` is the fix line.** It always builds, passes CI, and is deployable. Fixes, docs and maintenance land there through pull requests; each user-visible fix adds its line under `## [Unreleased]` in `CHANGELOG.md`. A merge to `main` is not a release; the release is the tag.
+- **Features go to `release/vX.Y.0`**, the branch that collects the next minor. It is cut from `main` the day the previous minor ships and merges back with a merge commit on the first Tuesday of the month. A pull request to `main` from any other branch fails when it carries a `feat` commit.
+- **A release** is a `chore(release): vX.Y.Z` commit on `main` and its tag. The tag push triggers the GHCR multi-arch image build (and `:latest`). Deploy is manual.
+- **Hotfixes** outside the calendar are for security problems, data loss and broken installs only. They branch from `main` as `hotfix/vX.Y.Z`, carry one fix, and the publish workflow waits for the maintainer's approval.
 - Never force-push `main` or any release branch.
 
-End users: track the latest `v*` tag (or `:latest` on GHCR). The `main` branch always equals the latest release.
+End users: track the latest `v*` tag (or `:latest` on GHCR). `main` carries fixes that are merged but not yet released, so do not deploy `main` itself; the `:edge` image is there to check a fix before its release.
 
-Contributors: branch off `main`; PRs target `main`.
+Contributors: branch off `main` for a fix and target `main`; branch off the current `release/vX.Y.0` for a feature and target it. Not sure which one? Open the PR against `main` and the check will say.
 
 ## Pull Requests
 
 1. Fork the repository
-2. Create a feature branch off `main` (`git checkout -b feat/your-feature main`)
+2. Create a branch: a fix off `main` (`git checkout -b fix/your-fix main`), a feature off the current `release/vX.Y.0`
 3. Make your changes
 4. Ensure all checks pass (`pnpm typecheck && pnpm lint && pnpm test && pnpm format:check && pnpm build`)
-5. Submit a PR against `main` with a clear description of the changes
+5. Submit a PR against `main` (fix) or the release branch (feature) with a clear description of the changes
 
 ## Translations
 

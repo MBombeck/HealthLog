@@ -22,6 +22,7 @@ typecheck.
 - **`check-openapi.ts`**: compares a freshly generated spec against the committed YAML; CI fails on drift (`pnpm openapi:check`).
 - **`check-env.ts`**: pre-deploy env-var sanity check against `env-manifest.json` (`pnpm check-env`); wired into CI.
 - **`assert-deploy.ts`**: post-deploy `/api/version` assertion.
+- **`release-policy.mjs`**: the release calendar and patch-content rules; `pnpm release:next` prints the next release, CI runs `check` on every tag and `pr` on pull requests to `main`. See `docs/contributing/release-policy.md`.
 - **`rotate-encryption-key.ts`**: AES-256-GCM key rotation; see `docs/ops/encryption-key-rotation.md`.
 - **`restore-backup.ts`**: restore an off-host AES-GCM backup from an S3-compatible bucket.
 - **`repair-apple-health-distance.ts`**: repair walking-distance rows the `export.zip` import stored 1000x too small; dry-run by default, see `docs/ops/apple-health-distance-repair.md`.

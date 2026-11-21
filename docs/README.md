@@ -64,6 +64,9 @@ notes, and machine-readable specs that ship alongside the source:
   — the iOS submission gate.
 - [`codex-protocol-spec.md`](./codex-protocol-spec.md) — Codex / ChatGPT
   OAuth protocol reverse-engineering notes.
+- [`contributing/release-policy.md`](./contributing/release-policy.md): when
+  a release happens, what a patch may contain, and the out-of-schedule
+  exceptions.
 - [`contributing/ui-standards.md`](./contributing/ui-standards.md) — the
   binding UI standards: card anatomy, spacing, text colour, tokens and
   which primitive to use where. Read before touching any surface.
