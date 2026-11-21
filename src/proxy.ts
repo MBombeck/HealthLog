@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { shouldRunWeb } from "@/lib/process-type";
+import { isScannerProbe, scannerProbeResponse } from "@/lib/http/scanner-probe";
 import { readSessionCookie } from "@/lib/auth/session-cookie";
 import {
   findRetiredRoute,
@@ -383,13 +384,9 @@ export function proxy(request: NextRequest) {
     );
   }
 
-  // A Server Action call. HealthLog defines no Server Actions (no module
-  // carries `"use server"`, which `no-server-actions-guard.test.ts` holds), so
-  // no bundle of this app, old or new, ever sends `Next-Action`: the requests
-  // that do are scanners probing the Server Action surface, nightly and in
-  // bursts. Left to Next, each one printed "Failed to find Server Action" at
-  // error level, unstructured, an error with no user behind it. Refused here
-  // instead, with one countable `warn` line: a refusal by design.
+  // A Server Action call. HealthLog defines none (`no-server-actions-guard`),
+  // so only scanners send `Next-Action`. Left to Next, each printed "Failed to
+  // find Server Action" at error level; refused here with one `warn` line.
   if (request.headers.has(SERVER_ACTION_HEADER)) {
     console.warn(
       JSON.stringify({
@@ -418,6 +415,9 @@ export function proxy(request: NextRequest) {
       ),
     );
   }
+
+  // Scanner probes get a few bytes, not a rendered not-found page.
+  if (isScannerProbe(pathname)) return scannerProbeResponse();
 
   // 301 redirects for renamed routes
   const redirect = LEGACY_REDIRECTS[pathname];

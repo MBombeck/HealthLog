@@ -8,7 +8,7 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     user: {
       count: vi.fn().mockResolvedValue(1),
-      findUnique: vi.fn().mockResolvedValue(null),
+      findFirst: vi.fn().mockResolvedValue(null),
       create: vi.fn(),
     },
     appSettings: {
@@ -157,7 +157,7 @@ describe("POST /api/auth/register — first-admin atomicity (M1)", () => {
     } as never);
     vi.mocked(hashPassword).mockResolvedValue("hashed");
     vi.mocked(createSession).mockResolvedValue(undefined as never);
-    vi.mocked(prisma.user.findUnique).mockResolvedValue(null as never);
+    vi.mocked(prisma.user.findFirst).mockResolvedValue(null as never);
     vi.mocked(prisma.user.create).mockImplementation((async (args: {
       data: Record<string, unknown>;
     }) => ({
@@ -178,6 +178,33 @@ describe("POST /api/auth/register — first-admin atomicity (M1)", () => {
     username: "newuser",
     password: "a-very-strong-password-123",
   };
+
+  it("stores the e-mail lower-cased and looks both names up regardless of case", async () => {
+    vi.mocked(prisma.user.count).mockResolvedValue(1);
+
+    const res = await postPathThrough({
+      ...validBody,
+      email: "New.Person@Example.COM",
+      username: "NewUser",
+    });
+    expect(res.status).toBe(201);
+    const createArgs = vi.mocked(prisma.user.create).mock.calls[0]?.[0] as {
+      data: { email: string; username: string };
+    };
+    expect(createArgs.data.email).toBe("new.person@example.com");
+    // The chosen spelling of the name is kept; only its uniqueness ignores case.
+    expect(createArgs.data.username).toBe("NewUser");
+    expect(vi.mocked(prisma.user.findFirst)).toHaveBeenCalledWith({
+      where: {
+        email: { equals: "new.person@example.com", mode: "insensitive" },
+      },
+      select: { id: true },
+    });
+    expect(vi.mocked(prisma.user.findFirst)).toHaveBeenCalledWith({
+      where: { username: { equals: "NewUser", mode: "insensitive" } },
+      select: { id: true },
+    });
+  });
 
   it("mints ADMIN when the in-transaction count is 0 (genuine first user)", async () => {
     // Early gate count and in-tx count both 0.
@@ -311,7 +338,7 @@ describe("POST /api/auth/register — refuses a live session (v1.38.19)", () => 
       inviteId: "inv-1",
     } as never);
     vi.mocked(prisma.user.count).mockResolvedValue(1 as never);
-    vi.mocked(prisma.user.findUnique).mockResolvedValue(null as never);
+    vi.mocked(prisma.user.findFirst).mockResolvedValue(null as never);
     vi.mocked(checkPasswordStrength).mockReturnValue({
       isAcceptable: true,
       feedback: [],

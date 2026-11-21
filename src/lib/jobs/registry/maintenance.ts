@@ -204,6 +204,7 @@ import {
 import { MAINTENANCE_DISCOVERY } from "./maintenance-discovery";
 import { MAINTENANCE_FILE_IMPORT_JOBS } from "./maintenance-file-imports";
 import { MAINTENANCE_REPAIR_JOBS } from "./maintenance-repairs";
+import { MAINTENANCE_RETENTION_JOBS } from "./maintenance-retention";
 import {
   defineJob,
   type JobDefinition,
@@ -528,6 +529,7 @@ const jobs: readonly JobDefinition[] = [
         .handleMeasurementFoldRepair,
   }),
   ...MAINTENANCE_REPAIR_JOBS,
+  ...MAINTENANCE_RETENTION_JOBS,
   // The nightly check vacuums when dead rows pile up; the same singleton key
   // as the operator's run, so the two collapse.
   defineJob({

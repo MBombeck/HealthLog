@@ -5,5 +5,9 @@
  */
 export const DAILY_BRIEFING_QUEUE = "daily-briefing";
 
-/** Every 15 minutes; the per-user local-hour gate selects the fallback slot. */
-export const DAILY_BRIEFING_CRON = "*/15 * * * *";
+/**
+ * Every 15 minutes, eight minutes past each quarter hour so it does not start
+ * beside the reminder checks; the per-user local-hour gate selects the
+ * fallback slot, so the minute inside the hour does not matter.
+ */
+export const DAILY_BRIEFING_CRON = "8-59/15 * * * *";

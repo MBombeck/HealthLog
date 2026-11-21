@@ -370,7 +370,7 @@ export function isAuthVerdictUnknown(error: unknown): boolean {
  */
 const SUPERSEDED_ME_RETRIES = 3;
 
-type MePayload = Partial<AuthUser> & {
+export type MePayload = Partial<AuthUser> & {
   id: string;
   username: string;
   role: string;
@@ -403,6 +403,22 @@ async function getCurrentMe(): Promise<MePayload> {
 }
 
 export async function fetchMe(): Promise<AuthUser> {
+  return adoptMePayload(await getCurrentMe());
+}
+
+/**
+ * Turn a `/api/auth/me` payload into the cached account, and (in the browser)
+ * act on it: mirror the display preferences, adopt the record-session
+ * context, set the cache scope and release a held transition.
+ *
+ * `apply: false` is the server render's form (`AuthMeSeed`): the same account
+ * value, with none of the browser-side effects, which would otherwise write
+ * module state shared by every request the server renders.
+ */
+export function adoptMePayload(
+  data: MePayload,
+  { apply = true }: { apply?: boolean } = {},
+): AuthUser {
   // v1.16.4 — routed through the typed wrapper; a non-OK /me (401)
   // throws `ApiError`, which `useAuth` treats as "not authenticated"
   // exactly like the old hand-rolled throw.
@@ -410,7 +426,6 @@ export async function fetchMe(): Promise<AuthUser> {
   // v1.4.47 — coerce `disableCoach` against `undefined` so a stale
   // /me payload from a partial-deploy rollback (older server image
   // without the field) keeps the Coach surface visible by default.
-  const data = await getCurrentMe();
   // Hour-cycle preference: coerce against a stale /me payload, then mirror
   // into localStorage so `useFormatters()` and the legacy format helpers
   // (which cannot reach the query cache) render the same clock.
@@ -419,7 +434,7 @@ export async function fetchMe(): Promise<AuthUser> {
   )
     ? data.timeFormat
     : "AUTO";
-  storeTimeFormat(timeFormat);
+  if (apply) storeTimeFormat(timeFormat);
   // Date-order preference: coerce against a stale /me payload, then mirror
   // into localStorage so `useFormatters()` and the `<DateField>` primitive
   // (which cannot reach the query cache) render the same field order.
@@ -428,15 +443,17 @@ export async function fetchMe(): Promise<AuthUser> {
   )
     ? data.dateFormat
     : "AUTO";
-  storeDateFormat(dateFormat);
+  if (apply) storeDateFormat(dateFormat);
   // Profile timezone (issue #490): mirror into localStorage so
   // `useFormatters()` and the legacy format helpers render timestamps in
   // the user's zone. `storeTimezone` validates the IANA name and CLEARS
   // the mirror on garbage, so a poison value falls back to Berlin instead
   // of reaching `Intl.DateTimeFormat` (RangeError).
-  storeTimezone(typeof data.timezone === "string" ? data.timezone : "");
+  if (apply) {
+    storeTimezone(typeof data.timezone === "string" ? data.timezone : "");
+  }
   // A confirmed session: refresh the non-sensitive offline-relaunch marker.
-  storeWasAuthenticated();
+  if (apply) storeWasAuthenticated();
   // v1.36.0 — the record this browser is reading, straight from the server's
   // resolved answer. This is the correcting write for the cache-scope mirror:
   // whatever the switch flow stamped before its reload, the block is what the
@@ -448,22 +465,24 @@ export async function fetchMe(): Promise<AuthUser> {
   // the shell back on screen with every subsequent request still asserting
   // `bootstrap`. Adoption first means a released hold is always released onto
   // a context the next request can prove.
-  adoptRecordFenceState(data.recordSession);
   const { accountAccess, status: accountAccessStatus } =
     resolveAccountAccess(data);
-  if (accountAccessStatus === "invalid") {
-    setRefusedRecordScope();
-  } else {
-    setRecordScope(accountAccess.active?.accountId ?? null);
-  }
-  // A cross-tab switch holds the shell until this server-resolved payload
-  // confirms the record the transition committed. The malformed branch has
-  // already installed its refusal sentinel, so it may release only into the
-  // refusal door rather than being mistaken for the caller's own record.
-  if (accountAccessStatus === "invalid") {
-    settleRefusedRecordSessionTransition();
-  } else {
-    settleRecordSessionTransition(accountAccess.active?.accountId ?? null);
+  if (apply) {
+    adoptRecordFenceState(data.recordSession);
+    if (accountAccessStatus === "invalid") {
+      setRefusedRecordScope();
+    } else {
+      setRecordScope(accountAccess.active?.accountId ?? null);
+    }
+    // A cross-tab switch holds the shell until this server-resolved payload
+    // confirms the record the transition committed. The malformed branch has
+    // already installed its refusal sentinel, so it may release only into the
+    // refusal door rather than being mistaken for the caller's own record.
+    if (accountAccessStatus === "invalid") {
+      settleRefusedRecordSessionTransition();
+    } else {
+      settleRecordSessionTransition(accountAccess.active?.accountId ?? null);
+    }
   }
   return {
     ...(data as AuthUser),

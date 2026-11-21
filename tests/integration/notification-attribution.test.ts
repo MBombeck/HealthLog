@@ -429,18 +429,15 @@ describe("notification attribution (real Postgres)", () => {
   it("persistence maps an omitted pair from the legacy recipient", async () => {
     const self = await createUser("legacy");
 
-    const attempt = await getPrismaClient().pushAttempt.create({
-      data: {
-        userId: self.id,
-        channel: "NTFY",
-        eventType: "MEDICATION_REMINDER",
-        result: "ok",
-      },
-      select: {
-        recordUserId: true,
-        recipientUserId: true,
-      },
-    });
+    // The app always names both principals, so the schema requires them; a
+    // writer that names only user_id is a raw insert, which the trigger maps.
+    const [attempt] = await getPrismaClient().$queryRaw<
+      Array<{ recordUserId: string; recipientUserId: string }>
+    >`
+      INSERT INTO push_attempts (id, user_id, channel, event_type, result)
+      VALUES (${`legacy-${self.id}`}, ${self.id}, 'NTFY', 'MEDICATION_REMINDER', 'ok')
+      RETURNING record_user_id AS "recordUserId", recipient_user_id AS "recipientUserId"
+    `;
 
     expect(attempt).toEqual({
       recordUserId: self.id,
@@ -454,15 +451,10 @@ describe("notification attribution (real Postgres)", () => {
     const otherUser = await createUser("other");
 
     await expect(
-      getPrismaClient().pushAttempt.create({
-        data: {
-          userId: recipientUser.id,
-          recordUserId: recordUser.id,
-          channel: "NTFY",
-          eventType: "MEDICATION_REMINDER",
-          result: "ok",
-        },
-      }),
+      getPrismaClient().$executeRaw`
+        INSERT INTO push_attempts (id, user_id, record_user_id, channel, event_type, result)
+        VALUES ('partial-pair', ${recipientUser.id}, ${recordUser.id}, 'NTFY', 'MEDICATION_REMINDER', 'ok')
+      `,
     ).rejects.toThrow("push attempt attribution requires both principals");
 
     await expect(

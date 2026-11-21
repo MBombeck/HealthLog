@@ -24,6 +24,8 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     measurement: {
       findMany: vi.fn(),
+      // No tombstone at the key: the duplicate below is a live row.
+      findFirst: vi.fn(async () => null),
       count: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),

@@ -145,6 +145,8 @@ const ALLOWED_SQL: Record<string, string> = {
     "Selects one row per account; `measurements` is read only inside the MIN / MAX scalar subqueries of each row.",
   "lib/jobs/pr-detection.ts::1":
     "Selects account ids; `measurements` is read inside `EXISTS`, one row per account at most.",
+  "lib/jobs/dense-intraday-hourly-rebuild.ts::1":
+    "Selects account ids from `users`; `measurements` is read inside `EXISTS`, one row per account at most.",
   "lib/rollups/measurement-coverage.ts::1":
     "Selects from `unnest` of the caller's type list; `measurements` is read inside `EXISTS`, one row per type at most.",
   "lib/dashboard/summary-reads.ts::1":

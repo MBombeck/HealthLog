@@ -21,13 +21,18 @@ import {
 import { defineJob, type JobDefinition, type JobGroup } from "./define-job";
 
 const MEDICATION_REMINDER_CHECK_QUEUE = "medication-reminder-check";
+// The four reminder checks keep their quarter-hour cadence but start apart:
+// the medication check on the quarter hour, the others two, four and six
+// minutes after it. Web and worker share one process by default, so nine
+// jobs starting in the same second were a latency spike for whoever was
+// using the app at :00, :15, :30 and :45.
 const MEDICATION_REMINDER_CHECK_CRON = "*/15 * * * *";
 const MOOD_REMINDER_QUEUE = "mood-reminder-check";
-const MOOD_REMINDER_CRON = "*/15 * * * *";
+const MOOD_REMINDER_CRON = "2-59/15 * * * *";
 const CYCLE_REMINDER_QUEUE = "cycle-reminder-check";
-const CYCLE_REMINDER_CRON = "*/15 * * * *";
+const CYCLE_REMINDER_CRON = "4-59/15 * * * *";
 const MEASUREMENT_REMINDER_QUEUE = "measurement-reminder-check";
-const MEASUREMENT_REMINDER_CRON = "*/15 * * * *";
+const MEASUREMENT_REMINDER_CRON = "6-59/15 * * * *";
 
 const checks = () => import("@/lib/jobs/reminder/mood-cycle-checks");
 

@@ -75,7 +75,7 @@ model User {
   /// `src/lib/api-handler.ts` reads it on every guardian request, and the
   /// creation flow is what writes it. A later notification plan may add
   /// delivery fanout after it defines consent and preference semantics.
-  managedProfileAt DateTime? @map("managed_profile_at")
+  managedProfileAt DateTime? @map("managed_profile_at") @db.Timestamptz(3)
 
   /// When deletion of this account was asked for. Non-null means the
   /// account is pending deletion: it is locked (every session, refresh token
@@ -1015,6 +1015,7 @@ model User {
   // 20 attempts ordered by recency. Daily prune at 03:35 Europe/Berlin
   // retires rows older than 90 days (see `handlePushAttemptCleanup` in
   // `reminder-worker.ts`).
+  pushAttempts                              PushAttempt[]                     @relation("PushAttemptUser")
   pushAttemptsForRecord                     PushAttempt[]                     @relation("PushAttemptRecordUser")
   pushAttemptsReceived                      PushAttempt[]                     @relation("PushAttemptRecipientUser")
   notificationEvents                        NotificationEvent[]
@@ -1245,6 +1246,7 @@ model User {
   // unique indexes ignore NULL pairs).
   @@unique([oidcIssuer, oidcSub])
   @@index([deletionPurgeAt], map: "users_deletion_purge_at_idx")
+  @@index([ouraUserId])
   @@map("users")
 }
 
@@ -2273,12 +2275,13 @@ model Measurement {
   /// mirrored.
   ingestTokenId         String?                           @map("ingest_token_id")
 
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  ingestToken   ApiToken?      @relation(fields: [ingestTokenId], references: [id], onDelete: SetNull)
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ingestToken     ApiToken?        @relation(fields: [ingestTokenId], references: [id], onDelete: SetNull)
   // v1.19.0 — optional back-relation to the full ECG waveform recording(s)
   // paired with this EVENT row. SET NULL on the FK side keeps the trace if
   // the EVENT row is re-keyed / removed.
-  ecgRecordings EcgRecording[]
+  ecgRecordings   EcgRecording[]
+  personalRecords PersonalRecord[]
 
   // Original measuredAt-based dedup — kept for legacy Withings ingest
   // and the manual UI's "no duplicate at the same wall-clock" guard.
@@ -2361,6 +2364,11 @@ model Measurement {
   // without this one the purge planned a sequential scan and could not finish
   // inside statement_timeout. Raw SQL only (partial predicate not expressible
   // in Prisma).
+  // `measurements_user_source_external_id_live_idx` is a partial index over
+  // `(user_id, source, external_id text_pattern_ops) WHERE deleted_at IS NULL
+  // AND external_id IS NOT NULL` (migration 0518): the integration deletes and
+  // sweeps that match an external-id prefix read it instead of every live
+  // reading of the account. Partial and opclass-specific, so raw SQL only.
   // `measurements_user_id_deleted_at_tombstone_idx` is a partial index over
   // `(user_id, deleted_at) WHERE deleted_at IS NOT NULL` (migration 0505,
   // v1.48.0): the sync handshake counts one account's tombstones through it
@@ -2482,6 +2490,8 @@ model AppleHealthTombstone {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, domain, externalId])
+  // The 75-day purge reads one account's rows by age (migration 0517).
+  @@index([userId, createdAt])
   @@map("apple_health_tombstones")
 }
 
@@ -2568,7 +2578,6 @@ model MeasurementRollup {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, type, granularity, bucketStart, source])
-  @@index([userId, type, granularity, bucketStart(sort: Desc)])
   @@map("measurement_rollups")
 }
 
@@ -2641,8 +2650,7 @@ model IntradayCumulativeProfile {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, type, dateKey])
-  @@index([userId, type, dateKey(sort: Desc)])
+  @@unique([userId, type, dateKey], map: "intraday_cumulative_profiles_user_type_date_key")
   @@index([dateKey])
   @@map("intraday_cumulative_profiles")
 }
@@ -2694,7 +2702,7 @@ model Workout {
   createdAt             DateTime          @default(now()) @map("created_at")
   updatedAt             DateTime          @updatedAt @map("updated_at")
 
-  user                   User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                   User                           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   route                  WorkoutRoute?
   samples                WorkoutSamples?
   insight                WorkoutInsight?
@@ -2722,11 +2730,11 @@ model Workout {
   /// has no `deletedAt` (workout deletes are hard deletes), so this stays
   /// a full unique — there is no tombstone to collide with and no
   /// resurrection gap to close.
-  @@unique([userId, source, externalId])
+  @@unique([userId, source, externalId], map: "workouts_user_source_external_key")
   /// Dashboard "recent workouts" query path.
-  @@index([userId, startedAt])
+  @@index([userId, startedAt], map: "workouts_user_started_idx")
   /// "Show me my last 10 runs" — per-sport history.
-  @@index([userId, sportType, startedAt])
+  @@index([userId, sportType, startedAt], map: "workouts_user_sport_started_idx")
   @@map("workouts")
 }
 
@@ -2754,7 +2762,7 @@ model WorkoutRoute {
   sampleTimestamps  Json?    @map("sample_timestamps")
   createdAt         DateTime @default(now()) @map("created_at")
 
-  workout Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  workout Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   // `workout_routes_geometry_backfill_idx` is a partial index over
   // `(workout_id) WHERE geometry IS NOT NULL` — see migration 0361 for the
@@ -2797,7 +2805,7 @@ model WorkoutSamples {
   sampleCount Int      @map("sample_count")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  workout Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  workout Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("workout_samples")
 }
@@ -2913,7 +2921,6 @@ model StrainTrimpCache {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, day])
-  @@index([userId, day(sort: Desc)])
   @@map("strain_trimp_cache")
 }
 
@@ -2950,7 +2957,7 @@ model PersonalRecord {
   /// SURFACE selects it: the record row itself carries the value, unit and
   /// achievedAt a reader sees. The backup does select it
   /// (`src/lib/export/awards-backup.ts`), because the column is a real foreign
-  /// key in the database even though no relation is declared here, so a
+  /// key, so a
   /// restore has to resolve it against the measurements it wrote instead of
   /// writing it blind and failing the constraint.
   sourceMeasurementId String?                 @map("source_measurement_id")
@@ -2958,15 +2965,16 @@ model PersonalRecord {
   externalId          String?                 @map("external_id")
   createdAt           DateTime                @default(now()) @map("created_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sourceMeasurement Measurement? @relation(fields: [sourceMeasurementId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   /// Idempotency guard for the detection worker — re-running it on
   /// the same (user, metric, slot, achievedAt) triple is a no-op.
-  @@unique([userId, metricType, metricSlot, achievedAt])
+  @@unique([userId, metricType, metricSlot, achievedAt], map: "personal_records_dedup_key")
   /// Hot read pattern — "current PR for this metric":
   /// ORDER BY value DESC LIMIT 1 (MAX direction) /
   /// ASC LIMIT 1 (MIN direction). Index covers both.
-  @@index([userId, metricType, value])
+  @@index([userId, metricType, value], map: "personal_records_user_metric_idx")
   // The foreign key's own lookup: deleting a reading checks this column once
   // per deleted row (migration 0362).
   @@index([sourceMeasurementId])
@@ -3745,7 +3753,7 @@ model MedicationIntakeEvent {
   // v1.7.0 sync — server-set mutation timestamp. The model had no
   // `updatedAt`; the offline-sync keyset feed orders on it, so it is
   // added here. `@updatedAt` makes Prisma maintain it on every write.
-  updatedAt            DateTime                @updatedAt @map("updated_at")
+  updatedAt            DateTime                @default(now()) @updatedAt @map("updated_at")
   // v1.7.0 sync — reconciliation counter. An intake is an immutable
   // fact, so a "correction" is a tombstone + re-insert rather than an
   // in-place edit; syncVersion still bumps on the soft-delete write so
@@ -3780,7 +3788,7 @@ model MedicationIntakeEvent {
   /// row instead of P2002-ing against the tombstone. Schema keeps the
   /// full `@@unique` for the `userId_medicationId_scheduledFor_source`
   /// compound where-key.
-  @@unique([userId, medicationId, scheduledFor, source])
+  @@unique([userId, medicationId, scheduledFor, source], map: "medication_intake_events_user_med_slot_source_live_key")
   /// v1.28 — `medication_intake_events_user_external_id_live_key` is a
   /// partial UNIQUE index over `(user_id, external_id) WHERE external_id
   /// IS NOT NULL AND deleted_at IS NULL` — see migration 0239. The bulk
@@ -3790,7 +3798,7 @@ model MedicationIntakeEvent {
   /// can't express a partial-predicate unique (same as the live-row slot
   /// unique above, migration 0121), so the schema keeps the full
   /// `@@unique` for the `userId_externalId` compound where-key.
-  @@unique([userId, externalId])
+  @@unique([userId, externalId], map: "medication_intake_events_user_external_id_live_key")
   @@unique([userId, idempotencyKey])
   @@index([userId, medicationId, scheduledFor])
   // v1.7.0 sync — keyset support for the `/api/sync/changes` intake feed
@@ -3989,13 +3997,13 @@ model MedicationInventoryItem {
   /// rows; the plaintext drop is DEFERRED to a later release.
   notesEncrypted Bytes?                   @map("notes_encrypted")
   createdAt      DateTime                 @default(now()) @map("created_at")
-  updatedAt      DateTime                 @updatedAt @map("updated_at")
+  updatedAt      DateTime                 @default(now()) @updatedAt @map("updated_at")
 
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([userId, medicationId, state])
-  @@index([userId, expiresAt])
+  @@index([userId, medicationId, state], map: "medication_inventory_items_user_med_state_idx")
+  @@index([userId, expiresAt], map: "medication_inventory_items_user_expires_idx")
   // `medication_inventory_items_note_backfill_idx` is a partial index over
   // `(user_id) WHERE notes IS NOT NULL AND notes_encrypted IS NULL` — see
   // migration 0243 (v1.28.46 H4) for the med-notes boot-discovery scan. Raw
@@ -4056,11 +4064,11 @@ model MedicationSideEffect {
   notesEncrypted Bytes?                       @map("notes_encrypted")
   createdAt      DateTime                     @default(now()) @map("created_at")
 
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([userId, medicationId, occurredAt])
-  @@index([userId, occurredAt])
+  @@index([userId, medicationId, occurredAt], map: "medication_side_effects_user_med_occurred_idx")
+  @@index([userId, occurredAt], map: "medication_side_effects_user_occurred_idx")
   // `medication_side_effects_note_backfill_idx` is a partial index over
   // `(user_id) WHERE notes IS NOT NULL AND notes_encrypted IS NULL` — see
   // migration 0243 (v1.28.46 H4) for the med-notes boot-discovery scan. Raw
@@ -4160,6 +4168,8 @@ model TelegramReminderMessage {
   @@index([medicationId, date])
   // Leads the foreign key, so a cascade from the parent row is an index lookup.
   @@index([scheduleId])
+  // The ledger retention purge reads by send time (migration 0517).
+  @@index([sentAt])
   @@map("telegram_reminder_messages")
 }
 
@@ -4969,7 +4979,7 @@ model MoodEntry {
   /// (`tz IS NULL`) were written under the Europe/Berlin assumption
   /// and read-paths interpret them as such. New rows always carry the
   /// user's `displayTimezone` at write time.
-  tz            String?
+  tz            String?   @db.VarChar(64)
   syncedAt      DateTime  @default(now()) @map("synced_at")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
@@ -5108,7 +5118,7 @@ model MoodContext {
   eventType    String?   @map("event_type")
   eventValence Int?      @map("event_valence") // -5 to +5
   /// When it happened, if the person knew. Absent is common and means absent.
-  eventAt      DateTime? @map("event_at")
+  eventAt      DateTime? @map("event_at") @db.Timestamptz(3)
 
   /// One free-text note for the whole context, AES-256-GCM at rest (Bytes, the
   /// shared codec every other note column uses). One column rather than one
@@ -5117,8 +5127,8 @@ model MoodContext {
   /// `scripts/rotate-encryption-key.ts`.
   notesEncrypted Bytes? @map("notes_encrypted")
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   moodEntry MoodEntry @relation(fields: [moodEntryId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -5181,7 +5191,7 @@ model MoodPrediction {
   /// JSON array of `{ feature, contribution }` — the standardised coefficient
   /// times that day's standardised value, per feature.
   features     String
-  computedAt   DateTime @map("computed_at")
+  computedAt   DateTime @map("computed_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -5390,7 +5400,6 @@ model MoodEntryRollup {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, granularity, bucketStart])
-  @@index([userId, granularity, bucketStart(sort: Desc)])
   @@map("mood_entry_rollups")
 }
 
@@ -6303,7 +6312,7 @@ model ImportJob {
   /// non-terminal row whose heartbeat has gone stale as orphaned, so a
   /// job still actively parsing in another worker (fresh heartbeat) is
   /// never flipped to `failed` (issue #486 follow-up).
-  updatedAt          DateTime  @updatedAt @map("updated_at")
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at")
   /// JSON envelope mirroring `ImportJobProgress` (`src/lib/measurements/
   /// import-apple-health-export.ts`). Updated mid-run.
   progress           Json      @default("{}")
@@ -6344,7 +6353,7 @@ model MedicationIntakeImportJob {
   startedAt     DateTime? @map("started_at")
   completedAt   DateTime? @map("completed_at")
   createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
 
   recordUser User        @relation("MedicationIntakeImportRecord", fields: [recordUserId], references: [id], onDelete: Cascade)
   medication Medication? @relation(fields: [medicationId], references: [id], onDelete: Cascade)
@@ -6428,7 +6437,7 @@ model IdempotencyKey {
   expiresAt          DateTime @map("expires_at")
   createdAt          DateTime @default(now()) @map("created_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([userId, key, method, path])
   @@index([expiresAt])
@@ -6504,7 +6513,7 @@ model Device {
   createdAt             DateTime            @default(now()) @map("created_at")
   updatedAt             DateTime            @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([userId])
   // `devices_apns_token_unique` is a partial UNIQUE index over
@@ -7128,7 +7137,6 @@ model HealthScoreRecord {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, dayKey])
-  @@index([userId, dayKey(sort: Desc)])
   @@map("health_score_records")
 }
 
@@ -7373,6 +7381,8 @@ model CoachMessage {
   // planner do an index-backed per-conversation merge instead of gathering +
   // sorting every assistant row in the user's threads on each global poll.
   @@index([conversationId, role, createdAt(sort: Desc)])
+  // The retention purge reads by age alone (migration 0517).
+  @@index([createdAt])
   @@map("coach_messages")
 }
 
@@ -7699,12 +7709,11 @@ model HealthProfileFactRevision {
   createdAt              DateTime                    @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user         User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  supersededBy HealthProfileFactRevision?  @relation("HealthProfileFactSupersession", fields: [supersededByRevisionId], references: [id], onDelete: SetNull)
+  supersededBy HealthProfileFactRevision?  @relation("HealthProfileFactSupersession", fields: [supersededByRevisionId], references: [id], onDelete: SetNull, map: "health_profile_fact_revisions_superseded_by_fkey")
   supersedes   HealthProfileFactRevision[] @relation("HealthProfileFactSupersession")
 
-  @@unique([userId, kind, validFrom])
-  @@index([userId, kind, validFrom(sort: Desc)])
-  @@index([supersededByRevisionId])
+  @@unique([userId, kind, validFrom], map: "health_profile_fact_revisions_user_kind_valid_from_key")
+  @@index([supersededByRevisionId], map: "health_profile_fact_revisions_superseded_by_idx")
   @@map("health_profile_fact_revisions")
 }
 
@@ -7733,6 +7742,8 @@ model CoachUsage {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, dateKey])
+  // The ledger retention purge reads by last write (migration 0517).
+  @@index([updatedAt])
   @@map("coach_usage")
 }
 
@@ -7817,7 +7828,7 @@ model NotificationEvent {
 
   recordUser User @relation(fields: [recordUserId], references: [id], onDelete: Cascade)
 
-  @@index([recordUserId, eventType, dedupKey, createdAt(sort: Desc)])
+  @@index([recordUserId, eventType, dedupKey, createdAt(sort: Desc)], map: "notification_events_record_user_id_event_type_dedup_key_created")
   @@index([createdAt], map: "notification_events_created_at_idx")
   @@map("notification_events")
 }
@@ -7844,7 +7855,7 @@ model NotificationEgressAuthorization {
   recipientUser User @relation("NotificationEgressAuthorizationRecipientUser", fields: [recipientUserId], references: [id], onDelete: Cascade)
 
   @@index([authorizedAt], map: "notification_egress_authorizations_authorized_at_idx")
-  @@index([recordUserId, recipientUserId, authorizedAt(sort: Desc)])
+  @@index([recordUserId, recipientUserId, authorizedAt(sort: Desc)], map: "notification_egress_authorizations_record_user_id_recipient_use")
   @@index([recipientUserId, authorizedAt(sort: Desc)], map: "notification_egress_auth_recipient_authorized_at_idx")
   @@map("notification_egress_authorizations")
 }
@@ -7874,22 +7885,23 @@ model PushAttempt {
   /// the difference because it cannot see the trigger — that report is expected,
   /// and `notification-attribution.test.ts` ("persistence maps an omitted pair
   /// from the legacy recipient") is what proves the accommodation still works.
-  recordUserId    String?  @map("record_user_id")
+  recordUserId    String   @map("record_user_id")
   /// The account whose channel, preferences, and locale receive the delivery.
   /// Nullable for the same reason as `recordUserId` above.
-  recipientUserId String?  @map("recipient_user_id")
+  recipientUserId String   @map("recipient_user_id")
   channel         String // "APNS" | "WEB_PUSH" | "TELEGRAM" | "NTFY"
   eventType       String   @map("event_type") // dispatcher event-type string
   result          String // "ok" | "error" | "skipped"
   reason          String? // sender-side reason on error/skip; null on ok
   createdAt       DateTime @default(now()) @map("created_at")
 
-  recordUser    User? @relation("PushAttemptRecordUser", fields: [recordUserId], references: [id], onDelete: Cascade)
-  recipientUser User? @relation("PushAttemptRecipientUser", fields: [recipientUserId], references: [id], onDelete: Cascade)
+  user          User @relation("PushAttemptUser", fields: [userId], references: [id], onDelete: Cascade)
+  recordUser    User @relation("PushAttemptRecordUser", fields: [recordUserId], references: [id], onDelete: Cascade)
+  recipientUser User @relation("PushAttemptRecipientUser", fields: [recipientUserId], references: [id], onDelete: Cascade)
 
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([recordUserId, createdAt(sort: Desc)])
-  @@index([recipientUserId, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)], map: "push_attempts_user_id_created_at_desc_idx")
+  @@index([recordUserId, createdAt(sort: Desc)], map: "push_attempts_record_user_id_created_at_desc_idx")
+  @@index([recipientUserId, createdAt(sort: Desc)], map: "push_attempts_recipient_user_id_created_at_desc_idx")
   @@map("push_attempts")
 }
 
@@ -8090,15 +8102,15 @@ model AccountGrant {
   /// invitation on the same pending row moves it; `createdAt` below is row
   /// bookkeeping and never moves. They agree the day the row is written and
   /// are allowed to disagree afterwards.
-  invitedAt  DateTime  @default(now()) @map("invited_at")
+  invitedAt  DateTime  @default(now()) @map("invited_at") @db.Timestamptz(3)
   /// When the delegate accepted. NULL = pending, which confers nothing.
   /// One-shot: an accepted grant can never be accepted again.
-  acceptedAt DateTime? @map("accepted_at")
+  acceptedAt DateTime? @map("accepted_at") @db.Timestamptz(3)
 
   /// When access ended, and who ended it. Written together, never cleared —
   /// a re-invitation is a NEW row. The database enforces that the two are
   /// either both set or both null.
-  revokedAt DateTime?            @map("revoked_at")
+  revokedAt DateTime?            @map("revoked_at") @db.Timestamptz(3)
   revokedBy AccountGrantRevoker? @map("revoked_by")
 
   /// Optional lapse date. Checked live on every resolution, so an expired
@@ -8106,13 +8118,13 @@ model AccountGrant {
   /// managed-profile invitation may carry an expiry while awaiting consent;
   /// accepting its MANAGE grant clears this field because an active Guardian
   /// ends only through an explicit lifecycle transition.
-  expiresAt  DateTime? @map("expires_at")
+  expiresAt  DateTime? @map("expires_at") @db.Timestamptz(3)
   /// Refreshed fire-and-forget when the grant is exercised, the same posture
   /// as `ApiToken.lastUsedAt`. The owner's panel reads it to answer "is this
   /// access still being used, or is it a grant nobody remembers".
-  lastUsedAt DateTime? @map("last_used_at")
+  lastUsedAt DateTime? @map("last_used_at") @db.Timestamptz(3)
 
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   grantor User @relation("AccountGrantsGiven", fields: [grantorId], references: [id], onDelete: Cascade)
   grantee User @relation("AccountGrantsReceived", fields: [granteeId], references: [id], onDelete: Cascade)
@@ -9953,7 +9965,7 @@ model DocumentSourceAlias {
   // NULLS NOT DISTINCT in migration 0356 (hand-written; Prisma would
   // regenerate it NULLS DISTINCT): a key stored without an instance still
   // collides with the same key without one.
-  @@unique([userId, sourceSystem, sourceInstance, sourceId])
+  @@unique([userId, sourceSystem, sourceInstance, sourceId], map: "document_source_aliases_user_id_source_system_source_instance_s")
   @@index([documentId])
   @@map("document_source_aliases")
 }
@@ -9980,7 +9992,7 @@ model DocumentImportKey {
   // NULLS NOT DISTINCT in migration 0356 (hand-written; Prisma would
   // regenerate it NULLS DISTINCT): a key stored without an instance still
   // collides with the same key without one.
-  @@unique([userId, sourceSystem, sourceInstance, sourceId])
+  @@unique([userId, sourceSystem, sourceInstance, sourceId], map: "document_import_keys_user_id_source_system_source_instance_sour")
   @@map("document_import_keys")
 }
 
@@ -10125,7 +10137,7 @@ model DocumentContentIndex {
   verbatimTextEncrypted Bytes?   @map("verbatim_text_encrypted")
   /// Deduped HMAC-SHA256 (truncated hex) of the normalised tokens — the blind
   /// index. One-way: opaque without the server-held index subkey. GIN-indexed
-  /// (raw SQL in the migration; Prisma cannot express a GIN index).
+  /// (`document_content_index_search_tokens_gin`, migration 0228).
   searchTokens          String[] @default([]) @map("search_tokens")
   /// Provenance of the indexed text: "vision" (provider transcription of the
   /// stored original), "text-ocr" (browser-OCR text posted by the client),
@@ -10151,6 +10163,7 @@ model DocumentContentIndex {
   user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([searchTokens], type: Gin, map: "document_content_index_search_tokens_gin")
   @@map("document_content_index")
 }
 

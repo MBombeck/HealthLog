@@ -285,6 +285,22 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // The message catalog boot script. Its `?v=` is the catalogs' content
+      // hash (`catalogVersion` above), so a versioned URL never changes and
+      // may be kept for good; the rule above made every cold load without a
+      // service worker revalidate the largest file of the page. Listed after
+      // it, so this value wins for these URLs. A bare URL keeps the rule
+      // above.
+      {
+        source: "/i18n/:file*",
+        has: [{ type: "query", key: "v" }],
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
     ];
   },
   serverExternalPackages: [

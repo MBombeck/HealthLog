@@ -164,6 +164,11 @@ describe("S1 — the direct session-resolution set is frozen", () => {
       "RSC prefetch of the session user's mood list, skipped under a switch",
     "app/page.tsx":
       "RSC prefetch of the session user's dashboard snapshot, skipped under a switch",
+    // The account payload for the first HTML, built by the `/api/auth/me`
+    // route's own builder for the caller's own session (an actor surface,
+    // like the route), so the shell renders the page instead of a spinner.
+    "app/layout.tsx":
+      "RSC seed of the caller's own /api/auth/me payload, built by the route's builder",
     // Onboarding routing. Reads the actor's OWN setup state through
     // `loadOnboardingFlowState` (a `getSession` wrapper, listed in the regex
     // below) to guard the step URL and to render the screens; the three

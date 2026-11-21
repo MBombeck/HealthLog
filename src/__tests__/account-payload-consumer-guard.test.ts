@@ -60,7 +60,7 @@
  * imports its response type from another module, is invisible to it.
  *
  * Mutation check: append a field to the response literal in
- * `src/app/api/auth/me/route.ts` and this goes red; delete the practice-name
+ * `src/lib/auth/me-payload.ts` and this goes red; delete the practice-name
  * read in `health-record-export-panel.tsx` and it goes red too; delete
  * `notificationPrefs` from the response literal and the last case goes red
  * naming the medication notification section.
@@ -72,7 +72,8 @@ import { describe, it, expect } from "vitest";
 import { stripComments } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
-const ME_ROUTE = join(SRC, "app", "api", "auth", "me", "route.ts");
+/** The one builder of the `/api/auth/me` payload, shared with the layout. */
+const ME_ROUTE = join(SRC, "lib", "auth", "me-payload.ts");
 
 /**
  * Where a client consumer may live. `src/app/api/**` is excluded — the server
@@ -107,6 +108,7 @@ const SKIP_DIRS = new Set([
 const NOT_A_CONSUMER = new Set([
   join(SRC, "hooks", "use-auth.ts"),
   join(SRC, "app", "api", "auth", "me", "route.ts"),
+  ME_ROUTE,
 ]);
 
 /**
@@ -190,11 +192,14 @@ function walk(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-/** Top-level keys of the `apiSuccess({ … })` literal the route returns. */
+/** Top-level keys of the `payload` literal the builder returns. */
 function payloadFields(source: string): string[] {
-  const start = source.indexOf("return apiSuccess({");
+  const start = source.indexOf("const payload = {");
   expect(start).toBeGreaterThan(-1);
-  const body = source.slice(start);
+  // The literal only: the builder's file holds other objects after it.
+  const end = source.indexOf("\n  };", start);
+  expect(end).toBeGreaterThan(start);
+  const body = source.slice(start, end);
   const fields: string[] = [];
   for (const m of body.matchAll(/^ {4}([a-zA-Z_$][\w$]*)\s*[:,]/gm)) {
     fields.push(m[1]);

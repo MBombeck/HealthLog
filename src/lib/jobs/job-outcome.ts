@@ -79,6 +79,8 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "candidates_scanned",
   // The nightly sign-in ledger cleanup (`auth-ledger-cleanup`).
   "challenges_deleted",
+  // The nightly ledger retention (`ledger-retention-cleanup`).
+  "coach_usage_days_deleted",
   "connect_tickets_deleted",
   "connections_deleted",
   "considered",
@@ -322,6 +324,7 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "system_job_admins",
   "system_job_notices",
   "system_jobs_failing",
+  "telegram_reminder_messages_deleted",
   "thumbnails_enqueued",
   "tls_pin_monitor_known_count",
   "tls_pin_monitor_outcome",

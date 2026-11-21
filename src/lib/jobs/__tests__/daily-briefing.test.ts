@@ -146,6 +146,6 @@ describe("daily-briefing registration", () => {
 
   it("uses an every-15-min cron for the fallback slot", () => {
     expect(DAILY_BRIEFING_QUEUE).toBe("daily-briefing");
-    expect(DAILY_BRIEFING_CRON).toBe("*/15 * * * *");
+    expect(DAILY_BRIEFING_CRON).toBe("8-59/15 * * * *");
   });
 });

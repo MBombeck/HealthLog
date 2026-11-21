@@ -41,6 +41,7 @@ import {
   cleanupExpiredIntakeTombstones,
 } from "@/lib/jobs/measurement-tombstone-cleanup";
 import { CONFIG_NOTICE_EVENT_TYPE } from "@/lib/notifications/reminder-dedup";
+import { purgeInBatches } from "@/lib/jobs/purge-batch";
 import { getWorkerPrisma } from "./shared";
 
 const MOOD_REMINDER_RETENTION_DAYS = 90;
@@ -137,12 +138,13 @@ export async function handleMoodReminderCleanup(
  * delete must not touch them or the once-per-state notice re-fires every
  * 90 days.
  *
- * The DELETE is unbounded by user. The event and attempt ledgers carry direct
- * `created_at` indexes, and final egress claims carry `authorized_at`, so each
- * trailing-edge scan is bounded by the size of the live working set. On a
- * one-million-row table with the documented retention
- * window, the daily prune touches ~11k rows (1M / 90d × 1d) and
- * completes in milliseconds.
+ * The DELETE is unbounded by user. The event ledger carries a direct
+ * `created_at` index and final egress claims carry `authorized_at`. The
+ * attempt ledger does not: its indexes lead on one of the three account
+ * columns, so finding the trailing edge is a skip scan over one of them
+ * (Postgres 18), not a range read. Its rows are therefore deleted in
+ * bounded batches (`purge-batch.ts`), so the first run after a long gap
+ * does not ask one statement to remove the whole backlog.
  */
 export interface PushAttemptCleanupPayload {
   triggeredAt: string;
@@ -158,8 +160,19 @@ export async function handlePushAttemptCleanup(
       const cutoff = new Date();
       cutoff.setUTCDate(cutoff.getUTCDate() - PUSH_ATTEMPT_RETENTION_DAYS);
       // account-deletion: retention ages delivery ledger rows out whatever their account's state.
-      const deletedAttempts = await p.pushAttempt.deleteMany({
-        where: { createdAt: { lt: cutoff } },
+      const deletedAttempts = await purgeInBatches({
+        findIds: async (take) =>
+          (
+            // account-deletion: retention, as above.
+            await p.pushAttempt.findMany({
+              where: { createdAt: { lt: cutoff } },
+              select: { id: true },
+              take,
+            })
+          ).map((row) => row.id),
+        deleteIds: async (ids) =>
+          (await p.pushAttempt.deleteMany({ where: { id: { in: ids } } }))
+            .count,
       });
       // account-deletion: retention, as above.
       const deletedEvents = await p.notificationEvent.deleteMany({
@@ -174,10 +187,15 @@ export async function handlePushAttemptCleanup(
           where: { authorizedAt: { lt: cutoff } },
         });
       const deleted =
-        deletedAttempts.count +
+        deletedAttempts.deleted +
         deletedEvents.count +
         deletedAuthorizations.count;
-      evt.addMeta("push_attempt_cleanup_deleted", deletedAttempts.count);
+      evt.addMeta("push_attempt_cleanup_deleted", deletedAttempts.deleted);
+      if (!deletedAttempts.drained) {
+        evt.addWarning(
+          "push-attempt-cleanup stopped at the batch cap; a backlog remains for the next run",
+        );
+      }
       evt.addMeta("notification_event_cleanup_deleted", deletedEvents.count);
       evt.addMeta(
         "notification_egress_authorization_cleanup_deleted",

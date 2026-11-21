@@ -70,7 +70,7 @@ beforeEach(() => {
 describe("periodic reconcile — wiring", () => {
   it("provisions the queue, schedules a 15-minute cron, and binds the handler", async () => {
     expect(IMPORT_JOB_RECONCILE_QUEUE).toBe("apple-health-import-reconcile");
-    expect(IMPORT_JOB_RECONCILE_CRON).toBe("*/15 * * * *");
+    expect(IMPORT_JOB_RECONCILE_CRON).toBe("11-59/15 * * * *");
 
     expect(groupOf(IMPORT_JOB_RECONCILE_QUEUE).name).toBe("maintenance");
     const job = jobOf(IMPORT_JOB_RECONCILE_QUEUE);

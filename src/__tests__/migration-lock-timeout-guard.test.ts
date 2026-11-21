@@ -1,23 +1,35 @@
 /**
- * Structural guard: how a migration bounds its lock wait, and when the boot
- * may retry it.
+ * Structural guard: how a migration bounds its lock wait, how long it holds
+ * what it takes, and when the boot may retry it.
  *
- * `prisma migrate deploy` runs a migration file statement by statement, each
- * committing on its own; it does not wrap the file in a transaction. Two
- * consequences were written into this repository the other way round:
+ * `prisma migrate deploy` runs a file one of two ways, and which one depends
+ * on the file (pinned against the real CLI by
+ * `tests/integration/migration-file-transaction.test.ts`):
  *
- * - A top-level `SET LOCAL lock_timeout` does nothing (there is no
- *   transaction for it to be local to), so the migration waits as long as
- *   the lock is held, and every write to the table queues behind it.
- * - A file that fails half-way stays half-applied, so marking it rolled back
- *   and running it again can fail on what already exists, or apply a change
- *   twice.
+ * - A file with a dollar-quoted body anywhere (a `DO` block, a function) is
+ *   sent as one query: one implicit transaction. It applies whole or not at
+ *   all, and every lock any statement takes is held until the file's last
+ *   statement has run.
+ * - A file without one is sent statement by statement, each committing on its
+ *   own. A failure leaves the earlier statements applied, and a top-level
+ *   `SET LOCAL lock_timeout` does nothing.
  *
- * So a lock wait is bounded inside a `DO` block with
- * `set_config('lock_timeout', …, true)`, which is one statement and rolls back
- * whole; and the `-- @retry-on-lock-timeout` marker, which lets
- * `scripts/migrate-deploy.mjs` retry a 55P03 failure on boot, is allowed only
- * on a file whose every other statement is harmless to run again.
+ * The rules that follow from that:
+ *
+ * - A lock wait is bounded inside a `DO` block with
+ *   `set_config('lock_timeout', …, true)`. The block makes the file one
+ *   transaction, so the bound holds for every statement after it.
+ * - The `-- @retry-on-lock-timeout` marker, which lets
+ *   `scripts/migrate-deploy.mjs` retry a 55P03 failure on boot, is safe on a
+ *   one-transaction file by construction; on a file split by statement it is
+ *   allowed only when every statement is harmless to run again.
+ * - In a one-transaction file, splitting `ADD CONSTRAINT … NOT VALID` from
+ *   `VALIDATE CONSTRAINT` buys nothing: the scan runs while the ACCESS
+ *   EXCLUSIVE lock of the `ADD` is still held. Long work (a `VALIDATE`, a
+ *   backfill on a large table, a plain index build on one) therefore stands
+ *   in a file that takes no other table lock, and bounds its own run time
+ *   with `set_config('statement_timeout', …, true)`, since `lock_timeout`
+ *   only bounds the wait for a lock, never the time spent holding it.
  */
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
@@ -25,7 +37,11 @@ import { describe, expect, it } from "vitest";
 
 import { RETIRED_MEASUREMENT_INDEXES } from "@/lib/jobs/measurement-maintenance";
 
-import { RETRY_MARKER } from "../../scripts/migrate-deploy.mjs";
+import {
+  RETRY_MARKER,
+  runsAsOneTransaction,
+  topLevelStatements,
+} from "../../scripts/migrate-deploy.mjs";
 
 const MIGRATIONS_DIR = join(process.cwd(), "prisma", "migrations");
 
@@ -38,16 +54,6 @@ function migrations(): Array<{ name: string; sql: string }> {
       name: file.split("/").at(-2) ?? file,
       sql: readFileSync(file, "utf8"),
     }));
-}
-
-/** The statements of a file, comments removed, dollar-quoted bodies blanked. */
-function topLevelStatements(sql: string): string[] {
-  return sql
-    .replace(/--[^\n]*/g, "")
-    .replace(/\$([A-Za-z_]*)\$[\s\S]*?\$\1\$/g, "$BODY$")
-    .split(";")
-    .map((statement) => statement.trim().replace(/\s+/g, " "))
-    .filter((statement) => statement.length > 0);
 }
 
 /** Statements that leave the database as they found it when run twice. */
@@ -79,7 +85,7 @@ function violations(name: string, sql: string): string[] {
       `${name}: bounds its lock wait but lacks -- @retry-on-lock-timeout`,
     );
   }
-  if (marked) {
+  if (marked && !runsAsOneTransaction(sql)) {
     for (const statement of statements) {
       if (!REPEATABLE.some((pattern) => pattern.test(statement))) {
         found.push(
@@ -93,9 +99,10 @@ function violations(name: string, sql: string): string[] {
 
 /**
  * `CREATE INDEX CONCURRENTLY` / `DROP INDEX CONCURRENTLY` refuse to run in a
- * transaction block, and under `migrate deploy` they do so whenever the file
- * holds any other statement (SQLSTATE 25001, seen against Prisma 7 and
- * Postgres 16). Such a statement therefore stands alone in its file.
+ * transaction block (SQLSTATE 25001), which a file with any dollar-quoted body
+ * is. A file split by statement would run it, but would also leave the
+ * statements before a failed build applied. Such a statement therefore stands
+ * alone in its file.
  */
 function concurrentViolations(name: string, sql: string): string[] {
   const statements = topLevelStatements(sql);
@@ -220,12 +227,22 @@ describe("migration lock waits", () => {
         "DO $x$ BEGIN PERFORM set_config('lock_timeout', '1s', true); END $x$;",
       ),
     ).toHaveLength(1);
+    // Split by statement (no dollar-quoted body): a failed attempt leaves
+    // the trigger behind, and the retry fails on it.
     expect(
       violations(
         "c",
-        "-- @retry-on-lock-timeout\nCREATE TRIGGER t BEFORE UPDATE ON m FOR EACH ROW EXECUTE FUNCTION f();\nDO $x$ BEGIN PERFORM set_config('lock_timeout', '1s', true); END $x$;",
+        '-- @retry-on-lock-timeout\nCREATE TRIGGER t BEFORE UPDATE ON m FOR EACH ROW EXECUTE FUNCTION f();\nCREATE INDEX IF NOT EXISTS "i" ON "m" ("c");',
       ),
     ).toEqual([expect.stringContaining("is not repeatable")]);
+    // The same statement beside a `DO` block is one transaction, which a
+    // failed attempt rolls back whole.
+    expect(
+      violations(
+        "c2",
+        "-- @retry-on-lock-timeout\nCREATE TRIGGER t BEFORE UPDATE ON m FOR EACH ROW EXECUTE FUNCTION f();\nDO $x$ BEGIN PERFORM set_config('lock_timeout', '1s', true); END $x$;",
+      ),
+    ).toEqual([]);
     expect(
       violations(
         "d",
@@ -297,6 +314,174 @@ describe("table locks since 0475", () => {
     // History is not re-run.
     expect(
       unboundedLockViolations("0100_e", 'ALTER TABLE "t" ADD COLUMN "c" INT;'),
+    ).toEqual([]);
+  });
+});
+
+/**
+ * From 0517 on, long work in a one-transaction file stands apart from every
+ * table lock: the locks a file takes are held until it ends, so an `ADD
+ * CONSTRAINT … NOT VALID` followed by its `VALIDATE` in the same file scans
+ * the table under ACCESS EXCLUSIVE after all (0476, 0509, 0511 did), and a
+ * backfill beside an `ALTER TABLE` keeps the table closed to reads and writes
+ * for the whole backfill (0476). The long work also bounds its own run time.
+ */
+const LONG_WORK_FROM = 517;
+
+/**
+ * Tables that grow with every reading, dose, or delivery and keep growing.
+ * A ledger that a retention purge holds to a few weeks or months is not one.
+ */
+const LARGE_TABLES = new Set([
+  "measurements",
+  "measurement_rollups",
+  "medication_intake_events",
+  "audit_logs",
+  "push_attempts",
+  "notification_events",
+  "workout_samples",
+]);
+
+const TABLE = String.raw`(?:ONLY\s+)?(?:IF\s+EXISTS\s+)?(?:"?public"?\.)?"?(\w+)"?`;
+
+function matches(pattern: RegExp, sql: string): string[] {
+  return [...sql.matchAll(pattern)].map((m) => m[1].toLowerCase());
+}
+
+/** What in the file runs long: a scan, a backfill, a plain index build. */
+function longWork(sql: string): string[] {
+  const work: string[] = [];
+  for (const table of matches(
+    new RegExp(
+      String.raw`\bALTER\s+TABLE\s+${TABLE}\s+VALIDATE\s+CONSTRAINT\b`,
+      "gi",
+    ),
+    sql,
+  )) {
+    work.push(`VALIDATE on ${table}`);
+  }
+  for (const table of matches(
+    new RegExp(String.raw`\b(?:UPDATE|DELETE\s+FROM)\s+${TABLE}`, "gi"),
+    sql,
+  )) {
+    if (LARGE_TABLES.has(table)) work.push(`backfill on ${table}`);
+  }
+  for (const table of matches(
+    new RegExp(
+      String.raw`\bCREATE\s+(?:UNIQUE\s+)?INDEX\s+(?!CONCURRENTLY)[^;]*?\bON\s+${TABLE}`,
+      "gi",
+    ),
+    sql,
+  )) {
+    if (LARGE_TABLES.has(table)) work.push(`index build on ${table}`);
+  }
+  return work;
+}
+
+/** The tables the file locks for longer than a statement's own work. */
+function heldLocks(sql: string): string[] {
+  return [
+    ...matches(
+      new RegExp(String.raw`\bALTER\s+TABLE\s+${TABLE}\s+(?!VALIDATE\s)`, "gi"),
+      sql,
+    ),
+    ...matches(
+      new RegExp(String.raw`\bLOCK\s+(?:TABLE\s+)?${TABLE}`, "gi"),
+      sql,
+    ),
+  ];
+}
+
+function longWorkViolations(name: string, sql: string): string[] {
+  const code = sql.replace(/--[^\n]*/g, "");
+  const work = longWork(code);
+  if (work.length === 0) return [];
+  const found: string[] = [];
+  if (!runsAsOneTransaction(code)) {
+    found.push(
+      `${name}: ${work.join(", ")} outside a DO block cannot bound its run time`,
+    );
+  } else if (!/set_config\(\s*'statement_timeout'/i.test(code)) {
+    found.push(
+      `${name}: ${work.join(", ")} without set_config('statement_timeout', …, true)`,
+    );
+  }
+  const held = [...new Set(heldLocks(code))];
+  if (held.length > 0) {
+    found.push(
+      `${name}: ${work.join(", ")} runs while the file holds its lock on ${held.join(", ")}; move one of them to a file of its own`,
+    );
+  }
+  return found;
+}
+
+describe("long work since 0517", () => {
+  it("stands apart from table locks and bounds its run time", () => {
+    const checked = migrations().filter(
+      ({ name }) => Number.parseInt(name.slice(0, 4), 10) >= LONG_WORK_FROM,
+    );
+    // No count floor: until a migration at or past 0517 exists there is
+    // nothing to check, and "names the history" below proves the matcher bites.
+    const found = checked.flatMap(({ name, sql }) =>
+      longWorkViolations(name, sql),
+    );
+    expect(found, found.join("\n")).toEqual([]);
+  });
+
+  it("names the history it was written from", () => {
+    // These ran before the rule and are not run again; the rule must still
+    // see what they did, or it would pass the next one that does the same.
+    const history = new Map(migrations().map(({ name, sql }) => [name, sql]));
+    for (const name of [
+      "0476_token_apple_health_mirror",
+      "0509_hypertension_event",
+      "0511_apple_health_v2_types",
+    ]) {
+      const sql = history.get(name);
+      expect(sql, name).toBeDefined();
+      expect(longWorkViolations(name, sql ?? ""), name).toContainEqual(
+        expect.stringMatching(/holds its lock on .*\bmeasurements\b/),
+      );
+    }
+  });
+
+  it("catches each shape it exists to refuse", () => {
+    const block = (body: string) =>
+      `DO $m$ BEGIN PERFORM set_config('lock_timeout', '5s', true); PERFORM set_config('statement_timeout', '5min', true); ${body} END $m$;`;
+    expect(
+      longWorkViolations(
+        "a",
+        block(
+          'ALTER TABLE "t" ADD CONSTRAINT "c" CHECK (x > 0) NOT VALID; ALTER TABLE "t" VALIDATE CONSTRAINT "c";',
+        ),
+      ),
+    ).toEqual([expect.stringContaining("holds its lock on t")]);
+    expect(
+      longWorkViolations(
+        "b",
+        block('UPDATE "measurements" SET "x" = 1 WHERE "x" IS NULL;'),
+      ),
+    ).toEqual([]);
+    expect(
+      longWorkViolations(
+        "c",
+        'DO $m$ BEGIN UPDATE "measurements" SET "x" = 1; END $m$;',
+      ),
+    ).toEqual([expect.stringContaining("statement_timeout")]);
+    expect(
+      longWorkViolations(
+        "d",
+        block(
+          'CREATE INDEX "i" ON "measurements" ("x"); ALTER TABLE "users" ADD COLUMN "y" INT;',
+        ),
+      ),
+    ).toEqual([expect.stringContaining("holds its lock on users")]);
+    // A small table's update is not long work, nor is a comment.
+    expect(
+      longWorkViolations(
+        "e",
+        '-- UPDATE "measurements" SET x = 1;\nALTER TABLE "users" ADD COLUMN "y" INT; UPDATE "users" SET "y" = 1;',
+      ),
     ).toEqual([]);
   });
 });
