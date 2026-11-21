@@ -1565,8 +1565,6 @@
     },
     "withoutNotification": "Without notification",
     "pausedSince": "Paused since",
-    "lastDoseYesterday": "Last dose yesterday",
-    "lastDoseDaysAgo": "Last dose {count} days ago",
     "complianceWindow": "Adherence ({days} days)",
     "complianceUnavailable": "Adherence could not be loaded",
     "complianceNotApplicable": "Adherence not applicable",
@@ -2647,7 +2645,8 @@
         "snooze": "Remind me later ({minutes} min)",
         "undo": "Undo",
         "takeFor": "Take {name}",
-        "skipFor": "Skip {name}"
+        "skipFor": "Skip {name}",
+        "takeSlot": "Take ({time})"
       },
       "state": {
         "pending": "Pending",
@@ -2661,7 +2660,8 @@
         "snoozedUntil": "Reminder snoozed until {time}"
       },
       "snoozedToast": "{name}: reminder again at {time}",
-      "snoozeFailed": "Could not snooze {name}. Try again"
+      "snoozeFailed": "Could not snooze {name}. Try again",
+      "earlyHint": "Early: this dose is due from {time}."
     },
     "intakeForm": {
       "title": "Log intake",

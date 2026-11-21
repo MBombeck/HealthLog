@@ -72,6 +72,8 @@ export function useMeasurementRowDisplay() {
   const rowIdentityAttrs = useCallback(
     (m: Measurement, isGrouped: boolean) => ({
       "data-testid": "measurement-row",
+      // The edit link from the save receipt scrolls to it (`?reading=`).
+      "data-measurement-id": m.id,
       "data-measurement-type": m.type,
       "data-measurement-value": String(
         isGrouped ? m.value : rowDisplay(m).value,

@@ -71,7 +71,10 @@ export function MoodTableRow({
   const { t } = useTranslations();
   const fmt = useFormatters();
   return (
-    <TableRow data-state={isSelected ? "selected" : undefined}>
+    <TableRow
+      data-state={isSelected ? "selected" : undefined}
+      data-mood-entry-id={entry.id}
+    >
       <TableCell className="pl-4">
         {canManageMind && (
           <Checkbox
@@ -157,6 +160,7 @@ export function MoodCardRow({
   return (
     <div
       data-testid="mood-row"
+      data-mood-entry-id={entry.id}
       data-state={isSelected ? "selected" : undefined}
       className="bg-card border-border data-[state=selected]:border-primary/60 data-[state=selected]:bg-primary/5 flex items-center justify-between rounded-lg border p-3"
     >

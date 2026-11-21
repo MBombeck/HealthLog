@@ -401,6 +401,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "medications.intake.bulk.invalid",
       "medications.intake.bulk.too_large",
       "medications.intake.changedSinceSeen",
+      "medications.intake.invalidPrecondition",
       "medications.intake.force_slot.invalid",
       "medications.intake.force_slot.occupied",
       "medications.intake.injection_site.disallowed",

@@ -153,9 +153,7 @@ export function MoodForm({
   const [tagsInput, setTagsInput] = useState("");
   // v1.8.5 — structured-tag keys picked from the taxonomy catalog.
   const [tagKeys, setTagKeys] = useState<string[]>([]);
-  // v1.8.5 — first-class free-text note. The model + API already
-  // accepted `note`; the web form was the only surface that couldn't
-  // write it.
+  // The free-text note.
   const [note, setNote] = useState("");
   const [moodLoggedAt, setMoodLoggedAt] = useState(() =>
     localDateTimeValue(defaultDate),
@@ -282,6 +280,7 @@ export function MoodForm({
               void refetchInactiveDailyReads(queryClient);
             }
           : undefined,
+        edit: { kind: "mood", ids: [saved.id] },
       });
       // The entry landed, but a tag picked here may have been archived or
       // deleted elsewhere since the picker loaded; the server says so.

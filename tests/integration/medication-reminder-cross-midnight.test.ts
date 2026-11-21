@@ -34,6 +34,9 @@ async function seedMedication(): Promise<string> {
       asNeeded: false,
       notificationsEnabled: true,
       startsOn: new Date("2026-07-01T00:00:00.000Z"),
+      // Existed before the doses it is reminded of: a dose whose time had
+      // passed when a medication was created is never owed.
+      createdAt: new Date("2026-07-01T00:00:00.000Z"),
       schedules: {
         create: {
           windowStart: "23:45",

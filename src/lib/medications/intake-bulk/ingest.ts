@@ -238,6 +238,28 @@ async function recordSyncArrival(input: BatchInput, state: BatchState) {
   }
 }
 
+/**
+ * Every landed entry carries its row's current `syncVersion`, read once after
+ * the batch settled (a later entry or the dedup pass may have moved it), so
+ * an undo with `expectedSyncVersion` matches what the client was told.
+ */
+async function stampSyncVersions(userId: string, state: BatchState) {
+  const ids = [...new Set(state.results.flatMap((r) => (r.id ? [r.id] : [])))];
+  if (ids.length === 0) return;
+  const rows = await prisma.medicationIntakeEvent.findMany({
+    where: { id: { in: ids }, userId },
+    select: { id: true, syncVersion: true },
+  });
+  const versionById = new Map(rows.map((r) => [r.id, r.syncVersion]));
+  for (const result of state.results) {
+    const version = result.id ? versionById.get(result.id) : undefined;
+    if (version === undefined) continue;
+    result.syncVersion = version;
+    if (result.intake)
+      result.intake = { ...result.intake, syncVersion: version };
+  }
+}
+
 export async function ingestBulkIntake(
   input: BatchInput,
 ): Promise<BulkIntakeOutcome> {
@@ -292,6 +314,7 @@ export async function ingestBulkIntake(
   await recordBatch(input, state);
   await settleLandedRows(input, state);
   await recordSyncArrival(input, state);
+  await stampSyncVersions(user.id, state);
 
   return {
     kind: "ingested",

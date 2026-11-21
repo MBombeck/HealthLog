@@ -1,6 +1,8 @@
 /**
  * One occurrence of a person-defined symptom (v1.40).
  *
+ *   GET    /api/symptoms/events/{id} — the occurrence, as the list reads it
+ *          (what the save receipt's Edit opens).
  *   PATCH  /api/symptoms/events/{id} — change the time, intensity, note or
  *          episode link. A new link must name an episode of the record that
  *          is open or ran over the occurrence's time; an unchanged link to an
@@ -14,7 +16,8 @@
  *          back.
  *
  * Owner-scoped (another account's id is a 404), module-gated on the record,
- * MANAGE on a shared record. The note is never logged.
+ * READ for the GET and MANAGE for a change on a shared record. The note is
+ * never logged.
  */
 import { NextRequest } from "next/server";
 
@@ -47,6 +50,30 @@ function notFound(): Response {
     errorCode: "symptoms.event.notFound",
   });
 }
+
+export const GET = apiHandler(
+  async (_request: NextRequest, { params }: RouteParams) => {
+    const { user } = await requireRecordAuth("read", "illness");
+
+    const gate = await requireIllnessEnabled(user.id);
+    if (!gate.enabled) return gate.response;
+
+    const { id } = await params;
+    const row = await prisma.symptomEvent.findFirst({
+      where: { id, userId: user.id, deletedAt: null },
+    });
+    if (!row) return notFound();
+
+    annotate({
+      action: {
+        name: "symptoms.event.get",
+        entity_type: "symptom_event",
+        entity_id: id,
+      },
+    });
+    return apiSuccess(toSymptomEventDTO(row));
+  },
+);
 
 export const PATCH = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {

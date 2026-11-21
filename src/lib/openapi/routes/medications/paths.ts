@@ -227,6 +227,13 @@ const bulkIntakeEntryResult = z
         "Why a `skipped` entry was not stored. Among others: `medication_not_found`, `unstable_external_id`, `force_slot_invalid`, `force_slot_occupied`, `injection_site_not_allowed`, and (v1.42.0) `intake_not_tracked` for an entry against a medication kept as a record only (`trackIntake: false`), the per-entry form of `medication.intake.notTracked`. A skip is final: resending the entry gives the same answer.",
       ),
     id: z.string().optional().describe("The landed row id (absent on skips)."),
+    syncVersion: z
+      .number()
+      .int()
+      .optional()
+      .describe(
+        "The landed row's version after the batch settled (absent on skips). Send it as `expectedSyncVersion` to undo the entry; a row changed since answers 409 `medications.intake.changedSinceSeen`. The `intake` row on `alreadyTaken` carries the same value.",
+      ),
     intake: medicationIntakeEventResource
       .optional()
       .describe("On `alreadyTaken`: the recorded row the slot already holds."),
@@ -857,14 +864,15 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             .regex(/^\d{1,9}$/)
             .optional()
             .describe(
-              "The row's `syncVersion` as this client last saw it (the take's response carries it). When the row has changed since, the undo is refused with 409 and nothing is deleted.",
+              "The row's `syncVersion` as this client last saw it (the take's response carries it). When the row has changed since, the undo is refused with 409 and nothing is deleted. Sent but not a whole number from 0 (e.g. `-1`, `1.5`, empty): 422 `medications.intake.invalidPrecondition`, nothing deleted.",
             ),
           expectedIdempotencyKey: z
             .string()
+            .min(1)
             .max(128)
             .optional()
             .describe(
-              "The idempotency key of the take this client recorded. When the row carries another key it holds someone else's take (a take that answered `alreadyTaken` keeps the first writer's key), so the undo is refused with 409.",
+              "The idempotency key of the take this client recorded. When the row carries another key it holds someone else's take (a take that answered `alreadyTaken` keeps the first writer's key), so the undo is refused with 409. Sent but empty or over 128 characters: 422 `medications.intake.invalidPrecondition`, nothing deleted.",
             ),
         }),
       },
@@ -892,6 +900,11 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
+        "422": {
+          description:
+            "`medications.intake.invalidPrecondition`: `expectedSyncVersion` or `expectedIdempotencyKey` was sent but is not readable. Nothing was deleted; an absent precondition is allowed, a broken one never skips the check.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
       },
     },
   },

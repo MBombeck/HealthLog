@@ -1565,8 +1565,6 @@
     },
     "withoutNotification": "알림 없음",
     "pausedSince": "일시중지 시작",
-    "lastDoseYesterday": "마지막 복용 어제",
-    "lastDoseDaysAgo": "마지막 복용 {count}일 전",
     "complianceWindow": "복약 순응도 ({days}일)",
     "complianceUnavailable": "복약 순응도를 불러오지 못했어요",
     "complianceNotApplicable": "복약 순응도 해당 없음",
@@ -2647,7 +2645,8 @@
         "snooze": "나중에 알림 ({minutes}분)",
         "undo": "실행 취소",
         "takeFor": "{name} 복용",
-        "skipFor": "{name} 건너뛰기"
+        "skipFor": "{name} 건너뛰기",
+        "takeSlot": "복용 ({time})"
       },
       "state": {
         "pending": "예정",
@@ -2661,7 +2660,8 @@
         "snoozedUntil": "{time}까지 알림 미룸"
       },
       "snoozedToast": "{name}: {time}에 다시 알려 드려요",
-      "snoozeFailed": "{name} 알림을 미루지 못했어요. 다시 시도해 주세요"
+      "snoozeFailed": "{name} 알림을 미루지 못했어요. 다시 시도해 주세요",
+      "earlyHint": "이른 복용: 이 용량은 {time}부터 복용 시간입니다."
     },
     "intakeForm": {
       "title": "복용 기록",

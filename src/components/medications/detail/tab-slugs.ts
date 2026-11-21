@@ -56,3 +56,18 @@ export function resolveTabSlug(
     raw && Object.hasOwn(LEGACY_TAB_SLUGS, raw) ? LEGACY_TAB_SLUGS[raw] : raw;
   return available.find((tab) => tab === slug) ?? "overview";
 }
+
+/** Scroll the tab row sideways (never the page) so the active tab shows. */
+export function scrollActiveIntoRow(
+  row: HTMLDivElement | null,
+  active: string,
+) {
+  const tab = row?.querySelector<HTMLElement>(
+    `[data-slot="medication-tab-${active}"]`,
+  );
+  if (!row || !tab) return;
+  row.scrollLeft = Math.max(
+    0,
+    tab.offsetLeft - (row.clientWidth - tab.offsetWidth) / 2,
+  );
+}

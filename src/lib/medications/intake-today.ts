@@ -120,6 +120,8 @@ export async function readTodayIntakes(input: {
     medicationId: e.medicationId,
     scheduledAt: e.scheduledFor.toISOString(),
     takenAt: e.takenAt?.toISOString() ?? null,
+    // The row's version, for an undo with `expectedSyncVersion`.
+    syncVersion: e.syncVersion,
     // Where the outcome was recorded, so a client can say "already taken at
     // 07:12 via an integration" before offering a second take.
     source: e.source,

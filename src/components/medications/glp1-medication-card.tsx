@@ -34,9 +34,11 @@ import { getDayOfWeekInTz } from "@/lib/tz/local-day";
 import { type InjectionSiteKey } from "@/lib/medications/injection-sites";
 import { LogInjectionSiteDialog } from "@/components/medications/log-injection-site-dialog";
 import { useGlobalExcludedInjectionSites } from "@/lib/medications/use-injection-site-prefs";
-import { reduceCurrentWindowStatus } from "@/lib/medications/window-status";
-import { cardWindowPill } from "@/lib/medications/dose-state/pill";
-import { resolveDisplayedSlotInstant } from "@/components/medications/card-parts/displayed-slot-instant";
+import {
+  cardDoseStatus,
+  cardTakeSlot,
+  cardWindowPill,
+} from "@/lib/medications/dose-state/pill";
 import {
   estimateDailyDoseCount,
   estimateRunwayDays,
@@ -71,11 +73,7 @@ interface ScheduleLite {
   label: string | null;
   dose: string | null;
   daysOfWeek: string | null;
-  /**
-   * v1.16.1 — first-class dose times + explicit per-dose bands; the
-   * window-status helper derives its bands from these (canonical) and
-   * only falls back to the legacy window when they are absent.
-   */
+  /** First-class dose times and explicit per-dose bands (schedule editor). */
   timesOfDay?: string[];
   doseWindows?: { timeOfDay: string; start: string; end: string }[] | null;
   /** Cadence fields the supply-runway estimate reads (v1.16.11). */
@@ -271,8 +269,6 @@ export function Glp1MedicationCard({
     queryFn: async () => {
       try {
         return await apiGet<{
-          lateMinutes: number;
-          missedMinutes: number;
           lowStockRunwayDays: number | null;
           reorderLeadDays?: number;
         }>("/api/settings/reminder-thresholds");
@@ -346,50 +342,15 @@ export function Glp1MedicationCard({
   // v1.15.9 — the open dose's server-derived status drives the green
   // take-window highlight + the overdue / heavily-overdue top line, shared
   // verbatim with the generic card. Defaults to "upcoming" (calm).
-  const doseStatus = display?.currentDose.status ?? "upcoming";
+  const currentDose = display?.currentDose;
+  const doseStatus = cardDoseStatus(currentDose, now);
+  const pill = cardWindowPill(currentDose, now, userTz);
 
-  // v1.4.37 — symmetric take-now / overdue pill with the generic
-  // card. Sort schedules by `windowStart` so the most-actionable
-  // earliest window wins when multiple GLP-1 windows overlap (rare
-  // today; the parity is what matters).
-  const sortedSchedules = [...medication.schedules].sort(
-    (a, b) =>
-      a.windowStart.localeCompare(b.windowStart) ||
-      a.windowEnd.localeCompare(b.windowEnd),
-  );
-  const lateMinutes = thresholds?.lateMinutes ?? 120;
-  const missedMinutes = thresholds?.missedMinutes ?? 240;
-  const currentWindowStatus = reduceCurrentWindowStatus({
-    schedules: sortedSchedules,
-    now,
-    lateMinutes,
-    missedMinutes,
-    active: medication.active,
-    lastTakenAt: medication.lastTakenAt,
-    todayEventCount: medication.todayEventCount ?? 0,
-    tz: userTz,
-    // v1.16.6 — gate the pill on the server display-due so a rolling
-    // cadence whose next injection is days away can never paint an overdue
-    // pill today. `undefined` (older payloads / fixtures) keeps legacy
-    // behaviour; `next` is already the parsed-and-validated `nextDueAt`.
-    nextDue:
-      medication.nextDueAt === undefined
-        ? undefined
-        : next
-          ? { at: next.date, overdue: medication.nextDueOverdue === true }
-          : null,
-  });
-
-  // v1.12.3 — slot instant of the injection this card is showing (the
-  // open/overdue window, else the server's next-due). Threaded onto the
-  // take / skip POST so the server records THIS dose deterministically
-  // rather than snapping "now" to the nearest slot.
-  const displayedSlot = resolveDisplayedSlotInstant({
-    currentWindowStatus,
-    nextDueAt: medication.nextDueAt,
-    now,
-    timeZone: userTz,
-  });
+  // The slot of the injection this card shows (the resolved open dose
+  // while due, overdue or missed, else the server's next-due), threaded onto
+  // the take / skip POST so the server records THIS dose.
+  const takeSlot = cardTakeSlot(currentDose, medication.nextDueAt, now);
+  const displayedSlot = takeSlot?.at ?? null;
 
   // v1.16.11 / v1.17.0 — low-stock card context, identical to the generic
   // card: runway days from the list payload's dose-derived stock, surfaced
@@ -506,7 +467,7 @@ export function Glp1MedicationCard({
       : null;
 
   const nextLine =
-    next && currentWindowStatus.status !== "in_window" ? (
+    next && pill?.status !== "in_window" ? (
       overdueLabel ? (
         <span className="inline-flex flex-wrap items-center gap-x-1 text-sm">
           <DoseStateLabel state="overdue" />
@@ -554,13 +515,7 @@ export function Glp1MedicationCard({
       linkLabel={t("medications.openDetailPage")}
       stateBadges={stateBadges}
       headerActions={headerActions}
-      windowStatus={cardWindowPill(
-        display?.currentDose,
-        currentWindowStatus,
-        now,
-        userTz,
-        medication.nextDueAt,
-      )}
+      windowStatus={pill}
       doseStatus={doseStatus}
       nextLine={nextLine}
       lastLine={lastLine}
@@ -580,6 +535,7 @@ export function Glp1MedicationCard({
       lowStockRunwayDays={lowStockRunwayDays}
       intakeLoading={intakeLoading}
       onRecordIntake={(skipped) => recordIntake(skipped, displayedSlot)}
+      takeSlot={takeSlot}
       snooze={snooze}
     >
       {/* v1.8.5 — post-dose injection-site capture (optional, skippable). */}

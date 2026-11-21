@@ -1565,8 +1565,6 @@
     },
     "withoutNotification": "Sin notificación",
     "pausedSince": "En pausa desde",
-    "lastDoseYesterday": "Última dosis ayer",
-    "lastDoseDaysAgo": "Última dosis hace {count} días",
     "complianceWindow": "Cumplimiento {days} días",
     "complianceUnavailable": "No se pudo cargar el cumplimiento",
     "complianceNotApplicable": "El cumplimiento no es aplicable",
@@ -2647,7 +2645,8 @@
         "snooze": "Recordar más tarde ({minutes} min)",
         "undo": "Deshacer",
         "takeFor": "Tomar {name}",
-        "skipFor": "Omitir {name}"
+        "skipFor": "Omitir {name}",
+        "takeSlot": "Tomar ({time})"
       },
       "state": {
         "pending": "Pendiente",
@@ -2661,7 +2660,8 @@
         "snoozedUntil": "Recordatorio pospuesto hasta las {time}"
       },
       "snoozedToast": "{name}: te lo recordaremos a las {time}",
-      "snoozeFailed": "No se pudo posponer {name}. Inténtalo de nuevo"
+      "snoozeFailed": "No se pudo posponer {name}. Inténtalo de nuevo",
+      "earlyHint": "Pronto: esta dosis toca a partir de las {time}."
     },
     "intakeForm": {
       "title": "Registrar toma",

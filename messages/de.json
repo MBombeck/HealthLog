@@ -1565,8 +1565,6 @@
     },
     "withoutNotification": "Ohne Benachrichtigung",
     "pausedSince": "Pausiert seit",
-    "lastDoseYesterday": "Letzte Dosis gestern",
-    "lastDoseDaysAgo": "Letzte Dosis vor {count} Tagen",
     "complianceWindow": "Therapietreue ({days} Tage)",
     "complianceUnavailable": "Therapietreue konnte nicht geladen werden",
     "complianceNotApplicable": "Therapietreue nicht anwendbar",
@@ -2647,7 +2645,8 @@
         "snooze": "Später erinnern ({minutes} Min.)",
         "undo": "Rückgängig",
         "takeFor": "Einnehmen: {name}",
-        "skipFor": "Überspringen: {name}"
+        "skipFor": "Überspringen: {name}",
+        "takeSlot": "Einnehmen ({time})"
       },
       "state": {
         "pending": "Ausstehend",
@@ -2661,7 +2660,8 @@
         "snoozedUntil": "Erinnerung verschoben auf {time}"
       },
       "snoozedToast": "{name}: Erinnerung wieder um {time}",
-      "snoozeFailed": "{name} konnte nicht verschoben werden. Bitte erneut versuchen"
+      "snoozeFailed": "{name} konnte nicht verschoben werden. Bitte erneut versuchen",
+      "earlyHint": "Früh dran: Diese Dosis ist ab {time} fällig."
     },
     "intakeForm": {
       "title": "Einnahme erfassen",

@@ -1565,8 +1565,6 @@
     },
     "withoutNotification": "Bez powiadomienia",
     "pausedSince": "Wstrzymane od",
-    "lastDoseYesterday": "Ostatnia dawka wczoraj",
-    "lastDoseDaysAgo": "Ostatnia dawka {count} dni temu",
     "complianceWindow": "Przestrzeganie {days} dni",
     "complianceUnavailable": "Nie udało się wczytać danych o przestrzeganiu",
     "complianceNotApplicable": "Przestrzeganie zaleceń nie ma zastosowania",
@@ -2647,7 +2645,8 @@
         "snooze": "Przypomnij później ({minutes} min)",
         "undo": "Cofnij",
         "takeFor": "Przyjmij {name}",
-        "skipFor": "Pomiń {name}"
+        "skipFor": "Pomiń {name}",
+        "takeSlot": "Przyjmij ({time})"
       },
       "state": {
         "pending": "Oczekujące",
@@ -2661,7 +2660,8 @@
         "snoozedUntil": "Przypomnienie odłożone do {time}"
       },
       "snoozedToast": "{name}: przypomnienie o {time}",
-      "snoozeFailed": "Nie udało się odłożyć {name}. Spróbuj ponownie"
+      "snoozeFailed": "Nie udało się odłożyć {name}. Spróbuj ponownie",
+      "earlyHint": "Wcześnie: ta dawka przypada od {time}."
     },
     "intakeForm": {
       "title": "Zarejestruj przyjęcie",

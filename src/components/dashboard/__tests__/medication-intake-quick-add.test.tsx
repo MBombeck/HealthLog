@@ -79,8 +79,6 @@ function makeMed(
     active: true,
     intakeActionable: true,
     schedules: [],
-    lastTakenAt: null,
-    todayEventCount: 0,
     ...overrides,
   };
 }
@@ -114,36 +112,18 @@ describe("pickDefaultMedicationId — auto-select heuristic", () => {
     expect(pickDefaultMedicationId([makeMed("solo")])).toBe("solo");
   });
 
-  it("prefers an in-window medication over the alphabetical fallback", () => {
-    // 10:00 Berlin time on a weekday. The morning slot for med "b" is
-    // open (08:00–11:00); med "a" has no schedule so it can only
-    // surface via the alphabetical fallback. The helper must pick "b".
-    const now = new Date("2026-05-12T08:00:00Z"); // 10:00 Berlin (UTC+2)
+  it("prefers a medication whose server dose is due today over the alphabetical fallback", () => {
+    const now = new Date("2026-05-12T08:00:00Z"); // 10:00 Berlin
     const result = pickDefaultMedicationId(
-      [
-        makeMed("a"),
-        makeMed("b", {
-          schedules: [
-            {
-              id: "s1",
-              windowStart: "08:00",
-              windowEnd: "11:00",
-              daysOfWeek: null,
-              label: null,
-              dose: null,
-            },
-          ],
-        }),
-      ],
+      [makeMed("a"), makeMed("b", { nextDueAt: "2026-05-12T09:00:00.000Z" })],
       now,
     );
     expect(result).toBe("b");
   });
 
-  it("does not pre-select a medication whose server next-due is in the future (v1.16.9)", () => {
-    // The band alone reads "in window" at 10:00 Berlin, but the server
-    // says the next unresolved dose is tomorrow (a rolling cadence whose
-    // dose was taken) — the gate must keep the heuristic off it.
+  it("does not pre-select a medication whose server next-due is another day (v1.16.9)", () => {
+    // The server says the next unresolved dose is tomorrow (a rolling
+    // cadence whose dose was taken): nothing is due today.
     const now = new Date("2026-05-12T08:00:00Z"); // 10:00 Berlin (UTC+2)
     const result = pickDefaultMedicationId(
       [
@@ -152,46 +132,6 @@ describe("pickDefaultMedicationId — auto-select heuristic", () => {
           name: "Bbb",
           nextDueAt: "2026-05-13T06:00:00.000Z", // tomorrow
           nextDueOverdue: false,
-          schedules: [
-            {
-              id: "s1",
-              windowStart: "08:00",
-              windowEnd: "11:00",
-              daysOfWeek: null,
-              label: null,
-              dose: null,
-            },
-          ],
-        }),
-      ],
-      now,
-    );
-    // Nothing genuinely due → alphabetical fallback ("Aaa").
-    expect(result).toBe("a");
-  });
-
-  it("does not pre-select a day-scale medication already taken early in its period (v1.16.9)", () => {
-    // Weekly Tuesday med (2026-05-12 is a Tuesday), taken two days ago.
-    const now = new Date("2026-05-12T08:00:00Z"); // 10:00 Berlin
-    const result = pickDefaultMedicationId(
-      [
-        makeMed("a", { name: "Aaa" }),
-        makeMed("b", {
-          name: "Bbb",
-          lastTakenAt: "2026-05-10T07:00:00.000Z", // Sunday — early take
-          nextDueAt: "2026-05-12T07:00:00.000Z", // today's slot (unresolved)
-          nextDueOverdue: true,
-          schedules: [
-            {
-              id: "s1",
-              windowStart: "09:00",
-              windowEnd: "09:00",
-              daysOfWeek: "2",
-              timesOfDay: ["09:00"],
-              label: null,
-              dose: null,
-            },
-          ],
         }),
       ],
       now,
@@ -200,33 +140,15 @@ describe("pickDefaultMedicationId — auto-select heuristic", () => {
   });
 
   it("reasons in the supplied profile timezone, not Berlin (v1.16.9)", () => {
-    // 08:00 UTC = 10:00 Berlin (inside the 08:00–11:00 window) but only
-    // 04:00 in New York (hours before it). The same instant must flip
-    // the pick with the timezone — pinning that the tz threads through
-    // both the wall-clock conversion and the window reduction.
-    const now = new Date("2026-05-12T08:00:00Z");
+    // 23:30 UTC is 19:30 the same day in New York but 01:30 the next day
+    // in Berlin: the same dose is today's in one zone only.
+    const now = new Date("2026-05-12T20:00:00Z");
     const meds = [
       makeMed("a", { name: "Aaa" }),
-      makeMed("b", {
-        name: "Bbb",
-        schedules: [
-          {
-            id: "s1",
-            windowStart: "08:00",
-            windowEnd: "11:00",
-            daysOfWeek: null,
-            label: null,
-            dose: null,
-          },
-        ],
-      }),
+      makeMed("b", { name: "Bbb", nextDueAt: "2026-05-12T23:30:00.000Z" }),
     ];
-    expect(pickDefaultMedicationId(meds, now, undefined, "Europe/Berlin")).toBe(
-      "b",
-    );
-    expect(
-      pickDefaultMedicationId(meds, now, undefined, "America/New_York"),
-    ).toBe("a");
+    expect(pickDefaultMedicationId(meds, now, "America/New_York")).toBe("b");
+    expect(pickDefaultMedicationId(meds, now, "Europe/Berlin")).toBe("a");
   });
 
   it("falls back to the alphabetical-first active medication when nothing is due", () => {
@@ -290,7 +212,7 @@ describe("<MedicationIntakeQuickAdd> — SSR contract", () => {
     ).toBeGreaterThanOrEqual(1);
   });
 
-  it("renders the current-window medication as selected ahead of array order", () => {
+  it("renders the medication due today as selected ahead of array order", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-05-12T08:00:00.000Z"));
     mockUseQuery.mockReturnValue({
@@ -298,18 +220,8 @@ describe("<MedicationIntakeQuickAdd> — SSR contract", () => {
         makeMed("first", { name: "Alpha" }),
         makeMed("due", {
           name: "Zulu",
-          nextDueAt: "2026-05-12T07:00:00.000Z",
+          nextDueAt: "2026-05-12T09:00:00.000Z",
           nextDueOverdue: false,
-          schedules: [
-            {
-              id: "due-schedule",
-              windowStart: "08:00",
-              windowEnd: "11:00",
-              daysOfWeek: null,
-              label: null,
-              dose: null,
-            },
-          ],
         }),
       ],
       isLoading: false,

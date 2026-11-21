@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { isRecordPreloadReady } from "@/components/providers";
+import {
+  isRecordPreloadReady,
+  preloadsMedicationsList,
+} from "@/components/providers";
 import {
   __resetRecordScopeForTests,
   setRecordScope,
@@ -76,5 +79,20 @@ describe("isRecordPreloadReady", () => {
         activeAccountId: null,
       }),
     ).toBe(false);
+  });
+});
+
+describe("preloadsMedicationsList", () => {
+  // The document's own load on /medications already carries the list in its
+  // server render; a prefetch then made the page's HydrationBoundary hydrate
+  // in an effect, and the first client render no longer matched (React #418).
+  it("does not warm the list on the document's own load of /medications", () => {
+    expect(preloadsMedicationsList("/medications", "/medications")).toBe(false);
+  });
+
+  it("warms it on a navigation to /medications, and nowhere else", () => {
+    expect(preloadsMedicationsList("/medications", null)).toBe(true);
+    expect(preloadsMedicationsList("/medications", "/")).toBe(true);
+    expect(preloadsMedicationsList("/", null)).toBe(false);
   });
 });

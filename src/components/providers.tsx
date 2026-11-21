@@ -7,6 +7,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   useSyncExternalStore,
   type ReactNode,
@@ -218,11 +219,26 @@ function getServerRecordScope(): string | null {
   return null;
 }
 
+/**
+ * Whether arriving on `pathname` warms the medications list: on a navigation
+ * to `/medications`, never on the document's own load there (`loadedOn`, the
+ * path the document loaded on until the first navigation), whose server
+ * render already carries the list.
+ */
+export function preloadsMedicationsList(
+  pathname: string | null,
+  loadedOn: string | null,
+): boolean {
+  return pathname === "/medications" && loadedOn !== pathname;
+}
+
 function DashboardSnapshotPreloader() {
   const queryClient = useQueryClient();
   const pathname = usePathname();
   const { user, isLoading } = useAuth();
   const transition = useRecordSessionTransition();
+  // The path the document itself loaded on, until the first navigation.
+  const loadedOn = useRef<string | null>(pathname);
   const recordScope = useSyncExternalStore(
     subscribeToClientRecordScope,
     getClientRecordScope,
@@ -248,8 +264,16 @@ function DashboardSnapshotPreloader() {
     // at route commit rides the data hop in parallel with the chunk
     // download; the nav links additionally prefetch on hover/touch
     // intent, so this is the fallback for direct loads + reloads.
+    if (loadedOn.current !== pathname) loadedOn.current = null;
     if (pathname === "/medications") {
-      prefetchMedicationsList(queryClient, controller.signal);
+      // Not on the document's own load: the server render already carries
+      // the list (`app/medications/page.tsx`). A prefetch here creates the
+      // query before the page's HydrationBoundary renders, which then hydrates
+      // the list in an effect instead, so the first client render paints the
+      // skeleton over the server's cards (React #418).
+      if (preloadsMedicationsList(pathname, loadedOn.current)) {
+        prefetchMedicationsList(queryClient, controller.signal);
+      }
     } else {
       // Off the page: a later prefetch starts a new visit, and an earlier one
       // must not excuse the next mount's re-verification.

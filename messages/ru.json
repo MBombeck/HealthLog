@@ -1565,8 +1565,6 @@
     },
     "withoutNotification": "Без уведомления",
     "pausedSince": "На паузе с",
-    "lastDoseYesterday": "Последняя доза вчера",
-    "lastDoseDaysAgo": "Последняя доза {count} дн. назад",
     "complianceWindow": "Приверженность ({days} дн.)",
     "complianceUnavailable": "Не удалось загрузить приверженность",
     "complianceNotApplicable": "Приверженность неприменима",
@@ -2647,7 +2645,8 @@
         "snooze": "Напомнить позже ({minutes} мин)",
         "undo": "Отменить",
         "takeFor": "Принять {name}",
-        "skipFor": "Пропустить {name}"
+        "skipFor": "Пропустить {name}",
+        "takeSlot": "Принять ({time})"
       },
       "state": {
         "pending": "Предстоит",
@@ -2661,7 +2660,8 @@
         "snoozedUntil": "Напоминание отложено до {time}"
       },
       "snoozedToast": "{name}: напомним в {time}",
-      "snoozeFailed": "Не удалось отложить {name}. Попробуйте ещё раз"
+      "snoozeFailed": "Не удалось отложить {name}. Попробуйте ещё раз",
+      "earlyHint": "Рано: эту дозу нужно принять с {time}."
     },
     "intakeForm": {
       "title": "Записать приём",

@@ -402,6 +402,47 @@ describe("symptom occurrences", () => {
     ).toBe(0);
   });
 
+  it("reads one occurrence by id, and is a 404 for another account's", async () => {
+    const id = await defineSymptom("Nausea");
+    const created = await logEvent({
+      definitionId: id,
+      intensity: 4,
+      occurredAt: "2026-09-02T07:15:00.000Z",
+      note: "after breakfast",
+    });
+    const eventId = (await json<Envelope<{ id: string }>>(created)).data.id;
+    const { GET } = await import("@/app/api/symptoms/events/[id]/route");
+    const read = await call(
+      GET,
+      "GET",
+      `/api/symptoms/events/${eventId}`,
+      undefined,
+      {
+        id: eventId,
+      },
+    );
+    expect(read.status).toBe(200);
+    expect(
+      (await json<Envelope<Record<string, unknown>>>(read)).data,
+    ).toMatchObject({
+      id: eventId,
+      definitionId: id,
+      intensity: 4,
+      note: "after breakfast",
+      occurredAt: "2026-09-02T07:15:00.000Z",
+    });
+
+    await signIn(OTHER_ID);
+    const foreign = await call(
+      GET,
+      "GET",
+      `/api/symptoms/events/${eventId}`,
+      undefined,
+      { id: eventId },
+    );
+    expect(foreign.status).toBe(404);
+  });
+
   it("says hasMore only when an occurrence past the page exists", async () => {
     const id = await defineSymptom("Headache");
     for (const occurredAt of [

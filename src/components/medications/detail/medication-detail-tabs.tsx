@@ -111,6 +111,7 @@ import type { RelatedLink } from "@/lib/links/related";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   resolveTabSlug,
+  scrollActiveIntoRow,
   TAB_LABEL_KEYS,
   TAB_SLUGS,
   type TabSlug,
@@ -392,19 +393,20 @@ export function MedicationDetailTabs({
   );
 
   const activeTab = resolveTabSlug(searchParams?.get("tab"), availableTabs);
+  const scrollActiveTabIntoRow = useCallback(
+    (row: HTMLDivElement | null) => scrollActiveIntoRow(row, activeTab),
+    [activeTab],
+  );
 
   useEffect(() => {
     if (shouldOpenEditFromUrl) {
-      // Drop `?edit=1` (keep any `tab` param) so a refresh after closing
-      // the wizard does not keep reopening it. Made while mounting, so it
-      // waits for the router's history integration (`afterPaint`).
+      // Drop `?edit=1` so a refresh does not reopen the wizard (after paint).
       writeUrlState((params) => params.delete("edit"), { afterPaint: true });
     }
   }, [shouldOpenEditFromUrl]);
 
   const onTabChange = useCallback((next: string) => {
-    // The tab is deep-linkable and survives a reload; a shallow in-place
-    // write keeps the viewport pinned to the tab strip on switch.
+    // Deep-linkable; a shallow write keeps the viewport on the tab strip.
     writeUrlState((params) => params.set("tab", next));
   }, []);
 
@@ -431,8 +433,7 @@ export function MedicationDetailTabs({
         return null;
       }
     },
-    // v1.16.11 — no compliance read for an as-needed medication (the
-    // section is hidden; there is no rate to fetch).
+    // No compliance read for an as-needed medication: no rate to show.
     enabled: activeTab === "overview" && !asNeeded,
     staleTime: 30_000,
   });
@@ -477,9 +478,9 @@ export function MedicationDetailTabs({
         data-slot="medication-detail-tabs"
       >
         <TabsList
-          // Six tabs do not fit a phone in one row; they sit in a three-up
-          // grid there instead of scrolling a label off the edge.
-          className="w-full justify-start max-sm:grid! max-sm:h-auto! max-sm:grid-cols-3"
+          // One row on a phone, scrolling sideways when a locale runs long.
+          ref={scrollActiveTabIntoRow}
+          className="scroll-touch w-full max-w-full justify-start overflow-x-auto"
           aria-label={t("medications.detail.shell.tablistLabel")}
         >
           {availableTabs.map((slug) => (
@@ -487,16 +488,15 @@ export function MedicationDetailTabs({
               key={slug}
               value={slug}
               data-slot={`medication-tab-${slug}`}
+              className="max-sm:flex-none max-sm:text-xs"
             >
               {t(TAB_LABEL_KEYS[slug])}
             </TabsTrigger>
           ))}
         </TabsList>
 
-        {/* ÜBERSICHT — the status landing surface: next due dose,
-            reminder state and supply runway (each with a jump link into
-            its owner tab), then the compliance readout. All values come
-            from data the page already holds — no new endpoints. */}
+        {/* ÜBERSICHT — next due dose, reminder state and supply runway
+            (each with a jump link into its owner tab), then compliance. */}
         <TabsContent value="overview" className="space-y-6 pt-2">
           <OverviewStatusSection
             medication={medication}

@@ -55,12 +55,14 @@
         {
           "index": 3,
           "status": "updated",
-          "id": "<id:1>"
+          "id": "<id:1>",
+          "syncVersion": "<syncVersion>"
         },
         {
           "index": 4,
           "status": "inserted",
-          "id": "<id:2>"
+          "id": "<id:2>",
+          "syncVersion": "<syncVersion>"
         },
         {
           "index": 5,
@@ -75,27 +77,32 @@
         {
           "index": 7,
           "status": "inserted",
-          "id": "<id:3>"
+          "id": "<id:3>",
+          "syncVersion": "<syncVersion>"
         },
         {
           "index": 8,
           "status": "duplicate",
-          "id": "<id:4>"
+          "id": "<id:4>",
+          "syncVersion": "<syncVersion>"
         },
         {
           "index": 9,
           "status": "inserted",
-          "id": "<id:5>"
+          "id": "<id:5>",
+          "syncVersion": "<syncVersion>"
         },
         {
           "index": 10,
           "status": "inserted",
-          "id": "<id:6>"
+          "id": "<id:6>",
+          "syncVersion": "<syncVersion>"
         },
         {
           "index": 11,
           "status": "duplicate",
-          "id": "<id:6>"
+          "id": "<id:6>",
+          "syncVersion": "<syncVersion>"
         },
         {
           "index": 12,
@@ -105,17 +112,20 @@
         {
           "index": 13,
           "status": "inserted",
-          "id": "<id:7>"
+          "id": "<id:7>",
+          "syncVersion": "<syncVersion>"
         },
         {
           "index": 14,
           "status": "duplicate",
-          "id": "<id:7>"
+          "id": "<id:7>",
+          "syncVersion": "<syncVersion>"
         },
         {
           "index": 15,
           "status": "inserted",
-          "id": "<id:8>"
+          "id": "<id:8>",
+          "syncVersion": "<syncVersion>"
         },
         {
           "index": 16,
@@ -125,7 +135,8 @@
         {
           "index": 17,
           "status": "updated",
-          "id": "<id:6>"
+          "id": "<id:6>",
+          "syncVersion": "<syncVersion>"
         }
       ]
     },

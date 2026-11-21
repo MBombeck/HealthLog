@@ -62,7 +62,39 @@ function render(
 // v1.16.8 — the cards read ONE batched summary key and `select` their
 // own row, so seeding merges into the shared array instead of writing a
 // per-medication key.
-function seedCompliance(client: QueryClient, medId: string) {
+/** The server's resolved open dose: due now (the frozen clock, 12:00Z). */
+const DOSE = {
+  status: "on_time_window",
+  targetAt: "2026-06-02T12:00:00.000Z",
+  state: "due",
+  takenLate: false,
+  dueAt: "2026-06-02T11:00:00.000Z",
+  overdueSince: "2026-06-02T13:00:00.000Z",
+  missedAfter: "2026-06-02T16:00:00.000Z",
+  lateTakeCounts: true,
+};
+const DUE_DISPLAY = {
+  shortDays: 7,
+  longDays: 30,
+  expectedShort: 7,
+  expectedLong: 30,
+  minStableDoses: 4,
+  short: { rate: 100, taken: 7, expected: 7, missed: 0, streak: 7 },
+  long: { rate: 100, taken: 30, expected: 30, missed: 0 },
+  currentCycle: {
+    state: "due",
+    nextDueAt: DOSE.targetAt,
+    graceUntil: DOSE.overdueSince,
+    hasClosedCycles: true,
+  },
+  currentDose: DOSE,
+};
+
+function seedCompliance(
+  client: QueryClient,
+  medId: string,
+  complianceDisplay?: typeof DUE_DISPLAY,
+) {
   const key = ["medications", "compliance-summary"];
   const existing =
     (client.getQueryData(key) as Array<{ medicationId: string }>) ?? [];
@@ -72,6 +104,7 @@ function seedCompliance(client: QueryClient, medId: string) {
       medicationId: medId,
       compliance7: { rate: 90, streak: 0, totalExpected: 7, taken: 6 },
       compliance30: { rate: 88 },
+      ...(complianceDisplay && { applicable: true, complianceDisplay }),
     },
   ]);
 }
@@ -242,10 +275,10 @@ describe("medication card symmetry — Ramipril vs Mounjaro", () => {
     expect(mounjaroHtml).not.toContain("GLP-1 injection");
   });
 
-  it("both cards render the take-now pill when inside the current schedule window", () => {
+  it("both cards render the take-now pill for the server's due dose", () => {
     const client = makeClient();
-    seedCompliance(client, ramipril.id);
-    seedCompliance(client, mounjaro.id);
+    seedCompliance(client, ramipril.id, DUE_DISPLAY);
+    seedCompliance(client, mounjaro.id, DUE_DISPLAY);
     seedGlp1Details(client, mounjaro.id);
 
     const ramiprilHtml = render(

@@ -31,11 +31,13 @@ import {
   OverdueSlotValue,
 } from "@/components/medications/dose-state-label";
 import { useWeekdayLabel } from "@/components/medications/card-parts/medication-next-last-slot";
-import { resolveDisplayedSlotInstant } from "@/components/medications/card-parts/displayed-slot-instant";
 import { estimateRunwayDays } from "@/lib/medications/supply-runway";
 import { useMedicationIntake } from "@/components/medications/use-medication-intake";
-import { reduceCurrentWindowStatus } from "@/lib/medications/window-status";
-import { cardWindowPill } from "@/lib/medications/dose-state/pill";
+import {
+  cardDisplayedSlot,
+  cardDoseStatus,
+  cardWindowPill,
+} from "@/lib/medications/dose-state/pill";
 import { resolveNextDueDayLabel } from "@/lib/medications/next-due-day-label";
 import { formatTime } from "@/lib/format";
 import { formatTimeWindowRange } from "@/lib/time-window-format";
@@ -221,18 +223,14 @@ export function MedicationTable({
   const [sort, setSort] = useState<MedicationTableSort | null>(initialSort);
   const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
 
-  // Same reminder-thresholds source as the cards so the status pill
-  // tiers identically on both presentations. The read also carries the
-  // per-user low-stock runway threshold (v1.16.11) so the stock cell's
-  // warn tier fires on the SAME days-of-runway predicate as the
+  // The per-user low-stock runway threshold (v1.16.11), so the stock
+  // cell's warn tier fires on the SAME days-of-runway predicate as the
   // low-stock notification, not a legacy dose count.
   const { data: thresholds } = useQuery({
     queryKey: queryKeys.settingsReminderThresholds(),
     queryFn: async () => {
       try {
         return await apiGet<{
-          lateMinutes: number;
-          missedMinutes: number;
           lowStockRunwayDays: number | null;
         }>("/api/settings/reminder-thresholds");
       } catch {
@@ -274,8 +272,6 @@ export function MedicationTable({
     locale,
   );
 
-  const lateMinutes = thresholds?.lateMinutes ?? 120;
-  const missedMinutes = thresholds?.missedMinutes ?? 240;
   // Per-user low-stock runway threshold: explicit `null` = the alert is
   // OFF (no amber tier); a missing / failed read falls back to the
   // server default (7 days), mirroring `resolveLowStockRunwayDays`.
@@ -385,8 +381,6 @@ export function MedicationTable({
               key={med.id}
               medication={med}
               userTz={userTz}
-              lateMinutes={lateMinutes}
-              missedMinutes={missedMinutes}
               lowStockRunwayDays={lowStockRunwayDays}
               highlighted={highlightId === med.id}
             />
@@ -396,8 +390,6 @@ export function MedicationTable({
               key={med.id}
               medication={med}
               userTz={userTz}
-              lateMinutes={lateMinutes}
-              missedMinutes={missedMinutes}
               lowStockRunwayDays={lowStockRunwayDays}
               highlighted={highlightId === med.id}
             />
@@ -411,8 +403,6 @@ export function MedicationTable({
 interface MedicationTableRowItemProps {
   medication: TableMedication;
   userTz: string;
-  lateMinutes: number;
-  missedMinutes: number;
   /** Per-user low-stock runway threshold in days; null = alert off. */
   lowStockRunwayDays: number | null;
   /** v1.29.x — the deep-link highlight target (see `MedicationTableProps`). */
@@ -422,8 +412,6 @@ interface MedicationTableRowItemProps {
 function MedicationTableRowItem({
   medication,
   userTz,
-  lateMinutes,
-  missedMinutes,
   lowStockRunwayDays,
   highlighted = false,
 }: MedicationTableRowItemProps) {
@@ -449,7 +437,6 @@ function MedicationTableRowItem({
   const longDays = display?.longDays ?? 30;
   const rateShort = display?.short.rate ?? compliance?.compliance7?.rate ?? 0;
   const rateLong = display?.long.rate ?? compliance?.compliance30?.rate ?? 0;
-  const doseStatus = display?.currentDose.status ?? "upcoming";
 
   const sortedSchedules = [...medication.schedules].sort(
     (a, b) =>
@@ -462,38 +449,18 @@ function MedicationTableRowItem({
     : NaN;
   const nextAt = Number.isFinite(nextDueMs) ? nextDueMs : undefined;
 
-  // The cards' band reading, the pill's fallback while compliance loads.
-  const currentWindowStatus = reduceCurrentWindowStatus({
-    schedules: sortedSchedules,
+  // The resolved open dose (`currentDose`), as on the cards: pill, status
+  // and the slot the buttons record (THIS dose, not "now" snapped).
+  const currentDose = display?.currentDose;
+  const doseStatus = cardDoseStatus(currentDose, now);
+  const pill = cardWindowPill(currentDose, now, userTz);
+  const displayedSlot = cardDisplayedSlot(
+    currentDose,
+    medication.nextDueAt,
     now,
-    lateMinutes,
-    missedMinutes,
-    active: medication.active,
-    lastTakenAt: medication.lastTakenAt,
-    todayEventCount: medication.todayEventCount ?? 0,
-    tz: userTz,
-    nextDue:
-      medication.nextDueAt === undefined
-        ? undefined
-        : nextAt !== undefined
-          ? {
-              at: new Date(nextAt),
-              overdue: medication.nextDueOverdue === true,
-            }
-          : null,
-  });
+  );
 
-  // Same displayed-slot threading as the cards so the server records
-  // THIS dose rather than snapping "now" to the nearest slot.
-  const displayedSlot = resolveDisplayedSlotInstant({
-    currentWindowStatus,
-    nextDueAt: medication.nextDueAt,
-    now,
-    timeZone: userTz,
-  });
-
-  // Status cell in the card's precedence (last-dose context, escalation, then
-  // the resolved pill); the table keeps the taken-early pill the card hides.
+  // Status cell in the card's precedence: escalation, then the pill.
   const canAct = medication.active && medication.intakeActionable !== false;
   const escalation: "missed" | "overdue" | null =
     canAct && doseStatus === "missed"
@@ -502,34 +469,18 @@ function MedicationTableRowItem({
         ? "overdue"
         : null;
 
-  const pill = cardWindowPill(
-    display?.currentDose,
-    currentWindowStatus,
-    now,
-    userTz,
-    medication.nextDueAt,
+  const statusCell = escalation ? (
+    <DoseStateLabel state={escalation} emphasis className="text-sm" />
+  ) : pill ? (
+    <MedicationStatusPill
+      compact
+      status={pill.status}
+      windowStart={pill.windowStart}
+      windowEnd={pill.windowEnd}
+    />
+  ) : (
+    <span className="text-muted-foreground text-sm">–</span>
   );
-  const statusCell =
-    pill && pill.takenEarlyDaysAgo != null ? (
-      <MedicationStatusPill
-        compact
-        status={pill.status}
-        windowStart={pill.windowStart}
-        windowEnd={pill.windowEnd}
-        takenEarlyDaysAgo={pill.takenEarlyDaysAgo}
-      />
-    ) : escalation ? (
-      <DoseStateLabel state={escalation} emphasis className="text-sm" />
-    ) : pill ? (
-      <MedicationStatusPill
-        compact
-        status={pill.status}
-        windowStart={pill.windowStart}
-        windowEnd={pill.windowEnd}
-      />
-    ) : (
-      <span className="text-muted-foreground text-sm">–</span>
-    );
 
   // Next-intake cell — the card's value logic, compacted: overdue slot
   // in calm amber, in-window shows the matched take-window range, a
@@ -581,12 +532,12 @@ function MedicationTableRowItem({
   } else if (medication.active) {
     if (medication.nextDueOverdue && nextAt) {
       nextCell = <OverdueSlotValue at={nextAt} />;
-    } else if (currentWindowStatus.status === "in_window") {
+    } else if (pill?.status === "in_window") {
       nextCell = (
         <span>
           {formatTimeWindowRange(
-            currentWindowStatus.window!.start,
-            currentWindowStatus.window!.end,
+            pill.windowStart,
+            pill.windowEnd,
             locale,
             fmt.wallTime,
           )}

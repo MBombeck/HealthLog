@@ -671,9 +671,10 @@ describe("medication-table — shared mutation/status sources (source guard)", (
     expect(source).toContain("useMedicationComplianceSummary");
   });
 
-  it("gates the status pill on the server next-due exactly like the cards", () => {
-    expect(source).toContain("reduceCurrentWindowStatus");
-    expect(source).toContain("nextDue:");
-    expect(source).toContain("resolveDisplayedSlotInstant");
+  it("reads the server's resolved dose exactly like the cards, with no window math of its own", () => {
+    expect(source).toContain("cardWindowPill(currentDose");
+    expect(source).toContain("cardDoseStatus(currentDose");
+    expect(source).toContain("cardDisplayedSlot(");
+    expect(source).not.toContain("window-status");
   });
 });

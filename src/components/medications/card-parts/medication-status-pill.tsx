@@ -1,26 +1,14 @@
-import { CircleCheck } from "lucide-react";
-
 import { DoseStateLabel } from "@/components/medications/dose-state-label";
 
 import { formatTimeWindowRange } from "@/lib/time-window-format";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
-import type { MedicationWindowStatus } from "@/lib/medications/window-status";
+import type { MedicationWindowStatus } from "@/lib/medications/dose-state/pill";
 
 interface MedicationStatusPillProps {
   /** Non-null window status; the caller guards `status &&` before rendering. */
   status: Exclude<MedicationWindowStatus, null>;
   windowStart: string;
   windowEnd: string;
-  /**
-   * v1.16.9 — day-scale last-dose context. Non-null when a dose was
-   * already taken earlier in the cadence period (a weekly shot days
-   * before its slot day, or the previous slot served late); the pill
-   * then renders a calm factual "last dose {n} days ago" note instead
-   * of the take-now / overdue prompt — prompting a full take on the
-   * slot day would be a double-dose prompt. The value is the whole
-   * local days since that take.
-   */
-  takenEarlyDaysAgo?: number | null;
   /**
    * v1.16.10 — compact variant for the table view's Status column:
    * suppresses the trailing window-range span so the cell stays one
@@ -50,11 +38,10 @@ export function MedicationStatusPill({
   status,
   windowStart,
   windowEnd,
-  takenEarlyDaysAgo = null,
   compact = false,
   inline = false,
 }: MedicationStatusPillProps) {
-  const { t, locale } = useTranslations();
+  const { locale } = useTranslations();
   const fmt = useFormatters();
   const Root = inline ? "span" : "p";
 
@@ -65,31 +52,6 @@ export function MedicationStatusPill({
   const suffixClass = inline
     ? "text-muted-foreground"
     : "text-muted-foreground hidden sm:inline";
-
-  if (takenEarlyDaysAgo != null) {
-    return (
-      <Root className="text-sm">
-        <span className="text-muted-foreground inline-flex items-center gap-1 font-medium">
-          <CircleCheck className="size-3.5 shrink-0" aria-hidden="true" />
-          {takenEarlyDaysAgo === 1
-            ? t("medications.lastDoseYesterday")
-            : t("medications.lastDoseDaysAgo", { count: takenEarlyDaysAgo })}
-        </span>
-        {!compact && (
-          <span className={suffixClass}>
-            {" "}
-            —{" "}
-            {formatTimeWindowRange(
-              windowStart,
-              windowEnd,
-              locale,
-              fmt.wallTime,
-            )}
-          </span>
-        )}
-      </Root>
-    );
-  }
 
   return (
     <Root className="text-sm">

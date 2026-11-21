@@ -316,6 +316,20 @@ interface CapturePickerProps {
   defaultDate?: string;
 }
 
+/**
+ * The line under a capture form's title. The intake sheet says what it
+ * records, as the medications page's own "Log intake" sheet does; the other
+ * forms speak for themselves.
+ */
+export function captureFormDescription(
+  kind: CaptureKind | null,
+  t: (key: string) => string,
+): string | undefined {
+  return kind === "medication"
+    ? t("medications.intakeForm.description")
+    : undefined;
+}
+
 export function CapturePicker({
   open,
   onOpenChange,
@@ -413,6 +427,7 @@ export function CapturePicker({
         onOpenChange={handleFormOpenChange}
         dirty={sheetBodyHasUnsavedInput}
         title={formTitle}
+        description={captureFormDescription(openKind, t)}
         footer={<div ref={setFooterEl} className="flex w-full" />}
       >
         {openKind === "measurement" && (

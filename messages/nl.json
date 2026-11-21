@@ -1565,8 +1565,6 @@
     },
     "withoutNotification": "Zonder melding",
     "pausedSince": "Gepauzeerd sinds",
-    "lastDoseYesterday": "Laatste dosis gisteren",
-    "lastDoseDaysAgo": "Laatste dosis {count} dagen geleden",
     "complianceWindow": "Therapietrouw ({days} dagen)",
     "complianceUnavailable": "Therapietrouw kon niet worden geladen",
     "complianceNotApplicable": "Therapietrouw niet van toepassing",
@@ -2647,7 +2645,8 @@
         "snooze": "Later herinneren ({minutes} min)",
         "undo": "Ongedaan maken",
         "takeFor": "{name} innemen",
-        "skipFor": "{name} overslaan"
+        "skipFor": "{name} overslaan",
+        "takeSlot": "Innemen ({time})"
       },
       "state": {
         "pending": "Gepland",
@@ -2661,7 +2660,8 @@
         "snoozedUntil": "Herinnering uitgesteld tot {time}"
       },
       "snoozedToast": "{name}: herinnering om {time}",
-      "snoozeFailed": "{name} kon niet worden uitgesteld. Probeer het opnieuw"
+      "snoozeFailed": "{name} kon niet worden uitgesteld. Probeer het opnieuw",
+      "earlyHint": "Vroeg: deze dosis is vanaf {time} aan de beurt."
     },
     "intakeForm": {
       "title": "Inname vastleggen",

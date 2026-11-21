@@ -1565,8 +1565,6 @@
     },
     "withoutNotification": "Sans notification",
     "pausedSince": "En pause depuis",
-    "lastDoseYesterday": "Dernière dose hier",
-    "lastDoseDaysAgo": "Dernière dose il y a {count} jours",
     "complianceWindow": "Observance {days} jours",
     "complianceUnavailable": "Impossible de charger l'observance",
     "complianceNotApplicable": "Observance non applicable",
@@ -2647,7 +2645,8 @@
         "snooze": "Me le rappeler plus tard ({minutes} min)",
         "undo": "Annuler",
         "takeFor": "Prendre {name}",
-        "skipFor": "Sauter {name}"
+        "skipFor": "Sauter {name}",
+        "takeSlot": "Prendre ({time})"
       },
       "state": {
         "pending": "À venir",
@@ -2661,7 +2660,8 @@
         "snoozedUntil": "Rappel reporté à {time}"
       },
       "snoozedToast": "{name} : rappel à {time}",
-      "snoozeFailed": "Impossible de reporter {name}. Réessaie"
+      "snoozeFailed": "Impossible de reporter {name}. Réessaie",
+      "earlyHint": "En avance : cette dose est prévue à partir de {time}."
     },
     "intakeForm": {
       "title": "Saisir une prise",

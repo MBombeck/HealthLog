@@ -1012,7 +1012,7 @@ export const complianceDisplay = z
         targetAt: isoDateTime()
           .nullable()
           .describe(
-            "Target instant of the open dose. Null when no dose is open.",
+            "Target instant of the open dose: the earliest slot still due or overdue, before any upcoming one, so a dose whose clock time has passed stays the current dose until it is recorded or missed. Null when no dose is open.",
           ),
         state: z
           .enum(["upcoming", "due", "overdue", "taken", "skipped", "missed"])
@@ -1676,6 +1676,12 @@ export const todayIntakeEntry = z
       "The slot the dose belongs to — the event's `scheduledFor`, renamed on this wire only.",
     ),
     takenAt: isoDateTime().nullable(),
+    syncVersion: z
+      .number()
+      .int()
+      .describe(
+        "The row's current version. Send it as `expectedSyncVersion` on `DELETE /api/medications/{id}/intake/{eventId}` to undo this dose only if nothing changed it since; a changed row answers 409 `medications.intake.changedSinceSeen`.",
+      ),
     source: z
       .enum(["WEB", "API", "REMINDER", "IMPORT", "APPLE_HEALTH"])
       .describe(

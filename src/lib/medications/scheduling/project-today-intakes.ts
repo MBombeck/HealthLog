@@ -38,6 +38,7 @@ import {
   isBeforeLiveEra,
   LIVE_ERA_REVISION_ARGS,
   liveEraStart,
+  predatesMedication,
 } from "@/lib/medications/scheduling/live-era";
 
 export interface ProjectTodayIntakesResult {
@@ -165,6 +166,15 @@ export async function projectTodayIntakesAndRecompute(input: {
         if (!Number.isFinite(h) || !Number.isFinite(m)) continue;
         const scheduledFor = localHmAsUtc(now, userTz, h, m);
         if (isBeforeLiveEra(scheduledFor, eraStart)) continue;
+        if (
+          predatesMedication(
+            scheduledFor,
+            med,
+            schedule.rollingIntervalDays !== null,
+          )
+        ) {
+          continue;
+        }
         // #1280 — a course ended with "End course" expects nothing from
         // that instant on; the schedule still emits its earlier slots today.
         if (med.endedAt && scheduledFor >= med.endedAt) continue;

@@ -593,6 +593,55 @@ describe("sw.js — offline page", () => {
   });
 });
 
+describe("sw.js — offline page follows the chosen theme", () => {
+  /** Run the offline page's head script against a stored theme choice. */
+  async function themeFor(
+    stored: string | null,
+    deviceDark = false,
+  ): Promise<{ theme: string | null; themeColor: string | null }> {
+    const harness = bootServiceWorker();
+    const html = await (await dispatchNavigationFetch(harness, "/")).text();
+    const script = /<head>.*?<script>(.*?)<\/script>/.exec(html)?.[1];
+    expect(script).toBeTruthy();
+    const attrs: Record<string, string> = {};
+    const meta = { content: "#282a36" } as { content: string };
+    const sandbox = {
+      localStorage: { getItem: () => stored },
+      matchMedia: () => ({ matches: deviceDark }),
+      document: {
+        documentElement: {
+          setAttribute: (k: string, v: string) => (attrs[k] = v),
+        },
+        querySelector: () => ({
+          setAttribute: (_: string, v: string) => (meta.content = v),
+        }),
+      },
+    };
+    vm.runInNewContext(script!, sandbox);
+    return { theme: attrs["data-theme"] ?? null, themeColor: meta.content };
+  }
+
+  it("reads the app's stored choice, with the app's own rule", async () => {
+    expect(await themeFor("light")).toEqual({
+      theme: "light",
+      themeColor: "#f3f2f5",
+    });
+    expect((await themeFor("dark")).theme).toBe("dark");
+    expect((await themeFor("system", false)).theme).toBe("light");
+    expect((await themeFor("system", true)).theme).toBe("dark");
+    // Nothing stored: the app's default, dark.
+    expect((await themeFor(null)).theme).toBe("dark");
+  });
+
+  it("styles both choices over the device scheme", async () => {
+    const harness = bootServiceWorker();
+    const html = await (await dispatchNavigationFetch(harness, "/")).text();
+    expect(html).toContain(":root[data-theme=light]{--bg:#f3f2f5");
+    expect(html).toContain(":root[data-theme=dark]{--bg:#282a36");
+    expect(html.indexOf("<script>")).toBeLessThan(html.indexOf("<body>"));
+  });
+});
+
 describe("sw.js — networkFirst privacy gate", () => {
   it("does not cache a navigation response that carries Cache-Control: no-store", async () => {
     const harness = bootServiceWorker();

@@ -11,7 +11,8 @@
         {
           "index": 0,
           "status": "inserted",
-          "id": "<id:1>"
+          "id": "<id:1>",
+          "syncVersion": "<syncVersion>"
         }
       ]
     },
