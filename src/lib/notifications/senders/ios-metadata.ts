@@ -33,6 +33,9 @@ const IOS_METADATA_ALLOWLIST = new Set([
   // foreground / handled notification can POST the completion directly
   // instead of routing through the capture deep link.
   "reminderId",
+  // SEIZURE_CLUSTER names the seizure that formed the cluster, so the app
+  // can open it; an opaque id, and dropped for a managed delivery.
+  "eventId",
 ]);
 
 export function pickIosMetadata(
