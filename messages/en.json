@@ -1598,6 +1598,7 @@
     "intakeToastFailed": "Could not record {name}. Try again",
     "intakeUndo": "Undo",
     "intakeUndone": "Entry reverted",
+    "intakeAlreadyTaken": "{name} was already recorded as taken. Nothing new was saved.",
     "intakeUndoFailed": "Could not undo. Open the history to fix it",
     "glp1LastInjection": "{label}",
     "glp1NextInjectionDays": "{label} (in {days} days)",
@@ -9563,6 +9564,13 @@
     "eventSecurityAlertDesc": "Sent when your account is used on a device or from a place we have not seen before.",
     "eventSharedRecordIntake": "Someone you shared your record with marks a dose",
     "eventSharedRecordIntakeDesc": "Only sent when another person does it, never for your own entries.",
+    "eventMedicationIntakeRecorded": "Confirm doses taken on other devices",
+    "eventMedicationIntakeRecordedDesc": "A quiet notice on your iPhone when a dose is recorded elsewhere (web, Telegram, a connected device), so a reminder already on screen is withdrawn. On by default when your phone keeps its own reminders.",
+    "intakeRecorded": {
+      "title": "Dose recorded",
+      "bodyTaken": "A dose was recorded as taken on another device.",
+      "bodySkipped": "A dose was recorded as skipped on another device."
+    },
     "security": {
       "newDeviceTitle": "New sign-in to your account",
       "newDeviceBody": "A new sign-in from {device} ({location}). If this wasn't you, change your password immediately.",
@@ -9809,10 +9817,11 @@
     "phaseYellowMessage": "🟡 Due soon:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n{minutes} min left.",
     "phaseOrangeTitle": "🟠 Overdue: {medName}",
     "phaseOrangeMessage": "🟠 Overdue:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nOverdue by {minutes} min.",
-    "phaseRedTitle": "🔴 Missed: {medName}",
-    "phaseRedMessage": "🔴 Missed:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nMarked as missed.",
+    "phaseRedTitle": "🔴 Not taken: {medName}",
+    "phaseRedMessage": "🔴 Not taken yet:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nIt counts as missed unless you record it. If you take it now, it still counts, as a late dose.",
     "buttonTaken": "Taken",
-    "buttonConfirm": "✓ Confirm",
+    "buttonConfirm": "Leave as missed",
+    "buttonTakenLate": "✅ Taken (late)",
     "buttonSnoozeOneHour": "🕐 1h",
     "buttonSnoozeThreeHours": "🕐 3h",
     "buttonSkip": "⏭ Skip"

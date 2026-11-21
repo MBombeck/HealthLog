@@ -104,6 +104,7 @@ describe("medications — documented shapes match the handlers", () => {
       autoRecorded: false,
       attributionSource: "AUTO",
       source: "APPLE_HEALTH",
+      takenVia: "APPLE_HEALTH",
       idempotencyKey: null,
       createdAt: "2026-07-19T08:05:00.000Z",
       updatedAt: "2026-07-19T08:05:00.000Z",

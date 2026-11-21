@@ -140,7 +140,7 @@ describe("runRecordIntake — shared C1 failure toast + C2 Undo", () => {
 
     // Firing the action calls undoIntake with the just-created event id.
     action?.onClick({} as never);
-    expect(undoIntake).toHaveBeenCalledWith("evt-99");
+    expect(undoIntake).toHaveBeenCalledWith("evt-99", undefined);
 
     // The post-success follow-up receives the event id + skipped flag.
     expect(onRecorded).toHaveBeenCalledWith("evt-99", false);

@@ -158,7 +158,7 @@ export async function buildMedsTodayBlock(
   // pending rows. Idempotent — `skipDuplicates` + the
   // `(userId, medicationId, scheduledFor, source)` unique index make a
   // concurrent intake-route hit safe.
-  await projectTodayIntakesAndRecompute({
+  const { slotKeys } = await projectTodayIntakesAndRecompute({
     userId,
     userTz,
     todayStart,
@@ -191,7 +191,12 @@ export async function buildMedsTodayBlock(
           scheduledFor: { gte: todayStart, lt: todayEndExclusive },
           ...SCHEDULED_DOSE_TODAY_WHERE,
         },
-        select: { takenAt: true, skipped: true, scheduledFor: true },
+        select: {
+          medicationId: true,
+          takenAt: true,
+          skipped: true,
+          scheduledFor: true,
+        },
       }),
       prisma.medicationIntakeEvent.groupBy({
         by: ["medicationId"],
@@ -229,10 +234,21 @@ export async function buildMedsTodayBlock(
       }),
     ]);
 
-  const takenToday = todayEvents.filter(
+  // The day's scheduled doses only: an ad-hoc take (stored on its own
+  // instant, `scheduledFor = takenAt`, as an extra dose or one before its
+  // slot's window) is not one of them, so "1 of 2" for a once-daily
+  // medication can no longer happen. A row on a slot of today's schedule
+  // counts whatever its stored instants say.
+  const slotEvents = todayEvents.filter(
+    (e) =>
+      slotKeys.has(`${e.medicationId}|${e.scheduledFor.toISOString()}`) ||
+      e.takenAt === null ||
+      e.takenAt.getTime() !== e.scheduledFor.getTime(),
+  );
+  const takenToday = slotEvents.filter(
     (e) => e.takenAt !== null && !e.skipped,
   ).length;
-  const skippedToday = todayEvents.filter((e) => e.skipped).length;
+  const skippedToday = slotEvents.filter((e) => e.skipped).length;
 
   const lastTakenAtByMedId = new Map<string, Date | null>(
     latestIntakes.map((entry) => [entry.medicationId, entry._max.takenAt]),
@@ -299,10 +315,10 @@ export async function buildMedsTodayBlock(
 
   return {
     activeCount: medications.length,
-    scheduledToday: todayEvents.length,
+    scheduledToday: slotEvents.length,
     takenToday,
     skippedToday,
-    scheduledTodayAt: todayEvents
+    scheduledTodayAt: slotEvents
       .map((e) => e.scheduledFor.toISOString())
       .sort(),
     nextDueAt: next?.dueAt ?? null,

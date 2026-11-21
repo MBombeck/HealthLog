@@ -1598,6 +1598,7 @@
     "intakeToastFailed": "{name} kon niet worden geregistreerd. Probeer het opnieuw",
     "intakeUndo": "Ongedaan maken",
     "intakeUndone": "Registratie teruggedraaid",
+    "intakeAlreadyTaken": "{name} was al als ingenomen vastgelegd. Er is niets nieuws opgeslagen.",
     "intakeUndoFailed": "Ongedaan maken mislukt. Open de geschiedenis om het te corrigeren",
     "glp1LastInjection": "{label}",
     "glp1NextInjectionDays": "{label} (over {days} dagen)",
@@ -9563,6 +9564,13 @@
     "eventSecurityAlertDesc": "Wordt verstuurd als je account wordt gebruikt op een apparaat of vanaf een plek die we nog niet eerder hebben gezien.",
     "eventSharedRecordIntake": "Iemand met wie je je dossier deelt, registreert een dosis",
     "eventSharedRecordIntakeDesc": "Alleen als iemand anders dat doet, nooit voor je eigen registraties.",
+    "eventMedicationIntakeRecorded": "Doses van andere apparaten bevestigen",
+    "eventMedicationIntakeRecordedDesc": "Een rustige melding op je iPhone als een dosis elders wordt vastgelegd (web, Telegram, een gekoppeld apparaat), zodat een getoonde herinnering verdwijnt. Standaard aan als je telefoon eigen herinneringen bijhoudt.",
+    "intakeRecorded": {
+      "title": "Dosis vastgelegd",
+      "bodyTaken": "Een dosis is op een ander apparaat als ingenomen vastgelegd.",
+      "bodySkipped": "Een dosis is op een ander apparaat als overgeslagen vastgelegd."
+    },
     "security": {
       "newDeviceTitle": "Nieuwe inlog op je account",
       "newDeviceBody": "Nieuwe inlog vanaf {device} ({location}). Was jij dit niet, wijzig dan direct je wachtwoord.",
@@ -9809,10 +9817,11 @@
     "phaseYellowMessage": "🟡 Bijna tijd:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nNog {minutes} min.",
     "phaseOrangeTitle": "🟠 Te laat: {medName}",
     "phaseOrangeMessage": "🟠 Te laat:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n{minutes} min te laat.",
-    "phaseRedTitle": "🔴 Gemist: {medName}",
-    "phaseRedMessage": "🔴 Gemist:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nGemarkeerd als gemist.",
+    "phaseRedTitle": "🔴 Niet ingenomen: {medName}",
+    "phaseRedMessage": "🔴 Nog niet ingenomen:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nTelt als gemist zolang je niets vastlegt. Neem je hem nu, dan telt hij nog, als late dosis.",
     "buttonTaken": "Ingenomen",
-    "buttonConfirm": "✓ Bevestigen",
+    "buttonConfirm": "Als gemist laten",
+    "buttonTakenLate": "✅ Ingenomen (te laat)",
     "buttonSnoozeOneHour": "🕐 1 u",
     "buttonSnoozeThreeHours": "🕐 3 u",
     "buttonSkip": "⏭ Overslaan"

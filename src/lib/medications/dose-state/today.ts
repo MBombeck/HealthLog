@@ -1,0 +1,93 @@
+/**
+ * The resolved state of each intake row of a window, by row id, read from
+ * every affected medication's dose ledger. A row the ledger does not place on
+ * a slot (an ad-hoc take, a placeholder outside every band) gets no entry.
+ */
+import { prisma } from "@/lib/db";
+import { DOSE_LEDGER_MEDICATION_INCLUDE, loadDoseLedger } from "./ledger";
+import {
+  resolveLedgerSlot,
+  type DoseTakenVia,
+  type ResolvedDose,
+} from "./resolve";
+
+/** How far back the ledger reads so a rolling cadence finds its anchor. */
+const LOOKBACK_MS = 2 * 24 * 60 * 60 * 1000;
+
+export async function resolveDosesByRow(input: {
+  userId: string;
+  userTz: string;
+  medicationIds: readonly string[];
+  /** The rows' takes, for `takenVia` on the resolved state. */
+  takenViaByRow: ReadonlyMap<string, DoseTakenVia | null>;
+  from: Date;
+  to: Date;
+  now: Date;
+}): Promise<Map<string, ResolvedDose>> {
+  const out = new Map<string, ResolvedDose>();
+  const ids = [...new Set(input.medicationIds)];
+  if (ids.length === 0) return out;
+  const medications = await prisma.medication.findMany({
+    where: { id: { in: ids }, userId: input.userId },
+    include: DOSE_LEDGER_MEDICATION_INCLUDE,
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+  });
+  for (const medication of medications) {
+    const ledger = await loadDoseLedger({
+      medication,
+      userId: input.userId,
+      userTz: input.userTz,
+      from: new Date(input.from.getTime() - LOOKBACK_MS),
+      to: input.to,
+      now: input.now,
+    });
+    for (const row of ledger.rows) {
+      const id = row.intake?.id;
+      const resolved = resolveLedgerSlot(
+        row,
+        input.now,
+        id ? (input.takenViaByRow.get(id) ?? null) : null,
+      );
+      if (id && resolved) out.set(id, resolved);
+    }
+  }
+  return out;
+}
+
+/**
+ * The resolved state of each medication's dose at `at` (its next due dose),
+ * by medication id. A medication with no slot at that instant gets no entry.
+ */
+export async function resolveDosesAt(input: {
+  userId: string;
+  userTz: string;
+  at: ReadonlyMap<string, Date>;
+  now: Date;
+}): Promise<Map<string, ResolvedDose>> {
+  const out = new Map<string, ResolvedDose>();
+  const ids = [...input.at.keys()];
+  if (ids.length === 0) return out;
+  const medications = await prisma.medication.findMany({
+    where: { id: { in: ids }, userId: input.userId },
+    include: DOSE_LEDGER_MEDICATION_INCLUDE,
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+  });
+  for (const medication of medications) {
+    const at = input.at.get(medication.id);
+    if (!at) continue;
+    const ledger = await loadDoseLedger({
+      medication,
+      userId: input.userId,
+      userTz: input.userTz,
+      from: new Date(Math.min(at.getTime(), input.now.getTime()) - LOOKBACK_MS),
+      to: new Date(Math.max(at.getTime(), input.now.getTime())),
+      now: input.now,
+    });
+    const row = ledger.rows.find(
+      (r) => r.kind === "slot" && r.at.getTime() === at.getTime(),
+    );
+    const resolved = row ? resolveLedgerSlot(row, input.now) : null;
+    if (resolved) out.set(medication.id, resolved);
+  }
+  return out;
+}

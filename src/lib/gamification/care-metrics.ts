@@ -51,10 +51,12 @@ export function getMissFreeDayKeys(
   for (const event of events) {
     const dayKey = userDayKey(event.scheduledFor, tz);
     const bucket = byDay.get(dayKey) ?? { resolved: 0, missed: 0 };
-    if (event.autoMissed) {
-      bucket.missed += 1;
-    } else if (event.takenAt !== null || event.skipped) {
+    // A recorded outcome answers the dose even if the auto-miss stamp is
+    // still on the row; only an unanswered auto-missed dose is a miss.
+    if (event.takenAt !== null || event.skipped) {
       bucket.resolved += 1;
+    } else if (event.autoMissed) {
+      bucket.missed += 1;
     }
     byDay.set(dayKey, bucket);
   }

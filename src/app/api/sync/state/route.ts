@@ -19,6 +19,8 @@
  *     measurements: { lastUpdatedAt, liveCount, tombstonedCount },
  *     mood:         { lastUpdatedAt, liveCount, tombstonedCount },
  *     intakes:      { lastUpdatedAt, liveCount, tombstonedCount },
+ *     medications:  { lastUpdatedAt },  — newest medication-row write
+ *                                         (snooze, pause, schedule)
  *     sync:         { incrementalWindowDays, tombstoneRetentionDays }
  *   }
  *
@@ -66,6 +68,7 @@ export const GET = apiHandler(async (_request: NextRequest) => {
     intakeLive,
     intakeTomb,
     currentUser,
+    medicationLatest,
   ] = await Promise.all([
     prisma.measurement.findFirst({
       where: { userId: user.id, deletedAt: null },
@@ -97,6 +100,11 @@ export const GET = apiHandler(async (_request: NextRequest) => {
     prisma.user.findUnique({
       where: { id: user.id },
       select: { lastSyncedAt: true, timezone: true },
+    }),
+    prisma.medication.findFirst({
+      where: { userId: user.id },
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+      select: { updatedAt: true },
     }),
   ]);
 
@@ -142,6 +150,12 @@ export const GET = apiHandler(async (_request: NextRequest) => {
       lastUpdatedAt: intakeLatest?.updatedAt?.toISOString() ?? null,
       liveCount: intakeLive,
       tombstonedCount: intakeTomb,
+    },
+    // A snooze, a pause or a schedule change moves what is due without
+    // touching an intake row. Each writes the medication row, so its
+    // newest `updatedAt` is the second half of "is my dose list stale".
+    medications: {
+      lastUpdatedAt: medicationLatest?.updatedAt?.toISOString() ?? null,
     },
     // v1.7.0 — the sync window iOS should derive its incremental-delta
     // horizon from, rather than hardcoding a constant. `incrementalWindowDays`

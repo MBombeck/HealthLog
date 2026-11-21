@@ -1598,6 +1598,7 @@
     "intakeToastFailed": "No se pudo registrar {name}; inténtalo de nuevo",
     "intakeUndo": "Deshacer",
     "intakeUndone": "Entrada revertida",
+    "intakeAlreadyTaken": "{name} ya estaba registrado como tomado. No se guardó nada nuevo.",
     "intakeUndoFailed": "No se pudo deshacer; corrígelo en el historial",
     "glp1LastInjection": "{label}",
     "glp1NextInjectionDays": "{label} (en {days} días)",
@@ -9563,6 +9564,13 @@
     "eventSecurityAlertDesc": "Se envía cuando se usa tu cuenta en un dispositivo o desde un lugar desconocidos.",
     "eventSharedRecordIntake": "Alguien con acceso marca una dosis",
     "eventSharedRecordIntakeDesc": "Solo se envía cuando lo hace otra persona, nunca con tus propias entradas.",
+    "eventMedicationIntakeRecorded": "Confirmar dosis tomadas en otros dispositivos",
+    "eventMedicationIntakeRecordedDesc": "Un aviso discreto en el iPhone cuando se registra una dosis en otro lugar (web, Telegram, un dispositivo conectado), para retirar un recordatorio ya visible. Activado por defecto si el teléfono gestiona sus propios recordatorios.",
+    "intakeRecorded": {
+      "title": "Dosis registrada",
+      "bodyTaken": "Se registró una dosis como tomada en otro dispositivo.",
+      "bodySkipped": "Se registró una dosis como omitida en otro dispositivo."
+    },
     "security": {
       "newDeviceTitle": "Nuevo inicio de sesión en tu cuenta",
       "newDeviceBody": "Un nuevo inicio de sesión desde {device} ({location}). Si no fuiste tú, cambia tu contraseña de inmediato.",
@@ -9809,10 +9817,11 @@
     "phaseYellowMessage": "🟡 Pronto:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nQuedan {minutes} min.",
     "phaseOrangeTitle": "🟠 Atrasado: {medName}",
     "phaseOrangeMessage": "🟠 Overdue:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nOverdue by {minutes} Mín.",
-    "phaseRedTitle": "🔴 Omitido: {medName}",
-    "phaseRedMessage": "🔴 Omitido:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nMarcado como omitido.",
+    "phaseRedTitle": "🔴 No tomado: {medName}",
+    "phaseRedMessage": "🔴 Aún no tomado:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nCuenta como omitido mientras no lo registres. Si lo tomas ahora, sigue contando, como dosis tardía.",
     "buttonTaken": "Tomado",
-    "buttonConfirm": "✓ Confirmar",
+    "buttonConfirm": "Dejar como omitida",
+    "buttonTakenLate": "✅ Tomado (tarde)",
     "buttonSnoozeOneHour": "🕐 1h",
     "buttonSnoozeThreeHours": "🕐 3h",
     "buttonSkip": "⏭ Omitir"

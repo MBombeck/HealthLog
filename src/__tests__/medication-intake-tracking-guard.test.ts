@@ -83,6 +83,8 @@ const INTAKE_MAY_SEE_EVERY_ROW: Record<string, string> = {
   "lib/medications/intake-bulk/ingest.ts": "writes recorded doses",
   "lib/medications/scheduling/slot-upsert.ts":
     "binds a recorded dose to its slot",
+  "lib/medications/scheduling/extra-dose.ts":
+    "whether a recorded dose on a slot is another one, split from slot-upsert",
   "lib/medications/scheduling/worker-helpers.ts":
     "slot lookups for one medication the caller already selected",
   "lib/medications/inventory/consumption.ts":

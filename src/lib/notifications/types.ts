@@ -95,6 +95,14 @@ export const EVENT_TYPES = [
   // user-visible Telegram message on every dose would be noise). Routed
   // through the dedicated intake-sync sender, not the alert cascade.
   "MEDICATION_INTAKE_SYNC",
+  // A visible, quiet confirmation that a dose was recorded on ANOTHER
+  // device or integration (a pill box, the web, Telegram). Silent pushes are
+  // throttled and never reach a force-quit app, and only a remote alert lets
+  // the iOS Notification Service Extension withdraw a local reminder, so
+  // this one is an `alert` push at `passive` interruption level. APNs-only,
+  // sent by `medication-intake-sync.ts` beside the silent push, one per slot
+  // per coalescing window.
+  "MEDICATION_INTAKE_RECORDED",
   // v1.23 — account-security alert (new-device / new-location sign-in). Fired
   // by the login completion path on the first sighting of a coarse device
   // fingerprint. ON by default at the channel layer: a sign-in the user did
@@ -205,6 +213,12 @@ export const EVENT_DEFAULT_ENABLED: Record<EventType, boolean> = {
   // toggle: this is plumbing that keeps the user's own devices coherent,
   // not a notification the user chooses to receive.
   MEDICATION_INTAKE_SYNC: true,
+  // OFF at the channel layer, ON in effect for an account whose phone keeps
+  // its own medication reminders (`clientManaged`, or a device that asks for
+  // client delivery): those reminders can only be withdrawn by a remote
+  // alert. An explicit per-channel row wins either way
+  // (`medication-intake-sync.ts`, `recordedConfirmationEnabled`).
+  MEDICATION_INTAKE_RECORDED: false,
   // v1.23 — ON by default; a new-device sign-in is a security event the user
   // needs surfaced. An explicit per-channel `NotificationPreference` row
   // (enabled=false) still suppresses it for a user who opts out.

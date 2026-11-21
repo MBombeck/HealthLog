@@ -145,11 +145,14 @@ async function postIntake(request: NextRequest, { params }: RouteParams) {
     case "refused":
       return apiError(outcome.message, 422, { errorCode: outcome.errorCode });
     case "existing":
-      return apiSuccess(outcome.row);
+      return apiSuccess({ ...outcome.row, alreadyTaken: false });
     case "outcome_change_refused":
       return refuseOutcomeChange();
     case "recorded":
-      return apiSuccess(outcome.event, 201);
+      return apiSuccess({ ...outcome.event, alreadyTaken: false }, 201);
+    case "alreadyTaken":
+      // The same dose reported twice: nothing written, the recorded row.
+      return apiSuccess({ ...outcome.row, alreadyTaken: true });
   }
 }
 

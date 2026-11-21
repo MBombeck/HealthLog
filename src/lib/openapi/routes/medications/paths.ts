@@ -88,6 +88,7 @@ import {
   medicationInventoryItemResource,
   medicationSupplySummaryResource,
   medicationIntakeEventResource,
+  repeatedIntakeEventResource,
   medicationCadenceResponse,
   medicationComplianceResponse,
   medicationComplianceSummaryEntry,
@@ -215,9 +216,9 @@ const bulkIntakeEntryResult = z
   .object({
     index: z.number().int().nonnegative(),
     status: z
-      .enum(["inserted", "updated", "duplicate", "skipped"])
+      .enum(["inserted", "updated", "duplicate", "alreadyTaken", "skipped"])
       .describe(
-        "`inserted`/`updated`/`duplicate` — the row landed (advance the cursor). `skipped` — not stored; see `reason`.",
+        "`inserted`/`updated`/`duplicate` — the row landed (advance the cursor); `duplicate` is an idempotent replay of an entry already stored, nothing else. `alreadyTaken` — the slot already holds a take recorded by another writer or another key: nothing was written, no stock consumed; `intake` is the recorded row, `takenAt` and `takenVia` say when and how it was taken. Advance the cursor and warn before a second dose. `skipped` — not stored; see `reason`.",
       ),
     reason: z
       .string()
@@ -226,6 +227,28 @@ const bulkIntakeEntryResult = z
         "Why a `skipped` entry was not stored. Among others: `medication_not_found`, `unstable_external_id`, `force_slot_invalid`, `force_slot_occupied`, `injection_site_not_allowed`, and (v1.42.0) `intake_not_tracked` for an entry against a medication kept as a record only (`trackIntake: false`), the per-entry form of `medication.intake.notTracked`. A skip is final: resending the entry gives the same answer.",
       ),
     id: z.string().optional().describe("The landed row id (absent on skips)."),
+    intake: medicationIntakeEventResource
+      .optional()
+      .describe("On `alreadyTaken`: the recorded row the slot already holds."),
+    takenAt: isoDateTime()
+      .nullable()
+      .optional()
+      .describe("On `alreadyTaken`: when the slot's take was recorded."),
+    takenVia: z
+      .enum([
+        "WEB",
+        "APP",
+        "INTEGRATION",
+        "TELEGRAM",
+        "APPLE_HEALTH",
+        "IMPORT",
+        "AUTO",
+      ])
+      .nullable()
+      .optional()
+      .describe(
+        "On `alreadyTaken`: where the slot's take came from (null for takes before migration 0515).",
+      ),
   })
   .meta({ id: "BulkMedicationIntakeEntryResult" });
 
@@ -825,12 +848,33 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Medications"],
       summary: "Undo one dose",
       description:
-        "A SOFT delete: the row stays, `deletedAt` is stamped and the sync counter bumps, so a client that was offline when it happened receives a tombstone keyed on the server id rather than silently keeping the dose forever. Every today, compliance and list read filters tombstones out, so it is invisible from here on. The inventory stamp is REFUNDED — undoing a dose puts the units back in the container — and the day's compliance rollup is recomputed, dropping the row entirely when the day now holds nothing. Undoing the single live dose of a one-shot medication reactivates that medication so the lists and the worker pick it back up. Re-deleting is harmless. Delegable at MANAGE level over the `medications` section. Cookie or Bearer auth.",
+        "Undo is serialised with every take of the slot and re-reads the row under the slot lock. Send `expectedSyncVersion` (and, for a take recorded with a key, `expectedIdempotencyKey`) so an undo never removes a dose another writer recorded. A SOFT delete: the row stays, `deletedAt` is stamped and the sync counter bumps, so a client that was offline when it happened receives a tombstone keyed on the server id rather than silently keeping the dose forever. Every today, compliance and list read filters tombstones out, so it is invisible from here on. The inventory stamp is REFUNDED — undoing a dose puts the units back in the container — and the day's compliance rollup is recomputed, dropping the row entirely when the day now holds nothing. Undoing the single live dose of a one-shot medication reactivates that medication so the lists and the worker pick it back up. Re-deleting is harmless. Delegable at MANAGE level over the `medications` section. Cookie or Bearer auth.",
       requestParams: {
         path: z.object({ id: z.string(), eventId: z.string() }),
+        query: z.object({
+          expectedSyncVersion: z
+            .string()
+            .regex(/^\d{1,9}$/)
+            .optional()
+            .describe(
+              "The row's `syncVersion` as this client last saw it (the take's response carries it). When the row has changed since, the undo is refused with 409 and nothing is deleted.",
+            ),
+          expectedIdempotencyKey: z
+            .string()
+            .max(128)
+            .optional()
+            .describe(
+              "The idempotency key of the take this client recorded. When the row carries another key it holds someone else's take (a take that answered `alreadyTaken` keeps the first writer's key), so the undo is refused with 409.",
+            ),
+        }),
       },
       responses: {
         ...recordRefusal(),
+        "409": {
+          description:
+            "`medications.intake.changedSinceSeen`: the row changed since the client read it, or holds another writer's take. Nothing was deleted; re-read the slot.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
         "200": {
           description: "The dose was tombstoned and its inventory refunded.",
           content: {
@@ -1566,7 +1610,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: {
             "application/json": {
               schema: dataEnvelope(
-                medicationIntakeEventResource,
+                repeatedIntakeEventResource,
                 "CreateMedicationIntakeResponse",
               ),
             },
@@ -1574,11 +1618,11 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "200": {
           description:
-            "Idempotent replay — the original event is returned without creating a new row.",
+            "Idempotent replay — the original event is returned without creating a new row. Also a repeat: a take that names no slot, for a slot already holding a take recorded within two hours, returns that row with `alreadyTaken: true` and writes nothing.",
           content: {
             "application/json": {
               schema: dataEnvelope(
-                medicationIntakeEventResource,
+                repeatedIntakeEventResource,
                 "ReplayMedicationIntakeResponse",
               ),
             },

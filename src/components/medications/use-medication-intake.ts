@@ -118,7 +118,7 @@ interface UseMedicationIntakeResult {
    */
   recordIntake: (skipped: boolean, scheduledFor?: Date | null) => Promise<void>;
   /** Reverse a just-recorded intake via the soft-delete route. */
-  undoIntake: (eventId: string) => Promise<void>;
+  undoIntake: (eventId: string, expectedSyncVersion?: number) => Promise<void>;
 }
 
 /**
@@ -142,7 +142,10 @@ export async function runRecordIntake(deps: {
   t: Translator;
   queryClient: QueryClient;
   setIntakeLoading: (value: string | null) => void;
-  undoIntake: (eventId: string) => void | Promise<void>;
+  undoIntake: (
+    eventId: string,
+    expectedSyncVersion?: number,
+  ) => void | Promise<void>;
   onRecorded?: (eventId: string | undefined, skipped: boolean) => void;
   /**
    * v1.36.x — the record this dose was written into, when it is not the
@@ -179,13 +182,25 @@ export async function runRecordIntake(deps: {
     // The POST returns the created event (`apiSuccess(event, 201)`); its id
     // drives both the Undo affordance and the card's post-success hook
     // (the optional injection-site prompt).
-    const created = await apiPost<{ id?: string } | undefined>(
+    const created = await apiPost<
+      { id?: string; syncVersion?: number; alreadyTaken?: boolean } | undefined
+    >(
       `/api/medications/${medication.id}/intake`,
       scheduledFor
         ? { skipped, scheduledFor: scheduledFor.toISOString() }
         : { skipped },
     );
     const eventId: string | undefined = created?.id;
+    // The slot already held a take (another device, a pill box): nothing was
+    // recorded, so there is nothing of this tap's own to undo.
+    if (created?.alreadyTaken) {
+      toast.info(
+        t("medications.intakeAlreadyTaken", { name: medication.name }),
+      );
+      await invalidateMedicationReads(queryClient);
+      return;
+    }
+    const seenVersion = created?.syncVersion;
     // v1.11.3 — the success toast carries an Undo action so a misclicked
     // take / skip no longer needs a history dive to correct.
     toast.success(
@@ -199,7 +214,7 @@ export async function runRecordIntake(deps: {
         recordName,
         eventId,
         t,
-        onUndo: (id) => void undoIntake(id),
+        onUndo: (id) => void undoIntake(id, seenVersion),
       }),
     );
     await invalidateMedicationReads(queryClient);
@@ -323,12 +338,20 @@ export async function runLogIntake(deps: {
 export async function runUndoIntake(deps: {
   medication: MedicationIntakeIdentity;
   eventId: string;
+  /** The row version the take answered with; a newer one refuses the undo. */
+  expectedSyncVersion?: number;
   t: Translator;
   queryClient: QueryClient;
 }): Promise<void> {
   const { medication, eventId, t, queryClient } = deps;
+  const query =
+    deps.expectedSyncVersion !== undefined
+      ? `?expectedSyncVersion=${deps.expectedSyncVersion}`
+      : "";
   try {
-    await apiDelete(`/api/medications/${medication.id}/intake/${eventId}`);
+    await apiDelete(
+      `/api/medications/${medication.id}/intake/${eventId}${query}`,
+    );
     await invalidateMedicationReads(queryClient);
     toast.success(t("medications.intakeUndone"));
   } catch (failure) {
@@ -345,8 +368,8 @@ export function useMedicationIntake({
   const recordName = useActiveRecordName();
   const [intakeLoading, setIntakeLoading] = useState<string | null>(null);
 
-  const undoIntake = (eventId: string) =>
-    runUndoIntake({ medication, eventId, t, queryClient });
+  const undoIntake = (eventId: string, expectedSyncVersion?: number) =>
+    runUndoIntake({ medication, eventId, expectedSyncVersion, t, queryClient });
 
   const recordIntake = (skipped: boolean, scheduledFor?: Date | null) =>
     runRecordIntake({

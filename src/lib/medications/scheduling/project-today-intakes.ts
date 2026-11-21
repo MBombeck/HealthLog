@@ -43,6 +43,11 @@ import {
 export interface ProjectTodayIntakesResult {
   projected: number;
   backfilled: number;
+  /**
+   * Today's scheduled slots as `medicationId|ISO instant`, so a counting
+   * reader can tell a slot row from an ad-hoc one.
+   */
+  slotKeys: Set<string>;
 }
 
 export async function projectTodayIntakesAndRecompute(input: {
@@ -171,19 +176,25 @@ export async function projectTodayIntakesAndRecompute(input: {
     }
   }
 
+  const slotKeys = new Set(
+    projected.map((p) => `${p.medicationId}|${p.scheduledFor.toISOString()}`),
+  );
   if (projected.length === 0) {
-    return { projected: 0, backfilled: 0 };
+    return { projected: 0, backfilled: 0, slotKeys };
   }
 
   const existing = await prisma.medicationIntakeEvent.findMany({
     where: {
       userId,
       scheduledFor: { gte: todayStart, lt: todayEnd },
+      // Only a live row occupies a slot. An undone dose leaves a tombstone,
+      // and the slot it held is open again: it must come back as pending,
+      // or the today list and the dashboard count drop a dose that is still
+      // due. The unique index covers live rows only since migration 0121
+      // (since 0515 `medication_intake_events_user_med_slot_live_key`), so a
+      // fresh REMINDER row beside a tombstone cannot collide.
+      deletedAt: null,
     },
-    // v1.7.0 sync — intentionally NO `deletedAt: null` filter here. A
-    // tombstoned row still occupies its `(userId, medicationId,
-    // scheduledFor, source)` unique slot, so the backfill must treat it
-    // as present to avoid a P2002 collision when minting REMINDER rows.
     select: { medicationId: true, scheduledFor: true },
   });
   const existingKey = new Set(
@@ -195,7 +206,7 @@ export async function projectTodayIntakesAndRecompute(input: {
   );
 
   if (missing.length === 0) {
-    return { projected: projected.length, backfilled: 0 };
+    return { projected: projected.length, backfilled: 0, slotKeys };
   }
 
   await prisma.medicationIntakeEvent.createMany({
@@ -222,5 +233,5 @@ export async function projectTodayIntakesAndRecompute(input: {
     skipDuplicates: true,
   });
 
-  return { projected: projected.length, backfilled: missing.length };
+  return { projected: projected.length, backfilled: missing.length, slotKeys };
 }

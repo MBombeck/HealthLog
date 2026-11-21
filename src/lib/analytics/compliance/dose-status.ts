@@ -3,6 +3,10 @@
 
 import { DOSE_WINDOW_DEFAULTS } from "@/lib/medications/scheduling/dose-window-defaults";
 import type { ComplianceSchedule } from "./types";
+import {
+  legacyDoseStatus,
+  resolveDoseState,
+} from "@/lib/medications/dose-state/resolve";
 
 /**
  * v1.15.9 — cadence-aware per-dose grace/miss window model.
@@ -87,8 +91,37 @@ export function deriveDoseStatus(
     windows?: Partial<typeof DOSE_WINDOW_DEFAULTS>;
   },
 ): DoseStatus {
-  if (options?.skipped) return "skipped";
+  return legacyDoseStatus(
+    resolveDoseState(
+      defaultDoseBand(targetAt, cadence, options),
+      {
+        takenAt: options?.takenAt ?? null,
+        skipped: options?.skipped ?? false,
+      },
+      now,
+    ).state,
+  );
+}
 
+/**
+ * The default-window band of a dose at `targetAt`, for a dose the ledger has
+ * not minted (a future one). The state itself is resolved by
+ * `dose-state/resolve.ts`, the one place that turns a band into a state.
+ */
+export function defaultDoseBand(
+  targetAt: Date,
+  cadence: DoseCadenceFamily,
+  options?: {
+    nextDoseAt?: Date | null;
+    windows?: Partial<typeof DOSE_WINDOW_DEFAULTS>;
+  },
+): {
+  at: Date;
+  onTimeStart: Date;
+  onTimeEnd: Date;
+  overdueEnd: Date;
+  earlyStart: Date;
+} {
   const w = { ...DOSE_WINDOW_DEFAULTS, ...(options?.windows ?? {}) };
   const target = targetAt.getTime();
 
@@ -113,18 +146,13 @@ export function deriveDoseStatus(
         : options.nextDoseAt.getTime() - w.dailyOnTimeMinutes * 60_000;
     if (nextOnTimeStart < overdueEnd) overdueEnd = nextOnTimeStart;
   }
-
-  const takenAt = options?.takenAt ?? null;
-  if (takenAt) {
-    const t = takenAt.getTime();
-    return t <= onTimeEnd ? "taken_on_time" : "taken_late";
-  }
-
-  const n = now.getTime();
-  if (n < onTimeStart) return "upcoming";
-  if (n <= onTimeEnd) return "on_time_window";
-  if (n <= overdueEnd) return "overdue";
-  return "missed";
+  return {
+    at: targetAt,
+    onTimeStart: new Date(onTimeStart),
+    onTimeEnd: new Date(onTimeEnd),
+    overdueEnd: new Date(overdueEnd),
+    earlyStart: new Date(onTimeStart),
+  };
 }
 
 /**

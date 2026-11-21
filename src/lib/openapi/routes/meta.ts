@@ -6,6 +6,7 @@
  * Schemas come from `src/lib/validations/*` where shared with the
  * runtime request parsing, so the wire contract stays single-source.
  */
+import { SERVER_FEATURES, SERVER_FEATURE_DOCS } from "@/lib/server-features";
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
@@ -238,6 +239,11 @@ const versionResponse = z
       .string()
       .describe(
         "Host of the online geolocation provider the fallback would use, so an operator surface names the real one instead of assuming the default.",
+      ),
+    features: z
+      .array(z.enum(SERVER_FEATURES))
+      .describe(
+        `The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is listed only once its behaviour has fully shipped, and is never renamed. ${SERVER_FEATURES.map((key) => `\`${key}\`: ${SERVER_FEATURE_DOCS[key]}`).join(" ")}`,
       ),
   })
   .meta({

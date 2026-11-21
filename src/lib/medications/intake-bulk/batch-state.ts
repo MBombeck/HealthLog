@@ -3,6 +3,8 @@
  * per-entry results and counters the response carries, and the distinct
  * days, slots and medications the tails after the loop act on.
  */
+import type { MedicationIntakeEvent } from "@/generated/prisma/client";
+import type { IntakeRecordedEvent } from "@/lib/notifications/medication-intake-recorded";
 import type { UnstableExternalIdShape } from "@/lib/validations/external-id";
 import type { InjectionSiteValue } from "@/lib/validations/medication";
 
@@ -30,12 +32,17 @@ export interface BulkIntakeEntry {
  * same as `inserted` for cursor advancement — both mean "the server accepted
  * this entry and produced a row id".
  */
-type EntryStatus = "inserted" | "updated" | "duplicate" | "skipped";
+type EntryStatus =
+  "inserted" | "updated" | "duplicate" | "alreadyTaken" | "skipped";
 export interface EntryResult {
   index: number;
   status: EntryStatus;
   reason?: string;
   id?: string;
+  /** On `alreadyTaken`: the recorded row and the take it holds. */
+  intake?: MedicationIntakeEvent;
+  takenAt?: string | null;
+  takenVia?: string | null;
 }
 
 export interface BatchState {
@@ -62,7 +69,15 @@ export interface BatchState {
    * cross-device sync fires once per affected slot — not once per row, and
    * not for pending echoes / duplicates that changed nothing.
    */
-  syncSlots: Map<string, { medicationId: string; scheduledFor: string }>;
+  syncSlots: Map<
+    string,
+    {
+      medicationId: string;
+      scheduledFor: string;
+      /** The take or skip it recorded, for the visible confirmation. */
+      recorded?: IntakeRecordedEvent;
+    }
+  >;
   /**
    * A landed non-skipped dose quiets an active snooze, exactly like the
    * single-intake routes (they null `snoozedUntil` on every recorded take).

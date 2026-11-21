@@ -1,17 +1,19 @@
 /**
- * A "taken" status update: re-run window-band attribution so an edited /
- * off-window take re-binds to the right slot instead of leaving
- * `scheduledFor` stale (audit HIGH-4). `forceSlotInstant` pins onto a named
- * real slot (422 if it is not one); otherwise band membership picks the slot
- * (the take's own time on a miss → ad-hoc). Mirrors the per-event PUT route.
+ * A "taken" status update on one intake row. The row already names its dose,
+ * so the take keeps that slot (`resolveTakeSlotForExistingRow`): confirming
+ * the injection site, re-marking a row, or marking an overdue reminder row as
+ * taken never moves the dose off its slot by the clock time of the request.
+ * A take that only documents an already-taken row (no `takenAt`) leaves its
+ * time and slot untouched. `forceSlotInstant` pins onto a named real slot
+ * (422 if it is not one). Mirrors the per-event PUT route.
  */
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import {
   applyCanonicalSlotWrite,
   resolveForcedSlotForWrite,
-  resolveSlotForWriteByBand,
 } from "@/lib/medications/scheduling/slot-upsert";
+import { resolveTakeSlotForExistingRow } from "@/lib/medications/scheduling/existing-row-slot";
 import {
   consumeForIntake,
   restoreForIntake,
@@ -27,12 +29,20 @@ interface TakeInput {
   forceSlotInstant: Date | undefined;
   resolvedInjectionSite: InjectionSiteValue | null;
   userTz: string;
+  takenVia: "WEB" | "APP";
+}
+
+interface TargetSlot {
+  slot: Date;
+  /** Undefined leaves the stored provenance as it is. */
+  attributionSource: "AUTO" | "USER_PIN" | undefined;
 }
 
 async function targetSlotOf(
   input: TakeInput,
   resolvedTakenAt: Date,
-): Promise<Date | IntakeStatusRefusal> {
+  documentsOnly: boolean,
+): Promise<TargetSlot | IntakeStatusRefusal> {
   const { userId, existing, intakeId, forceSlotInstant, userTz } = input;
   if (forceSlotInstant !== undefined) {
     const forced = await resolveForcedSlotForWrite({
@@ -53,21 +63,31 @@ async function targetSlotOf(
         errorCode: "medications.intake.force_slot.invalid",
       };
     }
-    return forced;
+    return { slot: forced, attributionSource: "USER_PIN" };
   }
-  const attribution = await resolveSlotForWriteByBand({
+  // Nothing about the dose changes, so nothing about its binding does.
+  if (documentsOnly) {
+    return { slot: existing.scheduledFor, attributionSource: undefined };
+  }
+  const bound = await resolveTakeSlotForExistingRow({
     userId,
     medicationId: existing.medicationId,
     userTz,
+    rowScheduledFor: existing.scheduledFor,
+    rowWasTaken: existing.takenAt !== null && !existing.skipped,
     takenAt: resolvedTakenAt,
   });
-  return attribution.slotInstant ?? resolvedTakenAt;
+  return {
+    slot: bound.slotInstant,
+    attributionSource: bound.attributionSource,
+  };
 }
 
 async function takeInPlace(
   input: TakeInput,
   resolvedTakenAt: Date,
   wasTaken: boolean,
+  attributionSource: TargetSlot["attributionSource"],
 ) {
   const { userId, intakeId, existing, resolvedInjectionSite } = input;
   const [updated] = await prisma.$transaction([
@@ -78,8 +98,11 @@ async function takeInPlace(
       data: {
         takenAt: resolvedTakenAt,
         skipped: false,
-        // The person confirmed it; no longer automatic.
+        // The person confirmed it; no longer automatic, and no longer a miss.
         autoRecorded: false,
+        autoMissed: false,
+        ...(!wasTaken && { takenVia: input.takenVia }),
+        ...(attributionSource !== undefined && { attributionSource }),
         syncVersion: { increment: 1 },
         // Persist the resolved site on the taken branch.
         ...(resolvedInjectionSite !== null && {
@@ -122,6 +145,7 @@ async function moveTake(
   resolvedTakenAt: Date,
   targetScheduledFor: Date,
   wasTaken: boolean,
+  attributionSource: TargetSlot["attributionSource"],
 ) {
   const { userId, intakeId, existing, resolvedInjectionSite } = input;
   await restoreForIntake({
@@ -144,6 +168,8 @@ async function moveTake(
     isExplicitSkip: false,
     idempotencyKey: null,
     createSource: "WEB",
+    attributionSource,
+    takenVia: input.takenVia,
     // Carry the recorded site / dose override across the
     // tombstone + re-insert: a slot move is a re-binding, not a new
     // dose, so the original row's documentation must survive when the
@@ -176,23 +202,45 @@ async function moveTake(
 
 /** Record the take, in place or on the slot it now binds to. */
 export async function applyTakenStatus(input: TakeInput) {
-  const resolvedTakenAt = input.takenAt ?? new Date();
-
-  const target = await targetSlotOf(input, resolvedTakenAt);
-  if (!(target instanceof Date)) return target;
-  const targetScheduledFor = target;
-
-  const slotMoved =
-    targetScheduledFor.getTime() !== input.existing.scheduledFor.getTime();
-
   // Transition gate for the inventory consume. Only
   // a row moving INTO taken may consume; a re-take of an already-
   // taken row (e.g. a time correction) leaves its stamp frozen, and a
   // pre-v1.16.10 taken row (NULL stamp, stock already moved by the
   // legacy hook at take time) must never retro-consume.
   const wasTaken = input.existing.takenAt !== null && !input.existing.skipped;
+  // A "taken" on a row that is already taken, without a time, documents the
+  // dose (the injection site confirmed after the tap) and is not a new take:
+  // its recorded time stays.
+  const documentsOnly =
+    wasTaken &&
+    input.takenAt === undefined &&
+    input.forceSlotInstant === undefined;
+  const resolvedTakenAt =
+    input.takenAt ??
+    (documentsOnly && input.existing.takenAt !== null
+      ? input.existing.takenAt
+      : new Date());
+
+  const target = await targetSlotOf(input, resolvedTakenAt, documentsOnly);
+  if ("kind" in target) return target;
+  const targetScheduledFor = target.slot;
+
+  const slotMoved =
+    targetScheduledFor.getTime() !== input.existing.scheduledFor.getTime();
+
   const updated = !slotMoved
-    ? await takeInPlace(input, resolvedTakenAt, wasTaken)
-    : await moveTake(input, resolvedTakenAt, targetScheduledFor, wasTaken);
+    ? await takeInPlace(
+        input,
+        resolvedTakenAt,
+        wasTaken,
+        target.attributionSource,
+      )
+    : await moveTake(
+        input,
+        resolvedTakenAt,
+        targetScheduledFor,
+        wasTaken,
+        target.attributionSource,
+      );
   return { kind: "updated" as const, row: updated };
 }

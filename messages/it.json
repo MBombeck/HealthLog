@@ -1598,6 +1598,7 @@
     "intakeToastFailed": "Impossibile registrare {name}; riprova",
     "intakeUndo": "Annulla",
     "intakeUndone": "Voce annullata",
+    "intakeAlreadyTaken": "{name} era già registrato come assunto. Non è stato salvato nulla di nuovo.",
     "intakeUndoFailed": "Impossibile annullare; correggi nella cronologia",
     "glp1LastInjection": "{label}",
     "glp1NextInjectionDays": "{label} (tra {days} giorni)",
@@ -9563,6 +9564,13 @@
     "eventSecurityAlertDesc": "Inviato quando il tuo account viene usato su un dispositivo o da un luogo sconosciuti.",
     "eventSharedRecordIntake": "Una persona con accesso segna una dose",
     "eventSharedRecordIntakeDesc": "Inviato solo quando lo fa un'altra persona, mai per le tue voci.",
+    "eventMedicationIntakeRecorded": "Conferma le dosi prese su altri dispositivi",
+    "eventMedicationIntakeRecordedDesc": "Un avviso discreto sull’iPhone quando una dose viene registrata altrove (web, Telegram, un dispositivo collegato), così un promemoria già visibile viene ritirato. Attivo per impostazione predefinita se il telefono gestisce i propri promemoria.",
+    "intakeRecorded": {
+      "title": "Dose registrata",
+      "bodyTaken": "Una dose è stata registrata come assunta su un altro dispositivo.",
+      "bodySkipped": "Una dose è stata registrata come saltata su un altro dispositivo."
+    },
     "security": {
       "newDeviceTitle": "Nuovo accesso al tuo account",
       "newDeviceBody": "Un nuovo accesso da {device} ({location}). Se non sei stato tu, cambia subito la password.",
@@ -9809,10 +9817,11 @@
     "phaseYellowMessage": "🟡 In scadenza:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nMancano {minutes} min.",
     "phaseOrangeTitle": "🟠 In ritardo: {medName}",
     "phaseOrangeMessage": "🟠 Overdue:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nOverdue by {minutes} Min.",
-    "phaseRedTitle": "🔴 Saltata: {medName}",
-    "phaseRedMessage": "🔴 Saltata:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nContrassegnata come saltata.",
+    "phaseRedTitle": "🔴 Non assunta: {medName}",
+    "phaseRedMessage": "🔴 Non ancora assunta:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nConta come saltata finché non la registri. Se la prendi ora conta comunque, come dose in ritardo.",
     "buttonTaken": "Assunto",
-    "buttonConfirm": "✓ Conferma",
+    "buttonConfirm": "Lasciare saltata",
+    "buttonTakenLate": "✅ Assunto (in ritardo)",
     "buttonSnoozeOneHour": "🕐 1h",
     "buttonSnoozeThreeHours": "🕐 3h",
     "buttonSkip": "⏭ Salta"

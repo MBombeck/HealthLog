@@ -462,3 +462,43 @@ describe("complianceChips — the detail page's rate", () => {
     expect(chips.adherenceRate).toBe(bundle.compliance30.rate);
   });
 });
+
+describe("streaksFromTimeline — a missed day ends the run", () => {
+  const dose = (day: string, status: "taken" | "missed" | "upcoming") =>
+    ({
+      day: new Date(`${day}T08:00:00Z`),
+      status,
+    }) as unknown as Parameters<typeof streaksFromTimeline>[0][number];
+
+  it("the morning after two missed days the streak is 0, not 1", () => {
+    // Taken on the 18th, missed the 19th and 20th, today's dose not due yet.
+    const timeline = [
+      dose("2026-11-18", "taken"),
+      dose("2026-11-19", "missed"),
+      dose("2026-11-20", "missed"),
+      dose("2026-11-21", "upcoming"),
+    ];
+    const { current } = streaksFromTimeline(
+      timeline,
+      new Date("2026-11-21T00:20:00Z"),
+      4,
+      "UTC",
+    );
+    expect(current).toBe(0);
+  });
+
+  it("an open today neither extends nor breaks a run of taken days", () => {
+    const timeline = [
+      dose("2026-11-19", "taken"),
+      dose("2026-11-20", "taken"),
+      dose("2026-11-21", "upcoming"),
+    ];
+    const { current } = streaksFromTimeline(
+      timeline,
+      new Date("2026-11-21T00:20:00Z"),
+      3,
+      "UTC",
+    );
+    expect(current).toBe(2);
+  });
+});

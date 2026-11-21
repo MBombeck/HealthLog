@@ -1598,6 +1598,7 @@
     "intakeToastFailed": "기록하지 못했어요: {name}. 다시 시도해 주세요",
     "intakeUndo": "실행 취소",
     "intakeUndone": "기록을 되돌렸어요",
+    "intakeAlreadyTaken": "{name}은(는) 이미 복용한 것으로 기록되어 있습니다. 새로 저장된 내용은 없습니다.",
     "intakeUndoFailed": "되돌리지 못했어요. 기록에서 수정해 주세요",
     "glp1LastInjection": "{label}",
     "glp1NextInjectionDays": "{label} ({days}일 후)",
@@ -9563,6 +9564,13 @@
     "eventSecurityAlertDesc": "처음 보는 기기나 장소에서 계정이 사용되면 보내요.",
     "eventSharedRecordIntake": "기록을 공유한 사람이 복용을 표시할 때",
     "eventSharedRecordIntakeDesc": "다른 사람이 표시했을 때만 보내고, 내 기록에는 보내지 않아요.",
+    "eventMedicationIntakeRecorded": "다른 기기에서 복용한 용량 확인",
+    "eventMedicationIntakeRecordedDesc": "다른 곳(웹, 텔레그램, 연결된 기기)에서 복용이 기록되면 iPhone에 조용히 알려 이미 표시된 알림을 거둡니다. 휴대폰이 자체 알림을 관리하면 기본으로 켜집니다.",
+    "intakeRecorded": {
+      "title": "복용 기록됨",
+      "bodyTaken": "다른 기기에서 복용으로 기록되었습니다.",
+      "bodySkipped": "다른 기기에서 건너뜀으로 기록되었습니다."
+    },
     "security": {
       "newDeviceTitle": "계정에 새 로그인",
       "newDeviceBody": "{device} ({location})에서 새로 로그인했어요. 본인이 아니라면 비밀번호를 바로 변경하세요.",
@@ -9809,10 +9817,11 @@
     "phaseYellowMessage": "🟡 곧 복용:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n{minutes}분 남았어요.",
     "phaseOrangeTitle": "🟠 복용 시간 지남: {medName}",
     "phaseOrangeMessage": "🟠 복용 시간 지남:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n{minutes}분 지났어요.",
-    "phaseRedTitle": "🔴 놓침: {medName}",
-    "phaseRedMessage": "🔴 놓침:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n놓친 것으로 기록했어요.",
+    "phaseRedTitle": "🔴 복용 안 함: {medName}",
+    "phaseRedMessage": "🔴 아직 복용하지 않았어요:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n기록하기 전까지는 놓친 것으로 셉니다. 지금 복용해도 늦은 복용으로 인정돼요.",
     "buttonTaken": "복용함",
-    "buttonConfirm": "✓ 확인",
+    "buttonConfirm": "놓친 것으로 두기",
+    "buttonTakenLate": "✅ 복용함 (늦게)",
     "buttonSnoozeOneHour": "🕐 1시간",
     "buttonSnoozeThreeHours": "🕐 3시간",
     "buttonSkip": "⏭ 건너뛰기"

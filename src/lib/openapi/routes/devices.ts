@@ -5,6 +5,7 @@
  * Schemas come from `src/lib/validations/*` where shared with the
  * runtime request parsing, so the wire contract stays single-source.
  */
+import { isoDateTime } from "@/lib/validations/datetime";
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 import {
@@ -57,6 +58,30 @@ const deviceRegisterRequest = z
       .optional()
       .describe(
         "v1.17.1 (#22) hex-encoded ActivityKit Live Activity push token (distinct from the device APNs token). The server addresses a Live Activity update / end push on a medication-intake mutation. Omitted = keep the prior value; null = clear it when the Activity ends.",
+      ),
+    liveActivityTokens: z
+      .array(
+        z.object({
+          token: z
+            .string()
+            .min(8)
+            .max(256)
+            .regex(/^[A-Fa-f0-9]+$/)
+            .describe("The Activity's ActivityKit push token (hex)."),
+          medicationId: z
+            .string()
+            .describe("The medication the Activity shows."),
+          slotInstant: isoDateTime()
+            .optional()
+            .describe(
+              "The slot the Activity counts down to (the today row's `slotInstant`). With it the server ends this Activity once that slot is taken or skipped; without it, once no dose of the medication the Activity could show is open.",
+            ),
+        }),
+      )
+      .max(8)
+      .optional()
+      .describe(
+        "The device's running medication Live Activities, as a full replacement list: present replaces the stored list (an empty array clears it), omitted leaves it unchanged. Each entry is ended with one `end` push once its dose is answered, and removed after the push. When this field is present the legacy `liveActivityPushToken` is ignored.",
       ),
   })
   .meta({

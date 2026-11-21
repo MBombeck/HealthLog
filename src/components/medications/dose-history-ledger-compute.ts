@@ -176,19 +176,25 @@ export function isSlotActionable(row: LedgerRow): boolean {
  * the authoritative refetch reconcile afterwards, so any divergence (e.g. the
  * take landing late rather than on-time) self-heals on the next read.
  *
- * `nowIso` is the optimistic `takenAt` for a Genommen tap (the slot's own
- * anchor stands in for a clean on-time mark until the server re-attributes).
+ * The optimistic take is recorded now, the time it is reported: a dose
+ * marked taken on a slot that already reads missed paints late, never on
+ * time, and the server's resolved state replaces it on the refetch.
  */
 export function applyOptimisticSlotMark(
   payload: LedgerPayload,
   slotAt: string,
   action: "taken" | "skipped",
+  nowIso: string = new Date().toISOString(),
 ): LedgerPayload {
   const rows = payload.rows.map((row) => {
     if (row.kind !== "slot" || row.at !== slotAt) return row;
     if (!isSlotActionable(row)) return row;
     const status: DoseHistoryStatus =
-      action === "taken" ? "taken_on_time" : "skipped";
+      action === "skipped"
+        ? "skipped"
+        : row.status === "missed"
+          ? "taken_late"
+          : "taken_on_time";
     return {
       ...row,
       status,
@@ -196,7 +202,7 @@ export function applyOptimisticSlotMark(
         // Optimistic placeholder id; replaced by the server row on refetch.
         id: row.intake?.id ?? null,
         scheduledFor: row.at,
-        takenAt: action === "taken" ? row.at : null,
+        takenAt: action === "taken" ? nowIso : null,
         skipped: action === "skipped",
         autoMissed: false,
       },
@@ -207,9 +213,11 @@ export function applyOptimisticSlotMark(
 
 /**
  * Request body for marking a ledger slot from the Verlauf. The taken arm
- * anchors `takenAt` on the slot instant: marking Tuesday 09:00 from a
- * Thursday evening records a dose taken Tuesday 09:00, which is the claim
- * the person is making. The optimistic paint above already promised this.
+ * names the slot and records the take at the time it is reported (no
+ * `takenAt`, so the server stamps now). Stamping the slot's own instant
+ * filed a missed dose marked days later as taken on time, which flattered
+ * the adherence rate; a take reported late reads late. A dose taken at a
+ * known earlier time is entered with that time through "Add intake".
  */
 export function slotMarkRequestBody(
   row: Pick<LedgerRow, "at">,
@@ -217,5 +225,5 @@ export function slotMarkRequestBody(
 ): Record<string, unknown> {
   return action === "skipped"
     ? { skipped: true, scheduledFor: row.at }
-    : { skipped: false, scheduledFor: row.at, takenAt: row.at };
+    : { skipped: false, scheduledFor: row.at };
 }

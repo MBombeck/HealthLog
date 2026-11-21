@@ -21,6 +21,8 @@
  *     (`sandbox` for Debug builds, `production` for Release / TestFlight)
  *     because the server has no way to tell from the token alone.
  */
+import type { Prisma } from "@/generated/prisma/client";
+import { isoDateTime } from "@/lib/validations/datetime";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
@@ -72,6 +74,26 @@ const deviceSchema = z
       .regex(/^[A-Fa-f0-9]+$/, "liveActivityPushToken must be hex")
       .nullable()
       .optional(),
+    // The device's running medication Live Activities as a set, each with
+    // its push token and the dose it shows. Present replaces the stored set
+    // (an empty array clears it) and the legacy single token is ignored;
+    // omitted keeps the set.
+    liveActivityTokens: z
+      .array(
+        z.object({
+          token: z
+            .string()
+            .min(8)
+            .max(256)
+            .regex(/^[A-Fa-f0-9]+$/),
+          medicationId: z.string().min(1).max(64),
+          slotInstant: isoDateTime()
+            .transform((v) => new Date(v))
+            .optional(),
+        }),
+      )
+      .max(8)
+      .optional(),
   })
   .refine(
     (v) =>
@@ -83,6 +105,55 @@ const deviceSchema = z
       path: ["apnsEnvironment"],
     },
   );
+
+/**
+ * The device-level Live Activity token to store: what the request sends,
+ * else what the device row being merged held.
+ */
+function liveActivityFields(
+  sent: { liveActivityPushToken?: string | null; liveActivityTokens?: unknown },
+  previous: { liveActivityPushToken: string | null } | null,
+) {
+  // With the per-Activity list present the legacy single token is ignored.
+  const token =
+    sent.liveActivityTokens !== undefined
+      ? undefined
+      : sent.liveActivityPushToken;
+  return token !== undefined
+    ? { liveActivityPushToken: token }
+    : previous
+      ? { liveActivityPushToken: previous.liveActivityPushToken }
+      : {};
+}
+
+/**
+ * The device's running Activities, replaced as a set when the request names
+ * them (an empty list clears them); omitted leaves them as they are.
+ */
+async function replaceLiveActivityTokens(
+  tx: Prisma.TransactionClient,
+  deviceId: string,
+  sent: {
+    liveActivityTokens?: Array<{
+      token: string;
+      medicationId: string;
+      slotInstant?: Date;
+    }>;
+  },
+): Promise<void> {
+  if (sent.liveActivityTokens === undefined) return;
+  await tx.liveActivityToken.deleteMany({ where: { deviceId } });
+  if (sent.liveActivityTokens.length === 0) return;
+  await tx.liveActivityToken.createMany({
+    data: sent.liveActivityTokens.map((a) => ({
+      deviceId,
+      pushToken: a.token,
+      medicationId: a.medicationId,
+      slotInstant: a.slotInstant ?? null,
+    })),
+    skipDuplicates: true,
+  });
+}
 
 export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
@@ -143,7 +214,6 @@ export const POST = apiHandler(async (request: NextRequest) => {
     apnsToken,
     apnsEnvironment,
     medicationDelivery,
-    liveActivityPushToken,
   } = parsed.data;
 
   const registration = await prisma.$transaction(async (tx) => {
@@ -240,11 +310,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
         : duplicateDevice
           ? { medicationDelivery: duplicateDevice.medicationDelivery }
           : {}),
-      ...(liveActivityPushToken !== undefined
-        ? { liveActivityPushToken }
-        : duplicateDevice
-          ? { liveActivityPushToken: duplicateDevice.liveActivityPushToken }
-          : {}),
+      ...liveActivityFields(parsed.data, duplicateDevice),
     };
 
     const device = canonicalDevice
@@ -257,6 +323,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
           data: { userId: user.id, ...deviceData },
           select: { id: true },
         });
+
+    await replaceLiveActivityTokens(tx, device.id, parsed.data);
 
     // Keep channel reconciliation under the same identity locks as the device
     // row. Moving it after commit lets two first-time registrations race the

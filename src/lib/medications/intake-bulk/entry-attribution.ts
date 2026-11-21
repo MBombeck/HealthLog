@@ -14,8 +14,8 @@ import {
   resolveForcedSlotForWrite,
   resolveSlotForWriteByBand,
   resolveSlotInstantForWrite,
-  slotHeldByAnotherDose,
 } from "@/lib/medications/scheduling/slot-upsert";
+import { slotHeldByAnotherDose } from "@/lib/medications/scheduling/extra-dose";
 import type { BulkIntakeEntry } from "./batch-state";
 
 export interface EntryAttribution {

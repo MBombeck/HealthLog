@@ -11,6 +11,7 @@
       "autoMissed": false,
       "autoRecorded": false,
       "attributionSource": "AUTO",
+      "takenVia": null,
       "source": "WEB",
       "idempotencyKey": null,
       "createdAt": "<createdAt>",
@@ -20,7 +21,8 @@
       "externalId": null,
       "updatedAt": "<updatedAt>",
       "syncVersion": "<syncVersion>",
-      "deletedAt": null
+      "deletedAt": null,
+      "alreadyTaken": false
     },
     "error": null
   },
@@ -46,7 +48,15 @@
       "args": [
         {
           "userId": "<id:2>",
-          "originDeviceToken": null
+          "originDeviceToken": null,
+          "recorded": {
+            "medicationId": "<id:3>",
+            "intakeId": "<id:1>",
+            "slotInstant": "2026-10-14T20:00:00.000Z",
+            "outcome": "skipped",
+            "takenAt": null,
+            "takenVia": "WEB"
+          }
         }
       ]
     },
@@ -364,6 +374,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "APP",
         "source": "API",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -390,6 +401,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "WEB",
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -416,6 +428,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -437,6 +450,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "USER_PIN",
+        "takenVia": "WEB",
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -463,6 +477,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "WEB",
         "source": "WEB",
         "idempotencyKey": "dose-key-0001",
         "createdAt": "<createdAt>",
@@ -489,6 +504,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "USER_PIN",
+        "takenVia": "WEB",
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -515,6 +531,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -536,6 +553,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "WEB",
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -557,6 +575,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "WEB",
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -578,6 +597,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",

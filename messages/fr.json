@@ -1598,6 +1598,7 @@
     "intakeToastFailed": "Impossible d'enregistrer {name}. Réessayez",
     "intakeUndo": "Annuler",
     "intakeUndone": "Entrée annulée",
+    "intakeAlreadyTaken": "{name} était déjà enregistré comme pris. Rien de nouveau n’a été enregistré.",
     "intakeUndoFailed": "Annulation impossible. Corrigez dans l'historique",
     "glp1LastInjection": "{label}",
     "glp1NextInjectionDays": "{label} (dans {days} jours)",
@@ -9563,6 +9564,13 @@
     "eventSecurityAlertDesc": "Envoyé quand votre compte est utilisé sur un appareil ou depuis un lieu inconnus.",
     "eventSharedRecordIntake": "Une personne avec accès marque une dose",
     "eventSharedRecordIntakeDesc": "Envoyé uniquement quand une autre personne le fait, jamais pour vos propres saisies.",
+    "eventMedicationIntakeRecorded": "Confirmer les doses prises sur d’autres appareils",
+    "eventMedicationIntakeRecordedDesc": "Un avis discret sur l’iPhone quand une dose est enregistrée ailleurs (web, Telegram, un appareil connecté), pour retirer un rappel déjà affiché. Activé par défaut si le téléphone gère ses propres rappels.",
+    "intakeRecorded": {
+      "title": "Dose enregistrée",
+      "bodyTaken": "Une dose a été enregistrée comme prise sur un autre appareil.",
+      "bodySkipped": "Une dose a été enregistrée comme sautée sur un autre appareil."
+    },
     "security": {
       "newDeviceTitle": "Nouvelle connexion à votre compte",
       "newDeviceBody": "Une nouvelle connexion depuis {device} ({location}). Si ce n'était pas vous, changez votre mot de passe immédiatement.",
@@ -9809,10 +9817,11 @@
     "phaseYellowMessage": "🟡 Bientôt due :\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nIl reste {minutes} min.",
     "phaseOrangeTitle": "🟠 En retard : {medName}",
     "phaseOrangeMessage": "🟠 Overdue:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nOverdue by {minutes} Min.",
-    "phaseRedTitle": "🔴 Manquée : {medName}",
-    "phaseRedMessage": "🔴 Manquée :\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nMarquée comme manquée.",
+    "phaseRedTitle": "🔴 Pas prise : {medName}",
+    "phaseRedMessage": "🔴 Pas encore prise :\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nElle compte comme manquée tant que rien n’est enregistré. Si tu la prends maintenant, elle compte quand même, en retard.",
     "buttonTaken": "Pris",
-    "buttonConfirm": "✓ Confirmer",
+    "buttonConfirm": "Laisser manquée",
+    "buttonTakenLate": "✅ Pris (en retard)",
     "buttonSnoozeOneHour": "🕐 1h",
     "buttonSnoozeThreeHours": "🕐 3h",
     "buttonSkip": "⏭ Ignorer"

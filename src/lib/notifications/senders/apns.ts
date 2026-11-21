@@ -886,7 +886,7 @@ export interface ApnsRawSendInput {
    * content-available push (no alert); `liveactivity` for an
    * ActivityKit update / end push.
    */
-  pushType: "background" | "liveactivity";
+  pushType: "background" | "liveactivity" | "alert";
   /**
    * Custom JSON payload merged into the notification body. For a
    * `background` push this is the app's userInfo; for a `liveactivity`
@@ -901,6 +901,7 @@ export interface ApnsRawSendInput {
   topic?: string;
   /** `apns-priority`. `5` for background (power-conserving) is required. */
   priority?: 5 | 10;
+  collapseId?: string; // `apns-collapse-id`: a newer push replaces the older
 }
 
 /**
@@ -938,10 +939,9 @@ export async function sendApnsRawPush(
   } else {
     note.priority = input.priority ?? 10;
   }
-  // Bypass the convenience setters entirely so the body is exactly what
-  // the silent-sync / Live-Activity contract specifies — no injected
-  // `aps.alert` shell.
+  // Bypass the convenience setters: the body is exactly what the caller sent.
   note.rawPayload = input.payload;
+  if (input.collapseId) note.collapseId = input.collapseId;
 
   const start = performance.now();
   let result: Awaited<ReturnType<apn.Provider["send"]>>;

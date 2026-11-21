@@ -1,0 +1,14 @@
+{
+  "$comment": "The fields of MedicationActivityAttributes.ContentState in the iOS app (HealthLog/LiveActivity/MedicationActivityAttributes.swift). Its Codable conformance is synthesised, so every non-optional field is required on decode, defaults included. Dates are seconds since 2001-01-01T00:00:00Z. Change this file together with the Swift struct.",
+  "required": {
+    "status": { "type": "string", "enum": ["pending", "taken", "snoozed"] },
+    "countdownTarget": { "type": "appleDate" },
+    "confirmed": { "type": "boolean" },
+    "pendingConfirm": { "type": "boolean" },
+    "isOverdue": { "type": "boolean" },
+    "timeFormatRaw": { "type": "string", "enum": ["AUTO", "H12", "H24"] }
+  },
+  "optional": {
+    "pendingConfirmStartedAt": { "type": "appleDate" }
+  }
+}

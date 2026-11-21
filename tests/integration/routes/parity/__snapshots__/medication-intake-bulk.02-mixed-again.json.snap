@@ -4,8 +4,8 @@
     "data": {
       "processed": 18,
       "inserted": 0,
-      "updated": 5,
-      "duplicates": 6,
+      "updated": 3,
+      "duplicates": 8,
       "skipped": [
         {
           "index": 0,
@@ -54,13 +54,71 @@
         },
         {
           "index": 3,
-          "status": "updated",
-          "id": "<id:1>"
+          "status": "alreadyTaken",
+          "id": "<id:1>",
+          "intake": {
+            "id": "<id:1>",
+            "userId": "<id:2>",
+            "medicationId": "<id:3>",
+            "scheduledFor": "2026-10-15T08:00:00.000Z",
+            "takenAt": "2026-10-15T08:30:00.000Z",
+            "skipped": false,
+            "autoMissed": false,
+            "autoRecorded": false,
+            "attributionSource": "AUTO",
+            "takenVia": "APP",
+            "source": "REMINDER",
+            "idempotencyKey": null,
+            "createdAt": "<createdAt>",
+            "injectionSite": null,
+            "doseTaken": null,
+            "inventoryConsumption": [
+              {
+                "units": 1,
+                "itemId": "<id:4>"
+              }
+            ],
+            "externalId": null,
+            "updatedAt": "<updatedAt>",
+            "syncVersion": "<syncVersion>",
+            "deletedAt": null
+          },
+          "takenAt": "2026-10-15T08:30:00.000Z",
+          "takenVia": "APP"
         },
         {
           "index": 4,
-          "status": "updated",
-          "id": "<id:2>"
+          "status": "alreadyTaken",
+          "id": "<id:5>",
+          "intake": {
+            "id": "<id:5>",
+            "userId": "<id:2>",
+            "medicationId": "<id:3>",
+            "scheduledFor": "2026-10-13T08:00:00.000Z",
+            "takenAt": "2026-10-13T11:00:00.000Z",
+            "skipped": false,
+            "autoMissed": false,
+            "autoRecorded": false,
+            "attributionSource": "USER_PIN",
+            "takenVia": "APP",
+            "source": "API",
+            "idempotencyKey": null,
+            "createdAt": "<createdAt>",
+            "injectionSite": null,
+            "doseTaken": null,
+            "inventoryConsumption": [
+              {
+                "units": 1,
+                "itemId": "<id:4>"
+              }
+            ],
+            "externalId": null,
+            "updatedAt": "<updatedAt>",
+            "syncVersion": "<syncVersion>",
+            "deletedAt": null
+          },
+          "takenAt": "2026-10-13T11:00:00.000Z",
+          "takenVia": "APP"
         },
         {
           "index": 5,
@@ -75,27 +133,27 @@
         {
           "index": 7,
           "status": "updated",
-          "id": "<id:3>"
+          "id": "<id:6>"
         },
         {
           "index": 8,
           "status": "duplicate",
-          "id": "<id:4>"
+          "id": "<id:7>"
         },
         {
           "index": 9,
           "status": "updated",
-          "id": "<id:5>"
+          "id": "<id:8>"
         },
         {
           "index": 10,
           "status": "duplicate",
-          "id": "<id:6>"
+          "id": "<id:9>"
         },
         {
           "index": 11,
           "status": "duplicate",
-          "id": "<id:6>"
+          "id": "<id:9>"
         },
         {
           "index": 12,
@@ -105,17 +163,17 @@
         {
           "index": 13,
           "status": "duplicate",
-          "id": "<id:7>"
+          "id": "<id:10>"
         },
         {
           "index": 14,
           "status": "duplicate",
-          "id": "<id:7>"
+          "id": "<id:10>"
         },
         {
           "index": 15,
           "status": "duplicate",
-          "id": "<id:8>"
+          "id": "<id:11>"
         },
         {
           "index": 16,
@@ -125,7 +183,7 @@
         {
           "index": 17,
           "status": "updated",
-          "id": "<id:6>"
+          "id": "<id:9>"
         }
       ]
     },
@@ -141,8 +199,8 @@
         "write_bucket": "own",
         "processed": 18,
         "inserted": 0,
-        "updated": 5,
-        "duplicates": 6,
+        "updated": 3,
+        "duplicates": 8,
         "skipped": 7,
         "extra_doses_unscheduled": 0,
         "external_id_rejected": 2,
@@ -159,8 +217,34 @@
       "effect": "queueMedicationIntakeSync",
       "args": [
         {
-          "userId": "<id:9>",
-          "originDeviceToken": null
+          "userId": "<id:2>",
+          "originDeviceToken": null,
+          "recorded": [
+            {
+              "medicationId": "<id:3>",
+              "intakeId": "<id:6>",
+              "slotInstant": "2026-10-15T20:00:00.000Z",
+              "outcome": "skipped",
+              "takenAt": null,
+              "takenVia": "APP"
+            },
+            {
+              "medicationId": "<id:3>",
+              "intakeId": "<id:8>",
+              "slotInstant": "2026-10-16T08:00:00.000Z",
+              "outcome": "taken",
+              "takenAt": null,
+              "takenVia": "APP"
+            },
+            {
+              "medicationId": "<id:12>",
+              "intakeId": "<id:9>",
+              "slotInstant": "2026-10-15T10:00:00.000Z",
+              "outcome": "skipped",
+              "takenAt": null,
+              "takenVia": "APP"
+            }
+          ]
         }
       ]
     }
@@ -168,8 +252,8 @@
   "stored": {
     "medications": [
       {
-        "id": "<id:10>",
-        "userId": "<id:9>",
+        "id": "<id:13>",
+        "userId": "<id:2>",
         "name": "Apple mirror",
         "dose": "10mg",
         "treatmentClass": "GENERIC",
@@ -204,8 +288,8 @@
         "updatedAt": "<updatedAt>"
       },
       {
-        "id": "<id:11>",
-        "userId": "<id:9>",
+        "id": "<id:12>",
+        "userId": "<id:2>",
         "name": "As-needed pen",
         "dose": "10mg",
         "treatmentClass": "GENERIC",
@@ -243,8 +327,8 @@
         "updatedAt": "<updatedAt>"
       },
       {
-        "id": "<id:12>",
-        "userId": "<id:9>",
+        "id": "<id:14>",
+        "userId": "<id:2>",
         "name": "Record only",
         "dose": "10mg",
         "treatmentClass": "GENERIC",
@@ -279,8 +363,8 @@
         "updatedAt": "<updatedAt>"
       },
       {
-        "id": "<id:13>",
-        "userId": "<id:9>",
+        "id": "<id:3>",
+        "userId": "<id:2>",
         "name": "Twice daily",
         "dose": "10mg",
         "treatmentClass": "GENERIC",
@@ -317,8 +401,8 @@
     ],
     "schedules": [
       {
-        "id": "<id:14>",
-        "medicationId": "<id:12>",
+        "id": "<id:15>",
+        "medicationId": "<id:14>",
         "windowStart": "07:00",
         "windowEnd": "08:00",
         "label": null,
@@ -337,8 +421,8 @@
         "doseWindows": null
       },
       {
-        "id": "<id:15>",
-        "medicationId": "<id:13>",
+        "id": "<id:16>",
+        "medicationId": "<id:3>",
         "windowStart": "08:00",
         "windowEnd": "10:00",
         "label": null,
@@ -357,8 +441,8 @@
         "doseWindows": null
       },
       {
-        "id": "<id:16>",
-        "medicationId": "<id:10>",
+        "id": "<id:17>",
+        "medicationId": "<id:13>",
         "windowStart": "09:00",
         "windowEnd": "11:00",
         "label": null,
@@ -377,8 +461,8 @@
         "doseWindows": null
       },
       {
-        "id": "<id:17>",
-        "medicationId": "<id:13>",
+        "id": "<id:18>",
+        "medicationId": "<id:3>",
         "windowStart": "20:00",
         "windowEnd": "22:00",
         "label": null,
@@ -402,15 +486,16 @@
     "courses": [],
     "intakes": [
       {
-        "id": "<id:2>",
-        "userId": "<id:9>",
-        "medicationId": "<id:13>",
+        "id": "<id:5>",
+        "userId": "<id:2>",
+        "medicationId": "<id:3>",
         "scheduledFor": "2026-10-13T08:00:00.000Z",
         "takenAt": "2026-10-13T11:00:00.000Z",
         "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "USER_PIN",
+        "takenVia": "APP",
         "source": "API",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -419,7 +504,7 @@
         "inventoryConsumption": [
           {
             "units": 1,
-            "itemId": "<id:18>"
+            "itemId": "<id:4>"
           }
         ],
         "externalId": null,
@@ -429,14 +514,15 @@
       },
       {
         "id": "<id:19>",
-        "userId": "<id:9>",
-        "medicationId": "<id:10>",
+        "userId": "<id:2>",
+        "medicationId": "<id:13>",
         "scheduledFor": "2026-10-14T09:00:00.000Z",
         "takenAt": "2026-10-14T09:05:00.000Z",
         "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "APPLE_HEALTH",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -449,15 +535,16 @@
         "deletedAt": null
       },
       {
-        "id": "<id:8>",
-        "userId": "<id:9>",
-        "medicationId": "<id:10>",
+        "id": "<id:11>",
+        "userId": "<id:2>",
+        "medicationId": "<id:13>",
         "scheduledFor": "2026-10-14T09:30:00.000Z",
         "takenAt": "2026-10-14T09:30:00.000Z",
         "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "APPLE_HEALTH",
         "source": "APPLE_HEALTH",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -470,15 +557,16 @@
         "deletedAt": null
       },
       {
-        "id": "<id:4>",
-        "userId": "<id:9>",
-        "medicationId": "<id:13>",
+        "id": "<id:7>",
+        "userId": "<id:2>",
+        "medicationId": "<id:3>",
         "scheduledFor": "2026-10-14T20:00:00.000Z",
         "takenAt": "2026-10-14T20:05:00.000Z",
         "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -492,14 +580,15 @@
       },
       {
         "id": "<id:1>",
-        "userId": "<id:9>",
-        "medicationId": "<id:13>",
+        "userId": "<id:2>",
+        "medicationId": "<id:3>",
         "scheduledFor": "2026-10-15T08:00:00.000Z",
         "takenAt": "2026-10-15T08:30:00.000Z",
         "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "APP",
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -508,7 +597,7 @@
         "inventoryConsumption": [
           {
             "units": 1,
-            "itemId": "<id:18>"
+            "itemId": "<id:4>"
           }
         ],
         "externalId": null,
@@ -517,15 +606,16 @@
         "deletedAt": null
       },
       {
-        "id": "<id:7>",
-        "userId": "<id:9>",
-        "medicationId": "<id:10>",
+        "id": "<id:10>",
+        "userId": "<id:2>",
+        "medicationId": "<id:13>",
         "scheduledFor": "2026-10-15T09:00:00.000Z",
         "takenAt": "2026-10-15T09:20:00.000Z",
         "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "APPLE_HEALTH",
         "source": "APPLE_HEALTH",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -538,15 +628,16 @@
         "deletedAt": null
       },
       {
-        "id": "<id:6>",
-        "userId": "<id:9>",
-        "medicationId": "<id:11>",
+        "id": "<id:9>",
+        "userId": "<id:2>",
+        "medicationId": "<id:12>",
         "scheduledFor": "2026-10-15T10:00:00.000Z",
         "takenAt": null,
         "skipped": true,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "APP",
         "source": "API",
         "idempotencyKey": "bulk-key-0001",
         "createdAt": "<createdAt>",
@@ -559,15 +650,16 @@
         "deletedAt": null
       },
       {
-        "id": "<id:3>",
-        "userId": "<id:9>",
-        "medicationId": "<id:13>",
+        "id": "<id:6>",
+        "userId": "<id:2>",
+        "medicationId": "<id:3>",
         "scheduledFor": "2026-10-15T20:00:00.000Z",
         "takenAt": null,
         "skipped": true,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "API",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -580,15 +672,16 @@
         "deletedAt": null
       },
       {
-        "id": "<id:5>",
-        "userId": "<id:9>",
-        "medicationId": "<id:13>",
+        "id": "<id:8>",
+        "userId": "<id:2>",
+        "medicationId": "<id:3>",
         "scheduledFor": "2026-10-16T08:00:00.000Z",
         "takenAt": null,
         "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "API",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -604,9 +697,9 @@
     "doseChanges": [],
     "inventoryItems": [
       {
-        "id": "<id:18>",
-        "userId": "<id:9>",
-        "medicationId": "<id:13>",
+        "id": "<id:4>",
+        "userId": "<id:2>",
+        "medicationId": "<id:3>",
         "state": "IN_USE",
         "containerType": "OTHER",
         "unitsTotal": "30",
@@ -629,20 +722,20 @@
     "audit": [
       {
         "action": "medications.intake.bulk.ingest",
-        "userId": "<id:9>",
+        "userId": "<id:2>",
         "actorUserId": null,
         "details": {
           "processed": 18,
           "inserted": 0,
-          "updated": 5,
-          "duplicates": 6,
+          "updated": 3,
+          "duplicates": 8,
           "skipped": 7
         },
         "ipAddress": null
       },
       {
         "action": "medications.intake.bulk.ingest",
-        "userId": "<id:9>",
+        "userId": "<id:2>",
         "actorUserId": null,
         "details": {
           "processed": 18,

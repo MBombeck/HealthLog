@@ -31,6 +31,7 @@ import { resolveDisplayedSlotInstant } from "@/components/medications/card-parts
 import { estimateRunwayDays } from "@/lib/medications/supply-runway";
 import { useMedicationIntake } from "@/components/medications/use-medication-intake";
 import { reduceCurrentWindowStatus } from "@/lib/medications/window-status";
+import { cardWindowPill } from "@/lib/medications/dose-state/pill";
 import { resolveNextDueDayLabel } from "@/lib/medications/next-due-day-label";
 import { formatTime } from "@/lib/format";
 import { formatTimeWindowRange } from "@/lib/time-window-format";
@@ -457,9 +458,7 @@ function MedicationTableRowItem({
     : NaN;
   const nextAt = Number.isFinite(nextDueMs) ? nextDueMs : undefined;
 
-  // The SAME served-next-due-gated pill reduction the cards run —
-  // including the v1.16.6 `nextDue` gate so a rolling cadence whose
-  // next dose is tomorrow can never paint an overdue pill today.
+  // The cards' band reading, the pill's fallback while compliance loads.
   const currentWindowStatus = reduceCurrentWindowStatus({
     schedules: sortedSchedules,
     now,
@@ -489,13 +488,9 @@ function MedicationTableRowItem({
     timeZone: userTz,
   });
 
-  // Status cell — the card body's precedence with one DELIBERATE
-  // divergence: the card suppresses the taken-early pill on its
-  // next-intake row (the "last intake" line below already names the
-  // dose), while the table keeps it — the table has a dedicated Status
-  // column with no neighbouring last-intake context. Order here:
-  // last-dose context outranks the overdue escalation, which outranks
-  // the window pill.
+  // Status cell, the card's precedence (last-dose context, then overdue,
+  // then the pill read from the resolved dose, `dose-state/pill.ts`); the
+  // table keeps the taken-early pill the card hides (no last-intake line).
   const canAct = medication.active && medication.intakeActionable !== false;
   const overdueLabel =
     canAct && doseStatus === "missed"
@@ -504,26 +499,31 @@ function MedicationTableRowItem({
         ? t("medications.overdue")
         : null;
 
+  const pill = cardWindowPill(
+    display?.currentDose,
+    currentWindowStatus,
+    now,
+    userTz,
+  );
   const statusCell =
-    currentWindowStatus.status &&
-    currentWindowStatus.takenEarlyDaysAgo != null ? (
+    pill && pill.takenEarlyDaysAgo != null ? (
       <MedicationStatusPill
         compact
-        status={currentWindowStatus.status}
-        windowStart={currentWindowStatus.window!.start}
-        windowEnd={currentWindowStatus.window!.end}
-        takenEarlyDaysAgo={currentWindowStatus.takenEarlyDaysAgo}
+        status={pill.status}
+        windowStart={pill.windowStart}
+        windowEnd={pill.windowEnd}
+        takenEarlyDaysAgo={pill.takenEarlyDaysAgo}
       />
     ) : overdueLabel ? (
       <span className="text-destructive text-sm font-medium">
         {overdueLabel}
       </span>
-    ) : currentWindowStatus.status ? (
+    ) : pill ? (
       <MedicationStatusPill
         compact
-        status={currentWindowStatus.status}
-        windowStart={currentWindowStatus.window!.start}
-        windowEnd={currentWindowStatus.window!.end}
+        status={pill.status}
+        windowStart={pill.windowStart}
+        windowEnd={pill.windowEnd}
       />
     ) : (
       <span className="text-muted-foreground text-sm">–</span>

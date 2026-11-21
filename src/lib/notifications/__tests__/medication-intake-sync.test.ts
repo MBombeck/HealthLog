@@ -39,6 +39,9 @@ const deviceFindMany = vi.fn();
 const channelFindUnique = vi.fn();
 const deviceDeleteMany = vi.fn();
 const userFindUnique = vi.fn();
+const deviceUpdateMany = vi.fn();
+const intakeCount = vi.fn();
+const activityDeleteMany = vi.fn();
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -48,6 +51,13 @@ vi.mock("@/lib/db", () => ({
     device: {
       findMany: (...a: unknown[]) => deviceFindMany(...a),
       deleteMany: (...a: unknown[]) => deviceDeleteMany(...a),
+      updateMany: (...a: unknown[]) => deviceUpdateMany(...a),
+    },
+    medicationIntakeEvent: {
+      count: (...a: unknown[]) => intakeCount(...a),
+    },
+    liveActivityToken: {
+      deleteMany: (...a: unknown[]) => activityDeleteMany(...a),
     },
     notificationChannel: {
       findUnique: (...a: unknown[]) => channelFindUnique(...a),
@@ -83,6 +93,7 @@ function device(overrides: Record<string, unknown> = {}) {
     apnsToken: "bbbb2222",
     apnsEnvironment: "sandbox",
     liveActivityPushToken: null,
+    liveActivities: [],
     ...overrides,
   };
 }
@@ -94,6 +105,9 @@ beforeEach(() => {
   channelFindUnique.mockResolvedValue({ enabled: true, preferences: [] });
   rawSendMock.mockResolvedValue({ ok: true, status: 200 });
   deviceDeleteMany.mockResolvedValue({ count: 0 });
+  deviceUpdateMany.mockResolvedValue({ count: 0 });
+  intakeCount.mockResolvedValue(0);
+  activityDeleteMany.mockResolvedValue({ count: 0 });
   userFindUnique.mockResolvedValue({
     deletionRequestedAt: null,
     deletionPurgeAt: null,
@@ -344,6 +358,96 @@ describe("queueMedicationIntakeSync — Live Activity push", () => {
     // ActivityKit envelope only — no health data rides along.
     expect(la.payload.medicationId).toBeUndefined();
     expect(la.payload.scheduledFor).toBeUndefined();
+    // A content-state the app's synthesised decoder accepts: every
+    // non-optional field of MedicationActivityAttributes.ContentState.
+    expect(Object.keys(la.payload.aps["content-state"]).sort()).toEqual([
+      "confirmed",
+      "countdownTarget",
+      "isOverdue",
+      "pendingConfirm",
+      "status",
+      "timeFormatRaw",
+    ]);
+    expect(la.payload.aps["content-state"].status).toBe("taken");
+    // The spent token is cleared.
+    expect(deviceUpdateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["d1"] } },
+      data: { liveActivityPushToken: null },
+    });
+  });
+
+  it("leaves the Activity running while a dose it could show is still open", async () => {
+    deviceFindMany.mockResolvedValue([
+      device({ id: "d1", token: "tok-1", liveActivityPushToken: "la-open" }),
+    ]);
+    intakeCount.mockResolvedValue(1);
+
+    queueMedicationIntakeSync({ userId: nextUserId() });
+    await drainFlush();
+
+    expect(rawSendMock.mock.calls.map((c) => c[0].pushType)).toEqual([
+      "background",
+    ]);
+    expect(deviceUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it("ends exactly the Activity whose dose was answered, and drops its token", async () => {
+    const answeredSlot = new Date("2026-11-21T07:00:00.000Z");
+    const openSlot = new Date("2026-11-21T19:00:00.000Z");
+    deviceFindMany.mockResolvedValue([
+      device({
+        id: "d1",
+        token: "tok-1",
+        liveActivities: [
+          {
+            id: "la-a",
+            pushToken: "aa11",
+            medicationId: "m-a",
+            slotInstant: answeredSlot,
+          },
+          {
+            id: "la-b",
+            pushToken: "bb22",
+            medicationId: "m-b",
+            slotInstant: openSlot,
+          },
+        ],
+      }),
+    ]);
+    intakeCount.mockImplementation(
+      async (args: { where: { medicationId?: string } }) =>
+        args.where.medicationId === "m-a" ? 1 : 0,
+    );
+
+    queueMedicationIntakeSync({ userId: nextUserId() });
+    await drainFlush();
+
+    const ends = rawSendMock.mock.calls
+      .map((c) => c[0])
+      .filter((a) => a.pushType === "liveactivity");
+    expect(ends.map((a) => a.deviceToken)).toEqual(["aa11"]);
+    expect(activityDeleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ["la-a"] } },
+    });
+  });
+
+  it("clears a Live Activity token APNs reports dead", async () => {
+    deviceFindMany.mockResolvedValue([
+      device({ id: "d1", token: "tok-1", liveActivityPushToken: "la-dead" }),
+    ]);
+    rawSendMock.mockImplementation(async (args: { pushType: string }) =>
+      args.pushType === "liveactivity"
+        ? { ok: false, reason: "BadDeviceToken", shouldDisable: true }
+        : { ok: true, status: 200 },
+    );
+
+    queueMedicationIntakeSync({ userId: nextUserId() });
+    await drainFlush();
+
+    expect(deviceUpdateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["d1"] } },
+      data: { liveActivityPushToken: null },
+    });
   });
 
   it("sends no liveactivity push when no token is stored", async () => {

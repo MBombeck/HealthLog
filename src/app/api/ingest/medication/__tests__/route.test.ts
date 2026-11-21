@@ -18,6 +18,7 @@ vi.mock("@/lib/db", () => ({
     },
     medication: {
       findFirst: vi.fn(),
+      findMany: vi.fn(),
     },
     user: {
       findUnique: vi.fn(),
@@ -85,6 +86,14 @@ function postReq(
 
 beforeEach(() => {
   vi.resetAllMocks();
+  // The route lists the account's active medications and matches the name
+  // itself; answer that list with whatever the by-name lookup answers.
+  vi.mocked(prisma.medication.findMany).mockImplementation((async () => {
+    const one = await prisma.medication.findFirst({
+      where: { name: "by-name" },
+    });
+    return one ? [one] : [];
+  }) as unknown as typeof prisma.medication.findMany);
   vi.mocked(auditLog).mockResolvedValue(undefined);
   vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true } as never);
   vi.mocked(checkAuthSurfaceRateLimit).mockResolvedValue({
@@ -291,10 +300,11 @@ describe("POST /api/ingest/medication — slot attribution + convergence (v1.16.
     });
   });
 
-  it("keeps the standalone ad-hoc contract for an off-window take", async () => {
+  it("keeps the standalone ad-hoc contract for a take beyond every slot's reach", async () => {
     wireHappyPath();
-    // 14:30 Berlin — outside the 09:00 band and its late tail.
-    const offWindow = new Date("2026-06-10T12:30:00.000Z");
+    // 16:30 Berlin — outside the 09:00 band, its late tail, and the six
+    // hours a take still reaches its nearest open slot.
+    const offWindow = new Date("2026-06-10T14:30:00.000Z");
     vi.mocked(prisma.medicationIntakeEvent.create).mockResolvedValue({
       id: "evt-adhoc",
       scheduledFor: offWindow,
@@ -377,7 +387,7 @@ describe("POST /api/ingest/medication — slot attribution + convergence (v1.16.
     } as Awaited<ReturnType<typeof prisma.apiToken.findUnique>>);
   }
 
-  it("gives a one-medication token the same 403 for an unknown and an out-of-scope name", async () => {
+  it("gives a one-medication token the same 404 for an unknown and an out-of-scope name", async () => {
     wireHappyPath();
     narrowToken(["medication:med-other:ingest"]);
     const known = await POST(
@@ -387,8 +397,8 @@ describe("POST /api/ingest/medication — slot attribution + convergence (v1.16.
     const unknown = await POST(
       postReq({ medicationName: "Nonexistent", idempotencyKey: "k-unknown-1" }),
     );
-    expect(known.status).toBe(403);
-    expect(unknown.status).toBe(403);
+    expect(known.status).toBe(404);
+    expect(unknown.status).toBe(404);
     expect((await unknown.json()).error).toBe((await known.json()).error);
     // No replay was looked up for a medication outside the scope.
     expect(prisma.medicationIntakeEvent.findFirst).not.toHaveBeenCalled();

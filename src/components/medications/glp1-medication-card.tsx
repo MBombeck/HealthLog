@@ -33,6 +33,7 @@ import { type InjectionSiteKey } from "@/lib/medications/injection-sites";
 import { LogInjectionSiteDialog } from "@/components/medications/log-injection-site-dialog";
 import { useGlobalExcludedInjectionSites } from "@/lib/medications/use-injection-site-prefs";
 import { reduceCurrentWindowStatus } from "@/lib/medications/window-status";
+import { cardWindowPill } from "@/lib/medications/dose-state/pill";
 import { resolveDisplayedSlotInstant } from "@/components/medications/card-parts/displayed-slot-instant";
 import {
   estimateDailyDoseCount,
@@ -556,18 +557,12 @@ export function Glp1MedicationCard({
       linkLabel={t("medications.openDetailPage")}
       stateBadges={stateBadges}
       headerActions={headerActions}
-      windowStatus={
-        currentWindowStatus.status
-          ? {
-              status: currentWindowStatus.status,
-              // v1.16.1 — the pill shows the MATCHED dose band, not the
-              // legacy schedule window (which may be stale / degenerate).
-              windowStart: currentWindowStatus.window!.start,
-              windowEnd: currentWindowStatus.window!.end,
-              takenEarlyDaysAgo: currentWindowStatus.takenEarlyDaysAgo,
-            }
-          : null
-      }
+      windowStatus={cardWindowPill(
+        display?.currentDose,
+        currentWindowStatus,
+        now,
+        userTz,
+      )}
       doseStatus={doseStatus}
       nextLine={nextLine}
       lastLine={lastLine}

@@ -38,6 +38,7 @@ function row(overrides: Partial<SlotIntakeRow> = {}): SlotIntakeRow {
     externalId: null,
     updatedAt: createdAt,
     syncVersion: 0,
+    takenVia: null,
     deletedAt: null,
     ...overrides,
   };
@@ -283,7 +284,7 @@ describe("applyCanonicalSlotWrite — auto-miss reset", () => {
     expect(updateArg.data.autoMissed).toBe(false);
   });
 
-  it("does NOT touch autoMissed on a write without a takenAt (skip)", async () => {
+  it("clears autoMissed on a deliberate skip too: a skip answers the dose", async () => {
     const pending = row({ id: "pend-skip", source: "REMINDER" });
     const client = makeClient({
       findManyResult: [[pending]],
@@ -299,7 +300,7 @@ describe("applyCanonicalSlotWrite — auto-miss reset", () => {
     });
     const updateArg = vi.mocked(client.medicationIntakeEvent.update).mock
       .calls[0][0] as unknown as { data: Record<string, unknown> };
-    expect("autoMissed" in updateArg.data).toBe(false);
+    expect(updateArg.data.autoMissed).toBe(false);
   });
 });
 
@@ -324,18 +325,44 @@ describe("applyCanonicalSlotWrite — H1 deterministic selection", () => {
       updateImpl: async (id) =>
         row({ id, takenAt: new Date("2026-06-15T05:05:00Z") }),
     });
+    // A skip is a decision that still applies over a take, so it writes;
+    // it lands on the actioned row.
     const res = await applyCanonicalSlotWrite({
       ...BASE,
       client: client as unknown as UpsertClient,
-      takenAt: new Date("2026-06-15T05:05:00Z"),
-      skipped: false,
-      isExplicitTaken: true,
-      isExplicitSkip: false,
+      takenAt: null,
+      skipped: true,
+      isExplicitTaken: false,
+      isExplicitSkip: true,
     });
     expect(res.row.id).toBe("taken-new");
     const updateArg = vi.mocked(client.medicationIntakeEvent.update).mock
       .calls[0][0] as { where: { id: string } };
     expect(updateArg.where.id).toBe("taken-new");
+  });
+
+  it("answers alreadyTaken for a take on a taken slot and writes nothing", async () => {
+    const taken = row({
+      id: "taken-first",
+      source: "API",
+      takenAt: new Date("2026-06-15T05:01:00Z"),
+      idempotencyKey: "box-1",
+    });
+    const client = makeClient({ findManyResult: [[taken]] });
+    const res = await applyCanonicalSlotWrite({
+      ...BASE,
+      client: client as unknown as UpsertClient,
+      takenAt: new Date("2026-06-15T05:04:00Z"),
+      skipped: false,
+      isExplicitTaken: true,
+      isExplicitSkip: false,
+      idempotencyKey: "phone-1",
+    });
+    expect(res.alreadyTaken).toBe(true);
+    expect(res.consumedTransition).toBe(false);
+    expect(res.row.takenAt?.toISOString()).toBe("2026-06-15T05:01:00.000Z");
+    expect(res.row.idempotencyKey).toBe("box-1");
+    expect(client.medicationIntakeEvent.update).not.toHaveBeenCalled();
   });
 
   it("prefers the first row in (createdAt asc, id asc) order when none actioned", async () => {

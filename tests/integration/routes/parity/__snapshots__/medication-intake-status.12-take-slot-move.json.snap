@@ -11,6 +11,7 @@
       "autoMissed": false,
       "autoRecorded": false,
       "attributionSource": "AUTO",
+      "takenVia": "WEB",
       "source": "WEB",
       "idempotencyKey": null,
       "createdAt": "<createdAt>",
@@ -31,13 +32,7 @@
         "name": "medications.intake.update"
       },
       "meta": {
-        "medication_id": "<id:3>",
-        "units": 1,
-        "item_ids": [
-          "<id:4>"
-        ],
-        "auto_opened": 0,
-        "intakeId": "<id:5>",
+        "intakeId": "<id:4>",
         "status": "taken"
       },
       "warnings": null,
@@ -50,7 +45,15 @@
       "args": [
         {
           "userId": "<id:2>",
-          "originDeviceToken": null
+          "originDeviceToken": null,
+          "recorded": {
+            "medicationId": "<id:3>",
+            "intakeId": "<id:1>",
+            "slotInstant": "2026-10-14T20:00:00.000Z",
+            "outcome": "taken",
+            "takenAt": "2026-10-14T20:30:00.000Z",
+            "takenVia": "WEB"
+          }
         }
       ]
     },
@@ -69,7 +72,7 @@
   "stored": {
     "medications": [
       {
-        "id": "<id:6>",
+        "id": "<id:5>",
         "userId": "<id:2>",
         "name": "Daily pen",
         "dose": "10mg",
@@ -108,7 +111,7 @@
         "updatedAt": "<updatedAt>"
       },
       {
-        "id": "<id:7>",
+        "id": "<id:6>",
         "userId": "<id:2>",
         "name": "Record only",
         "dose": "10mg",
@@ -144,7 +147,7 @@
         "updatedAt": "<updatedAt>"
       },
       {
-        "id": "<id:8>",
+        "id": "<id:7>",
         "userId": "<id:2>",
         "name": "Three times",
         "dose": "10mg",
@@ -220,8 +223,8 @@
     ],
     "schedules": [
       {
-        "id": "<id:9>",
-        "medicationId": "<id:8>",
+        "id": "<id:8>",
+        "medicationId": "<id:7>",
         "windowStart": "06:00",
         "windowEnd": "07:00",
         "label": null,
@@ -240,8 +243,8 @@
         "doseWindows": null
       },
       {
-        "id": "<id:10>",
-        "medicationId": "<id:7>",
+        "id": "<id:9>",
+        "medicationId": "<id:6>",
         "windowStart": "07:00",
         "windowEnd": "08:00",
         "label": null,
@@ -260,7 +263,7 @@
         "doseWindows": null
       },
       {
-        "id": "<id:11>",
+        "id": "<id:10>",
         "medicationId": "<id:3>",
         "windowStart": "08:00",
         "windowEnd": "10:00",
@@ -280,8 +283,8 @@
         "doseWindows": null
       },
       {
-        "id": "<id:12>",
-        "medicationId": "<id:6>",
+        "id": "<id:11>",
+        "medicationId": "<id:5>",
         "windowStart": "09:00",
         "windowEnd": "11:00",
         "label": null,
@@ -300,8 +303,8 @@
         "doseWindows": null
       },
       {
-        "id": "<id:13>",
-        "medicationId": "<id:8>",
+        "id": "<id:12>",
+        "medicationId": "<id:7>",
         "windowStart": "10:00",
         "windowEnd": "11:00",
         "label": null,
@@ -320,8 +323,8 @@
         "doseWindows": null
       },
       {
-        "id": "<id:14>",
-        "medicationId": "<id:8>",
+        "id": "<id:13>",
+        "medicationId": "<id:7>",
         "windowStart": "13:00",
         "windowEnd": "14:00",
         "label": null,
@@ -340,7 +343,7 @@
         "doseWindows": null
       },
       {
-        "id": "<id:15>",
+        "id": "<id:14>",
         "medicationId": "<id:3>",
         "windowStart": "20:00",
         "windowEnd": "22:00",
@@ -365,7 +368,7 @@
     "courses": [],
     "intakes": [
       {
-        "id": "<id:16>",
+        "id": "<id:15>",
         "userId": "<id:2>",
         "medicationId": "<id:3>",
         "scheduledFor": "2026-10-09T08:00:00.000Z",
@@ -374,6 +377,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -386,7 +390,7 @@
         "deletedAt": "2026-10-09T09:00:00.000Z"
       },
       {
-        "id": "<id:17>",
+        "id": "<id:16>",
         "userId": "<id:2>",
         "medicationId": "<id:3>",
         "scheduledFor": "2026-10-10T08:00:00.000Z",
@@ -395,6 +399,29 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
+        "source": "REMINDER",
+        "idempotencyKey": null,
+        "createdAt": "<createdAt>",
+        "injectionSite": null,
+        "doseTaken": null,
+        "inventoryConsumption": null,
+        "externalId": null,
+        "updatedAt": "<updatedAt>",
+        "syncVersion": "<syncVersion>",
+        "deletedAt": null
+      },
+      {
+        "id": "<id:17>",
+        "userId": "<id:2>",
+        "medicationId": "<id:3>",
+        "scheduledFor": "2026-10-11T08:00:00.000Z",
+        "takenAt": null,
+        "skipped": false,
+        "autoMissed": false,
+        "autoRecorded": false,
+        "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -410,12 +437,13 @@
         "id": "<id:18>",
         "userId": "<id:2>",
         "medicationId": "<id:3>",
-        "scheduledFor": "2026-10-11T08:00:00.000Z",
-        "takenAt": null,
+        "scheduledFor": "2026-10-12T08:00:00.000Z",
+        "takenAt": "2026-10-12T08:10:00.000Z",
         "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -430,13 +458,14 @@
       {
         "id": "<id:19>",
         "userId": "<id:2>",
-        "medicationId": "<id:3>",
-        "scheduledFor": "2026-10-12T08:00:00.000Z",
-        "takenAt": "2026-10-12T08:10:00.000Z",
+        "medicationId": "<id:6>",
+        "scheduledFor": "2026-10-13T07:00:00.000Z",
+        "takenAt": "2026-10-13T07:05:00.000Z",
         "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -451,13 +480,14 @@
       {
         "id": "<id:20>",
         "userId": "<id:2>",
-        "medicationId": "<id:7>",
-        "scheduledFor": "2026-10-13T07:00:00.000Z",
-        "takenAt": "2026-10-13T07:05:00.000Z",
+        "medicationId": "<id:3>",
+        "scheduledFor": "2026-10-13T20:00:00.000Z",
+        "takenAt": null,
         "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -472,34 +502,14 @@
       {
         "id": "<id:21>",
         "userId": "<id:2>",
-        "medicationId": "<id:3>",
-        "scheduledFor": "2026-10-13T20:00:00.000Z",
-        "takenAt": null,
-        "skipped": false,
-        "autoMissed": false,
-        "autoRecorded": false,
-        "attributionSource": "AUTO",
-        "source": "REMINDER",
-        "idempotencyKey": null,
-        "createdAt": "<createdAt>",
-        "injectionSite": null,
-        "doseTaken": null,
-        "inventoryConsumption": null,
-        "externalId": null,
-        "updatedAt": "<updatedAt>",
-        "syncVersion": "<syncVersion>",
-        "deletedAt": null
-      },
-      {
-        "id": "<id:22>",
-        "userId": "<id:2>",
-        "medicationId": "<id:7>",
+        "medicationId": "<id:6>",
         "scheduledFor": "2026-10-14T07:00:00.000Z",
         "takenAt": null,
         "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -512,15 +522,16 @@
         "deletedAt": null
       },
       {
-        "id": "<id:5>",
+        "id": "<id:4>",
         "userId": "<id:2>",
         "medicationId": "<id:3>",
         "scheduledFor": "2026-10-14T08:00:00.000Z",
-        "takenAt": null,
+        "takenAt": "2026-10-14T08:05:00.000Z",
         "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -542,32 +553,29 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "WEB",
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
         "injectionSite": "ABDOMEN_LEFT",
         "doseTaken": null,
-        "inventoryConsumption": [
-          {
-            "units": 1,
-            "itemId": "<id:4>"
-          }
-        ],
+        "inventoryConsumption": null,
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
         "deletedAt": null
       },
       {
-        "id": "<id:23>",
+        "id": "<id:22>",
         "userId": "<id:2>",
-        "medicationId": "<id:8>",
+        "medicationId": "<id:7>",
         "scheduledFor": "2026-10-15T06:00:00.000Z",
         "takenAt": null,
         "skipped": false,
         "autoMissed": true,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -580,7 +588,7 @@
         "deletedAt": null
       },
       {
-        "id": "<id:24>",
+        "id": "<id:23>",
         "userId": "<id:2>",
         "medicationId": "<id:3>",
         "scheduledFor": "2026-10-15T08:00:00.000Z",
@@ -589,6 +597,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "WEB",
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -597,7 +606,7 @@
         "inventoryConsumption": [
           {
             "units": 1,
-            "itemId": "<id:4>"
+            "itemId": "<id:24>"
           }
         ],
         "externalId": null,
@@ -608,13 +617,14 @@
       {
         "id": "<id:25>",
         "userId": "<id:2>",
-        "medicationId": "<id:6>",
+        "medicationId": "<id:5>",
         "scheduledFor": "2026-10-15T09:00:00.000Z",
         "takenAt": null,
         "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -629,13 +639,14 @@
       {
         "id": "<id:26>",
         "userId": "<id:2>",
-        "medicationId": "<id:8>",
+        "medicationId": "<id:7>",
         "scheduledFor": "2026-10-15T10:00:00.000Z",
         "takenAt": "2026-10-15T10:05:00.000Z",
         "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -650,13 +661,14 @@
       {
         "id": "<id:27>",
         "userId": "<id:2>",
-        "medicationId": "<id:8>",
+        "medicationId": "<id:7>",
         "scheduledFor": "2026-10-15T13:00:00.000Z",
         "takenAt": null,
         "skipped": true,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -678,6 +690,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -693,13 +706,13 @@
     "doseChanges": [],
     "inventoryItems": [
       {
-        "id": "<id:4>",
+        "id": "<id:24>",
         "userId": "<id:2>",
         "medicationId": "<id:3>",
         "state": "IN_USE",
         "containerType": "OTHER",
         "unitsTotal": "30",
-        "unitsRemaining": "28",
+        "unitsRemaining": "29",
         "firstUseAt": "2026-10-15T08:30:00.000Z",
         "expiresAt": null,
         "printedExpiry": null,
@@ -721,7 +734,7 @@
         "userId": "<id:2>",
         "actorUserId": null,
         "details": {
-          "intakeId": "<id:24>",
+          "intakeId": "<id:23>",
           "status": "taken"
         },
         "ipAddress": null
@@ -731,7 +744,7 @@
         "userId": "<id:2>",
         "actorUserId": null,
         "details": {
-          "intakeId": "<id:5>",
+          "intakeId": "<id:4>",
           "status": "taken"
         },
         "ipAddress": null

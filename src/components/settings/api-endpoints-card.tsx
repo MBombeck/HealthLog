@@ -22,7 +22,7 @@ export function ApiEndpointsCard() {
       method: "POST",
       path: "/api/ingest/medication",
       auth: "Authorization: Bearer hlk_...",
-      example: `{ "medicationName": "...", "scheduledFor": "..." }`,
+      example: `{ "medicationName": "...", "idempotencyKey": "<one per take>", "takenAt": "<optional ISO time>" }`,
     },
     {
       method: "POST",

@@ -18,6 +18,7 @@ import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
 import { formatDose } from "@/lib/medications/format-dose";
 import { formatUnitsPerDose } from "@/lib/medications/units-per-dose";
 import { reduceCurrentWindowStatus } from "@/lib/medications/window-status";
+import { cardWindowPill } from "@/lib/medications/dose-state/pill";
 import { resolveNextDueDayLabel } from "@/lib/medications/next-due-day-label";
 import { resolveDisplayedSlotInstant } from "@/components/medications/card-parts/displayed-slot-instant";
 import {
@@ -519,18 +520,12 @@ export function MedicationCard({
       linkLabel={t("medications.openDetailPage")}
       stateBadges={stateBadges}
       headerActions={headerActions}
-      windowStatus={
-        currentWindowStatus.status
-          ? {
-              status: currentWindowStatus.status,
-              // v1.16.1 — the pill shows the MATCHED dose band, not the
-              // legacy schedule window (which may be stale / degenerate).
-              windowStart: currentWindowStatus.window!.start,
-              windowEnd: currentWindowStatus.window!.end,
-              takenEarlyDaysAgo: currentWindowStatus.takenEarlyDaysAgo,
-            }
-          : null
-      }
+      windowStatus={cardWindowPill(
+        display?.currentDose,
+        currentWindowStatus,
+        now,
+        userTz,
+      )}
       doseStatus={medication.asNeeded ? "upcoming" : doseStatus}
       nextLine={asNeededLine ?? nextLine}
       lastLine={

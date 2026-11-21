@@ -88,7 +88,8 @@ describe("getPhaseMessage — localised", () => {
       -300,
       "en",
     );
-    expect(result.message).toContain("Marked as missed.");
+    // Missed, and a late take still counts: the message says both.
+    expect(result.message).toContain("it still counts");
     expect(result.message).not.toContain("300");
   });
 });
@@ -119,17 +120,19 @@ describe("getPhaseKeyboard — localised", () => {
     );
   });
 
-  it("RED phase has Confirm button localised", () => {
-    expect(
-      getPhaseKeyboard("RED", "med-1", "en").inline_keyboard[0].find(
-        (b) => b.callback_data === "ack:med-1",
-      )?.text,
-    ).toBe("✓ Confirm");
+  it("RED phase offers a late take and leaving the dose missed, localised", () => {
+    const en = getPhaseKeyboard("RED", "med-1", "en").inline_keyboard[0];
+    expect(en.find((b) => b.callback_data === "ack:med-1")?.text).toBe(
+      "Leave as missed",
+    );
+    expect(en.find((b) => b.callback_data === "taken:med-1")?.text).toBe(
+      "✅ Taken (late)",
+    );
     expect(
       getPhaseKeyboard("RED", "med-1", "de").inline_keyboard[0].find(
         (b) => b.callback_data === "ack:med-1",
       )?.text,
-    ).toBe("✓ Bestätigen");
+    ).toBe("Als verpasst lassen");
   });
 
   it("callback_data values are NEVER translated (stable contract)", () => {

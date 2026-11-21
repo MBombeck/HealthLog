@@ -685,17 +685,14 @@ export function pairDoses(
     if (bestIdx >= 0) {
       claimed.add(bestIdx);
       match = events[bestIdx];
-      // v1.15.9 — an auto-missed dose (the cron marked a never-acted row
-      // past its miss cutoff) counts as `missed` even though it carries no
-      // `takenAt`. Check it BEFORE the user-skip branch: a forgotten dose
-      // must count against the rate, while a deliberate user skip stays
-      // `skipped` (excluded from the denominator). `autoMissed` and a
-      // user-`skipped` are mutually exclusive on a live row by construction
-      // (the cron only touches `skipped = false` pending rows), but the
-      // ordering makes the precedence explicit and regression-proof.
-      if (match.autoMissed) status = "missed";
+      // A recorded outcome wins over the auto-miss stamp: the person who
+      // records a dose the cron already marked missed (a late entry) or skips
+      // it deliberately has answered it, and the database clears the stamp on
+      // that write (migration 0515). An auto-missed dose without an outcome
+      // counts as `missed` even though it carries no `takenAt`.
+      if (match.takenAt && !match.skipped) status = "taken";
       else if (match.skipped) status = "skipped";
-      else if (match.takenAt) status = "taken";
+      else if (match.autoMissed) status = "missed";
       else if (slot.windowEnd > now) status = "upcoming";
       else status = "missed";
     } else if (slot.windowEnd > now) {

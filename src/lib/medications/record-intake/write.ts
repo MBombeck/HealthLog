@@ -34,6 +34,7 @@ export interface IntakeWrite {
 export type IntakeWriteResult =
   | { kind: "existing"; row: MedicationIntakeEvent }
   | { kind: "outcome_change_refused" }
+  | { kind: "alreadyTaken"; row: MedicationIntakeEvent }
   | { kind: "written"; event: IntakeRow; consumedTransition: boolean };
 
 /**
@@ -113,8 +114,10 @@ async function writeOntoSlot(
     // Per-intake dose override (null unless a taken write
     // carried one).
     doseTaken: write.resolvedDoseTaken,
+    takenVia: write.intakeSource === "WEB" ? "WEB" : "APP",
   });
   if (applied.outcomeChangeRefused) return { kind: "outcome_change_refused" };
+  if (applied.alreadyTaken) return { kind: "alreadyTaken", row: applied.row };
   // Reset the snooze when a dose is actually recorded (not on a
   // no-downgrade no-op, which left the prior taken row untouched).
   if (!skipped && !applied.noDowngradeNoOp) {
@@ -155,6 +158,9 @@ async function insertStandalone(write: IntakeWrite): Promise<IntakeRow> {
         takenAt: resolvedTakenAt,
         skipped,
         source: write.intakeSource,
+        ...(resolvedTakenAt !== null && {
+          takenVia: write.intakeSource === "WEB" ? "WEB" : "APP",
+        }),
         idempotencyKey: write.idempotencyKey ?? null,
         // Site only on a resolved taken-injection write.
         ...(resolvedInjectionSite !== null && {

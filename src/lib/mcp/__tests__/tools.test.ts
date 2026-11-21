@@ -55,6 +55,7 @@ vi.mock("@/lib/db", () => ({
     medicationIntakeEvent: {
       groupBy: vi.fn(async () => []),
       findMany: vi.fn(async () => []),
+      findFirst: vi.fn(async () => null),
     },
     medicationScheduleRevision: { groupBy: vi.fn(async () => []) },
     integrationStatus: { findMany: vi.fn(async () => []) },

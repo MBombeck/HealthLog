@@ -274,7 +274,11 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "import.rate_limited",
       "import.write_failed",
     ],
-    ingest: ["ingest.rate_limited"],
+    ingest: [
+      "ingest.idempotencyKey.reused",
+      "ingest.medication.notFound",
+      "ingest.rate_limited",
+    ],
     insights: [
       "insights.generate.budgetExceeded",
       "insights.generate.outboundScreened",
@@ -368,6 +372,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "medications.intake.bulk.apple_health_not_mirrored",
       "medications.intake.bulk.invalid",
       "medications.intake.bulk.too_large",
+      "medications.intake.changedSinceSeen",
       "medications.intake.force_slot.invalid",
       "medications.intake.force_slot.occupied",
       "medications.intake.injection_site.disallowed",

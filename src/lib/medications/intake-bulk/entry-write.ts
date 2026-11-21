@@ -59,8 +59,22 @@ async function writeOntoSlot(
     doseTaken: (!entry.skipped && entry.doseTaken) || null,
     // External dose-event UUID rides onto the landed row.
     externalId: entry.externalId ?? null,
+    takenVia: entry.source === "APPLE_HEALTH" ? "APPLE_HEALTH" : "APP",
   });
-  if (applied.noDowngradeNoOp) {
+  if (applied.alreadyTaken) {
+    // The slot already holds a take: nothing written, and the entry says
+    // when and how that take was recorded so the app can warn before a
+    // second dose. Advances the cursor like `duplicate`.
+    state.duplicates += 1;
+    state.results.push({
+      index: i,
+      status: "alreadyTaken",
+      id: applied.row.id,
+      intake: applied.row,
+      takenAt: applied.row.takenAt?.toISOString() ?? null,
+      takenVia: applied.row.takenVia ?? null,
+    });
+  } else if (applied.noDowngradeNoOp) {
     // Pending echo onto an already-actioned slot. Report it as a
     // duplicate so the iOS cursor advances WITHOUT downgrading the
     // recorded dose. A pending echo is never a taken write, so it
@@ -148,6 +162,9 @@ async function insertStandalone(
       // Apple provenance on a standalone (ad-hoc) row;
       // every other caller keeps today's "API".
       source: entry.source ?? "API",
+      ...(entry.takenAt && {
+        takenVia: entry.source === "APPLE_HEALTH" ? "APPLE_HEALTH" : "APP",
+      }),
       idempotencyKey: entry.idempotencyKey ?? null,
       // External dose-event UUID for the idempotent
       // re-sync dedup.

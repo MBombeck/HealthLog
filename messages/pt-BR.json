@@ -1598,6 +1598,7 @@
     "intakeToastFailed": "Não foi possível registrar {name}. Tente novamente",
     "intakeUndo": "Desfazer",
     "intakeUndone": "Entrada revertida",
+    "intakeAlreadyTaken": "{name} já estava registrado como tomado. Nada de novo foi salvo.",
     "intakeUndoFailed": "Não foi possível desfazer. Abra o histórico para corrigir",
     "glp1LastInjection": "{label}",
     "glp1NextInjectionDays": "{label} (em {days} dias)",
@@ -9563,6 +9564,13 @@
     "eventSecurityAlertDesc": "Enviado quando sua conta é usada em um dispositivo ou de um lugar que nunca vimos antes.",
     "eventSharedRecordIntake": "Alguém com quem você compartilhou seu registro marca uma dose",
     "eventSharedRecordIntakeDesc": "Enviado apenas quando outra pessoa faz isso, nunca para suas próprias entradas.",
+    "eventMedicationIntakeRecorded": "Confirmar doses tomadas em outros dispositivos",
+    "eventMedicationIntakeRecordedDesc": "Um aviso discreto no iPhone quando uma dose é registrada em outro lugar (web, Telegram, um dispositivo conectado), para retirar um lembrete já exibido. Ativado por padrão se o celular gerencia os próprios lembretes.",
+    "intakeRecorded": {
+      "title": "Dose registrada",
+      "bodyTaken": "Uma dose foi registrada como tomada em outro dispositivo.",
+      "bodySkipped": "Uma dose foi registrada como pulada em outro dispositivo."
+    },
     "security": {
       "newDeviceTitle": "Novo login na sua conta",
       "newDeviceBody": "Um novo login de {device} ({location}). Se não foi você, altere sua senha imediatamente.",
@@ -9809,10 +9817,11 @@
     "phaseYellowMessage": "🟡 Vence em breve:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nFaltam {minutes} min.",
     "phaseOrangeTitle": "🟠 Atrasada: {medName}",
     "phaseOrangeMessage": "🟠 Atrasada:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nAtrasada por {minutes} min.",
-    "phaseRedTitle": "🔴 Perdida: {medName}",
-    "phaseRedMessage": "🔴 Perdida:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nMarcada como perdida.",
+    "phaseRedTitle": "🔴 Não tomada: {medName}",
+    "phaseRedMessage": "🔴 Ainda não tomada:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nConta como perdida enquanto nada for registrado. Se tomar agora, ainda conta, como dose atrasada.",
     "buttonTaken": "Tomado",
-    "buttonConfirm": "✓ Confirmar",
+    "buttonConfirm": "Deixar como perdida",
+    "buttonTakenLate": "✅ Tomado (atrasado)",
     "buttonSnoozeOneHour": "🕐 1h",
     "buttonSnoozeThreeHours": "🕐 3h",
     "buttonSkip": "⏭ Pular"
