@@ -21,6 +21,7 @@
       "source": "MANUAL",
       "externalId": "manual:run-twin",
       "metadata": null,
+      "performance": null,
       "route": null,
       "samples": null,
       "hrSeries": null,

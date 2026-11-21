@@ -468,8 +468,8 @@
         "userId": "<id:2>",
         "medicationId": "<id:3>",
         "scheduledFor": "2026-10-15T10:00:00.000Z",
-        "takenAt": null,
-        "skipped": true,
+        "takenAt": "2026-10-15T10:00:00.000Z",
+        "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
@@ -479,7 +479,7 @@
         "createdAt": "<createdAt>",
         "injectionSite": "ABDOMEN_LEFT",
         "doseTaken": "0.5 pen",
-        "inventoryConsumption": null,
+        "inventoryConsumption": [],
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
@@ -589,8 +589,8 @@
         "details": {
           "processed": 18,
           "inserted": 0,
-          "updated": 3,
-          "duplicates": 8,
+          "updated": 2,
+          "duplicates": 9,
           "skipped": 7
         },
         "ipAddress": null
@@ -602,8 +602,8 @@
         "details": {
           "processed": 18,
           "inserted": 6,
-          "updated": 2,
-          "duplicates": 3,
+          "updated": 1,
+          "duplicates": 4,
           "skipped": 7
         },
         "ipAddress": null
