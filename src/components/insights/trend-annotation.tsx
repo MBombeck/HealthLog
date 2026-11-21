@@ -19,6 +19,7 @@ import {
 import { CONFIDENCE_TONE, ScorePill } from "@/components/ui/score-pill";
 import { apiGet } from "@/lib/api/api-fetch";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
+import { dayKeyToTimestamp } from "@/components/charts/health-chart/series-math";
 
 /**
  * v1.4.20 — single-sentence AI annotation rendered directly
@@ -215,11 +216,6 @@ interface MeasurementApiRow {
 interface MoodAnalyticsRow {
   date: string;
   score: number;
-}
-
-function dayKeyToTimestamp(dayKey: string): number {
-  const [y, m, d] = dayKey.split("-").map(Number);
-  return Date.UTC(y, m - 1, d, 12, 0, 0);
 }
 
 /**

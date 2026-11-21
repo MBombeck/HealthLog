@@ -59,6 +59,10 @@ import { shouldFireDataReady } from "@/lib/charts/data-ready-latch";
 import { moodLabelKeyForScore } from "@/lib/mood/labels";
 import { apiGet } from "@/lib/api/api-fetch";
 import { trendLineByTime } from "@/lib/stats/linear-fit";
+import {
+  dayKeyToTimestamp,
+  movingAverageByPoints,
+} from "./health-chart/series-math";
 
 // --- Types ---
 
@@ -152,31 +156,6 @@ const COLOR_MA = "var(--dracula-pink)";
 const COLOR_TREND = "var(--dracula-cyan)";
 
 // --- Helpers ---
-
-function dayKeyToTimestamp(dayKey: string): number {
-  const [year, month, day] = dayKey.split("-").map(Number);
-  return Date.UTC(year, month - 1, day, 12, 0, 0);
-}
-
-function movingAverageByPoints(
-  data: Array<{ date: Date; value: number }>,
-  windowSize: number,
-): Array<{ date: Date; value: number }> {
-  if (data.length === 0) return [];
-
-  const sorted = [...data].sort((a, b) => a.date.getTime() - b.date.getTime());
-
-  return sorted.map((point, index) => {
-    const start = Math.max(0, index - windowSize + 1);
-    const window = sorted.slice(start, index + 1);
-    const avg =
-      window.reduce((sum, item) => sum + item.value, 0) / window.length;
-    return {
-      date: point.date,
-      value: Math.round(avg * 100) / 100,
-    };
-  });
-}
 
 // --- Aggregation helpers (exported for unit tests) ---
 
@@ -406,55 +385,27 @@ export function MoodChart({
   const chartData = useMemo((): ChartDataPoint[] | undefined => {
     if (!data?.entries?.length) return undefined;
 
-    const allPoints: ChartDataPoint[] = data.entries
-      .map((entry) => ({
-        date: tzFmt.dateShortSmart(new Date(dayKeyToTimestamp(entry.date))),
-        timestamp: dayKeyToTimestamp(entry.date),
-        pointIndex: 0,
-        score: entry.score,
-      }))
-      .sort((a, b) => a.timestamp - b.timestamp);
-
     // v1.37.29 — a calendar-day window, not "the last N logged days":
     // the tabs promise days, and the measurement charts window by days.
+    // The bucketing (≤90d → day, 91-730d → week, >730d → month, the same
+    // `pickBucket()` thresholds every dashboard chart uses) is
+    // `aggregateMoodEntries`, the function the unit tests pin.
     const cutoff = new Date().getTime() - rangePoints * 86_400_000;
-    const sliced =
+    const windowed =
       rangePoints > 0
-        ? allPoints.filter((point) => point.timestamp >= cutoff)
-        : allPoints;
-
-    // v1.4.15: parity with health-chart's auto-bucketing. Other
-    // dashboard charts (BP, weight, pulse) auto-aggregate to weekly /
-    // monthly when the visible range is long enough that drawing every
-    // daily point would clutter the chart; the mood chart used to show
-    // raw points only, which made multi-month windows unreadable.
-    // Using the same `pickBucket()` thresholds the rest of the
-    // dashboard uses (≤90d → day, 91-730d → week, >730d → month) keeps
-    // the bucketing chip consistent across metrics.
-    const rangeDays =
-      sliced.length < 2
-        ? 0
-        : Math.round(
-            (sliced[sliced.length - 1].timestamp - sliced[0].timestamp) /
-              (24 * 60 * 60 * 1000),
-          );
-    const bucketType = pickBucket(rangeDays);
-
-    const visibleData: ChartDataPoint[] =
-      bucketType === "day"
-        ? sliced
-        : bucketTimeSeries(
-            sliced.map((p) => ({
-              timestamp: p.timestamp,
-              values: { score: p.score },
-            })),
-            { bucket: bucketType, timeZone: profileTimeZone },
-          ).points.map((point) => ({
-            date: tzFmt.dateShortSmart(new Date(point.timestamp)),
-            timestamp: point.timestamp,
-            pointIndex: 0,
-            score: point.values.score,
-          }));
+        ? data.entries.filter(
+            (entry) => dayKeyToTimestamp(entry.date) >= cutoff,
+          )
+        : data.entries;
+    const visibleData: ChartDataPoint[] = aggregateMoodEntries(
+      windowed,
+      profileTimeZone,
+    ).points.map((point) => ({
+      date: tzFmt.dateShortSmart(new Date(point.timestamp)),
+      timestamp: point.timestamp,
+      pointIndex: 0,
+      score: point.score,
+    }));
 
     const enriched: ChartDataPoint[] = visibleData.map((d, index) => ({
       ...d,
