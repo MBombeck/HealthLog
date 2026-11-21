@@ -57,8 +57,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return claimInvalid();
   }
 
-  const existing = await prisma.user.findUnique({
-    where: { username },
+  const existing = await prisma.user.findFirst({
+    where: { username: { equals: username, mode: "insensitive" } },
     select: { id: true },
   });
   if (existing) {

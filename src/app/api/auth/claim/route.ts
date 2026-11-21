@@ -42,6 +42,7 @@ import {
 } from "@/lib/managed-profiles/handover";
 import { notifyGuardiansOfHandover } from "@/lib/managed-profiles/handover-notify";
 import { checkPasswordBreachIfEnabled } from "@/lib/password-breach-check";
+import { normaliseAccountEmail } from "@/lib/validations/auth";
 import { claimSchema } from "@/lib/validations/managed-profile-handover";
 
 const taken = () =>
@@ -59,7 +60,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
     maxBytes: 16 * 1024,
   });
   if (!parsed.ok) return parsed.error;
-  const { token, username, email, password } = parsed.data;
+  const { token, username, password } = parsed.data;
+  const email = normaliseAccountEmail(parsed.data.email);
 
   // The link first. Without this the collision probe below would answer 409
   // to anybody, token or not, and the claim route would be a username and
@@ -73,8 +75,14 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // The profile's own row never collides here: its username is the generated
   // `managed-…` one, which no chosen name may start with, and it has no email.
   const [existingEmail, existingUsername] = await Promise.all([
-    prisma.user.findUnique({ where: { email }, select: { id: true } }),
-    prisma.user.findUnique({ where: { username }, select: { id: true } }),
+    prisma.user.findFirst({
+      where: { email: { equals: email, mode: "insensitive" } },
+      select: { id: true },
+    }),
+    prisma.user.findFirst({
+      where: { username: { equals: username, mode: "insensitive" } },
+      select: { id: true },
+    }),
   ]);
   if (existingEmail || existingUsername) return taken();
 

@@ -196,6 +196,23 @@ describe("PUT /api/admin/users/[id]", () => {
     );
   });
 
+  it("stores a new e-mail lower-cased and answers 409 when another account holds it", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: "u1",
+      role: "USER",
+    } as never);
+    vi.mocked(prisma.user.update).mockRejectedValue(
+      Object.assign(new Error("Unique constraint failed"), { code: "P2002" }),
+    );
+    const res = await PUT(
+      jsonReq({ email: "Taken@Example.com" }),
+      params("u1"),
+    );
+    expect(res.status).toBe(409);
+    const updateArgs = vi.mocked(prisma.user.update).mock.calls[0]?.[0];
+    expect(updateArgs?.data).toEqual({ email: "taken@example.com" });
+  });
+
   it("supports clearing email by passing null", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: "u1",

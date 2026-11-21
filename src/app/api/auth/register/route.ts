@@ -4,7 +4,7 @@ import {
   consumeInviteToken,
   recordInviteConsumer,
 } from "@/lib/auth/invite-token";
-import { registerSchema } from "@/lib/validations/auth";
+import { normaliseAccountEmail, registerSchema } from "@/lib/validations/auth";
 import { hashPassword, checkPasswordStrength } from "@/lib/auth/password";
 import { createSession, getSession } from "@/lib/auth/session";
 import { recordSignInDevice } from "@/lib/auth/login-alert";
@@ -103,12 +103,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
   if (!parsed.ok) return parsed.error;
 
   const {
-    email,
     username,
     password,
     timezone: timezoneInput,
     inviteToken,
   } = parsed.data;
+  const email = normaliseAccountEmail(parsed.data.email);
 
   // v1.15.20 — closed registration still admits a valid invite. The
   // token itself is 32 random bytes behind a keyed hash and the surface
@@ -144,8 +144,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // would then say what the status code no longer does. Anyone doing that has
   // to move this block after the hash in the same change.
   const [existingEmail, existingUsername] = await Promise.all([
-    prisma.user.findUnique({ where: { email } }),
-    prisma.user.findUnique({ where: { username } }),
+    prisma.user.findFirst({
+      where: { email: { equals: email, mode: "insensitive" } },
+    }),
+    prisma.user.findFirst({
+      where: { username: { equals: username, mode: "insensitive" } },
+    }),
   ]);
   if (existingEmail || existingUsername) {
     return apiError("Username or email already taken", 409, TAKEN);
