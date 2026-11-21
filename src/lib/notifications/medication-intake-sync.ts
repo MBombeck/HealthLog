@@ -21,7 +21,13 @@
  *   2. A Live Activity end push (`apns-push-type: liveactivity`, topic
  *      `<bundle>.push-type.liveactivity`) to any device that has a
  *      stored `liveActivityPushToken`, so the lock-screen Activity ends
- *      immediately rather than waiting for the next background wake.
+ *      immediately rather than waiting for the next background wake. The
+ *      device stores one token and no medication, so the server cannot
+ *      tell which dose an Activity shows; it ends Activities only when no
+ *      dose the app could be showing is still open
+ *      (`liveActivityEndState`), with a full content-state the app can
+ *      decode. A token that pushed its end, or that APNs reports dead, is
+ *      cleared: it addresses nothing any more.
  *
  * COALESCING. Mutations arrive in bursts — a bulk intake marking five
  * doses, or a user resolving several slots back-to-back. The fan-out is
@@ -66,6 +72,11 @@ import {
 } from "@/lib/notifications/senders/apns";
 import { recordPushAttempt } from "@/lib/notifications/senders/push-attempt-record";
 import { EVENT_DEFAULT_ENABLED } from "@/lib/notifications/types";
+import {
+  endedMedicationContentState,
+  type MedicationLiveActivityContentState,
+} from "@/lib/notifications/live-activity-content-state";
+import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 
 const EVENT_TYPE = "MEDICATION_INTAKE_SYNC";
 
@@ -256,6 +267,9 @@ async function flushIntakeSync(
       userId,
       recipients,
       bundleId: config.bundleId,
+      liveActivityEnd: recipients.some((d) => d.liveActivityPushToken)
+        ? await liveActivityEndState(userId)
+        : null,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -282,6 +296,8 @@ async function fanOutIntakeSyncApns(args: {
   userId: string;
   recipients: SyncRecipient[];
   bundleId: string;
+  /** The final content-state to end Activities with, or null to leave them. */
+  liveActivityEnd: MedicationLiveActivityContentState | null;
 }): Promise<void> {
   // Pure sync trigger — deliberately NO medication id / name / dose
   // instant. The iOS reconcile re-reads the full state itself, and a
@@ -295,6 +311,7 @@ async function fanOutIntakeSyncApns(args: {
 
   let anySuccess = false;
   const deadDeviceIds: string[] = [];
+  const spentLiveActivityDeviceIds: string[] = [];
   let lastFailureReason: string | undefined;
 
   for (const device of args.recipients) {
@@ -317,14 +334,30 @@ async function fanOutIntakeSyncApns(args: {
       if (silent.shouldDisable) deadDeviceIds.push(device.id);
     }
 
-    // 2) Live Activity end push — only when a token is stored.
-    if (device.liveActivityPushToken) {
-      await sendLiveActivityEnd({
+    // 2) Live Activity end push — only when a token is stored and no dose
+    // the Activity could be showing is still open.
+    if (device.liveActivityPushToken && args.liveActivityEnd) {
+      const spent = await sendLiveActivityEnd({
         token: device.liveActivityPushToken,
         environment,
         bundleId: args.bundleId,
+        contentState: args.liveActivityEnd,
       });
+      if (spent) spentLiveActivityDeviceIds.push(device.id);
     }
+  }
+
+  // An ended Activity's token, or one APNs reports dead, addresses nothing;
+  // the app registers a fresh one with its next Activity.
+  if (spentLiveActivityDeviceIds.length > 0) {
+    await prisma.device
+      .updateMany({
+        where: { id: { in: spentLiveActivityDeviceIds } },
+        data: { liveActivityPushToken: null },
+      })
+      .catch(() => {
+        /* best-effort cleanup */
+      });
   }
 
   // Reap devices APNs reported as permanently dead on the silent send.
@@ -346,19 +379,64 @@ async function fanOutIntakeSyncApns(args: {
 }
 
 /**
+ * How far around now the iOS app surfaces a dose as a Live Activity
+ * (`MedicationLiveActivityPlan`: two hours ahead, three hours overdue).
+ */
+const LIVE_ACTIVITY_LEAD_MS = 2 * 60 * 60 * 1000;
+const LIVE_ACTIVITY_OVERDUE_MS = 3 * 60 * 60 * 1000;
+
+/**
+ * The content-state to end the user's medication Live Activities with, or
+ * null while any tracked dose the app could be showing is still open: ending
+ * then could close the Activity of a dose that is still due. The silent push
+ * beside it lets the app reconcile that case itself.
+ */
+async function liveActivityEndState(
+  userId: string,
+): Promise<MedicationLiveActivityContentState | null> {
+  const now = Date.now();
+  const open = await prisma.medicationIntakeEvent.count({
+    where: {
+      userId,
+      deletedAt: null,
+      takenAt: null,
+      skipped: false,
+      autoMissed: false,
+      scheduledFor: {
+        gte: new Date(now - LIVE_ACTIVITY_OVERDUE_MS),
+        lte: new Date(now + LIVE_ACTIVITY_LEAD_MS),
+      },
+      ...TRACKED_INTAKE_EVENT_WHERE,
+    },
+  });
+  if (open > 0) return null;
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { timeFormat: true },
+  });
+  return endedMedicationContentState({
+    resolvedAt: new Date(now),
+    timeFormat: user?.timeFormat,
+  });
+}
+
+/**
  * Push an ActivityKit `end` event to a running Live Activity. The Activity
  * push topic is the app bundle id suffixed with `.push-type.liveactivity`;
  * the body carries the ActivityKit envelope (`event: "end"`, a timestamp,
- * an empty content-state) and nothing else — the push token itself
- * addresses the Activity, so no health data rides along. Best-effort: a
- * failure is annotated, never thrown.
+ * the full final content-state the app decodes) and nothing else — the push
+ * token itself addresses the Activity, so no health data rides along.
+ * Best-effort: a failure is annotated, never thrown. Returns whether the
+ * token is spent: the end went out, or APNs reported the token dead.
  */
 async function sendLiveActivityEnd(args: {
   token: string;
   environment: "sandbox" | "production";
   bundleId: string;
-}): Promise<void> {
+  contentState: MedicationLiveActivityContentState;
+}): Promise<boolean> {
   try {
+    const nowS = Math.floor(Date.now() / 1000);
     const result = await sendApnsRawPush({
       deviceToken: args.token,
       environment: args.environment,
@@ -367,11 +445,11 @@ async function sendLiveActivityEnd(args: {
       priority: 10,
       payload: {
         aps: {
-          timestamp: Math.floor(Date.now() / 1000),
+          timestamp: nowS,
           event: "end",
-          "content-state": {},
+          "content-state": args.contentState,
           // Dismiss the ended Activity from the lock screen promptly.
-          "dismissal-date": Math.floor(Date.now() / 1000),
+          "dismissal-date": nowS,
         },
       },
     });
@@ -381,10 +459,12 @@ async function sendLiveActivityEnd(args: {
         result.reason ?? "unknown",
       );
     }
+    return result.ok || result.shouldDisable === true;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     getEvent()?.addWarning(
       `medication_intake_sync_liveactivity_threw: ${message}`,
     );
+    return false;
   }
 }
