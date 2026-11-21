@@ -37,9 +37,13 @@ const SRC = join(process.cwd(), "src");
 
 /** File → the jobs it may name, each with the reason it may. */
 const ADMITTED: Record<string, { jobs: string[]; why: string }> = {
-  "lib/insights/comprehensive-generate.ts": {
+  "lib/insights/comprehensive-steps.ts": {
     jobs: ["daily_briefing"],
-    why: "The daily briefing's generation and its phrasing re-roll; the JSON and grounding repairs do not reason.",
+    why: "The daily briefing's generation; the JSON, grounding and screen repairs do not reason.",
+  },
+  "lib/insights/comprehensive-support.ts": {
+    jobs: ["daily_briefing"],
+    why: "The daily briefing's phrasing re-roll, a fresh pass at the paragraph.",
   },
   "lib/insights/briefing-request/completion.ts": {
     jobs: ["daily_briefing"],
