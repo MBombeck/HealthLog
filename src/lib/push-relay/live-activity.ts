@@ -37,6 +37,7 @@ import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 import { liveActivityRelayEnabled } from "@/lib/push-relay/config";
 import { fromBase64Url } from "@/lib/push-relay/encoding";
 import { newUlid } from "@/lib/push-relay/plaintext";
+import { passPageOffset } from "@/lib/push-relay/pass-window";
 import {
   loadPushContext,
   ROUTABLE_DEVICE_SELECT,
@@ -302,7 +303,13 @@ async function nextOpenDose(
         gte: new Date(now.getTime() - OVERDUE_MS),
         lte: new Date(now.getTime() + LEAD_MS),
       },
-      ...TRACKED_INTAKE_EVENT_WHERE,
+      // A left-over open row of a paused or ended medication is no dose due.
+      medication: {
+        ...TRACKED_INTAKE_EVENT_WHERE.medication,
+        active: true,
+        pausedAt: null,
+        endedAt: null,
+      },
     },
     orderBy: [{ scheduledFor: "asc" }, { id: "asc" }],
     select: {
@@ -491,6 +498,10 @@ export async function runDeviceLiveActivities(
   return { started, updated };
 }
 
+/** Devices per pass, and the pass period (`push-live-activity`, 5 min). */
+export const PASS_LIMIT = 500;
+const PASS_PERIOD_MS = 5 * 60_000;
+
 /** The pass over every device that may get a relay start or update. */
 export async function runLiveActivityRelayPass(
   now: Date = new Date(),
@@ -499,17 +510,26 @@ export async function runLiveActivityRelayPass(
   if (!liveActivityRelayEnabled()) return facts;
   const ctx = await loadPushContext();
   if (!ctx.registration?.instanceId) return facts;
+  const where = {
+    relayState: "bound",
+    relayConsentAt: { not: null },
+    liveActivityConsentAt: { not: null },
+    apnsToken: { not: null },
+    pushKeyPublic: { not: null },
+  } as const;
+  // Capped per tick; the page rotates with the tick, so a device past the
+  // first page is reached within a bounded number of passes.
   const devices = await prisma.device.findMany({
-    where: {
-      relayState: "bound",
-      relayConsentAt: { not: null },
-      liveActivityConsentAt: { not: null },
-      apnsToken: { not: null },
-      pushKeyPublic: { not: null },
-    },
+    where,
     select: DEVICE_SELECT,
     orderBy: { id: "asc" },
-    take: 500,
+    skip: passPageOffset({
+      total: await prisma.device.count({ where }),
+      pageSize: PASS_LIMIT,
+      now,
+      periodMs: PASS_PERIOD_MS,
+    }),
+    take: PASS_LIMIT,
   });
   for (const device of devices) {
     facts.devices += 1;
