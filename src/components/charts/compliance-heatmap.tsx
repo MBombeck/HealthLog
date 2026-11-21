@@ -384,7 +384,7 @@ export function ComplianceHeatmap({
                   : undefined,
             }))}
             columns={[
-              { key: "taken", label: t("medications.taken") },
+              { key: "taken", label: t("medications.dose.state.taken") },
               { key: "expected", label: t("doctorReport.colExpected") },
               {
                 key: "rate",

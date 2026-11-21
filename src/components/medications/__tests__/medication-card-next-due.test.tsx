@@ -346,7 +346,7 @@ describe("<MedicationCard> — as-needed marker (v1.16.11, #316)", () => {
     expect(html).toContain("Last intake:");
     // No due/overdue presentation, ever.
     expect(html).not.toContain("Overdue");
-    expect(html).not.toContain("Take now");
+    expect(html).not.toContain('data-state="due"');
     // No compliance bars and no skeleton placeholder for them.
     expect(html).not.toContain("Adherence (");
   });
@@ -364,7 +364,8 @@ describe("<MedicationCard> — as-needed marker (v1.16.11, #316)", () => {
     );
     // The shared intake actions render (take/skip) — an as-needed dose
     // is loggable from the card exactly like a scheduled one.
-    expect(html).toContain("Taken");
+    expect(html).toContain('data-slot="medication-intake-take"');
+    expect(html).toContain(">Take<");
   });
 });
 

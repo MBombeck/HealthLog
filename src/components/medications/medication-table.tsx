@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MedicationStatusPill } from "@/components/medications/card-parts/medication-status-pill";
+import { DoseStateLabel } from "@/components/medications/dose-state-label";
 import { useWeekdayLabel } from "@/components/medications/card-parts/medication-next-last-slot";
 import { resolveDisplayedSlotInstant } from "@/components/medications/card-parts/displayed-slot-instant";
 import { estimateRunwayDays } from "@/lib/medications/supply-runway";
@@ -492,11 +493,11 @@ function MedicationTableRowItem({
   // then the pill read from the resolved dose, `dose-state/pill.ts`); the
   // table keeps the taken-early pill the card hides (no last-intake line).
   const canAct = medication.active && medication.intakeActionable !== false;
-  const overdueLabel =
+  const escalation: "missed" | "overdue" | null =
     canAct && doseStatus === "missed"
-      ? t("medications.veryOverdue")
+      ? "missed"
       : canAct && doseStatus === "overdue"
-        ? t("medications.overdue")
+        ? "overdue"
         : null;
 
   const pill = cardWindowPill(
@@ -514,10 +515,8 @@ function MedicationTableRowItem({
         windowEnd={pill.windowEnd}
         takenEarlyDaysAgo={pill.takenEarlyDaysAgo}
       />
-    ) : overdueLabel ? (
-      <span className="text-destructive text-sm font-medium">
-        {overdueLabel}
-      </span>
+    ) : escalation ? (
+      <DoseStateLabel state={escalation} emphasis className="text-sm" />
     ) : pill ? (
       <MedicationStatusPill
         compact
@@ -757,7 +756,7 @@ function MedicationTableRowItem({
               className="size-11 sm:size-9"
               onClick={() => recordIntake(false, displayedSlot)}
               disabled={!!intakeLoading}
-              aria-label={t("medications.takeActionFor", {
+              aria-label={t("medications.dose.action.takeFor", {
                 name: medication.name,
               })}
             >
@@ -773,7 +772,7 @@ function MedicationTableRowItem({
               className="size-11 sm:size-9"
               onClick={() => recordIntake(true, displayedSlot)}
               disabled={!!intakeLoading}
-              aria-label={t("medications.skipActionFor", {
+              aria-label={t("medications.dose.action.skipFor", {
                 name: medication.name,
               })}
             >

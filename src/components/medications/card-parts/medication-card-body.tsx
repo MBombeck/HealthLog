@@ -1,13 +1,13 @@
 "use client";
 
 import { type ReactNode } from "react";
-import { AlertTriangle } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatTimeWindowRange } from "@/lib/time-window-format";
 import { MedicationCardHeader } from "@/components/medications/medication-card-header";
 import { MedicationStatusPill } from "@/components/medications/card-parts/medication-status-pill";
+import { DoseStateLabel } from "@/components/medications/dose-state-label";
 import {
   MedicationComplianceBars,
   MedicationComplianceError,
@@ -217,16 +217,17 @@ export function MedicationCardBody({
 }: MedicationCardBodyProps) {
   const { t, locale } = useTranslations();
 
-  // Overdue escalation line: a dose past its on-time window. `missed` (at /
-  // past the clinical miss cutoff) reads "Stark überfällig"; the still-takeable
-  // `overdue` tail reads the calmer "Überfällig". Both use the destructive
-  // tone so the urgency is unmistakable; suppressed on an inactive med.
+  // Escalation of the open dose past its on-time window, in the shared
+  // vocabulary: "Overdue" while the late window runs, "Missed" past the miss
+  // cutoff. A missed dose still counts (late) when taken now, and the card
+  // says so under the row, so "missed" and the Take button beside it never
+  // contradict each other. Suppressed on an inactive med.
   const canAct = active && intakeActionable;
-  const overdueLabel =
+  const escalation: "missed" | "overdue" | null =
     canAct && doseStatus === "missed"
-      ? t("medications.veryOverdue")
+      ? "missed"
       : canAct && doseStatus === "overdue"
-        ? t("medications.overdue")
+        ? "overdue"
         : null;
 
   // v1.16.11 — EVERY dose state rides the "next intake" row as its
@@ -248,12 +249,9 @@ export function MedicationCardBody({
   // is still open; otherwise the card's own next-intake value (the
   // overdue slot time) fills the gap.
   const nextValueOverride =
-    windowStatus?.takenEarlyDaysAgo != null ? null : overdueLabel ? (
+    windowStatus?.takenEarlyDaysAgo != null ? null : escalation ? (
       <span className="inline-flex flex-wrap items-center gap-x-1 gap-y-0.5 text-sm">
-        <span className="text-destructive inline-flex items-center gap-1 font-medium">
-          <AlertTriangle className="size-3.5 shrink-0" aria-hidden="true" />
-          {overdueLabel}
-        </span>
+        <DoseStateLabel state={escalation} emphasis />
         {windowStatus !== null ? (
           <span className="text-muted-foreground">
             —{" "}
@@ -318,6 +316,16 @@ export function MedicationCardBody({
           next={nextValueOverride ?? nextLine}
           last={lastLine}
         />
+        {escalation === "missed" &&
+          windowStatus?.takenEarlyDaysAgo == null &&
+          !recordOnly && (
+            <p
+              className="text-muted-foreground text-xs"
+              data-slot="medication-missed-still-counts"
+            >
+              {t("medications.dose.state.missedStillCounts")}
+            </p>
+          )}
 
         {/* Compliance bars — always two rows; constant-height skeleton holds
             the slot while the query is in flight so the grid row stays even.

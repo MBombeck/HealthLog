@@ -326,9 +326,9 @@
     "colGlp1Note": "Note",
     "colGlp1SideEffect": "Effet secondaire",
     "colMedication": "Médicament",
-    "colTaken": "Pris",
-    "colSkipped": "Sauté",
-    "colMissed": "Manqué",
+    "colTaken": "Prise",
+    "colSkipped": "Sautée",
+    "colMissed": "Manquée",
     "colExpected": "Attendues",
     "colComplianceRate": "Taux d'observance",
     "moodTitle": "Évolution de l’humeur",
@@ -1581,11 +1581,8 @@
     },
     "withoutNotification": "Sans notification",
     "pausedSince": "En pause depuis",
-    "takeNow": "Prendre maintenant",
     "lastDoseYesterday": "Dernière dose hier",
     "lastDoseDaysAgo": "Dernière dose il y a {count} jours",
-    "overdue": "En retard",
-    "veryOverdue": "Très en retard",
     "complianceWindow": "Observance {days} jours",
     "complianceUnavailable": "Impossible de charger l'observance",
     "complianceNotApplicable": "Observance non applicable",
@@ -1599,8 +1596,6 @@
     "dayStreakOne": "jour de série",
     "cycleDueToday": "À prendre aujourd'hui",
     "cycleNoClosedCycles": "Aucun cycle de dose terminé pour l'instant",
-    "taken": "Pris",
-    "skipped": "Sauté",
     "intakeToastTaken": "{name} enregistré comme pris",
     "intakeToastSkipped": "{name} sauté",
     "intakeToastFailed": "Impossible d'enregistrer {name}. Réessayez",
@@ -2046,8 +2041,6 @@
     "intakeHistoryColStatus": "Statut",
     "intakeHistoryColSource": "Source",
     "intakeHistoryInjectionSite": "Site d'injection : {site}",
-    "intakeHistoryStatusTaken": "Prise",
-    "intakeHistoryStatusSkipped": "Ignorée",
     "intakeHistorySortByTaken": "Trier par heure de prise",
     "intakeHistorySortByScheduled": "Trier par heure programmée",
     "intakeHistoryPageInfo": "Page {page} sur {total}, {count} entrées",
@@ -2136,8 +2129,6 @@
         "adherenceLabel": "Observance",
         "adherenceBarLabel": "{onTime} à l'heure, {late} en retard, {missed} manquées",
         "add": "Entrée",
-        "markTaken": "Prise",
-        "markSkipped": "Sautée",
         "rowActionsLabel": "Actions pour {time}",
         "markAsTaken": "Marquer comme prise",
         "markAsSkipped": "Marquer comme sautée",
@@ -2145,12 +2136,7 @@
         "takenDetail": "prévue {planned}, prise {taken}",
         "doseTaken": "Dose : {dose}",
         "status": {
-          "taken_on_time": "à l'heure",
-          "taken_late": "en retard",
-          "skipped": "sautée",
-          "missed": "manquée",
-          "upcoming": "à venir",
-          "ad_hoc": "hors planning"
+          "ad_hoc": "Hors planning"
         },
         "addDialog": {
           "title": "Ajouter une prise",
@@ -2499,8 +2485,6 @@
     "tableStockDoses": "{count} doses",
     "tableStockRunway": "≈ {days} jours restants",
     "cardLowStockRunway": "Réserve : ≈ {days} jours",
-    "takeActionFor": "Prendre : {name}",
-    "skipActionFor": "Passer : {name}",
     "reorderDescription": "Définissez l'ordre de vos médicaments pour la vue cartes et la vue tableau.",
     "reorderSaved": "Ordre enregistré",
     "reorderSaveFailed": "L'ordre n'a pas pu être enregistré",
@@ -2693,6 +2677,26 @@
       "saveError": "La composition n’a pas pu être enregistrée",
       "catalogError": "La liste des nutriments n’a pas pu être chargée",
       "invalidRow": "Choisissez un nutriment et saisissez une quantité supérieure à zéro sur chaque ligne."
+    },
+    "dose": {
+      "action": {
+        "take": "Prendre",
+        "skip": "Sauter",
+        "snooze": "Me le rappeler plus tard ({minutes} min)",
+        "undo": "Annuler",
+        "takeFor": "Prendre {name}",
+        "skipFor": "Sauter {name}"
+      },
+      "state": {
+        "pending": "À venir",
+        "due": "À prendre",
+        "overdue": "En retard",
+        "taken": "Prise",
+        "takenLate": "Prise en retard",
+        "skipped": "Sautée",
+        "missed": "Manquée",
+        "missedStillCounts": "La prendre maintenant compte encore, comme prise en retard."
+      }
     }
   },
   "charts": {

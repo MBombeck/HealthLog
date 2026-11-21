@@ -1581,11 +1581,8 @@
     },
     "withoutNotification": "Without notification",
     "pausedSince": "Paused since",
-    "takeNow": "Take now",
     "lastDoseYesterday": "Last dose yesterday",
     "lastDoseDaysAgo": "Last dose {count} days ago",
-    "overdue": "Overdue",
-    "veryOverdue": "Very overdue",
     "complianceWindow": "Adherence ({days} days)",
     "complianceUnavailable": "Adherence could not be loaded",
     "complianceNotApplicable": "Adherence not applicable",
@@ -1599,8 +1596,6 @@
     "dayStreakOne": "day streak",
     "cycleDueToday": "Due today",
     "cycleNoClosedCycles": "No closed dose cycles yet",
-    "taken": "Taken",
-    "skipped": "Skipped",
     "intakeToastTaken": "{name} recorded as taken",
     "intakeToastSkipped": "{name} skipped",
     "intakeToastFailed": "Could not record {name}. Try again",
@@ -2046,8 +2041,6 @@
     "intakeHistoryColStatus": "Status",
     "intakeHistoryColSource": "Source",
     "intakeHistoryInjectionSite": "Injection site: {site}",
-    "intakeHistoryStatusTaken": "Taken",
-    "intakeHistoryStatusSkipped": "Skipped",
     "intakeHistorySortByTaken": "Sort by taken time",
     "intakeHistorySortByScheduled": "Sort by scheduled time",
     "intakeHistoryPageInfo": "Page {page} of {total}, {count} entries",
@@ -2136,8 +2129,6 @@
         "adherenceLabel": "Adherence",
         "adherenceBarLabel": "{onTime} on time, {late} late, {missed} missed",
         "add": "Entry",
-        "markTaken": "Taken",
-        "markSkipped": "Skipped",
         "rowActionsLabel": "Actions for {time}",
         "markAsTaken": "Mark as taken",
         "markAsSkipped": "Mark as skipped",
@@ -2145,12 +2136,7 @@
         "takenDetail": "planned {planned}, taken {taken}",
         "doseTaken": "Dose: {dose}",
         "status": {
-          "taken_on_time": "on time",
-          "taken_late": "late",
-          "skipped": "skipped",
-          "missed": "missed",
-          "upcoming": "upcoming",
-          "ad_hoc": "off-schedule"
+          "ad_hoc": "Off-schedule"
         },
         "addDialog": {
           "title": "Add intake",
@@ -2499,8 +2485,6 @@
     "tableStockDoses": "{count} doses",
     "tableStockRunway": "≈ {days} days left",
     "cardLowStockRunway": "Supply: ≈ {days} days",
-    "takeActionFor": "Take {name}",
-    "skipActionFor": "Skip {name}",
     "reorderDescription": "Set the order of your medications for both the card and the table view.",
     "reorderSaved": "Order saved",
     "reorderSaveFailed": "Order could not be saved",
@@ -2693,6 +2677,26 @@
       "saveError": "The composition could not be saved",
       "catalogError": "The list of nutrients could not be loaded",
       "invalidRow": "Choose a nutrient and enter an amount above zero in every line."
+    },
+    "dose": {
+      "action": {
+        "take": "Take",
+        "skip": "Skip",
+        "snooze": "Remind me later ({minutes} min)",
+        "undo": "Undo",
+        "takeFor": "Take {name}",
+        "skipFor": "Skip {name}"
+      },
+      "state": {
+        "pending": "Pending",
+        "due": "Due",
+        "overdue": "Overdue",
+        "taken": "Taken",
+        "takenLate": "Taken late",
+        "skipped": "Skipped",
+        "missed": "Missed",
+        "missedStillCounts": "Taking it now still counts, as late."
+      }
     }
   },
   "charts": {

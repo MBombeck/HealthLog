@@ -326,7 +326,7 @@
     "colGlp1Note": "Notiz",
     "colGlp1SideEffect": "Nebenwirkung",
     "colMedication": "Medikament",
-    "colTaken": "Eingenommen",
+    "colTaken": "Genommen",
     "colSkipped": "Übersprungen",
     "colMissed": "Verpasst",
     "colExpected": "Erwartet",
@@ -1581,11 +1581,8 @@
     },
     "withoutNotification": "Ohne Benachrichtigung",
     "pausedSince": "Pausiert seit",
-    "takeNow": "Jetzt einnehmen",
     "lastDoseYesterday": "Letzte Dosis gestern",
     "lastDoseDaysAgo": "Letzte Dosis vor {count} Tagen",
-    "overdue": "Überfällig",
-    "veryOverdue": "Stark überfällig",
     "complianceWindow": "Therapietreue ({days} Tage)",
     "complianceUnavailable": "Therapietreue konnte nicht geladen werden",
     "complianceNotApplicable": "Therapietreue nicht anwendbar",
@@ -1599,8 +1596,6 @@
     "dayStreakOne": "Tag Serie",
     "cycleDueToday": "Heute fällig",
     "cycleNoClosedCycles": "Noch keine abgeschlossenen Dosiszyklen",
-    "taken": "Genommen",
-    "skipped": "Übersprungen",
     "intakeToastTaken": "{name} als genommen erfasst",
     "intakeToastSkipped": "{name} übersprungen",
     "intakeToastFailed": "{name} konnte nicht erfasst werden. Bitte erneut versuchen",
@@ -2041,13 +2036,11 @@
     "intakeHistoryEmptyTitle": "Noch keine Einnahmen erfasst",
     "intakeHistoryEmptyDescription": "Trage eine Einnahme auf der Tagesübersicht ein, um den Verlauf aufzubauen.",
     "intakeHistoryEmptyAction": "Zur Tagesübersicht",
-    "intakeHistoryColTaken": "Eingenommen",
+    "intakeHistoryColTaken": "Genommen",
     "intakeHistoryColScheduled": "Geplant",
     "intakeHistoryColStatus": "Status",
     "intakeHistoryColSource": "Quelle",
     "intakeHistoryInjectionSite": "Injektionsstelle: {site}",
-    "intakeHistoryStatusTaken": "Eingenommen",
-    "intakeHistoryStatusSkipped": "Übersprungen",
     "intakeHistorySortByTaken": "Nach Einnahme-Zeitpunkt sortieren",
     "intakeHistorySortByScheduled": "Nach geplantem Zeitpunkt sortieren",
     "intakeHistoryPageInfo": "Seite {page} von {total}, {count} Einträge",
@@ -2136,8 +2129,6 @@
         "adherenceLabel": "Therapietreue",
         "adherenceBarLabel": "{onTime} pünktlich, {late} verspätet, {missed} verpasst",
         "add": "Eintrag",
-        "markTaken": "Genommen",
-        "markSkipped": "Übersprungen",
         "rowActionsLabel": "Aktionen für {time}",
         "markAsTaken": "Als genommen markieren",
         "markAsSkipped": "Als übersprungen markieren",
@@ -2145,12 +2136,7 @@
         "takenDetail": "geplant {planned}, genommen {taken}",
         "doseTaken": "Dosis: {dose}",
         "status": {
-          "taken_on_time": "pünktlich",
-          "taken_late": "verspätet",
-          "skipped": "übersprungen",
-          "missed": "verpasst",
-          "upcoming": "ausstehend",
-          "ad_hoc": "außerplanmäßig"
+          "ad_hoc": "Außerplanmäßig"
         },
         "addDialog": {
           "title": "Einnahme hinzufügen",
@@ -2499,8 +2485,6 @@
     "tableStockDoses": "{count} Dosen",
     "tableStockRunway": "≈ {days} Tage übrig",
     "cardLowStockRunway": "Vorrat: ≈ {days} Tage",
-    "takeActionFor": "Einnehmen: {name}",
-    "skipActionFor": "Überspringen: {name}",
     "reorderDescription": "Bestimme die Reihenfolge deiner Medikamente für die Karten- und die Tabellenansicht.",
     "reorderSaved": "Reihenfolge gespeichert",
     "reorderSaveFailed": "Reihenfolge konnte nicht gespeichert werden",
@@ -2693,6 +2677,26 @@
       "saveError": "Die Zusammensetzung konnte nicht gespeichert werden",
       "catalogError": "Die Nährstoffliste konnte nicht geladen werden",
       "invalidRow": "Wähl in jeder Zeile einen Nährstoff und trag eine Menge über null ein."
+    },
+    "dose": {
+      "action": {
+        "take": "Einnehmen",
+        "skip": "Überspringen",
+        "snooze": "Später erinnern ({minutes} Min.)",
+        "undo": "Rückgängig",
+        "takeFor": "Einnehmen: {name}",
+        "skipFor": "Überspringen: {name}"
+      },
+      "state": {
+        "pending": "Ausstehend",
+        "due": "Fällig",
+        "overdue": "Überfällig",
+        "taken": "Genommen",
+        "takenLate": "Verspätet genommen",
+        "skipped": "Übersprungen",
+        "missed": "Verpasst",
+        "missedStillCounts": "Nimmst du sie jetzt, zählt sie noch, als verspätet."
+      }
     }
   },
   "charts": {

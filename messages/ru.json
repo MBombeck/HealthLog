@@ -364,7 +364,7 @@
     "colMedication": "Лекарство",
     "colTaken": "Принято",
     "colSkipped": "Пропущено",
-    "colMissed": "Пропущено",
+    "colMissed": "Не принято",
     "colExpected": "Ожидалось",
     "colComplianceRate": "Приверженность",
     "moodTitle": "Динамика настроения",
@@ -1581,11 +1581,8 @@
     },
     "withoutNotification": "Без уведомления",
     "pausedSince": "На паузе с",
-    "takeNow": "Принять сейчас",
     "lastDoseYesterday": "Последняя доза вчера",
     "lastDoseDaysAgo": "Последняя доза {count} дн. назад",
-    "overdue": "Просрочено",
-    "veryOverdue": "Сильно просрочено",
     "complianceWindow": "Приверженность ({days} дн.)",
     "complianceUnavailable": "Не удалось загрузить приверженность",
     "complianceNotApplicable": "Приверженность неприменима",
@@ -1599,8 +1596,6 @@
     "dayStreakOne": "дней подряд",
     "cycleDueToday": "Срок сегодня",
     "cycleNoClosedCycles": "Закрытых циклов доз пока нет",
-    "taken": "Принято",
-    "skipped": "Пропущено",
     "intakeToastTaken": "{name} записано как принятое",
     "intakeToastSkipped": "{name} пропущено",
     "intakeToastFailed": "Не удалось записать {name}. Попробуйте ещё раз",
@@ -2046,8 +2041,6 @@
     "intakeHistoryColStatus": "Статус",
     "intakeHistoryColSource": "Источник",
     "intakeHistoryInjectionSite": "Место инъекции: {site}",
-    "intakeHistoryStatusTaken": "Принято",
-    "intakeHistoryStatusSkipped": "Пропущено",
     "intakeHistorySortByTaken": "Сортировать по времени приёма",
     "intakeHistorySortByScheduled": "Сортировать по запланированному времени",
     "intakeHistoryPageInfo": "Страница {page} из {total}, записей: {count}",
@@ -2136,8 +2129,6 @@
         "adherenceLabel": "Приверженность",
         "adherenceBarLabel": "{onTime} вовремя, {late} с опозданием, {missed} пропущено",
         "add": "Запись",
-        "markTaken": "Принято",
-        "markSkipped": "Пропущено",
         "rowActionsLabel": "Действия для {time}",
         "markAsTaken": "Отметить как принято",
         "markAsSkipped": "Отметить как пропущено",
@@ -2145,12 +2136,7 @@
         "takenDetail": "запланировано {planned}, принято {taken}",
         "doseTaken": "Доза: {dose}",
         "status": {
-          "taken_on_time": "вовремя",
-          "taken_late": "с опозданием",
-          "skipped": "пропущено",
-          "missed": "пропущено",
-          "upcoming": "предстоит",
-          "ad_hoc": "вне расписания"
+          "ad_hoc": "Вне расписания"
         },
         "addDialog": {
           "title": "Добавить приём",
@@ -2499,8 +2485,6 @@
     "tableStockDoses": "{count} доз",
     "tableStockRunway": "≈ {days} дн. осталось",
     "cardLowStockRunway": "Запас: ≈ {days} дн.",
-    "takeActionFor": "Принять {name}",
-    "skipActionFor": "Пропустить {name}",
     "reorderDescription": "Задайте порядок лекарств для карточек и таблицы.",
     "reorderSaved": "Порядок сохранён",
     "reorderSaveFailed": "Не удалось сохранить порядок",
@@ -2693,6 +2677,26 @@
       "saveError": "Не удалось сохранить состав",
       "catalogError": "Не удалось загрузить список нутриентов",
       "invalidRow": "Выберите нутриент и укажите количество больше нуля в каждой строке."
+    },
+    "dose": {
+      "action": {
+        "take": "Принять",
+        "skip": "Пропустить",
+        "snooze": "Напомнить позже ({minutes} мин)",
+        "undo": "Отменить",
+        "takeFor": "Принять {name}",
+        "skipFor": "Пропустить {name}"
+      },
+      "state": {
+        "pending": "Предстоит",
+        "due": "Пора принять",
+        "overdue": "Просрочено",
+        "taken": "Принято",
+        "takenLate": "Принято с опозданием",
+        "skipped": "Пропущено",
+        "missed": "Не принято",
+        "missedStillCounts": "Если принять сейчас, доза засчитается как принятая с опозданием."
+      }
     }
   },
   "charts": {

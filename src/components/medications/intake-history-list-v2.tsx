@@ -724,7 +724,7 @@ function IntakeStatusBadge({
         className="bg-success/15 text-success gap-1 text-xs"
       >
         <Check aria-hidden="true" className="h-3 w-3" />
-        {t("medications.intakeHistoryStatusTaken")}
+        {t("medications.dose.state.taken")}
       </Badge>
     );
   }
@@ -732,7 +732,7 @@ function IntakeStatusBadge({
     return (
       <Badge variant="outline" className="text-muted-foreground gap-1 text-xs">
         <SkipForward aria-hidden="true" className="h-3 w-3" />
-        {t("medications.intakeHistoryStatusSkipped")}
+        {t("medications.dose.state.skipped")}
       </Badge>
     );
   }

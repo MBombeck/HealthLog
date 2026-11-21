@@ -328,7 +328,7 @@
     "colMedication": "Lek",
     "colTaken": "Przyjęte",
     "colSkipped": "Pominięte",
-    "colMissed": "Pominięte",
+    "colMissed": "Nieprzyjęte",
     "colExpected": "Oczekiwane",
     "colComplianceRate": "Wskaźnik przestrzegania",
     "moodTitle": "Przebieg nastroju",
@@ -1581,11 +1581,8 @@
     },
     "withoutNotification": "Bez powiadomienia",
     "pausedSince": "Wstrzymane od",
-    "takeNow": "Przyjmij teraz",
     "lastDoseYesterday": "Ostatnia dawka wczoraj",
     "lastDoseDaysAgo": "Ostatnia dawka {count} dni temu",
-    "overdue": "Po terminie",
-    "veryOverdue": "Mocno po terminie",
     "complianceWindow": "Przestrzeganie {days} dni",
     "complianceUnavailable": "Nie udało się wczytać danych o przestrzeganiu",
     "complianceNotApplicable": "Przestrzeganie zaleceń nie ma zastosowania",
@@ -1599,8 +1596,6 @@
     "dayStreakOne": "dzień serii",
     "cycleDueToday": "Termin dzisiaj",
     "cycleNoClosedCycles": "Brak zakończonych cykli dawkowania",
-    "taken": "Przyjęte",
-    "skipped": "Pominięte",
     "intakeToastTaken": "{name} oznaczone jako przyjęte",
     "intakeToastSkipped": "{name} pominięte",
     "intakeToastFailed": "Nie udało się zapisać {name}. Spróbuj ponownie",
@@ -2041,13 +2036,11 @@
     "intakeHistoryEmptyTitle": "Brak przyjęć",
     "intakeHistoryEmptyDescription": "Gdy tylko zarejestrujesz przyjęcie, pojawi się tu wraz z godziną i źródłem.",
     "intakeHistoryEmptyAction": "Zarejestruj przyjęcie",
-    "intakeHistoryColTaken": "Przyjęty",
+    "intakeHistoryColTaken": "Przyjęte",
     "intakeHistoryColScheduled": "Zaplanowany",
     "intakeHistoryColStatus": "Status",
     "intakeHistoryColSource": "Źródło",
     "intakeHistoryInjectionSite": "Miejsce wstrzyknięcia: {site}",
-    "intakeHistoryStatusTaken": "Przyjęty",
-    "intakeHistoryStatusSkipped": "Pominięty",
     "intakeHistorySortByTaken": "Sortuj wg czasu przyjęcia",
     "intakeHistorySortByScheduled": "Sortuj wg czasu zaplanowanego",
     "intakeHistoryPageInfo": "Strona {page} z {total}, {count} wpisów",
@@ -2136,8 +2129,6 @@
         "adherenceLabel": "Przestrzeganie",
         "adherenceBarLabel": "{onTime} na czas, {late} z opóźnieniem, {missed} pominięte",
         "add": "Wpis",
-        "markTaken": "Przyjęte",
-        "markSkipped": "Pominięte",
         "rowActionsLabel": "Akcje dla {time}",
         "markAsTaken": "Oznacz jako przyjętą",
         "markAsSkipped": "Oznacz jako pominiętą",
@@ -2145,12 +2136,7 @@
         "takenDetail": "planowo {planned}, przyjęto {taken}",
         "doseTaken": "Dawka: {dose}",
         "status": {
-          "taken_on_time": "na czas",
-          "taken_late": "z opóźnieniem",
-          "skipped": "pominięte",
-          "missed": "nieprzyjęte",
-          "upcoming": "oczekujące",
-          "ad_hoc": "poza planem"
+          "ad_hoc": "Poza planem"
         },
         "addDialog": {
           "title": "Dodaj przyjęcie",
@@ -2499,8 +2485,6 @@
     "tableStockDoses": "Dawki: {count}",
     "tableStockRunway": "≈ {days} dni zapasu",
     "cardLowStockRunway": "Zapas: ≈ {days} dni",
-    "takeActionFor": "Przyjmij: {name}",
-    "skipActionFor": "Pomiń: {name}",
     "reorderDescription": "Ustal kolejność swoich leków w widoku kart i w tabeli.",
     "reorderSaved": "Kolejność zapisana",
     "reorderSaveFailed": "Nie udało się zapisać kolejności",
@@ -2693,6 +2677,26 @@
       "saveError": "Nie udało się zapisać składu",
       "catalogError": "Nie udało się wczytać listy składników",
       "invalidRow": "W każdej linii wybierz składnik i wpisz ilość większą od zera."
+    },
+    "dose": {
+      "action": {
+        "take": "Przyjmij",
+        "skip": "Pomiń",
+        "snooze": "Przypomnij później ({minutes} min)",
+        "undo": "Cofnij",
+        "takeFor": "Przyjmij {name}",
+        "skipFor": "Pomiń {name}"
+      },
+      "state": {
+        "pending": "Oczekujące",
+        "due": "Do przyjęcia",
+        "overdue": "Po terminie",
+        "taken": "Przyjęte",
+        "takenLate": "Przyjęte z opóźnieniem",
+        "skipped": "Pominięte",
+        "missed": "Nieprzyjęte",
+        "missedStillCounts": "Jeśli przyjmiesz ją teraz, nadal się liczy, jako z opóźnieniem."
+      }
     }
   },
   "charts": {

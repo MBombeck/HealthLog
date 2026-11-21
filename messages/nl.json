@@ -1581,11 +1581,8 @@
     },
     "withoutNotification": "Zonder melding",
     "pausedSince": "Gepauzeerd sinds",
-    "takeNow": "Nu innemen",
     "lastDoseYesterday": "Laatste dosis gisteren",
     "lastDoseDaysAgo": "Laatste dosis {count} dagen geleden",
-    "overdue": "Te laat",
-    "veryOverdue": "Ruim te laat",
     "complianceWindow": "Therapietrouw ({days} dagen)",
     "complianceUnavailable": "Therapietrouw kon niet worden geladen",
     "complianceNotApplicable": "Therapietrouw niet van toepassing",
@@ -1599,8 +1596,6 @@
     "dayStreakOne": "dag op rij",
     "cycleDueToday": "Vandaag gepland",
     "cycleNoClosedCycles": "Nog geen afgeronde doseringscycli",
-    "taken": "Ingenomen",
-    "skipped": "Overgeslagen",
     "intakeToastTaken": "{name} geregistreerd als ingenomen",
     "intakeToastSkipped": "{name} overgeslagen",
     "intakeToastFailed": "{name} kon niet worden geregistreerd. Probeer het opnieuw",
@@ -2046,8 +2041,6 @@
     "intakeHistoryColStatus": "Status",
     "intakeHistoryColSource": "Bron",
     "intakeHistoryInjectionSite": "Injectieplaats: {site}",
-    "intakeHistoryStatusTaken": "Ingenomen",
-    "intakeHistoryStatusSkipped": "Overgeslagen",
     "intakeHistorySortByTaken": "Sorteren op innametijd",
     "intakeHistorySortByScheduled": "Sorteren op geplande tijd",
     "intakeHistoryPageInfo": "Pagina {page} van {total}, {count} registraties",
@@ -2136,8 +2129,6 @@
         "adherenceLabel": "Therapietrouw",
         "adherenceBarLabel": "{onTime} op tijd, {late} te laat, {missed} gemist",
         "add": "Registratie",
-        "markTaken": "Ingenomen",
-        "markSkipped": "Overgeslagen",
         "rowActionsLabel": "Acties voor {time}",
         "markAsTaken": "Markeren als ingenomen",
         "markAsSkipped": "Markeren als overgeslagen",
@@ -2145,12 +2136,7 @@
         "takenDetail": "gepland {planned}, ingenomen {taken}",
         "doseTaken": "Dosis: {dose}",
         "status": {
-          "taken_on_time": "op tijd",
-          "taken_late": "te laat",
-          "skipped": "overgeslagen",
-          "missed": "gemist",
-          "upcoming": "gepland",
-          "ad_hoc": "buiten schema"
+          "ad_hoc": "Buiten schema"
         },
         "addDialog": {
           "title": "Inname toevoegen",
@@ -2499,8 +2485,6 @@
     "tableStockDoses": "{count} doses",
     "tableStockRunway": "≈ {days} dagen over",
     "cardLowStockRunway": "Voorraad: ≈ {days} dagen",
-    "takeActionFor": "{name} innemen",
-    "skipActionFor": "{name} overslaan",
     "reorderDescription": "Bepaal de volgorde van je medicatie voor zowel de kaart- als de tabelweergave.",
     "reorderSaved": "Volgorde opgeslagen",
     "reorderSaveFailed": "De volgorde kan niet worden opgeslagen",
@@ -2693,6 +2677,26 @@
       "saveError": "De samenstelling kan niet worden opgeslagen",
       "catalogError": "De lijst met voedingsstoffen kan niet worden geladen",
       "invalidRow": "Kies in elke regel een voedingsstof en voer een hoeveelheid groter dan nul in."
+    },
+    "dose": {
+      "action": {
+        "take": "Innemen",
+        "skip": "Overslaan",
+        "snooze": "Later herinneren ({minutes} min)",
+        "undo": "Ongedaan maken",
+        "takeFor": "{name} innemen",
+        "skipFor": "{name} overslaan"
+      },
+      "state": {
+        "pending": "Gepland",
+        "due": "Aan de beurt",
+        "overdue": "Te laat",
+        "taken": "Ingenomen",
+        "takenLate": "Te laat ingenomen",
+        "skipped": "Overgeslagen",
+        "missed": "Gemist",
+        "missedStillCounts": "Neem je hem nu, dan telt hij nog, als te laat."
+      }
     }
   },
   "charts": {

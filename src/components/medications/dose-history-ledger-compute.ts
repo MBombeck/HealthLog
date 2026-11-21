@@ -16,6 +16,7 @@
  */
 
 import type { DoseHistoryStatus } from "@/lib/medications/scheduling/dose-history";
+import type { WireDoseState } from "@/lib/medications/dose-state/resolve";
 
 /** The serialised row shape the `dose-history` endpoint returns. */
 export interface LedgerRow {
@@ -25,6 +26,12 @@ export interface LedgerRow {
   /** The slot's "HH:mm" label, or null for an ad-hoc row. */
   timeOfDay: string | null;
   status: DoseHistoryStatus;
+  /**
+   * The slot's resolved dose state from the server (`upcoming`, `due`,
+   * `overdue`, ...); absent on an older payload and on an optimistic row.
+   */
+  state?: WireDoseState | null;
+  takenLate?: boolean;
   /** v1.15.20 — slot served by a deliberate user pin ("zugeordnet"). */
   pinned?: boolean;
   /** v1.15.20 — due-context for an ad-hoc take: the nearest slot it could
@@ -186,18 +193,20 @@ export function applyOptimisticSlotMark(
   action: "taken" | "skipped",
   nowIso: string = new Date().toISOString(),
 ): LedgerPayload {
-  const rows = payload.rows.map((row) => {
+  const rows = payload.rows.map((row): LedgerRow => {
     if (row.kind !== "slot" || row.at !== slotAt) return row;
     if (!isSlotActionable(row)) return row;
     const status: DoseHistoryStatus =
       action === "skipped"
         ? "skipped"
-        : row.status === "missed"
+        : row.status === "missed" || row.state === "overdue"
           ? "taken_late"
           : "taken_on_time";
     return {
       ...row,
       status,
+      state: action === "skipped" ? "skipped" : "taken",
+      takenLate: status === "taken_late",
       intake: {
         // Optimistic placeholder id; replaced by the server row on refetch.
         id: row.intake?.id ?? null,

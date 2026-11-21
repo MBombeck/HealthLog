@@ -362,9 +362,9 @@
     "colGlp1Note": "Observação",
     "colGlp1SideEffect": "Efeito colateral",
     "colMedication": "Medicamento",
-    "colTaken": "Tomado",
-    "colSkipped": "Pulado",
-    "colMissed": "Perdido",
+    "colTaken": "Tomada",
+    "colSkipped": "Pulada",
+    "colMissed": "Perdida",
     "colExpected": "Esperado",
     "colComplianceRate": "Taxa de adesão",
     "moodTitle": "Trajetória do humor",
@@ -1581,11 +1581,8 @@
     },
     "withoutNotification": "Sem notificação",
     "pausedSince": "Pausado desde",
-    "takeNow": "Tomar agora",
     "lastDoseYesterday": "Última dose ontem",
     "lastDoseDaysAgo": "Última dose há {count} dias",
-    "overdue": "Atrasado",
-    "veryOverdue": "Muito atrasado",
     "complianceWindow": "Adesão ({days} dias)",
     "complianceUnavailable": "A adesão não pôde ser carregada",
     "complianceNotApplicable": "Adesão não aplicável",
@@ -1599,8 +1596,6 @@
     "dayStreakOne": "dia seguido",
     "cycleDueToday": "Previsto para hoje",
     "cycleNoClosedCycles": "Nenhum ciclo de doses fechado ainda",
-    "taken": "Tomada",
-    "skipped": "Pulada",
     "intakeToastTaken": "{name} registrada como tomada",
     "intakeToastSkipped": "{name} pulada",
     "intakeToastFailed": "Não foi possível registrar {name}. Tente novamente",
@@ -2046,8 +2041,6 @@
     "intakeHistoryColStatus": "Status",
     "intakeHistoryColSource": "Fonte",
     "intakeHistoryInjectionSite": "Local da injeção: {site}",
-    "intakeHistoryStatusTaken": "Tomada",
-    "intakeHistoryStatusSkipped": "Pulada",
     "intakeHistorySortByTaken": "Ordenar por horário da tomada",
     "intakeHistorySortByScheduled": "Ordenar por horário programado",
     "intakeHistoryPageInfo": "Página {page} de {total}, {count} entradas",
@@ -2136,8 +2129,6 @@
         "adherenceLabel": "Adesão",
         "adherenceBarLabel": "{onTime} no horário, {late} atrasadas, {missed} perdidas",
         "add": "Entrada",
-        "markTaken": "Tomada",
-        "markSkipped": "Pulada",
         "rowActionsLabel": "Ações para {time}",
         "markAsTaken": "Marcar como tomada",
         "markAsSkipped": "Marcar como pulada",
@@ -2145,12 +2136,7 @@
         "takenDetail": "prevista {planned}, tomada {taken}",
         "doseTaken": "Dose: {dose}",
         "status": {
-          "taken_on_time": "no horário",
-          "taken_late": "atrasada",
-          "skipped": "pulada",
-          "missed": "perdida",
-          "upcoming": "prevista",
-          "ad_hoc": "fora do cronograma"
+          "ad_hoc": "Fora do cronograma"
         },
         "addDialog": {
           "title": "Adicionar tomada",
@@ -2499,8 +2485,6 @@
     "tableStockDoses": "{count} doses",
     "tableStockRunway": "≈ {days} dias restantes",
     "cardLowStockRunway": "Estoque: ≈ {days} dias",
-    "takeActionFor": "Tomar {name}",
-    "skipActionFor": "Pular {name}",
     "reorderDescription": "Defina a ordem dos seus medicamentos tanto na visualização em cartões quanto na tabela.",
     "reorderSaved": "Ordem salva",
     "reorderSaveFailed": "A ordem não pôde ser salva",
@@ -2693,6 +2677,26 @@
       "saveError": "A composição não pôde ser salva",
       "catalogError": "A lista de nutrientes não pôde ser carregada",
       "invalidRow": "Escolha um nutriente e insira uma quantidade acima de zero em cada linha."
+    },
+    "dose": {
+      "action": {
+        "take": "Tomar",
+        "skip": "Pular",
+        "snooze": "Lembrar mais tarde ({minutes} min)",
+        "undo": "Desfazer",
+        "takeFor": "Tomar {name}",
+        "skipFor": "Pular {name}"
+      },
+      "state": {
+        "pending": "Prevista",
+        "due": "Na hora",
+        "overdue": "Atrasada",
+        "taken": "Tomada",
+        "takenLate": "Tomada com atraso",
+        "skipped": "Pulada",
+        "missed": "Perdida",
+        "missedStillCounts": "Se tomar agora, ainda conta, como atrasada."
+      }
     }
   },
   "charts": {

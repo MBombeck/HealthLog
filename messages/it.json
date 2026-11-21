@@ -328,7 +328,7 @@
     "colMedication": "Farmaco",
     "colTaken": "Assunta",
     "colSkipped": "Saltata",
-    "colMissed": "Persa",
+    "colMissed": "Mancata",
     "colExpected": "Attese",
     "colComplianceRate": "Tasso di aderenza",
     "moodTitle": "Andamento dell’umore",
@@ -1581,11 +1581,8 @@
     },
     "withoutNotification": "Senza notifica",
     "pausedSince": "In pausa dal",
-    "takeNow": "Assumi ora",
     "lastDoseYesterday": "Ultima dose ieri",
     "lastDoseDaysAgo": "Ultima dose {count} giorni fa",
-    "overdue": "In ritardo",
-    "veryOverdue": "Molto in ritardo",
     "complianceWindow": "Aderenza {days} giorni",
     "complianceUnavailable": "Impossibile caricare l'aderenza",
     "complianceNotApplicable": "Aderenza non applicabile",
@@ -1599,8 +1596,6 @@
     "dayStreakOne": "giorno di serie",
     "cycleDueToday": "In scadenza oggi",
     "cycleNoClosedCycles": "Ancora nessun ciclo di dose completato",
-    "taken": "Assunta",
-    "skipped": "Saltata",
     "intakeToastTaken": "{name} registrata come assunta",
     "intakeToastSkipped": "{name} saltata",
     "intakeToastFailed": "Impossibile registrare {name}; riprova",
@@ -2046,8 +2041,6 @@
     "intakeHistoryColStatus": "Stato",
     "intakeHistoryColSource": "Sorgente",
     "intakeHistoryInjectionSite": "Sito di iniezione: {site}",
-    "intakeHistoryStatusTaken": "Assunta",
-    "intakeHistoryStatusSkipped": "Saltata",
     "intakeHistorySortByTaken": "Ordina per ora di assunzione",
     "intakeHistorySortByScheduled": "Ordina per orario programmato",
     "intakeHistoryPageInfo": "Pagina {page} di {total}, {count} voci",
@@ -2136,8 +2129,6 @@
         "adherenceLabel": "Aderenza",
         "adherenceBarLabel": "{onTime} puntuali, {late} in ritardo, {missed} mancate",
         "add": "Voce",
-        "markTaken": "Assunta",
-        "markSkipped": "Saltata",
         "rowActionsLabel": "Azioni per {time}",
         "markAsTaken": "Segna come assunta",
         "markAsSkipped": "Segna come saltata",
@@ -2145,12 +2136,7 @@
         "takenDetail": "prevista {planned}, assunta {taken}",
         "doseTaken": "Dose: {dose}",
         "status": {
-          "taken_on_time": "puntuale",
-          "taken_late": "in ritardo",
-          "skipped": "saltata",
-          "missed": "mancata",
-          "upcoming": "in attesa",
-          "ad_hoc": "fuori programma"
+          "ad_hoc": "Fuori programma"
         },
         "addDialog": {
           "title": "Aggiungi assunzione",
@@ -2499,8 +2485,6 @@
     "tableStockDoses": "{count} dosi",
     "tableStockRunway": "≈ {days} giorni rimanenti",
     "cardLowStockRunway": "Scorta: ≈ {days} giorni",
-    "takeActionFor": "Assumi: {name}",
-    "skipActionFor": "Salta: {name}",
     "reorderDescription": "Imposta l'ordine dei tuoi farmaci: vale per la vista a schede e per la tabella.",
     "reorderSaved": "Ordine salvato",
     "reorderSaveFailed": "Impossibile salvare l’ordine",
@@ -2693,6 +2677,26 @@
       "saveError": "Non è stato possibile salvare la composizione",
       "catalogError": "Non è stato possibile caricare l'elenco dei nutrienti",
       "invalidRow": "Scegli un nutriente e inserisci una quantità maggiore di zero in ogni riga."
+    },
+    "dose": {
+      "action": {
+        "take": "Assumi",
+        "skip": "Salta",
+        "snooze": "Ricordamelo più tardi ({minutes} min)",
+        "undo": "Annulla",
+        "takeFor": "Assumi {name}",
+        "skipFor": "Salta {name}"
+      },
+      "state": {
+        "pending": "In attesa",
+        "due": "Da assumere",
+        "overdue": "In ritardo",
+        "taken": "Assunta",
+        "takenLate": "Assunta in ritardo",
+        "skipped": "Saltata",
+        "missed": "Mancata",
+        "missedStillCounts": "Se la assumi ora conta ancora, come in ritardo."
+      }
     }
   },
   "charts": {

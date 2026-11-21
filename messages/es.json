@@ -1581,11 +1581,8 @@
     },
     "withoutNotification": "Sin notificación",
     "pausedSince": "En pausa desde",
-    "takeNow": "Tomar ahora",
     "lastDoseYesterday": "Última dosis ayer",
     "lastDoseDaysAgo": "Última dosis hace {count} días",
-    "overdue": "Vencida",
-    "veryOverdue": "Muy vencida",
     "complianceWindow": "Cumplimiento {days} días",
     "complianceUnavailable": "No se pudo cargar el cumplimiento",
     "complianceNotApplicable": "El cumplimiento no es aplicable",
@@ -1599,8 +1596,6 @@
     "dayStreakOne": "día de racha",
     "cycleDueToday": "Pendiente hoy",
     "cycleNoClosedCycles": "Aún no hay ciclos de dosis completados",
-    "taken": "Tomada",
-    "skipped": "Omitida",
     "intakeToastTaken": "{name} registrada como tomada",
     "intakeToastSkipped": "{name} omitida",
     "intakeToastFailed": "No se pudo registrar {name}; inténtalo de nuevo",
@@ -2046,8 +2041,6 @@
     "intakeHistoryColStatus": "Estado",
     "intakeHistoryColSource": "Fuente",
     "intakeHistoryInjectionSite": "Lugar de inyección: {site}",
-    "intakeHistoryStatusTaken": "Tomada",
-    "intakeHistoryStatusSkipped": "Omitida",
     "intakeHistorySortByTaken": "Ordenar por hora de toma",
     "intakeHistorySortByScheduled": "Ordenar por hora programada",
     "intakeHistoryPageInfo": "Página {page} de {total}, {count} entradas",
@@ -2136,8 +2129,6 @@
         "adherenceLabel": "Adherencia",
         "adherenceBarLabel": "{onTime} a tiempo, {late} con retraso, {missed} omitidas",
         "add": "Entrada",
-        "markTaken": "Tomada",
-        "markSkipped": "Saltada",
         "rowActionsLabel": "Acciones para {time}",
         "markAsTaken": "Marcar como tomada",
         "markAsSkipped": "Marcar como omitida",
@@ -2145,12 +2136,7 @@
         "takenDetail": "prevista {planned}, tomada {taken}",
         "doseTaken": "Dosis: {dose}",
         "status": {
-          "taken_on_time": "a tiempo",
-          "taken_late": "con retraso",
-          "skipped": "saltada",
-          "missed": "perdida",
-          "upcoming": "pendiente",
-          "ad_hoc": "fuera de horario"
+          "ad_hoc": "Fuera de horario"
         },
         "addDialog": {
           "title": "Añadir toma",
@@ -2499,8 +2485,6 @@
     "tableStockDoses": "{count} dosis",
     "tableStockRunway": "≈ {days} días restantes",
     "cardLowStockRunway": "Reserva: ≈ {days} días",
-    "takeActionFor": "Tomar: {name}",
-    "skipActionFor": "Omitir: {name}",
     "reorderDescription": "Define el orden de tus medicamentos: se aplica a la vista de tarjetas y a la de tabla.",
     "reorderSaved": "Orden guardado",
     "reorderSaveFailed": "No se pudo guardar el orden",
@@ -2693,6 +2677,26 @@
       "saveError": "No se pudo guardar la composición",
       "catalogError": "No se pudo cargar la lista de nutrientes",
       "invalidRow": "Elige un nutriente e introduce una cantidad mayor que cero en cada línea."
+    },
+    "dose": {
+      "action": {
+        "take": "Tomar",
+        "skip": "Omitir",
+        "snooze": "Recordar más tarde ({minutes} min)",
+        "undo": "Deshacer",
+        "takeFor": "Tomar {name}",
+        "skipFor": "Omitir {name}"
+      },
+      "state": {
+        "pending": "Pendiente",
+        "due": "Es la hora",
+        "overdue": "Atrasada",
+        "taken": "Tomada",
+        "takenLate": "Tomada tarde",
+        "skipped": "Omitida",
+        "missed": "Perdida",
+        "missedStillCounts": "Si la tomas ahora, aún cuenta, como tardía."
+      }
     }
   },
   "charts": {

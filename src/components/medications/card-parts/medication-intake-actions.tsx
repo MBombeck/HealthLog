@@ -3,6 +3,7 @@ import { Check, Loader2, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import { DOSE_ACTION_TERM } from "@/lib/medications/dose-state/terms";
 
 interface MedicationIntakeActionsProps {
   /** "take" | "skip" while the matching request is in flight, else null. */
@@ -53,7 +54,7 @@ export function MedicationIntakeActions({
         ) : (
           <Check className="h-4 w-4" />
         )}
-        {t("medications.taken")}
+        {t(DOSE_ACTION_TERM.take)}
       </Button>
       <Button
         data-slot="medication-intake-skip"
@@ -67,7 +68,7 @@ export function MedicationIntakeActions({
         ) : (
           <SkipForward className="h-4 w-4" />
         )}
-        {t("medications.skipped")}
+        {t(DOSE_ACTION_TERM.skip)}
       </Button>
     </div>
   );
