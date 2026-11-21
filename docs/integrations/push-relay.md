@@ -65,7 +65,10 @@ The relay is off until the admin turns it on.
    time, even while your server is unreachable.
 
 Turning the switch off deletes your instance at the relay, which removes every
-device binding with it, and deletes the instance key here. The apps notice it
+device binding with it, and deletes the instance key here. If the relay is not
+reachable at that moment, the server keeps the key, sends nothing, and retries
+the deletion until the relay confirms it. Revoking a device or withdrawing
+consent reaches the relay the same way. The apps notice it
 on their next sync and go back to local reminders on their own.
 
 ### Checking it works, and the instance key
@@ -81,6 +84,17 @@ that key every 30 days through the relay's rotation endpoint, and **Rotate
 relay key** does it at once (the relay allows one rotation a day). The new
 key is kept before the request leaves, so a lost answer cannot lock the
 server out, and the old one is kept for 7 days.
+
+### Sender keys
+
+Envelopes are sealed with this server's sender key, which every device pins.
+A new sender key is announced to the apps as `next` at least 7 days before
+it seals anything, then becomes `current`; the old one stays pinned as
+`previous` for 30 days and is then deleted. The regular rotation is yearly.
+If a sender key is ever exposed, `POST /api/admin/push-relay/rotate-sender-key`
+(an admin with a fresh second factor, audit-logged) replaces it at once;
+devices that have not fetched the new key show a neutral notification until
+the app is opened.
 
 ### Deleting an account
 
@@ -150,7 +164,10 @@ All optional, all on the compose whitelist.
 | `PUSH_RELAY_KEYS` | the hosted relay's keys      | the relay's identity public keys, Ed25519, unpadded base64url, comma separated |
 
 Every relay answer must carry a signature by one of the pinned identity keys,
-bound to the request it answers. An answer without one is treated as if it
+bound to the method, path and nonce of the request it answers, and fit the
+expected shape and size (at most 256 KiB). Retry hints are taken only from the
+signed body, never from the unsigned `Retry-After` header, and capped at a
+day. An answer without one is treated as if it
 never arrived; it is never read as a refusal, a revocation or a deletion. A
 relay without pinned keys cannot be used at all.
 

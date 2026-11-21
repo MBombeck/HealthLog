@@ -83,10 +83,26 @@ export class FakeRelay {
   apnsAnswer = new Map<string, "ok" | "unregistered">();
   private nextId = 1;
 
+  /** The request being answered: method and raw path the signature binds. */
+  private current = { method: "GET", pathAndQuery: "/" };
+  /** Answer every 429 and 503 with this signed hint, when set. */
+  retryAfter: number | null = null;
+  /** Per path: answer with this status and error instead of handling it. */
+  refuse = new Map<string, { status: number; error: string }>();
+
   private sign(nonce: string | null, status: number, body: string): string {
     const seed = this.forge ? Buffer.alloc(32, 0x42) : RELAY_SEED;
     return toBase64Url(
-      signText(seed, responseText({ host: RELAY_HOST, nonce, status, body })),
+      signText(
+        seed,
+        responseText({
+          host: RELAY_HOST,
+          ...this.current,
+          nonce,
+          status,
+          body,
+        }),
+      ),
     );
   }
 
@@ -116,7 +132,17 @@ export class FakeRelay {
       nonceHeader && fromBase64Url(nonceHeader, 16) ? nonceHeader : null;
     const body = typeof init.body === "string" ? init.body : "";
     const pathAndQuery = target.pathname + target.search;
+    this.current = { method, pathAndQuery };
     this.calls.push(`${method} ${pathAndQuery}`);
+    if (!nonce) return this.reply(null, 400, { error: "nonce_required" });
+    const refusal = this.refuse.get(pathAndQuery);
+    if (refusal) {
+      return this.reply(nonce, refusal.status, {
+        error: refusal.error,
+        scope: "instance",
+        ...(this.retryAfter ? { retryAfter: this.retryAfter } : {}),
+      });
+    }
     if (this.unavailable)
       return this.reply(nonce, 503, { error: "relay_misconfigured" });
 

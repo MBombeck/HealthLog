@@ -25,6 +25,7 @@ import {
   relayCall,
   type RegistrationRow,
 } from "@/lib/push-relay/registration";
+import { queueRelayUnbind } from "@/lib/push-relay/unbind-queue";
 
 export interface BindingStatement {
   instanceId: string;
@@ -162,24 +163,16 @@ export async function forwardBinding(
 }
 
 /**
- * Remove the relay binding of a device's token (`DELETE /v1/bindings`). The
- * relay answers `204` whether or not the token was bound, so this reveals
- * nothing and is safe to call for any token. Best effort.
+ * Remove the relay binding of a device's token (`DELETE /v1/bindings`),
+ * through the unbind queue: tried at once, retried by the minute pass while
+ * the relay is not reachable (`unbind-queue.ts`). The relay answers `204`
+ * whether or not the token was bound, so this reveals nothing.
  */
 export async function unbindToken(
   apnsToken: string | null,
   config: RelayConfig = relayConfig(),
 ): Promise<void> {
-  if (!apnsToken) return;
-  const registration = await loadRegistration(config);
-  if (!registration?.instanceId) return;
-  await relayCall(
-    registration,
-    "DELETE",
-    "/v1/bindings",
-    { token: apnsToken.toLowerCase() },
-    config,
-  );
+  await queueRelayUnbind(apnsToken, config);
 }
 
 /** Clear everything relay-related on a device; the row itself stays. */

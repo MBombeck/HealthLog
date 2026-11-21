@@ -28,6 +28,11 @@ import {
 } from "@/lib/push-relay/config";
 import { fromBase64Url, toBase64Url } from "@/lib/push-relay/encoding";
 import {
+  MAX_RELAY_BODY_BYTES,
+  parseRelayBody,
+  signedRetryAfter,
+} from "@/lib/push-relay/responses";
+import {
   ed25519PublicOf,
   registerText,
   requestText,
@@ -41,7 +46,7 @@ export type RelayCallResult =
       kind: "response";
       status: number;
       body: Record<string, unknown> | null;
-      /** `Retry-After` header, seconds. */
+      /** The signed body's `retryAfter`, seconds, capped at one day. */
       retryAfter: number | null;
     }
   | { kind: "transport"; reason: string };
@@ -64,19 +69,63 @@ function nowSeconds(offset: number): number {
   return Math.floor(Date.now() / 1000) + offset;
 }
 
-/** Whether `signature` is a pinned relay key's signature of this response. */
+/**
+ * Whether `signature` is a pinned relay key's `hl-relay-resp-v2` signature
+ * of this response to this request. A response bound to `-` (no nonce) never
+ * verifies: every request this server sends carries one.
+ */
 export function verifyRelayResponse(
   config: Pick<RelayConfig, "host" | "identityKeys">,
-  nonce: string | null,
+  request: { method: string; pathAndQuery: string; nonce: string },
   status: number,
   body: Buffer,
   signatureHeader: string | null,
 ): boolean {
-  if (!signatureHeader) return false;
+  if (!signatureHeader || !/^[A-Za-z0-9_-]{22}$/.test(request.nonce)) {
+    return false;
+  }
   const signature = fromBase64Url(signatureHeader, 64);
   if (!signature) return false;
-  const text = responseText({ host: config.host, nonce, status, body });
+  const text = responseText({
+    host: config.host,
+    method: request.method,
+    pathAndQuery: request.pathAndQuery,
+    nonce: request.nonce,
+    status,
+    body,
+  });
   return config.identityKeys.some((key) => verifyText(key, text, signature));
+}
+
+/** Read at most `limit` bytes of a body; null when it is longer or breaks. */
+async function readBounded(
+  response: Response,
+  limit: number,
+): Promise<Buffer | null> {
+  const declared = Number(response.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > limit) {
+    await response.body?.cancel().catch(() => undefined);
+    return null;
+  }
+  if (!response.body) return Buffer.alloc(0);
+  const reader = response.body.getReader();
+  const chunks: Buffer[] = [];
+  let size = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > limit) {
+        await reader.cancel().catch(() => undefined);
+        return null;
+      }
+      chunks.push(Buffer.from(value));
+    }
+  } catch {
+    return null;
+  }
+  return Buffer.concat(chunks);
 }
 
 async function exchange(
@@ -108,11 +157,12 @@ async function exchange(
       reason: kind ? `relay_${kind}` : "relay_network",
     };
   }
-  const bytes = Buffer.from(await response.arrayBuffer());
+  const bytes = await readBounded(response, MAX_RELAY_BODY_BYTES);
+  if (!bytes) return { kind: "transport", reason: "relay_body_too_large" };
   if (
     !verifyRelayResponse(
       config,
-      nonce,
+      { method, pathAndQuery: path, nonce },
       response.status,
       bytes,
       response.headers.get("hl-relay-signature"),
@@ -121,23 +171,32 @@ async function exchange(
     getEvent()?.addMeta("push_relay_signature_invalid", response.status);
     return { kind: "transport", reason: "relay_signature_invalid" };
   }
-  let parsed: Record<string, unknown> | null = null;
+  let json: unknown = null;
   if (bytes.length > 0) {
     try {
-      const value = JSON.parse(bytes.toString("utf8"));
-      parsed = value && typeof value === "object" ? value : null;
+      json = JSON.parse(bytes.toString("utf8"));
     } catch {
       return { kind: "transport", reason: "relay_body_invalid" };
     }
   }
-  const retryHeader = Number(response.headers.get("retry-after"));
+  const parsed = parseRelayBody(method, path, response.status, json);
+  if (parsed === "invalid") {
+    return { kind: "transport", reason: "relay_body_invalid" };
+  }
+  // Only the signed body's hint counts; the `Retry-After` header is not
+  // signed and is ignored.
   return {
     kind: "response",
     status: response.status,
     body: parsed,
-    retryAfter:
-      Number.isFinite(retryHeader) && retryHeader > 0 ? retryHeader : null,
+    retryAfter: signedRetryAfter(parsed),
   };
+}
+
+/** The clock offset a relay time implies, never more than a day either way. */
+function boundedOffset(relayTime: number): number {
+  const offset = relayTime - Math.floor(Date.now() / 1000);
+  return Math.max(-86_400, Math.min(86_400, offset));
 }
 
 function staleRelayTime(result: RelayCallResult): number | null {
@@ -194,7 +253,7 @@ export async function signedRelayCall(
     );
     const relayTime = staleRelayTime(result);
     if (relayTime === null || attempt > 0) return result;
-    offset = relayTime - Math.floor(Date.now() / 1000);
+    offset = boundedOffset(relayTime);
     await onOffset?.(offset);
   }
   return { kind: "transport", reason: "relay_unreachable" };
@@ -230,7 +289,7 @@ export async function registerInstance(
     );
     const relayTime = staleRelayTime(result);
     if (relayTime === null || attempt > 0) return result;
-    offset = relayTime - Math.floor(Date.now() / 1000);
+    offset = boundedOffset(relayTime);
     await onOffset?.(offset);
   }
   return { kind: "transport", reason: "relay_unreachable" };

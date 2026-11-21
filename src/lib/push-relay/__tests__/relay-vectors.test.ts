@@ -53,10 +53,15 @@ import {
   verifyText,
 } from "@/lib/push-relay/statements";
 import { openEnvelope, OpenError } from "./envelope-open";
+import { buildPlaintext, padPlaintext } from "@/lib/push-relay/plaintext";
+import {
+  intakeRecordedMessage,
+  intakeSyncMessage,
+} from "@/lib/push-relay/medication-pushes";
 
 const FIXTURE = path.join(__dirname, "fixtures", "relay-vectors-v1.json");
 const PINNED_SHA256 =
-  "8b2106f1727b70f0b7c688baeed225e18fe064f21622e956429d2d3eaf993ede";
+  "f8fc19fc71a21c41dbe96bf70f3d7548ba86f46f8eacbd1e4b04234a39b40335";
 
 const raw = readFileSync(FIXTURE);
 const vectors = JSON.parse(raw.toString("utf8"));
@@ -96,7 +101,6 @@ describe("relay vectors v1", () => {
   const SEAL_KEYS: Record<string, { skS: string; skR: string }> = {
     alert: { skS: "senderPrivateKey", skR: "recipientPrivateKey" },
     silent: { skS: "senderPrivateKey", skR: "recipientPrivateKey" },
-    liveActivity: { skS: "senderPrivateKey", skR: "recipientPrivateKey" },
     previousSender: {
       skS: "senderPreviousPrivateKey",
       skR: "recipientPrivateKey",
@@ -118,9 +122,7 @@ describe("relay vectors v1", () => {
       );
       const pushClass = v.expectedClass as EnvelopeClass;
       const json = Buffer.from(JSON.stringify(v.plaintext), "utf8");
-      const bucket = { alert: 1024, silent: 1024, liveactivity: 512 }[
-        pushClass
-      ];
+      const bucket = { alert: 1024, silent: 1024 }[pushClass];
       const padded = Buffer.alloc(bucket);
       padded.writeUInt16BE(json.length, 0);
       json.copy(padded, 2);
@@ -149,6 +151,65 @@ describe("relay vectors v1", () => {
       expect(sealed.toString("base64url")).toBe(v.envelope);
     });
   }
+
+  it("builds the alert and silent plaintexts the way the vectors record them", () => {
+    const alert = vectors.envelopes.find(
+      (e: { name: string }) => e.name === "alert",
+    );
+    const silent = vectors.envelopes.find(
+      (e: { name: string }) => e.name === "silent",
+    );
+    const d = alert.plaintext.d;
+    const recorded = intakeRecordedMessage(
+      {
+        medicationId: d.medicationId,
+        intakeId: d.intakeId,
+        slotInstant: new Date(d.slotInstant),
+        outcome: d.outcome,
+        takenAt: new Date(d.takenAt),
+        takenVia: d.takenVia,
+      },
+      alert.plaintext.n,
+    );
+    const sync = intakeSyncMessage(new Date(silent.plaintext.d.syncedAt));
+    for (const [message, v] of [
+      [recorded, alert],
+      [sync, silent],
+    ] as const) {
+      const built = {
+        ...buildPlaintext({
+          pushClass: message.pushClass,
+          type: message.type,
+          lifetimeSeconds: message.lifetimeSeconds,
+          nowMs: v.plaintext.iat * 1000,
+          data: message.data,
+          text: message.text,
+          ui: message.ui,
+        }),
+      };
+      // The id is random per seal; the vector fixes one.
+      const plaintext = { ...built, id: v.plaintext.id };
+      expect(JSON.stringify(plaintext)).toBe(JSON.stringify(v.plaintext));
+      const { padded } = padPlaintext(message.pushClass, plaintext);
+      const injected = x25519PrivateKey(hex(keys.ephemeralPrivateKey));
+      const inject: (type: "x25519") => {
+        privateKey: nodeCrypto.KeyObject;
+        publicKey: nodeCrypto.KeyObject;
+      } = () => ({ privateKey: injected, publicKey: injected });
+      vi.mocked(nodeCrypto.generateKeyPairSync).mockImplementation(
+        inject as typeof nodeCrypto.generateKeyPairSync,
+      );
+      const sealed = sealPadded({
+        pushClass: message.pushClass,
+        padded,
+        recipientPublicKey: hex(keys.recipientPublicKey),
+        senderPrivateKey: hex(keys.senderPrivateKey),
+        apnsToken: hex(v.apnsToken),
+      });
+      vi.mocked(nodeCrypto.generateKeyPairSync).mockRestore();
+      expect(sealed.toString("base64url")).toBe(v.envelope);
+    }
+  });
 
   it("seals with a fresh ephemeral key every time", () => {
     const padded = Buffer.alloc(1024);
@@ -241,14 +302,26 @@ describe("relay vectors v1", () => {
       }),
       response: responseText({
         host,
+        method: "POST",
+        pathAndQuery: "/v1/push",
         nonce: keys.nonce,
         status: 200,
         body: byName("response").body,
       }),
+      responseAppEndpoint: responseText({
+        host,
+        method: "DELETE",
+        pathAndQuery: "/v1/bindings/self",
+        nonce: keys.nonce,
+        status: 204,
+        body: "",
+      }),
       responseWithoutNonce: responseText({
         host,
+        method: "GET",
+        pathAndQuery: "/healthz",
         nonce: null,
-        status: 404,
+        status: 200,
         body: byName("responseWithoutNonce").body,
       }),
       bind: bindText({

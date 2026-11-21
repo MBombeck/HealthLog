@@ -136,19 +136,33 @@ describe("sender keys", () => {
     ).toEqual([{ publicKey: "cur", status: "current" }]);
   });
 
-  it("is due for rotation after 30 days", () => {
+  it("announces the next key a year less 7 days after the current one", () => {
+    const at = (days: number) => ({
+      senderCreatedAt: new Date(now.getTime() - days * day),
+    });
+    expect(senderKeyDue(at(357), now)).toBe(false);
+    expect(senderKeyDue(at(358), now)).toBe(true);
+    expect(senderKeyDue({ ...at(400), nextSenderPublicKey: "n" }, now)).toBe(
+      false,
+    );
+  });
+
+  it("publishes at most three keys: next, current, previous", () => {
     expect(
-      senderKeyDue(
-        { senderCreatedAt: new Date(now.getTime() - 29 * day) },
+      publishedSenderKeys(
+        {
+          senderPublicKey: "cur",
+          nextSenderPublicKey: "nxt",
+          previousSenderPublicKey: "prev",
+          previousRetiredAt: new Date(now.getTime() - day),
+        },
         now,
       ),
-    ).toBe(false);
-    expect(
-      senderKeyDue(
-        { senderCreatedAt: new Date(now.getTime() - 30 * day) },
-        now,
-      ),
-    ).toBe(true);
+    ).toEqual([
+      { publicKey: "nxt", status: "next" },
+      { publicKey: "cur", status: "current" },
+      { publicKey: "prev", status: "previous" },
+    ]);
   });
 
   it("derives a 22-character collapse id that differs per device", () => {

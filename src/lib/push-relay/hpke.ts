@@ -28,26 +28,28 @@ import {
 
 import { tokenTag } from "@/lib/push-relay/encoding";
 
-export type EnvelopeClass = "alert" | "silent" | "liveactivity";
+/**
+ * The classes this server seals. Class byte `0x03` (Live Activity) is
+ * reserved by the envelope format and never sealed: a Live Activity end
+ * travels without an envelope.
+ */
+export type EnvelopeClass = "alert" | "silent";
 
 export const ENVELOPE_VERSION = 0x01;
 export const ENVELOPE_SUITE = 0x01;
 export const CLASS_BYTE: Record<EnvelopeClass, number> = {
   alert: 0x01,
   silent: 0x02,
-  liveactivity: 0x03,
 };
 /** Padded plaintext size per class. */
 export const BUCKET: Record<EnvelopeClass, number> = {
   alert: 1024,
   silent: 1024,
-  liveactivity: 512,
 };
 /** The longest `exp - iat` a receiver accepts per class, in seconds. */
 export const MAX_LIFETIME_S: Record<EnvelopeClass, number> = {
   alert: 6 * 3600,
   silent: 3600,
-  liveactivity: 4 * 3600,
 };
 export const INFO = Buffer.from("HealthLog push envelope v1", "ascii");
 const HEADER_LEN = 3;

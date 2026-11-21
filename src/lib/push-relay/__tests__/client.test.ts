@@ -41,22 +41,35 @@ const identity = {
 
 /** A relay answer signed by `seed` for the nonce of the request it answers. */
 function signedAnswer(
+  url: string,
   init: RequestInit,
   status: number,
   body: unknown,
   seed: Buffer = relaySeed,
-  nonceOverride?: string,
+  nonceOverride?: string | null,
+  extraHeaders: Record<string, string> = {},
+  pathOverride?: string,
 ) {
   const text = body === null ? "" : JSON.stringify(body);
   const nonce =
-    nonceOverride ?? (new Headers(init.headers).get("HL-Nonce") as string);
+    nonceOverride === undefined
+      ? (new Headers(init.headers).get("HL-Nonce") as string)
+      : nonceOverride;
+  const target = new URL(url);
   const signature = signText(
     seed,
-    responseText({ host: "push.example.org", nonce, status, body: text }),
+    responseText({
+      host: "push.example.org",
+      method: init.method ?? "GET",
+      pathAndQuery: pathOverride ?? target.pathname + target.search,
+      nonce,
+      status,
+      body: text,
+    }),
   ).toString("base64url");
   return new Response(text || null, {
     status,
-    headers: { "HL-Relay-Signature": signature },
+    headers: { "HL-Relay-Signature": signature, ...extraHeaders },
   });
 }
 
@@ -66,8 +79,8 @@ beforeEach(() => {
 
 describe("relay client", () => {
   it("signs the request over host, instance, method, path, time, nonce and body", async () => {
-    fetchMock.mockImplementation(async (_url: string, init: RequestInit) =>
-      signedAnswer(init, 200, { results: [] }),
+    fetchMock.mockImplementation(async (url: string, init: RequestInit) =>
+      signedAnswer(url, init, 200, { results: [] }),
     );
     const result = await signedRelayCall(config, identity, "POST", "/v1/push", {
       items: [],
@@ -101,10 +114,11 @@ describe("relay client", () => {
         new Response(JSON.stringify({ error: "unregistered" }), {
           status: 410,
         }),
-      (init: RequestInit) =>
-        signedAnswer(init, 410, { error: "unregistered" }, other),
-      (init: RequestInit) =>
+      (url: string, init: RequestInit) =>
+        signedAnswer(url, init, 410, { error: "unregistered" }, other),
+      (url: string, init: RequestInit) =>
         signedAnswer(
+          url,
           init,
           410,
           { error: "unregistered" },
@@ -113,8 +127,8 @@ describe("relay client", () => {
         ),
     ]) {
       fetchMock.mockReset();
-      fetchMock.mockImplementation(async (_u: string, init: RequestInit) =>
-        answer(init),
+      fetchMock.mockImplementation(async (url: string, init: RequestInit) =>
+        answer(url, init),
       );
       const result = await signedRelayCall(
         config,
@@ -134,11 +148,11 @@ describe("relay client", () => {
     const relayTime = Math.floor(Date.now() / 1000) + 1000;
     const offsets: number[] = [];
     fetchMock
-      .mockImplementationOnce(async (_u: string, init: RequestInit) =>
-        signedAnswer(init, 401, { error: "stale_timestamp", relayTime }),
+      .mockImplementationOnce(async (url: string, init: RequestInit) =>
+        signedAnswer(url, init, 401, { error: "stale_timestamp", relayTime }),
       )
-      .mockImplementationOnce(async (_u: string, init: RequestInit) =>
-        signedAnswer(init, 200, { state: "ok" }),
+      .mockImplementationOnce(async (url: string, init: RequestInit) =>
+        signedAnswer(url, init, 200, { state: "ok" }),
       );
     const result = await signedRelayCall(
       config,
@@ -161,17 +175,23 @@ describe("relay client", () => {
     expect(offsets).toHaveLength(1);
   });
 
-  it("verifies the vector response signature", () => {
+  it("verifies the vector response signatures", () => {
+    const config = {
+      host: "push.healthlog.dev",
+      identityKeys: [ed25519PublicOf(relaySeed)],
+    };
     const v = vectors.statements.find(
       (s: { name: string }) => s.name === "response",
     );
+    const request = {
+      method: "POST",
+      pathAndQuery: "/v1/push",
+      nonce: keys.nonce,
+    };
     expect(
       verifyRelayResponse(
-        {
-          host: "push.healthlog.dev",
-          identityKeys: [ed25519PublicOf(relaySeed)],
-        },
-        keys.nonce,
+        config,
+        request,
         200,
         Buffer.from(v.body),
         v.signature,
@@ -179,15 +199,146 @@ describe("relay client", () => {
     ).toBe(true);
     expect(
       verifyRelayResponse(
-        {
-          host: "push.healthlog.dev",
-          identityKeys: [ed25519PublicOf(relaySeed)],
-        },
-        keys.nonce,
+        config,
+        request,
         410,
         Buffer.from(v.body),
         v.signature,
       ),
     ).toBe(false);
+    expect(
+      verifyRelayResponse(
+        config,
+        { ...request, pathAndQuery: "/v1/receipts" },
+        200,
+        Buffer.from(v.body),
+        v.signature,
+      ),
+    ).toBe(false);
+    const app = vectors.statements.find(
+      (s: { name: string }) => s.name === "responseAppEndpoint",
+    );
+    expect(
+      verifyRelayResponse(
+        config,
+        {
+          method: "DELETE",
+          pathAndQuery: "/v1/bindings/self",
+          nonce: keys.nonce,
+        },
+        204,
+        Buffer.alloc(0),
+        app.signature,
+      ),
+    ).toBe(true);
+  });
+
+  it("treats an answer for another path, or bound to no nonce, as no answer", async () => {
+    for (const answer of [
+      (url: string, init: RequestInit) =>
+        signedAnswer(
+          url,
+          init,
+          200,
+          { state: "ok" },
+          relaySeed,
+          undefined,
+          {},
+          "/v1/push",
+        ),
+      (url: string, init: RequestInit) =>
+        signedAnswer(url, init, 200, { state: "ok" }, relaySeed, null),
+    ]) {
+      fetchMock.mockReset();
+      fetchMock.mockImplementation(async (url: string, init: RequestInit) =>
+        answer(url, init),
+      );
+      expect(
+        await signedRelayCall(config, identity, "GET", "/v1/status", undefined),
+      ).toEqual({ kind: "transport", reason: "relay_signature_invalid" });
+    }
+  });
+
+  it("takes the retry hint only from the signed body, capped at a day", async () => {
+    fetchMock.mockImplementation(async (url: string, init: RequestInit) =>
+      signedAnswer(
+        url,
+        init,
+        429,
+        { error: "instance_rate", scope: "instance" },
+        relaySeed,
+        undefined,
+        {
+          "Retry-After": "999999",
+        },
+      ),
+    );
+    const unsignedHint = await signedRelayCall(
+      config,
+      identity,
+      "GET",
+      "/v1/status",
+      undefined,
+    );
+    expect(
+      unsignedHint.kind === "response" && unsignedHint.retryAfter,
+    ).toBeNull();
+    fetchMock.mockReset();
+    fetchMock.mockImplementation(async (url: string, init: RequestInit) =>
+      signedAnswer(url, init, 429, {
+        error: "instance_rate",
+        retryAfter: 10_000_000,
+      }),
+    );
+    const signedHint = await signedRelayCall(
+      config,
+      identity,
+      "GET",
+      "/v1/status",
+      undefined,
+    );
+    expect(signedHint.kind === "response" && signedHint.retryAfter).toBe(
+      86_400,
+    );
+  });
+
+  it("refuses a body over 256 KiB, and a signed body that breaks its schema", async () => {
+    fetchMock.mockImplementation(async (url: string, init: RequestInit) =>
+      signedAnswer(url, init, 200, {
+        results: [],
+        filler: "x".repeat(300_000),
+      }),
+    );
+    expect(
+      await signedRelayCall(config, identity, "POST", "/v1/push", {
+        items: [],
+      }),
+    ).toEqual({ kind: "transport", reason: "relay_body_too_large" });
+    fetchMock.mockReset();
+    fetchMock.mockImplementation(async (url: string, init: RequestInit) =>
+      signedAnswer(url, init, 200, {
+        instanceId: "not-a-uuid",
+        tier: "x".repeat(500),
+      }),
+    );
+    expect(
+      await signedRelayCall(
+        config,
+        identity,
+        "POST",
+        "/v1/instances/self/rotate",
+        {},
+      ),
+    ).toEqual({ kind: "transport", reason: "relay_body_invalid" });
+    fetchMock.mockReset();
+    fetchMock.mockImplementation(async (url: string, init: RequestInit) =>
+      signedAnswer(url, init, 403, {
+        error: "instance_suspended",
+        reason: "y".repeat(300),
+      }),
+    );
+    expect(
+      await signedRelayCall(config, identity, "GET", "/v1/status", undefined),
+    ).toEqual({ kind: "transport", reason: "relay_body_invalid" });
   });
 });

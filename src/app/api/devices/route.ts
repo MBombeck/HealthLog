@@ -38,7 +38,7 @@ import {
   activityStatementSchema,
   applyPushFields,
   devicePushFields,
-  refusePushFields,
+  preparePushFields,
 } from "@/lib/push-relay/device-registration";
 
 const deviceSchema = z
@@ -54,12 +54,15 @@ const deviceSchema = z
     model: z.string().min(1).max(64).optional(),
     // APNs-specific pair — the iOS client populates these once it has
     // an APNs token from the OS callback. Hex string per Apple's spec
-    // (64 chars on most devices; cap at 256 for forward compat).
+    // (64 chars on most devices; cap at 256 for forward compat). Stored in
+    // lower case, so one token in other letters is the same token for the
+    // ownership guard below (and for the relay, which compares lower case).
     apnsToken: z
       .string()
       .min(8)
       .max(256)
       .regex(/^[A-Fa-f0-9]+$/, "apnsToken must be hex")
+      .transform((v) => v.toLowerCase())
       .optional(),
     apnsEnvironment: z.enum(["sandbox", "production"]).optional(),
     // v1.7.0 — per-device medication-delivery override. NULL (or
@@ -261,10 +264,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
     medicationDelivery,
   } = parsed.data;
 
-  // A refused push field (a low-order key, a binding without consent or for
-  // another instance or token) answers 422 before anything is written.
-  const pushRefused = await refusePushFields(user.id, parsed.data);
-  if (pushRefused) return pushRefused;
+  // Refused push fields (`preparePushFields`) answer before anything is
+  // written; a relay-bound APNs token this replaces is noted for unbinding.
+  const push = await preparePushFields(user.id, parsed.data);
+  if (push.refused) return push.refused;
 
   const registration = await prisma.$transaction(async (tx) => {
     // Token ownership is decided from one database snapshot. Advisory

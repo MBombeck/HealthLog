@@ -396,7 +396,11 @@ async function main() {
       ),
     );
   }
-  for (const field of ["senderKeyEncrypted", "collapseSecretEncrypted"]) {
+  for (const field of [
+    "senderKeyEncrypted",
+    "nextSenderKeyEncrypted",
+    "collapseSecretEncrypted",
+  ]) {
     results.push(
       await rotateStringColumn(
         "PushEnvelopeKeys",

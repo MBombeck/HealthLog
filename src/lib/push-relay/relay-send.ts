@@ -30,6 +30,7 @@ import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
 import { relayConfig, type RelayConfig } from "@/lib/push-relay/config";
 import { isCircuitOpen } from "@/lib/push-relay/circuit";
+import { MAX_RETRY_AFTER_S } from "@/lib/push-relay/responses";
 import {
   loadRegistration,
   relayCall,
@@ -317,13 +318,7 @@ async function sendBatch(
     result.kind === "transport" ? 0 : result.status,
   );
   if (result.kind === "transport" || result.status !== 200) {
-    const hint =
-      result.kind === "response"
-        ? (result.retryAfter ??
-          (typeof result.body?.retryAfter === "number"
-            ? result.body.retryAfter
-            : null))
-        : null;
+    const hint = result.kind === "response" ? result.retryAfter : null;
     const defect =
       result.kind === "response" &&
       (result.status === 413 || result.status === 422);
@@ -371,7 +366,9 @@ async function applyItemResult(
   const status = typeof answer?.status === "number" ? answer.status : 0;
   const code = String(answer?.result ?? answer?.error ?? "missing");
   const hint =
-    typeof answer?.retryAfter === "number" ? answer.retryAfter : null;
+    typeof answer?.retryAfter === "number"
+      ? Math.min(answer.retryAfter, MAX_RETRY_AFTER_S)
+      : null;
   summary.answers.push({
     ref: row.ref,
     status,

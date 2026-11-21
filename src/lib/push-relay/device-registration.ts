@@ -23,6 +23,8 @@ import { z } from "zod/v4";
 import { prisma } from "@/lib/db";
 import { apiError } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { queueRelayUnbind } from "@/lib/push-relay/unbind-queue";
 import {
   RELAY_DEVICES_PER_ACCOUNT,
   relayConfig,
@@ -106,6 +108,11 @@ export const devicePushFields = {
 };
 
 export interface DevicePushInput {
+  /**
+   * Set by `preparePushFields` on the request it read: the relay-bound APNs
+   * token this registration replaces, for `applyPushFields` to unbind.
+   */
+  replacedRelayToken?: string | null;
   pushKey?: z.infer<typeof pushKeySchema> | null;
   relayBinding?: z.infer<typeof relayBindingSchema>;
   relayConsent?: z.infer<typeof relayConsentSchema>;
@@ -119,7 +126,8 @@ export type PushFieldRefusal =
   | "consent_required"
   | "push_key_required"
   | "apns_token_required"
-  | "relay_device_limit";
+  | "relay_device_limit"
+  | "relay_daily_limit";
 
 /**
  * Checks that need no device row: the key is usable, the binding comes with
@@ -128,7 +136,11 @@ export type PushFieldRefusal =
 export async function checkPushFields(
   userId: string,
   input: DevicePushInput,
-  stored: { pushKeyPublic: string | null; apnsToken: string | null } | null,
+  stored: {
+    pushKeyPublic: string | null;
+    apnsToken: string | null;
+    relayState?: string;
+  } | null,
 ): Promise<PushFieldRefusal | null> {
   if (input.pushKey) {
     if (!input.pushKey.suites.includes(1)) return "unsupported_suite";
@@ -157,7 +169,21 @@ export async function checkPushFields(
       NOT: { apnsToken: apnsToken },
     },
   });
-  return bound >= RELAY_DEVICES_PER_ACCOUNT ? "relay_device_limit" : null;
+  if (bound >= RELAY_DEVICES_PER_ACCOUNT) return "relay_device_limit";
+  // A binding the relay does not hold yet counts toward the account's daily
+  // cap; resubmitting the statement of a device already bound with this
+  // token does not.
+  const alreadyBound =
+    stored?.relayState === "bound" && stored.apnsToken === apnsToken;
+  if (!alreadyBound) {
+    const quota = await checkRateLimit(
+      `push-relay:new-binding:${userId}`,
+      RELAY_NEW_BINDINGS_PER_DAY,
+      24 * 3600 * 1000,
+    );
+    if (!quota.allowed) return "relay_daily_limit";
+  }
+  return null;
 }
 
 /**
@@ -168,6 +194,19 @@ export async function applyPushFields(
   deviceId: string,
   input: DevicePushInput,
 ): Promise<DevicePushBlock> {
+  const replacedRelayToken = input.replacedRelayToken ?? null;
+  // The device's APNs token changed: the old token's binding goes through
+  // the retrying unbind queue, and the device binds its new token with a
+  // fresh statement (sent with this request, or asked for).
+  if (replacedRelayToken) {
+    await queueRelayUnbind(replacedRelayToken);
+    if (!input.relayBinding) {
+      await prisma.device.update({
+        where: { id: deviceId },
+        data: { relayState: "rebind_needed", relayBoundAt: null },
+      });
+    }
+  }
   const before = await prisma.device.findUnique({
     where: { id: deviceId },
     select: { apnsToken: true, relayState: true },
@@ -220,31 +259,68 @@ const PUSH_REFUSAL_CODES = {
   push_key_required: "devices.push.push_key_required",
   apns_token_required: "devices.push.apns_token_required",
   relay_device_limit: "devices.push.relay_device_limit",
+  relay_daily_limit: "devices.push.relay_daily_limit",
 } as const satisfies Record<PushFieldRefusal, string>;
 
 /**
- * The 422 for refused push fields, or null when they pass. Reads the device
- * the request names (by its token or its APNs token) for what it already
- * holds.
+ * New relay bindings one account may start per day: room for a household's
+ * devices and a few reinstalls, not for minting bindings for made-up tokens.
  */
-export async function refusePushFields(
+export const RELAY_NEW_BINDINGS_PER_DAY = 10;
+
+export interface PreparedPushFields {
+  /** The refusal to answer with, or null when the push fields pass. */
+  refused: Response | null;
+  /**
+   * The relay-bound APNs token this registration replaces (the device's
+   * token changed), whose binding has to go.
+   */
+  replacedRelayToken: string | null;
+}
+
+/**
+ * Check the push fields against what the device already holds (read by its
+ * token or its APNs token) and note a relay-bound APNs token the request
+ * replaces. A refusal answers 422 with `devices.push.<reason>`, the daily
+ * binding cap 429 with `devices.push.relay_daily_limit`.
+ */
+export async function preparePushFields(
   userId: string,
   input: DevicePushInput & { token: string },
-): Promise<Response | null> {
-  const stored = await prisma.device.findFirst({
-    where: {
-      userId,
-      OR: [
-        { token: input.token },
-        ...(input.apnsToken ? [{ apnsToken: input.apnsToken }] : []),
-      ],
-    },
-    select: { pushKeyPublic: true, apnsToken: true },
-  });
+): Promise<PreparedPushFields> {
+  const [stored, previous] = await Promise.all([
+    prisma.device.findFirst({
+      where: {
+        userId,
+        OR: [
+          { token: input.token },
+          ...(input.apnsToken ? [{ apnsToken: input.apnsToken }] : []),
+        ],
+      },
+      select: { pushKeyPublic: true, apnsToken: true, relayState: true },
+    }),
+    prisma.device.findFirst({
+      where: { userId, token: input.token },
+      select: { apnsToken: true, relayState: true, relayConsentAt: true },
+    }),
+  ]);
+  const replacedRelayToken =
+    previous?.apnsToken &&
+    input.apnsToken &&
+    previous.apnsToken.toLowerCase() !== input.apnsToken.toLowerCase() &&
+    (previous.relayState !== "none" || previous.relayConsentAt)
+      ? previous.apnsToken
+      : null;
+  input.replacedRelayToken = replacedRelayToken;
   const refusal = await checkPushFields(userId, input, stored);
-  if (!refusal) return null;
+  if (!refusal) return { refused: null, replacedRelayToken };
   annotate({ meta: { push_refused: refusal } });
-  return apiError(`Push registration refused: ${refusal}`, 422, {
-    errorCode: PUSH_REFUSAL_CODES[refusal],
-  });
+  return {
+    refused: apiError(
+      `Push registration refused: ${refusal}`,
+      refusal === "relay_daily_limit" ? 429 : 422,
+      { errorCode: PUSH_REFUSAL_CODES[refusal] },
+    ),
+    replacedRelayToken,
+  };
 }

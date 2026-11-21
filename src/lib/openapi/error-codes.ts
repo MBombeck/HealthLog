@@ -53,6 +53,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "devices.push.instance_mismatch",
       "devices.push.invalid_push_key",
       "devices.push.push_key_required",
+      "devices.push.relay_daily_limit",
       "devices.push.relay_device_limit",
       "devices.push.relay_not_offered",
       "devices.push.token_mismatch",
@@ -60,6 +61,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     ],
     admin: [
       "admin.pushRelay.confirmationsRequired",
+      "admin.pushRelay.noSenderKey",
       "admin.pushRelay.notRegistered",
       "admin.pushRelay.unavailable",
       "admin.users.delete.managed_profile",

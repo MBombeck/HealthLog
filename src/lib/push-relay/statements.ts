@@ -125,16 +125,23 @@ export function requestText(input: {
   );
 }
 
-/** `hl-relay-resp-v1`: the relay's signature over one response. */
+/**
+ * `hl-relay-resp-v2`: the relay's signature over one response, bound to the
+ * request's method, raw path with query and nonce.
+ */
 export function responseText(input: {
   host: string;
+  method: string;
+  pathAndQuery: string;
   nonce: string | null;
   status: number;
   body: Uint8Array | string;
 }): string {
   return join(
-    "hl-relay-resp-v1",
+    "hl-relay-resp-v2",
     input.host,
+    input.method.toUpperCase(),
+    input.pathAndQuery,
     input.nonce ?? "-",
     input.status,
     bodyHashHex(input.body),
