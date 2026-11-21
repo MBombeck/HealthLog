@@ -1631,7 +1631,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "200": {
           description:
-            "Idempotent replay — the original event is returned without creating a new row. Also a repeat: a take that names no slot, for a slot already holding a take recorded within two hours, returns that row with `alreadyTaken: true` and writes nothing. A take or a skip that names a slot already holding a take answers the same way: the first take is never overwritten from here, and a deliberate change of a recorded take goes through the row (`POST /api/medications/intake`, `PUT /api/medications/{id}/intake/{eventId}`).",
+            "Idempotent replay — the original event is returned without creating a new row. Also a repeat: a take that names no slot, for a slot already holding a take recorded within two hours, returns that row with `alreadyTaken: true` and writes nothing (one further away is a dose of its own and answers the nearest open slot, 201). A take or a skip that names a slot already holding a take answers the same way: the first take is never overwritten from here, and a deliberate change of a recorded take goes through the row (`POST /api/medications/intake`, `PUT /api/medications/{id}/intake/{eventId}`).",
           content: {
             "application/json": {
               schema: dataEnvelope(
