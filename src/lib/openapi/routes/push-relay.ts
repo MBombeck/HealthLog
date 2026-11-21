@@ -15,6 +15,8 @@ import {
   pushKeySchema,
   relayBindingSchema,
   liveActivityConsentSchema,
+  liveActivityStartSchema,
+  liveActivityWithdrawSchema,
   relayConsentSchema,
 } from "@/lib/push-relay/device-registration";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
@@ -77,7 +79,9 @@ export const relayCapabilityBlock = z
       ),
     liveActivity: z
       .array(z.string())
-      .describe('Live Activity events the relay carries (`["end"]`).'),
+      .describe(
+        'Live Activity events the relay carries: `["end"]`, and `["end", "start", "update"]` while the operator\'s switch (`PUSH_RELAY_LIVE_ACTIVITY=on`) is on; start and update reach only a device with `push.device.liveActivityConsent`. Empty while the relay is not offered. Offer the second switch only when it lists `start`.',
+      ),
     liveActivityConsentTextVersion: z
       .string()
       .describe(
@@ -125,7 +129,7 @@ export const devicePushBlockSchema = z
     liveActivityConsent: z
       .boolean()
       .describe(
-        "The person gave the second consent: Live Activity start and update over the relay. Withdrawn with the relay consent.",
+        "The relay holds the device's Live Activity consent: start and update over the relay. Withdrawn with the relay consent.",
       ),
   })
   .meta({ id: "DevicePushState" });
@@ -165,7 +169,18 @@ export const devicePushRequestFields = {
   liveActivityConsent: liveActivityConsentSchema
     .optional()
     .describe(
-      'The second, separate switch: Live Activity start and update over the relay, off by default ("The relay and Apple can see when a dose is due."). `granted: true` needs the relay consent, given now or before, else 422 `devices.push.relay_consent_required`; `granted: false` withdraws it. Recorded now; the server sends Live Activity start or update over the relay only once `push.relay.liveActivity` lists them.',
+      'The second, separate switch: Live Activity start and update over the relay, off by default ("The relay and Apple can see when a dose is due."). The device\'s `hl-la-consent-v1` (`textVersion`, `iat` within 300 s, signature by the binding key), checked here and passed on to the relay at once; `push.device.liveActivityConsent` turns true once the relay took it. Needs a device bound with the relay consent, else 422 `devices.push.relay_consent_required`; a bad statement 422 `devices.push.bad_signature` or `devices.push.statement_stale`.',
+    ),
+  liveActivityWithdraw: liveActivityWithdrawSchema
+    .optional()
+    .describe(
+      "The device's `hl-la-withdraw-v1` (`iat` within 300 s, signature by the binding key): drops the Live Activity consent here and at the relay. Withdrawing the relay consent drops it too.",
+    ),
+  liveActivityStart: liveActivityStartSchema
+    .nullable()
+    .optional()
+    .describe(
+      "The ActivityKit push-to-start token with the device's `hl-la-start-v1` (`statement.laTokenTag` is the tag of the push-to-start token, `iat` at most 30 days old; sign again when the token changes and at least every 30 days). Handed to the relay only inside a start push. `null` drops it.",
     ),
 };
 

@@ -75,7 +75,16 @@ const deviceRegisterRequest = z
             .describe("The Activity's ActivityKit push token (hex)."),
           medicationId: z
             .string()
-            .describe("The medication the Activity shows."),
+            .optional()
+            .describe(
+              "The medication the Activity shows. Required unless `relayStart` is true.",
+            ),
+          relayStart: z
+            .boolean()
+            .optional()
+            .describe(
+              "The Activity was started by the server over the relay (attributes type `HealthLogDoseAttributes`), so the app does not know its dose: the server fills in `medicationId` and `slotInstant` of the dose it started. Send its update token with an `hl-activity-v1` statement as for any Activity.",
+            ),
           slotInstant: isoDateTime()
             .optional()
             .describe(

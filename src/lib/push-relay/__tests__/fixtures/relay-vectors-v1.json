@@ -140,6 +140,95 @@
       "relay": "accept"
     },
     {
+      "name": "silentDataChanged",
+      "recipientKeys": [
+        "a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8"
+      ],
+      "trustedSenders": [
+        "bfda3768f927db529fe9f0f6ee4ba469e432c93bb6fbb8ed5d04e87ed0a45d7b"
+      ],
+      "apnsToken": "0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f",
+      "expectedClass": "silent",
+      "now": 1795000000,
+      "envelope": "AQECMyAvh85P8gy80PLkjIx_Jj0Ro2CcZzuMfq5WZTdpwS8k7quR0Ue1RNDc3IvsJveBmShLBz8DgThuQgEZ4zGw6n4wX8tygTcEDpDKWSAPklQdMh4gEoWGC9RHJFgqKlZMmteGJv-brDGRlmdRzaj-NcC1G26SvAPYep_L5qc_pjgo-N6weL4y3uFRm_SSrLzBugd_4iZlTXzXDNEk8AkY4g9g6vRp3seWl4UBqtVk6W4vtneybmmoUrfW4-5HzbW9JPD0eNSz5YcwB4txq6geEswOg1rdlwBkXHp7RtGW7gV5KLKLZ6QIck2DbbrMuy8dsw3FinRM4Kde0YwR-xPFXHEQLPEdKviAgl2aOAjcH4SafpP956YKdEMo0zKpnZJBa3dMjKMedlxuo1FZmhThCvcIKWlNo5To1v9GJzk-PpsMAJrySGGzbkYXgq_lOngXVFkby64tarfxNB4WcS-b-f4WpaLs0zEGiN1tk2FD2nqWikFesnfyzFf75JFV-i9oCZPEhbMR-F0Z0DRRYxeJ6daN72tYxsJFLUBmw7Ofui9h6WAJtDlJMgyQPR_CffLHEx5kel5pjaHaqDNEcCJ7drv8IJ41XjucQ2y5Xh4xMgDLva9fkfHp-xw6a6WIh8hqxXTbnv3-4CPRG6U5mkwDrsk4v7yRGLnML4ezAe5bnQiOeeYTNQpwD55imi4u2rfzeBuhZ_oaMQ2x818zb0EX3QgXqGwtuTnlvcjGHzgLt-RP3WPx-PwijGSYru23JgfjSQqFEcbFtUS3XdpwyDzIy3cvwELCLuZrUVvo4yuXirP7FvC7NBvz7g5hGivrQz9WUumCtNVI5Xt8_vRpcTtfYXjU-PzI3r10qo4PhocGyWA1nxTTo-xCY4f0BKvok2RUqXA2MO35fZAqCgum1xQF5KdIo4AZv1dpOmxU5l2OgY1S_IP3V4ZA8ecgp1omeeoTTpGBaznVY84JjX8RkUFWf7IcMcyLsgF0KksWDgtVxJGHrTmCCi4xAOH--2ii2YLX8Ev4yo7HkvL5qYkR7Rg1BdW0Tw6l31cd4nXeTaFpkgG5RFK-O2E2Rasp20M5qzyE3C5gw5NI4V_yvWtX17N9vUDinpJ3CvDrciFsn-7sK79_aR9nben_unOZJLVhgSz3ByqNK5LSn4WjxQtQIOSvWz7gGaUWytM7Cmy8-ZFXu7mVy1ePGkG4dnIaMOcJ5xFXf2uzaqUZs3LocSgOGdw8Oghh9kqyJq19cCEJhC5p74yAqfUrJwT6GGygqPir_Bb4QrwJD_Hy3tyMz9QoKdUmi8xrkabqQ4g9Dmdl04RPrnvy6gR2crhN3nmf7AHYe9o7ZGEdBFUyiyKUOJooxWRuwKvKB42bXqKAZq7LgnbF0NSEzR30gG-Hvyl7tTOrkdQugMSgO1Jch1WrxzY62Ukk-A",
+      "expect": "ok",
+      "plaintext": {
+        "v": 1,
+        "t": "DATA_CHANGED",
+        "id": "01JTESTVECT000000000000004",
+        "iat": 1795000000,
+        "exp": 1795003600,
+        "d": {
+          "domains": [
+            "measurements",
+            "sleep"
+          ],
+          "changedAt": "2026-11-21T07:12:00.000Z"
+        }
+      },
+      "relay": "accept"
+    },
+    {
+      "name": "silentHealthKitCatchUp",
+      "recipientKeys": [
+        "a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8"
+      ],
+      "trustedSenders": [
+        "bfda3768f927db529fe9f0f6ee4ba469e432c93bb6fbb8ed5d04e87ed0a45d7b"
+      ],
+      "apnsToken": "0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f",
+      "expectedClass": "silent",
+      "now": 1795000000,
+      "envelope": "AQECMyAvh85P8gy80PLkjIx_Jj0Ro2CcZzuMfq5WZTdpwS8k06uR0Ue1RNDc3IvsJvuFjCVADDwLmyBoR3d2iQeBmGY-TZNc90h1avfFTjFs9jJoQXogEoWGC9RHJFw4NkQVy5aGMOzF9HCDnGZWxK3iJ5X9W3yEr1GZP43B5KY2oyQ6r8q6M7B01a4KibiT6_fv_Rlu5jFRSzuAS41gsR0Z8U0hvaBNzK2AhNRT-4stvDpemHf1MVuYYIH70t9q_4TpFMfOSeaJ1bceN7tB8Ypjb8wOg1rdlwBkXHp7RtGW7gV5KLKLZ6QIck2DbbrMuy8dsw3FinRM4Kde0YwR-xPFXHEQLPEdKviAgl2aOAjcH4SafpP956YKdEMo0zKpnZJBa3dMjKMedlxuo1FZmhThCvcIKWlNo5To1v9GJzk-PpsMAJrySGGzbkYXgq_lOngXVFkby64tarfxNB4WcS-b-f4WpaLs0zEGiN1tk2FD2nqWikFesnfyzFf75JFV-i9oCZPEhbMR-F0Z0DRRYxeJ6daN72tYxsJFLUBmw7Ofui9h6WAJtDlJMgyQPR_CffLHEx5kel5pjaHaqDNEcCJ7drv8IJ41XjucQ2y5Xh4xMgDLva9fkfHp-xw6a6WIh8hqxXTbnv3-4CPRG6U5mkwDrsk4v7yRGLnML4ezAe5bnQiOeeYTNQpwD55imi4u2rfzeBuhZ_oaMQ2x818zb0EX3QgXqGwtuTnlvcjGHzgLt-RP3WPx-PwijGSYru23JgfjSQqFEcbFtUS3XdpwyDzIy3cvwELCLuZrUVvo4yuXirP7FvC7NBvz7g5hGivrQz9WUumCtNVI5Xt8_vRpcTtfYXjU-PzI3r10qo4PhocGyWA1nxTTo-xCY4f0BKvok2RUqXA2MO35fZAqCgum1xQF5KdIo4AZv1dpOmxU5l2OgY1S_IP3V4ZA8ecgp1omeeoTTpGBaznVY84JjX8RkUFWf7IcMcyLsgF0KksWDgtVxJGHrTmCCi4xAOH--2ii2YLX8Ev4yo7HkvL5qYkR7Rg1BdW0Tw6l31cd4nXeTaFpkgG5RFK-O2E2Rasp20M5qzyE3C5gw5NI4V_yvWtX17N9vUDinpJ3CvDrciFsn-7sK79_aR9nben_unOZJLVhgSz3ByqNK5LSn4WjxQtQIOSvWz7gGaUWytM7Cmy8-ZFXu7mVy1ePGkG4dnIaMOcJ5xFXf2uzaqUZs3LocSgOGdw8Oghh9kqyJq19cCEJhC5p74yAqfUrJwT6GGygqPir_Bb4QrwJD_Hy3tyMz9QoKdUmi8xrkabqQ4g9Dmdl04RPrnvy6gR2crhN3nmf7AHYe9o7ZGEdBFUyiyKUOJooxWRuwKvKB42bXqKAZq7LgnbF0NSEzR30gG-Hvyl7tTOrkdQucyTpeibzDBb55JYlqMHwxw",
+      "expect": "ok",
+      "plaintext": {
+        "v": 1,
+        "t": "HEALTHKIT_CATCH_UP",
+        "id": "01JTESTVECT000000000000005",
+        "iat": 1795000000,
+        "exp": 1795003600,
+        "d": {
+          "requestedAt": "2026-11-21T07:12:00.000Z"
+        }
+      },
+      "relay": "accept"
+    },
+    {
+      "name": "alertSecurity",
+      "recipientKeys": [
+        "a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8"
+      ],
+      "trustedSenders": [
+        "bfda3768f927db529fe9f0f6ee4ba469e432c93bb6fbb8ed5d04e87ed0a45d7b"
+      ],
+      "apnsToken": "0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f",
+      "expectedClass": "alert",
+      "now": 1795000000,
+      "envelope": "AQEBMyAvh85P8gy80PLkjIx_Jj0Ro2CcZzuMfq5WZTdpwS8le6uR0Ue1RNDc3IvsJuCFjjxGDSMbkD5nQ3Fh43T2oSAwVdgI5DgDH5XbTDF89lQdMh4gEoWGC9RHJFw4MFYJ2crFaOyWpDOYk2dRzajiJ4nvDjTYrw7QeJbO5aM-oCQ6sN7uIaYtk_9Vke-T5_Lj0wN053cqHXffHuA05l1doxku8r07kriAzsQdos9v6ShU4BvtO3vrCeaV_7YE3ajLdqiqMMSz9-5xQslhkOkAALlg93qq9nNELxMcKLTyzmwXCN3lR8UoHCj0Td6pzUZ-1iPn91hulc586_czmHKxORZ_Xog_ENrTxx7PakGIRtvbMtavs4QmVjdAoVfI-bB7SSQJz_ZMPwg3_BAV30a1KNsqRQw7xvjK7N0yTlRbE-hpbumbPAjFC2Q7oNyKTxZzdmM5r8tLC8KdQDxrDC-b-f4WpaLs0zEGiN1tk2FD2nqWikFesnfyzFf75JFV-i9oCZPEhbMR-F0Z0DRRYxeJ6daN72tYxsJFLUBmw7Ofui9h6WAJtDlJMgyQPR_CffLHEx5kel5pjaHaqDNEcCJ7drv8IJ41XjucQ2y5Xh4xMgDLva9fkfHp-xw6a6WIh8hqxXTbnv3-4CPRG6U5mkwDrsk4v7yRGLnML4ezAe5bnQiOeeYTNQpwD55imi4u2rfzeBuhZ_oaMQ2x818zb0EX3QgXqGwtuTnlvcjGHzgLt-RP3WPx-PwijGSYru23JgfjSQqFEcbFtUS3XdpwyDzIy3cvwELCLuZrUVvo4yuXirP7FvC7NBvz7g5hGivrQz9WUumCtNVI5Xt8_vRpcTtfYXjU-PzI3r10qo4PhocGyWA1nxTTo-xCY4f0BKvok2RUqXA2MO35fZAqCgum1xQF5KdIo4AZv1dpOmxU5l2OgY1S_IP3V4ZA8ecgp1omeeoTTpGBaznVY84JjX8RkUFWf7IcMcyLsgF0KksWDgtVxJGHrTmCCi4xAOH--2ii2YLX8Ev4yo7HkvL5qYkR7Rg1BdW0Tw6l31cd4nXeTaFpkgG5RFK-O2E2Rasp20M5qzyE3C5gw5NI4V_yvWtX17N9vUDinpJ3CvDrciFsn-7sK79_aR9nben_unOZJLVhgSz3ByqNK5LSn4WjxQtQIOSvWz7gGaUWytM7Cmy8-ZFXu7mVy1ePGkG4dnIaMOcJ5xFXf2uzaqUZs3LocSgOGdw8Oghh9kqyJq19cCEJhC5p74yAqfUrJwT6GGygqPir_Bb4QrwJD_Hy3tyMz9QoKdUmi8xrkabqQ4g9Dmdl04RPrnvy6gR2crhN3nmf7AHYe9o7ZGEdBFUyiyKUOJooxWRuwKvKB42bXqKAZq7LgnbF0NSEzR30gG-Hvyl7tTOrkdQufVxN2ZKUGMIhdBR05o18qA",
+      "expect": "ok",
+      "plaintext": {
+        "v": 1,
+        "t": "SECURITY_ALERT",
+        "id": "01JTESTVECT000000000000006",
+        "iat": 1795000000,
+        "exp": 1795021600,
+        "d": {
+          "securityKind": "new_device"
+        },
+        "n": {
+          "title": "New sign-in",
+          "body": "Your account was signed in on a new device."
+        },
+        "ui": {
+          "category": "SECURITY_ALERT",
+          "thread": "SECURITY_ALERT",
+          "level": "time-sensitive",
+          "sound": "default"
+        }
+      },
+      "relay": "accept"
+    },
+    {
       "name": "previousSender",
       "recipientKeys": [
         "a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8"
@@ -721,6 +810,24 @@
       "signature": "3e-7ttkCsiNif9wVteQ-tUOIRooz9YUbEE1HslGTA8qF5m_UR71WCE5W5jUdEBWwHG8681BLN8XxCSHQKYGVCg"
     },
     {
+      "name": "laStart",
+      "publicKey": "iEuIV_TqoWE8YVBNs01L6vNGUXoOMd483dTZtCAdnQs",
+      "text": "hl-la-start-v1\npush.healthlog.dev\n6f1c2a4e-1b9d-4c3e-8a7f-0d2b5e9c1a37\nacc19bd80263c6ae510f3f94531cbe18\n24571a59ec87bab54c86e6beacfb24a7\n1795000000",
+      "signature": "T1slT6X5F9eyHwp4FBoCyC3ySXC53kf2r4Cdb24EQl-jDBhIh70pmQk9RlWvm2BSPbmR93uQzjOQHm2L8NAmDg"
+    },
+    {
+      "name": "laConsent",
+      "publicKey": "iEuIV_TqoWE8YVBNs01L6vNGUXoOMd483dTZtCAdnQs",
+      "text": "hl-la-consent-v1\npush.healthlog.dev\n6f1c2a4e-1b9d-4c3e-8a7f-0d2b5e9c1a37\nacc19bd80263c6ae510f3f94531cbe18\n2026-11-21\n1795000000",
+      "signature": "INTB8IF4MaqR5z4guM2qp-RorD5V2EYbi9HyaS3RwmcQKmU5lPU2nA8zjl9ZwjYsY7D8Ib57V6dTJlggMso1AQ"
+    },
+    {
+      "name": "laWithdraw",
+      "publicKey": "iEuIV_TqoWE8YVBNs01L6vNGUXoOMd483dTZtCAdnQs",
+      "text": "hl-la-withdraw-v1\npush.healthlog.dev\n6f1c2a4e-1b9d-4c3e-8a7f-0d2b5e9c1a37\nacc19bd80263c6ae510f3f94531cbe18\n1795000000",
+      "signature": "Vw7994mHVOqD9VtcSbZJnxb2TNhfMYaY06WFM6-1v-cWe2Dlwzc0sOkKUcHQ9BbMeiCdR24EtRzNoyPRenjnAQ"
+    },
+    {
       "name": "response",
       "publicKey": "SAdaWX5yGhVuLgeZ3lzAxTJNxufq8c3UYlCGjsUyFd0",
       "text": "hl-relay-resp-v2\npush.healthlog.dev\nPOST\n/v1/push\nTk5OTk5OTk5OTk5OTk5OTg\n200\neef46741adfc3a9f76294d3b78f37a45f113092ac9d44ee77c7a038a88ff09a1",
@@ -740,6 +847,13 @@
       "text": "hl-relay-resp-v2\npush.healthlog.dev\nGET\n/healthz\n-\n200\na29ee2b15c494311c52521766e44af56a3ad2248e7a8ab465e5206463c13d288",
       "signature": "bDGLnQ-tGUfY7IYBGz0m8DHcsouNZhWfUKmc2PF9goQZVnKzbpHLYsx2DIodbNQ4xWAD3-wmZDu-ynd7gfLkCw",
       "body": "{\"status\":\"ok\"}"
+    },
+    {
+      "name": "registryExport",
+      "publicKey": "SAdaWX5yGhVuLgeZ3lzAxTJNxufq8c3UYlCGjsUyFd0",
+      "text": "hl-relay-export-v1\npush.healthlog.dev\n964e23291eb432b11140e40636b961e32410fd97eabf4b1c94b93e4fdb1dab25",
+      "signature": "hjrR5-_oRcmoLhBlyIbmuq0oOAXsTlxBipbGDGyZnp_TZRpBb5wa4Tr1EbbL89Hic8k2btv1jZ33ZlZ9TfzRDw",
+      "body": "{\"format\":\"healthlog-push-registry-v2\"}"
     },
     {
       "name": "statusFile",
@@ -799,6 +913,21 @@
       "name": "responseAppReplayedOntoOtherRequest",
       "of": "responseAppEndpoint",
       "text": "hl-relay-resp-v2\npush.healthlog.dev\nDELETE\n/v1/bindings/self\nUFBQUFBQUFBQUFBQUFBQUA\n204\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "laStartAsActivity",
+      "of": "laStart",
+      "text": "hl-activity-v1\npush.healthlog.dev\n6f1c2a4e-1b9d-4c3e-8a7f-0d2b5e9c1a37\nacc19bd80263c6ae510f3f94531cbe18\n24571a59ec87bab54c86e6beacfb24a7\n1795000000"
+    },
+    {
+      "name": "laConsentOtherVersion",
+      "of": "laConsent",
+      "text": "hl-la-consent-v1\npush.healthlog.dev\n6f1c2a4e-1b9d-4c3e-8a7f-0d2b5e9c1a37\nacc19bd80263c6ae510f3f94531cbe18\n2026-12-01\n1795000000"
+    },
+    {
+      "name": "laWithdrawAsUnbind",
+      "of": "laWithdraw",
+      "text": "hl-unbind-v1\npush.healthlog.dev\n6f1c2a4e-1b9d-4c3e-8a7f-0d2b5e9c1a37\nacc19bd80263c6ae510f3f94531cbe18\n1795000000"
     },
     {
       "name": "activityTokenSwapped",

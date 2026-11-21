@@ -6513,6 +6513,9 @@ model LiveActivityToken {
   /// inside that end push. Reader: `push-relay/route-device.ts`.
   activityStatement Json?     @map("activity_statement")
   activitySignature String?   @map("activity_signature")
+  /// The content state the last relay update sent, so an unchanged state is
+  /// not sent again. Reader and writer: `push-relay/live-activity.ts`.
+  lastRelayState    Json?     @map("last_relay_state")
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
@@ -6585,6 +6588,18 @@ model Device {
   /// and `/api/auth/me` `push.device.liveActivityConsent`.
   liveActivityConsentAt      DateTime? @map("live_activity_consent_at")
   liveActivityConsentVersion String?   @map("live_activity_consent_version")
+  /// The ActivityKit push-to-start token and the device's `hl-la-start-v1`
+  /// statement over it (`liveActivityStart`), handed to the relay only
+  /// inside a start push. Reader: `push-relay/live-activity.ts`.
+  laStartToken               String?   @map("la_start_token")
+  laStartStatement           Json?     @map("la_start_statement")
+  laStartSignature           String?   @map("la_start_signature")
+  /// The dose the last relay start was for, so a dose starts once and the
+  /// app's registration of the started Activity (`relayStart: true`) finds
+  /// its dose. Reader and writer: `push-relay/live-activity.ts`.
+  laStartedMedicationId      String?   @map("la_started_medication_id")
+  laStartedSlot              DateTime? @map("la_started_slot")
+  laStartedAt                DateTime? @map("la_started_at")
   relayBoundAt           DateTime?           @map("relay_bound_at")
   /// The newest envelope ids this device reports it opened, per class
   /// (`GET /api/sync/state`), and when it reported them. Reader: the delivery

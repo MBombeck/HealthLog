@@ -40,6 +40,10 @@ import {
 export type RelayPushClass = "alert" | "silent" | "liveactivity";
 
 export interface RelayActivity {
+  /** `start` or `update`; absent for an end (the relay's default). */
+  event?: "start" | "update";
+  /** The closed content state (`live-activity.ts`); start and update only. */
+  state?: Readonly<Record<string, string | number | boolean>>;
   token: string;
   bindingKey: string;
   statement: Record<string, unknown>;
@@ -140,6 +144,9 @@ export async function sendRelayItems(
               activity: {
                 ...item.activity,
                 statement: item.activity.statement as Prisma.InputJsonObject,
+                ...(item.activity.state
+                  ? { state: { ...item.activity.state } }
+                  : {}),
               },
             }
           : {}),

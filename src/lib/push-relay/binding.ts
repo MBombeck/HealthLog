@@ -188,6 +188,9 @@ export function clearedRelayFields(options: { pushKey: boolean }) {
     // The Live Activity consent rides on the relay consent; it goes with it.
     liveActivityConsentAt: null,
     liveActivityConsentVersion: null,
+    laStartToken: null,
+    laStartStatement: Prisma.DbNull,
+    laStartSignature: null,
     ...(options.pushKey ? { pushKeyPublic: null, pushKeySuites: [] } : {}),
   };
 }

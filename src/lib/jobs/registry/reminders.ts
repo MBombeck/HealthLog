@@ -4,7 +4,7 @@
  * the eventful reminder-satisfy queue, the push relay's minute pass (its
  * outbox retries, breaker probe, sender-key rotation and receipt report), and
  * the two silent wakes: the DATA_CHANGED minute flush and the hourly
- * HealthKit catch-up.
+ * HealthKit catch-up, and the Live Activity start and update pass.
  *
  * The three daily reminders tick every 15 minutes and short-circuit unless
  * the user's local time is the reminder's hour, so one UTC cron serves every
@@ -49,6 +49,10 @@ const PUSH_DATA_CHANGED_CRON = "* * * * *";
 // Devices whose Apple Health upload fell behind; hourly, off the hour.
 const HEALTHKIT_CATCH_UP_QUEUE = "healthkit-catch-up";
 const HEALTHKIT_CATCH_UP_CRON = "23 * * * *";
+// Live Activity start and update over the relay; every five minutes, so a
+// dose turns due or overdue on the lock screen within that.
+const PUSH_LIVE_ACTIVITY_QUEUE = "push-live-activity";
+const PUSH_LIVE_ACTIVITY_CRON = "1-59/5 * * * *";
 
 const checks = () => import("@/lib/jobs/reminder/mood-cycle-checks");
 
@@ -110,6 +114,14 @@ const jobs: readonly JobDefinition[] = [
     work: { localConcurrency: 1 },
     load: async () =>
       (await import("@/lib/jobs/healthkit-catch-up")).handleHealthKitCatchUp,
+  }),
+  // A pass with the operator's switch off reads nothing and returns.
+  defineJob({
+    queue: PUSH_LIVE_ACTIVITY_QUEUE,
+    cron: PUSH_LIVE_ACTIVITY_CRON,
+    work: { localConcurrency: 1 },
+    load: async () =>
+      (await import("@/lib/jobs/push-live-activity")).handlePushLiveActivity,
   }),
   // No cron: enqueued by the ingest paths when a measurement or lab lands;
   // the 15-minute checkup tick is the safety net.

@@ -70,6 +70,9 @@ const SUCCESS: Record<string, z.ZodType> = {
   "POST /v1/bindings": z.looseObject({
     state: z.enum(["provisional", "active", "soft_invalid"]),
   }),
+  "POST /v1/bindings/liveactivity": z.looseObject({
+    liveActivity: z.literal("granted"),
+  }),
 };
 
 /**
