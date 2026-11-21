@@ -19,6 +19,7 @@ vi.mock("@/lib/db", () => ({
     moodEntry: { findFirst: vi.fn(), count: vi.fn() },
     medicationIntakeEvent: { findFirst: vi.fn(), count: vi.fn() },
     medication: { findFirst: vi.fn(async () => null) },
+    auditLog: { findFirst: vi.fn(async () => null) },
     user: { findUnique: vi.fn(), update: vi.fn() },
   },
 }));

@@ -83,8 +83,10 @@ export async function deleteIntakeEvent(input: {
       return "changedSinceSeen" as const;
     }
     // A deleted dose record refunds its consumption stamp first (no-op for
-    // a never-consumed row; a re-delete finds it cleared).
-    await restoreForIntake({ client: prisma, userId: user.id, eventId });
+    // a never-consumed row; a re-delete finds it cleared), inside the same
+    // transaction: a failed tombstone keeps the stock as it was, and the
+    // refund holds no second connection while the lock holds the first.
+    await restoreForIntake({ client: tx, userId: user.id, eventId });
     // Sync — soft-delete instead of a hard `delete`; see below.
     await tx.medicationIntakeEvent.update({
       where: { id: eventId },
