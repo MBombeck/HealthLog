@@ -3778,17 +3778,17 @@ model MedicationIntakeEvent {
   /// and idempotently `createMany`-backfill missing rows. Without a
   /// unique constraint the two reads could race a duplicate REMINDER
   /// row in for the same `(medicationId, scheduledFor)` between the
-  /// existence probe and the insert. `source` is in the key so the
-  /// reminder worker (REMINDER) doesn't collide with manual user
-  /// inserts (WEB / TELEGRAM / IMPORT) on the same slot.
+  /// existence probe and the insert.
   /// v1.12.1 — this is a partial live-row unique in the DB (`WHERE
   /// deleted_at IS NULL`, migration 0121, replacing the 0073 table
   /// constraint). A slot the user previously deleted (tombstoned) no
   /// longer blocks a re-take: `applyCanonicalSlotWrite` can re-create the
-  /// row instead of P2002-ing against the tombstone. Schema keeps the
-  /// full `@@unique` for the `userId_medicationId_scheduledFor_source`
-  /// compound where-key.
-  @@unique([userId, medicationId, scheduledFor, source], map: "medication_intake_events_user_med_slot_source_live_key")
+  /// row instead of P2002-ing against the tombstone. The schema keeps a
+  /// full `@@unique` so Prisma knows the key.
+  /// v1.49.0 — migration 0515 drops `source` from the key: one live row per
+  /// slot, whoever writes it, so two writers can no longer hold the same
+  /// slot twice. Still a partial live-row unique in the DB.
+  @@unique([userId, medicationId, scheduledFor], map: "medication_intake_events_user_med_slot_live_key")
   /// v1.28 — `medication_intake_events_user_external_id_live_key` is a
   /// partial UNIQUE index over `(user_id, external_id) WHERE external_id
   /// IS NOT NULL AND deleted_at IS NULL` — see migration 0239. The bulk
