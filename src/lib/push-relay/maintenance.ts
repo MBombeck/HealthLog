@@ -10,6 +10,8 @@
  * 4. Rotates the envelope sender key when it is 30 days old.
  * 5. Reports envelope receipts to the relay, at most every 50 minutes.
  * 6. Prunes delivery rows older than 30 days.
+ * 7. Sends the relay unbinds owed for erased accounts (`unbind-queue.ts`).
+ * 8. Rotates the instance signing key when it is 30 days old.
  */
 import { prisma } from "@/lib/db";
 import { loadApnsConfig } from "@/lib/notifications/senders/apns";
@@ -26,6 +28,11 @@ import {
   pendingReceiptCounts,
 } from "@/lib/push-relay/receipts";
 import { rotateSenderKey, senderKeyDue } from "@/lib/push-relay/sender-keys";
+import { drainRelayUnbinds } from "@/lib/push-relay/unbind-queue";
+import {
+  instanceKeyDue,
+  rotateInstanceKey,
+} from "@/lib/push-relay/instance-key";
 
 const RECEIPT_INTERVAL_MS = 50 * 60 * 1000;
 const RETENTION_MS = 30 * 24 * 3600 * 1000;
@@ -38,6 +45,8 @@ export interface RelayMaintenanceFacts {
   rotated: boolean;
   receipts_sent: boolean;
   pruned: number;
+  unbound: number;
+  instance_key_rotated: boolean;
 }
 
 export async function runRelayMaintenance(
@@ -50,6 +59,8 @@ export async function runRelayMaintenance(
     rotated: false,
     receipts_sent: false,
     pruned: 0,
+    unbound: 0,
+    instance_key_rotated: false,
   };
   const config = relayConfig();
   let row = config.available ? await loadRegistration(config) : null;
@@ -78,6 +89,13 @@ export async function runRelayMaintenance(
       );
       facts.retried = due.length;
     }
+  }
+
+  facts.unbound = await drainRelayUnbinds(now, config);
+
+  if (row?.instanceId && !isCircuitOpen(row) && instanceKeyDue(row, now)) {
+    facts.instance_key_rotated =
+      (await rotateInstanceKey(row, config)) === "rotated";
   }
 
   const keys = await prisma.pushEnvelopeKeys.findUnique({

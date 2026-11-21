@@ -20,6 +20,7 @@ import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { credentialRevocations } from "@/lib/auth/credential-revocations";
 import { remainingGuardianWhere } from "@/lib/managed-profiles/guardian-where";
+import { queueRelayUnbindsForAccount } from "@/lib/push-relay/unbind-queue";
 import {
   requestOffhostPurge,
   type OffhostPurgeReason,
@@ -92,6 +93,10 @@ export async function eraseAccount(
   // The nightly off-host copies go with the account. The request commits
   // with the deletion; the purge job deletes the objects.
   await requestOffhostPurge(tx, userId, reason);
+  // The push relay's bindings for the account's devices go too. The unbinds
+  // are queued here and sent by the relay's minute pass, so a relay that is
+  // down delays them without blocking the erasure.
+  await queueRelayUnbindsForAccount(tx, userId);
   // Every other row the account owns goes through `onDelete: Cascade`.
   await tx.user.delete({ where: { id: userId } });
 }

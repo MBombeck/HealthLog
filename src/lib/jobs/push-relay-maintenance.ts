@@ -25,6 +25,8 @@ export async function handlePushRelayMaintenance(
         push_relay_rotated: facts.rotated,
         push_relay_receipts_sent: facts.receipts_sent,
         push_relay_pruned: facts.pruned,
+        push_relay_unbound: facts.unbound,
+        push_relay_instance_key_rotated: facts.instance_key_rotated,
       });
     } catch (err) {
       evt.addWarning(`push-relay maintenance failed: ${err}`);

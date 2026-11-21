@@ -382,14 +382,20 @@ async function main() {
     );
   }
 
-  // ───── Push relay — instance key, sender key, collapse secret (String) ─────
-  results.push(
-    await rotateStringColumn(
-      "PushRelayRegistration",
-      "instanceKeyEncrypted",
-      prisma.pushRelayRegistration,
-    ),
-  );
+  // ───── Push relay — instance keys, sender key, collapse secret (String) ─────
+  for (const field of [
+    "instanceKeyEncrypted",
+    "pendingInstanceKeyEncrypted",
+    "previousInstanceKeyEncrypted",
+  ]) {
+    results.push(
+      await rotateStringColumn(
+        "PushRelayRegistration",
+        field,
+        prisma.pushRelayRegistration,
+      ),
+    );
+  }
   for (const field of ["senderKeyEncrypted", "collapseSecretEncrypted"]) {
     results.push(
       await rotateStringColumn(

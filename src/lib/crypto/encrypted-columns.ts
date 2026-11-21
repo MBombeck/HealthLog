@@ -223,6 +223,16 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
     field: "instanceKeyEncrypted",
     kind: "string",
   },
+  {
+    model: "PushRelayRegistration",
+    field: "pendingInstanceKeyEncrypted",
+    kind: "string",
+  },
+  {
+    model: "PushRelayRegistration",
+    field: "previousInstanceKeyEncrypted",
+    kind: "string",
+  },
   { model: "PushEnvelopeKeys", field: "senderKeyEncrypted", kind: "string" },
   {
     model: "PushEnvelopeKeys",

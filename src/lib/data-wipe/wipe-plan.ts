@@ -369,6 +369,8 @@ export const INSTANCE_SCOPED: Readonly<Record<string, string>> = {
   AppSettings: "instance-wide configuration singleton",
   PushRelayRegistration:
     "this instance's registration at the push relay and its instance key; the operator's switch, not any account's data",
+  PushRelayUnbind:
+    "relay unbinds owed for device tokens of accounts already erased; tied to no account any more",
   PushEnvelopeKeys:
     "the instance's envelope sender keys and collapse secret; they seal pushes for every account alike",
   EncryptionKeyCanary:

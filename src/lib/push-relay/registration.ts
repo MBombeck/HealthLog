@@ -182,6 +182,45 @@ async function applyAnswer(
 }
 
 /** One signed instance request under `row`, its answer applied. */
+function seedOf(encrypted: string | null): Buffer | null {
+  if (!encrypted) return null;
+  try {
+    return fromBase64Url(decrypt(encrypted), 32);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Make `seed` the instance key: the one in use becomes `previous` for the
+ * 7-day overlap, a pending rotation is settled.
+ */
+export async function promoteInstanceKey(
+  row: RegistrationRow,
+  seed: Buffer,
+  now: Date = new Date(),
+): Promise<void> {
+  await prisma.pushRelayRegistration.update({
+    where: { id: row.id },
+    data: {
+      instanceKeyEncrypted: encrypt(toBase64Url(seed)),
+      instanceKeyCreatedAt: now,
+      pendingInstanceKeyEncrypted: null,
+      previousInstanceKeyEncrypted: row.instanceKeyEncrypted,
+      previousInstanceKeyUntil: new Date(now.getTime() + 7 * 24 * 3600 * 1000),
+    },
+  });
+}
+
+function isBadSignature(result: RelayCallResult): boolean {
+  return (
+    result.kind === "response" &&
+    result.status === 401 &&
+    result.body?.error === "bad_signature"
+  );
+}
+
+/** One signed instance request under `row`, its answer applied. */
 export async function relayCall(
   row: RegistrationRow,
   method: "GET" | "POST" | "DELETE",
@@ -193,23 +232,59 @@ export async function relayCall(
   if (!seed || !row.instanceId || !config.available) {
     return { kind: "transport", reason: "relay_not_registered" };
   }
-  const result = await signedRelayCall(
-    config,
-    {
-      instanceId: row.instanceId,
-      instanceSeed: seed,
-      clockOffsetSeconds: row.clockOffsetSeconds,
-    },
-    method,
-    path,
-    payload,
-    async (offset) => {
-      await prisma.pushRelayRegistration.update({
-        where: { id: row.id },
-        data: { clockOffsetSeconds: offset },
-      });
-    },
-  );
+  const instanceId = row.instanceId;
+  const call = (instanceSeed: Buffer) =>
+    signedRelayCall(
+      config,
+      {
+        instanceId,
+        instanceSeed,
+        clockOffsetSeconds: row.clockOffsetSeconds,
+      },
+      method,
+      path,
+      payload,
+      async (offset) => {
+        await prisma.pushRelayRegistration.update({
+          where: { id: row.id },
+          data: { clockOffsetSeconds: offset },
+        });
+      },
+    );
+  let result = await call(seed);
+  // The overlap of a key rotation: a rotation whose answer was lost left the
+  // relay on the pending key; one the relay never applied leaves it on the
+  // previous key. Either is tried once, and the key that works is kept.
+  if (isBadSignature(result)) {
+    const pending = seedOf(row.pendingInstanceKeyEncrypted);
+    const previous =
+      row.previousInstanceKeyUntil && row.previousInstanceKeyUntil > new Date()
+        ? seedOf(row.previousInstanceKeyEncrypted)
+        : null;
+    for (const [alt, kind] of [
+      [pending, "pending"],
+      [previous, "previous"],
+    ] as const) {
+      if (!alt) continue;
+      const retry = await call(alt);
+      if (isBadSignature(retry) || retry.kind === "transport") continue;
+      if (kind === "pending") {
+        await promoteInstanceKey(row, alt);
+      } else {
+        await prisma.pushRelayRegistration.update({
+          where: { id: row.id },
+          data: {
+            instanceKeyEncrypted: encrypt(toBase64Url(alt)),
+            previousInstanceKeyEncrypted: null,
+            previousInstanceKeyUntil: null,
+          },
+        });
+      }
+      getEvent()?.addMeta("push_relay_instance_key_fallback", kind);
+      result = retry;
+      break;
+    }
+  }
   return applyAnswer(row, result);
 }
 

@@ -6,15 +6,15 @@
 -- consent record, the signed relay binding and its state, and the newest
 -- envelope ids the device reports it opened. `live_activity_tokens` gains the
 -- device's signed Live Activity statement, which reaches the relay only with
--- the end push. Three new tables: the registration of this instance at the
+-- the end push. Four new tables: the registration of this instance at the
 -- relay (present while the operator offers it), the sender keys envelopes are
--- sealed with, and the per-device delivery ledger that doubles as the retry
--- outbox.
+-- sealed with, the per-device delivery ledger that doubles as the retry
+-- outbox, and the queue of relay unbinds owed for erased accounts.
 --
 -- Every column is nullable or has a default, so the previous image keeps
 -- working after a rollback; the new tables are not read by it. One DO block,
 -- every statement guarded, so a replay after a lock timeout changes nothing.
--- Reversibility: drop the three tables and the added columns.
+-- Reversibility: drop the four tables and the added columns.
 --
 -- @retry-on-lock-timeout
 
@@ -45,6 +45,10 @@ BEGIN
         "relay_host" TEXT NOT NULL,
         "instance_id" TEXT,
         "instance_key_encrypted" TEXT NOT NULL,
+        "instance_key_created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "pending_instance_key_encrypted" TEXT,
+        "previous_instance_key_encrypted" TEXT,
+        "previous_instance_key_until" TIMESTAMP(3),
         "tier" TEXT,
         "state" TEXT NOT NULL DEFAULT 'pending',
         "state_reason" TEXT,
@@ -110,5 +114,18 @@ BEGIN
         ON "push_relay_deliveries" ("status", "next_attempt_at");
     CREATE INDEX IF NOT EXISTS "push_relay_deliveries_device_id_push_class_created_at_idx"
         ON "push_relay_deliveries" ("device_id", "push_class", "created_at");
+
+    CREATE TABLE IF NOT EXISTS "push_relay_unbinds" (
+        "id" TEXT NOT NULL,
+        "token" TEXT NOT NULL,
+        "attempts" INTEGER NOT NULL DEFAULT 0,
+        "next_attempt_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "push_relay_unbinds_pkey" PRIMARY KEY ("id")
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS "push_relay_unbinds_token_key"
+        ON "push_relay_unbinds" ("token");
+    CREATE INDEX IF NOT EXISTS "push_relay_unbinds_next_attempt_at_idx"
+        ON "push_relay_unbinds" ("next_attempt_at");
 END
 $migration$;
