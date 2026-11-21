@@ -9354,6 +9354,17 @@
         "button": "Rotate relay key",
         "done": "The relay key was rotated",
         "failed": "The relay key could not be rotated now; the relay allows one rotation a day"
+      },
+      "invite": {
+        "label": "Invite code (optional)",
+        "hint": "Only needed while the relay accepts new servers by invitation only. The code has 24 characters and works once.",
+        "invalid": "An invite code has exactly 24 characters: letters, digits, - or _.",
+        "enter": "Enter invite code"
+      },
+      "reason": {
+        "inviteRequired": "This relay accepts new servers by invitation only. Enter an invite code.",
+        "inviteRejected": "The relay did not accept this invite code. It may have expired or already been used. Ask for a new one and enter it.",
+        "registrationPaused": "The relay is not taking new servers right now. This server asks again later on its own."
       }
     }
   },

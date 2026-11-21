@@ -19,6 +19,7 @@ import {
   liveActivityWithdrawSchema,
   relayConsentSchema,
 } from "@/lib/push-relay/device-registration";
+import { relayInviteSchema } from "@/lib/push-relay/invite";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
 import { isoDateTime } from "@/lib/validations/datetime";
 
@@ -259,7 +260,7 @@ export const pushRelayAdminPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Admin"],
       summary: "Offer the push relay to this server's users, or stop",
       description:
-        "Turning it on needs `acceptTerms` and `householdOnly`, registers the instance at the relay and creates its key. Turning it off deletes the instance at the relay, every device binding with it, and the key. Admin-only, cookie-only, audit-logged.",
+        "Turning it on needs `acceptTerms` and `householdOnly`, registers the instance at the relay and creates its key; `invite` carries the relay's one-time code when the relay is invite-only. The answer is the state after the registration attempt: a refusal reads `offered: true`, `instanceId: null` and a `reason` (`invite_required`, `invite_rejected`, `registration_paused`, or a transport code). Turning it off deletes the instance at the relay, every device binding with it, and the key. Admin-only, cookie-only, audit-logged.",
       requestBody: {
         required: true,
         content: {
@@ -269,6 +270,11 @@ export const pushRelayAdminPaths: NonNullable<ZodOpenApiObject["paths"]> = {
                 enabled: z.boolean(),
                 acceptTerms: z.boolean().optional(),
                 householdOnly: z.boolean().optional(),
+                invite: relayInviteSchema
+                  .optional()
+                  .describe(
+                    "The relay's one-time invite code, 24 base64url characters, for a relay that accepts new servers by invitation only. Used for this registration attempt only and never stored; any other shape is 422.",
+                  ),
               })
               .meta({ id: "AdminPushRelaySwitch" }),
           },

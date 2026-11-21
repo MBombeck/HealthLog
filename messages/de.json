@@ -9354,6 +9354,17 @@
         "button": "Relay-Schlüssel erneuern",
         "done": "Der Relay-Schlüssel wurde erneuert",
         "failed": "Der Relay-Schlüssel ließ sich jetzt nicht erneuern; der Relay erlaubt eine Erneuerung am Tag"
+      },
+      "invite": {
+        "label": "Einladungscode (optional)",
+        "hint": "Nur nötig, solange der Relay neue Server nur auf Einladung aufnimmt. Der Code hat 24 Zeichen und gilt einmal.",
+        "invalid": "Ein Einladungscode hat genau 24 Zeichen: Buchstaben, Ziffern, - oder _.",
+        "enter": "Einladungscode eingeben"
+      },
+      "reason": {
+        "inviteRequired": "Dieser Relay nimmt neue Server nur auf Einladung auf. Gib einen Einladungscode ein.",
+        "inviteRejected": "Der Relay hat diesen Einladungscode nicht angenommen. Er ist vielleicht abgelaufen oder schon benutzt. Lass dir einen neuen geben und gib ihn ein.",
+        "registrationPaused": "Der Relay nimmt gerade keine neuen Server auf. Dieser Server fragt später von selbst wieder an."
       }
     }
   },

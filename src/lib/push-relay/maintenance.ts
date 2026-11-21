@@ -3,7 +3,9 @@
  * (`push-relay-maintenance`).
  *
  * 1. Registers a registration that has no instance id yet (the relay was
- *    unreachable when the operator turned it on, or forgot the instance).
+ *    unreachable when the operator turned it on, or forgot the instance),
+ *    unless the relay wants an invite code from the operator or paused
+ *    registration.
  * 2. Probes an open breaker with a signed `GET /v1/status` when it is due.
  * 3. Retries the outbox: pending deliveries whose next attempt is due, each
  *    with its finished envelope and its own deadline.
@@ -17,6 +19,7 @@
 import { prisma } from "@/lib/db";
 import { loadApnsConfig } from "@/lib/notifications/senders/apns";
 import { relayConfig } from "@/lib/push-relay/config";
+import { OPERATOR_ACTION_REASONS } from "@/lib/push-relay/invite";
 import { isCircuitOpen, probeDue } from "@/lib/push-relay/circuit";
 import {
   ensureInstanceRegistered,
@@ -73,7 +76,14 @@ export async function runRelayMaintenance(
   if (config.available) await finishRelayDisable(config);
   let row = config.available ? await loadRegistration(config) : null;
 
-  if (row && !row.instanceId) {
+  // A registration the relay refused for want of an invite code waits for
+  // the operator; one the relay paused waits out the pause.
+  if (
+    row &&
+    !row.instanceId &&
+    !OPERATOR_ACTION_REASONS.has(row.stateReason ?? "") &&
+    !(row.pausedUntil && row.pausedUntil > now)
+  ) {
     facts.registered = await ensureInstanceRegistered(row, config);
     row = await loadRegistration(config);
   }

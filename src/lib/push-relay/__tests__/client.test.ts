@@ -9,11 +9,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const fetchMock = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/safe-fetch", () => ({ safeFetch: fetchMock }));
 
-import { signedRelayCall, verifyRelayResponse } from "@/lib/push-relay/client";
+import {
+  registerInstance,
+  registrationBody,
+  signedRelayCall,
+  verifyRelayResponse,
+} from "@/lib/push-relay/client";
 import { relayConfig } from "@/lib/push-relay/config";
 import { fromBase64Url } from "@/lib/push-relay/encoding";
+import { relayInviteSchema } from "@/lib/push-relay/invite";
 import {
   ed25519PublicOf,
+  registerText,
   requestText,
   responseText,
   signText,
@@ -340,5 +347,68 @@ describe("relay client", () => {
     expect(
       await signedRelayCall(config, identity, "GET", "/v1/status", undefined),
     ).toEqual({ kind: "transport", reason: "relay_body_invalid" });
+  });
+});
+
+describe("registration body", () => {
+  const invite = "Q2xhc3NpY0ludml0ZUNvZGVz";
+
+  it("carries the proof of possession and leaves `invite` out without a code", () => {
+    const body = JSON.parse(registrationBody(config, instanceSeed, 1795000000));
+    expect(Object.keys(body).sort()).toEqual([
+      "client",
+      "proof",
+      "publicKey",
+      "time",
+    ]);
+    const publicKey = ed25519PublicOf(instanceSeed);
+    expect(body.publicKey).toBe(publicKey.toString("base64url"));
+    expect(
+      verifyText(
+        publicKey,
+        registerText("push.example.org", publicKey, 1795000000),
+        fromBase64Url(body.proof, 64) as Buffer,
+      ),
+    ).toBe(true);
+  });
+
+  it("adds the invite code as `invite`, outside the signed proof text", () => {
+    const plain = JSON.parse(
+      registrationBody(config, instanceSeed, 1795000000),
+    );
+    const body = JSON.parse(
+      registrationBody(config, instanceSeed, 1795000000, invite),
+    );
+    expect(body).toEqual({ ...plain, invite });
+  });
+
+  it("sends the code on the wire with the registration", async () => {
+    fetchMock.mockImplementation(async (url: string, init: RequestInit) =>
+      signedAnswer(url, init, 403, { error: "invite_required" }),
+    );
+    const result = await registerInstance(
+      config,
+      instanceSeed,
+      0,
+      undefined,
+      invite,
+    );
+    expect(result).toMatchObject({ kind: "response", status: 403 });
+    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    expect(JSON.parse(init.body as string).invite).toBe(invite);
+  });
+
+  it("accepts exactly 24 base64url characters as a code", () => {
+    expect(relayInviteSchema.safeParse(invite).success).toBe(true);
+    for (const bad of [
+      "",
+      invite.slice(1),
+      `${invite}A`,
+      `${invite.slice(1)}+`,
+      `${invite.slice(1)}=`,
+      `${invite.slice(1)} `,
+    ]) {
+      expect(relayInviteSchema.safeParse(bad).success).toBe(false);
+    }
   });
 });

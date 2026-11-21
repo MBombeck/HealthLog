@@ -9354,6 +9354,17 @@
         "button": "Renouveler la clé du relais",
         "done": "La clé du relais a été renouvelée",
         "failed": "La clé du relais n'a pas pu être renouvelée maintenant ; le relais permet un renouvellement par jour"
+      },
+      "invite": {
+        "label": "Code d'invitation (facultatif)",
+        "hint": "Nécessaire uniquement tant que le relais n'accepte de nouveaux serveurs que sur invitation. Le code compte 24 caractères et ne sert qu'une fois.",
+        "invalid": "Un code d'invitation compte exactement 24 caractères : lettres, chiffres, - ou _.",
+        "enter": "Saisir un code d'invitation"
+      },
+      "reason": {
+        "inviteRequired": "Ce relais n'accepte de nouveaux serveurs que sur invitation. Saisissez un code d'invitation.",
+        "inviteRejected": "Le relais n'a pas accepté ce code d'invitation. Il a peut-être expiré ou déjà été utilisé. Demandez-en un nouveau et saisissez-le.",
+        "registrationPaused": "Le relais n'accepte pas de nouveaux serveurs pour le moment. Ce serveur réessaiera plus tard de lui-même."
       }
     }
   },

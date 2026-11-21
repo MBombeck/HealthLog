@@ -71,6 +71,34 @@ the deletion until the relay confirms it. Revoking a device or withdrawing
 consent reaches the relay the same way. The apps notice it
 on their next sync and go back to local reminders on their own.
 
+### Invite codes
+
+A relay can accept new servers by invitation only. The hosted relay may run
+that way during a test phase, so a server that registers for the first time
+can need a one-time invite code. Ask for one at `relay@healthlog.dev`; if you
+run your own relay, `healthlog-push admin invite` prints one. A code has 24
+characters (letters, digits, `-` and `_`), is valid for 7 days and registers
+exactly one server.
+
+Enter the code in the **Invite code** field of the dialog when you switch the
+relay on. Without a code the field stays empty and nothing changes for a relay
+that accepts everyone. The code is sent with that one registration and is
+never stored or logged on your server; the relay spends it only when the
+registration succeeds.
+
+If the relay refuses, the card says why within the same click:
+
+- **This relay accepts new servers by invitation only.** No code was entered.
+  Use **Enter invite code** on the card and try again.
+- **The relay did not accept this invite code.** The code is unknown, expired
+  or already used. Ask for a new one.
+- **The relay is not taking new servers right now.** Registration is paused at
+  the relay. Your server asks again on its own once the relay's pause is over.
+
+After an invite refusal your server does not keep asking the relay; it waits
+until you enter a code. A server that is already registered never needs a
+code again, also not after an update or a relay restore.
+
 ### Checking it works, and the instance key
 
 The relay card has **Send test push**: one harmless sealed notification to

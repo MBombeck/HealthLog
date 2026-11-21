@@ -9354,6 +9354,17 @@
         "button": "Renovar la clave del relé",
         "done": "La clave del relé se renovó",
         "failed": "No se pudo renovar ahora la clave del relé; el relé permite una renovación al día"
+      },
+      "invite": {
+        "label": "Código de invitación (opcional)",
+        "hint": "Solo hace falta mientras el relé admite servidores nuevos únicamente por invitación. El código tiene 24 caracteres y sirve una vez.",
+        "invalid": "Un código de invitación tiene exactamente 24 caracteres: letras, cifras, - o _.",
+        "enter": "Introducir código de invitación"
+      },
+      "reason": {
+        "inviteRequired": "Este relé solo admite servidores nuevos por invitación. Introduce un código de invitación.",
+        "inviteRejected": "El relé no aceptó este código de invitación. Puede que haya caducado o que ya se haya usado. Pide uno nuevo e introdúcelo.",
+        "registrationPaused": "El relé no admite servidores nuevos en este momento. Este servidor volverá a intentarlo más tarde por sí solo."
       }
     }
   },

@@ -259,25 +259,40 @@ export async function signedRelayCall(
   return { kind: "transport", reason: "relay_unreachable" };
 }
 
+/**
+ * The `POST /v1/instances` body. `invite` is the operator's one-time code for
+ * a relay in invite mode; without one the field is left out.
+ */
+export function registrationBody(
+  config: RelayConfig,
+  instanceSeed: Buffer,
+  time: number,
+  invite?: string,
+): string {
+  const publicKey = ed25519PublicOf(instanceSeed);
+  return JSON.stringify({
+    publicKey: toBase64Url(publicKey),
+    client: clientHeader(),
+    time,
+    proof: toBase64Url(
+      signText(instanceSeed, registerText(config.host, publicKey, time)),
+    ),
+    ...(invite ? { invite } : {}),
+  });
+}
+
 /** `POST /v1/instances`: register (or recover) the instance key. */
 export async function registerInstance(
   config: RelayConfig,
   instanceSeed: Buffer,
   clockOffsetSeconds: number,
   onOffset?: OffsetSink,
+  invite?: string,
 ): Promise<RelayCallResult> {
-  const publicKey = ed25519PublicOf(instanceSeed);
   let offset = clockOffsetSeconds;
   for (let attempt = 0; attempt < 2; attempt++) {
     const time = nowSeconds(offset);
-    const body = JSON.stringify({
-      publicKey: toBase64Url(publicKey),
-      client: clientHeader(),
-      time,
-      proof: toBase64Url(
-        signText(instanceSeed, registerText(config.host, publicKey, time)),
-      ),
-    });
+    const body = registrationBody(config, instanceSeed, time, invite);
     const nonce = toBase64Url(randomBytes(16));
     const result = await exchange(
       config,
