@@ -174,7 +174,12 @@ export async function sendSealed(
           ? "production"
           : "sandbox",
       pushType: sealed.pushClass === "alert" ? "alert" : "background",
-      priority: sealed.pushClass === "alert" ? 10 : 5,
+      // A passive alert (the dose confirmation) goes at priority 5, like its
+      // plaintext twin; the relay picks its own priority per class.
+      priority:
+        sealed.pushClass === "alert" && target.message.ui?.level !== "passive"
+          ? 10
+          : 5,
       payload: templateFor(sealed.pushClass, sealed.envelope),
       collapseId: collapse,
       expiry: sealed.exp,

@@ -187,17 +187,26 @@ export async function flushDataChange(
     ? (await wakeableDevices(owner.userId)).find((d) => d.id === deviceId)
     : undefined;
   if (!device) return false;
-  const result = await sendWake(
-    "DATA_CHANGED",
-    [device],
-    { domains: [...domains].sort(), changedAt: now.toISOString() },
-    { now, collapseKey: "data-changed" },
-  );
-  if (result.overBudget.length > 0) {
-    // The device's silent budget is spent: the domains wait for the next
-    // window instead of being lost.
+  let result;
+  try {
+    result = await sendWake(
+      "DATA_CHANGED",
+      [device],
+      { domains: [...domains].sort(), changedAt: now.toISOString() },
+      { now, collapseKey: "data-changed" },
+    );
+  } catch (err) {
+    // The claim already took the domains; a failed send puts them back.
     await addPending(deviceId, domains, now);
-    getEvent()?.addMeta("push_data_changed_over_budget", true);
+    throw err;
+  }
+  if (result.sent.length === 0) {
+    // Not sent (the silent budget is spent, or no route took it): the
+    // domains wait for the next window instead of being lost.
+    await addPending(deviceId, domains, now);
+    if (result.overBudget.length > 0) {
+      getEvent()?.addMeta("push_data_changed_over_budget", true);
+    }
   }
   return result.sent.length > 0;
 }
