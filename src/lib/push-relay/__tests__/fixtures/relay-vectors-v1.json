@@ -744,16 +744,23 @@
     {
       "name": "response",
       "publicKey": "SAdaWX5yGhVuLgeZ3lzAxTJNxufq8c3UYlCGjsUyFd0",
-      "text": "hl-relay-resp-v1\npush.healthlog.dev\nTk5OTk5OTk5OTk5OTk5OTg\n200\neef46741adfc3a9f76294d3b78f37a45f113092ac9d44ee77c7a038a88ff09a1",
-      "signature": "OwSQPZWogg9-lol5wzePG1VF3N0cT5FB2Fi7GwtC809OT5poRkyqUSDzQU05lnLJcoTOr2THGTUDGtbP3NawDg",
+      "text": "hl-relay-resp-v2\npush.healthlog.dev\nPOST\n/v1/push\nTk5OTk5OTk5OTk5OTk5OTg\n200\neef46741adfc3a9f76294d3b78f37a45f113092ac9d44ee77c7a038a88ff09a1",
+      "signature": "soVdSa6DkP_-LdYu60H-Db4B8rCy57iJ5yF__O_qG2yy6RgbukM_BRmRxGFcja4NL7tLTVfCOATmdTnkF_QXBA",
       "body": "{\"items\":[]}"
+    },
+    {
+      "name": "responseAppEndpoint",
+      "publicKey": "SAdaWX5yGhVuLgeZ3lzAxTJNxufq8c3UYlCGjsUyFd0",
+      "text": "hl-relay-resp-v2\npush.healthlog.dev\nDELETE\n/v1/bindings/self\nTk5OTk5OTk5OTk5OTk5OTg\n204\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "signature": "-zxBTR3_D1ZQfDTOJk1FUk7y7tCvGy06dO-esZoqk-7PCUTbwOVeT0LjVFd07P_q7h5HU9kZPmfR16F-wt-GBQ",
+      "body": ""
     },
     {
       "name": "responseWithoutNonce",
       "publicKey": "SAdaWX5yGhVuLgeZ3lzAxTJNxufq8c3UYlCGjsUyFd0",
-      "text": "hl-relay-resp-v1\npush.healthlog.dev\n-\n404\nd2dfdc9511fbeaa0701d1f8730f4989313b062ca1b61a2bd8bed8f4f5d654b5d",
-      "signature": "YvLUyItMuwKj6uRHkNQD45kbulEHGsKKloGfmuEVI-4TY1hz8OJFf_2WrO-3ixFQ2Vh-f-yp_23MPr3BL5oPAw",
-      "body": "{\"error\":\"not_found\"}"
+      "text": "hl-relay-resp-v2\npush.healthlog.dev\nGET\n/healthz\n-\n200\na29ee2b15c494311c52521766e44af56a3ad2248e7a8ab465e5206463c13d288",
+      "signature": "bDGLnQ-tGUfY7IYBGz0m8DHcsouNZhWfUKmc2PF9goQZVnKzbpHLYsx2DIodbNQ4xWAD3-wmZDu-ynd7gfLkCw",
+      "body": "{\"status\":\"ok\"}"
     },
     {
       "name": "statusFile",
@@ -792,12 +799,27 @@
     {
       "name": "responseOtherNonce",
       "of": "response",
-      "text": "hl-relay-resp-v1\npush.healthlog.dev\nT09PT09PT09PT09PT09PTw\n200\neef46741adfc3a9f76294d3b78f37a45f113092ac9d44ee77c7a038a88ff09a1"
+      "text": "hl-relay-resp-v2\npush.healthlog.dev\nPOST\n/v1/push\nT09PT09PT09PT09PT09PTw\n200\neef46741adfc3a9f76294d3b78f37a45f113092ac9d44ee77c7a038a88ff09a1"
     },
     {
       "name": "responseOtherStatus",
       "of": "response",
-      "text": "hl-relay-resp-v1\npush.healthlog.dev\nTk5OTk5OTk5OTk5OTk5OTg\n410\neef46741adfc3a9f76294d3b78f37a45f113092ac9d44ee77c7a038a88ff09a1"
+      "text": "hl-relay-resp-v2\npush.healthlog.dev\nPOST\n/v1/push\nTk5OTk5OTk5OTk5OTk5OTg\n410\neef46741adfc3a9f76294d3b78f37a45f113092ac9d44ee77c7a038a88ff09a1"
+    },
+    {
+      "name": "responseOtherMethod",
+      "of": "response",
+      "text": "hl-relay-resp-v2\npush.healthlog.dev\nGET\n/v1/push\nTk5OTk5OTk5OTk5OTk5OTg\n200\neef46741adfc3a9f76294d3b78f37a45f113092ac9d44ee77c7a038a88ff09a1"
+    },
+    {
+      "name": "responseOtherPath",
+      "of": "response",
+      "text": "hl-relay-resp-v2\npush.healthlog.dev\nPOST\n/v1/status\nTk5OTk5OTk5OTk5OTk5OTg\n200\neef46741adfc3a9f76294d3b78f37a45f113092ac9d44ee77c7a038a88ff09a1"
+    },
+    {
+      "name": "responseAppReplayedOntoOtherRequest",
+      "of": "responseAppEndpoint",
+      "text": "hl-relay-resp-v2\npush.healthlog.dev\nDELETE\n/v1/bindings/self\nUFBQUFBQUFBQUFBQUFBQUA\n204\ne3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
       "name": "activityTokenSwapped",

@@ -56,7 +56,7 @@ import { openEnvelope, OpenError } from "./envelope-open";
 
 const FIXTURE = path.join(__dirname, "fixtures", "relay-vectors-v1.json");
 const PINNED_SHA256 =
-  "8b2106f1727b70f0b7c688baeed225e18fe064f21622e956429d2d3eaf993ede";
+  "d524d404116c8f99f0af02f56d2c174ecf53cb88da2f0abc20a4c32c66ef71c3";
 
 const raw = readFileSync(FIXTURE);
 const vectors = JSON.parse(raw.toString("utf8"));
@@ -241,14 +241,26 @@ describe("relay vectors v1", () => {
       }),
       response: responseText({
         host,
+        method: "POST",
+        pathAndQuery: "/v1/push",
         nonce: keys.nonce,
         status: 200,
         body: byName("response").body,
       }),
+      responseAppEndpoint: responseText({
+        host,
+        method: "DELETE",
+        pathAndQuery: "/v1/bindings/self",
+        nonce: keys.nonce,
+        status: 204,
+        body: "",
+      }),
       responseWithoutNonce: responseText({
         host,
+        method: "GET",
+        pathAndQuery: "/healthz",
         nonce: null,
-        status: 404,
+        status: 200,
         body: byName("responseWithoutNonce").body,
       }),
       bind: bindText({
