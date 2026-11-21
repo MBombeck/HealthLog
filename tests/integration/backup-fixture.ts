@@ -1534,14 +1534,18 @@ export const FILL_OVERRIDES: Readonly<Record<string, unknown>> = {
   "IntradayCumulativeProfile.basis": "HOUR_BUCKETS",
   // The posted hours are a whole day of slots (-1 for an hour not posted);
   // the restore refuses any other length, as it does for the curve.
-  // CHECK in migration 0517: text day keys are `YYYY-MM-DD`.
-  "MenstrualCycle.endDate": "2026-10-28",
-  "MenstrualCycle.periodEndDate": "2026-10-05",
-  "MenstrualCycle.ovulationDate": "2026-10-15",
   "IntradayCumulativeProfile.hourlyIncrements": Array.from(
     { length: 24 },
     (_, hour) => (hour < 6 ? -1 : 350),
   ),
+  // CHECK in migration 0517: text day keys are `YYYY-MM-DD`.
+  "MenstrualCycle.endDate": "2026-10-28",
+  "MenstrualCycle.periodEndDate": "2026-10-05",
+  "MenstrualCycle.ovulationDate": "2026-10-15",
+  // The same CHECK in migration 0533, on the pregnancy days.
+  "CycleProfile.pregnancyStartDate": "2026-03-02",
+  "CycleProfile.pregnancyDueDate": "2026-12-07",
+  "CycleProfile.deliveryDate": "2026-11-30",
 };
 
 /**

@@ -6,9 +6,16 @@
 -- row reads NULL, so nothing changes for anyone until they set a state, and
 -- nothing is copied.
 --
+-- The three days carry the same shape check 0517 gave every other text day
+-- key (`<table>_<column>_day_key_shape`; NULL passes). The backup copies them
+-- verbatim and its schema reads them as day keys, so a column that took any
+-- text could hold a value that made the writer's own copy fail its preview
+-- and its restore.
+--
 -- One DO block, every step guarded, so a replay after a lock timeout finishes
 -- what is missing. Reversibility: drop the five columns and the type; the
--- forecast runs again for anyone who had set a state.
+-- forecast runs again for anyone who had set a state. The checks go with the
+-- columns.
 --
 -- @retry-on-lock-timeout
 
@@ -28,5 +35,30 @@ BEGIN
         ADD COLUMN IF NOT EXISTS "pregnancy_due_date" TEXT,
         ADD COLUMN IF NOT EXISTS "delivery_date" TEXT,
         ADD COLUMN IF NOT EXISTS "postpartum_weeks" INTEGER NOT NULL DEFAULT 12;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+         WHERE conname = 'cycle_profiles_pregnancy_start_date_day_key_shape'
+    ) THEN
+        ALTER TABLE "cycle_profiles"
+            ADD CONSTRAINT "cycle_profiles_pregnancy_start_date_day_key_shape"
+            CHECK ("pregnancy_start_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    END IF;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+         WHERE conname = 'cycle_profiles_pregnancy_due_date_day_key_shape'
+    ) THEN
+        ALTER TABLE "cycle_profiles"
+            ADD CONSTRAINT "cycle_profiles_pregnancy_due_date_day_key_shape"
+            CHECK ("pregnancy_due_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    END IF;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+         WHERE conname = 'cycle_profiles_delivery_date_day_key_shape'
+    ) THEN
+        ALTER TABLE "cycle_profiles"
+            ADD CONSTRAINT "cycle_profiles_delivery_date_day_key_shape"
+            CHECK ("delivery_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    END IF;
 END
 $migration$;
