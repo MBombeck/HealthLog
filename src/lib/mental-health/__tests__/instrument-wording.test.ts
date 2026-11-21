@@ -273,7 +273,9 @@ describe("validated entries carry the published wording", () => {
         "WHO5.ru",
       ].sort(),
     );
-    expect(wordingFor("SCI", "de").validated).toBe(false);
-    expect(wordingFor("PHQ9", "ko").validated).toBe(true);
+    expect(presentedWording("SCI", "de", false)).toBe(
+      "unvalidated_translation",
+    );
+    expect(presentedWording("PHQ9", "ko", false)).toBe("validated");
   });
 });
