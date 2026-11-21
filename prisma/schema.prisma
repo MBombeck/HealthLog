@@ -3586,6 +3586,21 @@ enum IntakeSource {
 /// ("Zuordnung lösen") counterpart that stays a standalone ad-hoc take
 /// (`scheduledFor === takenAt`). The nightly slot dedup never folds a
 /// USER_PIN row into a snap cluster, so neither decision is reverted.
+/// Where a take was recorded: the web app, a Bearer client (the iOS app),
+/// the ingest hook (a pill box, home automation), a Telegram button, the
+/// Apple Health medication sync, a file import, or the server's auto-take.
+enum IntakeTakenVia {
+  WEB
+  APP
+  INTEGRATION
+  TELEGRAM
+  APPLE_HEALTH
+  IMPORT
+  AUTO
+
+  @@map("intake_taken_via")
+}
+
 enum IntakeAttributionSource {
   AUTO
   USER_PIN
@@ -3662,6 +3677,13 @@ model MedicationIntakeEvent {
   /// never on-time-washed — and surfaces released rows as ad-hoc; the
   /// nightly dedup leaves both standalone.
   attributionSource    IntakeAttributionSource @default(AUTO) @map("attribution_source")
+  /// How the dose on this row was recorded as taken. `source` names the
+  /// writer that created the row, which for a projected or reminder slot is
+  /// the server, so it cannot say where a take came from. Set by every take
+  /// write that knows its origin, null before migration 0515 and on rows no
+  /// take reached. Read by the today list (`takenVia`) so a client can warn
+  /// before a second take of the same dose.
+  takenVia             IntakeTakenVia?         @map("taken_via")
   source               IntakeSource            @default(WEB)
   /// v1.32.37 — client-supplied replay anchor, unique PER USER (migration
   /// 0273). It carried a GLOBAL unique from 0001_init, which let one
@@ -6402,16 +6424,16 @@ model IdempotencyKey {
 /// for whatever new gateway labels Apple ships next without a forced
 /// migration.
 model Device {
-  id                    String   @id @default(cuid())
-  userId                String   @map("user_id")
-  platform              String // "ios"
-  token                 String   @unique
-  bundleId              String   @map("bundle_id")
-  locale                String?
-  appVersion            String?  @map("app_version")
-  model                 String?
-  apnsToken             String?  @map("apns_token")
-  apnsEnvironment       String?  @map("apns_environment") // "sandbox" | "production"
+  id                       String   @id @default(cuid())
+  userId                   String   @map("user_id")
+  platform                 String // "ios"
+  token                    String   @unique
+  bundleId                 String   @map("bundle_id")
+  locale                   String?
+  appVersion               String?  @map("app_version")
+  model                    String?
+  apnsToken                String?  @map("apns_token")
+  apnsEnvironment          String?  @map("apns_environment") // "sandbox" | "production"
   /// v1.7.0 — per-device medication-delivery override. NULL = inherit the
   /// user-level roaming default
   /// (`User.notificationPrefs.medication.deliveryDefault`). "server"
@@ -6419,7 +6441,7 @@ model Device {
   /// v1.48.0 (#179) the dispatcher's APNs send honours it per device for the
   /// medication reminder that announces a dose; NULL there follows the
   /// account-wide client-managed flag (`deviceDeliversLocally`).
-  medicationDelivery    String?  @map("medication_delivery")
+  medicationDelivery       String?  @map("medication_delivery")
   /// v1.17.1 (#22) — APNs push token for the iOS Live Activity update/end
   /// channel. ActivityKit issues a per-Activity push token distinct from the
   /// device APNs token; the server stores the most recent one so the worker
@@ -6427,10 +6449,15 @@ model Device {
   /// the device has no active Live Activity. The iOS client owns the
   /// ActivityKit lifecycle and registers/clears this token; no server-side
   /// behaviour hangs off it beyond addressing the update push.
-  liveActivityPushToken String?  @map("live_activity_push_token")
-  lastSeen              DateTime @default(now()) @map("last_seen")
-  createdAt             DateTime @default(now()) @map("created_at")
-  updatedAt             DateTime @updatedAt @map("updated_at")
+  liveActivityPushToken    String?  @map("live_activity_push_token")
+  /// The medication whose Live Activity `liveActivityPushToken` addresses, as
+  /// the app reports it on registration. With it the server ends that
+  /// Activity only when that medication's dose is answered; without it, only
+  /// when no dose the app could show is open.
+  liveActivityMedicationId String?  @map("live_activity_medication_id")
+  lastSeen                 DateTime @default(now()) @map("last_seen")
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

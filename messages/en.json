@@ -1594,6 +1594,7 @@
     "intakeToastFailed": "Could not record {name}. Try again",
     "intakeUndo": "Undo",
     "intakeUndone": "Entry reverted",
+    "intakeAlreadyTaken": "{name} was already recorded as taken. Nothing new was saved.",
     "intakeUndoFailed": "Could not undo. Open the history to fix it",
     "glp1LastInjection": "{label}",
     "glp1NextInjectionDays": "{label} (in {days} days)",
@@ -9558,6 +9559,13 @@
     "eventSecurityAlertDesc": "Sent when your account is used on a device or from a place we have not seen before.",
     "eventSharedRecordIntake": "Someone you shared your record with marks a dose",
     "eventSharedRecordIntakeDesc": "Only sent when another person does it, never for your own entries.",
+    "eventMedicationIntakeRecorded": "Confirm doses taken on other devices",
+    "eventMedicationIntakeRecordedDesc": "A quiet notice on your iPhone when a dose is recorded elsewhere (web, Telegram, a connected device), so a reminder already on screen is withdrawn. On by default when your phone keeps its own reminders.",
+    "intakeRecorded": {
+      "title": "Dose recorded",
+      "bodyTaken": "A dose was recorded as taken on another device.",
+      "bodySkipped": "A dose was recorded as skipped on another device."
+    },
     "security": {
       "newDeviceTitle": "New sign-in to your account",
       "newDeviceBody": "A new sign-in from {device} ({location}). If this wasn't you, change your password immediately.",

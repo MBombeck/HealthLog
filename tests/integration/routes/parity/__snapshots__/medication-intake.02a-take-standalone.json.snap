@@ -11,6 +11,7 @@
       "autoMissed": false,
       "autoRecorded": false,
       "attributionSource": "AUTO",
+      "takenVia": "WEB",
       "source": "WEB",
       "idempotencyKey": null,
       "createdAt": "<createdAt>",
@@ -49,7 +50,15 @@
       "args": [
         {
           "userId": "<id:2>",
-          "originDeviceToken": null
+          "originDeviceToken": null,
+          "recorded": {
+            "medicationId": "<id:3>",
+            "intakeId": "<id:1>",
+            "slotInstant": "2026-10-15T11:00:00.000Z",
+            "outcome": "taken",
+            "takenAt": "2026-10-15T11:00:00.000Z",
+            "takenVia": "WEB"
+          }
         }
       ]
     },
@@ -367,6 +376,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -388,6 +398,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -409,6 +420,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -430,6 +442,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "WEB",
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -456,6 +469,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "WEB",
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",

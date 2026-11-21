@@ -38,6 +38,7 @@ function row(overrides: Partial<SlotIntakeRow> = {}): SlotIntakeRow {
     externalId: null,
     updatedAt: createdAt,
     syncVersion: 0,
+    takenVia: null,
     deletedAt: null,
     ...overrides,
   };
@@ -324,18 +325,44 @@ describe("applyCanonicalSlotWrite — H1 deterministic selection", () => {
       updateImpl: async (id) =>
         row({ id, takenAt: new Date("2026-06-15T05:05:00Z") }),
     });
+    // A skip is a decision that still applies over a take, so it writes;
+    // it lands on the actioned row.
     const res = await applyCanonicalSlotWrite({
       ...BASE,
       client: client as unknown as UpsertClient,
-      takenAt: new Date("2026-06-15T05:05:00Z"),
-      skipped: false,
-      isExplicitTaken: true,
-      isExplicitSkip: false,
+      takenAt: null,
+      skipped: true,
+      isExplicitTaken: false,
+      isExplicitSkip: true,
     });
     expect(res.row.id).toBe("taken-new");
     const updateArg = vi.mocked(client.medicationIntakeEvent.update).mock
       .calls[0][0] as { where: { id: string } };
     expect(updateArg.where.id).toBe("taken-new");
+  });
+
+  it("answers alreadyTaken for a take on a taken slot and writes nothing", async () => {
+    const taken = row({
+      id: "taken-first",
+      source: "API",
+      takenAt: new Date("2026-06-15T05:01:00Z"),
+      idempotencyKey: "box-1",
+    });
+    const client = makeClient({ findManyResult: [[taken]] });
+    const res = await applyCanonicalSlotWrite({
+      ...BASE,
+      client: client as unknown as UpsertClient,
+      takenAt: new Date("2026-06-15T05:04:00Z"),
+      skipped: false,
+      isExplicitTaken: true,
+      isExplicitSkip: false,
+      idempotencyKey: "phone-1",
+    });
+    expect(res.alreadyTaken).toBe(true);
+    expect(res.consumedTransition).toBe(false);
+    expect(res.row.takenAt?.toISOString()).toBe("2026-06-15T05:01:00.000Z");
+    expect(res.row.idempotencyKey).toBe("box-1");
+    expect(client.medicationIntakeEvent.update).not.toHaveBeenCalled();
   });
 
   it("prefers the first row in (createdAt asc, id asc) order when none actioned", async () => {

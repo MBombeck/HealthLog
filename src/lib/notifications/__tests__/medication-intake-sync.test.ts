@@ -366,7 +366,7 @@ describe("queueMedicationIntakeSync — Live Activity push", () => {
     // The spent token is cleared.
     expect(deviceUpdateMany).toHaveBeenCalledWith({
       where: { id: { in: ["d1"] } },
-      data: { liveActivityPushToken: null },
+      data: { liveActivityPushToken: null, liveActivityMedicationId: null },
     });
   });
 
@@ -400,7 +400,7 @@ describe("queueMedicationIntakeSync — Live Activity push", () => {
 
     expect(deviceUpdateMany).toHaveBeenCalledWith({
       where: { id: { in: ["d1"] } },
-      data: { liveActivityPushToken: null },
+      data: { liveActivityPushToken: null, liveActivityMedicationId: null },
     });
   });
 

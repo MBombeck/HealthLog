@@ -15,6 +15,10 @@ import { reconcileOneShotState } from "@/lib/medications/lifecycle";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
 import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
+import {
+  slotLockKey,
+  withSlotLock,
+} from "@/lib/medications/scheduling/slot-lock";
 
 /**
  * The event under this medication and record, tombstoned or not (a re-delete
@@ -43,18 +47,52 @@ export async function deleteIntakeEvent(input: {
   medicationId: string;
   eventId: string;
   event: MedicationIntakeEvent;
+  /** The `syncVersion` the client saw; a different one refuses the undo. */
+  expectedSyncVersion?: number;
+  /**
+   * The idempotency key of the take the client wants to undo. A row that
+   * carries another key holds someone else's take (a pill box this tap
+   * converged onto answers `alreadyTaken` and keeps its key), so the undo is
+   * refused.
+   */
+  expectedIdempotencyKey?: string;
   ipAddress: string;
   originDeviceToken: string | null;
-}): Promise<void> {
+}): Promise<"deleted" | "changedSinceSeen"> {
   const { user, medicationId: id, eventId, event } = input;
 
-  // A deleted dose record refunds its consumption stamp (no-op for a
-  // never-consumed row; a re-delete finds it cleared).
-  await restoreForIntake({
-    client: prisma,
+  // Serialised with every take of the slot (`slot-lock.ts`) and re-read
+  // under the lock, so a take racing this undo never lands on the
+  // tombstone, and a stale undo cannot remove a newer dose.
+  const key = slotLockKey({
     userId: user.id,
-    eventId,
+    medicationId: id,
+    slot: event.scheduledFor,
   });
+  const verdict = await withSlotLock(prisma, key, async (tx) => {
+    const current = await tx.medicationIntakeEvent.findUnique({
+      where: { id: eventId },
+      select: { syncVersion: true, idempotencyKey: true },
+    });
+    if (
+      (input.expectedSyncVersion !== undefined &&
+        current?.syncVersion !== input.expectedSyncVersion) ||
+      (input.expectedIdempotencyKey !== undefined &&
+        current?.idempotencyKey !== input.expectedIdempotencyKey)
+    ) {
+      return "changedSinceSeen" as const;
+    }
+    // A deleted dose record refunds its consumption stamp first (no-op for
+    // a never-consumed row; a re-delete finds it cleared).
+    await restoreForIntake({ client: prisma, userId: user.id, eventId });
+    // Sync — soft-delete instead of a hard `delete`; see below.
+    await tx.medicationIntakeEvent.update({
+      where: { id: eventId },
+      data: { deletedAt: new Date(), syncVersion: { increment: 1 } },
+    });
+    return "deleted" as const;
+  });
+  if (verdict === "changedSinceSeen") return verdict;
 
   // Sync — soft-delete instead of a hard `delete`. An intake is an immutable
   // fact, so a "correction" is a tombstone + re-insert (never an in-place
@@ -64,13 +102,6 @@ export async function deleteIntakeEvent(input: {
   // time. Every today / compliance / list read filters `deletedAt: null`, so
   // the row is invisible to normal reads from here on. A re-delete re-bumps
   // harmlessly.
-  await prisma.medicationIntakeEvent.update({
-    where: { id: eventId },
-    data: {
-      deletedAt: new Date(),
-      syncVersion: { increment: 1 },
-    },
-  });
 
   await auditLog("medication.intake.delete", {
     userId: user.id,
@@ -112,4 +143,5 @@ export async function deleteIntakeEvent(input: {
     userId: user.id,
     originDeviceToken: input.originDeviceToken,
   });
+  return "deleted";
 }

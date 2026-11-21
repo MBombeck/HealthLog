@@ -92,6 +92,14 @@ const SESSION_OK = {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  // The slot write runs in a transaction holding the slot's lock; a
+  // callback runs against the same mocked client.
+  vi.mocked(prisma.$transaction).mockImplementation((async (arg: unknown) =>
+    Array.isArray(arg)
+      ? Promise.all(arg)
+      : (arg as (c: unknown) => unknown)(
+          prisma,
+        )) as unknown as typeof prisma.$transaction);
   // v1.36.0 — the GET's validation breadcrumb goes through the `auditLog`
   // helper, whose promise the route attaches a `.catch` to. `resetAllMocks`
   // clears the factory's implementation, so it is restored here.
@@ -466,10 +474,12 @@ describe("POST /api/medications/intake", () => {
     expect(res.status).toBe(200);
 
     expect(queueMedicationIntakeSync).toHaveBeenCalledTimes(1);
-    expect(queueMedicationIntakeSync).toHaveBeenCalledWith({
-      userId: "user-1",
-      originDeviceToken: "origin-device-token",
-    });
+    expect(queueMedicationIntakeSync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user-1",
+        originDeviceToken: "origin-device-token",
+      }),
+    );
   });
 
   // ── v1.16.10 — inventory consumption seams ──────────────────────────

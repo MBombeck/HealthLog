@@ -103,6 +103,10 @@ export async function readTodayIntakes(input: {
     medicationId: e.medicationId,
     scheduledAt: e.scheduledFor.toISOString(),
     takenAt: e.takenAt?.toISOString() ?? null,
+    // Where the outcome was recorded, so a client can say "already taken at
+    // 07:12 via an integration" before offering a second take.
+    source: e.source,
+    takenVia: e.takenAt ? e.takenVia : null,
     status: e.skipped
       ? "skipped"
       : e.takenAt

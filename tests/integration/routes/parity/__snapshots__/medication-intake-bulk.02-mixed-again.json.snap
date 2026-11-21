@@ -4,8 +4,8 @@
     "data": {
       "processed": 18,
       "inserted": 0,
-      "updated": 5,
-      "duplicates": 6,
+      "updated": 3,
+      "duplicates": 8,
       "skipped": [
         {
           "index": 0,
@@ -54,12 +54,12 @@
         },
         {
           "index": 3,
-          "status": "updated",
+          "status": "duplicate",
           "id": "<id:1>"
         },
         {
           "index": 4,
-          "status": "updated",
+          "status": "duplicate",
           "id": "<id:2>"
         },
         {
@@ -141,8 +141,8 @@
         "write_bucket": "own",
         "processed": 18,
         "inserted": 0,
-        "updated": 5,
-        "duplicates": 6,
+        "updated": 3,
+        "duplicates": 8,
         "skipped": 7,
         "extra_doses_unscheduled": 0,
         "external_id_rejected": 2,
@@ -411,6 +411,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "USER_PIN",
+        "takenVia": "APP",
         "source": "API",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -437,6 +438,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "APPLE_HEALTH",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -458,6 +460,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "APPLE_HEALTH",
         "source": "APPLE_HEALTH",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -479,6 +482,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -500,6 +504,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "APP",
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -526,6 +531,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "APPLE_HEALTH",
         "source": "APPLE_HEALTH",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -547,6 +553,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": "APP",
         "source": "API",
         "idempotencyKey": "bulk-key-0001",
         "createdAt": "<createdAt>",
@@ -568,6 +575,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "API",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -589,6 +597,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "API",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -634,8 +643,8 @@
         "details": {
           "processed": 18,
           "inserted": 0,
-          "updated": 5,
-          "duplicates": 6,
+          "updated": 3,
+          "duplicates": 8,
           "skipped": 7
         },
         "ipAddress": null

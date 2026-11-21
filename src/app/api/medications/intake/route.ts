@@ -91,7 +91,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // A delegated write, the canonical slot form. Everything the handler does
   // downstream addresses the RECORD and stays correct; what the owner gets
   // is the notification at the end of the update.
-  const { user, actor } = await requireRecordAuth("write", "medications");
+  const { user, actor, authMethod } = await requireRecordAuth(
+    "write",
+    "medications",
+  );
 
   const { data: body, error } = await safeJson(request, {
     maxBytes: 64 * 1024,
@@ -136,6 +139,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
       existing,
       ipAddress: getClientIp(request),
       originDeviceToken: request.headers.get("x-device-id"),
+      takenVia: authMethod === "bearer" ? "APP" : "WEB",
     },
     parsed.data,
   );

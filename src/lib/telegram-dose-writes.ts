@@ -138,6 +138,9 @@ export async function markMedicationTaken(
   });
 
   let scheduledFor: Date | null = null;
+  // The slot already held a take (another device, the pill box): this tap
+  // recorded nothing, and the answer says so.
+  let recordedBefore = false;
   if (!existing) {
     const takenAt = new Date();
 
@@ -174,6 +177,7 @@ export async function markMedicationTaken(
       // inventory units; a redelivered button press converging onto an
       // already-taken slot row (including a pre-stamp row) must not.
       let consumedTransition = true;
+      let alreadyTaken = false;
       if (canonicalSlot) {
         const applied = await applyCanonicalSlotWrite({
           client: tx,
@@ -187,10 +191,12 @@ export async function markMedicationTaken(
           idempotencyKey,
           createSource: "REMINDER",
           attributionSource: "AUTO",
+          takenVia: "TELEGRAM",
         });
         slotScheduledFor = applied.row.scheduledFor;
         eventId = applied.row.id;
         consumedTransition = applied.consumedTransition;
+        alreadyTaken = applied.alreadyTaken === true;
       } else {
         // Ad-hoc / PRN — standalone row under the documented contract
         // (`scheduledFor = takenAt`).
@@ -202,6 +208,7 @@ export async function markMedicationTaken(
             takenAt,
             skipped: false,
             source: "REMINDER",
+            takenVia: "TELEGRAM",
             idempotencyKey,
           },
         });
@@ -212,9 +219,10 @@ export async function markMedicationTaken(
         where: { id: medication.id },
         data: { snoozedUntil: null },
       });
-      return { slotScheduledFor, eventId, consumedTransition };
+      return { slotScheduledFor, eventId, consumedTransition, alreadyTaken };
     });
     scheduledFor = written.slotScheduledFor;
+    recordedBefore = written.alreadyTaken;
     // The button confirmed a take; consume inventory units.
     // Runs after the intake transaction committed (the dose record must
     // never hinge on the stock write); the stamp keeps a Telegram
@@ -235,7 +243,20 @@ export async function markMedicationTaken(
     invalidateUserMedications(userId, { evict: true });
     // Wake the owner's iOS devices like a web take does, so a running Live
     // Activity and the widgets reconcile a dose confirmed in Telegram.
-    queueMedicationIntakeSync({ userId, originDeviceToken: null });
+    queueMedicationIntakeSync({
+      userId,
+      originDeviceToken: null,
+      recorded: written.alreadyTaken
+        ? undefined
+        : {
+            medicationId: medication.id,
+            intakeId: written.eventId,
+            slotInstant: written.slotScheduledFor,
+            outcome: "taken",
+            takenAt,
+            takenVia: "TELEGRAM",
+          },
+    });
   }
 
   // Refresh the compliance rollup for the
@@ -252,9 +273,10 @@ export async function markMedicationTaken(
 
   return {
     ok: true,
-    message: existing
-      ? t("telegram.alreadyRecorded", { name: medication.name })
-      : t("telegram.recordedAsTaken", { name: medication.name }),
+    message:
+      existing || recordedBefore
+        ? t("telegram.alreadyRecorded", { name: medication.name })
+        : t("telegram.recordedAsTaken", { name: medication.name }),
     medicationName: medication.name,
   };
 }
@@ -377,7 +399,18 @@ export async function markMedicationSkipped(input: {
       eventId: writtenSkip.eventId,
     });
     invalidateUserMedications(userId, { evict: true });
-    queueMedicationIntakeSync({ userId, originDeviceToken: null });
+    queueMedicationIntakeSync({
+      userId,
+      originDeviceToken: null,
+      recorded: {
+        medicationId,
+        intakeId: writtenSkip.eventId,
+        slotInstant: writtenSkip.slotScheduledFor,
+        outcome: "skipped",
+        takenAt: null,
+        takenVia: "TELEGRAM",
+      },
+    });
   }
 
   // Refresh the compliance rollup for the skipped

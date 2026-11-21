@@ -1594,6 +1594,7 @@
     "intakeToastFailed": "{name} konnte nicht erfasst werden. Bitte erneut versuchen",
     "intakeUndo": "Rückgängig",
     "intakeUndone": "Eintrag zurückgenommen",
+    "intakeAlreadyTaken": "{name} war schon als genommen erfasst. Nichts Neues gespeichert.",
     "intakeUndoFailed": "Rückgängig fehlgeschlagen. Im Verlauf korrigieren",
     "glp1LastInjection": "{label}",
     "glp1NextInjectionDays": "{label} (in {days} Tagen)",
@@ -9558,6 +9559,13 @@
     "eventSecurityAlertDesc": "Wird gesendet, wenn dein Konto auf einem unbekannten Gerät oder von einem unbekannten Ort verwendet wird.",
     "eventSharedRecordIntake": "Jemand mit Zugriff markiert eine Dosis",
     "eventSharedRecordIntakeDesc": "Wird nur gesendet, wenn eine andere Person es tut, nie bei deinen eigenen Einträgen.",
+    "eventMedicationIntakeRecorded": "Einnahmen von anderen Geräten bestätigen",
+    "eventMedicationIntakeRecordedDesc": "Ein leiser Hinweis auf dem iPhone, wenn eine Dosis anderswo erfasst wird (Web, Telegram, ein verbundenes Gerät), damit eine schon angezeigte Erinnerung verschwindet. Standardmäßig an, wenn dein iPhone eigene Erinnerungen hält.",
+    "intakeRecorded": {
+      "title": "Dosis erfasst",
+      "bodyTaken": "Eine Dosis wurde auf einem anderen Gerät als genommen erfasst.",
+      "bodySkipped": "Eine Dosis wurde auf einem anderen Gerät als ausgelassen erfasst."
+    },
     "security": {
       "newDeviceTitle": "Neue Anmeldung bei deinem Konto",
       "newDeviceBody": "Eine neue Anmeldung von {device} ({location}). Falls du das nicht warst, ändere sofort dein Passwort.",

@@ -183,7 +183,7 @@ export async function projectTodayIntakesAndRecompute(input: {
       // and the slot it held is open again: it must come back as pending,
       // or the today list and the dashboard count drop a dose that is still
       // due. The unique index covers live rows only since migration 0121
-      // (`medication_intake_events_user_med_slot_source_live_key`), so a
+      // (since 0515 `medication_intake_events_user_med_slot_live_key`), so a
       // fresh REMINDER row beside a tombstone cannot collide.
       deletedAt: null,
     },

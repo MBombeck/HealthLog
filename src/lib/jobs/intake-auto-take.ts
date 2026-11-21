@@ -538,6 +538,7 @@ async function applyDecision(
       data: {
         takenAt: at,
         autoRecorded: true,
+        takenVia: "AUTO",
         syncVersion: { increment: 1 },
       },
     });
@@ -556,6 +557,7 @@ async function applyDecision(
         // worker's slot rows; `autoRecorded` says which server path.
         source: "REMINDER",
         autoRecorded: true,
+        takenVia: "AUTO",
       },
       select: { id: true },
     });

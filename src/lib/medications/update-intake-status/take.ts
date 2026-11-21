@@ -29,6 +29,7 @@ interface TakeInput {
   forceSlotInstant: Date | undefined;
   resolvedInjectionSite: InjectionSiteValue | null;
   userTz: string;
+  takenVia: "WEB" | "APP";
 }
 
 interface TargetSlot {
@@ -100,6 +101,7 @@ async function takeInPlace(
         // The person confirmed it; no longer automatic, and no longer a miss.
         autoRecorded: false,
         autoMissed: false,
+        ...(!wasTaken && { takenVia: input.takenVia }),
         ...(attributionSource !== undefined && { attributionSource }),
         syncVersion: { increment: 1 },
         // Persist the resolved site on the taken branch.
@@ -167,6 +169,7 @@ async function moveTake(
     idempotencyKey: null,
     createSource: "WEB",
     attributionSource,
+    takenVia: input.takenVia,
     // Carry the recorded site / dose override across the
     // tombstone + re-insert: a slot move is a re-binding, not a new
     // dose, so the original row's documentation must survive when the

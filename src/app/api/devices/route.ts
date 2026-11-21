@@ -72,6 +72,9 @@ const deviceSchema = z
       .regex(/^[A-Fa-f0-9]+$/, "liveActivityPushToken must be hex")
       .nullable()
       .optional(),
+    // The medication whose Activity the token addresses, so the end push is
+    // bound to that medication. Sent with the token; cleared with it.
+    liveActivityMedicationId: z.string().min(1).max(64).nullable().optional(),
   })
   .refine(
     (v) =>
@@ -83,6 +86,39 @@ const deviceSchema = z
       path: ["apnsEnvironment"],
     },
   );
+
+/**
+ * The Live Activity token and its medication to store: what the request
+ * sends, else what the device row being merged held. A new token without a
+ * medication names none, and a cleared token clears it.
+ */
+function liveActivityFields(
+  sent: {
+    liveActivityPushToken?: string | null;
+    liveActivityMedicationId?: string | null;
+  },
+  previous: {
+    liveActivityPushToken: string | null;
+    liveActivityMedicationId: string | null;
+  } | null,
+) {
+  const token = sent.liveActivityPushToken;
+  const medicationId = sent.liveActivityMedicationId;
+  return {
+    ...(token !== undefined
+      ? { liveActivityPushToken: token }
+      : previous
+        ? { liveActivityPushToken: previous.liveActivityPushToken }
+        : {}),
+    ...(medicationId !== undefined
+      ? { liveActivityMedicationId: medicationId }
+      : token !== undefined
+        ? { liveActivityMedicationId: null }
+        : previous
+          ? { liveActivityMedicationId: previous.liveActivityMedicationId }
+          : {}),
+  };
+}
 
 export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
@@ -143,7 +179,6 @@ export const POST = apiHandler(async (request: NextRequest) => {
     apnsToken,
     apnsEnvironment,
     medicationDelivery,
-    liveActivityPushToken,
   } = parsed.data;
 
   const registration = await prisma.$transaction(async (tx) => {
@@ -173,6 +208,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
           token: true,
           medicationDelivery: true,
           liveActivityPushToken: true,
+          liveActivityMedicationId: true,
         },
       }),
       apnsToken
@@ -184,6 +220,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
               token: true,
               medicationDelivery: true,
               liveActivityPushToken: true,
+              liveActivityMedicationId: true,
             },
           })
         : null,
@@ -240,11 +277,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
         : duplicateDevice
           ? { medicationDelivery: duplicateDevice.medicationDelivery }
           : {}),
-      ...(liveActivityPushToken !== undefined
-        ? { liveActivityPushToken }
-        : duplicateDevice
-          ? { liveActivityPushToken: duplicateDevice.liveActivityPushToken }
-          : {}),
+      ...liveActivityFields(parsed.data, duplicateDevice),
     };
 
     const device = canonicalDevice

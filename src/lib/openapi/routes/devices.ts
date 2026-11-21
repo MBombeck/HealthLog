@@ -58,6 +58,15 @@ const deviceRegisterRequest = z
       .describe(
         "v1.17.1 (#22) hex-encoded ActivityKit Live Activity push token (distinct from the device APNs token). The server addresses a Live Activity update / end push on a medication-intake mutation. Omitted = keep the prior value; null = clear it when the Activity ends.",
       ),
+    liveActivityMedicationId: z
+      .string()
+      .min(1)
+      .max(64)
+      .nullable()
+      .optional()
+      .describe(
+        "The medication whose Live Activity `liveActivityPushToken` addresses. With it the server ends that Activity only when that medication has no open dose the Activity could show; without it, only when no tracked dose of the account is open. Omitted keeps the stored value unless a new token arrives, which clears it; null clears it.",
+      ),
   })
   .meta({
     id: "DeviceRegisterRequest",

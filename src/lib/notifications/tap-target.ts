@@ -49,6 +49,7 @@ export const NOTIFICATION_TAP_PATHS: Record<SentEventType, string | null> = {
   MEDICATION_LOW_STOCK: "/medications",
   MEASUREMENT_REMINDER: "/checkups",
   MEDICATION_INTAKE_SYNC: null,
+  MEDICATION_INTAKE_RECORDED: "/medications",
   SECURITY_ALERT: "/settings/security",
   DAILY_BRIEFING: "/",
   SHARED_RECORD_INTAKE: "/medications",

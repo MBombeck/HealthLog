@@ -15,6 +15,7 @@
  * the caller's signal to keep the unmodified insert behaviour.
  */
 import type {
+  IntakeTakenVia,
   MedicationIntakeEvent,
   PrismaClient,
 } from "@/generated/prisma/client";
@@ -22,7 +23,10 @@ import { medicationWindow } from "@/lib/medications/course-window";
 
 import { prisma as defaultPrisma } from "@/lib/db";
 import { isP2002 } from "@/lib/prisma-errors";
-import { userDayKey } from "@/lib/tz/format";
+import {
+  slotLockKey,
+  withSlotLock,
+} from "@/lib/medications/scheduling/slot-lock";
 import { resolveCanonicalSlotInstant } from "@/lib/medications/scheduling/resolve-slot-instant";
 import {
   attributeTakenToSlot,
@@ -121,6 +125,8 @@ export interface ApplyCanonicalSlotWriteInput {
    * upsert, so a carried id is trusted fresh here.
    */
   externalId?: string | null;
+  /** Where a take came from; stamped only on a write that records a take. */
+  takenVia?: IntakeTakenVia;
 }
 
 export interface ApplyCanonicalSlotWriteResult {
@@ -149,7 +155,16 @@ export interface ApplyCanonicalSlotWriteResult {
    * disagreed with the one that is already there.
    */
   outcomeChangeRefused: boolean;
+  /** The slot already held a take; nothing was written. */
+  alreadyTaken?: boolean;
 }
+
+const NO_OP = {
+  outcome: "updated",
+  consumedTransition: false,
+  noDowngradeNoOp: true,
+  outcomeChangeRefused: false,
+} as const;
 
 /**
  * Forward grace a TAKEN write may still snap onto a slot whose anchor sits
@@ -252,6 +267,15 @@ async function findSlotRows(
 export async function applyCanonicalSlotWrite(
   input: ApplyCanonicalSlotWriteInput,
 ): Promise<ApplyCanonicalSlotWriteResult> {
+  const key = slotLockKey({ ...input, slot: input.canonicalSlot });
+  return withSlotLock(input.client, key, (client) =>
+    writeCanonicalSlot({ ...input, client }),
+  );
+}
+
+async function writeCanonicalSlot(
+  input: ApplyCanonicalSlotWriteInput,
+): Promise<ApplyCanonicalSlotWriteResult> {
   const {
     client,
     userId,
@@ -265,6 +289,7 @@ export async function applyCanonicalSlotWrite(
     attributionSource,
     doseTaken = null,
     externalId = null,
+    takenVia,
   } = input;
 
   const rows = await findSlotRows(client, userId, medicationId, canonicalSlot);
@@ -299,6 +324,7 @@ export async function applyCanonicalSlotWrite(
         ...(doseTaken !== null && { doseTaken }),
         // v1.28 — external dose-event id only when the write carries one.
         ...(externalId !== null && { externalId }),
+        ...(takenAt !== null && takenVia !== undefined && { takenVia }),
       },
     })) as SlotIntakeRow;
     return {
@@ -312,19 +338,17 @@ export async function applyCanonicalSlotWrite(
     };
   } catch (err) {
     if (!isP2002(err)) throw err;
+    // Inside a transaction the violation aborted it, so the re-read fails
+    // and the original error goes up for `withSlotLock` to retry whole.
     const raced = await findSlotRows(
       client,
       userId,
       medicationId,
       canonicalSlot,
-    );
-    const winner = pickSlotRow(raced);
-    if (!winner) throw err; // genuinely gone — surface the original error.
-    return applyToExisting(client, winner, {
-      ...input,
-      // The slot now has a row; the create's intended idempotencyKey
-      // still applies to the converged row.
-    });
+    ).catch(() => null);
+    const winner = raced ? pickSlotRow(raced) : null;
+    if (!winner) throw err;
+    return applyToExisting(client, winner, input);
   }
 }
 
@@ -347,6 +371,7 @@ async function applyToExisting(
     attributionSource,
     doseTaken = null,
     externalId = null,
+    takenVia,
     refuseOutcomeChange = false,
   } = input;
 
@@ -385,6 +410,13 @@ async function applyToExisting(
       noDowngradeNoOp: true,
       outcomeChangeRefused: false,
     };
+  }
+
+  // A take on a slot that already holds a take is the same dose reported
+  // again: the first take, its time and its idempotency key stay, nothing
+  // is written, and the caller answers `alreadyTaken`.
+  if (isExplicitTaken && existing.takenAt !== null && !existing.skipped) {
+    return { ...NO_OP, row: existing, alreadyTaken: true };
   }
 
   // Never clear a recorded dose with a pending projection echo. An
@@ -440,6 +472,7 @@ async function applyToExisting(
       // (an Apple dose converging onto a pre-minted pending slot row);
       // never clears a previously-recorded id.
       ...(externalId !== null && { externalId }),
+      ...(takenAt !== null && takenVia !== undefined && { takenVia }),
     },
   })) as SlotIntakeRow;
 
@@ -731,112 +764,6 @@ export async function findPinConflict(input: {
       row.takenAt.getTime() === input.incomingTakenAt.getTime();
     return !sameTake;
   });
-}
-
-/**
- * How far apart two different external dose records may sit and still be one
- * dose entered twice rather than two doses.
- */
-export const DOUBLE_ENTRY_TOLERANCE_MS = 60_000;
-
-/**
- * Is `held` (the take a slot already carries) a different dose from the
- * incoming external dose record, both attributed to the same slot by band?
- *
- * Band attribution maps a take to the slot whose band contains it, and a
- * weekly schedule's band reaches a day either side of the slot. Without this
- * check an extra dose logged the day after a Tuesday dose landed on the
- * Tuesday slot and overwrote it last-write-wins: the Tuesday time was
- * replaced and the extra dose existed nowhere (#1221). The rule:
- *
- *   - Nothing taken on the slot yet (pending, skipped): not another dose, the
- *     incoming take is the slot's dose.
- *   - The same external record: the same dose.
- *   - A take on a different local calendar day (the user's zone): another
- *     dose. A slot is one dose a day; the band only reaches across midnight
- *     so a late take still counts for its slot.
- *   - The same local day, and the held take was logged in HealthLog (no
- *     external record): the same dose. A tap at 08:00 and the same dose
- *     recorded in Health at 08:20 converge onto the slot, one dose and one
- *     stock consumption.
- *   - The same local day, two different external records: the record says
- *     which it is. One that names this slot as its scheduled time is the
- *     slot's dose, recorded again: editing a dose in Health replaces it with
- *     a new record (a new UUID, possibly a new time), and that must move the
- *     slot's dose, not add a second one. One without a scheduled time of its
- *     own (Health logs an extra dose as unscheduled, and the phone then sends
- *     its own time) is another dose, unless it sits within
- *     {@link DOUBLE_ENTRY_TOLERANCE_MS} of the held one, which is one dose
- *     entered twice.
- */
-export function isAnotherDose(
-  held: { takenAt: Date | null; externalId: string | null },
-  incoming: {
-    takenAt: Date;
-    externalId: string | null;
-    /** The record's scheduled time is the slot itself. */
-    namesSlot: boolean;
-  },
-  userTz: string,
-): boolean {
-  if (held.takenAt === null) return false;
-  if (held.externalId !== null && held.externalId === incoming.externalId) {
-    return false;
-  }
-  if (
-    userDayKey(held.takenAt, userTz) !== userDayKey(incoming.takenAt, userTz)
-  ) {
-    return true;
-  }
-  if (held.externalId === null || incoming.externalId === null) return false;
-  if (incoming.namesSlot) return false;
-  const gap = Math.abs(held.takenAt.getTime() - incoming.takenAt.getTime());
-  return gap > DOUBLE_ENTRY_TOLERANCE_MS;
-}
-
-/**
- * Does the slot at `canonicalSlot` already carry a recorded take that is a
- * different dose from the incoming one (see {@link isAnotherDose})? The
- * caller records the incoming take as its own unscheduled dose instead of
- * converging onto the slot.
- */
-export async function slotHeldByAnotherDose(input: {
-  userId: string;
-  medicationId: string;
-  canonicalSlot: Date;
-  takenAt: Date;
-  externalId: string | null;
-  /** The scheduled time the incoming record carries, if any. */
-  scheduledFor: Date | null;
-  userTz: string;
-  client?: Pick<PrismaClient, "medicationIntakeEvent">;
-}): Promise<boolean> {
-  const client = input.client ?? defaultPrisma;
-  const rows = await client.medicationIntakeEvent.findMany({
-    where: {
-      userId: input.userId,
-      medicationId: input.medicationId,
-      scheduledFor: input.canonicalSlot,
-      deletedAt: null,
-      takenAt: { not: null },
-    },
-    select: { takenAt: true, externalId: true },
-  });
-  const namesSlot =
-    input.scheduledFor !== null &&
-    Math.abs(input.scheduledFor.getTime() - input.canonicalSlot.getTime()) <=
-      DOUBLE_ENTRY_TOLERANCE_MS;
-  return rows.some((row) =>
-    isAnotherDose(
-      row,
-      {
-        takenAt: input.takenAt,
-        externalId: input.externalId,
-        namesSlot,
-      },
-      input.userTz,
-    ),
-  );
 }
 
 export interface ResolveForcedSlotInput {

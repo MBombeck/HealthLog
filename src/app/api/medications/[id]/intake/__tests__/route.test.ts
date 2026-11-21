@@ -134,6 +134,14 @@ const ROUTE_PARAMS = { params: Promise.resolve({ id: "med-1" }) };
 
 beforeEach(() => {
   vi.resetAllMocks();
+  // The slot write runs in a transaction holding the slot's lock; a
+  // callback runs against the same mocked client.
+  vi.mocked(prisma.$transaction).mockImplementation((async (arg: unknown) =>
+    Array.isArray(arg)
+      ? Promise.all(arg)
+      : (arg as (c: unknown) => unknown)(
+          prisma,
+        )) as unknown as typeof prisma.$transaction);
   // v1.36.0 — the GET's validation breadcrumb goes through the `auditLog`
   // helper, whose promise the route attaches a `.catch` to. `resetAllMocks`
   // clears the factory's implementation, so it is restored here.
@@ -408,10 +416,9 @@ describe("POST /api/medications/[id]/intake — one-shot lifecycle", () => {
     // (#22) — the logged dose queues exactly one cross-device sync
     // fan-out; the web caller carries no X-Device-Id.
     expect(queueMedicationIntakeSync).toHaveBeenCalledTimes(1);
-    expect(queueMedicationIntakeSync).toHaveBeenCalledWith({
-      userId: "user-1",
-      originDeviceToken: null,
-    });
+    expect(queueMedicationIntakeSync).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: "user-1", originDeviceToken: null }),
+    );
   });
 });
 
@@ -506,12 +513,12 @@ describe("POST /api/medications/[id]/intake — v1.8.2 reconcile (M2 inventory)"
       }),
       ROUTE_PARAMS,
     );
-    expect(res.status).toBe(201);
-    // Re-post of an already-taken slot → no pending→taken transition →
-    // inventory must NOT be consumed.
+    // Re-post of an already-taken slot is the same dose reported again:
+    // 200 with `alreadyTaken`, nothing written, no inventory consumed.
+    expect(res.status).toBe(200);
+    expect((await res.json()).data.alreadyTaken).toBe(true);
     expect(consumeForIntake).not.toHaveBeenCalled();
-    // The row was updated, not duplicated.
-    expect(prisma.medicationIntakeEvent.update).toHaveBeenCalledTimes(1);
+    expect(prisma.medicationIntakeEvent.update).not.toHaveBeenCalled();
     expect(prisma.medicationIntakeEvent.create).not.toHaveBeenCalled();
   });
 

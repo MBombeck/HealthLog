@@ -1594,6 +1594,7 @@
     "intakeToastFailed": "Nie udało się zapisać {name}. Spróbuj ponownie",
     "intakeUndo": "Cofnij",
     "intakeUndone": "Wpis cofnięty",
+    "intakeAlreadyTaken": "{name} był już zapisany jako przyjęty. Nic nowego nie zapisano.",
     "intakeUndoFailed": "Nie udało się cofnąć. Popraw w historii",
     "glp1LastInjection": "{label}",
     "glp1NextInjectionDays": "{label} (za {days} dni)",
@@ -9558,6 +9559,13 @@
     "eventSecurityAlertDesc": "Wysyłane, gdy Twoje konto zostanie użyte na nieznanym urządzeniu lub z nieznanego miejsca.",
     "eventSharedRecordIntake": "Ktoś z dostępem oznacza dawkę",
     "eventSharedRecordIntakeDesc": "Wysyłane tylko wtedy, gdy robi to inna osoba, nigdy przy Twoich własnych wpisach.",
+    "eventMedicationIntakeRecorded": "Potwierdzaj dawki przyjęte na innych urządzeniach",
+    "eventMedicationIntakeRecordedDesc": "Cicha informacja na iPhonie, gdy dawka zostanie zapisana gdzie indziej (web, Telegram, podłączone urządzenie), aby wyświetlone przypomnienie zniknęło. Domyślnie włączone, gdy telefon sam zarządza przypomnieniami.",
+    "intakeRecorded": {
+      "title": "Dawka zapisana",
+      "bodyTaken": "Dawkę zapisano jako przyjętą na innym urządzeniu.",
+      "bodySkipped": "Dawkę zapisano jako pominiętą na innym urządzeniu."
+    },
     "security": {
       "newDeviceTitle": "Nowe logowanie do Twojego konta",
       "newDeviceBody": "Nowe logowanie z {device} ({location}). Jeśli to nie Ty, natychmiast zmień hasło.",

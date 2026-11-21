@@ -110,14 +110,33 @@ export const DELETE = apiHandler(
       return apiError("Intake not found", 404);
     }
 
-    await deleteIntakeEvent({
+    // An undo names the version of the row it saw. When another writer
+    // changed the row since (a pill box take this tap converged onto), the
+    // undo would remove a dose that is not its own: 409, nothing deleted.
+    const seen = request.nextUrl.searchParams.get("expectedSyncVersion");
+    const expectedSyncVersion =
+      seen !== null && /^\d{1,9}$/.test(seen) ? Number(seen) : undefined;
+    const ownKey = request.nextUrl.searchParams.get("expectedIdempotencyKey");
+    const expectedIdempotencyKey =
+      ownKey !== null && ownKey.length > 0 && ownKey.length <= 128
+        ? ownKey
+        : undefined;
+
+    const deleted = await deleteIntakeEvent({
       user,
       medicationId: id,
       eventId,
       event,
+      expectedSyncVersion,
+      expectedIdempotencyKey,
       ipAddress: getClientIp(request) ?? "unknown",
       originDeviceToken: request.headers.get("x-device-id"),
     });
+    if (deleted === "changedSinceSeen") {
+      return apiError("The dose changed since it was read", 409, {
+        errorCode: "medications.intake.changedSinceSeen",
+      });
+    }
 
     return apiSuccess({ deleted: true });
   },

@@ -19,6 +19,7 @@ import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
 import { restoreForIntake } from "@/lib/medications/inventory/consumption";
 import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
+import { recordedEventOf } from "@/lib/notifications/medication-intake-recorded";
 import { notifyDelegatedIntake } from "@/lib/notifications/delegated-intake";
 import {
   refuseDelegatedChange,
@@ -36,6 +37,7 @@ interface StatusContext {
   existing: StatusUpdateEvent;
   ipAddress: string | null;
   originDeviceToken: string | null;
+  takenVia: "WEB" | "APP";
 }
 
 type UpdatedRow = Extract<
@@ -140,6 +142,7 @@ async function recordAfterUpdate(
 function startTails(
   ctx: StatusContext,
   status: IntakeStatusUpdate["status"],
+  updated: UpdatedRow | null,
 ): void {
   const { user, existing } = ctx;
   // (#22) — silent cross-device intake sync. Wake the user's OTHER
@@ -151,6 +154,10 @@ function startTails(
   queueMedicationIntakeSync({
     userId: user.id,
     originDeviceToken: ctx.originDeviceToken,
+    recorded:
+      status !== "snoozed" && updated
+        ? recordedEventOf(updated, ctx.takenVia)
+        : undefined,
   });
 
   // "Somebody else marked your dose". The helper refuses on self and
@@ -211,6 +218,7 @@ export async function updateIntakeStatus(
       forceSlotInstant: data.forceSlotInstant,
       resolvedInjectionSite: site.site,
       userTz: userTzForHook,
+      takenVia: ctx.takenVia,
     });
     if (taken.kind === "refused") return taken;
     updated = taken.row;
@@ -219,7 +227,7 @@ export async function updateIntakeStatus(
   }
 
   await recordAfterUpdate(ctx, data, updated, userTzForHook);
-  startTails(ctx, status);
+  startTails(ctx, status, updated);
 
   return { kind: "updated", row: updated };
 }

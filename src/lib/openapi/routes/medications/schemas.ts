@@ -700,6 +700,20 @@ export const medicationIntakeEventResource = z
         "How the row bound to its schedule slot: AUTO = the write path's nearest-slot resolution; USER_PIN = the user explicitly pinned the slot (the dedup converge keeps the pinned row).",
       ),
     source: z.enum(["WEB", "API", "REMINDER", "IMPORT", "APPLE_HEALTH"]),
+    takenVia: z
+      .enum([
+        "WEB",
+        "APP",
+        "INTEGRATION",
+        "TELEGRAM",
+        "APPLE_HEALTH",
+        "IMPORT",
+        "AUTO",
+      ])
+      .nullable()
+      .describe(
+        "Where the take on this row came from, whatever wrote the row (`source` keeps the writer that created it, `REMINDER` for a projected slot). Null until a take reaches the row, and on takes recorded before migration 0515.",
+      ),
     idempotencyKey: z.string().nullable(),
     createdAt: isoDateTime(),
     updatedAt: isoDateTime(),
@@ -1606,6 +1620,21 @@ export const medicationDoseHistoryImportFatalReasonEnum = z
 // to. Never registered until now: `openapi:check` compares the registry
 // against the YAML and never the route tree against the registry.
 
+/**
+ * The 200 of a dose POST: a replay, or a take of a slot that already holds a
+ * take recorded within two hours of it (`alreadyTaken: true`).
+ */
+export const repeatedIntakeEventResource = medicationIntakeEventResource
+  .extend({
+    alreadyTaken: z
+      .literal(true)
+      .optional()
+      .describe(
+        "Present and true when this POST reported a dose already recorded: the slot it binds to holds a take recorded within two hours of this one. Nothing was written and no stock was consumed; the body is the recorded row, so `takenAt` and `source` say when and how. Absent on an idempotency replay.",
+      ),
+  })
+  .meta({ id: "RepeatedMedicationIntakeEvent" });
+
 export const todayIntakeEntry = z
   .object({
     id: z.string().describe("Intake-event id."),
@@ -1614,6 +1643,25 @@ export const todayIntakeEntry = z
       "The slot the dose belongs to — the event's `scheduledFor`, renamed on this wire only.",
     ),
     takenAt: isoDateTime().nullable(),
+    source: z
+      .enum(["WEB", "API", "REMINDER", "IMPORT", "APPLE_HEALTH"])
+      .describe(
+        "Which writer created the row. A take that converges onto a projected or reminder slot keeps `REMINDER` here; read `takenVia` for where the take came from. Values: `WEB` the web app, `API` a Bearer client (the iOS app, the ingest hook a pill box or home automation posts to), `REMINDER` a Telegram reminder button (or the server's own projection while the slot is still open), `IMPORT` a file import, `APPLE_HEALTH` the Apple Health medication sync. Read it with `takenAt` to warn before a second take of the same slot.",
+      ),
+    takenVia: z
+      .enum([
+        "WEB",
+        "APP",
+        "INTEGRATION",
+        "TELEGRAM",
+        "APPLE_HEALTH",
+        "IMPORT",
+        "AUTO",
+      ])
+      .nullable()
+      .describe(
+        'How the take on this slot was recorded, whatever wrote the row: `WEB` the web app, `APP` a Bearer client such as the iOS app, `INTEGRATION` the ingest hook (a pill box, home automation), `TELEGRAM` a Telegram button, `APPLE_HEALTH` the Apple Health medication sync, `IMPORT` a file import, `AUTO` the server\'s auto-take. Null while the slot is not taken, and on takes recorded before this field existed. Show it with `takenAt` before offering a second take: "already taken at 07:12 via an integration".',
+      ),
     status: z
       .enum(["skipped", "taken", "missed", "pending", "snoozed"])
       .describe(
