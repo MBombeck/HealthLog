@@ -155,7 +155,11 @@ const DELIBERATELY_OPEN: Record<string, { count: number; reason: string }> = {
     reason: "native ingest skew",
   },
   "integrations/healthkit/route.ts": { count: 2, reason: "native ingest skew" },
-  "devices/route.ts": { count: 1, reason: "native ingest skew" },
+  "devices/route.ts": {
+    count: 2,
+    reason:
+      "native ingest skew, and each Live Activity entry for the same reason",
+  },
 
   // ---------------------------------------------------------------
   // 4. Layout PUTs. Same skew, same mechanism: `comparisonBaseline`,
