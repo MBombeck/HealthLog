@@ -15,10 +15,7 @@
  *     row is written under a stable identity that a second run finds;
  *   - a summary of counts and closed reasons, never content.
  */
-export {
-  RECORD_FILE_IMPORT_CONCURRENCY,
-  RECORD_FILE_IMPORT_QUEUE,
-} from "@/lib/jobs/record-file-import-queue";
+export { RECORD_FILE_IMPORT_QUEUE } from "@/lib/jobs/record-file-import-queue";
 
 /** One-shot: the run consumes its staged upload. Default expiry (15 min). */
 export const RECORD_FILE_IMPORT_SEND_OPTIONS = { retryLimit: 0 } as const;

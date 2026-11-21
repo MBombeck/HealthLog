@@ -208,8 +208,6 @@ export type ModuleKey = (typeof MODULE_KEYS)[number];
  */
 export const CORE_DOMAIN_KEYS = ["weight", "bloodPressure", "pulse"] as const;
 
-export type CoreDomainKey = (typeof CORE_DOMAIN_KEYS)[number];
-
 /**
  * The registry. Order is the Settings-hub display order (grouped by
  * category in the UI; this flat order is the canonical iteration order).

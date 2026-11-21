@@ -116,7 +116,6 @@ export const NUTRIENT_CODES = [
 ] as const;
 
 export type NutrientCode = (typeof NUTRIENT_CODES)[number];
-export type SyncableNutrientCode = (typeof SYNCABLE_NUTRIENT_CODES)[number];
 
 /** Canonical storage units. `ug` is µg on the wire — ASCII on purpose. */
 export type NutrientUnit = "mg" | "ug" | "ml" | "g" | "kcal";

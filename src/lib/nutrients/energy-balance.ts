@@ -36,7 +36,6 @@ import { startOfLocalDayKey } from "@/lib/tz/local-day";
 import { foldNutrientDays } from "./day-total";
 
 export const ENERGY_BALANCE_MIN_DAYS = 7;
-export const ENERGY_BALANCE_MAX_DAYS = 90;
 const TREND_DAYS = 7;
 const TREND_MIN_DAYS = 4;
 

@@ -280,14 +280,7 @@ function inBedEnvelopeMinutes(rows: readonly SleepStageRow[]): number | null {
  */
 export const SESSION_GAP_MS = 3 * 60 * 60 * 1000;
 
-export {
-  MAIN_SLEEP_MIN_MINUTES,
-  NIGHT_WINDOW_END_MINUTES,
-  NIGHT_WINDOW_START_MINUTES,
-  asleepMidpointMinutes,
-  isDaytimeNap,
-  sessionZoneOf,
-} from "./sleep-session-clock";
+export { asleepMidpointMinutes, isDaytimeNap } from "./sleep-session-clock";
 
 export interface SleepStageRow {
   value: number;

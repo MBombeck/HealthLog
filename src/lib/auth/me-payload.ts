@@ -441,8 +441,6 @@ async function loadRecordView(auth: AuthContext, accountAccess: AccountAccess) {
   };
 }
 
-export type AuthMePayload = Awaited<ReturnType<typeof buildAuthMePayload>>;
-
 /**
  * Capability flags for clients that are not shipped with the server. Constant
  * by design: a feature the server supports is supported for every account,

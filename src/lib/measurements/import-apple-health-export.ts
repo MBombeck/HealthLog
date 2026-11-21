@@ -45,9 +45,7 @@ import {
 } from "@/lib/measurements/import-apple-health-export-handlers";
 
 export {
-  hashCumulativeSourceIdentity,
   hashSampleKey,
-  isIdleStandHour,
   parseRecordValue,
 } from "@/lib/measurements/import-apple-health-export-handlers";
 

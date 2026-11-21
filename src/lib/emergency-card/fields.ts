@@ -56,10 +56,6 @@ export const emergencyCardLinkCreateSchema = z
   })
   .strict();
 
-export type EmergencyCardLinkCreate = z.infer<
-  typeof emergencyCardLinkCreateSchema
->;
-
 /** The ticked items in the card's reading order, each once. */
 export function normaliseFields(
   fields: readonly EmergencyCardField[],

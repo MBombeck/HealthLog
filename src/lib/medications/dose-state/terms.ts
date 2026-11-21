@@ -33,8 +33,6 @@ export const DOSE_ACTION_TERM = {
   undo: "medications.dose.action.undo",
 } as const;
 
-export type DoseAction = keyof typeof DOSE_ACTION_TERM;
-
 /**
  * A wire state (`upcoming|due|overdue|taken|skipped|missed` plus `takenLate`)
  * back in the resolver's vocabulary. Null for an unknown or absent state.
