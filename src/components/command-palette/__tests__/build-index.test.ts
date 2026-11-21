@@ -2,8 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildPaletteIndex,
+  tasksBeforeSwitches,
   type PaletteIndexInput,
 } from "@/components/command-palette/build-index";
+import { rankEntries } from "@/lib/command-palette/rank";
+
+import enMessages from "../../../../messages/en.json";
 
 const t = (key: string) => key;
 
@@ -142,5 +146,40 @@ describe("buildPaletteIndex — links", () => {
   it("every id is unique", () => {
     const all = ids(index({ isAdmin: true }));
     expect(new Set(all).size).toBe(all.length);
+  });
+});
+
+describe("palette ranking — a task word lands on the task", () => {
+  // The real English titles, so the switch is "Doctor report" as on screen.
+  const en = enMessages as unknown as Record<string, unknown>;
+  const translate = (key: string) => {
+    let node: unknown = en;
+    for (const part of key.split(".")) {
+      node = (node as Record<string, unknown> | undefined)?.[part];
+    }
+    return typeof node === "string" ? node : key;
+  };
+  const entries = index({
+    t: translate,
+    moduleToggles: [{ key: "doctorReport", enabled: true }],
+  });
+
+  it.each([
+    "doctor",
+    "report",
+    "arztbericht",
+    "pdf",
+    "bericht",
+    "doctor report",
+  ])("%s opens the page that generates the doctor report first", (query) => {
+    const [first] = tasksBeforeSwitches(rankEntries(query, entries));
+    expect(first?.id).toBe("settings:health-record");
+  });
+
+  it("keeps the switch reachable, after every other hit", () => {
+    const hits = tasksBeforeSwitches(rankEntries("doctor report", entries));
+    const switchAt = hits.findIndex((e) => e.id === "module:doctorReport");
+    expect(switchAt).toBe(hits.length - 1);
+    expect(switchAt).toBeGreaterThan(0);
   });
 });

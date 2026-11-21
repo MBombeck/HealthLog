@@ -86,6 +86,35 @@ export const PALETTE_SYNONYMS: Readonly<Record<string, ReadonlyArray<string>>> =
     "settings:ai#ai-provider": ["openai", "anthropic", "ollama", "llm", "key"],
     "settings:api#api-tokens": ["token", "api key", "bearer"],
     "settings:modules": ["features", "funktionen", "module"],
+    // The page that generates the doctor report. The words are the task,
+    // in every interface language, so a search for the task finds the page
+    // that does it rather than the module switch that turns it off.
+    "settings:health-record": [
+      "doctor report",
+      "doctor",
+      "report",
+      "pdf",
+      "arztbericht",
+      "arzt",
+      "bericht",
+      "informe médico",
+      "informe",
+      "rapport médical",
+      "rapport",
+      "referto medico",
+      "rapporto",
+      "의사 보고서",
+      "보고서",
+      "artsrapport",
+      "verslag",
+      "raport lekarski",
+      "raport",
+      "relatório médico",
+      "relatório",
+      "отчёт для врача",
+      "отчёт",
+      "врач",
+    ],
     "settings:account": ["profil", "profile", "name", "email"],
 
     // ── Actions ──
@@ -95,3 +124,12 @@ export const PALETTE_SYNONYMS: Readonly<Record<string, ReadonlyArray<string>>> =
     "action:coach": ["chat", "ai", "ki", "ask", "fragen"],
     "action:shortcuts": ["keyboard", "tastatur", "hotkeys", "shortcuts"],
   };
+
+/**
+ * Entries a task word should reach first. The doctor-report page shares
+ * "pdf" with Documents and "doctor report" with the module switch; the boost
+ * puts the page that does the job above both whenever it matches at all.
+ */
+export const PALETTE_TASK_BOOST: Readonly<Record<string, number>> = {
+  "settings:health-record": 100,
+};

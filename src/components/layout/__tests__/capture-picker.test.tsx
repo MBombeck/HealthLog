@@ -44,6 +44,12 @@ vi.mock("@/components/dashboard/quick-entry-forms.lazy", () => ({
   SymptomEntryForm: () => <div data-testid="symptom-form" />,
 }));
 
+// The types the person logged by hand most recently, newest first.
+const recentRef: { value: string[] } = { value: [] };
+vi.mock("@/components/measurements/entry/use-entry-recall", () => ({
+  useRecentEntryTypes: () => recentRef.value,
+}));
+
 import { CapturePicker } from "../capture-picker";
 
 function render() {
@@ -82,5 +88,35 @@ describe("<CapturePicker> — switched-off modules", () => {
     const html = render();
     expect(html).toContain('data-testid="capture-picker-mood"');
     expect(html).toContain('data-testid="capture-picker-medication"');
+  });
+});
+
+describe("<CapturePicker> — recently logged types", () => {
+  it("offers each recent type as its own row under Measurement", () => {
+    modulesRef.value = undefined;
+    recentRef.value = ["WEIGHT", "BLOOD_PRESSURE"];
+    const html = render();
+    const measurement = html.indexOf(
+      'data-testid="capture-picker-measurement"',
+    );
+    const weight = html.indexOf(
+      'data-testid="capture-picker-measurement-WEIGHT"',
+    );
+    const bp = html.indexOf(
+      'data-testid="capture-picker-measurement-BLOOD_PRESSURE"',
+    );
+    const medication = html.indexOf('data-testid="capture-picker-medication"');
+    expect(measurement).toBeGreaterThan(-1);
+    expect(weight).toBeGreaterThan(measurement);
+    expect(bp).toBeGreaterThan(weight);
+    expect(medication).toBeGreaterThan(bp);
+    expect(html).toContain(">Weight<");
+    recentRef.value = [];
+  });
+
+  it("offers none before anything was logged", () => {
+    modulesRef.value = undefined;
+    recentRef.value = [];
+    expect(render()).not.toContain("capture-picker-measurement-");
   });
 });

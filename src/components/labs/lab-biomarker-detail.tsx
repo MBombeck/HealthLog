@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   useInfiniteQuery,
-  useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
@@ -15,14 +14,10 @@ import {
   FlaskConical,
   FolderOpen,
   ListOrdered,
-  Pencil,
   Plus,
 } from "lucide-react";
-import { toast } from "sonner";
-import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { useAuth } from "@/hooks/use-auth";
-import { DeleteButton } from "@/components/data-list";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -34,7 +29,7 @@ import { InsightStatusCard } from "@/components/insights/insight-status-card";
 import { MetricStatStrip } from "@/components/insights/metric-stat-strip";
 import { useInsightBiomarkerAssessment } from "@/hooks/use-insight-status";
 import { useMounted } from "@/hooks/use-mounted";
-import { ApiError, apiDelete, apiGet } from "@/lib/api/api-fetch";
+import { ApiError, apiGet } from "@/lib/api/api-fetch";
 import { summarize, type DataSummary } from "@/lib/analytics/trends";
 import { BIOMARKER_CATALOG } from "@/lib/labs/biomarker-catalog";
 import { useTranslations } from "@/lib/i18n/context";
@@ -54,6 +49,8 @@ import { ChartSkeleton } from "@/components/charts/chart-skeleton";
 import { importWithRetry } from "@/lib/retry-import";
 
 import { BiomarkerAliases } from "./biomarker-aliases";
+import { BiomarkerHeaderActions } from "./biomarker-header-actions";
+import { LabLatestValues } from "./lab-latest-values";
 import { BiomarkerForm } from "./biomarker-form";
 import { LabForm } from "./lab-form";
 import { LabTrendCard } from "./lab-trend-card";
@@ -287,24 +284,6 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
     ]);
   }
 
-  // v1.18.9 (#41/#3) — delete the biomarker directly from its detail page so
-  // a stray marker is removable without a Settings detour. This removes every
-  // reading under the marker along with it; the line here used to claim
-  // `onDelete: SetNull` kept them, which stopped being true when delete became
-  // a "drop this and its history" action. The confirmation dialog states it in
-  // all six locales, and Hide is the reversible alternative. On success,
-  // invalidate the catalog + result list and return to the labs surface.
-  const deleteMarker = useMutation({
-    mutationFn: () => apiDelete(`/api/biomarkers/${biomarkerId}`),
-    onSuccess: () => {
-      toast.success(t("labs.biomarker.deletedToast"));
-      void invalidateKeys(queryClient, labDependentKeys);
-      router.push("/labs");
-    },
-    onError: (failure) =>
-      showErrorToast(t("labs.biomarker.deleteError"), { cause: failure }),
-  });
-
   // v1.25.1 — the per-marker description leads the page, mirroring the metric
   // sub-pages' explainer caption. Resolve the catalog slug from the marker name
   // and fall back to the user's own `context`, then to a generic explainer so a
@@ -349,33 +328,14 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
         description={description}
         actions={
           <>
-            {/* v1.25.3 — header control cluster, left → right:
-              Delete · Edit · Show-all-values · Add. The icon controls share one
-              ghost-icon treatment (the target-range editing lives inside the
-              full marker editor behind the pencil, so the separate range
-              control was dropped). */}
-            <DeleteButton
-              domain="labs"
-              onConfirm={() => deleteMarker.mutate()}
-              title={t("labs.biomarker.deleteConfirmTitle")}
-              description={t("labs.biomarker.deleteConfirmDescription")}
-              confirmLabel={t("labs.biomarker.delete")}
-              triggerTitle={t("labs.biomarker.delete")}
-              className="min-h-11 min-w-11 sm:min-h-9 sm:min-w-9"
-              iconClassName="h-4 w-4"
-            />
+            {/* Edit, then Delete inside the overflow menu, away from the
+              thumb (`BiomarkerHeaderActions`). */}
             {canManageLabs && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="min-h-11 min-w-11 sm:min-h-9 sm:min-w-9"
-                onClick={() => setEditOpen(true)}
-                disabled={!marker}
-                aria-label={t("labs.biomarker.edit")}
-                title={t("labs.biomarker.edit")}
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
+              <BiomarkerHeaderActions
+                biomarkerId={biomarkerId}
+                canEdit={!!marker}
+                onEdit={() => setEditOpen(true)}
+              />
             )}
             {/* "Show all readings" mirrors the metric sub-pages' `<SubPageShell>`
               control. The full reading feed lives on
@@ -428,9 +388,10 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
         </p>
       ) : null}
 
-      {/* v1.43 — the other spellings this marker answers to. */}
-      {marker ? (
-        <BiomarkerAliases marker={marker} canEdit={canManageLabs} />
+      {/* v1.43 — the other spellings this marker answers to. Editing them
+          lives in the edit sheet; a reader who may not edit sees them here. */}
+      {marker && !canManageLabs ? (
+        <BiomarkerAliases marker={marker} canEdit={false} />
       ) : null}
 
       {/* Bridge to the source report PDFs. There is no per-value document
@@ -475,15 +436,18 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
       ) : isQualitative ? (
         // Qualitative marker — no numeric strip / chart. Show the latest
         // result text on its own simple line, no unit, no range badge.
-        <Card>
-          <CardContent className="space-y-1">
-            <p className="text-muted-foreground text-xs">
-              {t("labs.detail.latestResult")}
-            </p>
-            <p className="text-2xl font-bold">{latest?.valueText ?? ""}</p>
-            {latest ? <LabSourceLine source={latest.source} /> : null}
-          </CardContent>
-        </Card>
+        <>
+          <Card>
+            <CardContent className="space-y-1">
+              <p className="text-muted-foreground text-xs">
+                {t("labs.detail.latestResult")}
+              </p>
+              <p className="text-2xl font-bold">{latest?.valueText ?? ""}</p>
+              {latest ? <LabSourceLine source={latest.source} /> : null}
+            </CardContent>
+          </Card>
+          <LabLatestValues readings={readings} biomarkerId={biomarkerId} />
+        </>
       ) : (
         <>
           {/* Numbers-first stat strip — Min / Max / Median / Mean over the
@@ -504,6 +468,7 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
               />
             </CardContent>
           </Card>
+          <LabLatestValues readings={readings} biomarkerId={biomarkerId} />
           <LabTrendCard
             trend={marker?.trend}
             unit={labUnitText(marker?.unit ?? latest?.unit)}
@@ -564,12 +529,16 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
         }
       >
         {marker ? (
-          <BiomarkerForm
-            existing={marker}
-            footerSlot={editFooterEl}
-            onSuccess={afterEditMarker}
-            onCancel={() => setEditOpen(false)}
-          />
+          <div className="space-y-6">
+            <BiomarkerForm
+              existing={marker}
+              footerSlot={editFooterEl}
+              onSuccess={afterEditMarker}
+              onCancel={() => setEditOpen(false)}
+            />
+            {/* Saves on its own, like it did on the page. */}
+            <BiomarkerAliases marker={marker} canEdit />
+          </div>
         ) : null}
       </ResponsiveSheet>
     </div>

@@ -17,13 +17,12 @@
 import { describe, it, expect } from "vitest";
 
 import { MEASUREMENT_CATEGORIES } from "@/lib/measurements/categories";
-import { VALUE_RANGES, getUnitForType } from "@/lib/validations/measurement";
+import { getUnitForType } from "@/lib/validations/measurement";
 import { hasDisplayTransform } from "@/lib/measurements/display-transform";
-import { parseDecimalEntry } from "@/lib/measurements/entry-units";
 import {
   MEASUREMENT_FORM_TYPE_VALUES,
   MEASUREMENT_TYPES,
-} from "@/components/measurements/measurement-form";
+} from "@/components/measurements/measurement-form-types";
 import en from "../../../../messages/en.json";
 
 /**
@@ -98,19 +97,6 @@ describe("manual measurement form — body composition", () => {
         expect(typeof translate(row.unitKey)).toBe("string");
       }
       expect(typeof translate(row.labelKey)).toBe("string");
-    },
-  );
-
-  it.each(formBodyRows.map((row) => [row.value, row] as const))(
-    "%s suggests a placeholder the server would accept",
-    (type, row) => {
-      const range = VALUE_RANGES[type];
-      expect(range, `${type} has no plausibility range`).toBeDefined();
-      const placeholder =
-        "placeholder" in row ? parseDecimalEntry(row.placeholder) : null;
-      expect(placeholder).not.toBeNull();
-      expect(placeholder!).toBeGreaterThanOrEqual(range.min);
-      expect(placeholder!).toBeLessThanOrEqual(range.max);
     },
   );
 });

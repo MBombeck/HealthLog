@@ -59,7 +59,12 @@
     "readThrottled": "Il y a trop de requêtes pour le moment, réessayez plus tard.",
     "sessionEnded": "Votre session a expiré, reconnectez-vous pour continuer.",
     "signIn": "Se connecter",
-    "yes": "Oui"
+    "yes": "Oui",
+    "savedWithValue": "{label} {value} enregistré",
+    "savedNamed": "{label} enregistré",
+    "entryUndone": "Entrée supprimée",
+    "entryUndoFailed": "Impossible de supprimer l’entrée.",
+    "note": "Note"
   },
   "apiErrors": {
     "measurement": {
@@ -607,7 +612,8 @@
       "lifeEventDescription": "Un déménagement, une naissance, un nouvel emploi",
       "lifeEvent": "Événement de vie",
       "seizure": "Crise",
-      "seizureDescription": "Lancer le chronomètre ou enregistrer une crise non chronométrée"
+      "seizureDescription": "Lancer le chronomètre ou enregistrer une crise non chronométrée",
+      "recentMeasurementDescription": "Mesure saisie récemment"
     },
     "cycle": "Cycle",
     "labs": "Analyses",
@@ -905,7 +911,6 @@
     "value": "Valeur",
     "date": "Date",
     "source": "Source",
-    "notes": "Notes",
     "typeWeight": "Poids",
     "typeBloodPressure": "Tension artérielle",
     "typeBpSys": "Sys",
@@ -1105,7 +1110,10 @@
     "typeAcuteTrainingLoad": "Charge d'entraînement aiguë",
     "sourceGarmin": "Garmin",
     "valueOutOfRange": "Saisissez une valeur entre {min} et {max} {unit}.",
-    "valueOutOfRangeNoUnit": "Saisissez une valeur entre {min} et {max}."
+    "valueOutOfRangeNoUnit": "Saisissez une valeur entre {min} et {max}.",
+    "lastValue": "Dernière valeur : {value}, {when}",
+    "lastValueDeviates": "Très différent de ta dernière mesure. Est-ce correct ?",
+    "saveAndNext": "Enregistrer et suivant"
   },
   "metricCatalog": {
     "title": "Ce que HealthLog peut suivre",
@@ -1174,7 +1182,6 @@
     "previousPage": "Page précédente",
     "nextPage": "Page suivante",
     "loginRequired": "Connectez-vous pour voir vos entrées d’humeur.",
-    "note": "Note",
     "noteCollapse": "Réduire la note",
     "noteExpand": "Afficher la note complète",
     "notePlaceholder": "Ajoutez une note sur votre ressenti…",
@@ -10624,7 +10631,11 @@
       "valuesTitle": "{marker} : toutes les valeurs",
       "valuesDescription": "Chaque mesure de ce biomarqueur. Modifiez ou supprimez une entrée directement.",
       "backToMarker": "Retour à {marker}",
-      "latestResult": "Dernier résultat"
+      "latestResult": "Dernier résultat",
+      "latestValues": "Dernières valeurs",
+      "allValues": "Toutes les valeurs",
+      "columnDate": "Date",
+      "columnValue": "Valeur"
     },
     "chart": {
       "empty": "Aucune mesure sur cette période.",
@@ -13982,10 +13993,8 @@
       "anchorLow": "Aucune",
       "anchorHigh": "La pire imaginable",
       "intensityValueText": "{value} sur {max} ({low} à {high})",
-      "when": "Quand",
       "during": "Pendant une maladie",
       "duringNone": "Non lié",
-      "note": "Note",
       "notePlaceholder": "Qu'est-ce qui se passait d'autre ?",
       "reset": "Réinitialiser le formulaire",
       "emptyHint": "Ajoutez votre premier symptôme, par exemple aura ou mal de tête.",
@@ -13995,7 +14004,10 @@
       "partlySaved": "{saved} sur {total} enregistrés, le reste est encore sélectionné.",
       "severalHint": "Choisissez-en plusieurs s’ils sont survenus ensemble.",
       "filterPlaceholder": "Chercher un symptôme",
-      "filterEmpty": "Aucun symptôme ne correspond."
+      "filterEmpty": "Aucun symptôme ne correspond.",
+      "whenHint": "Modifie la date et l’heure pour saisir une entrée passée.",
+      "intensityShort": "{value}/{max}",
+      "intensityPreset": "Réglé sur ta dernière évaluation. Modifie-la si aujourd’hui est différent."
     },
     "section": {
       "title": "Vos symptômes",

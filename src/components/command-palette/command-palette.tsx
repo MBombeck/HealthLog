@@ -28,6 +28,7 @@ import { useIsMobile } from "@/hooks/use-is-mobile";
 import { useModuleToggle } from "@/hooks/use-module-toggle";
 import {
   EMPTY_STATE_ACTIONS,
+  tasksBeforeSwitches,
   type PaletteEntry,
   type PaletteGroup,
 } from "@/components/command-palette/build-index";
@@ -102,7 +103,7 @@ export function arrangeResults(
       { group: "actions" as const, entries: actions },
     ].filter((section) => section.entries.length > 0);
   }
-  const ranked = rankEntries(query, index);
+  const ranked = tasksBeforeSwitches(rankEntries(query, index));
   // Groups appear in the order of their best hit, so the best match is
   // always the first option.
   const order: PaletteGroup[] = [];
@@ -173,7 +174,7 @@ export function PaletteBody({ isMobile }: { isMobile: boolean }) {
   const today = useTodayKey();
   const coachLaunch = useCoachLaunch();
   const index = usePaletteIndex();
-  const toggle = useModuleToggle();
+  const toggle = useModuleToggle({ undoable: true });
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const [recentIds] = useState(() => readRecent(user?.id));
@@ -213,7 +214,7 @@ export function PaletteBody({ isMobile }: { isMobile: boolean }) {
   function run(entry: PaletteEntry) {
     const target = entry.run;
     if (target.kind === "module") {
-      // A switch: flip it where it is, and stay.
+      // A switch: flip it where it is, and stay (its receipt has an Undo).
       toggle.mutate({ key: target.module, enabled: !target.enabled });
       return;
     }
