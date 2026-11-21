@@ -22,6 +22,12 @@ vi.mock("@/lib/db", () => ({
     auditLog: {
       create: vi.fn(),
     },
+    // The hosted relay ships its keys pinned, so the route looks up this
+    // instance's relay registration; none exists here. A plain function, so
+    // the suite's mock resets cannot turn the answer into `undefined`.
+    pushRelayRegistration: {
+      findUnique: async () => null,
+    },
   },
 }));
 

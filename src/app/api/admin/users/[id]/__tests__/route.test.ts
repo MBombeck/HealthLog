@@ -259,7 +259,15 @@ describe("PUT /api/admin/users/[id]", () => {
           // The declared bounds of a size issue come from the schema.
           Object.keys(issue)
             .filter(
-              (k) => !["minimum", "maximum", "inclusive", "origin"].includes(k),
+              (k) =>
+                ![
+                  "minimum",
+                  "maximum",
+                  "inclusive",
+                  "origin",
+                  "minimumInclusive",
+                  "maximumInclusive",
+                ].includes(k),
             )
             .sort(),
         ).toEqual(["code", "message", "path"]);
