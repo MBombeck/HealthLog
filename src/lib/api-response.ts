@@ -1,9 +1,9 @@
 import { isIP } from "node:net";
 import { NextResponse } from "next/server";
-import type { ZodError, ZodIssue } from "zod/v4";
+import type { ZodError, ZodIssue, ZodType } from "zod/v4";
 
 import {
-  issueBounds,
+  issueBoundsWithSchema,
   unrecognisedKeys,
   unrecognisedKeysMessage,
   type SanitisedZodIssue,
@@ -58,6 +58,13 @@ export interface SanitiseZodIssueOptions {
    * client contract.
    */
   stripValuesFromMessage?: boolean;
+  /**
+   * The schema the issues came from. With it, a `too_small` / `too_big`
+   * issue on a field that declares both ends carries both (`minimum` and
+   * `maximum`, each with its `…Inclusive`); without it, only the broken
+   * bound, as before. `parseJsonBody` always passes it.
+   */
+  schema?: ZodType;
 }
 
 /**
@@ -93,10 +100,11 @@ export interface SanitiseZodIssueOptions {
  */
 export function sanitiseZodIssues(
   issues: readonly ZodIssue[],
+  options?: { stripValuesFromMessage?: false; schema?: ZodType },
 ): SanitisedZodIssue[];
 export function sanitiseZodIssues(
   issues: readonly ZodIssue[],
-  options: { stripValuesFromMessage: true },
+  options: { stripValuesFromMessage: true; schema?: ZodType },
 ): Array<Omit<SanitisedZodIssue, "message">>;
 export function sanitiseZodIssues(
   issues: readonly ZodIssue[],
@@ -109,7 +117,7 @@ export function sanitiseZodIssues(
         path: issue.path.join("."),
         code: issue.code,
         ...(keys ? { keys } : {}),
-        ...issueBounds(issue),
+        ...issueBoundsWithSchema(issue, options?.schema),
       };
     });
   }
@@ -120,7 +128,7 @@ export function sanitiseZodIssues(
       code: issue.code,
       message: keys ? unrecognisedKeysMessage(keys) : issue.message,
       ...(keys ? { keys } : {}),
-      ...issueBounds(issue),
+      ...issueBoundsWithSchema(issue, options?.schema),
     };
   });
 }
@@ -203,12 +211,13 @@ export function returnAllZodIssues(
   error: ZodError,
   status: number = 422,
   meta?: ErrorMeta,
+  schema?: ZodType,
 ): NextResponse {
   return buildJsonErrorResponse(
     {
       data: null,
       error: "Validation failed",
-      details: { issues: sanitiseZodIssues(error.issues) },
+      details: { issues: sanitiseZodIssues(error.issues, { schema }) },
     },
     status,
     meta,

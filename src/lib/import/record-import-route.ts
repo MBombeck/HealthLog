@@ -61,7 +61,9 @@ export async function handleRecordImport<
   const parsed = opts.schema.safeParse(
     Object.fromEntries(new URL(request.url).searchParams),
   );
-  if (!parsed.success) return returnAllZodIssues(parsed.error, 422);
+  if (!parsed.success) {
+    return returnAllZodIssues(parsed.error, 422, undefined, opts.schema);
+  }
   const query = parsed.data;
 
   const rl = query.dryRun
