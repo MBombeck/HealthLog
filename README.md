@@ -124,9 +124,9 @@ Actively developed. Issue reports and pull requests are welcome. Behaviour and s
 
 ## Release schedule
 
-HealthLog ships on a calendar. A feature release comes out on the first Tuesday of every month. On the other Tuesdays there is a patch release with fixes, if there is anything to fix. Nothing else ships in between, with one exception: a security problem, data loss or a broken install gets a fix as soon as it is ready, and the release notes say why.
+HealthLog ships on a calendar. A feature release comes out on the first Saturday of every month. On the other Saturdays there is a patch release with fixes, if there is anything to fix. Nothing else ships in between, with one exception: a security problem, data loss or a broken install gets a fix as soon as it is ready, and the release notes say why.
 
-For a self-hoster that means one update a month to read about, a small one on some Tuesdays, and no reason to pull images every day. The `:edge` image follows `main` for anyone who wants to check a fix before it is released; take a backup first, migrations do not run backwards. The calendar starts after 1.49.0, and the full rule is in [docs/contributing/release-policy.md](docs/contributing/release-policy.md).
+For a self-hoster that means one update a month to read about, a small one on some Saturdays, and no reason to pull images every day. The `:edge` image follows `main` for anyone who wants to check a fix before it is released; take a backup first, migrations do not run backwards. The calendar starts after 1.49.0, and the full rule is in [docs/contributing/release-policy.md](docs/contributing/release-policy.md).
 
 ## Thanks
 

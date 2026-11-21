@@ -90,20 +90,20 @@ Always include the migration file in your PR.
 
 ## Branch Model
 
-HealthLog is trunk-based: `main` is the single long-lived branch and is always releasable. There is no `develop` branch. Releases follow a calendar, described in [docs/contributing/release-policy.md](docs/contributing/release-policy.md): a minor on the first Tuesday of the month, patches with fixes only on the other Tuesdays.
+HealthLog is trunk-based: `main` is the single long-lived branch and is always releasable. There is no `develop` branch. Releases follow a calendar, described in [docs/contributing/release-policy.md](docs/contributing/release-policy.md): a minor on the first Saturday of the month, patches with fixes only on the other Saturdays.
 
 ```
-   fix/*  ──► PR ──► main ──► tag vX.Y.Z on a Tuesday ──► GHCR build
+   fix/*  ──► PR ──► main ──► tag vX.Y.Z on a Saturday ──► GHCR build
                       │
                       └──► every push: :edge image
 
-   feat/* ──► PR ──► release/vX.Y.0 ──► PR (merge commit) on the first Tuesday ──► main ──► tag vX.Y.0
+   feat/* ──► PR ──► release/vX.Y.0 ──► PR (merge commit) on the first Saturday ──► main ──► tag vX.Y.0
 ```
 
 The rules:
 
 - **`main` is the fix line.** It always builds, passes CI, and is deployable. Fixes, docs and maintenance land there through pull requests; each user-visible fix adds its line under `## [Unreleased]` in `CHANGELOG.md`. A merge to `main` is not a release; the release is the tag.
-- **Features go to `release/vX.Y.0`**, the branch that collects the next minor. It is cut from `main` the day the previous minor ships and merges back with a merge commit on the first Tuesday of the month. A pull request to `main` from any other branch fails when it carries a `feat` commit.
+- **Features go to `release/vX.Y.0`**, the branch that collects the next minor. It is cut from `main` the day the previous minor ships and merges back with a merge commit on the first Saturday of the month. A pull request to `main` from any other branch fails when it carries a `feat` commit.
 - **A release** is a `chore(release): vX.Y.Z` commit on `main` and its tag. The tag push triggers the GHCR multi-arch image build (and `:latest`). Deploy is manual.
 - **Hotfixes** outside the calendar are for security problems, data loss and broken installs only. They branch from `main` as `hotfix/vX.Y.Z`, carry one fix, and the publish workflow waits for the maintainer's approval.
 - Never force-push `main` or any release branch.

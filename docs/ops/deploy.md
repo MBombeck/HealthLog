@@ -1,7 +1,7 @@
 # Deploy ordering
 
 Releases follow a calendar (`docs/contributing/release-policy.md`): a minor on
-the first Tuesday of the month, a patch on other Tuesdays when there are fixes,
+the first Saturday of the month, a patch on other Saturdays when there are fixes,
 and an out-of-schedule release only for security, data loss or a broken
 install. `:latest` therefore moves at most once a week, except for those.
 Between releases, `main` collects merged fixes and every push to it publishes

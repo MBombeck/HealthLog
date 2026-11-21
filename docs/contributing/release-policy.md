@@ -6,27 +6,30 @@ document, a code comment or a habit disagrees, this page wins.
 
 ## Calendar
 
-- **Minor release (`X.Y.0`):** the first Tuesday of the month. It ships with
+- **Minor release (`X.Y.0`):** the first Saturday of the month. It ships with
   everything that is done and green on `release/vX.Y.0` by then. Whatever is
   not ready waits for the next month; the release does not wait for a feature.
-- **Patch release (`X.Y.Z`):** any other Tuesday, when there is something a
+- **Patch release (`X.Y.Z`):** any other Saturday, when there is something a
   user would notice. A week with nothing worth shipping has no release.
-- **One release per Tuesday.**
+- **One release per Saturday.**
 
-A Tuesday runs from 00:00 on Tuesday to 06:00 on Wednesday, Europe/Berlin, so
+Releases ship on Saturday because that is when self-hosters have time to read
+the notes and update.
+
+A Saturday runs from 00:00 on Saturday to 06:00 on Sunday, Europe/Berlin, so
 an evening release may run past midnight.
 
 A minor's month starts at least three weeks after the previous minor shipped.
-For a minor on a first Tuesday that is always the next month. The rule matters
+For a minor on a first Saturday that is always the next month. The rule matters
 once: after 1.49.0, which ships on no fixed day.
 
 ### Starting point
 
 1.49.0 is the last release before the calendar. It ships when the work planned
 for it is done and green, on whatever day that is. The calendar applies to
-every tag after it: the first scheduled minor, 1.50.0, is on the first Tuesday
+every tag after it: the first scheduled minor, 1.50.0, is on the first Saturday
 of the first month that starts at least three weeks after 1.49.0 ships, and the
-Tuesdays in between are patch Tuesdays.
+Saturdays in between are patch Saturdays.
 
 ## What goes where
 
@@ -57,14 +60,14 @@ A release leaves the schedule for one of three reasons and no other:
 
 1. **Security.** A vulnerability that can be exploited on a default install or
    from an ordinary account, rated high or critical. Lower ratings ship on the
-   next Tuesday.
+   next Saturday.
 2. **Data loss.** Writes are lost, wrong data is stored, backup or restore is
    broken, or a migration destroys something.
 3. **Broken install.** The container does not start, a migration fails, sign-in
    is impossible, the app is unusable for a whole class of clients after an
    update, or medication reminders stop arriving.
 
-Anything else waits for Tuesday. It is on `main` and in the `:edge` image the
+Anything else waits for Saturday. It is on `main` and in the `:edge` image the
 moment it is merged.
 
 Procedure:
@@ -80,13 +83,13 @@ Procedure:
    release. The notes say that it is a security fix and that updating is
    recommended. Details follow no sooner than seven days later.
 
-An out-of-schedule release does not move or replace the next Tuesday.
+An out-of-schedule release does not move or replace the next Saturday.
 
 ## Where work collects
 
 - **`main`** is the fix line. Fixes land continuously through `fix/X` branches
   and pull requests. Every commit is releasable, but a merge is not a release.
-  A release is the tag made on Tuesday, preceded by one `chore(release): vX.Y.Z`
+  A release is the tag made on Saturday, preceded by one `chore(release): vX.Y.Z`
   commit (version, changelog heading, regenerated OpenAPI).
 - **`release/vX.Y.0`** collects the next minor. It is cut from `main` the day
   the previous minor ships and takes features through `feat/X` branches. After
@@ -115,7 +118,7 @@ gate as always:
 
 Then merge with a merge commit, tag, delete the branch and cut the next
 `release/vX.Y.0` from `main`. Red is never shipped. If the gate is not green on
-the first Tuesday, the work that holds it up leaves the branch and the rest
+the first Saturday, the work that holds it up leaves the branch and the rest
 ships.
 
 A patch is the same on a smaller scale: release commit on `main`, Security &
@@ -126,10 +129,10 @@ After any release, `/api/version` is checked on every deploy target
 
 ## Images
 
-| Tag                       | Built from              | For                           |
-| ------------------------- | ----------------------- | ----------------------------- |
-| `:latest`, `:X.Y.Z`       | a release tag on `main` | everyone                      |
-| `:edge`, `:edge-<commit>` | every push to `main`    | checking a fix before Tuesday |
+| Tag                       | Built from              | For                            |
+| ------------------------- | ----------------------- | ------------------------------ |
+| `:latest`, `:X.Y.Z`       | a release tag on `main` | everyone                       |
+| `:edge`, `:edge-<commit>` | every push to `main`    | checking a fix before Saturday |
 
 `:edge` is amd64 only, unsigned, and reports its version as the release line
 plus `-edge.<commit>`. It carries fixes only, but it is not a release. Take a
