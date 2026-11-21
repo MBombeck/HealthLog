@@ -2645,7 +2645,8 @@
         "snooze": "Ricordamelo più tardi ({minutes} min)",
         "undo": "Annulla",
         "takeFor": "Assumi {name}",
-        "skipFor": "Salta {name}"
+        "skipFor": "Salta {name}",
+        "takeSlot": "Assumi ({time})"
       },
       "state": {
         "pending": "In attesa",
@@ -2659,7 +2660,8 @@
         "snoozedUntil": "Promemoria rinviato alle {time}"
       },
       "snoozedToast": "{name}: promemoria di nuovo alle {time}",
-      "snoozeFailed": "Impossibile rinviare {name}. Riprova"
+      "snoozeFailed": "Impossibile rinviare {name}. Riprova",
+      "earlyHint": "In anticipo: questa dose è prevista dalle {time}."
     },
     "intakeForm": {
       "title": "Registra assunzione",

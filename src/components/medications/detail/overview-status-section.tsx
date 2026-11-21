@@ -29,16 +29,15 @@ import {
   doseStateFromWire,
   isOpenDoseState,
 } from "@/lib/medications/dose-state/terms";
+import {
+  cardTakeSlot,
+  liveDoseState,
+  type ResolvedDoseWire,
+} from "@/lib/medications/dose-state/pill";
 import { queryKeys } from "@/lib/query-keys";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import type { TabSlug } from "@/components/medications/detail/tab-slugs";
 import type { MedicationDetailSnapshot } from "@/components/medications/detail/medication-detail-tabs";
-
-interface CurrentDoseWire {
-  state: string | null;
-  takenLate: boolean;
-  targetAt: Date | string | null;
-}
 
 /** "Today, 08:00", "Tomorrow, 08:00", "Mon, 08:00" or the date: the card's phrasing. */
 export function useNextDoseText(): (at: string) => string {
@@ -73,7 +72,7 @@ export function OverviewStatusSection({
   recordOnly: boolean;
   asNeeded: boolean;
   courseStatus?: "UPCOMING" | "CURRENT" | "ENDED";
-  currentDose: CurrentDoseWire | null;
+  currentDose: ResolvedDoseWire | null;
   jumpTo: (tab: TabSlug) => (() => void) | undefined;
 }) {
   const { t } = useTranslations();
@@ -124,18 +123,11 @@ export function OverviewStatusSection({
       : estimateRunwayDays(dosesRemaining, medication.schedules);
 
   // The open dose and its actions, the card's: the resolved state from the
-  // compliance block, the take for the slot the state names (else the next
-  // due one), and the snooze while a reminder is open.
-  // The slot shown and taken is the list's `nextDueAt`, which keeps an open
-  // overdue slot; `currentDose` walks from now forward and can already be
-  // about the next day's dose, in which case the open slot is overdue.
-  const sameSlot =
-    currentDose?.targetAt != null &&
-    medication.nextDueAt != null &&
-    new Date(currentDose.targetAt).getTime() ===
-      new Date(medication.nextDueAt).getTime();
-  const state = sameSlot
-    ? doseStateFromWire(currentDose?.state, currentDose?.takenLate)
+  // compliance block (`currentDose`, the earliest slot still due or
+  // overdue), the take for the slot it names, else the next due one.
+  const now = new Date();
+  const state = currentDose
+    ? doseStateFromWire(liveDoseState(currentDose, now), currentDose.takenLate)
     : medication.nextDueOverdue
       ? "overdue"
       : null;
@@ -150,7 +142,8 @@ export function OverviewStatusSection({
     !recordOnly &&
     courseStatus !== "ENDED" &&
     courseStatus !== "UPCOMING";
-  const slotAt = medication.nextDueAt ? new Date(medication.nextDueAt) : null;
+  const takeSlot = cardTakeSlot(currentDose, medication.nextDueAt, now);
+  const slotAt = takeSlot?.at ?? null;
   const { intakeLoading, recordIntake } = useMedicationIntake({ medication });
   const snooze = useCardDoseSnooze({
     ...medication,
@@ -194,6 +187,7 @@ export function OverviewStatusSection({
             <MedicationIntakeActions
               intakeLoading={intakeLoading}
               onRecordIntake={(skipped) => void recordIntake(skipped, slotAt)}
+              slot={takeSlot}
               snooze={snooze}
             />
           )}

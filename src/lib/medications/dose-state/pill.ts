@@ -149,3 +149,30 @@ export function cardDisplayedSlot(
   const next = ms(nextDueAt ?? null);
   return next === null ? null : new Date(next);
 }
+
+/** The slot a take records, and when the dose opens if that take is early. */
+export interface TakeSlot {
+  at: Date;
+  /** When the dose's window opens, while a take now would be early. */
+  earlyFrom: Date | null;
+}
+
+/**
+ * The take button's slot: {@link cardDisplayedSlot}, and the opening of the
+ * dose window while the resolved dose on that slot is still pending, so the
+ * button can say the take would be early. Null without a slot.
+ */
+export function cardTakeSlot(
+  dose: ResolvedDoseWire | null | undefined,
+  nextDueAt: string | null | undefined,
+  now: Date,
+): TakeSlot | null {
+  const at = cardDisplayedSlot(dose, nextDueAt, now);
+  if (!at) return null;
+  const dueAt = ms(dose?.dueAt);
+  const early =
+    liveDoseState(dose, now) === "upcoming" &&
+    ms(dose?.targetAt) === at.getTime() &&
+    dueAt !== null;
+  return { at, earlyFrom: early ? new Date(dueAt) : null };
+}

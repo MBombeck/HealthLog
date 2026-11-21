@@ -2645,7 +2645,8 @@
         "snooze": "Später erinnern ({minutes} Min.)",
         "undo": "Rückgängig",
         "takeFor": "Einnehmen: {name}",
-        "skipFor": "Überspringen: {name}"
+        "skipFor": "Überspringen: {name}",
+        "takeSlot": "Einnehmen ({time})"
       },
       "state": {
         "pending": "Ausstehend",
@@ -2659,7 +2660,8 @@
         "snoozedUntil": "Erinnerung verschoben auf {time}"
       },
       "snoozedToast": "{name}: Erinnerung wieder um {time}",
-      "snoozeFailed": "{name} konnte nicht verschoben werden. Bitte erneut versuchen"
+      "snoozeFailed": "{name} konnte nicht verschoben werden. Bitte erneut versuchen",
+      "earlyHint": "Früh dran: Diese Dosis ist ab {time} fällig."
     },
     "intakeForm": {
       "title": "Einnahme erfassen",

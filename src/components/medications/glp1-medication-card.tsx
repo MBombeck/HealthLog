@@ -35,8 +35,8 @@ import { type InjectionSiteKey } from "@/lib/medications/injection-sites";
 import { LogInjectionSiteDialog } from "@/components/medications/log-injection-site-dialog";
 import { useGlobalExcludedInjectionSites } from "@/lib/medications/use-injection-site-prefs";
 import {
-  cardDisplayedSlot,
   cardDoseStatus,
+  cardTakeSlot,
   cardWindowPill,
 } from "@/lib/medications/dose-state/pill";
 import {
@@ -349,11 +349,8 @@ export function Glp1MedicationCard({
   // The slot of the injection this card shows (the resolved open dose
   // while due, overdue or missed, else the server's next-due), threaded onto
   // the take / skip POST so the server records THIS dose.
-  const displayedSlot = cardDisplayedSlot(
-    currentDose,
-    medication.nextDueAt,
-    now,
-  );
+  const takeSlot = cardTakeSlot(currentDose, medication.nextDueAt, now);
+  const displayedSlot = takeSlot?.at ?? null;
 
   // v1.16.11 / v1.17.0 — low-stock card context, identical to the generic
   // card: runway days from the list payload's dose-derived stock, surfaced
@@ -538,6 +535,7 @@ export function Glp1MedicationCard({
       lowStockRunwayDays={lowStockRunwayDays}
       intakeLoading={intakeLoading}
       onRecordIntake={(skipped) => recordIntake(skipped, displayedSlot)}
+      takeSlot={takeSlot}
       snooze={snooze}
     >
       {/* v1.8.5 — post-dose injection-site capture (optional, skippable). */}

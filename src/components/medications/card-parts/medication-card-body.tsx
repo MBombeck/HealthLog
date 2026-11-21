@@ -171,6 +171,8 @@ export interface MedicationCardBodyProps {
   intakeLoading: string | null;
   /** Record the displayed dose (the card binds the slot instant). */
   onRecordIntake: (skipped: boolean) => void;
+  /** The slot the take records, named on the button (`cardTakeSlot`). */
+  takeSlot?: ComponentProps<typeof MedicationIntakeActions>["slot"];
   /** The card's "Remind me later" and snoozed state (`useDoseSnooze`). */
   snooze?: ComponentProps<typeof MedicationIntakeActions>["snooze"];
 
@@ -212,6 +214,7 @@ export function MedicationCardBody({
   lowStockRunwayDays = null,
   intakeLoading,
   onRecordIntake,
+  takeSlot = null,
   snooze = null,
   children,
   highlighted = false,
@@ -352,6 +355,7 @@ export function MedicationCardBody({
             <MedicationIntakeActions
               intakeLoading={intakeLoading}
               onRecordIntake={onRecordIntake}
+              slot={takeSlot}
               snooze={snooze}
             />
           </div>

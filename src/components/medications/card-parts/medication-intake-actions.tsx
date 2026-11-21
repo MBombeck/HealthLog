@@ -2,9 +2,15 @@ import { BellRing, Check, Loader2, SkipForward } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { InlineAction } from "@/components/ui/inline-action";
-import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import {
+  useDisplayTimezone,
+  useFormatters,
+  useTranslations,
+} from "@/lib/i18n/context";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { DOSE_ACTION_TERM } from "@/lib/medications/dose-state/terms";
+import type { TakeSlot } from "@/lib/medications/dose-state/pill";
+import { userDayKey } from "@/lib/tz/format";
 
 interface MedicationIntakeActionsProps {
   /** "take" | "skip" while the matching request is in flight, else null. */
@@ -15,6 +21,12 @@ interface MedicationIntakeActionsProps {
    * here just forward the skip flag.
    */
   onRecordIntake: (skipped: boolean) => void;
+  /**
+   * The slot the take records (`cardTakeSlot`): named on the button, so a
+   * tap says which dose it answers, with an "early" line under the buttons
+   * while that dose's window has not opened. Null keeps the plain label.
+   */
+  slot?: TakeSlot | null;
   /**
    * The card's snooze ("Remind me later (30 min)") and its snoozed state,
    * from {@link useDoseSnooze}. Omitted where a snooze means nothing.
@@ -44,16 +56,33 @@ interface MedicationIntakeActionsProps {
 export function MedicationIntakeActions({
   intakeLoading,
   onRecordIntake,
+  slot = null,
   snooze = null,
 }: MedicationIntakeActionsProps) {
   const { t } = useTranslations();
   const fmt = useFormatters();
+  const tz = useDisplayTimezone();
   // v1.36.x — marking a dose taken or skipped is the verb the delegation was
   // written for. A read-only delegate sees the card and its schedule and no
   // action row; the card is otherwise unchanged.
   const { canWriteDomain } = useRecordCapabilities();
   const canRecordIntake = canWriteDomain("medications");
   if (!canRecordIntake) return null;
+
+  // The slot's clock time, with its day when it is not today.
+  const slotLabel = slot
+    ? userDayKey(slot.at, tz) === userDayKey(new Date(), tz)
+      ? fmt.time(slot.at)
+      : `${fmt.dateShortSmart(slot.at)}, ${fmt.time(slot.at)}`
+    : null;
+  const earlyHint = slot?.earlyFrom ? (
+    <p
+      className="text-muted-foreground text-xs"
+      data-slot="medication-intake-early"
+    >
+      {t("medications.dose.earlyHint", { time: fmt.time(slot.earlyFrom) })}
+    </p>
+  ) : null;
 
   const buttons = (
     <div className="flex gap-2">
@@ -68,7 +97,9 @@ export function MedicationIntakeActions({
         ) : (
           <Check className="h-4 w-4" />
         )}
-        {t(DOSE_ACTION_TERM.take)}
+        {slotLabel
+          ? t("medications.dose.action.takeSlot", { time: slotLabel })
+          : t(DOSE_ACTION_TERM.take)}
       </Button>
       <Button
         data-slot="medication-intake-skip"
@@ -87,11 +118,21 @@ export function MedicationIntakeActions({
     </div>
   );
 
-  if (!snooze || (!snooze.canSnooze && !snooze.snoozedUntil)) return buttons;
+  if (!snooze || (!snooze.canSnooze && !snooze.snoozedUntil)) {
+    return earlyHint ? (
+      <div className="space-y-1">
+        {buttons}
+        {earlyHint}
+      </div>
+    ) : (
+      buttons
+    );
+  }
 
   return (
     <div className="space-y-1">
       {buttons}
+      {earlyHint}
       {/* The snooze rides under the two buttons: one length for every
           surface, named in the label, and the held state in its place once
           set, so a card never hides that the reminder was pushed back. */}

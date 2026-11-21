@@ -20,8 +20,8 @@ import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
 import { formatDose } from "@/lib/medications/format-dose";
 import { formatUnitsPerDose } from "@/lib/medications/units-per-dose";
 import {
-  cardDisplayedSlot,
   cardDoseStatus,
+  cardTakeSlot,
   cardWindowPill,
 } from "@/lib/medications/dose-state/pill";
 import { resolveNextDueDayLabel } from "@/lib/medications/next-due-day-label";
@@ -290,11 +290,8 @@ export function MedicationCard({
   // POST so the server records THIS dose rather than snapping "now" to the
   // nearest slot: the resolved open dose while it is due, overdue or missed,
   // else the server's next-due.
-  const displayedSlot = cardDisplayedSlot(
-    currentDose,
-    medication.nextDueAt,
-    now,
-  );
+  const takeSlot = cardTakeSlot(currentDose, medication.nextDueAt, now);
+  const displayedSlot = takeSlot?.at ?? null;
 
   // v1.16.11 — low-stock card context. Runway days from the list
   // payload's dose-derived stock over the same estimate the table /
@@ -507,6 +504,7 @@ export function MedicationCard({
       lowStockRunwayDays={lowStockRunwayDays}
       intakeLoading={intakeLoading}
       onRecordIntake={(skipped) => recordIntake(skipped, displayedSlot)}
+      takeSlot={takeSlot}
       snooze={snooze}
     >
       {/* v1.8.5 — post-dose injection-site capture (optional, skippable). */}
