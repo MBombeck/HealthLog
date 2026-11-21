@@ -9,7 +9,7 @@
  * index read of this account's rows and nothing else, with or without
  * statistics on the table.
  */
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { countTombstonedMeasurements } from "@/lib/sync/measurement-counts";
 
@@ -20,6 +20,20 @@ const prisma = () => getPrismaClient();
 
 beforeEach(async () => {
   await truncateAllTables(prisma());
+  // Statistics another file in this worker gathered survive its TRUNCATE and
+  // would decide the plan for this fixture; each case states its own.
+  await prisma().$executeRawUnsafe(
+    "ALTER TABLE measurements SET (autovacuum_enabled = false)",
+  );
+  await prisma().$executeRawUnsafe(
+    "DELETE FROM pg_statistic WHERE starelid = 'measurements'::regclass",
+  );
+});
+
+afterAll(async () => {
+  await prisma().$executeRawUnsafe(
+    "ALTER TABLE measurements RESET (autovacuum_enabled)",
+  );
 });
 
 async function account(id: string, live: number, tombstones: number) {
@@ -40,20 +54,26 @@ async function account(id: string, live: number, tombstones: number) {
 }
 
 describe("the tombstone count of the sync handshake", () => {
-  it("is exact and visits only the caller's tombstones", async () => {
-    await account("caller", 50, 7);
-    await account("neighbour", 50, 400);
+  it.each(["without statistics", "with this table's statistics"])(
+    "is exact and visits only the caller's tombstones, %s",
+    async (state) => {
+      await account("caller", 50, 7);
+      await account("neighbour", 50, 400);
+      if (state !== "without statistics") {
+        await prisma().$executeRawUnsafe("ANALYZE measurements");
+      }
 
-    const ledger = await explainStatements(() =>
-      countTombstonedMeasurements("caller"),
-    );
+      const ledger = await explainStatements(() =>
+        countTombstonedMeasurements("caller"),
+      );
 
-    expect(ledger.result).toBe(7);
-    expect(ledger.plans.some((p) => p.seqScan)).toBe(false);
-    // The caller's seven, not the neighbour's four hundred.
-    expect(ledger.rowVisits).toBeLessThanOrEqual(7);
-    expect(JSON.stringify(ledger.plans.map((p) => p.plan))).toContain(
-      "measurements_user_id_deleted_at_tombstone_idx",
-    );
-  });
+      expect(ledger.result).toBe(7);
+      expect(ledger.plans.some((p) => p.seqScan)).toBe(false);
+      // The caller's seven, not the neighbour's four hundred.
+      expect(ledger.rowVisits).toBeLessThanOrEqual(7);
+      expect(JSON.stringify(ledger.plans.map((p) => p.plan))).toContain(
+        "measurements_user_id_deleted_at_tombstone_idx",
+      );
+    },
+  );
 });
