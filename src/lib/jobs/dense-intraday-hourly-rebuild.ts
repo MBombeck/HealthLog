@@ -25,7 +25,7 @@
  * boot; an unregistered queue silently never drains.
  */
 import { dropPendingDeletion } from "@/lib/account-deletion/active-account";
-import { Prisma, type PrismaClient } from "@/generated/prisma/client";
+import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
@@ -128,25 +128,35 @@ export async function findHourlyRebuildCandidateUserIds(
 
   const users = await dropPendingDeletion(
     prismaClient,
+    // Per account, not over the whole table: every index on `measurements`
+    // leads on `user_id`, so the probe for one account is an index range
+    // read, where the former `SELECT DISTINCT user_id` over the table could
+    // only scan it, on every boot. The type list is cast to the enum, not the
+    // column to text, so the `(user_id, type, measured_at)` index serves it.
     await prismaClient.$queryRaw<Array<{ user_id: string }>>`
-    SELECT DISTINCT m."user_id"
-    FROM "measurements" m
-    WHERE m."source" = 'APPLE_HEALTH'
-      AND m."type"::text IN (${Prisma.join(types)})
-      AND m."deleted_at" IS NULL
-      AND m."external_id" ~ '^stats:[A-Za-z0-9]+:[0-9]{4}-[0-9]{2}-[0-9]{2}$'
-      AND m."measured_at" < ${windowStart}
-      AND EXISTS (
-        SELECT 1
-        FROM "measurements" t
-        WHERE t."user_id" = m."user_id"
-          AND t."type" = m."type"
-          AND t."source" = 'APPLE_HEALTH'
-          AND t."deleted_at" IS NOT NULL
-          AND t."external_id" NOT LIKE 'stats:%'
-          AND t."measured_at" >= m."measured_at" - interval '14 hours'
-          AND t."measured_at" <  m."measured_at" + interval '14 hours'
-      )
+    SELECT u."id" AS "user_id"
+    FROM "users" u
+    WHERE EXISTS (
+      SELECT 1
+      FROM "measurements" m
+      WHERE m."user_id" = u."id"
+        AND m."type" = ANY (${types}::"measurement_type"[])
+        AND m."source" = 'APPLE_HEALTH'
+        AND m."deleted_at" IS NULL
+        AND m."external_id" ~ '^stats:[A-Za-z0-9]+:[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+        AND m."measured_at" < ${windowStart}
+        AND EXISTS (
+          SELECT 1
+          FROM "measurements" t
+          WHERE t."user_id" = m."user_id"
+            AND t."type" = m."type"
+            AND t."source" = 'APPLE_HEALTH'
+            AND t."deleted_at" IS NOT NULL
+            AND t."external_id" NOT LIKE 'stats:%'
+            AND t."measured_at" >= m."measured_at" - interval '14 hours'
+            AND t."measured_at" <  m."measured_at" + interval '14 hours'
+        )
+    )
   `,
     (u) => u.user_id,
   );

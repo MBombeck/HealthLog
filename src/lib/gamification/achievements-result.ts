@@ -498,7 +498,7 @@ export async function buildAchievementsResult(
         AND m."measured_at" >= ${startDate}
         AND m."measured_at" <= ${now}
         AND m."source"::text <> 'IMPORT'
-        AND m."type"::text IN ('WEIGHT', 'BLOOD_PRESSURE_SYS', 'BLOOD_PRESSURE_DIA', 'PULSE')
+        AND m."type" IN ('WEIGHT'::measurement_type, 'BLOOD_PRESSURE_SYS'::measurement_type, 'BLOOD_PRESSURE_DIA'::measurement_type, 'PULSE'::measurement_type)
         AND m."deleted_at" IS NULL
       GROUP BY 1, 2, 3
       ORDER BY 2, 3, 1
