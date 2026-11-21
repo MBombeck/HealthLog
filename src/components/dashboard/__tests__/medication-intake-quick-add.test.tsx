@@ -38,13 +38,25 @@ import {
 // reach into a real QueryClient. The default-stub returns the
 // populated medications list; per-test mockReturnValue calls override.
 const mockUseQuery = vi.fn();
+function isDayLedgerQuery(opts: unknown): boolean {
+  const key = (opts as { queryKey?: unknown[] })?.queryKey;
+  return (
+    Array.isArray(key) && key[0] === "medications" && key[2] === "dose-history"
+  );
+}
 const mockInvalidateQueries = vi.fn().mockResolvedValue(undefined);
 const mockQueryClient = {
   invalidateQueries: mockInvalidateQueries,
   getQueryCache: () => ({ findAll: () => [] }),
 };
 vi.mock("@tanstack/react-query", () => ({
-  useQuery: (opts: unknown) => mockUseQuery(opts),
+  // The intake form also reads the day's dose ledger; that read stays
+  // pending here, so the form offers no slot and the medication stubs below
+  // only answer the medication list.
+  useQuery: (opts: unknown) =>
+    isDayLedgerQuery(opts)
+      ? { data: undefined, status: "pending", isPending: true }
+      : mockUseQuery(opts),
   useQueryClient: () => mockQueryClient,
 }));
 
