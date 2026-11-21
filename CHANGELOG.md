@@ -92,6 +92,7 @@
 - Pushes to an iPhone that registered a key are sealed for that device on every path, the server's own Apple key included.
 - APNs tokens are compared and stored in lower case, so one token cannot be held by two accounts in different spellings.
 - The calendar feed and emergency card links are stored only as a hash, rate limited, need a fresh sign-in to create, and stay out of backups.
+- The add form no longer keeps the last measurement type in browser storage. It opens on the type last saved by hand, read from the account's own readings, so it is the same on every device.
 
 ### Updating
 
