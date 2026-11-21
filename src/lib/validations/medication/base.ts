@@ -5,6 +5,12 @@ import { validateEntryInstant } from "@/lib/validations/entry-instant";
 import { hhmmToMinutes } from "@/lib/medications/scheduling/hhmm";
 import { isoDateTime } from "@/lib/validations/datetime";
 import { MEDICATION_NOTE_MAX_CHARS } from "@/lib/medications/note-limits";
+import { MEDICATION_CATEGORY_ORDER_MAX } from "@/lib/medication-list-layout";
+import {
+  CUSTOM_MEDICATION_CATEGORY_KEY_PATTERN,
+  MEDICATION_CATEGORY_VALUES,
+  type MedicationCategoryValue,
+} from "@/lib/medications/category-values";
 
 /**
  * v1.8.5 — the eight injection-site enum values, mirrored from the
@@ -81,34 +87,7 @@ export const medicationNoteField = z
   .describe(
     `#1371 — the person's own note on the medication, for directions such as "30 to 60 minutes before food". Free text, trimmed, at most ${MEDICATION_NOTE_MAX_CHARS} characters (counted after trimming). An empty string or NULL clears it; absent leaves it untouched. Encrypted at rest and returned decrypted as \`note\` on the medication read paths.`,
   );
-/**
- * Clinical-category values stored in the `medication_categories` table
- * (TEXT column, the `MedicationCategoryAssignment` model). v1.5.4 adds `DIABETES` and `ANTIBIOTIC` so the
- * wizard's Step 2 taxonomy can write a first-class bucket for those
- * two rows instead of collapsing them into `OTHER`. The column is a
- * plain TEXT field — no Prisma enum exists to migrate; the Zod values
- * list is the only enforcement layer. v1.39.4 adds `MENTAL_HEALTH`
- * (antidepressants, anxiolytics, mood stabilisers, ADHD medication), again
- * without a migration.
- */
-export const MEDICATION_CATEGORY_VALUES = [
-  "BLOOD_PRESSURE",
-  "VITAMIN",
-  "SUPPLEMENT",
-  "PAIN_RELIEF",
-  "ALLERGY",
-  "DIGESTIVE",
-  "THYROID",
-  "HORMONE",
-  "SKIN",
-  "SLEEP_AID",
-  "DIABETES",
-  "ANTIBIOTIC",
-  "MENTAL_HEALTH",
-  "OTHER",
-] as const;
-export type MedicationCategoryValue =
-  (typeof MEDICATION_CATEGORY_VALUES)[number];
+export { MEDICATION_CATEGORY_VALUES, type MedicationCategoryValue };
 
 /**
  * v1.40 (#1041) — a category the person named themselves is addressed by the
@@ -120,12 +99,26 @@ export const CUSTOM_MEDICATION_CATEGORY_PREFIX = "custom:";
 /** Per-account ceiling on custom medication categories (hidden ones count). */
 export const MAX_CUSTOM_MEDICATION_CATEGORIES = 20;
 
-const CUSTOM_MEDICATION_CATEGORY_KEY = /^custom:[0-9a-f-]{36}$/;
+const CUSTOM_MEDICATION_CATEGORY_KEY = CUSTOM_MEDICATION_CATEGORY_KEY_PATTERN;
 
 /** Is `value` a custom-category key rather than a built-in value? */
 export function isCustomMedicationCategoryKey(value: string): boolean {
   return value.startsWith(CUSTOM_MEDICATION_CATEGORY_PREFIX);
 }
+
+/**
+ * The category order of the medication list layout (`categoryOrder` on
+ * `PUT /api/medications/layout`): built-in values and `custom:<uuid>` keys,
+ * first = top, at most `MEDICATION_CATEGORY_ORDER_MAX`.
+ */
+export const medicationCategoryOrderSchema = z
+  .array(
+    z.union([
+      z.enum(MEDICATION_CATEGORY_VALUES),
+      z.string().regex(CUSTOM_MEDICATION_CATEGORY_KEY, "Unknown category"),
+    ]),
+  )
+  .max(MEDICATION_CATEGORY_ORDER_MAX);
 
 /**
  * The `category` a create or update body may carry: a built-in value or a

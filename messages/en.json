@@ -2694,7 +2694,32 @@
     "phaseGreenHint": "First reminder, this long before the reminder window ends.",
     "phaseYellowHint": "Another reminder, this long before the window ends.",
     "phaseOrangeHint": "A reminder that the dose is overdue, this long after the window ended.",
-    "phaseRedHint": "After this long past the window, the dose counts as missed."
+    "phaseRedHint": "After this long past the window, the dose counts as missed.",
+    "filter": {
+      "searchPlaceholder": "Search medication…",
+      "searchLabel": "Search medications",
+      "clearSearch": "Clear search",
+      "treatmentPeriod": "Treatment period",
+      "noMatchesTitle": "No matching medications",
+      "noMatchesDescription": "Try adjusting your search query or filters.",
+      "countOne": "{count} medication",
+      "countFew": "{count} medications",
+      "countOther": "{count} medications"
+    },
+    "groups": {
+      "heading": "Categories",
+      "description": "Group medications by category.",
+      "label": "Grouping",
+      "none": "None",
+      "category": "By category",
+      "openLabel": "Open on load",
+      "openExpanded": "All",
+      "openFlagged": "Due only",
+      "openCollapsed": "None",
+      "orderWithinGroups": "The order applies within each category.",
+      "orderHeading": "Category order",
+      "orderDefault": "Until you move one, built-in categories keep a fixed order, your own follow alphabetically and {other} comes last."
+    }
   },
   "charts": {
     "loadingLabel": "Loading chart…",

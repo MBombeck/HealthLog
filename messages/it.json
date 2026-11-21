@@ -2694,7 +2694,32 @@
     "phaseGreenHint": "Primo promemoria, questo tempo prima della fine della finestra di promemoria.",
     "phaseYellowHint": "Un altro promemoria, questo tempo prima della fine della finestra.",
     "phaseOrangeHint": "Un promemoria che la dose è in ritardo, questo tempo dopo la fine della finestra.",
-    "phaseRedHint": "Passato questo tempo dalla finestra, la dose conta come mancata."
+    "phaseRedHint": "Passato questo tempo dalla finestra, la dose conta come mancata.",
+    "filter": {
+      "searchPlaceholder": "Cerca farmaco…",
+      "searchLabel": "Cerca farmaci",
+      "clearSearch": "Cancella ricerca",
+      "treatmentPeriod": "Periodo di trattamento",
+      "noMatchesTitle": "Nessun farmaco trovato",
+      "noMatchesDescription": "Prova a modificare i termini di ricerca o i filtri.",
+      "countOne": "{count} farmaco",
+      "countFew": "{count} farmaci",
+      "countOther": "{count} farmaci"
+    },
+    "groups": {
+      "heading": "Categorie",
+      "description": "Raggruppa i farmaci per categoria.",
+      "label": "Raggruppamento",
+      "none": "Nessuno",
+      "category": "Per categoria",
+      "openLabel": "Aperte al caricamento",
+      "openExpanded": "Tutte",
+      "openFlagged": "Solo da assumere",
+      "openCollapsed": "Nessuna",
+      "orderWithinGroups": "L’ordine vale all’interno di ogni categoria.",
+      "orderHeading": "Ordine delle categorie",
+      "orderDefault": "Finché non ne sposti una, le categorie predefinite seguono un ordine fisso, le tue l’ordine alfabetico e {other} viene per ultima."
+    }
   },
   "charts": {
     "loadingLabel": "Caricamento del grafico…",

@@ -16,8 +16,7 @@
  *   all of them, only those with a value outside its range, or none.
  * - `categoryOrder`: only the labs list reads it, and only on the server: a
  *   category-key allow-list `GET /api/labs/overview` applies before it
- *   answers `categories` (`applyCategoryOrder` in
- *   `src/lib/labs/marker-category.ts`), so every client receives the
+ *   answers `categories` (`applyCategoryOrder` in this module), so every client receives the
  *   categories already in the person's order. Same tolerance as `order`.
  *
  * Null / missing column = the defaults below. The GET never lazy-writes, and
@@ -78,6 +77,37 @@ export function mergeCategoryOrder(
     0,
     MODULE_LIST_CATEGORY_ORDER_MAX,
   );
+}
+
+/**
+ * The person's category order (`categoryOrder` in the labs list layout)
+ * over categories already in the default order.
+ *
+ * Listed keys come first, in the listed order; a key the data does not have
+ * is skipped. A category the list does not name (a panel added since the
+ * person arranged the list) follows the listed ones in the default order.
+ * "other" is the one exception: left at the end of the listed categories it
+ * stays last, after any category added later, because a catch-all belongs
+ * at the bottom unless the person moved it up. An empty order is the
+ * default order. `catchAllKey` names the list's catch-all category ("other"
+ * for Labs, "OTHER" for medications).
+ */
+export function applyCategoryOrder<T extends { key: string }>(
+  categories: readonly T[],
+  order: readonly string[],
+  catchAllKey: string,
+): T[] {
+  if (order.length === 0) return [...categories];
+  const present = new Set(categories.map((category) => category.key));
+  const listed = order.filter((key) => present.has(key));
+  const rank = new Map(listed.map((key, index) => [key, index]));
+  const ordered = categories
+    .filter((category) => rank.has(category.key))
+    .sort((a, b) => rank.get(a.key)! - rank.get(b.key)!);
+  const rest = categories.filter((category) => !rank.has(category.key));
+  const otherLast = ordered.at(-1)?.key === catchAllKey;
+  if (!otherLast || rest.length === 0) return [...ordered, ...rest];
+  return [...ordered.slice(0, -1), ...rest, ordered.at(-1)!];
 }
 
 export interface ModuleListPrefs {

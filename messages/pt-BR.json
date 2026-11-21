@@ -2694,7 +2694,32 @@
     "phaseGreenHint": "Primeiro lembrete, este tempo antes do fim da janela de lembrete.",
     "phaseYellowHint": "Outro lembrete, este tempo antes do fim da janela.",
     "phaseOrangeHint": "Um lembrete de que a dose está atrasada, este tempo depois do fim da janela.",
-    "phaseRedHint": "Passado este tempo após a janela, a dose conta como perdida."
+    "phaseRedHint": "Passado este tempo após a janela, a dose conta como perdida.",
+    "filter": {
+      "searchPlaceholder": "Buscar medicamento…",
+      "searchLabel": "Buscar medicamentos",
+      "clearSearch": "Limpar busca",
+      "treatmentPeriod": "Período de tratamento",
+      "noMatchesTitle": "Nenhum medicamento encontrado",
+      "noMatchesDescription": "Tente ajustar sua busca ou os filtros.",
+      "countOne": "{count} medicamento",
+      "countFew": "{count} medicamentos",
+      "countOther": "{count} medicamentos"
+    },
+    "groups": {
+      "heading": "Categorias",
+      "description": "Agrupa os medicamentos por categoria.",
+      "label": "Agrupamento",
+      "none": "Nenhum",
+      "category": "Por categoria",
+      "openLabel": "Abertas ao carregar",
+      "openExpanded": "Todas",
+      "openFlagged": "Apenas devidos",
+      "openCollapsed": "Nenhuma",
+      "orderWithinGroups": "A ordem vale dentro de cada categoria.",
+      "orderHeading": "Ordem das categorias",
+      "orderDefault": "Até você mover uma, as categorias integradas seguem uma ordem fixa, as suas vêm em ordem alfabética e {other} fica por último."
+    }
   },
   "charts": {
     "loadingLabel": "Carregando gráfico…",

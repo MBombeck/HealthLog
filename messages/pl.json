@@ -2694,7 +2694,32 @@
     "phaseGreenHint": "Pierwsze przypomnienie, tyle przed końcem okna przypomnień.",
     "phaseYellowHint": "Kolejne przypomnienie, tyle przed końcem okna.",
     "phaseOrangeHint": "Przypomnienie, że dawka jest po terminie, tyle po końcu okna.",
-    "phaseRedHint": "Po tylu od końca okna dawka liczy się jako nieprzyjęta."
+    "phaseRedHint": "Po tylu od końca okna dawka liczy się jako nieprzyjęta.",
+    "filter": {
+      "searchPlaceholder": "Szukaj leku…",
+      "searchLabel": "Szukaj leków",
+      "clearSearch": "Wyczyść wyszukiwanie",
+      "treatmentPeriod": "Okres leczenia",
+      "noMatchesTitle": "Brak pasujących leków",
+      "noMatchesDescription": "Spróbuj zmienić zapytanie lub zresetować filtry.",
+      "countOne": "{count} lek",
+      "countFew": "{count} leki",
+      "countOther": "{count} leków"
+    },
+    "groups": {
+      "heading": "Kategorie",
+      "description": "Grupuje leki według kategorii.",
+      "label": "Grupowanie",
+      "none": "Brak",
+      "category": "Według kategorii",
+      "openLabel": "Rozwinięte po otwarciu",
+      "openExpanded": "Wszystkie",
+      "openFlagged": "Tylko należne",
+      "openCollapsed": "Żadne",
+      "orderWithinGroups": "Kolejność obowiązuje w obrębie każdej kategorii.",
+      "orderHeading": "Kolejność kategorii",
+      "orderDefault": "Dopóki żadnej nie przesuniesz, wbudowane kategorie mają stałą kolejność, twoje własne idą alfabetycznie, a {other} na końcu."
+    }
   },
   "charts": {
     "loadingLabel": "Ładowanie wykresu…",

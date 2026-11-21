@@ -15,10 +15,13 @@ import {
   MEDICATION_TREATMENT_CLASS_VALUES,
   doseWindowEntrySchema,
   injectionSiteEnum,
+  medicationCategoryOrderSchema,
 } from "@/lib/validations/medication";
 import { medicationExtractionSchema } from "@/lib/ai/coach/medication-extract-prompt";
 import {
   MEDICATION_LIST_VIEWS,
+  MEDICATION_GROUP_BYS,
+  MEDICATION_GROUPS_OPEN,
   MEDICATION_ORDER_ID_MAX_LENGTH,
   MEDICATION_ORDER_MAX_ENTRIES,
 } from "@/lib/medication-list-layout";
@@ -1351,11 +1354,26 @@ export const medicationListLayoutSchema = z
       .describe(
         "User-defined manual medication order (medication ids, first = top), shared by both views. Display-only — unknown / deleted ids are ignored at render time, never 422. Optional on PUT (preserve-when-absent); always present on responses.",
       ),
+    groupBy: z
+      .enum(MEDICATION_GROUP_BYS)
+      .optional()
+      .describe('Grouping mode ("none" or "category"). Default "none".'),
+    groupsOpen: z
+      .enum(MEDICATION_GROUPS_OPEN)
+      .optional()
+      .describe(
+        'Which groups open by default ("expanded", "flagged", "collapsed"). Default "expanded".',
+      ),
+    categoryOrder: medicationCategoryOrderSchema
+      .optional()
+      .describe(
+        "The category order of the grouped list, first = top: built-in category values and `custom:<uuid>` keys, at most 64. A malformed key is a 422; a well-formed custom key the account does not have is dropped on write. Categories not listed follow in the default order, OTHER last. Optional on PUT (preserve-when-absent); always present on responses.",
+      ),
   })
   .meta({
     id: "MedicationListLayout",
     description:
-      "Per-user /medications presentation: the card/table view choice plus the manual medication order shared by both views. Mirrors the dashboard-widgets / insights-layout contract.",
+      "Per-user /medications presentation: the card/table view choice plus the manual medication order, category grouping and ordering. Mirrors the dashboard-widgets / insights-layout contract.",
   });
 
 // v1.32.21 — the PUT body additionally carries the optional

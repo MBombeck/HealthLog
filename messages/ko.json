@@ -2694,7 +2694,32 @@
     "phaseGreenHint": "알림 시간이 끝나기 이만큼 전에 첫 알림을 보내요.",
     "phaseYellowHint": "알림 시간이 끝나기 이만큼 전에 한 번 더 알려요.",
     "phaseOrangeHint": "알림 시간이 끝난 뒤 이만큼 지나면 복용이 늦었다고 알려요.",
-    "phaseRedHint": "알림 시간이 끝나고 이만큼 지나면 놓친 것으로 기록해요."
+    "phaseRedHint": "알림 시간이 끝나고 이만큼 지나면 놓친 것으로 기록해요.",
+    "filter": {
+      "searchPlaceholder": "약물 검색…",
+      "searchLabel": "약물 검색",
+      "clearSearch": "검색어 지우기",
+      "treatmentPeriod": "치료 기간",
+      "noMatchesTitle": "일치하는 약물 없음",
+      "noMatchesDescription": "검색어 또는 필터를 조정해 보세요.",
+      "countOne": "{count}개 약물",
+      "countFew": "{count}개 약물",
+      "countOther": "{count}개 약물"
+    },
+    "groups": {
+      "heading": "카테고리",
+      "description": "약물을 카테고리별로 묶어 보여줘요.",
+      "label": "그룹화",
+      "none": "없음",
+      "category": "카테고리별",
+      "openLabel": "열 때 펼치기",
+      "openExpanded": "모두",
+      "openFlagged": "복용 예정만",
+      "openCollapsed": "없음",
+      "orderWithinGroups": "순서는 각 카테고리 안에서 적용돼요.",
+      "orderHeading": "카테고리 순서",
+      "orderDefault": "직접 옮기기 전에는 기본 카테고리가 정해진 순서로, 직접 만든 카테고리가 가나다순으로 이어지고 {other}가 마지막에 와요."
+    }
   },
   "charts": {
     "loadingLabel": "차트 불러오는 중…",
