@@ -6342,6 +6342,7 @@
             "error": {
               "privateOrigin": "This address is on a private network. The person running the server has to allow it first.",
               "invalidUrl": "Enter the folder's full address without a user name or password in it.",
+              "httpsRequired": "Use an https:// address. Over plain http:// the password would travel unencrypted.",
               "passwordRequired": "Enter the password once when setting up the folder.",
               "saveFailed": "The folder could not be saved. Check the address and try again.",
               "fetchFailed": "The fetch could not be started. Try again later."

@@ -170,8 +170,11 @@ async function download(source: SourceRow): Promise<Download> {
   if (!target.allowed || !target.folderUrl || !target.origin) {
     return {
       kind: "outcome",
+      // A public address over plain http (saved before that was refused)
+      // reads as an unusable address: the card asks for a new one.
       outcome:
-        target.reasonCode === "invalid_origin"
+        target.reasonCode === "invalid_origin" ||
+        target.reasonCode === "https_required"
           ? "invalid_origin"
           : "private_origin_not_approved",
     };

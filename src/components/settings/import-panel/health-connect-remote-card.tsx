@@ -29,6 +29,10 @@ import {
 } from "@/lib/api/api-fetch";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
+import {
+  recentProofErrorMessage,
+  useRecentProof,
+} from "@/components/settings/security-section/use-recent-proof";
 import { ImportCardShell } from "./import-card-shell";
 
 interface RemoteState {
@@ -90,6 +94,9 @@ export function HealthConnectRemoteCard() {
     if (code === "import.health_connect.remote.invalid_url") {
       return t(`${k}.error.invalidUrl`);
     }
+    if (code === "import.health_connect.remote.https_required") {
+      return t(`${k}.error.httpsRequired`);
+    }
     if (code === "import.health_connect.remote.password_required") {
       return t(`${k}.error.passwordRequired`);
     }
@@ -99,11 +106,17 @@ export function HealthConnectRemoteCard() {
     setError(null);
     void queryClient.invalidateQueries({ queryKey: key });
   };
+  // A save that writes the password asks for a fresh proof; the hook opens
+  // the re-proof dialog on that refusal and retries.
+  const recentProof = useRecentProof();
   const save = useMutation({
     mutationFn: (body: Record<string, unknown>) =>
-      apiPut<RemoteState>(ROUTE, body),
+      recentProof.run(() => apiPut<RemoteState>(ROUTE, body)),
     onSuccess: done,
-    onError: (err) => setError(errorText(err)),
+    onError: (err) => {
+      const message = recentProofErrorMessage(err, errorText(err));
+      setError(message);
+    },
   });
   const fetchNow = useMutation({
     mutationFn: () => apiPost(`${ROUTE}/fetch`, {}),
@@ -137,6 +150,7 @@ export function HealthConnectRemoteCard() {
       title={t(`${k}.title`)}
       description={t(`${k}.description`)}
     >
+      {recentProof.dialog}
       {state.data && (
         <form
           className="space-y-3"

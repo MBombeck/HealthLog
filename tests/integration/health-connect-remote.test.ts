@@ -216,3 +216,107 @@ describe("scheduled Health Connect fetch", () => {
     expect(sent).toHaveLength(0);
   });
 });
+
+describe("where the stored password may go", () => {
+  const PASSWORD = ["app", "pass"].join("-");
+
+  async function stored() {
+    return getPrismaClient().healthConnectRemoteSource.findUniqueOrThrow({
+      where: { userId },
+    });
+  }
+
+  it("refuses a move to another server without a new password, and keeps the row", async () => {
+    await save({
+      folderUrl: `${origin}/dav`,
+      username: "me",
+      password: PASSWORD,
+    });
+    const before = await stored();
+    const moved = await save({
+      folderUrl: "https://cloud.example.com/remote.php/dav/files/me",
+      username: "me",
+    });
+    expect(moved.status).toBe(422);
+    expect(moved.body.meta?.errorCode).toBe(
+      "import.health_connect.remote.password_required",
+    );
+    const after = await stored();
+    expect(after.folderUrl).toBe(before.folderUrl);
+    expect(after.credentialsEncrypted).toBe(before.credentialsEncrypted);
+
+    // With a password of its own the move is saved, and the old one is gone.
+    const withPassword = await save({
+      folderUrl: "https://cloud.example.com/remote.php/dav/files/me",
+      username: "me",
+      password: "another-one",
+    });
+    expect(withPassword.status).toBe(200);
+    const replaced = await stored();
+    expect(replaced.folderUrl).toBe(
+      "https://cloud.example.com/remote.php/dav/files/me",
+    );
+    expect(replaced.credentialsEncrypted).not.toBe(before.credentialsEncrypted);
+  });
+
+  it("keeps the password for another folder on the same server", async () => {
+    await save({
+      folderUrl: `${origin}/dav`,
+      username: "me",
+      password: PASSWORD,
+    });
+    const before = await stored();
+    const res = await save({
+      folderUrl: `${origin}/dav/elsewhere`,
+      username: "me",
+    });
+    expect(res.status).toBe(200);
+    const after = await stored();
+    expect(after.folderUrl).toBe(`${origin}/dav/elsewhere`);
+    expect(after.credentialsEncrypted).toBe(before.credentialsEncrypted);
+    expect(await pass()).toBe("imported");
+  });
+
+  it("asks for a fresh proof before it writes a password", async () => {
+    await save({
+      folderUrl: `${origin}/dav`,
+      username: "me",
+      password: PASSWORD,
+    });
+    await getPrismaClient().session.updateMany({
+      where: { userId },
+      data: { createdAt: new Date(Date.now() - 60 * 60_000) },
+    });
+    const before = await stored();
+    const refused = await save({
+      folderUrl: `${origin}/dav`,
+      username: "me",
+      password: "another-one",
+    });
+    expect(refused.status).toBe(401);
+    expect(refused.body.meta?.errorCode).toBe("auth.reproof.required");
+    expect((await stored()).credentialsEncrypted).toBe(
+      before.credentialsEncrypted,
+    );
+    // A save that writes no password (the switch, the file name) needs none.
+    const toggled = await save({
+      folderUrl: `${origin}/dav`,
+      username: "me",
+      enabled: false,
+    });
+    expect(toggled.status).toBe(200);
+    expect((await stored()).enabled).toBe(false);
+  });
+
+  it("refuses a public folder over plain http", async () => {
+    const res = await save({
+      folderUrl: "http://cloud.example.com/remote.php/dav/files/me",
+      username: "me",
+      password: PASSWORD,
+    });
+    expect(res.status).toBe(422);
+    expect(res.body.meta?.errorCode).toBe(
+      "import.health_connect.remote.https_required",
+    );
+  });
+});

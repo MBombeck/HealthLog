@@ -11,6 +11,13 @@
  * range), and then through the operator-approved dispatcher. The request body
  * can never widen it. A folder URL may carry a path; the grant is matched on
  * the origin.
+ *
+ * The fetch sends the WebDAV password in a Basic header, so a public host is
+ * reachable over `https:` only (`https_required` otherwise): over plain
+ * `http:` everyone on the path would read the password every six hours. Plain
+ * `http:` stays possible for a private host the operator listed with that
+ * exact `http://` origin, a Nextcloud on the home network without a
+ * certificate, because the grant names the scheme.
  */
 import {
   evaluateOriginGrant,
@@ -39,13 +46,18 @@ export function configuredWebdavPrivateOrigins(): ReadonlySet<string> {
   );
 }
 
+/** A public folder address over plain `http:`. */
+export const HTTPS_REQUIRED = "https_required" as const;
+
+export type WebdavReason = OriginReason | typeof HTTPS_REQUIRED;
+
 export interface WebdavTarget {
   allowed: boolean;
   /** The folder URL without a trailing slash, null when unusable. */
   folderUrl: string | null;
   origin: string | null;
   privateOriginApproved: boolean;
-  reasonCode: OriginReason | null;
+  reasonCode: WebdavReason | null;
 }
 
 /**
@@ -56,7 +68,7 @@ export function evaluateWebdavFolderUrl(
   value: string,
   privateOrigins: ReadonlySet<string>,
 ): WebdavTarget {
-  const refused = (reasonCode: OriginReason): WebdavTarget => ({
+  const refused = (reasonCode: WebdavReason): WebdavTarget => ({
     allowed: false,
     folderUrl: null,
     origin: null,
@@ -75,6 +87,13 @@ export function evaluateWebdavFolderUrl(
   const origin = originOfUrl(value);
   if (!origin) return refused(INVALID_ORIGIN);
   const verdict = evaluateOriginGrant(origin, privateOrigins, value);
+  if (
+    verdict.allowed &&
+    !verdict.privateOriginApproved &&
+    url.protocol !== "https:"
+  ) {
+    return refused(HTTPS_REQUIRED);
+  }
   const path = url.pathname.replace(/\/+$/, "");
   return {
     allowed: verdict.allowed,

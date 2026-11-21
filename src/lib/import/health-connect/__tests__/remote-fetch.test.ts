@@ -69,6 +69,28 @@ describe("evaluateWebdavFolderUrl", () => {
     ).toBe(false);
   });
 
+  it("refuses a public folder over plain http, the password would travel in clear", () => {
+    expect(
+      evaluateWebdavFolderUrl(
+        "http://cloud.example.com/remote.php/dav/files/me",
+        configuredWebdavPrivateOrigins(),
+      ),
+    ).toMatchObject({
+      allowed: false,
+      folderUrl: null,
+      reasonCode: "https_required",
+    });
+    // An http grant names the scheme: it opens that private origin only.
+    process.env.HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS =
+      "http://192.168.1.20:8080";
+    expect(
+      evaluateWebdavFolderUrl(
+        "http://cloud.example.com/dav",
+        configuredWebdavPrivateOrigins(),
+      ).reasonCode,
+    ).toBe("https_required");
+  });
+
   it("refuses credentials, a query or a fragment in the address", () => {
     for (const url of [
       "https://me:secret@cloud.example.com/dav",

@@ -3,10 +3,18 @@
  * scheduled Health Connect export lands in, fetched on its own.
  *
  *   GET    the folder and the last attempt; never the credentials.
- *   PUT    save the folder, the file name, the user name and (on first save
- *          or to change it) the password, which is sealed at rest. A private
- *          address needs its exact origin in
- *          `HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS` (422 otherwise).
+ *   PUT    save the folder, the file name, the user name and (on first save,
+ *          on a move to another server, or to change it) the password, which
+ *          is sealed at rest. A private address needs its exact origin in
+ *          `HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS` (422 otherwise); a public
+ *          one needs `https:`.
+ *
+ * The stored password only ever goes to the server it was given for. A save
+ * that moves the folder to another origin without a new password is refused,
+ * so the "never returned" credential cannot be pointed at a host the caller
+ * picks and read back from its Basic header. A save that writes a password
+ * asks for a fresh proof (`requireRecentProof`, a Bearer caller presents an
+ * `X-Step-Up` elevation): it decides where a standing credential goes.
  *   DELETE forget the folder and its credentials.
  *
  * Owner-only (a cookie session or a full-scope token); the folder is the
@@ -15,7 +23,7 @@
  */
 import type { NextRequest } from "next/server";
 
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, requireAuth, requireRecentProof } from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
@@ -26,6 +34,7 @@ import {
   evaluateWebdavFolderUrl,
 } from "@/lib/import/health-connect/remote-origin";
 import { annotate } from "@/lib/logging/context";
+import { originOfUrl } from "@/lib/private-origin-policy";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { healthConnectRemoteSchema } from "@/lib/validations/health-connect-remote";
 
@@ -103,6 +112,11 @@ export const PUT = apiHandler(async (request: NextRequest) => {
         errorCode: "import.health_connect.remote.invalid_url",
       });
     }
+    if (target.reasonCode === "https_required") {
+      return apiError("A public folder address must use https", 422, {
+        errorCode: "import.health_connect.remote.https_required",
+      });
+    }
     return apiError("This folder address is on a private network", 422, {
       errorCode: "import.health_connect.remote.private_origin_not_approved",
     });
@@ -112,11 +126,19 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     where: { userId: user.id },
     select: { id: true, folderUrl: true, fileName: true },
   });
-  if (!existing && body.password === undefined) {
+  // The password belongs to the server it was given for: a first save, and a
+  // save that moves the folder to another origin, bring their own.
+  const originMoved =
+    existing !== null && originOfUrl(existing.folderUrl) !== target.origin;
+  if ((!existing || originMoved) && body.password === undefined) {
     return apiError("A password is required", 422, {
       errorCode: "import.health_connect.remote.password_required",
     });
   }
+  const proof =
+    body.password !== undefined
+      ? await requireRecentProof({ bearer: "elevation" })
+      : null;
   const moved =
     !existing ||
     existing.folderUrl !== target.folderUrl ||
@@ -126,6 +148,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
       ? sealCredentials({ username: body.username, password: body.password })
       : undefined;
   const now = new Date();
+  await proof?.commitElevation();
   if (existing) {
     await prisma.healthConnectRemoteSource.update({
       where: { id: existing.id },

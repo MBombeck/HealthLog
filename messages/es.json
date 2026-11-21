@@ -6342,6 +6342,7 @@
             "error": {
               "privateOrigin": "Esta dirección está en una red privada. Quien administra el servidor tiene que permitirla primero.",
               "invalidUrl": "Escribe la dirección completa de la carpeta, sin usuario ni contraseña dentro.",
+              "httpsRequired": "Usa una dirección https://. Con http:// la contraseña viajaría sin cifrar.",
               "passwordRequired": "Escribe la contraseña una vez al configurar la carpeta.",
               "saveFailed": "No se pudo guardar la carpeta. Revisa la dirección e inténtalo de nuevo.",
               "fetchFailed": "No se pudo iniciar la recogida. Inténtalo más tarde."

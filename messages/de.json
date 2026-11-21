@@ -6342,6 +6342,7 @@
             "error": {
               "privateOrigin": "Diese Adresse liegt in einem privaten Netz. Wer den Server betreibt, muss sie erst freigeben.",
               "invalidUrl": "Gib die vollständige Adresse des Ordners ein, ohne Benutzername oder Passwort darin.",
+              "httpsRequired": "Verwende eine https://-Adresse. Über http:// ginge das Passwort unverschlüsselt durchs Netz.",
               "passwordRequired": "Gib das Passwort beim Einrichten des Ordners einmal ein.",
               "saveFailed": "Der Ordner konnte nicht gespeichert werden. Prüfe die Adresse und versuche es noch einmal.",
               "fetchFailed": "Das Abholen konnte nicht gestartet werden. Versuche es später noch einmal."
