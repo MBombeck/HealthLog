@@ -8741,7 +8741,8 @@
           "failureOwnerExists": "Konto, do którego należy ten plik, jest na tym serwerze, a plik przywraca się do tego konta. Prześlij go ponownie bez wybierania konta."
         },
         "restoreSkippedSeizureMedicationReference": "Plan ratunkowy lub dawka ratunkowa napadu powiązane z lekiem, którego nie ma w pliku (zachowane bez powiązania)",
-        "restoreSkippedSeizureTypeReference": "Napad powiązany z rodzajem napadu, którego nie ma w pliku (zachowany bez rodzaju)"
+        "restoreSkippedSeizureTypeReference": "Napad powiązany z rodzajem napadu, którego nie ma w pliku (zachowany bez rodzaju)",
+        "restoreSkippedSeizureIntakeReference": "Dawka ratunkowa napadu powiązana z przyjęciem leku, którego nie ma w pliku (zachowana bez powiązania)"
       },
       "danger-zone": {
         "title": "Strefa zagrożenia",

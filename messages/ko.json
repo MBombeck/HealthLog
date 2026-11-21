@@ -8716,7 +8716,8 @@
           "failureOwnerExists": "이 파일의 계정이 이 서버에 있어서 파일은 그 계정으로 복원돼요. 계정을 고르지 말고 다시 업로드해 주세요."
         },
         "restoreSkippedSeizureMedicationReference": "파일에 없는 약에 연결된 발작 응급 계획 또는 응급약 투여 (연결 없이 보존)",
-        "restoreSkippedSeizureTypeReference": "파일에 없는 발작 유형에 연결된 발작 (유형 없이 보존)"
+        "restoreSkippedSeizureTypeReference": "파일에 없는 발작 유형에 연결된 발작 (유형 없이 보존)",
+        "restoreSkippedSeizureIntakeReference": "파일에 없는 복용 기록에 연결된 발작 응급약 투여 (연결 없이 보존)"
       },
       "danger-zone": {
         "title": "위험 구역",

@@ -213,6 +213,7 @@ export type SkippedCatalogue =
   | "symptomDuplicate"
   | "seizureMedicationReference"
   | "seizureTypeReference"
+  | "seizureIntakeReference"
   | "cycleCiphertext"
   | "moodLabelCiphertext"
   | "visitCiphertext"

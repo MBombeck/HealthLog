@@ -26,7 +26,9 @@
  * The rescue medication of a type and of a dose resolves through the
  * medication step's `medicationIdBySourceId`; a miss is nulled (the dose keeps
  * its name snapshot). The intake a dose wrote is kept only when that intake
- * row exists on the restored account. Who logged a seizure travels as
+ * row exists on the restored account: by its id in a disaster-recovery file,
+ * and in a portable one through the slot the intake step recorded for the
+ * intake's `ref`. A miss is nulled and reported (`seizureIntakeReference`). Who logged a seizure travels as
  * "owner" / "delegate": the owner maps to the restored account, a delegate
  * keeps the id it had (it renders as "someone acting on the record").
  */
@@ -40,6 +42,8 @@ import {
   recordUnknownKeys,
   type RestoreSkipLog,
 } from "@/lib/export/restore-skips";
+
+import type { RestoredIntakeSlot } from "@/lib/export/restore-context";
 
 import { UNREADABLE_EXPORT_MARKER } from "./unreadable-marker";
 
@@ -372,6 +376,7 @@ export async function restoreSeizuresData(
   payload: SeizuresRestoreInput,
   medicationIdBySourceId: ReadonlyMap<string, string>,
   skips: RestoreSkipLog,
+  intakeSlotBySourceId: ReadonlyMap<string, RestoredIntakeSlot>,
 ): Promise<SeizuresRestoreCleared> {
   const clearedEvents = await tx.seizureEvent.deleteMany({
     where: { userId: ownerId },
@@ -415,7 +420,11 @@ export async function restoreSeizuresData(
     if (source) typeIdBySource.set(source, created.id);
   }
 
-  const intakeIds = new Set<string>();
+  // The intake a dose wrote. A disaster-recovery file kept the intake's id,
+  // so the row is looked up by it. A portable file's intakes came back under
+  // fresh ids; the dose names the source id, which the medication step
+  // mapped to the live slot the row occupies, and the slot is unique.
+  const intakeBySource = new Map<string, string>();
   const referencedIntakes = (payload.seizureEvents ?? []).flatMap((e) =>
     (e.rescueDoses ?? []).flatMap((d) =>
       d.intakeEventId ? [d.intakeEventId] : [],
@@ -426,8 +435,33 @@ export async function restoreSeizuresData(
       where: { userId: ownerId, id: { in: referencedIntakes } },
       select: { id: true },
     });
-    for (const r of rows) intakeIds.add(r.id);
+    for (const r of rows) intakeBySource.set(r.id, r.id);
+    for (const sourceId of new Set(referencedIntakes)) {
+      if (intakeBySource.has(sourceId)) continue;
+      const slot = intakeSlotBySourceId.get(sourceId);
+      if (!slot) continue;
+      const row = await tx.medicationIntakeEvent.findFirst({
+        where: {
+          userId: ownerId,
+          medicationId: slot.medicationId,
+          scheduledFor: slot.scheduledFor,
+          source: slot.source as any,
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+      if (row) intakeBySource.set(sourceId, row.id);
+    }
   }
+  // Without the link, deleting the seizure or the dose leaves the intake and
+  // its stock deduction standing, so a dropped link is reported, not hidden.
+  const droppedIntakes: string[] = [];
+  const intake = (sourceId: string | null | undefined): string | null => {
+    if (!sourceId) return null;
+    const mapped = intakeBySource.get(sourceId);
+    if (!mapped) droppedIntakes.push(sourceId);
+    return mapped ?? null;
+  };
 
   const droppedTypes: string[] = [];
   for (const e of payload.seizureEvents ?? []) {
@@ -495,10 +529,7 @@ export async function restoreSeizuresData(
             givenBy: (d.givenBy ?? null) as any,
             effect: (d.effect ?? "UNKNOWN") as any,
             seizureEndedAt: date(d.seizureEndedAt),
-            intakeEventId:
-              d.intakeEventId && intakeIds.has(d.intakeEventId)
-                ? d.intakeEventId
-                : null,
+            intakeEventId: intake(d.intakeEventId),
             createdAt: new Date(d.createdAt),
             updatedAt: new Date(d.updatedAt),
           })),
@@ -535,6 +566,12 @@ export async function restoreSeizuresData(
     "seizureTypeReference",
     [...new Set(droppedTypes)],
     droppedTypes,
+  );
+  recordUnknownKeys(
+    skips,
+    "seizureIntakeReference",
+    [...new Set(droppedIntakes)],
+    droppedIntakes,
   );
 
   return {

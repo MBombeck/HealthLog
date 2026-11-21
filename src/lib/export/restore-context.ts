@@ -119,6 +119,13 @@ export interface PendingEfficacyTarget {
   target: BackupPayload["medications"][number]["efficacyTargets"][number];
 }
 
+/** The live slot one restored intake event occupies. */
+export interface RestoredIntakeSlot {
+  medicationId: string;
+  scheduledFor: Date;
+  source: string;
+}
+
 /**
  * What one domain wrote that a later one points at. Each field is filled by
  * the step named beside it and read only after that step has run.
@@ -136,6 +143,13 @@ export interface RestoreLinks {
    * portable file's `ref`) to the id it got here.
    */
   medicationIdBySourceId: Map<string, string>;
+  /**
+   * Intake events: a portable file's intake `ref` to the slot the restored
+   * row occupies. The row gets a fresh id the restore never sees (the rows
+   * go in with one `createMany`), and the live slot is unique, so a seizure
+   * rescue dose naming the intake finds the row through it.
+   */
+  intakeSlotBySourceId: Map<string, RestoredIntakeSlot>;
   /** Medications: targets written once the markers exist (labs step). */
   pendingEfficacyTargets: PendingEfficacyTarget[];
   /** Labs: marker name to the id it got. */
@@ -209,6 +223,7 @@ export function emptyRestoreLinks(): RestoreLinks {
     writtenReferencedMeasurementIds: new Set(),
     restoredMedicationIds: new Set(),
     medicationIdBySourceId: new Map(),
+    intakeSlotBySourceId: new Map(),
     pendingEfficacyTargets: [],
     biomarkerByName: new Map(),
     restoredBiomarkerIds: new Set(),

@@ -423,7 +423,13 @@ function serialiseIntakeEvent(e: BackupIntakeEvent, disasterRecovery: boolean) {
           syncVersion: e.syncVersion,
           deletedAt: e.deletedAt?.toISOString() ?? null,
         }
-      : {}),
+      : // No ids: a portable restore mints fresh ones. The source ids still
+        // travel as references, because a medication name is not unique on
+        // an account (one drug in two strengths), and a seizure rescue dose
+        // names the intake it wrote.
+        { ref: e.id, medicationRef: e.medicationId }),
+    // The name stays beside the reference: an older reader and a person
+    // reading the file both resolve a dose by it.
     medication: e.medication.name,
     scheduledFor: e.scheduledFor.toISOString(),
     takenAt: e.takenAt?.toISOString() ?? null,

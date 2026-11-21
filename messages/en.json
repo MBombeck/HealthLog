@@ -8741,7 +8741,8 @@
           "failureOwnerExists": "The account this file belongs to is on this server, and the file restores into that account. Upload it again without choosing an account."
         },
         "restoreSkippedSeizureMedicationReference": "Seizure rescue plan or dose linked to a medication the file does not contain (kept without the link)",
-        "restoreSkippedSeizureTypeReference": "Seizure linked to a seizure type the file does not contain (kept without the type)"
+        "restoreSkippedSeizureTypeReference": "Seizure linked to a seizure type the file does not contain (kept without the type)",
+        "restoreSkippedSeizureIntakeReference": "Seizure rescue dose linked to a medication intake the file does not contain (kept without the link)"
       },
       "danger-zone": {
         "title": "Danger zone",

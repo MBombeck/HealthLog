@@ -8741,7 +8741,8 @@
           "failureOwnerExists": "Le compte auquel appartient ce fichier est sur ce serveur, et le fichier se restaure dans ce compte. Téléversez-le à nouveau sans choisir de compte."
         },
         "restoreSkippedSeizureMedicationReference": "Plan de secours ou dose de secours d'une crise lié à un médicament absent du fichier (conservé sans le lien)",
-        "restoreSkippedSeizureTypeReference": "Crise liée à un type de crise absent du fichier (conservée sans le type)"
+        "restoreSkippedSeizureTypeReference": "Crise liée à un type de crise absent du fichier (conservée sans le type)",
+        "restoreSkippedSeizureIntakeReference": "Dose de secours d'une crise liée à une prise absente du fichier (conservée sans le lien)"
       },
       "danger-zone": {
         "title": "Zone de danger",
