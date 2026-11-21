@@ -18126,6 +18126,302 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
+  /api/import/gadgetbridge:
+    post:
+      tags:
+        - Import
+      summary: Upload a Gadgetbridge database export for background import
+      description: "Takes the SQLite file Gadgetbridge's \"Export database\" writes, at most 512 MB. Tables are found by name
+        and columns, so the importer reads every device family's schema version: activity samples become one
+        ACTIVITY_STEPS total per local day (the device with the most steps that day) and one PULSE mean per local hour;
+        SpO2 samples OXYGEN_SATURATION; resting and manual heart rate RESTING_HEART_RATE and PULSE; sleep sessions
+        SLEEP_DURATION in minutes; weight samples WEIGHT. Rows carry `source = IMPORT` and a stable identity, so a
+        second import writes nothing twice; a later export's larger day total replaces the earlier one. Every other
+        table with rows is named in the result's `skips`. Body is `multipart/form-data` with the file under `file`,
+        streamed to disk after authentication. The response is **202 with a `jobId`**; poll the status route.
+        Re-uploading the same bytes resolves to the still-viable job. One import per account at a time, whatever its
+        kind. Five uploads a minute per account. A run stops at a ten-minute budget, keeps what it wrote and fails with
+        `time_budget`; uploading the same file again continues. Cookie or wildcard Bearer."
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  description: The Gadgetbridge database file, under the field `file`.
+              required:
+                - file
+      responses:
+        "202":
+          description: "Accepted and queued, or matched to a job already carrying these bytes (`idempotent: true`)."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GadgetbridgeImportKickoffEnvelope"
+        "400":
+          description: The request carried no body at all.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401": *a1
+        "403": *a9
+        "409":
+          description: An import for this account (of any kind) is already queued or running. The upload was discarded.
+            `errorCode` is `import.apple_health.busy`, `jobId` names the running job.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "413":
+          description: The file is larger than 512 MB (`import.file.too_large`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422":
+          description: The multipart body could not be read. Whether the file is readable is decided by the worker and reported on
+            the job.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429": *a5
+        "503":
+          description: No background worker is bound, or the queue did not take the job.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /api/import/gadgetbridge/status:
+    get:
+      tags:
+        - Import
+      summary: The caller's latest Gadgetbridge import
+      description: The caller's most recent import of this kind, or `null` when there has never been one. Counts and closed
+        reasons only.
+      responses:
+        "200":
+          description: The latest job, or null.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GadgetbridgeImportStatusEnvelope"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
+  /api/import/fhir-bundle:
+    post:
+      tags:
+        - Import
+      summary: Upload a FHIR R4 Bundle for background import
+      description: Takes a FHIR R4 Bundle (JSON) from a patient portal, at most 32 MB and 50 000 entries. Laboratory
+        Observations go through the Health Records lab mapping (marker matching, unit normalisation, panels) under
+        `source = IMPORT`; vital-sign Observations become measurements by a closed LOINC table and are refused in a unit
+        it does not list; Conditions become illness entries, Immunizations vaccinations, MedicationStatements
+        medications (no schedule, reminders off), Encounters visits. Every resource is deduplicated by its issuer and
+        id, so the same Bundle imported again writes nothing. Other resource types are counted in `skips`. C-CDA
+        documents are not read. Body is `multipart/form-data` with the file under `file`, streamed to disk after
+        authentication. The response is **202 with a `jobId`**; poll the status route. Re-uploading the same bytes
+        resolves to the still-viable job. One import per account at a time, whatever its kind. Five uploads a minute per
+        account. A run stops at a ten-minute budget, keeps what it wrote and fails with `time_budget`; uploading the
+        same file again continues. Cookie or wildcard Bearer.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  description: The Bundle as a JSON file, under the field `file`.
+              required:
+                - file
+      responses:
+        "202":
+          description: "Accepted and queued, or matched to a job already carrying these bytes (`idempotent: true`)."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FhirBundleImportKickoffEnvelope"
+        "400":
+          description: The request carried no body at all.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401": *a1
+        "403": *a9
+        "409":
+          description: An import for this account (of any kind) is already queued or running. The upload was discarded.
+            `errorCode` is `import.apple_health.busy`, `jobId` names the running job.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "413":
+          description: The file is larger than 32 MB (`import.file.too_large`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422":
+          description: The multipart body could not be read. Whether the file is readable is decided by the worker and reported on
+            the job.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429": *a5
+        "503":
+          description: No background worker is bound, or the queue did not take the job.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /api/import/fhir-bundle/status:
+    get:
+      tags:
+        - Import
+      summary: The caller's latest FHIR Bundle import
+      description: The caller's most recent import of this kind, or `null` when there has never been one. Counts and closed
+        reasons only.
+      responses:
+        "200":
+          description: The latest job, or null.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FhirBundleImportStatusEnvelope"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
+  /api/import/health-connect-remote:
+    get:
+      tags:
+        - Import
+      summary: The folder a scheduled Health Connect export is fetched from
+      description: "The account's WebDAV or Nextcloud folder and its last attempt, or `source: null`. The credentials are
+        never returned. Owner-only."
+      responses:
+        "200":
+          description: The folder, or null.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthConnectRemoteEnvelope"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
+    put:
+      tags:
+        - Import
+      summary: Save the folder a scheduled Health Connect export is fetched from
+      description: Saves the folder (`folderUrl`, a WebDAV address such as Nextcloud's
+        `remote.php/dav/files/<user>/<folder>`), the export's `fileName` in it (default `Health Connect.zip`), the
+        WebDAV `username` and, on the first save or to change it, the `password` (sealed at rest, never returned).
+        HealthLog then fetches the file about every six hours, through `safeFetch` with no redirects followed, and hands
+        a file it has not seen (by SHA-256) to the Health Connect import queue, the same importer an upload uses. A
+        failure backs off from thirty minutes to a day. A private address needs its exact origin in
+        `HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS`. Ten saves an hour.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                folderUrl:
+                  type: string
+                  minLength: 8
+                  maxLength: 2048
+                fileName:
+                  default: Health Connect.zip
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                username:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                password:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+                enabled:
+                  default: true
+                  type: boolean
+              required:
+                - folderUrl
+                - username
+              additionalProperties: false
+      responses:
+        "200":
+          description: Saved; the folder as it now reads.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthConnectRemoteSavedEnvelope"
+        "401": *a1
+        "403": *a9
+        "422":
+          description: "The folder cannot be used: `import.health_connect.remote.invalid_url` (not a URL, or one with credentials,
+            a query or a fragment), `import.health_connect.remote.private_origin_not_approved` (a private address not
+            listed in `HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS`), `import.health_connect.remote.origin_config_invalid`, or
+            `import.health_connect.remote.password_required` on a first save without a password."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429": *a5
+    delete:
+      tags:
+        - Import
+      summary: Forget the Health Connect folder
+      description: Deletes the folder and its sealed credentials. Imports already made stay.
+      responses:
+        "200":
+          description: Whether a folder was removed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthConnectRemoteDeletedEnvelope"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
+  /api/import/health-connect-remote/fetch:
+    post:
+      tags:
+        - Import
+      summary: Fetch the Health Connect folder now
+      description: Marks the folder due and sends one job to the scheduled fetch's queue; the download never runs in the
+        request. Follow the outcome on `GET /api/import/health-connect-remote` and the import on `GET
+        /api/import/health-connect-export/status`. Six an hour.
+      responses:
+        "202":
+          description: Queued.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthConnectRemoteFetchEnvelope"
+        "401": *a1
+        "403": *a9
+        "404":
+          description: No folder is set up (`import.health_connect.remote.not_configured`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
   /api/measurement-reminders:
     get:
       tags:
@@ -25565,6 +25861,42 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
+  /api/managed-profiles/{id}/activity:
+    get:
+      tags:
+        - Account sharing
+      summary: Who did what in a managed profile
+      description: "The audit rows filed under one managed profile that a person performed, newest first: every Guardian's
+        acts, the caller's own included, because nobody signs in to a managed profile and every act on it is a
+        Guardian's. Reads coalesce to one row per Guardian per day with a count, as on `GET /api/account/activity`; the
+        entry shape and the window are the same, and `meta.truncated` says whether the row ceiling was hit. Only the
+        action, the actor and the instant are published, never a row's details. Cookie transport only, an ACTOR surface
+        like the roster beside it. Anyone who is not an active Guardian of THIS managed profile gets the same 404 as an
+        unknown id, an adult's record shared at manage level included."
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: The profile's activity, and how far back it can see.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagedProfileActivityEnvelope"
+        "401": *a1
+        "403": *a9
+        "404":
+          description: "No such managed profile, or the caller is not one of its Guardians (`meta.errorCode:
+            managed_profile.not_found`). The two are byte-identical."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
   /api/managed-profiles/{id}/guardians:
     get:
       tags:
@@ -32362,8 +32694,13 @@ components:
                 pattern: ^[A-Fa-f0-9]+$
                 description: The Activity's ActivityKit push token (hex).
               medicationId:
+                description: The medication the Activity shows. Required unless `relayStart` is true.
                 type: string
-                description: The medication the Activity shows.
+              relayStart:
+                description: "The Activity was started by the server over the relay (attributes type `HealthLogDoseAttributes`), so the
+                  app does not know its dose: the server fills in `medicationId` and `slotInstant` of the dose it
+                  started. Send its update token with an `hl-activity-v1` statement as for any Activity."
+                type: boolean
               slotInstant:
                 description: The slot the Activity counts down to (the today row's `slotInstant`). With it the server ends this Activity
                   once that slot is taken or skipped; without it, once no dose of the medication the Activity could show
@@ -32400,7 +32737,6 @@ components:
                 type: string
             required:
               - token
-              - medicationId
         pushKey:
           description: The device's X25519 push key with the envelope suites it opens. Every later push to the device is sealed to
             it. A low-order key is refused with 422 `devices.push.invalid_push_key`. `null` withdraws it and the relay
@@ -32487,21 +32823,88 @@ components:
             - textVersion
           additionalProperties: false
         liveActivityConsent:
-          description: 'The second, separate switch: Live Activity start and update over the relay, off by default ("The relay and
-            Apple can see when a dose is due."). `granted: true` needs the relay consent, given now or before, else 422
-            `devices.push.relay_consent_required`; `granted: false` withdraws it. Recorded now; the server sends Live
-            Activity start or update over the relay only once `push.relay.liveActivity` lists them.'
+          description: "The second, separate switch: Live Activity start and update over the relay, off by default (\"The relay
+            and Apple can see when a dose is due.\"). The device's `hl-la-consent-v1` (`textVersion`, `iat` within 300
+            s, signature by the binding key), checked here and passed on to the relay at once;
+            `push.device.liveActivityConsent` turns true once the relay took it. Needs a device bound with the relay
+            consent, else 422 `devices.push.relay_consent_required`; a bad statement 422 `devices.push.bad_signature` or
+            `devices.push.statement_stale`."
           type: object
           properties:
-            granted:
-              type: boolean
             textVersion:
               type: string
               pattern: ^[A-Za-z0-9._-]{1,32}$
+            iat:
+              type: integer
+              minimum: 0
+              maximum: 99999999999
+            signature:
+              type: string
+              pattern: ^[A-Za-z0-9_-]+$
           required:
-            - granted
             - textVersion
+            - iat
+            - signature
           additionalProperties: false
+        liveActivityWithdraw:
+          description: "The device's `hl-la-withdraw-v1` (`iat` within 300 s, signature by the binding key): drops the Live
+            Activity consent here and at the relay. Withdrawing the relay consent drops it too."
+          type: object
+          properties:
+            iat:
+              type: integer
+              minimum: 0
+              maximum: 99999999999
+            signature:
+              type: string
+              pattern: ^[A-Za-z0-9_-]+$
+          required:
+            - iat
+            - signature
+          additionalProperties: false
+        liveActivityStart:
+          description: The ActivityKit push-to-start token with the device's `hl-la-start-v1` (`statement.laTokenTag` is the tag
+            of the push-to-start token, `iat` at most 30 days old; sign again when the token changes and at least every
+            30 days). Handed to the relay only inside a start push. `null` drops it.
+          anyOf:
+            - type: object
+              properties:
+                token:
+                  type: string
+                  minLength: 64
+                  maxLength: 200
+                  pattern: ^[0-9A-Fa-f]+$
+                statement:
+                  type: object
+                  properties:
+                    instanceId:
+                      type: string
+                      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
+                    tokenTag:
+                      type: string
+                      pattern: ^[0-9a-f]{32}$
+                    laTokenTag:
+                      type: string
+                      pattern: ^[0-9a-f]{32}$
+                    iat:
+                      type: integer
+                      minimum: 0
+                      maximum: 99999999999
+                  required:
+                    - instanceId
+                    - tokenTag
+                    - laTokenTag
+                    - iat
+                  additionalProperties: false
+                signature:
+                  type: string
+                  pattern: ^[A-Za-z0-9_-]+$
+              required:
+                - token
+                - statement
+                - signature
+              additionalProperties: false
+            - type: "null"
       required:
         - token
         - bundleId
@@ -41667,6 +42070,7 @@ components:
         - $ref: "#/components/schemas/RecordCoachSettingsPatch"
         - $ref: "#/components/schemas/RecordInsightsSettingsPatch"
         - $ref: "#/components/schemas/RecordDocumentsSettingsPatch"
+        - $ref: "#/components/schemas/RecordAiSourceSettingsPatch"
       description: The body for the family named in the path. Only that family's variant is accepted — sending the profile
         body to `/thresholds` is a 422, because every variant is strict. OpenAPI cannot tie the variant to the path
         parameter, so the union is the honest publication of six separate contracts sharing one URL shape.
@@ -42253,6 +42657,28 @@ components:
       description: "Turn automatic AI reading of the record's uploads on or off. Turning it on is the guardian's consent to
         document reading on the profile's behalf: it mints the profile's `ai_extraction` receipt when none is active,
         and the audit row names the guardian."
+    RecordAiSourceSettingsPatch:
+      type: object
+      properties:
+        source:
+          type: string
+          enum:
+            - INSTANCE
+            - NONE
+            - GUARDIAN
+        chainId:
+          anyOf:
+            - type: string
+              pattern: ^[A-Za-z0-9_-]{1,32}$
+            - type: "null"
+      required:
+        - source
+      additionalProperties: false
+      description: Choose the managed profile's AI provider source. `GUARDIAN` lends the calling guardian's own chain
+        (`chainId` one of their named chains, or null for their default chain); a chain id the caller does not have
+        answers 422 `record_settings.ai_source.chain_missing`. The profile's consent receipts and switches still gate
+        every call. The audit row names the guardian and records the source and whether a named or the default chain was
+        picked.
     EnvironmentPreferencesRequest:
       type: object
       properties:
@@ -43852,7 +44278,7 @@ components:
                 devices.push.bad_signature, devices.push.consent_required, devices.push.instance_mismatch,
                 devices.push.invalid_push_key, devices.push.push_key_required, devices.push.relay_consent_required,
                 devices.push.relay_daily_limit, devices.push.relay_device_limit, devices.push.relay_not_offered,
-                devices.push.token_mismatch, devices.push.unsupported_suite; admin —
+                devices.push.statement_stale, devices.push.token_mismatch, devices.push.unsupported_suite; admin —
                 admin.pushRelay.confirmationsRequired, admin.pushRelay.noSenderKey, admin.pushRelay.notRegistered,
                 admin.pushRelay.unavailable, admin.users.delete.managed_profile, admin.users.delete.self; ai —
                 ai.budget.exceeded, ai.provider.none, ai.record.notPermitted, ai.unavailable, ai.usage.aboveCeiling,
@@ -43923,27 +44349,30 @@ components:
                 illness.day-log.invalid, illness.disabled, illness.episode.chronic-no-resolve, illness.episode.invalid,
                 illness.episode.invalid-window, illness.episode.parent-not-found, illness.insights.invalid; import —
                 import.apple_health.busy, import.csv.content_type, import.csv.empty, import.csv.too_large,
-                import.rate_limited, import.write_failed; ingest — ingest.idempotencyKey.reused,
-                ingest.medication.notFound, ingest.rate_limited; insights — insights.generate.budgetExceeded,
-                insights.generate.outboundScreened, insights.generate.profileScopeChanged,
-                insights.generate.scopeChanged; labs — labs.biomarker.alias.taken, labs.biomarker.create.invalid,
-                labs.biomarker.duplicate, labs.biomarker.merge.invalid, labs.biomarker.merge.unitMismatch,
-                labs.biomarker.notFound, labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid,
-                labs.create.invalid, labs.fhir_batch.invalid, labs.series.invalid, labs.link.invalid,
-                labs.ocr.budgetExceeded, labs.ocr.extractFailed, labs.ocr.fileTooLarge, labs.ocr.fileType,
-                labs.ocr.localOcrDisabled, labs.ocr.outputLimit, labs.ocr.pdfRendererUnavailable,
-                labs.ocr.providerUnsupported, labs.ocr.rateLimited, labs.ocr.tooLarge, labs.restore.invalid,
-                labs.result.notFound, labs.unit.mismatch, labs.unit.unset, labs.update.invalid,
-                labs.update.linkedFieldsImmutable, labs.update.numericExpected, labs.update.qualitativeExpected,
-                labs.update.referenceRangeInvalid, labs.update.sourceReferenceRangeInvalid; life_event —
-                life_event.invalid, life_event.not_found; managed_profile — managed_profile.guardian.duplicate,
-                managed_profile.guardian.managed_invitee, managed_profile.guardian.required,
-                managed_profile.handover.no_pending, managed_profile.handover.unknown_guardian,
-                managed_profile.not_found; maintenance — maintenance.pulseDayMean.busy,
-                maintenance.pulseDayMean.dryRunRequired; measurement — measurement.batch.invalid,
-                measurement.batch.source_not_permitted, measurement.batch.too_large, measurement.bulk-delete.invalid,
-                measurement.create.invalid, measurement.create.source_not_permitted, measurement.delete.too_large,
-                measurement.duplicate_timestamp, measurement.restore.invalid,
+                import.file.too_large, import.health_connect.remote.invalid_url,
+                import.health_connect.remote.not_configured, import.health_connect.remote.origin_config_invalid,
+                import.health_connect.remote.password_required,
+                import.health_connect.remote.private_origin_not_approved, import.rate_limited, import.write_failed;
+                ingest — ingest.idempotencyKey.reused, ingest.medication.notFound, ingest.rate_limited; insights —
+                insights.generate.budgetExceeded, insights.generate.outboundScreened,
+                insights.generate.profileScopeChanged, insights.generate.scopeChanged; labs —
+                labs.biomarker.alias.taken, labs.biomarker.create.invalid, labs.biomarker.duplicate,
+                labs.biomarker.merge.invalid, labs.biomarker.merge.unitMismatch, labs.biomarker.notFound,
+                labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid, labs.create.invalid,
+                labs.fhir_batch.invalid, labs.series.invalid, labs.link.invalid, labs.ocr.budgetExceeded,
+                labs.ocr.extractFailed, labs.ocr.fileTooLarge, labs.ocr.fileType, labs.ocr.localOcrDisabled,
+                labs.ocr.outputLimit, labs.ocr.pdfRendererUnavailable, labs.ocr.providerUnsupported,
+                labs.ocr.rateLimited, labs.ocr.tooLarge, labs.restore.invalid, labs.result.notFound, labs.unit.mismatch,
+                labs.unit.unset, labs.update.invalid, labs.update.linkedFieldsImmutable, labs.update.numericExpected,
+                labs.update.qualitativeExpected, labs.update.referenceRangeInvalid,
+                labs.update.sourceReferenceRangeInvalid; life_event — life_event.invalid, life_event.not_found;
+                managed_profile — managed_profile.guardian.duplicate, managed_profile.guardian.managed_invitee,
+                managed_profile.guardian.required, managed_profile.handover.no_pending,
+                managed_profile.handover.unknown_guardian, managed_profile.not_found; maintenance —
+                maintenance.pulseDayMean.busy, maintenance.pulseDayMean.dryRunRequired; measurement —
+                measurement.batch.invalid, measurement.batch.source_not_permitted, measurement.batch.too_large,
+                measurement.bulk-delete.invalid, measurement.create.invalid, measurement.create.source_not_permitted,
+                measurement.delete.too_large, measurement.duplicate_timestamp, measurement.restore.invalid,
                 measurement.update.glucose_context_not_glucose, measurement.update.server_owned_source; medication —
                 medication.intake.import.invalid_format, medication.intake.notTracked, medication.link.invalid;
                 medications — medications.category.invalid, medications.category.limitReached,
@@ -43974,12 +44403,12 @@ components:
                 personal_records.invalid_query; practitioner — practitioner.invalid; profile —
                 profile.update.emailInUse, profile.update.emailRateLimited, profile.update.emailSecondFactorRequired,
                 profile.update.invalidBody, profile.update.nothingSaved; profile_claim — profile_claim.invalid,
-                profile_claim.oidc_only_unsupported, profile_claim.sso_unavailable, profile_claim.taken; record_write —
-                record_write.rate_limited; recovery — recovery.kit.stale; report-selection —
-                report-selection.body.invalid_json, report-selection.body.invalid_shape,
-                report-selection.leaves.unknown; request — request.cross_site; route — route.retired; search —
-                search.invalid; security_activity — security_activity.invalid; seizures — seizures.disabled,
-                seizures.event.notFound, seizures.invalid, seizures.rescue.medicationNotFound,
+                profile_claim.oidc_only_unsupported, profile_claim.sso_unavailable, profile_claim.taken; record_settings
+                — record_settings.ai_source.chain_missing; record_write — record_write.rate_limited; recovery —
+                recovery.kit.stale; report-selection — report-selection.body.invalid_json,
+                report-selection.body.invalid_shape, report-selection.leaves.unknown; request — request.cross_site;
+                route — route.retired; search — search.invalid; security_activity — security_activity.invalid; seizures
+                — seizures.disabled, seizures.event.notFound, seizures.invalid, seizures.rescue.medicationNotFound,
                 seizures.rescue.medicationRequired, seizures.rescue.notAsNeeded, seizures.rescue.notFound,
                 seizures.type.inUse, seizures.type.limit, seizures.type.notFound; share-link —
                 share-link.document.decryptFailed, share-link.document.notFound, share-link.document.rateLimited,
@@ -46798,6 +47227,7 @@ components:
               - push.data-changed
               - push.healthkit-catch-up
               - push.security-alert-relay
+              - push.live-activity-relay
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices.
@@ -46834,8 +47264,12 @@ components:
             with a push key whose app registered in the last three days gets a sealed silent HEALTHKIT_CATCH_UP
             (d.requestedAt) when the account's Apple Health upload is six hours behind; at most three a day, four hours
             apart. `push.security-alert-relay`: SECURITY_ALERT (new sign-in, passkey added or removed, token revoked,
-            refresh-token reuse) reaches sealed and relay-bound devices with ui.level time-sensitive and
-            d.securityKind."
+            refresh-token reuse) reaches sealed and relay-bound devices with ui.level time-sensitive and d.securityKind.
+            `push.live-activity-relay`: POST /api/devices takes liveActivityConsent (hl-la-consent-v1),
+            liveActivityWithdraw (hl-la-withdraw-v1), liveActivityStart (push-to-start token with hl-la-start-v1) and
+            liveActivityTokens[].relayStart; the server starts and updates medication Live Activities over the relay
+            with the closed content state while push.relay.liveActivity lists start and update (operator switch
+            PUSH_RELAY_LIVE_ACTIVITY, off by default)."
       required:
         - version
         - buildSha
@@ -49843,6 +50277,31 @@ components:
             required:
               - source
               - externalId
+            additionalProperties: {}
+        fhirImportedResources:
+          default: []
+          type: array
+          items:
+            type: object
+            properties:
+              resourceType:
+                type: string
+                minLength: 1
+                maxLength: 64
+              resourceKey:
+                type: string
+                pattern: ^[0-9a-f]{40}$
+              recordId:
+                type: string
+                minLength: 1
+                maxLength: 64
+              createdAt:
+                type: string
+                minLength: 1
+            required:
+              - resourceType
+              - resourceKey
+              - recordId
             additionalProperties: {}
         illnessEpisodes:
           default: []
@@ -53803,6 +54262,7 @@ components:
         - biomarkers
         - biomarkerMerges
         - labResultImportKeys
+        - fhirImportedResources
         - illnessEpisodes
         - symptomDefinitions
         - lifeEvents
@@ -60486,7 +60946,7 @@ components:
             - "null"
         liveActivityConsent:
           type: boolean
-          description: "The person gave the second consent: Live Activity start and update over the relay. Withdrawn with the
+          description: "The relay holds the device's Live Activity consent: start and update over the relay. Withdrawn with the
             relay consent."
       required:
         - transport
@@ -83901,6 +84361,379 @@ components:
         - data
         - error
       additionalProperties: false
+    GadgetbridgeImportKickoffEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            jobId:
+              type: string
+            status:
+              type: string
+            idempotent:
+              type: boolean
+          required:
+            - jobId
+            - status
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    GadgetbridgeImportStatusEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            job:
+              anyOf:
+                - $ref: "#/components/schemas/RecordFileImportJob"
+                - type: "null"
+          required:
+            - job
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    RecordFileImportJob:
+      type: object
+      properties:
+        jobId:
+          type: string
+        status:
+          type: string
+        startedAt:
+          type: string
+        completedAt:
+          type:
+            - string
+            - "null"
+        uploadBytes:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        result:
+          anyOf:
+            - $ref: "#/components/schemas/RecordFileImportResult"
+            - type: "null"
+        failureReason:
+          description: "On `failed`, a reason led by a closed code and a colon: `not_gadgetbridge`, `unsafe_schema`,
+            `not_fhir_bundle`, `too_many_entries`, `too_large`, `time_budget`, `staging_missing`."
+          type:
+            - string
+            - "null"
+      required:
+        - jobId
+        - status
+        - startedAt
+        - completedAt
+        - uploadBytes
+        - result
+        - failureReason
+      additionalProperties: false
+    RecordFileImportResult:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - gadgetbridge
+            - fhir_bundle
+        imported:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        duplicates:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        skipped:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        failed:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        lines:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                description: A measurement type (`ACTIVITY_STEPS`, `PULSE`, …) or a record family (`lab`, `condition`, `vaccination`,
+                  `medication`, `visit`).
+              imported:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+              duplicates:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+            required:
+              - key
+              - imported
+              - duplicates
+            additionalProperties: false
+          description: What each kind of row became.
+        skips:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                description: "A Gadgetbridge table name or a FHIR resource type: a schema name, never content."
+              reason:
+                type: string
+                description: "A closed reason code: `not_read`, `invalid_time`, `invalid_value`, `out_of_range`, `unsupported_type`,
+                  `unsupported_category`, `unit_mismatch`, `not_final`, `no_date`, `future_date`, `no_label`,
+                  `not_confirmed`, `not_completed`, `not_taken`, `not_a_visit`, or one of the lab mapping's reasons."
+              count:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+            required:
+              - key
+              - reason
+              - count
+            additionalProperties: false
+          description: What the file held that was not imported, and why.
+        budgetExceeded:
+          type: boolean
+          description: The run stopped at its ten-minute budget. The job is `failed` with `time_budget`; uploading the same file
+            again continues, and what was written is found under its identities.
+        measuredSpan:
+          anyOf:
+            - type: object
+              properties:
+                from:
+                  type: string
+                to:
+                  type: string
+              required:
+                - from
+                - to
+              additionalProperties: false
+            - type: "null"
+        durationMs:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+      required:
+        - kind
+        - imported
+        - duplicates
+        - skipped
+        - failed
+        - lines
+        - skips
+        - budgetExceeded
+        - measuredSpan
+        - durationMs
+      additionalProperties: false
+    FhirBundleImportKickoffEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            jobId:
+              type: string
+            status:
+              type: string
+            idempotent:
+              type: boolean
+          required:
+            - jobId
+            - status
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    FhirBundleImportStatusEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            job:
+              anyOf:
+                - $ref: "#/components/schemas/RecordFileImportJob"
+                - type: "null"
+          required:
+            - job
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    HealthConnectRemoteEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/HealthConnectRemoteState"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    HealthConnectRemoteState:
+      type: object
+      properties:
+        source:
+          anyOf:
+            - type: object
+              properties:
+                folderUrl:
+                  type: string
+                fileName:
+                  type: string
+                enabled:
+                  type: boolean
+                lastAttemptAt:
+                  type:
+                    - string
+                    - "null"
+                lastOutcome:
+                  description: "The closed outcome of the last attempt: `imported`, `unchanged`, `busy`, `not_found`, `unauthorized`,
+                    `redirected`, `upstream_error`, `too_large`, `timeout`, `network`, `private_origin_not_approved`,
+                    `invalid_origin`, `no_worker`."
+                  type:
+                    - string
+                    - "null"
+                nextAttemptAt:
+                  type: string
+                consecutiveFailures:
+                  type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                lastImportJobId:
+                  type:
+                    - string
+                    - "null"
+              required:
+                - folderUrl
+                - fileName
+                - enabled
+                - lastAttemptAt
+                - lastOutcome
+                - nextAttemptAt
+                - consecutiveFailures
+                - lastImportJobId
+              additionalProperties: false
+            - type: "null"
+      required:
+        - source
+      additionalProperties: false
+    HealthConnectRemoteSavedEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/HealthConnectRemoteState"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    HealthConnectRemoteDeletedEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            deleted:
+              type: boolean
+          required:
+            - deleted
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    HealthConnectRemoteFetchEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            queued:
+              type: boolean
+          required:
+            - queued
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
     MeasurementReminderListEnvelope:
       type: object
       properties:
@@ -96792,7 +97625,10 @@ components:
           type: array
           items:
             type: string
-          description: Live Activity events the relay carries (`["end"]`).
+          description: "Live Activity events the relay carries: `[\"end\"]`, and `[\"end\", \"start\", \"update\"]` while the
+            operator's switch (`PUSH_RELAY_LIVE_ACTIVITY=on`) is on; start and update reach only a device with
+            `push.device.liveActivityConsent`. Empty while the relay is not offered. Offer the second switch only when
+            it lists `start`."
         liveActivityConsentTextVersion:
           type: string
           description: The text version of the Live Activity consent sentence; sent back as `liveActivityConsent.textVersion`.
@@ -98030,6 +98866,37 @@ components:
         - data
         - error
       additionalProperties: false
+    ManagedProfileActivityEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ManagedProfileActivity"
+        error:
+          type: "null"
+        meta:
+          $ref: "#/components/schemas/ListCapMeta"
+      required:
+        - data
+        - error
+        - meta
+      additionalProperties: false
+    ManagedProfileActivity:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecordActivityEntry"
+        retentionDays:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: "How far back this feed can see, in days: the instance's audit retention setting, the same number `GET
+            /api/account/activity` sends."
+      required:
+        - entries
+        - retentionDays
+      additionalProperties: false
     ManagedProfileGuardianListEnvelope:
       type: object
       properties:
@@ -99146,6 +100013,7 @@ components:
             - coach
             - insights
             - documents
+            - aiSource
           description: The closed set of configuration families a Guardian may read and write on a managed record. Identity,
             credentials, delivery channels, Coach memories and provider connections are absent by construction — no
             family accepts them, so every future field fails closed until one deliberately does.
@@ -99158,6 +100026,7 @@ components:
             - $ref: "#/components/schemas/RecordCoachSettings"
             - $ref: "#/components/schemas/RecordInsightsSettings"
             - $ref: "#/components/schemas/RecordDocumentsSettings"
+            - $ref: "#/components/schemas/RecordAiSourceSettings"
           description: The DTO for the family in the path. Which variant arrives is determined entirely by `{family}`, so branch
             on `family` rather than probing the shape — OpenAPI cannot express the dependency between a path parameter
             and a response variant.
@@ -99564,6 +100433,51 @@ components:
         pipeline reads. Off by default. Turning it on records the record's document-reading consent (an `ai_extraction`
         receipt) when none is active, and queues a bounded catch-up over documents already stored when the record's
         `documentAi` capability is open.
+    RecordAiSourceSettings:
+      type: object
+      properties:
+        source:
+          type: string
+          enum:
+            - INSTANCE
+            - NONE
+            - GUARDIAN
+        chainId:
+          type:
+            - string
+            - "null"
+        servedByYou:
+          type: boolean
+        guardianChainUsable:
+          type: boolean
+        yourChains:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+            required:
+              - id
+              - name
+            additionalProperties: false
+        instanceKeyConfigured:
+          type: boolean
+      required:
+        - source
+        - chainId
+        - servedByYou
+        - guardianChainUsable
+        - yourChains
+        - instanceKeyConfigured
+      additionalProperties: false
+      description: "Which provider a managed profile's AI work uses: the operator's key (`INSTANCE`, the default), none
+        (`NONE`), or a chain of a guardian (`GUARDIAN`; `chainId` a named chain of that guardian, null for their default
+        chain). `servedByYou` says whether the reading guardian is the lender; `guardianChainUsable` whether the lender
+        still manages the profile and the chain still exists. `yourChains` lists the reading guardian's named chains to
+        pick from, ids and names only."
     PatchRecordSettingsFamilyEnvelope:
       type: object
       properties:
