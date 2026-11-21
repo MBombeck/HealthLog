@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2849,
-  "total": 8943,
+  "total": 8941,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -2562,7 +2562,7 @@
     "lib/notifications/senders/__tests__/push-attempt-record.test.ts": 1,
     "lib/notifications/senders/__tests__/telegram.test.ts": 1,
     "lib/notifications/senders/__tests__/urgency.test.ts": 1,
-    "lib/notifications/senders/apns.ts": 11,
+    "lib/notifications/senders/apns.ts": 9,
     "lib/notifications/senders/push-attempt-record.ts": 1,
     "lib/notifications/senders/telegram-keyboards.ts": 1,
     "lib/notifications/senders/telegram.ts": 4,

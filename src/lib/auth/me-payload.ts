@@ -43,6 +43,7 @@ import { loadAiCapabilities } from "@/lib/ai/capabilities/load";
 import { loadCoachReasoningState } from "@/lib/ai/reasoning/controls";
 import { parseCoachPrefs } from "@/lib/validations/coach-prefs";
 import { storedGlucoseUnit } from "@/lib/glucose";
+import { accountPushState } from "@/lib/push-relay/capability";
 
 /**
  * The account payload for one authenticated caller. `accountAccess` may be
@@ -51,6 +52,7 @@ import { storedGlucoseUnit } from "@/lib/glucose";
 export async function buildAuthMePayload(
   auth: AuthContext,
   resolvedAccess?: AccountAccess,
+  request?: Request,
 ) {
   const { user } = auth;
   const accountAccess = resolvedAccess ?? (await resolveAccountAccess(auth));
@@ -241,6 +243,8 @@ export async function buildAuthMePayload(
     // has a medication to learn it from. A flag only ever appears here once
     // the server supports it, and stays `true`; absence means an older server.
     features: SERVER_FEATURES,
+    // Relay offer, plus the `X-Device-Id` device's state (null when server-rendered).
+    push: await accountPushState(user.id, request),
   };
   return payload;
 }

@@ -9199,7 +9199,60 @@
     },
     "auditActedBy": "przez {name}",
     "auditActorDeleted": "usunięte konto",
-    "auditActedByColumn": "Wykonane przez"
+    "auditActedByColumn": "Wykonane przez",
+    "pushRelay": {
+      "title": "Przekaźnik push HealthLog",
+      "description": "Pozwala aplikacji z App Store odbierać powiadomienia z tego serwera przez przekaźnik projektu HealthLog.",
+      "whatItSees": "Każde powiadomienie jest szyfrowane na tym serwerze dla urządzenia docelowego, więc przekaźnik nie może go odczytać. Widzi, kiedy ten serwer coś wysyła do urządzenia.",
+      "toggleLabel": "Udostępnij przekaźnik push HealthLog użytkownikom tego serwera",
+      "toggleDescription": "Wyłączone, dopóki go nie włączysz. Potem każda osoba decyduje we własnej aplikacji.",
+      "devices": "Powiązane urządzenia: {count}",
+      "since": "od {time}",
+      "docs": "Dowiedz się więcej",
+      "privacy": "Informacja o prywatności",
+      "terms": "Warunki przekaźnika",
+      "dialogTitle": "Udostępnij przekaźnik push HealthLog",
+      "dialogBody": "Przekaźnik prowadzi opiekun projektu HealthLog. Każde powiadomienie jest szyfrowane na tym serwerze dla swojego urządzenia; przekaźnik nie może go odczytać, ale widzi, że ten serwer coś wysyła do urządzenia, i kiedy. Po włączeniu każda osoba na tym serwerze raz zobaczy propozycję w swojej aplikacji i sama zdecyduje. Przypomnienia zostają na urządzeniach. Przekaźnik służy do użytku prywatnego i domowego i nie jest usługą medyczną.",
+      "acceptTerms": "Akceptuję warunki przekaźnika i przeczytałem informację o prywatności.",
+      "householdOnly": "Prowadzę ten serwer prywatnie dla siebie lub mojego gospodarstwa domowego.",
+      "enable": "Włącz",
+      "cancel": "Anuluj",
+      "disableTitle": "Wyłączyć przekaźnik?",
+      "disableBody": "Ten serwer wyrejestruje się z przekaźnika. Powiązane przez niego urządzenia przestaną dostawać powiadomienia z przekaźnika, a aplikacje same wrócą do lokalnych przypomnień.",
+      "disable": "Wyłącz",
+      "enabled": "Przekaźnik push jest włączony",
+      "disabled": "Przekaźnik push jest wyłączony",
+      "saveFailed": "Nie udało się zapisać ustawienia przekaźnika",
+      "state": {
+        "ok": "Połączono",
+        "degraded": "Zakłócony",
+        "down": "Niedostępny",
+        "off": "Wyłączony"
+      },
+      "unavailable": {
+        "modeOff": "Przekaźnik jest wyłączony dla tego serwera (PUSH_RELAY_MODE=off).",
+        "invalidUrl": "PUSH_RELAY_URL nie jest adresem https, więc nie można użyć przekaźnika.",
+        "keysUnpinned": "Dla tego przekaźnika nie przypięto kluczy, więc nie można sprawdzić jego odpowiedzi. Ustaw PUSH_RELAY_KEYS."
+      },
+      "notice": {
+        "title": "Nowość: powiadomienia przez przekaźnik push HealthLog",
+        "body": "Aplikacja HealthLog z App Store może teraz odbierać powiadomienia z tego serwera przez przekaźnik projektu HealthLog. Treść jest tu szyfrowana dla każdego urządzenia i przekaźnik nie może jej odczytać; widzi, kiedy ten serwer coś wysyła do urządzenia. Opcja pozostaje wyłączona, dopóki jej nie włączysz, a potem każda osoba decyduje we własnej aplikacji.",
+        "open": "Otwórz ustawienia",
+        "dismiss": "Rozumiem"
+      },
+      "test": {
+        "button": "Wyślij testowy push",
+        "failed": "Nie udało się wysłać testowego pusha",
+        "noDevice": "Żadne z twoich urządzeń nie jest powiązane z przekaźnikiem. Najpierw włącz przekaźnik w aplikacji HealthLog na iPhonie.",
+        "line": "{device}: przekaźnik odpowiedział {answer}, dostarczenie {delivery}",
+        "unsigned": "nic podpisanego (niedostępny lub niezweryfikowany)"
+      },
+      "rotate": {
+        "button": "Odnów klucz przekaźnika",
+        "done": "Klucz przekaźnika został odnowiony",
+        "failed": "Nie udało się teraz odnowić klucza przekaźnika; przekaźnik pozwala na jedno odnowienie dziennie"
+      }
+    }
   },
   "achievements": {
     "title": "Osiągnięcia",
@@ -9696,6 +9749,10 @@
       "title": "Trwała zmiana",
       "bodyUp": "Twój parametr {metric} utrzymuje się wyżej od {date}. Insights pokazuje stan przed i po.",
       "bodyDown": "Twój parametr {metric} utrzymuje się niżej od {date}. Insights pokazuje stan przed i po."
+    },
+    "relayTest": {
+      "title": "Powiadomienie testowe HealthLog",
+      "body": "Twój serwer dotarł do tego urządzenia przez przekaźnik push."
     }
   },
   "i18n": {

@@ -9199,7 +9199,60 @@
     },
     "auditActedBy": "por {name}",
     "auditActorDeleted": "uma conta excluída",
-    "auditActedByColumn": "Realizado por"
+    "auditActedByColumn": "Realizado por",
+    "pushRelay": {
+      "title": "Relay de push do HealthLog",
+      "description": "Permite que o app da App Store receba notificações deste servidor pelo relay do projeto HealthLog.",
+      "whatItSees": "Cada notificação é criptografada neste servidor para o dispositivo de destino, então o relay não consegue lê-la. Ele vê quando este servidor envia algo a um dispositivo.",
+      "toggleLabel": "Oferecer o relay de push do HealthLog aos usuários deste servidor",
+      "toggleDescription": "Desligado até você ativar. Depois, cada pessoa decide no próprio app.",
+      "devices": "{count} dispositivos vinculados",
+      "since": "desde {time}",
+      "docs": "Saiba mais",
+      "privacy": "Aviso de privacidade",
+      "terms": "Termos do relay",
+      "dialogTitle": "Oferecer o relay de push do HealthLog",
+      "dialogBody": "O relay é operado pelo mantenedor do projeto HealthLog. Cada notificação é criptografada neste servidor para o seu dispositivo; o relay não consegue lê-la, mas vê que este servidor envia algo a um dispositivo, e quando. Depois de ativar, cada pessoa neste servidor vê uma oferta no app uma vez e decide por si. Os lembretes ficam nos dispositivos. O relay é para uso privado e doméstico e não é um serviço médico.",
+      "acceptTerms": "Aceito os termos do relay e li o aviso de privacidade.",
+      "householdOnly": "Mantenho este servidor de forma privada para mim ou minha família.",
+      "enable": "Ativar",
+      "cancel": "Cancelar",
+      "disableTitle": "Desligar o relay?",
+      "disableBody": "Este servidor sai do relay. Dispositivos vinculados por ele deixam de receber notificações do relay, e os apps voltam sozinhos aos lembretes locais.",
+      "disable": "Desligar",
+      "enabled": "O relay de push está ativado",
+      "disabled": "O relay de push está desligado",
+      "saveFailed": "Não foi possível salvar a configuração do relay",
+      "state": {
+        "ok": "Conectado",
+        "degraded": "Instável",
+        "down": "Inacessível",
+        "off": "Desligado"
+      },
+      "unavailable": {
+        "modeOff": "O relay está desligado para este servidor (PUSH_RELAY_MODE=off).",
+        "invalidUrl": "PUSH_RELAY_URL não é um endereço https, então o relay não pode ser usado.",
+        "keysUnpinned": "Nenhuma chave está fixada para este relay, então suas respostas não podem ser verificadas. Defina PUSH_RELAY_KEYS."
+      },
+      "notice": {
+        "title": "Novo: notificações pelo relay de push do HealthLog",
+        "body": "O app HealthLog da App Store agora pode receber notificações deste servidor pelo relay do projeto HealthLog. O conteúdo é criptografado aqui para cada dispositivo e o relay não consegue lê-lo; ele vê quando este servidor envia algo a um dispositivo. A opção fica desligada até você ativá-la, e depois cada pessoa decide no próprio app.",
+        "open": "Abrir configurações",
+        "dismiss": "Entendi"
+      },
+      "test": {
+        "button": "Enviar push de teste",
+        "failed": "Não foi possível enviar o push de teste",
+        "noDevice": "Nenhum dos seus dispositivos está vinculado ao relay. Ative primeiro o relay no app HealthLog do seu iPhone.",
+        "line": "{device}: o relay respondeu {answer}, entrega {delivery}",
+        "unsigned": "nada assinado (inacessível ou não verificado)"
+      },
+      "rotate": {
+        "button": "Renovar a chave do relay",
+        "done": "A chave do relay foi renovada",
+        "failed": "Não foi possível renovar a chave do relay agora; o relay permite uma renovação por dia"
+      }
+    }
   },
   "achievements": {
     "title": "Conquistas",
@@ -9696,6 +9749,10 @@
       "title": "Uma mudança persistente",
       "bodyUp": "Seu {metric} se manteve mais alto desde {date}. Insights mostra o antes e o depois.",
       "bodyDown": "Seu {metric} se manteve mais baixo desde {date}. Insights mostra o antes e o depois."
+    },
+    "relayTest": {
+      "title": "Notificação de teste do HealthLog",
+      "body": "Seu servidor alcançou este dispositivo pelo relay de push."
     }
   },
   "i18n": {

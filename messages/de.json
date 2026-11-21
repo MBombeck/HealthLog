@@ -9199,7 +9199,60 @@
     },
     "auditActedBy": "durch {name}",
     "auditActorDeleted": "ein gelöschtes Konto",
-    "auditActedByColumn": "Ausgeführt von"
+    "auditActedByColumn": "Ausgeführt von",
+    "pushRelay": {
+      "title": "HealthLog-Push-Relay",
+      "description": "Damit die App aus dem App Store Benachrichtigungen dieses Servers über den Relay des HealthLog-Projekts empfängt.",
+      "whatItSees": "Jede Benachrichtigung wird auf diesem Server für das jeweilige Gerät verschlüsselt, der Relay kann sie nicht lesen. Er sieht, wann dieser Server einem Gerät etwas schickt.",
+      "toggleLabel": "Den HealthLog-Push-Relay den Nutzern dieses Servers anbieten",
+      "toggleDescription": "Aus, bis du es einschaltest. Danach entscheidet jede Person in ihrer eigenen App.",
+      "devices": "{count} Geräte verbunden",
+      "since": "seit {time}",
+      "docs": "Mehr erfahren",
+      "privacy": "Datenschutzhinweis",
+      "terms": "Relay-Bedingungen",
+      "dialogTitle": "HealthLog-Push-Relay anbieten",
+      "dialogBody": "Betreiber des Relays ist der Maintainer des HealthLog-Projekts. Jede Benachrichtigung wird auf diesem Server für ihr Gerät verschlüsselt; der Relay kann sie nicht lesen, sieht aber, dass dieser Server einem Gerät etwas schickt, und wann. Nach dem Einschalten sieht jede Person auf diesem Server einmal ein Angebot in ihrer App und entscheidet selbst. Erinnerungen bleiben auf den Geräten. Der Relay ist für private und familiäre Nutzung und kein medizinisches Angebot.",
+      "acceptTerms": "Ich akzeptiere die Relay-Bedingungen und habe den Datenschutzhinweis gelesen.",
+      "householdOnly": "Ich betreibe diesen Server privat für mich oder meine Familie.",
+      "enable": "Einschalten",
+      "cancel": "Abbrechen",
+      "disableTitle": "Relay ausschalten?",
+      "disableBody": "Dieser Server meldet sich vom Relay ab. Darüber verbundene Geräte bekommen keine Relay-Benachrichtigungen mehr, und die Apps wechseln von selbst zu lokalen Erinnerungen.",
+      "disable": "Ausschalten",
+      "enabled": "Der Push-Relay ist eingeschaltet",
+      "disabled": "Der Push-Relay ist ausgeschaltet",
+      "saveFailed": "Die Relay-Einstellung konnte nicht gespeichert werden",
+      "state": {
+        "ok": "Verbunden",
+        "degraded": "Gestört",
+        "down": "Nicht erreichbar",
+        "off": "Aus"
+      },
+      "unavailable": {
+        "modeOff": "Der Relay ist für diesen Server abgeschaltet (PUSH_RELAY_MODE=off).",
+        "invalidUrl": "PUSH_RELAY_URL ist keine https-Adresse, daher lässt sich der Relay nicht nutzen.",
+        "keysUnpinned": "Für diesen Relay sind keine Schlüssel hinterlegt, seine Antworten lassen sich nicht prüfen. Setze PUSH_RELAY_KEYS."
+      },
+      "notice": {
+        "title": "Neu: Benachrichtigungen über den HealthLog-Push-Relay",
+        "body": "Die HealthLog-App aus dem App Store kann Benachrichtigungen von diesem Server jetzt über den Relay des HealthLog-Projekts empfangen. Der Inhalt wird hier für jedes Gerät verschlüsselt, der Relay kann ihn nicht lesen; er sieht, wann dieser Server einem Gerät etwas schickt. Die Option ist aus, bis du sie einschaltest, und danach entscheidet jede Person in ihrer App selbst.",
+        "open": "Einstellungen öffnen",
+        "dismiss": "Verstanden"
+      },
+      "test": {
+        "button": "Testpush senden",
+        "failed": "Der Testpush konnte nicht gesendet werden",
+        "noDevice": "Keines deiner eigenen Geräte ist mit dem Relay verbunden. Schalte den Relay zuerst in der HealthLog-App auf deinem iPhone ein.",
+        "line": "{device}: Relay antwortete {answer}, Zustellung {delivery}",
+        "unsigned": "nichts Signiertes (nicht erreichbar oder nicht geprüft)"
+      },
+      "rotate": {
+        "button": "Relay-Schlüssel erneuern",
+        "done": "Der Relay-Schlüssel wurde erneuert",
+        "failed": "Der Relay-Schlüssel ließ sich jetzt nicht erneuern; der Relay erlaubt eine Erneuerung am Tag"
+      }
+    }
   },
   "achievements": {
     "title": "Erfolge",
@@ -9696,6 +9749,10 @@
       "title": "Eine anhaltende Veränderung",
       "bodyUp": "Dein Wert {metric} liegt seit {date} höher. Insights zeigt vorher und nachher.",
       "bodyDown": "Dein Wert {metric} liegt seit {date} niedriger. Insights zeigt vorher und nachher."
+    },
+    "relayTest": {
+      "title": "HealthLog-Testbenachrichtigung",
+      "body": "Dein Server hat dieses Gerät über den Push-Relay erreicht."
     }
   },
   "i18n": {

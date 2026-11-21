@@ -9199,7 +9199,60 @@
     },
     "auditActedBy": "da {name}",
     "auditActorDeleted": "un account eliminato",
-    "auditActedByColumn": "Eseguito da"
+    "auditActedByColumn": "Eseguito da",
+    "pushRelay": {
+      "title": "Relay push di HealthLog",
+      "description": "Permette all'app dell'App Store di ricevere le notifiche di questo server tramite il relay del progetto HealthLog.",
+      "whatItSees": "Ogni notifica viene cifrata su questo server per il dispositivo a cui è destinata, quindi il relay non può leggerla. Vede quando questo server invia qualcosa a un dispositivo.",
+      "toggleLabel": "Offrire il relay push di HealthLog agli utenti di questo server",
+      "toggleDescription": "Disattivato finché non lo attivi. Poi ogni persona decide nella propria app.",
+      "devices": "{count} dispositivi collegati",
+      "since": "dal {time}",
+      "docs": "Scopri di più",
+      "privacy": "Informativa sulla privacy",
+      "terms": "Condizioni del relay",
+      "dialogTitle": "Offrire il relay push di HealthLog",
+      "dialogBody": "Il relay è gestito dal maintainer del progetto HealthLog. Ogni notifica viene cifrata su questo server per il suo dispositivo; il relay non può leggerla, ma vede che questo server invia qualcosa a un dispositivo, e quando. Dopo l'attivazione, ogni persona su questo server vede una volta un'offerta nella propria app e decide da sé. I promemoria restano sui dispositivi. Il relay è per uso privato e familiare e non è un servizio medico.",
+      "acceptTerms": "Accetto le condizioni del relay e ho letto l'informativa sulla privacy.",
+      "householdOnly": "Gestisco questo server privatamente per me o la mia famiglia.",
+      "enable": "Attiva",
+      "cancel": "Annulla",
+      "disableTitle": "Disattivare il relay?",
+      "disableBody": "Questo server esce dal relay. I dispositivi collegati tramite esso non ricevono più notifiche dal relay e le app tornano da sole ai promemoria locali.",
+      "disable": "Disattiva",
+      "enabled": "Il relay push è attivo",
+      "disabled": "Il relay push è disattivato",
+      "saveFailed": "Non è stato possibile salvare l'impostazione del relay",
+      "state": {
+        "ok": "Connesso",
+        "degraded": "Disturbato",
+        "down": "Non raggiungibile",
+        "off": "Disattivato"
+      },
+      "unavailable": {
+        "modeOff": "Il relay è disattivato per questo server (PUSH_RELAY_MODE=off).",
+        "invalidUrl": "PUSH_RELAY_URL non è un indirizzo https, quindi il relay non può essere usato.",
+        "keysUnpinned": "Nessuna chiave è fissata per questo relay, quindi le sue risposte non possono essere verificate. Imposta PUSH_RELAY_KEYS."
+      },
+      "notice": {
+        "title": "Novità: notifiche tramite il relay push di HealthLog",
+        "body": "L'app HealthLog dell'App Store ora può ricevere le notifiche di questo server tramite il relay del progetto HealthLog. Il contenuto viene cifrato qui per ogni dispositivo e il relay non può leggerlo; vede quando questo server invia qualcosa a un dispositivo. L'opzione resta disattivata finché non la attivi, poi ogni persona decide nella propria app.",
+        "open": "Apri impostazioni",
+        "dismiss": "Ho capito"
+      },
+      "test": {
+        "button": "Invia push di prova",
+        "failed": "Non è stato possibile inviare il push di prova",
+        "noDevice": "Nessuno dei tuoi dispositivi è collegato al relay. Attiva prima il relay nell'app HealthLog sul tuo iPhone.",
+        "line": "{device}: il relay ha risposto {answer}, consegna {delivery}",
+        "unsigned": "niente di firmato (non raggiungibile o non verificato)"
+      },
+      "rotate": {
+        "button": "Rinnova la chiave del relay",
+        "done": "La chiave del relay è stata rinnovata",
+        "failed": "Non è stato possibile rinnovare ora la chiave del relay; il relay consente un rinnovo al giorno"
+      }
+    }
   },
   "achievements": {
     "title": "Obiettivi",
@@ -9696,6 +9749,10 @@
       "title": "Un cambiamento duraturo",
       "bodyUp": "Il tuo valore {metric} è rimasto più alto dal {date}. Insights mostra il prima e il dopo.",
       "bodyDown": "Il tuo valore {metric} è rimasto più basso dal {date}. Insights mostra il prima e il dopo."
+    },
+    "relayTest": {
+      "title": "Notifica di prova HealthLog",
+      "body": "Il tuo server ha raggiunto questo dispositivo tramite il relay push."
     }
   },
   "i18n": {

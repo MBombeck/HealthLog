@@ -51,7 +51,7 @@ import { resolveAccountAccess } from "@/lib/sharing/account-access";
 
 export const dynamic = "force-dynamic";
 
-export const GET = apiHandler(async () => {
+export const GET = apiHandler(async (request?: Request) => {
   const auth = await requireActorAuth();
   const { user } = auth;
 
@@ -80,5 +80,5 @@ export const GET = apiHandler(async () => {
 
   // The payload itself is built by the one builder the root layout's server
   // render shares (`src/lib/auth/me-payload.ts`).
-  return apiSuccess(await buildAuthMePayload(auth, accountAccess));
+  return apiSuccess(await buildAuthMePayload(auth, accountAccess, request));
 });

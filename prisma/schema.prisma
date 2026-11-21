@@ -873,6 +873,10 @@ model User {
   totpLastStep                 BigInt?   @map("totp_last_step")
   mfaEnforced                  Boolean   @default(false) @map("mfa_enforced")
   passkeyUpgradeNudgeDismissed Boolean   @default(false) @map("passkey_upgrade_nudge_dismissed")
+  /// One-time admin notices this admin account has dismissed, by id
+  /// (`push_relay_available`). Reader: the admin start page, which shows a
+  /// notice only while its id is absent here.
+  adminNoticesDismissed        String[]  @default([]) @map("admin_notices_dismissed")
 
   // Relations
   passkeys                                  Passkey[]
@@ -6470,14 +6474,20 @@ model IdempotencyKey {
 /// that dose is answered (`medication-intake-sync.ts`). The token addresses
 /// the Activity; nothing else about the dose leaves in the push.
 model LiveActivityToken {
-  id           String    @id @default(cuid())
-  deviceId     String    @map("device_id")
-  pushToken    String    @map("push_token")
-  medicationId String    @map("medication_id")
+  id                String    @id @default(cuid())
+  deviceId          String    @map("device_id")
+  pushToken         String    @map("push_token")
+  medicationId      String    @map("medication_id")
   /// The slot the Activity counts down to; null for a medication-level one.
-  slotInstant  DateTime? @map("slot_instant")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+  slotInstant       DateTime? @map("slot_instant")
+  /// The device's `hl-activity-v1` statement for this Activity
+  /// (`{ instanceId, tokenTag, laTokenTag, iat }`) and its signature. The
+  /// relay ends an Activity only with them, and they reach the relay only
+  /// inside that end push. Reader: `push-relay/route-device.ts`.
+  activityStatement Json?     @map("activity_statement")
+  activitySignature String?   @map("activity_signature")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
 
   device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 
@@ -6487,16 +6497,16 @@ model LiveActivityToken {
 }
 
 model Device {
-  id                    String              @id @default(cuid())
-  userId                String              @map("user_id")
-  platform              String // "ios"
-  token                 String              @unique
-  bundleId              String              @map("bundle_id")
-  locale                String?
-  appVersion            String?             @map("app_version")
-  model                 String?
-  apnsToken             String?             @map("apns_token")
-  apnsEnvironment       String?             @map("apns_environment") // "sandbox" | "production"
+  id                     String              @id @default(cuid())
+  userId                 String              @map("user_id")
+  platform               String // "ios"
+  token                  String              @unique
+  bundleId               String              @map("bundle_id")
+  locale                 String?
+  appVersion             String?             @map("app_version")
+  model                  String?
+  apnsToken              String?             @map("apns_token")
+  apnsEnvironment        String?             @map("apns_environment") // "sandbox" | "production"
   /// v1.7.0 — per-device medication-delivery override. NULL = inherit the
   /// user-level roaming default
   /// (`User.notificationPrefs.medication.deliveryDefault`). "server"
@@ -6504,7 +6514,7 @@ model Device {
   /// v1.48.0 (#179) the dispatcher's APNs send honours it per device for the
   /// medication reminder that announces a dose; NULL there follows the
   /// account-wide client-managed flag (`deviceDeliversLocally`).
-  medicationDelivery    String?             @map("medication_delivery")
+  medicationDelivery     String?             @map("medication_delivery")
   /// v1.17.1 (#22) — APNs push token for the iOS Live Activity update/end
   /// channel. ActivityKit issues a per-Activity push token distinct from the
   /// device APNs token; the server stores the most recent one so the worker
@@ -6512,14 +6522,46 @@ model Device {
   /// the device has no active Live Activity. The iOS client owns the
   /// ActivityKit lifecycle and registers/clears this token; no server-side
   /// behaviour hangs off it beyond addressing the update push.
-  liveActivityPushToken String?             @map("live_activity_push_token")
+  liveActivityPushToken  String?             @map("live_activity_push_token")
   /// The device's running medication Live Activities, one row each, with
   /// the dose it shows. Replaced as a set by `POST /api/devices`
   /// (`liveActivities`); a row goes when its end push goes out.
-  liveActivities        LiveActivityToken[]
-  lastSeen              DateTime            @default(now()) @map("last_seen")
-  createdAt             DateTime            @default(now()) @map("created_at")
-  updatedAt             DateTime            @updatedAt @map("updated_at")
+  liveActivities         LiveActivityToken[]
+  /// The device's X25519 push key (raw 32 bytes, base64url), the recipient
+  /// of every sealed push envelope. Set only with the device's consent, from
+  /// `POST /api/devices` `pushKey`; null for a device that takes plaintext
+  /// pushes. Readers: the push builders (`push-relay/route-device.ts`).
+  pushKeyPublic          String?             @map("push_key_public")
+  /// The envelope suites the device opens (`pushKey.suites`). Reader: the
+  /// sealer, which refuses to seal with a suite the device cannot open.
+  pushKeySuites          Int[]               @default([]) @map("push_key_suites")
+  /// When and under which consent text the person turned the relay on for
+  /// this device (`relayConsent`). Readers: the relay binding (the consent
+  /// record the relay stores) and `/api/auth/me` `push.device.consent`.
+  relayConsentAt         DateTime?           @map("relay_consent_at")
+  relayConsentVersion    String?             @map("relay_consent_version")
+  /// The device's signed relay binding, forwarded to the relay unchanged:
+  /// the Ed25519 binding key, the `hl-bind-v1` statement fields and the
+  /// signature. Kept so a rebind after `404 binding_unknown` can resubmit the
+  /// last statement. Reader: `push-relay/binding.ts`.
+  relayBindingKey        String?             @map("relay_binding_key")
+  relayBindingStatement  Json?               @map("relay_binding_statement")
+  relayBindingSignature  String?             @map("relay_binding_signature")
+  /// `none` | `bound` | `rebind_needed` | `conflict`. Reader: `/api/auth/me`
+  /// `push.device.relayState` and the push routing, which sends over the
+  /// relay only for `bound`.
+  relayState             String              @default("none") @map("relay_state")
+  relayBoundAt           DateTime?           @map("relay_bound_at")
+  /// The newest envelope ids this device reports it opened, per class
+  /// (`GET /api/sync/state`), and when it reported them. Reader: the delivery
+  /// ledger, which marks earlier relay pushes confirmed (`receipts.ts`).
+  envelopeOpenedAlertId  String?             @map("envelope_opened_alert_id")
+  envelopeOpenedSilentId String?             @map("envelope_opened_silent_id")
+  envelopeReportedAt     DateTime?           @map("envelope_reported_at")
+  relayDeliveries        PushRelayDelivery[]
+  lastSeen               DateTime            @default(now()) @map("last_seen")
+  createdAt              DateTime            @default(now()) @map("created_at")
+  updatedAt              DateTime            @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
@@ -11285,4 +11327,125 @@ model FitbitOAuthState {
   @@index([expiresAt])
   @@index([userId])
   @@map("fitbit_oauth_states")
+}
+
+/// This instance at one push relay host: present while the operator offers
+/// the relay (the admin switch), deleted with its keys when it is switched
+/// off. `instanceId` is null until the relay accepted the registration.
+/// Readers: `push-relay/registration.ts`, the relay client and the
+/// `/api/auth/me` capability.
+model PushRelayRegistration {
+  id                           String    @id @default(cuid())
+  relayHost                    String    @unique @map("relay_host")
+  instanceId                   String?   @map("instance_id")
+  /// The Ed25519 instance key seed, base64url, encrypted at rest.
+  instanceKeyEncrypted         String    @map("instance_key_encrypted")
+  /// When the current instance key was made; rotated every 30 days.
+  instanceKeyCreatedAt         DateTime  @default(now()) @map("instance_key_created_at")
+  /// A rotation in flight: the new key, kept until the relay confirmed it,
+  /// so a lost answer cannot lock the instance out. Encrypted at rest.
+  pendingInstanceKeyEncrypted  String?   @map("pending_instance_key_encrypted")
+  /// The key before the last rotation, kept for 7 days as the overlap: a
+  /// request the relay refuses as `bad_signature` is retried with it once.
+  previousInstanceKeyEncrypted String?   @map("previous_instance_key_encrypted")
+  previousInstanceKeyUntil     DateTime? @map("previous_instance_key_until")
+  tier                         String?
+  /// `pending` | `ok` | `degraded` | `down` | `suspended` | `revoked`.
+  state                        String    @default("pending")
+  stateReason                  String?   @map("state_reason")
+  stateSince                   DateTime  @default(now()) @map("state_since")
+  /// The breaker: consecutive transport failures, when it opened, when the
+  /// next status probe is due.
+  circuitFailures              Int       @default(0) @map("circuit_failures")
+  circuitOpenedAt              DateTime? @map("circuit_opened_at")
+  nextProbeAt                  DateTime? @map("next_probe_at")
+  /// A request-level pause the relay asked for (`429` at instance, tier or
+  /// global scope, `503` with a retry hint).
+  pausedUntil                  DateTime? @map("paused_until")
+  /// Seconds to add to this server's clock, learnt from `stale_timestamp`.
+  clockOffsetSeconds           Int       @default(0) @map("clock_offset_seconds")
+  noticeId                     String?   @map("notice_id")
+  noticeLevel                  String?   @map("notice_level")
+  /// The server-side cap on deletions after `410 unregistered`.
+  unregisteredSince            DateTime? @map("unregistered_since")
+  unregisteredCount            Int       @default(0) @map("unregistered_count")
+  deletionHoldUntil            DateTime? @map("deletion_hold_until")
+  receiptsSentAt               DateTime? @map("receipts_sent_at")
+  lastSuccessAt                DateTime? @map("last_success_at")
+  /// The operator's acceptance: terms version, household confirmation, who.
+  termsVersion                 String    @map("terms_version")
+  householdConfirmedAt         DateTime  @map("household_confirmed_at")
+  enabledByUserId              String?   @map("enabled_by_user_id")
+  createdAt                    DateTime  @default(now()) @map("created_at")
+  updatedAt                    DateTime  @updatedAt @map("updated_at")
+
+  @@map("push_relay_registrations")
+}
+
+/// The keys this server seals push envelopes with: the current X25519 sender
+/// key (private part encrypted at rest), the previous public key while it is
+/// still pinned by devices, and the secret the per-device collapse ids are
+/// derived from. One row. Readers: the sealer and `/api/auth/me`
+/// `push.relay.senderKeys`.
+model PushEnvelopeKeys {
+  id                      String    @id @default("singleton")
+  senderKeyEncrypted      String    @map("sender_key_encrypted")
+  senderPublicKey         String    @map("sender_public_key")
+  senderCreatedAt         DateTime  @map("sender_created_at")
+  previousSenderPublicKey String?   @map("previous_sender_public_key")
+  previousRetiredAt       DateTime? @map("previous_retired_at")
+  collapseSecretEncrypted String    @map("collapse_secret_encrypted")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+
+  @@map("push_envelope_keys")
+}
+
+/// One push handed to the relay for one device: the outbox while it waits or
+/// retries (the finished envelope is resent, never resealed), then the
+/// delivery ledger the envelope receipts confirm. Readers: the retry pass,
+/// `intakeSync` and the hourly receipt report (`push-relay/receipts.ts`).
+model PushRelayDelivery {
+  id                String    @id @default(cuid())
+  deviceId          String    @map("device_id")
+  ref               String
+  /// `alert` | `silent` | `liveactivity`.
+  pushClass         String    @map("push_class")
+  eventType         String    @map("event_type")
+  /// The relay item without `token`, `env` and `ref`: envelope, collapse,
+  /// activity. Cleared once the push is final.
+  item              Json?
+  expiresAt         DateTime  @map("expires_at")
+  /// `pending` | `accepted` | `dropped` | `failed`.
+  status            String    @default("pending")
+  reason            String?
+  attempts          Int       @default(0)
+  nextAttemptAt     DateTime? @map("next_attempt_at")
+  acceptedAt        DateTime? @map("accepted_at")
+  confirmedAt       DateTime? @map("confirmed_at")
+  receiptReportedAt DateTime? @map("receipt_reported_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([deviceId, ref])
+  @@index([status, nextAttemptAt])
+  @@index([deviceId, pushClass, createdAt])
+  @@map("push_relay_deliveries")
+}
+
+/// Relay unbinds owed for device tokens whose account was erased: written in
+/// the erasure transaction, sent by the relay's minute pass with retries, so
+/// a relay outage never blocks a deletion. A row goes once the relay
+/// confirmed, or after 7 days (the relay drops idle bindings on its own).
+/// Reader: `push-relay/unbind-queue.ts`.
+model PushRelayUnbind {
+  id            String   @id @default(cuid())
+  token         String   @unique
+  attempts      Int      @default(0)
+  nextAttemptAt DateTime @default(now()) @map("next_attempt_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([nextAttemptAt])
+  @@map("push_relay_unbinds")
 }

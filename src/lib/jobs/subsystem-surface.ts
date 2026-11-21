@@ -129,6 +129,7 @@ const subsystemSurface = {
   "intake-slot-dedup": { audience: "system" },
   "mood-reminder-cleanup": { audience: "system" },
   "push-attempt-cleanup": { audience: "system" },
+  "push-relay-maintenance": { audience: "system" },
   "arrival-reaction-cleanup": { audience: "system" },
   "cycle-prediction-refresh": { audience: "system" },
   "mood-prognosis-refresh": { audience: "system" },

@@ -21,7 +21,9 @@
  *     intakes:      { lastUpdatedAt, liveCount, tombstonedCount },
  *     medications:  { lastUpdatedAt },  — newest medication-row write
  *                                         (snooze, pause, schedule)
- *     sync:         { incrementalWindowDays, tombstoneRetentionDays }
+ *     sync:         { incrementalWindowDays, tombstoneRetentionDays },
+ *     push:         { receiptsRecorded }  — whether `openedAlert` /
+ *                                         `openedSilent` were recorded
  *   }
  *
  *   Per-domain block: `lastUpdatedAt` = MAX(updated_at) for live rows,
@@ -46,12 +48,29 @@ import {
 } from "@/lib/auth/native-client";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import {
+  openedFromQuery,
+  recordOpenedEnvelopes,
+} from "@/lib/push-relay/receipts";
+import {
   countLiveMeasurements,
   countTombstonedMeasurements,
 } from "@/lib/sync/measurement-counts";
 
-export const GET = apiHandler(async (_request: NextRequest) => {
+export const GET = apiHandler(async (request?: NextRequest) => {
   const { user } = await requireAuth();
+
+  // Envelope receipts. The app reports the newest push envelope id it
+  // opened per class (`openedAlert`, `openedSilent`) for the device named by
+  // `X-Device-Id`. It is the one write of this handshake: it confirms the
+  // relay pushes that arrived, so the ones that did not show up as
+  // `intakeSync: degraded` (`push-relay/receipts.ts`).
+  const receipts = await recordOpenedEnvelopes(
+    user.id,
+    request?.headers?.get("x-device-id") ?? null,
+    openedFromQuery(
+      request?.url ? new URL(request.url).searchParams : new URLSearchParams(),
+    ),
+  );
 
   // Per-domain aggregate reads. The measurement counts are bounded by days
   // and tombstones rather than readings (`measurement-counts.ts`); the mood
@@ -125,6 +144,7 @@ export const GET = apiHandler(async (_request: NextRequest) => {
       moodLiveCount: moodLive,
       intakeLiveCount: intakeLive,
       lastSyncedAt: lastSyncedAt?.toISOString() ?? null,
+      envelopeReceipts: receipts,
     },
   });
 
@@ -166,5 +186,8 @@ export const GET = apiHandler(async (_request: NextRequest) => {
       incrementalWindowDays: NATIVE_REFRESH_TOKEN_DAYS,
       tombstoneRetentionDays: TOMBSTONE_RETENTION_DAYS,
     },
+    // Whether the envelope receipts on this request were recorded: false
+    // without `X-Device-Id`, for an unknown device or without valid ids.
+    push: { receiptsRecorded: receipts },
   });
 });

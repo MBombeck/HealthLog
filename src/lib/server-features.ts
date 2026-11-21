@@ -13,6 +13,7 @@ export const SERVER_FEATURES = [
   "medication.undo-precondition",
   "sync.medications-last-updated",
   "medication.live-activity-tokens",
+  "push.relay",
   "medication.dose-state",
   "measurement.reading-timezone",
   "apple-health.types-2026-11",
@@ -34,6 +35,8 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "GET /api/sync/state carries medications.lastUpdatedAt.",
   "medication.live-activity-tokens":
     "POST /api/devices takes liveActivityTokens; each Activity is ended by its own push once its dose is answered.",
+  "push.relay":
+    "The server seals push envelopes and can use the push relay; /api/auth/me push.relay and push.device carry the state, POST /api/devices takes pushKey, relayConsent and relayBinding.",
   "medication.dose-state":
     "Today rows and complianceDisplay.currentDose carry the resolved state, takenLate, dueAt, overdueSince and slotInstant.",
   "measurement.reading-timezone":

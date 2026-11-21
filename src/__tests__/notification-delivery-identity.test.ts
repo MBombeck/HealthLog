@@ -44,6 +44,11 @@ const sendViaApnsMock = vi.fn();
 vi.mock("@/lib/notifications/senders/apns", () => ({
   sendViaApns: (...args: unknown[]) => sendViaApnsMock(...args),
 }));
+// The dispatcher's APNs channel seals for devices with a push key before it
+// hands the rest to `sendViaApns`; these accounts have none.
+vi.mock("@/lib/push-relay/apns-channel", () => ({
+  sendApnsChannel: (...args: unknown[]) => sendViaApnsMock(...args),
+}));
 vi.mock("@/lib/notifications/senders/email", () => ({
   sendViaEmail: vi.fn(),
 }));

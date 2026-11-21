@@ -13,7 +13,7 @@ import { resolveEventDefault } from "@/lib/notifications/event-defaults";
 import { sendViaTelegram } from "@/lib/notifications/senders/telegram";
 import { sendViaNtfy } from "@/lib/notifications/senders/ntfy";
 import { sendViaWebPush } from "@/lib/notifications/senders/web-push";
-import { sendViaApns } from "@/lib/notifications/senders/apns";
+import { sendApnsChannel } from "@/lib/push-relay/apns-channel";
 import { sendViaWebhook } from "@/lib/notifications/senders/webhook";
 import { sendViaEmail } from "@/lib/notifications/senders/email";
 import type { SendOutcome } from "@/lib/notifications/retry-policy";
@@ -643,10 +643,10 @@ function prepareChannelSend(
       return {
         send: () =>
           apnsDeviceIds
-            ? sendViaApns(recipientUserId, payload, {
+            ? sendApnsChannel(recipientUserId, payload, {
                 onlyDeviceIds: apnsDeviceIds,
               })
-            : sendViaApns(recipientUserId, payload),
+            : sendApnsChannel(recipientUserId, payload),
       };
     }
     default:

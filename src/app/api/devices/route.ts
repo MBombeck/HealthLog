@@ -34,6 +34,12 @@ import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { endApnsNoDeviceRest } from "@/lib/notifications/channel-state";
+import {
+  activityStatementSchema,
+  applyPushFields,
+  devicePushFields,
+  refusePushFields,
+} from "@/lib/push-relay/device-registration";
 
 const deviceSchema = z
   .object({
@@ -90,10 +96,21 @@ const deviceSchema = z
           slotInstant: isoDateTime()
             .transform((v) => new Date(v))
             .optional(),
+          // The device's signed `hl-activity-v1` statement for this
+          // Activity. Kept here and handed to the push relay only inside the
+          // end push, so the relay never learns when an Activity starts.
+          statement: activityStatementSchema.optional(),
+          signature: z
+            .string()
+            .regex(/^[A-Za-z0-9_-]{86}$/)
+            .optional(),
         }),
       )
       .max(8)
       .optional(),
+    // The push relay fields: the device's push key, the person's relay
+    // consent and the signed relay binding (`push-relay/device-registration`).
+    ...devicePushFields,
   })
   .refine(
     (v) =>
@@ -138,6 +155,8 @@ async function replaceLiveActivityTokens(
       token: string;
       medicationId: string;
       slotInstant?: Date;
+      statement?: Record<string, unknown>;
+      signature?: string;
     }>;
   },
 ): Promise<void> {
@@ -150,9 +169,35 @@ async function replaceLiveActivityTokens(
       pushToken: a.token,
       medicationId: a.medicationId,
       slotInstant: a.slotInstant ?? null,
+      ...(a.statement && a.signature
+        ? {
+            activityStatement: a.statement as Prisma.InputJsonObject,
+            activitySignature: a.signature,
+          }
+        : {}),
     })),
     skipDuplicates: true,
   });
+}
+
+/** The 409 for a token another account holds, with its audit row. */
+async function denyConflict(
+  userId: string,
+  {
+    conflict,
+    deviceId,
+  }: {
+    conflict: "apns_token_owned_by_other_user" | "token_owned_by_other_user";
+    deviceId: string;
+  },
+) {
+  await auditLog("device.register.denied", {
+    userId,
+    details: { reason: conflict, deviceId },
+  });
+  return conflict === "apns_token_owned_by_other_user"
+    ? apiError("APNs token already registered to another account", 409)
+    : apiError("Device token already registered to another account", 409);
 }
 
 export const POST = apiHandler(async (request: NextRequest) => {
@@ -215,6 +260,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
     apnsEnvironment,
     medicationDelivery,
   } = parsed.data;
+
+  // A refused push field (a low-order key, a binding without consent or for
+  // another instance or token) answers 422 before anything is written.
+  const pushRefused = await refusePushFields(user.id, parsed.data);
+  if (pushRefused) return pushRefused;
 
   const registration = await prisma.$transaction(async (tx) => {
     // Token ownership is decided from one database snapshot. Advisory
@@ -346,18 +396,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return { id: device.id };
   });
 
-  if ("conflict" in registration) {
-    await auditLog("device.register.denied", {
-      userId: user.id,
-      details: {
-        reason: registration.conflict,
-        deviceId: registration.deviceId,
-      },
-    });
-    return registration.conflict === "apns_token_owned_by_other_user"
-      ? apiError("APNs token already registered to another account", 409)
-      : apiError("Device token already registered to another account", 409);
-  }
+  if (registration.conflict) return denyConflict(user.id, registration);
 
   const { id } = registration;
 
@@ -376,5 +415,5 @@ export const POST = apiHandler(async (request: NextRequest) => {
     action: { name: "devices.register", entity_type: "device", entity_id: id },
   });
 
-  return apiSuccess({ id }, 201);
+  return apiSuccess({ id, push: await applyPushFields(id, parsed.data) }, 201);
 });

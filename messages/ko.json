@@ -9199,7 +9199,60 @@
     },
     "auditActedBy": "{name} 님이 수행",
     "auditActorDeleted": "삭제된 계정",
-    "auditActedByColumn": "수행한 사람"
+    "auditActedByColumn": "수행한 사람",
+    "pushRelay": {
+      "title": "HealthLog 푸시 릴레이",
+      "description": "App Store 앱이 HealthLog 프로젝트가 운영하는 릴레이를 통해 이 서버의 알림을 받을 수 있게 합니다.",
+      "whatItSees": "모든 알림은 이 서버에서 받는 기기용으로 암호화되므로 릴레이는 내용을 읽을 수 없습니다. 릴레이는 이 서버가 언제 기기에 무언가를 보내는지만 봅니다.",
+      "toggleLabel": "이 서버 사용자에게 HealthLog 푸시 릴레이 제공",
+      "toggleDescription": "켜기 전까지는 꺼져 있습니다. 켠 뒤에는 각자 자신의 앱에서 결정합니다.",
+      "devices": "연결된 기기 {count}대",
+      "since": "{time}부터",
+      "docs": "자세히 알아보기",
+      "privacy": "개인정보 안내",
+      "terms": "릴레이 이용 조건",
+      "dialogTitle": "HealthLog 푸시 릴레이 제공",
+      "dialogBody": "릴레이는 HealthLog 프로젝트 관리자가 운영합니다. 각 알림은 이 서버에서 해당 기기용으로 암호화되어 릴레이가 읽을 수 없지만, 이 서버가 기기에 무언가를 보낸다는 사실과 그 시점은 볼 수 있습니다. 켜면 이 서버의 모든 사람이 앱에서 한 번 제안을 보고 스스로 결정합니다. 리마인더는 기기에 남습니다. 릴레이는 개인 및 가정용이며 의료 서비스가 아닙니다.",
+      "acceptTerms": "릴레이 이용 조건에 동의하며 개인정보 안내를 읽었습니다.",
+      "householdOnly": "이 서버를 나 자신이나 가족을 위해 개인적으로 운영합니다.",
+      "enable": "켜기",
+      "cancel": "취소",
+      "disableTitle": "릴레이를 끌까요?",
+      "disableBody": "이 서버가 릴레이에서 탈퇴합니다. 릴레이로 연결된 기기는 더 이상 릴레이 알림을 받지 않으며, 앱은 스스로 로컬 리마인더로 돌아갑니다.",
+      "disable": "끄기",
+      "enabled": "푸시 릴레이가 켜졌습니다",
+      "disabled": "푸시 릴레이가 꺼졌습니다",
+      "saveFailed": "릴레이 설정을 저장하지 못했습니다",
+      "state": {
+        "ok": "연결됨",
+        "degraded": "장애",
+        "down": "연결 불가",
+        "off": "꺼짐"
+      },
+      "unavailable": {
+        "modeOff": "이 서버에서는 릴레이가 꺼져 있습니다 (PUSH_RELAY_MODE=off).",
+        "invalidUrl": "PUSH_RELAY_URL이 https 주소가 아니어서 릴레이를 사용할 수 없습니다.",
+        "keysUnpinned": "이 릴레이에 고정된 키가 없어 응답을 확인할 수 없습니다. PUSH_RELAY_KEYS를 설정하세요."
+      },
+      "notice": {
+        "title": "새 기능: HealthLog 푸시 릴레이를 통한 알림",
+        "body": "이제 App Store의 HealthLog 앱이 HealthLog 프로젝트가 운영하는 릴레이를 통해 이 서버의 알림을 받을 수 있습니다. 내용은 여기서 기기마다 암호화되어 릴레이가 읽을 수 없으며, 릴레이는 이 서버가 언제 기기에 무언가를 보내는지만 봅니다. 이 옵션은 켜기 전까지 꺼져 있으며, 켠 뒤에는 각자 자신의 앱에서 결정합니다.",
+        "open": "설정 열기",
+        "dismiss": "확인"
+      },
+      "test": {
+        "button": "테스트 푸시 보내기",
+        "failed": "테스트 푸시를 보내지 못했습니다",
+        "noDevice": "내 기기 중 릴레이에 연결된 기기가 없습니다. 먼저 iPhone의 HealthLog 앱에서 릴레이를 켜세요.",
+        "line": "{device}: 릴레이 응답 {answer}, 전달 {delivery}",
+        "unsigned": "서명된 응답 없음 (연결 불가 또는 검증 실패)"
+      },
+      "rotate": {
+        "button": "릴레이 키 교체",
+        "done": "릴레이 키가 교체되었습니다",
+        "failed": "지금 릴레이 키를 교체하지 못했습니다. 릴레이는 하루에 한 번만 교체를 허용합니다"
+      }
+    }
   },
   "achievements": {
     "title": "업적",
@@ -9696,6 +9749,10 @@
       "title": "지속적인 변화",
       "bodyUp": "{date} 이후 {metric} 값이 더 높게 유지되고 있습니다. 인사이트에서 전후를 확인하세요.",
       "bodyDown": "{date} 이후 {metric} 값이 더 낮게 유지되고 있습니다. 인사이트에서 전후를 확인하세요."
+    },
+    "relayTest": {
+      "title": "HealthLog 테스트 알림",
+      "body": "서버가 푸시 릴레이를 통해 이 기기에 도달했습니다."
     }
   },
   "i18n": {

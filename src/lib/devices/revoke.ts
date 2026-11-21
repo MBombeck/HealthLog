@@ -21,6 +21,8 @@
  * isn't yours" would let an attacker enumerate device ids).
  */
 import { prisma } from "@/lib/db";
+import { getEvent } from "@/lib/logging/context";
+import { unbindToken } from "@/lib/push-relay/binding";
 
 export interface RevokeDeviceCascadeResult {
   id: string;
@@ -38,7 +40,14 @@ export async function revokeDeviceCascade(
   // the transactional window tight.
   const device = await prisma.device.findUnique({
     where: { id: deviceId },
-    select: { id: true, userId: true, model: true, bundleId: true },
+    select: {
+      id: true,
+      userId: true,
+      model: true,
+      bundleId: true,
+      apnsToken: true,
+      relayState: true,
+    },
   });
 
   if (!device || device.userId !== userId) {
@@ -77,6 +86,17 @@ export async function revokeDeviceCascade(
   writes.push(prisma.device.delete({ where: { id: device.id } }));
 
   await prisma.$transaction(writes as never);
+
+  // A revoked device leaves the push relay too, so its token is not bound to
+  // this instance until the relay's own idle expiry. Best effort: the relay
+  // answers 204 whether or not the token was bound.
+  if (device.relayState !== "none") {
+    await unbindToken(device.apnsToken).catch((err: unknown) => {
+      getEvent()?.addWarning(
+        `push_relay_unbind_failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    });
+  }
 
   return {
     id: device.id,

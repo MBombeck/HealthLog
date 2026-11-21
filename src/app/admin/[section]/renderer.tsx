@@ -37,6 +37,7 @@ import { LoginOverviewSection } from "@/components/admin/login-overview-section"
 import { ModuleAvailabilitySection } from "@/components/admin/module-availability-section";
 import { RemindersSection } from "@/components/admin/reminders-section";
 import { ServicesSection } from "@/components/admin/services-section";
+import { PushRelaySection } from "@/components/admin/push-relay-section";
 import { SystemStatusSection } from "@/components/admin/system-status-section";
 import { SupportReportCard } from "@/components/admin/support-report-card";
 import { RevealWhenSettled } from "@/components/ui/reveal-when-settled";
@@ -92,6 +93,8 @@ export function AdminSectionRenderer({
       return (
         <SectionFrame>
           <ServicesSection />
+          {/* The push relay switch for the App Store app. */}
+          <PushRelaySection />
         </SectionFrame>
       );
     case "integrations":

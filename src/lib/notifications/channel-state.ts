@@ -84,9 +84,26 @@ export async function recordChannelHardReject(
  */
 export async function recordChannelTransientFailure(
   channel: ChannelRef,
-  outcome: Pick<SendOutcome, "reason" | "message" | "statusCode">,
+  outcome: Pick<
+    SendOutcome,
+    "reason" | "message" | "statusCode" | "relayTransport"
+  >,
   now: Date = new Date(),
 ): Promise<{ autoDisabled: boolean; nextRetryAt: Date | null }> {
+  // A push relay failure is never the channel's: the relay outbox retries the
+  // push within its deadline, and five relay outages in a row must not turn
+  // a person's iPhone notifications off. The reason is kept for the status
+  // screen; the counter, the backoff and the auto-disable stay untouched.
+  if (outcome.relayTransport) {
+    await prisma.notificationChannel.update({
+      where: { id: channel.id },
+      data: {
+        lastFailureAt: now,
+        lastFailureReason: outcome.reason ?? "relay_transport",
+      },
+    });
+    return { autoDisabled: false, nextRetryAt: null };
+  }
   // Re-read current counter inside an atomic update to avoid races
   // when multiple dispatch attempts collide.
   const updated = await prisma.notificationChannel.update({

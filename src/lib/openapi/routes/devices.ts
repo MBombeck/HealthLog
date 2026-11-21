@@ -14,6 +14,11 @@ import {
   errorEnvelope,
   stdResponses,
 } from "./shared";
+import {
+  devicePushBlockSchema,
+  devicePushRequestFields,
+  liveActivityStatementFields,
+} from "./push-relay";
 
 const deviceRegisterRequest = z
   .object({
@@ -76,6 +81,7 @@ const deviceRegisterRequest = z
             .describe(
               "The slot the Activity counts down to (the today row's `slotInstant`). With it the server ends this Activity once that slot is taken or skipped; without it, once no dose of the medication the Activity could show is open.",
             ),
+          ...liveActivityStatementFields,
         }),
       )
       .max(8)
@@ -83,6 +89,7 @@ const deviceRegisterRequest = z
       .describe(
         "The device's running medication Live Activities, as a full replacement list: present replaces the stored list (an empty array clears it), omitted leaves it unchanged. Each entry is ended with one `end` push once its dose is answered, and removed after the push. When this field is present the legacy `liveActivityPushToken` is ignored.",
       ),
+    ...devicePushRequestFields,
   })
   .meta({
     id: "DeviceRegisterRequest",
@@ -96,7 +103,7 @@ export const devicePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Devices"],
       summary: "Register native device + APNs token",
       description:
-        "Idempotent upsert by `token`. APNs token + environment are paired — supplying one without the other returns 422. Cross-user re-registration of either identifier returns 409.",
+        "Idempotent upsert by `token`. APNs token + environment are paired — supplying one without the other returns 422. Cross-user re-registration of either identifier returns 409. A refused push field (push key, relay binding, consent) returns 422 with `meta.errorCode` `devices.push.<reason>` and changes nothing. The answer's `push` block is the device's push state after the call.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: deviceRegisterRequest } },
@@ -107,7 +114,7 @@ export const devicePaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: {
             "application/json": {
               schema: dataEnvelope(
-                z.object({ id: z.string() }),
+                z.object({ id: z.string(), push: devicePushBlockSchema }),
                 "DeviceRegisterResponse",
               ),
             },

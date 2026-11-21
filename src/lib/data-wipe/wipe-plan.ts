@@ -369,6 +369,12 @@ export const WIPE_EXEMPT: Readonly<Record<string, string>> = {
  */
 export const INSTANCE_SCOPED: Readonly<Record<string, string>> = {
   AppSettings: "instance-wide configuration singleton",
+  PushRelayRegistration:
+    "this instance's registration at the push relay and its instance key; the operator's switch, not any account's data",
+  PushRelayUnbind:
+    "relay unbinds owed for device tokens of accounts already erased; tied to no account any more",
+  PushEnvelopeKeys:
+    "the instance's envelope sender keys and collapse secret; they seal pushes for every account alike",
   EncryptionKeyCanary:
     "one known value per configured encryption key id, checked at boot; belongs to the instance's keys, not to any account",
   RateLimit: "instance-wide rate-limit buckets, keyed by string, self-expiring",
@@ -575,6 +581,8 @@ export const USER_KEPT_FIELDS: Readonly<Record<string, string>> = {
   mfaEnforced: "the operator's per-account second-factor policy",
   passkeyUpgradeNudgeDismissed:
     "an interface nudge the person already dismissed",
+  adminNoticesDismissed:
+    "one-time admin notices this admin already dismissed; interface state, not record content",
   timezone: "an interface preference — how dates and times are rendered",
   locale: "an interface preference — which language the interface speaks",
   unitPreference: "an interface preference — metric or imperial rendering",
