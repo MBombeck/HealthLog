@@ -184,7 +184,7 @@ export function CyclePregnancyCard({ profile }: { profile: CycleProfileDTO }) {
           disabled={update.isPending}
         >
           {update.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+            <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
           ) : null}
           {t("cycle.pregnancy.save")}
         </Button>

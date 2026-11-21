@@ -9324,6 +9324,7 @@
       "enabled": "Przekaźnik push jest włączony",
       "disabled": "Przekaźnik push jest wyłączony",
       "saveFailed": "Nie udało się zapisać ustawienia przekaźnika",
+      "loadError": "Nie udało się odczytać stanu przekaźnika push.",
       "state": {
         "ok": "Połączono",
         "degraded": "Zakłócony",

@@ -5,6 +5,7 @@ import { Send } from "lucide-react";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { Badge } from "@/components/ui/badge";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
@@ -36,6 +37,32 @@ const UNAVAILABLE_LABEL = {
   keys_unpinned: "admin.pushRelay.unavailable.keysUnpinned",
 } as const;
 
+/** The relay card when its status could not be read. */
+function PushRelayLoadError({
+  error,
+  onRetry,
+}: {
+  error: unknown;
+  onRetry: () => void;
+}) {
+  const { t } = useTranslations();
+  return (
+    <SettingsCard>
+      <SettingsCardHeader
+        icon={Send}
+        title={t("admin.pushRelay.title")}
+        description={t("admin.pushRelay.description")}
+      />
+      <QueryErrorRow
+        inset
+        error={error}
+        message={t("admin.pushRelay.loadError")}
+        onRetry={onRetry}
+      />
+    </SettingsCard>
+  );
+}
+
 /**
  * The operator's switch for the push relay: off until turned on, and turning
  * it on asks for the relay terms and the household confirmation.
@@ -43,13 +70,24 @@ const UNAVAILABLE_LABEL = {
 export function PushRelaySection() {
   const { t } = useTranslations();
   const fmt = useFormatters();
-  const { data: status } = usePushRelayStatus();
+  const statusQuery = usePushRelayStatus();
+  const status = statusQuery.data;
   const setRelay = useSetPushRelay();
   const [enableOpen, setEnableOpen] = useState(false);
   const [disableOpen, setDisableOpen] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [householdOnly, setHouseholdOnly] = useState(false);
 
+  // A failed read says so; hidden is only for a server whose operator
+  // turned the relay off (`allowed: false`).
+  if (statusQuery.isError && !status) {
+    return (
+      <PushRelayLoadError
+        error={statusQuery.error}
+        onRetry={() => void statusQuery.refetch()}
+      />
+    );
+  }
   if (!status || !status.allowed) return null;
 
   function save(body: Parameters<typeof setRelay.mutate>[0]) {

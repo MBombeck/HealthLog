@@ -28,8 +28,10 @@
  *   EXCLUSIVE lock of the `ADD` is still held. Long work (a `VALIDATE`, a
  *   backfill on a large table, a plain index build on one) therefore stands
  *   in a file that takes no other table lock, and bounds its own run time
- *   with `set_config('statement_timeout', …, true)`, since `lock_timeout`
- *   only bounds the wait for a lock, never the time spent holding it.
+ *   with `SET LOCAL statement_timeout` as a statement of its own before the
+ *   work, since `lock_timeout` only bounds the wait for a lock, never the
+ *   time spent holding it. Set with `set_config` inside the block that does
+ *   the work, the timeout does not bound that block.
  */
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
@@ -70,10 +72,21 @@ const REPEATABLE = [
 const TOP_LEVEL_TIMEOUT =
   /^SET (LOCAL |SESSION )?(lock_timeout|statement_timeout)\b|^SET LOCAL\b/i;
 
+/**
+ * The one top-level setting that takes effect: `SET LOCAL statement_timeout`
+ * in a file that runs as one transaction. The timeout is armed when a
+ * statement starts, so only a statement of its own before the work can bound
+ * it (see "long work since 0517" below). A lock wait is still bounded inside
+ * the block, where `set_config('lock_timeout', …, true)` works.
+ */
+const LOCAL_STATEMENT_TIMEOUT = /^SET LOCAL statement_timeout\b/i;
+
 function violations(name: string, sql: string): string[] {
   const found: string[] = [];
   const statements = topLevelStatements(sql);
+  const oneTransaction = runsAsOneTransaction(sql);
   for (const statement of statements) {
+    if (oneTransaction && LOCAL_STATEMENT_TIMEOUT.test(statement)) continue;
     if (TOP_LEVEL_TIMEOUT.test(statement)) {
       found.push(`${name}: top-level "${statement}" has no effect`);
     }
@@ -221,6 +234,23 @@ describe("migration lock waits", () => {
 
   it("catches each shape it exists to refuse", () => {
     expect(violations("a", "SET LOCAL lock_timeout = '10s';")).toHaveLength(1);
+    // A split file has no transaction for SET LOCAL to be local to.
+    expect(
+      violations("a2", "SET LOCAL statement_timeout = '5min';"),
+    ).toHaveLength(1);
+    // A session-wide SET outlives the file even in one transaction.
+    expect(
+      violations(
+        "a3",
+        "SET statement_timeout = '5min';\nDO $x$ BEGIN PERFORM 1; END $x$;",
+      ),
+    ).toHaveLength(1);
+    expect(
+      violations(
+        "a4",
+        "SET LOCAL statement_timeout = '5min';\nDO $x$ BEGIN PERFORM 1; END $x$;",
+      ),
+    ).toEqual([]);
     expect(
       violations(
         "b",
@@ -348,34 +378,87 @@ function matches(pattern: RegExp, sql: string): string[] {
   return [...sql.matchAll(pattern)].map((m) => m[1].toLowerCase());
 }
 
-/** What in the file runs long: a scan, a backfill, a plain index build. */
-function longWork(sql: string): string[] {
-  const work: string[] = [];
-  for (const table of matches(
+/** Each match of `pattern` as its lower-cased table and its offset. */
+function located(
+  pattern: RegExp,
+  sql: string,
+): Array<{ table: string; at: number }> {
+  return [...sql.matchAll(pattern)].map((m) => ({
+    table: m[1].toLowerCase(),
+    at: m.index ?? 0,
+  }));
+}
+
+/** What in the file runs long (a scan, a backfill, a plain index build), and where. */
+function longWorkAt(sql: string): Array<{ label: string; at: number }> {
+  const work: Array<{ label: string; at: number }> = [];
+  for (const { table, at } of located(
     new RegExp(
       String.raw`\bALTER\s+TABLE\s+${TABLE}\s+VALIDATE\s+CONSTRAINT\b`,
       "gi",
     ),
     sql,
   )) {
-    work.push(`VALIDATE on ${table}`);
+    work.push({ label: `VALIDATE on ${table}`, at });
   }
-  for (const table of matches(
+  for (const { table, at } of located(
     new RegExp(String.raw`\b(?:UPDATE|DELETE\s+FROM)\s+${TABLE}`, "gi"),
     sql,
   )) {
-    if (LARGE_TABLES.has(table)) work.push(`backfill on ${table}`);
+    if (LARGE_TABLES.has(table))
+      work.push({ label: `backfill on ${table}`, at });
   }
-  for (const table of matches(
+  for (const { table, at } of located(
     new RegExp(
       String.raw`\bCREATE\s+(?:UNIQUE\s+)?INDEX\s+(?!CONCURRENTLY)[^;]*?\bON\s+${TABLE}`,
       "gi",
     ),
     sql,
   )) {
-    if (LARGE_TABLES.has(table)) work.push(`index build on ${table}`);
+    if (LARGE_TABLES.has(table)) {
+      work.push({ label: `index build on ${table}`, at });
+    }
   }
-  return work;
+  return work.sort((a, b) => a.at - b.at);
+}
+
+function longWork(sql: string): string[] {
+  return longWorkAt(sql).map(({ label }) => label);
+}
+
+/**
+ * The file with every dollar-quoted body blanked to spaces, so an offset in
+ * it is an offset in the file, and only top-level text is left to match.
+ */
+function topLevelOnly(sql: string): string {
+  return sql.replace(/\$([A-Za-z_]*)\$[\s\S]*?\$\1\$/g, (body) =>
+    " ".repeat(body.length),
+  );
+}
+
+/**
+ * `statement_timeout` is armed when a top-level statement starts. Set from
+ * inside a `DO` block, it bounds only the statements that start after that
+ * block, never the block's own work (probed on Postgres 18, pinned through
+ * the real CLI in `tests/integration/migration-file-transaction.test.ts`).
+ * The bound that holds is `SET LOCAL statement_timeout` as a statement of its
+ * own, before the statement that does the work, in a one-transaction file.
+ */
+const TOP_LEVEL_STATEMENT_TIMEOUT = /\bSET\s+LOCAL\s+statement_timeout\b/i;
+const STATEMENT_TIMEOUT_SET_CONFIG = /set_config\(\s*'statement_timeout'/i;
+
+function statementTimeoutViolations(name: string, sql: string): string[] {
+  const code = sql.replace(/--[^\n]*/g, "");
+  const top = topLevelOnly(code);
+  if (
+    STATEMENT_TIMEOUT_SET_CONFIG.test(code) &&
+    !STATEMENT_TIMEOUT_SET_CONFIG.test(top)
+  ) {
+    return [
+      `${name}: set_config('statement_timeout') inside a dollar-quoted body does not bound that body; use SET LOCAL statement_timeout as its own statement before it`,
+    ];
+  }
+  return [];
 }
 
 /** The tables the file locks for longer than a statement's own work. */
@@ -401,10 +484,14 @@ function longWorkViolations(name: string, sql: string): string[] {
     found.push(
       `${name}: ${work.join(", ")} outside a DO block cannot bound its run time`,
     );
-  } else if (!/set_config\(\s*'statement_timeout'/i.test(code)) {
-    found.push(
-      `${name}: ${work.join(", ")} without set_config('statement_timeout', …, true)`,
-    );
+  } else {
+    const bound = topLevelOnly(code).search(TOP_LEVEL_STATEMENT_TIMEOUT);
+    const first = longWorkAt(code)[0].at;
+    if (bound < 0 || bound > first) {
+      found.push(
+        `${name}: ${work.join(", ")} without SET LOCAL statement_timeout as its own statement before it`,
+      );
+    }
   }
   const held = [...new Set(heldLocks(code))];
   if (held.length > 0) {
@@ -422,9 +509,10 @@ describe("long work since 0517", () => {
     );
     // No count floor: until a migration at or past 0517 exists there is
     // nothing to check, and "names the history" below proves the matcher bites.
-    const found = checked.flatMap(({ name, sql }) =>
-      longWorkViolations(name, sql),
-    );
+    const found = checked.flatMap(({ name, sql }) => [
+      ...longWorkViolations(name, sql),
+      ...statementTimeoutViolations(name, sql),
+    ]);
     expect(found, found.join("\n")).toEqual([]);
   });
 
@@ -447,7 +535,7 @@ describe("long work since 0517", () => {
 
   it("catches each shape it exists to refuse", () => {
     const block = (body: string) =>
-      `DO $m$ BEGIN PERFORM set_config('lock_timeout', '5s', true); PERFORM set_config('statement_timeout', '5min', true); ${body} END $m$;`;
+      `SET LOCAL statement_timeout = '5min';\nDO $m$ BEGIN PERFORM set_config('lock_timeout', '5s', true); ${body} END $m$;`;
     expect(
       longWorkViolations(
         "a",
@@ -467,7 +555,7 @@ describe("long work since 0517", () => {
         "c",
         'DO $m$ BEGIN UPDATE "measurements" SET "x" = 1; END $m$;',
       ),
-    ).toEqual([expect.stringContaining("statement_timeout")]);
+    ).toEqual([expect.stringContaining("SET LOCAL statement_timeout")]);
     expect(
       longWorkViolations(
         "d",
@@ -476,6 +564,33 @@ describe("long work since 0517", () => {
         ),
       ),
     ).toEqual([expect.stringContaining("holds its lock on users")]);
+    // The bound set inside the block that does the work, or after it, does
+    // not hold; the one before it in a comment is no bound at all.
+    const inside = `DO $m$ BEGIN PERFORM set_config('statement_timeout', '5min', true); UPDATE "measurements" SET "x" = 1; END $m$;`;
+    expect(longWorkViolations("f", inside)).toEqual([
+      expect.stringContaining("SET LOCAL statement_timeout"),
+    ]);
+    expect(statementTimeoutViolations("f", inside)).toEqual([
+      expect.stringContaining("does not bound that body"),
+    ]);
+    expect(
+      longWorkViolations(
+        "g",
+        `DO $m$ BEGIN UPDATE "measurements" SET "x" = 1; END $m$;\nSET LOCAL statement_timeout = '5min';`,
+      ),
+    ).toEqual([expect.stringContaining("SET LOCAL statement_timeout")]);
+    expect(
+      longWorkViolations(
+        "h",
+        `-- SET LOCAL statement_timeout = '5min';\nDO $m$ BEGIN UPDATE "measurements" SET "x" = 1; END $m$;`,
+      ),
+    ).toEqual([expect.stringContaining("SET LOCAL statement_timeout")]);
+    expect(
+      statementTimeoutViolations(
+        "i",
+        `SET LOCAL statement_timeout = '5min';\nDO $m$ BEGIN UPDATE "measurements" SET "x" = 1; END $m$;`,
+      ),
+    ).toEqual([]);
     // A small table's update is not long work, nor is a comment.
     expect(
       longWorkViolations(

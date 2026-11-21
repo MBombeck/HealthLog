@@ -40,9 +40,16 @@ of them are the first kind.
   that builds it again.
 - **Long work stands apart from table locks** (from 0517 on). A constraint
   `VALIDATE`, a backfill on a large table, or a plain index build on one runs
-  in a file that takes no other table lock, and sets
-  `set_config('statement_timeout', …, true)`. `lock_timeout` only bounds the
-  wait for a lock, never the time spent holding it. Adding a constraint
+  in a file that takes no other table lock, and bounds its run time with
+  `SET LOCAL statement_timeout = '…';` as a statement of its own, before the
+  block that does the work. Postgres arms the timeout when a statement starts,
+  so `set_config('statement_timeout', …, true)` inside the block bounds only
+  the statements after that block, never the block itself; the integration
+  test above proves both through the real CLI. The top-level `SET LOCAL` holds
+  because the file is one transaction, and ends with it. `lock_timeout` is
+  different: it is read when a lock wait begins, so setting it inside the
+  block works. `lock_timeout` only bounds the wait for a lock, never the time
+  spent holding it. Adding a constraint
   `NOT VALID` and validating it in the same file buys nothing, because the
   scan then runs while the `ADD` still holds ACCESS EXCLUSIVE on the table. The
   pattern is three files: the column and the `NOT VALID` constraint; the

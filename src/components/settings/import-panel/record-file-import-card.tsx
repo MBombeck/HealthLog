@@ -172,7 +172,7 @@ export function RecordFileImportCard({ kind }: { kind: CardKind }) {
       <div aria-live="polite" className="space-y-2">
         {(uploading || running) && (
           <p className="text-muted-foreground flex items-center gap-2 text-xs">
-            <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+            <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" />
             {uploading ? copy.uploading : copy.running}
           </p>
         )}
@@ -186,7 +186,7 @@ export function RecordFileImportCard({ kind }: { kind: CardKind }) {
             className="text-destructive flex items-start gap-2 text-sm"
           >
             <AlertCircle
-              className="mt-0.5 h-3.5 w-3.5 shrink-0"
+              className="mt-0.5 size-3.5 shrink-0"
               aria-hidden="true"
             />
             <span>{uploadError ?? failure}</span>
@@ -205,9 +205,9 @@ export function RecordFileImportCard({ kind }: { kind: CardKind }) {
           data-testid={`${testId}-choose`}
         >
           {busy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+            <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" />
           ) : (
-            <Upload className="h-3.5 w-3.5" />
+            <Upload className="size-3.5" />
           )}
           {copy.choose}
         </Button>
