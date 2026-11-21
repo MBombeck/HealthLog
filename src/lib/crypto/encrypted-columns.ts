@@ -236,6 +236,11 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   { model: "PushEnvelopeKeys", field: "senderKeyEncrypted", kind: "string" },
   {
     model: "PushEnvelopeKeys",
+    field: "nextSenderKeyEncrypted",
+    kind: "string",
+  },
+  {
+    model: "PushEnvelopeKeys",
     field: "collapseSecretEncrypted",
     kind: "string",
   },

@@ -11390,15 +11390,20 @@ model PushRelayRegistration {
 }
 
 /// The keys this server seals push envelopes with: the current X25519 sender
-/// key (private part encrypted at rest), the previous public key while it is
-/// still pinned by devices, and the secret the per-device collapse ids are
-/// derived from. One row. Readers: the sealer and `/api/auth/me`
+/// key (private part encrypted at rest), the announced next one, the previous
+/// public key for 30 days after it retired, and the secret the per-device
+/// collapse ids are derived from. One row. Readers: the sealer and `/api/auth/me`
 /// `push.relay.senderKeys`.
 model PushEnvelopeKeys {
   id                      String    @id @default("singleton")
   senderKeyEncrypted      String    @map("sender_key_encrypted")
   senderPublicKey         String    @map("sender_public_key")
   senderCreatedAt         DateTime  @map("sender_created_at")
+  /// The announced key: published as `next` for at least 7 days before it
+  /// seals anything, so every device has pinned it by then.
+  nextSenderKeyEncrypted  String?   @map("next_sender_key_encrypted")
+  nextSenderPublicKey     String?   @map("next_sender_public_key")
+  nextAnnouncedAt         DateTime? @map("next_announced_at")
   previousSenderPublicKey String?   @map("previous_sender_public_key")
   previousRetiredAt       DateTime? @map("previous_retired_at")
   collapseSecretEncrypted String    @map("collapse_secret_encrypted")

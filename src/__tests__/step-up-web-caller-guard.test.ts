@@ -137,6 +137,8 @@ const GATED_ROUTES: Record<string, string> = {
   "POST /api/cycle/feed-subscription": "web",
   "POST /api/cycle/feed-subscription/rotate": "web",
   "POST /api/admin/encryption/rotate": "web",
+  "POST /api/admin/push-relay/rotate-sender-key":
+    "the emergency sender-key rotation, an operator action for an exposed key; no web control calls it, the documented path is the admin API with a fresh second factor",
   "POST /api/admin/users/[id]/reset-password": "web",
   "POST /api/auth/me/mfa/disable": "web",
   "POST /api/auth/me/mfa/recovery-codes/regenerate": "web",

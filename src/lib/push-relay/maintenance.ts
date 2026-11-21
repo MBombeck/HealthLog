@@ -7,7 +7,8 @@
  * 2. Probes an open breaker with a signed `GET /v1/status` when it is due.
  * 3. Retries the outbox: pending deliveries whose next attempt is due, each
  *    with its finished envelope and its own deadline.
- * 4. Rotates the envelope sender key when it is 30 days old.
+ * 4. Moves the staged sender-key rollout one step (announce yearly, promote
+ *    after 7 days as `next`, retire `previous` after 30 days).
  * 5. Reports envelope receipts to the relay, at most every 50 minutes.
  * 6. Prunes delivery rows older than 30 days.
  * 7. Sends the relay unbinds owed for erased accounts (`unbind-queue.ts`).
@@ -19,6 +20,7 @@ import { relayConfig } from "@/lib/push-relay/config";
 import { isCircuitOpen, probeDue } from "@/lib/push-relay/circuit";
 import {
   ensureInstanceRegistered,
+  finishRelayDisable,
   loadRegistration,
   relayCall,
 } from "@/lib/push-relay/registration";
@@ -27,14 +29,18 @@ import {
   markReceiptsReported,
   pendingReceiptCounts,
 } from "@/lib/push-relay/receipts";
-import { rotateSenderKey, senderKeyDue } from "@/lib/push-relay/sender-keys";
+import { advanceSenderKeys } from "@/lib/push-relay/sender-keys";
 import { drainRelayUnbinds } from "@/lib/push-relay/unbind-queue";
 import {
   instanceKeyDue,
   rotateInstanceKey,
 } from "@/lib/push-relay/instance-key";
 
-const RECEIPT_INTERVAL_MS = 50 * 60 * 1000;
+/**
+ * The relay takes one receipt report per instance every 45 minutes; 55 leaves
+ * headroom for clock drift and a slow minute pass.
+ */
+const RECEIPT_INTERVAL_MS = 55 * 60 * 1000;
 const RETENTION_MS = 30 * 24 * 3600 * 1000;
 const OUTBOX_BATCH = 500;
 
@@ -63,6 +69,8 @@ export async function runRelayMaintenance(
     instance_key_rotated: false,
   };
   const config = relayConfig();
+  // A switch-off the relay has not confirmed yet is finished first.
+  if (config.available) await finishRelayDisable(config);
   let row = config.available ? await loadRegistration(config) : null;
 
   if (row && !row.instanceId) {
@@ -98,12 +106,10 @@ export async function runRelayMaintenance(
       (await rotateInstanceKey(row, config)) === "rotated";
   }
 
-  const keys = await prisma.pushEnvelopeKeys.findUnique({
-    where: { id: "singleton" },
-    select: { senderCreatedAt: true },
-  });
-  if (keys && (row || loadApnsConfig()) && senderKeyDue(keys, now)) {
-    facts.rotated = await rotateSenderKey({ now });
+  // The staged sender-key rollout: announce, promote after 7 days, retire
+  // after 30 (`sender-keys.ts`).
+  if (row || loadApnsConfig()) {
+    facts.rotated = (await advanceSenderKeys(now)) !== null;
   }
 
   if (
@@ -121,12 +127,16 @@ export async function runRelayMaintenance(
         { accepted: counts.accepted, confirmed: counts.confirmed },
         config,
       );
-      if (result.kind === "response" && result.status === 204) {
-        await markReceiptsReported(counts.ids, now);
+      // Any signed answer starts the interval again, so a refused report is
+      // not retried every minute.
+      if (result.kind === "response") {
         await prisma.pushRelayRegistration.update({
           where: { id: row.id },
-          data: { receiptsSentAt: now },
+          data: { receiptsSentAt: new Date() },
         });
+      }
+      if (result.kind === "response" && result.status === 204) {
+        await markReceiptsReported(counts.ids, now);
         facts.receipts_sent = true;
       }
     }

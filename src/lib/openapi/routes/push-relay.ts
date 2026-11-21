@@ -23,7 +23,7 @@ const senderKey = z
     publicKey: z
       .string()
       .describe("X25519 sender public key, 32 bytes, unpadded base64url."),
-    status: z.enum(["current", "previous"]),
+    status: z.enum(["next", "current", "previous"]),
   })
   .meta({ id: "PushSenderKey" });
 
@@ -61,7 +61,7 @@ export const relayCapabilityBlock = z
     senderKeys: z
       .array(senderKey)
       .describe(
-        "The keys to pin for this account: `current`, and `previous` for 30 days after a rotation. Present whenever this server seals envelopes, over the relay or over its own APNs key; a sealed push opens with one of them.",
+        "The keys to pin for this account, at most three: `next` (announced at least 7 days before it seals anything), `current`, and `previous` for 30 days after it retired. Pin all of them and try each. Present whenever this server seals envelopes, over the relay or over its own APNs key.",
       ),
     envelopeVersions: z
       .array(z.number().int())
@@ -342,6 +342,32 @@ export const pushRelayAdminPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "409": {
           description: "The relay is not registered on this server.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/admin/push-relay/rotate-sender-key": {
+    post: {
+      tags: ["Admin"],
+      summary: "Emergency rotation of the envelope sender key",
+      description:
+        "For a sender key known to be exposed: a new current key at once, without the 7-day announcement, and the previous key dropped. Devices that have not fetched the new key show the neutral placeholder until the app is opened. Admin-only, cookie-only, fresh second factor, audit-logged.",
+      responses: {
+        "200": {
+          description: "Rotated.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ rotated: z.literal(true) }),
+                "AdminPushRelaySenderRotateEnvelope",
+              ),
+            },
+          },
+        },
+        "409": {
+          description: "This server seals no envelopes yet.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,

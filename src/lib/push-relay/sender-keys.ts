@@ -1,13 +1,20 @@
 /**
  * The sender keys this server seals push envelopes with.
  *
- * One X25519 pair, its private half encrypted at rest with
- * `src/lib/crypto.ts`, rotated every 30 days. The previous public key stays
- * published as `previous` for 30 days after a rotation, so a device that has
- * not refreshed its pins in that time still opens what was sealed before, and
- * a device never trusts more than two sender keys. Every seal uses the
- * current key. An emergency rotation (`rotateSenderKey({ emergency: true })`)
- * drops the previous key at once.
+ * X25519 pairs, private halves encrypted at rest with `src/lib/crypto.ts`,
+ * rolled out staged (`spec/envelope.md`, "Rotation"), so a device that has
+ * not opened the app recently never gets an envelope sealed with a key it has
+ * not pinned:
+ *
+ * 1. Announce: a year after the current key was made (less the 7 days), a new
+ *    pair is published as `next` and seals nothing.
+ * 2. Overlap: after at least 7 days as `next` it becomes `current` and seals
+ *    every push; the old current becomes `previous`.
+ * 3. Retire: 30 days later `previous` is deleted.
+ *
+ * At most three keys are published (`next`, `current`, `previous`). An
+ * emergency rotation (`rotateSenderKey({ emergency: true })`, an audited
+ * operator action) skips the announcement and drops `previous` at once.
  *
  * The same row holds the secret the per-device collapse ids are derived from
  * (`collapseIdFor`): the HMAC over the device token makes the id differ per
@@ -21,7 +28,8 @@ import { decrypt, encrypt } from "@/lib/crypto";
 import { fromBase64Url, fromHex, toBase64Url } from "@/lib/push-relay/encoding";
 import { generateX25519 } from "@/lib/push-relay/hpke";
 
-export const SENDER_KEY_ROTATION_DAYS = 30;
+export const SENDER_KEY_ROTATION_DAYS = 365;
+export const NEXT_SENDER_KEY_DAYS = 7;
 export const PREVIOUS_SENDER_KEY_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -32,7 +40,7 @@ export interface SenderKeyMaterial {
 
 export interface PublishedSenderKey {
   publicKey: string;
-  status: "current" | "previous";
+  status: "next" | "current" | "previous";
 }
 
 function freshRow(now: Date) {
@@ -77,19 +85,22 @@ export async function loadSenderKeyMaterial(): Promise<SenderKeyMaterial | null>
   return { senderPrivateKey, collapseSecret };
 }
 
-/** The sender keys a device pins: current, and previous while it lasts. */
+/** The sender keys a device pins: next, current, and previous while it lasts. */
 export function publishedSenderKeys(
   row: {
     senderPublicKey: string;
+    nextSenderPublicKey?: string | null;
     previousSenderPublicKey: string | null;
     previousRetiredAt: Date | null;
   } | null,
   now: Date = new Date(),
 ): PublishedSenderKey[] {
   if (!row) return [];
-  const keys: PublishedSenderKey[] = [
-    { publicKey: row.senderPublicKey, status: "current" },
-  ];
+  const keys: PublishedSenderKey[] = [];
+  if (row.nextSenderPublicKey) {
+    keys.push({ publicKey: row.nextSenderPublicKey, status: "next" });
+  }
+  keys.push({ publicKey: row.senderPublicKey, status: "current" });
   if (
     row.previousSenderPublicKey &&
     row.previousRetiredAt &&
@@ -101,37 +112,105 @@ export function publishedSenderKeys(
   return keys;
 }
 
-/** Whether the current sender key is due for its 30-day rotation. */
+/** Whether the next key is due to be announced (a year less the overlap). */
 export function senderKeyDue(
-  row: { senderCreatedAt: Date },
+  row: { senderCreatedAt: Date; nextSenderPublicKey?: string | null },
   now: Date = new Date(),
 ): boolean {
   return (
+    !row.nextSenderPublicKey &&
     now.getTime() - row.senderCreatedAt.getTime() >=
-    SENDER_KEY_ROTATION_DAYS * DAY_MS
+      (SENDER_KEY_ROTATION_DAYS - NEXT_SENDER_KEY_DAYS) * DAY_MS
   );
 }
 
+export type SenderKeyStep = "announced" | "promoted" | "retired" | null;
+
 /**
- * Replace the current sender key. The old public key becomes `previous`
- * unless `emergency`, which drops it so devices stop trusting it at their next
- * `/api/auth/me`. Returns false when there is no key row to rotate.
+ * Move the staged rollout one step: retire a `previous` past its 30 days,
+ * promote a `next` announced at least 7 days ago, or announce a `next` when
+ * the current key is due. Returns what happened, at most one step per call.
+ */
+export async function advanceSenderKeys(
+  now: Date = new Date(),
+): Promise<SenderKeyStep> {
+  const row = await prisma.pushEnvelopeKeys.findUnique({
+    where: { id: "singleton" },
+  });
+  if (!row) return null;
+  if (
+    row.previousSenderPublicKey &&
+    row.previousRetiredAt &&
+    now.getTime() - row.previousRetiredAt.getTime() >=
+      PREVIOUS_SENDER_KEY_DAYS * DAY_MS
+  ) {
+    await prisma.pushEnvelopeKeys.update({
+      where: { id: "singleton" },
+      data: { previousSenderPublicKey: null, previousRetiredAt: null },
+    });
+    return "retired";
+  }
+  if (
+    row.nextSenderKeyEncrypted &&
+    row.nextSenderPublicKey &&
+    row.nextAnnouncedAt &&
+    now.getTime() - row.nextAnnouncedAt.getTime() >=
+      NEXT_SENDER_KEY_DAYS * DAY_MS
+  ) {
+    await prisma.pushEnvelopeKeys.update({
+      where: { id: "singleton" },
+      data: {
+        senderKeyEncrypted: row.nextSenderKeyEncrypted,
+        senderPublicKey: row.nextSenderPublicKey,
+        senderCreatedAt: now,
+        previousSenderPublicKey: row.senderPublicKey,
+        previousRetiredAt: now,
+        nextSenderKeyEncrypted: null,
+        nextSenderPublicKey: null,
+        nextAnnouncedAt: null,
+      },
+    });
+    return "promoted";
+  }
+  if (senderKeyDue(row, now)) {
+    const pair = generateX25519();
+    await prisma.pushEnvelopeKeys.update({
+      where: { id: "singleton" },
+      data: {
+        nextSenderKeyEncrypted: encrypt(toBase64Url(pair.privateKey)),
+        nextSenderPublicKey: toBase64Url(pair.publicKey),
+        nextAnnouncedAt: now,
+      },
+    });
+    return "announced";
+  }
+  return null;
+}
+
+/**
+ * Emergency rotation, for a sender key known to be exposed: a new current
+ * key at once, without an announcement, and the old current, an announced
+ * next and the previous key dropped. Devices that have not fetched the new
+ * key show the neutral placeholder until the app is opened.
  */
 export async function rotateSenderKey(
-  options: { emergency?: boolean; now?: Date } = {},
+  options: { now?: Date } = {},
 ): Promise<boolean> {
   const now = options.now ?? new Date();
   const row = await prisma.pushEnvelopeKeys.findUnique({
     where: { id: "singleton" },
-    select: { senderPublicKey: true },
+    select: { id: true },
   });
   if (!row) return false;
   await prisma.pushEnvelopeKeys.update({
     where: { id: "singleton" },
     data: {
       ...freshRow(now),
-      previousSenderPublicKey: options.emergency ? null : row.senderPublicKey,
-      previousRetiredAt: options.emergency ? null : now,
+      previousSenderPublicKey: null,
+      previousRetiredAt: null,
+      nextSenderKeyEncrypted: null,
+      nextSenderPublicKey: null,
+      nextAnnouncedAt: null,
     },
   });
   return true;

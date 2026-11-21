@@ -1,5 +1,6 @@
 /**
- * Relay unbinds owed for an erased account.
+ * Relay unbinds: owed for an erased account, a revoked device, a withdrawn
+ * consent or push key.
  *
  * An account's erasure (`eraseAccount`: the person's own deletion, an
  * admin's, the purge after the grace window, a managed profile's) queues one
@@ -47,16 +48,38 @@ export async function queueRelayUnbindsForAccount(
   return tokens.length;
 }
 
+/**
+ * Queue the unbind of one device token (a revoked device, a withdrawn
+ * consent or push key) and try it at once. A relay that is down leaves it
+ * queued for the minute pass.
+ */
+export async function queueRelayUnbind(
+  apnsToken: string | null,
+  config: RelayConfig = relayConfig(),
+): Promise<void> {
+  if (!apnsToken) return;
+  const token = apnsToken.toLowerCase();
+  await prisma.pushRelayUnbind.createMany({
+    data: [{ token }],
+    skipDuplicates: true,
+  });
+  await drainRelayUnbinds(new Date(), config, [token]);
+}
+
 /** Send the due unbinds. Returns how many the relay confirmed. */
 export async function drainRelayUnbinds(
   now: Date = new Date(),
   config: RelayConfig = relayConfig(),
+  onlyTokens?: readonly string[],
 ): Promise<number> {
   await prisma.pushRelayUnbind.deleteMany({
     where: { createdAt: { lt: new Date(now.getTime() - GIVE_UP_MS) } },
   });
   const due = await prisma.pushRelayUnbind.findMany({
-    where: { nextAttemptAt: { lte: now } },
+    where: {
+      nextAttemptAt: { lte: now },
+      ...(onlyTokens ? { token: { in: [...onlyTokens] } } : {}),
+    },
     orderBy: { nextAttemptAt: "asc" },
     take: BATCH,
   });
