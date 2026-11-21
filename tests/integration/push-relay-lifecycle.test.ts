@@ -352,10 +352,10 @@ describe("admin test push", () => {
 
 describe("a relay without pinned keys", () => {
   it("is unavailable, cannot be turned on, and sends nothing", async () => {
-    vi.stubEnv("PUSH_RELAY_URL", "https://push.healthlog.dev");
+    // An operator's own relay with no PUSH_RELAY_KEYS: the hosted relay
+    // ships its keys pinned, so only a self-run relay can lack them.
+    vi.stubEnv("PUSH_RELAY_URL", "https://relay.example.org");
     vi.stubEnv("PUSH_RELAY_KEYS", "");
-    const { HOSTED_RELAY_KEYS } = await import("@/lib/push-relay/config");
-    expect(HOSTED_RELAY_KEYS).toEqual([]);
     const prisma = getPrismaClient();
     const { PUT } = await import("@/app/api/admin/push-relay/route");
     const { makeAdmin } = await import("../kit/factories");

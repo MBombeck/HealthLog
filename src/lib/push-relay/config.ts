@@ -23,7 +23,12 @@ export const HOSTED_RELAY_URL = "https://push.healthlog.dev";
  * runs. Pinned per release; an operator of their own relay sets
  * `PUSH_RELAY_KEYS` instead.
  */
-export const HOSTED_RELAY_KEYS: readonly string[] = Object.freeze([]);
+export const HOSTED_RELAY_KEYS: readonly string[] = Object.freeze([
+  // current
+  "IU8JGZzcE-O4gp4q2BL2o6YYNJeHyDg8MNmAGL5_Ypo",
+  // next, published before the relay switches to it
+  "kPhnCqIwrF_cyQIFTAgCHrWnPavdWkcwMB35oi_wCH0",
+]);
 
 /** The version of the consent text the app shows on its opt-in card. */
 export const RELAY_CONSENT_TEXT_VERSION = "2026-11-21";

@@ -316,7 +316,13 @@ describe("what travels over the relay", () => {
 
 describe("relay configuration", () => {
   it("is unavailable without pinned keys and refuses plain http", () => {
-    expect(relayConfig({}).unavailableReason).toBe("keys_unpinned");
+    // The hosted relay ships its keys pinned; an operator's own relay has none
+    // until PUSH_RELAY_KEYS names them.
+    expect(relayConfig({}).available).toBe(true);
+    expect(
+      relayConfig({ PUSH_RELAY_URL: "https://relay.example.org" })
+        .unavailableReason,
+    ).toBe("keys_unpinned");
     expect(relayConfig({ PUSH_RELAY_MODE: "off" }).unavailableReason).toBe(
       "mode_off",
     );
