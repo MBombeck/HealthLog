@@ -4,6 +4,10 @@
  * Extracted from reminder-worker.ts, which owns the queue names, cron
  * schedules, and boss.work registrations.
  */
+import {
+  nextSlotHeldBySnooze,
+  snoozeHoldsSlot,
+} from "@/lib/medications/snooze-scope";
 import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { type Job } from "pg-boss";
 import type { Locale } from "@/lib/i18n/config";
@@ -139,54 +143,8 @@ export function slotClock(
     );
 }
 
-/**
- * Whether a medication-level snooze holds the reminder of one slot. It
- * holds only while it runs (`now < snoozedUntil`), and only for a slot whose
- * reminder window had opened when the snooze was set (`snoozedAt`, the
- * medication row's @updatedAt of the snooze write), or for the slot the
- * snooze was set ahead of (`heldNextWindowStart`, see
- * {@link nextSlotHeldBySnooze}). A later edit to the row moves `snoozedAt`
- * forward, which can only widen the hold back to the old medication-wide
- * behaviour, never lose a snooze.
- */
-export function snoozeHoldsSlot(
-  snoozedUntil: Date | null,
-  snoozedAt: Date,
-  slotWindowStart: Date,
-  now: Date,
-  heldNextWindowStart: Date | null = null,
-): boolean {
-  if (!snoozedUntil || now.getTime() >= snoozedUntil.getTime()) return false;
-  if (slotWindowStart.getTime() <= snoozedAt.getTime()) return true;
-  return (
-    heldNextWindowStart !== null &&
-    slotWindowStart.getTime() === heldNextWindowStart.getTime()
-  );
-}
-
-/**
- * The window start of the slot a snooze was set ahead of, or `null`. A
- * snooze set while one of the medication's reminder windows was open answers
- * that slot, and a later slot stays reminded (a morning "skip" that snoozes
- * to the end of the day must not silence the evening dose). A snooze set
- * while no window was open, such as "remind me later" on a dose that is
- * not due yet, answers the next slot to open, so that one is held too.
- */
-export function nextSlotHeldBySnooze(
-  windows: ReadonlyArray<{ start: Date; end: Date }>,
-  snoozedAt: Date,
-): Date | null {
-  const at = snoozedAt.getTime();
-  let next: Date | null = null;
-  for (const window of windows) {
-    const start = window.start.getTime();
-    if (start <= at && at <= window.end.getTime()) return null;
-    if (start > at && (next === null || start < next.getTime())) {
-      next = window.start;
-    }
-  }
-  return next;
-}
+// The snooze scope is shared with the today list (`snooze-scope.ts`).
+export { nextSlotHeldBySnooze, snoozeHoldsSlot };
 
 /**
  * Check all active medications for each user and determine reminder phases.

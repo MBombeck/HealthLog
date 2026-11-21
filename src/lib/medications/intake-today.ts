@@ -10,6 +10,7 @@ import { annotate } from "@/lib/logging/context";
 import { getUserTodayBounds } from "@/lib/tz/local-day";
 import { projectTodayIntakesAndRecompute } from "@/lib/medications/scheduling/project-today-intakes";
 import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
+import { slotsHeldBySnooze } from "@/lib/medications/snooze-scope";
 
 export async function readTodayIntakes(input: {
   userId: string;
@@ -47,8 +48,46 @@ export async function readTodayIntakes(input: {
       ...TRACKED_INTAKE_EVENT_WHERE,
     },
     orderBy: [{ scheduledFor: "asc" }, { id: "asc" }],
-    include: { medication: { select: { id: true, snoozedUntil: true } } },
+    include: {
+      medication: {
+        select: {
+          id: true,
+          snoozedUntil: true,
+          updatedAt: true,
+          schedules: {
+            select: {
+              windowStart: true,
+              windowEnd: true,
+              timesOfDay: true,
+              reminderGraceMinutes: true,
+              doseWindows: true,
+            },
+          },
+        },
+      },
+    },
   });
+
+  // A snooze answers one dose, not the medication: the slots it holds by the
+  // reminder worker's own rule, per medication.
+  const now = new Date();
+  const heldByMedication = new Map<string, Set<number>>();
+  for (const e of events) {
+    if (heldByMedication.has(e.medicationId)) continue;
+    heldByMedication.set(
+      e.medicationId,
+      slotsHeldBySnooze({
+        snoozedUntil: e.medication.snoozedUntil,
+        snoozedAt: e.medication.updatedAt,
+        schedules: e.medication.schedules,
+        slotInstants: events
+          .filter((x) => x.medicationId === e.medicationId)
+          .map((x) => x.scheduledFor),
+        tz: userTz,
+        now,
+      }),
+    );
+  }
 
   annotate({
     action: { name: "medications.intake.today" },
@@ -74,9 +113,13 @@ export async function readTodayIntakes(input: {
           // a stale row surfacing in the window reads honestly.)
           e.autoMissed
           ? "missed"
-          : e.medication.snoozedUntil && e.medication.snoozedUntil > new Date()
+          : heldByMedication.get(e.medicationId)?.has(e.scheduledFor.getTime())
             ? "snoozed"
             : "pending",
-    snoozedUntil: e.medication.snoozedUntil?.toISOString() ?? null,
+    snoozedUntil: heldByMedication
+      .get(e.medicationId)
+      ?.has(e.scheduledFor.getTime())
+      ? (e.medication.snoozedUntil?.toISOString() ?? null)
+      : null,
   }));
 }

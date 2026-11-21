@@ -1617,12 +1617,12 @@ export const todayIntakeEntry = z
     status: z
       .enum(["skipped", "taken", "missed", "pending", "snoozed"])
       .describe(
-        "Resolved in that precedence order. `missed` is TERMINAL — the nightly cron closed a never-acted slot — and is not a `pending` that can still be answered. `snoozed` is not a property of this event at all: it reflects the MEDICATION's deferral stamp still lying in the future, so every pending dose of that medication reads snoozed at once.",
+        "Resolved in that precedence order. `missed` is TERMINAL — the nightly cron closed a never-acted slot — and is not a `pending` that can still be answered. `snoozed` means the medication's running deferral holds THIS slot: the slot whose reminder window was open when the snooze was set, or, set while none was open, the next slot to open. It is the same rule the reminder worker applies, so another slot of the same medication stays `pending` and is still reminded.",
       ),
     snoozedUntil: isoDateTime()
       .nullable()
       .describe(
-        "The medication's deferral stamp, repeated on each of its events. Null when the medication is not deferred.",
+        "When the snooze holding this slot ends. Null when no running snooze holds this slot, including other slots of a snoozed medication.",
       ),
   })
   .meta({
