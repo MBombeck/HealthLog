@@ -28,6 +28,7 @@ import { encryptNote, readNote } from "@/lib/crypto/note-cipher";
 import { anonymous, callRoute } from "../../kit/call-route";
 import { makeMedication, makeSession, makeUser } from "../../kit/factories";
 import { getPrismaClient, truncateAllTables } from "../setup";
+import { expectSanitisedIssue } from "../zod-issue-shape";
 
 const prisma = getPrismaClient();
 const ROUTE = "/api/medications/{id}/side-effects";
@@ -175,9 +176,15 @@ describe("GET /api/medications/{id}/side-effects", () => {
     expect(res.error).toBe("Validation failed");
     const issues = (res.body as ValidationBody).details.issues;
     expect(issues.map((i) => i.path).sort()).toEqual(["from", "limit"]);
-    for (const issue of issues) {
-      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
-    }
+    for (const issue of issues) expectSanitisedIssue(issue);
+    // The declared bound is named, never the value sent.
+    expect(issues.find((i) => i.path === "limit")).toMatchObject({
+      code: "too_big",
+      maximum: 200,
+      inclusive: true,
+      origin: "number",
+    });
+    expect(JSON.stringify(issues)).not.toContain("99999");
   });
 
   it("answers 404 for another account's medication and 401 to an anonymous caller", async () => {

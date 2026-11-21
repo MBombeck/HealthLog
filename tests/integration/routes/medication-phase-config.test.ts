@@ -26,6 +26,7 @@ import {
 import { anonymous, callRoute } from "../../kit/call-route";
 import { makeMedication, makeSession, makeUser } from "../../kit/factories";
 import { getPrismaClient, truncateAllTables } from "../setup";
+import { expectSanitisedIssue } from "../zod-issue-shape";
 
 const prisma = getPrismaClient();
 const ROUTE = "/api/medications/{id}/phase-config";
@@ -189,9 +190,18 @@ describe("PUT /api/medications/{id}/phase-config", () => {
       "greenValue",
       "redValue",
     ]);
-    for (const issue of body.details.issues) {
-      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
-    }
+    for (const issue of body.details.issues) expectSanitisedIssue(issue);
+    // The bounded field names both declared ends, never the value sent.
+    expect(
+      body.details.issues.find((i) => i.path === "redValue"),
+    ).toMatchObject({
+      code: "too_big",
+      minimum: 0,
+      maximum: 1440,
+      minimumInclusive: true,
+      maximumInclusive: true,
+    });
+    expect(JSON.stringify(body.details.issues)).not.toContain("10000");
     expect(await storedRow(med.id)).toBeNull();
   });
 

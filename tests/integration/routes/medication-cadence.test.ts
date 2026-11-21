@@ -25,6 +25,7 @@ import { GET } from "@/app/api/medications/[id]/cadence/route";
 import { anonymous, callRoute } from "../../kit/call-route";
 import { makeMedication, makeSession, makeUser } from "../../kit/factories";
 import { getPrismaClient, truncateAllTables } from "../setup";
+import { expectSanitisedIssue } from "../zod-issue-shape";
 
 const prisma = getPrismaClient();
 const ROUTE = "/api/medications/{id}/cadence";
@@ -210,30 +211,33 @@ describe("GET /api/medications/{id}/cadence", () => {
   });
 
   it.each([
-    ["9999", "too large"],
-    ["0", "below one"],
-    ["notanumber", "not a number"],
-  ])("refuses days=%s (%s) with the multi-issue 422", async (days) => {
-    const owner = await makeUser();
-    const med = await makeMedication(owner);
+    ["9999", "too large", { code: "too_big", maximum: 180 }],
+    ["0", "below one", { code: "too_small", minimum: 1 }],
+    ["notanumber", "not a number", { code: "invalid_type" }],
+  ])(
+    "refuses days=%s (%s) with the multi-issue 422",
+    async (days, _, named) => {
+      const owner = await makeUser();
+      const med = await makeMedication(owner);
 
-    const res = await callRoute(GET, {
-      method: "GET",
-      route: ROUTE,
-      params: { id: med.id },
-      query: { days },
-      auth: await makeSession(owner),
-    });
+      const res = await callRoute(GET, {
+        method: "GET",
+        route: ROUTE,
+        params: { id: med.id },
+        query: { days },
+        auth: await makeSession(owner),
+      });
 
-    expect(res.status).toBe(422);
-    expect(res.error).toBe("Validation failed");
-    const issues = (res.body as ValidationBody).details.issues;
-    expect(issues.length).toBeGreaterThanOrEqual(1);
-    expect(issues.every((i) => i.path === "days")).toBe(true);
-    for (const issue of issues) {
-      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
-    }
-  });
+      expect(res.status).toBe(422);
+      expect(res.error).toBe("Validation failed");
+      const issues = (res.body as ValidationBody).details.issues;
+      expect(issues.length).toBeGreaterThanOrEqual(1);
+      expect(issues.every((i) => i.path === "days")).toBe(true);
+      for (const issue of issues) expectSanitisedIssue(issue);
+      // A bound issue names the declared bound, never the value sent.
+      expect(issues[0]).toMatchObject(named);
+    },
+  );
 
   it("answers 404 for another account's medication", async () => {
     const owner = await makeUser();
