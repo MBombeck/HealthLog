@@ -9324,6 +9324,7 @@
       "enabled": "El relé push está activado",
       "disabled": "El relé push está desactivado",
       "saveFailed": "No se pudo guardar el ajuste del relé",
+      "loadError": "No se pudo leer el estado del relé push.",
       "state": {
         "ok": "Conectado",
         "degraded": "Con problemas",

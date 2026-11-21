@@ -9324,6 +9324,7 @@
       "enabled": "Le relais push est activé",
       "disabled": "Le relais push est désactivé",
       "saveFailed": "Le réglage du relais n'a pas pu être enregistré",
+      "loadError": "Impossible de lire l'état du relais push.",
       "state": {
         "ok": "Connecté",
         "degraded": "Perturbé",

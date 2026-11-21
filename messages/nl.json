@@ -9324,6 +9324,7 @@
       "enabled": "De pushrelay staat aan",
       "disabled": "De pushrelay staat uit",
       "saveFailed": "De relay-instelling kon niet worden opgeslagen",
+      "loadError": "De status van de pushrelay kon niet worden gelezen.",
       "state": {
         "ok": "Verbonden",
         "degraded": "Verstoord",

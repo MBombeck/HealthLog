@@ -22,6 +22,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { RecentAuditPreview } from "../recent-audit-preview";
 import { CoachFeedbackSection } from "../coach-feedback-section";
 import { AiQualitySection } from "../ai-quality-section";
+import { PushRelaySection } from "../push-relay-section";
 
 function render(node: React.ReactNode) {
   return renderToStaticMarkup(
@@ -33,6 +34,9 @@ const cases: Array<[string, () => React.ReactNode]> = [
   ["RecentAuditPreview", () => <RecentAuditPreview />],
   ["CoachFeedbackSection", () => <CoachFeedbackSection />],
   ["AiQualitySection", () => <AiQualitySection />],
+  // Rendered nothing on a failed read, the same as a relay the operator
+  // turned off.
+  ["PushRelaySection", () => <PushRelaySection />],
 ];
 
 describe("admin read-error family — a read failure is foreground and recoverable", () => {

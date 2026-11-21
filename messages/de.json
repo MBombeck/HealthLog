@@ -9324,6 +9324,7 @@
       "enabled": "Der Push-Relay ist eingeschaltet",
       "disabled": "Der Push-Relay ist ausgeschaltet",
       "saveFailed": "Die Relay-Einstellung konnte nicht gespeichert werden",
+      "loadError": "Der Stand des Push-Relays konnte nicht gelesen werden.",
       "state": {
         "ok": "Verbunden",
         "degraded": "Gestört",
