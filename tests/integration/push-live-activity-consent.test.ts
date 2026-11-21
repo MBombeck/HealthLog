@@ -1,11 +1,7 @@
 /**
- * The second consent and the operator's switch for Live Activity start and
- * update over the relay:
- *
- * - `liveActivityConsent` is its own field, refused without the relay
- *   consent, and withdrawn with it;
- * - `push.relay.liveActivity` lists `start` and `update` only while
- *   `PUSH_RELAY_LIVE_ACTIVITY=on`; by default only `end`.
+ * The second, separate consent to Live Activity start and update over the
+ * relay: its own field, refused without the relay consent, withdrawn with
+ * it, and published as `push.device.liveActivityConsent`.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -38,7 +34,6 @@ import { deviceBody, enableRelay, registerDevice } from "./push-relay-kit";
 beforeEach(async () => {
   vi.stubEnv("PUSH_RELAY_URL", RELAY_URL);
   vi.stubEnv("PUSH_RELAY_KEYS", RELAY_PUBLIC_KEY);
-  vi.stubEnv("PUSH_RELAY_LIVE_ACTIVITY", "");
   await truncateAllTables(getPrismaClient());
   relay.current = new FakeRelay();
 });
@@ -121,14 +116,12 @@ describe("Live Activity consent", () => {
   });
 });
 
-describe("the operator's switch", () => {
-  it("lists start and update only while it is on", async () => {
+describe("the account payload", () => {
+  it("names the consent text version and carries only end", async () => {
     await enableRelay();
     const session = await makeSession(await makeUser());
-    expect((await relayBlock(session)).liveActivity).toEqual(["end"]);
-    vi.stubEnv("PUSH_RELAY_LIVE_ACTIVITY", "on");
-    const on = await relayBlock(session);
-    expect(on.liveActivity).toEqual(["end", "start", "update"]);
-    expect(on.liveActivityConsentTextVersion).toBe("2026-11-21");
+    const block = await relayBlock(session);
+    expect(block.liveActivity).toEqual(["end"]);
+    expect(block.liveActivityConsentTextVersion).toBe("2026-11-21");
   });
 });

@@ -77,9 +77,7 @@ export const relayCapabilityBlock = z
       ),
     liveActivity: z
       .array(z.string())
-      .describe(
-        'Live Activity events the relay carries for a device with `push.device.liveActivityConsent`: `["end"]`, and `["end", "start", "update"]` once the operator\'s switch (`PUSH_RELAY_LIVE_ACTIVITY=on`) is on. Empty while the relay is not offered. Offer the second switch only when it lists `start`.',
-      ),
+      .describe('Live Activity events the relay carries (`["end"]`).'),
     liveActivityConsentTextVersion: z
       .string()
       .describe(
@@ -167,7 +165,7 @@ export const devicePushRequestFields = {
   liveActivityConsent: liveActivityConsentSchema
     .optional()
     .describe(
-      'The second, separate switch: Live Activity start and update over the relay, off by default ("The relay and Apple can see when a dose is due."). `granted: true` needs the relay consent, given now or before, else 422 `devices.push.relay_consent_required`; `granted: false` withdraws it.',
+      'The second, separate switch: Live Activity start and update over the relay, off by default ("The relay and Apple can see when a dose is due."). `granted: true` needs the relay consent, given now or before, else 422 `devices.push.relay_consent_required`; `granted: false` withdraws it. Recorded now; the server sends Live Activity start or update over the relay only once `push.relay.liveActivity` lists them.',
     ),
 };
 
