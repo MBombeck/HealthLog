@@ -477,7 +477,7 @@ describe("runTakeAllDue — per-medication loop with failure isolation", () => {
     vi.mocked(toast.success).mockClear();
 
     await runTakeAllDue({ medications: dueTwo, t, queryClient });
-    const options = vi.mocked(toast.success).mock.calls[0][1] as {
+    const options = vi.mocked(toast.success).mock.calls[0][1] as unknown as {
       action: { onClick: () => void };
     };
     options.action.onClick();
