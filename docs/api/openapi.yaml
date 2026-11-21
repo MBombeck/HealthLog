@@ -48735,6 +48735,18 @@ components:
                   - REMINDER
                   - IMPORT
                   - APPLE_HEALTH
+              takenVia:
+                anyOf:
+                  - type: string
+                    enum:
+                      - WEB
+                      - APP
+                      - INTEGRATION
+                      - TELEGRAM
+                      - APPLE_HEALTH
+                      - IMPORT
+                      - AUTO
+                  - type: "null"
               idempotencyKey:
                 type:
                   - string
