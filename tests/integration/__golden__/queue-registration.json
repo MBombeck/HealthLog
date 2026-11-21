@@ -2078,7 +2078,7 @@
       "timezone": "Europe/Berlin"
     },
     {
-      "cron": "*/15 * * * *",
+      "cron": "11-59/15 * * * *",
       "data": {},
       "key": "",
       "kind": "cron",
@@ -2185,7 +2185,7 @@
       "timezone": "Europe/Berlin"
     },
     {
-      "cron": "*/15 * * * *",
+      "cron": "4-59/15 * * * *",
       "data": {},
       "key": "",
       "kind": "cron",
@@ -2196,7 +2196,7 @@
       "timezone": "Europe/Berlin"
     },
     {
-      "cron": "*/15 * * * *",
+      "cron": "8-59/15 * * * *",
       "data": {},
       "key": "",
       "kind": "cron",
@@ -2573,7 +2573,7 @@
       "timezone": "Europe/Berlin"
     },
     {
-      "cron": "*/15 * * * *",
+      "cron": "6-59/15 * * * *",
       "data": {},
       "key": "",
       "kind": "cron",
@@ -2652,7 +2652,7 @@
       "timezone": "Europe/Berlin"
     },
     {
-      "cron": "*/15 * * * *",
+      "cron": "2-59/15 * * * *",
       "data": {},
       "key": "",
       "kind": "cron",
@@ -2721,7 +2721,7 @@
       "timezone": "Europe/Berlin"
     },
     {
-      "cron": "15 * * * *",
+      "cron": "16 * * * *",
       "data": {},
       "key": "",
       "kind": "cron",
@@ -2953,7 +2953,7 @@
       "timezone": "Europe/Berlin"
     },
     {
-      "cron": "0 * * * *",
+      "cron": "3 * * * *",
       "data": {},
       "key": "",
       "kind": "cron",

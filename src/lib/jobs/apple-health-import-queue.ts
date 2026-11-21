@@ -24,7 +24,7 @@
  */
 export const IMPORT_JOB_RECONCILE_QUEUE = "apple-health-import-reconcile";
 
-export const IMPORT_JOB_RECONCILE_CRON = "*/15 * * * *";
+export const IMPORT_JOB_RECONCILE_CRON = "11-59/15 * * * *";
 
 /** Queue name isolated from revision-1 workers during rolling deployments. */
 export const APPLE_HEALTH_IMPORT_V2_QUEUE = "apple-health-import-v2";

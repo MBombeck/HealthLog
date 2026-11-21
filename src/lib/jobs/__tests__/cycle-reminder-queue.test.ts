@@ -40,7 +40,7 @@ describe("cycle-reminder registration", () => {
 
   it("schedules the cycle-reminder cron, single-flight", () => {
     const job = jobOf(CYCLE_REMINDER_QUEUE);
-    expect(job.cron).toBe("*/15 * * * *");
+    expect(job.cron).toBe("4-59/15 * * * *");
     expect(job.scheduleOptions).toBeUndefined();
     expect(job.work).toEqual({ localConcurrency: 1 });
   });
