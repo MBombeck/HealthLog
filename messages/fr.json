@@ -1999,12 +1999,12 @@
     "sideEffectTagAppetiteLoss": "Perte d’appétit",
     "sideEffectTagHeartburn": "Brûlures d’estomac",
     "sideEffectTagHeadache": "Maux de tête",
-    "phaseConfig": "Phases de rappel",
-    "phaseConfigDescription": "Configurez les moments des rappels.",
-    "phaseGreen": "Vert",
-    "phaseYellow": "Jaune",
-    "phaseOrange": "Orange",
-    "phaseRed": "Rouge",
+    "phaseConfig": "Moments des rappels",
+    "phaseConfigDescription": "Quand vient chaque rappel et quand une dose compte comme manquée.",
+    "phaseGreen": "À prendre",
+    "phaseYellow": "Toujours à prendre",
+    "phaseOrange": "En retard",
+    "phaseRed": "Manquée",
     "phaseMinutes": "Min",
     "phasePercent": "%",
     "phaseResetDefaults": "Rétablir les valeurs par défaut",
@@ -2138,20 +2138,22 @@
         "disabledToast": "Rappels désactivés",
         "toggleFailed": "Impossible de modifier le réglage des rappels.",
         "clientManagedChip": "Géré par l’iPhone",
-        "clientManagedHint": "Votre iPhone gère les rappels de ce médicament."
+        "clientManagedHint": "Votre iPhone gère les rappels de ce médicament.",
+        "helperAutoRecorded": "Les doses sont enregistrées automatiquement, donc aucun rappel n'est envoyé.",
+        "plan": "Prochaine dose {dose} : rappels tant qu'elle est à prendre, puis encore une fois si elle est en retard après {overdue}. Après {missed}, elle compte comme manquée."
       },
       "settings": {
         "title": "Réglages",
         "phases": {
-          "openButton": "Configurer les phases",
-          "requiresCourseWindow": "Les phases sont disponibles une fois une période de traitement définie."
+          "openButton": "Ajuster"
         },
         "grace": {
           "label": "Fenêtre de rappel",
           "appliesToAllNote": "S’applique à tous les horaires de ce médicament.",
           "unit": "minutes",
           "saved": "Fenêtre de rappel enregistrée",
-          "failed": "Impossible d’enregistrer la fenêtre de rappel."
+          "failed": "Impossible d’enregistrer la fenêtre de rappel.",
+          "description": "Les rappels commencent à l'heure de la dose et durent ce temps. Ensuite, la dose est en retard."
         },
         "codes": {
           "label": "Codes cliniques (ATC / RxNorm)",
@@ -2678,7 +2680,11 @@
       "extraDose": "Enregistrée comme dose supplémentaire, hors planning.",
       "noMedications": "Ajoutez d’abord un médicament, puis vous pourrez enregistrer des prises pour celui-ci.",
       "saveError": "Impossible d'enregistrer la prise. Réessaie"
-    }
+    },
+    "phaseGreenHint": "Premier rappel, ce délai avant la fin de la plage de rappel.",
+    "phaseYellowHint": "Un autre rappel, ce délai avant la fin de la plage.",
+    "phaseOrangeHint": "Un rappel que la dose est en retard, ce délai après la fin de la plage.",
+    "phaseRedHint": "Passé ce délai après la plage, la dose compte comme manquée."
   },
   "charts": {
     "loadingLabel": "Chargement du graphique…",

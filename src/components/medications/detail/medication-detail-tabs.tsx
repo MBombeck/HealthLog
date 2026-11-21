@@ -47,12 +47,7 @@ import {
   holdsGuardianSurfaces,
   useRecordCapabilities,
 } from "@/hooks/use-record-capabilities";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useUrlSearch, writeUrlState } from "@/lib/url-state";
@@ -108,7 +103,10 @@ import type { ComplianceDisplay } from "@/lib/analytics/compliance";
 import { AutoMarkTakenBody } from "@/components/medications/sections/auto-mark-taken-section";
 import { IntakeTrackingBody } from "@/components/medications/sections/intake-tracking-section";
 import { MedicationRelatedSection } from "@/components/medications/detail/medication-related-section";
-import { OverviewStatusSection } from "@/components/medications/detail/overview-status-section";
+import {
+  OverviewStatusSection,
+  ReminderPlanLine,
+} from "@/components/medications/detail/overview-status-section";
 import type { RelatedLink } from "@/lib/links/related";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
@@ -633,7 +631,17 @@ export function MedicationDetailTabs({
                 <NotificationsBody
                   medicationId={id}
                   notificationsEnabled={medication.notificationsEnabled}
+                  autoMarkTaken={medication.autoMarkTaken === true}
+                  plan={
+                    asNeeded ? null : <ReminderPlanLine medicationId={id} />
+                  }
                 />
+                {!asNeeded && medication.autoMarkTaken !== true && (
+                  <PhasesRow
+                    medicationId={id}
+                    onRequestPhaseSheet={() => setPhaseSheetOpen(true)}
+                  />
+                )}
                 <GraceRow
                   medicationId={id}
                   schedules={medication.schedules.map((s) => ({
@@ -827,17 +835,6 @@ export function MedicationDetailTabs({
             {nutrientsOn && !showComposition && (
               <CompositionRow medicationId={id} ownRecord={!inSharedRecord} />
             )}
-            {isGlp1 && (
-              <div className="py-3">
-                <PhasesRow
-                  medicationId={id}
-                  treatmentClass={medication.treatmentClass}
-                  startsOn={medication.startsOn}
-                  endsOn={medication.endsOn}
-                  onRequestPhaseSheet={() => setPhaseSheetOpen(true)}
-                />
-              </div>
-            )}
           </SettingsGroup>
 
           <SettingsGroup
@@ -904,15 +901,13 @@ export function MedicationDetailTabs({
         onSuccess={() => setEditOpen(false)}
       />
 
-      {/* GLP-1 phase/titration editor — sibling-swapped from the Lifecycle
-          group so the modal stack never exceeds the tab + one sheet. */}
-      {isGlp1 && (
-        <PhaseConfigSheet
-          medicationId={id}
-          open={phaseSheetOpen}
-          onOpenChange={setPhaseSheetOpen}
-        />
-      )}
+      {/* The reminder-phase editor, opened from the Schedule tab's
+          reminder card; one sheet above the tab, never a stack. */}
+      <PhaseConfigSheet
+        medicationId={id}
+        open={phaseSheetOpen}
+        onOpenChange={setPhaseSheetOpen}
+      />
     </div>
   );
 }

@@ -1999,12 +1999,12 @@
     "sideEffectTagAppetiteLoss": "eetlustverlies",
     "sideEffectTagHeartburn": "brandend maagzuur",
     "sideEffectTagHeadache": "hoofdpijn",
-    "phaseConfig": "Herinneringsfasen",
-    "phaseConfigDescription": "Stel de timing van herinneringen in.",
-    "phaseGreen": "Groen",
-    "phaseYellow": "Geel",
-    "phaseOrange": "Oranje",
-    "phaseRed": "Rood",
+    "phaseConfig": "Tijden van de herinneringen",
+    "phaseConfigDescription": "Wanneer elke herinnering komt en wanneer een dosis als gemist telt.",
+    "phaseGreen": "Aan de beurt",
+    "phaseYellow": "Nog aan de beurt",
+    "phaseOrange": "Te laat",
+    "phaseRed": "Gemist",
     "phaseMinutes": "Min",
     "phasePercent": "%",
     "phaseResetDefaults": "Standaardwaarden herstellen",
@@ -2138,20 +2138,22 @@
         "disabledToast": "Herinneringen uit",
         "toggleFailed": "De herinneringsinstelling kon niet worden gewijzigd.",
         "clientManagedChip": "Beheerd door iPhone",
-        "clientManagedHint": "Je iPhone beheert de herinneringen voor dit medicijn."
+        "clientManagedHint": "Je iPhone beheert de herinneringen voor dit medicijn.",
+        "helperAutoRecorded": "Doses worden automatisch vastgelegd, dus er komen geen herinneringen.",
+        "plan": "Volgende dosis {dose}: herinneringen zolang hij aan de beurt is, en nog één keer als hij na {overdue} te laat is. Na {missed} telt hij als gemist."
       },
       "settings": {
         "title": "Instellingen",
         "phases": {
-          "openButton": "Fasen instellen",
-          "requiresCourseWindow": "Fasen zijn beschikbaar zodra er een kuurperiode is ingesteld."
+          "openButton": "Aanpassen"
         },
         "grace": {
           "label": "Herinneringsvenster",
           "appliesToAllNote": "Geldt voor elk schema van dit medicijn.",
           "unit": "minuten",
           "saved": "Herinneringsvenster opgeslagen",
-          "failed": "Het herinneringsvenster kon niet worden opgeslagen."
+          "failed": "Het herinneringsvenster kon niet worden opgeslagen.",
+          "description": "Herinneringen beginnen op het tijdstip van de dosis en lopen zo lang. Daarna is de dosis te laat."
         },
         "codes": {
           "label": "Klinische codes (ATC / RxNorm)",
@@ -2678,7 +2680,11 @@
       "extraDose": "Wordt vastgelegd als extra dosis, buiten het schema.",
       "noMedications": "Voeg eerst een medicijn toe, daarna kun je er innames bij vastleggen.",
       "saveError": "De inname kon niet worden opgeslagen. Probeer het opnieuw"
-    }
+    },
+    "phaseGreenHint": "Eerste herinnering, zo lang voor het einde van het herinneringsvenster.",
+    "phaseYellowHint": "Nog een herinnering, zo lang voor het einde van het venster.",
+    "phaseOrangeHint": "Een herinnering dat de dosis te laat is, zo lang na het einde van het venster.",
+    "phaseRedHint": "Zo lang na het venster telt de dosis als gemist."
   },
   "charts": {
     "loadingLabel": "Grafiek laden…",

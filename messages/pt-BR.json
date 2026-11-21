@@ -1999,12 +1999,12 @@
     "sideEffectTagAppetiteLoss": "perda-de-apetite",
     "sideEffectTagHeartburn": "azia",
     "sideEffectTagHeadache": "dor-de-cabeça",
-    "phaseConfig": "Fases de lembrete",
-    "phaseConfigDescription": "Configure o tempo dos lembretes.",
-    "phaseGreen": "Verde",
-    "phaseYellow": "Amarelo",
-    "phaseOrange": "Laranja",
-    "phaseRed": "Vermelho",
+    "phaseConfig": "Horários dos lembretes",
+    "phaseConfigDescription": "Quando cada lembrete chega e quando uma dose conta como perdida.",
+    "phaseGreen": "Na hora",
+    "phaseYellow": "Ainda na hora",
+    "phaseOrange": "Atrasada",
+    "phaseRed": "Perdida",
     "phaseMinutes": "Min",
     "phasePercent": "%",
     "phaseResetDefaults": "Redefinir para padrões",
@@ -2138,20 +2138,22 @@
         "disabledToast": "Lembretes desligados",
         "toggleFailed": "Não foi possível alterar a configuração de lembrete.",
         "clientManagedChip": "Gerenciado pelo iPhone",
-        "clientManagedHint": "Seu iPhone gerencia os lembretes deste medicamento."
+        "clientManagedHint": "Seu iPhone gerencia os lembretes deste medicamento.",
+        "helperAutoRecorded": "As doses são registradas automaticamente, então nenhum lembrete é enviado.",
+        "plan": "Próxima dose {dose}: lembretes enquanto estiver na hora e mais uma vez se atrasar depois das {overdue}. Depois das {missed} conta como perdida."
       },
       "settings": {
         "title": "Configurações",
         "phases": {
-          "openButton": "Configurar fases",
-          "requiresCourseWindow": "As fases ficam disponíveis quando uma janela de curso é definida."
+          "openButton": "Ajustar"
         },
         "grace": {
           "label": "Janela de lembrete",
           "appliesToAllNote": "Aplica-se a todos os cronogramas deste medicamento.",
           "unit": "minutos",
           "saved": "Janela de lembrete salva",
-          "failed": "Não foi possível salvar a janela de lembrete."
+          "failed": "Não foi possível salvar a janela de lembrete.",
+          "description": "Os lembretes começam na hora da dose e duram este tempo. Depois, a dose está atrasada."
         },
         "codes": {
           "label": "Códigos clínicos (ATC / RxNorm)",
@@ -2678,7 +2680,11 @@
       "extraDose": "Registrada como dose extra, fora do cronograma.",
       "noMedications": "Adicione um medicamento primeiro; depois você pode registrar tomadas dele.",
       "saveError": "Não foi possível salvar a tomada. Tente de novo"
-    }
+    },
+    "phaseGreenHint": "Primeiro lembrete, este tempo antes do fim da janela de lembrete.",
+    "phaseYellowHint": "Outro lembrete, este tempo antes do fim da janela.",
+    "phaseOrangeHint": "Um lembrete de que a dose está atrasada, este tempo depois do fim da janela.",
+    "phaseRedHint": "Passado este tempo após a janela, a dose conta como perdida."
   },
   "charts": {
     "loadingLabel": "Carregando gráfico…",

@@ -1999,12 +1999,12 @@
     "sideEffectTagAppetiteLoss": "식욕저하",
     "sideEffectTagHeartburn": "속쓰림",
     "sideEffectTagHeadache": "두통",
-    "phaseConfig": "알림 단계",
-    "phaseConfigDescription": "알림을 보낼 시점을 설정해요.",
-    "phaseGreen": "초록",
-    "phaseYellow": "노랑",
-    "phaseOrange": "주황",
-    "phaseRed": "빨강",
+    "phaseConfig": "알림 시점",
+    "phaseConfigDescription": "각 알림이 언제 오고 언제 놓친 것으로 기록되는지 정해요.",
+    "phaseGreen": "복용 시간",
+    "phaseYellow": "아직 복용 시간",
+    "phaseOrange": "시간 지남",
+    "phaseRed": "놓침",
     "phaseMinutes": "분",
     "phasePercent": "%",
     "phaseResetDefaults": "기본값으로 되돌리기",
@@ -2138,20 +2138,22 @@
         "disabledToast": "알림 꺼짐",
         "toggleFailed": "알림 설정을 바꾸지 못했어요.",
         "clientManagedChip": "iPhone에서 관리",
-        "clientManagedHint": "이 약의 알림은 iPhone에서 관리해요."
+        "clientManagedHint": "이 약의 알림은 iPhone에서 관리해요.",
+        "helperAutoRecorded": "복용이 자동으로 기록되어 알림을 보내지 않아요.",
+        "plan": "다음 복용 {dose}: 복용 시간 동안 알리고, {overdue} 이후 늦어지면 한 번 더 알려요. {missed} 이후에는 놓친 것으로 기록해요."
       },
       "settings": {
         "title": "설정",
         "phases": {
-          "openButton": "단계 설정",
-          "requiresCourseWindow": "복용 기간을 설정하면 단계를 쓸 수 있어요."
+          "openButton": "조정"
         },
         "grace": {
           "label": "알림 유예 시간",
           "appliesToAllNote": "이 약의 모든 일정에 적용돼요.",
           "unit": "분",
           "saved": "알림 유예 시간을 저장했어요",
-          "failed": "알림 유예 시간을 저장하지 못했어요."
+          "failed": "알림 유예 시간을 저장하지 못했어요.",
+          "description": "알림은 복용 시간에 시작해 이 시간 동안 이어져요. 그 뒤에는 복용이 늦은 것으로 봐요."
         },
         "codes": {
           "label": "임상 코드 (ATC / RxNorm)",
@@ -2678,7 +2680,11 @@
       "extraDose": "일정 외 추가 복용으로 기록돼요.",
       "noMedications": "약을 먼저 추가하면 복용을 기록할 수 있어요.",
       "saveError": "복용 기록을 저장하지 못했어요. 다시 시도해 주세요"
-    }
+    },
+    "phaseGreenHint": "알림 시간이 끝나기 이만큼 전에 첫 알림을 보내요.",
+    "phaseYellowHint": "알림 시간이 끝나기 이만큼 전에 한 번 더 알려요.",
+    "phaseOrangeHint": "알림 시간이 끝난 뒤 이만큼 지나면 복용이 늦었다고 알려요.",
+    "phaseRedHint": "알림 시간이 끝나고 이만큼 지나면 놓친 것으로 기록해요."
   },
   "charts": {
     "loadingLabel": "차트 불러오는 중…",

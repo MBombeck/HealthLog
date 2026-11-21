@@ -1999,12 +1999,12 @@
     "sideEffectTagAppetiteLoss": "Pérdida de apetito",
     "sideEffectTagHeartburn": "Ardor de estómago",
     "sideEffectTagHeadache": "Dolor de cabeza",
-    "phaseConfig": "Fases de recordatorio",
-    "phaseConfigDescription": "Configura los momentos de los recordatorios.",
-    "phaseGreen": "Verde",
-    "phaseYellow": "Amarillo",
-    "phaseOrange": "Naranja",
-    "phaseRed": "Rojo",
+    "phaseConfig": "Momentos de los recordatorios",
+    "phaseConfigDescription": "Cuándo llega cada recordatorio y cuándo una dosis cuenta como perdida.",
+    "phaseGreen": "Es la hora",
+    "phaseYellow": "Aún es la hora",
+    "phaseOrange": "Atrasada",
+    "phaseRed": "Perdida",
     "phaseMinutes": "Mín",
     "phasePercent": "%",
     "phaseResetDefaults": "Restablecer valores por defecto",
@@ -2138,20 +2138,22 @@
         "disabledToast": "Recordatorios desactivados",
         "toggleFailed": "No se pudo cambiar el ajuste de recordatorios.",
         "clientManagedChip": "Gestionado por el iPhone",
-        "clientManagedHint": "Tu iPhone gestiona los recordatorios de este medicamento."
+        "clientManagedHint": "Tu iPhone gestiona los recordatorios de este medicamento.",
+        "helperAutoRecorded": "Las dosis se registran automáticamente, así que no se envían recordatorios.",
+        "plan": "Próxima dosis {dose}: recordatorios mientras es la hora y otra vez si se atrasa después de las {overdue}. Después de las {missed} cuenta como perdida."
       },
       "settings": {
         "title": "Ajustes",
         "phases": {
-          "openButton": "Configurar fases",
-          "requiresCourseWindow": "Las fases están disponibles una vez fijado un periodo de tratamiento."
+          "openButton": "Ajustar"
         },
         "grace": {
           "label": "Ventana de recordatorio",
           "appliesToAllNote": "Se aplica a todos los horarios de este medicamento.",
           "unit": "minutos",
           "saved": "Ventana de recordatorio guardada",
-          "failed": "No se pudo guardar la ventana de recordatorio."
+          "failed": "No se pudo guardar la ventana de recordatorio.",
+          "description": "Los recordatorios empiezan a la hora de la dosis y duran este tiempo. Después, la dosis está atrasada."
         },
         "codes": {
           "label": "Códigos clínicos (ATC / RxNorm)",
@@ -2678,7 +2680,11 @@
       "extraDose": "Se registra como dosis extra, fuera del horario.",
       "noMedications": "Añade primero un medicamento y luego podrás registrar tomas para él.",
       "saveError": "No se pudo guardar la toma. Inténtalo de nuevo"
-    }
+    },
+    "phaseGreenHint": "Primer recordatorio, este tiempo antes de que termine la ventana de recordatorio.",
+    "phaseYellowHint": "Otro recordatorio, este tiempo antes de que termine la ventana.",
+    "phaseOrangeHint": "Un recordatorio de que la dosis está atrasada, este tiempo después de que terminó la ventana.",
+    "phaseRedHint": "Pasado este tiempo tras la ventana, la dosis cuenta como perdida."
   },
   "charts": {
     "loadingLabel": "Cargando la gráfica…",

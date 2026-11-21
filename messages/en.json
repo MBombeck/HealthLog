@@ -1999,12 +1999,12 @@
     "sideEffectTagAppetiteLoss": "appetite-loss",
     "sideEffectTagHeartburn": "heartburn",
     "sideEffectTagHeadache": "headache",
-    "phaseConfig": "Reminder phases",
-    "phaseConfigDescription": "Configure timing for reminders.",
-    "phaseGreen": "Green",
-    "phaseYellow": "Yellow",
-    "phaseOrange": "Orange",
-    "phaseRed": "Red",
+    "phaseConfig": "Reminder timing",
+    "phaseConfigDescription": "When each reminder comes and when a dose counts as missed.",
+    "phaseGreen": "Due",
+    "phaseYellow": "Still due",
+    "phaseOrange": "Overdue",
+    "phaseRed": "Missed",
     "phaseMinutes": "Min",
     "phasePercent": "%",
     "phaseResetDefaults": "Reset to defaults",
@@ -2138,20 +2138,22 @@
         "disabledToast": "Reminders off",
         "toggleFailed": "Could not change the reminder setting.",
         "clientManagedChip": "Managed by iPhone",
-        "clientManagedHint": "Your iPhone manages reminders for this medication."
+        "clientManagedHint": "Your iPhone manages reminders for this medication.",
+        "helperAutoRecorded": "Doses are recorded automatically, so no reminders are sent.",
+        "plan": "Next dose {dose}: reminders while it is due, and once more when it is overdue after {overdue}. After {missed} it counts as missed."
       },
       "settings": {
         "title": "Settings",
         "phases": {
-          "openButton": "Configure phases",
-          "requiresCourseWindow": "Phases are available once a course window is set."
+          "openButton": "Adjust"
         },
         "grace": {
           "label": "Reminder window",
           "appliesToAllNote": "Applies to every schedule of this medication.",
           "unit": "minutes",
           "saved": "Reminder window saved",
-          "failed": "Could not save the reminder window."
+          "failed": "Could not save the reminder window.",
+          "description": "Reminders start at the dose time and run this long. After it, the dose is overdue."
         },
         "codes": {
           "label": "Clinical codes (ATC / RxNorm)",
@@ -2678,7 +2680,11 @@
       "extraDose": "Recorded as an extra dose, outside the schedule.",
       "noMedications": "Add a medication first, then you can log intakes against it.",
       "saveError": "Could not save the intake. Try again"
-    }
+    },
+    "phaseGreenHint": "First reminder, this long before the reminder window ends.",
+    "phaseYellowHint": "Another reminder, this long before the window ends.",
+    "phaseOrangeHint": "A reminder that the dose is overdue, this long after the window ended.",
+    "phaseRedHint": "After this long past the window, the dose counts as missed."
   },
   "charts": {
     "loadingLabel": "Loading chart…",

@@ -1999,12 +1999,12 @@
     "sideEffectTagAppetiteLoss": "Appetitlosigkeit",
     "sideEffectTagHeartburn": "Sodbrennen",
     "sideEffectTagHeadache": "Kopfschmerzen",
-    "phaseConfig": "Erinnerungsphasen",
-    "phaseConfigDescription": "Konfiguriere die Zeitpunkte für Erinnerungen.",
-    "phaseGreen": "Grün",
-    "phaseYellow": "Gelb",
-    "phaseOrange": "Orange",
-    "phaseRed": "Rot",
+    "phaseConfig": "Zeitpunkte der Erinnerungen",
+    "phaseConfigDescription": "Wann welche Erinnerung kommt und wann eine Dosis als verpasst zählt.",
+    "phaseGreen": "Fällig",
+    "phaseYellow": "Noch fällig",
+    "phaseOrange": "Überfällig",
+    "phaseRed": "Verpasst",
     "phaseMinutes": "Min",
     "phasePercent": "%",
     "phaseResetDefaults": "Auf Standard zurücksetzen",
@@ -2138,20 +2138,22 @@
         "disabledToast": "Erinnerungen aus",
         "toggleFailed": "Erinnerungs-Einstellung konnte nicht geändert werden.",
         "clientManagedChip": "Vom iPhone verwaltet",
-        "clientManagedHint": "Dein iPhone steuert die Erinnerungen für dieses Medikament."
+        "clientManagedHint": "Dein iPhone steuert die Erinnerungen für dieses Medikament.",
+        "helperAutoRecorded": "Dosen werden automatisch erfasst, deshalb kommen keine Erinnerungen.",
+        "plan": "Nächste Dosis {dose}: Erinnerungen, solange sie fällig ist, und noch einmal, wenn sie ab {overdue} überfällig ist. Ab {missed} zählt sie als verpasst."
       },
       "settings": {
         "title": "Einstellungen",
         "phases": {
-          "openButton": "Phasen konfigurieren",
-          "requiresCourseWindow": "Phasen sind nur mit Kurs-Fenster verfügbar."
+          "openButton": "Anpassen"
         },
         "grace": {
           "label": "Erinnerungsfenster",
           "appliesToAllNote": "Gilt für alle Zeitpläne dieses Medikaments.",
           "unit": "Minuten",
           "saved": "Erinnerungsfenster gespeichert",
-          "failed": "Erinnerungsfenster konnte nicht gespeichert werden."
+          "failed": "Erinnerungsfenster konnte nicht gespeichert werden.",
+          "description": "Erinnerungen beginnen zur Dosiszeit und laufen so lange. Danach ist die Dosis überfällig."
         },
         "codes": {
           "label": "Klinische Codes (ATC / RxNorm)",
@@ -2678,7 +2680,11 @@
       "extraDose": "Wird als zusätzliche Dosis außerhalb des Plans erfasst.",
       "noMedications": "Lege zuerst ein Medikament an, dann kannst du Einnahmen dafür erfassen.",
       "saveError": "Die Einnahme konnte nicht gespeichert werden. Bitte erneut versuchen"
-    }
+    },
+    "phaseGreenHint": "Erste Erinnerung, so lange vor dem Ende des Erinnerungsfensters.",
+    "phaseYellowHint": "Weitere Erinnerung, so lange vor dem Ende des Fensters.",
+    "phaseOrangeHint": "Erinnerung, dass die Dosis überfällig ist, so lange nach dem Ende des Fensters.",
+    "phaseRedHint": "So lange nach dem Fenster zählt die Dosis als verpasst."
   },
   "charts": {
     "loadingLabel": "Diagramm wird geladen…",

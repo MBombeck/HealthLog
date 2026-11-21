@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2847,
-  "total": 8916,
+  "total": 8915,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1186,7 +1186,7 @@
     "components/medications/sections/inventory-shared.ts": 1,
     "components/medications/sections/notifications-section.tsx": 4,
     "components/medications/sections/phase-config-sheet.tsx": 1,
-    "components/medications/sections/settings-section.tsx": 8,
+    "components/medications/sections/settings-section.tsx": 7,
     "components/medications/sections/use-composition.ts": 1,
     "components/medications/settings-group.tsx": 4,
     "components/medications/side-effects-section.tsx": 5,

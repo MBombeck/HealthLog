@@ -142,6 +142,9 @@ export function GraceRow({
       >
         {t("medications.detail.settings.grace.label")}
       </Label>
+      <p className="text-muted-foreground text-xs">
+        {t("medications.detail.settings.grace.description")}
+      </p>
       {multiSchedule && (
         <p className="text-muted-foreground text-xs">
           {t("medications.detail.settings.grace.appliesToAllNote")}
@@ -275,40 +278,29 @@ export function DrugCodingRow({
 }
 
 /**
- * v1.7.0 — phases / course-window row. GLP-1 only; the button mounts
- * once a course window is set, otherwise an italic hint. When
- * `onRequestPhaseSheet` is provided the parent orchestrates the
- * sibling-swap; otherwise the row self-mounts `<PhaseConfigSheet>`.
+ * The reminder phases row: when the reminders for a dose come and when the
+ * dose counts as missed. Every scheduled medication has phases (the reminder
+ * worker reads them for all of them); the row used to be GLP-1 only, and
+ * then only once a course window was set. When `onRequestPhaseSheet` is
+ * provided the parent orchestrates the sheet; otherwise the row mounts it.
  */
 export function PhasesRow({
   medicationId,
-  treatmentClass,
-  startsOn,
-  endsOn,
   onRequestPhaseSheet,
 }: {
   medicationId: string;
-  treatmentClass?: string;
-  startsOn?: string | null;
-  endsOn?: string | null;
   onRequestPhaseSheet?: () => void;
 }) {
   const { t } = useTranslations();
   const [phaseSheetOpen, setPhaseSheetOpen] = useState(false);
 
-  const isGlp1 = treatmentClass === "GLP1";
-  const hasCourseWindow = Boolean(startsOn) && Boolean(endsOn);
-  const showPhases = isGlp1 && hasCourseWindow;
-
-  if (!isGlp1) return null;
-
   return (
     <>
       <div
-        className="space-y-2"
+        className="flex items-start justify-between gap-3"
         data-slot="medication-detail-phase-management-row"
       >
-        <div className="space-y-1">
+        <div className="min-w-0 space-y-1">
           <p className="text-foreground text-sm font-medium">
             {t("medications.phaseConfig")}
           </p>
@@ -316,31 +308,22 @@ export function PhasesRow({
             {t("medications.phaseConfigDescription")}
           </p>
         </div>
-        {showPhases ? (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              onRequestPhaseSheet
-                ? onRequestPhaseSheet()
-                : setPhaseSheetOpen(true)
-            }
-            className="min-h-11 sm:min-h-9"
-            data-slot="medication-detail-phase-management-button"
-          >
-            {t("medications.detail.settings.phases.openButton")}
-          </Button>
-        ) : (
-          <p
-            className="text-muted-foreground text-xs italic"
-            data-slot="medication-detail-phase-management-empty"
-          >
-            {t("medications.detail.settings.phases.requiresCourseWindow")}
-          </p>
-        )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            onRequestPhaseSheet
+              ? onRequestPhaseSheet()
+              : setPhaseSheetOpen(true)
+          }
+          className="min-h-11 shrink-0 sm:min-h-9"
+          data-slot="medication-detail-phase-management-button"
+        >
+          {t("medications.detail.settings.phases.openButton")}
+        </Button>
       </div>
 
-      {showPhases && !onRequestPhaseSheet && (
+      {!onRequestPhaseSheet && (
         <PhaseConfigSheet
           medicationId={medicationId}
           open={phaseSheetOpen}
