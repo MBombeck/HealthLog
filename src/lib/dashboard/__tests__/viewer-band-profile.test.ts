@@ -31,6 +31,7 @@ const DELEGATE_PROFILE = {
   gender: "FEMALE" as const,
   heightCm: 165,
   thresholdsJson: { WEIGHT: { min: 55, max: 62 } },
+  timezone: "Europe/Berlin",
 };
 
 describe("viewerBandProfile", () => {
@@ -46,6 +47,7 @@ describe("viewerBandProfile", () => {
       gender: null,
       heightCm: null,
       thresholdsJson: null,
+      timezone: "Europe/Berlin",
     });
   });
 });

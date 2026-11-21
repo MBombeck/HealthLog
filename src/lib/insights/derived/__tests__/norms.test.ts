@@ -1,9 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  lookupNormalRange,
-  hasSharpenedNorm,
-  predictSixMinuteWalkDistance,
-} from "../norms";
+import { lookupNormalRange, predictSixMinuteWalkDistance } from "../norms";
 
 describe("lookupNormalRange — the age/sex reference-range enabler", () => {
   it("returns a sex-specific VO2max band for a registered metric", () => {
@@ -172,11 +168,11 @@ describe("waist circumference — age × sex bands (WHO, raised for elderly)", (
   });
 });
 
-describe("hasSharpenedNorm", () => {
+describe("a sharpened band exists only for a metric with an age/sex profile", () => {
   it("mirrors lookupNormalRange truthiness", () => {
-    expect(hasSharpenedNorm("VO2_MAX", 35, "MALE")).toBe(true);
-    expect(hasSharpenedNorm("VO2_MAX", 35, null)).toBe(false);
-    expect(hasSharpenedNorm("STEPS", 35, "MALE")).toBe(false);
+    expect(lookupNormalRange("VO2_MAX", 35, "MALE")).not.toBeNull();
+    expect(lookupNormalRange("VO2_MAX", 35, null)).toBeNull();
+    expect(lookupNormalRange("STEPS", 35, "MALE")).toBeNull();
   });
 });
 

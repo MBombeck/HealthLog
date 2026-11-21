@@ -13,15 +13,15 @@
  */
 
 import { Clock, Cog, Database, Globe, Loader2, Server } from "lucide-react";
-import { formatDateTime } from "@/lib/format";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { geoLookupState, StatusItem, useSystemStatus } from "./_shared";
 
 export function SystemStatusSummary() {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const { data: status, isError, error, refetch } = useSystemStatus();
 
   return (
@@ -60,7 +60,7 @@ export function SystemStatusSummary() {
           <StatusItem
             icon={Clock}
             label={t("admin.overview.snapshotStarted")}
-            value={formatDateTime(status.startTime)}
+            value={fmt.dateTime(status.startTime)}
           />
           {/* v1.4.27 — surface the offline-geo state so the maintainer
               spots the missing GeoLite2 databases without crawling logs.

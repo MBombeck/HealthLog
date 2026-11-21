@@ -16,7 +16,7 @@ import {
   type WorkoutStartBounds,
 } from "@/lib/workouts/canonical-read";
 import type { aiCapabilityToServe } from "@/lib/ai/capabilities/gate";
-import { getAgeFromDateOfBirth } from "@/lib/analytics/pulse-targets";
+import { ageInYears } from "@/lib/tz/date-only";
 import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
 import { buildWorkoutHrSeries } from "@/lib/workouts/hr-series";
 import {
@@ -177,6 +177,7 @@ async function resolveIdentity(userId: string, row: StoredWorkout) {
   return {
     readSameSport,
     userRow,
+    timezone,
     dayKey,
     cluster,
     canonical,
@@ -190,7 +191,7 @@ async function readEnrichment(
   row: StoredWorkout,
   identity: Awaited<ReturnType<typeof resolveIdentity>>,
 ) {
-  const { readSameSport, userRow, cluster, canonical } = identity;
+  const { readSameSport, userRow, timezone, cluster, canonical } = identity;
   // ── Enrichment reads (all over existing tables — no migration) ────
 
   // Heart-rate curve: stored series first, pulse-window fallback
@@ -212,7 +213,7 @@ async function readEnrichment(
 
   // Effort zones: WHOOP device durations win; else %HRmax fold from
   // the series when profile age exists; else null.
-  const ageYears = getAgeFromDateOfBirth(userRow?.dateOfBirth ?? null);
+  const ageYears = ageInYears(userRow?.dateOfBirth, timezone);
   const zones = computeZones({
     hrMax: hrMaxFromAge(ageYears),
     series: hrSeries?.points ?? [],

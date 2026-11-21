@@ -59,7 +59,6 @@ import {
   useTranslations,
   useFormatters,
 } from "@/lib/i18n/context";
-import { formatDateShort } from "@/lib/format";
 import { makeFormatters } from "@/lib/format-locale";
 import { cn } from "@/lib/utils";
 import { RichChartTooltip, type RichTooltipRow } from "./chart-tooltip";
@@ -112,13 +111,12 @@ type RangeDays = (typeof RANGE_DAYS)[number];
  *
  * v1.4.25 — the `dateFormatter` argument lets the chart pass a
  * tz-aware formatter so a Pacific/Auckland user's X-axis tick label
- * for "2026-05-15" reads as 15.05. in their tz. Default keeps the
- * legacy `formatDateShort` so the existing unit test (which calls the
- * exported helper without arguments) stays byte-identical.
+ * for "2026-05-15" reads as 15.05. in their tz. The caller always
+ * supplies it, so the helper never guesses a locale.
  */
 export function aggregateMedicationCompliance(
   points: DailyCompliancePoint[],
-  dateFormatter: (date: Date) => string = (d) => formatDateShort(d, false),
+  dateFormatter: (date: Date) => string,
 ): ChartPoint[] {
   return points
     .filter((p) => p.scheduled > 0)

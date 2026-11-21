@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { containsHealthTerm, healthTermKind } from "../lexicon";
+import { healthTermKind } from "../lexicon";
 
 describe("healthTermKind", () => {
   it.each([
@@ -28,6 +28,5 @@ describe("healthTermKind", () => {
     "Has two kids",
   ])("leaves %j alone", (text) => {
     expect(healthTermKind(text)).toBeNull();
-    expect(containsHealthTerm(text)).toBe(false);
   });
 });

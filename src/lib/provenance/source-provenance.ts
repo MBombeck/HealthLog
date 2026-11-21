@@ -32,6 +32,7 @@ import {
   getSourceLadder,
   parseSourcePriority,
 } from "@/lib/validations/source-priority";
+import { mean } from "@/lib/stats/central";
 
 /** The rank the CASE gives a source that is not on the type's ladder. */
 export const OFF_LADDER_RANK = 90;
@@ -353,8 +354,6 @@ export function buildComparison(args: {
   });
 
   const both = days.filter((d) => d.a !== null && d.b !== null);
-  const mean = (xs: number[]) =>
-    xs.length === 0 ? null : xs.reduce((s, x) => s + x, 0) / xs.length;
   return {
     type,
     from,

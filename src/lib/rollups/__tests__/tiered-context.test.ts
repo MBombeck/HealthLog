@@ -48,10 +48,7 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-import {
-  buildTieredSeries,
-  buildTieredSeriesForTypes,
-} from "../tiered-context";
+import { buildTieredSeries } from "../tiered-context";
 
 const NOW = new Date("2026-06-19T00:00:00.000Z").getTime();
 
@@ -159,20 +156,6 @@ describe("buildTieredSeries", () => {
       tz: "Europe/Berlin",
     });
     expect(series.anomalies).toHaveLength(0);
-  });
-
-  it("recomputes freshness once when batching across types", async () => {
-    mocks.probeRollupCoverage.mockResolvedValue(
-      new Map([
-        ["WEIGHT", true],
-        ["PULSE", true],
-      ]),
-    );
-    await buildTieredSeriesForTypes("u1", ["WEIGHT", "PULSE"], {
-      now: NOW,
-      tz: "Europe/Berlin",
-    });
-    expect(mocks.ensureUserRollupsFresh).toHaveBeenCalledTimes(1);
   });
 
   describe("user-tz day-keying for the raw 0-14d band", () => {

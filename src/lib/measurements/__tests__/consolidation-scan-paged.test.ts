@@ -5,8 +5,8 @@ const appSettings = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/db", () => ({ prisma: { appSettings } }));
 
+import { userDayKey } from "@/lib/tz/format";
 import {
-  bucketRowsByDay,
   iterateDayBuckets,
   iterateSourcePages,
   runConsolidation,
@@ -212,7 +212,13 @@ describe("iterateDayBuckets", () => {
       );
     }
 
-    const baseline = bucketRowsByDay(days, "Europe/Berlin", "stats:");
+    // The whole-array reference: every non-stats row, grouped by local day.
+    const baseline = new Map<string, PerSampleRow[]>();
+    for (const r of days) {
+      if (r.externalId?.startsWith("stats:")) continue;
+      const key = userDayKey(r.measuredAt, "Europe/Berlin");
+      baseline.set(key, [...(baseline.get(key) ?? []), r]);
+    }
     expect([...streamed.keys()]).toEqual([...baseline.keys()]);
     for (const [key, rows] of baseline) {
       expect(streamed.get(key)).toEqual(rows.map((r) => r.id));

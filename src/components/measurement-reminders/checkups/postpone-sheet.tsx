@@ -18,21 +18,12 @@ import { Label } from "@/components/ui/label";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import type { MeasurementReminder } from "@/hooks/use-measurement-reminders";
 import { useDisplayTimezone, useTranslations } from "@/lib/i18n/context";
-import { shiftDateKey } from "@/lib/tz/format";
+import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 
 import { DAY_MS } from "./reminder-form";
 
 /** The offsets the postpone sheet's quick chips offer, in days. */
 const SNOOZE_CHIP_DAYS = [7, 30, 90] as const;
-
-/**
- * The local calendar day (ISO `yyyy-MM-dd`) an instant falls on in `tz`.
- * Snooze is day-precision by contract: the server resolves the day to the
- * reminder's notifyHour in the profile timezone.
- */
-function isoDayInTz(atMs: number, tz: string): string {
-  return new Date(atMs).toLocaleDateString("sv-SE", { timeZone: tz });
-}
 
 /**
  * The dates the postpone sheet's quick chips resolve to, on the display zone's
@@ -52,7 +43,7 @@ export function postponeOffsetTargets(
   // in between moves it an hour, which flips the date for anyone acting near
   // midnight. Anchoring today's local date at UTC noon and stepping whole
   // UTC days keeps every offset on the day its label names.
-  const today = isoDayInTz(nowMs, tz);
+  const today = userDayKey(new Date(nowMs), tz);
   return SNOOZE_CHIP_DAYS.map((days) => ({
     days,
     date: shiftDateKey(today, days),
@@ -91,7 +82,7 @@ export function CheckupPostponeSheet({
     setSnoozeDate("");
     setConfirmSkip(false);
   };
-  const minSnoozeDate = isoDayInTz(now + DAY_MS, displayTz);
+  const minSnoozeDate = userDayKey(new Date(now + DAY_MS), displayTz);
   return (
     <>
       <ResponsiveSheet

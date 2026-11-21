@@ -17,10 +17,14 @@ import { describe, expect, it } from "vitest";
 import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
 import { mapAppleHealthEntry } from "@/lib/measurements/apple-health-mapping";
 
-const appleImporterSource = readFileSync(
-  join(process.cwd(), "src/lib/measurements/import-apple-health-export.ts"),
-  "utf8",
-);
+// The importer builds rows in its tag handlers and writes them in its writer.
+const appleImporterSource = [
+  "src/lib/measurements/import-apple-health-export.ts",
+  "src/lib/measurements/import-apple-health-export-handlers.ts",
+  "src/lib/measurements/import-apple-health-export-writer.ts",
+]
+  .map((rel) => readFileSync(join(process.cwd(), rel), "utf8"))
+  .join("\n");
 
 function isoDayKey(d: Date): string {
   return d.toISOString().slice(0, 10);

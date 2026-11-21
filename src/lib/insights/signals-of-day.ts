@@ -28,6 +28,7 @@ import {
 } from "@/lib/measurements/vital-precision";
 import { userDayKey } from "@/lib/tz/format";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
+import { mean } from "@/lib/stats/central";
 
 /**
  * v1.18.7 — one present-focused signal feeding the daily briefing. Every
@@ -250,12 +251,6 @@ function buildSignal(
 function localSecondOfDay(at: Date, tz: string): number {
   const c = wallClockInTz(at, tz);
   return c.hour * 3600 + c.minute * 60 + c.second;
-}
-
-function mean(values: readonly number[]): number | null {
-  return values.length === 0
-    ? null
-    : values.reduce((s, v) => s + v, 0) / values.length;
 }
 
 /**

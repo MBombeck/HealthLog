@@ -71,7 +71,6 @@ vi.mock("@/lib/ai/capabilities/egress", () => ({
 }));
 vi.mock("@/lib/ai/provider", () => ({
   resolveProviderChain: vi.fn(async () => chain.current),
-  resolveProvider: vi.fn(async () => ({ type: "none" })),
 }));
 vi.mock("@/lib/ai/provider-health-ledger", async () => {
   const actual = await vi.importActual<

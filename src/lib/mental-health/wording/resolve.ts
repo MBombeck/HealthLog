@@ -21,11 +21,6 @@ export function wordingFor(
   return WORDING[id][wordingLocale(locale)];
 }
 
-/** Whether the text for `locale` is a published validated translation. */
-export function isValidatedWording(id: InstrumentId, locale: string): boolean {
-  return wordingFor(id, locale).validated;
-}
-
 /**
  * The wording an administration was answered in, from what the reader saw:
  * their language's text, or the English original they switched to.

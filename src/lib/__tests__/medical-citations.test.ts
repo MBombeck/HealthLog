@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { CITATIONS, citationLabel, citationUrl } from "../medical-citations";
+import { CITATIONS, citationLabel } from "../medical-citations";
 
 describe("medical-citations master list", () => {
   it("every citation has a non-empty url + caveat", () => {
@@ -18,12 +18,6 @@ describe("medical-citations master list", () => {
     const ids = Object.values(CITATIONS).map((c) => c.id);
     const unique = new Set(ids);
     expect(unique.size).toBe(ids.length);
-  });
-
-  it("citationUrl resolves to the same string", () => {
-    expect(citationUrl("ESH_2023_HYPERTENSION")).toBe(
-      CITATIONS.ESH_2023_HYPERTENSION.url,
-    );
   });
 
   it("citationLabel formats name + year", () => {

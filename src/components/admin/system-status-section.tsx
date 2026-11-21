@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatDateTime } from "@/lib/format";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
@@ -66,6 +65,7 @@ export function FailingJobsCard({
   failingJobs: { windowHours: number; queues: FailingQueue[] } | null;
 }) {
   const { t, tCount } = useTranslations();
+  const fmt = useFormatters();
 
   if (failingJobs === null) {
     return (
@@ -112,7 +112,7 @@ export function FailingJobsCard({
               </p>
               <p className="text-muted-foreground text-xs">
                 {t("admin.failingJobs.lastFailed", {
-                  when: formatDateTime(queue.lastFailedAt),
+                  when: fmt.dateTime(queue.lastFailedAt),
                 })}
               </p>
               {queue.lastError.length > 0 && (
@@ -184,7 +184,7 @@ export function SystemStatusSection() {
             <StatusItem
               icon={Clock}
               label={t("admin.startedAt")}
-              value={formatDateTime(status.startTime)}
+              value={fmt.dateTime(status.startTime)}
             />
             <StatusItem
               icon={Users}
@@ -220,7 +220,7 @@ export function SystemStatusSection() {
               <StatusItem
                 icon={Bell}
                 label={t("admin.lastReminderCheck")}
-                value={formatDateTime(status.worker.lastReminderCheck)}
+                value={fmt.dateTime(status.worker.lastReminderCheck)}
               />
             )}
             {status.integrations.umami && (

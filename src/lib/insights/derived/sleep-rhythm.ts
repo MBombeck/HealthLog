@@ -164,26 +164,6 @@ export function computeAverageSleep(
   };
 }
 
-/**
- * Day type of a night from its WAKE day's weekday: Saturday / Sunday → "free",
- * else "work". The documented calendar default (no work calendar exists).
- *
- * `night` is ALREADY the YYYY-MM-DD wake-day key in the user's timezone (the
- * canonical engine keyed it with `userDayKey`), so its weekday is a pure
- * property of those calendar digits — there is no second tz conversion to do.
- * Parsing the digits and taking `getUTCDay()` is timezone-independent: a UTC
- * instant at midnight of the same Y-M-D reads back the identical weekday in
- * every zone, so this is correct for far-east (UTC+13/+14) users too — the
- * earlier "noon-UTC instant + wallClockInTz" form shifted the weekday by a day
- * there.
- */
-export function defaultDayType(night: string): "work" | "free" {
-  const [y, m, d] = night.split("-").map(Number);
-  if (!y || !m || !d) return "work";
-  const weekday = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 = Sun … 6 = Sat
-  return weekday === 0 || weekday === 6 ? "free" : "work";
-}
-
 function toDebtDto(
   r: SleepDebtResult,
   source: MeasurementSource,

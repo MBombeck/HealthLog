@@ -30,11 +30,11 @@ import { BellRing, Check, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
-import { formatDateOrRelative } from "@/lib/format";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { ConfirmButton } from "@/components/ui/confirm-button";
-import { useTranslations } from "@/lib/i18n/context";
+import { formatDateOrRelative } from "@/lib/i18n/relative-time";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { useAiCapability } from "@/hooks/use-ai-capability";
 import { planMetricLabel } from "@/lib/ai/coach/plan-metric";
 import {
@@ -54,6 +54,7 @@ export function CoachRemindersSection({
   hideWhenEmpty?: boolean;
 }) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   // Unavailable (including the loading frame) means read-only: the lifecycle
   // controls appear only once the account says the Coach can be used.
   const readOnly = !useAiCapability("coach").available;
@@ -95,7 +96,7 @@ export function CoachRemindersSection({
           {r.dueAt && (
             <span>
               {t("settings.ai.coachReminders.duePrefix", {
-                when: formatDateOrRelative(r.dueAt, t),
+                when: formatDateOrRelative(r.dueAt, t, fmt),
               })}
             </span>
           )}

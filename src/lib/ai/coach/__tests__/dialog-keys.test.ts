@@ -18,6 +18,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { locales, type Locale } from "@/lib/i18n/config";
+import { pluralKey } from "@/lib/i18n/plural";
 import {
   coachScopeWindowSchema,
   type CoachResultGranularity,
@@ -47,9 +48,6 @@ import {
   methodAveragesKey,
   methodReadingsKey,
   methodTotalsKey,
-  stepMetricsKey,
-  stepReadingsKey,
-  stepRowsKey,
 } from "@/lib/ai/coach/dialog-keys";
 
 const ROOT = join(__dirname, "../../../../..");
@@ -111,9 +109,10 @@ function catalogKeys(): Set<string> {
   }
   for (const locale of locales) {
     for (const count of COUNTS) {
-      keys.add(stepReadingsKey(count, locale));
-      keys.add(stepRowsKey(count, locale));
-      keys.add(stepMetricsKey(count, locale));
+      // The step-row counts the live trail renders through `tCount`.
+      keys.add(pluralKey("coach.step.readings", count, locale));
+      keys.add(pluralKey("coach.step.rows", count, locale));
+      keys.add(pluralKey("coach.step.metrics", count, locale));
       keys.add(methodReadingsKey(count, locale));
     }
   }

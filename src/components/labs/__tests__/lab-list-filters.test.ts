@@ -4,11 +4,11 @@ import {
   buildMarkerCategoryMap,
   filterMarkerRows,
   labListFiltersToSearch,
-  labReadingDayKey,
   parseLabListSearchParams,
   sortMarkerRows,
   type LabListFilters,
 } from "../lab-list-filters";
+import { labReadingDay } from "@/lib/labs/reading-day";
 import type { MarkerRow } from "../lab-list-rows";
 import type { LabOverviewCategoryDto, LabResultDto } from "../types";
 
@@ -248,7 +248,7 @@ describe("filterMarkerRows", () => {
     ).toEqual([row1, row2]);
   });
 
-  it("matches local day bounds using labReadingDayKey (handling timezone shifts)", () => {
+  it("matches local day bounds using labReadingDay (handling timezone shifts)", () => {
     // 2026-08-31T22:30:00.000Z in UTC is 2026-08-31.
     // In Europe/Warsaw (UTC+2 in summer / CEST), it is 2026-09-01 00:30.
     // In America/New_York (UTC-4 in summer / EDT), it is 2026-08-31 18:30.
@@ -260,9 +260,9 @@ describe("filterMarkerRows", () => {
     });
 
     const dayKeyWarsaw = (takenAt: string) =>
-      labReadingDayKey(takenAt, "Europe/Warsaw");
+      labReadingDay(takenAt, "Europe/Warsaw");
     const dayKeyNy = (takenAt: string) =>
-      labReadingDayKey(takenAt, "America/New_York");
+      labReadingDay(takenAt, "America/New_York");
 
     // Warsaw (local date 2026-09-01): matches from 2026-09-01, excluded by to 2026-08-31
     expect(
@@ -330,46 +330,6 @@ describe("sortMarkerRows", () => {
   it("handles sort=manual without manualOrder gracefully", () => {
     expect(sortMarkerRows(rows, "manual", [])).toEqual(rows);
     expect(sortMarkerRows(rows, "manual", undefined)).toEqual(rows);
-  });
-});
-
-describe("labReadingDayKey", () => {
-  it("keeps noon UTC anchors on their stated date across all timezones", () => {
-    const noonInstant = "2026-09-01T12:00:00.000Z";
-    expect(labReadingDayKey(noonInstant, "UTC")).toBe("2026-09-01");
-    expect(labReadingDayKey(noonInstant, "America/New_York")).toBe(
-      "2026-09-01",
-    );
-    expect(labReadingDayKey(noonInstant, "Pacific/Kiritimati")).toBe(
-      "2026-09-01",
-    );
-  });
-
-  it("documents exact-noon date-anchor ambiguity vs true instant timestamps", () => {
-    // Because the data model does not have an explicit `dateOnly` boolean flag,
-    // exact 12:00:00.000Z is treated as a date anchor by convention to align with
-    // `useLabDate` / `date-only.ts`. In Pacific/Kiritimati (UTC+14), 12:00 UTC would be
-    // 02:00 on the NEXT calendar day if treated as an instant; but as an anchor it stays 2026-09-01.
-    const noonAnchor = "2026-09-01T12:00:00.000Z";
-    expect(labReadingDayKey(noonAnchor, "Pacific/Kiritimati")).toBe(
-      "2026-09-01",
-    );
-
-    // Any non-noon instant (even 1 second off noon) is recognized as a true instant with time
-    // and correctly shifts to the local date in the user's timezone:
-    const nonNoonInstant = "2026-09-01T12:00:01.000Z";
-    expect(labReadingDayKey(nonNoonInstant, "Pacific/Kiritimati")).toBe(
-      "2026-09-02",
-    );
-    expect(labReadingDayKey(nonNoonInstant, "UTC")).toBe("2026-09-01");
-  });
-
-  it("formats timestamps with times in the user's timezone", () => {
-    // 2026-09-01 00:30 UTC+2 (Warsaw) = 2026-08-31 22:30 UTC
-    const eveningUtc = "2026-08-31T22:30:00.000Z";
-    expect(labReadingDayKey(eveningUtc, "UTC")).toBe("2026-08-31");
-    expect(labReadingDayKey(eveningUtc, "Europe/Warsaw")).toBe("2026-09-01");
-    expect(labReadingDayKey(eveningUtc, "America/New_York")).toBe("2026-08-31");
   });
 });
 

@@ -118,7 +118,7 @@ import {
 } from "@/lib/dashboard/score-rings";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import type { Locale } from "@/lib/i18n/config";
-import { getAgeFromDateOfBirth } from "@/lib/analytics/pulse-targets";
+import { ageInYears } from "@/lib/tz/date-only";
 import {
   binaryReferenceSex,
   toProfileSex,
@@ -648,14 +648,10 @@ async function buildExtras(
   let bpEnvelopePriorTwoWeeks: BpInTargetEnvelope | null = null;
 
   const bpTargets = resolveEffectiveBpTargets(
-    {
-      dateOfBirth: user.dateOfBirth,
-      gender: user.gender,
-      heightCm: user.heightCm ?? null,
-    },
+    { ...user, timezone: userTz },
     user.thresholdsJson,
   );
-  const clinicalBpTargets = getBpTargets(user.dateOfBirth);
+  const clinicalBpTargets = getBpTargets(user.dateOfBirth, userTz, now);
   if (bpTargets) {
     // v1.17 — two runs (current + prior-week), identical to the
     // analytics route, so the dashboard ring's week-over-week delta reflects
@@ -1373,7 +1369,7 @@ export async function buildDashboardSnapshot(
   // healthScore; memory rides the briefing card.
   const narrativeSex = binaryReferenceSex(user.gender);
   const narrativeProfile = {
-    ageYears: getAgeFromDateOfBirth(user.dateOfBirth),
+    ageYears: ageInYears(user.dateOfBirth, userTz, now),
     sex: narrativeSex,
     heightCm: user.heightCm ?? null,
   };
@@ -1432,6 +1428,7 @@ export async function buildDashboardSnapshot(
       // body fat). Resolved off the same `thresholdsJson` blob the health
       // score and the tile directions read.
       thresholdsJson: user.thresholdsJson,
+      timezone: userTz,
     }),
     tiles: {
       summaries: slim.summaries,
@@ -1451,11 +1448,7 @@ export async function buildDashboardSnapshot(
         weightTrendReferenceKg(slim.summaries.WEIGHT),
       ),
       directions: resolveSummaryVerdicts(slim.summaries, {
-        profile: {
-          dateOfBirth: user.dateOfBirth,
-          gender: user.gender,
-          heightCm: user.heightCm ?? null,
-        },
+        profile: { ...user, timezone: userTz },
         thresholdsJson: user.thresholdsJson,
       }),
     },

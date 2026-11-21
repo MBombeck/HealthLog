@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  dropInvalidStagedAttachments,
-  launchScopeToCoachScope,
-} from "../coach-conversation";
+import { dropInvalidStagedAttachments } from "../coach-conversation";
+import { launchScopeToCoachScope } from "../use-coach-send-handlers";
 import {
   metricScopeFromExplainer,
   scopeSourceFromMetricKey,

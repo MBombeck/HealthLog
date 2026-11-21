@@ -32,6 +32,7 @@
  * matters is for them and their clinician; nothing here grades it.
  */
 import { wallClockInTz } from "@/lib/tz/wall-clock";
+import { mean } from "@/lib/stats/central";
 
 export const BP_PARTS_OF_DAY = ["morning", "midday", "evening"] as const;
 export type BpPartOfDay = (typeof BP_PARTS_OF_DAY)[number];
@@ -106,10 +107,6 @@ export interface BpTimeOfDaySummary {
   morningEveningDifference: { systolic: number; diastolic: number } | null;
 }
 
-function mean(values: number[]): number {
-  return values.reduce((sum, v) => sum + v, 0) / values.length;
-}
-
 /** Bucket paired readings by the local hour they were taken at, in `timeZone`. */
 export function computeBpTimeOfDay(
   readings: readonly BpTimedReading[],
@@ -133,11 +130,15 @@ export function computeBpTimeOfDay(
       part,
       ...BP_PART_HOURS[part],
       readingCount: rows.length,
-      systolic: enough ? Math.round(mean(rows.map((r) => r.systolic))) : null,
-      diastolic: enough ? Math.round(mean(rows.map((r) => r.diastolic))) : null,
+      systolic: enough ? Math.round(mean(rows.map((r) => r.systolic))!) : null,
+      diastolic: enough
+        ? Math.round(mean(rows.map((r) => r.diastolic))!)
+        : null,
       pulseReadingCount: pulses.length,
       pulse:
-        pulses.length >= BP_PART_MIN_READINGS ? Math.round(mean(pulses)) : null,
+        pulses.length >= BP_PART_MIN_READINGS
+          ? Math.round(mean(pulses)!)
+          : null,
     };
   });
 

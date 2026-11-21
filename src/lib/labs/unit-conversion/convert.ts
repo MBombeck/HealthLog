@@ -21,7 +21,7 @@ import {
   type Affine,
   type AnalyteConversion,
 } from "./registry";
-import { scaleUnitOf, scaleUnitsInFamilyOf, shiftPowerOfTen } from "./scale";
+import { scaleUnitOf, shiftPowerOfTen } from "./scale";
 
 export type ConversionRefusal =
   "unknown_analyte" | "unknown_unit" | "not_finite";
@@ -141,29 +141,6 @@ export function convertLabRange(input: {
     via = probe.via;
   }
   return { ok: true, low: converted[0], high: converted[1], via };
-}
-
-/**
- * The units a reading can arrive in and be converted to `to` for this marker:
- * every unit in the scale family of `to`, and, when the analyte has an entry,
- * every unit of that entry along with their scale families. `to` itself is not
- * listed.
- */
-export function conversionsFor(input: {
-  analyteKey: string | null | undefined;
-  to: string;
-}): string[] {
-  const to = normaliseLabUnit(input.to);
-  const found = new Set<string>(scaleUnitsInFamilyOf(to));
-  const entry = analyteConversionFor(input.analyteKey);
-  if (entry && (to in entry.units || intoEntryUnit(entry, to))) {
-    for (const unit of Object.keys(entry.units)) {
-      found.add(unit);
-      for (const sibling of scaleUnitsInFamilyOf(unit)) found.add(sibling);
-    }
-  }
-  found.delete(to);
-  return [...found].filter((unit) => normaliseLabUnit(unit) !== to);
 }
 
 /**

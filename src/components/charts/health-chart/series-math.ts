@@ -10,6 +10,8 @@ import { translateOrNull } from "@/lib/i18n/translate-code";
 import { computeTickGrid, type TickLayout } from "@/lib/charts/x-axis-density";
 
 import type { ChartDataPoint } from "./types";
+import { dateOnlyAtNoonUtc } from "@/lib/tz/date-only";
+import { median } from "@/lib/stats/central";
 
 const BASE_TYPE_LABEL_KEYS: Record<string, string> = {
   WEIGHT: "charts.weight",
@@ -88,9 +90,9 @@ export function toDayKey(
   return `${year}-${month}-${day}`;
 }
 
+/** A day key's position on a chart's time axis: noon UTC of that date. */
 export function dayKeyToTimestamp(dayKey: string): number {
-  const [year, month, day] = dayKey.split("-").map(Number);
-  return Date.UTC(year, month - 1, day, 12, 0, 0);
+  return dateOnlyAtNoonUtc(dayKey).getTime();
 }
 
 export function movingAverageByPoints(
@@ -123,13 +125,7 @@ export function computePersonalBaseline(
   windowPoints = 90,
 ): number | null {
   if (data.length < 5) return null;
-  const recent = data.slice(-windowPoints);
-  const sorted = recent.map((d) => d.value).sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  if (sorted.length % 2 === 0) {
-    return (sorted[mid - 1] + sorted[mid]) / 2;
-  }
-  return sorted[mid];
+  return median(data.slice(-windowPoints).map((d) => d.value));
 }
 
 /**

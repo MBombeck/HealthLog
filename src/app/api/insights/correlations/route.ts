@@ -27,7 +27,6 @@ import { MODULE_KEYS, resolveModuleMap } from "@/lib/modules/gate";
 import { isSurfaceVisible, type SurfaceModuleMap } from "@/lib/modules/surface";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { prisma } from "@/lib/db";
-import { wallClockInTz } from "@/lib/tz/wall-clock";
 import {
   discoverCorrelations,
   discoverEmergingCorrelations,
@@ -42,21 +41,13 @@ import {
 } from "@/lib/insights/correlation-patterns";
 import { assembleDiscoveryMatrix } from "@/lib/insights/discovery-matrix";
 import { fetchLabDraws } from "@/lib/insights/correlation-channel-series";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 
 export const dynamic = "force-dynamic";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** Trailing window for the discovery scan (days). */
 const WINDOW_DAYS = 180;
-
-/** Day key (YYYY-MM-DD) for an instant in the user's display timezone. */
-function tzDayKey(at: Date, tz: string): string {
-  const { year, month, day } = wallClockInTz(at, tz);
-  const mm = String(month).padStart(2, "0");
-  const dd = String(day).padStart(2, "0");
-  return `${year}-${mm}-${dd}`;
-}
 
 export const GET = apiHandler(async () => {
   // v1.37.0 — MANAGE-level read: computed over the whole record, with no
@@ -156,7 +147,7 @@ async function buildCorrelationsResponse(
   // v1.22 — rolling early-detection pass over the trailing window, re-using
   // the already-built series (no extra DB read). Emerging pairs exclude anything
   // the retrospective scan already established (no double-count).
-  const recentFromDayKey = tzDayKey(
+  const recentFromDayKey = userDayKey(
     new Date(now.getTime() - EARLY_WINDOW_DAYS * MS_PER_DAY),
     tz,
   );

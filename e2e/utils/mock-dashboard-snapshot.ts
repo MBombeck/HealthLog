@@ -21,18 +21,16 @@ import {
   buildWeightRangeFromHeight,
   getBodyFatTargetRange,
 } from "@/lib/analytics/value-bands";
-import {
-  getAgeFromDateOfBirth,
-  getPersonalizedPulseTarget,
-} from "@/lib/analytics/pulse-targets";
+import { getPersonalizedPulseTarget } from "@/lib/analytics/pulse-targets";
+import { ageInYears } from "@/lib/tz/date-only";
 
 // v1.18.6 — resolve the mock's band block from the same pure helpers the
 // server builder uses, so the e2e fixture matches the real DTO shape.
 function mockTargetBands(): DashboardTargetBands {
   const dob = new Date("1990-01-01T00:00:00.000Z");
-  const bpTargets = getBpTargets(dob);
+  const bpTargets = getBpTargets(dob, "UTC");
   const pulseTarget = getPersonalizedPulseTarget(
-    getAgeFromDateOfBirth(dob),
+    ageInYears(dob, "UTC"),
     "MALE",
   );
   const bodyFatRange = getBodyFatTargetRange("MALE");

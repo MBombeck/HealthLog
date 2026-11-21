@@ -121,7 +121,7 @@ const WINDOW_DAYS: Record<CoachScopeWindow, number> = {
 // `since = now − N·86400_000ms` (`readBestGranularityRollups`,
 // `measurement-read-wmy.ts`), a raw-instant cutoff with no timezone
 // awareness. The Coach snapshot path (`get_metric_series`) builds its
-// timelines on user-tz day keys (`tzDayKey(userTz)`, the v1.30.3 pattern also
+// timelines on user-tz day keys (`userDayKey(userTz)`, the v1.30.3 pattern also
 // used by `metric-status.ts`'s cache rollover / `bp-in-target.ts`'s same-day
 // pairing); these rich reads (`compare_metric` / `detect_changepoints` /
 // `get_metric_baseline`) do not, so a user far from UTC can see a ±1-day edge

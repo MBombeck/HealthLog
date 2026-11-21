@@ -53,11 +53,7 @@ import { isP2002 as isUniqueConstraintViolation } from "@/lib/prisma-errors";
 import { recomputeBucketsForMeasurement } from "@/lib/rollups/measurement-rollups";
 
 import { dailyStatsExternalId } from "./apple-health-mapping";
-import {
-  bucketRowsByDay,
-  runConsolidation,
-  type DayWriteOutcome,
-} from "./consolidation-base";
+import { runConsolidation, type DayWriteOutcome } from "./consolidation-base";
 import { type PerSampleRow } from "./drain-per-sample-cumulative";
 
 /** HealthLog measurement type that carries step counts. */
@@ -186,21 +182,6 @@ export interface StepConsolidationOptions {
   dryRun?: boolean;
   /** Logger sink — defaults to `console.log`. */
   log?: (line: string) => void;
-}
-
-/**
- * Group legacy step rows into per-day buckets in the user's timezone.
- * Rows already in the daily-stats shape are skipped — they are the
- * canonical total, not a legacy sample. Exposed for unit testing the
- * bucketing semantics without booting Prisma.
- */
-export function bucketLegacyStepRows(
-  rows: readonly PerSampleRow[],
-  tz: string,
-): Map<string, PerSampleRow[]> {
-  // Skip on the BROAD `stats:` prefix so a daily total from ANY provider
-  // (Apple `stats:HK…`, Google / Fitbit `stats:steps:…`) is never bucketed.
-  return bucketRowsByDay(rows, tz, ANY_DAILY_STATS_PREFIX);
 }
 
 /** SUM the values in a per-day legacy bucket. */

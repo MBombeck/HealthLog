@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ageAt, resolveRecordBenchmark } from "../record-benchmark";
+import { resolveRecordBenchmark } from "../record-benchmark";
 
 const DOB_1981 = new Date("1981-06-15T00:00:00.000Z");
 const at = (iso: string) => new Date(iso);
@@ -10,6 +10,7 @@ const profile = {
   sex: "MALE" as const,
   heightCm: 180,
   weightKg: 80,
+  timezone: "UTC",
 };
 
 function record(
@@ -20,14 +21,6 @@ function record(
 ) {
   return { metricType, unit, metricSlot, achievedAt: at(achievedAt) };
 }
-
-describe("ageAt", () => {
-  it("counts whole years up to the day before the birthday", () => {
-    expect(ageAt(DOB_1981, at("2026-06-14T23:00:00.000Z"))).toBe(44);
-    expect(ageAt(DOB_1981, at("2026-06-15T00:00:00.000Z"))).toBe(45);
-    expect(ageAt(null, at("2026-06-15T00:00:00.000Z"))).toBeNull();
-  });
-});
 
 describe("resolveRecordBenchmark", () => {
   it("gives a 45-year-old man's VO2 max record the FRIEND band in its unit", () => {

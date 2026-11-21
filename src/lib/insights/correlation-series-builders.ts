@@ -34,8 +34,7 @@
  * Pure over already-fetched rows — the DB reads live in the caller (the route),
  * mirroring how the engine itself is pure over `NamedSeries[]`.
  */
-import { dayKeyForUserTz } from "@/lib/measurements/consolidation-tz";
-import { shiftDateKey } from "@/lib/tz/format";
+import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { foldNutrientDays } from "@/lib/nutrients/day-total";
 import {
   NUTRIENT_CATALOG,
@@ -88,7 +87,7 @@ export function buildComplianceDailySeries(
     const isMissed = row.status === "missed";
     if (!isTaken && !isMissed) continue;
 
-    const day = dayKeyForUserTz(row.at, tz);
+    const day = userDayKey(row.at, tz);
     const bucket = byDay.get(day) ?? { taken: 0, missed: 0 };
     if (isTaken) bucket.taken += 1;
     else bucket.missed += 1;
@@ -126,7 +125,7 @@ export interface SymptomEpisodeSpan {
 
 /** Inclusive `YYYY-MM-DD` day key for an instant in the user's tz. */
 function dayKey(at: Date, tz: string): string {
-  return dayKeyForUserTz(at, tz);
+  return userDayKey(at, tz);
 }
 
 /**

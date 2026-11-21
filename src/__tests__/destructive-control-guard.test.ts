@@ -366,6 +366,10 @@ const REGISTRY: DestructiveEntry[] = [
   {
     file: "components/mood/mood-list.tsx",
     destroys: "one mood entry, or every selected mood entry",
+    triggers: [
+      "components/mood/mood-list.tsx",
+      "components/mood/mood-list-rows.tsx",
+    ],
     recovery: "restorable",
     confirm: ["DeleteButton", "SelectionActionBar", "AlertDialog"],
   },

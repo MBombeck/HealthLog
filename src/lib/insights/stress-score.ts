@@ -76,16 +76,6 @@ export const STRESS_MIN_INTRADAY_SAMPLES = 3;
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-/**
- * The UTC calendar day a Stress run scores — the PREVIOUS day relative to
- * `now`. The cron fires in the small hours; scoring the just-ended day is what
- * gives the intra-day SDNN set a full day of samples instead of a near-empty
- * few hours. Delegates to the shared `scoreDayKey` so all three engines agree.
- */
-export function stressDayKey(now: Date): string {
-  return scoreDayKey(now);
-}
-
 /** The full `externalId` for a given run's Stress score row. */
 export function stressExternalId(now: Date): string {
   return scoreExternalId(STRESS_SCORE_EXTERNAL_ID_PREFIX, now);
@@ -132,7 +122,7 @@ async function readIntradaySdnn(
   userId: string,
   now: Date,
 ): Promise<number[]> {
-  const dayKey = stressDayKey(now);
+  const dayKey = scoreDayKey(now);
   // eslint-disable-next-line healthlog/no-utc-day-key -- UTC by design: UTC day window of the UTC-day score engines (scoreDayKey)
   const dayStart = new Date(`${dayKey}T00:00:00.000Z`);
   const dayEnd = new Date(dayStart.getTime() + MS_PER_DAY);

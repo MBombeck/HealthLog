@@ -30,8 +30,9 @@ import { annotate } from "@/lib/logging/context";
 import { resolveModuleMap } from "@/lib/modules/gate";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 
-import { arrivalLocalDate, classifyArrival } from "./salience";
+import { classifyArrival } from "./salience";
 import type { ArrivalKind, DataArrival } from "./types";
+import { userDayKey } from "@/lib/tz/format";
 
 export const DATA_ARRIVAL_QUEUE = "data-arrival";
 
@@ -162,7 +163,7 @@ export async function emitDataArrival(input: EmitArrivalInput): Promise<void> {
           inserted: insertedCount,
           sample_local_date:
             classification === "backfill"
-              ? arrivalLocalDate(newestSampleAt, tz)
+              ? userDayKey(newestSampleAt, tz)
               : undefined,
         },
       });
@@ -181,7 +182,7 @@ export async function emitDataArrival(input: EmitArrivalInput): Promise<void> {
       }
     }
 
-    const localDate = arrivalLocalDate(now, tz);
+    const localDate = userDayKey(now, tz);
     const payload: DataArrival = {
       userId,
       kind,

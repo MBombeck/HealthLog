@@ -1,6 +1,5 @@
 "use client";
 
-import { DayLinkStated } from "@/components/day/day-link";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -46,7 +45,7 @@ import {
   LabResultRelatedLinks,
 } from "./lab-result-related-links";
 import type { LabResultDto } from "./types";
-import { useLabDate, useLabNumber } from "./use-lab-format";
+import { LabDayLink, useLabDate, useLabNumber } from "./use-lab-format";
 import { labUnitText } from "@/lib/labs/dimensionless";
 
 const NOTE_MAX_LENGTH = 2000;
@@ -411,13 +410,13 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
                 unit={r.unit}
               />
               <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                <DayLinkStated
-                  at={r.takenAt}
+                <LabDayLink
+                  takenAt={r.takenAt}
                   focus={labDayFocus(r)}
                   className="whitespace-nowrap"
                 >
                   {labDate(r.takenAt)}
-                </DayLinkStated>
+                </LabDayLink>
                 <ReferenceRangeBadge status={r.rangeStatus} />
                 {r.hasNote ? (
                   <span className="text-xs">{t("labs.hasNote")}</span>
@@ -492,9 +491,9 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
                 <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
                   {/* v1.42 — the draw date opens the day; the row keeps its
                       edit and delete. A draw day is often a visit day. */}
-                  <DayLinkStated at={r.takenAt} focus={labDayFocus(r)}>
+                  <LabDayLink takenAt={r.takenAt} focus={labDayFocus(r)}>
                     {labDate(r.takenAt)}
-                  </DayLinkStated>
+                  </LabDayLink>
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col items-start gap-1">

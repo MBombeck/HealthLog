@@ -19,7 +19,6 @@ import {
   type OperatorModuleAvailability,
 } from "../operator-availability";
 import {
-  isCoreDomain,
   isCodeDisabledModule,
   isModuleKey,
   isOptInModule,
@@ -475,11 +474,14 @@ describe("normalisePrefs — fail-open coercion", () => {
   });
 });
 
+const isCore = (key: string) =>
+  (CORE_DOMAIN_KEYS as readonly string[]).includes(key);
+
 describe("registry — core domains can never be disabled", () => {
   it("the three core domains are not toggleable module keys", () => {
     for (const core of CORE_DOMAIN_KEYS) {
       expect(isModuleKey(core)).toBe(false);
-      expect(isCoreDomain(core)).toBe(true);
+      expect(isCore(core)).toBe(true);
     }
   });
 
@@ -495,7 +497,7 @@ describe("registry — core domains can never be disabled", () => {
   it("every toggleable key is a known module and not a core domain", () => {
     for (const key of MODULE_KEYS) {
       expect(isModuleKey(key)).toBe(true);
-      expect(isCoreDomain(key)).toBe(false);
+      expect(isCore(key)).toBe(false);
     }
   });
 });

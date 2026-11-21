@@ -22,7 +22,7 @@ import { join } from "node:path";
  */
 const CHART_FILES = [
   "health-chart.tsx",
-  "mood-chart.tsx",
+  "mood-chart/plot.tsx",
   "medication-compliance-chart.tsx",
   "scatter-correlation-chart.tsx",
 ];

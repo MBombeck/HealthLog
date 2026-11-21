@@ -69,7 +69,7 @@ import {
   meetsDurationFloor,
   workoutInsightInputHash,
 } from "@/lib/workouts/insight-gates";
-import { getAgeFromDateOfBirth } from "@/lib/analytics/pulse-targets";
+import { ageInYears } from "@/lib/tz/date-only";
 import {
   computeZones,
   hrMaxFromAge,
@@ -354,7 +354,7 @@ export async function runWorkoutInsightGenerate(
     });
 
     const zones = computeZones({
-      hrMax: hrMaxFromAge(getAgeFromDateOfBirth(profile?.dateOfBirth ?? null)),
+      hrMax: hrMaxFromAge(ageInYears(profile?.dateOfBirth, tz)),
       series: hrSeries?.points ?? [],
       bucketSec: hrSeries?.bucketSec ?? 0,
       whoopZoneDurations: parseWhoopZoneDurations(row.metadata),

@@ -24,6 +24,7 @@ import type {
   TimeOfDayPattern,
   WeekdayRow,
 } from "@/lib/insights/mood-aggregates";
+import { mean } from "@/lib/stats/central";
 
 // --- Named thresholds (the anti-platitude contract) ---
 
@@ -108,11 +109,6 @@ const WEEKDAY_LABEL_KEYS = [
   "charts.weekdaysFull.sat",
   "charts.weekdaysFull.sun",
 ] as const;
-
-function mean(values: number[]): number | null {
-  if (values.length === 0) return null;
-  return values.reduce((sum, v) => sum + v, 0) / values.length;
-}
 
 /** Weekday (0 = Monday … 6 = Sunday) for a daily-bucket offset. */
 function weekdayOfOffset(

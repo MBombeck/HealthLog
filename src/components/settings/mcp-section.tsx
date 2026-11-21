@@ -34,8 +34,7 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { ModuleStateCard } from "@/components/settings/module-state-card";
 import { useAuth } from "@/hooks/use-auth";
-import { formatDate, formatDateTime } from "@/lib/format";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
 import {
@@ -74,6 +73,7 @@ export function McpSection() {
 
 function McpConnectionsCard() {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
 
@@ -153,7 +153,7 @@ function McpConnectionsCard() {
                     {t("settings.mcp.connectionLastUsed")}:
                   </span>{" "}
                   {conn.lastUsedAt
-                    ? formatDateTime(conn.lastUsedAt)
+                    ? fmt.dateTime(conn.lastUsedAt)
                     : t("settings.mcp.connectionNeverUsed")}
                 </p>
                 <ConfirmButton
@@ -220,7 +220,7 @@ function McpEnableCard() {
 }
 
 function McpTokensCard() {
-  const { t } = useTranslations();
+  const [{ t }, fmt] = [useTranslations(), useFormatters()];
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
   const [newName, setNewName] = useState("");
@@ -445,14 +445,14 @@ function McpTokensCard() {
                       <span className="font-medium">
                         {t("settings.tokenTableCreated")}:
                       </span>{" "}
-                      {formatDate(tok.createdAt)}
+                      {fmt.date(tok.createdAt)}
                     </p>
                     <p className="text-muted-foreground text-xs">
                       <span className="font-medium">
                         {t("settings.tokenTableLastUsed")}:
                       </span>{" "}
                       {tok.lastUsedAt
-                        ? formatDateTime(tok.lastUsedAt)
+                        ? fmt.dateTime(tok.lastUsedAt)
                         : t("settings.tokenNeverUsed")}
                     </p>
                     <ConfirmButton

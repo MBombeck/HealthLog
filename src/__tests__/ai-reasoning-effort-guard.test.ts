@@ -111,7 +111,6 @@ describe("every exported resolver binds it", () => {
 
   it("finds the resolvers (an empty set is a failure, not a pass)", () => {
     expect(resolvers.map((r) => r.name).sort()).toEqual([
-      "resolveProvider",
       "resolveProviderChain",
       "resolveProviderForTest",
     ]);

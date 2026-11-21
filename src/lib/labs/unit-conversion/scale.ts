@@ -112,27 +112,3 @@ export function shiftPowerOfTen(value: number, power: number): number {
   if (power === 0) return value;
   return power > 0 ? value * 10 ** power : value / 10 ** -power;
 }
-
-/**
- * `value` in `from`, written in `to`, when both are in the same family;
- * null when either is in none or they are in different families.
- */
-export function convertByScale(
-  value: number,
-  from: string,
-  to: string,
-): number | null {
-  const a = scaleUnitOf(from);
-  const b = scaleUnitOf(to);
-  if (!a || !b || a.family !== b.family) return null;
-  return shiftPowerOfTen(value, a.exponent - b.exponent);
-}
-
-/** Every unit that has a family, in its spelling here. */
-export function scaleUnitsInFamilyOf(unit: string): string[] {
-  const own = scaleUnitOf(unit);
-  if (!own) return [];
-  return [...SCALE_UNITS.entries()]
-    .filter(([, [family]]) => family === own.family)
-    .map(([spelling]) => spelling);
-}

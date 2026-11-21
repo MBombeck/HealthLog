@@ -31,12 +31,13 @@ import {
 } from "@/lib/workouts/canonical-read";
 import type { MeasurementSource } from "@/generated/prisma/client";
 import { annotate } from "@/lib/logging/context";
-import { tzDayKey, tzWeekday } from "../snapshot-series";
+import { tzWeekday } from "../snapshot-series";
 import type {
   CoachProvenance,
   CoachProvenanceMetric,
   CoachScopeSource,
 } from "../types";
+import { userDayKey } from "@/lib/tz/format";
 
 /**
  * v1.7.0 — the workouts block never dumps every session. It carries
@@ -100,7 +101,7 @@ export function buildWorkoutsBlock(ctx: Readonly<WorkoutsBlockContext>): void {
     });
   } else {
     const recentList = workoutRows.slice(0, WORKOUT_RECENT_CAP).map((w) => ({
-      date: tzDayKey(w.startedAt, userTz),
+      date: userDayKey(w.startedAt, userTz),
       weekday: tzWeekday(w.startedAt, userTz),
       sport: w.sportType,
       durationMin: Math.round(w.durationSec / 60),

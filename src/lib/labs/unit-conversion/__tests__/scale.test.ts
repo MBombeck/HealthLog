@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import { molarMass, formulaLabel } from "../atomic-weights";
-import {
-  convertByScale,
-  scaleUnitOf,
-  scaleUnitsInFamilyOf,
-  shiftPowerOfTen,
-} from "../scale";
+import { scaleUnitOf, shiftPowerOfTen } from "../scale";
+
+/** The scale step `convertLabValue` takes when both units share a family. */
+function convertByScale(value: number, from: string, to: string) {
+  const a = scaleUnitOf(from);
+  const b = scaleUnitOf(to);
+  if (!a || !b || a.family !== b.family) return null;
+  return shiftPowerOfTen(value, a.exponent - b.exponent);
+}
 
 describe("scale families", () => {
   it("puts each unit in the family of its quantity", () => {
@@ -61,15 +64,6 @@ describe("scale families", () => {
     }
     // Thousands are not millions.
     expect(convertByScale(1, "x10E3/uL", "10^12/L")).toBe(0.001);
-  });
-
-  it("lists every unit of a family, in its own spelling", () => {
-    const amount = scaleUnitsInFamilyOf("mmol/L");
-    expect(amount).toEqual(
-      expect.arrayContaining(["mol/L", "mmol/L", "µmol/L", "nmol/L", "pmol/L"]),
-    );
-    expect(amount).not.toContain("mg/dL");
-    expect(scaleUnitsInFamilyOf("%")).toEqual([]);
   });
 });
 

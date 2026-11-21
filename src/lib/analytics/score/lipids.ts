@@ -5,12 +5,12 @@ import {
   coverage,
   failedPillar,
   insufficientPillar,
-  mean,
   okPillar,
   scoreReferenceBand,
   uniqueSources,
   withinWindow,
 } from "./shared";
+import { mean } from "@/lib/stats/central";
 
 export const LIPIDS_WINDOW_DAYS = 365;
 export const LIPIDS_MIN_PANELS = 1;
@@ -91,7 +91,7 @@ export function computeLipidsPillar(
       historyDays: 1,
     }),
     value: {
-      score: mean(markerScores),
+      score: mean(markerScores)!,
       observed: {
         value: panel.length,
         unit: panel.length === 1 ? "result" : "results",

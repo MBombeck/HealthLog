@@ -2,7 +2,6 @@
  * v1.16.0 — structured self-context unit tests.
  *
  * Pins the pure pieces of the questionnaire feature without a DB:
- *   - `deriveAgeYears` — whole-year age math incl. the pre-birthday edge.
  *   - `composeSelfContextText` — merge order (profile facts → structured
  *     answers → free text), the profile-facts-alone-stay-silent rule,
  *     and the de/en label split.
@@ -20,7 +19,6 @@ import {
   clampPendingQuestions,
   composeSelfContextText,
   composeStructuredRecordsText,
-  deriveAgeYears,
   PENDING_QUESTION_MAX_CHARS,
   type SelfContext,
 } from "../about-me";
@@ -36,24 +34,6 @@ const emptyCtx: SelfContext = {
   allergies: null,
   coachFocus: null,
 };
-
-describe("deriveAgeYears", () => {
-  const now = new Date("2026-06-10T12:00:00Z");
-
-  it("counts whole years after the birthday", () => {
-    expect(deriveAgeYears(new Date("1980-06-01"), now)).toBe(46);
-  });
-
-  it("does not count the year before the birthday", () => {
-    expect(deriveAgeYears(new Date("1980-06-20"), now)).toBe(45);
-  });
-
-  it("returns null for unknown or implausible dates", () => {
-    expect(deriveAgeYears(null, now)).toBeNull();
-    expect(deriveAgeYears(new Date("1850-01-01"), now)).toBeNull();
-    expect(deriveAgeYears(new Date("2030-01-01"), now)).toBeNull();
-  });
-});
 
 describe("composeSelfContextText", () => {
   const profile = { ageYears: 46, gender: "MALE" };

@@ -42,15 +42,16 @@ import {
   resolveThresholdOverride,
   resolveWeightTargetOverride,
   type ThresholdMetric,
+  profileTimezone,
   type UserProfileForRange,
 } from "@/lib/analytics/effective-range";
-import { getAgeFromDateOfBirth } from "@/lib/analytics/pulse-targets";
 import {
   getTrendSentiment,
   type TrendDirectionSentiment,
   type TrendSentimentDirection,
 } from "@/lib/insights/trend-sentiment";
 import { binaryReferenceSex } from "@/lib/profile/sex";
+import { ageInYears } from "@/lib/tz/date-only";
 
 import { resolveWeightTrend } from "./weight-trend";
 
@@ -157,7 +158,7 @@ function hasProfileDefault(
     case "BLOOD_PRESSURE_DIA":
       return profile.dateOfBirth != null;
     case "PULSE": {
-      const age = getAgeFromDateOfBirth(profile.dateOfBirth ?? null);
+      const age = ageInYears(profile.dateOfBirth, profileTimezone(profile));
       return age != null && age >= 20;
     }
     case "BODY_FAT":

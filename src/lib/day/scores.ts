@@ -46,7 +46,7 @@ import {
   DEVICE_STRAIN_SCALE_MAX,
   deviceStrainDays,
 } from "@/lib/insights/derived/wellness-scores";
-import { getAgeFromDateOfBirth } from "@/lib/analytics/pulse-targets";
+import { ageInYears } from "@/lib/tz/date-only";
 import type { ModuleKey } from "@/lib/modules/registry";
 import { surfaceModule } from "@/lib/modules/surface";
 import { dateOnlyKey } from "@/lib/tz/date-only";
@@ -279,7 +279,7 @@ async function sleepScoreOf(
   const derived = await computeSleepScore(
     args.userId,
     {
-      ageYears: getAgeFromDateOfBirth(user?.dateOfBirth ?? null),
+      ageYears: ageInYears(user?.dateOfBirth, args.tz),
       sex: null,
     },
     { now: until, until, tz: args.tz, priorityJson: args.priorityJson },

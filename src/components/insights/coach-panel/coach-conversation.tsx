@@ -15,7 +15,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { DAY_QUERY_PARAM } from "@/lib/day/contract";
 import { queryKeys } from "@/lib/query-keys";
 import { apiDelete, apiGet } from "@/lib/api/api-fetch";
-import type { CoachFollowUp, CoachScope } from "@/lib/ai/coach/types";
+import type { CoachFollowUp } from "@/lib/ai/coach/types";
 import type { CoachLaunchScope } from "@/lib/insights/coach-launch-context";
 import type { InboundDocumentDetailDto } from "@/lib/validations/inbound-documents";
 import { MAX_COACH_ATTACHMENTS } from "@/lib/documents/inbound-constants";
@@ -68,6 +68,7 @@ import {
   useDetachCoachDocument,
   useSendCoachMessage,
 } from "./use-coach";
+import { useCoachSendHandlers } from "./use-coach-send-handlers";
 import { translateOrNull } from "@/lib/i18n/translate-code";
 import { currentUrlSearch, writeUrlHref } from "@/lib/url-state";
 
@@ -92,26 +93,6 @@ import { currentUrlSearch, writeUrlHref } from "@/lib/url-state";
  * `<SheetDescription>` (required for the dialog's accessible name) while
  * the page mounts a plain `<h1>` / `<p>`.
  */
-
-/**
- * v1.21.0 — collapse a UI launch scope ({ metric, also,
- * window }) into the chat route's wire scope ({ sources, window }).
- * Returns undefined when there is nothing to narrow, so the request
- * falls back to the route's default all-source snapshot. Exported for
- * the unit test that pins the source-dedup + window contract.
- */
-export function launchScopeToCoachScope(
-  launchScope: CoachLaunchScope | null | undefined,
-): CoachScope | undefined {
-  if (!launchScope?.metric) return undefined;
-  const sources = Array.from(
-    new Set([launchScope.metric, ...(launchScope.also ?? [])]),
-  );
-  return {
-    sources,
-    ...(launchScope.window ? { window: launchScope.window } : {}),
-  };
-}
 
 /**
  * v1.29.x — a stale/invalid `?doc=<id>` deep-link (a deleted document, a
@@ -642,196 +623,26 @@ export function CoachConversation({
     ? null
     : latestClarification(conversation?.messages ?? [], send.streaming);
 
-  // v1.39.4 — a follow-up chip: its label is the message, and the server
-  // resolves what it asks for from the message that offered it.
-  function handleFollowUp(followUp: CoachFollowUp, messageId: string) {
-    if (send.isStreaming || fenced || currentConversationId === null) return;
-    void send.send({
-      conversationId: currentConversationId,
-      message: followUp.label,
-      followUp: { messageId, id: followUp.id },
-    });
-  }
-
-  // v1.41 — a reply pill under the latest answer: a clarifying question's
-  // choice, or an answer to a fact or plan proposal. Its label goes out as
-  // the person's own message; the request says which offer it answers, and
-  // the server resolves the rest from what it stored on that message.
-  function handleReply(intent: CoachReplyIntent) {
-    if (send.isStreaming || fenced || currentConversationId === null) return;
-    const sent = send.send({
-      conversationId: currentConversationId,
-      message: intent.label,
-      ...(intent.kind === "clarification"
-        ? {
-            clarification: {
-              messageId: intent.messageId,
-              choiceId: intent.choice.id,
-            },
-          }
-        : intent.kind === "memory"
-          ? {
-              memoryDecision: {
-                messageId: intent.messageId,
-                proposalId: intent.proposalId,
-                accept: intent.accept,
-              },
-            }
-          : {
-              planDecision: {
-                messageId: intent.messageId,
-                planId: intent.planId,
-                accept: intent.accept,
-              },
-            }),
-    });
-    // A decision changes what the Coach remembers or which plans run; the
-    // lists elsewhere read it fresh once the turn is through.
-    if (intent.kind !== "clarification") {
-      void sent.then(() =>
-        queryClient.invalidateQueries({
-          queryKey:
-            intent.kind === "memory"
-              ? queryKeys.coachFacts()
-              : queryKeys.coachPlansAll(),
-        }),
-      );
-    }
-  }
-
-  async function handleSubmit(value: string) {
-    const trimmed = value.trim();
-    if (!trimmed || send.isStreaming) return;
-    // v1.29.x (S7) — a fenced turn cannot go out while a staged attachment is
-    // still being indexed: the fenced endpoint 422s on an un-indexed document,
-    // so mirror that gate client-side (the composer shows the "still indexing"
-    // hint). The server edge is the real wall; this is the honest UI mirror.
-    if (fenced && anyPendingUnindexed) return;
-    // v1.16.5 — in the guided flow the composer message IS the answer
-    // to the current question. Mark it answered before the send so the
-    // question bubble anchors above the user's message, and dismiss the
-    // question server-side — answered questions never return.
-    const guidedQuestion =
-      guided.phase === "asking" ? guided.questions[guided.index] : null;
-    const guidedIndex = guided.phase === "asking" ? guided.index : null;
-    if (guidedQuestion !== null) {
-      dispatchGuided({ type: "ANSWER_SUBMITTED", answer: trimmed });
-      dismissQuestions.mutate(guidedQuestion);
-    }
-    setInputValue("");
-    // v1.21.0 — attach the launch scope to the FIRST turn of a
-    // fresh conversation so a chat opened from a metric surface / insight
-    // card reads a snapshot narrowed to the relevant source(s). A continued
-    // thread (existing id) keeps its own established scope, so we omit it.
-    const scope =
-      currentConversationId === null
-        ? launchScopeToCoachScope(launchScope)
-        : undefined;
-    // v1.16.6 — hand the question to the turn so the Coach reaction is
-    // contextual (the question bubble itself is never persisted).
-    // v1.29.x (S7) — `fenced` + `pendingAttachmentIds` route a fenced turn
-    // through the hardened `/api/insights/chat/fenced` endpoint (see
-    // `resolveCoachSendTarget`); the tool-mode fields (`scope`,
-    // `guidedQuestion`) are suppressed on a fenced turn — that endpoint has no
-    // snapshot and no guided flow. `pendingAttachmentIds` travels ONLY on a
-    // brand-new conversation (first-turn attach).
-    // Same first-turn gate as `scope` — see `initialWorkoutId`.
-    const workoutId =
-      currentConversationId === null
-        ? (activeWorkoutId ?? undefined)
-        : undefined;
-    const wasFreshFenced = currentConversationId === null && fenced;
-    const resolvedId = await send.send({
-      conversationId: currentConversationId ?? undefined,
-      message: trimmed,
-      guidedQuestion: fenced ? undefined : (guidedQuestion ?? undefined),
-      scope: fenced ? undefined : scope,
-      workoutId: fenced ? undefined : workoutId,
-      // v1.39.4 — a typed message answers an open clarifying question.
-      clarification: openClarification
-        ? { messageId: openClarification.messageId }
-        : undefined,
+  const { handleFollowUp, handleReply, handleSubmit, handleRegenerate } =
+    useCoachSendHandlers({
+      send,
+      currentConversationId,
       fenced,
-      pendingAttachmentIds:
-        currentConversationId === null ? pendingAttachmentIds : undefined,
+      anyPendingUnindexed,
+      openClarification,
+      guided,
+      dispatchGuided,
+      dismissQuestions,
+      setInputValue,
+      setPendingAdopt,
+      pendingAttachmentIds,
+      setPendingAttachmentIds,
+      launchScope,
+      activeWorkoutId,
+      queryClient,
+      autoSend,
+      prefill,
     });
-    // A fresh fenced chat's first turn created the conversation server-side and
-    // persisted the attachments; the server now owns them via the conversation
-    // detail, so drop the local staging set to avoid duplicate "indexing" pills.
-    if (wasFreshFenced && resolvedId) {
-      setPendingAttachmentIds([]);
-    }
-    if (guidedQuestion !== null && guidedIndex !== null) {
-      setPendingAdopt({
-        question: guidedQuestion,
-        answer: trimmed,
-        guidedIndex,
-      });
-      // v1.16.6 — sequence per answer: answer → Coach reaction
-      // (streamed above) → adopt offer → next question. A resolved id
-      // means the reaction landed; the machine then advances when the
-      // adopt offer settles (ADOPTION_SETTLED). A null id is the
-      // provider-less / errored turn — no reaction is coming, so keep
-      // the original silent flow and advance immediately.
-      if (resolvedId === null) {
-        dispatchGuided({ type: "TURN_COMPLETE" });
-      }
-    }
-  }
-
-  // Auto-send the prefill as the conversation's first turn, exactly once.
-  // A card hand-off (e.g. the assessment "ask about this") opens the Coach
-  // with `autoSend` so the answer lands without a manual send. Ref-guarded so
-  // it fires a single time per mount; only for a fresh conversation with a
-  // non-empty prefill and no stream in flight.
-  const autoSentRef = useRef(false);
-  // Latest-handler ref so the auto-send effect never lists `handleSubmit` (it
-  // re-creates each render) and never calls it synchronously in the effect
-  // body — the dispatch is deferred to a microtask so the composer state it
-  // touches settles outside the effect.
-  const handleSubmitRef = useRef(handleSubmit);
-  useEffect(() => {
-    handleSubmitRef.current = handleSubmit;
-  });
-  useEffect(() => {
-    if (!autoSend) return;
-    if (autoSentRef.current) return;
-    if (currentConversationId !== null) return;
-    if (send.isStreaming) return;
-    const seed = (prefill ?? "").trim();
-    if (!seed) return;
-    autoSentRef.current = true;
-    queueMicrotask(() => {
-      void handleSubmitRef.current(seed);
-    });
-  }, [autoSend, prefill, currentConversationId, send.isStreaming]);
-
-  // v1.22 — "Try again": regenerate an assistant reply by resubmitting the
-  // user turn that produced it as a FRESH turn. The composer value is left
-  // untouched (unlike `handleSubmit`, which clears it) so a half-typed
-  // follow-up survives a regenerate. The existing thread is the conversation
-  // context, so the new turn continues it rather than forking.
-  function handleRegenerate(userText: string) {
-    const trimmed = userText.trim();
-    if (!trimmed || send.isStreaming) return;
-    if (fenced && anyPendingUnindexed) return;
-    const scope =
-      currentConversationId === null
-        ? launchScopeToCoachScope(launchScope)
-        : undefined;
-    void send.send({
-      conversationId: currentConversationId ?? undefined,
-      message: trimmed,
-      scope: fenced ? undefined : scope,
-      workoutId:
-        fenced || currentConversationId !== null
-          ? undefined
-          : (activeWorkoutId ?? undefined),
-      fenced,
-      pendingAttachmentIds:
-        currentConversationId === null ? pendingAttachmentIds : undefined,
-    });
-  }
 
   function handleNewChat() {
     setCurrentConversationId(null);
@@ -1092,76 +903,228 @@ export function CoachConversation({
     </div>
   ) : null;
 
+  const view: CoachSurfaceView = {
+    surface,
+    className,
+    conversation,
+    currentConversationId,
+    title,
+    tagline,
+    heroActive,
+    threadStarted,
+    docScopeBanner,
+    composerNode,
+    composerStack,
+    send,
+    interleaved,
+    handleRegenerate,
+    handleFollowUp,
+    handleReply,
+    handleNewChat,
+    selectConversation,
+    openSettingsOnData,
+    attachEnabled,
+    pickerOpen,
+    setPickerOpen,
+    remainingSlots,
+    excludeIds,
+    handlePickFromVault,
+    renderTitle,
+    renderDescription,
+    leadingHeaderActions,
+    trailingHeaderActions,
+    drawerSettingsOpen,
+    setDrawerSettingsOpen,
+    onRequestFullView,
+    historyTrayOpen,
+    setHistoryTrayOpen,
+    sourcesTrayOpen,
+    setSourcesTrayOpen,
+    a2MetricLabel,
+  };
+
   // The PAGE surface has no header bar of its own. Conversations, New chat
   // and the settings gear live in the conversations panel on the right; its
   // toggle sits in the app's top bar. The drawer surface keeps its own header
-  // + body chrome (handled below).
-  if (surface === "page") {
-    return (
-      <div
-        data-slot="coach-conversation"
-        data-variant={surface}
-        className={cn("flex min-h-0 flex-1 flex-row", className)}
-      >
-        {/* The conversation column. Its thread and composer keep one centred,
-            capped column (`max-w-2xl`) across the new-chat hero and an active
-            conversation, and that width does not change when the panel
-            beside it opens or closes: only the centring moves. */}
-        <div
-          data-slot="coach-page-main"
-          className="flex min-h-0 min-w-0 flex-1 flex-col"
-        >
-          {docScopeBanner}
-          <CoachTopBarTrail
-            conversationTitle={
-              heroActive ? null : (conversation?.title ?? null)
-            }
-          />
-          {!heroActive ? <h1 className="sr-only">{title}</h1> : null}
-          {heroActive ? (
-            <CoachHero composer={composerNode} />
-          ) : (
-            <>
-              <div className="flex min-h-0 flex-1 flex-col">
-                <MessageThread
-                  conversation={conversation ?? null}
-                  streaming={send.streaming}
-                  optimisticUser={send.optimisticUser}
-                  interleaved={interleaved}
-                  onRegenerate={handleRegenerate}
-                  onFollowUp={handleFollowUp}
-                  onReply={handleReply}
-                />
-              </div>
-              <div
-                data-slot="coach-page-composer"
-                className="@container/composer relative shrink-0 px-4 pt-2 pb-3 sm:px-6 sm:pb-4"
-              >
-                <div className="mx-auto w-full max-w-2xl">{composerStack}</div>
-                <NewChatFab onNewChat={handleNewChat} />
-              </div>
-            </>
-          )}
-        </div>
-        <ConversationsPanel
-          activeId={currentConversationId}
-          onSelect={selectConversation}
-          onNewChat={handleNewChat}
-          openSettingsOnData={openSettingsOnData}
-        />
-        {attachEnabled ? (
-          <AttachmentPicker
-            open={pickerOpen}
-            onOpenChange={setPickerOpen}
-            remainingSlots={remainingSlots}
-            excludeIds={excludeIds}
-            onConfirm={handlePickFromVault}
-          />
-        ) : null}
-      </div>
-    );
-  }
+  // + body chrome.
+  if (surface === "page") return renderPageSurface(view);
+  return renderDrawerSurface(view);
+}
 
+/**
+ * Everything the two surface renderers read from `CoachConversation`. The
+ * state and handlers stay owned by the conversation; the renderers only lay
+ * them out, so both surfaces keep one chat logic.
+ */
+interface CoachSurfaceView {
+  surface: CoachConversationProps["surface"];
+  className: string | undefined;
+  conversation: ReturnType<typeof useCoachConversation>["data"];
+  currentConversationId: string | null;
+  title: string;
+  tagline: string;
+  heroActive: boolean;
+  threadStarted: boolean;
+  docScopeBanner: React.ReactNode;
+  composerNode: React.ReactNode;
+  composerStack: React.ReactNode;
+  send: ReturnType<typeof useSendCoachMessage>;
+  interleaved: InterleavedThreadItem[];
+  handleRegenerate: (userText: string) => void;
+  handleFollowUp: (followUp: CoachFollowUp, messageId: string) => void;
+  handleReply: (intent: CoachReplyIntent) => void;
+  handleNewChat: () => void;
+  selectConversation: (id: string) => void;
+  openSettingsOnData: boolean;
+  attachEnabled: boolean;
+  pickerOpen: boolean;
+  setPickerOpen: (open: boolean) => void;
+  remainingSlots: number;
+  excludeIds: string[];
+  handlePickFromVault: (ids: string[]) => void;
+  renderTitle: CoachConversationProps["renderTitle"];
+  renderDescription: CoachConversationProps["renderDescription"];
+  leadingHeaderActions: React.ReactNode;
+  trailingHeaderActions: React.ReactNode;
+  drawerSettingsOpen: boolean;
+  setDrawerSettingsOpen: (open: boolean) => void;
+  onRequestFullView: (() => void) | undefined;
+  historyTrayOpen: boolean;
+  setHistoryTrayOpen: (open: boolean) => void;
+  sourcesTrayOpen: boolean;
+  setSourcesTrayOpen: (open: boolean) => void;
+  a2MetricLabel: string | null;
+}
+
+/** The full-page `/coach` surface: conversation column + conversations panel. */
+function renderPageSurface({
+  surface,
+  className,
+  conversation,
+  currentConversationId,
+  title,
+  heroActive,
+  docScopeBanner,
+  composerNode,
+  composerStack,
+  send,
+  interleaved,
+  handleRegenerate,
+  handleFollowUp,
+  handleReply,
+  handleNewChat,
+  selectConversation,
+  openSettingsOnData,
+  attachEnabled,
+  pickerOpen,
+  setPickerOpen,
+  remainingSlots,
+  excludeIds,
+  handlePickFromVault,
+}: CoachSurfaceView) {
+  return (
+    <div
+      data-slot="coach-conversation"
+      data-variant={surface}
+      className={cn("flex min-h-0 flex-1 flex-row", className)}
+    >
+      {/* The conversation column. Its thread and composer keep one centred,
+          capped column (`max-w-2xl`) across the new-chat hero and an active
+          conversation, and that width does not change when the panel
+          beside it opens or closes: only the centring moves. */}
+      <div
+        data-slot="coach-page-main"
+        className="flex min-h-0 min-w-0 flex-1 flex-col"
+      >
+        {docScopeBanner}
+        <CoachTopBarTrail
+          conversationTitle={heroActive ? null : (conversation?.title ?? null)}
+        />
+        {!heroActive ? <h1 className="sr-only">{title}</h1> : null}
+        {heroActive ? (
+          <CoachHero composer={composerNode} />
+        ) : (
+          <>
+            <div className="flex min-h-0 flex-1 flex-col">
+              <MessageThread
+                conversation={conversation ?? null}
+                streaming={send.streaming}
+                optimisticUser={send.optimisticUser}
+                interleaved={interleaved}
+                onRegenerate={handleRegenerate}
+                onFollowUp={handleFollowUp}
+                onReply={handleReply}
+              />
+            </div>
+            <div
+              data-slot="coach-page-composer"
+              className="@container/composer relative shrink-0 px-4 pt-2 pb-3 sm:px-6 sm:pb-4"
+            >
+              <div className="mx-auto w-full max-w-2xl">{composerStack}</div>
+              <NewChatFab onNewChat={handleNewChat} />
+            </div>
+          </>
+        )}
+      </div>
+      <ConversationsPanel
+        activeId={currentConversationId}
+        onSelect={selectConversation}
+        onNewChat={handleNewChat}
+        openSettingsOnData={openSettingsOnData}
+      />
+      {attachEnabled ? (
+        <AttachmentPicker
+          open={pickerOpen}
+          onOpenChange={setPickerOpen}
+          remainingSlots={remainingSlots}
+          excludeIds={excludeIds}
+          onConfirm={handlePickFromVault}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * The drawer surface: its own header, the thread + rail-tray strip + docked
+ * composer, and the conversation list + sources as mobile trays.
+ */
+function renderDrawerSurface({
+  surface,
+  className,
+  conversation,
+  currentConversationId,
+  title,
+  tagline,
+  threadStarted,
+  docScopeBanner,
+  composerStack,
+  send,
+  interleaved,
+  handleRegenerate,
+  handleFollowUp,
+  handleReply,
+  handleNewChat,
+  selectConversation,
+  attachEnabled,
+  pickerOpen,
+  setPickerOpen,
+  remainingSlots,
+  excludeIds,
+  handlePickFromVault,
+  renderTitle,
+  renderDescription,
+  leadingHeaderActions,
+  trailingHeaderActions,
+  drawerSettingsOpen,
+  setDrawerSettingsOpen,
+  onRequestFullView,
+  historyTrayOpen,
+  setHistoryTrayOpen,
+  sourcesTrayOpen,
+  setSourcesTrayOpen,
+  a2MetricLabel,
+}: CoachSurfaceView) {
   return (
     <div
       data-slot="coach-conversation"

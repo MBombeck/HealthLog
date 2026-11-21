@@ -56,3 +56,8 @@ export function avgInWindow(
   const sum = filtered.reduce((s, r) => s + r.value, 0);
   return Math.round((sum / filtered.length) * 100) / 100;
 }
+
+/** The later of `date` and an optional floor. */
+export function laterDate(date: Date, floor: Date | null): Date {
+  return floor !== null && floor.getTime() > date.getTime() ? floor : date;
+}

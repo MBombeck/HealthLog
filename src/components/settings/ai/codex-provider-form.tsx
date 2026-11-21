@@ -14,8 +14,7 @@ import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { apiDelete, apiPost } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
-import { formatDateTime } from "@/lib/format";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { aiInputDependentKeys, invalidateKeys } from "@/lib/query-keys";
 
 import type { InsightsSettings } from "./shared";
@@ -27,7 +26,7 @@ export function CodexProviderForm({
 }: {
   settings: InsightsSettings | null | undefined;
 }) {
-  const { t } = useTranslations();
+  const [{ t }, fmt] = [useTranslations(), useFormatters()];
   const queryClient = useQueryClient();
 
   const [msg, setMsg] = useState<string | null>(null);
@@ -182,14 +181,14 @@ export function CodexProviderForm({
       {settings?.lastInsightAt && (
         <p className="text-muted-foreground text-xs">
           {t("settings.ai.codex.lastInsight", {
-            when: formatDateTime(settings.lastInsightAt),
+            when: fmt.dateTime(settings.lastInsightAt),
           })}
         </p>
       )}
       {settings?.codexConnectedAt && isConnected && (
         <p className="text-muted-foreground text-xs">
           {t("settings.ai.connectedSince", {
-            when: formatDateTime(settings.codexConnectedAt),
+            when: fmt.dateTime(settings.codexConnectedAt),
           })}
         </p>
       )}

@@ -1,3 +1,4 @@
+import { heightSquaredM2 } from "@/lib/analytics/classifications";
 export interface ValueBand {
   min: number;
   max: number;
@@ -78,8 +79,7 @@ export function buildTrafficRange(
 }
 
 export function buildWeightRangeFromHeight(heightCm: number): TrafficRange {
-  const heightM = heightCm / 100;
-  const h2 = heightM * heightM;
+  const h2 = heightSquaredM2(heightCm);
 
   return {
     greenMin: 18.5 * h2,

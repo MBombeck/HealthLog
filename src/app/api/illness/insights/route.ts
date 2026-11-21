@@ -32,8 +32,8 @@ import {
   summarizeIllnessRetrospective,
   type RetrospectiveEpisode,
 } from "@/lib/illness/retrospective";
-import { dayKeyForUserTz } from "@/lib/measurements/consolidation-tz";
 import { resolveUserTimezone } from "@/lib/measurements/consolidation-base";
+import { userDayKey } from "@/lib/tz/format";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** Cap the per-episode gap computations so a heavy history can't fan out. */
@@ -163,7 +163,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     return {
       id: r.id,
       type: r.type,
-      onsetDay: dayKeyForUserTz(r.onsetAt, tz),
+      onsetDay: userDayKey(r.onsetAt, tz),
       resolved: r.resolvedAt !== null,
       recoveryGapDays: gap?.recoveryGapDays ?? null,
       gapMeasurementDays: gap?.gapMeasurementDays ?? 0,

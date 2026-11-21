@@ -120,35 +120,6 @@ export function chooseTickInterval(
 }
 
 /**
- * v1.4.19 A2 legacy helper — kept for the existing test suite + any
- * external consumer. Maps the viewport to a sensible "max ticks" cap.
- *
- * Note that `chooseTickInterval` no longer routes through this; the
- * day-aware policy above replaced the cap-based algorithm. The shape
- * stays for backwards compatibility (a few tests assert specific cap
- * values per viewport).
- */
-const VIEWPORT_BUCKETS: ReadonlyArray<{
-  maxWidth: number;
-  maxTicks: number;
-}> = [
-  { maxWidth: 360, maxTicks: 4 },
-  { maxWidth: 480, maxTicks: 6 },
-  { maxWidth: 768, maxTicks: 8 },
-  { maxWidth: Number.POSITIVE_INFINITY, maxTicks: 10 },
-];
-
-export function resolveTargetTickCount(viewportWidth: number): number {
-  if (!Number.isFinite(viewportWidth) || viewportWidth <= 0) {
-    return VIEWPORT_BUCKETS[VIEWPORT_BUCKETS.length - 1].maxTicks;
-  }
-  for (const bucket of VIEWPORT_BUCKETS) {
-    if (viewportWidth <= bucket.maxWidth) return bucket.maxTicks;
-  }
-  return VIEWPORT_BUCKETS[VIEWPORT_BUCKETS.length - 1].maxTicks;
-}
-
-/**
  * SSR-safe accessor for the active viewport width. Used by chart wrappers
  * so they can react to the current device. Returns the desktop default
  * (1280) on the server so SSR-rendered charts keep their pre-v1.4.19

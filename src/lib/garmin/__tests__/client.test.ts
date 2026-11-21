@@ -7,7 +7,7 @@ import {
   extractGarminToken,
   GarminApiError,
   GarminSession,
-  garminTokenExpiry,
+  garminTokenClaims,
   GARMIN_TOKEN_PATH,
   isGarminKeyRefusal,
   isGarminRateLimit,
@@ -74,10 +74,10 @@ describe("extractGarminToken", () => {
   });
 });
 
-describe("garminTokenExpiry", () => {
+describe("garminTokenClaims", () => {
   it("reads exp in ms and ignores tokens without one", () => {
-    expect(garminTokenExpiry(jwt(1_800_000_000))).toBe(1_800_000_000_000);
-    expect(garminTokenExpiry("opaque")).toBeUndefined();
+    expect(garminTokenClaims(jwt(1_800_000_000)).exp).toBe(1_800_000_000_000);
+    expect(garminTokenClaims("opaque").exp).toBeUndefined();
   });
 });
 

@@ -20,7 +20,6 @@ import { QueryClient } from "@tanstack/react-query";
 
 import {
   isSharingAccessDenied,
-  isSharingNotPermitted,
   subscribeToGrantLoss,
 } from "@/hooks/use-account-switch";
 import { ApiError } from "@/lib/api/api-fetch";
@@ -54,8 +53,6 @@ describe("the two sharing error codes", () => {
     // act as that account and must leave; the other means the surface is not
     // part of what sharing covers and leaving would be the wrong answer.
     expect(isSharingAccessDenied(DENIED)).toBe(true);
-    expect(isSharingNotPermitted(DENIED)).toBe(false);
-    expect(isSharingNotPermitted(NOT_PERMITTED)).toBe(true);
     expect(isSharingAccessDenied(NOT_PERMITTED)).toBe(false);
   });
 

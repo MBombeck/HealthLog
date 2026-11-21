@@ -8,7 +8,6 @@ import {
   getReferenceRange,
   isReferenceMetric,
   normalBandIndex,
-  referenceCitation,
   referenceLabel,
   type ReferenceMetric,
 } from "../reference-ranges";
@@ -127,9 +126,6 @@ describe("reference-ranges backbone", () => {
     expect(isReferenceMetric("NOT_A_METRIC")).toBe(false);
     expect(getReferenceRange("NOT_A_METRIC")).toBeNull();
     expect(getReferenceRange("HBA1C")).toBe(REFERENCE_RANGES.HBA1C);
-    expect(referenceCitation("BLOOD_PRESSURE")).toBe(
-      CITATIONS.ESH_2023_HYPERTENSION,
-    );
   });
 
   it("no commercial brand appears in any band label or caveat", () => {

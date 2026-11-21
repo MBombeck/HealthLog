@@ -37,6 +37,7 @@ import { userDayKey } from "@/lib/tz/format";
 import { workoutSportTypeEnum } from "@/lib/validations/workout";
 import type { WorkoutHrSeries } from "./hr-series";
 import type { WorkoutZones } from "./zones";
+import { median, roundTo } from "@/lib/stats/central";
 
 /** Lookback for the own-history comparison, in days. */
 export const OWN_HISTORY_LOOKBACK_DAYS = 90;
@@ -111,15 +112,6 @@ export interface WorkoutInsightEvidence {
 export function narrowSportType(raw: string): string {
   const parsed = workoutSportTypeEnum.safeParse(raw);
   return parsed.success ? parsed.data : "other";
-}
-
-function median(values: number[]): number | null {
-  const sorted = values.filter((v) => Number.isFinite(v)).sort((a, b) => a - b);
-  if (sorted.length === 0) return null;
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 1
-    ? sorted[mid]
-    : Math.round(((sorted[mid - 1] + sorted[mid]) / 2) * 10) / 10;
 }
 
 /**
@@ -217,7 +209,7 @@ export function summariseHrShape(
     secondHalfMeanBpm,
     driftBpm: Math.round((secondHalfMeanBpm - firstHalfMeanBpm) * 10) / 10,
     peaks: peakIndices.length,
-    medianSettleSec: settles.length > 0 ? median(settles) : null,
+    medianSettleSec: median1(settles),
   };
 }
 
@@ -259,6 +251,12 @@ export interface OwnHistoryRow {
  * by two paired watches is one session, and counting it twice inflates the
  * sample size and biases every median.
  */
+/** Median of the finite values, to one decimal; null when there are none. */
+function median1(values: readonly number[]): number | null {
+  const m = median(values.filter((v) => Number.isFinite(v)));
+  return m === null ? null : roundTo(m, 1);
+}
+
 export function summariseOwnHistory(
   rows: readonly OwnHistoryRow[],
 ): WorkoutOwnHistory | null {
@@ -276,9 +274,9 @@ export function summariseOwnHistory(
     lookbackDays: OWN_HISTORY_LOOKBACK_DAYS,
     sampleSize: rows.length,
     medianDurationSec: Math.round(medianDurationSec),
-    medianAvgHr: median(numeric((r) => r.avgHeartRate)),
-    medianDistanceM: median(numeric((r) => r.totalDistanceM)),
-    medianEnergyKcal: median(numeric((r) => r.totalEnergyKcal)),
+    medianAvgHr: median1(numeric((r) => r.avgHeartRate)),
+    medianDistanceM: median1(numeric((r) => r.totalDistanceM)),
+    medianEnergyKcal: median1(numeric((r) => r.totalEnergyKcal)),
   };
 }
 

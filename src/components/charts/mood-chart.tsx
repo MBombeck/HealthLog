@@ -3,17 +3,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { queryKeys } from "@/lib/query-keys";
-import {
-  ResponsiveContainer,
-  ComposedChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ReferenceArea,
-  ReferenceLine,
-} from "recharts";
 import { useEffect, useState, useMemo, useRef } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
@@ -33,12 +22,10 @@ import {
   pickBucket,
   type ChartBucketType,
 } from "@/lib/charts/bucket-time-series";
-import { RichChartTooltip, type RichTooltipRow } from "./chart-tooltip";
 import { ChartDataTable } from "./chart-data-table";
 import { chartPointDayKey } from "@/components/day/chart-day";
 import {
   ChartDayFooter,
-  OPEN_DAY_LINE,
   useChartDayLinks,
 } from "@/components/day/chart-day-links";
 import { ChartEmptyState } from "./chart-empty-state";
@@ -53,29 +40,22 @@ import type {
 import { ChartOverlayControls } from "./chart-overlay-controls";
 import { useChartOverlayPrefs } from "@/hooks/use-chart-overlay-prefs";
 import { useViewportWidth } from "@/hooks/use-viewport-width";
-import { computeTickPositions } from "@/lib/charts/x-axis-density";
 import { CHART_HEIGHT_PX } from "@/lib/charts/constants";
 import { shouldFireDataReady } from "@/lib/charts/data-ready-latch";
 import { moodLabelKeyForScore } from "@/lib/mood/labels";
 import { apiGet } from "@/lib/api/api-fetch";
 import { trendLineByTime } from "@/lib/stats/linear-fit";
+import {
+  dayKeyToTimestamp,
+  movingAverageByPoints,
+} from "./health-chart/series-math";
+import { MoodChartPlot, type ChartDataPoint } from "./mood-chart/plot";
 
 // --- Types ---
 
 interface MoodAnalyticsData {
   entries: Array<{ date: string; score: number; samples: number }>;
   summary: DataSummary;
-}
-
-interface ChartDataPoint {
-  date: string;
-  timestamp: number;
-  pointIndex: number;
-  score: number;
-  ma?: number;
-  trend?: number;
-  /** v1.4.16 — prior-period overlay value. */
-  scoreCompare?: number;
 }
 
 interface MoodChartProps {
@@ -132,51 +112,7 @@ interface MoodChartProps {
 
 // MOOD_LABELS built dynamically via t() in the component
 
-// v1.12.6 — mood-level bands ride the same Dracula good→bad ramp the mood
-// heatmap and distribution chart already use (red → orange → yellow →
-// green), so the three mood surfaces read as one palette instead of the
-// chart's former three-band red/orange/green that skipped the yellow rung.
-// Tokens, not raw hex, so a theme change flows through one source.
-const VALUE_BANDS = [
-  { min: 1, max: 2, color: "var(--dracula-red)", opacity: 0.16 },
-  { min: 2, max: 3, color: "var(--dracula-orange)", opacity: 0.18 },
-  { min: 3, max: 3.5, color: "var(--dracula-yellow)", opacity: 0.18 },
-  { min: 3.5, max: 5, color: "var(--dracula-green)", opacity: 0.2 },
-] as const;
-
-// The mood line + overlays use the same hues the rest of the Insights
-// charts do — purple primary (matching HealthChart), pink moving average,
-// cyan trend — as tokens rather than the former hand-picked hex.
-const COLOR_MAIN = "var(--dracula-purple)";
-const COLOR_MA = "var(--dracula-pink)";
-const COLOR_TREND = "var(--dracula-cyan)";
-
 // --- Helpers ---
-
-function dayKeyToTimestamp(dayKey: string): number {
-  const [year, month, day] = dayKey.split("-").map(Number);
-  return Date.UTC(year, month - 1, day, 12, 0, 0);
-}
-
-function movingAverageByPoints(
-  data: Array<{ date: Date; value: number }>,
-  windowSize: number,
-): Array<{ date: Date; value: number }> {
-  if (data.length === 0) return [];
-
-  const sorted = [...data].sort((a, b) => a.date.getTime() - b.date.getTime());
-
-  return sorted.map((point, index) => {
-    const start = Math.max(0, index - windowSize + 1);
-    const window = sorted.slice(start, index + 1);
-    const avg =
-      window.reduce((sum, item) => sum + item.value, 0) / window.length;
-    return {
-      date: point.date,
-      value: Math.round(avg * 100) / 100,
-    };
-  });
-}
 
 // --- Aggregation helpers (exported for unit tests) ---
 
@@ -406,55 +342,27 @@ export function MoodChart({
   const chartData = useMemo((): ChartDataPoint[] | undefined => {
     if (!data?.entries?.length) return undefined;
 
-    const allPoints: ChartDataPoint[] = data.entries
-      .map((entry) => ({
-        date: tzFmt.dateShortSmart(new Date(dayKeyToTimestamp(entry.date))),
-        timestamp: dayKeyToTimestamp(entry.date),
-        pointIndex: 0,
-        score: entry.score,
-      }))
-      .sort((a, b) => a.timestamp - b.timestamp);
-
     // v1.37.29 — a calendar-day window, not "the last N logged days":
     // the tabs promise days, and the measurement charts window by days.
+    // The bucketing (≤90d → day, 91-730d → week, >730d → month, the same
+    // `pickBucket()` thresholds every dashboard chart uses) is
+    // `aggregateMoodEntries`, the function the unit tests pin.
     const cutoff = new Date().getTime() - rangePoints * 86_400_000;
-    const sliced =
+    const windowed =
       rangePoints > 0
-        ? allPoints.filter((point) => point.timestamp >= cutoff)
-        : allPoints;
-
-    // v1.4.15: parity with health-chart's auto-bucketing. Other
-    // dashboard charts (BP, weight, pulse) auto-aggregate to weekly /
-    // monthly when the visible range is long enough that drawing every
-    // daily point would clutter the chart; the mood chart used to show
-    // raw points only, which made multi-month windows unreadable.
-    // Using the same `pickBucket()` thresholds the rest of the
-    // dashboard uses (≤90d → day, 91-730d → week, >730d → month) keeps
-    // the bucketing chip consistent across metrics.
-    const rangeDays =
-      sliced.length < 2
-        ? 0
-        : Math.round(
-            (sliced[sliced.length - 1].timestamp - sliced[0].timestamp) /
-              (24 * 60 * 60 * 1000),
-          );
-    const bucketType = pickBucket(rangeDays);
-
-    const visibleData: ChartDataPoint[] =
-      bucketType === "day"
-        ? sliced
-        : bucketTimeSeries(
-            sliced.map((p) => ({
-              timestamp: p.timestamp,
-              values: { score: p.score },
-            })),
-            { bucket: bucketType, timeZone: profileTimeZone },
-          ).points.map((point) => ({
-            date: tzFmt.dateShortSmart(new Date(point.timestamp)),
-            timestamp: point.timestamp,
-            pointIndex: 0,
-            score: point.values.score,
-          }));
+        ? data.entries.filter(
+            (entry) => dayKeyToTimestamp(entry.date) >= cutoff,
+          )
+        : data.entries;
+    const visibleData: ChartDataPoint[] = aggregateMoodEntries(
+      windowed,
+      profileTimeZone,
+    ).points.map((point) => ({
+      date: tzFmt.dateShortSmart(new Date(point.timestamp)),
+      timestamp: point.timestamp,
+      pointIndex: 0,
+      score: point.score,
+    }));
 
     const enriched: ChartDataPoint[] = visibleData.map((d, index) => ({
       ...d,
@@ -735,304 +643,28 @@ export function MoodChart({
       />
     )
   ) : (
-    <div
-      // v1.12.7 — the mood line plots a 1–5 score band; the former
-      // 240/280 px full-mode height left a tall dead strip below the
-      // line on the mood subpage. Tighten the default to 200/220 px so
-      // the chart fits its content without the empty gap. A per-mount
-      // `--chart-height` override (trends-row mini, etc.) still wins, so
-      // only the unoverridden full-mode mount shrinks.
-      className={`${
-        mini
-          ? "h-[var(--chart-height,140px)]"
-          : "h-[var(--chart-height,200px)] md:h-[var(--chart-height-md,220px)]"
-      } touch-pan-y ${chartDays.plotClassName}`}
-      {...chartDays.plotProps}
-      // Same stable hook as the measurement chart: rendered by the data
-      // branch only, so the browser suite can gate on it instead of on
-      // Recharts' own class names.
-      data-slot="chart-plot"
-      role="img"
-      aria-label={moodAriaLabel}
-    >
-      <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart
-          data={chartDataWithCompare ?? chartData}
-          margin={{ top: 10, right: 8, bottom: 8, left: 8 }}
-          accessibilityLayer
-          onClick={chartDays.onChartClick}
-        >
-          {/* v1.4.25 — the mood chart's YAxis is pinned to
-                    five mood-score ticks ([1,2,3,4,5]), which Recharts
-                    syncs with CartesianGrid by default. That left the
-                    mini variant painting five horizontal lines while
-                    the BP / Weight / Pulse minis painted six (their
-                    auto-generated YAxis ticks land on six bands in
-                    typical health ranges). The explicit coordinates
-                    generator below produces six evenly-spaced lines
-                    so the trends row reads as a single rhythm. */}
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke="var(--border)"
-            opacity={0.5}
-            horizontalCoordinatesGenerator={({ offset }) => {
-              // `offset` carries the chart's plot-area metrics.
-              // Six evenly-spaced y-coordinates inside the plot
-              // area (top + 4 intermediate + bottom) match the
-              // density of the BP/Weight/Pulse minis.
-              const top = offset.top ?? 0;
-              const height = offset.height ?? 0;
-              if (height <= 0) return [];
-              const lines = 6;
-              return Array.from({ length: lines }, (_, i) =>
-                Math.round(top + (height * i) / (lines - 1)),
-              );
-            }}
-          />
-          {showBands &&
-            VALUE_BANDS.map((band) => (
-              <ReferenceArea
-                key={`band-${band.min}-${band.max}`}
-                y1={band.min}
-                y2={band.max}
-                fill={band.color}
-                fillOpacity={band.opacity}
-                strokeOpacity={0}
-                ifOverflow="discard"
-              />
-            ))}
-          {/* v1.4.18 — personal-baseline gated behind the
-                    Trend toggle (maintainer: "only when a trend is being
-                    displayed"). Default OFF. */}
-          {showTrend && personalBaseline != null && (
-            <ReferenceLine
-              y={personalBaseline}
-              stroke={COLOR_MAIN}
-              strokeDasharray="2 4"
-              strokeOpacity={0.4}
-              strokeWidth={1}
-              ifOverflow="discard"
-              label={{
-                value: t("charts.personalBaseline"),
-                position: "insideTopLeft",
-                fill: "var(--muted-foreground)",
-                fontSize: 10,
-                opacity: 0.7,
-              }}
-            />
-          )}
-          <XAxis
-            type="number"
-            dataKey="pointIndex"
-            domain={[0, maxPointIndex]}
-            allowDecimals={false}
-            tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={(value: number) =>
-              tzFmt.date(
-                new Date(chartData[Math.round(value)]?.timestamp ?? Date.now()),
-              )
-            }
-            // v1.4.29 — Recharts ignores `interval` on numeric
-            // axes; pass explicit tick positions instead.
-            ticks={computeTickPositions(chartData ?? [], viewportWidth)}
-            padding={{ left: 10, right: 10 }}
-            tickMargin={10}
-          />
-          <YAxis
-            domain={[1, 5]}
-            ticks={[1, 2, 3, 4, 5]}
-            tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-            tickLine={false}
-            axisLine={false}
-            width={65}
-            tickMargin={10}
-            tickFormatter={formatMoodTick}
-          />
-          {chartDays.openIndex !== undefined ? (
-            <ReferenceLine
-              key="open-day"
-              x={chartDays.openIndex}
-              {...OPEN_DAY_LINE}
-            />
-          ) : null}
-          <Tooltip
-            {...chartDays.tooltipProps}
-            cursor={{
-              stroke: "var(--muted-foreground)",
-              strokeOpacity: 0.3,
-              strokeDasharray: "3 3",
-            }}
-            content={(props) => {
-              const {
-                active,
-                payload,
-                label: rechartsLabel,
-              } = props as unknown as {
-                active?: boolean;
-                payload?: Array<{
-                  name?: string;
-                  value?: number;
-                  color?: string;
-                  dataKey?: string;
-                  payload?: ChartDataPoint;
-                }>;
-                label?: number;
-              };
-              if (!active || !payload?.length) return null;
-              const ts =
-                payload[0]?.payload?.timestamp ??
-                (typeof rechartsLabel === "number"
-                  ? chartData?.[Math.round(rechartsLabel)]?.timestamp
-                  : undefined);
-              const dateLabel = ts ? tzFmt.date(new Date(ts)) : "";
-              const rows: RichTooltipRow[] = [];
-              const hoverPoint = payload[0]?.payload as
-                ChartDataPoint | undefined;
-              for (const item of payload) {
-                if (typeof item.value !== "number") continue;
-                const dataKey = String(item.dataKey ?? "");
-                // Skip auxiliary lines (`ma`, `trend`,
-                // `scoreCompare`). Comparison value rendered as
-                // delta on the primary row + own row below.
-                if (
-                  dataKey === "ma" ||
-                  dataKey === "trend" ||
-                  dataKey === "scoreCompare"
-                )
-                  continue;
-                let delta: string | undefined;
-                const compareValue =
-                  effectiveCompareBaseline !== "none" && hoverPoint
-                    ? hoverPoint.scoreCompare
-                    : undefined;
-                if (
-                  effectiveCompareBaseline !== "none" &&
-                  typeof compareValue === "number" &&
-                  Number.isFinite(compareValue)
-                ) {
-                  const diff = item.value - compareValue;
-                  if (Math.abs(diff) < 0.05) {
-                    delta = t("charts.deltaUnchanged");
-                  } else {
-                    const sign = diff > 0 ? "+" : "−";
-                    const formatted = `${sign}${fmt.number(Math.abs(diff), 1)}`;
-                    delta = t(
-                      effectiveCompareBaseline === "lastMonth"
-                        ? "comparison.deltaVs.lastMonth"
-                        : "comparison.deltaVs.lastYear",
-                    ).replace("{delta}", formatted);
-                  }
-                } else if (personalBaseline != null) {
-                  const diff = item.value - personalBaseline;
-                  if (Math.abs(diff) < 0.05) {
-                    delta = t("charts.deltaUnchanged");
-                  } else {
-                    const sign = diff > 0 ? "+" : "−";
-                    const formatted = `${sign}${fmt.number(Math.abs(diff), 1)}`;
-                    delta = t("charts.deltaVsBaseline").replace(
-                      "{delta}",
-                      formatted,
-                    );
-                  }
-                }
-                rows.push({
-                  name: t("charts.moodScore"),
-                  value: formatTooltipValue(item.value),
-                  color: item.color ?? COLOR_MAIN,
-                  delta,
-                });
-                if (
-                  effectiveCompareBaseline !== "none" &&
-                  typeof compareValue === "number" &&
-                  Number.isFinite(compareValue)
-                ) {
-                  rows.push({
-                    name: `${t("charts.moodScore")} · ${t(
-                      "comparison.tooltipPrior",
-                    )}`,
-                    value: formatTooltipValue(compareValue),
-                    color: item.color ?? COLOR_MAIN,
-                  });
-                }
-              }
-              if (rows.length === 0) return null;
-              return (
-                <RichChartTooltip
-                  active
-                  label={dateLabel}
-                  rows={rows}
-                  action={chartDays.tooltipAction(
-                    hoverPoint ? dayLinkSource?.indexOf(hoverPoint) : undefined,
-                  )}
-                />
-              );
-            }}
-          />
-          <Line
-            type="monotone"
-            dataKey="score"
-            name="score"
-            stroke={COLOR_MAIN}
-            strokeWidth={2}
-            dot={{ r: 3, fill: COLOR_MAIN }}
-            activeDot={{ r: 5 }}
-            connectNulls
-            isAnimationActive={animationsEnabled}
-            animationDuration={animationsEnabled ? 600 : 0}
-            animationEasing="ease-out"
-          />
-          {showMA && (
-            <Line
-              type="monotone"
-              dataKey="ma"
-              name="ma"
-              stroke={COLOR_MA}
-              strokeWidth={1.5}
-              strokeDasharray="5 5"
-              dot={false}
-              connectNulls
-            />
-          )}
-          {showTrend && (
-            <Line
-              type="linear"
-              dataKey="trend"
-              name="trend"
-              stroke={COLOR_TREND}
-              strokeWidth={1}
-              strokeDasharray="8 4"
-              dot={false}
-              connectNulls
-            />
-          )}
-          {/* v1.4.16 — comparison overlay (mood). Same
-                    dimmed dashed treatment the BP/weight/pulse chart
-                    uses; mood is a single metric so we only render
-                    one overlay line. Suppressed when there's no prior
-                    data via hasComparisonData. */}
-          {effectiveCompareBaseline !== "none" && hasComparisonData && (
-            <Line
-              type="monotone"
-              dataKey="scoreCompare"
-              name="scoreCompare"
-              stroke={COLOR_MAIN}
-              strokeWidth={1.25}
-              strokeDasharray="4 3"
-              strokeOpacity={0.45}
-              dot={false}
-              connectNulls
-              isAnimationActive={animationsEnabled}
-              animationDuration={animationsEnabled ? 600 : 0}
-              animationEasing="ease-out"
-              legendType="none"
-              data-slot="chart-compare-line-mood"
-            />
-          )}
-        </ComposedChart>
-      </ResponsiveContainer>
-    </div>
+    <MoodChartPlot
+      chartData={chartData}
+      chartDataWithCompare={chartDataWithCompare}
+      mini={mini}
+      chartDays={chartDays}
+      moodAriaLabel={moodAriaLabel}
+      showBands={showBands}
+      showTrend={showTrend}
+      showMA={showMA}
+      personalBaseline={personalBaseline}
+      maxPointIndex={maxPointIndex}
+      tzFmt={tzFmt}
+      fmt={fmt}
+      viewportWidth={viewportWidth}
+      formatMoodTick={formatMoodTick}
+      formatTooltipValue={formatTooltipValue}
+      effectiveCompareBaseline={effectiveCompareBaseline}
+      hasComparisonData={hasComparisonData}
+      animationsEnabled={animationsEnabled}
+      t={t}
+      dayLinkSource={dayLinkSource}
+    />
   );
 
   // v1.13.1 — mini mode: flat shell that exactly mirrors `<HealthChart

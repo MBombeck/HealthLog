@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
 import {
   recentProofErrorMessage,
@@ -18,7 +18,6 @@ import {
 } from "@/components/settings/security-section/use-recent-proof";
 import { loadDocument } from "@/lib/navigation/load-document";
 import { useAccountDeletionGrace } from "@/lib/queries/use-privacy-summary";
-import { formatDate } from "@/lib/format";
 
 /**
  * Settings → Advanced.
@@ -69,6 +68,7 @@ export function AdvancedSection() {
 
 function DataResetCard() {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const queryClient = useQueryClient();
   // With a grace window the wipe keeps a copy an admin can restore until the
   // window ends; the dialog says so only once it knows the number.
@@ -112,7 +112,7 @@ function DataResetCard() {
       setMsg(
         typeof restorableUntil === "string"
           ? t("settings.dangerZoneSuccessGrace", {
-              date: formatDate(restorableUntil),
+              date: fmt.date(restorableUntil),
             })
           : t("settings.dangerZoneSuccess"),
       );
@@ -209,6 +209,7 @@ function DataResetCard() {
  */
 function AccountDeleteCard() {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   // With a grace window the account is locked at once and erased when the
   // window ends; until then an admin can undo it. Stated only once known.
   const grace = useAccountDeletionGrace();
@@ -258,7 +259,7 @@ function AccountDeleteCard() {
       setMsg(
         typeof scheduledPurgeAt === "string"
           ? t("settings.deleteAccountScheduled", {
-              date: formatDate(scheduledPurgeAt),
+              date: fmt.date(scheduledPurgeAt),
             })
           : t("settings.deleteAccountSuccess"),
       );

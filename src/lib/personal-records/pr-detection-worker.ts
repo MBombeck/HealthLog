@@ -39,7 +39,6 @@
  */
 import { prisma as defaultPrisma } from "@/lib/db";
 import { CUMULATIVE_HK_TYPES } from "@/lib/measurements/apple-health-mapping";
-import { dayKeyForUserTz } from "@/lib/measurements/consolidation-tz";
 import {
   iterateDayBuckets,
   iterateSourcePages,
@@ -61,7 +60,7 @@ import {
   type MeasurementType,
   type PrismaClient,
 } from "@/generated/prisma/client";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 
 /**
  * Minimum sample count per metric before the worker writes its first
@@ -619,7 +618,7 @@ async function findBestCumulativeDay(
           dayRows.map((r) => ({ ...r, type })),
           metricKey,
           priorityJson,
-          (d) => dayKeyForUserTz(d, tz),
+          (d) => userDayKey(d, tz),
         ).canonicalRows
       : dayRows;
     if (canonicalRows.length === 0) continue;

@@ -24,10 +24,9 @@ import {
   Tag,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { formatDateTime } from "@/lib/format";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { ApiError, apiGet } from "@/lib/api/api-fetch";
 import { StatusItem, usePublicVersion } from "./_shared";
@@ -66,6 +65,7 @@ function shortSha(sha: string | null): string | null {
 
 export function VersionTileSection() {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const { data: version } = usePublicVersion();
 
   // Best-effort, day-stale, never throws into the render. The route is
@@ -135,7 +135,7 @@ export function VersionTileSection() {
         <StatusItem
           icon={Clock}
           label={t("admin.overview.versionTileBuiltAt")}
-          value={version?.builtAt ? formatDateTime(version.builtAt) : "—"}
+          value={version?.builtAt ? fmt.dateTime(version.builtAt) : "—"}
         />
       </div>
     </SettingsCard>

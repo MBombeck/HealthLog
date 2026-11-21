@@ -6,8 +6,6 @@ vi.mock("@/lib/crypto", () => ({
 }));
 
 import {
-  generatePKCE,
-  generateState,
   requestDeviceCode,
   pollDeviceCode,
   refreshDeviceTokens,
@@ -32,26 +30,6 @@ function makeIdToken(claims: Record<string, unknown>): string {
 }
 
 describe("codex-oauth", () => {
-  describe("generatePKCE", () => {
-    it("generates verifier and challenge of correct format", () => {
-      const { verifier, challenge } = generatePKCE();
-      expect(verifier.length).toBeGreaterThanOrEqual(43);
-      expect(challenge.length).toBeGreaterThanOrEqual(43);
-    });
-    it("generates different values each time", () => {
-      const a = generatePKCE();
-      const b = generatePKCE();
-      expect(a.verifier).not.toBe(b.verifier);
-    });
-  });
-
-  describe("generateState", () => {
-    it("generates a non-empty base64url string", () => {
-      const state = generateState();
-      expect(state.length).toBeGreaterThan(20);
-    });
-  });
-
   describe("getCodexClientId", () => {
     const ORIGINAL = process.env.CODEX_OAUTH_CLIENT_ID;
     afterEach(() => {

@@ -23,7 +23,6 @@ import { reconcileOneShotState } from "@/lib/medications/lifecycle";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
 import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
-import { dayKeyForUserTz } from "@/lib/measurements/consolidation-tz";
 import {
   applyCanonicalSlotWrite,
   findPinConflict,
@@ -34,6 +33,7 @@ import { dateOnlyKey } from "@/lib/tz/date-only";
 import { resolveInjectionSiteForWrite } from "@/lib/medications/injection-site-write";
 import type { InjectionSiteKey } from "@/lib/medications/injection-sites";
 import type { z } from "zod/v4";
+import { userDayKey } from "@/lib/tz/format";
 
 export type IntakeEventEdit = z.output<typeof updateIntakeEventSchema>;
 
@@ -94,7 +94,7 @@ async function refuseTakeBeforeStart(
       select: { startsOn: true },
     });
     if (medication?.startsOn) {
-      const takenDay = dayKeyForUserTz(data.takenAt, user.timezone);
+      const takenDay = userDayKey(data.takenAt, user.timezone);
       const startsOnDay = dateOnlyKey(medication.startsOn);
       if (takenDay < startsOnDay) {
         annotate({

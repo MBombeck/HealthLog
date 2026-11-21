@@ -1,14 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  daysBetween,
-  externalDayHref,
-  isOpenableDay,
-  parseDayParam,
-  shiftDateKey,
-  todayKeyInZone,
-  withDayHref,
-} from "../day-url";
+import { isOpenableDay, parseDayParam, todayKeyInZone } from "../day-url";
 
 /**
  * The day layer's address rules: which `?day=` values open, how a step to the
@@ -28,29 +20,6 @@ describe("day URL rules", () => {
     expect(parseDayParam("", today)).toBeNull();
     expect(parseDayParam(null, today)).toBeNull();
     expect(isOpenableDay(undefined, today)).toBe(false);
-  });
-
-  it("steps calendar days across month, year and DST boundaries", () => {
-    expect(shiftDateKey("2026-01-01", -1)).toBe("2025-12-31");
-    expect(shiftDateKey("2026-02-28", 1)).toBe("2026-03-01");
-    expect(shiftDateKey("2024-02-28", 1)).toBe("2024-02-29");
-    // Europe's spring-forward and fall-back days are ordinary calendar steps.
-    expect(shiftDateKey("2026-03-28", 1)).toBe("2026-03-29");
-    expect(shiftDateKey("2026-03-29", 1)).toBe("2026-03-30");
-    expect(shiftDateKey("2026-10-25", -1)).toBe("2026-10-24");
-    expect(daysBetween("2026-03-28", "2026-03-30")).toBe(2);
-    expect(daysBetween("2026-10-26", "2026-10-24")).toBe(-2);
-  });
-
-  it("keeps the page's own query when setting or removing the day", () => {
-    expect(withDayHref("/labs", "?analyte=ldl", "2025-12-12")).toBe(
-      "/labs?analyte=ldl&day=2025-12-12",
-    );
-    expect(withDayHref("/labs", "?analyte=ldl&day=2025-12-12", null)).toBe(
-      "/labs?analyte=ldl",
-    );
-    expect(withDayHref("/", "", null)).toBe("/");
-    expect(externalDayHref("2026-01-03")).toBe("/?day=2026-01-03");
   });
 
   it("reads today in the record's zone, not the host's", () => {

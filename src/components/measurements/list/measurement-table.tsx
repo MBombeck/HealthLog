@@ -3,8 +3,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DayLink, DayLinkAt } from "@/components/day/day-link";
-import { formatDateOrRelative } from "@/lib/format";
 import { formatDurationMinutes } from "@/lib/i18n/duration";
+import { formatDateOrRelative } from "@/lib/i18n/relative-time";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { rawDisplayFractionDigits } from "@/lib/measurements/display-transform";
 import { SortableHead } from "@/components/data-list";
@@ -223,11 +223,11 @@ function MeasurementTableRow({
         <TableCell className="text-muted-foreground text-sm">
           {m.dayKey !== undefined ? (
             <DayLink date={m.dayKey}>
-              {formatDateOrRelative(m.measuredAt, t)}
+              {formatDateOrRelative(m.measuredAt, t, fmt)}
             </DayLink>
           ) : (
             <DayLinkAt at={m.measuredAt}>
-              {formatDateOrRelative(m.measuredAt, t)}
+              {formatDateOrRelative(m.measuredAt, t, fmt)}
             </DayLinkAt>
           )}
         </TableCell>

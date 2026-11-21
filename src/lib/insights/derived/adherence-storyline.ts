@@ -37,6 +37,7 @@ import {
 } from "@/lib/medications/med-target-map";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 import { dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
+import { mean, medianAbsoluteDeviation } from "@/lib/stats/central";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const MAD_TO_SIGMA = 1.4826;
@@ -87,8 +88,9 @@ export interface ShapeStorylineInput {
   targetMetric: MeasurementType;
   adherencePct: number;
   adherenceDays: number;
-  vitalPriorMean: number;
-  vitalRecentMean: number;
+  /** Null when the side holds no days. */
+  vitalPriorMean: number | null;
+  vitalRecentMean: number | null;
   vitalDaysPrior: number;
   vitalDaysRecent: number;
   /** Robust spread (MAD·1.4826) of the vital over the window. */
@@ -109,7 +111,9 @@ export function shapeAdherenceStoryline(
   if (input.adherencePct > ADHERENCE_DIP_PCT) return null;
   if (
     input.vitalDaysPrior < MIN_VITAL_DAYS_PER_SIDE ||
-    input.vitalDaysRecent < MIN_VITAL_DAYS_PER_SIDE
+    input.vitalDaysRecent < MIN_VITAL_DAYS_PER_SIDE ||
+    input.vitalPriorMean === null ||
+    input.vitalRecentMean === null
   ) {
     return null;
   }
@@ -136,25 +140,8 @@ export function shapeAdherenceStoryline(
   };
 }
 
-function mean(xs: readonly number[]): number {
-  if (xs.length === 0) return 0;
-  let s = 0;
-  for (const x of xs) s += x;
-  return s / xs.length;
-}
-
-function median(xs: readonly number[]): number {
-  if (xs.length === 0) return 0;
-  const sorted = [...xs].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0
-    ? (sorted[mid - 1] + sorted[mid]) / 2
-    : sorted[mid];
-}
-
 function robustSpread(xs: readonly number[]): number {
-  const m = median(xs);
-  return median(xs.map((x) => Math.abs(x - m))) * MAD_TO_SIGMA;
+  return (medianAbsoluteDeviation(xs) ?? 0) * MAD_TO_SIGMA;
 }
 
 /**

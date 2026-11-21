@@ -423,13 +423,3 @@ export function timeSinceLastAnswer(daysSinceLast: number | null): {
     display: "More than 2 years ago (more than 105 weeks ago)",
   };
 }
-
-/** Median of a non-empty list, else null. */
-export function median(values: readonly number[]): number | null {
-  if (values.length === 0) return null;
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 1
-    ? sorted[mid]
-    : (sorted[mid - 1] + sorted[mid]) / 2;
-}

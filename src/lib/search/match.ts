@@ -285,18 +285,6 @@ export function scoreCandidate(
   return { matched, score, phrase };
 }
 
-/** `scoreCandidate` for a raw query. */
-export function scoreForQuery(
-  candidate: Pick<SearchCandidate, "fields" | "contentWords">,
-  query: string,
-): CandidateScore {
-  return scoreCandidate(
-    candidate,
-    queryWords(query),
-    normalizeSearchText(query),
-  );
-}
-
 /** Whether a scored candidate stays in the result at all. */
 export function isHit(score: CandidateScore): boolean {
   return score.matched > 0 || score.phrase;

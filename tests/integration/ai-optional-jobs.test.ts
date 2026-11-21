@@ -40,7 +40,6 @@ vi.mock("@/lib/ai/provider", async (importOriginal) => {
   return {
     ...actual,
     resolveProviderChain: vi.fn(async () => chain()),
-    resolveProvider: vi.fn(async () => ({ type: "none" })),
   };
 });
 

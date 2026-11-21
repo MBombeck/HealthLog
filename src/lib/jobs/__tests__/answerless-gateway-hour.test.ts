@@ -278,7 +278,6 @@ vi.mock("@/lib/ai/provider", async () => {
     resolveProviderChain: async () => [
       { providerType: "openai-compatible", instance: gateway },
     ],
-    resolveProvider: async () => ({ type: "none" }),
     probeProviderPresence: async () => true,
   };
 });

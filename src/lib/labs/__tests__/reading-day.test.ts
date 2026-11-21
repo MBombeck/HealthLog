@@ -1,5 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { labReadingDay, labReadingDaySearchRange } from "../reading-day";
+import {
+  isLabDateOnly,
+  labReadingDay,
+  labReadingDaySearchRange,
+} from "../reading-day";
+
+describe("isLabDateOnly", () => {
+  it("knows both date-only anchors and nothing else", () => {
+    expect(isLabDateOnly("2026-06-10T12:00:00.000Z")).toBe(true);
+    // Rows written before the noon anchor sit at UTC midnight. The client
+    // once checked noon only and dated these a day early west of UTC.
+    expect(isLabDateOnly("2026-06-10T00:00:00.000Z")).toBe(true);
+    expect(isLabDateOnly("2026-06-10T12:00:01.000Z")).toBe(false);
+    expect(isLabDateOnly(new Date("2026-06-10T07:30:00.000Z"))).toBe(false);
+  });
+});
 
 describe("labReadingDay", () => {
   it("reads a date-only reading as its stated date in every zone", () => {
@@ -9,6 +24,21 @@ describe("labReadingDay", () => {
       expect(labReadingDay(noon, tz)).toBe("2026-06-10");
       expect(labReadingDay(legacyMidnight, tz)).toBe("2026-06-10");
     }
+  });
+
+  it("accepts the ISO string and epoch forms the client holds", () => {
+    expect(labReadingDay("2026-06-10T00:00:00.000Z", "America/New_York")).toBe(
+      "2026-06-10",
+    );
+    expect(
+      labReadingDay(
+        Date.parse("2026-09-01T12:00:00.000Z"),
+        "Pacific/Kiritimati",
+      ),
+    ).toBe("2026-09-01");
+    expect(
+      labReadingDay("2026-09-01T12:00:01.000Z", "Pacific/Kiritimati"),
+    ).toBe("2026-09-02");
   });
 
   it("reads a hand-entered instant on the user's own day", () => {

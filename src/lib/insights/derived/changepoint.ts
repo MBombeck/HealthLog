@@ -42,6 +42,7 @@ import { readDayMeanSeries } from "@/lib/insights/derived/baseline";
 import { moduleForMeasurementType } from "@/lib/modules/measurement-scope";
 import type { SurfaceModuleMap } from "@/lib/modules/surface";
 import { linearFit } from "@/lib/stats/linear-fit";
+import { mean, medianAbsoluteDeviation } from "@/lib/stats/central";
 
 const MAD_TO_SIGMA = 1.4826;
 /** Upper bound of the reported (and ranked) magnitude, in robust-σ units. */
@@ -75,27 +76,9 @@ export interface DetectLevelShiftOptions {
   spreadFloor?: number;
 }
 
-function mean(xs: readonly number[]): number {
-  if (xs.length === 0) return 0;
-  let sum = 0;
-  for (const x of xs) sum += x;
-  return sum / xs.length;
-}
-
-function median(xs: readonly number[]): number {
-  if (xs.length === 0) return 0;
-  const sorted = [...xs].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0
-    ? (sorted[mid - 1] + sorted[mid]) / 2
-    : sorted[mid];
-}
-
 /** Robust spread: MAD·1.4826 (σ-equivalent). Zero when the series is flat. */
 function robustSpread(xs: readonly number[]): number {
-  const m = median(xs);
-  const deviations = xs.map((x) => Math.abs(x - m));
-  return median(deviations) * MAD_TO_SIGMA;
+  return (medianAbsoluteDeviation(xs) ?? 0) * MAD_TO_SIGMA;
 }
 
 /**
@@ -120,7 +103,7 @@ export function detectLevelShift(
 
   // CUSUM of deviations from the grand mean; the break candidate is the index
   // where the cumulative deviation is most extreme (the classic CUSUM peak).
-  const grand = mean(series);
+  const grand = mean(series)!;
   let cusum = 0;
   let bestAbs = -1;
   let breakIndex = -1;
@@ -145,8 +128,8 @@ export function detectLevelShift(
     return null;
   }
 
-  const beforeMean = mean(before);
-  const afterMean = mean(after);
+  const beforeMean = mean(before)!;
+  const afterMean = mean(after)!;
   const delta = afterMean - beforeMean;
   if (Math.abs(delta) < minAbsDelta) return null;
 

@@ -108,7 +108,6 @@ const SQL_READERS: Record<string, Entry> = {
 const TS_READERS: Record<string, Entry> = {
   "lib/measurements/series/read-raw.ts": HELPER,
   "lib/doctor-report/collect.ts": HELPER,
-  "lib/doctor-report-pdf/clinical-summary.ts": HELPER,
   "lib/insights/comprehensive-generate.ts": HELPER,
   "lib/insights/features.ts": HELPER,
   "lib/insights/mood-status.ts": {

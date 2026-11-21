@@ -22,7 +22,10 @@ const workerSource = readFileSync(
   "utf8",
 );
 const parserSource = readFileSync(
-  join(process.cwd(), "src/lib/measurements/import-apple-health-export.ts"),
+  join(
+    process.cwd(),
+    "src/lib/measurements/import-apple-health-export-handlers.ts",
+  ),
   "utf8",
 );
 const statusRouteSource = readFileSync(

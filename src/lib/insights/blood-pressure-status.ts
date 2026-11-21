@@ -137,6 +137,7 @@ async function buildBloodPressureSnapshot(
       dateOfBirth: true,
       gender: true,
       thresholdsJson: true,
+      timezone: true,
     },
   });
 

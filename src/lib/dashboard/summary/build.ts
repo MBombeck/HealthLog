@@ -382,6 +382,7 @@ export async function buildDashboardSummary(
         dateOfBirth: verdictProfile?.dateOfBirth ?? null,
         gender: verdictProfile?.gender ?? null,
         heightCm: verdictProfile?.heightCm ?? null,
+        timezone: userTz,
       },
       thresholdsJson: verdictProfile?.thresholdsJson ?? null,
     }),

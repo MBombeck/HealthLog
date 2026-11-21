@@ -49,7 +49,7 @@ describe("prompt reads exclude tombstoned rows", () => {
     // v1.16.9 — the compliance timeline reads intake events through the
     // medication relation (`intakeEvents`) so the ledger can be rebuilt
     // per medication; the tombstone filter must ride on that nested read.
-    const src = read("../../ai/coach/snapshot.ts");
+    const src = read("../../ai/coach/snapshot-blocks/snapshot-reads.ts");
     const intakeRead = src.match(
       /intakeEvents:\s*\{[\s\S]{0,300}?where:\s*\{[^}]*\}/,
     );

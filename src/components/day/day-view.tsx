@@ -42,10 +42,10 @@ import { DayMovementSection } from "./day-movement";
 import { DayNutrientsSection } from "./day-nutrients";
 import { DayScores } from "./day-scores";
 import { tileKeyOf } from "./day-values-model";
-import { shiftDateKey } from "./day-url";
 import { useDay, usePrefetchDay } from "./use-day";
 import { useDayValueFormat } from "./use-day-value-format";
 import { EmptyState } from "@/components/ui/empty-state";
+import { shiftDateKey } from "@/lib/tz/format";
 
 /**
  * One day, as the layer shows it in every shell: a header with the date and

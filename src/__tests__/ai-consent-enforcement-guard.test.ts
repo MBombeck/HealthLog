@@ -8,7 +8,7 @@
  * class, so the third one cannot appear quietly.
  *
  * The invariant: a module that resolves a provider INSTANCE for a user
- * (`resolveProvider` / `resolveProviderChain` / `resolveProviderForTest`) holds
+ * (`resolveProviderChain` / `resolveProviderForTest`) holds
  * something it can call `generateCompletion` on. Every such module must also
  * pull in a consent helper — or sit on the allowlist below with a written
  * reason a reviewer signed off.
@@ -59,7 +59,6 @@ function read(rel: string): string {
  * decrypt a key or construct a client, so they cannot egress anything.
  */
 const RESOLUTION_HELPERS = [
-  "resolveProvider",
   "resolveProviderChain",
   "resolveProviderForTest",
 ] as const;

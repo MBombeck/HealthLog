@@ -10,8 +10,9 @@
  * link to one would be a dead end, so such a parameter is dropped quietly,
  * the same way `?add=` is on the measurements page.
  */
-import { DAY_QUERY_PARAM, type DateKey } from "@/lib/day/contract";
-import { dateOnlyKey, isCalendarDateKey } from "@/lib/tz/date-only";
+import type { DateKey } from "@/lib/day/contract";
+import { isCalendarDateKey } from "@/lib/tz/date-only";
+import { userDayKey } from "@/lib/tz/format";
 import { getDateTimeFormat } from "@/lib/tz/intl-cache";
 
 /**
@@ -23,7 +24,8 @@ export const DAY_HISTORY_KEY = "__healthlogDayLayer";
 
 /** Today's calendar date in `timeZone`, `YYYY-MM-DD`. */
 export function todayKeyInZone(timeZone: string, now = new Date()): DateKey {
-  // en-CA spells a date as YYYY-MM-DD.
+  // en-CA spells a date as YYYY-MM-DD; the same cached formatter family
+  // `userDayKey` reads, kept here because this runs on every day-layer render.
   return getDateTimeFormat("en-CA", timeZone, {
     year: "numeric",
     month: "2-digit",
@@ -36,7 +38,7 @@ export function dateKeyOfInstant(
   instant: Date | string | number,
   timeZone: string,
 ): DateKey {
-  return todayKeyInZone(timeZone, new Date(instant));
+  return userDayKey(new Date(instant), timeZone);
 }
 
 /** True when `key` is a real date on or before `todayKey`. */
@@ -66,42 +68,6 @@ export function stripDayOf(
   todayKey: DateKey,
 ): DateKey {
   return open ?? parseDayParam(remembered, todayKey) ?? todayKey;
-}
-
-/** `key` moved by `delta` calendar days. */
-export function shiftDateKey(key: DateKey, delta: number): DateKey {
-  const anchor = new Date(`${key}T12:00:00.000Z`);
-  anchor.setUTCDate(anchor.getUTCDate() + delta);
-  return dateOnlyKey(anchor);
-}
-
-/** Calendar days from `from` to `to` (negative when `to` is earlier). */
-export function daysBetween(from: DateKey, to: DateKey): number {
-  const a = Date.parse(`${from}T12:00:00.000Z`);
-  const b = Date.parse(`${to}T12:00:00.000Z`);
-  return Math.round((b - a) / 86_400_000);
-}
-
-/** The current location with the day set, or removed when `key` is null. */
-export function withDayHref(
-  pathname: string,
-  search: string,
-  key: DateKey | null,
-): string {
-  const next = new URLSearchParams(search);
-  if (key === null) next.delete(DAY_QUERY_PARAM);
-  else next.set(DAY_QUERY_PARAM, key);
-  const query = next.toString();
-  return query ? `${pathname}?${query}` : pathname;
-}
-
-/**
- * The link a day carries off its own page: the dashboard with the day open
- * over it. Closing the layer there lands on today, which is what a link from
- * outside the page (a Coach chip, a notification) should do.
- */
-export function externalDayHref(key: DateKey): string {
-  return `/?${DAY_QUERY_PARAM}=${key}`;
 }
 
 /**

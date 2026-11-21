@@ -36,7 +36,7 @@ import {
   type MetricStatusMetricId,
 } from "@/lib/insights/metric-status-registry";
 import { computeSteadyRun } from "@/lib/insights/assessment-context";
-import { getAgeFromDateOfBirth } from "@/lib/analytics/pulse-targets";
+import { ageInYears } from "@/lib/tz/date-only";
 import { lookupNormalRange } from "@/lib/insights/derived/norms";
 import { buildMetricSignal } from "@/lib/insights/metric-signal";
 import { PROMPT_VERSION } from "@/lib/ai/prompts/base-system";
@@ -410,6 +410,7 @@ async function buildMetricSnapshot(
       newestDaysAgo,
       dateOfBirth: user?.dateOfBirth ?? null,
       gender: user?.gender ?? null,
+      userTz,
     });
 
   const snapshot = {
@@ -536,9 +537,10 @@ function metricRangeAndSignal(args: {
   newestDaysAgo: number | null;
   dateOfBirth: Date | null;
   gender: string | null;
+  userTz: string;
 }) {
   const { meta, reading, graded, newestDaysAgo } = args;
-  const ageYears = getAgeFromDateOfBirth(args.dateOfBirth);
+  const ageYears = ageInYears(args.dateOfBirth, args.userTz);
   const sex = binaryReferenceSex(args.gender);
 
   // v1.10.0 — sharpen the coarse registry `normalRange` with the

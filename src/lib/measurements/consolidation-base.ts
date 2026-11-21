@@ -18,7 +18,7 @@
  * `runConsolidation` driver below; each drain stays a thin caller that
  * supplies its reducer/types and keeps its own public summary shape.
  *
- * The timezone day-math helpers (`dayKeyForUserTz`,
+ * The timezone day-math helpers (`userDayKey`,
  * `canonicalDailyTimestamp`), the
  * `PerSampleRow` shape, and `CONSOLIDATION_GRACE_CUTOFF_HOURS` all live
  * in the dependency-free leaf `consolidation-tz.ts`. Both this module
@@ -40,11 +40,10 @@ import { reportJobProgress } from "@/lib/jobs/job-observer";
 import {
   CONSOLIDATION_GRACE_CUTOFF_HOURS,
   canonicalDailyTimestamp,
-  dayKeyForUserTz,
   foldBoundary,
   type PerSampleRow,
 } from "./consolidation-tz";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 import { resolveStoredTimezone } from "@/lib/tz/resolver";
 
 // Re-export the shared grace constant so the established
@@ -127,33 +126,6 @@ export async function loadConsolidationUsers(
         where: ACTIVE_ACCOUNT,
         select: { id: true, timezone: true },
       });
-}
-
-/**
- * Group an array of per-sample rows into per-day buckets keyed by the
- * user's timezone. Rows already in the daily-stats shape (externalId
- * starting with `statsPrefix`) are skipped — re-running on a
- * previously-collapsed bucket is a no-op. This is the single bucketing
- * implementation behind `bucketRowsByUserDay`, `bucketMeanRows`, and
- * `bucketLegacyStepRows`; the only thing that varied between them was the
- * prefix they skip on.
- */
-export function bucketRowsByDay(
-  rows: readonly PerSampleRow[],
-  tz: string,
-  statsPrefix: string,
-): Map<string, PerSampleRow[]> {
-  const byDay = new Map<string, PerSampleRow[]>();
-  for (const row of rows) {
-    if (row.externalId !== null && row.externalId.startsWith(statsPrefix)) {
-      continue;
-    }
-    const key = dayKeyForUserTz(row.measuredAt, tz);
-    const slot = byDay.get(key) ?? [];
-    slot.push(row);
-    byDay.set(key, slot);
-  }
-  return byDay;
 }
 
 /**
@@ -391,8 +363,8 @@ export async function* iterateSourcePages<
  * The rows arrive in `measuredAt` order and a local calendar day is one
  * contiguous span of instants, so a day is complete the moment a row from a
  * later day shows up. Rows whose externalId starts with `statsPrefix` (the
- * daily-stats shape) are skipped, the same as `bucketRowsByDay`; pass `null`
- * to keep every row. `onRow` sees every scanned row, skipped ones included,
+ * daily-stats shape) are skipped, so re-running on a collapsed day is a
+ * no-op; pass `null` to keep every row. `onRow` sees every scanned row, skipped ones included,
  * for the scan-count log line.
  */
 export async function* iterateDayBuckets<
@@ -415,7 +387,7 @@ export async function* iterateDayBuckets<
       ) {
         continue;
       }
-      const key = dayKeyForUserTz(row.measuredAt, tz);
+      const key = userDayKey(row.measuredAt, tz);
       if (key !== currentKey) {
         if (currentKey !== null && current.length > 0) {
           yield [currentKey, current];

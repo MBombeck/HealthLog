@@ -88,17 +88,3 @@ export function classifyArrival(
 
   return "salient";
 }
-
-/**
- * The `localDate` an arrival is filed under: TODAY in the user's timezone, not
- * the sample's own day.
- *
- * The day key is a claim key, not a timestamp — it answers "which day does this
- * reaction belong to", and a sleep night that ended at 06:00 today, a workout
- * from 23:40 yesterday synced at 00:20, and this morning's weight are all part
- * of the same day's story. Filing by the sample's own day would split them and
- * defeat the once-per-kind-per-day claim the unique row exists to make.
- */
-export function arrivalLocalDate(now: Date, tz: string): string {
-  return userDayKey(now, tz);
-}

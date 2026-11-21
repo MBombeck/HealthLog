@@ -47,23 +47,6 @@ function resolveRow(
   );
 }
 
-export function getAgeFromDateOfBirth(
-  dateOfBirth: Date | string | null | undefined,
-): number | null {
-  if (!dateOfBirth) return null;
-  const dob =
-    typeof dateOfBirth === "string" ? new Date(dateOfBirth) : dateOfBirth;
-  if (Number.isNaN(dob.getTime())) return null;
-
-  const today = new Date();
-  let age = today.getFullYear() - dob.getFullYear();
-  const monthDiff = today.getMonth() - dob.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
-    age--;
-  }
-  return age;
-}
-
 export function getPersonalizedPulseTarget(
   age: number | null,
   gender: PulseGender,

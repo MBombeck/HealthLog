@@ -31,6 +31,7 @@ import {
 } from "@/lib/insights/mood-tag-influence";
 import type { MeasurementType } from "@/generated/prisma/enums";
 import type { MeasurementSource } from "@/generated/prisma/client";
+import { median } from "@/lib/stats/central";
 
 // --- Tag × health-metric crosstab (v1.12.0) ------------------------------
 
@@ -519,16 +520,6 @@ function toFactorDisplayUnit(
   return display === "hours" ? value / 60 : value;
 }
 
-/** Median of a numeric array (sorted-copy, mean-of-two for even length). */
-function median(values: number[]): number {
-  if (values.length === 0) return Number.NaN;
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0
-    ? (sorted[mid - 1] + sorted[mid]) / 2
-    : sorted[mid];
-}
-
 /** Reference data for one RATED factor's daily series + its meta. */
 interface FactorDailySeries {
   ref: Pick<
@@ -649,7 +640,7 @@ export function computeFactorMetricCrosstab(args: {
       ) {
         continue;
       }
-      const split = median(ratedDays);
+      const split = median(ratedDays)!;
 
       const lowVals: number[] = [];
       const highVals: number[] = [];

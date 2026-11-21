@@ -24,7 +24,6 @@ vi.mock("@/lib/rollups/after-measurement-mutation", () => ({
 }));
 
 import {
-  strainDayKey,
   strainExternalId,
   strainMeasuredAt,
   tanakaHrMax,
@@ -53,7 +52,6 @@ describe("strain-score helpers", () => {
   it("scores the PREVIOUS UTC day (cron fires in the small hours)", () => {
     // NOW is 2026-06-02 → the scored day is the just-completed 2026-06-01,
     // whose workouts + active-energy total are settled.
-    expect(strainDayKey(NOW)).toBe("2026-06-01");
     expect(strainExternalId(NOW)).toBe(
       `${STRAIN_SCORE_EXTERNAL_ID_PREFIX}2026-06-01`,
     );

@@ -10,7 +10,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   deriveSeries,
-  seriesForRecord,
   type SeriesInputRecord,
 } from "@/lib/vaccinations/series";
 
@@ -244,20 +243,5 @@ describe("a record with no resolvable antigen yields nothing", () => {
       record("t2", 100, "tetanus"),
     ]);
     expect(series.get("t2")?.[0].position).toBe(2);
-  });
-});
-
-describe("the single-record helper agrees with the whole-set derivation", () => {
-  it("returns the same entry the full derivation would", () => {
-    const history = [record("td-1", 240, "td"), record("tdap", 6, "tdap")];
-    expect(seriesForRecord("tdap", history)).toEqual(
-      deriveSeries(history).get("tdap"),
-    );
-  });
-
-  it("returns an empty array for a record the history does not contain", () => {
-    expect(
-      seriesForRecord("not-in-history", [record("t1", 12, "tetanus")]),
-    ).toEqual([]);
   });
 });

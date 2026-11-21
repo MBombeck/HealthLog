@@ -17,6 +17,7 @@
  *
  * Pure: the caller reads the profile and the weight the walk equation needs.
  */
+import { ageInYears } from "@/lib/tz/date-only";
 import type { MeasurementType } from "@/generated/prisma/client";
 import {
   lookupNormalRange,
@@ -43,6 +44,8 @@ export interface RecordBenchmarkProfile {
   heightCm: number | null;
   /** Latest weight in kg, for the six-minute-walk equation only. */
   weightKg: number | null;
+  /** The owner's zone: the day their birthday turns over in. */
+  timezone: string;
 }
 
 interface NormCitation {
@@ -101,18 +104,6 @@ function sameUnit(type: MeasurementType, stored: string): boolean {
   return accepted.some((u) => unitKey(u) === unitKey(stored));
 }
 
-/** Whole years between a date of birth and an instant. */
-export function ageAt(dateOfBirth: Date | null, at: Date): number | null {
-  if (!dateOfBirth || Number.isNaN(dateOfBirth.getTime())) return null;
-  let age = at.getUTCFullYear() - dateOfBirth.getUTCFullYear();
-  const beforeBirthday =
-    at.getUTCMonth() < dateOfBirth.getUTCMonth() ||
-    (at.getUTCMonth() === dateOfBirth.getUTCMonth() &&
-      at.getUTCDate() < dateOfBirth.getUTCDate());
-  if (beforeBirthday) age -= 1;
-  return age >= 0 ? age : null;
-}
-
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
 export function resolveRecordBenchmark(
@@ -127,7 +118,11 @@ export function resolveRecordBenchmark(
   // A per-sport slot (a 5 km time) has no population norm here.
   if (record.metricSlot !== null) return null;
   if (!sameUnit(record.metricType, record.unit)) return null;
-  const age = ageAt(profile.dateOfBirth, record.achievedAt);
+  const age = ageInYears(
+    profile.dateOfBirth,
+    profile.timezone,
+    record.achievedAt,
+  );
   // Every band below is age-stratified; without an age none is honest.
   if (age === null) return null;
 

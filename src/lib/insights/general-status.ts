@@ -83,6 +83,7 @@ async function buildGeneralSnapshot(
       dateOfBirth: true,
       gender: true,
       thresholdsJson: true,
+      timezone: true,
     },
   });
 

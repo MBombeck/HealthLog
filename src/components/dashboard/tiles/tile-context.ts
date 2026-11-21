@@ -20,7 +20,11 @@ import {
 } from "@/lib/dashboard/bands";
 import type { DashboardLayout } from "@/lib/dashboard-layout";
 import { resolveGlucoseUnit } from "@/lib/glucose";
-import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import {
+  useDisplayTimezone,
+  useFormatters,
+  useTranslations,
+} from "@/lib/i18n/context";
 import type { TrendDirectionSentiment } from "@/lib/insights/trend-sentiment";
 import { toProfileSex } from "@/lib/profile/sex";
 import {
@@ -191,6 +195,7 @@ export function useDashboardTileContext({
   // waits for the snapshot's, which resolve against the record. Keyed on the
   // `user` identity so the React Compiler can preserve the memo.
   const inSharedRecord = user?.accountAccess?.active != null;
+  const displayTimezone = useDisplayTimezone();
   const clientBandProfile = useMemo(
     () =>
       viewerBandProfile(
@@ -199,10 +204,11 @@ export function useDashboardTileContext({
           gender: toProfileSex(user?.gender),
           heightCm: user?.heightCm ?? null,
           thresholdsJson: null,
+          timezone: displayTimezone,
         },
         inSharedRecord,
       ),
-    [user, inSharedRecord],
+    [user, inSharedRecord, displayTimezone],
   );
   const clientBands = useMemo(
     () => buildDashboardBands(clientBandProfile),

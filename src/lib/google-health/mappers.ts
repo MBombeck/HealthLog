@@ -1050,17 +1050,6 @@ export function mapSleepSessionDetailed(
   };
 }
 
-/**
- * Flat convenience wrapper — the per-segment rows of one session, without the
- * window metadata. Retained for callers that only need the rows.
- */
-export function mapSleepSession(
-  point: GoogleHealthDataPoint,
-  tz?: string,
-): GoogleHealthMappedMeasurement[] {
-  return mapSleepSessionDetailed(point, tz).rows;
-}
-
 // ── Workouts (exercise sessions) ───────────────────────────────
 
 /**

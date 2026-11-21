@@ -28,6 +28,7 @@ import type { WorkoutSportType } from "@/lib/validations/workout";
 import { FitImportError } from "./errors";
 import type { DecodedFit } from "./parse";
 import { mapFitSportType } from "./sport-map";
+import { mean } from "@/lib/stats/central";
 
 /** Sessions one file may describe (a multisport race has a handful). */
 export const FIT_MAX_SESSIONS = 16;
@@ -149,11 +150,6 @@ function maxOf(values: readonly number[]): number | null {
   let max = values[0]!;
   for (const v of values) if (v > max) max = v;
   return max;
-}
-
-function mean(values: number[]): number | null {
-  if (values.length === 0) return null;
-  return values.reduce((a, b) => a + b, 0) / values.length;
 }
 
 /**

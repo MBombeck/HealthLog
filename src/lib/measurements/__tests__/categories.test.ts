@@ -2,11 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import { measurementTypeEnum } from "@/lib/validations/measurement";
 
-import {
-  MEASUREMENT_CATEGORIES,
-  getMeasurementCategory,
-  measurementTypesForCategory,
-} from "../categories";
+import { MEASUREMENT_CATEGORIES, getMeasurementCategory } from "../categories";
+
+/** The types the category map assigns to `category`, in map order. */
+function measurementTypesForCategory(category: string): string[] {
+  return [...MEASUREMENT_CATEGORIES]
+    .filter(([, cat]) => cat === category)
+    .map(([type]) => type);
+}
 
 describe("MEASUREMENT_CATEGORIES — completeness wall", () => {
   it("assigns a category to every MeasurementType in the canonical enum", () => {
@@ -45,7 +48,7 @@ describe("getMeasurementCategory", () => {
   });
 });
 
-describe("measurementTypesForCategory", () => {
+describe("category membership", () => {
   it("lists every type assigned to a category", () => {
     expect(measurementTypesForCategory("hearing").sort()).toEqual([
       "AUDIO_EXPOSURE_ENV",
@@ -63,7 +66,7 @@ describe("measurementTypesForCategory", () => {
       new Set(Array.from(MEASUREMENT_CATEGORIES.values())),
     );
     for (const cat of allCategories) {
-      const members = measurementTypesForCategory(cat as never);
+      const members = measurementTypesForCategory(cat);
       expect(members.length, `${cat} should not be empty`).toBeGreaterThan(0);
     }
   });

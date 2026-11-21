@@ -40,10 +40,6 @@ import {
 } from "@/lib/analytics/sleep-night";
 import { buildCycleExportSummary } from "@/lib/cycle/export-data";
 import { resolveModuleMap } from "@/lib/modules/gate";
-import {
-  COURSES_COMPLIANCE_SELECT,
-  SCHEDULE_COMPLIANCE_SELECT,
-} from "@/lib/analytics/compliance";
 import { MEASUREMENT_LEAF_IDS } from "@/lib/report-selection/catalogue";
 import type { ReportSelection } from "@/lib/report-selection/selection";
 import {
@@ -89,6 +85,11 @@ import { dateOfBirthKey, dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
 import { PATIENT_NAME_SELECT, patientName } from "@/lib/account-name";
 import { readingsMean } from "@/lib/measurements/day-mean";
 import { loadScreenerUnvalidatedTranslations } from "./screener-translations";
+import { bmiOf } from "@/lib/analytics/classifications";
+import {
+  findReportIntakeEvents,
+  findReportMedications,
+} from "./collect-medications";
 
 const DENSE_REPORT_RAW_WINDOW_DAYS = 90;
 
@@ -260,116 +261,10 @@ export async function collectDoctorReportData(
         },
       }),
       wantsMedications
-        ? prisma.medication.findMany({
-            // The report describes its window, and a link can pin that window
-            // in the past: a medication whose course had not begun by the
-            // window's end, or had ended before it began, is not part of it.
-            // One with a dose scheduled inside the window was taken then,
-            // whenever it was entered. Dose history and the last intake stop
-            // at the window's end too, so a report for March does not show a
-            // dose set in June.
-            //
-            // v1.40 (#1024) — a medication taken in courses is part of the
-            // window when one of its courses overlaps it; the row's own
-            // window is only the latest course. One without courses keeps
-            // the rule above.
-            where: {
-              userId,
-              active: true,
-              OR: [
-                {
-                  courses: {
-                    some: {
-                      startsOn: { lte: lastDay },
-                      OR: [{ endsOn: null }, { endsOn: { gte: firstDay } }],
-                    },
-                  },
-                },
-                {
-                  // A dose logged inside the window outside every course (the
-                  // person knows better than the window) still places it.
-                  courses: { some: {} },
-                  intakeEvents: {
-                    some: {
-                      deletedAt: null,
-                      scheduledFor: { gte: start, lte: end },
-                    },
-                  },
-                },
-                {
-                  courses: { none: {} },
-                  AND: [
-                    {
-                      OR: [
-                        { startsOn: { lte: lastDay } },
-                        { startsOn: null, createdAt: { lte: end } },
-                        {
-                          intakeEvents: {
-                            some: {
-                              deletedAt: null,
-                              scheduledFor: { gte: start, lte: end },
-                            },
-                          },
-                        },
-                      ],
-                    },
-                    { OR: [{ endsOn: null }, { endsOn: { gte: firstDay } }] },
-                  ],
-                },
-              ],
-            },
-            include: {
-              schedules: {
-                select: { ...SCHEDULE_COMPLIANCE_SELECT, label: true },
-              },
-              scheduleRevisions: {
-                orderBy: [{ validFrom: "asc" }, { id: "asc" }],
-                select: {
-                  id: true,
-                  validFrom: true,
-                  validUntil: true,
-                  payload: true,
-                  supersededByRevisionId: true,
-                },
-              },
-              pauseEras: { select: { pausedAt: true, resumedAt: true } },
-              // v1.40 (#1024) — the courses, so a gap between two expects nothing.
-              courses: COURSES_COMPLIANCE_SELECT,
-              doseChanges: {
-                where: { effectiveFrom: { lte: end } },
-                orderBy: [{ effectiveFrom: "asc" }, { id: "asc" }],
-              },
-              intakeEvents: {
-                where: { takenAt: { not: null, lte: end } },
-                orderBy: [{ takenAt: "desc" }, { id: "desc" }],
-                take: 1,
-                select: { takenAt: true, injectionSite: true },
-              },
-            },
-          })
+        ? findReportMedications(userId, { start, end, firstDay, lastDay })
         : Promise.resolve([]),
       wantsIntakeEvents
-        ? prisma.medicationIntakeEvent.findMany({
-            where: {
-              userId,
-              deletedAt: null,
-              scheduledFor: { gte: start, lte: end },
-            },
-            include: {
-              medication: {
-                select: {
-                  id: true,
-                  name: true,
-                  dose: true,
-                  atcCode: true,
-                  rxNormCode: true,
-                  deliveryForm: true,
-                  asNeeded: true,
-                },
-              },
-            },
-            orderBy: [{ scheduledFor: "asc" }, { id: "asc" }],
-          })
+        ? findReportIntakeEvents(userId, start, end)
         : Promise.resolve([]),
       // Zero DB read when the mood leaf was not chosen: the payload reflects
       // "mood was never fetched", not "mood was fetched and then dropped".
@@ -533,7 +428,7 @@ export async function collectDoctorReportData(
   const weightStats = stats.WEIGHT;
   const bmiRaw =
     weightStats && userProfile?.heightCm
-      ? weightStats.latest / (userProfile.heightCm / 100) ** 2
+      ? bmiOf(weightStats.latest, userProfile.heightCm)
       : null;
   const bmi = bmiRaw !== null ? Math.round(bmiRaw * 10) / 10 : null;
 
@@ -553,6 +448,7 @@ export async function collectDoctorReportData(
     heightCm: userProfile?.heightCm ?? null,
     dateOfBirth: userProfile?.dateOfBirth ?? null,
     gender: userProfile?.gender ?? null,
+    timezone: reportTz,
   };
   if (glucosePanelOn) {
     // #943 — the untagged bucket is a bucket. A report built from a meter

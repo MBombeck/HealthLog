@@ -1,4 +1,4 @@
-import { getAgeFromDateOfBirth } from "@/lib/analytics/pulse-targets";
+import { ageInYears } from "@/lib/tz/date-only";
 import {
   UNBOUNDED_REACH,
   withinReach,
@@ -64,7 +64,7 @@ interface WorkoutEvidenceDependencies {
   ) => Promise<WorkoutHrSeries | null>;
   computeZones: (input: ComputeZonesInput) => WorkoutZones | null;
   hrMaxFromAge: (age: number | null) => number | null;
-  getAgeFromDateOfBirth: (dateOfBirth: Date | null) => number | null;
+  ageInYears: (dateOfBirth: Date | null, timezone: string) => number | null;
   parseWhoopZoneDurations: (metadata: unknown) => number[] | null;
   buildSportContext: (
     userId: string,
@@ -105,7 +105,10 @@ export function createWorkoutEvidenceBuilder(
       });
       const zones = dependencies.computeZones({
         hrMax: dependencies.hrMaxFromAge(
-          dependencies.getAgeFromDateOfBirth(profile?.dateOfBirth ?? null),
+          dependencies.ageInYears(
+            profile?.dateOfBirth ?? null,
+            profile?.timezone ?? DEFAULT_TIMEZONE,
+          ),
         ),
         series: hrSeries?.points ?? [],
         bucketSec: hrSeries?.bucketSec ?? 0,
@@ -178,7 +181,7 @@ export const buildWorkoutEvidenceSection = createWorkoutEvidenceBuilder({
   buildHrSeries: buildWorkoutHrSeries,
   computeZones,
   hrMaxFromAge,
-  getAgeFromDateOfBirth,
+  ageInYears,
   parseWhoopZoneDurations,
   buildSportContext,
   buildEvidence: buildWorkoutEvidence,

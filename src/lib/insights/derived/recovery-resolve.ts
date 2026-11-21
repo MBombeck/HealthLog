@@ -39,9 +39,9 @@
  * backfill are needed and two genuinely different nights stay separate.
  */
 import type { MeasurementSource } from "@/generated/prisma/client";
-import { dayKeyForUserTz } from "@/lib/measurements/consolidation-tz";
 import { resolveUserTimezone } from "@/lib/measurements/consolidation-base";
 import { DEFAULT_SOURCE_PRIORITY } from "@/lib/validations/source-priority";
+import { userDayKey } from "@/lib/tz/format";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -97,7 +97,7 @@ export function wakeDayKeyOf(
   tz: string,
 ): string {
   const anchor = source === "COMPUTED" ? new Date(d.getTime() + MS_PER_DAY) : d;
-  return dayKeyForUserTz(anchor, tz);
+  return userDayKey(anchor, tz);
 }
 
 /**

@@ -38,7 +38,6 @@ import {
   ensureUserRollupsFresh,
   readRollupBuckets,
 } from "./measurement-rollups";
-import { probeRollupCoverage } from "./measurement-coverage";
 import { readDayAggregates } from "@/lib/measurements/day-aggregates";
 import { dayWeightedRowsSql, windowMeanSql } from "@/lib/measurements/day-mean";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
@@ -621,33 +620,4 @@ export async function buildTieredSeries(
     anomalies,
     windowStats: stats,
   };
-}
-
-/**
- * Convenience batch — build tiered series for several metrics, probing
- * coverage once and recomputing freshness once for the whole set. Types with
- * no rollup coverage AND no raw rows simply come back with empty bands.
- */
-export async function buildTieredSeriesForTypes(
-  userId: string,
-  types: MeasurementType[],
-  options: BuildTieredSeriesOptions,
-): Promise<TieredSeries[]> {
-  const now = options.now ?? Date.now();
-  if (!options.skipEnsureFresh) {
-    await ensureUserRollupsFresh(userId);
-  }
-  // Probe coverage once so the caller can reason about which bands are
-  // rollup-backed vs raw-only; the per-type builder still falls back on miss.
-  const coverage = await probeRollupCoverage(userId);
-  const present = types.filter((t) => coverage.has(t));
-  return Promise.all(
-    present.map((type) =>
-      buildTieredSeries(userId, type, {
-        ...options,
-        now,
-        skipEnsureFresh: true,
-      }),
-    ),
-  );
 }

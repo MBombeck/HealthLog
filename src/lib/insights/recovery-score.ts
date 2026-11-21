@@ -45,7 +45,6 @@ import {
   type BaselineProfile,
 } from "@/lib/insights/derived/baseline";
 import {
-  scoreDayKey,
   scoreExternalId,
   scoreMeasuredAt,
   upsertScoreRow,
@@ -55,16 +54,6 @@ import { resolveRestMode, type RestModeContext } from "@/lib/illness/rest-mode";
 
 /** The per-day idempotency-key prefix for a stored Recovery score row. */
 export const RECOVERY_SCORE_EXTERNAL_ID_PREFIX = "recovery:";
-
-/**
- * The UTC calendar day a Recovery run scores — the PREVIOUS day relative to
- * `now` (the cron fires in the small hours; the just-completed day is the one
- * with a full signal set). Delegates to the shared `scoreDayKey` so all three
- * score engines agree on the day stamp.
- */
-export function recoveryDayKey(now: Date): string {
-  return scoreDayKey(now);
-}
 
 /** The full `externalId` for a given run's Recovery score row. */
 export function recoveryExternalId(now: Date): string {

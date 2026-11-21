@@ -27,7 +27,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma as defaultPrisma } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/crypto";
-import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { annotate } from "@/lib/logging/context";
 import { AI_BUDGETS, REFERENCE_AI_SEED } from "@/lib/ai/ai-budgets";
 import { dayRotatedSeed } from "@/lib/ai/prompts/opener-archetype";
@@ -53,7 +52,7 @@ import {
   validateNarrativeText,
   buildNarrativeCorrection,
 } from "@/lib/insights/narrative/narrative-grounding";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 
 /**
  * Stable identifier for the narrative prompt revision. Bumped whenever the
@@ -116,12 +115,6 @@ export interface NarrativeProvenancePayload {
   pairsTested: number;
   fdrQ: number;
   computedAt: string;
-}
-
-/** UTC YYYY-MM-DD boundary key for a row, in the user's tz. */
-function dateKeyFor(now: Date, tz: string): string {
-  const { year, month, day } = wallClockInTz(now, tz);
-  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 // ── prompt ──────────────────────────────────────────────────────────────
@@ -365,7 +358,7 @@ export async function generatePeriodNarrative(
     // near-identical every time (Root cause D — the fixed seed in prod).
     seed: options.referenceSeed
       ? REFERENCE_AI_SEED
-      : dayRotatedSeed(`${userId}:${period}:${dateKeyFor(now, tz)}`),
+      : dayRotatedSeed(`${userId}:${period}:${userDayKey(now, tz)}`),
     // The narrative output is PLAIN TEXT (no markdown, no JSON), so suppress
     // the JSON-mode opt-in the status cards default into.
     responseFormat: "text",
@@ -398,7 +391,7 @@ export async function generatePeriodNarrative(
     fdrQ: context.fdrQ,
     computedAt: context.provenance.computedAt,
   };
-  const dateKey = dateKeyFor(now, tz);
+  const dateKey = userDayKey(now, tz);
 
   // Upsert the single (user, period, locale) row in place — delete/regenerate
   // clean by construction. The prose is held AES-256-GCM at rest.

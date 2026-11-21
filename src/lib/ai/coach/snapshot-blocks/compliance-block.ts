@@ -25,9 +25,10 @@ import {
 import type { DoseHistoryRow } from "@/lib/medications/scheduling/dose-history";
 import { annotate } from "@/lib/logging/context";
 import { courseStatusAt } from "@/lib/medications/course-window";
-import { isoWeekKey, tzDayKey, tzWeekday } from "../snapshot-series";
+import { isoWeekKey, tzWeekday } from "../snapshot-series";
 import type { RegisterBlock } from "../series-condense";
 import type { CoachProvenance, CoachProvenanceMetric } from "../types";
+import { userDayKey } from "@/lib/tz/format";
 
 /**
  * The medication row shape the block consumes — exactly what the
@@ -149,7 +150,7 @@ export function buildComplianceBlock(
       { date: Date; total: number; taken: number }
     >();
     for (const r of recent) {
-      const key = tzDayKey(r.at, userTz);
+      const key = userDayKey(r.at, userTz);
       const e = recentByDay.get(key) ?? {
         date: r.at,
         total: 0,
@@ -210,7 +211,7 @@ export function buildComplianceBlock(
       // Every day's rate over the whole window, as the recent rows state it.
       const byDay = new Map<string, { taken: number; total: number }>();
       for (const r of countable) {
-        const key = tzDayKey(r.at, userTz);
+        const key = userDayKey(r.at, userTz);
         const e = byDay.get(key) ?? { taken: 0, total: 0 };
         e.total += 1;
         if (isTaken(r)) e.taken += 1;

@@ -15,11 +15,11 @@ import {
 } from "../dense-intraday-retention";
 import {
   canonicalHourlyTimestamp,
-  dayKeyForUserTz,
   hourOfDayForUserTz,
 } from "../consolidation-tz";
 import type { PerSampleRow } from "../consolidation-tz";
 import type { MeasurementType } from "@/generated/prisma/client";
+import { userDayKey } from "@/lib/tz/format";
 
 function row(id: string, iso: string, value = 50): PerSampleRow {
   return {
@@ -136,7 +136,7 @@ describe("canonicalHourlyTimestamp — local HH:30 anchor", () => {
     for (const tz of ["Europe/Berlin", "America/New_York", "Asia/Kathmandu"]) {
       for (const hour of [0, 6, 12, 23]) {
         const anchor = canonicalHourlyTimestamp("2026-05-01", hour, tz);
-        expect(dayKeyForUserTz(anchor, tz)).toBe("2026-05-01");
+        expect(userDayKey(anchor, tz)).toBe("2026-05-01");
         expect(hourOfDayForUserTz(anchor, tz)).toBe(hour);
       }
     }
@@ -147,7 +147,7 @@ describe("canonicalHourlyTimestamp — local HH:30 anchor", () => {
     // instant is picked must read back as (2026-10-25, hour 2) — that is
     // all the fold needs, the externalId is the row identity.
     const anchor = canonicalHourlyTimestamp("2026-10-25", 2, "Europe/Berlin");
-    expect(dayKeyForUserTz(anchor, "Europe/Berlin")).toBe("2026-10-25");
+    expect(userDayKey(anchor, "Europe/Berlin")).toBe("2026-10-25");
     expect(hourOfDayForUserTz(anchor, "Europe/Berlin")).toBe(2);
   });
 

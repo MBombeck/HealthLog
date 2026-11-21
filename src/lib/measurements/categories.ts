@@ -269,19 +269,3 @@ export function getMeasurementCategory(
 ): MeasurementCategory | undefined {
   return MEASUREMENT_CATEGORIES.get(type);
 }
-
-/**
- * List every `MeasurementType` belonging to a given category. Useful
- * for the iOS picker fan-out and the web Insights nav grouping. The
- * return order is the insertion order in `MEASUREMENT_CATEGORIES`
- * above — kept deterministic so the picker UX has a stable layout.
- */
-export function measurementTypesForCategory(
-  category: MeasurementCategory,
-): MeasurementType[] {
-  const out: MeasurementType[] = [];
-  for (const [type, cat] of MEASUREMENT_CATEGORIES) {
-    if (cat === category) out.push(type);
-  }
-  return out;
-}

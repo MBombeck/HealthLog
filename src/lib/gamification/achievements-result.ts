@@ -35,6 +35,7 @@ import {
   getWeeklyConsistency,
 } from "@/lib/gamification/care-metrics";
 import {
+  bmiOf,
   classifyBMI,
   classifyBP,
   classifyPulse,
@@ -56,9 +57,8 @@ export type AchievementsResult = Awaited<
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ROLLING_WINDOW_DAYS = 30;
 
-// v1.16.1 — weekly measurement-consistency badge: 4 consecutive weeks
-// with at least 5 distinct active vitals days each. Mirrors the
-// `measurement-weeks-4` definition's target.
+// The weekly measurement-consistency badge: 4 consecutive weeks with at least
+// 5 distinct active vitals days each, the `measurement-weeks-4` target.
 const MEASUREMENT_CONSISTENCY_MIN_DAYS_PER_WEEK = 5;
 const MEASUREMENT_CONSISTENCY_TARGET_WEEKS = 4;
 
@@ -259,7 +259,7 @@ function getHealthGreenDaySeries(
 
   for (const [dayKey, slot] of dayStats.entries()) {
     if (heightCm && slot.weight.count > 0) {
-      const bmi = slot.weight.sum / slot.weight.count / (heightCm / 100) ** 2;
+      const bmi = bmiOf(slot.weight.sum / slot.weight.count, heightCm);
       if (classifyBMI(bmi).severity === "normal") {
         bmiGreenDays.push(dayKey);
       }

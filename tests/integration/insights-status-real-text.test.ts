@@ -39,7 +39,6 @@ vi.mock("@/lib/ai/provider", async (importOriginal) => ({
       },
     },
   ]),
-  resolveProvider: vi.fn().mockResolvedValue({ type: "none" }),
 }));
 
 import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";

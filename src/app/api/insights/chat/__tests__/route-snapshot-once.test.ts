@@ -71,7 +71,6 @@ vi.mock("@/lib/ai/provider", () => ({
   resolveProviderChain: vi.fn(async () => [
     { providerType: "admin-openai", instance: { supportsTools: false } },
   ]),
-  resolveProvider: vi.fn(),
 }));
 vi.mock("@/lib/ai/consent-guard", () => ({
   assertConsentForChain: vi.fn(async () => undefined),

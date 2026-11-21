@@ -240,22 +240,6 @@ export function reorderGroups(
   return { categories: [...placed, ...rest] };
 }
 
-/**
- * The complete placement map the layout PUT carries: every category →
- * its tag keys in current display order. Sending the full map (instead
- * of a delta) keeps the stored blob deterministic — the server resolves
- * unknown / stale keys by dropping them at read time.
- */
-export function buildPlacements(
-  catalog: ManageCatalog,
-): Record<string, string[]> {
-  const placements: Record<string, string[]> = {};
-  for (const category of catalog.categories) {
-    placements[category.key] = category.tags.map((tag) => tag.key);
-  }
-  return placements;
-}
-
 /** Current group-key order, for the layout PUT's `groupOrder`. */
 export function buildGroupOrder(catalog: ManageCatalog): string[] {
   return catalog.categories.map((category) => category.key);
