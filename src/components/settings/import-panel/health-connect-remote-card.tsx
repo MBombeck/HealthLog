@@ -111,12 +111,11 @@ export function HealthConnectRemoteCard() {
   const recentProof = useRecentProof();
   const save = useMutation({
     mutationFn: (body: Record<string, unknown>) =>
-      recentProof.run(() => apiPut<RemoteState>(ROUTE, body)),
+      recentProof.run(() =>
+        apiPut<RemoteState>("/api/import/health-connect-remote", body),
+      ),
     onSuccess: done,
-    onError: (err) => {
-      const message = recentProofErrorMessage(err, errorText(err));
-      setError(message);
-    },
+    onError: (err) => setError(recentProofErrorMessage(err, errorText(err))),
   });
   const fetchNow = useMutation({
     mutationFn: () => apiPost(`${ROUTE}/fetch`, {}),
