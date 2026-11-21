@@ -125,6 +125,23 @@ binding directly at the relay.
   server has received nothing from it for six hours while the app is still
   in use.
 
+### Live Activity start and update
+
+Starting a medication Live Activity from the server, and updating it as the
+dose turns due, overdue or is snoozed, is a separate choice. The content a
+Live Activity shows cannot be sealed, so the relay and Apple can see when a
+dose is due. The app asks for it with a second switch of its own, off by
+default, beside the relay switch; the device signs that consent with its
+binding key, and turning the relay off turns it off too. The content carries
+only the state and the timing (pending, due, overdue, snoozed, the countdown
+and the time format), never a medication name; the relay refuses anything
+else. Each dose starts at most one Activity, and the relay limits starts and
+updates per device and day.
+
+On the server it is held back by `PUSH_RELAY_LIVE_ACTIVITY` until the app's
+device test has passed; while that is off only the end of a Live Activity goes
+over the relay. A server with its own APNs key is not affected.
+
 ### How often
 
 The silent wakes are rationed, because Apple stops waking an app that gets
@@ -187,11 +204,12 @@ nobody relies on a confirmation that did not come.
 
 All optional, all on the compose whitelist.
 
-| Variable          | Default                      | Meaning                                                                        |
-| ----------------- | ---------------------------- | ------------------------------------------------------------------------------ |
-| `PUSH_RELAY_MODE` | `allowed`                    | `off` hides the relay entirely, the admin notice included                      |
-| `PUSH_RELAY_URL`  | `https://push.healthlog.dev` | the relay origin; `https` only                                                 |
-| `PUSH_RELAY_KEYS` | the hosted relay's keys      | the relay's identity public keys, Ed25519, unpadded base64url, comma separated |
+| Variable                   | Default                      | Meaning                                                                                                                                                                        |
+| -------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `PUSH_RELAY_MODE`          | `allowed`                    | `off` hides the relay entirely, the admin notice included                                                                                                                      |
+| `PUSH_RELAY_URL`           | `https://push.healthlog.dev` | the relay origin; `https` only                                                                                                                                                 |
+| `PUSH_RELAY_KEYS`          | the hosted relay's keys      | the relay's identity public keys, Ed25519, unpadded base64url, comma separated                                                                                                 |
+| `PUSH_RELAY_LIVE_ACTIVITY` | off                          | `on` lets Live Activity start and update go over the relay to devices whose owner gave the separate Live Activity consent; leave it off until the app's device test has passed |
 
 Every relay answer must carry a signature by one of the pinned identity keys,
 bound to the method, path and nonce of the request it answers, and fit the
