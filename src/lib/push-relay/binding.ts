@@ -185,6 +185,9 @@ export function clearedRelayFields(options: { pushKey: boolean }) {
     relayBindingSignature: null,
     relayConsentAt: null,
     relayConsentVersion: null,
+    // The Live Activity consent rides on the relay consent; it goes with it.
+    liveActivityConsentAt: null,
+    liveActivityConsentVersion: null,
     ...(options.pushKey ? { pushKeyPublic: null, pushKeySuites: [] } : {}),
   };
 }

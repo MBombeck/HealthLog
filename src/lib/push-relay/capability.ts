@@ -11,17 +11,22 @@
  * - `instanceId`: what the app signs its binding statement for.
  * - `senderKeys`: the keys the app pins for this account; present whenever
  *   this server seals envelopes, over the relay or over its own APNs key.
- * - `envelopeVersions`, `liveActivity`, `termsUrl`, `privacyUrl`,
+ * - `envelopeVersions`, `liveActivity` (`end`, plus `start` and `update`
+ *   while the operator's switch `PUSH_RELAY_LIVE_ACTIVITY` is on),
+ *   `liveActivityConsentTextVersion`, `termsUrl`, `privacyUrl`,
  *   `consentTextVersion`.
  *
  * `push.device`: `transport` (`relay` | `direct` | `none`), `consent`,
- * `relayState`, `intakeSync` (`ok` | `degraded`).
+ * `relayState`, `intakeSync` (`ok` | `degraded`), `liveActivityConsent`.
  */
 import { prisma } from "@/lib/db";
 import { loadApnsConfig } from "@/lib/notifications/senders/apns";
 import {
   ENVELOPE_VERSIONS,
+  LIVE_ACTIVITY_CONSENT_TEXT_VERSION,
   LIVE_ACTIVITY_EVENTS,
+  LIVE_ACTIVITY_RELAY_EVENTS,
+  liveActivityRelayEnabled,
   RELAY_CONSENT_TEXT_VERSION,
   relayConfig,
   relayDocumentUrls,
@@ -55,6 +60,7 @@ export interface RelayCapability {
   senderKeys: PublishedSenderKey[];
   envelopeVersions: number[];
   liveActivity: string[];
+  liveActivityConsentTextVersion: string;
   termsUrl: string | null;
   privacyUrl: string | null;
   consentTextVersion: string;
@@ -68,6 +74,7 @@ export interface DevicePushBlock {
   intakeSync: "ok" | "degraded";
   senderKeys: PublishedSenderKey[];
   relayInstanceId: string | null;
+  liveActivityConsent: boolean;
 }
 
 /** The health the app sees for a registration. */
@@ -119,7 +126,13 @@ export async function relayCapability(
     instanceId: row?.instanceId ?? null,
     senderKeys: await senderKeysFor(row),
     envelopeVersions: sealing ? [...ENVELOPE_VERSIONS] : [],
-    liveActivity: row ? [...LIVE_ACTIVITY_EVENTS] : [],
+    liveActivity: row
+      ? [
+          ...LIVE_ACTIVITY_EVENTS,
+          ...(liveActivityRelayEnabled() ? LIVE_ACTIVITY_RELAY_EVENTS : []),
+        ]
+      : [],
+    liveActivityConsentTextVersion: LIVE_ACTIVITY_CONSENT_TEXT_VERSION,
     termsUrl: docs?.termsUrl ?? null,
     privacyUrl: docs?.privacyUrl ?? null,
     consentTextVersion: RELAY_CONSENT_TEXT_VERSION,
@@ -198,6 +211,7 @@ export async function devicePushBlock(
         relayState: true,
         relayConsentAt: true,
         envelopeReportedAt: true,
+        liveActivityConsentAt: true,
       },
     }),
     config.available ? loadRegistration(config) : null,
@@ -214,6 +228,9 @@ export async function devicePushBlock(
       device && transport === "relay" ? await intakeSyncOf(device, row) : "ok",
     senderKeys: await senderKeysFor(row),
     relayInstanceId: row?.instanceId ?? null,
+    liveActivityConsent: Boolean(
+      device?.relayConsentAt && device.liveActivityConsentAt,
+    ),
   };
 }
 

@@ -448,6 +448,10 @@ x-healthlog-env: &healthlog_env
   PUSH_RELAY_MODE: "${PUSH_RELAY_MODE:-}"
   PUSH_RELAY_URL: "${PUSH_RELAY_URL:-}"
   PUSH_RELAY_KEYS: "${PUSH_RELAY_KEYS:-}"
+  # PUSH_RELAY_LIVE_ACTIVITY "on" lets Live Activity start and update go over
+  # the relay for devices that consented; off by default until the app's device
+  # test passed.
+  PUSH_RELAY_LIVE_ACTIVITY: "${PUSH_RELAY_LIVE_ACTIVITY:-}"
   # Structured logging. LOG_LEVEL is one of debug/info/warn/error (default
   # info) — drop to debug while chasing a problem, raise to warn on a busy
   # instance. LOG_SAMPLE_RATE keeps that fraction of successful events

@@ -35,9 +35,29 @@ export const RELAY_CLIENT_NAME = "healthlog";
 /** Envelope versions and Live Activity events this server can send. */
 export const ENVELOPE_VERSIONS: readonly number[] = Object.freeze([1]);
 export const LIVE_ACTIVITY_EVENTS: readonly string[] = Object.freeze(["end"]);
+/** What the operator's switch adds, for devices with the second consent. */
+export const LIVE_ACTIVITY_RELAY_EVENTS: readonly string[] = Object.freeze([
+  "start",
+  "update",
+]);
+/** The version of the Live Activity consent sentence the app shows. */
+export const LIVE_ACTIVITY_CONSENT_TEXT_VERSION = "2026-11-21";
 
 /** Request deadline for one relay call (`spec`: batch wait 8 s, plus margin). */
 export const RELAY_REQUEST_TIMEOUT_MS = 10_000;
+
+/**
+ * The server-side switch for Live Activity start and update over the relay
+ * (`PUSH_RELAY_LIVE_ACTIVITY=on`). Off by default: it stays off until the
+ * app's device test of the relay's Live Activity template has passed. With it
+ * off only `end` goes over the relay, as before; a server's own APNs key is
+ * not affected either way.
+ */
+export function liveActivityRelayEnabled(
+  env: Partial<Record<string, string | undefined>> = process.env,
+): boolean {
+  return (env.PUSH_RELAY_LIVE_ACTIVITY ?? "").trim().toLowerCase() === "on";
+}
 
 /** Devices one account may bind through the relay. */
 export const RELAY_DEVICES_PER_ACCOUNT = 5;

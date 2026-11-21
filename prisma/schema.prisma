@@ -6558,6 +6558,13 @@ model Device {
   /// `push.device.relayState` and the push routing, which sends over the
   /// relay only for `bound`.
   relayState             String              @default("none") @map("relay_state")
+  /// The person's second, separate consent to Live Activity start and
+  /// update over the relay (`liveActivityConsent`), whose content the relay
+  /// and Apple can see. Distinct from the relay consent, off until given.
+  /// Readers: the Live Activity relay sender (`push-relay/live-activity.ts`)
+  /// and `/api/auth/me` `push.device.liveActivityConsent`.
+  liveActivityConsentAt      DateTime? @map("live_activity_consent_at")
+  liveActivityConsentVersion String?   @map("live_activity_consent_version")
   relayBoundAt           DateTime?           @map("relay_bound_at")
   /// The newest envelope ids this device reports it opened, per class
   /// (`GET /api/sync/state`), and when it reported them. Reader: the delivery
