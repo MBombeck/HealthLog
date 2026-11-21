@@ -75,6 +75,7 @@ export function deviceBody(
       ...extra,
     },
     pushKey,
+    binding,
   };
 }
 
@@ -98,8 +99,8 @@ export async function bindDevice(
   session?: SessionFixture,
 ) {
   const owner = session ?? (await makeSession(await makeUser()));
-  const { body, pushKey } = deviceBody(instanceId, token);
+  const { body, pushKey, binding } = deviceBody(instanceId, token);
   const res = await registerDevice(owner, body);
   expect(res.data.push.relayState).toBe("bound");
-  return { session: owner, deviceId: res.data.id, pushKey };
+  return { session: owner, deviceId: res.data.id, pushKey, binding };
 }

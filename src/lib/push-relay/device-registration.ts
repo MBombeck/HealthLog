@@ -14,8 +14,14 @@
  *   removed at the relay, the push key stays (a server with its own APNs key
  *   keeps sealing to it). The Live Activity consent goes with it.
  * - `liveActivityConsent` is the second, separate consent to Live Activity
- *   start and update over the relay. Granting it without the relay consent
- *   is refused with 422 `devices.push.relay_consent_required`.
+ *   start and update over the relay: the device's signed `hl-la-consent-v1`,
+ *   checked against its binding key and passed on to the relay
+ *   (`POST /v1/bindings/liveactivity`). `liveActivityWithdraw` is the signed
+ *   `hl-la-withdraw-v1`; it drops the consent here and at the relay. Both
+ *   need a device bound with the relay consent, else 422
+ *   `devices.push.relay_consent_required`.
+ * - `liveActivityStart` is the ActivityKit push-to-start token with the
+ *   device's signed `hl-la-start-v1`; `null` drops it.
  *
  * The answer carries the `push` block: the transport this device gets, the
  * envelope version, the sender keys to pin, the relay instance id and the
@@ -46,6 +52,10 @@ import {
   devicePushBlock,
   type DevicePushBlock,
 } from "@/lib/push-relay/capability";
+import {
+  applyLiveActivityFields,
+  checkLiveActivityFields,
+} from "@/lib/push-relay/live-activity-registration";
 
 const b64url = (bytes: number) =>
   z
@@ -93,12 +103,39 @@ export const relayConsentSchema = z
   })
   .strict();
 
-/**
- * The second, separate consent to Live Activity start and update over the
- * relay. Granting needs the relay consent (given now or before); withdrawing
- * never does.
- */
-export const liveActivityConsentSchema = relayConsentSchema;
+/** `hl-la-consent-v1`, signed with the binding key when the person agrees. */
+export const liveActivityConsentSchema = z
+  .object({
+    textVersion: z.string().regex(/^[A-Za-z0-9._-]{1,32}$/),
+    iat: unixSeconds,
+    signature: b64url(64),
+  })
+  .strict();
+
+/** `hl-la-withdraw-v1`, signed with the binding key when the person stops. */
+export const liveActivityWithdrawSchema = z
+  .object({ iat: unixSeconds, signature: b64url(64) })
+  .strict();
+
+/** The push-to-start token with its `hl-la-start-v1` statement. */
+export const liveActivityStartSchema = z
+  .object({
+    token: z
+      .string()
+      .min(64)
+      .max(200)
+      .regex(/^[0-9A-Fa-f]+$/),
+    statement: z
+      .object({
+        instanceId: uuid,
+        tokenTag: hexTag,
+        laTokenTag: hexTag,
+        iat: unixSeconds,
+      })
+      .strict(),
+    signature: b64url(64),
+  })
+  .strict();
 
 /** The signed Live Activity statement on one `liveActivityTokens` entry. */
 export const activityStatementSchema = z
@@ -116,6 +153,8 @@ export const devicePushFields = {
   relayBinding: relayBindingSchema.optional(),
   relayConsent: relayConsentSchema.optional(),
   liveActivityConsent: liveActivityConsentSchema.optional(),
+  liveActivityWithdraw: liveActivityWithdrawSchema.optional(),
+  liveActivityStart: liveActivityStartSchema.nullable().optional(),
 };
 
 export interface DevicePushInput {
@@ -128,6 +167,8 @@ export interface DevicePushInput {
   relayBinding?: z.infer<typeof relayBindingSchema>;
   relayConsent?: z.infer<typeof relayConsentSchema>;
   liveActivityConsent?: z.infer<typeof liveActivityConsentSchema>;
+  liveActivityWithdraw?: z.infer<typeof liveActivityWithdrawSchema>;
+  liveActivityStart?: z.infer<typeof liveActivityStartSchema> | null;
   apnsToken?: string;
 }
 
@@ -140,7 +181,8 @@ export type PushFieldRefusal =
   | "apns_token_required"
   | "relay_device_limit"
   | "relay_daily_limit"
-  | "relay_consent_required";
+  | "relay_consent_required"
+  | "statement_stale";
 
 /**
  * Checks that need no device row: the key is usable, the binding comes with
@@ -154,15 +196,11 @@ export async function checkPushFields(
     apnsToken: string | null;
     relayState?: string;
     relayConsentAt?: Date | null;
+    relayBindingKey?: string | null;
   } | null,
 ): Promise<PushFieldRefusal | null> {
-  if (
-    input.liveActivityConsent?.granted === true &&
-    input.relayConsent?.granted !== true &&
-    !(stored?.relayConsentAt && input.relayConsent?.granted !== false)
-  ) {
-    return "relay_consent_required";
-  }
+  const laRefusal = await checkLiveActivityFields(input, stored);
+  if (laRefusal) return laRefusal;
   if (input.pushKey) {
     if (!input.pushKey.suites.includes(1)) return "unsupported_suite";
     if (!isValidRecipientKey(fromBase64Url(input.pushKey.publicKey, 32))) {
@@ -265,18 +303,7 @@ export async function applyPushFields(
     });
     await forwardBinding(deviceId);
   }
-  if (input.liveActivityConsent && !withdraw) {
-    const granted = input.liveActivityConsent.granted;
-    await prisma.device.update({
-      where: { id: deviceId },
-      data: {
-        liveActivityConsentAt: granted ? new Date() : null,
-        liveActivityConsentVersion: granted
-          ? input.liveActivityConsent.textVersion
-          : null,
-      },
-    });
-  }
+  if (!withdraw) await applyLiveActivityFields(deviceId, input);
   return devicePushBlock(deviceId);
 }
 
@@ -294,6 +321,7 @@ const PUSH_REFUSAL_CODES = {
   relay_device_limit: "devices.push.relay_device_limit",
   relay_daily_limit: "devices.push.relay_daily_limit",
   relay_consent_required: "devices.push.relay_consent_required",
+  statement_stale: "devices.push.statement_stale",
 } as const satisfies Record<PushFieldRefusal, string>;
 
 /**
@@ -336,6 +364,7 @@ export async function preparePushFields(
         apnsToken: true,
         relayState: true,
         relayConsentAt: true,
+        relayBindingKey: true,
       },
     }),
     prisma.device.findFirst({

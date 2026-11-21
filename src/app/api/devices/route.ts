@@ -89,25 +89,35 @@ const deviceSchema = z
     // omitted keeps the set.
     liveActivityTokens: z
       .array(
-        z.object({
-          token: z
-            .string()
-            .min(8)
-            .max(256)
-            .regex(/^[A-Fa-f0-9]+$/),
-          medicationId: z.string().min(1).max(64),
-          slotInstant: isoDateTime()
-            .transform((v) => new Date(v))
-            .optional(),
-          // The device's signed `hl-activity-v1` statement for this
-          // Activity. Kept here and handed to the push relay only inside the
-          // end push, so the relay never learns when an Activity starts.
-          statement: activityStatementSchema.optional(),
-          signature: z
-            .string()
-            .regex(/^[A-Za-z0-9_-]{86}$/)
-            .optional(),
-        }),
+        z
+          .object({
+            token: z
+              .string()
+              .min(8)
+              .max(256)
+              .regex(/^[A-Fa-f0-9]+$/),
+            // A relay-started Activity knows no dose (its attributes are
+            // fixed); the server fills in the dose it started.
+            medicationId: z.string().min(1).max(64).optional(),
+            relayStart: z.boolean().optional(),
+            slotInstant: isoDateTime()
+              .transform((v) => new Date(v))
+              .optional(),
+            // The device's signed `hl-activity-v1` statement for this
+            // Activity. Kept here and handed to the push relay only inside the
+            // end push, so the relay never learns when an Activity starts.
+            statement: activityStatementSchema.optional(),
+            signature: z
+              .string()
+              .regex(/^[A-Za-z0-9_-]{86}$/)
+              .optional(),
+          })
+          .refine(
+            (a) => a.medicationId !== undefined || a.relayStart === true,
+            {
+              message: "medicationId is required unless relayStart is true",
+            },
+          ),
       )
       .max(8)
       .optional(),
@@ -156,7 +166,8 @@ async function replaceLiveActivityTokens(
   sent: {
     liveActivityTokens?: Array<{
       token: string;
-      medicationId: string;
+      medicationId?: string;
+      relayStart?: boolean;
       slotInstant?: Date;
       statement?: Record<string, unknown>;
       signature?: string;
@@ -166,8 +177,29 @@ async function replaceLiveActivityTokens(
   if (sent.liveActivityTokens === undefined) return;
   await tx.liveActivityToken.deleteMany({ where: { deviceId } });
   if (sent.liveActivityTokens.length === 0) return;
+  // The dose a relay start was for, for an Activity that knows none.
+  const started = sent.liveActivityTokens.some((a) => !a.medicationId)
+    ? await tx.device.findUnique({
+        where: { id: deviceId },
+        select: { laStartedMedicationId: true, laStartedSlot: true },
+      })
+    : null;
+  const rows = sent.liveActivityTokens.flatMap((a) => {
+    const medicationId = a.medicationId ?? started?.laStartedMedicationId;
+    if (!medicationId) return [];
+    return [
+      {
+        ...a,
+        medicationId,
+        slotInstant: a.medicationId
+          ? a.slotInstant
+          : (started?.laStartedSlot ?? undefined),
+      },
+    ];
+  });
+  if (rows.length === 0) return;
   await tx.liveActivityToken.createMany({
-    data: sent.liveActivityTokens.map((a) => ({
+    data: rows.map((a) => ({
       deviceId,
       pushToken: a.token,
       medicationId: a.medicationId,

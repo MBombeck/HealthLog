@@ -407,6 +407,9 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "push-data-changed": short(
     "At most 500 pending accounts, one claim and one sealed silent send each, then one retention DELETE.",
   ),
+  "push-live-activity": short(
+    "At most 500 consented relay devices, two indexed dose reads and one relay push batch each; nothing while the operator's switch is off.",
+  ),
   "healthkit-catch-up": short(
     "One indexed scan of Apple Health accounts gone quiet, and at most one sealed silent send per recent device within its daily limit.",
   ),

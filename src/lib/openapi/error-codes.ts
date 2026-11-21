@@ -57,6 +57,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "devices.push.relay_daily_limit",
       "devices.push.relay_device_limit",
       "devices.push.relay_not_offered",
+      "devices.push.statement_stale",
       "devices.push.token_mismatch",
       "devices.push.unsupported_suite",
     ],

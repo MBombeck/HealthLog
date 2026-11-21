@@ -28,6 +28,8 @@ import {
 } from "@/lib/push-relay/encoding";
 import {
   activityText,
+  laConsentText,
+  laStartText,
   bindText,
   ed25519PublicOf,
   registerText,
@@ -81,6 +83,8 @@ export class FakeRelay {
   /** Apply a key rotation, then drop the connection before answering. */
   dropAfterRotate = false;
   apnsAnswer = new Map<string, "ok" | "unregistered">();
+  /** Live Activity consents by device token: the text version. */
+  laConsents = new Map<string, string>();
   private nextId = 1;
 
   /** The request being answered: method and raw path the signature binds. */
@@ -241,6 +245,14 @@ export class FakeRelay {
         this.bindings.delete(token);
       return this.reply(nonce, 204, null);
     }
+    if (method === "POST" && pathAndQuery === "/v1/bindings/liveactivity")
+      return this.laConsent(nonce, instanceId, JSON.parse(body));
+    if (method === "DELETE" && pathAndQuery === "/v1/bindings/liveactivity") {
+      const { token } = JSON.parse(body);
+      if (this.bindings.get(token)?.instanceId === instanceId)
+        this.laConsents.delete(token);
+      return this.reply(nonce, 204, null);
+    }
     if (method === "POST" && pathAndQuery === "/v1/push")
       return this.push(nonce, instanceId, JSON.parse(body));
     if (method === "POST" && pathAndQuery === "/v1/receipts") {
@@ -285,6 +297,35 @@ export class FakeRelay {
     return this.reply(nonce, existing ? 200 : 201, { state: "provisional" });
   }
 
+  /** `POST /v1/bindings/liveactivity`, checked as the relay checks it. */
+  private laConsent(nonce: string | null, instanceId: string, req: Wire) {
+    const binding = this.bindings.get(req.token);
+    if (
+      !binding ||
+      binding.instanceId !== instanceId ||
+      binding.bindingKey !== req.bindingKey
+    ) {
+      return this.reply(nonce, 404, { error: "binding_unknown" });
+    }
+    if (Math.abs(req.consent.iat - Math.floor(Date.now() / 1000)) > 300) {
+      return this.reply(nonce, 401, { error: "stale_timestamp" });
+    }
+    const ok = verifyText(
+      fromBase64Url(req.bindingKey, 32) as Buffer,
+      laConsentText({
+        host: RELAY_HOST,
+        instanceId,
+        tokenTag: tokenTagHex(req.token) as string,
+        textVersion: req.consent.textVersion,
+        iat: req.consent.iat,
+      }),
+      fromBase64Url(req.signature, 64) as Buffer,
+    );
+    if (!ok) return this.reply(nonce, 403, { error: "binding_refused" });
+    this.laConsents.set(req.token, req.consent.textVersion);
+    return this.reply(nonce, 200, { liveActivity: "granted" });
+  }
+
   private push(
     nonce: string | null,
     instanceId: string,
@@ -297,6 +338,17 @@ export class FakeRelay {
       }
       if (item.class === "liveactivity") {
         const st = item.activity.statement;
+        const event = item.activity.event ?? "end";
+        const text =
+          event === "start"
+            ? laStartText({
+                host: RELAY_HOST,
+                instanceId: st.instanceId,
+                tokenTag: st.tokenTag,
+                startTokenTag: st.laTokenTag,
+                iat: st.iat,
+              })
+            : activityText({ host: RELAY_HOST, ...st });
         const ok =
           item.activity.bindingKey === binding.bindingKey &&
           st.instanceId === instanceId &&
@@ -304,15 +356,46 @@ export class FakeRelay {
           st.laTokenTag === tokenTagHex(item.activity.token) &&
           verifyText(
             fromBase64Url(binding.bindingKey, 32) as Buffer,
-            activityText({ host: RELAY_HOST, ...st }),
+            text,
             fromBase64Url(item.activity.signature, 64) as Buffer,
           );
         if (!ok)
           return { ref: item.ref, status: 403, error: "activity_refused" };
+        if (event === "end") {
+          if (item.activity.state)
+            return { ref: item.ref, status: 422, error: "invalid_item" };
+          this.apns.push({
+            token: item.activity.token,
+            pushClass: "liveactivity",
+            payload: { aps: { event: "end" } },
+          });
+          return { ref: item.ref, status: 200, result: "accepted" };
+        }
+        if (!this.laConsents.has(item.token)) {
+          return {
+            ref: item.ref,
+            status: 403,
+            error: "liveactivity_consent_required",
+          };
+        }
+        if (!closedState(item.activity.state)) {
+          return { ref: item.ref, status: 422, error: "invalid_item" };
+        }
         this.apns.push({
           token: item.activity.token,
           pushClass: "liveactivity",
-          payload: { aps: { event: "end" } },
+          payload: {
+            aps: {
+              event,
+              "content-state": item.activity.state,
+              ...(event === "start"
+                ? {
+                    "attributes-type": "HealthLogDoseAttributes",
+                    attributes: { v: 1 },
+                  }
+                : {}),
+            },
+          },
         });
         return { ref: item.ref, status: 200, result: "accepted" };
       }
@@ -357,6 +440,30 @@ export class FakeRelay {
       relayTime: Math.floor(Date.now() / 1000),
     });
   }
+}
+
+/** The relay's closed content-state template (`internal/wire/liveactivity.go`). */
+function closedState(state: Wire | undefined): boolean {
+  if (!state || typeof state !== "object") return false;
+  const keys = Object.keys(state).sort().join();
+  if (
+    keys !==
+    "confirmed,countdownTarget,isOverdue,pendingConfirm,status,timeFormatRaw"
+  )
+    return false;
+  const now = Math.floor(Date.now() / 1000);
+  const t = state.countdownTarget;
+  return (
+    ["pending", "due", "overdue", "snoozed", "taken", "skipped"].includes(
+      state.status,
+    ) &&
+    ["AUTO", "H12", "H24"].includes(state.timeFormatRaw) &&
+    Number.isInteger(t) &&
+    (t === 0 || (t >= now - 86400 && t <= now + 172800)) &&
+    [state.isOverdue, state.confirmed, state.pendingConfirm].every(
+      (b) => typeof b === "boolean",
+    )
+  );
 }
 
 /** Wait until `predicate` holds, polling; throws after `timeoutMs`. */
