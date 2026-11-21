@@ -88,13 +88,18 @@ export function streaksFromTimeline(
   windowDays: number,
   timeZone: string | undefined,
 ): { current: number; longest: number } {
-  const byDay = new Map<string, "all-good" | "bad">();
+  // A day with a missed slot breaks the run. A day whose slots are all
+  // still upcoming (today before its doses) neither extends nor breaks it:
+  // counting it as good showed a one-day streak the morning after two
+  // missed days.
+  const byDay = new Map<string, "all-good" | "bad" | "open">();
   for (const slot of timeline) {
     const key = localDayKey(slot.day, timeZone);
     const existing = byDay.get(key);
-    const isBad = slot.status === "missed";
-    if (isBad) {
+    if (slot.status === "missed") {
       byDay.set(key, "bad");
+    } else if (slot.status === "upcoming") {
+      if (existing === undefined) byDay.set(key, "open");
     } else if (existing !== "bad") {
       byDay.set(key, "all-good");
     }
@@ -130,7 +135,7 @@ export function streaksFromTimeline(
     if (state === "bad") {
       if (run > longest) longest = run;
       run = 0;
-    } else {
+    } else if (state !== "open") {
       run++;
     }
   }
