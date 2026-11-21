@@ -18,6 +18,7 @@ import {
   intakeAggregateQuerySchema,
   intakeStatusUpdateSchema,
   glp1PostBodySchema,
+  glp1DoseChangeDeleteQuerySchema,
   glp1DoseChangePatchSchema,
   bulkDeleteIntakeEventsSchema,
   updateIntakeEventSchema,
@@ -708,6 +709,34 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       },
     },
   },
+  "/api/medications/{id}/glp1/dose-changes": {
+    delete: {
+      tags: ["Medications"],
+      summary: "Remove one GLP-1 titration step by its client id",
+      description:
+        "For a step a device removed before its upload answered: the device knows the `clientId` but not the server id, and not whether the step reached the server. Idempotent: removes the step under this `clientId` when one exists, and spends the client id either way, so a create under it that arrives later answers 410 `glp1.doseChange.deleted` and writes nothing. Answers 204 whether or not a step was found. A create that was already past its own check when this delete ran can still land; a client that sees that create answer 200 or 201 sends this delete once more. Audits `medication.glp1.doseChange.delete` when a step was removed. Rate-limited 30/min keyed on the ACTOR, shared with the step's other writes. Delegable at MANAGE level over the `medications` section. Cookie or Bearer auth.",
+      requestParams: {
+        path: z.object({ id: z.string() }),
+        query: glp1DoseChangeDeleteQuerySchema,
+      },
+      responses: {
+        ...recordRefusal(),
+        "204": {
+          description:
+            "The client id is spent, and the step under it, if there was one, is removed. No body.",
+        },
+        "404": {
+          description: "No such medication for this record.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+        "422": {
+          description: "`clientId` is missing or malformed.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+      },
+    },
+  },
   "/api/medications/{id}/glp1/dose-changes/{doseChangeId}": {
     patch: {
       tags: ["Medications"],
@@ -753,7 +782,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Medications"],
       summary: "Remove one GLP-1 titration step",
       description:
-        "A HARD delete: the step is removed, not tombstoned, and its client id is free again. The audit row (`medication.glp1.doseChange.delete`) carries the step's dose, unit, date and client id, so the removal is reconstructable from the trail. Rate-limited 30/min keyed on the ACTOR. Delegable at MANAGE level over the `medications` section. Cookie or Bearer auth.",
+        "A HARD delete: the step is removed. Its client id is spent with it, so a later create under the same `clientId` answers 410 `glp1.doseChange.deleted` instead of bringing the step back. A step known only by its client id is removed at `DELETE /api/medications/{id}/glp1/dose-changes?clientId=`. The audit row (`medication.glp1.doseChange.delete`) carries the step's dose, unit, date and client id, so the removal is reconstructable from the trail. Rate-limited 30/min keyed on the ACTOR. Delegable at MANAGE level over the `medications` section. Cookie or Bearer auth.",
       requestParams: {
         path: z.object({ id: z.string(), doseChangeId: z.string() }),
       },
