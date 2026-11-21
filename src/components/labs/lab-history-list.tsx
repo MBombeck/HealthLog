@@ -34,7 +34,8 @@ import { formatLabReading } from "@/lib/labs/format-value";
 import { LabConvertedNote } from "./lab-converted-note";
 import { resolveNoteForUpdate } from "@/lib/labs/note-update";
 import { resolveValueForUpdate, valueEditSeed } from "@/lib/labs/value-update";
-import { useTranslations } from "@/lib/i18n/context";
+import { useDisplayTimezone, useTranslations } from "@/lib/i18n/context";
+import { labReadingDay } from "@/lib/labs/reading-day";
 import { invalidateKeys, labDependentKeys, queryKeys } from "@/lib/query-keys";
 
 import { ReferenceRangeBadge } from "./reference-range-badge";
@@ -89,6 +90,7 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
   const { t } = useTranslations();
   const labNumber = useLabNumber();
   const labDate = useLabDate();
+  const displayTz = useDisplayTimezone();
   const { canManageDomain } = useRecordCapabilities();
   // What the day shows at its top when opened from a reading: the value and
   // the reading before it, the comparison a draw is read against.
@@ -412,7 +414,7 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
               />
               <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                 <DayLinkStated
-                  at={r.takenAt}
+                  at={labReadingDay(r.takenAt, displayTz)}
                   focus={labDayFocus(r)}
                   className="whitespace-nowrap"
                 >
@@ -492,7 +494,10 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
                 <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
                   {/* v1.42 — the draw date opens the day; the row keeps its
                       edit and delete. A draw day is often a visit day. */}
-                  <DayLinkStated at={r.takenAt} focus={labDayFocus(r)}>
+                  <DayLinkStated
+                    at={labReadingDay(r.takenAt, displayTz)}
+                    focus={labDayFocus(r)}
+                  >
                     {labDate(r.takenAt)}
                   </DayLinkStated>
                 </TableCell>

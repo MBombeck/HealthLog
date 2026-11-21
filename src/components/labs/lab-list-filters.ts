@@ -10,12 +10,7 @@
  */
 import { applyOrder } from "@/lib/module-list-prefs";
 import type { ModuleSortDir } from "@/lib/settings/module-list-layout";
-import {
-  dateOnlyKey,
-  isCalendarDateKey,
-  isNoonUtcAnchor,
-} from "@/lib/tz/date-only";
-import { userDayKey } from "@/lib/tz/format";
+import { isCalendarDateKey } from "@/lib/tz/date-only";
 import type { MarkerRow } from "./lab-list-rows";
 import type { LabOverviewCategoryDto } from "./types";
 
@@ -137,31 +132,6 @@ export function labListFiltersToSearch(filters: LabListFilters): string {
   if (filters.fromDay) sp.set("from", filters.fromDay);
   if (filters.toDay) sp.set("to", filters.toDay);
   return sp.toString();
-}
-
-/**
- * Resolve the local calendar day key (`YYYY-MM-DD`) for a lab reading.
- *
- * Data model semantics & date-only heuristic:
- * The data model (`LabResult` in Prisma and `LabResultDto`) stores `takenAt` as
- * an ISO timestamp and does not have an explicit date-only marker column (e.g.
- * `hasTime` or `dateOnly`). Instead, the codebase convention (`@/lib/tz/date-only`)
- * stores date-only imports at 12:00:00.000 UTC (`dateOnlyAtNoonUtc`).
- *
- * Inherent ambiguity:
- * An instant reading entered at exactly 12:00:00.000Z is indistinguishable from a
- * date-only anchor without schema changes. We preserve the `isNoonUtcAnchor`
- * heuristic here so that the day key used for filtering matches exactly what the
- * row displays to the user via `useLabDate` (`calendarDate(instant)` for noon-UTC
- * anchors, avoiding timezone-shift discrepancies in timezones like UTC+14).
- * Timestamps with a time of day resolve in the user's timezone via `userDayKey`.
- */
-export function labReadingDayKey(takenAt: string, tz: string): string {
-  const instant = new Date(takenAt);
-  if (isNoonUtcAnchor(instant)) {
-    return dateOnlyKey(instant);
-  }
-  return userDayKey(instant, tz);
 }
 
 /**

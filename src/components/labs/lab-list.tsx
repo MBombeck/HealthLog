@@ -20,11 +20,12 @@ import {
   type ModuleListView,
 } from "@/lib/module-list-prefs";
 
+import { labReadingDay } from "@/lib/labs/reading-day";
+
 import { LabFilterRail } from "./lab-filter-rail";
 import {
   buildMarkerCategoryMap,
   filterMarkerRows,
-  labReadingDayKey,
   sortMarkerRows,
 } from "./lab-list-filters";
 import { useLabListFilters } from "./use-lab-list-filters";
@@ -425,7 +426,7 @@ export function LabList({
   );
 
   const dayKeyOf = useCallback(
-    (takenAt: string) => labReadingDayKey(takenAt, displayTz),
+    (takenAt: string) => labReadingDay(takenAt, displayTz),
     [displayTz],
   );
 

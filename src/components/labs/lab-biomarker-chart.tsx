@@ -22,7 +22,7 @@ import {
   useFormatters,
   useTranslations,
 } from "@/lib/i18n/context";
-import { dateOnlyKey, isNoonUtcAnchor } from "@/lib/tz/date-only";
+import { isLabDateOnly, labReadingDay } from "@/lib/labs/reading-day";
 
 import { RichChartTooltip, type RichTooltipRow } from "../charts/chart-tooltip";
 import {
@@ -30,7 +30,6 @@ import {
   OPEN_DAY_LINE,
   useChartDayLinks,
 } from "../day/chart-day-links";
-import { dateKeyOfInstant } from "../day/day-url";
 import type { LabResultDto } from "./types";
 import { useLabNumber } from "./use-lab-format";
 import { labSourceLabel } from "./lab-source-line";
@@ -113,23 +112,18 @@ export function LabBiomarkerChart({
   const { t } = useTranslations();
   const labNumber = useLabNumber();
   const fmt = useFormatters();
-  // A reading from a report that states only its date is stored at noon UTC
-  // and is dated by that calendar date; one typed with its time of day is
-  // dated in the reader's zone (the rule `useLabDate` applies to the lists).
+  // A reading from a report that states only its date is dated by that
+  // calendar date; one typed with its time of day is dated in the reader's
+  // zone (`isLabDateOnly`, the rule `useLabDate` applies to the lists).
   const labShortDate = (value: number | string) => {
     const instant = new Date(value);
-    return isNoonUtcAnchor(instant)
+    return isLabDateOnly(instant)
       ? fmt.dateShortSmartCalendar(instant)
       : fmt.dateShortSmart(instant);
   };
   const [range, setRange] = useState<RangeKey>("365");
   const timeZone = useDisplayTimezone();
-  const dayOf = (timestamp: number) => {
-    const instant = new Date(timestamp);
-    return isNoonUtcAnchor(instant)
-      ? dateOnlyKey(instant)
-      : dateKeyOfInstant(instant, timeZone);
-  };
+  const dayOf = (timestamp: number) => labReadingDay(timestamp, timeZone);
   // Capture "now" once at mount so the recency filter stays pure across
   // re-renders (an inline `Date.now()` in render is impure).
   const [nowMs] = useState(() => Date.now());
