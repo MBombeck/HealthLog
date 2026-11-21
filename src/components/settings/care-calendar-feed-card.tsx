@@ -120,7 +120,7 @@ export function CareCalendarFeedCard() {
         />
       ) : status.isLoading || !status.data ? (
         <div className="flex h-16 items-center justify-center">
-          <Loader2 className="text-muted-foreground h-5 w-5 animate-spin motion-reduce:animate-none" />
+          <Loader2 className="text-muted-foreground size-5 animate-spin motion-reduce:animate-none" />
         </div>
       ) : !feed ? (
         <>
@@ -133,7 +133,7 @@ export function CareCalendarFeedCard() {
               disabled={mint.isPending}
             >
               {mint.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+                <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
               ) : null}
               {t("cycle.feed.turnOn")}
             </Button>
