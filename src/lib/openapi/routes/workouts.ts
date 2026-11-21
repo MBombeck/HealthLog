@@ -277,6 +277,31 @@ const workoutActivityInsight = z
   })
   .meta({ id: "WorkoutActivityInsight" });
 
+/**
+ * #1343 — the watch's own figures for one session, read server-side from the
+ * workout's metadata (the FIT import's keys, the Garmin integration's as a
+ * fallback). Every figure is null when the source did not compute it.
+ */
+const workoutPerformance = z
+  .object({
+    aerobicTrainingEffect: z.number().nullable().describe("0–5 score."),
+    anaerobicTrainingEffect: z.number().nullable().describe("0–5 score."),
+    trainingLoad: z.number().nullable(),
+    recoveryTimeMin: z
+      .number()
+      .nullable()
+      .describe("Minutes until the watch considers the person recovered."),
+    sweatLossMl: z.number().nullable().describe("Estimated, millilitres."),
+    avgPowerW: z.number().nullable(),
+    avgVerticalOscillationMm: z.number().nullable(),
+    avgGroundContactTimeMs: z.number().nullable(),
+    avgGroundContactBalancePct: z
+      .number()
+      .nullable()
+      .describe("The left foot's share of ground contact, percent."),
+  })
+  .meta({ id: "WorkoutPerformance" });
+
 const workoutDetailResponse = z
   .object({
     id: z.string(),
@@ -318,6 +343,7 @@ const workoutDetailResponse = z
     source: measurementSourceEnum,
     externalId: z.string().nullable(),
     metadata: z.unknown().nullable(),
+    performance: workoutPerformance.nullable().optional(),
     route: workoutRouteGeometry.nullable(),
     samples: workoutHrSeries.nullable(),
     // #67 enrichment — additive; absent from a pre-enrichment client's

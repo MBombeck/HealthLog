@@ -6,7 +6,15 @@
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 
+import {
+  missingPerformanceFigures,
+  type WorkoutPerformanceKey,
+} from "@/lib/workouts/performance-metrics";
+
 import type { EntryResult, PreparedWorkout } from "./entries";
+
+/** Performance figures an entry hands a stored workout that lacks them. */
+export type PerformanceFigures = Partial<Record<WorkoutPerformanceKey, number>>;
 
 /** The workout columns a hand-entered workout's resubmit may overwrite. */
 export const MANUAL_OVERWRITE_FIELDS = [
@@ -72,6 +80,12 @@ export interface WritePlan {
     workoutId: string;
     samples: PreparedWorkout["samples"];
     route: PreparedWorkout["route"];
+    /**
+     * The watch's figures (training effect, recovery time, running
+     * dynamics) the stored workout does not show yet. Merged into its
+     * metadata without replacing a key it already has.
+     */
+    figures: PerformanceFigures | null;
   }>;
   /** Hand-entered workouts this batch edits in place. */
   toOverwrite: Array<{
@@ -88,6 +102,7 @@ type StoredWorkout = {
   id: string;
   hasSeries: boolean;
   hasRoute: boolean;
+  metadata: unknown;
   values: ManualOverwriteValues;
 };
 
@@ -134,6 +149,7 @@ async function readStoredWorkouts(
           stepCount: true,
           elevationM: true,
           pauseDurationSec: true,
+          metadata: true,
         },
       })
     : [];
@@ -145,6 +161,7 @@ async function readStoredWorkouts(
       id: row.id,
       hasSeries: row.samples !== null,
       hasRoute: row.route !== null,
+      metadata: row.metadata,
       values: {
         sportType: row.sportType,
         startedAt: row.startedAt,
@@ -209,7 +226,10 @@ export async function planWorkoutWrites(
       // the opt-in needs no second check here.
       const samples = p.samples && !known.hasSeries ? p.samples : null;
       const route = p.route && !known.hasRoute ? p.route : null;
-      if ((samples || route) && !enrichClaimed.has(known.id)) {
+      // A file imported again after a release that reads more of it hands
+      // the stored workout the figures it did not read the first time.
+      const figures = missingPerformanceFigures(known.metadata, p.row.metadata);
+      if ((samples || route || figures) && !enrichClaimed.has(known.id)) {
         enrichClaimed.add(known.id);
         // Enrichment. The status is assigned after the write, because
         // a concurrent writer may get the series or the track in first —
@@ -222,6 +242,7 @@ export async function planWorkoutWrites(
           workoutId: known.id,
           samples,
           route,
+          figures,
         });
       } else {
         results[p.index] = { index: p.index, status: "duplicate" };

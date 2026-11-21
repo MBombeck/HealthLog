@@ -5,6 +5,7 @@
  * the stored Activity Insight while it may be served. The route owns
  * authentication, the module gate and the AI capability.
  */
+import { readWorkoutPerformance } from "@/lib/workouts/performance-metrics";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -379,6 +380,12 @@ function shapeDetail(
     source: row.source,
     externalId: row.externalId,
     metadata: row.metadata,
+    // #1343 — the watch's own figures for the session, read by name from
+    // the metadata (FIT import keys, Garmin's as a fallback). Null when
+    // the workout carries none.
+    performance:
+      readWorkoutPerformance(row.metadata) ??
+      readWorkoutPerformance(canonical?.metadata),
     route,
     samples,
     // #67 enrichment — all additive, all over existing tables.

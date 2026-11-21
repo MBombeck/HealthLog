@@ -209,7 +209,25 @@ export interface ActivityOptions {
   withPositions?: boolean;
   /** Heart rate at second `i`; null leaves it invalid. */
   hr?: (i: number) => number | null;
+  /**
+   * Write the watch's own session figures (training effect, training load,
+   * sweat loss, running dynamics) and an `activity_metrics` message with a
+   * recovery time, the way a Garmin running watch does.
+   */
+  performance?: boolean;
 }
+
+/** The figures `performance: true` writes, in the decoder's units. */
+export const WATCH_PERFORMANCE = {
+  aerobicTrainingEffect: 3,
+  anaerobicTrainingEffect: 1.2,
+  trainingLoad: 54.25,
+  sweatLossMl: 589,
+  avgVerticalOscillationMm: 103.5,
+  avgGroundContactTimeMs: 301.5,
+  avgGroundContactBalancePct: 49.47,
+  recoveryTimeMin: 1899,
+} as const;
 
 const LAT = 51.4818;
 const LON = 7.2162;
@@ -253,6 +271,7 @@ export function buildWatchActivity(opts: ActivityOptions): Buffer {
     [253, 4, BT.uint32],
     [2, 4, BT.uint32],
   ]).data(2, [t0 + opts.seconds, t0]);
+  const perf = WATCH_PERFORMANCE;
   b.define(3, 18, [
     [253, 4, BT.uint32],
     [2, 4, BT.uint32],
@@ -265,6 +284,17 @@ export function buildWatchActivity(opts: ActivityOptions): Buffer {
     [16, 1, BT.uint8],
     [17, 1, BT.uint8],
     [22, 2, BT.uint16],
+    ...(opts.performance
+      ? ([
+          [24, 1, BT.uint8],
+          [137, 1, BT.uint8],
+          [168, 4, BT.sint32],
+          [178, 2, BT.uint16],
+          [89, 2, BT.uint16],
+          [91, 2, BT.uint16],
+          [133, 2, BT.uint16],
+        ] as Array<[number, number, number]>)
+      : []),
   ]).data(3, [
     t0 + opts.seconds,
     t0,
@@ -277,7 +307,24 @@ export function buildWatchActivity(opts: ActivityOptions): Buffer {
     135,
     149,
     42,
+    ...(opts.performance
+      ? [
+          perf.aerobicTrainingEffect * 10,
+          Math.round(perf.anaerobicTrainingEffect * 10),
+          Math.round(perf.trainingLoad * 65536),
+          perf.sweatLossMl,
+          Math.round(perf.avgVerticalOscillationMm * 10),
+          Math.round(perf.avgGroundContactTimeMs * 10),
+          Math.round(perf.avgGroundContactBalancePct * 100),
+        ]
+      : []),
   ]);
+  if (opts.performance) {
+    b.define(5, 140, [
+      [4, 1, BT.uint8],
+      [9, 2, BT.uint16],
+    ]).data(5, [perf.aerobicTrainingEffect * 10, perf.recoveryTimeMin]);
+  }
   b.define(4, 34, [
     [253, 4, BT.uint32],
     [1, 2, BT.uint16],
