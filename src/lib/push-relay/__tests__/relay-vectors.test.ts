@@ -44,6 +44,9 @@ import {
 } from "@/lib/push-relay/hpke";
 import {
   activityText,
+  laConsentText,
+  laStartText,
+  laWithdrawText,
   bindText,
   ed25519PublicOf,
   registerText,
@@ -54,6 +57,8 @@ import {
 } from "@/lib/push-relay/statements";
 import { openEnvelope, OpenError } from "./envelope-open";
 import { buildPlaintext, padPlaintext } from "@/lib/push-relay/plaintext";
+import { alertMessage } from "@/lib/push-relay/apns-channel";
+import { wakeMessage } from "@/lib/push-relay/wakes";
 import {
   intakeRecordedMessage,
   intakeSyncMessage,
@@ -61,7 +66,7 @@ import {
 
 const FIXTURE = path.join(__dirname, "fixtures", "relay-vectors-v1.json");
 const PINNED_SHA256 =
-  "f8fc19fc71a21c41dbe96bf70f3d7548ba86f46f8eacbd1e4b04234a39b40335";
+  "eea37337e2db06cc668493dfee44610ed43f97b53fbf71f16f4c4b4a10ccd618";
 
 const raw = readFileSync(FIXTURE);
 const vectors = JSON.parse(raw.toString("utf8"));
@@ -151,6 +156,42 @@ describe("relay vectors v1", () => {
       expect(sealed.toString("base64url")).toBe(v.envelope);
     });
   }
+
+  it("builds the wake and security plaintexts the way the vectors record them", () => {
+    const pick = (name: string) =>
+      vectors.envelopes.find((e: { name: string }) => e.name === name);
+    const data = pick("silentDataChanged");
+    const catchUp = pick("silentHealthKitCatchUp");
+    const security = pick("alertSecurity");
+    const cases = [
+      [wakeMessage("DATA_CHANGED", data.plaintext.d), data],
+      [wakeMessage("HEALTHKIT_CATCH_UP", catchUp.plaintext.d), catchUp],
+      [
+        alertMessage({
+          eventType: "SECURITY_ALERT",
+          title: security.plaintext.n.title,
+          message: security.plaintext.n.body,
+          metadata: { securityKind: security.plaintext.d.securityKind },
+          urgent: true,
+        }),
+        security,
+      ],
+    ] as const;
+    for (const [message, v] of cases) {
+      const built = buildPlaintext({
+        pushClass: message.pushClass,
+        type: message.type,
+        lifetimeSeconds: message.lifetimeSeconds,
+        nowMs: v.plaintext.iat * 1000,
+        data: message.data,
+        text: message.text,
+        ui: message.ui,
+      });
+      expect(JSON.stringify({ ...built, id: v.plaintext.id }), v.name).toBe(
+        JSON.stringify(v.plaintext),
+      );
+    }
+  });
 
   it("builds the alert and silent plaintexts the way the vectors record them", () => {
     const alert = vectors.envelopes.find(
@@ -337,6 +378,26 @@ describe("relay vectors v1", () => {
         instanceId: keys.instanceId,
         tokenTag: tokenTagHex(keys.apnsToken) as string,
         laTokenTag: tokenTagHex(keys.laToken) as string,
+        iat: now,
+      }),
+      laStart: laStartText({
+        host,
+        instanceId: keys.instanceId,
+        tokenTag: tokenTagHex(keys.apnsToken) as string,
+        startTokenTag: tokenTagHex(keys.laToken) as string,
+        iat: now,
+      }),
+      laConsent: laConsentText({
+        host,
+        instanceId: keys.instanceId,
+        tokenTag: tokenTagHex(keys.apnsToken) as string,
+        textVersion: "2026-11-21",
+        iat: now,
+      }),
+      laWithdraw: laWithdrawText({
+        host,
+        instanceId: keys.instanceId,
+        tokenTag: tokenTagHex(keys.apnsToken) as string,
         iat: now,
       }),
     };

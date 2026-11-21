@@ -185,3 +185,58 @@ export function activityText(input: {
     input.iat,
   );
 }
+
+/**
+ * `hl-la-start-v1`: the device allows its instance to start Live Activities
+ * through the relay with one push-to-start token.
+ */
+export function laStartText(input: {
+  host: string;
+  instanceId: string;
+  tokenTag: string;
+  startTokenTag: string;
+  iat: number;
+}): string {
+  return join(
+    "hl-la-start-v1",
+    input.host,
+    input.instanceId,
+    input.tokenTag,
+    input.startTokenTag,
+    input.iat,
+  );
+}
+
+/** `hl-la-consent-v1`: the device's consent to Live Activity start and update. */
+export function laConsentText(input: {
+  host: string;
+  instanceId: string;
+  tokenTag: string;
+  textVersion: string;
+  iat: number;
+}): string {
+  return join(
+    "hl-la-consent-v1",
+    input.host,
+    input.instanceId,
+    input.tokenTag,
+    input.textVersion,
+    input.iat,
+  );
+}
+
+/** `hl-la-withdraw-v1`: the device withdraws that consent. */
+export function laWithdrawText(input: {
+  host: string;
+  instanceId: string;
+  tokenTag: string;
+  iat: number;
+}): string {
+  return join(
+    "hl-la-withdraw-v1",
+    input.host,
+    input.instanceId,
+    input.tokenTag,
+    input.iat,
+  );
+}
