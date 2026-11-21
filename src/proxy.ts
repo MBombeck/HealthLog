@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { shouldRunWeb } from "@/lib/process-type";
+import { isScannerProbe, scannerProbeResponse } from "@/lib/http/scanner-probe";
 import { readSessionCookie } from "@/lib/auth/session-cookie";
 import {
   findRetiredRoute,
@@ -363,18 +364,6 @@ function logNotificationActionRefusal(
   );
 }
 
-/**
- * Paths only a scanner asks for: dotfiles a deploy must never serve, and the
- * script extensions and CMS paths of software this app is not. The
- * `.well-known` directory is not a dotfile path here; it is public by design.
- */
-const SCANNER_PROBE =
-  /^\/(?:\.(?!well-known(?:\/|$))[^/]*|wp-(?:admin|content|includes|login)\b|xmlrpc\b|cgi-bin\b|phpmyadmin\b)|\.(?:php\d?|aspx?|jsp|cgi|env|ini|bak|sql)$/i;
-
-export function isScannerProbe(pathname: string): boolean {
-  return SCANNER_PROBE.test(pathname);
-}
-
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -395,13 +384,9 @@ export function proxy(request: NextRequest) {
     );
   }
 
-  // A Server Action call. HealthLog defines no Server Actions (no module
-  // carries `"use server"`, which `no-server-actions-guard.test.ts` holds), so
-  // no bundle of this app, old or new, ever sends `Next-Action`: the requests
-  // that do are scanners probing the Server Action surface, nightly and in
-  // bursts. Left to Next, each one printed "Failed to find Server Action" at
-  // error level, unstructured, an error with no user behind it. Refused here
-  // instead, with one countable `warn` line: a refusal by design.
+  // A Server Action call. HealthLog defines none (`no-server-actions-guard`),
+  // so only scanners send `Next-Action`. Left to Next, each printed "Failed to
+  // find Server Action" at error level; refused here with one `warn` line.
   if (request.headers.has(SERVER_ACTION_HEADER)) {
     console.warn(
       JSON.stringify({
@@ -431,18 +416,8 @@ export function proxy(request: NextRequest) {
     );
   }
 
-  // A scanner probe (`/.env`, `/wp-login.php`, `/.git/config`): a path no
-  // version of this app ever served. Left to Next, each one rendered the full
-  // root layout into a 57 KB not-found page, and a scan is hundreds of them in
-  // a row inside the server's heap ceiling. Answered here with a few bytes.
-  if (isScannerProbe(pathname)) {
-    return applyBaselineSecurityHeaders(
-      new NextResponse("Not found", {
-        status: 404,
-        headers: { "Content-Type": "text/plain; charset=utf-8" },
-      }),
-    );
-  }
+  // Scanner probes get a few bytes, not a rendered not-found page.
+  if (isScannerProbe(pathname)) return scannerProbeResponse();
 
   // 301 redirects for renamed routes
   const redirect = LEGACY_REDIRECTS[pathname];

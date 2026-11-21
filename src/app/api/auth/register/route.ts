@@ -5,6 +5,7 @@ import {
   recordInviteConsumer,
 } from "@/lib/auth/invite-token";
 import { normaliseAccountEmail, registerSchema } from "@/lib/validations/auth";
+import { accountNameTaken } from "@/lib/auth/account-name-taken";
 import { hashPassword, checkPasswordStrength } from "@/lib/auth/password";
 import { createSession, getSession } from "@/lib/auth/session";
 import { recordSignInDevice } from "@/lib/auth/login-alert";
@@ -143,15 +144,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // unified the 409 into the success shape to close the oracle: the clock
   // would then say what the status code no longer does. Anyone doing that has
   // to move this block after the hash in the same change.
-  const [existingEmail, existingUsername] = await Promise.all([
-    prisma.user.findFirst({
-      where: { email: { equals: email, mode: "insensitive" } },
-    }),
-    prisma.user.findFirst({
-      where: { username: { equals: username, mode: "insensitive" } },
-    }),
-  ]);
-  if (existingEmail || existingUsername) {
+  if (await accountNameTaken(email, username)) {
     return apiError("Username or email already taken", 409, TAKEN);
   }
 

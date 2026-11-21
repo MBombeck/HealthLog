@@ -170,7 +170,8 @@ describe("PUT /api/admin/users/[id]", () => {
     const res = await PUT(
       jsonReq({
         username: "renamed",
-        email: "new@example.com",
+        // Stored lower-cased: addresses are unique regardless of case.
+        email: "New@Example.com",
         role: "ADMIN",
       }),
       params("u1"),
@@ -194,23 +195,17 @@ describe("PUT /api/admin/users/[id]", () => {
         details: expect.objectContaining({ targetUserId: "u1" }),
       }),
     );
-  });
 
-  it("stores a new e-mail lower-cased and answers 409 when another account holds it", async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValue({
-      id: "u1",
-      role: "USER",
-    } as never);
-    vi.mocked(prisma.user.update).mockRejectedValue(
+    // Another account holds the address (the case-blind key refuses it):
+    // a 409, not a 500.
+    vi.mocked(prisma.user.update).mockRejectedValueOnce(
       Object.assign(new Error("Unique constraint failed"), { code: "P2002" }),
     );
-    const res = await PUT(
+    const taken = await PUT(
       jsonReq({ email: "Taken@Example.com" }),
       params("u1"),
     );
-    expect(res.status).toBe(409);
-    const updateArgs = vi.mocked(prisma.user.update).mock.calls[0]?.[0];
-    expect(updateArgs?.data).toEqual({ email: "taken@example.com" });
+    expect(taken.status).toBe(409);
   });
 
   it("supports clearing email by passing null", async () => {

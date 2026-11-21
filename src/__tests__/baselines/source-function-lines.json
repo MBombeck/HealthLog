@@ -1,16 +1,15 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 328,
-  "total": 103561,
+  "count": 327,
+  "total": 103175,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
     "app/api/admin/notifications/reminder-check/route.ts :: apiHandler(arg)": 206,
     "app/api/admin/settings/route.ts :: apiHandler(arg) #2": 211,
     "app/api/auth/login/route.ts :: apiHandler(arg)": 260,
-    "app/api/auth/me/route.ts :: apiHandler(arg)": 378,
     "app/api/auth/oidc/callback/route.ts :: apiHandler(arg)": 251,
-    "app/api/auth/register/route.ts :: apiHandler(arg)": 266,
+    "app/api/auth/register/route.ts :: apiHandler(arg)": 262,
     "app/api/coach/about-me/route.ts :: apiHandler(arg) #2": 309,
     "app/api/cycle/day-logs/bulk/route.ts :: postBulk": 213,
     "app/api/cycle/insights/route.ts :: apiHandler(arg)": 226,
@@ -35,7 +34,7 @@
     "app/api/mood-entries/route.ts :: postMoodEntry": 324,
     "app/api/nutrients/batch/route.ts :: postBatch": 209,
     "app/api/onboarding/complete/route.ts :: completeNeedsFlow": 218,
-    "app/api/record-settings/[family]/route.ts :: apiHandler(arg) #2": 269,
+    "app/api/record-settings/[family]/route.ts :: apiHandler(arg) #2": 268,
     "app/api/user/ai-provider/route.ts :: apiHandler(arg) #2": 217,
     "app/api/withings/callback/route.ts :: apiHandler(arg)": 247,
     "app/auth/login/page.tsx :: LoginPage": 559,
@@ -246,7 +245,7 @@
     "lib/analytics/score/reader.ts :: computeUserHealthScore": 324,
     "lib/analytics/summaries-slice.ts :: computeFromRollups": 373,
     "lib/api-handler.ts :: apiHandler": 204,
-    "lib/auth/profile-update.ts :: applyProfileUpdate": 353,
+    "lib/auth/profile-update.ts :: applyProfileUpdate": 352,
     "lib/cache/server-cache.ts :: createServerCaches": 230,
     "lib/cycle/backup.ts :: restoreCycleData": 224,
     "lib/cycle/day-log-write.ts :: writeDayLog": 311,
@@ -329,7 +328,7 @@
     "lib/withings/sync-activity.ts :: syncUserActivity": 377,
     "lib/withings/sync-ecg.ts :: syncUserEcg": 202,
     "lib/withings/sync-sleep.ts :: syncUserSleep": 375,
-    "lib/withings/sync.ts :: syncUserMeasurements": 337,
-    "proxy.ts :: proxy": 467
+    "lib/withings/sync.ts :: syncUserMeasurements": 336,
+    "proxy.ts :: proxy": 466
   }
 }

@@ -30,7 +30,6 @@ import { auditLog } from "@/lib/auth/audit";
 import { recordSignInDevice } from "@/lib/auth/login-alert";
 import { checkPasswordStrength, hashPassword } from "@/lib/auth/password";
 import { createSession, getSession } from "@/lib/auth/session";
-import { prisma } from "@/lib/db";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { annotate } from "@/lib/logging/context";
@@ -43,6 +42,7 @@ import {
 import { notifyGuardiansOfHandover } from "@/lib/managed-profiles/handover-notify";
 import { checkPasswordBreachIfEnabled } from "@/lib/password-breach-check";
 import { normaliseAccountEmail } from "@/lib/validations/auth";
+import { accountNameTaken } from "@/lib/auth/account-name-taken";
 import { claimSchema } from "@/lib/validations/managed-profile-handover";
 
 const taken = () =>
@@ -74,17 +74,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // registration route orders it (its comment carries the timing argument).
   // The profile's own row never collides here: its username is the generated
   // `managed-…` one, which no chosen name may start with, and it has no email.
-  const [existingEmail, existingUsername] = await Promise.all([
-    prisma.user.findFirst({
-      where: { email: { equals: email, mode: "insensitive" } },
-      select: { id: true },
-    }),
-    prisma.user.findFirst({
-      where: { username: { equals: username, mode: "insensitive" } },
-      select: { id: true },
-    }),
-  ]);
-  if (existingEmail || existingUsername) return taken();
+  if (await accountNameTaken(email, username)) return taken();
 
   const locale = await resolveServerLocale({ request });
   const strength = checkPasswordStrength(password, [username, email], locale);

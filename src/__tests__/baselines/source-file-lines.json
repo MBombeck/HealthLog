@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 78,
-  "total": 85219,
+  "total": 85212,
   "entries": {
     "app/medications/page-client.tsx": 842,
     "components/cycle/log-day-sheet.tsx": 1646,
@@ -79,7 +79,7 @@
     "lib/telegram-webhook-handlers.ts": 1319,
     "lib/validations/inbound-documents.ts": 999,
     "lib/withings/sync-sleep.ts": 879,
-    "lib/withings/sync.ts": 933,
+    "lib/withings/sync.ts": 926,
     "proxy.ts": 846
   }
 }

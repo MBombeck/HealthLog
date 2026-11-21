@@ -196,7 +196,10 @@ function walk(dir: string, out: string[] = []): string[] {
 function payloadFields(source: string): string[] {
   const start = source.indexOf("const payload = {");
   expect(start).toBeGreaterThan(-1);
-  const body = source.slice(start);
+  // The literal only: the builder's file holds other objects after it.
+  const end = source.indexOf("\n  };", start);
+  expect(end).toBeGreaterThan(start);
+  const body = source.slice(start, end);
   const fields: string[] = [];
   for (const m of body.matchAll(/^ {4}([a-zA-Z_$][\w$]*)\s*[:,]/gm)) {
     fields.push(m[1]);

@@ -163,6 +163,7 @@ export async function handlePushAttemptCleanup(
       const deletedAttempts = await purgeInBatches({
         findIds: async (take) =>
           (
+            // account-deletion: retention, as above.
             await p.pushAttempt.findMany({
               where: { createdAt: { lt: cutoff } },
               select: { id: true },

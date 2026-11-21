@@ -180,7 +180,7 @@ describe("POST /api/auth/register — first-admin atomicity (M1)", () => {
   };
 
   it("stores the e-mail lower-cased and looks both names up regardless of case", async () => {
-    vi.mocked(prisma.user.count).mockResolvedValue(1 as never);
+    vi.mocked(prisma.user.count).mockResolvedValue(1);
 
     const res = await postPathThrough({
       ...validBody,
@@ -198,9 +198,11 @@ describe("POST /api/auth/register — first-admin atomicity (M1)", () => {
       where: {
         email: { equals: "new.person@example.com", mode: "insensitive" },
       },
+      select: { id: true },
     });
     expect(vi.mocked(prisma.user.findFirst)).toHaveBeenCalledWith({
       where: { username: { equals: "NewUser", mode: "insensitive" } },
+      select: { id: true },
     });
   });
 

@@ -7,7 +7,8 @@ import { NextRequest } from "next/server";
 
 vi.mock("@/lib/process-type", () => ({ shouldRunWeb: () => true }));
 
-import { isScannerProbe, proxy } from "../proxy";
+import { isScannerProbe } from "@/lib/http/scanner-probe";
+import { proxy } from "../proxy";
 
 describe("scanner probes", () => {
   it.each([

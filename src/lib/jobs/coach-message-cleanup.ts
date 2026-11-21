@@ -48,6 +48,7 @@ export async function cleanupOldCoachMessages(
   const { deleted } = await purgeInBatches({
     findIds: async (take) =>
       (
+        // account-deletion: retention, as above.
         await prisma.coachMessage.findMany({
           where: { createdAt: { lt: cutoff } },
           select: { id: true },

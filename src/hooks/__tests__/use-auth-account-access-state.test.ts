@@ -22,7 +22,12 @@ import {
   __resetRecordFenceForTests,
   currentRecordFenceState,
 } from "@/lib/api/record-fence";
-import { adoptMePayload, fetchMe, NO_ACCOUNT_ACCESS } from "../use-auth";
+import {
+  adoptMePayload,
+  fetchMe,
+  NO_ACCOUNT_ACCESS,
+  type MePayload,
+} from "../use-auth";
 
 const response = {
   id: "delegate",
@@ -53,18 +58,21 @@ beforeEach(() => {
 
 describe("adoptMePayload on the server render", () => {
   it("resolves the same account without touching browser state", () => {
-    const published = {
-      ...response,
-      accountAccess: {
-        accounts: [canonicalEntry],
-        active: canonicalEntry,
-        recordKind: "shared",
-        canSwitch: true,
-      },
-      recordSession: { epoch: 3, scope: "record-a" },
-    };
+    // Through JSON, as the layout hands it over.
+    const published: MePayload = JSON.parse(
+      JSON.stringify({
+        ...response,
+        accountAccess: {
+          accounts: [canonicalEntry],
+          active: canonicalEntry,
+          recordKind: "shared",
+          canSwitch: true,
+        },
+        recordSession: { epoch: 3, scope: "record-a" },
+      }),
+    );
 
-    const user = adoptMePayload(published as never, { apply: false });
+    const user = adoptMePayload(published, { apply: false });
 
     // The value the shell renders from is the browser's.
     expect(user.accountAccessStatus).toBe("valid");
@@ -75,7 +83,7 @@ describe("adoptMePayload on the server render", () => {
     expect(currentRecordFenceState()).toBeNull();
 
     // Applied, the same payload sets both.
-    adoptMePayload(published as never);
+    adoptMePayload(published);
     expect(getRecordScope()).toBe("record-a");
     expect(currentRecordFenceState()).toEqual({ epoch: 3, scope: "record-a" });
   });

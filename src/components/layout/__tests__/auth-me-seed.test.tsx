@@ -19,13 +19,21 @@ vi.mock("@/hooks/use-auth", () => ({
   },
 }));
 
+import type { MePayload } from "@/hooks/use-auth";
 import { queryKeys } from "@/lib/query-keys";
 import { AuthMeSeed } from "../auth-me-seed";
 
-function seed(client: QueryClient, payload: unknown) {
+const PAYLOAD: MePayload = {
+  id: "u1",
+  username: "u1",
+  role: "USER",
+  timezone: "Europe/Berlin",
+};
+
+function seed(client: QueryClient, payload: MePayload | null) {
   renderToStaticMarkup(
     <QueryClientProvider client={client}>
-      <AuthMeSeed payload={payload as never} />
+      <AuthMeSeed payload={payload} />
     </QueryClientProvider>,
   );
 }
@@ -33,9 +41,9 @@ function seed(client: QueryClient, payload: unknown) {
 describe("AuthMeSeed", () => {
   it("seeds the account on the server, stale and without the browser effects", () => {
     const client = new QueryClient();
-    seed(client, { id: "u1" });
+    seed(client, PAYLOAD);
     expect(client.getQueryData(queryKeys.authMe())).toEqual({
-      id: "u1",
+      ...PAYLOAD,
       adopted: true,
     });
     expect(adopt).toHaveBeenCalledWith({ apply: false });
@@ -46,7 +54,7 @@ describe("AuthMeSeed", () => {
     const client = new QueryClient();
     client.setQueryData(queryKeys.authMe(), { id: "fresh" });
     adopt.mockClear();
-    seed(client, { id: "u1" });
+    seed(client, PAYLOAD);
     expect(client.getQueryData(queryKeys.authMe())).toEqual({ id: "fresh" });
     expect(adopt).not.toHaveBeenCalled();
   });
