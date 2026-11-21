@@ -909,12 +909,14 @@ describe("GET /api/dashboard/summary", () => {
     ) => {
       const a = args as {
         where: { OR?: unknown };
-        select?: { medicationId?: boolean };
+        select?: { medicationId?: boolean; takenAt?: boolean };
       };
       if (a.where.OR) return Promise.resolve([]) as never;
       // The existence probe asks for `(medicationId, scheduledFor)`;
-      // the tally read asks for `(takenAt, skipped, scheduledFor)`.
-      if (a.select?.medicationId) return Promise.resolve([]) as never;
+      // the tally read also asks for `(takenAt, skipped)`.
+      if (a.select?.medicationId && !a.select.takenAt) {
+        return Promise.resolve([]) as never;
+      }
       return Promise.resolve([
         {
           takenAt: null,
@@ -1092,7 +1094,12 @@ describe("GET /api/dashboard/summary", () => {
       const a = args as { where: { OR?: unknown } };
       if (!a.where.OR) {
         return Promise.resolve([
-          { takenAt: new Date(), skipped: false, scheduledFor: new Date() },
+          // A take on its slot, a minute after the slot instant.
+          {
+            takenAt: new Date(),
+            skipped: false,
+            scheduledFor: new Date(Date.now() - 60_000),
+          },
           { takenAt: null, skipped: false, scheduledFor: new Date() },
         ]) as never;
       }

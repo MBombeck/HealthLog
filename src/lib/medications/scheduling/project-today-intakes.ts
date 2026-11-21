@@ -43,6 +43,11 @@ import {
 export interface ProjectTodayIntakesResult {
   projected: number;
   backfilled: number;
+  /**
+   * Today's scheduled slots as `medicationId|ISO instant`, so a counting
+   * reader can tell a slot row from an ad-hoc one.
+   */
+  slotKeys: Set<string>;
 }
 
 export async function projectTodayIntakesAndRecompute(input: {
@@ -171,8 +176,11 @@ export async function projectTodayIntakesAndRecompute(input: {
     }
   }
 
+  const slotKeys = new Set(
+    projected.map((p) => `${p.medicationId}|${p.scheduledFor.toISOString()}`),
+  );
   if (projected.length === 0) {
-    return { projected: 0, backfilled: 0 };
+    return { projected: 0, backfilled: 0, slotKeys };
   }
 
   const existing = await prisma.medicationIntakeEvent.findMany({
@@ -198,7 +206,7 @@ export async function projectTodayIntakesAndRecompute(input: {
   );
 
   if (missing.length === 0) {
-    return { projected: projected.length, backfilled: 0 };
+    return { projected: projected.length, backfilled: 0, slotKeys };
   }
 
   await prisma.medicationIntakeEvent.createMany({
@@ -225,5 +233,5 @@ export async function projectTodayIntakesAndRecompute(input: {
     skipDuplicates: true,
   });
 
-  return { projected: projected.length, backfilled: missing.length };
+  return { projected: projected.length, backfilled: missing.length, slotKeys };
 }

@@ -136,7 +136,7 @@ beforeEach(() => {
   capturedTodayWhere = null;
   projectTodayIntakesAndRecompute.mockImplementation(async () => {
     callOrder.push("project");
-    return { projected: 0, backfilled: 0 };
+    return { projected: 0, backfilled: 0, slotKeys: new Set<string>() };
   });
 });
 
@@ -210,7 +210,7 @@ describe("buildMedsTodayBlock — the 25-hour day", () => {
 });
 
 describe("buildMedsTodayBlock — tally", () => {
-  it("counts scheduled / taken / skipped with the summary-tile semantics", async () => {
+  it("counts scheduled / taken / skipped, leaving an ad-hoc take out", async () => {
     const slot = (iso: string) => new Date(iso);
     todayRows = [
       {
@@ -218,6 +218,7 @@ describe("buildMedsTodayBlock — tally", () => {
         skipped: false,
         scheduledFor: slot("2026-06-10T06:00:00.000Z"),
       },
+      // an ad-hoc take (stored on its own instant): not a scheduled dose
       {
         takenAt: new Date("2026-06-10T08:00:00.000Z"),
         skipped: false,
@@ -239,14 +240,13 @@ describe("buildMedsTodayBlock — tally", () => {
 
     const block = await buildMedsTodayBlock(fakePrisma, "user-1", BERLIN, NOW);
 
-    expect(block.scheduledToday).toBe(4);
-    expect(block.takenToday).toBe(2);
+    expect(block.scheduledToday).toBe(3);
+    expect(block.takenToday).toBe(1);
     expect(block.skippedToday).toBe(1);
     // The slot instants the Today fact checks against its own clock (#173).
     expect(block.scheduledTodayAt).toEqual([
       "2026-06-10T04:00:00.000Z",
       "2026-06-10T06:00:00.000Z",
-      "2026-06-10T08:00:00.000Z",
       "2026-06-10T12:00:00.000Z",
     ]);
   });
