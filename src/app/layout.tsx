@@ -7,6 +7,10 @@ import "./fonts/inter";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { AuthShell } from "@/components/layout/auth-shell";
+import { AuthMeSeed } from "@/components/layout/auth-me-seed";
+import { getSession } from "@/lib/auth/session";
+import { buildAuthMePayload } from "@/lib/auth/me-payload";
+import type { MePayload } from "@/hooks/use-auth";
 import { MonitoringBootstrap } from "@/components/monitoring/bootstrap";
 import { getPublicMonitoringSettings } from "@/lib/monitoring-settings";
 import { WebVitalsReporter } from "@/components/monitoring/web-vitals-reporter";
@@ -89,9 +93,10 @@ export default async function RootLayout({
 
   // The monitoring switches ride the document render instead of a request
   // from every page load; the key-mismatch page reads no data.
-  const [initialLocale, monitoring] = await Promise.all([
+  const [initialLocale, monitoring, me] = await Promise.all([
     resolveInitialLocale(),
     isKeyMismatch() ? null : getPublicMonitoringSettings(),
+    isKeyMismatch() ? null : serverAccount(),
   ]);
 
   return (
@@ -159,6 +164,7 @@ export default async function RootLayout({
               block mutations. Resolve it here (server component) and
               thread the boolean into the client shell so the demo
               banner can render without a client-side detection path. */}
+            <AuthMeSeed payload={me} />
             <AuthShell demoMode={process.env.DEMO_MODE === "true"}>
               {children}
             </AuthShell>
@@ -167,4 +173,24 @@ export default async function RootLayout({
       </body>
     </html>
   );
+}
+
+/**
+ * The signed-in account's `/api/auth/me` payload, built by the route's own
+ * builder, in its wire shape (JSON semantics: dates as ISO strings), or null
+ * when there is no session or it cannot be built. An accelerator only: on
+ * null the shell fetches the payload itself, exactly as before.
+ */
+async function serverAccount(): Promise<MePayload | null> {
+  try {
+    const session = await getSession();
+    if (!session) return null;
+    const payload = await buildAuthMePayload({
+      ...session,
+      authMethod: "cookie",
+    });
+    return JSON.parse(JSON.stringify(payload)) as MePayload;
+  } catch {
+    return null;
+  }
 }
