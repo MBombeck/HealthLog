@@ -1,12 +1,10 @@
 /**
  * Legacy locale-aware date/time helpers, kept only for their remaining
  * importers under `src/components/medications/**` (`formatDateTime`,
- * `formatTime`) and `src/components/mood/mood-list.tsx` (`formatDateTime`).
- * Those surfaces are being reworked separately; once they move to
- * `useFormatters()` from `@/lib/i18n/context`, delete this module. Every
- * other caller already formats through `useFormatters()` (client) or
- * `makeFormatters(locale)` from `@/lib/format-locale` (server). Do not add
- * new importers.
+ * `formatTime`). Once those move to `useFormatters()` from
+ * `@/lib/i18n/context`, delete this module. Every other caller already
+ * formats through `useFormatters()` (client) or `makeFormatters(locale)` from
+ * `@/lib/format-locale` (server). Do not add new importers.
  *
  * The helpers guess the locale from the `healthlog-locale` cookie, then
  * localStorage, falling back to `en`; on the server `document` is undefined,
