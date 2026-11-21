@@ -149,17 +149,14 @@ export function metricFamily(key: string): string {
   if (
     key === HYDRATION_CHANNEL_KEY ||
     key === CAFFEINE_CHANNEL_KEY ||
+    key === ENERGY_BALANCE_CHANNEL_KEY ||
     key.startsWith(NUTRIENT_CHANNEL_PREFIX)
   )
     return "NUTRIENTS";
   // v1.21.0 (FDREXTEND) — medication compliance and symptom severity each form
-  // their OWN single-channel family, so the loop's same-family guard collapses
-  // only the self-lag (compliance→compliance, symptom→symptom). The returned
-  // key equals the channel key for both, so neither shares a family with any
-  // vital / sleep / mood channel — they remain free to pair cross-domain
-  // (the whole point: adherence↓ → next-day symptom↑, or compliance↓ → a vital
-  // drifting). No special-case branch is needed; the `return key` fall-through
-  // already isolates them. This comment documents the deliberate decision.
+  // their OWN single-channel family through this fall-through, so only the
+  // self-lag collapses and both stay free to pair cross-domain (adherence↓ →
+  // next-day symptom↑). Deliberate: no special-case branch is needed.
   return key;
 }
 
@@ -517,6 +514,8 @@ export const MOVEMENT_DISTANCE_CHANNEL_KEY = "MOVEMENT_DISTANCE";
 export const HYDRATION_CHANNEL_KEY = "HYDRATION";
 /** Daily caffeine intake (mg), from the nutrient log. Owned by `nutrients`. */
 export const CAFFEINE_CHANNEL_KEY = "CAFFEINE";
+/** Daily energy balance (kcal); a day missing an input is no point. `nutrients`. */
+export const ENERGY_BALANCE_CHANNEL_KEY = "ENERGY_BALANCE";
 /** One micronutrient's daily intake: `NUTRIENT:<catalog code>`. */
 export const NUTRIENT_CHANNEL_PREFIX = "NUTRIENT:";
 /**
@@ -557,6 +556,7 @@ export const INDOOR_CLIMATE_TARGETS: readonly string[] = ["SLEEP_DURATION"];
 export const EXTENDED_CHANNEL_KEYS: readonly string[] = [
   HYDRATION_CHANNEL_KEY,
   CAFFEINE_CHANNEL_KEY,
+  ENERGY_BALANCE_CHANNEL_KEY,
   ALCOHOL_CHANNEL_KEY,
   WORKOUT_MINUTES_CHANNEL_KEY,
   TRAINING_LOAD_CHANNEL_KEY,

@@ -2902,6 +2902,7 @@
         "HRV_RMSSD": "variabilidade da frequência cardíaca (RMSSD)",
         "HYDRATION": "ingestão de água",
         "CAFFEINE": "ingestão de cafeína",
+        "ENERGY_BALANCE": "balanço energético diário",
         "ALCOHOL": "consumo de álcool",
         "WORKOUT_MINUTES": "minutos de treino",
         "TRAINING_LOAD": "carga de treino",

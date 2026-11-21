@@ -2902,6 +2902,7 @@
         "HRV_RMSSD": "심박 변이도(RMSSD)",
         "HYDRATION": "수분 섭취량",
         "CAFFEINE": "카페인 섭취량",
+        "ENERGY_BALANCE": "일일 에너지 균형",
         "ALCOHOL": "음주",
         "WORKOUT_MINUTES": "운동 시간",
         "TRAINING_LOAD": "훈련 부하",

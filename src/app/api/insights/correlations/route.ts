@@ -238,6 +238,7 @@ async function buildCorrelationsResponse(
       custom_metric_days: diagnostics.customMetricDays,
       // v1.44 — reach of the extended families.
       nutrient_days: diagnostics.nutrientDays,
+      energy_balance_days: diagnostics.energyBalanceDays,
       alcohol_days: diagnostics.alcoholDays,
       training_days: diagnostics.trainingDays,
       indoor_nights: diagnostics.indoorNights,

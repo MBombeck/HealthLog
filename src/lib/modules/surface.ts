@@ -247,6 +247,7 @@ const STATIC_SURFACE_MODULE = {
   // ambient movement like steps and carry no owner.
   "correlation:HYDRATION": "nutrients",
   "correlation:CAFFEINE": "nutrients",
+  "correlation:ENERGY_BALANCE": "nutrients",
   "correlation:NUTRIENT": "nutrients",
   "correlation:ALCOHOL": "mood",
   "correlation:WORKOUT_MINUTES": "workouts",

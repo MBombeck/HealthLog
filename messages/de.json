@@ -2902,6 +2902,7 @@
         "HRV_RMSSD": "die Herzratenvariabilität (RMSSD)",
         "HYDRATION": "die Trinkmenge",
         "CAFFEINE": "die Koffeinmenge",
+        "ENERGY_BALANCE": "die tägliche Energiebilanz",
         "ALCOHOL": "der Alkoholkonsum",
         "WORKOUT_MINUTES": "die Workout-Dauer",
         "TRAINING_LOAD": "die Trainingslast",

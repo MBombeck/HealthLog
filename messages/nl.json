@@ -2902,6 +2902,7 @@
         "HRV_RMSSD": "hartslagvariabiliteit (RMSSD)",
         "HYDRATION": "waterinname",
         "CAFFEINE": "cafeïne-inname",
+        "ENERGY_BALANCE": "de dagelijkse energiebalans",
         "ALCOHOL": "alcoholgebruik",
         "WORKOUT_MINUTES": "trainingsminuten",
         "TRAINING_LOAD": "trainingsbelasting",

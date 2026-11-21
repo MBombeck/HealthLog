@@ -72,6 +72,11 @@ vi.mock("@/lib/insights/correlation-channel-series", () => ({
     },
   ]),
 }));
+vi.mock("@/lib/insights/energy-balance-channel", () => ({
+  fetchEnergyBalanceSeries: vi.fn(async () => [
+    { key: "ENERGY_BALANCE", role: "behaviour", points: pts },
+  ]),
+}));
 vi.mock("@/lib/rollups/measurement-read", () => ({
   loadUserSourcePriority: vi.fn(),
 }));
@@ -88,6 +93,7 @@ import {
   fetchNutrientSeries,
   fetchTrainingSeries,
 } from "@/lib/insights/correlation-channel-series";
+import { fetchEnergyBalanceSeries } from "@/lib/insights/energy-balance-channel";
 
 const OPTS = {
   tz: "UTC",
@@ -209,6 +215,7 @@ describe("assembleDiscoveryMatrix — the extended families (v1.44)", () => {
     "HYDRATION",
     "CAFFEINE",
     "NUTRIENT:zinc",
+    "ENERGY_BALANCE",
     "ALCOHOL",
     "WORKOUT_MINUTES",
     "TRAINING_LOAD",
@@ -243,6 +250,7 @@ describe("assembleDiscoveryMatrix — the extended families (v1.44)", () => {
       fetchAlcoholSeries,
       fetchTrainingSeries,
       fetchIndoorClimateSeries,
+      fetchEnergyBalanceSeries,
     ].map((fn) => vi.mocked(fn));
     for (const read of reads) read.mockClear();
     const { series } = await assembleDiscoveryMatrix("u1", {
@@ -260,6 +268,7 @@ describe("assembleDiscoveryMatrix — the extended families (v1.44)", () => {
       "HYDRATION",
       "CAFFEINE",
       "NUTRIENT:zinc",
+      "ENERGY_BALANCE",
       "ALCOHOL",
       "WORKOUT_MINUTES",
       "TRAINING_LOAD",
