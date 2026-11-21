@@ -144,10 +144,8 @@ export function MeasurementForm({
       ? "BLOOD_PRESSURE"
       : defaultType;
 
-  // v1.30.1 — an explicit deep-link default always wins; absent one,
-  // seed from the last type the user actually saved rather than always
-  // landing on BLOOD_PRESSURE. Lazy initializer so the localStorage read
-  // happens once, at mount, not on every render.
+  // A deep-link default wins, else the last type saved (not always blood
+  // pressure); lazy, so localStorage is read once, at mount.
   const [selectedType, setType] = useState(
     () =>
       normalizedDefault ||
@@ -371,6 +369,7 @@ export function MeasurementForm({
               void refetchInactiveDailyReads(queryClient);
             }
           : undefined,
+        edit: { kind: "measurement", ids: ids.slice(0, 1) }, // BP: systolic
       });
       if (goOn && nextType) {
         setType(nextType);

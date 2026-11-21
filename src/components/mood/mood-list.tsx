@@ -93,6 +93,7 @@ import {
   selectedCountOnPage,
 } from "@/components/data-list";
 import { useRovingRadioGroup } from "@/hooks/use-roving-radio-group";
+import { useEntryEditLink } from "@/components/forms/use-entry-edit-link";
 import { MoodTagPicker, type RatedFactor } from "./mood-tag-picker";
 import {
   EMPTY_LEVEL_A,
@@ -118,9 +119,7 @@ import {
   type DroppedLinkKeysWire,
 } from "@/lib/mood/dropped-link-keys";
 
-// Re-export the score map under the legacy local name to keep the
-// rest of this file unchanged. v1.4.27 B6 / BL-P6-11 — the single
-// source of truth now lives in `@/lib/mood/labels`.
+// The score map under its local name; `@/lib/mood/labels` owns it.
 const MOOD_SCORES = MOOD_SCORE_BY_ENUM as Record<string, number>;
 
 const MOOD_LEVELS_LIST = [
@@ -611,6 +610,13 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
     });
   }
 
+  // `?entry=<id>`: a save receipt's Edit.
+  useEntryEditLink(
+    "mood",
+    data?.entries,
+    canManageMind ? startEdit : undefined,
+  );
+
   if (!isAuthenticated) {
     return (
       <p className="text-muted-foreground text-sm">{t("mood.loginRequired")}</p>
@@ -809,15 +815,8 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
               </Table>
             </div>
 
-            {/* Mobile list — v1.4.15 phase-A3 fix #2: previously the row
-                rendered the score TWICE on mobile (the big number in the
-                left badge AND a duplicate in the title line: "2 (schlecht)").
-                Desktop's table version only ever showed one. The badge is
-                the visual anchor; next to it the user wants the textual
-                label, not a second copy of the digit. The
-                `data-testid="mood-row"` hook is what the Playwright Pixel-5
-                guard at `e2e/mood-card-mobile.spec.ts` queries to assert
-                "exactly one occurrence of the score per row". */}
+            {/* Mobile list: the score once per row, in the badge, the label
+                beside it (`e2e/mood-card-mobile.spec.ts` on `mood-row`). */}
             <div data-slot="mood-rows" className="space-y-2 md:hidden">
               {data.entries.map((entry) => {
                 const isSelected = selectedIds.has(entry.id);

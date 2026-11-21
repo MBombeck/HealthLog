@@ -185,7 +185,7 @@ const PINNED_AFFORDANCES: Record<
   "src/components/documents/document-card.tsx": { "text-success": 1 },
   // The one receipt the measurement, mood and symptom quick entries share:
   // what was saved, in words, with an Undo.
-  "src/components/forms/entry-saved-toast.ts": { "toast.success": 1 },
+  "src/components/forms/entry-saved-toast.tsx": { "toast.success": 1 },
   "src/components/documents/detail/use-document-detail-ai.ts": {
     "toast.success": 1,
   },

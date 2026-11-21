@@ -120,8 +120,7 @@ export function SymptomEntryForm({
 
   const list = definitions.data?.definitions ?? [];
   const limit = definitions.data?.limit ?? 0;
-  // Only the symptoms the person named hold a slot; a built-in one that Apple
-  // Health created does not.
+  // Only symptoms the person named hold a slot, not Apple Health's built-ins.
   const atLimit =
     limit > 0 && list.filter((d) => d.code === null).length >= limit;
   const labelById = new Map(list.map((d) => [d.id, d.label]));
@@ -201,6 +200,7 @@ export function SymptomEntryForm({
             void invalidateSymptomReads(queryClient);
           }
         : undefined,
+      edit: { kind: "symptom", ids: events.map((e) => e.id) },
     });
     resetForm();
     onSuccess?.();
