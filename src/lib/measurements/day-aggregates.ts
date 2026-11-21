@@ -19,6 +19,7 @@
  * before, so a caller that treated "the last 21 days" and "the 70 days before
  * that" differently keeps exactly the same per-row partition.
  */
+import { readingWallSql } from "@/lib/tz/reading-zone-sql";
 import type {
   MeasurementSource,
   MeasurementType,
@@ -129,7 +130,7 @@ export async function readDayAggregates(
   >`
     WITH src AS (
       SELECT
-        to_char((m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone}, 'YYYY-MM-DD') AS day,
+        to_char(${readingWallSql("m", timeZone)}, 'YYYY-MM-DD') AS day,
         ${segment} AS segment,
         m."value" AS value
       FROM measurements m
@@ -277,7 +278,7 @@ export async function readSourceDayAggregates(opts: {
     WITH src AS (
       SELECT
         m."type"::text AS type,
-        to_char((m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone}, 'YYYY-MM-DD') AS day,
+        to_char(${readingWallSql("m", timeZone)}, 'YYYY-MM-DD') AS day,
         m."source"::text AS source,
         m."device_type" AS device_type,
         m."value" AS value,

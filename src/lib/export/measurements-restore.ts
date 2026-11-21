@@ -10,6 +10,7 @@
  * the transaction, writes them a batch at a time (`restoreMeasurements`), so
  * the restore never holds more than one batch.
  */
+import { isStorableTimeZone } from "@/lib/tz/reading-zone";
 import type { Prisma } from "@/generated/prisma/client";
 import { TOMBSTONE_RETENTION_DAYS } from "@/lib/auth/native-client";
 import { encryptNote } from "@/lib/crypto/note-cipher";
@@ -207,6 +208,12 @@ function toRestoredMeasurementData(
     sleepStage: (measurement.sleepStage ?? null) as never,
     rhythmClassification: (measurement.rhythmClassification ?? null) as never,
     deviceType: measurement.deviceType ?? null,
+    // A zone the runtime cannot read is restored as the profile zone, as the
+    // batch route stores it.
+    timeZone:
+      measurement.timeZone && isStorableTimeZone(measurement.timeZone)
+        ? measurement.timeZone
+        : null,
     // The token link (#1272) survives only onto the account that still holds
     // the token: a backup restored elsewhere, or after the token was deleted,
     // would point at a row that is not there or not this account's.

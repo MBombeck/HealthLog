@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { readingWallSql } from "@/lib/tz/reading-zone-sql";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
 import { metricKeyForType } from "@/lib/measurements/cumulative-day-sum";
@@ -70,7 +71,8 @@ export async function dayGroupedListResponse(
     ${opts.from ? Prisma.sql`AND m."measured_at" >= ${opts.from}` : Prisma.empty}
     ${opts.to ? Prisma.sql`AND m."measured_at" <= ${opts.to}` : Prisma.empty}
   `;
-  const localDay = Prisma.sql`to_char((m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${tz}, 'YYYY-MM-DD')`;
+  // A reading's own zone decides its day when it carries one (iOS #181).
+  const localDay = Prisma.sql`to_char(${readingWallSql("m", tz)}, 'YYYY-MM-DD')`;
   // Direction comes from the Zod enum, never from raw input. The window
   // count runs before LIMIT, so every row of the page carries the
   // distinct-day total of the whole filtered set.

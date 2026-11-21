@@ -42,6 +42,7 @@ const MEASUREMENT_BACKUP_SELECT = {
   sleepStage: true,
   rhythmClassification: true,
   deviceType: true,
+  timeZone: true,
   ingestTokenId: true,
   syncVersion: true,
   deletedAt: true,
@@ -87,6 +88,7 @@ function serialiseMeasurement(
         sleepStage: measurement.sleepStage,
         rhythmClassification: measurement.rhythmClassification,
         deviceType: measurement.deviceType,
+        timeZone: measurement.timeZone,
         ingestTokenId: measurement.ingestTokenId,
         syncVersion: measurement.syncVersion,
         deletedAt: measurement.deletedAt?.toISOString() ?? null,
@@ -113,6 +115,9 @@ function serialiseMeasurement(
         sleepStage: measurement.sleepStage,
         rhythmClassification: measurement.rhythmClassification,
         deviceType: measurement.deviceType,
+        // The zone is part of what the reading says: without it a night
+        // slept abroad files under another day once it is imported.
+        timeZone: measurement.timeZone,
         deletedAt: measurement.deletedAt?.toISOString() ?? null,
       };
 }

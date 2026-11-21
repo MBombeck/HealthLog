@@ -140,6 +140,9 @@ export async function seedEveryTwoEndedModel(
       measuredAt: AT("2026-07-02T06:30:00.000Z"),
       source: "APPLE_HEALTH",
       externalId: "round-trip-deleted-sample",
+      // The zone the reading was taken in (iOS #181) rides the round
+      // trip like every other column of the reading.
+      timeZone: "America/New_York",
       syncVersion: 4,
       deletedAt: AT(TOMBSTONE_DELETED_AT),
     },

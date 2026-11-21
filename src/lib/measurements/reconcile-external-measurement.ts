@@ -444,6 +444,7 @@ const SET_INSERT_FIELDS = new Set<string>([
   "sleepStage",
   "rhythmClassification",
   "deviceType",
+  "timeZone",
   "notesEncrypted",
 ]);
 
@@ -484,6 +485,7 @@ async function insertFresh(
         externalSourceVersion: desired.externalSourceVersion ?? null,
         sleepStage: desired.sleepStage ?? null,
         deviceType: desired.deviceType ?? null,
+        timeZone: desired.timeZone ?? null,
         notesEncrypted: desired.notesEncrypted ?? null,
       })),
     );

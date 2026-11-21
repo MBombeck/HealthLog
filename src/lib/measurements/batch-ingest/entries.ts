@@ -29,6 +29,12 @@ export interface BatchIngestEntry {
   externalSourceVersion?: string;
   source?: "APPLE_HEALTH" | "MANUAL";
   deviceType?: DeviceType | null;
+  /**
+   * IANA zone the sample was taken in (HealthKit `HKMetadataKeyTimeZone`).
+   * Checked per entry; a name the server cannot read in SQL is stored as
+   * null (the profile zone), and the entry itself is still written.
+   */
+  timeZone?: string;
 }
 
 /** The parsed request: the entries and the client's declared wake reason. */

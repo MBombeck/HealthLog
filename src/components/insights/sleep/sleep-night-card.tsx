@@ -86,7 +86,7 @@ export function SleepNightCard({ enabled }: { enabled: boolean }) {
   const shownNight = data?.night ?? night ?? null;
 
   const session = data?.main ?? null;
-  const timeZone = profileZone;
+  const timeZone = session?.timeZone ?? profileZone;
   const axisFormat = useMemo(
     () => makeFormatters(locale, timeZone, timeFormat, dateFormat),
     [locale, timeZone, timeFormat, dateFormat],

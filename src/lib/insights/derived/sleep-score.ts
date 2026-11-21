@@ -447,7 +447,7 @@ export function reconstructNights(
     // and the list show it without a main night.
     const main = n.mainSession;
     const midpoint = main
-      ? asleepMidpointMinutes(main.end, main.asleepMinutes, tz)
+      ? asleepMidpointMinutes(main.end, main.asleepMinutes, main.timeZone)
       : null;
     return {
       night: n.night,

@@ -28,6 +28,8 @@ export interface SleepNightSegment {
 export interface SleepNightSession {
   /** `YYYY-MM-DD` wake-day key. */
   night: string;
+  /** The night's own zone when it is not the profile zone. */
+  timeZone?: string | null;
   source: string | null;
   start: string;
   end: string;

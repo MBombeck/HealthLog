@@ -139,6 +139,11 @@ const batchEntrySchema = z.object({
   // treats null as `unknown` and only uses it as a tiebreaker when a
   // ranked device-type coexists in the same daily bucket.
   deviceType: deviceTypeEnum.nullable().optional(),
+  // iOS #181 — the IANA zone the sample was taken in, from HealthKit's
+  // `HKMetadataKeyTimeZone`. Optional; absent means the profile zone. A name
+  // the server cannot read is stored as null rather than refusing the entry,
+  // so the shape is only bounded here and checked per entry.
+  timeZone: z.string().min(1).max(64).optional(),
 });
 
 // v1.32.8 (iOS #66) — optional per-REQUEST diagnostic tag naming what woke the

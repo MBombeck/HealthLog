@@ -91,6 +91,7 @@ function desiredFor(userId: string, p: PreparedEntry) {
     rhythmClassification: p.row
       .rhythmClassification as Prisma.MeasurementUncheckedCreateInput["rhythmClassification"],
     deviceType: p.row.deviceType as string | null,
+    timeZone: p.row.timeZone as string | null,
     aggregationProvenance: statsRow ? ("HEALTHKIT_STATISTICS" as const) : null,
     // Only a bridge row names its token (#1272); a phone row leaves the
     // column as it is.
