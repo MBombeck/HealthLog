@@ -2690,8 +2690,11 @@
         "takenLate": "Принято с опозданием",
         "skipped": "Пропущено",
         "missed": "Не принято",
-        "missedStillCounts": "Если принять сейчас, доза засчитается как принятая с опозданием."
-      }
+        "missedStillCounts": "Если принять сейчас, доза засчитается как принятая с опозданием.",
+        "snoozedUntil": "Напоминание отложено до {time}"
+      },
+      "snoozedToast": "{name}: напомним в {time}",
+      "snoozeFailed": "Не удалось отложить {name}. Попробуйте ещё раз"
     }
   },
   "charts": {
@@ -5788,6 +5791,13 @@
             "description": "Напоминания о менструации и фертильном окне включаются по каналам в матрице уведомлений.",
             "link": "Открыть матрицу уведомлений"
           }
+        },
+        "snooze": {
+          "title": "Напомнить позже",
+          "description": "На сколько откладывается напоминание о дозе: на карточке лекарства, в Telegram и в приложении.",
+          "label": "Отложить на",
+          "option": "{minutes} мин",
+          "saveError": "Не удалось сохранить. Попробуйте ещё раз"
         }
       },
       "layout": {
@@ -9831,29 +9841,29 @@
     "askMedicationName": "Укажите лекарство, например <b>taken Ramipril</b>.",
     "medicationNotFoundExact": "Лекарство не найдено. Отправьте название точно так, как в HealthLog.",
     "helpHeader": "<b>Доступные команды:</b>",
-    "helpBody": "/help: показать эту справку\n/add: записать приём\n/start: запустить бота\n\n<b>Текстовые команды:</b>\ntaken &lt;name&gt;: подтвердить приём\n\n<b>Кнопки в напоминаниях:</b>\n• Taken: подтвердить приём\n• 🕐 1h / 🕐 3h: отложить напоминание\n• ⏭ Skip: пропустить приём\n• ✓ Confirm: подтвердить пропущенный приём",
+    "helpBody": "/help: показать эту справку\n/add: записать приём\n/start: запустить бота\n\n<b>Текстовые команды:</b>\ntaken &lt;name&gt;: подтвердить приём\n\n<b>Кнопки в напоминаниях:</b>\n• ✅ Принять: отметить приём\n• 🕐 Напомнить позже: отложить напоминание на время из настроек\n• ⏭ Пропустить: пропустить приём\n• Оставить как непринятое: оставить непринятую дозу непринятой",
     "measureValuePrompt": "Ответьте значением, чтобы записать его (необязательно).",
     "buttonMeasureValue": "Значение…",
     "measureValueSaved": "Измерение сохранено.",
     "measureValueInvalid": "Ответьте числом, чтобы записать измерение.",
     "measureValueOutOfRange": "Это значение вне правдоподобного диапазона.",
-    "measureValueExpired": "Срок этого запроса истёк."
+    "measureValueExpired": "Срок этого запроса истёк.",
+    "snoozeMinutes": "{minutes} мин"
   },
   "medicationReminders": {
-    "phaseGreenTitle": "🟢 Напоминание: {medName}",
-    "phaseGreenMessage": "🟢 Напоминание:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nОкно закроется через {minutes} мин.",
-    "phaseYellowTitle": "🟡 Скоро срок: {medName}",
-    "phaseYellowMessage": "🟡 Скоро срок:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nОсталось {minutes} мин.",
+    "phaseGreenTitle": "🟢 Пора принять: {medName}",
+    "phaseGreenMessage": "🟢 Пора принять:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nОкно закроется через {minutes} мин.",
+    "phaseYellowTitle": "🟡 Ещё пора принять: {medName}",
+    "phaseYellowMessage": "🟡 Ещё пора принять:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nДо конца окна {minutes} мин.",
     "phaseOrangeTitle": "🟠 Просрочено: {medName}",
     "phaseOrangeMessage": "🟠 Просрочено:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nПросрочено на {minutes} мин.",
     "phaseRedTitle": "🔴 Не принято: {medName}",
-    "phaseRedMessage": "🔴 Ещё не принято:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nСчитается пропущенным, пока ничего не записано. Если принять сейчас, это всё равно засчитается, как поздняя доза.",
-    "buttonTaken": "Принято",
-    "buttonConfirm": "Оставить пропущенным",
-    "buttonTakenLate": "✅ Принято (поздно)",
-    "buttonSnoozeOneHour": "🕐 1 ч",
-    "buttonSnoozeThreeHours": "🕐 3 ч",
-    "buttonSkip": "⏭ Пропустить"
+    "phaseRedMessage": "🔴 Не принято:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nЕсли принять сейчас, доза засчитается как принятая с опозданием.",
+    "buttonTaken": "✅ Принять",
+    "buttonConfirm": "Оставить как непринятое",
+    "buttonTakenLate": "✅ Принять (с опозданием)",
+    "buttonSkip": "⏭ Пропустить",
+    "buttonSnooze": "🕐 Напомнить позже ({minutes} мин)"
   },
   "lowStockReminders": {
     "title": "Мало запаса: {medName}",

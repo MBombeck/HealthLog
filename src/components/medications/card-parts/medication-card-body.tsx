@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode } from "react";
+import { type ComponentProps, type ReactNode } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -173,6 +173,8 @@ export interface MedicationCardBodyProps {
   intakeLoading: string | null;
   /** Record the displayed dose (the card binds the slot instant). */
   onRecordIntake: (skipped: boolean) => void;
+  /** The card's "Remind me later" and snoozed state (`useDoseSnooze`). */
+  snooze?: ComponentProps<typeof MedicationIntakeActions>["snooze"];
 
   /** GLP-1 variant mounts its post-dose injection-site dialog here. */
   children?: ReactNode;
@@ -212,6 +214,7 @@ export function MedicationCardBody({
   lowStockRunwayDays = null,
   intakeLoading,
   onRecordIntake,
+  snooze = null,
   children,
   highlighted = false,
 }: MedicationCardBodyProps) {
@@ -387,6 +390,7 @@ export function MedicationCardBody({
             <MedicationIntakeActions
               intakeLoading={intakeLoading}
               onRecordIntake={onRecordIntake}
+              snooze={snooze}
             />
           </div>
         )}

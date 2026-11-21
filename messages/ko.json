@@ -2690,8 +2690,11 @@
         "takenLate": "늦게 복용함",
         "skipped": "건너뜀",
         "missed": "놓침",
-        "missedStillCounts": "지금 복용해도 늦게 복용한 것으로 기록돼요."
-      }
+        "missedStillCounts": "지금 복용해도 늦게 복용한 것으로 기록돼요.",
+        "snoozedUntil": "{time}까지 알림 미룸"
+      },
+      "snoozedToast": "{name}: {time}에 다시 알려 드려요",
+      "snoozeFailed": "{name} 알림을 미루지 못했어요. 다시 시도해 주세요"
     }
   },
   "charts": {
@@ -5788,6 +5791,13 @@
             "description": "생리와 가임기 리마인더는 알림 표에서 채널별로 켭니다.",
             "link": "알림 표 열기"
           }
+        },
+        "snooze": {
+          "title": "나중에 알림",
+          "description": "약 카드, 텔레그램, 앱에서 복용 알림을 얼마나 미룰지 정해요.",
+          "label": "미루는 시간",
+          "option": "{minutes}분",
+          "saveError": "저장하지 못했어요. 다시 시도해 주세요"
         }
       },
       "layout": {
@@ -9831,29 +9841,29 @@
     "askMedicationName": "약을 지정해 주세요. 예: <b>taken 라미프릴</b>.",
     "medicationNotFoundExact": "약을 찾지 못했어요. HealthLog에 있는 이름 그대로 보내 주세요.",
     "helpHeader": "<b>사용할 수 있는 명령:</b>",
-    "helpBody": "/help: 이 도움말 보기\n/add: 복용 기록하기\n/start: 봇 시작하기\n\n<b>텍스트 명령:</b>\ntaken &lt;이름&gt;: 복용 확인\n\n<b>알림 속 버튼:</b>\n• 복용: 복용 확인\n• 🕐 1h / 🕐 3h: 알림 미루기\n• ⏭ 건너뛰기: 복용 건너뛰기\n• ✓ 확인: 놓친 복용 확인",
+    "helpBody": "/help: 이 도움말 보기\n/add: 복용 기록하기\n/start: 봇 시작하기\n\n<b>텍스트 명령:</b>\ntaken &lt;이름&gt;: 복용 확인\n\n<b>알림 속 버튼:</b>\n• ✅ 복용: 복용 기록\n• 🕐 나중에 알림: 설정한 시간만큼 알림 미루기\n• ⏭ 건너뛰기: 이번 복용 건너뛰기\n• 놓친 것으로 두기: 놓친 복용을 그대로 두기",
     "measureValuePrompt": "값을 답장으로 보내면 기록해요(선택).",
     "buttonMeasureValue": "값…",
     "measureValueSaved": "측정값을 저장했어요.",
     "measureValueInvalid": "측정값을 기록하려면 숫자로 답장해 주세요.",
     "measureValueOutOfRange": "그 값은 가능한 범위를 벗어났어요.",
-    "measureValueExpired": "그 요청은 만료됐어요."
+    "measureValueExpired": "그 요청은 만료됐어요.",
+    "snoozeMinutes": "{minutes}분"
   },
   "medicationReminders": {
-    "phaseGreenTitle": "🟢 알림: {medName}",
-    "phaseGreenMessage": "🟢 알림:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n{minutes}분 뒤에 시간대가 끝나요.",
-    "phaseYellowTitle": "🟡 곧 복용: {medName}",
-    "phaseYellowMessage": "🟡 곧 복용:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n{minutes}분 남았어요.",
-    "phaseOrangeTitle": "🟠 복용 시간 지남: {medName}",
-    "phaseOrangeMessage": "🟠 복용 시간 지남:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n{minutes}분 지났어요.",
-    "phaseRedTitle": "🔴 복용 안 함: {medName}",
-    "phaseRedMessage": "🔴 아직 복용하지 않았어요:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n기록하기 전까지는 놓친 것으로 셉니다. 지금 복용해도 늦은 복용으로 인정돼요.",
-    "buttonTaken": "복용함",
+    "phaseGreenTitle": "🟢 복용 시간: {medName}",
+    "phaseGreenMessage": "🟢 복용 시간:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n{minutes}분 후 복용 시간이 끝나요.",
+    "phaseYellowTitle": "🟡 아직 복용 시간: {medName}",
+    "phaseYellowMessage": "🟡 아직 복용 시간:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n복용 시간이 {minutes}분 남았어요.",
+    "phaseOrangeTitle": "🟠 시간 지남: {medName}",
+    "phaseOrangeMessage": "🟠 시간 지남:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n{minutes}분 지났어요.",
+    "phaseRedTitle": "🔴 놓침: {medName}",
+    "phaseRedMessage": "🔴 놓침:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n지금 복용해도 늦게 복용한 것으로 기록돼요.",
+    "buttonTaken": "✅ 복용",
     "buttonConfirm": "놓친 것으로 두기",
-    "buttonTakenLate": "✅ 복용함 (늦게)",
-    "buttonSnoozeOneHour": "🕐 1시간",
-    "buttonSnoozeThreeHours": "🕐 3시간",
-    "buttonSkip": "⏭ 건너뛰기"
+    "buttonTakenLate": "✅ 복용 (늦게 복용으로 기록)",
+    "buttonSkip": "⏭ 건너뛰기",
+    "buttonSnooze": "🕐 나중에 알림 ({minutes}분)"
   },
   "lowStockReminders": {
     "title": "재고 부족: {medName}",

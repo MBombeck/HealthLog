@@ -2690,8 +2690,11 @@
         "takenLate": "Taken late",
         "skipped": "Skipped",
         "missed": "Missed",
-        "missedStillCounts": "Taking it now still counts, as late."
-      }
+        "missedStillCounts": "Taking it now still counts, as late.",
+        "snoozedUntil": "Reminder snoozed until {time}"
+      },
+      "snoozedToast": "{name}: reminder again at {time}",
+      "snoozeFailed": "Could not snooze {name}. Try again"
     }
   },
   "charts": {
@@ -5788,6 +5791,13 @@
             "description": "Period and fertile-window reminders are switched per channel in the notification matrix.",
             "link": "Open the notification matrix"
           }
+        },
+        "snooze": {
+          "title": "Remind me later",
+          "description": "How long a dose reminder is pushed back, on the medication card, in Telegram and in the app.",
+          "label": "Push back by",
+          "option": "{minutes} min",
+          "saveError": "Could not save. Try again"
         }
       },
       "layout": {
@@ -9831,29 +9841,29 @@
     "askMedicationName": "Please specify a medication, e.g. <b>taken Ramipril</b>.",
     "medicationNotFoundExact": "Medication not found. Please send the name exactly as in HealthLog.",
     "helpHeader": "<b>Available commands:</b>",
-    "helpBody": "/help: show this help\n/add: record an intake\n/start: start the bot\n\n<b>Text commands:</b>\ntaken &lt;name&gt;: confirm an intake\n\n<b>Buttons in reminders:</b>\n• Taken: confirm intake\n• 🕐 1h / 🕐 3h: postpone reminder\n• ⏭ Skip: skip intake\n• ✓ Confirm: confirm a missed intake",
+    "helpBody": "/help: show this help\n/add: record an intake\n/start: start the bot\n\n<b>Text commands:</b>\ntaken &lt;name&gt;: confirm an intake\n\n<b>Buttons in reminders:</b>\n• ✅ Take: record the dose\n• 🕐 Remind me later: postpone the reminder, by the length set in Settings\n• ⏭ Skip: skip the dose\n• Leave as missed: leave a missed dose as missed",
     "measureValuePrompt": "Reply with the value to log it (optional).",
     "buttonMeasureValue": "Value…",
     "measureValueSaved": "Reading saved.",
     "measureValueInvalid": "Reply with a number to log a reading.",
     "measureValueOutOfRange": "That value is outside the plausible range.",
-    "measureValueExpired": "That prompt has expired."
+    "measureValueExpired": "That prompt has expired.",
+    "snoozeMinutes": "{minutes} min"
   },
   "medicationReminders": {
-    "phaseGreenTitle": "🟢 Reminder: {medName}",
-    "phaseGreenMessage": "🟢 Reminder:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nWindow closes in {minutes} min.",
-    "phaseYellowTitle": "🟡 Due soon: {medName}",
-    "phaseYellowMessage": "🟡 Due soon:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n{minutes} min left.",
+    "phaseGreenTitle": "🟢 Due: {medName}",
+    "phaseGreenMessage": "🟢 Due:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nThe window closes in {minutes} min.",
+    "phaseYellowTitle": "🟡 Still due: {medName}",
+    "phaseYellowMessage": "🟡 Still due:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n{minutes} min left in the window.",
     "phaseOrangeTitle": "🟠 Overdue: {medName}",
     "phaseOrangeMessage": "🟠 Overdue:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nOverdue by {minutes} min.",
-    "phaseRedTitle": "🔴 Not taken: {medName}",
-    "phaseRedMessage": "🔴 Not taken yet:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nIt counts as missed unless you record it. If you take it now, it still counts, as a late dose.",
-    "buttonTaken": "Taken",
+    "phaseRedTitle": "🔴 Missed: {medName}",
+    "phaseRedMessage": "🔴 Missed:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nTaking it now still counts, as late.",
+    "buttonTaken": "✅ Take",
     "buttonConfirm": "Leave as missed",
-    "buttonTakenLate": "✅ Taken (late)",
-    "buttonSnoozeOneHour": "🕐 1h",
-    "buttonSnoozeThreeHours": "🕐 3h",
-    "buttonSkip": "⏭ Skip"
+    "buttonTakenLate": "✅ Take (counts as late)",
+    "buttonSkip": "⏭ Skip",
+    "buttonSnooze": "🕐 Remind me later ({minutes} min)"
   },
   "lowStockReminders": {
     "title": "Low supply: {medName}",

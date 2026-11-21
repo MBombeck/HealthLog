@@ -2690,8 +2690,11 @@
         "takenLate": "Przyjęte z opóźnieniem",
         "skipped": "Pominięte",
         "missed": "Nieprzyjęte",
-        "missedStillCounts": "Jeśli przyjmiesz ją teraz, nadal się liczy, jako z opóźnieniem."
-      }
+        "missedStillCounts": "Jeśli przyjmiesz ją teraz, nadal się liczy, jako z opóźnieniem.",
+        "snoozedUntil": "Przypomnienie odłożone do {time}"
+      },
+      "snoozedToast": "{name}: przypomnienie o {time}",
+      "snoozeFailed": "Nie udało się odłożyć {name}. Spróbuj ponownie"
     }
   },
   "charts": {
@@ -5788,6 +5791,13 @@
             "description": "Przypomnienia o miesiączce i dniach płodnych włączasz dla każdego kanału w tabeli powiadomień.",
             "link": "Otwórz tabelę powiadomień"
           }
+        },
+        "snooze": {
+          "title": "Przypomnij później",
+          "description": "O ile odkładane jest przypomnienie o dawce: na karcie leku, w Telegramie i w aplikacji.",
+          "label": "Odłóż o",
+          "option": "{minutes} min",
+          "saveError": "Nie udało się zapisać. Spróbuj ponownie"
         }
       },
       "layout": {
@@ -9831,29 +9841,29 @@
     "askMedicationName": "Podaj lek, np. <b>przyjęty Ramipril</b>.",
     "medicationNotFoundExact": "Nie znaleziono leku. Wyślij nazwę dokładnie tak, jak w HealthLog.",
     "helpHeader": "<b>Dostępne polecenia:</b>",
-    "helpBody": "/help: pokaż tę pomoc\n/add: zapisz przyjęcie\n/start: uruchom bota\n\n<b>Polecenia tekstowe:</b>\ntaken &lt;nazwa&gt;: potwierdź przyjęcie\n\n<b>Przyciski w przypomnieniach:</b>\n• Przyjęto: potwierdź przyjęcie\n• 🕐 1h / 🕐 3h: odłóż przypomnienie\n• ⏭ Pomiń: pomiń przyjęcie\n• ✓ Potwierdź: potwierdź pominięte przyjęcie",
+    "helpBody": "/help: pokaż tę pomoc\n/add: zapisz przyjęcie\n/start: uruchom bota\n\n<b>Polecenia tekstowe:</b>\ntaken &lt;nazwa&gt;: potwierdź przyjęcie\n\n<b>Przyciski w przypomnieniach:</b>\n• ✅ Przyjmij: zapisz przyjęcie\n• 🕐 Przypomnij później: odłóż przypomnienie o czas ustawiony w ustawieniach\n• ⏭ Pomiń: pomiń dawkę\n• Zostaw jako nieprzyjęte: zostaw nieprzyjętą dawkę jako nieprzyjętą",
     "measureValuePrompt": "Odpowiedz wartością, aby ją zapisać (opcjonalnie).",
     "buttonMeasureValue": "Wartość…",
     "measureValueSaved": "Pomiar zapisany.",
     "measureValueInvalid": "Odpowiedz liczbą, aby zapisać pomiar.",
     "measureValueOutOfRange": "Ta wartość jest poza wiarygodnym zakresem.",
-    "measureValueExpired": "Ten monit wygasł."
+    "measureValueExpired": "Ten monit wygasł.",
+    "snoozeMinutes": "{minutes} min"
   },
   "medicationReminders": {
-    "phaseGreenTitle": "🟢 Przypomnienie: {medName}",
-    "phaseGreenMessage": "🟢 Reminder:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nWindow closes in {minutes} Min.",
-    "phaseYellowTitle": "🟡 Wkrótce: {medName}",
-    "phaseYellowMessage": "🟡 Wkrótce:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nPozostało {minutes} min.",
-    "phaseOrangeTitle": "🟠 Zaległe: {medName}",
-    "phaseOrangeMessage": "🟠 Overdue:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nOverdue by {minutes} Min.",
+    "phaseGreenTitle": "🟢 Do przyjęcia: {medName}",
+    "phaseGreenMessage": "🟢 Do przyjęcia:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nOkno zamyka się za {minutes} min.",
+    "phaseYellowTitle": "🟡 Nadal do przyjęcia: {medName}",
+    "phaseYellowMessage": "🟡 Nadal do przyjęcia:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nW oknie zostało {minutes} min.",
+    "phaseOrangeTitle": "🟠 Po terminie: {medName}",
+    "phaseOrangeMessage": "🟠 Po terminie:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nPo terminie o {minutes} min.",
     "phaseRedTitle": "🔴 Nieprzyjęte: {medName}",
-    "phaseRedMessage": "🔴 Jeszcze nieprzyjęte:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nLiczy się jako pominięte, dopóki nic nie zapiszesz. Jeśli przyjmiesz teraz, nadal się liczy, jako spóźniona dawka.",
-    "buttonTaken": "Przyjęty",
-    "buttonConfirm": "Zostaw jako pominięte",
-    "buttonTakenLate": "✅ Przyjęty (z opóźnieniem)",
-    "buttonSnoozeOneHour": "🕐 1h",
-    "buttonSnoozeThreeHours": "🕐 3h",
-    "buttonSkip": "⏭ Pomiń"
+    "phaseRedMessage": "🔴 Nieprzyjęte:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nJeśli przyjmiesz ją teraz, nadal się liczy, jako z opóźnieniem.",
+    "buttonTaken": "✅ Przyjmij",
+    "buttonConfirm": "Zostaw jako nieprzyjęte",
+    "buttonTakenLate": "✅ Przyjmij (liczy się z opóźnieniem)",
+    "buttonSkip": "⏭ Pomiń",
+    "buttonSnooze": "🕐 Przypomnij później ({minutes} min)"
   },
   "lowStockReminders": {
     "title": "Niski zapas: {medName}",

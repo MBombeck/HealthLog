@@ -12,6 +12,8 @@ import { MedicationCardMenu } from "@/components/medications/medication-card-men
 import { MedicationStateBadges } from "@/components/medications/card-parts/medication-state-badges";
 import { MedicationCardBody } from "@/components/medications/card-parts/medication-card-body";
 import { useMedicationIntake } from "@/components/medications/use-medication-intake";
+import { useDoseSnooze } from "@/components/medications/card-parts/use-dose-snooze";
+import { useActiveRecordName } from "@/hooks/use-record-capabilities";
 import { useWeekdayLabel } from "@/components/medications/card-parts/medication-next-last-slot";
 import {
   useTranslations,
@@ -244,6 +246,21 @@ export function Glp1MedicationCard({
   // SAME shared hook the generic card uses, closing the robustness gap
   // where a failed GLP-1 POST was swallowed silently and the success toast
   // carried no Undo. The card keeps its post-success injection-site prompt.
+  // "Remind me later": only where a reminder exists to push back, in the
+  // person's own record (a delegate may not snooze).
+  const recordName = useActiveRecordName();
+  const snooze = useDoseSnooze({
+    medicationId: medication.id,
+    medicationName: medication.name,
+    enabled:
+      medication.active &&
+      medication.notificationsEnabled &&
+      medication.autoMarkTaken !== true &&
+      medication.trackIntake !== false &&
+      medication.intakeActionable !== false &&
+      !recordName,
+  });
+
   const { intakeLoading, recordIntake } = useMedicationIntake({
     medication,
     onRecorded: (eventId, skipped) => {
@@ -582,6 +599,7 @@ export function Glp1MedicationCard({
       lowStockRunwayDays={lowStockRunwayDays}
       intakeLoading={intakeLoading}
       onRecordIntake={(skipped) => recordIntake(skipped, displayedSlot)}
+      snooze={snooze}
     >
       {/* v1.8.5 — post-dose injection-site capture (optional, skippable). */}
       {tracksInjection && (

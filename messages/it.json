@@ -2690,8 +2690,11 @@
         "takenLate": "Assunta in ritardo",
         "skipped": "Saltata",
         "missed": "Mancata",
-        "missedStillCounts": "Se la assumi ora conta ancora, come in ritardo."
-      }
+        "missedStillCounts": "Se la assumi ora conta ancora, come in ritardo.",
+        "snoozedUntil": "Promemoria rinviato alle {time}"
+      },
+      "snoozedToast": "{name}: promemoria di nuovo alle {time}",
+      "snoozeFailed": "Impossibile rinviare {name}. Riprova"
     }
   },
   "charts": {
@@ -5788,6 +5791,13 @@
             "description": "I promemoria del ciclo e della finestra fertile si attivano per canale nella griglia delle notifiche.",
             "link": "Apri la griglia delle notifiche"
           }
+        },
+        "snooze": {
+          "title": "Ricordamelo più tardi",
+          "description": "Di quanto viene rinviato un promemoria della dose, sulla scheda del farmaco, in Telegram e nell'app.",
+          "label": "Rinvia di",
+          "option": "{minutes} min",
+          "saveError": "Impossibile salvare. Riprova"
         }
       },
       "layout": {
@@ -9831,29 +9841,29 @@
     "askMedicationName": "Indica il farmaco, es. <b>preso Ramipril</b>.",
     "medicationNotFoundExact": "Farmaco non trovato. Invia il nome esattamente come appare in HealthLog.",
     "helpHeader": "<b>Comandi disponibili:</b>",
-    "helpBody": "/help: mostra questa guida\n/add: registra un'assunzione\n/start: avvia il bot\n\n<b>Comandi testuali:</b>\ntaken &lt;nome&gt;: conferma un'assunzione\n\n<b>Pulsanti nei promemoria:</b>\n• Assunto: conferma l'assunzione\n• 🕐 1h / 🕐 3h: posticipa il promemoria\n• ⏭ Salta: salta l'assunzione\n• ✓ Conferma: conferma un'assunzione saltata",
+    "helpBody": "/help: mostra questa guida\n/add: registra un'assunzione\n/start: avvia il bot\n\n<b>Comandi testuali:</b>\ntaken &lt;nome&gt;: conferma un'assunzione\n\n<b>Pulsanti nei promemoria:</b>\n• ✅ Assumi: registra l'assunzione\n• 🕐 Ricordamelo più tardi: posticipa il promemoria, della durata scelta nelle impostazioni\n• ⏭ Salta: salta l'assunzione\n• Lasciare mancata: lascia un'assunzione mancata come mancata",
     "measureValuePrompt": "Rispondi con il valore per registrarlo (facoltativo).",
     "buttonMeasureValue": "Valore…",
     "measureValueSaved": "Misurazione salvata.",
     "measureValueInvalid": "Rispondi con un numero per registrare una misurazione.",
     "measureValueOutOfRange": "Questo valore è fuori dall’intervallo plausibile.",
-    "measureValueExpired": "Questo messaggio è scaduto."
+    "measureValueExpired": "Questo messaggio è scaduto.",
+    "snoozeMinutes": "{minutes} min"
   },
   "medicationReminders": {
-    "phaseGreenTitle": "🟢 Promemoria: {medName}",
-    "phaseGreenMessage": "🟢 Reminder:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nWindow closes in {minutes} Min.",
-    "phaseYellowTitle": "🟡 In scadenza: {medName}",
-    "phaseYellowMessage": "🟡 In scadenza:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nMancano {minutes} min.",
+    "phaseGreenTitle": "🟢 Da assumere: {medName}",
+    "phaseGreenMessage": "🟢 Da assumere:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nLa finestra si chiude tra {minutes} min.",
+    "phaseYellowTitle": "🟡 Ancora da assumere: {medName}",
+    "phaseYellowMessage": "🟡 Ancora da assumere:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nRestano {minutes} min nella finestra.",
     "phaseOrangeTitle": "🟠 In ritardo: {medName}",
-    "phaseOrangeMessage": "🟠 Overdue:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nOverdue by {minutes} Min.",
-    "phaseRedTitle": "🔴 Non assunta: {medName}",
-    "phaseRedMessage": "🔴 Non ancora assunta:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nConta come saltata finché non la registri. Se la prendi ora conta comunque, come dose in ritardo.",
-    "buttonTaken": "Assunto",
-    "buttonConfirm": "Lasciare saltata",
-    "buttonTakenLate": "✅ Assunto (in ritardo)",
-    "buttonSnoozeOneHour": "🕐 1h",
-    "buttonSnoozeThreeHours": "🕐 3h",
-    "buttonSkip": "⏭ Salta"
+    "phaseOrangeMessage": "🟠 In ritardo:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nIn ritardo di {minutes} min.",
+    "phaseRedTitle": "🔴 Mancata: {medName}",
+    "phaseRedMessage": "🔴 Mancata:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nSe la assumi ora conta ancora, come in ritardo.",
+    "buttonTaken": "✅ Assumi",
+    "buttonConfirm": "Lasciare mancata",
+    "buttonTakenLate": "✅ Assumi (conta in ritardo)",
+    "buttonSkip": "⏭ Salta",
+    "buttonSnooze": "🕐 Ricordamelo più tardi ({minutes} min)"
   },
   "lowStockReminders": {
     "title": "Scorte in esaurimento: {medName}",

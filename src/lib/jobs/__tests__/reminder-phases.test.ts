@@ -47,8 +47,8 @@ describe("getPhaseMessage — localised", () => {
       45,
       "de",
     );
-    expect(result.title).toBe("🟢 Erinnerung: Ramipril");
-    expect(result.message).toContain("Zeitfenster endet in 45 Min.");
+    expect(result.title).toBe("🟢 Fällig: Ramipril");
+    expect(result.message).toContain("Das Zeitfenster endet in 45 Min.");
     expect(result.message).toContain("<b>Ramipril</b>");
   });
 
@@ -61,8 +61,8 @@ describe("getPhaseMessage — localised", () => {
       20,
       "en",
     );
-    expect(result.title).toBe("🟡 Due soon: Ramipril");
-    expect(result.message).toContain("20 min left.");
+    expect(result.title).toBe("🟡 Still due: Ramipril");
+    expect(result.message).toContain("20 min left in the window.");
     expect(result.message).toContain("<b>Ramipril</b>");
   });
 
@@ -89,7 +89,8 @@ describe("getPhaseMessage — localised", () => {
       "en",
     );
     // Missed, and a late take still counts: the message says both.
-    expect(result.message).toContain("it still counts");
+    expect(result.title).toBe("🔴 Missed: Aspirin");
+    expect(result.message).toContain("still counts, as late");
     expect(result.message).not.toContain("300");
   });
 });
@@ -99,10 +100,12 @@ describe("getPhaseKeyboard — localised", () => {
     const kb = getPhaseKeyboard("YELLOW", "med-1", "de");
     const flat = kb.inline_keyboard.flat();
     expect(flat.find((b) => b.callback_data === "taken:med-1")?.text).toBe(
-      "Genommen",
+      "✅ Einnehmen",
     );
-    expect(flat.find((b) => b.callback_data === "snooze:med-1:60")?.text).toBe(
-      "🕐 1h",
+    // One snooze, the person's own length (default 30 min), named in the
+    // label like on every other surface.
+    expect(flat.find((b) => b.callback_data === "snooze:med-1:30")?.text).toBe(
+      "🕐 Später erinnern (30 Min.)",
     );
     expect(flat.find((b) => b.callback_data === "skip:med-1")?.text).toBe(
       "⏭ Überspringen",
@@ -113,7 +116,7 @@ describe("getPhaseKeyboard — localised", () => {
     const kb = getPhaseKeyboard("YELLOW", "med-1", "en");
     const flat = kb.inline_keyboard.flat();
     expect(flat.find((b) => b.callback_data === "taken:med-1")?.text).toBe(
-      "Taken",
+      "✅ Take",
     );
     expect(flat.find((b) => b.callback_data === "skip:med-1")?.text).toBe(
       "⏭ Skip",
@@ -126,7 +129,7 @@ describe("getPhaseKeyboard — localised", () => {
       "Leave as missed",
     );
     expect(en.find((b) => b.callback_data === "taken:med-1")?.text).toBe(
-      "✅ Taken (late)",
+      "✅ Take (counts as late)",
     );
     expect(
       getPhaseKeyboard("RED", "med-1", "de").inline_keyboard[0].find(
@@ -140,10 +143,24 @@ describe("getPhaseKeyboard — localised", () => {
       const kb = getPhaseKeyboard("YELLOW", "med-x", locale);
       const cb = kb.inline_keyboard.flat().map((b) => b.callback_data);
       expect(cb).toContain("taken:med-x");
-      expect(cb).toContain("snooze:med-x:60");
-      expect(cb).toContain("snooze:med-x:180");
+      expect(cb).toContain("snooze:med-x:30");
       expect(cb).toContain("skip:med-x");
     }
+  });
+});
+
+describe("getPhaseKeyboard — the person's snooze length", () => {
+  it("offers exactly one snooze, with the length the setting holds", () => {
+    const flat = getPhaseKeyboard(
+      "GREEN",
+      "med-1",
+      "en",
+      45,
+    ).inline_keyboard.flat();
+    const snoozes = flat.filter((b) => b.callback_data.startsWith("snooze:"));
+    expect(snoozes).toEqual([
+      { text: "🕐 Remind me later (45 min)", callback_data: "snooze:med-1:45" },
+    ]);
   });
 });
 

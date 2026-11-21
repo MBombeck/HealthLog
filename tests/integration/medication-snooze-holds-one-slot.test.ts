@@ -120,4 +120,38 @@ describe("a snooze holds the dose it answers", () => {
     expect(statusAt(after, MORNING)).toEqual(["skipped"]);
     expect(statusAt(after, AFTERNOON)).toEqual(["pending"]);
   });
+
+  it("a snooze without an instant defers by the person's snooze length", async () => {
+    const { user, medId } = await twiceDaily();
+    const prisma = getPrismaClient();
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { notificationPrefs: { medication: { snoozeMinutes: 45 } } },
+    });
+    const morning = (await readToday()).find(
+      (r) =>
+        r.medicationId === medId &&
+        new Date(r.scheduledAt).getTime() === MORNING.getTime(),
+    );
+    const r = await statusPost({ intakeId: morning!.id, status: "snoozed" });
+    expect(r.status).toBe(200);
+    const med = await prisma.medication.findUniqueOrThrow({
+      where: { id: medId },
+    });
+    expect(med.snoozedUntil?.getTime()).toBe(NOW.getTime() + 45 * 60_000);
+  });
+
+  it("without a setting the snooze length is 30 minutes", async () => {
+    const { medId } = await twiceDaily();
+    const morning = (await readToday()).find(
+      (r) =>
+        r.medicationId === medId &&
+        new Date(r.scheduledAt).getTime() === MORNING.getTime(),
+    );
+    await statusPost({ intakeId: morning!.id, status: "snoozed" });
+    const med = await getPrismaClient().medication.findUniqueOrThrow({
+      where: { id: medId },
+    });
+    expect(med.snoozedUntil?.getTime()).toBe(NOW.getTime() + 30 * 60_000);
+  });
 });

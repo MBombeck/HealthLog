@@ -17,6 +17,7 @@ import {
   resolveNotificationPrefs,
   notificationsShowFigures,
   resolveReorderLeadDays,
+  resolveSnoozeMinutes,
 } from "../notification-prefs";
 
 /**
@@ -101,6 +102,7 @@ describe("parseNotificationPrefs", () => {
         deliveryDefault: "server",
         lowStockRunwayDays: 7,
         reorderLeadDays: 10,
+        snoozeMinutes: 30,
       },
       mood: { reminderHour: DEFAULT_MOOD_REMINDER_HOUR },
       cycle: { clientManaged: false },
@@ -126,6 +128,7 @@ describe("parseNotificationPrefs", () => {
         deliveryDefault: "server",
         lowStockRunwayDays: 7,
         reorderLeadDays: 10,
+        snoozeMinutes: 30,
       },
       mood: { reminderHour: DEFAULT_MOOD_REMINDER_HOUR },
       cycle: { clientManaged: false },
@@ -153,6 +156,7 @@ describe("parseNotificationPrefs", () => {
         deliveryDefault: "client",
         lowStockRunwayDays: 7,
         reorderLeadDays: 10,
+        snoozeMinutes: 30,
       },
       mood: { reminderHour: DEFAULT_MOOD_REMINDER_HOUR },
       cycle: { clientManaged: false },
@@ -196,6 +200,7 @@ describe("resolveNotificationPrefs (deep-merge)", () => {
         deliveryDefault: "server",
         lowStockRunwayDays: 7,
         reorderLeadDays: 10,
+        snoozeMinutes: 30,
       },
       mood: { reminderHour: DEFAULT_MOOD_REMINDER_HOUR },
       cycle: { clientManaged: false },
@@ -227,6 +232,7 @@ describe("resolveNotificationPrefs (deep-merge)", () => {
         deliveryDefault: "server",
         lowStockRunwayDays: 7,
         reorderLeadDays: 10,
+        snoozeMinutes: 30,
       },
       mood: { reminderHour: DEFAULT_MOOD_REMINDER_HOUR },
       cycle: { clientManaged: false },
@@ -255,6 +261,7 @@ describe("resolveNotificationPrefs (deep-merge)", () => {
         deliveryDefault: "server",
         lowStockRunwayDays: 7,
         reorderLeadDays: 10,
+        snoozeMinutes: 30,
       },
       mood: { reminderHour: DEFAULT_MOOD_REMINDER_HOUR },
       cycle: { clientManaged: false },
@@ -283,6 +290,7 @@ describe("resolveNotificationPrefs (deep-merge)", () => {
         deliveryDefault: "client",
         lowStockRunwayDays: 7,
         reorderLeadDays: 10,
+        snoozeMinutes: 30,
       },
       mood: { reminderHour: DEFAULT_MOOD_REMINDER_HOUR },
       cycle: { clientManaged: false },
@@ -312,6 +320,7 @@ describe("resolveNotificationPrefs (deep-merge)", () => {
         deliveryDefault: "server",
         lowStockRunwayDays: 7,
         reorderLeadDays: 10,
+        snoozeMinutes: 30,
       },
       mood: { reminderHour: 8 },
       cycle: { clientManaged: false },
@@ -641,6 +650,7 @@ describe("lowStockRunwayDays — v1.16.11 low-stock threshold", () => {
       deliveryDefault: "server",
       lowStockRunwayDays: 21,
       reorderLeadDays: 10,
+      snoozeMinutes: 30,
     });
     // ...and the next PATCH (threshold off) keeps the sibling again.
     const off = resolveNotificationPrefs(merged, {
@@ -651,6 +661,7 @@ describe("lowStockRunwayDays — v1.16.11 low-stock threshold", () => {
       deliveryDefault: "server",
       lowStockRunwayDays: null,
       reorderLeadDays: 10,
+      snoozeMinutes: 30,
     });
   });
 });
@@ -679,5 +690,35 @@ describe("notificationsShowFigures (content.detail)", () => {
       { mood: { reminderHour: 8 } },
     );
     expect(merged.content).toEqual({ detail: "detailed" });
+  });
+});
+
+describe("medication.snoozeMinutes", () => {
+  it("defaults to 30 and keeps a stored length", () => {
+    expect(resolveSnoozeMinutes(null)).toBe(30);
+    expect(resolveSnoozeMinutes({ medication: { snoozeMinutes: 45 } })).toBe(
+      45,
+    );
+  });
+
+  it("refuses a length outside 5 to 240 minutes", () => {
+    for (const snoozeMinutes of [0, 4, 241, 12.5]) {
+      expect(
+        notificationPrefsSchema.safeParse({ medication: { snoozeMinutes } })
+          .success,
+      ).toBe(false);
+    }
+    expect(
+      notificationPrefsSchema.safeParse({ medication: { snoozeMinutes: 5 } })
+        .success,
+    ).toBe(true);
+  });
+
+  it("survives a PATCH of a sibling key", () => {
+    const merged = resolveNotificationPrefs(
+      { medication: { snoozeMinutes: 60 } },
+      { medication: { lowStockRunwayDays: 14 } },
+    );
+    expect(merged.medication.snoozeMinutes).toBe(60);
   });
 });

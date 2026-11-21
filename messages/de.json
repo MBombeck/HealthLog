@@ -2690,8 +2690,11 @@
         "takenLate": "Verspätet genommen",
         "skipped": "Übersprungen",
         "missed": "Verpasst",
-        "missedStillCounts": "Nimmst du sie jetzt, zählt sie noch, als verspätet."
-      }
+        "missedStillCounts": "Nimmst du sie jetzt, zählt sie noch, als verspätet.",
+        "snoozedUntil": "Erinnerung verschoben auf {time}"
+      },
+      "snoozedToast": "{name}: Erinnerung wieder um {time}",
+      "snoozeFailed": "{name} konnte nicht verschoben werden. Bitte erneut versuchen"
     }
   },
   "charts": {
@@ -5788,6 +5791,13 @@
             "description": "Perioden- und Fruchtbarkeits-Erinnerungen schaltest du je Kanal in der Benachrichtigungsübersicht.",
             "link": "Benachrichtigungsübersicht öffnen"
           }
+        },
+        "snooze": {
+          "title": "Später erinnern",
+          "description": "Wie lange eine Dosis-Erinnerung verschoben wird, auf der Medikamentenkarte, in Telegram und in der App.",
+          "label": "Verschieben um",
+          "option": "{minutes} Min.",
+          "saveError": "Konnte nicht gespeichert werden. Bitte erneut versuchen"
         }
       },
       "layout": {
@@ -9831,29 +9841,29 @@
     "askMedicationName": "Bitte Medikament angeben, z. B. <b>genommen Ramipril</b>.",
     "medicationNotFoundExact": "Medikament nicht gefunden. Bitte Namen exakt wie in HealthLog senden.",
     "helpHeader": "<b>Verfügbare Befehle:</b>",
-    "helpBody": "/help: Diese Hilfe anzeigen\n/add: Einnahme erfassen\n/start: Bot starten\n\n<b>Textbefehle:</b>\ngenommen &lt;Name&gt;: Einnahme bestätigen\n\n<b>Über die Buttons in Erinnerungen:</b>\n• Genommen: Einnahme bestätigen\n• 🕐 1h / 🕐 3h: Erinnerung verschieben\n• ⏭ Überspringen: Einnahme überspringen\n• ✓ Bestätigen: Verpasste Einnahme bestätigen",
+    "helpBody": "/help: Diese Hilfe anzeigen\n/add: Einnahme erfassen\n/start: Bot starten\n\n<b>Textbefehle:</b>\ngenommen &lt;Name&gt;: Einnahme bestätigen\n\n<b>Über die Buttons in Erinnerungen:</b>\n• ✅ Einnehmen: Einnahme erfassen\n• 🕐 Später erinnern: Erinnerung verschieben, um die in den Einstellungen gewählte Dauer\n• ⏭ Überspringen: Dosis überspringen\n• Als verpasst lassen: verpasste Dosis als verpasst lassen",
     "measureValuePrompt": "Antworte mit dem Wert, um ihn zu speichern (optional).",
     "buttonMeasureValue": "Wert…",
     "measureValueSaved": "Messwert gespeichert.",
     "measureValueInvalid": "Antworte mit einer Zahl, um einen Messwert zu speichern.",
     "measureValueOutOfRange": "Dieser Wert liegt außerhalb des plausiblen Bereichs.",
-    "measureValueExpired": "Diese Aufforderung ist abgelaufen."
+    "measureValueExpired": "Diese Aufforderung ist abgelaufen.",
+    "snoozeMinutes": "{minutes} Min."
   },
   "medicationReminders": {
-    "phaseGreenTitle": "🟢 Erinnerung: {medName}",
-    "phaseGreenMessage": "🟢 Erinnerung:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nZeitfenster endet in {minutes} Min.",
-    "phaseYellowTitle": "🟡 Bald fällig: {medName}",
-    "phaseYellowMessage": "🟡 Bald fällig:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nNoch {minutes} Min. Zeit.",
+    "phaseGreenTitle": "🟢 Fällig: {medName}",
+    "phaseGreenMessage": "🟢 Fällig:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nDas Zeitfenster endet in {minutes} Min.",
+    "phaseYellowTitle": "🟡 Noch fällig: {medName}",
+    "phaseYellowMessage": "🟡 Noch fällig:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nNoch {minutes} Min. im Zeitfenster.",
     "phaseOrangeTitle": "🟠 Überfällig: {medName}",
     "phaseOrangeMessage": "🟠 Überfällig:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nSeit {minutes} Min. überfällig.",
-    "phaseRedTitle": "🔴 Nicht genommen: {medName}",
-    "phaseRedMessage": "🔴 Noch nicht genommen:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nZählt als verpasst, solange nichts erfasst ist. Nimmst du sie jetzt, zählt sie trotzdem, als verspätete Dosis.",
-    "buttonTaken": "Genommen",
+    "phaseRedTitle": "🔴 Verpasst: {medName}",
+    "phaseRedMessage": "🔴 Verpasst:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nNimmst du sie jetzt, zählt sie noch, als verspätet.",
+    "buttonTaken": "✅ Einnehmen",
     "buttonConfirm": "Als verpasst lassen",
-    "buttonTakenLate": "✅ Genommen (verspätet)",
-    "buttonSnoozeOneHour": "🕐 1h",
-    "buttonSnoozeThreeHours": "🕐 3h",
-    "buttonSkip": "⏭ Überspringen"
+    "buttonTakenLate": "✅ Einnehmen (zählt verspätet)",
+    "buttonSkip": "⏭ Überspringen",
+    "buttonSnooze": "🕐 Später erinnern ({minutes} Min.)"
   },
   "lowStockReminders": {
     "title": "Vorrat niedrig: {medName}",

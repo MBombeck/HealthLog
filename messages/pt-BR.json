@@ -2690,8 +2690,11 @@
         "takenLate": "Tomada com atraso",
         "skipped": "Pulada",
         "missed": "Perdida",
-        "missedStillCounts": "Se tomar agora, ainda conta, como atrasada."
-      }
+        "missedStillCounts": "Se tomar agora, ainda conta, como atrasada.",
+        "snoozedUntil": "Lembrete adiado até {time}"
+      },
+      "snoozedToast": "{name}: lembrete de novo às {time}",
+      "snoozeFailed": "Não foi possível adiar {name}. Tente de novo"
     }
   },
   "charts": {
@@ -5788,6 +5791,13 @@
             "description": "Os lembretes de menstruação e de janela fértil são ligados por canal na matriz de notificações.",
             "link": "Abrir a matriz de notificações"
           }
+        },
+        "snooze": {
+          "title": "Lembrar mais tarde",
+          "description": "Por quanto tempo um lembrete de dose é adiado, no cartão do medicamento, no Telegram e no app.",
+          "label": "Adiar por",
+          "option": "{minutes} min",
+          "saveError": "Não foi possível salvar. Tente de novo"
         }
       },
       "layout": {
@@ -9831,29 +9841,29 @@
     "askMedicationName": "Especifique um medicamento, por exemplo <b>tomado Ramipril</b>.",
     "medicationNotFoundExact": "Medicamento não encontrado. Envie o nome exatamente como está no HealthLog.",
     "helpHeader": "<b>Comandos disponíveis:</b>",
-    "helpBody": "/help: mostrar esta ajuda\n/add: registrar uma tomada\n/start: iniciar o bot\n\n<b>Comandos de texto:</b>\ntaken &lt;nome&gt;: confirmar uma tomada\n\n<b>Botões nos lembretes:</b>\n• Tomado: confirmar a tomada\n• 🕐 1h / 🕐 3h: adiar o lembrete\n• ⏭ Pular: pular a tomada\n• ✓ Confirmar: confirmar uma tomada perdida",
+    "helpBody": "/help: mostrar esta ajuda\n/add: registrar uma tomada\n/start: iniciar o bot\n\n<b>Comandos de texto:</b>\ntaken &lt;nome&gt;: confirmar uma tomada\n\n<b>Botões nos lembretes:</b>\n• ✅ Tomar: registrar a tomada\n• 🕐 Lembrar mais tarde: adiar o lembrete, pelo tempo definido nos ajustes\n• ⏭ Pular: pular a tomada\n• Deixar como perdida: deixar uma tomada perdida como perdida",
     "measureValuePrompt": "Responda com o valor para registrá-lo (opcional).",
     "buttonMeasureValue": "Valor…",
     "measureValueSaved": "Leitura salva.",
     "measureValueInvalid": "Responda com um número para registrar uma leitura.",
     "measureValueOutOfRange": "Esse valor está fora da faixa plausível.",
-    "measureValueExpired": "Esse prompt expirou."
+    "measureValueExpired": "Esse prompt expirou.",
+    "snoozeMinutes": "{minutes} min"
   },
   "medicationReminders": {
-    "phaseGreenTitle": "🟢 Lembrete: {medName}",
-    "phaseGreenMessage": "🟢 Lembrete:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nA janela fecha em {minutes} min.",
-    "phaseYellowTitle": "🟡 Vence em breve: {medName}",
-    "phaseYellowMessage": "🟡 Vence em breve:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nFaltam {minutes} min.",
+    "phaseGreenTitle": "🟢 Na hora: {medName}",
+    "phaseGreenMessage": "🟢 Na hora:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nA janela fecha em {minutes} min.",
+    "phaseYellowTitle": "🟡 Ainda na hora: {medName}",
+    "phaseYellowMessage": "🟡 Ainda na hora:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nRestam {minutes} min na janela.",
     "phaseOrangeTitle": "🟠 Atrasada: {medName}",
-    "phaseOrangeMessage": "🟠 Atrasada:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nAtrasada por {minutes} min.",
-    "phaseRedTitle": "🔴 Não tomada: {medName}",
-    "phaseRedMessage": "🔴 Ainda não tomada:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nConta como perdida enquanto nada for registrado. Se tomar agora, ainda conta, como dose atrasada.",
-    "buttonTaken": "Tomado",
+    "phaseOrangeMessage": "🟠 Atrasada:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nAtrasada há {minutes} min.",
+    "phaseRedTitle": "🔴 Perdida: {medName}",
+    "phaseRedMessage": "🔴 Perdida:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nSe tomar agora, ainda conta, como atrasada.",
+    "buttonTaken": "✅ Tomar",
     "buttonConfirm": "Deixar como perdida",
-    "buttonTakenLate": "✅ Tomado (atrasado)",
-    "buttonSnoozeOneHour": "🕐 1h",
-    "buttonSnoozeThreeHours": "🕐 3h",
-    "buttonSkip": "⏭ Pular"
+    "buttonTakenLate": "✅ Tomar (conta como atrasada)",
+    "buttonSkip": "⏭ Pular",
+    "buttonSnooze": "🕐 Lembrar mais tarde ({minutes} min)"
   },
   "lowStockReminders": {
     "title": "Estoque baixo: {medName}",

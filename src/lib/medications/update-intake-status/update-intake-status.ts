@@ -30,6 +30,7 @@ import {
   type StatusUpdateEvent,
 } from "./admission";
 import { applyTakenStatus } from "./take";
+import { resolveSnoozeMinutes } from "@/lib/validations/notification-prefs";
 
 interface StatusContext {
   user: Pick<SessionUser, "id" | "timezone">;
@@ -49,6 +50,15 @@ export type IntakeStatusOutcome =
   | IntakeStatusRefusal
   | { kind: "untracked" }
   | { kind: "updated"; row: UpdatedRow | null };
+
+/** The owner's snooze length in minutes, from the notification prefs. */
+async function snoozeMinutesOf(userId: string): Promise<number> {
+  const row = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { notificationPrefs: true },
+  });
+  return resolveSnoozeMinutes(row?.notificationPrefs ?? null);
+}
 
 /** The skip and the snooze; the take has its own module. */
 async function applySkipOrSnooze(ctx: StatusContext, data: IntakeStatusUpdate) {
@@ -76,8 +86,12 @@ async function applySkipOrSnooze(ctx: StatusContext, data: IntakeStatusUpdate) {
     });
     return updated;
   }
-  // snoozed: snoozedUntil lives on the Medication row.
-  const until = snoozedUntil ?? new Date(Date.now() + 30 * 60_000); // default +30min
+  // snoozed: snoozedUntil lives on the Medication row. Without an explicit
+  // instant the deferral is the person's own snooze length (default 30
+  // minutes), the same value Telegram's button and the web card use.
+  const until =
+    snoozedUntil ??
+    new Date(Date.now() + (await snoozeMinutesOf(user.id)) * 60_000);
   await prisma.medication.update({
     where: { id: existing.medicationId },
     data: { snoozedUntil: until },

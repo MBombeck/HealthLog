@@ -16,6 +16,7 @@ export const SERVER_FEATURES = [
   "medication.dose-state",
   "measurement.reading-timezone",
   "apple-health.types-2026-11",
+  "medication.snooze-setting",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -38,6 +39,8 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "Today rows and complianceDisplay.currentDose carry the resolved state, takenLate, dueAt, overdueSince and slotInstant.",
   "measurement.reading-timezone":
     "POST /api/measurements/batch accepts an optional IANA timeZone per entry; the reading's own zone sets its day for sleep, the day view, list day groups and daily charts.",
+  "medication.snooze-setting":
+    "GET/PATCH /api/auth/me/notification-prefs carry medication.snoozeMinutes (5–240, default 30); a snooze without snoozedUntil and Telegram's Remind me later button defer by it.",
   "apple-health.types-2026-11":
     "The batch ingest accepts the Apple Health cycling distance, rowing distance and speed, and running speed, power, ground contact time, vertical oscillation and stride length types.",
 };

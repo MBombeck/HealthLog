@@ -2690,8 +2690,11 @@
         "takenLate": "Te laat ingenomen",
         "skipped": "Overgeslagen",
         "missed": "Gemist",
-        "missedStillCounts": "Neem je hem nu, dan telt hij nog, als te laat."
-      }
+        "missedStillCounts": "Neem je hem nu, dan telt hij nog, als te laat.",
+        "snoozedUntil": "Herinnering uitgesteld tot {time}"
+      },
+      "snoozedToast": "{name}: herinnering om {time}",
+      "snoozeFailed": "{name} kon niet worden uitgesteld. Probeer het opnieuw"
     }
   },
   "charts": {
@@ -5788,6 +5791,13 @@
             "description": "Herinneringen voor menstruatie en vruchtbare dagen zet je per kanaal aan in het meldingenoverzicht.",
             "link": "Meldingenoverzicht openen"
           }
+        },
+        "snooze": {
+          "title": "Later herinneren",
+          "description": "Hoe lang een dosisherinnering wordt uitgesteld, op de medicijnkaart, in Telegram en in de app.",
+          "label": "Uitstellen met",
+          "option": "{minutes} min",
+          "saveError": "Opslaan mislukt. Probeer het opnieuw"
         }
       },
       "layout": {
@@ -9831,29 +9841,29 @@
     "askMedicationName": "Geef een medicijn op, bijv. <b>taken Ramipril</b>.",
     "medicationNotFoundExact": "Medicijn niet gevonden. Stuur de naam precies zoals die in HealthLog staat.",
     "helpHeader": "<b>Beschikbare commando's:</b>",
-    "helpBody": "/help: deze hulp tonen\n/add: een inname registreren\n/start: de bot starten\n\n<b>Tekstcommando's:</b>\ntaken &lt;naam&gt;: een inname bevestigen\n\n<b>Knoppen in herinneringen:</b>\n• Ingenomen: inname bevestigen\n• 🕐 1 u / 🕐 3 u: herinnering uitstellen\n• ⏭ Overslaan: inname overslaan\n• ✓ Bevestigen: een gemiste inname bevestigen",
+    "helpBody": "/help: deze hulp tonen\n/add: een inname registreren\n/start: de bot starten\n\n<b>Tekstcommando's:</b>\ntaken &lt;naam&gt;: een inname bevestigen\n\n<b>Knoppen in herinneringen:</b>\n• ✅ Innemen: inname vastleggen\n• 🕐 Later herinneren: herinnering uitstellen, met de duur uit de instellingen\n• ⏭ Overslaan: dosis overslaan\n• Als gemist laten: een gemiste dosis als gemist laten",
     "measureValuePrompt": "Antwoord met de waarde om die vast te leggen (optioneel).",
     "buttonMeasureValue": "Waarde…",
     "measureValueSaved": "Meting opgeslagen.",
     "measureValueInvalid": "Antwoord met een getal om een meting vast te leggen.",
     "measureValueOutOfRange": "Die waarde ligt buiten het aannemelijke bereik.",
-    "measureValueExpired": "Dit verzoek is verlopen."
+    "measureValueExpired": "Dit verzoek is verlopen.",
+    "snoozeMinutes": "{minutes} min"
   },
   "medicationReminders": {
-    "phaseGreenTitle": "🟢 Herinnering: {medName}",
-    "phaseGreenMessage": "🟢 Herinnering:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nTijdvenster sluit over {minutes} min.",
-    "phaseYellowTitle": "🟡 Bijna tijd: {medName}",
-    "phaseYellowMessage": "🟡 Bijna tijd:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nNog {minutes} min.",
+    "phaseGreenTitle": "🟢 Aan de beurt: {medName}",
+    "phaseGreenMessage": "🟢 Aan de beurt:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nHet tijdvenster sluit over {minutes} min.",
+    "phaseYellowTitle": "🟡 Nog aan de beurt: {medName}",
+    "phaseYellowMessage": "🟡 Nog aan de beurt:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nNog {minutes} min in het tijdvenster.",
     "phaseOrangeTitle": "🟠 Te laat: {medName}",
     "phaseOrangeMessage": "🟠 Te laat:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n{minutes} min te laat.",
-    "phaseRedTitle": "🔴 Niet ingenomen: {medName}",
-    "phaseRedMessage": "🔴 Nog niet ingenomen:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nTelt als gemist zolang je niets vastlegt. Neem je hem nu, dan telt hij nog, als late dosis.",
-    "buttonTaken": "Ingenomen",
+    "phaseRedTitle": "🔴 Gemist: {medName}",
+    "phaseRedMessage": "🔴 Gemist:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nNeem je hem nu, dan telt hij nog, als te laat.",
+    "buttonTaken": "✅ Innemen",
     "buttonConfirm": "Als gemist laten",
-    "buttonTakenLate": "✅ Ingenomen (te laat)",
-    "buttonSnoozeOneHour": "🕐 1 u",
-    "buttonSnoozeThreeHours": "🕐 3 u",
-    "buttonSkip": "⏭ Overslaan"
+    "buttonTakenLate": "✅ Innemen (telt als te laat)",
+    "buttonSkip": "⏭ Overslaan",
+    "buttonSnooze": "🕐 Later herinneren ({minutes} min)"
   },
   "lowStockReminders": {
     "title": "Lage voorraad: {medName}",

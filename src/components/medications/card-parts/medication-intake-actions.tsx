@@ -1,7 +1,8 @@
-import { Check, Loader2, SkipForward } from "lucide-react";
+import { BellRing, Check, Loader2, SkipForward } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { useTranslations } from "@/lib/i18n/context";
+import { InlineAction } from "@/components/ui/inline-action";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { DOSE_ACTION_TERM } from "@/lib/medications/dose-state/terms";
 
@@ -14,6 +15,17 @@ interface MedicationIntakeActionsProps {
    * here just forward the skip flag.
    */
   onRecordIntake: (skipped: boolean) => void;
+  /**
+   * The card's snooze ("Remind me later (30 min)") and its snoozed state,
+   * from {@link useDoseSnooze}. Omitted where a snooze means nothing.
+   */
+  snooze?: {
+    minutes: number;
+    snoozedUntil: string | null;
+    canSnooze: boolean;
+    busy: boolean;
+    snooze: () => void;
+  } | null;
 }
 
 /**
@@ -32,8 +44,10 @@ interface MedicationIntakeActionsProps {
 export function MedicationIntakeActions({
   intakeLoading,
   onRecordIntake,
+  snooze = null,
 }: MedicationIntakeActionsProps) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   // v1.36.x — marking a dose taken or skipped is the verb the delegation was
   // written for. A read-only delegate sees the card and its schedule and no
   // action row; the card is otherwise unchanged.
@@ -41,7 +55,7 @@ export function MedicationIntakeActions({
   const canRecordIntake = canWriteDomain("medications");
   if (!canRecordIntake) return null;
 
-  return (
+  const buttons = (
     <div className="flex gap-2">
       <Button
         data-slot="medication-intake-take"
@@ -70,6 +84,39 @@ export function MedicationIntakeActions({
         )}
         {t(DOSE_ACTION_TERM.skip)}
       </Button>
+    </div>
+  );
+
+  if (!snooze || (!snooze.canSnooze && !snooze.snoozedUntil)) return buttons;
+
+  return (
+    <div className="space-y-1">
+      {buttons}
+      {/* The snooze rides under the two buttons: one length for every
+          surface, named in the label, and the held state in its place once
+          set, so a card never hides that the reminder was pushed back. */}
+      {snooze.snoozedUntil ? (
+        <p
+          className="text-muted-foreground flex min-h-11 items-center gap-1.5 text-xs sm:min-h-9"
+          data-slot="medication-snoozed"
+        >
+          <BellRing className="size-3.5 shrink-0" aria-hidden="true" />
+          {t("medications.dose.state.snoozedUntil", {
+            time: fmt.time(snooze.snoozedUntil),
+          })}
+        </p>
+      ) : (
+        <InlineAction
+          tone="muted"
+          size="xs"
+          onClick={snooze.snooze}
+          disabled={snooze.busy || !!intakeLoading}
+          data-slot="medication-intake-snooze"
+        >
+          <BellRing className="size-3.5" aria-hidden="true" />
+          {t(DOSE_ACTION_TERM.snooze, { minutes: snooze.minutes })}
+        </InlineAction>
+      )}
     </div>
   );
 }

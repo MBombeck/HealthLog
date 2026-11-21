@@ -8,6 +8,7 @@ import { useMounted } from "@/hooks/use-mounted";
 import { useTranslations } from "@/lib/i18n/context";
 import { isSurfaceVisible } from "@/lib/modules/surface";
 import { CoachNudgeCard } from "@/components/settings/coach-nudge-card";
+import { DoseSnoozeCard } from "@/components/settings/dose-snooze-card";
 import { LowStockCard } from "@/components/settings/low-stock-card";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { MoodReminderCard } from "@/components/settings/mood-reminder-card";
@@ -64,6 +65,12 @@ export function NotificationsSection() {
         {moodEnabled ? (
           <div id="mood-reminder" className="scroll-mt-28">
             <MoodReminderCard isAuthenticated={isAuthenticated} />
+          </div>
+        ) : null}
+
+        {medsEnabled ? (
+          <div id="dose-snooze" className="scroll-mt-28">
+            <DoseSnoozeCard isAuthenticated={isAuthenticated} />
           </div>
         ) : null}
 

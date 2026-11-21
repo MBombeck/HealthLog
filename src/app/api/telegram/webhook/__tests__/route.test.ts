@@ -409,7 +409,18 @@ describe("Telegram webhook — callback dispatch", () => {
     expect(answerTelegramCallbackQuery).toHaveBeenCalledTimes(1);
     const ackText = vi.mocked(answerTelegramCallbackQuery).mock.calls[0][2];
     expect(ackText).toMatch(/Ramipril/);
-    expect(ackText).toMatch(/1 hour/i);
+    // The answer names the minutes the button carried (an older 1 h button
+    // keeps working), in the same "N min" form the new button uses.
+    expect(ackText).toMatch(/60 min/);
+  });
+
+  it("'snooze:<medId>:<minutes>' holds the minutes to the setting's range", async () => {
+    await POST(tgRequest(callbackUpdate("snooze:med-1:100000")));
+    const updateArgs = vi.mocked(prisma.medication.update).mock.calls[0][0];
+    const deltaMs =
+      (updateArgs.data as { snoozedUntil: Date }).snoozedUntil.getTime() -
+      Date.now();
+    expect(deltaMs).toBeLessThanOrEqual(240 * 60_000 + 1000);
   });
 
   it("'skip:<medId>' creates an intake event with skipped=true and snoozes through the person's own end of day", async () => {

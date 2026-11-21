@@ -2690,8 +2690,11 @@
         "takenLate": "Prise en retard",
         "skipped": "Sautée",
         "missed": "Manquée",
-        "missedStillCounts": "La prendre maintenant compte encore, comme prise en retard."
-      }
+        "missedStillCounts": "La prendre maintenant compte encore, comme prise en retard.",
+        "snoozedUntil": "Rappel reporté à {time}"
+      },
+      "snoozedToast": "{name} : rappel à {time}",
+      "snoozeFailed": "Impossible de reporter {name}. Réessaie"
     }
   },
   "charts": {
@@ -5788,6 +5791,13 @@
             "description": "Les rappels de règles et de fenêtre fertile s’activent par canal dans la grille des notifications.",
             "link": "Ouvrir la grille des notifications"
           }
+        },
+        "snooze": {
+          "title": "Me le rappeler plus tard",
+          "description": "De combien un rappel de dose est reporté, sur la carte du médicament, dans Telegram et dans l'app.",
+          "label": "Reporter de",
+          "option": "{minutes} min",
+          "saveError": "Enregistrement impossible. Réessaie"
         }
       },
       "layout": {
@@ -9831,29 +9841,29 @@
     "askMedicationName": "Indiquez le médicament, p. ex. <b>pris Ramipril</b>.",
     "medicationNotFoundExact": "Médicament introuvable. Envoyez le nom exactement tel qu’il apparaît dans HealthLog.",
     "helpHeader": "<b>Commandes disponibles :</b>",
-    "helpBody": "/help : afficher cette aide\n/add : enregistrer une prise\n/start : démarrer le bot\n\n<b>Commandes texte :</b>\ntaken &lt;nom&gt; : confirmer une prise\n\n<b>Boutons dans les rappels :</b>\n• Pris : confirmer la prise\n• 🕐 1h / 🕐 3h : reporter le rappel\n• ⏭ Ignorer : ignorer la prise\n• ✓ Confirmer : confirmer une prise manquée",
+    "helpBody": "/help : afficher cette aide\n/add : enregistrer une prise\n/start : démarrer le bot\n\n<b>Commandes texte :</b>\ntaken &lt;nom&gt; : confirmer une prise\n\n<b>Boutons dans les rappels :</b>\n• ✅ Prendre : enregistrer la prise\n• 🕐 Me le rappeler plus tard : reporter le rappel, de la durée choisie dans les réglages\n• ⏭ Sauter : sauter la prise\n• Laisser manquée : laisser une prise manquée comme manquée",
     "measureValuePrompt": "Répondez avec la valeur pour l’enregistrer (facultatif).",
     "buttonMeasureValue": "Valeur…",
     "measureValueSaved": "Mesure enregistrée.",
     "measureValueInvalid": "Répondez avec un nombre pour enregistrer une mesure.",
     "measureValueOutOfRange": "Cette valeur est en dehors de la plage plausible.",
-    "measureValueExpired": "Cette invite a expiré."
+    "measureValueExpired": "Cette invite a expiré.",
+    "snoozeMinutes": "{minutes} min"
   },
   "medicationReminders": {
-    "phaseGreenTitle": "🟢 Rappel : {medName}",
-    "phaseGreenMessage": "🟢 Reminder:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nWindow closes in {minutes} Min.",
-    "phaseYellowTitle": "🟡 Bientôt due : {medName}",
-    "phaseYellowMessage": "🟡 Bientôt due :\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nIl reste {minutes} min.",
-    "phaseOrangeTitle": "🟠 En retard : {medName}",
-    "phaseOrangeMessage": "🟠 Overdue:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nOverdue by {minutes} Min.",
-    "phaseRedTitle": "🔴 Pas prise : {medName}",
-    "phaseRedMessage": "🔴 Pas encore prise :\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nElle compte comme manquée tant que rien n’est enregistré. Si tu la prends maintenant, elle compte quand même, en retard.",
-    "buttonTaken": "Pris",
+    "phaseGreenTitle": "🟢 À prendre: {medName}",
+    "phaseGreenMessage": "🟢 À prendre:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nLa plage se termine dans {minutes} min.",
+    "phaseYellowTitle": "🟡 Toujours à prendre: {medName}",
+    "phaseYellowMessage": "🟡 Toujours à prendre:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nEncore {minutes} min dans la plage.",
+    "phaseOrangeTitle": "🟠 En retard: {medName}",
+    "phaseOrangeMessage": "🟠 En retard:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nEn retard de {minutes} min.",
+    "phaseRedTitle": "🔴 Manquée: {medName}",
+    "phaseRedMessage": "🔴 Manquée:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nLa prendre maintenant compte encore, comme prise en retard.",
+    "buttonTaken": "✅ Prendre",
     "buttonConfirm": "Laisser manquée",
-    "buttonTakenLate": "✅ Pris (en retard)",
-    "buttonSnoozeOneHour": "🕐 1h",
-    "buttonSnoozeThreeHours": "🕐 3h",
-    "buttonSkip": "⏭ Ignorer"
+    "buttonTakenLate": "✅ Prendre (compte en retard)",
+    "buttonSkip": "⏭ Sauter",
+    "buttonSnooze": "🕐 Me le rappeler plus tard ({minutes} min)"
   },
   "lowStockReminders": {
     "title": "Stock faible : {medName}",

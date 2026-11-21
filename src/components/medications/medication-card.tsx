@@ -8,6 +8,8 @@ import { useState, useEffect, useReducer } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useMedicationIntake } from "@/components/medications/use-medication-intake";
+import { useDoseSnooze } from "@/components/medications/card-parts/use-dose-snooze";
+import { useActiveRecordName } from "@/hooks/use-record-capabilities";
 import { MedicationCardMenu } from "@/components/medications/medication-card-menu";
 import { MedicationStateBadges } from "@/components/medications/card-parts/medication-state-badges";
 import { MedicationCardBody } from "@/components/medications/card-parts/medication-card-body";
@@ -188,6 +190,22 @@ export function MedicationCard({
   // a shared hook so the generic and GLP-1 cards can never re-diverge. The
   // card keeps only its post-success follow-up: prompting (skippably) for
   // the injection site on a taken dose when tracking is enabled.
+  // "Remind me later": only where a reminder exists to push back, in the
+  // person's own record (a delegate may not snooze).
+  const recordName = useActiveRecordName();
+  const snooze = useDoseSnooze({
+    medicationId: medication.id,
+    medicationName: medication.name,
+    enabled:
+      medication.active &&
+      medication.notificationsEnabled &&
+      medication.autoMarkTaken !== true &&
+      medication.trackIntake !== false &&
+      medication.intakeActionable !== false &&
+      medication.asNeeded !== true &&
+      !recordName,
+  });
+
   const { intakeLoading, recordIntake } = useMedicationIntake({
     medication,
     onRecorded: (eventId, skipped) => {
@@ -555,6 +573,7 @@ export function MedicationCard({
       lowStockRunwayDays={lowStockRunwayDays}
       intakeLoading={intakeLoading}
       onRecordIntake={(skipped) => recordIntake(skipped, displayedSlot)}
+      snooze={snooze}
     >
       {/* v1.8.5 — post-dose injection-site capture (optional, skippable). */}
       {tracksInjection && (

@@ -59,6 +59,13 @@ export const medicationKeys = {
    * and a medication write changes the per-category counts.
    */
   medicationCategories: () => ["medications", "categories"] as const,
+  /**
+   * Today's dose rows across every medication
+   * (`GET /api/medications/intake?scope=today`), the row a card snoozes and
+   * the place its snoozed state is read. Under the `["medications"]`
+   * prefix: every intake write refetches it.
+   */
+  medicationIntakeToday: () => ["medications", "intake", "today"] as const,
   medicationCadence: (medicationId: string) =>
     ["medications", medicationId, "cadence"] as const,
   medicationGlp1Details: (medicationId: string) =>

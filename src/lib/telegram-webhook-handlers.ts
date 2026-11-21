@@ -31,6 +31,10 @@ import {
   findTelegramDoseMedication,
   listTelegramDoseMedications,
 } from "@/lib/telegram-dose-medications";
+import {
+  MAX_SNOOZE_MINUTES,
+  MIN_SNOOZE_MINUTES,
+} from "@/lib/medications/snooze-length";
 import { GREETING_WORDS, HELP_WORDS } from "@/lib/telegram-bare-words";
 import {
   markMedicationSkipped,
@@ -236,10 +240,16 @@ export async function handleCallback(update: TelegramUpdate) {
     }
     await cleanupReminderTracking(user.id, medicationId);
   } else if (data.startsWith("snooze:")) {
-    // Format: "snooze:{medicationId}:{minutes}"
+    // Format: "snooze:{medicationId}:{minutes}". The reminder's button
+    // carries the person's snooze length; a button from an older message
+    // (the former 1 h / 3 h pair) still answers with its own minutes. Held to
+    // the setting's range either way.
     const parts = data.split(":");
     const medicationId = parts[1];
-    const minutes = parseInt(parts[2], 10);
+    const asked = parseInt(parts[2], 10);
+    const minutes = Number.isFinite(asked)
+      ? Math.min(Math.max(asked, MIN_SNOOZE_MINUTES), MAX_SNOOZE_MINUTES)
+      : NaN;
     if (!medicationId || !Number.isFinite(minutes)) {
       await answerTelegramCallbackQuery(
         botToken,
@@ -268,14 +278,13 @@ export async function handleCallback(update: TelegramUpdate) {
       data: { snoozedUntil: new Date(Date.now() + minutes * 60000) },
     });
 
-    const duration =
-      minutes <= 60
-        ? t("telegram.snoozeOneHour")
-        : t("telegram.snoozeThreeHours");
     await answerTelegramCallbackQuery(
       botToken,
       callback.id,
-      t("telegram.snoozedFor", { name: medication.name, duration }),
+      t("telegram.snoozedFor", {
+        name: medication.name,
+        duration: t("telegram.snoozeMinutes", { minutes }),
+      }),
     );
     if (messageId) {
       await deleteMessage(botToken, chatId, messageId);

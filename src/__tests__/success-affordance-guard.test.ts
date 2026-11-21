@@ -268,6 +268,10 @@ const PINNED_AFFORDANCES: Record<
   "src/components/measurements/list/use-measurement-list-data.ts": {
     "toast.success": 3,
   },
+  // The snooze's confirmation ("reminder again at 09:12").
+  "src/components/medications/card-parts/use-dose-snooze.ts": {
+    "toast.success": 1,
+  },
   // The tone of the due and taken dose states, which every dose surface
   // renders through this one label (it reports no write).
   "src/components/medications/dose-state-label.tsx": { "text-success": 2 },
