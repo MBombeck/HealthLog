@@ -7,7 +7,8 @@
  *
  *   - `due`     -> pill `in_window`, showing the dose window;
  *   - `overdue` -> pill `late`, and `very_late` past the midpoint between the
- *                  end of the on-time window and the miss cutoff;
+ *                  end of the on-time window and the miss cutoff, naming
+ *                  the slot's time instead of the closed window;
  *   - anything else -> no pill (the card body states missed / taken itself).
  *
  * While the compliance block is still loading there is no dose and no pill;
@@ -96,10 +97,15 @@ export function cardWindowPill(
     windowEnd: hhmm(overdueSince, tz),
   };
   if (state === "due") return { status: "in_window", ...window };
+  // Past its window an overdue dose names its own time ("Overdue — 08:00"),
+  // not the window that has closed: one time, so a 12 h clock fits the row.
+  const slot = ms(dose.targetAt);
   const veryLateFrom = overdueSince + (missedAfter - overdueSince) / 2;
   return {
     status: now.getTime() >= veryLateFrom ? "very_late" : "late",
-    ...window,
+    ...(slot === null
+      ? window
+      : { windowStart: hhmm(slot, tz), windowEnd: hhmm(slot, tz) }),
   };
 }
 

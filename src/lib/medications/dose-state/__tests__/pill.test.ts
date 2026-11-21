@@ -48,6 +48,14 @@ describe("cardWindowPill", () => {
     });
   });
 
+  it("names the slot's time once overdue, not the closed window", () => {
+    expect(cardWindowPill(dose, at("2026-11-21T15:00:00Z"), "UTC")).toEqual({
+      status: "late",
+      windowStart: "13:59",
+      windowEnd: "13:59",
+    });
+  });
+
   it("escalates past the on-time window, and past its midpoint", () => {
     expect(
       cardWindowPill(dose, at("2026-11-21T15:00:00Z"), "UTC")?.status,

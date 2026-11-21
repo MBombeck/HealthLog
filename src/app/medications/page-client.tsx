@@ -514,20 +514,20 @@ export default function MedicationsPageClient() {
         description={t("medications.subtitle")}
         actions={
           <>
-            {/* v1.16.11 (#316) — "Alle fälligen einnehmen". Contextual, not a
-              permanent fixture: it renders only while at least TWO
-              medications are currently due (a single due dose is the
-              card's own one-tap job). Calm outline variant so the primary
-              Add button keeps the visual lead; same responsive 44-px
-              mobile tap floor as its neighbours. */}
+            {/* #316 — only while TWO or more doses are due (one is the
+              card's own tap); outline, so Add keeps the lead. */}
             {canAddMedication && dueMeds.length >= 2 && (
               <Button
                 variant="outline"
                 onClick={() => setTakeAllOpen(true)}
-                className="min-h-11 sm:min-h-9"
+                // An icon on a phone, so the H1 keeps its one line.
+                className="min-h-11 max-sm:min-w-11 sm:min-h-9"
+                title={t("medications.takeAllDue.button")}
               >
                 <CheckCheck className="h-4 w-4" aria-hidden="true" />
-                {t("medications.takeAllDue.button")}
+                <span className="max-sm:sr-only">
+                  {t("medications.takeAllDue.button")}
+                </span>
               </Button>
             )}
             {/* v1.16.11 — the wrench is the one customize entry point:
