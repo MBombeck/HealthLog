@@ -50,7 +50,11 @@ notes, and machine-readable specs that ship alongside the source:
   [`using/care-calendar-feed.md`](./using/care-calendar-feed.md) the same for
   booked visits, check-ups and vaccination boosters coming due.
   [`using/energy-balance.md`](./using/energy-balance.md) explains the daily
-  energy balance and when a day has none.
+  energy balance, when a day has none, and how it reaches the correlations
+  and the Coach.
+  [`using/scheduled-doctor-report.md`](./using/scheduled-doctor-report.md)
+  covers filing the doctor report into the documents every month, quarter
+  or year.
   [`using/lasting-change-notification.md`](./using/lasting-change-notification.md)
   covers the opt-in notification about a vital that settled at a new level.
 - [`migration/`](./migration/) — migration notes. Currently only

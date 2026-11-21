@@ -33,3 +33,22 @@ import changes it with nothing to recalculate.
 The read is `GET /api/nutrients/energy-balance?days=30` (7 to 90 days), behind
 the opt-in nutrients module, so a script or another client sees the same
 figures.
+
+## In the correlations and the Coach
+
+The daily balance is also a channel in the correlation scan, named **daily
+energy balance**. It pairs a day's balance with the next day's readings
+(weight, sleep, mood and the rest), under the same evidence bar as every
+other channel: at least 20 days that hold a balance, and only the days that
+do. A day without one is left out, never counted as zero. It is never paired
+with energy intake, which it is computed from. With the nutrients module off
+it is not read.
+
+The Coach sees one compact line: the averages of intake, expenditure and
+balance over the last fourteen finished days, how many of them held a
+balance, and on how many resting energy was estimated. It is told to treat
+the line as a description of your record and never to turn it into a calorie
+target, a diet or a weight forecast. The line is left out when the nutrients
+module is off, when active energy is not among the Coach's sources, and
+under a Coach lookback limit of seven days. AI analysis has to be on for the
+Coach at all; the card and the correlations do not depend on it.
