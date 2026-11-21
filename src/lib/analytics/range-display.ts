@@ -42,11 +42,13 @@ function convertAggregate(
 ): WindowAggregate {
   const abs = (v: number | null) =>
     v === null ? null : applyDisplayTransform(v, transform);
+  // The display of zero is the transform's shift alone, so the sum of
+  // `count` converted readings is the scaled sum plus that shift per reading.
   const sum =
     agg.sum === null
       ? null
       : applyDisplayTransformDelta(agg.sum, transform) +
-        (transform.offset ?? 0) * agg.count;
+        applyDisplayTransform(0, transform) * agg.count;
   return {
     count: agg.count,
     min: abs(agg.min),
