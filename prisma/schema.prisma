@@ -8384,6 +8384,16 @@ enum CycleTrackingGoal {
   @@map("cycle_tracking_goal")
 }
 
+/// A reproductive state that pauses the cycle forecast. PREGNANT
+/// lasts until the owner changes it; POSTPARTUM lasts `postpartumWeeks` from
+/// the delivery date and then resolves back to the ordinary cycle.
+enum CycleReproductiveState {
+  PREGNANT
+  POSTPARTUM
+
+  @@map("cycle_reproductive_state")
+}
+
 /// Menstrual-flow intensity for a logged day. Mirrors the HealthKit
 /// `HKCategoryValueMenstrualFlow` ladder (unspecified collapses to the
 /// presence of a row; `NONE` is an explicit no-flow marker).
@@ -8590,6 +8600,26 @@ model CycleProfile {
   /// whether the intent-revealing day-log fields encrypt at the
   /// application layer in addition to the always-encrypted notes.
   sensitiveCategoryEncryption Boolean @default(true) @map("sensitive_category_encryption")
+
+  /// Pregnancy and postpartum as a cycle state, set by the owner (or
+  /// once, conservatively, by an Apple Health import; see
+  /// `src/lib/cycle/pregnancy.ts`). NULL is the ordinary cycle. While the
+  /// resolved state is PREGNANT, or POSTPARTUM inside its window, the period
+  /// and fertility forecast pauses everywhere it is shown and every
+  /// prediction push is suppressed. The goal above is kept untouched, so the
+  /// ordinary cycle resumes with the goal the owner had. The dates are
+  /// `YYYY-MM-DD` calendar days in the owner's zone, like every cycle date.
+  reproductiveState  CycleReproductiveState? @map("reproductive_state")
+  /// First day of the pregnancy as the owner gives it (usually the first day
+  /// of the last period). Optional; the due date alone also places the week.
+  pregnancyStartDate String?                 @map("pregnancy_start_date")
+  /// The expected due date the owner was given. Optional.
+  pregnancyDueDate   String?                 @map("pregnancy_due_date")
+  /// The day the pregnancy ended in a birth. Required for POSTPARTUM.
+  deliveryDate       String?                 @map("delivery_date")
+  /// How many weeks after `deliveryDate` the postpartum state lasts before
+  /// the ordinary cycle (and its forecast) resumes on its own.
+  postpartumWeeks    Int                     @default(12) @map("postpartum_weeks")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

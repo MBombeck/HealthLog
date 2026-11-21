@@ -49,6 +49,11 @@ export class ExportCycleWriter {
     this.markedCycle.push(rec);
   }
 
+  /** A pregnancy / lactation status sample (see the accumulator). */
+  consumeStatus(hkType: string, start: string, end: string | null): void {
+    this.cycleAccumulator.consumeStatus(hkType, start, end);
+  }
+
   consume(rec: CycleSample): void {
     const consumed = this.cycleAccumulator.consume(
       rec.hkType,

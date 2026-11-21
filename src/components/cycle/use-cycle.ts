@@ -471,6 +471,14 @@ export interface CyclePrefsPatch {
   typicalCycleLength?: number | null;
   typicalPeriodLength?: number | null;
   lutealPhaseLength?: number | null;
+  /** `state: null` returns to the ordinary cycle and clears the dates. */
+  pregnancy?: {
+    state: "PREGNANT" | "POSTPARTUM" | null;
+    startDate?: string | null;
+    dueDate?: string | null;
+    deliveryDate?: string | null;
+    postpartumWeeks?: number;
+  };
 }
 
 export function useUpdateCyclePrefs() {

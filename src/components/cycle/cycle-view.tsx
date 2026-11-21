@@ -34,6 +34,7 @@ import {
   useCycleProfile,
 } from "./use-cycle";
 import { ListCapNotice } from "@/components/ui/list-cap-notice";
+import { CyclePregnancyBanner } from "./cycle-pregnancy-banner";
 
 /**
  * v1.15.0 — the cycle vertical's client orchestrator.
@@ -167,10 +168,10 @@ export function CycleView() {
   const calendarError = calendar.isError && !calendar.data;
   const tileHue = verdict?.phase ? PHASE_HUE[verdict.phase] : undefined;
   const goal = calendar.data?.profile.goal;
-  // Honesty-gate inputs for the phase-education card (Clue precedent): the
-  // predictive phase framing only shows when prediction is on, not in
-  // raw-chart mode, and at least three cycles are observed.
+  // Honesty-gate inputs for the phase-education card (Clue precedent): phase
+  // framing only with prediction on, no raw-chart mode, three cycles seen.
   const calProfile = calendar.data?.profile;
+  const paused = calendar.data?.pregnancy?.predictionsPaused === true;
 
   return (
     <div className="space-y-6">
@@ -193,6 +194,7 @@ export function CycleView() {
         }
       />
 
+      <CyclePregnancyBanner pregnancy={calendar.data?.pregnancy} />
       {/* Desktop: ring (left) + tabs (right). Single column below lg. */}
       <div className="grid gap-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:items-start">
         {/* Wheel + compact phase card — grouped so they stick together. The
@@ -284,7 +286,7 @@ export function CycleView() {
                   className="mt-1 w-full"
                   onClick={() => openSheet(today)}
                 >
-                  {verdict?.state === "OVERDUE"
+                  {verdict?.state === "OVERDUE" || paused
                     ? t("cycle.ring.logPeriodCta")
                     : t("cycle.ring.firstPeriodCta")}
                 </Button>
@@ -292,10 +294,9 @@ export function CycleView() {
             </div>
           </div>
 
-          {/* Phase-education card beneath the wheel — the single instance,
-              including the "you often notice this here" chip row sourced from
-              the user's own symptom-by-phase history. */}
-          {!loading && !calendarError ? (
+          {/* Phase-education card beneath the wheel, with the chip row from
+              the user's own symptom-by-phase history; none while paused. */}
+          {!loading && !calendarError && !paused ? (
             <PhaseEducationCard
               animate={play}
               phase={verdict?.phase ?? null}

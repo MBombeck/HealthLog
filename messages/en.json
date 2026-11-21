@@ -546,7 +546,17 @@
       "window": "analysed {from} to {to}, which can reach beyond the report period",
       "windowLine": "Analysed {from} to {to}. This window can reach beyond the report period."
     },
-    "screenerUnvalidated": "{label}: {count} of {total} results were answered in a translation that has not been scientifically validated; treat them as orientation."
+    "screenerUnvalidated": "{label}: {count} of {total} results were answered in a translation that has not been scientifically validated; treat them as orientation.",
+    "pregnancy": {
+      "title": "Pregnancy",
+      "pregnantWeek": "Pregnant, week {weeks}+{days} on the report date",
+      "pregnant": "Pregnant",
+      "startDate": "First day of the last period",
+      "dueDate": "Due date",
+      "postpartumWeek": "After the birth, week {weeks} on the report date",
+      "deliveryDate": "Date of the birth",
+      "predictionsPaused": "Self-reported. Cycle predictions are paused."
+    }
   },
   "errorBoundary": {
     "title": "Something went wrong",
@@ -3071,7 +3081,8 @@
         "no_personal_goal": "Set a personal weight goal to see progress here.",
         "weight_not_tracked": "Log a weight reading to see progress toward your goal.",
         "read_failed": "Weight data could not be loaded. Try again.",
-        "notScored": "Weight-goal progress is personal context and does not affect the Health Score."
+        "notScored": "Weight-goal progress is personal context and does not affect the Health Score.",
+        "pregnancy_context": "During a pregnancy and after the birth, weight is shown as data, not against a goal."
       },
       "configureLink": "Choose what counts toward your score",
       "coverage": {
@@ -10456,6 +10467,38 @@
         "LATE": "No forecast while this period is later than expected; it returns once you log it.",
         "OFF": "Forecasts are turned off; only past cycles are included, if chosen."
       }
+    },
+    "pregnancy": {
+      "title": "Pregnancy and after the birth",
+      "description": "While either holds, period and fertility predictions pause.",
+      "stateLabel": "Current state",
+      "state": {
+        "NONE": "Ordinary cycle",
+        "PREGNANT": "Pregnant",
+        "POSTPARTUM": "After the birth"
+      },
+      "startDate": "First day of the last period",
+      "dueDate": "Due date",
+      "deliveryDate": "Date of the birth",
+      "postpartumWeeks": "Weeks before predictions resume",
+      "noneHint": "Predictions run as usual.",
+      "pausedHint": "Period and fertility predictions and their reminders pause. Weight and blood pressure are shown in this context, without a weight goal.",
+      "save": "Save",
+      "errors": {
+        "start_in_future": "The first day cannot be in the future.",
+        "delivery_in_future": "The date of the birth cannot be in the future.",
+        "due_before_start": "The due date must come after the first day.",
+        "delivery_required": "Add the date of the birth.",
+        "generic": "This could not be saved. Try again."
+      },
+      "banner": {
+        "pregnantWeek": "Pregnant, week {weeks}+{days}",
+        "pregnant": "Pregnant",
+        "postpartumWeek": "After the birth, week {weeks}",
+        "due": "Due date {date}.",
+        "resumes": "Predictions resume on {date}.",
+        "paused": "Period and fertility predictions are paused."
+      }
     }
   },
   "cycleReminders": {
@@ -14510,7 +14553,9 @@
       "labValuesOther": "{count} lab values",
       "seizuresOne": "1 seizure",
       "seizuresFew": "{count} seizures",
-      "seizuresOther": "{count} seizures"
+      "seizuresOther": "{count} seizures",
+      "pregnancy": "Pregnancy",
+      "postpartum": "After the birth"
     },
     "labs": {
       "menuTitle": "Lab values",
@@ -14537,7 +14582,8 @@
       "daysOne": "on 1 day",
       "daysFew": "mean of {count} days",
       "daysOther": "mean of {count} days"
-    }
+    },
+    "pregnancyWeek": "pregnancy week {week}"
   },
   "lifeEvents": {
     "title": "Life event",

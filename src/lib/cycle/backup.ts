@@ -31,6 +31,7 @@ import type {
   CervixOpening,
   CervixPosition,
   ContraceptiveKind,
+  CycleReproductiveState,
   CycleTrackingGoal,
   FlowLevel,
   HomeTestResult,
@@ -46,6 +47,7 @@ import {
   UNOPENED,
 } from "@/lib/export/sealed-text";
 import { UNREADABLE_EXPORT_MARKER } from "@/lib/export/unreadable-marker";
+import { POSTPARTUM_WEEKS_DEFAULT } from "@/lib/cycle/pregnancy";
 import type { BackupPayload } from "@/lib/validations/backup";
 import {
   recordUnknownKeys,
@@ -70,6 +72,12 @@ export interface CycleBackupSection {
     rawChartMode: boolean;
     discreetNotifications: boolean;
     sensitiveCategoryEncryption: boolean;
+    /** The pregnancy / postpartum state and its dates. */
+    reproductiveState: string | null;
+    pregnancyStartDate: string | null;
+    pregnancyDueDate: string | null;
+    deliveryDate: string | null;
+    postpartumWeeks: number;
     createdAt?: string;
     updatedAt?: string;
   } | null;
@@ -272,6 +280,11 @@ export async function buildCycleBackupSection(
           rawChartMode: profile.rawChartMode,
           discreetNotifications: profile.discreetNotifications,
           sensitiveCategoryEncryption: profile.sensitiveCategoryEncryption,
+          reproductiveState: profile.reproductiveState,
+          pregnancyStartDate: profile.pregnancyStartDate,
+          pregnancyDueDate: profile.pregnancyDueDate,
+          deliveryDate: profile.deliveryDate,
+          postpartumWeeks: profile.postpartumWeeks,
         }
       : null,
     cycles: cycles.map((c) => ({
@@ -426,6 +439,30 @@ const CYCLE_SOURCES = new Set<MeasurementSource>([
   "IMPORT",
   "APPLE_HEALTH",
 ]);
+const REPRODUCTIVE_STATES = new Set<CycleReproductiveState>([
+  "PREGNANT",
+  "POSTPARTUM",
+]);
+/**
+ * The pregnancy state of a restored profile. A file from before the state
+ * existed carries none of these and restores the ordinary cycle.
+ */
+function restoredPregnancy(p: {
+  reproductiveState?: string | null;
+  pregnancyStartDate?: string | null;
+  pregnancyDueDate?: string | null;
+  deliveryDate?: string | null;
+  postpartumWeeks?: number;
+}) {
+  return {
+    reproductiveState: enumOrNull(p.reproductiveState, REPRODUCTIVE_STATES),
+    pregnancyStartDate: p.pregnancyStartDate ?? null,
+    pregnancyDueDate: p.pregnancyDueDate ?? null,
+    deliveryDate: p.deliveryDate ?? null,
+    postpartumWeeks: p.postpartumWeeks ?? POSTPARTUM_WEEKS_DEFAULT,
+  };
+}
+
 const CYCLE_GOALS = new Set<CycleTrackingGoal>([
   "GENERAL_HEALTH",
   "AVOID_PREGNANCY",
@@ -561,14 +598,14 @@ export async function restoreCycleData(
         rawChartMode: p.rawChartMode ?? false,
         discreetNotifications: p.discreetNotifications ?? false,
         sensitiveCategoryEncryption: p.sensitiveCategoryEncryption ?? true,
+        ...restoredPregnancy(p),
         ...(p.createdAt ? { createdAt: new Date(p.createdAt) } : {}),
         ...(p.updatedAt ? { updatedAt: new Date(p.updatedAt) } : {}),
       },
     });
   }
 
-  // Recreate observed cycle spans; map startDate → id so day-logs can
-  // re-attach to their owning span.
+  // Recreate observed spans; startDate → id re-attaches day-logs to them.
   const cycleIdByStart = new Map<string, string>();
   const restoredCycleIds = new Set<string>();
   // A folded start names the start that absorbed it. Kept only when that start

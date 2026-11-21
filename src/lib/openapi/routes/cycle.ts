@@ -280,6 +280,28 @@ const cycleVerdictDto = z
       "The resolved cycle verdict for the user's own timezone day. Render these values; do not recompute them. The grace window that decides OVERDUE is deliberately not published — read `state` and `overdueDays`.",
   });
 
+const pregnancyDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+const cyclePregnancyDto = z
+  .object({
+    storedState: z.enum(["PREGNANT", "POSTPARTUM"]).nullable(),
+    state: z.enum(["PREGNANT", "POSTPARTUM"]).nullable(),
+    startDate: pregnancyDate.nullable(),
+    dueDate: pregnancyDate.nullable(),
+    deliveryDate: pregnancyDate.nullable(),
+    postpartumWeeks: z.number().int(),
+    gestationalWeeks: z.number().int().nullable(),
+    gestationalDays: z.number().int().nullable(),
+    postpartumWeek: z.number().int().nullable(),
+    postpartumEndsOn: pregnancyDate.nullable(),
+    predictionsPaused: z.boolean(),
+  })
+  .meta({
+    id: "CyclePregnancyDTO",
+    description:
+      "The pregnancy / postpartum state, resolved on the owner's calendar day. `storedState` is what the owner set; `state` is what holds today (POSTPARTUM past `postpartumEndsOn` reads null). `gestationalWeeks`+`gestationalDays` count completed weeks from `startDate`, or from `dueDate` less 280 days. While `predictionsPaused` is true the period and fertility forecast is empty on every surface and no prediction push is sent. Render these values; do not recompute them.",
+  });
+
 const cycleProfileDto = z
   .object({
     goal: cycleTrackingGoalEnumOpenapi,
@@ -293,6 +315,7 @@ const cycleProfileDto = z
     typicalPeriodLength: z.number().int().nullable(),
     lutealPhaseLength: z.number().int().nullable(),
     updatedAt: isoDateTime(),
+    pregnancy: cyclePregnancyDto,
   })
   .meta({
     id: "CycleProfileDTO",
@@ -306,6 +329,8 @@ const cycleCalendarResponse = z.object({
     predictionEnabled: z.boolean(),
     cyclesObserved: z.number().int(),
   }),
+  // Additive (v1.49).
+  pregnancy: cyclePregnancyDto,
   prediction: cyclePredictionDto.nullable(),
   // The resolved verdict — required, never optional. An optional verdict is a
   // plausible default that invites a client to fall back to deriving its own,
@@ -1088,7 +1113,7 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Cycle"],
       summary: "Update cycle preferences (v1.15.0)",
       description:
-        "Deep-merges the supplied fields. `enabled` flips `cycleTrackingEnabled`. Returns the merged CycleProfileDTO. NOT gated.",
+        "Deep-merges the supplied fields. `enabled` flips `cycleTrackingEnabled`. `pregnancy` sets or clears the pregnancy / postpartum state (v1.49): `state: null` clears every pregnancy date with it; a date omitted keeps its stored value; the merged result is checked as a whole and answers 422 with `cycle-prefs.pregnancy.*` when a first day or delivery lies in the future, the due date is not after the first day, or POSTPARTUM has no delivery date. Returns the merged CycleProfileDTO. NOT gated.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: cyclePrefsRequest } },

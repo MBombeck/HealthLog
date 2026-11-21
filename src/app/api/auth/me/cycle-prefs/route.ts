@@ -6,7 +6,7 @@
  *                                      predictionEnabled?, discreetNotifications?,
  *                                      sensitiveCategoryEncryption?,
  *                                      typicalCycleLength?, typicalPeriodLength?,
- *                                      lutealPhaseLength? }`. Deep-merges the
+ *                                      lutealPhaseLength?, pregnancy? }`. Deep-merges the
  *                                      supplied fields over the persisted row
  *                                      (the notification-prefs precedent) and
  *                                      returns the merged CycleProfileDTO.
@@ -30,7 +30,19 @@ import { getOrCreateCycleProfile } from "@/lib/cycle/profile";
 import { isCycleEnabled } from "@/lib/cycle/enabled";
 import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
 import { toCycleProfileDTO } from "@/lib/cycle/dto";
-import { cyclePrefsSchema } from "@/lib/validations/cycle";
+import {
+  cyclePrefsSchema,
+  mergePregnancyPatch,
+  pregnancyPatchProblem,
+} from "@/lib/validations/cycle";
+import { predictionsPausedOn } from "@/lib/cycle/pregnancy";
+import { moodDateKey } from "@/lib/mood/date-key";
+import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+
+/** The owner's calendar day, the day every cycle date is counted on. */
+function ownerToday(timezone: string | null | undefined): string {
+  return moodDateKey(new Date(), timezone ?? DEFAULT_TIMEZONE);
+}
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +55,9 @@ export const GET = apiHandler(async () => {
 
   const profile = await getOrCreateCycleProfile(user.id);
   const resolved = isCycleEnabled(user.gender, profile);
-  return apiSuccess(toCycleProfileDTO(profile, resolved));
+  return apiSuccess(
+    toCycleProfileDTO(profile, resolved, ownerToday(user.timezone)),
+  );
 });
 
 export const PATCH = apiHandler(async (req: Request) => {
@@ -85,8 +99,31 @@ export const PATCH = apiHandler(async (req: Request) => {
   // Ensure the row exists, then deep-merge: only the supplied fields are
   // touched; siblings are left untouched (field-by-field, no mass
   // assignment). `enabled` maps onto the `cycleTrackingEnabled` column.
-  await getOrCreateCycleProfile(user.id);
+  const stored = await getOrCreateCycleProfile(user.id);
   const p = parsed.data;
+  const today = ownerToday(user.timezone);
+
+  // The pregnancy state merges over the stored columns and is checked
+  // as a whole: a patch that only moves the due date must still agree with
+  // the first day already stored.
+  const pregnancy = p.pregnancy
+    ? mergePregnancyPatch(
+        {
+          reproductiveState: stored.reproductiveState,
+          pregnancyStartDate: stored.pregnancyStartDate,
+          pregnancyDueDate: stored.pregnancyDueDate,
+          deliveryDate: stored.deliveryDate,
+          postpartumWeeks: stored.postpartumWeeks,
+        },
+        p.pregnancy,
+      )
+    : null;
+  if (pregnancy) {
+    const problem = pregnancyPatchProblem(pregnancy, today);
+    if (problem) {
+      return apiError("Invalid pregnancy dates", 422, { errorCode: problem });
+    }
+  }
 
   const updated = await prisma.cycleProfile.update({
     where: { userId: user.id },
@@ -115,8 +152,22 @@ export const PATCH = apiHandler(async (req: Request) => {
       ...(p.lutealPhaseLength !== undefined && {
         lutealPhaseLength: p.lutealPhaseLength,
       }),
+      ...(pregnancy && {
+        reproductiveState: pregnancy.reproductiveState,
+        pregnancyStartDate: pregnancy.pregnancyStartDate,
+        pregnancyDueDate: pregnancy.pregnancyDueDate,
+        deliveryDate: pregnancy.deliveryDate,
+        postpartumWeeks: pregnancy.postpartumWeeks,
+      }),
     },
   });
+
+  // A state that pauses the forecast takes the cached forecast with it at
+  // once, so the reminder cron has nothing left to push from; the refresh job
+  // writes a new one once the state no longer holds.
+  if (pregnancy && predictionsPausedOn(updated, today)) {
+    await prisma.cyclePrediction.deleteMany({ where: { userId: user.id } });
+  }
 
   const resolved = isCycleEnabled(user.gender, updated);
   // The typical lengths, the prediction switch and tracking itself all feed
@@ -134,5 +185,5 @@ export const PATCH = apiHandler(async (req: Request) => {
     meta: { changed: Object.keys(p), enabled: resolved },
   });
 
-  return apiSuccess(toCycleProfileDTO(updated, resolved));
+  return apiSuccess(toCycleProfileDTO(updated, resolved, today));
 });

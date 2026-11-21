@@ -546,7 +546,17 @@
       "window": "analizowano od {from} do {to}, może to wykraczać poza okres raportu",
       "windowLine": "Analizowano od {from} do {to}. Ten okres może wykraczać poza okres raportu."
     },
-    "screenerUnvalidated": "{label}: {count} z {total} wyników uzyskano w tłumaczeniu niezwalidowanym naukowo; należy traktować je orientacyjnie."
+    "screenerUnvalidated": "{label}: {count} z {total} wyników uzyskano w tłumaczeniu niezwalidowanym naukowo; należy traktować je orientacyjnie.",
+    "pregnancy": {
+      "title": "Ciąża",
+      "pregnantWeek": "W ciąży, tydzień {weeks}+{days} w dniu raportu",
+      "pregnant": "W ciąży",
+      "startDate": "Pierwszy dzień ostatniej miesiączki",
+      "dueDate": "Przewidywany termin porodu",
+      "postpartumWeek": "Po porodzie, tydzień {weeks} w dniu raportu",
+      "deliveryDate": "Data porodu",
+      "predictionsPaused": "Podane samodzielnie. Prognozy cyklu są wstrzymane."
+    }
   },
   "errorBoundary": {
     "title": "Coś poszło nie tak",
@@ -3071,7 +3081,8 @@
         "no_personal_goal": "Ustaw osobisty cel wagowy, aby zobaczyć tutaj postęp.",
         "weight_not_tracked": "Zapisz pomiar masy ciała, aby zobaczyć postęp w kierunku celu.",
         "read_failed": "Nie udało się wczytać danych masy ciała. Spróbuj ponownie.",
-        "notScored": "Postęp celu wagowego jest osobistym kontekstem i nie wpływa na wynik zdrowia."
+        "notScored": "Postęp celu wagowego jest osobistym kontekstem i nie wpływa na wynik zdrowia.",
+        "pregnancy_context": "W ciąży i po porodzie waga jest pokazywana jako dane, a nie względem celu."
       },
       "configureLink": "Wybierz, co liczy się do Twojego wyniku",
       "coverage": {
@@ -10456,6 +10467,38 @@
         "LATE": "Brak prognozy, dopóki ta miesiączka spóźnia się bardziej niż oczekiwano; wróci, gdy ją zapiszesz.",
         "OFF": "Prognozy są wyłączone; uwzględniane są tylko poprzednie cykle, jeśli je wybrano."
       }
+    },
+    "pregnancy": {
+      "title": "Ciąża i okres po porodzie",
+      "description": "Dopóki trwa któryś z nich, prognozy miesiączki i płodności są wstrzymane.",
+      "stateLabel": "Obecny stan",
+      "state": {
+        "NONE": "Zwykły cykl",
+        "PREGNANT": "W ciąży",
+        "POSTPARTUM": "Po porodzie"
+      },
+      "startDate": "Pierwszy dzień ostatniej miesiączki",
+      "dueDate": "Przewidywany termin porodu",
+      "deliveryDate": "Data porodu",
+      "postpartumWeeks": "Tygodnie do wznowienia prognoz",
+      "noneHint": "Prognozy działają jak zwykle.",
+      "pausedHint": "Prognozy miesiączki i płodności oraz ich przypomnienia są wstrzymane. Waga i ciśnienie są pokazywane w tym kontekście, bez celu wagowego.",
+      "save": "Zapisz",
+      "errors": {
+        "start_in_future": "Pierwszy dzień nie może być w przyszłości.",
+        "delivery_in_future": "Data porodu nie może być w przyszłości.",
+        "due_before_start": "Termin porodu musi przypadać po pierwszym dniu.",
+        "delivery_required": "Dodaj datę porodu.",
+        "generic": "Nie udało się zapisać. Spróbuj ponownie."
+      },
+      "banner": {
+        "pregnantWeek": "W ciąży, tydzień {weeks}+{days}",
+        "pregnant": "W ciąży",
+        "postpartumWeek": "Po porodzie, tydzień {weeks}",
+        "due": "Termin porodu {date}.",
+        "resumes": "Prognozy wracają {date}.",
+        "paused": "Prognozy miesiączki i płodności są wstrzymane."
+      }
     }
   },
   "cycleReminders": {
@@ -14510,7 +14553,9 @@
       "labValuesOther": "{count} wyników badań",
       "seizuresOne": "1 napad",
       "seizuresFew": "{count} napady",
-      "seizuresOther": "{count} napadów"
+      "seizuresOther": "{count} napadów",
+      "pregnancy": "Ciąża",
+      "postpartum": "Po porodzie"
     },
     "labs": {
       "menuTitle": "Wyniki badań",
@@ -14537,7 +14582,8 @@
       "daysOne": "w 1 dniu",
       "daysFew": "średnia z {count} dni",
       "daysOther": "średnia z {count} dni"
-    }
+    },
+    "pregnancyWeek": "tydzień ciąży {week}"
   },
   "lifeEvents": {
     "title": "Wydarzenie życiowe",

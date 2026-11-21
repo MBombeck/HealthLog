@@ -32,6 +32,11 @@ import {
 import { resolveLuteal } from "@/lib/cycle";
 import type { CyclePhase } from "@/lib/cycle/types";
 import {
+  PREGNANCY_PROFILE_SELECT,
+  pregnancyFieldsOf,
+  resolvePregnancyState,
+} from "@/lib/cycle/pregnancy";
+import {
   phaseForDate,
   buildPhaseDayMap,
   gatedPrediction,
@@ -135,6 +140,19 @@ export interface CycleSnapshotBlock {
    */
   upcoming: UpcomingCycleBlock[];
   phaseInsight: PhaseInsightBlock | null;
+  /**
+   * The pregnancy or postpartum state the owner set, when it holds
+   * today. While it does, the forecast is paused: `phase`, `dayOfCycle`,
+   * `nextEvent` and `upcoming` are empty. Dates and counts only.
+   */
+  pregnancy: {
+    state: "PREGNANT" | "POSTPARTUM";
+    gestationalWeeks: number | null;
+    gestationalDays: number | null;
+    dueDate: string | null;
+    deliveryDate: string | null;
+    postpartumWeek: number | null;
+  } | null;
 }
 
 /**
@@ -177,6 +195,32 @@ function interpretHeadline(
 }
 
 /**
+ * The pregnancy or postpartum state on `today`: whether it pauses the
+ * forecast, and the block the snapshot carries. A paused forecast names no
+ * phase either: the last logged cycle's day count would read as "day 200 of
+ * the cycle" during a pregnancy.
+ */
+function snapshotPregnancy(
+  profile: CycleProfileInput,
+  today: string,
+): { paused: boolean; block: CycleSnapshotBlock["pregnancy"] } {
+  const r = resolvePregnancyState(profile, today);
+  return {
+    paused: r.predictionsPaused,
+    block: r.state
+      ? {
+          state: r.state,
+          gestationalWeeks: r.gestationalAge?.weeks ?? null,
+          gestationalDays: r.gestationalAge?.days ?? null,
+          dueDate: r.dueDate,
+          deliveryDate: r.deliveryDate,
+          postpartumWeek: r.postpartumWeek,
+        }
+      : null,
+  };
+}
+
+/**
  * Build the cycle snapshot block. Returns `null` when there is nothing to say
  * (no observed cycle → no phase, no prediction, no insight) so the caller omits
  * the field entirely. The caller has already confirmed `isCycleEnabled`.
@@ -202,6 +246,7 @@ export async function buildCycleSnapshotBlock(
       typicalCycleLength: true,
       typicalPeriodLength: true,
       secondarySymptom: true,
+      ...PREGNANCY_PROFILE_SELECT,
     },
   });
   if (!profile) return null;
@@ -214,12 +259,11 @@ export async function buildCycleSnapshotBlock(
     predictionEnabled: profile.predictionEnabled,
     rawChartMode: profile.rawChartMode,
     secondarySymptom: profile.secondarySymptom,
+    ...pregnancyFieldsOf(profile),
   };
 
-  // Derive "today" from the user's timezone — matches how the calendar
-  // (calendar/route.ts) and insights routes resolve it, so the Coach's
-  // "you are on day N / period in M days" never disagrees with the calendar
-  // near local midnight.
+  // "Today" in the user's timezone, as the calendar and insights routes read
+  // it, so "day N / period in M days" never disagrees near local midnight.
   const tz = timezone ?? DEFAULT_TIMEZONE;
   const today = moodDateKey(now, tz);
   const from = addDays(today, -WINDOW_DAYS);
@@ -234,12 +278,8 @@ export async function buildCycleSnapshotBlock(
       tz,
       dayLogsFrom: defaultCalendarDayLogStart(today),
     }),
-    // A year of steps, heart-rate variability and CGM glucose is far too
-    // many readings to hold as objects (#1023). The crosstab only needs
-    // each day's sum and count per source and device, which is what the
-    // per-source picker decides on, so the fold runs in SQL. Days are the
-    // user's days, the ones `metricDayMap` keys on and the phase days are
-    // dated in.
+    // A year of readings is too many objects (#1023): the crosstab needs each
+    // user day's sum and count per source and device, folded in SQL.
     readSourceDayAggregates({
       userId,
       types: PHASE_CROSSTAB_METRIC_TYPES,
@@ -266,13 +306,16 @@ export async function buildCycleSnapshotBlock(
 
   const prediction = gatedPrediction(profileInput, inputs, today);
 
-  const { phase, dayOfCycle } = phaseForDate(
-    today,
-    cycles,
-    prediction?.nextPeriodStart ?? null,
-    lutealLength,
-    today,
-  );
+  const pregnancy = snapshotPregnancy(profileInput, today);
+  const { phase, dayOfCycle } = pregnancy.paused
+    ? { phase: null, dayOfCycle: null }
+    : phaseForDate(
+        today,
+        cycles,
+        prediction?.nextPeriodStart ?? null,
+        lutealLength,
+        today,
+      );
 
   // Next predicted event — period range + confidence + method, fertile window
   // goal-gated.
@@ -381,5 +424,6 @@ export async function buildCycleSnapshotBlock(
     nextEvent,
     upcoming,
     phaseInsight,
+    pregnancy: pregnancy.block,
   };
 }

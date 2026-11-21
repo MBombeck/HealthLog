@@ -1,3 +1,4 @@
+import { drawPregnancyBlock } from "./pregnancy-lines";
 import { PDF_FONT_FAMILY } from "./fonts";
 import type { jsPDF } from "jspdf";
 import { dateOnlyAtNoonUtc } from "@/lib/tz/date-only";
@@ -455,10 +456,9 @@ export function buildMedicationMoodWellnessSection(
         .finalY + 8;
   }
 
-  // v1.15.0 — cycle / reproductive-health section. Privacy default OFF: the
-  // aggregator only populates `data.cycle` when the cycle section toggle is
-  // explicitly ON AND the user has an observed cycle. Statistics only (no
-  // free-text notes). Skipped entirely otherwise.
+  // v1.15.0 — cycle / reproductive-health section. Privacy default OFF:
+  // `data.cycle` is set only when its toggle is ON and there is something to
+  // say. Statistics only (no free-text notes); skipped entirely otherwise.
   if (data.cycle) {
     const cyc = data.cycle;
     y = ensureSpace(y, 6 + 6 + estimateTableHeight(1));
@@ -505,6 +505,7 @@ export function buildMedicationMoodWellnessSection(
     }
     y += 2;
 
+    y = drawPregnancyBlock(context, cyc.pregnancy, y);
     if (cyc.recentCycles.length > 0) {
       const cycleRows = cyc.recentCycles.map((c) => [
         fmtDate(`${c.startDate}T12:00:00.000Z`),

@@ -13,6 +13,10 @@ import { z } from "zod/v4";
 import { isPlausibleEntryInstant } from "@/lib/validations/entry-instant";
 import { assertStableExternalId } from "@/lib/validations/external-id";
 import { isoDateTime } from "@/lib/validations/datetime";
+import {
+  POSTPARTUM_WEEKS_MAX,
+  POSTPARTUM_WEEKS_MIN,
+} from "@/lib/cycle/pregnancy";
 
 /**
  * v1.17 — `loggedAt` instant on the cycle wire stays a string (the iOS
@@ -233,6 +237,110 @@ export const cycleHistoryQuerySchema = z.object({
 /* ── cycle preferences (PATCH /api/auth/me/cycle-prefs) ──────────── */
 
 /**
+ * The pregnancy / postpartum state. `state: null` returns to the
+ * ordinary cycle and clears every date with it, so no pregnancy date stays
+ * behind once the owner leaves the state. A date omitted from the patch keeps
+ * its stored value; the route checks the merged result
+ * (`pregnancyPatchProblem`).
+ */
+export const cyclePregnancyStateEnum = z.enum(["PREGNANT", "POSTPARTUM"]);
+
+export const cyclePregnancyPatchSchema = z
+  .object({
+    state: cyclePregnancyStateEnum.nullable(),
+    startDate: dateString.nullable().optional(),
+    dueDate: dateString.nullable().optional(),
+    deliveryDate: dateString.nullable().optional(),
+    postpartumWeeks: z
+      .number()
+      .int()
+      .min(POSTPARTUM_WEEKS_MIN)
+      .max(POSTPARTUM_WEEKS_MAX)
+      .optional(),
+  })
+  .strict();
+
+export type CyclePregnancyPatch = z.infer<typeof cyclePregnancyPatchSchema>;
+
+/** The stored pregnancy columns a patch merges over. */
+export interface StoredPregnancyColumns {
+  reproductiveState: "PREGNANT" | "POSTPARTUM" | null;
+  pregnancyStartDate: string | null;
+  pregnancyDueDate: string | null;
+  deliveryDate: string | null;
+  postpartumWeeks: number;
+}
+
+/** Merge a pregnancy patch over the stored columns. */
+export function mergePregnancyPatch(
+  stored: StoredPregnancyColumns,
+  patch: CyclePregnancyPatch,
+): StoredPregnancyColumns {
+  if (patch.state === null) {
+    return {
+      reproductiveState: null,
+      pregnancyStartDate: null,
+      pregnancyDueDate: null,
+      deliveryDate: null,
+      postpartumWeeks: patch.postpartumWeeks ?? stored.postpartumWeeks,
+    };
+  }
+  return {
+    reproductiveState: patch.state,
+    pregnancyStartDate:
+      patch.startDate !== undefined
+        ? patch.startDate
+        : stored.pregnancyStartDate,
+    pregnancyDueDate:
+      patch.dueDate !== undefined ? patch.dueDate : stored.pregnancyDueDate,
+    deliveryDate:
+      patch.deliveryDate !== undefined
+        ? patch.deliveryDate
+        : stored.deliveryDate,
+    postpartumWeeks: patch.postpartumWeeks ?? stored.postpartumWeeks,
+  };
+}
+
+/** The codes `pregnancyPatchProblem` answers with. */
+export const PREGNANCY_PATCH_ERROR_CODES = {
+  startInFuture: "cycle-prefs.pregnancy.start_in_future",
+  deliveryInFuture: "cycle-prefs.pregnancy.delivery_in_future",
+  dueBeforeStart: "cycle-prefs.pregnancy.due_before_start",
+  deliveryRequired: "cycle-prefs.pregnancy.delivery_required",
+} as const;
+
+/**
+ * What is wrong with a merged state on the owner's day `today`, as an error
+ * code, or null. A first day or a delivery cannot lie in the future; a due
+ * date must come after the first day; POSTPARTUM needs its delivery date.
+ */
+export function pregnancyPatchProblem(
+  merged: StoredPregnancyColumns,
+  today: string,
+):
+  | (typeof PREGNANCY_PATCH_ERROR_CODES)[keyof typeof PREGNANCY_PATCH_ERROR_CODES]
+  | null {
+  if (merged.reproductiveState === null) return null;
+  if (merged.pregnancyStartDate && merged.pregnancyStartDate > today) {
+    return PREGNANCY_PATCH_ERROR_CODES.startInFuture;
+  }
+  if (merged.deliveryDate && merged.deliveryDate > today) {
+    return PREGNANCY_PATCH_ERROR_CODES.deliveryInFuture;
+  }
+  if (
+    merged.pregnancyStartDate &&
+    merged.pregnancyDueDate &&
+    merged.pregnancyDueDate <= merged.pregnancyStartDate
+  ) {
+    return PREGNANCY_PATCH_ERROR_CODES.dueBeforeStart;
+  }
+  if (merged.reproductiveState === "POSTPARTUM" && !merged.deliveryDate) {
+    return PREGNANCY_PATCH_ERROR_CODES.deliveryRequired;
+  }
+  return null;
+}
+
+/**
  * Partial deep-merge body for the cycle-prefs PATCH. Mirrors the
  * notification-prefs precedent: an omitted field is left untouched.
  */
@@ -252,6 +360,8 @@ export const cyclePrefsSchema = z
     // Bound matches the engine clamp [LUTEAL_MIN, LUTEAL_MAX] (§4) so the
     // stored value never silently snaps in the predictor (QA HIGH).
     lutealPhaseLength: z.number().int().min(10).max(16).nullable().optional(),
+    // Pregnancy and postpartum (see `cyclePregnancyPatchSchema`).
+    pregnancy: cyclePregnancyPatchSchema.optional(),
   })
   .refine((v) => Object.keys(v).length > 0, {
     message: "At least one preference field is required",

@@ -323,6 +323,27 @@ export function resolveCycleDay(
  * Resolve everything a client needs to render the cycle ring and its caption.
  * The only place in the product that decides any of it.
  */
+/**
+ * The verdict while a pregnancy or postpartum state pauses the
+ * forecast: nothing about today. No cycle day, no phase, no "late". The state
+ * is `INSUFFICIENT_DATA` so a client that predates the pregnancy field shows
+ * its quiet empty state rather than a late period; a current client reads the
+ * `pregnancy` block beside the verdict.
+ */
+export function pausedCycleVerdict(): CycleVerdict {
+  return {
+    state: "INSUFFICIENT_DATA",
+    dayOfCycle: null,
+    cycleLength: null,
+    phase: null,
+    spans: [],
+    cycleStartDate: null,
+    overdueDays: null,
+    daysUntilNext: null,
+    fertileWindow: { start: null, end: null, active: false },
+  };
+}
+
 export function resolveCycleVerdict(
   input: ResolveCycleVerdictInput,
 ): CycleVerdict {

@@ -521,6 +521,7 @@ const DISPOSITIONS: Record<StructuredLeafId, Disposition> = {
         cycleLengthVariabilityDays: null,
         averagePeriodLengthDays: 5,
         currentPhase: "LUTEAL",
+        pregnancy: null,
       },
     },
     marker: "Menstrual cycle",

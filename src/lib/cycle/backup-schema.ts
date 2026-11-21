@@ -13,6 +13,7 @@ import {
   CervixOpening,
   CervixPosition,
   ContraceptiveKind,
+  CycleReproductiveState,
   CycleTrackingGoal,
   FlowLevel,
   HomeTestResult,
@@ -21,6 +22,13 @@ import {
   SecondarySymptom,
 } from "@/generated/prisma/enums";
 import { isoDateTime } from "@/lib/export/backup-schema-kit";
+import {
+  POSTPARTUM_WEEKS_MAX,
+  POSTPARTUM_WEEKS_MIN,
+} from "@/lib/cycle/pregnancy";
+
+/** A `YYYY-MM-DD` calendar day. */
+const dateKey = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 /* ── v1.15.0 cycle-tracking backup shapes ──────────────────────────── */
 
@@ -141,6 +149,16 @@ export const cycleProfileSchema = z
     rawChartMode: z.boolean().optional(),
     discreetNotifications: z.boolean().optional(),
     sensitiveCategoryEncryption: z.boolean().optional(),
+    reproductiveState: z.enum(CycleReproductiveState).nullable().optional(),
+    pregnancyStartDate: dateKey.nullable().optional(),
+    pregnancyDueDate: dateKey.nullable().optional(),
+    deliveryDate: dateKey.nullable().optional(),
+    postpartumWeeks: z
+      .number()
+      .int()
+      .min(POSTPARTUM_WEEKS_MIN)
+      .max(POSTPARTUM_WEEKS_MAX)
+      .optional(),
     createdAt: isoDateTime.optional(),
     updatedAt: isoDateTime.optional(),
   })

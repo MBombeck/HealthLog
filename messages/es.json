@@ -546,7 +546,17 @@
       "window": "analizado del {from} al {to}, puede ir más allá del periodo del informe",
       "windowLine": "Analizado del {from} al {to}. Este intervalo puede ir más allá del periodo del informe."
     },
-    "screenerUnvalidated": "{label}: {count} de {total} resultados se respondieron con una traducción no validada científicamente; deben tomarse como orientación."
+    "screenerUnvalidated": "{label}: {count} de {total} resultados se respondieron con una traducción no validada científicamente; deben tomarse como orientación.",
+    "pregnancy": {
+      "title": "Embarazo",
+      "pregnantWeek": "Embarazada, semana {weeks}+{days} en la fecha del informe",
+      "pregnant": "Embarazada",
+      "startDate": "Primer día del último periodo",
+      "dueDate": "Fecha prevista de parto",
+      "postpartumWeek": "Después del parto, semana {weeks} en la fecha del informe",
+      "deliveryDate": "Fecha del parto",
+      "predictionsPaused": "Autodeclarado. Las previsiones del ciclo están en pausa."
+    }
   },
   "errorBoundary": {
     "title": "Algo ha salido mal",
@@ -3071,7 +3081,8 @@
         "no_personal_goal": "Define un objetivo personal de peso para ver aquí el progreso.",
         "weight_not_tracked": "Registra una lectura de peso para ver el progreso hacia tu objetivo.",
         "read_failed": "No se pudieron cargar los datos de peso. Inténtalo de nuevo.",
-        "notScored": "El progreso del objetivo de peso es contexto personal y no afecta a la puntuación de salud."
+        "notScored": "El progreso del objetivo de peso es contexto personal y no afecta a la puntuación de salud.",
+        "pregnancy_context": "Durante el embarazo y después del parto, el peso se muestra como dato, no frente a un objetivo."
       },
       "configureLink": "Elegir qué cuenta para tu puntuación",
       "coverage": {
@@ -10456,6 +10467,38 @@
         "LATE": "Sin previsión mientras este periodo llegue más tarde de lo esperado; vuelve en cuanto lo registres.",
         "OFF": "Las previsiones están desactivadas; solo se incluyen ciclos pasados, si los elegiste."
       }
+    },
+    "pregnancy": {
+      "title": "Embarazo y posparto",
+      "description": "Mientras dure, se pausan las previsiones de periodo y fertilidad.",
+      "stateLabel": "Estado actual",
+      "state": {
+        "NONE": "Ciclo habitual",
+        "PREGNANT": "Embarazada",
+        "POSTPARTUM": "Después del parto"
+      },
+      "startDate": "Primer día del último periodo",
+      "dueDate": "Fecha prevista de parto",
+      "deliveryDate": "Fecha del parto",
+      "postpartumWeeks": "Semanas hasta que vuelvan las previsiones",
+      "noneHint": "Las previsiones funcionan como siempre.",
+      "pausedHint": "Se pausan las previsiones de periodo y fertilidad y sus recordatorios. El peso y la presión arterial se muestran en este contexto, sin objetivo de peso.",
+      "save": "Guardar",
+      "errors": {
+        "start_in_future": "El primer día no puede estar en el futuro.",
+        "delivery_in_future": "La fecha del parto no puede estar en el futuro.",
+        "due_before_start": "La fecha prevista debe ser posterior al primer día.",
+        "delivery_required": "Añade la fecha del parto.",
+        "generic": "No se pudo guardar. Inténtalo de nuevo."
+      },
+      "banner": {
+        "pregnantWeek": "Embarazada, semana {weeks}+{days}",
+        "pregnant": "Embarazada",
+        "postpartumWeek": "Después del parto, semana {weeks}",
+        "due": "Fecha prevista {date}.",
+        "resumes": "Las previsiones vuelven el {date}.",
+        "paused": "Las previsiones de periodo y fertilidad están en pausa."
+      }
     }
   },
   "cycleReminders": {
@@ -14510,7 +14553,9 @@
       "labValuesOther": "{count} valores de laboratorio",
       "seizuresOne": "1 crisis",
       "seizuresFew": "{count} crisis",
-      "seizuresOther": "{count} crisis"
+      "seizuresOther": "{count} crisis",
+      "pregnancy": "Embarazo",
+      "postpartum": "Después del parto"
     },
     "labs": {
       "menuTitle": "Valores de laboratorio",
@@ -14537,7 +14582,8 @@
       "daysOne": "en 1 día",
       "daysFew": "media de {count} días",
       "daysOther": "media de {count} días"
-    }
+    },
+    "pregnancyWeek": "semana de embarazo {week}"
   },
   "lifeEvents": {
     "title": "Acontecimiento vital",

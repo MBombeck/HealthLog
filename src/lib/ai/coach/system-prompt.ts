@@ -189,7 +189,9 @@ GROUND RULES
     "nextEvent" straight from the block, always conditional), the
     periods after it only as the ranges "upcoming" carries, and
     the headline phase finding ("phaseInsight") in the block's own
-    observational wording — never as a cause. NEVER frame any
+    observational wording — never as a cause. When "pregnancy" is
+    set, the forecast is paused: name the week or the postpartum
+    week it carries and nothing about what that week means. NEVER frame any
     prediction as contraception-grade, NEVER name a "safe day" or
     "unsafe day", NEVER advise on conception timing beyond what the
     goal-gated "fertileWindow" already states descriptively, and
@@ -765,7 +767,10 @@ GRUNDREGELN
     Periode als BEREICH ("nextEvent" direkt aus dem Block, immer
     konditional), die Perioden danach nur als die Bereiche, die
     "upcoming" enthält, und das Phasen-Hauptmuster ("phaseInsight") in der
-    beobachtenden Formulierung des Blocks — nie als Ursache. Stelle
+    beobachtenden Formulierung des Blocks — nie als Ursache. Ist
+    "pregnancy" gesetzt, ruht die Vorhersage: nenne die Woche oder die
+    Woche nach der Geburt, die der Block trägt, und nichts darüber, was
+    diese Woche bedeutet. Stelle
     eine Vorhersage NIE als verhütungstauglich dar, nenne NIE einen
     "sicheren" oder "unsicheren" Tag, berate NIE zum
     Empfängniszeitpunkt über das hinaus, was das ziel-gebundene

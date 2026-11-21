@@ -38,10 +38,11 @@ import {
 import { PROJECTION_MAX_HORIZON, projectCycles } from "@/lib/cycle/projection";
 import {
   toCyclePredictionDTO,
+  toCyclePregnancyDTO,
   goalAllowsFertileWindow,
   cycleDisclaimerKey,
 } from "@/lib/cycle/dto";
-import { resolveCycleVerdict } from "@/lib/cycle/verdict";
+import { pausedCycleVerdict, resolveCycleVerdict } from "@/lib/cycle/verdict";
 import { addDays } from "@/lib/cycle/day-math";
 import { moodDateKey } from "@/lib/mood/date-key";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
@@ -143,24 +144,30 @@ export const GET = apiHandler(async (request: NextRequest) => {
   // cannot reappear here. `today` is the user's timezone day, which is the
   // other half of why this cannot be a client-side derivation: a browser in a
   // different zone resolves a different "today" and reads a different cycle day.
-  const verdict = resolveCycleVerdict({
-    days,
-    today,
-    profile: {
-      typicalCycleLength: profile.typicalCycleLength,
-      typicalPeriodLength: profile.typicalPeriodLength,
-      lutealPhaseLength: profile.lutealPhaseLength,
-    },
-    nextPeriodStart: predictionDto?.nextPeriodStart ?? null,
-    fertileWindowStart: predictionDto?.fertileWindowStart ?? null,
-    fertileWindowEnd: predictionDto?.fertileWindowEnd ?? null,
-    // The latest start the person logged, read off the cycle rows rather than
-    // the grid. The grid's phase band is withheld while the engine is still
-    // learning, and the day count must not go with it — `cycles` is ordered by
-    // startDate ascending, so the last one at or before today is the anchor.
-    lastPeriodStart:
-      cycles.filter((c) => c.startDate <= today).at(-1)?.startDate ?? null,
-  });
+  // A pregnancy or postpartum state pauses the forecast. The verdict
+  // then says nothing about today rather than counting a cycle day or calling
+  // the period late; `pregnancy` beside it carries what does hold.
+  const pregnancy = toCyclePregnancyDTO(profile, today);
+  const verdict = pregnancy.predictionsPaused
+    ? pausedCycleVerdict()
+    : resolveCycleVerdict({
+        days,
+        today,
+        profile: {
+          typicalCycleLength: profile.typicalCycleLength,
+          typicalPeriodLength: profile.typicalPeriodLength,
+          lutealPhaseLength: profile.lutealPhaseLength,
+        },
+        nextPeriodStart: predictionDto?.nextPeriodStart ?? null,
+        fertileWindowStart: predictionDto?.fertileWindowStart ?? null,
+        fertileWindowEnd: predictionDto?.fertileWindowEnd ?? null,
+        // The latest start the person logged, read off the cycle rows rather than
+        // the grid. The grid's phase band is withheld while the engine is still
+        // learning, and the day count must not go with it — `cycles` is ordered by
+        // startDate ascending, so the last one at or before today is the anchor.
+        lastPeriodStart:
+          cycles.filter((c) => c.startDate <= today).at(-1)?.startDate ?? null,
+      });
 
   // The cycles beyond the next one, from the same engine run. Read by the
   // predictions panel; the calendar feed serves the same projection, so a
@@ -197,6 +204,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
       // so a consumer never sees two divergent "cycles observed" values.
       cyclesObserved: prediction?.cyclesObserved ?? cycles.length,
     },
+    // Additive (v1.49): the pregnancy / postpartum state on the owner's day.
+    // While `predictionsPaused` is true the forecast fields are empty.
+    pregnancy,
     prediction: predictionDto,
     // The one resolved answer about today: cycle day, the ring's arcs, how
     // many days until the next period, and whether the period is late and by

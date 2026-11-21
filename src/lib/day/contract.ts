@@ -289,7 +289,8 @@ export type TimelineBucket = (typeof TIMELINE_BUCKETS)[number];
  *   visits       visits and procedures
  *   labs         days with results
  *   documents    dated documents
- *   cycle        cycles, only with the module on
+ *   cycle        cycles, only with the module on; since v1.49 also the
+ *                pregnancy and postpartum stretches the owner set
  */
 export const TIMELINE_LANE_KEYS = [
   "life",
@@ -324,6 +325,8 @@ export const TIMELINE_ITEM_KINDS = [
   "seizureDay",
   "document",
   "cycle",
+  "pregnancy",
+  "postpartum",
 ] as const;
 
 export type TimelineItemKind = (typeof TIMELINE_ITEM_KINDS)[number];

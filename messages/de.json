@@ -546,7 +546,17 @@
       "window": "ausgewertet {from} bis {to}, das kann über den Berichtszeitraum hinausreichen",
       "windowLine": "Ausgewertet {from} bis {to}. Dieser Zeitraum kann über den Berichtszeitraum hinausreichen."
     },
-    "screenerUnvalidated": "{label}: {count} von {total} Ergebnissen wurden in einer nicht wissenschaftlich validierten Übersetzung beantwortet; sie dienen der Orientierung."
+    "screenerUnvalidated": "{label}: {count} von {total} Ergebnissen wurden in einer nicht wissenschaftlich validierten Übersetzung beantwortet; sie dienen der Orientierung.",
+    "pregnancy": {
+      "title": "Schwangerschaft",
+      "pregnantWeek": "Schwanger, Woche {weeks}+{days} am Berichtsdatum",
+      "pregnant": "Schwanger",
+      "startDate": "Erster Tag der letzten Periode",
+      "dueDate": "Errechneter Geburtstermin",
+      "postpartumWeek": "Nach der Geburt, Woche {weeks} am Berichtsdatum",
+      "deliveryDate": "Geburtsdatum des Kindes",
+      "predictionsPaused": "Selbst angegeben. Zyklusprognosen ruhen."
+    }
   },
   "errorBoundary": {
     "title": "Da ist etwas schiefgelaufen",
@@ -3071,7 +3081,8 @@
         "no_personal_goal": "Lege ein persönliches Gewichtsziel fest, um hier den Fortschritt zu sehen.",
         "weight_not_tracked": "Erfasse dein Gewicht, um den Fortschritt zum Ziel zu sehen.",
         "read_failed": "Gewichtsdaten konnten nicht geladen werden. Versuche es erneut.",
-        "notScored": "Der Fortschritt zum Gewichtsziel ist persönlicher Kontext und beeinflusst den Gesundheitsscore nicht."
+        "notScored": "Der Fortschritt zum Gewichtsziel ist persönlicher Kontext und beeinflusst den Gesundheitsscore nicht.",
+        "pregnancy_context": "In der Schwangerschaft und nach der Geburt erscheint das Gewicht als Wert, nicht gemessen an einem Ziel."
       },
       "configureLink": "Festlegen, was in deinen Score einfließt",
       "coverage": {
@@ -10456,6 +10467,38 @@
         "LATE": "Keine Prognose, solange diese Periode später kommt als erwartet; sie ist zurück, sobald du sie erfasst.",
         "OFF": "Prognosen sind ausgeschaltet; enthalten sind nur vergangene Zyklen, falls gewählt."
       }
+    },
+    "pregnancy": {
+      "title": "Schwangerschaft und nach der Geburt",
+      "description": "Solange einer davon gilt, ruhen Perioden- und Fruchtbarkeitsprognosen.",
+      "stateLabel": "Aktueller Zustand",
+      "state": {
+        "NONE": "Normaler Zyklus",
+        "PREGNANT": "Schwanger",
+        "POSTPARTUM": "Nach der Geburt"
+      },
+      "startDate": "Erster Tag der letzten Periode",
+      "dueDate": "Errechneter Geburtstermin",
+      "deliveryDate": "Geburtsdatum des Kindes",
+      "postpartumWeeks": "Wochen, bis die Prognosen wieder laufen",
+      "noneHint": "Die Prognosen laufen wie gewohnt.",
+      "pausedHint": "Perioden- und Fruchtbarkeitsprognosen samt Erinnerungen ruhen. Gewicht und Blutdruck erscheinen in diesem Zusammenhang, ohne Gewichtsziel.",
+      "save": "Speichern",
+      "errors": {
+        "start_in_future": "Der erste Tag kann nicht in der Zukunft liegen.",
+        "delivery_in_future": "Das Geburtsdatum kann nicht in der Zukunft liegen.",
+        "due_before_start": "Der Geburtstermin muss nach dem ersten Tag liegen.",
+        "delivery_required": "Trag das Geburtsdatum ein.",
+        "generic": "Das konnte nicht gespeichert werden. Versuch es noch einmal."
+      },
+      "banner": {
+        "pregnantWeek": "Schwanger, Woche {weeks}+{days}",
+        "pregnant": "Schwanger",
+        "postpartumWeek": "Nach der Geburt, Woche {weeks}",
+        "due": "Errechneter Termin {date}.",
+        "resumes": "Die Prognosen laufen ab {date} wieder.",
+        "paused": "Perioden- und Fruchtbarkeitsprognosen ruhen."
+      }
     }
   },
   "cycleReminders": {
@@ -14510,7 +14553,9 @@
       "labValuesOther": "{count} Laborwerte",
       "seizuresOne": "1 Anfall",
       "seizuresFew": "{count} Anfälle",
-      "seizuresOther": "{count} Anfälle"
+      "seizuresOther": "{count} Anfälle",
+      "pregnancy": "Schwangerschaft",
+      "postpartum": "Nach der Geburt"
     },
     "labs": {
       "menuTitle": "Laborwerte",
@@ -14537,7 +14582,8 @@
       "daysOne": "an 1 Tag",
       "daysFew": "Schnitt aus {count} Tagen",
       "daysOther": "Schnitt aus {count} Tagen"
-    }
+    },
+    "pregnancyWeek": "Schwangerschaftswoche {week}"
   },
   "lifeEvents": {
     "title": "Lebensereignis",

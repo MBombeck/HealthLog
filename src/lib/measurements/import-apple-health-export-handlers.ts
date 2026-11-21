@@ -334,6 +334,22 @@ function openRecord(ctx: ExportTagContext, attrs: TagAttributes): void {
   if (!hkType) return;
   tally.recordsRead += 1;
 
+  if (CycleImportAccumulator.handlesStatus(hkType)) {
+    // Pregnancy / lactation status: held for the profile decision at
+    // flush, never a day log or a measurement.
+    const start = Date.parse(attrs.startDate ?? "");
+    const end = Date.parse(attrs.endDate ?? "");
+    if (Number.isNaN(start)) tallyReason(unknown, `${hkType}::unparseable`);
+    else {
+      ctx.cycle.consumeStatus(
+        hkType,
+        userDayKey(new Date(start), ctx.userTimezone),
+        Number.isNaN(end) ? null : userDayKey(new Date(end), ctx.userTimezone),
+      );
+    }
+    return;
+  }
+
   if (CycleImportAccumulator.handles(hkType)) {
     openCycleRecord(ctx, hkType, attrs);
     return;

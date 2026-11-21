@@ -105,6 +105,8 @@ export interface CalendarResponse {
     predictionEnabled: boolean;
     cyclesObserved: number;
   };
+  /** The pregnancy / postpartum state on the owner's day. */
+  pregnancy?: CyclePregnancy;
   prediction: CyclePrediction | null;
   /** The resolved verdict — always present, so nothing here needs to derive one. */
   verdict: CycleVerdict;
@@ -179,6 +181,23 @@ export interface CycleProfileDTO {
   typicalPeriodLength: number | null;
   lutealPhaseLength: number | null;
   updatedAt: string;
+  /** The pregnancy / postpartum state, resolved by the server. */
+  pregnancy: CyclePregnancy;
+}
+
+/** Mirrors `CyclePregnancyDTO`; render it, never recount it. */
+export interface CyclePregnancy {
+  storedState: "PREGNANT" | "POSTPARTUM" | null;
+  state: "PREGNANT" | "POSTPARTUM" | null;
+  startDate: string | null;
+  dueDate: string | null;
+  deliveryDate: string | null;
+  postpartumWeeks: number;
+  gestationalWeeks: number | null;
+  gestationalDays: number | null;
+  postpartumWeek: number | null;
+  postpartumEndsOn: string | null;
+  predictionsPaused: boolean;
 }
 
 /** The day-log capture payload (subset of the API input we send from web). */

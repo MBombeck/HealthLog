@@ -19,6 +19,7 @@ export const SERVER_FEATURES = [
   "apple-health.types-2026-11",
   "medication.snooze-setting",
   "apple-health.effort-scores",
+  "cycle.pregnancy-state",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -49,4 +50,6 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "The batch ingest accepts the Apple Health cycling distance, rowing distance and speed, and running speed, power, ground contact time, vertical oscillation and stride length types.",
   "apple-health.effort-scores":
     "The batch ingest accepts HealthKit workoutEffortScore, estimatedWorkoutEffortScore and physicalEffort as WORKOUT_EFFORT_SCORE, ESTIMATED_WORKOUT_EFFORT_SCORE and PHYSICAL_EFFORT.",
+  "cycle.pregnancy-state":
+    "CycleProfileDTO and the cycle calendar carry pregnancy (CyclePregnancyDTO): PREGNANT or POSTPARTUM with its dates, the resolved week and predictionsPaused; PATCH /api/auth/me/cycle-prefs takes pregnancy. While paused the forecast is empty and the verdict is INSUFFICIENT_DATA.",
 };

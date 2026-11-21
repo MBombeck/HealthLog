@@ -546,7 +546,17 @@
       "window": "geanalyseerd van {from} tot {to}, dit kan buiten de rapportperiode vallen",
       "windowLine": "Geanalyseerd van {from} tot {to}. Deze periode kan buiten de rapportperiode vallen."
     },
-    "screenerUnvalidated": "{label}: {count} van {total} uitkomsten zijn beantwoord in een niet wetenschappelijk gevalideerde vertaling; zie ze als een indicatie."
+    "screenerUnvalidated": "{label}: {count} van {total} uitkomsten zijn beantwoord in een niet wetenschappelijk gevalideerde vertaling; zie ze als een indicatie.",
+    "pregnancy": {
+      "title": "Zwangerschap",
+      "pregnantWeek": "Zwanger, week {weeks}+{days} op de rapportdatum",
+      "pregnant": "Zwanger",
+      "startDate": "Eerste dag van de laatste menstruatie",
+      "dueDate": "Uitgerekende datum",
+      "postpartumWeek": "Na de bevalling, week {weeks} op de rapportdatum",
+      "deliveryDate": "Datum van de bevalling",
+      "predictionsPaused": "Zelf opgegeven. Cyclusvoorspellingen staan stil."
+    }
   },
   "errorBoundary": {
     "title": "Er is iets misgegaan",
@@ -3071,7 +3081,8 @@
         "no_personal_goal": "Stel een persoonlijk gewichtsdoel in om hier je voortgang te zien.",
         "weight_not_tracked": "Leg een gewichtsmeting vast om je voortgang richting je doel te zien.",
         "read_failed": "Gewichtsgegevens kunnen niet worden geladen. Probeer het opnieuw.",
-        "notScored": "De voortgang richting je gewichtsdoel is persoonlijke context en heeft geen invloed op de Gezondheidsscore."
+        "notScored": "De voortgang richting je gewichtsdoel is persoonlijke context en heeft geen invloed op de Gezondheidsscore.",
+        "pregnancy_context": "Tijdens de zwangerschap en na de bevalling wordt gewicht als gegeven getoond, niet tegen een doel."
       },
       "configureLink": "Kies wat meetelt voor je score",
       "coverage": {
@@ -10456,6 +10467,38 @@
         "LATE": "Geen voorspelling zolang deze menstruatie later is dan verwacht; die komt terug zodra je haar registreert.",
         "OFF": "Voorspellingen staan uit; alleen eerdere cycli zijn opgenomen, als je die hebt gekozen."
       }
+    },
+    "pregnancy": {
+      "title": "Zwangerschap en na de bevalling",
+      "description": "Zolang een van beide geldt, staan menstruatie- en vruchtbaarheidsvoorspellingen stil.",
+      "stateLabel": "Huidige status",
+      "state": {
+        "NONE": "Gewone cyclus",
+        "PREGNANT": "Zwanger",
+        "POSTPARTUM": "Na de bevalling"
+      },
+      "startDate": "Eerste dag van de laatste menstruatie",
+      "dueDate": "Uitgerekende datum",
+      "deliveryDate": "Datum van de bevalling",
+      "postpartumWeeks": "Weken voordat voorspellingen hervatten",
+      "noneHint": "Voorspellingen werken zoals gewoonlijk.",
+      "pausedHint": "Menstruatie- en vruchtbaarheidsvoorspellingen en hun herinneringen staan stil. Gewicht en bloeddruk worden in deze context getoond, zonder gewichtsdoel.",
+      "save": "Opslaan",
+      "errors": {
+        "start_in_future": "De eerste dag kan niet in de toekomst liggen.",
+        "delivery_in_future": "De datum van de bevalling kan niet in de toekomst liggen.",
+        "due_before_start": "De uitgerekende datum moet na de eerste dag liggen.",
+        "delivery_required": "Vul de datum van de bevalling in.",
+        "generic": "Opslaan is mislukt. Probeer het opnieuw."
+      },
+      "banner": {
+        "pregnantWeek": "Zwanger, week {weeks}+{days}",
+        "pregnant": "Zwanger",
+        "postpartumWeek": "Na de bevalling, week {weeks}",
+        "due": "Uitgerekende datum {date}.",
+        "resumes": "Voorspellingen hervatten op {date}.",
+        "paused": "Menstruatie- en vruchtbaarheidsvoorspellingen staan stil."
+      }
     }
   },
   "cycleReminders": {
@@ -14510,7 +14553,9 @@
       "labValuesOther": "{count} labwaarden",
       "seizuresOne": "1 aanval",
       "seizuresFew": "{count} aanvallen",
-      "seizuresOther": "{count} aanvallen"
+      "seizuresOther": "{count} aanvallen",
+      "pregnancy": "Zwangerschap",
+      "postpartum": "Na de bevalling"
     },
     "labs": {
       "menuTitle": "Labwaarden",
@@ -14537,7 +14582,8 @@
       "daysOne": "op 1 dag",
       "daysFew": "gemiddelde van {count} dagen",
       "daysOther": "gemiddelde van {count} dagen"
-    }
+    },
+    "pregnancyWeek": "zwangerschapsweek {week}"
   },
   "lifeEvents": {
     "title": "Levensgebeurtenis",
