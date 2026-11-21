@@ -2104,7 +2104,6 @@
         "loadError": "No se pudo cargar el historial.",
         "empty": "Aún no hay tomas en este periodo.",
         "summaryEmpty": "Aún no hay dosis que evaluar.",
-        "adherenceLabel": "Adherencia",
         "adherenceBarLabel": "{onTime} a tiempo, {late} con retraso, {missed} omitidas",
         "add": "Entrada",
         "rowActionsLabel": "Acciones para {time}",

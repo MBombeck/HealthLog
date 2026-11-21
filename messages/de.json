@@ -2104,7 +2104,6 @@
         "loadError": "Verlauf konnte nicht geladen werden.",
         "empty": "Noch keine Einnahmen in diesem Zeitraum.",
         "summaryEmpty": "Noch keine auswertbaren Dosen.",
-        "adherenceLabel": "Therapietreue",
         "adherenceBarLabel": "{onTime} pünktlich, {late} verspätet, {missed} verpasst",
         "add": "Eintrag",
         "rowActionsLabel": "Aktionen für {time}",

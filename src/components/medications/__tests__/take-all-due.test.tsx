@@ -456,9 +456,39 @@ describe("runTakeAllDue — per-medication loop with failure isolation", () => {
       skipped: false,
       scheduledFor: slotA.toISOString(),
     });
+    // One Undo for the whole sweep, as a single take has one.
     expect(vi.mocked(toast.success)).toHaveBeenCalledWith(
       'medications.takeAllDue.successToast:{"count":2}',
+      expect.objectContaining({
+        action: expect.objectContaining({ onClick: expect.any(Function) }),
+      }),
     );
+    vi.unstubAllGlobals();
+  });
+
+  it("its one Undo removes exactly the rows the sweep wrote", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(okResponse("evt-a"))
+      .mockResolvedValueOnce(okResponse("evt-b"))
+      .mockResolvedValue(okResponse("deleted"));
+    vi.stubGlobal("fetch", fetchMock);
+    const queryClient = fakeQueryClient();
+    vi.mocked(toast.success).mockClear();
+
+    await runTakeAllDue({ medications: dueTwo, t, queryClient });
+    const options = vi.mocked(toast.success).mock.calls[0][1] as {
+      action: { onClick: () => void };
+    };
+    options.action.onClick();
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(4));
+    expect(fetchMock.mock.calls[2][0]).toBe(
+      "/api/medications/med-a/intake/evt-a",
+    );
+    expect(fetchMock.mock.calls[3][0]).toBe(
+      "/api/medications/med-b/intake/evt-b",
+    );
+    expect((fetchMock.mock.calls[2][1] as RequestInit).method).toBe("DELETE");
     vi.unstubAllGlobals();
   });
 

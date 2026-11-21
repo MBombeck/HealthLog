@@ -2104,7 +2104,6 @@
         "loadError": "Не удалось загрузить историю.",
         "empty": "В этом периоде приёмов пока нет.",
         "summaryEmpty": "Пока нет доз для оценки.",
-        "adherenceLabel": "Приверженность",
         "adherenceBarLabel": "{onTime} вовремя, {late} с опозданием, {missed} пропущено",
         "add": "Запись",
         "rowActionsLabel": "Действия для {time}",

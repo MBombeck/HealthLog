@@ -2104,7 +2104,6 @@
         "loadError": "기록을 불러오지 못했어요.",
         "empty": "이 기간에는 복용 기록이 아직 없어요.",
         "summaryEmpty": "아직 계산할 복용이 없어요.",
-        "adherenceLabel": "복약 순응도",
         "adherenceBarLabel": "정시 {onTime}, 늦음 {late}, 놓침 {missed}",
         "add": "기록",
         "rowActionsLabel": "{time} 작업",

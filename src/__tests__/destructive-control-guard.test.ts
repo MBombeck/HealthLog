@@ -595,6 +595,19 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["AlertDialog"],
   },
   {
+    file: "components/medications/take-all-due.ts",
+    destroys: 'the intake rows a "Take all due" sweep wrote seconds ago',
+    recovery: "tombstoned-no-restore",
+    confirm: [],
+    unconfirmed: [
+      {
+        control: "Undo inside the sweep's success toast",
+        reason:
+          "The undo of a batch create the person made a moment earlier, reached only from that create's own toast, removing exactly the rows it wrote. Confirming an undo would ask someone to confirm a correction.",
+      },
+    ],
+  },
+  {
     file: "components/medications/use-medication-intake.ts",
     destroys:
       "an intake event: one recorded seconds ago (its toast's Undo), or a dose-history row",

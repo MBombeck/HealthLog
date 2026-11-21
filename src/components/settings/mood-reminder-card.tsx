@@ -8,7 +8,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Switch } from "@/components/ui/switch";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
 import { readUpdatedAtToken, withBaseToken } from "@/lib/api/optimistic-token";
@@ -30,6 +30,7 @@ export function MoodReminderCard({
   isAuthenticated: boolean;
 }) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const queryClient = useQueryClient();
   const [optimistic, setOptimistic] = useState<boolean | null>(null);
   const [optimisticHour, setOptimisticHour] = useState<number | null>(null);
@@ -236,7 +237,7 @@ export function MoodReminderCard({
           >
             {Array.from({ length: 24 }, (_, h) => (
               <option key={h} value={h}>
-                {`${h.toString().padStart(2, "0")}:00`}
+                {fmt.wallTime(`${h.toString().padStart(2, "0")}:00`)}
               </option>
             ))}
           </NativeSelect>

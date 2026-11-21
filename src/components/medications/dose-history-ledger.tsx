@@ -125,7 +125,7 @@ export function DoseHistoryLedger({
       {/* Header: the took/skipped summary chart + the add affordance. */}
       <div className="flex items-start justify-between gap-3">
         {compliance && compliance.denominator > 0 ? (
-          <LedgerSummaryChart compliance={compliance} />
+          <LedgerSummaryChart compliance={compliance} windowDays={windowDays} />
         ) : (
           <p className="text-muted-foreground text-sm">
             {t("medications.detail.verlauf.summaryEmpty")}

@@ -2104,7 +2104,6 @@
         "loadError": "Could not load the history.",
         "empty": "No intakes in this period yet.",
         "summaryEmpty": "No doses to score yet.",
-        "adherenceLabel": "Adherence",
         "adherenceBarLabel": "{onTime} on time, {late} late, {missed} missed",
         "add": "Entry",
         "rowActionsLabel": "Actions for {time}",

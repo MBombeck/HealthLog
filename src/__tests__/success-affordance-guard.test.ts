@@ -319,8 +319,9 @@ const PINNED_AFFORDANCES: Record<
   "src/components/medications/sections/settings-section.tsx": {
     "toast.success": 2,
   },
-  // Same pair again: the batch summary names the record it landed in.
-  "src/components/medications/take-all-due.ts": { "toast.success": 2 },
+  // Same pair again: the batch summary names the record it landed in;
+  // + the confirmation of the sweep's one Undo.
+  "src/components/medications/take-all-due.ts": { "toast.success": 3 },
   // v1.36.x — one fewer: the log-intake path's three-armed toast collapsed
   // into the shared `intakeToastOptions` decision plus a single call pair.
   // + the row delete's toast and its undo's confirmation.

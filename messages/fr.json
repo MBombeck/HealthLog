@@ -2104,7 +2104,6 @@
         "loadError": "Impossible de charger l'historique.",
         "empty": "Aucune prise sur cette période pour l'instant.",
         "summaryEmpty": "Aucune dose à évaluer pour l'instant.",
-        "adherenceLabel": "Observance",
         "adherenceBarLabel": "{onTime} à l'heure, {late} en retard, {missed} manquées",
         "add": "Entrée",
         "rowActionsLabel": "Actions pour {time}",

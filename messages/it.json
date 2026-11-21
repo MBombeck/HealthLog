@@ -2104,7 +2104,6 @@
         "loadError": "Impossibile caricare la cronologia.",
         "empty": "Ancora nessuna assunzione in questo periodo.",
         "summaryEmpty": "Ancora nessuna dose da valutare.",
-        "adherenceLabel": "Aderenza",
         "adherenceBarLabel": "{onTime} puntuali, {late} in ritardo, {missed} mancate",
         "add": "Voce",
         "rowActionsLabel": "Azioni per {time}",

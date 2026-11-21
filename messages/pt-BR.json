@@ -2104,7 +2104,6 @@
         "loadError": "Não foi possível carregar o histórico.",
         "empty": "Nenhuma tomada neste período ainda.",
         "summaryEmpty": "Nenhuma dose para pontuar ainda.",
-        "adherenceLabel": "Adesão",
         "adherenceBarLabel": "{onTime} no horário, {late} atrasadas, {missed} perdidas",
         "add": "Entrada",
         "rowActionsLabel": "Ações para {time}",

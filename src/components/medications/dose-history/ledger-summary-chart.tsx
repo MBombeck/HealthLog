@@ -12,8 +12,11 @@ import type { complianceFromLedger } from "../dose-history-ledger-compute";
  */
 export function LedgerSummaryChart({
   compliance,
+  windowDays,
 }: {
   compliance: NonNullable<ReturnType<typeof complianceFromLedger>>;
+  /** The span the rate covers, named in the label like the card's rates. */
+  windowDays: number;
 }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
@@ -24,7 +27,7 @@ export function LedgerSummaryChart({
     <div className="min-w-0 flex-1 space-y-1.5" data-slot="ledger-summary">
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-muted-foreground text-xs font-medium">
-          {t("medications.detail.verlauf.adherenceLabel")}
+          {t("medications.complianceWindow", { days: windowDays })}
         </span>
         <span className="text-foreground text-sm font-semibold tabular-nums">
           {rate !== null ? `${fmt.number(rate)}%` : "—"}

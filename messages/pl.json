@@ -2104,7 +2104,6 @@
         "loadError": "Nie udało się wczytać historii.",
         "empty": "Brak przyjęć w tym okresie.",
         "summaryEmpty": "Brak dawek do oceny.",
-        "adherenceLabel": "Przestrzeganie",
         "adherenceBarLabel": "{onTime} na czas, {late} z opóźnieniem, {missed} pominięte",
         "add": "Wpis",
         "rowActionsLabel": "Akcje dla {time}",

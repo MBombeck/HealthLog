@@ -2104,7 +2104,6 @@
         "loadError": "De geschiedenis kon niet worden geladen.",
         "empty": "Nog geen innames in deze periode.",
         "summaryEmpty": "Nog geen doses om te beoordelen.",
-        "adherenceLabel": "Therapietrouw",
         "adherenceBarLabel": "{onTime} op tijd, {late} te laat, {missed} gemist",
         "add": "Registratie",
         "rowActionsLabel": "Acties voor {time}",
