@@ -3,7 +3,18 @@
  * WHO BMI categories, ESC/ESH BP classification, and smart alerts.
  */
 
-// ── BMI Classification (WHO) ────────────────────────────
+// ── BMI (WHO) ───────────────────────────────────────────
+
+/** Height in metres, squared: the BMI divisor. */
+export function heightSquaredM2(heightCm: number): number {
+  const heightM = heightCm / 100;
+  return heightM * heightM;
+}
+
+/** Body-mass index in kg/m², unrounded. The one copy of the formula. */
+export function bmiOf(weightKg: number, heightCm: number): number {
+  return weightKg / heightSquaredM2(heightCm);
+}
 
 export interface BmiClassification {
   category: string;
@@ -11,43 +22,50 @@ export interface BmiClassification {
   severity: "normal" | "warning" | "danger";
 }
 
-export function classifyBMI(bmi: number): BmiClassification {
-  if (bmi < 18.5) {
-    return {
-      category: "Underweight",
-      color: "var(--dracula-yellow)",
-      severity: "warning",
-    };
-  }
-  if (bmi < 25) {
-    return { category: "Normal", color: "var(--success)", severity: "normal" };
-  }
-  if (bmi < 30) {
-    return {
-      category: "Overweight",
-      color: "var(--warning)",
-      severity: "warning",
-    };
-  }
-  if (bmi < 35) {
-    return {
-      category: "Obesity Grade I",
-      color: "var(--chart-3)",
-      severity: "danger",
-    };
-  }
-  if (bmi < 40) {
-    return {
-      category: "Obesity Grade II",
-      color: "var(--destructive)",
-      severity: "danger",
-    };
-  }
-  return {
+/** The WHO BMI ladder, the one place its cut points live. */
+export type BmiCategory =
+  "underweight" | "normal" | "overweight" | "obese1" | "obese2" | "obese3";
+
+export function bmiCategory(bmi: number): BmiCategory {
+  if (bmi < 18.5) return "underweight";
+  if (bmi < 25) return "normal";
+  if (bmi < 30) return "overweight";
+  if (bmi < 35) return "obese1";
+  if (bmi < 40) return "obese2";
+  return "obese3";
+}
+
+const BMI_CLASSIFICATIONS: Record<BmiCategory, BmiClassification> = {
+  underweight: {
+    category: "Underweight",
+    color: "var(--dracula-yellow)",
+    severity: "warning",
+  },
+  normal: { category: "Normal", color: "var(--success)", severity: "normal" },
+  overweight: {
+    category: "Overweight",
+    color: "var(--warning)",
+    severity: "warning",
+  },
+  obese1: {
+    category: "Obesity Grade I",
+    color: "var(--chart-3)",
+    severity: "danger",
+  },
+  obese2: {
+    category: "Obesity Grade II",
+    color: "var(--destructive)",
+    severity: "danger",
+  },
+  obese3: {
     category: "Obesity Grade III",
     color: "var(--destructive)",
     severity: "danger",
-  };
+  },
+};
+
+export function classifyBMI(bmi: number): BmiClassification {
+  return BMI_CLASSIFICATIONS[bmiCategory(bmi)];
 }
 
 // ── BP Classification (ESH 2023) ────────────────────────
@@ -58,39 +76,46 @@ export interface BpClassification {
   severity: "normal" | "elevated" | "warning" | "danger";
 }
 
-export function classifyBP(sys: number, dia: number): BpClassification {
-  if (sys < 120 && dia < 80) {
-    return { category: "Optimal", color: "var(--success)", severity: "normal" };
-  }
-  if (sys < 130 && dia < 85) {
-    return { category: "Normal", color: "var(--info)", severity: "normal" };
-  }
-  if (sys < 140 && dia < 90) {
-    return {
-      category: "High-normal",
-      color: "var(--dracula-yellow)",
-      severity: "elevated",
-    };
-  }
-  if (sys < 160 && dia < 100) {
-    return {
-      category: "Hypertension Grade 1",
-      color: "var(--warning)",
-      severity: "warning",
-    };
-  }
-  if (sys < 180 && dia < 110) {
-    return {
-      category: "Hypertension Grade 2",
-      color: "var(--chart-3)",
-      severity: "danger",
-    };
-  }
-  return {
+/** The ESH 2023 office-BP ladder, the one place its cut points live. */
+export type BpCategory =
+  "optimal" | "normal" | "highNormal" | "grade1" | "grade2" | "grade3";
+
+export function bpCategory(sys: number, dia: number): BpCategory {
+  if (sys < 120 && dia < 80) return "optimal";
+  if (sys < 130 && dia < 85) return "normal";
+  if (sys < 140 && dia < 90) return "highNormal";
+  if (sys < 160 && dia < 100) return "grade1";
+  if (sys < 180 && dia < 110) return "grade2";
+  return "grade3";
+}
+
+const BP_CLASSIFICATIONS: Record<BpCategory, BpClassification> = {
+  optimal: { category: "Optimal", color: "var(--success)", severity: "normal" },
+  normal: { category: "Normal", color: "var(--info)", severity: "normal" },
+  highNormal: {
+    category: "High-normal",
+    color: "var(--dracula-yellow)",
+    severity: "elevated",
+  },
+  grade1: {
+    category: "Hypertension Grade 1",
+    color: "var(--warning)",
+    severity: "warning",
+  },
+  grade2: {
+    category: "Hypertension Grade 2",
+    color: "var(--chart-3)",
+    severity: "danger",
+  },
+  grade3: {
     category: "Hypertension Grade 3",
     color: "var(--destructive)",
     severity: "danger",
-  };
+  },
+};
+
+export function classifyBP(sys: number, dia: number): BpClassification {
+  return BP_CLASSIFICATIONS[bpCategory(sys, dia)];
 }
 
 // ── Pulse Classification (AHA) ──────────────────────────
@@ -357,8 +382,7 @@ export function getStepsRange(): { min: number; max: number } {
  * Healthy weight range based on BMI 18.5–24.9 (WHO).
  */
 export function getWeightRange(heightCm: number): { min: number; max: number } {
-  const heightM = heightCm / 100;
-  const heightSq = heightM * heightM;
+  const heightSq = heightSquaredM2(heightCm);
   return {
     min: Math.round(18.5 * heightSq * 10) / 10,
     max: Math.round(24.9 * heightSq * 10) / 10,
