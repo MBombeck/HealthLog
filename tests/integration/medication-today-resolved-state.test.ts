@@ -26,7 +26,10 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-async function setup(doseWindows?: unknown) {
+async function setup(
+  doseWindows?: unknown,
+  legacy?: { windowStart: string; windowEnd: string },
+) {
   const prisma = getPrismaClient();
   const user = await prisma.user.create({
     data: {
@@ -50,9 +53,9 @@ async function setup(doseWindows?: unknown) {
       createdAt: new Date(Date.now() - 30 * DAY_MS),
       schedules: {
         create: {
-          windowStart: "08:00",
-          windowEnd: "08:00",
-          timesOfDay: ["08:00"],
+          windowStart: legacy?.windowStart ?? "08:00",
+          windowEnd: legacy?.windowEnd ?? "08:00",
+          timesOfDay: legacy ? [] : ["08:00"],
           daysOfWeek: null,
           scheduleType: "SCHEDULED",
           ...(doseWindows !== undefined && {
@@ -77,29 +80,33 @@ function at(iso: string) {
 }
 
 describe("today list: resolved dose state", () => {
-  it("moves pending, due, overdue, missed with the clock and says a late take counts", async () => {
+  it("moves upcoming, due, overdue, missed with the clock and says a late take counts", async () => {
     at("2026-11-21T05:00:00.000Z");
-    await setup();
-    expect(await slotRow()).toMatchObject({
-      state: "pending",
+    // 07:30 to 10:00 Berlin is the stored on-time window.
+    await setup([{ timeOfDay: "08:00", start: "07:30", end: "10:00" }]);
+    const row = (await slotRow())!;
+    expect(row).toMatchObject({
+      state: "upcoming",
+      takenLate: false,
       slotInstant: SLOT.toISOString(),
+      dueAt: "2026-11-21T06:30:00.000Z",
+      overdueSince: null,
       lateTakeCounts: false,
     });
-    const row = (await slotRow())!;
-    const dueAt = Date.parse(row.dueAt as string);
-    const overdueSince = Date.parse(row.overdueSince as string);
     const missedAfter = Date.parse(row.missedAfter as string);
-    expect(dueAt).toBeLessThanOrEqual(SLOT.getTime());
-    expect(overdueSince).toBeGreaterThan(SLOT.getTime());
-    expect(missedAfter).toBeGreaterThan(overdueSince);
+    expect(missedAfter).toBeGreaterThan(Date.parse("2026-11-21T09:00:00.000Z"));
 
-    at(new Date(dueAt + 60_000).toISOString());
+    at("2026-11-21T06:31:00.000Z");
     expect((await slotRow())?.state).toBe("due");
-    at(new Date(overdueSince + 60_000).toISOString());
-    expect((await slotRow())?.state).toBe("overdue");
+    at("2026-11-21T09:01:00.000Z");
+    expect(await slotRow()).toMatchObject({
+      state: "overdue",
+      overdueSince: "2026-11-21T09:00:00.000Z",
+    });
     at(new Date(missedAfter + 60_000).toISOString());
     expect(await slotRow()).toMatchObject({
       state: "missed",
+      overdueSince: null,
       lateTakeCounts: true,
     });
   });
@@ -122,12 +129,14 @@ describe("today list: resolved dose state", () => {
     });
   });
 
-  it("a stored dose window sets the instants the list shows", async () => {
-    at("2026-11-21T05:00:00.000Z");
-    await setup([{ timeOfDay: "08:00", start: "07:30", end: "10:00" }]);
-    const row = (await slotRow())!;
-    // 07:30 and 10:00 Berlin.
-    expect(row.dueAt).toBe("2026-11-21T06:30:00.000Z");
-    expect(row.overdueSince).toBe("2026-11-21T09:00:00.000Z");
+  it("a take after the on-time window reads taken, late", async () => {
+    at("2026-11-21T10:00:00.000Z");
+    const { user, medId } = await setup();
+    await readToday();
+    await getPrismaClient().medicationIntakeEvent.updateMany({
+      where: { userId: user.id, medicationId: medId, scheduledFor: SLOT },
+      data: { takenAt: new Date("2026-11-21T09:30:00.000Z") },
+    });
+    expect(await slotRow()).toMatchObject({ state: "taken", takenLate: true });
   });
 });

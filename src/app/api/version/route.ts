@@ -2,6 +2,7 @@ import { apiHandler } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { offlineGeoReady, resolveGeoProviderHost } from "@/lib/geo";
 import packageJson from "../../../../package.json";
+import { SERVER_FEATURES } from "@/lib/server-features";
 
 // v1.4.27 — `offlineGeoEnabled` reads from the same source the geo
 // resolver uses for the runtime fallback gate, so the public state and
@@ -67,5 +68,7 @@ export const GET = apiHandler(async () => {
     docs: "https://docs.healthlog.dev",
     offlineGeoEnabled,
     geoProviderHost,
+    // The behaviours a client may rely on (`server-features.ts`).
+    features: [...SERVER_FEATURES],
   });
 });

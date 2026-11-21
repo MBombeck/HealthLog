@@ -192,9 +192,14 @@ async function settleLandedRows(input: BatchInput, state: BatchState) {
   }
 
   if (state.syncSlots.size > 0) {
+    // One sync per batch, and the visible confirmation once per recorded
+    // slot (`medication-intake-recorded.ts`).
     queueMedicationIntakeSync({
       userId: user.id,
       originDeviceToken: input.originDeviceToken,
+      recorded: [...state.syncSlots.values()].flatMap((slot) =>
+        slot.recorded ? [slot.recorded] : [],
+      ),
     });
   }
 }

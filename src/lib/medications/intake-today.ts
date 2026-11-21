@@ -12,7 +12,10 @@ import { projectTodayIntakesAndRecompute } from "@/lib/medications/scheduling/pr
 import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 import { slotsHeldBySnooze } from "@/lib/medications/snooze-scope";
 import { resolveDosesByRow } from "@/lib/medications/dose-state/today";
-import { serializeResolvedDose } from "@/lib/medications/dose-state/resolve";
+import {
+  serializeResolvedDose,
+  wireDoseState,
+} from "@/lib/medications/dose-state/resolve";
 
 export async function readTodayIntakes(input: {
   userId: string;
@@ -154,16 +157,17 @@ function todayDoseFields(
   if (dose) {
     const s = serializeResolvedDose(dose);
     return {
-      state: s.state,
+      ...wireDoseState(dose.state),
       slotInstant: s.slotInstant,
       dueAt: s.dueAt,
-      overdueSince: s.overdueSince,
+      overdueSince: dose.state === "overdue" ? s.overdueSince : null,
       missedAfter: s.missedAfter,
       lateTakeCounts: s.lateTakeCounts,
     };
   }
   return {
     state: taken ? ("taken" as const) : null,
+    takenLate: false,
     slotInstant: null,
     dueAt: null,
     overdueSince: null,

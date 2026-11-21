@@ -174,6 +174,19 @@ function recordLanded(
     state.syncSlots.set(`${entry.medicationId}|${scheduledForIso}`, {
       medicationId: entry.medicationId,
       scheduledFor: scheduledForIso,
+      // A dose the person recorded on this device; an Apple Health mirror
+      // is a bulk catch-up and confirms nothing on the other devices.
+      ...(entry.source !== "APPLE_HEALTH" &&
+        landed?.id !== undefined && {
+          recorded: {
+            medicationId: entry.medicationId,
+            intakeId: landed.id,
+            slotInstant: effectiveScheduledFor,
+            outcome: entry.skipped ? ("skipped" as const) : ("taken" as const),
+            takenAt: entry.skipped ? null : (entry.takenAt ?? null),
+            takenVia: "APP" as const,
+          },
+        }),
     });
     if (!entry.skipped) state.snoozeClearIds.add(entry.medicationId);
   }

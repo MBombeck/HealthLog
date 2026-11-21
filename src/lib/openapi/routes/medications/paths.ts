@@ -216,9 +216,9 @@ const bulkIntakeEntryResult = z
   .object({
     index: z.number().int().nonnegative(),
     status: z
-      .enum(["inserted", "updated", "duplicate", "skipped"])
+      .enum(["inserted", "updated", "duplicate", "alreadyTaken", "skipped"])
       .describe(
-        "`inserted`/`updated`/`duplicate` — the row landed (advance the cursor). `skipped` — not stored; see `reason`.",
+        "`inserted`/`updated`/`duplicate` — the row landed (advance the cursor); `duplicate` is an idempotent replay of an entry already stored, nothing else. `alreadyTaken` — the slot already holds a take recorded by another writer or another key: nothing was written, no stock consumed; `intake` is the recorded row, `takenAt` and `takenVia` say when and how it was taken. Advance the cursor and warn before a second dose. `skipped` — not stored; see `reason`.",
       ),
     reason: z
       .string()
@@ -227,6 +227,28 @@ const bulkIntakeEntryResult = z
         "Why a `skipped` entry was not stored. Among others: `medication_not_found`, `unstable_external_id`, `force_slot_invalid`, `force_slot_occupied`, `injection_site_not_allowed`, and (v1.42.0) `intake_not_tracked` for an entry against a medication kept as a record only (`trackIntake: false`), the per-entry form of `medication.intake.notTracked`. A skip is final: resending the entry gives the same answer.",
       ),
     id: z.string().optional().describe("The landed row id (absent on skips)."),
+    intake: medicationIntakeEventResource
+      .optional()
+      .describe("On `alreadyTaken`: the recorded row the slot already holds."),
+    takenAt: isoDateTime()
+      .nullable()
+      .optional()
+      .describe("On `alreadyTaken`: when the slot's take was recorded."),
+    takenVia: z
+      .enum([
+        "WEB",
+        "APP",
+        "INTEGRATION",
+        "TELEGRAM",
+        "APPLE_HEALTH",
+        "IMPORT",
+        "AUTO",
+      ])
+      .nullable()
+      .optional()
+      .describe(
+        "On `alreadyTaken`: where the slot's take came from (null for takes before migration 0515).",
+      ),
   })
   .meta({ id: "BulkMedicationIntakeEntryResult" });
 
@@ -1588,7 +1610,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: {
             "application/json": {
               schema: dataEnvelope(
-                medicationIntakeEventResource,
+                repeatedIntakeEventResource,
                 "CreateMedicationIntakeResponse",
               ),
             },

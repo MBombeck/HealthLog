@@ -403,18 +403,18 @@ async function applyToExisting(
     };
   }
 
-  // A take on a slot that already holds a take is the same dose reported
-  // again: the first take, its time and its idempotency key stay, nothing
-  // is written, and the caller answers `alreadyTaken`. An external dose
-  // record (Apple Health) is the exception: the bulk path has already told
-  // it apart from another dose, and an edit in Health must move the dose.
+  // A take on a taken slot writes nothing and answers `alreadyTaken` (the
+  // same key again: a replay). An Apple Health record keeps last-write-wins:
+  // bulk told it apart from another dose, and an edit in Health moves it.
   if (
     isExplicitTaken &&
     externalId === null &&
     existing.takenAt !== null &&
     !existing.skipped
   ) {
-    return { ...NO_OP, row: existing, alreadyTaken: true };
+    const replay =
+      idempotencyKey !== null && idempotencyKey === existing.idempotencyKey;
+    return { ...NO_OP, row: existing, alreadyTaken: !replay };
   }
 
   // Never clear a recorded dose with a pending projection echo. An

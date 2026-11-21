@@ -349,3 +349,61 @@ describe("POST /api/devices", () => {
     ).resolves.toBe(1);
   });
 });
+
+describe("POST /api/devices — per-Activity Live Activity tokens", () => {
+  const base = {
+    token: "device-la-list-1",
+    bundleId: "io.healthlog.ios",
+    apnsToken: "abcdef0123456789abcdef0123456789",
+    apnsEnvironment: "sandbox",
+  };
+  async function stored(deviceToken: string) {
+    const device = await getPrismaClient().device.findFirstOrThrow({
+      where: { token: deviceToken },
+      include: { liveActivities: { orderBy: { pushToken: "asc" } } },
+    });
+    return device;
+  }
+
+  it("replaces the list when sent, clears it on [], keeps it when omitted, and then ignores the legacy token", async () => {
+    await seedSession("device-la-list");
+    const slot = "2026-11-21T07:00:00.000Z";
+    expect(
+      (
+        await registerDevice({
+          ...base,
+          liveActivityPushToken: "1111111111111111",
+          liveActivityTokens: [
+            {
+              token: "aaaa0000aaaa0000",
+              medicationId: "m-a",
+              slotInstant: slot,
+            },
+            { token: "bbbb0000bbbb0000", medicationId: "m-b" },
+          ],
+        })
+      ).status,
+    ).toBeLessThan(300);
+    let device = await stored(base.token);
+    expect(
+      device.liveActivities.map((a) => [
+        a.pushToken,
+        a.medicationId,
+        a.slotInstant?.toISOString() ?? null,
+      ]),
+    ).toEqual([
+      ["aaaa0000aaaa0000", "m-a", slot],
+      ["bbbb0000bbbb0000", "m-b", null],
+    ]);
+    // The legacy field is ignored when the list is present.
+    expect(device.liveActivityPushToken).toBeNull();
+
+    await registerDevice({ ...base });
+    device = await stored(base.token);
+    expect(device.liveActivities).toHaveLength(2);
+
+    await registerDevice({ ...base, liveActivityTokens: [] });
+    device = await stored(base.token);
+    expect(device.liveActivities).toHaveLength(0);
+  });
+});

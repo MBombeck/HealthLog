@@ -1,5 +1,6 @@
 import { z } from "zod/v4";
 import { resolveDosesAt } from "@/lib/medications/dose-state/today";
+import { wireDoseState } from "@/lib/medications/dose-state/resolve";
 import { fenceUserText } from "@/lib/ai/coach/data-fence";
 import { medicationWindow } from "@/lib/medications/course-window";
 
@@ -56,16 +57,9 @@ const getMedicationScheduleOutput: z.ZodRawShape = {
         // The next dose's resolved state (`dose-state/resolve.ts`), the same
         // value the app's today list and card show.
         doseState: z
-          .enum([
-            "pending",
-            "due",
-            "overdue",
-            "missed",
-            "taken",
-            "taken_late",
-            "skipped",
-          ])
+          .enum(["upcoming", "due", "overdue", "taken", "skipped", "missed"])
           .nullable(),
+        takenLate: z.boolean(),
         asNeeded: z.boolean(),
         intakeTracked: z.boolean(),
         links: z.array(recordLinkSchema),
@@ -79,7 +73,7 @@ export const getMedicationScheduleTool: McpToolDefinition = {
   name: "get_medication_schedule",
   title: "Get the medication schedule",
   description:
-    "Fetch when the user's active medications are next due, and which are overdue right now. Reuses the same server-authoritative recurrence engine the medication cards render (open overdue slots win over future ones). Returns one row per active medication: its id (med:<id>, which fetch accepts), name, dose, the person's own note on it (directions such as when to take it relative to food; null when none), next-due instant, an overdue flag, the next dose's resolved state (doseState: pending, due, overdue, missed, taken, taken_late or skipped; a missed dose taken now still counts, late), an as-needed (PRN) flag, an intakeTracked flag, and its directly linked records (links: conditions, documents and visits, each with an id fetch accepts, a label, a date, and for a document imported from Paperless-ngx or Papra its sourceSystem and sourceId; [] when none; at most 25 with linksTruncated; documents only while the Documents module is on). As-needed medications and medications whose intake tracking is off (intakeTracked: false, kept as a record only) have no due time (nextDueAt: null). Returns { present: false } when no medications are tracked, and { present: false, reason: \"module_disabled\" } when the medications module is switched off.",
+    "Fetch when the user's active medications are next due, and which are overdue right now. Reuses the same server-authoritative recurrence engine the medication cards render (open overdue slots win over future ones). Returns one row per active medication: its id (med:<id>, which fetch accepts), name, dose, the person's own note on it (directions such as when to take it relative to food; null when none), next-due instant, an overdue flag, the next dose's resolved state (doseState: upcoming, due, overdue, taken, skipped or missed, with takenLate for a late take; a missed dose taken now still counts, late), an as-needed (PRN) flag, an intakeTracked flag, and its directly linked records (links: conditions, documents and visits, each with an id fetch accepts, a label, a date, and for a document imported from Paperless-ngx or Papra its sourceSystem and sourceId; [] when none; at most 25 with linksTruncated; documents only while the Documents module is on). As-needed medications and medications whose intake tracking is off (intakeTracked: false, kept as a record only) have no due time (nextDueAt: null). Returns { present: false } when no medications are tracked, and { present: false, reason: \"module_disabled\" } when the medications module is switched off.",
   inputShape: {},
   annotations: READ_ONLY_ANNOTATIONS,
   outputShape: getMedicationScheduleOutput,
@@ -234,10 +228,15 @@ export const getMedicationScheduleTool: McpToolDefinition = {
       at: nextDue,
       now,
     });
-    const withState = rows.map((row, i) => ({
-      ...row,
-      doseState: states.get(medications[i].id)?.state ?? null,
-    }));
+    const withState = rows.map((row, i) => {
+      const resolved = states.get(medications[i].id);
+      const wire = resolved ? wireDoseState(resolved.state) : null;
+      return {
+        ...row,
+        doseState: wire?.state ?? null,
+        takenLate: wire?.takenLate ?? false,
+      };
+    });
 
     annotate({
       action: { name: "mcp.tool.invoked" },

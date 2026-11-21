@@ -65,8 +65,10 @@ $migration$;
 --    nullable `taken_via` holds the origin of the take itself (web, app,
 --    integration, Telegram, Apple Health, import, auto-take). Existing rows
 --    stay null: their origin was never recorded.
--- 4. Which medication a device's Live Activity token belongs to, as the app
---    reports it, so the end push can be bound to that medication.
+-- 4. A device's running Live Activities, one row each with the dose it
+--    shows (`live_activity_tokens`), so the end push goes to exactly the
+--    Activity whose dose was answered. The single device-level token stays
+--    for clients that send only that.
 --
 -- Additive and nullable, so no row is rewritten; each statement is idempotent.
 
@@ -83,8 +85,22 @@ BEGIN
     ALTER TABLE "medication_intake_events"
         ADD COLUMN IF NOT EXISTS "taken_via" "intake_taken_via";
 
-    ALTER TABLE "devices"
-        ADD COLUMN IF NOT EXISTS "live_activity_medication_id" TEXT;
+    CREATE TABLE IF NOT EXISTS "live_activity_tokens" (
+        "id" TEXT NOT NULL,
+        "device_id" TEXT NOT NULL,
+        "push_token" TEXT NOT NULL,
+        "medication_id" TEXT NOT NULL,
+        "slot_instant" TIMESTAMP(3),
+        "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updated_at" TIMESTAMP(3) NOT NULL,
+        CONSTRAINT "live_activity_tokens_pkey" PRIMARY KEY ("id"),
+        CONSTRAINT "live_activity_tokens_device_id_fkey" FOREIGN KEY ("device_id")
+            REFERENCES "devices"("id") ON DELETE CASCADE ON UPDATE CASCADE
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS "live_activity_tokens_device_id_push_token_key"
+        ON "live_activity_tokens" ("device_id", "push_token");
+    CREATE INDEX IF NOT EXISTS "live_activity_tokens_device_id_idx"
+        ON "live_activity_tokens" ("device_id");
 END
 $migration$;
 

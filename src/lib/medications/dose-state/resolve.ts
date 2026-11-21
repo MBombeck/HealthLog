@@ -192,3 +192,28 @@ export function serializeResolvedDose(dose: ResolvedDose) {
     lateTakeCounts: dose.lateTakeCounts,
   };
 }
+
+/** The dose-state vocabulary on the wire (today rows, currentDose, MCP). */
+export const WIRE_DOSE_STATES = [
+  "upcoming",
+  "due",
+  "overdue",
+  "taken",
+  "skipped",
+  "missed",
+] as const;
+
+export type WireDoseState = (typeof WIRE_DOSE_STATES)[number];
+
+/**
+ * A resolved dose in the published vocabulary: `pending` reads `upcoming`,
+ * and a late take reads `taken` with `takenLate: true`.
+ */
+export function wireDoseState(state: DoseState): {
+  state: WireDoseState;
+  takenLate: boolean;
+} {
+  if (state === "pending") return { state: "upcoming", takenLate: false };
+  if (state === "taken_late") return { state: "taken", takenLate: true };
+  return { state, takenLate: false };
+}

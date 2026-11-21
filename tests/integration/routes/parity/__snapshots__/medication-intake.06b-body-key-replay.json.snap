@@ -26,7 +26,8 @@
       "externalId": null,
       "updatedAt": "<updatedAt>",
       "syncVersion": "<syncVersion>",
-      "deletedAt": null
+      "deletedAt": null,
+      "alreadyTaken": false
     },
     "error": null
   },

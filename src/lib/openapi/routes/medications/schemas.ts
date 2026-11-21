@@ -1015,19 +1015,14 @@ export const complianceDisplay = z
             "Target instant of the open dose. Null when no dose is open.",
           ),
         state: z
-          .enum([
-            "pending",
-            "due",
-            "overdue",
-            "missed",
-            "taken",
-            "taken_late",
-            "skipped",
-          ])
+          .enum(["upcoming", "due", "overdue", "taken", "skipped", "missed"])
           .nullable()
           .describe(
-            "The open dose's resolved state (`dose-state/resolve.ts`), the same vocabulary as the today list's `state`. Null when no dose is open. `status` above is the same state in the older vocabulary.",
+            "The open dose's resolved state, the same vocabulary as the today list's `state`. Null when no dose is open. `status` above is the same state in the older vocabulary.",
           ),
+        takenLate: z
+          .boolean()
+          .describe("With `state: taken`: taken after the on-time window."),
         dueAt: isoDateTime()
           .nullable()
           .describe("When the open dose's window opens."),
@@ -1655,10 +1650,9 @@ export const medicationDoseHistoryImportFatalReasonEnum = z
 export const repeatedIntakeEventResource = medicationIntakeEventResource
   .extend({
     alreadyTaken: z
-      .literal(true)
-      .optional()
+      .boolean()
       .describe(
-        "Present and true when this POST reported a dose already recorded: the slot it binds to holds a take recorded within two hours of this one. Nothing was written and no stock was consumed; the body is the recorded row, so `takenAt` and `source` say when and how. Absent on an idempotency replay.",
+        "True when this POST reported a dose already recorded: the slot it binds to already holds a take. Nothing was written and no stock was consumed; the body is the recorded row, so `takenAt` and `takenVia` say when and how. False on a fresh dose (201) and on an idempotency replay (200).",
       ),
   })
   .meta({ id: "RepeatedMedicationIntakeEvent" });
@@ -1701,18 +1695,15 @@ export const todayIntakeEntry = z
         "When the snooze holding this slot ends. Null when no running snooze holds this slot, including other slots of a snoozed medication.",
       ),
     state: z
-      .enum([
-        "pending",
-        "due",
-        "overdue",
-        "missed",
-        "taken",
-        "taken_late",
-        "skipped",
-      ])
+      .enum(["upcoming", "due", "overdue", "taken", "skipped", "missed"])
       .nullable()
       .describe(
-        "The resolved state of this dose, computed once on the server from the same bands the dose history, the adherence rate and the reminders use (the medication's stored dose windows included). `pending` before `dueAt`; `due` from `dueAt` to `overdueSince`; `overdue` until `missedAfter`; `missed` after that with nothing recorded (or closed by the auto-miss pass); `taken` / `taken_late` by when it was taken; `skipped`. Render from this instead of fixed thresholds. Null only for a row on no slot that records nothing.",
+        "The resolved state of this dose, computed once on the server from the same bands the dose history, the adherence rate and the reminders use (the medication's stored dose windows included). `upcoming` before `dueAt`; `due` from `dueAt`; `overdue` past the on-time window (see `overdueSince`) until `missedAfter`; `missed` after that with nothing recorded (or closed by the auto-miss pass); `taken` (see `takenLate`); `skipped`. Render from this instead of fixed thresholds. Null only for a row on no slot that records nothing. Distinct from the older `status` field above.",
+      ),
+    takenLate: z
+      .boolean()
+      .describe(
+        "With `state: taken`: taken after the on-time window (it still counts, late). False otherwise.",
       ),
     slotInstant: isoDateTime()
       .nullable()
@@ -1724,7 +1715,9 @@ export const todayIntakeEntry = z
       .describe("When the dose window opens; the dose is `due` from here."),
     overdueSince: isoDateTime()
       .nullable()
-      .describe("End of the on-time window; past it the dose is `overdue`."),
+      .describe(
+        "Since when the dose is overdue (the end of its on-time window). Null unless `state` is `overdue`.",
+      ),
     missedAfter: isoDateTime()
       .nullable()
       .describe(

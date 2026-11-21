@@ -7,7 +7,8 @@ import {
   legacyDoseStatus,
   resolveDoseState,
   resolveLedgerSlot,
-  type DoseState,
+  wireDoseState,
+  type WireDoseState,
 } from "@/lib/medications/dose-state/resolve";
 import {
   defaultDoseBand,
@@ -24,7 +25,8 @@ import {
 export interface CurrentDose {
   status: DoseStatus;
   targetAt: Date | null;
-  state: DoseState | null;
+  state: WireDoseState | null;
+  takenLate: boolean;
   dueAt: Date | null;
   overdueSince: Date | null;
   missedAfter: Date | null;
@@ -42,6 +44,7 @@ export function currentDoseOf(
       status: "upcoming",
       targetAt: null,
       state: null,
+      takenLate: false,
       dueAt: null,
       overdueSince: null,
       missedAfter: null,
@@ -57,7 +60,7 @@ export function currentDoseOf(
   return {
     status: legacyDoseStatus(resolved.state),
     targetAt: nextDueAt,
-    state: resolved.state,
+    ...wireDoseState(resolved.state),
     dueAt: resolved.dueAt,
     overdueSince: resolved.overdueSince,
     missedAfter: resolved.missedAfter,

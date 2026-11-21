@@ -46,7 +46,8 @@
       "args": [
         {
           "userId": "<id:3>",
-          "originDeviceToken": null
+          "originDeviceToken": null,
+          "recorded": []
         }
       ]
     }

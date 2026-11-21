@@ -104,7 +104,7 @@ export interface IntakeSyncRequest {
    * sends the visible confirmation to the owner's other iOS devices
    * (`medication-intake-recorded.ts`), coalesced per slot.
    */
-  recorded?: IntakeRecordedEvent;
+  recorded?: IntakeRecordedEvent | readonly IntakeRecordedEvent[];
 }
 
 interface CoalesceWindow {
@@ -128,10 +128,15 @@ const openWindows = new Map<string, CoalesceWindow>();
  * dispatch when it closes.
  */
 export function queueMedicationIntakeSync(input: IntakeSyncRequest): void {
-  if (input.recorded) {
+  const recorded = input.recorded;
+  for (const event of Array.isArray(recorded)
+    ? recorded
+    : recorded
+      ? [recorded]
+      : []) {
     queueIntakeRecorded({
       userId: input.userId,
-      event: input.recorded,
+      event,
       originDeviceToken: input.originDeviceToken ?? null,
     });
   }
@@ -254,7 +259,15 @@ async function flushIntakeSync(
         apnsToken: true,
         apnsEnvironment: true,
         liveActivityPushToken: true,
-        liveActivityMedicationId: true,
+        liveActivities: {
+          select: {
+            id: true,
+            pushToken: true,
+            medicationId: true,
+            slotInstant: true,
+          },
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        },
       },
     });
 
@@ -301,7 +314,18 @@ interface SyncRecipient {
   apnsToken: string | null;
   apnsEnvironment: string | null;
   liveActivityPushToken: string | null;
-  liveActivityMedicationId: string | null;
+  liveActivities: Array<{
+    id: string;
+    pushToken: string;
+    medicationId: string;
+    slotInstant: Date | null;
+  }>;
+}
+
+/** The dose a Live Activity shows, as far as the server knows it. */
+interface ActivityDose {
+  medicationId: string | null;
+  slotInstant: Date | null;
 }
 
 /**
@@ -314,11 +338,11 @@ async function fanOutIntakeSyncApns(args: {
   recipients: SyncRecipient[];
   bundleId: string;
   /**
-   * The final content-state to end an Activity of this medication (null:
-   * not known) with, or null to leave it running.
+   * The final content-state to end an Activity showing this dose with, or
+   * null to leave it running.
    */
   liveActivityEnd: (
-    medicationId: string | null,
+    dose: ActivityDose,
   ) => Promise<MedicationLiveActivityContentState | null>;
 }): Promise<void> {
   // Pure sync trigger — deliberately NO medication id / name / dose
@@ -334,6 +358,7 @@ async function fanOutIntakeSyncApns(args: {
   let anySuccess = false;
   const deadDeviceIds: string[] = [];
   const spentLiveActivityDeviceIds: string[] = [];
+  const spentActivityIds: string[] = [];
   let lastFailureReason: string | undefined;
 
   for (const device of args.recipients) {
@@ -356,10 +381,22 @@ async function fanOutIntakeSyncApns(args: {
       if (silent.shouldDisable) deadDeviceIds.push(device.id);
     }
 
-    // 2) Live Activity end push — only when a token is stored and no dose
-    // the Activity could be showing is still open.
+    // 2) Live Activity end pushes. Each registered Activity ends once the
+    // dose it shows is answered; the device-level token of a client that
+    // registers no list ends only when no dose it could show is open.
+    for (const activity of device.liveActivities) {
+      const endState = await args.liveActivityEnd(activity);
+      if (!endState) continue;
+      const spent = await sendLiveActivityEnd({
+        token: activity.pushToken,
+        environment,
+        bundleId: args.bundleId,
+        contentState: endState,
+      });
+      if (spent) spentActivityIds.push(activity.id);
+    }
     const endState = device.liveActivityPushToken
-      ? await args.liveActivityEnd(device.liveActivityMedicationId)
+      ? await args.liveActivityEnd({ medicationId: null, slotInstant: null })
       : null;
     if (device.liveActivityPushToken && endState) {
       const spent = await sendLiveActivityEnd({
@@ -372,13 +409,21 @@ async function fanOutIntakeSyncApns(args: {
     }
   }
 
+  if (spentActivityIds.length > 0) {
+    await prisma.liveActivityToken
+      .deleteMany({ where: { id: { in: spentActivityIds } } })
+      .catch(() => {
+        /* best-effort cleanup */
+      });
+  }
+
   // An ended Activity's token, or one APNs reports dead, addresses nothing;
   // the app registers a fresh one with its next Activity.
   if (spentLiveActivityDeviceIds.length > 0) {
     await prisma.device
       .updateMany({
         where: { id: { in: spentLiveActivityDeviceIds } },
-        data: { liveActivityPushToken: null, liveActivityMedicationId: null },
+        data: { liveActivityPushToken: null },
       })
       .catch(() => {
         /* best-effort cleanup */
@@ -422,39 +467,58 @@ function memoEndState(userId: string) {
     string,
     Promise<MedicationLiveActivityContentState | null>
   >();
-  return (medicationId: string | null) => {
-    const key = medicationId ?? "";
+  return (dose: ActivityDose) => {
+    const key = `${dose.medicationId ?? ""}|${dose.slotInstant?.getTime() ?? ""}`;
     let state = memo.get(key);
     if (!state) {
-      state = liveActivityEndState(userId, medicationId);
+      state = liveActivityEndState(userId, dose);
       memo.set(key, state);
     }
     return state;
   };
 }
 
+/**
+ * The content-state to end an Activity showing `dose` with, or null while
+ * that dose is still open. With a slot: once that slot's live row is taken
+ * or skipped. With a medication only: once none of its tracked doses the
+ * app could show (two hours ahead to three hours overdue) is open. With
+ * neither (a device-level token): once no tracked dose of the account is.
+ */
 async function liveActivityEndState(
   userId: string,
-  medicationId: string | null,
+  dose: ActivityDose,
 ): Promise<MedicationLiveActivityContentState | null> {
   const now = Date.now();
-  const open = await prisma.medicationIntakeEvent.count({
-    where: {
-      userId,
-      // Bound to the Activity's medication when the app named it.
-      ...(medicationId !== null && { medicationId }),
-      deletedAt: null,
-      takenAt: null,
-      skipped: false,
-      autoMissed: false,
-      scheduledFor: {
-        gte: new Date(now - LIVE_ACTIVITY_OVERDUE_MS),
-        lte: new Date(now + LIVE_ACTIVITY_LEAD_MS),
+  if (dose.medicationId !== null && dose.slotInstant !== null) {
+    const answered = await prisma.medicationIntakeEvent.count({
+      where: {
+        userId,
+        medicationId: dose.medicationId,
+        scheduledFor: dose.slotInstant,
+        deletedAt: null,
+        OR: [{ takenAt: { not: null } }, { skipped: true }],
       },
-      ...TRACKED_INTAKE_EVENT_WHERE,
-    },
-  });
-  if (open > 0) return null;
+    });
+    if (answered === 0) return null;
+  } else {
+    const open = await prisma.medicationIntakeEvent.count({
+      where: {
+        userId,
+        deletedAt: null,
+        takenAt: null,
+        skipped: false,
+        autoMissed: false,
+        ...(dose.medicationId !== null && { medicationId: dose.medicationId }),
+        scheduledFor: {
+          gte: new Date(now - LIVE_ACTIVITY_OVERDUE_MS),
+          lte: new Date(now + LIVE_ACTIVITY_LEAD_MS),
+        },
+        ...TRACKED_INTAKE_EVENT_WHERE,
+      },
+    });
+    if (open > 0) return null;
+  }
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { timeFormat: true },

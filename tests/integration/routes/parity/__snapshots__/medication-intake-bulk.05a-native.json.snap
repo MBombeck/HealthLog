@@ -49,7 +49,17 @@
       "args": [
         {
           "userId": "<id:4>",
-          "originDeviceToken": null
+          "originDeviceToken": null,
+          "recorded": [
+            {
+              "medicationId": "<id:2>",
+              "intakeId": "<id:1>",
+              "slotInstant": "2026-10-12T08:00:00.000Z",
+              "outcome": "taken",
+              "takenAt": "2026-10-12T08:10:00.000Z",
+              "takenVia": "APP"
+            }
+          ]
         }
       ]
     }

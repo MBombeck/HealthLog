@@ -61,7 +61,20 @@ async function writeOntoSlot(
     externalId: entry.externalId ?? null,
     takenVia: entry.source === "APPLE_HEALTH" ? "APPLE_HEALTH" : "APP",
   });
-  if (applied.noDowngradeNoOp) {
+  if (applied.alreadyTaken) {
+    // The slot already holds a take: nothing written, and the entry says
+    // when and how that take was recorded so the app can warn before a
+    // second dose. Advances the cursor like `duplicate`.
+    state.duplicates += 1;
+    state.results.push({
+      index: i,
+      status: "alreadyTaken",
+      id: applied.row.id,
+      intake: applied.row,
+      takenAt: applied.row.takenAt?.toISOString() ?? null,
+      takenVia: applied.row.takenVia ?? null,
+    });
+  } else if (applied.noDowngradeNoOp) {
     // Pending echo onto an already-actioned slot. Report it as a
     // duplicate so the iOS cursor advances WITHOUT downgrading the
     // recorded dose. A pending echo is never a taken write, so it

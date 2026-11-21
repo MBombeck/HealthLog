@@ -157,7 +157,7 @@ async function replayAnswer(
       { errorCode: "ingest.idempotencyKey.reused" },
     );
   }
-  return apiSuccess(existing);
+  return apiSuccess({ ...existing, alreadyTaken: false });
 }
 
 /** How long a key answers as a replay of its own take: one day. */
@@ -473,5 +473,5 @@ export const POST = apiHandler(async (request: NextRequest) => {
     event,
   });
 
-  return apiSuccess(event, 201);
+  return apiSuccess({ ...event, alreadyTaken: false }, 201);
 });

@@ -463,10 +463,14 @@ describe("POST /api/medications/intake/bulk — v1.8.2 reconcile", () => {
     // The whole batch produces ONE queued fan-out, not one per dose; the
     // web caller carries no X-Device-Id, so no origin is excluded.
     expect(queueMedicationIntakeSync).toHaveBeenCalledTimes(1);
-    expect(queueMedicationIntakeSync).toHaveBeenCalledWith({
-      userId: "user-1",
-      originDeviceToken: null,
-    });
+    // One fan-out, carrying the visible confirmation of each recorded slot.
+    expect(queueMedicationIntakeSync).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: "user-1", originDeviceToken: null }),
+    );
+    const [call] = vi.mocked(queueMedicationIntakeSync).mock.calls[0] as [
+      { recorded?: unknown[] },
+    ];
+    expect(call.recorded).toHaveLength(2);
   });
 
   it("C1 — a same-slot P2002 on create converges via re-find+update, not dropped as duplicate", async () => {

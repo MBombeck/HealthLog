@@ -89,3 +89,52 @@ describe("every intake writer queues the cross-device sync", () => {
     expect(Object.keys(EXEMPT).filter((f) => !found.includes(f))).toEqual([]);
   });
 });
+
+/**
+ * Every path that records a take or a skip a person made also sends the
+ * visible confirmation (`MEDICATION_INTAKE_RECORDED`) to the owner's other
+ * devices, by passing `recorded` to the sync push. The rest push the silent
+ * sync only, and say why.
+ */
+const CONFIRMS: readonly string[] = [
+  "lib/medications/record-intake/record-intake.ts",
+  "lib/medications/update-intake-status/update-intake-status.ts",
+  "lib/medications/intake-bulk/ingest.ts",
+  "lib/telegram-dose-writes.ts",
+  "app/api/ingest/medication/route.ts",
+];
+
+const SILENT_ONLY: Record<string, string> = {
+  "app/api/medications/[id]/intake/purge/route.ts": "deletes history",
+  "app/api/medications/[id]/intake/bulk-delete/route.ts": "deletes history",
+  "lib/medications/delete-intake-event.ts": "an undo reopens the dose",
+  "lib/medications/delete-intakes-by-external-ids.ts":
+    "Apple Health removed its own records",
+  "lib/medications/update-intake-event.ts":
+    "a correction of a dose already recorded",
+  "lib/jobs/medication-intake-import.ts": "a file import of past doses",
+  "lib/jobs/intake-auto-skip.ts": "the auto-miss pass, no person's decision",
+  "lib/jobs/intake-auto-take.ts": "the auto-take pass, no person's decision",
+};
+
+const CONFIRMING_PUSH =
+  /\bqueueMedicationIntakeSync\s*\(\s*\{[^}]*\brecorded\b/;
+
+describe("every recorded take or skip is confirmed on the other devices", () => {
+  const pushers = walkSourceFiles(SRC, { floor: 3000 })
+    .filter((file) => !/__tests__|\.test\.|^generated\//.test(file))
+    .filter((file) => file !== "lib/notifications/medication-intake-sync.ts")
+    .filter((file) => PUSHES.test(source(file)));
+
+  it("the confirming writers pass `recorded`", () => {
+    expect(CONFIRMS.filter((f) => !CONFIRMING_PUSH.test(source(f)))).toEqual(
+      [],
+    );
+  });
+
+  it("every other pusher is listed with its reason", () => {
+    expect(
+      pushers.filter((f) => !CONFIRMS.includes(f) && !(f in SILENT_ONLY)),
+    ).toEqual([]);
+  });
+});

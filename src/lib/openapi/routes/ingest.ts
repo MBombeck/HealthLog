@@ -17,10 +17,7 @@
 import type { ZodOpenApiObject } from "zod-openapi";
 
 import { externalIntakeSchema } from "@/lib/validations/medication";
-import {
-  medicationIntakeEventResource,
-  repeatedIntakeEventResource,
-} from "./medications/schemas";
+import { repeatedIntakeEventResource } from "./medications/schemas";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
 
 const externalIntakeRequest = externalIntakeSchema.meta({
@@ -46,7 +43,7 @@ export const ingestPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: {
             "application/json": {
               schema: dataEnvelope(
-                medicationIntakeEventResource,
+                repeatedIntakeEventResource,
                 "ExternalMedicationIntakeCreatedEnvelope",
               ),
             },

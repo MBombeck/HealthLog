@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2850,
-  "total": 9064,
+  "total": 9063,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -2509,7 +2509,7 @@
     "lib/medications/scheduling/resolve-slot-instant.ts": 2,
     "lib/medications/scheduling/schedule-eras.ts": 2,
     "lib/medications/scheduling/slot-resolution.ts": 2,
-    "lib/medications/scheduling/slot-upsert.ts": 26,
+    "lib/medications/scheduling/slot-upsert.ts": 25,
     "lib/medications/scheduling/worker-helpers.ts": 7,
     "lib/medications/side-effects/__tests__/drift-guard.test.ts": 1,
     "lib/medications/side-effects/__tests__/taxonomy.test.ts": 1,
