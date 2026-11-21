@@ -1,121 +1,47 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" font-family="ui-sans-serif, -apple-system, Segoe UI, Roboto, sans-serif" role="img" aria-labelledby="title desc">
   <title id="title">HealthLog push relay</title>
-  <desc id="desc">A self-hosted HealthLog server seals each push with HPKE (RFC 9180, auth mode, X25519, HKDF-SHA256, ChaCha20-Poly1305) for one iPhone and hands the sealed envelope to the push relay, which checks only the outer frame and passes it to Apple APNs inside a fixed template. On the iPhone the Notification Service Extension opens it with a device key made with Apple CryptoKit and kept in the keychain; only public keys and a device-signed Ed25519 binding statement go to the server. The relay signs every answer with a pinned Ed25519 key, and the phone can revoke its binding directly at the relay. The relay and Apple still see the timing, class, fixed size and device token.</desc>
+  <desc id="desc">Your server seals the message, the push relay forwards it and cannot read it, Apple delivers it and cannot read it, and the iPhone opens it with its own key. The message is encrypted end to end. The relay and Apple only see that a message went to a device, and when.</desc>
 
   <rect x="0" y="0" width="1200" height="620" fill="#282a36" />
 
-  <text x="600" y="40" fill="#f8f8f2" font-size="22" font-weight="700" text-anchor="middle">Push relay</text>
-  <text x="600" y="64" fill="#6272a4" font-size="13" text-anchor="middle">How a notification reaches your iPhone without the relay or Apple being able to read it.</text>
+  <text x="600" y="90" fill="#f8f8f2" font-size="30" font-weight="700" text-anchor="middle">Push relay</text>
 
-  <!-- Return path: public keys to the server -->
-  <g stroke="#50fa7b" stroke-width="1.2" stroke-dasharray="4 3" fill="none" marker-end="url(#a6-g)">
-    <path d="M1025 120 V 106 H 150 V 118" />
+  <!-- Encrypted end to end, with a lock -->
+  <g transform="translate(470 196)" fill="none" stroke="#bd93f9" stroke-width="2.5">
+    <path d="M6 0 V -7 a8 8 0 0 1 16 0 V 0" />
+    <rect x="0" y="0" width="28" height="22" rx="4" fill="#bd93f9" />
   </g>
-  <text x="600" y="98" fill="#50fa7b" font-size="11" text-anchor="middle">only public keys go to your server: the device key and a binding statement signed on the phone</text>
+  <text x="510" y="216" fill="#bd93f9" font-size="22" font-weight="600">encrypted end to end</text>
 
-  <!-- Server (cyan) -->
-  <g>
-    <rect x="30" y="120" width="240" height="320" rx="16" fill="none" stroke="#8be9fd" stroke-width="2" />
-    <text x="150" y="146" fill="#8be9fd" font-size="13" font-weight="700" text-anchor="middle">Your HealthLog server</text>
-    <rect x="40" y="165" width="220" height="56" rx="8" fill="#44475a" stroke="#8be9fd" stroke-width="1.5" />
-    <text x="150" y="188" text-anchor="middle" fill="#f8f8f2" font-size="12" font-weight="600">Seals every push</text>
-    <text x="150" y="207" text-anchor="middle" fill="#bd93f9" font-size="11">HPKE, RFC 9180, auth mode</text>
-    <rect x="40" y="233" width="220" height="56" rx="8" fill="#44475a" stroke="#8be9fd" stroke-width="1.5" />
-    <text x="150" y="256" text-anchor="middle" fill="#f8f8f2" font-size="12" font-weight="600">X25519 + ChaCha20-Poly1305</text>
-    <text x="150" y="275" text-anchor="middle" fill="#bd93f9" font-size="11">HKDF-SHA256, fixed size per class</text>
-    <rect x="40" y="301" width="220" height="56" rx="8" fill="#44475a" stroke="#8be9fd" stroke-width="1.5" />
-    <text x="150" y="324" text-anchor="middle" fill="#f8f8f2" font-size="12" font-weight="600">Sender key, X25519</text>
-    <text x="150" y="343" text-anchor="middle" fill="#bd93f9" font-size="11">pinned by the phone: proves origin</text>
-    <rect x="40" y="369" width="220" height="56" rx="8" fill="#44475a" stroke="#8be9fd" stroke-width="1.5" />
-    <text x="150" y="392" text-anchor="middle" fill="#f8f8f2" font-size="12" font-weight="600">Signs every request</text>
-    <text x="150" y="411" text-anchor="middle" fill="#bd93f9" font-size="11">Ed25519 instance key</text>
+  <!-- The path -->
+  <g fill="none" stroke-width="2">
+    <rect x="40" y="250" width="250" height="130" rx="14" stroke="#f8f8f2" />
+    <rect x="330" y="250" width="250" height="130" rx="14" stroke="#f8f8f2" />
+    <rect x="620" y="250" width="250" height="130" rx="14" stroke="#f8f8f2" />
+    <rect x="910" y="250" width="250" height="130" rx="14" stroke="#f8f8f2" />
   </g>
-
-  <!-- Relay (orange) -->
-  <g>
-    <rect x="330" y="120" width="230" height="320" rx="16" fill="none" stroke="#ffb86c" stroke-width="2" />
-    <text x="445" y="146" fill="#ffb86c" font-size="13" font-weight="700" text-anchor="middle">Push relay</text>
-    <rect x="340" y="165" width="210" height="56" rx="8" fill="#44475a" stroke="#ffb86c" stroke-width="1.5" />
-    <text x="445" y="188" text-anchor="middle" fill="#f8f8f2" font-size="12" font-weight="600">Checks the outer frame</text>
-    <text x="445" y="207" text-anchor="middle" fill="#bd93f9" font-size="11">version, suite, class, length</text>
-    <rect x="340" y="233" width="210" height="56" rx="8" fill="#44475a" stroke="#ffb86c" stroke-width="1.5" />
-    <text x="445" y="256" text-anchor="middle" fill="#f8f8f2" font-size="12" font-weight="600">Passes it on to Apple</text>
-    <text x="445" y="275" text-anchor="middle" fill="#bd93f9" font-size="11">holds no key that opens it</text>
-    <rect x="340" y="301" width="210" height="56" rx="8" fill="#44475a" stroke="#ffb86c" stroke-width="1.5" />
-    <text x="445" y="324" text-anchor="middle" fill="#f8f8f2" font-size="12" font-weight="600">Device-signed binding</text>
-    <text x="445" y="343" text-anchor="middle" fill="#bd93f9" font-size="11">only the phone's key binds it</text>
-    <rect x="340" y="369" width="210" height="56" rx="8" fill="#44475a" stroke="#ffb86c" stroke-width="1.5" />
-    <text x="445" y="392" text-anchor="middle" fill="#f8f8f2" font-size="12" font-weight="600">Signs every answer</text>
-    <text x="445" y="411" text-anchor="middle" fill="#bd93f9" font-size="11">Ed25519, server and app pin it</text>
+  <g font-size="28" font-weight="700" text-anchor="middle">
+    <text x="165" y="306" fill="#f8f8f2">Your server</text>
+    <text x="455" y="306" fill="#f8f8f2">Push relay</text>
+    <text x="745" y="306" fill="#f8f8f2">Apple</text>
+    <text x="1035" y="306" fill="#f8f8f2">iPhone</text>
+  </g>
+  <g font-size="18" fill="#a6a8b5" text-anchor="middle">
+    <text x="165" y="344">seals the message</text>
+    <text x="455" y="344">forwards, cannot read</text>
+    <text x="745" y="344">delivers, cannot read</text>
+    <text x="1035" y="344">opens it with its own key</text>
   </g>
 
-  <!-- Apple (purple) -->
-  <g>
-    <rect x="620" y="120" width="200" height="320" rx="16" fill="none" stroke="#bd93f9" stroke-width="2" />
-    <text x="720" y="146" fill="#bd93f9" font-size="13" font-weight="700" text-anchor="middle">Apple APNs</text>
-    <rect x="630" y="165" width="180" height="56" rx="8" fill="#44475a" stroke="#bd93f9" stroke-width="1.5" />
-    <text x="720" y="188" text-anchor="middle" fill="#f8f8f2" font-size="12" font-weight="600">Fixed template</text>
-    <text x="720" y="207" text-anchor="middle" fill="#bd93f9" font-size="11">envelope inside, unread</text>
-    <rect x="630" y="233" width="180" height="56" rx="8" fill="#44475a" stroke="#bd93f9" stroke-width="1.5" />
-    <text x="720" y="256" text-anchor="middle" fill="#f8f8f2" font-size="12" font-weight="600">Sees the device token</text>
-    <text x="720" y="275" text-anchor="middle" fill="#bd93f9" font-size="11">and when, and how big</text>
-    <rect x="630" y="301" width="180" height="56" rx="8" fill="#44475a" stroke="#bd93f9" stroke-width="1.5" />
-    <text x="720" y="324" text-anchor="middle" fill="#f8f8f2" font-size="12" font-weight="600">Can link the token</text>
-    <text x="720" y="343" text-anchor="middle" fill="#bd93f9" font-size="11">to an Apple account</text>
+  <g stroke="#f8f8f2" stroke-width="3" fill="none" marker-end="url(#a10)">
+    <path d="M292 315 L 324 315" />
+    <path d="M582 315 L 614 315" />
+    <path d="M872 315 L 904 315" />
   </g>
 
-  <!-- iPhone (green) -->
-  <g>
-    <rect x="880" y="120" width="290" height="320" rx="16" fill="none" stroke="#50fa7b" stroke-width="2" />
-    <text x="1025" y="146" fill="#50fa7b" font-size="13" font-weight="700" text-anchor="middle">iPhone</text>
-    <rect x="890" y="165" width="270" height="56" rx="8" fill="#44475a" stroke="#50fa7b" stroke-width="1.5" />
-    <text x="1025" y="188" text-anchor="middle" fill="#f8f8f2" font-size="12" font-weight="600">Notification Service Extension</text>
-    <text x="1025" y="207" text-anchor="middle" fill="#bd93f9" font-size="11">opens it, checks sender, expiry, replay</text>
-    <rect x="890" y="233" width="270" height="56" rx="8" fill="#44475a" stroke="#50fa7b" stroke-width="1.5" />
-    <text x="1025" y="256" text-anchor="middle" fill="#f8f8f2" font-size="12" font-weight="600">HealthLog app</text>
-    <text x="1025" y="275" text-anchor="middle" fill="#bd93f9" font-size="11">acts only on pushes that opened</text>
-    <rect x="890" y="301" width="270" height="56" rx="8" fill="#44475a" stroke="#50fa7b" stroke-width="1.5" />
-    <text x="1025" y="324" text-anchor="middle" fill="#f8f8f2" font-size="12" font-weight="600">Device key pair, X25519</text>
-    <text x="1025" y="343" text-anchor="middle" fill="#bd93f9" font-size="11">Apple CryptoKit, private key in the keychain</text>
-    <rect x="890" y="369" width="270" height="56" rx="8" fill="#44475a" stroke="#50fa7b" stroke-width="1.5" />
-    <text x="1025" y="392" text-anchor="middle" fill="#f8f8f2" font-size="12" font-weight="600">Binding key, Ed25519</text>
-    <text x="1025" y="411" text-anchor="middle" fill="#bd93f9" font-size="11">signs bind and revoke at the relay</text>
-  </g>
-
-  <!-- Sealed envelope path -->
-  <g stroke="#8be9fd" stroke-width="2" fill="none" marker-end="url(#a6-c)">
-    <path d="M262 193 L 336 193" />
-    <path d="M552 193 L 626 193" />
-    <path d="M812 193 L 886 193" />
-  </g>
-  <g fill="#8be9fd" font-size="10" text-anchor="middle">
-    <text x="300" y="185">sealed</text>
-    <text x="589" y="185">sealed</text>
-    <text x="849" y="185">sealed</text>
-  </g>
-
-  <!-- Signed answer back to the server -->
-  <g stroke="#ffb86c" stroke-width="1.2" stroke-dasharray="4 3" fill="none" marker-end="url(#a6-o)">
-    <path d="M338 397 L 264 397" />
-  </g>
-  <text x="300" y="389" fill="#ffb86c" font-size="10" text-anchor="middle">signed</text>
-
-  <!-- Direct revoke from the phone -->
-  <g stroke="#50fa7b" stroke-width="1.2" stroke-dasharray="4 3" fill="none" marker-end="url(#a6-g)">
-    <path d="M1025 440 V 462 H 445 V 444" />
-  </g>
-  <text x="735" y="480" fill="#50fa7b" font-size="11" text-anchor="middle">direct revoke, signed by the binding key, works even when your server is down</text>
-
-  <!-- What stays visible -->
-  <rect x="150" y="500" width="900" height="58" rx="10" fill="none" stroke="#ff5555" stroke-width="1.5" />
-  <text x="600" y="523" fill="#ff5555" font-size="12" font-weight="700" text-anchor="middle">What the relay and Apple can still see</text>
-  <text x="600" y="543" fill="#f8f8f2" font-size="11" text-anchor="middle">that a push went to a device, when, its class and its fixed size. Timing can hint at when a dose is taken.</text>
-
-  <text x="600" y="590" fill="#6272a4" font-size="11" text-anchor="middle">Reminders are planned on the iPhone and keep working when the relay is down.</text>
+  <text x="600" y="490" fill="#a6a8b5" font-size="22" text-anchor="middle">The relay and Apple only see that a message went to a device, and when.</text>
 
   <defs>
-    <marker id="a6-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8be9fd" /></marker>
-    <marker id="a6-o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ffb86c" /></marker>
-    <marker id="a6-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#50fa7b" /></marker>
+    <marker id="a10" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#f8f8f2" /></marker>
   </defs>
 </svg>
