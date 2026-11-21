@@ -12,17 +12,32 @@
  *   - a take further off but plausibly that dose (up to four hours) counts
  *     for it as late, unless the person switches that off (`forceSlotInstant`,
  *     the pin the history used to offer after the save);
- *   - anything else, or a medication without dose times, is an extra dose
+ *   - anything else, or a day without an open slot, is an extra dose
  *     outside the schedule (no slot);
  *   - a skip always names the slot it skips (the nearest one on that day).
  *
- * Pure; the instants are read in the browser's zone, as the date-time field
- * writes them.
+ * The slots come from the server's dose ledger for the chosen day
+ * (`openSlotsOf`), never from the schedule on the client: a weekly
+ * medication's off day, an interval week that does not fall due and a rolling
+ * cadence's gap have no slot there, and a slot already taken or skipped is
+ * not offered again. The forced slot the server accepts
+ * (`resolveForcedSlotForWrite`) is exactly a ledger slot instant.
+ *
+ * Pure.
  */
 
-export interface SlotSchedule {
-  timesOfDay?: string[] | null;
-  windowStart?: string | null;
+/** A ledger row as `GET /api/medications/[id]/dose-history` sends it. */
+export interface DayLedgerRow {
+  kind: "slot" | "ad_hoc";
+  at: string;
+  timeOfDay: string | null;
+  state?: string | null;
+}
+
+/** A slot the chosen day really has: its `HH:mm` label and its instant. */
+export interface DaySlot {
+  slotHm: string;
+  instant: Date;
 }
 
 /** The default on-time half-window in minutes (±1 h, the dose-window default). */
@@ -30,28 +45,27 @@ export const ON_TIME_MINUTES = 60;
 /** Past this gap a take is clearly its own extra dose. */
 export const NEAR_SLOT_CEILING_MINUTES = 240;
 
-/** Distinct `HH:mm` dose times across the schedules, sorted. */
-export function slotTimesOf(schedules: readonly SlotSchedule[]): string[] {
-  const times = new Set<string>();
-  for (const s of schedules) {
-    if (s.timesOfDay && s.timesOfDay.length > 0) {
-      for (const tod of s.timesOfDay) times.add(tod);
-    } else if (s.windowStart) {
-      times.add(s.windowStart);
+/**
+ * The slots of one day's ledger a dose can still count for: slot rows inside
+ * `[dayStart, dayEnd)`, minus those already taken or skipped, sorted.
+ */
+export function openSlotsOf(
+  rows: readonly DayLedgerRow[],
+  window: { dayStart: Date; dayEnd: Date },
+): DaySlot[] {
+  const slots: DaySlot[] = [];
+  for (const row of rows) {
+    if (row.kind !== "slot" || !row.timeOfDay) continue;
+    if (row.state === "taken" || row.state === "skipped") continue;
+    const instant = new Date(row.at);
+    const ms = instant.getTime();
+    if (Number.isNaN(ms)) continue;
+    if (ms < window.dayStart.getTime() || ms >= window.dayEnd.getTime()) {
+      continue;
     }
+    slots.push({ slotHm: row.timeOfDay, instant });
   }
-  return Array.from(times).sort((a, b) => a.localeCompare(b));
-}
-
-/** The slot instant on the local day of `takenAtLocal` for an `HH:mm` slot. */
-export function slotInstantOnDay(
-  takenAtLocal: string,
-  slotHm: string,
-): Date | null {
-  const datePart = takenAtLocal.slice(0, 10);
-  if (datePart.length !== 10) return null;
-  const d = new Date(`${datePart}T${slotHm}`);
-  return Number.isNaN(d.getTime()) ? null : d;
+  return slots.sort((a, b) => a.instant.getTime() - b.instant.getTime());
 }
 
 export interface NearestSlot {
@@ -60,17 +74,15 @@ export interface NearestSlot {
   gapMinutes: number;
 }
 
-/** The dose time nearest to the chosen time on its own day, or null. */
+/** The open slot nearest to the chosen time, or null. */
 export function nearestSlotForTake(
   takenAtLocal: string,
-  times: readonly string[],
+  slots: readonly DaySlot[],
 ): NearestSlot | null {
   const taken = new Date(takenAtLocal);
   if (Number.isNaN(taken.getTime())) return null;
   let best: NearestSlot | null = null;
-  for (const slotHm of times) {
-    const instant = slotInstantOnDay(takenAtLocal, slotHm);
-    if (!instant) continue;
+  for (const { slotHm, instant } of slots) {
     const gapMinutes = Math.abs(instant.getTime() - taken.getTime()) / 60_000;
     if (!best || gapMinutes < best.gapMinutes) {
       best = { slotHm, instant, gapMinutes };
@@ -102,11 +114,11 @@ export type SlotAttribution =
  */
 export function attributeIntake(input: {
   takenAtLocal: string;
-  times: readonly string[];
+  slots: readonly DaySlot[];
   skipped: boolean;
   countNear: boolean;
 }): SlotAttribution {
-  const nearest = nearestSlotForTake(input.takenAtLocal, input.times);
+  const nearest = nearestSlotForTake(input.takenAtLocal, input.slots);
   if (input.skipped) {
     return nearest ? { kind: "skip", slot: nearest } : { kind: "none" };
   }

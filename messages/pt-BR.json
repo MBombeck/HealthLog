@@ -2686,6 +2686,8 @@
       "countNearLabel": "Contar para a dose das {time}",
       "skips": "Pula a dose das {time}.",
       "extraDose": "Registrada como dose extra, fora do cronograma.",
+      "scheduleLoading": "Verificando as doses previstas para esse dia…",
+      "scheduleUnavailable": "Não foi possível ler o cronograma desse dia, então ela é registrada como dose extra.",
       "noMedications": "Adicione um medicamento primeiro; depois você pode registrar tomadas dele.",
       "saveError": "Não foi possível salvar a tomada. Tente de novo"
     },

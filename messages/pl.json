@@ -2686,6 +2686,8 @@
       "countNearLabel": "Policz jako dawkę z {time}",
       "skips": "Pomija dawkę z {time}.",
       "extraDose": "Zapisana jako dodatkowa dawka, poza planem.",
+      "scheduleLoading": "Sprawdzanie dawek zaplanowanych na ten dzień…",
+      "scheduleUnavailable": "Nie udało się odczytać planu na ten dzień, więc zostanie zapisana jako dodatkowa dawka.",
       "noMedications": "Najpierw dodaj lek, a potem będziesz mógł rejestrować jego przyjęcia.",
       "saveError": "Nie udało się zapisać przyjęcia. Spróbuj ponownie"
     },

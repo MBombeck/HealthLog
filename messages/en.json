@@ -2686,6 +2686,8 @@
       "countNearLabel": "Count it for the {time} dose",
       "skips": "Skips the {time} dose.",
       "extraDose": "Recorded as an extra dose, outside the schedule.",
+      "scheduleLoading": "Checking which doses that day has…",
+      "scheduleUnavailable": "Could not read that day's schedule, so this is recorded as an extra dose.",
       "noMedications": "Add a medication first, then you can log intakes against it.",
       "saveError": "Could not save the intake. Try again"
     },

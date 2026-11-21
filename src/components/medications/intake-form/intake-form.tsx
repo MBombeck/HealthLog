@@ -30,12 +30,17 @@ import { DOSE_STATE_TERM } from "@/lib/medications/dose-state/terms";
 import {
   attributeIntake,
   slotFieldsOf,
-  slotTimesOf,
   type SlotAttribution,
-  type SlotSchedule,
 } from "./slot-attribution";
+import { useIntakeDaySlots, type DaySlotsStatus } from "./use-intake-day-slots";
 
-export interface IntakeFormSchedule extends SlotSchedule {
+/**
+ * A schedule as the form reads it: only to find the dose a slot names. Which
+ * slots a day has comes from the server's ledger (`useIntakeDaySlots`).
+ */
+export interface IntakeFormSchedule {
+  timesOfDay?: string[] | null;
+  windowStart?: string | null;
   dose?: string | null;
 }
 
@@ -72,14 +77,19 @@ export function useIntakeFormState({
   const [doseOverride, setDoseOverride] = useState<string | null>(null);
   const [countNear, setCountNear] = useState(true);
 
-  const times = useMemo(
-    () => slotTimesOf(medication?.schedules ?? []),
-    [medication],
-  );
-  const skipped = outcome === "skipped";
+  const { status: slotsStatus, slots } = useIntakeDaySlots({
+    medicationId: medication?.id,
+    takenAtLocal: takenAt,
+  });
+  // A skip names the slot it skips; a day without an open slot (or one not
+  // read yet) has nothing to skip, so the outcome reads taken there.
+  const canSkip = slots.length > 0;
+  const effectiveOutcome: IntakeOutcome =
+    outcome === "skipped" && canSkip ? "skipped" : "taken";
+  const skipped = effectiveOutcome === "skipped";
   const attribution = useMemo(
-    () => attributeIntake({ takenAtLocal: takenAt, times, skipped, countNear }),
-    [takenAt, times, skipped, countNear],
+    () => attributeIntake({ takenAtLocal: takenAt, slots, skipped, countNear }),
+    [takenAt, slots, skipped, countNear],
   );
   // The configured dose: the dose of the schedule the take counts for, when
   // it names one (titration schedules differ per slot), else the medication's.
@@ -104,14 +114,15 @@ export function useIntakeFormState({
   return {
     takenAt,
     setTakenAt,
-    outcome,
+    outcome: effectiveOutcome,
     setOutcome,
+    canSkip,
+    slotsStatus,
     dose,
     setDose: setDoseOverride,
     configuredDose,
     countNear,
     setCountNear,
-    times,
     attribution,
     /** A medication switch starts its dose over. */
     resetForMedication: () => setDoseOverride(null),
@@ -143,11 +154,13 @@ export function intakeWriteOf(form: IntakeFormState): {
 /** The attribution in words, under the fields. */
 function AttributionLine({
   attribution,
+  slotsStatus,
   countNear,
   onCountNear,
   idPrefix,
 }: {
   attribution: SlotAttribution;
+  slotsStatus: DaySlotsStatus;
   countNear: boolean;
   onCountNear: (next: boolean) => void;
   idPrefix: string;
@@ -161,21 +174,25 @@ function AttributionLine({
         ? attribution.nearSlot
         : null;
   const text =
-    attribution.kind === "slot"
-      ? t("medications.intakeForm.countsFor", {
-          time: fmt.wallTime(attribution.slot.slotHm),
-        })
-      : attribution.kind === "late"
-        ? t("medications.intakeForm.countsForLate", {
-            time: fmt.wallTime(attribution.slot.slotHm),
-          })
-        : attribution.kind === "skip"
-          ? t("medications.intakeForm.skips", {
+    slotsStatus === "loading"
+      ? t("medications.intakeForm.scheduleLoading")
+      : slotsStatus === "error" && attribution.kind === "extra"
+        ? t("medications.intakeForm.scheduleUnavailable")
+        : attribution.kind === "slot"
+          ? t("medications.intakeForm.countsFor", {
               time: fmt.wallTime(attribution.slot.slotHm),
             })
-          : attribution.kind === "extra"
-            ? t("medications.intakeForm.extraDose")
-            : null;
+          : attribution.kind === "late"
+            ? t("medications.intakeForm.countsForLate", {
+                time: fmt.wallTime(attribution.slot.slotHm),
+              })
+            : attribution.kind === "skip"
+              ? t("medications.intakeForm.skips", {
+                  time: fmt.wallTime(attribution.slot.slotHm),
+                })
+              : attribution.kind === "extra"
+                ? t("medications.intakeForm.extraDose")
+                : null;
   return (
     <div className="space-y-2" data-slot="intake-form-attribution">
       {nearSlot && (
@@ -200,7 +217,8 @@ function AttributionLine({
         <p
           className="text-muted-foreground text-xs"
           data-slot="intake-form-counts-for"
-          data-kind={attribution.kind}
+          data-kind={slotsStatus === "loading" ? "pending" : attribution.kind}
+          data-slots={slotsStatus}
         >
           {text}
         </p>
@@ -237,8 +255,8 @@ export function IntakeFormFields({
 }) {
   const { t } = useTranslations();
   const skipped = form.outcome === "skipped";
-  // A medication without dose times has no dose to skip.
-  const canSkip = form.times.length > 0;
+  // A day without an open slot has no dose to skip.
+  const canSkip = form.canSkip;
 
   return (
     <div className="space-y-4" data-slot="intake-form">
@@ -324,6 +342,7 @@ export function IntakeFormFields({
 
       <AttributionLine
         attribution={form.attribution}
+        slotsStatus={form.slotsStatus}
         countNear={form.countNear}
         onCountNear={form.setCountNear}
         idPrefix={idPrefix}

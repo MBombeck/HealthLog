@@ -2686,6 +2686,8 @@
       "countNearLabel": "Laten tellen voor de dosis van {time}",
       "skips": "Slaat de dosis van {time} over.",
       "extraDose": "Wordt vastgelegd als extra dosis, buiten het schema.",
+      "scheduleLoading": "Controleren welke doses die dag gepland zijn…",
+      "scheduleUnavailable": "Het schema van die dag kon niet worden gelezen, dus dit wordt vastgelegd als extra dosis.",
       "noMedications": "Voeg eerst een medicijn toe, daarna kun je er innames bij vastleggen.",
       "saveError": "De inname kon niet worden opgeslagen. Probeer het opnieuw"
     },

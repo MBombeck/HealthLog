@@ -2686,6 +2686,8 @@
       "countNearLabel": "Für die Dosis um {time} zählen",
       "skips": "Überspringt die Dosis um {time}.",
       "extraDose": "Wird als zusätzliche Dosis außerhalb des Plans erfasst.",
+      "scheduleLoading": "Prüft, welche Dosen an dem Tag geplant sind…",
+      "scheduleUnavailable": "Der Plan für diesen Tag ließ sich nicht laden, daher wird dies als zusätzliche Dosis erfasst.",
       "noMedications": "Lege zuerst ein Medikament an, dann kannst du Einnahmen dafür erfassen.",
       "saveError": "Die Einnahme konnte nicht gespeichert werden. Bitte erneut versuchen"
     },
