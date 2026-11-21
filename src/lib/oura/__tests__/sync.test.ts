@@ -475,7 +475,10 @@ describe("syncUserOura", () => {
       "sleep:rec-T:seg:2026-06-09T23:30:00.000Z",
     ]);
     // Soft delete only.
-    expect(arg.data).toEqual({ deletedAt: expect.any(Date) });
+    expect(arg.data).toEqual({
+      deletedAt: expect.any(Date),
+      syncVersion: { increment: 1 },
+    });
 
     // A legacy run-indexed row for this record falls inside the sweep.
     const legacyId = "sleep:rec-T:seg:0";
@@ -549,7 +552,10 @@ describe("syncUserOura", () => {
       .map((c) => c[0] as { where: { id?: { in: string[] } }; data: unknown })
       .find((a) => a.where.id);
     expect(retire?.where.id?.in).toEqual(["m1", "m2"]);
-    expect(retire?.data).toEqual({ deletedAt: expect.any(Date) });
+    expect(retire?.data).toEqual({
+      deletedAt: expect.any(Date),
+      syncVersion: { increment: 1 },
+    });
     expect(recomputeMock).toHaveBeenCalledWith(
       "u1",
       "RESTING_HEART_RATE",
