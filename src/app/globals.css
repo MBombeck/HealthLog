@@ -636,20 +636,8 @@ body,
    */
   :root {
     --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-    --safe-area-top: env(safe-area-inset-top, 0px);
     --safe-area-left: env(safe-area-inset-left, 0px);
     --safe-area-right: env(safe-area-inset-right, 0px);
-    /*
-     * The strip an installed iOS app can leave out of its layout at the
-     * bottom (`src/lib/pwa/standalone-viewport-gap.ts` measures it and sets
-     * the gap inline on `<html>`; zero everywhere else). `--viewport-bottom`
-     * is the `bottom` that puts a box on the screen's real bottom edge: the
-     * shell, the bottom bar, the bottom sheets and the overlays take it, and
-     * whatever floats above the bar (the Coach button, toasts, the document
-     * bulk bar) adds it to its own offset.
-     */
-    --viewport-bottom-gap: 0px;
-    --viewport-bottom: calc(var(--viewport-bottom-gap) * -1);
   }
   html[data-scroll="body"] {
     scrollbar-gutter: stable;
@@ -761,14 +749,6 @@ body,
    * button step aside until the keyboard is gone.
    */
   [data-sheet-side="bottom"] {
-    bottom: calc(var(--keyboard-inset, 0px) + var(--viewport-bottom, 0px));
-  }
-  /*
-   * The keyboard is measured against the layout viewport, short strip or not
-   * (`innerHeight` minus the visual viewport's bottom), so a sheet standing on
-   * it takes the inset alone.
-   */
-  html[data-keyboard="open"] [data-sheet-side="bottom"] {
     bottom: var(--keyboard-inset, 0px);
   }
   /*
@@ -854,23 +834,8 @@ body,
  */
 html [data-sonner-toaster][data-y-position="bottom"] {
   @variant shell-mobile {
-    bottom: calc(
-      var(--viewport-bottom, 0px) + 4rem + env(safe-area-inset-bottom, 0px) +
-        0.75rem
-    );
+    bottom: calc(4rem + env(safe-area-inset-bottom, 0px) + 0.75rem);
   }
-}
-
-/*
- * The modal overlays dim the whole screen, including the strip an installed
- * iOS app can leave out of its layout at the bottom (`--viewport-bottom`,
- * above). Unlayered, so it outranks the primitives' `inset-0` utility.
- */
-[data-slot="sheet-overlay"],
-[data-slot="dialog-overlay"],
-[data-slot="alert-dialog-overlay"],
-[data-viewport-overlay] {
-  bottom: var(--viewport-bottom, 0px);
 }
 
 /*

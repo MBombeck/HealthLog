@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.48.5] — 2026-11-21
+
+### Fixed
+
+- **The bottom bar of an installed iOS web app holds still again.** 1.48.4
+  stretched the page, the bottom bar and the sheets over a strip that iOS 26
+  can leave out of a home-screen app's layout. On iOS 27 that correction
+  started a loop: the stretched page made iOS report the full screen, the
+  correction let go, the strip came back, and the bottom bar kept moving and
+  could not be tapped. The stretched page also let a scroll-into-view shift
+  the whole screen and hide the header. The correction is gone, and the
+  layout is the one from 1.48.3 again. Thanks to @2q2code for the report and
+  the video. (#1426)
+
 ## [1.48.4] — 2026-11-20
 
 ### Fixed

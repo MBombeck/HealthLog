@@ -401,8 +401,7 @@ function AppToaster() {
       richColors
       theme={resolvedTheme}
       mobileOffset={{
-        bottom:
-          "calc(var(--viewport-bottom, 0px) + 4rem + env(safe-area-inset-bottom, 0px) + 0.75rem)",
+        bottom: "calc(4rem + env(safe-area-inset-bottom, 0px) + 0.75rem)",
       }}
     />
   );

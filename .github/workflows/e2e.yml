@@ -146,9 +146,8 @@ jobs:
           if [ -z "$version" ]; then echo "playwright-core not found in pnpm-lock.yaml"; exit 1; fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
-  # The WebKit specs, in the same image as the shards: the bottom sheet and the
-  # installed app's short viewport on an iPhone (`bottom-sheet.spec.ts`,
-  # `pwa-standalone-viewport.spec.ts`, project `webkit-iphone`) and the app shell
+  # The WebKit specs, in the same image as the shards: the bottom sheet on an
+  # iPhone (`bottom-sheet.spec.ts`, project `webkit-iphone`) and the app shell
   # on an iPad (`tablet-shell.spec.ts`, project `webkit-tablet`).
   webkit:
     runs-on: ubuntu-24.04
