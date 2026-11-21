@@ -60,3 +60,34 @@ export function useDismissPushRelayNotice() {
       queryClient.invalidateQueries({ queryKey: queryKeys.adminPushRelay() }),
   });
 }
+
+export interface PushRelayTestResult {
+  outcome: "accepted" | "failed" | "waiting" | "no_device";
+  results: Array<{
+    deviceId: string;
+    model: string | null;
+    relayStatus: number;
+    relayResult: string;
+    relayReason: string | null;
+    delivery: string;
+  }>;
+}
+
+export function useSendPushRelayTest() {
+  return useMutation({
+    mutationFn: () =>
+      apiPost<PushRelayTestResult>("/api/admin/push-relay/test"),
+  });
+}
+
+export function useRotatePushRelayKey() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      apiPost<{
+        outcome: "rotated" | "refused" | "unreachable" | "not_registered";
+      }>("/api/admin/push-relay/rotate-key"),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminPushRelay() }),
+  });
+}

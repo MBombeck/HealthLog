@@ -21,6 +21,7 @@ import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { SettingsToggle } from "./_shared";
 import { usePushRelayStatus, useSetPushRelay } from "./use-push-relay";
+import { PushRelayTools } from "./push-relay-tools";
 
 const STATE_LABEL = {
   ok: "admin.pushRelay.state.ok",
@@ -123,6 +124,7 @@ export function PushRelaySection() {
               : ""}
           </p>
         )}
+        {status.offered && <PushRelayTools registered={!!status.instanceId} />}
         <p className="text-muted-foreground flex flex-wrap gap-3 text-xs">
           <a
             className="underline"

@@ -9198,6 +9198,18 @@
         "body": "De HealthLog-app uit de App Store kan nu meldingen van deze server ontvangen via de relay van het HealthLog-project. De inhoud wordt hier per apparaat versleuteld en de relay kan hem niet lezen; hij ziet wanneer deze server een apparaat iets stuurt. De optie blijft uit tot je hem aanzet, en daarna beslist iedereen in de eigen app.",
         "open": "Instellingen openen",
         "dismiss": "Begrepen"
+      },
+      "test": {
+        "button": "Testpush versturen",
+        "failed": "De testpush kon niet worden verstuurd",
+        "noDevice": "Geen van je eigen apparaten is aan de relay gekoppeld. Zet de relay eerst aan in de HealthLog-app op je iPhone.",
+        "line": "{device}: relay antwoordde {answer}, aflevering {delivery}",
+        "unsigned": "niets ondertekends (niet bereikbaar of niet geverifieerd)"
+      },
+      "rotate": {
+        "button": "Relaysleutel vernieuwen",
+        "done": "De relaysleutel is vernieuwd",
+        "failed": "De relaysleutel kon nu niet worden vernieuwd; de relay staat één vernieuwing per dag toe"
       }
     }
   },
@@ -9689,6 +9701,10 @@
     "seizureCluster": {
       "title": "Clusteraanvallen",
       "body": "{count} aanvallen binnen {hours} u, vastgelegd door {name}. Het noodplan staat in het aanvallendagboek."
+    },
+    "relayTest": {
+      "title": "HealthLog-testmelding",
+      "body": "Je server heeft dit apparaat via de pushrelay bereikt."
     }
   },
   "i18n": {

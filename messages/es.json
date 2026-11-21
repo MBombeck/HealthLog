@@ -9198,6 +9198,18 @@
         "body": "La app HealthLog de la App Store ya puede recibir notificaciones de este servidor a través del relé del proyecto HealthLog. El contenido se cifra aquí para cada dispositivo y el relé no puede leerlo; ve cuándo este servidor envía algo a un dispositivo. La opción sigue desactivada hasta que la actives, y después cada persona decide en su propia app.",
         "open": "Abrir ajustes",
         "dismiss": "Entendido"
+      },
+      "test": {
+        "button": "Enviar push de prueba",
+        "failed": "No se pudo enviar el push de prueba",
+        "noDevice": "Ninguno de tus dispositivos está vinculado al relé. Activa primero el relé en la app HealthLog de tu iPhone.",
+        "line": "{device}: el relé respondió {answer}, entrega {delivery}",
+        "unsigned": "nada firmado (no disponible o sin verificar)"
+      },
+      "rotate": {
+        "button": "Renovar la clave del relé",
+        "done": "La clave del relé se renovó",
+        "failed": "No se pudo renovar ahora la clave del relé; el relé permite una renovación al día"
       }
     }
   },
@@ -9689,6 +9701,10 @@
     "seizureCluster": {
       "title": "Racimo de crisis",
       "body": "{count} crisis en {hours} h, registradas por {name}. El plan de rescate está en el diario de crisis."
+    },
+    "relayTest": {
+      "title": "Notificación de prueba de HealthLog",
+      "body": "Tu servidor llegó a este dispositivo a través del relé push."
     }
   },
   "i18n": {

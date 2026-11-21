@@ -9198,6 +9198,18 @@
         "body": "Die HealthLog-App aus dem App Store kann Benachrichtigungen von diesem Server jetzt über den Relay des HealthLog-Projekts empfangen. Der Inhalt wird hier für jedes Gerät verschlüsselt, der Relay kann ihn nicht lesen; er sieht, wann dieser Server einem Gerät etwas schickt. Die Option ist aus, bis du sie einschaltest, und danach entscheidet jede Person in ihrer App selbst.",
         "open": "Einstellungen öffnen",
         "dismiss": "Verstanden"
+      },
+      "test": {
+        "button": "Testpush senden",
+        "failed": "Der Testpush konnte nicht gesendet werden",
+        "noDevice": "Keines deiner eigenen Geräte ist mit dem Relay verbunden. Schalte den Relay zuerst in der HealthLog-App auf deinem iPhone ein.",
+        "line": "{device}: Relay antwortete {answer}, Zustellung {delivery}",
+        "unsigned": "nichts Signiertes (nicht erreichbar oder nicht geprüft)"
+      },
+      "rotate": {
+        "button": "Relay-Schlüssel erneuern",
+        "done": "Der Relay-Schlüssel wurde erneuert",
+        "failed": "Der Relay-Schlüssel ließ sich jetzt nicht erneuern; der Relay erlaubt eine Erneuerung am Tag"
       }
     }
   },
@@ -9689,6 +9701,10 @@
     "seizureCluster": {
       "title": "Anfallsserie",
       "body": "{count} Anfälle innerhalb von {hours} h, eingetragen von {name}. Der Notfallplan steht im Anfallstagebuch."
+    },
+    "relayTest": {
+      "title": "HealthLog-Testbenachrichtigung",
+      "body": "Dein Server hat dieses Gerät über den Push-Relay erreicht."
     }
   },
   "i18n": {

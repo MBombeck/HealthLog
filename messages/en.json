@@ -9198,6 +9198,18 @@
         "body": "The HealthLog app from the App Store can now receive notifications from this server through the relay run by the HealthLog project. The content is encrypted here for each device and the relay cannot read it; it sees when this server sends a device something. The option stays off until you turn it on, and then each person decides in their own app.",
         "open": "Open settings",
         "dismiss": "Got it"
+      },
+      "test": {
+        "button": "Send test push",
+        "failed": "The test push could not be sent",
+        "noDevice": "None of your own devices is bound to the relay. Turn the relay on in the HealthLog app on your iPhone first.",
+        "line": "{device}: relay answered {answer}, delivery {delivery}",
+        "unsigned": "nothing signed (not reachable or not verified)"
+      },
+      "rotate": {
+        "button": "Rotate relay key",
+        "done": "The relay key was rotated",
+        "failed": "The relay key could not be rotated now; the relay allows one rotation a day"
       }
     }
   },
@@ -9689,6 +9701,10 @@
     "seizureCluster": {
       "title": "Seizure cluster",
       "body": "{count} seizures within {hours} h, logged by {name}. The rescue plan is in the seizure diary."
+    },
+    "relayTest": {
+      "title": "HealthLog test notification",
+      "body": "Your server reached this device through the push relay."
     }
   },
   "i18n": {

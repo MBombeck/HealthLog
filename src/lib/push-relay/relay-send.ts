@@ -64,6 +64,20 @@ export interface RelaySendSummary {
   failed: number;
   /** Live Activity rows whose token the relay or Apple reported gone. */
   activityGone: string[];
+  /**
+   * What the relay answered per item, by `ref`: only answers that carried a
+   * valid relay signature get here; anything else is `transport`.
+   */
+  answers: RelayItemAnswer[];
+}
+
+export interface RelayItemAnswer {
+  ref: string;
+  /** HTTP status of the item, or of the request when it failed as a whole; 0 for no signed answer. */
+  status: number;
+  /** `result` or `error` of the item, or the transport reason. */
+  code: string;
+  reason: string | null;
 }
 
 const BATCH = 50;
@@ -102,7 +116,13 @@ export async function sendRelayItems(
   config: RelayConfig = relayConfig(),
 ): Promise<RelaySendSummary> {
   if (items.length === 0) {
-    return { accepted: 0, waiting: 0, failed: 0, activityGone: [] };
+    return {
+      accepted: 0,
+      waiting: 0,
+      failed: 0,
+      activityGone: [],
+      answers: [],
+    };
   }
   const now = new Date();
   await prisma.pushRelayDelivery.createMany({
@@ -220,6 +240,7 @@ export async function attemptDeliveries(
     waiting: 0,
     failed: 0,
     activityGone: [],
+    answers: [],
   };
   const now = new Date();
   const registration = config.available ? await loadRegistration(config) : null;
@@ -307,6 +328,15 @@ async function sendBatch(
       result.kind === "response" &&
       (result.status === 413 || result.status === 422);
     for (const row of rows) {
+      summary.answers.push({
+        ref: row.ref,
+        status: result.kind === "transport" ? 0 : result.status,
+        code:
+          result.kind === "transport"
+            ? result.reason
+            : String(result.body?.error ?? "refused"),
+        reason: null,
+      });
       if (defect) {
         await finish(
           row.id,
@@ -342,6 +372,12 @@ async function applyItemResult(
   const code = String(answer?.result ?? answer?.error ?? "missing");
   const hint =
     typeof answer?.retryAfter === "number" ? answer.retryAfter : null;
+  summary.answers.push({
+    ref: row.ref,
+    status,
+    code,
+    reason: typeof answer?.reason === "string" ? answer.reason : null,
+  });
   if (status === 200 && code === "accepted") {
     await finish(row.id, "accepted", null);
     summary.accepted += 1;

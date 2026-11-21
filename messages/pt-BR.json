@@ -9198,6 +9198,18 @@
         "body": "O app HealthLog da App Store agora pode receber notificações deste servidor pelo relay do projeto HealthLog. O conteúdo é criptografado aqui para cada dispositivo e o relay não consegue lê-lo; ele vê quando este servidor envia algo a um dispositivo. A opção fica desligada até você ativá-la, e depois cada pessoa decide no próprio app.",
         "open": "Abrir configurações",
         "dismiss": "Entendi"
+      },
+      "test": {
+        "button": "Enviar push de teste",
+        "failed": "Não foi possível enviar o push de teste",
+        "noDevice": "Nenhum dos seus dispositivos está vinculado ao relay. Ative primeiro o relay no app HealthLog do seu iPhone.",
+        "line": "{device}: o relay respondeu {answer}, entrega {delivery}",
+        "unsigned": "nada assinado (inacessível ou não verificado)"
+      },
+      "rotate": {
+        "button": "Renovar a chave do relay",
+        "done": "A chave do relay foi renovada",
+        "failed": "Não foi possível renovar a chave do relay agora; o relay permite uma renovação por dia"
       }
     }
   },
@@ -9689,6 +9701,10 @@
     "seizureCluster": {
       "title": "Crises em salva",
       "body": "{count} crises em {hours} h, registradas por {name}. O plano de resgate está no diário de crises."
+    },
+    "relayTest": {
+      "title": "Notificação de teste do HealthLog",
+      "body": "Seu servidor alcançou este dispositivo pelo relay de push."
     }
   },
   "i18n": {

@@ -9198,6 +9198,18 @@
         "body": "Aplikacja HealthLog z App Store może teraz odbierać powiadomienia z tego serwera przez przekaźnik projektu HealthLog. Treść jest tu szyfrowana dla każdego urządzenia i przekaźnik nie może jej odczytać; widzi, kiedy ten serwer coś wysyła do urządzenia. Opcja pozostaje wyłączona, dopóki jej nie włączysz, a potem każda osoba decyduje we własnej aplikacji.",
         "open": "Otwórz ustawienia",
         "dismiss": "Rozumiem"
+      },
+      "test": {
+        "button": "Wyślij testowy push",
+        "failed": "Nie udało się wysłać testowego pusha",
+        "noDevice": "Żadne z twoich urządzeń nie jest powiązane z przekaźnikiem. Najpierw włącz przekaźnik w aplikacji HealthLog na iPhonie.",
+        "line": "{device}: przekaźnik odpowiedział {answer}, dostarczenie {delivery}",
+        "unsigned": "nic podpisanego (niedostępny lub niezweryfikowany)"
+      },
+      "rotate": {
+        "button": "Odnów klucz przekaźnika",
+        "done": "Klucz przekaźnika został odnowiony",
+        "failed": "Nie udało się teraz odnowić klucza przekaźnika; przekaźnik pozwala na jedno odnowienie dziennie"
       }
     }
   },
@@ -9689,6 +9701,10 @@
     "seizureCluster": {
       "title": "Napady gromadne",
       "body": "Napady: {count} w ciągu {hours} h, zapisane przez: {name}. Plan ratunkowy jest w dzienniczku napadów."
+    },
+    "relayTest": {
+      "title": "Powiadomienie testowe HealthLog",
+      "body": "Twój serwer dotarł do tego urządzenia przez przekaźnik push."
     }
   },
   "i18n": {

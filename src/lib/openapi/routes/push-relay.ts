@@ -269,4 +269,83 @@ export const pushRelayAdminPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       },
     },
   },
+  "/api/admin/push-relay/test": {
+    post: {
+      tags: ["Admin"],
+      summary: "Send a test push through the relay to the admin's own devices",
+      description:
+        "One harmless sealed alert (`RELAY_TEST`) to each relay-bound device of the calling admin, with the relay's signed answer and the delivery state per device. Admin-only, cookie-only, 5 per 15 minutes.",
+      responses: {
+        "200": {
+          description: "What the relay answered.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z
+                  .object({
+                    outcome: z.enum([
+                      "accepted",
+                      "failed",
+                      "waiting",
+                      "no_device",
+                    ]),
+                    results: z.array(
+                      z.object({
+                        deviceId: z.string(),
+                        model: z.string().nullable(),
+                        relayStatus: z
+                          .number()
+                          .int()
+                          .describe(
+                            "The item status the relay signed; 0 when no signed answer arrived.",
+                          ),
+                        relayResult: z.string(),
+                        relayReason: z.string().nullable(),
+                        delivery: z.string(),
+                      }),
+                    ),
+                  })
+                  .meta({ id: "AdminPushRelayTest" }),
+                "AdminPushRelayTestEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/admin/push-relay/rotate-key": {
+    post: {
+      tags: ["Admin"],
+      summary: "Rotate the instance signing key at the relay now",
+      description:
+        "Outside the 30-day schedule. The relay allows one rotation per UTC day. Admin-only, cookie-only, audit-logged.",
+      responses: {
+        "200": {
+          description: "The rotation's outcome.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({
+                  outcome: z.enum([
+                    "rotated",
+                    "refused",
+                    "unreachable",
+                    "not_registered",
+                  ]),
+                }),
+                "AdminPushRelayRotateEnvelope",
+              ),
+            },
+          },
+        },
+        "409": {
+          description: "The relay is not registered on this server.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+  },
 };
