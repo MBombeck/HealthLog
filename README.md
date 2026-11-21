@@ -95,7 +95,7 @@ NAS and homelab users have ready-made paths: [Unraid Community Applications](doc
 
 One container hosts both the web server and the job worker by default; split them via `HEALTHLOG_PROCESS_TYPE=web|worker` for horizontal scale. Encrypted nightly backups to any S3-compatible bucket are opt-in through five `BACKUP_*` environment variables (the admin panel shows their status), new users join by invite link or QR code, and the stack works out of the box behind Caddy, Traefik, Nginx, or [Coolify](https://coolify.io/).
 
-HealthLog ships often. Pin a tag, back up before upgrades, and read the [release notes](https://github.com/MBombeck/HealthLog/releases) before pulling `latest`. The operator manual (reverse proxy, migrations, encryption-key rotation, backup and restore) lives at [docs.healthlog.dev](https://docs.healthlog.dev).
+HealthLog releases on a fixed schedule (see [Release schedule](#release-schedule)). Pin a tag, back up before upgrades, and read the [release notes](https://github.com/MBombeck/HealthLog/releases) before pulling `latest`. The operator manual (reverse proxy, migrations, encryption-key rotation, backup and restore) lives at [docs.healthlog.dev](https://docs.healthlog.dev).
 
 ## Native iOS app
 
@@ -120,7 +120,13 @@ Next.js 16 (App Router, React Server Components), TypeScript strict, PostgreSQL 
 
 ## Status
 
-Actively developed, with frequent releases. Issue reports and pull requests are welcome. Behaviour and schema can change between versions; migrations are forward-only.
+Actively developed. Issue reports and pull requests are welcome. Behaviour and schema can change between minor versions; migrations are forward-only.
+
+## Release schedule
+
+HealthLog ships on a calendar. A feature release comes out on the first Saturday of every month. On the other Saturdays there is a patch release with fixes, if there is anything to fix. Nothing else ships in between, with one exception: a security problem, data loss or a broken install gets a fix as soon as it is ready, and the release notes say why.
+
+For a self-hoster that means one update a month to read about, a small one on some Saturdays, and no reason to pull images every day. The `:edge` image follows `main` for anyone who wants to check a fix before it is released; take a backup first, migrations do not run backwards. The calendar starts after 1.49.0, and the full rule is in [docs/contributing/release-policy.md](docs/contributing/release-policy.md).
 
 ## Thanks
 

@@ -28,6 +28,8 @@ Instead, send an email to **security@bombeck.io** with:
 - **Initial assessment**: Within 1 week
 - **Fix and disclosure**: Coordinated with reporter, typically within 30 days
 
+A high or critical security fix does not wait for the release calendar. It ships as an out-of-schedule patch release as soon as it is ready, with a GitHub Security Advisory published alongside; lower ratings ship with the next Saturday patch. See [docs/contributing/release-policy.md](docs/contributing/release-policy.md).
+
 ## Scope
 
 The following are in scope:

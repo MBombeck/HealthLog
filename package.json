@@ -51,6 +51,7 @@
     "openapi:generate": "npx tsx scripts/generate-openapi.ts",
     "openapi:check": "npx tsx scripts/check-openapi.ts",
     "check-env": "npx tsx scripts/check-env.ts",
+    "release:next": "node scripts/release-policy.mjs next",
     "mcp:stdio": "npx tsx src/cli/mcp-stdio.ts"
   },
   "dependencies": {

@@ -18,11 +18,17 @@ function readRepoFile(path: string): string {
   return readFileSync(join(dirname(testPath), "../..", path), "utf8");
 }
 type WorkflowStep = {
+  id?: string;
+  if?: string;
   name?: string;
   run?: string;
+  env?: Record<string, string>;
+  with?: Record<string, string | boolean>;
   "continue-on-error"?: boolean;
 };
 type WorkflowJob = {
+  environment?: string;
+  if?: string;
   needs?: string | string[];
   outputs?: Record<string, string>;
   steps?: WorkflowStep[];
@@ -31,6 +37,8 @@ type WorkflowJob = {
 };
 type Workflow = {
   on?: {
+    push?: { branches?: string[]; tags?: string[] };
+    pull_request?: { branches?: string[] };
     workflow_call?: { inputs?: Record<string, { required?: boolean }> };
   };
   jobs: Record<string, WorkflowJob>;
@@ -339,6 +347,83 @@ describe("release pre-build policy", () => {
     const needs = workflow.jobs.build?.needs;
 
     expect(Array.isArray(needs) ? needs : [needs]).toContain("release-policy");
+  });
+});
+
+describe("release calendar and approval", () => {
+  it("runs the calendar script on tags and publishes off_schedule", () => {
+    const workflow = loadWorkflow("docker-publish.yml");
+    const job = workflow.jobs["release-policy"];
+    const step = job?.steps?.find((s) => s.name === "Check release calendar");
+
+    expect(job?.outputs?.off_schedule).toBe(
+      "${{ steps.calendar.outputs.off_schedule }}",
+    );
+    expect(step?.id).toBe("calendar");
+    expect(step?.["continue-on-error"]).not.toBe(true);
+    expect(step?.run).toContain("node scripts/release-policy.mjs check");
+    expect(step?.run).toContain('--github-output "$GITHUB_OUTPUT"');
+    // Judged by the push time, so a re-run does not turn a Saturday tag
+    // into an off-schedule one.
+    expect(step?.env?.PUSHED_AT).toBe(
+      "${{ github.event.repository.pushed_at }}",
+    );
+  });
+
+  it("holds an off-schedule tag on the approval environment", () => {
+    const workflow = loadWorkflow("docker-publish.yml");
+    const approval = workflow.jobs["off-schedule-approval"];
+
+    expect(approval?.environment).toBe("off-schedule-release");
+    expect(approval?.needs).toEqual(["release-policy"]);
+    expect(approval?.if).toBe(
+      "needs.release-policy.outputs.off_schedule == 'true'",
+    );
+  });
+
+  it("builds only after the approval passed or was not needed", () => {
+    const workflow = loadWorkflow("docker-publish.yml");
+    const build = workflow.jobs.build;
+    const condition = (build?.if ?? "").replace(/\s+/g, " ");
+
+    expect(build?.needs).toEqual(["release-policy", "off-schedule-approval"]);
+    expect(condition).toContain("!cancelled()");
+    expect(condition).toContain("needs.release-policy.result == 'success'");
+    expect(condition).toContain(
+      "(needs.off-schedule-approval.result == 'success' || needs.off-schedule-approval.result == 'skipped')",
+    );
+    expect(condition).not.toContain("always()");
+    expect(condition).not.toContain("failure");
+  });
+});
+
+describe("edge image and fix-line check", () => {
+  it("builds :edge from main pushes without touching release tags", () => {
+    const workflow = loadWorkflow("edge-image.yml");
+    const build = workflow.jobs.edge?.steps?.find(
+      (s) => s.name === "Build & push",
+    );
+    const tags = String(build?.with?.tags ?? "");
+
+    expect(workflow.on?.push?.branches).toEqual(["main"]);
+    expect(workflow.on?.push?.tags).toBeUndefined();
+    expect(build?.with?.platforms).toBe("linux/amd64");
+    expect(tags).toContain("${{ env.IMAGE_REF }}:edge\n");
+    expect(tags).toContain(
+      "${{ env.IMAGE_REF }}:edge-${{ steps.provenance.outputs.build_sha }}",
+    );
+    expect(tags).not.toMatch(/latest|semver|\{\{ *version *\}\}/);
+  });
+
+  it("checks every pull request to main against the fix line", () => {
+    const workflow = loadWorkflow("release-branch-policy.yml");
+    const step = workflow.jobs["fix-line"]?.steps?.find(
+      (s) => s.name === "Check commits and changelog",
+    );
+
+    expect(workflow.on?.pull_request?.branches).toEqual(["main"]);
+    expect(step?.run).toContain("node scripts/release-policy.mjs pr");
+    expect(step?.env?.SOURCE_BRANCH).toBe("${{ github.head_ref }}");
   });
 });
 

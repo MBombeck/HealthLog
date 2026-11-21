@@ -1,5 +1,14 @@
 # Deploy ordering
 
+Releases follow a calendar (`docs/contributing/release-policy.md`): a minor on
+the first Saturday of the month, a patch on other Saturdays when there are fixes,
+and an out-of-schedule release only for security, data loss or a broken
+install. `:latest` therefore moves at most once a week, except for those.
+Between releases, `main` collects merged fixes and every push to it publishes
+`:edge` (amd64). A host that tracks `:edge` gets fixes before their release
+and no promise beyond that; take a backup first, migrations do not run
+backwards. Production installs track a release tag or `:latest`.
+
 Coolify handles the standard deploy ordering automatically: the
 container image is pulled, `docker-entrypoint.sh` runs
 `prisma migrate deploy` against the live database, and only then does
@@ -618,7 +627,7 @@ mechanic, end to end:
 > instance stays on the old release. If you pin, bumping the pin is part of
 > shipping, not an afterthought. If you would rather not carry that step, leave
 > the variable unset: `docker-publish.yml` rotates `:latest` on every release tag
-> without a pre-release suffix, so the git tag stays the single place a version is
+> without a pre-release suffix (at most weekly, see the release calendar), so the git tag stays the single place a version is
 > declared.
 >
 > Two checks after any deploy, because the first alone can be served from a
