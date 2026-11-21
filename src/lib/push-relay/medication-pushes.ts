@@ -112,20 +112,22 @@ export async function silentBudgetLeft(
 
 /**
  * Send the silent sync sealed. A relay device is skipped when the flush also
- * carries a recorded confirmation (that alert triggers the sync in the
- * extension) or when its hourly silent budget is spent.
+ * sends it the recorded confirmation (that alert triggers the sync in the
+ * extension) or when its hourly silent budget is spent. `confirmationInFlush`
+ * means the confirmation is enabled for the account, not merely that a dose
+ * was recorded: the confirmation is opt-in, and the sync must not depend on it.
  */
 export async function sendSealedIntakeSync(
   devices: RoutableDevice[],
   ctx: PushContext,
-  options: { recordedInFlush: boolean },
+  options: { confirmationInFlush: boolean },
 ): Promise<SealedSendResult> {
   const now = new Date();
   const message = intakeSyncMessage(now);
   const targets = [];
   for (const device of devices) {
     if (routeOf(device, ctx) === "relay") {
-      if (options.recordedInFlush) continue;
+      if (options.confirmationInFlush) continue;
       if (!(await silentBudgetLeft(device.id, now))) continue;
     }
     targets.push({ device, message, collapseKey: "intake-sync" });
