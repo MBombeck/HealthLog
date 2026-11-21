@@ -331,14 +331,15 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "WEB",
         "idempotencyKey": null,
-        "createdAt": "2026-05-01T14:51:01.000Z",
+        "createdAt": "2026-05-01T14:52:01.000Z",
         "injectionSite": null,
         "doseTaken": null,
         "inventoryConsumption": null,
         "externalId": null,
-        "updatedAt": "2026-05-01T14:56:01.000Z",
+        "updatedAt": "2026-05-01T14:57:01.000Z",
         "syncVersion": 0,
         "deletedAt": null
       },
@@ -349,19 +350,20 @@
         "scheduledFor": "2026-07-01T08:00:00.000Z",
         "takenAt": "2026-07-01T08:04:00.000Z",
         "skipped": true,
-        "autoMissed": true,
+        "autoMissed": false,
         "autoRecorded": true,
         "attributionSource": "USER_PIN",
+        "takenVia": "WEB",
         "source": "API",
         "idempotencyKey": "rt-MedicationIntakeEvent-idempotencyKey",
-        "createdAt": "2026-05-01T14:51:00.000Z",
+        "createdAt": "2026-05-01T14:52:00.000Z",
         "injectionSite": "ABDOMEN_LEFT",
         "doseTaken": "rt-MedicationIntakeEvent-doseTaken",
         "inventoryConsumption": {
           "roundTrip": "rt-MedicationIntakeEvent-inventoryConsumption"
         },
         "externalId": "rt-MedicationIntakeEvent-externalId",
-        "updatedAt": "2026-05-01T14:56:00.000Z",
+        "updatedAt": "2026-05-01T14:57:00.000Z",
         "syncVersion": 3,
         "deletedAt": null
       },
@@ -375,14 +377,15 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "WEB",
         "idempotencyKey": null,
-        "createdAt": "2026-05-01T14:51:02.000Z",
+        "createdAt": "2026-05-01T14:52:02.000Z",
         "injectionSite": null,
         "doseTaken": null,
         "inventoryConsumption": null,
         "externalId": null,
-        "updatedAt": "2026-05-01T14:56:02.000Z",
+        "updatedAt": "2026-05-01T14:57:02.000Z",
         "syncVersion": 0,
         "deletedAt": "<tombstone>"
       }
@@ -1136,8 +1139,13 @@
         "rawChartMode": true,
         "discreetNotifications": true,
         "sensitiveCategoryEncryption": false,
-        "createdAt": "2026-05-03T15:12:00.000Z",
-        "updatedAt": "2026-05-03T15:13:00.000Z"
+        "reproductiveState": "PREGNANT",
+        "pregnancyStartDate": "2026-03-02",
+        "pregnancyDueDate": "2026-12-07",
+        "deliveryDate": "2026-11-30",
+        "postpartumWeeks": 3,
+        "createdAt": "2026-05-03T15:17:00.000Z",
+        "updatedAt": "2026-05-03T15:18:00.000Z"
       }
     ],
     "MenstrualCycle": [
@@ -1162,10 +1170,10 @@
         "id": "<id:59>",
         "userId": "round-trip-owner",
         "startDate": "2026-06-01",
-        "endDate": "rt-MenstrualCycle-endDate",
-        "periodEndDate": "rt-MenstrualCycle-periodEndDate",
+        "endDate": "2026-10-28",
+        "periodEndDate": "2026-10-05",
         "lengthDays": 3,
-        "ovulationDate": "rt-MenstrualCycle-ovulationDate",
+        "ovulationDate": "2026-10-15",
         "ovulationConfirmed": true,
         "isPredicted": true,
         "tz": "rt-MenstrualCycle-tz",
@@ -2661,6 +2669,9 @@
         "roundTrip": "rt-User-aiNamedChains"
       },
       "aiResponseTimeoutSeconds": 3,
+      "aiCoachBudgets": {
+        "roundTrip": "rt-User-aiCoachBudgets"
+      },
       "documentsAutoAiRead": true,
       "onboardingCompletedAt": "2026-06-30T12:34:56.789Z",
       "onboardingTourCompleted": true,
@@ -2689,6 +2700,9 @@
       "reportSelectionJson": {
         "roundTrip": "rt-User-reportSelectionJson"
       },
+      "reportScheduleJson": {
+        "roundTrip": "rt-User-reportScheduleJson"
+      },
       "notificationPrefs": {
         "roundTrip": "rt-User-notificationPrefs"
       },
@@ -2710,6 +2724,9 @@
       "totpLastStep": "bigint:5",
       "mfaEnforced": true,
       "passkeyUpgradeNudgeDismissed": true,
+      "adminNoticesDismissed": [
+        "rt-User-adminNoticesDismissed"
+      ],
       "fullName": "rt-User-fullName",
       "insurerName": "rt-User-insurerName",
       "insuranceNumberEncrypted": "<sealed:v1:rt-User-insuranceNumberEncrypted>",

@@ -388,7 +388,7 @@
           "seizureTypes": 0,
           "seizureEvents": 0
         },
-        "accountSettingsApplied": 64,
+        "accountSettingsApplied": 66,
         "skipped": {
           "catalogueKeys": [
             {
@@ -803,6 +803,7 @@
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
+        "takenVia": null,
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<now>",
@@ -824,6 +825,7 @@
         "autoMissed": false,
         "autoRecorded": true,
         "attributionSource": "AUTO",
+        "takenVia": "WEB",
         "source": "API",
         "idempotencyKey": null,
         "createdAt": "<now>",
@@ -1446,6 +1448,11 @@
         "rawChartMode": true,
         "discreetNotifications": true,
         "sensitiveCategoryEncryption": false,
+        "reproductiveState": "PREGNANT",
+        "pregnancyStartDate": "2026-03-02",
+        "pregnancyDueDate": "2026-12-07",
+        "deliveryDate": "2026-11-30",
+        "postpartumWeeks": 3,
         "createdAt": "<now>",
         "updatedAt": "<now>"
       }
@@ -2537,6 +2544,9 @@
         "roundTrip": "rt-User-aiNamedChains"
       },
       "aiResponseTimeoutSeconds": 3,
+      "aiCoachBudgets": {
+        "roundTrip": "rt-User-aiCoachBudgets"
+      },
       "documentsAutoAiRead": true,
       "onboardingCompletedAt": "2026-06-30T12:34:56.789Z",
       "onboardingTourCompleted": true,
@@ -2565,6 +2575,9 @@
       "reportSelectionJson": {
         "roundTrip": "rt-User-reportSelectionJson"
       },
+      "reportScheduleJson": {
+        "roundTrip": "rt-User-reportScheduleJson"
+      },
       "notificationPrefs": {
         "roundTrip": "rt-User-notificationPrefs"
       },
@@ -2586,6 +2599,7 @@
       "totpLastStep": null,
       "mfaEnforced": false,
       "passkeyUpgradeNudgeDismissed": true,
+      "adminNoticesDismissed": [],
       "fullName": "rt-User-fullName",
       "insurerName": "rt-User-insurerName",
       "insuranceNumberEncrypted": "<sealed:v2:rt-User-insuranceNumberEncrypted>",
@@ -2732,6 +2746,9 @@
       "reportSelectionJson": {
         "roundTrip": "rt-User-reportSelectionJson"
       },
+      "reportScheduleJson": {
+        "roundTrip": "rt-User-reportScheduleJson"
+      },
       "globalExcludedInjectionSites": [
         "THIGH_LEFT"
       ],
@@ -2755,6 +2772,9 @@
         "roundTrip": "rt-User-aiNamedChains"
       },
       "aiResponseTimeoutSeconds": 3,
+      "aiCoachBudgets": {
+        "roundTrip": "rt-User-aiCoachBudgets"
+      },
       "useCentralCodex": true,
       "insightsPrivacyMode": "raw",
       "insightsExcludeMetrics": [
@@ -3087,6 +3107,7 @@
         "takenAt": "2026-07-01T08:04:00.000Z",
         "skipped": true,
         "source": "API",
+        "takenVia": "WEB",
         "autoRecorded": true
       },
       {
@@ -3097,6 +3118,7 @@
         "takenAt": "2026-06-22T07:06:00.000Z",
         "skipped": false,
         "source": "WEB",
+        "takenVia": null,
         "autoRecorded": false
       }
     ],
@@ -3189,7 +3211,12 @@
       "predictionEnabled": false,
       "rawChartMode": true,
       "discreetNotifications": true,
-      "sensitiveCategoryEncryption": false
+      "sensitiveCategoryEncryption": false,
+      "reproductiveState": "PREGNANT",
+      "pregnancyStartDate": "2026-03-02",
+      "pregnancyDueDate": "2026-12-07",
+      "deliveryDate": "2026-11-30",
+      "postpartumWeeks": 3
     },
     "cycles": [],
     "cycleDayLogs": [

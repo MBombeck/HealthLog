@@ -435,6 +435,9 @@ function serialiseIntakeEvent(e: BackupIntakeEvent, disasterRecovery: boolean) {
     takenAt: e.takenAt?.toISOString() ?? null,
     skipped: e.skipped,
     source: e.source,
+    // Both purposes: the today list reads it to warn before a second take,
+    // and a restore that dropped it would lose where each take came from.
+    takenVia: e.takenVia,
     // Both purposes: the history labels the dose "recorded
     // automatically", and a restore that dropped the marker would relabel
     // it as one the person confirmed.

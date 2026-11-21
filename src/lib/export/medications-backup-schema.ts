@@ -11,6 +11,7 @@ import {
   InjectionSite,
   IntakeAttributionSource,
   IntakeSource,
+  IntakeTakenVia,
   MeasurementType,
   MedicationCategory,
   MedicationContainerType,
@@ -384,6 +385,9 @@ export const intakeEventSchema = z
     autoRecorded: z.boolean().optional(),
     attributionSource: z.enum(IntakeAttributionSource).optional(),
     source: z.enum(IntakeSource).optional(),
+    // Where the take was recorded. Absent in files written before v1.49.0,
+    // and null on a row no take reached.
+    takenVia: z.enum(IntakeTakenVia).nullable().optional(),
     idempotencyKey: z.string().nullable().optional(),
     createdAt: isoDateTime.optional(),
     injectionSite: z.enum(InjectionSite).nullable().optional(),
