@@ -1059,6 +1059,11 @@ export const analyticsRangeResponse = z
       .describe(
         "v1.48.0 — the direction of `delta`: `flat` under 0.05 in the metric's own unit, `unknown` when `delta` is null. The dashboard summary's metric card takes its `trend` from this same comparison over `30d` (its `trendWindowDays` is then 30), so the arrow on the card and on the metric page agree.",
       ),
+    unit: z
+      .string()
+      .describe(
+        "The unit every number of this answer is in, resolved for the account: BLOOD_GLUCOSE in its glucose unit (`mg/dL` or `mmol/L`), the metric/imperial types (weight, length, distance, temperature, …) in its unit system, everything else in the stored unit. `min`, `max`, `mean`, `sum` and `delta` are converted; `deltaPct` is recomputed from the converted means. Render the values with this unit; never convert them again.",
+      ),
   })
   .meta({
     id: "AnalyticsRangeResponse",
