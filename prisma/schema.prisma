@@ -1884,6 +1884,17 @@ enum MeasurementType {
   WORKOUT_EFFORT_SCORE // score (0–10) — HealthKit `workoutEffortScore` (iOS 18). How hard a workout felt, logged by the person.
   ESTIMATED_WORKOUT_EFFORT_SCORE // score (0–10) — HealthKit `estimatedWorkoutEffortScore` (iOS 18). The watch's estimate of that score. Not the logged one.
   PHYSICAL_EFFORT // kcal/(hr·kg) — HealthKit `physicalEffort` (iOS 17+). Intensity during activity, in the same family as METs.
+  // Apple sport quantities (#1415). Distances are day totals of per-workout
+  // increments; the running dynamics and rowing speed are per-sample means.
+  // Context next to VO2 max and training load, never a training plan.
+  CYCLING_DISTANCE // m — HealthKit `distanceCycling`. Summed per day like walking + running distance.
+  ROWING_DISTANCE // m — HealthKit `distanceRowing` (iOS 18). Summed per day.
+  ROWING_SPEED // m/s — HealthKit `rowingSpeed` (iOS 18). Per-sample speed; daily MEAN.
+  RUNNING_SPEED // m/s — HealthKit `runningSpeed` (iOS 16). Per-sample speed; daily MEAN.
+  RUNNING_POWER // W — HealthKit `runningPower` (iOS 16). Per-sample power; daily MEAN.
+  RUNNING_GROUND_CONTACT_TIME // ms — HealthKit `runningGroundContactTime` (iOS 16). Per-sample mean.
+  RUNNING_VERTICAL_OSCILLATION // cm — HealthKit `runningVerticalOscillation` (iOS 16). Per-sample mean.
+  RUNNING_STRIDE_LENGTH // m — HealthKit `runningStrideLength` (iOS 16). Per-sample mean.
 
   @@map("measurement_type")
 }

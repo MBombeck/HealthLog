@@ -352,5 +352,53 @@
     "display": "Physical effort",
     "unit": "kcal/(kg.h)",
     "category": "activity"
+  },
+  "CYCLING_DISTANCE": {
+    "loinc": "HKQuantityTypeIdentifierDistanceCycling",
+    "display": "Distance cycling",
+    "unit": "m",
+    "category": "activity"
+  },
+  "ROWING_DISTANCE": {
+    "loinc": "HKQuantityTypeIdentifierDistanceRowing",
+    "display": "Distance rowing",
+    "unit": "m",
+    "category": "activity"
+  },
+  "ROWING_SPEED": {
+    "loinc": "HKQuantityTypeIdentifierRowingSpeed",
+    "display": "Rowing speed",
+    "unit": "m/s",
+    "category": "activity"
+  },
+  "RUNNING_SPEED": {
+    "loinc": "HKQuantityTypeIdentifierRunningSpeed",
+    "display": "Running speed",
+    "unit": "m/s",
+    "category": "activity"
+  },
+  "RUNNING_POWER": {
+    "loinc": "HKQuantityTypeIdentifierRunningPower",
+    "display": "Running power",
+    "unit": "W",
+    "category": "activity"
+  },
+  "RUNNING_GROUND_CONTACT_TIME": {
+    "loinc": "HKQuantityTypeIdentifierRunningGroundContactTime",
+    "display": "Running ground contact time",
+    "unit": "ms",
+    "category": "activity"
+  },
+  "RUNNING_VERTICAL_OSCILLATION": {
+    "loinc": "HKQuantityTypeIdentifierRunningVerticalOscillation",
+    "display": "Running vertical oscillation",
+    "unit": "cm",
+    "category": "activity"
+  },
+  "RUNNING_STRIDE_LENGTH": {
+    "loinc": "HKQuantityTypeIdentifierRunningStrideLength",
+    "display": "Running stride length",
+    "unit": "m",
+    "category": "activity"
   }
 }

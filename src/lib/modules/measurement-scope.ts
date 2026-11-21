@@ -104,6 +104,16 @@ const METRIC_STATUS_MODULE_OWNERS: Partial<Record<MeasurementType, ModuleKey>> =
     // intensity sample, like active energy, not the session itself.
     WORKOUT_EFFORT_SCORE: "workouts",
     ESTIMATED_WORKOUT_EFFORT_SCORE: "workouts",
+    // Apple sport quantities (#1415): every one is recorded during a
+    // workout of its sport, so they follow the workouts module.
+    CYCLING_DISTANCE: "workouts",
+    ROWING_DISTANCE: "workouts",
+    ROWING_SPEED: "workouts",
+    RUNNING_SPEED: "workouts",
+    RUNNING_POWER: "workouts",
+    RUNNING_GROUND_CONTACT_TIME: "workouts",
+    RUNNING_VERTICAL_OSCILLATION: "workouts",
+    RUNNING_STRIDE_LENGTH: "workouts",
     CARDIO_LOAD: "workouts",
     ACUTE_TRAINING_LOAD: "workouts",
     ANS_CHARGE: "recovery",

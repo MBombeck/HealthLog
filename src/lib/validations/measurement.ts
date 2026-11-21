@@ -188,6 +188,16 @@ export const measurementTypeEnum = z.enum([
   "WORKOUT_EFFORT_SCORE",
   "ESTIMATED_WORKOUT_EFFORT_SCORE",
   "PHYSICAL_EFFORT",
+  // Apple sport quantities (#1415): cycling and rowing distance, rowing
+  // speed and the running dynamics.
+  "CYCLING_DISTANCE",
+  "ROWING_DISTANCE",
+  "ROWING_SPEED",
+  "RUNNING_SPEED",
+  "RUNNING_POWER",
+  "RUNNING_GROUND_CONTACT_TIME",
+  "RUNNING_VERTICAL_OSCILLATION",
+  "RUNNING_STRIDE_LENGTH",
 ]);
 
 /**

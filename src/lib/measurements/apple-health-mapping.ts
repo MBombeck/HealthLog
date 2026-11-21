@@ -255,6 +255,8 @@ const UNIT_FIXED_COMPOSITE_VO2 =
   "Compound rate Apple emits verbatim as `mL/(kg*min)`; the Health app exposes no other spelling and the compound has no sibling unit to convert from.";
 const UNIT_FIXED_PHYSICAL_EFFORT =
   "Compound intensity Apple emits verbatim as `kcal/(hr*kg)` (METs-like); the Health app offers no sibling spelling, so there is nothing to convert from.";
+const UNIT_FIXED_RUNNING_POWER =
+  "Running power rides in watts (`W`), the only power unit HealthKit offers for it and the Health app displays, so no record unit can rescale the reading.";
 const UNIT_FIXED_STAND_HOUR =
   "Stand hours are a tally of hour samples: the importer maps `Stood` to 1 and drops `Idle`, and a daily row carries the count, so no record unit can rescale it.";
 const UNIT_FIXED_VALENCE =
@@ -439,6 +441,76 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     hkUnit: "kcal/(hr*kg)",
     unitFixedReason: UNIT_FIXED_PHYSICAL_EFFORT,
     dbUnit: "kcal/(hr·kg)",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
+  },
+  // Apple sport quantities (#1415). Raw SI on the wire, identity
+  // conversion (see the convention block at the top of this file). The two
+  // distances are day sums of per-workout increments, like walking +
+  // running distance; speeds, power and the stride measures are per-sample
+  // readings whose day reduction is the mean.
+  HKQuantityTypeIdentifierDistanceCycling: {
+    hkIdentifier: "HKQuantityTypeIdentifierDistanceCycling",
+    measurementType: "CYCLING_DISTANCE",
+    hkUnit: "m",
+    dbUnit: "m",
+    convertToDbUnit: (v) => v,
+    aggregation: "sum",
+  },
+  HKQuantityTypeIdentifierDistanceRowing: {
+    hkIdentifier: "HKQuantityTypeIdentifierDistanceRowing",
+    measurementType: "ROWING_DISTANCE",
+    hkUnit: "m",
+    dbUnit: "m",
+    convertToDbUnit: (v) => v,
+    aggregation: "sum",
+  },
+  HKQuantityTypeIdentifierRowingSpeed: {
+    hkIdentifier: "HKQuantityTypeIdentifierRowingSpeed",
+    measurementType: "ROWING_SPEED",
+    hkUnit: "m/s",
+    dbUnit: "m/s",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
+  },
+  HKQuantityTypeIdentifierRunningSpeed: {
+    hkIdentifier: "HKQuantityTypeIdentifierRunningSpeed",
+    measurementType: "RUNNING_SPEED",
+    hkUnit: "m/s",
+    dbUnit: "m/s",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
+  },
+  HKQuantityTypeIdentifierRunningPower: {
+    hkIdentifier: "HKQuantityTypeIdentifierRunningPower",
+    measurementType: "RUNNING_POWER",
+    hkUnit: "W",
+    unitFixedReason: UNIT_FIXED_RUNNING_POWER,
+    dbUnit: "W",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
+  },
+  HKQuantityTypeIdentifierRunningGroundContactTime: {
+    hkIdentifier: "HKQuantityTypeIdentifierRunningGroundContactTime",
+    measurementType: "RUNNING_GROUND_CONTACT_TIME",
+    hkUnit: "ms",
+    dbUnit: "ms",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
+  },
+  HKQuantityTypeIdentifierRunningVerticalOscillation: {
+    hkIdentifier: "HKQuantityTypeIdentifierRunningVerticalOscillation",
+    measurementType: "RUNNING_VERTICAL_OSCILLATION",
+    hkUnit: "cm",
+    dbUnit: "cm",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
+  },
+  HKQuantityTypeIdentifierRunningStrideLength: {
+    hkIdentifier: "HKQuantityTypeIdentifierRunningStrideLength",
+    measurementType: "RUNNING_STRIDE_LENGTH",
+    hkUnit: "m",
+    dbUnit: "m",
     convertToDbUnit: (v) => v,
     aggregation: "mean",
   },
@@ -1087,6 +1159,10 @@ export const CUMULATIVE_HK_TYPES: ReadonlySet<MeasurementType> =
     "STAND_MINUTES",
     "STAND_HOURS",
     "MINDFUL_MINUTES",
+    // #1415 — cycling and rowing distance accrue per workout, like walking
+    // + running distance.
+    "CYCLING_DISTANCE",
+    "ROWING_DISTANCE",
   ]);
 
 /**
@@ -1139,6 +1215,15 @@ export const HIGH_FREQUENCY_MEAN_TYPES: ReadonlySet<MeasurementType> =
     // CUMULATIVE_HK_TYPES by construction.
     "STAIR_ASCENT_SPEED",
     "STAIR_DESCENT_SPEED",
+    // #1415 — the running dynamics and rowing speed arrive per sample
+    // during a workout (tens of thousands a year); the day MEAN is the
+    // consolidation, like walking speed.
+    "ROWING_SPEED",
+    "RUNNING_SPEED",
+    "RUNNING_POWER",
+    "RUNNING_GROUND_CONTACT_TIME",
+    "RUNNING_VERTICAL_OSCILLATION",
+    "RUNNING_STRIDE_LENGTH",
   ]);
 
 /**
@@ -1373,24 +1458,20 @@ export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
   // v1.10.0 — `StairAscentSpeed`, `StairDescentSpeed`, and
   // `SixMinuteWalkTestDistance` moved into the mapping table
   // (STAIR_ASCENT_SPEED / STAIR_DESCENT_SPEED / SIX_MINUTE_WALK_DISTANCE).
-  "HKQuantityTypeIdentifierRunningSpeed",
-  "HKQuantityTypeIdentifierRunningPower",
-  "HKQuantityTypeIdentifierRunningStrideLength",
-  "HKQuantityTypeIdentifierRunningGroundContactTime",
-  "HKQuantityTypeIdentifierRunningVerticalOscillation",
+  // #1415 — `RunningSpeed`, `RunningPower`, `RunningStrideLength`,
+  // `RunningGroundContactTime` and `RunningVerticalOscillation` moved into
+  // the mapping table, as did `DistanceCycling`, `DistanceRowing` and
+  // `RowingSpeed`.
   // Cycling (iOS 17) — v1.5
   "HKQuantityTypeIdentifierCyclingCadence",
   "HKQuantityTypeIdentifierCyclingFunctionalThresholdPower",
   "HKQuantityTypeIdentifierCyclingPower",
   "HKQuantityTypeIdentifierCyclingSpeed",
-  "HKQuantityTypeIdentifierDistanceCycling",
   // Sport-specific distances + speeds (iOS 18) — v1.5+
   "HKQuantityTypeIdentifierDistanceCrossCountrySkiing",
   "HKQuantityTypeIdentifierCrossCountrySkiingSpeed",
   "HKQuantityTypeIdentifierDistancePaddleSports",
   "HKQuantityTypeIdentifierPaddleSportsSpeed",
-  "HKQuantityTypeIdentifierDistanceRowing",
-  "HKQuantityTypeIdentifierRowingSpeed",
   "HKQuantityTypeIdentifierDistanceSkatingSports",
   "HKQuantityTypeIdentifierDistanceSwimming",
   "HKQuantityTypeIdentifierSwimmingStrokeCount",

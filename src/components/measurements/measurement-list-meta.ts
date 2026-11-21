@@ -36,6 +36,8 @@ import {
   Sun,
   PersonStanding,
   Waves,
+  Bike,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 
@@ -111,6 +113,15 @@ export const MEASUREMENT_TYPE_LABEL_KEYS: Record<string, string> = {
   ESTIMATED_WORKOUT_EFFORT_SCORE:
     "measurements.typeEstimatedWorkoutEffortScore",
   PHYSICAL_EFFORT: "measurements.typePhysicalEffort",
+  // Apple sport quantities (#1415).
+  CYCLING_DISTANCE: "measurements.typeCyclingDistance",
+  ROWING_DISTANCE: "measurements.typeRowingDistance",
+  ROWING_SPEED: "measurements.typeRowingSpeed",
+  RUNNING_SPEED: "measurements.typeRunningSpeed",
+  RUNNING_POWER: "measurements.typeRunningPower",
+  RUNNING_GROUND_CONTACT_TIME: "measurements.typeRunningGroundContactTime",
+  RUNNING_VERTICAL_OSCILLATION: "measurements.typeRunningVerticalOscillation",
+  RUNNING_STRIDE_LENGTH: "measurements.typeRunningStrideLength",
   WALKING_STEADINESS_EVENT: "measurements.typeWalkingSteadinessEvent",
   BREATHING_DISTURBANCE_EVENT: "measurements.typeBreathingDisturbanceEvent",
   // ── v1.10.0 — computed scores (WX-C) ──
@@ -261,6 +272,17 @@ export const MEASUREMENT_TYPE_ICONS: Record<string, LucideIcon> = {
   WORKOUT_EFFORT_SCORE: Gauge,
   ESTIMATED_WORKOUT_EFFORT_SCORE: Gauge,
   PHYSICAL_EFFORT: Flame,
+  // Sport quantities: the bike and the water for the two distances and
+  // rowing speed, the gauge for speeds, the bolt for power, the footprints
+  // for the stride measures.
+  CYCLING_DISTANCE: Bike,
+  ROWING_DISTANCE: Waves,
+  ROWING_SPEED: Waves,
+  RUNNING_SPEED: Gauge,
+  RUNNING_POWER: Zap,
+  RUNNING_GROUND_CONTACT_TIME: Footprints,
+  RUNNING_VERTICAL_OSCILLATION: Footprints,
+  RUNNING_STRIDE_LENGTH: Footprints,
   WALKING_STEADINESS_EVENT: Footprints,
   BREATHING_DISTURBANCE_EVENT: Wind,
   // ── v1.10.0 — computed scores (WX-C) ──

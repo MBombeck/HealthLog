@@ -296,6 +296,14 @@ export const SPARSE_METRIC_TYPES: ReadonlySet<string> = new Set([
   "WORKOUT_EFFORT_SCORE",
   "ESTIMATED_WORKOUT_EFFORT_SCORE",
   "PHYSICAL_EFFORT",
+  "CYCLING_DISTANCE",
+  "ROWING_DISTANCE",
+  "ROWING_SPEED",
+  "RUNNING_SPEED",
+  "RUNNING_POWER",
+  "RUNNING_GROUND_CONTACT_TIME",
+  "RUNNING_VERTICAL_OSCILLATION",
+  "RUNNING_STRIDE_LENGTH",
   // As-needed and paused medications leave weeks without a dose by design.
   "MEDICATION_DOSE",
   // A period comes once a month, and not at all in a pregnancy.

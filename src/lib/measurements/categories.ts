@@ -261,6 +261,15 @@ export const MEASUREMENT_CATEGORIES: ReadonlyMap<
   ["WORKOUT_EFFORT_SCORE", "scores"],
   ["ESTIMATED_WORKOUT_EFFORT_SCORE", "scores"],
   ["PHYSICAL_EFFORT", "activity"],
+  // Apple sport quantities (#1415) sit with the other movement quantities.
+  ["CYCLING_DISTANCE", "activity"],
+  ["ROWING_DISTANCE", "activity"],
+  ["ROWING_SPEED", "activity"],
+  ["RUNNING_SPEED", "activity"],
+  ["RUNNING_POWER", "activity"],
+  ["RUNNING_GROUND_CONTACT_TIME", "activity"],
+  ["RUNNING_VERTICAL_OSCILLATION", "activity"],
+  ["RUNNING_STRIDE_LENGTH", "activity"],
 ]);
 
 /**

@@ -140,6 +140,17 @@ intensity of the effort in kilocalories per hour per kilogram, the same
 family as METs, and becomes `PHYSICAL_EFFORT`. None of the three is added
 to active or resting energy.
 
+Cycling and rowing distance, rowing speed and the running dynamics come
+in as their own types. `DistanceCycling` becomes `CYCLING_DISTANCE` and
+`DistanceRowing` becomes `ROWING_DISTANCE`, both in metres and summed per
+day like walking and running distance. `RowingSpeed` and `RunningSpeed`
+(m/s), `RunningPower` (W), `RunningGroundContactTime` (ms),
+`RunningVerticalOscillation` (cm) and `RunningStrideLength` (m) are
+per-sample readings taken during a workout, so their day value is the
+mean. A record in another unit, such as kilometres in an export from a
+metric account, is converted on the way in. Cycling speed, power and
+cadence, swimming, paddling and skiing stay on the deferred list.
+
 ### ECG archive safety, privacy, and idempotency
 
 ECG support is source-agnostic: if HealthKit includes a valid

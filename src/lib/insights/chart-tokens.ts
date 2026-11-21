@@ -175,6 +175,15 @@ export const ALLOWED_CHART_TOKENS = [
   "metric:WORKOUT_EFFORT_SCORE",
   "metric:ESTIMATED_WORKOUT_EFFORT_SCORE",
   "metric:PHYSICAL_EFFORT",
+  // Apple sport quantities (#1415). One series per type.
+  "metric:CYCLING_DISTANCE",
+  "metric:ROWING_DISTANCE",
+  "metric:ROWING_SPEED",
+  "metric:RUNNING_SPEED",
+  "metric:RUNNING_POWER",
+  "metric:RUNNING_GROUND_CONTACT_TIME",
+  "metric:RUNNING_VERTICAL_OSCILLATION",
+  "metric:RUNNING_STRIDE_LENGTH",
 ] as const;
 
 export type ChartToken = (typeof ALLOWED_CHART_TOKENS)[number];
