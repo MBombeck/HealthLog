@@ -36,6 +36,17 @@ const syncStateResponse = z
       liveCount: z.number().int().nonnegative(),
       tombstonedCount: z.number().int().nonnegative(),
     }),
+    medications: z
+      .object({
+        lastUpdatedAt: isoDateTime()
+          .nullable()
+          .describe(
+            "Newest write to any of the account's medication rows. A snooze, a pause and a schedule change move what is due without touching an intake row; compare this together with `intakes` (on inequality) to know whether the dose list is stale.",
+          ),
+      })
+      .describe(
+        "Freshness of the medication rows the dose state derives from.",
+      ),
     sync: z
       .object({
         incrementalWindowDays: z
