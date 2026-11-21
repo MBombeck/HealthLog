@@ -109,19 +109,6 @@ export function shouldAutoLaunchTour(args: {
   return args.nowMs - completedMs >= TOUR_AUTOLAUNCH_DELAY_MS;
 }
 
-/**
- * v1.18.0 — whether the achievements tour stop should be included.
- * Reads the per-user module map with the standard client default-on
- * convention (`modules?.achievements !== false`): only an explicit
- * `false` drops the stop. Pure + exported so the rule is unit-pinned
- * without rendering the launcher.
- */
-export function tourIncludesAchievements(
-  modules: Partial<Record<string, boolean>> | undefined,
-): boolean {
-  return modules?.achievements !== false;
-}
-
 // v1.4.15 — sessionStorage keys are now scoped by user id so an
 // admin impersonating a second user does not inherit the first user's
 // "tour dismissed for this session" state. The previous global keys

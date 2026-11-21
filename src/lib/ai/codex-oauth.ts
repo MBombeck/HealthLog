@@ -1,4 +1,3 @@
-import { createHash, randomBytes } from "node:crypto";
 import { encrypt, decrypt } from "@/lib/crypto";
 import { safeFetch } from "@/lib/safe-fetch";
 
@@ -39,20 +38,6 @@ const CODEX_SCOPES =
 
 const DEVICE_VERIFICATION_URL = `${ISSUER}/codex/device`;
 const DEVICE_REDIRECT_URI = `${ISSUER}/deviceauth/callback`;
-
-function base64url(buffer: Buffer): string {
-  return buffer.toString("base64url");
-}
-
-export function generatePKCE(): { verifier: string; challenge: string } {
-  const verifier = base64url(randomBytes(96));
-  const challenge = base64url(createHash("sha256").update(verifier).digest());
-  return { verifier, challenge };
-}
-
-export function generateState(): string {
-  return base64url(randomBytes(32));
-}
 
 export function getCodexClientId(): string {
   return process.env.CODEX_OAUTH_CLIENT_ID?.trim() || DEFAULT_CLIENT_ID;

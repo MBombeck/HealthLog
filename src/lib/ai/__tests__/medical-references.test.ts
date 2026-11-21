@@ -4,7 +4,6 @@ import {
   MEDICAL_REFERENCE_IDS,
   MEDICAL_REFERENCE_ORGS,
   selectReferencesForMetrics,
-  getMedicalReferenceById,
 } from "../medical-references";
 
 /**
@@ -28,7 +27,6 @@ import {
  *     per bucket so the prompt never injects an empty SOURCES list.
  *   - `selectReferencesForMetrics()` filters by overlap, not exact
  *     match.
- *   - `getMedicalReferenceById()` returns undefined for unknown ids.
  */
 
 describe("MEDICAL_REFERENCES bundle", () => {
@@ -162,16 +160,5 @@ describe("selectReferencesForMetrics()", () => {
       r.metricApplicability.some((m) => m === "bp" || m === "weight"),
     );
     expect(refs.map((r) => r.id)).toEqual(orderInBundle.map((r) => r.id));
-  });
-});
-
-describe("getMedicalReferenceById()", () => {
-  it("returns the reference for a known id", () => {
-    const sample = MEDICAL_REFERENCES[0];
-    expect(getMedicalReferenceById(sample.id)).toEqual(sample);
-  });
-
-  it("returns undefined for an unknown id", () => {
-    expect(getMedicalReferenceById("nonexistent-fake-2099")).toBeUndefined();
   });
 });

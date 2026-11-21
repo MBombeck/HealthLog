@@ -52,13 +52,11 @@ import {
 } from "@/lib/query-keys/record-session-transition";
 
 /**
- * The two stable sharing error codes, as the envelope publishes them
- * (`meta.errorCode`). Named here rather than typed inline so the reset
- * below and the "not available while sharing" state cannot drift apart from
- * what the server sends.
+ * The stable sharing error code for a lost grant, as the envelope publishes it
+ * (`meta.errorCode`). Named here rather than typed inline so the reset below
+ * cannot drift apart from what the server sends.
  */
 export const SHARING_ACCESS_DENIED = "sharing.access.denied";
-export const SHARING_NOT_PERMITTED = "sharing.not_permitted";
 
 /** The `meta.errorCode` on a failed request, when it carried one. */
 export function errorCodeOf(error: unknown): string | null {
@@ -78,19 +76,6 @@ export function errorCodeOf(error: unknown): string | null {
  */
 export function isSharingAccessDenied(error: unknown): boolean {
   return errorCodeOf(error) === SHARING_ACCESS_DENIED;
-}
-
-/**
- * True when the surface itself is not available while acting on another
- * account — grant management, credentials, integrations, notification
- * channels, anything that would let a delegate extend their own reach.
- *
- * A different fact from the one above and worth a different message: there is
- * nothing wrong with the caller's access, the page simply is not part of what
- * sharing covers.
- */
-export function isSharingNotPermitted(error: unknown): boolean {
-  return errorCodeOf(error) === SHARING_NOT_PERMITTED;
 }
 
 /**

@@ -141,16 +141,6 @@ export function tryParseKeyValueLine(line: string): LineParseOutcome {
   return { ok: true, value: parsed.data };
 }
 
-/**
- * Backwards-compatible wrapper around `tryParseKeyValueLine`. Returns
- * the parsed value on success, `null` on any failure — kept so existing
- * callers and the public test surface keep working unchanged.
- */
-export function parseKeyValueLine(line: string): CoachKeyValue | null {
-  const outcome = tryParseKeyValueLine(line);
-  return outcome.ok ? outcome.value : null;
-}
-
 export interface SentinelParseResult {
   /** Prose with the sentinel block (if any) stripped out. */
   prose: string;

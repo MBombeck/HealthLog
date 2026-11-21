@@ -285,14 +285,6 @@ export function readCodexModelCatalog(
   return read;
 }
 
-/** The offered models from an earlier read, without touching the network. */
-export function cachedCodexModels(
-  credential: CodexCredential,
-  now: number = Date.now(),
-): readonly CodexOfferedModel[] | null {
-  return offeredModels(getCodexCatalogState(credential, now));
-}
-
 /** The models a list read offered, or null when it offered none. */
 export function offeredModels(
   state: CodexCatalogState | null,

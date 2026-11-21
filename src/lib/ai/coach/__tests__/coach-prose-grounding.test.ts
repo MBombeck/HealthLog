@@ -17,30 +17,12 @@ import { describe, expect, it } from "vitest";
 import { locales, type Locale } from "@/lib/i18n/config";
 
 import {
-  collectNumericLeaves,
   findUnverifiedCoachNumbers,
   hasPopulationNormFraming,
   stripUnverifiedNumbers,
   UNVERIFIED_ELISION_MARK,
   unitWordBank,
 } from "@/lib/ai/coach/coach-prose-grounding";
-
-describe("collectNumericLeaves", () => {
-  it("walks numbers, numeric strings, arrays and nested objects", () => {
-    const out = new Set<number>();
-    collectNumericLeaves(
-      {
-        section: { avgSys30: 128, label: "LDL", value: "120" },
-        recent: [{ v: 72 }, { v: "1.2" }],
-      },
-      out,
-    );
-    expect(out.has(128)).toBe(true);
-    expect(out.has(120)).toBe(true);
-    expect(out.has(72)).toBe(true);
-    expect(out.has(1.2)).toBe(true);
-  });
-});
 
 describe("findUnverifiedCoachNumbers", () => {
   const payloads = [{ aggregate: { avgSys30: 128, avgDia30: 82 } }];
