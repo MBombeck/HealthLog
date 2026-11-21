@@ -91,9 +91,12 @@ rolled back (`prisma migrate resolve --rolled-back`) and runs
 `migrate deploy` again after 15, 30, 60, 120 and 240 seconds. The app starts
 as soon as an attempt gets the lock. A later boot that finds the attempt still
 on record (Prisma's `P3009`) reads the cause from `_prisma_migrations` and
-does the same. Nothing else is retried: any other failure, and a lock timeout
-in a migration that does not carry the marker, stops the boot exactly as
-before.
+does the same. A migration whose one statement builds an index concurrently
+is retried the same way without the marker: a failed build leaves only an
+INVALID index, which the next attempt drops first (below). Nothing else is
+retried: any other failure, and a lock timeout in any other migration, stops
+the boot exactly as before. How a migration file runs, and why that makes the
+retry safe, is in [migrations/README.md](migrations/README.md).
 
 The retries fit inside the container's health check: its start period is ten
 minutes (`docker-compose.yml` and the image's own `HEALTHCHECK`), so failed

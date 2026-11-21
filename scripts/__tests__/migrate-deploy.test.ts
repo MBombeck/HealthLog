@@ -25,9 +25,11 @@ import {
   concurrentIndexesIn,
   decideLockRetry,
   invalidIndexPlan,
+  isLoneConcurrentBuild,
   lockTimeoutInReport,
   prismaEnv,
   retryDelays,
+  runsAsOneTransaction,
   utcSessionUrl,
 } from "../migrate-deploy.mjs";
 
@@ -90,6 +92,45 @@ describe("which failure is retried", () => {
       migration: "0412_measurement_hot_updates",
       code: "55P03",
     });
+  });
+
+  it("retries a lone concurrent index build without a marker", () => {
+    // A failed build leaves only an INVALID index, which the boot drops
+    // before the attempt that builds it again.
+    const lone =
+      '-- why\nCREATE INDEX CONCURRENTLY IF NOT EXISTS "i" ON "t" ("c");\n';
+    expect(isLoneConcurrentBuild(lone)).toBe(true);
+    expect(
+      decideLockRetry({
+        output: P3018_LOCK,
+        failedRows: null,
+        readMigration: reader(lone),
+      }),
+    ).toMatchObject({ retry: true });
+    // Beside any other statement it is not lone, and not retried unmarked.
+    const beside = `${lone}ALTER TABLE "t" ADD COLUMN "d" int;\n`;
+    expect(isLoneConcurrentBuild(beside)).toBe(false);
+    expect(
+      decideLockRetry({
+        output: P3018_LOCK,
+        failedRows: null,
+        readMigration: reader(beside),
+      }).retry,
+    ).toBe(false);
+  });
+
+  it("knows which files Prisma sends as one transaction", () => {
+    expect(runsAsOneTransaction("DO $$ BEGIN END $$;")).toBe(true);
+    expect(runsAsOneTransaction("DO $m$ BEGIN END $m$;")).toBe(true);
+    expect(
+      runsAsOneTransaction(
+        "CREATE FUNCTION f() RETURNS int AS $body$ SELECT 1 $body$ LANGUAGE sql;",
+      ),
+    ).toBe(true);
+    expect(runsAsOneTransaction("ALTER TABLE x ADD COLUMN y int;")).toBe(false);
+    expect(runsAsOneTransaction("-- DO $$ in a comment\nSELECT 1;")).toBe(
+      false,
+    );
   });
 
   it("does not retry a lock timeout of an unmarked migration", () => {
