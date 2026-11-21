@@ -63,3 +63,24 @@ export function liveEraStartsByMedication(
 export function isBeforeLiveEra(slot: Date, eraStart: Date | null): boolean {
   return eraStart !== null && slot.getTime() < eraStart.getTime();
 }
+
+/**
+ * A clock-time dose whose time had already passed when the medication was
+ * created was never owed: the person added the medication after it. It is not
+ * projected, reminded, listed as overdue, or counted, and the medication's
+ * next dose is the following one (tomorrow's, for a daily dose). A dose later
+ * that same day, even one whose window was already open at creation, is owed.
+ *
+ * The dose ledger applies the same rule (`reconstructDoseHistory` drops a slot
+ * before creation that no recorded dose claims), so `currentDose`, the today
+ * rows, the list and the reminders agree. A rolling cadence is exempt: its
+ * occurrences hang on the course start or the last take, not on a clock
+ * time, and the start the person set is the occurrence they owe.
+ */
+export function predatesMedication(
+  slot: Date,
+  medication: { createdAt: Date },
+  rolling: boolean,
+): boolean {
+  return !rolling && slot.getTime() < medication.createdAt.getTime();
+}

@@ -48,6 +48,7 @@ import { sendsMedicationReminders } from "@/lib/medications/auto-mark-taken";
 import {
   LIVE_ERA_REVISION_ARGS,
   liveEraStart as liveEraStartOf,
+  predatesMedication,
 } from "@/lib/medications/scheduling/live-era";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
@@ -414,18 +415,12 @@ export async function handleReminderCheck(
             occurrencesByScheduleId.get(canonicalSchedule.id) ?? [];
           if (scheduleOccurrences.length === 0) continue;
 
-          // v1.7.0 — multi-time-of-day dispatch. A schedule
-          // with `timesOfDay = ["08:00","20:00"]` is two distinct dose
-          // slots per day; the pre-v1.7 worker keyed phase + dedup on the
-          // single `windowStart`, so the evening dose never reminded.
-          // Each slot resolves its own phase bounds. Logged-dose suppression
-          // uses the same dose bands as intake attribution and history.
-          //
-          // The legacy single-window contract is preserved: a schedule
-          // with no first-class `timesOfDay` emits exactly one slot at
-          // `windowStart` with `timeOfDay = ""`, which dedupes against
-          // pre-v1.7 rows (backfilled to "") byte-for-byte.
+          // Each `timesOfDay` entry is its own slot with its own phase bounds;
+          // logged-dose suppression uses the dose bands of intake attribution.
+          // A schedule without `timesOfDay` emits one slot at `windowStart`
+          // with `timeOfDay = ""` (byte-stable against legacy rows).
           const nowMs = now.getTime();
+          const rolling = canonicalSchedule.rollingIntervalDays !== null;
 
           const hasFirstClassTimes =
             schedule.timesOfDay && schedule.timesOfDay.length > 0;
@@ -507,7 +502,12 @@ export async function handleReminderCheck(
               followUp,
             } = phaseCandidate;
             const slotInstant = slotScheduledFor.getTime();
-            if (liveEraStart !== null && slotInstant < liveEraStart) {
+            // Not owed: before the live era, or before the medication existed.
+            const early = predatesMedication(slotScheduledFor, med, rolling);
+            if (
+              early ||
+              (liveEraStart !== null && slotInstant < liveEraStart)
+            ) {
               continue;
             }
 

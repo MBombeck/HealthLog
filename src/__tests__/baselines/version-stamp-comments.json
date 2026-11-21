@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2843,
-  "total": 8878,
+  "total": 8877,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -2314,7 +2314,7 @@
     "lib/jobs/reminder/google-health-sync.ts": 1,
     "lib/jobs/reminder/insights-handlers.ts": 3,
     "lib/jobs/reminder/medication-maintenance.ts": 3,
-    "lib/jobs/reminder/medication-reminder-check.ts": 8,
+    "lib/jobs/reminder/medication-reminder-check.ts": 7,
     "lib/jobs/reminder/mood-cycle-checks.ts": 3,
     "lib/jobs/reminder/ops-handlers.ts": 3,
     "lib/jobs/reminder/oura-sync.ts": 1,
