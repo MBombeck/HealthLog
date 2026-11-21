@@ -25,6 +25,7 @@ vi.mock("@/lib/notifications/dispatcher", () => ({
 }));
 
 import {
+  anomalyTapUrl,
   FRESH_BREAK_DAYS,
   pickFreshShift,
   runMeasurementAnomalyTick,
@@ -61,6 +62,16 @@ beforeEach(() => {
   m.shifts.mockResolvedValue([shift("2026-11-09")]);
   m.claim.mockResolvedValue(true);
   m.dispatch.mockResolvedValue({ dispatched: true });
+});
+
+describe("anomalyTapUrl", () => {
+  it("opens the metric's own page, and nothing for a type without one", () => {
+    expect(anomalyTapUrl("RESTING_HEART_RATE")).toEqual({
+      url: "/insights/resting-pulse",
+    });
+    expect(anomalyTapUrl("WEIGHT")).toEqual({ url: "/insights/weight" });
+    expect(anomalyTapUrl("RECOVERY_SCORE")).toEqual({});
+  });
 });
 
 describe("pickFreshShift", () => {

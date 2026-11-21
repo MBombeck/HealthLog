@@ -88,7 +88,10 @@ describe("the measurement anomaly push", () => {
     expect(dispatch.mock.calls[0][0]).toMatchObject({
       eventType: "MEASUREMENT_ANOMALY",
       userId,
-      metadata: { metric: "RESTING_HEART_RATE" },
+      metadata: {
+        metric: "RESTING_HEART_RATE",
+        url: "/insights/resting-pulse",
+      },
     });
     const claims = await getPrismaClient().notificationEvent.findMany({
       where: { recordUserId: userId },
