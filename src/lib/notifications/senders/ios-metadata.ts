@@ -40,7 +40,14 @@ const IOS_METADATA_ALLOWLIST = new Set([
   // `passkey_removed`, `token_revoked`, `refresh_reuse`), so the app opens
   // the account's security page. A closed set, no credential.
   "securityKind",
+  // MEASUREMENT_ANOMALY names the metric whose level shifted (the
+  // measurement type, e.g. `RESTING_HEART_RATE`), so the app opens its page
+  // where the relay carries no url. The name only, never a reading.
+  "metric",
 ]);
+
+/** A metric is passed only as a type name; anything else is dropped. */
+const METRIC_NAME = /^[A-Z][A-Z0-9_]{0,63}$/;
 
 export function pickIosMetadata(
   metadata: Record<string, unknown> | undefined,
@@ -48,9 +55,15 @@ export function pickIosMetadata(
   if (!metadata) return {};
   const out: Record<string, unknown> = {};
   for (const key of Object.keys(metadata)) {
-    if (IOS_METADATA_ALLOWLIST.has(key)) {
-      out[key] = metadata[key];
+    if (!IOS_METADATA_ALLOWLIST.has(key)) continue;
+    const value = metadata[key];
+    if (
+      key === "metric" &&
+      !(typeof value === "string" && METRIC_NAME.test(value))
+    ) {
+      continue;
     }
+    out[key] = value;
   }
   return out;
 }

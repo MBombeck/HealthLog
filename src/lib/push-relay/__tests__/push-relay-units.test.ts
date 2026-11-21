@@ -314,6 +314,29 @@ describe("what travels over the relay", () => {
   });
 });
 
+describe("MEASUREMENT_ANOMALY over the relay", () => {
+  const base = { title: "T", message: "M" };
+
+  it("seals the metric's name for the app, never the url or a value", () => {
+    const anomaly = alertMessage({
+      ...base,
+      eventType: "MEASUREMENT_ANOMALY",
+      metadata: {
+        metric: "RESTING_HEART_RATE",
+        breakDate: "2026-11-20",
+        url: "/insights/heart",
+      },
+    });
+    expect(anomaly.data).toEqual({ metric: "RESTING_HEART_RATE" });
+    const odd = alertMessage({
+      ...base,
+      eventType: "MEASUREMENT_ANOMALY",
+      metadata: { metric: 72 },
+    });
+    expect(odd.data).toEqual({});
+  });
+});
+
 describe("relay configuration", () => {
   it("is unavailable without pinned keys and refuses plain http", () => {
     // The hosted relay ships its keys pinned; an operator's own relay has none
