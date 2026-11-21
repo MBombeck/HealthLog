@@ -19,6 +19,9 @@ export const SERVER_FEATURES = [
   "apple-health.types-2026-11",
   "medication.snooze-setting",
   "apple-health.effort-scores",
+  "push.data-changed",
+  "push.healthkit-catch-up",
+  "push.security-alert-relay",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -49,4 +52,10 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "The batch ingest accepts the Apple Health cycling distance, rowing distance and speed, and running speed, power, ground contact time, vertical oscillation and stride length types.",
   "apple-health.effort-scores":
     "The batch ingest accepts HealthKit workoutEffortScore, estimatedWorkoutEffortScore and physicalEffort as WORKOUT_EFFORT_SCORE, ESTIMATED_WORKOUT_EFFORT_SCORE and PHYSICAL_EFFORT.",
+  "push.data-changed":
+    "A device with a push key gets a sealed silent DATA_CHANGED (d.domains, d.changedAt) when a server-side sync stores readings; per device at most once per five minutes and three times an hour, never for a change the device started itself.",
+  "push.healthkit-catch-up":
+    "A device with a push key whose app registered in the last three days gets a sealed silent HEALTHKIT_CATCH_UP (d.requestedAt) when the account's Apple Health upload is six hours behind; at most three a day, four hours apart.",
+  "push.security-alert-relay":
+    "SECURITY_ALERT (new sign-in, passkey added or removed, token revoked, refresh-token reuse) reaches sealed and relay-bound devices with ui.level time-sensitive and d.securityKind.",
 };
