@@ -13,7 +13,10 @@
         {
           "path": "days",
           "code": "too_small",
-          "message": "Too small: expected number to be >=1"
+          "message": "Too small: expected number to be >=1",
+          "minimum": 1,
+          "inclusive": true,
+          "origin": "number"
         }
       ]
     },

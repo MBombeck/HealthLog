@@ -164,3 +164,49 @@ describe("returnAllZodIssues", () => {
     });
   });
 });
+
+describe("sanitiseZodIssues — schema bounds", () => {
+  it("names the declared bound of a size issue and never the rejected value", () => {
+    const schema = z.object({
+      value: z.number().positive().max(500),
+      name: z.string().min(3),
+    });
+    const over = schema.safeParse({ value: 9999, name: "abc" });
+    const under = schema.safeParse({ value: 0, name: "x" });
+    expect(over.success || under.success).toBe(false);
+    const [big] = sanitiseZodIssues(over.error!.issues);
+    expect(big).toMatchObject({
+      path: "value",
+      code: "too_big",
+      maximum: 500,
+      inclusive: true,
+      origin: "number",
+    });
+    expect(JSON.stringify(big)).not.toContain("9999");
+    const small = sanitiseZodIssues(under.error!.issues, {
+      stripValuesFromMessage: true,
+    });
+    expect(small).toEqual([
+      {
+        path: "value",
+        code: "too_small",
+        minimum: 0,
+        inclusive: false,
+        origin: "number",
+      },
+      {
+        path: "name",
+        code: "too_small",
+        minimum: 3,
+        inclusive: true,
+        origin: "string",
+      },
+    ]);
+  });
+
+  it("adds nothing to an issue that is not about a size", () => {
+    const parsed = z.object({ v: z.number() }).safeParse({ v: "nope" });
+    const [issue] = sanitiseZodIssues(parsed.error!.issues);
+    expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+  });
+});

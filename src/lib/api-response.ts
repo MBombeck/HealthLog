@@ -51,6 +51,17 @@ export interface SanitisedZodIssue {
    * same reason: it carries no user-typed value.
    */
   keys?: string[];
+  /**
+   * Only set for `too_small` / `too_big`: the bound the schema declares
+   * (a number's range, a string's or a list's length), whether it is
+   * inclusive, and what it measures. These come from the schema, never
+   * from the request, so naming them echoes nothing the caller sent and
+   * lets a client tell the person the range instead of only "invalid".
+   */
+  minimum?: number;
+  maximum?: number;
+  inclusive?: boolean;
+  origin?: string;
 }
 
 /** Cap on how many rejected key names one issue reports. */
@@ -82,6 +93,23 @@ function sanitiseKeyName(key: string): string {
 function unrecognisedKeys(issue: ZodIssue): string[] | undefined {
   if (issue.code !== "unrecognized_keys") return undefined;
   return issue.keys.slice(0, MAX_REPORTED_KEYS).map(sanitiseKeyName);
+}
+
+/** Schema-declared bounds of a size issue; see {@link SanitisedZodIssue}. */
+function issueBounds(
+  issue: ZodIssue,
+): Pick<SanitisedZodIssue, "minimum" | "maximum" | "inclusive" | "origin"> {
+  if (issue.code !== "too_small" && issue.code !== "too_big") return {};
+  const raw = issue.code === "too_small" ? issue.minimum : issue.maximum;
+  const bound = Number(raw);
+  if (!Number.isFinite(bound)) return {};
+  return {
+    ...(issue.code === "too_small" ? { minimum: bound } : { maximum: bound }),
+    ...(typeof issue.inclusive === "boolean"
+      ? { inclusive: issue.inclusive }
+      : {}),
+    ...(typeof issue.origin === "string" ? { origin: issue.origin } : {}),
+  };
 }
 
 /**
@@ -165,6 +193,7 @@ export function sanitiseZodIssues(
         path: issue.path.join("."),
         code: issue.code,
         ...(keys ? { keys } : {}),
+        ...issueBounds(issue),
       };
     });
   }
@@ -175,6 +204,7 @@ export function sanitiseZodIssues(
       code: issue.code,
       message: keys ? unrecognisedKeysMessage(keys) : issue.message,
       ...(keys ? { keys } : {}),
+      ...issueBounds(issue),
     };
   });
 }
