@@ -328,18 +328,18 @@ describe("table locks since 0475", () => {
  */
 const LONG_WORK_FROM = 517;
 
-/** Tables that grow with every reading, dose, or delivery. */
+/**
+ * Tables that grow with every reading, dose, or delivery and keep growing.
+ * A ledger that a retention purge holds to a few weeks or months is not one.
+ */
 const LARGE_TABLES = new Set([
   "measurements",
   "measurement_rollups",
   "medication_intake_events",
-  "mood_entries",
   "audit_logs",
   "push_attempts",
   "notification_events",
-  "coach_messages",
   "workout_samples",
-  "apple_health_tombstones",
 ]);
 
 const TABLE = String.raw`(?:ONLY\s+)?(?:IF\s+EXISTS\s+)?(?:"?public"?\.)?"?(\w+)"?`;

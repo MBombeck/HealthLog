@@ -123,6 +123,42 @@ that for you, and each boot retries). Anything else is a session you can
 judge: a stuck client may be ended with `SELECT pg_terminate_backend(<pid>)`.
 You never need to run `migrate resolve` by hand for this case.
 
+### Accounts that differ only in case
+
+From 1.48.6 an e-mail address and a username are unique regardless of case,
+because sign-in already treats `Name@host` and `name@host` as the same
+address. Migration `0517` first counts the addresses and names that two
+accounts on the instance share when case is ignored. When there are any, it
+stops with
+
+```
+HealthLog 0517: 1 e-mail address(es) and 0 username(s) belong to more than one account when case is ignored; no account was changed.
+```
+
+and the container does not start. Nothing is merged or renamed for you. List
+the accounts:
+
+```sh
+docker compose exec db psql -U healthlog -c "
+  SELECT id, username, email, created_at FROM users
+   WHERE lower(email) IN (SELECT lower(email) FROM users WHERE email IS NOT NULL
+                           GROUP BY 1 HAVING count(*) > 1)
+      OR lower(username) IN (SELECT lower(username) FROM users
+                              GROUP BY 1 HAVING count(*) > 1)
+   ORDER BY lower(email), lower(username), created_at"
+```
+
+Decide which account of each pair keeps the address or name and give the
+other one a different one (`UPDATE users SET email = '…' WHERE id = '…'`).
+The migration runs as one transaction, so the failed attempt changed nothing,
+but Prisma keeps it on record as failed. Mark it rolled back, then start the
+container again:
+
+```sh
+docker compose run --rm --entrypoint sh app -c \
+  'NODE_PATH=/opt/prisma-cli/node_modules node /opt/prisma-cli/node_modules/prisma/build/index.js migrate resolve --rolled-back 0517_case_insensitive_identity_and_retention_indexes'
+```
+
 ### A concurrent index build that failed
 
 A migration that builds an index `CONCURRENTLY` (0477 is one) and fails

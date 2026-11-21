@@ -107,6 +107,8 @@ describe("GET /api/admin/support-report (integration)", () => {
     await prisma.pushAttempt.create({
       data: {
         userId: member.id,
+        recordUserId: member.id,
+        recipientUserId: member.id,
         channel: "NTFY",
         eventType: "MEDICATION_REMINDER",
         result: "error",
