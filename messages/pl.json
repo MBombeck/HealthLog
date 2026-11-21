@@ -12957,6 +12957,18 @@
     },
     "alcohol": {
       "loadError": "Nie udało się wczytać alkoholu."
+    },
+    "energyBalance": {
+      "title": "Bilans energetyczny",
+      "loadError": "Nie udało się wczytać bilansu energetycznego.",
+      "perDay": "{value} dziennie",
+      "trendMeta": "Średnia z ostatnich siedmiu dni: to, co zjadłeś, minus energia spoczynkowa i aktywna.",
+      "meanMeta": "Średnia z {days} dni: to, co zjadłeś, minus energia spoczynkowa i aktywna.",
+      "means": "Przez {days} dni średnio {intake} kcal zjedzone i {used} kcal zużyte.",
+      "dayLine": "{intake} kcal zjedzone, {used} kcal zużyte",
+      "estimated": "W {days} z tych dni energia spoczynkowa jest szacunkiem z masy ciała, wzrostu, wieku i płci (Mifflin-St Jeor), bo nie dotarł żaden pomiar.",
+      "needsProfile": "Twoje spożycie jest tutaj, ale nie dotarła energia spoczynkowa. Dodaj wzrost, datę urodzenia i płeć w profilu oraz pomiar masy ciała, a bilans zostanie oszacowany.",
+      "needsExpenditure": "Twoje spożycie jest tutaj, ale w te same dni nie dotarła energia aktywna, więc nie ma jeszcze bilansu."
     }
   },
   "daily": {

@@ -49,6 +49,8 @@ notes, and machine-readable specs that ship alongside the source:
   subscribing to the cycle forecast from Google, Apple or Outlook, and
   [`using/care-calendar-feed.md`](./using/care-calendar-feed.md) the same for
   booked visits, check-ups and vaccination boosters coming due.
+  [`using/energy-balance.md`](./using/energy-balance.md) explains the daily
+  energy balance and when a day has none.
 - [`migration/`](./migration/) — migration notes. Currently only
   v1.3 to v1.4; later releases are covered by `CHANGELOG.md` and
   <https://docs.healthlog.dev>.

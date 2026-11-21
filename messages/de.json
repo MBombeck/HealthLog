@@ -12957,6 +12957,18 @@
     },
     "alcohol": {
       "loadError": "Alkohol konnte nicht geladen werden."
+    },
+    "energyBalance": {
+      "title": "Energiebilanz",
+      "loadError": "Die Energiebilanz konnte nicht geladen werden.",
+      "perDay": "{value} pro Tag",
+      "trendMeta": "Mittel der letzten sieben Tage: Gegessenes minus Ruhe- und Aktivenergie.",
+      "meanMeta": "Mittel über {days} Tage: Gegessenes minus Ruhe- und Aktivenergie.",
+      "means": "Über {days} Tage im Mittel {intake} kcal gegessen und {used} kcal verbraucht.",
+      "dayLine": "{intake} kcal gegessen, {used} kcal verbraucht",
+      "estimated": "An {days} dieser Tage ist die Ruheenergie eine Schätzung aus Gewicht, Größe, Alter und Geschlecht (Mifflin-St Jeor), weil kein Messwert ankam.",
+      "needsProfile": "Deine Aufnahme ist da, aber keine Ruheenergie kam an. Trag Größe, Geburtsdatum und Geschlecht im Profil ein und erfasse ein Gewicht, dann wird die Bilanz geschätzt.",
+      "needsExpenditure": "Deine Aufnahme ist da, aber an denselben Tagen kam keine Aktivenergie an, daher gibt es noch keine Bilanz."
     }
   },
   "daily": {

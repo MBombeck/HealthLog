@@ -249,6 +249,62 @@ export const nutrientDailyQuerySchema = z.object({
   days: z.coerce.number().int().min(1).max(90).default(30),
 });
 
+/** `GET /api/nutrients/energy-balance?days=N`. */
+export const energyBalanceQuerySchema = z.object({
+  days: z.coerce.number().int().min(7).max(90).default(30),
+});
+
+const kcal = () => z.number().int().nullable();
+
+/** The energy balance read; shaped by `computeEnergyBalance`. */
+export const energyBalanceResponseSchema = z.object({
+  windowDays: z.number().int(),
+  days: z
+    .array(
+      z.object({
+        day: z.string().meta({ format: "date" }),
+        intakeKcal: kcal().describe(
+          "The day's folded `energy` intake; null when nothing was logged (never 0).",
+        ),
+        restingKcal: kcal().describe(
+          "Resting energy: the day's `BASAL_ENERGY_BURNED` sum, else the Mifflin-St Jeor estimate, else null.",
+        ),
+        restingEstimated: z
+          .boolean()
+          .describe("True when `restingKcal` is the estimate, not a reading."),
+        activeKcal: kcal().describe(
+          "The day's `ACTIVE_ENERGY_BURNED` sum, or null.",
+        ),
+        expenditureKcal: kcal().describe(
+          "Resting plus active; null when either is missing.",
+        ),
+        balanceKcal: kcal().describe(
+          "Intake minus expenditure; negative is a deficit. Null when either is missing.",
+        ),
+        trendKcal: kcal().describe(
+          "Mean balance of the seven days ending here, once four of them hold one; null on the partial day.",
+        ),
+        partial: z
+          .boolean()
+          .describe(
+            "Today, still running: outside the trend and the window means.",
+          ),
+      }),
+    )
+    .describe("One entry per local day, oldest first."),
+  summary: z.object({
+    daysWithBalance: z.number().int(),
+    meanIntakeKcal: kcal(),
+    meanExpenditureKcal: kcal(),
+    meanBalanceKcal: kcal(),
+  }),
+  estimateGaps: z
+    .array(z.enum(["weight", "height", "birthDate", "sex"]))
+    .describe(
+      "What the resting estimate lacks; empty when it can be made. A day without a resting reading has no expenditure while any is missing.",
+    ),
+});
+
 const resolvedNutrientReferenceSchema = z.object({
   authority: z
     .enum(["EFSA", "IOM", "NIH ODS"])

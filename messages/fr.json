@@ -12957,6 +12957,18 @@
     },
     "alcohol": {
       "loadError": "Impossible de charger l'alcool."
+    },
+    "energyBalance": {
+      "title": "Bilan énergétique",
+      "loadError": "Le bilan énergétique n'a pas pu être chargé.",
+      "perDay": "{value} par jour",
+      "trendMeta": "Moyenne des sept derniers jours : ce que tu as mangé moins l'énergie au repos et active.",
+      "meanMeta": "Moyenne sur {days} jours : ce que tu as mangé moins l'énergie au repos et active.",
+      "means": "Sur {days} jours, en moyenne {intake} kcal mangées et {used} kcal dépensées.",
+      "dayLine": "{intake} kcal mangées, {used} kcal dépensées",
+      "estimated": "Sur {days} de ces jours, l'énergie au repos est une estimation à partir de ton poids, ta taille, ton âge et ton sexe (Mifflin-St Jeor), faute de mesure.",
+      "needsProfile": "Ton apport est là, mais aucune énergie au repos n'est arrivée. Ajoute ta taille, ta date de naissance et ton sexe au profil, avec une mesure de poids, et le bilan sera estimé.",
+      "needsExpenditure": "Ton apport est là, mais aucune énergie active n'est arrivée les mêmes jours, il n'y a donc pas encore de bilan."
     }
   },
   "daily": {

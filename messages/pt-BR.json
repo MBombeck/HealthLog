@@ -12957,6 +12957,18 @@
     },
     "alcohol": {
       "loadError": "Não foi possível carregar o álcool."
+    },
+    "energyBalance": {
+      "title": "Balanço energético",
+      "loadError": "Não foi possível carregar o balanço energético.",
+      "perDay": "{value} por dia",
+      "trendMeta": "Média dos últimos sete dias: o que você comeu menos a energia em repouso e ativa.",
+      "meanMeta": "Média de {days} dias: o que você comeu menos a energia em repouso e ativa.",
+      "means": "Em {days} dias, em média {intake} kcal ingeridas e {used} kcal gastas.",
+      "dayLine": "{intake} kcal ingeridas, {used} kcal gastas",
+      "estimated": "Em {days} desses dias a energia em repouso é uma estimativa a partir do seu peso, altura, idade e sexo (Mifflin-St Jeor), porque nenhuma medição chegou.",
+      "needsProfile": "Sua ingestão está aqui, mas nenhuma energia em repouso chegou. Adicione altura, data de nascimento e sexo ao perfil, com uma medição de peso, e o balanço será estimado.",
+      "needsExpenditure": "Sua ingestão está aqui, mas nenhuma energia ativa chegou nos mesmos dias, então ainda não há balanço."
     }
   },
   "daily": {

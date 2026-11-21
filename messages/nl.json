@@ -12957,6 +12957,18 @@
     },
     "alcohol": {
       "loadError": "Alcohol kon niet worden geladen."
+    },
+    "energyBalance": {
+      "title": "Energiebalans",
+      "loadError": "De energiebalans kon niet worden geladen.",
+      "perDay": "{value} per dag",
+      "trendMeta": "Gemiddelde van de laatste zeven dagen: wat je at min rust- en actieve energie.",
+      "meanMeta": "Gemiddelde over {days} dagen: wat je at min rust- en actieve energie.",
+      "means": "Over {days} dagen gemiddeld {intake} kcal gegeten en {used} kcal verbruikt.",
+      "dayLine": "{intake} kcal gegeten, {used} kcal verbruikt",
+      "estimated": "Op {days} van deze dagen is de rustenergie een schatting uit gewicht, lengte, leeftijd en geslacht (Mifflin-St Jeor), omdat er geen meting binnenkwam.",
+      "needsProfile": "Je inname is er, maar er kwam geen rustenergie binnen. Vul lengte, geboortedatum en geslacht in je profiel in, met een gewichtsmeting, en de balans wordt geschat.",
+      "needsExpenditure": "Je inname is er, maar op dezelfde dagen kwam geen actieve energie binnen, dus er is nog geen balans."
     }
   },
   "daily": {

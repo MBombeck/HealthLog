@@ -12957,6 +12957,18 @@
     },
     "alcohol": {
       "loadError": "Could not load alcohol."
+    },
+    "energyBalance": {
+      "title": "Energy balance",
+      "loadError": "The energy balance could not be loaded.",
+      "perDay": "{value} a day",
+      "trendMeta": "Average of the last seven days: what you ate minus resting and active energy.",
+      "meanMeta": "Average over {days} days: what you ate minus resting and active energy.",
+      "means": "Over {days} days, on average {intake} kcal eaten and {used} kcal used.",
+      "dayLine": "{intake} kcal eaten, {used} kcal used",
+      "estimated": "On {days} of these days resting energy is an estimate from your weight, height, age and sex (Mifflin-St Jeor), because no reading arrived.",
+      "needsProfile": "Your intake is here, but no resting energy arrived. Add your height, date of birth and sex to your profile, with a weight reading, and the balance is estimated.",
+      "needsExpenditure": "Your intake is here, but no active energy arrived on the same days, so there is no balance to show yet."
     }
   },
   "daily": {

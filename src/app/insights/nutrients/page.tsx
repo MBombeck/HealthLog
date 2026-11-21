@@ -10,6 +10,7 @@ import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
 import { HydrationCard } from "@/components/insights/nutrients/hydration-card";
 import { EnergyMacrosCard } from "@/components/insights/nutrients/energy-macros-card";
+import { EnergyBalanceCard } from "@/components/insights/nutrients/energy-balance-card";
 import { SingleNutrientCard } from "@/components/insights/nutrients/single-nutrient-card";
 import { MicronutrientsCard } from "@/components/insights/nutrients/micronutrients-card";
 import { useAuth } from "@/hooks/use-auth";
@@ -170,6 +171,7 @@ export default function InsightsNutrientsPage() {
       {overview.isLoading ? null : (
         <>
           <EnergyMacrosCard />
+          <EnergyBalanceCard />
           <SingleNutrientCard
             code="caffeine"
             icon={Coffee}

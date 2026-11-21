@@ -12957,6 +12957,18 @@
     },
     "alcohol": {
       "loadError": "Impossibile caricare l'alcol."
+    },
+    "energyBalance": {
+      "title": "Bilancio energetico",
+      "loadError": "Non è stato possibile caricare il bilancio energetico.",
+      "perDay": "{value} al giorno",
+      "trendMeta": "Media degli ultimi sette giorni: quanto hai mangiato meno l'energia a riposo e attiva.",
+      "meanMeta": "Media su {days} giorni: quanto hai mangiato meno l'energia a riposo e attiva.",
+      "means": "In {days} giorni, in media {intake} kcal mangiate e {used} kcal consumate.",
+      "dayLine": "{intake} kcal mangiate, {used} kcal consumate",
+      "estimated": "In {days} di questi giorni l'energia a riposo è una stima da peso, altezza, età e sesso (Mifflin-St Jeor), perché non è arrivata alcuna misura.",
+      "needsProfile": "La tua assunzione c'è, ma non è arrivata energia a riposo. Aggiungi altezza, data di nascita e sesso al profilo, con una misura del peso, e il bilancio verrà stimato.",
+      "needsExpenditure": "La tua assunzione c'è, ma negli stessi giorni non è arrivata energia attiva, quindi non c'è ancora un bilancio."
     }
   },
   "daily": {

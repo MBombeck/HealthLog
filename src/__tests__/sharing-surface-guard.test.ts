@@ -1058,6 +1058,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "measurements",
     why: "One nutrient's daily series over the record, scoped by the resolved user id.",
   },
+  "app/api/nutrients/energy-balance/route.ts": {
+    domain: "measurements",
+    why: "The record's daily energy balance, read-only: its intake and energy readings plus the profile height, birth date and sex the resting estimate needs, all read for the resolved user id.",
+  },
   "app/api/encounters/route.ts": {
     domain: "profile",
     why: "The record's visits — what happened at a practice and what is booked. Record content in the same sense as the allergies and family history already under this domain: it names no credential, no integration and no notification channel. Carries the honest cost of that classification, which is that a delegate granted `profile` for allergies also sees the visit list; the consent copy names visits for exactly this reason. The create arm is a delegable write.",
@@ -2569,8 +2573,10 @@ const ACTOR_ROUTES: Record<string, string> = {
  *
  * The care calendar subscription joins the actor list: its feed is only ever
  * the caller's own. 333 -> 334.
+ *
+ * The energy balance read joins the record list, read-only. 334 -> 335.
  */
-const FROZEN_ENTRY_COUNT = 334;
+const FROZEN_ENTRY_COUNT = 335;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

@@ -12957,6 +12957,18 @@
     },
     "alcohol": {
       "loadError": "알코올을 불러오지 못했어요."
+    },
+    "energyBalance": {
+      "title": "에너지 균형",
+      "loadError": "에너지 균형을 불러오지 못했습니다.",
+      "perDay": "하루 {value}",
+      "trendMeta": "최근 7일 평균: 섭취량에서 휴식 및 활동 에너지를 뺀 값입니다.",
+      "meanMeta": "{days}일 평균: 섭취량에서 휴식 및 활동 에너지를 뺀 값입니다.",
+      "means": "{days}일 동안 평균 {intake} kcal 섭취, {used} kcal 소모.",
+      "dayLine": "{intake} kcal 섭취, {used} kcal 소모",
+      "estimated": "이 중 {days}일은 측정값이 없어 휴식 에너지를 체중, 키, 나이, 성별로 추정했습니다(Mifflin-St Jeor).",
+      "needsProfile": "섭취량은 있지만 휴식 에너지가 들어오지 않았습니다. 프로필에 키, 생년월일, 성별을 추가하고 체중을 기록하면 균형이 추정됩니다.",
+      "needsExpenditure": "섭취량은 있지만 같은 날 활동 에너지가 들어오지 않아 아직 보여 줄 균형이 없습니다."
     }
   },
   "daily": {
