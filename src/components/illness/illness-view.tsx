@@ -54,8 +54,8 @@ import { IllnessInsightsCard } from "./illness-insights-card";
 import { SymptomsSection } from "@/components/symptoms/symptoms-section";
 import { groupEpisodes } from "./group-episodes";
 import { useIllnessEpisodes, useResolveEpisode } from "./use-illness";
-import { toLocalDateKey } from "./dates";
 import type { IllnessEpisodeDTO } from "./types";
+import { userDayKey } from "@/lib/tz/format";
 
 /**
  * The flares and recurring bouts filed under a condition, inside its card or
@@ -534,7 +534,7 @@ export function IllnessView() {
           date={logLastDay}
           onsetDate={
             logEpisode
-              ? toLocalDateKey(logEpisode.onsetAt, timeZone)
+              ? userDayKey(new Date(logEpisode.onsetAt), timeZone)
               : undefined
           }
         />

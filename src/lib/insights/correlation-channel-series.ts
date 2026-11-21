@@ -42,7 +42,6 @@ import {
   type NamedSeries,
 } from "@/lib/insights/correlation-discovery";
 import { resolveLabFields } from "@/lib/labs/serialise";
-import { wallClockInTz } from "@/lib/tz/wall-clock";
 import {
   ENVIRONMENT_FIELDS,
   environmentFieldValue,
@@ -486,12 +485,6 @@ export async function fetchSymptomEventSeries(
   return series;
 }
 
-/** Day key (YYYY-MM-DD) for an instant in the user's display timezone. */
-function tzDayKey(at: Date, tz: string): string {
-  const { year, month, day } = wallClockInTz(at, tz);
-  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-}
-
 const MEASUREMENT_READ_CAP = 20000;
 const MOOD_READ_CAP = 5000;
 
@@ -628,7 +621,7 @@ function factorDailyMeans(
   for (const l of links) {
     if (!Number.isFinite(l.rating)) continue;
     const value = l.inverse ? l.scaleMin + l.scaleMax - l.rating : l.rating;
-    const day = tzDayKey(l.at, tz);
+    const day = userDayKey(l.at, tz);
     const days =
       byFactor.get(l.key) ?? new Map<string, { sum: number; count: number }>();
     const acc = days.get(day) ?? { sum: 0, count: 0 };
@@ -733,7 +726,7 @@ export function toDailyMeans(
   const byDay = new Map<string, { sum: number; count: number }>();
   for (const r of rows) {
     if (!Number.isFinite(r.value)) continue;
-    const day = tzDayKey(r.at, tz);
+    const day = userDayKey(r.at, tz);
     const acc = byDay.get(day) ?? { sum: 0, count: 0 };
     acc.sum += r.value;
     acc.count += 1;
@@ -850,14 +843,14 @@ function buildCumulativeDailySeries(
         })),
         metricKey,
         priorityJson,
-        (d) => tzDayKey(d, tz),
+        (d) => userDayKey(d, tz),
       ).canonicalRows
     : rows.map((r) => ({ measuredAt: r.at, value: r.value }));
 
   const byDay = new Map<string, number>();
   for (const row of canonicalRows) {
     if (!Number.isFinite(row.value)) continue;
-    const key = tzDayKey(row.measuredAt, tz);
+    const key = userDayKey(row.measuredAt, tz);
     byDay.set(key, (byDay.get(key) ?? 0) + row.value);
   }
   return [...byDay.entries()]
@@ -1138,7 +1131,7 @@ export async function fetchLabDraws(
     const resolved = resolveLabFields(row, row.biomarker);
     draws.push({
       key: `LAB:${resolved.analyte}`,
-      day: tzDayKey(row.takenAt, tz),
+      day: userDayKey(row.takenAt, tz),
       value: row.value,
     });
   }

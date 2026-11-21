@@ -48,19 +48,6 @@ export function windowToDays(window: CoachScopeWindow): number {
 }
 
 /**
- * YYYY-MM-DD day key anchored to the user's display timezone. The
- * prompt asks the Coach "did you read at 23:50 last night?" — that
- * "last night" answer has to use the user's clock, not UTC. Up to
- * v1.4.24 the day-key was UTC, so a 23:50 Pacific/Auckland reading
- * landed in the next UTC day's bucket and the Coach couldn't pair it
- * with the user's mental model. Delegates to the canonical
- * `userDayKey` so every day-bucket surface stays byte-aligned.
- */
-export function tzDayKey(date: Date, tz: string): string {
-  return userDayKey(date, tz);
-}
-
-/**
  * 0..6 → "Sun".."Sat" using the user's tz so "last Monday" in the
  * prompt agrees with the calendar the user is looking at.
  */
@@ -84,7 +71,7 @@ export function isoWeekKey(date: Date, tz: string): string {
   // Resolve the wall-clock date in the user's tz, then compute the ISO
   // week from that calendar date. The Thursday-alignment math is the
   // standard ISO 8601 algorithm.
-  const dayKey = tzDayKey(date, tz);
+  const dayKey = userDayKey(date, tz);
   const [y, m, d] = dayKey.split("-").map(Number);
   const localMidnight = new Date(Date.UTC(y, m - 1, d));
   const dayNum = localMidnight.getUTCDay() || 7;
@@ -128,7 +115,7 @@ function dailyMeans<T extends { measuredAt: Date; value: number }>(
 ): Map<string, { date: Date; values: number[] }> {
   const grouped = new Map<string, { date: Date; values: number[] }>();
   for (const r of rows) {
-    const key = tzDayKey(r.measuredAt, tz);
+    const key = userDayKey(r.measuredAt, tz);
     const existing = grouped.get(key);
     if (existing) {
       existing.values.push(r.value);
@@ -145,7 +132,7 @@ function groupRowsByDay(
 ): Map<string, Array<{ measuredAt: Date; value: number }>> {
   const out = new Map<string, Array<{ measuredAt: Date; value: number }>>();
   for (const r of rows) {
-    const key = tzDayKey(r.measuredAt, tz);
+    const key = userDayKey(r.measuredAt, tz);
     const list = out.get(key);
     if (list) list.push(r);
     else out.set(key, [r]);
@@ -441,7 +428,7 @@ export function bpBandFromRows(
   const byDay = new Map<string, { sum: number; count: number }>();
   for (const r of rows) {
     // The user's day, like every other day mean in the snapshot.
-    const day = tzDayKey(r.measuredAt, tz);
+    const day = userDayKey(r.measuredAt, tz);
     const acc = byDay.get(day) ?? { sum: 0, count: 0 };
     acc.sum += r.value;
     acc.count += 1;

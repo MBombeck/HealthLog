@@ -18,7 +18,7 @@
  * `runConsolidation` driver below; each drain stays a thin caller that
  * supplies its reducer/types and keeps its own public summary shape.
  *
- * The timezone day-math helpers (`dayKeyForUserTz`,
+ * The timezone day-math helpers (`userDayKey`,
  * `canonicalDailyTimestamp`), the
  * `PerSampleRow` shape, and `CONSOLIDATION_GRACE_CUTOFF_HOURS` all live
  * in the dependency-free leaf `consolidation-tz.ts`. Both this module
@@ -40,11 +40,10 @@ import { reportJobProgress } from "@/lib/jobs/job-observer";
 import {
   CONSOLIDATION_GRACE_CUTOFF_HOURS,
   canonicalDailyTimestamp,
-  dayKeyForUserTz,
   foldBoundary,
   type PerSampleRow,
 } from "./consolidation-tz";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 import { resolveStoredTimezone } from "@/lib/tz/resolver";
 
 // Re-export the shared grace constant so the established
@@ -148,7 +147,7 @@ export function bucketRowsByDay(
     if (row.externalId !== null && row.externalId.startsWith(statsPrefix)) {
       continue;
     }
-    const key = dayKeyForUserTz(row.measuredAt, tz);
+    const key = userDayKey(row.measuredAt, tz);
     const slot = byDay.get(key) ?? [];
     slot.push(row);
     byDay.set(key, slot);
@@ -415,7 +414,7 @@ export async function* iterateDayBuckets<
       ) {
         continue;
       }
-      const key = dayKeyForUserTz(row.measuredAt, tz);
+      const key = userDayKey(row.measuredAt, tz);
       if (key !== currentKey) {
         if (currentKey !== null && current.length > 0) {
           yield [currentKey, current];

@@ -69,7 +69,6 @@ import {
 import { resolveUserTimezone } from "@/lib/measurements/consolidation-base";
 import {
   CONSOLIDATION_GRACE_CUTOFF_HOURS,
-  dayKeyForUserTz,
   hourOfDayForUserTz,
 } from "@/lib/measurements/consolidation-tz";
 import {
@@ -82,6 +81,7 @@ import {
   SERVER_PULLED_FOLD_SOURCES,
   DENSE_INTRADAY_RETENTION_TYPES,
 } from "@/lib/measurements/dense-intraday-sources";
+import { userDayKey } from "@/lib/tz/format";
 
 /** The per-entry status reason the batch result carries for such a row. */
 export type FoldedWindowReason = "folded_window";
@@ -142,11 +142,11 @@ export function isWindowFoldedAt(
 ): boolean {
   const rule = ruleFor(row);
   if (!rule) return false;
-  const firstOpenDay = dayKeyForUserTz(
+  const firstOpenDay = userDayKey(
     new Date(at.getTime() - rule.foldedAfterMs),
     tz,
   );
-  return dayKeyForUserTz(row.measuredAt, tz) < firstOpenDay;
+  return userDayKey(row.measuredAt, tz) < firstOpenDay;
 }
 
 /** Every type either rule folds. */
@@ -199,7 +199,7 @@ export function coveringStatsExternalId(
 ): string | null {
   const hk = hkIdentifierForType(row.type);
   if (!hk) return null;
-  const dateKey = dayKeyForUserTz(row.measuredAt, tz);
+  const dateKey = userDayKey(row.measuredAt, tz);
   if (DENSE_INTRADAY_RETENTION_TYPES.has(row.type)) {
     return hourlyStatsExternalId(
       hk,

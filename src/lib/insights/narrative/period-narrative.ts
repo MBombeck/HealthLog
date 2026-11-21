@@ -45,7 +45,6 @@ import type { MeasurementType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import type { Locale } from "@/lib/i18n/config";
 import { annotate } from "@/lib/logging/context";
-import { wallClockInTz } from "@/lib/tz/wall-clock";
 import {
   discoverCorrelations,
   withoutModelFencedPairs,
@@ -56,7 +55,7 @@ import { buildBaselineBand } from "@/lib/insights/derived/baseline";
 import { VITALS_BASELINE_TYPES } from "@/lib/insights/derived/registry";
 import { assembleDiscoveryMatrix } from "@/lib/insights/discovery-matrix";
 import { resolveModuleMap } from "@/lib/modules/gate";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 import {
   applyDisplayTransform,
   applyDisplayTransformDelta,
@@ -259,12 +258,6 @@ export type PeriodNarrativeResult =
   PeriodNarrativeContext | PeriodNarrativeInsufficient;
 
 // ── pure helpers ──────────────────────────────────────────────────────────
-
-/** YYYY-MM-DD day key for an instant in the user's display timezone. */
-function tzDayKey(at: Date, tz: string): string {
-  const { year, month, day } = wallClockInTz(at, tz);
-  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-}
 
 /** Round to 2 decimals. */
 function round2(n: number): number {
@@ -577,11 +570,11 @@ export async function buildPeriodNarrativeContext(
     glucoseUnit: profile?.glucoseUnit,
   });
 
-  const currentFrom = tzDayKey(
+  const currentFrom = userDayKey(
     new Date(now.getTime() - periodDays * MS_PER_DAY),
     tz,
   );
-  const priorFrom = tzDayKey(
+  const priorFrom = userDayKey(
     new Date(now.getTime() - periodDays * 2 * MS_PER_DAY),
     tz,
   );

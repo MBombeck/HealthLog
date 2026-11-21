@@ -9,8 +9,8 @@ import {
   dayHistoryState,
   historyEntryOwnedByLayer,
   parseDayParam,
-  shiftDateKey,
 } from "./day-url";
+import { shiftDateKey } from "@/lib/tz/format";
 
 /**
  * Opening, stepping and closing the day layer from anywhere in the app.

@@ -40,10 +40,7 @@ import {
   dailyStatsExternalId,
   mapAppleHealthEntry,
 } from "@/lib/measurements/apple-health-mapping";
-import {
-  dayKeyForUserTz,
-  canonicalDailyTimestamp,
-} from "@/lib/measurements/drain-per-sample-cumulative";
+import { canonicalDailyTimestamp } from "@/lib/measurements/drain-per-sample-cumulative";
 import { isHealthLogOriginEntry } from "@/lib/apple-health/own-origin";
 import {
   routeClinicalRecord,
@@ -87,6 +84,7 @@ import {
   type CycleImportStats,
 } from "@/lib/cycle/import-accumulator";
 import { HK_SEXUAL_ACTIVITY_PROTECTION_META } from "@/lib/cycle/healthkit-mapping";
+import { userDayKey } from "@/lib/tz/format";
 
 /**
  * Reverse-lookup for the symbolic `HKCategoryValueSleepAnalysis*`
@@ -1224,7 +1222,7 @@ export async function streamParseExportXml(
       // attach. The accumulator's per-day bucketing handles same-day
       // merges + idempotent re-import.
       if (CycleImportAccumulator.handles(hkType)) {
-        const dayKey = dayKeyForUserTz(
+        const dayKey = userDayKey(
           new Date(attrs.endDate ?? attrs.startDate ?? ""),
           userTimezone,
         );
@@ -1322,7 +1320,7 @@ export async function streamParseExportXml(
           ),
         commit: (healthLogId, marked) => {
           if (CUMULATIVE_HK_TYPES.has(mapped.type)) {
-            const dayKey = dayKeyForUserTz(mapped.takenAt, userTimezone);
+            const dayKey = userDayKey(mapped.takenAt, userTimezone);
             const sourceHash = hashCumulativeSourceIdentity(
               attrs.sourceName,
               attrs.device,

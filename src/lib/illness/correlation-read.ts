@@ -18,18 +18,17 @@
  * Reads are DAY-native (the spread invariant forbids composing a band from a
  * coarser tier's `sd`): the rollup DAY tier when covered, a bounded per-type
  * live-SQL fallback on a coverage miss. EVERY per-day key is the USER'S local
- * day (`dayKeyForUserTz`), never a raw UTC slice — the onset/feltBetter markers
+ * day (`userDayKey`), never a raw UTC slice — the onset/feltBetter markers
  * are already keyed in the user's tz, so the vital series must match or a
  * non-UTC user gets an off-by-one (a 03:00Z reading is local D−1 but UTC D).
  * Rollup DAY buckets are minted at the UTC midnight of the user-tz day, so
- * keying their `bucketStart` through `dayKeyForUserTz` is exact.
+ * keying their `bucketStart` through `userDayKey` is exact.
  */
 import pLimit from "p-limit";
 import type { MeasurementType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { readBestGranularityRollups } from "@/lib/rollups/measurement-read-wmy";
 import { probeRollupCoverage } from "@/lib/rollups/measurement-coverage";
-import { dayKeyForUserTz } from "@/lib/measurements/consolidation-tz";
 import { dayValue } from "@/lib/measurements/day-mean";
 import { resolveUserTimezone } from "@/lib/measurements/consolidation-base";
 import { reconstructNights } from "@/lib/insights/derived/sleep-score";
@@ -46,6 +45,7 @@ import {
   type SymptomBurdenPoint,
   type VitalSeries,
 } from "./correlation";
+import { userDayKey } from "@/lib/tz/format";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -94,9 +94,9 @@ export async function computeEpisodeCorrelation(
     baselineEnd.getTime() - BASELINE_WINDOW_DAYS * MS_PER_DAY,
   );
 
-  const onsetDay = dayKeyForUserTz(onset, tz);
+  const onsetDay = userDayKey(onset, tz);
   const feltBetterDay = episode.resolvedAt
-    ? dayKeyForUserTz(episode.resolvedAt, tz)
+    ? userDayKey(episode.resolvedAt, tz)
     : null;
 
   // One coverage probe shared across every vital read (pool-contention
@@ -229,12 +229,12 @@ async function readWindowMeans(
       resolved.granularity === "DAY" &&
       resolved.rows.length > 0
     ) {
-      const fromKey = dayKeyForUserTz(from, tz);
+      const fromKey = userDayKey(from, tz);
       // DAY buckets are minted at the UTC midnight of the user-tz day, so
       // keying `bucketStart` through the user tz is exact.
       const points = resolved.rows
         .map((row) => ({
-          day: dayKeyForUserTz(row.bucketStart, tz),
+          day: userDayKey(row.bucketStart, tz),
           mean: row.mean,
           max: row.maxValue ?? row.mean,
         }))
@@ -259,7 +259,7 @@ async function readWindowMeans(
   if (rows.length === 0) return { points: [], source: "none" };
   const byDay = new Map<string, { rows: typeof rows; max: number }>();
   for (const row of rows) {
-    const day = dayKeyForUserTz(row.measuredAt, tz);
+    const day = userDayKey(row.measuredAt, tz);
     const acc = byDay.get(day) ?? { rows: [], max: -Infinity };
     acc.rows.push(row);
     acc.max = Math.max(acc.max, row.value);
@@ -289,8 +289,8 @@ async function readDayLogFever(
   to: Date,
   tz: string,
 ): Promise<DayLogFeverPoint[]> {
-  const fromKey = dayKeyForUserTz(from, tz);
-  const toKey = dayKeyForUserTz(to, tz);
+  const fromKey = userDayKey(from, tz);
+  const toKey = userDayKey(to, tz);
   const rows = await prisma.illnessDayLog.findMany({
     where: {
       episodeId,
@@ -328,8 +328,8 @@ async function readDayLogSymptomBurden(
   to: Date,
   tz: string,
 ): Promise<SymptomBurdenPoint[]> {
-  const fromKey = dayKeyForUserTz(from, tz);
-  const toKey = dayKeyForUserTz(to, tz);
+  const fromKey = userDayKey(from, tz);
+  const toKey = userDayKey(to, tz);
   const rows = await prisma.illnessDayLog.findMany({
     where: {
       episodeId,

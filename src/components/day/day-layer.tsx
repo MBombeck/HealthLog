@@ -58,11 +58,12 @@ import {
   takeDayYield,
   useDayFocus,
 } from "./day-layer-controller";
-import { parseDayParam, shiftDateKey, stripDayOf } from "./day-url";
+import { parseDayParam, stripDayOf } from "./day-url";
 import { useLongDayLabel } from "./day-label";
 import type { DayViewProps } from "./day-view";
 import { usePrefetchDay } from "./use-day";
 import { useTodayKey } from "./use-today-key";
+import { shiftDateKey } from "@/lib/tz/format";
 
 /**
  * The day layer, mounted once by the shell so `?day=` opens a day over any

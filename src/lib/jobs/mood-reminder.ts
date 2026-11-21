@@ -33,7 +33,7 @@ import {
   DEFAULT_MOOD_REMINDER_HOUR,
   resolveMoodReminderHour,
 } from "@/lib/validations/notification-prefs";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 
 /**
  * Default hour of day (in the user's local timezone) at which the mood
@@ -90,14 +90,12 @@ export function evaluateMoodReminderWindow(
     return { fire: false, localDate: null, localHour: -1 };
   }
   const targetHour = user.reminderHour ?? MOOD_REMINDER_LOCAL_HOUR;
-  const parts = wallClockInTz(now, user.timezone || DEFAULT_TIMEZONE);
+  const tz = user.timezone || DEFAULT_TIMEZONE;
+  const parts = wallClockInTz(now, tz);
   const inWindow = parts.hour === targetHour;
-  const isoDate = `${parts.year.toString().padStart(4, "0")}-${parts.month
-    .toString()
-    .padStart(2, "0")}-${parts.day.toString().padStart(2, "0")}`;
   return {
     fire: inWindow,
-    localDate: inWindow ? isoDate : null,
+    localDate: inWindow ? userDayKey(now, tz) : null,
     localHour: parts.hour,
   };
 }

@@ -57,7 +57,6 @@ import {
 import {
   CONSOLIDATION_GRACE_CUTOFF_HOURS,
   canonicalDailyTimestamp,
-  dayKeyForUserTz,
   type PerSampleRow,
 } from "./consolidation-tz";
 import {
@@ -72,7 +71,7 @@ import {
 // keeps resolving them from here. The definitions moved to the
 // dependency-free leaf `consolidation-tz.ts` to break the init-order
 // cycle with `consolidation-base.ts`.
-export { canonicalDailyTimestamp, dayKeyForUserTz };
+export { canonicalDailyTimestamp };
 export type { PerSampleRow };
 
 /** Prefix marking an already-collapsed daily-stats row. */

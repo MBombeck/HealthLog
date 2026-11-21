@@ -3,10 +3,7 @@ import { annotate } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
 import { metricKeyForType } from "@/lib/measurements/cumulative-day-sum";
 import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
-import {
-  canonicalDailyTimestamp,
-  dayKeyForUserTz,
-} from "@/lib/measurements/drain-per-sample-cumulative";
+import { canonicalDailyTimestamp } from "@/lib/measurements/drain-per-sample-cumulative";
 import { localDayWindow } from "@/lib/tz/local-day";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { resolveStoredTimezone } from "@/lib/tz/resolver";
@@ -16,6 +13,7 @@ import {
   type MeasurementType,
 } from "@/generated/prisma/client";
 import { pageWithWindowTotal } from "./paging";
+import { userDayKey } from "@/lib/tz/format";
 
 /**
  * The day-grouped list for a cumulative type, paged over local days.
@@ -158,7 +156,7 @@ export async function dayGroupedListResponse(
   const priorityJson = metricKey ? await loadUserSourcePriority(user.id) : null;
   const canonicalGroups = metricKey
     ? pickCanonicalSourceRows(groupRows, metricKey, priorityJson, (d) =>
-        dayKeyForUserTz(d, tz),
+        userDayKey(d, tz),
       ).canonicalRows
     : groupRows;
 

@@ -32,7 +32,6 @@ vi.mock("@/lib/insights/derived/baseline", () => ({
 }));
 
 import {
-  stressDayKey,
   stressExternalId,
   stressMeasuredAt,
   stressProxyFromSdnn,
@@ -75,7 +74,6 @@ describe("stress-score helpers", () => {
   it("scores the PREVIOUS UTC day (cron fires in the small hours)", () => {
     // NOW is 2026-06-02 → the scored day is the just-completed 2026-06-01,
     // whose intra-day SDNN set is complete rather than a few hours old.
-    expect(stressDayKey(NOW)).toBe("2026-06-01");
     expect(stressExternalId(NOW)).toBe(
       `${STRESS_SCORE_EXTERNAL_ID_PREFIX}2026-06-01`,
     );

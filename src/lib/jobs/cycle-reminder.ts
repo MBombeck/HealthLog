@@ -49,7 +49,7 @@ import { dispatchNotification } from "@/lib/notifications/dispatcher";
 import type { EventType } from "@/lib/notifications/types";
 import { isCycleReminderClientManaged } from "@/lib/validations/notification-prefs";
 import { getEvent } from "@/lib/logging/context";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 import { logCaught } from "@/lib/logging/signal";
 
 /**
@@ -141,11 +141,9 @@ export function cycleReminderLocalDate(
   now: Date,
   timezone: string,
 ): string | null {
-  const parts = wallClockInTz(now, timezone || DEFAULT_TIMEZONE);
-  if (parts.hour !== CYCLE_REMINDER_LOCAL_HOUR) return null;
-  return `${parts.year.toString().padStart(4, "0")}-${parts.month
-    .toString()
-    .padStart(2, "0")}-${parts.day.toString().padStart(2, "0")}`;
+  const tz = timezone || DEFAULT_TIMEZONE;
+  if (wallClockInTz(now, tz).hour !== CYCLE_REMINDER_LOCAL_HOUR) return null;
+  return userDayKey(now, tz);
 }
 
 /**

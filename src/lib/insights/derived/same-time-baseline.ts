@@ -30,11 +30,10 @@ import { prisma } from "@/lib/db";
 import {
   PROFILE_HOURS,
   readCumulativeDayProfiles,
-  localDateKey,
   type CumulativeDayProfile,
 } from "@/lib/measurements/intraday-cumulative-profile";
 import { hourOfDayForUserTz } from "@/lib/measurements/consolidation-tz";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 
 import { buildBaselineBand, type BaselineProfile } from "./baseline";
 import { buildInsufficient, buildOk, deriveCoverage } from "./coverage";
@@ -149,7 +148,7 @@ export async function computeSameTimeBaseline(
     select: { timezone: true },
   });
   const timezone = user?.timezone || DEFAULT_TIMEZONE;
-  const dateKey = localDateKey(now, timezone);
+  const dateKey = userDayKey(now, timezone);
 
   const gate = (reason: string, historyDays: number) =>
     buildInsufficient<SameTimeBaselineValue>({

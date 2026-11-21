@@ -39,11 +39,7 @@ import type {
 import { prisma } from "@/lib/db";
 import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 
-import {
-  dayKeyForUserTz,
-  hourOfDayForUserTz,
-  type PerSampleRow,
-} from "./consolidation-tz";
+import { hourOfDayForUserTz, type PerSampleRow } from "./consolidation-tz";
 import { localDayWindow } from "@/lib/tz/local-day";
 
 /** Hours in a stored profile. Always 24, DST days included — see below. */
@@ -150,7 +146,7 @@ export function foldHourlyCumulative(
 
   for (const row of rows) {
     if (row.externalId?.startsWith(DAILY_STATS_PREFIX)) continue;
-    if (dayKeyForUserTz(row.measuredAt, timezone) !== dateKey) continue;
+    if (userDayKey(row.measuredAt, timezone) !== dateKey) continue;
     const hour = hourOfDayForUserTz(row.measuredAt, timezone);
     if (hour < 0 || hour >= PROFILE_HOURS) continue;
     perHour[hour] += row.value;
@@ -404,12 +400,4 @@ async function foldLiveDay(
     },
   });
   return foldHourlyCumulative(rows, dateKey, timezone);
-}
-
-/**
- * The caller's local calendar day. Thin wrapper so a consumer of this module
- * never has to reach for a second day-key implementation.
- */
-export function localDateKey(now: Date, timezone: string): string {
-  return userDayKey(now, timezone);
 }
