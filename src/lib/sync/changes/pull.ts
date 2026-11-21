@@ -71,6 +71,7 @@ async function expiry(
   token: string | undefined,
   cursor: SyncCursor,
   serverNow: Date,
+  cycleEnabled: boolean,
 ): Promise<"retention" | "sync_reset" | null> {
   const retentionHorizon = new Date(
     serverNow.getTime() - TOMBSTONE_RETENTION_DAYS * DAY_MS,
@@ -78,8 +79,16 @@ async function expiry(
   // Not `measurementMirror`: its watermark is when a token's setting last
   // changed, which can be any age, and the domain re-delivers values, not
   // deletions, so no pruned tombstone can hide behind it.
+  // Nor the cycle domains while the module is off: this pull does not read
+  // them and leaves their watermarks where they stand, so a client pulling
+  // every day would otherwise expire 75 days after the cursor was issued.
+  // Turning the module back on brings them into the check again, which is
+  // when a frozen watermark past retention does need a rebuild.
   const pastRetention = SYNC_DOMAINS.some((domain) => {
     if (domain === "measurementMirror") return false;
+    if (!cycleEnabled && (domain === "cycleDays" || domain === "cycles")) {
+      return false;
+    }
     const wm = cursor[domain];
     return wm !== undefined && wm.updatedAtMs < retentionHorizon.getTime();
   });
@@ -172,7 +181,7 @@ export async function pullSyncChanges(input: {
   // initial sync (every domain scans from the start).
   const cursor: SyncCursor = token ? (decodeCursor(token) ?? {}) : {};
 
-  const expired = await expiry(userId, token, cursor, serverNow);
+  const expired = await expiry(userId, token, cursor, serverNow, cycleEnabled);
   if (expired) {
     annotate({
       action: { name: "sync.changes.pull" },
