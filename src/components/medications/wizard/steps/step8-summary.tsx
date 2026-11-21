@@ -58,7 +58,12 @@ export function Step8Summary({
 }: Step8SummaryProps) {
   const { t } = useTranslations();
   const formatters = useFormatters();
-  const topSummary = summariseCadence(payload, t, formatters.date);
+  const topSummary = summariseCadence(
+    payload,
+    t,
+    formatters.date,
+    formatters.wallTime,
+  );
   const canRemove = payload.schedules.length > 1;
 
   // Reminders need at least one delivery channel. Fetch the channel
@@ -97,7 +102,11 @@ export function Step8Summary({
 
       <div className="space-y-2" data-slot="wizard-schedule-list">
         {payload.schedules.map((draft, index) => {
-          const cardSummary = summariseScheduleDraft(draft, t);
+          const cardSummary = summariseScheduleDraft(
+            draft,
+            t,
+            formatters.wallTime,
+          );
           return (
             <div
               key={index}

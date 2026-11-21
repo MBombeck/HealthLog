@@ -591,6 +591,7 @@ function MedicationTableRowItem({
             currentWindowStatus.window!.start,
             currentWindowStatus.window!.end,
             locale,
+            fmt.wallTime,
           )}
         </span>
       );
@@ -616,6 +617,7 @@ function MedicationTableRowItem({
             nextSchedule.windowStart,
             nextSchedule.windowEnd,
             locale,
+            fmt.wallTime,
           )}
         </span>
       );

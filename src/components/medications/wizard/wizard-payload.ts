@@ -1091,6 +1091,9 @@ export function summariseCadence(
   // instead of the raw ISO string. The ISO default keeps the helper pure
   // for non-React callers.
   formatDate: (d: Date) => string = dateToIsoString,
+  // UI callers pass `useFormatters().wallTime` so the dose times follow the
+  // reader's 12 h / 24 h preference like every other clock on the page.
+  wallTime: (hhmm: string) => string = (hhmm) => hhmm,
 ): string {
   const cadenceLine = cadenceLineFor(payload, t);
   const timesPhrase =
@@ -1098,7 +1101,7 @@ export function summariseCadence(
     payload.mode !== "asNeeded" &&
     payload.timesOfDay.length > 0
       ? t("medications.wizard.summary.times", {
-          times: sortTimes(payload.timesOfDay).join(", "),
+          times: sortTimes(payload.timesOfDay).map(wallTime).join(", "),
         })
       : "";
   const startPhrase = payload.startsOn
@@ -1127,6 +1130,7 @@ export function summariseCadence(
 export function summariseScheduleDraft(
   draft: ScheduleDraft,
   t: (key: string, params?: Record<string, string | number>) => string,
+  wallTime: (hhmm: string) => string = (hhmm) => hhmm,
 ): string {
   const cadenceLine = cadenceLineFor(draft, t);
   const timesPhrase =
@@ -1134,7 +1138,7 @@ export function summariseScheduleDraft(
     draft.mode !== "asNeeded" &&
     draft.timesOfDay.length > 0
       ? t("medications.wizard.summary.times", {
-          times: sortTimes(draft.timesOfDay).join(", "),
+          times: sortTimes(draft.timesOfDay).map(wallTime).join(", "),
         })
       : "";
   return [cadenceLine, timesPhrase].filter(Boolean).join(" · ");

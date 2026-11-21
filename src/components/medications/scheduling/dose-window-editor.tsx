@@ -23,7 +23,7 @@ import { useCallback, useId, useMemo, useState } from "react";
 import { TimeField } from "@/components/ui/time-field";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import {
   buildRows,
   isOrderedRange,
@@ -64,6 +64,7 @@ export function DoseWindowEditor({
   idPrefix,
 }: DoseWindowEditorProps) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const generatedId = useId();
   const prefix = idPrefix ?? generatedId;
 
@@ -162,7 +163,7 @@ export function DoseWindowEditor({
             >
               <div className="flex items-center justify-between gap-3">
                 <span className="text-foreground text-sm font-medium tabular-nums">
-                  {row.timeOfDay}
+                  {fmt.wallTime(row.timeOfDay)}
                 </span>
                 <div className="flex items-center gap-2">
                   <Label
@@ -235,8 +236,8 @@ export function DoseWindowEditor({
                 data-slot="dose-window-band"
               >
                 {t("medications.detail.zeitplan.window.onTimeBand", {
-                  start: row.start,
-                  end: row.end,
+                  start: fmt.wallTime(row.start),
+                  end: fmt.wallTime(row.end),
                 })}
                 {scale === "dayScale"
                   ? ` · ${t("medications.detail.zeitplan.window.lateDays", {
@@ -244,7 +245,7 @@ export function DoseWindowEditor({
                     })}`
                   : lateEnd
                     ? ` · ${t("medications.detail.zeitplan.window.lateUntil", {
-                        time: lateEnd,
+                        time: fmt.wallTime(lateEnd),
                       })}`
                     : ""}
               </p>

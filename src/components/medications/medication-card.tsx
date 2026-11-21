@@ -483,7 +483,12 @@ export function MedicationCard({
               {dayLabel && `${dayLabel}, `}
               {nextAt
                 ? formatTime(new Date(nextAt).toISOString())
-                : formatTimeWindowRange(s.windowStart, s.windowEnd, locale)}
+                : formatTimeWindowRange(
+                    s.windowStart,
+                    s.windowEnd,
+                    locale,
+                    fmt.wallTime,
+                  )}
               {s.label && (
                 <span className="hidden sm:inline"> ({s.label})</span>
               )}

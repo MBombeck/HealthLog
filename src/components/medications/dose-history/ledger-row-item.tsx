@@ -102,8 +102,9 @@ export function LedgerRowItem({
 
   // The leading time label: the slot's HH:mm for a slot row, else the ad-hoc
   // take's real clock time.
-  const timeLabel =
-    row.timeOfDay ?? fmt.time(new Date(intake?.takenAt ?? row.at));
+  const timeLabel = row.timeOfDay
+    ? fmt.wallTime(row.timeOfDay)
+    : fmt.time(new Date(intake?.takenAt ?? row.at));
 
   // When a take lands away from its slot, show both anchors so the row reads
   // "geplant 07:00 · genommen 11:29".
@@ -174,7 +175,9 @@ export function LedgerRowItem({
         {showTakeDetail && (
           <p className="text-muted-foreground text-xs">
             {t("medications.detail.verlauf.takenDetail", {
-              planned: row.timeOfDay ?? fmt.time(new Date(row.at)),
+              planned: row.timeOfDay
+                ? fmt.wallTime(row.timeOfDay)
+                : fmt.time(new Date(row.at)),
               taken: fmt.time(new Date(intake!.takenAt!)),
             })}
           </p>

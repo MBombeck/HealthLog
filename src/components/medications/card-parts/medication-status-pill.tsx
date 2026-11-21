@@ -3,7 +3,7 @@ import { CircleCheck } from "lucide-react";
 import { DoseStateLabel } from "@/components/medications/dose-state-label";
 
 import { formatTimeWindowRange } from "@/lib/time-window-format";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { MedicationWindowStatus } from "@/lib/medications/window-status";
 
 interface MedicationStatusPillProps {
@@ -55,6 +55,7 @@ export function MedicationStatusPill({
   inline = false,
 }: MedicationStatusPillProps) {
   const { t, locale } = useTranslations();
+  const fmt = useFormatters();
   const Root = inline ? "span" : "p";
 
   // v1.16.11 — the inline (next-row) variant keeps its window-range
@@ -77,7 +78,13 @@ export function MedicationStatusPill({
         {!compact && (
           <span className={suffixClass}>
             {" "}
-            — {formatTimeWindowRange(windowStart, windowEnd, locale)}
+            —{" "}
+            {formatTimeWindowRange(
+              windowStart,
+              windowEnd,
+              locale,
+              fmt.wallTime,
+            )}
           </span>
         )}
       </Root>
@@ -97,7 +104,8 @@ export function MedicationStatusPill({
       {!compact && (
         <span className={suffixClass}>
           {" "}
-          — {formatTimeWindowRange(windowStart, windowEnd, locale)}
+          —{" "}
+          {formatTimeWindowRange(windowStart, windowEnd, locale, fmt.wallTime)}
         </span>
       )}
     </Root>

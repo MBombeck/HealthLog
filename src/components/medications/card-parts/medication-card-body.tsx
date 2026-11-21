@@ -18,7 +18,7 @@ import { MedicationCycleStatus } from "@/components/medications/card-parts/medic
 import { MedicationIntakeActions } from "@/components/medications/card-parts/medication-intake-actions";
 import { MedicationNextLastSlot } from "@/components/medications/card-parts/medication-next-last-slot";
 import { MedicationNote } from "@/components/medications/medication-note";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { CurrentCycle, DoseStatus } from "@/lib/analytics/compliance";
 import type { MedicationWindowStatus } from "@/lib/medications/window-status";
 
@@ -216,6 +216,7 @@ export function MedicationCardBody({
   highlighted = false,
 }: MedicationCardBodyProps) {
   const { t, locale } = useTranslations();
+  const fmt = useFormatters();
 
   // Escalation of the open dose past its on-time window, in the shared
   // vocabulary: "Overdue" while the late window runs, "Missed" past the miss
@@ -259,6 +260,7 @@ export function MedicationCardBody({
               windowStatus.windowStart,
               windowStatus.windowEnd,
               locale,
+              fmt.wallTime,
             )}
           </span>
         ) : nextLine !== null ? (
