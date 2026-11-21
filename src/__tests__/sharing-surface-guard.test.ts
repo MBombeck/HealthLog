@@ -1140,7 +1140,7 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   },
   "app/api/symptoms/events/[id]/route.ts": {
     domain: "illness",
-    why: "One symptom occurrence of the record, fetch-then-guard against the resolved user. Reached only through this module's MANAGE arm.",
+    why: "One symptom occurrence of the record, fetch-then-guard against the resolved user. The GET is a READ (the save receipt's Edit opens the entry by id); every change is reached only through this module's MANAGE arm.",
   },
   // The seizure diary rides the illness section. A
   // guardian logging for a managed child is the primary user.

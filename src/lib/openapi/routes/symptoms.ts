@@ -427,6 +427,26 @@ export const symptomPaths: NonNullable<ZodOpenApiObject["paths"]> = {
     },
   },
   "/api/symptoms/events/{id}": {
+    get: {
+      tags: ["Symptoms"],
+      summary: "Read one symptom occurrence",
+      description:
+        "The occurrence as the list reads it, for a client that opens one entry by id (the web's save receipt opens its edit sheet from it).",
+      requestParams: pathId,
+      responses: {
+        ...recordRefusal(MODULE_OFF),
+        "200": {
+          description: "The occurrence.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(symptomEvent, "GetSymptomEventEnvelope"),
+            },
+          },
+        },
+        ...eventNotFound,
+        ...stdResponses,
+      },
+    },
     patch: {
       tags: ["Symptoms"],
       summary: "Edit a symptom occurrence (v1.40)",
