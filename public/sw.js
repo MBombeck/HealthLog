@@ -312,11 +312,25 @@ async function networkFirst(event, cacheName) {
 
 // Language-neutral, because the worker ships no catalog: the wordmark, the
 // word "Offline" and a 64 px retry link. It reloads itself when the
-// connection returns, follows the device scheme and keeps clear of the notch.
+// connection returns and keeps clear of the notch. It follows the theme the
+// person chose in the app: the worker cannot read it, but the page is served
+// on the app's origin, so its head script reads the same `healthlog-theme`
+// entry the app's theme bootstrap reads, with the same rule (light, dark, or
+// system = the device scheme; nothing stored = dark), and sets
+// `data-theme` before the body paints. The worker's own response carries no
+// Content-Security-Policy, so the inline script is not refused; without
+// script the device scheme stands.
+const OFFLINE_THEME_SCRIPT =
+  '(function(){var c="dark";try{var t=localStorage.getItem("healthlog-theme");c=t==="light"||t==="dark"?t:t==="system"?(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"):"dark"}catch(e){}document.documentElement.setAttribute("data-theme",c);var m=document.querySelector(\'meta[name="theme-color"]\');if(m)m.setAttribute("content",c==="light"?"#f3f2f5":"#282a36")})()';
+
 const OFFLINE_PAGE =
-  '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="dark light"><title>HealthLog — Offline</title><style>' +
+  '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="dark light"><meta name="theme-color" content="#282a36"><title>HealthLog — Offline</title><script>' +
+  OFFLINE_THEME_SCRIPT +
+  "</script><style>" +
   ":root{--bg:#282a36;--fg:#f8f8f2;--accent:#bd93f9;--muted:#a4a9c9;color-scheme:dark}" +
   "@media (prefers-color-scheme:light){:root{--bg:#f3f2f5;--fg:#1f2030;--accent:#6b46c1;--muted:#5b5e78;color-scheme:light}}" +
+  ":root[data-theme=dark]{--bg:#282a36;--fg:#f8f8f2;--accent:#bd93f9;--muted:#a4a9c9;color-scheme:dark}" +
+  ":root[data-theme=light]{--bg:#f3f2f5;--fg:#1f2030;--accent:#6b46c1;--muted:#5b5e78;color-scheme:light}" +
   "body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--fg);display:flex;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;margin:0;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);box-sizing:border-box}" +
   "main{text-align:center;padding:2rem}h1{color:var(--accent);margin:0 0 .5rem;font-size:2rem;letter-spacing:.05em}p{color:var(--muted);margin:.25rem 0 1.5rem;font-size:1rem}" +
   "a{display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:9999px;color:var(--accent);border:2px solid currentColor}a:focus-visible{outline:3px solid var(--accent);outline-offset:3px}svg{width:28px;height:28px}" +
