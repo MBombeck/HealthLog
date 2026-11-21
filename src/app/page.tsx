@@ -15,6 +15,7 @@ import { resolveDashboardLayout } from "@/lib/dashboard-layout";
 import { settleWithin } from "@/lib/async/settle-within";
 import { loadDailyDigest } from "@/lib/daily/load-digest";
 import { readSeriesBatch } from "@/lib/measurements/series-batch-read";
+import { readRecoveryKit } from "@/lib/recovery/kit";
 import { queryKeys } from "@/lib/query-keys";
 import type { MeasurementType } from "@/generated/prisma/client";
 
@@ -44,7 +45,9 @@ const DIGEST_SOFT_BUDGET_MS = 400;
  *  - the dashboard snapshot (`/api/dashboard/snapshot`) — every tile;
  *  - the Today digest (`/api/daily/digest` → `loadDailyDigest`) — the hero;
  *  - the batched chart series (`/api/measurements/series-batch` →
- *    `readSeriesBatch`) — the chart row.
+ *    `readSeriesBatch`) — the chart row;
+ *  - for an admin, the recovery-kit status (`/api/admin/recovery-kit`) — the
+ *    banner above the hero.
  *
  * Contract notes:
  *  - Query keys come ONLY from the central factory. Every dehydrated VALUE is
@@ -143,10 +146,27 @@ export default async function DashboardPage() {
               .catch(() => undefined)
           : Promise.resolve(undefined);
 
-      const [digest, series] = await Promise.all([
+      // The recovery-kit banner sits above the hero for an admin whose kit is
+      // due. Fetched only after hydration, it pushed the whole page down
+      // once it arrived (the dashboard's layout shift) and was its largest
+      // text, so its paint was the page's LCP. Seeded here, it is in the
+      // first HTML. Admin only, as the route is; instance-wide, not a record.
+      const recoveryKitWork =
+        user.role === "ADMIN"
+          ? readRecoveryKit().catch(() => undefined)
+          : Promise.resolve(undefined);
+
+      const [digest, series, recoveryKit] = await Promise.all([
         settleWithin(digestWork, DIGEST_SOFT_BUDGET_MS, undefined),
         seriesWork,
+        recoveryKitWork,
       ]);
+      if (recoveryKit !== undefined) {
+        queryClient.setQueryData(
+          queryKeys.adminRecoveryKit(),
+          JSON.parse(JSON.stringify(recoveryKit)),
+        );
+      }
 
       // JSON-round-trip both to the client wire shape before seeding.
       if (digest !== undefined) {
