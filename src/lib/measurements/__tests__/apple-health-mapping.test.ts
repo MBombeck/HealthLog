@@ -16,6 +16,7 @@ import {
 } from "@/lib/validations/measurement";
 import type { MeasurementType } from "@/generated/prisma/client";
 import effortSamples from "./fixtures/apple-health-effort-samples.json";
+import sportSamples from "./fixtures/apple-health-sport-samples.json";
 
 /**
  * MeasurementType values that Apple HealthKit has no native counterpart
@@ -803,6 +804,9 @@ describe("dailyStatsExternalId (v1.4.30 — R-A Option A handoff lock)", () => {
         "HKQuantityTypeIdentifierAppleStandTime",
         "HKCategoryTypeIdentifierAppleStandHour",
         "HKCategoryTypeIdentifierMindfulSession",
+        // #1415 — cycling and rowing distance.
+        "HKQuantityTypeIdentifierDistanceCycling",
+        "HKQuantityTypeIdentifierDistanceRowing",
       ].sort(),
     );
   });
@@ -911,6 +915,13 @@ describe("HIGH_FREQUENCY_MEAN_TYPES (v1.7.0)", () => {
         // granularity; the per-day mean is the right consolidation.
         "STAIR_ASCENT_SPEED",
         "STAIR_DESCENT_SPEED",
+        // #1415 — running dynamics and rowing speed, per sample in a workout.
+        "ROWING_SPEED",
+        "RUNNING_SPEED",
+        "RUNNING_POWER",
+        "RUNNING_GROUND_CONTACT_TIME",
+        "RUNNING_VERTICAL_OSCILLATION",
+        "RUNNING_STRIDE_LENGTH",
       ].sort(),
     );
   });
@@ -1455,5 +1466,94 @@ describe("Apple effort — logged score, watch estimate, physical effort", () =>
     expect(validateMeasurementRange("PHYSICAL_EFFORT", 50)).toBeNull();
     expect(validateMeasurementRange("PHYSICAL_EFFORT", -1)).not.toBeNull();
     expect(validateMeasurementRange("PHYSICAL_EFFORT", 50.1)).not.toBeNull();
+  });
+});
+
+describe("Apple sport quantities (#1415)", () => {
+  it("maps every fixture sample onto its own type and keeps the number", () => {
+    const types = new Set<string>();
+    for (const sample of sportSamples.samples) {
+      const out = mapAppleHealthEntry({
+        hkIdentifier: sample.hkIdentifier,
+        value: sample.value,
+        unit: sample.unit,
+        startDate: sample.startDate,
+        endDate: sample.endDate,
+      });
+      expect(out, sample.hkIdentifier).toMatchObject({
+        ...sample.expected,
+        takenAt: new Date(sample.endDate),
+      });
+      expect(HK_QUANTITY_TYPE_DEFERRED.has(sample.hkIdentifier)).toBe(false);
+      expect(
+        validateMeasurementRange(
+          sample.expected.type as MeasurementType,
+          sample.expected.value,
+        ),
+        sample.hkIdentifier,
+      ).toBeNull();
+      types.add(sample.expected.type);
+    }
+    expect(types.size).toBe(sportSamples.samples.length);
+  });
+
+  it("sums the two distances per day and averages everything else", () => {
+    for (const type of ["CYCLING_DISTANCE", "ROWING_DISTANCE"] as const) {
+      expect(CUMULATIVE_HK_TYPES.has(type)).toBe(true);
+      expect(HIGH_FREQUENCY_MEAN_TYPES.has(type)).toBe(false);
+    }
+    for (const type of [
+      "ROWING_SPEED",
+      "RUNNING_SPEED",
+      "RUNNING_POWER",
+      "RUNNING_GROUND_CONTACT_TIME",
+      "RUNNING_VERTICAL_OSCILLATION",
+      "RUNNING_STRIDE_LENGTH",
+    ] as const) {
+      expect(HIGH_FREQUENCY_MEAN_TYPES.has(type)).toBe(true);
+      expect(CUMULATIVE_HK_TYPES.has(type)).toBe(false);
+      const hk = hkIdentifierForType(type);
+      expect(hk).not.toBeNull();
+      expect(APPLE_HEALTH_TYPE_MAP[hk!]!.aggregation).toBe("mean");
+    }
+  });
+
+  it("converts an archive record written in the account's display unit", () => {
+    // A metric account writes cycling distance in km and ground contact
+    // time can arrive in seconds; both land in the canonical unit.
+    expect(
+      mapAppleHealthEntry(
+        {
+          hkIdentifier: "HKQuantityTypeIdentifierDistanceCycling",
+          value: 12.5,
+          unit: "km",
+          startDate: "2026-06-02T06:00:00.000Z",
+          endDate: "2026-06-02T06:40:00.000Z",
+        },
+        { convertRecordUnit: true },
+      ),
+    ).toMatchObject({ type: "CYCLING_DISTANCE", value: 12500, unit: "m" });
+    expect(
+      mapAppleHealthEntry(
+        {
+          hkIdentifier: "HKQuantityTypeIdentifierRunningGroundContactTime",
+          value: 0.25,
+          unit: "s",
+          startDate: "2026-06-03T05:30:00.000Z",
+          endDate: "2026-06-03T05:30:05.000Z",
+        },
+        { convertRecordUnit: true },
+      ),
+    ).toMatchObject({ type: "RUNNING_GROUND_CONTACT_TIME", value: 250 });
+  });
+
+  it("refuses a stride measure that slipped a unit", () => {
+    expect(
+      validateMeasurementRange("RUNNING_VERTICAL_OSCILLATION", 86),
+    ).not.toBeNull();
+    expect(
+      validateMeasurementRange("RUNNING_STRIDE_LENGTH", 112),
+    ).not.toBeNull();
+    expect(validateMeasurementRange("RUNNING_SPEED", 30)).not.toBeNull();
   });
 });

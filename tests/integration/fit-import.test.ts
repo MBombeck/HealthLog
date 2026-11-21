@@ -191,6 +191,66 @@ describe("FIT import", () => {
     expect(await workouts()).toHaveLength(1);
   });
 
+  it("hands the watch's figures to a Garmin twin and keeps what Garmin wrote (#1343)", async () => {
+    const prisma = getPrismaClient();
+    // The same run from the Garmin integration: a series already, and the
+    // training effect under the integration's own key.
+    const garmin = await prisma.workout.create({
+      data: {
+        userId: USER_ID,
+        source: "GARMIN",
+        externalId: "garmin-activity-1",
+        sportType: "running",
+        startedAt: START,
+        endedAt: new Date(START.getTime() + 1_800_000),
+        durationSec: 1800,
+        metadata: { garminActivity: "running", garminAerobicEffect: 2.8 },
+        samples: { create: { samples: [], sampleCount: 0 } },
+      },
+    });
+    const result = await importFitUpload({
+      userId: USER_ID,
+      upload: buildWatchActivity({
+        start: START,
+        seconds: 1800,
+        performance: true,
+      }),
+      now: NOW,
+    });
+    expect(result).toMatchObject({ imported: 0, merged: 1 });
+    const row = await prisma.workout.findUniqueOrThrow({
+      where: { id: garmin.id },
+    });
+    expect(row.metadata).toMatchObject({
+      garminActivity: "running",
+      garminAerobicEffect: 2.8,
+      recoveryTimeMin: 1899,
+      sweatLossMl: 589,
+      avgGroundContactTimeMs: 302,
+    });
+    // Garmin's own training effect stays the figure shown.
+    expect(row.metadata).not.toHaveProperty("aerobicTrainingEffect");
+    const { readWorkoutPerformance } =
+      await import("@/lib/workouts/performance-metrics");
+    expect(readWorkoutPerformance(row.metadata)).toMatchObject({
+      aerobicTrainingEffect: 2.8,
+      anaerobicTrainingEffect: 1.2,
+      recoveryTimeMin: 1899,
+    });
+
+    // Again: nothing left to add.
+    const again = await importFitUpload({
+      userId: USER_ID,
+      upload: buildWatchActivity({
+        start: START,
+        seconds: 1800,
+        performance: true,
+      }),
+      now: NOW,
+    });
+    expect(again).toMatchObject({ imported: 0, merged: 0, alreadyPresent: 1 });
+  });
+
   it("does not merge a session of another sport at the same time", async () => {
     await getPrismaClient().workout.create({
       data: {

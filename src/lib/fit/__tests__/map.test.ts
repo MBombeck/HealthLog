@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  WATCH_PERFORMANCE,
   buildBikeComputerActivity,
   buildWatchActivity,
 } from "../../../../tests/fixtures/fit/build-fit";
 import { FitImportError } from "../errors";
 import { fitExternalId, validateFitDrafts } from "../import";
-import { buildFitSamples, mapFitActivity } from "../map";
+import { buildFitSamples, mapFitActivity, sessionPerformance } from "../map";
+import { readWorkoutPerformance } from "@/lib/workouts/performance-metrics";
 import { decodeFitFile } from "../parse";
 import { mapFitSportType } from "../sport-map";
 
@@ -256,5 +258,58 @@ describe("decode refusals", () => {
       now: NOW,
     });
     expect(drafts[0]?.maxHeartRate).toBe(149);
+  });
+});
+
+describe("mapFitActivity, the watch's own session figures (#1343)", () => {
+  it("reads training effect, load, sweat loss, running dynamics and recovery time", async () => {
+    const { drafts } = await mapFile(
+      buildWatchActivity({ start: START, seconds: 600, performance: true }),
+    );
+    const w = drafts[0]!;
+    expect(w.metadata).toMatchObject({
+      aerobicTrainingEffect: 3,
+      anaerobicTrainingEffect: 1.2,
+      trainingLoad: 54.3,
+      sweatLossMl: 589,
+      avgVerticalOscillationMm: 103.5,
+      avgGroundContactTimeMs: 302,
+      avgGroundContactBalancePct: 49.5,
+      recoveryTimeMin: WATCH_PERFORMANCE.recoveryTimeMin,
+    });
+    // The figures pass the workout schema and read back as the detail serves them.
+    const { entries, invalid } = validateFitDrafts(drafts);
+    expect(invalid).toBe(0);
+    expect(readWorkoutPerformance(entries[0]!.metadata)).toMatchObject({
+      aerobicTrainingEffect: 3,
+      recoveryTimeMin: 1899,
+      avgGroundContactBalancePct: 49.5,
+    });
+  });
+
+  it("writes none of them for a file without them", async () => {
+    const { drafts } = await mapFile(
+      buildWatchActivity({ start: START, seconds: 600 }),
+    );
+    expect(readWorkoutPerformance(drafts[0]!.metadata)).toBeNull();
+  });
+
+  it("drops a zero recovery time, an invalid value and an out-of-range score", () => {
+    expect(
+      sessionPerformance(
+        {
+          total_training_effect: 7.5,
+          est_sweat_loss: 0,
+          avg_stance_time: Number.NaN,
+          avg_vertical_oscillation: "103",
+        },
+        { recovery_time: 0, aerobic_training_effect: 2.3 },
+      ),
+    ).toEqual({ aerobicTrainingEffect: 2.3 });
+  });
+
+  it("never reads a developer field or an inherited property", () => {
+    const session = Object.create({ total_training_effect: 3 }) as object;
+    expect(sessionPerformance(session, null)).toEqual({});
   });
 });

@@ -1,0 +1,80 @@
+{
+  "samples": [
+    {
+      "hkIdentifier": "HKQuantityTypeIdentifierDistanceCycling",
+      "value": 1240.5,
+      "unit": "m",
+      "startDate": "2026-06-02T06:00:00.000Z",
+      "endDate": "2026-06-02T06:05:00.000Z",
+      "expected": { "type": "CYCLING_DISTANCE", "value": 1240.5, "unit": "m" }
+    },
+    {
+      "hkIdentifier": "HKQuantityTypeIdentifierDistanceRowing",
+      "value": 410,
+      "unit": "m",
+      "startDate": "2026-06-02T17:00:00.000Z",
+      "endDate": "2026-06-02T17:02:00.000Z",
+      "expected": { "type": "ROWING_DISTANCE", "value": 410, "unit": "m" }
+    },
+    {
+      "hkIdentifier": "HKQuantityTypeIdentifierRowingSpeed",
+      "value": 3.4,
+      "unit": "m/s",
+      "startDate": "2026-06-02T17:00:00.000Z",
+      "endDate": "2026-06-02T17:00:10.000Z",
+      "expected": { "type": "ROWING_SPEED", "value": 3.4, "unit": "m/s" }
+    },
+    {
+      "hkIdentifier": "HKQuantityTypeIdentifierRunningSpeed",
+      "value": 3.1,
+      "unit": "m/s",
+      "startDate": "2026-06-03T05:30:00.000Z",
+      "endDate": "2026-06-03T05:30:05.000Z",
+      "expected": { "type": "RUNNING_SPEED", "value": 3.1, "unit": "m/s" }
+    },
+    {
+      "hkIdentifier": "HKQuantityTypeIdentifierRunningPower",
+      "value": 262,
+      "unit": "W",
+      "startDate": "2026-06-03T05:30:00.000Z",
+      "endDate": "2026-06-03T05:30:05.000Z",
+      "expected": { "type": "RUNNING_POWER", "value": 262, "unit": "W" }
+    },
+    {
+      "hkIdentifier": "HKQuantityTypeIdentifierRunningGroundContactTime",
+      "value": 248,
+      "unit": "ms",
+      "startDate": "2026-06-03T05:30:00.000Z",
+      "endDate": "2026-06-03T05:30:05.000Z",
+      "expected": {
+        "type": "RUNNING_GROUND_CONTACT_TIME",
+        "value": 248,
+        "unit": "ms"
+      }
+    },
+    {
+      "hkIdentifier": "HKQuantityTypeIdentifierRunningVerticalOscillation",
+      "value": 8.6,
+      "unit": "cm",
+      "startDate": "2026-06-03T05:30:00.000Z",
+      "endDate": "2026-06-03T05:30:05.000Z",
+      "expected": {
+        "type": "RUNNING_VERTICAL_OSCILLATION",
+        "value": 8.6,
+        "unit": "cm"
+      }
+    },
+    {
+      "hkIdentifier": "HKQuantityTypeIdentifierRunningStrideLength",
+      "value": 1.12,
+      "unit": "m",
+      "startDate": "2026-06-03T05:30:00.000Z",
+      "endDate": "2026-06-03T05:30:05.000Z",
+      "expected": {
+        "type": "RUNNING_STRIDE_LENGTH",
+        "value": 1.12,
+        "unit": "m"
+      }
+    }
+  ]
+}

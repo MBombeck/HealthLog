@@ -688,8 +688,8 @@ async function importCumulativeFixture(xml: string) {
 }
 
 describe("streamParseExportXml — cumulative source-day estimates", () => {
-  it("covers exactly the eleven cumulative HealthKit measurement types", () => {
-    expect(CUMULATIVE_HK_TYPES.size).toBe(11);
+  it("covers exactly the thirteen cumulative HealthKit measurement types", () => {
+    expect(CUMULATIVE_HK_TYPES.size).toBe(13);
     expect(
       new Set(allCumulativeMappings.map((mapping) => mapping.measurementType)),
     ).toEqual(CUMULATIVE_HK_TYPES);

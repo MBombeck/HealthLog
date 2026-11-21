@@ -95,6 +95,16 @@ export const MEASUREMENT_TYPE_COLORS: Record<string, string> = {
   ESTIMATED_WORKOUT_EFFORT_SCORE:
     "bg-chart-1/10 text-chart-1 dark:bg-chart-1/20",
   PHYSICAL_EFFORT: "bg-chart-4/10 text-chart-4 dark:bg-chart-4/20",
+  // Sport quantities (#1415) join the movement family (chart-2), beside
+  // walking + running distance and walking speed.
+  CYCLING_DISTANCE: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
+  ROWING_DISTANCE: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
+  ROWING_SPEED: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
+  RUNNING_SPEED: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
+  RUNNING_POWER: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
+  RUNNING_GROUND_CONTACT_TIME: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
+  RUNNING_VERTICAL_OSCILLATION: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
+  RUNNING_STRIDE_LENGTH: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
   WALKING_STEADINESS_EVENT: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
   BREATHING_DISTURBANCE_EVENT: "bg-chart-5/10 text-chart-5 dark:bg-chart-5/20",
   // ── v1.10.0 — computed scores (WX-C) ──

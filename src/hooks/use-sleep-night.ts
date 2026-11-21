@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { apiGet } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
+import type { SleepSourceDiscrepancyDto } from "@/components/insights/sleep-source-discrepancy-marker";
 
 /**
  * One reconstructed night from `GET /api/sleep/night?date=YYYY-MM-DD`.
@@ -27,6 +28,8 @@ export interface SleepNightSegment {
 export interface SleepNightSession {
   /** `YYYY-MM-DD` wake-day key. */
   night: string;
+  /** The night's own zone when it is not the profile zone. */
+  timeZone?: string | null;
   source: string | null;
   start: string;
   end: string;
@@ -38,6 +41,8 @@ export interface SleepNightSession {
   reconstructed: boolean;
   stages: Record<string, number>;
   segments: SleepNightSegment[];
+  /** Two writers reported clearly different totals; observational only. */
+  sourceDiscrepancy?: SleepSourceDiscrepancyDto | null;
 }
 
 export interface SleepNightPayload {
@@ -58,7 +63,8 @@ export interface UseSleepNightResult {
 }
 
 /**
- * Reads the night a person woke from into `date`.
+ * Reads the night a person woke from into `date`. `date` undefined reads the
+ * most recent night with a main sleep (the sleep page's opening night).
  *
  * `enabled` is the caller's gate — pass `false` when the user is signed
  * out or the sleep module is disabled, and nothing is fetched.
@@ -71,9 +77,11 @@ export function useSleepNight(
     queryKey: queryKeys.sleepNight(date),
     queryFn: () =>
       apiGet<SleepNightPayload>(
-        `/api/sleep/night?date=${encodeURIComponent(date as string)}`,
+        date === undefined
+          ? "/api/sleep/night"
+          : `/api/sleep/night?date=${encodeURIComponent(date)}`,
       ),
-    enabled: enabled && Boolean(date),
+    enabled,
     staleTime: 5 * 60_000,
     refetchOnWindowFocus: false,
   });

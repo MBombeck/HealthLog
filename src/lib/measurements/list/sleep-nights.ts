@@ -30,6 +30,8 @@ export interface SleepRow {
   sleepStage: SleepStage | null;
   source: MeasurementSource;
   deviceType: string | null;
+  /** The zone the row was taken in; null is the profile zone. */
+  timeZone: string | null;
 }
 
 /** The read bounds a list request passes through, both inclusive. */
@@ -90,6 +92,8 @@ export async function readSleepRows(
       // Writer-level collapse: two HealthKit apps behind one source (watch
       // stages vs phone in-bed) must not blend into one night.
       deviceType: true,
+      // A night slept abroad files under its own zone's wake day.
+      timeZone: true,
     },
   });
 }
@@ -172,7 +176,8 @@ export interface SleepNightSpan {
  * cuts them: ordered by start (`measured_at` minus the minutes), a new
  * session wherever a row starts more than `SESSION_GAP_MS` after every
  * earlier row has ended. A session's night is the local day its last row
- * ends on: the reconstruction's own rule, so a page night and a
+ * ends on, in that row's own zone when it has one (`time_zone`), else the
+ * profile zone: the reconstruction's own rule, so a page night and a
  * reconstructed night name the same day. A night counts when one of its
  * sessions holds an asleep row (an `ASLEEP_STAGES` stage, or a stage-less
  * row, with minutes). Nights are grouped, sorted and cut by `limit` /
@@ -208,7 +213,8 @@ export async function sleepNightPage(
         MIN(m."measured_at" - m."value" * interval '1 minute') AS s,
         MAX(m."measured_at") AS e,
         BOOL_OR(m."value" > 0 AND (m."sleep_stage" IS NULL
-          OR m."sleep_stage" IN (${ASLEEP_STAGE_SQL}))) AS asleep
+          OR m."sleep_stage" IN (${ASLEEP_STAGE_SQL}))) AS asleep,
+        (ARRAY_AGG(m."time_zone" ORDER BY m."measured_at" DESC))[1] AS zone
       FROM measurements m
       WHERE m."user_id" = ${userId}
         AND m."type" = 'SLEEP_DURATION'::measurement_type
@@ -228,12 +234,13 @@ export async function sleepNightPage(
       ) OVER (ORDER BY s, e ROWS UNBOUNDED PRECEDING) AS sid
       FROM o
     ), sess AS (
-      SELECT MIN(s) AS s, MAX(e) AS e, BOOL_OR(asleep) AS asleep
+      SELECT MIN(s) AS s, MAX(e) AS e, BOOL_OR(asleep) AS asleep,
+        (ARRAY_AGG(zone ORDER BY e DESC))[1] AS zone
       FROM g
       GROUP BY sid
     ), nights AS (
       SELECT
-        to_char((e AT TIME ZONE 'UTC') AT TIME ZONE ${tz}, 'YYYY-MM-DD') AS night,
+        to_char((e AT TIME ZONE 'UTC') AT TIME ZONE COALESCE(zone, ${tz}), 'YYYY-MM-DD') AS night,
         MIN(s) AS span_start,
         MAX(e) AS span_end
       FROM sess

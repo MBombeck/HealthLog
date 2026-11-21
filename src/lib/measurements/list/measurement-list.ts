@@ -61,6 +61,7 @@ const MEASUREMENT_WIRE_SELECT = {
   sleepStage: true,
   rhythmClassification: true,
   deviceType: true,
+  timeZone: true,
   syncVersion: true,
   deletedAt: true,
   createdAt: true,

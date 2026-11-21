@@ -193,6 +193,15 @@ const unitMap: Record<string, string> = {
   WORKOUT_EFFORT_SCORE: "score",
   ESTIMATED_WORKOUT_EFFORT_SCORE: "score",
   PHYSICAL_EFFORT: "kcal/(hr·kg)",
+  // Apple sport quantities (#1415), in the SI units HealthKit writes.
+  CYCLING_DISTANCE: "m",
+  ROWING_DISTANCE: "m",
+  ROWING_SPEED: "m/s",
+  RUNNING_SPEED: "m/s",
+  RUNNING_POWER: "W",
+  RUNNING_GROUND_CONTACT_TIME: "ms",
+  RUNNING_VERTICAL_OSCILLATION: "cm",
+  RUNNING_STRIDE_LENGTH: "m",
 };
 
 export function getUnitForType(type: string): string {

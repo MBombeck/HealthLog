@@ -70,6 +70,7 @@ const STATS_COLUMNS = [
   "glucoseContext",
   "rhythmClassification",
   "deviceType",
+  "timeZone",
 ] as const;
 
 export type StoredStatsRow = Record<

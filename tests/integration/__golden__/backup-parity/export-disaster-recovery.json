@@ -201,11 +201,12 @@
         "sleepStage": null,
         "rhythmClassification": null,
         "deviceType": null,
+        "timeZone": null,
         "ingestTokenId": null,
         "syncVersion": 1,
         "deletedAt": null,
-        "createdAt": "2026-05-01T08:20:03.000Z",
-        "updatedAt": "2026-05-01T08:21:03.000Z"
+        "createdAt": "2026-05-01T08:21:03.000Z",
+        "updatedAt": "2026-05-01T08:22:03.000Z"
       },
       {
         "id": "<id:2>",
@@ -225,11 +226,12 @@
         "sleepStage": "DEEP",
         "rhythmClassification": null,
         "deviceType": null,
+        "timeZone": null,
         "ingestTokenId": null,
         "syncVersion": 1,
         "deletedAt": null,
-        "createdAt": "2026-05-01T08:20:04.000Z",
-        "updatedAt": "2026-05-01T08:21:04.000Z"
+        "createdAt": "2026-05-01T08:21:04.000Z",
+        "updatedAt": "2026-05-01T08:22:04.000Z"
       },
       {
         "id": "<id:3>",
@@ -249,11 +251,12 @@
         "sleepStage": null,
         "rhythmClassification": null,
         "deviceType": null,
+        "timeZone": "America/New_York",
         "ingestTokenId": null,
         "syncVersion": 4,
         "deletedAt": "<tombstone>",
-        "createdAt": "2026-05-01T08:20:01.000Z",
-        "updatedAt": "2026-05-01T08:21:01.000Z"
+        "createdAt": "2026-05-01T08:21:01.000Z",
+        "updatedAt": "2026-05-01T08:22:01.000Z"
       },
       {
         "id": "<id:4>",
@@ -273,11 +276,12 @@
         "sleepStage": null,
         "rhythmClassification": null,
         "deviceType": "rt-Measurement-deviceType",
+        "timeZone": null,
         "ingestTokenId": null,
         "syncVersion": 1,
         "deletedAt": null,
-        "createdAt": "2026-05-01T08:20:00.000Z",
-        "updatedAt": "2026-05-01T08:21:00.000Z"
+        "createdAt": "2026-05-01T08:21:00.000Z",
+        "updatedAt": "2026-05-01T08:22:00.000Z"
       },
       {
         "id": "<id:5>",
@@ -297,11 +301,12 @@
         "sleepStage": null,
         "rhythmClassification": "IRREGULAR",
         "deviceType": null,
+        "timeZone": null,
         "ingestTokenId": null,
         "syncVersion": 1,
         "deletedAt": null,
-        "createdAt": "2026-05-01T08:20:02.000Z",
-        "updatedAt": "2026-05-01T08:21:02.000Z"
+        "createdAt": "2026-05-01T08:21:02.000Z",
+        "updatedAt": "2026-05-01T08:22:02.000Z"
       }
     ],
     "customMedicationCategories": [
@@ -2891,11 +2896,12 @@
         "sleepStage": null,
         "rhythmClassification": null,
         "deviceType": null,
+        "timeZone": null,
         "ingestTokenId": null,
         "syncVersion": 1,
         "deletedAt": null,
-        "createdAt": "2026-05-01T08:20:03.000Z",
-        "updatedAt": "2026-05-01T08:21:03.000Z"
+        "createdAt": "2026-05-01T08:21:03.000Z",
+        "updatedAt": "2026-05-01T08:22:03.000Z"
       },
       {
         "id": "<id:2>",
@@ -2915,11 +2921,12 @@
         "sleepStage": "DEEP",
         "rhythmClassification": null,
         "deviceType": null,
+        "timeZone": null,
         "ingestTokenId": null,
         "syncVersion": 1,
         "deletedAt": null,
-        "createdAt": "2026-05-01T08:20:04.000Z",
-        "updatedAt": "2026-05-01T08:21:04.000Z"
+        "createdAt": "2026-05-01T08:21:04.000Z",
+        "updatedAt": "2026-05-01T08:22:04.000Z"
       },
       {
         "id": "<id:3>",
@@ -2939,11 +2946,12 @@
         "sleepStage": null,
         "rhythmClassification": null,
         "deviceType": null,
+        "timeZone": "America/New_York",
         "ingestTokenId": null,
         "syncVersion": 4,
         "deletedAt": "<tombstone>",
-        "createdAt": "2026-05-01T08:20:01.000Z",
-        "updatedAt": "2026-05-01T08:21:01.000Z"
+        "createdAt": "2026-05-01T08:21:01.000Z",
+        "updatedAt": "2026-05-01T08:22:01.000Z"
       },
       {
         "id": "<id:4>",
@@ -2963,11 +2971,12 @@
         "sleepStage": null,
         "rhythmClassification": null,
         "deviceType": "rt-Measurement-deviceType",
+        "timeZone": null,
         "ingestTokenId": null,
         "syncVersion": 1,
         "deletedAt": null,
-        "createdAt": "2026-05-01T08:20:00.000Z",
-        "updatedAt": "2026-05-01T08:21:00.000Z"
+        "createdAt": "2026-05-01T08:21:00.000Z",
+        "updatedAt": "2026-05-01T08:22:00.000Z"
       },
       {
         "id": "<id:5>",
@@ -2987,11 +2996,12 @@
         "sleepStage": null,
         "rhythmClassification": "IRREGULAR",
         "deviceType": null,
+        "timeZone": null,
         "ingestTokenId": null,
         "syncVersion": 1,
         "deletedAt": null,
-        "createdAt": "2026-05-01T08:20:02.000Z",
-        "updatedAt": "2026-05-01T08:21:02.000Z"
+        "createdAt": "2026-05-01T08:21:02.000Z",
+        "updatedAt": "2026-05-01T08:22:02.000Z"
       }
     ],
     "medications": [

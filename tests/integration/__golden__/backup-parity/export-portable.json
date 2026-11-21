@@ -140,6 +140,7 @@
         "sleepStage": null,
         "rhythmClassification": null,
         "deviceType": null,
+        "timeZone": null,
         "deletedAt": null
       },
       {
@@ -156,6 +157,7 @@
         "sleepStage": "DEEP",
         "rhythmClassification": null,
         "deviceType": null,
+        "timeZone": null,
         "deletedAt": null
       },
       {
@@ -172,6 +174,7 @@
         "sleepStage": null,
         "rhythmClassification": null,
         "deviceType": "rt-Measurement-deviceType",
+        "timeZone": null,
         "deletedAt": null
       },
       {
@@ -188,6 +191,7 @@
         "sleepStage": null,
         "rhythmClassification": "IRREGULAR",
         "deviceType": null,
+        "timeZone": null,
         "deletedAt": null
       }
     ],
@@ -2006,6 +2010,7 @@
         "sleepStage": null,
         "rhythmClassification": null,
         "deviceType": null,
+        "timeZone": null,
         "deletedAt": null
       },
       {
@@ -2022,6 +2027,7 @@
         "sleepStage": "DEEP",
         "rhythmClassification": null,
         "deviceType": null,
+        "timeZone": null,
         "deletedAt": null
       },
       {
@@ -2038,6 +2044,7 @@
         "sleepStage": null,
         "rhythmClassification": null,
         "deviceType": "rt-Measurement-deviceType",
+        "timeZone": null,
         "deletedAt": null
       },
       {
@@ -2054,6 +2061,7 @@
         "sleepStage": null,
         "rhythmClassification": "IRREGULAR",
         "deviceType": null,
+        "timeZone": null,
         "deletedAt": null
       }
     ],

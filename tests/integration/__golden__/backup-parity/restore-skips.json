@@ -548,6 +548,7 @@
         "unit": "kg",
         "source": "MANUAL",
         "measuredAt": "2026-07-01T07:00:00.000Z",
+        "timeZone": null,
         "notes": null,
         "notesEncrypted": null,
         "externalId": null,

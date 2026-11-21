@@ -41,6 +41,9 @@ export const measurementSchema = z
     sleepStage: z.enum(SleepStage).nullable().optional(),
     rhythmClassification: z.enum(RhythmClassification).nullable().optional(),
     deviceType: z.string().nullable().optional(),
+    // The IANA zone the reading was taken in (iOS #181); absent in
+    // backups written before the column, which restore as the profile zone.
+    timeZone: z.string().max(64).nullable().optional(),
     // The token that carried an EXTERNAL reading (#1272). Kept on restore
     // only when the restoring account still holds that token.
     ingestTokenId: z.string().max(64).nullable().optional(),

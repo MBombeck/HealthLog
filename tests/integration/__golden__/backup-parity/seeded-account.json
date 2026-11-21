@@ -14,6 +14,7 @@
         "unit": "mmol/L",
         "source": "MANUAL",
         "measuredAt": "2026-07-03T06:45:00.000Z",
+        "timeZone": null,
         "notes": null,
         "notesEncrypted": null,
         "externalId": null,
@@ -25,8 +26,8 @@
         "deviceType": null,
         "syncVersion": 1,
         "deletedAt": null,
-        "createdAt": "2026-05-01T08:20:03.000Z",
-        "updatedAt": "2026-05-01T08:21:03.000Z",
+        "createdAt": "2026-05-01T08:21:03.000Z",
+        "updatedAt": "2026-05-01T08:22:03.000Z",
         "ingestTokenId": null
       },
       {
@@ -39,6 +40,7 @@
         "unit": "event",
         "source": "WITHINGS",
         "measuredAt": "2026-06-15T14:22:00.000Z",
+        "timeZone": null,
         "notes": null,
         "notesEncrypted": null,
         "externalId": null,
@@ -50,8 +52,8 @@
         "deviceType": null,
         "syncVersion": 1,
         "deletedAt": null,
-        "createdAt": "2026-05-01T08:20:02.000Z",
-        "updatedAt": "2026-05-01T08:21:02.000Z",
+        "createdAt": "2026-05-01T08:21:02.000Z",
+        "updatedAt": "2026-05-01T08:22:02.000Z",
         "ingestTokenId": null
       },
       {
@@ -64,6 +66,7 @@
         "unit": "bpm",
         "source": "APPLE_HEALTH",
         "measuredAt": "2026-07-02T06:30:00.000Z",
+        "timeZone": "America/New_York",
         "notes": null,
         "notesEncrypted": null,
         "externalId": "round-trip-deleted-sample",
@@ -75,8 +78,8 @@
         "deviceType": null,
         "syncVersion": 4,
         "deletedAt": "<tombstone>",
-        "createdAt": "2026-05-01T08:20:01.000Z",
-        "updatedAt": "2026-05-01T08:21:01.000Z",
+        "createdAt": "2026-05-01T08:21:01.000Z",
+        "updatedAt": "2026-05-01T08:22:01.000Z",
         "ingestTokenId": null
       },
       {
@@ -89,6 +92,7 @@
         "unit": "min",
         "source": "APPLE_HEALTH",
         "measuredAt": "2026-07-03T02:00:00.000Z",
+        "timeZone": null,
         "notes": null,
         "notesEncrypted": null,
         "externalId": "round-trip-deep-sleep",
@@ -100,8 +104,8 @@
         "deviceType": null,
         "syncVersion": 1,
         "deletedAt": null,
-        "createdAt": "2026-05-01T08:20:04.000Z",
-        "updatedAt": "2026-05-01T08:21:04.000Z",
+        "createdAt": "2026-05-01T08:21:04.000Z",
+        "updatedAt": "2026-05-01T08:22:04.000Z",
         "ingestTokenId": null
       },
       {
@@ -114,6 +118,7 @@
         "unit": "kg",
         "source": "MANUAL",
         "measuredAt": "2026-07-01T07:00:00.000Z",
+        "timeZone": null,
         "notes": "rt-Measurement-notes",
         "notesEncrypted": "<sealed:v1:rt-Measurement-notesEncrypted>",
         "externalId": null,
@@ -125,8 +130,8 @@
         "deviceType": "rt-Measurement-deviceType",
         "syncVersion": 1,
         "deletedAt": null,
-        "createdAt": "2026-05-01T08:20:00.000Z",
-        "updatedAt": "2026-05-01T08:21:00.000Z",
+        "createdAt": "2026-05-01T08:21:00.000Z",
+        "updatedAt": "2026-05-01T08:22:00.000Z",
         "ingestTokenId": null
       }
     ],

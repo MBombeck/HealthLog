@@ -97,7 +97,10 @@ activity's original FIT file, which the Personal API serves as well. After
 each hourly sync, HealthLog downloads the files of activities that arrived
 in the last day (up to five per run), reads them with the same importer as
 the **Activity file (FIT)** card, and adds the heart-rate, speed, power and
-cadence series to the Garmin workout. The workout itself is still the
+cadence series to the Garmin workout, together with the figures the watch
+computed for the session (recovery time, sweat loss, training load and the
+running dynamics). A figure Garmin's summary already carried, such as the
+training effect, keeps Garmin's value. The workout itself is still the
 summary Garmin sent. The GPS track in the file is kept only when **Workout
 routes** is switched on.
 

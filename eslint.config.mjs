@@ -227,6 +227,7 @@ const eslintConfig = defineConfig([
       "src/components/insights/mood/mood-time-of-day-chart.tsx",
       "src/components/insights/mood/mood-weekday-chart.tsx",
       "src/components/insights/sleep-stage-stacked-bar.tsx",
+      "src/components/insights/sleep/sleep-hypnogram-chart.tsx",
       "src/components/labs/lab-biomarker-chart.tsx",
       "src/components/medications/detail/efficacy/efficacy-chart.tsx",
       "src/components/medications/dose-strength-curve.tsx",

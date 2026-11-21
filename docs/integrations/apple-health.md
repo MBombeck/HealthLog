@@ -140,6 +140,31 @@ intensity of the effort in kilocalories per hour per kilogram, the same
 family as METs, and becomes `PHYSICAL_EFFORT`. None of the three is added
 to active or resting energy.
 
+Cycling and rowing distance, rowing speed and the running dynamics come
+in as their own types. `DistanceCycling` becomes `CYCLING_DISTANCE` and
+`DistanceRowing` becomes `ROWING_DISTANCE`, both in metres and summed per
+day like walking and running distance. `RowingSpeed` and `RunningSpeed`
+(m/s), `RunningPower` (W), `RunningGroundContactTime` (ms),
+`RunningVerticalOscillation` (cm) and `RunningStrideLength` (m) are
+per-sample readings taken during a workout, so their day value is the
+mean. A record in another unit, such as kilometres in an export from a
+metric account, is converted on the way in. Cycling speed, power and
+cadence, swimming, paddling and skiing stay on the deferred list.
+
+### Readings taken in another time zone
+
+The app can send the time zone a sample was taken in (`timeZone`, HealthKit's
+`HKMetadataKeyTimeZone`). A reading that carries one is placed on the local
+day of that zone, and one without it on the day of your profile's zone, which
+is what every older reading keeps meaning. So a night slept in New York on a
+Berlin profile is filed under the New York wake day, and the night timeline
+reads its clock in New York time. The sleep list and night view, the day
+view, the measurement list's day groups and the daily charts follow this
+rule. The cached long-range totals are kept per UTC day and are not moved by
+it, and the pulse day mean, the intraday heart-rate chart and the Coach's
+context still read the profile zone. A zone name the server cannot read is
+dropped and the reading is kept.
+
 ### ECG archive safety, privacy, and idempotency
 
 ECG support is source-agnostic: if HealthKit includes a valid

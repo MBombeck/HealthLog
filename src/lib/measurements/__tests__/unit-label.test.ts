@@ -76,6 +76,8 @@ const SHARED_SYMBOLS: ReadonlySet<string> = new Set([
   // Litres and litres per minute (spirometry), SI symbols every locale reads.
   "L",
   "L/min",
+  // Watts (Apple running power), the SI symbol.
+  "W",
   "h",
   "min",
   "/ 5",

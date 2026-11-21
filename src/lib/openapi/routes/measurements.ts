@@ -129,6 +129,14 @@ const batchEntrySchema = z
       .describe(
         "Device class mapped from `HKDevice.model`. Used by the analytics aggregator to break ties when the same source contributed multiple devices for the same day. Omit (or send null) on legacy clients — the server treats it as `unknown` and the picker falls through.",
       ),
+    timeZone: z
+      .string()
+      .min(1)
+      .max(64)
+      .optional()
+      .describe(
+        "IANA time zone the sample was taken in (`HKMetadataKeyTimeZone`, e.g. `America/New_York`). The local day and wall clock of the reading are read in this zone: a night slept abroad files under that zone's wake day, the day view and the daily charts count the reading on that zone's day. Omit it to keep the profile zone (`timezone` on `/api/auth/me`), which is also what every row stored without one means. A name the server cannot read (not a valid IANA name, or one its database does not know) is stored as null and the entry is still written. Not part of any dedup key; a `stats:` re-post updates it. Rollup buckets are UTC days and do not read it.",
+      ),
   })
   .meta({ id: "AppleHealthBatchEntry" });
 
@@ -327,6 +335,13 @@ export const measurementResource = z
       .nullable()
       .optional()
       .describe("`watch | band | ring | phone | scale | other | unknown`."),
+    timeZone: z
+      .string()
+      .nullable()
+      .optional()
+      .describe(
+        "IANA zone the reading was taken in, when its writer sent one; null means the profile zone. The reading's local day is read in it.",
+      ),
     syncVersion: z
       .number()
       .int()
@@ -506,7 +521,18 @@ const sleepSegmentResource = z.object({
 });
 
 const sleepSessionResource = z.object({
-  night: z.string().describe("Wake-day key (YYYY-MM-DD)."),
+  night: z
+    .string()
+    .describe(
+      "Wake-day key (YYYY-MM-DD), in `timeZone` when set, else in the profile zone.",
+    ),
+  timeZone: z
+    .string()
+    .nullable()
+    .optional()
+    .describe(
+      "The zone the night is read in when its last stage row carries one other than the profile zone (a night slept abroad); null otherwise. Render the night's clock times in it.",
+    ),
   source: measurementSourceEnum.nullable(),
   start: isoDateTime(),
   end: isoDateTime(),

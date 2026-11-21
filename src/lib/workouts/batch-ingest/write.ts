@@ -54,6 +54,8 @@ export async function writeWorkoutPlan(
   const seriesLanded = new Set<string>();
   /** Workout ids whose track row this request actually wrote. */
   const routesLanded = new Set<string>();
+  /** Workout ids whose performance figures this request actually merged. */
+  const figuresLanded = new Set<string>();
   /** Batch indices whose manual edit this request actually wrote. */
   const overwritten = new Set<number>();
 
@@ -69,6 +71,7 @@ export async function writeWorkoutPlan(
       routesLanded,
     });
     await fillClimbFromAttachedRoutes(tx, userId, toEnrich, routesLanded);
+    await mergePerformanceFigures(tx, userId, toEnrich, figuresLanded);
   });
 
   outcome.insertedCount = insertedIdByIndex.size;
@@ -87,7 +90,9 @@ export async function writeWorkoutPlan(
   // track: one `enriched` when either (or both) landed.
   for (const e of toEnrich) {
     const landed =
-      seriesLanded.has(e.workoutId) || routesLanded.has(e.workoutId);
+      seriesLanded.has(e.workoutId) ||
+      routesLanded.has(e.workoutId) ||
+      figuresLanded.has(e.workoutId);
     results[e.index] = {
       index: e.index,
       status: landed ? "enriched" : "duplicate",
@@ -312,6 +317,31 @@ async function fillClimbFromAttachedRoutes(
       where: { id: e.workoutId, userId, elevationM: null },
       data: { elevationM: climb },
     });
+  }
+}
+
+/**
+ * Hand a stored workout the performance figures it lacks. `||` keeps the
+ * right-hand side on a shared key, so the stored metadata wins: a figure its
+ * own source wrote, or one a concurrent writer merged first, is never
+ * replaced. The keys come from the closed list in `performance-metrics.ts`
+ * and the values are plausibility-checked numbers.
+ */
+async function mergePerformanceFigures(
+  tx: Tx,
+  userId: string,
+  toEnrich: WritePlan["toEnrich"],
+  figuresLanded: Set<string>,
+): Promise<void> {
+  for (const e of toEnrich) {
+    if (!e.figures) continue;
+    const merged = await tx.$executeRaw`
+      UPDATE "workouts"
+         SET "metadata" = ${JSON.stringify(e.figures)}::jsonb
+                          || COALESCE("metadata", '{}'::jsonb),
+             "updated_at" = ${new Date()}
+       WHERE "id" = ${e.workoutId} AND "user_id" = ${userId}`;
+    if (merged > 0) figuresLanded.add(e.workoutId);
   }
 }
 

@@ -41,6 +41,21 @@ describe("acceptedHealthKitTypes", () => {
       "HKQuantityTypeIdentifierEstimatedWorkoutEffortScore",
     );
     expect(accepted).toContain("HKQuantityTypeIdentifierPhysicalEffort");
+    // #1415 — cycling and rowing distance, rowing speed and the running
+    // dynamics; cycling speed, power and cadence stay deferred.
+    for (const id of [
+      "HKQuantityTypeIdentifierDistanceCycling",
+      "HKQuantityTypeIdentifierDistanceRowing",
+      "HKQuantityTypeIdentifierRowingSpeed",
+      "HKQuantityTypeIdentifierRunningSpeed",
+      "HKQuantityTypeIdentifierRunningPower",
+      "HKQuantityTypeIdentifierRunningGroundContactTime",
+      "HKQuantityTypeIdentifierRunningVerticalOscillation",
+      "HKQuantityTypeIdentifierRunningStrideLength",
+    ]) {
+      expect(accepted).toContain(id);
+    }
+    expect(accepted).not.toContain("HKQuantityTypeIdentifierCyclingSpeed");
   });
 
   it("lists only identifiers the batch mapper turns into a row, or a screener", () => {

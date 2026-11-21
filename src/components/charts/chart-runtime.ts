@@ -48,6 +48,7 @@ export { MoodDistributionChart } from "@/components/insights/mood/mood-distribut
 export { MoodTimeOfDayChart } from "@/components/insights/mood/mood-time-of-day-chart";
 export { MoodWeekdayChart } from "@/components/insights/mood/mood-weekday-chart";
 export { SleepStageStackedBar } from "@/components/insights/sleep-stage-stacked-bar";
+export { SleepHypnogramChart } from "@/components/insights/sleep/sleep-hypnogram-chart";
 export { LabBiomarkerChart } from "@/components/labs/lab-biomarker-chart";
 export { DoseStrengthCurve } from "@/components/medications/dose-strength-curve";
 export { DrugLevelChart } from "@/components/medications/drug-level-chart";

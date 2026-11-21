@@ -94,13 +94,13 @@ export async function readLocalDailyCells(args: {
   const hourExpr =
     hourlyTypes.length > 0
       ? Prisma.sql`CASE WHEN "type" = ANY(${hourlyTypes}::"measurement_type"[])
-          THEN EXTRACT(HOUR FROM ("measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${args.tz})::int
+          THEN EXTRACT(HOUR FROM ("measured_at" AT TIME ZONE 'UTC') AT TIME ZONE COALESCE("time_zone", ${args.tz}))::int
           ELSE 0 END`
       : Prisma.sql`0`;
   const rows = await prisma.$queryRaw<StatRow[]>`
     SELECT "type"::text AS "type",
            "source"::text AS "source",
-           to_char(("measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${args.tz}, 'YYYY-MM-DD') AS "day",
+           to_char(("measured_at" AT TIME ZONE 'UTC') AT TIME ZONE COALESCE("time_zone", ${args.tz}), 'YYYY-MM-DD') AS "day",
            ${hourExpr} AS "hour",
            SUM("value")::float8 AS "total",
            COUNT(*)::int AS "count"
@@ -216,7 +216,7 @@ export async function readLocalDaysWithReadings(args: {
   const shiftHours = args.shiftHours ?? 0;
   const shift = `${shiftHours} hours`;
   const rows = await prisma.$queryRaw<Array<{ day: string }>>`
-    SELECT DISTINCT to_char((("measured_at" + ${shift}::interval) AT TIME ZONE 'UTC') AT TIME ZONE ${args.tz}, 'YYYY-MM-DD') AS "day"
+    SELECT DISTINCT to_char((("measured_at" + ${shift}::interval) AT TIME ZONE 'UTC') AT TIME ZONE COALESCE("time_zone", ${args.tz}), 'YYYY-MM-DD') AS "day"
     FROM "measurements"
     WHERE "user_id" = ${args.userId}
       AND "deleted_at" IS NULL

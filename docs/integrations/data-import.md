@@ -341,12 +341,13 @@ Accepted files, up to 10 MB:
 
 What a file becomes:
 
-| FIT                                          | HealthLog                                                                                                |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Each session (one per sport in a multisport) | One workout: sport, start, end, distance, energy, average and peak heart rate, climb, pause time         |
-| The record stream (usually once a second)    | The workout's series: heart rate, speed, power and cadence, shown as the heart-rate chart on the workout |
-| The positions in the records                 | The GPS track, only when **Workout routes** is switched on in the privacy settings, stored encrypted     |
-| Laps, power and cadence averages, the device | Kept as the workout's details                                                                            |
+| FIT                                          | HealthLog                                                                                                                                                                                  |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Each session (one per sport in a multisport) | One workout: sport, start, end, distance, energy, average and peak heart rate, climb, pause time                                                                                           |
+| The record stream (usually once a second)    | The workout's series: heart rate, speed, power and cadence, shown as the heart-rate chart on the workout                                                                                   |
+| The positions in the records                 | The GPS track, only when **Workout routes** is switched on in the privacy settings, stored encrypted                                                                                       |
+| Laps, power and cadence averages, the device | Kept as the workout's details                                                                                                                                                              |
+| The watch's own figures for the session      | Shown on the workout: aerobic and anaerobic training effect, training load, recovery time, sweat loss, average power, vertical oscillation, ground contact time and its left/right balance |
 
 The series is capped at 30 000 points. A longer session (a day-long
 race at one record a second) is averaged down evenly so its shape stays.
