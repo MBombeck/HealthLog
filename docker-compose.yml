@@ -441,6 +441,13 @@ x-healthlog-env: &healthlog_env
   # Set "true" only if your own iOS build carries Apple's Critical Alerts
   # entitlement; otherwise urgent alerts use the time-sensitive level.
   APNS_CRITICAL_ENTITLEMENT: "${APNS_CRITICAL_ENTITLEMENT:-}"
+  # Push relay for the App Store app (docs/integrations/push-relay.md).
+  # PUSH_RELAY_MODE "off" hides the admin switch and the one-time notice;
+  # unset or "allowed" leaves the choice to the admin. PUSH_RELAY_URL and
+  # PUSH_RELAY_KEYS point a server at a relay other than the hosted one.
+  PUSH_RELAY_MODE: "${PUSH_RELAY_MODE:-}"
+  PUSH_RELAY_URL: "${PUSH_RELAY_URL:-}"
+  PUSH_RELAY_KEYS: "${PUSH_RELAY_KEYS:-}"
   # Structured logging. LOG_LEVEL is one of debug/info/warn/error (default
   # info) — drop to debug while chasing a problem, raise to warn on a busy
   # instance. LOG_SAMPLE_RATE keeps that fraction of successful events
