@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { DoseState } from "@/lib/medications/dose-state/resolve";
 import { DOSE_STATE_TERM } from "@/lib/medications/dose-state/terms";
 
@@ -68,6 +68,25 @@ export function DoseStateLabel({
     >
       <Icon className="size-3.5 shrink-0" aria-hidden="true" />
       {t(DOSE_STATE_TERM[state])}
+    </span>
+  );
+}
+
+/**
+ * An open slot past its on-time window, on the card's "next intake" row and
+ * the table's next cell: the shared "Overdue" label and the slot's time. It
+ * replaces "Overdue since {slot time}, can still be taken", which named the
+ * slot time as the moment the dose turned overdue.
+ */
+export function OverdueSlotValue({ at }: { at: string | number | Date }) {
+  const fmt = useFormatters();
+  return (
+    <span
+      className="inline-flex flex-wrap items-center gap-x-1 text-sm"
+      data-slot="medication-overdue-slot"
+    >
+      <DoseStateLabel state="overdue" />
+      <span className="text-muted-foreground">— {fmt.time(new Date(at))}</span>
     </span>
   );
 }

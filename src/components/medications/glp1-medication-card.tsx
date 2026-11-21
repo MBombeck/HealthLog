@@ -11,6 +11,7 @@ import { showErrorToast } from "@/lib/errors/error-toast";
 import { MedicationCardMenu } from "@/components/medications/medication-card-menu";
 import { MedicationStateBadges } from "@/components/medications/card-parts/medication-state-badges";
 import { MedicationCardBody } from "@/components/medications/card-parts/medication-card-body";
+import { DoseStateLabel } from "@/components/medications/dose-state-label";
 import { useMedicationIntake } from "@/components/medications/use-medication-intake";
 import { useCardDoseSnooze } from "@/components/medications/card-parts/use-dose-snooze";
 import { useWeekdayLabel } from "@/components/medications/card-parts/medication-next-last-slot";
@@ -495,11 +496,8 @@ export function Glp1MedicationCard({
   // the liked relative-day phrasing ("Samstag 13.7. (in 7 Tagen)") — while
   // the structure / labels live in the shared body. The purple dose accent
   // is byte-equivalent with the generic card's.
-  // v1.16.4 — an open overdue slot stays on the card as a calm amber
-  // "overdue — still takeable" line until its catch-up band closes
-  // (auto-miss); only then does the line advance to the next future slot.
-  // A same-day overdue anchor reads as a clock time, an older one (the
-  // weekly catch-up tail spans days) as its weekday + date.
+  // An open overdue slot reads "Overdue" + its time until the catch-up band
+  // closes; a same-day anchor shows the clock, an older one weekday + date.
   const overdueLabel =
     medication.nextDueOverdue && next
       ? diffDays(next.date, now) === 0
@@ -510,8 +508,9 @@ export function Glp1MedicationCard({
   const nextLine =
     next && currentWindowStatus.status !== "in_window" ? (
       overdueLabel ? (
-        <span className="text-warning font-medium">
-          {t("medications.nextIntakeOverdue", { time: overdueLabel })}
+        <span className="inline-flex flex-wrap items-center gap-x-1 text-sm">
+          <DoseStateLabel state="overdue" />
+          <span className="text-muted-foreground">— {overdueLabel}</span>
         </span>
       ) : (
         <>
@@ -560,6 +559,7 @@ export function Glp1MedicationCard({
         currentWindowStatus,
         now,
         userTz,
+        medication.nextDueAt,
       )}
       doseStatus={doseStatus}
       nextLine={nextLine}

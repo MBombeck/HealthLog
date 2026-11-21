@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2847,
-  "total": 8915,
+  "total": 8913,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1141,7 +1141,7 @@
     "components/medications/dose-history-ledger-compute.ts": 5,
     "components/medications/dose-strength-curve.tsx": 2,
     "components/medications/drug-level-chart.tsx": 2,
-    "components/medications/glp1-medication-card.tsx": 33,
+    "components/medications/glp1-medication-card.tsx": 32,
     "components/medications/injection-site-picker.tsx": 2,
     "components/medications/intake-edit-dialog.tsx": 2,
     "components/medications/intake-history-list-v2.tsx": 13,
@@ -1366,7 +1366,7 @@
     "components/settings/medications-section.tsx": 3,
     "components/settings/module-icons.ts": 8,
     "components/settings/modules-section.tsx": 3,
-    "components/settings/mood-reminder-card.tsx": 4,
+    "components/settings/mood-reminder-card.tsx": 3,
     "components/settings/mood-section.tsx": 2,
     "components/settings/notifications-section.tsx": 1,
     "components/settings/privacy-section.tsx": 2,

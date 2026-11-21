@@ -26,7 +26,10 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MedicationStatusPill } from "@/components/medications/card-parts/medication-status-pill";
-import { DoseStateLabel } from "@/components/medications/dose-state-label";
+import {
+  DoseStateLabel,
+  OverdueSlotValue,
+} from "@/components/medications/dose-state-label";
 import { useWeekdayLabel } from "@/components/medications/card-parts/medication-next-last-slot";
 import { resolveDisplayedSlotInstant } from "@/components/medications/card-parts/displayed-slot-instant";
 import { estimateRunwayDays } from "@/lib/medications/supply-runway";
@@ -504,6 +507,7 @@ function MedicationTableRowItem({
     currentWindowStatus,
     now,
     userTz,
+    medication.nextDueAt,
   );
   const statusCell =
     pill && pill.takenEarlyDaysAgo != null ? (
@@ -576,13 +580,7 @@ function MedicationTableRowItem({
     );
   } else if (medication.active) {
     if (medication.nextDueOverdue && nextAt) {
-      nextCell = (
-        <span className="text-warning font-medium">
-          {t("medications.nextIntakeOverdue", {
-            time: formatTime(new Date(nextAt).toISOString()),
-          })}
-        </span>
-      );
+      nextCell = <OverdueSlotValue at={nextAt} />;
     } else if (currentWindowStatus.status === "in_window") {
       nextCell = (
         <span>

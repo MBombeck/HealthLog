@@ -126,7 +126,19 @@ export function OverviewStatusSection({
   // The open dose and its actions, the card's: the resolved state from the
   // compliance block, the take for the slot the state names (else the next
   // due one), and the snooze while a reminder is open.
-  const state = doseStateFromWire(currentDose?.state, currentDose?.takenLate);
+  // The slot shown and taken is the list's `nextDueAt`, which keeps an open
+  // overdue slot; `currentDose` walks from now forward and can already be
+  // about the next day's dose, in which case the open slot is overdue.
+  const sameSlot =
+    currentDose?.targetAt != null &&
+    medication.nextDueAt != null &&
+    new Date(currentDose.targetAt).getTime() ===
+      new Date(medication.nextDueAt).getTime();
+  const state = sameSlot
+    ? doseStateFromWire(currentDose?.state, currentDose?.takenLate)
+    : medication.nextDueOverdue
+      ? "overdue"
+      : null;
   // Only a dose that waits for an answer gets a state beside it: due,
   // overdue, or missed (a take now still counts, late).
   const shownState =
@@ -138,12 +150,7 @@ export function OverviewStatusSection({
     !recordOnly &&
     courseStatus !== "ENDED" &&
     courseStatus !== "UPCOMING";
-  const slotAt =
-    currentDose?.targetAt != null
-      ? new Date(currentDose.targetAt)
-      : medication.nextDueAt
-        ? new Date(medication.nextDueAt)
-        : null;
+  const slotAt = medication.nextDueAt ? new Date(medication.nextDueAt) : null;
   const { intakeLoading, recordIntake } = useMedicationIntake({ medication });
   const snooze = useCardDoseSnooze({
     ...medication,

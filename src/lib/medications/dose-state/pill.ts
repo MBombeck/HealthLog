@@ -16,6 +16,8 @@ type Instant = Date | string | null;
 
 export interface ResolvedDoseWire {
   state: string | null;
+  /** The slot the resolved dose is about (`currentDose.targetAt`). */
+  targetAt?: Instant;
   dueAt: Instant;
   overdueSince: Instant;
   missedAfter: Instant;
@@ -85,6 +87,15 @@ export function cardWindowPill(
   },
   now: Date,
   tz: string,
+  /**
+   * The slot the card shows and posts a take for (the list's `nextDueAt`,
+   * which keeps an open overdue slot). When the resolved dose is about a
+   * LATER slot, `currentDose` skipped the open one (its cycle walks from
+   * `now` forward, so a slot whose time has passed but is still due or
+   * overdue reads as tomorrow's pending dose) and the card's own reading
+   * of the open slot stands instead of no pill at all.
+   */
+  displayedSlotAt?: string | Date | null,
 ): (DosePill & { takenEarlyDaysAgo: number | null }) | null {
   const fromFallback =
     fallback.status && fallback.window
@@ -96,6 +107,9 @@ export function cardWindowPill(
         }
       : null;
   if (fromFallback?.takenEarlyDaysAgo != null) return fromFallback;
+  const target = ms(dose?.targetAt ?? null);
+  const shown = ms(displayedSlotAt ?? null);
+  if (target !== null && shown !== null && target > shown) return fromFallback;
   const server = dosePillFromResolved(dose, now, tz);
   if (server === undefined) return fromFallback;
   return server ? { ...server, takenEarlyDaysAgo: null } : null;

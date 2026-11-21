@@ -12,6 +12,7 @@ import { useCardDoseSnooze } from "@/components/medications/card-parts/use-dose-
 import { MedicationCardMenu } from "@/components/medications/medication-card-menu";
 import { MedicationStateBadges } from "@/components/medications/card-parts/medication-state-badges";
 import { MedicationCardBody } from "@/components/medications/card-parts/medication-card-body";
+import { OverdueSlotValue } from "@/components/medications/dose-state-label";
 import { useWeekdayLabel } from "@/components/medications/card-parts/medication-next-last-slot";
 import { formatTimeWindowRange } from "@/lib/time-window-format";
 import { formatDateTime, formatTime } from "@/lib/format";
@@ -441,13 +442,7 @@ export function MedicationCard({
           // catch-up band closes (auto-miss); only then does the line
           // advance to the next future slot.
           if (medication.nextDueOverdue && nextAt) {
-            return (
-              <span className="text-warning font-medium">
-                {t("medications.nextIntakeOverdue", {
-                  time: formatTime(new Date(nextAt).toISOString()),
-                })}
-              </span>
-            );
+            return <OverdueSlotValue at={nextAt} />;
           }
 
           // Format day label relative to today
@@ -522,6 +517,7 @@ export function MedicationCard({
         currentWindowStatus,
         now,
         userTz,
+        medication.nextDueAt,
       )}
       doseStatus={medication.asNeeded ? "upcoming" : doseStatus}
       nextLine={asNeededLine ?? nextLine}

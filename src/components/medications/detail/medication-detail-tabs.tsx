@@ -185,6 +185,8 @@ export interface MedicationDetailSnapshot {
    * directly; no client-side recurrence walking.
    */
   nextDueAt?: string | null;
+  /** True while `nextDueAt` is an open slot past its on-time window. */
+  nextDueOverdue?: boolean;
   /**
    * v1.37.19 — server-resolved slot-aware runway (days); null = inventory
    * tracking off or no consuming cadence. Preferred over the client

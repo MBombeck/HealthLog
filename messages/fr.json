@@ -1482,7 +1482,7 @@
     "addMedication": "Ajouter",
     "firstMedication": "Ajouter le premier médicament",
     "addChoice": {
-      "logIntake": "Enregistrer une prise",
+      "logIntake": "Saisir une prise",
       "newMedication": "Nouveau médicament"
     },
     "takeAllDue": {
@@ -1575,7 +1575,6 @@
     "complianceInfoLabel": "Que signifie l'observance ?",
     "lastIntake": "Dernière prise :",
     "nextIntake": "Prochaine prise :",
-    "nextIntakeOverdue": "En retard depuis {time}, encore rattrapable",
     "dayStreak": "jours de série",
     "dayStreakOne": "jour de série",
     "cycleDueToday": "À prendre aujourd'hui",
@@ -2105,7 +2104,7 @@
         "empty": "Aucune prise sur cette période pour l'instant.",
         "summaryEmpty": "Aucune dose à évaluer pour l'instant.",
         "adherenceBarLabel": "{onTime} à l'heure, {late} en retard, {missed} manquées",
-        "add": "Entrée",
+        "add": "Saisir une prise",
         "rowActionsLabel": "Actions pour {time}",
         "markAsTaken": "Marquer comme prise",
         "markAsSkipped": "Marquer comme sautée",

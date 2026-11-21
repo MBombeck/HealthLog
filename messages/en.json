@@ -1482,7 +1482,7 @@
     "addMedication": "Add",
     "firstMedication": "Add first medication",
     "addChoice": {
-      "logIntake": "Log an intake",
+      "logIntake": "Log intake",
       "newMedication": "New medication"
     },
     "takeAllDue": {
@@ -1575,7 +1575,6 @@
     "complianceInfoLabel": "What does adherence mean?",
     "lastIntake": "Last intake:",
     "nextIntake": "Next intake:",
-    "nextIntakeOverdue": "Overdue since {time}, can still be taken",
     "dayStreak": "day streak",
     "dayStreakOne": "day streak",
     "cycleDueToday": "Due today",
@@ -2105,7 +2104,7 @@
         "empty": "No intakes in this period yet.",
         "summaryEmpty": "No doses to score yet.",
         "adherenceBarLabel": "{onTime} on time, {late} late, {missed} missed",
-        "add": "Entry",
+        "add": "Log intake",
         "rowActionsLabel": "Actions for {time}",
         "markAsTaken": "Mark as taken",
         "markAsSkipped": "Mark as skipped",
