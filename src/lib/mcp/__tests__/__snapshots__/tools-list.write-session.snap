@@ -593,7 +593,8 @@
                 "enum": [
                   "PAPERLESS",
                   "PAPRA",
-                  "OTHER"
+                  "OTHER",
+                  "REPORT_SCHEDULE"
                 ]
               },
               "sourceId": {
@@ -3093,7 +3094,8 @@
                       "enum": [
                         "PAPERLESS",
                         "PAPRA",
-                        "OTHER"
+                        "OTHER",
+                        "REPORT_SCHEDULE"
                       ]
                     },
                     "sourceId": {

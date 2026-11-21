@@ -2420,6 +2420,8 @@ const ACTOR_ROUTES: Record<string, string> = {
     "The UI language belongs to the person reading the screen, never to the record on it. Under a record scope this would transplant a delegate's choice onto the owner's row and send the owner's cron mail in a language they may not read. It has to keep working rather than merely refuse safely: the switcher's mount-time backfill fires on every page load, including the shared dashboard.",
   "app/api/settings/module-list-layout/route.ts":
     "How the person's own labs, illness and checkups lists are laid out: card or list view, manual order, sort. It reads and writes the caller's own row only. Inside another record the ids of a saved order simply match nothing and the list keeps the server order, so serving the person's own choice there reveals nothing of the owner's and grants nothing; refusing it under a switch broke the list controls in exactly the context they are used in.",
+  "app/api/settings/report-schedule/route.ts":
+    "The scheduled doctor report is a standing instruction that files a report into the vault every month, quarter or year. Only the person the record is about may set one, so the route always serves the caller's own record and never a record a switch opened; a delegate or a guardian reads and sets their own schedule, not the owner's.",
   "app/api/care/feed-subscription/route.ts":
     "The care calendar subscription mints a standing URL credential whose contents end up in a third party's calendar cloud. Only the person the dates are about may make one, so the route always serves the caller's own record and never a record a switch opened; a delegate or a guardian gets their own feed, not the owner's.",
   "app/api/feature-flags/route.ts":
@@ -2576,7 +2578,7 @@ const ACTOR_ROUTES: Record<string, string> = {
  *
  * The energy balance read joins the record list, read-only. 334 -> 335.
  */
-const FROZEN_ENTRY_COUNT = 335;
+const FROZEN_ENTRY_COUNT = 336;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

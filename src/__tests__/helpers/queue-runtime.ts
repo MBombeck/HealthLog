@@ -244,6 +244,9 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "coach-reminder-sweep": short("Batches of 200 to 500 rows, no provider."),
   "coach-plan-review": short("A batch of 100 plans, folded in SQL."),
   "medication-low-stock": short("A light inventory check per account."),
+  "report-schedule": short(
+    "At most twenty doctor-report PDFs a tick, each one record's report for one closed period; most ticks render none.",
+  ),
   "daily-briefing": short("A light cohort scan every fifteen minutes."),
 
   // ── Rollups ────────────────────────────────────────────────────────

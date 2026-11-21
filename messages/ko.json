@@ -12520,6 +12520,7 @@
       "importedFromWithId": "{system}에서 가져옴, ID {id}",
       "openInSource": "{system}에서 열기",
       "sourceOther": "다른 시스템",
+      "sourceReportSchedule": "보고서 일정",
       "share": "공유",
       "labValuesLink": "검사 수치 {count}개 보기",
       "visitsLabel": "연결된 진료",
@@ -15275,6 +15276,41 @@
       "visitWith": "진료 예약: {name}",
       "checkupDue": "예정: {label}",
       "boosterDue": "추가 접종 예정: {label}"
+    }
+  },
+  "reportSchedule": {
+    "title": "예약된 진료 보고서",
+    "description": "한 달, 분기 또는 한 해가 끝나면 진료 보고서를 자동으로 문서에 저장해요.",
+    "loadError": "보고서 일정을 불러올 수 없어요.",
+    "saveError": "보고서 일정을 저장할 수 없어요. 다시 시도해 주세요.",
+    "cadenceLabel": "주기",
+    "windowLabel": "각 보고서의 범위",
+    "cadence": {
+      "MONTHLY": "매월",
+      "QUARTERLY": "분기마다",
+      "YEARLY": "매년"
+    },
+    "window": {
+      "PERIOD": "끝난 기간",
+      "LAST_90_DAYS": "최근 90일",
+      "LAST_365_DAYS": "최근 12개월"
+    },
+    "usesSelection": "각 보고서에는 위의 내보내기에서 선택한 항목이 담겨요. 그곳에서 선택을 바꾸면 다음 보고서에 반영돼요. 알림은 보내지 않아요. 보고서가 그냥 그곳에 있어요.",
+    "turnOn": "켜기",
+    "turnOff": "끄기",
+    "turnOffTitle": "예약된 보고서를 끌까요?",
+    "turnOffBody": "새 보고서는 저장되지 않아요. 이미 문서에 있는 보고서는 그대로 남아요.",
+    "due": "다음 보고서: {period}, 기한이 된 뒤 한 시간 안에 저장돼요.",
+    "upToDate": "최신 상태예요. 현재 기간이 끝나면 다음 보고서가 저장돼요.",
+    "documentTitle": "진료 보고서 {period}",
+    "outcome": {
+      "stored": "{period} 보고서가 문서에 있어요.",
+      "alreadyFiled": "{period} 보고서가 이미 문서에 있었어요.",
+      "deletedByOwner": "{period} 보고서가 삭제되어 다시 저장하지 않아요.",
+      "quotaExceeded": "{period} 보고서가 문서 저장 공간에 들어가지 않았어요. 다음 기간에 다시 시도해요.",
+      "tooLarge": "{period} 보고서가 이곳의 문서 최대 크기보다 컸어요. 다음 기간에 다시 시도해요.",
+      "noSelection": "위의 내보내기에서 선택된 항목이 없어서 보고서를 저장하지 않았어요. 담을 내용을 고르면 다음 실행 때 저장돼요.",
+      "failed": "{period} 보고서를 저장할 수 없었어요. 한 시간 안에 다시 시도해요."
     }
   }
 }

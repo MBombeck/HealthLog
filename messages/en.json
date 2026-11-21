@@ -12520,6 +12520,7 @@
       "importedFromWithId": "Imported from {system}, ID {id}",
       "openInSource": "Open in {system}",
       "sourceOther": "another system",
+      "sourceReportSchedule": "the report schedule",
       "share": "Share",
       "labValuesLink": "View {count} lab values",
       "visitsLabel": "Belongs to visit",
@@ -15275,6 +15276,41 @@
       "visitWith": "Appointment: {name}",
       "checkupDue": "Due: {label}",
       "boosterDue": "Booster due: {label}"
+    }
+  },
+  "reportSchedule": {
+    "title": "Scheduled doctor report",
+    "description": "Files the doctor report into your documents on its own once a month, quarter or year has ended.",
+    "loadError": "The report schedule could not be loaded.",
+    "saveError": "The report schedule could not be saved. Please try again.",
+    "cadenceLabel": "How often",
+    "windowLabel": "What each report covers",
+    "cadence": {
+      "MONTHLY": "Every month",
+      "QUARTERLY": "Every quarter",
+      "YEARLY": "Every year"
+    },
+    "window": {
+      "PERIOD": "The period that ended",
+      "LAST_90_DAYS": "The last 90 days",
+      "LAST_365_DAYS": "The last 12 months"
+    },
+    "usesSelection": "Each report contains what you selected for the export above. Change the selection there and the next report follows it. No notification is sent: the report is simply there.",
+    "turnOn": "Turn on",
+    "turnOff": "Turn off",
+    "turnOffTitle": "Turn off the scheduled report?",
+    "turnOffBody": "No new reports are filed. The reports already in your documents stay there.",
+    "due": "Next report: {period}, filed within the hour after it is due.",
+    "upToDate": "Up to date. The next report follows when the current period ends.",
+    "documentTitle": "Doctor report {period}",
+    "outcome": {
+      "stored": "The report for {period} is in your documents.",
+      "alreadyFiled": "The report for {period} was already in your documents.",
+      "deletedByOwner": "The report for {period} was deleted, so it is not filed again.",
+      "quotaExceeded": "The report for {period} did not fit in your document storage. The next period tries again.",
+      "tooLarge": "The report for {period} was larger than a document may be here. The next period tries again.",
+      "noSelection": "Nothing is selected for the export above, so no report was filed. Choose what it should contain and it is filed on the next run.",
+      "failed": "The report for {period} could not be filed. It is tried again within the hour."
     }
   }
 }

@@ -12520,6 +12520,7 @@
       "importedFromWithId": "Geïmporteerd uit {system}, ID {id}",
       "openInSource": "Openen in {system}",
       "sourceOther": "een ander systeem",
+      "sourceReportSchedule": "het rapportschema",
       "share": "Delen",
       "labValuesLink": "{count} labwaarden bekijken",
       "visitsLabel": "Hoort bij bezoek",
@@ -15275,6 +15276,41 @@
       "visitWith": "Afspraak: {name}",
       "checkupDue": "Aan de beurt: {label}",
       "boosterDue": "Booster aan de beurt: {label}"
+    }
+  },
+  "reportSchedule": {
+    "title": "Gepland artsrapport",
+    "description": "Slaat het artsrapport vanzelf op in je documenten zodra een maand, kwartaal of jaar voorbij is.",
+    "loadError": "Het rapportschema kon niet worden geladen.",
+    "saveError": "Het rapportschema kon niet worden opgeslagen. Probeer het opnieuw.",
+    "cadenceLabel": "Hoe vaak",
+    "windowLabel": "Wat elk rapport omvat",
+    "cadence": {
+      "MONTHLY": "Elke maand",
+      "QUARTERLY": "Elk kwartaal",
+      "YEARLY": "Elk jaar"
+    },
+    "window": {
+      "PERIOD": "De afgelopen periode",
+      "LAST_90_DAYS": "De laatste 90 dagen",
+      "LAST_365_DAYS": "De laatste 12 maanden"
+    },
+    "usesSelection": "Elk rapport bevat wat je hierboven voor de export hebt geselecteerd. Pas je de selectie daar aan, dan volgt het volgende rapport die. Er wordt geen melding verstuurd: het rapport staat er gewoon.",
+    "turnOn": "Inschakelen",
+    "turnOff": "Uitschakelen",
+    "turnOffTitle": "Gepland rapport uitschakelen?",
+    "turnOffBody": "Er worden geen nieuwe rapporten opgeslagen. Rapporten die al in je documenten staan, blijven daar.",
+    "due": "Volgend rapport: {period}, opgeslagen binnen een uur nadat het aan de beurt is.",
+    "upToDate": "Bijgewerkt. Het volgende rapport volgt wanneer de huidige periode eindigt.",
+    "documentTitle": "Artsrapport {period}",
+    "outcome": {
+      "stored": "Het rapport over {period} staat in je documenten.",
+      "alreadyFiled": "Het rapport over {period} stond al in je documenten.",
+      "deletedByOwner": "Het rapport over {period} is verwijderd en wordt niet opnieuw opgeslagen.",
+      "quotaExceeded": "Het rapport over {period} paste niet meer in je documentopslag. De volgende periode probeert het opnieuw.",
+      "tooLarge": "Het rapport over {period} was groter dan een document hier mag zijn. De volgende periode probeert het opnieuw.",
+      "noSelection": "Er is hierboven niets geselecteerd voor de export, dus er is geen rapport opgeslagen. Kies wat erin moet en het volgt bij de volgende ronde.",
+      "failed": "Het rapport over {period} kon niet worden opgeslagen. Binnen een uur wordt het opnieuw geprobeerd."
     }
   }
 }

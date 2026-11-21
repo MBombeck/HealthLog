@@ -55,6 +55,7 @@ import { dailyPaths } from "./daily";
 import { cyclePaths } from "./cycle";
 import { cycleFeedPaths } from "./cycle-feed";
 import { careFeedPaths } from "./care-feed";
+import { reportSchedulePaths } from "./report-schedule";
 import { dashboardWidgetPaths } from "./dashboard";
 import { dayPaths } from "./day";
 import { searchPaths } from "./search";
@@ -106,6 +107,7 @@ const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   ...cyclePaths,
   ...cycleFeedPaths,
   ...careFeedPaths,
+  ...reportSchedulePaths,
   ...metaPaths,
   ...healthRecordPaths,
   ...exportPaths,

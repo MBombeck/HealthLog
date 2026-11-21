@@ -31,6 +31,7 @@ import { HealthRecordExportPanel } from "@/components/settings/report-selection/
 import { SectionHeading } from "@/components/ui/section-heading";
 import { SharingSection } from "@/components/settings/sharing-section";
 import { CareCalendarFeedCard } from "@/components/settings/care-calendar-feed-card";
+import { ReportScheduleCard } from "@/components/settings/report-schedule-card";
 
 export function GesundheitsakteSection() {
   const { t } = useTranslations();
@@ -41,6 +42,10 @@ export function GesundheitsakteSection() {
   return (
     <div className="space-y-10">
       <HealthRecordExportPanel />
+
+      {/* The same report, filed into the documents on its own once a month,
+          quarter or year has closed. Uses the selection chosen above. */}
+      <ReportScheduleCard />
 
       <section id="sharing" className="scroll-mt-28 space-y-4">
         <SectionHeading

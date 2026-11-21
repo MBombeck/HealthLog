@@ -536,6 +536,8 @@ export const USER_RESET = {
   activityGoalsJson: Prisma.DbNull,
   nutrientTargetsJson: Prisma.DbNull,
   reportSelectionJson: Prisma.DbNull,
+  // A wiped record has nothing to report on: the schedule goes with it.
+  reportScheduleJson: Prisma.DbNull,
   modulePreferencesJson: Prisma.DbNull,
   healthScoreConfigJson: Prisma.DbNull,
   globalExcludedInjectionSites: [],

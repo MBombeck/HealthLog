@@ -53,6 +53,10 @@ import {
 } from "@/lib/jobs/medication-low-stock-queue";
 import { MORNING_DIGEST_REFRESH_QUEUE } from "@/lib/jobs/morning-digest-refresh-shared";
 import {
+  REPORT_SCHEDULE_CRON,
+  REPORT_SCHEDULE_QUEUE,
+} from "@/lib/jobs/report-schedule-queue";
+import {
   PERIOD_NARRATIVE_CRON,
   PERIOD_NARRATIVE_EXPIRE_SECONDS,
   PERIOD_NARRATIVE_QUEUE,
@@ -260,6 +264,19 @@ const jobs: readonly JobDefinition[] = [
     cron: MEDICATION_LOW_STOCK_CRON,
     work: { localConcurrency: 1 },
     load: async () => (await handlers()).handleMedicationLowStock,
+  }),
+  // The scheduled doctor report. Single-flight; no retries, because the next
+  // hourly tick is the retry and the vault's source key keeps a retry from
+  // filing a report twice. Not in the heavy lane: one record's PDF at a time,
+  // at most twenty a tick, is far from an export's working set.
+  defineJob({
+    queue: REPORT_SCHEDULE_QUEUE,
+    cron: REPORT_SCHEDULE_CRON,
+    scheduleOptions: cronIsTheRetry,
+    work: { localConcurrency: 1 },
+    lock: () => WHOLE_PASS,
+    load: async () =>
+      (await import("@/lib/jobs/report-schedule")).handleReportSchedule,
   }),
   // Every 15 minutes; the per-user local-hour gate picks each user's slot.
   defineJob({

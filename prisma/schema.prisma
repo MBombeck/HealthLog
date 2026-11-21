@@ -711,6 +711,13 @@ model User {
   // here — absence is exclusion, and there is no defaults constant to drift.
   reportSelectionJson Json? @map("report_selection_json")
 
+  // The scheduled doctor report: `{ v: 1, cadence, window, lastPeriod,
+  // lastOutcome, lastRunAt }` (`src/lib/doctor-report/schedule.ts`). NULL is
+  // off, the default. The daily `report-schedule` job files the report of each
+  // closed period into the document vault once and stamps `lastPeriod`; the
+  // settings card reads the stamp and the outcome back.
+  reportScheduleJson Json? @map("report_schedule_json")
+
   // v1.4.49 M-DOUBLE-REMINDER — per-user notification preferences blob.
   //
   // Opt-in suppression for redundant server-side pushes. Shape:
