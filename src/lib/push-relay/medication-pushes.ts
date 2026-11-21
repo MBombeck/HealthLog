@@ -42,7 +42,8 @@ export interface RecordedFields {
   slotInstant: Date;
   outcome: "taken" | "skipped";
   takenAt: Date | null;
-  takenVia: string;
+  /** Null on a skip. */
+  takenVia: string | null;
 }
 
 /** The sealed confirmation of one recorded dose. */

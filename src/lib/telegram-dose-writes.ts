@@ -413,7 +413,7 @@ export async function markMedicationSkipped(input: {
         slotInstant: writtenSkip.slotScheduledFor,
         outcome: "skipped",
         takenAt: null,
-        takenVia: "TELEGRAM",
+        takenVia: null,
       },
     });
   }
