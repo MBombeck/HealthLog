@@ -20,6 +20,7 @@ import {
   relayConsentSchema,
 } from "@/lib/push-relay/device-registration";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
+import { isoDateTime } from "@/lib/validations/datetime";
 
 const senderKey = z
   .object({
@@ -130,6 +131,15 @@ export const devicePushBlockSchema = z
       .boolean()
       .describe(
         "The relay holds the device's Live Activity consent: start and update over the relay. Withdrawn with the relay consent.",
+      ),
+    liveActivityStarted: z
+      .object({
+        medicationId: z.string(),
+        slotInstant: isoDateTime(),
+      })
+      .nullable()
+      .describe(
+        "The dose the Live Activity the server started on this device (over the relay) shows. The start push never carries it, so the app reads it here, and in the `POST /api/devices` answer right after it registers the started Activity's token (`relayStart: true`). Null when no server start is pending or running, or once that slot is taken, skipped or missed, its medication paused, ended or deleted, or the Activity ended.",
       ),
   })
   .meta({ id: "DevicePushState" });

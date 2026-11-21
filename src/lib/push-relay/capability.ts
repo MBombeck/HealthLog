@@ -17,7 +17,8 @@
  *   `consentTextVersion`.
  *
  * `push.device`: `transport` (`relay` | `direct` | `none`), `consent`,
- * `relayState`, `intakeSync` (`ok` | `degraded`), `liveActivityConsent`.
+ * `relayState`, `intakeSync` (`ok` | `degraded`), `liveActivityConsent`,
+ * `liveActivityStarted` (`{ medicationId, slotInstant }` | null).
  */
 import { prisma } from "@/lib/db";
 import { loadApnsConfig } from "@/lib/notifications/senders/apns";
@@ -33,6 +34,10 @@ import {
   type RelayConfig,
 } from "@/lib/push-relay/config";
 import { isCircuitOpen } from "@/lib/push-relay/circuit";
+import {
+  liveActivityStartedOf,
+  type LiveActivityStarted,
+} from "@/lib/push-relay/live-activity-started";
 import {
   ensureEnvelopeKeys,
   publishedSenderKeys,
@@ -75,6 +80,8 @@ export interface DevicePushBlock {
   senderKeys: PublishedSenderKey[];
   relayInstanceId: string | null;
   liveActivityConsent: boolean;
+  /** The dose the server-started Live Activity shows (`live-activity-started.ts`). */
+  liveActivityStarted: LiveActivityStarted | null;
 }
 
 /** The health the app sees for a registration. */
@@ -212,6 +219,9 @@ export async function devicePushBlock(
         relayConsentAt: true,
         envelopeReportedAt: true,
         liveActivityConsentAt: true,
+        userId: true,
+        laStartedMedicationId: true,
+        laStartedSlot: true,
       },
     }),
     config.available ? loadRegistration(config) : null,
@@ -231,6 +241,7 @@ export async function devicePushBlock(
     liveActivityConsent: Boolean(
       device?.relayConsentAt && device.liveActivityConsentAt,
     ),
+    liveActivityStarted: device ? await liveActivityStartedOf(device) : null,
   };
 }
 

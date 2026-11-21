@@ -47236,6 +47236,7 @@ components:
               - push.healthkit-catch-up
               - push.security-alert-relay
               - push.live-activity-relay
+              - push.live-activity-started
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices.
@@ -47277,7 +47278,10 @@ components:
             liveActivityWithdraw (hl-la-withdraw-v1), liveActivityStart (push-to-start token with hl-la-start-v1) and
             liveActivityTokens[].relayStart; the server starts and updates medication Live Activities over the relay
             with the closed content state while push.relay.liveActivity lists start and update (operator switch
-            PUSH_RELAY_LIVE_ACTIVITY, off by default)."
+            PUSH_RELAY_LIVE_ACTIVITY, off by default). `push.live-activity-started`: push.device.liveActivityStarted on
+            /api/auth/me and in the POST /api/devices answer names the dose ({ medicationId, slotInstant }) of the Live
+            Activity the server started on the calling device; null once that slot is answered, its medication paused or
+            ended, or nothing was started."
       required:
         - version
         - buildSha
@@ -60956,6 +60960,25 @@ components:
           type: boolean
           description: "The relay holds the device's Live Activity consent: start and update over the relay. Withdrawn with the
             relay consent."
+        liveActivityStarted:
+          anyOf:
+            - type: object
+              properties:
+                medicationId:
+                  type: string
+                slotInstant:
+                  type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+              required:
+                - medicationId
+                - slotInstant
+              additionalProperties: false
+            - type: "null"
+          description: "The dose the Live Activity the server started on this device (over the relay) shows. The start push never
+            carries it, so the app reads it here, and in the `POST /api/devices` answer right after it registers the
+            started Activity's token (`relayStart: true`). Null when no server start is pending or running, or once that
+            slot is taken, skipped or missed, its medication paused, ended or deleted, or the Activity ended."
       required:
         - transport
         - envelope
@@ -60965,6 +60988,7 @@ components:
         - senderKeys
         - relayInstanceId
         - liveActivityConsent
+        - liveActivityStarted
       additionalProperties: false
     PushSenderKey:
       type: object
