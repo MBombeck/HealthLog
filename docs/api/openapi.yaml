@@ -3349,10 +3349,10 @@ paths:
         `auth.refresh.invalid` (not found / expired — drop the token and re-authenticate).
 
 
-        A 409 with `meta.errorCode` = `auth.refresh.superseded` (v1.48.6) answers the loser of two concurrent refreshes
+        A 409 with `meta.errorCode` = `auth.refresh.superseded` (v1.49.0) answers the loser of two concurrent refreshes
         with the same token: the other request rotated it, nothing is revoked, and its pair is live. Not terminal: read
         the credentials the winning request stored and continue. Do not present this refresh token again, since that is
-        a replay and revokes the device family. Before v1.48.6 this case answered 401 `auth.refresh.reuse`.
+        a replay and revokes the device family. Before v1.49.0 this case answered 401 `auth.refresh.reuse`.
       requestBody:
         required: true
         content:
