@@ -4,13 +4,21 @@ import {
   foldForMatch,
   isHit,
   markMatches,
-  scoreForQuery,
   queryWords,
   scoreCandidate,
   snippetOf,
   WEIGHT,
   type SearchCandidate,
 } from "../match";
+import { normalizeSearchText } from "@/lib/encounters/procedures";
+
+/** `scoreCandidate` for a raw query, the way the search route calls it. */
+function scoreForQuery(
+  c: Pick<SearchCandidate, "fields" | "contentWords">,
+  query: string,
+) {
+  return scoreCandidate(c, queryWords(query), normalizeSearchText(query));
+}
 
 function candidate(
   fields: SearchCandidate["fields"],

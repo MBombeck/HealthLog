@@ -70,7 +70,6 @@ import {
 } from "./apple-health-mapping";
 import {
   CONSOLIDATION_GRACE_CUTOFF_HOURS,
-  bucketRowsByDay,
   runConsolidation,
   type DayWriteOutcome,
 } from "./consolidation-base";
@@ -171,18 +170,6 @@ export function meanBucketValue(rows: readonly PerSampleRow[]): number {
   let acc = 0;
   for (const row of rows) acc += row.value;
   return acc / rows.length;
-}
-
-/**
- * Group per-sample rows into per-day buckets in the user's timezone.
- * Rows already in the daily-stats shape are skipped — they are the
- * canonical mean, not a sample. Exposed for unit testing without Prisma.
- */
-export function bucketMeanRows(
-  rows: readonly PerSampleRow[],
-  tz: string,
-): Map<string, PerSampleRow[]> {
-  return bucketRowsByDay(rows, tz, DAILY_STATS_PREFIX);
 }
 
 /**

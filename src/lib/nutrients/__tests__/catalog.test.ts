@@ -18,7 +18,6 @@ import {
   SYNCABLE_NUTRIENT_CODES,
   isAboveUpperLimit,
   isIngredientNutrientCode,
-  isSyncableNutrientCode,
   nutrientCodesInGroup,
   resolveNutrientReference,
   toCanonicalNutrientAmount,
@@ -40,11 +39,14 @@ const REFERENCE_LESS = [
   "alcohol",
 ];
 
+const isSyncable = (code: string) =>
+  (SYNCABLE_NUTRIENT_CODES as readonly string[]).includes(code);
+
 describe("nutrient catalog", () => {
   it("carries the 39 syncable codes plus the two supplement-only ones", () => {
     expect(SYNCABLE_NUTRIENT_CODES).toHaveLength(39);
     expect(NUTRIENT_CODES).toHaveLength(41);
-    expect(NUTRIENT_CODES.filter((c) => !isSyncableNutrientCode(c))).toEqual([
+    expect(NUTRIENT_CODES.filter((c) => !isSyncable(c))).toEqual([
       "dha",
       "epa",
     ]);
@@ -66,7 +68,7 @@ describe("nutrient catalog", () => {
       "cholesterol",
       "alcohol",
     ]) {
-      expect(isSyncableNutrientCode(code), code).toBe(true);
+      expect(isSyncable(code), code).toBe(true);
     }
   });
 

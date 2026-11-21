@@ -2144,20 +2144,3 @@ export function getSignal(key: string): SignalDefinition | null {
 export function allSignals(): SignalDefinition[] {
   return Object.values(SIGNALS);
 }
-
-/** Reverse index: DB `MeasurementType` → the signal it backs (built once). */
-const MEASUREMENT_TYPE_TO_SIGNAL = new Map<MeasurementType, SignalDefinition>(
-  allSignals()
-    .filter(
-      (s): s is Extract<SignalDefinition, { kind: "measurement" | "score" }> =>
-        s.kind === "measurement" || s.kind === "score",
-    )
-    .map((s) => [s.source.measurementType, s]),
-);
-
-/** Resolve the signal a `MeasurementType` backs, or null when unregistered. */
-export function signalForMeasurementType(
-  type: MeasurementType,
-): SignalDefinition | null {
-  return MEASUREMENT_TYPE_TO_SIGNAL.get(type) ?? null;
-}

@@ -16,12 +16,7 @@ import {
   getMetricStatusMeta,
 } from "@/lib/insights/metric-status-registry";
 import { MEASUREMENT_LOINC } from "@/lib/fhir/loinc-map";
-import {
-  SIGNALS,
-  allSignals,
-  getSignal,
-  signalForMeasurementType,
-} from "@/lib/signals/registry";
+import { SIGNALS, allSignals, getSignal } from "@/lib/signals/registry";
 import { deriveMetricStatusRegistry } from "@/lib/signals/adapters/metric-status";
 import { deriveMeasurementLoinc } from "@/lib/signals/adapters/fhir";
 import { deriveBucketedTypes } from "@/lib/signals/adapters/correlation";
@@ -107,13 +102,13 @@ describe("signal registry — structural sanity", () => {
     }
   });
 
-  it("signalForMeasurementType round-trips every measurement/score signal", () => {
+  it("no two measurement/score signals back the same measurement type", () => {
+    const types: string[] = [];
     for (const signal of allSignals()) {
       if (signal.kind !== "measurement" && signal.kind !== "score") continue;
-      expect(signalForMeasurementType(signal.source.measurementType)).toBe(
-        signal,
-      );
+      types.push(signal.source.measurementType);
     }
+    expect(new Set(types).size).toBe(types.length);
   });
 });
 

@@ -7,11 +7,7 @@ import { INSTRUMENT_ORDER, isSafetyFlagged } from "../instruments";
 import { anchorText, stemText } from "../instrument-wording";
 import { WORDING } from "../wording";
 import { loadLocaleWording } from "../wording/load";
-import {
-  isValidatedWording,
-  presentedWording,
-  wordingFor,
-} from "../wording/resolve";
+import { presentedWording, wordingFor } from "../wording/resolve";
 
 /**
  * How a surface reads questionnaire text, and which wording an
@@ -277,7 +273,7 @@ describe("validated entries carry the published wording", () => {
         "WHO5.ru",
       ].sort(),
     );
-    expect(isValidatedWording("SCI", "de")).toBe(false);
-    expect(isValidatedWording("PHQ9", "ko")).toBe(true);
+    expect(wordingFor("SCI", "de").validated).toBe(false);
+    expect(wordingFor("PHQ9", "ko").validated).toBe(true);
   });
 });

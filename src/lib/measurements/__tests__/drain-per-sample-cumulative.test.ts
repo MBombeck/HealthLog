@@ -11,8 +11,9 @@ vi.mock("@/lib/rollups/measurement-rollups", () => ({
 }));
 import { recomputeBucketsForMeasurement } from "@/lib/rollups/measurement-rollups";
 
+import { iterateDayBuckets } from "../consolidation-base";
+import type { PerSampleRow } from "../drain-per-sample-cumulative";
 import {
-  bucketRowsByUserDay,
   canonicalDailyTimestamp,
   drainPerSampleCumulative,
   sumBucketValues,
@@ -152,8 +153,26 @@ describe("localDayWindow — DST-aware [dayStart, dayEnd) drill-down bounds", ()
   });
 });
 
+/** Drain the production day-bucket stream over one ascending page of rows. */
+async function bucketRowsByUserDay(
+  rows: readonly PerSampleRow[],
+  tz: string,
+): Promise<Map<string, PerSampleRow[]>> {
+  const sorted = [...rows].sort(
+    (a, b) => a.measuredAt.getTime() - b.measuredAt.getTime(),
+  );
+  async function* pages() {
+    yield sorted;
+  }
+  const byDay = new Map<string, PerSampleRow[]>();
+  for await (const [key, day] of iterateDayBuckets(pages(), tz, "stats:")) {
+    byDay.set(key, day);
+  }
+  return byDay;
+}
+
 describe("bucketRowsByUserDay", () => {
-  it("groups per-sample rows by the user's calendar day", () => {
+  it("groups per-sample rows by the user's calendar day", async () => {
     const rows = [
       {
         id: "m-1",
@@ -177,13 +196,13 @@ describe("bucketRowsByUserDay", () => {
         externalId: "hk-uuid-3",
       },
     ];
-    const { byDay } = bucketRowsByUserDay(rows, "Europe/Berlin");
+    const byDay = await bucketRowsByUserDay(rows, "Europe/Berlin");
     expect(byDay.size).toBe(2);
     expect(byDay.get("2026-05-16")?.length).toBe(2);
     expect(byDay.get("2026-05-17")?.length).toBe(1);
   });
 
-  it("skips rows whose externalId is already in stats:... shape (idempotent re-run)", () => {
+  it("skips rows whose externalId is already in stats:... shape (idempotent re-run)", async () => {
     const rows = [
       {
         id: "m-1",
@@ -200,14 +219,14 @@ describe("bucketRowsByUserDay", () => {
         externalId: "hk-uuid-pre-drain",
       },
     ];
-    const { byDay } = bucketRowsByUserDay(rows, "Europe/Berlin");
+    const byDay = await bucketRowsByUserDay(rows, "Europe/Berlin");
     // The already-collapsed row is skipped; only the per-sample row
     // remains in the bucket.
     expect(byDay.get("2026-05-16")?.length).toBe(1);
     expect(byDay.get("2026-05-16")?.[0]?.id).toBe("m-2");
   });
 
-  it("groups rows with NULL externalId (manual entries) like any other per-sample row", () => {
+  it("groups rows with NULL externalId (manual entries) like any other per-sample row", async () => {
     const rows = [
       {
         id: "m-1",
@@ -217,12 +236,12 @@ describe("bucketRowsByUserDay", () => {
         externalId: null,
       },
     ];
-    const { byDay } = bucketRowsByUserDay(rows, "Europe/Berlin");
+    const byDay = await bucketRowsByUserDay(rows, "Europe/Berlin");
     expect(byDay.get("2026-05-16")?.length).toBe(1);
   });
 
-  it("returns an empty map when the input is empty", () => {
-    const { byDay } = bucketRowsByUserDay([], "Europe/Berlin");
+  it("returns an empty map when the input is empty", async () => {
+    const byDay = await bucketRowsByUserDay([], "Europe/Berlin");
     expect(byDay.size).toBe(0);
   });
 });

@@ -129,33 +129,6 @@ export async function loadConsolidationUsers(
 }
 
 /**
- * Group an array of per-sample rows into per-day buckets keyed by the
- * user's timezone. Rows already in the daily-stats shape (externalId
- * starting with `statsPrefix`) are skipped — re-running on a
- * previously-collapsed bucket is a no-op. This is the single bucketing
- * implementation behind `bucketRowsByUserDay`, `bucketMeanRows`, and
- * `bucketLegacyStepRows`; the only thing that varied between them was the
- * prefix they skip on.
- */
-export function bucketRowsByDay(
-  rows: readonly PerSampleRow[],
-  tz: string,
-  statsPrefix: string,
-): Map<string, PerSampleRow[]> {
-  const byDay = new Map<string, PerSampleRow[]>();
-  for (const row of rows) {
-    if (row.externalId !== null && row.externalId.startsWith(statsPrefix)) {
-      continue;
-    }
-    const key = userDayKey(row.measuredAt, tz);
-    const slot = byDay.get(key) ?? [];
-    slot.push(row);
-    byDay.set(key, slot);
-  }
-  return byDay;
-}
-
-/**
  * Outcome of writing a single per-day bucket. `left-as-stored`: the day
  * already has its `stats:` mean and the samples in hand cannot be shown to be
  * all of the day (`fold-constituents.ts`), so the stored mean and the rows
@@ -390,8 +363,8 @@ export async function* iterateSourcePages<
  * The rows arrive in `measuredAt` order and a local calendar day is one
  * contiguous span of instants, so a day is complete the moment a row from a
  * later day shows up. Rows whose externalId starts with `statsPrefix` (the
- * daily-stats shape) are skipped, the same as `bucketRowsByDay`; pass `null`
- * to keep every row. `onRow` sees every scanned row, skipped ones included,
+ * daily-stats shape) are skipped, so re-running on a collapsed day is a
+ * no-op; pass `null` to keep every row. `onRow` sees every scanned row, skipped ones included,
  * for the scan-count log line.
  */
 export async function* iterateDayBuckets<

@@ -799,15 +799,6 @@ export function isNutrientCode(code: string): code is NutrientCode {
   return NUTRIENT_CODE_SET.has(code);
 }
 
-const SYNCABLE_CODE_SET: ReadonlySet<string> = new Set(SYNCABLE_NUTRIENT_CODES);
-
-/** True when HealthKit may send `code` in the nutrient batch. */
-export function isSyncableNutrientCode(
-  code: string,
-): code is SyncableNutrientCode {
-  return SYNCABLE_CODE_SET.has(code);
-}
-
 /**
  * A code's catalogue entry with its position in display order, or `null` for
  * a code the catalogue does not know.
