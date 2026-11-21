@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 
-import { enqueueSupplementNutrientRecompute } from "@/lib/medications/ingredients/recompute-job";
+import { afterIdentityFieldsChanged } from "@/lib/auth/identity-change";
 import {
   apiHandler,
   requireGuardianAuth,
@@ -16,7 +16,6 @@ import {
 import { auditLog } from "@/lib/auth/audit";
 import {
   invalidateUserInsightsLayout,
-  invalidateUserMedications,
   invalidateUserProfile,
 } from "@/lib/cache/invalidate";
 import { prisma, toJson } from "@/lib/db";
@@ -269,6 +268,15 @@ export const PATCH = apiHandler(
               ? { dateFormat: patch.dateFormat }
               : {}),
           };
+          const priorTimezone =
+            patch.timezone !== undefined
+              ? ((
+                  await prisma.user.findUnique({
+                    where: { id: access.recordId },
+                    select: { timezone: true },
+                  })
+                )?.timezone ?? null)
+              : null;
           const record = await prisma.user.update({
             where: { id: access.recordId },
             data,
@@ -284,14 +292,13 @@ export const PATCH = apiHandler(
               dateFormat: true,
             },
           });
-          invalidateUserProfile(access.recordId);
+          await afterIdentityFieldsChanged(access.recordId, {
+            anthropometrics: true,
+            timezone:
+              patch.timezone !== undefined && patch.timezone !== priorTimezone,
+          });
           if (patch.unitPreference !== undefined) {
             void refreshTextsAfterUnitChange(access.recordId);
-          }
-          if (patch.timezone !== undefined) {
-            invalidateUserMedications(access.recordId, { evict: true });
-            // The supplement nutrient rows are keyed by the local day.
-            await enqueueSupplementNutrientRecompute(access.recordId);
           }
           settings = {
             ...record,

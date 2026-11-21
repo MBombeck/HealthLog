@@ -84,7 +84,9 @@ describe("record settings authorization", () => {
     expect(route).toContain("actorUserId: access.actorId");
     expect(route).toContain("details: { changed }");
     expect(route).not.toContain("details: { recordId:");
-    expect(route).toContain("invalidateUserMedications(access.recordId, {");
+    // The zone and identity refresh is the one every writer of these fields
+    // shares (medication day grid, zone cache, supplement recompute).
+    expect(route).toContain("afterIdentityFieldsChanged(access.recordId, {");
     // The module write is one record-keyed function shared with the setup
     // flow's derivation; the health-score invalidation lives there, so the
     // route must call it with the record and the helper must still invalidate.

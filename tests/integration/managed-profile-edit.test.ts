@@ -170,6 +170,27 @@ describe("GET /api/managed-profiles/{id}", () => {
 });
 
 describe("PATCH /api/managed-profiles/{id}", () => {
+  it("serves the record's new zone at once, not the cached old one", async () => {
+    const { guardian, profile } = await guardianAndProfile();
+    signIn(guardian);
+    const { resolveUserTimezone } = await import("@/lib/tz/resolver");
+    // Prime the in-process zone cache with the record's current zone.
+    expect(await resolveUserTimezone(profile.id)).toBe("UTC");
+
+    const response = await patchProfile(
+      profile.id,
+      managedProfileEditBody({
+        profileId: profile.id,
+        timezone: "Europe/Berlin",
+      }),
+    );
+    expect(response.status).toBe(200);
+
+    // The record's own profile edit refreshes this; a Guardian's edit of the
+    // same field used to leave it for the cache to age out.
+    expect(await resolveUserTimezone(profile.id)).toBe("Europe/Berlin");
+  });
+
   it("changes the name and the timezone a Guardian sends, and audits both", async () => {
     const { guardian, profile } = await guardianAndProfile();
     signIn(guardian);

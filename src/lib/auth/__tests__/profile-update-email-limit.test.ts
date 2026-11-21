@@ -25,6 +25,12 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+// A zone change queues the supplement nutrient recompute; nothing here is
+// about that job.
+vi.mock("@/lib/medications/ingredients/recompute-job", () => ({
+  enqueueSupplementNutrientRecompute: vi.fn(async () => ({ queued: true })),
+}));
+
 vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn().mockResolvedValue(undefined),
 }));
