@@ -382,6 +382,24 @@ async function main() {
     );
   }
 
+  // ───── Push relay — instance key, sender key, collapse secret (String) ─────
+  results.push(
+    await rotateStringColumn(
+      "PushRelayRegistration",
+      "instanceKeyEncrypted",
+      prisma.pushRelayRegistration,
+    ),
+  );
+  for (const field of ["senderKeyEncrypted", "collapseSecretEncrypted"]) {
+    results.push(
+      await rotateStringColumn(
+        "PushEnvelopeKeys",
+        field,
+        prisma.pushEnvelopeKeys,
+      ),
+    );
+  }
+
   // ───── Custom labels — mood + cycle (String "labelEncrypted") ─────
   // Catalogue rows carry NULL and are skipped by `shouldRotate`.
   results.push(

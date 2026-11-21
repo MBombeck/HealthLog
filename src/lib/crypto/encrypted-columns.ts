@@ -216,6 +216,19 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
     field: "webPushVapidPrivateKeyEncrypted",
     kind: "string",
   },
+  // The push relay: this instance's Ed25519 key at the relay, and the
+  // envelope sender key with the collapse-id secret.
+  {
+    model: "PushRelayRegistration",
+    field: "instanceKeyEncrypted",
+    kind: "string",
+  },
+  { model: "PushEnvelopeKeys", field: "senderKeyEncrypted", kind: "string" },
+  {
+    model: "PushEnvelopeKeys",
+    field: "collapseSecretEncrypted",
+    kind: "string",
+  },
   // Operator-shared central Codex (ChatGPT subscription) OAuth credential — the
   // access token, the rotating refresh token, and the mandatory
   // `ChatGPT-Account-ID` claim, each AES-256-GCM at rest like the per-user
@@ -685,6 +698,8 @@ export const UPDATED_AT_MODELS: ReadonlySet<string> = new Set([
   "MentalHealthAssessment",
   "MoodContext",
   "MoodEntry",
+  "PushEnvelopeKeys",
+  "PushRelayRegistration",
   "NotificationChannel",
   "Practitioner",
   "SeizureEvent",

@@ -1,7 +1,8 @@
 /**
  * The user-facing reminder ticks: the medication overdue check, the daily
  * mood reminder, the cycle reminder, the checkup (measurement) reminder, and
- * the eventful reminder-satisfy queue.
+ * the eventful reminder-satisfy queue, and the push relay's minute pass (its
+ * outbox retries, breaker probe, sender-key rotation and receipt report).
  *
  * The three daily reminders tick every 15 minutes and short-circuit unless
  * the user's local time is the reminder's hour, so one UTC cron serves every
@@ -28,6 +29,8 @@ const CYCLE_REMINDER_QUEUE = "cycle-reminder-check";
 const CYCLE_REMINDER_CRON = "*/15 * * * *";
 const MEASUREMENT_REMINDER_QUEUE = "measurement-reminder-check";
 const MEASUREMENT_REMINDER_CRON = "*/15 * * * *";
+const PUSH_RELAY_MAINTENANCE_QUEUE = "push-relay-maintenance";
+const PUSH_RELAY_MAINTENANCE_CRON = "* * * * *";
 
 const checks = () => import("@/lib/jobs/reminder/mood-cycle-checks");
 
@@ -57,6 +60,15 @@ const jobs: readonly JobDefinition[] = [
     cron: MEASUREMENT_REMINDER_CRON,
     work: { localConcurrency: 1 },
     load: async () => (await checks()).handleMeasurementReminderCheck,
+  }),
+  // Every minute; a pass with nothing to do reads two rows and returns.
+  defineJob({
+    queue: PUSH_RELAY_MAINTENANCE_QUEUE,
+    cron: PUSH_RELAY_MAINTENANCE_CRON,
+    work: { localConcurrency: 1 },
+    load: async () =>
+      (await import("@/lib/jobs/push-relay-maintenance"))
+        .handlePushRelayMaintenance,
   }),
   // No cron: enqueued by the ingest paths when a measurement or lab lands;
   // the 15-minute checkup tick is the safety net.

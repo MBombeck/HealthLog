@@ -395,6 +395,9 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   ),
   "mood-reminder-cleanup": short("One retention DELETE."),
   "push-attempt-cleanup": short("One retention DELETE."),
+  "push-relay-maintenance": short(
+    "One relay status probe, at most 500 outbox items in batches of 50, one receipt report; each relay call is bounded at 10 s.",
+  ),
   "arrival-reaction-cleanup": short("One retention DELETE."),
   "rate-limit-cleanup": short("One retention DELETE."),
   "idempotency-cleanup": short("One retention DELETE."),

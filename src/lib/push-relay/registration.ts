@@ -1,0 +1,327 @@
+/**
+ * This instance's registration at the relay, and every signed call made
+ * under it.
+ *
+ * The operator turns the relay on in the admin area (`enableRelay`): a fresh
+ * Ed25519 instance key is made and stored encrypted, the envelope sender keys
+ * are made if they do not exist yet, and the instance registers with a proof
+ * of possession. Turning it off (`disableRelay`) deletes the instance at the
+ * relay, which drops every binding, and deletes the registration and its key.
+ *
+ * `relayCall` is the one door for instance requests. It applies the
+ * request-level answer to the registration: the breaker (`circuit.ts`), a
+ * pause the relay asked for, suspension, revocation, an unknown instance
+ * (registered again by the maintenance pass), the clock offset. It never
+ * touches a device row or a notification channel.
+ */
+import { randomBytes } from "node:crypto";
+
+import { Prisma } from "@/generated/prisma/client";
+import { prisma } from "@/lib/db";
+import { decrypt, encrypt } from "@/lib/crypto";
+import { getEvent } from "@/lib/logging/context";
+import { loadApnsConfig } from "@/lib/notifications/senders/apns";
+import {
+  relayConfig,
+  RELAY_TERMS_VERSION,
+  type RelayConfig,
+} from "@/lib/push-relay/config";
+import {
+  registerInstance,
+  signedRelayCall,
+  type RelayCallResult,
+} from "@/lib/push-relay/client";
+import {
+  afterSignedResponse,
+  afterTransportFailure,
+  isCircuitOpen,
+  isTransportLikeStatus,
+} from "@/lib/push-relay/circuit";
+import { fromBase64Url, toBase64Url } from "@/lib/push-relay/encoding";
+import {
+  deleteEnvelopeKeys,
+  ensureEnvelopeKeys,
+} from "@/lib/push-relay/sender-keys";
+
+export type RegistrationRow = NonNullable<
+  Awaited<ReturnType<typeof prisma.pushRelayRegistration.findUnique>>
+>;
+
+/** The registration for the configured relay host, if the relay is on. */
+export async function loadRegistration(
+  config: RelayConfig = relayConfig(),
+): Promise<RegistrationRow | null> {
+  if (!config.host) return null;
+  return prisma.pushRelayRegistration.findUnique({
+    where: { relayHost: config.host },
+  });
+}
+
+function instanceSeedOf(row: RegistrationRow): Buffer | null {
+  try {
+    return fromBase64Url(decrypt(row.instanceKeyEncrypted), 32);
+  } catch {
+    return null;
+  }
+}
+
+async function setState(
+  id: string,
+  state: string,
+  reason: string | null,
+  extra: Prisma.PushRelayRegistrationUncheckedUpdateInput = {},
+) {
+  const current = await prisma.pushRelayRegistration.findUnique({
+    where: { id },
+    select: { state: true, stateReason: true },
+  });
+  const changed = current?.state !== state || current?.stateReason !== reason;
+  await prisma.pushRelayRegistration.update({
+    where: { id },
+    data: {
+      state,
+      stateReason: reason,
+      ...(changed ? { stateSince: new Date() } : {}),
+      ...extra,
+    },
+  });
+}
+
+/** Every bound device of this instance has to bind again. */
+async function markAllRebindNeeded(): Promise<void> {
+  await prisma.device.updateMany({
+    where: { relayState: { in: ["bound", "conflict"] } },
+    data: { relayState: "rebind_needed", relayBoundAt: null },
+  });
+}
+
+function noticeOf(body: Record<string, unknown> | null) {
+  const notice = body?.notice as { id?: unknown; level?: unknown } | null;
+  if (!notice || typeof notice.id !== "string") {
+    return { noticeId: null, noticeLevel: null };
+  }
+  return {
+    noticeId: notice.id.slice(0, 40),
+    noticeLevel: typeof notice.level === "string" ? notice.level : null,
+  };
+}
+
+/**
+ * Apply the request-level part of an answer to the registration. Returns the
+ * answer unchanged so the caller can read the item results.
+ */
+async function applyAnswer(
+  row: RegistrationRow,
+  result: RelayCallResult,
+): Promise<RelayCallResult> {
+  const now = new Date();
+  if (
+    result.kind === "transport" ||
+    isTransportLikeStatus(result.status, result.retryAfter, result.body)
+  ) {
+    const next = afterTransportFailure(row, now);
+    await prisma.pushRelayRegistration.update({
+      where: { id: row.id },
+      data: next,
+    });
+    if (isCircuitOpen(next) && !isCircuitOpen(row)) {
+      getEvent()?.addMeta("push_relay_circuit", "opened");
+      await setState(row.id, "down", "circuit_open");
+    }
+    return result;
+  }
+  const circuit = afterSignedResponse();
+  if (isCircuitOpen(row)) {
+    getEvent()?.addMeta("push_relay_circuit", "closed");
+  }
+  const error = result.body?.error;
+  const retry =
+    result.retryAfter ??
+    (typeof result.body?.retryAfter === "number"
+      ? result.body.retryAfter
+      : null);
+  if (result.status === 401 && error === "unknown_instance") {
+    await prisma.pushRelayRegistration.update({
+      where: { id: row.id },
+      data: { ...circuit, instanceId: null },
+    });
+    await markAllRebindNeeded();
+    await setState(row.id, "pending", "unknown_instance");
+  } else if (result.status === 403 && error === "instance_revoked") {
+    await setState(row.id, "revoked", "instance_revoked", circuit);
+    getEvent()?.addMeta("push_relay_refused", String(error));
+  } else if (result.status === 403 && error === "instance_suspended") {
+    const reason =
+      typeof result.body?.reason === "string" ? result.body.reason : null;
+    await setState(row.id, "suspended", reason, circuit);
+    getEvent()?.addMeta("push_relay_refused", String(error));
+  } else if (result.status === 426) {
+    await setState(row.id, "down", "min_server_version", circuit);
+  } else if ((result.status === 429 || result.status === 503) && retry) {
+    await setState(row.id, "degraded", String(error ?? "paused"), {
+      ...circuit,
+      pausedUntil: new Date(now.getTime() + retry * 1000),
+    });
+  } else if (result.status < 300) {
+    await setState(row.id, "ok", null, {
+      ...circuit,
+      lastSuccessAt: now,
+      pausedUntil: null,
+      ...(result.body && "notice" in result.body ? noticeOf(result.body) : {}),
+      ...(typeof result.body?.tier === "string"
+        ? { tier: result.body.tier }
+        : {}),
+    });
+  } else {
+    await prisma.pushRelayRegistration.update({
+      where: { id: row.id },
+      data: circuit,
+    });
+  }
+  return result;
+}
+
+/** One signed instance request under `row`, its answer applied. */
+export async function relayCall(
+  row: RegistrationRow,
+  method: "GET" | "POST" | "DELETE",
+  path: string,
+  payload?: unknown,
+  config: RelayConfig = relayConfig(),
+): Promise<RelayCallResult> {
+  const seed = instanceSeedOf(row);
+  if (!seed || !row.instanceId || !config.available) {
+    return { kind: "transport", reason: "relay_not_registered" };
+  }
+  const result = await signedRelayCall(
+    config,
+    {
+      instanceId: row.instanceId,
+      instanceSeed: seed,
+      clockOffsetSeconds: row.clockOffsetSeconds,
+    },
+    method,
+    path,
+    payload,
+    async (offset) => {
+      await prisma.pushRelayRegistration.update({
+        where: { id: row.id },
+        data: { clockOffsetSeconds: offset },
+      });
+    },
+  );
+  return applyAnswer(row, result);
+}
+
+/**
+ * Register a row that has no instance id yet. Returns whether it is
+ * registered afterwards. A known key answers with its existing id, which is
+ * also the recovery after the relay lost its database.
+ */
+export async function ensureInstanceRegistered(
+  row: RegistrationRow,
+  config: RelayConfig = relayConfig(),
+): Promise<boolean> {
+  if (row.instanceId) return true;
+  const seed = instanceSeedOf(row);
+  if (!seed || !config.available) return false;
+  const result = await registerInstance(
+    config,
+    seed,
+    row.clockOffsetSeconds,
+    async (offset) => {
+      await prisma.pushRelayRegistration.update({
+        where: { id: row.id },
+        data: { clockOffsetSeconds: offset },
+      });
+    },
+  );
+  if (
+    result.kind === "response" &&
+    (result.status === 200 || result.status === 201) &&
+    typeof result.body?.instanceId === "string"
+  ) {
+    await setState(row.id, "ok", null, {
+      instanceId: result.body.instanceId,
+      tier: typeof result.body.tier === "string" ? result.body.tier : null,
+      lastSuccessAt: new Date(),
+    });
+    return true;
+  }
+  const reason =
+    result.kind === "transport"
+      ? result.reason
+      : String(result.body?.error ?? `http_${result.status}`);
+  await setState(row.id, "pending", reason);
+  return false;
+}
+
+/**
+ * The operator turns the relay on. Creates the registration with a fresh
+ * instance key and registers it; a relay that cannot be reached leaves the
+ * row `pending`, and the maintenance pass registers it later.
+ */
+export async function enableRelay(input: {
+  userId: string;
+  config?: RelayConfig;
+}): Promise<RegistrationRow> {
+  const config = input.config ?? relayConfig();
+  await ensureEnvelopeKeys();
+  const now = new Date();
+  const row = await prisma.pushRelayRegistration.upsert({
+    where: { relayHost: config.host },
+    create: {
+      relayHost: config.host,
+      instanceKeyEncrypted: encrypt(toBase64Url(randomBytes(32))),
+      termsVersion: RELAY_TERMS_VERSION,
+      householdConfirmedAt: now,
+      enabledByUserId: input.userId,
+    },
+    update: {},
+  });
+  await ensureInstanceRegistered(row, config);
+  return (await loadRegistration(config)) ?? row;
+}
+
+/**
+ * The operator turns the relay off: the instance is deleted at the relay
+ * (every binding with it), its key and registration are deleted here, and
+ * every device returns to `none`. The envelope keys go too unless this server
+ * seals for its own APNs key.
+ */
+export async function disableRelay(
+  config: RelayConfig = relayConfig(),
+): Promise<{ unregistered: boolean }> {
+  const row = await loadRegistration(config);
+  let unregistered = false;
+  if (row?.instanceId) {
+    const result = await relayCall(
+      row,
+      "DELETE",
+      "/v1/instances/self",
+      undefined,
+      config,
+    );
+    unregistered =
+      result.kind === "response" &&
+      (result.status === 204 || result.status === 401);
+  }
+  if (row) {
+    await prisma.pushRelayRegistration.delete({ where: { id: row.id } });
+  }
+  await prisma.device.updateMany({
+    where: { relayState: { not: "none" } },
+    data: {
+      relayState: "none",
+      relayBoundAt: null,
+      relayBindingKey: null,
+      relayBindingStatement: Prisma.DbNull,
+      relayBindingSignature: null,
+    },
+  });
+  await prisma.pushRelayDelivery.deleteMany({
+    where: { status: "pending" },
+  });
+  if (!loadApnsConfig()) await deleteEnvelopeKeys();
+  return { unregistered };
+}
