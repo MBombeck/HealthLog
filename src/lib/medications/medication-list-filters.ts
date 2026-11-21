@@ -9,7 +9,9 @@
  *    - Gaps between courses do not match
  *    - Null end is open (+Infinity)
  *    - Legacy no-course rows use startsOn/endsOn; known end only has open start (-Infinity);
- *      both absent are excluded only with an active date filter
+ *      with both absent, an active medication runs from the day it was created
+ *      (`createdOn`, a day key on the account's clock) with an open end, and any
+ *      other one is excluded only with an active date filter
  *    - Reversed dates (from > to) show validation and ignore the date predicate while invalid
  *    - Browser-timezone immune date comparison (lexicographical ISO calendar day strings)
  */
@@ -27,6 +29,10 @@ export interface MedicationFilterable {
   startsOn?: string | null;
   endsOn?: string | null;
   courses?: MedicationFilterableCourse[];
+  /** Whether the medication is taken now; a dateless active one is ongoing. */
+  active?: boolean;
+  /** The day it was created (`YYYY-MM-DD`, the account's zone). */
+  createdOn?: string | null;
 }
 
 export interface MedicationListFilters {
@@ -91,9 +97,11 @@ export function matchesMedicationFilters(
       const mStart = med.startsOn ? med.startsOn.slice(0, 10) : null;
       const mEnd = med.endsOn ? med.endsOn.slice(0, 10) : null;
 
-      // Both absent: excluded only with active date filter
+      // Both absent: an active medication taken continuously since it was
+      // created runs from that day on; anything else has no known period.
       if (mStart === null && mEnd === null) {
-        return false;
+        if (med.active !== true || !med.createdOn) return false;
+        return !to || med.createdOn.slice(0, 10) <= to;
       }
 
       // Known end only has open start (-Infinity)

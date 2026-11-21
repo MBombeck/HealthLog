@@ -275,3 +275,36 @@ describe("matchesMedicationFilters & filterMedications", () => {
     });
   });
 });
+
+describe("a dateless medication taken continuously", () => {
+  const ongoing: MedicationFilterable = {
+    name: "Levothyroxine",
+    category: "THYROID",
+    startsOn: null,
+    endsOn: null,
+    courses: [],
+    active: true,
+    createdOn: "2026-02-10",
+  };
+
+  it("runs from its creation day with an open end while active", () => {
+    const hit = (fromDay: string, toDay: string) =>
+      matchesMedicationFilters(ongoing, { fromDay, toDay });
+    expect(hit("2026-03-01", "2026-03-31")).toBe(true);
+    expect(hit("2026-02-10", "2026-02-10")).toBe(true);
+    expect(hit("2026-01-01", "2026-02-09")).toBe(false);
+    expect(matchesMedicationFilters(ongoing, { fromDay: "2030-01-01" })).toBe(
+      true,
+    );
+  });
+
+  it("stays out of a date filter once inactive or without a creation day", () => {
+    const filters = { fromDay: "2026-03-01", toDay: "2026-03-31" };
+    expect(
+      matchesMedicationFilters({ ...ongoing, active: false }, filters),
+    ).toBe(false);
+    expect(
+      matchesMedicationFilters({ ...ongoing, createdOn: null }, filters),
+    ).toBe(false);
+  });
+});

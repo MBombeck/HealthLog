@@ -117,6 +117,7 @@ interface Medication {
   nextDueOverdue?: boolean;
   /** v1.5 — medication-level course start date (ISO string). */
   startsOn?: string | null;
+  createdAt?: string;
   /** v1.5 — medication-level course end date (ISO string). */
   endsOn?: string | null;
   /** v1.5 — single-administration medication. */
@@ -374,6 +375,7 @@ export default function MedicationsPageClient() {
     activeMeds,
     inactiveMeds,
     t,
+    tz: user?.timezone || DEFAULT_TIMEZONE,
   });
 
   // Groups open by default per the saved mode, and every group with a match

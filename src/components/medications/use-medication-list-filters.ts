@@ -17,6 +17,7 @@ import {
   type MedicationListFilters,
 } from "@/lib/medications/medication-list-filters";
 import type { useTranslations } from "@/lib/i18n/context";
+import { userDayKey } from "@/lib/tz/format";
 
 type Translator = ReturnType<typeof useTranslations>["t"];
 
@@ -80,6 +81,7 @@ export interface FilterableMedication {
   active: boolean;
   startsOn?: string | null;
   endsOn?: string | null;
+  createdAt?: string | null;
 }
 
 export interface UseMedicationListFiltersOptions<
@@ -89,6 +91,8 @@ export interface UseMedicationListFiltersOptions<
   activeMeds: T[];
   inactiveMeds: T[];
   t: Translator;
+  /** The account's zone, for the day a dateless medication was created. */
+  tz: string;
 }
 
 export function useMedicationListFilters<T extends FilterableMedication>({
@@ -96,6 +100,7 @@ export function useMedicationListFilters<T extends FilterableMedication>({
   activeMeds,
   inactiveMeds,
   t,
+  tz,
 }: UseMedicationListFiltersOptions<T>) {
   const [categoryFilter, setCategoryFilter] = useCategoryFilter();
   const [searchText, setSearchText] = useState("");
@@ -163,8 +168,24 @@ export function useMedicationListFilters<T extends FilterableMedication>({
     fromDay,
     toDay,
   };
-  const shownActiveMeds = filterMedications(activeMeds, filters);
-  const shownInactiveMeds = filterMedications(inactiveMeds, filters);
+  // The creation day on the account's clock, not the browser's, so a
+  // medication added late in the evening files under the right day.
+  const withCreatedOn = (med: T) => ({
+    ...med,
+    createdOn:
+      med.createdAt && !Number.isNaN(Date.parse(med.createdAt))
+        ? userDayKey(new Date(med.createdAt), tz)
+        : null,
+  });
+  const keep = (meds: T[]) => {
+    if (fromDay === "" && toDay === "") return filterMedications(meds, filters);
+    const kept = new Set(
+      filterMedications(meds.map(withCreatedOn), filters).map((m) => m.id),
+    );
+    return meds.filter((m) => kept.has(m.id));
+  };
+  const shownActiveMeds = keep(activeMeds);
+  const shownInactiveMeds = keep(inactiveMeds);
   const totalMatches = shownActiveMeds.length + shownInactiveMeds.length;
 
   return {
