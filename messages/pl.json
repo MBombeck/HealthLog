@@ -2138,7 +2138,7 @@
         "clientManagedChip": "Zarządzane przez iPhone’a",
         "clientManagedHint": "Twój iPhone zarządza przypomnieniami dla tego leku.",
         "helperAutoRecorded": "Dawki są zapisywane automatycznie, więc przypomnienia nie przychodzą.",
-        "plan": "Następna dawka {dose}: przypomnienia, póki jest do przyjęcia, i jeszcze raz, gdy po {overdue} będzie po terminie. Po {missed} liczy się jako nieprzyjęta."
+        "plan": "Następna dawka {dose}: przypomnienia, póki jest do przyjęcia, i gdy jest po terminie. Po terminie od {overdue}; po {missed} liczy się jako nieprzyjęta."
       },
       "settings": {
         "title": "Ustawienia",
@@ -2151,7 +2151,7 @@
           "unit": "minut",
           "saved": "Okno przypomnienia zapisane",
           "failed": "Nie udało się zapisać okna przypomnienia.",
-          "description": "Przypomnienia zaczynają się o porze dawki i trwają tyle. Potem dawka jest po terminie."
+          "description": "Jak długo po porze dawki przychodzą przypomnienia, zanim przyjdzie to o przekroczeniu terminu."
         },
         "codes": {
           "label": "Kody kliniczne (ATC / RxNorm)",

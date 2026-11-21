@@ -2138,7 +2138,7 @@
         "clientManagedChip": "iPhone에서 관리",
         "clientManagedHint": "이 약의 알림은 iPhone에서 관리해요.",
         "helperAutoRecorded": "복용이 자동으로 기록되어 알림을 보내지 않아요.",
-        "plan": "다음 복용 {dose}: 복용 시간 동안 알리고, {overdue} 이후 늦어지면 한 번 더 알려요. {missed} 이후에는 놓친 것으로 기록해요."
+        "plan": "다음 복용 {dose}: 복용 시간 동안과 늦어졌을 때 알려요. {overdue} 이후 늦은 것으로, {missed} 이후 놓친 것으로 기록해요."
       },
       "settings": {
         "title": "설정",
@@ -2151,7 +2151,7 @@
           "unit": "분",
           "saved": "알림 유예 시간을 저장했어요",
           "failed": "알림 유예 시간을 저장하지 못했어요.",
-          "description": "알림은 복용 시간에 시작해 이 시간 동안 이어져요. 그 뒤에는 복용이 늦은 것으로 봐요."
+          "description": "복용 시간 뒤 늦었다는 알림 전까지 알림이 이어지는 시간이에요."
         },
         "codes": {
           "label": "임상 코드 (ATC / RxNorm)",

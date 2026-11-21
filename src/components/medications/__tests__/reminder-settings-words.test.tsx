@@ -55,8 +55,8 @@ describe("reminder settings in words", () => {
     const html = render(<ReminderPlanLine medicationId="m1" />, client);
     expect(html).toContain('data-slot="medication-reminder-plan"');
     // The resolved instants, in the reader's zone (Berlin here).
-    expect(html).toContain("overdue after 10:00 AM");
-    expect(html).toContain("After 01:00 PM it counts as missed");
+    expect(html).toContain("overdue after 10:00 AM;");
+    expect(html).toContain("after 01:00 PM it counts as missed");
   });
 
   it("names a dose recorded automatically as sending no reminders", () => {

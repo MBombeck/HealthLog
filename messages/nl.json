@@ -2138,7 +2138,7 @@
         "clientManagedChip": "Beheerd door iPhone",
         "clientManagedHint": "Je iPhone beheert de herinneringen voor dit medicijn.",
         "helperAutoRecorded": "Doses worden automatisch vastgelegd, dus er komen geen herinneringen.",
-        "plan": "Volgende dosis {dose}: herinneringen zolang hij aan de beurt is, en nog één keer als hij na {overdue} te laat is. Na {missed} telt hij als gemist."
+        "plan": "Volgende dosis {dose}: herinneringen zolang hij aan de beurt is en als hij te laat is. Te laat na {overdue}; na {missed} telt hij als gemist."
       },
       "settings": {
         "title": "Instellingen",
@@ -2151,7 +2151,7 @@
           "unit": "minuten",
           "saved": "Herinneringsvenster opgeslagen",
           "failed": "Het herinneringsvenster kon niet worden opgeslagen.",
-          "description": "Herinneringen beginnen op het tijdstip van de dosis en lopen zo lang. Daarna is de dosis te laat."
+          "description": "Hoe lang de herinneringen na het tijdstip van de dosis doorgaan, voor de te-laat-herinnering."
         },
         "codes": {
           "label": "Klinische codes (ATC / RxNorm)",

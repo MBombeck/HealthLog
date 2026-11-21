@@ -2138,7 +2138,7 @@
         "clientManagedChip": "Géré par l’iPhone",
         "clientManagedHint": "Votre iPhone gère les rappels de ce médicament.",
         "helperAutoRecorded": "Les doses sont enregistrées automatiquement, donc aucun rappel n'est envoyé.",
-        "plan": "Prochaine dose {dose} : rappels tant qu'elle est à prendre, puis encore une fois si elle est en retard après {overdue}. Après {missed}, elle compte comme manquée."
+        "plan": "Prochaine dose {dose} : rappels tant qu'elle est à prendre et quand elle est en retard. En retard après {overdue} ; après {missed}, elle compte comme manquée."
       },
       "settings": {
         "title": "Réglages",
@@ -2151,7 +2151,7 @@
           "unit": "minutes",
           "saved": "Fenêtre de rappel enregistrée",
           "failed": "Impossible d’enregistrer la fenêtre de rappel.",
-          "description": "Les rappels commencent à l'heure de la dose et durent ce temps. Ensuite, la dose est en retard."
+          "description": "Combien de temps les rappels continuent après l'heure de la dose, avant le rappel de retard."
         },
         "codes": {
           "label": "Codes cliniques (ATC / RxNorm)",

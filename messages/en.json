@@ -2138,7 +2138,7 @@
         "clientManagedChip": "Managed by iPhone",
         "clientManagedHint": "Your iPhone manages reminders for this medication.",
         "helperAutoRecorded": "Doses are recorded automatically, so no reminders are sent.",
-        "plan": "Next dose {dose}: reminders while it is due, and once more when it is overdue after {overdue}. After {missed} it counts as missed."
+        "plan": "Next dose {dose}: reminders while it is due and once it is overdue. It is overdue after {overdue}; after {missed} it counts as missed."
       },
       "settings": {
         "title": "Settings",
@@ -2151,7 +2151,7 @@
           "unit": "minutes",
           "saved": "Reminder window saved",
           "failed": "Could not save the reminder window.",
-          "description": "Reminders start at the dose time and run this long. After it, the dose is overdue."
+          "description": "How long the reminders keep coming after the dose time, before the overdue reminder."
         },
         "codes": {
           "label": "Clinical codes (ATC / RxNorm)",

@@ -2138,7 +2138,7 @@
         "clientManagedChip": "Gestito dall’iPhone",
         "clientManagedHint": "Il tuo iPhone gestisce i promemoria di questo farmaco.",
         "helperAutoRecorded": "Le dosi vengono registrate automaticamente, quindi non arrivano promemoria.",
-        "plan": "Prossima dose {dose}: promemoria finché è da assumere e ancora una volta se è in ritardo dopo le {overdue}. Dopo le {missed} conta come mancata."
+        "plan": "Prossima dose {dose}: promemoria finché è da assumere e quando è in ritardo. In ritardo dopo le {overdue}; dopo le {missed} conta come mancata."
       },
       "settings": {
         "title": "Impostazioni",
@@ -2151,7 +2151,7 @@
           "unit": "minuti",
           "saved": "Finestra di promemoria salvata",
           "failed": "Impossibile salvare la finestra di promemoria.",
-          "description": "I promemoria iniziano all'ora della dose e durano questo tempo. Dopo, la dose è in ritardo."
+          "description": "Per quanto continuano i promemoria dopo l'ora della dose, prima di quello di ritardo."
         },
         "codes": {
           "label": "Codici clinici (ATC / RxNorm)",

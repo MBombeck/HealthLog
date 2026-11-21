@@ -2138,7 +2138,7 @@
         "clientManagedChip": "Gestionado por el iPhone",
         "clientManagedHint": "Tu iPhone gestiona los recordatorios de este medicamento.",
         "helperAutoRecorded": "Las dosis se registran automáticamente, así que no se envían recordatorios.",
-        "plan": "Próxima dosis {dose}: recordatorios mientras es la hora y otra vez si se atrasa después de las {overdue}. Después de las {missed} cuenta como perdida."
+        "plan": "Próxima dosis {dose}: recordatorios mientras es la hora y cuando se atrasa. Se atrasa después de las {overdue}; después de las {missed} cuenta como perdida."
       },
       "settings": {
         "title": "Ajustes",
@@ -2151,7 +2151,7 @@
           "unit": "minutos",
           "saved": "Ventana de recordatorio guardada",
           "failed": "No se pudo guardar la ventana de recordatorio.",
-          "description": "Los recordatorios empiezan a la hora de la dosis y duran este tiempo. Después, la dosis está atrasada."
+          "description": "Cuánto tiempo siguen los recordatorios tras la hora de la dosis, antes del aviso de atraso."
         },
         "codes": {
           "label": "Códigos clínicos (ATC / RxNorm)",

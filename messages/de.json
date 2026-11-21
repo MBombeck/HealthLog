@@ -2138,7 +2138,7 @@
         "clientManagedChip": "Vom iPhone verwaltet",
         "clientManagedHint": "Dein iPhone steuert die Erinnerungen für dieses Medikament.",
         "helperAutoRecorded": "Dosen werden automatisch erfasst, deshalb kommen keine Erinnerungen.",
-        "plan": "Nächste Dosis {dose}: Erinnerungen, solange sie fällig ist, und noch einmal, wenn sie ab {overdue} überfällig ist. Ab {missed} zählt sie als verpasst."
+        "plan": "Nächste Dosis {dose}: Erinnerungen, solange sie fällig ist, und wenn sie überfällig ist. Überfällig ab {overdue}; ab {missed} zählt sie als verpasst."
       },
       "settings": {
         "title": "Einstellungen",
@@ -2151,7 +2151,7 @@
           "unit": "Minuten",
           "saved": "Erinnerungsfenster gespeichert",
           "failed": "Erinnerungsfenster konnte nicht gespeichert werden.",
-          "description": "Erinnerungen beginnen zur Dosiszeit und laufen so lange. Danach ist die Dosis überfällig."
+          "description": "Wie lange nach der Dosiszeit erinnert wird, bevor die Überfällig-Erinnerung kommt."
         },
         "codes": {
           "label": "Klinische Codes (ATC / RxNorm)",

@@ -2138,7 +2138,7 @@
         "clientManagedChip": "Gerenciado pelo iPhone",
         "clientManagedHint": "Seu iPhone gerencia os lembretes deste medicamento.",
         "helperAutoRecorded": "As doses são registradas automaticamente, então nenhum lembrete é enviado.",
-        "plan": "Próxima dose {dose}: lembretes enquanto estiver na hora e mais uma vez se atrasar depois das {overdue}. Depois das {missed} conta como perdida."
+        "plan": "Próxima dose {dose}: lembretes enquanto estiver na hora e quando atrasar. Atrasada depois das {overdue}; depois das {missed} conta como perdida."
       },
       "settings": {
         "title": "Configurações",
@@ -2151,7 +2151,7 @@
           "unit": "minutos",
           "saved": "Janela de lembrete salva",
           "failed": "Não foi possível salvar a janela de lembrete.",
-          "description": "Os lembretes começam na hora da dose e duram este tempo. Depois, a dose está atrasada."
+          "description": "Por quanto tempo os lembretes continuam após a hora da dose, antes do lembrete de atraso."
         },
         "codes": {
           "label": "Códigos clínicos (ATC / RxNorm)",
