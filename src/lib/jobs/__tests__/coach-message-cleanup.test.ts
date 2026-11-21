@@ -6,10 +6,22 @@ import {
   DEFAULT_COACH_MESSAGE_RETENTION_DAYS,
 } from "../coach-message-cleanup";
 
-function makePrismaMock(deletedCount: number) {
+/** A table of `rows` old messages; each batch lists and deletes some. */
+function makePrismaMock(rows: number) {
+  let left = rows;
   return {
     coachMessage: {
-      deleteMany: vi.fn().mockResolvedValue({ count: deletedCount }),
+      findMany: vi.fn(async ({ take }: { take: number }) =>
+        Array.from({ length: Math.min(take, left) }, (_, i) => ({
+          id: `m${left - i}`,
+        })),
+      ),
+      deleteMany: vi.fn(
+        async ({ where }: { where: { id: { in: string[] } } }) => {
+          left -= where.id.in.length;
+          return { count: where.id.in.length };
+        },
+      ),
     },
   } as unknown as PrismaClient;
 }
@@ -69,11 +81,10 @@ describe("cleanupOldCoachMessages", () => {
     const deleted = await cleanupOldCoachMessages(prisma, now);
 
     expect(deleted).toBe(42);
-    expect(prisma.coachMessage.deleteMany).toHaveBeenCalledTimes(1);
     const cutoff = new Date(now.getTime() - 365 * 86_400_000);
-    expect(prisma.coachMessage.deleteMany).toHaveBeenCalledWith({
-      where: { createdAt: { lt: cutoff } },
-    });
+    expect(prisma.coachMessage.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { createdAt: { lt: cutoff } } }),
+    );
   });
 
   it("uses the configured retention", async () => {
@@ -83,8 +94,24 @@ describe("cleanupOldCoachMessages", () => {
     await cleanupOldCoachMessages(prisma, now);
 
     const cutoff = new Date(now.getTime() - 90 * 86_400_000);
-    expect(prisma.coachMessage.deleteMany).toHaveBeenCalledWith({
-      where: { createdAt: { lt: cutoff } },
-    });
+    expect(prisma.coachMessage.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { createdAt: { lt: cutoff } } }),
+    );
+  });
+
+  it("deletes a backlog larger than one batch in bounded batches", async () => {
+    const prisma = makePrismaMock(12_001);
+    const deleted = await cleanupOldCoachMessages(
+      prisma,
+      new Date("2026-05-04T00:00:00Z"),
+    );
+    expect(deleted).toBe(12_001);
+    // 5 000 + 5 000 + 2 001: no statement is asked for more than one batch.
+    expect(prisma.coachMessage.deleteMany).toHaveBeenCalledTimes(3);
+    for (const [args] of vi.mocked(prisma.coachMessage.deleteMany).mock.calls) {
+      expect(
+        (args as { where: { id: { in: string[] } } }).where.id.in.length,
+      ).toBeLessThanOrEqual(5_000);
+    }
   });
 });

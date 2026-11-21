@@ -1,5 +1,5 @@
 {
-  "registeredQueueCount": 127,
+  "registeredQueueCount": 128,
   "registeredQueues": [
     "account-deletion-purge",
     "achievement-unlock-sweep",
@@ -67,6 +67,7 @@
     "integration-watchdog-hourly",
     "lab-biomarker-backfill",
     "lab-document-date-repair",
+    "ledger-retention-cleanup",
     "mcp-token-cleanup",
     "mean-consolidation",
     "measurement-fold-repair",
@@ -1114,6 +1115,21 @@
       "notify": false,
       "partition": false,
       "policy": "short",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "ledger-retention-cleanup",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
       "retention_seconds": 1209600,
       "retry_backoff": false,
       "retry_delay": 0,
@@ -2519,6 +2535,18 @@
       "timezone": "Europe/Berlin"
     },
     {
+      "cron": "58 3 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "ledger-retention-cleanup",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
       "cron": "0 4 * * *",
       "data": {},
       "key": "",
@@ -3420,6 +3448,13 @@
       "queue": "lab-document-date-repair",
       "options": {
         "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "ledger-retention-cleanup",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
       }
     },
     {

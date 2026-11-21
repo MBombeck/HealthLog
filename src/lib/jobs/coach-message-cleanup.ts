@@ -9,17 +9,18 @@
  * table and the `(conversation_id, created_at)` indexes.
  *
  * Default retention is 365 days (configurable via COACH_MESSAGE_RETENTION_DAYS
- * env). Rows older than the cutoff are deleted in a single bulk `deleteMany`;
- * runs daily via pg-boss. The DELETE is keyed on `created_at` directly — the
- * pre-existing `(conversation_id, created_at)` index is not a perfect cover
- * for an unqualified `created_at` scan, but the trailing-edge delete touches
- * only the oldest sliver of the table.
+ * env). Rows older than the cutoff are deleted in bounded batches
+ * (`purge-batch.ts`) over `coach_messages_created_at_idx` (migration 0517);
+ * one unbounded DELETE without that index read the whole table, which the
+ * first run after a long gap, or a shortened retention, could not finish.
+ * Runs daily via pg-boss.
  *
  * The retention floor is 30 days: a misconfigured tiny value never nukes
  * recent, in-context conversation history. Content stays encrypted at rest
  * until the moment it is hard-deleted; there is no plaintext path.
  */
 import type { PrismaClient } from "@/generated/prisma/client";
+import { purgeInBatches } from "@/lib/jobs/purge-batch";
 
 export const DEFAULT_COACH_MESSAGE_RETENTION_DAYS = 365;
 
@@ -44,8 +45,19 @@ export async function cleanupOldCoachMessages(
   const days = getCoachMessageRetentionDays();
   const cutoff = new Date(now.getTime() - days * 86_400_000);
   // account-deletion: retention ages rows out whatever their account's state; a frozen record keeps no more than an active one.
-  const { count } = await prisma.coachMessage.deleteMany({
-    where: { createdAt: { lt: cutoff } },
+  const { deleted } = await purgeInBatches({
+    findIds: async (take) =>
+      (
+        await prisma.coachMessage.findMany({
+          where: { createdAt: { lt: cutoff } },
+          select: { id: true },
+          orderBy: { createdAt: "asc" },
+          take,
+        })
+      ).map((row) => row.id),
+    deleteIds: async (ids) =>
+      (await prisma.coachMessage.deleteMany({ where: { id: { in: ids } } }))
+        .count,
   });
-  return count;
+  return deleted;
 }

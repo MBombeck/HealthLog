@@ -39,6 +39,10 @@ import {
   AUTH_LEDGER_CLEANUP_QUEUE,
 } from "@/lib/jobs/auth-ledger-cleanup";
 import { BACKUP_RESTORE_QUEUE } from "@/lib/jobs/backup-restore-queue";
+import {
+  LEDGER_RETENTION_CLEANUP_CRON,
+  LEDGER_RETENTION_CLEANUP_QUEUE,
+} from "@/lib/jobs/ledger-retention-cleanup";
 import { COMPACTION_TOMBSTONE_PURGE_QUEUE } from "@/lib/jobs/compaction-tombstone-purge-queue";
 import {
   CYCLE_PREDICTION_REFRESH_CRON,
@@ -685,6 +689,13 @@ const jobs: readonly JobDefinition[] = [
     AUTH_LEDGER_CLEANUP_CRON,
     async () =>
       (await import("@/lib/jobs/auth-ledger-cleanup")).handleAuthLedgerCleanup,
+  ),
+  prune(
+    LEDGER_RETENTION_CLEANUP_QUEUE,
+    LEDGER_RETENTION_CLEANUP_CRON,
+    async () =>
+      (await import("@/lib/jobs/ledger-retention-cleanup"))
+        .handleLedgerRetentionCleanup,
   ),
   // Hourly heal of summaries stuck on PENDING.
   prune(
