@@ -76,7 +76,7 @@ import {
   endedMedicationContentState,
   type MedicationLiveActivityContentState,
 } from "@/lib/notifications/live-activity-content-state";
-import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
+import { openActivityDoses } from "@/lib/push-relay/live-activity";
 import {
   queueIntakeRecorded,
   recordedConfirmationEnabled,
@@ -528,13 +528,6 @@ async function fanOutIntakeSyncApns(args: {
 }
 
 /**
- * How far around now the iOS app surfaces a dose as a Live Activity
- * (`MedicationLiveActivityPlan`: two hours ahead, three hours overdue).
- */
-const LIVE_ACTIVITY_LEAD_MS = 2 * 60 * 60 * 1000;
-const LIVE_ACTIVITY_OVERDUE_MS = 3 * 60 * 60 * 1000;
-
-/**
  * The content-state to end the user's medication Live Activities with, or
  * null while any tracked dose the app could be showing is still open (of the
  * Activity's medication, when the device registered it): ending
@@ -561,7 +554,8 @@ function memoEndState(userId: string) {
  * The content-state to end an Activity showing `dose` with, or null while
  * that dose is still open. With a slot: once that slot's live row is taken
  * or skipped. With a medication only: once none of its tracked doses the
- * app could show (two hours ahead to three hours overdue) is open. With
+ * app could show is open (`openActivityDoses`: up to two hours ahead, and
+ * not yet missed by the medication's own bands). With
  * neither (a device-level token): once no tracked dose of the account is.
  */
 async function liveActivityEndState(
@@ -581,22 +575,13 @@ async function liveActivityEndState(
     });
     if (answered === 0) return null;
   } else {
-    const open = await prisma.medicationIntakeEvent.count({
-      where: {
-        userId,
-        deletedAt: null,
-        takenAt: null,
-        skipped: false,
-        autoMissed: false,
-        ...(dose.medicationId !== null && { medicationId: dose.medicationId }),
-        scheduledFor: {
-          gte: new Date(now - LIVE_ACTIVITY_OVERDUE_MS),
-          lte: new Date(now + LIVE_ACTIVITY_LEAD_MS),
-        },
-        ...TRACKED_INTAKE_EVENT_WHERE,
-      },
-    });
-    if (open > 0) return null;
+    // Open by the resolver's bands, the same doses a relay pass would show.
+    const open = await openActivityDoses(
+      userId,
+      new Date(now),
+      dose.medicationId ?? undefined,
+    );
+    if (open.length > 0) return null;
   }
   const user = await prisma.user.findUnique({
     where: { id: userId },

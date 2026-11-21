@@ -42,6 +42,13 @@ const userFindUnique = vi.fn();
 const deviceUpdateMany = vi.fn();
 const intakeCount = vi.fn();
 const activityDeleteMany = vi.fn();
+const openActivityDoses = vi.fn();
+
+// Which doses are still open is the dose-state resolver's answer, read
+// through the relay pass's own helper.
+vi.mock("@/lib/push-relay/live-activity", () => ({
+  openActivityDoses: (...a: unknown[]) => openActivityDoses(...a),
+}));
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -107,6 +114,7 @@ beforeEach(() => {
   deviceDeleteMany.mockResolvedValue({ count: 0 });
   deviceUpdateMany.mockResolvedValue({ count: 0 });
   intakeCount.mockResolvedValue(0);
+  openActivityDoses.mockResolvedValue([]);
   activityDeleteMany.mockResolvedValue({ count: 0 });
   userFindUnique.mockResolvedValue({
     deletionRequestedAt: null,
@@ -380,7 +388,7 @@ describe("queueMedicationIntakeSync — Live Activity push", () => {
     deviceFindMany.mockResolvedValue([
       device({ id: "d1", token: "tok-1", liveActivityPushToken: "la-open" }),
     ]);
-    intakeCount.mockResolvedValue(1);
+    openActivityDoses.mockResolvedValue([{ medicationId: "m-open" }]);
 
     queueMedicationIntakeSync({ userId: nextUserId() });
     await drainFlush();

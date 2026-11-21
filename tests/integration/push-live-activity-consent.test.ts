@@ -177,15 +177,71 @@ async function setUp() {
   return { ...bound, reg, consent, withdraw, startField, activityEntry };
 }
 
-async function dueDose(userId: string, minutesFromNow: number) {
-  const medication = await makeMedication({ id: userId });
+/**
+ * A time zone in which the real clock reads about noon, so every slot and
+ * window of a test lands on one local day whenever the suite runs.
+ */
+function noonZone(): string {
+  const offset = 12 - new Date().getUTCHours();
+  if (offset === 0) return "UTC";
+  return offset > 0 ? `Etc/GMT-${offset}` : `Etc/GMT+${-offset}`;
+}
+
+function hhmm(at: Date, tz: string): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: tz,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(at);
+}
+
+/**
+ * A daily medication with a dose `minutesFromNow` away, its open row on that
+ * slot, and, when given, a stored dose window around it (minutes relative to
+ * the slot). Without one the band is the daily default.
+ */
+async function dueDose(
+  userId: string,
+  minutesFromNow: number,
+  window?: { start: number; end: number },
+) {
+  const tz = noonZone();
+  await getPrismaClient().user.update({
+    where: { id: userId },
+    data: { timezone: tz },
+  });
   const slot = new Date(Date.now() + minutesFromNow * 60_000);
   slot.setUTCSeconds(0, 0);
+  const time = hhmm(slot, tz);
+  const minutes = (m: number) => new Date(slot.getTime() + m * 60_000);
+  const medication = await makeMedication(
+    { id: userId },
+    { createdAt: new Date(slot.getTime() - 2 * 24 * 3600_000) },
+    [
+      {
+        windowStart: time,
+        windowEnd: time,
+        timesOfDay: [time],
+        ...(window && {
+          doseWindows: [
+            {
+              timeOfDay: time,
+              start: hhmm(minutes(window.start), tz),
+              end: hhmm(minutes(window.end), tz),
+            },
+          ],
+        }),
+      },
+    ],
+  );
   await getPrismaClient().medicationIntakeEvent.create({
     data: { userId, medicationId: medication.id, scheduledFor: slot },
   });
-  return { medication, slot };
+  return { medication, slot, at: minutes };
 }
+
+const unix = (d: Date) => Math.floor(d.getTime() / 1000);
 
 const laPushes = () => fake.apns.filter((a) => a.pushClass === "liveactivity");
 
@@ -279,7 +335,7 @@ describe("start and update", () => {
       liveActivityConsent: t.consent(),
       liveActivityStart: t.startField(),
     });
-    const { medication, slot } = await dueDose(t.session.userId, 30);
+    const { medication, slot } = await dueDose(t.session.userId, 90);
     expect(await runLiveActivityRelayPass()).toMatchObject({ started: 1 });
     const [start] = laPushes();
     const aps = start!.payload.aps as Record<string, unknown>;
@@ -287,8 +343,9 @@ describe("start and update", () => {
     expect(aps.event).toBe("start");
     expect(aps.attributes).toEqual({ v: 1 });
     expect(aps["content-state"]).toEqual({
+      // Counts to the window's opening: the daily band opens an hour early.
       status: "pending",
-      countdownTarget: Math.floor(slot.getTime() / 1000),
+      countdownTarget: unix(slot) - 3600,
       isOverdue: false,
       confirmed: false,
       pendingConfirm: false,
@@ -342,7 +399,8 @@ describe("start and update", () => {
   it("update a running Activity only when its state changed", async () => {
     const t = await setUp();
     await t.reg({ liveActivityConsent: t.consent() });
-    const { medication, slot } = await dueDose(t.session.userId, -45);
+    // Past the daily band's on-time hour after the slot.
+    const { medication, slot } = await dueDose(t.session.userId, -90);
     await t.reg({
       liveActivityTokens: [
         t.activityEntry({
@@ -372,5 +430,115 @@ describe("start and update", () => {
         "content-state"
       ],
     ).toMatchObject({ status: "snoozed" });
+  });
+});
+
+describe("the dose state", () => {
+  const contentState = (push: (typeof fake.apns)[number] | undefined) =>
+    (push!.payload.aps as Record<string, unknown>)["content-state"];
+
+  it("follows the medication's stored dose window, not a fixed grace", async () => {
+    const t = await setUp();
+    await t.reg({
+      liveActivityConsent: t.consent(),
+      liveActivityStart: t.startField(),
+    });
+    // On time from the slot to three hours after it.
+    const { at } = await dueDose(t.session.userId, 5, { start: 0, end: 180 });
+    // 45 minutes past the slot: a fixed 30-minute grace called it overdue.
+    expect(await runLiveActivityRelayPass(at(45))).toMatchObject({
+      started: 1,
+    });
+    expect(contentState(laPushes()[0])).toEqual({
+      status: "due",
+      countdownTarget: unix(at(180)),
+      isOverdue: false,
+      confirmed: false,
+      pendingConfirm: false,
+      timeFormatRaw: "AUTO",
+    });
+  });
+
+  it("starts no earlier than the app's lead before the slot", async () => {
+    const t = await setUp();
+    await t.reg({
+      liveActivityConsent: t.consent(),
+      liveActivityStart: t.startField(),
+    });
+    const { at } = await dueDose(t.session.userId, 150);
+    expect(await runLiveActivityRelayPass(at(-121))).toMatchObject({
+      started: 0,
+    });
+    expect(await runLiveActivityRelayPass(at(-120))).toMatchObject({
+      started: 1,
+    });
+  });
+
+  it("updates exactly at the band's boundaries and ends when missed", async () => {
+    const t = await setUp();
+    await t.reg({ liveActivityConsent: t.consent() });
+    // Due from 30 minutes before the slot to 90 after; missed three hours
+    // later (the daily late tail).
+    const { medication, slot, at } = await dueDose(t.session.userId, 40, {
+      start: -30,
+      end: 90,
+    });
+    await t.reg({
+      liveActivityTokens: [
+        t.activityEntry({
+          medicationId: medication.id,
+          slotInstant: slot.toISOString(),
+        }),
+      ],
+    });
+    const second = (d: Date, s: number) => new Date(d.getTime() + s * 1000);
+    const dueAt = at(-30);
+    const overdueSince = at(90);
+    const missedAfter = at(270);
+    const pass = async (now: Date) => {
+      const before = laPushes().length;
+      await runLiveActivityRelayPass(now);
+      return laPushes().slice(before);
+    };
+
+    let pushes = await pass(second(dueAt, -1));
+    expect(pushes.map(contentState)).toEqual([
+      expect.objectContaining({
+        status: "pending",
+        countdownTarget: unix(dueAt),
+      }),
+    ]);
+    expect(await pass(second(dueAt, -1))).toEqual([]);
+
+    pushes = await pass(dueAt);
+    expect(pushes.map(contentState)).toEqual([
+      expect.objectContaining({
+        status: "due",
+        countdownTarget: unix(overdueSince),
+        isOverdue: false,
+      }),
+    ]);
+    expect(await pass(overdueSince)).toEqual([]);
+
+    pushes = await pass(second(overdueSince, 1));
+    expect(pushes.map(contentState)).toEqual([
+      expect.objectContaining({
+        status: "overdue",
+        countdownTarget: unix(overdueSince),
+        isOverdue: true,
+      }),
+    ]);
+    expect(await pass(missedAfter)).toEqual([]);
+
+    // Missed: nothing left to show, the Activity ends and its token goes.
+    pushes = await pass(second(missedAfter, 1));
+    expect(pushes).toEqual([
+      expect.objectContaining({
+        token: LA_TOKEN,
+        payload: { aps: { event: "end" } },
+      }),
+    ]);
+    expect(await getPrismaClient().liveActivityToken.count()).toBe(0);
+    expect(await pass(second(missedAfter, 301))).toEqual([]);
   });
 });
