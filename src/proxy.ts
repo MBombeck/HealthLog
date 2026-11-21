@@ -363,6 +363,18 @@ function logNotificationActionRefusal(
   );
 }
 
+/**
+ * Paths only a scanner asks for: dotfiles a deploy must never serve, and the
+ * script extensions and CMS paths of software this app is not. The
+ * `.well-known` directory is not a dotfile path here; it is public by design.
+ */
+const SCANNER_PROBE =
+  /^\/(?:\.(?!well-known(?:\/|$))[^/]*|wp-(?:admin|content|includes|login)\b|xmlrpc\b|cgi-bin\b|phpmyadmin\b)|\.(?:php\d?|aspx?|jsp|cgi|env|ini|bak|sql)$/i;
+
+export function isScannerProbe(pathname: string): boolean {
+  return SCANNER_PROBE.test(pathname);
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -416,6 +428,19 @@ export function proxy(request: NextRequest) {
         },
         { status: 404 },
       ),
+    );
+  }
+
+  // A scanner probe (`/.env`, `/wp-login.php`, `/.git/config`): a path no
+  // version of this app ever served. Left to Next, each one rendered the full
+  // root layout into a 57 KB not-found page, and a scan is hundreds of them in
+  // a row inside the server's heap ceiling. Answered here with a few bytes.
+  if (isScannerProbe(pathname)) {
+    return applyBaselineSecurityHeaders(
+      new NextResponse("Not found", {
+        status: 404,
+        headers: { "Content-Type": "text/plain; charset=utf-8" },
+      }),
     );
   }
 
