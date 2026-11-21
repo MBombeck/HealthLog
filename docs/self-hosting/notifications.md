@@ -494,6 +494,19 @@ A discreet notification opens the dashboard as well, so its link names
 nothing. The silent background sync push for medication intake is the only
 notification without a link.
 
+### "Remind me later" on a dose reminder
+
+A dose reminder can be put off with "Remind me later": on the medication
+card, on Telegram's reminder button and in the app's notification action.
+How long it waits is one setting per person, under Settings > Notifications,
+shared by all three: 10, 15, 30, 45, 60, 90 or 120 minutes, 30 when unset
+(`notificationPrefs.medication.snoozeMinutes` on
+`PATCH /api/auth/me/notification-prefs`, which accepts 5 to 240). A snooze
+holds one dose, the one whose reminder was open when it was set, or the next
+one to open; a later dose of the same medication is reminded as usual. A
+Telegram button from an older message keeps the length it was sent with,
+held to the same range.
+
 ### Health figures in notifications
 
 Settings, Notifications, **Health figures in notifications** decides what a
