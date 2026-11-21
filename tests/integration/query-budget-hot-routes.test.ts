@@ -62,7 +62,10 @@ const DAY_MS = 86_400_000;
  * the header for how to move one.
  */
 const BUDGET = {
-  authMe: 13,
+  // 13 → 14: the `push.relay` block reads the instance's relay registration
+  // (`push_relay_registrations`, one point read by relay host), which says
+  // whether the relay is offered and which sender keys the app pins.
+  authMe: 14,
   // 28 → 36 (#176): each measured card reads its month-over-month comparison
   // (one rollup read per card, the sleep card its nights), the same read
   // `GET /api/analytics/range` makes, so the card's arrow and the metric

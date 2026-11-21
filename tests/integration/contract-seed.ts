@@ -418,11 +418,14 @@ export async function seedContractAccount(
     ? definition[0]?.id
     : definition?.definitions?.[0]?.id;
   if (definitionId) {
-    await write("symptom", "POST", "api/symptoms/events", {
-      definitionId,
-      occurredAt: daysAgo(2).toISOString(),
-      intensity: 4,
-    });
+    keep(
+      "symptomEvent",
+      await write("symptom", "POST", "api/symptoms/events", {
+        definitionId,
+        occurredAt: daysAgo(2).toISOString(),
+        intensity: 4,
+      }),
+    );
   } else {
     failures.push(
       `symptom: no definition ${JSON.stringify(definitions.body).slice(0, 300)}`,
@@ -454,6 +457,15 @@ export async function seedContractAccount(
     },
   });
   ids.managedProfile = MANAGED_PROFILE_ID;
+  // One thing the guardian did inside the profile, for its activity feed.
+  await prisma.auditLog.create({
+    data: {
+      userId: MANAGED_PROFILE_ID,
+      actorUserId: CONTRACT_USER_ID,
+      action: "record-settings.profile.update",
+      details: JSON.stringify({ changed: ["displayName"] }),
+    },
+  });
 
   // ── Medication detail ──────────────────────────────────────────────────
   if (ids.medication) {
@@ -1147,6 +1159,8 @@ const PATH_PARAM_SOURCES: Record<string, Record<string, string>> = {
   "/api/managed-profiles/{id}": { id: "managedProfile" },
   "/api/managed-profiles/{id}/guardians": { id: "managedProfile" },
   "/api/managed-profiles/{id}/handover": { id: "managedProfile" },
+  "/api/managed-profiles/{id}/activity": { id: "managedProfile" },
+  "/api/symptoms/events/{id}": { id: "symptomEvent" },
   "/api/workouts/{id}": { id: "workout" },
   "/api/biomarkers/{id}": { id: "biomarker" },
   "/api/biomarkers/{id}/series": { id: "biomarker" },
