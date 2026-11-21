@@ -85,6 +85,8 @@ const NOT_HERE: Record<string, string> = {
     "A pairing of two values per day with no date axis; the pairs carry no date to open.",
   "src/components/admin/host-metrics-chart.tsx":
     "The server's own resource use, not a health record.",
+  "src/components/insights/sleep/sleep-hypnogram-chart.tsx":
+    "The axis is the clock hours of one night, all filed under one wake day; there is no second day on it to open.",
 };
 
 /**
