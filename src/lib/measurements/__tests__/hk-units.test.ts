@@ -5,6 +5,7 @@ import {
   hkDistanceToMetres,
   isConvertibleHkUnit,
 } from "../hk-units";
+import { mgdlToMmol } from "@/lib/glucose";
 
 describe("convertHkValue", () => {
   it("converts the km reading Apple writes on a metric archive", () => {
@@ -27,10 +28,14 @@ describe("convertHkValue", () => {
 
   it("strips the molar mass Apple annotates a glucose unit with", () => {
     expect(convertHkValue(5.5, "mmol<180.156>/L", "mg/dL")).toBeCloseTo(
-      99.0858,
+      99.1001,
       4,
     );
     expect(isConvertibleHkUnit("mmol<180>/L")).toBe(true);
+    // In with the factor the display reads out with: no drift on the way back.
+    expect(mgdlToMmol(convertHkValue(5.5, "mmol<180.156>/L", "mg/dL")!)).toBe(
+      5.5,
+    );
     expect(isConvertibleHkUnit("mmol<x>/L")).toBe(false);
   });
 

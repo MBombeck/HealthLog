@@ -89,6 +89,7 @@ import { dateOfBirthKey, dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
 import { PATIENT_NAME_SELECT, patientName } from "@/lib/account-name";
 import { readingsMean } from "@/lib/measurements/day-mean";
 import { loadScreenerUnvalidatedTranslations } from "./screener-translations";
+import { bmiOf } from "@/lib/analytics/classifications";
 
 const DENSE_REPORT_RAW_WINDOW_DAYS = 90;
 
@@ -533,7 +534,7 @@ export async function collectDoctorReportData(
   const weightStats = stats.WEIGHT;
   const bmiRaw =
     weightStats && userProfile?.heightCm
-      ? weightStats.latest / (userProfile.heightCm / 100) ** 2
+      ? bmiOf(weightStats.latest, userProfile.heightCm)
       : null;
   const bmi = bmiRaw !== null ? Math.round(bmiRaw * 10) / 10 : null;
 

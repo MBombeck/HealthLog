@@ -35,6 +35,7 @@ import {
   getWeeklyConsistency,
 } from "@/lib/gamification/care-metrics";
 import {
+  bmiOf,
   classifyBMI,
   classifyBP,
   classifyPulse,
@@ -259,7 +260,7 @@ function getHealthGreenDaySeries(
 
   for (const [dayKey, slot] of dayStats.entries()) {
     if (heightCm && slot.weight.count > 0) {
-      const bmi = slot.weight.sum / slot.weight.count / (heightCm / 100) ** 2;
+      const bmi = bmiOf(slot.weight.sum / slot.weight.count, heightCm);
       if (classifyBMI(bmi).severity === "normal") {
         bmiGreenDays.push(dayKey);
       }

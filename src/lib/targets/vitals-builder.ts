@@ -3,9 +3,11 @@ import {
   classifyBodyFat,
   classifyBP,
   classifySteps,
+  bmiOf,
   getBpTargetsByAge,
   getStepsRange,
   getWeightRange,
+  heightSquaredM2,
 } from "@/lib/analytics/classifications";
 import { isBpReadingInTarget } from "@/lib/analytics/bp-in-target";
 import { pairByTimestamp } from "@/lib/analytics/correlations";
@@ -194,10 +196,7 @@ export function buildVitalTargets({
     weightTargetOverride ?? (whoHeightCm ? getWeightRange(whoHeightCm) : null);
   let weightClassification: TargetItem["classification"] = null;
   if (latestByType.WEIGHT != null && whoHeightCm) {
-    const heightM = whoHeightCm / 100;
-    const classification = classifyBMI(
-      latestByType.WEIGHT / (heightM * heightM),
-    );
+    const classification = classifyBMI(bmiOf(latestByType.WEIGHT, whoHeightCm));
     weightClassification = {
       category: classification.category,
       color: classification.color,
@@ -385,8 +384,7 @@ export function buildVitalTargets({
   });
 
   if (heightCm) {
-    const heightM = heightCm / 100;
-    const heightSquared = heightM * heightM;
+    const heightSquared = heightSquaredM2(heightCm);
     const latestWeight = latestByType.WEIGHT ?? null;
     const currentBmi =
       latestWeight != null

@@ -78,6 +78,7 @@ import {
   type WeightTargetFeature,
 } from "@/lib/targets/weight-trend";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
+import { bmiOf } from "@/lib/analytics/classifications";
 // The briefing read blocks and the signals-of-day builder moved to
 // sibling modules; re-exported so every existing call site keeps
 // importing from here.
@@ -1228,7 +1229,7 @@ export async function extractFeatures(
     const summary = summarize(toDataPoints(weightData));
     const bmi =
       user?.heightCm && summary.latest
-        ? parseFloat((summary.latest / (user.heightCm / 100) ** 2).toFixed(1))
+        ? parseFloat(bmiOf(summary.latest, user.heightCm).toFixed(1))
         : null;
 
     features.weight = {

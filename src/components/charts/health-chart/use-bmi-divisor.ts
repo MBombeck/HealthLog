@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { apiGet } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
+import { heightSquaredM2 } from "@/lib/analytics/classifications";
 
 /**
  * The BMI view's divisor: the height of the record on screen, in metres,
@@ -32,5 +33,5 @@ export function useBmiDivisor(
   const heightCm = inSharedRecord
     ? (targets?.profile?.heightCm ?? null)
     : (user?.heightCm ?? null);
-  return heightCm ? (heightCm / 100) ** 2 : null;
+  return heightCm ? heightSquaredM2(heightCm) : null;
 }

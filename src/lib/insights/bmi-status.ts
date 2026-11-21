@@ -27,6 +27,7 @@ import {
   type StatusCardPlugin,
   type StatusTextResult,
 } from "@/lib/insights/status-pipeline";
+import { heightSquaredM2 } from "@/lib/analytics/classifications";
 
 /**
  * Public entry — unchanged signature. Prepares the card (cache-read,
@@ -122,7 +123,7 @@ async function buildBmiSnapshot(
   // v1.2.5 — bucket day windows on the user's own calendar so a
   // near-midnight reading lands on the user's day for non-Berlin self-hosters.
   // `userTz` was already resolved above for the cache day-key.
-  const heightFactor = (user.heightCm / 100) ** 2;
+  const heightFactor = heightSquaredM2(user.heightCm);
 
   const bmiPoints = measurements.map((measurement) => ({
     measuredAt: measurement.measuredAt,

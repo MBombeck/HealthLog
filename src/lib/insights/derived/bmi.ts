@@ -26,6 +26,7 @@
 import type { MeasurementType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import {
+  bmiOf,
   classifyBMI,
   type BmiClassification,
 } from "@/lib/analytics/classifications";
@@ -37,6 +38,7 @@ import {
 } from "./coverage";
 import type { BaselineProfile } from "./baseline";
 import { SPARKLINE_MAX_POINTS, type Derived } from "./types";
+import { roundTo } from "@/lib/stats/central";
 
 const WEIGHT_TYPE: MeasurementType = "WEIGHT";
 /** A weight reading older than this no longer reflects current BMI. */
@@ -168,14 +170,13 @@ export async function computeBmi(
   }
 
   const weightKg = latest.value;
-  const heightM = heightCm / 100;
-  const bmi = weightKg / (heightM * heightM);
+  const bmi = bmiOf(weightKg, heightCm);
   const { category, band } = classifyBmi(bmi);
 
   // BMI series from the recent weights at the fixed height; rows are
   // newest-first, the sparkline wants oldest → newest.
   const series = weights
-    .map((w) => Math.round((w.value / (heightM * heightM)) * 10) / 10)
+    .map((w) => roundTo(bmiOf(w.value, heightCm), 1))
     .reverse();
 
   const { coverage, confidence } = deriveCoverage({

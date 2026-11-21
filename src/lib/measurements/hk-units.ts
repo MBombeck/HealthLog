@@ -29,6 +29,8 @@
  *     that differ only in case.
  */
 
+import { MGDL_PER_MMOL } from "@/lib/glucose";
+
 interface HkUnitSpec {
   /** Units convert only within one family. */
   family: string;
@@ -91,9 +93,11 @@ const HK_UNITS: Record<string, HkUnitSpec> = {
 
   // ── Blood glucose (base: mg/dL) ────────────────────────────
   // Apple annotates the molar unit with glucose's molar mass, which the
-  // normaliser strips before the lookup.
+  // normaliser strips before the lookup. The factor is the one every display
+  // and manual-entry path divides by, so a reading imported in mmol/L reads
+  // back as the number Apple Health showed.
   "mg/dL": scaled("glucose", 1),
-  "mmol/L": scaled("glucose", 18.0156), // 180.156 g/mol ÷ 10
+  "mmol/L": scaled("glucose", MGDL_PER_MMOL),
 
   // ── Speed (base: metres per second) ────────────────────────
   "m/s": scaled("speed", 1),

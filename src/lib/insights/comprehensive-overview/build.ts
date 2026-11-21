@@ -17,6 +17,7 @@ import { summarize } from "@/lib/analytics/trends";
 import { resolveEffectiveBpTargets } from "@/lib/analytics/effective-range";
 import { computeBpInTargetPct } from "@/lib/analytics/bp-in-target";
 import {
+  bmiOf,
   classifyBMI,
   classifyBP,
   generateAlerts,
@@ -32,6 +33,7 @@ import {
 } from "./medication-compliance";
 import { readOverviewMoodSeries } from "./mood-series";
 import { readRestingPulseDaily } from "./resting-pulse-daily";
+import { roundTo } from "@/lib/stats/central";
 
 /** Who the overview is computed for: the record, with its zone. */
 export interface OverviewRecord {
@@ -59,8 +61,7 @@ function classifyProfile(
   let bmi: number | null = null;
   let bmiClassification = null;
   if (dbUser?.heightCm && summaries.WEIGHT?.latest) {
-    const heightM = dbUser.heightCm / 100;
-    bmi = Math.round((summaries.WEIGHT.latest / (heightM * heightM)) * 10) / 10;
+    bmi = roundTo(bmiOf(summaries.WEIGHT.latest, dbUser.heightCm), 1);
     bmiClassification = classifyBMI(bmi);
   }
 
