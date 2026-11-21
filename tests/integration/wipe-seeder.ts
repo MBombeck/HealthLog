@@ -148,10 +148,15 @@ export async function seedEveryTable(
     WHERE con.contype = 'c'
       AND con.connamespace = 'public'::regnamespace
       AND cardinality(con.conkey) = 1`;
+  // A day-key column is fenced by `CHECK (col ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$')`
+  // (`<table>_<column>_day_key_shape`) and takes a calendar day.
+  const DAY_KEY_FENCE = "~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'";
   const admitted = new Map<string, string>();
   for (const row of checkRows) {
+    const key = `${row.table_name}.${row.column_name}`;
     const first = /=\s*ANY\s*\(\s*\(?ARRAY\['((?:[^']|'')*)'/.exec(row.def);
-    if (first) admitted.set(`${row.table_name}.${row.column_name}`, first[1]);
+    if (first) admitted.set(key, first[1]);
+    else if (row.def.includes(DAY_KEY_FENCE)) admitted.set(key, "2026-01-01");
   }
 
   const byTable = new Map<string, ColumnRow[]>();
