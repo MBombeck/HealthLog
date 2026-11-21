@@ -268,21 +268,18 @@ const PINNED_AFFORDANCES: Record<
   "src/components/measurements/list/use-measurement-list-data.ts": {
     "toast.success": 3,
   },
-  "src/components/medications/card-parts/medication-status-pill.tsx": {
-    "text-success": 1,
-  },
+  // The tone of the due and taken dose states, which every dose surface
+  // renders through this one label (it reports no write).
+  "src/components/medications/dose-state-label.tsx": { "text-success": 2 },
   // Same pair, same reason as the dashboard quick-add above.
   "src/components/medications/dose-history-add-dialog.tsx": {
     "toast.success": 2,
-  },
-  "src/components/medications/dose-history/ledger-row-item.tsx": {
-    "text-success": 1,
   },
   "src/components/medications/dose-history/ledger-summary-chart.tsx": {
     "text-success": 1,
   },
   "src/components/medications/dose-history/use-dose-history-ledger.ts": {
-    "toast.success": 4,
+    "toast.success": 3,
   },
   "src/components/medications/intake-edit-dialog.tsx": { "toast.success": 1 },
   "src/components/medications/intake-history-list-v2.tsx": {
@@ -331,7 +328,8 @@ const PINNED_AFFORDANCES: Record<
   "src/components/medications/take-all-due.ts": { "toast.success": 2 },
   // v1.36.x — one fewer: the log-intake path's three-armed toast collapsed
   // into the shared `intakeToastOptions` decision plus a single call pair.
-  "src/components/medications/use-medication-intake.ts": { "toast.success": 4 },
+  // + the row delete's toast and its undo's confirmation.
+  "src/components/medications/use-medication-intake.ts": { "toast.success": 6 },
   "src/components/medications/wizard/medication-wizard-dialog.tsx": {
     "toast.success": 1,
   },

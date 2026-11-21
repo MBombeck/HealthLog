@@ -2096,9 +2096,6 @@
         "selection": {
           "rowToggleLabel": "행 선택"
         },
-        "bulkDelete": {
-          "cancelButton": "취소"
-        },
         "edit": {
           "dialogTitle": "복용 기록 편집",
           "takenAtLabel": "복용 시각",
@@ -2111,11 +2108,9 @@
           "failed": "복용 기록을 수정하지 못했어요."
         },
         "deleteRow": {
-          "confirmTitle": "이 복용 기록을 삭제할까요?",
-          "confirmBody": "기록이 영구히 삭제돼요.",
-          "confirmAction": "삭제",
           "toast": "복용 기록을 삭제했어요",
-          "failed": "복용 기록을 삭제하지 못했어요."
+          "failed": "복용 기록을 삭제하지 못했어요.",
+          "restored": "복용 기록을 되돌렸어요"
         },
         "viewRecent90": "최근 90일",
         "viewAll": "전체 기록",

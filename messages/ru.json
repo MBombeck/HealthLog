@@ -2096,9 +2096,6 @@
         "selection": {
           "rowToggleLabel": "Выбрать строку"
         },
-        "bulkDelete": {
-          "cancelButton": "Отмена"
-        },
         "edit": {
           "dialogTitle": "Изменить приём",
           "takenAtLabel": "Принято в",
@@ -2111,11 +2108,9 @@
           "failed": "Не удалось обновить приём."
         },
         "deleteRow": {
-          "confirmTitle": "Удалить этот приём?",
-          "confirmBody": "Запись будет удалена навсегда.",
-          "confirmAction": "Удалить",
           "toast": "Приём удалён",
-          "failed": "Не удалось удалить приём."
+          "failed": "Не удалось удалить приём.",
+          "restored": "Приём восстановлен"
         },
         "viewRecent90": "Последние 90 дней",
         "viewAll": "Вся история",

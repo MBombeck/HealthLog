@@ -2096,9 +2096,6 @@
         "selection": {
           "rowToggleLabel": "Seleziona riga"
         },
-        "bulkDelete": {
-          "cancelButton": "Annulla"
-        },
         "edit": {
           "dialogTitle": "Modifica assunzione",
           "takenAtLabel": "Assunta alle",
@@ -2111,11 +2108,9 @@
           "failed": "Impossibile aggiornare l’assunzione."
         },
         "deleteRow": {
-          "confirmTitle": "Eliminare questa assunzione?",
-          "confirmBody": "La voce viene rimossa definitivamente.",
-          "confirmAction": "Elimina",
           "toast": "Assunzione eliminata",
-          "failed": "Impossibile eliminare l’assunzione."
+          "failed": "Impossibile eliminare l’assunzione.",
+          "restored": "Assunzione ripristinata"
         },
         "viewRecent90": "Ultimi 90 giorni",
         "viewAll": "Storico completo",

@@ -25,6 +25,7 @@ import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 
 import { DoseStateLabel } from "@/components/medications/dose-state-label";
+import type { DeletedIntakeSnapshot } from "@/components/medications/use-medication-intake";
 import {
   DOSE_ACTION_TERM,
   doseStateOfHistoryRow,
@@ -52,7 +53,8 @@ interface LedgerRowItemProps {
     skipped: boolean;
     scheduledFor: string | null;
   }) => void;
-  onDelete: (id: string) => void;
+  /** Delete the row's intake at once; the toast carries the undo. */
+  onDelete: (intake: DeletedIntakeSnapshot) => void;
   /** Open the pin confirm for an ad-hoc take onto the named slot (ISO). */
   onPin: (eventId: string, slotAt: string) => void;
   /** Release a pinned binding (server re-attributes by band). */
@@ -424,7 +426,17 @@ function LedgerRowMenu({
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => onDelete(intake.id as string)}
+              onClick={() =>
+                onDelete({
+                  id: intake.id as string,
+                  takenAt: intake.takenAt,
+                  skipped: intake.skipped,
+                  scheduledFor:
+                    row.kind === "slot" ? intake.scheduledFor : null,
+                  doseTaken: intake.doseTaken ?? null,
+                  autoMissed: intake.autoMissed,
+                })
+              }
               data-slot="ledger-delete"
             >
               <Trash2 aria-hidden="true" className="mr-2 size-4" />

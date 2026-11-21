@@ -56,7 +56,7 @@ import {
   useTranslations,
 } from "@/lib/i18n/context";
 
-import { DeleteRowConfirm, PinConfirm } from "./dose-history/ledger-confirms";
+import { PinConfirm } from "./dose-history/ledger-confirms";
 import { LedgerRowItem } from "./dose-history/ledger-row-item";
 import { LedgerSummaryChart } from "./dose-history/ledger-summary-chart";
 import { useDoseHistoryLedger } from "./dose-history/use-dose-history-ledger";
@@ -112,9 +112,7 @@ export function DoseHistoryLedger({
     markSlot,
     toggleIntakeSkipped,
     setAttribution,
-    pendingDeleteId,
-    setPendingDeleteId,
-    confirmRowDelete,
+    deleteRow,
     pendingPin,
     setPendingPin,
   } = useDoseHistoryLedger({ medicationId, medicationName, windowDays });
@@ -212,7 +210,7 @@ export function DoseHistoryLedger({
                   onMark={markSlot}
                   onToggleSkipped={toggleIntakeSkipped}
                   onEdit={(ev) => setEditingEvent(ev)}
-                  onDelete={(id) => setPendingDeleteId(id)}
+                  onDelete={(intake) => void deleteRow(intake)}
                   onPin={(eventId, slotAt) =>
                     setPendingPin({ eventId, slotAt })
                   }
@@ -237,13 +235,6 @@ export function DoseHistoryLedger({
           medicationName={medicationName}
           schedules={schedules}
           ledgerKey={queryKey}
-        />
-      )}
-
-      {pendingDeleteId && (
-        <DeleteRowConfirm
-          onConfirm={() => void confirmRowDelete()}
-          onCancel={() => setPendingDeleteId(null)}
         />
       )}
 

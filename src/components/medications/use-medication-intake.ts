@@ -359,6 +359,96 @@ export async function runUndoIntake(deps: {
   }
 }
 
+/** What a deleted intake recorded, enough to record it again. */
+export interface DeletedIntakeSnapshot {
+  id: string;
+  takenAt: string | null;
+  skipped: boolean;
+  /** The slot the row belonged to (ISO), or null for an off-schedule take. */
+  scheduledFor: string | null;
+  doseTaken?: string | null;
+  autoMissed?: boolean;
+}
+
+/**
+ * The intake POST that records a deleted dose again: the same take time,
+ * the same slot, the same dose, through the ordinary write path (slot lock,
+ * already-taken check, stock). Null for a row that recorded nothing a person
+ * entered (an automatic "missed" placeholder), which an undo has no reason
+ * to bring back.
+ */
+export function restoreIntakeBody(
+  intake: DeletedIntakeSnapshot,
+): Record<string, unknown> | null {
+  if (intake.skipped) {
+    return intake.scheduledFor
+      ? { skipped: true, scheduledFor: intake.scheduledFor }
+      : null;
+  }
+  if (!intake.takenAt) return null;
+  return {
+    skipped: false,
+    takenAt: intake.takenAt,
+    ...(intake.scheduledFor ? { scheduledFor: intake.scheduledFor } : {}),
+    ...(intake.doseTaken ? { doseTaken: intake.doseTaken } : {}),
+  };
+}
+
+/**
+ * Delete one intake from the dose history, the way every other list in the
+ * app deletes: at once, soft (the row stays, tombstoned), and with an Undo in
+ * the toast that records the dose again. No confirmation dialog: the undo is
+ * the safety net, and the old dialog claimed a permanent removal that never
+ * happened.
+ */
+export async function runDeleteIntake(deps: {
+  medicationId: string;
+  intake: DeletedIntakeSnapshot;
+  t: Translator;
+  /** Refresh the reads after the delete and after an undo. */
+  reconcile: () => Promise<void>;
+}): Promise<void> {
+  const { medicationId, intake, t, reconcile } = deps;
+  try {
+    await apiDelete(`/api/medications/${medicationId}/intake/${intake.id}`);
+  } catch (failure) {
+    showErrorToast(t("medications.detail.intake.deleteRow.failed"), {
+      cause: failure,
+    });
+    return;
+  }
+  await reconcile();
+  const body = restoreIntakeBody(intake);
+  toast.success(
+    t("medications.detail.intake.deleteRow.toast"),
+    body
+      ? {
+          action: {
+            label: t("medications.dose.action.undo"),
+            onClick: () => {
+              void (async () => {
+                try {
+                  await apiPost(
+                    `/api/medications/${medicationId}/intake`,
+                    body,
+                  );
+                  toast.success(
+                    t("medications.detail.intake.deleteRow.restored"),
+                  );
+                } catch (failure) {
+                  showErrorToast(t("medications.intakeUndoFailed"), {
+                    cause: failure,
+                  });
+                }
+                await reconcile();
+              })();
+            },
+          },
+        }
+      : undefined,
+  );
+}
+
 export function useMedicationIntake({
   medication,
   onRecorded,

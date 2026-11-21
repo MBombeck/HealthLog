@@ -2096,9 +2096,6 @@
         "selection": {
           "rowToggleLabel": "Selecionar linha"
         },
-        "bulkDelete": {
-          "cancelButton": "Cancelar"
-        },
         "edit": {
           "dialogTitle": "Editar tomada",
           "takenAtLabel": "Tomada em",
@@ -2111,11 +2108,9 @@
           "failed": "Não foi possível atualizar a tomada."
         },
         "deleteRow": {
-          "confirmTitle": "Excluir esta tomada?",
-          "confirmBody": "A entrada é removida permanentemente.",
-          "confirmAction": "Excluir",
           "toast": "Tomada excluída",
-          "failed": "Não foi possível excluir a tomada."
+          "failed": "Não foi possível excluir a tomada.",
+          "restored": "Tomada restaurada"
         },
         "viewRecent90": "Últimos 90 dias",
         "viewAll": "Histórico completo",

@@ -2096,9 +2096,6 @@
         "selection": {
           "rowToggleLabel": "Seleccionar fila"
         },
-        "bulkDelete": {
-          "cancelButton": "Cancelar"
-        },
         "edit": {
           "dialogTitle": "Editar toma",
           "takenAtLabel": "Tomada a las",
@@ -2111,11 +2108,9 @@
           "failed": "No se pudo actualizar la toma."
         },
         "deleteRow": {
-          "confirmTitle": "¿Eliminar esta toma?",
-          "confirmBody": "La entrada se elimina de forma permanente.",
-          "confirmAction": "Eliminar",
           "toast": "Toma eliminada",
-          "failed": "No se pudo eliminar la toma."
+          "failed": "No se pudo eliminar la toma.",
+          "restored": "Toma restaurada"
         },
         "viewRecent90": "Últimos 90 días",
         "viewAll": "Historial completo",

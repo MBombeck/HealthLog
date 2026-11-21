@@ -2096,9 +2096,6 @@
         "selection": {
           "rowToggleLabel": "Select row"
         },
-        "bulkDelete": {
-          "cancelButton": "Cancel"
-        },
         "edit": {
           "dialogTitle": "Edit intake",
           "takenAtLabel": "Taken at",
@@ -2111,11 +2108,9 @@
           "failed": "Could not update the intake."
         },
         "deleteRow": {
-          "confirmTitle": "Delete this intake?",
-          "confirmBody": "The entry is removed permanently.",
-          "confirmAction": "Delete",
           "toast": "Intake deleted",
-          "failed": "Could not delete the intake."
+          "failed": "Could not delete the intake.",
+          "restored": "Intake restored"
         },
         "viewRecent90": "Last 90 days",
         "viewAll": "Full history",
