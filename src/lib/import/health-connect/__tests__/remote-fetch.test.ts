@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { nextAttemptAfter, REMOTE_SUCCESS_INTERVAL_MS } from "../remote-fetch";
+import {
+  nextAttemptAfter,
+  REMOTE_SUCCESS_INTERVAL_MS,
+  runWithinBudget,
+} from "../remote-fetch";
 import {
   configuredWebdavPrivateOrigins,
   evaluateWebdavFolderUrl,
@@ -101,5 +105,58 @@ describe("evaluateWebdavFolderUrl", () => {
         evaluateWebdavFolderUrl(url, configuredWebdavPrivateOrigins()),
       ).toMatchObject({ allowed: false, reasonCode: "invalid_origin" });
     }
+  });
+});
+
+describe("runWithinBudget", () => {
+  it("moves the other folders past one that hangs", async () => {
+    let release: () => void = () => {};
+    const slow = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const finished: string[] = [];
+    const run = runWithinBudget(
+      ["slow", "a", "b", "c", "d"],
+      { concurrency: 2, deadline: Number.POSITIVE_INFINITY },
+      async (item) => {
+        if (item === "slow") await slow;
+        finished.push(item);
+        return item;
+      },
+    );
+    // Everything else is done while the slow one still holds its lane.
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(finished).toEqual(["a", "b", "c", "d"]);
+    release();
+    expect(await run).toEqual(["a", "b", "c", "d", "slow"]);
+  });
+
+  it("never runs more than the concurrency at once", async () => {
+    let running = 0;
+    let peak = 0;
+    await runWithinBudget(
+      Array.from({ length: 12 }, (_, i) => i),
+      { concurrency: 4, deadline: Number.POSITIVE_INFINITY },
+      async () => {
+        running++;
+        peak = Math.max(peak, running);
+        await new Promise((resolve) => setTimeout(resolve, 1));
+        running--;
+      },
+    );
+    expect(peak).toBe(4);
+  });
+
+  it("starts nothing once the deadline has passed and leaves the rest", async () => {
+    let clock = 0;
+    const ran = await runWithinBudget(
+      [1, 2, 3, 4, 5],
+      { concurrency: 1, deadline: 3, now: () => clock },
+      async (item) => {
+        clock++;
+        return item;
+      },
+    );
+    expect(ran).toEqual([1, 2, 3]);
   });
 });
