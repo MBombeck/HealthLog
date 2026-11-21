@@ -143,6 +143,8 @@ function isCacheableNavigation(request, response) {
   try {
     const { pathname } = new URL(request.url);
     if (pathname === "/c" || pathname.startsWith("/c/")) return false;
+    // The emergency card's read-only view: a revoked card stays revoked.
+    if (pathname.startsWith("/e/")) return false;
     // Public to the proxy, so not no-store, but rendered for a signed-in
     // account during its setup.
     if (pathname === "/onboarding" || pathname.startsWith("/onboarding/")) {

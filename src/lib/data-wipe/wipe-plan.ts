@@ -242,6 +242,8 @@ export const WIPE_MODELS = [
   "CycleCalendarFeed",
   // The care calendar feed; deleting the row is the revocation.
   "CareCalendarFeed",
+  // The emergency card's QR link; deleting the row is the revocation.
+  "EmergencyCardLink",
   // v1.36.0 — account grants, on BOTH sides (see WIPE_OWNER_FIELDS): the ones
   // this account made over its own record, and the ones it holds over someone
   // else's.

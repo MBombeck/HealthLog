@@ -120,6 +120,7 @@ const RECORD_COOKIE_ONLY_PROOF_ROUTES = [
  */
 const ACTOR_COOKIE_ONLY_PROOF_ROUTES = [
   "app/api/care/feed-subscription/route.ts",
+  "app/api/emergency-card/link/route.ts",
 ].sort();
 
 /**

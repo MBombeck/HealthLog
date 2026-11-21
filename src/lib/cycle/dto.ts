@@ -11,6 +11,10 @@
 import { decrypt } from "@/lib/crypto";
 import { getEvent } from "@/lib/logging/context";
 import type { CyclePredictionResult } from "@/lib/cycle/types";
+import {
+  resolvePregnancyState,
+  type PregnancyProfileFields,
+} from "@/lib/cycle/pregnancy";
 import type {
   CycleDayLog,
   CycleSymptomLink,
@@ -278,11 +282,57 @@ export interface CycleProfileDTO {
   typicalPeriodLength: number | null;
   lutealPhaseLength: number | null;
   updatedAt: string;
+  /** The pregnancy / postpartum state, resolved on the owner's day. */
+  pregnancy: CyclePregnancyDTO;
+}
+
+/**
+ * The pregnancy / postpartum state as every client reads it: what
+ * the owner set, and what holds on the owner's calendar day. A client renders
+ * `state`, `gestationalWeeks`/`gestationalDays` and `postpartumWeek`; it does
+ * not recount them. `predictionsPaused` is the reason the forecast fields are
+ * empty.
+ */
+export interface CyclePregnancyDTO {
+  /** What the owner set: PREGNANT, POSTPARTUM, or null. */
+  storedState: "PREGNANT" | "POSTPARTUM" | null;
+  /** What holds today; POSTPARTUM past its window reads null. */
+  state: "PREGNANT" | "POSTPARTUM" | null;
+  startDate: string | null;
+  dueDate: string | null;
+  deliveryDate: string | null;
+  postpartumWeeks: number;
+  gestationalWeeks: number | null;
+  gestationalDays: number | null;
+  postpartumWeek: number | null;
+  postpartumEndsOn: string | null;
+  predictionsPaused: boolean;
+}
+
+export function toCyclePregnancyDTO(
+  row: PregnancyProfileFields,
+  today: string,
+): CyclePregnancyDTO {
+  const resolved = resolvePregnancyState(row, today);
+  return {
+    storedState: resolved.storedState,
+    state: resolved.state,
+    startDate: row.pregnancyStartDate ?? null,
+    dueDate: resolved.dueDate,
+    deliveryDate: resolved.deliveryDate,
+    postpartumWeeks: resolved.postpartumWeeks,
+    gestationalWeeks: resolved.gestationalAge?.weeks ?? null,
+    gestationalDays: resolved.gestationalAge?.days ?? null,
+    postpartumWeek: resolved.postpartumWeek,
+    postpartumEndsOn: resolved.postpartumEndsOn,
+    predictionsPaused: resolved.predictionsPaused,
+  };
 }
 
 export function toCycleProfileDTO(
   row: MenstrualCycleProfileRow,
   cycleTrackingEnabled: boolean,
+  today: string,
 ): CycleProfileDTO {
   return {
     goal: row.goal,
@@ -296,10 +346,11 @@ export function toCycleProfileDTO(
     typicalPeriodLength: row.typicalPeriodLength,
     lutealPhaseLength: row.lutealPhaseLength,
     updatedAt: row.updatedAt.toISOString(),
+    pregnancy: toCyclePregnancyDTO(row, today),
   };
 }
 
-type MenstrualCycleProfileRow = {
+type MenstrualCycleProfileRow = PregnancyProfileFields & {
   goal: string;
   secondarySymptom: string;
   rawChartMode: boolean;

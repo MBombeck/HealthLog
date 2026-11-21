@@ -1568,11 +1568,11 @@ export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
   // Reproductive / fertility — v1.15.0 promoted Contraceptive,
   // PregnancyTestResult, ProgesteroneTestResult and SexualActivity OUT of
   // this list (they route into CYCLE day-logs via the cycle accumulator).
-  // Pregnancy + Lactation STATUS stay deferred: the v1.15.0 CycleProfile
-  // has no pregnant/lactating column (pregnancy-mode is a later release),
-  // so there is no destination yet — promoting them would only grow the
-  // importer's skip tally. The four awareness types are server-DERIVED
-  // from the cycle engine, never ingested.
+  // Pregnancy + Lactation STATUS: since v1.49 the `export.xml` importer
+  // routes them to the cycle's pregnancy state before this list is read
+  // (`CycleImportAccumulator.handlesStatus`); they never become a
+  // Measurement, so for every other path they stay deferred. The four
+  // awareness types are server-DERIVED from the cycle engine, never ingested.
   "HKCategoryTypeIdentifierLactation",
   "HKCategoryTypeIdentifierPregnancy",
   "HKCategoryTypeIdentifierPersistentIntermenstrualBleeding",

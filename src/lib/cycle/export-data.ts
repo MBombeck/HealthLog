@@ -18,6 +18,7 @@ import { median, mad } from "@/lib/cycle/prediction";
 import { phaseForDay } from "@/lib/cycle/phase";
 import { dayDiff, addDays } from "@/lib/cycle/day-math";
 import { LUTEAL_DEFAULT, type CyclePhase } from "@/lib/cycle/types";
+import { resolvePregnancyState } from "@/lib/cycle/pregnancy";
 
 /** One observed cycle in the recent-cycles table. */
 export interface CycleExportCycle {
@@ -48,6 +49,53 @@ export interface CycleExportSummary {
   averagePeriodLengthDays: number | null;
   /** The phase the report date falls in, or null when it can't be resolved. */
   currentPhase: CyclePhase | null;
+  /**
+   * The pregnancy or postpartum state that holds on the report date,
+   * or null. Dates and counts only; while it holds `currentPhase` is null.
+   */
+  pregnancy: CycleExportPregnancy | null;
+}
+
+/** The pregnancy block of the export summary (v1.49). */
+export interface CycleExportPregnancy {
+  state: "PREGNANT" | "POSTPARTUM";
+  startDate: string | null;
+  dueDate: string | null;
+  deliveryDate: string | null;
+  /** Completed weeks and days on the report date (PREGNANT only). */
+  gestationalWeeks: number | null;
+  gestationalDays: number | null;
+  /** Completed weeks since the delivery on the report date (POSTPARTUM). */
+  postpartumWeek: number | null;
+}
+
+/** The pregnancy block on `asOf`, or null when no state holds then. */
+async function exportPregnancy(
+  userId: string,
+  asOf: string,
+): Promise<CycleExportPregnancy | null> {
+  const profile = await prisma.cycleProfile.findUnique({
+    where: { userId },
+    select: {
+      reproductiveState: true,
+      pregnancyStartDate: true,
+      pregnancyDueDate: true,
+      deliveryDate: true,
+      postpartumWeeks: true,
+    },
+  });
+  if (!profile) return null;
+  const resolved = resolvePregnancyState(profile, asOf);
+  if (!resolved.state) return null;
+  return {
+    state: resolved.state,
+    startDate: profile.pregnancyStartDate,
+    dueDate: resolved.dueDate,
+    deliveryDate: resolved.deliveryDate,
+    gestationalWeeks: resolved.gestationalAge?.weeks ?? null,
+    gestationalDays: resolved.gestationalAge?.days ?? null,
+    postpartumWeek: resolved.postpartumWeek,
+  };
 }
 
 /** Max observed cycles surfaced in the recent-cycles table. */
@@ -75,7 +123,22 @@ export async function buildCycleExportSummary(
     },
   });
 
-  if (cycles.length === 0) return null;
+  const pregnancy = await exportPregnancy(userId, asOf);
+  if (cycles.length === 0) {
+    // A pregnancy with no logged cycle is still the section's content.
+    return pregnancy
+      ? {
+          lastPeriodStart: null,
+          recentCycles: [],
+          observedCycleCount: 0,
+          averageCycleLengthDays: null,
+          cycleLengthVariabilityDays: null,
+          averagePeriodLengthDays: null,
+          currentPhase: null,
+          pregnancy,
+        }
+      : null;
+  }
 
   // Observed length: prefer the stored lengthDays, else derive from the
   // next cycle's start (the canonical start→next-start definition).
@@ -113,7 +176,7 @@ export async function buildCycleExportSummary(
   // Current phase: resolve against the cycle whose window contains `asOf`.
   let currentPhase: CyclePhase | null = null;
   const last = cycles[cycles.length - 1];
-  if (last) {
+  if (last && !pregnancy) {
     // The open cycle's nextStart is unknown; estimate it from the median
     // length so the phase math has a window.
     const estLength = averageCycleLengthDays ?? 28;
@@ -139,5 +202,6 @@ export async function buildCycleExportSummary(
     cycleLengthVariabilityDays,
     averagePeriodLengthDays,
     currentPhase,
+    pregnancy,
   };
 }

@@ -546,7 +546,17 @@
       "window": "geanalyseerd van {from} tot {to}, dit kan buiten de rapportperiode vallen",
       "windowLine": "Geanalyseerd van {from} tot {to}. Deze periode kan buiten de rapportperiode vallen."
     },
-    "screenerUnvalidated": "{label}: {count} van {total} uitkomsten zijn beantwoord in een niet wetenschappelijk gevalideerde vertaling; zie ze als een indicatie."
+    "screenerUnvalidated": "{label}: {count} van {total} uitkomsten zijn beantwoord in een niet wetenschappelijk gevalideerde vertaling; zie ze als een indicatie.",
+    "pregnancy": {
+      "title": "Zwangerschap",
+      "pregnantWeek": "Zwanger, week {weeks}+{days} op de rapportdatum",
+      "pregnant": "Zwanger",
+      "startDate": "Eerste dag van de laatste menstruatie",
+      "dueDate": "Uitgerekende datum",
+      "postpartumWeek": "Na de bevalling, week {weeks} op de rapportdatum",
+      "deliveryDate": "Datum van de bevalling",
+      "predictionsPaused": "Zelf opgegeven. Cyclusvoorspellingen staan stil."
+    }
   },
   "errorBoundary": {
     "title": "Er is iets misgegaan",
@@ -3071,7 +3081,8 @@
         "no_personal_goal": "Stel een persoonlijk gewichtsdoel in om hier je voortgang te zien.",
         "weight_not_tracked": "Leg een gewichtsmeting vast om je voortgang richting je doel te zien.",
         "read_failed": "Gewichtsgegevens kunnen niet worden geladen. Probeer het opnieuw.",
-        "notScored": "De voortgang richting je gewichtsdoel is persoonlijke context en heeft geen invloed op de Gezondheidsscore."
+        "notScored": "De voortgang richting je gewichtsdoel is persoonlijke context en heeft geen invloed op de Gezondheidsscore.",
+        "pregnancy_context": "Tijdens de zwangerschap en na de bevalling wordt gewicht als gegeven getoond, niet tegen een doel."
       },
       "configureLink": "Kies wat meetelt voor je score",
       "coverage": {
@@ -10456,6 +10467,38 @@
         "LATE": "Geen voorspelling zolang deze menstruatie later is dan verwacht; die komt terug zodra je haar registreert.",
         "OFF": "Voorspellingen staan uit; alleen eerdere cycli zijn opgenomen, als je die hebt gekozen."
       }
+    },
+    "pregnancy": {
+      "title": "Zwangerschap en na de bevalling",
+      "description": "Zolang een van beide geldt, staan menstruatie- en vruchtbaarheidsvoorspellingen stil.",
+      "stateLabel": "Huidige status",
+      "state": {
+        "NONE": "Gewone cyclus",
+        "PREGNANT": "Zwanger",
+        "POSTPARTUM": "Na de bevalling"
+      },
+      "startDate": "Eerste dag van de laatste menstruatie",
+      "dueDate": "Uitgerekende datum",
+      "deliveryDate": "Datum van de bevalling",
+      "postpartumWeeks": "Weken voordat voorspellingen hervatten",
+      "noneHint": "Voorspellingen werken zoals gewoonlijk.",
+      "pausedHint": "Menstruatie- en vruchtbaarheidsvoorspellingen en hun herinneringen staan stil. Gewicht en bloeddruk worden in deze context getoond, zonder gewichtsdoel.",
+      "save": "Opslaan",
+      "errors": {
+        "start_in_future": "De eerste dag kan niet in de toekomst liggen.",
+        "delivery_in_future": "De datum van de bevalling kan niet in de toekomst liggen.",
+        "due_before_start": "De uitgerekende datum moet na de eerste dag liggen.",
+        "delivery_required": "Vul de datum van de bevalling in.",
+        "generic": "Opslaan is mislukt. Probeer het opnieuw."
+      },
+      "banner": {
+        "pregnantWeek": "Zwanger, week {weeks}+{days}",
+        "pregnant": "Zwanger",
+        "postpartumWeek": "Na de bevalling, week {weeks}",
+        "due": "Uitgerekende datum {date}.",
+        "resumes": "Voorspellingen hervatten op {date}.",
+        "paused": "Menstruatie- en vruchtbaarheidsvoorspellingen staan stil."
+      }
     }
   },
   "cycleReminders": {
@@ -12181,7 +12224,8 @@
       "save": "Opslaan",
       "savedToast": "Noodinformatie opgeslagen",
       "saveError": "Je noodinformatie kon niet worden opgeslagen.",
-      "loadError": "Je noodinformatie kon niet worden geladen."
+      "loadError": "Je noodinformatie kon niet worden geladen.",
+      "cardLink": "Noodkaart openen"
     },
     "life": {
       "cardTitle": "Leefomstandigheden",
@@ -14510,7 +14554,9 @@
       "labValuesOther": "{count} labwaarden",
       "seizuresOne": "1 aanval",
       "seizuresFew": "{count} aanvallen",
-      "seizuresOther": "{count} aanvallen"
+      "seizuresOther": "{count} aanvallen",
+      "pregnancy": "Zwangerschap",
+      "postpartum": "Na de bevalling"
     },
     "labs": {
       "menuTitle": "Labwaarden",
@@ -14537,7 +14583,8 @@
       "daysOne": "op 1 dag",
       "daysFew": "gemiddelde van {count} dagen",
       "daysOther": "gemiddelde van {count} dagen"
-    }
+    },
+    "pregnancyWeek": "zwangerschapsweek {week}"
   },
   "lifeEvents": {
     "title": "Levensgebeurtenis",
@@ -15369,6 +15416,80 @@
       "tooLarge": "Het rapport over {period} was groter dan een document hier mag zijn. De volgende periode probeert het opnieuw.",
       "noSelection": "Er is hierboven niets geselecteerd voor de export, dus er is geen rapport opgeslagen. Kies wat erin moet en het volgt bij de volgende ronde.",
       "failed": "Het rapport over {period} kon niet worden opgeslagen. Binnen een uur wordt het opnieuw geprobeerd."
+    }
+  },
+  "emergencyCard": {
+    "title": "Noodkaart",
+    "subtitle": "Door de persoon zelf opgegeven. Controleer waar mogelijk.",
+    "allergies": "Allergieën",
+    "pregnancy": "Zwangerschap",
+    "pregnantWeek": "Zwanger, week {weeks}+{days}",
+    "pregnant": "Zwanger",
+    "dueDate": "Uitgerekende datum {date}",
+    "postpartum": "Bevallen op {date}, week {weeks} na de bevalling",
+    "postpartumNoDate": "Na een bevalling",
+    "dateOfBirth": "Geboortedatum",
+    "savedOn": "Stand van {date}",
+    "wallet": {
+      "instructions": "Druk af op 100 procent, knip langs de rand en vouw op de stippellijn.",
+      "scan": "Scan voor de volledige kaart",
+      "cut": "Ingekort zodat het past. De volledige kaart staat achter de QR-code."
+    },
+    "link": {
+      "validUntil": "Alleen lezen. Deze link werkt tot {date}.",
+      "readOnly": "Alleen lezen. Gedeeld door de eigenaar, die de link altijd kan intrekken.",
+      "title": "QR-link",
+      "loadError": "De status van de link kon niet worden geladen.",
+      "disclosure": "Wie de code scant, ziet de aangevinkte onderdelen zonder in te loggen. Je kunt de link een einddatum geven en altijd intrekken; elke keer openen wordt voor je vastgelegd.",
+      "fieldsLabel": "Wat de link toont",
+      "expiryLabel": "Link verloopt",
+      "expiry": {
+        "none": "Nooit, tot intrekking",
+        "30": "Over 30 dagen",
+        "365": "Over een jaar",
+        "730": "Over twee jaar"
+      },
+      "create": "Link maken",
+      "qrAlt": "QR-code voor de link naar de noodkaart",
+      "once": "De link en de code bestaan alleen nu. Download de portemonneekaart met de code voordat je deze pagina verlaat.",
+      "hidden": "Een link die begint met {prefix} is actief. Hij werd één keer getoond, bij het maken; trek hem in voor een nieuwe.",
+      "shows": "Toont: {items}.",
+      "expired": "Deze link is verlopen en toont niets meer.",
+      "expiresOn": "Verloopt op {date}.",
+      "noExpiry": "Geen einddatum. Hij werkt tot je hem intrekt.",
+      "opened": "{count} keer geopend, laatst {when}.",
+      "notOpened": "Nog niet geopend.",
+      "revoke": "Link intrekken",
+      "revokeTitle": "De link van de noodkaart intrekken?",
+      "revokeBody": "Geprinte kaarten met deze code werken dan niet meer. Je kunt een nieuwe link maken en de kaart opnieuw printen.",
+      "error": "De link kon niet worden gewijzigd. Probeer het opnieuw."
+    },
+    "page": {
+      "title": "Noodkaart",
+      "description": "Je noodgegevens voor onderweg.",
+      "back": "Gezondheidsprofiel",
+      "loadError": "De noodkaart kon niet worden geladen.",
+      "editHint": "Bloedgroep, contacten, implantaten en verklaringen komen uit je noodgegevens.",
+      "editLink": "Bewerken",
+      "offlineHint": "De app werkt bewust niet offline. Sla een kopie op je telefoon op om de kaart zonder verbinding bij je te hebben; die toont de stand van de dag van opslaan.",
+      "downloadError": "Downloaden is mislukt. Probeer het opnieuw.",
+      "saveOffline": "Offline kopie opslaan",
+      "wallet": "Portemonneekaart (PDF)",
+      "walletWithQr": "Portemonneekaart met QR-code (PDF)",
+      "preview": "Jouw kaart"
+    },
+    "fields": {
+      "BLOOD_TYPE": "Bloedgroep",
+      "ALLERGIES": "Allergieën",
+      "CONDITIONS": "Chronische aandoeningen",
+      "MEDICATIONS": "Huidige medicatie",
+      "PREGNANCY": "Zwangerschap",
+      "IMPLANTS": "Implantaten en hulpmiddelen",
+      "CONTACTS": "Noodcontacten",
+      "ADVANCE_DIRECTIVE": "Wilsverklaring",
+      "ORGAN_DONOR": "Orgaandonatie",
+      "NOTE": "Aanvullende notities",
+      "DATE_OF_BIRTH": "Geboortedatum"
     }
   }
 }

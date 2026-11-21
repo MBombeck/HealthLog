@@ -3,12 +3,13 @@
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 
 import { CycleCalendarFeedCard } from "./cycle-calendar-feed-card";
+import { CyclePregnancyCard } from "./cycle-pregnancy-card";
 import { CycleSettings } from "./cycle-settings";
 import type { CycleProfileDTO } from "./types";
 
 /**
- * The cycle page's settings tab: the profile form, then the calendar
- * subscription (#1350). The form remounts on a profile refetch (`key`), the
+ * The cycle page's settings tab: the pregnancy state (v1.49), the profile
+ * form, then the calendar subscription (#1350). The form remounts on a profile refetch (`key`), the
  * subscription card keeps its own state, including a link it just showed.
  *
  * The card is the owner's on their own record, and a guardian's on a managed
@@ -22,6 +23,7 @@ export function CycleSettingsTab({ profile }: { profile: CycleProfileDTO }) {
     !inSharedRecord || (recordKind === "managed" && level === "manage");
   return (
     <div className="space-y-4">
+      <CyclePregnancyCard key={`p-${profile.updatedAt}`} profile={profile} />
       <CycleSettings key={profile.updatedAt} profile={profile} />
       {mayHoldFeed ? <CycleCalendarFeedCard /> : null}
     </div>

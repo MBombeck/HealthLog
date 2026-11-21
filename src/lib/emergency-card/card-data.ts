@@ -1,0 +1,260 @@
+/**
+ * The emergency card's content (v1.49): the record's emergency facts, read
+ * for the items a card shows and nothing else.
+ *
+ * One loader for every surface: the owner's own card page, its offline copy
+ * and wallet PDF, and the read-only `hlm_` link a first responder scans. The
+ * link passes the items the owner ticked at mint; an item that is not ticked
+ * is never read, so it cannot leak through a later bug in the view.
+ *
+ * Sources, all the record's own:
+ *   - blood type, implants, contacts, advance directive, organ donor and the
+ *     note: the emergency profile (`readEmergencyProfile`, fail-soft per
+ *     encrypted field, the same read page one of the doctor report uses);
+ *   - allergies: every active allergy, severe ones
+ *     first, with the reaction where it decrypts;
+ *   - conditions: ongoing chronic conditions plus the anamnesis text;
+ *   - medications: active, not paused, not ended;
+ *   - pregnancy: the cycle's pregnancy or postpartum state, when it holds;
+ *   - birth date: the profile's.
+ */
+import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
+import { resolvePregnancyState } from "@/lib/cycle/pregnancy";
+import { prisma } from "@/lib/db";
+import { decryptAllergyReaction } from "@/lib/doctor-report-helpers";
+import { getEvent } from "@/lib/logging/context";
+import { readEmergencyProfile } from "@/lib/profile/emergency-profile";
+import { dateOfBirthKey, dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
+import type {
+  AdvanceDirectiveStatusValue,
+  EmergencyBloodTypeValue,
+  OrganDonorStatusValue,
+} from "@/lib/validations/emergency-profile";
+
+import {
+  EMERGENCY_CARD_FIELDS,
+  normaliseFields,
+  type EmergencyCardField,
+} from "./fields";
+
+/** The most allergies, conditions and medications one card lists. */
+const LIST_CAP = 30;
+
+export interface EmergencyCardAllergy {
+  substance: string;
+  severity: "MILD" | "MODERATE" | "SEVERE" | null;
+  reaction: string | null;
+}
+
+export interface EmergencyCardMedication {
+  name: string;
+  dose: string | null;
+}
+
+export interface EmergencyCardPregnancy {
+  state: "PREGNANT" | "POSTPARTUM";
+  gestationalWeeks: number | null;
+  gestationalDays: number | null;
+  dueDate: string | null;
+  deliveryDate: string | null;
+  postpartumWeek: number | null;
+}
+
+/**
+ * The card. Every item is `null` when it was not asked for or holds nothing;
+ * `fields` says which were asked for, so a view can tell "not shared" from
+ * "nothing recorded".
+ */
+export interface EmergencyCardView {
+  fields: EmergencyCardField[];
+  bloodType: EmergencyBloodTypeValue | null;
+  allergies: EmergencyCardAllergy[] | null;
+  conditions: string[] | null;
+  medications: EmergencyCardMedication[] | null;
+  pregnancy: EmergencyCardPregnancy | null;
+  implants: string | null;
+  contacts: string | null;
+  advanceDirective: AdvanceDirectiveStatusValue | null;
+  organDonor: OrganDonorStatusValue | null;
+  note: string | null;
+  dateOfBirth: string | null;
+  /** The owner's calendar day the card was read on. */
+  asOf: string;
+}
+
+const SEVERITY_ORDER = { SEVERE: 0, MODERATE: 1, MILD: 2 } as const;
+
+async function readAllergies(userId: string): Promise<EmergencyCardAllergy[]> {
+  const rows = await prisma.allergy.findMany({
+    where: {
+      userId,
+      deletedAt: null,
+      status: "ACTIVE",
+    },
+    orderBy: { createdAt: "asc" },
+    take: LIST_CAP,
+    select: { substance: true, severity: true, reactionEncrypted: true },
+  });
+  return rows
+    .map((r) => ({
+      substance: r.substance,
+      severity: r.severity,
+      reaction: decryptAllergyReaction(r.reactionEncrypted).reaction,
+    }))
+    .sort(
+      (a, b) =>
+        (a.severity ? SEVERITY_ORDER[a.severity] : 3) -
+        (b.severity ? SEVERITY_ORDER[b.severity] : 3),
+    );
+}
+
+async function readConditions(userId: string): Promise<string[]> {
+  const [episodes, profile] = await Promise.all([
+    prisma.illnessEpisode.findMany({
+      where: {
+        userId,
+        deletedAt: null,
+        lifecycle: "CHRONIC_ONGOING",
+        resolvedAt: null,
+      },
+      orderBy: { onsetAt: "asc" },
+      take: LIST_CAP,
+      select: { label: true },
+    }),
+    prisma.userHealthProfile.findUnique({
+      where: { userId },
+      select: { conditionsEncrypted: true },
+    }),
+  ]);
+  const out = episodes.map((e) => e.label);
+  if (profile?.conditionsEncrypted && profile.conditionsEncrypted.byteLength) {
+    try {
+      const text = decryptFromBytes(profile.conditionsEncrypted).trim();
+      if (text) out.push(text);
+    } catch {
+      getEvent()?.addWarning(
+        `emergency card: conditions decrypt failed for ${userId}`,
+      );
+    }
+  }
+  return out;
+}
+
+async function readMedications(
+  userId: string,
+  today: string,
+): Promise<EmergencyCardMedication[]> {
+  const rows = await prisma.medication.findMany({
+    where: {
+      userId,
+      active: true,
+      pausedAt: null,
+      OR: [{ endsOn: null }, { endsOn: { gte: dayKeyAsUtcMidnight(today) } }],
+    },
+    orderBy: [{ name: "asc" }, { id: "asc" }],
+    take: LIST_CAP,
+    select: { name: true, dose: true },
+  });
+  return rows.map((m) => ({ name: m.name, dose: m.dose.trim() || null }));
+}
+
+async function readPregnancy(
+  userId: string,
+  today: string,
+): Promise<EmergencyCardPregnancy | null> {
+  const profile = await prisma.cycleProfile.findUnique({
+    where: { userId },
+    select: {
+      cycleTrackingEnabled: true,
+      reproductiveState: true,
+      pregnancyStartDate: true,
+      pregnancyDueDate: true,
+      deliveryDate: true,
+      postpartumWeeks: true,
+    },
+  });
+  if (!profile || profile.cycleTrackingEnabled === false) return null;
+  const resolved = resolvePregnancyState(profile, today);
+  if (!resolved.state) return null;
+  return {
+    state: resolved.state,
+    gestationalWeeks: resolved.gestationalAge?.weeks ?? null,
+    gestationalDays: resolved.gestationalAge?.days ?? null,
+    dueDate: resolved.dueDate,
+    deliveryDate: resolved.deliveryDate,
+    postpartumWeek: resolved.postpartumWeek,
+  };
+}
+
+/**
+ * Read the card for `userId` on the owner's calendar day `today`, limited to
+ * `fields` (every item when omitted, the owner's own view).
+ */
+export async function loadEmergencyCard(
+  userId: string,
+  today: string,
+  fields: readonly EmergencyCardField[] = EMERGENCY_CARD_FIELDS,
+): Promise<EmergencyCardView> {
+  const asked = normaliseFields(fields);
+  const has = (f: EmergencyCardField) => asked.includes(f);
+  const needsProfile =
+    has("BLOOD_TYPE") ||
+    has("IMPLANTS") ||
+    has("CONTACTS") ||
+    has("ADVANCE_DIRECTIVE") ||
+    has("ORGAN_DONOR") ||
+    has("NOTE");
+
+  const [profile, allergies, conditions, medications, pregnancy, user] =
+    await Promise.all([
+      needsProfile ? readEmergencyProfile(userId) : null,
+      has("ALLERGIES") ? readAllergies(userId) : null,
+      has("CONDITIONS") ? readConditions(userId) : null,
+      has("MEDICATIONS") ? readMedications(userId, today) : null,
+      has("PREGNANCY") ? readPregnancy(userId, today) : null,
+      has("DATE_OF_BIRTH")
+        ? prisma.user.findUnique({
+            where: { id: userId },
+            select: { dateOfBirth: true, timezone: true },
+          })
+        : null,
+    ]);
+
+  const text = (value: string | null | undefined) => value ?? null;
+  return {
+    fields: asked,
+    bloodType: has("BLOOD_TYPE") ? (profile?.bloodType ?? null) : null,
+    allergies: allergies && allergies.length > 0 ? allergies : null,
+    conditions: conditions && conditions.length > 0 ? conditions : null,
+    medications: medications && medications.length > 0 ? medications : null,
+    pregnancy,
+    implants: has("IMPLANTS") ? text(profile?.implants) : null,
+    contacts: has("CONTACTS") ? text(profile?.contacts) : null,
+    advanceDirective: has("ADVANCE_DIRECTIVE")
+      ? (profile?.advanceDirective ?? null)
+      : null,
+    organDonor: has("ORGAN_DONOR") ? (profile?.organDonor ?? null) : null,
+    note: has("NOTE") ? text(profile?.note) : null,
+    dateOfBirth: user?.dateOfBirth
+      ? dateOfBirthKey(user.dateOfBirth, user.timezone)
+      : null,
+    asOf: today,
+  };
+}
+
+/** Does the card hold anything at all? */
+export function emergencyCardHasContent(view: EmergencyCardView): boolean {
+  return (
+    view.bloodType !== null ||
+    view.allergies !== null ||
+    view.conditions !== null ||
+    view.medications !== null ||
+    view.pregnancy !== null ||
+    view.implants !== null ||
+    view.contacts !== null ||
+    view.advanceDirective !== null ||
+    view.organDonor !== null ||
+    view.note !== null ||
+    view.dateOfBirth !== null
+  );
+}

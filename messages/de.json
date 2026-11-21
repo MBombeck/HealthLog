@@ -546,7 +546,17 @@
       "window": "ausgewertet {from} bis {to}, das kann über den Berichtszeitraum hinausreichen",
       "windowLine": "Ausgewertet {from} bis {to}. Dieser Zeitraum kann über den Berichtszeitraum hinausreichen."
     },
-    "screenerUnvalidated": "{label}: {count} von {total} Ergebnissen wurden in einer nicht wissenschaftlich validierten Übersetzung beantwortet; sie dienen der Orientierung."
+    "screenerUnvalidated": "{label}: {count} von {total} Ergebnissen wurden in einer nicht wissenschaftlich validierten Übersetzung beantwortet; sie dienen der Orientierung.",
+    "pregnancy": {
+      "title": "Schwangerschaft",
+      "pregnantWeek": "Schwanger, Woche {weeks}+{days} am Berichtsdatum",
+      "pregnant": "Schwanger",
+      "startDate": "Erster Tag der letzten Periode",
+      "dueDate": "Errechneter Geburtstermin",
+      "postpartumWeek": "Nach der Geburt, Woche {weeks} am Berichtsdatum",
+      "deliveryDate": "Geburtsdatum des Kindes",
+      "predictionsPaused": "Selbst angegeben. Zyklusprognosen ruhen."
+    }
   },
   "errorBoundary": {
     "title": "Da ist etwas schiefgelaufen",
@@ -3071,7 +3081,8 @@
         "no_personal_goal": "Lege ein persönliches Gewichtsziel fest, um hier den Fortschritt zu sehen.",
         "weight_not_tracked": "Erfasse dein Gewicht, um den Fortschritt zum Ziel zu sehen.",
         "read_failed": "Gewichtsdaten konnten nicht geladen werden. Versuche es erneut.",
-        "notScored": "Der Fortschritt zum Gewichtsziel ist persönlicher Kontext und beeinflusst den Gesundheitsscore nicht."
+        "notScored": "Der Fortschritt zum Gewichtsziel ist persönlicher Kontext und beeinflusst den Gesundheitsscore nicht.",
+        "pregnancy_context": "In der Schwangerschaft und nach der Geburt erscheint das Gewicht als Wert, nicht gemessen an einem Ziel."
       },
       "configureLink": "Festlegen, was in deinen Score einfließt",
       "coverage": {
@@ -10456,6 +10467,38 @@
         "LATE": "Keine Prognose, solange diese Periode später kommt als erwartet; sie ist zurück, sobald du sie erfasst.",
         "OFF": "Prognosen sind ausgeschaltet; enthalten sind nur vergangene Zyklen, falls gewählt."
       }
+    },
+    "pregnancy": {
+      "title": "Schwangerschaft und nach der Geburt",
+      "description": "Solange einer davon gilt, ruhen Perioden- und Fruchtbarkeitsprognosen.",
+      "stateLabel": "Aktueller Zustand",
+      "state": {
+        "NONE": "Normaler Zyklus",
+        "PREGNANT": "Schwanger",
+        "POSTPARTUM": "Nach der Geburt"
+      },
+      "startDate": "Erster Tag der letzten Periode",
+      "dueDate": "Errechneter Geburtstermin",
+      "deliveryDate": "Geburtsdatum des Kindes",
+      "postpartumWeeks": "Wochen, bis die Prognosen wieder laufen",
+      "noneHint": "Die Prognosen laufen wie gewohnt.",
+      "pausedHint": "Perioden- und Fruchtbarkeitsprognosen samt Erinnerungen ruhen. Gewicht und Blutdruck erscheinen in diesem Zusammenhang, ohne Gewichtsziel.",
+      "save": "Speichern",
+      "errors": {
+        "start_in_future": "Der erste Tag kann nicht in der Zukunft liegen.",
+        "delivery_in_future": "Das Geburtsdatum kann nicht in der Zukunft liegen.",
+        "due_before_start": "Der Geburtstermin muss nach dem ersten Tag liegen.",
+        "delivery_required": "Trag das Geburtsdatum ein.",
+        "generic": "Das konnte nicht gespeichert werden. Versuch es noch einmal."
+      },
+      "banner": {
+        "pregnantWeek": "Schwanger, Woche {weeks}+{days}",
+        "pregnant": "Schwanger",
+        "postpartumWeek": "Nach der Geburt, Woche {weeks}",
+        "due": "Errechneter Termin {date}.",
+        "resumes": "Die Prognosen laufen ab {date} wieder.",
+        "paused": "Perioden- und Fruchtbarkeitsprognosen ruhen."
+      }
     }
   },
   "cycleReminders": {
@@ -12181,7 +12224,8 @@
       "save": "Speichern",
       "savedToast": "Notfalldaten gespeichert",
       "saveError": "Notfalldaten konnten nicht gespeichert werden.",
-      "loadError": "Notfalldaten konnten nicht geladen werden."
+      "loadError": "Notfalldaten konnten nicht geladen werden.",
+      "cardLink": "Notfallkarte öffnen"
     },
     "life": {
       "cardTitle": "Lebensumstände",
@@ -14510,7 +14554,9 @@
       "labValuesOther": "{count} Laborwerte",
       "seizuresOne": "1 Anfall",
       "seizuresFew": "{count} Anfälle",
-      "seizuresOther": "{count} Anfälle"
+      "seizuresOther": "{count} Anfälle",
+      "pregnancy": "Schwangerschaft",
+      "postpartum": "Nach der Geburt"
     },
     "labs": {
       "menuTitle": "Laborwerte",
@@ -14537,7 +14583,8 @@
       "daysOne": "an 1 Tag",
       "daysFew": "Schnitt aus {count} Tagen",
       "daysOther": "Schnitt aus {count} Tagen"
-    }
+    },
+    "pregnancyWeek": "Schwangerschaftswoche {week}"
   },
   "lifeEvents": {
     "title": "Lebensereignis",
@@ -15369,6 +15416,80 @@
       "tooLarge": "Der Bericht für {period} war größer, als ein Dokument hier sein darf. Der nächste Zeitraum versucht es wieder.",
       "noSelection": "Oben ist für den Export nichts ausgewählt, deshalb wurde kein Bericht abgelegt. Wähle aus, was er enthalten soll, dann folgt er beim nächsten Lauf.",
       "failed": "Der Bericht für {period} konnte nicht abgelegt werden. Innerhalb einer Stunde wird es erneut versucht."
+    }
+  },
+  "emergencyCard": {
+    "title": "Notfallkarte",
+    "subtitle": "Von der Person selbst angegeben. Wo möglich bestätigen.",
+    "allergies": "Allergien",
+    "pregnancy": "Schwangerschaft",
+    "pregnantWeek": "Schwanger, Woche {weeks}+{days}",
+    "pregnant": "Schwanger",
+    "dueDate": "Errechneter Termin {date}",
+    "postpartum": "Geburt am {date}, Woche {weeks} nach der Geburt",
+    "postpartumNoDate": "Nach einer Geburt",
+    "dateOfBirth": "Geburtsdatum",
+    "savedOn": "Stand {date}",
+    "wallet": {
+      "instructions": "In Originalgröße drucken, entlang des Rahmens ausschneiden, an der gestrichelten Linie falten.",
+      "scan": "Für die ganze Karte scannen",
+      "cut": "Gekürzt, damit es passt. Die ganze Karte steht hinter dem QR-Code."
+    },
+    "link": {
+      "validUntil": "Nur lesbar. Dieser Link gilt bis {date}.",
+      "readOnly": "Nur lesbar. Von der Person geteilt, die den Link jederzeit widerrufen kann.",
+      "title": "QR-Link",
+      "loadError": "Der Status des Links konnte nicht geladen werden.",
+      "disclosure": "Wer den Code scannt, sieht die angehakten Punkte, ohne Anmeldung. Du kannst dem Link ein Ende geben und ihn jederzeit widerrufen; jedes Öffnen wird für dich festgehalten.",
+      "fieldsLabel": "Was der Link zeigt",
+      "expiryLabel": "Link endet",
+      "expiry": {
+        "none": "Nie, bis zum Widerruf",
+        "30": "In 30 Tagen",
+        "365": "In einem Jahr",
+        "730": "In zwei Jahren"
+      },
+      "create": "Link erstellen",
+      "qrAlt": "QR-Code für den Link zur Notfallkarte",
+      "once": "Link und Code gibt es nur jetzt. Lade die Brieftaschenkarte mit dem Code herunter, bevor du die Seite verlässt.",
+      "hidden": "Ein Link, der mit {prefix} beginnt, ist aktiv. Er wurde einmal beim Erstellen gezeigt; widerrufe ihn für einen neuen.",
+      "shows": "Zeigt: {items}.",
+      "expired": "Dieser Link ist abgelaufen und zeigt nichts mehr.",
+      "expiresOn": "Endet am {date}.",
+      "noExpiry": "Kein Enddatum. Er gilt, bis du ihn widerrufst.",
+      "opened": "{count}-mal geöffnet, zuletzt {when}.",
+      "notOpened": "Noch nicht geöffnet.",
+      "revoke": "Link widerrufen",
+      "revokeTitle": "Link zur Notfallkarte widerrufen?",
+      "revokeBody": "Gedruckte Karten mit diesem Code funktionieren dann nicht mehr. Du kannst einen neuen Link erstellen und die Karte neu drucken.",
+      "error": "Der Link konnte nicht geändert werden. Versuch es noch einmal."
+    },
+    "page": {
+      "title": "Notfallkarte",
+      "description": "Deine Notfalldaten für unterwegs.",
+      "back": "Anamnese",
+      "loadError": "Die Notfallkarte konnte nicht geladen werden.",
+      "editHint": "Blutgruppe, Kontakte, Implantate und Verfügungen stammen aus deinen Notfalldaten.",
+      "editLink": "Bearbeiten",
+      "offlineHint": "Die App funktioniert absichtlich nicht offline. Speichere eine Kopie auf dem Handy, um die Karte ohne Verbindung dabeizuhaben; sie zeigt den Stand vom Tag des Speicherns.",
+      "downloadError": "Der Download hat nicht geklappt. Versuch es noch einmal.",
+      "saveOffline": "Offline-Kopie speichern",
+      "wallet": "Karte für die Brieftasche (PDF)",
+      "walletWithQr": "Brieftaschenkarte mit QR-Code (PDF)",
+      "preview": "Deine Karte"
+    },
+    "fields": {
+      "BLOOD_TYPE": "Blutgruppe",
+      "ALLERGIES": "Allergien",
+      "CONDITIONS": "Chronische Erkrankungen",
+      "MEDICATIONS": "Aktuelle Medikamente",
+      "PREGNANCY": "Schwangerschaft",
+      "IMPLANTS": "Implantate und Geräte",
+      "CONTACTS": "Notfallkontakte",
+      "ADVANCE_DIRECTIVE": "Patientenverfügung",
+      "ORGAN_DONOR": "Organspende",
+      "NOTE": "Weitere Hinweise",
+      "DATE_OF_BIRTH": "Geburtsdatum"
     }
   }
 }

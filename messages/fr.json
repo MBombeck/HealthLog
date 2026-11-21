@@ -546,7 +546,17 @@
       "window": "analysé du {from} au {to}, ce qui peut dépasser la période du rapport",
       "windowLine": "Analysé du {from} au {to}. Cette fenêtre peut dépasser la période du rapport."
     },
-    "screenerUnvalidated": "{label} : {count} résultat(s) sur {total} ont été obtenus avec une traduction non validée scientifiquement ; à considérer comme une indication."
+    "screenerUnvalidated": "{label} : {count} résultat(s) sur {total} ont été obtenus avec une traduction non validée scientifiquement ; à considérer comme une indication.",
+    "pregnancy": {
+      "title": "Grossesse",
+      "pregnantWeek": "Enceinte, semaine {weeks}+{days} à la date du rapport",
+      "pregnant": "Enceinte",
+      "startDate": "Premier jour des dernières règles",
+      "dueDate": "Date prévue d'accouchement",
+      "postpartumWeek": "Après la naissance, semaine {weeks} à la date du rapport",
+      "deliveryDate": "Date de la naissance",
+      "predictionsPaused": "Déclaré par la personne. Les prévisions du cycle sont en pause."
+    }
   },
   "errorBoundary": {
     "title": "Une erreur est survenue",
@@ -3071,7 +3081,8 @@
         "no_personal_goal": "Définissez un objectif de poids personnel pour suivre votre progression ici.",
         "weight_not_tracked": "Enregistrez votre poids pour suivre votre progression vers votre objectif.",
         "read_failed": "Les données de poids n'ont pas pu être chargées. Réessayez.",
-        "notScored": "La progression vers l'objectif de poids est un contexte personnel et ne modifie pas le score de santé."
+        "notScored": "La progression vers l'objectif de poids est un contexte personnel et ne modifie pas le score de santé.",
+        "pregnancy_context": "Pendant la grossesse et après la naissance, le poids s'affiche comme une donnée, pas par rapport à un objectif."
       },
       "configureLink": "Choisir ce qui compte dans votre score",
       "coverage": {
@@ -10456,6 +10467,38 @@
         "LATE": "Pas de prévision tant que ces règles sont plus tardives que prévu ; elle revient dès que vous les enregistrez.",
         "OFF": "Les prévisions sont désactivées ; seuls les cycles passés sont inclus, si vous les avez choisis."
       }
+    },
+    "pregnancy": {
+      "title": "Grossesse et après la naissance",
+      "description": "Tant que l'un des deux s'applique, les prévisions de règles et de fertilité sont en pause.",
+      "stateLabel": "État actuel",
+      "state": {
+        "NONE": "Cycle habituel",
+        "PREGNANT": "Enceinte",
+        "POSTPARTUM": "Après la naissance"
+      },
+      "startDate": "Premier jour des dernières règles",
+      "dueDate": "Date prévue d'accouchement",
+      "deliveryDate": "Date de la naissance",
+      "postpartumWeeks": "Semaines avant la reprise des prévisions",
+      "noneHint": "Les prévisions fonctionnent comme d'habitude.",
+      "pausedHint": "Les prévisions de règles et de fertilité et leurs rappels sont en pause. Le poids et la tension s'affichent dans ce contexte, sans objectif de poids.",
+      "save": "Enregistrer",
+      "errors": {
+        "start_in_future": "Le premier jour ne peut pas être dans le futur.",
+        "delivery_in_future": "La date de la naissance ne peut pas être dans le futur.",
+        "due_before_start": "La date prévue doit suivre le premier jour.",
+        "delivery_required": "Ajoute la date de la naissance.",
+        "generic": "L'enregistrement a échoué. Réessaie."
+      },
+      "banner": {
+        "pregnantWeek": "Enceinte, semaine {weeks}+{days}",
+        "pregnant": "Enceinte",
+        "postpartumWeek": "Après la naissance, semaine {weeks}",
+        "due": "Date prévue le {date}.",
+        "resumes": "Les prévisions reprennent le {date}.",
+        "paused": "Les prévisions de règles et de fertilité sont en pause."
+      }
     }
   },
   "cycleReminders": {
@@ -12181,7 +12224,8 @@
       "save": "Enregistrer",
       "savedToast": "Informations d'urgence enregistrées",
       "saveError": "Impossible d'enregistrer vos informations d'urgence.",
-      "loadError": "Impossible de charger vos informations d'urgence."
+      "loadError": "Impossible de charger vos informations d'urgence.",
+      "cardLink": "Ouvrir la carte d'urgence"
     },
     "life": {
       "cardTitle": "Conditions de vie",
@@ -14510,7 +14554,9 @@
       "labValuesOther": "{count} valeurs de laboratoire",
       "seizuresOne": "{count} crise",
       "seizuresFew": "{count} crises",
-      "seizuresOther": "{count} crises"
+      "seizuresOther": "{count} crises",
+      "pregnancy": "Grossesse",
+      "postpartum": "Après la naissance"
     },
     "labs": {
       "menuTitle": "Valeurs de laboratoire",
@@ -14537,7 +14583,8 @@
       "daysOne": "sur {count} jour",
       "daysFew": "moyenne sur {count} jours",
       "daysOther": "moyenne sur {count} jours"
-    }
+    },
+    "pregnancyWeek": "semaine de grossesse {week}"
   },
   "lifeEvents": {
     "title": "Événement de vie",
@@ -15369,6 +15416,80 @@
       "tooLarge": "Le rapport de {period} dépassait la taille maximale d'un document ici. La prochaine période réessaiera.",
       "noSelection": "Rien n'est sélectionné pour l'export ci-dessus, aucun rapport n'a donc été classé. Choisissez son contenu et il sera classé au prochain passage.",
       "failed": "Le rapport de {period} n'a pas pu être classé. Nouvel essai dans l'heure."
+    }
+  },
+  "emergencyCard": {
+    "title": "Carte d'urgence",
+    "subtitle": "Renseigné par la personne. À confirmer si possible.",
+    "allergies": "Allergies",
+    "pregnancy": "Grossesse",
+    "pregnantWeek": "Enceinte, semaine {weeks}+{days}",
+    "pregnant": "Enceinte",
+    "dueDate": "Date prévue le {date}",
+    "postpartum": "Naissance le {date}, semaine {weeks} après la naissance",
+    "postpartumNoDate": "Après une naissance",
+    "dateOfBirth": "Date de naissance",
+    "savedOn": "État au {date}",
+    "wallet": {
+      "instructions": "Imprime à 100 pour cent, découpe le long du contour, plie sur la ligne pointillée.",
+      "scan": "Scanne pour la carte complète",
+      "cut": "Raccourci pour tenir. La carte complète est derrière le code QR."
+    },
+    "link": {
+      "validUntil": "Lecture seule. Ce lien fonctionne jusqu'au {date}.",
+      "readOnly": "Lecture seule. Partagé par la personne, qui peut le révoquer à tout moment.",
+      "title": "Lien QR",
+      "loadError": "Le statut du lien n'a pas pu être chargé.",
+      "disclosure": "Toute personne qui scanne le code voit les éléments cochés, sans se connecter. Tu peux donner une fin au lien et le révoquer à tout moment ; chaque ouverture est enregistrée pour toi.",
+      "fieldsLabel": "Ce que le lien affiche",
+      "expiryLabel": "Fin du lien",
+      "expiry": {
+        "none": "Jamais, jusqu'à révocation",
+        "30": "Dans 30 jours",
+        "365": "Dans un an",
+        "730": "Dans deux ans"
+      },
+      "create": "Créer le lien",
+      "qrAlt": "Code QR du lien vers la carte d'urgence",
+      "once": "Le lien et son code n'existent que maintenant. Télécharge la carte avec le code avant de quitter cette page.",
+      "hidden": "Un lien commençant par {prefix} est actif. Il n'a été affiché qu'à sa création ; révoque-le pour en obtenir un nouveau.",
+      "shows": "Affiche : {items}.",
+      "expired": "Ce lien a expiré et n'affiche plus rien.",
+      "expiresOn": "Expire le {date}.",
+      "noExpiry": "Pas de date de fin. Il fonctionne jusqu'à ce que tu le révoques.",
+      "opened": "Ouvert {count} fois, dernière fois {when}.",
+      "notOpened": "Pas encore ouvert.",
+      "revoke": "Révoquer le lien",
+      "revokeTitle": "Révoquer le lien de la carte d'urgence ?",
+      "revokeBody": "Les cartes imprimées avec ce code ne fonctionneront plus. Tu peux créer un nouveau lien et réimprimer la carte.",
+      "error": "Le lien n'a pas pu être modifié. Réessaie."
+    },
+    "page": {
+      "title": "Carte d'urgence",
+      "description": "Tes informations d'urgence quand tu n'es pas chez toi.",
+      "back": "Profil de santé",
+      "loadError": "La carte d'urgence n'a pas pu être chargée.",
+      "editHint": "Le groupe sanguin, les contacts, les implants et les déclarations viennent de tes informations d'urgence.",
+      "editLink": "Les modifier",
+      "offlineHint": "L'application ne fonctionne pas hors ligne, volontairement. Enregistre une copie sur ton téléphone pour avoir la carte sans connexion ; elle montre son contenu au jour de l'enregistrement.",
+      "downloadError": "Le téléchargement a échoué. Réessaie.",
+      "saveOffline": "Enregistrer une copie hors ligne",
+      "wallet": "Carte pour le portefeuille (PDF)",
+      "walletWithQr": "Carte avec code QR (PDF)",
+      "preview": "Ta carte"
+    },
+    "fields": {
+      "BLOOD_TYPE": "Groupe sanguin",
+      "ALLERGIES": "Allergies",
+      "CONDITIONS": "Maladies chroniques",
+      "MEDICATIONS": "Médicaments actuels",
+      "PREGNANCY": "Grossesse",
+      "IMPLANTS": "Implants et dispositifs",
+      "CONTACTS": "Contacts d'urgence",
+      "ADVANCE_DIRECTIVE": "Directives anticipées",
+      "ORGAN_DONOR": "Don d'organes",
+      "NOTE": "Notes complémentaires",
+      "DATE_OF_BIRTH": "Date de naissance"
     }
   }
 }

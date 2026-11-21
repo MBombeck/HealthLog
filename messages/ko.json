@@ -546,7 +546,17 @@
       "window": "{from}부터 {to}까지 분석, 보고 기간을 넘어설 수 있음",
       "windowLine": "{from}부터 {to}까지 분석했습니다. 이 기간은 보고 기간을 넘어설 수 있습니다."
     },
-    "screenerUnvalidated": "{label}: {total}개 결과 중 {count}개는 과학적으로 검증되지 않은 번역으로 응답했습니다. 참고용으로만 보십시오."
+    "screenerUnvalidated": "{label}: {total}개 결과 중 {count}개는 과학적으로 검증되지 않은 번역으로 응답했습니다. 참고용으로만 보십시오.",
+    "pregnancy": {
+      "title": "임신",
+      "pregnantWeek": "보고서 날짜 기준 임신 {weeks}주 {days}일",
+      "pregnant": "임신 중",
+      "startDate": "마지막 생리 시작일",
+      "dueDate": "출산 예정일",
+      "postpartumWeek": "보고서 날짜 기준 출산 후 {weeks}주",
+      "deliveryDate": "출산일",
+      "predictionsPaused": "본인 입력. 주기 예측이 일시 중지되었습니다."
+    }
   },
   "errorBoundary": {
     "title": "문제가 생겼어요",
@@ -3071,7 +3081,8 @@
         "no_personal_goal": "개인 체중 목표를 정하면 여기에서 진행 상황을 볼 수 있어요.",
         "weight_not_tracked": "체중을 기록하면 목표까지 진행 상황을 볼 수 있어요.",
         "read_failed": "체중 데이터를 불러오지 못했어요. 다시 시도해 주세요.",
-        "notScored": "체중 목표 진행 상황은 개인 참고용이라 건강 점수에는 영향을 주지 않아요."
+        "notScored": "체중 목표 진행 상황은 개인 참고용이라 건강 점수에는 영향을 주지 않아요.",
+        "pregnancy_context": "임신 중과 출산 후에는 체중이 목표 대비가 아닌 데이터로만 표시됩니다."
       },
       "configureLink": "점수에 반영할 항목 고르기",
       "coverage": {
@@ -10456,6 +10467,38 @@
         "LATE": "이번 생리가 예상보다 늦어지는 동안에는 예측이 없어요. 기록하면 다시 나타나요.",
         "OFF": "예측이 꺼져 있어요. 선택한 경우 지난 주기만 포함돼요."
       }
+    },
+    "pregnancy": {
+      "title": "임신 및 출산 후",
+      "description": "해당 기간에는 생리 및 가임기 예측이 일시 중지됩니다.",
+      "stateLabel": "현재 상태",
+      "state": {
+        "NONE": "일반 주기",
+        "PREGNANT": "임신 중",
+        "POSTPARTUM": "출산 후"
+      },
+      "startDate": "마지막 생리 시작일",
+      "dueDate": "출산 예정일",
+      "deliveryDate": "출산일",
+      "postpartumWeeks": "예측 재개까지의 주 수",
+      "noneHint": "예측이 평소대로 진행됩니다.",
+      "pausedHint": "생리 및 가임기 예측과 알림이 일시 중지됩니다. 체중과 혈압은 체중 목표 없이 이 맥락에서 표시됩니다.",
+      "save": "저장",
+      "errors": {
+        "start_in_future": "첫째 날은 미래일 수 없습니다.",
+        "delivery_in_future": "출산일은 미래일 수 없습니다.",
+        "due_before_start": "출산 예정일은 첫째 날 이후여야 합니다.",
+        "delivery_required": "출산일을 입력하세요.",
+        "generic": "저장하지 못했습니다. 다시 시도하세요."
+      },
+      "banner": {
+        "pregnantWeek": "임신 {weeks}주 {days}일",
+        "pregnant": "임신 중",
+        "postpartumWeek": "출산 후 {weeks}주",
+        "due": "출산 예정일 {date}.",
+        "resumes": "예측은 {date}에 재개됩니다.",
+        "paused": "생리 및 가임기 예측이 일시 중지되었습니다."
+      }
     }
   },
   "cycleReminders": {
@@ -12181,7 +12224,8 @@
       "save": "저장",
       "savedToast": "응급 정보를 저장했어요",
       "saveError": "응급 정보를 저장하지 못했어요.",
-      "loadError": "응급 정보를 불러오지 못했어요."
+      "loadError": "응급 정보를 불러오지 못했어요.",
+      "cardLink": "응급 카드 열기"
     },
     "life": {
       "cardTitle": "생활 환경",
@@ -14510,7 +14554,9 @@
       "labValuesOther": "검사 수치 {count}개",
       "seizuresOne": "발작 1회",
       "seizuresFew": "발작 {count}회",
-      "seizuresOther": "발작 {count}회"
+      "seizuresOther": "발작 {count}회",
+      "pregnancy": "임신",
+      "postpartum": "출산 후"
     },
     "labs": {
       "menuTitle": "검사 수치",
@@ -14537,7 +14583,8 @@
       "daysOne": "1일",
       "daysFew": "{count}일 평균",
       "daysOther": "{count}일 평균"
-    }
+    },
+    "pregnancyWeek": "임신 {week}주"
   },
   "lifeEvents": {
     "title": "삶의 사건",
@@ -15369,6 +15416,80 @@
       "tooLarge": "{period} 보고서가 이곳의 문서 최대 크기보다 컸어요. 다음 기간에 다시 시도해요.",
       "noSelection": "위의 내보내기에서 선택된 항목이 없어서 보고서를 저장하지 않았어요. 담을 내용을 고르면 다음 실행 때 저장돼요.",
       "failed": "{period} 보고서를 저장할 수 없었어요. 한 시간 안에 다시 시도해요."
+    }
+  },
+  "emergencyCard": {
+    "title": "응급 카드",
+    "subtitle": "본인이 입력한 정보입니다. 가능하면 확인하세요.",
+    "allergies": "알레르기",
+    "pregnancy": "임신",
+    "pregnantWeek": "임신 {weeks}주 {days}일",
+    "pregnant": "임신 중",
+    "dueDate": "출산 예정일 {date}",
+    "postpartum": "{date} 출산, 출산 후 {weeks}주",
+    "postpartumNoDate": "출산 후",
+    "dateOfBirth": "생년월일",
+    "savedOn": "{date} 기준",
+    "wallet": {
+      "instructions": "100퍼센트 크기로 인쇄하고 테두리를 따라 자른 뒤 점선에서 접으세요.",
+      "scan": "전체 카드를 보려면 스캔",
+      "cut": "공간에 맞게 줄였습니다. 전체 카드는 QR 코드에 있습니다."
+    },
+    "link": {
+      "validUntil": "읽기 전용. 이 링크는 {date}까지 유효합니다.",
+      "readOnly": "읽기 전용. 소유자가 공유했으며 언제든지 철회할 수 있습니다.",
+      "title": "QR 링크",
+      "loadError": "링크 상태를 불러오지 못했습니다.",
+      "disclosure": "코드를 스캔하는 사람은 로그인 없이 선택한 항목을 볼 수 있습니다. 링크에 만료일을 정하고 언제든지 철회할 수 있으며, 열람 기록이 남습니다.",
+      "fieldsLabel": "링크에 표시할 항목",
+      "expiryLabel": "링크 만료",
+      "expiry": {
+        "none": "철회할 때까지 유지",
+        "30": "30일 후",
+        "365": "1년 후",
+        "730": "2년 후"
+      },
+      "create": "링크 만들기",
+      "qrAlt": "응급 카드 링크 QR 코드",
+      "once": "링크와 코드는 지금만 표시됩니다. 이 페이지를 떠나기 전에 코드가 포함된 지갑 카드를 다운로드하세요.",
+      "hidden": "{prefix}(으)로 시작하는 링크가 활성 상태입니다. 만들 때 한 번만 표시되었으며, 새 링크가 필요하면 철회하세요.",
+      "shows": "표시 항목: {items}.",
+      "expired": "이 링크는 만료되어 더 이상 아무것도 표시하지 않습니다.",
+      "expiresOn": "{date}에 만료됩니다.",
+      "noExpiry": "만료일이 없습니다. 철회할 때까지 유효합니다.",
+      "opened": "{count}회 열림, 마지막 {when}.",
+      "notOpened": "아직 열리지 않았습니다.",
+      "revoke": "링크 철회",
+      "revokeTitle": "응급 카드 링크를 철회할까요?",
+      "revokeBody": "이 코드가 인쇄된 카드는 더 이상 작동하지 않습니다. 새 링크를 만들고 카드를 다시 인쇄할 수 있습니다.",
+      "error": "링크를 변경하지 못했습니다. 다시 시도하세요."
+    },
+    "page": {
+      "title": "응급 카드",
+      "description": "외출 시를 위한 응급 정보입니다.",
+      "back": "건강 프로필",
+      "loadError": "응급 카드를 불러오지 못했습니다.",
+      "editHint": "혈액형, 연락처, 이식 장치 및 의사 표시는 응급 정보에서 가져옵니다.",
+      "editLink": "편집",
+      "offlineHint": "앱은 의도적으로 오프라인에서 작동하지 않습니다. 연결 없이 카드를 가지고 다니려면 휴대폰에 사본을 저장하세요. 저장한 날의 내용이 표시됩니다.",
+      "downloadError": "다운로드에 실패했습니다. 다시 시도하세요.",
+      "saveOffline": "오프라인 사본 저장",
+      "wallet": "지갑 카드 (PDF)",
+      "walletWithQr": "QR 코드 포함 지갑 카드 (PDF)",
+      "preview": "내 카드"
+    },
+    "fields": {
+      "BLOOD_TYPE": "혈액형",
+      "ALLERGIES": "알레르기",
+      "CONDITIONS": "만성 질환",
+      "MEDICATIONS": "현재 복용 약",
+      "PREGNANCY": "임신",
+      "IMPLANTS": "이식 장치 및 기기",
+      "CONTACTS": "비상 연락처",
+      "ADVANCE_DIRECTIVE": "사전 의료 지시서",
+      "ORGAN_DONOR": "장기 기증",
+      "NOTE": "추가 메모",
+      "DATE_OF_BIRTH": "생년월일"
     }
   }
 }

@@ -10,6 +10,8 @@ import { apiSuccess } from "@/lib/api-response";
 import { requireCycleEnabled } from "@/lib/cycle/gate";
 import { isCycleEnabled } from "@/lib/cycle/enabled";
 import { toCycleProfileDTO } from "@/lib/cycle/dto";
+import { moodDateKey } from "@/lib/mood/date-key";
+import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
 export const dynamic = "force-dynamic";
 
@@ -23,5 +25,11 @@ export const GET = apiHandler(async () => {
 
   annotate({ action: { name: "cycle.profile.read" } });
 
-  return apiSuccess(toCycleProfileDTO(gate.profile, resolved));
+  return apiSuccess(
+    toCycleProfileDTO(
+      gate.profile,
+      resolved,
+      moodDateKey(new Date(), user.timezone ?? DEFAULT_TIMEZONE),
+    ),
+  );
 });

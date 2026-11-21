@@ -16,6 +16,7 @@
  * A pure server component: no client hooks, no session, no markdown — every
  * value renders as escaped React text.
  */
+import { pregnancyReportLines } from "@/lib/doctor-report-pdf/pregnancy-lines";
 import type { DoctorReportData } from "@/lib/doctor-report-data";
 import {
   LeafSection,
@@ -180,6 +181,14 @@ export function CycleSection({
     rows.push({
       label: t("doctorReport.cyclePhase"),
       value: t(`doctorReport.cyclePhases.${cycle.currentPhase}`),
+    });
+  }
+  // The pregnancy or postpartum state on the report date, in the
+  // PDF's own words (`pregnancyReportLines`).
+  if (cycle?.pregnancy) {
+    rows.push({
+      label: t("doctorReport.pregnancy.title"),
+      value: pregnancyReportLines(cycle.pregnancy, t, fmtDate).join(". "),
     });
   }
 

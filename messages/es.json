@@ -546,7 +546,17 @@
       "window": "analizado del {from} al {to}, puede ir más allá del periodo del informe",
       "windowLine": "Analizado del {from} al {to}. Este intervalo puede ir más allá del periodo del informe."
     },
-    "screenerUnvalidated": "{label}: {count} de {total} resultados se respondieron con una traducción no validada científicamente; deben tomarse como orientación."
+    "screenerUnvalidated": "{label}: {count} de {total} resultados se respondieron con una traducción no validada científicamente; deben tomarse como orientación.",
+    "pregnancy": {
+      "title": "Embarazo",
+      "pregnantWeek": "Embarazada, semana {weeks}+{days} en la fecha del informe",
+      "pregnant": "Embarazada",
+      "startDate": "Primer día del último periodo",
+      "dueDate": "Fecha prevista de parto",
+      "postpartumWeek": "Después del parto, semana {weeks} en la fecha del informe",
+      "deliveryDate": "Fecha del parto",
+      "predictionsPaused": "Autodeclarado. Las previsiones del ciclo están en pausa."
+    }
   },
   "errorBoundary": {
     "title": "Algo ha salido mal",
@@ -3071,7 +3081,8 @@
         "no_personal_goal": "Define un objetivo personal de peso para ver aquí el progreso.",
         "weight_not_tracked": "Registra una lectura de peso para ver el progreso hacia tu objetivo.",
         "read_failed": "No se pudieron cargar los datos de peso. Inténtalo de nuevo.",
-        "notScored": "El progreso del objetivo de peso es contexto personal y no afecta a la puntuación de salud."
+        "notScored": "El progreso del objetivo de peso es contexto personal y no afecta a la puntuación de salud.",
+        "pregnancy_context": "Durante el embarazo y después del parto, el peso se muestra como dato, no frente a un objetivo."
       },
       "configureLink": "Elegir qué cuenta para tu puntuación",
       "coverage": {
@@ -10456,6 +10467,38 @@
         "LATE": "Sin previsión mientras este periodo llegue más tarde de lo esperado; vuelve en cuanto lo registres.",
         "OFF": "Las previsiones están desactivadas; solo se incluyen ciclos pasados, si los elegiste."
       }
+    },
+    "pregnancy": {
+      "title": "Embarazo y posparto",
+      "description": "Mientras dure, se pausan las previsiones de periodo y fertilidad.",
+      "stateLabel": "Estado actual",
+      "state": {
+        "NONE": "Ciclo habitual",
+        "PREGNANT": "Embarazada",
+        "POSTPARTUM": "Después del parto"
+      },
+      "startDate": "Primer día del último periodo",
+      "dueDate": "Fecha prevista de parto",
+      "deliveryDate": "Fecha del parto",
+      "postpartumWeeks": "Semanas hasta que vuelvan las previsiones",
+      "noneHint": "Las previsiones funcionan como siempre.",
+      "pausedHint": "Se pausan las previsiones de periodo y fertilidad y sus recordatorios. El peso y la presión arterial se muestran en este contexto, sin objetivo de peso.",
+      "save": "Guardar",
+      "errors": {
+        "start_in_future": "El primer día no puede estar en el futuro.",
+        "delivery_in_future": "La fecha del parto no puede estar en el futuro.",
+        "due_before_start": "La fecha prevista debe ser posterior al primer día.",
+        "delivery_required": "Añade la fecha del parto.",
+        "generic": "No se pudo guardar. Inténtalo de nuevo."
+      },
+      "banner": {
+        "pregnantWeek": "Embarazada, semana {weeks}+{days}",
+        "pregnant": "Embarazada",
+        "postpartumWeek": "Después del parto, semana {weeks}",
+        "due": "Fecha prevista {date}.",
+        "resumes": "Las previsiones vuelven el {date}.",
+        "paused": "Las previsiones de periodo y fertilidad están en pausa."
+      }
     }
   },
   "cycleReminders": {
@@ -12181,7 +12224,8 @@
       "save": "Guardar",
       "savedToast": "Información de emergencia guardada",
       "saveError": "No se pudo guardar la información de emergencia.",
-      "loadError": "No se pudo cargar la información de emergencia."
+      "loadError": "No se pudo cargar la información de emergencia.",
+      "cardLink": "Abrir la tarjeta de emergencia"
     },
     "life": {
       "cardTitle": "Circunstancias de vida",
@@ -14510,7 +14554,9 @@
       "labValuesOther": "{count} valores de laboratorio",
       "seizuresOne": "1 crisis",
       "seizuresFew": "{count} crisis",
-      "seizuresOther": "{count} crisis"
+      "seizuresOther": "{count} crisis",
+      "pregnancy": "Embarazo",
+      "postpartum": "Después del parto"
     },
     "labs": {
       "menuTitle": "Valores de laboratorio",
@@ -14537,7 +14583,8 @@
       "daysOne": "en 1 día",
       "daysFew": "media de {count} días",
       "daysOther": "media de {count} días"
-    }
+    },
+    "pregnancyWeek": "semana de embarazo {week}"
   },
   "lifeEvents": {
     "title": "Acontecimiento vital",
@@ -15369,6 +15416,80 @@
       "tooLarge": "El informe de {period} superaba el tamaño máximo de un documento aquí. El próximo periodo lo vuelve a intentar.",
       "noSelection": "No hay nada seleccionado para la exportación de arriba, así que no se guardó ningún informe. Elige qué debe contener y se guardará en la próxima ejecución.",
       "failed": "No se pudo guardar el informe de {period}. Se vuelve a intentar dentro de una hora."
+    }
+  },
+  "emergencyCard": {
+    "title": "Tarjeta de emergencia",
+    "subtitle": "Datos aportados por su titular. Confírmalos si es posible.",
+    "allergies": "Alergias",
+    "pregnancy": "Embarazo",
+    "pregnantWeek": "Embarazada, semana {weeks}+{days}",
+    "pregnant": "Embarazada",
+    "dueDate": "Fecha prevista {date}",
+    "postpartum": "Parto el {date}, semana {weeks} después del parto",
+    "postpartumNoDate": "Después de un parto",
+    "dateOfBirth": "Fecha de nacimiento",
+    "savedOn": "A fecha de {date}",
+    "wallet": {
+      "instructions": "Imprime al 100 por ciento, recorta por el contorno y dobla por la línea discontinua.",
+      "scan": "Escanea para la tarjeta completa",
+      "cut": "Recortado para que quepa. La tarjeta completa está tras el código QR."
+    },
+    "link": {
+      "validUntil": "Solo lectura. Este enlace funciona hasta el {date}.",
+      "readOnly": "Solo lectura. Compartido por su titular, que puede revocarlo en cualquier momento.",
+      "title": "Enlace QR",
+      "loadError": "No se pudo cargar el estado del enlace.",
+      "disclosure": "Quien escanee el código verá lo que marques, sin iniciar sesión. Puedes darle una fecha de fin y revocarlo cuando quieras; cada apertura queda registrada para ti.",
+      "fieldsLabel": "Lo que muestra el enlace",
+      "expiryLabel": "El enlace termina",
+      "expiry": {
+        "none": "Nunca, hasta revocarlo",
+        "30": "En 30 días",
+        "365": "En un año",
+        "730": "En dos años"
+      },
+      "create": "Crear el enlace",
+      "qrAlt": "Código QR del enlace a la tarjeta de emergencia",
+      "once": "El enlace y su código solo existen ahora. Descarga la tarjeta con el código antes de salir de esta página.",
+      "hidden": "Hay un enlace activo que empieza por {prefix}. Se mostró una vez, al crearlo; revócalo para obtener otro.",
+      "shows": "Muestra: {items}.",
+      "expired": "Este enlace ha caducado y ya no muestra nada.",
+      "expiresOn": "Termina el {date}.",
+      "noExpiry": "Sin fecha de fin. Funciona hasta que lo revoques.",
+      "opened": "Abierto {count} veces, la última {when}.",
+      "notOpened": "Aún no se ha abierto.",
+      "revoke": "Revocar enlace",
+      "revokeTitle": "¿Revocar el enlace de la tarjeta de emergencia?",
+      "revokeBody": "Las tarjetas impresas con este código dejarán de funcionar. Puedes crear un enlace nuevo e imprimir la tarjeta otra vez.",
+      "error": "No se pudo cambiar el enlace. Inténtalo de nuevo."
+    },
+    "page": {
+      "title": "Tarjeta de emergencia",
+      "description": "Tus datos de emergencia para cuando estás fuera de casa.",
+      "back": "Perfil de salud",
+      "loadError": "No se pudo cargar la tarjeta de emergencia.",
+      "editHint": "El grupo sanguíneo, los contactos, los implantes y las declaraciones vienen de tus datos de emergencia.",
+      "editLink": "Editarlos",
+      "offlineHint": "La app no funciona sin conexión a propósito. Guarda una copia en el móvil para llevar la tarjeta sin conexión; muestra lo que contenía el día que la guardaste.",
+      "downloadError": "La descarga no funcionó. Inténtalo de nuevo.",
+      "saveOffline": "Guardar copia sin conexión",
+      "wallet": "Tarjeta para la cartera (PDF)",
+      "walletWithQr": "Tarjeta con código QR (PDF)",
+      "preview": "Tu tarjeta"
+    },
+    "fields": {
+      "BLOOD_TYPE": "Grupo sanguíneo",
+      "ALLERGIES": "Alergias",
+      "CONDITIONS": "Enfermedades crónicas",
+      "MEDICATIONS": "Medicación actual",
+      "PREGNANCY": "Embarazo",
+      "IMPLANTS": "Implantes y dispositivos",
+      "CONTACTS": "Contactos de emergencia",
+      "ADVANCE_DIRECTIVE": "Voluntades anticipadas",
+      "ORGAN_DONOR": "Donación de órganos",
+      "NOTE": "Notas adicionales",
+      "DATE_OF_BIRTH": "Fecha de nacimiento"
     }
   }
 }

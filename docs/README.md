@@ -49,6 +49,10 @@ notes, and machine-readable specs that ship alongside the source:
   subscribing to the cycle forecast from Google, Apple or Outlook, and
   [`using/care-calendar-feed.md`](./using/care-calendar-feed.md) the same for
   booked visits, check-ups and vaccination boosters coming due.
+  [`using/pregnancy.md`](./using/pregnancy.md) covers the pregnancy and
+  postpartum state of cycle tracking, and
+  [`using/emergency-card.md`](./using/emergency-card.md) the emergency card,
+  its offline copy, the wallet card and its QR link.
   [`using/energy-balance.md`](./using/energy-balance.md) explains the daily
   energy balance, when a day has none, and how it reaches the correlations
   and the Coach.

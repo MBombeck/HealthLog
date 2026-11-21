@@ -193,7 +193,14 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "cycle.symptom.custom.invalid",
       "cycle.symptom.custom.limit",
     ],
-    "cycle-prefs": ["cycle-prefs.body.invalid_json", "cycle-prefs.invalid"],
+    "cycle-prefs": [
+      "cycle-prefs.body.invalid_json",
+      "cycle-prefs.invalid",
+      "cycle-prefs.pregnancy.delivery_in_future",
+      "cycle-prefs.pregnancy.delivery_required",
+      "cycle-prefs.pregnancy.due_before_start",
+      "cycle-prefs.pregnancy.start_in_future",
+    ],
     "disable-coach": ["disable-coach.body.invalid_json"],
     data_wipe: ["data_wipe.copy_failed"],
     dawarich: [
@@ -262,6 +269,14 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "encounter.practitioner-not-found",
       "encounter.reminder-conflict",
       "encounter.reminder-not-found",
+    ],
+    "emergency-card": [
+      "emergency-card.api_disabled",
+      "emergency-card.cookie_only",
+      "emergency-card.exists",
+      "emergency-card.none",
+      "emergency-card.rateLimited",
+      "emergency-card.wallet.token",
     ],
     encryption: ["encryption.key_mismatch"],
     environment: [

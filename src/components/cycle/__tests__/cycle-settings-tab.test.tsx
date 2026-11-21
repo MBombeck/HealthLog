@@ -14,6 +14,9 @@ vi.mock("@/hooks/use-record-capabilities", () => ({
 vi.mock("../cycle-settings", () => ({
   CycleSettings: () => <div data-slot="cycle-settings-form" />,
 }));
+vi.mock("../cycle-pregnancy-card", () => ({
+  CyclePregnancyCard: () => <div data-slot="cycle-pregnancy" />,
+}));
 vi.mock("../cycle-calendar-feed-card", () => ({
   CycleCalendarFeedCard: () => <div data-slot="cycle-calendar-feed" />,
 }));

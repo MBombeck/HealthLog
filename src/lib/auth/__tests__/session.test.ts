@@ -54,6 +54,7 @@ vi.mock("@/lib/db", () => ({
     clinicianShareLink: { updateMany: vi.fn() },
     cycleCalendarFeed: { updateMany: vi.fn() },
     careCalendarFeed: { updateMany: vi.fn() },
+    emergencyCardLink: { updateMany: vi.fn() },
     stepUpElevation: { deleteMany: vi.fn() },
     $transaction: vi.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
   },

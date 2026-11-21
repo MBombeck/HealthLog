@@ -34,6 +34,9 @@ export type CervicalMucus =
  */
 export type SecondarySymptom = "MUCUS" | "CERVIX";
 
+/** Mirrors the Prisma enum `CycleReproductiveState`. */
+export type CycleReproductiveState = "PREGNANT" | "POSTPARTUM";
+
 /** Cervix vertical position — fertile = HIGH, infertile = LOW. */
 export type CervixPosition = "LOW" | "HIGH";
 
@@ -281,6 +284,17 @@ export interface CycleProfileInput {
    * unchanged.
    */
   secondarySymptom?: SecondarySymptom;
+  /**
+   * The pregnancy / postpartum state (`src/lib/cycle/pregnancy.ts`).
+   * Optional so the engine's own tests and the iOS parity fixtures keep
+   * their shape; absent reads as the ordinary cycle. `gatedPrediction`
+   * answers null while the resolved state pauses the forecast.
+   */
+  reproductiveState?: CycleReproductiveState | null;
+  pregnancyStartDate?: string | null;
+  pregnancyDueDate?: string | null;
+  deliveryDate?: string | null;
+  postpartumWeeks?: number | null;
 }
 
 /* ------------------------------------------------------------------ */

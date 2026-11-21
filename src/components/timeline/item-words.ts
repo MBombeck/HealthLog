@@ -94,6 +94,10 @@ export function makeItemWords(
         return { label: t("day.travel"), sub: null };
       case "cycle":
         return { label: t("nav.cycle"), sub: null };
+      case "pregnancy":
+        return { label: t("timeline.item.pregnancy"), sub: null };
+      case "postpartum":
+        return { label: t("timeline.item.postpartum"), sub: null };
       case "pause":
         return {
           label: t("day.event.paused", { label: item.label }),

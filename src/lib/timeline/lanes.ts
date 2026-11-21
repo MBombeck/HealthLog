@@ -36,6 +36,7 @@ import { dateOnlyKey } from "@/lib/tz/date-only";
 import { userDayKey } from "@/lib/tz/format";
 import { visitPath } from "@/lib/encounters/visit-links";
 import { decryptSeizureText } from "@/lib/seizures/server";
+import { pregnancySpans } from "@/lib/cycle/pregnancy";
 
 /**
  * The sharing domain each lane reads, or `null` for a lane only the record's
@@ -556,7 +557,57 @@ async function documentsLane(frame: LaneFrame): Promise<LaneRead> {
 }
 
 async function cycleLane(frame: LaneFrame): Promise<LaneRead> {
-  const rows = await prisma.menstrualCycle.findMany({
+  const [rows, profile] = await Promise.all([
+    cycleRows(frame),
+    pregnancyRow(frame),
+  ]);
+  // The pregnancy and postpartum stretches the owner set, drawn in
+  // the cycle lane so the value lines above read in their frame.
+  const stretches = profile ? pregnancySpans(profile) : [];
+  return {
+    items: [
+      ...rows.map((r) =>
+        item({
+          id: r.id,
+          kind: "cycle",
+          start: r.startDate,
+          end: r.endDate,
+          open: r.endDate === null,
+          label: "cycle",
+          href: "/cycle",
+        }),
+      ),
+      ...stretches.map((span) =>
+        item({
+          id: `${span.kind}:${span.start}`,
+          kind: span.kind,
+          start: span.start,
+          end: span.end,
+          open: span.end === null,
+          label: span.kind,
+          href: "/cycle",
+        }),
+      ),
+    ],
+    standing: [],
+  };
+}
+
+function pregnancyRow(frame: LaneFrame) {
+  return prisma.cycleProfile.findUnique({
+    where: { userId: frame.userId },
+    select: {
+      reproductiveState: true,
+      pregnancyStartDate: true,
+      pregnancyDueDate: true,
+      deliveryDate: true,
+      postpartumWeeks: true,
+    },
+  });
+}
+
+async function cycleRows(frame: LaneFrame) {
+  return prisma.menstrualCycle.findMany({
     where: {
       userId: frame.userId,
       deletedAt: null,
@@ -566,20 +617,6 @@ async function cycleLane(frame: LaneFrame): Promise<LaneRead> {
     select: { id: true, startDate: true, endDate: true },
     orderBy: { startDate: "asc" },
   });
-  return {
-    items: rows.map((r) =>
-      item({
-        id: r.id,
-        kind: "cycle",
-        start: r.startDate,
-        end: r.endDate,
-        open: r.endDate === null,
-        label: "cycle",
-        href: "/cycle",
-      }),
-    ),
-    standing: [],
-  };
 }
 
 export const LANE_READERS: Readonly<
