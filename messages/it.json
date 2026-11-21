@@ -12224,7 +12224,8 @@
       "save": "Salva",
       "savedToast": "Informazioni di emergenza salvate",
       "saveError": "Impossibile salvare le informazioni di emergenza.",
-      "loadError": "Impossibile caricare le informazioni di emergenza."
+      "loadError": "Impossibile caricare le informazioni di emergenza.",
+      "cardLink": "Apri la tessera di emergenza"
     },
     "life": {
       "cardTitle": "Circostanze di vita",
@@ -15415,6 +15416,80 @@
       "tooLarge": "Il referto di {period} superava la dimensione massima di un documento qui. Il prossimo periodo riprova.",
       "noSelection": "Non c'è nulla di selezionato per l'esportazione sopra, quindi non è stato archiviato alcun referto. Scegli cosa deve contenere e verrà archiviato alla prossima esecuzione.",
       "failed": "Non è stato possibile archiviare il referto di {period}. Nuovo tentativo entro un'ora."
+    }
+  },
+  "emergencyCard": {
+    "title": "Tessera di emergenza",
+    "subtitle": "Indicato dalla persona. Verificare se possibile.",
+    "allergies": "Allergie",
+    "pregnancy": "Gravidanza",
+    "pregnantWeek": "Incinta, settimana {weeks}+{days}",
+    "pregnant": "Incinta",
+    "dueDate": "Data presunta {date}",
+    "postpartum": "Parto il {date}, settimana {weeks} dopo il parto",
+    "postpartumNoDate": "Dopo un parto",
+    "dateOfBirth": "Data di nascita",
+    "savedOn": "Aggiornato al {date}",
+    "wallet": {
+      "instructions": "Stampa al 100 per cento, ritaglia lungo il bordo, piega sulla linea tratteggiata.",
+      "scan": "Scansiona per la tessera completa",
+      "cut": "Accorciato per starci. La tessera completa è dietro il codice QR."
+    },
+    "link": {
+      "validUntil": "Sola lettura. Questo link funziona fino al {date}.",
+      "readOnly": "Sola lettura. Condiviso dalla persona, che può revocarlo in qualsiasi momento.",
+      "title": "Link QR",
+      "loadError": "Impossibile caricare lo stato del link.",
+      "disclosure": "Chi scansiona il codice vede le voci selezionate, senza accedere. Puoi dare una scadenza al link e revocarlo in qualsiasi momento; ogni apertura viene registrata per te.",
+      "fieldsLabel": "Cosa mostra il link",
+      "expiryLabel": "Scadenza del link",
+      "expiry": {
+        "none": "Mai, fino alla revoca",
+        "30": "Tra 30 giorni",
+        "365": "Tra un anno",
+        "730": "Tra due anni"
+      },
+      "create": "Crea il link",
+      "qrAlt": "Codice QR del link alla tessera di emergenza",
+      "once": "Il link e il codice esistono solo ora. Scarica la tessera con il codice prima di lasciare questa pagina.",
+      "hidden": "È attivo un link che inizia con {prefix}. È stato mostrato una volta, alla creazione; revocalo per averne uno nuovo.",
+      "shows": "Mostra: {items}.",
+      "expired": "Questo link è scaduto e non mostra più nulla.",
+      "expiresOn": "Scade il {date}.",
+      "noExpiry": "Nessuna scadenza. Funziona finché non lo revochi.",
+      "opened": "Aperto {count} volte, l'ultima {when}.",
+      "notOpened": "Non ancora aperto.",
+      "revoke": "Revoca il link",
+      "revokeTitle": "Revocare il link della tessera di emergenza?",
+      "revokeBody": "Le tessere stampate con questo codice smetteranno di funzionare. Puoi creare un nuovo link e ristampare la tessera.",
+      "error": "Impossibile modificare il link. Riprova."
+    },
+    "page": {
+      "title": "Tessera di emergenza",
+      "description": "I tuoi dati di emergenza per quando sei fuori casa.",
+      "back": "Profilo sanitario",
+      "loadError": "Impossibile caricare la tessera di emergenza.",
+      "editHint": "Gruppo sanguigno, contatti, impianti e dichiarazioni provengono dai tuoi dati di emergenza.",
+      "editLink": "Modificali",
+      "offlineHint": "L'app non funziona offline di proposito. Salva una copia sul telefono per avere la tessera senza connessione; mostra il contenuto del giorno in cui l'hai salvata.",
+      "downloadError": "Il download non è riuscito. Riprova.",
+      "saveOffline": "Salva copia offline",
+      "wallet": "Tessera per il portafoglio (PDF)",
+      "walletWithQr": "Tessera con codice QR (PDF)",
+      "preview": "La tua tessera"
+    },
+    "fields": {
+      "BLOOD_TYPE": "Gruppo sanguigno",
+      "ALLERGIES": "Allergie",
+      "CONDITIONS": "Malattie croniche",
+      "MEDICATIONS": "Farmaci attuali",
+      "PREGNANCY": "Gravidanza",
+      "IMPLANTS": "Impianti e dispositivi",
+      "CONTACTS": "Contatti di emergenza",
+      "ADVANCE_DIRECTIVE": "Disposizioni anticipate",
+      "ORGAN_DONOR": "Donazione di organi",
+      "NOTE": "Note aggiuntive",
+      "DATE_OF_BIRTH": "Data di nascita"
     }
   }
 }

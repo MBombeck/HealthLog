@@ -12224,7 +12224,8 @@
       "save": "Save",
       "savedToast": "Emergency information saved",
       "saveError": "Couldn't save your emergency information.",
-      "loadError": "Couldn't load your emergency information."
+      "loadError": "Couldn't load your emergency information.",
+      "cardLink": "Open the emergency card"
     },
     "life": {
       "cardTitle": "Life circumstances",
@@ -15415,6 +15416,80 @@
       "tooLarge": "The report for {period} was larger than a document may be here. The next period tries again.",
       "noSelection": "Nothing is selected for the export above, so no report was filed. Choose what it should contain and it is filed on the next run.",
       "failed": "The report for {period} could not be filed. It is tried again within the hour."
+    }
+  },
+  "emergencyCard": {
+    "title": "Emergency card",
+    "subtitle": "Self-reported by its owner. Confirm where possible.",
+    "allergies": "Allergies",
+    "pregnancy": "Pregnancy",
+    "pregnantWeek": "Pregnant, week {weeks}+{days}",
+    "pregnant": "Pregnant",
+    "dueDate": "Due date {date}",
+    "postpartum": "Gave birth on {date}, week {weeks} after the birth",
+    "postpartumNoDate": "After a birth",
+    "dateOfBirth": "Date of birth",
+    "savedOn": "As of {date}",
+    "wallet": {
+      "instructions": "Print at 100 percent, cut along the outline, fold at the dashed line.",
+      "scan": "Scan for the full card",
+      "cut": "Shortened to fit. The full card is behind the QR code."
+    },
+    "link": {
+      "validUntil": "Read-only. This link works until {date}.",
+      "readOnly": "Read-only. Shared by its owner, who can revoke it at any time.",
+      "title": "QR link",
+      "loadError": "The link status could not be loaded.",
+      "disclosure": "Anyone who scans the code sees the items you tick, without signing in. You can give the link an end and revoke it at any time; every opening is recorded for you.",
+      "fieldsLabel": "What the link shows",
+      "expiryLabel": "Link ends",
+      "expiry": {
+        "none": "Never, until revoked",
+        "30": "In 30 days",
+        "365": "In one year",
+        "730": "In two years"
+      },
+      "create": "Make the link",
+      "qrAlt": "QR code for the emergency card link",
+      "once": "The link and its code exist only now. Download the wallet card with the code before you leave this page.",
+      "hidden": "A link starting with {prefix} is on. It was shown once, when it was made; revoke it for a new one.",
+      "shows": "Shows: {items}.",
+      "expired": "This link has ended and answers nothing.",
+      "expiresOn": "Ends on {date}.",
+      "noExpiry": "No end date. It works until you revoke it.",
+      "opened": "Opened {count} times, last {when}.",
+      "notOpened": "Not opened yet.",
+      "revoke": "Revoke link",
+      "revokeTitle": "Revoke the emergency card link?",
+      "revokeBody": "Printed cards with this code stop working. You can make a new link and print the card again.",
+      "error": "The link could not be changed. Try again."
+    },
+    "page": {
+      "title": "Emergency card",
+      "description": "Your emergency information for when you are away from home.",
+      "back": "Health profile",
+      "loadError": "The emergency card could not be loaded.",
+      "editHint": "Blood type, contacts, implants and the declarations come from your emergency details.",
+      "editLink": "Edit them",
+      "offlineHint": "The app does not work offline on purpose. Save a copy to your phone to carry the card without a connection; it shows what it held on the day you saved it.",
+      "downloadError": "The download did not work. Try again.",
+      "saveOffline": "Save offline copy",
+      "wallet": "Wallet card (PDF)",
+      "walletWithQr": "Wallet card with QR code (PDF)",
+      "preview": "Your card"
+    },
+    "fields": {
+      "BLOOD_TYPE": "Blood type",
+      "ALLERGIES": "Allergies",
+      "CONDITIONS": "Chronic conditions",
+      "MEDICATIONS": "Current medications",
+      "PREGNANCY": "Pregnancy",
+      "IMPLANTS": "Implants and devices",
+      "CONTACTS": "Emergency contacts",
+      "ADVANCE_DIRECTIVE": "Advance directive",
+      "ORGAN_DONOR": "Organ donor",
+      "NOTE": "Additional notes",
+      "DATE_OF_BIRTH": "Date of birth"
     }
   }
 }

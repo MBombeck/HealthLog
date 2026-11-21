@@ -17,6 +17,7 @@ type CredentialStore = Pick<
   | "clinicianShareLink"
   | "cycleCalendarFeed"
   | "careCalendarFeed"
+  | "emergencyCardLink"
   | "stepUpElevation"
 >;
 
@@ -69,6 +70,12 @@ export function credentialRevocations(
     // The care calendar feed is the same kind of door for visits and dates
     // coming due; only the owner mints one, so the record side is enough.
     db.careCalendarFeed.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: now },
+    }),
+    // The emergency card's QR link opens the card without signing in. A
+    // printed card goes dark with it; the owner prints a fresh one.
+    db.emergencyCardLink.updateMany({
       where: { userId, revokedAt: null },
       data: { revokedAt: now },
     }),

@@ -2422,6 +2422,14 @@ const ACTOR_ROUTES: Record<string, string> = {
     "How the person's own labs, illness and checkups lists are laid out: card or list view, manual order, sort. It reads and writes the caller's own row only. Inside another record the ids of a saved order simply match nothing and the list keeps the server order, so serving the person's own choice there reveals nothing of the owner's and grants nothing; refusing it under a switch broke the list controls in exactly the context they are used in.",
   "app/api/settings/report-schedule/route.ts":
     "The scheduled doctor report is a standing instruction that files a report into the vault every month, quarter or year. Only the person the record is about may set one, so the route always serves the caller's own record and never a record a switch opened; a delegate or a guardian reads and sets their own schedule, not the owner's.",
+  "app/api/emergency-card/route.ts":
+    "The emergency card is the person's own card for their own pocket. Under a record switch a delegate or a guardian reads their own card, never the owner's: carrying another person's emergency facts offline is a decision only that person makes.",
+  "app/api/emergency-card/offline/route.ts":
+    "The offline copy leaves the server as a file the holder keeps. Only the person the card is about may take one, so it is always the caller's own card.",
+  "app/api/emergency-card/wallet/route.ts":
+    "The wallet card is printed for the person carrying it, with a QR code of their own link. Always the caller's own card; a switch never prints the owner's.",
+  "app/api/emergency-card/link/route.ts":
+    "The emergency card link mints a standing URL credential printed on a card a stranger scans. Only the person the card is about may make one, so the route always serves the caller's own record and never a record a switch opened.",
   "app/api/care/feed-subscription/route.ts":
     "The care calendar subscription mints a standing URL credential whose contents end up in a third party's calendar cloud. Only the person the dates are about may make one, so the route always serves the caller's own record and never a record a switch opened; a delegate or a guardian gets their own feed, not the owner's.",
   "app/api/feature-flags/route.ts":
@@ -2577,8 +2585,12 @@ const ACTOR_ROUTES: Record<string, string> = {
  * the caller's own. 333 -> 334.
  *
  * The energy balance read joins the record list, read-only. 334 -> 335.
+ *
+ * The emergency card's four routes join the actor list: the card, its
+ * offline copy, its wallet PDF and its link are only ever the caller's own.
+ * 336 -> 340.
  */
-const FROZEN_ENTRY_COUNT = 336;
+const FROZEN_ENTRY_COUNT = 340;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

@@ -341,7 +341,7 @@ boot line.
 A few HealthLog URLs carry their credential in the path, because the caller
 cannot send a header: the calendar feeds (`/api/cycle/feed/hlf_…` and
 `/api/care/feed/hlf_…`, polled by Google, Apple or Outlook), the clinician
-share view (`/c/hls_…`)
+share view (`/c/hls_…`), the emergency card link (`/e/hlm_…`)
 and the provider webhooks. HealthLog scrubs these segments from its own logs
 and error reports. It cannot reach your proxy's access log, which records the
 full path of every request by default, so anyone who can read that log can
@@ -352,7 +352,7 @@ is written. For Caddy, skip logging the token-bearing paths:
 
 ```caddyfile
 your-instance.example.com {
-    @credential_paths path /api/cycle/feed/* /api/care/feed/* /c/*
+    @credential_paths path /api/cycle/feed/* /api/care/feed/* /c/* /e/*
     log_skip @credential_paths
     reverse_proxy app:3000
 }
@@ -365,6 +365,7 @@ map $request_uri $redacted_uri {
     ~^/api/cycle/feed/  /api/cycle/feed/[REDACTED];
     ~^/api/care/feed/   /api/care/feed/[REDACTED];
     ~^/c/               /c/[REDACTED];
+    ~^/e/               /e/[REDACTED];
     default             $request_uri;
 }
 log_format redacted '$remote_addr - [$time_local] "$request_method $redacted_uri" '

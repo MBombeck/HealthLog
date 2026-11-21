@@ -44,6 +44,7 @@ export function setPathCredentialHeaders(
     pathname.startsWith("/api/care/feed/");
   const page =
     pathname.startsWith("/c/") ||
+    pathname.startsWith("/e/") ||
     pathname.startsWith("/invite/") ||
     pathname === NATIVE_OIDC_RETURN_PATH ||
     pathname.startsWith(`${NATIVE_OIDC_RETURN_PATH}/`);

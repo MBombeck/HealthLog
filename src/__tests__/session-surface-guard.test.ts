@@ -315,6 +315,13 @@ describe("S2 — the URL-token authentication set is frozen", () => {
     // logs by `PATH_SECRET_PATHS`.
     "app/api/care/feed/[token]/route.ts":
       "the hlf_ path segment is the care calendar feed's only credential",
+    // The emergency card's read-only view behind a wallet card's QR
+    // code. The `hlm_` path segment is the credential: rate limited before
+    // the lookup, HMAC-hashed at rest, revocable, optionally expiring, every
+    // access audited on the owner's trail, the items frozen at mint, and
+    // scrubbed from logs by `PATH_SECRET_PATHS`.
+    "app/e/[token]/page.tsx":
+      "the hlm_ path segment is the emergency card link's only credential",
     // The native https return (#163 B2). A sign-in in the app finishes here
     // with a one-time, PKCE-locked handoff code or a second-factor ticket in
     // the query; the app intercepts the address before it loads. In a browser
@@ -385,6 +392,7 @@ describe("S2 — the URL-token authentication set is frozen", () => {
       "app/c/[token]/page.tsx",
       "app/c/[token]/report.pdf/route.ts",
       "app/claim/[token]/page.tsx",
+      "app/e/[token]/page.tsx",
       "app/invite/[token]/page.tsx",
     ]);
   });

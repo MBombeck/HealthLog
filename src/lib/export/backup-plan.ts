@@ -1,6 +1,5 @@
 /**
- * The one declaration of what a backup contains, and what it deliberately does
- * not.
+ * The one declaration of what a backup contains, and what it leaves out.
  *
  * The wipe plan next door ({@link ../data-wipe/wipe-plan}) answers the mirror
  * question and got the same treatment for the same reason: a list that was
@@ -46,8 +45,7 @@
  *                 provider handshake state that is meaningless on another
  *                 host, ledgers whose value is that they were written here.
  *
- * Every entry carries its reason in prose. "Obvious" is not a reason: the
- * defect here is someone deciding something was obvious, uncheckably.
+ * Every entry carries its reason in prose. "Obvious" is not a reason.
  */
 
 /** A model whose absence from a restore would lose something the account owns. */
@@ -813,6 +811,8 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "A live calendar-feed URL (#1350): a credential a calendar provider polls, stored only as its hash. Restoring it would bring back a link the owner may have revoked or rotated, and it names a host that may not be this one. After a restore the owner turns the subscription on again and re-adds the new link.",
   CareCalendarFeed:
     "A live calendar-feed URL for visits and dates coming due: a credential a calendar provider polls, stored only as its hash. Excluded for the cycle feed's reason: restoring it would bring back a link the owner may have revoked, naming a host that may not be this one. After a restore the owner turns the subscription on again.",
+  EmergencyCardLink:
+    "The emergency card's QR link (v1.49): a credential printed on a card, stored only as its hash. Restoring it would bring back a link the owner may have revoked; after a restore the owner makes a new link and prints the card again.",
   ClinicianShareLinkDocument:
     "Names which documents a share link exposed. Without the link it grants nothing, and with it, it would re-expose files through a URL the account may have revoked.",
 

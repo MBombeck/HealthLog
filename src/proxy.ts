@@ -51,8 +51,10 @@ export const PUBLIC_PATHS = [
   // path token is the credential, verified after the route's rate limit.
   "/api/notifications/action/",
   // #1350 — the calendar feeds; the `hlf_` path token is the credential.
+  // `/e/<hle_token>`, the emergency card's read-only QR view, the same.
   "/api/cycle/feed/",
   "/api/care/feed/",
+  "/e/",
   "/api/monitoring/",
   "/api/withings/webhook",
   // v1.11.0 — WHOOP webhook (`recovery.updated` / `sleep.updated` /
@@ -62,13 +64,11 @@ export const PUBLIC_PATHS = [
   "/api/whoop/webhook",
   "/api/telegram/webhook",
   "/api/ingest/",
-  // v1.4.26 — `/privacy` is a public legal page. iOS App Store Connect
-  // requires a publicly reachable Privacy-Policy URL during submission;
-  // GDPR Art. 13 expects the same for any visitor before they sign up.
+  // v1.4.26 — `/privacy` is a public legal page. App Store Connect needs a
+  // public privacy-policy URL; GDPR Art. 13 expects one before sign-up.
   "/privacy",
-  // v1.4.27 — `/about` carries the GeoLite2 CC BY-SA 4.0 attribution
-  // alongside the project credits. The CC licence requires the
-  // attribution to be reachable without a sign-in.
+  // v1.4.27 — `/about` carries the GeoLite2 CC BY-SA 4.0 attribution beside
+  // the credits; the licence requires it to be reachable without a sign-in.
   "/about",
   // v1.11.0 — `/c/<token>` is the public clinician view (Epic C). It is
   // authenticated solely by the unguessable `hls_` token in the path, NOT

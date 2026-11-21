@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { showErrorToast } from "@/lib/errors/error-toast";
@@ -214,7 +215,14 @@ export function EmergencyProfileManager() {
       {textField("note", EMERGENCY_NOTE_MAX, 3)}
 
       <p className="text-muted-foreground text-xs">
-        {t("records.emergency.reportHint")}
+        {t("records.emergency.reportHint")}{" "}
+        <Link
+          href="/emergency-card"
+          className="text-primary underline-offset-4 hover:underline"
+          data-slot="emergency-card-entry"
+        >
+          {t("records.emergency.cardLink")}
+        </Link>
       </p>
 
       <SettingsCardActions>

@@ -268,6 +268,14 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "encounter.reminder-conflict",
       "encounter.reminder-not-found",
     ],
+    "emergency-card": [
+      "emergency-card.api_disabled",
+      "emergency-card.cookie_only",
+      "emergency-card.exists",
+      "emergency-card.none",
+      "emergency-card.rateLimited",
+      "emergency-card.wallet.token",
+    ],
     encryption: ["encryption.key_mismatch"],
     environment: [
       "environment.backfill_pending",

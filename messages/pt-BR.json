@@ -12224,7 +12224,8 @@
       "save": "Salvar",
       "savedToast": "Informações de emergência salvas",
       "saveError": "Não foi possível salvar suas informações de emergência.",
-      "loadError": "Não foi possível carregar suas informações de emergência."
+      "loadError": "Não foi possível carregar suas informações de emergência.",
+      "cardLink": "Abrir o cartão de emergência"
     },
     "life": {
       "cardTitle": "Circunstâncias de vida",
@@ -15415,6 +15416,80 @@
       "tooLarge": "O relatório de {period} era maior do que um documento pode ser aqui. O próximo período tenta de novo.",
       "noSelection": "Nada está selecionado para a exportação acima, então nenhum relatório foi guardado. Escolha o que ele deve conter e ele será guardado na próxima execução.",
       "failed": "Não foi possível guardar o relatório de {period}. Nova tentativa em até uma hora."
+    }
+  },
+  "emergencyCard": {
+    "title": "Cartão de emergência",
+    "subtitle": "Informado pela própria pessoa. Confirme quando possível.",
+    "allergies": "Alergias",
+    "pregnancy": "Gravidez",
+    "pregnantWeek": "Grávida, semana {weeks}+{days}",
+    "pregnant": "Grávida",
+    "dueDate": "Data prevista {date}",
+    "postpartum": "Parto em {date}, semana {weeks} após o parto",
+    "postpartumNoDate": "Após um parto",
+    "dateOfBirth": "Data de nascimento",
+    "savedOn": "Atualizado em {date}",
+    "wallet": {
+      "instructions": "Imprima em 100 por cento, recorte pelo contorno e dobre na linha tracejada.",
+      "scan": "Escaneie para o cartão completo",
+      "cut": "Encurtado para caber. O cartão completo está no código QR."
+    },
+    "link": {
+      "validUntil": "Somente leitura. Este link funciona até {date}.",
+      "readOnly": "Somente leitura. Compartilhado pela pessoa, que pode revogá-lo a qualquer momento.",
+      "title": "Link QR",
+      "loadError": "Não foi possível carregar o status do link.",
+      "disclosure": "Quem escanear o código vê os itens marcados, sem entrar. Você pode definir um fim para o link e revogá-lo a qualquer momento; cada abertura fica registrada para você.",
+      "fieldsLabel": "O que o link mostra",
+      "expiryLabel": "O link termina",
+      "expiry": {
+        "none": "Nunca, até revogar",
+        "30": "Em 30 dias",
+        "365": "Em um ano",
+        "730": "Em dois anos"
+      },
+      "create": "Criar o link",
+      "qrAlt": "Código QR do link do cartão de emergência",
+      "once": "O link e o código existem só agora. Baixe o cartão com o código antes de sair desta página.",
+      "hidden": "Um link que começa com {prefix} está ativo. Ele foi mostrado uma vez, ao ser criado; revogue-o para um novo.",
+      "shows": "Mostra: {items}.",
+      "expired": "Este link expirou e não mostra mais nada.",
+      "expiresOn": "Termina em {date}.",
+      "noExpiry": "Sem data de término. Funciona até você revogar.",
+      "opened": "Aberto {count} vezes, a última {when}.",
+      "notOpened": "Ainda não foi aberto.",
+      "revoke": "Revogar link",
+      "revokeTitle": "Revogar o link do cartão de emergência?",
+      "revokeBody": "Cartões impressos com este código deixam de funcionar. Você pode criar um novo link e imprimir o cartão de novo.",
+      "error": "Não foi possível alterar o link. Tente de novo."
+    },
+    "page": {
+      "title": "Cartão de emergência",
+      "description": "Seus dados de emergência para quando estiver fora de casa.",
+      "back": "Perfil de saúde",
+      "loadError": "Não foi possível carregar o cartão de emergência.",
+      "editHint": "Tipo sanguíneo, contatos, implantes e declarações vêm dos seus dados de emergência.",
+      "editLink": "Editar",
+      "offlineHint": "O app não funciona offline de propósito. Salve uma cópia no celular para levar o cartão sem conexão; ela mostra o conteúdo do dia em que foi salva.",
+      "downloadError": "O download não funcionou. Tente de novo.",
+      "saveOffline": "Salvar cópia offline",
+      "wallet": "Cartão para a carteira (PDF)",
+      "walletWithQr": "Cartão com código QR (PDF)",
+      "preview": "Seu cartão"
+    },
+    "fields": {
+      "BLOOD_TYPE": "Tipo sanguíneo",
+      "ALLERGIES": "Alergias",
+      "CONDITIONS": "Doenças crônicas",
+      "MEDICATIONS": "Medicamentos atuais",
+      "PREGNANCY": "Gravidez",
+      "IMPLANTS": "Implantes e dispositivos",
+      "CONTACTS": "Contatos de emergência",
+      "ADVANCE_DIRECTIVE": "Diretivas antecipadas",
+      "ORGAN_DONOR": "Doação de órgãos",
+      "NOTE": "Notas adicionais",
+      "DATE_OF_BIRTH": "Data de nascimento"
     }
   }
 }

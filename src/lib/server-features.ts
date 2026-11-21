@@ -20,6 +20,7 @@ export const SERVER_FEATURES = [
   "medication.snooze-setting",
   "apple-health.effort-scores",
   "cycle.pregnancy-state",
+  "profile.emergency-card",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -52,4 +53,6 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "The batch ingest accepts HealthKit workoutEffortScore, estimatedWorkoutEffortScore and physicalEffort as WORKOUT_EFFORT_SCORE, ESTIMATED_WORKOUT_EFFORT_SCORE and PHYSICAL_EFFORT.",
   "cycle.pregnancy-state":
     "CycleProfileDTO and the cycle calendar carry pregnancy (CyclePregnancyDTO): PREGNANT or POSTPARTUM with its dates, the resolved week and predictionsPaused; PATCH /api/auth/me/cycle-prefs takes pregnancy. While paused the forecast is empty and the verdict is INSUFFICIENT_DATA.",
+  "profile.emergency-card":
+    "GET /api/emergency-card returns the emergency card; /api/emergency-card/link mints, reads and revokes its read-only hlm_ link, served at /e/{token} with only the fields the owner ticked.",
 };

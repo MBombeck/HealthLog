@@ -12224,7 +12224,8 @@
       "save": "Zapisz",
       "savedToast": "Informacje na wypadek nagły zapisane",
       "saveError": "Nie udało się zapisać informacji na wypadek nagły.",
-      "loadError": "Nie udało się wczytać informacji na wypadek nagły."
+      "loadError": "Nie udało się wczytać informacji na wypadek nagły.",
+      "cardLink": "Otwórz kartę ratunkową"
     },
     "life": {
       "cardTitle": "Warunki życia",
@@ -15415,6 +15416,80 @@
       "tooLarge": "Raport za {period} był większy niż dopuszczalny rozmiar dokumentu. Następny okres spróbuje ponownie.",
       "noSelection": "Powyżej nic nie wybrano do eksportu, więc raport nie został zapisany. Wybierz jego zawartość, a zostanie zapisany przy następnym przebiegu.",
       "failed": "Nie udało się zapisać raportu za {period}. Kolejna próba w ciągu godziny."
+    }
+  },
+  "emergencyCard": {
+    "title": "Karta ratunkowa",
+    "subtitle": "Podane przez właściciela. W miarę możliwości potwierdź.",
+    "allergies": "Alergie",
+    "pregnancy": "Ciąża",
+    "pregnantWeek": "W ciąży, tydzień {weeks}+{days}",
+    "pregnant": "W ciąży",
+    "dueDate": "Termin porodu {date}",
+    "postpartum": "Poród {date}, tydzień {weeks} po porodzie",
+    "postpartumNoDate": "Po porodzie",
+    "dateOfBirth": "Data urodzenia",
+    "savedOn": "Stan na {date}",
+    "wallet": {
+      "instructions": "Wydrukuj w skali 100 procent, wytnij wzdłuż obrysu, złóż na linii przerywanej.",
+      "scan": "Zeskanuj, by zobaczyć całą kartę",
+      "cut": "Skrócono, by się zmieściło. Pełna karta jest pod kodem QR."
+    },
+    "link": {
+      "validUntil": "Tylko do odczytu. Ten link działa do {date}.",
+      "readOnly": "Tylko do odczytu. Udostępnione przez właściciela, który może je w każdej chwili cofnąć.",
+      "title": "Link QR",
+      "loadError": "Nie udało się wczytać stanu linku.",
+      "disclosure": "Każdy, kto zeskanuje kod, zobaczy zaznaczone pozycje bez logowania. Możesz ustawić koniec ważności i w każdej chwili cofnąć link; każde otwarcie jest zapisywane.",
+      "fieldsLabel": "Co pokazuje link",
+      "expiryLabel": "Koniec ważności linku",
+      "expiry": {
+        "none": "Nigdy, do cofnięcia",
+        "30": "Za 30 dni",
+        "365": "Za rok",
+        "730": "Za dwa lata"
+      },
+      "create": "Utwórz link",
+      "qrAlt": "Kod QR do linku karty ratunkowej",
+      "once": "Link i kod są dostępne tylko teraz. Pobierz kartę z kodem, zanim opuścisz tę stronę.",
+      "hidden": "Aktywny jest link zaczynający się od {prefix}. Został pokazany raz, przy tworzeniu; cofnij go, aby utworzyć nowy.",
+      "shows": "Pokazuje: {items}.",
+      "expired": "Ten link wygasł i niczego już nie pokazuje.",
+      "expiresOn": "Wygasa {date}.",
+      "noExpiry": "Bez daty końca. Działa, dopóki go nie cofniesz.",
+      "opened": "Otwarto {count} razy, ostatnio {when}.",
+      "notOpened": "Jeszcze nie otwarto.",
+      "revoke": "Cofnij link",
+      "revokeTitle": "Cofnąć link do karty ratunkowej?",
+      "revokeBody": "Wydrukowane karty z tym kodem przestaną działać. Możesz utworzyć nowy link i wydrukować kartę ponownie.",
+      "error": "Nie udało się zmienić linku. Spróbuj ponownie."
+    },
+    "page": {
+      "title": "Karta ratunkowa",
+      "description": "Twoje dane ratunkowe na czas poza domem.",
+      "back": "Profil zdrowia",
+      "loadError": "Nie udało się wczytać karty ratunkowej.",
+      "editHint": "Grupa krwi, kontakty, implanty i oświadczenia pochodzą z Twoich danych ratunkowych.",
+      "editLink": "Edytuj",
+      "offlineHint": "Aplikacja celowo nie działa offline. Zapisz kopię w telefonie, by mieć kartę bez połączenia; pokazuje stan z dnia zapisu.",
+      "downloadError": "Pobieranie się nie udało. Spróbuj ponownie.",
+      "saveOffline": "Zapisz kopię offline",
+      "wallet": "Karta do portfela (PDF)",
+      "walletWithQr": "Karta z kodem QR (PDF)",
+      "preview": "Twoja karta"
+    },
+    "fields": {
+      "BLOOD_TYPE": "Grupa krwi",
+      "ALLERGIES": "Alergie",
+      "CONDITIONS": "Choroby przewlekłe",
+      "MEDICATIONS": "Obecne leki",
+      "PREGNANCY": "Ciąża",
+      "IMPLANTS": "Implanty i urządzenia",
+      "CONTACTS": "Kontakty alarmowe",
+      "ADVANCE_DIRECTIVE": "Oświadczenie pro futuro",
+      "ORGAN_DONOR": "Dawstwo narządów",
+      "NOTE": "Dodatkowe uwagi",
+      "DATE_OF_BIRTH": "Data urodzenia"
     }
   }
 }
