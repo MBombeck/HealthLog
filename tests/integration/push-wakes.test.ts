@@ -46,6 +46,7 @@ import { fromBase64Url } from "@/lib/push-relay/encoding";
 import { openEnvelope } from "@/lib/push-relay/__tests__/envelope-open";
 import {
   flushDueDataChanges,
+  batchDataChanges,
   noteDataChanged,
   withDataChangeOrigin,
 } from "@/lib/push-relay/data-changed";
@@ -210,6 +211,30 @@ describe("DATA_CHANGED", () => {
       { domains: ["measurements"] },
       { domains: ["sleep", "workouts"] },
     ]);
+  });
+
+  it("sends one wake for a batch of writes, merged, and still leaves the origin out", async () => {
+    const { session, devices, sender } = await setUp([
+      "b3".repeat(32),
+      "b4".repeat(32),
+    ]);
+    const [a, b] = devices as [Bound, Bound];
+    // Unbatched, the first note would go out alone as ["workouts"] and the
+    // rest would wait out the five-minute window.
+    await withDataChangeOrigin(a.deviceToken, () =>
+      batchDataChanges(async () => {
+        for (let i = 0; i < 20; i++) {
+          void noteDataChanged(session.userId, [
+            i % 2 === 0 ? "workouts" : "sleep",
+          ]);
+        }
+      }),
+    );
+    await eventually(() => wakes(b, sender, "DATA_CHANGED").length === 1);
+    expect(wakes(b, sender, "DATA_CHANGED")[0]!.d).toMatchObject({
+      domains: ["sleep", "workouts"],
+    });
+    expect(wakes(a, sender, "DATA_CHANGED")).toHaveLength(0);
   });
 
   it("is raised by a provider sync's shared tail", async () => {

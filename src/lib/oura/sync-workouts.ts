@@ -19,6 +19,7 @@
  */
 import { prisma } from "@/lib/db";
 import { emitInsertedWorkoutArrival } from "@/lib/arrivals/workout-emit";
+import { batchDataChanges } from "@/lib/push-relay/data-changed";
 import { annotate, getEvent } from "@/lib/logging/context";
 import type { Prisma } from "@/generated/prisma/client";
 import type { WorkoutSportType } from "@/lib/validations/workout";
@@ -78,6 +79,15 @@ export function mapOuraWorkout(w: OuraWorkout): OuraWorkoutRow | null {
  * a workout from three years ago is not news.
  */
 export async function upsertOuraWorkouts(
+  userId: string,
+  rows: readonly OuraWorkoutRow[],
+  opts: { emitArrivals?: boolean } = {},
+): Promise<number> {
+  // One DATA_CHANGED note for the batch, not one per row.
+  return batchDataChanges(() => storeOuraWorkouts(userId, rows, opts));
+}
+
+async function storeOuraWorkouts(
   userId: string,
   rows: readonly OuraWorkoutRow[],
   opts: { emitArrivals?: boolean } = {},

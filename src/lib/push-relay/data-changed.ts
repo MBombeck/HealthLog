@@ -48,6 +48,18 @@ export const COALESCE_WINDOW_MS = 5 * 60_000;
 export const SENDS_PER_HOUR = 3;
 const origin = new AsyncLocalStorage<string | null>();
 
+/** The notes a batch holds back, by account and origin device. */
+type PendingNotes = Map<
+  string,
+  {
+    userId: string;
+    skip: string | null;
+    domains: Set<DataDomain>;
+    now?: Date;
+  }
+>;
+const batch = new AsyncLocalStorage<PendingNotes>();
+
 /**
  * Run `fn` with the device that asked for it as the origin of every data
  * change it causes (`X-Device-Id`, the device's registered token).
@@ -57,6 +69,28 @@ export function withDataChangeOrigin<T>(
   fn: () => Promise<T>,
 ): Promise<T> {
   return origin.run(deviceToken || null, fn);
+}
+
+/**
+ * Run `fn`, a writer that stores many rows one at a time, and note its data
+ * changes once at the end: every `noteDataChanged` inside merges into one
+ * note per account and origin. Without it a history backfill read the
+ * account's wakeable devices once per row it stored. The notes go out fire
+ * and forget, as each would have.
+ */
+export async function batchDataChanges<T>(fn: () => Promise<T>): Promise<T> {
+  if (batch.getStore()) return fn();
+  const pending: PendingNotes = new Map();
+  try {
+    return await batch.run(pending, fn);
+  } finally {
+    for (const note of pending.values()) {
+      void noteDataChanged(note.userId, [...note.domains], {
+        originDeviceToken: note.skip,
+        now: note.now,
+      });
+    }
+  }
 }
 
 /** The domain a measurement type belongs to. */
@@ -94,6 +128,15 @@ export function noteDataChanged(
     options.originDeviceToken !== undefined
       ? options.originDeviceToken
       : (origin.getStore() ?? null);
+  const held = batch.getStore();
+  if (held) {
+    const key = `${userId}\u0000${skip ?? ""}`;
+    const note = held.get(key) ?? { userId, skip, domains: new Set() };
+    for (const domain of list) note.domains.add(domain as DataDomain);
+    if (options.now) note.now = options.now;
+    held.set(key, note);
+    return Promise.resolve();
+  }
   const now = options.now ?? new Date();
   return (async () => {
     try {

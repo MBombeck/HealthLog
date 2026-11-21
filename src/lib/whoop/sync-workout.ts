@@ -33,6 +33,7 @@ import {
 import { mapWhoopSportType } from "./sport-map";
 import { prisma } from "@/lib/db";
 import { emitInsertedWorkoutArrival } from "@/lib/arrivals/workout-emit";
+import { batchDataChanges } from "@/lib/push-relay/data-changed";
 import { getEvent } from "@/lib/logging/context";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -69,10 +70,12 @@ export async function syncUserWorkout(
     return handleCollectionFetchError("workout", userId, err);
   }
 
-  let imported = 0;
-  for (const w of records) {
-    imported += await upsertWhoopWorkout(userId, w);
-  }
+  // One DATA_CHANGED note for the walk, not one per workout.
+  const imported = await batchDataChanges(async () => {
+    let written = 0;
+    for (const w of records) written += await upsertWhoopWorkout(userId, w);
+    return written;
+  });
 
   await markResourceSynced(userId, "workout");
   return imported;

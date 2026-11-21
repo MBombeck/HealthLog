@@ -35,6 +35,7 @@ import {
 } from "./sync-core";
 import { prisma } from "@/lib/db";
 import { emitInsertedWorkoutArrival } from "@/lib/arrivals/workout-emit";
+import { batchDataChanges } from "@/lib/push-relay/data-changed";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
@@ -43,8 +44,9 @@ export async function syncUserWorkout(
   userId: string,
   opts: GoogleHealthResourceSyncOptions = {},
 ): Promise<number> {
+  // One DATA_CHANGED note for the collection, not one per session.
   return runGoogleHealthCollection("fetchExercise", () =>
-    syncExerciseSessions(userId, opts),
+    batchDataChanges(() => syncExerciseSessions(userId, opts)),
   );
 }
 

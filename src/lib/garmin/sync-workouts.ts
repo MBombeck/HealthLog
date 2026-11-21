@@ -17,6 +17,7 @@
  */
 import { prisma } from "@/lib/db";
 import { emitInsertedWorkoutArrival } from "@/lib/arrivals/workout-emit";
+import { batchDataChanges } from "@/lib/push-relay/data-changed";
 import { annotate, getEvent } from "@/lib/logging/context";
 import type { Prisma } from "@/generated/prisma/client";
 import type { WorkoutSportType } from "@/lib/validations/workout";
@@ -107,6 +108,15 @@ export function mapGarminActivity(a: GarminActivity): GarminWorkoutRow | null {
  * `emitArrivals: false` (the history backfill) writes without arrival events.
  */
 export async function upsertGarminWorkouts(
+  userId: string,
+  rows: readonly GarminWorkoutRow[],
+  opts: { emitArrivals?: boolean } = {},
+): Promise<number> {
+  // One DATA_CHANGED note for the batch, not one per row.
+  return batchDataChanges(() => writeGarminWorkouts(userId, rows, opts));
+}
+
+async function writeGarminWorkouts(
   userId: string,
   rows: readonly GarminWorkoutRow[],
   opts: { emitArrivals?: boolean } = {},

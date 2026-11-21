@@ -31,6 +31,7 @@
  */
 import { prisma } from "@/lib/db";
 import { emitInsertedWorkoutArrival } from "@/lib/arrivals/workout-emit";
+import { batchDataChanges } from "@/lib/push-relay/data-changed";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { annotate, getEvent } from "@/lib/logging/context";
 import {
@@ -139,6 +140,14 @@ export async function syncUserPolarWorkouts(
  * batch as a clean pass.
  */
 export async function upsertPolarWorkouts(
+  userId: string,
+  rows: readonly PolarWorkoutRow[],
+): Promise<number> {
+  // One DATA_CHANGED note for the batch, not one per row.
+  return batchDataChanges(() => writePolarWorkouts(userId, rows));
+}
+
+async function writePolarWorkouts(
   userId: string,
   rows: readonly PolarWorkoutRow[],
 ): Promise<number> {
