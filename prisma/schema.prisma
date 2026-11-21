@@ -6566,6 +6566,11 @@ model Device {
   envelopeOpenedSilentId String?             @map("envelope_opened_silent_id")
   envelopeReportedAt     DateTime?           @map("envelope_reported_at")
   relayDeliveries        PushRelayDelivery[]
+  /// The silent wakes this server sent the device (DATA_CHANGED,
+  /// HEALTHKIT_CATCH_UP), for their rate limits (`push-relay/wakes.ts`).
+  pushWakes              PushWake[]
+  /// The DATA_CHANGED wake owed to the device (`push-relay/data-changed.ts`).
+  pushDataChange         PushDataChange?
   lastSeen               DateTime            @default(now()) @map("last_seen")
   createdAt              DateTime            @default(now()) @map("created_at")
   updatedAt              DateTime            @updatedAt @map("updated_at")
@@ -11444,6 +11449,43 @@ model PushRelayDelivery {
   @@index([status, nextAttemptAt])
   @@index([deviceId, pushClass, createdAt])
   @@map("push_relay_deliveries")
+}
+
+/// The DATA_CHANGED wake owed to one device: the domains new readings from
+/// a server-side sync touched since its last wake, merged. A wake goes out at
+/// most once per five minutes and three times an hour per device; changes in
+/// between wait here and go out together. A change the device caused itself
+/// is never added to its own row. Writer and reader:
+/// `push-relay/data-changed.ts`; the minute job `push-data-changed` flushes
+/// what is due.
+model PushDataChange {
+  deviceId  String     @id @map("device_id")
+  /// Sorted, distinct: `measurements`, `sleep`, `workouts`, `nutrition`.
+  domains   String[]   @default([])
+  /// The last three wakes, oldest first: the five-minute and hourly bounds.
+  sentAt    DateTime[] @default([]) @map("sent_at")
+  updatedAt DateTime   @default(now()) @map("updated_at")
+
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@map("push_data_changes")
+}
+
+/// One silent wake this server sent a device, over the relay or its own
+/// APNs key: `DATA_CHANGED` or `HEALTHKIT_CATCH_UP`. Read for the rate limits
+/// (a shared hourly silent budget per device, the catch-up's daily count and
+/// spacing); rows older than two days are pruned by `push-data-changed`.
+model PushWake {
+  id        String   @id @default(cuid())
+  deviceId  String   @map("device_id")
+  kind      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, kind, createdAt])
+  @@index([createdAt])
+  @@map("push_wakes")
 }
 
 /// Relay unbinds owed for device tokens whose account was erased: written in

@@ -4,6 +4,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
 import { resolveSyncOutcome } from "@/lib/outcome/written-outcome";
 import { syncUserStrava } from "@/lib/strava/sync";
+import { withDataChangeOrigin } from "@/lib/push-relay/data-changed";
 
 /**
  * Manually trigger a Strava sync for the current user (v1.32.28).
@@ -16,7 +17,7 @@ import { syncUserStrava } from "@/lib/strava/sync";
  * Rate-limited 5/60s per user, matching the hardened Google Health
  * route; Strava's 200-req / 15-min cap leaves no room for a retry loop.
  */
-export const POST = apiHandler(async () => {
+export const POST = apiHandler(async (request: Request) => {
   const { user } = await requireAuth();
   annotate({ action: { name: "strava.sync" } });
 
@@ -28,7 +29,10 @@ export const POST = apiHandler(async () => {
   }
 
   try {
-    const imported = await syncUserStrava(user.id);
+    const imported = await withDataChangeOrigin(
+      request.headers.get("x-device-id"),
+      () => syncUserStrava(user.id),
+    );
     // `failed: false` is a statement, not a placeholder: the Strava walk has no
     // settled-but-partial arm. `upsertStravaWorkouts` rethrows the first row
     // error after attempting the batch and the page walk rethrows its own, so

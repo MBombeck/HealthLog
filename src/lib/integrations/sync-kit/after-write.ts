@@ -15,7 +15,9 @@
  *      marked stale back to the earliest touched reading (older closed blocks
  *      survive), and the status cards of the touched types are re-warmed
  *      (`afterMeasurementMutation`, shared with the interactive routes);
- *   3. where the provider asks for it, the dashboard snapshot is evicted.
+ *   3. where the provider asks for it, the dashboard snapshot is evicted;
+ *   4. the owner's iOS devices get a DATA_CHANGED wake for the touched
+ *      domains (`push-relay/data-changed.ts`, coalesced, fire and forget).
  *
  * Every leg is best effort: a populator hiccup never fails the sync. The
  * result says whether the fold failed, for the providers whose cycle verdict
@@ -35,6 +37,10 @@ import {
 } from "@/lib/cache/invalidate";
 import { invalidateStatusInsightsForTypes } from "@/lib/insights/status-invalidation";
 import { getEvent } from "@/lib/logging/context";
+import {
+  domainsOfMeasurementTypes,
+  noteDataChanged,
+} from "@/lib/push-relay/data-changed";
 import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
 import {
   collapseToTypeDayKeys,
@@ -97,6 +103,13 @@ export async function afterProviderWrite(
   if (write.evictDashboard && touched.length > 0) {
     invalidateUserDashboardSnapshot(userId);
   }
+  // The owner's iOS devices reload (DATA_CHANGED, coalesced per account).
+  if (touched.length > 0) {
+    void noteDataChanged(
+      userId,
+      domainsOfMeasurementTypes(touched.map((t) => t.type)),
+    );
+  }
   return { rollupFailed };
 }
 
@@ -150,4 +163,5 @@ export async function afterProviderBackfill(input: {
     invalidateUserMeasurements(input.userId, { touchedFrom: from });
   }
   invalidateProviderStatus(input.userId, input.provider, types);
+  void noteDataChanged(input.userId, domainsOfMeasurementTypes(types));
 }

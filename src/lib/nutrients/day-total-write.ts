@@ -6,7 +6,8 @@
  * picks the source from the credential (APPLE_HEALTH for the native client,
  * EXTERNAL for a bridge token) and this module writes only that source's rows,
  * so a manual water entry, a supplement total and the other day-total source
- * are never touched.
+ * are never touched. A bridge's write wakes the owner's iOS devices with a
+ * `nutrition` DATA_CHANGED (`push-relay/data-changed.ts`).
  *
  * Perf (measurements/batch shape): ONE indexed existence read splits the
  * entries into genuinely new (day, nutrient) pairs, landed by a single
@@ -20,7 +21,8 @@
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import type { NutrientCode } from "@/lib/nutrients/catalog";
-import type { NutrientSource } from "@/lib/nutrients/sources";
+import { NUTRIENT_SOURCE, type NutrientSource } from "@/lib/nutrients/sources";
+import { noteDataChanged } from "@/lib/push-relay/data-changed";
 
 export interface ValidNutrientEntry {
   /** Position in the request, echoed in the per-entry result. */
@@ -140,6 +142,14 @@ export async function writeNutrientDayTotals(
         outcome.statuses.push({ index: e.index, status: "failed" });
       }
     }
+  }
+  // A bridge's day totals wake the owner's iOS devices (DATA_CHANGED); the
+  // phone's own Apple Health totals do not.
+  if (
+    source === NUTRIENT_SOURCE.EXTERNAL &&
+    outcome.inserted + outcome.updated > 0
+  ) {
+    void noteDataChanged(userId, ["nutrition"]);
   }
   return outcome;
 }
