@@ -79,4 +79,28 @@ describe("mapVital", () => {
     expect(id(a)).toBe(id(b));
     expect(id(a)).not.toBe(id(c));
   });
+
+  it("reads a code only under the LOINC system itself, compared whole", () => {
+    const pulse = (system: string) =>
+      mapVital(
+        observation({
+          code: { coding: [{ system, code: "8867-4" }] },
+          valueQuantity: { value: 64, code: "/min" },
+        }),
+        "https://a.example",
+        NOW,
+      );
+    const type = (r: ReturnType<typeof pulse>) =>
+      Array.isArray(r) ? r.map((row) => row.type) : r;
+
+    expect(type(pulse("http://loinc.org"))).toEqual(["PULSE"]);
+    expect(type(pulse("urn:oid:2.16.840.1.113883.6.1"))).toEqual(["PULSE"]);
+    for (const hostile of [
+      "http://evil.example/loinc.org",
+      "http://loinc.org.evil.example",
+      "https://notloinc.org",
+    ]) {
+      expect(Array.isArray(pulse(hostile))).toBe(false);
+    }
+  });
 });

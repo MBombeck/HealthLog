@@ -71,6 +71,16 @@ export const VITAL_LOINC: Record<string, VitalSpec> = {
 
 export const BP_PANEL_CODES = new Set(["85354-9", "55284-4"]);
 
+/**
+ * The two identifiers FHIR R4 gives the LOINC code system: its canonical URI
+ * and its HL7 OID. A coding system is compared whole, never by substring, so
+ * `http://evil.example/loinc.org` is a foreign system, not LOINC.
+ */
+const LOINC_SYSTEMS: ReadonlySet<string> = new Set([
+  "http://loinc.org",
+  "urn:oid:2.16.840.1.113883.6.1",
+]);
+
 /** The LOINC codes a CodeableConcept carries. */
 export function loincCodes(concept: unknown): string[] {
   if (!concept || typeof concept !== "object") return [];
@@ -81,7 +91,7 @@ export function loincCodes(concept: unknown): string[] {
     if (!c || typeof c !== "object") continue;
     const { system, code } = c as { system?: unknown; code?: unknown };
     if (typeof code !== "string") continue;
-    if (typeof system === "string" && !system.includes("loinc.org")) continue;
+    if (typeof system === "string" && !LOINC_SYSTEMS.has(system)) continue;
     out.push(code.trim());
   }
   return out;
