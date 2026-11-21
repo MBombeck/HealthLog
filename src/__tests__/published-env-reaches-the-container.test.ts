@@ -141,3 +141,88 @@ describe("a variable the product publishes reaches the container", () => {
     });
   }
 });
+
+/** Every `NAME: "${NAME…` entry on the compose whitelist. */
+const COMPOSE_NAMES: string[] = [
+  ...COMPOSE.matchAll(/^\s*([A-Z][A-Z0-9_]+):\s*"\$\{\1\b/gm),
+].map((m) => m[1]);
+
+/**
+ * Whitelisted variables the manifest has never declared, frozen when this
+ * check was written (v1.49.0, after the four `PUSH_RELAY_*` variables reached
+ * compose and both examples but not the manifest). The list only shrinks: a
+ * variable added to the manifest must leave it, and a new whitelist entry
+ * must reach the manifest in the same change.
+ */
+const NOT_YET_IN_MANIFEST = new Set([
+  "ADMIN_AI_BASE_URL_ALLOWLIST",
+  "APNS_CRITICAL_ENTITLEMENT",
+  "APNS_KEY_B64",
+  "APNS_PRODUCTION",
+  "BACKUP_RETENTION_DAYS",
+  "BACKUP_S3_REGION",
+  "COACH_MESSAGE_RETENTION_DAYS",
+  "CODEX_CLIENT_VERSION",
+  "CODEX_MODEL",
+  "CODEX_MODEL_FALLBACK_CHAIN",
+  "DASHBOARD_SSR_PREFETCH",
+  "DATABASE_STATEMENT_TIMEOUT_MS",
+  "DEMO_MODE",
+  "DENSE_INTRADAY_RETENTION_ENABLED",
+  "ENCRYPTION_ACTIVE_KEY_ID",
+  "ENCRYPTION_KEYS",
+  "FHIR_MAX_MEDICATION_ADMINISTRATIONS",
+  "GOOGLE_HEALTH_BACKFILL_HORIZON_YEARS",
+  "GOOGLE_HEALTH_REDIRECT_URI",
+  "HEALTHLOG_PROCESS_TYPE",
+  "HOST_METRIC_RETENTION_DAYS",
+  "INTEGRATION_FAILURE_ALERT_THRESHOLD",
+  "IP_GEO_ALLOW_INSECURE",
+  "IP_GEO_LOOKUP_URL",
+  "LOG_INCLUDE_STACK",
+  "LOG_LEVEL",
+  "LOG_SAMPLE_RATE",
+  "LOG_SLOW_THRESHOLD_MS",
+  "LOKI_ENDPOINT",
+  "LOKI_PASSWORD",
+  "LOKI_USERNAME",
+  "NATIVE_CANVAS",
+  "NIGHTSCOUT_PRIVATE_ORIGINS",
+  "OURA_REDIRECT_URI",
+  "POLAR_REDIRECT_URI",
+  "SMTP_PASS",
+  "SMTP_SECURE",
+  "SMTP_USER",
+  "STRAVA_CLIENT_ID",
+  "STRAVA_CLIENT_SECRET",
+  "STRAVA_REDIRECT_URI",
+  "TELEGRAM_WEBHOOK_SECRET",
+  "VAPID_PRIVATE_KEY",
+  "VAPID_PUBLIC_KEY",
+  "VAPID_SUBJECT",
+  "WHOOP_REDIRECT_URI",
+  "WHOOP_WEBHOOK_SECRET",
+  "WITHINGS_REDIRECT_URI",
+]);
+
+describe("a variable on the compose whitelist is declared in the manifest", () => {
+  it("reads the whitelist", () => {
+    expect(COMPOSE_NAMES.length).toBeGreaterThan(100);
+    expect(COMPOSE_NAMES).toContain("PUSH_RELAY_MODE");
+  });
+
+  it("leaves no new whitelist entry out of `pnpm check-env`", () => {
+    const missing = COMPOSE_NAMES.filter(
+      (name) =>
+        !MANIFEST_NAMES.includes(name) && !NOT_YET_IN_MANIFEST.has(name),
+    );
+    expect(missing, missing.join(", ")).toEqual([]);
+  });
+
+  it("carries no frozen name the manifest now declares or compose dropped", () => {
+    const stale = [...NOT_YET_IN_MANIFEST].filter(
+      (name) => MANIFEST_NAMES.includes(name) || !COMPOSE_NAMES.includes(name),
+    );
+    expect(stale, stale.join(", ")).toEqual([]);
+  });
+});
