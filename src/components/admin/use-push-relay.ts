@@ -45,6 +45,7 @@ export function useSetPushRelay() {
       enabled: boolean;
       acceptTerms?: boolean;
       householdOnly?: boolean;
+      invite?: string;
     }) => apiPut<AdminPushRelayStatus>("/api/admin/push-relay", body),
     onSuccess: (data) => {
       queryClient.setQueryData(queryKeys.adminPushRelay(), data);

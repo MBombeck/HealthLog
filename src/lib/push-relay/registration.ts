@@ -316,6 +316,7 @@ export async function relayCall(
 export async function ensureInstanceRegistered(
   row: RegistrationRow,
   config: RelayConfig = relayConfig(),
+  options: { invite?: string } = {},
 ): Promise<boolean> {
   if (row.instanceId) return true;
   const seed = instanceSeedOf(row);
@@ -330,6 +331,7 @@ export async function ensureInstanceRegistered(
         data: { clockOffsetSeconds: offset },
       });
     },
+    options.invite,
   );
   if (
     result.kind === "response" &&
@@ -340,14 +342,28 @@ export async function ensureInstanceRegistered(
       instanceId: result.body.instanceId,
       tier: typeof result.body.tier === "string" ? result.body.tier : null,
       lastSuccessAt: new Date(),
+      pausedUntil: null,
     });
     return true;
   }
+  if (result.kind === "transport") {
+    await setState(row.id, "pending", result.reason);
+    return false;
+  }
+  const error = String(result.body?.error ?? `http_${result.status}`);
+  // The relay answers `invite_required` both to a missing code and to one it
+  // does not accept (unknown, expired or already used); which one it was is
+  // known here. Neither is retried until the operator enters a code
+  // (`OPERATOR_ACTION_REASONS`).
   const reason =
-    result.kind === "transport"
-      ? result.reason
-      : String(result.body?.error ?? `http_${result.status}`);
-  await setState(row.id, "pending", reason);
+    error === "invite_required" && options.invite ? "invite_rejected" : error;
+  // A closed relay, or one whose registration limits are reached, says when
+  // to ask again; the minute pass waits that long.
+  const pausedUntil =
+    error === "registration_paused"
+      ? new Date(Date.now() + (result.retryAfter ?? 3600) * 1000)
+      : null;
+  await setState(row.id, "pending", reason, { pausedUntil });
   return false;
 }
 
@@ -359,6 +375,8 @@ export async function ensureInstanceRegistered(
 export async function enableRelay(input: {
   userId: string;
   config?: RelayConfig;
+  /** The relay's one-time invite code, used for this attempt only. */
+  invite?: string;
 }): Promise<RegistrationRow> {
   const config = input.config ?? relayConfig();
   await ensureEnvelopeKeys();
@@ -385,7 +403,7 @@ export async function enableRelay(input: {
     const fresh = await loadRegistration(config);
     if (fresh) await relayCall(fresh, "GET", "/v1/status", undefined, config);
   } else {
-    await ensureInstanceRegistered(row, config);
+    await ensureInstanceRegistered(row, config, { invite: input.invite });
   }
   return (await loadRegistration(config)) ?? row;
 }

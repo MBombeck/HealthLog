@@ -93,6 +93,14 @@ export class FakeRelay {
   retryAfter: number | null = null;
   /** Per path: answer with this status and error instead of handling it. */
   refuse = new Map<string, { status: number; error: string }>();
+  /**
+   * Invite mode: the unspent codes a new key must bring. `null` is open
+   * registration. A code is spent only by a registration that succeeds; a
+   * known key gets its id back without one.
+   */
+  invites: Set<string> | null = null;
+  /** The `invite` field of every registration body, in order. */
+  registrationInvites: Array<string | undefined> = [];
 
   private sign(nonce: string | null, status: number, body: string): string {
     const seed = this.forge ? Buffer.alloc(32, 0x42) : RELAY_SEED;
@@ -161,6 +169,7 @@ export class FakeRelay {
       ) {
         return this.reply(nonce, 401, { error: "bad_signature" });
       }
+      this.registrationInvites.push(req.invite);
       for (const [id, key] of this.instances) {
         if (key.equals(pk))
           return this.reply(nonce, 200, {
@@ -168,6 +177,12 @@ export class FakeRelay {
             tier: "probation",
             limits: {},
           });
+      }
+      if (this.invites) {
+        if (typeof req.invite !== "string" || !this.invites.has(req.invite)) {
+          return this.reply(nonce, 403, { error: "invite_required" });
+        }
+        this.invites.delete(req.invite);
       }
       const id = `6f1c2a4e-1b9d-4c3e-8a7f-${String(this.nextId++).padStart(12, "0")}`;
       this.instances.set(id, pk);

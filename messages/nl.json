@@ -9354,6 +9354,17 @@
         "button": "Relaysleutel vernieuwen",
         "done": "De relaysleutel is vernieuwd",
         "failed": "De relaysleutel kon nu niet worden vernieuwd; de relay staat één vernieuwing per dag toe"
+      },
+      "invite": {
+        "label": "Uitnodigingscode (optioneel)",
+        "hint": "Alleen nodig zolang de relay nieuwe servers alleen op uitnodiging toelaat. De code heeft 24 tekens en werkt één keer.",
+        "invalid": "Een uitnodigingscode heeft precies 24 tekens: letters, cijfers, - of _.",
+        "enter": "Uitnodigingscode invoeren"
+      },
+      "reason": {
+        "inviteRequired": "Deze relay laat nieuwe servers alleen op uitnodiging toe. Voer een uitnodigingscode in.",
+        "inviteRejected": "De relay heeft deze uitnodigingscode niet geaccepteerd. Misschien is hij verlopen of al gebruikt. Vraag een nieuwe aan en voer die in.",
+        "registrationPaused": "De relay neemt op dit moment geen nieuwe servers aan. Deze server probeert het later vanzelf opnieuw."
       }
     }
   },

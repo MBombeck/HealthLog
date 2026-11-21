@@ -9354,6 +9354,17 @@
         "button": "Renovar a chave do relay",
         "done": "A chave do relay foi renovada",
         "failed": "Não foi possível renovar a chave do relay agora; o relay permite uma renovação por dia"
+      },
+      "invite": {
+        "label": "Código de convite (opcional)",
+        "hint": "Só é necessário enquanto o relay aceita novos servidores apenas por convite. O código tem 24 caracteres e vale uma vez.",
+        "invalid": "Um código de convite tem exatamente 24 caracteres: letras, números, - ou _.",
+        "enter": "Inserir código de convite"
+      },
+      "reason": {
+        "inviteRequired": "Este relay aceita novos servidores apenas por convite. Insira um código de convite.",
+        "inviteRejected": "O relay não aceitou este código de convite. Ele pode ter expirado ou já ter sido usado. Peça um novo e insira-o.",
+        "registrationPaused": "O relay não está aceitando novos servidores no momento. Este servidor tentará de novo mais tarde por conta própria."
       }
     }
   },

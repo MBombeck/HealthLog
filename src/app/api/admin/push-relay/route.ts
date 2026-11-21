@@ -2,13 +2,16 @@
  * `GET /api/admin/push-relay`: the relay's state for the admin card and the
  * one-time admin notice.
  *
- * `PUT /api/admin/push-relay` `{ enabled, acceptTerms, householdOnly }`:
+ * `PUT /api/admin/push-relay` `{ enabled, acceptTerms, householdOnly, invite? }`:
  * the operator's switch "Offer the HealthLog push relay to this server's
  * users". Turning it on requires both confirmations (the relay terms, and
  * that this server is run privately for its operator and their household),
  * creates the instance key and registers at the relay. Turning it off
  * deletes the instance at the relay (every device binding with it) and the
- * key here. Both are audit-logged.
+ * key here. Both are audit-logged. `invite` is the relay's one-time code for
+ * a relay that accepts new servers by invitation only; it rides this one
+ * registration attempt and is neither stored nor logged. The answer is the
+ * state after the attempt, so a refusal (`reason`) shows at once.
  *
  * Cookie-only (`requireAdmin()`): a Bearer token never reaches it.
  */
@@ -23,6 +26,7 @@ import { annotate } from "@/lib/logging/context";
 import { relayConfig, RELAY_TERMS_VERSION } from "@/lib/push-relay/config";
 import { disableRelay, enableRelay } from "@/lib/push-relay/registration";
 import { adminRelayStatus } from "@/lib/push-relay/admin-status";
+import { relayInviteSchema } from "@/lib/push-relay/invite";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +41,7 @@ const switchSchema = z
     enabled: z.boolean(),
     acceptTerms: z.boolean().optional(),
     householdOnly: z.boolean().optional(),
+    invite: relayInviteSchema.optional(),
   })
   .strict();
 
@@ -63,7 +68,11 @@ export const PUT = apiHandler(async (request: NextRequest) => {
         errorCode: "admin.pushRelay.confirmationsRequired",
       });
     }
-    const row = await enableRelay({ userId: user.id, config });
+    const row = await enableRelay({
+      userId: user.id,
+      config,
+      invite: parsed.data.invite,
+    });
     await auditLog("admin.push_relay.enabled", {
       userId: user.id,
       ipAddress: getClientIp(request),
@@ -72,11 +81,17 @@ export const PUT = apiHandler(async (request: NextRequest) => {
         termsVersion: RELAY_TERMS_VERSION,
         householdOnly: true,
         registered: row.instanceId !== null,
+        inviteEntered: parsed.data.invite !== undefined,
+        refusal: row.instanceId === null ? row.stateReason : null,
       },
     });
     annotate({
       action: { name: "admin.push_relay.enabled" },
-      meta: { registered: row.instanceId !== null },
+      meta: {
+        registered: row.instanceId !== null,
+        invite_entered: parsed.data.invite !== undefined,
+        refusal: row.instanceId === null ? row.stateReason : null,
+      },
     });
   } else {
     const { unregistered } = await disableRelay(config);

@@ -9354,6 +9354,17 @@
         "button": "Odnów klucz przekaźnika",
         "done": "Klucz przekaźnika został odnowiony",
         "failed": "Nie udało się teraz odnowić klucza przekaźnika; przekaźnik pozwala na jedno odnowienie dziennie"
+      },
+      "invite": {
+        "label": "Kod zaproszenia (opcjonalnie)",
+        "hint": "Potrzebny tylko wtedy, gdy przekaźnik przyjmuje nowe serwery wyłącznie na zaproszenie. Kod ma 24 znaki i działa jeden raz.",
+        "invalid": "Kod zaproszenia ma dokładnie 24 znaki: litery, cyfry, - lub _.",
+        "enter": "Wpisz kod zaproszenia"
+      },
+      "reason": {
+        "inviteRequired": "Ten przekaźnik przyjmuje nowe serwery tylko na zaproszenie. Wpisz kod zaproszenia.",
+        "inviteRejected": "Przekaźnik nie przyjął tego kodu zaproszenia. Mógł wygasnąć albo został już użyty. Poproś o nowy i wpisz go.",
+        "registrationPaused": "Przekaźnik nie przyjmuje teraz nowych serwerów. Ten serwer sam spróbuje ponownie później."
       }
     }
   },
