@@ -1,3 +1,4 @@
+import { sendSecurityAlert } from "@/lib/auth/security-alert";
 import { prisma } from "@/lib/db";
 import {
   consumeRegistrationChallenge,
@@ -93,6 +94,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     userId: user.id,
     ipAddress: getClientIp(request),
   });
+  void sendSecurityAlert(user.id, "passkey_added");
 
   annotate({ action: { name: "auth.passkey.register" } });
 

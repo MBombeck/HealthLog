@@ -9665,7 +9665,15 @@
     "security": {
       "newDeviceTitle": "Nieuwe inlog op je account",
       "newDeviceBody": "Nieuwe inlog vanaf {device} ({location}). Was jij dit niet, wijzig dan direct je wachtwoord.",
-      "unknownLocation": "onbekende locatie"
+      "unknownLocation": "onbekende locatie",
+      "passkeyAddedTitle": "Passkey toegevoegd",
+      "passkeyAddedBody": "Er is een nieuwe passkey aan je account toegevoegd. Was jij dit niet, verwijder hem dan in de beveiligingsinstellingen en wijzig je wachtwoord.",
+      "passkeyRemovedTitle": "Passkey verwijderd",
+      "passkeyRemovedBody": "Er is een passkey van je account verwijderd. Was jij dit niet, wijzig dan je wachtwoord en controleer je apparaten.",
+      "tokenRevokedTitle": "Toegangstoken ingetrokken",
+      "tokenRevokedBody": "Een toegangstoken van je account is ingetrokken. Was jij dit niet, wijzig dan je wachtwoord en controleer je tokens.",
+      "refreshReuseTitle": "Een apparaat is afgemeld",
+      "refreshReuseBody": "Een inlogtoken is twee keer gebruikt, daarom is het apparaat afgemeld. Log daar opnieuw in. Gebeurt dit vaker, wijzig dan je wachtwoord."
     },
     "sharedRecordIntake": {
       "title": "{name} heeft een dosis geregistreerd",

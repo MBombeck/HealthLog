@@ -162,6 +162,11 @@ vi.mock("@/lib/auth/hmac", () => ({
   hashToken: (raw: string) => `hash:${raw}`,
 }));
 
+const sendSecurityAlert = vi.fn();
+vi.mock("@/lib/auth/security-alert", () => ({
+  sendSecurityAlert: (...args: unknown[]) => sendSecurityAlert(...args),
+}));
+
 import {
   ACCESS_TOKEN_SUNSET_MS,
   issueAccessAndRefresh,
@@ -278,6 +283,8 @@ describe("rotateRefreshToken", () => {
       (r) => r.revokedAt === null && r.deviceId === "dev-1",
     );
     expect(liveDev1).toHaveLength(0);
+    // The owner hears about the signed-out family.
+    expect(sendSecurityAlert).toHaveBeenCalledWith("u1", "refresh_reuse");
   });
 
   it("v1.4.23 — per-device replay does NOT revoke another device's tokens", async () => {

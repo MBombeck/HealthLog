@@ -12,6 +12,7 @@
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { hashToken } from "@/lib/auth/hmac";
+import { sendSecurityAlert } from "@/lib/auth/security-alert";
 import { issueApiToken } from "@/lib/auth/issue-token";
 import type { TokenPolicyDecision } from "@/lib/auth/native-client";
 
@@ -191,6 +192,11 @@ export async function rotateRefreshToken(input: {
         where: { tokenHash: { in: accessHashes } },
         data: { revoked: true },
       });
+    }
+    // The person learns a device was signed out for a replayed token; fire
+    // and forget, so the refusal does not wait on the dispatcher.
+    if (compromised.length > 0) {
+      void sendSecurityAlert(row.userId, "refresh_reuse");
     }
     return { ok: false, reason: "already_used" };
   }

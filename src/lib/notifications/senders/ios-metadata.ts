@@ -33,6 +33,10 @@ const IOS_METADATA_ALLOWLIST = new Set([
   // foreground / handled notification can POST the completion directly
   // instead of routing through the capture deep link.
   "reminderId",
+  // SECURITY_ALERT: which change it reports (`new_device`, `passkey_added`,
+  // `passkey_removed`, `token_revoked`, `refresh_reuse`), so the app opens
+  // the account's security page. A closed set, no credential.
+  "securityKind",
 ]);
 
 export function pickIosMetadata(

@@ -9665,7 +9665,15 @@
     "security": {
       "newDeviceTitle": "계정에 새 로그인",
       "newDeviceBody": "{device} ({location})에서 새로 로그인했어요. 본인이 아니라면 비밀번호를 바로 변경하세요.",
-      "unknownLocation": "알 수 없는 장소"
+      "unknownLocation": "알 수 없는 장소",
+      "passkeyAddedTitle": "패스키 추가됨",
+      "passkeyAddedBody": "계정에 새 패스키가 추가되었어요. 본인이 아니라면 보안 설정에서 삭제하고 비밀번호를 변경하세요.",
+      "passkeyRemovedTitle": "패스키 삭제됨",
+      "passkeyRemovedBody": "계정에서 패스키가 삭제되었어요. 본인이 아니라면 비밀번호를 변경하고 기기를 확인하세요.",
+      "tokenRevokedTitle": "액세스 토큰 취소됨",
+      "tokenRevokedBody": "계정의 액세스 토큰이 취소되었어요. 본인이 아니라면 비밀번호를 변경하고 토큰을 확인하세요.",
+      "refreshReuseTitle": "기기가 로그아웃되었어요",
+      "refreshReuseBody": "로그인 토큰이 두 번 사용되어 해당 기기가 로그아웃되었어요. 그 기기에서 다시 로그인하세요. 계속 반복되면 비밀번호를 변경하세요."
     },
     "sharedRecordIntake": {
       "title": "{name} 님이 복용을 표시했어요",

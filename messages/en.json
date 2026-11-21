@@ -9665,7 +9665,15 @@
     "security": {
       "newDeviceTitle": "New sign-in to your account",
       "newDeviceBody": "A new sign-in from {device} ({location}). If this wasn't you, change your password immediately.",
-      "unknownLocation": "unknown location"
+      "unknownLocation": "unknown location",
+      "passkeyAddedTitle": "Passkey added",
+      "passkeyAddedBody": "A new passkey was added to your account. If this wasn't you, remove it in the security settings and change your password.",
+      "passkeyRemovedTitle": "Passkey removed",
+      "passkeyRemovedBody": "A passkey was removed from your account. If this wasn't you, change your password and review your devices.",
+      "tokenRevokedTitle": "Access token revoked",
+      "tokenRevokedBody": "An access token of your account was revoked. If this wasn't you, change your password and review your tokens.",
+      "refreshReuseTitle": "A device was signed out",
+      "refreshReuseBody": "A sign-in token was used twice, so its device was signed out. Sign in again there. If this keeps happening, change your password."
     },
     "sharedRecordIntake": {
       "title": "{name} marked a dose",

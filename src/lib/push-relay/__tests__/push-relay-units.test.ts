@@ -286,6 +286,32 @@ describe("what travels over the relay", () => {
       alertMessage({ ...base, eventType: "MEDICATION_LOW_STOCK" }).ui?.level,
     ).toBe("active");
   });
+
+  it("makes a security alert time-sensitive and keeps other urgent types active", () => {
+    const security = alertMessage({
+      ...base,
+      eventType: "SECURITY_ALERT",
+      metadata: { securityKind: "passkey_added" },
+    });
+    expect(security.ui?.level).toBe("time-sensitive");
+    expect(security.type).toBe("SECURITY_ALERT");
+    expect(security.data).toEqual({ securityKind: "passkey_added" });
+    expect(
+      alertMessage({ ...base, eventType: "SYSTEM_ALERT", urgent: true }).ui
+        ?.level,
+    ).toBe("time-sensitive");
+    // The receiver accepts time-sensitive only for the listed types.
+    expect(
+      alertMessage({ ...base, eventType: "SEIZURE_CLUSTER", urgent: true }).ui
+        ?.level,
+    ).toBe("active");
+    expect(
+      relayCarries(
+        { ...base, eventType: "SECURITY_ALERT" },
+        { medicationDelivery: null },
+      ),
+    ).toBe(true);
+  });
 });
 
 describe("relay configuration", () => {

@@ -32,6 +32,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
+vi.mock("@/lib/auth/security-alert", () => ({ sendSecurityAlert: vi.fn() }));
 
 vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn().mockResolvedValue(undefined),
@@ -40,6 +41,7 @@ vi.mock("@/lib/auth/audit", () => ({
 import { DELETE, PATCH } from "../route";
 import { requireAuth, requireMfaManagementAuth } from "@/lib/api-handler";
 import { prisma } from "@/lib/db";
+import { sendSecurityAlert } from "@/lib/auth/security-alert";
 
 const USER = { id: "user-1", username: "u" };
 /** The stored credential row; the session user carries no hash. */
@@ -237,6 +239,7 @@ describe("DELETE /api/auth/passkeys/{id} — the removal's gate", () => {
     expect(prisma.passkey.delete).toHaveBeenCalledWith({
       where: { id: "pk-1" },
     });
+    expect(sendSecurityAlert).toHaveBeenCalledWith(USER.id, "passkey_removed");
   });
 
   it("does not spend the proof on another account's passkey id", async () => {
