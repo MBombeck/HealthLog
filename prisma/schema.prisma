@@ -1012,6 +1012,7 @@ model User {
   // phase progress without round-tripping through pg-boss internals.
   importJobs                                ImportJob[]
   fhirImportedResources                     FhirImportedResource[]
+  healthConnectRemoteSource                 HealthConnectRemoteSource?
   medicationIntakeImportJobs                MedicationIntakeImportJob[]       @relation("MedicationIntakeImportRecord")
   // v1.5.0 — persistent measurement rollup table. Carries the
   // count/min/max/mean/sd/slope/r2 stats per (type, granularity,
@@ -11512,4 +11513,46 @@ model FhirImportedResource {
 
   @@unique([userId, resourceType, resourceKey])
   @@map("fhir_imported_resources")
+}
+
+/// The WebDAV or Nextcloud folder a person's scheduled Health Connect export
+/// lands in, which HealthLog fetches on its own (one per account). The
+/// fetched file goes through the same queue and importer as an upload
+/// (`src/lib/import/health-connect/queue-staged.ts`), so a file already
+/// imported, by hash, is never imported again. Read and written only by
+/// `src/lib/import/health-connect/remote-*.ts` and its settings route.
+model HealthConnectRemoteSource {
+  id                  String    @id @default(cuid())
+  userId              String    @unique @map("user_id")
+  /// The folder, `https://host/remote.php/dav/files/<user>/<folder>` on
+  /// Nextcloud. No credentials, query or fragment: those are refused on save.
+  folderUrl           String    @map("folder_url")
+  /// The export's file name inside the folder; Health Connect writes
+  /// `Health Connect.zip`.
+  fileName            String    @default("Health Connect.zip") @map("file_name")
+  /// The WebDAV user name and password (a Nextcloud app password), sealed
+  /// with the app's encryption key as one JSON value. Never returned.
+  credentialsEncrypted String   @map("credentials_encrypted")
+  enabled             Boolean   @default(true)
+  /// When the next fetch is due. Advanced by six hours after a fetch that
+  /// found nothing new or imported, and by a growing backoff after a failure.
+  nextAttemptAt       DateTime  @default(now()) @map("next_attempt_at")
+  lastAttemptAt       DateTime? @map("last_attempt_at")
+  /// The closed outcome of the last attempt (`imported`, `unchanged`,
+  /// `not_found`, `unauthorized`, `private_origin_not_approved`, …).
+  lastOutcome         String?   @map("last_outcome")
+  consecutiveFailures Int       @default(0) @map("consecutive_failures")
+  /// The ETag the server sent for the last file read, so an unchanged file is
+  /// not downloaded again.
+  lastEtag            String?   @map("last_etag")
+  /// SHA-256 of the last file handed to the importer.
+  lastFileSha256      String?   @map("last_file_sha256")
+  lastImportJobId     String?   @map("last_import_job_id")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([enabled, nextAttemptAt])
+  @@map("health_connect_remote_sources")
 }

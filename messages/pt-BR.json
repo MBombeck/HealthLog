@@ -6310,6 +6310,45 @@
               "timeBudget": "A importação parou no limite de tempo. Envie o mesmo arquivo de novo para continuar; nada é adicionado em dobro.",
               "stagingMissing": "O arquivo enviado não estava mais no servidor. Envie de novo."
             }
+          },
+          "healthConnectRemote": {
+            "outcome": {
+              "imported": "uma nova exportação foi entregue à importação",
+              "unchanged": "nada novo",
+              "busy": "outra importação estava em andamento, nova tentativa em breve",
+              "notFound": "o arquivo não está na pasta",
+              "unauthorized": "a pasta recusou o usuário ou a senha",
+              "redirected": "o servidor tentou redirecionar, e o HealthLog não segue",
+              "upstreamError": "o servidor respondeu com um erro",
+              "tooLarge": "o arquivo é maior que 1 GB",
+              "timeout": "o servidor demorou demais",
+              "network": "não foi possível contatar o servidor",
+              "privateOrigin": "este endereço está numa rede privada que o servidor não libera",
+              "invalidUrl": "o endereço da pasta não pode ser usado",
+              "noWorker": "o serviço em segundo plano não está rodando",
+              "unknown": "desconhecido"
+            },
+            "error": {
+              "privateOrigin": "Este endereço está numa rede privada. Quem administra o servidor precisa liberá-lo antes.",
+              "invalidUrl": "Informe o endereço completo da pasta, sem usuário ou senha dentro dele.",
+              "passwordRequired": "Informe a senha uma vez ao configurar a pasta.",
+              "saveFailed": "Não foi possível salvar a pasta. Confira o endereço e tente de novo.",
+              "fetchFailed": "Não foi possível iniciar a busca. Tente mais tarde."
+            },
+            "title": "Health Connect de uma pasta",
+            "description": "O HealthLog busca a exportação que o Health Connect salva de forma programada numa pasta WebDAV ou Nextcloud e importa o que for novo.",
+            "folderUrl": "Endereço da pasta (WebDAV)",
+            "fileName": "Nome do arquivo na pasta",
+            "username": "Usuário",
+            "password": "Senha ou senha de app",
+            "passwordKept": "Deixe vazio para manter a senha salva",
+            "enabled": "Buscar mais ou menos a cada seis horas",
+            "privacyNote": "A senha é guardada criptografada e nunca mais é mostrada. Cada arquivo é importado uma vez: um arquivo que o HealthLog já tem não é lido de novo. Uma pasta na rede de casa só funciona se quem administra o servidor liberar o endereço.",
+            "lastAttempt": "Última tentativa {when}: {outcome}",
+            "fetchNow": "Buscar agora",
+            "remove": "Remover pasta",
+            "removeTitle": "Remover esta pasta?",
+            "removeBody": "O HealthLog para de buscar nela e esquece a senha. O que já foi importado continua."
           }
         },
         "subtitle": "Exporte seus dados ou importe medições e registros de outros apps e arquivos."

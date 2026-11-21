@@ -92,6 +92,9 @@ export const integrationKeys = {
   /** The account's latest activity FIT file import, like Health Connect's. */
   fitImportStatus: () => ["import", "fit", "status"] as const,
 
+  /** The WebDAV or Nextcloud folder the Health Connect export is fetched from. */
+  healthConnectRemote: () => ["import", "health-connect", "remote"] as const,
+
   /**
    * The account's latest Gadgetbridge or FHIR Bundle import, one key per
    * kind: the two status routes answer different jobs.

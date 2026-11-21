@@ -6310,6 +6310,45 @@
               "timeBudget": "L'import s'est arrêté à sa limite de temps. Téléversez à nouveau le même fichier pour continuer ; rien n'est ajouté en double.",
               "stagingMissing": "Le fichier téléversé n'était plus sur le serveur. Téléversez-le à nouveau."
             }
+          },
+          "healthConnectRemote": {
+            "outcome": {
+              "imported": "un nouvel export a été transmis à l'import",
+              "unchanged": "rien de nouveau",
+              "busy": "un autre import était en cours, nouvel essai bientôt",
+              "notFound": "le fichier n'est pas dans le dossier",
+              "unauthorized": "le dossier a refusé le nom d'utilisateur ou le mot de passe",
+              "redirected": "le serveur a voulu rediriger, ce que HealthLog ne suit pas",
+              "upstreamError": "le serveur a répondu par une erreur",
+              "tooLarge": "le fichier dépasse 1 Go",
+              "timeout": "le serveur a mis trop de temps",
+              "network": "le serveur n'a pas pu être joint",
+              "privateOrigin": "cette adresse est sur un réseau privé que le serveur n'autorise pas",
+              "invalidUrl": "l'adresse du dossier n'est pas utilisable",
+              "noWorker": "le service d'arrière-plan ne tourne pas",
+              "unknown": "inconnu"
+            },
+            "error": {
+              "privateOrigin": "Cette adresse est sur un réseau privé. La personne qui gère le serveur doit d'abord l'autoriser.",
+              "invalidUrl": "Saisissez l'adresse complète du dossier, sans nom d'utilisateur ni mot de passe dedans.",
+              "passwordRequired": "Saisissez le mot de passe une fois lors de la configuration du dossier.",
+              "saveFailed": "Le dossier n'a pas pu être enregistré. Vérifiez l'adresse et réessayez.",
+              "fetchFailed": "La récupération n'a pas pu être lancée. Réessayez plus tard."
+            },
+            "title": "Health Connect depuis un dossier",
+            "description": "HealthLog récupère l'export que Health Connect enregistre selon un calendrier dans un dossier WebDAV ou Nextcloud, et importe ce qui est nouveau.",
+            "folderUrl": "Adresse du dossier (WebDAV)",
+            "fileName": "Nom du fichier dans le dossier",
+            "username": "Nom d'utilisateur",
+            "password": "Mot de passe ou mot de passe d'application",
+            "passwordKept": "Laisser vide pour garder le mot de passe enregistré",
+            "enabled": "Récupérer environ toutes les six heures",
+            "privacyNote": "Le mot de passe est stocké chiffré et n'est plus jamais affiché. Chaque fichier est importé une fois : un fichier que HealthLog a déjà n'est pas lu deux fois. Un dossier sur votre réseau domestique ne fonctionne que si la personne qui gère le serveur autorise son adresse.",
+            "lastAttempt": "Dernière tentative {when} : {outcome}",
+            "fetchNow": "Récupérer maintenant",
+            "remove": "Retirer le dossier",
+            "removeTitle": "Retirer ce dossier ?",
+            "removeBody": "HealthLog cesse d'y récupérer quoi que ce soit et oublie le mot de passe. Ce qui a déjà été importé reste."
           }
         },
         "subtitle": "Exportez vos données, ou importez des mesures et des entrées depuis d’autres applis et fichiers."

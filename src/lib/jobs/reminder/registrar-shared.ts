@@ -311,6 +311,7 @@ export const SCHEDULED_AND_SENT_QUEUES: ReadonlySet<string> = new Set([
   "free-text-encryption-backfill",
   "garmin-sync",
   "geolite2-fetch",
+  "health-connect-remote-fetch",
   "insight-pregenerate",
   "intake-slot-dedup",
   "measurement-maintenance",

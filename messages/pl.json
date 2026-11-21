@@ -6310,6 +6310,45 @@
               "timeBudget": "Import zatrzymał się na limicie czasu. Prześlij ten sam plik ponownie, aby kontynuować; nic nie zostanie dodane podwójnie.",
               "stagingMissing": "Przesłanego pliku nie było już na serwerze. Prześlij go ponownie."
             }
+          },
+          "healthConnectRemote": {
+            "outcome": {
+              "imported": "nowy eksport przekazano do importu",
+              "unchanged": "nic nowego",
+              "busy": "trwał inny import, wkrótce kolejna próba",
+              "notFound": "pliku nie ma w folderze",
+              "unauthorized": "folder odrzucił nazwę użytkownika lub hasło",
+              "redirected": "serwer próbował przekierować, czego HealthLog nie robi",
+              "upstreamError": "serwer odpowiedział błędem",
+              "tooLarge": "plik jest większy niż 1 GB",
+              "timeout": "serwer odpowiadał zbyt długo",
+              "network": "nie udało się połączyć z serwerem",
+              "privateOrigin": "ten adres jest w sieci prywatnej, na którą serwer nie zezwala",
+              "invalidUrl": "adres folderu jest nieprawidłowy",
+              "noWorker": "usługa w tle nie działa",
+              "unknown": "nieznane"
+            },
+            "error": {
+              "privateOrigin": "Ten adres jest w sieci prywatnej. Osoba zarządzająca serwerem musi najpierw na niego zezwolić.",
+              "invalidUrl": "Wpisz pełny adres folderu, bez nazwy użytkownika ani hasła w środku.",
+              "passwordRequired": "Wpisz hasło raz przy konfiguracji folderu.",
+              "saveFailed": "Nie udało się zapisać folderu. Sprawdź adres i spróbuj ponownie.",
+              "fetchFailed": "Nie udało się rozpocząć pobierania. Spróbuj później."
+            },
+            "title": "Health Connect z folderu",
+            "description": "HealthLog pobiera eksport, który Health Connect zapisuje według harmonogramu w folderze WebDAV lub Nextcloud, i importuje to, co nowe.",
+            "folderUrl": "Adres folderu (WebDAV)",
+            "fileName": "Nazwa pliku w folderze",
+            "username": "Nazwa użytkownika",
+            "password": "Hasło lub hasło aplikacji",
+            "passwordKept": "Zostaw puste, aby zachować zapisane hasło",
+            "enabled": "Pobieraj mniej więcej co sześć godzin",
+            "privacyNote": "Hasło jest zapisywane w postaci zaszyfrowanej i nigdy więcej nie jest pokazywane. Każdy plik jest importowany raz: pliku, który HealthLog już ma, nie czyta ponownie. Folder w sieci domowej działa tylko wtedy, gdy osoba zarządzająca serwerem zezwoli na jego adres.",
+            "lastAttempt": "Ostatnia próba {when}: {outcome}",
+            "fetchNow": "Pobierz teraz",
+            "remove": "Usuń folder",
+            "removeTitle": "Usunąć ten folder?",
+            "removeBody": "HealthLog przestanie z niego pobierać i zapomni hasło. To, co już zaimportowano, zostaje."
           }
         },
         "subtitle": "Eksportuj swoje dane albo importuj pomiary i wpisy z innych aplikacji i plików."

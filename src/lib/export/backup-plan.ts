@@ -793,6 +793,8 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "Further import source keys that were answered with an already stored document because the bytes matched. The next import run writes the same alias again the moment it meets the same bytes, so a restore loses nothing a re-run does not rebuild. A deleted document's aliases travel as import-ledger entries (`DocumentImportKey`), which is what they mean once the document is gone.",
   ImportJob:
     "A job record pointing at an uploaded file that the backup does not carry, so restoring it would resurrect a task with nothing to work on.",
+  HealthConnectRemoteSource:
+    "A sealed WebDAV credential to another system, and a fetch schedule of this host. Restored elsewhere the credential would start reading a folder on a host the person never set up; they enter it again.",
   FhirImportedResource:
     "The FHIR Bundle import's ledger of which resource became which row, by row id. A restore writes those rows under new ids, so a carried ledger would point at nothing; the conditions, vaccinations, medications and visits themselves travel. After a restore, importing the same Bundle again writes those four kinds once more (lab results and vital signs keep their identity on their own rows and stay deduplicated).",
   HealthKitTypeSync:
@@ -829,19 +831,4 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "Feedback on generated recommendations that are themselves DERIVED. Restoring the feedback without the item it judged leaves an orphan.",
 };
 
-/**
- * Tables created with raw SQL at runtime rather than declared in the schema.
- * Every check above walks `schema.prisma`, so a table outside it is invisible
- * to all of them — which is how the medication category went missing from
- * every backup until v1.39.4. The guard beside this file finds each
- * `CREATE TABLE IF NOT EXISTS` in the source and demands a verdict here, or a
- * schema model mapped to the same name.
- *
- * Empty since v1.40: the one such table, `medication_categories`, is the
- * `MedicationCategoryAssignment` model now and judged with the others.
- */
-export const RAW_SQL_TABLES: Readonly<
-  Record<string, { verdict: "BACKED_UP" | "NOT_IN_BACKUP"; reason: string }>
-> = {};
-
-export { AUTH_MODELS_OUT_OF_SCOPE } from "./backup-auth-models";
+export { AUTH_MODELS_OUT_OF_SCOPE, RAW_SQL_TABLES } from "./backup-auth-models";

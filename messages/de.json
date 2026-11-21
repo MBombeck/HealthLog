@@ -6310,6 +6310,45 @@
               "timeBudget": "Der Import hat an seiner Zeitgrenze angehalten. Lade dieselbe Datei noch einmal hoch, um fortzufahren; nichts kommt doppelt hinzu.",
               "stagingMissing": "Die hochgeladene Datei war nicht mehr auf dem Server. Bitte noch einmal hochladen."
             }
+          },
+          "healthConnectRemote": {
+            "outcome": {
+              "imported": "ein neuer Export wurde an den Import übergeben",
+              "unchanged": "nichts Neues",
+              "busy": "ein anderer Import lief, neuer Versuch bald",
+              "notFound": "die Datei liegt nicht im Ordner",
+              "unauthorized": "der Ordner hat Benutzername oder Passwort abgelehnt",
+              "redirected": "der Server wollte umleiten, dem folgt HealthLog nicht",
+              "upstreamError": "der Server hat mit einem Fehler geantwortet",
+              "tooLarge": "die Datei ist größer als 1 GB",
+              "timeout": "der Server hat zu lange gebraucht",
+              "network": "der Server war nicht erreichbar",
+              "privateOrigin": "diese Adresse liegt in einem privaten Netz, das der Server nicht freigibt",
+              "invalidUrl": "die Ordneradresse ist nicht verwendbar",
+              "noWorker": "der Hintergrunddienst läuft nicht",
+              "unknown": "unbekannt"
+            },
+            "error": {
+              "privateOrigin": "Diese Adresse liegt in einem privaten Netz. Wer den Server betreibt, muss sie erst freigeben.",
+              "invalidUrl": "Gib die vollständige Adresse des Ordners ein, ohne Benutzername oder Passwort darin.",
+              "passwordRequired": "Gib das Passwort beim Einrichten des Ordners einmal ein.",
+              "saveFailed": "Der Ordner konnte nicht gespeichert werden. Prüfe die Adresse und versuche es noch einmal.",
+              "fetchFailed": "Das Abholen konnte nicht gestartet werden. Versuche es später noch einmal."
+            },
+            "title": "Health Connect aus einem Ordner",
+            "description": "HealthLog holt den Export, den Health Connect nach Zeitplan speichert, aus einem WebDAV- oder Nextcloud-Ordner und übernimmt, was neu ist.",
+            "folderUrl": "Ordneradresse (WebDAV)",
+            "fileName": "Dateiname im Ordner",
+            "username": "Benutzername",
+            "password": "Passwort oder App-Passwort",
+            "passwordKept": "Leer lassen, um das gespeicherte Passwort zu behalten",
+            "enabled": "Etwa alle sechs Stunden abholen",
+            "privacyNote": "Das Passwort wird verschlüsselt gespeichert und nie wieder angezeigt. Jede Datei wird einmal übernommen: Eine Datei, die HealthLog schon hat, wird nicht doppelt gelesen. Ein Ordner im Heimnetz funktioniert nur, wenn wer den Server betreibt seine Adresse freigibt.",
+            "lastAttempt": "Letzter Versuch {when}: {outcome}",
+            "fetchNow": "Jetzt abholen",
+            "remove": "Ordner entfernen",
+            "removeTitle": "Diesen Ordner entfernen?",
+            "removeBody": "HealthLog holt nichts mehr von dort und vergisst das Passwort. Was schon übernommen wurde, bleibt."
           }
         },
         "subtitle": "Exportiere deine Daten oder importiere Messwerte und Einträge aus anderen Apps und Dateien."

@@ -6310,6 +6310,45 @@
               "timeBudget": "L'importazione si è fermata al suo limite di tempo. Carica di nuovo lo stesso file per continuare; nulla viene aggiunto due volte.",
               "stagingMissing": "Il file caricato non era più sul server. Caricalo di nuovo."
             }
+          },
+          "healthConnectRemote": {
+            "outcome": {
+              "imported": "una nuova esportazione è stata passata all'importazione",
+              "unchanged": "niente di nuovo",
+              "busy": "era in corso un'altra importazione, nuovo tentativo a breve",
+              "notFound": "il file non è nella cartella",
+              "unauthorized": "la cartella ha rifiutato nome utente o password",
+              "redirected": "il server voleva reindirizzare, HealthLog non lo segue",
+              "upstreamError": "il server ha risposto con un errore",
+              "tooLarge": "il file supera 1 GB",
+              "timeout": "il server ha impiegato troppo",
+              "network": "il server non è raggiungibile",
+              "privateOrigin": "questo indirizzo è in una rete privata che il server non consente",
+              "invalidUrl": "l'indirizzo della cartella non è utilizzabile",
+              "noWorker": "il servizio in background non è attivo",
+              "unknown": "sconosciuto"
+            },
+            "error": {
+              "privateOrigin": "Questo indirizzo è in una rete privata. Chi gestisce il server deve prima consentirlo.",
+              "invalidUrl": "Inserisci l'indirizzo completo della cartella, senza nome utente o password al suo interno.",
+              "passwordRequired": "Inserisci la password una volta quando configuri la cartella.",
+              "saveFailed": "Non è stato possibile salvare la cartella. Controlla l'indirizzo e riprova.",
+              "fetchFailed": "Non è stato possibile avviare il prelievo. Riprova più tardi."
+            },
+            "title": "Health Connect da una cartella",
+            "description": "HealthLog preleva l'esportazione che Health Connect salva a orari programmati in una cartella WebDAV o Nextcloud e importa ciò che è nuovo.",
+            "folderUrl": "Indirizzo della cartella (WebDAV)",
+            "fileName": "Nome del file nella cartella",
+            "username": "Nome utente",
+            "password": "Password o password per app",
+            "passwordKept": "Lascia vuoto per mantenere la password salvata",
+            "enabled": "Preleva circa ogni sei ore",
+            "privacyNote": "La password viene salvata cifrata e non viene più mostrata. Ogni file viene importato una volta: un file che HealthLog ha già non viene letto due volte. Una cartella sulla rete di casa funziona solo se chi gestisce il server ne consente l'indirizzo.",
+            "lastAttempt": "Ultimo tentativo {when}: {outcome}",
+            "fetchNow": "Preleva ora",
+            "remove": "Rimuovi cartella",
+            "removeTitle": "Rimuovere questa cartella?",
+            "removeBody": "HealthLog smette di prelevare da lì e dimentica la password. Ciò che è già stato importato resta."
           }
         },
         "subtitle": "Esporta i tuoi dati o importa misurazioni e voci da altre app e file."

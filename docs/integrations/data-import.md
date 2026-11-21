@@ -23,6 +23,8 @@ HealthLog has these ways to bring data in, all reachable from
 7. A **patient record as a FHIR R4 Bundle** — lab results, vital signs,
    conditions, vaccinations, medications and visits from a patient portal.
    See [`fhir-bundle-import.md`](./fhir-bundle-import.md).
+8. A **Health Connect export**, uploaded or fetched on a schedule from a
+   WebDAV or Nextcloud folder. See [`health-connect.md`](./health-connect.md).
 
 All paths skip rows that already exist, so re-running an import is
 safe — it merges rather than duplicating.

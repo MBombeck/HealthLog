@@ -6310,6 +6310,45 @@
               "timeBudget": "The import stopped at its time limit. Upload the same file again to continue; nothing is added twice.",
               "stagingMissing": "The uploaded file was no longer on the server. Upload it again."
             }
+          },
+          "healthConnectRemote": {
+            "outcome": {
+              "imported": "a new export was handed to the import",
+              "unchanged": "nothing new",
+              "busy": "another import was running, trying again soon",
+              "notFound": "the file was not found in the folder",
+              "unauthorized": "the folder refused the user name or password",
+              "redirected": "the server tried to redirect, which HealthLog does not follow",
+              "upstreamError": "the server answered with an error",
+              "tooLarge": "the file is larger than 1 GB",
+              "timeout": "the server took too long",
+              "network": "the server could not be reached",
+              "privateOrigin": "this address is on a private network the server does not allow",
+              "invalidUrl": "the folder address is not usable",
+              "noWorker": "the background worker is not running",
+              "unknown": "unknown"
+            },
+            "error": {
+              "privateOrigin": "This address is on a private network. The person running the server has to allow it first.",
+              "invalidUrl": "Enter the folder's full address without a user name or password in it.",
+              "passwordRequired": "Enter the password once when setting up the folder.",
+              "saveFailed": "The folder could not be saved. Check the address and try again.",
+              "fetchFailed": "The fetch could not be started. Try again later."
+            },
+            "title": "Health Connect from a folder",
+            "description": "Let HealthLog fetch the export Health Connect saves on a schedule, from a WebDAV or Nextcloud folder, and import what is new.",
+            "folderUrl": "Folder address (WebDAV)",
+            "fileName": "File name in the folder",
+            "username": "User name",
+            "password": "Password or app password",
+            "passwordKept": "Leave empty to keep the saved password",
+            "enabled": "Fetch about every six hours",
+            "privacyNote": "The password is stored encrypted and never shown again. Each file is imported once: a file HealthLog already has is not read twice. A folder on your home network works only when the person running the server allows its address.",
+            "lastAttempt": "Last attempt {when}: {outcome}",
+            "fetchNow": "Fetch now",
+            "remove": "Remove folder",
+            "removeTitle": "Remove this folder?",
+            "removeBody": "HealthLog stops fetching from it and forgets the password. What was already imported stays."
           }
         },
         "subtitle": "Export your data, or import measurements and records from other apps and files."

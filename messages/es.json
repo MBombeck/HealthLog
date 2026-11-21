@@ -6310,6 +6310,45 @@
               "timeBudget": "La importación se detuvo en su límite de tiempo. Sube el mismo archivo otra vez para continuar; nada se añade dos veces.",
               "stagingMissing": "El archivo subido ya no estaba en el servidor. Súbelo de nuevo."
             }
+          },
+          "healthConnectRemote": {
+            "outcome": {
+              "imported": "se entregó una exportación nueva a la importación",
+              "unchanged": "nada nuevo",
+              "busy": "había otra importación en curso, se reintentará pronto",
+              "notFound": "el archivo no está en la carpeta",
+              "unauthorized": "la carpeta rechazó el usuario o la contraseña",
+              "redirected": "el servidor intentó redirigir y HealthLog no lo sigue",
+              "upstreamError": "el servidor respondió con un error",
+              "tooLarge": "el archivo supera 1 GB",
+              "timeout": "el servidor tardó demasiado",
+              "network": "no se pudo contactar con el servidor",
+              "privateOrigin": "esta dirección está en una red privada que el servidor no permite",
+              "invalidUrl": "la dirección de la carpeta no es válida",
+              "noWorker": "el servicio en segundo plano no está en marcha",
+              "unknown": "desconocido"
+            },
+            "error": {
+              "privateOrigin": "Esta dirección está en una red privada. Quien administra el servidor tiene que permitirla primero.",
+              "invalidUrl": "Escribe la dirección completa de la carpeta, sin usuario ni contraseña dentro.",
+              "passwordRequired": "Escribe la contraseña una vez al configurar la carpeta.",
+              "saveFailed": "No se pudo guardar la carpeta. Revisa la dirección e inténtalo de nuevo.",
+              "fetchFailed": "No se pudo iniciar la recogida. Inténtalo más tarde."
+            },
+            "title": "Health Connect desde una carpeta",
+            "description": "HealthLog recoge la exportación que Health Connect guarda de forma programada en una carpeta WebDAV o Nextcloud e importa lo nuevo.",
+            "folderUrl": "Dirección de la carpeta (WebDAV)",
+            "fileName": "Nombre del archivo en la carpeta",
+            "username": "Usuario",
+            "password": "Contraseña o contraseña de aplicación",
+            "passwordKept": "Déjalo vacío para conservar la contraseña guardada",
+            "enabled": "Recoger aproximadamente cada seis horas",
+            "privacyNote": "La contraseña se guarda cifrada y no se vuelve a mostrar. Cada archivo se importa una vez: un archivo que HealthLog ya tiene no se lee dos veces. Una carpeta en tu red doméstica solo funciona si quien administra el servidor permite su dirección.",
+            "lastAttempt": "Último intento {when}: {outcome}",
+            "fetchNow": "Recoger ahora",
+            "remove": "Quitar carpeta",
+            "removeTitle": "¿Quitar esta carpeta?",
+            "removeBody": "HealthLog deja de recoger de ella y olvida la contraseña. Lo que ya se importó se queda."
           }
         },
         "subtitle": "Exporta tus datos o importa mediciones y registros de otras apps y archivos."

@@ -13,6 +13,11 @@ import {
   RECORD_FILE_IMPORT_QUEUE,
 } from "@/lib/jobs/record-file-import-queue";
 
+import {
+  HEALTH_CONNECT_REMOTE_FETCH_CRON,
+  HEALTH_CONNECT_REMOTE_FETCH_QUEUE,
+} from "@/lib/jobs/health-connect-remote-queue";
+
 import { defineJob, type JobDefinition } from "./define-job";
 
 export const MAINTENANCE_FILE_IMPORT_JOBS: readonly JobDefinition[] = [
@@ -30,5 +35,15 @@ export const MAINTENANCE_FILE_IMPORT_JOBS: readonly JobDefinition[] = [
     load: async () =>
       (await import("@/lib/jobs/record-file-import-worker"))
         .handleRecordFileImport,
+  }),
+  // The scheduled Health Connect export, fetched from a WebDAV or Nextcloud
+  // folder; each pass reads only the folders that are due.
+  defineJob({
+    queue: HEALTH_CONNECT_REMOTE_FETCH_QUEUE,
+    cron: HEALTH_CONNECT_REMOTE_FETCH_CRON,
+    work: { localConcurrency: 1 },
+    load: async () =>
+      (await import("@/lib/jobs/health-connect-remote-worker"))
+        .handleHealthConnectRemoteFetch,
   }),
 ];

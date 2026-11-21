@@ -216,6 +216,9 @@ export const WIPE_MODELS = [
   // wipe empties the rows it points at, so it goes with them: a later import
   // of the same Bundle writes the records again, as into a fresh account.
   "FhirImportedResource",
+  // The folder the Health Connect export is fetched from, with its sealed
+  // WebDAV credentials: a working credential to another system.
+  "HealthConnectRemoteSource",
   // v1.42 (#1173) — when each HealthKit type last arrived. Diagnostic, but a
   // record of what the account's phone sent and when.
   "HealthKitTypeSync",

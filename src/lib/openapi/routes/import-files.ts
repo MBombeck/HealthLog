@@ -8,6 +8,8 @@
 import type { ZodOpenApiObject } from "zod-openapi";
 import { z } from "zod/v4";
 
+import { healthConnectRemoteSchema } from "@/lib/validations/health-connect-remote";
+
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
 
 const recordFileImportResult = z
@@ -197,3 +199,132 @@ export const importFilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
     "FhirBundleImportStatusEnvelope",
   ),
 };
+
+const healthConnectRemoteState = z
+  .object({
+    source: z
+      .object({
+        folderUrl: z.string(),
+        fileName: z.string(),
+        enabled: z.boolean(),
+        lastAttemptAt: z.string().nullable(),
+        lastOutcome: z
+          .string()
+          .nullable()
+          .describe(
+            "The closed outcome of the last attempt: `imported`, `unchanged`, `busy`, `not_found`, `unauthorized`, `redirected`, `upstream_error`, `too_large`, `timeout`, `network`, `private_origin_not_approved`, `invalid_origin`, `no_worker`.",
+          ),
+        nextAttemptAt: z.string(),
+        consecutiveFailures: z.number().int(),
+        lastImportJobId: z.string().nullable(),
+      })
+      .nullable(),
+  })
+  .meta({ id: "HealthConnectRemoteState" });
+
+const remoteRefusal = {
+  description:
+    "The folder cannot be used: `import.health_connect.remote.invalid_url` (not a URL, or one with credentials, a query or a fragment), `import.health_connect.remote.private_origin_not_approved` (a private address not listed in `HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS`), `import.health_connect.remote.origin_config_invalid`, or `import.health_connect.remote.password_required` on a first save without a password.",
+  content: { "application/json": { schema: errorEnvelope } },
+};
+
+export const healthConnectRemotePaths: NonNullable<ZodOpenApiObject["paths"]> =
+  {
+    "/api/import/health-connect-remote": {
+      get: {
+        tags: ["Import"],
+        summary: "The folder a scheduled Health Connect export is fetched from",
+        description:
+          "The account's WebDAV or Nextcloud folder and its last attempt, or `source: null`. The credentials are never returned. Owner-only.",
+        responses: {
+          "200": {
+            description: "The folder, or null.",
+            content: {
+              "application/json": {
+                schema: dataEnvelope(
+                  healthConnectRemoteState,
+                  "HealthConnectRemoteEnvelope",
+                ),
+              },
+            },
+          },
+          ...stdResponses,
+        },
+      },
+      put: {
+        tags: ["Import"],
+        summary:
+          "Save the folder a scheduled Health Connect export is fetched from",
+        description:
+          "Saves the folder (`folderUrl`, a WebDAV address such as Nextcloud's `remote.php/dav/files/<user>/<folder>`), the export's `fileName` in it (default `Health Connect.zip`), the WebDAV `username` and, on the first save or to change it, the `password` (sealed at rest, never returned). HealthLog then fetches the file about every six hours, through `safeFetch` with no redirects followed, and hands a file it has not seen (by SHA-256) to the Health Connect import queue, the same importer an upload uses. A failure backs off from thirty minutes to a day. A private address needs its exact origin in `HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS`. Ten saves an hour.",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": { schema: healthConnectRemoteSchema },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Saved; the folder as it now reads.",
+            content: {
+              "application/json": {
+                schema: dataEnvelope(
+                  healthConnectRemoteState,
+                  "HealthConnectRemoteSavedEnvelope",
+                ),
+              },
+            },
+          },
+          ...stdResponses,
+          "422": remoteRefusal,
+        },
+      },
+      delete: {
+        tags: ["Import"],
+        summary: "Forget the Health Connect folder",
+        description:
+          "Deletes the folder and its sealed credentials. Imports already made stay.",
+        responses: {
+          "200": {
+            description: "Whether a folder was removed.",
+            content: {
+              "application/json": {
+                schema: dataEnvelope(
+                  z.object({ deleted: z.boolean() }),
+                  "HealthConnectRemoteDeletedEnvelope",
+                ),
+              },
+            },
+          },
+          ...stdResponses,
+        },
+      },
+    },
+    "/api/import/health-connect-remote/fetch": {
+      post: {
+        tags: ["Import"],
+        summary: "Fetch the Health Connect folder now",
+        description:
+          "Marks the folder due and sends one job to the scheduled fetch's queue; the download never runs in the request. Follow the outcome on `GET /api/import/health-connect-remote` and the import on `GET /api/import/health-connect-export/status`. Six an hour.",
+        responses: {
+          "202": {
+            description: "Queued.",
+            content: {
+              "application/json": {
+                schema: dataEnvelope(
+                  z.object({ queued: z.boolean() }),
+                  "HealthConnectRemoteFetchEnvelope",
+                ),
+              },
+            },
+          },
+          "404": {
+            description:
+              "No folder is set up (`import.health_connect.remote.not_configured`).",
+            content: { "application/json": { schema: errorEnvelope } },
+          },
+          ...stdResponses,
+        },
+      },
+    },
+  };

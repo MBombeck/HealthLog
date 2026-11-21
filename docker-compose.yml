@@ -272,6 +272,10 @@ x-healthlog-env: &healthlog_env
   # "http://dawarich.lan:3000"). Without it a LAN/private Dawarich URL is
   # refused as an SSRF target; a public instance needs nothing here.
   DAWARICH_PRIVATE_ORIGINS: "${DAWARICH_PRIVATE_ORIGINS:-}"
+  # WebDAV / Nextcloud servers on your own network that the scheduled Health
+  # Connect fetch may reach, comma-separated exact origins (e.g.
+  # "https://cloud.lan"); a public server needs nothing here.
+  HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS: "${HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS:-}"
   # Webhook (Gotify, Home Assistant, n8n) and ntfy targets on your own
   # network, comma-separated exact origins (e.g. "https://gotify.example.com,
   # http://ntfy.lan:8080"). Without it a target that resolves to a private

@@ -15,30 +15,18 @@
  * the file.
  */
 import type { NextRequest } from "next/server";
-import { unlink } from "node:fs/promises";
-
-import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { emitSignal } from "@/lib/logging/signal";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { getGlobalBoss } from "@/lib/jobs/boss-instance";
-import {
-  HEALTH_CONNECT_IMPORT_KIND,
-  HEALTH_CONNECT_IMPORT_PARSER_REVISION,
-  HEALTH_CONNECT_IMPORT_SEND_OPTIONS,
-  type HealthConnectImportPayload,
-} from "@/lib/jobs/health-connect-import-worker";
-import { HEALTH_CONNECT_IMPORT_QUEUE } from "@/lib/jobs/health-connect-import-queue";
 import { streamMultipartToDisk } from "@/lib/multipart/stream-to-disk";
 import {
-  createImportJobUnlessBusy,
-  discardStagedUpload,
   IMPORT_BUSY_CODE,
   IMPORT_BUSY_MESSAGE,
 } from "@/lib/import/apple-health-staging";
+import { queueStagedHealthConnectImport } from "@/lib/import/health-connect/queue-staged";
 
 export const dynamic = "force-dynamic";
 
@@ -103,90 +91,46 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError(`Multipart upload failed: ${message}`, 422);
   }
 
-  const existing = await prisma.importJob.findFirst({
-    where: {
-      userId: user.id,
-      kind: HEALTH_CONNECT_IMPORT_KIND,
-      uploadSha256: uploaded.sha256,
-      parserRevision: HEALTH_CONNECT_IMPORT_PARSER_REVISION,
-      status: { not: "failed" },
-    },
-    orderBy: { startedAt: "desc" },
-  });
-  if (existing) {
-    await unlink(uploaded.filePath).catch(() => {});
-    annotate({ meta: { idempotent_hit: true, job_id: existing.id } });
-    return apiSuccess(
-      { jobId: existing.id, status: existing.status, idempotent: true },
-      202,
-    );
-  }
-
-  const boss = getGlobalBoss();
-  if (!boss) {
-    emitSignal({
-      action: "import.health-connect.kickoff.denied",
-      level: "warn",
-      meta: { reason: "worker_not_running" },
-    });
-    await discardStagedUpload(uploaded.filePath);
-    throw new HttpError(503, "Background worker is not running");
-  }
-
-  const staged = await createImportJobUnlessBusy(prisma, {
+  const queued = await queueStagedHealthConnectImport({
     userId: user.id,
-    kind: HEALTH_CONNECT_IMPORT_KIND,
-    status: "queued",
-    uploadBytes: uploaded.bytes,
-    uploadSha256: uploaded.sha256,
-    parserRevision: HEALTH_CONNECT_IMPORT_PARSER_REVISION,
+    filePath: uploaded.filePath,
+    bytes: uploaded.bytes,
+    sha256: uploaded.sha256,
   });
-  if ("busy" in staged) {
-    await discardStagedUpload(uploaded.filePath);
-    return apiError(IMPORT_BUSY_MESSAGE, 409, {
-      errorCode: IMPORT_BUSY_CODE,
-      jobId: staged.busy.id,
-    });
+  switch (queued.outcome) {
+    case "idempotent":
+      annotate({ meta: { idempotent_hit: true, job_id: queued.jobId } });
+      return apiSuccess(
+        { jobId: queued.jobId, status: queued.status, idempotent: true },
+        202,
+      );
+    case "no_worker":
+      emitSignal({
+        action: "import.health-connect.kickoff.denied",
+        level: "warn",
+        meta: { reason: "worker_not_running" },
+      });
+      throw new HttpError(503, "Background worker is not running");
+    case "busy":
+      return apiError(IMPORT_BUSY_MESSAGE, 409, {
+        errorCode: IMPORT_BUSY_CODE,
+        jobId: queued.jobId,
+      });
+    case "not_queued":
+      throw new HttpError(503, "The import could not be queued");
+    case "queued":
+      break;
   }
-  const importJob = staged.created;
-
-  const payload: HealthConnectImportPayload = {
-    userId: user.id,
-    importJobId: importJob.id,
-    uploadPath: uploaded.filePath,
-  };
-  const bossJobId = await boss.send(
-    HEALTH_CONNECT_IMPORT_QUEUE,
-    payload,
-    HEALTH_CONNECT_IMPORT_SEND_OPTIONS,
-  );
-  if (!bossJobId) {
-    await prisma.importJob.update({
-      where: { id: importJob.id },
-      data: {
-        status: "failed",
-        failureReason:
-          "The import could not be queued. Upload the export again.",
-        completedAt: new Date(),
-      },
-    });
-    await discardStagedUpload(uploaded.filePath);
-    throw new HttpError(503, "The import could not be queued");
-  }
-  await prisma.importJob.update({
-    where: { id: importJob.id },
-    data: { pgBossJobId: bossJobId },
-  });
 
   await auditLog("import.health-connect.kickoff", {
     userId: user.id,
     ipAddress: getClientIp(request),
     details: {
-      jobId: importJob.id,
+      jobId: queued.jobId,
       uploadBytes: uploaded.bytes,
       uploadSha256: uploaded.sha256,
     },
   });
 
-  return apiSuccess({ jobId: importJob.id, status: "queued" as const }, 202);
+  return apiSuccess({ jobId: queued.jobId, status: "queued" as const }, 202);
 });

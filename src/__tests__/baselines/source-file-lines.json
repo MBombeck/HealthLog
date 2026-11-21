@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 78,
-  "total": 84394,
+  "total": 84381,
   "entries": {
     "app/medications/page-client.tsx": 842,
     "components/cycle/log-day-sheet.tsx": 1646,
@@ -39,7 +39,7 @@
     "lib/dashboard-layout.ts": 981,
     "lib/dashboard/snapshot.ts": 1481,
     "lib/day/records.ts": 1173,
-    "lib/export/backup-plan.ts": 847,
+    "lib/export/backup-plan.ts": 834,
     "lib/export/coach-backup.ts": 1070,
     "lib/export/profile-backup.ts": 1019,
     "lib/gamification/achievements-result.ts": 1094,
