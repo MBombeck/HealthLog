@@ -410,9 +410,21 @@ describe("medication-intake-status parity walk", { shuffle: false }, () => {
     });
 
     it("20 a delegate who marks an open dose, a snooze, a correction, a reader and nobody", async () => {
+      // Taken now, the evening dose binds to the morning slot, which already
+      // holds a take: refused, and nothing changes.
       await post(
         "20a-writer-take",
         { intakeId: ev.todayEvening, status: "taken" },
+        { ...writer },
+      );
+      // Taken inside its own window, the missed dose keeps its slot.
+      await post(
+        "20a-writer-take-own-slot",
+        {
+          intakeId: ev.missed,
+          status: "taken",
+          takenAt: "2026-10-15T06:30:00.000Z",
+        },
         { ...writer },
       );
       await post(

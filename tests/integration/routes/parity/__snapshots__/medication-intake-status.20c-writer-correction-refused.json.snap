@@ -146,7 +146,7 @@
         "active": true,
         "notificationsEnabled": true,
         "pausedAt": null,
-        "snoozedUntil": null,
+        "snoozedUntil": "2026-10-15T12:30:00.000Z",
         "startsOn": "2026-10-01T00:00:00.000Z",
         "endsOn": null,
         "endedAt": null,
@@ -550,18 +550,18 @@
         "userId": "<id:2>",
         "medicationId": "<id:4>",
         "scheduledFor": "2026-10-15T06:00:00.000Z",
-        "takenAt": null,
+        "takenAt": "2026-10-15T06:30:00.000Z",
         "skipped": false,
-        "autoMissed": true,
+        "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
-        "takenVia": null,
+        "takenVia": "WEB",
         "source": "REMINDER",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
         "injectionSite": null,
         "doseTaken": null,
-        "inventoryConsumption": null,
+        "inventoryConsumption": [],
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
@@ -680,7 +680,7 @@
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
-        "deletedAt": "<now>"
+        "deletedAt": null
       }
     ],
     "doseChanges": [],
@@ -714,7 +714,7 @@
         "userId": "<id:2>",
         "actorUserId": "<id:30>",
         "details": {
-          "intakeId": "<id:29>",
+          "intakeId": "<id:24>",
           "status": "taken"
         },
         "ipAddress": null

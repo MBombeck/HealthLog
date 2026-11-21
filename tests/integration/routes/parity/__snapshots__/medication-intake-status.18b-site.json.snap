@@ -17,7 +17,7 @@
       "createdAt": "<createdAt>",
       "injectionSite": "ABDOMEN_LEFT",
       "doseTaken": null,
-      "inventoryConsumption": null,
+      "inventoryConsumption": [],
       "externalId": null,
       "updatedAt": "<updatedAt>",
       "syncVersion": "<syncVersion>",

@@ -52,7 +52,7 @@
             "slotInstant": "2026-10-12T08:00:00.000Z",
             "outcome": "skipped",
             "takenAt": null,
-            "takenVia": "WEB"
+            "takenVia": null
           }
         }
       ]
