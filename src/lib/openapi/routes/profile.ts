@@ -699,6 +699,15 @@ const profileUpdateResponse = z
 // ever surfaced. `managedBy` reports the resolved provider origin: `user`
 // (BYOK), `local` (self-hosted Ollama/LM Studio), `server` (operator's
 // shared key), or null when no provider can serve the caller.
+const coachBudgetView = z
+  .object({
+    snapshotChars: z.number().int().optional(),
+    turnTokens: z.number().int().optional(),
+    maxRounds: z.number().int().optional(),
+    turnSeconds: z.number().int().optional(),
+  })
+  .nullable();
+
 const aiProviderResponse = z
   .object({
     provider: z
@@ -780,6 +789,12 @@ const aiProviderResponse = z
     ),
     compatReasoningEffort: reasoningEffortSchema.describe(
       "#1126 — the same for the OpenAI-compatible gateway entry.",
+    ),
+    localCoachBudget: coachBudgetView.describe(
+      "The Coach budget of the Local provider as a turn applies it (clamped to its bounds): snapshot characters, tokens, rounds and seconds. A field left out runs on the built-in value; null when none is set.",
+    ),
+    compatCoachBudget: coachBudgetView.describe(
+      "The same for the OpenAI-compatible gateway.",
     ),
     // v1.38.19 — the setup flow's last screen used to promise
     // that insights "work for you right away" as soon as `managedBy` read

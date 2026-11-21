@@ -73,6 +73,7 @@ export const accountSettingsBackupSchema = z
     activityGoalsJson: z.unknown().optional(),
     nutrientTargetsJson: z.unknown().optional(),
     reportSelectionJson: z.unknown().optional(),
+    reportScheduleJson: z.unknown().optional(),
     globalExcludedInjectionSites: z.array(z.string()).optional(),
     healthKitConfigJson: z.unknown().optional(),
     notificationPrefs: z.unknown().optional(),

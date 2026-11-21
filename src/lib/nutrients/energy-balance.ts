@@ -253,3 +253,46 @@ export async function readEnergyBalance(args: {
     },
   });
 }
+
+/**
+ * The balance of a record, with the profile read here: the route, the
+ * correlation scan and the Coach snapshot all read the same inputs, so none
+ * of them can estimate resting energy from a different profile.
+ */
+export async function readEnergyBalanceForUser(args: {
+  userId: string;
+  tz: string;
+  days: number;
+}): Promise<EnergyBalance> {
+  const profile = await prisma.user.findUnique({
+    where: { id: args.userId },
+    select: {
+      gender: true,
+      heightCm: true,
+      dateOfBirth: true,
+      sourcePriorityJson: true,
+    },
+  });
+  return readEnergyBalance({
+    userId: args.userId,
+    tz: args.tz,
+    days: args.days,
+    gender: profile?.gender ?? null,
+    heightCm: profile?.heightCm ?? null,
+    dateOfBirth: profile?.dateOfBirth ?? null,
+    sourcePriorityJson: profile?.sourcePriorityJson ?? null,
+  });
+}
+
+/**
+ * The finished days that hold a balance, oldest first: the daily series the
+ * correlation scan pairs. A day missing an input stays out rather than
+ * entering as zero, and today stays out because it is still running.
+ */
+export function completeBalanceDays(
+  balance: EnergyBalance,
+): Array<{ day: string; value: number }> {
+  return balance.days
+    .filter((d) => !d.partial && d.balanceKcal !== null)
+    .map((d) => ({ day: d.day, value: d.balanceKcal as number }));
+}

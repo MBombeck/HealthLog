@@ -2,6 +2,13 @@ import { isIP } from "node:net";
 import { NextResponse } from "next/server";
 import type { ZodError, ZodIssue } from "zod/v4";
 
+import {
+  issueBounds,
+  unrecognisedKeys,
+  unrecognisedKeysMessage,
+  type SanitisedZodIssue,
+} from "@/lib/api/zod-issue-fields";
+
 import { defaultErrorCodeForStatus } from "@/lib/api/default-error-codes";
 import {
   peerAddressStampInstalled,
@@ -31,70 +38,7 @@ export function apiSuccessWithMeta<T>(
   return NextResponse.json({ data, error: null, meta }, { status });
 }
 
-/**
- * Sanitised view of a single Zod issue. We surface `path`, `code`,
- * `message` and — for `unrecognized_keys` only — the bounded `keys`
- * list; `issue.params` may echo the offending user input
- * (e.g. a too-long string, a regex source) and we do not want that
- * round-tripped to mobile callers or persisted into the audit ledger.
- */
-export interface SanitisedZodIssue {
-  path: string;
-  code: string;
-  message: string;
-  /**
-   * Only set for `unrecognized_keys`: the rejected key names, sanitised
-   * and bounded by {@link sanitiseKeyName}. A key name is structure, not
-   * content, so naming it is what makes the rejection actionable — the
-   * caller learns which field it got wrong instead of only that the body
-   * had a field too many. It survives `stripValuesFromMessage` for the
-   * same reason: it carries no user-typed value.
-   */
-  keys?: string[];
-}
-
-/** Cap on how many rejected key names one issue reports. */
-const MAX_REPORTED_KEYS = 10;
-/** Cap on the length of a single reported key name. */
-const MAX_KEY_NAME_LENGTH = 64;
-
-/**
- * A key name arrives straight from the request body, so it is caller-
- * controlled and unbounded: a client can post a 100 KB key, or one
- * carrying markup, and Zod's own `unrecognized_keys` message echoes it
- * verbatim. That message reaches the client, the wide event and — at the
- * `stripValuesFromMessage` call sites — the audit ledger, so it is bounded
- * and character-restricted here rather than at each of those boundaries.
- * Anything outside `[A-Za-z0-9_.-]` collapses to `_`, which keeps a typo
- * like `measuredAtt` perfectly readable while leaving nothing that could
- * be mistaken for markup or a control sequence downstream.
- */
-function sanitiseKeyName(key: string): string {
-  return key.slice(0, MAX_KEY_NAME_LENGTH).replace(/[^A-Za-z0-9_.-]/g, "_");
-}
-
-/**
- * Zod reports every unknown key of one object in a single issue whose
- * `path` is the object itself, so the offending keys live in `issue.keys`
- * and nowhere in `path`. Without this the sanitised issue read
- * `{ path: "", code: "unrecognized_keys" }` and named nothing at all.
- */
-function unrecognisedKeys(issue: ZodIssue): string[] | undefined {
-  if (issue.code !== "unrecognized_keys") return undefined;
-  return issue.keys.slice(0, MAX_REPORTED_KEYS).map(sanitiseKeyName);
-}
-
-/**
- * Rebuilt from the sanitised key names rather than passed through from
- * Zod, so the wording stays the one callers already parse while the
- * unbounded verbatim echo does not ship.
- */
-function unrecognisedKeysMessage(keys: string[]): string {
-  const rendered = keys.map((key) => `"${key}"`).join(", ");
-  return keys.length === 1
-    ? `Unrecognized key: ${rendered}`
-    : `Unrecognized keys: ${rendered}`;
-}
+export type { SanitisedZodIssue } from "@/lib/api/zod-issue-fields";
 
 /**
  * Variant used when the issues land in an audit-ledger row whose
@@ -165,6 +109,7 @@ export function sanitiseZodIssues(
         path: issue.path.join("."),
         code: issue.code,
         ...(keys ? { keys } : {}),
+        ...issueBounds(issue),
       };
     });
   }
@@ -175,6 +120,7 @@ export function sanitiseZodIssues(
       code: issue.code,
       message: keys ? unrecognisedKeysMessage(keys) : issue.message,
       ...(keys ? { keys } : {}),
+      ...issueBounds(issue),
     };
   });
 }

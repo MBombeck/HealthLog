@@ -2902,6 +2902,7 @@
         "HRV_RMSSD": "variabilidade da frequência cardíaca (RMSSD)",
         "HYDRATION": "ingestão de água",
         "CAFFEINE": "ingestão de cafeína",
+        "ENERGY_BALANCE": "balanço energético diário",
         "ALCOHOL": "consumo de álcool",
         "WORKOUT_MINUTES": "minutos de treino",
         "TRAINING_LOAD": "carga de treino",
@@ -12576,6 +12577,7 @@
       "importedFromWithId": "Importado de {system}, ID {id}",
       "openInSource": "Abrir no {system}",
       "sourceOther": "outro sistema",
+      "sourceReportSchedule": "seu agendamento de relatórios",
       "share": "Compartilhar",
       "labValuesLink": "Ver {count} valores laboratoriais",
       "visitsLabel": "Pertence à consulta",
@@ -15331,6 +15333,41 @@
       "visitWith": "Consulta: {name}",
       "checkupDue": "Vence: {label}",
       "boosterDue": "Reforço a vencer: {label}"
+    }
+  },
+  "reportSchedule": {
+    "title": "Relatório médico agendado",
+    "description": "Guarda o relatório médico nos seus documentos sozinho quando um mês, trimestre ou ano termina.",
+    "loadError": "Não foi possível carregar o agendamento do relatório.",
+    "saveError": "Não foi possível salvar o agendamento do relatório. Tente de novo.",
+    "cadenceLabel": "Com que frequência",
+    "windowLabel": "O que cada relatório abrange",
+    "cadence": {
+      "MONTHLY": "Todo mês",
+      "QUARTERLY": "Todo trimestre",
+      "YEARLY": "Todo ano"
+    },
+    "window": {
+      "PERIOD": "O período encerrado",
+      "LAST_90_DAYS": "Os últimos 90 dias",
+      "LAST_365_DAYS": "Os últimos 12 meses"
+    },
+    "usesSelection": "Cada relatório contém o que você selecionou acima para a exportação. Mude a seleção lá e o próximo relatório a segue. Nenhuma notificação é enviada: o relatório simplesmente está lá.",
+    "turnOn": "Ativar",
+    "turnOff": "Desativar",
+    "turnOffTitle": "Desativar o relatório agendado?",
+    "turnOffBody": "Nenhum relatório novo será guardado. Os que já estão nos seus documentos ficam lá.",
+    "due": "Próximo relatório: {period}, guardado em até uma hora depois do vencimento.",
+    "upToDate": "Em dia. O próximo relatório vem quando o período atual terminar.",
+    "documentTitle": "Relatório médico {period}",
+    "outcome": {
+      "stored": "O relatório de {period} está nos seus documentos.",
+      "alreadyFiled": "O relatório de {period} já estava nos seus documentos.",
+      "deletedByOwner": "O relatório de {period} foi excluído, então não é guardado de novo.",
+      "quotaExceeded": "O relatório de {period} não coube no seu espaço de documentos. O próximo período tenta de novo.",
+      "tooLarge": "O relatório de {period} era maior do que um documento pode ser aqui. O próximo período tenta de novo.",
+      "noSelection": "Nada está selecionado para a exportação acima, então nenhum relatório foi guardado. Escolha o que ele deve conter e ele será guardado na próxima execução.",
+      "failed": "Não foi possível guardar o relatório de {period}. Nova tentativa em até uma hora."
     }
   }
 }

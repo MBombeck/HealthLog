@@ -2902,6 +2902,7 @@
         "HRV_RMSSD": "zmienność rytmu serca (RMSSD)",
         "HYDRATION": "spożycie wody",
         "CAFFEINE": "spożycie kofeiny",
+        "ENERGY_BALANCE": "dzienny bilans energetyczny",
         "ALCOHOL": "spożycie alkoholu",
         "WORKOUT_MINUTES": "minuty treningu",
         "TRAINING_LOAD": "obciążenie treningowe",
@@ -12576,6 +12577,7 @@
       "importedFromWithId": "Zaimportowano z: {system}, ID {id}",
       "openInSource": "Otwórz w: {system}",
       "sourceOther": "inny system",
+      "sourceReportSchedule": "harmonogramu raportów",
       "share": "Udostępnij",
       "labValuesLink": "Zobacz {count} wyników laboratoryjnych",
       "visitsLabel": "Należy do wizyty",
@@ -15331,6 +15333,41 @@
       "visitWith": "Wizyta: {name}",
       "checkupDue": "Termin: {label}",
       "boosterDue": "Dawka przypominająca: {label}"
+    }
+  },
+  "reportSchedule": {
+    "title": "Zaplanowany raport dla lekarza",
+    "description": "Sam zapisuje raport dla lekarza w dokumentach, gdy skończy się miesiąc, kwartał lub rok.",
+    "loadError": "Nie udało się wczytać harmonogramu raportu.",
+    "saveError": "Nie udało się zapisać harmonogramu raportu. Spróbuj ponownie.",
+    "cadenceLabel": "Jak często",
+    "windowLabel": "Co obejmuje każdy raport",
+    "cadence": {
+      "MONTHLY": "Co miesiąc",
+      "QUARTERLY": "Co kwartał",
+      "YEARLY": "Co rok"
+    },
+    "window": {
+      "PERIOD": "Zakończony okres",
+      "LAST_90_DAYS": "Ostatnie 90 dni",
+      "LAST_365_DAYS": "Ostatnie 12 miesięcy"
+    },
+    "usesSelection": "Każdy raport zawiera to, co wybrano powyżej do eksportu. Zmień tam wybór, a następny raport się do niego dostosuje. Nie jest wysyłane żadne powiadomienie: raport po prostu tam jest.",
+    "turnOn": "Włącz",
+    "turnOff": "Wyłącz",
+    "turnOffTitle": "Wyłączyć zaplanowany raport?",
+    "turnOffBody": "Nowe raporty nie będą zapisywane. Raporty, które już są w dokumentach, zostają.",
+    "due": "Następny raport: {period}, zapisany w ciągu godziny od terminu.",
+    "upToDate": "Aktualne. Następny raport pojawi się po zakończeniu bieżącego okresu.",
+    "documentTitle": "Raport dla lekarza {period}",
+    "outcome": {
+      "stored": "Raport za {period} jest w twoich dokumentach.",
+      "alreadyFiled": "Raport za {period} był już w twoich dokumentach.",
+      "deletedByOwner": "Raport za {period} został usunięty, więc nie jest zapisywany ponownie.",
+      "quotaExceeded": "Raport za {period} nie zmieścił się w miejscu na dokumenty. Następny okres spróbuje ponownie.",
+      "tooLarge": "Raport za {period} był większy niż dopuszczalny rozmiar dokumentu. Następny okres spróbuje ponownie.",
+      "noSelection": "Powyżej nic nie wybrano do eksportu, więc raport nie został zapisany. Wybierz jego zawartość, a zostanie zapisany przy następnym przebiegu.",
+      "failed": "Nie udało się zapisać raportu za {period}. Kolejna próba w ciągu godziny."
     }
   }
 }

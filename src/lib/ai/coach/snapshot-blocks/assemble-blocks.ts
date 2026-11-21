@@ -160,6 +160,7 @@ export async function assembleSnapshotBlocks(
     illnessBlock: reads.illnessBlock,
     labsBlock: reads.labsBlock,
     visitsBlock: reads.visitsBlock,
+    energyBalanceBlock: reads.energyBalanceBlock,
     snapshot,
     registerBlock,
   });

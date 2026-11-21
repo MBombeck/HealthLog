@@ -16,10 +16,9 @@ import { NextRequest } from "next/server";
 
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { apiSuccess, returnAllZodIssues } from "@/lib/api-response";
-import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { requireModuleEnabled } from "@/lib/modules/gate";
-import { readEnergyBalance } from "@/lib/nutrients/energy-balance";
+import { readEnergyBalanceForUser } from "@/lib/nutrients/energy-balance";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { energyBalanceQuerySchema } from "@/lib/validations/nutrients";
 
@@ -40,18 +39,10 @@ export const GET = apiHandler(async (request: NextRequest) => {
     });
   }
 
-  const profile = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { heightCm: true, dateOfBirth: true, sourcePriorityJson: true },
-  });
-  const balance = await readEnergyBalance({
+  const balance = await readEnergyBalanceForUser({
     userId: user.id,
     tz: user.timezone || DEFAULT_TIMEZONE,
     days: parsed.data.days,
-    gender: user.gender,
-    heightCm: profile?.heightCm ?? null,
-    dateOfBirth: profile?.dateOfBirth ?? null,
-    sourcePriorityJson: profile?.sourcePriorityJson ?? null,
   });
 
   annotate({

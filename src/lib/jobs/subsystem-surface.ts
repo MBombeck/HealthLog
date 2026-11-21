@@ -64,6 +64,7 @@ const subsystemSurface = {
   "coach-reminder-sweep": { audience: "system" },
   "coach-plan-review": { audience: "system" },
   "medication-low-stock": { audience: "system" },
+  "report-schedule": { audience: "system" },
   "daily-briefing": { audience: "system" },
   "system-job-alert": { audience: "system" },
 

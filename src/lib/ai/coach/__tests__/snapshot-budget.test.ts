@@ -81,6 +81,20 @@ vi.mock("@/lib/logging/context", () => ({
   getEvent: () => null,
 }));
 
+// The energy-balance line is compact by construction; it rides the budget
+// like any other registered block.
+vi.mock("../energy-balance-snapshot", () => ({
+  buildEnergyBalanceSnapshotBlock: vi.fn().mockResolvedValue({
+    windowDays: 14,
+    daysWithBalance: 12,
+    meanIntakeKcal: 2100,
+    meanExpenditureKcal: 2300,
+    meanBalanceKcal: -200,
+    restingEstimatedDays: 0,
+    basis: "recorded intake minus resting and active energy",
+  }),
+}));
+
 vi.mock("./glp1-snapshot", () => ({
   buildGlp1SnapshotBlock: vi.fn().mockResolvedValue(null),
 }));
@@ -468,5 +482,32 @@ describe("buildCoachSnapshot — budgeting + progressive degradation", () => {
     expect(
       annotateCalls.find((c) => c.name === "coach.snapshot.truncated"),
     ).toBeUndefined();
+  });
+
+  it("carries the energy-balance line only while active energy is in scope", async () => {
+    const { buildEnergyBalanceSnapshotBlock } =
+      await import("../energy-balance-snapshot");
+    const build = vi.mocked(buildEnergyBalanceSnapshotBlock);
+    build.mockClear();
+    const withEnergy = await buildCoachSnapshot("user-1", {
+      sources: ["weight", "active_energy"],
+      window: "last30days",
+    });
+    expect(
+      (JSON.parse(withEnergy.snapshotJson) as Record<string, unknown>)
+        .energyBalance,
+    ).toMatchObject({ meanBalanceKcal: -200 });
+    expect(build).toHaveBeenCalledTimes(1);
+
+    build.mockClear();
+    const without = await buildCoachSnapshot("user-1", {
+      sources: ["weight"],
+      window: "last30days",
+    });
+    expect(
+      (JSON.parse(without.snapshotJson) as Record<string, unknown>)
+        .energyBalance,
+    ).toBeUndefined();
+    expect(build).not.toHaveBeenCalled();
   });
 });

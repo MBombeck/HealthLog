@@ -2902,6 +2902,7 @@
         "HRV_RMSSD": "die Herzratenvariabilität (RMSSD)",
         "HYDRATION": "die Trinkmenge",
         "CAFFEINE": "die Koffeinmenge",
+        "ENERGY_BALANCE": "die tägliche Energiebilanz",
         "ALCOHOL": "der Alkoholkonsum",
         "WORKOUT_MINUTES": "die Workout-Dauer",
         "TRAINING_LOAD": "die Trainingslast",
@@ -12576,6 +12577,7 @@
       "importedFromWithId": "Importiert aus {system}, ID {id}",
       "openInSource": "In {system} öffnen",
       "sourceOther": "einem anderen System",
+      "sourceReportSchedule": "dem Berichtsplan",
       "share": "Teilen",
       "labValuesLink": "{count} Laborwerte ansehen",
       "visitsLabel": "Gehört zu Termin",
@@ -15331,6 +15333,41 @@
       "visitWith": "Termin: {name}",
       "checkupDue": "Fällig: {label}",
       "boosterDue": "Auffrischung fällig: {label}"
+    }
+  },
+  "reportSchedule": {
+    "title": "Geplanter Arztbericht",
+    "description": "Legt den Arztbericht von selbst in deinen Dokumenten ab, sobald ein Monat, Quartal oder Jahr vorbei ist.",
+    "loadError": "Der Berichtsplan konnte nicht geladen werden.",
+    "saveError": "Der Berichtsplan konnte nicht gespeichert werden. Bitte versuch es noch einmal.",
+    "cadenceLabel": "Wie oft",
+    "windowLabel": "Was jeder Bericht umfasst",
+    "cadence": {
+      "MONTHLY": "Jeden Monat",
+      "QUARTERLY": "Jedes Quartal",
+      "YEARLY": "Jedes Jahr"
+    },
+    "window": {
+      "PERIOD": "Den abgelaufenen Zeitraum",
+      "LAST_90_DAYS": "Die letzten 90 Tage",
+      "LAST_365_DAYS": "Die letzten 12 Monate"
+    },
+    "usesSelection": "Jeder Bericht enthält, was du oben für den Export ausgewählt hast. Änderst du die Auswahl dort, folgt ihr der nächste Bericht. Es gibt keine Benachrichtigung: Der Bericht ist einfach da.",
+    "turnOn": "Einschalten",
+    "turnOff": "Ausschalten",
+    "turnOffTitle": "Geplanten Bericht ausschalten?",
+    "turnOffBody": "Es werden keine neuen Berichte abgelegt. Die Berichte, die schon in deinen Dokumenten sind, bleiben dort.",
+    "due": "Nächster Bericht: {period}, abgelegt innerhalb einer Stunde, nachdem er fällig ist.",
+    "upToDate": "Auf dem neuesten Stand. Der nächste Bericht folgt, wenn der laufende Zeitraum endet.",
+    "documentTitle": "Arztbericht {period}",
+    "outcome": {
+      "stored": "Der Bericht für {period} liegt in deinen Dokumenten.",
+      "alreadyFiled": "Der Bericht für {period} lag schon in deinen Dokumenten.",
+      "deletedByOwner": "Der Bericht für {period} wurde gelöscht und wird nicht noch einmal abgelegt.",
+      "quotaExceeded": "Der Bericht für {period} passte nicht mehr in deinen Dokumentenspeicher. Der nächste Zeitraum versucht es wieder.",
+      "tooLarge": "Der Bericht für {period} war größer, als ein Dokument hier sein darf. Der nächste Zeitraum versucht es wieder.",
+      "noSelection": "Oben ist für den Export nichts ausgewählt, deshalb wurde kein Bericht abgelegt. Wähle aus, was er enthalten soll, dann folgt er beim nächsten Lauf.",
+      "failed": "Der Bericht für {period} konnte nicht abgelegt werden. Innerhalb einer Stunde wird es erneut versucht."
     }
   }
 }

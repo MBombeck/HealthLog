@@ -48,6 +48,7 @@ import * as healthScore from "@/app/api/auth/me/health-score-config/route";
 import * as sourcePriority from "@/app/api/auth/me/source-priority/route";
 import * as notificationPrefs from "@/app/api/auth/me/notification-prefs/route";
 import * as reportSelection from "@/app/api/auth/me/report-selection/route";
+import * as reportSchedule from "@/app/api/settings/report-schedule/route";
 import * as coachPrefs from "@/app/api/auth/me/coach-prefs/route";
 import { PUT as putAiUsage } from "@/app/api/auth/me/ai-usage/route";
 import { POST as dismissPasskeyNudge } from "@/app/api/auth/me/passkey-nudge/dismiss/route";
@@ -580,6 +581,21 @@ function entries(user: Pick<User, "id">): Entry[] {
       me: { pick: (me) => at(me, "reportSelection.leaves") },
     },
     {
+      columns: ["reportScheduleJson"],
+      write: {
+        handler: reportSchedule.PUT,
+        method: "PUT",
+        route: "/api/settings/report-schedule",
+        body: { cadence: "QUARTERLY", window: "LAST_365_DAYS" },
+      },
+      read: get(
+        reportSchedule.GET,
+        "/api/settings/report-schedule",
+        "schedule.cadence",
+      ),
+      expected: "QUARTERLY",
+    },
+    {
       columns: ["coachPrefsJson", "insightsExcludeMetrics"],
       write: {
         handler: coachPrefs.PUT,
@@ -657,6 +673,21 @@ function entries(user: Pick<User, "id">): Entry[] {
         }),
       },
       me: { pick: (me) => at(me, "avatarUrl") },
+    },
+    {
+      columns: ["aiCoachBudgets"],
+      write: {
+        handler: aiProvider.PATCH,
+        method: "PATCH",
+        route: "/api/user/ai-provider",
+        body: { localCoachBudget: { snapshotChars: 6000 } },
+      },
+      read: get(
+        aiProvider.GET,
+        "/api/user/ai-provider",
+        "localCoachBudget.snapshotChars",
+      ),
+      expected: 6000,
     },
     // #1417 — Local's model is its own: saved from the Local card first, it
     // survives the OpenAI card being saved after it.

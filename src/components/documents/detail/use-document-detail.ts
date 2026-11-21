@@ -30,6 +30,7 @@ import type {
 } from "@/lib/validations/inbound-documents";
 
 import { DOCUMENT_KIND_ICONS } from "../document-kind-meta";
+import { documentSourceName } from "../document-source-name";
 import { rendersInline, usePdfViewerEnabled } from "./original-file";
 
 export type PatchInput = {
@@ -188,14 +189,8 @@ export function useDocumentDetail({
   };
 
   const title = doc?.title ?? doc?.filename ?? t("documents.card.untitled");
-  // The product names are proper nouns and stay untranslated; only "another
-  // system" is prose.
   const sourceSystemName = (system: DocumentSourceSystemValue): string =>
-    system === "PAPERLESS"
-      ? "Paperless-ngx"
-      : system === "PAPRA"
-        ? "Papra"
-        : t("documents.detail.sourceOther");
+    documentSourceName(system, t);
   const Icon = doc ? DOCUMENT_KIND_ICONS[doc.kind] : null;
   // The ONE eager fetch of the original, and only for a document
   // that is going to render it.

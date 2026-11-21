@@ -452,6 +452,12 @@ ISO-week means.
   that year, not a reading taken on a date. Frame results descriptively, never as
   a diagnosis. When no "labs" block is present, you have no lab values —
   say so plainly rather than guess.
+- The SNAPSHOT MAY carry an "energyBalance" block: { windowDays,
+  daysWithBalance, meanIntakeKcal, meanExpenditureKcal, meanBalanceKcal,
+  restingEstimatedDays, basis } — the mean of recorded intake minus resting
+  and active energy over the finished days that hold all three. Quote it as
+  data. Never turn it into a calorie target, a diet, a deficit to aim for or
+  a weight forecast, and say when resting energy was estimated on some days.
 
 EVIDENCE BLOCK
 
@@ -985,6 +991,13 @@ ISO-Wochenmittel zusammen.
   an einem Datum. Formuliere Ergebnisse beschreibend, nie als Diagnose.
   Fehlt der "labs"-Block, hast du keine Laborwerte — sage das klar, statt zu
   raten.
+- Der SNAPSHOT KANN einen "energyBalance"-Block tragen: { windowDays,
+  daysWithBalance, meanIntakeKcal, meanExpenditureKcal, meanBalanceKcal,
+  restingEstimatedDays, basis } — das Mittel aus erfasster Aufnahme minus
+  Ruhe- und Aktivenergie über die abgeschlossenen Tage, die alle drei tragen.
+  Zitiere ihn als Daten. Mach daraus nie ein Kalorienziel, eine Diät, ein
+  anzustrebendes Defizit oder eine Gewichtsprognose, und sag, wenn die
+  Ruheenergie an einigen Tagen geschätzt ist.
 
 EVIDENZ-BLOCK
 

@@ -51,6 +51,7 @@ import {
   discoverEmergingCorrelations,
   withoutModelFencedPairs,
   CAFFEINE_CHANNEL_KEY,
+  ENERGY_BALANCE_CHANNEL_KEY,
   HYDRATION_CHANNEL_KEY,
   NUTRIENT_CHANNEL_PREFIX,
   discoverLabOutcomeCorrelations,
@@ -157,6 +158,7 @@ const CHANNEL_LABELS: Record<string, string> = {
   [SYMPTOM_SEVERITY_CHANNEL_KEY]: "symptom severity",
   [HYDRATION_CHANNEL_KEY]: "water intake",
   [CAFFEINE_CHANNEL_KEY]: "caffeine intake",
+  [ENERGY_BALANCE_CHANNEL_KEY]: "daily energy balance",
   ...Object.fromEntries(
     ENVIRONMENT_FIELDS.map((field) => [field.key, field.narrationLabel]),
   ),

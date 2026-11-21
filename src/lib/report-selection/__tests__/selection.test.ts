@@ -97,3 +97,29 @@ describe("report selection", () => {
     }
   });
 });
+
+describe("selectionFromSavedProfile", () => {
+  it("reads the leaves of the profile the export writes", async () => {
+    const { selectionFromSavedProfile } =
+      await import("@/lib/report-selection/saved-profile");
+    // The exact shape `POST /api/export/health-record` stores.
+    const written = {
+      v: 2,
+      leaves: ["WEIGHT", "PULSE", "NOT_A_LEAF"],
+      format: "pdf",
+      rangeDays: 90,
+      includeCharts: true,
+    };
+    expect(selectionFromSavedProfile(written).leaves).toEqual([
+      "PULSE",
+      "WEIGHT",
+    ]);
+    // A bare selection still reads; anything else is empty.
+    expect(
+      selectionFromSavedProfile({ v: 2, leaves: ["WEIGHT"] }).leaves,
+    ).toEqual(["WEIGHT"]);
+    expect(selectionFromSavedProfile({ sections: ["vitals"] }).leaves).toEqual(
+      [],
+    );
+  });
+});

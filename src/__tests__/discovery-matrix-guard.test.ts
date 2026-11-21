@@ -136,7 +136,9 @@ describe("T2 — only the declared builders construct a discovery channel", () =
    *  - `cycle/phase-crosstab.ts`, which builds a DELIBERATELY separate,
    *    cycle-gated matrix (CYCLE_PHASE × outcomes). That one must never reach
    *    the non-gated surfaces, which is the opposite requirement to this
-   *    file's, and is why it is listed rather than merged.
+   *    file's, and is why it is listed rather than merged;
+   *  - `energy-balance-channel.ts`, which shapes the ENERGY_BALANCE channel
+   *    from the energy-balance read and is folded by the assembler.
    */
   const CONSTRUCTION_ALLOWLIST = [
     ASSEMBLER,
@@ -144,6 +146,7 @@ describe("T2 — only the declared builders construct a discovery channel", () =
     "lib/insights/correlation-series-builders.ts",
     "lib/insights/correlation-discovery.ts",
     "lib/cycle/phase-crosstab.ts",
+    "lib/insights/energy-balance-channel.ts",
   ].sort();
 
   it("no file outside the allowlist constructs a NamedSeries", () => {

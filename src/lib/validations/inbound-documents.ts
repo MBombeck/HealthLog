@@ -37,6 +37,10 @@ import {
 } from "@/lib/documents/inbound-constants";
 import type { AiCapabilityState } from "@/lib/ai/capabilities/types";
 import { OCR_MAX_ROWS } from "@/lib/validations/labs-ocr";
+import {
+  DOCUMENT_UPLOAD_SOURCE_SYSTEMS,
+  type DocumentSourceSystemValue,
+} from "@/lib/validations/document-source-systems";
 import type {
   DocumentEncounterLinkDto,
   DocumentVaccinationLinkDto,
@@ -594,24 +598,13 @@ const vaccinationIdList = z
  * becoming a second trip. No `userId` field; it is always narrowed from the
  * session.
  */
-/**
- * v1.39.2 (#1038) — the systems an imported document can say it came from.
- * Closed on purpose: the detail sheet names each one, and a free string here
- * would be a label the person never chose rendered as if HealthLog vouched for
- * it. OTHER covers any importer that is neither.
- */
-export const DOCUMENT_SOURCE_SYSTEMS = ["PAPERLESS", "PAPRA", "OTHER"] as const;
-export type DocumentSourceSystemValue =
-  (typeof DOCUMENT_SOURCE_SYSTEMS)[number];
-
-/** Narrow a stored `sourceSystem` string to the closed set (null otherwise). */
-export function toDocumentSourceSystem(
-  value: string | null | undefined,
-): DocumentSourceSystemValue | null {
-  return (DOCUMENT_SOURCE_SYSTEMS as readonly string[]).includes(value ?? "")
-    ? (value as DocumentSourceSystemValue)
-    : null;
-}
+// The source-system vocabulary lives in `./document-source-systems`.
+export {
+  DOCUMENT_SOURCE_SYSTEMS,
+  DOCUMENT_UPLOAD_SOURCE_SYSTEMS,
+  toDocumentSourceSystem,
+  type DocumentSourceSystemValue,
+} from "@/lib/validations/document-source-systems";
 
 /** Max length of an imported document's id in its source system. */
 export const DOCUMENT_SOURCE_ID_MAX = 128;
@@ -666,7 +659,7 @@ export const documentSourceInstanceSchema = z
  * the body, and the lookup route's query. Both halves required.
  */
 export const documentSourceKeySchema = z.object({
-  sourceSystem: z.enum(DOCUMENT_SOURCE_SYSTEMS),
+  sourceSystem: z.enum(DOCUMENT_UPLOAD_SOURCE_SYSTEMS),
   sourceId: documentSourceIdSchema,
   /** Optional: without it the key matches any instance of the system. */
   sourceInstance: documentSourceInstanceSchema.optional(),
@@ -680,11 +673,8 @@ export const documentCreateSchema = z
     episodeIds: episodeIdList.optional(),
     encounterIds: encounterIdList.optional(),
     /** Where an imported document came from (provenance, shown on detail). */
-    sourceSystem: z.enum(DOCUMENT_SOURCE_SYSTEMS).optional(),
-    /**
-     * The document's id in `sourceSystem`. Printable ASCII only: it is a key,
-     * not prose, and it is echoed on the detail sheet.
-     */
+    sourceSystem: z.enum(DOCUMENT_UPLOAD_SOURCE_SYSTEMS).optional(),
+    /** The document's id in `sourceSystem` (see `documentSourceIdSchema`). */
     sourceId: documentSourceIdSchema.optional(),
     /**
      * v1.39.3 — which instance of `sourceSystem` (its origin). Optional; a

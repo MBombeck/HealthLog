@@ -608,6 +608,10 @@ const ACCOUNT_SETTING_CODECS = {
   activityGoalsJson: activityGoals,
   nutrientTargetsJson: nutrientTargets,
   reportSelectionJson: json("reportSelectionJson"),
+  // The report schedule travels with its stamps, so a restored record does
+  // not file a period it already filed; the vault's source key keeps a
+  // second copy out where the stamp is older than the documents.
+  reportScheduleJson: json("reportScheduleJson"),
   globalExcludedInjectionSites: excludedSites,
   healthKitConfigJson: json("healthKitConfigJson"),
   // Reminders and notifications, as preferences rather than channels.

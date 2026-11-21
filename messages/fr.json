@@ -2902,6 +2902,7 @@
         "HRV_RMSSD": "la variabilité de la fréquence cardiaque (RMSSD)",
         "HYDRATION": "l'apport en eau",
         "CAFFEINE": "l'apport en caféine",
+        "ENERGY_BALANCE": "le bilan énergétique quotidien",
         "ALCOHOL": "la consommation d'alcool",
         "WORKOUT_MINUTES": "les minutes d'entraînement",
         "TRAINING_LOAD": "la charge d'entraînement",
@@ -12576,6 +12577,7 @@
       "importedFromWithId": "Importé depuis {system}, ID {id}",
       "openInSource": "Ouvrir dans {system}",
       "sourceOther": "un autre système",
+      "sourceReportSchedule": "votre calendrier de rapports",
       "share": "Partager",
       "labValuesLink": "Voir {count} valeurs de laboratoire",
       "visitsLabel": "Rattaché au rendez-vous",
@@ -15331,6 +15333,41 @@
       "visitWith": "Rendez-vous : {name}",
       "checkupDue": "À faire : {label}",
       "boosterDue": "Rappel à faire : {label}"
+    }
+  },
+  "reportSchedule": {
+    "title": "Rapport médical programmé",
+    "description": "Classe le rapport médical dans vos documents dès qu'un mois, un trimestre ou une année est terminé.",
+    "loadError": "Impossible de charger le rapport programmé.",
+    "saveError": "Impossible d'enregistrer le rapport programmé. Veuillez réessayer.",
+    "cadenceLabel": "Fréquence",
+    "windowLabel": "Ce que couvre chaque rapport",
+    "cadence": {
+      "MONTHLY": "Chaque mois",
+      "QUARTERLY": "Chaque trimestre",
+      "YEARLY": "Chaque année"
+    },
+    "window": {
+      "PERIOD": "La période écoulée",
+      "LAST_90_DAYS": "Les 90 derniers jours",
+      "LAST_365_DAYS": "Les 12 derniers mois"
+    },
+    "usesSelection": "Chaque rapport contient ce que vous avez sélectionné pour l'export ci-dessus. Modifiez la sélection là-haut et le rapport suivant la suivra. Aucune notification n'est envoyée : le rapport est simplement là.",
+    "turnOn": "Activer",
+    "turnOff": "Désactiver",
+    "turnOffTitle": "Désactiver le rapport programmé ?",
+    "turnOffBody": "Aucun nouveau rapport ne sera classé. Ceux déjà dans vos documents y restent.",
+    "due": "Prochain rapport : {period}, classé dans l'heure qui suit son échéance.",
+    "upToDate": "À jour. Le prochain rapport suivra à la fin de la période en cours.",
+    "documentTitle": "Rapport médical {period}",
+    "outcome": {
+      "stored": "Le rapport de {period} est dans vos documents.",
+      "alreadyFiled": "Le rapport de {period} était déjà dans vos documents.",
+      "deletedByOwner": "Le rapport de {period} a été supprimé, il n'est donc pas classé à nouveau.",
+      "quotaExceeded": "Le rapport de {period} ne tenait plus dans votre espace de documents. La prochaine période réessaiera.",
+      "tooLarge": "Le rapport de {period} dépassait la taille maximale d'un document ici. La prochaine période réessaiera.",
+      "noSelection": "Rien n'est sélectionné pour l'export ci-dessus, aucun rapport n'a donc été classé. Choisissez son contenu et il sera classé au prochain passage.",
+      "failed": "Le rapport de {period} n'a pas pu être classé. Nouvel essai dans l'heure."
     }
   }
 }

@@ -534,6 +534,13 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["ConfirmButton"],
   },
   {
+    file: "components/settings/report-schedule-card.tsx",
+    destroys:
+      "the record's report schedule, so no further report is filed; the reports already filed stay in the vault, and turning it on again resumes",
+    recovery: "permanent",
+    confirm: ["ConfirmButton"],
+  },
+  {
     file: "components/settings/care-calendar-feed-card.tsx",
     destroys:
       "the record's care calendar-feed link; calendars subscribed to it stop updating, and turning it on again issues a new link",

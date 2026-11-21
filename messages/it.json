@@ -2902,6 +2902,7 @@
         "HRV_RMSSD": "la variabilità della frequenza cardiaca (RMSSD)",
         "HYDRATION": "l'assunzione di acqua",
         "CAFFEINE": "l'assunzione di caffeina",
+        "ENERGY_BALANCE": "il bilancio energetico giornaliero",
         "ALCOHOL": "il consumo di alcol",
         "WORKOUT_MINUTES": "i minuti di allenamento",
         "TRAINING_LOAD": "il carico di allenamento",
@@ -12576,6 +12577,7 @@
       "importedFromWithId": "Importato da {system}, ID {id}",
       "openInSource": "Apri in {system}",
       "sourceOther": "un altro sistema",
+      "sourceReportSchedule": "pianificazione dei referti",
       "share": "Condividi",
       "labValuesLink": "Vedi {count} valori di laboratorio",
       "visitsLabel": "Appartiene all'appuntamento",
@@ -15331,6 +15333,41 @@
       "visitWith": "Appuntamento: {name}",
       "checkupDue": "In scadenza: {label}",
       "boosterDue": "Richiamo in scadenza: {label}"
+    }
+  },
+  "reportSchedule": {
+    "title": "Referto medico pianificato",
+    "description": "Archivia da solo il referto medico nei tuoi documenti quando finisce un mese, un trimestre o un anno.",
+    "loadError": "Impossibile caricare il referto pianificato.",
+    "saveError": "Impossibile salvare il referto pianificato. Riprova.",
+    "cadenceLabel": "Con che frequenza",
+    "windowLabel": "Cosa copre ogni referto",
+    "cadence": {
+      "MONTHLY": "Ogni mese",
+      "QUARTERLY": "Ogni trimestre",
+      "YEARLY": "Ogni anno"
+    },
+    "window": {
+      "PERIOD": "Il periodo concluso",
+      "LAST_90_DAYS": "Gli ultimi 90 giorni",
+      "LAST_365_DAYS": "Gli ultimi 12 mesi"
+    },
+    "usesSelection": "Ogni referto contiene ciò che hai selezionato sopra per l'esportazione. Se cambi la selezione lì, il referto successivo la segue. Non viene inviata alcuna notifica: il referto è semplicemente lì.",
+    "turnOn": "Attiva",
+    "turnOff": "Disattiva",
+    "turnOffTitle": "Disattivare il referto pianificato?",
+    "turnOffBody": "Non verranno archiviati nuovi referti. Quelli già nei tuoi documenti restano lì.",
+    "due": "Prossimo referto: {period}, archiviato entro un'ora dalla scadenza.",
+    "upToDate": "Aggiornato. Il prossimo referto arriva alla fine del periodo in corso.",
+    "documentTitle": "Referto medico {period}",
+    "outcome": {
+      "stored": "Il referto di {period} è nei tuoi documenti.",
+      "alreadyFiled": "Il referto di {period} era già nei tuoi documenti.",
+      "deletedByOwner": "Il referto di {period} è stato eliminato, quindi non viene archiviato di nuovo.",
+      "quotaExceeded": "Il referto di {period} non entrava nello spazio dei documenti. Il prossimo periodo riprova.",
+      "tooLarge": "Il referto di {period} superava la dimensione massima di un documento qui. Il prossimo periodo riprova.",
+      "noSelection": "Non c'è nulla di selezionato per l'esportazione sopra, quindi non è stato archiviato alcun referto. Scegli cosa deve contenere e verrà archiviato alla prossima esecuzione.",
+      "failed": "Non è stato possibile archiviare il referto di {period}. Nuovo tentativo entro un'ora."
     }
   }
 }

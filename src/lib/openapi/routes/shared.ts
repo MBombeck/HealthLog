@@ -56,6 +56,30 @@ export const validationIssue = z
       .describe(
         "Only on `unrecognized_keys`: the refused key names, bounded to 10 and 64 characters each. Zod reports every unknown key of one object in a single issue whose `path` is the object, so the names live here and nowhere in `path`.",
       ),
+    minimum: z
+      .number()
+      .optional()
+      .describe(
+        "Only on `too_small`: the lower bound the schema declares (a number's value, a string's or a list's length; see `origin`). From the schema, never the request.",
+      ),
+    maximum: z
+      .number()
+      .optional()
+      .describe(
+        "Only on `too_big`: the upper bound the schema declares, for example a nutrient target's plausibility cap. From the schema, never the request.",
+      ),
+    inclusive: z
+      .boolean()
+      .optional()
+      .describe(
+        "With `minimum` / `maximum`: whether the bound itself is allowed (`false` for a value that must be above 0).",
+      ),
+    origin: z
+      .string()
+      .optional()
+      .describe(
+        "With `minimum` / `maximum`: what the bound measures, e.g. `number`, `string`, `array`. Treat an unfamiliar value as opaque.",
+      ),
   })
   .meta({
     id: "ValidationIssue",

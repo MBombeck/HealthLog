@@ -2902,6 +2902,7 @@
         "HRV_RMSSD": "la variabilidad de la frecuencia cardiaca (RMSSD)",
         "HYDRATION": "la ingesta de agua",
         "CAFFEINE": "la ingesta de cafeína",
+        "ENERGY_BALANCE": "el balance energético diario",
         "ALCOHOL": "el consumo de alcohol",
         "WORKOUT_MINUTES": "los minutos de entrenamiento",
         "TRAINING_LOAD": "la carga de entrenamiento",
@@ -12576,6 +12577,7 @@
       "importedFromWithId": "Importado de {system}, ID {id}",
       "openInSource": "Abrir en {system}",
       "sourceOther": "otro sistema",
+      "sourceReportSchedule": "tu calendario de informes",
       "share": "Compartir",
       "labValuesLink": "Ver {count} valores de laboratorio",
       "visitsLabel": "Pertenece a la cita",
@@ -15331,6 +15333,41 @@
       "visitWith": "Cita: {name}",
       "checkupDue": "Vence: {label}",
       "boosterDue": "Refuerzo pendiente: {label}"
+    }
+  },
+  "reportSchedule": {
+    "title": "Informe médico programado",
+    "description": "Guarda solo el informe médico en tus documentos cuando termina un mes, un trimestre o un año.",
+    "loadError": "No se pudo cargar el informe programado.",
+    "saveError": "No se pudo guardar el informe programado. Inténtalo de nuevo.",
+    "cadenceLabel": "Con qué frecuencia",
+    "windowLabel": "Qué abarca cada informe",
+    "cadence": {
+      "MONTHLY": "Cada mes",
+      "QUARTERLY": "Cada trimestre",
+      "YEARLY": "Cada año"
+    },
+    "window": {
+      "PERIOD": "El periodo terminado",
+      "LAST_90_DAYS": "Los últimos 90 días",
+      "LAST_365_DAYS": "Los últimos 12 meses"
+    },
+    "usesSelection": "Cada informe contiene lo que seleccionaste arriba para la exportación. Si cambias la selección allí, el siguiente informe la sigue. No se envía ninguna notificación: el informe simplemente está ahí.",
+    "turnOn": "Activar",
+    "turnOff": "Desactivar",
+    "turnOffTitle": "¿Desactivar el informe programado?",
+    "turnOffBody": "No se guardarán informes nuevos. Los que ya están en tus documentos se quedan allí.",
+    "due": "Próximo informe: {period}, guardado en la hora siguiente a su vencimiento.",
+    "upToDate": "Al día. El próximo informe llega cuando termine el periodo actual.",
+    "documentTitle": "Informe médico {period}",
+    "outcome": {
+      "stored": "El informe de {period} está en tus documentos.",
+      "alreadyFiled": "El informe de {period} ya estaba en tus documentos.",
+      "deletedByOwner": "El informe de {period} se eliminó, así que no se vuelve a guardar.",
+      "quotaExceeded": "El informe de {period} no cabía en tu almacenamiento de documentos. El próximo periodo lo vuelve a intentar.",
+      "tooLarge": "El informe de {period} superaba el tamaño máximo de un documento aquí. El próximo periodo lo vuelve a intentar.",
+      "noSelection": "No hay nada seleccionado para la exportación de arriba, así que no se guardó ningún informe. Elige qué debe contener y se guardará en la próxima ejecución.",
+      "failed": "No se pudo guardar el informe de {period}. Se vuelve a intentar dentro de una hora."
     }
   }
 }

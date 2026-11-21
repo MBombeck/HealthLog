@@ -10,6 +10,8 @@ export const settingsKeys = {
   notificationsStatus: () => ["notifications", "status"] as const,
 
   settingsGlobalServices: () => ["settings", "global-services"] as const,
+  /** The scheduled doctor report (`/api/settings/report-schedule`). */
+  settingsReportSchedule: () => ["settings", "report-schedule"] as const,
   settingsNtfy: () => ["settings", "ntfy"] as const,
   /** v1.17.1 — generic-webhook channel config. */
   settingsWebhook: () => ["settings", "webhook"] as const,
