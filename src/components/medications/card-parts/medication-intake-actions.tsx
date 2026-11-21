@@ -86,9 +86,12 @@ export function MedicationIntakeActions({
 
   const buttons = (
     <div className="flex gap-2">
+      {/* The take button gives way first: a label that names the slot
+          ("Einnehmen (21. Nov., 08:00)") wraps inside it rather than pushing
+          the card past a phone's width. */}
       <Button
         data-slot="medication-intake-take"
-        className="min-h-11 flex-1"
+        className="h-auto min-h-11 min-w-0 flex-1 shrink py-2 text-center leading-tight whitespace-normal"
         onClick={() => onRecordIntake(false)}
         disabled={!!intakeLoading}
       >
