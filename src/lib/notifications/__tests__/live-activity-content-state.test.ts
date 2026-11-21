@@ -4,7 +4,8 @@
  * required key fails the whole push; the fixture lists the struct's fields.
  */
 import { describe, expect, it } from "vitest";
-import { existsSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import contract from "./fixtures/medication-live-activity-content-state.json";
@@ -59,35 +60,47 @@ describe("medication Live Activity content-state", () => {
 });
 
 /**
- * The app's own fixture of content-state cases (shared by the iOS team),
- * dropped at `fixtures/app-medication-content-state.json`: every case the
- * app decodes as valid must carry the same keys as the state the server
- * builds. Skipped until the file is in the repository.
+ * The app's own golden fixture of content-state cases, copied verbatim from
+ * the iOS repository (`HealthLogTests/Fixtures/LiveActivity/
+ * medication-content-state.json`) and pinned by its SHA-256, so a change on
+ * either side fails both suites. Every key the app's `full` case carries must
+ * be in the state the server builds, and every case the app decodes must
+ * accept the server's end state as one of them.
  */
 const APP_FIXTURE = join(
   __dirname,
   "fixtures",
   "app-medication-content-state.json",
 );
+const APP_FIXTURE_SHA256 =
+  "901bf27b5eaf40f7b28458c9d645dd9c644b892bde4ca8565ed42dc0fba3c6fe";
+
+interface AppCase {
+  name: string;
+  contentState: Record<string, unknown>;
+  expect: Record<string, unknown>;
+}
 
 describe("the app's content-state fixture", () => {
-  it.skipIf(!existsSync(APP_FIXTURE))(
-    "the server's end state has the keys of the app's full case",
-    () => {
-      const cases = JSON.parse(readFileSync(APP_FIXTURE, "utf8")) as Record<
-        string,
-        unknown
-      >;
-      const full = (cases.full ?? cases.cases) as Record<string, unknown>;
-      expect(full).toBeTruthy();
-      const built = endedMedicationContentState({
-        resolvedAt: new Date("2026-11-21T09:10:00.000Z"),
-        timeFormat: "H24",
-      }) as unknown as Record<string, unknown>;
-      const required = Object.keys(full).filter(
-        (k) => k !== "pendingConfirmStartedAt",
-      );
-      for (const key of required) expect(key in built, key).toBe(true);
-    },
-  );
+  const raw = readFileSync(APP_FIXTURE);
+  const cases = (JSON.parse(raw.toString("utf8")) as { cases: AppCase[] })
+    .cases;
+
+  it("is the app's file, byte for byte", () => {
+    expect(createHash("sha256").update(raw).digest("hex")).toBe(
+      APP_FIXTURE_SHA256,
+    );
+  });
+
+  it("the server's end state has the keys of the app's full case", () => {
+    const full = cases.find((c) => c.name === "full");
+    expect(full).toBeTruthy();
+    const built = endedMedicationContentState({
+      resolvedAt: new Date("2026-11-21T09:10:00.000Z"),
+      timeFormat: "H24",
+    }) as unknown as Record<string, unknown>;
+    for (const key of Object.keys(full!.contentState)) {
+      expect(key in built, key).toBe(true);
+    }
+  });
 });
