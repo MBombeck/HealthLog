@@ -46,4 +46,6 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "GET/PATCH /api/auth/me/notification-prefs carry medication.snoozeMinutes (5–240, default 30); a snooze without snoozedUntil and Telegram's Remind me later button defer by it.",
   "apple-health.types-2026-11":
     "The batch ingest accepts the Apple Health cycling distance, rowing distance and speed, and running speed, power, ground contact time, vertical oscillation and stride length types.",
+  "apple-health.effort-scores":
+    "The batch ingest accepts HealthKit workoutEffortScore, estimatedWorkoutEffortScore and physicalEffort as WORKOUT_EFFORT_SCORE, ESTIMATED_WORKOUT_EFFORT_SCORE and PHYSICAL_EFFORT.",
 };
