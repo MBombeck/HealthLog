@@ -375,7 +375,6 @@ export default function MedicationsPageClient() {
     activeMeds,
     inactiveMeds,
     t,
-    tz: user?.timezone || DEFAULT_TIMEZONE,
   });
 
   // Groups open by default per the saved mode, and every group with a match

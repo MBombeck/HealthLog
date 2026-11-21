@@ -17,7 +17,8 @@ import {
   type MedicationListFilters,
 } from "@/lib/medications/medication-list-filters";
 import type { useTranslations } from "@/lib/i18n/context";
-import { userDayKey } from "@/lib/tz/format";
+import { useAuth } from "@/hooks/use-auth";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 
 type Translator = ReturnType<typeof useTranslations>["t"];
 
@@ -91,8 +92,6 @@ export interface UseMedicationListFiltersOptions<
   activeMeds: T[];
   inactiveMeds: T[];
   t: Translator;
-  /** The account's zone, for the day a dateless medication was created. */
-  tz: string;
 }
 
 export function useMedicationListFilters<T extends FilterableMedication>({
@@ -100,8 +99,10 @@ export function useMedicationListFilters<T extends FilterableMedication>({
   activeMeds,
   inactiveMeds,
   t,
-  tz,
 }: UseMedicationListFiltersOptions<T>) {
+  // The account's zone, for the day a dateless medication was created.
+  const { user } = useAuth();
+  const tz = user?.timezone || DEFAULT_TIMEZONE;
   const [categoryFilter, setCategoryFilter] = useCategoryFilter();
   const [searchText, setSearchText] = useState("");
   const searchInputRef = useRef<HTMLInputElement | null>(null);
