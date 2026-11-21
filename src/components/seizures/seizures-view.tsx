@@ -10,6 +10,7 @@
  * nothing on it diagnoses, scores a risk or says it is safe to wait.
  */
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   BrainCircuit,
   ChevronRight,
@@ -29,6 +30,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { TagChip } from "@/components/ui/tag-chip";
 import { TileHeader } from "@/components/insights/tile-header";
 import { useAuth } from "@/hooks/use-auth";
+import { useDeepLinkedRecord } from "@/hooks/use-deep-linked-record";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { SeizureEventDTO, SeizureTypeDTO } from "@/lib/seizures/shared";
@@ -72,6 +74,15 @@ export function SeizuresView() {
     setTypeSheet((s) => ({ session: (s?.session ?? 0) + 1, type }));
 
   const events = data?.events ?? [];
+  // `/seizures?event=<id>`, where the cluster push leads: scroll to the
+  // seizure and open it for a reader who may write; anyone else only scrolls.
+  useDeepLinkedRecord({
+    param: "event",
+    records: data?.events,
+    anchorAttribute: "data-seizure-id",
+    open: canLog ? openEvent : undefined,
+  });
+
   const clusterEventIds = useMemo(
     () => new Set(data?.summary.clusters.flatMap((c) => c.eventIds) ?? []),
     [data],
@@ -177,7 +188,11 @@ function SeizureList({
 }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
-  const [showAll, setShowAll] = useState(false);
+  // A linked seizure past the first twenty must be on the page to scroll to.
+  const linked = useSearchParams()?.get("event") ?? null;
+  const [showAll, setShowAll] = useState(
+    () => linked !== null && events.findIndex((e) => e.id === linked) >= 20,
+  );
   const listed = showAll ? events : events.slice(0, 20);
   const openEvent = onOpen;
   return (
