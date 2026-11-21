@@ -2686,6 +2686,8 @@
       "countNearLabel": "Contarla para la dosis de las {time}",
       "skips": "Omite la dosis de las {time}.",
       "extraDose": "Se registra como dosis extra, fuera del horario.",
+      "scheduleLoading": "Comprobando qué dosis tiene ese día…",
+      "scheduleUnavailable": "No se pudo leer el horario de ese día, así que se registra como dosis extra.",
       "noMedications": "Añade primero un medicamento y luego podrás registrar tomas para él.",
       "saveError": "No se pudo guardar la toma. Inténtalo de nuevo"
     },

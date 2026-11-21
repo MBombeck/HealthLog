@@ -2686,6 +2686,8 @@
       "countNearLabel": "{time} 복용분으로 기록",
       "skips": "{time} 복용분을 건너뛰어요.",
       "extraDose": "일정 외 추가 복용으로 기록돼요.",
+      "scheduleLoading": "그날 예정된 복용을 확인하는 중…",
+      "scheduleUnavailable": "그날 일정을 불러오지 못해 추가 복용으로 기록돼요.",
       "noMedications": "약을 먼저 추가하면 복용을 기록할 수 있어요.",
       "saveError": "복용 기록을 저장하지 못했어요. 다시 시도해 주세요"
     },

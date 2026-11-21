@@ -2686,6 +2686,8 @@
       "countNearLabel": "Contala per la dose delle {time}",
       "skips": "Salta la dose delle {time}.",
       "extraDose": "Registrata come dose extra, fuori programma.",
+      "scheduleLoading": "Verifica delle dosi previste quel giorno…",
+      "scheduleUnavailable": "Impossibile leggere il programma di quel giorno, quindi viene registrata come dose extra.",
       "noMedications": "Aggiungi prima un farmaco, poi potrai registrarne le assunzioni.",
       "saveError": "Impossibile salvare l'assunzione. Riprova"
     },

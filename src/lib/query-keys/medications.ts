@@ -99,6 +99,25 @@ export const medicationKeys = {
    */
   medicationDoseHistory: (medicationId: string, windowDays: number) =>
     ["medications", medicationId, "dose-history", windowDays] as const,
+  /**
+   * The same ledger read over one local calendar day (`dayKey` in
+   * `timeZone`), for the intake form: the slots that day really has are the
+   * only ones it offers. Under the `["medications"]` prefix, so an intake
+   * write refreshes it with the rest.
+   */
+  medicationDoseHistoryDay: (
+    medicationId: string,
+    dayKey: string,
+    timeZone: string,
+  ) =>
+    [
+      "medications",
+      medicationId,
+      "dose-history",
+      "day",
+      dayKey,
+      timeZone,
+    ] as const,
   medicationIntakeDrugLevelChart: (medicationId: string) =>
     ["medications", medicationId, "intake", "drug-level-chart"] as const,
   /**
