@@ -338,6 +338,80 @@ describe("PATCH and DELETE /api/medications/[id]/glp1/dose-changes/[doseChangeId
   });
 });
 
+describe("DELETE /api/medications/[id]/glp1/dose-changes?clientId=", () => {
+  async function removeByClientId(
+    medicationId: string,
+    clientId: string,
+  ): Promise<Response> {
+    const { DELETE } =
+      await import("@/app/api/medications/[id]/glp1/dose-changes/route");
+    return (DELETE as Handler)(
+      request(
+        "DELETE",
+        `/api/medications/${medicationId}/glp1/dose-changes?clientId=${encodeURIComponent(clientId)}`,
+      ),
+      { params: Promise.resolve({ id: medicationId }) },
+    );
+  }
+
+  it("removes the step under the client id, idempotently, and files it", async () => {
+    const medicationId = await seedMedication();
+    expect(
+      (await postStep(medicationId, { ...STEP, clientId: "step-a" })).status,
+    ).toBe(201);
+
+    expect((await removeByClientId(medicationId, "step-a")).status).toBe(204);
+    expect(await prisma.medicationDoseChange.count()).toBe(0);
+    expect((await removeByClientId(medicationId, "step-a")).status).toBe(204);
+
+    const audits = await prisma.auditLog.findMany({
+      where: { userId: USER_ID, action: "medication.glp1.doseChange.delete" },
+    });
+    expect(audits).toHaveLength(1);
+    expect(details(audits[0].details)).toMatchObject({
+      medicationId,
+      destroyedModel: "MedicationDoseChange",
+    });
+
+    const again = await postStep(medicationId, { ...STEP, clientId: "step-a" });
+    expect(again.status).toBe(410);
+  });
+
+  it("spends a client id that never reached the server", async () => {
+    const medicationId = await seedMedication();
+    expect((await removeByClientId(medicationId, "step-late")).status).toBe(
+      204,
+    );
+    // The upload that commits after the delete does not bring the step back.
+    const late = await postStep(medicationId, {
+      ...STEP,
+      clientId: "step-late",
+    });
+    expect(late.status).toBe(410);
+    expect(await prisma.medicationDoseChange.count()).toBe(0);
+  });
+
+  it("refuses a missing or malformed client id, and another account's medication", async () => {
+    const medicationId = await seedMedication();
+    expect((await removeByClientId(medicationId, "")).status).toBe(422);
+    expect((await removeByClientId(medicationId, "a b")).status).toBe(422);
+
+    const foreignMed = await seedMedication(OTHER_ID);
+    await prisma.medicationDoseChange.create({
+      data: {
+        medicationId: foreignMed,
+        effectiveFrom: new Date(STEP.effectiveFrom),
+        doseValue: 1,
+        doseUnit: "mg",
+        clientId: "step-x",
+      },
+    });
+    expect((await removeByClientId(foreignMed, "step-x")).status).toBe(404);
+    expect(await prisma.medicationDoseChange.count()).toBe(1);
+    expect(await prisma.medicationDoseChangeTombstone.count()).toBe(0);
+  });
+});
+
 describe("PUT /api/medications/[id]/intake/[eventId] — injection site", () => {
   async function takenDose(medicationId: string): Promise<string> {
     const row = await prisma.medicationIntakeEvent.create({

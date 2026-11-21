@@ -611,6 +611,14 @@ export const ADMITTED_MUTATING_HANDLERS = [
     "create",
   ),
   handler(
+    "app/api/medications/[id]/glp1/dose-changes/route.ts",
+    "/api/medications/[id]/glp1/dose-changes",
+    "DELETE",
+    "medications",
+    "manage",
+    "delete",
+  ),
+  handler(
     "app/api/medications/[id]/glp1/dose-changes/[doseChangeId]/route.ts",
     "/api/medications/[id]/glp1/dose-changes/[doseChangeId]",
     "PATCH",

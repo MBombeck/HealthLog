@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- A GLP-1 titration step can be removed by its client id: `DELETE /api/medications/{id}/glp1/dose-changes?clientId=` answers 204 whether or not the step reached the server, and spends the id so a late upload of the same step answers 410.
+
 ## [1.48.5] — 2026-11-21
 
 ### Fixed

@@ -1556,6 +1556,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "medications",
     why: "Reading the titration history, the recent injections and the supply math, and recording a titration step. The READ arm joined the MANAGE one when the route was published: the write had resolved the record since v1.37.0 while the read still resolved the caller, so a manager could add a dose the history refused them — may write, may not read, which the model does not produce. The read is at the level `/inventory`, `/side-effects` and `/cadence` use for the same medication's data and is strictly narrower than the write already admitted; the argument for the write is the manage literal's reason line.",
   },
+  "app/api/medications/[id]/glp1/dose-changes/route.ts": {
+    domain: "medications",
+    why: "Removing one titration step by its client id (#169), for a step a device removed before its upload answered. Reached only through this module's MANAGE arm, the level the create on `.../glp1` already asks; the argument for admitting it is the manage literal's reason line, and the entry here is what leg (a) freezes and leg (f) checks the section against.",
+  },
   "app/api/medications/[id]/glp1/dose-changes/[doseChangeId]/route.ts": {
     domain: "medications",
     why: "Correcting and removing one titration step (#169). Reached only through this module's MANAGE arm, the level the create on `.../glp1` already asks; the argument for admitting it is the manage literal's reason line, and the entry here is what leg (a) freezes and leg (f) checks the section against.",
@@ -2108,6 +2112,11 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
     conditions: ["C1"],
     why: "Recording a titration step. C1.",
   },
+  "app/api/medications/[id]/glp1/dose-changes/route.ts": {
+    domain: "medications",
+    conditions: ["C1", "C3"],
+    why: "Removing a titration step by its client id. The removal is hard and files the step's dose and date (C3); it burns the actor's bucket (C1).",
+  },
   "app/api/medications/[id]/glp1/dose-changes/[doseChangeId]/route.ts": {
     domain: "medications",
     conditions: ["C1", "C3", "C4"],
@@ -2589,8 +2598,11 @@ const ACTOR_ROUTES: Record<string, string> = {
  * The emergency card's four routes join the actor list: the card, its
  * offline copy, its wallet PDF and its link are only ever the caller's own.
  * 336 -> 340.
+ *
+ * Removing a titration step by its client id joins the record list and the
+ * manage literal. 340 -> 342.
  */
-const FROZEN_ENTRY_COUNT = 340;
+const FROZEN_ENTRY_COUNT = 342;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
@@ -3369,7 +3381,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
   it("keeps the admitted mutation inventory complete and discoverable", () => {
     expect(ADMITTED_MUTATING_HANDLERS.length).toBeGreaterThan(0);
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(105);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(106);
 
     const expected = ADMITTED_MUTATING_HANDLERS.map(
       ({ handlerModule, action, level }) =>
