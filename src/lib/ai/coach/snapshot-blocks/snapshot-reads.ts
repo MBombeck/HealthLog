@@ -36,6 +36,7 @@ import { buildCycleSnapshotBlock } from "../cycle-snapshot";
 import { buildIllnessSnapshotBlock } from "../illness-snapshot";
 import { buildLabsSnapshotBlock } from "../labs-snapshot";
 import { buildVisitsSnapshotBlock } from "../visits-snapshot";
+import { buildEnergyBalanceSnapshotBlock } from "../energy-balance-snapshot";
 import {
   buildCoarseTimelineTail,
   type CoarseTimelineTail,
@@ -385,6 +386,11 @@ async function startContextReads(ctx: Readonly<SnapshotReadsContext>) {
   // lowest-priority cluster), because a visit history is low-frequency context
   // the Coach can lose under budget pressure without losing a safety flag.
   const visitsBlockPromise = buildVisitsSnapshotBlock(userId, now, reach);
+  // The energy-balance line: nutrients-module gated inside, and left out when
+  // the person keeps active energy away from the Coach.
+  const energyBalanceBlockPromise = ctx.sources.has("active_energy")
+    ? buildEnergyBalanceSnapshotBlock(userId, userTz, reach)
+    : null;
   return {
     glp1BlockPromise,
     derivedBlockPromise,
@@ -396,6 +402,7 @@ async function startContextReads(ctx: Readonly<SnapshotReadsContext>) {
     illnessBlockPromise,
     labsBlockPromise,
     visitsBlockPromise,
+    energyBalanceBlockPromise,
   };
 }
 
@@ -422,6 +429,7 @@ export async function readSnapshotBlockInputs(
     illnessBlock,
     labsBlock,
     visitsBlock,
+    energyBalanceBlock,
   ] = await Promise.all([
     s.moodRowsPromise,
     s.complianceMedsPromise,
@@ -439,6 +447,7 @@ export async function readSnapshotBlockInputs(
     c.illnessBlockPromise,
     c.labsBlockPromise,
     c.visitsBlockPromise,
+    c.energyBalanceBlockPromise,
   ]);
   return {
     moodRows,
@@ -457,5 +466,6 @@ export async function readSnapshotBlockInputs(
     illnessBlock,
     labsBlock,
     visitsBlock,
+    energyBalanceBlock,
   };
 }

@@ -1,8 +1,9 @@
 /**
  * Narrative context for the Coach snapshot: rolling-profile memory, the
- * cycle/phase block, illness, labs and doctor visits. Each is built by its
- * own helper (read in the parallel batch, `snapshot-reads.ts`) and attached
- * here in a fixed order; some register for budget degradation, some do not.
+ * cycle/phase block, illness, labs, doctor visits and the energy balance.
+ * Each is built by its own helper (read in the parallel batch,
+ * `snapshot-reads.ts`) and attached here in a fixed order; some register for
+ * budget degradation, some do not.
  */
 import type { CoachScopeSource } from "../types";
 
@@ -12,6 +13,7 @@ interface NarrativeContextBlocksContext {
   illnessBlock: unknown;
   labsBlock: unknown;
   visitsBlock: unknown;
+  energyBalanceBlock: unknown;
   snapshot: Record<string, unknown>;
   registerBlock: (key: string, source: CoachScopeSource) => void;
 }
@@ -79,5 +81,12 @@ export function buildNarrativeContextBlocks(
   if (ctx.visitsBlock) {
     snapshot.visits = ctx.visitsBlock;
     registerBlock("visits", "skin_temp");
+  }
+
+  // The energy balance: window means only, registered on its own source so
+  // the degrader sheds it with the activity cluster under budget pressure.
+  if (ctx.energyBalanceBlock) {
+    snapshot.energyBalance = ctx.energyBalanceBlock;
+    registerBlock("energyBalance", "active_energy");
   }
 }
