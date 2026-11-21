@@ -11,7 +11,10 @@
           "message": "Too small: expected string to have >=1 characters",
           "minimum": 1,
           "inclusive": true,
-          "origin": "string"
+          "origin": "string",
+          "maximum": 100,
+          "minimumInclusive": true,
+          "maximumInclusive": true
         },
         {
           "path": "unitsPerDose",
