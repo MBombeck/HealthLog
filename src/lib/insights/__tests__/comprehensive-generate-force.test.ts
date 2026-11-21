@@ -21,7 +21,6 @@ const findUnique = vi.fn();
 const userUpdate = vi.fn();
 const auditDeleteMany = vi.fn();
 const resolveProviderChain = vi.fn();
-const resolveProvider = vi.fn();
 const runRawCompletionWithFallback = vi.fn();
 const extractFeatures = vi.fn();
 const aiCapabilityForRecord = vi.fn();
@@ -62,7 +61,6 @@ vi.mock("@/lib/ai/capabilities/gate", () => ({
 }));
 vi.mock("@/lib/ai/provider", () => ({
   resolveProviderChain: (...a: unknown[]) => resolveProviderChain(...a),
-  resolveProvider: (...a: unknown[]) => resolveProvider(...a),
 }));
 vi.mock("@/lib/ai/provider-runner", () => ({
   AllProvidersFailedError: class extends Error {},
@@ -132,7 +130,6 @@ beforeEach(() => {
   // No provider configured → the function returns `skipped` once it gets
   // past the cache short-circuit, which is enough to prove the branch.
   resolveProviderChain.mockResolvedValue([]);
-  resolveProvider.mockResolvedValue({ type: "none" });
   extractFeatures.mockResolvedValue(FEATURES);
   userUpdate.mockResolvedValue({});
   aiCapabilityForRecord.mockResolvedValue({
@@ -174,7 +171,6 @@ describe("generateComprehensiveInsight — the briefing capability at the wire",
       expect(outcome).toEqual({ status: "skipped", reason: skipped });
       expect(aiCapabilityForRecord).toHaveBeenCalledWith("u1", "briefing");
       expect(resolveProviderChain).not.toHaveBeenCalled();
-      expect(resolveProvider).not.toHaveBeenCalled();
       expect(runRawCompletionWithFallback).not.toHaveBeenCalled();
       expect(extractFeatures).not.toHaveBeenCalled();
     },

@@ -65,7 +65,6 @@ vi.mock("@/lib/ai/provider-runner", () => ({
 }));
 vi.mock("@/lib/ai/provider", () => ({
   resolveProviderChain: vi.fn(),
-  resolveProvider: vi.fn(),
 }));
 vi.mock("@/lib/ai/consent-guard", () => ({ assertConsentForChain: vi.fn() }));
 vi.mock("@/lib/ai/prompts/insight-generator", () => ({ PROMPT_VERSION: "x" }));

@@ -144,20 +144,18 @@ describe("every exported resolver binds", () => {
 
   it("finds the resolvers (an empty set is a failure, not a pass)", () => {
     expect(resolvers.map((r) => r.name).sort()).toEqual([
-      "resolveProvider",
       "resolveProviderChain",
       "resolveProviderForTest",
     ]);
   });
 
-  it.each([
-    "resolveProvider",
-    "resolveProviderChain",
-    "resolveProviderForTest",
-  ])("%s calls bindResponseTimeout", (name) => {
-    const resolver = resolvers.find((r) => r.name === name);
-    expect(resolver?.body ?? "").toMatch(/\bbindResponseTimeout\s*\(/);
-  });
+  it.each(["resolveProviderChain", "resolveProviderForTest"])(
+    "%s calls bindResponseTimeout",
+    (name) => {
+      const resolver = resolvers.find((r) => r.name === name);
+      expect(resolver?.body ?? "").toMatch(/\bbindResponseTimeout\s*\(/);
+    },
+  );
 });
 
 describe("clients are built only where a resolver binds them", () => {

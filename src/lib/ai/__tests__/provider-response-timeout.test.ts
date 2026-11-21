@@ -18,11 +18,7 @@ vi.mock("@/lib/crypto", () => ({
 }));
 
 import { prisma } from "@/lib/db";
-import {
-  resolveProvider,
-  resolveProviderChain,
-  resolveProviderForTest,
-} from "../provider";
+import { resolveProviderChain, resolveProviderForTest } from "../provider";
 
 const LOCAL_ROW = {
   aiProvider: "LOCAL",
@@ -36,6 +32,7 @@ const LOCAL_ROW = {
   aiCompatModel: null,
   role: "USER",
   aiProviderChain: [{ providerType: "local", priority: 1, enabled: true }],
+  aiNamedChains: null,
   useCentralCodex: false,
   managedProfileAt: null,
 };
@@ -53,17 +50,10 @@ beforeEach(() => {
 });
 
 describe("the resolvers bind the record's response-timeout setting", () => {
-  it("resolveProvider", async () => {
-    withSetting(300);
-    const provider = await resolveProvider("user-1");
-    expect(provider.type).toBe("local");
-    expect(provider.responseTimeoutSeconds).toBe(300);
-  });
-
   it("resolveProviderChain, every entry", async () => {
     withSetting(300);
     const chain = await resolveProviderChain("user-1", null);
-    expect(chain.length).toBeGreaterThan(0);
+    expect(chain.map((entry) => entry.providerType)).toEqual(["local"]);
     for (const entry of chain) {
       expect(entry.instance.responseTimeoutSeconds).toBe(300);
     }
@@ -79,7 +69,8 @@ describe("the resolvers bind the record's response-timeout setting", () => {
 
   it("binds nothing when the setting is unset", async () => {
     withSetting(null);
-    const provider = await resolveProvider("user-1");
-    expect(provider.responseTimeoutSeconds).toBeNull();
+    const chain = await resolveProviderChain("user-1", null);
+    expect(chain.map((entry) => entry.providerType)).toEqual(["local"]);
+    expect(chain[0].instance.responseTimeoutSeconds).toBeNull();
   });
 });

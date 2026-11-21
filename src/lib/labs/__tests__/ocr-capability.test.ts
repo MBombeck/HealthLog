@@ -16,7 +16,6 @@ vi.mock("@/lib/db", () => ({
 }));
 vi.mock("@/lib/ai/provider", () => ({
   resolveProviderChain: vi.fn(),
-  resolveProvider: vi.fn(),
 }));
 vi.mock("@/lib/ai/capabilities/egress", () => ({
   aiEgressRefusal: vi.fn(),
@@ -30,7 +29,7 @@ vi.mock("@/lib/documents/rasterize-pdf", () => ({
 }));
 
 import { prisma } from "@/lib/db";
-import { resolveProvider, resolveProviderChain } from "@/lib/ai/provider";
+import { resolveProviderChain } from "@/lib/ai/provider";
 import { aiEgressRefusal } from "@/lib/ai/capabilities/egress";
 import { getAiCapability } from "@/lib/ai/capabilities/gate";
 import { AiUnavailableError } from "@/lib/ai/capabilities/refusal";
@@ -53,7 +52,6 @@ beforeEach(() => {
   vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
     adminAiModel: null,
   } as never);
-  vi.mocked(resolveProvider).mockResolvedValue({ type: "none" } as never);
   vi.mocked(aiEgressRefusal).mockResolvedValue(null);
   vi.mocked(getAiCapability).mockResolvedValue({
     available: true,

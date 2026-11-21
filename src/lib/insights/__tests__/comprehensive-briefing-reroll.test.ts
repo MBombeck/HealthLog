@@ -13,7 +13,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const findUnique = vi.fn();
 const userUpdate = vi.fn();
 const resolveProviderChain = vi.fn();
-const resolveProvider = vi.fn();
 const runRawCompletionWithFallback = vi.fn();
 const extractFeatures = vi.fn();
 const invalidateUserInsights = vi.fn();
@@ -63,7 +62,6 @@ vi.mock("@/lib/ai/capabilities/gate", () => ({
 }));
 vi.mock("@/lib/ai/provider", () => ({
   resolveProviderChain: (...a: unknown[]) => resolveProviderChain(...a),
-  resolveProvider: (...a: unknown[]) => resolveProvider(...a),
 }));
 vi.mock("@/lib/ai/provider-runner", () => ({
   AllProvidersFailedError: class extends Error {},
@@ -136,7 +134,6 @@ beforeEach(() => {
   resolveProviderChain.mockResolvedValue([
     { providerType: "openai", instance: {} },
   ]);
-  resolveProvider.mockResolvedValue({ type: "none" });
   extractFeatures.mockResolvedValue(FEATURES);
   userUpdate.mockResolvedValue({});
 });

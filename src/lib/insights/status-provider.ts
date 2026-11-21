@@ -60,8 +60,8 @@ export function statusRunBoundMs(effectiveTimeoutMs: number): number {
 /**
  * Shared provider plumbing for the seven `*-status.ts` generators.
  *
- * Before this, each generator resolved a single provider via
- * `resolveProvider()` and raced one `generateCompletion()` call against
+ * Before this, each generator resolved a single provider, outside the
+ * chain, and raced one `generateCompletion()` call against
  * a 20 s cap. A degraded primary provider could not cascade, and the
  * cap fired below the providers' own 60 s floor — converting healthy-
  * but-slow generations into the generic fallback.

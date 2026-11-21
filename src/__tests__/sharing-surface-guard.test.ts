@@ -3624,19 +3624,11 @@ describe("(g) the MANAGE route set is frozen", () => {
       comprehensiveModules.some((m) => callsSymbol(m, "probeProviderPresence")),
     ).toBe(true);
     for (const m of comprehensiveModules) {
-      for (const name of [
-        "resolveProvider",
-        "resolveProviderChain",
-        "probeProviderChain",
-      ]) {
+      for (const name of ["resolveProviderChain", "probeProviderChain"]) {
         expect(callsSymbol(m, name), `${m} calls ${name}`).toBe(false);
       }
     }
-    for (const name of [
-      "resolveProvider",
-      "resolveProviderChain",
-      "probeProviderChain",
-    ]) {
+    for (const name of ["resolveProviderChain", "probeProviderChain"]) {
       const resolver = functionSource("lib/ai/provider.ts", name);
       expect(resolver.length, `${name} not found`).toBeGreaterThan(0);
       expect(resolver, `${name} ignores sharing authority`).toContain(

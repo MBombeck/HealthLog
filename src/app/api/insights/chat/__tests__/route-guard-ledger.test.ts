@@ -83,7 +83,6 @@ const { resolveProviderChain } = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/ai/provider", () => ({
   resolveProviderChain,
-  resolveProvider: vi.fn(),
 }));
 
 const { assertConsentForChain } = vi.hoisted(() => ({

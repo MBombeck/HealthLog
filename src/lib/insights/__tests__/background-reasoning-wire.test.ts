@@ -45,7 +45,6 @@ const { resolveProviderChain } = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/ai/provider", () => ({
   resolveProviderChain,
-  resolveProvider: vi.fn(),
   probeProviderPresence: vi.fn(async () => true),
   probeProviderChain: vi.fn(),
 }));

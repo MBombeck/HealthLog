@@ -43,7 +43,6 @@ vi.mock("undici", async (importOriginal) => {
 
 import {
   AITestConfigError,
-  resolveProvider,
   resolveProviderAvailability,
   resolveProviderChain,
   resolveProviderForTest,
@@ -52,7 +51,7 @@ import {
   PROVIDER_CHAIN_DEFAULT,
   PROVIDER_CHAIN_TYPES,
 } from "../provider-chain";
-import { singleUserTurn } from "../types";
+import { singleUserTurn, type AIProvider } from "../types";
 import { prisma } from "@/lib/db";
 
 /** A user row with every AI column present, overridable per test. */
@@ -68,7 +67,11 @@ function userRow(overrides: Record<string, unknown> = {}) {
     aiCompatKeyEncrypted: null,
     aiCompatModel: null,
     aiProviderChain: null,
+    aiNamedChains: null,
     useCentralCodex: false,
+    role: "USER",
+    managedProfileAt: null,
+    aiResponseTimeoutSeconds: null,
     codexConnectionStatus: null,
     codexAccessTokenEncrypted: null,
     codexRefreshTokenEncrypted: null,
@@ -89,6 +92,13 @@ function stubTransport() {
   return fetchMock;
 }
 
+/** The one entry the chain production runs resolves for the row. */
+async function soleEntry(providerType: string): Promise<AIProvider> {
+  const chain = await resolveProviderChain("u-1", null);
+  expect(chain.map((entry) => entry.providerType)).toEqual([providerType]);
+  return chain[0].instance;
+}
+
 const probe = () =>
   singleUserTurn({ system: "s", user: "u", responseFormat: "json" });
 
@@ -98,6 +108,8 @@ beforeEach(() => {
 });
 
 describe("the gateway resolves against its own columns", () => {
+  // Nothing in the default chain resolves for these rows, so the chain falls
+  // back to the picked gateway.
   it("posts to the saved base URL with the saved bearer and model", async () => {
     const fetchMock = stubTransport();
     vi.mocked(prisma.user.findUnique).mockResolvedValue(
@@ -109,7 +121,7 @@ describe("the gateway resolves against its own columns", () => {
       }),
     );
 
-    const provider = await resolveProvider("u-1");
+    const provider = await soleEntry("openai-compatible");
     const result = await provider.generateCompletion(probe());
 
     expect(fetchMock.mock.calls[0][0]).toBe(
@@ -134,7 +146,7 @@ describe("the gateway resolves against its own columns", () => {
       }),
     );
 
-    const provider = await resolveProvider("u-1");
+    const provider = await soleEntry("openai-compatible");
     await provider.generateCompletion(probe());
 
     expect(fetchMock.mock.calls[0][1].headers).not.toHaveProperty(
@@ -152,7 +164,7 @@ describe("the gateway resolves against its own columns", () => {
       }),
     );
 
-    const provider = await resolveProvider("u-1");
+    const provider = await soleEntry("openai-compatible");
     await provider.generateCompletion(probe());
 
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).model).toBe(
@@ -174,7 +186,7 @@ describe("the pinned OpenAI arm never reads the gateway's base URL", () => {
       }),
     );
 
-    const provider = await resolveProvider("u-1");
+    const provider = await soleEntry("openai");
     await provider.generateCompletion(probe());
 
     expect(fetchMock.mock.calls[0][0]).toBe(
@@ -232,14 +244,32 @@ describe("the pinned OpenAI arm never reads the gateway's base URL", () => {
         aiOpenaiKeyEncrypted: "enc-openai",
         aiCompatBaseUrl: "https://gateway.example.com/v1",
         aiCompatModel: "m",
+        aiProviderChain: [
+          { providerType: "openai-compatible", priority: 1, enabled: true },
+          { providerType: "openai", priority: 2, enabled: true },
+        ],
       }),
     );
 
-    const provider = await resolveProvider("u-1");
-    await provider.generateCompletion(probe());
+    const chain = await resolveProviderChain("u-1", null);
+    expect(chain.map((entry) => entry.providerType)).toEqual([
+      "openai-compatible",
+      "openai",
+    ]);
+    await chain[0].instance.generateCompletion(probe());
+    await chain[1].instance.generateCompletion(probe());
 
-    const authorization = fetchMock.mock.calls[0][1].headers.Authorization;
-    expect(authorization).toBeUndefined();
+    const [gatewayCall, openaiCall] = fetchMock.mock.calls;
+    expect(gatewayCall[0]).toBe(
+      "https://gateway.example.com/v1/chat/completions",
+    );
+    expect(gatewayCall[1].headers.Authorization).toBeUndefined();
+    // The key exists and goes where it belongs, so the absence above is the
+    // gateway arm not reading it.
+    expect(openaiCall[0]).toBe("https://api.openai.com/v1/chat/completions");
+    expect(openaiCall[1].headers.Authorization).toBe(
+      "Bearer decrypted:enc-openai",
+    );
   });
 });
 

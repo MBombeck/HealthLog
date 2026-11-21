@@ -26,11 +26,7 @@ vi.mock("@/lib/safe-fetch", async (importOriginal) => ({
 }));
 
 import { prisma } from "@/lib/db";
-import {
-  resolveProvider,
-  resolveProviderChain,
-  resolveProviderForTest,
-} from "../provider";
+import { resolveProviderChain, resolveProviderForTest } from "../provider";
 import { resetLocalJsonDialectCache } from "../local-client";
 import { singleUserTurn, type AIProvider } from "../types";
 
@@ -45,6 +41,7 @@ const ROW = {
   aiCompatKeyEncrypted: null,
   aiCompatModel: "llama3",
   role: "USER",
+  aiNamedChains: null,
   useCentralCodex: false,
   managedProfileAt: null,
   aiResponseTimeoutSeconds: null,
@@ -126,15 +123,11 @@ describe("resolveProviderChain binds each entry's own setting", () => {
   });
 });
 
-describe("resolveProvider", () => {
-  it("binds the selected Local provider's setting", async () => {
-    withChain(MIXED);
-    const provider = await resolveProvider("user-1");
-    expect(provider.type).toBe("local");
-    expect(await sentEffort(provider)).toBe("none");
-  });
-
-  it("reaches a selected gateway whose value sits on a disabled entry", async () => {
+describe("resolveProviderChain — the picked gateway fallback", () => {
+  it("reaches a picked gateway whose value sits on a disabled entry", async () => {
+    // The disabled entry is the holder the gateway form wrote for the
+    // setting, not a switch somebody turned off: with nothing else serving,
+    // the chain falls back to the picked gateway, carrying that value.
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       ...ROW,
       aiProvider: "OPENAI_COMPATIBLE",
@@ -148,9 +141,10 @@ describe("resolveProvider", () => {
         },
       ],
     } as never);
-    const provider = await resolveProvider("user-1");
-    expect(provider.type).toBe("openai-compatible");
-    expect(await sentEffort(provider)).toBe("low");
+    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(null as never);
+    const chain = await resolveProviderChain("user-1", null);
+    expect(chain.map((e) => e.providerType)).toEqual(["openai-compatible"]);
+    expect(await sentEffort(chain[0].instance)).toBe("low");
   });
 });
 

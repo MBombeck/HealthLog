@@ -524,7 +524,6 @@ export const modules = {
     resolveProviderChain: async () => [
       { providerType: "anthropic", instance: { supportsTools: true } },
     ],
-    resolveProvider: async () => ({ type: "none" }),
   }),
   consent: () => ({ assertConsentForChain: async () => undefined }),
   persistence: () => ({
