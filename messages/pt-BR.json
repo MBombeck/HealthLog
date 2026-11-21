@@ -6342,6 +6342,7 @@
             "error": {
               "privateOrigin": "Este endereço está numa rede privada. Quem administra o servidor precisa liberá-lo antes.",
               "invalidUrl": "Informe o endereço completo da pasta, sem usuário ou senha dentro dele.",
+              "httpsRequired": "Use um endereço https://. Com http://, a senha seria enviada sem criptografia.",
               "passwordRequired": "Informe a senha uma vez ao configurar a pasta.",
               "saveFailed": "Não foi possível salvar a pasta. Confira o endereço e tente de novo.",
               "fetchFailed": "Não foi possível iniciar a busca. Tente mais tarde."

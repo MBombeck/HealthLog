@@ -317,6 +317,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "import.csv.empty",
       "import.csv.too_large",
       "import.file.too_large",
+      "import.health_connect.remote.https_required",
       "import.health_connect.remote.invalid_url",
       "import.health_connect.remote.not_configured",
       "import.health_connect.remote.origin_config_invalid",

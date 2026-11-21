@@ -13,6 +13,7 @@
  * `practice` and `specialty` stay plaintext so the picker can search and sort
  * them in SQL.
  */
+import { textContains } from "@/lib/db-like";
 import { NextRequest } from "next/server";
 
 import { prisma } from "@/lib/db";
@@ -65,24 +66,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
         ...(parsed.data.q
           ? {
               OR: [
-                {
-                  name: {
-                    contains: parsed.data.q,
-                    mode: "insensitive" as const,
-                  },
-                },
-                {
-                  practice: {
-                    contains: parsed.data.q,
-                    mode: "insensitive" as const,
-                  },
-                },
-                {
-                  specialty: {
-                    contains: parsed.data.q,
-                    mode: "insensitive" as const,
-                  },
-                },
+                { name: textContains(parsed.data.q) },
+                { practice: textContains(parsed.data.q) },
+                { specialty: textContains(parsed.data.q) },
               ],
             }
           : {}),

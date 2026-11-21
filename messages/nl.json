@@ -6342,6 +6342,7 @@
             "error": {
               "privateOrigin": "Dit adres ligt in een privénetwerk. Wie de server beheert, moet het eerst toestaan.",
               "invalidUrl": "Vul het volledige adres van de map in, zonder gebruikersnaam of wachtwoord erin.",
+              "httpsRequired": "Gebruik een https://-adres. Via http:// gaat het wachtwoord onversleuteld over het netwerk.",
               "passwordRequired": "Vul het wachtwoord één keer in bij het instellen van de map.",
               "saveFailed": "De map kon niet worden opgeslagen. Controleer het adres en probeer het opnieuw.",
               "fetchFailed": "Ophalen kon niet worden gestart. Probeer het later opnieuw."

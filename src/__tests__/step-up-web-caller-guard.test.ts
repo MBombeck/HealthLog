@@ -156,6 +156,7 @@ const GATED_ROUTES: Record<string, string> = {
   "POST /api/tokens/documents": "web",
   "POST /api/tokens/measurements": "web",
   "POST /api/tokens/workouts": "web",
+  "PUT /api/import/health-connect-remote": "web",
 };
 
 /** The web side: everything under src that is not a route, a test or docs. */

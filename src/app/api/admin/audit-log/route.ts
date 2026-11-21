@@ -1,3 +1,4 @@
+import { textContains } from "@/lib/db-like";
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAdmin } from "@/lib/api-handler";
 import { apiSuccess, returnAllZodIssues } from "@/lib/api-response";
@@ -112,7 +113,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     // username match on the acting account resolves to ids first. Capped:
     // a one-letter search must not turn into an unbounded IN list.
     const actingMatches = await prisma.user.findMany({
-      where: { username: { contains: parsed.actor, mode: "insensitive" } },
+      where: { username: textContains(parsed.actor) },
       select: { id: true },
       take: ACTOR_MATCH_CAP,
     });
@@ -120,9 +121,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
       OR: [
         { userId: parsed.actor },
         {
-          user: {
-            username: { contains: parsed.actor, mode: "insensitive" },
-          },
+          user: { username: textContains(parsed.actor) },
         },
         { actorUserId: parsed.actor },
         ...(actingMatches.length > 0

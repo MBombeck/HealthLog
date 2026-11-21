@@ -201,7 +201,12 @@ now**:
   minutes.
 
 The password is stored encrypted with the app's encryption key and never
-shown again. Removing the folder deletes it; the imports stay.
+shown again. Removing the folder deletes it; the imports stay. It only ever
+goes to the server it was entered for: moving the folder to another server
+asks for the password again, and saving a password asks you to confirm it is
+you (sign in again, or re-enter your password or second factor) when the
+session is older than five minutes. A public folder address must start with
+`https://`, because the password travels with every fetch.
 
 The folder is not part of a backup, like the other connections to systems
 of your own (Nightscout, Dawarich, Paperless-ngx): a backup file is not a
@@ -217,7 +222,14 @@ exact origin listed by the person running the server, in
 `HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS` (comma-separated
 `scheme://host[:port]`, never a suffix or a range), the same rule as
 Nightscout and Dawarich. Link-local and cloud metadata addresses stay
-refused even when listed.
+refused even when listed. A listed origin may be `http://` (a home
+Nextcloud without a certificate); the grant names the scheme, so only that
+exact plain-http origin is allowed, and the password then crosses the home
+network unencrypted.
+
+The fetch answers with an outcome (`not found`, `refused the password`,
+`server error`) for any path on an allowed server. It returns no content, but
+it does tell an account whether a path exists on a server the operator listed.
 
 The endpoints are `GET`, `PUT` and `DELETE /api/import/health-connect-remote`
 and `POST /api/import/health-connect-remote/fetch`; the background pass is the

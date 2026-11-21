@@ -71,7 +71,7 @@ export async function importGadgetbridgeExport(input: {
   tally: RecordFileImportTally;
 }): Promise<void> {
   const { tally } = input;
-  const db = openGadgetbridgeDb(input.dbPath);
+  const db = await openGadgetbridgeDb(input.dbPath);
   try {
     for (const table of db.unread)
       tally.skip(table.name, "not_read", table.rows);
@@ -81,7 +81,7 @@ export async function importGadgetbridgeExport(input: {
     for (const table of db.tables) {
       if (tally.outOfTime()) return;
       if (table.kind === "activity") {
-        readActivity(db, table, input.tz, steps, pulse, tally);
+        await readActivity(db, table, input.tz, steps, pulse, tally);
       } else {
         await readSamples(db, { ...table, kind: table.kind }, input, tally);
       }
@@ -116,19 +116,19 @@ export async function importGadgetbridgeExport(input: {
       overwrite: true,
     });
   } finally {
-    db.close();
+    await db.close();
   }
 }
 
 /** Steps per device and local day, heart rate per local hour, in SQLite. */
-function readActivity(
-  db: ReturnType<typeof openGadgetbridgeDb>,
+async function readActivity(
+  db: Awaited<ReturnType<typeof openGadgetbridgeDb>>,
   table: GbTable,
   tz: string,
   steps: Map<string, Map<string, number>>,
   pulse: Map<string, { sum: number; n: number }>,
   tally: RecordFileImportTally,
-): void {
+): Promise<void> {
   const unit = table.millis ? HOUR_MS : 3600;
   const device = table.columns.has("DEVICE_ID") ? "DEVICE_ID" : "0";
   const hr = table.columns.has("HEART_RATE");
@@ -142,7 +142,7 @@ function readActivity(
           : "0 AS hs, 0 AS hn"
       }
     FROM "${table.name}" WHERE TIMESTAMP > 0 GROUP BY h, d`;
-  for (const batch of db.batches(sql)) {
+  for await (const batch of db.batches(sql)) {
     for (const row of batch) {
       const hourIndex = gbNumber(row.h);
       if (hourIndex === null) continue;
@@ -187,7 +187,7 @@ const SPOT: Record<
 
 /** One row per sample for the spot kinds, one per night for sleep. */
 async function readSamples(
-  db: ReturnType<typeof openGadgetbridgeDb>,
+  db: Awaited<ReturnType<typeof openGadgetbridgeDb>>,
   table: GbTable & { kind: Exclude<GbTable["kind"], "activity"> },
   input: { userId: string },
   tally: RecordFileImportTally,
@@ -196,7 +196,7 @@ async function readSamples(
   const value =
     table.kind === "sleep" ? "WAKEUP_TIME" : SPOT[table.kind].column;
   const sql = `SELECT TIMESTAMP AS t, ${device} AS d, ${value} AS v FROM "${table.name}" ORDER BY TIMESTAMP`;
-  for (const batch of db.batches(sql)) {
+  for await (const batch of db.batches(sql)) {
     if (tally.outOfTime()) return;
     const rows: ImportedMeasurement[] = [];
     for (const row of batch) {

@@ -8,6 +8,7 @@ import {
 } from "@/lib/api-handler";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
+import { findUserIdBySignInName } from "@/lib/auth/identity-lookup";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -96,15 +97,15 @@ export const POST = apiHandler(
     if (!parsed.ok) return parsed.error;
     const { id } = await params;
 
-    const invitee = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { username: { equals: parsed.data.identifier, mode: "insensitive" } },
-          { email: { equals: parsed.data.identifier, mode: "insensitive" } },
-        ],
-      },
-      select: GRANT_PARTY_SELECT,
-    });
+    // The same exact, case-blind lookup the sign-in form and the sibling
+    // invitation route use (`@/lib/auth/identity-lookup`).
+    const inviteeId = await findUserIdBySignInName(parsed.data.identifier);
+    const invitee = inviteeId
+      ? await prisma.user.findUnique({
+          where: { id: inviteeId },
+          select: GRANT_PARTY_SELECT,
+        })
+      : null;
     // The same code the sibling invitation route (`POST /api/account/grants`)
     // answers an unknown identifier with. This route has a second 404 — "you
     // are not a Guardian of that profile", `managed_profile.not_found` — and

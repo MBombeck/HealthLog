@@ -26,6 +26,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
+// The exact, case-blind lookup (`@/lib/auth/identity-lookup`) answers with an
+// id; the row read by that id is what each case below decides.
+vi.mock("@/lib/auth/identity-lookup", () => ({
+  findUserIdBySignInName: vi.fn(async () => "matched-account"),
+}));
+
 vi.mock("@/lib/api-handler", async () => {
   const actual =
     await vi.importActual<typeof import("@/lib/api-handler")>(
@@ -50,7 +56,7 @@ vi.mock("@/lib/api-handler", async () => {
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    user: { findFirst: vi.fn() },
+    user: { findUnique: vi.fn() },
     accountGrant: {
       create: vi.fn(),
       // inviteGrant sweeps expired live-pair rows before the create. No such
@@ -114,8 +120,8 @@ beforeEach(() => {
   vi.mocked(requireFreshMfaIfEnrolled).mockResolvedValue({
     user: OWNER,
   } as unknown as Awaited<ReturnType<typeof requireFreshMfaIfEnrolled>>);
-  vi.mocked(prisma.user.findFirst).mockResolvedValue(
-    INVITEE as never as Awaited<ReturnType<typeof prisma.user.findFirst>>,
+  vi.mocked(prisma.user.findUnique).mockResolvedValue(
+    INVITEE as never as Awaited<ReturnType<typeof prisma.user.findUnique>>,
   );
   vi.mocked(prisma.accountGrant.create).mockImplementation((async (args: {
     data: Record<string, unknown>;
@@ -287,7 +293,7 @@ describe("offering MANAGE", () => {
 
     await POST(request({ identifier: "housemate", access: "MANAGE" }));
 
-    expect(prisma.user.findFirst).not.toHaveBeenCalled();
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
   });
 
   it("lets a Bearer caller keep minting the two levels it always could", async () => {

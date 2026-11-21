@@ -11,6 +11,7 @@
  *
  * A refusal names the reason the callback redirects with.
  */
+import { findUserIdByEmail } from "@/lib/auth/identity-lookup";
 import { prisma } from "@/lib/db";
 import type { User } from "@/generated/prisma/client";
 import { annotate } from "@/lib/logging/context";
@@ -56,14 +57,10 @@ async function refreshDisplayEmail(
   ) {
     return user;
   }
-  const emailTaken = await prisma.user.findFirst({
-    where: {
-      email: { equals: displayEmail, mode: "insensitive" },
-      NOT: { id: user.id },
-    },
-    select: { id: true },
+  const emailTaken = await findUserIdByEmail(displayEmail, {
+    excludeId: user.id,
   });
-  if (emailTaken) return user;
+  if (emailTaken !== null) return user;
   return prisma.user.update({
     where: { id: user.id },
     data: { email: displayEmail },
@@ -163,9 +160,10 @@ export async function resolveOidcAccount(
     return refuse("oidc_email_unverified");
   }
 
-  const byEmail = await prisma.user.findFirst({
-    where: { email: { equals: email, mode: "insensitive" } },
-  });
+  const byEmailId = await findUserIdByEmail(email);
+  const byEmail = byEmailId
+    ? await prisma.user.findUnique({ where: { id: byEmailId } })
+    : null;
   if (byEmail) {
     // (2) Link ONCE. An account already pinned to a different IdP identity
     // is never silently re-bound: a rebind would let a second IdP identity

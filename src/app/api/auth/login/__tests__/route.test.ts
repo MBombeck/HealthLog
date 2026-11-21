@@ -10,6 +10,12 @@ import { NextRequest } from "next/server";
 
 // The per-account throttle has its own suite (login-throttle.test.ts); here
 // it lets every attempt through and counts nothing.
+// The exact, case-blind lookup (`@/lib/auth/identity-lookup`) answers with an
+// id; the row read by that id is what each case below decides.
+vi.mock("@/lib/auth/identity-lookup", () => ({
+  findUserIdBySignInName: vi.fn(async () => "matched-account"),
+}));
+
 vi.mock("@/lib/auth/login-throttle", () => ({
   beginAccountLoginAttempt: vi.fn(async () => ({
     waiting: null,
@@ -20,7 +26,7 @@ vi.mock("@/lib/auth/login-throttle", () => ({
 }));
 vi.mock("@/lib/db", () => ({
   prisma: {
-    user: { findFirst: vi.fn() },
+    user: { findUnique: vi.fn() },
     apiToken: { create: vi.fn() },
     refreshToken: { create: vi.fn() },
   },
@@ -97,7 +103,7 @@ function makeRequest(): NextRequest {
 
 beforeEach(() => {
   vi.resetAllMocks();
-  vi.mocked(prisma.user.findFirst).mockResolvedValue(null as never);
+  vi.mocked(prisma.user.findUnique).mockResolvedValue(null as never);
   vi.mocked(verifyPasswordOrDummy).mockResolvedValue(false);
   vi.mocked(auditLog).mockResolvedValue(undefined as never);
   vi.mocked(checkRateLimit).mockResolvedValue({
@@ -168,7 +174,7 @@ describe("POST /api/auth/login — OIDC_ONLY server-side enforcement", () => {
 
     const res = await POST(makeRequest());
     expect(res.status).toBe(403);
-    expect(prisma.user.findFirst).not.toHaveBeenCalled();
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
   });
 
   it("still allows password login when OIDC_ONLY is set but the provider is half-configured", async () => {

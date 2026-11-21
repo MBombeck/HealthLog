@@ -5,9 +5,14 @@ vi.mock("@/lib/auth/mfa-enrollment", () => ({
   syncMfaEnrollCookie: vi.fn().mockResolvedValue(undefined),
 }));
 
+// The exact, case-blind lookup answers with an id; the row read by that id is
+// what each case below decides.
+vi.mock("@/lib/auth/identity-lookup", () => ({
+  findUserIdBySignInName: vi.fn(async () => "matched-account"),
+}));
 vi.mock("@/lib/db", () => ({
   prisma: {
-    user: { findFirst: vi.fn() },
+    user: { findUnique: vi.fn() },
     webauthnMfaCredential: { count: vi.fn().mockResolvedValue(0) },
     // The per-account throttle's reads: no known place, no wait running.
     trustedDevice: { findUnique: vi.fn(async () => null) },
@@ -100,7 +105,7 @@ beforeEach(() => {
 
 describe("login MFA branch", () => {
   it("MFA user → returns mfaRequired + ticket and issues NO session", async () => {
-    vi.mocked(prisma.user.findFirst).mockResolvedValue({
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
       ...BASE_USER,
       totpConfirmedAt: new Date(),
     } as never);
@@ -121,7 +126,7 @@ describe("login MFA branch", () => {
   });
 
   it("WebAuthn-only user (no TOTP) → returns mfaRequired with webauthn method", async () => {
-    vi.mocked(prisma.user.findFirst).mockResolvedValue({
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
       ...BASE_USER,
       totpConfirmedAt: null,
     } as never);
@@ -137,7 +142,7 @@ describe("login MFA branch", () => {
   });
 
   it("non-MFA user → issues the session via finishLogin, no challenge", async () => {
-    vi.mocked(prisma.user.findFirst).mockResolvedValue({
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
       ...BASE_USER,
       totpConfirmedAt: null,
     } as never);
@@ -155,7 +160,7 @@ describe("login MFA branch", () => {
   it("wrong password never reaches the MFA branch", async () => {
     const { verifyPasswordOrDummy } = await import("@/lib/auth/password");
     vi.mocked(verifyPasswordOrDummy).mockResolvedValueOnce(false);
-    vi.mocked(prisma.user.findFirst).mockResolvedValue({
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
       ...BASE_USER,
       totpConfirmedAt: new Date(),
     } as never);
@@ -170,7 +175,7 @@ describe("login MFA branch", () => {
 describe("per-account login throttle", () => {
   it("refuses a throttled account before any password is verified", async () => {
     const { verifyPasswordOrDummy } = await import("@/lib/auth/password");
-    vi.mocked(prisma.user.findFirst).mockResolvedValue({
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
       ...BASE_USER,
       totpConfirmedAt: null,
     } as never);
@@ -190,7 +195,7 @@ describe("per-account login throttle", () => {
   });
 
   it("keys an unknown identifier on its hash, so a lock says nothing about existence", async () => {
-    vi.mocked(prisma.user.findFirst).mockResolvedValue(null as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(null as never);
     const res = await POST(loginRequest());
     expect(res.status).toBe(401);
     expect(vi.mocked(checkRateLimit).mock.calls[0][0]).toMatch(
@@ -200,7 +205,7 @@ describe("per-account login throttle", () => {
 
   it("refunds a successful sign-in and keeps a failed one counted", async () => {
     const { verifyPasswordOrDummy } = await import("@/lib/auth/password");
-    vi.mocked(prisma.user.findFirst).mockResolvedValue({
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
       ...BASE_USER,
       totpConfirmedAt: null,
     } as never);

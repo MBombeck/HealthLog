@@ -21,8 +21,8 @@ function fixture() {
 }
 
 describe("openGadgetbridgeDb", () => {
-  it("classifies the sample tables by name and columns", () => {
-    const db = openGadgetbridgeDb(fixture());
+  it("classifies the sample tables by name and columns", async () => {
+    const db = await openGadgetbridgeDb(fixture());
     try {
       const kinds = Object.fromEntries(
         db.tables.map((t) => [t.name, [t.kind, t.millis]]),
@@ -39,17 +39,19 @@ describe("openGadgetbridgeDb", () => {
       // an empty one and the bookkeeping tables are not.
       expect(db.unread).toEqual([{ name: "HUAMI_STRESS_SAMPLE", rows: 1 }]);
     } finally {
-      db.close();
+      await db.close();
     }
   });
 
-  it("refuses a file that is not a Gadgetbridge database", () => {
+  it("refuses a file that is not a Gadgetbridge database", async () => {
     const path = join(dirname(fixture()), "not-a-db");
     writeFileSync(path, "hello");
-    expect(() => openGadgetbridgeDb(path)).toThrow(RecordFileImportError);
+    await expect(openGadgetbridgeDb(path)).rejects.toThrow(
+      RecordFileImportError,
+    );
   });
 
-  it("refuses a view in place of a sample table", () => {
+  it("refuses a view in place of a sample table", async () => {
     const path = fixture();
     const { DatabaseSync } = process.getBuiltinModule(
       "node:sqlite",
@@ -59,6 +61,42 @@ describe("openGadgetbridgeDb", () => {
       "CREATE VIEW FAKE_ACTIVITY_SAMPLE AS SELECT TIMESTAMP, STEPS FROM MI_BAND_ACTIVITY_SAMPLE",
     );
     db.close();
-    expect(() => openGadgetbridgeDb(path)).toThrow(/unsafe_schema/);
+    await expect(openGadgetbridgeDb(path)).rejects.toThrow(/unsafe_schema/);
+  });
+
+  it("reads on its own thread, leaving the event loop free", async () => {
+    const db = await openGadgetbridgeDb(fixture());
+    try {
+      // A statement that keeps SQLite busy for a while: a recursive count to
+      // a few million. On the caller's thread no timer could fire before it
+      // returned.
+      let ticks = 0;
+      const timer = setInterval(() => ticks++, 1);
+      const batches = db.batches(
+        "WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 3000000) SELECT COUNT(*) AS c FROM n",
+        [],
+        10,
+      );
+      const first = await batches.next();
+      clearInterval(timer);
+      expect(first.value?.[0]?.c).toBe(3000000);
+      expect(ticks).toBeGreaterThan(5);
+    } finally {
+      await db.close();
+    }
+  });
+
+  it("stops an iteration that is left early, and closes twice without error", async () => {
+    const db = await openGadgetbridgeDb(fixture());
+    for await (const batch of db.batches(
+      'SELECT TIMESTAMP FROM "MI_BAND_ACTIVITY_SAMPLE"',
+      [],
+      1,
+    )) {
+      expect(batch).toHaveLength(1);
+      break;
+    }
+    await db.close();
+    await db.close();
   });
 });

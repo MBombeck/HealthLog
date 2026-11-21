@@ -1,3 +1,4 @@
+import { findUserIdBySignInName } from "@/lib/auth/identity-lookup";
 import { prisma } from "@/lib/db";
 import { loginPasswordSchema } from "@/lib/validations/auth";
 import { verifyPasswordOrDummy } from "@/lib/auth/password";
@@ -88,14 +89,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // across IPs without having to look up users by email.
   const identifierHash = hashToken(identifier);
 
-  const user = await prisma.user.findFirst({
-    where: {
-      OR: [
-        { email: { equals: identifier, mode: "insensitive" } },
-        { username: { equals: identifier, mode: "insensitive" } },
-      ],
-    },
-  });
+  // Exact match on either column, ignoring case (`@/lib/auth/identity-lookup`).
+  const userId = await findUserIdBySignInName(identifier);
+  const user = userId
+    ? await prisma.user.findUnique({ where: { id: userId } })
+    : null;
 
   // Under an SSO-only policy the one password sign-in allowed is the one that
   // confirms the account a pending single sign-on link names. Any other

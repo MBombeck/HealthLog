@@ -58,6 +58,7 @@ import {
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
+import { findUserIdBySignInName } from "@/lib/auth/identity-lookup";
 import { prisma } from "@/lib/db";
 import { getAuditLogRetentionDays } from "@/lib/jobs/audit-log-cleanup";
 import { annotate } from "@/lib/logging/context";
@@ -202,15 +203,13 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   // Either column, case-insensitively — the same lookup the login form does,
   // so the name somebody signs in with is the name they can be invited by.
-  const invitee = await prisma.user.findFirst({
-    where: {
-      OR: [
-        { email: { equals: identifier, mode: "insensitive" } },
-        { username: { equals: identifier, mode: "insensitive" } },
-      ],
-    },
-    select: GRANT_PARTY_SELECT,
-  });
+  const inviteeId = await findUserIdBySignInName(identifier);
+  const invitee = inviteeId
+    ? await prisma.user.findUnique({
+        where: { id: inviteeId },
+        select: GRANT_PARTY_SELECT,
+      })
+    : null;
   if (!invitee) {
     return apiError("No account with that name or e-mail", 404, {
       errorCode: INVITE_NO_ACCOUNT_CODE,

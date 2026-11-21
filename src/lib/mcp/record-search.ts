@@ -38,6 +38,7 @@
  * labels) are scrubbed of forged markers instead, as the existing search
  * titles are, because a host renders them in a list.
  */
+import { textContains } from "@/lib/db-like";
 import type {
   EncounterKind,
   IllnessLifecycle,
@@ -632,16 +633,15 @@ async function documentCandidates(
     words.length > 0
       ? contentMatches(userId, words, includeAiDeferred)
       : Promise.resolve(new Map<string, Set<string>>()),
-    // Title and file name are plaintext columns, so an older document is
-    // found by them in SQL, the way the vault list finds it.
+    // Plaintext title and file name: SQL finds older documents by them too.
     nameTerms.length > 0
       ? prisma.inboundDocument.findMany({
           where: {
             userId,
             deletedAt: null,
             OR: nameTerms.flatMap((term) => [
-              { title: { contains: term, mode: "insensitive" as const } },
-              { filename: { contains: term, mode: "insensitive" as const } },
+              { title: textContains(term) },
+              { filename: textContains(term) },
             ]),
           },
           select: { id: true },

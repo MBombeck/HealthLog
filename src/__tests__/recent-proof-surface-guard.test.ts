@@ -79,6 +79,9 @@ const RECENT_PROOF_ROUTES: Record<string, string> = {
   "app/api/export/route.ts": "elevation",
   "app/api/export/full-backup/route.ts": "elevation",
   "app/api/export/encrypted/route.ts": "elevation-if-enrolled",
+  // Writing the WebDAV password decides where a standing credential goes.
+  // Only a save that carries a password asks; the web card is the only client.
+  "app/api/import/health-connect-remote/route.ts": "elevation",
   // A connector token outlives the session that mints it. An account holding
   // a second factor or a passkey proves it in the app; one holding neither
   // (most SSO-only accounts) has nothing it could prove there and mints on its

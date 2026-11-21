@@ -6342,6 +6342,7 @@
             "error": {
               "privateOrigin": "Cette adresse est sur un réseau privé. La personne qui gère le serveur doit d'abord l'autoriser.",
               "invalidUrl": "Saisissez l'adresse complète du dossier, sans nom d'utilisateur ni mot de passe dedans.",
+              "httpsRequired": "Utilisez une adresse https://. Avec http://, le mot de passe circulerait en clair.",
               "passwordRequired": "Saisissez le mot de passe une fois lors de la configuration du dossier.",
               "saveFailed": "Le dossier n'a pas pu être enregistré. Vérifiez l'adresse et réessayez.",
               "fetchFailed": "La récupération n'a pas pu être lancée. Réessayez plus tard."

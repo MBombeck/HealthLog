@@ -6342,6 +6342,7 @@
             "error": {
               "privateOrigin": "Questo indirizzo è in una rete privata. Chi gestisce il server deve prima consentirlo.",
               "invalidUrl": "Inserisci l'indirizzo completo della cartella, senza nome utente o password al suo interno.",
+              "httpsRequired": "Usa un indirizzo https://. Con http:// la password viaggerebbe in chiaro.",
               "passwordRequired": "Inserisci la password una volta quando configuri la cartella.",
               "saveFailed": "Non è stato possibile salvare la cartella. Controlla l'indirizzo e riprova.",
               "fetchFailed": "Non è stato possibile avviare il prelievo. Riprova più tardi."

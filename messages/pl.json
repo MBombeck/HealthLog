@@ -6342,6 +6342,7 @@
             "error": {
               "privateOrigin": "Ten adres jest w sieci prywatnej. Osoba zarządzająca serwerem musi najpierw na niego zezwolić.",
               "invalidUrl": "Wpisz pełny adres folderu, bez nazwy użytkownika ani hasła w środku.",
+              "httpsRequired": "Użyj adresu https://. Przez http:// hasło zostałoby wysłane bez szyfrowania.",
               "passwordRequired": "Wpisz hasło raz przy konfiguracji folderu.",
               "saveFailed": "Nie udało się zapisać folderu. Sprawdź adres i spróbuj ponownie.",
               "fetchFailed": "Nie udało się rozpocząć pobierania. Spróbuj później."

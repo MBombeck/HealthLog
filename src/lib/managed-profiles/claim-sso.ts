@@ -29,6 +29,10 @@
 import { auditLog } from "@/lib/auth/audit";
 import { recordSignInDevice } from "@/lib/auth/login-alert";
 import { createSession } from "@/lib/auth/session";
+import {
+  findUserIdByEmail,
+  findUserIdByUsername,
+} from "@/lib/auth/identity-lookup";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -82,17 +86,14 @@ async function collision(input: {
     return "claim_sso_subject_bound";
   }
   if (input.email) {
-    const byEmail = await prisma.user.findFirst({
-      where: { email: { equals: input.email, mode: "insensitive" } },
-      select: { id: true },
-    });
-    if (byEmail) return "claim_email_taken";
+    if ((await findUserIdByEmail(input.email)) !== null) {
+      return "claim_email_taken";
+    }
   }
-  const byName = await prisma.user.findUnique({
-    where: { username: input.username },
-    select: { id: true },
-  });
-  return byName ? "claim_username_taken" : null;
+  // Case-blind like the unique key it answers for (migration 0517).
+  return (await findUserIdByUsername(input.username)) !== null
+    ? "claim_username_taken"
+    : null;
 }
 
 export async function completeSsoClaim(

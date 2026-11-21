@@ -224,7 +224,7 @@ const healthConnectRemoteState = z
 
 const remoteRefusal = {
   description:
-    "The folder cannot be used: `import.health_connect.remote.invalid_url` (not a URL, or one with credentials, a query or a fragment), `import.health_connect.remote.private_origin_not_approved` (a private address not listed in `HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS`), `import.health_connect.remote.origin_config_invalid`, or `import.health_connect.remote.password_required` on a first save without a password.",
+    "The folder cannot be used: `import.health_connect.remote.invalid_url` (not a URL, or one with credentials, a query or a fragment), `import.health_connect.remote.private_origin_not_approved` (a private address not listed in `HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS`), `import.health_connect.remote.https_required` (a public address over plain `http:`; the password travels in a Basic header), `import.health_connect.remote.origin_config_invalid`, or `import.health_connect.remote.password_required` on a first save, or a save that moves the folder to another origin, without a password.",
   content: { "application/json": { schema: errorEnvelope } },
 };
 
@@ -256,7 +256,7 @@ export const healthConnectRemotePaths: NonNullable<ZodOpenApiObject["paths"]> =
         summary:
           "Save the folder a scheduled Health Connect export is fetched from",
         description:
-          "Saves the folder (`folderUrl`, a WebDAV address such as Nextcloud's `remote.php/dav/files/<user>/<folder>`), the export's `fileName` in it (default `Health Connect.zip`), the WebDAV `username` and, on the first save or to change it, the `password` (sealed at rest, never returned). HealthLog then fetches the file about every six hours, through `safeFetch` with no redirects followed, and hands a file it has not seen (by SHA-256) to the Health Connect import queue, the same importer an upload uses. A failure backs off from thirty minutes to a day. A private address needs its exact origin in `HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS`. Ten saves an hour.",
+          "Saves the folder (`folderUrl`, a WebDAV address such as Nextcloud's `remote.php/dav/files/<user>/<folder>`), the export's `fileName` in it (default `Health Connect.zip`), the WebDAV `username` and, on the first save, on a move to another origin, or to change it, the `password` (sealed at rest, never returned). The stored password only goes to the origin it was given for, so moving the folder to another server without a new one is a 422. A save that carries a `password` asks for a fresh proof: a cookie session that signed in or re-proved within five minutes, else 401 `auth.reproof.required`; a Bearer caller presents an `X-Step-Up` elevation. A public folder must use `https:`; plain `http:` is accepted only for a private origin listed exactly, scheme included. HealthLog then fetches the file about every six hours, through `safeFetch` with no redirects followed, and hands a file it has not seen (by SHA-256) to the Health Connect import queue, the same importer an upload uses. A failure backs off from thirty minutes to a day. A private address needs its exact origin in `HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS`. Ten saves an hour.",
         requestBody: {
           required: true,
           content: {

@@ -170,8 +170,11 @@ async function download(source: SourceRow): Promise<Download> {
   if (!target.allowed || !target.folderUrl || !target.origin) {
     return {
       kind: "outcome",
+      // A public address over plain http (saved before that was refused)
+      // reads as an unusable address: the card asks for a new one.
       outcome:
-        target.reasonCode === "invalid_origin"
+        target.reasonCode === "invalid_origin" ||
+        target.reasonCode === "https_required"
           ? "invalid_origin"
           : "private_origin_not_approved",
     };
@@ -304,7 +307,50 @@ const SOURCE_SELECT = {
   consecutiveFailures: true,
 } as const;
 
-/** Every enabled source that is due, oldest first, at most `limit`. */
+/** Folders read at the same time in one pass. */
+export const REMOTE_FETCH_CONCURRENCY = 4;
+/**
+ * How long a pass keeps starting folders. A download may run for
+ * `DOWNLOAD_TIMEOUT_MS` once started, so the last one ends within about
+ * fourteen minutes, inside the queue's fifteen-minute expiry. A folder not
+ * started by then keeps its due time and is read on the next hourly pass.
+ */
+export const REMOTE_FETCH_START_BUDGET_MS = 4 * 60 * 1000;
+
+/**
+ * Run `work` over `items` in order, at most `concurrency` at once, starting
+ * no item once `deadline` (epoch ms) has passed. Returns the results of the
+ * items that ran, in the order they finished. A slow item holds one lane, so
+ * the others keep moving past it.
+ */
+export async function runWithinBudget<T, R>(
+  items: readonly T[],
+  options: { concurrency: number; deadline: number; now?: () => number },
+  work: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const now = options.now ?? Date.now;
+  const results: R[] = [];
+  let next = 0;
+  async function lane(): Promise<void> {
+    while (next < items.length && now() < options.deadline) {
+      const item = items[next++];
+      results.push(await work(item));
+    }
+  }
+  await Promise.all(
+    Array.from(
+      { length: Math.max(1, Math.min(options.concurrency, items.length)) },
+      lane,
+    ),
+  );
+  return results;
+}
+
+/**
+ * Every enabled source that is due, oldest first, at most `limit`, a few at a
+ * time and within the pass's start budget: one folder on a server that
+ * trickles its bytes no longer holds every other account's folder back.
+ */
 export async function fetchDueRemoteSources(
   now: Date = new Date(),
   limit = 20,
@@ -319,11 +365,21 @@ export async function fetchDueRemoteSources(
     take: limit,
     select: SOURCE_SELECT,
   });
+  const outcomes = await runWithinBudget(
+    due,
+    {
+      concurrency: REMOTE_FETCH_CONCURRENCY,
+      deadline: Date.now() + REMOTE_FETCH_START_BUDGET_MS,
+    },
+    (source) => fetchRemoteSource(source, now),
+  );
   const counts = {} as Record<RemoteOutcome, number>;
-  for (const source of due) {
-    const outcome = await fetchRemoteSource(source, now);
+  for (const outcome of outcomes) {
     counts[outcome] = (counts[outcome] ?? 0) + 1;
   }
+  annotate({
+    meta: { remote_due: due.length, remote_read: outcomes.length },
+  });
   return counts;
 }
 

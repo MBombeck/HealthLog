@@ -22,11 +22,20 @@
  *
  * Every other table with rows is reported as skipped, by name, so the person
  * can see what the file held that HealthLog did not read.
+ *
+ * The file is read on its own thread (`../sqlite-off-thread.ts`): counting a
+ * table, or grouping a year of minute samples by hour, is one synchronous
+ * SQLite call that took seconds on a file at the upload cap, and the import
+ * worker shares its process with the web server by default.
  */
-import type { DatabaseSync, SQLInputValue } from "node:sqlite";
+import type { SQLInputValue } from "node:sqlite";
 import { pathToFileURL } from "node:url";
 
 import { RecordFileImportError } from "@/lib/import/file-import/kinds";
+import {
+  openSqliteOffThread,
+  type OffThreadSqlite,
+} from "@/lib/import/sqlite-off-thread";
 
 export const GB_BATCH_SIZE = 1000;
 
@@ -54,8 +63,8 @@ export interface GadgetbridgeDb {
     sql: string,
     params?: readonly SQLInputValue[],
     size?: number,
-  ): Generator<Array<Record<string, unknown>>>;
-  close(): void;
+  ): AsyncGenerator<Array<Record<string, unknown>>>;
+  close(): Promise<void>;
 }
 
 /** A schema name the importer may splice: greenDAO's upper snake case. */
@@ -108,15 +117,17 @@ function classify(
  * {@link RecordFileImportError} when it is not; the database is closed again
  * in that case.
  */
-export function openGadgetbridgeDb(path: string): GadgetbridgeDb {
+export async function openGadgetbridgeDb(
+  path: string,
+): Promise<GadgetbridgeDb> {
   const url = pathToFileURL(path);
   url.searchParams.set("immutable", "1");
-  let db: DatabaseSync;
+  let db: OffThreadSqlite;
   try {
-    const { DatabaseSync: Database } = process.getBuiltinModule(
-      "node:sqlite",
-    ) as typeof import("node:sqlite");
-    db = new Database(url, { readOnly: true });
+    db = await openSqliteOffThread(
+      url,
+      "PRAGMA trusted_schema = OFF; PRAGMA query_only = ON; PRAGMA cell_size_check = ON; PRAGMA mmap_size = 0;",
+    );
   } catch {
     throw new RecordFileImportError(
       "not_gadgetbridge",
@@ -124,12 +135,9 @@ export function openGadgetbridgeDb(path: string): GadgetbridgeDb {
     );
   }
   try {
-    db.exec(
-      "PRAGMA trusted_schema = OFF; PRAGMA query_only = ON; PRAGMA cell_size_check = ON; PRAGMA mmap_size = 0;",
-    );
-    return inspect(db);
+    return await inspect(db);
   } catch (err) {
-    db.close();
+    await db.close();
     if (err instanceof RecordFileImportError) throw err;
     throw new RecordFileImportError(
       "not_gadgetbridge",
@@ -138,12 +146,10 @@ export function openGadgetbridgeDb(path: string): GadgetbridgeDb {
   }
 }
 
-function inspect(db: DatabaseSync): GadgetbridgeDb {
-  const schema = db
-    .prepare(
-      "SELECT type, name FROM sqlite_schema WHERE type IN ('table', 'view')",
-    )
-    .all() as Array<{ type: string; name: string }>;
+async function inspect(db: OffThreadSqlite): Promise<GadgetbridgeDb> {
+  const schema = (await db.all(
+    "SELECT type, name FROM sqlite_schema WHERE type IN ('table', 'view')",
+  )) as Array<{ type: string; name: string }>;
   const names = new Map(schema.map((row) => [row.name, row.type]));
   if (names.get("DEVICE") !== "table") {
     throw new RecordFileImportError(
@@ -159,7 +165,7 @@ function inspect(db: DatabaseSync): GadgetbridgeDb {
     if (!SAFE_NAME.test(name)) continue;
     const columns = new Set(
       (
-        db.prepare(`PRAGMA table_info("${name}")`).all() as Array<{
+        (await db.all(`PRAGMA table_info("${name}")`)) as Array<{
           name: string;
         }>
       ).map((c) => c.name),
@@ -176,11 +182,7 @@ function inspect(db: DatabaseSync): GadgetbridgeDb {
     if (type !== "table") continue;
     // `name` matched SAFE_NAME, so it can be quoted into the statement.
     const count = Number(
-      (
-        db.prepare(`SELECT COUNT(*) AS n FROM "${name}"`).get() as {
-          n: unknown;
-        }
-      ).n,
+      (await db.get(`SELECT COUNT(*) AS n FROM "${name}"`))?.n,
     );
     if (count === 0) continue;
     if (!kind) {
@@ -188,11 +190,7 @@ function inspect(db: DatabaseSync): GadgetbridgeDb {
       continue;
     }
     const max = Number(
-      (
-        db.prepare(`SELECT MAX(TIMESTAMP) AS t FROM "${name}"`).get() as {
-          t: unknown;
-        }
-      ).t,
+      (await db.get(`SELECT MAX(TIMESTAMP) AS t FROM "${name}"`))?.t,
     );
     tables.push({ name, kind, columns, millis: max > 100_000_000_000 });
   }
@@ -200,24 +198,9 @@ function inspect(db: DatabaseSync): GadgetbridgeDb {
   return {
     tables,
     unread,
-    *batches(sql, params = [], size = GB_BATCH_SIZE) {
-      let batch: Array<Record<string, unknown>> = [];
-      for (const row of db.prepare(sql).iterate(...params)) {
-        batch.push(row as Record<string, unknown>);
-        if (batch.length >= size) {
-          yield batch;
-          batch = [];
-        }
-      }
-      if (batch.length > 0) yield batch;
-    },
-    close() {
-      try {
-        db.close();
-      } catch {
-        // Already closed.
-      }
-    },
+    batches: (sql, params = [], size = GB_BATCH_SIZE) =>
+      db.batches(sql, params, size),
+    close: () => db.close(),
   };
 }
 
