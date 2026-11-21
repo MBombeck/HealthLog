@@ -8,6 +8,11 @@
  * (on only for an account whose phone keeps its own reminders), so a pill
  * box take on a server without its own APNs key reached a server-reminded
  * device as neither: the widget and the app kept showing the dose as due.
+ *
+ * And a Live Activity end over the relay that failed once (a relay outage
+ * past the end's deadline) is sent again by the next flush. Its ref is fixed
+ * per Activity, so the outbox used to skip the new end as a duplicate of the
+ * failed one, and the Activity never ended.
  */
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -43,6 +48,9 @@ import { getPrismaClient, truncateAllTables } from "./setup";
 import { callRoute } from "../kit/call-route";
 import { makeSession, makeToken, makeUser } from "../kit/factories";
 import { deviceBody, enableRelay, registerDevice } from "./push-relay-kit";
+import { tokenTagHex } from "@/lib/push-relay/encoding";
+import { activityText, signText } from "@/lib/push-relay/statements";
+import { RELAY_HOST } from "./push-relay-fake";
 
 const TOKEN = "4a".repeat(32);
 
@@ -90,5 +98,73 @@ describe("a dose recorded elsewhere wakes a relay device", () => {
     // The confirmation is off for this account, so no alert stands in for
     // the sync.
     expect(fake.apns.some((a) => a.pushClass === "alert")).toBe(false);
+  });
+
+  it("sends a Live Activity end again after the first one failed", async () => {
+    const { instanceId } = await enableRelay();
+    const user = await makeUser();
+    const session = await makeSession(user);
+    const { body, binding } = deviceBody(instanceId, TOKEN);
+    const registered = await registerDevice(session, body);
+    const deviceId = registered.data.id;
+    const prisma = getPrismaClient();
+    const medication = await prisma.medication.create({
+      data: { userId: user.id, name: "Ramipril", dose: "5 mg" },
+    });
+    const slot = new Date(Date.now() - 5 * 60_000);
+    await prisma.medicationIntakeEvent.create({
+      data: {
+        userId: user.id,
+        medicationId: medication.id,
+        scheduledFor: slot,
+        takenAt: new Date(),
+      },
+    });
+    const laToken = "7c".repeat(32);
+    const statement = {
+      instanceId,
+      tokenTag: tokenTagHex(TOKEN) as string,
+      laTokenTag: tokenTagHex(laToken) as string,
+      iat: Math.floor(Date.now() / 1000) - 60,
+    };
+    const activity = await prisma.liveActivityToken.create({
+      data: {
+        deviceId,
+        pushToken: laToken,
+        medicationId: medication.id,
+        slotInstant: slot,
+        activityStatement: statement,
+        activitySignature: signText(
+          binding.seed,
+          activityText({ host: RELAY_HOST, ...statement }),
+        ).toString("base64url"),
+      },
+    });
+    // The first end, dropped past its deadline during a relay outage.
+    await prisma.pushRelayDelivery.create({
+      data: {
+        deviceId,
+        ref: `end-${activity.id}`,
+        pushClass: "liveactivity",
+        eventType: "LIVE_ACTIVITY_END",
+        expiresAt: new Date(Date.now() - 60_000),
+        status: "dropped",
+        reason: "expired",
+      },
+    });
+    const { queueMedicationIntakeSync } =
+      await import("@/lib/notifications/medication-intake-sync");
+    queueMedicationIntakeSync({ userId: user.id, originDeviceToken: null });
+    await eventually(() =>
+      fake.apns.some(
+        (a) => a.pushClass === "liveactivity" && a.token === laToken,
+      ),
+    );
+    await eventually(
+      async () =>
+        (await prisma.liveActivityToken.count({
+          where: { id: activity.id },
+        })) === 0,
+    );
   });
 });

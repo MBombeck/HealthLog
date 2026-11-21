@@ -183,6 +183,17 @@ export async function endActivitiesOverRelay(
     ];
   });
   if (items.length === 0) return [];
+  // The ref is fixed per Activity, so one end is in flight at a time. An end
+  // that already failed or was dropped (a relay outage past its deadline)
+  // would make the outbox skip the new one as a duplicate and the Activity
+  // would never end: its final row goes, and this flush sends afresh.
+  await prisma.pushRelayDelivery.deleteMany({
+    where: {
+      deviceId: device.id,
+      ref: { in: items.map((i) => i.ref) },
+      status: { in: ["failed", "dropped"] },
+    },
+  });
   const summary = await sendRelayItems(items, ctx.config);
   const settled = await prisma.pushRelayDelivery.findMany({
     where: {
