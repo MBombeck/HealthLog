@@ -103,7 +103,7 @@ export const devicePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Devices"],
       summary: "Register native device + APNs token",
       description:
-        "Idempotent upsert by `token`. APNs token + environment are paired — supplying one without the other returns 422. Cross-user re-registration of either identifier returns 409. A refused push field (push key, relay binding, consent) returns 422 with `meta.errorCode` `devices.push.<reason>` and changes nothing. The answer's `push` block is the device's push state after the call.",
+        "Idempotent upsert by `token`. APNs token + environment are paired — supplying one without the other returns 422. Cross-user re-registration of either identifier returns 409. A refused push field (push key, relay binding, consent) returns 422 with `meta.errorCode` `devices.push.<reason>` and changes nothing; more than 10 new relay bindings for one account in 24 hours return 429 `devices.push.relay_daily_limit`. When the device's APNs token changes, the old token's relay binding is removed and the device has to bind the new token (`relayState: rebind_needed` unless the request carries the new `relayBinding`). The answer's `push` block is the device's push state after the call.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: deviceRegisterRequest } },

@@ -12,6 +12,8 @@
  *   reach the relay even when it is down at that moment.
  * - M7: one APNs token in other letters is the same token for the ownership
  *   guard.
+ * - A changed APNs token unbinds the old one at the relay, and an account
+ *   starts at most 10 new relay bindings a day.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -312,5 +314,46 @@ describe("M7: token ownership ignores letter case", () => {
       body: { ...base, token: "device-lower", apnsToken: token.toLowerCase() },
     });
     expect(second.status).toBe(409);
+  });
+});
+
+describe("token changes and the daily binding cap", () => {
+  it("unbinds the old token when a device's APNs token changes", async () => {
+    const { instanceId } = await enableRelay();
+    const oldToken = "aa".repeat(32);
+    const newToken = "ab".repeat(32);
+    const { session } = await bindDevice(instanceId, oldToken);
+    const moved = deviceBody(instanceId, newToken, { relayBinding: undefined });
+    const res = await registerDevice(session, {
+      ...moved.body,
+      token: `device-${oldToken.slice(0, 6)}`,
+    });
+    expect(res.status).toBe(201);
+    expect(res.data.push.relayState).toBe("rebind_needed");
+    expect(fake.bindings.has(oldToken)).toBe(false);
+    expect(await getPrismaClient().pushRelayUnbind.count()).toBe(0);
+    const rebound = deviceBody(instanceId, newToken);
+    const again = await registerDevice(session, {
+      ...rebound.body,
+      token: `device-${oldToken.slice(0, 6)}`,
+    });
+    expect(again.data.push.relayState).toBe("bound");
+    expect(fake.bindings.has(newToken)).toBe(true);
+  });
+
+  it("refuses the eleventh new relay binding of an account in a day", async () => {
+    const { instanceId } = await enableRelay();
+    const session = await makeSession(await makeUser());
+    const statuses: number[] = [];
+    let last: Awaited<ReturnType<typeof registerDevice>> | null = null;
+    for (let i = 0; i < 11; i++) {
+      const token = (i + 16).toString(16).repeat(32);
+      const { body } = deviceBody(instanceId, token);
+      last = await registerDevice(session, { ...body, token: "one-phone" });
+      statuses.push(last.status);
+    }
+    expect(statuses.slice(0, 10).every((s) => s === 201)).toBe(true);
+    expect(statuses[10]).toBe(429);
+    expect(last?.meta?.errorCode).toBe("devices.push.relay_daily_limit");
   });
 });

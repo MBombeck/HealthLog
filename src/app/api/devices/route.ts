@@ -38,7 +38,7 @@ import {
   activityStatementSchema,
   applyPushFields,
   devicePushFields,
-  refusePushFields,
+  preparePushFields,
 } from "@/lib/push-relay/device-registration";
 
 const deviceSchema = z
@@ -264,10 +264,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
     medicationDelivery,
   } = parsed.data;
 
-  // A refused push field (a low-order key, a binding without consent or for
-  // another instance or token) answers 422 before anything is written.
-  const pushRefused = await refusePushFields(user.id, parsed.data);
-  if (pushRefused) return pushRefused;
+  // Refused push fields (`preparePushFields`) answer before anything is
+  // written; a relay-bound APNs token this replaces is noted for unbinding.
+  const push = await preparePushFields(user.id, parsed.data);
+  if (push.refused) return push.refused;
 
   const registration = await prisma.$transaction(async (tx) => {
     // Token ownership is decided from one database snapshot. Advisory
