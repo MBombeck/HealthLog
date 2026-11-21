@@ -41,6 +41,11 @@ vi.mock("@/hooks/use-record-capabilities", () => ({
   useActiveRecordName: () => null,
 }));
 
+vi.mock("@tanstack/react-query", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@tanstack/react-query")>()),
+  useQueryClient: () => ({}),
+}));
+
 vi.mock("@/components/illness/use-illness", () => ({
   useIllnessEpisodes: () => ({ data: state.episodes, isLoading: false }),
 }));
@@ -98,6 +103,8 @@ vi.mock("../use-symptoms", () => ({
           },
         },
   useLogSymptomEvents: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useLatestSymptomIntensities: () => new Map(),
+  invalidateSymptomReads: vi.fn(),
   SymptomSaveError: class extends Error {},
   useCreateSymptomDefinition: () => ({
     mutateAsync: vi.fn(),

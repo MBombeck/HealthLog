@@ -43,6 +43,11 @@ vi.mock("@/hooks/use-auth", () => ({
   }),
 }));
 
+// The picker's quick rows read the person's recent types through a query.
+vi.mock("@/components/measurements/entry/use-entry-recall", () => ({
+  useRecentEntryTypes: () => [],
+}));
+
 import { DashboardHeader, greetingLine } from "../dashboard-header";
 import {
   CAPTURE_KIND_ORDER,

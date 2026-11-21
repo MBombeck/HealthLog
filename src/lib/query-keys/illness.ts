@@ -63,4 +63,10 @@ export const illnessKeys = {
   /** One window of occurrences; the window bounds and the filters are the key. */
   symptomEvents: (from: string, to: string, episodeId: string | null) =>
     ["illness", "symptoms", "events", from, to, episodeId] as const,
+  /**
+   * The newest occurrences of every symptom, for the entry form's preset
+   * intensity. Its own shape (one page, no window), so its own key.
+   */
+  symptomLatestEvents: () =>
+    ["illness", "symptoms", "events", "latest"] as const,
 };

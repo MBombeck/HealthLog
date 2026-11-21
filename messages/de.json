@@ -59,7 +59,12 @@
     "readThrottled": "Gerade gibt es zu viele Anfragen, versuch es später noch einmal.",
     "sessionEnded": "Deine Sitzung ist abgelaufen, melde dich erneut an, um weiterzumachen.",
     "signIn": "Anmelden",
-    "yes": "Ja"
+    "yes": "Ja",
+    "savedWithValue": "{label} {value} gespeichert",
+    "savedNamed": "{label} gespeichert",
+    "entryUndone": "Eintrag entfernt",
+    "entryUndoFailed": "Der Eintrag konnte nicht entfernt werden.",
+    "note": "Notiz"
   },
   "apiErrors": {
     "measurement": {
@@ -607,7 +612,8 @@
       "lifeEventDescription": "Umzug, Geburt, neue Stelle",
       "lifeEvent": "Lebensereignis",
       "seizure": "Anfall",
-      "seizureDescription": "Timer starten oder einen nicht gestoppten Anfall eintragen"
+      "seizureDescription": "Timer starten oder einen nicht gestoppten Anfall eintragen",
+      "recentMeasurementDescription": "Zuletzt erfasster Messwert"
     },
     "cycle": "Zyklus",
     "labs": "Laborwerte",
@@ -912,7 +918,6 @@
     "value": "Wert",
     "date": "Datum",
     "source": "Quelle",
-    "notes": "Notizen",
     "typeWeight": "Gewicht",
     "typeBloodPressure": "Blutdruck",
     "typeBpSys": "Sys",
@@ -1112,7 +1117,10 @@
     "typeAcuteTrainingLoad": "Akute Trainingsbelastung",
     "sourceGarmin": "Garmin",
     "valueOutOfRange": "Gib einen Wert zwischen {min} und {max} {unit} ein.",
-    "valueOutOfRangeNoUnit": "Gib einen Wert zwischen {min} und {max} ein."
+    "valueOutOfRangeNoUnit": "Gib einen Wert zwischen {min} und {max} ein.",
+    "lastValue": "Zuletzt {value}, {when}",
+    "lastValueDeviates": "Deutlich anders als dein letzter Wert. Stimmt das?",
+    "saveAndNext": "Speichern und weiter"
   },
   "metricCatalog": {
     "title": "Was HealthLog erfassen kann",
@@ -1181,7 +1189,6 @@
     "previousPage": "Vorherige Seite",
     "nextPage": "Nächste Seite",
     "loginRequired": "Bitte anmelden, um Stimmungseinträge zu sehen.",
-    "note": "Notiz",
     "noteCollapse": "Notiz einklappen",
     "noteExpand": "Notiz vollständig anzeigen",
     "notePlaceholder": "Notiz dazu, wie du dich fühlst…",
@@ -13997,10 +14004,8 @@
       "anchorLow": "Keine",
       "anchorHigh": "Stärkste vorstellbare",
       "intensityValueText": "{value} von {max} ({low} bis {high})",
-      "when": "Wann",
       "during": "Während einer Erkrankung",
       "duringNone": "Nicht verknüpft",
-      "note": "Notiz",
       "notePlaceholder": "Was war sonst noch?",
       "reset": "Formular zurücksetzen",
       "emptyHint": "Leg dein erstes Symptom an, zum Beispiel Aura oder Kopfschmerz.",
@@ -14010,7 +14015,10 @@
       "partlySaved": "{saved} von {total} gespeichert, der Rest ist noch ausgewählt.",
       "severalHint": "Wähle mehrere, wenn sie zusammen auftraten.",
       "filterPlaceholder": "Symptom suchen",
-      "filterEmpty": "Kein Symptom passt."
+      "filterEmpty": "Kein Symptom passt.",
+      "whenHint": "Datum und Uhrzeit anpassen, um einen vergangenen Eintrag zu erfassen.",
+      "intensityShort": "{value}/{max}",
+      "intensityPreset": "Auf deine letzte Einschätzung gesetzt. Ändere sie, wenn es heute anders ist."
     },
     "section": {
       "title": "Deine Symptome",

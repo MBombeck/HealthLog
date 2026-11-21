@@ -59,7 +59,12 @@
     "readThrottled": "Er zijn net te veel verzoeken, dus probeer het later opnieuw.",
     "sessionEnded": "Je sessie is verlopen, dus meld je opnieuw aan om verder te gaan.",
     "signIn": "Aanmelden",
-    "yes": "Ja"
+    "yes": "Ja",
+    "savedWithValue": "{label} {value} opgeslagen",
+    "savedNamed": "{label} opgeslagen",
+    "entryUndone": "Invoer verwijderd",
+    "entryUndoFailed": "De invoer kon niet worden verwijderd.",
+    "note": "Notitie"
   },
   "apiErrors": {
     "measurement": {
@@ -607,7 +612,8 @@
       "lifeEventDescription": "Een verhuizing, een geboorte, een nieuwe baan",
       "lifeEvent": "Levensgebeurtenis",
       "seizure": "Aanval",
-      "seizureDescription": "Start de timer of leg een niet getimede aanval vast"
+      "seizureDescription": "Start de timer of leg een niet getimede aanval vast",
+      "recentMeasurementDescription": "Onlangs vastgelegde meting"
     },
     "cycle": "Cyclus",
     "labs": "Labwaarden",
@@ -912,7 +918,6 @@
     "value": "Waarde",
     "date": "Datum",
     "source": "Bron",
-    "notes": "Notities",
     "typeWeight": "Gewicht",
     "typeBloodPressure": "Bloeddruk",
     "typeBpSys": "Sys",
@@ -1112,7 +1117,10 @@
     "typeAcuteTrainingLoad": "Acute trainingsbelasting",
     "sourceGarmin": "Garmin",
     "valueOutOfRange": "Vul een waarde in tussen {min} en {max} {unit}.",
-    "valueOutOfRangeNoUnit": "Vul een waarde in tussen {min} en {max}."
+    "valueOutOfRangeNoUnit": "Vul een waarde in tussen {min} en {max}.",
+    "lastValue": "Laatst {value}, {when}",
+    "lastValueDeviates": "Flink anders dan je vorige meting. Klopt dat?",
+    "saveAndNext": "Opslaan en volgende"
   },
   "metricCatalog": {
     "title": "Wat HealthLog kan bijhouden",
@@ -1181,7 +1189,6 @@
     "previousPage": "Vorige pagina",
     "nextPage": "Volgende pagina",
     "loginRequired": "Log in om stemmingsregistraties te bekijken.",
-    "note": "Notitie",
     "noteCollapse": "Notitie inklappen",
     "noteExpand": "Volledige notitie tonen",
     "notePlaceholder": "Voeg een notitie toe over hoe je je voelt…",
@@ -13997,10 +14004,8 @@
       "anchorLow": "Geen",
       "anchorHigh": "Ergst denkbaar",
       "intensityValueText": "{value} van {max} ({low} tot {high})",
-      "when": "Wanneer",
       "during": "Tijdens een ziekte",
       "duringNone": "Niet gekoppeld",
-      "note": "Notitie",
       "notePlaceholder": "Wat speelde er verder?",
       "reset": "Formulier leegmaken",
       "emptyHint": "Voeg je eerste symptoom toe, bijvoorbeeld aura of hoofdpijn.",
@@ -14010,7 +14015,10 @@
       "partlySaved": "{saved} van {total} opgeslagen, de rest is nog gekozen.",
       "severalHint": "Kies er meerdere als ze samen optraden.",
       "filterPlaceholder": "Symptoom zoeken",
-      "filterEmpty": "Geen symptoom komt overeen."
+      "filterEmpty": "Geen symptoom komt overeen.",
+      "whenHint": "Pas datum en tijd aan om een eerdere invoer vast te leggen.",
+      "intensityShort": "{value}/{max}",
+      "intensityPreset": "Ingesteld op je laatste beoordeling. Pas aan als het vandaag anders is."
     },
     "section": {
       "title": "Je symptomen",

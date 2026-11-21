@@ -19,7 +19,7 @@ import { surfaceModule } from "@/lib/modules/surface";
 import {
   MEASUREMENT_FORM_TYPE_VALUES,
   measurementFormTypes,
-} from "../measurement-form";
+} from "../measurement-form-types";
 
 describe("measurementFormTypes", () => {
   it("drops sleep and glucose while their modules are off", () => {

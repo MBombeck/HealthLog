@@ -59,7 +59,12 @@
     "readThrottled": "There are too many requests just now, so try again later.",
     "sessionEnded": "Your session has ended, so sign in again to continue.",
     "signIn": "Sign in",
-    "yes": "Yes"
+    "yes": "Yes",
+    "savedWithValue": "{label} {value} saved",
+    "savedNamed": "{label} saved",
+    "entryUndone": "Entry removed",
+    "entryUndoFailed": "The entry could not be removed.",
+    "note": "Note"
   },
   "apiErrors": {
     "measurement": {
@@ -607,7 +612,8 @@
       "lifeEventDescription": "A move, a birth, a new job",
       "lifeEvent": "Life event",
       "seizure": "Seizure",
-      "seizureDescription": "Start the timer or record one that was not timed"
+      "seizureDescription": "Start the timer or record one that was not timed",
+      "recentMeasurementDescription": "Recently logged measurement"
     },
     "cycle": "Cycle",
     "labs": "Labs",
@@ -912,7 +918,6 @@
     "value": "Value",
     "date": "Date",
     "source": "Source",
-    "notes": "Notes",
     "typeWeight": "Weight",
     "typeBloodPressure": "Blood Pressure",
     "typeBpSys": "Sys",
@@ -1112,7 +1117,10 @@
     "typeAcuteTrainingLoad": "Acute training load",
     "sourceGarmin": "Garmin",
     "valueOutOfRange": "Enter a value between {min} and {max} {unit}.",
-    "valueOutOfRangeNoUnit": "Enter a value between {min} and {max}."
+    "valueOutOfRangeNoUnit": "Enter a value between {min} and {max}.",
+    "lastValue": "Last {value}, {when}",
+    "lastValueDeviates": "Quite different from your last reading. Is that right?",
+    "saveAndNext": "Save and next"
   },
   "metricCatalog": {
     "title": "What HealthLog can track",
@@ -1181,7 +1189,6 @@
     "previousPage": "Previous page",
     "nextPage": "Next page",
     "loginRequired": "Please sign in to view mood entries.",
-    "note": "Note",
     "noteCollapse": "Collapse note",
     "noteExpand": "Show full note",
     "notePlaceholder": "Add a note about how you're feeling…",
@@ -13997,10 +14004,8 @@
       "anchorLow": "None",
       "anchorHigh": "Worst imaginable",
       "intensityValueText": "{value} of {max} ({low} to {high})",
-      "when": "When",
       "during": "During an illness",
       "duringNone": "Not linked",
-      "note": "Note",
       "notePlaceholder": "What else was going on?",
       "reset": "Reset form",
       "emptyHint": "Add your first symptom, for example aura or headache.",
@@ -14010,7 +14015,10 @@
       "partlySaved": "{saved} of {total} saved, the rest is still picked.",
       "severalHint": "Pick several if they came together.",
       "filterPlaceholder": "Find a symptom",
-      "filterEmpty": "No symptom matches."
+      "filterEmpty": "No symptom matches.",
+      "whenHint": "Adjust the date and time to log a past entry.",
+      "intensityShort": "{value}/{max}",
+      "intensityPreset": "Set to your last rating. Change it if today is different."
     },
     "section": {
       "title": "Your symptoms",

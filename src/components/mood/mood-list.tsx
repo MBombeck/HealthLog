@@ -1006,7 +1006,7 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
             {/* v1.8.5 — free-text note. */}
             <div className="space-y-2">
               <Label htmlFor="edit-mood-note">
-                {t("mood.note")} ({t("common.optional")})
+                {t("common.note")} ({t("common.optional")})
               </Label>
               <Textarea
                 id="edit-mood-note"

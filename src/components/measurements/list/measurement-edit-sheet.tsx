@@ -154,7 +154,7 @@ export function MeasurementEditSheet({
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-3">
                 <Label htmlFor="edit-notes">
-                  {t("measurements.notes")} ({t("common.optional")})
+                  {t("common.note")} ({t("common.optional")})
                 </Label>
                 <span className="text-muted-foreground text-xs">
                   {editNotes.length}/{MAX_COMMENT_LENGTH}

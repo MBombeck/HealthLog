@@ -128,6 +128,7 @@ export function QuickEntrySheets({
           onSuccess={onClose}
           onCancel={onClose}
           footerSlot={measurementFooterEl}
+          chain
         />
       </ResponsiveSheet>
       <ResponsiveSheet

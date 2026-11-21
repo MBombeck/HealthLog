@@ -59,7 +59,12 @@
     "readThrottled": "Сейчас слишком много запросов, попробуйте позже.",
     "sessionEnded": "Сеанс завершён, войдите снова, чтобы продолжить.",
     "signIn": "Вход",
-    "yes": "Да"
+    "yes": "Да",
+    "savedWithValue": "Сохранено: {label} {value}",
+    "savedNamed": "Сохранено: {label}",
+    "entryUndone": "Запись удалена",
+    "entryUndoFailed": "Не удалось удалить запись.",
+    "note": "Заметка"
   },
   "apiErrors": {
     "measurement": {
@@ -607,7 +612,8 @@
       "lifeEventDescription": "Переезд, рождение ребёнка, новая работа",
       "lifeEvent": "Событие жизни",
       "seizure": "Приступ",
-      "seizureDescription": "Запустите таймер или запишите приступ без замера времени"
+      "seizureDescription": "Запустите таймер или запишите приступ без замера времени",
+      "recentMeasurementDescription": "Недавно записанное измерение"
     },
     "cycle": "Цикл",
     "labs": "Анализы",
@@ -912,7 +918,6 @@
     "value": "Значение",
     "date": "Дата",
     "source": "Источник",
-    "notes": "Заметки",
     "typeWeight": "Вес",
     "typeBloodPressure": "АД",
     "typeBpSys": "Сист.",
@@ -1112,7 +1117,10 @@
     "typeAcuteTrainingLoad": "Острая тренировочная нагрузка",
     "sourceGarmin": "Garmin",
     "valueOutOfRange": "Введите значение от {min} до {max} {unit}.",
-    "valueOutOfRangeNoUnit": "Введите значение от {min} до {max}."
+    "valueOutOfRangeNoUnit": "Введите значение от {min} до {max}.",
+    "lastValue": "Последнее: {value}, {when}",
+    "lastValueDeviates": "Заметно отличается от прошлого измерения. Всё верно?",
+    "saveAndNext": "Сохранить и далее"
   },
   "metricCatalog": {
     "title": "Что умеет отслеживать HealthLog",
@@ -1181,7 +1189,6 @@
     "previousPage": "Предыдущая страница",
     "nextPage": "Следующая страница",
     "loginRequired": "Войдите, чтобы просматривать записи настроения.",
-    "note": "Заметка",
     "noteCollapse": "Свернуть заметку",
     "noteExpand": "Показать заметку полностью",
     "notePlaceholder": "Добавьте заметку о том, как вы себя чувствуете…",
@@ -13997,10 +14004,8 @@
       "anchorLow": "Нет",
       "anchorHigh": "Худшее, что можно представить",
       "intensityValueText": "{value} из {max} ({low} — {high})",
-      "when": "Когда",
       "during": "Во время заболевания",
       "duringNone": "Не связано",
-      "note": "Заметка",
       "notePlaceholder": "Что ещё происходило?",
       "reset": "Сбросить форму",
       "emptyHint": "Добавьте свой первый симптом, например ауру или головную боль.",
@@ -14010,7 +14015,10 @@
       "partlySaved": "Сохранено {saved} из {total}, остальные всё ещё выбраны.",
       "severalHint": "Выберите несколько, если они появились вместе.",
       "filterPlaceholder": "Найти симптом",
-      "filterEmpty": "Подходящих симптомов нет."
+      "filterEmpty": "Подходящих симптомов нет.",
+      "whenHint": "Измените дату и время, чтобы записать прошлую запись.",
+      "intensityShort": "{value}/{max}",
+      "intensityPreset": "Установлено по вашей последней оценке. Измените, если сегодня иначе."
     },
     "section": {
       "title": "Ваши симптомы",

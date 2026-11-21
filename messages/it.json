@@ -59,7 +59,12 @@
     "readThrottled": "Ci sono troppe richieste in questo momento, quindi riprova più tardi.",
     "sessionEnded": "La tua sessione è scaduta, quindi accedi di nuovo per continuare.",
     "signIn": "Accedi",
-    "yes": "Sì"
+    "yes": "Sì",
+    "savedWithValue": "{label} {value} salvato",
+    "savedNamed": "{label} salvato",
+    "entryUndone": "Voce rimossa",
+    "entryUndoFailed": "Impossibile rimuovere la voce.",
+    "note": "Nota"
   },
   "apiErrors": {
     "measurement": {
@@ -607,7 +612,8 @@
       "lifeEventDescription": "Un trasloco, una nascita, un nuovo lavoro",
       "lifeEvent": "Evento di vita",
       "seizure": "Crisi",
-      "seizureDescription": "Avvia il timer o registra una crisi non cronometrata"
+      "seizureDescription": "Avvia il timer o registra una crisi non cronometrata",
+      "recentMeasurementDescription": "Misurazione registrata di recente"
     },
     "cycle": "Ciclo",
     "labs": "Esami",
@@ -912,7 +918,6 @@
     "value": "Valore",
     "date": "Data",
     "source": "Sorgente",
-    "notes": "Note",
     "typeWeight": "Peso",
     "typeBloodPressure": "Pressione arteriosa",
     "typeBpSys": "Sis",
@@ -1112,7 +1117,10 @@
     "typeAcuteTrainingLoad": "Carico di allenamento acuto",
     "sourceGarmin": "Garmin",
     "valueOutOfRange": "Inserisci un valore tra {min} e {max} {unit}.",
-    "valueOutOfRangeNoUnit": "Inserisci un valore tra {min} e {max}."
+    "valueOutOfRangeNoUnit": "Inserisci un valore tra {min} e {max}.",
+    "lastValue": "Ultimo: {value}, {when}",
+    "lastValueDeviates": "Molto diverso dalla tua ultima misurazione. È corretto?",
+    "saveAndNext": "Salva e avanti"
   },
   "metricCatalog": {
     "title": "Cosa può monitorare HealthLog",
@@ -1181,7 +1189,6 @@
     "previousPage": "Pagina precedente",
     "nextPage": "Pagina successiva",
     "loginRequired": "Accedi per vedere le voci dell’umore.",
-    "note": "Nota",
     "noteCollapse": "Comprimi nota",
     "noteExpand": "Mostra nota completa",
     "notePlaceholder": "Aggiungi una nota su come ti senti…",
@@ -13997,10 +14004,8 @@
       "anchorLow": "Nessuna",
       "anchorHigh": "La peggiore immaginabile",
       "intensityValueText": "{value} su {max} (da {low} a {high})",
-      "when": "Quando",
       "during": "Durante una malattia",
       "duringNone": "Non collegato",
-      "note": "Nota",
       "notePlaceholder": "Cos'altro stava succedendo?",
       "reset": "Reimposta modulo",
       "emptyHint": "Aggiungi il tuo primo sintomo, per esempio aura o mal di testa.",
@@ -14010,7 +14015,10 @@
       "partlySaved": "{saved} di {total} salvati, il resto è ancora selezionato.",
       "severalHint": "Scegline più di uno se sono comparsi insieme.",
       "filterPlaceholder": "Cerca un sintomo",
-      "filterEmpty": "Nessun sintomo corrisponde."
+      "filterEmpty": "Nessun sintomo corrisponde.",
+      "whenHint": "Modifica data e ora per registrare una voce passata.",
+      "intensityShort": "{value}/{max}",
+      "intensityPreset": "Impostato sulla tua ultima valutazione. Cambiala se oggi è diverso."
     },
     "section": {
       "title": "I tuoi sintomi",

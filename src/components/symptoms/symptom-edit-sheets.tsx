@@ -145,7 +145,7 @@ export function EditSymptomEventSheet({
         />
         <FieldGroup
           htmlFor="symptom-event-occurred-at"
-          label={t("symptoms.entry.when")}
+          label={t("measurements.timestamp")}
         >
           <DateTimeField
             id="symptom-event-occurred-at"
@@ -165,7 +165,7 @@ export function EditSymptomEventSheet({
           htmlFor="symptom-event-note"
           label={
             <>
-              {t("symptoms.entry.note")}
+              {t("common.note")}
               <span className="text-muted-foreground ml-1 font-normal">
                 ({t("common.optional")})
               </span>
