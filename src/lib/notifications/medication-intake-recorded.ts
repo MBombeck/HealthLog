@@ -38,6 +38,11 @@ import {
 import { recordPushAttempt } from "@/lib/notifications/senders/push-attempt-record";
 import { CLIENT_MANAGED_APNS_EVENTS } from "@/lib/notifications/client-managed-apns";
 import { pendingDeletionOf } from "@/lib/account-deletion/pending";
+import {
+  loadPushContext,
+  ROUTABLE_DEVICE_SELECT,
+} from "@/lib/push-relay/route-device";
+import { sendSealedIntakeRecorded } from "@/lib/push-relay/medication-pushes";
 
 /** The confirmation of a row that now records a take or a skip, else none. */
 export function recordedEventOf(
@@ -160,17 +165,9 @@ export function intakeRecordedPayload(
   event: IntakeRecordedEvent,
   locale: Locale,
 ): Record<string, unknown> {
-  const { t } = getServerTranslator(locale);
   return {
     aps: {
-      alert: {
-        title: t("notifications.intakeRecorded.title"),
-        body: t(
-          event.outcome === "taken"
-            ? "notifications.intakeRecorded.bodyTaken"
-            : "notifications.intakeRecorded.bodySkipped",
-        ),
-      },
+      alert: recordedText(event, locale),
       "mutable-content": 1,
       "interruption-level": "passive",
       "thread-id": `medication-${event.medicationId}`,
@@ -185,11 +182,35 @@ export function intakeRecordedPayload(
   };
 }
 
+/** The neutral localised text of one confirmation. */
+function recordedText(event: IntakeRecordedEvent, locale: Locale) {
+  const { t } = getServerTranslator(locale);
+  return {
+    title: t("notifications.intakeRecorded.title"),
+    body: t(
+      event.outcome === "taken"
+        ? "notifications.intakeRecorded.bodyTaken"
+        : "notifications.intakeRecorded.bodySkipped",
+    ),
+  };
+}
+
 async function sendIntakeRecorded(userId: string, item: Pending) {
   try {
     const config = loadApnsConfig();
-    if (!config) return;
     if (await pendingDeletionOf(userId)) return;
+    const [devices, user] = await Promise.all([
+      prisma.device.findMany({
+        where: { userId, apnsToken: { not: null } },
+        select: { token: true, ...ROUTABLE_DEVICE_SELECT },
+      }),
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { locale: true },
+      }),
+    ]);
+    const sealedAny = devices.some((d) => d.pushKeyPublic !== null);
+    if (!config && !sealedAny) return;
     if (!(await recordedConfirmationEnabled(userId))) {
       recordPushAttempt({
         userId,
@@ -200,16 +221,6 @@ async function sendIntakeRecorded(userId: string, item: Pending) {
       });
       return;
     }
-    const [devices, user] = await Promise.all([
-      prisma.device.findMany({
-        where: { userId, apnsToken: { not: null } },
-        select: { token: true, apnsToken: true, apnsEnvironment: true },
-      }),
-      prisma.user.findUnique({
-        where: { id: userId },
-        select: { locale: true },
-      }),
-    ]);
     const recipients = devices.filter(
       (d) => !item.originDeviceToken || d.token !== item.originDeviceToken,
     );
@@ -223,11 +234,25 @@ async function sendIntakeRecorded(userId: string, item: Pending) {
       });
       return;
     }
-    const payload = intakeRecordedPayload(item.event, localeOf(user?.locale));
+    const locale = localeOf(user?.locale);
     let anyOk = false;
     let lastReason: string | undefined;
+    // A device with a push key gets the confirmation sealed, over this
+    // server's APNs key or the relay; never the plaintext below.
+    const sealedDevices = recipients.filter((d) => d.pushKeyPublic !== null);
+    if (sealedDevices.length > 0) {
+      const sealed = await sendSealedIntakeRecorded(
+        sealedDevices,
+        item.event,
+        recordedText(item.event, locale),
+        await loadPushContext(),
+      );
+      if (sealed.anyAccepted) anyOk = true;
+      else if (sealed.lastFailure) lastReason = sealed.lastFailure;
+    }
+    const payload = intakeRecordedPayload(item.event, locale);
     for (const device of recipients) {
-      if (!device.apnsToken) continue;
+      if (!config || !device.apnsToken || device.pushKeyPublic) continue;
       const result = await sendApnsRawPush({
         deviceToken: device.apnsToken,
         environment:

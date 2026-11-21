@@ -51,6 +51,11 @@ const recordPushAttemptMock = vi.fn();
 vi.mock("@/lib/notifications/senders/apns", () => ({
   sendViaApns: (...args: unknown[]) => sendViaApnsMock(...args),
 }));
+// No device here holds a push key, so the sealed front of the APNs channel
+// hands every send straight to `sendViaApns`.
+vi.mock("@/lib/push-relay/apns-channel", () => ({
+  sendApnsChannel: (...args: unknown[]) => sendViaApnsMock(...args),
+}));
 vi.mock("@/lib/notifications/senders/telegram", () => ({
   sendViaTelegram: (...args: unknown[]) => sendViaTelegramMock(...args),
 }));

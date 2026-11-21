@@ -81,6 +81,11 @@ import {
   queueIntakeRecorded,
   type IntakeRecordedEvent,
 } from "@/lib/notifications/medication-intake-recorded";
+import { loadPushContext, routeOf } from "@/lib/push-relay/route-device";
+import {
+  endActivitiesOverRelay,
+  sendSealedIntakeSync,
+} from "@/lib/push-relay/medication-pushes";
 
 const EVENT_TYPE = "MEDICATION_INTAKE_SYNC";
 
@@ -110,6 +115,8 @@ export interface IntakeSyncRequest {
 interface CoalesceWindow {
   /** Mutations that arrived AFTER the leading dispatch. */
   queued: number;
+  /** Whether every queued mutation also recorded a take or a skip. */
+  allRecorded: boolean;
   /** Distinct non-null origin tokens among the queued mutations. */
   originTokens: Set<string>;
   /** Whether any queued mutation had no origin token (web caller). */
@@ -140,9 +147,13 @@ export function queueMedicationIntakeSync(input: IntakeSyncRequest): void {
       originDeviceToken: input.originDeviceToken ?? null,
     });
   }
+  const recordedHere = Array.isArray(recorded)
+    ? recorded.length > 0
+    : recorded !== undefined;
   const existing = openWindows.get(input.userId);
   if (existing) {
     existing.queued += 1;
+    existing.allRecorded &&= recordedHere;
     if (input.originDeviceToken) {
       existing.originTokens.add(input.originDeviceToken);
     } else {
@@ -153,6 +164,7 @@ export function queueMedicationIntakeSync(input: IntakeSyncRequest): void {
 
   const window: CoalesceWindow = {
     queued: 0,
+    allRecorded: true,
     originTokens: new Set(),
     sawNullOrigin: false,
   };
@@ -169,6 +181,7 @@ export function queueMedicationIntakeSync(input: IntakeSyncRequest): void {
         : null;
     void flushIntakeSync(input.userId, {
       coalesced: window.queued,
+      recordedInFlush: window.allRecorded,
       originDeviceToken: origin,
     });
   }, COALESCE_WINDOW_MS);
@@ -179,6 +192,7 @@ export function queueMedicationIntakeSync(input: IntakeSyncRequest): void {
   // clears the other device at APNs latency, not after the window.
   void flushIntakeSync(input.userId, {
     coalesced: 0,
+    recordedInFlush: recordedHere,
     originDeviceToken: input.originDeviceToken ?? null,
   });
 }
@@ -217,13 +231,23 @@ async function apnsSyncEnabled(userId: string): Promise<boolean> {
  */
 async function flushIntakeSync(
   userId: string,
-  opts: { coalesced: number; originDeviceToken: string | null },
+  opts: {
+    coalesced: number;
+    originDeviceToken: string | null;
+    recordedInFlush: boolean;
+  },
 ): Promise<void> {
   try {
     const config = loadApnsConfig();
-    if (!config) {
-      // APNs not configured on this deployment — nothing to do. No ledger
-      // row: the silent-sync channel is a no-op, not a delivery attempt.
+    // Without an APNs key of its own the server reaches only sealed devices
+    // (over the relay). With none of those either there is nothing to do; no
+    // ledger row: the silent-sync channel is a no-op, not a delivery attempt.
+    if (
+      !config &&
+      (await prisma.device.count({
+        where: { userId, pushKeyPublic: { not: null } },
+      })) === 0
+    ) {
       return;
     }
 
@@ -259,12 +283,18 @@ async function flushIntakeSync(
         apnsToken: true,
         apnsEnvironment: true,
         liveActivityPushToken: true,
+        pushKeyPublic: true,
+        relayState: true,
+        relayConsentAt: true,
+        relayBindingKey: true,
         liveActivities: {
           select: {
             id: true,
             pushToken: true,
             medicationId: true,
             slotInstant: true,
+            activityStatement: true,
+            activitySignature: true,
           },
           orderBy: [{ createdAt: "asc" }, { id: "asc" }],
         },
@@ -297,8 +327,9 @@ async function flushIntakeSync(
     await fanOutIntakeSyncApns({
       userId,
       recipients,
-      bundleId: config.bundleId,
+      bundleId: config?.bundleId ?? null,
       liveActivityEnd: memoEndState(userId),
+      recordedInFlush: opts.recordedInFlush,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -314,11 +345,17 @@ interface SyncRecipient {
   apnsToken: string | null;
   apnsEnvironment: string | null;
   liveActivityPushToken: string | null;
+  pushKeyPublic: string | null;
+  relayState: string;
+  relayConsentAt: Date | null;
+  relayBindingKey: string | null;
   liveActivities: Array<{
     id: string;
     pushToken: string;
     medicationId: string;
     slotInstant: Date | null;
+    activityStatement: unknown;
+    activitySignature: string | null;
   }>;
 }
 
@@ -336,7 +373,10 @@ interface ActivityDose {
 async function fanOutIntakeSyncApns(args: {
   userId: string;
   recipients: SyncRecipient[];
-  bundleId: string;
+  /** This server's own APNs topic, or null when it has no APNs key. */
+  bundleId: string | null;
+  /** The flush also confirms a recorded dose (sealed devices skip the sync). */
+  recordedInFlush: boolean;
   /**
    * The final content-state to end an Activity showing this dose with, or
    * null to leave it running.
@@ -361,22 +401,51 @@ async function fanOutIntakeSyncApns(args: {
   const spentActivityIds: string[] = [];
   let lastFailureReason: string | undefined;
 
+  // Devices with a push key get the sync sealed, over the relay or this
+  // server's own key; never the plaintext trigger below.
+  const sealedDevices = args.recipients.filter((d) => d.pushKeyPublic);
+  const ctx = sealedDevices.length > 0 ? await loadPushContext() : null;
+  if (ctx) {
+    const sealed = await sendSealedIntakeSync(sealedDevices, ctx, {
+      recordedInFlush: args.recordedInFlush,
+    });
+    if (sealed.anyAccepted) anySuccess = true;
+    else if (sealed.lastFailure) lastFailureReason = sealed.lastFailure;
+  }
+
   for (const device of args.recipients) {
     if (!device.apnsToken) continue;
     const environment: "sandbox" | "production" =
       device.apnsEnvironment === "production" ? "production" : "sandbox";
 
-    // 1) Silent background reconcile push — one per device.
-    const silent = await sendApnsRawPush({
-      deviceToken: device.apnsToken,
-      environment,
-      pushType: "background",
-      payload: silentPayload,
-      priority: 5,
-    });
-    if (silent.ok) {
+    // A relay device's Activities end over the relay, with the statement the
+    // device signed at their start.
+    if (ctx && routeOf(device, ctx) === "relay") {
+      const due = [];
+      for (const activity of device.liveActivities) {
+        if (await args.liveActivityEnd(activity)) due.push(activity);
+      }
+      spentActivityIds.push(
+        ...(await endActivitiesOverRelay(device, due, ctx)),
+      );
+      continue;
+    }
+    const bundleId = args.bundleId;
+    if (!bundleId) continue;
+
+    // 1) Silent background reconcile push — one per device without a key.
+    const silent = device.pushKeyPublic
+      ? null
+      : await sendApnsRawPush({
+          deviceToken: device.apnsToken,
+          environment,
+          pushType: "background",
+          payload: silentPayload,
+          priority: 5,
+        });
+    if (silent?.ok) {
       anySuccess = true;
-    } else {
+    } else if (silent) {
       lastFailureReason = silent.reason;
       if (silent.shouldDisable) deadDeviceIds.push(device.id);
     }
@@ -390,7 +459,7 @@ async function fanOutIntakeSyncApns(args: {
       const spent = await sendLiveActivityEnd({
         token: activity.pushToken,
         environment,
-        bundleId: args.bundleId,
+        bundleId,
         contentState: endState,
       });
       if (spent) spentActivityIds.push(activity.id);
@@ -402,7 +471,7 @@ async function fanOutIntakeSyncApns(args: {
       const spent = await sendLiveActivityEnd({
         token: device.liveActivityPushToken,
         environment,
-        bundleId: args.bundleId,
+        bundleId,
         contentState: endState,
       });
       if (spent) spentLiveActivityDeviceIds.push(device.id);
