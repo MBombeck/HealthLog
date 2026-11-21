@@ -150,83 +150,86 @@ display per the user's preference. Event-class types record a single
 fired event (`value` is `1`) and are normally produced by a device, not
 hand-authored.
 
-| Type                            | Canonical unit       |
-| ------------------------------- | -------------------- |
-| `WEIGHT`                        | kg                   |
-| `BLOOD_PRESSURE_SYS`            | mmHg                 |
-| `BLOOD_PRESSURE_DIA`            | mmHg                 |
-| `PULSE`                         | bpm                  |
-| `RESTING_HEART_RATE`            | bpm                  |
-| `WALKING_HEART_RATE_AVERAGE`    | bpm                  |
-| `AVERAGE_HEART_RATE`            | bpm                  |
-| `MAX_HEART_RATE`                | bpm                  |
-| `CARDIO_RECOVERY`               | bpm                  |
-| `HEART_RATE_VARIABILITY`        | ms (SDNN)            |
-| `HRV_RMSSD`                     | ms (RMSSD)           |
-| `RESPIRATORY_RATE`              | count/min            |
-| `OXYGEN_SATURATION`             | percent (0–100)      |
-| `BLOOD_GLUCOSE`                 | mg/dL                |
-| `BLOOD_KETONES`                 | mmol/L               |
-| `INSULIN_DELIVERY`              | IU                   |
-| `FEV1`                          | L                    |
-| `FVC`                           | L                    |
-| `PEAK_EXPIRATORY_FLOW`          | L/min                |
-| `INHALER_USAGE`                 | count                |
-| `BODY_FAT`                      | percent (0–100)      |
-| `FAT_MASS`                      | kg                   |
-| `FAT_FREE_MASS`                 | kg                   |
-| `LEAN_BODY_MASS`                | kg                   |
-| `MUSCLE_MASS`                   | kg                   |
-| `BONE_MASS`                     | kg                   |
-| `TOTAL_BODY_WATER`              | kg                   |
-| `VISCERAL_FAT`                  | rating               |
-| `BODY_MASS_INDEX`               | kg/m²                |
-| `BODY_TEMPERATURE`              | °C (core)            |
-| `SKIN_TEMPERATURE`              | °C (dermal spot)     |
-| `WRIST_TEMPERATURE`             | °C (overnight wrist) |
-| `SLEEP_DURATION`                | minutes              |
-| `SLEEP_NEED`                    | minutes              |
-| `SLEEP_PERFORMANCE`             | percent (0–100)      |
-| `SLEEP_EFFICIENCY`              | percent (0–100)      |
-| `SLEEP_CONSISTENCY`             | percent (0–100)      |
-| `SLEEP_DISTURBANCE_COUNT`       | count                |
-| `BREATHING_DISTURBANCES`        | count                |
-| `ACTIVITY_STEPS`                | count                |
-| `FLIGHTS_CLIMBED`               | count                |
-| `WALKING_RUNNING_DISTANCE`      | metres               |
-| `SIX_MINUTE_WALK_DISTANCE`      | metres               |
-| `WALKING_STEP_LENGTH`           | metres               |
-| `WALKING_SPEED`                 | m/s                  |
-| `STAIR_ASCENT_SPEED`            | m/s                  |
-| `STAIR_DESCENT_SPEED`           | m/s                  |
-| `WALKING_STEADINESS`            | percent (0–100)      |
-| `WALKING_ASYMMETRY`             | percent (0–100)      |
-| `WALKING_DOUBLE_SUPPORT`        | percent (0–100)      |
-| `ACTIVE_ENERGY_BURNED`          | kcal                 |
-| `BASAL_ENERGY_BURNED`           | kcal                 |
-| `ENERGY_EXPENDITURE_KJ`         | kJ                   |
-| `VO2_MAX`                       | mL/(kg·min)          |
-| `PULSE_WAVE_VELOCITY`           | m/s                  |
-| `VASCULAR_AGE`                  | years                |
-| `FALL_COUNT`                    | count                |
-| `AUDIO_EXPOSURE_ENV`            | dBA                  |
-| `AUDIO_EXPOSURE_HEADPHONE`      | dBA                  |
-| `TIME_IN_DAYLIGHT`              | minutes              |
-| `RECOVERY_SCORE`                | score (0–100)        |
-| `STRESS_SCORE`                  | score (0–100)        |
-| `STRAIN_SCORE`                  | score (0–100)        |
-| `DAY_STRAIN`                    | score (0–21)         |
-| `WORKOUT_STRAIN`                | score (0–21)         |
-| `AUDIO_EXPOSURE_EVENT`          | count (event)        |
-| `IRREGULAR_RHYTHM_NOTIFICATION` | event                |
-| `HIGH_HEART_RATE_EVENT`         | event                |
-| `LOW_HEART_RATE_EVENT`          | event                |
-| `WALKING_STEADINESS_EVENT`      | event                |
-| `BREATHING_DISTURBANCE_EVENT`   | event                |
-| `HYPERTENSION_EVENT`            | event                |
-| `LOW_CARDIO_FITNESS_EVENT`      | event                |
-| `MENOPAUSAL_STATE`              | state (1–3)          |
-| `BLEEDING_AFTER_MENOPAUSE`      | flow (1–5)           |
+| Type                             | Canonical unit       |
+| -------------------------------- | -------------------- |
+| `WEIGHT`                         | kg                   |
+| `BLOOD_PRESSURE_SYS`             | mmHg                 |
+| `BLOOD_PRESSURE_DIA`             | mmHg                 |
+| `PULSE`                          | bpm                  |
+| `RESTING_HEART_RATE`             | bpm                  |
+| `WALKING_HEART_RATE_AVERAGE`     | bpm                  |
+| `AVERAGE_HEART_RATE`             | bpm                  |
+| `MAX_HEART_RATE`                 | bpm                  |
+| `CARDIO_RECOVERY`                | bpm                  |
+| `HEART_RATE_VARIABILITY`         | ms (SDNN)            |
+| `HRV_RMSSD`                      | ms (RMSSD)           |
+| `RESPIRATORY_RATE`               | count/min            |
+| `OXYGEN_SATURATION`              | percent (0–100)      |
+| `BLOOD_GLUCOSE`                  | mg/dL                |
+| `BLOOD_KETONES`                  | mmol/L               |
+| `INSULIN_DELIVERY`               | IU                   |
+| `FEV1`                           | L                    |
+| `FVC`                            | L                    |
+| `PEAK_EXPIRATORY_FLOW`           | L/min                |
+| `INHALER_USAGE`                  | count                |
+| `BODY_FAT`                       | percent (0–100)      |
+| `FAT_MASS`                       | kg                   |
+| `FAT_FREE_MASS`                  | kg                   |
+| `LEAN_BODY_MASS`                 | kg                   |
+| `MUSCLE_MASS`                    | kg                   |
+| `BONE_MASS`                      | kg                   |
+| `TOTAL_BODY_WATER`               | kg                   |
+| `VISCERAL_FAT`                   | rating               |
+| `BODY_MASS_INDEX`                | kg/m²                |
+| `BODY_TEMPERATURE`               | °C (core)            |
+| `SKIN_TEMPERATURE`               | °C (dermal spot)     |
+| `WRIST_TEMPERATURE`              | °C (overnight wrist) |
+| `SLEEP_DURATION`                 | minutes              |
+| `SLEEP_NEED`                     | minutes              |
+| `SLEEP_PERFORMANCE`              | percent (0–100)      |
+| `SLEEP_EFFICIENCY`               | percent (0–100)      |
+| `SLEEP_CONSISTENCY`              | percent (0–100)      |
+| `SLEEP_DISTURBANCE_COUNT`        | count                |
+| `BREATHING_DISTURBANCES`         | count                |
+| `ACTIVITY_STEPS`                 | count                |
+| `FLIGHTS_CLIMBED`                | count                |
+| `WALKING_RUNNING_DISTANCE`       | metres               |
+| `SIX_MINUTE_WALK_DISTANCE`       | metres               |
+| `WALKING_STEP_LENGTH`            | metres               |
+| `WALKING_SPEED`                  | m/s                  |
+| `STAIR_ASCENT_SPEED`             | m/s                  |
+| `STAIR_DESCENT_SPEED`            | m/s                  |
+| `WALKING_STEADINESS`             | percent (0–100)      |
+| `WALKING_ASYMMETRY`              | percent (0–100)      |
+| `WALKING_DOUBLE_SUPPORT`         | percent (0–100)      |
+| `ACTIVE_ENERGY_BURNED`           | kcal                 |
+| `BASAL_ENERGY_BURNED`            | kcal                 |
+| `WORKOUT_EFFORT_SCORE`           | score (0–10)         |
+| `ESTIMATED_WORKOUT_EFFORT_SCORE` | score (0–10)         |
+| `PHYSICAL_EFFORT`                | kcal/(hr·kg)         |
+| `ENERGY_EXPENDITURE_KJ`          | kJ                   |
+| `VO2_MAX`                        | mL/(kg·min)          |
+| `PULSE_WAVE_VELOCITY`            | m/s                  |
+| `VASCULAR_AGE`                   | years                |
+| `FALL_COUNT`                     | count                |
+| `AUDIO_EXPOSURE_ENV`             | dBA                  |
+| `AUDIO_EXPOSURE_HEADPHONE`       | dBA                  |
+| `TIME_IN_DAYLIGHT`               | minutes              |
+| `RECOVERY_SCORE`                 | score (0–100)        |
+| `STRESS_SCORE`                   | score (0–100)        |
+| `STRAIN_SCORE`                   | score (0–100)        |
+| `DAY_STRAIN`                     | score (0–21)         |
+| `WORKOUT_STRAIN`                 | score (0–21)         |
+| `AUDIO_EXPOSURE_EVENT`           | count (event)        |
+| `IRREGULAR_RHYTHM_NOTIFICATION`  | event                |
+| `HIGH_HEART_RATE_EVENT`          | event                |
+| `LOW_HEART_RATE_EVENT`           | event                |
+| `WALKING_STEADINESS_EVENT`       | event                |
+| `BREATHING_DISTURBANCE_EVENT`    | event                |
+| `HYPERTENSION_EVENT`             | event                |
+| `LOW_CARDIO_FITNESS_EVENT`       | event                |
+| `MENOPAUSAL_STATE`               | state (1–3)          |
+| `BLEEDING_AFTER_MENOPAUSE`       | flow (1–5)           |
 
 The table is a curated subset and lags the enum by a few
 device-derived types. The live, machine-readable list of writable

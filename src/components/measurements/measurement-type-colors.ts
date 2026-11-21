@@ -89,6 +89,12 @@ export const MEASUREMENT_TYPE_COLORS: Record<string, string> = {
   FEV1: "bg-chart-5/10 text-chart-5 dark:bg-chart-5/20",
   FVC: "bg-chart-5/10 text-chart-5 dark:bg-chart-5/20",
   PEAK_EXPIRATORY_FLOW: "bg-chart-5/10 text-chart-5 dark:bg-chart-5/20",
+  // Effort scores join the score family (chart-1); physical effort the
+  // energy family (chart-4), beside active and resting energy.
+  WORKOUT_EFFORT_SCORE: "bg-chart-1/10 text-chart-1 dark:bg-chart-1/20",
+  ESTIMATED_WORKOUT_EFFORT_SCORE:
+    "bg-chart-1/10 text-chart-1 dark:bg-chart-1/20",
+  PHYSICAL_EFFORT: "bg-chart-4/10 text-chart-4 dark:bg-chart-4/20",
   WALKING_STEADINESS_EVENT: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
   BREATHING_DISTURBANCE_EVENT: "bg-chart-5/10 text-chart-5 dark:bg-chart-5/20",
   // ── v1.10.0 — computed scores (WX-C) ──

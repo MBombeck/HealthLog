@@ -4867,6 +4867,9 @@ paths:
               - FEV1
               - FVC
               - PEAK_EXPIRATORY_FLOW
+              - WORKOUT_EFFORT_SCORE
+              - ESTIMATED_WORKOUT_EFFORT_SCORE
+              - PHYSICAL_EFFORT
         - in: query
           name: from
           schema:
@@ -6009,6 +6012,9 @@ paths:
               - FEV1
               - FVC
               - PEAK_EXPIRATORY_FLOW
+              - WORKOUT_EFFORT_SCORE
+              - ESTIMATED_WORKOUT_EFFORT_SCORE
+              - PHYSICAL_EFFORT
             description: The metric.
           required: true
           description: The metric.
@@ -6149,6 +6155,9 @@ paths:
               - FEV1
               - FVC
               - PEAK_EXPIRATORY_FLOW
+              - WORKOUT_EFFORT_SCORE
+              - ESTIMATED_WORKOUT_EFFORT_SCORE
+              - PHYSICAL_EFFORT
             description: The metric.
           required: true
           description: The metric.
@@ -30008,7 +30017,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 122
+              maxItems: 125
               type: array
               items:
                 type: string
@@ -30070,7 +30079,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 122
+              maxItems: 125
               type: array
               items:
                 type: string
@@ -30960,6 +30969,9 @@ components:
             - FEV1
             - FVC
             - PEAK_EXPIRATORY_FLOW
+            - WORKOUT_EFFORT_SCORE
+            - ESTIMATED_WORKOUT_EFFORT_SCORE
+            - PHYSICAL_EFFORT
         value:
           type: number
         measuredAt:
@@ -32804,6 +32816,9 @@ components:
             - FEV1
             - FVC
             - PEAK_EXPIRATORY_FLOW
+            - WORKOUT_EFFORT_SCORE
+            - ESTIMATED_WORKOUT_EFFORT_SCORE
+            - PHYSICAL_EFFORT
         biomarkerId:
           type: string
           minLength: 1
@@ -33305,7 +33320,7 @@ components:
           type: number
           const: 2
         leaves:
-          maxItems: 122
+          maxItems: 125
           type: array
           items:
             type: string
@@ -34594,6 +34609,9 @@ components:
         - FEV1
         - FVC
         - PEAK_EXPIRATORY_FLOW
+        - WORKOUT_EFFORT_SCORE
+        - ESTIMATED_WORKOUT_EFFORT_SCORE
+        - PHYSICAL_EFFORT
       description: DB-stored measurement category. v1.4.23 added 7 Apple Health values (HRV, resting HR, active energy,
         flights, walking/running distance, VO2 max, body temperature).
     InsightsSettingsPutRequest:
@@ -45887,6 +45905,9 @@ components:
                   - FEV1
                   - FVC
                   - PEAK_EXPIRATORY_FLOW
+                  - WORKOUT_EFFORT_SCORE
+                  - ESTIMATED_WORKOUT_EFFORT_SCORE
+                  - PHYSICAL_EFFORT
               value:
                 type: number
               valueMin:
@@ -46682,6 +46703,9 @@ components:
                             - FEV1
                             - FVC
                             - PEAK_EXPIRATORY_FLOW
+                            - WORKOUT_EFFORT_SCORE
+                            - ESTIMATED_WORKOUT_EFFORT_SCORE
+                            - PHYSICAL_EFFORT
                         - type: "null"
                     biomarkerName:
                       anyOf:
@@ -49878,6 +49902,9 @@ components:
                   - FEV1
                   - FVC
                   - PEAK_EXPIRATORY_FLOW
+                  - WORKOUT_EFFORT_SCORE
+                  - ESTIMATED_WORKOUT_EFFORT_SCORE
+                  - PHYSICAL_EFFORT
               dateKey:
                 type: string
                 pattern: ^\d{4}-\d{2}-\d{2}$
@@ -51088,6 +51115,9 @@ components:
                       - FEV1
                       - FVC
                       - PEAK_EXPIRATORY_FLOW
+                      - WORKOUT_EFFORT_SCORE
+                      - ESTIMATED_WORKOUT_EFFORT_SCORE
+                      - PHYSICAL_EFFORT
                   - type: "null"
               intervalDays:
                 anyOf:
@@ -51324,6 +51354,9 @@ components:
                   - FEV1
                   - FVC
                   - PEAK_EXPIRATORY_FLOW
+                  - WORKOUT_EFFORT_SCORE
+                  - ESTIMATED_WORKOUT_EFFORT_SCORE
+                  - PHYSICAL_EFFORT
               metricSlot:
                 type:
                   - string
@@ -57813,6 +57846,9 @@ components:
             - FEV1
             - FVC
             - PEAK_EXPIRATORY_FLOW
+            - WORKOUT_EFFORT_SCORE
+            - ESTIMATED_WORKOUT_EFFORT_SCORE
+            - PHYSICAL_EFFORT
         date:
           type: string
           format: date
@@ -58103,6 +58139,9 @@ components:
             - FEV1
             - FVC
             - PEAK_EXPIRATORY_FLOW
+            - WORKOUT_EFFORT_SCORE
+            - ESTIMATED_WORKOUT_EFFORT_SCORE
+            - PHYSICAL_EFFORT
         from:
           type: string
           format: date

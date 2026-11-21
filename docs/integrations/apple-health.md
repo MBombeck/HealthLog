@@ -130,6 +130,16 @@ up to 300 ms are accepted. When both arrive, the HRV page charts each on
 its own and the Coach reads them apart, because one is not a stand-in for
 the other.
 
+Workout effort and physical effort are stored apart from energy, and the
+logged score is stored apart from the watch's estimate.
+`WorkoutEffortScore` (iOS 18, the rating you logged, 0–10) becomes
+`WORKOUT_EFFORT_SCORE`. `EstimatedWorkoutEffortScore` (the watch's
+estimate of that score) becomes `ESTIMATED_WORKOUT_EFFORT_SCORE`. A day
+mean of one cannot blend the other. `PhysicalEffort` (iOS 17) is the
+intensity of the effort in kilocalories per hour per kilogram, the same
+family as METs, and becomes `PHYSICAL_EFFORT`. None of the three is added
+to active or resting energy.
+
 ### ECG archive safety, privacy, and idempotency
 
 ECG support is source-agnostic: if HealthKit includes a valid

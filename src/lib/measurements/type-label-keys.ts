@@ -121,6 +121,10 @@ export const MEASUREMENT_TYPE_LABEL_KEYS: Record<MeasurementType, string> = {
   MINDFUL_MINUTES: "measurements.typeMindfulMinutes",
   STATE_OF_MIND_VALENCE: "measurements.typeStateOfMindValence",
   AFIB_BURDEN: "measurements.typeAfibBurden",
+  WORKOUT_EFFORT_SCORE: "measurements.typeWorkoutEffortScore",
+  ESTIMATED_WORKOUT_EFFORT_SCORE:
+    "measurements.typeEstimatedWorkoutEffortScore",
+  PHYSICAL_EFFORT: "measurements.typePhysicalEffort",
   INDOOR_CO2: "measurements.typeIndoorCo2",
   INDOOR_TEMPERATURE: "measurements.typeIndoorTemperature",
   INDOOR_HUMIDITY: "measurements.typeIndoorHumidity",

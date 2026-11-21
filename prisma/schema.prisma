@@ -1878,6 +1878,12 @@ enum MeasurementType {
   FEV1 // litres — HealthKit `forcedExpiratoryVolume1`. Forced expiratory volume in the first second of a spirometry manoeuvre; spot reading.
   FVC // litres — HealthKit `forcedVitalCapacity`. Forced vital capacity from a spirometry manoeuvre; spot reading.
   PEAK_EXPIRATORY_FLOW // L/min — HealthKit `peakExpiratoryFlowRate`. Peak flow from a peak-flow meter or spirometer; spot reading.
+  // Apple effort. Spot readings, never summed into energy: a score is not
+  // kilocalories, and physical effort is a rate. The logged score and the
+  // watch's estimate stay apart so a day mean cannot blend them.
+  WORKOUT_EFFORT_SCORE // score (0–10) — HealthKit `workoutEffortScore` (iOS 18). How hard a workout felt, logged by the person.
+  ESTIMATED_WORKOUT_EFFORT_SCORE // score (0–10) — HealthKit `estimatedWorkoutEffortScore` (iOS 18). The watch's estimate of that score. Not the logged one.
+  PHYSICAL_EFFORT // kcal/(hr·kg) — HealthKit `physicalEffort` (iOS 17+). Intensity during activity, in the same family as METs.
 
   @@map("measurement_type")
 }
