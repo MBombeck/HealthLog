@@ -161,6 +161,7 @@ export function buildComplianceDisplay(
     currentCycle.nextDueAt,
     now,
     soonestCadenceFamily(schedules),
+    trailingComplianceLedger(events, schedules, ctx, now),
   );
 
   return {

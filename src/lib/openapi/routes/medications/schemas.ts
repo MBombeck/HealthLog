@@ -1012,7 +1012,7 @@ export const complianceDisplay = z
         targetAt: isoDateTime()
           .nullable()
           .describe(
-            "Target instant of the open dose. Null when no dose is open.",
+            "Target instant of the open dose: the earliest slot still due or overdue, before any upcoming one, so a dose whose clock time has passed stays the current dose until it is recorded or missed. Null when no dose is open.",
           ),
         state: z
           .enum(["upcoming", "due", "overdue", "taken", "skipped", "missed"])

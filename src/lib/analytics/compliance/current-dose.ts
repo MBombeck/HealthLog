@@ -8,6 +8,7 @@ import {
   resolveDoseState,
   resolveLedgerSlot,
   wireDoseState,
+  type ResolvedDose,
   type WireDoseState,
 } from "@/lib/medications/dose-state/resolve";
 import {
@@ -33,12 +34,39 @@ export interface CurrentDose {
   lateTakeCounts: boolean;
 }
 
+/**
+ * The earliest ledger slot still open now (`due` or `overdue`), or null.
+ *
+ * The cycle's `nextDueAt` walks occurrences from `now` forward, so once a
+ * dose's clock time has passed it names the NEXT occurrence even while the
+ * passed one is still due or overdue. The ledger holds every slot up to
+ * `now` with its band, so the open one is read from there: the current dose
+ * is the earliest open slot, before any pending one.
+ */
+function earliestOpenSlot(
+  ledgerRows: DoseHistoryRow[] | undefined,
+  now: Date,
+): { at: Date; resolved: ResolvedDose } | null {
+  let best: { at: Date; resolved: ResolvedDose } | null = null;
+  for (const row of ledgerRows ?? []) {
+    if (row.kind !== "slot") continue;
+    if (best && row.at.getTime() >= best.at.getTime()) continue;
+    const resolved = resolveLedgerSlot(row, now);
+    if (resolved?.state === "due" || resolved?.state === "overdue") {
+      best = { at: row.at, resolved };
+    }
+  }
+  return best;
+}
+
 export function currentDoseOf(
   nextDueAt: Date | null,
   now: Date,
   cadence: DoseCadenceFamily,
   ledgerRows?: DoseHistoryRow[],
 ): CurrentDose {
+  const open = earliestOpenSlot(ledgerRows, now);
+  if (open) return fromResolved(open.at, open.resolved);
   if (!nextDueAt) {
     return {
       status: "upcoming",
@@ -57,9 +85,13 @@ export function currentDoseOf(
   const resolved =
     (ledgerSlot && resolveLedgerSlot(ledgerSlot, now)) ??
     resolveDoseState(defaultDoseBand(nextDueAt, cadence), null, now);
+  return fromResolved(nextDueAt, resolved);
+}
+
+function fromResolved(targetAt: Date, resolved: ResolvedDose): CurrentDose {
   return {
     status: legacyDoseStatus(resolved.state),
-    targetAt: nextDueAt,
+    targetAt,
     ...wireDoseState(resolved.state),
     dueAt: resolved.dueAt,
     overdueSince: resolved.overdueSince,
