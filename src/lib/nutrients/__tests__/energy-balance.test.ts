@@ -1,11 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@/lib/db", () => ({ prisma: {} }));
+vi.mock("@/lib/db", () => ({
+  prisma: {
+    nutrientIntakeDay: { findMany: vi.fn(async () => []) },
+    measurement: { findFirst: vi.fn(async () => null) },
+  },
+}));
+vi.mock("@/lib/day/daily-stats", () => ({
+  readLocalDailyStats: vi.fn(async () => new Map()),
+}));
 
 import {
   ageOn,
   computeEnergyBalance,
   mifflinStJeor,
+  readEnergyBalance,
   type EnergyProfile,
 } from "../energy-balance";
 
@@ -147,5 +156,63 @@ describe("ageOn", () => {
   it("counts a birthday only once it has passed", () => {
     expect(ageOn("1990-06-15", "2026-06-14")).toBe(35);
     expect(ageOn("1990-06-15", "2026-06-15")).toBe(36);
+  });
+});
+
+describe("readEnergyBalance", () => {
+  const read = () =>
+    readEnergyBalance({
+      userId: "u",
+      tz: "Europe/Berlin",
+      days: 7,
+      gender: null,
+      heightCm: null,
+      dateOfBirth: null,
+      sourcePriorityJson: null,
+    });
+
+  it("lists the window oldest first and ends on today, partial, with no intake at all", async () => {
+    vi.useFakeTimers({ now: new Date("2026-11-21T12:00:00.000Z") });
+    try {
+      const out = await read();
+      expect(out.days.map((d) => d.day)).toEqual([
+        "2026-11-15",
+        "2026-11-16",
+        "2026-11-17",
+        "2026-11-18",
+        "2026-11-19",
+        "2026-11-20",
+        "2026-11-21",
+      ]);
+      expect(out.days.map((d) => d.partial)).toEqual([
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+      ]);
+      expect(out.days.at(-1)?.intakeKcal).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("turns the day at the record zone's midnight, not at UTC's", async () => {
+    // 23:59:59 and 00:00:00 in Berlin (UTC+1 in November).
+    for (const [now, today] of [
+      ["2026-11-21T22:59:59.000Z", "2026-11-21"],
+      ["2026-11-21T23:00:00.000Z", "2026-11-22"],
+    ] as const) {
+      vi.useFakeTimers({ now: new Date(now) });
+      try {
+        const out = await read();
+        expect(out.days.at(-1)).toMatchObject({ day: today, partial: true });
+        expect(out.days.filter((d) => d.partial)).toHaveLength(1);
+      } finally {
+        vi.useRealTimers();
+      }
+    }
   });
 });

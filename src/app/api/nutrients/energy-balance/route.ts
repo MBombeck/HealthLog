@@ -19,7 +19,7 @@ import { apiSuccess, returnAllZodIssues } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { readEnergyBalanceForUser } from "@/lib/nutrients/energy-balance";
-import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { energyBalanceQuerySchema } from "@/lib/validations/nutrients";
 
 export const dynamic = "force-dynamic";
@@ -41,7 +41,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
   const balance = await readEnergyBalanceForUser({
     userId: user.id,
-    tz: user.timezone || DEFAULT_TIMEZONE,
+    // The zone every other day read uses, so "today" here is the day view's
+    // today, operator default included.
+    tz: await resolveUserTimezone(user.id),
     days: parsed.data.days,
   });
 
