@@ -37,6 +37,10 @@
  * inventory has always acted on. An unscoped grant names every section and is
  * unaffected.
  *
+ * `push` is the push relay and the calling device's push state
+ * (`push-relay/capability.ts`): the app gates its opt-in card and its "sync
+ * disrupted" line on it, never on a version.
+ *
  * The own-record case is byte-identical: with no switch the active record IS
  * the caller, there is no grant to narrow to, and every value below is
  * resolved from the same row it always was.
@@ -75,6 +79,7 @@ import { loadAiCapabilities } from "@/lib/ai/capabilities/load";
 import { loadCoachReasoningState } from "@/lib/ai/reasoning/controls";
 import { parseCoachPrefs } from "@/lib/validations/coach-prefs";
 import { storedGlucoseUnit } from "@/lib/glucose";
+import { accountPushState } from "@/lib/push-relay/capability";
 
 export const dynamic = "force-dynamic";
 
@@ -117,7 +122,7 @@ function readInsuranceNumber(encrypted: string | null | undefined) {
   }
 }
 
-export const GET = apiHandler(async () => {
+export const GET = apiHandler(async (request?: Request) => {
   const auth = await requireActorAuth();
   const { user } = auth;
 
@@ -487,11 +492,11 @@ export const GET = apiHandler(async () => {
     // behind it have one reader by design, and a route that projected them
     // itself would be a second statement of what a record context is.
     recordSession: recordSessionForPayload(auth),
-    // v1.42 — what this server understands, for a client released on its own
-    // schedule (iOS #116, item 18). `trackIntake: true` says medications take
-    // the record-only switch, so an add form can offer it before the account
-    // has a medication to learn it from. A flag only ever appears here once
-    // the server supports it, and stays `true`; absence means an older server.
+    // What this server understands, for a client released on its own
+    // schedule: the `server-features.ts` keys, the list `GET /api/version`
+    // publishes. A key appears once its behaviour shipped and is never
+    // renamed; an absent key means an older server.
     features: SERVER_FEATURES,
+    push: await accountPushState(user.id, request),
   });
 });

@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 327,
-  "total": 103187,
+  "total": 103178,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
@@ -14,7 +14,7 @@
     "app/api/coach/about-me/route.ts :: apiHandler(arg) #2": 309,
     "app/api/cycle/day-logs/bulk/route.ts :: postBulk": 213,
     "app/api/cycle/insights/route.ts :: apiHandler(arg)": 226,
-    "app/api/devices/route.ts :: apiHandler(arg)": 223,
+    "app/api/devices/route.ts :: apiHandler(arg)": 217,
     "app/api/encounters/[id]/route.ts :: apiHandler(arg) #2": 269,
     "app/api/environment/route.ts :: apiHandler(arg)": 201,
     "app/api/export/health-record/route.ts :: apiHandler(arg)": 240,
@@ -314,7 +314,7 @@
     "lib/medications/scheduling/dose-history.ts :: reconstructDoseHistory": 217,
     "lib/multipart/stream-to-disk.ts :: streamMultipartToDisk": 272,
     "lib/notifications/dispatcher.ts :: dispatchNotification": 359,
-    "lib/notifications/senders/apns.ts :: sendViaApns": 291,
+    "lib/notifications/senders/apns.ts :: sendViaApns": 288,
     "lib/notifications/senders/web-push.ts :: sendViaWebPush": 255,
     "lib/personal-records/pr-detection-worker.ts :: detectPersonalRecordsForUser": 239,
     "lib/personal-records/pr-direction.ts :: getPRDirection": 216,

@@ -65,11 +65,20 @@ const syncStateResponse = z
           ),
       })
       .describe("Sync-window metadata the client reads instead of hardcoding."),
+    push: z
+      .object({
+        receiptsRecorded: z
+          .boolean()
+          .describe(
+            "Whether the envelope receipts of this request (`openedAlert`, `openedSilent`) were recorded.",
+          ),
+      })
+      .describe("v1.49 — envelope receipts."),
   })
   .meta({
     id: "SyncStateResponse",
     description:
-      "iOS SyncMode handshake. Reports the server-side `lastSyncedAt` checkpoint, which the batch ingest endpoints set when a client push lands; the handshake itself writes nothing. The cheap 'should I sync?' summary; the durable delta cursor lives on `/api/sync/changes`.",
+      "iOS SyncMode handshake. Reports the server-side `lastSyncedAt` checkpoint, which the batch ingest endpoints set when a client push lands; the handshake does not move it, and writes only the envelope receipts it carries. The cheap 'should I sync?' summary; the durable delta cursor lives on `/api/sync/changes`.",
   });
 
 const syncMeasurementUpsert = measurementResource
@@ -360,7 +369,25 @@ export const syncPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Sync"],
       summary: "Sync handshake + window metadata",
       description:
-        "Cheap 'should I sync?' summary. Returns the `lastSyncedAt` checkpoint, which the batch ingest endpoints advance when a client push lands; this route is a read and writes nothing. The `sync` block carries the incremental-delta window + tombstone retention so the client reads them rather than hardcoding.",
+        "Cheap 'should I sync?' summary. Returns the `lastSyncedAt` checkpoint, which the batch ingest endpoints advance when a client push lands; the handshake does not move it. The `sync` block carries the incremental-delta window + tombstone retention so the client reads them rather than hardcoding. v1.49: the app reports the newest push envelope id it opened per class in `openedAlert` and `openedSilent`, for the device named by `X-Device-Id`; that is the one thing this request writes, and it confirms the relay pushes that arrived.",
+      requestParams: {
+        query: z.object({
+          openedAlert: z
+            .string()
+            .regex(/^[0-9A-HJKMNP-TV-Z]{26}$/)
+            .optional()
+            .describe(
+              "The newest alert envelope id (ULID) this device opened.",
+            ),
+          openedSilent: z
+            .string()
+            .regex(/^[0-9A-HJKMNP-TV-Z]{26}$/)
+            .optional()
+            .describe(
+              "The newest silent envelope id (ULID) this device opened.",
+            ),
+        }),
+      },
       responses: {
         "200": {
           description: "Sync state summary.",
