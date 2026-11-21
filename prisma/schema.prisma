@@ -2227,8 +2227,9 @@ model Measurement {
   // v1.4.30 — iOS SyncMode foundation (R-E C-2). Monotonically
   // incremented on every server-side mutation of the row. iOS uses
   // it for last-writer-wins reconciliation when two devices write
-  // the same logical reading. Default = 1 for the create path; the
-  // update path is responsible for bumping it. Existing rows
+  // the same logical reading. Default = 1 for the create path; an
+  // update that changes the row raises it once in the row trigger
+  // (migration 0516), whether or not the caller raised it. Existing rows
   // start at the default after the additive migration so legacy
   // ingest keeps round-tripping unchanged.
   syncVersion           Int                               @default(1) @map("sync_version")
