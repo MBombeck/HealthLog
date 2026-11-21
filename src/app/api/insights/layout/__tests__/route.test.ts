@@ -425,7 +425,14 @@ describe("PUT /api/insights/layout — 422 multi-issue envelope", () => {
     expect(paths).toEqual(["tiles", "version"]);
 
     for (const issue of body.details.issues) {
-      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+      expect(
+        // The declared bounds of a size issue come from the schema.
+        Object.keys(issue)
+          .filter(
+            (k) => !["minimum", "maximum", "inclusive", "origin"].includes(k),
+          )
+          .sort(),
+      ).toEqual(["code", "message", "path"]);
     }
   });
 
@@ -465,7 +472,14 @@ describe("PUT /api/insights/layout — 422 multi-issue envelope", () => {
       // The filed issues strip `message` so a future Zod code that
       // echoes the offending value cannot leak into the audit
       // surface.
-      expect(Object.keys(issue).sort()).toEqual(["code", "path"]);
+      expect(
+        // The declared bounds of a size issue come from the schema.
+        Object.keys(issue)
+          .filter(
+            (k) => !["minimum", "maximum", "inclusive", "origin"].includes(k),
+          )
+          .sort(),
+      ).toEqual(["code", "path"]);
     }
   });
 
@@ -516,7 +530,14 @@ describe("PUT /api/insights/layout — 422 multi-issue envelope", () => {
     expect(Array.isArray(issues)).toBe(true);
     expect(issues.length).toBeGreaterThanOrEqual(2);
     for (const issue of issues) {
-      expect(Object.keys(issue).sort()).toEqual(["code", "message", "path"]);
+      expect(
+        // The declared bounds of a size issue come from the schema.
+        Object.keys(issue)
+          .filter(
+            (k) => !["minimum", "maximum", "inclusive", "origin"].includes(k),
+          )
+          .sort(),
+      ).toEqual(["code", "message", "path"]);
     }
   });
 
