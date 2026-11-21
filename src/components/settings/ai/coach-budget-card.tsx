@@ -12,6 +12,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Gauge, Loader2, Save } from "lucide-react";
 
+import { WrittenOutcomeLine } from "@/components/outcome/written-outcome-line";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -201,9 +202,11 @@ export function CoachBudgetCard({
         })}
       </div>
       {msg && (
-        <p className={`text-xs ${ok ? "text-success" : "text-destructive"}`}>
-          {msg}
-        </p>
+        <WrittenOutcomeLine
+          outcome={ok ? "success" : "failed"}
+          message={msg}
+          testId="coach-budget-outcome"
+        />
       )}
       <SettingsCardActions>
         <Button

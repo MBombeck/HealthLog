@@ -260,11 +260,16 @@ describe("PATCH /api/user/ai-provider — v1.22 fields", () => {
 
 describe("PATCH /api/user/ai-provider — Coach budgets", () => {
   const patch = PATCH as (req: Request) => Promise<Response>;
+  // The route selects only the columns it reads; the rest of the row is
+  // never looked at, so a partial row stands in for it.
+  type UserRow = Awaited<ReturnType<typeof prisma.user.findUnique>>;
+  const userRow = (fields: Record<string, unknown>) =>
+    fields as unknown as UserRow;
 
   it("merges a provider's budget into what is stored", async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValue({
-      aiCoachBudgets: { "openai-compatible": { maxRounds: 6 } },
-    } as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(
+      userRow({ aiCoachBudgets: { "openai-compatible": { maxRounds: 6 } } }),
+    );
     const res = await patch(
       patchRequest({ localCoachBudget: { snapshotChars: 6000 } }),
     );
@@ -290,14 +295,16 @@ describe("PATCH /api/user/ai-provider — Coach budgets", () => {
   });
 
   it("returns each provider's stored budget, clamped", async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValue({
-      aiProvider: "LOCAL",
-      aiCoachBudgets: { local: { snapshotChars: 1 } },
-    } as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(
+      userRow({
+        aiProvider: "LOCAL",
+        aiCoachBudgets: { local: { snapshotChars: 1 } },
+      }),
+    );
     vi.mocked(resolveProviderAvailability).mockResolvedValue({
       aiAvailable: true,
       managedBy: "user",
-    } as never);
+    });
     const res = await GET();
     const body = (await res.json()) as {
       data: {
