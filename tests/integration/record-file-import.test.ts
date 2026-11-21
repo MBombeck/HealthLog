@@ -297,6 +297,78 @@ describe("FHIR Bundle import", () => {
   });
 });
 
+describe("FHIR Bundle import across a backup", () => {
+  it.each(["portable-export", "disaster-recovery"] as const)(
+    "adds nothing when the same Bundle is imported after a %s restore",
+    async (purpose) => {
+      const prisma = getPrismaClient();
+      const user = await makeUser();
+      const dir = mkdtempSync(join(tmpdir(), "rfi-fhir-"));
+      cleanup.push(dir);
+      const path = join(dir, "bundle.json");
+      writeFileSync(path, JSON.stringify(bundle()));
+      await run(user.id, "fhir_bundle", path);
+
+      const { buildFullBackupPayload } =
+        await import("@/lib/export/full-backup-payload");
+      const { payload } = await buildFullBackupPayload(prisma, user.id, {
+        purpose,
+      });
+      expect(
+        (payload as { fhirImportedResources?: unknown[] })
+          .fhirImportedResources,
+      ).toHaveLength(4);
+      // The import ledger and the imported rows are gone, as on a fresh
+      // instance; only the file can bring the ledger back.
+      await prisma.fhirImportedResource.deleteMany({
+        where: { userId: user.id },
+      });
+      const { encrypt } = await import("@/lib/crypto");
+      const backup = await prisma.dataBackup.create({
+        data: {
+          userId: user.id,
+          type: "FHIR_LEDGER_ROUND_TRIP",
+          data: encrypt(JSON.stringify(payload)),
+        },
+      });
+      const { restoreBackup } = await import("@/lib/export/restore-backup");
+      const { STORED_BACKUP_SELECT } =
+        await import("@/lib/export/stored-backup");
+      const outcome = await restoreBackup({
+        backup: await prisma.dataBackup.findUniqueOrThrow({
+          where: { id: backup.id },
+          select: STORED_BACKUP_SELECT,
+        }),
+        actorUserId: user.id,
+        ipAddress: null,
+        restoreInstanceSettings: false,
+      });
+      expect(outcome, JSON.stringify(outcome)).toMatchObject({
+        ok: true,
+        response: { restored: true },
+      });
+      expect(
+        await prisma.fhirImportedResource.count({ where: { userId: user.id } }),
+      ).toBe(4);
+
+      const again = await run(user.id, "fhir_bundle", path);
+      expect(again.result).toMatchObject({ imported: 0, duplicates: 6 });
+      expect(
+        await prisma.illnessEpisode.count({ where: { userId: user.id } }),
+      ).toBe(1);
+      expect(
+        await prisma.vaccinationRecord.count({ where: { userId: user.id } }),
+      ).toBe(1);
+      expect(
+        await prisma.medication.count({ where: { userId: user.id } }),
+      ).toBe(1);
+      expect(await prisma.encounter.count({ where: { userId: user.id } })).toBe(
+        1,
+      );
+    },
+  );
+});
+
 describe("time budget", () => {
   it("stops, keeps its counts and fails the job for a retry", async () => {
     vi.resetModules();

@@ -45,6 +45,11 @@ entry's `fullUrl`) and its own `id`. Importing the same Bundle again, or a
 newer export from the same portal, writes nothing twice. A record you
 deleted in HealthLog is not brought back by a later import.
 
+The list of what was already imported travels in both kinds of backup
+(the portable export and the disaster-recovery copy), so importing the same
+Bundle again after a restore, on this server or a new one, also adds
+nothing.
+
 ## 5. Limits and safety
 
 - The file is parsed as untrusted JSON; every field is checked before it is

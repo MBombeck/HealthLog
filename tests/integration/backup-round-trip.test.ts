@@ -194,6 +194,8 @@ const COUNT_BACK: Record<
   LabResult: (p, userId) => p.labResult.count({ where: { userId } }),
   LabResultImportKey: (p, userId) =>
     p.labResultImportKey.count({ where: { userId } }),
+  FhirImportedResource: (p, userId) =>
+    p.fhirImportedResource.count({ where: { userId } }),
   Biomarker: (p, userId) => p.biomarker.count({ where: { userId } }),
   BiomarkerAlias: (p, userId) => p.biomarkerAlias.count({ where: { userId } }),
   BiomarkerMerge: (p, userId) => p.biomarkerMerge.count({ where: { userId } }),

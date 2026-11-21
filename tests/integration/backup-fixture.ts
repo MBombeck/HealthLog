@@ -566,6 +566,17 @@ export async function seedEveryTwoEndedModel(
       createdAt: AT("2026-07-04T09:00:00.000Z"),
     },
   });
+  // A FHIR Bundle resource already imported: without it in the file, the
+  // same Bundle imported after a restore would write its record again.
+  await prisma.fhirImportedResource.create({
+    data: {
+      userId: OWNER_ID,
+      resourceType: "Immunization",
+      resourceKey: "e".repeat(40),
+      recordId: "round-trip-vaccination",
+      createdAt: AT("2026-07-04T10:00:00.000Z"),
+    },
+  });
   // What the drug above is FOR, pinned to the analyte just created. The two
   // rows are seeded at opposite ends of this fixture on purpose: the drug is
   // restored hundreds of lines before the analyte, so this pairing is what

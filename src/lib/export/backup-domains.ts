@@ -51,6 +51,7 @@ import {
   restoreLabResults,
 } from "@/lib/export/labs-backup";
 import { restoreLifeEventsData } from "@/lib/export/life-events-backup";
+import { restoreFhirImportLedger } from "@/lib/export/fhir-import-ledger-backup";
 import {
   clearMeasurementRollups,
   clearMeasurements,
@@ -207,6 +208,9 @@ export const RESTORE_STEPS: readonly RestoreStep[] = [
   // After the markers: a drug's target names one by a real foreign key.
   { name: "efficacy targets", run: restoreEfficacyTargets },
   { name: "lab results", run: restoreLabResults },
+  // The FHIR Bundle import ledger; after the medications, whose new ids its
+  // MedicationStatement rows are mapped through.
+  { name: "fhir import ledger", run: restoreFhirImportLedger },
   { name: "illness", run: restoreIllness },
   {
     // The person's own symptoms and their occurrences. After the episodes,

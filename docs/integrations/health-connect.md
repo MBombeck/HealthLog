@@ -203,6 +203,14 @@ now**:
 The password is stored encrypted with the app's encryption key and never
 shown again. Removing the folder deletes it; the imports stay.
 
+The folder is not part of a backup, like the other connections to systems
+of your own (Nightscout, Dawarich, Paperless-ngx): a backup file is not a
+credential store, and on another server the address would point somewhere
+that server's operator never allowed. The imported data travels as usual;
+after a restore, enter the folder once more. A file that was imported
+before the restore is not imported twice: its rows are recognised by their
+identity.
+
 **A folder on your own network.** A public address works without any
 setting. A Nextcloud reachable only on the home network or a VPN needs its
 exact origin listed by the person running the server, in
