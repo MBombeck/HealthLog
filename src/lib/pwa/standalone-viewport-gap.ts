@@ -64,6 +64,14 @@ export function standaloneViewportGap(input: ViewportGapInput): number {
 export const VIEWPORT_GAP_PROPERTY = "--viewport-bottom-gap";
 
 /**
+ * How many changes of the gap, without a rotation, within
+ * `VIEWPORT_GAP_FLAP_WINDOW_MS` count as a loop. A real correction by iOS
+ * (the keyboard case below) flips once, and a flip back later is rare.
+ */
+export const VIEWPORT_GAP_FLAP_LIMIT = 3;
+export const VIEWPORT_GAP_FLAP_WINDOW_MS = 5_000;
+
+/**
  * The top inset, resolved. `env()` cannot be read from script, so a hidden
  * probe takes it as padding through `--safe-area-top` (globals.css), which a
  * test can also set where no desktop browser reports an inset.
@@ -99,6 +107,7 @@ export function trackStandaloneViewportGap(
   win: GapWindow,
   root: HTMLElement,
   safeAreaTop: () => number = () => readSafeAreaTop(root.ownerDocument),
+  now: () => number = () => Date.now(),
 ): () => void {
   const standalone =
     (win.navigator as Navigator & { standalone?: boolean }).standalone === true;
@@ -111,7 +120,16 @@ export function trackStandaloneViewportGap(
   // and of a pinch, where that would stutter. iOS keeps the layout viewport
   // still while the keyboard moves, so the window's own `resize` stays rare.
   let inset = safeAreaTop();
+  // Set once the published gap keeps changing by itself. Extending the
+  // layout over the strip can make iOS hand back the full viewport, which
+  // reads as "no gap" and pulls the layout back, which shortens the viewport
+  // again: on iOS 27 that loop moved the bottom bar on every frame. A loop
+  // like that ends with the gap off, which is the layout from before this
+  // correction existed, until the device is rotated.
+  let settledOff = false;
+  const flips: number[] = [];
   const update = () => {
+    if (settledOff) return;
     const gap = standaloneViewportGap({
       standalone,
       innerWidth: win.innerWidth,
@@ -121,6 +139,19 @@ export function trackStandaloneViewportGap(
       safeAreaTop: inset,
     });
     if (gap === current) return;
+    if (current !== -1) {
+      const at = now();
+      flips.push(at);
+      while (flips.length > 0 && at - flips[0] > VIEWPORT_GAP_FLAP_WINDOW_MS) {
+        flips.shift();
+      }
+      if (flips.length >= VIEWPORT_GAP_FLAP_LIMIT) {
+        settledOff = true;
+        current = 0;
+        root.style.removeProperty(VIEWPORT_GAP_PROPERTY);
+        return;
+      }
+    }
     current = gap;
     if (gap > 0) root.style.setProperty(VIEWPORT_GAP_PROPERTY, `${gap}px`);
     else root.style.removeProperty(VIEWPORT_GAP_PROPERTY);
@@ -131,13 +162,19 @@ export function trackStandaloneViewportGap(
     update();
   };
 
+  const rotate = () => {
+    settledOff = false;
+    flips.length = 0;
+    remeasure();
+  };
+
   update();
   win.addEventListener("resize", remeasure);
-  win.addEventListener("orientationchange", remeasure);
+  win.addEventListener("orientationchange", rotate);
   win.visualViewport?.addEventListener("resize", update);
   return () => {
     win.removeEventListener("resize", remeasure);
-    win.removeEventListener("orientationchange", remeasure);
+    win.removeEventListener("orientationchange", rotate);
     win.visualViewport?.removeEventListener("resize", update);
     root.style.removeProperty(VIEWPORT_GAP_PROPERTY);
   };

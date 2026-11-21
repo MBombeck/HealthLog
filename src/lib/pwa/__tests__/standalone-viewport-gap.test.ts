@@ -163,6 +163,93 @@ describe("trackStandaloneViewportGap", () => {
     stop();
   });
 
+  it("settles off when the gap and the viewport keep undoing each other", () => {
+    const win = new FakeWindow();
+    const root = fakeRoot();
+    let clock = 0;
+    let writes = 0;
+    const el = {
+      style: {
+        setProperty: (k: string, v: string) => {
+          writes += 1;
+          root.props.set(k, v);
+        },
+        removeProperty: (k: string) => root.props.delete(k),
+      },
+    } as unknown as HTMLElement;
+    const stop = trackStandaloneViewportGap(
+      win as unknown as Window,
+      el,
+      () => 62,
+      () => clock,
+    );
+    expect(root.props.get("--viewport-bottom-gap")).toBe("62px");
+
+    // The loop: the extended layout gets the full viewport back, the gap
+    // reads zero, the layout shrinks, the viewport is short again, and on.
+    for (let i = 0; i < 20; i += 1) {
+      clock += 16;
+      win.innerHeight = win.innerHeight === 894 ? 956 : 894;
+      win.dispatchEvent(new Event("resize"));
+    }
+    expect(root.props.has("--viewport-bottom-gap")).toBe(false);
+    const settled = writes;
+    for (let i = 0; i < 5; i += 1) {
+      win.innerHeight = win.innerHeight === 894 ? 956 : 894;
+      win.dispatchEvent(new Event("resize"));
+    }
+    expect(writes).toBe(settled);
+    expect(root.props.has("--viewport-bottom-gap")).toBe(false);
+
+    // A rotation measures afresh.
+    win.innerHeight = 894;
+    win.dispatchEvent(new Event("orientationchange"));
+    expect(root.props.get("--viewport-bottom-gap")).toBe("62px");
+    stop();
+  });
+
+  it("settles off when the gap swings between two sizes", () => {
+    const win = new FakeWindow();
+    const root = fakeRoot();
+    let clock = 0;
+    let inset = 62;
+    const stop = trackStandaloneViewportGap(
+      win as unknown as Window,
+      root.el,
+      () => inset,
+      () => clock,
+    );
+    for (let i = 0; i < 10; i += 1) {
+      clock += 16;
+      inset = inset === 62 ? 60 : 62;
+      win.innerHeight = 956 - inset;
+      win.dispatchEvent(new Event("resize"));
+    }
+    expect(root.props.has("--viewport-bottom-gap")).toBe(false);
+    stop();
+  });
+
+  it("keeps following corrections that are minutes apart", () => {
+    const win = new FakeWindow();
+    const root = fakeRoot();
+    let clock = 0;
+    const stop = trackStandaloneViewportGap(
+      win as unknown as Window,
+      root.el,
+      () => 62,
+      () => clock,
+    );
+    for (let i = 0; i < 6; i += 1) {
+      clock += 60_000;
+      win.innerHeight = win.innerHeight === 894 ? 956 : 894;
+      win.dispatchEvent(new Event("resize"));
+      expect(root.props.has("--viewport-bottom-gap")).toBe(
+        win.innerHeight === 894,
+      );
+    }
+    stop();
+  });
+
   it("does nothing outside an installed iOS app", () => {
     const win = new FakeWindow();
     win.navigator = {} as Navigator;
