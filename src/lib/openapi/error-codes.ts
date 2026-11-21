@@ -126,6 +126,14 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     ],
     biomarkers: ["biomarkers.unit.locked"],
     "body-site": ["body-site.invalid"],
+    care: [
+      "care.feed.api_disabled",
+      "care.feed.cookie_only",
+      "care.feed.exists",
+      "care.feed.none",
+      "care.feed.notFound",
+      "care.feed.rateLimited",
+    ],
     coach: [
       "coach.budget.exceeded",
       "coach.conversation.invalidTitle",

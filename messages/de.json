@@ -15193,5 +15193,24 @@
       "NO": "Nein, nichts sichtbar",
       "UNKNOWN": "Nicht sicher"
     }
+  },
+  "careFeed": {
+    "sectionTitle": "Kalender",
+    "sectionSubtitle": "Deine Termine und was fällig wird, in der Kalender-App, die du schon nutzt.",
+    "title": "Kalender-Abo für Termine und Fälligkeiten",
+    "description": "Gebuchte Besuche zu ihrer Uhrzeit, Vorsorge und Impfauffrischungen am Tag ihrer Fälligkeit.",
+    "loadError": "Das Kalender-Abo konnte nicht geladen werden.",
+    "linkHidden": "Ein Link, der mit {prefix} beginnt, ist aktiv. Er wird nur einmal gezeigt, beim Erstellen; schalte das Abo aus und wieder ein, um einen neuen zu bekommen.",
+    "linkOnce": "Nur jetzt sichtbar. Füge ihn in deine Kalender-App ein.",
+    "visits": "Gebuchte Besuche",
+    "checkups": "Fällige Vorsorge",
+    "vaccinations": "Fällige Impfauffrischungen",
+    "ics": {
+      "calendarName": "Termine und Fälligkeiten (HealthLog)",
+      "visit": "Termin",
+      "visitWith": "Termin: {name}",
+      "checkupDue": "Fällig: {label}",
+      "boosterDue": "Auffrischung fällig: {label}"
+    }
   }
 }

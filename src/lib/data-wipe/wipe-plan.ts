@@ -240,6 +240,8 @@ export const WIPE_MODELS = [
   // the feed on this record, and any this account minted on a record it
   // manages. Deleting the row is the revocation, as for the share link.
   "CycleCalendarFeed",
+  // The care calendar feed; deleting the row is the revocation.
+  "CareCalendarFeed",
   // v1.36.0 — account grants, on BOTH sides (see WIPE_OWNER_FIELDS): the ones
   // this account made over its own record, and the ones it holds over someone
   // else's.

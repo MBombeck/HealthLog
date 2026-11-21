@@ -46,7 +46,9 @@ notes, and machine-readable specs that ship alongside the source:
   record search: opening it, what it finds, how matching works, and its
   limits on very large and shared records.
   [`using/cycle-calendar-feed.md`](./using/cycle-calendar-feed.md) covers
-  subscribing to the cycle forecast from Google, Apple or Outlook.
+  subscribing to the cycle forecast from Google, Apple or Outlook, and
+  [`using/care-calendar-feed.md`](./using/care-calendar-feed.md) the same for
+  booked visits, check-ups and vaccination boosters coming due.
 - [`migration/`](./migration/) — migration notes. Currently only
   v1.3 to v1.4; later releases are covered by `CHANGELOG.md` and
   <https://docs.healthlog.dev>.

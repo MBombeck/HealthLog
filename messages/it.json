@@ -15193,5 +15193,24 @@
       "NO": "No, nulla di visibile",
       "UNKNOWN": "Non so"
     }
+  },
+  "careFeed": {
+    "sectionTitle": "Calendario",
+    "sectionSubtitle": "I tuoi appuntamenti e le scadenze, nell'app calendario che usi già.",
+    "title": "Abbonamento al calendario di appuntamenti e scadenze",
+    "description": "Le visite prenotate al loro orario, i controlli e i richiami dei vaccini nel giorno della scadenza.",
+    "loadError": "Non è stato possibile caricare l'abbonamento al calendario.",
+    "linkHidden": "È attivo un link che inizia con {prefix}. Viene mostrato una sola volta, alla creazione; disattiva e riattiva l'abbonamento per averne uno nuovo.",
+    "linkOnce": "Mostrato solo ora. Incollalo nella tua app calendario.",
+    "visits": "Visite prenotate",
+    "checkups": "Controlli in scadenza",
+    "vaccinations": "Richiami dei vaccini in scadenza",
+    "ics": {
+      "calendarName": "Appuntamenti e scadenze (HealthLog)",
+      "visit": "Appuntamento",
+      "visitWith": "Appuntamento: {name}",
+      "checkupDue": "In scadenza: {label}",
+      "boosterDue": "Richiamo in scadenza: {label}"
+    }
   }
 }

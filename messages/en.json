@@ -15193,5 +15193,24 @@
       "NO": "No, nothing visible",
       "UNKNOWN": "Not sure"
     }
+  },
+  "careFeed": {
+    "sectionTitle": "Calendar",
+    "sectionSubtitle": "Your appointments and what is coming due, in the calendar app you already use.",
+    "title": "Care calendar subscription",
+    "description": "Booked visits at their time, and check-ups and vaccination boosters on the day they come due.",
+    "loadError": "The calendar subscription could not be loaded.",
+    "linkHidden": "A link starting with {prefix} is active. It is shown only once, when it is made; turn the subscription off and on again for a new one.",
+    "linkOnce": "Shown only now. Paste it into your calendar app.",
+    "visits": "Booked visits",
+    "checkups": "Check-ups coming due",
+    "vaccinations": "Vaccination boosters coming due",
+    "ics": {
+      "calendarName": "Care dates (HealthLog)",
+      "visit": "Appointment",
+      "visitWith": "Appointment: {name}",
+      "checkupDue": "Due: {label}",
+      "boosterDue": "Booster due: {label}"
+    }
   }
 }

@@ -24,12 +24,13 @@
  * `/api/share-links` routes, and the public `/c/[token]` view are unchanged.
  */
 
-import { Share2 } from "lucide-react";
+import { CalendarSync, Share2 } from "lucide-react";
 
 import { useTranslations } from "@/lib/i18n/context";
 import { HealthRecordExportPanel } from "@/components/settings/report-selection/selection-panel";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { SharingSection } from "@/components/settings/sharing-section";
+import { CareCalendarFeedCard } from "@/components/settings/care-calendar-feed-card";
 
 export function GesundheitsakteSection() {
   const { t } = useTranslations();
@@ -50,6 +51,17 @@ export function GesundheitsakteSection() {
           subtitle={t("settings.sections.sharing.subtitle")}
         />
         <SharingSection />
+      </section>
+
+      {/* Booked visits and care dates coming due, as a calendar the person
+          subscribes to: another way the record leaves the app. */}
+      <section id="calendar" className="scroll-mt-28 space-y-4">
+        <SectionHeading
+          icon={CalendarSync}
+          title={t("careFeed.sectionTitle")}
+          subtitle={t("careFeed.sectionSubtitle")}
+        />
+        <CareCalendarFeedCard />
       </section>
     </div>
   );

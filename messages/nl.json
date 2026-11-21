@@ -15193,5 +15193,24 @@
       "NO": "Nee, niets zichtbaar",
       "UNKNOWN": "Niet zeker"
     }
+  },
+  "careFeed": {
+    "sectionTitle": "Agenda",
+    "sectionSubtitle": "Je afspraken en wat eraan komt, in de agenda-app die je al gebruikt.",
+    "title": "Agenda-abonnement voor afspraken en vervaldata",
+    "description": "Geboekte bezoeken op hun tijd, controles en boosters op de dag dat ze aan de beurt zijn.",
+    "loadError": "Het agenda-abonnement kon niet worden geladen.",
+    "linkHidden": "Er is een link actief die begint met {prefix}. Hij wordt maar één keer getoond, bij het maken; zet het abonnement uit en weer aan voor een nieuwe.",
+    "linkOnce": "Alleen nu zichtbaar. Plak hem in je agenda-app.",
+    "visits": "Geboekte bezoeken",
+    "checkups": "Controles die eraan komen",
+    "vaccinations": "Boosters die eraan komen",
+    "ics": {
+      "calendarName": "Afspraken en vervaldata (HealthLog)",
+      "visit": "Afspraak",
+      "visitWith": "Afspraak: {name}",
+      "checkupDue": "Aan de beurt: {label}",
+      "boosterDue": "Booster aan de beurt: {label}"
+    }
   }
 }

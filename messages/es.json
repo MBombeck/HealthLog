@@ -15193,5 +15193,24 @@
       "NO": "No, nada visible",
       "UNKNOWN": "No estoy seguro"
     }
+  },
+  "careFeed": {
+    "sectionTitle": "Calendario",
+    "sectionSubtitle": "Tus citas y lo que vence, en la app de calendario que ya usas.",
+    "title": "Suscripción de calendario de citas y vencimientos",
+    "description": "Las visitas reservadas a su hora, y los chequeos y refuerzos de vacunas el día que vencen.",
+    "loadError": "No se pudo cargar la suscripción de calendario.",
+    "linkHidden": "Hay un enlace activo que empieza por {prefix}. Solo se muestra una vez, al crearlo; desactiva y vuelve a activar la suscripción para obtener uno nuevo.",
+    "linkOnce": "Solo se muestra ahora. Pégalo en tu app de calendario.",
+    "visits": "Visitas reservadas",
+    "checkups": "Chequeos que vencen",
+    "vaccinations": "Refuerzos de vacunas que vencen",
+    "ics": {
+      "calendarName": "Citas y vencimientos (HealthLog)",
+      "visit": "Cita",
+      "visitWith": "Cita: {name}",
+      "checkupDue": "Vence: {label}",
+      "boosterDue": "Refuerzo pendiente: {label}"
+    }
   }
 }

@@ -113,6 +113,16 @@ const RECORD_COOKIE_ONLY_PROOF_ROUTES = [
 ].sort();
 
 /**
+ * Routes that resolve through `requireActorAuth` (always the caller's own
+ * record) and are cookie-only. The care calendar feed's mint hands out a
+ * standing URL credential, so no token may reach it and the session needs a
+ * fresh proof.
+ */
+const ACTOR_COOKIE_ONLY_PROOF_ROUTES = [
+  "app/api/care/feed-subscription/route.ts",
+].sort();
+
+/**
  * The connection consent. It resolves the session through `getSession`
  * (OAuth answers in its own error format, not the envelope) and asks for the
  * proof on the consent page and again on "allow".
@@ -159,6 +169,7 @@ describe("the recent-proof gate", () => {
         ...COOKIE_PROOF_ROUTES,
         ...TOKEN_ARM_COOKIE_PROOF_ROUTES,
         ...RECORD_COOKIE_ONLY_PROOF_ROUTES,
+        ...ACTOR_COOKIE_ONLY_PROOF_ROUTES,
         ...CONSENT_PROOF_ROUTES,
       ].sort(),
     );
@@ -177,6 +188,23 @@ describe("the recent-proof gate", () => {
         expect(handlerStart, rel).toBeGreaterThan(-1);
         expect(before.slice(handlerStart), rel).toMatch(
           /if \(auth\.authMethod !== "cookie"\) return cookieOnlyRefusal\(\);/,
+        );
+      }
+    }
+  });
+
+  it("an own-record cookie-only route refuses a token before it asks", () => {
+    for (const rel of ACTOR_COOKIE_ONLY_PROOF_ROUTES) {
+      const src = read(rel);
+      expect(importedAs(rel, "requireActorAuth"), rel).toHaveLength(1);
+      const proofs = [...src.matchAll(/await assertRecentCookieProof\(/g)];
+      expect(proofs.length, rel).toBeGreaterThan(0);
+      for (const proof of proofs) {
+        const before = src.slice(0, proof.index);
+        const handlerStart = before.lastIndexOf("apiHandler(");
+        expect(handlerStart, rel).toBeGreaterThan(-1);
+        expect(before.slice(handlerStart), rel).toMatch(
+          /if \(auth\.authMethod !== "cookie"\) return \w*[cC]ookieOnlyRefusal\(\);/,
         );
       }
     }

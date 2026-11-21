@@ -15193,5 +15193,24 @@
       "NO": "Nie, nic nie było widać",
       "UNKNOWN": "Nie wiem"
     }
+  },
+  "careFeed": {
+    "sectionTitle": "Kalendarz",
+    "sectionSubtitle": "Twoje wizyty i zbliżające się terminy w aplikacji kalendarza, której już używasz.",
+    "title": "Subskrypcja kalendarza wizyt i terminów",
+    "description": "Zarezerwowane wizyty o ich godzinie, badania i dawki przypominające w dniu, w którym przypadają.",
+    "loadError": "Nie udało się wczytać subskrypcji kalendarza.",
+    "linkHidden": "Aktywny jest link zaczynający się od {prefix}. Jest pokazywany tylko raz, przy tworzeniu; wyłącz i włącz subskrypcję ponownie, aby dostać nowy.",
+    "linkOnce": "Widoczny tylko teraz. Wklej go do aplikacji kalendarza.",
+    "visits": "Zarezerwowane wizyty",
+    "checkups": "Zbliżające się badania",
+    "vaccinations": "Zbliżające się dawki przypominające",
+    "ics": {
+      "calendarName": "Wizyty i terminy (HealthLog)",
+      "visit": "Wizyta",
+      "visitWith": "Wizyta: {name}",
+      "checkupDue": "Termin: {label}",
+      "boosterDue": "Dawka przypominająca: {label}"
+    }
   }
 }

@@ -15193,5 +15193,24 @@
       "NO": "Non, rien de visible",
       "UNKNOWN": "Pas sûr"
     }
+  },
+  "careFeed": {
+    "sectionTitle": "Calendrier",
+    "sectionSubtitle": "Tes rendez-vous et ce qui arrive à échéance, dans l'application de calendrier que tu utilises déjà.",
+    "title": "Abonnement agenda des rendez-vous et échéances",
+    "description": "Les visites prévues à leur heure, les bilans et les rappels de vaccins le jour de leur échéance.",
+    "loadError": "L'abonnement agenda n'a pas pu être chargé.",
+    "linkHidden": "Un lien commençant par {prefix} est actif. Il n'est affiché qu'une fois, à sa création ; désactive puis réactive l'abonnement pour en obtenir un nouveau.",
+    "linkOnce": "Affiché seulement maintenant. Colle-le dans ton application de calendrier.",
+    "visits": "Visites prévues",
+    "checkups": "Bilans à venir",
+    "vaccinations": "Rappels de vaccins à venir",
+    "ics": {
+      "calendarName": "Rendez-vous et échéances (HealthLog)",
+      "visit": "Rendez-vous",
+      "visitWith": "Rendez-vous : {name}",
+      "checkupDue": "À faire : {label}",
+      "boosterDue": "Rappel à faire : {label}"
+    }
   }
 }

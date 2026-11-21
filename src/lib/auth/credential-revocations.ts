@@ -16,6 +16,7 @@ type CredentialStore = Pick<
   | "mcpOAuthConnection"
   | "clinicianShareLink"
   | "cycleCalendarFeed"
+  | "careCalendarFeed"
   | "stepUpElevation"
 >;
 
@@ -63,6 +64,12 @@ export function credentialRevocations(
     // so a remediation never leaves a link it cannot see.
     db.cycleCalendarFeed.updateMany({
       where: { OR: [{ userId }, { createdById: userId }], revokedAt: null },
+      data: { revokedAt: now },
+    }),
+    // The care calendar feed is the same kind of door for visits and dates
+    // coming due; only the owner mints one, so the record side is enough.
+    db.careCalendarFeed.updateMany({
+      where: { userId, revokedAt: null },
       data: { revokedAt: now },
     }),
     db.stepUpElevation.deleteMany({ where: { userId } }),

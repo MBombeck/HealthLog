@@ -25,7 +25,11 @@ import { pluralKey } from "@/lib/i18n/plural";
 import { resolveIntlLocale } from "@/lib/format-locale";
 import type { ServerTranslator } from "@/lib/i18n/server-translator";
 
-import { eventUid, type IcsCalendar, type IcsEvent } from "../ics";
+import {
+  eventUid,
+  type IcsCalendar,
+  type IcsAllDayEvent as IcsEvent,
+} from "../ics";
 
 export type FeedTitleMode = "DISCREET" | "DESCRIPTIVE";
 export type FeedForecastStyle = "EXACT" | "MARGIN" | "BAND";
@@ -179,7 +183,9 @@ function fertileEvent(
 }
 
 /** The whole calendar the feed serves, events in date order. */
-export function buildFeedCalendar(input: FeedEventInput): IcsCalendar {
+export function buildFeedCalendar(
+  input: FeedEventInput,
+): IcsCalendar<IcsEvent> {
   const events: IcsEvent[] = [
     ...input.history.map((h) => historyEvent(h, input)),
     ...input.projected.flatMap((p) => forecastEvents(p, input)),
