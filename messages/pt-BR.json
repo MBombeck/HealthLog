@@ -5737,11 +5737,24 @@
         "documents": {
           "title": "Documentos",
           "autoAiRead": "Ler novos documentos automaticamente com IA",
-          "honesty": "Ligado, cada documento enviado a este perfil vai para o provedor de IA da instância para ser lido, descrito e indexado para busca, sem um toque por documento, e os documentos já existentes sem resumo também são enviados (até 200 a cada vez que é ligado). Ligar registra o consentimento deste perfil para que seus documentos sejam lidos. Valem as configurações de IA do perfil; o seu próprio provedor de IA nunca é usado. Desligado por padrão.",
+          "honesty": "Ligado, cada documento enviado a este perfil vai para o provedor de IA escolhido acima para o perfil, para ser lido, descrito e indexado para busca, sem um toque por documento, e os documentos já existentes sem resumo também são enviados (até 200 a cada vez que é ligado). Ligar registra o consentimento deste perfil para que seus documentos sejam lidos. Desligado por padrão.",
           "pageTitle": "Documentos e IA",
           "pageSubtitle": "Se a IA lê os documentos enviados ao perfil de {name}.",
-          "noProvider": "Este servidor não tem um provedor de IA que possa ler os documentos de {name}, então o botão fica desligado. Quem administra o servidor pode configurar um.",
+          "noProvider": "Nenhum provedor de IA capaz de ler documentos está escolhido para o perfil de {name}, então o botão fica desligado. Escolha um acima.",
           "aiOff": "A IA está desligada para o perfil de {name}, então nenhum documento seria lido."
+        },
+        "aiSource": {
+          "title": "Provedor de IA",
+          "label": "A IA deste perfil usa",
+          "honesty": "Um perfil gerenciado não tem chaves de IA próprias. Escolha para onde vai o trabalho de IA dele: para a chave de IA do servidor, para lugar nenhum ou para uma das cadeias que você configurou na sua própria conta. Os botões e consentimentos de IA do perfil continuam valendo em qualquer escolha.",
+          "instance": "A chave de IA do servidor",
+          "none": "Nenhum provedor de IA",
+          "yourDefault": "Sua cadeia padrão",
+          "yourChain": "Sua cadeia “{name}”",
+          "otherGuardian": "Uma cadeia de outro responsável",
+          "noInstanceKey": "Este servidor não tem chave de IA, então com essa escolha o perfil fica sem IA.",
+          "yourCredentials": "Suas próprias chaves e logins atendem este perfil, na ordem dessa cadeia e nada mais. O que o perfil envia conta nas suas contas de provedor.",
+          "unusable": "A cadeia escolhida não pode atender agora: o responsável que a escolheu não gerencia mais este perfil, ou a cadeia foi excluída. O perfil fica sem IA até alguém escolher de novo."
         }
       },
       "unavailableTitle": "Indisponível neste registro compartilhado",
@@ -6267,6 +6280,86 @@
               "stagingMissing": "O arquivo enviado não estava mais no servidor. Envie-o de novo.",
               "interrupted": "A importação foi interrompida por uma reinicialização do servidor. Envie o arquivo de novo."
             }
+          },
+          "recordFile": {
+            "gadgetbridge": {
+              "title": "Banco de dados do Gadgetbridge",
+              "description": "Importe passos, pulso, SpO2, sono e peso do banco de dados que o Gadgetbridge exporta no Android.",
+              "steps": {
+                "export": "No Gadgetbridge abra Configurações, depois Gerenciamento de dados, depois Exportar banco de dados.",
+                "upload": "Envie aqui o arquivo chamado Gadgetbridge. Até 512 MB."
+              }
+            },
+            "fhirBundle": {
+              "title": "Prontuário (FHIR)",
+              "description": "Importe exames, sinais vitais, condições, vacinas, medicamentos e consultas de um Bundle FHIR R4 exportado por um portal do paciente.",
+              "steps": {
+                "export": "No portal do paciente, exporte seu prontuário como FHIR R4 (JSON). Arquivos C-CDA não são lidos.",
+                "upload": "Envie aqui o arquivo .json. Até 32 MB."
+              }
+            },
+            "choose": "Escolher arquivo",
+            "uploading": "Enviando…",
+            "running": "Importando em segundo plano…",
+            "doneSummary": "O arquivo foi importado.",
+            "doneNothing": "A importação terminou, mas não havia nada novo.",
+            "skippedHeading": "Não importado",
+            "failed": "A importação falhou. Tente de novo.",
+            "uploadFailed": "O envio falhou. Tente de novo.",
+            "rateLimited": "Envios demais em pouco tempo. Espere um minuto e tente de novo.",
+            "tooLarge": "O arquivo é maior que o limite desta importação.",
+            "busy": "Já há uma importação em andamento para sua conta. Espere até terminar.",
+            "privacyNote": "O arquivo é apagado do servidor assim que a importação termina. Tudo é ligado ao registro de onde veio, então enviar o mesmo arquivo de novo não adiciona nada em dobro.",
+            "fileInputLabel": "Arquivo para importar",
+            "lineCounts": "{imported} novos, {duplicates} já existiam",
+            "failure": {
+              "notGadgetbridge": "Isto não é um banco de dados do Gadgetbridge. Exporte-o de novo no Gadgetbridge e envie o arquivo gerado.",
+              "unsafeSchema": "O arquivo contém uma estrutura que o HealthLog não lê por segurança.",
+              "notFhirBundle": "Isto não é um Bundle FHIR. O arquivo precisa ser a exportação JSON de um prontuário inteiro.",
+              "tooManyEntries": "O Bundle tem mais entradas do que uma importação lê. Exporte um período menor.",
+              "tooLarge": "O arquivo é maior que o limite desta importação.",
+              "timeBudget": "A importação parou no limite de tempo. Envie o mesmo arquivo de novo para continuar; nada é adicionado em dobro.",
+              "stagingMissing": "O arquivo enviado não estava mais no servidor. Envie de novo."
+            }
+          },
+          "healthConnectRemote": {
+            "outcome": {
+              "imported": "uma nova exportação foi entregue à importação",
+              "unchanged": "nada novo",
+              "busy": "outra importação estava em andamento, nova tentativa em breve",
+              "notFound": "o arquivo não está na pasta",
+              "unauthorized": "a pasta recusou o usuário ou a senha",
+              "redirected": "o servidor tentou redirecionar, e o HealthLog não segue",
+              "upstreamError": "o servidor respondeu com um erro",
+              "tooLarge": "o arquivo é maior que 1 GB",
+              "timeout": "o servidor demorou demais",
+              "network": "não foi possível contatar o servidor",
+              "privateOrigin": "este endereço está numa rede privada que o servidor não libera",
+              "invalidUrl": "o endereço da pasta não pode ser usado",
+              "noWorker": "o serviço em segundo plano não está rodando",
+              "unknown": "desconhecido"
+            },
+            "error": {
+              "privateOrigin": "Este endereço está numa rede privada. Quem administra o servidor precisa liberá-lo antes.",
+              "invalidUrl": "Informe o endereço completo da pasta, sem usuário ou senha dentro dele.",
+              "passwordRequired": "Informe a senha uma vez ao configurar a pasta.",
+              "saveFailed": "Não foi possível salvar a pasta. Confira o endereço e tente de novo.",
+              "fetchFailed": "Não foi possível iniciar a busca. Tente mais tarde."
+            },
+            "title": "Health Connect de uma pasta",
+            "description": "O HealthLog busca a exportação que o Health Connect salva de forma programada numa pasta WebDAV ou Nextcloud e importa o que for novo.",
+            "folderUrl": "Endereço da pasta (WebDAV)",
+            "fileName": "Nome do arquivo na pasta",
+            "username": "Usuário",
+            "password": "Senha ou senha de app",
+            "passwordKept": "Deixe vazio para manter a senha salva",
+            "enabled": "Buscar mais ou menos a cada seis horas",
+            "privacyNote": "A senha é guardada criptografada e nunca mais é mostrada. Cada arquivo é importado uma vez: um arquivo que o HealthLog já tem não é lido de novo. Uma pasta na rede de casa só funciona se quem administra o servidor liberar o endereço.",
+            "lastAttempt": "Última tentativa {when}: {outcome}",
+            "fetchNow": "Buscar agora",
+            "remove": "Remover pasta",
+            "removeTitle": "Remover esta pasta?",
+            "removeBody": "O HealthLog para de buscar nela e esquece a senha. O que já foi importado continua."
           }
         },
         "subtitle": "Exporte seus dados ou importe medições e registros de outros apps e arquivos."
@@ -13524,6 +13617,17 @@
       "opened": "{name} abriu seu registro {count}×",
       "acted": "{name} fez uma alteração no seu registro",
       "deletedAccount": "Uma conta excluída"
+    },
+    "managedActivity": {
+      "title": "Atividade no perfil de {name}",
+      "hint": "Quem fez o quê neste perfil: as mudanças de cada responsável, incluindo as suas.",
+      "action": "Mostrar atividade",
+      "emptyTitle": "Nada registrado ainda",
+      "emptyDescription": "As mudanças que um responsável faz neste perfil aparecem aqui, e as aberturas em uma linha por responsável por dia.",
+      "you": "Você",
+      "opened": "{name} abriu o perfil {count}×",
+      "acted": "{name} fez uma mudança no perfil",
+      "settingsUpdate": "{name} mudou as configurações do perfil"
     },
     "delegate": {
       "addOnlyNote": "Você pode adicionar a este registro. Alterar ou remover entradas é algo que só {name} pode fazer."

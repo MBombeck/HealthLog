@@ -85,8 +85,15 @@ export async function writeFhirLabReadings(args: {
   tz: string;
   readings: readonly MappedFhirLab[];
   prisma?: LabWriteClient;
+  /**
+   * `LabResult.source` of the rows, and the source their identities are
+   * looked up under. Apple Health's Health Records by default; a FHIR Bundle
+   * file import writes `IMPORT`.
+   */
+  source?: string;
 }): Promise<FhirLabWriteResult> {
   const client = args.prisma ?? defaultPrisma;
+  const source = args.source ?? APPLE_HEALTH_LAB_SOURCE;
   const { userId, tz, readings } = args;
   const statuses: FhirLabWriteStatus[] = new Array(readings.length);
   const result: FhirLabWriteResult = {
@@ -136,7 +143,7 @@ export async function writeFhirLabReadings(args: {
         await client.labResult.findMany({
           where: {
             userId,
-            source: APPLE_HEALTH_LAB_SOURCE,
+            source,
             externalId: { in: freshIds },
           },
           select: { externalId: true },
@@ -146,7 +153,7 @@ export async function writeFhirLabReadings(args: {
     for (const id of await heldLabImportKeys(
       client,
       userId,
-      APPLE_HEALTH_LAB_SOURCE,
+      source,
       freshIds,
     )) {
       held.add(id);
@@ -223,7 +230,7 @@ export async function writeFhirLabReadings(args: {
         continue;
       }
 
-      const built = await buildRow(client, userId, reading, index);
+      const built = await buildRow(client, userId, reading, index, source);
       if (!built.ok) {
         failed(plan.at, built.reason);
         continue;
@@ -314,6 +321,7 @@ async function buildRow(
   userId: string,
   reading: MappedFhirLab,
   index: MarkerIndex,
+  source: string,
 ): Promise<
   | { ok: true; row: Prisma.LabResultCreateManyInput; markerId: string }
   | { ok: false; reason: "unit_mismatch" | "marker_unit_unset" }
@@ -385,7 +393,7 @@ async function buildRow(
       sourceReferenceHigh: storedHigh,
       sourceReferenceText: reading.sourceReferenceText,
       takenAt: reading.takenAt,
-      source: APPLE_HEALTH_LAB_SOURCE,
+      source,
       externalId: reading.externalId,
       noteEncrypted: reading.note ? encryptNoteToBytes(reading.note) : null,
     },

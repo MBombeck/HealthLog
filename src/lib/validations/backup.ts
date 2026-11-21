@@ -70,6 +70,7 @@ import {
   labResultImportKeyBackupSchema,
   labResultBackupSchema,
 } from "@/lib/export/labs-backup-schema";
+import { fhirImportedResourceBackupSchema } from "@/lib/export/fhir-import-ledger-backup";
 import { lifeEventBackupSchema } from "@/lib/export/life-events-backup-schema";
 import { measurementSchema } from "@/lib/export/measurements-backup-schema";
 import {
@@ -179,6 +180,11 @@ export const backupPayloadSchema = z
     // The identities of Health Records readings the person deleted.
     // Defaulted: a file written before the lab import ledger carries no key.
     labResultImportKeys: z.array(labResultImportKeyBackupSchema).default([]),
+    // The FHIR Bundle import ledger. Defaulted: a file written before 1.49
+    // carries no key.
+    fhirImportedResources: z
+      .array(fhirImportedResourceBackupSchema)
+      .default([]),
     illnessEpisodes: z.array(illnessEpisodeBackupSchema).default([]),
     // Defaulted: a file written before v1.40 carries no key.
     symptomDefinitions: z.array(symptomDefinitionBackupSchema).default([]),

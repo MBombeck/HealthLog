@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2843,
-  "total": 8877,
+  "total": 8876,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1985,7 +1985,7 @@
     "lib/export/__tests__/records-backup.test.ts": 2,
     "lib/export/__tests__/restore-backup-round-trip.test.ts": 1,
     "lib/export/account-settings-backup.ts": 2,
-    "lib/export/backup-plan.ts": 9,
+    "lib/export/backup-plan.ts": 8,
     "lib/export/coach-backup.ts": 13,
     "lib/export/intraday-profile-backup.ts": 1,
     "lib/export/passphrase-archive.ts": 1,

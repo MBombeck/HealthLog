@@ -5737,11 +5737,24 @@
         "documents": {
           "title": "Dokumente",
           "autoAiRead": "Neue Dokumente automatisch mit KI lesen",
-          "honesty": "Wenn eingeschaltet, wird jedes in dieses Profil hochgeladene Dokument an den KI-Anbieter der Instanz geschickt, dort gelesen, beschrieben und für die Suche erschlossen, ohne Tippen je Dokument; schon vorhandene Dokumente ohne Zusammenfassung werden ebenfalls geschickt (bis zu 200 bei jedem Einschalten). Das Einschalten hält die Einwilligung dieses Profils fest, dass seine Dokumente gelesen werden dürfen. Es gelten die KI-Einstellungen des Profils; dein eigener KI-Anbieter wird nie verwendet. Standardmäßig aus.",
+          "honesty": "Wenn eingeschaltet, wird jedes in dieses Profil hochgeladene Dokument an den oben für das Profil gewählten KI-Anbieter geschickt, dort gelesen, beschrieben und für die Suche erschlossen, ohne Tippen je Dokument; schon vorhandene Dokumente ohne Zusammenfassung werden ebenfalls geschickt (bis zu 200 bei jedem Einschalten). Das Einschalten hält die Einwilligung dieses Profils fest, dass seine Dokumente gelesen werden dürfen. Standardmäßig aus.",
           "pageTitle": "Dokumente und KI",
           "pageSubtitle": "Ob KI die Dokumente liest, die in das Profil von {name} hochgeladen werden.",
-          "noProvider": "Dieser Server hat keinen KI-Anbieter, der die Dokumente von {name} lesen könnte, deshalb bleibt der Schalter aus. Wer den Server betreibt, kann einen einrichten.",
+          "noProvider": "Für das Profil von {name} ist kein KI-Anbieter gewählt, der Dokumente lesen könnte, deshalb bleibt der Schalter aus. Wähle oben einen.",
           "aiOff": "KI ist für das Profil von {name} ausgeschaltet, deshalb würde kein Dokument gelesen."
+        },
+        "aiSource": {
+          "title": "KI-Anbieter",
+          "label": "KI für dieses Profil nutzt",
+          "honesty": "Ein verwaltetes Profil hat keine eigenen KI-Schlüssel. Wähle, wohin seine KI-Arbeit geht: an den KI-Schlüssel des Servers, nirgendwohin, oder an eine der Ketten, die du in deinem eigenen Konto eingerichtet hast. Die KI-Schalter und Einwilligungen des Profils gelten bei jeder Wahl weiter.",
+          "instance": "KI-Schlüssel des Servers",
+          "none": "Kein KI-Anbieter",
+          "yourDefault": "Deine Standardkette",
+          "yourChain": "Deine Kette „{name}“",
+          "otherGuardian": "Eine Kette eines anderen Vormunds",
+          "noInstanceKey": "Dieser Server hat keinen KI-Schlüssel, mit dieser Wahl bleibt das Profil ohne KI.",
+          "yourCredentials": "Deine eigenen Schlüssel und Anmeldungen bedienen dieses Profil, in der Reihenfolge dieser Kette und mit nichts sonst. Was das Profil schickt, zählt gegen deine Anbieterkonten.",
+          "unusable": "Die gewählte Kette kann gerade nicht bedienen: Der Vormund, der sie gewählt hat, verwaltet das Profil nicht mehr, oder die Kette wurde gelöscht. Bis jemand neu wählt, hat das Profil keine KI."
         }
       },
       "unavailableTitle": "In diesem geteilten Datensatz nicht verfügbar",
@@ -6267,6 +6280,86 @@
               "stagingMissing": "Die hochgeladene Datei war nicht mehr auf dem Server. Lade sie erneut hoch.",
               "interrupted": "Der Import wurde durch einen Neustart des Servers unterbrochen. Lade die Datei erneut hoch."
             }
+          },
+          "recordFile": {
+            "gadgetbridge": {
+              "title": "Gadgetbridge-Datenbank",
+              "description": "Schritte, Puls, SpO2, Schlaf und Gewicht aus der Datenbank übernehmen, die Gadgetbridge auf Android exportiert.",
+              "steps": {
+                "export": "In Gadgetbridge Einstellungen öffnen, dann Datenverwaltung, dann Datenbank exportieren.",
+                "upload": "Die Datei namens Gadgetbridge hier hochladen. Bis 512 MB."
+              }
+            },
+            "fhirBundle": {
+              "title": "Patientenakte (FHIR)",
+              "description": "Laborwerte, Vitalwerte, Erkrankungen, Impfungen, Medikamente und Arztbesuche aus einem FHIR-R4-Bundle übernehmen, das ein Patientenportal exportiert.",
+              "steps": {
+                "export": "Im Patientenportal die Akte als FHIR R4 (JSON) exportieren. C-CDA-Dateien werden nicht gelesen.",
+                "upload": "Die .json-Datei hier hochladen. Bis 32 MB."
+              }
+            },
+            "choose": "Datei wählen",
+            "uploading": "Wird hochgeladen…",
+            "running": "Import läuft im Hintergrund…",
+            "doneSummary": "Die Datei wurde übernommen.",
+            "doneNothing": "Der Import ist fertig, es gab aber nichts Neues.",
+            "skippedHeading": "Nicht übernommen",
+            "failed": "Der Import ist fehlgeschlagen. Bitte noch einmal versuchen.",
+            "uploadFailed": "Das Hochladen ist fehlgeschlagen. Bitte noch einmal versuchen.",
+            "rateLimited": "Zu viele Uploads in kurzer Zeit. Eine Minute warten und dann noch einmal versuchen.",
+            "tooLarge": "Die Datei ist größer als die Grenze für diesen Import.",
+            "busy": "Für dein Konto läuft schon ein Import. Warte, bis er fertig ist.",
+            "privacyNote": "Die Datei wird vom Server gelöscht, sobald der Import endet. Alles wird über den Eintrag zugeordnet, aus dem es stammt, deshalb kommt beim erneuten Hochladen derselben Datei nichts doppelt hinzu.",
+            "fileInputLabel": "Zu importierende Datei",
+            "lineCounts": "{imported} neu, {duplicates} schon vorhanden",
+            "failure": {
+              "notGadgetbridge": "Das ist keine Gadgetbridge-Datenbank. Exportiere sie erneut in Gadgetbridge und lade die Datei hoch, die dabei entsteht.",
+              "unsafeSchema": "Die Datei enthält eine Struktur, die HealthLog aus Sicherheitsgründen nicht liest.",
+              "notFhirBundle": "Das ist kein FHIR-Bundle. Die Datei muss der JSON-Export einer ganzen Akte sein.",
+              "tooManyEntries": "Das Bundle hat mehr Einträge, als ein Import liest. Exportiere einen kürzeren Zeitraum.",
+              "tooLarge": "Die Datei ist größer als die Grenze für diesen Import.",
+              "timeBudget": "Der Import hat an seiner Zeitgrenze angehalten. Lade dieselbe Datei noch einmal hoch, um fortzufahren; nichts kommt doppelt hinzu.",
+              "stagingMissing": "Die hochgeladene Datei war nicht mehr auf dem Server. Bitte noch einmal hochladen."
+            }
+          },
+          "healthConnectRemote": {
+            "outcome": {
+              "imported": "ein neuer Export wurde an den Import übergeben",
+              "unchanged": "nichts Neues",
+              "busy": "ein anderer Import lief, neuer Versuch bald",
+              "notFound": "die Datei liegt nicht im Ordner",
+              "unauthorized": "der Ordner hat Benutzername oder Passwort abgelehnt",
+              "redirected": "der Server wollte umleiten, dem folgt HealthLog nicht",
+              "upstreamError": "der Server hat mit einem Fehler geantwortet",
+              "tooLarge": "die Datei ist größer als 1 GB",
+              "timeout": "der Server hat zu lange gebraucht",
+              "network": "der Server war nicht erreichbar",
+              "privateOrigin": "diese Adresse liegt in einem privaten Netz, das der Server nicht freigibt",
+              "invalidUrl": "die Ordneradresse ist nicht verwendbar",
+              "noWorker": "der Hintergrunddienst läuft nicht",
+              "unknown": "unbekannt"
+            },
+            "error": {
+              "privateOrigin": "Diese Adresse liegt in einem privaten Netz. Wer den Server betreibt, muss sie erst freigeben.",
+              "invalidUrl": "Gib die vollständige Adresse des Ordners ein, ohne Benutzername oder Passwort darin.",
+              "passwordRequired": "Gib das Passwort beim Einrichten des Ordners einmal ein.",
+              "saveFailed": "Der Ordner konnte nicht gespeichert werden. Prüfe die Adresse und versuche es noch einmal.",
+              "fetchFailed": "Das Abholen konnte nicht gestartet werden. Versuche es später noch einmal."
+            },
+            "title": "Health Connect aus einem Ordner",
+            "description": "HealthLog holt den Export, den Health Connect nach Zeitplan speichert, aus einem WebDAV- oder Nextcloud-Ordner und übernimmt, was neu ist.",
+            "folderUrl": "Ordneradresse (WebDAV)",
+            "fileName": "Dateiname im Ordner",
+            "username": "Benutzername",
+            "password": "Passwort oder App-Passwort",
+            "passwordKept": "Leer lassen, um das gespeicherte Passwort zu behalten",
+            "enabled": "Etwa alle sechs Stunden abholen",
+            "privacyNote": "Das Passwort wird verschlüsselt gespeichert und nie wieder angezeigt. Jede Datei wird einmal übernommen: Eine Datei, die HealthLog schon hat, wird nicht doppelt gelesen. Ein Ordner im Heimnetz funktioniert nur, wenn wer den Server betreibt seine Adresse freigibt.",
+            "lastAttempt": "Letzter Versuch {when}: {outcome}",
+            "fetchNow": "Jetzt abholen",
+            "remove": "Ordner entfernen",
+            "removeTitle": "Diesen Ordner entfernen?",
+            "removeBody": "HealthLog holt nichts mehr von dort und vergisst das Passwort. Was schon übernommen wurde, bleibt."
           }
         },
         "subtitle": "Exportiere deine Daten oder importiere Messwerte und Einträge aus anderen Apps und Dateien."
@@ -13524,6 +13617,17 @@
       "opened": "{name} hat deine Akte {count}× geöffnet",
       "acted": "{name} hat etwas in deiner Akte geändert",
       "deletedAccount": "Ein gelöschtes Konto"
+    },
+    "managedActivity": {
+      "title": "Aktivität im Profil von {name}",
+      "hint": "Wer in diesem Profil was getan hat: die Änderungen jedes Vormunds, deine eingeschlossen.",
+      "action": "Aktivität zeigen",
+      "emptyTitle": "Noch nichts festgehalten",
+      "emptyDescription": "Änderungen eines Vormunds in diesem Profil erscheinen hier, Öffnungen als eine Zeile je Vormund und Tag.",
+      "you": "Du",
+      "opened": "{name} hat das Profil {count}× geöffnet",
+      "acted": "{name} hat im Profil etwas geändert",
+      "settingsUpdate": "{name} hat die Einstellungen des Profils geändert"
     },
     "delegate": {
       "addOnlyNote": "Du kannst zu dieser Akte etwas hinzufügen. Einträge ändern oder löschen kann nur {name}."

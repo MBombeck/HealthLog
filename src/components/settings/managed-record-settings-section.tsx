@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, Settings } from "lucide-react";
+import { FileText, Settings, Sparkles } from "lucide-react";
 
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { useAuth } from "@/hooks/use-auth";
@@ -20,6 +20,7 @@ import {
 } from "@/lib/record-settings";
 
 import { SettingsCardHeader } from "./_card-header";
+import { AiSourceSettingsForm } from "./managed-record/ai-source-form";
 import { CoachSettingsForm } from "./managed-record/coach-form";
 import { DocumentsSettingsForm } from "./managed-record/documents-form";
 import type { SettingsFormProps } from "./managed-record/form-kit";
@@ -60,6 +61,8 @@ export function ManagedRecordSettingsForm({
       return <InsightsSettingsForm {...props} />;
     case "documents":
       return <DocumentsSettingsForm {...props} />;
+    case "aiSource":
+      return <AiSourceSettingsForm {...props} />;
   }
 }
 
@@ -137,7 +140,13 @@ export function ManagedRecordSettingsSection({
       data-record-settings-family={family}
     >
       <SettingsCardHeader
-        icon={family === "documents" ? FileText : Settings}
+        icon={
+          family === "documents"
+            ? FileText
+            : family === "aiSource"
+              ? Sparkles
+              : Settings
+        }
         title={t(`settings.sharedRecord.managedSettings.${family}.title`)}
       />
       {query.data ? (

@@ -98,6 +98,7 @@ export const BACKED_UP_MODELS = [
   "MentalHealthAssessment",
   "LabResult",
   "LabResultImportKey", // Deleted Health Records readings: `labs-backup.ts`.
+  "FhirImportedResource", // FHIR Bundle import ledger: `fhir-import-ledger-backup.ts`.
   "Biomarker",
   "Allergy",
   "FamilyHistoryEntry",
@@ -308,6 +309,7 @@ export const BACKUP_WRITER_FILES: readonly string[] = [
   "src/lib/export/symptoms-backup.ts",
   // The person's life events, both ends beside each other (v1.42).
   "src/lib/export/life-events-backup.ts",
+  "src/lib/export/fhir-import-ledger-backup.ts",
   // The seizure diary; the doses ride inside their seizure both ways.
   "src/lib/export/seizures-backup.ts",
   // The five relation links that close the relation matrix (v1.43), both
@@ -372,6 +374,7 @@ export const TWO_ENDED_MODELS = [
   "MoodTag",
   "LabResult",
   "LabResultImportKey",
+  "FhirImportedResource",
   "Biomarker",
   "Allergy",
   "FamilyHistoryEntry",
@@ -644,25 +647,6 @@ export const STRUCTURALLY_UNATTRIBUTABLE: Readonly<Record<string, string>> = {
 };
 
 /**
- * Backed-up models that do NOT travel yet, each with what an account loses
- * until it does.
- *
- * This is a debt register, not a design. Every line is a restore that comes
- * back short without saying so, which is the failure mode the whole file
- * exists to make visible. The reasons say what goes missing rather than
- * "not yet", so the next person can order the work by what it costs a person
- * rather than by what is cheapest to write.
- */
-export const COVERAGE_PENDING: Readonly<Record<string, string>> = {
-  // v1.43 — the new tables are declared here with the schema and move to
-  // TWO_ENDED_MODELS when their section writer and restore branch land.
-  WorkoutRoute:
-    "GPS traces. Deliberately absent from the payload today and DISCLOSED as absent in the file's own manifest, which is why this is a documented exclusion rather than a silent one — but it is still a loss for a self-hoster with no other copy.",
-  WorkoutSamples:
-    "Per-sample heart-rate and pace series behind a workout summary. Same disclosed-exclusion status as the routes above, same cost.",
-};
-
-/**
  * Recomputable from backed-up rows. The reason names what rebuilds it, so a
  * future reader can check the claim rather than trust it.
  */
@@ -791,6 +775,8 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "Further import source keys that were answered with an already stored document because the bytes matched. The next import run writes the same alias again the moment it meets the same bytes, so a restore loses nothing a re-run does not rebuild. A deleted document's aliases travel as import-ledger entries (`DocumentImportKey`), which is what they mean once the document is gone.",
   ImportJob:
     "A job record pointing at an uploaded file that the backup does not carry, so restoring it would resurrect a task with nothing to work on.",
+  HealthConnectRemoteSource:
+    "A sealed WebDAV credential to another system, and a fetch schedule of this host. Restored elsewhere the credential would start reading a folder on a host the person never set up; they enter it again.",
   HealthKitTypeSync:
     "When each HealthKit type last arrived on this host and how. Diagnostic state the next sync rebuilds; restored elsewhere it would claim deliveries that host never received.",
   ManagedProfileHandover:
@@ -827,31 +813,8 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "Feedback on generated recommendations that are themselves DERIVED. Restoring the feedback without the item it judged leaves an orphan.",
 };
 
-/**
- * Tables created with raw SQL at runtime rather than declared in the schema.
- * Every check above walks `schema.prisma`, so a table outside it is invisible
- * to all of them — which is how the medication category went missing from
- * every backup until v1.39.4. The guard beside this file finds each
- * `CREATE TABLE IF NOT EXISTS` in the source and demands a verdict here, or a
- * schema model mapped to the same name.
- *
- * Empty since v1.40: the one such table, `medication_categories`, is the
- * `MedicationCategoryAssignment` model now and judged with the others.
- */
-export const RAW_SQL_TABLES: Readonly<
-  Record<string, { verdict: "BACKED_UP" | "NOT_IN_BACKUP"; reason: string }>
-> = {};
-
-/** Auth material: not user data, and excluded from the wipe for the same reason. */
-export const AUTH_MODELS_OUT_OF_SCOPE: readonly string[] = [
-  "Session",
-  "RefreshToken",
-  "Passkey",
-  "WebauthnMfaCredential",
-  "MfaRecoveryCode",
-  "MfaChallenge",
-  "AuthChallenge",
-  "TrustedDevice",
-  "OidcNativeHandoff",
-  "InviteRedemption",
-];
+export {
+  AUTH_MODELS_OUT_OF_SCOPE,
+  COVERAGE_PENDING,
+  RAW_SQL_TABLES,
+} from "./backup-auth-models";

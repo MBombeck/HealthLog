@@ -5737,11 +5737,24 @@
         "documents": {
           "title": "Documents",
           "autoAiRead": "Read new documents automatically with AI",
-          "honesty": "When on, each document uploaded into this profile is sent to the instance's AI provider to be read, described and indexed for search, with no tap per document, and documents already here without a summary are sent too (up to 200 each time it is switched on). Turning it on records this profile's consent to having its documents read. The profile's AI settings apply; your own AI provider is never used. Off by default.",
+          "honesty": "When on, each document uploaded into this profile is sent to the AI provider chosen for the profile above, to be read, described and indexed for search, with no tap per document, and documents already here without a summary are sent too (up to 200 each time it is switched on). Turning it on records this profile's consent to having its documents read. Off by default.",
           "pageTitle": "Documents and AI",
           "pageSubtitle": "Whether AI reads the documents uploaded into {name}'s profile.",
-          "noProvider": "This server has no AI provider that could read {name}'s documents, so the switch stays off. The person who runs the server can set one up.",
+          "noProvider": "No AI provider is chosen for {name}'s profile that could read documents, so the switch stays off. Pick one above.",
           "aiOff": "AI is off for {name}'s profile, so no document would be read."
+        },
+        "aiSource": {
+          "title": "AI provider",
+          "label": "AI for this profile uses",
+          "honesty": "A managed profile has no AI keys of its own. Choose where its AI work goes: the server's AI key, none at all, or one of the chains you set up on your own account. The profile's own AI switches and consents still apply to whichever you choose.",
+          "instance": "The server's AI key",
+          "none": "No AI provider",
+          "yourDefault": "Your default chain",
+          "yourChain": "Your chain “{name}”",
+          "otherGuardian": "A chain of another guardian",
+          "noInstanceKey": "This server has no AI key set, so this choice leaves the profile without AI.",
+          "yourCredentials": "Your own keys and sign-ins serve this profile, in that chain's order and nothing else. What the profile sends counts against your provider accounts.",
+          "unusable": "The chosen chain cannot serve right now: the guardian who picked it no longer manages this profile, or the chain was deleted. The profile has no AI until someone picks again."
         }
       },
       "unavailableTitle": "Unavailable in this shared record",
@@ -6267,6 +6280,86 @@
               "stagingMissing": "The uploaded file was no longer on the server. Upload it again.",
               "interrupted": "The import was interrupted by a server restart. Upload the file again."
             }
+          },
+          "recordFile": {
+            "gadgetbridge": {
+              "title": "Gadgetbridge database",
+              "description": "Import steps, heart rate, SpO2, sleep and weight from the database Gadgetbridge exports on Android.",
+              "steps": {
+                "export": "In Gadgetbridge open Settings, then Data management, then Export database.",
+                "upload": "Upload the file called Gadgetbridge here. Up to 512 MB."
+              }
+            },
+            "fhirBundle": {
+              "title": "Patient record (FHIR)",
+              "description": "Import lab results, vital signs, conditions, vaccinations, medications and visits from a FHIR R4 Bundle a patient portal exports.",
+              "steps": {
+                "export": "In your patient portal, export your record as FHIR R4 (JSON). C-CDA files are not read.",
+                "upload": "Upload the .json file here. Up to 32 MB."
+              }
+            },
+            "choose": "Choose file",
+            "uploading": "Uploading…",
+            "running": "Importing in the background…",
+            "doneSummary": "The file was imported.",
+            "doneNothing": "The import finished, but there was nothing new to add.",
+            "skippedHeading": "Not imported",
+            "failed": "The import failed. Please try again.",
+            "uploadFailed": "The upload failed. Please try again.",
+            "rateLimited": "Too many uploads in a short time. Wait a minute and try again.",
+            "tooLarge": "The file is larger than the limit for this import.",
+            "busy": "An import is already running for your account. Wait until it has finished.",
+            "privacyNote": "The file is deleted from the server as soon as the import ends. Everything is matched by the record it came from, so uploading the same file again adds nothing twice.",
+            "fileInputLabel": "File to import",
+            "lineCounts": "{imported} new, {duplicates} already here",
+            "failure": {
+              "notGadgetbridge": "This is not a Gadgetbridge database. Export it again from Gadgetbridge and upload the file it writes.",
+              "unsafeSchema": "The file contains a structure HealthLog does not read for safety reasons.",
+              "notFhirBundle": "This is not a FHIR Bundle. The file must be the JSON export of a whole record.",
+              "tooManyEntries": "The Bundle has more entries than one import reads. Export a shorter period.",
+              "tooLarge": "The file is larger than the limit for this import.",
+              "timeBudget": "The import stopped at its time limit. Upload the same file again to continue; nothing is added twice.",
+              "stagingMissing": "The uploaded file was no longer on the server. Upload it again."
+            }
+          },
+          "healthConnectRemote": {
+            "outcome": {
+              "imported": "a new export was handed to the import",
+              "unchanged": "nothing new",
+              "busy": "another import was running, trying again soon",
+              "notFound": "the file was not found in the folder",
+              "unauthorized": "the folder refused the user name or password",
+              "redirected": "the server tried to redirect, which HealthLog does not follow",
+              "upstreamError": "the server answered with an error",
+              "tooLarge": "the file is larger than 1 GB",
+              "timeout": "the server took too long",
+              "network": "the server could not be reached",
+              "privateOrigin": "this address is on a private network the server does not allow",
+              "invalidUrl": "the folder address is not usable",
+              "noWorker": "the background worker is not running",
+              "unknown": "unknown"
+            },
+            "error": {
+              "privateOrigin": "This address is on a private network. The person running the server has to allow it first.",
+              "invalidUrl": "Enter the folder's full address without a user name or password in it.",
+              "passwordRequired": "Enter the password once when setting up the folder.",
+              "saveFailed": "The folder could not be saved. Check the address and try again.",
+              "fetchFailed": "The fetch could not be started. Try again later."
+            },
+            "title": "Health Connect from a folder",
+            "description": "Let HealthLog fetch the export Health Connect saves on a schedule, from a WebDAV or Nextcloud folder, and import what is new.",
+            "folderUrl": "Folder address (WebDAV)",
+            "fileName": "File name in the folder",
+            "username": "User name",
+            "password": "Password or app password",
+            "passwordKept": "Leave empty to keep the saved password",
+            "enabled": "Fetch about every six hours",
+            "privacyNote": "The password is stored encrypted and never shown again. Each file is imported once: a file HealthLog already has is not read twice. A folder on your home network works only when the person running the server allows its address.",
+            "lastAttempt": "Last attempt {when}: {outcome}",
+            "fetchNow": "Fetch now",
+            "remove": "Remove folder",
+            "removeTitle": "Remove this folder?",
+            "removeBody": "HealthLog stops fetching from it and forgets the password. What was already imported stays."
           }
         },
         "subtitle": "Export your data, or import measurements and records from other apps and files."
@@ -13524,6 +13617,17 @@
       "opened": "{name} opened your record {count}×",
       "acted": "{name} made a change in your record",
       "deletedAccount": "A deleted account"
+    },
+    "managedActivity": {
+      "title": "Activity in {name}'s profile",
+      "hint": "Who did what in this profile: every guardian's changes, yours included.",
+      "action": "Show activity",
+      "emptyTitle": "Nothing recorded yet",
+      "emptyDescription": "Changes a guardian makes in this profile appear here, and openings one line per guardian per day.",
+      "you": "You",
+      "opened": "{name} opened the profile {count}×",
+      "acted": "{name} made a change in the profile",
+      "settingsUpdate": "{name} changed the profile's settings"
     },
     "delegate": {
       "addOnlyNote": "You can add to this record. Changing or removing entries is something only {name} can do."

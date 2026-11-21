@@ -707,6 +707,15 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["ConfirmDialog"],
   },
 
+  // ── Import ──────────────────────────────────────────────────────────────
+  {
+    file: "components/settings/import-panel/health-connect-remote-card.tsx",
+    destroys:
+      "the saved WebDAV folder for the Health Connect export and its sealed password; imports already made stay",
+    recovery: "permanent",
+    confirm: ["ConfirmButton"],
+  },
+
   // ── Account sharing ─────────────────────────────────────────────────────
   {
     file: "components/settings/access/grants-given-card.tsx",

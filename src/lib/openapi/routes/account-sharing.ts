@@ -368,6 +368,18 @@ const recordActivityResponse = z
       "The owner's record of what somebody else did in their record, bounded by the instance's audit retention.",
   });
 
+const managedProfileActivityResponse = z
+  .object({
+    entries: z.array(recordActivityEntry),
+    retentionDays: z
+      .number()
+      .int()
+      .describe(
+        "How far back this feed can see, in days: the instance's audit retention setting, the same number `GET /api/account/activity` sends.",
+      ),
+  })
+  .meta({ id: "ManagedProfileActivity" });
+
 const sharingRefusal = {
   description:
     "Refused. `meta.errorCode` is `sharing.not_permitted` when the request was made while acting on another account (grant management is never delegable), or `sharing.access.denied` when the caller may not act as the account they named. The latter is byte-identical for an account that does not exist and one that granted nothing — the refusal is not an enumeration oracle.",
@@ -1181,6 +1193,36 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         "404": {
           description:
             "No such managed profile, or the caller is not one of its Guardians (`meta.errorCode: managed_profile.not_found`). The two are byte-identical, so the refusal is not an enumeration oracle — and an ordinary record whose owner granted somebody MANAGE is not a managed profile, so it answers here too.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+      },
+    },
+  },
+  "/api/managed-profiles/{id}/activity": {
+    get: {
+      tags: ["Account sharing"],
+      summary: "Who did what in a managed profile",
+      description:
+        "The audit rows filed under one managed profile that a person performed, newest first: every Guardian's acts, the caller's own included, because nobody signs in to a managed profile and every act on it is a Guardian's. Reads coalesce to one row per Guardian per day with a count, as on `GET /api/account/activity`; the entry shape and the window are the same, and `meta.truncated` says whether the row ceiling was hit. Only the action, the actor and the instant are published, never a row's details. Cookie transport only, an ACTOR surface like the roster beside it. Anyone who is not an active Guardian of THIS managed profile gets the same 404 as an unknown id, an adult's record shared at manage level included.",
+      requestParams: {
+        path: z.object({ id: z.string() }),
+      },
+      responses: {
+        ...stdResponses,
+        "200": {
+          description: "The profile's activity, and how far back it can see.",
+          content: {
+            "application/json": {
+              schema: listEnvelope(
+                managedProfileActivityResponse,
+                "ManagedProfileActivityEnvelope",
+              ),
+            },
+          },
+        },
+        "404": {
+          description:
+            "No such managed profile, or the caller is not one of its Guardians (`meta.errorCode: managed_profile.not_found`). The two are byte-identical.",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },

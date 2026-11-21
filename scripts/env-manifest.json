@@ -337,6 +337,17 @@
       ]
     },
     {
+      "name": "Health Connect folder on a private network",
+      "description": "Operator grant for WebDAV or Nextcloud servers on the operator's own network, read by the scheduled Health Connect fetch. Unset, a folder address that resolves to a private address is refused with private_origin_not_approved. Optional; a public server never needs it.",
+      "required": false,
+      "variables": [
+        {
+          "name": "HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS",
+          "purpose": "Comma-separated exact origins (scheme://host[:port], no path, no wildcard, no CIDR), e.g. \"https://cloud.lan\". Link-local, metadata and unspecified addresses stay refused even when listed."
+        }
+      ]
+    },
+    {
       "name": "Document picker",
       "description": "Operator grant for the document picker, which lets a person search their own Paperless-ngx or Papra instance and import picked documents. Unset, the picker is off. Optional.",
       "required": false,

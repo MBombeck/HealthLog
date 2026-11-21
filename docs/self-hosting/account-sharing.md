@@ -249,7 +249,7 @@ as something to log in as.
   request, follows the profile's own AI settings and consent: the profile
   needs its own consent for a provider that leaves the server, the
   guardian's consent does not stand in for it, and the read uses the
-  operator's provider, never the guardian's personal one. Automatic reading
+  provider source the guardian chose for the profile (below). Automatic reading
   is off on a new profile, so an upload alone is stored, thumbnailed and its
   text layer indexed on the server. A guardian turns it on for the profile
   under **Settings → AI** while inside it; that switch is the profile's own,
@@ -260,18 +260,43 @@ as something to log in as.
   on the level: an adult who shares their record at manage still keeps the
   vault to themselves.
 
-  **A managed profile has AI only where the instance has a server key.**
-  Everything a model does for a profile, document reads and the Coach
-  included, runs on the operator's instance-wide provider (the AI server
-  key under **Admin → AI**) and on nothing else: not the guardian's own key
-  or local model, and not a key or gateway entered inside the profile. On an
-  install where every account brings its own key and no server key is set,
-  profiles therefore have no AI at all; the profile's AI settings and its
-  document list say so, and the switch for automatic reading stays off.
-  Setting a server key is an instance-wide decision, not a per-profile one:
-  it also becomes the last fallback of every other account's default chain
-  (see [AI providers](../integrations/ai-providers.md#byok-vs-admin-shared)),
-  so weigh it as that rather than as a way to switch one profile on.
+  **The guardian chooses where a managed profile's AI runs.** A profile has
+  no keys of its own, so under **Settings → AI** inside the profile a
+  guardian picks its provider source:
+
+  | Choice              | What serves the profile                                                                                                |
+  | ------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+  | The server's AI key | The operator's instance-wide key under **Admin → AI**, and nothing else. The default, and the only option before 1.49. |
+  | No AI provider      | Nothing. Every AI feature of the profile reports that no provider is set up.                                           |
+  | Your default chain  | The default chain the guardian set up on their own account, with the guardian's own keys, sign-ins and local model.    |
+  | Your chain "name"   | One named chain of the guardian's, exactly its entries in its order.                                                   |
+
+  A guardian's chain serves the profile exactly as listed: no server key is
+  appended behind it and nothing else is tried, so a chain whose provider is
+  down refuses rather than falling back to a provider nobody picked. What the
+  profile sends counts against the guardian's provider accounts. The
+  guardian who picks a chain is the one who lends it; another guardian sees
+  "a chain of another guardian" and can pick again, which replaces it. If
+  the lending guardian stops managing the profile, or deletes the named
+  chain, the profile has no AI until somebody picks again. It never falls
+  back to the server key.
+
+  The choice names the credential source and nothing more. The profile's
+  own AI switches, its usage level and its consent still decide every call:
+  a provider that leaves the server still needs the profile's consent, and
+  the guardian's own consent does not stand in for it. The activity log
+  names the guardian who changed the source, which source they chose, and
+  whether it was a named chain or the default chain (never the chain's
+  name). An adult who shares their record at manage level is not a managed
+  profile: their AI stays theirs, and a delegate's AI work has no provider.
+
+  Picking the server key on an install without one leaves the profile
+  without AI, and the form says so. Setting a server key is an
+  instance-wide decision, not a per-profile one: it also becomes the last
+  fallback of every other account's default chain (see
+  [AI providers](../integrations/ai-providers.md#byok-vs-admin-shared)), so
+  weigh it as that rather than as a way to switch one profile on. Lending
+  your own chain is the per-profile way.
 
 - **Its reminders go to its guardians.** A record with no login has no
   channels of its own, so medication reminders, measurement reminders,

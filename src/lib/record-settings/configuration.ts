@@ -12,6 +12,8 @@ import {
 } from "@/lib/validations/modules";
 import { thresholdsUpdateSchema } from "@/lib/validations/thresholds";
 import { locales } from "@/lib/i18n/config";
+import { MANAGED_AI_SOURCES } from "@/lib/ai/managed-ai-source-keys";
+import { CHAIN_ID_PATTERN } from "@/lib/ai/named-chains";
 
 /**
  * The target-record configuration boundary. These literals are both the DTO
@@ -38,6 +40,8 @@ export const MANAGED_RECORD_SETTINGS_FIELD_ALLOWLIST = {
   insights: ["layout"],
   // #1403 — whether the profile's uploads are read with AI automatically.
   documents: ["autoAiRead"],
+  // #1403 — which provider the profile's AI work uses.
+  aiSource: ["source", "chainId"],
 } as const;
 
 export type ManagedRecordSettingsFamily =
@@ -188,6 +192,18 @@ export const MANAGED_RECORD_SETTINGS_PATCH_SCHEMAS = {
    * reading consent, as the owner's switch does for their own record.
    */
   documents: z.object({ autoAiRead: z.boolean() }).strict(),
+  /**
+   * #1403 — the profile's AI provider source: the operator's key, none, or a
+   * chain of the guardian making the change (`chainId` a named chain id, or
+   * null / absent for the guardian's default chain). Read by
+   * `src/lib/ai/managed-ai-source.ts`.
+   */
+  aiSource: z
+    .object({
+      source: z.enum(MANAGED_AI_SOURCES),
+      chainId: z.string().regex(CHAIN_ID_PATTERN).nullable().optional(),
+    })
+    .strict(),
 } as const;
 
 export type ManagedRecordSettingsPatch = {
@@ -204,6 +220,7 @@ export type ManagedRecordSettingsPatch = {
   documents: z.infer<
     (typeof MANAGED_RECORD_SETTINGS_PATCH_SCHEMAS)["documents"]
   >;
+  aiSource: z.infer<(typeof MANAGED_RECORD_SETTINGS_PATCH_SCHEMAS)["aiSource"]>;
 };
 
 export function isManagedRecordSettingsFamily(

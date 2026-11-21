@@ -12,12 +12,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { invalidateAllCaches } from "@/lib/cache/invalidate";
 import {
   ADMIN_WIPE_MODELS,
-  resolveGlobalWipeDelegate,
   USER_RESET,
   wipeDelegateKey,
   WIPE_TRANSACTION_MAX_WAIT_MS,
   WIPE_TRANSACTION_TIMEOUT_MS,
 } from "@/lib/data-wipe/wipe-plan";
+import { resolveGlobalWipeDelegate } from "@/lib/data-wipe/wipe-delegates";
 
 export const dynamic = "force-dynamic";
 

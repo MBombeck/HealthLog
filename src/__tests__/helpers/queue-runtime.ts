@@ -493,6 +493,17 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     },
     why: "Reads a Health Connect export database that can hold years of minute-level samples.",
   },
+  "record-file-import": {
+    runtime: "budgeted",
+    budget: {
+      file: "lib/jobs/record-file-import-worker.ts",
+      fn: "handleRecordFileImport",
+    },
+    why: "One Gadgetbridge database (512 MB) or FHIR Bundle (32 MB); stops at ten minutes or the job's budget, keeps what it wrote and fails for a retry that continues; a one-shot with retryLimit 0.",
+  },
+  "health-connect-remote-fetch": short(
+    "At most 20 due folders per pass, one GET each with a ten-minute timeout and a 1 GiB cap; the import itself runs on its own queue.",
+  ),
   "fit-import": short(
     "One activity file of at most 10 MB (32 MB unpacked), its messages capped by the structural scan before decoding; a one-shot with retryLimit 0.",
   ),

@@ -5737,11 +5737,24 @@
         "documents": {
           "title": "Documenten",
           "autoAiRead": "Nieuwe documenten automatisch met AI lezen",
-          "honesty": "Aan betekent dat elk document dat in dit profiel wordt geüpload naar de AI-provider van de instantie gaat om gelezen, beschreven en doorzoekbaar gemaakt te worden, zonder tik per document, en documenten die er al zijn zonder samenvatting gaan ook (tot 200 bij elke keer aanzetten). Aanzetten legt de toestemming van dit profiel vast om zijn documenten te laten lezen. De AI-instellingen van het profiel gelden; je eigen AI-provider wordt nooit gebruikt. Standaard uit.",
+          "honesty": "Aan betekent dat elk document dat in dit profiel wordt geüpload naar de hierboven voor het profiel gekozen AI-aanbieder gaat om gelezen, beschreven en doorzoekbaar gemaakt te worden, zonder tik per document, en documenten die er al zijn zonder samenvatting gaan ook (tot 200 bij elke keer aanzetten). Aanzetten legt de toestemming van dit profiel vast om zijn documenten te laten lezen. Standaard uit.",
           "pageTitle": "Documenten en AI",
           "pageSubtitle": "Of AI de documenten leest die in het profiel van {name} worden geüpload.",
-          "noProvider": "Deze server heeft geen AI-aanbieder die de documenten van {name} kan lezen, dus de schakelaar blijft uit. Wie de server beheert, kan er een instellen.",
+          "noProvider": "Voor het profiel van {name} is geen AI-aanbieder gekozen die documenten kan lezen, dus de schakelaar blijft uit. Kies er hierboven een.",
           "aiOff": "AI staat uit voor het profiel van {name}, dus er zou geen document worden gelezen."
+        },
+        "aiSource": {
+          "title": "AI-aanbieder",
+          "label": "AI voor dit profiel gebruikt",
+          "honesty": "Een beheerd profiel heeft geen eigen AI-sleutels. Kies waar het AI-werk heen gaat: naar de AI-sleutel van de server, nergens heen, of naar een van de ketens die je in je eigen account hebt ingesteld. De AI-schakelaars en toestemmingen van het profiel blijven bij elke keuze gelden.",
+          "instance": "De AI-sleutel van de server",
+          "none": "Geen AI-aanbieder",
+          "yourDefault": "Je standaardketen",
+          "yourChain": "Je keten “{name}”",
+          "otherGuardian": "Een keten van een andere voogd",
+          "noInstanceKey": "Deze server heeft geen AI-sleutel, dus met deze keuze blijft het profiel zonder AI.",
+          "yourCredentials": "Je eigen sleutels en aanmeldingen bedienen dit profiel, in de volgorde van die keten en verder niets. Wat het profiel verstuurt, telt mee op je eigen aanbiedersaccounts.",
+          "unusable": "De gekozen keten kan nu niet bedienen: de voogd die hem koos beheert dit profiel niet meer, of de keten is verwijderd. Het profiel heeft geen AI tot iemand opnieuw kiest."
         }
       },
       "unavailableTitle": "Niet beschikbaar in dit gedeelde dossier",
@@ -6267,6 +6280,86 @@
               "stagingMissing": "Het geüploade bestand stond niet meer op de server. Upload het opnieuw.",
               "interrupted": "De import werd onderbroken door een herstart van de server. Upload het bestand opnieuw."
             }
+          },
+          "recordFile": {
+            "gadgetbridge": {
+              "title": "Gadgetbridge-database",
+              "description": "Stappen, hartslag, SpO2, slaap en gewicht importeren uit de database die Gadgetbridge op Android exporteert.",
+              "steps": {
+                "export": "Open in Gadgetbridge Instellingen, dan Gegevensbeheer, dan Database exporteren.",
+                "upload": "Upload hier het bestand met de naam Gadgetbridge. Tot 512 MB."
+              }
+            },
+            "fhirBundle": {
+              "title": "Patiëntendossier (FHIR)",
+              "description": "Labuitslagen, vitale functies, aandoeningen, vaccinaties, medicijnen en bezoeken importeren uit een FHIR R4-bundle die een patiëntenportaal exporteert.",
+              "steps": {
+                "export": "Exporteer in je patiëntenportaal je dossier als FHIR R4 (JSON). C-CDA-bestanden worden niet gelezen.",
+                "upload": "Upload hier het .json-bestand. Tot 32 MB."
+              }
+            },
+            "choose": "Bestand kiezen",
+            "uploading": "Uploaden…",
+            "running": "Importeren op de achtergrond…",
+            "doneSummary": "Het bestand is geïmporteerd.",
+            "doneNothing": "De import is klaar, maar er was niets nieuws.",
+            "skippedHeading": "Niet geïmporteerd",
+            "failed": "De import is mislukt. Probeer het opnieuw.",
+            "uploadFailed": "Het uploaden is mislukt. Probeer het opnieuw.",
+            "rateLimited": "Te veel uploads in korte tijd. Wacht een minuut en probeer het opnieuw.",
+            "tooLarge": "Het bestand is groter dan de limiet voor deze import.",
+            "busy": "Er loopt al een import voor je account. Wacht tot die klaar is.",
+            "privacyNote": "Het bestand wordt van de server verwijderd zodra de import klaar is. Alles wordt gekoppeld aan het record waar het vandaan komt, dus hetzelfde bestand opnieuw uploaden voegt niets dubbel toe.",
+            "fileInputLabel": "Bestand om te importeren",
+            "lineCounts": "{imported} nieuw, {duplicates} al aanwezig",
+            "failure": {
+              "notGadgetbridge": "Dit is geen Gadgetbridge-database. Exporteer hem opnieuw in Gadgetbridge en upload het bestand dat daarbij ontstaat.",
+              "unsafeSchema": "Het bestand bevat een structuur die HealthLog om veiligheidsredenen niet leest.",
+              "notFhirBundle": "Dit is geen FHIR-bundle. Het bestand moet de JSON-export van een volledig dossier zijn.",
+              "tooManyEntries": "De bundle heeft meer regels dan één import leest. Exporteer een kortere periode.",
+              "tooLarge": "Het bestand is groter dan de limiet voor deze import.",
+              "timeBudget": "De import stopte bij zijn tijdslimiet. Upload hetzelfde bestand opnieuw om verder te gaan; niets wordt dubbel toegevoegd.",
+              "stagingMissing": "Het geüploade bestand stond niet meer op de server. Upload het opnieuw."
+            }
+          },
+          "healthConnectRemote": {
+            "outcome": {
+              "imported": "een nieuwe export is aan de import doorgegeven",
+              "unchanged": "niets nieuws",
+              "busy": "er liep een andere import, binnenkort opnieuw",
+              "notFound": "het bestand staat niet in de map",
+              "unauthorized": "de map weigerde de gebruikersnaam of het wachtwoord",
+              "redirected": "de server wilde doorverwijzen, dat volgt HealthLog niet",
+              "upstreamError": "de server antwoordde met een fout",
+              "tooLarge": "het bestand is groter dan 1 GB",
+              "timeout": "de server deed er te lang over",
+              "network": "de server was niet bereikbaar",
+              "privateOrigin": "dit adres ligt in een privénetwerk dat de server niet toestaat",
+              "invalidUrl": "het mapadres is niet bruikbaar",
+              "noWorker": "de achtergrondtaak draait niet",
+              "unknown": "onbekend"
+            },
+            "error": {
+              "privateOrigin": "Dit adres ligt in een privénetwerk. Wie de server beheert, moet het eerst toestaan.",
+              "invalidUrl": "Vul het volledige adres van de map in, zonder gebruikersnaam of wachtwoord erin.",
+              "passwordRequired": "Vul het wachtwoord één keer in bij het instellen van de map.",
+              "saveFailed": "De map kon niet worden opgeslagen. Controleer het adres en probeer het opnieuw.",
+              "fetchFailed": "Ophalen kon niet worden gestart. Probeer het later opnieuw."
+            },
+            "title": "Health Connect uit een map",
+            "description": "HealthLog haalt de export die Health Connect volgens schema opslaat uit een WebDAV- of Nextcloud-map en importeert wat nieuw is.",
+            "folderUrl": "Mapadres (WebDAV)",
+            "fileName": "Bestandsnaam in de map",
+            "username": "Gebruikersnaam",
+            "password": "Wachtwoord of app-wachtwoord",
+            "passwordKept": "Leeg laten om het opgeslagen wachtwoord te houden",
+            "enabled": "Ongeveer elke zes uur ophalen",
+            "privacyNote": "Het wachtwoord wordt versleuteld opgeslagen en nooit meer getoond. Elk bestand wordt één keer geïmporteerd: een bestand dat HealthLog al heeft wordt niet opnieuw gelezen. Een map op je thuisnetwerk werkt alleen als wie de server beheert het adres toestaat.",
+            "lastAttempt": "Laatste poging {when}: {outcome}",
+            "fetchNow": "Nu ophalen",
+            "remove": "Map verwijderen",
+            "removeTitle": "Deze map verwijderen?",
+            "removeBody": "HealthLog haalt daar niets meer op en vergeet het wachtwoord. Wat al geïmporteerd is, blijft."
           }
         },
         "subtitle": "Exporteer je gegevens, of importeer metingen en gegevens uit andere apps en bestanden."
@@ -13524,6 +13617,17 @@
       "opened": "{name} heeft je dossier {count}× geopend",
       "acted": "{name} heeft iets gewijzigd in je dossier",
       "deletedAccount": "Een verwijderd account"
+    },
+    "managedActivity": {
+      "title": "Activiteit in het profiel van {name}",
+      "hint": "Wie wat deed in dit profiel: de wijzigingen van elke voogd, die van jou inbegrepen.",
+      "action": "Activiteit tonen",
+      "emptyTitle": "Nog niets vastgelegd",
+      "emptyDescription": "Wijzigingen die een voogd in dit profiel maakt verschijnen hier, en openingen als één regel per voogd per dag.",
+      "you": "Jij",
+      "opened": "{name} opende het profiel {count}×",
+      "acted": "{name} heeft iets gewijzigd in het profiel",
+      "settingsUpdate": "{name} heeft de instellingen van het profiel gewijzigd"
     },
     "delegate": {
       "addOnlyNote": "Je kunt iets toevoegen aan dit dossier. Registraties wijzigen of verwijderen kan alleen {name}."

@@ -5737,11 +5737,24 @@
         "documents": {
           "title": "Dokumenty",
           "autoAiRead": "Automatycznie czytaj nowe dokumenty przez AI",
-          "honesty": "Po włączeniu każdy dokument przesłany do tego profilu trafia do dostawcy AI instancji, który go czyta, opisuje i indeksuje do wyszukiwania, bez dotykania każdego dokumentu; wysyłane są też dokumenty już zapisane bez podsumowania (do 200 przy każdym włączeniu). Włączenie zapisuje zgodę tego profilu na czytanie jego dokumentów. Obowiązują ustawienia AI profilu; twój własny dostawca AI nigdy nie jest używany. Domyślnie wyłączone.",
+          "honesty": "Po włączeniu każdy dokument przesłany do tego profilu trafia do dostawcy AI wybranego powyżej dla profilu, który go czyta, opisuje i indeksuje do wyszukiwania, bez dotykania każdego dokumentu; wysyłane są też dokumenty już zapisane bez podsumowania (do 200 przy każdym włączeniu). Włączenie zapisuje zgodę tego profilu na czytanie jego dokumentów. Domyślnie wyłączone.",
           "pageTitle": "Dokumenty i AI",
           "pageSubtitle": "Czy AI czyta dokumenty przesłane do profilu {name}.",
-          "noProvider": "Ten serwer nie ma dostawcy AI, który mógłby czytać dokumenty {name}, więc przełącznik pozostaje wyłączony. Osoba zarządzająca serwerem może go skonfigurować.",
+          "noProvider": "Dla profilu {name} nie wybrano dostawcy AI, który mógłby czytać dokumenty, więc przełącznik pozostaje wyłączony. Wybierz go powyżej.",
           "aiOff": "AI jest wyłączona dla profilu {name}, więc żaden dokument nie zostałby przeczytany."
+        },
+        "aiSource": {
+          "title": "Dostawca AI",
+          "label": "AI tego profilu używa",
+          "honesty": "Profil zarządzany nie ma własnych kluczy AI. Wybierz, dokąd trafia jego praca AI: do klucza AI serwera, donikąd albo do jednego z łańcuchów ustawionych na twoim własnym koncie. Przełączniki i zgody AI profilu obowiązują przy każdym wyborze.",
+          "instance": "Klucz AI serwera",
+          "none": "Brak dostawcy AI",
+          "yourDefault": "Twój domyślny łańcuch",
+          "yourChain": "Twój łańcuch „{name}”",
+          "otherGuardian": "Łańcuch innego opiekuna",
+          "noInstanceKey": "Ten serwer nie ma klucza AI, więc przy tym wyborze profil zostaje bez AI.",
+          "yourCredentials": "Twoje własne klucze i logowania obsługują ten profil, w kolejności tego łańcucha i niczym więcej. To, co wysyła profil, liczy się do twoich kont u dostawców.",
+          "unusable": "Wybrany łańcuch nie może teraz obsługiwać: opiekun, który go wybrał, nie zarządza już tym profilem albo łańcuch został usunięty. Profil nie ma AI, dopóki ktoś nie wybierze ponownie."
         }
       },
       "unavailableTitle": "Niedostępne w tym udostępnionym rekordzie",
@@ -6267,6 +6280,86 @@
               "stagingMissing": "Przesłanego pliku nie było już na serwerze. Prześlij go ponownie.",
               "interrupted": "Import przerwał restart serwera. Prześlij plik ponownie."
             }
+          },
+          "recordFile": {
+            "gadgetbridge": {
+              "title": "Baza danych Gadgetbridge",
+              "description": "Importuj kroki, tętno, SpO2, sen i wagę z bazy danych, którą Gadgetbridge eksportuje na Androidzie.",
+              "steps": {
+                "export": "W Gadgetbridge otwórz Ustawienia, potem Zarządzanie danymi, potem Eksportuj bazę danych.",
+                "upload": "Prześlij tutaj plik o nazwie Gadgetbridge. Do 512 MB."
+              }
+            },
+            "fhirBundle": {
+              "title": "Dokumentacja pacjenta (FHIR)",
+              "description": "Importuj wyniki badań, parametry życiowe, choroby, szczepienia, leki i wizyty z pakietu FHIR R4 wyeksportowanego z portalu pacjenta.",
+              "steps": {
+                "export": "W portalu pacjenta wyeksportuj dokumentację jako FHIR R4 (JSON). Pliki C-CDA nie są odczytywane.",
+                "upload": "Prześlij tutaj plik .json. Do 32 MB."
+              }
+            },
+            "choose": "Wybierz plik",
+            "uploading": "Przesyłanie…",
+            "running": "Import w tle…",
+            "doneSummary": "Plik został zaimportowany.",
+            "doneNothing": "Import się zakończył, ale nie było nic nowego.",
+            "skippedHeading": "Nie zaimportowano",
+            "failed": "Import się nie powiódł. Spróbuj ponownie.",
+            "uploadFailed": "Przesyłanie się nie powiodło. Spróbuj ponownie.",
+            "rateLimited": "Za dużo przesyłań w krótkim czasie. Odczekaj minutę i spróbuj ponownie.",
+            "tooLarge": "Plik jest większy niż limit tego importu.",
+            "busy": "Dla twojego konta trwa już import. Poczekaj, aż się zakończy.",
+            "privacyNote": "Plik jest usuwany z serwera zaraz po zakończeniu importu. Wszystko jest przypisane do rekordu, z którego pochodzi, więc ponowne przesłanie tego samego pliku niczego nie doda podwójnie.",
+            "fileInputLabel": "Plik do zaimportowania",
+            "lineCounts": "{imported} nowych, {duplicates} już było",
+            "failure": {
+              "notGadgetbridge": "To nie jest baza danych Gadgetbridge. Wyeksportuj ją ponownie w Gadgetbridge i prześlij utworzony plik.",
+              "unsafeSchema": "Plik zawiera strukturę, której HealthLog ze względów bezpieczeństwa nie odczytuje.",
+              "notFhirBundle": "To nie jest pakiet FHIR. Plik musi być eksportem JSON całej dokumentacji.",
+              "tooManyEntries": "Pakiet ma więcej wpisów, niż odczytuje jeden import. Wyeksportuj krótszy okres.",
+              "tooLarge": "Plik jest większy niż limit tego importu.",
+              "timeBudget": "Import zatrzymał się na limicie czasu. Prześlij ten sam plik ponownie, aby kontynuować; nic nie zostanie dodane podwójnie.",
+              "stagingMissing": "Przesłanego pliku nie było już na serwerze. Prześlij go ponownie."
+            }
+          },
+          "healthConnectRemote": {
+            "outcome": {
+              "imported": "nowy eksport przekazano do importu",
+              "unchanged": "nic nowego",
+              "busy": "trwał inny import, wkrótce kolejna próba",
+              "notFound": "pliku nie ma w folderze",
+              "unauthorized": "folder odrzucił nazwę użytkownika lub hasło",
+              "redirected": "serwer próbował przekierować, czego HealthLog nie robi",
+              "upstreamError": "serwer odpowiedział błędem",
+              "tooLarge": "plik jest większy niż 1 GB",
+              "timeout": "serwer odpowiadał zbyt długo",
+              "network": "nie udało się połączyć z serwerem",
+              "privateOrigin": "ten adres jest w sieci prywatnej, na którą serwer nie zezwala",
+              "invalidUrl": "adres folderu jest nieprawidłowy",
+              "noWorker": "usługa w tle nie działa",
+              "unknown": "nieznane"
+            },
+            "error": {
+              "privateOrigin": "Ten adres jest w sieci prywatnej. Osoba zarządzająca serwerem musi najpierw na niego zezwolić.",
+              "invalidUrl": "Wpisz pełny adres folderu, bez nazwy użytkownika ani hasła w środku.",
+              "passwordRequired": "Wpisz hasło raz przy konfiguracji folderu.",
+              "saveFailed": "Nie udało się zapisać folderu. Sprawdź adres i spróbuj ponownie.",
+              "fetchFailed": "Nie udało się rozpocząć pobierania. Spróbuj później."
+            },
+            "title": "Health Connect z folderu",
+            "description": "HealthLog pobiera eksport, który Health Connect zapisuje według harmonogramu w folderze WebDAV lub Nextcloud, i importuje to, co nowe.",
+            "folderUrl": "Adres folderu (WebDAV)",
+            "fileName": "Nazwa pliku w folderze",
+            "username": "Nazwa użytkownika",
+            "password": "Hasło lub hasło aplikacji",
+            "passwordKept": "Zostaw puste, aby zachować zapisane hasło",
+            "enabled": "Pobieraj mniej więcej co sześć godzin",
+            "privacyNote": "Hasło jest zapisywane w postaci zaszyfrowanej i nigdy więcej nie jest pokazywane. Każdy plik jest importowany raz: pliku, który HealthLog już ma, nie czyta ponownie. Folder w sieci domowej działa tylko wtedy, gdy osoba zarządzająca serwerem zezwoli na jego adres.",
+            "lastAttempt": "Ostatnia próba {when}: {outcome}",
+            "fetchNow": "Pobierz teraz",
+            "remove": "Usuń folder",
+            "removeTitle": "Usunąć ten folder?",
+            "removeBody": "HealthLog przestanie z niego pobierać i zapomni hasło. To, co już zaimportowano, zostaje."
           }
         },
         "subtitle": "Eksportuj swoje dane albo importuj pomiary i wpisy z innych aplikacji i plików."
@@ -13524,6 +13617,17 @@
       "opened": "{name} otworzył twoją kartę {count}×",
       "acted": "{name} wprowadził zmianę w twojej karcie",
       "deletedAccount": "Usunięte konto"
+    },
+    "managedActivity": {
+      "title": "Aktywność w profilu {name}",
+      "hint": "Kto co zrobił w tym profilu: zmiany każdego opiekuna, w tym twoje.",
+      "action": "Pokaż aktywność",
+      "emptyTitle": "Na razie nic nie zapisano",
+      "emptyDescription": "Zmiany opiekuna w tym profilu pojawiają się tutaj, a otwarcia jako jeden wiersz na opiekuna dziennie.",
+      "you": "Ty",
+      "opened": "{name} otworzył(a) profil {count}×",
+      "acted": "{name} coś zmienił(a) w profilu",
+      "settingsUpdate": "{name} zmienił(a) ustawienia profilu"
     },
     "delegate": {
       "addOnlyNote": "Możesz dodawać wpisy do tej karty. Zmieniać je i usuwać może tylko {name}."

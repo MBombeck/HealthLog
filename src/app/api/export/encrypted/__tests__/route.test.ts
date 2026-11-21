@@ -90,6 +90,7 @@ vi.mock("@/lib/db", () => ({
     biomarkerAlias: { findMany: vi.fn().mockResolvedValue([]) },
     biomarkerMerge: { findMany: vi.fn().mockResolvedValue([]) },
     labResultImportKey: { findMany: vi.fn().mockResolvedValue([]) },
+    fhirImportedResource: { findMany: vi.fn().mockResolvedValue([]) },
     illnessEpisode: { findMany: vi.fn().mockResolvedValue([]) },
     allergy: { findMany: vi.fn().mockResolvedValue([]) },
     familyHistoryEntry: { findMany: vi.fn().mockResolvedValue([]) },

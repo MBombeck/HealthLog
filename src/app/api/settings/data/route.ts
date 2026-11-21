@@ -19,11 +19,11 @@ import {
   protectManagedProfilesDuringDataWipe,
 } from "@/lib/managed-profiles/lifecycle";
 import {
-  resolveWipeDelegate,
   USER_RESET,
   wipeDelegateKey,
   WIPE_MODELS,
 } from "@/lib/data-wipe/wipe-plan";
+import { resolveWipeDelegate } from "@/lib/data-wipe/wipe-delegates";
 import { stampSyncReset } from "@/lib/sync/reset";
 import {
   accountDeletionGraceDays,

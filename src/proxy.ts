@@ -841,6 +841,6 @@ export const config = {
     // the matcher and `apiHandler` performs the proxy's duties for it. The
     // alternation must stay equal to that list; `proxy-body-limit.test.ts`
     // compiles this exactly as Next does and checks.
-    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.json|robots\\.txt|sitemap\\.xml|api/(?:import(?:/csv|/labs-csv|/medications-csv|/apple-health-export|/health-connect-export|/fit)?|admin/import-apple-health-export|admin/backups/upload|documents/inbound|medications/intake/(?:dose-history-import|bulk)|labs/ocr/extract|medications/[^/]+/ingredients/extract|user/avatar|measurements/batch|workouts/batch|insights/ecg|mood-entries/bulk|cycle/day-logs/bulk)/?$|(?!api/).*\\.(?:svg|png|jpg|jpeg|gif|webp|txt|xml)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.json|robots\\.txt|sitemap\\.xml|api/(?:import(?:/csv|/labs-csv|/medications-csv|/apple-health-export|/health-connect-export|/fit|/gadgetbridge|/fhir-bundle)?|admin/import-apple-health-export|admin/backups/upload|documents/inbound|medications/intake/(?:dose-history-import|bulk)|labs/ocr/extract|medications/[^/]+/ingredients/extract|user/avatar|measurements/batch|workouts/batch|insights/ecg|mood-entries/bulk|cycle/day-logs/bulk)/?$|(?!api/).*\\.(?:svg|png|jpg|jpeg|gif|webp|txt|xml)$).*)",
   ],
 };

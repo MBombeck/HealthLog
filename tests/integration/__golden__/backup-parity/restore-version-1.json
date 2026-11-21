@@ -19,6 +19,7 @@
         "nutrientDays": 1,
         "labResults": 1,
         "labResultImportKeys": 0,
+        "fhirImportedResources": 0,
         "biomarkers": 1,
         "illnessEpisodes": 2,
         "illnessDayLogs": 1,
@@ -77,6 +78,7 @@
         "cycleProfile": 0,
         "labResults": 0,
         "labResultImportKeys": 0,
+        "fhirImportedResources": 0,
         "biomarkers": 0,
         "nutrientDays": 0,
         "illnessEpisodes": 0,
@@ -297,6 +299,7 @@
           "cycleProfile": 0,
           "labResults": 0,
           "labResultImportKeys": 0,
+          "fhirImportedResources": 0,
           "biomarkers": 0,
           "nutrientDays": 0,
           "illnessEpisodes": 0,
@@ -759,6 +762,7 @@
       }
     ],
     "LabResultImportKey": [],
+    "FhirImportedResource": [],
     "Biomarker": [
       {
         "id": "<id:14>",
@@ -1084,6 +1088,9 @@
       "aiCompatModel": null,
       "aiProviderChain": null,
       "aiNamedChains": null,
+      "managedAiSource": "INSTANCE",
+      "managedAiGuardianId": null,
+      "managedAiChainId": null,
       "aiResponseTimeoutSeconds": null,
       "aiCoachBudgets": null,
       "documentsAutoAiRead": false,
@@ -1696,6 +1703,7 @@
     ],
     "biomarkerMerges": [],
     "labResultImportKeys": [],
+    "fhirImportedResources": [],
     "illnessEpisodes": [
       {
         "id": "legacy-episode-child",

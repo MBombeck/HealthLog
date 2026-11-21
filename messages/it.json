@@ -5737,11 +5737,24 @@
         "documents": {
           "title": "Documenti",
           "autoAiRead": "Leggi automaticamente i nuovi documenti con l'IA",
-          "honesty": "Se attivo, ogni documento caricato in questo profilo viene inviato al fornitore di IA dell'istanza per essere letto, descritto e indicizzato per la ricerca, senza un tocco per documento, e vengono inviati anche i documenti già presenti senza riassunto (fino a 200 a ogni attivazione). Attivarlo registra il consenso di questo profilo alla lettura dei suoi documenti. Valgono le impostazioni IA del profilo; il tuo fornitore di IA non viene mai usato. Disattivato per impostazione predefinita.",
+          "honesty": "Se attivo, ogni documento caricato in questo profilo viene inviato al fornitore di IA scelto qui sopra per il profilo, per essere letto, descritto e indicizzato per la ricerca, senza un tocco per documento, e vengono inviati anche i documenti già presenti senza riassunto (fino a 200 a ogni attivazione). Attivarlo registra il consenso di questo profilo alla lettura dei suoi documenti. Disattivato per impostazione predefinita.",
           "pageTitle": "Documenti e IA",
           "pageSubtitle": "Se l'IA legge i documenti caricati nel profilo di {name}.",
-          "noProvider": "Questo server non ha un fornitore di IA in grado di leggere i documenti di {name}, quindi l'interruttore resta spento. Chi gestisce il server può configurarne uno.",
+          "noProvider": "Per il profilo di {name} non è scelto alcun fornitore di IA in grado di leggere documenti, quindi l'interruttore resta spento. Scegline uno qui sopra.",
           "aiOff": "L'IA è disattivata per il profilo di {name}, quindi nessun documento verrebbe letto."
+        },
+        "aiSource": {
+          "title": "Fornitore di IA",
+          "label": "L'IA di questo profilo usa",
+          "honesty": "Un profilo gestito non ha chiavi IA proprie. Scegli dove va il suo lavoro di IA: alla chiave IA del server, da nessuna parte, o a una delle catene configurate nel tuo account. Gli interruttori e i consensi IA del profilo valgono con qualsiasi scelta.",
+          "instance": "La chiave IA del server",
+          "none": "Nessun fornitore di IA",
+          "yourDefault": "La tua catena predefinita",
+          "yourChain": "La tua catena «{name}»",
+          "otherGuardian": "Una catena di un altro tutore",
+          "noInstanceKey": "Questo server non ha una chiave IA, quindi con questa scelta il profilo resta senza IA.",
+          "yourCredentials": "Le tue chiavi e i tuoi accessi servono questo profilo, nell'ordine di quella catena e nient'altro. Ciò che il profilo invia conta sui tuoi account dei fornitori.",
+          "unusable": "La catena scelta ora non può servire: il tutore che l'ha scelta non gestisce più questo profilo, oppure la catena è stata eliminata. Il profilo non ha IA finché qualcuno non sceglie di nuovo."
         }
       },
       "unavailableTitle": "Non disponibile in questo record condiviso",
@@ -6267,6 +6280,86 @@
               "stagingMissing": "Il file caricato non era più sul server. Caricalo di nuovo.",
               "interrupted": "L’importazione è stata interrotta da un riavvio del server. Carica di nuovo il file."
             }
+          },
+          "recordFile": {
+            "gadgetbridge": {
+              "title": "Database di Gadgetbridge",
+              "description": "Importa passi, battito, SpO2, sonno e peso dal database che Gadgetbridge esporta su Android.",
+              "steps": {
+                "export": "In Gadgetbridge apri Impostazioni, poi Gestione dati, poi Esporta database.",
+                "upload": "Carica qui il file chiamato Gadgetbridge. Fino a 512 MB."
+              }
+            },
+            "fhirBundle": {
+              "title": "Cartella clinica (FHIR)",
+              "description": "Importa esami di laboratorio, parametri vitali, malattie, vaccinazioni, farmaci e visite da un Bundle FHIR R4 esportato da un portale del paziente.",
+              "steps": {
+                "export": "Nel portale del paziente esporta la tua cartella come FHIR R4 (JSON). I file C-CDA non vengono letti.",
+                "upload": "Carica qui il file .json. Fino a 32 MB."
+              }
+            },
+            "choose": "Scegli file",
+            "uploading": "Caricamento…",
+            "running": "Importazione in background…",
+            "doneSummary": "Il file è stato importato.",
+            "doneNothing": "L'importazione è finita, ma non c'era nulla di nuovo.",
+            "skippedHeading": "Non importato",
+            "failed": "L'importazione non è riuscita. Riprova.",
+            "uploadFailed": "Il caricamento non è riuscito. Riprova.",
+            "rateLimited": "Troppi caricamenti in poco tempo. Attendi un minuto e riprova.",
+            "tooLarge": "Il file supera il limite di questa importazione.",
+            "busy": "Per il tuo account è già in corso un'importazione. Attendi che finisca.",
+            "privacyNote": "Il file viene eliminato dal server appena l'importazione termina. Tutto viene associato al record da cui proviene, quindi ricaricare lo stesso file non aggiunge nulla due volte.",
+            "fileInputLabel": "File da importare",
+            "lineCounts": "{imported} nuovi, {duplicates} già presenti",
+            "failure": {
+              "notGadgetbridge": "Non è un database di Gadgetbridge. Esportalo di nuovo da Gadgetbridge e carica il file che produce.",
+              "unsafeSchema": "Il file contiene una struttura che HealthLog non legge per motivi di sicurezza.",
+              "notFhirBundle": "Non è un Bundle FHIR. Il file deve essere l'esportazione JSON di un'intera cartella.",
+              "tooManyEntries": "Il Bundle ha più voci di quante ne legga un'importazione. Esporta un periodo più breve.",
+              "tooLarge": "Il file supera il limite di questa importazione.",
+              "timeBudget": "L'importazione si è fermata al suo limite di tempo. Carica di nuovo lo stesso file per continuare; nulla viene aggiunto due volte.",
+              "stagingMissing": "Il file caricato non era più sul server. Caricalo di nuovo."
+            }
+          },
+          "healthConnectRemote": {
+            "outcome": {
+              "imported": "una nuova esportazione è stata passata all'importazione",
+              "unchanged": "niente di nuovo",
+              "busy": "era in corso un'altra importazione, nuovo tentativo a breve",
+              "notFound": "il file non è nella cartella",
+              "unauthorized": "la cartella ha rifiutato nome utente o password",
+              "redirected": "il server voleva reindirizzare, HealthLog non lo segue",
+              "upstreamError": "il server ha risposto con un errore",
+              "tooLarge": "il file supera 1 GB",
+              "timeout": "il server ha impiegato troppo",
+              "network": "il server non è raggiungibile",
+              "privateOrigin": "questo indirizzo è in una rete privata che il server non consente",
+              "invalidUrl": "l'indirizzo della cartella non è utilizzabile",
+              "noWorker": "il servizio in background non è attivo",
+              "unknown": "sconosciuto"
+            },
+            "error": {
+              "privateOrigin": "Questo indirizzo è in una rete privata. Chi gestisce il server deve prima consentirlo.",
+              "invalidUrl": "Inserisci l'indirizzo completo della cartella, senza nome utente o password al suo interno.",
+              "passwordRequired": "Inserisci la password una volta quando configuri la cartella.",
+              "saveFailed": "Non è stato possibile salvare la cartella. Controlla l'indirizzo e riprova.",
+              "fetchFailed": "Non è stato possibile avviare il prelievo. Riprova più tardi."
+            },
+            "title": "Health Connect da una cartella",
+            "description": "HealthLog preleva l'esportazione che Health Connect salva a orari programmati in una cartella WebDAV o Nextcloud e importa ciò che è nuovo.",
+            "folderUrl": "Indirizzo della cartella (WebDAV)",
+            "fileName": "Nome del file nella cartella",
+            "username": "Nome utente",
+            "password": "Password o password per app",
+            "passwordKept": "Lascia vuoto per mantenere la password salvata",
+            "enabled": "Preleva circa ogni sei ore",
+            "privacyNote": "La password viene salvata cifrata e non viene più mostrata. Ogni file viene importato una volta: un file che HealthLog ha già non viene letto due volte. Una cartella sulla rete di casa funziona solo se chi gestisce il server ne consente l'indirizzo.",
+            "lastAttempt": "Ultimo tentativo {when}: {outcome}",
+            "fetchNow": "Preleva ora",
+            "remove": "Rimuovi cartella",
+            "removeTitle": "Rimuovere questa cartella?",
+            "removeBody": "HealthLog smette di prelevare da lì e dimentica la password. Ciò che è già stato importato resta."
           }
         },
         "subtitle": "Esporta i tuoi dati o importa misurazioni e voci da altre app e file."
@@ -13524,6 +13617,17 @@
       "opened": "{name} ha aperto la tua cartella {count}×",
       "acted": "{name} ha fatto una modifica nella tua cartella",
       "deletedAccount": "Un account eliminato"
+    },
+    "managedActivity": {
+      "title": "Attività nel profilo di {name}",
+      "hint": "Chi ha fatto cosa in questo profilo: le modifiche di ogni tutore, comprese le tue.",
+      "action": "Mostra attività",
+      "emptyTitle": "Ancora niente di registrato",
+      "emptyDescription": "Le modifiche di un tutore in questo profilo compaiono qui, e le aperture in una riga per tutore e giorno.",
+      "you": "Tu",
+      "opened": "{name} ha aperto il profilo {count}×",
+      "acted": "{name} ha modificato qualcosa nel profilo",
+      "settingsUpdate": "{name} ha modificato le impostazioni del profilo"
     },
     "delegate": {
       "addOnlyNote": "Puoi aggiungere voci a questa cartella. Solo {name} può modificarle o eliminarle."

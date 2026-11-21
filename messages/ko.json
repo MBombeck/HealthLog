@@ -5737,11 +5737,24 @@
         "documents": {
           "title": "문서",
           "autoAiRead": "새 문서를 AI로 자동으로 읽기",
-          "honesty": "켜면 이 프로필에 올린 문서마다 인스턴스의 AI 제공자에게 보내져 문서별로 누를 필요 없이 읽히고 설명되고 검색용으로 색인돼요. 요약이 없는 기존 문서도 함께 보내져요(켤 때마다 최대 200개). 켜면 이 프로필의 문서를 읽어도 된다는 동의가 기록돼요. 프로필의 AI 설정이 적용되며 내 AI 제공자는 쓰이지 않아요. 기본값은 꺼짐이에요.",
+          "honesty": "켜면 이 프로필에 올린 문서마다 위에서 프로필용으로 고른 AI 제공자에게 보내져 문서별로 누를 필요 없이 읽히고 설명되고 검색용으로 색인돼요. 요약이 없는 기존 문서도 함께 보내져요(켤 때마다 최대 200개). 켜면 이 프로필의 문서를 읽어도 된다는 동의가 기록돼요. 기본값은 꺼짐이에요.",
           "pageTitle": "문서와 AI",
           "pageSubtitle": "{name}님의 프로필에 올린 문서를 AI가 읽을지 정해요.",
-          "noProvider": "이 서버에는 {name}님의 문서를 읽을 AI 제공자가 없어서 스위치를 켤 수 없어요. 서버 운영자가 제공자를 설정할 수 있어요.",
+          "noProvider": "{name}님의 프로필에 문서를 읽을 수 있는 AI 제공자가 선택되지 않아 스위치를 켤 수 없어요. 위에서 하나를 골라요.",
           "aiOff": "{name}님의 프로필에서 AI가 꺼져 있어 문서를 읽지 않아요."
+        },
+        "aiSource": {
+          "title": "AI 제공자",
+          "label": "이 프로필의 AI가 쓰는 곳",
+          "honesty": "관리 프로필에는 자체 AI 키가 없어요. 이 프로필의 AI 작업을 서버의 AI 키로 보낼지, 아무 데도 보내지 않을지, 내 계정에 설정한 체인 중 하나로 보낼지 골라요. 어떤 것을 고르든 프로필의 AI 스위치와 동의는 그대로 적용돼요.",
+          "instance": "서버의 AI 키",
+          "none": "AI 제공자 없음",
+          "yourDefault": "내 기본 체인",
+          "yourChain": "내 체인 “{name}”",
+          "otherGuardian": "다른 보호자의 체인",
+          "noInstanceKey": "이 서버에는 AI 키가 없어서 이 선택으로는 프로필에 AI가 없어요.",
+          "yourCredentials": "내 키와 로그인이 이 체인의 순서대로만 이 프로필을 처리해요. 프로필이 보내는 요청은 내 제공자 계정 사용량에 포함돼요.",
+          "unusable": "선택한 체인을 지금은 쓸 수 없어요. 고른 보호자가 더 이상 이 프로필을 관리하지 않거나 체인이 삭제됐어요. 누군가 다시 고를 때까지 프로필에는 AI가 없어요."
         }
       },
       "unavailableTitle": "이 공유 기록에서는 사용할 수 없어요",
@@ -6267,6 +6280,86 @@
               "stagingMissing": "업로드한 파일이 서버에 더 이상 없습니다. 다시 업로드하세요.",
               "interrupted": "서버 재시작으로 가져오기가 중단되었습니다. 파일을 다시 업로드하세요."
             }
+          },
+          "recordFile": {
+            "gadgetbridge": {
+              "title": "Gadgetbridge 데이터베이스",
+              "description": "Android의 Gadgetbridge가 내보내는 데이터베이스에서 걸음, 맥박, SpO2, 수면, 체중을 가져와요.",
+              "steps": {
+                "export": "Gadgetbridge에서 설정, 데이터 관리, 데이터베이스 내보내기를 차례로 열어요.",
+                "upload": "Gadgetbridge라는 파일을 여기에 올려요. 최대 512MB."
+              }
+            },
+            "fhirBundle": {
+              "title": "진료 기록 (FHIR)",
+              "description": "환자 포털이 내보내는 FHIR R4 Bundle에서 검사 결과, 활력 징후, 질환, 예방접종, 약, 진료 방문을 가져와요.",
+              "steps": {
+                "export": "환자 포털에서 기록을 FHIR R4(JSON)로 내보내요. C-CDA 파일은 읽지 않아요.",
+                "upload": ".json 파일을 여기에 올려요. 최대 32MB."
+              }
+            },
+            "choose": "파일 선택",
+            "uploading": "업로드 중…",
+            "running": "백그라운드에서 가져오는 중…",
+            "doneSummary": "파일을 가져왔어요.",
+            "doneNothing": "가져오기를 마쳤지만 새로 추가할 것이 없었어요.",
+            "skippedHeading": "가져오지 않은 항목",
+            "failed": "가져오기에 실패했어요. 다시 시도해 주세요.",
+            "uploadFailed": "업로드에 실패했어요. 다시 시도해 주세요.",
+            "rateLimited": "짧은 시간에 업로드가 너무 많아요. 1분 뒤에 다시 시도해 주세요.",
+            "tooLarge": "파일이 이 가져오기의 한도보다 커요.",
+            "busy": "계정에서 이미 가져오기가 진행 중이에요. 끝날 때까지 기다려 주세요.",
+            "privacyNote": "가져오기가 끝나면 파일은 서버에서 바로 삭제돼요. 모든 항목은 원래 기록과 연결되므로 같은 파일을 다시 올려도 중복으로 추가되지 않아요.",
+            "fileInputLabel": "가져올 파일",
+            "lineCounts": "새 항목 {imported}개, 이미 있음 {duplicates}개",
+            "failure": {
+              "notGadgetbridge": "Gadgetbridge 데이터베이스가 아니에요. Gadgetbridge에서 다시 내보내고 만들어진 파일을 올려 주세요.",
+              "unsafeSchema": "파일에 HealthLog가 보안상 읽지 않는 구조가 들어 있어요.",
+              "notFhirBundle": "FHIR Bundle이 아니에요. 전체 기록을 JSON으로 내보낸 파일이어야 해요.",
+              "tooManyEntries": "Bundle 항목이 한 번에 읽을 수 있는 수보다 많아요. 더 짧은 기간을 내보내 주세요.",
+              "tooLarge": "파일이 이 가져오기의 한도보다 커요.",
+              "timeBudget": "가져오기가 시간 한도에서 멈췄어요. 같은 파일을 다시 올리면 이어서 가져오고 중복되지 않아요.",
+              "stagingMissing": "올린 파일이 더 이상 서버에 없어요. 다시 올려 주세요."
+            }
+          },
+          "healthConnectRemote": {
+            "outcome": {
+              "imported": "새 내보내기를 가져오기로 넘겼어요",
+              "unchanged": "새 항목 없음",
+              "busy": "다른 가져오기가 진행 중이라 곧 다시 시도해요",
+              "notFound": "폴더에 파일이 없어요",
+              "unauthorized": "폴더가 사용자 이름이나 비밀번호를 거부했어요",
+              "redirected": "서버가 리디렉션하려 했지만 HealthLog는 따르지 않아요",
+              "upstreamError": "서버가 오류로 응답했어요",
+              "tooLarge": "파일이 1GB보다 커요",
+              "timeout": "서버 응답이 너무 늦어요",
+              "network": "서버에 연결할 수 없어요",
+              "privateOrigin": "이 주소는 서버가 허용하지 않는 사설 네트워크에 있어요",
+              "invalidUrl": "폴더 주소를 쓸 수 없어요",
+              "noWorker": "백그라운드 작업이 실행 중이 아니에요",
+              "unknown": "알 수 없음"
+            },
+            "error": {
+              "privateOrigin": "이 주소는 사설 네트워크에 있어요. 서버 운영자가 먼저 허용해야 해요.",
+              "invalidUrl": "사용자 이름이나 비밀번호가 들어가지 않은 폴더 전체 주소를 입력하세요.",
+              "passwordRequired": "폴더를 설정할 때 비밀번호를 한 번 입력하세요.",
+              "saveFailed": "폴더를 저장하지 못했어요. 주소를 확인하고 다시 시도하세요.",
+              "fetchFailed": "가져오기를 시작하지 못했어요. 나중에 다시 시도하세요."
+            },
+            "title": "폴더에서 Health Connect 가져오기",
+            "description": "Health Connect가 예약에 따라 WebDAV 또는 Nextcloud 폴더에 저장하는 내보내기 파일을 HealthLog가 직접 가져와 새 항목을 추가해요.",
+            "folderUrl": "폴더 주소 (WebDAV)",
+            "fileName": "폴더 안의 파일 이름",
+            "username": "사용자 이름",
+            "password": "비밀번호 또는 앱 비밀번호",
+            "passwordKept": "저장된 비밀번호를 유지하려면 비워 두세요",
+            "enabled": "약 6시간마다 가져오기",
+            "privacyNote": "비밀번호는 암호화되어 저장되고 다시 표시되지 않아요. 파일마다 한 번만 가져오며 HealthLog에 이미 있는 파일은 다시 읽지 않아요. 집 네트워크의 폴더는 서버 운영자가 주소를 허용한 경우에만 쓸 수 있어요.",
+            "lastAttempt": "마지막 시도 {when}: {outcome}",
+            "fetchNow": "지금 가져오기",
+            "remove": "폴더 제거",
+            "removeTitle": "이 폴더를 제거할까요?",
+            "removeBody": "HealthLog가 더 이상 이 폴더에서 가져오지 않고 비밀번호를 잊어요. 이미 가져온 항목은 그대로 남아요."
           }
         },
         "subtitle": "데이터를 내보내거나, 다른 앱과 파일에서 측정값과 기록을 가져와요."
@@ -13524,6 +13617,17 @@
       "opened": "{name} 님이 내 기록을 {count}번 열었어요",
       "acted": "{name} 님이 내 기록을 수정했어요",
       "deletedAccount": "삭제된 계정"
+    },
+    "managedActivity": {
+      "title": "{name}님 프로필의 활동",
+      "hint": "이 프로필에서 누가 무엇을 했는지 보여줘요. 나를 포함한 모든 보호자의 변경이 나와요.",
+      "action": "활동 보기",
+      "emptyTitle": "아직 기록된 것이 없어요",
+      "emptyDescription": "보호자가 이 프로필에서 바꾼 내용이 여기에 나오고, 열람은 보호자별 하루 한 줄로 나와요.",
+      "you": "나",
+      "opened": "{name}님이 프로필을 {count}번 열었어요",
+      "acted": "{name}님이 프로필에서 무언가를 바꿨어요",
+      "settingsUpdate": "{name}님이 프로필 설정을 바꿨어요"
     },
     "delegate": {
       "addOnlyNote": "이 기록에 추가할 수 있어요. 수정과 삭제는 {name} 님만 할 수 있어요."

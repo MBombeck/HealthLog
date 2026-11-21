@@ -1,6 +1,6 @@
 # Data import
 
-HealthLog has five ways to bring data in, all reachable from
+HealthLog has these ways to bring data in, all reachable from
 **Settings → Export & Import**:
 
 1. An **Apple Health `export.zip`** upload — the full archive from the
@@ -17,6 +17,14 @@ HealthLog has five ways to bring data in, all reachable from
    with its own `?dryRun=1` preview.
 5. An **activity file (FIT)** — one workout as a watch or bike computer
    recorded it, with its heart-rate curve. Documented in section 4 below.
+6. A **Gadgetbridge database** — steps, heart rate, SpO2, sleep and weight
+   from the Android companion app without a vendor cloud. See
+   [`gadgetbridge.md`](./gadgetbridge.md).
+7. A **patient record as a FHIR R4 Bundle** — lab results, vital signs,
+   conditions, vaccinations, medications and visits from a patient portal.
+   See [`fhir-bundle-import.md`](./fhir-bundle-import.md).
+8. A **Health Connect export**, uploaded or fetched on a schedule from a
+   WebDAV or Nextcloud folder. See [`health-connect.md`](./health-connect.md).
 
 All paths skip rows that already exist, so re-running an import is
 safe — it merges rather than duplicating.

@@ -37,6 +37,9 @@ export const PROXY_BYPASS_ROUTES: readonly string[] = [
   "/api/admin/import-apple-health-export",
   // One activity file (.fit, .fit.gz or a one-member ZIP), 10 MB.
   "/api/import/fit",
+  // A Gadgetbridge database (512 MB) or a FHIR R4 Bundle (32 MB).
+  "/api/import/gadgetbridge",
+  "/api/import/fhir-bundle",
   // Backup file upload, up to 512 MB raw.
   "/api/admin/backups/upload",
   // Document vault upload, admin-tunable per-file cap.

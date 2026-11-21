@@ -30,6 +30,8 @@ describe("managed record settings configuration contract", () => {
       insights: ["layout"],
       // #1403 — the profile's own automatic-reading switch.
       documents: ["autoAiRead"],
+      // #1403 — the profile's AI provider source.
+      aiSource: ["source", "chainId"],
     });
   });
 
@@ -55,6 +57,10 @@ describe("managed record settings configuration contract", () => {
     // The owner's preference name is not this family's field.
     ["documents", { documentsAutoAiRead: true }],
     ["documents", {}],
+    // The lender is always the caller: a guardian id is never a field.
+    ["aiSource", { source: "GUARDIAN", guardianId: "someone-else" }],
+    ["aiSource", { source: "OPERATOR" }],
+    ["aiSource", { source: "GUARDIAN", chainId: "../x" }],
   ] as const)("rejects a disallowed %s field", (family, patch) => {
     expect(() => parseManagedRecordSettingsPatch(family, patch)).toThrow();
   });

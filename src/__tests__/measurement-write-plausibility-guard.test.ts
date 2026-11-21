@@ -92,6 +92,7 @@ const WRITERS: Record<string, Disposition> = {
   // insert after `validateMeasurementRange`; day totals through the gated
   // reconcile seam.
   "lib/import/health-connect/import.ts": { kind: "validator" },
+  "lib/import/file-import/write-measurements.ts": { kind: "validator" },
   "lib/import/csv-write.ts": {
     kind: "upstream",
     validatedIn: "lib/import/csv-measurements.ts",

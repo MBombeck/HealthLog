@@ -19,6 +19,10 @@
  * instance cannot decrypt is carried as a visible marker rather than as
  * nothing.
  */
+import {
+  buildFhirImportLedgerSlice,
+  type FhirImportedResourceBackupEntry,
+} from "@/lib/export/fhir-import-ledger-backup";
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { FamilyHistoryEntryDTO } from "@/lib/records/dto";
 import {
@@ -74,6 +78,8 @@ export interface RecordsBackupSection {
   biomarkers: BiomarkerBackupEntry[];
   biomarkerMerges: BiomarkerMergeBackupEntry[];
   labResultImportKeys: LabResultImportKeyBackupEntry[];
+  /** The FHIR Bundle import ledger (`fhir-import-ledger-backup.ts`). */
+  fhirImportedResources: FhirImportedResourceBackupEntry[];
   illnessEpisodes: CanonicalIllnessEpisode[];
   allergies: CanonicalAllergy[];
   familyHistory: FamilyHistoryEntryDTO[];
@@ -93,6 +99,7 @@ export interface RecordsBackupSection {
 export interface RecordsBackupCounts {
   labResults: number;
   labResultImportKeys: number;
+  fhirImportedResources: number;
   biomarkers: number;
   illnessEpisodes: number;
   illnessDayLogs: number;
@@ -114,6 +121,7 @@ export async function buildRecordsBackupSection(
     | "biomarkerAlias"
     | "biomarkerMerge"
     | "labResultImportKey"
+    | "fhirImportedResource"
     | "illnessEpisode"
     | "allergy"
     | "familyHistoryEntry"
@@ -125,9 +133,10 @@ export async function buildRecordsBackupSection(
   options: RecordsBackupOptions = {},
 ): Promise<RecordsBackupSection> {
   const disasterRecovery = options.purpose === "disaster-recovery";
-  const [labs, illness, allergies, family, workouts, documents] =
+  const [labs, fhirLedger, illness, allergies, family, workouts, documents] =
     await Promise.all([
       buildLabsBackupSlice(prisma, userId, disasterRecovery),
+      buildFhirImportLedgerSlice(prisma, userId),
       buildIllnessBackupSlice(prisma, userId, disasterRecovery),
       buildAllergiesBackupSlice(prisma, userId, disasterRecovery),
       buildFamilyHistoryBackupSlice(prisma, userId, disasterRecovery),
@@ -142,6 +151,7 @@ export async function buildRecordsBackupSection(
 
   return {
     ...labs,
+    ...fhirLedger,
     ...illness,
     ...allergies,
     ...family,
@@ -166,6 +176,7 @@ export function countRecordsBackupSection(
   return {
     labResults: section.labResults.length,
     labResultImportKeys: section.labResultImportKeys.length,
+    fhirImportedResources: section.fhirImportedResources.length,
     biomarkers: section.biomarkers.length,
     illnessEpisodes: section.illnessEpisodes.length,
     illnessDayLogs: section.illnessEpisodes.reduce(

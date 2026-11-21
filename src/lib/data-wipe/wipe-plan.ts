@@ -212,6 +212,13 @@ export const WIPE_MODELS = [
   // was read off it; a child of the document, so it goes before it.
   "DocumentAiRun",
   "ImportJob",
+  // The FHIR Bundle import's ledger of which resources became which rows. A
+  // wipe empties the rows it points at, so it goes with them: a later import
+  // of the same Bundle writes the records again, as into a fresh account.
+  "FhirImportedResource",
+  // The folder the Health Connect export is fetched from, with its sealed
+  // WebDAV credentials: a working credential to another system.
+  "HealthConnectRemoteSource",
   // v1.42 (#1173) — when each HealthKit type last arrived. Diagnostic, but a
   // record of what the account's phone sent and when.
   "HealthKitTypeSync",
@@ -471,6 +478,10 @@ export const USER_RESET = {
   coachPrefsJson: Prisma.DbNull,
   coachLastSeenAt: null,
   documentsAutoAiRead: false,
+  // #1403 — a wiped managed profile goes back to the operator's key.
+  managedAiSource: "INSTANCE",
+  managedAiGuardianId: null,
+  managedAiChainId: null,
   labsLocalOcrEnabled: false,
   storeWorkoutRoutes: false,
   codexAccessTokenEncrypted: null,
@@ -621,7 +632,7 @@ export const USER_KEPT_FIELDS: Readonly<Record<string, string>> = {
  * exactly one thing — "delete this model's rows for this account" — and the
  * question of what "for this account" means for a given model stays in the
  * file that already answers every other question about the wipe.
- * {@link resolveWipeDelegate} translates; the route is unaware.
+ * `resolveWipeDelegate` (wipe-delegates.ts) translates; the route is unaware.
  */
 export const WIPE_OWNER_FIELDS: Readonly<Record<string, readonly string[]>> = {
   // The record owner owns the import payload. The actor is durable audit
@@ -716,76 +727,3 @@ export const WIPE_KEPT_ROWS: Readonly<
       "the account copies taken before a wipe (`PRE_WIPE_<ms>`), the current one included: it is written immediately before this transaction so the wipe can be undone during the deletion grace window, and the account-deletion purge job deletes each one when its window ends",
   },
 };
-
-/** The narrow slice of a Prisma delegate the wipe loop uses. */
-export interface UserScopedDeleteDelegate {
-  deleteMany(args: { where: { userId: string } }): Promise<{ count: number }>;
-}
-
-/** The same slice for the admin wipe, which selects no account at all. */
-export interface UnscopedDeleteDelegate {
-  deleteMany(args: Record<string, never>): Promise<{ count: number }>;
-}
-
-interface RawDeleteDelegate {
-  deleteMany(args: { where?: object }): Promise<{ count: number }>;
-}
-
-/**
- * The Prisma delegate for a model name, or a thrown error naming the model.
- *
- * One documented cast: {@link WIPE_MODELS} is a literal list of model names
- * checked against `schema.prisma` by the completeness test, and every entry
- * indexes a delegate that exposes `deleteMany`. The test also asserts every
- * entry resolves, so an unresolvable name fails the build rather than the
- * request.
- */
-function rawDelegate(client: object, model: string): RawDeleteDelegate {
-  const delegate = (client as Record<string, RawDeleteDelegate>)[
-    wipeDelegateKey(model)
-  ];
-  if (!delegate || typeof delegate.deleteMany !== "function") {
-    throw new Error(`No Prisma delegate for wipe model "${model}"`);
-  }
-  return delegate;
-}
-
-/**
- * Resolve a model name to its delegate on a client or transaction handle.
- *
- * A model listed in {@link WIPE_OWNER_FIELDS} gets a wrapper that rewrites the
- * caller's `{ userId }` into that model's own ownership predicate. The caller
- * still says "this account's rows" and still gets a count back; only the
- * translation moved, and it moved to the file that declares the columns rather
- * than to the loop that does not know about them.
- */
-export function resolveWipeDelegate(
-  client: object,
-  model: string,
-): UserScopedDeleteDelegate {
-  const delegate = rawDelegate(client, model);
-  if (!WIPE_OWNER_FIELDS[model] && !WIPE_KEPT_ROWS[model]) {
-    return delegate as UserScopedDeleteDelegate;
-  }
-  return {
-    deleteMany: ({ where }) =>
-      delegate.deleteMany({ where: wipeWhere(model, where.userId) }),
-  };
-}
-
-/**
- * Resolve a model name to a delegate that deletes every row of it.
- *
- * The admin wipe asks a different question from the per-account one — "every
- * row of this model" rather than "this account's rows" — so it gets its own
- * resolver instead of a `where` the caller has to remember to leave out.
- * {@link WIPE_OWNER_FIELDS} is irrelevant here by construction: with no
- * account to select, a row that belongs to two of them is deleted once.
- */
-export function resolveGlobalWipeDelegate(
-  client: object,
-  model: string,
-): UnscopedDeleteDelegate {
-  const delegate = rawDelegate(client, model);
-  return { deleteMany: () => delegate.deleteMany({}) };
-}

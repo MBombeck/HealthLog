@@ -169,6 +169,7 @@ describe("reconcileOrphanImportJobs", () => {
           },
           { kind: "health_connect" },
           { kind: "fit" },
+          { kind: { in: ["gadgetbridge", "fhir_bundle"] } },
         ],
       },
       select: { id: true, pgBossJobId: true, updatedAt: true, kind: true },

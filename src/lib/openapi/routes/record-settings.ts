@@ -49,6 +49,7 @@ const settingsFamilyEnum = z
     "coach",
     "insights",
     "documents",
+    "aiSource",
   ])
   .describe(
     "The closed set of configuration families a Guardian may read and write on a managed record. Identity, credentials, delivery channels, Coach memories and provider connections are absent by construction — no family accepts them, so every future field fails closed until one deliberately does.",
@@ -261,6 +262,21 @@ const documentsSettings = z.object({ autoAiRead: z.boolean() }).meta({
     "Whether the record's uploads are read with AI automatically, the record's own switch that the upload pipeline reads. Off by default. Turning it on records the record's document-reading consent (an `ai_extraction` receipt) when none is active, and queues a bounded catch-up over documents already stored when the record's `documentAi` capability is open.",
 });
 
+const aiSourceSettings = z
+  .object({
+    source: z.enum(["INSTANCE", "NONE", "GUARDIAN"]),
+    chainId: z.string().nullable(),
+    servedByYou: z.boolean(),
+    guardianChainUsable: z.boolean(),
+    yourChains: z.array(z.object({ id: z.string(), name: z.string() })),
+    instanceKeyConfigured: z.boolean(),
+  })
+  .meta({
+    id: "RecordAiSourceSettings",
+    description:
+      "Which provider a managed profile's AI work uses: the operator's key (`INSTANCE`, the default), none (`NONE`), or a chain of a guardian (`GUARDIAN`; `chainId` a named chain of that guardian, null for their default chain). `servedByYou` says whether the reading guardian is the lender; `guardianChainUsable` whether the lender still manages the profile and the chain still exists. `yourChains` lists the reading guardian's named chains to pick from, ids and names only.",
+  });
+
 const recordSettingsFamilyResponse = z
   .object({
     recordId: z.string(),
@@ -274,6 +290,7 @@ const recordSettingsFamilyResponse = z
         coachSettings,
         insightsSettings,
         documentsSettings,
+        aiSourceSettings,
       ])
       .describe(
         "The DTO for the family in the path. Which variant arrives is determined entirely by `{family}`, so branch on `family` rather than probing the shape — OpenAPI cannot express the dependency between a path parameter and a response variant.",
@@ -321,6 +338,11 @@ const recordSettingsPatchRequest = z
       id: "RecordDocumentsSettingsPatch",
       description:
         "Turn automatic AI reading of the record's uploads on or off. Turning it on is the guardian's consent to document reading on the profile's behalf: it mints the profile's `ai_extraction` receipt when none is active, and the audit row names the guardian.",
+    }),
+    MANAGED_RECORD_SETTINGS_PATCH_SCHEMAS.aiSource.meta({
+      id: "RecordAiSourceSettingsPatch",
+      description:
+        "Choose the managed profile's AI provider source. `GUARDIAN` lends the calling guardian's own chain (`chainId` one of their named chains, or null for their default chain); a chain id the caller does not have answers 422 `record_settings.ai_source.chain_missing`. The profile's consent receipts and switches still gate every call. The audit row names the guardian and records the source and whether a named or the default chain was picked.",
     }),
   ])
   .meta({
