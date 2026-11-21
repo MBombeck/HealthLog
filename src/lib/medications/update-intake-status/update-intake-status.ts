@@ -61,6 +61,7 @@ async function applySkipOrSnooze(ctx: StatusContext, data: IntakeStatusUpdate) {
         takenAt: null,
         skipped: true,
         autoRecorded: false,
+        autoMissed: false,
         syncVersion: { increment: 1 },
       },
     });

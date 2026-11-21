@@ -283,7 +283,7 @@ describe("applyCanonicalSlotWrite — auto-miss reset", () => {
     expect(updateArg.data.autoMissed).toBe(false);
   });
 
-  it("does NOT touch autoMissed on a write without a takenAt (skip)", async () => {
+  it("clears autoMissed on a deliberate skip too: a skip answers the dose", async () => {
     const pending = row({ id: "pend-skip", source: "REMINDER" });
     const client = makeClient({
       findManyResult: [[pending]],
@@ -299,7 +299,7 @@ describe("applyCanonicalSlotWrite — auto-miss reset", () => {
     });
     const updateArg = vi.mocked(client.medicationIntakeEvent.update).mock
       .calls[0][0] as unknown as { data: Record<string, unknown> };
-    expect("autoMissed" in updateArg.data).toBe(false);
+    expect(updateArg.data.autoMissed).toBe(false);
   });
 });
 

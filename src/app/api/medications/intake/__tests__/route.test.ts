@@ -423,6 +423,7 @@ describe("POST /api/medications/intake", () => {
         takenAt: null,
         skipped: true,
         autoRecorded: false,
+        autoMissed: false,
         syncVersion: { increment: 1 },
       },
     });

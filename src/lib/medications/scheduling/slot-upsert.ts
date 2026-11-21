@@ -419,7 +419,8 @@ async function applyToExisting(
       // records the take (late entry, offline sync catching up), the flag
       // must reset or the compliance engine keeps counting the now-taken
       // dose as a miss.
-      ...(takenAt !== null && { autoMissed: false }),
+      // A deliberate skip answers the dose too.
+      ...((takenAt !== null || skipped) && { autoMissed: false }),
       // v1.42.2 — a take or skip the person records is theirs, not the
       // auto-take pass's: the "recorded automatically" label goes.
       ...((isExplicitTaken || isExplicitSkip) && { autoRecorded: false }),
