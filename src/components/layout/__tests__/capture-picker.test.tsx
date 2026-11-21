@@ -50,7 +50,7 @@ vi.mock("@/components/measurements/entry/use-entry-recall", () => ({
   useRecentEntryTypes: () => recentRef.value,
 }));
 
-import { CapturePicker } from "../capture-picker";
+import { CapturePicker, captureFormDescription } from "../capture-picker";
 
 function render() {
   return renderToStaticMarkup(
@@ -118,5 +118,16 @@ describe("<CapturePicker> — recently logged types", () => {
     modulesRef.value = undefined;
     recentRef.value = [];
     expect(render()).not.toContain("capture-picker-measurement-");
+  });
+});
+
+describe("the capture form's description", () => {
+  it("says what the intake sheet records, like the medications page's sheet", () => {
+    const t = (key: string) => key;
+    expect(captureFormDescription("medication", t)).toBe(
+      "medications.intakeForm.description",
+    );
+    expect(captureFormDescription("mood", t)).toBeUndefined();
+    expect(captureFormDescription(null, t)).toBeUndefined();
   });
 });
