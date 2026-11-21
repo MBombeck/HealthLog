@@ -141,7 +141,7 @@ describe("resolveProviderChain — the picked gateway fallback", () => {
         },
       ],
     } as never);
-    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(null as never);
+    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(null);
     const chain = await resolveProviderChain("user-1", null);
     expect(chain.map((e) => e.providerType)).toEqual(["openai-compatible"]);
     expect(await sentEffort(chain[0].instance)).toBe("low");

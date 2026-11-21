@@ -89,8 +89,8 @@ const INTAKE_MAY_SEE_EVERY_ROW: Record<string, string> = {
     "units consumed by a recorded dose",
   "lib/medications/intake-slot-dedup.ts":
     "folds duplicate rows of doses already recorded",
-  "lib/doctor-report/collect.ts":
-    "administration ledger lists recorded doses; rates gate via expectsDoses",
+  "lib/doctor-report/collect-medications.ts":
+    "the report's administration ledger lists recorded doses; collect.ts gates rates via expectsDoses",
   "lib/medications/ingredients/recompute.ts":
     "sums the nutrients of doses that were taken; a recorded dose counts whatever the switch says",
 };
@@ -143,8 +143,8 @@ const MAY_READ_EVERY_ROW: Record<string, string> = {
   // list shows the stored schedule as information.
   "app/api/medications/[id]/compliance/route.ts":
     "buildCompliancePayload gates on the type-required trackIntake",
-  "lib/doctor-report/collect.ts":
-    "buildLedgerCompliance gates via expectsDoses; list is information",
+  "lib/doctor-report/collect-medications.ts":
+    "collect.ts's buildLedgerCompliance gates via expectsDoses; list is information",
   // The MCP medication resources list the stored schedule as information,
   // with `intakeTracked` beside it; they carry no due time or rate.
   "lib/mcp/resources.ts":

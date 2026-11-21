@@ -13,6 +13,7 @@
 import type { DateKey } from "@/lib/day/contract";
 import { isCalendarDateKey } from "@/lib/tz/date-only";
 import { userDayKey } from "@/lib/tz/format";
+import { getDateTimeFormat } from "@/lib/tz/intl-cache";
 
 /**
  * The history-state marker of an entry the layer pushed itself. Closing such
@@ -23,7 +24,13 @@ export const DAY_HISTORY_KEY = "__healthlogDayLayer";
 
 /** Today's calendar date in `timeZone`, `YYYY-MM-DD`. */
 export function todayKeyInZone(timeZone: string, now = new Date()): DateKey {
-  return userDayKey(now, timeZone);
+  // en-CA spells a date as YYYY-MM-DD; the same cached formatter family
+  // `userDayKey` reads, kept here because this runs on every day-layer render.
+  return getDateTimeFormat("en-CA", timeZone, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
 }
 
 /** The calendar date of an instant in `timeZone`. */
