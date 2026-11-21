@@ -92,7 +92,7 @@ describe("display name on the profile card", () => {
 
   it("is published on the account payload the card seeds from", () => {
     const route = readFileSync(
-      join(process.cwd(), "src/app/api/auth/me/route.ts"),
+      join(process.cwd(), "src/lib/auth/me-payload.ts"),
       "utf8",
     );
     expect(route).toMatch(/\bdisplayName:\s*user\.displayName\s*\?\?\s*null/);
