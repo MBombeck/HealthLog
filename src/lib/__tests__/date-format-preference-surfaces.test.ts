@@ -108,12 +108,7 @@ describe("issue #922 — the measurements list honours the date-order preference
   }
 
   it("renders day first under DMY", async () => {
-    const { formatDate, formatDateTime } = await legacy("DMY");
-    expect(fieldOrder(formatDate(new Date(SAMPLE)))).toEqual([
-      DAY,
-      MONTH,
-      YEAR,
-    ]);
+    const { formatDateTime } = await legacy("DMY");
     expect(fieldOrder(formatDateTime(new Date(SAMPLE))).slice(0, 3)).toEqual([
       DAY,
       MONTH,
@@ -122,8 +117,8 @@ describe("issue #922 — the measurements list honours the date-order preference
   });
 
   it("renders month first under MDY", async () => {
-    const { formatDate } = await legacy("MDY");
-    expect(fieldOrder(formatDate(new Date(SAMPLE)))).toEqual([
+    const { formatDateTime } = await legacy("MDY");
+    expect(fieldOrder(formatDateTime(new Date(SAMPLE))).slice(0, 3)).toEqual([
       MONTH,
       DAY,
       YEAR,
@@ -131,18 +126,17 @@ describe("issue #922 — the measurements list honours the date-order preference
   });
 
   it("renders year first under YMD", async () => {
-    const { formatDate, formatDateShort } = await legacy("YMD");
-    expect(fieldOrder(formatDate(new Date(SAMPLE)))).toEqual([
+    const { formatDateTime } = await legacy("YMD");
+    expect(fieldOrder(formatDateTime(new Date(SAMPLE))).slice(0, 3)).toEqual([
       YEAR,
       MONTH,
       DAY,
     ]);
-    expect(fieldOrder(formatDateShort(new Date(SAMPLE)))).toEqual([MONTH, DAY]);
   });
 
   it("keeps following the locale under AUTO", async () => {
-    const { formatDate } = await legacy("AUTO");
-    expect(fieldOrder(formatDate(new Date(SAMPLE)))).toEqual([
+    const { formatDateTime } = await legacy("AUTO");
+    expect(fieldOrder(formatDateTime(new Date(SAMPLE))).slice(0, 3)).toEqual([
       MONTH,
       DAY,
       YEAR,

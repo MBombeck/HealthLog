@@ -5,7 +5,7 @@
  * now honours every supported locale via the full `Locale` union.
  *
  * `activeLocale()` itself is module-private — exercise it through the
- * exported `formatDate` helper, which composes the cookie read with
+ * exported `formatDateTime` helper, which composes the cookie read with
  * `makeFormatters(locale)`. We stub the bare-minimum `document` /
  * `window` shape the helper actually reads, so the test runs under
  * the default node environment without pulling in `jsdom`.
@@ -17,7 +17,7 @@ interface Globals {
   window?: { localStorage?: { getItem: (key: string) => string | null } };
 }
 
-describe("formatDate (cookie-driven locale)", () => {
+describe("formatDateTime (cookie-driven locale)", () => {
   const globalAny = globalThis as unknown as Globals;
   let cookieValue = "";
   let storageValue: string | null = null;
@@ -54,57 +54,57 @@ describe("formatDate (cookie-driven locale)", () => {
 
   it("returns the de format when the cookie reads 'de'", async () => {
     setCookie("de");
-    const { formatDate } = await import("../format");
-    // German short-date is dd.mm.yyyy.
-    expect(formatDate(sample)).toMatch(/^\d{2}\.\d{2}\.\d{4}$/);
+    const { formatDateTime } = await import("../format");
+    // German date part is dd.mm.yyyy.
+    expect(formatDateTime(sample)).toMatch(/^\d{2}\.\d{2}\.\d{4}\b/);
   });
 
   it("returns the fr format when the cookie reads 'fr'", async () => {
     setCookie("fr");
-    const { formatDate } = await import("../format");
-    // French short-date is dd/mm/yyyy.
-    expect(formatDate(sample)).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+    const { formatDateTime } = await import("../format");
+    // French date part is dd/mm/yyyy.
+    expect(formatDateTime(sample)).toMatch(/^\d{2}\/\d{2}\/\d{4}\b/);
   });
 
   it("returns the es format when the cookie reads 'es'", async () => {
     setCookie("es");
-    const { formatDate } = await import("../format");
-    // Spanish short-date is dd/mm/yyyy.
-    expect(formatDate(sample)).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+    const { formatDateTime } = await import("../format");
+    // Spanish date part is dd/mm/yyyy.
+    expect(formatDateTime(sample)).toMatch(/^\d{2}\/\d{2}\/\d{4}\b/);
   });
 
   it("returns the it format when the cookie reads 'it'", async () => {
     setCookie("it");
-    const { formatDate } = await import("../format");
-    // Italian short-date is dd/mm/yyyy.
-    expect(formatDate(sample)).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+    const { formatDateTime } = await import("../format");
+    // Italian date part is dd/mm/yyyy.
+    expect(formatDateTime(sample)).toMatch(/^\d{2}\/\d{2}\/\d{4}\b/);
   });
 
   it("returns the pl format when the cookie reads 'pl'", async () => {
     setCookie("pl");
-    const { formatDate } = await import("../format");
-    // Polish short-date is dd.mm.yyyy.
-    expect(formatDate(sample)).toMatch(/^\d{2}\.\d{2}\.\d{4}$/);
+    const { formatDateTime } = await import("../format");
+    // Polish date part is dd.mm.yyyy.
+    expect(formatDateTime(sample)).toMatch(/^\d{2}\.\d{2}\.\d{4}\b/);
   });
 
   it("falls back to en for unrecognised cookie values", async () => {
     setCookie("xx");
-    const { formatDate } = await import("../format");
-    // English short-date is mm/dd/yyyy.
-    expect(formatDate(sample)).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+    const { formatDateTime } = await import("../format");
+    // English date part is mm/dd/yyyy.
+    expect(formatDateTime(sample)).toMatch(/^\d{2}\/\d{2}\/\d{4}\b/);
   });
 
   it("falls back to en when the cookie is missing and storage is unset", async () => {
     // cookieValue starts as "" — no match.
-    const { formatDate } = await import("../format");
-    expect(formatDate(sample)).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+    const { formatDateTime } = await import("../format");
+    expect(formatDateTime(sample)).toMatch(/^\d{2}\/\d{2}\/\d{4}\b/);
   });
 
   it("falls back to localStorage when the cookie is unrecognised", async () => {
     setCookie("xx");
     storageValue = "fr";
-    const { formatDate } = await import("../format");
-    // French short-date is dd/mm/yyyy — confirms the storage path is hit.
-    expect(formatDate(sample)).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+    const { formatDateTime } = await import("../format");
+    // French date part is dd/mm/yyyy — confirms the storage path is hit.
+    expect(formatDateTime(sample)).toMatch(/^\d{2}\/\d{2}\/\d{4}\b/);
   });
 });
