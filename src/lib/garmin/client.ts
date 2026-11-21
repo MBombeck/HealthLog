@@ -153,11 +153,6 @@ export function garminTokenClaims(token: string): {
   }
 }
 
-/** A JWT's `exp` claim in epoch ms, read without verifying the signature. */
-export function garminTokenExpiry(token: string): number | undefined {
-  return garminTokenClaims(token).exp;
-}
-
 export interface GarminToken {
   value: string;
   /** Epoch ms. */

@@ -36,7 +36,6 @@ import {
   mapOxygenSaturation,
   mapRespiratoryRate,
   mapRestingHeartRate,
-  mapSleepSession,
   mapSleepSessionDetailed,
   mapSteps,
   mapVo2Max,
@@ -190,7 +189,7 @@ describe("Google Health mapper goldens", () => {
         index,
         tz: tz ?? null,
         detailed: mapSleepSessionDetailed(point, tz),
-        rows: mapSleepSession(point, tz),
+        rows: mapSleepSessionDetailed(point, tz).rows,
       })),
     );
     await expect(await golden(output)).toMatchFileSnapshot(

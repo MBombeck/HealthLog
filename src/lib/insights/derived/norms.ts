@@ -386,12 +386,3 @@ export function predictSixMinuteWalkDistance(
   // A non-positive prediction is physically meaningless — treat as no band.
   return predicted > 0 ? predicted : null;
 }
-
-/** `true` when an age/sex-sharpened band exists for the metric+profile. */
-export function hasSharpenedNorm(
-  metricId: MetricStatusMetricId,
-  ageYears: number | null | undefined,
-  sex: NormSex,
-): boolean {
-  return lookupNormalRange(metricId, ageYears, sex) !== null;
-}

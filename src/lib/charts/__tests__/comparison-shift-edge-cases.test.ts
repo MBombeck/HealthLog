@@ -1,9 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  shiftDailySeriesForward,
-  averageValue,
-  computeComparisonDelta,
-} from "@/lib/charts/comparison-shift";
+import { shiftDailySeriesForward } from "@/lib/charts/comparison-shift";
 
 /**
  * v1.4.25 — edge-case end-to-end pinning for the `comparisonBaseline`
@@ -200,26 +196,5 @@ describe("hasComparisonData semantics — insufficient prior-period data", () =>
     ];
     const shifted = shiftDailySeriesForward(priorInput, "lastMonth");
     expect(mergeShifted(visibleDays, shifted, utcDayKey)).toBe(true);
-  });
-});
-
-describe("averageValue + computeComparisonDelta — tile caption math", () => {
-  it("tile delta math survives a partial-data prior window", () => {
-    const currentAvg = averageValue([80.5, 80.7, 80.9, 81.0, 81.2]);
-    // Only 2 prior readings exist — averageValue handles that fine.
-    const priorAvg = averageValue([82.0, 82.4]);
-    expect(currentAvg).toBeCloseTo(80.86, 2);
-    expect(priorAvg).toBe(82.2);
-    expect(computeComparisonDelta(currentAvg, priorAvg)).toBeCloseTo(-1.34, 2);
-  });
-
-  it("tile delta math returns null when the prior window is empty", () => {
-    const currentAvg = averageValue([80.5, 80.7, 80.9]);
-    const priorAvg = averageValue([]);
-    expect(currentAvg).toBeCloseTo(80.7, 2);
-    expect(priorAvg).toBeNull();
-    // The contract: if either side is null, the delta is null so the
-    // tile suppresses the comparison callout cleanly.
-    expect(computeComparisonDelta(currentAvg, priorAvg)).toBeNull();
   });
 });

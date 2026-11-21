@@ -4,7 +4,6 @@ import { allAnalyteConversions } from "../registry";
 import {
   convertLabRange,
   convertLabValue,
-  conversionsFor,
   type ConvertedValue,
 } from "../convert";
 
@@ -333,48 +332,5 @@ describe("a reference range", () => {
         to: "mmol/L",
       }),
     ).toEqual({ ok: true, low: 3.9, high: 5.6, via: "scale" });
-  });
-});
-
-describe("conversionsFor", () => {
-  it("lists what glucose in mg/dL can arrive as, without mg/dL itself", () => {
-    const units = conversionsFor({
-      analyteKey: "fasting-glucose",
-      to: "mg/dL",
-    });
-    expect(units).toContain("mmol/L");
-    expect(units).toContain("g/L");
-    expect(units).toContain("µmol/L"); // the amount family, scaled
-    expect(units).not.toContain("mg/dL");
-    expect(units).not.toContain("mg/dl");
-  });
-
-  it("lists only the scale family for a marker with no entry", () => {
-    const units = conversionsFor({ analyteKey: null, to: "mg/dL" });
-    expect(units).toContain("g/L");
-    expect(units).not.toContain("mmol/L");
-  });
-
-  it("lists nothing for a unit that has no family and no entry", () => {
-    expect(conversionsFor({ analyteKey: null, to: "%" })).toEqual([]);
-  });
-
-  it("lists HbA1c's two units", () => {
-    expect(conversionsFor({ analyteKey: "hba1c", to: "%" })).toEqual([
-      "mmol/mol",
-    ]);
-  });
-
-  it("every listed unit really converts", () => {
-    for (const entry of allAnalyteConversions()) {
-      for (const to of Object.keys(entry.units)) {
-        for (const from of conversionsFor({ analyteKey: entry.key, to })) {
-          expect(
-            convert(entry.key, 1, from, to).ok,
-            `${entry.key}: ${from} -> ${to}`,
-          ).toBe(true);
-        }
-      }
-    }
   });
 });

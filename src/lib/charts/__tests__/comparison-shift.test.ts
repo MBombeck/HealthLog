@@ -1,8 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   shiftDailySeriesForward,
-  averageValue,
-  computeComparisonDelta,
   COMPARISON_SHIFT_DAYS,
 } from "@/lib/charts/comparison-shift";
 
@@ -57,37 +55,5 @@ describe("shiftDailySeriesForward()", () => {
   it("exposes the shift days as a stable public table", () => {
     expect(COMPARISON_SHIFT_DAYS.lastMonth).toBe(30);
     expect(COMPARISON_SHIFT_DAYS.lastYear).toBe(365);
-  });
-});
-
-describe("averageValue()", () => {
-  it("returns the arithmetic mean over finite numeric values only", () => {
-    expect(averageValue([1, 2, 3, 4, 5])).toBe(3);
-  });
-
-  it("ignores null / undefined / non-finite entries", () => {
-    expect(averageValue([1, null, 2, undefined, 3, NaN, Infinity])).toBe(2);
-  });
-
-  it("returns null for an empty / all-null window", () => {
-    expect(averageValue([])).toBe(null);
-    expect(averageValue([null, undefined])).toBe(null);
-  });
-});
-
-describe("computeComparisonDelta()", () => {
-  it("returns current minus prior when both are numbers", () => {
-    expect(computeComparisonDelta(125, 132)).toBe(-7);
-    expect(computeComparisonDelta(82, 80)).toBe(2);
-  });
-
-  it("returns null when either side is missing so the UI can render unavailable", () => {
-    expect(computeComparisonDelta(125, null)).toBe(null);
-    expect(computeComparisonDelta(null, 130)).toBe(null);
-    expect(computeComparisonDelta(null, null)).toBe(null);
-  });
-
-  it("returns 0 — a real value — when current equals prior", () => {
-    expect(computeComparisonDelta(100, 100)).toBe(0);
   });
 });

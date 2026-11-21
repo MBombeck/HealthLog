@@ -36,7 +36,6 @@ import {
   mapOxygenSaturation,
   mapRespiratoryRate,
   mapRestingHeartRate,
-  mapSleepSession,
   mapSleepSessionDetailed,
   mapSteps,
   mapWeight,
@@ -446,6 +445,13 @@ describe("mapSleepSessionDetailed — unknown stage labels are counted", () => {
     ]);
   });
 });
+
+/** The per-segment rows of one session, without the window metadata. */
+function mapSleepSession(
+  ...args: Parameters<typeof mapSleepSessionDetailed>
+): ReturnType<typeof mapSleepSessionDetailed>["rows"] {
+  return mapSleepSessionDetailed(...args).rows;
+}
 
 describe("mapSleepSession — per-stage segments", () => {
   it("emits one SLEEP_DURATION row per known stage, skipping unknown labels", () => {
