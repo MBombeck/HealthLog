@@ -29,6 +29,7 @@ import {
 } from "@/lib/day/records";
 import { DAY_SCORE_MEASUREMENT_TYPES, readDayScores } from "@/lib/day/scores";
 import { measurementTypeVisible, type DayAccess } from "@/lib/day/sections";
+import { withDoseOffsets } from "@/lib/day/dose-offsets";
 import { readDayBands, shapeDayValues } from "@/lib/day/values";
 import { readGlucoseKetoneIndex } from "@/lib/measurements/read-glucose-ketone-index";
 import {
@@ -200,7 +201,7 @@ export async function loadDay(args: LoadDayArgs): Promise<DayResponse> {
 
   const values = shapeDayValues(readings, bands, sleepReadable, tz);
   const running = parts.flatMap((p) => p.running).sort(bySince);
-  const events = parts.flatMap((p) => p.events).sort(byTime);
+  const events = withDoseOffsets(parts.flatMap((p) => p.events).sort(byTime));
 
   const sections: DayResponse["sections"] = {};
   for (const section of access.notShared) {

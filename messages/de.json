@@ -14166,6 +14166,11 @@
       "micronutrientsOther": "{count} Mikronährstoffe erfasst",
       "micronutrientsFew": "{count} Mikronährstoffe erfasst",
       "open": "Nährstoffaufnahme ansehen"
+    },
+    "doseOffset": {
+      "after": "{duration} nach {name}",
+      "before": "{duration} vor {name}",
+      "atDose": "Zur Zeit von {name}"
     }
   },
   "timeline": {

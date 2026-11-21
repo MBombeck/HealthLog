@@ -14166,6 +14166,11 @@
       "micronutrientsOther": "{count} micronutriënten vastgelegd",
       "micronutrientsFew": "{count} micronutriënten vastgelegd",
       "open": "Inname van voedingsstoffen bekijken"
+    },
+    "doseOffset": {
+      "after": "{duration} na {name}",
+      "before": "{duration} voor {name}",
+      "atDose": "Op het moment van {name}"
     }
   },
   "timeline": {

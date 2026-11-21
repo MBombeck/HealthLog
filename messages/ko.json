@@ -14166,6 +14166,11 @@
       "micronutrientsOther": "미량영양소 {count}개 기록됨",
       "micronutrientsFew": "미량영양소 {count}개 기록됨",
       "open": "영양소 섭취 보기"
+    },
+    "doseOffset": {
+      "after": "{name} 복용 {duration} 후",
+      "before": "{name} 복용 {duration} 전",
+      "atDose": "{name} 복용 시점"
     }
   },
   "timeline": {

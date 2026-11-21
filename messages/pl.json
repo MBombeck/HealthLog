@@ -14166,6 +14166,11 @@
       "micronutrientsOther": "Zapisano {count} mikroskładników",
       "micronutrientsFew": "Zapisano {count} mikroskładniki",
       "open": "Zobacz spożycie składników odżywczych"
+    },
+    "doseOffset": {
+      "after": "{duration} po {name}",
+      "before": "{duration} przed {name}",
+      "atDose": "W chwili przyjęcia {name}"
     }
   },
   "timeline": {

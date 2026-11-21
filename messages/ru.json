@@ -14166,6 +14166,11 @@
       "micronutrientsOther": "Записано {count} микронутриентов",
       "micronutrientsFew": "Записано {count} микронутриента",
       "open": "Открыть приём нутриентов"
+    },
+    "doseOffset": {
+      "after": "Через {duration} после {name}",
+      "before": "За {duration} до {name}",
+      "atDose": "В момент приёма {name}"
     }
   },
   "timeline": {

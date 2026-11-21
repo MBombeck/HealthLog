@@ -54,6 +54,21 @@ describe("DayEvents dose", () => {
     expect(lines([event("intake", "Ramipril", null)])).toEqual(["Ramipril"]);
   });
 
+  it("places a symptom against the day's dose, as a distance only", () => {
+    const symptom = (minutes: number): DayEvent => ({
+      ...event("symptom", "Headache", "6"),
+      section: "symptoms",
+      doseOffset: { intakeId: "i1", title: "Metformin", minutes },
+    });
+    expect(lines([symptom(130)])).toEqual([
+      "Headache",
+      "6/10",
+      "2h 10m after Metformin",
+    ]);
+    expect(lines([symptom(-40)]).at(-1)).toBe("40m before Metformin");
+    expect(lines([symptom(0)]).at(-1)).toBe("At the time of Metformin");
+  });
+
   it("keeps a dose change's new dose on its own line", () => {
     expect(lines([event("doseChange", "Ramipril", "10 mg")])).toEqual([
       "Ramipril",

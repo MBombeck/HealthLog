@@ -14166,6 +14166,11 @@
       "micronutrientsOther": "{count} micronutrients logged",
       "micronutrientsFew": "{count} micronutrients logged",
       "open": "View nutrient intake"
+    },
+    "doseOffset": {
+      "after": "{duration} after {name}",
+      "before": "{duration} before {name}",
+      "atDose": "At the time of {name}"
     }
   },
   "timeline": {
