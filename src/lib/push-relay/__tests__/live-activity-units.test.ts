@@ -5,6 +5,7 @@ import {
   doseContentState,
   relayContentState,
 } from "@/lib/push-relay/live-activity";
+import { resolveDoseState } from "@/lib/medications/dose-state/resolve";
 
 const NOW = 1_795_000_000;
 const ok = {
@@ -39,25 +40,86 @@ describe("the relay content-state template", () => {
 
 describe("the state of a dose", () => {
   const at = (s: number) => new Date(s * 1000);
-  const dose = {
-    scheduledFor: at(NOW + 1800),
-    takenAt: null,
-    skipped: false,
-    snoozedUntil: null,
+  // A stored custom window: open from 30 min before the slot to 3 h after,
+  // then the daily late tail. A fixed 30-minute grace knows none of it.
+  const SLOT = NOW + 3600;
+  const band = {
+    at: at(SLOT),
+    earlyStart: at(SLOT - 5400),
+    onTimeStart: at(SLOT - 1800),
+    onTimeEnd: at(SLOT + 3 * 3600),
+    overdueEnd: at(SLOT + 6 * 3600),
   };
-  it("is pending, due, overdue and snoozed in unix seconds", () => {
-    expect(doseContentState(dose, "H24", at(NOW))).toMatchObject({
-      status: "pending",
-      countdownTarget: NOW + 1800,
+  const dueAt = SLOT - 1800;
+  const overdueSince = SLOT + 3 * 3600;
+  const missedAfter = SLOT + 6 * 3600;
+  const stateAt = (
+    s: number,
+    outcome: Parameters<typeof resolveDoseState>[1] = null,
+    snoozedUntil: Date | null = null,
+  ) =>
+    doseContentState(
+      { resolved: resolveDoseState(band, outcome, at(s)), snoozedUntil },
+      "H24",
+      at(s),
+    );
+
+  it("follows the medication's own window, not a fixed grace", () => {
+    // 45 minutes past the slot: on time by the stored window.
+    expect(stateAt(SLOT + 45 * 60)).toEqual({
+      status: "due",
+      countdownTarget: overdueSince,
+      isOverdue: false,
+      confirmed: false,
+      pendingConfirm: false,
       timeFormatRaw: "H24",
     });
-    expect(doseContentState(dose, null, at(NOW + 1900)).status).toBe("due");
-    expect(doseContentState(dose, null, at(NOW + 4000))).toMatchObject({
+  });
+
+  it("changes exactly at the band's boundaries", () => {
+    expect(stateAt(dueAt - 1)).toMatchObject({
+      status: "pending",
+      countdownTarget: dueAt,
+      isOverdue: false,
+    });
+    expect(stateAt(dueAt)).toMatchObject({
+      status: "due",
+      countdownTarget: overdueSince,
+    });
+    expect(stateAt(overdueSince)).toMatchObject({ status: "due" });
+    expect(stateAt(overdueSince + 1)).toMatchObject({
       status: "overdue",
+      countdownTarget: overdueSince,
       isOverdue: true,
     });
+    expect(stateAt(missedAfter)).toMatchObject({ status: "overdue" });
+    // Missed: nothing left to show, the Activity ends.
+    expect(stateAt(missedAfter + 1)).toBeNull();
     expect(
-      doseContentState({ ...dose, snoozedUntil: at(NOW + 600) }, null, at(NOW)),
-    ).toMatchObject({ status: "snoozed", countdownTarget: NOW + 600 });
+      stateAt(SLOT, { takenAt: null, skipped: false, autoMissed: true }),
+    ).toBeNull();
+  });
+
+  it("is taken, skipped and snoozed from the slot's own record", () => {
+    expect(
+      stateAt(SLOT + 60, { takenAt: at(SLOT), skipped: false }),
+    ).toMatchObject({ status: "taken", countdownTarget: 0, confirmed: true });
+    expect(
+      stateAt(overdueSince + 600, {
+        takenAt: at(overdueSince + 60),
+        skipped: false,
+      }),
+    ).toMatchObject({ status: "taken", confirmed: true });
+    expect(stateAt(SLOT, { takenAt: null, skipped: true })).toMatchObject({
+      status: "skipped",
+      countdownTarget: 0,
+    });
+    expect(stateAt(SLOT, null, at(SLOT + 600))).toMatchObject({
+      status: "snoozed",
+      countdownTarget: SLOT + 600,
+      isOverdue: false,
+    });
+    // A snooze that ran out no longer holds the dose.
+    expect(stateAt(SLOT, null, at(SLOT - 1))).toMatchObject({ status: "due" });
   });
 });
