@@ -164,10 +164,59 @@
           "updatedAt": "<updatedAt>",
           "syncVersion": "<syncVersion>",
           "deletedAt": null
+        },
+        {
+          "id": "<id:10>",
+          "userId": "<id:2>",
+          "medicationId": "<id:3>",
+          "scheduledFor": "2026-10-14T20:00:00.000Z",
+          "takenAt": "2026-10-14T20:05:00.000Z",
+          "skipped": false,
+          "autoMissed": false,
+          "autoRecorded": false,
+          "attributionSource": "AUTO",
+          "takenVia": null,
+          "source": "WEB",
+          "idempotencyKey": null,
+          "createdAt": "<createdAt>",
+          "injectionSite": null,
+          "doseTaken": null,
+          "inventoryConsumption": null,
+          "externalId": null,
+          "updatedAt": "<updatedAt>",
+          "syncVersion": "<syncVersion>",
+          "deletedAt": null
+        },
+        {
+          "id": "<id:11>",
+          "userId": "<id:2>",
+          "medicationId": "<id:3>",
+          "scheduledFor": "2026-10-15T08:00:00.000Z",
+          "takenAt": "2026-10-15T08:30:00.000Z",
+          "skipped": false,
+          "autoMissed": false,
+          "autoRecorded": false,
+          "attributionSource": "AUTO",
+          "takenVia": "WEB",
+          "source": "REMINDER",
+          "idempotencyKey": null,
+          "createdAt": "<createdAt>",
+          "injectionSite": null,
+          "doseTaken": null,
+          "inventoryConsumption": [
+            {
+              "units": 1,
+              "itemId": "<id:4>"
+            }
+          ],
+          "externalId": null,
+          "updatedAt": "<updatedAt>",
+          "syncVersion": "<syncVersion>",
+          "deletedAt": null
         }
       ],
       "meta": {
-        "total": 6,
+        "total": 8,
         "limit": 25,
         "offset": 0
       }
@@ -182,7 +231,7 @@
       },
       "meta": {
         "medication_id": "<id:3>",
-        "total": 6,
+        "total": 8,
         "status": "taken"
       },
       "warnings": null,
@@ -193,7 +242,7 @@
   "stored": {
     "medications": [
       {
-        "id": "<id:10>",
+        "id": "<id:12>",
         "userId": "<id:2>",
         "name": "As needed",
         "dose": "10mg",
@@ -229,7 +278,7 @@
         "updatedAt": "<updatedAt>"
       },
       {
-        "id": "<id:11>",
+        "id": "<id:13>",
         "userId": "<id:2>",
         "name": "Record only",
         "dose": "10mg",
@@ -265,7 +314,7 @@
         "updatedAt": "<updatedAt>"
       },
       {
-        "id": "<id:12>",
+        "id": "<id:14>",
         "userId": "<id:2>",
         "name": "Single shot",
         "dose": "10mg",
@@ -337,7 +386,7 @@
         "updatedAt": "<updatedAt>"
       },
       {
-        "id": "<id:13>",
+        "id": "<id:15>",
         "userId": "<id:2>",
         "name": "Weekly pen",
         "dose": "10mg",
@@ -378,8 +427,8 @@
     ],
     "schedules": [
       {
-        "id": "<id:14>",
-        "medicationId": "<id:11>",
+        "id": "<id:16>",
+        "medicationId": "<id:13>",
         "windowStart": "07:00",
         "windowEnd": "08:00",
         "label": null,
@@ -398,7 +447,7 @@
         "doseWindows": null
       },
       {
-        "id": "<id:15>",
+        "id": "<id:17>",
         "medicationId": "<id:3>",
         "windowStart": "08:00",
         "windowEnd": "10:00",
@@ -418,8 +467,8 @@
         "doseWindows": null
       },
       {
-        "id": "<id:16>",
-        "medicationId": "<id:13>",
+        "id": "<id:18>",
+        "medicationId": "<id:15>",
         "windowStart": "09:00",
         "windowEnd": "11:00",
         "label": null,
@@ -438,8 +487,8 @@
         "doseWindows": null
       },
       {
-        "id": "<id:17>",
-        "medicationId": "<id:12>",
+        "id": "<id:19>",
+        "medicationId": "<id:14>",
         "windowStart": "09:00",
         "windowEnd": "11:00",
         "label": null,
@@ -458,7 +507,7 @@
         "doseWindows": null
       },
       {
-        "id": "<id:18>",
+        "id": "<id:20>",
         "medicationId": "<id:3>",
         "windowStart": "20:00",
         "windowEnd": "22:00",
@@ -564,7 +613,7 @@
         "deletedAt": null
       },
       {
-        "id": "<id:19>",
+        "id": "<id:21>",
         "userId": "<id:2>",
         "medicationId": "<id:3>",
         "scheduledFor": "2026-10-12T20:00:00.000Z",
@@ -667,12 +716,12 @@
         "deletedAt": null
       },
       {
-        "id": "<id:20>",
+        "id": "<id:10>",
         "userId": "<id:2>",
         "medicationId": "<id:3>",
         "scheduledFor": "2026-10-14T20:00:00.000Z",
-        "takenAt": null,
-        "skipped": true,
+        "takenAt": "2026-10-14T20:05:00.000Z",
+        "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
@@ -689,12 +738,12 @@
         "deletedAt": null
       },
       {
-        "id": "<id:21>",
+        "id": "<id:11>",
         "userId": "<id:2>",
         "medicationId": "<id:3>",
         "scheduledFor": "2026-10-15T08:00:00.000Z",
-        "takenAt": null,
-        "skipped": true,
+        "takenAt": "2026-10-15T08:30:00.000Z",
+        "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
@@ -704,7 +753,12 @@
         "createdAt": "<createdAt>",
         "injectionSite": null,
         "doseTaken": null,
-        "inventoryConsumption": null,
+        "inventoryConsumption": [
+          {
+            "units": 1,
+            "itemId": "<id:4>"
+          }
+        ],
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
@@ -713,7 +767,7 @@
       {
         "id": "<id:22>",
         "userId": "<id:2>",
-        "medicationId": "<id:13>",
+        "medicationId": "<id:15>",
         "scheduledFor": "2026-10-15T09:00:00.000Z",
         "takenAt": "2026-10-15T09:10:00.000Z",
         "skipped": false,
@@ -735,7 +789,7 @@
       {
         "id": "<id:23>",
         "userId": "<id:2>",
-        "medicationId": "<id:12>",
+        "medicationId": "<id:14>",
         "scheduledFor": "2026-10-15T09:00:00.000Z",
         "takenAt": "2026-10-15T10:00:00.000Z",
         "skipped": false,
@@ -757,10 +811,10 @@
       {
         "id": "<id:24>",
         "userId": "<id:2>",
-        "medicationId": "<id:10>",
+        "medicationId": "<id:12>",
         "scheduledFor": "2026-10-15T11:00:00.000Z",
-        "takenAt": null,
-        "skipped": true,
+        "takenAt": "2026-10-15T11:00:00.000Z",
+        "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
@@ -770,7 +824,7 @@
         "createdAt": "<createdAt>",
         "injectionSite": null,
         "doseTaken": null,
-        "inventoryConsumption": null,
+        "inventoryConsumption": [],
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
@@ -808,7 +862,7 @@
         "state": "IN_USE",
         "containerType": "OTHER",
         "unitsTotal": "30",
-        "unitsRemaining": "24",
+        "unitsRemaining": "23",
         "firstUseAt": "2026-10-15T08:30:00.000Z",
         "expiresAt": null,
         "printedExpiry": null,
@@ -842,7 +896,7 @@
         "actorUserId": null,
         "details": {
           "medicationId": "<id:3>",
-          "eventId": "<id:21>",
+          "eventId": "<id:11>",
           "skipped": false
         },
         "ipAddress": null
@@ -852,7 +906,7 @@
         "userId": "<id:2>",
         "actorUserId": null,
         "details": {
-          "medicationId": "<id:10>",
+          "medicationId": "<id:12>",
           "eventId": "<id:24>",
           "skipped": false
         },
@@ -918,7 +972,7 @@
         "userId": "<id:2>",
         "actorUserId": null,
         "details": {
-          "medicationId": "<id:13>",
+          "medicationId": "<id:15>",
           "eventId": "<id:22>",
           "skipped": false
         },
@@ -929,7 +983,7 @@
         "userId": "<id:2>",
         "actorUserId": null,
         "details": {
-          "medicationId": "<id:12>",
+          "medicationId": "<id:14>",
           "eventId": "<id:23>",
           "skipped": false
         },
@@ -947,44 +1001,11 @@
         "ipAddress": null
       },
       {
-        "action": "medication.intake",
-        "userId": "<id:2>",
-        "actorUserId": null,
-        "details": {
-          "medicationId": "<id:3>",
-          "eventId": "<id:21>",
-          "skipped": true
-        },
-        "ipAddress": null
-      },
-      {
-        "action": "medication.intake",
-        "userId": "<id:2>",
-        "actorUserId": null,
-        "details": {
-          "medicationId": "<id:10>",
-          "eventId": "<id:24>",
-          "skipped": true
-        },
-        "ipAddress": null
-      },
-      {
-        "action": "medication.intake",
-        "userId": "<id:2>",
-        "actorUserId": null,
-        "details": {
-          "medicationId": "<id:3>",
-          "eventId": "<id:20>",
-          "skipped": true
-        },
-        "ipAddress": null
-      },
-      {
         "action": "medication.oneShot.reconciled",
         "userId": "<id:2>",
         "actorUserId": null,
         "details": {
-          "medicationId": "<id:12>",
+          "medicationId": "<id:14>",
           "action": "deactivate"
         },
         "ipAddress": null
@@ -994,7 +1015,7 @@
         "userId": "<id:2>",
         "actorUserId": "<id:26>",
         "details": {
-          "medicationId": "<id:10>",
+          "medicationId": "<id:12>",
           "reason": "resolved_event"
         },
         "ipAddress": null

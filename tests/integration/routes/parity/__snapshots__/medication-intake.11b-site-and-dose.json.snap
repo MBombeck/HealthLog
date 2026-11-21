@@ -556,8 +556,8 @@
         "userId": "<id:2>",
         "medicationId": "<id:7>",
         "scheduledFor": "2026-10-14T20:00:00.000Z",
-        "takenAt": null,
-        "skipped": true,
+        "takenAt": "2026-10-14T20:05:00.000Z",
+        "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
@@ -578,8 +578,8 @@
         "userId": "<id:2>",
         "medicationId": "<id:7>",
         "scheduledFor": "2026-10-15T08:00:00.000Z",
-        "takenAt": null,
-        "skipped": true,
+        "takenAt": "2026-10-15T08:30:00.000Z",
+        "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
@@ -589,7 +589,12 @@
         "createdAt": "<createdAt>",
         "injectionSite": null,
         "doseTaken": null,
-        "inventoryConsumption": null,
+        "inventoryConsumption": [
+          {
+            "units": 1,
+            "itemId": "<id:14>"
+          }
+        ],
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
@@ -622,8 +627,8 @@
         "userId": "<id:2>",
         "medicationId": "<id:4>",
         "scheduledFor": "2026-10-15T11:00:00.000Z",
-        "takenAt": null,
-        "skipped": true,
+        "takenAt": "2026-10-15T11:00:00.000Z",
+        "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
         "attributionSource": "AUTO",
@@ -633,7 +638,7 @@
         "createdAt": "<createdAt>",
         "injectionSite": null,
         "doseTaken": null,
-        "inventoryConsumption": null,
+        "inventoryConsumption": [],
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
@@ -671,7 +676,7 @@
         "state": "IN_USE",
         "containerType": "OTHER",
         "unitsTotal": "30",
-        "unitsRemaining": "24",
+        "unitsRemaining": "23",
         "firstUseAt": "2026-10-15T08:30:00.000Z",
         "expiresAt": null,
         "printedExpiry": null,
@@ -794,39 +799,6 @@
         "details": {
           "medicationId": "<id:7>",
           "eventId": "<id:24>",
-          "skipped": true
-        },
-        "ipAddress": null
-      },
-      {
-        "action": "medication.intake",
-        "userId": "<id:2>",
-        "actorUserId": null,
-        "details": {
-          "medicationId": "<id:7>",
-          "eventId": "<id:22>",
-          "skipped": true
-        },
-        "ipAddress": null
-      },
-      {
-        "action": "medication.intake",
-        "userId": "<id:2>",
-        "actorUserId": null,
-        "details": {
-          "medicationId": "<id:4>",
-          "eventId": "<id:23>",
-          "skipped": true
-        },
-        "ipAddress": null
-      },
-      {
-        "action": "medication.intake",
-        "userId": "<id:2>",
-        "actorUserId": null,
-        "details": {
-          "medicationId": "<id:7>",
-          "eventId": "<id:21>",
           "skipped": true
         },
         "ipAddress": null
