@@ -999,6 +999,7 @@
     "actions": "Acties",
     "deleteConfirmTitle": "Meting verwijderen?",
     "deleteConfirmDescription": "Deze meting wordt verwijderd. Je kunt dit daarna nog even ongedaan maken.",
+    "deleteConfirmDescriptionSynced": "Deze meting wordt verwijderd. Ze komt van een gekoppelde dienst, dus de volgende synchronisatie haalt haar terug tenzij ze daar ook wordt verwijderd. Je kunt dit daarna nog even ongedaan maken.",
     "pageInfo": "Pagina {page} van {total}",
     "previousPage": "Vorige pagina",
     "nextPage": "Volgende pagina",
@@ -8741,7 +8742,8 @@
           "failureOwnerExists": "Het account waar dit bestand bij hoort, staat op deze server, en het bestand wordt in dat account teruggezet. Upload het opnieuw zonder een account te kiezen."
         },
         "restoreSkippedSeizureMedicationReference": "Noodplan of nooddosis van een aanval gekoppeld aan een medicijn dat niet in het bestand staat (bewaard zonder de koppeling)",
-        "restoreSkippedSeizureTypeReference": "Aanval gekoppeld aan een aanvalstype dat niet in het bestand staat (bewaard zonder het type)"
+        "restoreSkippedSeizureTypeReference": "Aanval gekoppeld aan een aanvalstype dat niet in het bestand staat (bewaard zonder het type)",
+        "restoreSkippedSeizureIntakeReference": "Nooddosis van een aanval gekoppeld aan een inname die niet in het bestand staat (bewaard zonder de koppeling)"
       },
       "danger-zone": {
         "title": "Gevarenzone",

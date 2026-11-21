@@ -366,3 +366,27 @@ describe("extractGoogleApiErrorDetail — AIP-193 field violations", () => {
     expect(detail).not.toContain("filter=secret");
   });
 });
+
+describe("fetchDailyRollUp — today's end on a 25-hour day", () => {
+  it("still reads today in the first local hour of the fall-back day", async () => {
+    // Sunday 2026-10-25 has 25 hours in Berlin. 00:30 CEST is 22:30Z on the
+    // 24th, and `now + 24 h` from there is 23:30 CET on the 25th, so an end
+    // derived from it would stop before today.
+    vi.setSystemTime(new Date("2026-10-24T22:30:00Z"));
+    safeFetchMock.mockResolvedValue(
+      jsonResponse(200, { rollupDataPoints: [] }),
+    );
+
+    await fetchDailyRollUp(GOOGLE_HEALTH_DATA_TYPES.steps, "token", "steps", {
+      start: new Date("2026-10-20T12:00:00Z"),
+      tz: "Europe/Berlin",
+    });
+
+    const bodies = capturedBodies();
+    expect(bodies.at(-1)!.range.end.date).toEqual({
+      year: 2026,
+      month: 10,
+      day: 25,
+    });
+  });
+});

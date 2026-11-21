@@ -135,7 +135,10 @@ describe("syncUserSleep — record-scoped stale-segment sweep", () => {
       "sleep-uuid:sleep_in_bed",
     ]);
     // Soft delete only.
-    expect(arg.data).toEqual({ deletedAt: expect.any(Date) });
+    expect(arg.data).toEqual({
+      deletedAt: expect.any(Date),
+      syncVersion: { increment: 1 },
+    });
 
     // A legacy indexed row for this record falls inside the sweep.
     const legacyId = "sleep-uuid:seg:sleep_core:1";

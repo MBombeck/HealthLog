@@ -88,6 +88,25 @@ describe("isLastNightLocal", () => {
   });
 });
 
+describe("isLastNightLocal after a 23-hour day", () => {
+  const tz = "Europe/Berlin";
+  // Sunday 2026-03-29 has 23 local hours. Monday 00:30 CEST = Sunday 22:30Z,
+  // and `now − 24 h` from there lands on Saturday, two local days back.
+  const now = new Date("2026-03-29T22:30:00Z");
+  // Sunday evening 22:00 CEST = 20:00Z: yesterday, locally.
+  const sundayEvening = new Date("2026-03-29T20:00:00Z");
+
+  it("counts a segment from yesterday evening as last night", () => {
+    expect(isLastNightLocal(sundayEvening, now, tz)).toBe(true);
+  });
+
+  it("still refuses Saturday, two local days back", () => {
+    expect(isLastNightLocal(new Date("2026-03-28T20:00:00Z"), now, tz)).toBe(
+      false,
+    );
+  });
+});
+
 describe("maybeEnqueueMorningRefresh", () => {
   const NOW = new Date("2026-07-16T14:00:00Z"); // 07:00 on the 16th in LA
   const lastNight = new Date("2026-07-16T06:00:00Z"); // 23:00 on the 15th, LA

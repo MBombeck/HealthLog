@@ -102,7 +102,8 @@ export interface SymptomEventDTO {
  * names it.
  *
  * The one rule. The server checks it before writing a new link
- * (`isLinkableEpisode`), and the entry and edit sheets offer exactly the
+ * (`isLinkableEpisode`) and before moving the time of a linked occurrence,
+ * and the entry and edit sheets offer exactly the
  * episodes it admits, so the selector never offers what the server refuses.
  */
 export function isEpisodeLinkableAt(

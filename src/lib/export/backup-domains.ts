@@ -239,6 +239,7 @@ export const RESTORE_STEPS: readonly RestoreStep[] = [
           ctx.payload,
           ctx.links.medicationIdBySourceId,
           ctx.skips,
+          ctx.links.intakeSlotBySourceId,
         ),
       );
     },

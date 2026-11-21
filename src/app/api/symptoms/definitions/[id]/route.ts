@@ -30,6 +30,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { requireIllnessEnabled } from "@/lib/illness/gate";
 import {
   countCappedSymptomDefinitions,
+  lockSymptomDefinitions,
   encryptSymptomText,
   symptomDefinitionUpdateSchema,
   toSymptomDefinitionDTO,
@@ -81,49 +82,54 @@ export const PATCH = apiHandler(
     });
     if (!existing) return notFound();
 
-    // A hidden definition does not hold a slot; showing it again takes one.
-    // A built-in one never holds a slot, hidden or shown.
-    if (
+    // A hidden definition does not hold a slot; showing it again takes one,
+    // counted and written under the same lock as a create. A built-in one
+    // never holds a slot, hidden or shown.
+    const takesSlot =
       parsed.data.isActive === true &&
       !existing.isActive &&
-      existing.code === null
-    ) {
-      const activeCount = await countCappedSymptomDefinitions(user.id);
-      if (activeCount >= MAX_ACTIVE_SYMPTOM_DEFINITIONS) {
-        return apiError(
-          `Symptom limit reached (${MAX_ACTIVE_SYMPTOM_DEFINITIONS})`,
-          422,
-          {
-            errorCode: "symptoms.definition.limitReached",
-            limit: MAX_ACTIVE_SYMPTOM_DEFINITIONS,
-          },
-        );
-      }
-    }
+      existing.code === null;
 
-    const updated = await prisma.symptomDefinition.update({
-      where: { id: existing.id },
-      data: {
-        ...(parsed.data.label !== undefined
-          ? { labelEncrypted: encryptSymptomText(parsed.data.label) }
-          : {}),
-        ...(parsed.data.icon !== undefined ? { icon: parsed.data.icon } : {}),
-        ...(parsed.data.isActive !== undefined
-          ? { isActive: parsed.data.isActive }
-          : {}),
-        ...(parsed.data.sortOrder !== undefined
-          ? { sortOrder: parsed.data.sortOrder }
-          : {}),
-      },
-      select: {
-        id: true,
-        labelEncrypted: true,
-        icon: true,
-        sortOrder: true,
-        isActive: true,
-        code: true,
-      },
+    const updated = await prisma.$transaction(async (tx) => {
+      if (takesSlot) {
+        await lockSymptomDefinitions(tx, user.id);
+        const activeCount = await countCappedSymptomDefinitions(user.id, tx);
+        if (activeCount >= MAX_ACTIVE_SYMPTOM_DEFINITIONS) return null;
+      }
+      return tx.symptomDefinition.update({
+        where: { id: existing.id },
+        data: {
+          ...(parsed.data.label !== undefined
+            ? { labelEncrypted: encryptSymptomText(parsed.data.label) }
+            : {}),
+          ...(parsed.data.icon !== undefined ? { icon: parsed.data.icon } : {}),
+          ...(parsed.data.isActive !== undefined
+            ? { isActive: parsed.data.isActive }
+            : {}),
+          ...(parsed.data.sortOrder !== undefined
+            ? { sortOrder: parsed.data.sortOrder }
+            : {}),
+        },
+        select: {
+          id: true,
+          labelEncrypted: true,
+          icon: true,
+          sortOrder: true,
+          isActive: true,
+          code: true,
+        },
+      });
     });
+    if (!updated) {
+      return apiError(
+        `Symptom limit reached (${MAX_ACTIVE_SYMPTOM_DEFINITIONS})`,
+        422,
+        {
+          errorCode: "symptoms.definition.limitReached",
+          limit: MAX_ACTIVE_SYMPTOM_DEFINITIONS,
+        },
+      );
+    }
 
     await auditLog("symptoms.definition.update", {
       userId: user.id,

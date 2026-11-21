@@ -53,7 +53,7 @@ export async function retireOuraEquivalentDistance(
     if (rows.length === 0) break;
     const res = await prisma.measurement.updateMany({
       where: { userId, id: { in: rows.map((r) => r.id) }, deletedAt: null },
-      data: { deletedAt: new Date() },
+      data: { deletedAt: new Date(), syncVersion: { increment: 1 } },
     });
     retired += res.count;
     await afterMeasurementMutation(userId, rows, {

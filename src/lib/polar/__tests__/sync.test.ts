@@ -296,7 +296,10 @@ describe("syncUserPolar", () => {
       "sleep:2026-06-10:sleep_in_bed",
     ]);
     // Soft delete only.
-    expect(arg.data).toEqual({ deletedAt: expect.any(Date) });
+    expect(arg.data).toEqual({
+      deletedAt: expect.any(Date),
+      syncVersion: { increment: 1 },
+    });
 
     // A legacy indexed row for this night falls inside the sweep.
     const legacyId = "sleep:2026-06-10:seg:sleep_core:0";

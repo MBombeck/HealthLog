@@ -11,10 +11,7 @@ import { dateOfBirthForStorage } from "@/lib/tz/date-only";
 import { isValidTimezone } from "@/lib/tz/format";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { encrypt } from "@/lib/crypto";
-import {
-  invalidateUserMedications,
-  invalidateUserProfile,
-} from "@/lib/cache/invalidate";
+import { afterIdentityFieldsChanged } from "@/lib/auth/identity-change";
 import { sanitiseZodIssues, type SanitisedZodIssue } from "@/lib/api-response";
 import { checkProfileEmailRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
@@ -507,31 +504,30 @@ export async function applyProfileUpdate(
         )?.locale ?? null)
       : null;
 
+  const priorTimezone =
+    data.timezone !== undefined
+      ? ((
+          await prisma.user.findUnique({
+            where: { id: userId },
+            select: { timezone: true },
+          })
+        )?.timezone ?? null)
+      : null;
+
   const updatedUser = await prisma.user.update({
     where: { id: userId },
     data: updates,
   });
 
-  // Anthropometrics feed the cached targets grid (BMI band, BP-by-age
-  // range, body-fat band), the derived-score baseline profile (age /
-  // sex / height) and the analytics snapshot. Only those three fields
-  // matter here — a display-name or email edit must not cold-rebuild
-  // the analytics caches.
-  if (
-    data.heightCm !== undefined ||
-    data.dateOfBirth !== undefined ||
-    data.gender !== undefined
-  ) {
-    invalidateUserProfile(userId);
-  }
-
-  // v1.16.9 — the medication payloads (list next-due, today counts, the
-  // compliance day buckets) are computed in the user's timezone, but the
-  // list cache key carries only the userId. A timezone change must evict
-  // the bucket or the next read serves the previous zone's day grid.
-  if (data.timezone !== undefined) {
-    invalidateUserMedications(userId, { evict: true });
-  }
+  // Only those fields matter here: a display-name or email edit must not
+  // cold-rebuild the analytics caches.
+  await afterIdentityFieldsChanged(userId, {
+    anthropometrics:
+      data.heightCm !== undefined ||
+      data.dateOfBirth !== undefined ||
+      data.gender !== undefined,
+    timezone: data.timezone !== undefined && data.timezone !== priorTimezone,
+  });
 
   await auditLog("profile.update", {
     userId: updatedUser.id,

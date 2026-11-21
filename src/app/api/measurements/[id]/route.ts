@@ -159,6 +159,9 @@ export const PUT = apiHandler(
             notes: null,
             notesEncrypted: encryptNote(data.notes),
           }),
+          // Paired clients use the version for last-writer-wins. An edit
+          // that changes nothing keeps it (the 0412 row trigger).
+          syncVersion: { increment: 1 },
         },
         include: APPLE_HEALTH_MIRROR_INCLUDE,
       });

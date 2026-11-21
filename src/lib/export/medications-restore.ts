@@ -507,18 +507,28 @@ async function restoreIntakeEvents(
   ctx: RestoreContext,
   medByName: ReadonlyMap<string, string>,
 ): Promise<void> {
-  const { tx, ownerId, payload } = ctx;
-  const restoredMedicationIds = ctx.links.restoredMedicationIds;
+  const { tx, ownerId, payload, links } = ctx;
   if (payload.intakeEvents.length === 0) return;
+  // An event finds its medication by the source id: a disaster-recovery
+  // file's `medicationId`, which the drug kept, or a portable file's
+  // `medicationRef`, which matches the drug's `ref`. The name is only the
+  // fallback for a portable file written before the reference travelled:
+  // two drugs may share one, and resolving by it put every dose on the first.
+  const medicationFor = (
+    e: BackupPayload["intakeEvents"][number],
+  ): string | undefined => {
+    if (e.medicationId && links.restoredMedicationIds.has(e.medicationId)) {
+      return e.medicationId;
+    }
+    if (e.medicationRef)
+      return links.medicationIdBySourceId.get(e.medicationRef);
+    return medByName.get(e.medication);
+  };
   const unresolvedMedications = [
     ...new Set(
       payload.intakeEvents
-        .filter(
-          (e) =>
-            !(e.medicationId && restoredMedicationIds.has(e.medicationId)) &&
-            !medByName.has(e.medication),
-        )
-        .map((e) => e.medicationId ?? e.medication),
+        .filter((e) => !medicationFor(e))
+        .map((e) => e.medicationId ?? e.medicationRef ?? e.medication),
     ),
   ];
   if (unresolvedMedications.length > 0) {
@@ -530,11 +540,15 @@ async function restoreIntakeEvents(
   }
   const rows = payload.intakeEvents
     .map((e) => {
-      const medId =
-        e.medicationId && restoredMedicationIds.has(e.medicationId)
-          ? e.medicationId
-          : medByName.get(e.medication);
+      const medId = medicationFor(e);
       if (!medId) return null;
+      if (e.ref && !e.id) {
+        links.intakeSlotBySourceId.set(e.ref, {
+          medicationId: medId,
+          scheduledFor: new Date(e.scheduledFor),
+          source: e.source ?? "WEB",
+        });
+      }
       return {
         ...(e.id ? { id: e.id } : {}),
         userId: ownerId,

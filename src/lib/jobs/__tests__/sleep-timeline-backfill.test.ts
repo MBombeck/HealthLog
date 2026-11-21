@@ -20,6 +20,7 @@ const {
     whoopConnection: { findMany: vi.fn(), update: vi.fn() },
     withingsConnection: { findMany: vi.fn(), update: vi.fn() },
     measurement: { deleteMany: vi.fn() },
+    user: { update: vi.fn() },
   },
   bossSend: vi.fn(),
   syncUserWhoop: vi.fn(),
@@ -144,6 +145,21 @@ describe("runSleepTimelineBackfillForUser", () => {
     const updateArg = prismaMock.whoopConnection.update.mock.calls[0]![0];
     expect(updateArg.where).toEqual({ userId: "w1" });
     expect(updateArg.data.sleepTimelineBackfillAt).toBeInstanceOf(Date);
+    // The hard delete carries no tombstone, so the feed is reset.
+    expect(prismaMock.user.update).toHaveBeenCalledWith({
+      where: { id: "w1" },
+      data: { syncResetAt: expect.any(Date) },
+    });
+  });
+
+  it("does not reset the feed when nothing was deleted", async () => {
+    prismaMock.measurement.deleteMany.mockResolvedValue({ count: 0 });
+    syncUserWhoop.mockResolvedValue({ imported: 0, failed: false });
+    prismaMock.whoopConnection.update.mockResolvedValue({});
+
+    await runSleepTimelineBackfillForUser("w1", "WHOOP");
+
+    expect(prismaMock.user.update).not.toHaveBeenCalled();
   });
 
   it("WHOOP: a failed verdict THROWS without stamping the marker (gated re-sync)", async () => {

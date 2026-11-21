@@ -28,8 +28,8 @@ import {
 } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
-import { invalidateUserTimezone, isValidTimezone } from "@/lib/tz/resolver";
-import { enqueueSupplementNutrientRecompute } from "@/lib/medications/ingredients/recompute-job";
+import { isValidTimezone } from "@/lib/tz/resolver";
+import { afterIdentityFieldsChanged } from "@/lib/auth/identity-change";
 
 export const PUT = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
@@ -59,16 +59,13 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     data: { timezone: tz },
   });
 
-  invalidateUserTimezone(user.id);
-
-  // The supplement nutrient rows are keyed by the LOCAL day the dose fell
-  // on, minted under the timezone in force at write time. A zone change
-  // re-buckets those days, so the account's rows are recomputed through
-  // the ordinary job; best-effort, the singleton key collapses rapid
-  // re-picks.
-  if ((before?.timezone ?? null) !== tz) {
-    await enqueueSupplementNutrientRecompute(user.id);
-  }
+  // The zone cache, the medication day grid and the supplement nutrient
+  // rows keyed by the local day of the dose: the same refresh every writer
+  // of the zone runs.
+  await afterIdentityFieldsChanged(user.id, {
+    anthropometrics: false,
+    timezone: (before?.timezone ?? null) !== tz,
+  });
 
   await auditLog("user.timezone.update", {
     userId: user.id,

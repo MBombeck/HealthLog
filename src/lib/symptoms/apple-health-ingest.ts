@@ -6,8 +6,8 @@
  * code and an intensity on the diary's 0-10 scale. It lands on the account's
  * built-in definition for that code, created here on first use, labelled in
  * the person's language (`symptoms.builtin.<CODE>`). Built-in definitions
- * hold no slot of the eight-definition cap, so a sample is never refused for
- * it.
+ * hold no slot of the definition cap (`MAX_ACTIVE_SYMPTOM_DEFINITIONS`), so
+ * a sample is never refused for it.
  *
  * Per entry, in this order:
  *   - `skipped`: `unsupported_source` (anything but `APPLE_HEALTH`),
@@ -49,7 +49,7 @@ import {
   symptomBuiltinLabelKey,
   type SymptomBuiltinCode,
 } from "./builtin";
-import { encryptSymptomText } from "./server";
+import { encryptSymptomText, nextSymptomDefinitionSortOrder } from "./server";
 import { SYMPTOM_INTENSITY_MAX, SYMPTOM_INTENSITY_MIN } from "./shared";
 
 /** One entry as the route's schema hands it over (types checked, not values). */
@@ -140,11 +140,7 @@ async function resolveBuiltinDefinitions(
   if (missing.length === 0) return byCode;
 
   const translator = getServerTranslator(coerceLocale(locale));
-  const last = await prisma.symptomDefinition.aggregate({
-    where: { userId },
-    _max: { sortOrder: true },
-  });
-  let sortOrder = (last._max.sortOrder ?? -1) + 1;
+  let sortOrder = await nextSymptomDefinitionSortOrder(userId);
   for (const code of missing) {
     try {
       const created = await prisma.symptomDefinition.create({

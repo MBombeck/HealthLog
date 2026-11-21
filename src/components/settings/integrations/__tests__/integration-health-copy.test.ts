@@ -72,6 +72,24 @@ describe("formatHealthInstant", () => {
     );
   });
 
+  it("reads yesterday across a change of clocks", () => {
+    // Monday 2026-03-30 00:30 CEST, after the 23-hour Sunday: 24 hours back
+    // is Saturday.
+    const afterSpring = new Date("2026-03-29T22:30:00.000Z");
+    expect(
+      formatHealthInstant("2026-03-29T18:00:00.000Z", t, fmt, afterSpring),
+    ).toBe("gestern, 20:00");
+    expect(
+      formatHealthInstant("2026-03-28T18:00:00.000Z", t, fmt, afterSpring),
+    ).toBe("28.03., 19:00");
+    // Sunday 2026-10-25 23:30 CET, late in the 25-hour day: 24 hours back is
+    // still the 25th.
+    const lateFallBack = new Date("2026-10-25T22:30:00.000Z");
+    expect(
+      formatHealthInstant("2026-10-24T18:00:00.000Z", t, fmt, lateFallBack),
+    ).toBe("gestern, 20:00");
+  });
+
   it("buckets the day in the reader's zone, not UTC", () => {
     // 23:30 UTC on the 14th is already the 15th in Berlin.
     expect(formatHealthInstant("2026-10-14T23:30:00.000Z", t, fmt, NOW)).toBe(

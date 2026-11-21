@@ -76,6 +76,17 @@ describe("POST /api/auth/refresh — stable errorCode (v1.7.0)", () => {
     expect(json.meta?.errorCode).toBe("auth.refresh.reuse");
   });
 
+  it("returns a non-terminal 409 auth.refresh.superseded to a concurrent-rotation loser", async () => {
+    vi.mocked(rotateRefreshToken).mockResolvedValue({
+      ok: false,
+      reason: "superseded",
+    });
+    const res = await POST(makeRequest({ refreshToken: "hlr_raced" }));
+    expect(res.status).toBe(409);
+    const json = (await res.json()) as Envelope;
+    expect(json.meta?.errorCode).toBe("auth.refresh.superseded");
+  });
+
   it("returns auth.refresh.revoked when the family was revoked out-of-band", async () => {
     vi.mocked(rotateRefreshToken).mockResolvedValue({
       ok: false,

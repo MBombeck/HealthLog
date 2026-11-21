@@ -94,11 +94,22 @@ export const POST = apiHandler(async (request: NextRequest) => {
     //     terminal: re-auth required.
     //   - `auth.refresh.invalid` — not found / expired. The client drops
     //     the token and re-authenticates.
+    //   - `auth.refresh.superseded` (409) — a concurrent refresh with the
+    //     same token won; nothing is revoked. Not terminal: the client reads
+    //     the pair the winner stored and carries on. It must not present
+    //     this token again, which would be a replay.
     if (result.reason === "already_used") {
       return apiError(
         "Refresh token reuse detected. Please log in again.",
         401,
         { errorCode: "auth.refresh.reuse" },
+      );
+    }
+    if (result.reason === "superseded") {
+      return apiError(
+        "This refresh token was rotated by a concurrent request. Use the newest stored credentials; do not retry with this token.",
+        409,
+        { errorCode: "auth.refresh.superseded" },
       );
     }
     if (result.reason === "revoked") {

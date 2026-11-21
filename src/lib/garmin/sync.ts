@@ -217,7 +217,7 @@ export async function retireGarminSleepDays(
     if (rows.length === 0) return 0;
     const res = await prisma.measurement.updateMany({
       where: { userId, id: { in: rows.map((r) => r.id) }, deletedAt: null },
-      data: { deletedAt: new Date() },
+      data: { deletedAt: new Date(), syncVersion: { increment: 1 } },
     });
     await afterMeasurementMutation(userId, rows, {
       source: "sync",

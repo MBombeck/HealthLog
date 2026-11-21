@@ -11,6 +11,7 @@ import {
   WITHINGS_MEASTYPES,
   type WithingsMeasure,
 } from "./client";
+import { measureReadWindow } from "./measure-window";
 import {
   isPlanGatedError,
   isPlanReprobeDue,
@@ -122,16 +123,9 @@ export async function getValidToken(
 }
 
 /**
- * Incremental overlap window (ms). Withings backdates some readings (a scale
- * step syncs to the cloud minutes after the reading's timestamp), and
- * `lastSyncedAt` advances on every success — including a healthy 200-with-0
- * cycle (F-SYNC-1). A too-tight overlap let a reading that landed just before
- * the next cycle's `now()` slip through the gap. 10 minutes is comfortably wider
- * than the observed backdating skew while staying far short of a full re-scan;
- * the upserts are idempotent, so a wider overlap only re-touches a handful of
- * rows. (Still narrower than Google's 24h / Oura's 7-day because Withings is
- * webhook-primary — this overlap is the poll-catch-up safety net, not the main
- * path.)
+ * Incremental overlap (ms) under `lastSyncedAt`, our wall clock at the end of
+ * the last good run (it advances even on a 200-with-0, F-SYNC-1). It absorbs
+ * the skew to Withings' clock and a group committed while that run read.
  */
 export const WITHINGS_INCREMENTAL_OVERLAP_MS = 10 * 60 * 1000;
 
@@ -179,13 +173,11 @@ export async function syncUserMeasurements(
   // No connection row is not a failure — there is nothing to sync.
   if (!connection) return { imported: 0, failed: false };
 
-  const startDate = opts.fullSync
-    ? undefined
-    : connection.lastSyncedAt
-      ? new Date(
-          connection.lastSyncedAt.getTime() - WITHINGS_INCREMENTAL_OVERLAP_MS,
-        )
-      : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days back
+  const { startDate, updatedSince } = measureReadWindow(
+    connection.lastSyncedAt,
+    WITHINGS_INCREMENTAL_OVERLAP_MS,
+    opts.fullSync,
+  );
 
   // Withings API plans (2026-10-12): a request naming one meastype outside the
   // account's plan is refused whole with 277. Leave out what the plan refused
@@ -207,6 +199,7 @@ export async function syncUserMeasurements(
       fetch: (measTypes) =>
         fetchMeasurements(tokenInfo.accessToken, startDate, undefined, {
           measTypes,
+          updatedSince,
         }),
     });
   } catch (err) {

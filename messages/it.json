@@ -999,6 +999,7 @@
     "actions": "Azioni",
     "deleteConfirmTitle": "Eliminare la misurazione?",
     "deleteConfirmDescription": "Questa misurazione sarà eliminata. Subito dopo potrai annullare l’operazione per un breve momento.",
+    "deleteConfirmDescriptionSynced": "Questa misurazione verrà eliminata. Proviene da un servizio collegato, quindi la prossima sincronizzazione la riporterà se non viene eliminata anche lì. Potrai annullare per un breve momento.",
     "pageInfo": "Pagina {page} di {total}",
     "previousPage": "Pagina precedente",
     "nextPage": "Pagina successiva",
@@ -8741,7 +8742,8 @@
           "failureOwnerExists": "L’account a cui appartiene questo file è su questo server, e il file si ripristina in quell’account. Caricalo di nuovo senza scegliere un account."
         },
         "restoreSkippedSeizureMedicationReference": "Piano di soccorso o dose di soccorso di una crisi collegati a un farmaco non presente nel file (mantenuti senza il collegamento)",
-        "restoreSkippedSeizureTypeReference": "Crisi collegata a un tipo di crisi non presente nel file (mantenuta senza il tipo)"
+        "restoreSkippedSeizureTypeReference": "Crisi collegata a un tipo di crisi non presente nel file (mantenuta senza il tipo)",
+        "restoreSkippedSeizureIntakeReference": "Dose di soccorso di una crisi collegata a un'assunzione non presente nel file (mantenuta senza il collegamento)"
       },
       "danger-zone": {
         "title": "Zona pericolosa",

@@ -25,12 +25,10 @@
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { resolveModuleMap } from "@/lib/modules/gate";
-import { userDayKey } from "@/lib/tz/format";
+import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { enqueueMorningDigestRefresh } from "@/lib/jobs/morning-digest-refresh-shared";
 import { emitDataArrival } from "@/lib/arrivals/emit-shared";
-
-const MS_PER_DAY = 86_400_000;
 
 /**
  * True when `measuredAt` belongs to "last night" for an observer in `tz`: its
@@ -49,7 +47,9 @@ export function isLastNightLocal(
 ): boolean {
   if (measuredAt.getTime() > now.getTime()) return false;
   const todayKey = userDayKey(now, tz);
-  const yesterdayKey = userDayKey(new Date(now.getTime() - MS_PER_DAY), tz);
+  // The calendar day before today, not the day `now − 24 h` falls on: after
+  // a 23-hour day the first local hour minus 24 hours lands two days back.
+  const yesterdayKey = shiftDateKey(todayKey, -1);
   const segKey = userDayKey(measuredAt, tz);
   return segKey === todayKey || segKey === yesterdayKey;
 }

@@ -54,4 +54,31 @@ describe("target consistency builders", () => {
       consistency7d: [null, null, null, null, "near", "in", "in"],
     });
   });
+
+  it("walks local calendar days across a 23-hour day", () => {
+    // Monday 2026-03-30 00:30 CEST, right after the 23-hour Sunday. Stepping
+    // back 24 hours from here lands on Saturday and skips Sunday.
+    const result = rollupFromDayMap({
+      dayBandByKey: new Map([
+        ["2026-03-27", "in"],
+        ["2026-03-28", "in"],
+        ["2026-03-29", "in"],
+        ["2026-03-30", "in"],
+      ]),
+      timezone: "Europe/Berlin",
+      now: new Date("2026-03-29T22:30:00.000Z"),
+    });
+
+    expect(result.streakDays).toBe(4);
+    expect(result.daysInRange7d).toBe(4);
+    expect(result.consistency7d).toEqual([
+      null,
+      null,
+      null,
+      "in",
+      "in",
+      "in",
+      "in",
+    ]);
+  });
 });

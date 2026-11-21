@@ -4,7 +4,8 @@
  *   PATCH  /api/symptoms/events/{id} — change the time, intensity, note or
  *          episode link. A new link must name an episode of the record that
  *          is open or ran over the occurrence's time; an unchanged link to an
- *          episode that has since resolved is kept. An occurrence imported
+ *          episode that has since resolved is kept, and a moved time must
+ *          still lie inside that episode. An occurrence imported
  *          from Apple Health is edited like any other: the edit is the
  *          person's correction and stays, because a re-post of its sample
  *          answers `duplicate` and never overwrites it.
@@ -31,6 +32,7 @@ import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
 import { requireIllnessEnabled } from "@/lib/illness/gate";
 import {
   encryptSymptomText,
+  isEpisodeLinkableAt,
   isLinkableEpisode,
   symptomEventUpdateSchema,
   toSymptomEventDTO,
@@ -94,6 +96,25 @@ export const PATCH = apiHandler(
       return apiError("Episode did not run at that time", 422, {
         errorCode: "symptoms.episode.notOpen",
       });
+    }
+    // A moved time keeps its unchanged link only while the episode still ran
+    // over the new time: otherwise the occurrence would be filed against an
+    // episode that was over when it happened. A link to an episode since
+    // deleted is left as the episode's own removal will settle it.
+    if (
+      entry.occurredAt !== undefined &&
+      entry.episodeId === undefined &&
+      existing.episodeId !== null
+    ) {
+      const episode = await prisma.illnessEpisode.findFirst({
+        where: { id: existing.episodeId, userId: user.id, deletedAt: null },
+        select: { onsetAt: true, resolvedAt: true },
+      });
+      if (episode && !isEpisodeLinkableAt(episode, entry.occurredAt)) {
+        return apiError("Episode did not run at that time", 422, {
+          errorCode: "symptoms.episode.notOpen",
+        });
+      }
     }
 
     const updated = await prisma.symptomEvent.update({

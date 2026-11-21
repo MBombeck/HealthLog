@@ -999,6 +999,7 @@
     "actions": "Aktionen",
     "deleteConfirmTitle": "Messwert löschen?",
     "deleteConfirmDescription": "Dieser Messwert wird gelöscht. Direkt danach kannst du das kurz rückgängig machen.",
+    "deleteConfirmDescriptionSynced": "Dieser Messwert wird gelöscht. Er stammt aus einem verbundenen Dienst, deshalb holt ihn die nächste Synchronisierung zurück, wenn er dort nicht ebenfalls gelöscht wird. Direkt danach kannst du das kurz rückgängig machen.",
     "pageInfo": "Seite {page} von {total}",
     "previousPage": "Vorherige Seite",
     "nextPage": "Nächste Seite",
@@ -8741,7 +8742,8 @@
           "failureOwnerExists": "Das Konto, zu dem diese Datei gehört, ist auf diesem Server, und die Datei wird in dieses Konto wiederhergestellt. Lade sie noch einmal hoch, ohne ein Konto zu wählen."
         },
         "restoreSkippedSeizureMedicationReference": "Notfallplan oder Notfalldosis eines Anfalls verweist auf ein Medikament, das nicht in der Datei enthalten ist (ohne Verknüpfung übernommen)",
-        "restoreSkippedSeizureTypeReference": "Anfall verweist auf eine Anfallsart, die nicht in der Datei enthalten ist (ohne Anfallsart übernommen)"
+        "restoreSkippedSeizureTypeReference": "Anfall verweist auf eine Anfallsart, die nicht in der Datei enthalten ist (ohne Anfallsart übernommen)",
+        "restoreSkippedSeizureIntakeReference": "Notfalldosis eines Anfalls verweist auf eine Einnahme, die nicht in der Datei enthalten ist (ohne Verknüpfung übernommen)"
       },
       "danger-zone": {
         "title": "Gefahrenzone",

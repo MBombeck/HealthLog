@@ -32,6 +32,7 @@ import { GlucoseContextSelect } from "../glucose-context-select";
 import { MEASUREMENT_TYPE_LABEL_KEYS as TYPE_LABEL_KEYS } from "../measurement-list-meta";
 
 import { MAX_COMMENT_LENGTH, toDateTimeLocalValue } from "./list-model";
+import { deleteConfirmDescription } from "./row-actions";
 import type { MeasurementEdit } from "./use-measurement-edit";
 import type { MeasurementRowDisplay } from "./use-measurement-row-display";
 
@@ -194,7 +195,7 @@ export function MeasurementEditSheet({
                     {t("measurements.deleteConfirmTitle")}
                   </AlertDialogTitle>
                   <AlertDialogDescription>
-                    {t("measurements.deleteConfirmDescription")}
+                    {deleteConfirmDescription(editing, t)}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

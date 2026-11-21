@@ -71,7 +71,7 @@ export async function sweepStaleSleepSegments(
           deletedAt: null,
           externalId: { startsWith: s.prefix, notIn: s.keepIds },
         },
-        data: { deletedAt: new Date() },
+        data: { deletedAt: new Date(), syncVersion: { increment: 1 } },
       });
       removed += res.count;
     } catch (err) {

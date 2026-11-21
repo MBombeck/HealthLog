@@ -103,22 +103,36 @@ export function withingsNextOffset(
  * `measTypes` narrows the request to a subset of `MEASURE_TYPE_MAP` (the sync
  * leaves out what the account's API plan refuses); omitted, every mapped type
  * is asked for.
+ *
+ * `updatedSince` asks for the groups created or changed in the Withings cloud
+ * after that instant (`lastupdate`), whatever their measure date. That is the
+ * filter an incremental sync needs: a cuff or scale that reaches the cloud
+ * through the phone hours later keeps its original measure date, so a
+ * `startdate` window that follows the sync watermark never sees it. Withings
+ * documents `lastupdate` as an alternative to `startdate` / `enddate`, so
+ * when it is given the measure-date bounds are not sent.
  */
 export async function fetchMeasurements(
   accessToken: string,
   startDate?: Date,
   endDate?: Date,
-  opts: { measTypes?: readonly number[] } = {},
+  opts: { measTypes?: readonly number[]; updatedSince?: Date } = {},
 ): Promise<WithingsMeasure[]> {
   const baseParams: Record<string, string> = {
     action: "getmeas",
     meastypes: (opts.measTypes ?? WITHINGS_MEASTYPES).join(","),
   };
-  if (startDate) {
-    baseParams.startdate = String(Math.floor(startDate.getTime() / 1000));
-  }
-  if (endDate) {
-    baseParams.enddate = String(Math.floor(endDate.getTime() / 1000));
+  if (opts.updatedSince) {
+    baseParams.lastupdate = String(
+      Math.floor(opts.updatedSince.getTime() / 1000),
+    );
+  } else {
+    if (startDate) {
+      baseParams.startdate = String(Math.floor(startDate.getTime() / 1000));
+    }
+    if (endDate) {
+      baseParams.enddate = String(Math.floor(endDate.getTime() / 1000));
+    }
   }
 
   const walk = await walkPages<number, WithingsMeasure>(

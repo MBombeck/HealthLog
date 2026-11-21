@@ -81,6 +81,9 @@ function catalogueLabel(
   if (catalogue === "seizureTypeReference") {
     return t("admin.section.backups.restoreSkippedSeizureTypeReference");
   }
+  if (catalogue === "seizureIntakeReference") {
+    return t("admin.section.backups.restoreSkippedSeizureIntakeReference");
+  }
   if (catalogue === "visitCiphertext") {
     return t("admin.section.backups.restoreSkippedVisitCiphertext");
   }
