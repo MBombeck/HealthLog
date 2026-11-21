@@ -146,14 +146,19 @@ function mockUserLookups(opts: {
   byEmail?: ReturnType<typeof userRow> | null;
   emailTaken?: boolean;
 }) {
-  vi.mocked(prisma.user.findFirst).mockImplementation(((args: {
-    where: Record<string, unknown>;
-  }) => {
+  // One reader for both row reads: the (issuer, sub) lookup and the read by
+  // id of the account the e-mail lookup named.
+  const rows = ((args: { where: Record<string, unknown> }) => {
     if (args.where.oidcIssuer !== undefined) {
       return Promise.resolve(opts.byIdentity ?? null);
     }
-    return Promise.resolve(null);
-  }) as never);
+    const byEmail = opts.byEmail;
+    return Promise.resolve(
+      byEmail && args.where.id === byEmail.id ? byEmail : null,
+    );
+  }) as never;
+  vi.mocked(prisma.user.findFirst).mockImplementation(rows);
+  vi.mocked(prisma.user.findUnique).mockImplementation(rows);
   vi.mocked(findUserIdByEmail).mockImplementation(
     async (_email: string, options: { excludeId?: string } = {}) => {
       if (options.excludeId !== undefined) {
@@ -162,12 +167,6 @@ function mockUserLookups(opts: {
       return opts.byEmail?.id ?? null;
     },
   );
-  vi.mocked(prisma.user.findUnique).mockImplementation(((args: {
-    where: { id?: string };
-  }) =>
-    Promise.resolve(
-      opts.byEmail && args.where.id === opts.byEmail.id ? opts.byEmail : null,
-    )) as never);
 }
 
 function makeRequest(opts: { query?: string; cookie?: string }): NextRequest {

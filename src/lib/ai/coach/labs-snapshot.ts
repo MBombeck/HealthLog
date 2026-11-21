@@ -56,7 +56,7 @@
  * lookback limit (the whole record when there is none), or, for a named read,
  * when no marker matches the analyte.
  */
-import { likeLiteral } from "@/lib/db-like";
+import { textContains } from "@/lib/db-like";
 import type { Prisma } from "@/generated/prisma/client";
 import { sameLabUnit } from "@/lib/labs/unit-normalise";
 import {
@@ -348,12 +348,10 @@ export async function buildLabsSnapshotBlock(
         ? [
             {
               biomarkerId: null,
-              analyte: { contains: likeLiteral(wanted), mode: "insensitive" },
+              analyte: textContains(wanted),
             },
             {
-              biomarker: {
-                name: { contains: likeLiteral(wanted), mode: "insensitive" },
-              },
+              biomarker: { name: textContains(wanted) },
             },
           ]
         : undefined,

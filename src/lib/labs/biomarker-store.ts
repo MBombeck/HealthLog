@@ -9,7 +9,7 @@
  * Mirrors the `LabResult.noteEncrypted` codec in `./store.ts` so the two
  * encrypted columns on the Labs feature share one byte layout.
  */
-import { likeLiteral } from "@/lib/db-like";
+import { textEquals } from "@/lib/db-like";
 import { Buffer } from "node:buffer";
 
 import { decrypt, encrypt } from "@/lib/crypto";
@@ -150,7 +150,7 @@ export async function resolveOrMintBiomarker(
     const raced = await prisma.biomarker.findFirst({
       where: {
         userId,
-        name: { equals: likeLiteral(name), mode: "insensitive" },
+        name: textEquals(name),
       },
       select: INDEXED_SELECT,
     });

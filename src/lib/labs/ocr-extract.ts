@@ -28,7 +28,7 @@
  * an extracted field as a command, and the human review screen is the hard
  * backstop — nothing commits without per-row confirmation.
  */
-import { likeLiteral } from "@/lib/db-like";
+import { textEquals } from "@/lib/db-like";
 import type { AIProvider, CompletionParams } from "@/lib/ai/types";
 import {
   DOCUMENT_TEXT_FENCE_END,
@@ -176,7 +176,7 @@ export async function annotateRow(
         // The printed name, or any reading already filed under the marker it
         // resolves to: an earlier report may have spelled it another way.
         OR: [
-          { analyte: { equals: likeLiteral(analyte), mode: "insensitive" } },
+          { analyte: textEquals(analyte) },
           ...(existingBiomarker ? [{ biomarkerId: existingBiomarker.id }] : []),
         ],
         takenAt: labReadingDaySearchRange(takenAt),

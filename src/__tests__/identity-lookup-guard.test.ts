@@ -1,5 +1,5 @@
 /**
- * No account is looked up by a pattern.
+ * No account is looked up by a pattern, and no search treats its input as one.
  *
  * Prisma's `mode: "insensitive"` compiles to `ILIKE` on Postgres, and the
  * value goes in as the pattern unescaped: `_` matches any one character and
@@ -9,17 +9,17 @@
  * lookups by e-mail or username go through `@/lib/auth/identity-lookup`
  * (`lower(col) = lower($1)`, the expression migration 0517's keys index).
  *
- * Two rules, over every non-test source file under `src/`:
- *   1. no `mode: "insensitive"` filter sits on an identity column, except the
- *      listed searches (which escape their input, rule 2);
- *   2. every `mode: "insensitive"` filter passes its value through
- *      `likeLiteral()` (`@/lib/db-like`), so a search for `a_b` finds `a_b`.
+ * Three rules, over every non-test source file under `src/`:
+ *   1. `mode: "insensitive"` is written only in `lib/db-like.ts`, inside
+ *      `textContains` / `textEquals`, which escape the value. Everything else
+ *      filters through those two, so no filter can forget the escape;
+ *   2. neither filter sits on an identity column, except the listed searches;
+ *   3. every call of either is attributed to the column it filters. A call
+ *      the matcher cannot attribute (the filter kept in a variable, spread in)
+ *      fails, rather than passing unseen.
  *
- * Every occurrence of the operator must be attributed to the column it
- * filters, or the guard fails: a filter written in a shape the matcher cannot
- * read (built in a variable, spread in) is a failure to look at, not a pass.
- * The matcher itself is exercised on fixtures below, so a matcher that finds
- * nothing fails too.
+ * The matchers are exercised on fixtures below and the sweep has a floor, so
+ * a matcher that finds nothing fails too.
  */
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -32,6 +32,7 @@ import {
 } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
+const HELPERS = "lib/db-like.ts";
 
 /** Columns that name an account. A filter on them is an account lookup. */
 const IDENTITY_COLUMNS = new Set([
@@ -43,8 +44,7 @@ const IDENTITY_COLUMNS = new Set([
 
 /**
  * Searches, not lookups, that may filter an identity column by substring.
- * Each entry names the file and the column; each must still be found, so a
- * stale entry fails.
+ * Each entry names the file, the column and how often; a stale entry fails.
  */
 const IDENTITY_SEARCHES: ReadonlyArray<{
   file: string;
@@ -57,35 +57,32 @@ const IDENTITY_SEARCHES: ReadonlyArray<{
     column: "username",
     count: 2,
     reason:
-      "The admin audit-log filter searches acting accounts by part of a name (cookie-only admin surface, capped). It resolves nobody's identity.",
+      "The admin audit-log filter finds acting accounts by part of a name (cookie-only admin surface, capped, escaped). It resolves nobody's identity.",
   },
 ];
 
 const MODE = /\bmode\s*:\s*["'`]insensitive["'`]/g;
-/** `column: { …, mode: "insensitive" … }`, across lines, no nested braces. */
-const KEYED =
-  /([A-Za-z_$][\w$]*)\s*:\s*\{([^{}]*?\bmode\s*:\s*["'`]insensitive["'`][^{}]*)\}/g;
+const CALL = /(?<![\w$.])text(?:Contains|Equals)\s*\(/g;
+const KEYED_CALL = /([A-Za-z_$][\w$]*)\s*:\s*(text(?:Contains|Equals))\s*\(/g;
 
 interface Filter {
   file: string;
   line: number;
   column: string;
-  body: string;
 }
 
-function scan(
-  file: string,
-  source: string,
-): { filters: Filter[]; operators: number } {
+function scan(file: string, source: string) {
   const code = stripComments(source);
-  const operators = [...code.matchAll(MODE)].length;
-  const filters = [...code.matchAll(KEYED)].map((m) => ({
-    file,
-    line: code.slice(0, m.index).split("\n").length,
-    column: m[1],
-    body: m[2],
-  }));
-  return { filters, operators };
+  const lineOf = (index: number) => code.slice(0, index).split("\n").length;
+  return {
+    modes: [...code.matchAll(MODE)].map((m) => lineOf(m.index)),
+    calls: [...code.matchAll(CALL)].length,
+    filters: [...code.matchAll(KEYED_CALL)].map((m): Filter => ({
+      file,
+      line: lineOf(m.index),
+      column: m[1],
+    })),
+  };
 }
 
 function sourceFiles(): string[] {
@@ -95,67 +92,74 @@ function sourceFiles(): string[] {
     .filter((p) => !/\.test\.tsx?$/.test(p));
 }
 
-function scanTree(): { filters: Filter[]; unattributed: string[] } {
+function scanTree() {
   const filters: Filter[] = [];
+  const stray: string[] = [];
   const unattributed: string[] = [];
+  let helperModes = 0;
   for (const file of sourceFiles()) {
     const result = scan(file, readSourceText(join(SRC, file)));
+    if (file === HELPERS) {
+      helperModes = result.modes.length;
+      continue;
+    }
+    for (const line of result.modes) stray.push(`${file}:${line}`);
     filters.push(...result.filters);
-    if (result.filters.length !== result.operators) {
+    if (result.filters.length !== result.calls) {
       unattributed.push(
-        `${file}: ${result.operators} operator(s), ${result.filters.length} attributed`,
+        `${file}: ${result.calls} call(s), ${result.filters.length} attributed`,
       );
     }
   }
-  return { filters, unattributed };
+  return { filters, stray, unattributed, helperModes };
 }
 
-describe("the matcher", () => {
-  it("attributes a filter written across lines, in either key order", () => {
-    const { filters, operators } = scan(
+describe("the matchers", () => {
+  it("find the operator across lines, and not inside a comment", () => {
+    const { modes } = scan(
       "fixture.ts",
-      `prisma.user.findFirst({ where: { OR: [
-        { email: {
-            equals: identifier,
-            mode: "insensitive",
-        } },
-        { username: { mode: 'insensitive', equals: identifier } },
-        { name: { contains: likeLiteral(q), mode: "insensitive" as const } },
-      ] } });`,
+      `// email: { equals: x, mode: "insensitive" }
+       prisma.user.findFirst({ where: { email: {
+         equals: identifier,
+         mode:
+           'insensitive',
+       } } });`,
     );
-    expect(operators).toBe(3);
-    expect(filters.map((f) => f.column)).toEqual(["email", "username", "name"]);
+    expect(modes).toEqual([4]);
   });
 
-  it("counts a filter it cannot attribute instead of skipping it", () => {
-    const { filters, operators } = scan(
+  it("attribute a filter to its column, and count one they cannot", () => {
+    const { calls, filters } = scan(
       "fixture.ts",
-      `const f = { equals: x, mode: "insensitive" };
-       const g = { ...f, mode: "insensitive" };`,
+      `const where = { OR: [
+         { username: textEquals(name) },
+         { title:
+             textContains(q) },
+       ] };
+       const loose = textContains(q);`,
     );
-    // `const f = {` is no `key: {`; the two must not agree.
-    expect(operators).toBe(2);
-    expect(filters.length).toBeLessThan(operators);
-  });
-
-  it("ignores the operator inside a comment", () => {
-    const { operators } = scan(
-      "fixture.ts",
-      `// email: { equals: x, mode: "insensitive" }\nconst a = 1;`,
-    );
-    expect(operators).toBe(0);
+    expect(filters.map((f) => f.column)).toEqual(["username", "title"]);
+    expect(calls).toBe(3);
   });
 });
 
 describe("case-insensitive filters under src/", () => {
-  const { filters, unattributed } = scanTree();
+  const { filters, stray, unattributed, helperModes } = scanTree();
 
-  it("reads every one of them", () => {
-    requireFloor("mode: insensitive filters", filters, 20);
+  it("write the operator only in the escaping helpers", () => {
+    expect(helperModes).toBe(2);
+    expect(
+      stray,
+      'Filter through textContains() / textEquals() from @/lib/db-like; a bare mode: "insensitive" passes _ and % through as wildcards.',
+    ).toEqual([]);
+  });
+
+  it("are every one attributed to a column", () => {
+    requireFloor("textContains / textEquals filters", filters, 20);
     expect(unattributed).toEqual([]);
   });
 
-  it("puts none on an identity column outside the listed searches", () => {
+  it("sit on no identity column outside the listed searches", () => {
     const offenders = filters
       .filter((f) => IDENTITY_COLUMNS.has(f.column))
       .filter(
@@ -167,11 +171,11 @@ describe("case-insensitive filters under src/", () => {
       .map((f) => `${f.file}:${f.line} ${f.column}`);
     expect(
       offenders,
-      'Look accounts up through @/lib/auth/identity-lookup, never with mode: "insensitive" (ILIKE: _ and % are wildcards).',
+      "Look accounts up through @/lib/auth/identity-lookup, never with a pattern filter.",
     ).toEqual([]);
   });
 
-  it("finds each listed search where it is listed", () => {
+  it("find each listed search where it is listed", () => {
     for (const search of IDENTITY_SEARCHES) {
       const found = filters.filter(
         (f) => f.file === search.file && f.column === search.column,
@@ -180,15 +184,5 @@ describe("case-insensitive filters under src/", () => {
         search.count,
       );
     }
-  });
-
-  it("escapes the value of every one with likeLiteral()", () => {
-    const unescaped = filters
-      .filter((f) => !/\blikeLiteral\s*\(/.test(f.body))
-      .map((f) => `${f.file}:${f.line} ${f.column}`);
-    expect(
-      unescaped,
-      "Wrap the value in likeLiteral() from @/lib/db-like, or _ and % in it act as wildcards.",
-    ).toEqual([]);
   });
 });

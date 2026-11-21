@@ -10,7 +10,7 @@
  * to the Prisma `where`; it is never a body field. The `data` object is
  * built field-by-field (no mass assignment); `note` is encrypted at rest.
  */
-import { likeLiteral } from "@/lib/db-like";
+import { textContains } from "@/lib/db-like";
 import { NextRequest } from "next/server";
 
 import { prisma } from "@/lib/db";
@@ -77,11 +77,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
               },
             }
           : {}),
-        ...(q
-          ? {
-              label: { contains: likeLiteral(q), mode: "insensitive" as const },
-            }
-          : {}),
+        ...(q ? { label: textContains(q) } : {}),
       },
       // `id` breaks ties so offset paging never repeats or drops a row.
       orderBy: [{ onsetAt: order }, { id: order }],

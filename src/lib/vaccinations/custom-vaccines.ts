@@ -2,7 +2,7 @@
  * What the custom-vaccine routes share (v1.42, #1005): the columns they
  * publish, the name-clash probe and the removal.
  */
-import { likeLiteral } from "@/lib/db-like";
+import { textEquals } from "@/lib/db-like";
 import type { Prisma } from "@/generated/prisma/client";
 
 /** The columns a definition is published with. */
@@ -31,7 +31,7 @@ export async function findLiveNameClash(
     where: {
       userId,
       deletedAt: null,
-      name: { equals: likeLiteral(name), mode: "insensitive" },
+      name: textEquals(name),
       ...(exceptId ? { id: { not: exceptId } } : {}),
     },
     select: { id: true },
