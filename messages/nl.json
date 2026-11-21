@@ -10646,7 +10646,12 @@
       "valuesTitle": "{marker}: alle metingen",
       "valuesDescription": "Alle metingen van deze biomarker. Bewerk of verwijder een registratie direct.",
       "backToMarker": "Terug naar {marker}",
-      "latestResult": "Laatste uitslag"
+      "latestResult": "Laatste uitslag",
+      "latestValues": "Laatste waarden",
+      "allValues": "Alle waarden",
+      "columnDate": "Datum",
+      "columnValue": "Waarde",
+      "columnRange": "Referentiebereik"
     },
     "chart": {
       "empty": "Geen metingen in deze periode.",

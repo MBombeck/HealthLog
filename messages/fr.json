@@ -10646,7 +10646,12 @@
       "valuesTitle": "{marker} : toutes les valeurs",
       "valuesDescription": "Chaque mesure de ce biomarqueur. Modifiez ou supprimez une entrée directement.",
       "backToMarker": "Retour à {marker}",
-      "latestResult": "Dernier résultat"
+      "latestResult": "Dernier résultat",
+      "latestValues": "Dernières valeurs",
+      "allValues": "Toutes les valeurs",
+      "columnDate": "Date",
+      "columnValue": "Valeur",
+      "columnRange": "Plage de référence"
     },
     "chart": {
       "empty": "Aucune mesure sur cette période.",

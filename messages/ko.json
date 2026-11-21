@@ -10646,7 +10646,12 @@
       "valuesTitle": "{marker}: 전체 측정값",
       "valuesDescription": "이 바이오마커의 모든 측정값이에요. 항목을 바로 편집하거나 삭제할 수 있어요.",
       "backToMarker": "{marker} 화면으로 돌아가기",
-      "latestResult": "최근 결과"
+      "latestResult": "최근 결과",
+      "latestValues": "최근 값",
+      "allValues": "모든 값",
+      "columnDate": "날짜",
+      "columnValue": "값",
+      "columnRange": "참고 범위"
     },
     "chart": {
       "empty": "이 기간에는 측정값이 없어요.",

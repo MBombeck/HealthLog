@@ -10646,7 +10646,12 @@
       "valuesTitle": "{marker}: все измерения",
       "valuesDescription": "Все измерения этого показателя. Изменяйте или удаляйте запись напрямую.",
       "backToMarker": "Назад к {marker}",
-      "latestResult": "Последний результат"
+      "latestResult": "Последний результат",
+      "latestValues": "Последние значения",
+      "allValues": "Все значения",
+      "columnDate": "Дата",
+      "columnValue": "Значение",
+      "columnRange": "Референсный диапазон"
     },
     "chart": {
       "empty": "В этом периоде нет измерений.",

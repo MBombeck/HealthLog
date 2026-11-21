@@ -10646,7 +10646,12 @@
       "valuesTitle": "{marker}: all readings",
       "valuesDescription": "Every reading for this biomarker. Edit or remove an entry directly.",
       "backToMarker": "Back to {marker}",
-      "latestResult": "Latest result"
+      "latestResult": "Latest result",
+      "latestValues": "Latest values",
+      "allValues": "All values",
+      "columnDate": "Date",
+      "columnValue": "Value",
+      "columnRange": "Reference range"
     },
     "chart": {
       "empty": "No readings in this period.",

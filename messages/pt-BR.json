@@ -10646,7 +10646,12 @@
       "valuesTitle": "{marker}: todas as leituras",
       "valuesDescription": "Cada leitura deste biomarcador. Edite ou remova uma entrada diretamente.",
       "backToMarker": "Voltar para {marker}",
-      "latestResult": "Resultado mais recente"
+      "latestResult": "Resultado mais recente",
+      "latestValues": "Últimos valores",
+      "allValues": "Todos os valores",
+      "columnDate": "Data",
+      "columnValue": "Valor",
+      "columnRange": "Faixa de referência"
     },
     "chart": {
       "empty": "Nenhuma leitura neste período.",

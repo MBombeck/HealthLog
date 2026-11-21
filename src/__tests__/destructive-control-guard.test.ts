@@ -431,10 +431,10 @@ const REGISTRY: DestructiveEntry[] = [
     ],
   },
   {
-    file: "components/labs/lab-biomarker-detail.tsx",
+    file: "components/labs/biomarker-header-actions.tsx",
     destroys: "a biomarker AND every lab reading recorded against it",
     recovery: "permanent",
-    confirm: ["DeleteButton"],
+    confirm: ["AlertDialog"],
   },
   {
     file: "components/custom-metrics/custom-metric-detail.tsx",

@@ -257,7 +257,7 @@ const PINNED_AFFORDANCES: Record<
   "src/components/insights/insights-tab-strip.tsx": { "toast.success": 1 },
   "src/components/labs/biomarker-form.tsx": { "toast.success": 1 },
   "src/components/labs/biomarker-manager.tsx": { "toast.success": 2 },
-  "src/components/labs/lab-biomarker-detail.tsx": { "toast.success": 1 },
+  "src/components/labs/biomarker-header-actions.tsx": { "toast.success": 1 },
   "src/components/labs/lab-form.tsx": { "toast.success": 1 },
   "src/components/labs/lab-history-list.tsx": { "toast.success": 3 },
   "src/components/measurement-reminders/vorsorge-dashboard-card.tsx": {

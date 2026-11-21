@@ -10646,7 +10646,12 @@
       "valuesTitle": "{marker}: wszystkie odczyty",
       "valuesDescription": "Każdy odczyt tego biomarkera. Edytuj lub usuń wpis bezpośrednio.",
       "backToMarker": "Powrót do {marker}",
-      "latestResult": "Ostatni wynik"
+      "latestResult": "Ostatni wynik",
+      "latestValues": "Ostatnie wyniki",
+      "allValues": "Wszystkie wyniki",
+      "columnDate": "Data",
+      "columnValue": "Wartość",
+      "columnRange": "Zakres referencyjny"
     },
     "chart": {
       "empty": "Brak pomiarów w tym okresie.",

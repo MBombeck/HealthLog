@@ -10646,7 +10646,12 @@
       "valuesTitle": "{marker}: alle Werte",
       "valuesDescription": "Jeder Messwert für diesen Biomarker. Bearbeite oder entferne einen Eintrag direkt.",
       "backToMarker": "Zurück zu {marker}",
-      "latestResult": "Letztes Ergebnis"
+      "latestResult": "Letztes Ergebnis",
+      "latestValues": "Letzte Werte",
+      "allValues": "Alle Werte",
+      "columnDate": "Datum",
+      "columnValue": "Wert",
+      "columnRange": "Referenzbereich"
     },
     "chart": {
       "empty": "Keine Werte in diesem Zeitraum.",
