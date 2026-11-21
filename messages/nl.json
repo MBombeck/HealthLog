@@ -1565,8 +1565,6 @@
     },
     "withoutNotification": "Zonder melding",
     "pausedSince": "Gepauzeerd sinds",
-    "lastDoseYesterday": "Laatste dosis gisteren",
-    "lastDoseDaysAgo": "Laatste dosis {count} dagen geleden",
     "complianceWindow": "Therapietrouw ({days} dagen)",
     "complianceUnavailable": "Therapietrouw kon niet worden geladen",
     "complianceNotApplicable": "Therapietrouw niet van toepassing",

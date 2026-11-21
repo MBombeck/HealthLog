@@ -17,8 +17,9 @@
  *
  * Limits, stated plainly. The matcher is textual and finds the names, not
  * every way to spell a window; it proves a file names the arithmetic, not that
- * a listed file uses it only for its stated reason. The entries marked as the
- * card's browser fallback are the ones to retire next.
+ * a listed file uses it only for its stated reason. The card, the table, the
+ * take-all sweep and the intake pickers read the server's resolved dose
+ * (`dose-state/pill.ts`); the browser fallback they once kept is gone.
  */
 import { describe, expect, it } from "vitest";
 import { join } from "node:path";
@@ -57,9 +58,7 @@ const MAY_TOUCH_WINDOWS: Record<string, string> = {
     "which slot is the next due one (the resolver then states it)",
   // Settings: the configured thresholds themselves.
   "lib/app-settings.ts": "stores the configured thresholds",
-  "lib/queries/use-reminder-thresholds.ts": "reads the configured thresholds",
   "lib/analytics/compliance/parsing.ts": "parses the configured thresholds",
-  "lib/medications/default-medication.ts": "default threshold values",
   "app/api/admin/notifications/reminder-check/route.ts":
     "admin diagnostic of the reminder worker",
   "lib/openapi/routes/settings.ts": "documents the thresholds",
@@ -69,15 +68,6 @@ const MAY_TOUCH_WINDOWS: Record<string, string> = {
   "lib/daily/digest.ts": "the digest's due-soon horizon",
   "components/medications/sections/inventory-section.tsx":
     "passes the thresholds to the card it renders",
-
-  // The card's browser fallback while the compliance block loads, and the
-  // slot it posts a take for. To retire: read `currentDose` / the today list.
-  "lib/medications/window-status.ts": "card fallback, to retire",
-  "components/medications/medication-card.tsx": "card fallback, to retire",
-  "components/medications/glp1-medication-card.tsx": "card fallback, to retire",
-  "components/medications/medication-table.tsx": "card fallback, to retire",
-  "components/medications/take-all-due.ts": "card fallback, to retire",
-  "app/medications/page-client.tsx": "passes the thresholds to the cards",
 };
 
 function files(): string[] {

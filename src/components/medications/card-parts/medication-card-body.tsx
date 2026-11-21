@@ -20,7 +20,7 @@ import { MedicationNextLastSlot } from "@/components/medications/card-parts/medi
 import { MedicationNote } from "@/components/medications/medication-note";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { CurrentCycle, DoseStatus } from "@/lib/analytics/compliance";
-import type { MedicationWindowStatus } from "@/lib/medications/window-status";
+import type { MedicationWindowStatus } from "@/lib/medications/dose-state/pill";
 
 /**
  * v1.15.9 — the ONE shared medication-card body.
@@ -88,8 +88,6 @@ export interface MedicationCardBodyProps {
     status: Exclude<MedicationWindowStatus, null>;
     windowStart: string;
     windowEnd: string;
-    /** v1.16.9 — day-scale last-dose context in whole days (see the pill). */
-    takenEarlyDaysAgo?: number | null;
   } | null;
 
   /**
@@ -287,16 +285,14 @@ export function MedicationCardBody({
           }
           last={lastLine}
         />
-        {escalation === "missed" &&
-          windowStatus?.takenEarlyDaysAgo == null &&
-          !recordOnly && (
-            <p
-              className="text-muted-foreground text-xs"
-              data-slot="medication-missed-still-counts"
-            >
-              {t("medications.dose.state.missedStillCounts")}
-            </p>
-          )}
+        {escalation === "missed" && !recordOnly && (
+          <p
+            className="text-muted-foreground text-xs"
+            data-slot="medication-missed-still-counts"
+          >
+            {t("medications.dose.state.missedStillCounts")}
+          </p>
+        )}
 
         {/* Compliance bars — always two rows; constant-height skeleton holds
             the slot while the query is in flight so the grid row stays even.
@@ -372,7 +368,6 @@ function hasNextDoseValue(
   windowStatus: MedicationCardBodyProps["windowStatus"],
   escalation: "missed" | "overdue" | null,
 ): boolean {
-  if (windowStatus?.takenEarlyDaysAgo != null) return false;
   return escalation !== null || windowStatus !== null;
 }
 
@@ -397,7 +392,6 @@ function NextDoseValue({
 }) {
   const { locale } = useTranslations();
   const fmt = useFormatters();
-  if (windowStatus?.takenEarlyDaysAgo != null) return null;
   if (escalation) {
     return (
       <span className="inline-flex flex-wrap items-center gap-x-1 gap-y-0.5 text-sm">

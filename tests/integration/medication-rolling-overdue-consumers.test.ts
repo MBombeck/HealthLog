@@ -4,13 +4,14 @@
  *
  * This is intentionally a RED contract for the diagnosed Mounjaro defect:
  * the weekly occurrence anchored on 2026-07-28 remains actionable after the
- * user's local day changes.  The list and Dashboard are the authoritative
- * server reads; the GLP-1 card and take-all derivations consume the list
- * payload exactly as production does.
+ * user's local day changes.  The list, the Dashboard and the compliance
+ * read's `currentDose` are the authoritative server reads; the GLP-1 card
+ * and take-all derivations consume them exactly as production does.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { NextRequest } from "next/server";
 
-import { resolveDisplayedSlotInstant } from "@/components/medications/card-parts/displayed-slot-instant";
+import { cardDisplayedSlot } from "@/lib/medications/dose-state/pill";
 import {
   deriveDueMedications,
   type DueDerivationMedication,
@@ -20,6 +21,12 @@ import { buildMedicationsList } from "@/lib/medications/list-read";
 import { applyCanonicalSlotWrite } from "@/lib/medications/scheduling/slot-upsert";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
+import { cookieJar } from "./mock-next-headers";
+import { invalidateUserMedications } from "@/lib/cache/invalidate";
+
+vi.mock("next/headers", async () =>
+  (await import("./medication-dose-state-fixtures")).nextHeadersMock(),
+);
 
 const USER_ID = "user-rolling-overdue-consumers";
 const USER_TZ = "Europe/Berlin";
@@ -41,6 +48,11 @@ beforeEach(async () => {
       timezone: USER_TZ,
     },
   });
+  const session = await prisma.session.create({
+    data: { userId: USER_ID, expiresAt: new Date(NOW.getTime() + 86_400_000) },
+  });
+  cookieJar.clear();
+  cookieJar.set("healthlog_session", session.id);
 });
 
 afterEach(() => {
@@ -85,10 +97,33 @@ async function createMounjaro(): Promise<string> {
   return medication.id;
 }
 
-async function readConsumerOccurrence(
-  medicationId: string,
-  complianceStatus: "overdue" | "upcoming" = "overdue",
-) {
+/** The batched compliance read's resolved open dose for the medication. */
+async function readCurrentDose(medicationId: string) {
+  invalidateUserMedications(USER_ID, { evict: true });
+  const { GET } = await import("@/app/api/medications/compliance/route");
+  const res = await (GET as unknown as (r: NextRequest) => Promise<Response>)(
+    new NextRequest("http://localhost/api/medications/compliance"),
+  );
+  expect(res.status).toBe(200);
+  const body = (await res.json()) as {
+    data: Array<{
+      medicationId: string;
+      complianceDisplay?: {
+        currentDose: {
+          state: string | null;
+          targetAt: string | null;
+          dueAt: string | null;
+          overdueSince: string | null;
+          missedAfter: string | null;
+        };
+      };
+    }>;
+  };
+  return body.data.find((row) => row.medicationId === medicationId)
+    ?.complianceDisplay?.currentDose;
+}
+
+async function readConsumerOccurrence(medicationId: string) {
   const prisma = getPrismaClient();
   const list = await buildMedicationsList(USER_ID, USER_TZ);
   const raw = list.find((row) => row.id === medicationId);
@@ -98,32 +133,22 @@ async function readConsumerOccurrence(
 
   const dashboard = await buildMedsTodayBlock(prisma, USER_ID, USER_TZ, NOW);
 
-  // A prior-day rolling slot is outside today's clock window. The GLP-1
-  // card therefore displays the server's canonical nextDueAt verbatim.
+  // The GLP-1 card records the slot of the server's resolved open dose, or
+  // the list's next-due when nothing is open.
+  const currentDose = await readCurrentDose(medicationId);
   const glp1Occurrence =
-    resolveDisplayedSlotInstant({
-      currentWindowStatus: {
-        status: null,
-        schedule: null,
-        window: null,
-      },
-      nextDueAt: listOccurrence,
-      now: NOW,
-      timeZone: USER_TZ,
-    })?.toISOString() ?? null;
+    cardDisplayedSlot(currentDose, listOccurrence, NOW)?.toISOString() ?? null;
 
   const takeAll = deriveDueMedications([medication], {
     now: NOW,
     tz: USER_TZ,
-    // Mirrors the compliance row that keeps the card action enabled for an
-    // unresolved weekly dose after its same-day window has passed.
-    doseStatusById: new Map([[medicationId, complianceStatus]]),
+    currentDoseById: new Map(currentDose ? [[medicationId, currentDose]] : []),
   });
 
   return {
     list: {
       occurrence: listOccurrence,
-      overdue: medication.nextDueOverdue === true,
+      overdue: (raw as { nextDueOverdue?: boolean }).nextDueOverdue === true,
     },
     dashboard: {
       occurrence:
@@ -179,7 +204,7 @@ describe("rolling weekly overdue occurrence — shared consumers", () => {
         },
       });
 
-      const state = await readConsumerOccurrence(medicationId, "upcoming");
+      const state = await readConsumerOccurrence(medicationId);
       expect(state.list).toEqual({
         occurrence: NEXT_OCCURRENCE.toISOString(),
         overdue: false,

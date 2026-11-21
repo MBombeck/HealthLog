@@ -33,7 +33,6 @@ import {
   resolveMedicationSelectionId,
   type DefaultMedicationOption,
 } from "@/lib/medications/default-medication";
-import type { ScheduleWindowInput } from "@/lib/medications/window-status";
 import {
   runLogIntake,
   runUndoIntake,
@@ -44,10 +43,13 @@ import {
   useIntakeFormState,
 } from "@/components/medications/intake-form/intake-form";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
-import { useMedicationDueThresholds } from "@/lib/queries/use-reminder-thresholds";
 import { EmptyState } from "@/components/ui/empty-state";
 
-interface LogIntakeSchedule extends ScheduleWindowInput {
+interface LogIntakeSchedule {
+  windowStart: string;
+  windowEnd: string;
+  daysOfWeek: string | null;
+  timesOfDay?: string[];
   label: string | null;
   dose: string | null;
 }
@@ -77,9 +79,6 @@ export function LogIntakeDialog({
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const userTz = user?.timezone || DEFAULT_TIMEZONE;
-  // The account's own late / missed thresholds decide which dose counts as
-  // due for the preselection, the same tiers the medication cards show.
-  const dueThresholds = useMedicationDueThresholds();
   const formId = useId();
 
   const [medicationOverride, setMedicationOverride] = useState<string | null>(
@@ -91,7 +90,6 @@ export function LogIntakeDialog({
       medications,
       medicationOverride,
       selectionNow,
-      dueThresholds,
       userTz,
     ) ?? "";
   const selected = useMemo(

@@ -9,7 +9,6 @@ import { Loader2, Pill, Plus } from "lucide-react";
 import Link from "next/link";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
-import type { ScheduleWindowInput } from "@/lib/medications/window-status";
 import {
   resolveMedicationSelectionId,
   type DefaultMedicationOption,
@@ -28,7 +27,6 @@ import {
   useIntakeFormState,
 } from "@/components/medications/intake-form/intake-form";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
-import { useMedicationDueThresholds } from "@/lib/queries/use-reminder-thresholds";
 
 /**
  * v1.4.37 — dashboard "Hinzufügen" → "Medikamenteneinnahme" quick-add.
@@ -69,7 +67,11 @@ import { useMedicationDueThresholds } from "@/lib/queries/use-reminder-threshold
  * button stays reachable above the mobile keyboard.
  */
 
-interface Schedule extends ScheduleWindowInput {
+interface Schedule {
+  windowStart: string;
+  windowEnd: string;
+  daysOfWeek: string | null;
+  timesOfDay?: string[];
   id: string;
   label: string | null;
   dose: string | null;
@@ -119,9 +121,6 @@ export function MedicationIntakeQuickAdd({
   // logged-out mounts behave unchanged.
   const { user } = useAuth();
   const userTz = user?.timezone || DEFAULT_TIMEZONE;
-  // The account's own late / missed thresholds decide which dose counts as
-  // due for the preselection, the same tiers the medication cards show.
-  const dueThresholds = useMedicationDueThresholds();
   // The record this dose lands in, or null in the caller's own.
   const recordName = useActiveRecordName();
 
@@ -179,7 +178,6 @@ export function MedicationIntakeQuickAdd({
       medications,
       medicationOverride,
       selectionNow,
-      dueThresholds,
       userTz,
     ) ?? "";
   const selectedMedication = sortedMedications.find(

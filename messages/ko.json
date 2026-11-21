@@ -1565,8 +1565,6 @@
     },
     "withoutNotification": "알림 없음",
     "pausedSince": "일시중지 시작",
-    "lastDoseYesterday": "마지막 복용 어제",
-    "lastDoseDaysAgo": "마지막 복용 {count}일 전",
     "complianceWindow": "복약 순응도 ({days}일)",
     "complianceUnavailable": "복약 순응도를 불러오지 못했어요",
     "complianceNotApplicable": "복약 순응도 해당 없음",

@@ -1565,8 +1565,6 @@
     },
     "withoutNotification": "Sans notification",
     "pausedSince": "En pause depuis",
-    "lastDoseYesterday": "Dernière dose hier",
-    "lastDoseDaysAgo": "Dernière dose il y a {count} jours",
     "complianceWindow": "Observance {days} jours",
     "complianceUnavailable": "Impossible de charger l'observance",
     "complianceNotApplicable": "Observance non applicable",

@@ -4,13 +4,13 @@
  * button. A user with several medications due in the current window
  * confirms them in ONE action instead of per-card taps.
  *
- * Due-set derivation reuses the EXACT pipeline a single card runs —
- * `reduceCurrentWindowStatus` (band model + server display-due gate +
- * taken-early downgrade) and `resolveDisplayedSlotInstant` (the canonical
- * slot the card's own "Genommen" button would record) — so the set the
- * dialog lists is, by construction, the set of cards currently showing a
- * take-now / overdue pill. No new endpoint: every input rides on the
- * `GET /api/medications` list payload the page already holds.
+ * Due-set derivation reads the SAME server-resolved open dose a single card
+ * reads (`complianceDisplay.currentDose`, through `dose-state/pill.ts`), and
+ * records the slot the card's own take button would record
+ * (`cardDisplayedSlot`), so the set the dialog lists is, by construction,
+ * the set of cards currently showing a due / overdue / missed state. No new
+ * endpoint: the list payload and the batched compliance rows the page
+ * already holds carry every input.
  *
  * Recording loops the per-medication `POST /api/medications/{id}/intake`
  * (the same call `runRecordIntake` makes for one card) rather than the
@@ -39,9 +39,8 @@
  * changing an event the owner already resolved — live on
  * `POST /api/medications/intake`, the account-wide slot route, which this
  * loop does not call. The route it does call has no snooze arm at all, and
- * the derivation above cannot put a resolved dose in the set: an event with
- * a `takenAt` closes its window status, and `takenEarlyDaysAgo` drops the
- * day-scale case ahead of it. Every entry it sends is `skipped: false` on a
+ * the derivation above cannot put a resolved dose in the set: the server's
+ * open dose is never a slot that already holds a take or a skip. Every entry it sends is `skipped: false` on a
  * slot still in play, which is the same request the card's own button makes.
  */
 
@@ -53,12 +52,13 @@ import { apiDelete, apiPost } from "@/lib/api/api-fetch";
 import { intakeToastOptions } from "@/components/medications/use-medication-intake";
 import { invalidateMedicationReads } from "@/lib/query-keys";
 import {
-  reduceCurrentWindowStatus,
-  type ScheduleWindowInput,
-} from "@/lib/medications/window-status";
-import { resolveDisplayedSlotInstant } from "@/components/medications/card-parts/displayed-slot-instant";
-import type { DoseStatus } from "@/lib/analytics/compliance";
+  cardDisplayedSlot,
+  cardWindowPill,
+  liveDoseState,
+  type ResolvedDoseWire,
+} from "@/lib/medications/dose-state/pill";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { wallClockInTz } from "@/lib/tz/wall-clock";
 
 type Translator = (
   key: string,
@@ -66,7 +66,9 @@ type Translator = (
 ) => string;
 
 /** Schedule shape the derivation needs — the list payload is a superset. */
-export interface DueDerivationSchedule extends ScheduleWindowInput {
+export interface DueDerivationSchedule {
+  windowStart: string;
+  timesOfDay?: string[];
   dose: string | null;
 }
 
@@ -79,11 +81,8 @@ export interface DueDerivationMedication {
   note?: string | null;
   active: boolean;
   pausedAt: string | null;
-  lastTakenAt: string | null;
-  todayEventCount?: number | null;
-  /** Server display-due verdict from `GET /api/medications`. */
+  /** Server display-due slot from `GET /api/medications`. */
   nextDueAt?: string | null;
-  nextDueOverdue?: boolean;
   /** v1.16.11 (#316) — as-needed (PRN): never due, never in the set. */
   asNeeded?: boolean;
   /** v1.39.1 (#1033) — false: kept as a record, never due, never in the set. */
@@ -111,28 +110,31 @@ export interface DueMedication {
   scheduledFor: Date | null;
 }
 
-const DEFAULT_THRESHOLDS = { lateMinutes: 120, missedMinutes: 240 };
+/** The dose of the schedule whose dose time is the slot's, if any. */
+function slotDose(
+  schedules: DueDerivationSchedule[],
+  slot: Date | null,
+  tz: string,
+): string | null {
+  if (!slot) return null;
+  const p = wallClockInTz(slot, tz);
+  const hm = `${String(p.hour).padStart(2, "0")}:${String(p.minute).padStart(2, "0")}`;
+  const match = schedules.find((s) =>
+    s.timesOfDay && s.timesOfDay.length > 0
+      ? s.timesOfDay.includes(hm)
+      : s.windowStart === hm,
+  );
+  return match?.dose ?? null;
+}
 
 /**
- * Derive the medications that are due RIGHT NOW — active, unpaused, with
- * a non-null current-window status (in_window / late / very_late) that is
- * not the day-scale taken-early downgrade. Input order is preserved so
- * the dialog lists medications in the same order the page renders them.
- *
- * The due set ADDITIONALLY includes escalated medications: an active,
- * unpaused, non-as-needed medication whose batched compliance
- * `currentDose.status` (`doseStatusById`, the same
- * `useMedicationComplianceSummaryAll` rows the page and the table hold)
- * is `overdue` / `missed`. A dose whose band + catch-up tail have closed
- * renders the red escalation value with an ACTIVE take button on its
- * card, so it must be takeable from the batch too — the window-only
- * derivation silently dropped it. The recorded slot for such an entry is
- * exactly what the card's own take button records: the SAME
- * `resolveDisplayedSlotInstant` call over the same (closed) window
- * status, which resolves to the server's `nextDueAt` instant (or null,
- * preserving the unscheduled now-snap path). Entries dedupe by
- * construction — the window branch and the escalation branch are
- * mutually exclusive per medication.
+ * Derive the medications that are due RIGHT NOW: active, unpaused, tracked,
+ * with a server-resolved open dose (`currentDoseById`, the page's batched
+ * `useMedicationComplianceSummaryAll` rows) that is due, overdue, or missed
+ * (a missed dose keeps an active take button on its card: a late take still
+ * counts). Input order is preserved so the dialog lists medications in the
+ * order the page renders them. A medication whose compliance row has not
+ * loaded yet is not in the set, exactly as its card shows no state yet.
  */
 export function deriveDueMedications(
   medications: DueDerivationMedication[],
@@ -140,28 +142,20 @@ export function deriveDueMedications(
     now?: Date;
     /** IANA timezone (profile timezone; Berlin is the legacy fallback). */
     tz?: string;
-    thresholds?: { lateMinutes: number; missedMinutes: number };
-    /**
-     * Batched compliance dose status per medication id (the page's
-     * `useMedicationComplianceSummaryAll` rows). Absent / unknown ids
-     * keep the window-only derivation — the legacy behaviour.
-     */
-    doseStatusById?: ReadonlyMap<string, DoseStatus>;
+    /** The resolved open dose per medication id (`currentDose`). */
+    currentDoseById?: ReadonlyMap<string, ResolvedDoseWire>;
   } = {},
 ): DueMedication[] {
   const now = options.now ?? new Date();
   const tz = options.tz ?? DEFAULT_TIMEZONE;
-  const { lateMinutes, missedMinutes } =
-    options.thresholds ?? DEFAULT_THRESHOLDS;
 
   const due: DueMedication[] = [];
   for (const m of medications) {
     // Paused courses keep their schedules but must never surface here —
-    // the cards suppress their pills the same way. As-needed (PRN)
+    // the cards suppress their state the same way. As-needed (PRN)
     // medications are never due, structurally — even a (bogus)
-    // compliance row for one must not pull it into the set.
-    // A medication with intake tracking off is never due either; the list
-    // already serves it with no schedules, this makes the rule explicit.
+    // compliance row for one must not pull it into the set. A medication
+    // with intake tracking off is never due either.
     if (
       !m.active ||
       m.pausedAt ||
@@ -171,55 +165,20 @@ export function deriveDueMedications(
     ) {
       continue;
     }
-
-    const nextDueMs = m.nextDueAt ? new Date(m.nextDueAt).getTime() : NaN;
-    const status = reduceCurrentWindowStatus({
-      schedules: m.schedules,
-      now,
-      lateMinutes,
-      missedMinutes,
-      active: m.active,
-      lastTakenAt: m.lastTakenAt,
-      todayEventCount: m.todayEventCount ?? 0,
-      tz,
-      // The same server display-due gate the cards apply: a future
-      // (non-overdue) next-due suppresses the overdue tiers; `undefined`
-      // (older mocks) keeps the legacy band-only behaviour.
-      nextDue:
-        m.nextDueAt === undefined
-          ? undefined
-          : Number.isFinite(nextDueMs)
-            ? { at: new Date(nextDueMs), overdue: m.nextDueOverdue === true }
-            : null,
-    });
-    // `takenEarlyDaysAgo` non-null = a day-scale dose already on board
-    // earlier in its period; including it would build a double-dose
-    // confirm list. The card suppresses every prompt tier (incl. the red
-    // escalation value) the same way.
-    if (status.takenEarlyDaysAgo !== null) continue;
-
-    // Escalation alignment with the card: a compliance-derived
-    // overdue / missed dose keeps an active take button on its card even
-    // after the band's catch-up tail closed (window status null).
-    const complianceStatus = options.doseStatusById?.get(m.id);
-    const escalated =
-      complianceStatus === "overdue" || complianceStatus === "missed";
-    if (!status.status && !escalated) continue;
-
+    const dose = options.currentDoseById?.get(m.id);
+    const state = liveDoseState(dose, now);
+    if (state !== "due" && state !== "overdue" && state !== "missed") {
+      continue;
+    }
+    const pill = cardWindowPill(dose, now, tz);
+    const scheduledFor = cardDisplayedSlot(dose, m.nextDueAt ?? null, now);
     due.push({
       id: m.id,
       name: m.name,
-      dose: status.schedule?.dose ?? m.dose,
+      dose: slotDose(m.schedules, scheduledFor, tz) ?? m.dose,
       note: m.note ?? null,
-      window: status.window
-        ? { start: status.window.start, end: status.window.end }
-        : null,
-      scheduledFor: resolveDisplayedSlotInstant({
-        currentWindowStatus: status,
-        nextDueAt: m.nextDueAt ?? null,
-        now,
-        timeZone: tz,
-      }),
+      window: pill ? { start: pill.windowStart, end: pill.windowEnd } : null,
+      scheduledFor,
     });
   }
   return due;

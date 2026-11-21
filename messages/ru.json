@@ -1565,8 +1565,6 @@
     },
     "withoutNotification": "Без уведомления",
     "pausedSince": "На паузе с",
-    "lastDoseYesterday": "Последняя доза вчера",
-    "lastDoseDaysAgo": "Последняя доза {count} дн. назад",
     "complianceWindow": "Приверженность ({days} дн.)",
     "complianceUnavailable": "Не удалось загрузить приверженность",
     "complianceNotApplicable": "Приверженность неприменима",

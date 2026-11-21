@@ -1565,8 +1565,6 @@
     },
     "withoutNotification": "Sem notificação",
     "pausedSince": "Pausado desde",
-    "lastDoseYesterday": "Última dose ontem",
-    "lastDoseDaysAgo": "Última dose há {count} dias",
     "complianceWindow": "Adesão ({days} dias)",
     "complianceUnavailable": "A adesão não pôde ser carregada",
     "complianceNotApplicable": "Adesão não aplicável",

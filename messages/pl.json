@@ -1565,8 +1565,6 @@
     },
     "withoutNotification": "Bez powiadomienia",
     "pausedSince": "Wstrzymane od",
-    "lastDoseYesterday": "Ostatnia dawka wczoraj",
-    "lastDoseDaysAgo": "Ostatnia dawka {count} dni temu",
     "complianceWindow": "Przestrzeganie {days} dni",
     "complianceUnavailable": "Nie udało się wczytać danych o przestrzeganiu",
     "complianceNotApplicable": "Przestrzeganie zaleceń nie ma zastosowania",

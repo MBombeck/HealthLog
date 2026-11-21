@@ -382,27 +382,6 @@ export default function MedicationsPageClient() {
     return () => clearTimeout(timer);
   }, [highlightId, medications]);
 
-  // v1.16.11 — the same reminder-thresholds read the cards make (shared
-  // key + cache), so the header's due-set derivation tiers late /
-  // very_late exactly like the card pills. Null on failure keeps the
-  // derivation on the 120/240 defaults the cards also fall back to.
-  const { data: thresholds } = useQuery({
-    queryKey: queryKeys.settingsReminderThresholds(),
-    queryFn: async () => {
-      try {
-        return await apiGet<{
-          lateMinutes: number;
-          missedMinutes: number;
-          lowStockRunwayDays: number | null;
-        }>("/api/settings/reminder-thresholds");
-      } catch {
-        return null;
-      }
-    },
-    enabled: isAuthenticated,
-    staleTime: 5 * 60 * 1000,
-  });
-
   // v1.16.11 — the SAME batched compliance rows the cards / table read
   // (shared key + cache, no extra round trip). The due-set derivation
   // needs each medication's compliance dose status so an escalated
@@ -509,20 +488,17 @@ export default function MedicationsPageClient() {
     effectiveCategoryFilter,
   );
 
-  // v1.16.11 (#316) — the currently-due set, derived from the list payload
-  // the page already holds via the SAME pipeline a card's pill runs (band
-  // model + server display-due gate + taken-early downgrade), plus the
-  // batched compliance dose status so escalated (overdue / missed)
-  // medications past their band tail stay takeable from the batch. Page
-  // order is preserved so the confirm dialog lists medications as rendered.
+  // v1.16.11 (#316) — the currently-due set, from the same server-resolved
+  // open dose every card reads (the batched compliance rows). Page order is
+  // preserved so the confirm dialog lists medications as rendered.
   const dueMeds = deriveDueMedications(activeMeds, {
     tz: user?.timezone || DEFAULT_TIMEZONE,
-    thresholds: thresholds ?? undefined,
-    doseStatusById: new Map(
-      (complianceRows ?? []).map((row) => [
-        row.medicationId,
-        row.complianceDisplay?.currentDose.status ?? "upcoming",
-      ]),
+    currentDoseById: new Map(
+      (complianceRows ?? []).flatMap((row) =>
+        row.complianceDisplay
+          ? [[row.medicationId, row.complianceDisplay.currentDose] as const]
+          : [],
+      ),
     ),
   });
 

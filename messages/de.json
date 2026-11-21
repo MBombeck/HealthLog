@@ -1565,8 +1565,6 @@
     },
     "withoutNotification": "Ohne Benachrichtigung",
     "pausedSince": "Pausiert seit",
-    "lastDoseYesterday": "Letzte Dosis gestern",
-    "lastDoseDaysAgo": "Letzte Dosis vor {count} Tagen",
     "complianceWindow": "Therapietreue ({days} Tage)",
     "complianceUnavailable": "Therapietreue konnte nicht geladen werden",
     "complianceNotApplicable": "Therapietreue nicht anwendbar",
