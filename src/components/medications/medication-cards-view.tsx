@@ -111,6 +111,7 @@ export function MedicationCardsView<T extends CardMedication>({
             open={open}
             onToggle={() => toggle(group)}
             panelId={panelId}
+            headingLevel={section === "inactive" ? "h3" : "h2"}
           />
           <div
             id={panelId}

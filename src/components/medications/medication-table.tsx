@@ -2,7 +2,7 @@
 
 import type { MedicationCourseFields } from "@/components/medications/course-fields";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
-import { Fragment, useEffect, useMemo, useReducer, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -264,10 +264,9 @@ export function MedicationTable({
     "inactive",
   );
 
-  const doseStatusById = useMemo(
-    () => buildDoseStatusById(complianceRows),
-    [complianceRows],
-  );
+  // Read at render time, not memoised on the rows: the table re-renders every
+  // minute, so a dose whose time passes since the fetch counts as due.
+  const doseStatusById = buildDoseStatusById(complianceRows);
 
   const { isOpen, toggle } = useMedicationGroupsOpen(groupsOpen, isFiltered, {
     doseStatusById,
@@ -331,6 +330,7 @@ export function MedicationTable({
               toggle={toggle}
               colSpan={columns.length}
               renderRows={renderMedicationRows}
+              sectionLabel={`${t("common.inactive")} (${sortedInactive.length})`}
             />
           ) : (
             renderMedicationRows(sortedInactive)

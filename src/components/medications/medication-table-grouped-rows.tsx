@@ -14,15 +14,33 @@ export function MedicationTableGroupedRows({
   toggle,
   colSpan,
   renderRows,
+  sectionLabel,
 }: {
   groups: MedicationGroup<TableMedication>[];
   isOpen: (group: MedicationGroup<TableMedication>) => boolean;
   toggle: (group: MedicationGroup<TableMedication>) => void;
   colSpan: number;
   renderRows: (medications: readonly TableMedication[]) => ReactNode;
+  /**
+   * A label row above the groups, for the inactive block: without it the
+   * inactive groups would repeat the active category headers with nothing
+   * telling them apart.
+   */
+  sectionLabel?: string;
 }) {
+  if (groups.length === 0) return null;
   return (
     <>
+      {sectionLabel && (
+        <TableRow className="hover:bg-transparent">
+          <TableCell
+            colSpan={colSpan}
+            className="text-muted-foreground px-4 pt-4 pb-1.5 text-sm font-medium"
+          >
+            {sectionLabel}
+          </TableCell>
+        </TableRow>
+      )}
       {groups.map((group) => {
         const open = isOpen(group);
         return (

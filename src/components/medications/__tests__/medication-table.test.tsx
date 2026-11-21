@@ -409,6 +409,30 @@ describe("<MedicationTable> — structure + shared payloads", () => {
     expect(html).not.toContain('data-medication-id="m1"');
   });
 
+  it("labels the inactive block when grouped, so its category headers do not read as a second active list", () => {
+    const client = makeClient();
+    const html = render(
+      <MedicationTable
+        activeMedications={[
+          med({ id: "a1", name: "Ramipril", category: "HEART" }),
+        ]}
+        inactiveMedications={[
+          med({
+            id: "i1",
+            name: "Enalapril",
+            category: "HEART",
+            active: false,
+          }),
+        ]}
+        groupBy="category"
+      />,
+      client,
+    );
+    const inactiveAt = html.indexOf("(1)");
+    expect(inactiveAt).toBeGreaterThan(html.indexOf('data-medication-id="a1"'));
+    expect(inactiveAt).toBeLessThan(html.indexOf('data-medication-id="i1"'));
+  });
+
   it("renders a GLP-1 medication like any other row", () => {
     const client = makeClient();
     seedCompliance(client, "g1", 100, 100);

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
+  buildDoseStatusById,
   groupMedications,
   openByDefault,
   isMedicationDue,
@@ -338,5 +339,42 @@ describe("MedicationGroupHeader accessibility (item 8 regression)", () => {
     expect(html).not.toContain("aria-controls");
     expect(html).toContain('aria-expanded="false"');
     expect(html).toContain('type="button"');
+  });
+});
+
+describe("buildDoseStatusById", () => {
+  // The resolved dose at fetch time says upcoming; its due time has passed
+  // since, and the card already reads it as due. "Due only" must agree.
+  const dose = {
+    state: "upcoming",
+    dueAt: "2026-11-21T08:00:00.000Z",
+    overdueSince: "2026-11-21T09:00:00.000Z",
+    missedAfter: "2026-11-21T12:00:00.000Z",
+  };
+  const rows = [
+    {
+      medicationId: "m1",
+      complianceDisplay: { currentDose: dose },
+    },
+  ] as unknown as Parameters<typeof buildDoseStatusById>[0];
+
+  it("reads the resolved dose at now, as the card does", () => {
+    expect(
+      buildDoseStatusById(rows, new Date("2026-11-21T07:59:00.000Z")).get("m1"),
+    ).toBe("upcoming");
+    expect(
+      buildDoseStatusById(rows, new Date("2026-11-21T08:30:00.000Z")).get("m1"),
+    ).toBe("on_time_window");
+    expect(
+      buildDoseStatusById(rows, new Date("2026-11-21T10:00:00.000Z")).get("m1"),
+    ).toBe("overdue");
+  });
+
+  it("counts a medication without a resolved dose as upcoming", () => {
+    expect(
+      buildDoseStatusById([
+        { medicationId: "m2", complianceDisplay: null },
+      ] as unknown as Parameters<typeof buildDoseStatusById>[0]).get("m2"),
+    ).toBe("upcoming");
   });
 });

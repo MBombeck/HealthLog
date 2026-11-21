@@ -101,7 +101,16 @@ function renderPage(meds: readonly ReturnType<typeof createDueMed>[]): string {
         longDays: 30,
         short: { rate: 100, streak: 5 },
         long: { rate: 100, streak: 20 },
-        currentDose: { status: "overdue" },
+        // A resolved dose past its catch-up band: missed keeps its state at
+        // any clock, so the due set does not depend on when the test runs.
+        currentDose: {
+          status: "missed",
+          state: "missed",
+          targetAt: "2026-07-24T08:00:00.000Z",
+          dueAt: "2026-07-24T07:00:00.000Z",
+          overdueSince: "2026-07-24T09:00:00.000Z",
+          missedAfter: "2026-07-24T12:00:00.000Z",
+        },
       },
     })),
   );

@@ -14,6 +14,7 @@ import { applyCategoryOrder } from "@/lib/settings/module-list-layout";
 import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
 import { MEDICATION_CATEGORY_VALUES } from "@/lib/medications/category-values";
 import type { DoseStatus } from "@/lib/analytics/compliance/dose-status";
+import { cardDoseStatus } from "@/lib/medications/dose-state/pill";
 import type { MedicationComplianceSummaryEntry } from "@/lib/queries/use-medication-compliance-summary";
 
 export interface MedicationGroupCategory {
@@ -28,8 +29,10 @@ export interface MedicationGroup<T> {
 }
 
 /**
- * The current dose status of each medication, from the batched compliance
- * rows. A medication without a row counts as upcoming.
+ * The current dose status of each medication at `now`, read from the
+ * resolved open dose in the batched compliance rows the way the card reads
+ * it (`cardDoseStatus`), so a dose whose time passed since the fetch counts
+ * as due here too. A medication without a row counts as upcoming.
  */
 export function buildDoseStatusById(
   rows:
@@ -39,11 +42,12 @@ export function buildDoseStatusById(
       >[]
     | null
     | undefined,
+  now: Date = new Date(),
 ): Map<string, DoseStatus> {
   return new Map(
     (rows ?? []).map((row) => [
       row.medicationId,
-      row.complianceDisplay?.currentDose.status ?? "upcoming",
+      cardDoseStatus(row.complianceDisplay?.currentDose, now),
     ]),
   );
 }
@@ -328,6 +332,7 @@ export function MedicationGroupHeader({
   onToggle,
   panelId,
   className,
+  headingLevel = "h2",
 }: {
   category: MedicationGroupCategory;
   count: number;
@@ -335,9 +340,12 @@ export function MedicationGroupHeader({
   onToggle: () => void;
   panelId?: string;
   className?: string;
+  /** h3 under a section heading (the inactive block), h2 otherwise. */
+  headingLevel?: "h2" | "h3";
 }) {
+  const Heading = headingLevel;
   return (
-    <h2 className={cn("min-w-0", className)}>
+    <Heading className={cn("min-w-0", className)}>
       <button
         type="button"
         data-slot="medication-list-group"
@@ -359,6 +367,6 @@ export function MedicationGroupHeader({
         </span>
         <TagChip className="shrink-0 tabular-nums">{count}</TagChip>
       </button>
-    </h2>
+    </Heading>
   );
 }
