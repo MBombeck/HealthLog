@@ -12,6 +12,8 @@ import type { MeasurementType } from "@/generated/prisma/client";
 import { classifyExternalId } from "@/lib/validations/external-id";
 import { encryptNote } from "@/lib/crypto/note-cipher";
 import { isP2002, isP2025 } from "@/lib/prisma-errors";
+import { isStorableTimeZone } from "@/lib/tz/reading-zone";
+import { zonesKnownToPostgres } from "@/lib/tz/reading-zone-sql";
 
 import type { JsonImportMeasurement } from "./schema";
 import type { JsonImportTally } from "./tally";
@@ -22,9 +24,13 @@ export type { JsonImportMeasurement } from "./schema";
  * A reading's own columns beyond its value: what the reading says, carried
  * whole so a range keeps its bounds, a sleep row its stage and an ECG its
  * verdict. Every arm of the write states them, so a re-import of the same
- * file puts back what an edit in between changed.
+ * file puts back what an edit in between changed. A zone the server cannot
+ * read is stored as null, as the batch route stores it.
  */
-function readingColumns(m: JsonImportMeasurement) {
+function readingColumns(
+  m: JsonImportMeasurement,
+  storableZones: ReadonlySet<string>,
+) {
   return {
     value: m.value,
     valueMin: m.valueMin ?? null,
@@ -35,6 +41,10 @@ function readingColumns(m: JsonImportMeasurement) {
     sleepStage: m.sleepStage ?? null,
     rhythmClassification: m.rhythmClassification ?? null,
     deviceType: m.deviceType ?? null,
+    timeZone:
+      m.timeZone !== undefined && storableZones.has(m.timeZone)
+        ? m.timeZone
+        : null,
     notes: null,
     notesEncrypted: encryptNote(m.notes || null),
   };
@@ -65,6 +75,17 @@ export async function importJsonMeasurements(
 ): Promise<ImportedMeasurements> {
   const touched: ImportedMeasurements["touched"] = [];
   const inserted: ImportedMeasurements["inserted"] = [];
+  // Checked against Postgres too: the SQL readers hand the zone to
+  // `AT TIME ZONE`, which refuses a name only the runtime knows.
+  const storableZones = await zonesKnownToPostgres(prisma, [
+    ...new Set(
+      rows.flatMap((m) =>
+        m.timeZone !== undefined && isStorableTimeZone(m.timeZone)
+          ? [m.timeZone]
+          : [],
+      ),
+    ),
+  ]);
   for (const m of rows) {
     // The `(userId, type, source, externalId)` upsert key is only
     // idempotent while the id is STABLE; an id that rotates between
@@ -80,7 +101,7 @@ export async function importJsonMeasurements(
     try {
       // `measuredAt` is already a `Date` (validateEntryInstant transform).
       const measuredAt = m.measuredAt;
-      const columns = readingColumns(m);
+      const columns = readingColumns(m, storableZones);
       if (m.externalId) {
         // INSERT ... RETURNING is the only insertion proof. A concurrent
         // importer can win this key after any existence probe, so attempt
