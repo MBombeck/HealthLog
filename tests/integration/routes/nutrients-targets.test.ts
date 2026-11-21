@@ -110,9 +110,11 @@ describe("/api/nutrients/targets", () => {
   it("names each refused value's plausibility bounds, and never the value", async () => {
     const user = await nutrientUser();
     const session = await makeSession(user);
+    // A value whose digits appear in no bound, so the echo check below
+    // cannot match a bound by accident (sodium's maximum is 50000).
     const res = await patch(
       {
-        protein: { value: 5000, direction: "target" },
+        protein: { value: 4321, direction: "target" },
         sodium: { value: 0, direction: "limit" },
       },
       session,
@@ -127,16 +129,18 @@ describe("/api/nutrients/targets", () => {
           code: "too_big",
           maximum: NUTRIENT_CATALOG.protein.plausibleDailyMax,
           inclusive: true,
+          minimum: 0,
         }),
         expect.objectContaining({
           path: "targets.sodium.value",
           code: "too_small",
           minimum: 0,
           inclusive: false,
+          maximum: NUTRIENT_CATALOG.sodium.plausibleDailyMax,
         }),
       ]),
     );
-    expect(JSON.stringify(issues)).not.toContain("5000");
+    expect(JSON.stringify(issues)).not.toContain("4321");
   });
 
   it("refuses with module.disabled while the module is off", async () => {
