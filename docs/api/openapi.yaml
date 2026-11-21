@@ -46072,6 +46072,7 @@ components:
               - measurement.reading-timezone
               - apple-health.types-2026-11
               - medication.snooze-setting
+              - apple-health.effort-scores
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices.
@@ -46090,7 +46091,10 @@ components:
             `apple-health.types-2026-11`: The batch ingest accepts the Apple Health cycling distance, rowing distance
             and speed, and running speed, power, ground contact time, vertical oscillation and stride length types.
             `medication.snooze-setting`: GET/PATCH /api/auth/me/notification-prefs carry medication.snoozeMinutes
-            (5–240, default 30); a snooze without snoozedUntil and Telegram's Remind me later button defer by it."
+            (5–240, default 30); a snooze without snoozedUntil and Telegram's Remind me later button defer by it.
+            `apple-health.effort-scores`: The batch ingest accepts HealthKit workoutEffortScore,
+            estimatedWorkoutEffortScore and physicalEffort as WORKOUT_EFFORT_SCORE, ESTIMATED_WORKOUT_EFFORT_SCORE and
+            PHYSICAL_EFFORT."
       required:
         - version
         - buildSha

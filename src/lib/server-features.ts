@@ -18,6 +18,7 @@ export const SERVER_FEATURES = [
   "measurement.reading-timezone",
   "apple-health.types-2026-11",
   "medication.snooze-setting",
+  "apple-health.effort-scores",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
