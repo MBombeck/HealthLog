@@ -334,5 +334,23 @@
     "display": "Beta hydroxybutyrate [Moles/volume] in Blood",
     "unit": "mmol/L",
     "category": "laboratory"
+  },
+  "WORKOUT_EFFORT_SCORE": {
+    "loinc": "HKQuantityTypeIdentifierWorkoutEffortScore",
+    "display": "Workout effort score",
+    "unit": "{score}",
+    "category": "activity"
+  },
+  "ESTIMATED_WORKOUT_EFFORT_SCORE": {
+    "loinc": "HKQuantityTypeIdentifierEstimatedWorkoutEffortScore",
+    "display": "Estimated workout effort score",
+    "unit": "{score}",
+    "category": "activity"
+  },
+  "PHYSICAL_EFFORT": {
+    "loinc": "HKQuantityTypeIdentifierPhysicalEffort",
+    "display": "Physical effort",
+    "unit": "kcal/(kg.h)",
+    "category": "activity"
   }
 }

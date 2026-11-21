@@ -176,6 +176,9 @@ export const MEASUREMENT_LEAF_GROUP: Record<MeasurementType, ReportGroupId> = {
   STRAIN_SCORE: "activity",
   DAY_STRAIN: "activity",
   WORKOUT_STRAIN: "activity",
+  WORKOUT_EFFORT_SCORE: "activity",
+  ESTIMATED_WORKOUT_EFFORT_SCORE: "activity",
+  PHYSICAL_EFFORT: "activity",
   EXERCISE_MINUTES: "activity",
   STAND_MINUTES: "activity",
   STAND_HOURS: "activity",
@@ -320,6 +323,9 @@ export const LEAF_MODULE: Partial<Record<ReportLeafId, ModuleKey>> = {
   STRAIN_SCORE: "workouts",
   DAY_STRAIN: "workouts",
   WORKOUT_STRAIN: "workouts",
+  WORKOUT_EFFORT_SCORE: "workouts",
+  ESTIMATED_WORKOUT_EFFORT_SCORE: "workouts",
+  PHYSICAL_EFFORT: "workouts",
   // The per-sport workout block.
   WORKOUTS: "workouts",
   // Readiness signals.

@@ -2128,6 +2128,74 @@ export const SIGNALS: Record<string, SignalDefinition> = {
       category: "activity",
     },
   },
+  // Apple effort. Stored and readable over MCP, off the Coach snapshot and
+  // the correlations: a session's intensity is not a daily vital, and no
+  // score or total is built from any of the three. The logged score and the
+  // watch's estimate are separate types so a mean of one cannot blend the
+  // other.
+  WORKOUT_EFFORT_SCORE: {
+    key: "WORKOUT_EFFORT_SCORE",
+    kind: "measurement",
+    source: { measurementType: "WORKOUT_EFFORT_SCORE" },
+    displayName: "Workout effort",
+    unit: "score",
+    direction: "target-band",
+    archetype: "activity-fitness",
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: true,
+    },
+    fhir: {
+      loinc: "HKQuantityTypeIdentifierWorkoutEffortScore",
+      display: "Workout effort score",
+      unit: "{score}",
+      category: "activity",
+    },
+  },
+  ESTIMATED_WORKOUT_EFFORT_SCORE: {
+    key: "ESTIMATED_WORKOUT_EFFORT_SCORE",
+    kind: "measurement",
+    source: { measurementType: "ESTIMATED_WORKOUT_EFFORT_SCORE" },
+    displayName: "Estimated workout effort",
+    unit: "score",
+    direction: "target-band",
+    archetype: "activity-fitness",
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: true,
+    },
+    fhir: {
+      loinc: "HKQuantityTypeIdentifierEstimatedWorkoutEffortScore",
+      display: "Estimated workout effort score",
+      unit: "{score}",
+      category: "activity",
+    },
+  },
+  PHYSICAL_EFFORT: {
+    key: "PHYSICAL_EFFORT",
+    kind: "measurement",
+    source: { measurementType: "PHYSICAL_EFFORT" },
+    displayName: "Physical effort",
+    unit: "kcal/(hr·kg)",
+    direction: "target-band",
+    archetype: "activity-fitness",
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: true,
+    },
+    fhir: {
+      loinc: "HKQuantityTypeIdentifierPhysicalEffort",
+      display: "Physical effort",
+      unit: "kcal/(kg.h)",
+      category: "activity",
+    },
+  },
 };
 
 /** Type guard: narrow an arbitrary string to a registered signal key. */

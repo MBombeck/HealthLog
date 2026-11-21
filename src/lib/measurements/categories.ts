@@ -256,6 +256,11 @@ export const MEASUREMENT_CATEGORIES: ReadonlyMap<
   // this overlay.
   ["MENOPAUSAL_STATE", "body"],
   ["BLEEDING_AFTER_MENOPAUSE", "body"],
+  // Apple effort. The scores join the other effort indices; the rate joins
+  // the activity quantities it is not added into.
+  ["WORKOUT_EFFORT_SCORE", "scores"],
+  ["ESTIMATED_WORKOUT_EFFORT_SCORE", "scores"],
+  ["PHYSICAL_EFFORT", "activity"],
 ]);
 
 /**

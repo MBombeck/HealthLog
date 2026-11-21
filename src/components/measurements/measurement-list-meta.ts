@@ -107,6 +107,10 @@ export const MEASUREMENT_TYPE_LABEL_KEYS: Record<string, string> = {
   FEV1: "measurements.typeFev1",
   FVC: "measurements.typeFvc",
   PEAK_EXPIRATORY_FLOW: "measurements.typePeakExpiratoryFlow",
+  WORKOUT_EFFORT_SCORE: "measurements.typeWorkoutEffortScore",
+  ESTIMATED_WORKOUT_EFFORT_SCORE:
+    "measurements.typeEstimatedWorkoutEffortScore",
+  PHYSICAL_EFFORT: "measurements.typePhysicalEffort",
   WALKING_STEADINESS_EVENT: "measurements.typeWalkingSteadinessEvent",
   BREATHING_DISTURBANCE_EVENT: "measurements.typeBreathingDisturbanceEvent",
   // ── v1.10.0 — computed scores (WX-C) ──
@@ -253,6 +257,10 @@ export const MEASUREMENT_TYPE_ICONS: Record<string, LucideIcon> = {
   FEV1: Wind,
   FVC: Wind,
   PEAK_EXPIRATORY_FLOW: Wind,
+  // Effort scores use the dial; physical effort the energy flame.
+  WORKOUT_EFFORT_SCORE: Gauge,
+  ESTIMATED_WORKOUT_EFFORT_SCORE: Gauge,
+  PHYSICAL_EFFORT: Flame,
   WALKING_STEADINESS_EVENT: Footprints,
   BREATHING_DISTURBANCE_EVENT: Wind,
   // ── v1.10.0 — computed scores (WX-C) ──
