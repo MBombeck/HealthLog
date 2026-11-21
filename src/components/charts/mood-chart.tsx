@@ -49,7 +49,7 @@ import {
   dayKeyToTimestamp,
   movingAverageByPoints,
 } from "./health-chart/series-math";
-import { MoodChartPlot, type ChartDataPoint } from "./mood-chart-plot";
+import { MoodChartPlot, type ChartDataPoint } from "./mood-chart/plot";
 
 // --- Types ---
 

@@ -23,7 +23,7 @@ import {
 import type { ComparisonBaseline } from "@/lib/dashboard-layout";
 import type { Formatters } from "@/lib/format-locale";
 import { computeTickPositions } from "@/lib/charts/x-axis-density";
-import { RichChartTooltip, type RichTooltipRow } from "./chart-tooltip";
+import { RichChartTooltip, type RichTooltipRow } from "../chart-tooltip";
 
 export interface ChartDataPoint {
   date: string;

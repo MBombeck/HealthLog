@@ -106,7 +106,8 @@ const KEYBOARD_ELSEWHERE: Record<string, { file: string; why: string }> = {
 function hasKeyboardDoor(text: string): boolean {
   return (
     jsxTags(text, "ChartDataTable").some(mountOpensDays) ||
-    /<DayLink(?:At|Stated)?[\s>]/.test(text)
+    // `LabDayLink` is `DayLinkStated` with the lab-day rule applied.
+    /<(?:Lab)?DayLink(?:At|Stated)?[\s>]/.test(text)
   );
 }
 
