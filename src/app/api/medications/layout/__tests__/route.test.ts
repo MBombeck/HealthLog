@@ -10,11 +10,22 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
+interface UserLayoutSelectPayload {
+  medicationListLayoutJson: unknown;
+  updatedAt?: Date;
+}
+
+const { mockUserFindUnique, mockUserUpdate } = vi.hoisted(() => ({
+  mockUserFindUnique:
+    vi.fn<(args?: unknown) => Promise<UserLayoutSelectPayload | null>>(),
+  mockUserUpdate: vi.fn<(args?: unknown) => Promise<unknown>>(),
+}));
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     user: {
-      findUnique: vi.fn(),
-      update: vi.fn(),
+      findUnique: mockUserFindUnique,
+      update: mockUserUpdate,
       updateMany: vi.fn(),
     },
     auditLog: {
@@ -139,16 +150,33 @@ describe("PUT /api/medications/layout — preserve-when-absent", () => {
     vi.mocked(prisma.user.update).mockResolvedValue({} as never);
 
     const res = await callPut(
-      makeReq({ version: 1, view: "table", order: ["med-a", "med-b"] }),
+      makeReq({
+        version: 1,
+        view: "table",
+        order: ["med-a", "med-b"],
+        groupBy: "category",
+        groupsOpen: "collapsed",
+        categoryOrder: ["VITAMIN", "PAIN_RELIEF"],
+      }),
     );
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
-      data: { version: number; view: string; order: string[] };
+      data: {
+        version: number;
+        view: string;
+        order: string[];
+        groupBy: string;
+        groupsOpen: string;
+        categoryOrder: string[];
+      };
     };
     expect(body.data).toEqual({
       version: 1,
       view: "table",
       order: ["med-a", "med-b"],
+      groupBy: "category",
+      groupsOpen: "collapsed",
+      categoryOrder: ["VITAMIN", "PAIN_RELIEF"],
       // v1.32.21 — the write now echoes the fresh optimistic-concurrency token.
       updatedAt: expect.any(String),
     });
@@ -163,17 +191,23 @@ describe("PUT /api/medications/layout — preserve-when-absent", () => {
       version: 1,
       view: "table",
       order: ["med-a", "med-b"],
+      groupBy: "category",
+      groupsOpen: "collapsed",
+      categoryOrder: ["VITAMIN", "PAIN_RELIEF"],
     });
-    // No stored-blob read needed — both fields were on the body.
+    // No stored-blob read needed — all fields were on the body.
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
   });
 
-  it("a view-only PUT preserves the stored manual order", async () => {
+  it("a view-only PUT preserves stored order, grouping and category order", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       medicationListLayoutJson: {
         version: 1,
         view: "cards",
         order: ["med-z", "med-a"],
+        groupBy: "category",
+        groupsOpen: "flagged",
+        categoryOrder: ["PAIN_RELIEF"],
       },
     } as never);
     vi.mocked(prisma.user.update).mockResolvedValue({} as never);
@@ -181,15 +215,55 @@ describe("PUT /api/medications/layout — preserve-when-absent", () => {
     const res = await callPut(makeReq({ version: 1, view: "table" }));
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
-      data: { view: string; order: string[] };
+      data: {
+        view: string;
+        order: string[];
+        groupBy: string;
+        groupsOpen: string;
+        categoryOrder: string[];
+      };
     };
     expect(body.data.view).toBe("table");
     expect(body.data.order).toEqual(["med-z", "med-a"]);
+    expect(body.data.groupBy).toBe("category");
+    expect(body.data.groupsOpen).toBe("flagged");
+    expect(body.data.categoryOrder).toEqual(["PAIN_RELIEF"]);
+  });
+
+  it("a groupBy-only PUT preserves stored view and order", async () => {
+    mockUserFindUnique.mockResolvedValue({
+      medicationListLayoutJson: {
+        version: 1,
+        view: "table",
+        order: ["med-1"],
+        groupBy: "none",
+        groupsOpen: "expanded",
+        categoryOrder: [],
+      },
+      updatedAt: new Date("2026-07-24T10:00:00.000Z"),
+    });
+    mockUserUpdate.mockResolvedValue({});
+
+    const res = await callPut(makeReq({ version: 1, groupBy: "category" }));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: { view: string; order: string[]; groupBy: string };
+    };
+    expect(body.data.view).toBe("table");
+    expect(body.data.order).toEqual(["med-1"]);
+    expect(body.data.groupBy).toBe("category");
   });
 
   it("an order-only PUT preserves the stored view", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
-      medicationListLayoutJson: { version: 1, view: "table", order: [] },
+      medicationListLayoutJson: {
+        version: 1,
+        view: "table",
+        order: [],
+        groupBy: "none",
+        groupsOpen: "expanded",
+        categoryOrder: [],
+      },
     } as never);
     vi.mocked(prisma.user.update).mockResolvedValue({} as never);
 
@@ -202,6 +276,40 @@ describe("PUT /api/medications/layout — preserve-when-absent", () => {
     };
     expect(body.data.view).toBe("table");
     expect(body.data.order).toEqual(["med-1", "med-2"]);
+  });
+
+  it("a categoryOrder-only PUT preserves stored medication order, view, and grouping", async () => {
+    mockUserFindUnique.mockResolvedValue({
+      medicationListLayoutJson: {
+        version: 1,
+        view: "table",
+        order: ["med-alpha", "med-beta"],
+        groupBy: "category",
+        groupsOpen: "flagged",
+        categoryOrder: ["PAIN"],
+      },
+      updatedAt: new Date("2026-07-24T10:00:00.000Z"),
+    });
+    mockUserUpdate.mockResolvedValue({});
+
+    const res = await callPut(
+      makeReq({ version: 1, categoryOrder: ["HEART", "PAIN"] }),
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: {
+        view: string;
+        order: string[];
+        groupBy: string;
+        groupsOpen: string;
+        categoryOrder: string[];
+      };
+    };
+    expect(body.data.view).toBe("table");
+    expect(body.data.order).toEqual(["med-alpha", "med-beta"]);
+    expect(body.data.groupBy).toBe("category");
+    expect(body.data.groupsOpen).toBe("flagged");
+    expect(body.data.categoryOrder).toEqual(["HEART", "PAIN"]);
   });
 
   it("dedupes a repeated id in the submitted order", async () => {

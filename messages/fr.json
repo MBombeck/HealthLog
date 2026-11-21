@@ -2692,7 +2692,32 @@
     "phaseGreenHint": "Premier rappel, ce délai avant la fin de la plage de rappel.",
     "phaseYellowHint": "Un autre rappel, ce délai avant la fin de la plage.",
     "phaseOrangeHint": "Un rappel que la dose est en retard, ce délai après la fin de la plage.",
-    "phaseRedHint": "Passé ce délai après la plage, la dose compte comme manquée."
+    "phaseRedHint": "Passé ce délai après la plage, la dose compte comme manquée.",
+    "filter": {
+      "searchPlaceholder": "Rechercher un médicament…",
+      "searchLabel": "Rechercher des médicaments",
+      "clearSearch": "Effacer la recherche",
+      "treatmentPeriod": "Période de traitement",
+      "noMatchesTitle": "Aucun médicament trouvé",
+      "noMatchesDescription": "Essayez d'ajuster votre recherche ou vos filtres.",
+      "countOne": "{count} médicament",
+      "countFew": "{count} médicaments",
+      "countOther": "{count} médicaments"
+    },
+    "groups": {
+      "heading": "Catégories",
+      "description": "Regroupe les médicaments par catégorie.",
+      "label": "Regroupement",
+      "none": "Aucun",
+      "category": "Par catégorie",
+      "openLabel": "Ouvertes à l’affichage",
+      "openExpanded": "Toutes",
+      "openFlagged": "À prendre seulement",
+      "openCollapsed": "Aucune",
+      "orderWithinGroups": "L’ordre s’applique au sein de chaque catégorie.",
+      "orderHeading": "Ordre des catégories",
+      "orderDefault": "Tant que vous n’en déplacez aucune, les catégories intégrées suivent un ordre fixe, les vôtres l’ordre alphabétique et {other} vient en dernier."
+    }
   },
   "charts": {
     "loadingLabel": "Chargement du graphique…",

@@ -2692,7 +2692,32 @@
     "phaseGreenHint": "Eerste herinnering, zo lang voor het einde van het herinneringsvenster.",
     "phaseYellowHint": "Nog een herinnering, zo lang voor het einde van het venster.",
     "phaseOrangeHint": "Een herinnering dat de dosis te laat is, zo lang na het einde van het venster.",
-    "phaseRedHint": "Zo lang na het venster telt de dosis als gemist."
+    "phaseRedHint": "Zo lang na het venster telt de dosis als gemist.",
+    "filter": {
+      "searchPlaceholder": "Medicijn zoeken…",
+      "searchLabel": "Medicijnen zoeken",
+      "clearSearch": "Zoekopdracht wissen",
+      "treatmentPeriod": "Behandelperiode",
+      "noMatchesTitle": "Geen passende medicijnen",
+      "noMatchesDescription": "Probeer je zoekopdracht of filters aan te passen.",
+      "countOne": "{count} medicijn",
+      "countFew": "{count} medicijnen",
+      "countOther": "{count} medicijnen"
+    },
+    "groups": {
+      "heading": "Categorieën",
+      "description": "Groepeert de medicijnen per categorie.",
+      "label": "Groepering",
+      "none": "Niet",
+      "category": "Per categorie",
+      "openLabel": "Open bij laden",
+      "openExpanded": "Alle",
+      "openFlagged": "Alleen te nemen",
+      "openCollapsed": "Geen",
+      "orderWithinGroups": "De volgorde geldt binnen elke categorie.",
+      "orderHeading": "Volgorde van de categorieën",
+      "orderDefault": "Tot je er een verplaatst, staan de ingebouwde categorieën in een vaste volgorde, je eigen alfabetisch daarna en {other} als laatste."
+    }
   },
   "charts": {
     "loadingLabel": "Grafiek laden…",

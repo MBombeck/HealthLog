@@ -33655,6 +33655,27 @@ components:
             type: string
             minLength: 1
             maxLength: 64
+        groupBy:
+          description: Grouping mode ("none" or "category"). Default "none".
+          type: string
+          enum:
+            - none
+            - category
+        groupsOpen:
+          description: Which groups open by default ("expanded", "flagged", "collapsed"). Default "expanded".
+          type: string
+          enum:
+            - expanded
+            - flagged
+            - collapsed
+        categoryOrder:
+          description: User-defined category order allow-list.
+          maxItems: 200
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
         baseUpdatedAt:
           description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
             legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored
@@ -63845,6 +63866,27 @@ components:
           description: User-defined manual medication order (medication ids, first = top), shared by both views. Display-only —
             unknown / deleted ids are ignored at render time, never 422. Optional on PUT (preserve-when-absent); always
             present on responses.
+          maxItems: 200
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+        groupBy:
+          description: Grouping mode ("none" or "category"). Default "none".
+          type: string
+          enum:
+            - none
+            - category
+        groupsOpen:
+          description: Which groups open by default ("expanded", "flagged", "collapsed"). Default "expanded".
+          type: string
+          enum:
+            - expanded
+            - flagged
+            - collapsed
+        categoryOrder:
+          description: User-defined category order allow-list.
           maxItems: 200
           type: array
           items:
