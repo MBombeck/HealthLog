@@ -489,9 +489,8 @@ function MedicationTableRowItem({
     timeZone: userTz,
   });
 
-  // Status cell, the card's precedence (last-dose context, then overdue,
-  // then the pill read from the resolved dose, `dose-state/pill.ts`); the
-  // table keeps the taken-early pill the card hides (no last-intake line).
+  // Status cell in the card's precedence (last-dose context, escalation, then
+  // the resolved pill); the table keeps the taken-early pill the card hides.
   const canAct = medication.active && medication.intakeActionable !== false;
   const escalation: "missed" | "overdue" | null =
     canAct && doseStatus === "missed"

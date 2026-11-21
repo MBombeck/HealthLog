@@ -543,13 +543,6 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["AlertDialog"],
   },
   {
-    file: "components/medications/dose-history/use-dose-history-ledger.ts",
-    destroys: "one intake event",
-    triggers: ["components/medications/dose-history/ledger-confirms.tsx"],
-    recovery: "tombstoned-no-restore",
-    confirm: ["AlertDialog"],
-  },
-  {
     file: "components/medications/side-effects-section.tsx",
     destroys: "one side-effect log entry",
     recovery: "permanent",
@@ -584,7 +577,8 @@ const REGISTRY: DestructiveEntry[] = [
   },
   {
     file: "components/medications/use-medication-intake.ts",
-    destroys: "an intake event recorded seconds ago",
+    destroys:
+      "an intake event: one recorded seconds ago (its toast's Undo), or a dose-history row",
     recovery: "tombstoned-no-restore",
     confirm: [],
     unconfirmed: [
@@ -592,6 +586,11 @@ const REGISTRY: DestructiveEntry[] = [
         control: "Undo inside the intake success toast",
         reason:
           "This IS the undo for a create the person made a moment earlier, reached only from that create's own toast. Confirming an undo would ask someone to confirm a correction, which inverts what the affordance is for.",
+      },
+      {
+        control: "Delete in a dose-history row's menu",
+        reason:
+          "Deletes the way measurements, mood and labs delete: at once, with an Undo in the toast that records the same dose again (time, slot, dose) through the ordinary intake write. The confirm it replaced claimed a permanent removal the soft delete never made.",
       },
     ],
   },

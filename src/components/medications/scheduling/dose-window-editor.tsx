@@ -68,17 +68,11 @@ export function DoseWindowEditor({
   const generatedId = useId();
   const prefix = idPrefix ?? generatedId;
 
-  // v1.25.13 — the switch reflects the user's INTENT to customise, held in
-  // local state, because it cannot be reconstructed from `value` alone: the
-  // persisted contract stores ONLY ranges that differ from the default band
-  // (`rowsToEntries` drops a default-equal range so the column stays minimal).
-  // The former editor seeded the range from the default band on toggle-ON and
-  // emitted immediately, so serialisation dropped it right back to `[]`, the
-  // controlled `checked={row.custom}` recomputed `false`, and the switch
-  // snapped off — the toggle could never turn on without first editing a range
-  // the editor wouldn't reveal until the toggle was on (a deadlock). Tracking
-  // the opened set here decouples the toggle from serialisation: the row shows
-  // its default band, and an explicit range only persists once it differs.
+  // The switch holds the INTENT to customise in local state: the stored
+  // contract keeps only ranges that differ from the default band, so a
+  // switch derived from `value` snapped off before a range could be edited
+  // (v1.25.13). An opened row shows its default band; a range persists
+  // only once it differs.
   const [opened, setOpened] = useState<ReadonlySet<string>>(
     () => new Set<string>(),
   );

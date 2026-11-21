@@ -9,6 +9,7 @@ import { showErrorToast } from "@/lib/errors/error-toast";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { useSnoozeMinutes } from "@/lib/queries/use-snooze-minutes";
 import { invalidateMedicationReads, queryKeys } from "@/lib/query-keys";
+import { useActiveRecordName } from "@/hooks/use-record-capabilities";
 
 /** The fields of a today row (`GET /api/medications/intake?scope=today`) read here. */
 export interface TodayDoseRow {
@@ -102,4 +103,33 @@ export function useDoseSnooze({
     busy,
     snooze,
   };
+}
+
+/**
+ * A medication card's snooze: offered only where a reminder exists to push
+ * back, in the person's own record (a delegate may not snooze).
+ */
+export function useCardDoseSnooze(medication: {
+  id: string;
+  name: string;
+  active: boolean;
+  notificationsEnabled: boolean;
+  autoMarkTaken?: boolean;
+  trackIntake?: boolean;
+  intakeActionable?: boolean;
+  asNeeded?: boolean;
+}) {
+  const recordName = useActiveRecordName();
+  return useDoseSnooze({
+    medicationId: medication.id,
+    medicationName: medication.name,
+    enabled:
+      medication.active &&
+      medication.notificationsEnabled &&
+      medication.autoMarkTaken !== true &&
+      medication.trackIntake !== false &&
+      medication.intakeActionable !== false &&
+      medication.asNeeded !== true &&
+      !recordName,
+  });
 }

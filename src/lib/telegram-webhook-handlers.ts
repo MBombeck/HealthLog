@@ -31,10 +31,7 @@ import {
   findTelegramDoseMedication,
   listTelegramDoseMedications,
 } from "@/lib/telegram-dose-medications";
-import {
-  MAX_SNOOZE_MINUTES,
-  MIN_SNOOZE_MINUTES,
-} from "@/lib/medications/snooze-length";
+import { answerDoseSnooze } from "@/lib/telegram-dose-snooze";
 import { GREETING_WORDS, HELP_WORDS } from "@/lib/telegram-bare-words";
 import {
   markMedicationSkipped,
@@ -240,56 +237,16 @@ export async function handleCallback(update: TelegramUpdate) {
     }
     await cleanupReminderTracking(user.id, medicationId);
   } else if (data.startsWith("snooze:")) {
-    // Format: "snooze:{medicationId}:{minutes}". The reminder's button
-    // carries the person's snooze length; a button from an older message
-    // (the former 1 h / 3 h pair) still answers with its own minutes. Held to
-    // the setting's range either way.
-    const parts = data.split(":");
-    const medicationId = parts[1];
-    const asked = parseInt(parts[2], 10);
-    const minutes = Number.isFinite(asked)
-      ? Math.min(Math.max(asked, MIN_SNOOZE_MINUTES), MAX_SNOOZE_MINUTES)
-      : NaN;
-    if (!medicationId || !Number.isFinite(minutes)) {
-      await answerTelegramCallbackQuery(
-        botToken,
-        callback.id,
-        t("telegram.errorInvalidAction"),
-      );
-      return;
-    }
-
-    const medication = await findTelegramDoseMedication(
-      user.id,
-      user.timezone,
-      { id: medicationId },
-    );
-    if (!medication) {
-      await answerTelegramCallbackQuery(
-        botToken,
-        callback.id,
-        t("telegram.errorMedicationNotFound"),
-      );
-      return;
-    }
-
-    await prisma.medication.update({
-      where: { id: medication.id },
-      data: { snoozedUntil: new Date(Date.now() + minutes * 60000) },
+    await answerDoseSnooze({
+      data,
+      user,
+      t,
+      reply: (text) => answerTelegramCallbackQuery(botToken, callback.id, text),
+      done: async (medicationId) => {
+        if (messageId) await deleteMessage(botToken, chatId, messageId);
+        await cleanupReminderTracking(user.id, medicationId);
+      },
     });
-
-    await answerTelegramCallbackQuery(
-      botToken,
-      callback.id,
-      t("telegram.snoozedFor", {
-        name: medication.name,
-        duration: t("telegram.snoozeMinutes", { minutes }),
-      }),
-    );
-    if (messageId) {
-      await deleteMessage(botToken, chatId, messageId);
-    }
-    await cleanupReminderTracking(user.id, medicationId);
   } else if (data.startsWith("skip:")) {
     const medicationId = data.slice("skip:".length).trim();
     if (!medicationId) {

@@ -26,6 +26,7 @@ import { useFormatters, useTranslations } from "@/lib/i18n/context";
 
 import { DoseStateLabel } from "@/components/medications/dose-state-label";
 import type { DeletedIntakeSnapshot } from "@/components/medications/use-medication-intake";
+import type { DoseState } from "@/lib/medications/dose-state/resolve";
 import {
   DOSE_ACTION_TERM,
   doseStateOfHistoryRow,
@@ -137,24 +138,7 @@ export function LedgerRowItem({
           <span className="text-foreground text-sm font-medium tabular-nums">
             {timeLabel}
           </span>
-          {/* The row's state in the shared dose vocabulary. An open slot
-              reads pending, due or overdue as the server resolved it; an
-              off-schedule take carries the "off-schedule" tag instead. */}
-          {rowState ? (
-            <DoseStateLabel
-              state={rowState}
-              className="text-xs"
-              slot="ledger-status"
-            />
-          ) : (
-            <span
-              className="text-primary inline-flex items-center gap-1 text-xs font-medium"
-              data-slot="ledger-status"
-            >
-              <Plus aria-hidden="true" className="size-3.5 shrink-0" />
-              {t("medications.detail.verlauf.status.ad_hoc")}
-            </span>
-          )}
+          <LedgerRowStatus state={rowState} />
           {row.kind === "ad_hoc" && (
             <Badge variant="outline" className="text-2xs">
               {t("medications.detail.verlauf.adHocTag")}
@@ -446,5 +430,28 @@ function LedgerRowMenu({
         )}
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+/**
+ * The row's state in the shared dose vocabulary. An open slot reads pending,
+ * due or overdue as the server resolved it; an off-schedule take carries the
+ * "off-schedule" tag instead.
+ */
+function LedgerRowStatus({ state }: { state: DoseState | null }) {
+  const { t } = useTranslations();
+  if (state) {
+    return (
+      <DoseStateLabel state={state} className="text-xs" slot="ledger-status" />
+    );
+  }
+  return (
+    <span
+      className="text-primary inline-flex items-center gap-1 text-xs font-medium"
+      data-slot="ledger-status"
+    >
+      <Plus aria-hidden="true" className="size-3.5 shrink-0" />
+      {t("medications.detail.verlauf.status.ad_hoc")}
+    </span>
   );
 }

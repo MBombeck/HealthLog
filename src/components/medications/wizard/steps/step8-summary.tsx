@@ -66,12 +66,8 @@ export function Step8Summary({
   );
   const canRemove = payload.schedules.length > 1;
 
-  // Reminders need at least one delivery channel. Fetch the channel
-  // list only while the toggle is on; when the server reports zero
-  // enabled channels, a small hint below the toggle links to
-  // `/settings/notifications` so the user learns BEFORE saving that
-  // the reminder would have nowhere to go. Query errors / loading
-  // render no hint — a false "no channel" warning is worse than none.
+  // A reminder needs a delivery channel: with none enabled a hint below the
+  // toggle says so before saving (no hint on a failed or loading read).
   const { data: notificationChannels } = useQuery({
     queryKey: queryKeys.notificationsStatus(),
     queryFn: async () => {
@@ -155,10 +151,7 @@ export function Step8Summary({
           </p>
         )}
 
-        {/* v1.16.11 — an as-needed medication carries no parallel
-            schedules; the single "Bei Bedarf" card stays as the route
-            back into Step 5 (mirroring the one-shot edit path), but the
-            add affordance is hidden alongside one-shot. */}
+        {/* As-needed and one-shot carry one schedule: no "add another". */}
         {payload.mode !== "oneShot" && payload.mode !== "asNeeded" && (
           <button
             type="button"
@@ -178,9 +171,7 @@ export function Step8Summary({
       </div>
 
       <Step8NoteField payload={payload} applyPartial={applyPartial} />
-      {/* v1.39.1 (#1033) — intake tracking. Off keeps the medication and
-          its schedule as a record; nothing is due, so the reminders toggle
-          below goes with it. As-needed is never due either way. */}
+      {/* Intake tracking (#1033): off keeps a record, nothing falls due. */}
       {payload.mode !== "asNeeded" && (
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
@@ -235,8 +226,7 @@ export function Step8Summary({
         </div>
       )}
 
-      {/* v1.16.11 — an as-needed medication never reminds (no slots),
-          so the reminders toggle is hidden alongside the schedules. */}
+      {/* As-needed never reminds: no reminders toggle. */}
       {payload.mode !== "asNeeded" && payload.trackIntake && (
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">

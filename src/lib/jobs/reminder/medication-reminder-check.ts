@@ -674,8 +674,7 @@ export async function handleReminderCheck(
                 resolveSnoozeMinutes(med.user.notificationPrefs),
               );
 
-              // v0.5.4 — surface the slot time as an ISO 8601 string so
-              // the iOS snooze action pins against the actual slot.
+              // The slot as ISO 8601: the iOS snooze pins to it.
               const scheduledAtIso = slotScheduledFor.toISOString();
 
               evt.addMeta(

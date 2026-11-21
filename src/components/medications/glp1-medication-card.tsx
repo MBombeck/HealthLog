@@ -12,8 +12,7 @@ import { MedicationCardMenu } from "@/components/medications/medication-card-men
 import { MedicationStateBadges } from "@/components/medications/card-parts/medication-state-badges";
 import { MedicationCardBody } from "@/components/medications/card-parts/medication-card-body";
 import { useMedicationIntake } from "@/components/medications/use-medication-intake";
-import { useDoseSnooze } from "@/components/medications/card-parts/use-dose-snooze";
-import { useActiveRecordName } from "@/hooks/use-record-capabilities";
+import { useCardDoseSnooze } from "@/components/medications/card-parts/use-dose-snooze";
 import { useWeekdayLabel } from "@/components/medications/card-parts/medication-next-last-slot";
 import {
   useTranslations,
@@ -242,25 +241,9 @@ export function Glp1MedicationCard({
     medication.deliveryForm === "INJECTION" &&
     medication.trackInjectionSites === true;
 
-  // v1.12.2 — take / skip + failure-toast (C1) + Undo (C2) come from the
-  // SAME shared hook the generic card uses, closing the robustness gap
-  // where a failed GLP-1 POST was swallowed silently and the success toast
-  // carried no Undo. The card keeps its post-success injection-site prompt.
-  // "Remind me later": only where a reminder exists to push back, in the
-  // person's own record (a delegate may not snooze).
-  const recordName = useActiveRecordName();
-  const snooze = useDoseSnooze({
-    medicationId: medication.id,
-    medicationName: medication.name,
-    enabled:
-      medication.active &&
-      medication.notificationsEnabled &&
-      medication.autoMarkTaken !== true &&
-      medication.trackIntake !== false &&
-      medication.intakeActionable !== false &&
-      !recordName,
-  });
-
+  // Take / skip / Undo and the snooze come from the hooks the generic card
+  // uses; the card keeps its post-success injection-site prompt.
+  const snooze = useCardDoseSnooze(medication);
   const { intakeLoading, recordIntake } = useMedicationIntake({
     medication,
     onRecorded: (eventId, skipped) => {
@@ -281,9 +264,7 @@ export function Glp1MedicationCard({
     refetch: refetchCompliance,
   } = useMedicationComplianceSummary(medication.id);
 
-  // v1.4.37 — same reminder-thresholds source as the generic
-  // medication card so the take-now / overdue / very-overdue pill
-  // tiers identically on both surfaces.
+  // The generic card's reminder thresholds, so the pill tiers identically.
   const { data: thresholds } = useQuery({
     queryKey: queryKeys.settingsReminderThresholds(),
     queryFn: async () => {
