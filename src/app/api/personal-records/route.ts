@@ -27,6 +27,7 @@
  * gains `benchmark`: the cited age- and sex-aware band for the age the record
  * was set at (`resolveRecordBenchmark`), or null.
  */
+import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { prisma } from "@/lib/db";
 import type { NextRequest } from "next/server";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
@@ -79,7 +80,12 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const profile = wantsBand
     ? await prisma.user.findUnique({
         where: { id: user.id },
-        select: { dateOfBirth: true, gender: true, heightCm: true },
+        select: {
+          dateOfBirth: true,
+          gender: true,
+          heightCm: true,
+          timezone: true,
+        },
       })
     : null;
   // Only the six-minute-walk equation needs a weight.
@@ -96,6 +102,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     sex: toProfileSex(profile?.gender) ?? undefined,
     heightCm: profile?.heightCm ?? null,
     weightKg: weight?.value ?? null,
+    timezone: profile?.timezone ?? DEFAULT_TIMEZONE,
   };
 
   return apiListSuccess(

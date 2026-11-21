@@ -538,6 +538,7 @@ export async function findTriggerForUser(
         heightCm: user.heightCm,
         dateOfBirth: user.dateOfBirth,
         gender: user.gender,
+        timezone: user.timezone ?? undefined,
       },
       (user.thresholdsJson ?? null) as ThresholdOverridesJson | null,
     ).range;

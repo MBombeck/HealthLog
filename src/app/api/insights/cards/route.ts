@@ -81,6 +81,7 @@ const PROFILE_SELECT = {
   dateOfBirth: true,
   gender: true,
   thresholdsJson: true,
+  timezone: true,
 } as const;
 
 export const GET = apiHandler(async () => {

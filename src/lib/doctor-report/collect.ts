@@ -553,6 +553,7 @@ export async function collectDoctorReportData(
     heightCm: userProfile?.heightCm ?? null,
     dateOfBirth: userProfile?.dateOfBirth ?? null,
     gender: userProfile?.gender ?? null,
+    timezone: reportTz,
   };
   if (glucosePanelOn) {
     // #943 — the untagged bucket is a bucket. A report built from a meter

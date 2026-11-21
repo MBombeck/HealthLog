@@ -6,10 +6,7 @@ import {
   getPulseUserPrompt,
 } from "@/lib/ai/prompts/pulse";
 import { computeSteadyRun } from "@/lib/insights/assessment-context";
-import {
-  getAgeFromDateOfBirth,
-  getPersonalizedPulseTarget,
-} from "@/lib/analytics/pulse-targets";
+import { getPersonalizedPulseTarget } from "@/lib/analytics/pulse-targets";
 import {
   getEffectiveRange,
   resolveThresholdOverride,
@@ -38,6 +35,7 @@ import {
   type StatusTextResult,
 } from "@/lib/insights/status-pipeline";
 import { binaryReferenceSex } from "@/lib/profile/sex";
+import { ageInYears } from "@/lib/tz/date-only";
 import { userDayKey } from "@/lib/tz/resolver";
 
 /**
@@ -161,10 +159,14 @@ async function buildPulseSnapshot(
   const ownPulse = resolveThresholdOverride(user?.thresholdsJson, "PULSE");
   const pulseTarget =
     (user && ownPulse
-      ? getEffectiveRange("PULSE", user, { PULSE: ownPulse }).range
+      ? getEffectiveRange(
+          "PULSE",
+          { ...user, timezone: userTz },
+          { PULSE: ownPulse },
+        ).range
       : null) ??
     getPersonalizedPulseTarget(
-      getAgeFromDateOfBirth(user?.dateOfBirth ?? null),
+      ageInYears(user?.dateOfBirth, userTz),
       binaryReferenceSex(user?.gender),
     );
 

@@ -18,8 +18,8 @@ import { resolveWeightTargetOverride } from "@/lib/analytics/effective-range";
 import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
 import { reconstructNights } from "@/lib/insights/derived/sleep-score";
 import { pickCumulativeDaySum } from "@/lib/measurements/cumulative-day-sum";
+import { ageInYears } from "@/lib/tz/date-only";
 import { userDayKey } from "@/lib/tz/format";
-import { getAgeFromDateOfBirth } from "@/lib/analytics/pulse-targets";
 import { healthScoreNoticeItemKey } from "@/lib/daily/priority-item-key";
 import { annotate, getEvent } from "@/lib/logging/context";
 
@@ -469,7 +469,10 @@ function scoreInputsFor(args: {
   >;
 }): PillarInputs {
   const { asOf, input } = args;
-  const ageYears = getAgeFromDateOfBirth(input.profile.dateOfBirth);
+  const ageYears = ageInYears(
+    input.profile.dateOfBirth,
+    input.profile.timezone,
+  );
   const asOfDay = userDayKey(asOf, input.profile.timezone);
   const activityWindow = activityWindowKeys(asOf, input.profile.timezone);
   const sleepSinceDay = userDayKey(

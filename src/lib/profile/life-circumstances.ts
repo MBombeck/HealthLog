@@ -12,9 +12,10 @@
  *
  * Server-only.
  */
+import { ageInYears } from "@/lib/tz/date-only";
+import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { Prisma } from "@/generated/prisma/client";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
-import { deriveAgeYears } from "@/lib/ai/coach/about-me";
 import {
   AUDIT_C_HISTORY_LIMIT,
   loadNewestReadableAuditC,
@@ -268,7 +269,7 @@ export async function buildLifeCircumstances(
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
-      select: { dateOfBirth: true, gender: true, locale: true },
+      select: { dateOfBirth: true, gender: true, locale: true, timezone: true },
     }),
     prisma.userHealthProfile.findUnique({
       where: { userId },
@@ -388,7 +389,11 @@ export async function buildLifeCircumstances(
         ? { days: [...freeDays.days].sort((a, b) => a - b), source: "fact" }
         : { days: [...DEFAULT_FREE_WEEKDAYS], source: "default_weekend" },
       screeningHints: screeningHints({
-        ageYears: deriveAgeYears(user?.dateOfBirth ?? null, now),
+        ageYears: ageInYears(
+          user?.dateOfBirth,
+          user?.timezone ?? DEFAULT_TIMEZONE,
+          now,
+        ),
         sex,
         smokingStatus,
         detail: tobacco,

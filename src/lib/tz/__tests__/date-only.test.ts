@@ -143,6 +143,27 @@ describe("date of birth", () => {
       ),
     ).toBe(14);
   });
+
+  it("turns the birthday over at the owner's midnight, not UTC's", () => {
+    const dob = new Date("1981-06-15T12:00:00.000Z");
+    // 23:30 on 14 June UTC is already 15 June in Berlin.
+    const lateUtc = new Date("2026-06-14T23:30:00.000Z");
+    expect(ageInYears(dob, "Europe/Berlin", lateUtc)).toBe(45);
+    expect(ageInYears(dob, "UTC", lateUtc)).toBe(44);
+    // 01:00 on 15 June UTC is still 14 June in Los Angeles.
+    const earlyUtc = new Date("2026-06-15T01:00:00.000Z");
+    expect(ageInYears(dob, "America/Los_Angeles", earlyUtc)).toBe(44);
+  });
+
+  it("answers null for a date it cannot read or an impossible age", () => {
+    const now = new Date("2026-06-15T12:00:00.000Z");
+    expect(ageInYears(null, "UTC", now)).toBeNull();
+    expect(ageInYears(undefined, "UTC", now)).toBeNull();
+    expect(ageInYears("not a date", "UTC", now)).toBeNull();
+    expect(ageInYears("2030-01-01", "UTC", now)).toBeNull();
+    expect(ageInYears("1850-01-01", "UTC", now)).toBeNull();
+    expect(ageInYears("1980-06-01", "UTC", now)).toBe(46);
+  });
 });
 
 describe("dateOnlyWindow", () => {

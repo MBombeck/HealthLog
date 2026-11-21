@@ -93,6 +93,7 @@ export async function buildComprehensiveResponse(user: OverviewRecord) {
       dateOfBirth: true,
       gender: true,
       thresholdsJson: true,
+      timezone: true,
     },
   });
 

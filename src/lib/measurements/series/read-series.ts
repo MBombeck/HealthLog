@@ -87,6 +87,7 @@ export async function readSeries(args: {
         gender: true,
         heightCm: true,
         thresholdsJson: true,
+        timezone: true,
         glucoseUnit: true,
         locale: true,
       },
@@ -103,6 +104,7 @@ export async function readSeries(args: {
     dateOfBirth: record?.dateOfBirth ?? null,
     gender: record?.gender ?? null,
     heightCm: record?.heightCm ?? null,
+    timezone: seriesTz,
   };
   const verdictType = KIND_TO_TYPE[kind];
   const dayValues = seriesDayValues(verdictType, points, seriesTz);

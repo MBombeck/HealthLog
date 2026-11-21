@@ -25,6 +25,7 @@
  * username, role, insurance number) — narrowing the surface on the
  * external-assistant boundary.
  */
+import { ageInYears } from "@/lib/tz/date-only";
 import { prisma } from "@/lib/db";
 import { resolveMarkerForRead } from "@/lib/labs/biomarker-resolve";
 import { fenceUserText } from "@/lib/ai/coach/data-fence";
@@ -114,21 +115,6 @@ const WINDOW_DAYS: Record<string, number> = {
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-/** Whole-year age from a date of birth, or null when unknown. */
-function ageYears(dateOfBirth: Date | null): number | null {
-  if (!dateOfBirth) return null;
-  const now = new Date();
-  let age = now.getUTCFullYear() - dateOfBirth.getUTCFullYear();
-  const monthDelta = now.getUTCMonth() - dateOfBirth.getUTCMonth();
-  if (
-    monthDelta < 0 ||
-    (monthDelta === 0 && now.getUTCDate() < dateOfBirth.getUTCDate())
-  ) {
-    age -= 1;
-  }
-  return age >= 0 && age < 150 ? age : null;
-}
-
 /** First value of a template variable that may arrive exploded as an array. */
 /**
  * The explicit-absence answer for a resource whose module is switched off
@@ -173,7 +159,7 @@ export const MCP_RESOURCES: McpResourceDefinition[] = [
       if (!user) return { present: false };
       return {
         present: true,
-        ageYears: ageYears(user.dateOfBirth),
+        ageYears: ageInYears(user.dateOfBirth, user.timezone),
         gender: user.gender ?? null,
         heightCm: user.heightCm ?? null,
         timezone: user.timezone,

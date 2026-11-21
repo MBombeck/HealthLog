@@ -18,10 +18,9 @@
 import { VALUE_RANGES } from "@/lib/measurements/value-ranges";
 import { binaryReferenceSex } from "@/lib/profile/sex";
 import { getBpTargets, type BpTargets } from "./bp-targets";
-import {
-  getAgeFromDateOfBirth,
-  getPersonalizedPulseTarget,
-} from "./pulse-targets";
+import { ageInYears } from "@/lib/tz/date-only";
+import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { getPersonalizedPulseTarget } from "./pulse-targets";
 import {
   buildWeightRangeFromHeight,
   getBodyFatTargetRange,
@@ -55,6 +54,11 @@ export interface UserProfileForRange {
   heightCm: number | null;
   dateOfBirth: Date | string | null;
   gender: string | null;
+  /**
+   * The owner's zone: the day their birthday turns over in. Every caller in
+   * the tree passes it; absent reads the birthday on the default zone.
+   */
+  timezone?: string;
 }
 
 /**
@@ -125,6 +129,10 @@ const GLUCOSE_DEFAULTS: Record<
   BEDTIME: { min: 90, max: 150 },
 };
 
+export function profileTimezone(profile: UserProfileForRange): string {
+  return profile.timezone ?? DEFAULT_TIMEZONE;
+}
+
 function toDate(value: Date | string | null): Date | null {
   if (!value) return null;
   return value instanceof Date ? value : new Date(value);
@@ -134,7 +142,7 @@ function defaultRange(
   metric: ThresholdMetric,
   profile: UserProfileForRange,
 ): TrafficRange | null {
-  const age = getAgeFromDateOfBirth(profile.dateOfBirth ?? null);
+  const age = ageInYears(profile.dateOfBirth, profileTimezone(profile));
   const gender = binaryReferenceSex(profile.gender);
   const dateOfBirth = toDate(profile.dateOfBirth);
 
@@ -145,7 +153,7 @@ function defaultRange(
         : null;
     case "BLOOD_PRESSURE_SYS": {
       if (!dateOfBirth) return null;
-      const t = getBpTargets(dateOfBirth);
+      const t = getBpTargets(dateOfBirth, profileTimezone(profile));
       if (!t) return null;
       return {
         greenMin: t.sysLow,
@@ -156,7 +164,7 @@ function defaultRange(
     }
     case "BLOOD_PRESSURE_DIA": {
       if (!dateOfBirth) return null;
-      const t = getBpTargets(dateOfBirth);
+      const t = getBpTargets(dateOfBirth, profileTimezone(profile));
       if (!t) return null;
       // The lower orange wing must NOT extend to 60 mmHg — sustained
       // diastolic ≤ 60 is a clinical hypotension / perfusion-risk

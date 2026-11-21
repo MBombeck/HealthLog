@@ -125,18 +125,25 @@ export function dateOfBirthForStorage(
   return dateOnlyAtNoonUtc(dateOfBirthKey(instant, timezone));
 }
 
-/** Whole years of age on `now` in the owner's `timezone`; null when unknown. */
+/**
+ * Whole years of age on `now` in the owner's `timezone`. The one age rule:
+ * the birthday turns over at the owner's midnight, not the server's or UTC's,
+ * so every surface (targets, zones, scores, the Coach) agrees on the day.
+ * Null when the date is missing, unreadable, in the future, or names an age
+ * of 130 or more.
+ */
 export function ageInYears(
-  dateOfBirth: Date | null,
+  dateOfBirth: Date | string | null | undefined,
   timezone: string,
   now: Date = new Date(),
 ): number | null {
   if (!dateOfBirth) return null;
-  const [by, bm, bd] = dateOfBirthKey(dateOfBirth, timezone)
-    .split("-")
-    .map(Number);
+  const dob = dateOfBirth instanceof Date ? dateOfBirth : new Date(dateOfBirth);
+  if (Number.isNaN(dob.getTime())) return null;
+  const [by, bm, bd] = dateOfBirthKey(dob, timezone).split("-").map(Number);
   const [ty, tm, td] = userDayKey(now, timezone).split("-").map(Number);
-  return ty - by - (tm < bm || (tm === bm && td < bd) ? 1 : 0);
+  const age = ty - by - (tm < bm || (tm === bm && td < bd) ? 1 : 0);
+  return age >= 0 && age < 130 ? age : null;
 }
 
 /**

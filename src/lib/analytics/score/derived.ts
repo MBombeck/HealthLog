@@ -29,7 +29,7 @@ export async function computeHealthScoreDerived(
   });
   const now = new Date();
   const timezone = user.timezone ?? DEFAULT_TIMEZONE;
-  const bpTargets = getBpTargets(user.dateOfBirth);
+  const bpTargets = getBpTargets(user.dateOfBirth, timezone);
   const bpAt = (at: Date) =>
     bpTargets
       ? computeBpInTargetFastPath({

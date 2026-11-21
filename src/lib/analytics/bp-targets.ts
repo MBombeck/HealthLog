@@ -1,3 +1,5 @@
+import { ageInYears } from "@/lib/tz/date-only";
+
 /**
  * Automatic BP target calculation based on ESH 2023 guidelines (the
  * last *joint* ESC/ESH document was 2018; ESC withdrew from the 2023
@@ -40,23 +42,13 @@ export function bpTargetsEqual(
   );
 }
 
-function getAge(dateOfBirth: Date): number {
-  const today = new Date();
-  let age = today.getFullYear() - dateOfBirth.getFullYear();
-  const monthDiff = today.getMonth() - dateOfBirth.getMonth();
-  if (
-    monthDiff < 0 ||
-    (monthDiff === 0 && today.getDate() < dateOfBirth.getDate())
-  ) {
-    age--;
-  }
-  return age;
-}
-
-export function getBpTargets(dateOfBirth: Date | null): BpTargets | null {
-  if (!dateOfBirth) return null;
-
-  const age = getAge(dateOfBirth);
+export function getBpTargets(
+  dateOfBirth: Date | null,
+  timezone: string,
+  now: Date = new Date(),
+): BpTargets | null {
+  const age = ageInYears(dateOfBirth, timezone, now);
+  if (age === null) return null;
 
   if (age < 65) {
     return { sysLow: 120, sysHigh: 129, diaLow: 70, diaHigh: 79 };

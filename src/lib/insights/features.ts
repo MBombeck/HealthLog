@@ -3,6 +3,7 @@
  * Extracts aggregated health metrics from the database.
  * No raw timestamps or exact values are sent in aggregated mode.
  */
+import { ageInYears } from "@/lib/tz/date-only";
 import { prisma } from "@/lib/db";
 import { summarize } from "@/lib/analytics/trends";
 import type { DataPoint } from "@/lib/analytics/trends";
@@ -1123,6 +1124,7 @@ export async function extractFeatures(
       dateOfBirth: true,
       gender: true,
       thresholdsJson: true,
+      timezone: true,
     },
   });
 
@@ -1194,16 +1196,10 @@ export async function extractFeatures(
       : 0;
 
   // Compute age
-  let ageYears: number | null = null;
-  if (user?.dateOfBirth) {
-    const dob = user.dateOfBirth;
-    const today = new Date();
-    ageYears = today.getFullYear() - dob.getFullYear();
-    const monthDiff = today.getMonth() - dob.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
-      ageYears--;
-    }
-  }
+  const ageYears = ageInYears(
+    user?.dateOfBirth,
+    user?.timezone ?? DEFAULT_TIMEZONE,
+  );
 
   const features: AggregatedFeatures = {
     context: {

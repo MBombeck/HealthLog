@@ -282,7 +282,7 @@ const PILLARS: Record<
   BLOOD_PRESSURE: {
     module: "blood-pressure.ts",
     emit: (profile) => {
-      const target = getBpTargets(dobForAge(profile.ageYears));
+      const target = getBpTargets(dobForAge(profile.ageYears), "UTC");
       if (!target) return [];
       return valuesOf([
         computeBloodPressurePillar({
