@@ -39,6 +39,11 @@ export interface EntryResult {
   status: EntryStatus;
   reason?: string;
   id?: string;
+  /**
+   * The landed row's `syncVersion` once the batch has settled, so the client
+   * can undo the entry with `expectedSyncVersion` (absent on skips).
+   */
+  syncVersion?: number;
   /** On `alreadyTaken`: the recorded row and the take it holds. */
   intake?: MedicationIntakeEvent;
   takenAt?: string | null;

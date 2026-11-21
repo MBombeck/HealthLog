@@ -111,6 +111,8 @@ beforeEach(() => {
   vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
   vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true } as never);
+  // The settled-version read after the batch; a test that cares overrides it.
+  vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue([]);
 });
 
 describe("POST /api/medications/intake/bulk — 422 multi-issue (v1.4.43 W6)", () => {
@@ -1457,7 +1459,10 @@ describe("POST /api/medications/intake/bulk — v1.28 Apple Health dose events",
       data: { inserted: number; entries: Array<{ status: string }> };
     };
     expect(body.data.inserted).toBe(1);
-    expect(prisma.medicationIntakeEvent.findMany).not.toHaveBeenCalled();
+    // The one read is the settled-version read after the batch, by row id.
+    const reads = vi.mocked(prisma.medicationIntakeEvent.findMany).mock.calls;
+    expect(reads).toHaveLength(1);
+    expect(JSON.stringify(reads[0][0])).not.toContain("externalId");
     const createArgs = vi.mocked(prisma.medicationIntakeEvent.create).mock
       .calls[0][0] as { data: Record<string, unknown> };
     expect(createArgs.data.source).toBe("API");

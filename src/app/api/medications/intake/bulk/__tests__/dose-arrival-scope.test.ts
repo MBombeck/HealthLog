@@ -105,6 +105,8 @@ async function postReplayedDose(
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true } as never);
+  // The settled-version read after the batch; a test that cares overrides it.
+  vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue([]);
   vi.mocked(prisma.user.update).mockResolvedValue({} as never);
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
   vi.mocked(prisma.medication.findMany).mockResolvedValue([

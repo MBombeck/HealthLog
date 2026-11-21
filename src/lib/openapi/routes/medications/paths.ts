@@ -227,6 +227,13 @@ const bulkIntakeEntryResult = z
         "Why a `skipped` entry was not stored. Among others: `medication_not_found`, `unstable_external_id`, `force_slot_invalid`, `force_slot_occupied`, `injection_site_not_allowed`, and (v1.42.0) `intake_not_tracked` for an entry against a medication kept as a record only (`trackIntake: false`), the per-entry form of `medication.intake.notTracked`. A skip is final: resending the entry gives the same answer.",
       ),
     id: z.string().optional().describe("The landed row id (absent on skips)."),
+    syncVersion: z
+      .number()
+      .int()
+      .optional()
+      .describe(
+        "The landed row's version after the batch settled (absent on skips). Send it as `expectedSyncVersion` to undo the entry; a row changed since answers 409 `medications.intake.changedSinceSeen`. The `intake` row on `alreadyTaken` carries the same value.",
+      ),
     intake: medicationIntakeEventResource
       .optional()
       .describe("On `alreadyTaken`: the recorded row the slot already holds."),
