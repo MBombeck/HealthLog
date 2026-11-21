@@ -2680,6 +2680,31 @@
       "saveError": "Nie udało się zapisać składu",
       "catalogError": "Nie udało się wczytać listy składników",
       "invalidRow": "W każdej linii wybierz składnik i wpisz ilość większą od zera."
+    },
+    "filter": {
+      "searchPlaceholder": "Szukaj leku…",
+      "searchLabel": "Szukaj leków",
+      "clearSearch": "Wyczyść wyszukiwanie",
+      "treatmentPeriod": "Okres leczenia",
+      "noMatchesTitle": "Brak pasujących leków",
+      "noMatchesDescription": "Spróbuj zmienić zapytanie lub zresetować filtry.",
+      "countOne": "{count} lek",
+      "countFew": "{count} leki",
+      "countOther": "{count} leków"
+    },
+    "groups": {
+      "heading": "Kategorie",
+      "description": "Grupuje leki według kategorii.",
+      "label": "Grupowanie",
+      "none": "Brak",
+      "category": "Według kategorii",
+      "openLabel": "Rozwinięte po otwarciu",
+      "openExpanded": "Wszystkie",
+      "openFlagged": "Tylko należne",
+      "openCollapsed": "Żadne",
+      "orderWithinGroups": "Kolejność obowiązuje w obrębie każdej kategorii.",
+      "orderHeading": "Kolejność kategorii",
+      "orderDefault": "Dopóki żadnej nie przesuniesz, wbudowane kategorie mają stałą kolejność, twoje własne idą alfabetycznie, a {other} na końcu."
     }
   },
   "charts": {

@@ -3,10 +3,11 @@ import { describe, expect, it } from "vitest";
 import { locales } from "@/lib/i18n/config";
 import { labelIn } from "@/lib/i18n/localised-label-index";
 import type { ReferenceRangeStatus } from "@/lib/labs/reference-range";
+import { applyCategoryOrder as applyOrderWithCatchAll } from "@/lib/settings/module-list-layout";
 
 import { ALIAS_PANEL, BIOMARKER_PANELS } from "../biomarker-catalog";
 import {
-  applyCategoryOrder,
+  OTHER_CATEGORY,
   categoriseOverview,
   customCategoryLabel,
   customPanelSuggestions,
@@ -224,6 +225,11 @@ describe("categoriseOverview", () => {
   });
 });
 
+const applyCategoryOrder = <T extends { key: string }>(
+  categories: readonly T[],
+  order: readonly string[],
+): T[] => applyOrderWithCatchAll(categories, order, OTHER_CATEGORY);
+
 describe("applyCategoryOrder", () => {
   const cats = (...keys: string[]) => keys.map((key) => ({ key }));
   const keysOf = (list: { key: string }[]) => list.map((c) => c.key);
@@ -280,6 +286,27 @@ describe("applyCategoryOrder", () => {
         ]),
       ),
     ).toEqual(["lipids", "iron", "custom:abc", "other"]);
+  });
+
+  it("takes a custom catch-all key when the caller names one", () => {
+    expect(
+      keysOf(
+        applyOrderWithCatchAll(
+          cats("lipids", "OTHER", "thyroid"),
+          ["OTHER", "lipids"],
+          "OTHER",
+        ),
+      ),
+    ).toEqual(["OTHER", "lipids", "thyroid"]);
+    expect(
+      keysOf(
+        applyOrderWithCatchAll(
+          cats("lipids", "OTHER", "thyroid"),
+          ["lipids", "OTHER"],
+          "OTHER",
+        ),
+      ),
+    ).toEqual(["lipids", "thyroid", "OTHER"]);
   });
 
   it("keeps other where the person moved it", () => {

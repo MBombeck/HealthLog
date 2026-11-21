@@ -2680,6 +2680,31 @@
       "saveError": "성분을 저장하지 못했어요",
       "catalogError": "영양소 목록을 불러오지 못했어요",
       "invalidRow": "모든 줄에서 영양소를 고르고 0보다 큰 함량을 입력하세요."
+    },
+    "filter": {
+      "searchPlaceholder": "약물 검색…",
+      "searchLabel": "약물 검색",
+      "clearSearch": "검색어 지우기",
+      "treatmentPeriod": "치료 기간",
+      "noMatchesTitle": "일치하는 약물 없음",
+      "noMatchesDescription": "검색어 또는 필터를 조정해 보세요.",
+      "countOne": "{count}개 약물",
+      "countFew": "{count}개 약물",
+      "countOther": "{count}개 약물"
+    },
+    "groups": {
+      "heading": "카테고리",
+      "description": "약물을 카테고리별로 묶어 보여줘요.",
+      "label": "그룹화",
+      "none": "없음",
+      "category": "카테고리별",
+      "openLabel": "열 때 펼치기",
+      "openExpanded": "모두",
+      "openFlagged": "복용 예정만",
+      "openCollapsed": "없음",
+      "orderWithinGroups": "순서는 각 카테고리 안에서 적용돼요.",
+      "orderHeading": "카테고리 순서",
+      "orderDefault": "직접 옮기기 전에는 기본 카테고리가 정해진 순서로, 직접 만든 카테고리가 가나다순으로 이어지고 {other}가 마지막에 와요."
     }
   },
   "charts": {

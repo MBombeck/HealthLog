@@ -2680,6 +2680,31 @@
       "saveError": "The composition could not be saved",
       "catalogError": "The list of nutrients could not be loaded",
       "invalidRow": "Choose a nutrient and enter an amount above zero in every line."
+    },
+    "filter": {
+      "searchPlaceholder": "Search medication…",
+      "searchLabel": "Search medications",
+      "clearSearch": "Clear search",
+      "treatmentPeriod": "Treatment period",
+      "noMatchesTitle": "No matching medications",
+      "noMatchesDescription": "Try adjusting your search query or filters.",
+      "countOne": "{count} medication",
+      "countFew": "{count} medications",
+      "countOther": "{count} medications"
+    },
+    "groups": {
+      "heading": "Categories",
+      "description": "Group medications by category.",
+      "label": "Grouping",
+      "none": "None",
+      "category": "By category",
+      "openLabel": "Open on load",
+      "openExpanded": "All",
+      "openFlagged": "Due only",
+      "openCollapsed": "None",
+      "orderWithinGroups": "The order applies within each category.",
+      "orderHeading": "Category order",
+      "orderDefault": "Until you move one, built-in categories keep a fixed order, your own follow alphabetically and {other} comes last."
     }
   },
   "charts": {

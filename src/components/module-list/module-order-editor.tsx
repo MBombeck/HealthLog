@@ -26,18 +26,20 @@ import { useTranslations } from "@/lib/i18n/context";
 import { EmptyState } from "@/components/ui/empty-state";
 
 /**
- * v1.18.6 — generic, controlled reorder list shared by the
- * Vorsorge / Illness / Labs settings pages.
+ * v1.18.6 — generic, controlled reorder list shared by settings pages
+ * (Vorsorge / Illness / Labs / Medications categories).
  *
- * A single section (no active/inactive split — the secondary modules have a
- * flat list) with the same vocabulary as the medication order editor: an
- * `@dnd-kit` drag handle (pointer + keyboard sensors) plus per-row up/down
- * arrow buttons as the primary keyboard surface. Unlike the medication
- * editor it is fully controlled — there is no Save/Cancel draft state
- * because the host persists each move immediately to the localStorage order
- * (the choice is presentational, not a server write). The swap-and-renumber
- * logic is the shared `reorderById` helper so the order semantics match the
- * dashboard / insights / medications surfaces exactly.
+ * A single section (no active/inactive split — secondary modules and category
+ * lists have a flat list) with the same vocabulary as the medication order
+ * editor: an `@dnd-kit` drag handle (pointer + keyboard sensors) plus per-row
+ * up/down arrow buttons as the primary keyboard surface.
+ *
+ * It is fully controlled through `items` and `onChange`. Hosts may either
+ * persist moves immediately (e.g. secondary modules persisting to local
+ * storage order) or buffer them into a local draft state with an explicit
+ * Save/Cancel pair (e.g. Medications category order persisting to the server).
+ * The swap-and-renumber logic is the shared `reorderById` helper so the order
+ * semantics match the dashboard / insights / medications surfaces exactly.
  */
 
 export interface ReorderItem {

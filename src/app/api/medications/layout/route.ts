@@ -32,8 +32,11 @@ import {
   serializeMedicationListLayout,
   DEFAULT_MEDICATION_LIST_LAYOUT,
   MEDICATION_LIST_VIEWS,
+  MEDICATION_GROUP_BYS,
+  MEDICATION_GROUPS_OPEN,
   MEDICATION_ORDER_ID_MAX_LENGTH,
   MEDICATION_ORDER_MAX_ENTRIES,
+  MEDICATION_CATEGORY_ORDER_MAX,
   type MedicationListLayoutWithToken,
 } from "@/lib/medication-list-layout";
 import { Prisma } from "@/generated/prisma/client";
@@ -46,8 +49,8 @@ import type { NextRequest } from "next/server";
 
 const layoutSchema = z.object({
   version: z.literal(1),
-  // Both fields are optional so a client can PUT exactly the field it
-  // changed; the handler merges the absent one from the stored blob
+  // Fields are optional so a client can PUT exactly the field it
+  // changed; the handler merges the absent ones from the stored blob
   // (preserve-when-absent, like `chartOverlayPrefs` on the dashboard layout).
   view: z.enum(MEDICATION_LIST_VIEWS).optional(),
   // Medication ids are opaque here — display-only ordering, unknown /
@@ -56,6 +59,12 @@ const layoutSchema = z.object({
   order: z
     .array(z.string().min(1).max(MEDICATION_ORDER_ID_MAX_LENGTH))
     .max(MEDICATION_ORDER_MAX_ENTRIES)
+    .optional(),
+  groupBy: z.enum(MEDICATION_GROUP_BYS).optional(),
+  groupsOpen: z.enum(MEDICATION_GROUPS_OPEN).optional(),
+  categoryOrder: z
+    .array(z.string().min(1).max(MEDICATION_ORDER_ID_MAX_LENGTH))
+    .max(MEDICATION_CATEGORY_ORDER_MAX)
     .optional(),
 });
 
@@ -162,19 +171,35 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     return returnAllZodIssues(parsed.error, 422);
   }
 
-  // Preserve-when-absent: a PUT carrying only `view` must not wipe the
-  // stored manual order, and an order-only PUT must not reset the view.
-  // One stored-blob read covers both fallbacks.
+  // Preserve-when-absent: a PUT carrying a subset of fields must not wipe the
+  // stored values for omitted fields.
+  // One stored-blob read covers all fallbacks.
   let mergedView = parsed.data.view;
   let mergedOrder = parsed.data.order;
-  if (mergedView === undefined || mergedOrder === undefined) {
+  let mergedGroupBy = parsed.data.groupBy;
+  let mergedGroupsOpen = parsed.data.groupsOpen;
+  let mergedCategoryOrder = parsed.data.categoryOrder;
+  if (
+    mergedView === undefined ||
+    mergedOrder === undefined ||
+    mergedGroupBy === undefined ||
+    mergedGroupsOpen === undefined ||
+    mergedCategoryOrder === undefined
+  ) {
     const existing = await buildMedicationListLayout(user.id);
     if (mergedView === undefined) mergedView = existing.view;
     if (mergedOrder === undefined) mergedOrder = existing.order;
+    if (mergedGroupBy === undefined) mergedGroupBy = existing.groupBy;
+    if (mergedGroupsOpen === undefined) mergedGroupsOpen = existing.groupsOpen;
+    if (mergedCategoryOrder === undefined)
+      mergedCategoryOrder = existing.categoryOrder;
   }
   const normalized = serializeMedicationListLayout({
     view: mergedView,
     order: mergedOrder,
+    groupBy: mergedGroupBy,
+    groupsOpen: mergedGroupsOpen,
+    categoryOrder: mergedCategoryOrder,
   });
 
   // v1.32.21 — guard the write on the client's base token. A stale base
