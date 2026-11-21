@@ -9324,6 +9324,7 @@
       "enabled": "O relay de push está ativado",
       "disabled": "O relay de push está desligado",
       "saveFailed": "Não foi possível salvar a configuração do relay",
+      "loadError": "Não foi possível ler o status do relay de push.",
       "state": {
         "ok": "Conectado",
         "degraded": "Instável",

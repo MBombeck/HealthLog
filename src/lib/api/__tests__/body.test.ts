@@ -38,6 +38,28 @@ async function withEvent<T>(fn: () => Promise<T>) {
 }
 
 describe("parseJsonBody", () => {
+  it("names both ends of a bounded field on a 422", async () => {
+    const bounded = z.object({ mg: z.number().min(0).max(5000) });
+    const parsed = await parseJsonBody(
+      post(JSON.stringify({ mg: 6000 })),
+      bounded,
+    );
+    if (parsed.ok) throw new Error("expected a refusal");
+    const body = (await parsed.error.json()) as {
+      details: { issues: Array<Record<string, unknown>> };
+    };
+    expect(body.details.issues).toEqual([
+      expect.objectContaining({
+        path: "mg",
+        code: "too_big",
+        minimum: 0,
+        maximum: 5000,
+        minimumInclusive: true,
+        maximumInclusive: true,
+      }),
+    ]);
+  });
+
   it("returns the schema's output and the decoded body", async () => {
     const parsed = await parseJsonBody(
       post(JSON.stringify({ name: "a", count: 2, extra: true })),

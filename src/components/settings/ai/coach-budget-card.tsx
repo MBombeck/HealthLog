@@ -217,9 +217,9 @@ export function CoachBudgetCard({
           disabled={saveMutation.isPending}
         >
           {saveMutation.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+            <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
           ) : (
-            <Save className="h-4 w-4" />
+            <Save className="size-4" />
           )}
           {t("settings.ai.saveCta")}
         </Button>

@@ -120,10 +120,10 @@ export async function parseJsonBody<S extends z.ZodType>(
     : undefined;
   const error =
     options.message === undefined
-      ? returnAllZodIssues(parsed.error, status, meta)
+      ? returnAllZodIssues(parsed.error, status, meta, schema)
       : apiValidationError(
           options.message,
-          sanitiseZodIssues(parsed.error.issues),
+          sanitiseZodIssues(parsed.error.issues, { schema }),
           status,
           meta,
         );

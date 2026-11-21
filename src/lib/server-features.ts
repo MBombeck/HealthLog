@@ -28,6 +28,7 @@ export const SERVER_FEATURES = [
   "push.security-alert-relay",
   "push.live-activity-relay",
   "push.live-activity-started",
+  "day.dose-offset",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -76,4 +77,6 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "POST /api/devices takes liveActivityConsent (hl-la-consent-v1), liveActivityWithdraw (hl-la-withdraw-v1), liveActivityStart (push-to-start token with hl-la-start-v1) and liveActivityTokens[].relayStart; the server starts and updates medication Live Activities over the relay with the closed content state while push.relay.liveActivity lists start and update (operator switch PUSH_RELAY_LIVE_ACTIVITY, off by default).",
   "push.live-activity-started":
     "push.device.liveActivityStarted on /api/auth/me and in the POST /api/devices answer names the dose ({ medicationId, slotInstant }) of the Live Activity the server started on the calling device; null once that slot is answered, its medication paused or ended, or nothing was started.",
+  "day.dose-offset":
+    "GET /api/day/{date} symptom events and every GET /api/symptoms/events occurrence carry doseOffset (intakeId, title, minutes) from one rule: the nearest dose taken at or before it on the same local day of the record's zone, else the nearest after it (negative minutes); absent without a timed dose that day or when medications are not readable.",
 };

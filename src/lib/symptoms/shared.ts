@@ -91,6 +91,11 @@ export interface SymptomEventDTO {
   externalId: string | null;
   createdAt: string;
   updatedAt: string;
+  /**
+   * List reads only: the day view's dose offset for this occurrence, absent
+   * when its local day holds no timed dose or medications are not readable.
+   */
+  doseOffset?: { intakeId: string; title: string; minutes: number };
 }
 
 /**

@@ -43,6 +43,10 @@ import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { buildExtendedChangepointSignals } from "@/lib/insights/derived/changepoint";
 import { annotate } from "@/lib/logging/context";
 import { logCaught } from "@/lib/logging/signal";
+import {
+  INSIGHTS_OVERVIEW_PATH,
+  subPageSlugForType,
+} from "@/lib/insights/sub-page-metric";
 import { MEASUREMENT_TYPE_LABEL_KEYS } from "@/lib/measurements/type-label-keys";
 import { resolveModuleMap } from "@/lib/modules/gate";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
@@ -214,9 +218,26 @@ async function notifyUser(
     title: own.title,
     message: own.message,
     renderForRecipient: render,
-    metadata: { metric: shift.metric, breakDate: shift.breakDate },
+    metadata: {
+      metric: shift.metric,
+      breakDate: shift.breakDate,
+      // The metric's own page when one focuses it; without one the tap
+      // target stays the event's default, the Insights overview.
+      ...anomalyTapUrl(shift.metric),
+    },
   });
   return true;
+}
+
+/**
+ * `metadata.url` for a shift: `/insights/<slug>` of the page that focuses
+ * the metric (`subPageSlugForType`), or nothing. The tap resolver takes it
+ * on every channel, and a Guardian or discreet delivery still opens the
+ * app root.
+ */
+export function anomalyTapUrl(metric: MeasurementType): { url?: string } {
+  const slug = subPageSlugForType(metric);
+  return slug ? { url: `${INSIGHTS_OVERVIEW_PATH}/${slug}` } : {};
 }
 
 /** The pg-boss handler. */

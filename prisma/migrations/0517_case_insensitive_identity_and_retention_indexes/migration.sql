@@ -82,11 +82,15 @@ BEGIN
 END
 $duplicates$;
 
+-- Plain builds, held until the file ends: bound how long they may take. The
+-- timeout is armed when a statement starts, so it is set here, as a statement
+-- of its own; set inside the block below it would not bound that block. The
+-- file is one transaction, so it holds for every statement that follows.
+SET LOCAL statement_timeout = '5min';
+
 DO $retention$
 BEGIN
     PERFORM set_config('lock_timeout', '10s', true);
-    -- Plain builds, held until the file ends: bound how long they may take.
-    PERFORM set_config('statement_timeout', '5min', true);
 
     CREATE INDEX IF NOT EXISTS "apple_health_tombstones_user_id_created_at_idx"
         ON "apple_health_tombstones" ("user_id", "created_at");

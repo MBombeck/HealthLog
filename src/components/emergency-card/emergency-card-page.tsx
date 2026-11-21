@@ -137,7 +137,7 @@ export function EmergencyCardPage() {
               />
             ) : !card.data ? (
               <div className="flex h-24 items-center justify-center">
-                <Loader2 className="text-muted-foreground h-5 w-5 animate-spin motion-reduce:animate-none" />
+                <Loader2 className="text-muted-foreground size-5 animate-spin motion-reduce:animate-none" />
               </div>
             ) : (
               <EmergencyCardSheet view={card.data.card} t={t} locale={locale} />
@@ -168,7 +168,7 @@ export function EmergencyCardPage() {
                 onClick={() => void download("offline")}
               >
                 {busy === "offline" ? (
-                  <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+                  <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
                 ) : null}
                 {t("emergencyCard.page.saveOffline")}
               </Button>
@@ -179,7 +179,7 @@ export function EmergencyCardPage() {
                 onClick={() => void download("wallet")}
               >
                 {busy === "wallet" ? (
-                  <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+                  <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
                 ) : null}
                 {minted
                   ? t("emergencyCard.page.walletWithQr")
@@ -258,7 +258,7 @@ function LinkCard({
           />
         ) : !status.data ? (
           <div className="flex h-16 items-center justify-center">
-            <Loader2 className="text-muted-foreground h-5 w-5 animate-spin motion-reduce:animate-none" />
+            <Loader2 className="text-muted-foreground size-5 animate-spin motion-reduce:animate-none" />
           </div>
         ) : !link ? (
           <LinkForm pending={mint.isPending} onCreate={(b) => void create(b)} />
@@ -362,7 +362,7 @@ function LinkForm({
           }
         >
           {pending ? (
-            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+            <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
           ) : null}
           {t("emergencyCard.link.create")}
         </Button>
@@ -393,7 +393,7 @@ function LinkStatus({
           <img
             src={minted.qr}
             alt={t("emergencyCard.link.qrAlt")}
-            className="mx-auto h-48 w-48 rounded-lg bg-white p-2"
+            className="mx-auto size-48 rounded-lg bg-white p-2"
           />
           <code className="bg-muted block rounded-md px-3 py-2 text-sm break-all">
             {minted.url}

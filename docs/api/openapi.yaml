@@ -44502,15 +44502,27 @@ components:
           items:
             type: string
         minimum:
-          description: "Only on `too_small`: the lower bound the schema declares (a number's value, a string's or a list's length;
-            see `origin`). From the schema, never the request."
+          description: "On `too_small`: the lower bound the schema declares (a number's value, a string's or a list's length; see
+            `origin`). Since v1.49.0 also on `too_big` when the field declares a lower bound too (with
+            `minimumInclusive`), on every body validated through the shared body parser. From the schema, never the
+            request."
           type: number
         maximum:
-          description: "Only on `too_big`: the upper bound the schema declares, for example a nutrient target's plausibility cap.
-            From the schema, never the request."
+          description: "On `too_big`: the upper bound the schema declares, for example a nutrient target's plausibility cap. Since
+            v1.49.0 also on `too_small` when the field declares an upper bound too (with `maximumInclusive`). From the
+            schema, never the request."
           type: number
         inclusive:
-          description: "With `minimum` / `maximum`: whether the bound itself is allowed (`false` for a value that must be above 0)."
+          description: "With `minimum` / `maximum`: whether the bound that was broken is itself allowed (`false` for a value that
+            must be above 0)."
+          type: boolean
+        minimumInclusive:
+          description: "Since v1.49.0. Present only when the issue carries both `minimum` and `maximum`: whether `minimum` itself
+            is allowed."
+          type: boolean
+        maximumInclusive:
+          description: "Since v1.49.0. Present only when the issue carries both `minimum` and `maximum`: whether `maximum` itself
+            is allowed."
           type: boolean
         origin:
           description: "With `minimum` / `maximum`: what the bound measures, e.g. `number`, `string`, `array`. Treat an unfamiliar
@@ -47237,6 +47249,7 @@ components:
               - push.security-alert-relay
               - push.live-activity-relay
               - push.live-activity-started
+              - day.dose-offset
           description: "The server behaviours a client may rely on, by key; check for a key rather than compare versions. A key is
             listed only once its behaviour has fully shipped, and is never renamed. `medication.intake-recorded-push`: A
             take or skip recorded elsewhere sends MEDICATION_INTAKE_RECORDED to the owner's other iOS devices.
@@ -47281,7 +47294,10 @@ components:
             PUSH_RELAY_LIVE_ACTIVITY, off by default). `push.live-activity-started`: push.device.liveActivityStarted on
             /api/auth/me and in the POST /api/devices answer names the dose ({ medicationId, slotInstant }) of the Live
             Activity the server started on the calling device; null once that slot is answered, its medication paused or
-            ended, or nothing was started."
+            ended, or nothing was started. `day.dose-offset`: GET /api/day/{date} symptom events and every GET
+            /api/symptoms/events occurrence carry doseOffset (intakeId, title, minutes) from one rule: the nearest dose
+            taken at or before it on the same local day of the record's zone, else the nearest after it (negative
+            minutes); absent without a timed dose that day or when medications are not readable."
       required:
         - version
         - buildSha
@@ -102368,6 +102384,31 @@ components:
           type: string
         updatedAt:
           type: string
+        doseOffset:
+          description: "Since v1.49.0, on `GET /api/symptoms/events` only (feature key `day.dose-offset`). The same value `GET
+            /api/day/{date}` carries for this occurrence: its distance from the nearest dose taken at or before it on
+            the same local day of the record's zone, else the nearest one after it. Absent when that day holds no timed
+            dose, when the medications module is off, or when a delegate's grant does not cover medications. A distance
+            in time and nothing more; never a cause."
+          type: object
+          properties:
+            intakeId:
+              type: string
+              description: The anchoring intake event's id.
+            title:
+              type: string
+              description: The medication's name.
+            minutes:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+              description: "Minutes from the dose to the symptom. Positive: after the dose; negative: before it, when the day holds no
+                earlier dose."
+          required:
+            - intakeId
+            - title
+            - minutes
+          additionalProperties: false
       required:
         - id
         - definitionId

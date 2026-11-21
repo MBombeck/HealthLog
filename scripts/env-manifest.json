@@ -348,6 +348,38 @@
       ]
     },
     {
+      "name": "Push relay",
+      "description": "Notifications to the App Store app through the HealthLog push relay, for a server without its own APNs key (docs/integrations/push-relay.md). Unset, the admin may turn the relay on in Admin > Services; nothing is sent until then. Optional.",
+      "required": false,
+      "variables": [
+        {
+          "name": "PUSH_RELAY_MODE",
+          "purpose": "\"off\" hides the relay entirely, the one-time admin notice included. Unset or \"allowed\" leaves the choice to the admin."
+        },
+        {
+          "name": "PUSH_RELAY_LIVE_ACTIVITY",
+          "purpose": "\"on\" lets Live Activity start and update go over the relay to devices whose owner gave the separate Live Activity consent; the relay then also sees when a dose falls due. Off by default."
+        }
+      ]
+    },
+    {
+      "name": "Push relay, own relay",
+      "description": "A relay other than the hosted one. Both together: a relay URL without its pinned identity keys is not usable, and nothing is sent to it. Optional; unset, the hosted relay at https://push.healthlog.dev with its keys pinned in the release is used.",
+      "required": false,
+      "allOrNone": true,
+      "variables": [
+        {
+          "name": "PUSH_RELAY_URL",
+          "purpose": "The relay origin, https only.",
+          "example": "https://push.example.org"
+        },
+        {
+          "name": "PUSH_RELAY_KEYS",
+          "purpose": "The relay's identity public keys (Ed25519, unpadded base64url, comma separated). Every relay answer must carry a signature by one of them."
+        }
+      ]
+    },
+    {
       "name": "Document picker",
       "description": "Operator grant for the document picker, which lets a person search their own Paperless-ngx or Papra instance and import picked documents. Unset, the picker is off. Optional.",
       "required": false,

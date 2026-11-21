@@ -33,8 +33,8 @@ import { formatRecordedNumber } from "@/lib/format/recorded-number";
 import { SCREENER_INSTRUMENTS } from "@/lib/validations/mental-health";
 import { listTargetsBySource } from "@/lib/links/link-service";
 import { getEvent } from "@/lib/logging/context";
+import { readTakenIntakeEvents } from "@/lib/day/taken-intakes";
 import { lastDayCovered } from "@/lib/life-events/dates";
-import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 import { phaseForDate } from "@/lib/cycle/engine-adapter";
 import { LUTEAL_DEFAULT } from "@/lib/cycle/types";
 import { resolveCycleDay } from "@/lib/cycle/verdict";
@@ -192,23 +192,9 @@ async function medicationsPart(frame: DayFrame): Promise<SectionPart> {
           medication: { select: { name: true } },
         },
       }),
-      prisma.medicationIntakeEvent.findMany({
-        where: {
-          userId,
-          deletedAt: null,
-          skipped: false,
-          takenAt: { gte: frame.dayStart, lt: frame.dayEnd },
-          ...TRACKED_INTAKE_EVENT_WHERE,
-        },
-        select: {
-          id: true,
-          medicationId: true,
-          takenAt: true,
-          doseTaken: true,
-          medication: { select: { name: true, dose: true } },
-        },
-        orderBy: [{ takenAt: "asc" }, { id: "asc" }],
-      }),
+      readTakenIntakeEvents(userId, [
+        { from: frame.dayStart, to: frame.dayEnd },
+      ]),
       prisma.medicationDoseChange.findMany({
         where: {
           medication: { userId },
@@ -406,19 +392,7 @@ async function medicationsPart(frame: DayFrame): Promise<SectionPart> {
       );
     }
   }
-  for (const intake of intakes) {
-    out.events.push(
-      event({
-        at: intake.takenAt ? intake.takenAt.toISOString() : null,
-        kind: "intake",
-        section: "medications",
-        id: intake.id,
-        title: intake.medication.name,
-        meta: intake.doseTaken ?? intake.medication.dose,
-        href: `/medications/${intake.medicationId}/history`,
-      }),
-    );
-  }
+  out.events.push(...intakes);
   for (const change of doseChanges) {
     let note: string | null = null;
     if (change.noteEncrypted && change.noteEncrypted.byteLength > 0) {
