@@ -12,7 +12,6 @@ export function VaultDropOverlay() {
     <div
       aria-hidden
       data-slot="document-drop-overlay"
-      data-viewport-overlay=""
       className="bg-background/80 fixed inset-0 z-50 p-4 backdrop-blur-sm md:p-8"
     >
       <div className="border-primary bg-primary/5 flex h-full items-center justify-center rounded-xl border-2 border-dashed">

@@ -629,8 +629,6 @@ export function OnboardingTour({
       // capture clicks; only the tooltip card opts back in below. Every
       // pixel of the page, inside AND outside the spotlight, passes pointer
       // events through; the tour is a visual overlay with its own controls.
-      // `data-viewport-overlay`: reaches an installed app's bottom edge.
-      data-viewport-overlay=""
       className="pointer-events-none fixed inset-0 z-[200]"
     >
       {/* Spotlight outline — purely visual ring around the highlighted

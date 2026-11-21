@@ -123,7 +123,6 @@ export default defineConfig({
         "pwa-offline.spec.ts",
         // Runs only in the WebKit phone project.
         "bottom-sheet.spec.ts",
-        "pwa-standalone-viewport.spec.ts",
         // Runs only in the two tablet projects.
         "tablet-shell.spec.ts",
       ],
@@ -247,7 +246,6 @@ export default defineConfig({
         "pwa-offline.spec.ts",
         // Runs only in the WebKit phone project.
         "bottom-sheet.spec.ts",
-        "pwa-standalone-viewport.spec.ts",
         // Runs only in the two tablet projects.
         "tablet-shell.spec.ts",
         // The Apple Health import journey uploads an archive into the one
@@ -335,10 +333,7 @@ export default defineConfig({
       : [
           {
             name: "webkit-iphone",
-            testMatch: [
-              "bottom-sheet.spec.ts",
-              "pwa-standalone-viewport.spec.ts",
-            ],
+            testMatch: ["bottom-sheet.spec.ts"],
             use: {
               ...devices["iPhone 13"],
               colorScheme: "dark" as const,

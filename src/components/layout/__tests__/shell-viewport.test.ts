@@ -43,16 +43,7 @@ describe("the shell takes the window's edges", () => {
   it("takes its height from the initial containing block, never from a viewport unit", () => {
     const shell = classes(SHELL_ROOT_CLASS);
     expect(shell).toEqual(
-      expect.arrayContaining([
-        "shell-safe-area",
-        "absolute",
-        "inset-x-0",
-        "top-0",
-        // Not `bottom-0`: an installed iOS app can lay out short of the
-        // screen, and the shell extends over that strip
-        // (`standalone-viewport-gap.ts`). Zero everywhere else.
-        "bottom-(--viewport-bottom)",
-      ]),
+      expect.arrayContaining(["shell-safe-area", "absolute", "inset-0"]),
     );
     // `fixed` re-rasterises the whole app in its own layer and traps the
     // bottom bar's z-index in a stacking context.
@@ -106,12 +97,12 @@ describe("the bottom edge is cleared in both shells", () => {
   );
   const fabSize = rem(/\bsize-(\d+)\b/.exec(fab)![0]);
   const phoneFabBottom = rem(
-    /(?<![\w:-])bottom-\[calc\(var\(--viewport-bottom\)\+var\(--safe-area-bottom\)\+[\d.]+rem\)\]/.exec(
+    /(?<![\w:-])bottom-\[calc\(var\(--safe-area-bottom\)\+[\d.]+rem\)\]/.exec(
       fab,
     )![0],
   );
   const desktopFabBottom = rem(
-    /shell-desktop:bottom-\[calc\(var\(--viewport-bottom\)\+var\(--safe-area-bottom\)\+[\d.]+rem\)\]/.exec(
+    /shell-desktop:bottom-\[calc\(var\(--safe-area-bottom\)\+[\d.]+rem\)\]/.exec(
       fab,
     )![0],
   );
