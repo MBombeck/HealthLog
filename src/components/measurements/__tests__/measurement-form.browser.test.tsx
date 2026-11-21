@@ -302,20 +302,21 @@ describe("<MeasurementForm> type", () => {
     await userEvent.keyboard("{Escape}");
   });
 
-  it("opens on the type saved last when no type is asked for", async () => {
-    const first = await mount({ defaultType: "WEIGHT" });
-    await first.screen.getByLabelText("Value (kg)").fill("80");
-    await first.save.click();
-    await expect.poll(() => first.onSuccess.mock.calls.length).toBe(1);
-    // Awaited: the unmount runs inside `act`, and one left running overlaps
-    // the next render's `act`, after which React commits nothing for the
-    // rest of the file (every later case finds an empty container).
-    await first.screen.unmount();
-
+  it("opens on the type saved last by hand when no type is asked for", async () => {
+    api.on("GET", /^\/api\/measurements\?sourceEq=MANUAL/, {
+      data: {
+        measurements: [
+          reading("WEIGHT", 82.3, "kg", "2026-09-15T07:00:00.000Z"),
+          reading("BLOOD_GLUCOSE", 95, "mg/dL", "2026-09-14T07:00:00.000Z"),
+        ],
+      },
+    });
     const { screen } = await mount();
     await expect
       .element(screen.getByRole("combobox", { name: /^Type/ }))
       .toHaveTextContent("Weight");
+    // Read from the person's readings, never kept in browser storage.
+    expect(Object.values(window.localStorage)).not.toContain("WEIGHT");
   });
 
   it("clears every field from the menu's Reset", async () => {

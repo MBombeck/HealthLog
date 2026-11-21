@@ -43,12 +43,9 @@ import {
 import { localizedApiError } from "@/lib/api/localized-error";
 import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import { MEASUREMENT_NOTES_MAX_LENGTH } from "@/lib/measurements/notes-limit";
-import {
-  getLastUsedMeasurementType,
-  setLastUsedMeasurementType,
-} from "@/lib/measurements/last-used-type";
 
 import { DurationReadAs } from "./duration-read-as";
+import { useRecentEntryTypes } from "./entry/use-entry-recall";
 import { LastValueLine, lastValuePlaceholder } from "./entry/last-value-line";
 import {
   canonicalEntryValue,
@@ -56,7 +53,6 @@ import {
 } from "./entry/use-measurement-entry-assist";
 import { useMeasurementRowDisplay } from "./list/use-measurement-row-display";
 import {
-  MEASUREMENT_FORM_TYPE_VALUES,
   MEASUREMENT_TYPES,
   measurementFormTypes,
 } from "./measurement-form-types";
@@ -144,17 +140,21 @@ export function MeasurementForm({
       ? "BLOOD_PRESSURE"
       : defaultType;
 
-  // A deep-link default wins, else the last type saved (not always blood
-  // pressure); lazy, so localStorage is read once, at mount.
-  const [selectedType, setType] = useState(
-    () =>
-      normalizedDefault ||
-      getLastUsedMeasurementType(MEASUREMENT_FORM_TYPE_VALUES) ||
-      "BLOOD_PRESSURE",
-  );
   // Only types whose module is on. A default, a deep link or the last-used
   // type that is switched off falls back to the first offered type.
   const moduleTypes = measurementFormTypes(user?.modules);
+  // A deep-link default wins, else the type the person last saved by hand,
+  // read from their own readings (the same answer on every device, and
+  // nothing about their health kept in browser storage), else blood
+  // pressure. `null` until a type is picked.
+  const recentTypes = useRecentEntryTypes(
+    moduleTypes.map((mt) => mt.value),
+    true,
+  );
+  const [pickedType, setType] = useState<string | null>(
+    normalizedDefault || null,
+  );
+  const selectedType = pickedType ?? recentTypes[0] ?? "BLOOD_PRESSURE";
   const type = moduleTypes.some((mt) => mt.value === selectedType)
     ? selectedType
     : (moduleTypes[0]?.value ?? "BLOOD_PRESSURE");
@@ -163,6 +163,14 @@ export function MeasurementForm({
   const [sysBp, setSysBp] = useState("");
   const [diaBp, setDiaBp] = useState("");
   const [pulse, setPulse] = useState("");
+  // Once something is typed, the shown type stays put: the readings that
+  // pick the default may arrive after the first keystroke.
+  if (
+    pickedType === null &&
+    (value !== "" || sysBp !== "" || diaBp !== "" || pulse !== "")
+  ) {
+    setType(type);
+  }
   // The glucose of a fingerstick entered with its ketones; optional.
   const [pairedGlucose, setPairedGlucose] = useState("");
   const [notes, setNotes] = useState("");
@@ -229,7 +237,7 @@ export function MeasurementForm({
     durationUnit !== null ? parseDurationEntry(value, durationUnit) : null;
 
   function resetForm() {
-    setType(normalizedDefault || "BLOOD_PRESSURE");
+    setType(normalizedDefault || null);
     setValue("");
     setSysBp("");
     setDiaBp("");
@@ -336,10 +344,6 @@ export function MeasurementForm({
           ...(isGlucoseMode ? { glucoseContext } : {}),
         });
       }
-
-      // v1.30.1 — remember this type as the next mount's smart
-      // default (deep links still override it).
-      setLastUsedMeasurementType(type);
 
       const savedValue = isBpMode
         ? `${sysBp}/${diaBp} mmHg`
