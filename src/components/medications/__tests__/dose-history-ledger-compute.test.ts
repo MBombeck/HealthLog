@@ -156,16 +156,18 @@ describe("applyOptimisticSlotMark", () => {
     ],
   };
 
-  it("flips the matched missed slot to taken_on_time with a synthetic intake, bumping the rate instantly", () => {
+  it("flips the matched missed slot to taken_late at the time it is reported, bumping the rate instantly", () => {
     expect(complianceFromLedger(payload.rows).rate).toBe(0); // 0 taken / 1 missed
     const next = applyOptimisticSlotMark(
       payload,
       "2026-06-01T05:00:00.000Z",
       "taken",
+      "2026-06-03T18:00:00.000Z",
     );
     const marked = next.rows.find((r) => r.at === "2026-06-01T05:00:00.000Z")!;
-    expect(marked.status).toBe("taken_on_time");
-    expect(marked.intake?.takenAt).toBe("2026-06-01T05:00:00.000Z");
+    // Never flattered to on time: the take is reported now, late.
+    expect(marked.status).toBe("taken_late");
+    expect(marked.intake?.takenAt).toBe("2026-06-03T18:00:00.000Z");
     expect(marked.intake?.skipped).toBe(false);
     expect(complianceFromLedger(next.rows).rate).toBe(100);
   });
@@ -200,12 +202,11 @@ describe("applyOptimisticSlotMark", () => {
 describe("slotMarkRequestBody", () => {
   const row = { at: "2026-08-04T07:00:00.000Z" };
 
-  it("anchors takenAt on the slot instant, not on now", () => {
+  it("names the slot and leaves the take time to the server (now), never the slot instant", () => {
     const body = slotMarkRequestBody(row, "taken");
     expect(body).toEqual({
       skipped: false,
       scheduledFor: "2026-08-04T07:00:00.000Z",
-      takenAt: "2026-08-04T07:00:00.000Z",
     });
   });
 
