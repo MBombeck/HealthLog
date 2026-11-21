@@ -88,7 +88,10 @@ async function setup() {
 async function undo(
   medId: string,
   eventId: string,
-  query: { expectedSyncVersion?: number; expectedIdempotencyKey?: string },
+  query: {
+    expectedSyncVersion?: number | string;
+    expectedIdempotencyKey?: string;
+  },
 ) {
   const { DELETE } =
     await import("@/app/api/medications/[id]/intake/[eventId]/route");
@@ -303,6 +306,35 @@ describe("an undo with the version a read returned", () => {
         expectedIdempotencyKey: "bulk-1",
       }),
     ).toMatchObject({ status: 200 });
+    expect(await liveRows(medId)).toHaveLength(0);
+  });
+
+  it.each([
+    ["a negative version", { expectedSyncVersion: "-1" }],
+    ["a fractional version", { expectedSyncVersion: "1.5" }],
+    ["a non-number version", { expectedSyncVersion: "abc" }],
+    ["an empty version", { expectedSyncVersion: "" }],
+    ["an empty key", { expectedIdempotencyKey: "" }],
+    ["a key over 128 characters", { expectedIdempotencyKey: "k".repeat(129) }],
+  ])("refuses %s with 422 and deletes nothing", async (_, query) => {
+    const { medId } = await setup();
+    const res = await perMedPost(medId, {
+      scheduledFor: SLOT.toISOString(),
+      idempotencyKey: "tap-1",
+    });
+    const { data } = (await res.json()) as { data: { id: string } };
+    expect(await undo(medId, data.id, query)).toEqual({
+      status: 422,
+      errorCode: "medications.intake.invalidPrecondition",
+    });
+    expect(await liveRows(medId)).toHaveLength(1);
+  });
+
+  it("still undoes without any precondition", async () => {
+    const { medId } = await setup();
+    const res = await perMedPost(medId, { scheduledFor: SLOT.toISOString() });
+    const { data } = (await res.json()) as { data: { id: string } };
+    expect(await undo(medId, data.id, {})).toMatchObject({ status: 200 });
     expect(await liveRows(medId)).toHaveLength(0);
   });
 });

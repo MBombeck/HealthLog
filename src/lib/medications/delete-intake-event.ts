@@ -145,3 +145,36 @@ export async function deleteIntakeEvent(input: {
   });
   return "deleted";
 }
+
+/**
+ * The undo's optional preconditions. Absent means unchecked; sent means it
+ * must be readable: `expectedSyncVersion` a whole number 0 to 999999999,
+ * `expectedIdempotencyKey` 1 to 128 characters.
+ */
+export function readUndoPrecondition(params: URLSearchParams):
+  | {
+      ok: true;
+      expectedSyncVersion: number | undefined;
+      expectedIdempotencyKey: string | undefined;
+    }
+  | { ok: false; message: string } {
+  const seen = params.get("expectedSyncVersion");
+  if (seen !== null && !/^\d{1,9}$/.test(seen)) {
+    return {
+      ok: false,
+      message: "expectedSyncVersion must be a whole number from 0",
+    };
+  }
+  const ownKey = params.get("expectedIdempotencyKey");
+  if (ownKey !== null && (ownKey.length === 0 || ownKey.length > 128)) {
+    return {
+      ok: false,
+      message: "expectedIdempotencyKey must be 1 to 128 characters",
+    };
+  }
+  return {
+    ok: true,
+    expectedSyncVersion: seen === null ? undefined : Number(seen),
+    expectedIdempotencyKey: ownKey ?? undefined,
+  };
+}

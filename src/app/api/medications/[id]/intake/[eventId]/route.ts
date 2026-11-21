@@ -17,6 +17,7 @@ import {
 import {
   deleteIntakeEvent,
   findDeletableIntakeEvent,
+  readUndoPrecondition,
 } from "@/lib/medications/delete-intake-event";
 import { NextRequest } from "next/server";
 
@@ -101,6 +102,19 @@ export const DELETE = apiHandler(
 
     const { id, eventId } = await params;
 
+    // An undo names the version of the row it saw. When another writer
+    // changed the row since (a pill box take this tap converged onto), the
+    // undo would remove a dose that is not its own: 409, nothing deleted. A
+    // precondition that is sent but unreadable is refused, never ignored: an
+    // undo that dropped it would go through unchecked.
+    const precondition = readUndoPrecondition(request.nextUrl.searchParams);
+    if (!precondition.ok) {
+      return apiError(precondition.message, 422, {
+        errorCode: "medications.intake.invalidPrecondition",
+      });
+    }
+    const { expectedSyncVersion, expectedIdempotencyKey } = precondition;
+
     const event = await findDeletableIntakeEvent({
       userId: user.id,
       medicationId: id,
@@ -109,18 +123,6 @@ export const DELETE = apiHandler(
     if (!event) {
       return apiError("Intake not found", 404);
     }
-
-    // An undo names the version of the row it saw. When another writer
-    // changed the row since (a pill box take this tap converged onto), the
-    // undo would remove a dose that is not its own: 409, nothing deleted.
-    const seen = request.nextUrl.searchParams.get("expectedSyncVersion");
-    const expectedSyncVersion =
-      seen !== null && /^\d{1,9}$/.test(seen) ? Number(seen) : undefined;
-    const ownKey = request.nextUrl.searchParams.get("expectedIdempotencyKey");
-    const expectedIdempotencyKey =
-      ownKey !== null && ownKey.length > 0 && ownKey.length <= 128
-        ? ownKey
-        : undefined;
 
     const deleted = await deleteIntakeEvent({
       user,

@@ -864,14 +864,15 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             .regex(/^\d{1,9}$/)
             .optional()
             .describe(
-              "The row's `syncVersion` as this client last saw it (the take's response carries it). When the row has changed since, the undo is refused with 409 and nothing is deleted.",
+              "The row's `syncVersion` as this client last saw it (the take's response carries it). When the row has changed since, the undo is refused with 409 and nothing is deleted. Sent but not a whole number from 0 (e.g. `-1`, `1.5`, empty): 422 `medications.intake.invalidPrecondition`, nothing deleted.",
             ),
           expectedIdempotencyKey: z
             .string()
+            .min(1)
             .max(128)
             .optional()
             .describe(
-              "The idempotency key of the take this client recorded. When the row carries another key it holds someone else's take (a take that answered `alreadyTaken` keeps the first writer's key), so the undo is refused with 409.",
+              "The idempotency key of the take this client recorded. When the row carries another key it holds someone else's take (a take that answered `alreadyTaken` keeps the first writer's key), so the undo is refused with 409. Sent but empty or over 128 characters: 422 `medications.intake.invalidPrecondition`, nothing deleted.",
             ),
         }),
       },
@@ -899,6 +900,11 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
+        "422": {
+          description:
+            "`medications.intake.invalidPrecondition`: `expectedSyncVersion` or `expectedIdempotencyKey` was sent but is not readable. Nothing was deleted; an absent precondition is allowed, a broken one never skips the check.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
       },
     },
   },
