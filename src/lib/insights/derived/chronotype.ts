@@ -43,6 +43,7 @@
  * assumption, surfaced as such — not hardcoded here.
  */
 import { circularMeanMinutes, circularMinuteDistance } from "./sleep-score";
+import { mean } from "@/lib/stats/central";
 
 const MINUTES_PER_DAY = 1440;
 
@@ -126,11 +127,6 @@ export interface ChronotypeResult {
   workNightsCounted: number;
   /** `minFreeNights` − `freeNightsCounted` while learning, else 0. */
   freeNightsUntilReady: number;
-}
-
-function mean(values: readonly number[]): number | null {
-  if (values.length === 0) return null;
-  return values.reduce((s, v) => s + v, 0) / values.length;
 }
 
 /**

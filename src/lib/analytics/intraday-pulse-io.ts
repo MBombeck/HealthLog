@@ -17,7 +17,6 @@
  */
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
-import { percentile } from "@/lib/insights/strain-score";
 import { resolveRestingPulseSeries } from "@/lib/analytics/resting-pulse";
 import { localDayWindow } from "@/lib/tz/local-day";
 import { userDayKey } from "@/lib/tz/format";
@@ -40,6 +39,7 @@ import {
   isAggregatedBucketExternalId,
   parseAggregatedBucketStart,
 } from "@/lib/measurements/apple-health-mapping";
+import { median, roundTo } from "@/lib/stats/central";
 
 /** UTC padding around the local calendar day so the query is a safe superset. */
 const WINDOW_LEAD_MS = 15 * 60 * 60 * 1000; // covers UTC−14…+12 day starts
@@ -75,12 +75,6 @@ export interface IntradayPulseResult {
  * days tolerates a single missed night without widening the read.
  */
 const RESTING_STALE_AFTER_MS = 2 * 24 * 60 * 60 * 1000;
-
-/** Median (p50), or null on an empty series. */
-function median(values: number[]): number | null {
-  if (values.length === 0) return null;
-  return Math.round(percentile(values, 50) * 10) / 10;
-}
 
 /**
  * Resolve the personal resting baseline and its maturity. Prefers the clean
@@ -146,9 +140,9 @@ async function resolveBaseline(
     dayKeyOf: (d) => userDayKey(d, timezone),
   });
 
-  const recent = resolved.series.slice(-30).map((p) => p.value);
+  const recentMedian = median(resolved.series.slice(-30).map((p) => p.value));
   return {
-    baseline: median(recent),
+    baseline: recentMedian === null ? null : roundTo(recentMedian, 1),
     mature: resolved.series.length >= MIN_BASELINE_DAYS,
     source: resolved.which,
   };

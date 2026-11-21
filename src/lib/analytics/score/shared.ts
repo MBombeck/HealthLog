@@ -74,21 +74,6 @@ export function scoreReferenceBand(
   return 100;
 }
 
-export function mean(values: readonly number[]): number {
-  return values.length === 0
-    ? Number.NaN
-    : values.reduce((sum, value) => sum + value, 0) / values.length;
-}
-
-export function median(values: readonly number[]): number {
-  if (values.length === 0) return Number.NaN;
-  const ordered = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(ordered.length / 2);
-  return ordered.length % 2 === 0
-    ? (ordered[middle - 1] + ordered[middle]) / 2
-    : ordered[middle];
-}
-
 export function readingSpread(values: readonly number[]): number {
   if (values.length < 2) return 0;
   return standardDeviation(values, READING_SPREAD) ?? 0;

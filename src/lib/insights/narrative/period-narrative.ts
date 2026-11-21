@@ -52,7 +52,7 @@ import {
   type DailySeriesPoint,
   type NamedSeries,
 } from "@/lib/insights/correlation-discovery";
-import { buildBaselineBand, median } from "@/lib/insights/derived/baseline";
+import { buildBaselineBand } from "@/lib/insights/derived/baseline";
 import { VITALS_BASELINE_TYPES } from "@/lib/insights/derived/registry";
 import { assembleDiscoveryMatrix } from "@/lib/insights/discovery-matrix";
 import { resolveModuleMap } from "@/lib/modules/gate";
@@ -65,6 +65,7 @@ import {
   resolveUnitPreferences,
   type UnitPreferences,
 } from "@/lib/measurements/display-transform";
+import { median } from "@/lib/stats/central";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -405,7 +406,7 @@ export function assemblePeriodNarrativeContext(
     if (current.length < MIN_COVERED_DAYS_PER_METRIC) continue;
     const band = buildBaselineBand(prior, type);
     if (!band) continue;
-    const center = median(current);
+    const center = median(current)!;
     const above = center > band.high;
     const below = center < band.low;
     const shown = narratedUnit(type, units);

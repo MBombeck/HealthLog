@@ -9,6 +9,7 @@ import type {
   DoctorReportTranslator,
 } from "./render-context";
 import { dayValueRows } from "@/lib/measurements/day-mean";
+import { mean } from "@/lib/stats/central";
 
 export function getBmiClassificationKey(bmi: number): string {
   if (bmi < 18.5) return "doctorReport.bmiUnderweight";
@@ -55,9 +56,9 @@ export function trendArrow(values: number[]): "↑" | "↓" | "→" {
   const mid = Math.floor(values.length / 2);
   const firstHalf = values.slice(0, mid);
   const secondHalf = values.slice(mid);
-  const mean = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
-  const delta = mean(secondHalf) - mean(firstHalf);
-  const threshold = Math.abs(mean(firstHalf)) * 0.01;
+  // Both halves hold at least one value once there are two.
+  const delta = mean(secondHalf)! - mean(firstHalf)!;
+  const threshold = Math.abs(mean(firstHalf)!) * 0.01;
   if (delta > threshold) return "↑";
   if (delta < -threshold) return "↓";
   return "→";

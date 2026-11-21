@@ -21,7 +21,6 @@ import { daysBetweenDateKeys, shiftDateKey, userDayKey } from "@/lib/tz/format";
 import {
   deriveClusters,
   durationFlags,
-  median,
   monthlyByType,
   monthsBetween,
   NICE_CLUSTER_RULE,
@@ -45,6 +44,8 @@ import {
   type EventRow,
   type TypeLookup,
 } from "./server";
+import { median } from "@/lib/stats/central";
+import { mean } from "@/lib/stats/central";
 
 /** Cycle days the distribution keeps; later days fold into the last bucket. */
 export const CYCLE_DAY_BUCKETS = 40;
@@ -514,11 +515,11 @@ async function loadSleepOverlay(
   if (before.length < MIN_SLEEP_NIGHTS || other.length < MIN_SLEEP_NIGHTS) {
     return null;
   }
-  const mean = (list: typeof nights) =>
-    Math.round(list.reduce((s, n) => s + n.asleepMinutes, 0) / list.length);
+  const meanMinutes = (list: typeof nights) =>
+    Math.round(mean(list.map((n) => n.asleepMinutes))!);
   return {
-    beforeSeizureDays: mean(before),
-    otherNights: mean(other),
+    beforeSeizureDays: meanMinutes(before),
+    otherNights: meanMinutes(other),
     nightsBefore: before.length,
     nightsOther: other.length,
   };

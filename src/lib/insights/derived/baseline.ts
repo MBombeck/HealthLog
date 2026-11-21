@@ -61,6 +61,7 @@ import {
   type DerivedProvenanceSource,
 } from "./types";
 import { dateOnlyKey } from "@/lib/tz/date-only";
+import { median, medianAbsoluteDeviation } from "@/lib/stats/central";
 
 /** k for the median ± k·MAD band — ≈3σ-equivalent for normal data. */
 const DEFAULT_MAD_K = 3;
@@ -191,26 +192,6 @@ export interface DayMeanPoint {
   mean: number;
 }
 
-// ── pure statistics (exported for the parity test) ───────────────────
-
-/** Median of a numeric array (does not mutate the input). */
-export function median(values: number[]): number {
-  if (values.length === 0) return NaN;
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0
-    ? (sorted[mid - 1] + sorted[mid]) / 2
-    : sorted[mid];
-}
-
-/** Median absolute deviation about the median (raw, unscaled). */
-export function medianAbsoluteDeviation(values: number[]): number {
-  if (values.length === 0) return NaN;
-  const center = median(values);
-  const deviations = values.map((v) => Math.abs(v - center));
-  return median(deviations);
-}
-
 /**
  * Build the median ± k·MAD band from a per-day mean series. Pure — the
  * caller supplies the already-resolved DAY-native series so this can be
@@ -232,9 +213,9 @@ export function buildBaselineBand(
   type: MeasurementType | null,
   k: number = DEFAULT_MAD_K,
 ): Omit<VitalsBaselineValue, "type" | "series"> | null {
-  if (dayMeans.length === 0) return null;
   const center = median(dayMeans);
   const mad = medianAbsoluteDeviation(dayMeans);
+  if (center === null || mad === null) return null;
   // Scale MAD to a σ-equivalent so the band reads like a robust ±kσ.
   const spread = k * mad * MAD_SIGMA_SCALE;
   // The edges never sit closer than the measurement's own day-to-day wobble:

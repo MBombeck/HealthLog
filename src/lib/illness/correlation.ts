@@ -36,7 +36,7 @@
  */
 import type { MeasurementType } from "@/generated/prisma/client";
 import { FEVER_RED_FLAG_C, SPO2_RED_FLAG_PCT } from "@/lib/clinical-floors";
-import { buildBaselineBand, median } from "@/lib/insights/derived/baseline";
+import { buildBaselineBand } from "@/lib/insights/derived/baseline";
 import {
   buildInsufficient,
   buildOk,
@@ -45,6 +45,7 @@ import {
 } from "@/lib/insights/derived/coverage";
 import type { Derived } from "@/lib/insights/derived/types";
 import { daysBetweenDateKeys } from "@/lib/tz/format";
+import { median } from "@/lib/stats/central";
 
 /* ── tunables (documented invariants) ────────────────────────────────── */
 
@@ -645,7 +646,7 @@ export function computeIllnessCorrelation(
   const recoveryGapDays =
     window.lifecycle === "CHRONIC_ONGOING" || gaps.length === 0
       ? null
-      : Math.round(median(gaps));
+      : Math.round(median(gaps)!);
 
   // Name the per-episode driver: among the ADVERSE return tracks that produced
   // a real gap, the one whose own gap sits closest to the headline median (it
@@ -911,7 +912,7 @@ function computeSleepContext(
     return null;
   }
 
-  const baselineMeanMinutes = Math.round(median(baseMinutes));
+  const baselineMeanMinutes = Math.round(median(baseMinutes)!);
   const episodeMeanMinutes = Math.round(
     episodeMinutes.reduce((s, v) => s + v, 0) / episodeMinutes.length,
   );

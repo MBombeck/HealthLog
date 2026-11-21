@@ -29,6 +29,7 @@ import type {
 } from "@/lib/insights/mood-aggregates";
 import { round } from "@/lib/insights/status-shared";
 import { shiftDateKey } from "@/lib/tz/format";
+import { mean, median } from "@/lib/stats/central";
 
 export const PATTERN_MIN_DAYS_PER_SIDE = 8;
 export const PATTERN_FDR_Q = 0.1;
@@ -133,18 +134,6 @@ function collapseDays(
   return out;
 }
 
-function median(values: readonly number[]): number {
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 1
-    ? sorted[mid]
-    : (sorted[mid - 1] + sorted[mid]) / 2;
-}
-
-function mean(values: readonly number[]): number {
-  return values.reduce((s, v) => s + v, 0) / values.length;
-}
-
 /** Cohen's d on the pooled SD, banded at the conventional 0.5 / 0.8. */
 function strengthOf(
   subject: readonly number[],
@@ -152,6 +141,7 @@ function strengthOf(
 ): MoodPatternFinding["strength"] {
   const ms = mean(subject);
   const mc = mean(comparison);
+  if (ms === null || mc === null) return "weak";
   const vs =
     subject.reduce((s, v) => s + (v - ms) ** 2, 0) / (subject.length - 1);
   const vc =
@@ -173,7 +163,7 @@ function candidates(days: Map<string, MoodDay>): Candidate[] {
 
   // The day after a day below the person's own median, against the day after
   // one above it. Days on the median itself belong to neither side.
-  const med = list.length > 0 ? median(list.map((d) => d.mean)) : 0;
+  const med = median(list.map((d) => d.mean)) ?? 0;
   const afterLow: number[] = [];
   const afterHigh: number[] = [];
   for (const day of list) {
@@ -292,6 +282,7 @@ export function computeMoodPatterns(args: {
     if (q[i] > PATTERN_FDR_Q) return;
     const subject = mean(c.subject);
     const comparison = mean(c.comparison);
+    if (subject === null || comparison === null) return;
     const delta = subject - comparison;
     passed.push({
       id: c.kind === "best_weekday" ? "best_weekday" : c.id,

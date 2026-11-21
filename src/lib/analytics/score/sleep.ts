@@ -11,10 +11,10 @@ import {
   coverage,
   failedPillar,
   insufficientPillar,
-  mean,
   okPillar,
   readingSpread,
 } from "./shared";
+import { mean } from "@/lib/stats/central";
 
 export const SLEEP_WINDOW_DAYS = 28;
 export const SLEEP_MIN_NIGHTS = 14;
@@ -56,7 +56,8 @@ export function computeSleepPillar(
   }
 
   const asleepValues = nights.map((night) => night.asleepMinutes);
-  const observed = mean(asleepValues);
+  // The night floor above guarantees nights here.
+  const observed = mean(asleepValues)!;
   const need = sleepNeedMinutes(input.ageYears);
   const sufficiency = scoreSufficiency(observed, need) ?? 0;
   const midpoints = nights

@@ -112,6 +112,7 @@ import {
   type HealthProfileAiSection,
 } from "@/lib/validations/health-profile-facts";
 import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
+import { mean } from "@/lib/stats/central";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const SELF_CONTEXT_AI_SECTIONS = [
@@ -320,9 +321,7 @@ export function evaluateScoreTrigger(
   ) {
     return false;
   }
-  const mean = (values: number[]) =>
-    values.reduce((sum, v) => sum + v, 0) / values.length;
-  return mean(priorValues) - mean(recentValues) >= COACH_NUDGE_SCORE_DROP;
+  return mean(priorValues)! - mean(recentValues)! >= COACH_NUDGE_SCORE_DROP;
 }
 
 /**
@@ -349,12 +348,10 @@ export function evaluateWeightTrigger(
   ) {
     return false;
   }
-  const mean = (values: number[]) =>
-    values.reduce((sum, v) => sum + v, 0) / values.length;
   const distance = (v: number) =>
     Math.max(0, range.greenMin - v, v - range.greenMax);
-  const recentDistance = distance(mean(recentValues));
-  const priorDistance = distance(mean(priorValues));
+  const recentDistance = distance(mean(recentValues)!);
+  const priorDistance = distance(mean(priorValues)!);
   return (
     recentDistance > 0 &&
     recentDistance - priorDistance >= COACH_NUDGE_WEIGHT_DRIFT_KG

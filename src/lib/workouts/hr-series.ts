@@ -20,6 +20,7 @@
  * readings must not paint a two-point "curve".
  */
 import { prisma } from "@/lib/db";
+import { median } from "@/lib/stats/central";
 
 /** Dense raw-PULSE retention. Older days keep only hourly folds. */
 const DENSE_INTRADAY_RETENTION_DAYS = 90;
@@ -71,15 +72,6 @@ function clamp(value: number, lo: number, hi: number): number {
  */
 export function adaptiveBucketSec(durationSec: number): number {
   return clamp(Math.ceil(durationSec / 240), 5, 60);
-}
-
-function median(values: number[]): number {
-  if (values.length === 0) return 0;
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0
-    ? (sorted[mid - 1] + sorted[mid]) / 2
-    : sorted[mid];
 }
 
 /**
@@ -153,7 +145,7 @@ export function foldHrBuckets(
     });
     densities.push(b.n);
   }
-  return { points, bucketCount, medianDensity: median(densities) };
+  return { points, bucketCount, medianDensity: median(densities) ?? 0 };
 }
 
 /**

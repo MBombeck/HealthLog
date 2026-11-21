@@ -34,6 +34,7 @@ import {
   WORK_STATUS_KEYS,
   decodeKeyList,
 } from "@/lib/mood/context-vocabulary";
+import { mean } from "@/lib/stats/central";
 
 /**
  * The smallest number of days a context value may be seen on and still be
@@ -108,10 +109,6 @@ function round(value: number, digits: number): number {
   return Math.round(value * factor) / factor;
 }
 
-function mean(values: number[]): number {
-  return values.reduce((sum, v) => sum + v, 0) / values.length;
-}
-
 /**
  * Compare every context value against the day's pleasantness.
  *
@@ -156,6 +153,7 @@ export function computeContextMoodComparison(
     }
     const withAvg = mean(withVals);
     const withoutAvg = mean(withoutVals);
+    if (withAvg === null || withoutAvg === null) return;
     const delta = withAvg - withoutAvg;
     if (delta === 0) return;
     const welch = welchTTest(withVals, withoutVals);

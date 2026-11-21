@@ -7,13 +7,13 @@ import {
   daysBetween,
   failedPillar,
   insufficientPillar,
-  median,
   okPillar,
   scoreReferenceBand,
   readingSpread,
   uniqueSources,
   withinWindow,
 } from "./shared";
+import { median } from "@/lib/stats/central";
 
 export const HBA1C_WINDOW_DAYS = 180;
 export const FASTING_GLUCOSE_WINDOW_DAYS = 90;
@@ -123,7 +123,8 @@ export function computeGlycaemiaPillar(
   }
 
   const values = fasting.map((row) => row.value);
-  const observed = median(values);
+  // The reading floor above guarantees readings here.
+  const observed = median(values)!;
   // The behavioural/device noise convention from the design is one half of
   // within-person SD, translated onto this pillar's proportional score scale.
   const halfSd = readingSpread(values) * 0.5;

@@ -34,6 +34,7 @@ import { resolveUserTimezone } from "@/lib/tz/resolver";
 
 import { decryptFromBytes } from "../bytes-codec";
 import { scrubFenceMarkers } from "../data-fence";
+import { mean } from "@/lib/stats/central";
 
 /** Days read before the plan began, for the "before" mean. */
 const BEFORE_DAYS = 14;
@@ -64,14 +65,10 @@ export interface PlanProgressContext {
   db?: Parameters<typeof readDayAggregates>[0]["db"];
 }
 
-function mean(values: readonly number[]): number {
-  return values.reduce((sum, v) => sum + v, 0) / values.length;
-}
-
 /** Least-squares slope of value over day index, per day. */
 function slopePerDay(points: ReadonlyArray<{ x: number; y: number }>): number {
-  const mx = mean(points.map((p) => p.x));
-  const my = mean(points.map((p) => p.y));
+  const mx = mean(points.map((p) => p.x))!;
+  const my = mean(points.map((p) => p.y))!;
   let num = 0;
   let den = 0;
   for (const p of points) {
@@ -156,7 +153,7 @@ export async function computePlanProgress(
   if (recent.length > 0) {
     parts.push(
       `latest ${RECENT_DAYS}-day mean ${formatAbsolute(
-        mean(recent.map((d) => d.value)),
+        mean(recent.map((d) => d.value))!,
         transform,
       )}`,
     );
@@ -164,8 +161,8 @@ export async function computePlanProgress(
     parts.push(`no readings in the last ${RECENT_DAYS} days`);
   }
   if (before.length >= MIN_DAYS_SINCE_START) {
-    const beforeMean = mean(before);
-    const sinceMean = mean(since.map((d) => d.value));
+    const beforeMean = mean(before)!;
+    const sinceMean = mean(since.map((d) => d.value))!;
     parts.push(
       `mean since the start ${formatAbsolute(sinceMean, transform)} against ${formatAbsolute(
         beforeMean,
