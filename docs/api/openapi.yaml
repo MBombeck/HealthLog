@@ -33669,13 +33669,32 @@ components:
             - flagged
             - collapsed
         categoryOrder:
-          description: User-defined category order allow-list.
-          maxItems: 200
+          description: "The category order of the grouped list, first = top: built-in category values and `custom:<uuid>` keys, at
+            most 64. A malformed key is a 422; a well-formed custom key the account does not have is dropped on write.
+            Categories not listed follow in the default order, OTHER last. Optional on PUT (preserve-when-absent);
+            always present on responses."
+          maxItems: 64
           type: array
           items:
-            type: string
-            minLength: 1
-            maxLength: 64
+            anyOf:
+              - type: string
+                enum:
+                  - BLOOD_PRESSURE
+                  - VITAMIN
+                  - SUPPLEMENT
+                  - PAIN_RELIEF
+                  - ALLERGY
+                  - DIGESTIVE
+                  - THYROID
+                  - HORMONE
+                  - SKIN
+                  - SLEEP_AID
+                  - DIABETES
+                  - ANTIBIOTIC
+                  - MENTAL_HEALTH
+                  - OTHER
+              - type: string
+                pattern: ^custom:[0-9a-f-]{36}$
         baseUpdatedAt:
           description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
             legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored
@@ -63886,13 +63905,32 @@ components:
             - flagged
             - collapsed
         categoryOrder:
-          description: User-defined category order allow-list.
-          maxItems: 200
+          description: "The category order of the grouped list, first = top: built-in category values and `custom:<uuid>` keys, at
+            most 64. A malformed key is a 422; a well-formed custom key the account does not have is dropped on write.
+            Categories not listed follow in the default order, OTHER last. Optional on PUT (preserve-when-absent);
+            always present on responses."
+          maxItems: 64
           type: array
           items:
-            type: string
-            minLength: 1
-            maxLength: 64
+            anyOf:
+              - type: string
+                enum:
+                  - BLOOD_PRESSURE
+                  - VITAMIN
+                  - SUPPLEMENT
+                  - PAIN_RELIEF
+                  - ALLERGY
+                  - DIGESTIVE
+                  - THYROID
+                  - HORMONE
+                  - SKIN
+                  - SLEEP_AID
+                  - DIABETES
+                  - ANTIBIOTIC
+                  - MENTAL_HEALTH
+                  - OTHER
+              - type: string
+                pattern: ^custom:[0-9a-f-]{36}$
         updatedAt:
           description: "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as
             `baseUpdatedAt` on the next write. Opaque."

@@ -36,10 +36,13 @@ import {
   MEDICATION_GROUPS_OPEN,
   MEDICATION_ORDER_ID_MAX_LENGTH,
   MEDICATION_ORDER_MAX_ENTRIES,
-  MEDICATION_CATEGORY_ORDER_MAX,
   type MedicationListLayoutWithToken,
 } from "@/lib/medication-list-layout";
 import { Prisma } from "@/generated/prisma/client";
+import {
+  isCustomMedicationCategoryKey,
+  medicationCategoryOrderSchema,
+} from "@/lib/validations/medication/base";
 import { z } from "zod/v4";
 import { invalidateUserMedicationListLayout } from "@/lib/cache/invalidate";
 import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
@@ -62,11 +65,35 @@ const layoutSchema = z.object({
     .optional(),
   groupBy: z.enum(MEDICATION_GROUP_BYS).optional(),
   groupsOpen: z.enum(MEDICATION_GROUPS_OPEN).optional(),
-  categoryOrder: z
-    .array(z.string().min(1).max(MEDICATION_ORDER_ID_MAX_LENGTH))
-    .max(MEDICATION_CATEGORY_ORDER_MAX)
-    .optional(),
+  // Built-in values or `custom:<uuid>` keys, nothing else: a malformed key
+  // is a 422. A well-formed custom key the account does not have (deleted,
+  // or another account's) is dropped below rather than refused, because a
+  // client's draft can name a category deleted on another device meanwhile.
+  categoryOrder: medicationCategoryOrderSchema.optional(),
 });
+
+/**
+ * The category order as written: built-in values, and only the custom keys
+ * this account has (hidden ones included, they still file medications).
+ */
+async function keepOwnCategoryKeys(
+  userId: string,
+  order: readonly string[],
+): Promise<string[]> {
+  const custom = order.filter(isCustomMedicationCategoryKey);
+  if (custom.length === 0) return [...order];
+  const owned = new Set(
+    (
+      await prisma.medicationCategoryLabel.findMany({
+        where: { userId, key: { in: custom } },
+        select: { key: true },
+      })
+    ).map((row) => row.key),
+  );
+  return order.filter(
+    (key) => !isCustomMedicationCategoryKey(key) || owned.has(key),
+  );
+}
 
 async function buildMedicationListLayout(
   userId: string,
@@ -178,7 +205,10 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   let mergedOrder = parsed.data.order;
   let mergedGroupBy = parsed.data.groupBy;
   let mergedGroupsOpen = parsed.data.groupsOpen;
-  let mergedCategoryOrder = parsed.data.categoryOrder;
+  let mergedCategoryOrder =
+    parsed.data.categoryOrder === undefined
+      ? undefined
+      : await keepOwnCategoryKeys(user.id, parsed.data.categoryOrder);
   if (
     mergedView === undefined ||
     mergedOrder === undefined ||

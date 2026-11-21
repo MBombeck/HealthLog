@@ -597,6 +597,9 @@ export async function restoreMedications(ctx: RestoreContext): Promise<void> {
   const medByName = new Map<string, string>();
   const unresolvedRevisionLinks: string[] = [];
   const categoryKeyRemap = await restoreCustomCategories(ctx);
+  for (const [from, to] of categoryKeyRemap) {
+    links.medicationCategoryKeyBySourceKey.set(from, to);
+  }
 
   // The zone a derived course's creation day is read in: the file's own
   // account settings, else the account's stored one.

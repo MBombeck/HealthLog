@@ -15,11 +15,15 @@ interface UserLayoutSelectPayload {
   updatedAt?: Date;
 }
 
-const { mockUserFindUnique, mockUserUpdate } = vi.hoisted(() => ({
-  mockUserFindUnique:
-    vi.fn<(args?: unknown) => Promise<UserLayoutSelectPayload | null>>(),
-  mockUserUpdate: vi.fn<(args?: unknown) => Promise<unknown>>(),
-}));
+const { mockUserFindUnique, mockUserUpdate, mockCategoryFindMany } = vi.hoisted(
+  () => ({
+    mockCategoryFindMany:
+      vi.fn<(args?: unknown) => Promise<{ key: string }[]>>(),
+    mockUserFindUnique:
+      vi.fn<(args?: unknown) => Promise<UserLayoutSelectPayload | null>>(),
+    mockUserUpdate: vi.fn<(args?: unknown) => Promise<unknown>>(),
+  }),
+);
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -30,6 +34,9 @@ vi.mock("@/lib/db", () => ({
     },
     auditLog: {
       create: vi.fn(),
+    },
+    medicationCategoryLabel: {
+      findMany: mockCategoryFindMany,
     },
   },
   toJson: (v: unknown) => v,
@@ -286,14 +293,14 @@ describe("PUT /api/medications/layout — preserve-when-absent", () => {
         order: ["med-alpha", "med-beta"],
         groupBy: "category",
         groupsOpen: "flagged",
-        categoryOrder: ["PAIN"],
+        categoryOrder: ["PAIN_RELIEF"],
       },
       updatedAt: new Date("2026-07-24T10:00:00.000Z"),
     });
     mockUserUpdate.mockResolvedValue({});
 
     const res = await callPut(
-      makeReq({ version: 1, categoryOrder: ["HEART", "PAIN"] }),
+      makeReq({ version: 1, categoryOrder: ["THYROID", "PAIN_RELIEF"] }),
     );
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
@@ -309,7 +316,7 @@ describe("PUT /api/medications/layout — preserve-when-absent", () => {
     expect(body.data.order).toEqual(["med-alpha", "med-beta"]);
     expect(body.data.groupBy).toBe("category");
     expect(body.data.groupsOpen).toBe("flagged");
-    expect(body.data.categoryOrder).toEqual(["HEART", "PAIN"]);
+    expect(body.data.categoryOrder).toEqual(["THYROID", "PAIN_RELIEF"]);
   });
 
   it("dedupes a repeated id in the submitted order", async () => {
@@ -340,6 +347,17 @@ describe("PUT /api/medications/layout — 422 multi-issue envelope", () => {
     const paths = body.details.issues.map((i) => i.path);
     expect(paths.some((p) => p.startsWith("view"))).toBe(true);
     expect(paths.some((p) => p.startsWith("order"))).toBe(true);
+  });
+
+  it("refuses a category order key that is neither built in nor custom:<uuid>", async () => {
+    for (const key of ["PAIN", "custom:not-a-uuid", "", "x".repeat(80)]) {
+      const res = await callPut(makeReq({ version: 1, categoryOrder: [key] }));
+      expect(res.status, key).toBe(422);
+    }
+    const tooMany = Array.from({ length: 65 }, () => "VITAMIN");
+    const res = await callPut(makeReq({ version: 1, categoryOrder: tooMany }));
+    expect(res.status).toBe(422);
+    expect(mockUserUpdate).not.toHaveBeenCalled();
   });
 
   it("rejects a wrong version", async () => {
@@ -464,5 +482,50 @@ describe("PUT /api/medications/layout — optimistic concurrency", () => {
     expect(prisma.user.updateMany).not.toHaveBeenCalled();
     const body = (await res.json()) as { data: { updatedAt: string } };
     expect(body.data.updatedAt).toBe("2026-07-24T11:00:00.000Z");
+  });
+});
+
+describe("PUT /api/medications/layout — category order keys", () => {
+  const OWN = "custom:0f0c6a52-6a43-4f63-9b39-0c1f4d7e2a10";
+  const FOREIGN = "custom:9a9c6a52-6a43-4f63-9b39-0c1f4d7e2a10";
+
+  it("keeps the account's own custom keys and drops one it does not have", async () => {
+    mockUserFindUnique.mockResolvedValue({
+      medicationListLayoutJson: null,
+      updatedAt: new Date("2026-07-24T10:00:00.000Z"),
+    });
+    mockUserUpdate.mockResolvedValue({});
+    mockCategoryFindMany.mockResolvedValue([{ key: OWN }]);
+
+    const res = await callPut(
+      makeReq({
+        version: 1,
+        categoryOrder: [FOREIGN, OWN, "VITAMIN", "OTHER"],
+      }),
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { data: { categoryOrder: string[] } };
+    expect(body.data.categoryOrder).toEqual([OWN, "VITAMIN", "OTHER"]);
+    // The lookup is scoped to the caller and to the keys the body names.
+    expect(mockCategoryFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: expect.any(String), key: { in: [FOREIGN, OWN] } },
+      }),
+    );
+  });
+
+  it("asks nothing of the category table for an order of built-ins only", async () => {
+    mockUserFindUnique.mockResolvedValue({
+      medicationListLayoutJson: null,
+      updatedAt: new Date("2026-07-24T10:00:00.000Z"),
+    });
+    mockUserUpdate.mockResolvedValue({});
+    mockCategoryFindMany.mockClear();
+
+    const res = await callPut(
+      makeReq({ version: 1, categoryOrder: ["VITAMIN", "OTHER"] }),
+    );
+    expect(res.status).toBe(200);
+    expect(mockCategoryFindMany).not.toHaveBeenCalled();
   });
 });

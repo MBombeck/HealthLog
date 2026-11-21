@@ -5,7 +5,9 @@ import { validateEntryInstant } from "@/lib/validations/entry-instant";
 import { hhmmToMinutes } from "@/lib/medications/scheduling/hhmm";
 import { isoDateTime } from "@/lib/validations/datetime";
 import { MEDICATION_NOTE_MAX_CHARS } from "@/lib/medications/note-limits";
+import { MEDICATION_CATEGORY_ORDER_MAX } from "@/lib/medication-list-layout";
 import {
+  CUSTOM_MEDICATION_CATEGORY_KEY_PATTERN,
   MEDICATION_CATEGORY_VALUES,
   type MedicationCategoryValue,
 } from "@/lib/medications/category-values";
@@ -97,12 +99,26 @@ export const CUSTOM_MEDICATION_CATEGORY_PREFIX = "custom:";
 /** Per-account ceiling on custom medication categories (hidden ones count). */
 export const MAX_CUSTOM_MEDICATION_CATEGORIES = 20;
 
-const CUSTOM_MEDICATION_CATEGORY_KEY = /^custom:[0-9a-f-]{36}$/;
+const CUSTOM_MEDICATION_CATEGORY_KEY = CUSTOM_MEDICATION_CATEGORY_KEY_PATTERN;
 
 /** Is `value` a custom-category key rather than a built-in value? */
 export function isCustomMedicationCategoryKey(value: string): boolean {
   return value.startsWith(CUSTOM_MEDICATION_CATEGORY_PREFIX);
 }
+
+/**
+ * The category order of the medication list layout (`categoryOrder` on
+ * `PUT /api/medications/layout`): built-in values and `custom:<uuid>` keys,
+ * first = top, at most `MEDICATION_CATEGORY_ORDER_MAX`.
+ */
+export const medicationCategoryOrderSchema = z
+  .array(
+    z.union([
+      z.enum(MEDICATION_CATEGORY_VALUES),
+      z.string().regex(CUSTOM_MEDICATION_CATEGORY_KEY, "Unknown category"),
+    ]),
+  )
+  .max(MEDICATION_CATEGORY_ORDER_MAX);
 
 /**
  * The `category` a create or update body may carry: a built-in value or a

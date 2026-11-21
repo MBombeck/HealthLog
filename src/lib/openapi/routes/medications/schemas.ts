@@ -15,6 +15,7 @@ import {
   MEDICATION_TREATMENT_CLASS_VALUES,
   doseWindowEntrySchema,
   injectionSiteEnum,
+  medicationCategoryOrderSchema,
 } from "@/lib/validations/medication";
 import { medicationExtractionSchema } from "@/lib/ai/coach/medication-extract-prompt";
 import {
@@ -23,7 +24,6 @@ import {
   MEDICATION_GROUPS_OPEN,
   MEDICATION_ORDER_ID_MAX_LENGTH,
   MEDICATION_ORDER_MAX_ENTRIES,
-  MEDICATION_CATEGORY_ORDER_MAX,
 } from "@/lib/medication-list-layout";
 import { MEDICATION_IMPORT_SKIP_REASONS } from "@/lib/jobs/medication-intake-import";
 import { isoDateTime } from "@/lib/validations/datetime";
@@ -1364,11 +1364,11 @@ export const medicationListLayoutSchema = z
       .describe(
         'Which groups open by default ("expanded", "flagged", "collapsed"). Default "expanded".',
       ),
-    categoryOrder: z
-      .array(z.string().min(1).max(MEDICATION_ORDER_ID_MAX_LENGTH))
-      .max(MEDICATION_CATEGORY_ORDER_MAX)
+    categoryOrder: medicationCategoryOrderSchema
       .optional()
-      .describe("User-defined category order allow-list."),
+      .describe(
+        "The category order of the grouped list, first = top: built-in category values and `custom:<uuid>` keys, at most 64. A malformed key is a 422; a well-formed custom key the account does not have is dropped on write. Categories not listed follow in the default order, OTHER last. Optional on PUT (preserve-when-absent); always present on responses.",
+      ),
   })
   .meta({
     id: "MedicationListLayout",

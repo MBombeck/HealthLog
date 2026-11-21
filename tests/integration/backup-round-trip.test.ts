@@ -2004,6 +2004,110 @@ describe("every model the plan claims two-ended survives a real restore", () => 
     },
   );
 
+  /**
+   * The grouped list's category order names custom categories by key. A
+   * restore re-mints a key another account on this instance already holds,
+   * so the order has to follow the category to its new key, or the person's
+   * own category falls back to its default place after every such restore.
+   */
+  it.each(["kept", "re-minted"] as const)(
+    "keeps the list's custom category order when the category key is %s",
+    async (outcome) => {
+      const prisma = getPrismaClient();
+      await seedAdminSession(prisma);
+      await createOwner(prisma);
+      await prisma.medicationCategoryLabel.create({
+        data: {
+          userId: OWNER_ID,
+          key: ROUND_TRIP_CATEGORY_KEY,
+          labelEncrypted: encryptToBytes("Travel kit"),
+        },
+      });
+      const travel = await prisma.medication.create({
+        data: { userId: OWNER_ID, name: "Tamiflu", dose: "75 mg" },
+      });
+      await setMedicationCategory(travel.id, ROUND_TRIP_CATEGORY_KEY);
+      const layout = {
+        version: 1,
+        view: "cards",
+        order: [],
+        groupBy: "category",
+        groupsOpen: "expanded",
+        categoryOrder: [ROUND_TRIP_CATEGORY_KEY, "THYROID", "OTHER"],
+      };
+      await prisma.user.update({
+        where: { id: OWNER_ID },
+        data: { medicationListLayoutJson: layout },
+      });
+
+      const { payload } = await buildFullBackupPayload(prisma, OWNER_ID, {
+        purpose: "portable-export",
+      });
+
+      await prisma.user.delete({ where: { id: OWNER_ID } });
+      if (outcome === "re-minted") {
+        // Another account on this instance holds the key now, so the restore
+        // cannot reuse it.
+        const other = await prisma.user.create({
+          data: {
+            username: "round-trip-other",
+            email: "round-trip-other@example.test",
+          },
+        });
+        await prisma.medicationCategoryLabel.create({
+          data: {
+            userId: other.id,
+            key: ROUND_TRIP_CATEGORY_KEY,
+            labelEncrypted: encryptToBytes("Someone else's"),
+          },
+        });
+      }
+      await createOwner(prisma);
+      const backup = await prisma.dataBackup.create({
+        data: {
+          userId: OWNER_ID,
+          type: "TWO_ENDED_ROUND_TRIP",
+          data: encrypt(JSON.stringify(payload)),
+        },
+      });
+      const response = await POST(
+        new Request(`http://localhost/api/admin/backups/${backup.id}/restore`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ confirm: "RESTORE" }),
+        }) as never,
+        { params: Promise.resolve({ id: backup.id }) },
+      );
+      expect(response.status, JSON.stringify(await response.json())).toBe(200);
+
+      const own = await prisma.medicationCategoryLabel.findMany({
+        where: { userId: OWNER_ID },
+        select: { key: true },
+      });
+      expect(own).toHaveLength(1);
+      const restoredKey = own[0].key;
+      if (outcome === "kept") {
+        expect(restoredKey).toBe(ROUND_TRIP_CATEGORY_KEY);
+      } else {
+        expect(restoredKey).not.toBe(ROUND_TRIP_CATEGORY_KEY);
+      }
+      const restoredMed = await prisma.medication.findFirstOrThrow({
+        where: { userId: OWNER_ID, name: "Tamiflu" },
+        select: { id: true },
+      });
+      const categories = await resolveMedicationCategories([restoredMed.id]);
+      expect(categories[restoredMed.id]?.category).toBe(restoredKey);
+      const row = await prisma.user.findUniqueOrThrow({
+        where: { id: OWNER_ID },
+        select: { medicationListLayoutJson: true },
+      });
+      expect(row.medicationListLayoutJson).toEqual({
+        ...layout,
+        categoryOrder: [restoredKey, "THYROID", "OTHER"],
+      });
+    },
+  );
+
   it("carries a turn's tables readable in a portable file and seals them again on restore", async () => {
     const prisma = getPrismaClient();
     await seedAdminSession(prisma);

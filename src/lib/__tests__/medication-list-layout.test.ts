@@ -12,6 +12,7 @@ import {
   DEFAULT_MEDICATION_LIST_LAYOUT,
   MEDICATION_ORDER_MAX_ENTRIES,
   MEDICATION_CATEGORY_ORDER_MAX,
+  remapMedicationListCategoryOrder,
   sortMedicationCategoriesByDefault,
   resolveMedicationListLayout,
   serializeMedicationListLayout,
@@ -104,14 +105,17 @@ describe("resolveMedicationListLayout", () => {
     const resolved = resolveMedicationListLayout({
       view: "cards",
       order: ["med-a", "med-b", "med-a"],
-      categoryOrder: ["CAT_A", "CAT_B", "CAT_A"],
+      categoryOrder: ["VITAMIN", "THYROID", "VITAMIN"],
     });
     expect(resolved.order).toEqual(["med-a", "med-b"]);
-    expect(resolved.categoryOrder).toEqual(["CAT_A", "CAT_B"]);
+    expect(resolved.categoryOrder).toEqual(["VITAMIN", "THYROID"]);
   });
 
   it("caps categoryOrder at MEDICATION_CATEGORY_ORDER_MAX", () => {
-    const categoryOrder = Array.from({ length: 300 }, (_, i) => `cat-${i}`);
+    const categoryOrder = Array.from(
+      { length: 300 },
+      (_, i) => `custom:00000000-0000-4000-8000-${String(i).padStart(12, "0")}`,
+    );
     const resolved = resolveMedicationListLayout({
       categoryOrder,
     });
@@ -209,5 +213,40 @@ describe("sortMedicationCategoriesByDefault", () => {
     expect(
       sortMedicationCategoriesByDefault([{ key: "OTHER", label: "Other" }]),
     ).toEqual([{ key: "OTHER", label: "Other" }]);
+  });
+});
+
+describe("category order keys in a stored blob", () => {
+  it("drops a key that is neither a built-in value nor custom:<uuid>", () => {
+    const own = "custom:0f0c6a52-6a43-4f63-9b39-0c1f4d7e2a10";
+    expect(
+      resolveMedicationListLayout({
+        categoryOrder: ["PAIN", own, 7, "custom:x", "OTHER"],
+      }).categoryOrder,
+    ).toEqual([own, "OTHER"]);
+  });
+});
+
+describe("remapMedicationListCategoryOrder", () => {
+  const from = "custom:0f0c6a52-6a43-4f63-9b39-0c1f4d7e2a10";
+  const to = "custom:1a1c6a52-6a43-4f63-9b39-0c1f4d7e2a10";
+
+  it("rewrites a re-minted key and leaves the rest of the blob alone", () => {
+    expect(
+      remapMedicationListCategoryOrder(
+        { version: 1, view: "table", categoryOrder: ["VITAMIN", from] },
+        new Map([[from, to]]),
+      ),
+    ).toEqual({ version: 1, view: "table", categoryOrder: ["VITAMIN", to] });
+  });
+
+  it("passes a blob through untouched without a remap or an order", () => {
+    const blob = { version: 1, view: "cards" };
+    expect(remapMedicationListCategoryOrder(blob, new Map([[from, to]]))).toBe(
+      blob,
+    );
+    expect(remapMedicationListCategoryOrder(null, new Map([[from, to]]))).toBe(
+      null,
+    );
   });
 });

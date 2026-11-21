@@ -145,6 +145,13 @@ export interface RestoreLinks {
    */
   medicationIdBySourceId: Map<string, string>;
   /**
+   * Medications: a custom category key the file carries to the key it got
+   * here, only for a key the restore had to re-mint (held by another account
+   * on this instance). The account settings step reads it so the list
+   * layout's category order follows the restored categories.
+   */
+  medicationCategoryKeyBySourceKey: Map<string, string>;
+  /**
    * Intake events: a portable file's intake `ref` to the slot the restored
    * row occupies. The row gets a fresh id the restore never sees (the rows
    * go in with one `createMany`), and the live slot is unique, so a seizure
@@ -224,6 +231,7 @@ export function emptyRestoreLinks(): RestoreLinks {
     writtenReferencedMeasurementIds: new Set(),
     restoredMedicationIds: new Set(),
     medicationIdBySourceId: new Map(),
+    medicationCategoryKeyBySourceKey: new Map(),
     intakeSlotBySourceId: new Map(),
     pendingEfficacyTargets: [],
     biomarkerByName: new Map(),

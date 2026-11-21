@@ -30,3 +30,19 @@ export const MEDICATION_CATEGORY_VALUES = [
 
 export type MedicationCategoryValue =
   (typeof MEDICATION_CATEGORY_VALUES)[number];
+
+/**
+ * A custom category's key, `custom:<uuid>` (the key of its
+ * `MedicationCategoryLabel` row). The one definition the write schemas and
+ * the list layout check against.
+ */
+export const CUSTOM_MEDICATION_CATEGORY_KEY_PATTERN = /^custom:[0-9a-f-]{36}$/;
+
+/** Is `value` a well-formed category key: a built-in value or a custom key? */
+export function isMedicationCategoryKey(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    ((MEDICATION_CATEGORY_VALUES as readonly string[]).includes(value) ||
+      CUSTOM_MEDICATION_CATEGORY_KEY_PATTERN.test(value))
+  );
+}

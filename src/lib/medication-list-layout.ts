@@ -14,7 +14,10 @@
  * same preserve-when-absent PUT contract (see the route).
  */
 
-import { MEDICATION_CATEGORY_VALUES } from "@/lib/medications/category-values";
+import {
+  MEDICATION_CATEGORY_VALUES,
+  isMedicationCategoryKey,
+} from "@/lib/medications/category-values";
 
 /** The two list presentations /medications can render. */
 export const MEDICATION_LIST_VIEWS = ["cards", "table"] as const;
@@ -76,7 +79,12 @@ export const MEDICATION_ORDER_MAX_ENTRIES = 200;
 /** Per-entry id length bound (cuids are 25 chars; leave headroom). */
 export const MEDICATION_ORDER_ID_MAX_LENGTH = 64;
 
-export const MEDICATION_CATEGORY_ORDER_MAX = 200;
+/**
+ * Upper bound on the stored category order. An account has the built-in
+ * categories plus at most 20 of its own, and the write drops keys the
+ * account does not have, so this is headroom, not a limit anyone reaches.
+ */
+export const MEDICATION_CATEGORY_ORDER_MAX = 64;
 
 export const DEFAULT_MEDICATION_LIST_LAYOUT: MedicationListLayout = {
   version: 1,
@@ -178,14 +186,10 @@ export function resolveMedicationListLayout(
     ? blob.groupsOpen
     : DEFAULT_MEDICATION_LIST_LAYOUT.groupsOpen;
   const categoryOrder = Array.isArray(blob.categoryOrder)
-    ? dedupeOrder(
-        blob.categoryOrder.filter(
-          (key): key is string =>
-            typeof key === "string" &&
-            key.length > 0 &&
-            key.length <= MEDICATION_ORDER_ID_MAX_LENGTH,
-        ),
-      ).slice(0, MEDICATION_CATEGORY_ORDER_MAX)
+    ? dedupeOrder(blob.categoryOrder.filter(isMedicationCategoryKey)).slice(
+        0,
+        MEDICATION_CATEGORY_ORDER_MAX,
+      )
     : [];
 
   return { version: 1, view, order, groupBy, groupsOpen, categoryOrder };
@@ -225,4 +229,24 @@ function dedupeOrder(order: readonly string[]): string[] {
     out.push(id);
   }
   return out;
+}
+
+/**
+ * The stored layout blob with its category order rewritten through `remap`
+ * (file key to the key a restore gave the category). Anything else in the
+ * blob, and a blob without a category order, passes through untouched.
+ */
+export function remapMedicationListCategoryOrder(
+  raw: unknown,
+  remap: ReadonlyMap<string, string>,
+): unknown {
+  if (remap.size === 0 || raw === null || typeof raw !== "object") return raw;
+  const blob = raw as { categoryOrder?: unknown };
+  if (!Array.isArray(blob.categoryOrder)) return raw;
+  return {
+    ...blob,
+    categoryOrder: blob.categoryOrder.map((key: unknown) =>
+      typeof key === "string" ? (remap.get(key) ?? key) : key,
+    ),
+  };
 }
