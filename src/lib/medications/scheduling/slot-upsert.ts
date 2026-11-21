@@ -416,10 +416,9 @@ async function applyToExisting(
       skipped,
       // A recorded dose is no longer an auto-miss. The hourly auto-miss cron
       // stamps `autoMissed: true` on a never-acted slot; when the user later
-      // records the take (late entry, offline sync catching up), the flag
-      // must reset or the compliance engine keeps counting the now-taken
-      // dose as a miss.
-      // A deliberate skip answers the dose too.
+      // records the take or skip (late entry, offline sync catching up), the
+      // flag must reset or the engine keeps counting the answered dose as a
+      // miss.
       ...((takenAt !== null || skipped) && { autoMissed: false }),
       // v1.42.2 — a take or skip the person records is theirs, not the
       // auto-take pass's: the "recorded automatically" label goes.
