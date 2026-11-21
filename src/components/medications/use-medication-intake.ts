@@ -6,9 +6,10 @@ import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { invalidateMedicationReads } from "@/lib/query-keys";
 import { apiDelete, apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 
 /**
  * Every intake write in this hook clears the Today hero + dashboard through
@@ -70,12 +71,31 @@ export function intakeToastOptions(input: {
   if (eventId && onUndo) {
     return {
       action: {
-        label: t("medications.intakeUndo"),
+        label: t("medications.dose.action.undo"),
         onClick: () => onUndo(eventId),
       },
     };
   }
   return undefined;
+}
+
+/**
+ * The one confirmation of a recorded dose, on every surface: "{name}: taken,
+ * 08:12" or "{name}: skipped".
+ */
+export function intakeToastMessage(input: {
+  t: Translator;
+  name: string;
+  skipped: boolean;
+  takenAt: Date;
+  formatTime: (at: Date) => string;
+}): string {
+  return input.skipped
+    ? input.t("medications.intakeToastSkipped", { name: input.name })
+    : input.t("medications.intakeToastTaken", {
+        name: input.name,
+        time: input.formatTime(input.takenAt),
+      });
 }
 
 /**
@@ -154,6 +174,8 @@ export async function runRecordIntake(deps: {
    * they can see is an Undo the server refuses.
    */
   recordName?: string | null;
+  /** The reader's clock for the toast ("Ramipril: taken, 08:12"). */
+  formatTime: (at: Date) => string;
 }): Promise<void> {
   const {
     medication,
@@ -165,6 +187,7 @@ export async function runRecordIntake(deps: {
     undoIntake,
     onRecorded,
     recordName,
+    formatTime,
   } = deps;
 
   setIntakeLoading(skipped ? "skip" : "take");
@@ -183,7 +206,13 @@ export async function runRecordIntake(deps: {
     // drives both the Undo affordance and the card's post-success hook
     // (the optional injection-site prompt).
     const created = await apiPost<
-      { id?: string; syncVersion?: number; alreadyTaken?: boolean } | undefined
+      | {
+          id?: string;
+          syncVersion?: number;
+          alreadyTaken?: boolean;
+          takenAt?: string | null;
+        }
+      | undefined
     >(
       `/api/medications/${medication.id}/intake`,
       scheduledFor
@@ -204,12 +233,13 @@ export async function runRecordIntake(deps: {
     // v1.11.3 — the success toast carries an Undo action so a misclicked
     // take / skip no longer needs a history dive to correct.
     toast.success(
-      t(
-        skipped
-          ? "medications.intakeToastSkipped"
-          : "medications.intakeToastTaken",
-        { name: medication.name },
-      ),
+      intakeToastMessage({
+        t,
+        name: medication.name,
+        skipped,
+        takenAt: created?.takenAt ? new Date(created.takenAt) : new Date(),
+        formatTime,
+      }),
       intakeToastOptions({
         recordName,
         eventId,
@@ -256,6 +286,12 @@ export async function runLogIntake(deps: {
    */
   scheduledFor?: string;
   /**
+   * The slot instant a take near, but outside, a slot's on-time window is
+   * pinned to ("counts for the 08:00 dose, as late"). The server refuses an
+   * instant that is no slot of the medication.
+   */
+  forceSlotInstant?: string;
+  /**
    * v1.16.4 — per-intake dose override. Sent only on a taken write; the
    * caller passes it only when the user's dose edit deviates from the
    * configured medication / schedule dose.
@@ -271,41 +307,59 @@ export async function runLogIntake(deps: {
   undoIntake?: (eventId: string) => void | Promise<void>;
   /** See {@link runRecordIntake}: names the record, and drops Undo. */
   recordName?: string | null;
+  /** The reader's clock for the toast. */
+  formatTime: (at: Date) => string;
+  /**
+   * The POST, when the caller sends it its own way (the capture sheet's
+   * idempotent post, which survives a retried tap).
+   */
+  post?: (url: string, body: Record<string, unknown>) => Promise<unknown>;
+  /**
+   * A form's own error line: when given, a failed write is reported here
+   * (the sheet's inline alert) instead of a toast.
+   */
+  onFailure?: (message: string) => void;
 }): Promise<boolean> {
   const {
     medication,
     skipped,
     takenAt,
     scheduledFor,
+    forceSlotInstant,
     doseTaken,
     t,
     queryClient,
     undoIntake,
     recordName,
+    formatTime,
+    post = (url, body) => apiPost(url, body),
+    onFailure,
   } = deps;
   try {
     const body: Record<string, unknown> = { skipped };
     if (!skipped) body.takenAt = takenAt;
     if (scheduledFor) body.scheduledFor = scheduledFor;
+    if (!skipped && forceSlotInstant) body.forceSlotInstant = forceSlotInstant;
     if (!skipped && doseTaken) body.doseTaken = doseTaken;
     // v1.30.1 — the route returns the created event
     // (`apiSuccess(event, 201)`, same as the card's `runRecordIntake`);
     // its id drives the Undo action below.
-    const created = await apiPost<{ id?: string } | undefined>(
+    const created = (await post(
       `/api/medications/${medication.id}/intake`,
       body,
-    );
+    )) as { id?: string } | undefined;
     const eventId = created?.id;
     // Started, not awaited: the dialog closes on this answer. A scheduled
     // dose lands on its slot, so a stale card tapped meanwhile only repeats
     // it.
     void invalidateMedicationReads(queryClient);
-    const message = t(
-      skipped
-        ? "medications.intakeToastSkipped"
-        : "medications.intakeToastTaken",
-      { name: medication.name },
-    );
+    const message = intakeToastMessage({
+      t,
+      name: medication.name,
+      skipped,
+      takenAt: new Date(takenAt),
+      formatTime,
+    });
     // v1.30.1 — only pass a second `toast.success` argument when there's
     // a real Undo action to attach; keeps the no-undo call signature
     // identical to the pre-fix behaviour (existing unit tests assert the
@@ -323,10 +377,16 @@ export async function runLogIntake(deps: {
     }
     return true;
   } catch (failure) {
-    showErrorToast(
-      t("medications.intakeToastFailed", { name: medication.name }),
-      { cause: failure },
-    );
+    if (onFailure) {
+      onFailure(
+        localizedApiError(failure, t, "medications.intakeForm.saveError"),
+      );
+    } else {
+      showErrorToast(
+        t("medications.intakeToastFailed", { name: medication.name }),
+        { cause: failure },
+      );
+    }
     return false;
   }
 }
@@ -455,6 +515,7 @@ export function useMedicationIntake({
 }: UseMedicationIntakeParams): UseMedicationIntakeResult {
   const queryClient = useQueryClient();
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const recordName = useActiveRecordName();
   const [intakeLoading, setIntakeLoading] = useState<string | null>(null);
 
@@ -472,6 +533,7 @@ export function useMedicationIntake({
       undoIntake,
       onRecorded,
       recordName,
+      formatTime: (at) => fmt.time(at),
     });
 
   return { intakeLoading, recordIntake, undoIntake };

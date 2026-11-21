@@ -597,7 +597,7 @@
       "measurement": "Misurazione",
       "measurementDescription": "Peso, pressione, battito e altro",
       "medication": "Farmaco",
-      "medicationDescription": "Segna una dose come assunta",
+      "medicationDescription": "Registra una dose, assunta o saltata",
       "mood": "Umore",
       "moodDescription": "Registra umore e tag",
       "workout": "Allenamento",
@@ -784,14 +784,7 @@
     "quickAddLifeEvent": "Registra evento di vita",
     "customizeDashboard": "Personalizza dashboard",
     "medicationIntakeQuickAdd": {
-      "sheetDescription": "Registra dose, orario e farmaco con pochi tap.",
-      "medicationLabel": "Farmaco",
-      "medicationPlaceholder": "Seleziona un farmaco",
-      "doseLabel": "Dose",
-      "dosePlaceholder": "es. 5 mg",
-      "doseHint": "Precompilato con la dose standard. Modificala per registrare una dose diversa solo per questa assunzione.",
-      "timeLabel": "Orario di assunzione",
-      "saveError": "Impossibile salvare l’assunzione.",
+      "sheetDescription": "Registra una dose assunta o saltata, anche in un secondo momento.",
       "emptyTitle": "Ancora nessun farmaco",
       "emptyDescription": "Crea prima un farmaco con un orario, poi torna qui per registrarne l’assunzione.",
       "emptyCta": "Aggiungi farmaco",
@@ -1494,22 +1487,6 @@
       "partialToast": "{taken} registrate, {failed} non riuscite. Riprova",
       "failedToast": "Nessuna assunzione registrata. Riprova"
     },
-    "logIntake": {
-      "dialogTitle": "Registra un'assunzione",
-      "dialogDescription": "Registra una dose per un farmaco esistente. Puoi retrodatarla a una data e un'ora passate.",
-      "medicationLabel": "Farmaco",
-      "slotLabel": "Fascia della pianificazione",
-      "slotNone": "Nessuna fascia specifica",
-      "doseLabel": "Dose",
-      "doseHint": "Precompilato con la dose del farmaco o della fascia. Modificala per registrare una dose diversa solo per questa assunzione.",
-      "takenAtLabel": "Data e ora",
-      "takenAtHint": "Per impostazione predefinita è adesso; scegli una data e un'ora precedenti per registrare una dose passata.",
-      "skippedLabel": "Registra come saltata",
-      "noMedications": "Aggiungi prima un farmaco, poi potrai registrarne le assunzioni.",
-      "cancel": "Annulla",
-      "submit": "Registra assunzione",
-      "slotError": "Non è stato possibile associare un orario alla fascia selezionata. Scegli un’altra fascia o «Nessuna fascia specifica»."
-    },
     "emptyTitle": "Ancora nessun farmaco",
     "emptyDescription": "Crea farmaci, dosi e fasce orarie per registrare l’aderenza.",
     "loadFailed": "Impossibile caricare i farmaci",
@@ -1596,10 +1573,9 @@
     "dayStreakOne": "giorno di serie",
     "cycleDueToday": "In scadenza oggi",
     "cycleNoClosedCycles": "Ancora nessun ciclo di dose completato",
-    "intakeToastTaken": "{name} registrata come assunta",
-    "intakeToastSkipped": "{name} saltata",
+    "intakeToastTaken": "{name}: assunta, {time}",
+    "intakeToastSkipped": "{name}: saltata",
     "intakeToastFailed": "Impossibile registrare {name}; riprova",
-    "intakeUndo": "Annulla",
     "intakeUndone": "Voce annullata",
     "intakeAlreadyTaken": "{name} era già registrato come assunto. Non è stato salvato nulla di nuovo.",
     "intakeUndoFailed": "Impossibile annullare; correggi nella cronologia",
@@ -2133,21 +2109,6 @@
         "status": {
           "ad_hoc": "Fuori programma"
         },
-        "addDialog": {
-          "title": "Aggiungi assunzione",
-          "description": "Registra una dose, anche retroattiva o fuori programma.",
-          "takenAtLabel": "Assunta alle",
-          "skippedLabel": "Saltata",
-          "nudgeHint": "Vicina allo slot {slot}: al salvataggio chiediamo se attribuirla.",
-          "cancel": "Annulla",
-          "submit": "Salva"
-        },
-        "nudge": {
-          "title": "Attribuire a questo slot?",
-          "body": "Questa assunzione cade appena fuori dalla finestra di {slot}. Attribuirla a quello slot o tenerla come voce fuori programma?",
-          "keepAdHoc": "Fuori programma",
-          "pin": "Attribuisci"
-        },
         "pin": {
           "action": "Attribuisci allo slot delle {time}",
           "release": "Rimuovi attribuzione",
@@ -2294,7 +2255,6 @@
         "supplyLabel": "Scorta",
         "supplyRunway": "Copre ancora circa {days} giorni",
         "jumpToZeitplan": "Apri programma",
-        "jumpToVerlauf": "Apri cronologia",
         "jumpToBestand": "Apri scorta",
         "complianceTitle": "Aderenza",
         "complianceEmpty": "Ancora nessun dato sull'aderenza."
@@ -2695,6 +2655,22 @@
       },
       "snoozedToast": "{name}: promemoria di nuovo alle {time}",
       "snoozeFailed": "Impossibile rinviare {name}. Riprova"
+    },
+    "intakeForm": {
+      "title": "Registra assunzione",
+      "description": "Registra una dose assunta o saltata, anche in un secondo momento.",
+      "medicationLabel": "Farmaco",
+      "outcomeLabel": "Cosa è successo",
+      "timeLabel": "Ora",
+      "doseLabel": "Dose",
+      "doseHint": "Precompilata con la dose prevista. Cambiala solo se ne hai assunta una quantità diversa.",
+      "countsFor": "Conta per la dose delle {time}.",
+      "countsForLate": "Conta per la dose delle {time}, come in ritardo.",
+      "countNearLabel": "Contala per la dose delle {time}",
+      "skips": "Salta la dose delle {time}.",
+      "extraDose": "Registrata come dose extra, fuori programma.",
+      "noMedications": "Aggiungi prima un farmaco, poi potrai registrarne le assunzioni.",
+      "saveError": "Impossibile salvare l'assunzione. Riprova"
     }
   },
   "charts": {

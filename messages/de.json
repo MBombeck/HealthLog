@@ -597,7 +597,7 @@
       "measurement": "Messung",
       "measurementDescription": "Gewicht, Blutdruck, Puls und mehr",
       "medication": "Medikament",
-      "medicationDescription": "Eine Dosis als genommen markieren",
+      "medicationDescription": "Eine Dosis erfassen, genommen oder übersprungen",
       "mood": "Stimmung",
       "moodDescription": "Stimmung und Tags erfassen",
       "workout": "Workout",
@@ -784,14 +784,7 @@
     "quickAddLifeEvent": "Lebensereignis erfassen",
     "customizeDashboard": "Dashboard anpassen",
     "medicationIntakeQuickAdd": {
-      "sheetDescription": "Dosis, Zeitpunkt und Medikament in wenigen Tipps protokollieren.",
-      "medicationLabel": "Medikament",
-      "medicationPlaceholder": "Medikament auswählen",
-      "doseLabel": "Dosis",
-      "dosePlaceholder": "z. B. 5 mg",
-      "doseHint": "Vorbelegt mit der Standarddosis. Passe sie an, um eine abweichende Dosis nur für diese Einnahme zu erfassen.",
-      "timeLabel": "Zeitpunkt",
-      "saveError": "Einnahme konnte nicht gespeichert werden.",
+      "sheetDescription": "Erfasse eine genommene oder übersprungene Dosis, auch nachträglich.",
       "emptyTitle": "Noch keine Medikamente angelegt",
       "emptyDescription": "Lege zuerst ein Medikament mit Zeitfenster an, damit du die Einnahme protokollieren kannst.",
       "emptyCta": "Medikament hinzufügen",
@@ -1494,22 +1487,6 @@
       "partialToast": "{taken} erfasst, {failed} fehlgeschlagen. Bitte erneut versuchen",
       "failedToast": "Keine Einnahme erfasst. Bitte erneut versuchen"
     },
-    "logIntake": {
-      "dialogTitle": "Einnahme erfassen",
-      "dialogDescription": "Erfasse eine Dosis für ein vorhandenes Medikament. Du kannst sie auf ein vergangenes Datum und eine vergangene Uhrzeit zurückdatieren.",
-      "medicationLabel": "Medikament",
-      "slotLabel": "Einnahmeslot",
-      "slotNone": "Kein bestimmter Slot",
-      "doseLabel": "Dosis",
-      "doseHint": "Vorbelegt mit der Dosis des Medikaments bzw. Slots. Passe sie an, um eine abweichende Dosis nur für diese Einnahme zu erfassen.",
-      "takenAtLabel": "Datum und Uhrzeit",
-      "takenAtHint": "Standard ist jetzt; wähle ein früheres Datum und eine frühere Uhrzeit, um eine vergangene Dosis zu erfassen.",
-      "skippedLabel": "Als übersprungen erfassen",
-      "noMedications": "Lege zuerst ein Medikament an, dann kannst du Einnahmen dafür erfassen.",
-      "cancel": "Abbrechen",
-      "submit": "Einnahme erfassen",
-      "slotError": "Der gewählte Slot konnte keiner Uhrzeit zugeordnet werden. Bitte wähle einen anderen Slot oder „Kein bestimmter Slot“."
-    },
     "emptyTitle": "Noch keine Medikamente",
     "emptyDescription": "Lege Medikamente, Dosierungen und Einnahmefenster an, um die Therapietreue zu erfassen.",
     "loadFailed": "Medikamente konnten nicht geladen werden",
@@ -1596,10 +1573,9 @@
     "dayStreakOne": "Tag Serie",
     "cycleDueToday": "Heute fällig",
     "cycleNoClosedCycles": "Noch keine abgeschlossenen Dosiszyklen",
-    "intakeToastTaken": "{name} als genommen erfasst",
-    "intakeToastSkipped": "{name} übersprungen",
+    "intakeToastTaken": "{name}: genommen, {time}",
+    "intakeToastSkipped": "{name}: übersprungen",
     "intakeToastFailed": "{name} konnte nicht erfasst werden. Bitte erneut versuchen",
-    "intakeUndo": "Rückgängig",
     "intakeUndone": "Eintrag zurückgenommen",
     "intakeAlreadyTaken": "{name} war schon als genommen erfasst. Nichts Neues gespeichert.",
     "intakeUndoFailed": "Rückgängig fehlgeschlagen. Im Verlauf korrigieren",
@@ -2133,21 +2109,6 @@
         "status": {
           "ad_hoc": "Außerplanmäßig"
         },
-        "addDialog": {
-          "title": "Einnahme hinzufügen",
-          "description": "Dosis nachtragen, auch rückwirkend oder außerplanmäßig.",
-          "takenAtLabel": "Genommen um",
-          "skippedLabel": "Übersprungen",
-          "nudgeHint": "Liegt nah am Slot {slot}. Beim Speichern fragen wir, ob zugeordnet werden soll.",
-          "cancel": "Abbrechen",
-          "submit": "Speichern"
-        },
-        "nudge": {
-          "title": "Diesem Slot zuordnen?",
-          "body": "Die Einnahme liegt knapp außerhalb des Fensters von {slot}. Diesem Slot zuordnen oder als außerplanmäßigen Eintrag speichern?",
-          "keepAdHoc": "Außerplanmäßig",
-          "pin": "Zuordnen"
-        },
         "pin": {
           "action": "Slot {time} zuordnen",
           "release": "Zuordnung lösen",
@@ -2294,7 +2255,6 @@
         "supplyLabel": "Bestand",
         "supplyRunway": "Reicht noch ca. {days} Tage",
         "jumpToZeitplan": "Zum Zeitplan",
-        "jumpToVerlauf": "Zum Verlauf",
         "jumpToBestand": "Zum Bestand",
         "complianceTitle": "Therapietreue",
         "complianceEmpty": "Noch keine Daten zur Therapietreue."
@@ -2695,6 +2655,22 @@
       },
       "snoozedToast": "{name}: Erinnerung wieder um {time}",
       "snoozeFailed": "{name} konnte nicht verschoben werden. Bitte erneut versuchen"
+    },
+    "intakeForm": {
+      "title": "Einnahme erfassen",
+      "description": "Erfasse eine genommene oder übersprungene Dosis, auch nachträglich.",
+      "medicationLabel": "Medikament",
+      "outcomeLabel": "Was ist passiert",
+      "timeLabel": "Zeitpunkt",
+      "doseLabel": "Dosis",
+      "doseHint": "Vorbelegt mit der geplanten Dosis. Ändere sie nur, wenn du eine andere Menge genommen hast.",
+      "countsFor": "Zählt für die Dosis um {time}.",
+      "countsForLate": "Zählt für die Dosis um {time}, als verspätet.",
+      "countNearLabel": "Für die Dosis um {time} zählen",
+      "skips": "Überspringt die Dosis um {time}.",
+      "extraDose": "Wird als zusätzliche Dosis außerhalb des Plans erfasst.",
+      "noMedications": "Lege zuerst ein Medikament an, dann kannst du Einnahmen dafür erfassen.",
+      "saveError": "Die Einnahme konnte nicht gespeichert werden. Bitte erneut versuchen"
     }
   },
   "charts": {

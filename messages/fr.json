@@ -597,7 +597,7 @@
       "measurement": "Mesure",
       "measurementDescription": "Poids, tension artérielle, pouls et plus",
       "medication": "Médicament",
-      "medicationDescription": "Marquer une dose comme prise",
+      "medicationDescription": "Saisir une dose, prise ou sautée",
       "mood": "Humeur",
       "moodDescription": "Enregistrez votre humeur et des étiquettes",
       "workout": "Entraînement",
@@ -784,14 +784,7 @@
     "quickAddLifeEvent": "Enregistrer un événement de vie",
     "customizeDashboard": "Personnaliser le tableau de bord",
     "medicationIntakeQuickAdd": {
-      "sheetDescription": "Enregistrez la dose, l’heure et le médicament en quelques touches.",
-      "medicationLabel": "Médicament",
-      "medicationPlaceholder": "Sélectionner un médicament",
-      "doseLabel": "Dose",
-      "dosePlaceholder": "p. ex. 5 mg",
-      "doseHint": "Prérempli avec la dose standard. Modifiez-la pour enregistrer une dose différente pour cette prise uniquement.",
-      "timeLabel": "Heure de la prise",
-      "saveError": "Impossible d’enregistrer la prise.",
+      "sheetDescription": "Enregistre une dose prise ou sautée, même après coup.",
       "emptyTitle": "Aucun médicament pour l’instant",
       "emptyDescription": "Créez d’abord un médicament avec un horaire, puis revenez ici pour saisir la prise.",
       "emptyCta": "Ajouter un médicament",
@@ -1494,22 +1487,6 @@
       "partialToast": "{taken} enregistrées, {failed} échouées. Veuillez réessayer",
       "failedToast": "Aucune prise enregistrée. Veuillez réessayer"
     },
-    "logIntake": {
-      "dialogTitle": "Enregistrer une prise",
-      "dialogDescription": "Enregistrez une dose pour un médicament existant. Vous pouvez l’antidater à une date et une heure passées.",
-      "medicationLabel": "Médicament",
-      "slotLabel": "Créneau du planning",
-      "slotNone": "Aucun créneau précis",
-      "doseLabel": "Dose",
-      "doseHint": "Prérempli avec la dose du médicament ou du créneau. Modifiez-la pour enregistrer une dose différente pour cette prise uniquement.",
-      "takenAtLabel": "Date et heure",
-      "takenAtHint": "Par défaut maintenant ; choisissez une date et une heure antérieures pour enregistrer une dose passée.",
-      "skippedLabel": "Enregistrer comme ignorée",
-      "noMedications": "Ajoutez d’abord un médicament, puis vous pourrez enregistrer des prises pour celui-ci.",
-      "cancel": "Annuler",
-      "submit": "Enregistrer la prise",
-      "slotError": "Le créneau sélectionné n’a pas pu être associé à une heure. Choisissez un autre créneau ou « Aucun créneau précis »."
-    },
     "emptyTitle": "Aucun médicament pour l’instant",
     "emptyDescription": "Créez des médicaments, des doses et des fenêtres horaires pour suivre l’observance.",
     "loadFailed": "Impossible de charger les médicaments",
@@ -1596,10 +1573,9 @@
     "dayStreakOne": "jour de série",
     "cycleDueToday": "À prendre aujourd'hui",
     "cycleNoClosedCycles": "Aucun cycle de dose terminé pour l'instant",
-    "intakeToastTaken": "{name} enregistré comme pris",
-    "intakeToastSkipped": "{name} sauté",
+    "intakeToastTaken": "{name} : prise, {time}",
+    "intakeToastSkipped": "{name} : sautée",
     "intakeToastFailed": "Impossible d'enregistrer {name}. Réessayez",
-    "intakeUndo": "Annuler",
     "intakeUndone": "Entrée annulée",
     "intakeAlreadyTaken": "{name} était déjà enregistré comme pris. Rien de nouveau n’a été enregistré.",
     "intakeUndoFailed": "Annulation impossible. Corrigez dans l'historique",
@@ -2133,21 +2109,6 @@
         "status": {
           "ad_hoc": "Hors planning"
         },
-        "addDialog": {
-          "title": "Ajouter une prise",
-          "description": "Enregistrez une dose, même rétroactive ou hors planning.",
-          "takenAtLabel": "Prise à",
-          "skippedLabel": "Sautée",
-          "nudgeHint": "Proche du créneau {slot} : à l'enregistrement, nous demandons s'il faut l'y rattacher.",
-          "cancel": "Annuler",
-          "submit": "Enregistrer"
-        },
-        "nudge": {
-          "title": "Rattacher à ce créneau ?",
-          "body": "Cette prise se situe juste en dehors de la fenêtre de {slot}. La rattacher à ce créneau ou la conserver comme entrée hors planning ?",
-          "keepAdHoc": "Hors planning",
-          "pin": "Rattacher"
-        },
         "pin": {
           "action": "Rattacher au créneau de {time}",
           "release": "Détacher du créneau",
@@ -2294,7 +2255,6 @@
         "supplyLabel": "Stock",
         "supplyRunway": "Couvre encore environ {days} jours",
         "jumpToZeitplan": "Voir l'horaire",
-        "jumpToVerlauf": "Voir l'historique",
         "jumpToBestand": "Voir le stock",
         "complianceTitle": "Observance",
         "complianceEmpty": "Aucune donnée d'observance pour l'instant."
@@ -2695,6 +2655,22 @@
       },
       "snoozedToast": "{name} : rappel à {time}",
       "snoozeFailed": "Impossible de reporter {name}. Réessaie"
+    },
+    "intakeForm": {
+      "title": "Saisir une prise",
+      "description": "Enregistre une dose prise ou sautée, même après coup.",
+      "medicationLabel": "Médicament",
+      "outcomeLabel": "Ce qui s'est passé",
+      "timeLabel": "Heure",
+      "doseLabel": "Dose",
+      "doseHint": "Préremplie avec la dose prévue. Ne la change que si tu as pris une autre quantité.",
+      "countsFor": "Compte pour la dose de {time}.",
+      "countsForLate": "Compte pour la dose de {time}, comme prise en retard.",
+      "countNearLabel": "La compter pour la dose de {time}",
+      "skips": "Saute la dose de {time}.",
+      "extraDose": "Enregistrée comme dose supplémentaire, hors planning.",
+      "noMedications": "Ajoutez d’abord un médicament, puis vous pourrez enregistrer des prises pour celui-ci.",
+      "saveError": "Impossible d'enregistrer la prise. Réessaie"
     }
   },
   "charts": {

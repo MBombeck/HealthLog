@@ -72,6 +72,8 @@ export interface LedgerSchedule {
 export interface DoseHistoryLedgerProps {
   medicationId: string;
   medicationName: string;
+  /** The configured dose, the add form's starting dose. */
+  medicationDose?: string;
   schedules: LedgerSchedule[];
   /** Trailing window in days the ledger renders. Defaults to 90. */
   windowDays?: number;
@@ -80,6 +82,7 @@ export interface DoseHistoryLedgerProps {
 export function DoseHistoryLedger({
   medicationId,
   medicationName,
+  medicationDose,
   schedules,
   windowDays = 90,
 }: DoseHistoryLedgerProps) {
@@ -233,6 +236,7 @@ export function DoseHistoryLedger({
           onOpenChange={setAddOpen}
           medicationId={medicationId}
           medicationName={medicationName}
+          medicationDose={medicationDose}
           schedules={schedules}
           ledgerKey={queryKey}
         />

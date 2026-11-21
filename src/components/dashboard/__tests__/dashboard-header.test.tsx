@@ -160,7 +160,7 @@ describe("<DashboardHeader> — quick-add menu", () => {
 
     expect(html).toContain("Log measurement");
     expect(html).toContain("Log mood");
-    expect(html).toContain("Log medication intake");
+    expect(html).toContain("Log intake");
     // Water logging was removed from the app; the dashboard quick-add offers
     // no water entry.
     expect(html).not.toContain("Log water");
@@ -196,16 +196,16 @@ describe("<DashboardHeader> — every entry follows its module, as the capture p
       "en",
     );
     expect(html).not.toContain("Log mood");
-    expect(html).toContain("Log medication intake");
+    expect(html).toContain("Log intake");
   });
 
-  it("withholds Log medication intake when the medications module is off", () => {
+  it("withholds Log intake when the medications module is off", () => {
     modulesRef.value = { medications: false };
     const html = renderSSR(
       <DashboardHeader onQuickEntry={() => undefined} />,
       "en",
     );
-    expect(html).not.toContain("Log medication intake");
+    expect(html).not.toContain("Log intake");
     expect(html).toContain("Log mood");
   });
 
@@ -234,7 +234,7 @@ describe("<DashboardHeader> — every entry follows its module, as the capture p
       );
       const label = {
         measurement: "Log measurement",
-        medication: "Log medication intake",
+        medication: "Log intake",
         mood: "Log mood",
         symptom: "Log symptom",
         seizure: "Log seizure",

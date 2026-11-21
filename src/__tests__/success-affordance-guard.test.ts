@@ -181,13 +181,6 @@ const PINNED_AFFORDANCES: Record<
     // behind the delete toast's Undo action.
     "toast.success": 3,
   },
-  // v1.36.x — two call sites, one decision: the intake toast routes through
-  // `intakeToastOptions()`, which returns `undefined` in the caller's own
-  // record, and sonner's one-argument form is what the unit tests assert. So
-  // the if/else that `runLogIntake` already uses landed here too.
-  "src/components/dashboard/medication-intake-quick-add.tsx": {
-    "toast.success": 2,
-  },
   "src/components/dashboard/range-display.tsx": { "text-success": 2 },
   "src/components/documents/document-card.tsx": { "text-success": 1 },
   "src/components/documents/detail/use-document-detail-ai.ts": {
@@ -275,10 +268,6 @@ const PINNED_AFFORDANCES: Record<
   // The tone of the due and taken dose states, which every dose surface
   // renders through this one label (it reports no write).
   "src/components/medications/dose-state-label.tsx": { "text-success": 2 },
-  // Same pair, same reason as the dashboard quick-add above.
-  "src/components/medications/dose-history-add-dialog.tsx": {
-    "toast.success": 2,
-  },
   "src/components/medications/dose-history/ledger-summary-chart.tsx": {
     "text-success": 1,
   },

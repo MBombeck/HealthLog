@@ -597,7 +597,7 @@
       "measurement": "Meting",
       "measurementDescription": "Gewicht, bloeddruk, hartslag en meer",
       "medication": "Medicatie",
-      "medicationDescription": "Een dosis als ingenomen markeren",
+      "medicationDescription": "Een dosis vastleggen, ingenomen of overgeslagen",
       "mood": "Stemming",
       "moodDescription": "Je stemming en tags vastleggen",
       "workout": "Training",
@@ -779,19 +779,12 @@
     "medications": "Medicatie",
     "quickAddMeasurement": "Meting vastleggen",
     "quickAddMood": "Stemming vastleggen",
-    "quickAddMedicationIntake": "Medicatie-inname vastleggen",
+    "quickAddMedicationIntake": "Inname vastleggen",
     "quickAddWorkout": "Training vastleggen",
     "quickAddLifeEvent": "Levensgebeurtenis vastleggen",
     "customizeDashboard": "Dashboard aanpassen",
     "medicationIntakeQuickAdd": {
-      "sheetDescription": "Leg dosis, tijdstip en medicijn vast met een paar tikken.",
-      "medicationLabel": "Medicijn",
-      "medicationPlaceholder": "Kies een medicijn",
-      "doseLabel": "Dosis",
-      "dosePlaceholder": "bijv. 5 mg",
-      "doseHint": "Vooraf ingevuld met de standaarddosis. Pas deze aan om alleen voor deze inname een afwijkende dosis vast te leggen.",
-      "timeLabel": "Tijdstip van inname",
-      "saveError": "De medicatie-inname kon niet worden opgeslagen.",
+      "sheetDescription": "Leg een ingenomen of overgeslagen dosis vast, ook achteraf.",
       "emptyTitle": "Nog geen medicatie",
       "emptyDescription": "Maak eerst een medicijn met een schema aan en kom dan hier terug om de inname vast te leggen.",
       "emptyCta": "Medicijn toevoegen",
@@ -1494,22 +1487,6 @@
       "partialToast": "{taken} geregistreerd, {failed} mislukt. Probeer het opnieuw",
       "failedToast": "Geen inname geregistreerd. Probeer het opnieuw"
     },
-    "logIntake": {
-      "dialogTitle": "Inname vastleggen",
-      "dialogDescription": "Registreer een dosis bij een bestaand medicijn. Je kunt een eerdere datum en tijd kiezen.",
-      "medicationLabel": "Medicijn",
-      "slotLabel": "Tijdstip in schema",
-      "slotNone": "Geen specifiek tijdstip",
-      "doseLabel": "Dosis",
-      "doseHint": "Vooraf ingevuld met de dosis van het medicijn of het tijdstip. Pas deze aan om alleen voor deze inname een afwijkende dosis te registreren.",
-      "takenAtLabel": "Datum en tijd",
-      "takenAtHint": "Standaard nu; kies een eerdere datum en tijd om een eerdere dosis vast te leggen.",
-      "skippedLabel": "Als overgeslagen vastleggen",
-      "noMedications": "Voeg eerst een medicijn toe, daarna kun je er innames bij vastleggen.",
-      "cancel": "Annuleren",
-      "submit": "Inname vastleggen",
-      "slotError": "Het gekozen tijdstip kon niet aan een tijd worden gekoppeld. Kies een ander tijdstip of “Geen specifiek tijdstip”."
-    },
     "emptyTitle": "Nog geen medicatie",
     "emptyDescription": "Voeg medicijnen, doseringen en herinneringsvensters toe om je therapietrouw bij te houden.",
     "loadFailed": "Medicatie kon niet worden geladen",
@@ -1596,10 +1573,9 @@
     "dayStreakOne": "dag op rij",
     "cycleDueToday": "Vandaag gepland",
     "cycleNoClosedCycles": "Nog geen afgeronde doseringscycli",
-    "intakeToastTaken": "{name} geregistreerd als ingenomen",
-    "intakeToastSkipped": "{name} overgeslagen",
+    "intakeToastTaken": "{name}: ingenomen, {time}",
+    "intakeToastSkipped": "{name}: overgeslagen",
     "intakeToastFailed": "{name} kon niet worden geregistreerd. Probeer het opnieuw",
-    "intakeUndo": "Ongedaan maken",
     "intakeUndone": "Registratie teruggedraaid",
     "intakeAlreadyTaken": "{name} was al als ingenomen vastgelegd. Er is niets nieuws opgeslagen.",
     "intakeUndoFailed": "Ongedaan maken mislukt. Open de geschiedenis om het te corrigeren",
@@ -2133,21 +2109,6 @@
         "status": {
           "ad_hoc": "Buiten schema"
         },
-        "addDialog": {
-          "title": "Inname toevoegen",
-          "description": "Registreer een dosis, ook een met een eerdere datum of een buiten het schema.",
-          "takenAtLabel": "Ingenomen op",
-          "skippedLabel": "Overgeslagen",
-          "nudgeHint": "Dicht bij het tijdstip {slot}. Bij het opslaan vragen we of je de inname daaraan wilt toewijzen.",
-          "cancel": "Annuleren",
-          "submit": "Opslaan"
-        },
-        "nudge": {
-          "title": "Aan dit tijdstip toewijzen?",
-          "body": "Deze inname valt net buiten het venster van {slot}. Wil je hem aan dat tijdstip toewijzen, of als registratie buiten het schema bewaren?",
-          "keepAdHoc": "Buiten schema",
-          "pin": "Toewijzen"
-        },
         "pin": {
           "action": "Toewijzen aan tijdstip {time}",
           "release": "Toewijzing opheffen",
@@ -2294,7 +2255,6 @@
         "supplyLabel": "Voorraad",
         "supplyRunway": "Nog genoeg voor ongeveer {days} dagen",
         "jumpToZeitplan": "Schema openen",
-        "jumpToVerlauf": "Geschiedenis openen",
         "jumpToBestand": "Voorraad openen",
         "complianceTitle": "Therapietrouw",
         "complianceEmpty": "Nog geen gegevens over therapietrouw."
@@ -2695,6 +2655,22 @@
       },
       "snoozedToast": "{name}: herinnering om {time}",
       "snoozeFailed": "{name} kon niet worden uitgesteld. Probeer het opnieuw"
+    },
+    "intakeForm": {
+      "title": "Inname vastleggen",
+      "description": "Leg een ingenomen of overgeslagen dosis vast, ook achteraf.",
+      "medicationLabel": "Medicijn",
+      "outcomeLabel": "Wat er gebeurde",
+      "timeLabel": "Tijdstip",
+      "doseLabel": "Dosis",
+      "doseHint": "Vooraf ingevuld met de geplande dosis. Pas hem alleen aan als je een andere hoeveelheid nam.",
+      "countsFor": "Telt voor de dosis van {time}.",
+      "countsForLate": "Telt voor de dosis van {time}, als te laat.",
+      "countNearLabel": "Laten tellen voor de dosis van {time}",
+      "skips": "Slaat de dosis van {time} over.",
+      "extraDose": "Wordt vastgelegd als extra dosis, buiten het schema.",
+      "noMedications": "Voeg eerst een medicijn toe, daarna kun je er innames bij vastleggen.",
+      "saveError": "De inname kon niet worden opgeslagen. Probeer het opnieuw"
     }
   },
   "charts": {

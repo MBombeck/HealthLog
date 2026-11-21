@@ -597,7 +597,7 @@
       "measurement": "Measurement",
       "measurementDescription": "Weight, blood pressure, pulse and more",
       "medication": "Medication",
-      "medicationDescription": "Mark a dose as taken",
+      "medicationDescription": "Log a dose, taken or skipped",
       "mood": "Mood",
       "moodDescription": "Log your mood and tags",
       "workout": "Workout",
@@ -779,19 +779,12 @@
     "medications": "Medications",
     "quickAddMeasurement": "Log measurement",
     "quickAddMood": "Log mood",
-    "quickAddMedicationIntake": "Log medication intake",
+    "quickAddMedicationIntake": "Log intake",
     "quickAddWorkout": "Log workout",
     "quickAddLifeEvent": "Log life event",
     "customizeDashboard": "Customize dashboard",
     "medicationIntakeQuickAdd": {
-      "sheetDescription": "Record dose, time, and medication in a few taps.",
-      "medicationLabel": "Medication",
-      "medicationPlaceholder": "Select a medication",
-      "doseLabel": "Dose",
-      "dosePlaceholder": "e.g. 5 mg",
-      "doseHint": "Pre-filled with the standard dose. Edit it to record a deviating dose for this intake only.",
-      "timeLabel": "Time taken",
-      "saveError": "Could not save medication intake.",
+      "sheetDescription": "Record a dose you took or skipped, also afterwards.",
       "emptyTitle": "No medications yet",
       "emptyDescription": "Create a medication with a schedule first, then come back here to log the intake.",
       "emptyCta": "Add medication",
@@ -1494,22 +1487,6 @@
       "partialToast": "{taken} recorded, {failed} failed. Please try again",
       "failedToast": "No intake recorded. Please try again"
     },
-    "logIntake": {
-      "dialogTitle": "Log an intake",
-      "dialogDescription": "Record a dose against an existing medication. You can backdate it to a past date and time.",
-      "medicationLabel": "Medication",
-      "slotLabel": "Schedule slot",
-      "slotNone": "No specific slot",
-      "doseLabel": "Dose",
-      "doseHint": "Pre-filled with the medication or slot dose. Edit it to record a deviating dose for this intake only.",
-      "takenAtLabel": "Date and time",
-      "takenAtHint": "Defaults to now; pick an earlier date and time to log a past dose.",
-      "skippedLabel": "Logged as skipped",
-      "noMedications": "Add a medication first, then you can log intakes against it.",
-      "cancel": "Cancel",
-      "submit": "Log intake",
-      "slotError": "The selected slot couldn’t be matched to a time. Pick another slot or “No specific slot”."
-    },
     "emptyTitle": "No medications yet",
     "emptyDescription": "Add medications, dosages, and reminder windows to track adherence.",
     "loadFailed": "Could not load medications",
@@ -1596,10 +1573,9 @@
     "dayStreakOne": "day streak",
     "cycleDueToday": "Due today",
     "cycleNoClosedCycles": "No closed dose cycles yet",
-    "intakeToastTaken": "{name} recorded as taken",
-    "intakeToastSkipped": "{name} skipped",
+    "intakeToastTaken": "{name}: taken, {time}",
+    "intakeToastSkipped": "{name}: skipped",
     "intakeToastFailed": "Could not record {name}. Try again",
-    "intakeUndo": "Undo",
     "intakeUndone": "Entry reverted",
     "intakeAlreadyTaken": "{name} was already recorded as taken. Nothing new was saved.",
     "intakeUndoFailed": "Could not undo. Open the history to fix it",
@@ -2133,21 +2109,6 @@
         "status": {
           "ad_hoc": "Off-schedule"
         },
-        "addDialog": {
-          "title": "Add intake",
-          "description": "Record a dose, including a backdated or off-schedule one.",
-          "takenAtLabel": "Taken at",
-          "skippedLabel": "Skipped",
-          "nudgeHint": "Close to the {slot} slot. On save we ask whether to attribute it.",
-          "cancel": "Cancel",
-          "submit": "Save"
-        },
-        "nudge": {
-          "title": "Attribute to this slot?",
-          "body": "This intake falls just outside the {slot} window. Attribute it to that slot, or keep it as an off-schedule entry?",
-          "keepAdHoc": "Off-schedule",
-          "pin": "Attribute"
-        },
         "pin": {
           "action": "Attribute to slot {time}",
           "release": "Release attribution",
@@ -2294,7 +2255,6 @@
         "supplyLabel": "Supply",
         "supplyRunway": "Lasts about {days} more days",
         "jumpToZeitplan": "Open schedule",
-        "jumpToVerlauf": "Open history",
         "jumpToBestand": "Open supply",
         "complianceTitle": "Adherence",
         "complianceEmpty": "No adherence data yet."
@@ -2695,6 +2655,22 @@
       },
       "snoozedToast": "{name}: reminder again at {time}",
       "snoozeFailed": "Could not snooze {name}. Try again"
+    },
+    "intakeForm": {
+      "title": "Log intake",
+      "description": "Record a dose you took or skipped, also afterwards.",
+      "medicationLabel": "Medication",
+      "outcomeLabel": "What happened",
+      "timeLabel": "Time",
+      "doseLabel": "Dose",
+      "doseHint": "Pre-filled with the planned dose. Change it only if you took a different amount.",
+      "countsFor": "Counts for the {time} dose.",
+      "countsForLate": "Counts for the {time} dose, as late.",
+      "countNearLabel": "Count it for the {time} dose",
+      "skips": "Skips the {time} dose.",
+      "extraDose": "Recorded as an extra dose, outside the schedule.",
+      "noMedications": "Add a medication first, then you can log intakes against it.",
+      "saveError": "Could not save the intake. Try again"
     }
   },
   "charts": {

@@ -597,7 +597,7 @@
       "measurement": "Medição",
       "measurementDescription": "Peso, pressão arterial, pulso e mais",
       "medication": "Medicamento",
-      "medicationDescription": "Marcar uma dose como tomada",
+      "medicationDescription": "Registrar uma dose, tomada ou pulada",
       "mood": "Humor",
       "moodDescription": "Registre seu humor e etiquetas",
       "workout": "Treino",
@@ -779,19 +779,12 @@
     "medications": "Medicamentos",
     "quickAddMeasurement": "Registrar medição",
     "quickAddMood": "Registrar humor",
-    "quickAddMedicationIntake": "Registrar tomada de medicamento",
+    "quickAddMedicationIntake": "Registrar tomada",
     "quickAddWorkout": "Registrar treino",
     "quickAddLifeEvent": "Registrar evento de vida",
     "customizeDashboard": "Personalizar painel",
     "medicationIntakeQuickAdd": {
-      "sheetDescription": "Registre dose, horário e medicamento em alguns toques.",
-      "medicationLabel": "Medicamento",
-      "medicationPlaceholder": "Selecione um medicamento",
-      "doseLabel": "Dose",
-      "dosePlaceholder": "ex.: 5 mg",
-      "doseHint": "Pré-preenchido com a dose padrão. Edite para registrar uma dose diferente apenas nesta tomada.",
-      "timeLabel": "Horário da tomada",
-      "saveError": "Não foi possível salvar a tomada do medicamento.",
+      "sheetDescription": "Registre uma dose tomada ou pulada, também depois.",
       "emptyTitle": "Nenhum medicamento ainda",
       "emptyDescription": "Primeiro crie um medicamento com horários, depois volte aqui para registrar a tomada.",
       "emptyCta": "Adicionar medicamento",
@@ -1494,22 +1487,6 @@
       "partialToast": "{taken} registradas, {failed} falharam. Tente novamente",
       "failedToast": "Nenhuma tomada registrada. Tente novamente"
     },
-    "logIntake": {
-      "dialogTitle": "Registrar uma tomada",
-      "dialogDescription": "Registre uma dose contra um medicamento existente. Você pode retrodatá-la para uma data e hora passadas.",
-      "medicationLabel": "Medicamento",
-      "slotLabel": "Horário do cronograma",
-      "slotNone": "Sem horário específico",
-      "doseLabel": "Dose",
-      "doseHint": "Pré-preenchida com a dose do medicamento ou do horário. Edite-a para registrar uma dose diferente apenas nesta tomada.",
-      "takenAtLabel": "Data e hora",
-      "takenAtHint": "Padrão é agora; escolha uma data e hora anteriores para registrar uma dose passada.",
-      "skippedLabel": "Registrada como pulada",
-      "noMedications": "Adicione um medicamento primeiro; depois você pode registrar tomadas dele.",
-      "cancel": "Cancelar",
-      "submit": "Registrar tomada",
-      "slotError": "O horário selecionado não pôde ser correspondido a um horário. Escolha outro horário ou “Sem horário específico”."
-    },
     "emptyTitle": "Nenhum medicamento ainda",
     "emptyDescription": "Adicione medicamentos, doses e janelas de lembrete para acompanhar a adesão.",
     "loadFailed": "Não foi possível carregar os medicamentos",
@@ -1596,10 +1573,9 @@
     "dayStreakOne": "dia seguido",
     "cycleDueToday": "Previsto para hoje",
     "cycleNoClosedCycles": "Nenhum ciclo de doses fechado ainda",
-    "intakeToastTaken": "{name} registrada como tomada",
-    "intakeToastSkipped": "{name} pulada",
+    "intakeToastTaken": "{name}: tomada, {time}",
+    "intakeToastSkipped": "{name}: pulada",
     "intakeToastFailed": "Não foi possível registrar {name}. Tente novamente",
-    "intakeUndo": "Desfazer",
     "intakeUndone": "Entrada revertida",
     "intakeAlreadyTaken": "{name} já estava registrado como tomado. Nada de novo foi salvo.",
     "intakeUndoFailed": "Não foi possível desfazer. Abra o histórico para corrigir",
@@ -2133,21 +2109,6 @@
         "status": {
           "ad_hoc": "Fora do cronograma"
         },
-        "addDialog": {
-          "title": "Adicionar tomada",
-          "description": "Registre uma dose, incluindo uma retrodatada ou fora do cronograma.",
-          "takenAtLabel": "Tomada em",
-          "skippedLabel": "Pulada",
-          "nudgeHint": "Perto do horário {slot}. Ao salvar, perguntamos se deve atribuí-la.",
-          "cancel": "Cancelar",
-          "submit": "Salvar"
-        },
-        "nudge": {
-          "title": "Atribuir a este horário?",
-          "body": "Esta tomada fica logo fora da janela {slot}. Atribuí-la a esse horário ou mantê-la como uma entrada fora do cronograma?",
-          "keepAdHoc": "Fora do cronograma",
-          "pin": "Atribuir"
-        },
         "pin": {
           "action": "Atribuir ao horário {time}",
           "release": "Liberar atribuição",
@@ -2294,7 +2255,6 @@
         "supplyLabel": "Estoque",
         "supplyRunway": "Dura cerca de {days} dias a mais",
         "jumpToZeitplan": "Abrir cronograma",
-        "jumpToVerlauf": "Abrir histórico",
         "jumpToBestand": "Abrir estoque",
         "complianceTitle": "Adesão",
         "complianceEmpty": "Nenhum dado de adesão ainda."
@@ -2695,6 +2655,22 @@
       },
       "snoozedToast": "{name}: lembrete de novo às {time}",
       "snoozeFailed": "Não foi possível adiar {name}. Tente de novo"
+    },
+    "intakeForm": {
+      "title": "Registrar tomada",
+      "description": "Registre uma dose tomada ou pulada, também depois.",
+      "medicationLabel": "Medicamento",
+      "outcomeLabel": "O que aconteceu",
+      "timeLabel": "Horário",
+      "doseLabel": "Dose",
+      "doseHint": "Pré-preenchida com a dose prevista. Mude só se tomou outra quantidade.",
+      "countsFor": "Conta para a dose das {time}.",
+      "countsForLate": "Conta para a dose das {time}, como atrasada.",
+      "countNearLabel": "Contar para a dose das {time}",
+      "skips": "Pula a dose das {time}.",
+      "extraDose": "Registrada como dose extra, fora do cronograma.",
+      "noMedications": "Adicione um medicamento primeiro; depois você pode registrar tomadas dele.",
+      "saveError": "Não foi possível salvar a tomada. Tente de novo"
     }
   },
   "charts": {

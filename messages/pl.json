@@ -597,7 +597,7 @@
       "measurement": "Pomiar",
       "measurementDescription": "Waga, ciśnienie, tętno i więcej",
       "medication": "Lek",
-      "medicationDescription": "Oznacz dawkę jako przyjętą",
+      "medicationDescription": "Zapisz dawkę, przyjętą lub pominiętą",
       "mood": "Nastrój",
       "moodDescription": "Zapisz nastrój i tagi",
       "workout": "Trening",
@@ -784,14 +784,7 @@
     "quickAddLifeEvent": "Zapisz wydarzenie życiowe",
     "customizeDashboard": "Dostosuj pulpit",
     "medicationIntakeQuickAdd": {
-      "sheetDescription": "Zapisz dawkę, godzinę i lek w kilku stuknięciach.",
-      "medicationLabel": "Lek",
-      "medicationPlaceholder": "Wybierz lek",
-      "doseLabel": "Dawka",
-      "dosePlaceholder": "np. 5 mg",
-      "doseHint": "Wstępnie wypełnione standardową dawką. Zmień ją, aby zapisać inną dawkę tylko dla tego przyjęcia.",
-      "timeLabel": "Godzina przyjęcia",
-      "saveError": "Nie udało się zapisać przyjęcia.",
+      "sheetDescription": "Zapisz przyjętą lub pominiętą dawkę, także później.",
       "emptyTitle": "Brak leków",
       "emptyDescription": "Najpierw dodaj lek z harmonogramem, a potem wróć tutaj, aby zarejestrować jego przyjęcie.",
       "emptyCta": "Dodaj lek",
@@ -1494,22 +1487,6 @@
       "partialToast": "Zarejestrowano: {taken}, nieudane: {failed}. Spróbuj ponownie",
       "failedToast": "Nie zarejestrowano żadnego przyjęcia. Spróbuj ponownie"
     },
-    "logIntake": {
-      "dialogTitle": "Zarejestruj przyjęcie",
-      "dialogDescription": "Zarejestruj dawkę istniejącego leku. Możesz wstawić ją wstecznie na przeszłą datę i godzinę.",
-      "medicationLabel": "Lek",
-      "slotLabel": "Przedział harmonogramu",
-      "slotNone": "Bez konkretnego przedziału",
-      "doseLabel": "Dawka",
-      "doseHint": "Wstępnie wypełnione dawką leku lub przedziału. Zmień ją, aby zapisać inną dawkę tylko dla tego przyjęcia.",
-      "takenAtLabel": "Data i godzina",
-      "takenAtHint": "Domyślnie teraz; wybierz wcześniejszą datę i godzinę, aby zarejestrować przeszłą dawkę.",
-      "skippedLabel": "Zarejestruj jako pominięte",
-      "noMedications": "Najpierw dodaj lek, a potem będziesz mógł rejestrować jego przyjęcia.",
-      "cancel": "Anuluj",
-      "submit": "Zarejestruj przyjęcie",
-      "slotError": "Nie udało się przypisać godziny do wybranego slotu. Wybierz inny slot lub „Brak konkretnego slotu”."
-    },
     "emptyTitle": "Brak leków",
     "emptyDescription": "Utwórz leki, dawki i okna czasowe, aby śledzić przestrzeganie.",
     "loadFailed": "Nie udało się załadować leków",
@@ -1596,10 +1573,9 @@
     "dayStreakOne": "dzień serii",
     "cycleDueToday": "Termin dzisiaj",
     "cycleNoClosedCycles": "Brak zakończonych cykli dawkowania",
-    "intakeToastTaken": "{name} oznaczone jako przyjęte",
-    "intakeToastSkipped": "{name} pominięte",
+    "intakeToastTaken": "{name}: przyjęte, {time}",
+    "intakeToastSkipped": "{name}: pominięte",
     "intakeToastFailed": "Nie udało się zapisać {name}. Spróbuj ponownie",
-    "intakeUndo": "Cofnij",
     "intakeUndone": "Wpis cofnięty",
     "intakeAlreadyTaken": "{name} był już zapisany jako przyjęty. Nic nowego nie zapisano.",
     "intakeUndoFailed": "Nie udało się cofnąć. Popraw w historii",
@@ -2133,21 +2109,6 @@
         "status": {
           "ad_hoc": "Poza planem"
         },
-        "addDialog": {
-          "title": "Dodaj przyjęcie",
-          "description": "Zarejestruj dawkę, także wstecznie lub poza planem.",
-          "takenAtLabel": "Przyjęto o",
-          "skippedLabel": "Pominięte",
-          "nudgeHint": "Blisko slotu {slot}. Przy zapisie zapytamy, czy przypisać.",
-          "cancel": "Anuluj",
-          "submit": "Zapisz"
-        },
-        "nudge": {
-          "title": "Przypisać do tego slotu?",
-          "body": "To przyjęcie wypada tuż poza oknem {slot}. Przypisać je do tego slotu czy zachować jako wpis poza planem?",
-          "keepAdHoc": "Poza planem",
-          "pin": "Przypisz"
-        },
         "pin": {
           "action": "Przypisz do slotu {time}",
           "release": "Usuń przypisanie",
@@ -2294,7 +2255,6 @@
         "supplyLabel": "Zapas",
         "supplyRunway": "Wystarczy na około {days} dni",
         "jumpToZeitplan": "Otwórz harmonogram",
-        "jumpToVerlauf": "Otwórz historię",
         "jumpToBestand": "Otwórz zapas",
         "complianceTitle": "Przestrzeganie",
         "complianceEmpty": "Brak danych o przestrzeganiu."
@@ -2695,6 +2655,22 @@
       },
       "snoozedToast": "{name}: przypomnienie o {time}",
       "snoozeFailed": "Nie udało się odłożyć {name}. Spróbuj ponownie"
+    },
+    "intakeForm": {
+      "title": "Zarejestruj przyjęcie",
+      "description": "Zapisz przyjętą lub pominiętą dawkę, także później.",
+      "medicationLabel": "Lek",
+      "outcomeLabel": "Co się stało",
+      "timeLabel": "Godzina",
+      "doseLabel": "Dawka",
+      "doseHint": "Wstępnie wpisana zaplanowana dawka. Zmień ją tylko, jeśli przyjęto inną ilość.",
+      "countsFor": "Liczy się jako dawka z {time}.",
+      "countsForLate": "Liczy się jako dawka z {time}, z opóźnieniem.",
+      "countNearLabel": "Policz jako dawkę z {time}",
+      "skips": "Pomija dawkę z {time}.",
+      "extraDose": "Zapisana jako dodatkowa dawka, poza planem.",
+      "noMedications": "Najpierw dodaj lek, a potem będziesz mógł rejestrować jego przyjęcia.",
+      "saveError": "Nie udało się zapisać przyjęcia. Spróbuj ponownie"
     }
   },
   "charts": {

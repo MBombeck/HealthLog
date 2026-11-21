@@ -48,6 +48,8 @@ const HELPER = "intakeToastOptions";
 const VIA_ORCHESTRATOR: Record<string, string> = {
   "components/medications/log-intake-dialog.tsx":
     "Posts through `runLogIntake`, which calls the helper itself.",
+  "components/medications/card-parts/use-dose-snooze.ts":
+    "Snoozes a reminder (status `snoozed`): records no dose, and a delegate never sees it.",
 };
 
 function candidateFiles(): string[] {
@@ -171,8 +173,9 @@ describe("the intake confirmation is decided in one place", () => {
     for (const rel of [
       "components/medications/use-medication-intake.ts",
       "components/medications/dose-history/use-dose-history-ledger.ts",
-      "components/dashboard/medication-intake-quick-add.tsx",
-      "components/medications/dose-history-add-dialog.tsx",
+      // The capture sheet and the history's "+ Entry" post through
+      // `runLogIntake` since they share the one intake form, so they are
+      // no longer posting surfaces of their own.
     ]) {
       expect(
         posting.map((m) => m.rel),
