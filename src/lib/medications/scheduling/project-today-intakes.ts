@@ -179,11 +179,14 @@ export async function projectTodayIntakesAndRecompute(input: {
     where: {
       userId,
       scheduledFor: { gte: todayStart, lt: todayEnd },
+      // Only a live row occupies a slot. An undone dose leaves a tombstone,
+      // and the slot it held is open again: it must come back as pending,
+      // or the today list and the dashboard count drop a dose that is still
+      // due. The unique index covers live rows only since migration 0121
+      // (`medication_intake_events_user_med_slot_source_live_key`), so a
+      // fresh REMINDER row beside a tombstone cannot collide.
+      deletedAt: null,
     },
-    // v1.7.0 sync — intentionally NO `deletedAt: null` filter here. A
-    // tombstoned row still occupies its `(userId, medicationId,
-    // scheduledFor, source)` unique slot, so the backfill must treat it
-    // as present to avoid a P2002 collision when minting REMINDER rows.
     select: { medicationId: true, scheduledFor: true },
   });
   const existingKey = new Set(
