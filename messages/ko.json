@@ -6969,7 +6969,18 @@
         "confirm": "API 키 삭제",
         "done": "API 키를 삭제했어요.",
         "failed": "API 키를 삭제하지 못했어요."
-      }
+      },
+      "coachBudgetHeading": "자체 호스팅 모델용 코치 예산",
+      "coachBudgetBody": "코치가 프롬프트에 넣는 데이터의 양과 한 번의 답변이 작업할 수 있는 시간을 로컬 모델과 게이트웨이별로 정합니다. 컨텍스트 창이 작은 모델이면 스냅샷 크기를 줄이고, 자체 하드웨어의 큰 모델이면 스냅샷과 답변당 한도를 늘리세요. 빈 칸은 표시된 기본값을 유지합니다. 서버의 공용 제공자를 통한 답변은 항상 기본 한도를 유지합니다.",
+      "coachBudgetProvider": "제공자",
+      "coachBudgetLocal": "로컬 모델",
+      "coachBudgetCompat": "게이트웨이",
+      "coachBudgetSnapshotChars": "스냅샷 크기(문자)",
+      "coachBudgetTurnTokens": "답변당 토큰",
+      "coachBudgetMaxRounds": "답변당 도구 라운드",
+      "coachBudgetTurnSeconds": "답변당 초",
+      "coachBudgetRange": "{min}~{max}",
+      "coachBudgetInvalid": "각 값은 범위 안의 정수이거나 비워 두어야 합니다."
     },
     "dashboard": {
       "units": {
@@ -9678,6 +9689,13 @@
     "seizureCluster": {
       "title": "군집 발작",
       "body": "{hours}시간 안에 발작 {count}회, {name} 님이 기록함. 응급 계획은 발작 일지에 있습니다."
+    },
+    "eventMeasurementAnomaly": "활력 징후의 지속적 변화",
+    "eventMeasurementAnomalyDesc": "안정 시 심박수나 혈압 같은 활력 징후가 최소 열흘 동안 새로운 수준을 유지할 때. 일주일에 한 번 이하, 아침에만, 진행 중인 질병 기간에는 보내지 않습니다.",
+    "measurementAnomaly": {
+      "title": "지속적인 변화",
+      "bodyUp": "{date} 이후 {metric} 값이 더 높게 유지되고 있습니다. 인사이트에서 전후를 확인하세요.",
+      "bodyDown": "{date} 이후 {metric} 값이 더 낮게 유지되고 있습니다. 인사이트에서 전후를 확인하세요."
     }
   },
   "i18n": {
@@ -12985,6 +13003,18 @@
     },
     "alcohol": {
       "loadError": "알코올을 불러오지 못했어요."
+    },
+    "energyBalance": {
+      "title": "에너지 균형",
+      "loadError": "에너지 균형을 불러오지 못했습니다.",
+      "perDay": "하루 {value}",
+      "trendMeta": "최근 7일 평균: 섭취량에서 휴식 및 활동 에너지를 뺀 값입니다.",
+      "meanMeta": "{days}일 평균: 섭취량에서 휴식 및 활동 에너지를 뺀 값입니다.",
+      "means": "{days}일 동안 평균 {intake} kcal 섭취, {used} kcal 소모.",
+      "dayLine": "{intake} kcal 섭취, {used} kcal 소모",
+      "estimated": "이 중 {days}일은 측정값이 없어 휴식 에너지를 체중, 키, 나이, 성별로 추정했습니다(Mifflin-St Jeor).",
+      "needsProfile": "섭취량은 있지만 휴식 에너지가 들어오지 않았습니다. 프로필에 키, 생년월일, 성별을 추가하고 체중을 기록하면 균형이 추정됩니다.",
+      "needsExpenditure": "섭취량은 있지만 같은 날 활동 에너지가 들어오지 않아 아직 보여 줄 균형이 없습니다."
     }
   },
   "daily": {
@@ -14194,6 +14224,11 @@
       "micronutrientsOther": "미량영양소 {count}개 기록됨",
       "micronutrientsFew": "미량영양소 {count}개 기록됨",
       "open": "영양소 섭취 보기"
+    },
+    "doseOffset": {
+      "after": "{name} 복용 {duration} 후",
+      "before": "{name} 복용 {duration} 전",
+      "atDose": "{name} 복용 시점"
     }
   },
   "timeline": {
@@ -15220,6 +15255,25 @@
       "YES": "예",
       "NO": "아니요, 보이는 것 없음",
       "UNKNOWN": "잘 모르겠음"
+    }
+  },
+  "careFeed": {
+    "sectionTitle": "캘린더",
+    "sectionSubtitle": "예약과 다가오는 일정을 이미 쓰는 캘린더 앱에서 확인하세요.",
+    "title": "진료 캘린더 구독",
+    "description": "예약된 방문은 해당 시간에, 검진과 백신 추가 접종은 예정일에 표시됩니다.",
+    "loadError": "캘린더 구독을 불러오지 못했습니다.",
+    "linkHidden": "{prefix}(으)로 시작하는 링크가 활성 상태입니다. 링크는 생성할 때 한 번만 표시됩니다. 새 링크가 필요하면 구독을 껐다가 다시 켜세요.",
+    "linkOnce": "지금만 표시됩니다. 캘린더 앱에 붙여 넣으세요.",
+    "visits": "예약된 방문",
+    "checkups": "예정된 검진",
+    "vaccinations": "예정된 백신 추가 접종",
+    "ics": {
+      "calendarName": "진료 일정 (HealthLog)",
+      "visit": "진료 예약",
+      "visitWith": "진료 예약: {name}",
+      "checkupDue": "예정: {label}",
+      "boosterDue": "추가 접종 예정: {label}"
     }
   }
 }

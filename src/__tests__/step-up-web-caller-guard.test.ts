@@ -133,6 +133,7 @@ const GATED_ROUTES: Record<string, string> = {
   "POST /api/account/grants": "web",
   "POST /api/admin/backups/[id]/restore": "web",
   "POST /api/admin/backups/upload": "web",
+  "POST /api/care/feed-subscription": "web",
   "POST /api/cycle/feed-subscription": "web",
   "POST /api/cycle/feed-subscription/rotate": "web",
   "POST /api/admin/encryption/rotate": "web",

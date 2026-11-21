@@ -53,6 +53,7 @@ vi.mock("@/lib/db", () => ({
     mcpOAuthConnection: { updateMany: vi.fn() },
     clinicianShareLink: { updateMany: vi.fn() },
     cycleCalendarFeed: { updateMany: vi.fn() },
+    careCalendarFeed: { updateMany: vi.fn() },
     stepUpElevation: { deleteMany: vi.fn() },
     $transaction: vi.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
   },
@@ -592,6 +593,10 @@ describe("destroyAllSessions", () => {
         OR: [{ userId: "user-rotated" }, { createdById: "user-rotated" }],
         revokedAt: null,
       },
+      data: { revokedAt: expect.any(Date) },
+    });
+    expect(prisma.careCalendarFeed.updateMany).toHaveBeenCalledWith({
+      where: { userId: "user-rotated", revokedAt: null },
       data: { revokedAt: expect.any(Date) },
     });
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);

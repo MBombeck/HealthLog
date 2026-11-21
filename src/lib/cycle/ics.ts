@@ -1,8 +1,9 @@
 /**
  * A small, hand-rolled RFC 5545 writer for the cycle calendar feed (#1350).
  *
- * The feed needs one shape of calendar: all-day events, a published
- * subscription, no time zones and no recurrence. That is a few dozen lines of
+ * The feeds need one shape of calendar: all-day events (and, for the care
+ * feed's appointments, events at a UTC time), a published subscription, no
+ * time zones and no recurrence. That is a few dozen lines of
  * the specification, so it is written here rather than taken from a
  * dependency whose defaults (descriptions, organisers, alarms, a VTIMEZONE)
  * would each be something to switch off.
@@ -18,7 +19,8 @@
  */
 import { createHash, createHmac } from "node:crypto";
 
-export interface IcsEvent {
+/** An all-day event: what the cycle feed draws. */
+export interface IcsAllDayEvent {
   /** Globally unique and stable across rebuilds of the same feed. */
   uid: string;
   /** First day, `YYYY-MM-DD`. */
@@ -29,10 +31,25 @@ export interface IcsEvent {
   description?: string;
 }
 
-export interface IcsCalendar {
+/**
+ * An event at a time: a booked appointment in the care feed. Written in UTC
+ * (`DTSTART:…Z`), so no VTIMEZONE is needed and the calendar app shows it in
+ * its own zone. Busy rather than free, like any appointment.
+ */
+export interface IcsTimedEvent {
+  uid: string;
+  startAt: Date;
+  endAt: Date;
+  summary: string;
+  description?: string;
+}
+
+export type IcsEvent = IcsAllDayEvent | IcsTimedEvent;
+
+export interface IcsCalendar<E extends IcsEvent = IcsEvent> {
   /** `X-WR-CALNAME`, the name a calendar app shows for the subscription. */
   name: string;
-  events: readonly IcsEvent[];
+  events: readonly E[];
 }
 
 const CRLF = "\r\n";
@@ -136,14 +153,25 @@ function render(calendar: IcsCalendar, stamp: string): string {
       `UID:${event.uid}`,
       `DTSTAMP:${stamp}`,
       `LAST-MODIFIED:${stamp}`,
-      `DTSTART;VALUE=DATE:${icsDate(event.start)}`,
-      `DTEND;VALUE=DATE:${icsDate(event.endExclusive)}`,
+      ...("startAt" in event
+        ? [
+            `DTSTART:${icsStamp(event.startAt)}`,
+            `DTEND:${icsStamp(event.endAt)}`,
+          ]
+        : [
+            `DTSTART;VALUE=DATE:${icsDate(event.start)}`,
+            `DTEND;VALUE=DATE:${icsDate(event.endExclusive)}`,
+          ]),
       `SUMMARY:${escapeText(event.summary)}`,
     );
     if (event.description) {
       lines.push(`DESCRIPTION:${escapeText(event.description)}`);
     }
-    lines.push("TRANSP:TRANSPARENT", "CLASS:PRIVATE", "END:VEVENT");
+    lines.push(
+      "startAt" in event ? "TRANSP:OPAQUE" : "TRANSP:TRANSPARENT",
+      "CLASS:PRIVATE",
+      "END:VEVENT",
+    );
   }
   lines.push("END:VCALENDAR");
   return lines.map(foldLine).join(CRLF) + CRLF;

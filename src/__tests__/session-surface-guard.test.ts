@@ -308,6 +308,13 @@ describe("S2 — the URL-token authentication set is frozen", () => {
     // logs by `PATH_SECRET_PATHS`.
     "app/api/cycle/feed/[token]/route.ts":
       "calendar provider polls without a session; the hlf_ path token is the credential",
+    // The care calendar feed: visits, check-ups and boosters coming due,
+    // built like the cycle feed. The `hlf_` path segment is the credential,
+    // rate limited before the lookup, HMAC-hashed at rest, the account and
+    // the operator switch re-read per fetch behind one 404, and scrubbed from
+    // logs by `PATH_SECRET_PATHS`.
+    "app/api/care/feed/[token]/route.ts":
+      "the hlf_ path segment is the care calendar feed's only credential",
     // The native https return (#163 B2). A sign-in in the app finishes here
     // with a one-time, PKCE-locked handoff code or a second-factor ticket in
     // the query; the app intercepts the address before it loads. In a browser
@@ -367,6 +374,7 @@ describe("S2 — the URL-token authentication set is frozen", () => {
     expect(bySegment.length).toBeGreaterThan(0);
     expect(bySegment).toEqual([
       "app/api/c/[token]/unlock/route.ts",
+      "app/api/care/feed/[token]/route.ts",
       "app/api/cycle/feed/[token]/route.ts",
       "app/api/notifications/action/[token]/route.ts",
       "app/api/whoop/webhook/[token]/route.ts",

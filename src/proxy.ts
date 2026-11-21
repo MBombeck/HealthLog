@@ -48,11 +48,11 @@ export const PUBLIC_PATHS = [
   "/api/notifications/vapid",
   // v1.42.2 — notification quick answers. A notification app (ntfy's `http`
   // action) calls this with no session; the signed, single-use, short-lived
-  // token in the path is the whole credential, verified by the route after
-  // its rate limit. Trailing slash: admits only `/action/<token>`.
+  // path token is the credential, verified after the route's rate limit.
   "/api/notifications/action/",
-  // #1350 — the calendar feed; the `hlf_` path token is the credential.
+  // #1350 — the calendar feeds; the `hlf_` path token is the credential.
   "/api/cycle/feed/",
+  "/api/care/feed/",
   "/api/monitoring/",
   "/api/withings/webhook",
   // v1.11.0 — WHOOP webhook (`recovery.updated` / `sleep.updated` /

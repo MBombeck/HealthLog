@@ -6969,7 +6969,18 @@
         "confirm": "Supprimer la clé API",
         "done": "Clé API supprimée.",
         "failed": "Impossible de supprimer la clé API."
-      }
+      },
+      "coachBudgetHeading": "Budget du Coach pour les modèles auto-hébergés",
+      "coachBudgetBody": "La quantité de tes données que le Coach place dans le prompt et la durée de travail d'une réponse, pour le modèle local et la passerelle. Réduis la taille de l'instantané pour un modèle à petite fenêtre de contexte ; augmente-la avec les limites par réponse pour un grand modèle sur ton propre matériel. Les champs vides gardent les valeurs par défaut affichées. Une réponse du fournisseur partagé du serveur garde toujours les limites par défaut.",
+      "coachBudgetProvider": "Fournisseur",
+      "coachBudgetLocal": "Modèle local",
+      "coachBudgetCompat": "Passerelle",
+      "coachBudgetSnapshotChars": "Taille de l'instantané (caractères)",
+      "coachBudgetTurnTokens": "Jetons par réponse",
+      "coachBudgetMaxRounds": "Tours d'outils par réponse",
+      "coachBudgetTurnSeconds": "Secondes par réponse",
+      "coachBudgetRange": "De {min} à {max}",
+      "coachBudgetInvalid": "Chaque valeur doit être un nombre entier dans sa plage, ou rester vide."
     },
     "dashboard": {
       "units": {
@@ -9678,6 +9689,13 @@
     "seizureCluster": {
       "title": "Crises en série",
       "body": "{count} crises en {hours} h, enregistrées par {name}. Le plan d'urgence est dans le journal des crises."
+    },
+    "eventMeasurementAnomaly": "Changement durable d'un signe vital",
+    "eventMeasurementAnomalyDesc": "Quand un signe vital comme la fréquence cardiaque au repos ou la tension reste à un nouveau niveau depuis au moins dix jours. Au plus une fois par semaine, le matin, jamais pendant une maladie en cours.",
+    "measurementAnomaly": {
+      "title": "Un changement durable",
+      "bodyUp": "Ta valeur {metric} reste plus haute depuis le {date}. Insights montre l'avant et l'après.",
+      "bodyDown": "Ta valeur {metric} reste plus basse depuis le {date}. Insights montre l'avant et l'après."
     }
   },
   "i18n": {
@@ -12985,6 +13003,18 @@
     },
     "alcohol": {
       "loadError": "Impossible de charger l'alcool."
+    },
+    "energyBalance": {
+      "title": "Bilan énergétique",
+      "loadError": "Le bilan énergétique n'a pas pu être chargé.",
+      "perDay": "{value} par jour",
+      "trendMeta": "Moyenne des sept derniers jours : ce que tu as mangé moins l'énergie au repos et active.",
+      "meanMeta": "Moyenne sur {days} jours : ce que tu as mangé moins l'énergie au repos et active.",
+      "means": "Sur {days} jours, en moyenne {intake} kcal mangées et {used} kcal dépensées.",
+      "dayLine": "{intake} kcal mangées, {used} kcal dépensées",
+      "estimated": "Sur {days} de ces jours, l'énergie au repos est une estimation à partir de ton poids, ta taille, ton âge et ton sexe (Mifflin-St Jeor), faute de mesure.",
+      "needsProfile": "Ton apport est là, mais aucune énergie au repos n'est arrivée. Ajoute ta taille, ta date de naissance et ton sexe au profil, avec une mesure de poids, et le bilan sera estimé.",
+      "needsExpenditure": "Ton apport est là, mais aucune énergie active n'est arrivée les mêmes jours, il n'y a donc pas encore de bilan."
     }
   },
   "daily": {
@@ -14194,6 +14224,11 @@
       "micronutrientsOther": "{count} micronutriments enregistrés",
       "micronutrientsFew": "{count} micronutriments enregistrés",
       "open": "Voir les apports en nutriments"
+    },
+    "doseOffset": {
+      "after": "{duration} après {name}",
+      "before": "{duration} avant {name}",
+      "atDose": "À l'heure de {name}"
     }
   },
   "timeline": {
@@ -15220,6 +15255,25 @@
       "YES": "Oui",
       "NO": "Non, rien de visible",
       "UNKNOWN": "Pas sûr"
+    }
+  },
+  "careFeed": {
+    "sectionTitle": "Calendrier",
+    "sectionSubtitle": "Tes rendez-vous et ce qui arrive à échéance, dans l'application de calendrier que tu utilises déjà.",
+    "title": "Abonnement agenda des rendez-vous et échéances",
+    "description": "Les visites prévues à leur heure, les bilans et les rappels de vaccins le jour de leur échéance.",
+    "loadError": "L'abonnement agenda n'a pas pu être chargé.",
+    "linkHidden": "Un lien commençant par {prefix} est actif. Il n'est affiché qu'une fois, à sa création ; désactive puis réactive l'abonnement pour en obtenir un nouveau.",
+    "linkOnce": "Affiché seulement maintenant. Colle-le dans ton application de calendrier.",
+    "visits": "Visites prévues",
+    "checkups": "Bilans à venir",
+    "vaccinations": "Rappels de vaccins à venir",
+    "ics": {
+      "calendarName": "Rendez-vous et échéances (HealthLog)",
+      "visit": "Rendez-vous",
+      "visitWith": "Rendez-vous : {name}",
+      "checkupDue": "À faire : {label}",
+      "boosterDue": "Rappel à faire : {label}"
     }
   }
 }

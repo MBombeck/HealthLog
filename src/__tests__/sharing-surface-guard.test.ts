@@ -1058,6 +1058,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "measurements",
     why: "One nutrient's daily series over the record, scoped by the resolved user id.",
   },
+  "app/api/nutrients/energy-balance/route.ts": {
+    domain: "measurements",
+    why: "The record's daily energy balance, read-only: its intake and energy readings plus the profile height, birth date and sex the resting estimate needs, all read for the resolved user id.",
+  },
   "app/api/encounters/route.ts": {
     domain: "profile",
     why: "The record's visits — what happened at a practice and what is booked. Record content in the same sense as the allergies and family history already under this domain: it names no credential, no integration and no notification channel. Carries the honest cost of that classification, which is that a delegate granted `profile` for allergies also sees the visit list; the consent copy names visits for exactly this reason. The create arm is a delegable write.",
@@ -2416,6 +2420,8 @@ const ACTOR_ROUTES: Record<string, string> = {
     "The UI language belongs to the person reading the screen, never to the record on it. Under a record scope this would transplant a delegate's choice onto the owner's row and send the owner's cron mail in a language they may not read. It has to keep working rather than merely refuse safely: the switcher's mount-time backfill fires on every page load, including the shared dashboard.",
   "app/api/settings/module-list-layout/route.ts":
     "How the person's own labs, illness and checkups lists are laid out: card or list view, manual order, sort. It reads and writes the caller's own row only. Inside another record the ids of a saved order simply match nothing and the list keeps the server order, so serving the person's own choice there reveals nothing of the owner's and grants nothing; refusing it under a switch broke the list controls in exactly the context they are used in.",
+  "app/api/care/feed-subscription/route.ts":
+    "The care calendar subscription mints a standing URL credential whose contents end up in a third party's calendar cloud. Only the person the dates are about may make one, so the route always serves the caller's own record and never a record a switch opened; a delegate or a guardian gets their own feed, not the owner's.",
   "app/api/feature-flags/route.ts":
     "Reads the `AppSettings` singleton and no user row at all, so there is no record for a switch to substitute. It answers about the deployment, which for this purpose is the caller's side of the request; the shell gates the Coach launcher and the assistant surfaces on it, so a 403 here is a piece of chrome deciding it does not exist.",
 };
@@ -2564,8 +2570,13 @@ const ACTOR_ROUTES: Record<string, string> = {
  * history and Effect reads join the record list, and the course writes and
  * the Effect target join both the record list and the guardian literal.
  * 324 -> 333.
+ *
+ * The care calendar subscription joins the actor list: its feed is only ever
+ * the caller's own. 333 -> 334.
+ *
+ * The energy balance read joins the record list, read-only. 334 -> 335.
  */
-const FROZEN_ENTRY_COUNT = 333;
+const FROZEN_ENTRY_COUNT = 335;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

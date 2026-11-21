@@ -33,6 +33,11 @@ const CYCLE_REMINDER_QUEUE = "cycle-reminder-check";
 const CYCLE_REMINDER_CRON = "4-59/15 * * * *";
 const MEASUREMENT_REMINDER_QUEUE = "measurement-reminder-check";
 const MEASUREMENT_REMINDER_CRON = "6-59/15 * * * *";
+// Every 15 minutes like the reminders, eight minutes past: it short-circuits
+// unless the person's local hour is the push hour, so one UTC cron serves
+// every zone.
+const MEASUREMENT_ANOMALY_QUEUE = "measurement-anomaly-check";
+const MEASUREMENT_ANOMALY_CRON = "8-59/15 * * * *";
 
 const checks = () => import("@/lib/jobs/reminder/mood-cycle-checks");
 
@@ -62,6 +67,14 @@ const jobs: readonly JobDefinition[] = [
     cron: MEASUREMENT_REMINDER_CRON,
     work: { localConcurrency: 1 },
     load: async () => (await checks()).handleMeasurementReminderCheck,
+  }),
+  defineJob({
+    queue: MEASUREMENT_ANOMALY_QUEUE,
+    cron: MEASUREMENT_ANOMALY_CRON,
+    work: { localConcurrency: 1 },
+    load: async () =>
+      (await import("@/lib/jobs/measurement-anomaly-check"))
+        .handleMeasurementAnomalyCheck,
   }),
   // No cron: enqueued by the ingest paths when a measurement or lab lands;
   // the 15-minute checkup tick is the safety net.

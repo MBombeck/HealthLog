@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 326,
-  "total": 102804,
+  "count": 325,
+  "total": 102584,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
@@ -34,7 +34,6 @@
     "app/api/nutrients/batch/route.ts :: postBatch": 209,
     "app/api/onboarding/complete/route.ts :: completeNeedsFlow": 218,
     "app/api/record-settings/[family]/route.ts :: apiHandler(arg) #2": 268,
-    "app/api/user/ai-provider/route.ts :: apiHandler(arg) #2": 217,
     "app/api/withings/callback/route.ts :: apiHandler(arg)": 247,
     "app/auth/login/page.tsx :: LoginPage": 559,
     "app/auth/register/page.tsx :: RegisterPage": 283,
@@ -232,7 +231,7 @@
     "lib/ai/coach/cycle-snapshot.ts :: buildCycleSnapshotBlock": 202,
     "lib/ai/coach/glp1-snapshot.ts :: buildGlp1SnapshotBlock": 218,
     "lib/ai/coach/tools/loop.ts :: runCoachToolLoop": 438,
-    "lib/ai/coach/turn/model.ts :: runTurnModel": 534,
+    "lib/ai/coach/turn/model.ts :: runTurnModel": 531,
     "lib/ai/coach/turn/pipeline.ts :: runTurn": 274,
     "lib/ai/coach/turn/reply-guards.ts :: guardReply": 331,
     "lib/ai/codex-client.ts :: parseResponse": 302,

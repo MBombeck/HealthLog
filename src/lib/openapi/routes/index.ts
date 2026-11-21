@@ -54,6 +54,7 @@ import { customMetricPaths } from "./custom-metrics";
 import { dailyPaths } from "./daily";
 import { cyclePaths } from "./cycle";
 import { cycleFeedPaths } from "./cycle-feed";
+import { careFeedPaths } from "./care-feed";
 import { dashboardWidgetPaths } from "./dashboard";
 import { dayPaths } from "./day";
 import { searchPaths } from "./search";
@@ -104,6 +105,7 @@ import { coachPrefsSchema, withScopeRefusal } from "./shared";
 const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   ...cyclePaths,
   ...cycleFeedPaths,
+  ...careFeedPaths,
   ...metaPaths,
   ...healthRecordPaths,
   ...exportPaths,

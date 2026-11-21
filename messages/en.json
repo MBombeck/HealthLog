@@ -6969,7 +6969,18 @@
         "confirm": "Remove API key",
         "done": "API key removed.",
         "failed": "Could not remove the API key."
-      }
+      },
+      "coachBudgetHeading": "Coach budget for self-hosted models",
+      "coachBudgetBody": "How much of your data the Coach puts into the prompt, and how long one answer may work, for the local model and the gateway. Lower the snapshot size for a model with a small context window; raise it and the per-answer limits for a large model on your own hardware. Empty fields keep the built-in values shown. An answer from the server's shared provider always keeps the built-in limits.",
+      "coachBudgetProvider": "Provider",
+      "coachBudgetLocal": "Local model",
+      "coachBudgetCompat": "Gateway",
+      "coachBudgetSnapshotChars": "Snapshot size (characters)",
+      "coachBudgetTurnTokens": "Tokens per answer",
+      "coachBudgetMaxRounds": "Tool rounds per answer",
+      "coachBudgetTurnSeconds": "Seconds per answer",
+      "coachBudgetRange": "{min} to {max}",
+      "coachBudgetInvalid": "Each value must be a whole number within its range, or empty."
     },
     "dashboard": {
       "units": {
@@ -9678,6 +9689,13 @@
     "seizureCluster": {
       "title": "Seizure cluster",
       "body": "{count} seizures within {hours} h, logged by {name}. The rescue plan is in the seizure diary."
+    },
+    "eventMeasurementAnomaly": "Lasting change in a vital",
+    "eventMeasurementAnomalyDesc": "When a vital such as resting heart rate or blood pressure has held a new level for at least ten days. At most once a week, in the morning, never during an open illness.",
+    "measurementAnomaly": {
+      "title": "A lasting change",
+      "bodyUp": "{metric} has stayed higher since {date}. Insights shows the before and after.",
+      "bodyDown": "{metric} has stayed lower since {date}. Insights shows the before and after."
     }
   },
   "i18n": {
@@ -12985,6 +13003,18 @@
     },
     "alcohol": {
       "loadError": "Could not load alcohol."
+    },
+    "energyBalance": {
+      "title": "Energy balance",
+      "loadError": "The energy balance could not be loaded.",
+      "perDay": "{value} a day",
+      "trendMeta": "Average of the last seven days: what you ate minus resting and active energy.",
+      "meanMeta": "Average over {days} days: what you ate minus resting and active energy.",
+      "means": "Over {days} days, on average {intake} kcal eaten and {used} kcal used.",
+      "dayLine": "{intake} kcal eaten, {used} kcal used",
+      "estimated": "On {days} of these days resting energy is an estimate from your weight, height, age and sex (Mifflin-St Jeor), because no reading arrived.",
+      "needsProfile": "Your intake is here, but no resting energy arrived. Add your height, date of birth and sex to your profile, with a weight reading, and the balance is estimated.",
+      "needsExpenditure": "Your intake is here, but no active energy arrived on the same days, so there is no balance to show yet."
     }
   },
   "daily": {
@@ -14194,6 +14224,11 @@
       "micronutrientsOther": "{count} micronutrients logged",
       "micronutrientsFew": "{count} micronutrients logged",
       "open": "View nutrient intake"
+    },
+    "doseOffset": {
+      "after": "{duration} after {name}",
+      "before": "{duration} before {name}",
+      "atDose": "At the time of {name}"
     }
   },
   "timeline": {
@@ -15220,6 +15255,25 @@
       "YES": "Yes",
       "NO": "No, nothing visible",
       "UNKNOWN": "Not sure"
+    }
+  },
+  "careFeed": {
+    "sectionTitle": "Calendar",
+    "sectionSubtitle": "Your appointments and what is coming due, in the calendar app you already use.",
+    "title": "Care calendar subscription",
+    "description": "Booked visits at their time, and check-ups and vaccination boosters on the day they come due.",
+    "loadError": "The calendar subscription could not be loaded.",
+    "linkHidden": "A link starting with {prefix} is active. It is shown only once, when it is made; turn the subscription off and on again for a new one.",
+    "linkOnce": "Shown only now. Paste it into your calendar app.",
+    "visits": "Booked visits",
+    "checkups": "Check-ups coming due",
+    "vaccinations": "Vaccination boosters coming due",
+    "ics": {
+      "calendarName": "Care dates (HealthLog)",
+      "visit": "Appointment",
+      "visitWith": "Appointment: {name}",
+      "checkupDue": "Due: {label}",
+      "boosterDue": "Booster due: {label}"
     }
   }
 }

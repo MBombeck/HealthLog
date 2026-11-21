@@ -6969,7 +6969,18 @@
         "confirm": "Rimuovi chiave API",
         "done": "Chiave API rimossa.",
         "failed": "Impossibile rimuovere la chiave API."
-      }
+      },
+      "coachBudgetHeading": "Budget del Coach per modelli self-hosted",
+      "coachBudgetBody": "Quanti dei tuoi dati il Coach mette nel prompt e per quanto può lavorare una risposta, per il modello locale e il gateway. Riduci la dimensione dello snapshot per un modello con una finestra di contesto piccola; aumentala insieme ai limiti per risposta per un modello grande sul tuo hardware. I campi vuoti mantengono i valori predefiniti mostrati. Una risposta dal provider condiviso del server mantiene sempre i limiti predefiniti.",
+      "coachBudgetProvider": "Provider",
+      "coachBudgetLocal": "Modello locale",
+      "coachBudgetCompat": "Gateway",
+      "coachBudgetSnapshotChars": "Dimensione dello snapshot (caratteri)",
+      "coachBudgetTurnTokens": "Token per risposta",
+      "coachBudgetMaxRounds": "Turni di strumenti per risposta",
+      "coachBudgetTurnSeconds": "Secondi per risposta",
+      "coachBudgetRange": "Da {min} a {max}",
+      "coachBudgetInvalid": "Ogni valore deve essere un numero intero nel suo intervallo, oppure vuoto."
     },
     "dashboard": {
       "units": {
@@ -9678,6 +9689,13 @@
     "seizureCluster": {
       "title": "Crisi a grappolo",
       "body": "{count} crisi in {hours} h, registrate da {name}. Il piano di soccorso è nel diario delle crisi."
+    },
+    "eventMeasurementAnomaly": "Cambiamento duraturo di un parametro vitale",
+    "eventMeasurementAnomalyDesc": "Quando un parametro vitale come la frequenza cardiaca a riposo o la pressione resta su un nuovo livello da almeno dieci giorni. Al massimo una volta a settimana, al mattino, mai durante una malattia in corso.",
+    "measurementAnomaly": {
+      "title": "Un cambiamento duraturo",
+      "bodyUp": "Il tuo valore {metric} è rimasto più alto dal {date}. Insights mostra il prima e il dopo.",
+      "bodyDown": "Il tuo valore {metric} è rimasto più basso dal {date}. Insights mostra il prima e il dopo."
     }
   },
   "i18n": {
@@ -12985,6 +13003,18 @@
     },
     "alcohol": {
       "loadError": "Impossibile caricare l'alcol."
+    },
+    "energyBalance": {
+      "title": "Bilancio energetico",
+      "loadError": "Non è stato possibile caricare il bilancio energetico.",
+      "perDay": "{value} al giorno",
+      "trendMeta": "Media degli ultimi sette giorni: quanto hai mangiato meno l'energia a riposo e attiva.",
+      "meanMeta": "Media su {days} giorni: quanto hai mangiato meno l'energia a riposo e attiva.",
+      "means": "In {days} giorni, in media {intake} kcal mangiate e {used} kcal consumate.",
+      "dayLine": "{intake} kcal mangiate, {used} kcal consumate",
+      "estimated": "In {days} di questi giorni l'energia a riposo è una stima da peso, altezza, età e sesso (Mifflin-St Jeor), perché non è arrivata alcuna misura.",
+      "needsProfile": "La tua assunzione c'è, ma non è arrivata energia a riposo. Aggiungi altezza, data di nascita e sesso al profilo, con una misura del peso, e il bilancio verrà stimato.",
+      "needsExpenditure": "La tua assunzione c'è, ma negli stessi giorni non è arrivata energia attiva, quindi non c'è ancora un bilancio."
     }
   },
   "daily": {
@@ -14194,6 +14224,11 @@
       "micronutrientsOther": "{count} micronutrienti registrati",
       "micronutrientsFew": "{count} micronutrienti registrati",
       "open": "Vedi apporto di nutrienti"
+    },
+    "doseOffset": {
+      "after": "{duration} dopo {name}",
+      "before": "{duration} prima di {name}",
+      "atDose": "All'ora di {name}"
     }
   },
   "timeline": {
@@ -15220,6 +15255,25 @@
       "YES": "Sì",
       "NO": "No, nulla di visibile",
       "UNKNOWN": "Non so"
+    }
+  },
+  "careFeed": {
+    "sectionTitle": "Calendario",
+    "sectionSubtitle": "I tuoi appuntamenti e le scadenze, nell'app calendario che usi già.",
+    "title": "Abbonamento al calendario di appuntamenti e scadenze",
+    "description": "Le visite prenotate al loro orario, i controlli e i richiami dei vaccini nel giorno della scadenza.",
+    "loadError": "Non è stato possibile caricare l'abbonamento al calendario.",
+    "linkHidden": "È attivo un link che inizia con {prefix}. Viene mostrato una sola volta, alla creazione; disattiva e riattiva l'abbonamento per averne uno nuovo.",
+    "linkOnce": "Mostrato solo ora. Incollalo nella tua app calendario.",
+    "visits": "Visite prenotate",
+    "checkups": "Controlli in scadenza",
+    "vaccinations": "Richiami dei vaccini in scadenza",
+    "ics": {
+      "calendarName": "Appuntamenti e scadenze (HealthLog)",
+      "visit": "Appuntamento",
+      "visitWith": "Appuntamento: {name}",
+      "checkupDue": "In scadenza: {label}",
+      "boosterDue": "Richiamo in scadenza: {label}"
     }
   }
 }

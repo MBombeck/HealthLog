@@ -43,6 +43,7 @@ import { DIALOG_TOOL_DEFS } from "@/lib/ai/coach/tools/dialog-tools";
 import {
   createTurnBudget,
   estimateInputTokens,
+  type TurnLimits,
   type TurnPayer,
 } from "@/lib/ai/coach/tools/turn-budget";
 import type {
@@ -274,16 +275,10 @@ export async function runTurnModel(args: {
   ledger: TurnLedger;
   /** The turn's frame channel; the live `step` and `activity` frames go out on it. */
   emitter: TurnEmitter;
-  /**
-   * v1.39.4 — server-authored context lines for this turn (a resolved
-   * follow-up chip, an answered clarification). Empty on a plain turn,
-   * which then sends its prompt unchanged.
-   */
+  /** v1.39.4 — server-authored context lines (a resolved chip, an answered
+   *  clarification); empty on a plain turn, whose prompt is unchanged. */
   turnHints: string[];
-  /**
-   * v1.39.4 — the tables earlier replies of this conversation hold, named
-   * for the context and for `show_result`. Empty on a new conversation.
-   */
+  /** v1.39.4 — the tables earlier replies hold, for `show_result`. */
   priorResults?: PriorResultTurn[];
   /** v1.41 — the person's message, the only source of a remembered fact. */
   message: string;
@@ -293,6 +288,8 @@ export async function runTurnModel(args: {
   reasoning?: TurnReasoning;
   /** v1.41 — who pays: fixes the turn's budget. */
   payer: TurnPayer;
+  /** The tool-loop limits, the person's own budget for a self-hosted model. */
+  turnLimits?: TurnLimits;
   /** v1.41 — a window was set for this conversation by the client. */
   conversationWindowSet: boolean;
 }): Promise<ModelOutcome> {
@@ -419,6 +416,7 @@ export async function runTurnModel(args: {
       let interimSent = false;
       const budget = createTurnBudget({
         payer: args.payer,
+        limits: args.turnLimits,
         effort: args.reasoning?.effort,
         initialInputTokens: estimateInputTokens(
           toolRequest.system.length +

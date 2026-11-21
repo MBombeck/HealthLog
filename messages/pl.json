@@ -6969,7 +6969,18 @@
         "confirm": "Usuń klucz API",
         "done": "Usunięto klucz API.",
         "failed": "Nie udało się usunąć klucza API."
-      }
+      },
+      "coachBudgetHeading": "Budżet Coacha dla modeli hostowanych samodzielnie",
+      "coachBudgetBody": "Ile Twoich danych Coach umieszcza w prompcie i jak długo może pracować jedna odpowiedź, osobno dla modelu lokalnego i bramy. Zmniejsz rozmiar migawki dla modelu z małym oknem kontekstu; zwiększ go razem z limitami na odpowiedź dla dużego modelu na własnym sprzęcie. Puste pola zachowują pokazane wartości domyślne. Odpowiedź od wspólnego dostawcy serwera zawsze zachowuje limity domyślne.",
+      "coachBudgetProvider": "Dostawca",
+      "coachBudgetLocal": "Model lokalny",
+      "coachBudgetCompat": "Brama",
+      "coachBudgetSnapshotChars": "Rozmiar migawki (znaki)",
+      "coachBudgetTurnTokens": "Tokeny na odpowiedź",
+      "coachBudgetMaxRounds": "Rundy narzędzi na odpowiedź",
+      "coachBudgetTurnSeconds": "Sekundy na odpowiedź",
+      "coachBudgetRange": "Od {min} do {max}",
+      "coachBudgetInvalid": "Każda wartość musi być liczbą całkowitą w swoim zakresie albo pozostać pusta."
     },
     "dashboard": {
       "units": {
@@ -9678,6 +9689,13 @@
     "seizureCluster": {
       "title": "Napady gromadne",
       "body": "Napady: {count} w ciągu {hours} h, zapisane przez: {name}. Plan ratunkowy jest w dzienniczku napadów."
+    },
+    "eventMeasurementAnomaly": "Trwała zmiana parametru życiowego",
+    "eventMeasurementAnomalyDesc": "Gdy parametr życiowy, taki jak tętno spoczynkowe lub ciśnienie, utrzymuje nowy poziom od co najmniej dziesięciu dni. Najwyżej raz w tygodniu, rano, nigdy w trakcie trwającej choroby.",
+    "measurementAnomaly": {
+      "title": "Trwała zmiana",
+      "bodyUp": "Twój parametr {metric} utrzymuje się wyżej od {date}. Insights pokazuje stan przed i po.",
+      "bodyDown": "Twój parametr {metric} utrzymuje się niżej od {date}. Insights pokazuje stan przed i po."
     }
   },
   "i18n": {
@@ -12985,6 +13003,18 @@
     },
     "alcohol": {
       "loadError": "Nie udało się wczytać alkoholu."
+    },
+    "energyBalance": {
+      "title": "Bilans energetyczny",
+      "loadError": "Nie udało się wczytać bilansu energetycznego.",
+      "perDay": "{value} dziennie",
+      "trendMeta": "Średnia z ostatnich siedmiu dni: to, co zjadłeś, minus energia spoczynkowa i aktywna.",
+      "meanMeta": "Średnia z {days} dni: to, co zjadłeś, minus energia spoczynkowa i aktywna.",
+      "means": "Przez {days} dni średnio {intake} kcal zjedzone i {used} kcal zużyte.",
+      "dayLine": "{intake} kcal zjedzone, {used} kcal zużyte",
+      "estimated": "W {days} z tych dni energia spoczynkowa jest szacunkiem z masy ciała, wzrostu, wieku i płci (Mifflin-St Jeor), bo nie dotarł żaden pomiar.",
+      "needsProfile": "Twoje spożycie jest tutaj, ale nie dotarła energia spoczynkowa. Dodaj wzrost, datę urodzenia i płeć w profilu oraz pomiar masy ciała, a bilans zostanie oszacowany.",
+      "needsExpenditure": "Twoje spożycie jest tutaj, ale w te same dni nie dotarła energia aktywna, więc nie ma jeszcze bilansu."
     }
   },
   "daily": {
@@ -14194,6 +14224,11 @@
       "micronutrientsOther": "Zapisano {count} mikroskładników",
       "micronutrientsFew": "Zapisano {count} mikroskładniki",
       "open": "Zobacz spożycie składników odżywczych"
+    },
+    "doseOffset": {
+      "after": "{duration} po {name}",
+      "before": "{duration} przed {name}",
+      "atDose": "W chwili przyjęcia {name}"
     }
   },
   "timeline": {
@@ -15220,6 +15255,25 @@
       "YES": "Tak",
       "NO": "Nie, nic nie było widać",
       "UNKNOWN": "Nie wiem"
+    }
+  },
+  "careFeed": {
+    "sectionTitle": "Kalendarz",
+    "sectionSubtitle": "Twoje wizyty i zbliżające się terminy w aplikacji kalendarza, której już używasz.",
+    "title": "Subskrypcja kalendarza wizyt i terminów",
+    "description": "Zarezerwowane wizyty o ich godzinie, badania i dawki przypominające w dniu, w którym przypadają.",
+    "loadError": "Nie udało się wczytać subskrypcji kalendarza.",
+    "linkHidden": "Aktywny jest link zaczynający się od {prefix}. Jest pokazywany tylko raz, przy tworzeniu; wyłącz i włącz subskrypcję ponownie, aby dostać nowy.",
+    "linkOnce": "Widoczny tylko teraz. Wklej go do aplikacji kalendarza.",
+    "visits": "Zarezerwowane wizyty",
+    "checkups": "Zbliżające się badania",
+    "vaccinations": "Zbliżające się dawki przypominające",
+    "ics": {
+      "calendarName": "Wizyty i terminy (HealthLog)",
+      "visit": "Wizyta",
+      "visitWith": "Wizyta: {name}",
+      "checkupDue": "Termin: {label}",
+      "boosterDue": "Dawka przypominająca: {label}"
     }
   }
 }

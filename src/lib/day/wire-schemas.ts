@@ -8,6 +8,7 @@
  * `./contract.ts`, never this file, so no validator lands in the browser.
  */
 import { z } from "zod/v4";
+import { dayDoseOffsetField } from "./dose-offset-schema";
 
 import { dayNutrientSchema } from "./day-nutrient-schema";
 
@@ -164,6 +165,7 @@ const dayEvent = z
       .array(z.object({ id: z.string(), name: z.string() }))
       .describe("Documents filed against the entry."),
     href: z.string().nullable(),
+    doseOffset: dayDoseOffsetField,
   })
   .meta({ id: "DayEvent" });
 

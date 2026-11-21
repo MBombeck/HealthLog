@@ -25,7 +25,8 @@ import { NATIVE_OIDC_RETURN_PATH } from "@/lib/auth/native-return";
  * share view, but its caching is the route's own: `private, no-cache` plus an
  * ETag, so a provider can ask again with `If-None-Match` instead of
  * downloading the body on every poll. `no-store` here would throw the
- * validator away.
+ * validator away. The care calendar feed (`/api/care/feed/<hlf_token>`) is
+ * the same kind of link and gets the same treatment.
  *
  * The native https return page (`/auth/native-return`, #163 B2) receives a
  * one-time sign-in code or second-factor ticket in its query. The app normally
@@ -38,7 +39,9 @@ export function setPathCredentialHeaders(
   pathname: string,
   headers: Headers,
 ): void {
-  const feed = pathname.startsWith("/api/cycle/feed/");
+  const feed =
+    pathname.startsWith("/api/cycle/feed/") ||
+    pathname.startsWith("/api/care/feed/");
   const page =
     pathname.startsWith("/c/") ||
     pathname.startsWith("/invite/") ||

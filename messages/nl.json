@@ -6969,7 +6969,18 @@
         "confirm": "API-sleutel verwijderen",
         "done": "API-sleutel verwijderd.",
         "failed": "De API-sleutel kon niet worden verwijderd."
-      }
+      },
+      "coachBudgetHeading": "Coachbudget voor zelf gehoste modellen",
+      "coachBudgetBody": "Hoeveel van je gegevens de Coach in de prompt zet en hoe lang één antwoord mag werken, voor het lokale model en de gateway. Verklein de snapshot voor een model met een klein contextvenster; vergroot hem en de grenzen per antwoord voor een groot model op je eigen hardware. Lege velden houden de getoonde standaardwaarden. Een antwoord via de gedeelde provider van de server houdt altijd de standaardgrenzen.",
+      "coachBudgetProvider": "Provider",
+      "coachBudgetLocal": "Lokaal model",
+      "coachBudgetCompat": "Gateway",
+      "coachBudgetSnapshotChars": "Snapshotgrootte (tekens)",
+      "coachBudgetTurnTokens": "Tokens per antwoord",
+      "coachBudgetMaxRounds": "Toolrondes per antwoord",
+      "coachBudgetTurnSeconds": "Seconden per antwoord",
+      "coachBudgetRange": "{min} tot {max}",
+      "coachBudgetInvalid": "Elke waarde moet een geheel getal binnen het bereik zijn, of leeg blijven."
     },
     "dashboard": {
       "units": {
@@ -9678,6 +9689,13 @@
     "seizureCluster": {
       "title": "Clusteraanvallen",
       "body": "{count} aanvallen binnen {hours} u, vastgelegd door {name}. Het noodplan staat in het aanvallendagboek."
+    },
+    "eventMeasurementAnomaly": "Blijvende verandering in een vitale waarde",
+    "eventMeasurementAnomalyDesc": "Wanneer een vitale waarde zoals rusthartslag of bloeddruk al minstens tien dagen op een nieuw niveau blijft. Hooguit één keer per week, 's ochtends, nooit tijdens een lopende ziekte.",
+    "measurementAnomaly": {
+      "title": "Een blijvende verandering",
+      "bodyUp": "Je {metric} is sinds {date} hoger gebleven. Insights toont het voor en na.",
+      "bodyDown": "Je {metric} is sinds {date} lager gebleven. Insights toont het voor en na."
     }
   },
   "i18n": {
@@ -12985,6 +13003,18 @@
     },
     "alcohol": {
       "loadError": "Alcohol kon niet worden geladen."
+    },
+    "energyBalance": {
+      "title": "Energiebalans",
+      "loadError": "De energiebalans kon niet worden geladen.",
+      "perDay": "{value} per dag",
+      "trendMeta": "Gemiddelde van de laatste zeven dagen: wat je at min rust- en actieve energie.",
+      "meanMeta": "Gemiddelde over {days} dagen: wat je at min rust- en actieve energie.",
+      "means": "Over {days} dagen gemiddeld {intake} kcal gegeten en {used} kcal verbruikt.",
+      "dayLine": "{intake} kcal gegeten, {used} kcal verbruikt",
+      "estimated": "Op {days} van deze dagen is de rustenergie een schatting uit gewicht, lengte, leeftijd en geslacht (Mifflin-St Jeor), omdat er geen meting binnenkwam.",
+      "needsProfile": "Je inname is er, maar er kwam geen rustenergie binnen. Vul lengte, geboortedatum en geslacht in je profiel in, met een gewichtsmeting, en de balans wordt geschat.",
+      "needsExpenditure": "Je inname is er, maar op dezelfde dagen kwam geen actieve energie binnen, dus er is nog geen balans."
     }
   },
   "daily": {
@@ -14194,6 +14224,11 @@
       "micronutrientsOther": "{count} micronutriënten vastgelegd",
       "micronutrientsFew": "{count} micronutriënten vastgelegd",
       "open": "Inname van voedingsstoffen bekijken"
+    },
+    "doseOffset": {
+      "after": "{duration} na {name}",
+      "before": "{duration} voor {name}",
+      "atDose": "Op het moment van {name}"
     }
   },
   "timeline": {
@@ -15220,6 +15255,25 @@
       "YES": "Ja",
       "NO": "Nee, niets zichtbaar",
       "UNKNOWN": "Niet zeker"
+    }
+  },
+  "careFeed": {
+    "sectionTitle": "Agenda",
+    "sectionSubtitle": "Je afspraken en wat eraan komt, in de agenda-app die je al gebruikt.",
+    "title": "Agenda-abonnement voor afspraken en vervaldata",
+    "description": "Geboekte bezoeken op hun tijd, controles en boosters op de dag dat ze aan de beurt zijn.",
+    "loadError": "Het agenda-abonnement kon niet worden geladen.",
+    "linkHidden": "Er is een link actief die begint met {prefix}. Hij wordt maar één keer getoond, bij het maken; zet het abonnement uit en weer aan voor een nieuwe.",
+    "linkOnce": "Alleen nu zichtbaar. Plak hem in je agenda-app.",
+    "visits": "Geboekte bezoeken",
+    "checkups": "Controles die eraan komen",
+    "vaccinations": "Boosters die eraan komen",
+    "ics": {
+      "calendarName": "Afspraken en vervaldata (HealthLog)",
+      "visit": "Afspraak",
+      "visitWith": "Afspraak: {name}",
+      "checkupDue": "Aan de beurt: {label}",
+      "boosterDue": "Booster aan de beurt: {label}"
     }
   }
 }

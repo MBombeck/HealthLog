@@ -22,6 +22,9 @@ export const nutrientKeys = {
    * it.
    */
   nutrientCatalog: () => ["nutrients", "catalog"] as const,
+  /** The daily energy balance from `GET /api/nutrients/energy-balance`. */
+  energyBalance: (days: number) =>
+    ["nutrients", "energy-balance", days] as const,
   // No key for `GET /api/nutrients/targets`: no web view reads it. The
   // target editor reads a code's target from the daily series above and
   // invalidates that series after a save. The route serves the API and the

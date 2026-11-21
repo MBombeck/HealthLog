@@ -100,4 +100,6 @@ export const encounterKeys = {
   practitionerUpdate: () => ["practitioners", "update"] as const,
   practitionerDelete: () => ["practitioners", "delete"] as const,
   practitionerRestore: () => ["practitioners", "restore"] as const,
+  /** The care calendar subscription (`/api/care/feed-subscription`). */
+  careFeedSubscription: () => ["care", "feed-subscription"] as const,
 };

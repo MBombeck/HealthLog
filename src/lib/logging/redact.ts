@@ -78,6 +78,9 @@ export const PATH_SECRET_PATHS: ReadonlyArray<{
   // `/api/cycle/feed-subscription`, a different segment, so this prefix
   // (which ends in `/`) never matches them.
   { prefix: "/api/cycle/feed/" },
+  // The care calendar feed, `/api/care/feed/<hlf_token>.ics`; its management
+  // route is `/api/care/feed-subscription`, which this prefix never matches.
+  { prefix: "/api/care/feed/" },
 ];
 
 function redactPathSegments(input: string): string {

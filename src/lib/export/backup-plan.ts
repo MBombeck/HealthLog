@@ -14,8 +14,7 @@
  * The wipe may lean on the database: deleting a `Medication` cascades to its
  * schedules, dose changes and inventory events, so the wipe plan never has to
  * name them. **A restore has no cascade.** Every child has to be carried
- * explicitly and re-inserted explicitly, so sixteen models the wipe plan never
- * needed to mention are decisions here.
+ * and re-inserted explicitly: sixteen models the wipe never names are here.
  *
  * ── The three verdicts ──────────────────────────────────────────────────────
  *
@@ -48,8 +47,7 @@
  *                 host, ledgers whose value is that they were written here.
  *
  * Every entry carries its reason in prose. "Obvious" is not a reason: the
- * whole class of defect here is someone deciding something was obvious and
- * nobody being able to check afterwards.
+ * defect here is someone deciding something was obvious, uncheckably.
  */
 
 /** A model whose absence from a restore would lose something the account owns. */
@@ -813,6 +811,8 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "A live URL handed to a practice. Restoring it would resurrect a link the account may have revoked deliberately — and it points at a host that may not be this one.",
   CycleCalendarFeed:
     "A live calendar-feed URL (#1350): a credential a calendar provider polls, stored only as its hash. Restoring it would bring back a link the owner may have revoked or rotated, and it names a host that may not be this one. After a restore the owner turns the subscription on again and re-adds the new link.",
+  CareCalendarFeed:
+    "A live calendar-feed URL for visits and dates coming due: a credential a calendar provider polls, stored only as its hash. Excluded for the cycle feed's reason: restoring it would bring back a link the owner may have revoked, naming a host that may not be this one. After a restore the owner turns the subscription on again.",
   ClinicianShareLinkDocument:
     "Names which documents a share link exposed. Without the link it grants nothing, and with it, it would re-expose files through a URL the account may have revoked.",
 

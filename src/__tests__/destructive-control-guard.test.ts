@@ -533,6 +533,13 @@ const REGISTRY: DestructiveEntry[] = [
     recovery: "permanent",
     confirm: ["ConfirmButton"],
   },
+  {
+    file: "components/settings/care-calendar-feed-card.tsx",
+    destroys:
+      "the record's care calendar-feed link; calendars subscribed to it stop updating, and turning it on again issues a new link",
+    recovery: "permanent",
+    confirm: ["ConfirmButton"],
+  },
 
   // ── Medications ─────────────────────────────────────────────────────────
   {

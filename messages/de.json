@@ -6969,7 +6969,18 @@
         "confirm": "API-Schlüssel entfernen",
         "done": "API-Schlüssel entfernt.",
         "failed": "Der API-Schlüssel konnte nicht entfernt werden."
-      }
+      },
+      "coachBudgetHeading": "Coach-Budget für selbst betriebene Modelle",
+      "coachBudgetBody": "Wie viel deiner Daten der Coach in den Prompt legt und wie lange eine Antwort arbeiten darf, für das lokale Modell und das Gateway. Verkleinere den Snapshot für ein Modell mit kleinem Kontextfenster; vergrößere ihn und die Grenzen pro Antwort für ein großes Modell auf eigener Hardware. Leere Felder behalten die angezeigten Standardwerte. Eine Antwort über den gemeinsamen Anbieter des Servers behält immer die Standardgrenzen.",
+      "coachBudgetProvider": "Anbieter",
+      "coachBudgetLocal": "Lokales Modell",
+      "coachBudgetCompat": "Gateway",
+      "coachBudgetSnapshotChars": "Snapshot-Größe (Zeichen)",
+      "coachBudgetTurnTokens": "Tokens pro Antwort",
+      "coachBudgetMaxRounds": "Werkzeugrunden pro Antwort",
+      "coachBudgetTurnSeconds": "Sekunden pro Antwort",
+      "coachBudgetRange": "{min} bis {max}",
+      "coachBudgetInvalid": "Jeder Wert muss eine ganze Zahl in seinem Bereich sein oder leer bleiben."
     },
     "dashboard": {
       "units": {
@@ -9678,6 +9689,13 @@
     "seizureCluster": {
       "title": "Anfallsserie",
       "body": "{count} Anfälle innerhalb von {hours} h, eingetragen von {name}. Der Notfallplan steht im Anfallstagebuch."
+    },
+    "eventMeasurementAnomaly": "Anhaltende Veränderung eines Vitalwerts",
+    "eventMeasurementAnomalyDesc": "Wenn ein Vitalwert wie Ruhepuls oder Blutdruck seit mindestens zehn Tagen auf einem neuen Niveau bleibt. Höchstens einmal pro Woche, morgens, nie während einer offenen Erkrankung.",
+    "measurementAnomaly": {
+      "title": "Eine anhaltende Veränderung",
+      "bodyUp": "Dein Wert {metric} liegt seit {date} höher. Insights zeigt vorher und nachher.",
+      "bodyDown": "Dein Wert {metric} liegt seit {date} niedriger. Insights zeigt vorher und nachher."
     }
   },
   "i18n": {
@@ -12985,6 +13003,18 @@
     },
     "alcohol": {
       "loadError": "Alkohol konnte nicht geladen werden."
+    },
+    "energyBalance": {
+      "title": "Energiebilanz",
+      "loadError": "Die Energiebilanz konnte nicht geladen werden.",
+      "perDay": "{value} pro Tag",
+      "trendMeta": "Mittel der letzten sieben Tage: Gegessenes minus Ruhe- und Aktivenergie.",
+      "meanMeta": "Mittel über {days} Tage: Gegessenes minus Ruhe- und Aktivenergie.",
+      "means": "Über {days} Tage im Mittel {intake} kcal gegessen und {used} kcal verbraucht.",
+      "dayLine": "{intake} kcal gegessen, {used} kcal verbraucht",
+      "estimated": "An {days} dieser Tage ist die Ruheenergie eine Schätzung aus Gewicht, Größe, Alter und Geschlecht (Mifflin-St Jeor), weil kein Messwert ankam.",
+      "needsProfile": "Deine Aufnahme ist da, aber keine Ruheenergie kam an. Trag Größe, Geburtsdatum und Geschlecht im Profil ein und erfasse ein Gewicht, dann wird die Bilanz geschätzt.",
+      "needsExpenditure": "Deine Aufnahme ist da, aber an denselben Tagen kam keine Aktivenergie an, daher gibt es noch keine Bilanz."
     }
   },
   "daily": {
@@ -14194,6 +14224,11 @@
       "micronutrientsOther": "{count} Mikronährstoffe erfasst",
       "micronutrientsFew": "{count} Mikronährstoffe erfasst",
       "open": "Nährstoffaufnahme ansehen"
+    },
+    "doseOffset": {
+      "after": "{duration} nach {name}",
+      "before": "{duration} vor {name}",
+      "atDose": "Zur Zeit von {name}"
     }
   },
   "timeline": {
@@ -15220,6 +15255,25 @@
       "YES": "Ja",
       "NO": "Nein, nichts sichtbar",
       "UNKNOWN": "Nicht sicher"
+    }
+  },
+  "careFeed": {
+    "sectionTitle": "Kalender",
+    "sectionSubtitle": "Deine Termine und was fällig wird, in der Kalender-App, die du schon nutzt.",
+    "title": "Kalender-Abo für Termine und Fälligkeiten",
+    "description": "Gebuchte Besuche zu ihrer Uhrzeit, Vorsorge und Impfauffrischungen am Tag ihrer Fälligkeit.",
+    "loadError": "Das Kalender-Abo konnte nicht geladen werden.",
+    "linkHidden": "Ein Link, der mit {prefix} beginnt, ist aktiv. Er wird nur einmal gezeigt, beim Erstellen; schalte das Abo aus und wieder ein, um einen neuen zu bekommen.",
+    "linkOnce": "Nur jetzt sichtbar. Füge ihn in deine Kalender-App ein.",
+    "visits": "Gebuchte Besuche",
+    "checkups": "Fällige Vorsorge",
+    "vaccinations": "Fällige Impfauffrischungen",
+    "ics": {
+      "calendarName": "Termine und Fälligkeiten (HealthLog)",
+      "visit": "Termin",
+      "visitWith": "Termin: {name}",
+      "checkupDue": "Fällig: {label}",
+      "boosterDue": "Auffrischung fällig: {label}"
     }
   }
 }

@@ -93,6 +93,8 @@ export async function assembleTurnContext(args: {
   guidedQuestion: string | undefined;
   workoutId: string | undefined;
   conversation: TurnConversation;
+  /** The snapshot cap the turn's provider chain allows. */
+  snapshotChars?: number;
 }): Promise<TurnContext> {
   const { userId, locale, message, scope, guidedQuestion, workoutId } = args;
   const { conversationId, priorTurns, priorSummary } = args.conversation;
@@ -133,7 +135,10 @@ export async function assembleTurnContext(args: {
       ? { window: clampWindow(requestedWindow, reach) }
       : {}),
   };
-  const snapshot = await buildCoachSnapshot(userId, effectiveScope, { reach });
+  const snapshot = await buildCoachSnapshot(userId, effectiveScope, {
+    reach,
+    maxChars: args.snapshotChars,
+  });
   // v1.15.20 — the user-authored "about me" self-description (Settings →
   // AI) rides the system prompt as a delimited, user-provided context
   // block. Fail-open: a missing / undecryptable text yields null and the

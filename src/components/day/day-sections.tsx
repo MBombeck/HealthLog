@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDurationMinutes } from "@/lib/i18n/duration";
 import Link from "next/link";
 import { useState } from "react";
 import {
@@ -287,6 +288,25 @@ export function dayMeta(
     default:
       return meta;
   }
+}
+
+/**
+ * "2 h 10 min after Metformin", "40 min before Metformin", "at the time of
+ * Metformin": where a symptom sits against the day's dose, as a distance in
+ * time and never as a cause.
+ */
+export function doseOffsetText(
+  offset: { title: string; minutes: number },
+  t: Translate,
+): string {
+  if (offset.minutes === 0) {
+    return t("day.doseOffset.atDose", { name: offset.title });
+  }
+  const duration = formatDurationMinutes(Math.abs(offset.minutes), t);
+  return t(
+    offset.minutes > 0 ? "day.doseOffset.after" : "day.doseOffset.before",
+    { duration, name: offset.title },
+  );
 }
 
 /** Running kinds whose `sub` is a dose and reads as part of the name. */
@@ -656,6 +676,14 @@ export function DayEvents({ events }: { events: readonly DayEvent[] }) {
                 )}
                 {meta ? (
                   <p className="text-muted-foreground mt-0.5 text-xs">{meta}</p>
+                ) : null}
+                {event.doseOffset ? (
+                  <p
+                    className="text-muted-foreground mt-0.5 text-xs"
+                    data-slot="day-event-dose-offset"
+                  >
+                    {doseOffsetText(event.doseOffset, t)}
+                  </p>
                 ) : null}
                 {event.note ? (
                   // The person's own words: content, never muted.

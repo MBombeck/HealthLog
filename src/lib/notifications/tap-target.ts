@@ -55,6 +55,8 @@ export const NOTIFICATION_TAP_PATHS: Record<SentEventType, string | null> = {
   SHARED_RECORD_INTAKE: "/medications",
   BACKUP_HEALTH: "/admin/backups",
   SEIZURE_CLUSTER: "/seizures",
+  // The health-status card on the Insights overview shows the shift.
+  MEASUREMENT_ANOMALY: "/insights",
 };
 
 const MAX_PATH_LENGTH = 512;

@@ -331,6 +331,58 @@ describe("a local day across a clock change", () => {
     ]);
   });
 
+  it("places a symptom against that day's dose, and only that day's", async () => {
+    const db = getPrismaClient();
+    const owner = await makeUser("dose");
+    const med = await db.medication.create({
+      data: { userId: owner.id, name: "Metformin", dose: "500 mg" },
+    });
+    await db.medicationIntakeEvent.create({
+      data: {
+        userId: owner.id,
+        medicationId: med.id,
+        scheduledFor: new Date("2026-03-09T21:00:00.000Z"),
+        takenAt: new Date("2026-03-09T21:00:00.000Z"),
+      },
+    });
+    const intake = await db.medicationIntakeEvent.create({
+      data: {
+        userId: owner.id,
+        medicationId: med.id,
+        scheduledFor: new Date("2026-03-10T07:00:00.000Z"),
+        takenAt: new Date("2026-03-10T07:05:00.000Z"),
+      },
+    });
+    const definition = await db.symptomDefinition.create({
+      data: { userId: owner.id, labelEncrypted: encryptToBytes("Headache") },
+    });
+    for (const at of ["2026-03-10T06:00:00.000Z", "2026-03-10T09:15:00.000Z"]) {
+      await db.symptomEvent.create({
+        data: {
+          userId: owner.id,
+          definitionId: definition.id,
+          occurredAt: new Date(at),
+          intensity: 5,
+        },
+      });
+    }
+    await signIn(owner.id);
+
+    const day = await json<Day>(await getDay("2026-03-10"));
+    const offsets = day.events
+      .filter((e) => e.kind === "symptom")
+      .map((e) => e.doseOffset);
+    // 07:00 Berlin is before the day's dose; the evening dose of the 9th is
+    // another day and never anchors it.
+    expect(offsets).toEqual([
+      { intakeId: intake.id, title: "Metformin", minutes: -65 },
+      { intakeId: intake.id, title: "Metformin", minutes: 130 },
+    ]);
+    expect(
+      day.events.find((e) => e.kind === "intake")?.doseOffset,
+    ).toBeUndefined();
+  });
+
   it("holds 25 hours on the fall-back day", async () => {
     const db = getPrismaClient();
     const owner = await makeUser("fall");

@@ -15,6 +15,8 @@ import { NUTRIENT_DEFINITIONS } from "@/lib/nutrients/catalog";
 import {
   nutrientBatchSchema,
   nutrientBatchResponseSchema,
+  energyBalanceQuerySchema,
+  energyBalanceResponseSchema,
   nutrientDailyQuerySchema,
   nutrientDailySeriesSchema,
   nutrientOverviewQuerySchema,
@@ -181,6 +183,30 @@ export const nutrientPaths: NonNullable<ZodOpenApiObject["paths"]> = {
               schema: dataEnvelope(
                 nutrientDailySeriesSchema,
                 "NutrientDailySeriesEnvelope",
+              ),
+            },
+          },
+        },
+        ...recordRefusal(NUTRIENTS_DISABLED_DESCRIPTION),
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/nutrients/energy-balance": {
+    get: {
+      tags: ["Nutrients"],
+      summary: "The daily energy balance",
+      description:
+        "Intake against resting plus active energy over the last `days` local days (7 to 90, default 30), computed live: intake is the folded `energy` nutrient total, resting and active energy are the day sums of `BASAL_ENERGY_BURNED` and `ACTIVE_ENERGY_BURNED`. A day without a resting reading takes the Mifflin-St Jeor estimate from the weight carried forward, the height, the age and the profile sex (`restingEstimated`); without them, or without an active reading or an intake, the day has no balance rather than a guessed one. Today is `partial` and stays out of the seven-day trend and the window means. Descriptive figures, not a target. Behind the opt-in `nutrients` module.",
+      requestParams: { query: energyBalanceQuerySchema },
+      responses: {
+        "200": {
+          description: "The balance per day, the trend and the window means.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                energyBalanceResponseSchema,
+                "EnergyBalanceEnvelope",
               ),
             },
           },

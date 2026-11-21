@@ -6969,7 +6969,18 @@
         "confirm": "Remover chave de API",
         "done": "Chave de API removida.",
         "failed": "Não foi possível remover a chave de API."
-      }
+      },
+      "coachBudgetHeading": "Orçamento do Coach para modelos auto-hospedados",
+      "coachBudgetBody": "Quanto dos seus dados o Coach coloca no prompt e por quanto tempo uma resposta pode trabalhar, para o modelo local e o gateway. Reduza o tamanho do snapshot para um modelo com janela de contexto pequena; aumente-o junto com os limites por resposta para um modelo grande no seu próprio hardware. Campos vazios mantêm os valores padrão mostrados. Uma resposta do provedor compartilhado do servidor sempre mantém os limites padrão.",
+      "coachBudgetProvider": "Provedor",
+      "coachBudgetLocal": "Modelo local",
+      "coachBudgetCompat": "Gateway",
+      "coachBudgetSnapshotChars": "Tamanho do snapshot (caracteres)",
+      "coachBudgetTurnTokens": "Tokens por resposta",
+      "coachBudgetMaxRounds": "Rodadas de ferramentas por resposta",
+      "coachBudgetTurnSeconds": "Segundos por resposta",
+      "coachBudgetRange": "De {min} a {max}",
+      "coachBudgetInvalid": "Cada valor deve ser um número inteiro dentro do seu intervalo, ou ficar vazio."
     },
     "dashboard": {
       "units": {
@@ -9678,6 +9689,13 @@
     "seizureCluster": {
       "title": "Crises em salva",
       "body": "{count} crises em {hours} h, registradas por {name}. O plano de resgate está no diário de crises."
+    },
+    "eventMeasurementAnomaly": "Mudança persistente em um sinal vital",
+    "eventMeasurementAnomalyDesc": "Quando um sinal vital como a frequência cardíaca em repouso ou a pressão se mantém em um novo nível há pelo menos dez dias. No máximo uma vez por semana, de manhã, nunca durante uma doença em aberto.",
+    "measurementAnomaly": {
+      "title": "Uma mudança persistente",
+      "bodyUp": "Seu {metric} se manteve mais alto desde {date}. Insights mostra o antes e o depois.",
+      "bodyDown": "Seu {metric} se manteve mais baixo desde {date}. Insights mostra o antes e o depois."
     }
   },
   "i18n": {
@@ -12985,6 +13003,18 @@
     },
     "alcohol": {
       "loadError": "Não foi possível carregar o álcool."
+    },
+    "energyBalance": {
+      "title": "Balanço energético",
+      "loadError": "Não foi possível carregar o balanço energético.",
+      "perDay": "{value} por dia",
+      "trendMeta": "Média dos últimos sete dias: o que você comeu menos a energia em repouso e ativa.",
+      "meanMeta": "Média de {days} dias: o que você comeu menos a energia em repouso e ativa.",
+      "means": "Em {days} dias, em média {intake} kcal ingeridas e {used} kcal gastas.",
+      "dayLine": "{intake} kcal ingeridas, {used} kcal gastas",
+      "estimated": "Em {days} desses dias a energia em repouso é uma estimativa a partir do seu peso, altura, idade e sexo (Mifflin-St Jeor), porque nenhuma medição chegou.",
+      "needsProfile": "Sua ingestão está aqui, mas nenhuma energia em repouso chegou. Adicione altura, data de nascimento e sexo ao perfil, com uma medição de peso, e o balanço será estimado.",
+      "needsExpenditure": "Sua ingestão está aqui, mas nenhuma energia ativa chegou nos mesmos dias, então ainda não há balanço."
     }
   },
   "daily": {
@@ -14194,6 +14224,11 @@
       "micronutrientsOther": "{count} micronutrientes registrados",
       "micronutrientsFew": "{count} micronutrientes registrados",
       "open": "Ver ingestão de nutrientes"
+    },
+    "doseOffset": {
+      "after": "{duration} depois de {name}",
+      "before": "{duration} antes de {name}",
+      "atDose": "Na hora de {name}"
     }
   },
   "timeline": {
@@ -15220,6 +15255,25 @@
       "YES": "Sim",
       "NO": "Não, nada visível",
       "UNKNOWN": "Não tenho certeza"
+    }
+  },
+  "careFeed": {
+    "sectionTitle": "Calendário",
+    "sectionSubtitle": "Suas consultas e o que está para vencer, no app de calendário que você já usa.",
+    "title": "Assinatura de calendário de consultas e vencimentos",
+    "description": "Consultas marcadas no horário, e check-ups e reforços de vacina no dia em que vencem.",
+    "loadError": "Não foi possível carregar a assinatura do calendário.",
+    "linkHidden": "Um link que começa com {prefix} está ativo. Ele só é mostrado uma vez, ao ser criado; desative e ative a assinatura de novo para obter outro.",
+    "linkOnce": "Mostrado só agora. Cole no seu app de calendário.",
+    "visits": "Consultas marcadas",
+    "checkups": "Check-ups a vencer",
+    "vaccinations": "Reforços de vacina a vencer",
+    "ics": {
+      "calendarName": "Consultas e vencimentos (HealthLog)",
+      "visit": "Consulta",
+      "visitWith": "Consulta: {name}",
+      "checkupDue": "Vence: {label}",
+      "boosterDue": "Reforço a vencer: {label}"
     }
   }
 }

@@ -632,6 +632,8 @@ const ACCOUNT_SETTING_CODECS = {
   // Provider types only; the reader drops anything it cannot resolve.
   aiNamedChains: json("aiNamedChains"),
   aiResponseTimeoutSeconds: plain("aiResponseTimeoutSeconds"),
+  // The Coach budgets of Local and the gateway; clamped again when read.
+  aiCoachBudgets: json("aiCoachBudgets"),
   useCentralCodex: plain("useCentralCodex"),
   insightsPrivacyMode: oneOf(
     "insightsPrivacyMode",

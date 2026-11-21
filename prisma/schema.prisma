@@ -541,6 +541,13 @@ model User {
   // default timed the Coach out before the first token landed.
   aiResponseTimeoutSeconds Int? @map("ai_response_timeout_seconds")
 
+  /// The Coach budget of each self-hosted provider (Local and the
+  /// OpenAI-compatible gateway): snapshot characters, tokens, rounds and
+  /// seconds per turn, as `{ "local": {...}, "openai-compatible": {...} }`.
+  /// Parsed and clamped by `parseCoachBudgets`
+  /// (`src/lib/ai/coach/coach-budgets.ts`); null = the built-in limits.
+  aiCoachBudgets Json? @map("ai_coach_budgets")
+
   // Automatic AI reading of uploaded vault documents. OFF by default: the vault
   // stays local-first — a newly stored document is only read externally when the
   // user explicitly taps a per-document AI action (which still needs an active
@@ -1221,6 +1228,7 @@ model User {
   // managed profile.
   cycleCalendarFeeds       CycleCalendarFeed[] @relation("CycleCalendarFeedSubject")
   cycleCalendarFeedsMinted CycleCalendarFeed[] @relation("CycleCalendarFeedCreator")
+  careCalendarFeeds        CareCalendarFeed[]
 
   // v1.39 — the needs-based onboarding's answers and step ledger for THIS
   // record. 1:1, and keyed by record rather than by the person at the
@@ -8625,6 +8633,65 @@ model CycleCalendarFeed {
   @@index([userId, createdAt(sort: Desc)])
   @@index([createdById])
   @@map("cycle_calendar_feeds")
+}
+
+/// How the care calendar feed titles its events. DISCREET is one dot, so a
+/// glance at a shared screen or a lock screen says nothing; DESCRIPTIVE names
+/// the appointment's practitioner or the check-up's own label.
+enum CareCalendarFeedTitleMode {
+  DISCREET
+  DESCRIPTIVE
+
+  @@map("care_calendar_feed_title_mode")
+}
+
+/// A subscribable calendar feed of one record's care dates: booked visits,
+/// check-ups coming due and vaccination boosters coming due.
+///
+/// The row is a URL credential, built like `CycleCalendarFeed`: only the HMAC
+/// of the raw `hlf_` token is stored, the raw token is returned once at mint,
+/// and the feed is computed live on every fetch, so nothing about the dates is
+/// stored here. Only the record's owner mints one, from their own session; a
+/// feed is never minted on a managed profile or a shared record.
+///
+/// At most one live feed per record: a partial unique index on `user_id WHERE
+/// revoked_at IS NULL`, written in the migration. Revocation stamps
+/// `revokedAt` and never deletes. Not in the backup, for the reason the cycle
+/// feed is not (`backup-plan.ts`).
+model CareCalendarFeed {
+  id     String @id @default(cuid())
+  /// The record whose care dates the feed serves, and who minted it.
+  userId String @map("user_id")
+
+  /// HMAC-SHA256 of the raw `hlf_` token.
+  tokenHash   String @unique @map("token_hash")
+  /// The first 8 characters of the raw token, shown in settings.
+  tokenPrefix String @map("token_prefix")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  revokedAt DateTime? @map("revoked_at")
+
+  /// Fetch statistics, written fire-and-forget by the feed route.
+  lastFetchedAt DateTime? @map("last_fetched_at")
+  fetchCount    Int       @default(0) @map("fetch_count")
+  /// The last fetcher's User-Agent, truncated to 80 characters.
+  lastFetcherUa String?   @map("last_fetcher_ua")
+
+  /// SHA-256 of the last served body without its timestamps; it moves
+  /// `contentChangedAt`, and both drive DTSTAMP, LAST-MODIFIED and the ETag.
+  bodyHash         String?  @map("body_hash")
+  contentChangedAt DateTime @default(now()) @map("content_changed_at")
+
+  /// Which dates the feed carries.
+  includeVisits       Boolean                   @default(true) @map("include_visits")
+  includeCheckups     Boolean                   @default(true) @map("include_checkups")
+  includeVaccinations Boolean                   @default(true) @map("include_vaccinations")
+  titleMode           CareCalendarFeedTitleMode @default(DISCREET) @map("title_mode")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("care_calendar_feeds")
 }
 
 /// One row per menstrual cycle (a period-start anchor + derived span).

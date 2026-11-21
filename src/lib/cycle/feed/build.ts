@@ -29,7 +29,7 @@ import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { moodDateKey } from "@/lib/mood/date-key";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
-import { icsContentHash, type IcsCalendar } from "../ics";
+import { icsContentHash, type IcsAllDayEvent, type IcsCalendar } from "../ics";
 import {
   buildFeedCalendar,
   type FeedForecastStyle,
@@ -55,7 +55,7 @@ export interface FeedSubject {
 }
 
 export interface BuiltFeed {
-  calendar: IcsCalendar;
+  calendar: IcsCalendar<IcsAllDayEvent>;
   /** SHA-256 of the body without its stamps. Doubles as the ETag. */
   contentHash: string;
   projectionState: ProjectionState;
