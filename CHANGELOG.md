@@ -2,9 +2,120 @@
 
 ## [Unreleased]
 
+## [1.49.0] — 2026-11-21
+
 ### Added
 
+- Push relay for the iPhone app: a server without the App Store app's Apple key can reach the app through the optional, voluntary HealthLog push relay, run on a server in Germany. Off until an admin turns it on under Admin > Services; then each person decides on their iPhone. Alerts and silent pushes are sealed for their one device, so the relay sees when a device gets something and of which kind, never what it says. For private and household use only, not a medical service. Source in `MBombeck/healthlog-push` (Apache-2.0); details in `docs/integrations/push-relay.md`.
+- Admin relay card with a test push to your own devices and a relay key rotation, and an invite code field for when the relay asks for one; erasing an account removes its devices at the relay.
+- Live Activity start and update over the relay, behind `PUSH_RELAY_LIVE_ACTIVITY=on` and a second consent per device, off by default. Its content carries only state and countdown, never a medication name, so the relay and Apple can see when a dose is due. It follows the medication's own dose windows.
+- Silent wakes when a server-side sync stores new readings and when the app's Apple Health upload is six hours behind, rationed per device.
+- Security notifications when a passkey is added or removed, an access or connector token is revoked, or a device is signed out by refresh token reuse; time-sensitive on the iPhone.
+- Emergency card at `/emergency-card`: offline HTML copy, wallet card PDF, and a QR link that shows only the ticked items, can expire, can be revoked, and logs every opening. (`docs/using/emergency-card.md`)
+- Pregnancy and the weeks after a birth as a cycle state: predictions and their reminders pause, the timeline and doctor report show the week, and the emergency card can show it. (`docs/using/pregnancy.md`)
+- Gadgetbridge database import (steps, pulse, SpO2, resting heart rate, sleep, weight), read without stalling the server on a large file. (`docs/integrations/gadgetbridge.md`)
+- FHIR R4 Bundle import: labs, vital signs, conditions, vaccinations, medications without reminders, and visits; a second import writes nothing twice, also after a restore. (`docs/integrations/fhir-bundle-import.md`)
+- Scheduled Health Connect export fetched from a WebDAV or Nextcloud folder about every six hours, several folders at a time, with the app password stored encrypted. A private network folder needs its origin in `HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS`.
+- AI source per managed profile (server key, none, or one of the guardian's chains) and the profile's activity feed in the guardian's account. Thanks to @ch3funio. (#1403)
+- Medication list grouped by category, with search, category and treatment period filters, and the group open mode and category order in Settings. Thanks to @ferges123. (#1425)
+- Night timeline on the sleep page; WHOOP and Polar, which report only stage totals, get a note. Thanks to @kruemelro. (#1419)
+- FIT import reads training effect, training load, recovery time, sweat loss and running dynamics, fills them into workouts already stored, and synced Garmin runs gain recovery time and running dynamics. Thanks to @kruemelro. (#1343)
+- Apple Health cycling and rowing distance, rowing speed, running speed, power, ground contact time, vertical oscillation and stride length, and workout effort separate from estimated effort. Thanks to @camiracode. (#1415, #1416)
+- Energy balance on the nutrients page (intake against resting and active energy, seven-day trend), in the correlations, and as a two-week line for the Coach. (#1116)
+- Scheduled doctor report filed into documents monthly, quarterly or yearly, off by default. (#1116)
+- Coach limits for local providers and OpenAI-compatible gateways (data read, tokens, steps, time per answer). (#1116)
+- Day view shows a symptom's distance in time from the nearest dose. Thanks to @2q2code. (#1116)
+- Calendar feed for booked visits, check-ups coming due and vaccination boosters, with neutral titles by default.
+- Notification for a lasting change in a vital (held ten days, at most weekly, off by default).
+- Capture menu: most-used types as rows, "Save and next", the last reading under the field; the save receipt has Undo and Edit.
+- Biomarker page lists its five newest values under the chart.
+- Time zone per reading from the iPhone; the Day view, list and daily charts follow it.
+- API: `GET /api/version` lists `features`; `POST /api/measurements/batch` takes `timeZone` per entry; workouts carry `performance`; `GET /api/nutrients/energy-balance`; dose rows carry their resolved state and `alreadyTaken`; `medications.lastUpdatedAt` in `/api/sync/state`; `notificationPrefs.medication.snoozeMinutes`; questionnaire history rows carry `source` and `itemsUnavailable`; `push.device.liveActivityStarted` names the dose of a server-started Live Activity.
 - A GLP-1 titration step can be removed by its client id: `DELETE /api/medications/{id}/glp1/dose-changes?clientId=` answers 204 whether or not the step reached the server, and spends the id so a late upload of the same step answers 410.
+
+### Changed
+
+- Releases follow a calendar: a minor on the first Saturday of the month, fixes on other Saturdays, and off-schedule only for security, data loss or a broken install. Every push to `main` publishes an `:edge` image (amd64). See `docs/contributing/release-policy.md`.
+- One vocabulary for doses: Take and Skip on dose cards; pending, due, overdue, taken, taken late, skipped and missed as states, also in Telegram and the doctor report. Russian and Polish no longer share one word for skipped and missed.
+- One snooze length per person under Settings > Notifications (5 to 240 minutes, 30 by default) on every surface.
+- One intake form for the medications page, the history and the capture menu, which names the dose it counts for; the medication page offers take, skip and snooze for the next dose.
+- The reminder card says in words what will happen; the reminder steps are offered for every scheduled medication.
+- Deleting a dose happens at once with an Undo; "Take all due" has one Undo for the batch.
+- Dose times follow the 12 or 24 hour setting.
+- Ages count on the person's own calendar everywhere.
+- A search for "doctor" or "report" lands on the page that makes the report.
+- A seizure cluster notification opens the seizure that formed it, and a lasting change notification opens its vital's insights page where there is one.
+- The timeline's Add button matches the other pages.
+- A 422 names the bounds a value missed in `details.issues[]`; `GET /api/analytics/range` answers in the account's units with `unit`.
+- Protected pages arrive with the account in the first HTML; the dashboard's largest paint on a slow phone connection went from 4.3 s to about 1 s.
+- The onboarding tour loads on demand, the translation script is cached for good, and the recovery kit banner no longer shifts the dashboard.
+- Scanner probes such as `/.env` get a 9-byte 404, and the quarter-hour jobs start minutes apart.
+- Six duplicate indexes dropped and indexes added for retention purges and external id prefix lookups; Telegram reminder messages are kept 30 days and Coach usage 180 days.
+
+### Fixed
+
+- Doses recorded by several sources land on one slot: a second take changes nothing, an undo cannot remove another device's take, and existing duplicates are merged (a take wins over a skip).
+- A late take or a skip after a dose was marked missed left it missed in the timeline, streak and achievements.
+- An undone dose comes back as pending in the Today list and on the dashboard.
+- A snooze holds only the dose it answers; skipping in Telegram no longer snoozes the medication for the day.
+- The streak breaks on a missed day.
+- Marking a missed dose as taken in the history records when it was reported, not the scheduled time.
+- An extra dose no longer counts as a scheduled dose on the dashboard.
+- An older schedule stored with a range was reminded and scored an hour off.
+- A card whose dose time had just passed showed no due or overdue badge.
+- A dose recorded anywhere reaches every relay device, as a confirmation when those are on and as a silent sync otherwise.
+- A take more than two hours after the recorded one counts for the next open dose instead of being dropped as a repeat.
+- The web intake form offers only the slots that exist on the chosen day, read from the server; a weekly medication's off day no longer offers its time and then answers 422.
+- Paired iPhones refresh when the server marks a dose missed, and the end of a Live Activity reaches the app in a form it decodes.
+- The medication hook matches names regardless of case and spacing, answers 404 for an unknown name, and folds two box openings within a minute into one dose; the copied examples no longer send a fixed key.
+- Withings readings that reach the cloud late are imported, because incremental syncs ask by upload time.
+- A device signed itself out when two refreshes raced; the second now gets `409 auth.refresh.superseded`.
+- With the cycle module off, a paired app no longer rebuilds every 75 days, and deleting all cycle data reaches paired apps.
+- A portable restore keeps each dose on its own medication when two share a name.
+- Entering a reading again after deleting it no longer answers 409, and the delete dialog says when a sync will bring it back.
+- Editing a managed profile's time zone, birth date or sex refreshes its day grid and targets at once.
+- Lab results stored at midnight UTC show on their own day west of UTC.
+- Glucose imported from Apple Health in mmol/L reads back as entered.
+- The hour after a clock change no longer shifts yesterday and tomorrow in the morning refresh, the target strip, the Google Health day total, the integration card and the symptom severity chart.
+- Symptoms: a new one of your own sorts last, the limit holds when several are added at once, and moving an occurrence checks its episode.
+- Editing a walking distance or speed in metric units seeds the value in the unit the label shows.
+- The FHIR endpoint and the MCP doctor visit read the saved report selection again instead of an empty one.
+- A relay outage no longer counts toward switching the iPhone channel off.
+- The admin relay card shows a failed status read instead of nothing.
+
+### Security
+
+- E-mail address and username are unique regardless of case; new and changed addresses are stored in lower case.
+- Sign-in, registration, invites and single sign-on look accounts up exactly, regardless of case; an `_` or `%` no longer acts as a wildcard. Not an account takeover path: single sign-on never links on e-mail alone and sign-in still needs the password. Search filters take `_` and `%` literally too.
+- Moving a Health Connect WebDAV folder to another server requires the password again, saving a password asks for a fresh confirmation, and a public folder must use https.
+- The emergency card can no longer be locked by repeated openings.
+- Pushes to an iPhone that registered a key are sealed for that device on every path, the server's own Apple key included.
+- APNs tokens are compared and stored in lower case, so one token cannot be held by two accounts in different spellings.
+- The calendar feed and emergency card links are stored only as a hash, rate limited, need a fresh sign-in to create, and stay out of backups.
+
+### Updating
+
+- Take a backup first. With the `backups` volume the container writes a pre-migration dump before it migrates; without it, run `pg_dump` yourself.
+- Twenty migrations run on the first start: 0514, 0515, 0517 to 0522, 0524 to 0526, 0529 to 0537. Three change existing data:
+  - 0515 merges dose rows two sources recorded for the same slot (take over skip), clears the missed mark on taken or skipped doses, and stores the dose window of older single-time schedules.
+  - 0517 makes e-mail and username unique regardless of case. On a clash it stops, changes nothing, and the container does not start: list the accounts with the query in `docs/ops/deploy.md` ("Accounts that differ only in case"), rename one of each pair, run `prisma migrate resolve --rolled-back 0517_case_insensitive_identity_and_retention_indexes` as shown there, and start again.
+  - 0529 lowers APNs tokens; where two devices held one token in different case, the most recently seen keeps it and the other registers again on its next launch.
+- 0518 builds an index on `measurements` `CONCURRENTLY` during the start, before the app serves; on a large instance the first start takes longer. Do not restart it midway; if it fails, see "A concurrent index build that failed" in `docs/ops/deploy.md`.
+- 0517's index builds stop after five minutes instead of holding the start; the file is one transaction, so a stop changes nothing.
+- `docs/ops/deploy.md`, "v1.49.0 notes", has the operator detail.
+- Going back to 1.48.5 means restoring the pre-migration dump with the 1.48.5 image (`docs/ops/disaster-recovery.md`, "Going back to before a migration"), not starting the old image on the migrated database.
+- New optional environment variables, all on the compose whitelist: `PUSH_RELAY_MODE` (`off` hides the relay), `PUSH_RELAY_URL` and `PUSH_RELAY_KEYS` (another relay), `PUSH_RELAY_LIVE_ACTIVITY` (`on` allows Live Activity start and update over the relay; default off), `HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS` (exact origins of private WebDAV folders).
+- The iPhone app 1.7 follows shortly; the relay and the new dose behaviour on the phone need it.
+
+### Thanks
+
+- @camiracode for the cycling, rowing and running types and the workout effort code. (#1415, #1416)
+- @kruemelro for the night timeline and FIT requests and real files to test against. (#1419, #1343)
+- @2q2code for the notes on daily medication and symptom tracking. (#1116)
+- @ljcasaai for the Coach limits, energy balance, scheduled report and lasting change requests. (#1116)
+- @ferges123 for the grouped and filtered medication list. (#1425)
+- @ch3funio for the guardian request behind the profile AI source and activity feed. (#1403)
+- Everyone who donated or supported the project, among them @ljcasaai and @ch3funio; the push relay runs on that support.
 
 ## [1.48.5] — 2026-11-21
 
