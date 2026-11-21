@@ -129,4 +129,44 @@ describe("currentDose is the earliest open slot", () => {
     expect(current.targetAt).toEqual(slot);
     expect(current.state).toBe("due");
   });
+
+  it.each(["skipped", "autoMissed"] as const)(
+    "a rolling dose closed as %s moves the current dose to the next occurrence",
+    (closed) => {
+      const now = local(2026, 7, 29, 12, 0);
+      const lastTaken = local(2026, 7, 21, 8, 0);
+      const closedSlot = local(2026, 7, 28, 8, 0);
+      const ctx = buildComplianceMedicationContext(
+        {
+          startsOn: null,
+          endsOn: null,
+          endedAt: null,
+          oneShot: false,
+          createdAt: new Date(now.getTime() - 60 * DAY_MS),
+        },
+        lastTaken,
+        TZ,
+      );
+      const schedules: ComplianceSchedule[] = [
+        { ...daily("08:00"), rollingIntervalDays: 7 },
+      ];
+      const events = [
+        { scheduledFor: lastTaken, takenAt: lastTaken, skipped: false },
+        {
+          scheduledFor: closedSlot,
+          takenAt: null,
+          skipped: closed === "skipped",
+          autoMissed: closed === "autoMissed",
+        },
+      ];
+      const current = buildMedicationComplianceBundle(
+        events,
+        schedules,
+        ctx,
+        now,
+      ).complianceDisplay.currentDose;
+      expect(current.targetAt).toEqual(local(2026, 8, 4, 8, 0));
+      expect(current.state).toBe("upcoming");
+    },
+  );
 });
