@@ -467,19 +467,19 @@ export function TimelineView() {
   ];
 
   const addButton = canAddLifeEvent ? (
+    // The page header's primary "+ Add", the same button the dashboard and
+    // medications headers carry; the sheet it opens names the life event.
     <Button
-      variant="outline"
-      size="sm"
       className="min-h-11 sm:min-h-9"
       onClick={() => {
         setEditing(null);
         setSheetOpen(true);
       }}
-      aria-label={t("lifeEvents.add")}
+      title={t("lifeEvents.add")}
       data-slot="timeline-add-life-event"
     >
       <Plus className="size-4" aria-hidden="true" />
-      <span className="hidden sm:inline">{t("lifeEvents.add")}</span>
+      {t("common.add")}
     </Button>
   ) : null;
 
