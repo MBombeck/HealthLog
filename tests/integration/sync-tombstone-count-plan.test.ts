@@ -6,8 +6,14 @@
  * count walked every account's tombstones (75 days of them, every sweep and
  * consolidation of every account) to answer for one. With the partial
  * `(user_id, deleted_at) WHERE deleted_at IS NOT NULL` index the count is an
- * index read of this account's rows and nothing else, with or without
- * statistics on the table.
+ * index read of this account's tombstones and nothing else.
+ *
+ * That holds on a table with statistics, which is every table autovacuum has
+ * seen. Without them the planner prices `deleted_at IS NOT NULL` at its
+ * default selectivity, which makes the partial index look as large as the
+ * account indexes, and which of them it reads is a tie it breaks by build
+ * details. Either way the read stays inside the caller's own rows, which is
+ * what that case pins.
  */
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -54,26 +60,40 @@ async function account(id: string, live: number, tombstones: number) {
 }
 
 describe("the tombstone count of the sync handshake", () => {
-  it.each(["without statistics", "with this table's statistics"])(
-    "is exact and visits only the caller's tombstones, %s",
-    async (state) => {
-      await account("caller", 50, 7);
-      await account("neighbour", 50, 400);
-      if (state !== "without statistics") {
-        await prisma().$executeRawUnsafe("ANALYZE measurements");
-      }
+  it("is exact and visits only the caller's tombstones, with statistics", async () => {
+    await account("caller", 50, 7);
+    await account("neighbour", 50, 400);
+    await prisma().$executeRawUnsafe("ANALYZE measurements");
 
-      const ledger = await explainStatements(() =>
-        countTombstonedMeasurements("caller"),
-      );
+    const ledger = await explainStatements(() =>
+      countTombstonedMeasurements("caller"),
+    );
 
-      expect(ledger.result).toBe(7);
-      expect(ledger.plans.some((p) => p.seqScan)).toBe(false);
-      // The caller's seven, not the neighbour's four hundred.
-      expect(ledger.rowVisits).toBeLessThanOrEqual(7);
-      expect(JSON.stringify(ledger.plans.map((p) => p.plan))).toContain(
-        "measurements_user_id_deleted_at_tombstone_idx",
-      );
-    },
-  );
+    expect(ledger.result).toBe(7);
+    expect(ledger.plans.some((p) => p.seqScan)).toBe(false);
+    // The caller's seven, not the neighbour's four hundred.
+    expect(ledger.rowVisits).toBeLessThanOrEqual(7);
+    expect(JSON.stringify(ledger.plans.map((p) => p.plan))).toContain(
+      "measurements_user_id_deleted_at_tombstone_idx",
+    );
+  });
+
+  it("is exact and stays inside the caller's rows, without statistics", async () => {
+    await account("caller", 50, 7);
+    await account("neighbour", 50, 400);
+    const [stats] = await prisma().$queryRawUnsafe<Array<{ columns: number }>>(
+      `SELECT COUNT(*)::int AS columns FROM pg_statistic
+        WHERE starelid = 'measurements'::regclass`,
+    );
+    expect(stats).toEqual({ columns: 0 });
+
+    const ledger = await explainStatements(() =>
+      countTombstonedMeasurements("caller"),
+    );
+
+    expect(ledger.result).toBe(7);
+    expect(ledger.plans.some((p) => p.seqScan)).toBe(false);
+    // At most the caller's 57 rows; never one of the neighbour's 450.
+    expect(ledger.rowVisits).toBeLessThanOrEqual(57);
+  });
 });
