@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { showEntrySavedToast } from "@/components/forms/entry-saved-toast";
-import { apiPost } from "@/lib/api/api-fetch";
+import { removeSavedMeasurements } from "@/components/forms/entry-undo";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 import { useAuth } from "@/hooks/use-auth";
@@ -366,7 +366,7 @@ export function MeasurementForm({
         // delete; a delegate who may write but not delete gets no Undo.
         undo: canManageDomain("measurements")
           ? async () => {
-              await apiPost("/api/measurements/bulk-delete", { ids });
+              await removeSavedMeasurements(ids);
               void invalidateKeys(queryClient, measurementDependentKeys);
               void refetchInactiveDailyReads(queryClient);
             }

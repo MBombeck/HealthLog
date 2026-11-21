@@ -412,6 +412,25 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["DeleteButton"],
   },
   {
+    file: "components/forms/entry-undo.ts",
+    destroys:
+      "the measurement, mood entry or symptom occurrences a quick-entry form saved a moment ago",
+    triggers: [
+      "components/measurements/measurement-form.tsx",
+      "components/mood/mood-form.tsx",
+      "components/symptoms/symptom-entry-form.tsx",
+    ],
+    recovery: "tombstoned-no-restore",
+    confirm: [],
+    unconfirmed: [
+      {
+        control: "Undo on the save receipt — entry-saved-toast.ts",
+        reason:
+          "The Undo removes only the rows the same save created seconds earlier, and only while its receipt is on screen; what it takes back is exactly what the person just typed and can type again. It exists for the typo noticed a moment after Save. A confirmation would make correcting a slip dearer than the slip itself, and it is offered only to a caller who may delete those rows anyway.",
+      },
+    ],
+  },
+  {
     file: "components/labs/lab-biomarker-detail.tsx",
     destroys: "a biomarker AND every lab reading recorded against it",
     recovery: "permanent",

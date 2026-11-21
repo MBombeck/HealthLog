@@ -40,7 +40,7 @@ import {
   useRecordCapabilities,
 } from "@/hooks/use-record-capabilities";
 import { showEntrySavedToast } from "@/components/forms/entry-saved-toast";
-import { apiDelete } from "@/lib/api/api-fetch";
+import { removeSavedSymptomEvents } from "@/components/forms/entry-undo";
 import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
 import {
@@ -197,9 +197,7 @@ export function SymptomEntryForm({
       recordName,
       undo: canDefine
         ? async () => {
-            for (const event of events) {
-              await apiDelete(`/api/symptoms/events/${event.id}`);
-            }
+            await removeSavedSymptomEvents(events.map((e) => e.id));
             void invalidateSymptomReads(queryClient);
           }
         : undefined,

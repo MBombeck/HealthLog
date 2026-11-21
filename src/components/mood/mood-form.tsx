@@ -40,7 +40,7 @@ import {
   useActiveRecordName,
   useRecordCapabilities,
 } from "@/hooks/use-record-capabilities";
-import { apiDelete } from "@/lib/api/api-fetch";
+import { removeSavedMoodEntry } from "@/components/forms/entry-undo";
 import { useTranslations } from "@/lib/i18n/context";
 import { useRovingRadioGroup } from "@/hooks/use-roving-radio-group";
 import {
@@ -277,7 +277,7 @@ export function MoodForm({
         recordName,
         undo: canManageDomain("mind")
           ? async () => {
-              await apiDelete(`/api/mood-entries/${saved.id}`);
+              await removeSavedMoodEntry(saved.id);
               void invalidateKeys(queryClient, moodDependentKeys);
               void refetchInactiveDailyReads(queryClient);
             }
