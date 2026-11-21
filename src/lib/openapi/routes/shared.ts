@@ -60,19 +60,31 @@ export const validationIssue = z
       .number()
       .optional()
       .describe(
-        "Only on `too_small`: the lower bound the schema declares (a number's value, a string's or a list's length; see `origin`). From the schema, never the request.",
+        "On `too_small`: the lower bound the schema declares (a number's value, a string's or a list's length; see `origin`). Since v1.49.0 also on `too_big` when the field declares a lower bound too (with `minimumInclusive`), on every body validated through the shared body parser. From the schema, never the request.",
       ),
     maximum: z
       .number()
       .optional()
       .describe(
-        "Only on `too_big`: the upper bound the schema declares, for example a nutrient target's plausibility cap. From the schema, never the request.",
+        "On `too_big`: the upper bound the schema declares, for example a nutrient target's plausibility cap. Since v1.49.0 also on `too_small` when the field declares an upper bound too (with `maximumInclusive`). From the schema, never the request.",
       ),
     inclusive: z
       .boolean()
       .optional()
       .describe(
-        "With `minimum` / `maximum`: whether the bound itself is allowed (`false` for a value that must be above 0).",
+        "With `minimum` / `maximum`: whether the bound that was broken is itself allowed (`false` for a value that must be above 0).",
+      ),
+    minimumInclusive: z
+      .boolean()
+      .optional()
+      .describe(
+        "Since v1.49.0. Present only when the issue carries both `minimum` and `maximum`: whether `minimum` itself is allowed.",
+      ),
+    maximumInclusive: z
+      .boolean()
+      .optional()
+      .describe(
+        "Since v1.49.0. Present only when the issue carries both `minimum` and `maximum`: whether `maximum` itself is allowed.",
       ),
     origin: z
       .string()

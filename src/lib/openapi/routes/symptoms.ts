@@ -22,6 +22,7 @@ import {
   symptomEventUpdateSchema,
 } from "@/lib/symptoms/shared";
 
+import { dayDoseOffsetField } from "@/lib/day/dose-offset-schema";
 import { symptomBatchPayloadSchema } from "@/lib/symptoms/batch-schema";
 import { SYMPTOM_BUILTIN_CODES } from "@/lib/symptoms/builtin";
 
@@ -130,6 +131,9 @@ const symptomEvent = z
       ),
     createdAt: z.string(),
     updatedAt: z.string(),
+    doseOffset: dayDoseOffsetField.describe(
+      "Since v1.49.0, on `GET /api/symptoms/events` only (feature key `day.dose-offset`). The same value `GET /api/day/{date}` carries for this occurrence: its distance from the nearest dose taken at or before it on the same local day of the record's zone, else the nearest one after it. Absent when that day holds no timed dose, when the medications module is off, or when a delegate's grant does not cover medications. A distance in time and nothing more; never a cause.",
+    ),
   })
   .meta({
     id: "SymptomEvent",

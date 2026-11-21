@@ -866,6 +866,104 @@ describe("symptom occurrences", () => {
     expect(hrefs).toEqual([`/illness/${live.id}`, "/illness"]);
   });
 
+  it("carries the day view's doseOffset on every listed occurrence", async () => {
+    const id = await defineSymptom("Headache");
+    const db = getPrismaClient();
+    const med = await db.medication.create({
+      data: { userId: OWNER_ID, name: "Metformin", dose: "500 mg" },
+    });
+    // The evening dose of the 9th (22:00 Berlin) is another local day.
+    await db.medicationIntakeEvent.create({
+      data: {
+        userId: OWNER_ID,
+        medicationId: med.id,
+        scheduledFor: new Date("2026-03-09T21:00:00.000Z"),
+        takenAt: new Date("2026-03-09T21:00:00.000Z"),
+      },
+    });
+    const intake = await db.medicationIntakeEvent.create({
+      data: {
+        userId: OWNER_ID,
+        medicationId: med.id,
+        scheduledFor: new Date("2026-03-10T07:00:00.000Z"),
+        takenAt: new Date("2026-03-10T07:05:00.000Z"),
+      },
+    });
+    // 07:00 and 10:15 Berlin on the 10th, and 23:30 Berlin on the 11th,
+    // a day with no dose.
+    for (const at of [
+      "2026-03-10T06:00:00.000Z",
+      "2026-03-10T09:15:00.000Z",
+      "2026-03-11T22:30:00.000Z",
+    ]) {
+      const response = await logEvent({
+        definitionId: id,
+        intensity: 5,
+        occurredAt: at,
+      });
+      expect(response.status).toBe(201);
+    }
+
+    type Listed = Envelope<{
+      events: Array<{
+        id: string;
+        occurredAt: string;
+        doseOffset?: { intakeId: string; title: string; minutes: number };
+      }>;
+    }>;
+    const { GET } = await import("@/app/api/symptoms/events/route");
+    const listed = await json<Listed>(
+      await call(GET, "GET", "/api/symptoms/events"),
+    );
+    const byTime = Object.fromEntries(
+      listed.data.events.map((e) => [e.occurredAt, e.doseOffset]),
+    );
+    expect(byTime).toEqual({
+      "2026-03-10T06:00:00.000Z": {
+        intakeId: intake.id,
+        title: "Metformin",
+        minutes: -65,
+      },
+      "2026-03-10T09:15:00.000Z": {
+        intakeId: intake.id,
+        title: "Metformin",
+        minutes: 130,
+      },
+      "2026-03-11T22:30:00.000Z": undefined,
+    });
+
+    // The same values the day view carries for the same occurrences.
+    const dayRoute = await import("@/app/api/day/[date]/route");
+    const day = await json<
+      Envelope<{
+        events: Array<{ kind: string; id: string; doseOffset?: unknown }>;
+      }>
+    >(
+      await call(dayRoute.GET, "GET", "/api/day/2026-03-10", undefined, {
+        date: "2026-03-10",
+      }),
+    );
+    for (const e of day.data.events.filter((x) => x.kind === "symptom")) {
+      expect(listed.data.events.find((l) => l.id === e.id)?.doseOffset).toEqual(
+        e.doseOffset,
+      );
+    }
+
+    // Medications switched off: no dose is named.
+    await db.user.update({
+      where: { id: OWNER_ID },
+      data: { modulePreferencesJson: { medications: false } },
+    });
+    const off = await json<Listed>(
+      await call(GET, "GET", "/api/symptoms/events"),
+    );
+    expect(off.data.events.map((e) => e.doseOffset)).toEqual([
+      undefined,
+      undefined,
+      undefined,
+    ]);
+  });
+
   it("answers illness.disabled with the module off", async () => {
     await getPrismaClient().user.update({
       where: { id: OWNER_ID },
