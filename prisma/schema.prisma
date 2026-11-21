@@ -6521,8 +6521,9 @@ model LiveActivityToken {
 
   device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 
+  // The unique key leads with `deviceId`, so it serves every lookup by
+  // device; a separate index on it alone would be a prefix of it.
   @@unique([deviceId, pushToken])
-  @@index([deviceId])
   @@map("live_activity_tokens")
 }
 
