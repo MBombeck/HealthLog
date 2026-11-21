@@ -1,18 +1,9 @@
 /**
- * v1.8.2 — shared slot resolution for the intake write paths.
- *
- * Both `POST /api/medications/[id]/intake` (source WEB) and
- * `POST /api/medications/intake/bulk` (source API) must resolve an
- * incoming dose write to the canonical scheduled-slot instant so the
- * write updates the pending REMINDER row the projector/worker minted
- * rather than inserting a second row that differs only by `source` (and
- * by a sub-minute `scheduledFor` drift). This module loads the
- * medication's schedules + the rolling-anchor `lastIntakeAt` and runs the
- * pure `resolveCanonicalSlotInstant` snap.
- *
- * Returns `null` when the dose does not map to a scheduled slot
- * (PRN / off-slot beyond tolerance / cyclic off-week / no schedules) —
- * the caller's signal to keep the unmodified insert behaviour.
+ * Shared slot resolution and the one slot write for every intake write path:
+ * an incoming dose resolves to the canonical slot instant and converges onto
+ * the slot's row (the pending row the projector or worker minted) instead of
+ * inserting a second one. A resolver answers `null` when the dose maps to no
+ * scheduled slot (PRN, off-slot, cyclic off-week, no schedules).
  */
 import type {
   IntakeTakenVia,
@@ -414,8 +405,15 @@ async function applyToExisting(
 
   // A take on a slot that already holds a take is the same dose reported
   // again: the first take, its time and its idempotency key stay, nothing
-  // is written, and the caller answers `alreadyTaken`.
-  if (isExplicitTaken && existing.takenAt !== null && !existing.skipped) {
+  // is written, and the caller answers `alreadyTaken`. An external dose
+  // record (Apple Health) is the exception: the bulk path has already told
+  // it apart from another dose, and an edit in Health must move the dose.
+  if (
+    isExplicitTaken &&
+    externalId === null &&
+    existing.takenAt !== null &&
+    !existing.skipped
+  ) {
     return { ...NO_OP, row: existing, alreadyTaken: true };
   }
 

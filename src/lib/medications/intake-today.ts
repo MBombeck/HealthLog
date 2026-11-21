@@ -11,6 +11,8 @@ import { getUserTodayBounds } from "@/lib/tz/local-day";
 import { projectTodayIntakesAndRecompute } from "@/lib/medications/scheduling/project-today-intakes";
 import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 import { slotsHeldBySnooze } from "@/lib/medications/snooze-scope";
+import { resolveDosesByRow } from "@/lib/medications/dose-state/today";
+import { serializeResolvedDose } from "@/lib/medications/dose-state/resolve";
 
 export async function readTodayIntakes(input: {
   userId: string;
@@ -89,6 +91,18 @@ export async function readTodayIntakes(input: {
     );
   }
 
+  // The resolved dose state of each row, from each medication's ledger
+  // (`dose-state/resolve.ts`): one answer for every client.
+  const resolved = await resolveDosesByRow({
+    userId,
+    userTz,
+    medicationIds: events.map((e) => e.medicationId),
+    takenViaByRow: new Map(events.map((e) => [e.id, e.takenVia])),
+    from: todayStart,
+    to: todayEnd,
+    now,
+  });
+
   annotate({
     action: { name: "medications.intake.today" },
     meta: {
@@ -125,5 +139,35 @@ export async function readTodayIntakes(input: {
       ?.has(e.scheduledFor.getTime())
       ? (e.medication.snoozedUntil?.toISOString() ?? null)
       : null,
+    ...todayDoseFields(resolved.get(e.id) ?? null, e.takenAt !== null),
   }));
+}
+
+/**
+ * The resolved fields of a today row. A row the ledger places on no slot (an
+ * ad-hoc take) reads `taken` with no window.
+ */
+function todayDoseFields(
+  dose: Parameters<typeof serializeResolvedDose>[0] | null,
+  taken: boolean,
+) {
+  if (dose) {
+    const s = serializeResolvedDose(dose);
+    return {
+      state: s.state,
+      slotInstant: s.slotInstant,
+      dueAt: s.dueAt,
+      overdueSince: s.overdueSince,
+      missedAfter: s.missedAfter,
+      lateTakeCounts: s.lateTakeCounts,
+    };
+  }
+  return {
+    state: taken ? ("taken" as const) : null,
+    slotInstant: null,
+    dueAt: null,
+    overdueSince: null,
+    missedAfter: null,
+    lateTakeCounts: false,
+  };
 }

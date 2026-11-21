@@ -133,6 +133,12 @@ export interface DoseHistoryRow {
    * or the row is an orphaned skip.
    */
   nearestSlot?: NearestSlotContext;
+  /**
+   * The slot's band (a `slot` row only): its on-time window, early grace and
+   * miss cutoff, so `dose-state/resolve.ts` can tell due from overdue from
+   * missed without re-deriving the windows. Not serialised by the routes.
+   */
+  band?: SlotBand;
 }
 
 /**
@@ -273,13 +279,11 @@ export function reconstructDoseHistory(
     }
   }
 
-  // The best fit claims a slot first, whatever order the caller read the rows
-  // in. A take the write path stored ON the slot it attributes to goes before
-  // one stored on its own instant (an extra dose recorded unscheduled), then
-  // on-time before late, then the nearer take. Processing in the caller's
-  // order (newest `scheduledFor` first on the history route) let an extra dose
-  // logged half an hour after the slot claim it and pushed the slot's own
-  // dose out as the off-schedule one.
+  // The best fit claims a slot first, whatever order the rows came in: a take
+  // stored ON its slot before one stored on its own instant (an extra dose),
+  // then on-time before late, then the nearer take. The caller's order let an
+  // extra dose logged half an hour after the slot push the slot's own dose
+  // out as the off-schedule one.
   const ranked = taken.map((i) => {
     const matched = attributeIntakeToSlot(i.takenAt as Date, bands);
     if (!matched) return { i, matched, key: [2, 0, 0] as const };
@@ -326,11 +330,11 @@ export function reconstructDoseHistory(
         status: c.status,
         intake: c.intake,
         ...(c.pinned && { pinned: true }),
+        band,
       };
     }
-    // Unfilled slot: missed only once the miss cutoff (the late tail's end)
-    // has passed; until then the dose is still takeable, so it reads upcoming
-    // rather than prematurely missed.
+    // Unfilled slot: missed only past the miss cutoff (the late tail's end);
+    // until then the dose is still takeable and reads upcoming.
     const status: DoseHistoryStatus =
       now.getTime() > band.overdueEnd.getTime() ? "missed" : "upcoming";
     return {
@@ -339,6 +343,7 @@ export function reconstructDoseHistory(
       timeOfDay: band.timeOfDay,
       status,
       intake: null,
+      band,
     };
   });
 

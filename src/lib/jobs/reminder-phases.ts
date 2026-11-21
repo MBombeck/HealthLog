@@ -4,6 +4,7 @@
  * current time relative to the schedule window end.
  */
 
+import type { DoseState } from "@/lib/medications/dose-state/resolve";
 import { coerceLocale, type Locale } from "@/lib/i18n/config";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 
@@ -220,6 +221,15 @@ export function getPhaseMessage(
  * locale; callback_data values are stable English identifiers and must
  * NOT be translated (the bot dispatcher matches on them).
  */
+/**
+ * The resolved dose state each reminder phase announces: GREEN and YELLOW
+ * fire inside the dose window, ORANGE in its overdue tail, RED once the
+ * dose is missed (when a late take still counts).
+ */
+export function doseStateOfPhase(phase: ReminderPhase): DoseState {
+  return phase === "RED" ? "missed" : phase === "ORANGE" ? "overdue" : "due";
+}
+
 export function getPhaseKeyboard(
   phase: ReminderPhase,
   medicationId: string,
@@ -227,12 +237,15 @@ export function getPhaseKeyboard(
 ): { inline_keyboard: { text: string; callback_data: string }[][] } {
   const t = getServerTranslator(resolveLocale(locale)).t;
 
-  if (phase === "RED") {
+  // The RED phase is the resolved state `missed` (`dose-state/resolve.ts`):
+  // a take recorded now still counts, late, so the take button says so and
+  // the other button leaves the dose missed rather than "confirming" it.
+  if (doseStateOfPhase(phase) === "missed") {
     return {
       inline_keyboard: [
         [
           {
-            text: t("medicationReminders.buttonTaken"),
+            text: t("medicationReminders.buttonTakenLate"),
             callback_data: `taken:${medicationId}`,
           },
           {

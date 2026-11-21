@@ -1014,6 +1014,34 @@ export const complianceDisplay = z
           .describe(
             "Target instant of the open dose. Null when no dose is open.",
           ),
+        state: z
+          .enum([
+            "pending",
+            "due",
+            "overdue",
+            "missed",
+            "taken",
+            "taken_late",
+            "skipped",
+          ])
+          .nullable()
+          .describe(
+            "The open dose's resolved state (`dose-state/resolve.ts`), the same vocabulary as the today list's `state`. Null when no dose is open. `status` above is the same state in the older vocabulary.",
+          ),
+        dueAt: isoDateTime()
+          .nullable()
+          .describe("When the open dose's window opens."),
+        overdueSince: isoDateTime()
+          .nullable()
+          .describe("End of its on-time window; past it the dose is overdue."),
+        missedAfter: isoDateTime()
+          .nullable()
+          .describe("Its miss cutoff; past it an unanswered dose is missed."),
+        lateTakeCounts: z
+          .boolean()
+          .describe(
+            "A take recorded for this dose now still counts for it (late after `overdueSince`).",
+          ),
       })
       .describe(
         "v1.15.9 — the open dose's per-dose status + target, so the card highlights the actionable take-window green and escalates an overdue dose without re-deriving the window math client-side.",
@@ -1671,6 +1699,41 @@ export const todayIntakeEntry = z
       .nullable()
       .describe(
         "When the snooze holding this slot ends. Null when no running snooze holds this slot, including other slots of a snoozed medication.",
+      ),
+    state: z
+      .enum([
+        "pending",
+        "due",
+        "overdue",
+        "missed",
+        "taken",
+        "taken_late",
+        "skipped",
+      ])
+      .nullable()
+      .describe(
+        "The resolved state of this dose, computed once on the server from the same bands the dose history, the adherence rate and the reminders use (the medication's stored dose windows included). `pending` before `dueAt`; `due` from `dueAt` to `overdueSince`; `overdue` until `missedAfter`; `missed` after that with nothing recorded (or closed by the auto-miss pass); `taken` / `taken_late` by when it was taken; `skipped`. Render from this instead of fixed thresholds. Null only for a row on no slot that records nothing.",
+      ),
+    slotInstant: isoDateTime()
+      .nullable()
+      .describe(
+        "The slot's scheduled time. Null for a take on no slot (ad hoc).",
+      ),
+    dueAt: isoDateTime()
+      .nullable()
+      .describe("When the dose window opens; the dose is `due` from here."),
+    overdueSince: isoDateTime()
+      .nullable()
+      .describe("End of the on-time window; past it the dose is `overdue`."),
+    missedAfter: isoDateTime()
+      .nullable()
+      .describe(
+        "The miss cutoff; past it an unanswered dose is `missed`. Schedule a client-side state change at `dueAt`, `overdueSince` and `missedAfter` instead of polling.",
+      ),
+    lateTakeCounts: z
+      .boolean()
+      .describe(
+        "A take recorded for this dose now still counts for it (as `taken_late` after the on-time window): true while `due`, `overdue` and `missed`. A client that shows `missed` with a take action says that a late take still counts.",
       ),
   })
   .meta({
