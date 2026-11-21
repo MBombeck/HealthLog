@@ -11,6 +11,7 @@ import {
   WITHINGS_MEASTYPES,
   type WithingsMeasure,
 } from "./client";
+import { measureReadWindow } from "./measure-window";
 import {
   isPlanGatedError,
   isPlanReprobeDue,
@@ -122,15 +123,9 @@ export async function getValidToken(
 }
 
 /**
- * Incremental overlap window (ms), subtracted from `lastSyncedAt` to form the
- * `lastupdate` bound of an incremental read. `lastSyncedAt` is our wall clock
- * at the end of the previous run and advances on every success, including a
- * healthy 200-with-0 cycle (F-SYNC-1), while `lastupdate` is compared against
- * the time Withings stored a group. The overlap absorbs the skew between the
- * two clocks and a group that Withings committed while the previous run was
- * reading. The upserts are idempotent, so a wider overlap only re-touches a
- * handful of rows. Late uploads need no overlap at all: `lastupdate` follows
- * the upload, not the measure date.
+ * Incremental overlap (ms) under `lastSyncedAt`, our wall clock at the end of
+ * the last good run (it advances even on a 200-with-0, F-SYNC-1). It absorbs
+ * the skew to Withings' clock and a group committed while that run read.
  */
 export const WITHINGS_INCREMENTAL_OVERLAP_MS = 10 * 60 * 1000;
 
@@ -178,21 +173,11 @@ export async function syncUserMeasurements(
   // No connection row is not a failure — there is nothing to sync.
   if (!connection) return { imported: 0, failed: false };
 
-  // The watermark is wall-clock time, so an incremental run must filter on
-  // the time Withings received a group (`lastupdate`), never on its measure
-  // date: a reading uploaded late through the phone app carries a measure
-  // date from before the watermark and a measure-date window would skip it
-  // for good. The first sync and the full sync read by measure date.
-  const updatedSince =
-    !opts.fullSync && connection.lastSyncedAt
-      ? new Date(
-          connection.lastSyncedAt.getTime() - WITHINGS_INCREMENTAL_OVERLAP_MS,
-        )
-      : undefined;
-  const startDate =
-    opts.fullSync || updatedSince
-      ? undefined
-      : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days back
+  const { startDate, updatedSince } = measureReadWindow(
+    connection.lastSyncedAt,
+    WITHINGS_INCREMENTAL_OVERLAP_MS,
+    opts.fullSync,
+  );
 
   // Withings API plans (2026-10-12): a request naming one meastype outside the
   // account's plan is refused whole with 277. Leave out what the plan refused

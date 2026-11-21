@@ -76,7 +76,7 @@ describe("rotateRefreshToken: concurrent-rotation loser", () => {
         tokenLabel: "iOS",
         accessTokenDays: 1,
         refreshTokenDays: 90,
-      } as never,
+      },
       deviceId: "dev-1",
     });
     expect(result).toEqual({ ok: false, reason: "superseded" });

@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2850,
-  "total": 9086,
+  "total": 9085,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1863,7 +1863,7 @@
     "lib/auth/oidc-native-handoff.ts": 1,
     "lib/auth/oidc.ts": 1,
     "lib/auth/passkey.ts": 4,
-    "lib/auth/profile-update.ts": 5,
+    "lib/auth/profile-update.ts": 4,
     "lib/auth/security-activity.ts": 1,
     "lib/auth/session.ts": 12,
     "lib/avatar.ts": 1,

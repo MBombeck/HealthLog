@@ -17,7 +17,7 @@ describe("deleteConfirmDescription", () => {
   it.each(["WITHINGS", "NIGHTSCOUT", "GOOGLE_HEALTH", "OURA", "GARMIN"])(
     "warns that a %s row comes back with the next sync",
     (source) => {
-      expect(deleteConfirmDescription({ source } as never, t)).toBe(
+      expect(deleteConfirmDescription({ source }, t)).toBe(
         "measurements.deleteConfirmDescriptionSynced",
       );
     },
@@ -26,7 +26,7 @@ describe("deleteConfirmDescription", () => {
   it.each(["MANUAL", "APPLE_HEALTH", "IMPORT"])(
     "keeps the plain text for a %s row",
     (source) => {
-      expect(deleteConfirmDescription({ source } as never, t)).toBe(
+      expect(deleteConfirmDescription({ source }, t)).toBe(
         "measurements.deleteConfirmDescription",
       );
     },

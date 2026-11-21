@@ -748,3 +748,43 @@ describe("back-filling an entry months into the past", () => {
     expect(days.filter((d) => d.isCycleStart)).toHaveLength(1);
   });
 });
+
+describe("DELETE /api/cycle/all and the sync feed", () => {
+  it("expires every cursor a paired client holds", async () => {
+    await loginAs(FEMALE_USER_ID);
+    const prisma = getPrismaClient();
+    const { POST } = await import("@/app/api/cycle/day-logs/route");
+    const logged = await POST(
+      jsonRequest("/api/cycle/day-logs", "POST", {
+        date: "2026-03-01",
+        flow: "MEDIUM",
+        loggedAt: "2026-03-01T08:00:00.000Z",
+      }),
+    );
+    expect(logged.status).toBeLessThan(300);
+
+    const { pullSyncChanges, syncChangesFromNow } =
+      await import("@/lib/sync/changes/pull");
+    // A client that mirrored the row holds a cursor issued before the purge.
+    const issuedAt = new Date(Date.now() - 1000);
+    const cursor = syncChangesFromNow(issuedAt).cursor!;
+
+    const { DELETE } = await import("@/app/api/cycle/all/route");
+    const purged = await DELETE(jsonRequest("/api/cycle/all", "DELETE"));
+    expect(purged.status).toBe(200);
+    expect(await prisma.cycleDayLog.count()).toBe(0);
+    // The rows left without tombstones, so only a reset tells the client.
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { id: FEMALE_USER_ID },
+    });
+    expect(user.syncResetAt).not.toBeNull();
+
+    const pulled = await pullSyncChanges({
+      userId: FEMALE_USER_ID,
+      token: cursor,
+      limit: 100,
+      serverNow: new Date(),
+    });
+    expect(pulled.cursorExpired).toBe(true);
+  });
+});

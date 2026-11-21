@@ -268,15 +268,6 @@ export const PATCH = apiHandler(
               ? { dateFormat: patch.dateFormat }
               : {}),
           };
-          const priorTimezone =
-            patch.timezone !== undefined
-              ? ((
-                  await prisma.user.findUnique({
-                    where: { id: access.recordId },
-                    select: { timezone: true },
-                  })
-                )?.timezone ?? null)
-              : null;
           const record = await prisma.user.update({
             where: { id: access.recordId },
             data,
@@ -294,8 +285,8 @@ export const PATCH = apiHandler(
           });
           await afterIdentityFieldsChanged(access.recordId, {
             anthropometrics: true,
-            timezone:
-              patch.timezone !== undefined && patch.timezone !== priorTimezone,
+            // A zone in the patch counts as changed; the refresh is idempotent.
+            timezone: patch.timezone !== undefined,
           });
           if (patch.unitPreference !== undefined) {
             void refreshTextsAfterUnitChange(access.recordId);

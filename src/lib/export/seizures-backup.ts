@@ -366,6 +366,51 @@ const date = (v: string | null | undefined) => (v ? new Date(v) : null);
    same literals. */
 
 /**
+ * The intake each rescue dose of the file wrote, keyed by the id the file
+ * names. A disaster-recovery file kept the intake's id, so the row is looked
+ * up by it. A portable file's intakes came back under fresh ids; the dose
+ * names the source id, which the medication step mapped to the live slot the
+ * row occupies, and the slot is unique.
+ */
+async function resolveRescueIntakes(
+  tx: Prisma.TransactionClient,
+  ownerId: string,
+  payload: SeizuresRestoreInput,
+  intakeSlotBySourceId: ReadonlyMap<string, RestoredIntakeSlot>,
+): Promise<Map<string, string>> {
+  const intakeBySource = new Map<string, string>();
+  const referencedIntakes = (payload.seizureEvents ?? []).flatMap((e) =>
+    (e.rescueDoses ?? []).flatMap((d) =>
+      d.intakeEventId ? [d.intakeEventId] : [],
+    ),
+  );
+  if (referencedIntakes.length > 0) {
+    const rows = await tx.medicationIntakeEvent.findMany({
+      where: { userId: ownerId, id: { in: referencedIntakes } },
+      select: { id: true },
+    });
+    for (const r of rows) intakeBySource.set(r.id, r.id);
+    for (const sourceId of new Set(referencedIntakes)) {
+      if (intakeBySource.has(sourceId)) continue;
+      const slot = intakeSlotBySourceId.get(sourceId);
+      if (!slot) continue;
+      const row = await tx.medicationIntakeEvent.findFirst({
+        where: {
+          userId: ownerId,
+          medicationId: slot.medicationId,
+          scheduledFor: slot.scheduledFor,
+          source: slot.source as any,
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+      if (row) intakeBySource.set(sourceId, row.id);
+    }
+  }
+  return intakeBySource;
+}
+
+/**
  * Re-create the account's seizure diary. Delete-then-recreate inside the
  * caller's transaction; deleting a seizure cascades its doses. MUST run AFTER
  * the medications step (`medicationIdBySourceId`) and the intake events.
@@ -420,39 +465,12 @@ export async function restoreSeizuresData(
     if (source) typeIdBySource.set(source, created.id);
   }
 
-  // The intake a dose wrote. A disaster-recovery file kept the intake's id,
-  // so the row is looked up by it. A portable file's intakes came back under
-  // fresh ids; the dose names the source id, which the medication step
-  // mapped to the live slot the row occupies, and the slot is unique.
-  const intakeBySource = new Map<string, string>();
-  const referencedIntakes = (payload.seizureEvents ?? []).flatMap((e) =>
-    (e.rescueDoses ?? []).flatMap((d) =>
-      d.intakeEventId ? [d.intakeEventId] : [],
-    ),
+  const intakeBySource = await resolveRescueIntakes(
+    tx,
+    ownerId,
+    payload,
+    intakeSlotBySourceId,
   );
-  if (referencedIntakes.length > 0) {
-    const rows = await tx.medicationIntakeEvent.findMany({
-      where: { userId: ownerId, id: { in: referencedIntakes } },
-      select: { id: true },
-    });
-    for (const r of rows) intakeBySource.set(r.id, r.id);
-    for (const sourceId of new Set(referencedIntakes)) {
-      if (intakeBySource.has(sourceId)) continue;
-      const slot = intakeSlotBySourceId.get(sourceId);
-      if (!slot) continue;
-      const row = await tx.medicationIntakeEvent.findFirst({
-        where: {
-          userId: ownerId,
-          medicationId: slot.medicationId,
-          scheduledFor: slot.scheduledFor,
-          source: slot.source as any,
-          deletedAt: null,
-        },
-        select: { id: true },
-      });
-      if (row) intakeBySource.set(sourceId, row.id);
-    }
-  }
   // Without the link, deleting the seizure or the dose leaves the intake and
   // its stock deduction standing, so a dropped link is reported, not hidden.
   const droppedIntakes: string[] = [];

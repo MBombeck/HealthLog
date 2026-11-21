@@ -147,6 +147,10 @@ describe("a portable restore of intakes and rescue doses", () => {
     expect(file.intakeEvents.every((e) => e.medicationId === undefined)).toBe(
       true,
     );
+    // It names the drug and the intake by their source ids instead: two
+    // doses of two drugs that share a name are told apart only by them.
+    expect(new Set(file.intakeEvents.map((e) => e.medicationRef)).size).toBe(2);
+    expect(file.intakeEvents.every((e) => e.ref)).toBe(true);
 
     const backup = await prisma.dataBackup.create({
       data: {

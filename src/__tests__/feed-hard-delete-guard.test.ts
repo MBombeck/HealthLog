@@ -16,10 +16,14 @@
  * branch; raw SQL deletes are swept by their own matcher.
  */
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { stripComments, walkSourceFiles } from "./helpers/source-files";
+import {
+  readSource,
+  readSourceText,
+  stripComments,
+  walkSourceFiles,
+} from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -115,7 +119,7 @@ function sourceFiles(): string[] {
 }
 
 function code(rel: string): string {
-  return stripComments(readFileSync(join(SRC, rel), "utf8"));
+  return stripComments(readSourceText(join(SRC, rel)));
 }
 
 describe("hard deletes of sync-feed rows", () => {
@@ -149,7 +153,10 @@ describe("hard deletes of sync-feed rows", () => {
   });
 
   it("the restore entry point resets the feed", () => {
-    expect(RESET.test(code("lib/export/restore-backup.ts"))).toBe(true);
+    const text = stripComments(
+      readSource("src/lib/export/restore-backup.ts", "restoreBackup"),
+    );
+    expect(RESET.test(text)).toBe(true);
   });
 
   it("the matcher reads a delete written across lines", () => {
