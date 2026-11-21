@@ -27,7 +27,24 @@ interface InstantFormatters {
   time: (value: Date) => string;
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
+
+/**
+ * The label of the calendar day before `now`'s, in the formatter's zone.
+ *
+ * Not the label of `now − 24 h`: in the first hour after a 23-hour day that
+ * lands two days back, and in the last hour of a 25-hour day it is still
+ * today. A local day lasts 23 to 25 hours, so of `now − 23 h`, `− 24 h` and
+ * `− 25 h` the first one off today's label is always yesterday.
+ */
+function yesterdayLabel(fmt: InstantFormatters, now: Date): string {
+  const today = fmt.dateShortSmart(now);
+  for (const hours of [23, 24, 25]) {
+    const label = fmt.dateShortSmart(new Date(now.getTime() - hours * HOUR_MS));
+    if (label !== today) return label;
+  }
+  return today;
+}
 
 /** The one word in the status badge. */
 export function healthBadgeLabel(
@@ -65,7 +82,7 @@ export function formatHealthInstant(
   if (day === fmt.dateShortSmart(now)) {
     return t("settings.integrationCard.when.today", { time });
   }
-  if (day === fmt.dateShortSmart(new Date(now.getTime() - DAY_MS))) {
+  if (day === yesterdayLabel(fmt, now)) {
     return t("settings.integrationCard.when.yesterday", { time });
   }
   return t("settings.integrationCard.when.date", { date: day, time });

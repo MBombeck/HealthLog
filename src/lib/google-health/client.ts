@@ -343,7 +343,12 @@ export async function fetchDailyRollUp(
     new Date(now.getTime() - GOOGLE_HEALTH_ROLLUP_BACKFILL_DAYS * DAY_MS);
   // End exclusive at tomorrow (user-local) so today's running total is covered.
   const startCivil = civilDateInTz(from, query.tz);
-  const endCivil = civilDateInTz(new Date(now.getTime() + DAY_MS), query.tz);
+  // Tomorrow is the civil day after today's, not the day `now + 24 h` falls
+  // on: in the first local hour of a 25-hour day that is still today, and
+  // the exclusive end would leave today's running total out.
+  const endCivil = utcMsToCivil(
+    civilToUtcMs(civilDateInTz(now, query.tz)) + DAY_MS,
+  );
 
   let requestCount = 0;
 
