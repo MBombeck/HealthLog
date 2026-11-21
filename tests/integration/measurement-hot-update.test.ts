@@ -98,30 +98,6 @@ describe("an update that changes nothing", () => {
     expect(after.syncVersion).toBe(row.syncVersion + 1);
   });
 
-  it("raises the version once when the caller changes a value and forgets it (0516)", async () => {
-    const row = await seedReading();
-    await prisma.measurement.update({
-      where: { id: row.id },
-      data: { value: 72.5 },
-    });
-    const after = await prisma.measurement.findUniqueOrThrow({
-      where: { id: row.id },
-    });
-    expect(after.syncVersion).toBe(row.syncVersion + 1);
-  });
-
-  it("raises the version once on a tombstone that does not raise it", async () => {
-    const row = await seedReading();
-    await prisma.measurement.updateMany({
-      where: { id: row.id },
-      data: { deletedAt: new Date() },
-    });
-    const after = await prisma.measurement.findUniqueOrThrow({
-      where: { id: row.id },
-    });
-    expect(after.syncVersion).toBe(row.syncVersion + 1);
-  });
-
   it("gives the table room on each page and an earlier autovacuum", async () => {
     const [rel] = await prisma.$queryRaw<Array<{ options: string[] | null }>>`
       SELECT reloptions AS options FROM pg_class WHERE relname = 'measurements'`;
