@@ -207,6 +207,106 @@ worker container that start together wait for each other on an advisory lock
 and derive the same password. Going back to 1.46 runs as the owner, as 1.46
 always did, and finds nothing in the queue schema it did not create.
 
+### v1.49.0 notes
+
+The sequence above covers this release, with one possible stop (`0517`, see
+below). It brings twenty migrations, `0514` to `0537` (`0516`, `0523`,
+`0527` and `0528` do not exist). Copy the pre-migration dump of step 0 off
+the host before you start: it is the way back.
+
+Three migrations change data:
+
+- `0515` merges doses recorded twice for one slot. Of each slot's live rows
+  it keeps the one that records a take, else a skip, else the oldest pending
+  row, and soft-deletes the rest (clearing `deleted_at` restores one). It
+  clears the auto-miss mark on doses that were taken or skipped, installs a
+  trigger that keeps it cleared, rewrites legacy single-time schedules with a
+  dose window into `times_of_day` and `dose_windows`, and replaces the
+  slot's unique index `(user_id, medication_id, scheduled_for, source)` with
+  one on `(user_id, medication_id, scheduled_for)`: one live dose per slot,
+  whoever writes it.
+- `0517` makes e-mail address and username unique regardless of case. When
+  two accounts already share one, it stops before changing anything and the
+  container does not start; see "Accounts that differ only in case" above.
+  Existing addresses are not rewritten; new and changed ones are stored in
+  lower case. It also drops six duplicate indexes, builds four small
+  retention indexes, and adds a shape CHECK to day keys stored as text. A
+  column holding a key that does not fit gets the CHECK `NOT VALID` and the
+  count as a warning, instead of a failed start.
+- `0529` lowers APNs device tokens. Where two devices hold one token in
+  different case, the one seen most recently keeps it; the other loses its
+  token and registers again on its next launch.
+
+The rest is additive: enum values for Apple Health workout effort and sport
+quantities (`0514`, `0519`), nullable columns or columns with a default
+(`0520`, `0521`, `0525`, `0526`, `0530`, `0533`, `0536`, `0537`), and new
+tables (`0522`, `0524`, `0531`, `0532`, `0534`, `0535`). `0518` builds an
+index on `measurements` `CONCURRENTLY` at boot. Writes carry on, but on a
+very large table the build can take a while; the app's healthcheck allows
+ten minutes for the start. If it is interrupted, see "A concurrent index
+build that failed" above.
+
+New variables, all optional and on the compose whitelist:
+`HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS` (a WebDAV or Nextcloud server on
+your own network for the scheduled Health Connect fetch), and
+`PUSH_RELAY_MODE`, `PUSH_RELAY_URL`, `PUSH_RELAY_KEYS`,
+`PUSH_RELAY_LIVE_ACTIVITY` ([push-relay.md](../integrations/push-relay.md)).
+The relay is off until an admin turns it on in Admin > Services, and Live
+Activity start and update go over it only with `PUSH_RELAY_LIVE_ACTIVITY=on`
+and a second consent on the device. `pnpm check-env` reports all five.
+
+Steps:
+
+1. Before the update, check for accounts that differ only in case with the
+   query under "Accounts that differ only in case". Resolve any pair first,
+   and `0517` will not stop the start.
+2. Follow the sequence above.
+3. List the day-key columns `0517` could only check `NOT VALID`. Nothing
+   breaks, but those rows were written in a wrong shape and are worth a look:
+
+   ```sh
+   docker compose exec db psql -U healthlog -c "
+     SELECT conrelid::regclass AS table_name, conname FROM pg_constraint
+      WHERE conname LIKE '%\\_day\\_key\\_shape' AND NOT convalidated"
+   ```
+
+Rollback to v1.48.5: restore the pre-migration dump with the v1.48.5 image
+(disaster-recovery.md, "Going back to before a migration"). Anything written
+since the update is lost, so decide early. Switching the image back alone is
+not enough:
+
+- After `0515`, v1.48.5 writes a dose for a slot another source already
+  holds as a second row, and the new index refuses it, so that write fails.
+- After `0529`, v1.48.5 stores an APNs token in the case the app sends it,
+  and the index on `lower(apns_token)` refuses a token another device
+  already holds in other letters.
+- Readings of the new measurement types (`WORKOUT_EFFORT_SCORE`,
+  `ESTIMATED_WORKOUT_EFFORT_SCORE`, `PHYSICAL_EFFORT`, `CYCLING_DISTANCE`,
+  `ROWING_DISTANCE`, `ROWING_SPEED`, `RUNNING_SPEED`, `RUNNING_POWER`,
+  `RUNNING_GROUND_CONTACT_TIME`, `RUNNING_VERTICAL_OSCILLATION`,
+  `RUNNING_STRIDE_LENGTH`) may not decode in the v1.48.5 image, whose client
+  does not know them.
+
+Every other migration is harmless to the old image, which ignores what it
+does not know. If the dump is gone, or too much has been written since,
+switch the image back only after these three steps, run as the database
+owner, and expect the merged doses and lowered tokens to stay as they are:
+
+```sql
+DROP INDEX IF EXISTS "medication_intake_events_user_med_slot_live_key";
+CREATE UNIQUE INDEX IF NOT EXISTS "medication_intake_events_user_med_slot_source_live_key"
+  ON "medication_intake_events" ("user_id", "medication_id", "scheduled_for", "source")
+  WHERE "deleted_at" IS NULL;
+DROP INDEX IF EXISTS "devices_apns_token_lower_unique";
+```
+
+and check that no reading of the new types exists
+(`SELECT type, count(*) FROM measurements WHERE type IN (…) GROUP BY type`
+with the eleven names above). If any do, stay on v1.49.0 or move those rows
+aside, as described for v1.48.2. The next upgrade to v1.49.0 does not
+rebuild the two dropped indexes, since its migrations are already on
+record; build them again by hand with the definitions in `0515` and `0529`.
+
 ### v1.48.4 notes
 
 No migration and no step by hand for the symptom change. The cap on active
