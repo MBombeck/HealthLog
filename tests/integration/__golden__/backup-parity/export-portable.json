@@ -80,6 +80,9 @@
       "reportSelectionJson": {
         "roundTrip": "rt-User-reportSelectionJson"
       },
+      "reportScheduleJson": {
+        "roundTrip": "rt-User-reportScheduleJson"
+      },
       "globalExcludedInjectionSites": [
         "THIGH_LEFT"
       ],
@@ -103,6 +106,9 @@
         "roundTrip": "rt-User-aiNamedChains"
       },
       "aiResponseTimeoutSeconds": 3,
+      "aiCoachBudgets": {
+        "roundTrip": "rt-User-aiCoachBudgets"
+      },
       "useCentralCodex": true,
       "insightsPrivacyMode": "raw",
       "insightsExcludeMetrics": [
@@ -435,6 +441,7 @@
         "takenAt": "2026-07-01T08:04:00.000Z",
         "skipped": true,
         "source": "API",
+        "takenVia": "WEB",
         "autoRecorded": true
       },
       {
@@ -445,6 +452,7 @@
         "takenAt": "2026-06-22T07:06:00.000Z",
         "skipped": false,
         "source": "WEB",
+        "takenVia": null,
         "autoRecorded": false
       }
     ],
@@ -537,7 +545,12 @@
       "predictionEnabled": false,
       "rawChartMode": true,
       "discreetNotifications": true,
-      "sensitiveCategoryEncryption": false
+      "sensitiveCategoryEncryption": false,
+      "reproductiveState": "PREGNANT",
+      "pregnancyStartDate": "2026-03-02",
+      "pregnancyDueDate": "2026-12-07",
+      "deliveryDate": "2026-11-30",
+      "postpartumWeeks": 3
     },
     "cycles": [],
     "cycleDayLogs": [
@@ -1950,6 +1963,9 @@
       "reportSelectionJson": {
         "roundTrip": "rt-User-reportSelectionJson"
       },
+      "reportScheduleJson": {
+        "roundTrip": "rt-User-reportScheduleJson"
+      },
       "globalExcludedInjectionSites": [
         "THIGH_LEFT"
       ],
@@ -1971,6 +1987,9 @@
       },
       "aiNamedChains": {
         "roundTrip": "rt-User-aiNamedChains"
+      },
+      "aiCoachBudgets": {
+        "roundTrip": "rt-User-aiCoachBudgets"
       },
       "aiResponseTimeoutSeconds": 3,
       "useCentralCodex": true,
@@ -2305,7 +2324,8 @@
         "takenAt": "2026-07-01T08:04:00.000Z",
         "skipped": true,
         "autoRecorded": true,
-        "source": "API"
+        "source": "API",
+        "takenVia": "WEB"
       },
       {
         "ref": "<id:8>",
@@ -2315,7 +2335,8 @@
         "takenAt": "2026-06-22T07:06:00.000Z",
         "skipped": false,
         "autoRecorded": false,
-        "source": "WEB"
+        "source": "WEB",
+        "takenVia": null
       }
     ],
     "moodEntries": [
@@ -2375,7 +2396,12 @@
       "predictionEnabled": false,
       "rawChartMode": true,
       "discreetNotifications": true,
-      "sensitiveCategoryEncryption": false
+      "sensitiveCategoryEncryption": false,
+      "reproductiveState": "PREGNANT",
+      "pregnancyStartDate": "2026-03-02",
+      "pregnancyDueDate": "2026-12-07",
+      "deliveryDate": "2026-11-30",
+      "postpartumWeeks": 3
     },
     "cycles": [],
     "cycleDayLogs": [

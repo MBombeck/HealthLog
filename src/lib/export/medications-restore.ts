@@ -560,6 +560,7 @@ async function restoreIntakeEvents(
         autoRecorded: e.autoRecorded ?? false,
         attributionSource: e.attributionSource ?? "AUTO",
         source: e.source ?? "WEB",
+        takenVia: e.takenVia ?? null,
         idempotencyKey: e.idempotencyKey ?? null,
         ...(e.createdAt ? { createdAt: new Date(e.createdAt) } : {}),
         injectionSite: e.injectionSite ?? null,
