@@ -1565,7 +1565,8 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       summary: "Rotate refresh token (one-time use)",
       description:
         "Reuse of a consumed refresh token revokes every refresh token still active for the originating device (per-device blast radius from v1.4.23). Legacy tokens issued before v1.4.23 with a null deviceId fall back to revoke-all-for-user.\n\n" +
-        "On a 401, `meta.errorCode` is a stable machine code so the client can branch terminal re-auth from a transient blip without parsing the prose `error`: `auth.refresh.reuse` (a consumed token was replayed — device family revoked, re-pair required), `auth.refresh.revoked` (family revoked out-of-band — re-pair required), `auth.refresh.invalid` (not found / expired — drop the token and re-authenticate).",
+        "On a 401, `meta.errorCode` is a stable machine code so the client can branch terminal re-auth from a transient blip without parsing the prose `error`: `auth.refresh.reuse` (a consumed token was replayed — device family revoked, re-pair required), `auth.refresh.revoked` (family revoked out-of-band — re-pair required), `auth.refresh.invalid` (not found / expired — drop the token and re-authenticate).\n\n" +
+        "A 409 with `meta.errorCode` = `auth.refresh.superseded` (v1.48.6) answers the loser of two concurrent refreshes with the same token: the other request rotated it, nothing is revoked, and its pair is live. Not terminal: read the credentials the winning request stored and continue. Do not present this refresh token again, since that is a replay and revokes the device family. Before v1.48.6 this case answered 401 `auth.refresh.reuse`.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: refreshRequest } },
@@ -1587,6 +1588,11 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
+        "409": {
+          description:
+            "`meta.errorCode` = `auth.refresh.superseded`: a concurrent refresh with the same token won. Nothing is revoked; read the newest stored credentials and do not retry with this token.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
       },
     },
   },

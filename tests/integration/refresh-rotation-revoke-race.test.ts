@@ -131,6 +131,59 @@ describe("refresh rotation — revocation landing between read and consume", () 
     expect(await bearerVerdict(result.bundle.accessToken)).toBe("accepted");
   });
 
+  it("answers the loser of two concurrent rotations as superseded and keeps the winner live", async () => {
+    const user = await seedUser("race-sibling");
+    const phone = await issueAccessAndRefresh({
+      userId: user.id,
+      policy: NATIVE_POLICY,
+      deviceId: DEVICE_ID,
+      source: "test",
+    });
+
+    // Inside the loser's window (after it read the row as live and minted its
+    // pair, before it marks the row consumed), a sibling rotation with the
+    // same token runs to completion and wins. The second lookup the loser
+    // makes is the one that fetches its new row's id, exactly that window.
+    const original = prisma.refreshToken.findUnique.bind(prisma.refreshToken);
+    let winner: Awaited<ReturnType<typeof rotateRefreshToken>> | null = null;
+    let raced = false;
+    let lookups = 0;
+    const hook = vi
+      .spyOn(prisma.refreshToken, "findUnique")
+      .mockImplementation((async (args: unknown) => {
+        lookups++;
+        if (lookups === 2 && !raced) {
+          raced = true;
+          hook.mockImplementation(original as never);
+          winner = await rotateRefreshToken({
+            refreshToken: phone.refreshToken,
+            policy: NATIVE_POLICY,
+            deviceId: DEVICE_ID,
+          });
+        }
+        return original(args as never);
+      }) as never);
+
+    const loser = await rotateRefreshToken({
+      refreshToken: phone.refreshToken,
+      policy: NATIVE_POLICY,
+      deviceId: DEVICE_ID,
+    });
+    hook.mockRestore();
+
+    expect(raced).toBe(true);
+    expect(loser).toEqual({ ok: false, reason: "superseded" });
+    const won = winner as Awaited<ReturnType<typeof rotateRefreshToken>> | null;
+    expect(won?.ok).toBe(true);
+    if (!won?.ok) return;
+    // Nothing was revoked: the winner's pair is the live login.
+    expect(await bearerVerdict(won.bundle.accessToken)).toBe("accepted");
+    const live = await getPrismaClient().refreshToken.findMany({
+      where: { userId: user.id, revokedAt: null, usedAt: null },
+    });
+    expect(live).toHaveLength(1);
+  });
+
   it("still reports a plain double-consume as already_used", async () => {
     const user = await seedUser("race-double");
     const phone = await issueAccessAndRefresh({
