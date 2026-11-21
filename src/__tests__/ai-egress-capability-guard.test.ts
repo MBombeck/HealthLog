@@ -26,9 +26,23 @@ import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
+/**
+ * The chain runners: every `run…` function `provider-runner.ts` exports. Read
+ * from the module rather than kept by hand, because a hand-kept list is how
+ * the streaming runner stayed invisible here until v1.48.6: the matcher named
+ * the plain runner and a runner that no longer exists, and the two files that
+ * stream a chain were neither matched nor listed.
+ */
+const CHAIN_RUNNERS = [
+  ...stripComments(
+    readFileSync(join(SRC, "lib/ai/provider-runner.ts"), "utf8"),
+  ).matchAll(/export\s+async\s+function\s+(run\w*)\s*\(/g),
+].map((m) => m[1]!);
+
 /** A provider call: a client's completion (plain or streamed), or a chain runner. */
-const EGRESS_CALL =
-  /\.generateCompletion(?:Stream)?\s*\(|\brunRawCompletionWithFallback\s*\(|\brunWithFallback\s*\(/;
+const EGRESS_CALL = new RegExp(
+  `\\.generateCompletion(?:Stream)?\\s*\\(|\\b(?:${CHAIN_RUNNERS.join("|")})\\s*\\(`,
+);
 
 /**
  * A capability read in the same file: one of the gates, or the wire re-check
@@ -77,11 +91,22 @@ const EGRESS_SITES: Record<string, EgressSite> = {
       "AI-composed nudges call the first chain entry directly; the composer re-checks `coach` before the chain.",
   },
 
+  "lib/documents/fenced-chat.ts": {
+    recheck: true,
+    reason:
+      "The fenced document and Coach chat streams a chain; it re-checks the wire (`assertAiEgress`) for the picked provider before the stream opens.",
+  },
+
   // ── Admitted by the one caller that reaches them ───────────────────────
+  "lib/ai/coach/turn/model.ts": {
+    recheck: false,
+    reason:
+      "The Coach turn's streamed model call; reached only through the chat route, which gates on `coach` (`requireAiCapability`) and checks consent for the chain.",
+  },
   "lib/insights/briefing-provider.ts": {
     recheck: false,
     reason:
-      "Reached only through generateComprehensiveInsight, which re-checks `briefing` before the chain is resolved.",
+      "Reached through generateComprehensiveInsight, which re-checks `briefing` before the chain is resolved, and through the on-demand briefing request (`lib/insights/briefing-request/completion.ts`), which the generate route gates on `briefing` (`requireAiCapability`).",
   },
   "lib/ai/coach/tools/loop.ts": {
     recheck: false,
@@ -230,6 +255,23 @@ describe("every kind of background run re-checks before its read", () => {
 
 describe("AI egress call sites", () => {
   const found = sourceFiles().filter((rel) => EGRESS_CALL.test(code(rel)));
+
+  it("reads both chain runners out of provider-runner.ts", () => {
+    expect(CHAIN_RUNNERS).toEqual(
+      expect.arrayContaining([
+        "runRawCompletionWithFallback",
+        "runStreamingRawCompletionWithFallback",
+      ]),
+    );
+  });
+
+  it.each(CHAIN_RUNNERS)("%s has at least one matched caller", (runner) => {
+    const call = new RegExp(`\\b${runner}\\s*\\(`);
+    const callers = found.filter(
+      (rel) => rel !== "lib/ai/provider-runner.ts" && call.test(code(rel)),
+    );
+    expect(callers.length).toBeGreaterThan(0);
+  });
 
   it("finds provider calls at all (an empty matcher is a failure, not a pass)", () => {
     expect(found.length).toBeGreaterThan(5);
