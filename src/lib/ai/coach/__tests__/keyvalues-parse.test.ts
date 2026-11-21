@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  parseKeyValuesSentinel,
-  tryParseKeyValueLine,
-} from "../keyvalues";
+import { parseKeyValuesSentinel, tryParseKeyValueLine } from "../keyvalues";
 
 /** The line parser's success value, or null on any failure. */
 function parseKeyValueLine(line: string) {

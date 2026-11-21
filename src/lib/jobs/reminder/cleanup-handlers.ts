@@ -162,8 +162,8 @@ export async function handlePushAttemptCleanup(
       // account-deletion: retention ages delivery ledger rows out whatever their account's state.
       const deletedAttempts = await purgeInBatches({
         findIds: async (take) =>
+          // account-deletion: retention, as above.
           (
-            // account-deletion: retention, as above.
             await p.pushAttempt.findMany({
               where: { createdAt: { lt: cutoff } },
               select: { id: true },

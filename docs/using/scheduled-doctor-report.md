@@ -16,7 +16,7 @@ that reads them.
   selected, nothing is filed and the card says so.
 
 Within the hour after a period ends, the report for it is rendered and
-stored as a document of the kind *Doctor report*, dated the last day of the
+stored as a document of the kind _Doctor report_, dated the last day of the
 period and titled with the period (`Doctor report 2026-10`). Turning the
 schedule on files the period that ended most recently on the next run.
 

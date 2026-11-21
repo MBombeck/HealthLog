@@ -47,8 +47,8 @@ export async function cleanupOldCoachMessages(
   // account-deletion: retention ages rows out whatever their account's state; a frozen record keeps no more than an active one.
   const { deleted } = await purgeInBatches({
     findIds: async (take) =>
+      // account-deletion: retention, as above.
       (
-        // account-deletion: retention, as above.
         await prisma.coachMessage.findMany({
           where: { createdAt: { lt: cutoff } },
           select: { id: true },
