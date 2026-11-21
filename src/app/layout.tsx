@@ -182,6 +182,11 @@ export default async function RootLayout({
  * null the shell fetches the payload itself, exactly as before.
  */
 async function serverAccount(): Promise<MePayload | null> {
+  // The server-prefetch escape hatch covers the account too: with
+  // `DASHBOARD_SSR_PREFETCH=false` every page falls back to pure client
+  // fetching, the shell included. The e2e server sets it so Playwright route
+  // mocks, which only see client fetches, decide the account a page renders.
+  if (process.env.DASHBOARD_SSR_PREFETCH === "false") return null;
   try {
     const session = await getSession();
     if (!session) return null;
