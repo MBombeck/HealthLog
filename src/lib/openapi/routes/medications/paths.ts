@@ -218,7 +218,7 @@ const bulkIntakeEntryResult = z
     status: z
       .enum(["inserted", "updated", "duplicate", "alreadyTaken", "skipped"])
       .describe(
-        "`inserted`/`updated`/`duplicate` — the row landed (advance the cursor); `duplicate` is an idempotent replay of an entry already stored, nothing else. `alreadyTaken` — the slot already holds a take recorded by another writer or another key: nothing was written, no stock consumed; `intake` is the recorded row, `takenAt` and `takenVia` say when and how it was taken. Advance the cursor and warn before a second dose. `skipped` — not stored; see `reason`.",
+        "`inserted`/`updated`/`duplicate` — the row landed (advance the cursor); `duplicate` is an idempotent replay of an entry already stored, nothing else. `alreadyTaken` — the slot already holds a take recorded by another writer or another key, and this entry was a take or a skip: nothing was written, no stock consumed or refunded; `intake` is the recorded row, `takenAt` and `takenVia` say when and how it was taken. Advance the cursor and warn before a second dose. `skipped` — not stored; see `reason`.",
       ),
     reason: z
       .string()
@@ -1631,7 +1631,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "200": {
           description:
-            "Idempotent replay — the original event is returned without creating a new row. Also a repeat: a take that names no slot, for a slot already holding a take recorded within two hours, returns that row with `alreadyTaken: true` and writes nothing.",
+            "Idempotent replay — the original event is returned without creating a new row. Also a repeat: a take that names no slot, for a slot already holding a take recorded within two hours, returns that row with `alreadyTaken: true` and writes nothing. A take or a skip that names a slot already holding a take answers the same way: the first take is never overwritten from here, and a deliberate change of a recorded take goes through the row (`POST /api/medications/intake`, `PUT /api/medications/{id}/intake/{eventId}`).",
           content: {
             "application/json": {
               schema: dataEnvelope(

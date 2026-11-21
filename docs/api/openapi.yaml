@@ -8489,7 +8489,9 @@ paths:
         "200":
           description: "Idempotent replay — the original event is returned without creating a new row. Also a repeat: a take that
             names no slot, for a slot already holding a take recorded within two hours, returns that row with
-            `alreadyTaken: true` and writes nothing."
+            `alreadyTaken: true` and writes nothing. A take or a skip that names a slot already holding a take answers
+            the same way: the first take is never overwritten from here, and a deliberate change of a recorded take goes
+            through the row (`POST /api/medications/intake`, `PUT /api/medications/{id}/intake/{eventId}`)."
           content:
             application/json:
               schema:
@@ -62483,9 +62485,9 @@ components:
             - skipped
           description: "`inserted`/`updated`/`duplicate` — the row landed (advance the cursor); `duplicate` is an idempotent
             replay of an entry already stored, nothing else. `alreadyTaken` — the slot already holds a take recorded by
-            another writer or another key: nothing was written, no stock consumed; `intake` is the recorded row,
-            `takenAt` and `takenVia` say when and how it was taken. Advance the cursor and warn before a second dose.
-            `skipped` — not stored; see `reason`."
+            another writer or another key, and this entry was a take or a skip: nothing was written, no stock consumed
+            or refunded; `intake` is the recorded row, `takenAt` and `takenVia` say when and how it was taken. Advance
+            the cursor and warn before a second dose. `skipped` — not stored; see `reason`."
         reason:
           description: "Why a `skipped` entry was not stored. Among others: `medication_not_found`, `unstable_external_id`,
             `force_slot_invalid`, `force_slot_occupied`, `injection_site_not_allowed`, and (v1.42.0)
@@ -64036,9 +64038,9 @@ components:
             propagate deletions.
         alreadyTaken:
           type: boolean
-          description: "True when this POST reported a dose already recorded: the slot it binds to already holds a take. Nothing
-            was written and no stock was consumed; the body is the recorded row, so `takenAt` and `takenVia` say when
-            and how. False on a fresh dose (201) and on an idempotency replay (200)."
+          description: "True when this POST reported a dose already recorded, or skipped one: the slot it binds to already holds a
+            take. Nothing was written and no stock was consumed; the body is the recorded row, so `takenAt` and
+            `takenVia` say when and how. False on a fresh dose (201) and on an idempotency replay (200)."
       required:
         - id
         - userId

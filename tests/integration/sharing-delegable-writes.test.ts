@@ -1213,17 +1213,28 @@ describe("POST /api/medications/[id]/intake — the slot upsert is not a way rou
     expect(row.skipped).toBe(false);
   });
 
-  it("still lets the owner correct their own dose", async () => {
+  it("still lets the owner correct their own dose, through the row", async () => {
     const owner = await makeUser("owner");
     const { medicationId, slot, eventId } = await seedTakenSlot(owner.id);
     await signIn(owner.id);
 
-    const response = await postIntake(medicationId, {
+    // A skip through the slot is stale by construction (the slot holds a
+    // take), so it answers alreadyTaken and changes nothing.
+    const stale = await postIntake(medicationId, {
       skipped: true,
       scheduledFor: slot.toISOString(),
     });
+    expect(stale.status).toBe(200);
+    expect(
+      ((await payload(stale)).data as { alreadyTaken?: boolean }).alreadyTaken,
+    ).toBe(true);
 
-    expect([200, 201]).toContain(response.status);
+    const { POST } = await import("@/app/api/medications/intake/route");
+    const response = await post(POST as Handler, "/api/medications/intake", {
+      intakeId: eventId,
+      status: "skipped",
+    });
+    expect(response.status).toBe(200);
     const row = await getPrismaClient().medicationIntakeEvent.findUniqueOrThrow(
       { where: { id: eventId }, select: { skipped: true } },
     );

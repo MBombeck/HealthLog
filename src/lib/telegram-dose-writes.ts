@@ -283,7 +283,9 @@ export async function markMedicationTaken(
 
 /**
  * Record a Telegram "skip" on the dose the reminder message names, or on the
- * band the skip moment falls in. Idempotent per message.
+ * band the skip moment falls in. Idempotent per message. A skip on a slot
+ * that already holds a take (an old reminder button after the pill box
+ * recorded the dose) writes nothing and answers `alreadyTaken`.
  */
 export async function markMedicationSkipped(input: {
   userId: string;
@@ -291,7 +293,7 @@ export async function markMedicationSkipped(input: {
   medicationId: string;
   chatId: string;
   messageId: number | undefined;
-}): Promise<void> {
+}): Promise<"skipped" | "alreadyTaken"> {
   const { userId, userTz, medicationId, chatId, messageId } = input;
   const msgId = messageId ?? "na";
   const idempotencyKey =
@@ -343,6 +345,7 @@ export async function markMedicationSkipped(input: {
     // P2002 trade-off as the take path — the rare create race rolls
     // back and Telegram's redelivery converges on the raced row.
     const writtenSkip = await prisma.$transaction(async (tx) => {
+      let alreadyTaken = false;
       let slotScheduledFor: Date;
       let eventId: string;
       if (canonicalSlot) {
@@ -358,6 +361,7 @@ export async function markMedicationSkipped(input: {
           idempotencyKey,
           createSource: "REMINDER",
         });
+        alreadyTaken = applied.alreadyTaken === true;
         slotScheduledFor = applied.row.scheduledFor;
         eventId = applied.row.id;
       } else {
@@ -387,8 +391,9 @@ export async function markMedicationSkipped(input: {
           data: { snoozedUntil: endOfDay },
         });
       }
-      return { slotScheduledFor, eventId };
+      return { slotScheduledFor, eventId, alreadyTaken };
     });
+    if (writtenSkip.alreadyTaken) return "alreadyTaken";
     skippedScheduledFor = writtenSkip.slotScheduledFor;
     // An explicit skip can downgrade a previously-taken
     // slot row (last-write-wins); refund whatever its consumption
@@ -424,4 +429,5 @@ export async function markMedicationSkipped(input: {
       tz: userTz,
     });
   }
+  return "skipped";
 }

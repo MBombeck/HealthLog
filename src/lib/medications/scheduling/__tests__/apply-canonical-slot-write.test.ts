@@ -194,7 +194,7 @@ describe("applyCanonicalSlotWrite — C2 no-downgrade", () => {
     expect(res.row.takenAt).not.toBeNull();
   });
 
-  it("an EXPLICIT skip still applies (last-write-wins) onto a taken slot", async () => {
+  it("an explicit skip onto a taken slot answers alreadyTaken and writes nothing", async () => {
     const taken = row({
       id: "taken-2",
       takenAt: new Date("2026-06-15T05:00:00Z"),
@@ -203,6 +203,25 @@ describe("applyCanonicalSlotWrite — C2 no-downgrade", () => {
     const client = makeClient({
       findManyResult: [[taken]],
       updateImpl: async (id) => row({ id, takenAt: null, skipped: true }),
+    });
+    const res = await applyCanonicalSlotWrite({
+      ...BASE,
+      client: client as unknown as UpsertClient,
+      takenAt: null,
+      skipped: true,
+      isExplicitTaken: false,
+      isExplicitSkip: true,
+    });
+    expect(res.alreadyTaken).toBe(true);
+    expect(res.row.id).toBe("taken-2");
+    expect(client.medicationIntakeEvent.update).not.toHaveBeenCalled();
+  });
+
+  it("an explicit skip still applies onto a skipped slot's take-less row", async () => {
+    const skippedRow = row({ id: "skipped-2", skipped: true, source: "WEB" });
+    const client = makeClient({
+      findManyResult: [[skippedRow]],
+      updateImpl: async (id) => row({ id, skipped: true }),
     });
     const res = await applyCanonicalSlotWrite({
       ...BASE,
@@ -306,8 +325,8 @@ describe("applyCanonicalSlotWrite — auto-miss reset", () => {
 
 describe("applyCanonicalSlotWrite — H1 deterministic selection", () => {
   it("updates the ACTIONED row, not the pending one, when both exist", async () => {
-    // Pending REMINDER row created first, taken WEB row created later. The
-    // upsert must converge onto the actioned (taken) row.
+    // Pending REMINDER row created first, skipped WEB row created later. The
+    // upsert must converge onto the actioned (skipped) row.
     const pending = row({
       id: "pending-old",
       source: "REMINDER",
@@ -316,7 +335,7 @@ describe("applyCanonicalSlotWrite — H1 deterministic selection", () => {
     const actioned = row({
       id: "taken-new",
       source: "WEB",
-      takenAt: new Date("2026-06-15T05:02:00Z"),
+      skipped: true,
       createdAt: new Date("2026-06-15T05:02:00Z"),
     });
     // findMany returns in (createdAt asc, id asc) order: pending first.
@@ -325,15 +344,15 @@ describe("applyCanonicalSlotWrite — H1 deterministic selection", () => {
       updateImpl: async (id) =>
         row({ id, takenAt: new Date("2026-06-15T05:05:00Z") }),
     });
-    // A skip is a decision that still applies over a take, so it writes;
+    // A take is a decision that still applies over a skip, so it writes;
     // it lands on the actioned row.
     const res = await applyCanonicalSlotWrite({
       ...BASE,
       client: client as unknown as UpsertClient,
-      takenAt: null,
-      skipped: true,
-      isExplicitTaken: false,
-      isExplicitSkip: true,
+      takenAt: new Date("2026-06-15T05:05:00Z"),
+      skipped: false,
+      isExplicitTaken: true,
+      isExplicitSkip: false,
     });
     expect(res.row.id).toBe("taken-new");
     const updateArg = vi.mocked(client.medicationIntakeEvent.update).mock

@@ -1663,7 +1663,7 @@ export const repeatedIntakeEventResource = medicationIntakeEventResource
     alreadyTaken: z
       .boolean()
       .describe(
-        "True when this POST reported a dose already recorded: the slot it binds to already holds a take. Nothing was written and no stock was consumed; the body is the recorded row, so `takenAt` and `takenVia` say when and how. False on a fresh dose (201) and on an idempotency replay (200).",
+        "True when this POST reported a dose already recorded, or skipped one: the slot it binds to already holds a take. Nothing was written and no stock was consumed; the body is the recorded row, so `takenAt` and `takenVia` say when and how. False on a fresh dose (201) and on an idempotency replay (200).",
       ),
   })
   .meta({ id: "RepeatedMedicationIntakeEvent" });
