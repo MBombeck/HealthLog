@@ -30,6 +30,7 @@ import {
 } from "@/lib/medications/scheduling/slot-upsert";
 import { consumeForIntake } from "@/lib/medications/inventory/consumption";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
+import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { isRecordOnly } from "@/lib/medications/intake-tracking";
 import { refuseUntrackedIntake } from "@/lib/medications/route-guards";
@@ -77,6 +78,23 @@ async function refuseUnauthenticated(request: NextRequest, message: string) {
  * Rate limit: 60 requests per minute per TOKEN (per client IP for a request
  * that presents no valid one).
  */
+/**
+ * The tails of an ingested dose, the same as a web take's: the caches (the
+ * ingest is an interactive dose record; the next read must reflect it rather
+ * than wait out the TTL), the cross-device intake sync (the hook is no
+ * device, so none is excluded), and the compliance rollup of its day.
+ */
+async function afterIngestedDose(input: {
+  userId: string;
+  medicationId: string;
+  scheduledFor: Date;
+  tz: string | null;
+}): Promise<void> {
+  invalidateUserMedications(input.userId, { evict: true });
+  queueMedicationIntakeSync({ userId: input.userId, originDeviceToken: null });
+  await refreshDoseSlot(input);
+}
+
 export const POST = apiHandler(async (request: NextRequest) => {
   annotate({ action: { name: "ingest.medication" } });
 
@@ -320,14 +338,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     },
   });
 
-  // v1.16.9 — the ingest is an interactive dose record; the next read
-  // (today feed, card pill, compliance heatmap) must reflect it rather
-  // than wait out the TTL.
-  invalidateUserMedications(apiToken.userId, { evict: true });
-
-  // v1.4.39 — refresh the compliance rollup for the ingested
-  // event's user-day.
-  await refreshDoseSlot({
+  await afterIngestedDose({
     userId: apiToken.userId,
     medicationId: medication.id,
     scheduledFor: event.scheduledFor,
