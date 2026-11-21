@@ -25,7 +25,10 @@ import {
   SETTINGS_LAYOUT_PAGES,
   SETTINGS_MODULE_PAGES,
 } from "@/lib/command-palette/settings-cards";
-import { PALETTE_SYNONYMS } from "@/lib/command-palette/synonyms";
+import {
+  PALETTE_SYNONYMS,
+  PALETTE_TASK_BOOST,
+} from "@/lib/command-palette/synonyms";
 
 /**
  * The command palette's index: every place and action this session may
@@ -59,6 +62,8 @@ export interface PaletteEntry {
   /** Where it sits, shown beside the title (a card's section). */
   hint?: string;
   keywords: ReadonlyArray<string>;
+  /** See `PALETTE_TASK_BOOST`. */
+  boost?: number;
   icon: LucideIcon;
   run: PaletteRun;
 }
@@ -106,6 +111,20 @@ const INSIGHTS_EXTRA: ReadonlyArray<{
   },
   { slug: "ecg", labelKey: "insights.navEcg" },
 ];
+
+/**
+ * The ranked hits with every module switch after every other hit. A switch
+ * shares its name with the task it gates ("Doctor report"), and Enter on it
+ * flips the module; a word typed to do the task must never land there first.
+ */
+export function tasksBeforeSwitches<T extends { run: PaletteRun }>(
+  ranked: ReadonlyArray<T>,
+): T[] {
+  return [
+    ...ranked.filter((entry) => entry.run.kind !== "module"),
+    ...ranked.filter((entry) => entry.run.kind === "module"),
+  ];
+}
 
 function keywordsFor(id: string, extra: ReadonlyArray<string> = []) {
   return [...extra, ...(PALETTE_SYNONYMS[id] ?? [])];
@@ -202,6 +221,7 @@ export function buildPaletteIndex(input: PaletteIndexInput): PaletteEntry[] {
       title,
       hint: t("nav.settings"),
       keywords: keywordsFor(id),
+      boost: PALETTE_TASK_BOOST[id],
       icon: section.icon,
       run: { kind: "href", href: `/settings/${section.slug}` },
     });

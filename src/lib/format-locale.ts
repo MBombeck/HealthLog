@@ -169,6 +169,13 @@ export interface Formatters {
   dateTime: (value: DateInput) => string;
   /** Time only, e.g. "14:30" or "2:30 PM" per the `timeFormat` preference. */
   time: (value: DateInput) => string;
+  /**
+   * A stored wall-clock time ("08:00", the `HH:mm` of a schedule, a dose
+   * window or a slot) in the same hour cycle as `time`, so a schedule time
+   * and an instant never sit side by side as "08:00" and "08:30 AM". A value
+   * that is not `HH:mm` comes back unchanged.
+   */
+  wallTime: (hhmm: string) => string;
   /** Short weekday + date, e.g. "Do., 19.02." / "Thu, Feb 19". */
   dateWithWeekday: (value: DateInput) => string;
   /**
@@ -331,6 +338,21 @@ export function makeFormatters(
         minute: "2-digit",
         ...hourOpts,
       }).format(asDate(value)),
+
+    wallTime: (hhmm) => {
+      const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm.trim());
+      if (!m) return hhmm;
+      const hour = Number(m[1]);
+      const minute = Number(m[2]);
+      if (hour > 23 || minute > 59) return hhmm;
+      // A fixed UTC day: only the wall-clock parts are read.
+      return getDateTimeFormat(intlLocale, {
+        timeZone: "UTC",
+        hour: "2-digit",
+        minute: "2-digit",
+        ...hourOpts,
+      }).format(new Date(Date.UTC(2000, 0, 1, hour, minute)));
+    },
 
     dateWithWeekday: (value) =>
       getDateTimeFormat(dateLocale, {

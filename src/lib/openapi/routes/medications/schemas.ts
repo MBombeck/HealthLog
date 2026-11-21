@@ -1248,6 +1248,17 @@ const doseHistoryRow = z
       "upcoming",
       "ad_hoc",
     ]),
+    state: z
+      .enum(["upcoming", "due", "overdue", "taken", "skipped", "missed"])
+      .nullable()
+      .describe(
+        "The slot's resolved dose state, the same vocabulary as the today rows and `complianceDisplay.currentDose`: an open slot (`status: upcoming`) reads `upcoming`, `due` or `overdue`. Null on an ad-hoc row.",
+      ),
+    takenLate: z
+      .boolean()
+      .describe(
+        "True when the take came after the on-time window; `state` is then `taken`.",
+      ),
     pinned: z
       .boolean()
       .optional()

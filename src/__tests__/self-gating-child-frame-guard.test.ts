@@ -49,8 +49,6 @@ const ALLOWED: Record<string, string> = {
     "The strip returns null on `!summary || summary.count <= 0` before drawing the card, the same condition the child gates on.",
   "components/insights/metric-stat-strip.tsx > CardContent > SeriesBlock":
     "Same card as the entry above.",
-  "components/medications/detail/medication-detail-tabs.tsx > div > PhasesRow":
-    "The padded row renders only under `isGlp1`, the condition the child returns null on.",
   "components/settings/ai/ai-usage-card.tsx > span > {cond} > span":
     "The bordered ring is the radio control itself and the dot inside marks the checked option; an empty ring is the unchecked look, not an empty frame.",
 };

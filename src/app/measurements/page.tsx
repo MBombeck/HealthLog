@@ -6,10 +6,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { useMounted } from "@/hooks/use-mounted";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
-import {
-  MeasurementForm,
-  resolveAddToken,
-} from "@/components/measurements/measurement-form";
+import { MeasurementForm } from "@/components/measurements/measurement-form";
+import { resolveAddToken } from "@/components/measurements/measurement-form-types";
 import { MeasurementList } from "@/components/measurements/measurement-list";
 import { CustomMetricList } from "@/components/custom-metrics/custom-metric-list";
 import { Button } from "@/components/ui/button";
@@ -208,6 +206,8 @@ export default function MeasurementsPage() {
             setReturnTo(null);
           }}
           footerSlot={footerEl}
+          // A deep link that returns somewhere else saves once and goes back.
+          chain={!returnTo}
         />
       </ResponsiveSheet>
 

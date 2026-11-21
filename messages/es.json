@@ -59,7 +59,12 @@
     "readThrottled": "Hay demasiadas solicitudes ahora mismo, así que vuelve a intentarlo más tarde.",
     "sessionEnded": "Tu sesión ha caducado, así que inicia sesión de nuevo para continuar.",
     "signIn": "Iniciar sesión",
-    "yes": "Sí"
+    "yes": "Sí",
+    "savedWithValue": "{label} {value} guardado",
+    "savedNamed": "{label} guardado",
+    "entryUndone": "Entrada eliminada",
+    "entryUndoFailed": "No se pudo eliminar la entrada.",
+    "note": "Nota"
   },
   "apiErrors": {
     "measurement": {
@@ -597,7 +602,7 @@
       "measurement": "Medición",
       "measurementDescription": "Peso, presión arterial, pulso y más",
       "medication": "Medicamento",
-      "medicationDescription": "Marcar una dosis como tomada",
+      "medicationDescription": "Registrar una dosis, tomada u omitida",
       "mood": "Estado de ánimo",
       "moodDescription": "Registra tu estado de ánimo y etiquetas",
       "workout": "Entrenamiento",
@@ -607,7 +612,8 @@
       "lifeEventDescription": "Una mudanza, un nacimiento, un nuevo trabajo",
       "lifeEvent": "Acontecimiento vital",
       "seizure": "Crisis",
-      "seizureDescription": "Inicia el cronómetro o registra una crisis no cronometrada"
+      "seizureDescription": "Inicia el cronómetro o registra una crisis no cronometrada",
+      "recentMeasurementDescription": "Medición registrada hace poco"
     },
     "cycle": "Ciclo",
     "labs": "Análisis",
@@ -784,14 +790,7 @@
     "quickAddLifeEvent": "Registrar acontecimiento vital",
     "customizeDashboard": "Personalizar panel",
     "medicationIntakeQuickAdd": {
-      "sheetDescription": "Registra dosis, hora y medicamento en unos pocos toques.",
-      "medicationLabel": "Medicamento",
-      "medicationPlaceholder": "Selecciona un medicamento",
-      "doseLabel": "Dosis",
-      "dosePlaceholder": "p. ej. 5 mg",
-      "doseHint": "Precargado con la dosis estándar. Edítala para registrar una dosis diferente solo para esta toma.",
-      "timeLabel": "Hora de la toma",
-      "saveError": "No se ha podido guardar la toma.",
+      "sheetDescription": "Registra una dosis tomada u omitida, también después.",
       "emptyTitle": "Aún no hay medicamentos",
       "emptyDescription": "Crea primero un medicamento con horario, después vuelve aquí para registrar la toma.",
       "emptyCta": "Añadir medicamento",
@@ -912,7 +911,6 @@
     "value": "Valor",
     "date": "Fecha",
     "source": "Fuente",
-    "notes": "Notas",
     "typeWeight": "Peso",
     "typeBloodPressure": "Presión arterial",
     "typeBpSys": "Sis",
@@ -1112,7 +1110,10 @@
     "typeAcuteTrainingLoad": "Carga de entrenamiento aguda",
     "sourceGarmin": "Garmin",
     "valueOutOfRange": "Introduce un valor entre {min} y {max} {unit}.",
-    "valueOutOfRangeNoUnit": "Introduce un valor entre {min} y {max}."
+    "valueOutOfRangeNoUnit": "Introduce un valor entre {min} y {max}.",
+    "lastValue": "Último: {value}, {when}",
+    "lastValueDeviates": "Muy distinto de tu última medición. ¿Es correcto?",
+    "saveAndNext": "Guardar y siguiente"
   },
   "metricCatalog": {
     "title": "Lo que HealthLog puede registrar",
@@ -1181,7 +1182,6 @@
     "previousPage": "Página anterior",
     "nextPage": "Página siguiente",
     "loginRequired": "Inicia sesión para ver tus estados de ánimo.",
-    "note": "Nota",
     "noteCollapse": "Contraer nota",
     "noteExpand": "Mostrar nota completa",
     "notePlaceholder": "Añade una nota sobre cómo te sientes…",
@@ -1482,7 +1482,7 @@
     "addMedication": "Añadir",
     "firstMedication": "Añadir el primer medicamento",
     "addChoice": {
-      "logIntake": "Registrar una toma",
+      "logIntake": "Registrar toma",
       "newMedication": "Nuevo medicamento"
     },
     "takeAllDue": {
@@ -1493,22 +1493,6 @@
       "successToast": "{count} tomas registradas",
       "partialToast": "{taken} registradas, {failed} fallidas. Inténtalo de nuevo",
       "failedToast": "No se registró ninguna toma. Inténtalo de nuevo"
-    },
-    "logIntake": {
-      "dialogTitle": "Registrar una toma",
-      "dialogDescription": "Registra una dosis de un medicamento existente. Puedes posfecharla a una fecha y hora pasadas.",
-      "medicationLabel": "Medicamento",
-      "slotLabel": "Franja del horario",
-      "slotNone": "Sin franja concreta",
-      "doseLabel": "Dosis",
-      "doseHint": "Precargado con la dosis del medicamento o de la franja. Edítala para registrar una dosis diferente solo para esta toma.",
-      "takenAtLabel": "Fecha y hora",
-      "takenAtHint": "Por defecto es ahora; elige una fecha y hora anteriores para registrar una dosis pasada.",
-      "skippedLabel": "Registrar como omitida",
-      "noMedications": "Añade primero un medicamento y luego podrás registrar tomas para él.",
-      "cancel": "Cancelar",
-      "submit": "Registrar toma",
-      "slotError": "No se pudo asignar una hora al intervalo seleccionado. Elige otro intervalo o «Sin intervalo específico»."
     },
     "emptyTitle": "Aún no hay medicamentos",
     "emptyDescription": "Crea medicamentos, dosis y franjas horarias para registrar el cumplimiento.",
@@ -1581,11 +1565,8 @@
     },
     "withoutNotification": "Sin notificación",
     "pausedSince": "En pausa desde",
-    "takeNow": "Tomar ahora",
     "lastDoseYesterday": "Última dosis ayer",
     "lastDoseDaysAgo": "Última dosis hace {count} días",
-    "overdue": "Vencida",
-    "veryOverdue": "Muy vencida",
     "complianceWindow": "Cumplimiento {days} días",
     "complianceUnavailable": "No se pudo cargar el cumplimiento",
     "complianceNotApplicable": "El cumplimiento no es aplicable",
@@ -1594,17 +1575,13 @@
     "complianceInfoLabel": "¿Qué significa el cumplimiento?",
     "lastIntake": "Última toma:",
     "nextIntake": "Próxima toma:",
-    "nextIntakeOverdue": "Atrasada desde {time}, aún se puede tomar",
     "dayStreak": "días de racha",
     "dayStreakOne": "día de racha",
     "cycleDueToday": "Pendiente hoy",
     "cycleNoClosedCycles": "Aún no hay ciclos de dosis completados",
-    "taken": "Tomada",
-    "skipped": "Omitida",
-    "intakeToastTaken": "{name} registrada como tomada",
-    "intakeToastSkipped": "{name} omitida",
+    "intakeToastTaken": "{name}: tomada, {time}",
+    "intakeToastSkipped": "{name}: omitida",
     "intakeToastFailed": "No se pudo registrar {name}; inténtalo de nuevo",
-    "intakeUndo": "Deshacer",
     "intakeUndone": "Entrada revertida",
     "intakeAlreadyTaken": "{name} ya estaba registrado como tomado. No se guardó nada nuevo.",
     "intakeUndoFailed": "No se pudo deshacer; corrígelo en el historial",
@@ -2021,12 +1998,12 @@
     "sideEffectTagAppetiteLoss": "Pérdida de apetito",
     "sideEffectTagHeartburn": "Ardor de estómago",
     "sideEffectTagHeadache": "Dolor de cabeza",
-    "phaseConfig": "Fases de recordatorio",
-    "phaseConfigDescription": "Configura los momentos de los recordatorios.",
-    "phaseGreen": "Verde",
-    "phaseYellow": "Amarillo",
-    "phaseOrange": "Naranja",
-    "phaseRed": "Rojo",
+    "phaseConfig": "Momentos de los recordatorios",
+    "phaseConfigDescription": "Cuándo llega cada recordatorio y cuándo una dosis cuenta como perdida.",
+    "phaseGreen": "Es la hora",
+    "phaseYellow": "Aún es la hora",
+    "phaseOrange": "Atrasada",
+    "phaseRed": "Perdida",
     "phaseMinutes": "Mín",
     "phasePercent": "%",
     "phaseResetDefaults": "Restablecer valores por defecto",
@@ -2046,8 +2023,6 @@
     "intakeHistoryColStatus": "Estado",
     "intakeHistoryColSource": "Fuente",
     "intakeHistoryInjectionSite": "Lugar de inyección: {site}",
-    "intakeHistoryStatusTaken": "Tomada",
-    "intakeHistoryStatusSkipped": "Omitida",
     "intakeHistorySortByTaken": "Ordenar por hora de toma",
     "intakeHistorySortByScheduled": "Ordenar por hora programada",
     "intakeHistoryPageInfo": "Página {page} de {total}, {count} entradas",
@@ -2103,9 +2078,6 @@
         "selection": {
           "rowToggleLabel": "Seleccionar fila"
         },
-        "bulkDelete": {
-          "cancelButton": "Cancelar"
-        },
         "edit": {
           "dialogTitle": "Editar toma",
           "takenAtLabel": "Tomada a las",
@@ -2118,11 +2090,9 @@
           "failed": "No se pudo actualizar la toma."
         },
         "deleteRow": {
-          "confirmTitle": "¿Eliminar esta toma?",
-          "confirmBody": "La entrada se elimina de forma permanente.",
-          "confirmAction": "Eliminar",
           "toast": "Toma eliminada",
-          "failed": "No se pudo eliminar la toma."
+          "failed": "No se pudo eliminar la toma.",
+          "restored": "Toma restaurada"
         },
         "viewRecent90": "Últimos 90 días",
         "viewAll": "Historial completo",
@@ -2133,11 +2103,8 @@
         "loadError": "No se pudo cargar el historial.",
         "empty": "Aún no hay tomas en este periodo.",
         "summaryEmpty": "Aún no hay dosis que evaluar.",
-        "adherenceLabel": "Adherencia",
         "adherenceBarLabel": "{onTime} a tiempo, {late} con retraso, {missed} omitidas",
-        "add": "Entrada",
-        "markTaken": "Tomada",
-        "markSkipped": "Saltada",
+        "add": "Registrar toma",
         "rowActionsLabel": "Acciones para {time}",
         "markAsTaken": "Marcar como tomada",
         "markAsSkipped": "Marcar como omitida",
@@ -2145,27 +2112,7 @@
         "takenDetail": "prevista {planned}, tomada {taken}",
         "doseTaken": "Dosis: {dose}",
         "status": {
-          "taken_on_time": "a tiempo",
-          "taken_late": "con retraso",
-          "skipped": "saltada",
-          "missed": "perdida",
-          "upcoming": "pendiente",
-          "ad_hoc": "fuera de horario"
-        },
-        "addDialog": {
-          "title": "Añadir toma",
-          "description": "Registra una dosis, también retroactiva o fuera de horario.",
-          "takenAtLabel": "Tomada a las",
-          "skippedLabel": "Saltada",
-          "nudgeHint": "Cerca del horario {slot}: al guardar te preguntamos si asignarla.",
-          "cancel": "Cancelar",
-          "submit": "Guardar"
-        },
-        "nudge": {
-          "title": "¿Asignar a este horario?",
-          "body": "Esta toma queda justo fuera de la ventana de {slot}. ¿Asignarla a ese horario o guardarla como entrada fuera de horario?",
-          "keepAdHoc": "Fuera de horario",
-          "pin": "Asignar"
+          "ad_hoc": "Fuera de horario"
         },
         "pin": {
           "action": "Asignar al horario de las {time}",
@@ -2189,20 +2136,22 @@
         "disabledToast": "Recordatorios desactivados",
         "toggleFailed": "No se pudo cambiar el ajuste de recordatorios.",
         "clientManagedChip": "Gestionado por el iPhone",
-        "clientManagedHint": "Tu iPhone gestiona los recordatorios de este medicamento."
+        "clientManagedHint": "Tu iPhone gestiona los recordatorios de este medicamento.",
+        "helperAutoRecorded": "Las dosis se registran automáticamente, así que no se envían recordatorios.",
+        "plan": "Próxima dosis {dose}: recordatorios mientras es la hora y cuando se atrasa. Se atrasa después de las {overdue}; después de las {missed} cuenta como perdida."
       },
       "settings": {
         "title": "Ajustes",
         "phases": {
-          "openButton": "Configurar fases",
-          "requiresCourseWindow": "Las fases están disponibles una vez fijado un periodo de tratamiento."
+          "openButton": "Ajustar"
         },
         "grace": {
           "label": "Ventana de recordatorio",
           "appliesToAllNote": "Se aplica a todos los horarios de este medicamento.",
           "unit": "minutos",
           "saved": "Ventana de recordatorio guardada",
-          "failed": "No se pudo guardar la ventana de recordatorio."
+          "failed": "No se pudo guardar la ventana de recordatorio.",
+          "description": "Cuánto tiempo siguen los recordatorios tras la hora de la dosis, antes del aviso de atraso."
         },
         "codes": {
           "label": "Códigos clínicos (ATC / RxNorm)",
@@ -2313,7 +2262,6 @@
         "supplyLabel": "Existencias",
         "supplyRunway": "Alcanza para unos {days} días más",
         "jumpToZeitplan": "Ver horario",
-        "jumpToVerlauf": "Ver historial",
         "jumpToBestand": "Ver existencias",
         "complianceTitle": "Adherencia",
         "complianceEmpty": "Aún no hay datos de adherencia."
@@ -2499,8 +2447,6 @@
     "tableStockDoses": "{count} dosis",
     "tableStockRunway": "≈ {days} días restantes",
     "cardLowStockRunway": "Reserva: ≈ {days} días",
-    "takeActionFor": "Tomar: {name}",
-    "skipActionFor": "Omitir: {name}",
     "reorderDescription": "Define el orden de tus medicamentos: se aplica a la vista de tarjetas y a la de tabla.",
     "reorderSaved": "Orden guardado",
     "reorderSaveFailed": "No se pudo guardar el orden",
@@ -2693,7 +2639,50 @@
       "saveError": "No se pudo guardar la composición",
       "catalogError": "No se pudo cargar la lista de nutrientes",
       "invalidRow": "Elige un nutriente e introduce una cantidad mayor que cero en cada línea."
-    }
+    },
+    "dose": {
+      "action": {
+        "take": "Tomar",
+        "skip": "Omitir",
+        "snooze": "Recordar más tarde ({minutes} min)",
+        "undo": "Deshacer",
+        "takeFor": "Tomar {name}",
+        "skipFor": "Omitir {name}"
+      },
+      "state": {
+        "pending": "Pendiente",
+        "due": "Es la hora",
+        "overdue": "Atrasada",
+        "taken": "Tomada",
+        "takenLate": "Tomada tarde",
+        "skipped": "Omitida",
+        "missed": "Perdida",
+        "missedStillCounts": "Si la tomas ahora, aún cuenta, como tardía.",
+        "snoozedUntil": "Recordatorio pospuesto hasta las {time}"
+      },
+      "snoozedToast": "{name}: te lo recordaremos a las {time}",
+      "snoozeFailed": "No se pudo posponer {name}. Inténtalo de nuevo"
+    },
+    "intakeForm": {
+      "title": "Registrar toma",
+      "description": "Registra una dosis tomada u omitida, también después.",
+      "medicationLabel": "Medicamento",
+      "outcomeLabel": "Qué pasó",
+      "timeLabel": "Hora",
+      "doseLabel": "Dosis",
+      "doseHint": "Precargada con la dosis prevista. Cámbiala solo si tomaste otra cantidad.",
+      "countsFor": "Cuenta para la dosis de las {time}.",
+      "countsForLate": "Cuenta para la dosis de las {time}, como tardía.",
+      "countNearLabel": "Contarla para la dosis de las {time}",
+      "skips": "Omite la dosis de las {time}.",
+      "extraDose": "Se registra como dosis extra, fuera del horario.",
+      "noMedications": "Añade primero un medicamento y luego podrás registrar tomas para él.",
+      "saveError": "No se pudo guardar la toma. Inténtalo de nuevo"
+    },
+    "phaseGreenHint": "Primer recordatorio, este tiempo antes de que termine la ventana de recordatorio.",
+    "phaseYellowHint": "Otro recordatorio, este tiempo antes de que termine la ventana.",
+    "phaseOrangeHint": "Un recordatorio de que la dosis está atrasada, este tiempo después de que terminó la ventana.",
+    "phaseRedHint": "Pasado este tiempo tras la ventana, la dosis cuenta como perdida."
   },
   "charts": {
     "loadingLabel": "Cargando la gráfica…",
@@ -5790,6 +5779,13 @@
             "description": "Los recordatorios del periodo y de la ventana fértil se activan por canal en la matriz de notificaciones.",
             "link": "Abrir la matriz de notificaciones"
           }
+        },
+        "snooze": {
+          "title": "Recordar más tarde",
+          "description": "Cuánto se pospone un recordatorio de dosis, en la tarjeta del medicamento, en Telegram y en la app.",
+          "label": "Posponer",
+          "option": "{minutes} min",
+          "saveError": "No se pudo guardar. Inténtalo de nuevo"
         }
       },
       "layout": {
@@ -9908,29 +9904,29 @@
     "askMedicationName": "Indica el medicamento, p. ej. <b>tomado Ramipril</b>.",
     "medicationNotFoundExact": "Medicamento no encontrado. Envía el nombre exactamente como aparece en HealthLog.",
     "helpHeader": "<b>Comandos disponibles:</b>",
-    "helpBody": "/help: mostrar esta ayuda\n/add: registrar una toma\n/start: iniciar el bot\n\n<b>Comandos de texto:</b>\ntaken &lt;nombre&gt;: confirmar una toma\n\n<b>Botones en los recordatorios:</b>\n• Tomado: confirmar la toma\n• 🕐 1h / 🕐 3h: posponer el recordatorio\n• ⏭ Omitir: omitir la toma\n• ✓ Confirmar: confirmar una toma omitida",
+    "helpBody": "/help: mostrar esta ayuda\n/add: registrar una toma\n/start: iniciar el bot\n\n<b>Comandos de texto:</b>\ntaken &lt;nombre&gt;: confirmar una toma\n\n<b>Botones en los recordatorios:</b>\n• ✅ Tomar: registrar la toma\n• 🕐 Recordar más tarde: posponer el recordatorio, según la duración de los ajustes\n• ⏭ Omitir: omitir la toma\n• Dejar como perdida: dejar una toma perdida como perdida",
     "measureValuePrompt": "Responde con el valor para registrarlo (opcional).",
     "buttonMeasureValue": "Valor…",
     "measureValueSaved": "Lectura guardada.",
     "measureValueInvalid": "Responde con un número para registrar una lectura.",
     "measureValueOutOfRange": "Ese valor está fuera del rango plausible.",
-    "measureValueExpired": "Esa solicitud ha caducado."
+    "measureValueExpired": "Esa solicitud ha caducado.",
+    "snoozeMinutes": "{minutes} min"
   },
   "medicationReminders": {
-    "phaseGreenTitle": "🟢 Recordatorio: {medName}",
-    "phaseGreenMessage": "🟢 Reminder:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nWindow closes in {minutes} Mín.",
-    "phaseYellowTitle": "🟡 Pronto: {medName}",
-    "phaseYellowMessage": "🟡 Pronto:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nQuedan {minutes} min.",
-    "phaseOrangeTitle": "🟠 Atrasado: {medName}",
-    "phaseOrangeMessage": "🟠 Overdue:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nOverdue by {minutes} Mín.",
-    "phaseRedTitle": "🔴 No tomado: {medName}",
-    "phaseRedMessage": "🔴 Aún no tomado:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nCuenta como omitido mientras no lo registres. Si lo tomas ahora, sigue contando, como dosis tardía.",
-    "buttonTaken": "Tomado",
-    "buttonConfirm": "Dejar como omitida",
-    "buttonTakenLate": "✅ Tomado (tarde)",
-    "buttonSnoozeOneHour": "🕐 1h",
-    "buttonSnoozeThreeHours": "🕐 3h",
-    "buttonSkip": "⏭ Omitir"
+    "phaseGreenTitle": "🟢 Es la hora: {medName}",
+    "phaseGreenMessage": "🟢 Es la hora:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nLa ventana se cierra en {minutes} min.",
+    "phaseYellowTitle": "🟡 Aún es la hora: {medName}",
+    "phaseYellowMessage": "🟡 Aún es la hora:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nQuedan {minutes} min en la ventana.",
+    "phaseOrangeTitle": "🟠 Atrasada: {medName}",
+    "phaseOrangeMessage": "🟠 Atrasada:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nAtrasada {minutes} min.",
+    "phaseRedTitle": "🔴 Perdida: {medName}",
+    "phaseRedMessage": "🔴 Perdida:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nSi la tomas ahora, aún cuenta, como tardía.",
+    "buttonTaken": "✅ Tomar",
+    "buttonConfirm": "Dejar como perdida",
+    "buttonTakenLate": "✅ Tomar (cuenta como tardía)",
+    "buttonSkip": "⏭ Omitir",
+    "buttonSnooze": "🕐 Recordar más tarde ({minutes} min)"
   },
   "lowStockReminders": {
     "title": "Quedan pocas existencias: {medName}",
@@ -10715,7 +10711,11 @@
       "valuesTitle": "{marker}: todas las lecturas",
       "valuesDescription": "Cada lectura de este biomarcador. Edita o elimina una entrada directamente.",
       "backToMarker": "Volver a {marker}",
-      "latestResult": "Último resultado"
+      "latestResult": "Último resultado",
+      "latestValues": "Últimos valores",
+      "allValues": "Todos los valores",
+      "columnDate": "Fecha",
+      "columnValue": "Valor"
     },
     "chart": {
       "empty": "Sin mediciones en este periodo.",
@@ -14086,10 +14086,8 @@
       "anchorLow": "Ninguna",
       "anchorHigh": "La peor imaginable",
       "intensityValueText": "{value} de {max} ({low} a {high})",
-      "when": "Cuándo",
       "during": "Durante una enfermedad",
       "duringNone": "Sin vincular",
-      "note": "Nota",
       "notePlaceholder": "¿Qué más estaba pasando?",
       "reset": "Restablecer formulario",
       "emptyHint": "Añade tu primer síntoma, por ejemplo aura o dolor de cabeza.",
@@ -14099,7 +14097,10 @@
       "partlySaved": "{saved} de {total} guardados, el resto sigue seleccionado.",
       "severalHint": "Elige varios si aparecieron juntos.",
       "filterPlaceholder": "Buscar un síntoma",
-      "filterEmpty": "Ningún síntoma coincide."
+      "filterEmpty": "Ningún síntoma coincide.",
+      "whenHint": "Ajusta la fecha y la hora para registrar una entrada pasada.",
+      "intensityShort": "{value}/{max}",
+      "intensityPreset": "Ajustado a tu última valoración. Cámbiala si hoy es distinto."
     },
     "section": {
       "title": "Tus síntomas",

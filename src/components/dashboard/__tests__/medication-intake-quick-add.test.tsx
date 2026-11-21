@@ -317,9 +317,7 @@ describe("<MedicationIntakeQuickAdd> — SSR contract", () => {
 
     try {
       const html = renderSSR(<MedicationIntakeQuickAdd />);
-      expect(html).toMatch(
-        /data-slot="select-value"[^>]*>[\s\S]*?Zulu[\s\S]*?<\/span>/,
-      );
+      expect(html).toMatch(/<option value="[^"]+" selected="">Zulu/);
     } finally {
       vi.useRealTimers();
     }
@@ -343,9 +341,7 @@ describe("<MedicationIntakeQuickAdd> — SSR contract", () => {
     });
     const html = renderSSR(<MedicationIntakeQuickAdd />);
     // Alphabetical fallback would land on "Alpha" if it were offered.
-    expect(html).toMatch(
-      /data-slot="select-value"[^>]*>[\s\S]*?Zulu[\s\S]*?<\/span>/,
-    );
+    expect(html).toMatch(/<option value="[^"]+" selected="">Zulu/);
     expect(html).not.toContain("Alpha");
   });
 
@@ -396,10 +392,17 @@ describe("submit invalidation — the quick-add is a capture-picker surface, not
     expect(componentSrc).not.toContain(
       "invalidateKeys(queryClient, medicationDependentKeys)",
     );
-    // AFTER the intake POST landed, and after the sheet was told it is done:
-    // the save does not wait for the refetches before it closes.
+    // The submit goes through the shared `runLogIntake`, which starts the
+    // blessed invalidation once the POST landed and does not wait for it.
     expect(componentSrc).toMatch(
-      /async function handleSubmit\([\s\S]*?await post<[\s\S]*?onSuccess\?\.\(\);\s*(?:\/\/[^\n]*\n\s*)*void invalidateMedicationReads\(queryClient\);/,
+      /async function handleSubmit\([\s\S]*?await runLogIntake\(/,
+    );
+    const orchestrator = readFileSync(
+      resolve(__dirname, "../../medications/use-medication-intake.ts"),
+      "utf8",
+    );
+    expect(orchestrator).toMatch(
+      /export async function runLogIntake[\s\S]*?await post\([\s\S]*?void invalidateMedicationReads\(queryClient\);/,
     );
     // The bundle carries every inline compliance chart, so no second sweep.
     expect(medicationDependentKeys).toContainEqual(

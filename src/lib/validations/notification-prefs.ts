@@ -21,6 +21,11 @@
  * shape falls back to defaults rather than throwing.
  */
 import { z } from "zod/v4";
+import {
+  DEFAULT_SNOOZE_MINUTES,
+  MAX_SNOOZE_MINUTES,
+  MIN_SNOOZE_MINUTES,
+} from "@/lib/medications/snooze-length";
 
 /**
  * Medication category schema. Currently a single boolean
@@ -60,6 +65,17 @@ const medicationPrefsSchema = z
      * this user default when set.
      */
     reorderLeadDays: z.number().int().min(0).max(60),
+    /**
+     * How long "Remind me later" defers a dose reminder, in minutes: one
+     * value for every surface (the web card, Telegram, the app's
+     * notification action), so "later" means the same everywhere. 5–240,
+     * default 30 (see `DEFAULT_SNOOZE_MINUTES`).
+     */
+    snoozeMinutes: z
+      .number()
+      .int()
+      .min(MIN_SNOOZE_MINUTES)
+      .max(MAX_SNOOZE_MINUTES),
   })
   .partial();
 
@@ -203,6 +219,8 @@ export interface NotificationPrefs {
      * 0–60; default 10. Per-medication `reorderLeadDays` overrides it.
      */
     reorderLeadDays: number;
+    /** Minutes "Remind me later" defers a dose reminder (5–240, default 30). */
+    snoozeMinutes: number;
   };
   mood: {
     /** v1.7.0 — local-time hour (0–23) for the daily mood reminder. */
@@ -282,6 +300,7 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
     deliveryDefault: "server",
     lowStockRunwayDays: DEFAULT_LOW_STOCK_RUNWAY_DAYS,
     reorderLeadDays: DEFAULT_REORDER_LEAD_DAYS,
+    snoozeMinutes: DEFAULT_SNOOZE_MINUTES,
   },
   mood: {
     reminderHour: DEFAULT_MOOD_REMINDER_HOUR,
@@ -477,6 +496,15 @@ export function resolveReorderLeadDays(
     return medicationOverride;
   }
   return parseNotificationPrefs(raw).medication.reorderLeadDays;
+}
+
+/**
+ * The user's snooze length in minutes ("Remind me later"), read by every
+ * snooze writer: the intake status route's default, Telegram's button and
+ * its handler. A null / drifted row resolves to the 30-minute default.
+ */
+export function resolveSnoozeMinutes(raw: unknown): number {
+  return parseNotificationPrefs(raw).medication.snoozeMinutes;
 }
 
 /**

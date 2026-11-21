@@ -12,8 +12,11 @@ import type { complianceFromLedger } from "../dose-history-ledger-compute";
  */
 export function LedgerSummaryChart({
   compliance,
+  windowDays,
 }: {
   compliance: NonNullable<ReturnType<typeof complianceFromLedger>>;
+  /** The span the rate covers, named in the label like the card's rates. */
+  windowDays: number;
 }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
@@ -24,7 +27,7 @@ export function LedgerSummaryChart({
     <div className="min-w-0 flex-1 space-y-1.5" data-slot="ledger-summary">
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-muted-foreground text-xs font-medium">
-          {t("medications.detail.verlauf.adherenceLabel")}
+          {t("medications.complianceWindow", { days: windowDays })}
         </span>
         <span className="text-foreground text-sm font-semibold tabular-nums">
           {rate !== null ? `${fmt.number(rate)}%` : "—"}
@@ -54,13 +57,13 @@ export function LedgerSummaryChart({
       </div>
       <div className="text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
         <span className="text-success">
-          {t("medications.detail.verlauf.status.taken_on_time")}: {takenOnTime}
+          {t("medications.dose.state.taken")}: {takenOnTime}
         </span>
         <span className="text-warning">
-          {t("medications.detail.verlauf.status.taken_late")}: {takenLate}
+          {t("medications.dose.state.takenLate")}: {takenLate}
         </span>
         <span className="text-destructive">
-          {t("medications.detail.verlauf.status.missed")}: {missed}
+          {t("medications.dose.state.missed")}: {missed}
         </span>
       </div>
     </div>

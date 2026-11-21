@@ -1086,11 +1086,10 @@ function cadenceLineFor(
 export function summariseCadence(
   payload: WizardPayload,
   t: (key: string, params?: Record<string, string | number>) => string,
-  // v1.16.4 — UI callers pass `useFormatters().date` so the course-window
-  // dates render in the active locale ("11.06.2026" / "Jun 11, 2026")
-  // instead of the raw ISO string. The ISO default keeps the helper pure
-  // for non-React callers.
+  // UI callers pass `useFormatters().date` / `.wallTime` (locale, hour cycle);
+  // the defaults keep the helper pure for non-React callers.
   formatDate: (d: Date) => string = dateToIsoString,
+  wallTime: (hhmm: string) => string = (hhmm) => hhmm,
 ): string {
   const cadenceLine = cadenceLineFor(payload, t);
   const timesPhrase =
@@ -1098,7 +1097,7 @@ export function summariseCadence(
     payload.mode !== "asNeeded" &&
     payload.timesOfDay.length > 0
       ? t("medications.wizard.summary.times", {
-          times: sortTimes(payload.timesOfDay).join(", "),
+          times: sortTimes(payload.timesOfDay).map(wallTime).join(", "),
         })
       : "";
   const startPhrase = payload.startsOn
@@ -1127,6 +1126,7 @@ export function summariseCadence(
 export function summariseScheduleDraft(
   draft: ScheduleDraft,
   t: (key: string, params?: Record<string, string | number>) => string,
+  wallTime: (hhmm: string) => string = (hhmm) => hhmm,
 ): string {
   const cadenceLine = cadenceLineFor(draft, t);
   const timesPhrase =
@@ -1134,7 +1134,7 @@ export function summariseScheduleDraft(
     draft.mode !== "asNeeded" &&
     draft.timesOfDay.length > 0
       ? t("medications.wizard.summary.times", {
-          times: sortTimes(draft.timesOfDay).join(", "),
+          times: sortTimes(draft.timesOfDay).map(wallTime).join(", "),
         })
       : "";
   return [cadenceLine, timesPhrase].filter(Boolean).join(" · ");

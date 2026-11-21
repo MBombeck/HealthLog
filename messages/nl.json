@@ -59,7 +59,12 @@
     "readThrottled": "Er zijn net te veel verzoeken, dus probeer het later opnieuw.",
     "sessionEnded": "Je sessie is verlopen, dus meld je opnieuw aan om verder te gaan.",
     "signIn": "Aanmelden",
-    "yes": "Ja"
+    "yes": "Ja",
+    "savedWithValue": "{label} {value} opgeslagen",
+    "savedNamed": "{label} opgeslagen",
+    "entryUndone": "Invoer verwijderd",
+    "entryUndoFailed": "De invoer kon niet worden verwijderd.",
+    "note": "Notitie"
   },
   "apiErrors": {
     "measurement": {
@@ -597,7 +602,7 @@
       "measurement": "Meting",
       "measurementDescription": "Gewicht, bloeddruk, hartslag en meer",
       "medication": "Medicatie",
-      "medicationDescription": "Een dosis als ingenomen markeren",
+      "medicationDescription": "Een dosis vastleggen, ingenomen of overgeslagen",
       "mood": "Stemming",
       "moodDescription": "Je stemming en tags vastleggen",
       "workout": "Training",
@@ -607,7 +612,8 @@
       "lifeEventDescription": "Een verhuizing, een geboorte, een nieuwe baan",
       "lifeEvent": "Levensgebeurtenis",
       "seizure": "Aanval",
-      "seizureDescription": "Start de timer of leg een niet getimede aanval vast"
+      "seizureDescription": "Start de timer of leg een niet getimede aanval vast",
+      "recentMeasurementDescription": "Onlangs vastgelegde meting"
     },
     "cycle": "Cyclus",
     "labs": "Labwaarden",
@@ -779,19 +785,12 @@
     "medications": "Medicatie",
     "quickAddMeasurement": "Meting vastleggen",
     "quickAddMood": "Stemming vastleggen",
-    "quickAddMedicationIntake": "Medicatie-inname vastleggen",
+    "quickAddMedicationIntake": "Inname vastleggen",
     "quickAddWorkout": "Training vastleggen",
     "quickAddLifeEvent": "Levensgebeurtenis vastleggen",
     "customizeDashboard": "Dashboard aanpassen",
     "medicationIntakeQuickAdd": {
-      "sheetDescription": "Leg dosis, tijdstip en medicijn vast met een paar tikken.",
-      "medicationLabel": "Medicijn",
-      "medicationPlaceholder": "Kies een medicijn",
-      "doseLabel": "Dosis",
-      "dosePlaceholder": "bijv. 5 mg",
-      "doseHint": "Vooraf ingevuld met de standaarddosis. Pas deze aan om alleen voor deze inname een afwijkende dosis vast te leggen.",
-      "timeLabel": "Tijdstip van inname",
-      "saveError": "De medicatie-inname kon niet worden opgeslagen.",
+      "sheetDescription": "Leg een ingenomen of overgeslagen dosis vast, ook achteraf.",
       "emptyTitle": "Nog geen medicatie",
       "emptyDescription": "Maak eerst een medicijn met een schema aan en kom dan hier terug om de inname vast te leggen.",
       "emptyCta": "Medicijn toevoegen",
@@ -912,7 +911,6 @@
     "value": "Waarde",
     "date": "Datum",
     "source": "Bron",
-    "notes": "Notities",
     "typeWeight": "Gewicht",
     "typeBloodPressure": "Bloeddruk",
     "typeBpSys": "Sys",
@@ -1112,7 +1110,10 @@
     "typeAcuteTrainingLoad": "Acute trainingsbelasting",
     "sourceGarmin": "Garmin",
     "valueOutOfRange": "Vul een waarde in tussen {min} en {max} {unit}.",
-    "valueOutOfRangeNoUnit": "Vul een waarde in tussen {min} en {max}."
+    "valueOutOfRangeNoUnit": "Vul een waarde in tussen {min} en {max}.",
+    "lastValue": "Laatst {value}, {when}",
+    "lastValueDeviates": "Flink anders dan je vorige meting. Klopt dat?",
+    "saveAndNext": "Opslaan en volgende"
   },
   "metricCatalog": {
     "title": "Wat HealthLog kan bijhouden",
@@ -1181,7 +1182,6 @@
     "previousPage": "Vorige pagina",
     "nextPage": "Volgende pagina",
     "loginRequired": "Log in om stemmingsregistraties te bekijken.",
-    "note": "Notitie",
     "noteCollapse": "Notitie inklappen",
     "noteExpand": "Volledige notitie tonen",
     "notePlaceholder": "Voeg een notitie toe over hoe je je voelt…",
@@ -1494,22 +1494,6 @@
       "partialToast": "{taken} geregistreerd, {failed} mislukt. Probeer het opnieuw",
       "failedToast": "Geen inname geregistreerd. Probeer het opnieuw"
     },
-    "logIntake": {
-      "dialogTitle": "Inname vastleggen",
-      "dialogDescription": "Registreer een dosis bij een bestaand medicijn. Je kunt een eerdere datum en tijd kiezen.",
-      "medicationLabel": "Medicijn",
-      "slotLabel": "Tijdstip in schema",
-      "slotNone": "Geen specifiek tijdstip",
-      "doseLabel": "Dosis",
-      "doseHint": "Vooraf ingevuld met de dosis van het medicijn of het tijdstip. Pas deze aan om alleen voor deze inname een afwijkende dosis te registreren.",
-      "takenAtLabel": "Datum en tijd",
-      "takenAtHint": "Standaard nu; kies een eerdere datum en tijd om een eerdere dosis vast te leggen.",
-      "skippedLabel": "Als overgeslagen vastleggen",
-      "noMedications": "Voeg eerst een medicijn toe, daarna kun je er innames bij vastleggen.",
-      "cancel": "Annuleren",
-      "submit": "Inname vastleggen",
-      "slotError": "Het gekozen tijdstip kon niet aan een tijd worden gekoppeld. Kies een ander tijdstip of “Geen specifiek tijdstip”."
-    },
     "emptyTitle": "Nog geen medicatie",
     "emptyDescription": "Voeg medicijnen, doseringen en herinneringsvensters toe om je therapietrouw bij te houden.",
     "loadFailed": "Medicatie kon niet worden geladen",
@@ -1581,11 +1565,8 @@
     },
     "withoutNotification": "Zonder melding",
     "pausedSince": "Gepauzeerd sinds",
-    "takeNow": "Nu innemen",
     "lastDoseYesterday": "Laatste dosis gisteren",
     "lastDoseDaysAgo": "Laatste dosis {count} dagen geleden",
-    "overdue": "Te laat",
-    "veryOverdue": "Ruim te laat",
     "complianceWindow": "Therapietrouw ({days} dagen)",
     "complianceUnavailable": "Therapietrouw kon niet worden geladen",
     "complianceNotApplicable": "Therapietrouw niet van toepassing",
@@ -1594,17 +1575,13 @@
     "complianceInfoLabel": "Wat betekent therapietrouw?",
     "lastIntake": "Laatste inname:",
     "nextIntake": "Volgende inname:",
-    "nextIntakeOverdue": "Te laat sinds {time}, kan nog worden ingenomen",
     "dayStreak": "dagen op rij",
     "dayStreakOne": "dag op rij",
     "cycleDueToday": "Vandaag gepland",
     "cycleNoClosedCycles": "Nog geen afgeronde doseringscycli",
-    "taken": "Ingenomen",
-    "skipped": "Overgeslagen",
-    "intakeToastTaken": "{name} geregistreerd als ingenomen",
-    "intakeToastSkipped": "{name} overgeslagen",
+    "intakeToastTaken": "{name}: ingenomen, {time}",
+    "intakeToastSkipped": "{name}: overgeslagen",
     "intakeToastFailed": "{name} kon niet worden geregistreerd. Probeer het opnieuw",
-    "intakeUndo": "Ongedaan maken",
     "intakeUndone": "Registratie teruggedraaid",
     "intakeAlreadyTaken": "{name} was al als ingenomen vastgelegd. Er is niets nieuws opgeslagen.",
     "intakeUndoFailed": "Ongedaan maken mislukt. Open de geschiedenis om het te corrigeren",
@@ -2021,12 +1998,12 @@
     "sideEffectTagAppetiteLoss": "eetlustverlies",
     "sideEffectTagHeartburn": "brandend maagzuur",
     "sideEffectTagHeadache": "hoofdpijn",
-    "phaseConfig": "Herinneringsfasen",
-    "phaseConfigDescription": "Stel de timing van herinneringen in.",
-    "phaseGreen": "Groen",
-    "phaseYellow": "Geel",
-    "phaseOrange": "Oranje",
-    "phaseRed": "Rood",
+    "phaseConfig": "Tijden van de herinneringen",
+    "phaseConfigDescription": "Wanneer elke herinnering komt en wanneer een dosis als gemist telt.",
+    "phaseGreen": "Aan de beurt",
+    "phaseYellow": "Nog aan de beurt",
+    "phaseOrange": "Te laat",
+    "phaseRed": "Gemist",
     "phaseMinutes": "Min",
     "phasePercent": "%",
     "phaseResetDefaults": "Standaardwaarden herstellen",
@@ -2046,8 +2023,6 @@
     "intakeHistoryColStatus": "Status",
     "intakeHistoryColSource": "Bron",
     "intakeHistoryInjectionSite": "Injectieplaats: {site}",
-    "intakeHistoryStatusTaken": "Ingenomen",
-    "intakeHistoryStatusSkipped": "Overgeslagen",
     "intakeHistorySortByTaken": "Sorteren op innametijd",
     "intakeHistorySortByScheduled": "Sorteren op geplande tijd",
     "intakeHistoryPageInfo": "Pagina {page} van {total}, {count} registraties",
@@ -2103,9 +2078,6 @@
         "selection": {
           "rowToggleLabel": "Rij selecteren"
         },
-        "bulkDelete": {
-          "cancelButton": "Annuleren"
-        },
         "edit": {
           "dialogTitle": "Inname bewerken",
           "takenAtLabel": "Ingenomen op",
@@ -2118,11 +2090,9 @@
           "failed": "De inname kon niet worden bijgewerkt."
         },
         "deleteRow": {
-          "confirmTitle": "Deze inname verwijderen?",
-          "confirmBody": "De registratie wordt definitief verwijderd.",
-          "confirmAction": "Verwijderen",
           "toast": "Inname verwijderd",
-          "failed": "De inname kon niet worden verwijderd."
+          "failed": "De inname kon niet worden verwijderd.",
+          "restored": "Inname hersteld"
         },
         "viewRecent90": "Afgelopen 90 dagen",
         "viewAll": "Volledige geschiedenis",
@@ -2133,11 +2103,8 @@
         "loadError": "De geschiedenis kon niet worden geladen.",
         "empty": "Nog geen innames in deze periode.",
         "summaryEmpty": "Nog geen doses om te beoordelen.",
-        "adherenceLabel": "Therapietrouw",
         "adherenceBarLabel": "{onTime} op tijd, {late} te laat, {missed} gemist",
-        "add": "Registratie",
-        "markTaken": "Ingenomen",
-        "markSkipped": "Overgeslagen",
+        "add": "Inname vastleggen",
         "rowActionsLabel": "Acties voor {time}",
         "markAsTaken": "Markeren als ingenomen",
         "markAsSkipped": "Markeren als overgeslagen",
@@ -2145,27 +2112,7 @@
         "takenDetail": "gepland {planned}, ingenomen {taken}",
         "doseTaken": "Dosis: {dose}",
         "status": {
-          "taken_on_time": "op tijd",
-          "taken_late": "te laat",
-          "skipped": "overgeslagen",
-          "missed": "gemist",
-          "upcoming": "gepland",
-          "ad_hoc": "buiten schema"
-        },
-        "addDialog": {
-          "title": "Inname toevoegen",
-          "description": "Registreer een dosis, ook een met een eerdere datum of een buiten het schema.",
-          "takenAtLabel": "Ingenomen op",
-          "skippedLabel": "Overgeslagen",
-          "nudgeHint": "Dicht bij het tijdstip {slot}. Bij het opslaan vragen we of je de inname daaraan wilt toewijzen.",
-          "cancel": "Annuleren",
-          "submit": "Opslaan"
-        },
-        "nudge": {
-          "title": "Aan dit tijdstip toewijzen?",
-          "body": "Deze inname valt net buiten het venster van {slot}. Wil je hem aan dat tijdstip toewijzen, of als registratie buiten het schema bewaren?",
-          "keepAdHoc": "Buiten schema",
-          "pin": "Toewijzen"
+          "ad_hoc": "Buiten schema"
         },
         "pin": {
           "action": "Toewijzen aan tijdstip {time}",
@@ -2189,20 +2136,22 @@
         "disabledToast": "Herinneringen uit",
         "toggleFailed": "De herinneringsinstelling kon niet worden gewijzigd.",
         "clientManagedChip": "Beheerd door iPhone",
-        "clientManagedHint": "Je iPhone beheert de herinneringen voor dit medicijn."
+        "clientManagedHint": "Je iPhone beheert de herinneringen voor dit medicijn.",
+        "helperAutoRecorded": "Doses worden automatisch vastgelegd, dus er komen geen herinneringen.",
+        "plan": "Volgende dosis {dose}: herinneringen zolang hij aan de beurt is en als hij te laat is. Te laat na {overdue}; na {missed} telt hij als gemist."
       },
       "settings": {
         "title": "Instellingen",
         "phases": {
-          "openButton": "Fasen instellen",
-          "requiresCourseWindow": "Fasen zijn beschikbaar zodra er een kuurperiode is ingesteld."
+          "openButton": "Aanpassen"
         },
         "grace": {
           "label": "Herinneringsvenster",
           "appliesToAllNote": "Geldt voor elk schema van dit medicijn.",
           "unit": "minuten",
           "saved": "Herinneringsvenster opgeslagen",
-          "failed": "Het herinneringsvenster kon niet worden opgeslagen."
+          "failed": "Het herinneringsvenster kon niet worden opgeslagen.",
+          "description": "Hoe lang de herinneringen na het tijdstip van de dosis doorgaan, voor de te-laat-herinnering."
         },
         "codes": {
           "label": "Klinische codes (ATC / RxNorm)",
@@ -2313,7 +2262,6 @@
         "supplyLabel": "Voorraad",
         "supplyRunway": "Nog genoeg voor ongeveer {days} dagen",
         "jumpToZeitplan": "Schema openen",
-        "jumpToVerlauf": "Geschiedenis openen",
         "jumpToBestand": "Voorraad openen",
         "complianceTitle": "Therapietrouw",
         "complianceEmpty": "Nog geen gegevens over therapietrouw."
@@ -2499,8 +2447,6 @@
     "tableStockDoses": "{count} doses",
     "tableStockRunway": "≈ {days} dagen over",
     "cardLowStockRunway": "Voorraad: ≈ {days} dagen",
-    "takeActionFor": "{name} innemen",
-    "skipActionFor": "{name} overslaan",
     "reorderDescription": "Bepaal de volgorde van je medicatie voor zowel de kaart- als de tabelweergave.",
     "reorderSaved": "Volgorde opgeslagen",
     "reorderSaveFailed": "De volgorde kan niet worden opgeslagen",
@@ -2693,7 +2639,50 @@
       "saveError": "De samenstelling kan niet worden opgeslagen",
       "catalogError": "De lijst met voedingsstoffen kan niet worden geladen",
       "invalidRow": "Kies in elke regel een voedingsstof en voer een hoeveelheid groter dan nul in."
-    }
+    },
+    "dose": {
+      "action": {
+        "take": "Innemen",
+        "skip": "Overslaan",
+        "snooze": "Later herinneren ({minutes} min)",
+        "undo": "Ongedaan maken",
+        "takeFor": "{name} innemen",
+        "skipFor": "{name} overslaan"
+      },
+      "state": {
+        "pending": "Gepland",
+        "due": "Aan de beurt",
+        "overdue": "Te laat",
+        "taken": "Ingenomen",
+        "takenLate": "Te laat ingenomen",
+        "skipped": "Overgeslagen",
+        "missed": "Gemist",
+        "missedStillCounts": "Neem je hem nu, dan telt hij nog, als te laat.",
+        "snoozedUntil": "Herinnering uitgesteld tot {time}"
+      },
+      "snoozedToast": "{name}: herinnering om {time}",
+      "snoozeFailed": "{name} kon niet worden uitgesteld. Probeer het opnieuw"
+    },
+    "intakeForm": {
+      "title": "Inname vastleggen",
+      "description": "Leg een ingenomen of overgeslagen dosis vast, ook achteraf.",
+      "medicationLabel": "Medicijn",
+      "outcomeLabel": "Wat er gebeurde",
+      "timeLabel": "Tijdstip",
+      "doseLabel": "Dosis",
+      "doseHint": "Vooraf ingevuld met de geplande dosis. Pas hem alleen aan als je een andere hoeveelheid nam.",
+      "countsFor": "Telt voor de dosis van {time}.",
+      "countsForLate": "Telt voor de dosis van {time}, als te laat.",
+      "countNearLabel": "Laten tellen voor de dosis van {time}",
+      "skips": "Slaat de dosis van {time} over.",
+      "extraDose": "Wordt vastgelegd als extra dosis, buiten het schema.",
+      "noMedications": "Voeg eerst een medicijn toe, daarna kun je er innames bij vastleggen.",
+      "saveError": "De inname kon niet worden opgeslagen. Probeer het opnieuw"
+    },
+    "phaseGreenHint": "Eerste herinnering, zo lang voor het einde van het herinneringsvenster.",
+    "phaseYellowHint": "Nog een herinnering, zo lang voor het einde van het venster.",
+    "phaseOrangeHint": "Een herinnering dat de dosis te laat is, zo lang na het einde van het venster.",
+    "phaseRedHint": "Zo lang na het venster telt de dosis als gemist."
   },
   "charts": {
     "loadingLabel": "Grafiek laden…",
@@ -5790,6 +5779,13 @@
             "description": "Herinneringen voor menstruatie en vruchtbare dagen zet je per kanaal aan in het meldingenoverzicht.",
             "link": "Meldingenoverzicht openen"
           }
+        },
+        "snooze": {
+          "title": "Later herinneren",
+          "description": "Hoe lang een dosisherinnering wordt uitgesteld, op de medicijnkaart, in Telegram en in de app.",
+          "label": "Uitstellen met",
+          "option": "{minutes} min",
+          "saveError": "Opslaan mislukt. Probeer het opnieuw"
         }
       },
       "layout": {
@@ -9908,29 +9904,29 @@
     "askMedicationName": "Geef een medicijn op, bijv. <b>taken Ramipril</b>.",
     "medicationNotFoundExact": "Medicijn niet gevonden. Stuur de naam precies zoals die in HealthLog staat.",
     "helpHeader": "<b>Beschikbare commando's:</b>",
-    "helpBody": "/help: deze hulp tonen\n/add: een inname registreren\n/start: de bot starten\n\n<b>Tekstcommando's:</b>\ntaken &lt;naam&gt;: een inname bevestigen\n\n<b>Knoppen in herinneringen:</b>\n• Ingenomen: inname bevestigen\n• 🕐 1 u / 🕐 3 u: herinnering uitstellen\n• ⏭ Overslaan: inname overslaan\n• ✓ Bevestigen: een gemiste inname bevestigen",
+    "helpBody": "/help: deze hulp tonen\n/add: een inname registreren\n/start: de bot starten\n\n<b>Tekstcommando's:</b>\ntaken &lt;naam&gt;: een inname bevestigen\n\n<b>Knoppen in herinneringen:</b>\n• ✅ Innemen: inname vastleggen\n• 🕐 Later herinneren: herinnering uitstellen, met de duur uit de instellingen\n• ⏭ Overslaan: dosis overslaan\n• Als gemist laten: een gemiste dosis als gemist laten",
     "measureValuePrompt": "Antwoord met de waarde om die vast te leggen (optioneel).",
     "buttonMeasureValue": "Waarde…",
     "measureValueSaved": "Meting opgeslagen.",
     "measureValueInvalid": "Antwoord met een getal om een meting vast te leggen.",
     "measureValueOutOfRange": "Die waarde ligt buiten het aannemelijke bereik.",
-    "measureValueExpired": "Dit verzoek is verlopen."
+    "measureValueExpired": "Dit verzoek is verlopen.",
+    "snoozeMinutes": "{minutes} min"
   },
   "medicationReminders": {
-    "phaseGreenTitle": "🟢 Herinnering: {medName}",
-    "phaseGreenMessage": "🟢 Herinnering:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nTijdvenster sluit over {minutes} min.",
-    "phaseYellowTitle": "🟡 Bijna tijd: {medName}",
-    "phaseYellowMessage": "🟡 Bijna tijd:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nNog {minutes} min.",
+    "phaseGreenTitle": "🟢 Aan de beurt: {medName}",
+    "phaseGreenMessage": "🟢 Aan de beurt:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nHet tijdvenster sluit over {minutes} min.",
+    "phaseYellowTitle": "🟡 Nog aan de beurt: {medName}",
+    "phaseYellowMessage": "🟡 Nog aan de beurt:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nNog {minutes} min in het tijdvenster.",
     "phaseOrangeTitle": "🟠 Te laat: {medName}",
     "phaseOrangeMessage": "🟠 Te laat:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n{minutes} min te laat.",
-    "phaseRedTitle": "🔴 Niet ingenomen: {medName}",
-    "phaseRedMessage": "🔴 Nog niet ingenomen:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nTelt als gemist zolang je niets vastlegt. Neem je hem nu, dan telt hij nog, als late dosis.",
-    "buttonTaken": "Ingenomen",
+    "phaseRedTitle": "🔴 Gemist: {medName}",
+    "phaseRedMessage": "🔴 Gemist:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nNeem je hem nu, dan telt hij nog, als te laat.",
+    "buttonTaken": "✅ Innemen",
     "buttonConfirm": "Als gemist laten",
-    "buttonTakenLate": "✅ Ingenomen (te laat)",
-    "buttonSnoozeOneHour": "🕐 1 u",
-    "buttonSnoozeThreeHours": "🕐 3 u",
-    "buttonSkip": "⏭ Overslaan"
+    "buttonTakenLate": "✅ Innemen (telt als te laat)",
+    "buttonSkip": "⏭ Overslaan",
+    "buttonSnooze": "🕐 Later herinneren ({minutes} min)"
   },
   "lowStockReminders": {
     "title": "Lage voorraad: {medName}",
@@ -10715,7 +10711,11 @@
       "valuesTitle": "{marker}: alle metingen",
       "valuesDescription": "Alle metingen van deze biomarker. Bewerk of verwijder een registratie direct.",
       "backToMarker": "Terug naar {marker}",
-      "latestResult": "Laatste uitslag"
+      "latestResult": "Laatste uitslag",
+      "latestValues": "Laatste waarden",
+      "allValues": "Alle waarden",
+      "columnDate": "Datum",
+      "columnValue": "Waarde"
     },
     "chart": {
       "empty": "Geen metingen in deze periode.",
@@ -14086,10 +14086,8 @@
       "anchorLow": "Geen",
       "anchorHigh": "Ergst denkbaar",
       "intensityValueText": "{value} van {max} ({low} tot {high})",
-      "when": "Wanneer",
       "during": "Tijdens een ziekte",
       "duringNone": "Niet gekoppeld",
-      "note": "Notitie",
       "notePlaceholder": "Wat speelde er verder?",
       "reset": "Formulier leegmaken",
       "emptyHint": "Voeg je eerste symptoom toe, bijvoorbeeld aura of hoofdpijn.",
@@ -14099,7 +14097,10 @@
       "partlySaved": "{saved} van {total} opgeslagen, de rest is nog gekozen.",
       "severalHint": "Kies er meerdere als ze samen optraden.",
       "filterPlaceholder": "Symptoom zoeken",
-      "filterEmpty": "Geen symptoom komt overeen."
+      "filterEmpty": "Geen symptoom komt overeen.",
+      "whenHint": "Pas datum en tijd aan om een eerdere invoer vast te leggen.",
+      "intensityShort": "{value}/{max}",
+      "intensityPreset": "Ingesteld op je laatste beoordeling. Pas aan als het vandaag anders is."
     },
     "section": {
       "title": "Je symptomen",

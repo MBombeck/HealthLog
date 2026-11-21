@@ -49,7 +49,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
-import { apiPost } from "@/lib/api/api-fetch";
+import { apiDelete, apiPost } from "@/lib/api/api-fetch";
 import { intakeToastOptions } from "@/components/medications/use-medication-intake";
 import { invalidateMedicationReads } from "@/lib/query-keys";
 import {
@@ -255,15 +255,29 @@ export async function runTakeAllDue(deps: {
   const { medications, t, queryClient, recordName } = deps;
   let taken = 0;
   let failed = 0;
+  // The rows this sweep wrote, for its one Undo (a slot that already held a
+  // take wrote nothing and is not undone).
+  const written: { medicationId: string; id: string; syncVersion?: number }[] =
+    [];
 
   for (const med of medications) {
     try {
-      await apiPost(
+      const created = await apiPost<
+        | { id?: string; syncVersion?: number; alreadyTaken?: boolean }
+        | undefined
+      >(
         `/api/medications/${med.id}/intake`,
         med.scheduledFor
           ? { skipped: false, scheduledFor: med.scheduledFor.toISOString() }
           : { skipped: false },
       );
+      if (created?.id && !created.alreadyTaken) {
+        written.push({
+          medicationId: med.id,
+          id: created.id,
+          syncVersion: created.syncVersion,
+        });
+      }
       taken += 1;
     } catch {
       failed += 1;
@@ -284,7 +298,15 @@ export async function runTakeAllDue(deps: {
   }
 
   if (failed === 0) {
-    const options = intakeToastOptions({ recordName, eventId: undefined, t });
+    // One Undo for the whole sweep, like a single take's; the shared helper
+    // still decides (inside somebody else's record it names the record and
+    // offers no Undo, which a delegate could not use).
+    const options = intakeToastOptions({
+      recordName,
+      eventId: written.length > 0 ? written[0].id : undefined,
+      t,
+      onUndo: () => void undoTakeAllDue({ written, t, queryClient }),
+    });
     const message = t("medications.takeAllDue.successToast", { count: taken });
     if (options) {
       toast.success(message, options);
@@ -298,4 +320,33 @@ export async function runTakeAllDue(deps: {
   }
 
   return { taken, failed };
+}
+
+/** Reverse a sweep: remove each row it wrote, then one confirmation. */
+async function undoTakeAllDue(input: {
+  written: { medicationId: string; id: string; syncVersion?: number }[];
+  t: Translator;
+  queryClient: QueryClient;
+}): Promise<void> {
+  const { written, t, queryClient } = input;
+  let failed = 0;
+  for (const row of written) {
+    const query =
+      row.syncVersion !== undefined
+        ? `?expectedSyncVersion=${row.syncVersion}`
+        : "";
+    try {
+      await apiDelete(
+        `/api/medications/${row.medicationId}/intake/${row.id}${query}`,
+      );
+    } catch {
+      failed += 1;
+    }
+  }
+  await invalidateMedicationReads(queryClient);
+  if (failed > 0) {
+    showErrorToast(t("medications.intakeUndoFailed"));
+  } else {
+    toast.success(t("medications.intakeUndone"));
+  }
 }

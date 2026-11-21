@@ -8,9 +8,11 @@ import { useState, useEffect, useReducer } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useMedicationIntake } from "@/components/medications/use-medication-intake";
+import { useCardDoseSnooze } from "@/components/medications/card-parts/use-dose-snooze";
 import { MedicationCardMenu } from "@/components/medications/medication-card-menu";
 import { MedicationStateBadges } from "@/components/medications/card-parts/medication-state-badges";
 import { MedicationCardBody } from "@/components/medications/card-parts/medication-card-body";
+import { OverdueSlotValue } from "@/components/medications/dose-state-label";
 import { useWeekdayLabel } from "@/components/medications/card-parts/medication-next-last-slot";
 import { formatTimeWindowRange } from "@/lib/time-window-format";
 import { formatDateTime, formatTime } from "@/lib/format";
@@ -184,10 +186,9 @@ export function MedicationCard({
     medication.deliveryForm === "INJECTION" &&
     medication.trackInjectionSites === true;
 
-  // v1.12.2 — intake take / skip + failure-toast (C1) + Undo (C2) live in
-  // a shared hook so the generic and GLP-1 cards can never re-diverge. The
-  // card keeps only its post-success follow-up: prompting (skippably) for
-  // the injection site on a taken dose when tracking is enabled.
+  // Take / skip / Undo live in a hook shared with the GLP-1 card; the card
+  // keeps its follow-up, the (skippable) injection-site prompt.
+  const snooze = useCardDoseSnooze(medication);
   const { intakeLoading, recordIntake } = useMedicationIntake({
     medication,
     onRecorded: (eventId, skipped) => {
@@ -264,12 +265,8 @@ export function MedicationCard({
   const rate7 = display?.short.rate ?? compliance?.compliance7?.rate ?? 0;
   const rate30 = display?.long.rate ?? compliance?.compliance30?.rate ?? 0;
   const streak = display?.short.streak ?? compliance?.compliance7?.streak ?? 0;
-  // v1.15.9 — the open dose's server-derived status drives a discreet status
-  // line/glyph (text + icon only) and the overdue / heavily-overdue top line.
-  // Per the neutral med-card rule there is NO green take-window highlight and
-  // no grade-tinted card chrome — status is conveyed by a calm line, never a
-  // background/border tint. Defaults to "upcoming" (calm) when the display
-  // block is absent (older mocks).
+  // The open dose's server-derived status drives the calm status line (never
+  // a card tint); "upcoming" when the display block is absent (older mocks).
   const doseStatus = display?.currentDose.status ?? "upcoming";
   const categoryLabel = getMedicationCategoryLabel(
     medication.category,
@@ -282,13 +279,9 @@ export function MedicationCard({
       a.windowEnd.localeCompare(b.windowEnd),
   );
   const now = new Date();
-  // v1.8.4 — the next-due instant comes from the server (`nextDueAt`,
-  // computed by the canonical recurrence engine anchored on the last
-  // intake). The day label below derives from it; the window-range /
-  // dose / label still come from the earliest configured schedule. The
-  // legacy client-side daysOfWeek walker only ever read daysOfWeek +
-  // windowStart and silently mis-anchored rolling / RRULE / one-shot
-  // cadences, so it is gone.
+  // The next-due instant is the server's (`nextDueAt`, the recurrence engine
+  // anchored on the last intake); window, dose and label come from the
+  // earliest configured schedule.
   const nextDueMs = medication.nextDueAt
     ? new Date(medication.nextDueAt).getTime()
     : NaN;
@@ -449,13 +442,7 @@ export function MedicationCard({
           // catch-up band closes (auto-miss); only then does the line
           // advance to the next future slot.
           if (medication.nextDueOverdue && nextAt) {
-            return (
-              <span className="text-warning font-medium">
-                {t("medications.nextIntakeOverdue", {
-                  time: formatTime(new Date(nextAt).toISOString()),
-                })}
-              </span>
-            );
+            return <OverdueSlotValue at={nextAt} />;
           }
 
           // Format day label relative to today
@@ -483,7 +470,12 @@ export function MedicationCard({
               {dayLabel && `${dayLabel}, `}
               {nextAt
                 ? formatTime(new Date(nextAt).toISOString())
-                : formatTimeWindowRange(s.windowStart, s.windowEnd, locale)}
+                : formatTimeWindowRange(
+                    s.windowStart,
+                    s.windowEnd,
+                    locale,
+                    fmt.wallTime,
+                  )}
               {s.label && (
                 <span className="hidden sm:inline"> ({s.label})</span>
               )}
@@ -525,6 +517,7 @@ export function MedicationCard({
         currentWindowStatus,
         now,
         userTz,
+        medication.nextDueAt,
       )}
       doseStatus={medication.asNeeded ? "upcoming" : doseStatus}
       nextLine={asNeededLine ?? nextLine}
@@ -550,6 +543,7 @@ export function MedicationCard({
       lowStockRunwayDays={lowStockRunwayDays}
       intakeLoading={intakeLoading}
       onRecordIntake={(skipped) => recordIntake(skipped, displayedSlot)}
+      snooze={snooze}
     >
       {/* v1.8.5 — post-dose injection-site capture (optional, skippable). */}
       {tracksInjection && (

@@ -6,8 +6,9 @@
  *
  * Resurrects the v1.5.4 `{ medicationId, open, onOpenChange }` contract
  * but inside a Sheet (mobile bottom / desktop right) instead of inline
- * on the settings row. Mounts only when the parent confirms
- * `treatmentClass === "GLP1"` + a course window is set.
+ * on the settings row. Every scheduled medication has phases (the reminder
+ * worker reads them for all of them); the sheet is reached from the
+ * Schedule tab's reminder card.
  *
  * Body hosts the four-row green/yellow/orange/red grid with mode
  * (MINUTES / PERCENT) and value inputs, an `[Auf Standard]` reset, and
@@ -71,6 +72,18 @@ const DEFAULT_CONFIG: PhaseConfig = {
   yellow: { value: 30, mode: "MINUTES" },
   orange: { value: 0, mode: "MINUTES" },
   red: { value: 240, mode: "MINUTES" },
+};
+
+/**
+ * What each phase does, in words: the phases are named after the dose
+ * state they announce (due, still due, overdue, missed), not after the
+ * traffic-light colours they used to carry.
+ */
+const PHASE_HINT_KEYS: Record<keyof PhaseConfig, string> = {
+  green: "medications.phaseGreenHint",
+  yellow: "medications.phaseYellowHint",
+  orange: "medications.phaseOrangeHint",
+  red: "medications.phaseRedHint",
 };
 
 const PHASE_KEYS: Array<keyof PhaseConfig> = [
@@ -248,9 +261,14 @@ function PhaseConfigForm({
               key={key}
               className="grid grid-cols-[1fr_auto_120px] items-end gap-2"
             >
-              <Label htmlFor={inputId} className="text-sm font-medium">
-                {labels[key]}
-              </Label>
+              <div className="space-y-0.5">
+                <Label htmlFor={inputId} className="text-sm font-medium">
+                  {labels[key]}
+                </Label>
+                <p className="text-muted-foreground text-xs">
+                  {t(PHASE_HINT_KEYS[key])}
+                </p>
+              </div>
               <Select
                 value={cfg[key].mode}
                 onValueChange={(v) => patch(key, { mode: v as PhaseMode })}

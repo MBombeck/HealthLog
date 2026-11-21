@@ -20,7 +20,7 @@ import { CheckCheck, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { useActiveRecordName } from "@/hooks/use-record-capabilities";
 import { MedicationNote } from "@/components/medications/medication-note";
 import { formatDose } from "@/lib/medications/format-dose";
@@ -43,6 +43,7 @@ export function TakeAllDueDialog({
   dueMedications,
 }: TakeAllDueDialogProps) {
   const { t, locale } = useTranslations();
+  const fmt = useFormatters();
   const queryClient = useQueryClient();
   const recordName = useActiveRecordName();
   const [submitting, setSubmitting] = useState(false);
@@ -136,6 +137,7 @@ export function TakeAllDueDialog({
                   med.window.start,
                   med.window.end,
                   locale,
+                  fmt.wallTime,
                 )}
               </span>
             ) : null}

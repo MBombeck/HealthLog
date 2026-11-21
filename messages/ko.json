@@ -59,7 +59,12 @@
     "readThrottled": "지금은 요청이 너무 많으니 나중에 다시 시도해 주세요.",
     "sessionEnded": "세션이 만료되었으니 계속하려면 다시 로그인해 주세요.",
     "signIn": "로그인",
-    "yes": "예"
+    "yes": "예",
+    "savedWithValue": "{label} {value} 저장됨",
+    "savedNamed": "{label} 저장됨",
+    "entryUndone": "항목을 삭제했습니다",
+    "entryUndoFailed": "항목을 삭제하지 못했습니다.",
+    "note": "메모"
   },
   "apiErrors": {
     "measurement": {
@@ -362,9 +367,9 @@
     "colGlp1Note": "메모",
     "colGlp1SideEffect": "부작용",
     "colMedication": "약",
-    "colTaken": "복용",
+    "colTaken": "복용함",
     "colSkipped": "건너뜀",
-    "colMissed": "누락",
+    "colMissed": "놓침",
     "colExpected": "예정",
     "colComplianceRate": "순응률",
     "moodTitle": "기분 추이",
@@ -597,7 +602,7 @@
       "measurement": "측정",
       "measurementDescription": "체중, 혈압, 맥박 등",
       "medication": "약",
-      "medicationDescription": "복용으로 표시하기",
+      "medicationDescription": "복용 또는 건너뛴 용량 기록",
       "mood": "기분",
       "moodDescription": "기분과 태그 기록하기",
       "workout": "운동",
@@ -607,7 +612,8 @@
       "lifeEventDescription": "이사, 출산, 새 직장",
       "lifeEvent": "삶의 사건",
       "seizure": "발작",
-      "seizureDescription": "타이머를 시작하거나 시간을 재지 않은 발작을 기록"
+      "seizureDescription": "타이머를 시작하거나 시간을 재지 않은 발작을 기록",
+      "recentMeasurementDescription": "최근 기록한 측정값"
     },
     "cycle": "생리 주기",
     "labs": "검사",
@@ -784,14 +790,7 @@
     "quickAddLifeEvent": "삶의 사건 기록",
     "customizeDashboard": "대시보드 맞춤 설정",
     "medicationIntakeQuickAdd": {
-      "sheetDescription": "몇 번의 탭으로 약과 용량, 시각을 기록해요.",
-      "medicationLabel": "약",
-      "medicationPlaceholder": "약 선택",
-      "doseLabel": "용량",
-      "dosePlaceholder": "예: 5 mg",
-      "doseHint": "기본 용량이 미리 채워져 있어요. 이번 복용만 다르게 기록하려면 수정하세요.",
-      "timeLabel": "복용 시각",
-      "saveError": "복용 기록을 저장하지 못했어요.",
+      "sheetDescription": "복용하거나 건너뛴 용량을 나중에라도 기록해요.",
       "emptyTitle": "등록된 약이 없어요",
       "emptyDescription": "먼저 일정이 있는 약을 만든 뒤, 여기로 돌아와 복용을 기록하세요.",
       "emptyCta": "약 추가",
@@ -912,7 +911,6 @@
     "value": "값",
     "date": "날짜",
     "source": "출처",
-    "notes": "메모",
     "typeWeight": "체중",
     "typeBloodPressure": "혈압",
     "typeBpSys": "수축기",
@@ -1112,7 +1110,10 @@
     "typeAcuteTrainingLoad": "급성 훈련 부하",
     "sourceGarmin": "Garmin",
     "valueOutOfRange": "{min}에서 {max} {unit} 사이의 값을 입력해 주세요.",
-    "valueOutOfRangeNoUnit": "{min}에서 {max} 사이의 값을 입력해 주세요."
+    "valueOutOfRangeNoUnit": "{min}에서 {max} 사이의 값을 입력해 주세요.",
+    "lastValue": "최근 {value}, {when}",
+    "lastValueDeviates": "지난 측정값과 많이 다릅니다. 맞나요?",
+    "saveAndNext": "저장 후 다음"
   },
   "metricCatalog": {
     "title": "HealthLog가 기록할 수 있는 것",
@@ -1181,7 +1182,6 @@
     "previousPage": "이전 쪽",
     "nextPage": "다음 쪽",
     "loginRequired": "기분 기록을 보려면 로그인해 주세요.",
-    "note": "메모",
     "noteCollapse": "메모 접기",
     "noteExpand": "메모 전체 보기",
     "notePlaceholder": "지금 기분에 대한 메모를 남겨 보세요…",
@@ -1494,22 +1494,6 @@
       "partialToast": "{taken}건 기록, {failed}건 실패. 다시 시도해 주세요",
       "failedToast": "복용을 기록하지 못했어요. 다시 시도해 주세요"
     },
-    "logIntake": {
-      "dialogTitle": "복용 기록",
-      "dialogDescription": "등록된 약에 복용량을 기록해요. 지난 날짜와 시각으로도 기록할 수 있어요.",
-      "medicationLabel": "약",
-      "slotLabel": "일정 슬롯",
-      "slotNone": "슬롯 지정 안 함",
-      "doseLabel": "용량",
-      "doseHint": "약 또는 슬롯의 용량이 미리 채워져요. 이번 복용만 다른 용량으로 기록하려면 수정하세요.",
-      "takenAtLabel": "날짜와 시각",
-      "takenAtHint": "기본값은 지금이에요. 지난 복용을 기록하려면 이전 날짜와 시각을 고르세요.",
-      "skippedLabel": "건너뜀으로 기록",
-      "noMedications": "약을 먼저 추가하면 복용을 기록할 수 있어요.",
-      "cancel": "취소",
-      "submit": "복용 기록",
-      "slotError": "선택한 슬롯의 시각을 찾지 못했어요. 다른 슬롯이나 '슬롯 지정 안 함'을 고르세요."
-    },
     "emptyTitle": "아직 등록한 약이 없어요",
     "emptyDescription": "약과 복용량, 알림 시간을 추가하면 복약 순응도를 확인할 수 있어요.",
     "loadFailed": "약을 불러오지 못했어요",
@@ -1581,11 +1565,8 @@
     },
     "withoutNotification": "알림 없음",
     "pausedSince": "일시중지 시작",
-    "takeNow": "지금 복용",
     "lastDoseYesterday": "마지막 복용 어제",
     "lastDoseDaysAgo": "마지막 복용 {count}일 전",
-    "overdue": "시간 지남",
-    "veryOverdue": "많이 지남",
     "complianceWindow": "복약 순응도 ({days}일)",
     "complianceUnavailable": "복약 순응도를 불러오지 못했어요",
     "complianceNotApplicable": "복약 순응도 해당 없음",
@@ -1594,17 +1575,13 @@
     "complianceInfoLabel": "복약 순응도란?",
     "lastIntake": "마지막 복용:",
     "nextIntake": "다음 복용:",
-    "nextIntakeOverdue": "{time}부터 지남, 지금도 복용할 수 있어요",
     "dayStreak": "일 연속 기록",
     "dayStreakOne": "일 연속 기록",
     "cycleDueToday": "오늘 예정",
     "cycleNoClosedCycles": "아직 완료된 복용 주기가 없어요",
-    "taken": "복용함",
-    "skipped": "건너뜀",
-    "intakeToastTaken": "복용으로 기록함: {name}",
-    "intakeToastSkipped": "건너뜀: {name}",
+    "intakeToastTaken": "{name}: 복용함, {time}",
+    "intakeToastSkipped": "{name}: 건너뜀",
     "intakeToastFailed": "기록하지 못했어요: {name}. 다시 시도해 주세요",
-    "intakeUndo": "실행 취소",
     "intakeUndone": "기록을 되돌렸어요",
     "intakeAlreadyTaken": "{name}은(는) 이미 복용한 것으로 기록되어 있습니다. 새로 저장된 내용은 없습니다.",
     "intakeUndoFailed": "되돌리지 못했어요. 기록에서 수정해 주세요",
@@ -2021,12 +1998,12 @@
     "sideEffectTagAppetiteLoss": "식욕저하",
     "sideEffectTagHeartburn": "속쓰림",
     "sideEffectTagHeadache": "두통",
-    "phaseConfig": "알림 단계",
-    "phaseConfigDescription": "알림을 보낼 시점을 설정해요.",
-    "phaseGreen": "초록",
-    "phaseYellow": "노랑",
-    "phaseOrange": "주황",
-    "phaseRed": "빨강",
+    "phaseConfig": "알림 시점",
+    "phaseConfigDescription": "각 알림이 언제 오고 언제 놓친 것으로 기록되는지 정해요.",
+    "phaseGreen": "복용 시간",
+    "phaseYellow": "아직 복용 시간",
+    "phaseOrange": "시간 지남",
+    "phaseRed": "놓침",
     "phaseMinutes": "분",
     "phasePercent": "%",
     "phaseResetDefaults": "기본값으로 되돌리기",
@@ -2041,13 +2018,11 @@
     "intakeHistoryEmptyTitle": "아직 복용 기록이 없어요",
     "intakeHistoryEmptyDescription": "일일 복용 페이지에서 용량을 기록하면 이력이 쌓여요.",
     "intakeHistoryEmptyAction": "일일 복용 열기",
-    "intakeHistoryColTaken": "복용",
+    "intakeHistoryColTaken": "복용함",
     "intakeHistoryColScheduled": "예정",
     "intakeHistoryColStatus": "상태",
     "intakeHistoryColSource": "출처",
     "intakeHistoryInjectionSite": "주사 부위: {site}",
-    "intakeHistoryStatusTaken": "복용함",
-    "intakeHistoryStatusSkipped": "건너뜀",
     "intakeHistorySortByTaken": "복용 시각순 정렬",
     "intakeHistorySortByScheduled": "예정 시각순 정렬",
     "intakeHistoryPageInfo": "{page}/{total}페이지, 기록 {count}개",
@@ -2103,9 +2078,6 @@
         "selection": {
           "rowToggleLabel": "행 선택"
         },
-        "bulkDelete": {
-          "cancelButton": "취소"
-        },
         "edit": {
           "dialogTitle": "복용 기록 편집",
           "takenAtLabel": "복용 시각",
@@ -2118,11 +2090,9 @@
           "failed": "복용 기록을 수정하지 못했어요."
         },
         "deleteRow": {
-          "confirmTitle": "이 복용 기록을 삭제할까요?",
-          "confirmBody": "기록이 영구히 삭제돼요.",
-          "confirmAction": "삭제",
           "toast": "복용 기록을 삭제했어요",
-          "failed": "복용 기록을 삭제하지 못했어요."
+          "failed": "복용 기록을 삭제하지 못했어요.",
+          "restored": "복용 기록을 되돌렸어요"
         },
         "viewRecent90": "최근 90일",
         "viewAll": "전체 기록",
@@ -2133,11 +2103,8 @@
         "loadError": "기록을 불러오지 못했어요.",
         "empty": "이 기간에는 복용 기록이 아직 없어요.",
         "summaryEmpty": "아직 계산할 복용이 없어요.",
-        "adherenceLabel": "복약 순응도",
         "adherenceBarLabel": "정시 {onTime}, 늦음 {late}, 놓침 {missed}",
-        "add": "기록",
-        "markTaken": "복용함",
-        "markSkipped": "건너뜀",
+        "add": "복용 기록",
         "rowActionsLabel": "{time} 작업",
         "markAsTaken": "복용함으로 표시",
         "markAsSkipped": "건너뜀으로 표시",
@@ -2145,27 +2112,7 @@
         "takenDetail": "예정 {planned}, 복용 {taken}",
         "doseTaken": "용량: {dose}",
         "status": {
-          "taken_on_time": "정시",
-          "taken_late": "늦음",
-          "skipped": "건너뜀",
-          "missed": "놓침",
-          "upcoming": "예정",
           "ad_hoc": "일정 외"
-        },
-        "addDialog": {
-          "title": "복용 기록 추가",
-          "description": "복용을 기록해요. 지난 날짜나 일정 외 복용도 괜찮아요.",
-          "takenAtLabel": "복용 시각",
-          "skippedLabel": "건너뜀",
-          "nudgeHint": "{slot} 시간대와 가까워요. 저장할 때 그 시간대에 배정할지 물어볼게요.",
-          "cancel": "취소",
-          "submit": "저장"
-        },
-        "nudge": {
-          "title": "이 시간대에 배정할까요?",
-          "body": "이 복용은 {slot} 시간대 범위를 살짝 벗어났어요. 그 시간대에 배정할까요, 아니면 일정 외 기록으로 둘까요?",
-          "keepAdHoc": "일정 외",
-          "pin": "배정"
         },
         "pin": {
           "action": "{time} 시간대에 배정",
@@ -2189,20 +2136,22 @@
         "disabledToast": "알림 꺼짐",
         "toggleFailed": "알림 설정을 바꾸지 못했어요.",
         "clientManagedChip": "iPhone에서 관리",
-        "clientManagedHint": "이 약의 알림은 iPhone에서 관리해요."
+        "clientManagedHint": "이 약의 알림은 iPhone에서 관리해요.",
+        "helperAutoRecorded": "복용이 자동으로 기록되어 알림을 보내지 않아요.",
+        "plan": "다음 복용 {dose}: 복용 시간 동안과 늦어졌을 때 알려요. {overdue} 이후 늦은 것으로, {missed} 이후 놓친 것으로 기록해요."
       },
       "settings": {
         "title": "설정",
         "phases": {
-          "openButton": "단계 설정",
-          "requiresCourseWindow": "복용 기간을 설정하면 단계를 쓸 수 있어요."
+          "openButton": "조정"
         },
         "grace": {
           "label": "알림 유예 시간",
           "appliesToAllNote": "이 약의 모든 일정에 적용돼요.",
           "unit": "분",
           "saved": "알림 유예 시간을 저장했어요",
-          "failed": "알림 유예 시간을 저장하지 못했어요."
+          "failed": "알림 유예 시간을 저장하지 못했어요.",
+          "description": "복용 시간 뒤 늦었다는 알림 전까지 알림이 이어지는 시간이에요."
         },
         "codes": {
           "label": "임상 코드 (ATC / RxNorm)",
@@ -2313,7 +2262,6 @@
         "supplyLabel": "재고",
         "supplyRunway": "약 {days}일 더 쓸 수 있어요",
         "jumpToZeitplan": "일정 열기",
-        "jumpToVerlauf": "기록 열기",
         "jumpToBestand": "재고 열기",
         "complianceTitle": "복약 순응도",
         "complianceEmpty": "아직 복약 순응도 데이터가 없어요."
@@ -2499,8 +2447,6 @@
     "tableStockDoses": "{count}회분",
     "tableStockRunway": "약 {days}일 남음",
     "cardLowStockRunway": "재고: 약 {days}일",
-    "takeActionFor": "복용: {name}",
-    "skipActionFor": "건너뛰기: {name}",
     "reorderDescription": "카드 보기와 표 보기 모두에 적용되는 약의 순서를 정하세요.",
     "reorderSaved": "순서를 저장했어요",
     "reorderSaveFailed": "순서를 저장하지 못했어요",
@@ -2693,7 +2639,50 @@
       "saveError": "성분을 저장하지 못했어요",
       "catalogError": "영양소 목록을 불러오지 못했어요",
       "invalidRow": "모든 줄에서 영양소를 고르고 0보다 큰 함량을 입력하세요."
-    }
+    },
+    "dose": {
+      "action": {
+        "take": "복용",
+        "skip": "건너뛰기",
+        "snooze": "나중에 알림 ({minutes}분)",
+        "undo": "실행 취소",
+        "takeFor": "{name} 복용",
+        "skipFor": "{name} 건너뛰기"
+      },
+      "state": {
+        "pending": "예정",
+        "due": "복용 시간",
+        "overdue": "시간 지남",
+        "taken": "복용함",
+        "takenLate": "늦게 복용함",
+        "skipped": "건너뜀",
+        "missed": "놓침",
+        "missedStillCounts": "지금 복용해도 늦게 복용한 것으로 기록돼요.",
+        "snoozedUntil": "{time}까지 알림 미룸"
+      },
+      "snoozedToast": "{name}: {time}에 다시 알려 드려요",
+      "snoozeFailed": "{name} 알림을 미루지 못했어요. 다시 시도해 주세요"
+    },
+    "intakeForm": {
+      "title": "복용 기록",
+      "description": "복용하거나 건너뛴 용량을 나중에라도 기록해요.",
+      "medicationLabel": "약",
+      "outcomeLabel": "결과",
+      "timeLabel": "시간",
+      "doseLabel": "용량",
+      "doseHint": "계획된 용량이 채워져 있어요. 다른 양을 복용했을 때만 바꾸세요.",
+      "countsFor": "{time} 복용분으로 기록돼요.",
+      "countsForLate": "{time} 복용분으로, 늦게 복용한 것으로 기록돼요.",
+      "countNearLabel": "{time} 복용분으로 기록",
+      "skips": "{time} 복용분을 건너뛰어요.",
+      "extraDose": "일정 외 추가 복용으로 기록돼요.",
+      "noMedications": "약을 먼저 추가하면 복용을 기록할 수 있어요.",
+      "saveError": "복용 기록을 저장하지 못했어요. 다시 시도해 주세요"
+    },
+    "phaseGreenHint": "알림 시간이 끝나기 이만큼 전에 첫 알림을 보내요.",
+    "phaseYellowHint": "알림 시간이 끝나기 이만큼 전에 한 번 더 알려요.",
+    "phaseOrangeHint": "알림 시간이 끝난 뒤 이만큼 지나면 복용이 늦었다고 알려요.",
+    "phaseRedHint": "알림 시간이 끝나고 이만큼 지나면 놓친 것으로 기록해요."
   },
   "charts": {
     "loadingLabel": "차트 불러오는 중…",
@@ -5790,6 +5779,13 @@
             "description": "생리와 가임기 리마인더는 알림 표에서 채널별로 켭니다.",
             "link": "알림 표 열기"
           }
+        },
+        "snooze": {
+          "title": "나중에 알림",
+          "description": "약 카드, 텔레그램, 앱에서 복용 알림을 얼마나 미룰지 정해요.",
+          "label": "미루는 시간",
+          "option": "{minutes}분",
+          "saveError": "저장하지 못했어요. 다시 시도해 주세요"
         }
       },
       "layout": {
@@ -9908,29 +9904,29 @@
     "askMedicationName": "약을 지정해 주세요. 예: <b>taken 라미프릴</b>.",
     "medicationNotFoundExact": "약을 찾지 못했어요. HealthLog에 있는 이름 그대로 보내 주세요.",
     "helpHeader": "<b>사용할 수 있는 명령:</b>",
-    "helpBody": "/help: 이 도움말 보기\n/add: 복용 기록하기\n/start: 봇 시작하기\n\n<b>텍스트 명령:</b>\ntaken &lt;이름&gt;: 복용 확인\n\n<b>알림 속 버튼:</b>\n• 복용: 복용 확인\n• 🕐 1h / 🕐 3h: 알림 미루기\n• ⏭ 건너뛰기: 복용 건너뛰기\n• ✓ 확인: 놓친 복용 확인",
+    "helpBody": "/help: 이 도움말 보기\n/add: 복용 기록하기\n/start: 봇 시작하기\n\n<b>텍스트 명령:</b>\ntaken &lt;이름&gt;: 복용 확인\n\n<b>알림 속 버튼:</b>\n• ✅ 복용: 복용 기록\n• 🕐 나중에 알림: 설정한 시간만큼 알림 미루기\n• ⏭ 건너뛰기: 이번 복용 건너뛰기\n• 놓친 것으로 두기: 놓친 복용을 그대로 두기",
     "measureValuePrompt": "값을 답장으로 보내면 기록해요(선택).",
     "buttonMeasureValue": "값…",
     "measureValueSaved": "측정값을 저장했어요.",
     "measureValueInvalid": "측정값을 기록하려면 숫자로 답장해 주세요.",
     "measureValueOutOfRange": "그 값은 가능한 범위를 벗어났어요.",
-    "measureValueExpired": "그 요청은 만료됐어요."
+    "measureValueExpired": "그 요청은 만료됐어요.",
+    "snoozeMinutes": "{minutes}분"
   },
   "medicationReminders": {
-    "phaseGreenTitle": "🟢 알림: {medName}",
-    "phaseGreenMessage": "🟢 알림:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n{minutes}분 뒤에 시간대가 끝나요.",
-    "phaseYellowTitle": "🟡 곧 복용: {medName}",
-    "phaseYellowMessage": "🟡 곧 복용:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n{minutes}분 남았어요.",
-    "phaseOrangeTitle": "🟠 복용 시간 지남: {medName}",
-    "phaseOrangeMessage": "🟠 복용 시간 지남:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n{minutes}분 지났어요.",
-    "phaseRedTitle": "🔴 복용 안 함: {medName}",
-    "phaseRedMessage": "🔴 아직 복용하지 않았어요:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n기록하기 전까지는 놓친 것으로 셉니다. 지금 복용해도 늦은 복용으로 인정돼요.",
-    "buttonTaken": "복용함",
+    "phaseGreenTitle": "🟢 복용 시간: {medName}",
+    "phaseGreenMessage": "🟢 복용 시간:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n{minutes}분 후 복용 시간이 끝나요.",
+    "phaseYellowTitle": "🟡 아직 복용 시간: {medName}",
+    "phaseYellowMessage": "🟡 아직 복용 시간:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n복용 시간이 {minutes}분 남았어요.",
+    "phaseOrangeTitle": "🟠 시간 지남: {medName}",
+    "phaseOrangeMessage": "🟠 시간 지남:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n{minutes}분 지났어요.",
+    "phaseRedTitle": "🔴 놓침: {medName}",
+    "phaseRedMessage": "🔴 놓침:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n지금 복용해도 늦게 복용한 것으로 기록돼요.",
+    "buttonTaken": "✅ 복용",
     "buttonConfirm": "놓친 것으로 두기",
-    "buttonTakenLate": "✅ 복용함 (늦게)",
-    "buttonSnoozeOneHour": "🕐 1시간",
-    "buttonSnoozeThreeHours": "🕐 3시간",
-    "buttonSkip": "⏭ 건너뛰기"
+    "buttonTakenLate": "✅ 복용 (늦게 복용으로 기록)",
+    "buttonSkip": "⏭ 건너뛰기",
+    "buttonSnooze": "🕐 나중에 알림 ({minutes}분)"
   },
   "lowStockReminders": {
     "title": "재고 부족: {medName}",
@@ -10715,7 +10711,11 @@
       "valuesTitle": "{marker}: 전체 측정값",
       "valuesDescription": "이 바이오마커의 모든 측정값이에요. 항목을 바로 편집하거나 삭제할 수 있어요.",
       "backToMarker": "{marker} 화면으로 돌아가기",
-      "latestResult": "최근 결과"
+      "latestResult": "최근 결과",
+      "latestValues": "최근 값",
+      "allValues": "모든 값",
+      "columnDate": "날짜",
+      "columnValue": "값"
     },
     "chart": {
       "empty": "이 기간에는 측정값이 없어요.",
@@ -14086,10 +14086,8 @@
       "anchorLow": "없음",
       "anchorHigh": "상상할 수 있는 최악",
       "intensityValueText": "{max} 중 {value} ({low}부터 {high}까지)",
-      "when": "시각",
       "during": "질병 기간 중",
       "duringNone": "연결 안 함",
-      "note": "메모",
       "notePlaceholder": "그 밖에 어떤 일이 있었나요?",
       "reset": "양식 초기화",
       "emptyHint": "첫 증상을 추가하세요. 예: 전조, 두통.",
@@ -14099,7 +14097,10 @@
       "partlySaved": "{total}개 중 {saved}개 저장됨, 나머지는 아직 선택되어 있습니다.",
       "severalHint": "함께 나타났다면 여러 개를 선택하세요.",
       "filterPlaceholder": "증상 찾기",
-      "filterEmpty": "일치하는 증상이 없습니다."
+      "filterEmpty": "일치하는 증상이 없습니다.",
+      "whenHint": "지난 항목을 기록하려면 날짜와 시간을 바꾸세요.",
+      "intensityShort": "{value}/{max}",
+      "intensityPreset": "지난번 평가로 설정했습니다. 오늘 다르면 바꾸세요."
     },
     "section": {
       "title": "내 증상",

@@ -32,7 +32,7 @@ import {
  *      `medications.treatmentClassGlp1` string into the slot.
  *   3. Take-now status pill — when the current time is inside a
  *      configured schedule window and `lastTakenAt` is null/older, both
- *      cards render the `medications.takeNow` localised text.
+ *      cards render the due state (`medications.dose.state.due`).
  *   4. Primary actions row — exactly two buttons (Eingenommen /
  *      Übersprungen).
  *   5. Purple dose accent — both cards render
@@ -266,7 +266,7 @@ describe("medication card symmetry — Ramipril vs Mounjaro", () => {
     );
 
     for (const html of [ramiprilHtml, mounjaroHtml]) {
-      expect(html).toContain("Take now");
+      expect(html).toContain('data-state="due"');
       // Coloured-pill contract — the in_window pill class carries
       // the success token, not the warning token.
       expect(html).toContain("text-success");

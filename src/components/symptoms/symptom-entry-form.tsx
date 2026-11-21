@@ -23,7 +23,6 @@ import { localDateTimeValue } from "@/components/day/prefill";
 import { useId, useState } from "react";
 import { createPortal } from "react-dom";
 import { Loader2, MoreHorizontal, Plus, RotateCcw } from "lucide-react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { DateTimeField } from "@/components/ui/date-time-field";
@@ -40,6 +39,8 @@ import {
   useActiveRecordName,
   useRecordCapabilities,
 } from "@/hooks/use-record-capabilities";
+import { showEntrySavedToast } from "@/components/forms/entry-saved-toast";
+import { removeSavedSymptomEvents } from "@/components/forms/entry-undo";
 import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
 import {
@@ -55,10 +56,13 @@ import {
 } from "./episode-link-field";
 import { SymptomPicker } from "./symptom-picker";
 import {
+  invalidateSymptomReads,
   SymptomSaveError,
+  useLatestSymptomIntensities,
   useLogSymptomEvents,
   useSymptomDefinitions,
 } from "./use-symptoms";
+import { useQueryClient } from "@tanstack/react-query";
 
 const NOTE_MAX_LENGTH = 500;
 
@@ -95,6 +99,9 @@ export function SymptomEntryForm({
   // has since ended, as long as it happened while that one ran.
   const episodes = useIllnessEpisodes(true);
   const log = useLogSymptomEvents();
+  const queryClient = useQueryClient();
+  // Each symptom's last intensity: a picked symptom's slider starts there.
+  const latest = useLatestSymptomIntensities();
 
   const picks = useSymptomPicks();
   const { picked } = picks;
@@ -125,7 +132,7 @@ export function SymptomEntryForm({
 
   function togglePick(id: string) {
     setSymptomError(null);
-    picks.toggle(id);
+    picks.toggle(id, latest.get(id));
   }
 
   function resetForm() {
@@ -147,8 +154,9 @@ export function SymptomEntryForm({
     if (!picks.validate()) return;
 
     const occurredAtIso = new Date(occurredAt).toISOString();
+    let events: Array<{ id: string }>;
     try {
-      await log.mutateAsync(
+      events = await log.mutateAsync(
         picked.map((definitionId) => ({
           definitionId,
           intensity: picks.intensities[definitionId] ?? 0,
@@ -173,64 +181,38 @@ export function SymptomEntryForm({
       );
       return;
     }
-    toast.success(
-      t("common.saved"),
-      recordName
-        ? {
-            description: t("recordSharing.toast.savedTo", {
-              name: recordName,
-            }),
+    const [only] = picked;
+    showEntrySavedToast({
+      t,
+      label: picked
+        .map((id) => labelById.get(id) ?? t("symptoms.unreadableLabel"))
+        .join(", "),
+      value:
+        picked.length === 1 && only !== undefined
+          ? t("symptoms.entry.intensityShort", {
+              value: picks.intensities[only] ?? 0,
+              max: SYMPTOM_INTENSITY_MAX,
+            })
+          : undefined,
+      recordName,
+      undo: canDefine
+        ? async () => {
+            await removeSavedSymptomEvents(events.map((e) => e.id));
+            void invalidateSymptomReads(queryClient);
           }
         : undefined,
-    );
+    });
     resetForm();
     onSuccess?.();
   }
 
   const footerNode = (
-    <div className="flex w-full items-center justify-between gap-2">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="size-11"
-            disabled={busy}
-            aria-label={t("common.moreOptions")}
-          >
-            <MoreHorizontal className="size-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <DropdownMenuItem onClick={resetForm}>
-            <RotateCcw className="mr-2 size-4" />
-            {t("symptoms.entry.reset")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <div className="flex items-center gap-2">
-        {onCancel && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={busy}
-          >
-            {t("common.cancel")}
-          </Button>
-        )}
-        <Button type="submit" form={formId} disabled={busy}>
-          {busy ? (
-            <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <Plus className="size-4" />
-          )}
-          {t("common.save")}
-        </Button>
-      </div>
-    </div>
+    <SymptomEntryFooter
+      busy={busy}
+      formId={formId}
+      onReset={resetForm}
+      onCancel={onCancel}
+    />
   );
 
   const symptomGroupId = `${formId}-symptom`;
@@ -252,6 +234,7 @@ export function SymptomEntryForm({
         atLimit={atLimit}
         limit={limit}
         error={symptomError}
+        autoFocus
       />
 
       {(picked.length === 0 ? [DRAFT] : picked).map((id) => (
@@ -268,13 +251,14 @@ export function SymptomEntryForm({
           value={picks.intensities[id] ?? null}
           onChange={(next) => picks.setIntensity(id, next)}
           showError={picks.missing.has(id)}
+          preset={picks.preset.has(id)}
         />
       ))}
 
       <FieldGroup
         htmlFor={`${formId}-occurred-at`}
-        label={t("symptoms.entry.when")}
-        hint={t("measurements.timestampBackdateHint")}
+        label={t("measurements.timestamp")}
+        hint={t("symptoms.entry.whenHint")}
       >
         <DateTimeField
           id={`${formId}-occurred-at`}
@@ -297,7 +281,7 @@ export function SymptomEntryForm({
         htmlFor={`${formId}-note`}
         label={
           <>
-            {t("symptoms.entry.note")}
+            {t("common.note")}
             <span className="text-muted-foreground ml-1 font-normal">
               ({t("common.optional")})
             </span>
@@ -349,20 +333,32 @@ function useSymptomPicks() {
     {},
   );
   const [missing, setMissing] = useState<Set<string>>(() => new Set());
+  // The picks whose intensity is still the preset from their last occurrence.
+  const [preset, setPreset] = useState<Set<string>>(() => new Set());
 
-  function toggle(id: string) {
+  /** Toggles `id`; a new pick starts on `last`, its previous intensity. */
+  function toggle(id: string, last?: number) {
     if (picked.includes(id)) {
       setPicked(picked.filter((p) => p !== id));
       return;
     }
-    if (picked.length === 0 && (intensities[DRAFT] ?? null) !== null) {
-      setIntensities((prev) => ({ ...prev, [id]: prev[DRAFT] ?? null }));
+    const draft = picked.length === 0 ? (intensities[DRAFT] ?? null) : null;
+    if (draft !== null) {
+      setIntensities((prev) => ({ ...prev, [id]: draft }));
       setMissing(new Set());
+    } else if (last !== undefined && (intensities[id] ?? null) === null) {
+      setIntensities((prev) => ({ ...prev, [id]: last }));
+      setPreset((prev) => new Set(prev).add(id));
     }
     setPicked([...picked, id]);
   }
 
   function setIntensity(id: string, value: number | null) {
+    setPreset((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
     setIntensities((prev) => ({ ...prev, [id]: value }));
     setMissing((prev) => {
       const next = new Set(prev);
@@ -383,12 +379,14 @@ function useSymptomPicks() {
     setPicked([]);
     setIntensities({});
     setMissing(new Set());
+    setPreset(new Set());
   }
 
   return {
     picked,
     intensities,
     missing,
+    preset,
     toggle,
     setIntensity,
     validate,
@@ -404,12 +402,15 @@ function IntensitySlider({
   onChange,
   showError,
   testId,
+  preset,
 }: {
   label: string;
   value: number | null;
   onChange: (next: number | null) => void;
   showError: boolean;
   testId?: string;
+  /** The value is the symptom's last intensity, not one chosen today. */
+  preset: boolean;
 }) {
   const { t } = useTranslations();
   const low = t("symptoms.entry.anchorLow");
@@ -437,11 +438,79 @@ function IntensitySlider({
               })
         }
       />
+      {preset ? (
+        <p
+          className="text-muted-foreground text-xs"
+          data-testid="symptom-intensity-preset"
+        >
+          {t("symptoms.entry.intensityPreset")}
+        </p>
+      ) : null}
       {showError ? (
         <p role="alert" className="text-destructive text-sm">
           {t("symptoms.entry.intensityRequired")}
         </p>
       ) : null}
+    </div>
+  );
+}
+
+/** The action row: the reset menu, Cancel and Save, portalled by the form. */
+function SymptomEntryFooter({
+  busy,
+  formId,
+  onReset,
+  onCancel,
+}: {
+  busy: boolean;
+  formId: string;
+  onReset: () => void;
+  onCancel?: () => void;
+}) {
+  const { t } = useTranslations();
+  return (
+    <div className="flex w-full items-center justify-between gap-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="size-11"
+            disabled={busy}
+            aria-label={t("common.moreOptions")}
+          >
+            <MoreHorizontal className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuItem onClick={onReset}>
+            <RotateCcw className="mr-2 size-4" />
+            {t("symptoms.entry.reset")}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <div className="flex items-center gap-2">
+        {onCancel && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={busy}
+          >
+            {t("common.cancel")}
+          </Button>
+        )}
+        <Button type="submit" form={formId} disabled={busy}>
+          {busy ? (
+            <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
+          ) : (
+            <Plus className="size-4" />
+          )}
+          {t("common.save")}
+        </Button>
+      </div>
     </div>
   );
 }

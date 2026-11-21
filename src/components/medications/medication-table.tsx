@@ -26,6 +26,10 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MedicationStatusPill } from "@/components/medications/card-parts/medication-status-pill";
+import {
+  DoseStateLabel,
+  OverdueSlotValue,
+} from "@/components/medications/dose-state-label";
 import { useWeekdayLabel } from "@/components/medications/card-parts/medication-next-last-slot";
 import { resolveDisplayedSlotInstant } from "@/components/medications/card-parts/displayed-slot-instant";
 import { estimateRunwayDays } from "@/lib/medications/supply-runway";
@@ -488,15 +492,14 @@ function MedicationTableRowItem({
     timeZone: userTz,
   });
 
-  // Status cell, the card's precedence (last-dose context, then overdue,
-  // then the pill read from the resolved dose, `dose-state/pill.ts`); the
-  // table keeps the taken-early pill the card hides (no last-intake line).
+  // Status cell in the card's precedence (last-dose context, escalation, then
+  // the resolved pill); the table keeps the taken-early pill the card hides.
   const canAct = medication.active && medication.intakeActionable !== false;
-  const overdueLabel =
+  const escalation: "missed" | "overdue" | null =
     canAct && doseStatus === "missed"
-      ? t("medications.veryOverdue")
+      ? "missed"
       : canAct && doseStatus === "overdue"
-        ? t("medications.overdue")
+        ? "overdue"
         : null;
 
   const pill = cardWindowPill(
@@ -504,6 +507,7 @@ function MedicationTableRowItem({
     currentWindowStatus,
     now,
     userTz,
+    medication.nextDueAt,
   );
   const statusCell =
     pill && pill.takenEarlyDaysAgo != null ? (
@@ -514,10 +518,8 @@ function MedicationTableRowItem({
         windowEnd={pill.windowEnd}
         takenEarlyDaysAgo={pill.takenEarlyDaysAgo}
       />
-    ) : overdueLabel ? (
-      <span className="text-destructive text-sm font-medium">
-        {overdueLabel}
-      </span>
+    ) : escalation ? (
+      <DoseStateLabel state={escalation} emphasis className="text-sm" />
     ) : pill ? (
       <MedicationStatusPill
         compact
@@ -578,13 +580,7 @@ function MedicationTableRowItem({
     );
   } else if (medication.active) {
     if (medication.nextDueOverdue && nextAt) {
-      nextCell = (
-        <span className="text-warning font-medium">
-          {t("medications.nextIntakeOverdue", {
-            time: formatTime(new Date(nextAt).toISOString()),
-          })}
-        </span>
-      );
+      nextCell = <OverdueSlotValue at={nextAt} />;
     } else if (currentWindowStatus.status === "in_window") {
       nextCell = (
         <span>
@@ -592,6 +588,7 @@ function MedicationTableRowItem({
             currentWindowStatus.window!.start,
             currentWindowStatus.window!.end,
             locale,
+            fmt.wallTime,
           )}
         </span>
       );
@@ -617,6 +614,7 @@ function MedicationTableRowItem({
             nextSchedule.windowStart,
             nextSchedule.windowEnd,
             locale,
+            fmt.wallTime,
           )}
         </span>
       );
@@ -757,7 +755,7 @@ function MedicationTableRowItem({
               className="size-11 sm:size-9"
               onClick={() => recordIntake(false, displayedSlot)}
               disabled={!!intakeLoading}
-              aria-label={t("medications.takeActionFor", {
+              aria-label={t("medications.dose.action.takeFor", {
                 name: medication.name,
               })}
             >
@@ -773,7 +771,7 @@ function MedicationTableRowItem({
               className="size-11 sm:size-9"
               onClick={() => recordIntake(true, displayedSlot)}
               disabled={!!intakeLoading}
-              aria-label={t("medications.skipActionFor", {
+              aria-label={t("medications.dose.action.skipFor", {
                 name: medication.name,
               })}
             >

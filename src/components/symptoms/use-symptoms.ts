@@ -19,6 +19,7 @@ import {
 import { apiDelete, apiGet, apiPatch } from "@/lib/api/api-fetch";
 import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import { invalidateKeys, queryKeys } from "@/lib/query-keys";
+import { latestIntensityById } from "./symptom-chip-filter";
 import type {
   SymptomDefinitionDTO,
   SymptomEventDTO,
@@ -125,6 +126,28 @@ export function useSymptomEvents(
   });
 }
 
+/** Enough of the newest occurrences to find each symptom's last intensity. */
+const LATEST_EVENTS_LIMIT = 200;
+
+/**
+ * Each symptom's most recent intensity, for the entry form to start that
+ * symptom's slider on. An empty map while it loads or when it fails: the
+ * slider then starts unset, as it always did.
+ */
+export function useLatestSymptomIntensities(
+  enabled = true,
+): Map<string, number> {
+  const query = useQuery({
+    queryKey: queryKeys.symptomLatestEvents(),
+    enabled,
+    queryFn: () =>
+      apiGet<SymptomEventList>(
+        `/api/symptoms/events?limit=${LATEST_EVENTS_LIMIT}`,
+      ),
+  });
+  return latestIntensityById(query.data?.events ?? []);
+}
+
 /**
  * What a symptom write reaches: the illness tree its keys live under, and the
  * day and the timeline, which list every occurrence. Nothing on the dashboard
@@ -214,15 +237,18 @@ export function useLogSymptomEvents() {
   return useMutation({
     mutationFn: async (inputs: SymptomEventCreateInput[]) => {
       const saved: string[] = [];
+      const events: SymptomEventDTO[] = [];
       try {
         for (const input of inputs) {
-          await post<SymptomEventDTO>("/api/symptoms/events", input);
+          events.push(
+            await post<SymptomEventDTO>("/api/symptoms/events", input),
+          );
           saved.push(input.definitionId);
         }
       } catch (cause) {
         throw new SymptomSaveError(saved, cause);
       }
-      return saved;
+      return events;
     },
     onSettled: invalidate,
   });

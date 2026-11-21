@@ -59,7 +59,12 @@
     "readThrottled": "Gerade gibt es zu viele Anfragen, versuch es später noch einmal.",
     "sessionEnded": "Deine Sitzung ist abgelaufen, melde dich erneut an, um weiterzumachen.",
     "signIn": "Anmelden",
-    "yes": "Ja"
+    "yes": "Ja",
+    "savedWithValue": "{label} {value} gespeichert",
+    "savedNamed": "{label} gespeichert",
+    "entryUndone": "Eintrag entfernt",
+    "entryUndoFailed": "Der Eintrag konnte nicht entfernt werden.",
+    "note": "Notiz"
   },
   "apiErrors": {
     "measurement": {
@@ -326,7 +331,7 @@
     "colGlp1Note": "Notiz",
     "colGlp1SideEffect": "Nebenwirkung",
     "colMedication": "Medikament",
-    "colTaken": "Eingenommen",
+    "colTaken": "Genommen",
     "colSkipped": "Übersprungen",
     "colMissed": "Verpasst",
     "colExpected": "Erwartet",
@@ -597,7 +602,7 @@
       "measurement": "Messung",
       "measurementDescription": "Gewicht, Blutdruck, Puls und mehr",
       "medication": "Medikament",
-      "medicationDescription": "Eine Dosis als genommen markieren",
+      "medicationDescription": "Eine Dosis erfassen, genommen oder übersprungen",
       "mood": "Stimmung",
       "moodDescription": "Stimmung und Tags erfassen",
       "workout": "Workout",
@@ -607,7 +612,8 @@
       "lifeEventDescription": "Umzug, Geburt, neue Stelle",
       "lifeEvent": "Lebensereignis",
       "seizure": "Anfall",
-      "seizureDescription": "Timer starten oder einen nicht gestoppten Anfall eintragen"
+      "seizureDescription": "Timer starten oder einen nicht gestoppten Anfall eintragen",
+      "recentMeasurementDescription": "Zuletzt erfasster Messwert"
     },
     "cycle": "Zyklus",
     "labs": "Laborwerte",
@@ -784,14 +790,7 @@
     "quickAddLifeEvent": "Lebensereignis erfassen",
     "customizeDashboard": "Dashboard anpassen",
     "medicationIntakeQuickAdd": {
-      "sheetDescription": "Dosis, Zeitpunkt und Medikament in wenigen Tipps protokollieren.",
-      "medicationLabel": "Medikament",
-      "medicationPlaceholder": "Medikament auswählen",
-      "doseLabel": "Dosis",
-      "dosePlaceholder": "z. B. 5 mg",
-      "doseHint": "Vorbelegt mit der Standarddosis. Passe sie an, um eine abweichende Dosis nur für diese Einnahme zu erfassen.",
-      "timeLabel": "Zeitpunkt",
-      "saveError": "Einnahme konnte nicht gespeichert werden.",
+      "sheetDescription": "Erfasse eine genommene oder übersprungene Dosis, auch nachträglich.",
       "emptyTitle": "Noch keine Medikamente angelegt",
       "emptyDescription": "Lege zuerst ein Medikament mit Zeitfenster an, damit du die Einnahme protokollieren kannst.",
       "emptyCta": "Medikament hinzufügen",
@@ -912,7 +911,6 @@
     "value": "Wert",
     "date": "Datum",
     "source": "Quelle",
-    "notes": "Notizen",
     "typeWeight": "Gewicht",
     "typeBloodPressure": "Blutdruck",
     "typeBpSys": "Sys",
@@ -1112,7 +1110,10 @@
     "typeAcuteTrainingLoad": "Akute Trainingsbelastung",
     "sourceGarmin": "Garmin",
     "valueOutOfRange": "Gib einen Wert zwischen {min} und {max} {unit} ein.",
-    "valueOutOfRangeNoUnit": "Gib einen Wert zwischen {min} und {max} ein."
+    "valueOutOfRangeNoUnit": "Gib einen Wert zwischen {min} und {max} ein.",
+    "lastValue": "Zuletzt {value}, {when}",
+    "lastValueDeviates": "Deutlich anders als dein letzter Wert. Stimmt das?",
+    "saveAndNext": "Speichern und weiter"
   },
   "metricCatalog": {
     "title": "Was HealthLog erfassen kann",
@@ -1181,7 +1182,6 @@
     "previousPage": "Vorherige Seite",
     "nextPage": "Nächste Seite",
     "loginRequired": "Bitte anmelden, um Stimmungseinträge zu sehen.",
-    "note": "Notiz",
     "noteCollapse": "Notiz einklappen",
     "noteExpand": "Notiz vollständig anzeigen",
     "notePlaceholder": "Notiz dazu, wie du dich fühlst…",
@@ -1494,22 +1494,6 @@
       "partialToast": "{taken} erfasst, {failed} fehlgeschlagen. Bitte erneut versuchen",
       "failedToast": "Keine Einnahme erfasst. Bitte erneut versuchen"
     },
-    "logIntake": {
-      "dialogTitle": "Einnahme erfassen",
-      "dialogDescription": "Erfasse eine Dosis für ein vorhandenes Medikament. Du kannst sie auf ein vergangenes Datum und eine vergangene Uhrzeit zurückdatieren.",
-      "medicationLabel": "Medikament",
-      "slotLabel": "Einnahmeslot",
-      "slotNone": "Kein bestimmter Slot",
-      "doseLabel": "Dosis",
-      "doseHint": "Vorbelegt mit der Dosis des Medikaments bzw. Slots. Passe sie an, um eine abweichende Dosis nur für diese Einnahme zu erfassen.",
-      "takenAtLabel": "Datum und Uhrzeit",
-      "takenAtHint": "Standard ist jetzt; wähle ein früheres Datum und eine frühere Uhrzeit, um eine vergangene Dosis zu erfassen.",
-      "skippedLabel": "Als übersprungen erfassen",
-      "noMedications": "Lege zuerst ein Medikament an, dann kannst du Einnahmen dafür erfassen.",
-      "cancel": "Abbrechen",
-      "submit": "Einnahme erfassen",
-      "slotError": "Der gewählte Slot konnte keiner Uhrzeit zugeordnet werden. Bitte wähle einen anderen Slot oder „Kein bestimmter Slot“."
-    },
     "emptyTitle": "Noch keine Medikamente",
     "emptyDescription": "Lege Medikamente, Dosierungen und Einnahmefenster an, um die Therapietreue zu erfassen.",
     "loadFailed": "Medikamente konnten nicht geladen werden",
@@ -1581,11 +1565,8 @@
     },
     "withoutNotification": "Ohne Benachrichtigung",
     "pausedSince": "Pausiert seit",
-    "takeNow": "Jetzt einnehmen",
     "lastDoseYesterday": "Letzte Dosis gestern",
     "lastDoseDaysAgo": "Letzte Dosis vor {count} Tagen",
-    "overdue": "Überfällig",
-    "veryOverdue": "Stark überfällig",
     "complianceWindow": "Therapietreue ({days} Tage)",
     "complianceUnavailable": "Therapietreue konnte nicht geladen werden",
     "complianceNotApplicable": "Therapietreue nicht anwendbar",
@@ -1594,17 +1575,13 @@
     "complianceInfoLabel": "Was bedeutet Therapietreue?",
     "lastIntake": "Letzte Einnahme:",
     "nextIntake": "Nächste Einnahme:",
-    "nextIntakeOverdue": "Überfällig seit {time}, noch nachholbar",
     "dayStreak": "Tage Serie",
     "dayStreakOne": "Tag Serie",
     "cycleDueToday": "Heute fällig",
     "cycleNoClosedCycles": "Noch keine abgeschlossenen Dosiszyklen",
-    "taken": "Genommen",
-    "skipped": "Übersprungen",
-    "intakeToastTaken": "{name} als genommen erfasst",
-    "intakeToastSkipped": "{name} übersprungen",
+    "intakeToastTaken": "{name}: genommen, {time}",
+    "intakeToastSkipped": "{name}: übersprungen",
     "intakeToastFailed": "{name} konnte nicht erfasst werden. Bitte erneut versuchen",
-    "intakeUndo": "Rückgängig",
     "intakeUndone": "Eintrag zurückgenommen",
     "intakeAlreadyTaken": "{name} war schon als genommen erfasst. Nichts Neues gespeichert.",
     "intakeUndoFailed": "Rückgängig fehlgeschlagen. Im Verlauf korrigieren",
@@ -2021,12 +1998,12 @@
     "sideEffectTagAppetiteLoss": "Appetitlosigkeit",
     "sideEffectTagHeartburn": "Sodbrennen",
     "sideEffectTagHeadache": "Kopfschmerzen",
-    "phaseConfig": "Erinnerungsphasen",
-    "phaseConfigDescription": "Konfiguriere die Zeitpunkte für Erinnerungen.",
-    "phaseGreen": "Grün",
-    "phaseYellow": "Gelb",
-    "phaseOrange": "Orange",
-    "phaseRed": "Rot",
+    "phaseConfig": "Zeitpunkte der Erinnerungen",
+    "phaseConfigDescription": "Wann welche Erinnerung kommt und wann eine Dosis als verpasst zählt.",
+    "phaseGreen": "Fällig",
+    "phaseYellow": "Noch fällig",
+    "phaseOrange": "Überfällig",
+    "phaseRed": "Verpasst",
     "phaseMinutes": "Min",
     "phasePercent": "%",
     "phaseResetDefaults": "Auf Standard zurücksetzen",
@@ -2041,13 +2018,11 @@
     "intakeHistoryEmptyTitle": "Noch keine Einnahmen erfasst",
     "intakeHistoryEmptyDescription": "Trage eine Einnahme auf der Tagesübersicht ein, um den Verlauf aufzubauen.",
     "intakeHistoryEmptyAction": "Zur Tagesübersicht",
-    "intakeHistoryColTaken": "Eingenommen",
+    "intakeHistoryColTaken": "Genommen",
     "intakeHistoryColScheduled": "Geplant",
     "intakeHistoryColStatus": "Status",
     "intakeHistoryColSource": "Quelle",
     "intakeHistoryInjectionSite": "Injektionsstelle: {site}",
-    "intakeHistoryStatusTaken": "Eingenommen",
-    "intakeHistoryStatusSkipped": "Übersprungen",
     "intakeHistorySortByTaken": "Nach Einnahme-Zeitpunkt sortieren",
     "intakeHistorySortByScheduled": "Nach geplantem Zeitpunkt sortieren",
     "intakeHistoryPageInfo": "Seite {page} von {total}, {count} Einträge",
@@ -2103,9 +2078,6 @@
         "selection": {
           "rowToggleLabel": "Zeile auswählen"
         },
-        "bulkDelete": {
-          "cancelButton": "Abbrechen"
-        },
         "edit": {
           "dialogTitle": "Einnahme bearbeiten",
           "takenAtLabel": "Eingenommen um",
@@ -2118,11 +2090,9 @@
           "failed": "Einnahme konnte nicht aktualisiert werden."
         },
         "deleteRow": {
-          "confirmTitle": "Diese Einnahme löschen?",
-          "confirmBody": "Der Eintrag wird dauerhaft entfernt.",
-          "confirmAction": "Löschen",
           "toast": "Einnahme gelöscht",
-          "failed": "Einnahme konnte nicht gelöscht werden."
+          "failed": "Einnahme konnte nicht gelöscht werden.",
+          "restored": "Einnahme wiederhergestellt"
         },
         "viewRecent90": "Letzte 90 Tage",
         "viewAll": "Komplette Historie",
@@ -2133,11 +2103,8 @@
         "loadError": "Verlauf konnte nicht geladen werden.",
         "empty": "Noch keine Einnahmen in diesem Zeitraum.",
         "summaryEmpty": "Noch keine auswertbaren Dosen.",
-        "adherenceLabel": "Therapietreue",
         "adherenceBarLabel": "{onTime} pünktlich, {late} verspätet, {missed} verpasst",
-        "add": "Eintrag",
-        "markTaken": "Genommen",
-        "markSkipped": "Übersprungen",
+        "add": "Einnahme erfassen",
         "rowActionsLabel": "Aktionen für {time}",
         "markAsTaken": "Als genommen markieren",
         "markAsSkipped": "Als übersprungen markieren",
@@ -2145,27 +2112,7 @@
         "takenDetail": "geplant {planned}, genommen {taken}",
         "doseTaken": "Dosis: {dose}",
         "status": {
-          "taken_on_time": "pünktlich",
-          "taken_late": "verspätet",
-          "skipped": "übersprungen",
-          "missed": "verpasst",
-          "upcoming": "ausstehend",
-          "ad_hoc": "außerplanmäßig"
-        },
-        "addDialog": {
-          "title": "Einnahme hinzufügen",
-          "description": "Dosis nachtragen, auch rückwirkend oder außerplanmäßig.",
-          "takenAtLabel": "Genommen um",
-          "skippedLabel": "Übersprungen",
-          "nudgeHint": "Liegt nah am Slot {slot}. Beim Speichern fragen wir, ob zugeordnet werden soll.",
-          "cancel": "Abbrechen",
-          "submit": "Speichern"
-        },
-        "nudge": {
-          "title": "Diesem Slot zuordnen?",
-          "body": "Die Einnahme liegt knapp außerhalb des Fensters von {slot}. Diesem Slot zuordnen oder als außerplanmäßigen Eintrag speichern?",
-          "keepAdHoc": "Außerplanmäßig",
-          "pin": "Zuordnen"
+          "ad_hoc": "Außerplanmäßig"
         },
         "pin": {
           "action": "Slot {time} zuordnen",
@@ -2189,20 +2136,22 @@
         "disabledToast": "Erinnerungen aus",
         "toggleFailed": "Erinnerungs-Einstellung konnte nicht geändert werden.",
         "clientManagedChip": "Vom iPhone verwaltet",
-        "clientManagedHint": "Dein iPhone steuert die Erinnerungen für dieses Medikament."
+        "clientManagedHint": "Dein iPhone steuert die Erinnerungen für dieses Medikament.",
+        "helperAutoRecorded": "Dosen werden automatisch erfasst, deshalb kommen keine Erinnerungen.",
+        "plan": "Nächste Dosis {dose}: Erinnerungen, solange sie fällig ist, und wenn sie überfällig ist. Überfällig ab {overdue}; ab {missed} zählt sie als verpasst."
       },
       "settings": {
         "title": "Einstellungen",
         "phases": {
-          "openButton": "Phasen konfigurieren",
-          "requiresCourseWindow": "Phasen sind nur mit Kurs-Fenster verfügbar."
+          "openButton": "Anpassen"
         },
         "grace": {
           "label": "Erinnerungsfenster",
           "appliesToAllNote": "Gilt für alle Zeitpläne dieses Medikaments.",
           "unit": "Minuten",
           "saved": "Erinnerungsfenster gespeichert",
-          "failed": "Erinnerungsfenster konnte nicht gespeichert werden."
+          "failed": "Erinnerungsfenster konnte nicht gespeichert werden.",
+          "description": "Wie lange nach der Dosiszeit erinnert wird, bevor die Überfällig-Erinnerung kommt."
         },
         "codes": {
           "label": "Klinische Codes (ATC / RxNorm)",
@@ -2313,7 +2262,6 @@
         "supplyLabel": "Bestand",
         "supplyRunway": "Reicht noch ca. {days} Tage",
         "jumpToZeitplan": "Zum Zeitplan",
-        "jumpToVerlauf": "Zum Verlauf",
         "jumpToBestand": "Zum Bestand",
         "complianceTitle": "Therapietreue",
         "complianceEmpty": "Noch keine Daten zur Therapietreue."
@@ -2499,8 +2447,6 @@
     "tableStockDoses": "{count} Dosen",
     "tableStockRunway": "≈ {days} Tage übrig",
     "cardLowStockRunway": "Vorrat: ≈ {days} Tage",
-    "takeActionFor": "Einnehmen: {name}",
-    "skipActionFor": "Überspringen: {name}",
     "reorderDescription": "Bestimme die Reihenfolge deiner Medikamente für die Karten- und die Tabellenansicht.",
     "reorderSaved": "Reihenfolge gespeichert",
     "reorderSaveFailed": "Reihenfolge konnte nicht gespeichert werden",
@@ -2693,7 +2639,50 @@
       "saveError": "Die Zusammensetzung konnte nicht gespeichert werden",
       "catalogError": "Die Nährstoffliste konnte nicht geladen werden",
       "invalidRow": "Wähl in jeder Zeile einen Nährstoff und trag eine Menge über null ein."
-    }
+    },
+    "dose": {
+      "action": {
+        "take": "Einnehmen",
+        "skip": "Überspringen",
+        "snooze": "Später erinnern ({minutes} Min.)",
+        "undo": "Rückgängig",
+        "takeFor": "Einnehmen: {name}",
+        "skipFor": "Überspringen: {name}"
+      },
+      "state": {
+        "pending": "Ausstehend",
+        "due": "Fällig",
+        "overdue": "Überfällig",
+        "taken": "Genommen",
+        "takenLate": "Verspätet genommen",
+        "skipped": "Übersprungen",
+        "missed": "Verpasst",
+        "missedStillCounts": "Nimmst du sie jetzt, zählt sie noch, als verspätet.",
+        "snoozedUntil": "Erinnerung verschoben auf {time}"
+      },
+      "snoozedToast": "{name}: Erinnerung wieder um {time}",
+      "snoozeFailed": "{name} konnte nicht verschoben werden. Bitte erneut versuchen"
+    },
+    "intakeForm": {
+      "title": "Einnahme erfassen",
+      "description": "Erfasse eine genommene oder übersprungene Dosis, auch nachträglich.",
+      "medicationLabel": "Medikament",
+      "outcomeLabel": "Was ist passiert",
+      "timeLabel": "Zeitpunkt",
+      "doseLabel": "Dosis",
+      "doseHint": "Vorbelegt mit der geplanten Dosis. Ändere sie nur, wenn du eine andere Menge genommen hast.",
+      "countsFor": "Zählt für die Dosis um {time}.",
+      "countsForLate": "Zählt für die Dosis um {time}, als verspätet.",
+      "countNearLabel": "Für die Dosis um {time} zählen",
+      "skips": "Überspringt die Dosis um {time}.",
+      "extraDose": "Wird als zusätzliche Dosis außerhalb des Plans erfasst.",
+      "noMedications": "Lege zuerst ein Medikament an, dann kannst du Einnahmen dafür erfassen.",
+      "saveError": "Die Einnahme konnte nicht gespeichert werden. Bitte erneut versuchen"
+    },
+    "phaseGreenHint": "Erste Erinnerung, so lange vor dem Ende des Erinnerungsfensters.",
+    "phaseYellowHint": "Weitere Erinnerung, so lange vor dem Ende des Fensters.",
+    "phaseOrangeHint": "Erinnerung, dass die Dosis überfällig ist, so lange nach dem Ende des Fensters.",
+    "phaseRedHint": "So lange nach dem Fenster zählt die Dosis als verpasst."
   },
   "charts": {
     "loadingLabel": "Diagramm wird geladen…",
@@ -5790,6 +5779,13 @@
             "description": "Perioden- und Fruchtbarkeits-Erinnerungen schaltest du je Kanal in der Benachrichtigungsübersicht.",
             "link": "Benachrichtigungsübersicht öffnen"
           }
+        },
+        "snooze": {
+          "title": "Später erinnern",
+          "description": "Wie lange eine Dosis-Erinnerung verschoben wird, auf der Medikamentenkarte, in Telegram und in der App.",
+          "label": "Verschieben um",
+          "option": "{minutes} Min.",
+          "saveError": "Konnte nicht gespeichert werden. Bitte erneut versuchen"
         }
       },
       "layout": {
@@ -9908,29 +9904,29 @@
     "askMedicationName": "Bitte Medikament angeben, z. B. <b>genommen Ramipril</b>.",
     "medicationNotFoundExact": "Medikament nicht gefunden. Bitte Namen exakt wie in HealthLog senden.",
     "helpHeader": "<b>Verfügbare Befehle:</b>",
-    "helpBody": "/help: Diese Hilfe anzeigen\n/add: Einnahme erfassen\n/start: Bot starten\n\n<b>Textbefehle:</b>\ngenommen &lt;Name&gt;: Einnahme bestätigen\n\n<b>Über die Buttons in Erinnerungen:</b>\n• Genommen: Einnahme bestätigen\n• 🕐 1h / 🕐 3h: Erinnerung verschieben\n• ⏭ Überspringen: Einnahme überspringen\n• ✓ Bestätigen: Verpasste Einnahme bestätigen",
+    "helpBody": "/help: Diese Hilfe anzeigen\n/add: Einnahme erfassen\n/start: Bot starten\n\n<b>Textbefehle:</b>\ngenommen &lt;Name&gt;: Einnahme bestätigen\n\n<b>Über die Buttons in Erinnerungen:</b>\n• ✅ Einnehmen: Einnahme erfassen\n• 🕐 Später erinnern: Erinnerung verschieben, um die in den Einstellungen gewählte Dauer\n• ⏭ Überspringen: Dosis überspringen\n• Als verpasst lassen: verpasste Dosis als verpasst lassen",
     "measureValuePrompt": "Antworte mit dem Wert, um ihn zu speichern (optional).",
     "buttonMeasureValue": "Wert…",
     "measureValueSaved": "Messwert gespeichert.",
     "measureValueInvalid": "Antworte mit einer Zahl, um einen Messwert zu speichern.",
     "measureValueOutOfRange": "Dieser Wert liegt außerhalb des plausiblen Bereichs.",
-    "measureValueExpired": "Diese Aufforderung ist abgelaufen."
+    "measureValueExpired": "Diese Aufforderung ist abgelaufen.",
+    "snoozeMinutes": "{minutes} Min."
   },
   "medicationReminders": {
-    "phaseGreenTitle": "🟢 Erinnerung: {medName}",
-    "phaseGreenMessage": "🟢 Erinnerung:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nZeitfenster endet in {minutes} Min.",
-    "phaseYellowTitle": "🟡 Bald fällig: {medName}",
-    "phaseYellowMessage": "🟡 Bald fällig:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nNoch {minutes} Min. Zeit.",
+    "phaseGreenTitle": "🟢 Fällig: {medName}",
+    "phaseGreenMessage": "🟢 Fällig:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nDas Zeitfenster endet in {minutes} Min.",
+    "phaseYellowTitle": "🟡 Noch fällig: {medName}",
+    "phaseYellowMessage": "🟡 Noch fällig:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nNoch {minutes} Min. im Zeitfenster.",
     "phaseOrangeTitle": "🟠 Überfällig: {medName}",
     "phaseOrangeMessage": "🟠 Überfällig:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nSeit {minutes} Min. überfällig.",
-    "phaseRedTitle": "🔴 Nicht genommen: {medName}",
-    "phaseRedMessage": "🔴 Noch nicht genommen:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nZählt als verpasst, solange nichts erfasst ist. Nimmst du sie jetzt, zählt sie trotzdem, als verspätete Dosis.",
-    "buttonTaken": "Genommen",
+    "phaseRedTitle": "🔴 Verpasst: {medName}",
+    "phaseRedMessage": "🔴 Verpasst:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nNimmst du sie jetzt, zählt sie noch, als verspätet.",
+    "buttonTaken": "✅ Einnehmen",
     "buttonConfirm": "Als verpasst lassen",
-    "buttonTakenLate": "✅ Genommen (verspätet)",
-    "buttonSnoozeOneHour": "🕐 1h",
-    "buttonSnoozeThreeHours": "🕐 3h",
-    "buttonSkip": "⏭ Überspringen"
+    "buttonTakenLate": "✅ Einnehmen (zählt verspätet)",
+    "buttonSkip": "⏭ Überspringen",
+    "buttonSnooze": "🕐 Später erinnern ({minutes} Min.)"
   },
   "lowStockReminders": {
     "title": "Vorrat niedrig: {medName}",
@@ -10715,7 +10711,11 @@
       "valuesTitle": "{marker}: alle Werte",
       "valuesDescription": "Jeder Messwert für diesen Biomarker. Bearbeite oder entferne einen Eintrag direkt.",
       "backToMarker": "Zurück zu {marker}",
-      "latestResult": "Letztes Ergebnis"
+      "latestResult": "Letztes Ergebnis",
+      "latestValues": "Letzte Werte",
+      "allValues": "Alle Werte",
+      "columnDate": "Datum",
+      "columnValue": "Wert"
     },
     "chart": {
       "empty": "Keine Werte in diesem Zeitraum.",
@@ -14086,10 +14086,8 @@
       "anchorLow": "Keine",
       "anchorHigh": "Stärkste vorstellbare",
       "intensityValueText": "{value} von {max} ({low} bis {high})",
-      "when": "Wann",
       "during": "Während einer Erkrankung",
       "duringNone": "Nicht verknüpft",
-      "note": "Notiz",
       "notePlaceholder": "Was war sonst noch?",
       "reset": "Formular zurücksetzen",
       "emptyHint": "Leg dein erstes Symptom an, zum Beispiel Aura oder Kopfschmerz.",
@@ -14099,7 +14097,10 @@
       "partlySaved": "{saved} von {total} gespeichert, der Rest ist noch ausgewählt.",
       "severalHint": "Wähle mehrere, wenn sie zusammen auftraten.",
       "filterPlaceholder": "Symptom suchen",
-      "filterEmpty": "Kein Symptom passt."
+      "filterEmpty": "Kein Symptom passt.",
+      "whenHint": "Datum und Uhrzeit anpassen, um einen vergangenen Eintrag zu erfassen.",
+      "intensityShort": "{value}/{max}",
+      "intensityPreset": "Auf deine letzte Einschätzung gesetzt. Ändere sie, wenn es heute anders ist."
     },
     "section": {
       "title": "Deine Symptome",

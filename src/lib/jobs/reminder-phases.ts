@@ -7,6 +7,7 @@
 import type { DoseState } from "@/lib/medications/dose-state/resolve";
 import { coerceLocale, type Locale } from "@/lib/i18n/config";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
+import { DEFAULT_SNOOZE_MINUTES } from "@/lib/medications/snooze-length";
 
 export type ReminderPhase = "GREEN" | "YELLOW" | "ORANGE" | "RED";
 export type PhaseMode = "MINUTES" | "PERCENT";
@@ -234,6 +235,11 @@ export function getPhaseKeyboard(
   phase: ReminderPhase,
   medicationId: string,
   locale: Locale | string | null | undefined,
+  /**
+   * The person's snooze length ("Remind me later"), the one value the web
+   * card and the app use too (`notificationPrefs.medication.snoozeMinutes`).
+   */
+  snoozeMinutes: number = DEFAULT_SNOOZE_MINUTES,
 ): { inline_keyboard: { text: string; callback_data: string }[][] } {
   const t = getServerTranslator(resolveLocale(locale)).t;
 
@@ -267,12 +273,10 @@ export function getPhaseKeyboard(
       ],
       [
         {
-          text: t("medicationReminders.buttonSnoozeOneHour"),
-          callback_data: `snooze:${medicationId}:60`,
-        },
-        {
-          text: t("medicationReminders.buttonSnoozeThreeHours"),
-          callback_data: `snooze:${medicationId}:180`,
+          text: t("medicationReminders.buttonSnooze", {
+            minutes: snoozeMinutes,
+          }),
+          callback_data: `snooze:${medicationId}:${snoozeMinutes}`,
         },
         {
           text: t("medicationReminders.buttonSkip"),

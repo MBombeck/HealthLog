@@ -44,10 +44,16 @@ export interface ModuleToggleVars {
  */
 export function useModuleToggle(options?: {
   onToggled?: (vars: ModuleToggleVars) => void;
+  /**
+   * Put an Undo on the receipt that flips the module back. For a switch
+   * reached without seeing it (the command palette's Enter), where the
+   * person may have meant the page and not the switch.
+   */
+  undoable?: boolean;
 }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
-  return useMutation({
+  const mutation = useMutation({
     // Factory-routed; the in-repo eslint rule forbids a bare literal here.
     mutationKey: queryKeys.modulesPrefs(),
     mutationFn: async (vars: ModuleToggleVars) => {
@@ -93,7 +99,18 @@ export function useModuleToggle(options?: {
         });
         void queryClient.invalidateQueries({ queryKey: queryKeys.cycle() });
       }
-      toast.success(t("settings.sections.modules.saved"));
+      toast.success(
+        t("settings.sections.modules.saved"),
+        options?.undoable
+          ? {
+              action: {
+                label: t("common.undo"),
+                onClick: () =>
+                  mutation.mutate({ key: vars.key, enabled: !vars.enabled }),
+              },
+            }
+          : undefined,
+      );
       options?.onToggled?.(vars);
     },
     onError: (err) => {
@@ -110,6 +127,7 @@ export function useModuleToggle(options?: {
       showErrorToast(t("settings.sections.modules.error"), { cause: err });
     },
   });
+  return mutation;
 }
 
 /**

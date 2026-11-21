@@ -42,6 +42,13 @@ import { apiGet, apiPut } from "@/lib/api/api-fetch";
 export interface NotificationsSectionProps {
   medicationId: string;
   notificationsEnabled: boolean;
+  /**
+   * Doses are recorded automatically: no reminder is sent whatever the
+   * switch says, and the helper says so instead of "Reminders are on".
+   */
+  autoMarkTaken?: boolean;
+  /** What the reminders will do, in words (`ReminderPlanLine`). */
+  plan?: React.ReactNode;
 }
 
 interface NotificationChannel {
@@ -93,6 +100,8 @@ export function NotificationsSection(props: NotificationsSectionProps) {
 export function NotificationsBody({
   medicationId,
   notificationsEnabled,
+  autoMarkTaken = false,
+  plan = null,
 }: NotificationsSectionProps) {
   const { t } = useTranslations();
   const { isAuthenticated } = useAuth();
@@ -196,9 +205,11 @@ export function NotificationsBody({
               id={HELPER_ID}
               className="text-muted-foreground block text-xs"
             >
-              {localEnabled
-                ? t("medications.detail.notifications.helperOn")
-                : t("medications.detail.notifications.helperOff")}
+              {autoMarkTaken
+                ? t("medications.detail.notifications.helperAutoRecorded")
+                : localEnabled
+                  ? t("medications.detail.notifications.helperOn")
+                  : t("medications.detail.notifications.helperOff")}
             </span>
           </span>
           <Switch
@@ -211,6 +222,10 @@ export function NotificationsBody({
           />
         </label>
       )}
+
+      {/* When the reminders come and when the dose counts as missed, read
+          off the resolved next dose. */}
+      {!autoMarkTaken && plan}
 
       {readsCallerPrefs &&
         Array.isArray(status?.channels) &&

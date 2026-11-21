@@ -351,6 +351,14 @@ const notificationPrefsResolved = z
         .describe(
           "Reorder lead time in days (0–60) the low-stock alert assumes. The alert fires this lead plus one dose-interval before the supply runs out so a refill arrives before the last dose. Default 10; a per-medication reorderLeadDays overrides it.",
         ),
+      snoozeMinutes: z
+        .number()
+        .int()
+        .min(5)
+        .max(240)
+        .describe(
+          'How long "Remind me later" defers a dose reminder, in minutes (5–240, default 30). One value for every surface: the web card, Telegram and the app\'s notification action show it as "Remind me later (30 min)". A snooze written without `snoozedUntil` defers by this much.',
+        ),
     }),
     mood: z.object({
       reminderHour: z
@@ -1788,7 +1796,7 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Notifications"],
       summary: "Update per-user notification preferences",
       description:
-        'Deep-merges the supplied partial shape over the persisted row — a PATCH touching only one category leaves the siblings intact. Always returns the fully-resolved next state so clients can hard-set their optimistic update. `medication.clientManaged: true` (or `deliveryDefault: "client"`) keeps the MEDICATION_REMINDER that announces a dose off APNs and leaves the follow-ups for a dose still open on it (v1.42.0); `medication.lowStockRunwayDays` (1–60, nullable, default 7) tunes the low-stock alert — null switches it off. Rate-limit 60/min per user.',
+        'Deep-merges the supplied partial shape over the persisted row — a PATCH touching only one category leaves the siblings intact. Always returns the fully-resolved next state so clients can hard-set their optimistic update. `medication.clientManaged: true` (or `deliveryDefault: "client"`) keeps the MEDICATION_REMINDER that announces a dose off APNs and leaves the follow-ups for a dose still open on it (v1.42.0); `medication.lowStockRunwayDays` (1–60, nullable, default 7) tunes the low-stock alert — null switches it off; `medication.snoozeMinutes` (5–240, default 30) is the snooze length. Rate-limit 60/min per user.',
       requestBody: {
         required: true,
         content: {

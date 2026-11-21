@@ -59,7 +59,12 @@
     "readThrottled": "W tej chwili jest zbyt wiele zapytań, więc spróbuj ponownie później.",
     "sessionEnded": "Twoja sesja wygasła, więc zaloguj się ponownie, aby kontynuować.",
     "signIn": "Zaloguj się",
-    "yes": "Tak"
+    "yes": "Tak",
+    "savedWithValue": "Zapisano: {label} {value}",
+    "savedNamed": "Zapisano: {label}",
+    "entryUndone": "Wpis usunięty",
+    "entryUndoFailed": "Nie udało się usunąć wpisu.",
+    "note": "Notatka"
   },
   "apiErrors": {
     "measurement": {
@@ -328,7 +333,7 @@
     "colMedication": "Lek",
     "colTaken": "Przyjęte",
     "colSkipped": "Pominięte",
-    "colMissed": "Pominięte",
+    "colMissed": "Nieprzyjęte",
     "colExpected": "Oczekiwane",
     "colComplianceRate": "Wskaźnik przestrzegania",
     "moodTitle": "Przebieg nastroju",
@@ -597,7 +602,7 @@
       "measurement": "Pomiar",
       "measurementDescription": "Waga, ciśnienie, tętno i więcej",
       "medication": "Lek",
-      "medicationDescription": "Oznacz dawkę jako przyjętą",
+      "medicationDescription": "Zapisz dawkę, przyjętą lub pominiętą",
       "mood": "Nastrój",
       "moodDescription": "Zapisz nastrój i tagi",
       "workout": "Trening",
@@ -607,7 +612,8 @@
       "lifeEventDescription": "Przeprowadzka, narodziny, nowa praca",
       "lifeEvent": "Wydarzenie życiowe",
       "seizure": "Napad",
-      "seizureDescription": "Uruchom stoper lub zapisz napad, którego czasu nie mierzono"
+      "seizureDescription": "Uruchom stoper lub zapisz napad, którego czasu nie mierzono",
+      "recentMeasurementDescription": "Ostatnio zapisany pomiar"
     },
     "cycle": "Cykl",
     "labs": "Wyniki badań",
@@ -784,14 +790,7 @@
     "quickAddLifeEvent": "Zapisz wydarzenie życiowe",
     "customizeDashboard": "Dostosuj pulpit",
     "medicationIntakeQuickAdd": {
-      "sheetDescription": "Zapisz dawkę, godzinę i lek w kilku stuknięciach.",
-      "medicationLabel": "Lek",
-      "medicationPlaceholder": "Wybierz lek",
-      "doseLabel": "Dawka",
-      "dosePlaceholder": "np. 5 mg",
-      "doseHint": "Wstępnie wypełnione standardową dawką. Zmień ją, aby zapisać inną dawkę tylko dla tego przyjęcia.",
-      "timeLabel": "Godzina przyjęcia",
-      "saveError": "Nie udało się zapisać przyjęcia.",
+      "sheetDescription": "Zapisz przyjętą lub pominiętą dawkę, także później.",
       "emptyTitle": "Brak leków",
       "emptyDescription": "Najpierw dodaj lek z harmonogramem, a potem wróć tutaj, aby zarejestrować jego przyjęcie.",
       "emptyCta": "Dodaj lek",
@@ -912,7 +911,6 @@
     "value": "Wartość",
     "date": "Data",
     "source": "Źródło",
-    "notes": "Notatki",
     "typeWeight": "Waga",
     "typeBloodPressure": "Ciśnienie krwi",
     "typeBpSys": "Skur",
@@ -1112,7 +1110,10 @@
     "typeAcuteTrainingLoad": "Ostre obciążenie treningowe",
     "sourceGarmin": "Garmin",
     "valueOutOfRange": "Wpisz wartość od {min} do {max} {unit}.",
-    "valueOutOfRangeNoUnit": "Wpisz wartość od {min} do {max}."
+    "valueOutOfRangeNoUnit": "Wpisz wartość od {min} do {max}.",
+    "lastValue": "Ostatnio {value}, {when}",
+    "lastValueDeviates": "Wyraźnie inaczej niż ostatni pomiar. Czy to się zgadza?",
+    "saveAndNext": "Zapisz i dalej"
   },
   "metricCatalog": {
     "title": "Co HealthLog potrafi śledzić",
@@ -1181,7 +1182,6 @@
     "previousPage": "Poprzednia strona",
     "nextPage": "Następna strona",
     "loginRequired": "Zaloguj się, aby zobaczyć wpisy nastroju.",
-    "note": "Notatka",
     "noteCollapse": "Zwiń notatkę",
     "noteExpand": "Pokaż całą notatkę",
     "notePlaceholder": "Dodaj notatkę o swoim samopoczuciu…",
@@ -1494,22 +1494,6 @@
       "partialToast": "Zarejestrowano: {taken}, nieudane: {failed}. Spróbuj ponownie",
       "failedToast": "Nie zarejestrowano żadnego przyjęcia. Spróbuj ponownie"
     },
-    "logIntake": {
-      "dialogTitle": "Zarejestruj przyjęcie",
-      "dialogDescription": "Zarejestruj dawkę istniejącego leku. Możesz wstawić ją wstecznie na przeszłą datę i godzinę.",
-      "medicationLabel": "Lek",
-      "slotLabel": "Przedział harmonogramu",
-      "slotNone": "Bez konkretnego przedziału",
-      "doseLabel": "Dawka",
-      "doseHint": "Wstępnie wypełnione dawką leku lub przedziału. Zmień ją, aby zapisać inną dawkę tylko dla tego przyjęcia.",
-      "takenAtLabel": "Data i godzina",
-      "takenAtHint": "Domyślnie teraz; wybierz wcześniejszą datę i godzinę, aby zarejestrować przeszłą dawkę.",
-      "skippedLabel": "Zarejestruj jako pominięte",
-      "noMedications": "Najpierw dodaj lek, a potem będziesz mógł rejestrować jego przyjęcia.",
-      "cancel": "Anuluj",
-      "submit": "Zarejestruj przyjęcie",
-      "slotError": "Nie udało się przypisać godziny do wybranego slotu. Wybierz inny slot lub „Brak konkretnego slotu”."
-    },
     "emptyTitle": "Brak leków",
     "emptyDescription": "Utwórz leki, dawki i okna czasowe, aby śledzić przestrzeganie.",
     "loadFailed": "Nie udało się załadować leków",
@@ -1581,11 +1565,8 @@
     },
     "withoutNotification": "Bez powiadomienia",
     "pausedSince": "Wstrzymane od",
-    "takeNow": "Przyjmij teraz",
     "lastDoseYesterday": "Ostatnia dawka wczoraj",
     "lastDoseDaysAgo": "Ostatnia dawka {count} dni temu",
-    "overdue": "Po terminie",
-    "veryOverdue": "Mocno po terminie",
     "complianceWindow": "Przestrzeganie {days} dni",
     "complianceUnavailable": "Nie udało się wczytać danych o przestrzeganiu",
     "complianceNotApplicable": "Przestrzeganie zaleceń nie ma zastosowania",
@@ -1594,17 +1575,13 @@
     "complianceInfoLabel": "Co oznacza przestrzeganie zaleceń?",
     "lastIntake": "Ostatnie przyjęcie:",
     "nextIntake": "Następne przyjęcie:",
-    "nextIntakeOverdue": "Zaległa od {time}, wciąż można przyjąć",
     "dayStreak": "dni serii",
     "dayStreakOne": "dzień serii",
     "cycleDueToday": "Termin dzisiaj",
     "cycleNoClosedCycles": "Brak zakończonych cykli dawkowania",
-    "taken": "Przyjęte",
-    "skipped": "Pominięte",
-    "intakeToastTaken": "{name} oznaczone jako przyjęte",
-    "intakeToastSkipped": "{name} pominięte",
+    "intakeToastTaken": "{name}: przyjęte, {time}",
+    "intakeToastSkipped": "{name}: pominięte",
     "intakeToastFailed": "Nie udało się zapisać {name}. Spróbuj ponownie",
-    "intakeUndo": "Cofnij",
     "intakeUndone": "Wpis cofnięty",
     "intakeAlreadyTaken": "{name} był już zapisany jako przyjęty. Nic nowego nie zapisano.",
     "intakeUndoFailed": "Nie udało się cofnąć. Popraw w historii",
@@ -2021,12 +1998,12 @@
     "sideEffectTagAppetiteLoss": "Utrata apetytu",
     "sideEffectTagHeartburn": "Zgaga",
     "sideEffectTagHeadache": "Ból głowy",
-    "phaseConfig": "Fazy przypomnień",
-    "phaseConfigDescription": "Skonfiguruj momenty przypomnień.",
-    "phaseGreen": "Zielony",
-    "phaseYellow": "Żółty",
-    "phaseOrange": "Pomarańczowy",
-    "phaseRed": "Czerwony",
+    "phaseConfig": "Pory przypomnień",
+    "phaseConfigDescription": "Kiedy przychodzi każde przypomnienie i kiedy dawka liczy się jako nieprzyjęta.",
+    "phaseGreen": "Do przyjęcia",
+    "phaseYellow": "Nadal do przyjęcia",
+    "phaseOrange": "Po terminie",
+    "phaseRed": "Nieprzyjęte",
     "phaseMinutes": "Min",
     "phasePercent": "%",
     "phaseResetDefaults": "Przywróć wartości domyślne",
@@ -2041,13 +2018,11 @@
     "intakeHistoryEmptyTitle": "Brak przyjęć",
     "intakeHistoryEmptyDescription": "Gdy tylko zarejestrujesz przyjęcie, pojawi się tu wraz z godziną i źródłem.",
     "intakeHistoryEmptyAction": "Zarejestruj przyjęcie",
-    "intakeHistoryColTaken": "Przyjęty",
+    "intakeHistoryColTaken": "Przyjęte",
     "intakeHistoryColScheduled": "Zaplanowany",
     "intakeHistoryColStatus": "Status",
     "intakeHistoryColSource": "Źródło",
     "intakeHistoryInjectionSite": "Miejsce wstrzyknięcia: {site}",
-    "intakeHistoryStatusTaken": "Przyjęty",
-    "intakeHistoryStatusSkipped": "Pominięty",
     "intakeHistorySortByTaken": "Sortuj wg czasu przyjęcia",
     "intakeHistorySortByScheduled": "Sortuj wg czasu zaplanowanego",
     "intakeHistoryPageInfo": "Strona {page} z {total}, {count} wpisów",
@@ -2103,9 +2078,6 @@
         "selection": {
           "rowToggleLabel": "Zaznacz wiersz"
         },
-        "bulkDelete": {
-          "cancelButton": "Anuluj"
-        },
         "edit": {
           "dialogTitle": "Edytuj przyjęcie",
           "takenAtLabel": "Przyjęto o",
@@ -2118,11 +2090,9 @@
           "failed": "Nie udało się zaktualizować przyjęcia."
         },
         "deleteRow": {
-          "confirmTitle": "Usunąć to przyjęcie?",
-          "confirmBody": "Wpis zostanie trwale usunięty.",
-          "confirmAction": "Usuń",
           "toast": "Przyjęcie usunięte",
-          "failed": "Nie udało się usunąć przyjęcia."
+          "failed": "Nie udało się usunąć przyjęcia.",
+          "restored": "Przyjęcie przywrócone"
         },
         "viewRecent90": "Ostatnie 90 dni",
         "viewAll": "Pełna historia",
@@ -2133,11 +2103,8 @@
         "loadError": "Nie udało się wczytać historii.",
         "empty": "Brak przyjęć w tym okresie.",
         "summaryEmpty": "Brak dawek do oceny.",
-        "adherenceLabel": "Przestrzeganie",
         "adherenceBarLabel": "{onTime} na czas, {late} z opóźnieniem, {missed} pominięte",
-        "add": "Wpis",
-        "markTaken": "Przyjęte",
-        "markSkipped": "Pominięte",
+        "add": "Zarejestruj przyjęcie",
         "rowActionsLabel": "Akcje dla {time}",
         "markAsTaken": "Oznacz jako przyjętą",
         "markAsSkipped": "Oznacz jako pominiętą",
@@ -2145,27 +2112,7 @@
         "takenDetail": "planowo {planned}, przyjęto {taken}",
         "doseTaken": "Dawka: {dose}",
         "status": {
-          "taken_on_time": "na czas",
-          "taken_late": "z opóźnieniem",
-          "skipped": "pominięte",
-          "missed": "nieprzyjęte",
-          "upcoming": "oczekujące",
-          "ad_hoc": "poza planem"
-        },
-        "addDialog": {
-          "title": "Dodaj przyjęcie",
-          "description": "Zarejestruj dawkę, także wstecznie lub poza planem.",
-          "takenAtLabel": "Przyjęto o",
-          "skippedLabel": "Pominięte",
-          "nudgeHint": "Blisko slotu {slot}. Przy zapisie zapytamy, czy przypisać.",
-          "cancel": "Anuluj",
-          "submit": "Zapisz"
-        },
-        "nudge": {
-          "title": "Przypisać do tego slotu?",
-          "body": "To przyjęcie wypada tuż poza oknem {slot}. Przypisać je do tego slotu czy zachować jako wpis poza planem?",
-          "keepAdHoc": "Poza planem",
-          "pin": "Przypisz"
+          "ad_hoc": "Poza planem"
         },
         "pin": {
           "action": "Przypisz do slotu {time}",
@@ -2189,20 +2136,22 @@
         "disabledToast": "Przypomnienia wyłączone",
         "toggleFailed": "Nie udało się zmienić ustawienia przypomnień.",
         "clientManagedChip": "Zarządzane przez iPhone’a",
-        "clientManagedHint": "Twój iPhone zarządza przypomnieniami dla tego leku."
+        "clientManagedHint": "Twój iPhone zarządza przypomnieniami dla tego leku.",
+        "helperAutoRecorded": "Dawki są zapisywane automatycznie, więc przypomnienia nie przychodzą.",
+        "plan": "Następna dawka {dose}: przypomnienia, póki jest do przyjęcia, i gdy jest po terminie. Po terminie od {overdue}; po {missed} liczy się jako nieprzyjęta."
       },
       "settings": {
         "title": "Ustawienia",
         "phases": {
-          "openButton": "Skonfiguruj fazy",
-          "requiresCourseWindow": "Fazy są dostępne po ustawieniu okresu leczenia."
+          "openButton": "Dostosuj"
         },
         "grace": {
           "label": "Okno przypomnienia",
           "appliesToAllNote": "Dotyczy wszystkich harmonogramów tego leku.",
           "unit": "minut",
           "saved": "Okno przypomnienia zapisane",
-          "failed": "Nie udało się zapisać okna przypomnienia."
+          "failed": "Nie udało się zapisać okna przypomnienia.",
+          "description": "Jak długo po porze dawki przychodzą przypomnienia, zanim przyjdzie to o przekroczeniu terminu."
         },
         "codes": {
           "label": "Kody kliniczne (ATC / RxNorm)",
@@ -2313,7 +2262,6 @@
         "supplyLabel": "Zapas",
         "supplyRunway": "Wystarczy na około {days} dni",
         "jumpToZeitplan": "Otwórz harmonogram",
-        "jumpToVerlauf": "Otwórz historię",
         "jumpToBestand": "Otwórz zapas",
         "complianceTitle": "Przestrzeganie",
         "complianceEmpty": "Brak danych o przestrzeganiu."
@@ -2499,8 +2447,6 @@
     "tableStockDoses": "Dawki: {count}",
     "tableStockRunway": "≈ {days} dni zapasu",
     "cardLowStockRunway": "Zapas: ≈ {days} dni",
-    "takeActionFor": "Przyjmij: {name}",
-    "skipActionFor": "Pomiń: {name}",
     "reorderDescription": "Ustal kolejność swoich leków w widoku kart i w tabeli.",
     "reorderSaved": "Kolejność zapisana",
     "reorderSaveFailed": "Nie udało się zapisać kolejności",
@@ -2693,7 +2639,50 @@
       "saveError": "Nie udało się zapisać składu",
       "catalogError": "Nie udało się wczytać listy składników",
       "invalidRow": "W każdej linii wybierz składnik i wpisz ilość większą od zera."
-    }
+    },
+    "dose": {
+      "action": {
+        "take": "Przyjmij",
+        "skip": "Pomiń",
+        "snooze": "Przypomnij później ({minutes} min)",
+        "undo": "Cofnij",
+        "takeFor": "Przyjmij {name}",
+        "skipFor": "Pomiń {name}"
+      },
+      "state": {
+        "pending": "Oczekujące",
+        "due": "Do przyjęcia",
+        "overdue": "Po terminie",
+        "taken": "Przyjęte",
+        "takenLate": "Przyjęte z opóźnieniem",
+        "skipped": "Pominięte",
+        "missed": "Nieprzyjęte",
+        "missedStillCounts": "Jeśli przyjmiesz ją teraz, nadal się liczy, jako z opóźnieniem.",
+        "snoozedUntil": "Przypomnienie odłożone do {time}"
+      },
+      "snoozedToast": "{name}: przypomnienie o {time}",
+      "snoozeFailed": "Nie udało się odłożyć {name}. Spróbuj ponownie"
+    },
+    "intakeForm": {
+      "title": "Zarejestruj przyjęcie",
+      "description": "Zapisz przyjętą lub pominiętą dawkę, także później.",
+      "medicationLabel": "Lek",
+      "outcomeLabel": "Co się stało",
+      "timeLabel": "Godzina",
+      "doseLabel": "Dawka",
+      "doseHint": "Wstępnie wpisana zaplanowana dawka. Zmień ją tylko, jeśli przyjęto inną ilość.",
+      "countsFor": "Liczy się jako dawka z {time}.",
+      "countsForLate": "Liczy się jako dawka z {time}, z opóźnieniem.",
+      "countNearLabel": "Policz jako dawkę z {time}",
+      "skips": "Pomija dawkę z {time}.",
+      "extraDose": "Zapisana jako dodatkowa dawka, poza planem.",
+      "noMedications": "Najpierw dodaj lek, a potem będziesz mógł rejestrować jego przyjęcia.",
+      "saveError": "Nie udało się zapisać przyjęcia. Spróbuj ponownie"
+    },
+    "phaseGreenHint": "Pierwsze przypomnienie, tyle przed końcem okna przypomnień.",
+    "phaseYellowHint": "Kolejne przypomnienie, tyle przed końcem okna.",
+    "phaseOrangeHint": "Przypomnienie, że dawka jest po terminie, tyle po końcu okna.",
+    "phaseRedHint": "Po tylu od końca okna dawka liczy się jako nieprzyjęta."
   },
   "charts": {
     "loadingLabel": "Ładowanie wykresu…",
@@ -5790,6 +5779,13 @@
             "description": "Przypomnienia o miesiączce i dniach płodnych włączasz dla każdego kanału w tabeli powiadomień.",
             "link": "Otwórz tabelę powiadomień"
           }
+        },
+        "snooze": {
+          "title": "Przypomnij później",
+          "description": "O ile odkładane jest przypomnienie o dawce: na karcie leku, w Telegramie i w aplikacji.",
+          "label": "Odłóż o",
+          "option": "{minutes} min",
+          "saveError": "Nie udało się zapisać. Spróbuj ponownie"
         }
       },
       "layout": {
@@ -9908,29 +9904,29 @@
     "askMedicationName": "Podaj lek, np. <b>przyjęty Ramipril</b>.",
     "medicationNotFoundExact": "Nie znaleziono leku. Wyślij nazwę dokładnie tak, jak w HealthLog.",
     "helpHeader": "<b>Dostępne polecenia:</b>",
-    "helpBody": "/help: pokaż tę pomoc\n/add: zapisz przyjęcie\n/start: uruchom bota\n\n<b>Polecenia tekstowe:</b>\ntaken &lt;nazwa&gt;: potwierdź przyjęcie\n\n<b>Przyciski w przypomnieniach:</b>\n• Przyjęto: potwierdź przyjęcie\n• 🕐 1h / 🕐 3h: odłóż przypomnienie\n• ⏭ Pomiń: pomiń przyjęcie\n• ✓ Potwierdź: potwierdź pominięte przyjęcie",
+    "helpBody": "/help: pokaż tę pomoc\n/add: zapisz przyjęcie\n/start: uruchom bota\n\n<b>Polecenia tekstowe:</b>\ntaken &lt;nazwa&gt;: potwierdź przyjęcie\n\n<b>Przyciski w przypomnieniach:</b>\n• ✅ Przyjmij: zapisz przyjęcie\n• 🕐 Przypomnij później: odłóż przypomnienie o czas ustawiony w ustawieniach\n• ⏭ Pomiń: pomiń dawkę\n• Zostaw jako nieprzyjęte: zostaw nieprzyjętą dawkę jako nieprzyjętą",
     "measureValuePrompt": "Odpowiedz wartością, aby ją zapisać (opcjonalnie).",
     "buttonMeasureValue": "Wartość…",
     "measureValueSaved": "Pomiar zapisany.",
     "measureValueInvalid": "Odpowiedz liczbą, aby zapisać pomiar.",
     "measureValueOutOfRange": "Ta wartość jest poza wiarygodnym zakresem.",
-    "measureValueExpired": "Ten monit wygasł."
+    "measureValueExpired": "Ten monit wygasł.",
+    "snoozeMinutes": "{minutes} min"
   },
   "medicationReminders": {
-    "phaseGreenTitle": "🟢 Przypomnienie: {medName}",
-    "phaseGreenMessage": "🟢 Reminder:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nWindow closes in {minutes} Min.",
-    "phaseYellowTitle": "🟡 Wkrótce: {medName}",
-    "phaseYellowMessage": "🟡 Wkrótce:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nPozostało {minutes} min.",
-    "phaseOrangeTitle": "🟠 Zaległe: {medName}",
-    "phaseOrangeMessage": "🟠 Overdue:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nOverdue by {minutes} Min.",
+    "phaseGreenTitle": "🟢 Do przyjęcia: {medName}",
+    "phaseGreenMessage": "🟢 Do przyjęcia:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nOkno zamyka się za {minutes} min.",
+    "phaseYellowTitle": "🟡 Nadal do przyjęcia: {medName}",
+    "phaseYellowMessage": "🟡 Nadal do przyjęcia:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nW oknie zostało {minutes} min.",
+    "phaseOrangeTitle": "🟠 Po terminie: {medName}",
+    "phaseOrangeMessage": "🟠 Po terminie:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nPo terminie o {minutes} min.",
     "phaseRedTitle": "🔴 Nieprzyjęte: {medName}",
-    "phaseRedMessage": "🔴 Jeszcze nieprzyjęte:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nLiczy się jako pominięte, dopóki nic nie zapiszesz. Jeśli przyjmiesz teraz, nadal się liczy, jako spóźniona dawka.",
-    "buttonTaken": "Przyjęty",
-    "buttonConfirm": "Zostaw jako pominięte",
-    "buttonTakenLate": "✅ Przyjęty (z opóźnieniem)",
-    "buttonSnoozeOneHour": "🕐 1h",
-    "buttonSnoozeThreeHours": "🕐 3h",
-    "buttonSkip": "⏭ Pomiń"
+    "phaseRedMessage": "🔴 Nieprzyjęte:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nJeśli przyjmiesz ją teraz, nadal się liczy, jako z opóźnieniem.",
+    "buttonTaken": "✅ Przyjmij",
+    "buttonConfirm": "Zostaw jako nieprzyjęte",
+    "buttonTakenLate": "✅ Przyjmij (liczy się z opóźnieniem)",
+    "buttonSkip": "⏭ Pomiń",
+    "buttonSnooze": "🕐 Przypomnij później ({minutes} min)"
   },
   "lowStockReminders": {
     "title": "Niski zapas: {medName}",
@@ -10715,7 +10711,11 @@
       "valuesTitle": "{marker}: wszystkie odczyty",
       "valuesDescription": "Każdy odczyt tego biomarkera. Edytuj lub usuń wpis bezpośrednio.",
       "backToMarker": "Powrót do {marker}",
-      "latestResult": "Ostatni wynik"
+      "latestResult": "Ostatni wynik",
+      "latestValues": "Ostatnie wyniki",
+      "allValues": "Wszystkie wyniki",
+      "columnDate": "Data",
+      "columnValue": "Wartość"
     },
     "chart": {
       "empty": "Brak pomiarów w tym okresie.",
@@ -14086,10 +14086,8 @@
       "anchorLow": "Brak",
       "anchorHigh": "Najgorszy wyobrażalny",
       "intensityValueText": "{value} z {max} ({low} do {high})",
-      "when": "Kiedy",
       "during": "W trakcie choroby",
       "duringNone": "Bez powiązania",
-      "note": "Notatka",
       "notePlaceholder": "Co jeszcze się działo?",
       "reset": "Wyczyść formularz",
       "emptyHint": "Dodaj swój pierwszy objaw, na przykład aurę lub ból głowy.",
@@ -14099,7 +14097,10 @@
       "partlySaved": "Zapisano {saved} z {total}, reszta jest nadal zaznaczona.",
       "severalHint": "Wybierz kilka, jeśli wystąpiły razem.",
       "filterPlaceholder": "Szukaj objawu",
-      "filterEmpty": "Żaden objaw nie pasuje."
+      "filterEmpty": "Żaden objaw nie pasuje.",
+      "whenHint": "Zmień datę i godzinę, aby zapisać wcześniejszy wpis.",
+      "intensityShort": "{value}/{max}",
+      "intensityPreset": "Ustawiono na Twoją ostatnią ocenę. Zmień ją, jeśli dziś jest inaczej."
     },
     "section": {
       "title": "Twoje objawy",

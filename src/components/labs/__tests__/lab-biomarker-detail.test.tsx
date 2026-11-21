@@ -166,9 +166,27 @@ describe("<LabBiomarkerDetail>", () => {
     );
   });
 
-  it("offers the edit + delete controls with hover tooltips", () => {
+  it("offers Edit, with Delete behind the overflow menu rather than beside it", () => {
     expect(html).toContain('title="Edit"');
-    expect(html).toContain('title="Delete"');
+    expect(html).toContain('data-slot="biomarker-more-actions"');
+    // No delete icon of the same size next to Edit.
+    expect(html).not.toContain('title="Delete"');
+  });
+
+  it("lists the latest readings under the chart with a link to all of them", () => {
+    const table = html.slice(html.indexOf('data-slot="lab-latest-values"'));
+    expect(table.match(/data-slot="lab-latest-value"/g)).toHaveLength(3);
+    expect(table).toContain("95");
+    expect(table).toContain('href="/labs/bm-1/values"');
+    expect(table).toContain("All values");
+    // Directly under the chart: before the trend card and the assessment.
+    expect(html.indexOf('data-slot="lab-latest-values"')).toBeLessThan(
+      html.indexOf('data-testid="insight-status-card-loading"'),
+    );
+  });
+
+  it("keeps the alias editor out of the page for an editor", () => {
+    expect(html).not.toContain('data-slot="biomarker-aliases"');
   });
 
   it("drops the standalone adjust-target-range control", () => {

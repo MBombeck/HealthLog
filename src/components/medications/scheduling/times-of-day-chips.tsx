@@ -35,7 +35,7 @@ import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TimeField } from "@/components/ui/time-field";
 import { Label } from "@/components/ui/label";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 
 export interface TimesOfDayChipsProps {
   value: string[];
@@ -116,6 +116,7 @@ export function TimesOfDayChips({
   showPresets = true,
 }: TimesOfDayChipsProps) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const inputId = useId();
   const sortedValue = useMemo(() => sortTimes(value), [value]);
   const [draft, setDraft] = useState("");
@@ -180,7 +181,7 @@ export function TimesOfDayChips({
         >
           {PRESETS.map(({ key, value: preset }) => {
             const isOn = sortedValue.includes(preset);
-            const label = `${t(`${i18nPrefix}.presets.${key}`)} ${preset}`;
+            const label = `${t(`${i18nPrefix}.presets.${key}`)} ${fmt.wallTime(preset)}`;
             return (
               <button
                 key={key}
@@ -230,11 +231,11 @@ export function TimesOfDayChips({
               data-time={time}
               className="bg-muted text-foreground inline-flex h-11 items-center gap-1.5 rounded-md border px-3 text-sm font-medium sm:h-9"
             >
-              <span>{time}</span>
+              <span>{fmt.wallTime(time)}</span>
               <button
                 type="button"
                 disabled={disabled}
-                aria-label={`${t(`${i18nPrefix}.remove`)} ${time}`}
+                aria-label={`${t(`${i18nPrefix}.remove`)} ${fmt.wallTime(time)}`}
                 onClick={() => onRemove(time)}
                 className="focus-visible:ring-ring hover:bg-background relative inline-flex h-7 w-7 items-center justify-center rounded-sm before:absolute before:inset-[-8px] before:content-[''] focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
                 data-slot="times-of-day-chip-remove"

@@ -5,21 +5,10 @@ import { useId, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { DateTimeField } from "@/components/ui/date-time-field";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Loader2, Pill, Plus } from "lucide-react";
 import Link from "next/link";
-import { toast } from "sonner";
-import { useTranslations } from "@/lib/i18n/context";
-import { invalidateMedicationReads, queryKeys } from "@/lib/query-keys";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
 import type { ScheduleWindowInput } from "@/lib/medications/window-status";
 import {
   resolveMedicationSelectionId,
@@ -29,11 +18,15 @@ import { useAuth } from "@/hooks/use-auth";
 import { useActiveRecordName } from "@/hooks/use-record-capabilities";
 import { apiGet } from "@/lib/api/api-fetch";
 import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
-import { localizedApiError } from "@/lib/api/localized-error";
 import {
-  intakeToastOptions,
+  runLogIntake,
   runUndoIntake,
 } from "@/components/medications/use-medication-intake";
+import {
+  IntakeFormFields,
+  intakeWriteOf,
+  useIntakeFormState,
+} from "@/components/medications/intake-form/intake-form";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { useMedicationDueThresholds } from "@/lib/queries/use-reminder-thresholds";
 
@@ -175,22 +168,11 @@ export function MedicationIntakeQuickAdd({
   const [medicationOverride, setMedicationOverride] = useState<string | null>(
     null,
   );
-  // v1.16.4 — the dose field is editable: the intake POST body grew a
-  // `doseTaken` slot, so a half/double dose can be recorded per intake.
-  // `null` = untouched → the medication's configured dose flows through
-  // and nothing extra is sent; an edit that differs from the configured
-  // dose is persisted as the per-intake override.
-  const [doseOverride, setDoseOverride] = useState<string | null>(null);
-  const [takenAt, setTakenAt] = useState<string>(() =>
-    localDateTimeValue(defaultDate),
-  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectionNow] = useState(() => new Date());
-
-  const errorId = useId();
-  const errorDescriptor = error ? errorId : undefined;
   const formId = useId();
+  const fmt = useFormatters();
 
   const medicationId =
     resolveMedicationSelectionId(
@@ -200,85 +182,38 @@ export function MedicationIntakeQuickAdd({
       dueThresholds,
       userTz,
     ) ?? "";
-  const selectedMedication = medications.find((m) => m.id === medicationId);
-  const dose = doseOverride ?? selectedMedication?.dose ?? "";
-
-  function handleMedicationChange(value: string) {
-    setMedicationOverride(value);
-    // Reset the dose override when the medication changes so the new
-    // medication's configured dose flows through on the next render.
-    setDoseOverride(null);
-  }
+  const selectedMedication = sortedMedications.find(
+    (m) => m.id === medicationId,
+  );
+  // The one intake form (`intake-form/intake-form.tsx`), the same fields the
+  // medications page and the dose history show.
+  const form = useIntakeFormState({
+    medication: selectedMedication,
+    initialTakenAt: localDateTimeValue(defaultDate),
+  });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!medicationId || loading) return;
-    setError(null);
+    if (!selectedMedication || loading) return;
     setLoading(true);
-
+    setError(null);
+    const med = { id: selectedMedication.id, name: selectedMedication.name };
     try {
-      const timestamp = new Date(takenAt).toISOString();
-      // v1.16.4 — only a deliberate deviation travels: an untouched or
-      // configured-dose value sends nothing, so the row stays NULL and
-      // read paths fall back to the medication's dose.
-      const trimmedDose = dose.trim();
-      const doseDeviates =
-        trimmedDose.length > 0 &&
-        trimmedDose !== (selectedMedication?.dose ?? "").trim();
-      // v1.30.1 — the route returns the created event
-      // (`apiSuccess(event, 201)`), same shape the card's take/skip path
-      // already reads; the id drives the new Undo action below.
-      const created = await post<{ id?: string } | undefined>(
-        `/api/medications/${medicationId}/intake`,
-        {
-          takenAt: timestamp,
-          skipped: false,
-          ...(doseDeviates && { doseTaken: trimmedDose }),
-        },
-      );
-      const eventId = created?.id;
-
-      // v1.36.x — the shared decision, not a fourth copy of it. This surface
-      // was left out of the collapse that took the other three: it offered a
-      // delegate an Undo hitting `DELETE /api/medications/{id}/intake/{id}`,
-      // which is not delegable and refuses, and it confirmed with a bare
-      // "Saved" — the one confirmation a person acting for somebody else does
-      // not need. It is reachable by a write delegate from the capture picker
-      // and from the dashboard quick-add, so both mattered.
-      const options = intakeToastOptions({
-        recordName,
-        eventId,
+      // The idempotent post survives a retried tap; the toast, the Undo
+      // and the record naming are the shared ones.
+      const ok = await runLogIntake({
+        medication: med,
+        ...intakeWriteOf(form),
         t,
-        onUndo: selectedMedication
-          ? (id) =>
-              void runUndoIntake({
-                medication: {
-                  id: medicationId,
-                  name: selectedMedication.name,
-                },
-                eventId: id,
-                t,
-                queryClient,
-              })
-          : undefined,
+        queryClient,
+        recordName,
+        formatTime: (at) => fmt.time(at),
+        onFailure: setError,
+        post: (url, body) => post(url, body),
+        undoIntake: (eventId) =>
+          runUndoIntake({ medication: med, eventId, t, queryClient }),
       });
-      if (options) {
-        toast.success(t("common.saved"), options);
-      } else {
-        toast.success(t("common.saved"));
-      }
-      onSuccess?.();
-      // The dose is stored; the sheet does not wait for the refetches. The
-      // bundle covers every inline compliance chart as well.
-      void invalidateMedicationReads(queryClient);
-    } catch (err) {
-      setError(
-        localizedApiError(
-          err,
-          t,
-          "dashboard.medicationIntakeQuickAdd.saveError",
-        ),
-      );
+      if (ok) onSuccess?.();
     } finally {
       setLoading(false);
     }
@@ -385,112 +320,17 @@ export function MedicationIntakeQuickAdd({
     <form
       id={formId}
       onSubmit={handleSubmit}
-      className="space-y-4"
       data-testid="medication-intake-quick-add-form"
     >
-      <div className="space-y-2">
-        <Label htmlFor="medication-intake-medication">
-          {t("dashboard.medicationIntakeQuickAdd.medicationLabel")}
-        </Label>
-        <Select
-          value={medicationId}
-          onValueChange={handleMedicationChange}
-          disabled={medicationsLoading || medications.length === 0}
-        >
-          <SelectTrigger
-            id="medication-intake-medication"
-            data-testid="medication-intake-quick-add-medication"
-          >
-            <SelectValue
-              placeholder={t(
-                "dashboard.medicationIntakeQuickAdd.medicationPlaceholder",
-              )}
-            >
-              {selectedMedication ? (
-                <span className="flex items-center gap-2">
-                  <Pill
-                    className="text-muted-foreground h-4 w-4"
-                    aria-hidden="true"
-                  />
-                  <span>{selectedMedication.name}</span>
-                  {selectedMedication.dose ? (
-                    <span className="text-muted-foreground text-xs">
-                      ({selectedMedication.dose})
-                    </span>
-                  ) : null}
-                </span>
-              ) : null}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {sortedMedications.map((m) => (
-              <SelectItem key={m.id} value={m.id}>
-                <span className="flex items-center gap-2">
-                  <Pill
-                    className="text-muted-foreground h-4 w-4"
-                    aria-hidden="true"
-                  />
-                  <span>{m.name}</span>
-                  {m.dose ? (
-                    <span className="text-muted-foreground text-xs">
-                      ({m.dose})
-                    </span>
-                  ) : null}
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="medication-intake-dose">
-          {t("dashboard.medicationIntakeQuickAdd.doseLabel")}
-        </Label>
-        <Input
-          id="medication-intake-dose"
-          data-testid="medication-intake-quick-add-dose"
-          value={dose}
-          data-seed={selectedMedication?.dose ?? ""}
-          onChange={(e) => setDoseOverride(e.target.value)}
-          maxLength={50}
-          placeholder={
-            selectedMedication?.dose ??
-            t("dashboard.medicationIntakeQuickAdd.dosePlaceholder")
-          }
-          autoComplete="off"
-        />
-        <p className="text-muted-foreground text-xs">
-          {t("dashboard.medicationIntakeQuickAdd.doseHint")}
-        </p>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="medication-intake-taken-at">
-          {t("dashboard.medicationIntakeQuickAdd.timeLabel")}
-        </Label>
-        <DateTimeField
-          id="medication-intake-taken-at"
-          data-testid="medication-intake-quick-add-taken-at"
-          value={takenAt}
-          onChange={setTakenAt}
-          required
-          aria-required="true"
-          aria-invalid={!!error || undefined}
-          aria-describedby={errorDescriptor}
-        />
-      </div>
-
-      {error && (
-        <div
-          id={errorId}
-          role="alert"
-          aria-live="assertive"
-          className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm"
-        >
-          {error}
-        </div>
-      )}
+      <IntakeFormFields
+        form={form}
+        medication={selectedMedication}
+        medications={sortedMedications}
+        onMedicationChange={setMedicationOverride}
+        idPrefix="medication-intake"
+        testIdPrefix="medication-intake-quick-add"
+        error={error}
+      />
 
       {footerSlot ? createPortal(footerNode, footerSlot) : footerNode}
     </form>

@@ -181,15 +181,11 @@ const PINNED_AFFORDANCES: Record<
     // behind the delete toast's Undo action.
     "toast.success": 3,
   },
-  // v1.36.x — two call sites, one decision: the intake toast routes through
-  // `intakeToastOptions()`, which returns `undefined` in the caller's own
-  // record, and sonner's one-argument form is what the unit tests assert. So
-  // the if/else that `runLogIntake` already uses landed here too.
-  "src/components/dashboard/medication-intake-quick-add.tsx": {
-    "toast.success": 2,
-  },
   "src/components/dashboard/range-display.tsx": { "text-success": 2 },
   "src/components/documents/document-card.tsx": { "text-success": 1 },
+  // The one receipt the measurement, mood and symptom quick entries share:
+  // what was saved, in words, with an Undo.
+  "src/components/forms/entry-saved-toast.ts": { "toast.success": 1 },
   "src/components/documents/detail/use-document-detail-ai.ts": {
     "toast.success": 1,
   },
@@ -254,7 +250,7 @@ const PINNED_AFFORDANCES: Record<
   "src/components/insights/insights-tab-strip.tsx": { "toast.success": 1 },
   "src/components/labs/biomarker-form.tsx": { "toast.success": 1 },
   "src/components/labs/biomarker-manager.tsx": { "toast.success": 2 },
-  "src/components/labs/lab-biomarker-detail.tsx": { "toast.success": 1 },
+  "src/components/labs/biomarker-header-actions.tsx": { "toast.success": 1 },
   "src/components/labs/lab-form.tsx": { "toast.success": 1 },
   "src/components/labs/lab-history-list.tsx": { "toast.success": 3 },
   "src/components/measurement-reminders/vorsorge-dashboard-card.tsx": {
@@ -264,25 +260,21 @@ const PINNED_AFFORDANCES: Record<
     CheckCircle2: 2,
     "text-success": 1,
   },
-  "src/components/measurements/measurement-form.tsx": { "toast.success": 1 },
   "src/components/measurements/list/use-measurement-list-data.ts": {
     "toast.success": 3,
   },
-  "src/components/medications/card-parts/medication-status-pill.tsx": {
-    "text-success": 1,
+  // The snooze's confirmation ("reminder again at 09:12").
+  "src/components/medications/card-parts/use-dose-snooze.ts": {
+    "toast.success": 1,
   },
-  // Same pair, same reason as the dashboard quick-add above.
-  "src/components/medications/dose-history-add-dialog.tsx": {
-    "toast.success": 2,
-  },
-  "src/components/medications/dose-history/ledger-row-item.tsx": {
-    "text-success": 1,
-  },
+  // The tone of the due and taken dose states, which every dose surface
+  // renders through this one label (it reports no write).
+  "src/components/medications/dose-state-label.tsx": { "text-success": 2 },
   "src/components/medications/dose-history/ledger-summary-chart.tsx": {
     "text-success": 1,
   },
   "src/components/medications/dose-history/use-dose-history-ledger.ts": {
-    "toast.success": 4,
+    "toast.success": 3,
   },
   "src/components/medications/intake-edit-dialog.tsx": { "toast.success": 1 },
   "src/components/medications/intake-history-list-v2.tsx": {
@@ -327,11 +319,13 @@ const PINNED_AFFORDANCES: Record<
   "src/components/medications/sections/settings-section.tsx": {
     "toast.success": 2,
   },
-  // Same pair again: the batch summary names the record it landed in.
-  "src/components/medications/take-all-due.ts": { "toast.success": 2 },
+  // Same pair again: the batch summary names the record it landed in;
+  // + the confirmation of the sweep's one Undo.
+  "src/components/medications/take-all-due.ts": { "toast.success": 3 },
   // v1.36.x — one fewer: the log-intake path's three-armed toast collapsed
   // into the shared `intakeToastOptions` decision plus a single call pair.
-  "src/components/medications/use-medication-intake.ts": { "toast.success": 4 },
+  // + the row delete's toast and its undo's confirmation.
+  "src/components/medications/use-medication-intake.ts": { "toast.success": 6 },
   "src/components/medications/wizard/medication-wizard-dialog.tsx": {
     "toast.success": 1,
   },
@@ -339,10 +333,6 @@ const PINNED_AFFORDANCES: Record<
   "src/components/mood/manage/tag-editor-sheet.tsx": { "toast.success": 2 },
   "src/components/mood/manage/tag-groups-card.tsx": { "toast.success": 4 },
   "src/components/mood/manage/tag-manager-card.tsx": { "toast.success": 2 },
-  "src/components/mood/mood-form.tsx": { "toast.success": 1 },
-  // The symptom quick entry confirms a save exactly as the measurement and
-  // mood forms beside it do.
-  "src/components/symptoms/symptom-entry-form.tsx": { "toast.success": 1 },
   "src/components/mood/mood-list.tsx": { "toast.success": 3 },
   "src/components/onboarding/done-screen.tsx": { CheckCircle2: 2 },
   "src/components/practitioners/practitioner-list.tsx": { "toast.success": 1 },

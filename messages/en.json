@@ -59,7 +59,12 @@
     "readThrottled": "There are too many requests just now, so try again later.",
     "sessionEnded": "Your session has ended, so sign in again to continue.",
     "signIn": "Sign in",
-    "yes": "Yes"
+    "yes": "Yes",
+    "savedWithValue": "{label} {value} saved",
+    "savedNamed": "{label} saved",
+    "entryUndone": "Entry removed",
+    "entryUndoFailed": "The entry could not be removed.",
+    "note": "Note"
   },
   "apiErrors": {
     "measurement": {
@@ -597,7 +602,7 @@
       "measurement": "Measurement",
       "measurementDescription": "Weight, blood pressure, pulse and more",
       "medication": "Medication",
-      "medicationDescription": "Mark a dose as taken",
+      "medicationDescription": "Log a dose, taken or skipped",
       "mood": "Mood",
       "moodDescription": "Log your mood and tags",
       "workout": "Workout",
@@ -607,7 +612,8 @@
       "lifeEventDescription": "A move, a birth, a new job",
       "lifeEvent": "Life event",
       "seizure": "Seizure",
-      "seizureDescription": "Start the timer or record one that was not timed"
+      "seizureDescription": "Start the timer or record one that was not timed",
+      "recentMeasurementDescription": "Recently logged measurement"
     },
     "cycle": "Cycle",
     "labs": "Labs",
@@ -779,19 +785,12 @@
     "medications": "Medications",
     "quickAddMeasurement": "Log measurement",
     "quickAddMood": "Log mood",
-    "quickAddMedicationIntake": "Log medication intake",
+    "quickAddMedicationIntake": "Log intake",
     "quickAddWorkout": "Log workout",
     "quickAddLifeEvent": "Log life event",
     "customizeDashboard": "Customize dashboard",
     "medicationIntakeQuickAdd": {
-      "sheetDescription": "Record dose, time, and medication in a few taps.",
-      "medicationLabel": "Medication",
-      "medicationPlaceholder": "Select a medication",
-      "doseLabel": "Dose",
-      "dosePlaceholder": "e.g. 5 mg",
-      "doseHint": "Pre-filled with the standard dose. Edit it to record a deviating dose for this intake only.",
-      "timeLabel": "Time taken",
-      "saveError": "Could not save medication intake.",
+      "sheetDescription": "Record a dose you took or skipped, also afterwards.",
       "emptyTitle": "No medications yet",
       "emptyDescription": "Create a medication with a schedule first, then come back here to log the intake.",
       "emptyCta": "Add medication",
@@ -912,7 +911,6 @@
     "value": "Value",
     "date": "Date",
     "source": "Source",
-    "notes": "Notes",
     "typeWeight": "Weight",
     "typeBloodPressure": "Blood Pressure",
     "typeBpSys": "Sys",
@@ -1112,7 +1110,10 @@
     "typeAcuteTrainingLoad": "Acute training load",
     "sourceGarmin": "Garmin",
     "valueOutOfRange": "Enter a value between {min} and {max} {unit}.",
-    "valueOutOfRangeNoUnit": "Enter a value between {min} and {max}."
+    "valueOutOfRangeNoUnit": "Enter a value between {min} and {max}.",
+    "lastValue": "Last {value}, {when}",
+    "lastValueDeviates": "Quite different from your last reading. Is that right?",
+    "saveAndNext": "Save and next"
   },
   "metricCatalog": {
     "title": "What HealthLog can track",
@@ -1181,7 +1182,6 @@
     "previousPage": "Previous page",
     "nextPage": "Next page",
     "loginRequired": "Please sign in to view mood entries.",
-    "note": "Note",
     "noteCollapse": "Collapse note",
     "noteExpand": "Show full note",
     "notePlaceholder": "Add a note about how you're feeling…",
@@ -1482,7 +1482,7 @@
     "addMedication": "Add",
     "firstMedication": "Add first medication",
     "addChoice": {
-      "logIntake": "Log an intake",
+      "logIntake": "Log intake",
       "newMedication": "New medication"
     },
     "takeAllDue": {
@@ -1493,22 +1493,6 @@
       "successToast": "{count} intakes recorded",
       "partialToast": "{taken} recorded, {failed} failed. Please try again",
       "failedToast": "No intake recorded. Please try again"
-    },
-    "logIntake": {
-      "dialogTitle": "Log an intake",
-      "dialogDescription": "Record a dose against an existing medication. You can backdate it to a past date and time.",
-      "medicationLabel": "Medication",
-      "slotLabel": "Schedule slot",
-      "slotNone": "No specific slot",
-      "doseLabel": "Dose",
-      "doseHint": "Pre-filled with the medication or slot dose. Edit it to record a deviating dose for this intake only.",
-      "takenAtLabel": "Date and time",
-      "takenAtHint": "Defaults to now; pick an earlier date and time to log a past dose.",
-      "skippedLabel": "Logged as skipped",
-      "noMedications": "Add a medication first, then you can log intakes against it.",
-      "cancel": "Cancel",
-      "submit": "Log intake",
-      "slotError": "The selected slot couldn’t be matched to a time. Pick another slot or “No specific slot”."
     },
     "emptyTitle": "No medications yet",
     "emptyDescription": "Add medications, dosages, and reminder windows to track adherence.",
@@ -1581,11 +1565,8 @@
     },
     "withoutNotification": "Without notification",
     "pausedSince": "Paused since",
-    "takeNow": "Take now",
     "lastDoseYesterday": "Last dose yesterday",
     "lastDoseDaysAgo": "Last dose {count} days ago",
-    "overdue": "Overdue",
-    "veryOverdue": "Very overdue",
     "complianceWindow": "Adherence ({days} days)",
     "complianceUnavailable": "Adherence could not be loaded",
     "complianceNotApplicable": "Adherence not applicable",
@@ -1594,17 +1575,13 @@
     "complianceInfoLabel": "What does adherence mean?",
     "lastIntake": "Last intake:",
     "nextIntake": "Next intake:",
-    "nextIntakeOverdue": "Overdue since {time}, can still be taken",
     "dayStreak": "day streak",
     "dayStreakOne": "day streak",
     "cycleDueToday": "Due today",
     "cycleNoClosedCycles": "No closed dose cycles yet",
-    "taken": "Taken",
-    "skipped": "Skipped",
-    "intakeToastTaken": "{name} recorded as taken",
-    "intakeToastSkipped": "{name} skipped",
+    "intakeToastTaken": "{name}: taken, {time}",
+    "intakeToastSkipped": "{name}: skipped",
     "intakeToastFailed": "Could not record {name}. Try again",
-    "intakeUndo": "Undo",
     "intakeUndone": "Entry reverted",
     "intakeAlreadyTaken": "{name} was already recorded as taken. Nothing new was saved.",
     "intakeUndoFailed": "Could not undo. Open the history to fix it",
@@ -2021,12 +1998,12 @@
     "sideEffectTagAppetiteLoss": "appetite-loss",
     "sideEffectTagHeartburn": "heartburn",
     "sideEffectTagHeadache": "headache",
-    "phaseConfig": "Reminder phases",
-    "phaseConfigDescription": "Configure timing for reminders.",
-    "phaseGreen": "Green",
-    "phaseYellow": "Yellow",
-    "phaseOrange": "Orange",
-    "phaseRed": "Red",
+    "phaseConfig": "Reminder timing",
+    "phaseConfigDescription": "When each reminder comes and when a dose counts as missed.",
+    "phaseGreen": "Due",
+    "phaseYellow": "Still due",
+    "phaseOrange": "Overdue",
+    "phaseRed": "Missed",
     "phaseMinutes": "Min",
     "phasePercent": "%",
     "phaseResetDefaults": "Reset to defaults",
@@ -2046,8 +2023,6 @@
     "intakeHistoryColStatus": "Status",
     "intakeHistoryColSource": "Source",
     "intakeHistoryInjectionSite": "Injection site: {site}",
-    "intakeHistoryStatusTaken": "Taken",
-    "intakeHistoryStatusSkipped": "Skipped",
     "intakeHistorySortByTaken": "Sort by taken time",
     "intakeHistorySortByScheduled": "Sort by scheduled time",
     "intakeHistoryPageInfo": "Page {page} of {total}, {count} entries",
@@ -2103,9 +2078,6 @@
         "selection": {
           "rowToggleLabel": "Select row"
         },
-        "bulkDelete": {
-          "cancelButton": "Cancel"
-        },
         "edit": {
           "dialogTitle": "Edit intake",
           "takenAtLabel": "Taken at",
@@ -2118,11 +2090,9 @@
           "failed": "Could not update the intake."
         },
         "deleteRow": {
-          "confirmTitle": "Delete this intake?",
-          "confirmBody": "The entry is removed permanently.",
-          "confirmAction": "Delete",
           "toast": "Intake deleted",
-          "failed": "Could not delete the intake."
+          "failed": "Could not delete the intake.",
+          "restored": "Intake restored"
         },
         "viewRecent90": "Last 90 days",
         "viewAll": "Full history",
@@ -2133,11 +2103,8 @@
         "loadError": "Could not load the history.",
         "empty": "No intakes in this period yet.",
         "summaryEmpty": "No doses to score yet.",
-        "adherenceLabel": "Adherence",
         "adherenceBarLabel": "{onTime} on time, {late} late, {missed} missed",
-        "add": "Entry",
-        "markTaken": "Taken",
-        "markSkipped": "Skipped",
+        "add": "Log intake",
         "rowActionsLabel": "Actions for {time}",
         "markAsTaken": "Mark as taken",
         "markAsSkipped": "Mark as skipped",
@@ -2145,27 +2112,7 @@
         "takenDetail": "planned {planned}, taken {taken}",
         "doseTaken": "Dose: {dose}",
         "status": {
-          "taken_on_time": "on time",
-          "taken_late": "late",
-          "skipped": "skipped",
-          "missed": "missed",
-          "upcoming": "upcoming",
-          "ad_hoc": "off-schedule"
-        },
-        "addDialog": {
-          "title": "Add intake",
-          "description": "Record a dose, including a backdated or off-schedule one.",
-          "takenAtLabel": "Taken at",
-          "skippedLabel": "Skipped",
-          "nudgeHint": "Close to the {slot} slot. On save we ask whether to attribute it.",
-          "cancel": "Cancel",
-          "submit": "Save"
-        },
-        "nudge": {
-          "title": "Attribute to this slot?",
-          "body": "This intake falls just outside the {slot} window. Attribute it to that slot, or keep it as an off-schedule entry?",
-          "keepAdHoc": "Off-schedule",
-          "pin": "Attribute"
+          "ad_hoc": "Off-schedule"
         },
         "pin": {
           "action": "Attribute to slot {time}",
@@ -2189,20 +2136,22 @@
         "disabledToast": "Reminders off",
         "toggleFailed": "Could not change the reminder setting.",
         "clientManagedChip": "Managed by iPhone",
-        "clientManagedHint": "Your iPhone manages reminders for this medication."
+        "clientManagedHint": "Your iPhone manages reminders for this medication.",
+        "helperAutoRecorded": "Doses are recorded automatically, so no reminders are sent.",
+        "plan": "Next dose {dose}: reminders while it is due and once it is overdue. It is overdue after {overdue}; after {missed} it counts as missed."
       },
       "settings": {
         "title": "Settings",
         "phases": {
-          "openButton": "Configure phases",
-          "requiresCourseWindow": "Phases are available once a course window is set."
+          "openButton": "Adjust"
         },
         "grace": {
           "label": "Reminder window",
           "appliesToAllNote": "Applies to every schedule of this medication.",
           "unit": "minutes",
           "saved": "Reminder window saved",
-          "failed": "Could not save the reminder window."
+          "failed": "Could not save the reminder window.",
+          "description": "How long the reminders keep coming after the dose time, before the overdue reminder."
         },
         "codes": {
           "label": "Clinical codes (ATC / RxNorm)",
@@ -2313,7 +2262,6 @@
         "supplyLabel": "Supply",
         "supplyRunway": "Lasts about {days} more days",
         "jumpToZeitplan": "Open schedule",
-        "jumpToVerlauf": "Open history",
         "jumpToBestand": "Open supply",
         "complianceTitle": "Adherence",
         "complianceEmpty": "No adherence data yet."
@@ -2499,8 +2447,6 @@
     "tableStockDoses": "{count} doses",
     "tableStockRunway": "≈ {days} days left",
     "cardLowStockRunway": "Supply: ≈ {days} days",
-    "takeActionFor": "Take {name}",
-    "skipActionFor": "Skip {name}",
     "reorderDescription": "Set the order of your medications for both the card and the table view.",
     "reorderSaved": "Order saved",
     "reorderSaveFailed": "Order could not be saved",
@@ -2693,7 +2639,50 @@
       "saveError": "The composition could not be saved",
       "catalogError": "The list of nutrients could not be loaded",
       "invalidRow": "Choose a nutrient and enter an amount above zero in every line."
-    }
+    },
+    "dose": {
+      "action": {
+        "take": "Take",
+        "skip": "Skip",
+        "snooze": "Remind me later ({minutes} min)",
+        "undo": "Undo",
+        "takeFor": "Take {name}",
+        "skipFor": "Skip {name}"
+      },
+      "state": {
+        "pending": "Pending",
+        "due": "Due",
+        "overdue": "Overdue",
+        "taken": "Taken",
+        "takenLate": "Taken late",
+        "skipped": "Skipped",
+        "missed": "Missed",
+        "missedStillCounts": "Taking it now still counts, as late.",
+        "snoozedUntil": "Reminder snoozed until {time}"
+      },
+      "snoozedToast": "{name}: reminder again at {time}",
+      "snoozeFailed": "Could not snooze {name}. Try again"
+    },
+    "intakeForm": {
+      "title": "Log intake",
+      "description": "Record a dose you took or skipped, also afterwards.",
+      "medicationLabel": "Medication",
+      "outcomeLabel": "What happened",
+      "timeLabel": "Time",
+      "doseLabel": "Dose",
+      "doseHint": "Pre-filled with the planned dose. Change it only if you took a different amount.",
+      "countsFor": "Counts for the {time} dose.",
+      "countsForLate": "Counts for the {time} dose, as late.",
+      "countNearLabel": "Count it for the {time} dose",
+      "skips": "Skips the {time} dose.",
+      "extraDose": "Recorded as an extra dose, outside the schedule.",
+      "noMedications": "Add a medication first, then you can log intakes against it.",
+      "saveError": "Could not save the intake. Try again"
+    },
+    "phaseGreenHint": "First reminder, this long before the reminder window ends.",
+    "phaseYellowHint": "Another reminder, this long before the window ends.",
+    "phaseOrangeHint": "A reminder that the dose is overdue, this long after the window ended.",
+    "phaseRedHint": "After this long past the window, the dose counts as missed."
   },
   "charts": {
     "loadingLabel": "Loading chart…",
@@ -5790,6 +5779,13 @@
             "description": "Period and fertile-window reminders are switched per channel in the notification matrix.",
             "link": "Open the notification matrix"
           }
+        },
+        "snooze": {
+          "title": "Remind me later",
+          "description": "How long a dose reminder is pushed back, on the medication card, in Telegram and in the app.",
+          "label": "Push back by",
+          "option": "{minutes} min",
+          "saveError": "Could not save. Try again"
         }
       },
       "layout": {
@@ -9908,29 +9904,29 @@
     "askMedicationName": "Please specify a medication, e.g. <b>taken Ramipril</b>.",
     "medicationNotFoundExact": "Medication not found. Please send the name exactly as in HealthLog.",
     "helpHeader": "<b>Available commands:</b>",
-    "helpBody": "/help: show this help\n/add: record an intake\n/start: start the bot\n\n<b>Text commands:</b>\ntaken &lt;name&gt;: confirm an intake\n\n<b>Buttons in reminders:</b>\n• Taken: confirm intake\n• 🕐 1h / 🕐 3h: postpone reminder\n• ⏭ Skip: skip intake\n• ✓ Confirm: confirm a missed intake",
+    "helpBody": "/help: show this help\n/add: record an intake\n/start: start the bot\n\n<b>Text commands:</b>\ntaken &lt;name&gt;: confirm an intake\n\n<b>Buttons in reminders:</b>\n• ✅ Take: record the dose\n• 🕐 Remind me later: postpone the reminder, by the length set in Settings\n• ⏭ Skip: skip the dose\n• Leave as missed: leave a missed dose as missed",
     "measureValuePrompt": "Reply with the value to log it (optional).",
     "buttonMeasureValue": "Value…",
     "measureValueSaved": "Reading saved.",
     "measureValueInvalid": "Reply with a number to log a reading.",
     "measureValueOutOfRange": "That value is outside the plausible range.",
-    "measureValueExpired": "That prompt has expired."
+    "measureValueExpired": "That prompt has expired.",
+    "snoozeMinutes": "{minutes} min"
   },
   "medicationReminders": {
-    "phaseGreenTitle": "🟢 Reminder: {medName}",
-    "phaseGreenMessage": "🟢 Reminder:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nWindow closes in {minutes} min.",
-    "phaseYellowTitle": "🟡 Due soon: {medName}",
-    "phaseYellowMessage": "🟡 Due soon:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n{minutes} min left.",
+    "phaseGreenTitle": "🟢 Due: {medName}",
+    "phaseGreenMessage": "🟢 Due:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nThe window closes in {minutes} min.",
+    "phaseYellowTitle": "🟡 Still due: {medName}",
+    "phaseYellowMessage": "🟡 Still due:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\n{minutes} min left in the window.",
     "phaseOrangeTitle": "🟠 Overdue: {medName}",
     "phaseOrangeMessage": "🟠 Overdue:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nOverdue by {minutes} min.",
-    "phaseRedTitle": "🔴 Not taken: {medName}",
-    "phaseRedMessage": "🔴 Not taken yet:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nIt counts as missed unless you record it. If you take it now, it still counts, as a late dose.",
-    "buttonTaken": "Taken",
+    "phaseRedTitle": "🔴 Missed: {medName}",
+    "phaseRedMessage": "🔴 Missed:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nTaking it now still counts, as late.",
+    "buttonTaken": "✅ Take",
     "buttonConfirm": "Leave as missed",
-    "buttonTakenLate": "✅ Taken (late)",
-    "buttonSnoozeOneHour": "🕐 1h",
-    "buttonSnoozeThreeHours": "🕐 3h",
-    "buttonSkip": "⏭ Skip"
+    "buttonTakenLate": "✅ Take (counts as late)",
+    "buttonSkip": "⏭ Skip",
+    "buttonSnooze": "🕐 Remind me later ({minutes} min)"
   },
   "lowStockReminders": {
     "title": "Low supply: {medName}",
@@ -10715,7 +10711,11 @@
       "valuesTitle": "{marker}: all readings",
       "valuesDescription": "Every reading for this biomarker. Edit or remove an entry directly.",
       "backToMarker": "Back to {marker}",
-      "latestResult": "Latest result"
+      "latestResult": "Latest result",
+      "latestValues": "Latest values",
+      "allValues": "All values",
+      "columnDate": "Date",
+      "columnValue": "Value"
     },
     "chart": {
       "empty": "No readings in this period.",
@@ -14086,10 +14086,8 @@
       "anchorLow": "None",
       "anchorHigh": "Worst imaginable",
       "intensityValueText": "{value} of {max} ({low} to {high})",
-      "when": "When",
       "during": "During an illness",
       "duringNone": "Not linked",
-      "note": "Note",
       "notePlaceholder": "What else was going on?",
       "reset": "Reset form",
       "emptyHint": "Add your first symptom, for example aura or headache.",
@@ -14099,7 +14097,10 @@
       "partlySaved": "{saved} of {total} saved, the rest is still picked.",
       "severalHint": "Pick several if they came together.",
       "filterPlaceholder": "Find a symptom",
-      "filterEmpty": "No symptom matches."
+      "filterEmpty": "No symptom matches.",
+      "whenHint": "Adjust the date and time to log a past entry.",
+      "intensityShort": "{value}/{max}",
+      "intensityPreset": "Set to your last rating. Change it if today is different."
     },
     "section": {
       "title": "Your symptoms",

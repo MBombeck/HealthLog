@@ -11,7 +11,9 @@ import { showErrorToast } from "@/lib/errors/error-toast";
 import { MedicationCardMenu } from "@/components/medications/medication-card-menu";
 import { MedicationStateBadges } from "@/components/medications/card-parts/medication-state-badges";
 import { MedicationCardBody } from "@/components/medications/card-parts/medication-card-body";
+import { DoseStateLabel } from "@/components/medications/dose-state-label";
 import { useMedicationIntake } from "@/components/medications/use-medication-intake";
+import { useCardDoseSnooze } from "@/components/medications/card-parts/use-dose-snooze";
 import { useWeekdayLabel } from "@/components/medications/card-parts/medication-next-last-slot";
 import {
   useTranslations,
@@ -240,10 +242,9 @@ export function Glp1MedicationCard({
     medication.deliveryForm === "INJECTION" &&
     medication.trackInjectionSites === true;
 
-  // v1.12.2 — take / skip + failure-toast (C1) + Undo (C2) come from the
-  // SAME shared hook the generic card uses, closing the robustness gap
-  // where a failed GLP-1 POST was swallowed silently and the success toast
-  // carried no Undo. The card keeps its post-success injection-site prompt.
+  // Take / skip / Undo and the snooze come from the hooks the generic card
+  // uses; the card keeps its post-success injection-site prompt.
+  const snooze = useCardDoseSnooze(medication);
   const { intakeLoading, recordIntake } = useMedicationIntake({
     medication,
     onRecorded: (eventId, skipped) => {
@@ -264,9 +265,7 @@ export function Glp1MedicationCard({
     refetch: refetchCompliance,
   } = useMedicationComplianceSummary(medication.id);
 
-  // v1.4.37 — same reminder-thresholds source as the generic
-  // medication card so the take-now / overdue / very-overdue pill
-  // tiers identically on both surfaces.
+  // The generic card's reminder thresholds, so the pill tiers identically.
   const { data: thresholds } = useQuery({
     queryKey: queryKeys.settingsReminderThresholds(),
     queryFn: async () => {
@@ -497,11 +496,8 @@ export function Glp1MedicationCard({
   // the liked relative-day phrasing ("Samstag 13.7. (in 7 Tagen)") — while
   // the structure / labels live in the shared body. The purple dose accent
   // is byte-equivalent with the generic card's.
-  // v1.16.4 — an open overdue slot stays on the card as a calm amber
-  // "overdue — still takeable" line until its catch-up band closes
-  // (auto-miss); only then does the line advance to the next future slot.
-  // A same-day overdue anchor reads as a clock time, an older one (the
-  // weekly catch-up tail spans days) as its weekday + date.
+  // An open overdue slot reads "Overdue" + its time until the catch-up band
+  // closes; a same-day anchor shows the clock, an older one weekday + date.
   const overdueLabel =
     medication.nextDueOverdue && next
       ? diffDays(next.date, now) === 0
@@ -512,8 +508,9 @@ export function Glp1MedicationCard({
   const nextLine =
     next && currentWindowStatus.status !== "in_window" ? (
       overdueLabel ? (
-        <span className="text-warning font-medium">
-          {t("medications.nextIntakeOverdue", { time: overdueLabel })}
+        <span className="inline-flex flex-wrap items-center gap-x-1 text-sm">
+          <DoseStateLabel state="overdue" />
+          <span className="text-muted-foreground">— {overdueLabel}</span>
         </span>
       ) : (
         <>
@@ -562,6 +559,7 @@ export function Glp1MedicationCard({
         currentWindowStatus,
         now,
         userTz,
+        medication.nextDueAt,
       )}
       doseStatus={doseStatus}
       nextLine={nextLine}
@@ -582,6 +580,7 @@ export function Glp1MedicationCard({
       lowStockRunwayDays={lowStockRunwayDays}
       intakeLoading={intakeLoading}
       onRecordIntake={(skipped) => recordIntake(skipped, displayedSlot)}
+      snooze={snooze}
     >
       {/* v1.8.5 — post-dose injection-site capture (optional, skippable). */}
       {tracksInjection && (

@@ -24,6 +24,12 @@ export interface Rankable {
   title: string;
   /** Synonyms and related words; matched one tier below the title. */
   keywords?: ReadonlyArray<string>;
+  /**
+   * Added to any match, for the entry a task word should land on before a
+   * page that merely shares the word (`PALETTE_TASK_BOOST`). Never makes a
+   * non-match match.
+   */
+  boost?: number;
 }
 
 const TIER = {
@@ -160,7 +166,7 @@ export function scoreEntry(query: string, entry: Rankable): number {
     const score = scoreField(q, normaliseSearchText(keyword));
     if (score > 0) best = Math.max(best, score - KEYWORD_PENALTY);
   }
-  return best;
+  return best > 0 ? best + (entry.boost ?? 0) : 0;
 }
 
 /**

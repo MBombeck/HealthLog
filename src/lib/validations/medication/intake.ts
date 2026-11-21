@@ -256,7 +256,7 @@ export const intakeStatusUpdateSchema = z.object({
     .transform((s) => new Date(s))
     .optional()
     .describe(
-      "How long to defer. Defaults to 30 minutes from now. Deliberately UNBOUNDED — nothing here caps how far out it may sit. Ignored unless the status is `snoozed`.",
+      "How long to defer. Defaults to now plus the user's `notificationPrefs.medication.snoozeMinutes` (30 unless set), the same length the web card and Telegram use; a client that offers the setting's \"Remind me later\" may omit it. Deliberately UNBOUNDED — nothing here caps how far out it may sit. Ignored unless the status is `snoozed`.",
     ),
   injectionSite: injectionSiteEnum
     .optional()

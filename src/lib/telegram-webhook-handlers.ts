@@ -31,6 +31,7 @@ import {
   findTelegramDoseMedication,
   listTelegramDoseMedications,
 } from "@/lib/telegram-dose-medications";
+import { answerDoseSnooze } from "@/lib/telegram-dose-snooze";
 import { GREETING_WORDS, HELP_WORDS } from "@/lib/telegram-bare-words";
 import {
   markMedicationSkipped,
@@ -236,51 +237,16 @@ export async function handleCallback(update: TelegramUpdate) {
     }
     await cleanupReminderTracking(user.id, medicationId);
   } else if (data.startsWith("snooze:")) {
-    // Format: "snooze:{medicationId}:{minutes}"
-    const parts = data.split(":");
-    const medicationId = parts[1];
-    const minutes = parseInt(parts[2], 10);
-    if (!medicationId || !Number.isFinite(minutes)) {
-      await answerTelegramCallbackQuery(
-        botToken,
-        callback.id,
-        t("telegram.errorInvalidAction"),
-      );
-      return;
-    }
-
-    const medication = await findTelegramDoseMedication(
-      user.id,
-      user.timezone,
-      { id: medicationId },
-    );
-    if (!medication) {
-      await answerTelegramCallbackQuery(
-        botToken,
-        callback.id,
-        t("telegram.errorMedicationNotFound"),
-      );
-      return;
-    }
-
-    await prisma.medication.update({
-      where: { id: medication.id },
-      data: { snoozedUntil: new Date(Date.now() + minutes * 60000) },
+    await answerDoseSnooze({
+      data,
+      user,
+      t,
+      reply: (text) => answerTelegramCallbackQuery(botToken, callback.id, text),
+      done: async (medicationId) => {
+        if (messageId) await deleteMessage(botToken, chatId, messageId);
+        await cleanupReminderTracking(user.id, medicationId);
+      },
     });
-
-    const duration =
-      minutes <= 60
-        ? t("telegram.snoozeOneHour")
-        : t("telegram.snoozeThreeHours");
-    await answerTelegramCallbackQuery(
-      botToken,
-      callback.id,
-      t("telegram.snoozedFor", { name: medication.name, duration }),
-    );
-    if (messageId) {
-      await deleteMessage(botToken, chatId, messageId);
-    }
-    await cleanupReminderTracking(user.id, medicationId);
   } else if (data.startsWith("skip:")) {
     const medicationId = data.slice("skip:".length).trim();
     if (!medicationId) {

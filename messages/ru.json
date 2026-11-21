@@ -59,7 +59,12 @@
     "readThrottled": "Сейчас слишком много запросов, попробуйте позже.",
     "sessionEnded": "Сеанс завершён, войдите снова, чтобы продолжить.",
     "signIn": "Вход",
-    "yes": "Да"
+    "yes": "Да",
+    "savedWithValue": "Сохранено: {label} {value}",
+    "savedNamed": "Сохранено: {label}",
+    "entryUndone": "Запись удалена",
+    "entryUndoFailed": "Не удалось удалить запись.",
+    "note": "Заметка"
   },
   "apiErrors": {
     "measurement": {
@@ -364,7 +369,7 @@
     "colMedication": "Лекарство",
     "colTaken": "Принято",
     "colSkipped": "Пропущено",
-    "colMissed": "Пропущено",
+    "colMissed": "Не принято",
     "colExpected": "Ожидалось",
     "colComplianceRate": "Приверженность",
     "moodTitle": "Динамика настроения",
@@ -597,7 +602,7 @@
       "measurement": "Измерение",
       "measurementDescription": "Вес, АД, пульс и другое",
       "medication": "Лекарство",
-      "medicationDescription": "Отметить дозу как принятую",
+      "medicationDescription": "Записать дозу: принята или пропущена",
       "mood": "Настроение",
       "moodDescription": "Записать настроение и теги",
       "workout": "Тренировка",
@@ -607,7 +612,8 @@
       "lifeEventDescription": "Переезд, рождение ребёнка, новая работа",
       "lifeEvent": "Событие жизни",
       "seizure": "Приступ",
-      "seizureDescription": "Запустите таймер или запишите приступ без замера времени"
+      "seizureDescription": "Запустите таймер или запишите приступ без замера времени",
+      "recentMeasurementDescription": "Недавно записанное измерение"
     },
     "cycle": "Цикл",
     "labs": "Анализы",
@@ -779,19 +785,12 @@
     "medications": "Лекарства",
     "quickAddMeasurement": "Записать измерение",
     "quickAddMood": "Записать настроение",
-    "quickAddMedicationIntake": "Записать приём лекарства",
+    "quickAddMedicationIntake": "Записать приём",
     "quickAddWorkout": "Записать тренировку",
     "quickAddLifeEvent": "Записать событие жизни",
     "customizeDashboard": "Настроить сводку",
     "medicationIntakeQuickAdd": {
-      "sheetDescription": "Запишите дозу, время и лекарство в несколько касаний.",
-      "medicationLabel": "Лекарство",
-      "medicationPlaceholder": "Выберите лекарство",
-      "doseLabel": "Доза",
-      "dosePlaceholder": "напр. 5 мг",
-      "doseHint": "Заполнено стандартной дозой. Измените её, чтобы записать отклоняющуюся дозу только для этого приёма.",
-      "timeLabel": "Время приёма",
-      "saveError": "Не удалось сохранить приём лекарства.",
+      "sheetDescription": "Запишите принятую или пропущенную дозу, в том числе задним числом.",
       "emptyTitle": "Лекарств пока нет",
       "emptyDescription": "Сначала создайте лекарство с расписанием, затем вернитесь сюда, чтобы записать приём.",
       "emptyCta": "Добавить лекарство",
@@ -912,7 +911,6 @@
     "value": "Значение",
     "date": "Дата",
     "source": "Источник",
-    "notes": "Заметки",
     "typeWeight": "Вес",
     "typeBloodPressure": "АД",
     "typeBpSys": "Сист.",
@@ -1112,7 +1110,10 @@
     "typeAcuteTrainingLoad": "Острая тренировочная нагрузка",
     "sourceGarmin": "Garmin",
     "valueOutOfRange": "Введите значение от {min} до {max} {unit}.",
-    "valueOutOfRangeNoUnit": "Введите значение от {min} до {max}."
+    "valueOutOfRangeNoUnit": "Введите значение от {min} до {max}.",
+    "lastValue": "Последнее: {value}, {when}",
+    "lastValueDeviates": "Заметно отличается от прошлого измерения. Всё верно?",
+    "saveAndNext": "Сохранить и далее"
   },
   "metricCatalog": {
     "title": "Что умеет отслеживать HealthLog",
@@ -1181,7 +1182,6 @@
     "previousPage": "Предыдущая страница",
     "nextPage": "Следующая страница",
     "loginRequired": "Войдите, чтобы просматривать записи настроения.",
-    "note": "Заметка",
     "noteCollapse": "Свернуть заметку",
     "noteExpand": "Показать заметку полностью",
     "notePlaceholder": "Добавьте заметку о том, как вы себя чувствуете…",
@@ -1494,22 +1494,6 @@
       "partialToast": "Записано: {taken}, ошибок: {failed}. Попробуйте ещё раз",
       "failedToast": "Приём не записан. Попробуйте ещё раз"
     },
-    "logIntake": {
-      "dialogTitle": "Записать приём",
-      "dialogDescription": "Запишите дозу для существующего лекарства. Можно указать прошедшие дату и время.",
-      "medicationLabel": "Лекарство",
-      "slotLabel": "Слот расписания",
-      "slotNone": "Без конкретного слота",
-      "doseLabel": "Доза",
-      "doseHint": "Заполнено дозой лекарства или слота. Измените, чтобы записать отклоняющуюся дозу только для этого приёма.",
-      "takenAtLabel": "Дата и время",
-      "takenAtHint": "По умолчанию сейчас; выберите более ранние дату и время, чтобы записать прошлую дозу.",
-      "skippedLabel": "Записано как пропущено",
-      "noMedications": "Сначала добавьте лекарство, затем можно записывать приёмы по нему.",
-      "cancel": "Отмена",
-      "submit": "Записать приём",
-      "slotError": "Не удалось сопоставить выбранный слот со временем. Выберите другой слот или «Без конкретного слота»."
-    },
     "emptyTitle": "Лекарств пока нет",
     "emptyDescription": "Добавьте лекарства, дозы и окна напоминаний, чтобы отслеживать приверженность.",
     "loadFailed": "Не удалось загрузить лекарства",
@@ -1581,11 +1565,8 @@
     },
     "withoutNotification": "Без уведомления",
     "pausedSince": "На паузе с",
-    "takeNow": "Принять сейчас",
     "lastDoseYesterday": "Последняя доза вчера",
     "lastDoseDaysAgo": "Последняя доза {count} дн. назад",
-    "overdue": "Просрочено",
-    "veryOverdue": "Сильно просрочено",
     "complianceWindow": "Приверженность ({days} дн.)",
     "complianceUnavailable": "Не удалось загрузить приверженность",
     "complianceNotApplicable": "Приверженность неприменима",
@@ -1594,17 +1575,13 @@
     "complianceInfoLabel": "Что значит приверженность?",
     "lastIntake": "Последний приём:",
     "nextIntake": "Следующий приём:",
-    "nextIntakeOverdue": "Просрочено с {time}, ещё можно принять",
     "dayStreak": "дней подряд",
     "dayStreakOne": "дней подряд",
     "cycleDueToday": "Срок сегодня",
     "cycleNoClosedCycles": "Закрытых циклов доз пока нет",
-    "taken": "Принято",
-    "skipped": "Пропущено",
-    "intakeToastTaken": "{name} записано как принятое",
-    "intakeToastSkipped": "{name} пропущено",
+    "intakeToastTaken": "{name}: принято, {time}",
+    "intakeToastSkipped": "{name}: пропущено",
     "intakeToastFailed": "Не удалось записать {name}. Попробуйте ещё раз",
-    "intakeUndo": "Отменить",
     "intakeUndone": "Запись отменена",
     "intakeAlreadyTaken": "{name} уже отмечен как принятый. Ничего нового не сохранено.",
     "intakeUndoFailed": "Не удалось отменить. Откройте историю, чтобы исправить",
@@ -2021,12 +1998,12 @@
     "sideEffectTagAppetiteLoss": "потеря аппетита",
     "sideEffectTagHeartburn": "изжога",
     "sideEffectTagHeadache": "головная боль",
-    "phaseConfig": "Фазы напоминаний",
-    "phaseConfigDescription": "Настройте время для напоминаний.",
-    "phaseGreen": "Зелёная",
-    "phaseYellow": "Жёлтая",
-    "phaseOrange": "Оранжевая",
-    "phaseRed": "Красная",
+    "phaseConfig": "Время напоминаний",
+    "phaseConfigDescription": "Когда приходит каждое напоминание и когда доза считается непринятой.",
+    "phaseGreen": "Пора принять",
+    "phaseYellow": "Ещё пора принять",
+    "phaseOrange": "Просрочено",
+    "phaseRed": "Не принято",
     "phaseMinutes": "Мин",
     "phasePercent": "%",
     "phaseResetDefaults": "Сбросить к значениям по умолчанию",
@@ -2046,8 +2023,6 @@
     "intakeHistoryColStatus": "Статус",
     "intakeHistoryColSource": "Источник",
     "intakeHistoryInjectionSite": "Место инъекции: {site}",
-    "intakeHistoryStatusTaken": "Принято",
-    "intakeHistoryStatusSkipped": "Пропущено",
     "intakeHistorySortByTaken": "Сортировать по времени приёма",
     "intakeHistorySortByScheduled": "Сортировать по запланированному времени",
     "intakeHistoryPageInfo": "Страница {page} из {total}, записей: {count}",
@@ -2103,9 +2078,6 @@
         "selection": {
           "rowToggleLabel": "Выбрать строку"
         },
-        "bulkDelete": {
-          "cancelButton": "Отмена"
-        },
         "edit": {
           "dialogTitle": "Изменить приём",
           "takenAtLabel": "Принято в",
@@ -2118,11 +2090,9 @@
           "failed": "Не удалось обновить приём."
         },
         "deleteRow": {
-          "confirmTitle": "Удалить этот приём?",
-          "confirmBody": "Запись будет удалена навсегда.",
-          "confirmAction": "Удалить",
           "toast": "Приём удалён",
-          "failed": "Не удалось удалить приём."
+          "failed": "Не удалось удалить приём.",
+          "restored": "Приём восстановлен"
         },
         "viewRecent90": "Последние 90 дней",
         "viewAll": "Вся история",
@@ -2133,11 +2103,8 @@
         "loadError": "Не удалось загрузить историю.",
         "empty": "В этом периоде приёмов пока нет.",
         "summaryEmpty": "Пока нет доз для оценки.",
-        "adherenceLabel": "Приверженность",
         "adherenceBarLabel": "{onTime} вовремя, {late} с опозданием, {missed} пропущено",
-        "add": "Запись",
-        "markTaken": "Принято",
-        "markSkipped": "Пропущено",
+        "add": "Записать приём",
         "rowActionsLabel": "Действия для {time}",
         "markAsTaken": "Отметить как принято",
         "markAsSkipped": "Отметить как пропущено",
@@ -2145,27 +2112,7 @@
         "takenDetail": "запланировано {planned}, принято {taken}",
         "doseTaken": "Доза: {dose}",
         "status": {
-          "taken_on_time": "вовремя",
-          "taken_late": "с опозданием",
-          "skipped": "пропущено",
-          "missed": "пропущено",
-          "upcoming": "предстоит",
-          "ad_hoc": "вне расписания"
-        },
-        "addDialog": {
-          "title": "Добавить приём",
-          "description": "Запишите дозу, в том числе задним числом или вне расписания.",
-          "takenAtLabel": "Принято в",
-          "skippedLabel": "Пропущено",
-          "nudgeHint": "Близко к слоту {slot}. При сохранении спросим, отнести ли приём к нему.",
-          "cancel": "Отмена",
-          "submit": "Сохранить"
-        },
-        "nudge": {
-          "title": "Отнести к этому слоту?",
-          "body": "Этот приём чуть выходит за окно слота {slot}. Отнести его к этому слоту или оставить как запись вне расписания?",
-          "keepAdHoc": "Вне расписания",
-          "pin": "Отнести"
+          "ad_hoc": "Вне расписания"
         },
         "pin": {
           "action": "Отнести к слоту {time}",
@@ -2189,20 +2136,22 @@
         "disabledToast": "Напоминания выключены",
         "toggleFailed": "Не удалось изменить настройку напоминаний.",
         "clientManagedChip": "Управляется iPhone",
-        "clientManagedHint": "Напоминания для этого лекарства управляются вашим iPhone."
+        "clientManagedHint": "Напоминания для этого лекарства управляются вашим iPhone.",
+        "helperAutoRecorded": "Дозы записываются автоматически, поэтому напоминаний не будет.",
+        "plan": "Следующая доза {dose}: напоминания, пока пора принять, и когда она просрочена. Просрочена после {overdue}; после {missed} считается непринятой."
       },
       "settings": {
         "title": "Настройки",
         "phases": {
-          "openButton": "Настроить фазы",
-          "requiresCourseWindow": "Фазы доступны после задания окна курса."
+          "openButton": "Настроить"
         },
         "grace": {
           "label": "Окно напоминания",
           "appliesToAllNote": "Применяется ко всем расписаниям этого лекарства.",
           "unit": "минут",
           "saved": "Окно напоминания сохранено",
-          "failed": "Не удалось сохранить окно напоминания."
+          "failed": "Не удалось сохранить окно напоминания.",
+          "description": "Как долго после времени приёма приходят напоминания до напоминания о просрочке."
         },
         "codes": {
           "label": "Клинические коды (ATC / RxNorm)",
@@ -2313,7 +2262,6 @@
         "supplyLabel": "Запас",
         "supplyRunway": "Хватит примерно ещё на {days} дн.",
         "jumpToZeitplan": "Открыть расписание",
-        "jumpToVerlauf": "Открыть историю",
         "jumpToBestand": "Открыть запас",
         "complianceTitle": "Приверженность",
         "complianceEmpty": "Данных о приверженности пока нет."
@@ -2499,8 +2447,6 @@
     "tableStockDoses": "{count} доз",
     "tableStockRunway": "≈ {days} дн. осталось",
     "cardLowStockRunway": "Запас: ≈ {days} дн.",
-    "takeActionFor": "Принять {name}",
-    "skipActionFor": "Пропустить {name}",
     "reorderDescription": "Задайте порядок лекарств для карточек и таблицы.",
     "reorderSaved": "Порядок сохранён",
     "reorderSaveFailed": "Не удалось сохранить порядок",
@@ -2693,7 +2639,50 @@
       "saveError": "Не удалось сохранить состав",
       "catalogError": "Не удалось загрузить список нутриентов",
       "invalidRow": "Выберите нутриент и укажите количество больше нуля в каждой строке."
-    }
+    },
+    "dose": {
+      "action": {
+        "take": "Принять",
+        "skip": "Пропустить",
+        "snooze": "Напомнить позже ({minutes} мин)",
+        "undo": "Отменить",
+        "takeFor": "Принять {name}",
+        "skipFor": "Пропустить {name}"
+      },
+      "state": {
+        "pending": "Предстоит",
+        "due": "Пора принять",
+        "overdue": "Просрочено",
+        "taken": "Принято",
+        "takenLate": "Принято с опозданием",
+        "skipped": "Пропущено",
+        "missed": "Не принято",
+        "missedStillCounts": "Если принять сейчас, доза засчитается как принятая с опозданием.",
+        "snoozedUntil": "Напоминание отложено до {time}"
+      },
+      "snoozedToast": "{name}: напомним в {time}",
+      "snoozeFailed": "Не удалось отложить {name}. Попробуйте ещё раз"
+    },
+    "intakeForm": {
+      "title": "Записать приём",
+      "description": "Запишите принятую или пропущенную дозу, в том числе задним числом.",
+      "medicationLabel": "Лекарство",
+      "outcomeLabel": "Что произошло",
+      "timeLabel": "Время",
+      "doseLabel": "Доза",
+      "doseHint": "Указана запланированная доза. Меняйте её, только если приняли другое количество.",
+      "countsFor": "Засчитывается за дозу на {time}.",
+      "countsForLate": "Засчитывается за дозу на {time}, с опозданием.",
+      "countNearLabel": "Засчитать за дозу на {time}",
+      "skips": "Пропускает дозу на {time}.",
+      "extraDose": "Записывается как дополнительная доза вне расписания.",
+      "noMedications": "Сначала добавьте лекарство, затем можно записывать приёмы по нему.",
+      "saveError": "Не удалось сохранить приём. Попробуйте ещё раз"
+    },
+    "phaseGreenHint": "Первое напоминание за столько до конца окна напоминаний.",
+    "phaseYellowHint": "Ещё одно напоминание за столько до конца окна.",
+    "phaseOrangeHint": "Напоминание о просроченной дозе через столько после конца окна.",
+    "phaseRedHint": "Через столько после окна доза считается непринятой."
   },
   "charts": {
     "loadingLabel": "Загрузка графика…",
@@ -5790,6 +5779,13 @@
             "description": "Напоминания о менструации и фертильном окне включаются по каналам в матрице уведомлений.",
             "link": "Открыть матрицу уведомлений"
           }
+        },
+        "snooze": {
+          "title": "Напомнить позже",
+          "description": "На сколько откладывается напоминание о дозе: на карточке лекарства, в Telegram и в приложении.",
+          "label": "Отложить на",
+          "option": "{minutes} мин",
+          "saveError": "Не удалось сохранить. Попробуйте ещё раз"
         }
       },
       "layout": {
@@ -9908,29 +9904,29 @@
     "askMedicationName": "Укажите лекарство, например <b>taken Ramipril</b>.",
     "medicationNotFoundExact": "Лекарство не найдено. Отправьте название точно так, как в HealthLog.",
     "helpHeader": "<b>Доступные команды:</b>",
-    "helpBody": "/help: показать эту справку\n/add: записать приём\n/start: запустить бота\n\n<b>Текстовые команды:</b>\ntaken &lt;name&gt;: подтвердить приём\n\n<b>Кнопки в напоминаниях:</b>\n• Taken: подтвердить приём\n• 🕐 1h / 🕐 3h: отложить напоминание\n• ⏭ Skip: пропустить приём\n• ✓ Confirm: подтвердить пропущенный приём",
+    "helpBody": "/help: показать эту справку\n/add: записать приём\n/start: запустить бота\n\n<b>Текстовые команды:</b>\ntaken &lt;name&gt;: подтвердить приём\n\n<b>Кнопки в напоминаниях:</b>\n• ✅ Принять: отметить приём\n• 🕐 Напомнить позже: отложить напоминание на время из настроек\n• ⏭ Пропустить: пропустить приём\n• Оставить как непринятое: оставить непринятую дозу непринятой",
     "measureValuePrompt": "Ответьте значением, чтобы записать его (необязательно).",
     "buttonMeasureValue": "Значение…",
     "measureValueSaved": "Измерение сохранено.",
     "measureValueInvalid": "Ответьте числом, чтобы записать измерение.",
     "measureValueOutOfRange": "Это значение вне правдоподобного диапазона.",
-    "measureValueExpired": "Срок этого запроса истёк."
+    "measureValueExpired": "Срок этого запроса истёк.",
+    "snoozeMinutes": "{minutes} мин"
   },
   "medicationReminders": {
-    "phaseGreenTitle": "🟢 Напоминание: {medName}",
-    "phaseGreenMessage": "🟢 Напоминание:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nОкно закроется через {minutes} мин.",
-    "phaseYellowTitle": "🟡 Скоро срок: {medName}",
-    "phaseYellowMessage": "🟡 Скоро срок:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nОсталось {minutes} мин.",
+    "phaseGreenTitle": "🟢 Пора принять: {medName}",
+    "phaseGreenMessage": "🟢 Пора принять:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nОкно закроется через {minutes} мин.",
+    "phaseYellowTitle": "🟡 Ещё пора принять: {medName}",
+    "phaseYellowMessage": "🟡 Ещё пора принять:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nДо конца окна {minutes} мин.",
     "phaseOrangeTitle": "🟠 Просрочено: {medName}",
     "phaseOrangeMessage": "🟠 Просрочено:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nПросрочено на {minutes} мин.",
     "phaseRedTitle": "🔴 Не принято: {medName}",
-    "phaseRedMessage": "🔴 Ещё не принято:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nСчитается пропущенным, пока ничего не записано. Если принять сейчас, это всё равно засчитается, как поздняя доза.",
-    "buttonTaken": "Принято",
-    "buttonConfirm": "Оставить пропущенным",
-    "buttonTakenLate": "✅ Принято (поздно)",
-    "buttonSnoozeOneHour": "🕐 1 ч",
-    "buttonSnoozeThreeHours": "🕐 3 ч",
-    "buttonSkip": "⏭ Пропустить"
+    "phaseRedMessage": "🔴 Не принято:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nЕсли принять сейчас, доза засчитается как принятая с опозданием.",
+    "buttonTaken": "✅ Принять",
+    "buttonConfirm": "Оставить как непринятое",
+    "buttonTakenLate": "✅ Принять (с опозданием)",
+    "buttonSkip": "⏭ Пропустить",
+    "buttonSnooze": "🕐 Напомнить позже ({minutes} мин)"
   },
   "lowStockReminders": {
     "title": "Мало запаса: {medName}",
@@ -10715,7 +10711,11 @@
       "valuesTitle": "{marker}: все измерения",
       "valuesDescription": "Все измерения этого показателя. Изменяйте или удаляйте запись напрямую.",
       "backToMarker": "Назад к {marker}",
-      "latestResult": "Последний результат"
+      "latestResult": "Последний результат",
+      "latestValues": "Последние значения",
+      "allValues": "Все значения",
+      "columnDate": "Дата",
+      "columnValue": "Значение"
     },
     "chart": {
       "empty": "В этом периоде нет измерений.",
@@ -14086,10 +14086,8 @@
       "anchorLow": "Нет",
       "anchorHigh": "Худшее, что можно представить",
       "intensityValueText": "{value} из {max} ({low} — {high})",
-      "when": "Когда",
       "during": "Во время заболевания",
       "duringNone": "Не связано",
-      "note": "Заметка",
       "notePlaceholder": "Что ещё происходило?",
       "reset": "Сбросить форму",
       "emptyHint": "Добавьте свой первый симптом, например ауру или головную боль.",
@@ -14099,7 +14097,10 @@
       "partlySaved": "Сохранено {saved} из {total}, остальные всё ещё выбраны.",
       "severalHint": "Выберите несколько, если они появились вместе.",
       "filterPlaceholder": "Найти симптом",
-      "filterEmpty": "Подходящих симптомов нет."
+      "filterEmpty": "Подходящих симптомов нет.",
+      "whenHint": "Измените дату и время, чтобы записать прошлую запись.",
+      "intensityShort": "{value}/{max}",
+      "intensityPreset": "Установлено по вашей последней оценке. Измените, если сегодня иначе."
     },
     "section": {
       "title": "Ваши симптомы",

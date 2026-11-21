@@ -152,9 +152,13 @@ describe("medication card-parts — shared presentational components", () => {
         windowEnd="20:00"
       />,
     );
-    expect(html).toContain("Take now");
+    // A due dose reads "Due" with a clock; the check is reserved for a
+    // dose that was taken.
+    expect(html).toContain('data-state="due"');
+    expect(html).toContain(">Due<");
     expect(html).toContain("text-success");
-    expect(html).toContain("lucide-circle-check");
+    expect(html).toContain("lucide-clock");
+    expect(html).not.toContain("lucide-circle-check");
   });
 
   it("status pill stamps the warning token + glyph when late (semantic, not Dracula yellow)", () => {
@@ -483,7 +487,7 @@ describe("medication card body — shared shell + dose-state presentation", () =
     expect(html).not.toContain("ring-success/40");
     expect(html).not.toContain("bg-success/5");
     // The discreet status pill still communicates the state.
-    expect(html).toContain("Take now");
+    expect(html).toContain('data-state="due"');
   });
 
   it("never tints the card surface across any dose status", () => {
@@ -506,13 +510,16 @@ describe("medication card body — shared shell + dose-state presentation", () =
     const html = renderBody("overdue");
     expect(html).toContain("Overdue");
     expect(html).toContain("text-destructive");
-    expect(html).not.toContain("Very overdue");
+    expect(html).not.toContain('data-state="missed"');
+    expect(html).not.toContain("medication-missed-still-counts");
   });
 
-  it("escalates to 'Very overdue' at / past the miss cutoff", () => {
+  it("names a dose past the miss cutoff 'Missed' and says a take still counts", () => {
     const html = renderBody("missed");
-    expect(html).toContain("Very overdue");
+    expect(html).toContain('data-state="missed"');
+    expect(html).toContain(">Missed<");
     expect(html).toContain("text-destructive");
+    expect(html).toContain('data-slot="medication-missed-still-counts"');
   });
 
   it("keeps the inactive surface muted without any status tint", () => {

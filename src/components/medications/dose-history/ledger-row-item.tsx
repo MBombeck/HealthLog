@@ -1,10 +1,7 @@
 "use client";
 
 import {
-  AlertCircle,
-  AlertTriangle,
   Check,
-  CircleCheck,
   Link2,
   Loader2,
   MoreVertical,
@@ -26,43 +23,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
-import type { DoseHistoryStatus } from "@/lib/medications/scheduling/dose-history";
+
+import { DoseStateLabel } from "@/components/medications/dose-state-label";
+import type { DeletedIntakeSnapshot } from "@/components/medications/use-medication-intake";
+import type { DoseState } from "@/lib/medications/dose-state/resolve";
+import {
+  DOSE_ACTION_TERM,
+  doseStateOfHistoryRow,
+} from "@/lib/medications/dose-state/terms";
 
 import {
   formatSlotDelta,
   isSlotActionable,
   type LedgerRow,
 } from "../dose-history-ledger-compute";
-
-/** Status → semantic colour token + glyph. Mirrors the card status pill's
- * success / warning / destructive ramp so the surface reads as one vocabulary;
- * skipped + upcoming are calm muted, ad-hoc is the neutral-positive accent. */
-const STATUS_TONE: Record<DoseHistoryStatus, string> = {
-  taken_on_time: "text-success",
-  taken_late: "text-warning",
-  skipped: "text-muted-foreground",
-  missed: "text-destructive",
-  upcoming: "text-muted-foreground",
-  ad_hoc: "text-primary",
-};
-
-function StatusGlyph({ status }: { status: DoseHistoryStatus }) {
-  const cls = "size-3.5 shrink-0";
-  switch (status) {
-    case "taken_on_time":
-      return <CircleCheck aria-hidden="true" className={cls} />;
-    case "taken_late":
-      return <AlertCircle aria-hidden="true" className={cls} />;
-    case "missed":
-      return <AlertTriangle aria-hidden="true" className={cls} />;
-    case "ad_hoc":
-      return <Plus aria-hidden="true" className={cls} />;
-    case "skipped":
-      return <SkipForward aria-hidden="true" className={cls} />;
-    default:
-      return null;
-  }
-}
 
 interface LedgerRowItemProps {
   row: LedgerRow;
@@ -80,7 +54,8 @@ interface LedgerRowItemProps {
     skipped: boolean;
     scheduledFor: string | null;
   }) => void;
-  onDelete: (id: string) => void;
+  /** Delete the row's intake at once; the toast carries the undo. */
+  onDelete: (intake: DeletedIntakeSnapshot) => void;
   /** Open the pin confirm for an ad-hoc take onto the named slot (ISO). */
   onPin: (eventId: string, slotAt: string) => void;
   /** Release a pinned binding (server re-attributes by band). */
@@ -120,6 +95,7 @@ export function LedgerRowItem({
   const fmt = useFormatters();
 
   const actionable = isSlotActionable(row);
+  const rowState = doseStateOfHistoryRow(row);
   // A missed slot from an earlier day stays markable, but only through the
   // kebab — the visible button is reserved for doses still in play.
   const showTakenButton = actionable && (row.status === "upcoming" || isToday);
@@ -129,8 +105,9 @@ export function LedgerRowItem({
 
   // The leading time label: the slot's HH:mm for a slot row, else the ad-hoc
   // take's real clock time.
-  const timeLabel =
-    row.timeOfDay ?? fmt.time(new Date(intake?.takenAt ?? row.at));
+  const timeLabel = row.timeOfDay
+    ? fmt.wallTime(row.timeOfDay)
+    : fmt.time(new Date(intake?.takenAt ?? row.at));
 
   // When a take lands away from its slot, show both anchors so the row reads
   // "geplant 07:00 · genommen 11:29".
@@ -161,13 +138,7 @@ export function LedgerRowItem({
           <span className="text-foreground text-sm font-medium tabular-nums">
             {timeLabel}
           </span>
-          <span
-            className={`inline-flex items-center gap-1 text-xs font-medium ${STATUS_TONE[row.status]}`}
-            data-slot="ledger-status"
-          >
-            <StatusGlyph status={row.status} />
-            {t(`medications.detail.verlauf.status.${row.status}`)}
-          </span>
+          <LedgerRowStatus state={rowState} />
           {row.kind === "ad_hoc" && (
             <Badge variant="outline" className="text-2xs">
               {t("medications.detail.verlauf.adHocTag")}
@@ -190,7 +161,9 @@ export function LedgerRowItem({
         {showTakeDetail && (
           <p className="text-muted-foreground text-xs">
             {t("medications.detail.verlauf.takenDetail", {
-              planned: row.timeOfDay ?? fmt.time(new Date(row.at)),
+              planned: row.timeOfDay
+                ? fmt.wallTime(row.timeOfDay)
+                : fmt.time(new Date(row.at)),
               taken: fmt.time(new Date(intake!.takenAt!)),
             })}
           </p>
@@ -240,7 +213,7 @@ export function LedgerRowItem({
             ) : (
               <Check aria-hidden="true" className="size-4" />
             )}
-            {t("medications.detail.verlauf.markTaken")}
+            {t(DOSE_ACTION_TERM.take)}
           </Button>
         )}
         {/* .x — the other half of the same admitted verb. Marking a dose
@@ -269,7 +242,7 @@ export function LedgerRowItem({
             ) : (
               <SkipForward aria-hidden="true" className="size-4" />
             )}
-            {t("medications.detail.verlauf.markSkipped")}
+            {t(DOSE_ACTION_TERM.skip)}
           </Button>
         )}
         {canManageMedications && (
@@ -357,7 +330,7 @@ function LedgerRowMenu({
             data-slot="ledger-menu-taken"
           >
             <Check aria-hidden="true" className="mr-2 size-4" />
-            {t("medications.detail.verlauf.markTaken")}
+            {t(DOSE_ACTION_TERM.take)}
           </DropdownMenuItem>
         )}
         {actionable && (
@@ -373,7 +346,7 @@ function LedgerRowMenu({
             ) : (
               <SkipForward aria-hidden="true" className="mr-2 size-4" />
             )}
-            {t("medications.detail.verlauf.markSkipped")}
+            {t(DOSE_ACTION_TERM.skip)}
           </DropdownMenuItem>
         )}
         {canPin && (
@@ -437,7 +410,17 @@ function LedgerRowMenu({
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => onDelete(intake.id as string)}
+              onClick={() =>
+                onDelete({
+                  id: intake.id as string,
+                  takenAt: intake.takenAt,
+                  skipped: intake.skipped,
+                  scheduledFor:
+                    row.kind === "slot" ? intake.scheduledFor : null,
+                  doseTaken: intake.doseTaken ?? null,
+                  autoMissed: intake.autoMissed,
+                })
+              }
               data-slot="ledger-delete"
             >
               <Trash2 aria-hidden="true" className="mr-2 size-4" />
@@ -447,5 +430,28 @@ function LedgerRowMenu({
         )}
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+/**
+ * The row's state in the shared dose vocabulary. An open slot reads pending,
+ * due or overdue as the server resolved it; an off-schedule take carries the
+ * "off-schedule" tag instead.
+ */
+function LedgerRowStatus({ state }: { state: DoseState | null }) {
+  const { t } = useTranslations();
+  if (state) {
+    return (
+      <DoseStateLabel state={state} className="text-xs" slot="ledger-status" />
+    );
+  }
+  return (
+    <span
+      className="text-primary inline-flex items-center gap-1 text-xs font-medium"
+      data-slot="ledger-status"
+    >
+      <Plus aria-hidden="true" className="size-3.5 shrink-0" />
+      {t("medications.detail.verlauf.status.ad_hoc")}
+    </span>
   );
 }

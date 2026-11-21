@@ -29,6 +29,11 @@ import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { isoDateTime } from "@/lib/validations/datetime";
 import {
+  resolveLedgerSlot,
+  wireDoseState,
+  type WireDoseState,
+} from "@/lib/medications/dose-state/resolve";
+import {
   DOSE_LEDGER_MEDICATION_INCLUDE,
   loadDoseLedger,
 } from "@/lib/medications/dose-state/ledger";
@@ -63,6 +68,14 @@ interface SerializedDoseHistoryRow {
   at: string;
   timeOfDay: string | null;
   status: DoseHistoryRow["status"];
+  /**
+   * The slot's resolved dose state (`dose-state/resolve.ts`) in the published
+   * vocabulary, so an open slot reads upcoming, due or overdue the way the
+   * card and the today list say it. Null on an ad-hoc row.
+   */
+  state: WireDoseState | null;
+  /** True for a take after the on-time window (`state` is then `taken`). */
+  takenLate: boolean;
   /** v1.15.20 — slot served by a deliberate user pin ("zugeordnet"). */
   pinned?: boolean;
   /** v1.15.20 — due-context for an ad-hoc take: the nearest slot it could
@@ -82,6 +95,41 @@ interface SerializedDoseHistoryRow {
     /** v1.32.8 (iOS #64) — how the dose was recorded; null on legacy rows. */
     source: "WEB" | "API" | "REMINDER" | "IMPORT" | "APPLE_HEALTH" | null;
   } | null;
+}
+
+/** One ledger row for the wire, with its resolved state beside it. */
+function serializeRow(
+  row: DoseHistoryRow,
+  wire: { state: WireDoseState | null; takenLate: boolean },
+): SerializedDoseHistoryRow {
+  return {
+    kind: row.kind,
+    at: row.at.toISOString(),
+    timeOfDay: row.timeOfDay,
+    status: row.status,
+    state: wire.state,
+    takenLate: wire.takenLate,
+    ...(row.pinned && { pinned: true }),
+    ...(row.nearestSlot && {
+      nearestSlot: {
+        at: row.nearestSlot.at.toISOString(),
+        timeOfDay: row.nearestSlot.timeOfDay,
+        filled: row.nearestSlot.filled,
+      },
+    }),
+    intake: row.intake
+      ? {
+          id: row.intake.id ?? null,
+          scheduledFor: row.intake.scheduledFor.toISOString(),
+          takenAt: row.intake.takenAt?.toISOString() ?? null,
+          skipped: row.intake.skipped,
+          autoMissed: row.intake.autoMissed ?? false,
+          doseTaken: row.intake.doseTaken ?? null,
+          source: row.intake.source ?? null,
+          autoRecorded: row.intake.autoRecorded ?? false,
+        }
+      : null,
+  };
 }
 
 export const GET = apiHandler(
@@ -149,32 +197,13 @@ export const GET = apiHandler(
       now,
     });
 
-    const serialized: SerializedDoseHistoryRow[] = rows.map((row) => ({
-      kind: row.kind,
-      at: row.at.toISOString(),
-      timeOfDay: row.timeOfDay,
-      status: row.status,
-      ...(row.pinned && { pinned: true }),
-      ...(row.nearestSlot && {
-        nearestSlot: {
-          at: row.nearestSlot.at.toISOString(),
-          timeOfDay: row.nearestSlot.timeOfDay,
-          filled: row.nearestSlot.filled,
-        },
-      }),
-      intake: row.intake
-        ? {
-            id: row.intake.id ?? null,
-            scheduledFor: row.intake.scheduledFor.toISOString(),
-            takenAt: row.intake.takenAt?.toISOString() ?? null,
-            skipped: row.intake.skipped,
-            autoMissed: row.intake.autoMissed ?? false,
-            doseTaken: row.intake.doseTaken ?? null,
-            source: row.intake.source ?? null,
-            autoRecorded: row.intake.autoRecorded ?? false,
-          }
-        : null,
-    }));
+    const serialized: SerializedDoseHistoryRow[] = rows.map((row) => {
+      const resolved = resolveLedgerSlot(row, now);
+      const wire = resolved
+        ? wireDoseState(resolved.state)
+        : { state: null, takenLate: false };
+      return serializeRow(row, wire);
+    });
 
     annotate({
       action: {

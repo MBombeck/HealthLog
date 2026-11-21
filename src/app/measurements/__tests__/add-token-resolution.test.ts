@@ -6,7 +6,7 @@ import {
   MEASUREMENT_FORM_TYPE_VALUES,
   ADD_TOKEN_ALIASES,
   resolveAddToken,
-} from "@/components/measurements/measurement-form";
+} from "@/components/measurements/measurement-form-types";
 
 /**
  * F-1 contract — every `?add=<token>` the Insights surfaces ship must

@@ -59,7 +59,12 @@
     "readThrottled": "Ci sono troppe richieste in questo momento, quindi riprova più tardi.",
     "sessionEnded": "La tua sessione è scaduta, quindi accedi di nuovo per continuare.",
     "signIn": "Accedi",
-    "yes": "Sì"
+    "yes": "Sì",
+    "savedWithValue": "{label} {value} salvato",
+    "savedNamed": "{label} salvato",
+    "entryUndone": "Voce rimossa",
+    "entryUndoFailed": "Impossibile rimuovere la voce.",
+    "note": "Nota"
   },
   "apiErrors": {
     "measurement": {
@@ -328,7 +333,7 @@
     "colMedication": "Farmaco",
     "colTaken": "Assunta",
     "colSkipped": "Saltata",
-    "colMissed": "Persa",
+    "colMissed": "Mancata",
     "colExpected": "Attese",
     "colComplianceRate": "Tasso di aderenza",
     "moodTitle": "Andamento dell’umore",
@@ -597,7 +602,7 @@
       "measurement": "Misurazione",
       "measurementDescription": "Peso, pressione, battito e altro",
       "medication": "Farmaco",
-      "medicationDescription": "Segna una dose come assunta",
+      "medicationDescription": "Registra una dose, assunta o saltata",
       "mood": "Umore",
       "moodDescription": "Registra umore e tag",
       "workout": "Allenamento",
@@ -607,7 +612,8 @@
       "lifeEventDescription": "Un trasloco, una nascita, un nuovo lavoro",
       "lifeEvent": "Evento di vita",
       "seizure": "Crisi",
-      "seizureDescription": "Avvia il timer o registra una crisi non cronometrata"
+      "seizureDescription": "Avvia il timer o registra una crisi non cronometrata",
+      "recentMeasurementDescription": "Misurazione registrata di recente"
     },
     "cycle": "Ciclo",
     "labs": "Esami",
@@ -784,14 +790,7 @@
     "quickAddLifeEvent": "Registra evento di vita",
     "customizeDashboard": "Personalizza dashboard",
     "medicationIntakeQuickAdd": {
-      "sheetDescription": "Registra dose, orario e farmaco con pochi tap.",
-      "medicationLabel": "Farmaco",
-      "medicationPlaceholder": "Seleziona un farmaco",
-      "doseLabel": "Dose",
-      "dosePlaceholder": "es. 5 mg",
-      "doseHint": "Precompilato con la dose standard. Modificala per registrare una dose diversa solo per questa assunzione.",
-      "timeLabel": "Orario di assunzione",
-      "saveError": "Impossibile salvare l’assunzione.",
+      "sheetDescription": "Registra una dose assunta o saltata, anche in un secondo momento.",
       "emptyTitle": "Ancora nessun farmaco",
       "emptyDescription": "Crea prima un farmaco con un orario, poi torna qui per registrarne l’assunzione.",
       "emptyCta": "Aggiungi farmaco",
@@ -912,7 +911,6 @@
     "value": "Valore",
     "date": "Data",
     "source": "Sorgente",
-    "notes": "Note",
     "typeWeight": "Peso",
     "typeBloodPressure": "Pressione arteriosa",
     "typeBpSys": "Sis",
@@ -1112,7 +1110,10 @@
     "typeAcuteTrainingLoad": "Carico di allenamento acuto",
     "sourceGarmin": "Garmin",
     "valueOutOfRange": "Inserisci un valore tra {min} e {max} {unit}.",
-    "valueOutOfRangeNoUnit": "Inserisci un valore tra {min} e {max}."
+    "valueOutOfRangeNoUnit": "Inserisci un valore tra {min} e {max}.",
+    "lastValue": "Ultimo: {value}, {when}",
+    "lastValueDeviates": "Molto diverso dalla tua ultima misurazione. È corretto?",
+    "saveAndNext": "Salva e avanti"
   },
   "metricCatalog": {
     "title": "Cosa può monitorare HealthLog",
@@ -1181,7 +1182,6 @@
     "previousPage": "Pagina precedente",
     "nextPage": "Pagina successiva",
     "loginRequired": "Accedi per vedere le voci dell’umore.",
-    "note": "Nota",
     "noteCollapse": "Comprimi nota",
     "noteExpand": "Mostra nota completa",
     "notePlaceholder": "Aggiungi una nota su come ti senti…",
@@ -1482,7 +1482,7 @@
     "addMedication": "Aggiungi",
     "firstMedication": "Aggiungi il primo farmaco",
     "addChoice": {
-      "logIntake": "Registra un'assunzione",
+      "logIntake": "Registra assunzione",
       "newMedication": "Nuovo farmaco"
     },
     "takeAllDue": {
@@ -1493,22 +1493,6 @@
       "successToast": "{count} assunzioni registrate",
       "partialToast": "{taken} registrate, {failed} non riuscite. Riprova",
       "failedToast": "Nessuna assunzione registrata. Riprova"
-    },
-    "logIntake": {
-      "dialogTitle": "Registra un'assunzione",
-      "dialogDescription": "Registra una dose per un farmaco esistente. Puoi retrodatarla a una data e un'ora passate.",
-      "medicationLabel": "Farmaco",
-      "slotLabel": "Fascia della pianificazione",
-      "slotNone": "Nessuna fascia specifica",
-      "doseLabel": "Dose",
-      "doseHint": "Precompilato con la dose del farmaco o della fascia. Modificala per registrare una dose diversa solo per questa assunzione.",
-      "takenAtLabel": "Data e ora",
-      "takenAtHint": "Per impostazione predefinita è adesso; scegli una data e un'ora precedenti per registrare una dose passata.",
-      "skippedLabel": "Registra come saltata",
-      "noMedications": "Aggiungi prima un farmaco, poi potrai registrarne le assunzioni.",
-      "cancel": "Annulla",
-      "submit": "Registra assunzione",
-      "slotError": "Non è stato possibile associare un orario alla fascia selezionata. Scegli un’altra fascia o «Nessuna fascia specifica»."
     },
     "emptyTitle": "Ancora nessun farmaco",
     "emptyDescription": "Crea farmaci, dosi e fasce orarie per registrare l’aderenza.",
@@ -1581,11 +1565,8 @@
     },
     "withoutNotification": "Senza notifica",
     "pausedSince": "In pausa dal",
-    "takeNow": "Assumi ora",
     "lastDoseYesterday": "Ultima dose ieri",
     "lastDoseDaysAgo": "Ultima dose {count} giorni fa",
-    "overdue": "In ritardo",
-    "veryOverdue": "Molto in ritardo",
     "complianceWindow": "Aderenza {days} giorni",
     "complianceUnavailable": "Impossibile caricare l'aderenza",
     "complianceNotApplicable": "Aderenza non applicabile",
@@ -1594,17 +1575,13 @@
     "complianceInfoLabel": "Cosa significa aderenza?",
     "lastIntake": "Ultima assunzione:",
     "nextIntake": "Prossima assunzione:",
-    "nextIntakeOverdue": "In ritardo da {time}, ancora recuperabile",
     "dayStreak": "giorni di serie",
     "dayStreakOne": "giorno di serie",
     "cycleDueToday": "In scadenza oggi",
     "cycleNoClosedCycles": "Ancora nessun ciclo di dose completato",
-    "taken": "Assunta",
-    "skipped": "Saltata",
-    "intakeToastTaken": "{name} registrata come assunta",
-    "intakeToastSkipped": "{name} saltata",
+    "intakeToastTaken": "{name}: assunta, {time}",
+    "intakeToastSkipped": "{name}: saltata",
     "intakeToastFailed": "Impossibile registrare {name}; riprova",
-    "intakeUndo": "Annulla",
     "intakeUndone": "Voce annullata",
     "intakeAlreadyTaken": "{name} era già registrato come assunto. Non è stato salvato nulla di nuovo.",
     "intakeUndoFailed": "Impossibile annullare; correggi nella cronologia",
@@ -2021,12 +1998,12 @@
     "sideEffectTagAppetiteLoss": "Perdita di appetito",
     "sideEffectTagHeartburn": "Bruciore di stomaco",
     "sideEffectTagHeadache": "Mal di testa",
-    "phaseConfig": "Fasi di promemoria",
-    "phaseConfigDescription": "Configura i momenti dei promemoria.",
-    "phaseGreen": "Verde",
-    "phaseYellow": "Giallo",
-    "phaseOrange": "Arancione",
-    "phaseRed": "Rosso",
+    "phaseConfig": "Tempi dei promemoria",
+    "phaseConfigDescription": "Quando arriva ogni promemoria e quando una dose conta come mancata.",
+    "phaseGreen": "Da assumere",
+    "phaseYellow": "Ancora da assumere",
+    "phaseOrange": "In ritardo",
+    "phaseRed": "Mancata",
     "phaseMinutes": "Min",
     "phasePercent": "%",
     "phaseResetDefaults": "Ripristina predefiniti",
@@ -2046,8 +2023,6 @@
     "intakeHistoryColStatus": "Stato",
     "intakeHistoryColSource": "Sorgente",
     "intakeHistoryInjectionSite": "Sito di iniezione: {site}",
-    "intakeHistoryStatusTaken": "Assunta",
-    "intakeHistoryStatusSkipped": "Saltata",
     "intakeHistorySortByTaken": "Ordina per ora di assunzione",
     "intakeHistorySortByScheduled": "Ordina per orario programmato",
     "intakeHistoryPageInfo": "Pagina {page} di {total}, {count} voci",
@@ -2103,9 +2078,6 @@
         "selection": {
           "rowToggleLabel": "Seleziona riga"
         },
-        "bulkDelete": {
-          "cancelButton": "Annulla"
-        },
         "edit": {
           "dialogTitle": "Modifica assunzione",
           "takenAtLabel": "Assunta alle",
@@ -2118,11 +2090,9 @@
           "failed": "Impossibile aggiornare l’assunzione."
         },
         "deleteRow": {
-          "confirmTitle": "Eliminare questa assunzione?",
-          "confirmBody": "La voce viene rimossa definitivamente.",
-          "confirmAction": "Elimina",
           "toast": "Assunzione eliminata",
-          "failed": "Impossibile eliminare l’assunzione."
+          "failed": "Impossibile eliminare l’assunzione.",
+          "restored": "Assunzione ripristinata"
         },
         "viewRecent90": "Ultimi 90 giorni",
         "viewAll": "Storico completo",
@@ -2133,11 +2103,8 @@
         "loadError": "Impossibile caricare la cronologia.",
         "empty": "Ancora nessuna assunzione in questo periodo.",
         "summaryEmpty": "Ancora nessuna dose da valutare.",
-        "adherenceLabel": "Aderenza",
         "adherenceBarLabel": "{onTime} puntuali, {late} in ritardo, {missed} mancate",
-        "add": "Voce",
-        "markTaken": "Assunta",
-        "markSkipped": "Saltata",
+        "add": "Registra assunzione",
         "rowActionsLabel": "Azioni per {time}",
         "markAsTaken": "Segna come assunta",
         "markAsSkipped": "Segna come saltata",
@@ -2145,27 +2112,7 @@
         "takenDetail": "prevista {planned}, assunta {taken}",
         "doseTaken": "Dose: {dose}",
         "status": {
-          "taken_on_time": "puntuale",
-          "taken_late": "in ritardo",
-          "skipped": "saltata",
-          "missed": "mancata",
-          "upcoming": "in attesa",
-          "ad_hoc": "fuori programma"
-        },
-        "addDialog": {
-          "title": "Aggiungi assunzione",
-          "description": "Registra una dose, anche retroattiva o fuori programma.",
-          "takenAtLabel": "Assunta alle",
-          "skippedLabel": "Saltata",
-          "nudgeHint": "Vicina allo slot {slot}: al salvataggio chiediamo se attribuirla.",
-          "cancel": "Annulla",
-          "submit": "Salva"
-        },
-        "nudge": {
-          "title": "Attribuire a questo slot?",
-          "body": "Questa assunzione cade appena fuori dalla finestra di {slot}. Attribuirla a quello slot o tenerla come voce fuori programma?",
-          "keepAdHoc": "Fuori programma",
-          "pin": "Attribuisci"
+          "ad_hoc": "Fuori programma"
         },
         "pin": {
           "action": "Attribuisci allo slot delle {time}",
@@ -2189,20 +2136,22 @@
         "disabledToast": "Promemoria disattivati",
         "toggleFailed": "Impossibile modificare l’impostazione dei promemoria.",
         "clientManagedChip": "Gestito dall’iPhone",
-        "clientManagedHint": "Il tuo iPhone gestisce i promemoria di questo farmaco."
+        "clientManagedHint": "Il tuo iPhone gestisce i promemoria di questo farmaco.",
+        "helperAutoRecorded": "Le dosi vengono registrate automaticamente, quindi non arrivano promemoria.",
+        "plan": "Prossima dose {dose}: promemoria finché è da assumere e quando è in ritardo. In ritardo dopo le {overdue}; dopo le {missed} conta come mancata."
       },
       "settings": {
         "title": "Impostazioni",
         "phases": {
-          "openButton": "Configura le fasi",
-          "requiresCourseWindow": "Le fasi sono disponibili dopo aver impostato un periodo di trattamento."
+          "openButton": "Modifica"
         },
         "grace": {
           "label": "Finestra di promemoria",
           "appliesToAllNote": "Vale per tutti i programmi di questo farmaco.",
           "unit": "minuti",
           "saved": "Finestra di promemoria salvata",
-          "failed": "Impossibile salvare la finestra di promemoria."
+          "failed": "Impossibile salvare la finestra di promemoria.",
+          "description": "Per quanto continuano i promemoria dopo l'ora della dose, prima di quello di ritardo."
         },
         "codes": {
           "label": "Codici clinici (ATC / RxNorm)",
@@ -2313,7 +2262,6 @@
         "supplyLabel": "Scorta",
         "supplyRunway": "Copre ancora circa {days} giorni",
         "jumpToZeitplan": "Apri programma",
-        "jumpToVerlauf": "Apri cronologia",
         "jumpToBestand": "Apri scorta",
         "complianceTitle": "Aderenza",
         "complianceEmpty": "Ancora nessun dato sull'aderenza."
@@ -2499,8 +2447,6 @@
     "tableStockDoses": "{count} dosi",
     "tableStockRunway": "≈ {days} giorni rimanenti",
     "cardLowStockRunway": "Scorta: ≈ {days} giorni",
-    "takeActionFor": "Assumi: {name}",
-    "skipActionFor": "Salta: {name}",
     "reorderDescription": "Imposta l'ordine dei tuoi farmaci: vale per la vista a schede e per la tabella.",
     "reorderSaved": "Ordine salvato",
     "reorderSaveFailed": "Impossibile salvare l’ordine",
@@ -2693,7 +2639,50 @@
       "saveError": "Non è stato possibile salvare la composizione",
       "catalogError": "Non è stato possibile caricare l'elenco dei nutrienti",
       "invalidRow": "Scegli un nutriente e inserisci una quantità maggiore di zero in ogni riga."
-    }
+    },
+    "dose": {
+      "action": {
+        "take": "Assumi",
+        "skip": "Salta",
+        "snooze": "Ricordamelo più tardi ({minutes} min)",
+        "undo": "Annulla",
+        "takeFor": "Assumi {name}",
+        "skipFor": "Salta {name}"
+      },
+      "state": {
+        "pending": "In attesa",
+        "due": "Da assumere",
+        "overdue": "In ritardo",
+        "taken": "Assunta",
+        "takenLate": "Assunta in ritardo",
+        "skipped": "Saltata",
+        "missed": "Mancata",
+        "missedStillCounts": "Se la assumi ora conta ancora, come in ritardo.",
+        "snoozedUntil": "Promemoria rinviato alle {time}"
+      },
+      "snoozedToast": "{name}: promemoria di nuovo alle {time}",
+      "snoozeFailed": "Impossibile rinviare {name}. Riprova"
+    },
+    "intakeForm": {
+      "title": "Registra assunzione",
+      "description": "Registra una dose assunta o saltata, anche in un secondo momento.",
+      "medicationLabel": "Farmaco",
+      "outcomeLabel": "Cosa è successo",
+      "timeLabel": "Ora",
+      "doseLabel": "Dose",
+      "doseHint": "Precompilata con la dose prevista. Cambiala solo se ne hai assunta una quantità diversa.",
+      "countsFor": "Conta per la dose delle {time}.",
+      "countsForLate": "Conta per la dose delle {time}, come in ritardo.",
+      "countNearLabel": "Contala per la dose delle {time}",
+      "skips": "Salta la dose delle {time}.",
+      "extraDose": "Registrata come dose extra, fuori programma.",
+      "noMedications": "Aggiungi prima un farmaco, poi potrai registrarne le assunzioni.",
+      "saveError": "Impossibile salvare l'assunzione. Riprova"
+    },
+    "phaseGreenHint": "Primo promemoria, questo tempo prima della fine della finestra di promemoria.",
+    "phaseYellowHint": "Un altro promemoria, questo tempo prima della fine della finestra.",
+    "phaseOrangeHint": "Un promemoria che la dose è in ritardo, questo tempo dopo la fine della finestra.",
+    "phaseRedHint": "Passato questo tempo dalla finestra, la dose conta come mancata."
   },
   "charts": {
     "loadingLabel": "Caricamento del grafico…",
@@ -5790,6 +5779,13 @@
             "description": "I promemoria del ciclo e della finestra fertile si attivano per canale nella griglia delle notifiche.",
             "link": "Apri la griglia delle notifiche"
           }
+        },
+        "snooze": {
+          "title": "Ricordamelo più tardi",
+          "description": "Di quanto viene rinviato un promemoria della dose, sulla scheda del farmaco, in Telegram e nell'app.",
+          "label": "Rinvia di",
+          "option": "{minutes} min",
+          "saveError": "Impossibile salvare. Riprova"
         }
       },
       "layout": {
@@ -9908,29 +9904,29 @@
     "askMedicationName": "Indica il farmaco, es. <b>preso Ramipril</b>.",
     "medicationNotFoundExact": "Farmaco non trovato. Invia il nome esattamente come appare in HealthLog.",
     "helpHeader": "<b>Comandi disponibili:</b>",
-    "helpBody": "/help: mostra questa guida\n/add: registra un'assunzione\n/start: avvia il bot\n\n<b>Comandi testuali:</b>\ntaken &lt;nome&gt;: conferma un'assunzione\n\n<b>Pulsanti nei promemoria:</b>\n• Assunto: conferma l'assunzione\n• 🕐 1h / 🕐 3h: posticipa il promemoria\n• ⏭ Salta: salta l'assunzione\n• ✓ Conferma: conferma un'assunzione saltata",
+    "helpBody": "/help: mostra questa guida\n/add: registra un'assunzione\n/start: avvia il bot\n\n<b>Comandi testuali:</b>\ntaken &lt;nome&gt;: conferma un'assunzione\n\n<b>Pulsanti nei promemoria:</b>\n• ✅ Assumi: registra l'assunzione\n• 🕐 Ricordamelo più tardi: posticipa il promemoria, della durata scelta nelle impostazioni\n• ⏭ Salta: salta l'assunzione\n• Lasciare mancata: lascia un'assunzione mancata come mancata",
     "measureValuePrompt": "Rispondi con il valore per registrarlo (facoltativo).",
     "buttonMeasureValue": "Valore…",
     "measureValueSaved": "Misurazione salvata.",
     "measureValueInvalid": "Rispondi con un numero per registrare una misurazione.",
     "measureValueOutOfRange": "Questo valore è fuori dall’intervallo plausibile.",
-    "measureValueExpired": "Questo messaggio è scaduto."
+    "measureValueExpired": "Questo messaggio è scaduto.",
+    "snoozeMinutes": "{minutes} min"
   },
   "medicationReminders": {
-    "phaseGreenTitle": "🟢 Promemoria: {medName}",
-    "phaseGreenMessage": "🟢 Reminder:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nWindow closes in {minutes} Min.",
-    "phaseYellowTitle": "🟡 In scadenza: {medName}",
-    "phaseYellowMessage": "🟡 In scadenza:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nMancano {minutes} min.",
+    "phaseGreenTitle": "🟢 Da assumere: {medName}",
+    "phaseGreenMessage": "🟢 Da assumere:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nLa finestra si chiude tra {minutes} min.",
+    "phaseYellowTitle": "🟡 Ancora da assumere: {medName}",
+    "phaseYellowMessage": "🟡 Ancora da assumere:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nRestano {minutes} min nella finestra.",
     "phaseOrangeTitle": "🟠 In ritardo: {medName}",
-    "phaseOrangeMessage": "🟠 Overdue:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nOverdue by {minutes} Min.",
-    "phaseRedTitle": "🔴 Non assunta: {medName}",
-    "phaseRedMessage": "🔴 Non ancora assunta:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nConta come saltata finché non la registri. Se la prendi ora conta comunque, come dose in ritardo.",
-    "buttonTaken": "Assunto",
-    "buttonConfirm": "Lasciare saltata",
-    "buttonTakenLate": "✅ Assunto (in ritardo)",
-    "buttonSnoozeOneHour": "🕐 1h",
-    "buttonSnoozeThreeHours": "🕐 3h",
-    "buttonSkip": "⏭ Salta"
+    "phaseOrangeMessage": "🟠 In ritardo:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nIn ritardo di {minutes} min.",
+    "phaseRedTitle": "🔴 Mancata: {medName}",
+    "phaseRedMessage": "🔴 Mancata:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nSe la assumi ora conta ancora, come in ritardo.",
+    "buttonTaken": "✅ Assumi",
+    "buttonConfirm": "Lasciare mancata",
+    "buttonTakenLate": "✅ Assumi (conta in ritardo)",
+    "buttonSkip": "⏭ Salta",
+    "buttonSnooze": "🕐 Ricordamelo più tardi ({minutes} min)"
   },
   "lowStockReminders": {
     "title": "Scorte in esaurimento: {medName}",
@@ -10715,7 +10711,11 @@
       "valuesTitle": "{marker}: tutte le letture",
       "valuesDescription": "Ogni lettura di questo biomarcatore. Modifica o rimuovi una voce direttamente.",
       "backToMarker": "Torna a {marker}",
-      "latestResult": "Ultimo risultato"
+      "latestResult": "Ultimo risultato",
+      "latestValues": "Ultimi valori",
+      "allValues": "Tutti i valori",
+      "columnDate": "Data",
+      "columnValue": "Valore"
     },
     "chart": {
       "empty": "Nessuna misurazione in questo periodo.",
@@ -14086,10 +14086,8 @@
       "anchorLow": "Nessuna",
       "anchorHigh": "La peggiore immaginabile",
       "intensityValueText": "{value} su {max} (da {low} a {high})",
-      "when": "Quando",
       "during": "Durante una malattia",
       "duringNone": "Non collegato",
-      "note": "Nota",
       "notePlaceholder": "Cos'altro stava succedendo?",
       "reset": "Reimposta modulo",
       "emptyHint": "Aggiungi il tuo primo sintomo, per esempio aura o mal di testa.",
@@ -14099,7 +14097,10 @@
       "partlySaved": "{saved} di {total} salvati, il resto è ancora selezionato.",
       "severalHint": "Scegline più di uno se sono comparsi insieme.",
       "filterPlaceholder": "Cerca un sintomo",
-      "filterEmpty": "Nessun sintomo corrisponde."
+      "filterEmpty": "Nessun sintomo corrisponde.",
+      "whenHint": "Modifica data e ora per registrare una voce passata.",
+      "intensityShort": "{value}/{max}",
+      "intensityPreset": "Impostato sulla tua ultima valutazione. Cambiala se oggi è diverso."
     },
     "section": {
       "title": "I tuoi sintomi",

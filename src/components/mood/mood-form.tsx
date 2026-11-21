@@ -35,6 +35,12 @@ import {
   StickyNote,
 } from "lucide-react";
 import { toast } from "sonner";
+import { showEntrySavedToast } from "@/components/forms/entry-saved-toast";
+import {
+  useActiveRecordName,
+  useRecordCapabilities,
+} from "@/hooks/use-record-capabilities";
+import { removeSavedMoodEntry } from "@/components/forms/entry-undo";
 import { useTranslations } from "@/lib/i18n/context";
 import { useRovingRadioGroup } from "@/hooks/use-roving-radio-group";
 import {
@@ -124,6 +130,8 @@ export function MoodForm({
   defaultDate,
 }: MoodFormProps) {
   const { t } = useTranslations();
+  const recordName = useActiveRecordName();
+  const { canManageDomain } = useRecordCapabilities();
   const queryClient = useQueryClient();
   const post = useIdempotentPost();
 
@@ -237,28 +245,44 @@ export function MoodForm({
 
       const trimmedNote = note.trim();
 
-      const saved = await post<DroppedLinkKeysWire>("/api/mood-entries", {
-        mood,
-        tags: tags.length > 0 ? tags : undefined,
-        tagKeys: tagKeys.length > 0 ? tagKeys : undefined,
-        note: trimmedNote.length > 0 ? trimmedNote : undefined,
-        // v1.37 — only the values somebody answered. An untouched slider
-        // sends nothing, and the server writes NULL rather than a middle.
-        ...levelACreatePayload(levelA),
-        // v1.38 — omitted when nothing was answered, so the create stores no
-        // context row rather than a row of NULLs.
-        ...(contextIsEmpty(context)
-          ? {}
-          : { context: moodContextPayload(context) }),
-        moodLoggedAt: timestamp,
-      });
+      const saved = await post<DroppedLinkKeysWire & { id: string }>(
+        "/api/mood-entries",
+        {
+          mood,
+          tags: tags.length > 0 ? tags : undefined,
+          tagKeys: tagKeys.length > 0 ? tagKeys : undefined,
+          note: trimmedNote.length > 0 ? trimmedNote : undefined,
+          // v1.37 — only the values somebody answered. An untouched slider
+          // sends nothing, and the server writes NULL rather than a middle.
+          ...levelACreatePayload(levelA),
+          // v1.38 — omitted when nothing was answered, so the create stores no
+          // context row rather than a row of NULLs.
+          ...(contextIsEmpty(context)
+            ? {}
+            : { context: moodContextPayload(context) }),
+          moodLoggedAt: timestamp,
+        },
+      );
 
       // v1.17.0 — promote the saved structured tags to the Quick row's MRU
       // history so the next entry surfaces them as one-tap chips.
       if (tagKeys.length > 0) recordUse(tagKeys);
+      const levelLabel = MOOD_LEVELS.find((l) => l.value === mood)?.labelKey;
       resetForm();
       setMoreTagsOpen(false);
-      toast.success(t("common.saved"));
+      showEntrySavedToast({
+        t,
+        label: t("nav.capture.mood"),
+        value: levelLabel ? t(levelLabel) : undefined,
+        recordName,
+        undo: canManageDomain("mind")
+          ? async () => {
+              await removeSavedMoodEntry(saved.id);
+              void invalidateKeys(queryClient, moodDependentKeys);
+              void refetchInactiveDailyReads(queryClient);
+            }
+          : undefined,
+      });
       // The entry landed, but a tag picked here may have been archived or
       // deleted elsewhere since the picker loaded; the server says so.
       if (droppedAnyLinkKeys(saved)) toast.warning(t("mood.tagsNotSaved"));
@@ -273,49 +297,13 @@ export function MoodForm({
   }
 
   const footerNode = (
-    <div className="flex w-full items-center justify-between gap-2">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-11 w-11"
-            disabled={loading}
-            aria-label={t("common.moreOptions")}
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <DropdownMenuItem onClick={requestReset}>
-            <RotateCcw className="mr-2 h-4 w-4" />
-            {t("mood.formReset")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <div className="flex items-center gap-2">
-        {onCancel && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={loading}
-          >
-            {t("common.cancel")}
-          </Button>
-        )}
-        <Button type="submit" form={formId} disabled={loading || !mood}>
-          {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <Plus className="h-4 w-4" />
-          )}
-          {t("common.save")}
-        </Button>
-      </div>
-    </div>
+    <MoodFormFooter
+      loading={loading}
+      canSave={!!mood}
+      formId={formId}
+      onReset={requestReset}
+      onCancel={onCancel}
+    />
   );
 
   // v1.12.0 — the annotate panel (tags / factors / note / time) reveals
@@ -378,6 +366,9 @@ export function MoodForm({
                 data-mood={level.value}
                 onClick={() => pickMood(level.value)}
                 {...getMoodRadioProps(index)}
+                // The first value control takes the focus when the sheet
+                // opens, so a face is one key or tap away.
+                autoFocus={index === 0}
                 // v1.12 — selected-state unified with the tag tiles and
                 // factor steps: `border-primary bg-primary/15 text-primary`
                 // on a single 1px border (no `border-2` jump) so the
@@ -556,7 +547,7 @@ export function MoodForm({
               htmlFor="mood-note"
               label={
                 <>
-                  {t("mood.note")}
+                  {t("common.note")}
                   <span className="text-muted-foreground ml-1 font-normal">
                     ({t("common.optional")})
                   </span>
@@ -629,5 +620,67 @@ export function MoodForm({
         </AlertDialogContent>
       </AlertDialog>
     </form>
+  );
+}
+
+/** The action row: the reset menu, Cancel and Save, portalled by the form. */
+function MoodFormFooter({
+  loading,
+  canSave,
+  formId,
+  onReset,
+  onCancel,
+}: {
+  loading: boolean;
+  canSave: boolean;
+  formId: string;
+  onReset: () => void;
+  onCancel?: () => void;
+}) {
+  const { t } = useTranslations();
+  return (
+    <div className="flex w-full items-center justify-between gap-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-11 w-11"
+            disabled={loading}
+            aria-label={t("common.moreOptions")}
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuItem onClick={onReset}>
+            <RotateCcw className="mr-2 h-4 w-4" />
+            {t("mood.formReset")}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <div className="flex items-center gap-2">
+        {onCancel && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={loading}
+          >
+            {t("common.cancel")}
+          </Button>
+        )}
+        <Button type="submit" form={formId} disabled={loading || !canSave}>
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+          ) : (
+            <Plus className="h-4 w-4" />
+          )}
+          {t("common.save")}
+        </Button>
+      </div>
+    </div>
   );
 }

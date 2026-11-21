@@ -412,10 +412,29 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["DeleteButton"],
   },
   {
-    file: "components/labs/lab-biomarker-detail.tsx",
+    file: "components/forms/entry-undo.ts",
+    destroys:
+      "the measurement, mood entry or symptom occurrences a quick-entry form saved a moment ago",
+    triggers: [
+      "components/measurements/measurement-form.tsx",
+      "components/mood/mood-form.tsx",
+      "components/symptoms/symptom-entry-form.tsx",
+    ],
+    recovery: "tombstoned-no-restore",
+    confirm: [],
+    unconfirmed: [
+      {
+        control: "Undo on the save receipt — entry-saved-toast.ts",
+        reason:
+          "The Undo removes only the rows the same save created seconds earlier, and only while its receipt is on screen; what it takes back is exactly what the person just typed and can type again. It exists for the typo noticed a moment after Save. A confirmation would make correcting a slip dearer than the slip itself, and it is offered only to a caller who may delete those rows anyway.",
+      },
+    ],
+  },
+  {
+    file: "components/labs/biomarker-header-actions.tsx",
     destroys: "a biomarker AND every lab reading recorded against it",
     recovery: "permanent",
-    confirm: ["DeleteButton"],
+    confirm: ["AlertDialog"],
   },
   {
     file: "components/custom-metrics/custom-metric-detail.tsx",
@@ -557,13 +576,6 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["AlertDialog"],
   },
   {
-    file: "components/medications/dose-history/use-dose-history-ledger.ts",
-    destroys: "one intake event",
-    triggers: ["components/medications/dose-history/ledger-confirms.tsx"],
-    recovery: "tombstoned-no-restore",
-    confirm: ["AlertDialog"],
-  },
-  {
     file: "components/medications/side-effects-section.tsx",
     destroys: "one side-effect log entry",
     recovery: "permanent",
@@ -597,8 +609,22 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["AlertDialog"],
   },
   {
+    file: "components/medications/take-all-due.ts",
+    destroys: 'the intake rows a "Take all due" sweep wrote seconds ago',
+    recovery: "tombstoned-no-restore",
+    confirm: [],
+    unconfirmed: [
+      {
+        control: "Undo inside the sweep's success toast",
+        reason:
+          "The undo of a batch create the person made a moment earlier, reached only from that create's own toast, removing exactly the rows it wrote. Confirming an undo would ask someone to confirm a correction.",
+      },
+    ],
+  },
+  {
     file: "components/medications/use-medication-intake.ts",
-    destroys: "an intake event recorded seconds ago",
+    destroys:
+      "an intake event: one recorded seconds ago (its toast's Undo), or a dose-history row",
     recovery: "tombstoned-no-restore",
     confirm: [],
     unconfirmed: [
@@ -606,6 +632,11 @@ const REGISTRY: DestructiveEntry[] = [
         control: "Undo inside the intake success toast",
         reason:
           "This IS the undo for a create the person made a moment earlier, reached only from that create's own toast. Confirming an undo would ask someone to confirm a correction, which inverts what the affordance is for.",
+      },
+      {
+        control: "Delete in a dose-history row's menu",
+        reason:
+          "Deletes the way measurements, mood and labs delete: at once, with an Undo in the toast that records the same dose again (time, slot, dose) through the ordinary intake write. The confirm it replaced claimed a permanent removal the soft delete never made.",
       },
     ],
   },

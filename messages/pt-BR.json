@@ -59,7 +59,12 @@
     "readThrottled": "Há solicitações demais neste momento, então tente de novo mais tarde.",
     "sessionEnded": "Sua sessão terminou, então entre novamente para continuar.",
     "signIn": "Entrar",
-    "yes": "Sim"
+    "yes": "Sim",
+    "savedWithValue": "{label} {value} salvo",
+    "savedNamed": "{label} salvo",
+    "entryUndone": "Registro removido",
+    "entryUndoFailed": "Não foi possível remover o registro.",
+    "note": "Nota"
   },
   "apiErrors": {
     "measurement": {
@@ -362,9 +367,9 @@
     "colGlp1Note": "Observação",
     "colGlp1SideEffect": "Efeito colateral",
     "colMedication": "Medicamento",
-    "colTaken": "Tomado",
-    "colSkipped": "Pulado",
-    "colMissed": "Perdido",
+    "colTaken": "Tomada",
+    "colSkipped": "Pulada",
+    "colMissed": "Perdida",
     "colExpected": "Esperado",
     "colComplianceRate": "Taxa de adesão",
     "moodTitle": "Trajetória do humor",
@@ -597,7 +602,7 @@
       "measurement": "Medição",
       "measurementDescription": "Peso, pressão arterial, pulso e mais",
       "medication": "Medicamento",
-      "medicationDescription": "Marcar uma dose como tomada",
+      "medicationDescription": "Registrar uma dose, tomada ou pulada",
       "mood": "Humor",
       "moodDescription": "Registre seu humor e etiquetas",
       "workout": "Treino",
@@ -607,7 +612,8 @@
       "lifeEventDescription": "Uma mudança, um nascimento, um novo emprego",
       "lifeEvent": "Evento de vida",
       "seizure": "Crise",
-      "seizureDescription": "Inicie o cronômetro ou registre uma crise não cronometrada"
+      "seizureDescription": "Inicie o cronômetro ou registre uma crise não cronometrada",
+      "recentMeasurementDescription": "Medição registrada recentemente"
     },
     "cycle": "Ciclo",
     "labs": "Exames",
@@ -779,19 +785,12 @@
     "medications": "Medicamentos",
     "quickAddMeasurement": "Registrar medição",
     "quickAddMood": "Registrar humor",
-    "quickAddMedicationIntake": "Registrar tomada de medicamento",
+    "quickAddMedicationIntake": "Registrar tomada",
     "quickAddWorkout": "Registrar treino",
     "quickAddLifeEvent": "Registrar evento de vida",
     "customizeDashboard": "Personalizar painel",
     "medicationIntakeQuickAdd": {
-      "sheetDescription": "Registre dose, horário e medicamento em alguns toques.",
-      "medicationLabel": "Medicamento",
-      "medicationPlaceholder": "Selecione um medicamento",
-      "doseLabel": "Dose",
-      "dosePlaceholder": "ex.: 5 mg",
-      "doseHint": "Pré-preenchido com a dose padrão. Edite para registrar uma dose diferente apenas nesta tomada.",
-      "timeLabel": "Horário da tomada",
-      "saveError": "Não foi possível salvar a tomada do medicamento.",
+      "sheetDescription": "Registre uma dose tomada ou pulada, também depois.",
       "emptyTitle": "Nenhum medicamento ainda",
       "emptyDescription": "Primeiro crie um medicamento com horários, depois volte aqui para registrar a tomada.",
       "emptyCta": "Adicionar medicamento",
@@ -912,7 +911,6 @@
     "value": "Valor",
     "date": "Data",
     "source": "Fonte",
-    "notes": "Notas",
     "typeWeight": "Peso",
     "typeBloodPressure": "Pressão arterial",
     "typeBpSys": "Sistólica",
@@ -1112,7 +1110,10 @@
     "typeAcuteTrainingLoad": "Carga de treino aguda",
     "sourceGarmin": "Garmin",
     "valueOutOfRange": "Informe um valor entre {min} e {max} {unit}.",
-    "valueOutOfRangeNoUnit": "Informe um valor entre {min} e {max}."
+    "valueOutOfRangeNoUnit": "Informe um valor entre {min} e {max}.",
+    "lastValue": "Último: {value}, {when}",
+    "lastValueDeviates": "Bem diferente da sua última medição. Está certo?",
+    "saveAndNext": "Salvar e próximo"
   },
   "metricCatalog": {
     "title": "O que o HealthLog pode acompanhar",
@@ -1181,7 +1182,6 @@
     "previousPage": "Página anterior",
     "nextPage": "Próxima página",
     "loginRequired": "Entre para ver as entradas de humor.",
-    "note": "Nota",
     "noteCollapse": "Recolher nota",
     "noteExpand": "Mostrar nota completa",
     "notePlaceholder": "Adicione uma nota sobre como você está se sentindo…",
@@ -1482,7 +1482,7 @@
     "addMedication": "Adicionar",
     "firstMedication": "Adicionar primeiro medicamento",
     "addChoice": {
-      "logIntake": "Registrar uma tomada",
+      "logIntake": "Registrar tomada",
       "newMedication": "Novo medicamento"
     },
     "takeAllDue": {
@@ -1493,22 +1493,6 @@
       "successToast": "{count} tomadas registradas",
       "partialToast": "{taken} registradas, {failed} falharam. Tente novamente",
       "failedToast": "Nenhuma tomada registrada. Tente novamente"
-    },
-    "logIntake": {
-      "dialogTitle": "Registrar uma tomada",
-      "dialogDescription": "Registre uma dose contra um medicamento existente. Você pode retrodatá-la para uma data e hora passadas.",
-      "medicationLabel": "Medicamento",
-      "slotLabel": "Horário do cronograma",
-      "slotNone": "Sem horário específico",
-      "doseLabel": "Dose",
-      "doseHint": "Pré-preenchida com a dose do medicamento ou do horário. Edite-a para registrar uma dose diferente apenas nesta tomada.",
-      "takenAtLabel": "Data e hora",
-      "takenAtHint": "Padrão é agora; escolha uma data e hora anteriores para registrar uma dose passada.",
-      "skippedLabel": "Registrada como pulada",
-      "noMedications": "Adicione um medicamento primeiro; depois você pode registrar tomadas dele.",
-      "cancel": "Cancelar",
-      "submit": "Registrar tomada",
-      "slotError": "O horário selecionado não pôde ser correspondido a um horário. Escolha outro horário ou “Sem horário específico”."
     },
     "emptyTitle": "Nenhum medicamento ainda",
     "emptyDescription": "Adicione medicamentos, doses e janelas de lembrete para acompanhar a adesão.",
@@ -1581,11 +1565,8 @@
     },
     "withoutNotification": "Sem notificação",
     "pausedSince": "Pausado desde",
-    "takeNow": "Tomar agora",
     "lastDoseYesterday": "Última dose ontem",
     "lastDoseDaysAgo": "Última dose há {count} dias",
-    "overdue": "Atrasado",
-    "veryOverdue": "Muito atrasado",
     "complianceWindow": "Adesão ({days} dias)",
     "complianceUnavailable": "A adesão não pôde ser carregada",
     "complianceNotApplicable": "Adesão não aplicável",
@@ -1594,17 +1575,13 @@
     "complianceInfoLabel": "O que significa adesão?",
     "lastIntake": "Última tomada:",
     "nextIntake": "Próxima tomada:",
-    "nextIntakeOverdue": "Atrasada desde {time}, ainda pode ser tomada",
     "dayStreak": "dias seguidos",
     "dayStreakOne": "dia seguido",
     "cycleDueToday": "Previsto para hoje",
     "cycleNoClosedCycles": "Nenhum ciclo de doses fechado ainda",
-    "taken": "Tomada",
-    "skipped": "Pulada",
-    "intakeToastTaken": "{name} registrada como tomada",
-    "intakeToastSkipped": "{name} pulada",
+    "intakeToastTaken": "{name}: tomada, {time}",
+    "intakeToastSkipped": "{name}: pulada",
     "intakeToastFailed": "Não foi possível registrar {name}. Tente novamente",
-    "intakeUndo": "Desfazer",
     "intakeUndone": "Entrada revertida",
     "intakeAlreadyTaken": "{name} já estava registrado como tomado. Nada de novo foi salvo.",
     "intakeUndoFailed": "Não foi possível desfazer. Abra o histórico para corrigir",
@@ -2021,12 +1998,12 @@
     "sideEffectTagAppetiteLoss": "perda-de-apetite",
     "sideEffectTagHeartburn": "azia",
     "sideEffectTagHeadache": "dor-de-cabeça",
-    "phaseConfig": "Fases de lembrete",
-    "phaseConfigDescription": "Configure o tempo dos lembretes.",
-    "phaseGreen": "Verde",
-    "phaseYellow": "Amarelo",
-    "phaseOrange": "Laranja",
-    "phaseRed": "Vermelho",
+    "phaseConfig": "Horários dos lembretes",
+    "phaseConfigDescription": "Quando cada lembrete chega e quando uma dose conta como perdida.",
+    "phaseGreen": "Na hora",
+    "phaseYellow": "Ainda na hora",
+    "phaseOrange": "Atrasada",
+    "phaseRed": "Perdida",
     "phaseMinutes": "Min",
     "phasePercent": "%",
     "phaseResetDefaults": "Redefinir para padrões",
@@ -2046,8 +2023,6 @@
     "intakeHistoryColStatus": "Status",
     "intakeHistoryColSource": "Fonte",
     "intakeHistoryInjectionSite": "Local da injeção: {site}",
-    "intakeHistoryStatusTaken": "Tomada",
-    "intakeHistoryStatusSkipped": "Pulada",
     "intakeHistorySortByTaken": "Ordenar por horário da tomada",
     "intakeHistorySortByScheduled": "Ordenar por horário programado",
     "intakeHistoryPageInfo": "Página {page} de {total}, {count} entradas",
@@ -2103,9 +2078,6 @@
         "selection": {
           "rowToggleLabel": "Selecionar linha"
         },
-        "bulkDelete": {
-          "cancelButton": "Cancelar"
-        },
         "edit": {
           "dialogTitle": "Editar tomada",
           "takenAtLabel": "Tomada em",
@@ -2118,11 +2090,9 @@
           "failed": "Não foi possível atualizar a tomada."
         },
         "deleteRow": {
-          "confirmTitle": "Excluir esta tomada?",
-          "confirmBody": "A entrada é removida permanentemente.",
-          "confirmAction": "Excluir",
           "toast": "Tomada excluída",
-          "failed": "Não foi possível excluir a tomada."
+          "failed": "Não foi possível excluir a tomada.",
+          "restored": "Tomada restaurada"
         },
         "viewRecent90": "Últimos 90 dias",
         "viewAll": "Histórico completo",
@@ -2133,11 +2103,8 @@
         "loadError": "Não foi possível carregar o histórico.",
         "empty": "Nenhuma tomada neste período ainda.",
         "summaryEmpty": "Nenhuma dose para pontuar ainda.",
-        "adherenceLabel": "Adesão",
         "adherenceBarLabel": "{onTime} no horário, {late} atrasadas, {missed} perdidas",
-        "add": "Entrada",
-        "markTaken": "Tomada",
-        "markSkipped": "Pulada",
+        "add": "Registrar tomada",
         "rowActionsLabel": "Ações para {time}",
         "markAsTaken": "Marcar como tomada",
         "markAsSkipped": "Marcar como pulada",
@@ -2145,27 +2112,7 @@
         "takenDetail": "prevista {planned}, tomada {taken}",
         "doseTaken": "Dose: {dose}",
         "status": {
-          "taken_on_time": "no horário",
-          "taken_late": "atrasada",
-          "skipped": "pulada",
-          "missed": "perdida",
-          "upcoming": "prevista",
-          "ad_hoc": "fora do cronograma"
-        },
-        "addDialog": {
-          "title": "Adicionar tomada",
-          "description": "Registre uma dose, incluindo uma retrodatada ou fora do cronograma.",
-          "takenAtLabel": "Tomada em",
-          "skippedLabel": "Pulada",
-          "nudgeHint": "Perto do horário {slot}. Ao salvar, perguntamos se deve atribuí-la.",
-          "cancel": "Cancelar",
-          "submit": "Salvar"
-        },
-        "nudge": {
-          "title": "Atribuir a este horário?",
-          "body": "Esta tomada fica logo fora da janela {slot}. Atribuí-la a esse horário ou mantê-la como uma entrada fora do cronograma?",
-          "keepAdHoc": "Fora do cronograma",
-          "pin": "Atribuir"
+          "ad_hoc": "Fora do cronograma"
         },
         "pin": {
           "action": "Atribuir ao horário {time}",
@@ -2189,20 +2136,22 @@
         "disabledToast": "Lembretes desligados",
         "toggleFailed": "Não foi possível alterar a configuração de lembrete.",
         "clientManagedChip": "Gerenciado pelo iPhone",
-        "clientManagedHint": "Seu iPhone gerencia os lembretes deste medicamento."
+        "clientManagedHint": "Seu iPhone gerencia os lembretes deste medicamento.",
+        "helperAutoRecorded": "As doses são registradas automaticamente, então nenhum lembrete é enviado.",
+        "plan": "Próxima dose {dose}: lembretes enquanto estiver na hora e quando atrasar. Atrasada depois das {overdue}; depois das {missed} conta como perdida."
       },
       "settings": {
         "title": "Configurações",
         "phases": {
-          "openButton": "Configurar fases",
-          "requiresCourseWindow": "As fases ficam disponíveis quando uma janela de curso é definida."
+          "openButton": "Ajustar"
         },
         "grace": {
           "label": "Janela de lembrete",
           "appliesToAllNote": "Aplica-se a todos os cronogramas deste medicamento.",
           "unit": "minutos",
           "saved": "Janela de lembrete salva",
-          "failed": "Não foi possível salvar a janela de lembrete."
+          "failed": "Não foi possível salvar a janela de lembrete.",
+          "description": "Por quanto tempo os lembretes continuam após a hora da dose, antes do lembrete de atraso."
         },
         "codes": {
           "label": "Códigos clínicos (ATC / RxNorm)",
@@ -2313,7 +2262,6 @@
         "supplyLabel": "Estoque",
         "supplyRunway": "Dura cerca de {days} dias a mais",
         "jumpToZeitplan": "Abrir cronograma",
-        "jumpToVerlauf": "Abrir histórico",
         "jumpToBestand": "Abrir estoque",
         "complianceTitle": "Adesão",
         "complianceEmpty": "Nenhum dado de adesão ainda."
@@ -2499,8 +2447,6 @@
     "tableStockDoses": "{count} doses",
     "tableStockRunway": "≈ {days} dias restantes",
     "cardLowStockRunway": "Estoque: ≈ {days} dias",
-    "takeActionFor": "Tomar {name}",
-    "skipActionFor": "Pular {name}",
     "reorderDescription": "Defina a ordem dos seus medicamentos tanto na visualização em cartões quanto na tabela.",
     "reorderSaved": "Ordem salva",
     "reorderSaveFailed": "A ordem não pôde ser salva",
@@ -2693,7 +2639,50 @@
       "saveError": "A composição não pôde ser salva",
       "catalogError": "A lista de nutrientes não pôde ser carregada",
       "invalidRow": "Escolha um nutriente e insira uma quantidade acima de zero em cada linha."
-    }
+    },
+    "dose": {
+      "action": {
+        "take": "Tomar",
+        "skip": "Pular",
+        "snooze": "Lembrar mais tarde ({minutes} min)",
+        "undo": "Desfazer",
+        "takeFor": "Tomar {name}",
+        "skipFor": "Pular {name}"
+      },
+      "state": {
+        "pending": "Prevista",
+        "due": "Na hora",
+        "overdue": "Atrasada",
+        "taken": "Tomada",
+        "takenLate": "Tomada com atraso",
+        "skipped": "Pulada",
+        "missed": "Perdida",
+        "missedStillCounts": "Se tomar agora, ainda conta, como atrasada.",
+        "snoozedUntil": "Lembrete adiado até {time}"
+      },
+      "snoozedToast": "{name}: lembrete de novo às {time}",
+      "snoozeFailed": "Não foi possível adiar {name}. Tente de novo"
+    },
+    "intakeForm": {
+      "title": "Registrar tomada",
+      "description": "Registre uma dose tomada ou pulada, também depois.",
+      "medicationLabel": "Medicamento",
+      "outcomeLabel": "O que aconteceu",
+      "timeLabel": "Horário",
+      "doseLabel": "Dose",
+      "doseHint": "Pré-preenchida com a dose prevista. Mude só se tomou outra quantidade.",
+      "countsFor": "Conta para a dose das {time}.",
+      "countsForLate": "Conta para a dose das {time}, como atrasada.",
+      "countNearLabel": "Contar para a dose das {time}",
+      "skips": "Pula a dose das {time}.",
+      "extraDose": "Registrada como dose extra, fora do cronograma.",
+      "noMedications": "Adicione um medicamento primeiro; depois você pode registrar tomadas dele.",
+      "saveError": "Não foi possível salvar a tomada. Tente de novo"
+    },
+    "phaseGreenHint": "Primeiro lembrete, este tempo antes do fim da janela de lembrete.",
+    "phaseYellowHint": "Outro lembrete, este tempo antes do fim da janela.",
+    "phaseOrangeHint": "Um lembrete de que a dose está atrasada, este tempo depois do fim da janela.",
+    "phaseRedHint": "Passado este tempo após a janela, a dose conta como perdida."
   },
   "charts": {
     "loadingLabel": "Carregando gráfico…",
@@ -5790,6 +5779,13 @@
             "description": "Os lembretes de menstruação e de janela fértil são ligados por canal na matriz de notificações.",
             "link": "Abrir a matriz de notificações"
           }
+        },
+        "snooze": {
+          "title": "Lembrar mais tarde",
+          "description": "Por quanto tempo um lembrete de dose é adiado, no cartão do medicamento, no Telegram e no app.",
+          "label": "Adiar por",
+          "option": "{minutes} min",
+          "saveError": "Não foi possível salvar. Tente de novo"
         }
       },
       "layout": {
@@ -9908,29 +9904,29 @@
     "askMedicationName": "Especifique um medicamento, por exemplo <b>tomado Ramipril</b>.",
     "medicationNotFoundExact": "Medicamento não encontrado. Envie o nome exatamente como está no HealthLog.",
     "helpHeader": "<b>Comandos disponíveis:</b>",
-    "helpBody": "/help: mostrar esta ajuda\n/add: registrar uma tomada\n/start: iniciar o bot\n\n<b>Comandos de texto:</b>\ntaken &lt;nome&gt;: confirmar uma tomada\n\n<b>Botões nos lembretes:</b>\n• Tomado: confirmar a tomada\n• 🕐 1h / 🕐 3h: adiar o lembrete\n• ⏭ Pular: pular a tomada\n• ✓ Confirmar: confirmar uma tomada perdida",
+    "helpBody": "/help: mostrar esta ajuda\n/add: registrar uma tomada\n/start: iniciar o bot\n\n<b>Comandos de texto:</b>\ntaken &lt;nome&gt;: confirmar uma tomada\n\n<b>Botões nos lembretes:</b>\n• ✅ Tomar: registrar a tomada\n• 🕐 Lembrar mais tarde: adiar o lembrete, pelo tempo definido nos ajustes\n• ⏭ Pular: pular a tomada\n• Deixar como perdida: deixar uma tomada perdida como perdida",
     "measureValuePrompt": "Responda com o valor para registrá-lo (opcional).",
     "buttonMeasureValue": "Valor…",
     "measureValueSaved": "Leitura salva.",
     "measureValueInvalid": "Responda com um número para registrar uma leitura.",
     "measureValueOutOfRange": "Esse valor está fora da faixa plausível.",
-    "measureValueExpired": "Esse prompt expirou."
+    "measureValueExpired": "Esse prompt expirou.",
+    "snoozeMinutes": "{minutes} min"
   },
   "medicationReminders": {
-    "phaseGreenTitle": "🟢 Lembrete: {medName}",
-    "phaseGreenMessage": "🟢 Lembrete:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nA janela fecha em {minutes} min.",
-    "phaseYellowTitle": "🟡 Vence em breve: {medName}",
-    "phaseYellowMessage": "🟡 Vence em breve:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nFaltam {minutes} min.",
+    "phaseGreenTitle": "🟢 Na hora: {medName}",
+    "phaseGreenMessage": "🟢 Na hora:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nA janela fecha em {minutes} min.",
+    "phaseYellowTitle": "🟡 Ainda na hora: {medName}",
+    "phaseYellowMessage": "🟡 Ainda na hora:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nRestam {minutes} min na janela.",
     "phaseOrangeTitle": "🟠 Atrasada: {medName}",
-    "phaseOrangeMessage": "🟠 Atrasada:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nAtrasada por {minutes} min.",
-    "phaseRedTitle": "🔴 Não tomada: {medName}",
-    "phaseRedMessage": "🔴 Ainda não tomada:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nConta como perdida enquanto nada for registrado. Se tomar agora, ainda conta, como dose atrasada.",
-    "buttonTaken": "Tomado",
+    "phaseOrangeMessage": "🟠 Atrasada:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nAtrasada há {minutes} min.",
+    "phaseRedTitle": "🔴 Perdida: {medName}",
+    "phaseRedMessage": "🔴 Perdida:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nSe tomar agora, ainda conta, como atrasada.",
+    "buttonTaken": "✅ Tomar",
     "buttonConfirm": "Deixar como perdida",
-    "buttonTakenLate": "✅ Tomado (atrasado)",
-    "buttonSnoozeOneHour": "🕐 1h",
-    "buttonSnoozeThreeHours": "🕐 3h",
-    "buttonSkip": "⏭ Pular"
+    "buttonTakenLate": "✅ Tomar (conta como atrasada)",
+    "buttonSkip": "⏭ Pular",
+    "buttonSnooze": "🕐 Lembrar mais tarde ({minutes} min)"
   },
   "lowStockReminders": {
     "title": "Estoque baixo: {medName}",
@@ -10715,7 +10711,11 @@
       "valuesTitle": "{marker}: todas as leituras",
       "valuesDescription": "Cada leitura deste biomarcador. Edite ou remova uma entrada diretamente.",
       "backToMarker": "Voltar para {marker}",
-      "latestResult": "Resultado mais recente"
+      "latestResult": "Resultado mais recente",
+      "latestValues": "Últimos valores",
+      "allValues": "Todos os valores",
+      "columnDate": "Data",
+      "columnValue": "Valor"
     },
     "chart": {
       "empty": "Nenhuma leitura neste período.",
@@ -14086,10 +14086,8 @@
       "anchorLow": "Nenhum",
       "anchorHigh": "O pior imaginável",
       "intensityValueText": "{value} de {max} ({low} a {high})",
-      "when": "Quando",
       "during": "Durante uma doença",
       "duringNone": "Não vinculado",
-      "note": "Nota",
       "notePlaceholder": "O que mais estava acontecendo?",
       "reset": "Redefinir formulário",
       "emptyHint": "Adicione seu primeiro sintoma, por exemplo aura ou dor de cabeça.",
@@ -14099,7 +14097,10 @@
       "partlySaved": "{saved} de {total} salvos, o restante continua selecionado.",
       "severalHint": "Escolha vários se apareceram juntos.",
       "filterPlaceholder": "Buscar um sintoma",
-      "filterEmpty": "Nenhum sintoma corresponde."
+      "filterEmpty": "Nenhum sintoma corresponde.",
+      "whenHint": "Ajuste a data e a hora para registrar uma entrada anterior.",
+      "intensityShort": "{value}/{max}",
+      "intensityPreset": "Definido com sua última avaliação. Mude se hoje for diferente."
     },
     "section": {
       "title": "Seus sintomas",

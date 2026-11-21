@@ -8,7 +8,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Switch } from "@/components/ui/switch";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
 import { readUpdatedAtToken, withBaseToken } from "@/lib/api/optimistic-token";
@@ -30,6 +30,7 @@ export function MoodReminderCard({
   isAuthenticated: boolean;
 }) {
   const { t } = useTranslations();
+  const fmt = useFormatters();
   const queryClient = useQueryClient();
   const [optimistic, setOptimistic] = useState<boolean | null>(null);
   const [optimisticHour, setOptimisticHour] = useState<number | null>(null);
@@ -37,15 +38,8 @@ export function MoodReminderCard({
   const [msg, setMsg] = useState<string | null>(null);
   const [msgType, setMsgType] = useState<"success" | "error" | null>(null);
 
-  // v1.4.49 — auto-clear the inline `<p role="status">` line 3 s after
-  // the mutation settles so a Settings card the user scrolled past
-  // minutes earlier doesn't keep echoing a stale "reminder enabled"
-  // banner. Mirrors the `<DisableCoachCard>` pattern landed in v1.4.48
-  // M2; the v1.4.48 docstring claimed this card already auto-cleared,
-  // this commit backfills the actual behaviour. The ref tracks the
-  // in-flight timer so we can clear it on unmount + on a follow-up
-  // toggle (otherwise a rapid double-tap could leave a stray timer
-  // pointing at a stale message).
+  // The status line clears itself 3 s after a save; the ref holds the timer
+  // so unmount and a quick second toggle clear it.
   const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -236,7 +230,7 @@ export function MoodReminderCard({
           >
             {Array.from({ length: 24 }, (_, h) => (
               <option key={h} value={h}>
-                {`${h.toString().padStart(2, "0")}:00`}
+                {fmt.wallTime(`${h.toString().padStart(2, "0")}:00`)}
               </option>
             ))}
           </NativeSelect>

@@ -1,7 +1,9 @@
-import { AlertCircle, AlertTriangle, CircleCheck } from "lucide-react";
+import { CircleCheck } from "lucide-react";
+
+import { DoseStateLabel } from "@/components/medications/dose-state-label";
 
 import { formatTimeWindowRange } from "@/lib/time-window-format";
-import { useTranslations } from "@/lib/i18n/context";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { MedicationWindowStatus } from "@/lib/medications/window-status";
 
 interface MedicationStatusPillProps {
@@ -37,7 +39,7 @@ interface MedicationStatusPillProps {
 }
 
 /**
- * Shared take-now / overdue / very-overdue status pill for the medication
+ * Shared due / overdue status pill for the medication
  * cards. Pairs the colour token with a Lucide glyph so colour-blind users
  * (red-green) can disambiguate the three tiers — WCAG 1.4.1 (Use of Color).
  *
@@ -53,6 +55,7 @@ export function MedicationStatusPill({
   inline = false,
 }: MedicationStatusPillProps) {
   const { t, locale } = useTranslations();
+  const fmt = useFormatters();
   const Root = inline ? "span" : "p";
 
   // v1.16.11 — the inline (next-row) variant keeps its window-range
@@ -75,7 +78,13 @@ export function MedicationStatusPill({
         {!compact && (
           <span className={suffixClass}>
             {" "}
-            — {formatTimeWindowRange(windowStart, windowEnd, locale)}
+            —{" "}
+            {formatTimeWindowRange(
+              windowStart,
+              windowEnd,
+              locale,
+              fmt.wallTime,
+            )}
           </span>
         )}
       </Root>
@@ -84,39 +93,19 @@ export function MedicationStatusPill({
 
   return (
     <Root className="text-sm">
-      <span
-        className={
-          // v1.12.2 — converge the three tiers onto the semantic feedback
-          // vocabulary (success / warning / destructive) so the medication
-          // status surface stops mixing semantic + Dracula tokens. The pill
-          // reads as the standard urgency ramp: in-window = success (green),
-          // late = warning (amber), very-late = destructive (red). This drops
-          // the lone `text-dracula-yellow` middle-tier stray.
-          "inline-flex items-center gap-1 font-medium " +
-          (status === "in_window"
-            ? "text-success"
-            : status === "late"
-              ? "text-warning"
-              : "text-destructive")
-        }
-      >
-        {status === "in_window" ? (
-          <CircleCheck className="size-3.5 shrink-0" aria-hidden="true" />
-        ) : status === "late" ? (
-          <AlertCircle className="size-3.5 shrink-0" aria-hidden="true" />
-        ) : (
-          <AlertTriangle className="size-3.5 shrink-0" aria-hidden="true" />
-        )}
-        {status === "in_window"
-          ? t("medications.takeNow")
-          : status === "late"
-            ? t("medications.overdue")
-            : t("medications.veryOverdue")}
-      </span>
+      {/* The pill names the open dose in the shared vocabulary: "Due" with
+          a clock inside the window, "Overdue" past it, in the urgent tone
+          once more than half of the late window is gone. A check is never
+          shown for a dose still to take. */}
+      <DoseStateLabel
+        state={status === "in_window" ? "due" : "overdue"}
+        emphasis={status === "very_late"}
+      />
       {!compact && (
         <span className={suffixClass}>
           {" "}
-          — {formatTimeWindowRange(windowStart, windowEnd, locale)}
+          —{" "}
+          {formatTimeWindowRange(windowStart, windowEnd, locale, fmt.wallTime)}
         </span>
       )}
     </Root>

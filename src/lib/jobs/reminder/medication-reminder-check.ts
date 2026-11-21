@@ -51,6 +51,7 @@ import {
 } from "@/lib/medications/scheduling/live-era";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
+import { resolveSnoozeMinutes } from "@/lib/validations/notification-prefs";
 import { isModuleEnabled } from "@/lib/modules/gate";
 import { getEvent } from "@/lib/logging/context";
 import {
@@ -105,6 +106,8 @@ async function loadRemindableMedications(
           // How the slot time is spelled (`slotClock`).
           timeFormat: true,
           dateFormat: true,
+          // The snooze length the Telegram "Remind me later" button offers.
+          notificationPrefs: true,
         },
       },
     },
@@ -668,10 +671,10 @@ export async function handleReminderCheck(
                 currentPhase,
                 med.id,
                 recipientLocale,
+                resolveSnoozeMinutes(med.user.notificationPrefs),
               );
 
-              // v0.5.4 — surface the slot time as an ISO 8601 string so
-              // the iOS snooze action pins against the actual slot.
+              // The slot as ISO 8601: the iOS snooze pins to it.
               const scheduledAtIso = slotScheduledFor.toISOString();
 
               evt.addMeta(

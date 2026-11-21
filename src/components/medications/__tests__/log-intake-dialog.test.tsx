@@ -181,7 +181,7 @@ describe("<LogIntakeDialog> the medication's own note (#1371)", () => {
     const html = renderDialog([
       medication("a", { note: "30 to 60 minutes before food" }),
     ]);
-    expect(html).toContain('data-slot="log-intake-note"');
+    expect(html).toContain('data-slot="intake-form-note"');
     expect(html).toContain("30 to 60 minutes before food");
   });
 

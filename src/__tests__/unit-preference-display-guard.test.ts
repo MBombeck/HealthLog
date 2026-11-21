@@ -293,8 +293,8 @@ const UNIT_LITERAL_ALLOWLIST: Record<
     lines: 3,
     reason: "the onboarding unit picker: its options are the two units",
   },
-  "components/measurements/measurement-form.tsx": {
-    lines: 12,
+  "components/measurements/measurement-form-types.ts": {
+    lines: 11,
     reason:
       "input parsing: canonical units of the entry table, replaced by the transform's unit at render and inverted on save",
   },

@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { AddSymptomChip } from "./add-symptom-chip";
 import {
   filterSymptomChips,
+  orderSymptomsByUse,
   SYMPTOM_FILTER_THRESHOLD,
 } from "./symptom-chip-filter";
 import { SymptomIcon } from "./symptom-icons";
@@ -38,6 +39,7 @@ export function SymptomPicker({
   atLimit,
   limit,
   error,
+  autoFocus = false,
 }: {
   /** Labels the chip group; `<groupId>-error` describes it on an error. */
   groupId: string;
@@ -48,11 +50,17 @@ export function SymptomPicker({
   atLimit: boolean;
   limit: number;
   error: string | null;
+  /** Focus the first chip on mount, as the form's first value control. */
+  autoFocus?: boolean;
 }) {
   const { t } = useTranslations();
   const [chipFilter, setChipFilter] = useState("");
+  // Only the first paint focuses a chip; once the person filters or picks,
+  // a chip that remounts must not take the focus from them.
+  const [initialFocus, setInitialFocus] = useState(autoFocus);
 
-  const list = definitions.data?.definitions ?? [];
+  // The ones felt most in the last 30 days first, then the rest.
+  const list = orderSymptomsByUse(definitions.data?.definitions ?? []);
   const filterable = list.length > SYMPTOM_FILTER_THRESHOLD;
   const shown = filterable
     ? filterSymptomChips(list, chipFilter, picked)
@@ -80,7 +88,10 @@ export function SymptomPicker({
               <Input
                 type="search"
                 value={chipFilter}
-                onChange={(e) => setChipFilter(e.target.value)}
+                onChange={(e) => {
+                  setInitialFocus(false);
+                  setChipFilter(e.target.value);
+                }}
                 placeholder={t("symptoms.entry.filterPlaceholder")}
                 aria-label={t("symptoms.entry.filterPlaceholder")}
                 data-testid="symptom-chip-filter"
@@ -94,13 +105,17 @@ export function SymptomPicker({
             aria-describedby={error ? `${groupId}-error` : undefined}
             className="flex flex-wrap gap-2"
           >
-            {shown.map((definition) => (
+            {shown.map((definition, index) => (
               <SymptomChip
                 key={definition.id}
+                autoFocus={initialFocus && index === 0}
                 icon={definition.icon}
                 label={definition.label ?? t("symptoms.unreadableLabel")}
                 selected={picked.includes(definition.id)}
-                onToggle={() => onToggle(definition.id)}
+                onToggle={() => {
+                  setInitialFocus(false);
+                  onToggle(definition.id);
+                }}
               />
             ))}
             {canDefine && !atLimit ? (
@@ -146,15 +161,18 @@ function SymptomChip({
   label,
   selected,
   onToggle,
+  autoFocus,
 }: {
   icon: string | null;
   label: string;
   selected: boolean;
   onToggle: () => void;
+  autoFocus: boolean;
 }) {
   return (
     <button
       type="button"
+      autoFocus={autoFocus}
       role="checkbox"
       aria-checked={selected}
       data-testid="symptom-chip"
