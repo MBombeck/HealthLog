@@ -90,7 +90,7 @@ const WRITE_SITES: Record<string, string> = {
   // verdicts' dirty identities and run the tail once per batch.
   "lib/measurements/reconcile-external-measurement.ts":
     "a primitive; every caller runs the tail over the verdicts' dirty identities",
-  "lib/measurements/import-apple-health-export.ts":
+  "lib/measurements/import-apple-health-export-writer.ts":
     "the import worker refolds the import's span and re-warms every imported type",
   "lib/measurements/import-unchanged-rows.ts":
     "the Apple export import's natural-key rescue, inside the import; its worker runs both legs once over the whole import",
@@ -214,7 +214,7 @@ describe("measurement write tail", () => {
       // run them once over the whole import.
       .filter(
         (file) =>
-          file !== "lib/measurements/import-apple-health-export.ts" &&
+          file !== "lib/measurements/import-apple-health-export-writer.ts" &&
           file !== "lib/import/health-connect/import.ts",
       );
     expect(handRolled.length).toBeGreaterThan(0);

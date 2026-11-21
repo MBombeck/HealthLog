@@ -85,7 +85,9 @@ const WRITERS: Record<string, Disposition> = {
   },
   "lib/mcp/writes.ts": { kind: "validator" },
   "lib/measurements/create-from-telegram.ts": { kind: "validator" },
-  "lib/measurements/import-apple-health-export.ts": { kind: "validator" },
+  "lib/measurements/import-apple-health-export-writer.ts": {
+    kind: "validator",
+  },
   // v1.42 — the Health Connect export import. Spot rows go through the bulk
   // insert after `validateMeasurementRange`; day totals through the gated
   // reconcile seam.
@@ -205,7 +207,7 @@ describe("every measurement writer declares how it meets the plausibility domain
   it("sees a writer that only calls the bulk insert", () => {
     // The importer has no Prisma measurement write left; if the bulk-insert
     // matcher stopped matching, it would drop out of the sweep silently.
-    const importer = "lib/measurements/import-apple-health-export.ts";
+    const importer = "lib/measurements/import-apple-health-export-writer.ts";
     expect(MEASUREMENT_WRITE.test(read(importer))).toBe(false);
     expect(discoveredWriters()).toContain(importer);
   });

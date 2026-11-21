@@ -101,9 +101,9 @@ const PROVIDER_INGESTS: ProviderIngest[] = [
     provider: "Apple Health export",
     mapper: "resolveHkWorkoutSportType",
     mapperFile: "lib/measurements/hk-workout-activity-type-map.ts",
-    captureFile: "lib/measurements/import-apple-health-export.ts",
+    captureFile: "lib/measurements/import-apple-health-export-handlers.ts",
     captureField: "workoutActivityType",
-    writeFile: "lib/measurements/import-apple-health-export.ts",
+    writeFile: "lib/measurements/import-apple-health-export-writer.ts",
     metadataKey: "activityType",
   },
   {

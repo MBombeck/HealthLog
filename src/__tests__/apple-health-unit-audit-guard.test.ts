@@ -190,7 +190,10 @@ describe("Apple Health mapping — the record's own unit (issue #944)", () => {
     // kind that lands as a one-word argument in an unrelated diff.
     const optIn = "convertRecordUnit: true";
     const archive = readFileSync(
-      join(process.cwd(), "src/lib/measurements/import-apple-health-export.ts"),
+      join(
+        process.cwd(),
+        "src/lib/measurements/import-apple-health-export-handlers.ts",
+      ),
       "utf8",
     );
     expect(archive).toContain(optIn);
@@ -226,6 +229,8 @@ describe("Apple Health mapping — the record's own unit (issue #944)", () => {
     const owners = [
       "src/lib/measurements/apple-health-mapping.ts",
       "src/lib/measurements/import-apple-health-export.ts",
+      "src/lib/measurements/import-apple-health-export-handlers.ts",
+      "src/lib/measurements/import-apple-health-export-writer.ts",
     ];
     expect(readFileSync(shared, "utf8")).toContain("1609.344");
 
