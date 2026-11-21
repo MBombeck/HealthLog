@@ -70,6 +70,7 @@ export async function syncUserBody(
       type: "WEIGHT" as const,
       source: "WHOOP" as const,
       externalId: WHOOP_BODY_WEIGHT_EXTERNAL_ID,
+      deletedAt: null,
     };
     // Read the day it sat on before removing it, so that day's rollup is
     // refolded without it.
@@ -78,7 +79,12 @@ export async function syncUserBody(
       select: { type: true, measuredAt: true },
     });
     if (legacy.length > 0) {
-      await prisma.measurement.deleteMany({ where: legacyWhere });
+      // A tombstone, not a hard delete, so a paired client that mirrored
+      // the row learns of its removal from the sync feed.
+      await prisma.measurement.updateMany({
+        where: legacyWhere,
+        data: { deletedAt: new Date(), syncVersion: { increment: 1 } },
+      });
       await afterMeasurementMutation(userId, legacy, {
         source: "sync",
         label: "whoop-body",

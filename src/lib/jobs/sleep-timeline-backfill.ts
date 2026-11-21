@@ -35,6 +35,7 @@ import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { integrationBackfillSourceOptions } from "@/lib/jobs/integration-backfill-admission";
+import { stampSyncReset } from "@/lib/sync/reset";
 import { syncUserWhoop } from "@/lib/whoop/sync";
 import {
   SLEEP_BACKFILL_DAYS,
@@ -118,6 +119,11 @@ export async function runSleepTimelineBackfillForUser(
       data: { sleepTimelineBackfillAt: new Date() },
     });
   }
+
+  // The delete is a hard delete with no tombstone, and the re-sync writes the
+  // nights back under new row ids. A paired client that mirrored the old rows
+  // could not learn of their removal from the feed, so the pass resets it.
+  if (deleted > 0) await stampSyncReset(prisma, userId);
 
   annotate({
     action: {

@@ -11,6 +11,9 @@
  * intent-revealing fields — goal + cycle/period/luteal priors — are reset to
  * neutral defaults, so no reproductive intent survives either.
  *
+ * The feed is reset in the same transaction (`stampSyncReset`), so a paired
+ * client drops its mirror of the purged rows on its next pull.
+ *
  * Gated (`cycle.disabled` 403) and owner-scoped. The purge action itself IS
  * audited (written after the transaction, so it survives) — its `details`
  * carry only counts, no reproductive content.
@@ -24,6 +27,7 @@ import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, getClientIp } from "@/lib/api-response";
 import { requireCycleEnabled } from "@/lib/cycle/gate";
+import { stampSyncReset } from "@/lib/sync/reset";
 
 export const DELETE = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
@@ -90,6 +94,12 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
         lutealPhaseLength: null,
       },
     });
+    // The rows are gone without tombstones (a tombstone would keep the dated
+    // trace the purge exists to remove), so a paired client that mirrored
+    // them could never learn of it from the feed. Reset the feed in the same
+    // transaction: every cursor issued before now answers `cursorExpired`
+    // with reason `sync_reset`, and the client rebuilds without the rows.
+    await stampSyncReset(tx, user.id);
     return {
       dayLogs: dayLogs.count,
       customSymptoms: customSymptoms.count,
