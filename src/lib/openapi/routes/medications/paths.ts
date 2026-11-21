@@ -361,7 +361,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "422": {
           description:
-            "Body validation failed (multi-issue envelope, breadcrumbed as `medications.intake.update.validation-failed`), or `meta.errorCode` = `medications.intake.injection_site.disallowed` when the site is outside the medication's effective allowed set, or `medications.intake.force_slot.invalid` when `forceSlotInstant` is not a real slot of the medication, or (v1.42.0) `medication.intake.notTracked` when the event is still open and its medication is kept as a record only (`trackIntake: false`): resolving or snoozing it would record a new dose that is counted nowhere. Correcting an event that is already taken or skipped stays open. The coded refusals carry no issue list — branch on the code.",
+            "Body validation failed (multi-issue envelope, breadcrumbed as `medications.intake.update.validation-failed`), or `meta.errorCode` = `medications.intake.injection_site.disallowed` when the site is outside the medication's effective allowed set, or `medications.intake.force_slot.invalid` when `forceSlotInstant` is not a real slot of the medication, or `medications.intake.force_slot.occupied` when a take would move onto a slot that already holds a take (nothing changes; the dose stays on its row), or (v1.42.0) `medication.intake.notTracked` when the event is still open and its medication is kept as a record only (`trackIntake: false`): resolving or snoozing it would record a new dose that is counted nowhere. Correcting an event that is already taken or skipped stays open. The coded refusals carry no issue list — branch on the code.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "401": stdResponses["401"],
@@ -844,7 +844,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "422": {
           description:
-            "Body validation failed (multi-issue), or one of three coded refusals: `medications.intake.taken_at.before_start` when the edited take predates the medication's start day in the record's timezone, `medications.intake.force_slot.invalid` when the pinned instant is not a real slot, and `medications.intake.force_slot.occupied` when it is a real slot that another live dose already holds.",
+            "Body validation failed (multi-issue), or one of three coded refusals: `medications.intake.taken_at.before_start` when the edited take predates the medication's start day in the record's timezone, `medications.intake.force_slot.invalid` when the pinned instant is not a real slot, and `medications.intake.force_slot.occupied` when it is a real slot that another live dose already holds, or when the corrected dose would move onto a slot that already holds a take (nothing changes; the dose stays where it was).",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "401": stdResponses["401"],

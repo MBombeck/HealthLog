@@ -30,6 +30,7 @@ import {
   resolveSlotForWriteByBand,
 } from "@/lib/medications/scheduling/slot-upsert";
 import { resolveTakeSlotForExistingRow } from "@/lib/medications/scheduling/existing-row-slot";
+import { moveRowToSlot } from "@/lib/medications/scheduling/slot-move";
 import { dateOnlyKey } from "@/lib/tz/date-only";
 import { resolveInjectionSiteForWrite } from "@/lib/medications/injection-site-write";
 import type { InjectionSiteKey } from "@/lib/medications/injection-sites";
@@ -379,9 +380,8 @@ async function editIntakeInPlace(
  * REMINDER row) rather than bare-updating into an occupied slot and risking a
  * P2002 (audit HIGH-4).
  *
- * The source row's consumption stamp is refunded BEFORE the tombstone; the
- * consume on the converged row below nets the move to exactly one
- * consumption.
+ * The source row's consumption stamp is refunded and the converged row
+ * consumes, so the move nets exactly one consumption.
  */
 async function moveIntakeToSlot(
   ctx: EditContext,
@@ -402,68 +402,70 @@ async function moveIntakeToSlot(
     nextSkipped,
     wasTaken,
   } = move;
-  await restoreForIntake({
-    client: prisma,
-    userId: user.id,
-    eventId,
-  });
-  await prisma.medicationIntakeEvent.update({
-    where: { id: eventId },
-    data: { deletedAt: new Date(), syncVersion: { increment: 1 } },
-  });
-  const applied = await applyCanonicalSlotWrite({
-    client: prisma,
-    userId: user.id,
-    medicationId: id,
-    canonicalSlot: targetScheduledFor,
-    takenAt: nextSkipped ? null : nextTakenAt,
-    skipped: nextSkipped,
-    isExplicitTaken: !nextSkipped && nextTakenAt !== null,
-    isExplicitSkip: nextSkipped,
-    idempotencyKey: null,
-    // The converged row keeps the ORIGINAL's provenance. This used to be a
-    // hardcoded `"WEB"`, which said "somebody typed this in the browser"
-    // about an Apple Health dose whose time was corrected. Under MANAGE the
-    // sentence would be wrong about a second person as well.
-    createSource: event.source,
-    attributionSource,
-    // A slot move is a re-binding, not a new dose: the original row's
-    // recorded injection site and dose override ride along onto the
-    // converged row instead of being tombstoned away, unless the same edit
-    // sets a new site (#169).
-    injectionSite:
-      move.injectionSite !== undefined
-        ? move.injectionSite
-        : (event.injectionSite as InjectionSiteKey | null),
-    doseTaken: event.doseTaken,
-  });
-  // The shared slot write only ever sets a site; a clear in the same edit
-  // lands here, on the converged row.
-  let row = applied.row;
-  if (move.injectionSite === null && row.injectionSite !== null) {
-    row = await prisma.medicationIntakeEvent.update({
-      where: { id: row.id },
-      data: { injectionSite: null, syncVersion: { increment: 1 } },
-    });
-  }
-  // A taken source WITHOUT a stamp is a legacy row whose stock moved through
-  // the old take-time hook: the refund above was a no-op, so consuming on the
-  // converged row would double-charge — skip it. Every other taken outcome
-  // nets the move to exactly one consumption.
-  if (
-    nextTakenAt !== null &&
-    !nextSkipped &&
-    (!wasTaken || event.inventoryConsumption !== null)
-  ) {
-    await consumeForIntake({
-      client: prisma,
+  // One locked transaction (`slot-move.ts`): a target slot that already
+  // holds a take refuses the move and leaves the source row as it was.
+  return moveRowToSlot(
+    {
       userId: user.id,
       medicationId: id,
-      eventId: applied.row.id,
-      intakeAt: nextTakenAt,
-    });
-  }
-  return row;
+      id: eventId,
+      slot: event.scheduledFor,
+      target: targetScheduledFor,
+    },
+    (tx) =>
+      applyCanonicalSlotWrite({
+        client: tx,
+        userId: user.id,
+        medicationId: id,
+        canonicalSlot: targetScheduledFor,
+        takenAt: nextSkipped ? null : nextTakenAt,
+        skipped: nextSkipped,
+        isExplicitTaken: !nextSkipped && nextTakenAt !== null,
+        isExplicitSkip: nextSkipped,
+        idempotencyKey: null,
+        // The converged row keeps the ORIGINAL's provenance: an Apple Health
+        // dose whose time was corrected is still an Apple Health dose.
+        createSource: event.source,
+        attributionSource,
+        // A slot move is a re-binding, not a new dose: the recorded site and
+        // dose override ride along unless the same edit sets a new site (#169).
+        injectionSite:
+          move.injectionSite !== undefined
+            ? move.injectionSite
+            : (event.injectionSite as InjectionSiteKey | null),
+        doseTaken: event.doseTaken,
+      }),
+    async (tx, applied) => {
+      await restoreForIntake({ client: tx, userId: user.id, eventId });
+      // The shared slot write only ever sets a site; a clear in the same
+      // edit lands here, on the converged row.
+      let row = applied.row;
+      if (move.injectionSite === null && row.injectionSite !== null) {
+        row = await tx.medicationIntakeEvent.update({
+          where: { id: row.id },
+          data: { injectionSite: null, syncVersion: { increment: 1 } },
+        });
+      }
+      // A taken source WITHOUT a stamp is a legacy row whose stock moved
+      // through the old take-time hook: the refund was a no-op, so consuming
+      // on the converged row would double-charge. Every other taken outcome
+      // nets the move to exactly one consumption.
+      if (
+        nextTakenAt !== null &&
+        !nextSkipped &&
+        (!wasTaken || event.inventoryConsumption !== null)
+      ) {
+        await consumeForIntake({
+          client: tx,
+          userId: user.id,
+          medicationId: id,
+          eventId: applied.row.id,
+          intakeAt: nextTakenAt,
+        });
+      }
+      return row;
+    },
+  );
 }
 
 /** Correct one dose; the event is the live row the route found. */
@@ -532,6 +534,21 @@ export async function updateIntakeEvent(
         wasTaken,
         injectionSite,
       });
+  if (updated === "gone") {
+    return {
+      ok: false as const,
+      status: 404,
+      message: "Intake event not found",
+      errorCode: "medications.notFound",
+    };
+  }
+  if (updated === "occupied") {
+    return {
+      ok: false as const,
+      message: "The slot the dose would move to already holds a take",
+      errorCode: "medications.intake.force_slot.occupied",
+    };
+  }
 
   await auditLog("medication.intake.update", {
     userId: user.id,

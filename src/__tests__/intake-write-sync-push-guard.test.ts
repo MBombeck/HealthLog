@@ -36,6 +36,8 @@ const PUSHES = /\bqueueMedicationIntakeSync\s*\(/;
 const EXEMPT: Record<string, string> = {
   "lib/medications/scheduling/slot-upsert.ts":
     "the shared slot write; every caller queues the push",
+  "lib/medications/scheduling/slot-move.ts":
+    "the locked by-id write; update-intake-status.ts and update-intake-event.ts queue the push",
   "lib/medications/update-intake-status/take.ts":
     "called by update-intake-status.ts, which queues the push",
   "lib/medications/record-intake/write.ts":

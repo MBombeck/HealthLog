@@ -29,7 +29,11 @@ import {
   type IntakeStatusUpdate,
   type StatusUpdateEvent,
 } from "./admission";
-import { applyTakenStatus } from "./take";
+import { applyTakenStatus, rowWriteRefused } from "./take";
+import {
+  isRowWriteRefusal,
+  updateLiveRow,
+} from "@/lib/medications/scheduling/slot-move";
 import { resolveSnoozeMinutes } from "@/lib/validations/notification-prefs";
 
 interface StatusContext {
@@ -65,26 +69,26 @@ async function applySkipOrSnooze(ctx: StatusContext, data: IntakeStatusUpdate) {
   const { user, existing } = ctx;
   const { intakeId, status, snoozedUntil } = data;
   if (status === "skipped") {
-    const updated = await prisma.medicationIntakeEvent.update({
-      where: { id: intakeId },
-      // Bump the reconciliation counter on the skip toggle.
-      // A skip the person records clears the automatic marker.
-      data: {
+    // Under the slot lock and only on a live row (`slot-move.ts`). A skip
+    // the person records clears the automatic marker; the row stopped being
+    // taken, so its consumption stamp is refunded in the same transaction.
+    return updateLiveRow(
+      {
+        userId: user.id,
+        medicationId: existing.medicationId,
+        id: intakeId,
+        slot: existing.scheduledFor,
+      },
+      {
         takenAt: null,
         skipped: true,
         autoRecorded: false,
         autoMissed: false,
         syncVersion: { increment: 1 },
       },
-    });
-    // The row stopped being taken; refund whatever its
-    // consumption stamp recorded (no-op for a never-consumed row).
-    await restoreForIntake({
-      client: prisma,
-      userId: user.id,
-      eventId: intakeId,
-    });
-    return updated;
+      (tx) =>
+        restoreForIntake({ client: tx, userId: user.id, eventId: intakeId }),
+    );
   }
   // snoozed: snoozedUntil lives on the Medication row. Without an explicit
   // instant the deferral is the person's own snooze length (default 30
@@ -237,7 +241,9 @@ export async function updateIntakeStatus(
     if (taken.kind === "refused") return taken;
     updated = taken.row;
   } else {
-    updated = await applySkipOrSnooze(ctx, data);
+    const written = await applySkipOrSnooze(ctx, data);
+    if (isRowWriteRefusal(written)) return rowWriteRefused(written);
+    updated = written;
   }
 
   await recordAfterUpdate(ctx, data, updated, userTzForHook);

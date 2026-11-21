@@ -87,7 +87,11 @@ export const PUT = apiHandler(
       originDeviceToken: request.headers.get("x-device-id"),
     });
     if (!outcome.ok) {
-      return apiError(outcome.message, 422, { errorCode: outcome.errorCode });
+      return apiError(
+        outcome.message,
+        "status" in outcome ? outcome.status : 422,
+        { errorCode: outcome.errorCode },
+      );
     }
 
     return apiSuccess(outcome.row);
