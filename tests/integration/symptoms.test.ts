@@ -256,6 +256,53 @@ describe("symptom definitions", () => {
     ).toBe(false);
   });
 
+  it("puts a new definition after the built-in ones Apple Health created", async () => {
+    const prisma = getPrismaClient();
+    for (const [i, code] of ["FEVER", "COUGH", "HEADACHE"].entries()) {
+      await prisma.symptomDefinition.create({
+        data: {
+          userId: OWNER_ID,
+          labelEncrypted: encryptToBytes(code),
+          code,
+          sortOrder: i,
+        },
+      });
+    }
+    const id = await defineSymptom("Aura");
+    const row = await prisma.symptomDefinition.findUniqueOrThrow({
+      where: { id },
+    });
+    expect(row.sortOrder).toBe(3);
+  });
+
+  it("admits one of several concurrent creates at the last free slot", async () => {
+    const prisma = getPrismaClient();
+    for (let i = 0; i < MAX_ACTIVE_SYMPTOM_DEFINITIONS - 1; i += 1) {
+      await prisma.symptomDefinition.create({
+        data: {
+          userId: OWNER_ID,
+          labelEncrypted: encryptToBytes(`S${i}`),
+          sortOrder: i,
+        },
+      });
+    }
+    const { POST } = await import("@/app/api/symptoms/definitions/route");
+    const labels = ["A", "B", "C", "D", "E", "F"];
+    const responses = await Promise.all(
+      labels.map((label) =>
+        call(POST, "POST", "/api/symptoms/definitions", { label }),
+      ),
+    );
+    expect(responses.map((r) => r.status).sort()).toEqual([
+      201, 422, 422, 422, 422, 422,
+    ]);
+    expect(
+      await prisma.symptomDefinition.count({
+        where: { userId: OWNER_ID, isActive: true, code: null },
+      }),
+    ).toBe(MAX_ACTIVE_SYMPTOM_DEFINITIONS);
+  });
+
   it("purges a definition with every occurrence of it", async () => {
     const id = await defineSymptom("Aura");
     await logEvent({ definitionId: id, intensity: 4 });
@@ -680,6 +727,50 @@ describe("symptom occurrences", () => {
       (await db.symptomEvent.findUniqueOrThrow({ where: { id: eventId } }))
         .episodeId,
     ).toBe(cold.id);
+  });
+
+  it("refuses to move a linked occurrence out of its resolved episode", async () => {
+    const id = await defineSymptom("Aura");
+    const db = getPrismaClient();
+    const cold = await db.illnessEpisode.create({
+      data: {
+        userId: OWNER_ID,
+        label: "Cold",
+        type: "INFECTION",
+        onsetAt: new Date("2026-10-01T00:00:00.000Z"),
+        resolvedAt: new Date("2026-10-08T00:00:00.000Z"),
+      },
+    });
+    const created = await logEvent({
+      definitionId: id,
+      intensity: 5,
+      occurredAt: "2026-10-05T09:00:00.000Z",
+      episodeId: cold.id,
+    });
+    const eventId = (await json<Envelope<{ id: string }>>(created)).data.id;
+    const { PATCH } = await import("@/app/api/symptoms/events/[id]/route");
+    const patch = (body: Record<string, unknown>) =>
+      call(PATCH, "PATCH", `/api/symptoms/events/${eventId}`, body, {
+        id: eventId,
+      });
+
+    const out = await patch({ occurredAt: "2026-10-12T09:00:00.000Z" });
+    expect(out.status).toBe(422);
+    expect((await json<Envelope<null>>(out)).meta?.errorCode).toBe(
+      "symptoms.episode.notOpen",
+    );
+    const row = await db.symptomEvent.findUniqueOrThrow({
+      where: { id: eventId },
+    });
+    expect(row.occurredAt.toISOString()).toBe("2026-10-05T09:00:00.000Z");
+    // Inside the episode it moves; and moved out with the link cleared too.
+    expect(
+      (await patch({ occurredAt: "2026-10-06T09:00:00.000Z" })).status,
+    ).toBe(200);
+    expect(
+      (await patch({ occurredAt: "2026-10-12T09:00:00.000Z", episodeId: null }))
+        .status,
+    ).toBe(200);
   });
 
   it("opens a link from the day view only to a live episode", async () => {

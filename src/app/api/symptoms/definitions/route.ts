@@ -25,6 +25,8 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { requireIllnessEnabled } from "@/lib/illness/gate";
 import {
   countCappedSymptomDefinitions,
+  lockSymptomDefinitions,
+  nextSymptomDefinitionSortOrder,
   encryptSymptomText,
   listSymptomDefinitions,
   symptomDefinitionCreateSchema,
@@ -82,8 +84,30 @@ async function postDefinition(request: NextRequest): Promise<Response> {
   });
   if (!parsed.ok) return parsed.error;
 
-  const activeCount = await countCappedSymptomDefinitions(user.id);
-  if (activeCount >= MAX_ACTIVE_SYMPTOM_DEFINITIONS) {
+  // Counted and written under one lock, so two creates at 29 cannot both
+  // pass the cap.
+  const created = await prisma.$transaction(async (tx) => {
+    await lockSymptomDefinitions(tx, user.id);
+    const activeCount = await countCappedSymptomDefinitions(user.id, tx);
+    if (activeCount >= MAX_ACTIVE_SYMPTOM_DEFINITIONS) return null;
+    return tx.symptomDefinition.create({
+      data: {
+        userId: user.id,
+        labelEncrypted: encryptSymptomText(parsed.data.label),
+        icon: parsed.data.icon ?? null,
+        sortOrder: await nextSymptomDefinitionSortOrder(user.id, tx),
+      },
+      select: {
+        id: true,
+        labelEncrypted: true,
+        icon: true,
+        sortOrder: true,
+        isActive: true,
+        code: true,
+      },
+    });
+  });
+  if (!created) {
     return apiError(
       `Symptom limit reached (${MAX_ACTIVE_SYMPTOM_DEFINITIONS})`,
       422,
@@ -93,23 +117,6 @@ async function postDefinition(request: NextRequest): Promise<Response> {
       },
     );
   }
-
-  const created = await prisma.symptomDefinition.create({
-    data: {
-      userId: user.id,
-      labelEncrypted: encryptSymptomText(parsed.data.label),
-      icon: parsed.data.icon ?? null,
-      sortOrder: activeCount,
-    },
-    select: {
-      id: true,
-      labelEncrypted: true,
-      icon: true,
-      sortOrder: true,
-      isActive: true,
-      code: true,
-    },
-  });
 
   await auditLog("symptoms.definition.create", {
     userId: user.id,
