@@ -20,11 +20,31 @@
  * the blob without pulling the Prisma client into the browser bundle.
  */
 import { prisma } from "@/lib/db";
+import { isReportLeafId } from "./catalogue";
+import { parseSavedProfile } from "./profile-shape";
 import {
   EMPTY_REPORT_SELECTION,
+  selectionFromLeaves,
   selectionFromStoredBlob,
   type ReportSelection,
 } from "./selection";
+
+/**
+ * The selection inside a stored profile blob.
+ *
+ * The export writes the profile with its render choices beside the leaves
+ * (`format`, `rangeDays`, `includeCharts`), and the bare selection schema is
+ * strict, so reading the row through it alone turned every saved profile into
+ * the empty selection. The profile shape is read first; a bare `{ v, leaves }`
+ * blob still reads as before. Unknown leaf ids are dropped, never added to,
+ * and any other shape is the empty selection.
+ */
+export function selectionFromSavedProfile(raw: unknown): ReportSelection {
+  const profile = parseSavedProfile(raw);
+  if (profile)
+    return selectionFromLeaves(profile.leaves.filter(isReportLeafId));
+  return selectionFromStoredBlob(raw);
+}
 
 /**
  * Resolve the owner's saved selection.
@@ -41,5 +61,5 @@ export async function resolveSavedSelection(
     select: { reportSelectionJson: true },
   });
   if (!row) return EMPTY_REPORT_SELECTION;
-  return selectionFromStoredBlob(row.reportSelectionJson);
+  return selectionFromSavedProfile(row.reportSelectionJson);
 }
