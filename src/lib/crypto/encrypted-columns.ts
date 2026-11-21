@@ -208,6 +208,12 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
     field: "tokenEncrypted",
     kind: "string",
   },
+  // The WebDAV credentials of the Health Connect folder fetch.
+  {
+    model: "HealthConnectRemoteSource",
+    field: "credentialsEncrypted",
+    kind: "string",
+  },
 
   // ───── AppSettings — operator credentials ─────
   { model: "AppSettings", field: "adminAiKeyEncrypted", kind: "string" },
@@ -692,6 +698,7 @@ export const UPDATED_AT_MODELS: ReadonlySet<string> = new Set([
   "ExtractedFact",
   "FamilyHistoryEntry",
   "GoogleHealthConnection",
+  "HealthConnectRemoteSource",
   "IllnessDayLog",
   "IllnessEpisode",
   "InboundDocument",

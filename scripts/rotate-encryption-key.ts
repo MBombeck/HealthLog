@@ -366,6 +366,16 @@ async function main() {
     ),
   );
 
+  // ───── Health Connect folder fetch (String) ─────
+  // Column: "credentialsEncrypted" — the WebDAV user name and app password.
+  results.push(
+    await rotateStringColumn(
+      "HealthConnectRemoteSource",
+      "credentialsEncrypted",
+      prisma.healthConnectRemoteSource,
+    ),
+  );
+
   // ───── AppSettings — operator credentials (String) ─────
   // Columns: "adminAiKeyEncrypted" "webPushVapidPrivateKeyEncrypted"
   // "adminCodexAccessTokenEncrypted" "adminCodexRefreshTokenEncrypted"
