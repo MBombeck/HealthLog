@@ -78,6 +78,8 @@ export class FakeRelay {
   down = false;
   forge = false;
   unavailable = false;
+  /** Apply a key rotation, then drop the connection before answering. */
+  dropAfterRotate = false;
   apnsAnswer = new Map<string, "ok" | "unregistered">();
   private nextId = 1;
 
@@ -173,6 +175,32 @@ export class FakeRelay {
       return this.reply(nonce, 401, { error: "bad_signature" });
     }
 
+    if (method === "POST" && pathAndQuery === "/v1/instances/self/rotate") {
+      const req = JSON.parse(body);
+      const pk = fromBase64Url(req.publicKey, 32);
+      const proof = fromBase64Url(req.proof, 64);
+      if (
+        !pk ||
+        !proof ||
+        !verifyText(pk, registerText(RELAY_HOST, pk, req.time), proof)
+      ) {
+        return this.reply(nonce, 422, { error: "invalid_item" });
+      }
+      for (const k of this.instances.values()) {
+        if (k.equals(pk))
+          return this.reply(nonce, 409, { error: "key_in_use" });
+      }
+      this.instances.set(instanceId, pk);
+      if (this.dropAfterRotate) {
+        this.dropAfterRotate = false;
+        throw Object.assign(new Error("socket hang up"), { kind: "network" });
+      }
+      return this.reply(nonce, 200, {
+        instanceId,
+        tier: "probation",
+        limits: {},
+      });
+    }
     if (method === "DELETE" && pathAndQuery === "/v1/instances/self") {
       this.instances.delete(instanceId);
       for (const [t, b] of this.bindings)

@@ -68,6 +68,29 @@ Turning the switch off deletes your instance at the relay, which removes every
 device binding with it, and deletes the instance key here. The apps notice it
 on their next sync and go back to local reminders on their own.
 
+### Checking it works, and the instance key
+
+The relay card has **Send test push**: one harmless sealed notification to
+each of your own devices that use the relay. The card shows what the relay
+answered, verified against its pinned signing key, and whether the push was
+accepted for delivery. Use it after turning the relay on, after an update, or
+when someone says notifications stopped.
+
+Your server signs every relay request with its own instance key. It replaces
+that key every 30 days through the relay's rotation endpoint, and **Rotate
+relay key** does it at once (the relay allows one rotation a day). The new
+key is kept before the request leaves, so a lost answer cannot lock the
+server out, and the old one is kept for 7 days.
+
+### Deleting an account
+
+When an account is erased (by the person, by an admin, or by the purge after
+the grace window), the server tells the relay to drop the binding of each of
+its devices. The unbind is queued with the erasure and sent by the relay's
+background pass, so a relay that is down delays it without blocking the
+deletion; it is retried for 7 days. The app's own "turn off" also revokes its
+binding directly at the relay.
+
 ### What goes over the relay
 
 - the confirmation that a dose was recorded on another device;
