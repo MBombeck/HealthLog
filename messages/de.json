@@ -5726,11 +5726,24 @@
         "documents": {
           "title": "Dokumente",
           "autoAiRead": "Neue Dokumente automatisch mit KI lesen",
-          "honesty": "Wenn eingeschaltet, wird jedes in dieses Profil hochgeladene Dokument an den KI-Anbieter der Instanz geschickt, dort gelesen, beschrieben und für die Suche erschlossen, ohne Tippen je Dokument; schon vorhandene Dokumente ohne Zusammenfassung werden ebenfalls geschickt (bis zu 200 bei jedem Einschalten). Das Einschalten hält die Einwilligung dieses Profils fest, dass seine Dokumente gelesen werden dürfen. Es gelten die KI-Einstellungen des Profils; dein eigener KI-Anbieter wird nie verwendet. Standardmäßig aus.",
+          "honesty": "Wenn eingeschaltet, wird jedes in dieses Profil hochgeladene Dokument an den oben für das Profil gewählten KI-Anbieter geschickt, dort gelesen, beschrieben und für die Suche erschlossen, ohne Tippen je Dokument; schon vorhandene Dokumente ohne Zusammenfassung werden ebenfalls geschickt (bis zu 200 bei jedem Einschalten). Das Einschalten hält die Einwilligung dieses Profils fest, dass seine Dokumente gelesen werden dürfen. Standardmäßig aus.",
           "pageTitle": "Dokumente und KI",
           "pageSubtitle": "Ob KI die Dokumente liest, die in das Profil von {name} hochgeladen werden.",
-          "noProvider": "Dieser Server hat keinen KI-Anbieter, der die Dokumente von {name} lesen könnte, deshalb bleibt der Schalter aus. Wer den Server betreibt, kann einen einrichten.",
+          "noProvider": "Für das Profil von {name} ist kein KI-Anbieter gewählt, der Dokumente lesen könnte, deshalb bleibt der Schalter aus. Wähle oben einen.",
           "aiOff": "KI ist für das Profil von {name} ausgeschaltet, deshalb würde kein Dokument gelesen."
+        },
+        "aiSource": {
+          "title": "KI-Anbieter",
+          "label": "KI für dieses Profil nutzt",
+          "honesty": "Ein verwaltetes Profil hat keine eigenen KI-Schlüssel. Wähle, wohin seine KI-Arbeit geht: an den KI-Schlüssel des Servers, nirgendwohin, oder an eine der Ketten, die du in deinem eigenen Konto eingerichtet hast. Die KI-Schalter und Einwilligungen des Profils gelten bei jeder Wahl weiter.",
+          "instance": "KI-Schlüssel des Servers",
+          "none": "Kein KI-Anbieter",
+          "yourDefault": "Deine Standardkette",
+          "yourChain": "Deine Kette „{name}“",
+          "otherGuardian": "Eine Kette eines anderen Vormunds",
+          "noInstanceKey": "Dieser Server hat keinen KI-Schlüssel, mit dieser Wahl bleibt das Profil ohne KI.",
+          "yourCredentials": "Deine eigenen Schlüssel und Anmeldungen bedienen dieses Profil, in der Reihenfolge dieser Kette und mit nichts sonst. Was das Profil schickt, zählt gegen deine Anbieterkonten.",
+          "unusable": "Die gewählte Kette kann gerade nicht bedienen: Der Vormund, der sie gewählt hat, verwaltet das Profil nicht mehr, oder die Kette wurde gelöscht. Bis jemand neu wählt, hat das Profil keine KI."
         }
       },
       "unavailableTitle": "In diesem geteilten Datensatz nicht verfügbar",
@@ -13472,6 +13485,17 @@
       "opened": "{name} hat deine Akte {count}× geöffnet",
       "acted": "{name} hat etwas in deiner Akte geändert",
       "deletedAccount": "Ein gelöschtes Konto"
+    },
+    "managedActivity": {
+      "title": "Aktivität im Profil von {name}",
+      "hint": "Wer in diesem Profil was getan hat: die Änderungen jedes Vormunds, deine eingeschlossen.",
+      "action": "Aktivität zeigen",
+      "emptyTitle": "Noch nichts festgehalten",
+      "emptyDescription": "Änderungen eines Vormunds in diesem Profil erscheinen hier, Öffnungen als eine Zeile je Vormund und Tag.",
+      "you": "Du",
+      "opened": "{name} hat das Profil {count}× geöffnet",
+      "acted": "{name} hat im Profil etwas geändert",
+      "settingsUpdate": "{name} hat die Einstellungen des Profils geändert"
     },
     "delegate": {
       "addOnlyNote": "Du kannst zu dieser Akte etwas hinzufügen. Einträge ändern oder löschen kann nur {name}."

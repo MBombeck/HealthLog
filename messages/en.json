@@ -5726,11 +5726,24 @@
         "documents": {
           "title": "Documents",
           "autoAiRead": "Read new documents automatically with AI",
-          "honesty": "When on, each document uploaded into this profile is sent to the instance's AI provider to be read, described and indexed for search, with no tap per document, and documents already here without a summary are sent too (up to 200 each time it is switched on). Turning it on records this profile's consent to having its documents read. The profile's AI settings apply; your own AI provider is never used. Off by default.",
+          "honesty": "When on, each document uploaded into this profile is sent to the AI provider chosen for the profile above, to be read, described and indexed for search, with no tap per document, and documents already here without a summary are sent too (up to 200 each time it is switched on). Turning it on records this profile's consent to having its documents read. Off by default.",
           "pageTitle": "Documents and AI",
           "pageSubtitle": "Whether AI reads the documents uploaded into {name}'s profile.",
-          "noProvider": "This server has no AI provider that could read {name}'s documents, so the switch stays off. The person who runs the server can set one up.",
+          "noProvider": "No AI provider is chosen for {name}'s profile that could read documents, so the switch stays off. Pick one above.",
           "aiOff": "AI is off for {name}'s profile, so no document would be read."
+        },
+        "aiSource": {
+          "title": "AI provider",
+          "label": "AI for this profile uses",
+          "honesty": "A managed profile has no AI keys of its own. Choose where its AI work goes: the server's AI key, none at all, or one of the chains you set up on your own account. The profile's own AI switches and consents still apply to whichever you choose.",
+          "instance": "The server's AI key",
+          "none": "No AI provider",
+          "yourDefault": "Your default chain",
+          "yourChain": "Your chain “{name}”",
+          "otherGuardian": "A chain of another guardian",
+          "noInstanceKey": "This server has no AI key set, so this choice leaves the profile without AI.",
+          "yourCredentials": "Your own keys and sign-ins serve this profile, in that chain's order and nothing else. What the profile sends counts against your provider accounts.",
+          "unusable": "The chosen chain cannot serve right now: the guardian who picked it no longer manages this profile, or the chain was deleted. The profile has no AI until someone picks again."
         }
       },
       "unavailableTitle": "Unavailable in this shared record",
@@ -13472,6 +13485,17 @@
       "opened": "{name} opened your record {count}×",
       "acted": "{name} made a change in your record",
       "deletedAccount": "A deleted account"
+    },
+    "managedActivity": {
+      "title": "Activity in {name}'s profile",
+      "hint": "Who did what in this profile: every guardian's changes, yours included.",
+      "action": "Show activity",
+      "emptyTitle": "Nothing recorded yet",
+      "emptyDescription": "Changes a guardian makes in this profile appear here, and openings one line per guardian per day.",
+      "you": "You",
+      "opened": "{name} opened the profile {count}×",
+      "acted": "{name} made a change in the profile",
+      "settingsUpdate": "{name} changed the profile's settings"
     },
     "delegate": {
       "addOnlyNote": "You can add to this record. Changing or removing entries is something only {name} can do."

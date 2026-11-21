@@ -5726,11 +5726,24 @@
         "documents": {
           "title": "Documents",
           "autoAiRead": "Lire automatiquement les nouveaux documents avec l'IA",
-          "honesty": "Activé, chaque document téléversé dans ce profil est envoyé au fournisseur d'IA de l'instance pour être lu, décrit et indexé pour la recherche, sans action par document, et les documents déjà présents sans résumé sont aussi envoyés (jusqu'à 200 à chaque activation). L'activer enregistre le consentement de ce profil à la lecture de ses documents. Les réglages d'IA du profil s'appliquent ; votre propre fournisseur d'IA n'est jamais utilisé. Désactivé par défaut.",
+          "honesty": "Activé, chaque document téléversé dans ce profil est envoyé au fournisseur d'IA choisi ci-dessus pour le profil, pour être lu, décrit et indexé pour la recherche, sans action par document, et les documents déjà présents sans résumé sont aussi envoyés (jusqu'à 200 à chaque activation). L'activer enregistre le consentement de ce profil à la lecture de ses documents. Désactivé par défaut.",
           "pageTitle": "Documents et IA",
           "pageSubtitle": "Si l'IA lit les documents téléversés dans le profil de {name}.",
-          "noProvider": "Ce serveur n'a aucun fournisseur d'IA capable de lire les documents de {name}, l'interrupteur reste donc désactivé. La personne qui gère le serveur peut en configurer un.",
+          "noProvider": "Aucun fournisseur d'IA capable de lire des documents n'est choisi pour le profil de {name}, l'interrupteur reste donc désactivé. Choisissez-en un ci-dessus.",
           "aiOff": "L'IA est désactivée pour le profil de {name}, aucun document ne serait donc lu."
+        },
+        "aiSource": {
+          "title": "Fournisseur d'IA",
+          "label": "L'IA de ce profil utilise",
+          "honesty": "Un profil géré n'a pas de clés d'IA à lui. Choisissez où va son travail d'IA : vers la clé d'IA du serveur, nulle part, ou vers l'une des chaînes configurées sur votre propre compte. Les interrupteurs et consentements d'IA du profil s'appliquent quel que soit le choix.",
+          "instance": "La clé d'IA du serveur",
+          "none": "Aucun fournisseur d'IA",
+          "yourDefault": "Votre chaîne par défaut",
+          "yourChain": "Votre chaîne « {name} »",
+          "otherGuardian": "Une chaîne d'un autre tuteur",
+          "noInstanceKey": "Ce serveur n'a pas de clé d'IA, ce choix laisse donc le profil sans IA.",
+          "yourCredentials": "Vos propres clés et connexions servent ce profil, dans l'ordre de cette chaîne et rien d'autre. Ce que le profil envoie compte sur vos comptes de fournisseur.",
+          "unusable": "La chaîne choisie ne peut pas servir pour l'instant : le tuteur qui l'a choisie ne gère plus ce profil, ou la chaîne a été supprimée. Le profil n'a pas d'IA tant que personne n'a choisi à nouveau."
         }
       },
       "unavailableTitle": "Indisponible dans ce dossier partagé",
@@ -13472,6 +13485,17 @@
       "opened": "{name} a ouvert votre dossier {count}×",
       "acted": "{name} a fait une modification dans votre dossier",
       "deletedAccount": "Un compte supprimé"
+    },
+    "managedActivity": {
+      "title": "Activité dans le profil de {name}",
+      "hint": "Qui a fait quoi dans ce profil : les modifications de chaque tuteur, les vôtres comprises.",
+      "action": "Afficher l'activité",
+      "emptyTitle": "Rien d'enregistré pour l'instant",
+      "emptyDescription": "Les modifications d'un tuteur dans ce profil apparaissent ici, et les ouvertures sur une ligne par tuteur et par jour.",
+      "you": "Vous",
+      "opened": "{name} a ouvert le profil {count}×",
+      "acted": "{name} a modifié quelque chose dans le profil",
+      "settingsUpdate": "{name} a modifié les réglages du profil"
     },
     "delegate": {
       "addOnlyNote": "Vous pouvez ajouter des éléments à ce dossier. Seul {name} peut modifier ou supprimer des entrées."

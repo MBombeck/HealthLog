@@ -5726,11 +5726,24 @@
         "documents": {
           "title": "Dokumenty",
           "autoAiRead": "Automatycznie czytaj nowe dokumenty przez AI",
-          "honesty": "Po włączeniu każdy dokument przesłany do tego profilu trafia do dostawcy AI instancji, który go czyta, opisuje i indeksuje do wyszukiwania, bez dotykania każdego dokumentu; wysyłane są też dokumenty już zapisane bez podsumowania (do 200 przy każdym włączeniu). Włączenie zapisuje zgodę tego profilu na czytanie jego dokumentów. Obowiązują ustawienia AI profilu; twój własny dostawca AI nigdy nie jest używany. Domyślnie wyłączone.",
+          "honesty": "Po włączeniu każdy dokument przesłany do tego profilu trafia do dostawcy AI wybranego powyżej dla profilu, który go czyta, opisuje i indeksuje do wyszukiwania, bez dotykania każdego dokumentu; wysyłane są też dokumenty już zapisane bez podsumowania (do 200 przy każdym włączeniu). Włączenie zapisuje zgodę tego profilu na czytanie jego dokumentów. Domyślnie wyłączone.",
           "pageTitle": "Dokumenty i AI",
           "pageSubtitle": "Czy AI czyta dokumenty przesłane do profilu {name}.",
-          "noProvider": "Ten serwer nie ma dostawcy AI, który mógłby czytać dokumenty {name}, więc przełącznik pozostaje wyłączony. Osoba zarządzająca serwerem może go skonfigurować.",
+          "noProvider": "Dla profilu {name} nie wybrano dostawcy AI, który mógłby czytać dokumenty, więc przełącznik pozostaje wyłączony. Wybierz go powyżej.",
           "aiOff": "AI jest wyłączona dla profilu {name}, więc żaden dokument nie zostałby przeczytany."
+        },
+        "aiSource": {
+          "title": "Dostawca AI",
+          "label": "AI tego profilu używa",
+          "honesty": "Profil zarządzany nie ma własnych kluczy AI. Wybierz, dokąd trafia jego praca AI: do klucza AI serwera, donikąd albo do jednego z łańcuchów ustawionych na twoim własnym koncie. Przełączniki i zgody AI profilu obowiązują przy każdym wyborze.",
+          "instance": "Klucz AI serwera",
+          "none": "Brak dostawcy AI",
+          "yourDefault": "Twój domyślny łańcuch",
+          "yourChain": "Twój łańcuch „{name}”",
+          "otherGuardian": "Łańcuch innego opiekuna",
+          "noInstanceKey": "Ten serwer nie ma klucza AI, więc przy tym wyborze profil zostaje bez AI.",
+          "yourCredentials": "Twoje własne klucze i logowania obsługują ten profil, w kolejności tego łańcucha i niczym więcej. To, co wysyła profil, liczy się do twoich kont u dostawców.",
+          "unusable": "Wybrany łańcuch nie może teraz obsługiwać: opiekun, który go wybrał, nie zarządza już tym profilem albo łańcuch został usunięty. Profil nie ma AI, dopóki ktoś nie wybierze ponownie."
         }
       },
       "unavailableTitle": "Niedostępne w tym udostępnionym rekordzie",
@@ -13472,6 +13485,17 @@
       "opened": "{name} otworzył twoją kartę {count}×",
       "acted": "{name} wprowadził zmianę w twojej karcie",
       "deletedAccount": "Usunięte konto"
+    },
+    "managedActivity": {
+      "title": "Aktywność w profilu {name}",
+      "hint": "Kto co zrobił w tym profilu: zmiany każdego opiekuna, w tym twoje.",
+      "action": "Pokaż aktywność",
+      "emptyTitle": "Na razie nic nie zapisano",
+      "emptyDescription": "Zmiany opiekuna w tym profilu pojawiają się tutaj, a otwarcia jako jeden wiersz na opiekuna dziennie.",
+      "you": "Ty",
+      "opened": "{name} otworzył(a) profil {count}×",
+      "acted": "{name} coś zmienił(a) w profilu",
+      "settingsUpdate": "{name} zmienił(a) ustawienia profilu"
     },
     "delegate": {
       "addOnlyNote": "Możesz dodawać wpisy do tej karty. Zmieniać je i usuwać może tylko {name}."

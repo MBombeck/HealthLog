@@ -10,7 +10,6 @@ import { openStoredKey } from "./stored-key";
 import { isAnthropicBaseUrl } from "./anthropic-host";
 import { CodexClient } from "./codex-client";
 import { codexCredentialKey } from "./codex-slug-cache";
-import { chainEntryReadsImages } from "./codex-slug-chain";
 import { OpenAIClient } from "./openai-client";
 import { AnthropicClient } from "./anthropic-client";
 import { LocalOpenAICompatibleClient } from "./local-client";
@@ -54,6 +53,15 @@ import {
   pinnedChains,
 } from "./named-chains";
 import { chainLabelFor, logChainCalls } from "./chain-call-log";
+import { managedAiServing } from "./managed-ai-source";
+import {
+  credentialPresenceOf,
+  entryVision,
+  guardianChainPresence,
+  NO_PRESENCE,
+  PRESENCE_USER_SELECT,
+  resolveGuardianChain,
+} from "./managed-ai-chain";
 import {
   everyEntry,
   type ProviderEntryPresence,
@@ -730,6 +738,23 @@ export async function resolveProviderChain(
   const label = chainLabelFor(selection, capability);
   const logged = (providerType: ProviderChainType, provider: AIProvider) =>
     logChainCalls(bind(provider), providerType, label);
+  if (policy === "operator-default") {
+    // #1403 — the guardian's choice for the profile decides the credential
+    // source before anything else is read.
+    const serving = await managedAiServing(userId);
+    if (serving.kind === "none") return [];
+    if (serving.kind === "guardian") {
+      return resolveGuardianChain(serving, capability, (type, id, row) =>
+        type === "admin-codex"
+          ? resolveAdminCodexProvider()
+          : resolveProviderForType(type, {
+              userId: id,
+              userRow: row,
+              policy: "personal",
+            }),
+      );
+    }
+  }
   if (!pinned && policy === "operator-default") {
     const provider = await resolveAdminProvider();
     return provider.type === "none"
@@ -839,59 +864,8 @@ export async function resolveProviderAvailability(
 }
 
 // ── The one presence definition ────────────────────────────────────────────
-
-/** The credential-presence columns the probe reads off the record's row. */
-const PRESENCE_USER_SELECT = {
-  aiProvider: true,
-  aiProviderChain: true,
-  aiNamedChains: true,
-  aiAnthropicKeyEncrypted: true,
-  aiLocalKeyEncrypted: true,
-  aiOpenaiKeyEncrypted: true,
-  aiLocalBaseUrl: true,
-  aiLocalModel: true,
-  aiCompatBaseUrl: true,
-  aiCompatModel: true,
-  aiModel: true,
-  codexConnectionStatus: true,
-  codexAccessTokenEncrypted: true,
-  codexRefreshTokenEncrypted: true,
-  useCentralCodex: true,
-  managedProfileAt: true,
-  labsLocalOcrEnabled: true,
-  aiResponseTimeoutSeconds: true,
-} as const;
-
-const NO_PRESENCE: ProviderPresence = Object.freeze({
-  entries: [],
-  localOcrEnabled: false,
-  managedBy: null,
-  availableTypes: [],
-});
-
-/**
- * Whether one chain entry's model can read an image. Mirrors the model each
- * entry runs on (`src/lib/labs/ocr-capability.ts`): each Codex path asks its
- * own sign-in, the operator's slot uses the operator's model, Local its own
- * (`aiLocalModel`), every other entry the person's shared `aiModel`.
- */
-function entryVision(
-  providerType: string,
-  recordId: string,
-  models: {
-    user: string | null;
-    local: string | null;
-    admin: string | null;
-  },
-): boolean {
-  const model =
-    providerType === "admin-openai"
-      ? models.admin
-      : providerType === "local"
-        ? models.local
-        : models.user;
-  return chainEntryReadsImages(providerType, recordId, model);
-}
+// The row it reads, the entry vision and the credential check live in
+// `./managed-ai-chain.ts`.
 
 /**
  * The provider chain that would serve a record, presence only: which entries
@@ -946,6 +920,11 @@ export function probeProviderChain(
       if (policy === "deny") return NO_PRESENCE;
       const named = parseNamedChains(row.aiNamedChains ?? null);
       if (policy === "operator-default") {
+        const serving = await managedAiServing(recordId);
+        if (serving.kind === "none") return NO_PRESENCE;
+        if (serving.kind === "guardian") {
+          return guardianChainPresence(serving, settings, row);
+        }
         return {
           entries: adminKey ? [vision("admin-openai")] : [],
           pinned: pinnedChains(
@@ -962,32 +941,7 @@ export function probeProviderChain(
         };
       }
 
-      const codexConnected =
-        row.codexConnectionStatus === "connected" &&
-        !!row.codexAccessTokenEncrypted &&
-        !!row.codexRefreshTokenEncrypted;
-      const credentialPresent = (providerType: ProviderChainType): boolean => {
-        switch (providerType) {
-          case "codex":
-            return codexConnected;
-          case "openai":
-            return !!row.aiOpenaiKeyEncrypted;
-          case "anthropic":
-            return !!row.aiAnthropicKeyEncrypted;
-          case "local":
-            return !!row.aiLocalBaseUrl;
-          case "openai-compatible":
-            return !!(
-              row.aiCompatBaseUrl &&
-              (row.aiCompatModel || row.aiModel)
-            );
-          case "admin-openai":
-            return adminKey;
-          default:
-            // `admin-codex` is never resolved from a stored chain entry.
-            return false;
-        }
-      };
+      const credentialPresent = credentialPresenceOf(row, adminKey);
       const centralCodex =
         row.useCentralCodex && appSettingsCentralCodexConnected(settings);
       const entries: ProviderEntryPresence[] = defaultChainTypes(named, row)

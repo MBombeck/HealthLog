@@ -102,9 +102,10 @@ to one task.
   chain's id, never its name), `capability` and `provider`, so the app's
   own log answers which chain and provider served a call.
 - **Guardrails apply per chain.** Entries resolve under the same
-  credential policy (a delegate gets nothing, a guardian only the
-  operator's key, so a managed profile's local-only binding refuses
-  rather than reach the operator's key), consent is decided from the
+  credential policy (a delegate gets nothing; a managed profile gets the
+  source its guardian chose: the operator's key, nothing, or one chain the
+  guardian lends from their own account, see
+  [Account sharing](../self-hosting/account-sharing.md)), consent is decided from the
   attached chain's entries under the capability's own rule, and the
   egress re-check at the wire runs as before.
 - **Deleting a chain** returns its capabilities to Default; if it was the

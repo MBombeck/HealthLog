@@ -5726,11 +5726,24 @@
         "documents": {
           "title": "Documentos",
           "autoAiRead": "Leer los documentos nuevos automáticamente con IA",
-          "honesty": "Si está activado, cada documento subido a este perfil se envía al proveedor de IA de la instancia para leerlo, describirlo e indexarlo para la búsqueda, sin tocar cada documento, y también se envían los documentos que ya hay sin resumen (hasta 200 cada vez que se activa). Activarlo registra el consentimiento de este perfil para que se lean sus documentos. Se aplican los ajustes de IA del perfil; nunca se usa tu propio proveedor de IA. Desactivado por defecto.",
+          "honesty": "Si está activado, cada documento subido a este perfil se envía al proveedor de IA elegido arriba para el perfil, para leerlo, describirlo e indexarlo para la búsqueda, sin tocar cada documento, y también se envían los documentos que ya hay sin resumen (hasta 200 cada vez que se activa). Activarlo registra el consentimiento de este perfil para que se lean sus documentos. Desactivado por defecto.",
           "pageTitle": "Documentos e IA",
           "pageSubtitle": "Si la IA lee los documentos que se suben al perfil de {name}.",
-          "noProvider": "Este servidor no tiene ningún proveedor de IA que pueda leer los documentos de {name}, así que el interruptor sigue desactivado. Quien administra el servidor puede configurar uno.",
+          "noProvider": "No hay ningún proveedor de IA elegido para el perfil de {name} que pueda leer documentos, así que el interruptor sigue desactivado. Elige uno arriba.",
           "aiOff": "La IA está desactivada para el perfil de {name}, así que no se leería ningún documento."
+        },
+        "aiSource": {
+          "title": "Proveedor de IA",
+          "label": "La IA de este perfil usa",
+          "honesty": "Un perfil gestionado no tiene claves de IA propias. Elige adónde va su trabajo de IA: a la clave de IA del servidor, a ninguna parte o a una de las cadenas que configuraste en tu propia cuenta. Los interruptores y consentimientos de IA del perfil siguen aplicándose con cualquier opción.",
+          "instance": "La clave de IA del servidor",
+          "none": "Ningún proveedor de IA",
+          "yourDefault": "Tu cadena predeterminada",
+          "yourChain": "Tu cadena «{name}»",
+          "otherGuardian": "Una cadena de otro tutor",
+          "noInstanceKey": "Este servidor no tiene clave de IA, así que con esta opción el perfil se queda sin IA.",
+          "yourCredentials": "Tus propias claves e inicios de sesión atienden a este perfil, en el orden de esa cadena y nada más. Lo que envía el perfil cuenta en tus cuentas de proveedor.",
+          "unusable": "La cadena elegida no puede atender ahora: el tutor que la eligió ya no gestiona este perfil o la cadena se eliminó. El perfil no tiene IA hasta que alguien vuelva a elegir."
         }
       },
       "unavailableTitle": "No disponible en este registro compartido",
@@ -13472,6 +13485,17 @@
       "opened": "{name} abrió tu historial {count}×",
       "acted": "{name} hizo un cambio en tu historial",
       "deletedAccount": "Una cuenta eliminada"
+    },
+    "managedActivity": {
+      "title": "Actividad en el perfil de {name}",
+      "hint": "Quién hizo qué en este perfil: los cambios de cada tutor, incluidos los tuyos.",
+      "action": "Mostrar actividad",
+      "emptyTitle": "Aún no hay nada registrado",
+      "emptyDescription": "Los cambios que hace un tutor en este perfil aparecen aquí, y las aperturas en una línea por tutor y día.",
+      "you": "Tú",
+      "opened": "{name} abrió el perfil {count}×",
+      "acted": "{name} hizo un cambio en el perfil",
+      "settingsUpdate": "{name} cambió los ajustes del perfil"
     },
     "delegate": {
       "addOnlyNote": "Puedes añadir cosas a este historial. Modificar o borrar entradas solo lo puede hacer {name}."

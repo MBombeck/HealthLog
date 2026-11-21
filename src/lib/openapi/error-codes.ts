@@ -471,6 +471,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "profile_claim.sso_unavailable",
       "profile_claim.taken",
     ],
+    record_settings: ["record_settings.ai_source.chain_missing"],
     record_write: ["record_write.rate_limited"],
     recovery: ["recovery.kit.stale"],
     "report-selection": [

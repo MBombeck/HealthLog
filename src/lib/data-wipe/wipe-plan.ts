@@ -469,6 +469,10 @@ export const USER_RESET = {
   coachPrefsJson: Prisma.DbNull,
   coachLastSeenAt: null,
   documentsAutoAiRead: false,
+  // #1403 — a wiped managed profile goes back to the operator's key.
+  managedAiSource: "INSTANCE",
+  managedAiGuardianId: null,
+  managedAiChainId: null,
   labsLocalOcrEnabled: false,
   storeWorkoutRoutes: false,
   codexAccessTokenEncrypted: null,

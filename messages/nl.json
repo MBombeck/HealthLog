@@ -5726,11 +5726,24 @@
         "documents": {
           "title": "Documenten",
           "autoAiRead": "Nieuwe documenten automatisch met AI lezen",
-          "honesty": "Aan betekent dat elk document dat in dit profiel wordt geüpload naar de AI-provider van de instantie gaat om gelezen, beschreven en doorzoekbaar gemaakt te worden, zonder tik per document, en documenten die er al zijn zonder samenvatting gaan ook (tot 200 bij elke keer aanzetten). Aanzetten legt de toestemming van dit profiel vast om zijn documenten te laten lezen. De AI-instellingen van het profiel gelden; je eigen AI-provider wordt nooit gebruikt. Standaard uit.",
+          "honesty": "Aan betekent dat elk document dat in dit profiel wordt geüpload naar de hierboven voor het profiel gekozen AI-aanbieder gaat om gelezen, beschreven en doorzoekbaar gemaakt te worden, zonder tik per document, en documenten die er al zijn zonder samenvatting gaan ook (tot 200 bij elke keer aanzetten). Aanzetten legt de toestemming van dit profiel vast om zijn documenten te laten lezen. Standaard uit.",
           "pageTitle": "Documenten en AI",
           "pageSubtitle": "Of AI de documenten leest die in het profiel van {name} worden geüpload.",
-          "noProvider": "Deze server heeft geen AI-aanbieder die de documenten van {name} kan lezen, dus de schakelaar blijft uit. Wie de server beheert, kan er een instellen.",
+          "noProvider": "Voor het profiel van {name} is geen AI-aanbieder gekozen die documenten kan lezen, dus de schakelaar blijft uit. Kies er hierboven een.",
           "aiOff": "AI staat uit voor het profiel van {name}, dus er zou geen document worden gelezen."
+        },
+        "aiSource": {
+          "title": "AI-aanbieder",
+          "label": "AI voor dit profiel gebruikt",
+          "honesty": "Een beheerd profiel heeft geen eigen AI-sleutels. Kies waar het AI-werk heen gaat: naar de AI-sleutel van de server, nergens heen, of naar een van de ketens die je in je eigen account hebt ingesteld. De AI-schakelaars en toestemmingen van het profiel blijven bij elke keuze gelden.",
+          "instance": "De AI-sleutel van de server",
+          "none": "Geen AI-aanbieder",
+          "yourDefault": "Je standaardketen",
+          "yourChain": "Je keten “{name}”",
+          "otherGuardian": "Een keten van een andere voogd",
+          "noInstanceKey": "Deze server heeft geen AI-sleutel, dus met deze keuze blijft het profiel zonder AI.",
+          "yourCredentials": "Je eigen sleutels en aanmeldingen bedienen dit profiel, in de volgorde van die keten en verder niets. Wat het profiel verstuurt, telt mee op je eigen aanbiedersaccounts.",
+          "unusable": "De gekozen keten kan nu niet bedienen: de voogd die hem koos beheert dit profiel niet meer, of de keten is verwijderd. Het profiel heeft geen AI tot iemand opnieuw kiest."
         }
       },
       "unavailableTitle": "Niet beschikbaar in dit gedeelde dossier",
@@ -13472,6 +13485,17 @@
       "opened": "{name} heeft je dossier {count}× geopend",
       "acted": "{name} heeft iets gewijzigd in je dossier",
       "deletedAccount": "Een verwijderd account"
+    },
+    "managedActivity": {
+      "title": "Activiteit in het profiel van {name}",
+      "hint": "Wie wat deed in dit profiel: de wijzigingen van elke voogd, die van jou inbegrepen.",
+      "action": "Activiteit tonen",
+      "emptyTitle": "Nog niets vastgelegd",
+      "emptyDescription": "Wijzigingen die een voogd in dit profiel maakt verschijnen hier, en openingen als één regel per voogd per dag.",
+      "you": "Jij",
+      "opened": "{name} opende het profiel {count}×",
+      "acted": "{name} heeft iets gewijzigd in het profiel",
+      "settingsUpdate": "{name} heeft de instellingen van het profiel gewijzigd"
     },
     "delegate": {
       "addOnlyNote": "Je kunt iets toevoegen aan dit dossier. Registraties wijzigen of verwijderen kan alleen {name}."

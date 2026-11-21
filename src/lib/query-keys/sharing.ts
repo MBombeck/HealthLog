@@ -59,6 +59,14 @@ export const sharingKeys = {
     ["managed-profiles", profileId, "profile"] as const,
 
   /**
+   * #1403 — who did what in one managed profile (`GET
+   * /api/managed-profiles/{id}/activity`). Under the family prefix so a grant
+   * transition refreshes it with the roster.
+   */
+  managedProfileActivity: (profileId: string) =>
+    ["managed-profiles", profileId, "activity"] as const,
+
+  /**
    * v1.42 (#959) — whether a managed profile has an open handover link (`GET
    * /api/managed-profiles/{id}/handover`). Under the family prefix so a grant
    * transition refreshes it with the rest.

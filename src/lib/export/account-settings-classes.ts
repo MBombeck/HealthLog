@@ -57,6 +57,14 @@ export const USER_COLUMNS_OUTSIDE_SETTINGS = {
   // Whether somebody else runs this record. Account shape, and the gate for
   // the guardian's reach: the wipe keeps it for the same reason.
   managedProfileAt: "IDENTITY",
+  // #1403 — which provider a managed profile's AI uses. The source names a
+  // guardian account of THIS host, which a copy restored elsewhere would point
+  // at nobody (or at the wrong person), and the choice is the guardian's act
+  // on this host, re-checked against their grant on every resolution. A
+  // restore leaves the profile on its current source.
+  managedAiSource: "OPERATIONAL",
+  managedAiGuardianId: "OPERATIONAL",
+  managedAiChainId: "OPERATIONAL",
   // The operator's per-account policy and quota, set by the operator and not
   // by the person; a file from Monday must not undo Tuesday's decision.
   mfaEnforced: "IDENTITY",

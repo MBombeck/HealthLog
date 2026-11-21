@@ -533,6 +533,23 @@ model User {
   // every capability reads the main chain under today's rules.
   aiNamedChains Json? @map("ai_named_chains")
 
+  /// #1403 — where a managed profile's AI work gets its provider. Read only
+  /// while `managedProfileAt` is set (`src/lib/ai/managed-ai-source.ts`):
+  /// `INSTANCE` is the operator's key alone (the default, and the behaviour
+  /// before this column), `NONE` is no provider at all, and `GUARDIAN` is a
+  /// chain the guardian named in `managedAiGuardianId` configured on their own
+  /// account. Ignored on every other account.
+  managedAiSource     ManagedAiSource @default(INSTANCE) @map("managed_ai_source")
+  /// The guardian whose chain serves the profile under `GUARDIAN`. A plain id,
+  /// not a relation: the guardian's own deletion must not touch this row, and
+  /// the resolver serves nothing unless this account still holds an active
+  /// MANAGE grant on the profile.
+  managedAiGuardianId String?         @map("managed_ai_guardian_id")
+  /// Which of that guardian's chains: a named chain id
+  /// (`User.aiNamedChains`), or null for the guardian's default chain. A chain
+  /// that no longer exists serves nothing rather than a wider set.
+  managedAiChainId    String?         @map("managed_ai_chain_id")
+
   // v1.22 (#89) — per-user response timeout for AI generation, in SECONDS.
   // Threaded onto `CompletionParams.timeoutMs` (×1000). Null = the generous
   // built-in default (~180 s). Surfaced in Settings → AI mainly for
@@ -11455,4 +11472,13 @@ model PushRelayUnbind {
 
   @@index([nextAttemptAt])
   @@map("push_relay_unbinds")
+}
+
+/// #1403 — the provider source of a managed profile's AI work.
+enum ManagedAiSource {
+  INSTANCE
+  NONE
+  GUARDIAN
+
+  @@map("managed_ai_source")
 }

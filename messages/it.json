@@ -5726,11 +5726,24 @@
         "documents": {
           "title": "Documenti",
           "autoAiRead": "Leggi automaticamente i nuovi documenti con l'IA",
-          "honesty": "Se attivo, ogni documento caricato in questo profilo viene inviato al fornitore di IA dell'istanza per essere letto, descritto e indicizzato per la ricerca, senza un tocco per documento, e vengono inviati anche i documenti già presenti senza riassunto (fino a 200 a ogni attivazione). Attivarlo registra il consenso di questo profilo alla lettura dei suoi documenti. Valgono le impostazioni IA del profilo; il tuo fornitore di IA non viene mai usato. Disattivato per impostazione predefinita.",
+          "honesty": "Se attivo, ogni documento caricato in questo profilo viene inviato al fornitore di IA scelto qui sopra per il profilo, per essere letto, descritto e indicizzato per la ricerca, senza un tocco per documento, e vengono inviati anche i documenti già presenti senza riassunto (fino a 200 a ogni attivazione). Attivarlo registra il consenso di questo profilo alla lettura dei suoi documenti. Disattivato per impostazione predefinita.",
           "pageTitle": "Documenti e IA",
           "pageSubtitle": "Se l'IA legge i documenti caricati nel profilo di {name}.",
-          "noProvider": "Questo server non ha un fornitore di IA in grado di leggere i documenti di {name}, quindi l'interruttore resta spento. Chi gestisce il server può configurarne uno.",
+          "noProvider": "Per il profilo di {name} non è scelto alcun fornitore di IA in grado di leggere documenti, quindi l'interruttore resta spento. Scegline uno qui sopra.",
           "aiOff": "L'IA è disattivata per il profilo di {name}, quindi nessun documento verrebbe letto."
+        },
+        "aiSource": {
+          "title": "Fornitore di IA",
+          "label": "L'IA di questo profilo usa",
+          "honesty": "Un profilo gestito non ha chiavi IA proprie. Scegli dove va il suo lavoro di IA: alla chiave IA del server, da nessuna parte, o a una delle catene configurate nel tuo account. Gli interruttori e i consensi IA del profilo valgono con qualsiasi scelta.",
+          "instance": "La chiave IA del server",
+          "none": "Nessun fornitore di IA",
+          "yourDefault": "La tua catena predefinita",
+          "yourChain": "La tua catena «{name}»",
+          "otherGuardian": "Una catena di un altro tutore",
+          "noInstanceKey": "Questo server non ha una chiave IA, quindi con questa scelta il profilo resta senza IA.",
+          "yourCredentials": "Le tue chiavi e i tuoi accessi servono questo profilo, nell'ordine di quella catena e nient'altro. Ciò che il profilo invia conta sui tuoi account dei fornitori.",
+          "unusable": "La catena scelta ora non può servire: il tutore che l'ha scelta non gestisce più questo profilo, oppure la catena è stata eliminata. Il profilo non ha IA finché qualcuno non sceglie di nuovo."
         }
       },
       "unavailableTitle": "Non disponibile in questo record condiviso",
@@ -13472,6 +13485,17 @@
       "opened": "{name} ha aperto la tua cartella {count}×",
       "acted": "{name} ha fatto una modifica nella tua cartella",
       "deletedAccount": "Un account eliminato"
+    },
+    "managedActivity": {
+      "title": "Attività nel profilo di {name}",
+      "hint": "Chi ha fatto cosa in questo profilo: le modifiche di ogni tutore, comprese le tue.",
+      "action": "Mostra attività",
+      "emptyTitle": "Ancora niente di registrato",
+      "emptyDescription": "Le modifiche di un tutore in questo profilo compaiono qui, e le aperture in una riga per tutore e giorno.",
+      "you": "Tu",
+      "opened": "{name} ha aperto il profilo {count}×",
+      "acted": "{name} ha modificato qualcosa nel profilo",
+      "settingsUpdate": "{name} ha modificato le impostazioni del profilo"
     },
     "delegate": {
       "addOnlyNote": "Puoi aggiungere voci a questa cartella. Solo {name} può modificarle o eliminarle."

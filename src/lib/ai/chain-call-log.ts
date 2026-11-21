@@ -14,7 +14,9 @@
  *   ai.chain.served  info  { chain, capability, provider }
  *   ai.chain.failed  warn  { chain, capability, provider, failure, code }
  *
- * `chain` is `main`, `default:<id>` or `pinned:<id>`: the id of the named
+ * `chain` is `main`, `default:<id>`, `pinned:<id>` or `guardian:<id>` (a
+ * managed profile served by its guardian's chain, `guardian:default` for the
+ * guardian's default chain, #1403): the id of the named
  * chain (chosen by the client, never its name, which is free text), with
  * `pinned` meaning the capability is attached to it and nothing else is
  * tried. `capability` is null for the default chain read without one.
