@@ -6,7 +6,7 @@
  * through `stampSyncReset`, which expires every cursor issued before it. A
  * hard delete that does neither leaves the client's mirror holding rows the
  * server no longer has, and nothing in the feed will ever correct it.
- * `DELETE /api/cycle/all` did exactly that until v1.48.6.
+ * `DELETE /api/cycle/all` did exactly that until v1.49.0.
  *
  * So every file that hard-deletes a feed row is named here with the reason
  * the client still converges. A file whose reason is a reset must call

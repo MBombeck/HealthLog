@@ -26,9 +26,9 @@ export const HOSTED_RELAY_URL = "https://push.healthlog.dev";
 export const HOSTED_RELAY_KEYS: readonly string[] = Object.freeze([]);
 
 /** The version of the consent text the app shows on its opt-in card. */
-export const RELAY_CONSENT_TEXT_VERSION = "2026-12-01";
+export const RELAY_CONSENT_TEXT_VERSION = "2026-11-21";
 /** The version of the relay terms the operator accepts with the switch. */
-export const RELAY_TERMS_VERSION = "2026-12-01";
+export const RELAY_TERMS_VERSION = "2026-11-21";
 /** The client name and version every signed request names. */
 export const RELAY_CLIENT_NAME = "healthlog";
 

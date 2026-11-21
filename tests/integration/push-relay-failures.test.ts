@@ -110,7 +110,7 @@ function bodyFor(
       suites: [1],
       publicKey: generateX25519().publicKey.toString("base64url"),
     },
-    relayConsent: { granted: true, textVersion: "2026-12-01" },
+    relayConsent: { granted: true, textVersion: "2026-11-21" },
     relayBinding: {
       bindingKey: binding.publicKey.toString("base64url"),
       statement,

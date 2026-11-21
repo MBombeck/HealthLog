@@ -378,7 +378,7 @@ describe("a relay without pinned keys", () => {
           Buffer.alloc(32, 1).toString("base64url"),
         ),
         state: "ok",
-        termsVersion: "2026-12-01",
+        termsVersion: "2026-11-21",
         householdConfirmedAt: new Date(),
       },
     });

@@ -29,7 +29,7 @@ const SRC = join(process.cwd(), "src");
 /**
  * The chain runners: every `run…` function `provider-runner.ts` exports. Read
  * from the module rather than kept by hand, because a hand-kept list is how
- * the streaming runner stayed invisible here until v1.48.6: the matcher named
+ * the streaming runner stayed invisible here until v1.49.0: the matcher named
  * the plain runner and a runner that no longer exists, and the two files that
  * stream a chain were neither matched nor listed.
  */

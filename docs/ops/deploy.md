@@ -134,7 +134,7 @@ You never need to run `migrate resolve` by hand for this case.
 
 ### Accounts that differ only in case
 
-From 1.48.6 an e-mail address and a username are unique regardless of case,
+From 1.49.0 an e-mail address and a username are unique regardless of case,
 because sign-in already treats `Name@host` and `name@host` as the same
 address. Migration `0517` first counts the addresses and names that two
 accounts on the instance share when case is ignored. When there are any, it

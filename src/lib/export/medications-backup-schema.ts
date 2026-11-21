@@ -372,7 +372,7 @@ export const intakeEventSchema = z
     // A portable file's source ids, which it carries instead of `id` and
     // `medicationId`: `medicationRef` matches the medication's own `ref`, and
     // `ref` is what a seizure rescue dose's `intakeEventId` names. Absent in
-    // files written before v1.48.6, which resolve the medication by name.
+    // files written before v1.49.0, which resolve the medication by name.
     ref: z.string().min(1).optional(),
     medicationRef: z.string().min(1).optional(),
     medication: z.string().min(1),
