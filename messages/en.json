@@ -6269,6 +6269,47 @@
               "stagingMissing": "The uploaded file was no longer on the server. Upload it again.",
               "interrupted": "The import was interrupted by a server restart. Upload the file again."
             }
+          },
+          "recordFile": {
+            "gadgetbridge": {
+              "title": "Gadgetbridge database",
+              "description": "Import steps, heart rate, SpO2, sleep and weight from the database Gadgetbridge exports on Android.",
+              "steps": {
+                "export": "In Gadgetbridge open Settings, then Data management, then Export database.",
+                "upload": "Upload the file called Gadgetbridge here. Up to 512 MB."
+              }
+            },
+            "fhirBundle": {
+              "title": "Patient record (FHIR)",
+              "description": "Import lab results, vital signs, conditions, vaccinations, medications and visits from a FHIR R4 Bundle a patient portal exports.",
+              "steps": {
+                "export": "In your patient portal, export your record as FHIR R4 (JSON). C-CDA files are not read.",
+                "upload": "Upload the .json file here. Up to 32 MB."
+              }
+            },
+            "choose": "Choose file",
+            "uploading": "Uploading…",
+            "running": "Importing in the background…",
+            "doneSummary": "The file was imported.",
+            "doneNothing": "The import finished, but there was nothing new to add.",
+            "skippedHeading": "Not imported",
+            "failed": "The import failed. Please try again.",
+            "uploadFailed": "The upload failed. Please try again.",
+            "rateLimited": "Too many uploads in a short time. Wait a minute and try again.",
+            "tooLarge": "The file is larger than the limit for this import.",
+            "busy": "An import is already running for your account. Wait until it has finished.",
+            "privacyNote": "The file is deleted from the server as soon as the import ends. Everything is matched by the record it came from, so uploading the same file again adds nothing twice.",
+            "fileInputLabel": "File to import",
+            "lineCounts": "{imported} new, {duplicates} already here",
+            "failure": {
+              "notGadgetbridge": "This is not a Gadgetbridge database. Export it again from Gadgetbridge and upload the file it writes.",
+              "unsafeSchema": "The file contains a structure HealthLog does not read for safety reasons.",
+              "notFhirBundle": "This is not a FHIR Bundle. The file must be the JSON export of a whole record.",
+              "tooManyEntries": "The Bundle has more entries than one import reads. Export a shorter period.",
+              "tooLarge": "The file is larger than the limit for this import.",
+              "timeBudget": "The import stopped at its time limit. Upload the same file again to continue; nothing is added twice.",
+              "stagingMissing": "The uploaded file was no longer on the server. Upload it again."
+            }
           }
         },
         "subtitle": "Export your data, or import measurements and records from other apps and files."

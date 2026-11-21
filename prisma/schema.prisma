@@ -1011,6 +1011,7 @@ model User {
   // pg-boss job state so the polling endpoint can read live per-
   // phase progress without round-tripping through pg-boss internals.
   importJobs                                ImportJob[]
+  fhirImportedResources                     FhirImportedResource[]
   medicationIntakeImportJobs                MedicationIntakeImportJob[]       @relation("MedicationIntakeImportRecord")
   // v1.5.0 — persistent measurement rollup table. Carries the
   // count/min/max/mean/sd/slope/r2 stats per (type, granularity,
@@ -11481,4 +11482,34 @@ enum ManagedAiSource {
   GUARDIAN
 
   @@map("managed_ai_source")
+}
+
+/// #1403 follow-up — which FHIR resources of an imported Bundle became which
+/// record row, so a second import of the same Bundle (or a later export from
+/// the same portal) writes nothing twice. One row per resource the import
+/// wrote, keyed by a digest of the issuer, the resource type and the
+/// resource's own id: never the id itself, never content. Lab results and
+/// vital signs carry their identity on their own rows (`externalId`) and are
+/// not listed here; Conditions, Immunizations, MedicationStatements and
+/// Encounters have no external identity column, so this ledger is theirs.
+///
+/// Deleting the record row the ledger points at does not resurrect it on the
+/// next import: the ledger row stays, and the import counts the resource a
+/// duplicate. Read and written only by `src/lib/import/fhir-bundle/`.
+model FhirImportedResource {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  /// `Condition`, `Immunization`, `MedicationStatement` or `Encounter`.
+  resourceType String   @map("resource_type")
+  /// 40 hex characters of SHA-256 over the issuer, the type and the id.
+  resourceKey  String   @map("resource_key")
+  /// The id of the row the resource became, in the model the type names.
+  /// A plain id: the row's own deletion must not take the ledger with it.
+  recordId     String   @map("record_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, resourceType, resourceKey])
+  @@map("fhir_imported_resources")
 }

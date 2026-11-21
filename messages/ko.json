@@ -6269,6 +6269,47 @@
               "stagingMissing": "업로드한 파일이 서버에 더 이상 없습니다. 다시 업로드하세요.",
               "interrupted": "서버 재시작으로 가져오기가 중단되었습니다. 파일을 다시 업로드하세요."
             }
+          },
+          "recordFile": {
+            "gadgetbridge": {
+              "title": "Gadgetbridge 데이터베이스",
+              "description": "Android의 Gadgetbridge가 내보내는 데이터베이스에서 걸음, 맥박, SpO2, 수면, 체중을 가져와요.",
+              "steps": {
+                "export": "Gadgetbridge에서 설정, 데이터 관리, 데이터베이스 내보내기를 차례로 열어요.",
+                "upload": "Gadgetbridge라는 파일을 여기에 올려요. 최대 512MB."
+              }
+            },
+            "fhirBundle": {
+              "title": "진료 기록 (FHIR)",
+              "description": "환자 포털이 내보내는 FHIR R4 Bundle에서 검사 결과, 활력 징후, 질환, 예방접종, 약, 진료 방문을 가져와요.",
+              "steps": {
+                "export": "환자 포털에서 기록을 FHIR R4(JSON)로 내보내요. C-CDA 파일은 읽지 않아요.",
+                "upload": ".json 파일을 여기에 올려요. 최대 32MB."
+              }
+            },
+            "choose": "파일 선택",
+            "uploading": "업로드 중…",
+            "running": "백그라운드에서 가져오는 중…",
+            "doneSummary": "파일을 가져왔어요.",
+            "doneNothing": "가져오기를 마쳤지만 새로 추가할 것이 없었어요.",
+            "skippedHeading": "가져오지 않은 항목",
+            "failed": "가져오기에 실패했어요. 다시 시도해 주세요.",
+            "uploadFailed": "업로드에 실패했어요. 다시 시도해 주세요.",
+            "rateLimited": "짧은 시간에 업로드가 너무 많아요. 1분 뒤에 다시 시도해 주세요.",
+            "tooLarge": "파일이 이 가져오기의 한도보다 커요.",
+            "busy": "계정에서 이미 가져오기가 진행 중이에요. 끝날 때까지 기다려 주세요.",
+            "privacyNote": "가져오기가 끝나면 파일은 서버에서 바로 삭제돼요. 모든 항목은 원래 기록과 연결되므로 같은 파일을 다시 올려도 중복으로 추가되지 않아요.",
+            "fileInputLabel": "가져올 파일",
+            "lineCounts": "새 항목 {imported}개, 이미 있음 {duplicates}개",
+            "failure": {
+              "notGadgetbridge": "Gadgetbridge 데이터베이스가 아니에요. Gadgetbridge에서 다시 내보내고 만들어진 파일을 올려 주세요.",
+              "unsafeSchema": "파일에 HealthLog가 보안상 읽지 않는 구조가 들어 있어요.",
+              "notFhirBundle": "FHIR Bundle이 아니에요. 전체 기록을 JSON으로 내보낸 파일이어야 해요.",
+              "tooManyEntries": "Bundle 항목이 한 번에 읽을 수 있는 수보다 많아요. 더 짧은 기간을 내보내 주세요.",
+              "tooLarge": "파일이 이 가져오기의 한도보다 커요.",
+              "timeBudget": "가져오기가 시간 한도에서 멈췄어요. 같은 파일을 다시 올리면 이어서 가져오고 중복되지 않아요.",
+              "stagingMissing": "올린 파일이 더 이상 서버에 없어요. 다시 올려 주세요."
+            }
           }
         },
         "subtitle": "데이터를 내보내거나, 다른 앱과 파일에서 측정값과 기록을 가져와요."

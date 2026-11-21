@@ -6269,6 +6269,47 @@
               "stagingMissing": "Het geüploade bestand stond niet meer op de server. Upload het opnieuw.",
               "interrupted": "De import werd onderbroken door een herstart van de server. Upload het bestand opnieuw."
             }
+          },
+          "recordFile": {
+            "gadgetbridge": {
+              "title": "Gadgetbridge-database",
+              "description": "Stappen, hartslag, SpO2, slaap en gewicht importeren uit de database die Gadgetbridge op Android exporteert.",
+              "steps": {
+                "export": "Open in Gadgetbridge Instellingen, dan Gegevensbeheer, dan Database exporteren.",
+                "upload": "Upload hier het bestand met de naam Gadgetbridge. Tot 512 MB."
+              }
+            },
+            "fhirBundle": {
+              "title": "Patiëntendossier (FHIR)",
+              "description": "Labuitslagen, vitale functies, aandoeningen, vaccinaties, medicijnen en bezoeken importeren uit een FHIR R4-bundle die een patiëntenportaal exporteert.",
+              "steps": {
+                "export": "Exporteer in je patiëntenportaal je dossier als FHIR R4 (JSON). C-CDA-bestanden worden niet gelezen.",
+                "upload": "Upload hier het .json-bestand. Tot 32 MB."
+              }
+            },
+            "choose": "Bestand kiezen",
+            "uploading": "Uploaden…",
+            "running": "Importeren op de achtergrond…",
+            "doneSummary": "Het bestand is geïmporteerd.",
+            "doneNothing": "De import is klaar, maar er was niets nieuws.",
+            "skippedHeading": "Niet geïmporteerd",
+            "failed": "De import is mislukt. Probeer het opnieuw.",
+            "uploadFailed": "Het uploaden is mislukt. Probeer het opnieuw.",
+            "rateLimited": "Te veel uploads in korte tijd. Wacht een minuut en probeer het opnieuw.",
+            "tooLarge": "Het bestand is groter dan de limiet voor deze import.",
+            "busy": "Er loopt al een import voor je account. Wacht tot die klaar is.",
+            "privacyNote": "Het bestand wordt van de server verwijderd zodra de import klaar is. Alles wordt gekoppeld aan het record waar het vandaan komt, dus hetzelfde bestand opnieuw uploaden voegt niets dubbel toe.",
+            "fileInputLabel": "Bestand om te importeren",
+            "lineCounts": "{imported} nieuw, {duplicates} al aanwezig",
+            "failure": {
+              "notGadgetbridge": "Dit is geen Gadgetbridge-database. Exporteer hem opnieuw in Gadgetbridge en upload het bestand dat daarbij ontstaat.",
+              "unsafeSchema": "Het bestand bevat een structuur die HealthLog om veiligheidsredenen niet leest.",
+              "notFhirBundle": "Dit is geen FHIR-bundle. Het bestand moet de JSON-export van een volledig dossier zijn.",
+              "tooManyEntries": "De bundle heeft meer regels dan één import leest. Exporteer een kortere periode.",
+              "tooLarge": "Het bestand is groter dan de limiet voor deze import.",
+              "timeBudget": "De import stopte bij zijn tijdslimiet. Upload hetzelfde bestand opnieuw om verder te gaan; niets wordt dubbel toegevoegd.",
+              "stagingMissing": "Het geüploade bestand stond niet meer op de server. Upload het opnieuw."
+            }
           }
         },
         "subtitle": "Exporteer je gegevens, of importeer metingen en gegevens uit andere apps en bestanden."

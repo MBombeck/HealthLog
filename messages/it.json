@@ -6269,6 +6269,47 @@
               "stagingMissing": "Il file caricato non era più sul server. Caricalo di nuovo.",
               "interrupted": "L’importazione è stata interrotta da un riavvio del server. Carica di nuovo il file."
             }
+          },
+          "recordFile": {
+            "gadgetbridge": {
+              "title": "Database di Gadgetbridge",
+              "description": "Importa passi, battito, SpO2, sonno e peso dal database che Gadgetbridge esporta su Android.",
+              "steps": {
+                "export": "In Gadgetbridge apri Impostazioni, poi Gestione dati, poi Esporta database.",
+                "upload": "Carica qui il file chiamato Gadgetbridge. Fino a 512 MB."
+              }
+            },
+            "fhirBundle": {
+              "title": "Cartella clinica (FHIR)",
+              "description": "Importa esami di laboratorio, parametri vitali, malattie, vaccinazioni, farmaci e visite da un Bundle FHIR R4 esportato da un portale del paziente.",
+              "steps": {
+                "export": "Nel portale del paziente esporta la tua cartella come FHIR R4 (JSON). I file C-CDA non vengono letti.",
+                "upload": "Carica qui il file .json. Fino a 32 MB."
+              }
+            },
+            "choose": "Scegli file",
+            "uploading": "Caricamento…",
+            "running": "Importazione in background…",
+            "doneSummary": "Il file è stato importato.",
+            "doneNothing": "L'importazione è finita, ma non c'era nulla di nuovo.",
+            "skippedHeading": "Non importato",
+            "failed": "L'importazione non è riuscita. Riprova.",
+            "uploadFailed": "Il caricamento non è riuscito. Riprova.",
+            "rateLimited": "Troppi caricamenti in poco tempo. Attendi un minuto e riprova.",
+            "tooLarge": "Il file supera il limite di questa importazione.",
+            "busy": "Per il tuo account è già in corso un'importazione. Attendi che finisca.",
+            "privacyNote": "Il file viene eliminato dal server appena l'importazione termina. Tutto viene associato al record da cui proviene, quindi ricaricare lo stesso file non aggiunge nulla due volte.",
+            "fileInputLabel": "File da importare",
+            "lineCounts": "{imported} nuovi, {duplicates} già presenti",
+            "failure": {
+              "notGadgetbridge": "Non è un database di Gadgetbridge. Esportalo di nuovo da Gadgetbridge e carica il file che produce.",
+              "unsafeSchema": "Il file contiene una struttura che HealthLog non legge per motivi di sicurezza.",
+              "notFhirBundle": "Non è un Bundle FHIR. Il file deve essere l'esportazione JSON di un'intera cartella.",
+              "tooManyEntries": "Il Bundle ha più voci di quante ne legga un'importazione. Esporta un periodo più breve.",
+              "tooLarge": "Il file supera il limite di questa importazione.",
+              "timeBudget": "L'importazione si è fermata al suo limite di tempo. Carica di nuovo lo stesso file per continuare; nulla viene aggiunto due volte.",
+              "stagingMissing": "Il file caricato non era più sul server. Caricalo di nuovo."
+            }
           }
         },
         "subtitle": "Esporta i tuoi dati o importa misurazioni e voci da altre app e file."

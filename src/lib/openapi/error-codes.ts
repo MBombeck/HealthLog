@@ -297,6 +297,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "import.csv.content_type",
       "import.csv.empty",
       "import.csv.too_large",
+      "import.file.too_large",
       "import.rate_limited",
       "import.write_failed",
     ],

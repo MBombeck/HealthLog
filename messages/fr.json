@@ -6269,6 +6269,47 @@
               "stagingMissing": "Le fichier envoyé n’était plus sur le serveur. Envoyez-le à nouveau.",
               "interrupted": "L’importation a été interrompue par un redémarrage du serveur. Envoyez le fichier à nouveau."
             }
+          },
+          "recordFile": {
+            "gadgetbridge": {
+              "title": "Base de données Gadgetbridge",
+              "description": "Importer pas, pouls, SpO2, sommeil et poids depuis la base de données que Gadgetbridge exporte sur Android.",
+              "steps": {
+                "export": "Dans Gadgetbridge, ouvrez Paramètres, puis Gestion des données, puis Exporter la base de données.",
+                "upload": "Téléversez ici le fichier nommé Gadgetbridge. Jusqu'à 512 Mo."
+              }
+            },
+            "fhirBundle": {
+              "title": "Dossier patient (FHIR)",
+              "description": "Importer résultats d'analyses, signes vitaux, maladies, vaccinations, médicaments et consultations depuis un Bundle FHIR R4 exporté par un portail patient.",
+              "steps": {
+                "export": "Dans votre portail patient, exportez votre dossier au format FHIR R4 (JSON). Les fichiers C-CDA ne sont pas lus.",
+                "upload": "Téléversez ici le fichier .json. Jusqu'à 32 Mo."
+              }
+            },
+            "choose": "Choisir un fichier",
+            "uploading": "Téléversement…",
+            "running": "Import en arrière-plan…",
+            "doneSummary": "Le fichier a été importé.",
+            "doneNothing": "L'import est terminé, mais il n'y avait rien de nouveau.",
+            "skippedHeading": "Non importé",
+            "failed": "L'import a échoué. Veuillez réessayer.",
+            "uploadFailed": "Le téléversement a échoué. Veuillez réessayer.",
+            "rateLimited": "Trop de téléversements en peu de temps. Attendez une minute et réessayez.",
+            "tooLarge": "Le fichier dépasse la limite de cet import.",
+            "busy": "Un import est déjà en cours pour votre compte. Attendez qu'il soit terminé.",
+            "privacyNote": "Le fichier est supprimé du serveur dès la fin de l'import. Tout est rattaché à l'enregistrement d'origine, donc téléverser à nouveau le même fichier n'ajoute rien en double.",
+            "fileInputLabel": "Fichier à importer",
+            "lineCounts": "{imported} nouveaux, {duplicates} déjà présents",
+            "failure": {
+              "notGadgetbridge": "Ce n'est pas une base de données Gadgetbridge. Exportez-la à nouveau depuis Gadgetbridge et téléversez le fichier obtenu.",
+              "unsafeSchema": "Le fichier contient une structure que HealthLog ne lit pas pour des raisons de sécurité.",
+              "notFhirBundle": "Ce n'est pas un Bundle FHIR. Le fichier doit être l'export JSON d'un dossier complet.",
+              "tooManyEntries": "Le Bundle contient plus d'entrées qu'un import n'en lit. Exportez une période plus courte.",
+              "tooLarge": "Le fichier dépasse la limite de cet import.",
+              "timeBudget": "L'import s'est arrêté à sa limite de temps. Téléversez à nouveau le même fichier pour continuer ; rien n'est ajouté en double.",
+              "stagingMissing": "Le fichier téléversé n'était plus sur le serveur. Téléversez-le à nouveau."
+            }
           }
         },
         "subtitle": "Exportez vos données, ou importez des mesures et des entrées depuis d’autres applis et fichiers."

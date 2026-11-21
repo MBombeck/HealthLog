@@ -91,4 +91,11 @@ export const integrationKeys = {
 
   /** The account's latest activity FIT file import, like Health Connect's. */
   fitImportStatus: () => ["import", "fit", "status"] as const,
+
+  /**
+   * The account's latest Gadgetbridge or FHIR Bundle import, one key per
+   * kind: the two status routes answer different jobs.
+   */
+  recordFileImportStatus: (kind: "gadgetbridge" | "fhir_bundle") =>
+    ["import", "record-file", kind, "status"] as const,
 };

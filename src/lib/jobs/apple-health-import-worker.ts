@@ -65,6 +65,10 @@ import { HEALTH_CONNECT_IMPORT_KIND } from "@/lib/jobs/health-connect-import-wor
 import { HEALTH_CONNECT_IMPORT_QUEUE } from "@/lib/jobs/health-connect-import-queue";
 import { FIT_IMPORT_KIND, FIT_IMPORT_QUEUE } from "@/lib/jobs/fit-import-queue";
 import {
+  RECORD_FILE_IMPORT_KINDS,
+  RECORD_FILE_IMPORT_QUEUE,
+} from "@/lib/import/file-import/kinds";
+import {
   APPLE_HEALTH_IMPORT_V2_QUEUE,
   APPLE_HEALTH_IMPORT_LEGACY_QUEUE,
 } from "./apple-health-import-queue";
@@ -82,6 +86,9 @@ export const APPLE_HEALTH_IMPORT_KIND = "apple_health";
 function queuesForKind(kind: string): readonly string[] {
   if (kind === HEALTH_CONNECT_IMPORT_KIND) return [HEALTH_CONNECT_IMPORT_QUEUE];
   if (kind === FIT_IMPORT_KIND) return [FIT_IMPORT_QUEUE];
+  if ((RECORD_FILE_IMPORT_KINDS as readonly string[]).includes(kind)) {
+    return [RECORD_FILE_IMPORT_QUEUE];
+  }
   return [APPLE_HEALTH_IMPORT_V2_QUEUE, APPLE_HEALTH_IMPORT_LEGACY_QUEUE];
 }
 
@@ -726,6 +733,7 @@ export async function reconcileOrphanImportJobs(): Promise<void> {
         },
         { kind: HEALTH_CONNECT_IMPORT_KIND },
         { kind: FIT_IMPORT_KIND },
+        { kind: { in: [...RECORD_FILE_IMPORT_KINDS] } },
       ],
     },
     select: { id: true, pgBossJobId: true, updatedAt: true, kind: true },

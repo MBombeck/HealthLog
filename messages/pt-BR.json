@@ -6269,6 +6269,47 @@
               "stagingMissing": "O arquivo enviado não estava mais no servidor. Envie-o de novo.",
               "interrupted": "A importação foi interrompida por uma reinicialização do servidor. Envie o arquivo de novo."
             }
+          },
+          "recordFile": {
+            "gadgetbridge": {
+              "title": "Banco de dados do Gadgetbridge",
+              "description": "Importe passos, pulso, SpO2, sono e peso do banco de dados que o Gadgetbridge exporta no Android.",
+              "steps": {
+                "export": "No Gadgetbridge abra Configurações, depois Gerenciamento de dados, depois Exportar banco de dados.",
+                "upload": "Envie aqui o arquivo chamado Gadgetbridge. Até 512 MB."
+              }
+            },
+            "fhirBundle": {
+              "title": "Prontuário (FHIR)",
+              "description": "Importe exames, sinais vitais, condições, vacinas, medicamentos e consultas de um Bundle FHIR R4 exportado por um portal do paciente.",
+              "steps": {
+                "export": "No portal do paciente, exporte seu prontuário como FHIR R4 (JSON). Arquivos C-CDA não são lidos.",
+                "upload": "Envie aqui o arquivo .json. Até 32 MB."
+              }
+            },
+            "choose": "Escolher arquivo",
+            "uploading": "Enviando…",
+            "running": "Importando em segundo plano…",
+            "doneSummary": "O arquivo foi importado.",
+            "doneNothing": "A importação terminou, mas não havia nada novo.",
+            "skippedHeading": "Não importado",
+            "failed": "A importação falhou. Tente de novo.",
+            "uploadFailed": "O envio falhou. Tente de novo.",
+            "rateLimited": "Envios demais em pouco tempo. Espere um minuto e tente de novo.",
+            "tooLarge": "O arquivo é maior que o limite desta importação.",
+            "busy": "Já há uma importação em andamento para sua conta. Espere até terminar.",
+            "privacyNote": "O arquivo é apagado do servidor assim que a importação termina. Tudo é ligado ao registro de onde veio, então enviar o mesmo arquivo de novo não adiciona nada em dobro.",
+            "fileInputLabel": "Arquivo para importar",
+            "lineCounts": "{imported} novos, {duplicates} já existiam",
+            "failure": {
+              "notGadgetbridge": "Isto não é um banco de dados do Gadgetbridge. Exporte-o de novo no Gadgetbridge e envie o arquivo gerado.",
+              "unsafeSchema": "O arquivo contém uma estrutura que o HealthLog não lê por segurança.",
+              "notFhirBundle": "Isto não é um Bundle FHIR. O arquivo precisa ser a exportação JSON de um prontuário inteiro.",
+              "tooManyEntries": "O Bundle tem mais entradas do que uma importação lê. Exporte um período menor.",
+              "tooLarge": "O arquivo é maior que o limite desta importação.",
+              "timeBudget": "A importação parou no limite de tempo. Envie o mesmo arquivo de novo para continuar; nada é adicionado em dobro.",
+              "stagingMissing": "O arquivo enviado não estava mais no servidor. Envie de novo."
+            }
           }
         },
         "subtitle": "Exporte seus dados ou importe medições e registros de outros apps e arquivos."

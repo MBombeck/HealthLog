@@ -71,6 +71,7 @@ import { encounterPaths } from "./encounters";
 import { vaccinationPaths } from "./vaccinations";
 import { illnessPaths } from "./illness";
 import { importPaths } from "./import";
+import { importFilePaths } from "./import-files";
 import { insightsPaths, sleepScoreValue, wellnessScoreValue } from "./insights";
 import { integrationPaths } from "./integrations";
 import { insightsSignalPaths } from "./insights-signals";
@@ -136,6 +137,7 @@ const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   ...settingsPaths,
   ...consentPaths,
   ...importPaths,
+  ...importFilePaths,
   ...measurementReminderPaths,
   ...labsPaths,
   ...ocrPaths,

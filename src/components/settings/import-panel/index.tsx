@@ -31,6 +31,7 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { AppleHealthImportCard } from "./apple-health-import-card";
 import { HealthConnectImportCard } from "./health-connect-import-card";
 import { FitImportCard } from "./fit-import-card";
+import { RecordFileImportCard } from "./record-file-import-card";
 import { JsonImportCard } from "./json-import-card";
 import { CsvImportCard } from "./csv-import-card";
 import { DoseHistoryImportCard } from "./dose-history-import-card";
@@ -63,6 +64,8 @@ export function ImportPanel() {
         <AppleHealthImportCard />
         <HealthConnectImportCard />
         <FitImportCard />
+        <RecordFileImportCard kind="gadgetbridge" />
+        <RecordFileImportCard kind="fhir_bundle" />
         <JsonImportCard />
         <CsvImportCard />
         <DoseHistoryImportCard />

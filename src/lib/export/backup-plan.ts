@@ -793,6 +793,8 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "Further import source keys that were answered with an already stored document because the bytes matched. The next import run writes the same alias again the moment it meets the same bytes, so a restore loses nothing a re-run does not rebuild. A deleted document's aliases travel as import-ledger entries (`DocumentImportKey`), which is what they mean once the document is gone.",
   ImportJob:
     "A job record pointing at an uploaded file that the backup does not carry, so restoring it would resurrect a task with nothing to work on.",
+  FhirImportedResource:
+    "The FHIR Bundle import's ledger of which resource became which row, by row id. A restore writes those rows under new ids, so a carried ledger would point at nothing; the conditions, vaccinations, medications and visits themselves travel. After a restore, importing the same Bundle again writes those four kinds once more (lab results and vital signs keep their identity on their own rows and stay deduplicated).",
   HealthKitTypeSync:
     "When each HealthKit type last arrived on this host and how. Diagnostic state the next sync rebuilds; restored elsewhere it would claim deliveries that host never received.",
   ManagedProfileHandover:
@@ -842,16 +844,4 @@ export const RAW_SQL_TABLES: Readonly<
   Record<string, { verdict: "BACKED_UP" | "NOT_IN_BACKUP"; reason: string }>
 > = {};
 
-/** Auth material: not user data, and excluded from the wipe for the same reason. */
-export const AUTH_MODELS_OUT_OF_SCOPE: readonly string[] = [
-  "Session",
-  "RefreshToken",
-  "Passkey",
-  "WebauthnMfaCredential",
-  "MfaRecoveryCode",
-  "MfaChallenge",
-  "AuthChallenge",
-  "TrustedDevice",
-  "OidcNativeHandoff",
-  "InviteRedemption",
-];
+export { AUTH_MODELS_OUT_OF_SCOPE } from "./backup-auth-models";

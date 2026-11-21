@@ -6269,6 +6269,47 @@
               "stagingMissing": "Die hochgeladene Datei war nicht mehr auf dem Server. Lade sie erneut hoch.",
               "interrupted": "Der Import wurde durch einen Neustart des Servers unterbrochen. Lade die Datei erneut hoch."
             }
+          },
+          "recordFile": {
+            "gadgetbridge": {
+              "title": "Gadgetbridge-Datenbank",
+              "description": "Schritte, Puls, SpO2, Schlaf und Gewicht aus der Datenbank übernehmen, die Gadgetbridge auf Android exportiert.",
+              "steps": {
+                "export": "In Gadgetbridge Einstellungen öffnen, dann Datenverwaltung, dann Datenbank exportieren.",
+                "upload": "Die Datei namens Gadgetbridge hier hochladen. Bis 512 MB."
+              }
+            },
+            "fhirBundle": {
+              "title": "Patientenakte (FHIR)",
+              "description": "Laborwerte, Vitalwerte, Erkrankungen, Impfungen, Medikamente und Arztbesuche aus einem FHIR-R4-Bundle übernehmen, das ein Patientenportal exportiert.",
+              "steps": {
+                "export": "Im Patientenportal die Akte als FHIR R4 (JSON) exportieren. C-CDA-Dateien werden nicht gelesen.",
+                "upload": "Die .json-Datei hier hochladen. Bis 32 MB."
+              }
+            },
+            "choose": "Datei wählen",
+            "uploading": "Wird hochgeladen…",
+            "running": "Import läuft im Hintergrund…",
+            "doneSummary": "Die Datei wurde übernommen.",
+            "doneNothing": "Der Import ist fertig, es gab aber nichts Neues.",
+            "skippedHeading": "Nicht übernommen",
+            "failed": "Der Import ist fehlgeschlagen. Bitte noch einmal versuchen.",
+            "uploadFailed": "Das Hochladen ist fehlgeschlagen. Bitte noch einmal versuchen.",
+            "rateLimited": "Zu viele Uploads in kurzer Zeit. Eine Minute warten und dann noch einmal versuchen.",
+            "tooLarge": "Die Datei ist größer als die Grenze für diesen Import.",
+            "busy": "Für dein Konto läuft schon ein Import. Warte, bis er fertig ist.",
+            "privacyNote": "Die Datei wird vom Server gelöscht, sobald der Import endet. Alles wird über den Eintrag zugeordnet, aus dem es stammt, deshalb kommt beim erneuten Hochladen derselben Datei nichts doppelt hinzu.",
+            "fileInputLabel": "Zu importierende Datei",
+            "lineCounts": "{imported} neu, {duplicates} schon vorhanden",
+            "failure": {
+              "notGadgetbridge": "Das ist keine Gadgetbridge-Datenbank. Exportiere sie erneut in Gadgetbridge und lade die Datei hoch, die dabei entsteht.",
+              "unsafeSchema": "Die Datei enthält eine Struktur, die HealthLog aus Sicherheitsgründen nicht liest.",
+              "notFhirBundle": "Das ist kein FHIR-Bundle. Die Datei muss der JSON-Export einer ganzen Akte sein.",
+              "tooManyEntries": "Das Bundle hat mehr Einträge, als ein Import liest. Exportiere einen kürzeren Zeitraum.",
+              "tooLarge": "Die Datei ist größer als die Grenze für diesen Import.",
+              "timeBudget": "Der Import hat an seiner Zeitgrenze angehalten. Lade dieselbe Datei noch einmal hoch, um fortzufahren; nichts kommt doppelt hinzu.",
+              "stagingMissing": "Die hochgeladene Datei war nicht mehr auf dem Server. Bitte noch einmal hochladen."
+            }
           }
         },
         "subtitle": "Exportiere deine Daten oder importiere Messwerte und Einträge aus anderen Apps und Dateien."

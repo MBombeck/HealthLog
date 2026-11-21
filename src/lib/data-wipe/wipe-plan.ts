@@ -212,6 +212,10 @@ export const WIPE_MODELS = [
   // was read off it; a child of the document, so it goes before it.
   "DocumentAiRun",
   "ImportJob",
+  // The FHIR Bundle import's ledger of which resources became which rows. A
+  // wipe empties the rows it points at, so it goes with them: a later import
+  // of the same Bundle writes the records again, as into a fresh account.
+  "FhirImportedResource",
   // v1.42 (#1173) — when each HealthKit type last arrived. Diagnostic, but a
   // record of what the account's phone sent and when.
   "HealthKitTypeSync",
