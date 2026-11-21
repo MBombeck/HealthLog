@@ -116,12 +116,8 @@ export function getPRDirection(
     // v1.5.5 — lean body mass is the muscle-mass-adjacent body-comp
     // axis where higher is the goal.
     case "LEAN_BODY_MASS":
-    // v1.5.5 — walking speed is a well-established
-    // clinical fitness marker (often called the "sixth vital
-    // sign" in older-adult medicine); faster gait correlates
-    // with cardiovascular fitness, sarcopenia recovery, and
-    // overall mobility resilience. MAX direction matches Apple's
-    // own Mobility-section framing.
+    // v1.5.5 — walking speed, the "sixth vital sign" of older-adult
+    // medicine; faster gait is the fitter result, as Apple's Mobility frames it.
     case "WALKING_SPEED":
     // v1.10.0 — cardio recovery (a larger one-minute HR drop is the
     // fitter result), six-minute-walk distance (the classic endurance
