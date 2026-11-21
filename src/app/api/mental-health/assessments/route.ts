@@ -14,7 +14,9 @@
  *
  * GET lists the caller's assessments (totals + bands + flags only — item-level
  * answers are excluded from this surface by construction; the by-id sibling
- * route is the one read that decrypts them back).
+ * route is the one read that serves them). Each row also says where it came
+ * from (`source`) and whether its answers are there (`itemsUnavailable`), from
+ * the detail read's own decoder; only that boolean leaves the decode.
  */
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
@@ -64,6 +66,7 @@ import {
  */
 const TREND_READ_CAP = 1500;
 import { listPage } from "@/lib/http/list-query";
+import { decodeResponses } from "@/lib/mental-health/responses";
 
 /** The columns every read of an administration returns (`shapeRow`). */
 const ASSESSMENT_SELECT = {
@@ -105,6 +108,27 @@ function shapeRow(row: {
     crisisShownAt: row.crisisShownAt?.toISOString() ?? null,
     takenAt: row.takenAt.toISOString(),
     createdAt: row.createdAt.toISOString(),
+  };
+}
+
+/**
+ * A history row: the shared shape plus what the detail read says about the
+ * answers, so a history can say "answers not shared" without a detail read
+ * per row. The blob is decoded through the detail read's own decoder and only
+ * the boolean leaves; no answer is served or logged here.
+ */
+function shapeListRow(
+  row: Parameters<typeof shapeRow>[0] & {
+    source: string;
+    responsesEncrypted: Uint8Array;
+  },
+) {
+  const def = INSTRUMENTS[row.instrument as InstrumentId];
+  return {
+    ...shapeRow(row),
+    source: row.source,
+    itemsUnavailable: decodeResponses(row.responsesEncrypted, def)
+      .itemsUnavailable,
   };
 }
 
@@ -157,7 +181,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
       orderBy: [{ takenAt: "desc" }, { id: "desc" }],
       take,
       skip: offset ?? 0,
-      select: ASSESSMENT_SELECT,
+      select: { ...ASSESSMENT_SELECT, source: true, responsesEncrypted: true },
     }),
   );
   // v1.44 — the change of each screener against its meaningful-change
@@ -178,7 +202,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     action: { name: "mental-health.list" },
     meta: { count: rows.length, trends: trends.length },
   });
-  return apiListSuccess({ assessments: rows.map(shapeRow), trends }, cap);
+  return apiListSuccess({ assessments: rows.map(shapeListRow), trends }, cap);
 });
 
 // `withIdempotency` lets a double-tap / retry re-send the same
