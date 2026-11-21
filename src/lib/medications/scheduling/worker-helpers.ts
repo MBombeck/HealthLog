@@ -104,8 +104,36 @@ export function buildCanonicalSchedule(
     scheduleType,
     cyclicOnWeeks: schedule.cyclicOnWeeks ?? null,
     cyclicOffWeeks: schedule.cyclicOffWeeks ?? null,
-    doseWindows: normaliseDoseWindows(schedule.doseWindows),
+    doseWindows: legacyWindowAsDoseWindow(
+      schedule,
+      isEmptyLegacyDaily,
+      normaliseDoseWindows(schedule.doseWindows),
+    ),
   };
+}
+
+/**
+ * A legacy single-time schedule keeps its range in `windowStart` /
+ * `windowEnd`. Its band honours that stored range, not the default hour
+ * either side of the start (migration 0515 rewrote stored rows the same
+ * way; this covers a row an older client still writes).
+ */
+function legacyWindowAsDoseWindow(
+  schedule: Pick<WorkerScheduleRow, "windowStart" | "windowEnd">,
+  isEmptyLegacyDaily: boolean,
+  doseWindows: DoseWindowEntry[] | null,
+): DoseWindowEntry[] | null {
+  const { windowStart: start, windowEnd: end } = schedule;
+  if (
+    !isEmptyLegacyDaily ||
+    !HHMM_RE.test(start) ||
+    !HHMM_RE.test(end) ||
+    end <= start ||
+    doseWindows?.some((w) => w.timeOfDay === start)
+  ) {
+    return doseWindows;
+  }
+  return [...(doseWindows ?? []), { timeOfDay: start, start, end }];
 }
 
 const HHMM_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;

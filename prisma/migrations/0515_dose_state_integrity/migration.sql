@@ -151,3 +151,44 @@ BEGIN
         WHERE "deleted_at" IS NULL;
 END
 $migration$;
+
+-- 6. The dose window shown is the dose window stored. A legacy single-time
+--    schedule (no `times_of_day`, no recurrence rule, no rolling interval)
+--    kept its window only in `window_start` / `window_end`. The band minter
+--    read just `window_start` and drew the default hour either side of it,
+--    so a dose stored as 08:00 to 10:00 was shown, reminded and scored as
+--    07:00 to 09:00 while the card's pill used 08:00 to 10:00. Such a row
+--    with a real range now states it the way every newer row does: its time
+--    in `times_of_day` and the range as its dose window. A row whose start
+--    equals its end (a point time) keeps the default band and is left alone.
+--    The medications touched move `updated_at`, so clients reading
+--    `/api/sync/state` see the change. A second run finds no row to change.
+
+DO $migration$
+BEGIN
+    PERFORM set_config('lock_timeout', '10s', true);
+
+    WITH legacy AS (
+        UPDATE "medication_schedules"
+        SET "times_of_day" = ARRAY["window_start"],
+            "dose_windows" = jsonb_build_array(jsonb_build_object(
+                'timeOfDay', "window_start",
+                'start', "window_start",
+                'end', "window_end"
+            ))
+        WHERE cardinality("times_of_day") = 0
+          AND "rrule" IS NULL
+          AND "rolling_interval_days" IS NULL
+          AND "schedule_type" <> 'PRN'
+          AND ("days_of_week" IS NULL OR btrim("days_of_week") = '')
+          AND "dose_windows" IS NULL
+          AND "window_start" ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+          AND "window_end" ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+          AND "window_end" > "window_start"
+        RETURNING "medication_id"
+    )
+    UPDATE "medications" m
+    SET "updated_at" = now()
+    WHERE m."id" IN (SELECT "medication_id" FROM legacy);
+END
+$migration$;

@@ -139,4 +139,16 @@ describe("today list: resolved dose state", () => {
     });
     expect(await slotRow()).toMatchObject({ state: "taken", takenLate: true });
   });
+
+  it("a legacy schedule's stored window is the window the dose reads (C-L8)", async () => {
+    at("2026-11-21T09:30:00.000Z");
+    // Stored 08:00 to 10:00 Berlin, no times_of_day: 10:30 is past it.
+    await setup(undefined, { windowStart: "08:00", windowEnd: "10:00" });
+    const row = (await slotRow())!;
+    expect(row).toMatchObject({
+      state: "overdue",
+      dueAt: "2026-11-21T07:00:00.000Z",
+      overdueSince: "2026-11-21T09:00:00.000Z",
+    });
+  });
 });
