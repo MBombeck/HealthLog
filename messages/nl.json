@@ -999,6 +999,7 @@
     "actions": "Acties",
     "deleteConfirmTitle": "Meting verwijderen?",
     "deleteConfirmDescription": "Deze meting wordt verwijderd. Je kunt dit daarna nog even ongedaan maken.",
+    "deleteConfirmDescriptionSynced": "Deze meting wordt verwijderd. Ze komt van een gekoppelde dienst, dus de volgende synchronisatie haalt haar terug tenzij ze daar ook wordt verwijderd. Je kunt dit daarna nog even ongedaan maken.",
     "pageInfo": "Pagina {page} van {total}",
     "previousPage": "Vorige pagina",
     "nextPage": "Volgende pagina",

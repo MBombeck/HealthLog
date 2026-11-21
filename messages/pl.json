@@ -999,6 +999,7 @@
     "actions": "Akcje",
     "deleteConfirmTitle": "Usunąć pomiar?",
     "deleteConfirmDescription": "Ten pomiar zostanie usunięty. Zaraz po usunięciu możesz to przez chwilę cofnąć.",
+    "deleteConfirmDescriptionSynced": "Ten pomiar zostanie usunięty. Pochodzi z połączonej usługi, więc następna synchronizacja go przywróci, jeśli nie zostanie usunięty również tam. Przez krótką chwilę możesz to cofnąć.",
     "pageInfo": "Strona {page} z {total}",
     "previousPage": "Poprzednia strona",
     "nextPage": "Następna strona",

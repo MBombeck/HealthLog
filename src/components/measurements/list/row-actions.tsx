@@ -55,6 +55,33 @@ export function isServerComputed(m: Pick<Measurement, "source">): boolean {
 }
 
 /**
+ * Sources whose sync writes a deleted row back. Each of these integrations
+ * treats the provider as the source of truth for its own rows and clears
+ * `deletedAt` when it reads the row again (the Withings, Nightscout and
+ * Google Health upserts and the shared external reconciler the others write
+ * through), so deleting such a row here lasts only until the next sync.
+ */
+const SYNC_REVIVED_SOURCES: ReadonlySet<string> = new Set([
+  "WITHINGS",
+  "WHOOP",
+  "NIGHTSCOUT",
+  "POLAR",
+  "OURA",
+  "GOOGLE_HEALTH",
+  "GARMIN",
+]);
+
+/** The delete confirmation's text, saying so when a sync brings the row back. */
+export function deleteConfirmDescription(
+  m: Pick<Measurement, "source">,
+  t: Translate,
+): string {
+  return SYNC_REVIVED_SOURCES.has(m.source)
+    ? t("measurements.deleteConfirmDescriptionSynced")
+    : t("measurements.deleteConfirmDescription");
+}
+
+/**
  * A row's controls: the chevron into a day's or night's samples for a
  * grouped row; edit (owner only) and delete for a reading, neither for a
  * computed score. The table's buttons are 40 px, the phone list's the large
@@ -115,7 +142,7 @@ export function MeasurementRowActions({
         iconClassName={desktop ? undefined : "h-4 w-4"}
         onConfirm={() => onDelete(m.id)}
         title={t("measurements.deleteConfirmTitle")}
-        description={t("measurements.deleteConfirmDescription")}
+        description={deleteConfirmDescription(m, t)}
       />
     </>
   );

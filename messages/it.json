@@ -999,6 +999,7 @@
     "actions": "Azioni",
     "deleteConfirmTitle": "Eliminare la misurazione?",
     "deleteConfirmDescription": "Questa misurazione sarà eliminata. Subito dopo potrai annullare l’operazione per un breve momento.",
+    "deleteConfirmDescriptionSynced": "Questa misurazione verrà eliminata. Proviene da un servizio collegato, quindi la prossima sincronizzazione la riporterà se non viene eliminata anche lì. Potrai annullare per un breve momento.",
     "pageInfo": "Pagina {page} di {total}",
     "previousPage": "Pagina precedente",
     "nextPage": "Pagina successiva",

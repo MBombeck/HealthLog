@@ -999,6 +999,7 @@
     "actions": "Actions",
     "deleteConfirmTitle": "Delete measurement?",
     "deleteConfirmDescription": "This measurement will be deleted. You can undo this for a short moment afterwards.",
+    "deleteConfirmDescriptionSynced": "This measurement will be deleted. It came from a connected service, so the next sync brings it back unless it is deleted there too. You can undo this for a short moment afterwards.",
     "pageInfo": "Page {page} of {total}",
     "previousPage": "Previous page",
     "nextPage": "Next page",

@@ -999,6 +999,7 @@
     "actions": "Actions",
     "deleteConfirmTitle": "Supprimer la mesure ?",
     "deleteConfirmDescription": "Cette mesure sera supprimée. Vous pourrez annuler cette action pendant un court instant juste après.",
+    "deleteConfirmDescriptionSynced": "Cette mesure sera supprimée. Elle provient d'un service connecté, la prochaine synchronisation la rétablira donc si elle n'y est pas supprimée aussi. Vous pourrez annuler pendant un court instant.",
     "pageInfo": "Page {page} sur {total}",
     "previousPage": "Page précédente",
     "nextPage": "Page suivante",

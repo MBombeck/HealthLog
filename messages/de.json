@@ -999,6 +999,7 @@
     "actions": "Aktionen",
     "deleteConfirmTitle": "Messwert löschen?",
     "deleteConfirmDescription": "Dieser Messwert wird gelöscht. Direkt danach kannst du das kurz rückgängig machen.",
+    "deleteConfirmDescriptionSynced": "Dieser Messwert wird gelöscht. Er stammt aus einem verbundenen Dienst, deshalb holt ihn die nächste Synchronisierung zurück, wenn er dort nicht ebenfalls gelöscht wird. Direkt danach kannst du das kurz rückgängig machen.",
     "pageInfo": "Seite {page} von {total}",
     "previousPage": "Vorherige Seite",
     "nextPage": "Nächste Seite",

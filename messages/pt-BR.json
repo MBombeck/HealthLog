@@ -999,6 +999,7 @@
     "actions": "Ações",
     "deleteConfirmTitle": "Excluir medição?",
     "deleteConfirmDescription": "Esta medição será excluída. Você pode desfazer isso por um curto momento depois.",
+    "deleteConfirmDescriptionSynced": "Esta medição será excluída. Ela veio de um serviço conectado, então a próxima sincronização a trará de volta, a menos que também seja excluída lá. Você pode desfazer isso por um breve momento.",
     "pageInfo": "Página {page} de {total}",
     "previousPage": "Página anterior",
     "nextPage": "Próxima página",
