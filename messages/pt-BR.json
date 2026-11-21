@@ -10650,8 +10650,7 @@
       "latestValues": "Últimos valores",
       "allValues": "Todos os valores",
       "columnDate": "Data",
-      "columnValue": "Valor",
-      "columnRange": "Faixa de referência"
+      "columnValue": "Valor"
     },
     "chart": {
       "empty": "Nenhuma leitura neste período.",

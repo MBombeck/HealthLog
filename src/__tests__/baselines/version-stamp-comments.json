@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2849,
-  "total": 8943,
+  "total": 8940,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1055,7 +1055,7 @@
     "components/labs/biomarker-manager.tsx": 2,
     "components/labs/biomarker-merge-sheet.tsx": 1,
     "components/labs/lab-biomarker-chart.tsx": 3,
-    "components/labs/lab-biomarker-detail.tsx": 13,
+    "components/labs/lab-biomarker-detail.tsx": 12,
     "components/labs/lab-form.tsx": 6,
     "components/labs/lab-history-list.tsx": 3,
     "components/labs/lab-list.tsx": 5,
@@ -1100,7 +1100,7 @@
     "components/measurements/__tests__/measurement-list-filter-select.test.tsx": 3,
     "components/measurements/__tests__/measurement-list-locked-type.test.tsx": 2,
     "components/measurements/__tests__/measurement-list-step-grouping.test.tsx": 1,
-    "components/measurements/measurement-form.tsx": 11,
+    "components/measurements/measurement-form.tsx": 9,
     "components/medications/__tests__/add-inventory-dialog.test.tsx": 1,
     "components/medications/__tests__/card-parts.test.tsx": 13,
     "components/medications/__tests__/detail-page-cascade.test.tsx": 1,

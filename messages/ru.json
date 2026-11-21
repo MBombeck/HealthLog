@@ -10650,8 +10650,7 @@
       "latestValues": "Последние значения",
       "allValues": "Все значения",
       "columnDate": "Дата",
-      "columnValue": "Значение",
-      "columnRange": "Референсный диапазон"
+      "columnValue": "Значение"
     },
     "chart": {
       "empty": "В этом периоде нет измерений.",

@@ -10650,8 +10650,7 @@
       "latestValues": "최근 값",
       "allValues": "모든 값",
       "columnDate": "날짜",
-      "columnValue": "값",
-      "columnRange": "참고 범위"
+      "columnValue": "값"
     },
     "chart": {
       "empty": "이 기간에는 측정값이 없어요.",

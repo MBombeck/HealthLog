@@ -10650,8 +10650,7 @@
       "latestValues": "Ostatnie wyniki",
       "allValues": "Wszystkie wyniki",
       "columnDate": "Data",
-      "columnValue": "Wartość",
-      "columnRange": "Zakres referencyjny"
+      "columnValue": "Wartość"
     },
     "chart": {
       "empty": "Brak pomiarów w tym okresie.",

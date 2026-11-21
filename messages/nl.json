@@ -10650,8 +10650,7 @@
       "latestValues": "Laatste waarden",
       "allValues": "Alle waarden",
       "columnDate": "Datum",
-      "columnValue": "Waarde",
-      "columnRange": "Referentiebereik"
+      "columnValue": "Waarde"
     },
     "chart": {
       "empty": "Geen metingen in deze periode.",

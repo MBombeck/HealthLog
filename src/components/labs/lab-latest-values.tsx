@@ -55,7 +55,6 @@ export function LabLatestValues({
             <tr>
               <th scope="col">{t("labs.detail.columnDate")}</th>
               <th scope="col">{t("labs.detail.columnValue")}</th>
-              <th scope="col">{t("labs.detail.columnRange")}</th>
             </tr>
           </thead>
           <tbody className="divide-border divide-y">
@@ -72,10 +71,13 @@ export function LabLatestValues({
                     <span className="text-muted-foreground ml-1 text-xs font-normal">
                       {labUnitText(reading.unit)}
                     </span>
-                  ) : null}
-                </td>
-                <td className="py-2 text-right">
-                  <ReferenceRangeBadge status={reading.rangeStatus} compact />
+                  ) : null}{" "}
+                  {/* Draws nothing for a reading without usable bounds. */}
+                  <ReferenceRangeBadge
+                    status={reading.rangeStatus}
+                    compact
+                    className="ml-1 align-middle"
+                  />
                 </td>
               </tr>
             ))}

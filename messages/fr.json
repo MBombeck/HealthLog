@@ -10650,8 +10650,7 @@
       "latestValues": "Dernières valeurs",
       "allValues": "Toutes les valeurs",
       "columnDate": "Date",
-      "columnValue": "Valeur",
-      "columnRange": "Plage de référence"
+      "columnValue": "Valeur"
     },
     "chart": {
       "empty": "Aucune mesure sur cette période.",

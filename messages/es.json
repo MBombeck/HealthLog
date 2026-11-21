@@ -10650,8 +10650,7 @@
       "latestValues": "Últimos valores",
       "allValues": "Todos los valores",
       "columnDate": "Fecha",
-      "columnValue": "Valor",
-      "columnRange": "Rango de referencia"
+      "columnValue": "Valor"
     },
     "chart": {
       "empty": "Sin mediciones en este periodo.",

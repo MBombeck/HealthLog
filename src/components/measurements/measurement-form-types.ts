@@ -107,7 +107,7 @@ export const MEASUREMENT_TYPES = [
     labelKey: "measurements.typeBodyTemperature",
     unit: "°C",
   },
-  // v1.25 — physical / clinical signals. Manual web capture so a web-only
+  // Physical / clinical signals. Manual web capture so a web-only
   // self-hoster can log them (the iOS client + measurements API already do).
   {
     value: "WAIST_CIRCUMFERENCE",
@@ -131,7 +131,7 @@ export const MEASUREMENT_TYPES = [
   },
 ] as const;
 
-// v1.4.34 — single source of truth for the `/measurements?add=<TYPE>`
+// The single source of truth for the `/measurements?add=<TYPE>`
 // deep link the Insights empty-state CTAs ship. Derived from the form's
 // MEASUREMENT_TYPES so a new row in the form is immediately usable as
 // a deep-link target.
