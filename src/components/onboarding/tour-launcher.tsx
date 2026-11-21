@@ -39,6 +39,7 @@
  *      finished onboarding.
  */
 
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -47,7 +48,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { useNavModules } from "@/hooks/use-nav-modules";
 import { apiPost } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
-import { OnboardingTour } from "./tour";
+// The tour opens once in an account's life, so its ~800 lines stay out of the
+// shell every page ships: the chunk loads when the launcher decides to show it.
+const OnboardingTour = dynamic(
+  () => import("./tour").then((m) => m.OnboardingTour),
+  { ssr: false },
+);
 
 const POST_WIZARD_GRACE_MS = 1500;
 
