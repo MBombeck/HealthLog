@@ -9158,7 +9158,48 @@
     },
     "auditActedBy": "par {name}",
     "auditActorDeleted": "un compte supprimé",
-    "auditActedByColumn": "Effectué par"
+    "auditActedByColumn": "Effectué par",
+    "pushRelay": {
+      "title": "Relais push HealthLog",
+      "description": "Permet à l'app de l'App Store de recevoir les notifications de ce serveur via le relais du projet HealthLog.",
+      "whatItSees": "Chaque notification est chiffrée sur ce serveur pour l'appareil destinataire, le relais ne peut donc pas la lire. Il voit quand ce serveur envoie quelque chose à un appareil.",
+      "toggleLabel": "Proposer le relais push HealthLog aux utilisateurs de ce serveur",
+      "toggleDescription": "Désactivé tant que vous ne l'activez pas. Ensuite, chaque personne décide dans sa propre app.",
+      "devices": "{count} appareils liés",
+      "since": "depuis {time}",
+      "docs": "En savoir plus",
+      "privacy": "Avis de confidentialité",
+      "terms": "Conditions du relais",
+      "dialogTitle": "Proposer le relais push HealthLog",
+      "dialogBody": "Le relais est exploité par le mainteneur du projet HealthLog. Chaque notification est chiffrée sur ce serveur pour son appareil ; le relais ne peut pas la lire, mais il voit que ce serveur envoie quelque chose à un appareil, et quand. Une fois activé, chaque personne de ce serveur voit une fois une proposition dans son app et décide elle-même. Les rappels restent sur les appareils. Le relais est destiné à un usage privé et familial et n'est pas un service médical.",
+      "acceptTerms": "J'accepte les conditions du relais et j'ai lu l'avis de confidentialité.",
+      "householdOnly": "J'exploite ce serveur à titre privé, pour moi ou mon foyer.",
+      "enable": "Activer",
+      "cancel": "Annuler",
+      "disableTitle": "Désactiver le relais ?",
+      "disableBody": "Ce serveur quitte le relais. Les appareils liés par son intermédiaire ne reçoivent plus de notifications du relais, et les apps repassent d'elles-mêmes aux rappels locaux.",
+      "disable": "Désactiver",
+      "enabled": "Le relais push est activé",
+      "disabled": "Le relais push est désactivé",
+      "saveFailed": "Le réglage du relais n'a pas pu être enregistré",
+      "state": {
+        "ok": "Connecté",
+        "degraded": "Perturbé",
+        "down": "Injoignable",
+        "off": "Désactivé"
+      },
+      "unavailable": {
+        "modeOff": "Le relais est désactivé pour ce serveur (PUSH_RELAY_MODE=off).",
+        "invalidUrl": "PUSH_RELAY_URL n'est pas une adresse https, le relais ne peut donc pas être utilisé.",
+        "keysUnpinned": "Aucune clé n'est épinglée pour ce relais, ses réponses ne peuvent donc pas être vérifiées. Définissez PUSH_RELAY_KEYS."
+      },
+      "notice": {
+        "title": "Nouveau : notifications via le relais push HealthLog",
+        "body": "L'app HealthLog de l'App Store peut désormais recevoir les notifications de ce serveur via le relais du projet HealthLog. Le contenu est chiffré ici pour chaque appareil et le relais ne peut pas le lire ; il voit quand ce serveur envoie quelque chose à un appareil. L'option reste désactivée tant que vous ne l'activez pas, puis chaque personne décide dans sa propre app.",
+        "open": "Ouvrir les réglages",
+        "dismiss": "Compris"
+      }
+    }
   },
   "achievements": {
     "title": "Réussites",

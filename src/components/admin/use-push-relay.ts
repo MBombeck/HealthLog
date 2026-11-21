@@ -1,0 +1,62 @@
+"use client";
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiGet, apiPost, apiPut } from "@/lib/api/api-fetch";
+import { queryKeys } from "@/lib/query-keys";
+
+/** `GET /api/admin/push-relay`. */
+export interface AdminPushRelayStatus {
+  allowed: boolean;
+  available: boolean;
+  unavailableReason: "mode_off" | "invalid_url" | "keys_unpinned" | null;
+  relayHost: string | null;
+  offered: boolean;
+  state: "ok" | "degraded" | "down" | "off";
+  since: string | null;
+  reason: string | null;
+  instanceId: string | null;
+  tier: string | null;
+  notice: { id: string; level: string | null } | null;
+  lastSuccessAt: string | null;
+  devices: { bound: number; consented: number };
+  termsVersion: string;
+  termsUrl: string | null;
+  privacyUrl: string | null;
+  docsUrl: string;
+  noticePending: boolean;
+}
+
+export function usePushRelayStatus() {
+  return useQuery({
+    queryKey: queryKeys.adminPushRelay(),
+    queryFn: () =>
+      apiGet<AdminPushRelayStatus>("/api/admin/push-relay", {
+        credentials: "include",
+      }),
+    staleTime: 30_000,
+  });
+}
+
+export function useSetPushRelay() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: queryKeys.adminPushRelay(),
+    mutationFn: (body: {
+      enabled: boolean;
+      acceptTerms?: boolean;
+      householdOnly?: boolean;
+    }) => apiPut<AdminPushRelayStatus>("/api/admin/push-relay", body),
+    onSuccess: (data) => {
+      queryClient.setQueryData(queryKeys.adminPushRelay(), data);
+    },
+  });
+}
+
+export function useDismissPushRelayNotice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiPost("/api/admin/push-relay/notice"),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminPushRelay() }),
+  });
+}

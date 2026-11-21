@@ -9158,7 +9158,48 @@
     },
     "auditActedBy": "by {name}",
     "auditActorDeleted": "a deleted account",
-    "auditActedByColumn": "Acted by"
+    "auditActedByColumn": "Acted by",
+    "pushRelay": {
+      "title": "HealthLog push relay",
+      "description": "Lets the App Store app receive notifications from this server through the relay run by the HealthLog project.",
+      "whatItSees": "Each notification is encrypted on this server for the device it goes to, so the relay cannot read it. The relay sees when this server sends a device something.",
+      "toggleLabel": "Offer the HealthLog push relay to this server's users",
+      "toggleDescription": "Off until you turn it on. After that each person decides in their own app.",
+      "devices": "{count} devices bound",
+      "since": "since {time}",
+      "docs": "Learn more",
+      "privacy": "Privacy notice",
+      "terms": "Relay terms",
+      "dialogTitle": "Offer the HealthLog push relay",
+      "dialogBody": "The relay is run by the maintainer of the HealthLog project. Each notification is encrypted on this server for its device; the relay cannot read it, but it sees that this server sends a device something, and when. After you turn it on, every person on this server sees an offer in their app once and decides for themselves. Reminders stay on the devices. The relay is for private and household use and is not a medical service.",
+      "acceptTerms": "I accept the relay terms and have read the privacy notice.",
+      "householdOnly": "I run this server privately for myself or my household.",
+      "enable": "Turn on",
+      "cancel": "Cancel",
+      "disableTitle": "Turn the relay off?",
+      "disableBody": "This server leaves the relay. Devices bound through it stop getting relay notifications, and the apps go back to local reminders on their own.",
+      "disable": "Turn off",
+      "enabled": "The push relay is on",
+      "disabled": "The push relay is off",
+      "saveFailed": "The relay setting could not be saved",
+      "state": {
+        "ok": "Connected",
+        "degraded": "Disrupted",
+        "down": "Not reachable",
+        "off": "Off"
+      },
+      "unavailable": {
+        "modeOff": "The relay is switched off for this server (PUSH_RELAY_MODE=off).",
+        "invalidUrl": "PUSH_RELAY_URL is not an https address, so the relay cannot be used.",
+        "keysUnpinned": "No relay keys are pinned for this relay, so its answers cannot be checked. Set PUSH_RELAY_KEYS."
+      },
+      "notice": {
+        "title": "New: notifications through the HealthLog push relay",
+        "body": "The HealthLog app from the App Store can now receive notifications from this server through the relay run by the HealthLog project. The content is encrypted here for each device and the relay cannot read it; it sees when this server sends a device something. The option stays off until you turn it on, and then each person decides in their own app.",
+        "open": "Open settings",
+        "dismiss": "Got it"
+      }
+    }
   },
   "achievements": {
     "title": "Achievements",

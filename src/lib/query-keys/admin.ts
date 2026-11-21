@@ -65,6 +65,8 @@ export const adminKeys = {
   adminRecoveryKit: () => ["admin", "recovery-kit"] as const,
   /** Every backup signal's verdict (admin overview + Backups). */
   adminRecoveryReadiness: () => ["admin", "recovery-readiness"] as const,
+  /** The push relay switch, its state and the one-time notice. */
+  adminPushRelay: () => ["admin", "push-relay"] as const,
   adminFeedback: (status: string) => ["admin", "feedback", status] as const,
   adminFeedbackRoot: () => ["admin", "feedback"] as const,
   adminHostMetrics: (window: string) =>

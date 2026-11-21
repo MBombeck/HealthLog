@@ -9158,7 +9158,48 @@
     },
     "auditActedBy": "door {name}",
     "auditActorDeleted": "een verwijderd account",
-    "auditActedByColumn": "Uitgevoerd door"
+    "auditActedByColumn": "Uitgevoerd door",
+    "pushRelay": {
+      "title": "HealthLog-pushrelay",
+      "description": "Laat de app uit de App Store meldingen van deze server ontvangen via de relay van het HealthLog-project.",
+      "whatItSees": "Elke melding wordt op deze server versleuteld voor het apparaat waarvoor hij bedoeld is, dus de relay kan hem niet lezen. Hij ziet wanneer deze server een apparaat iets stuurt.",
+      "toggleLabel": "De HealthLog-pushrelay aanbieden aan de gebruikers van deze server",
+      "toggleDescription": "Uit tot je het aanzet. Daarna beslist iedereen in de eigen app.",
+      "devices": "{count} apparaten gekoppeld",
+      "since": "sinds {time}",
+      "docs": "Meer informatie",
+      "privacy": "Privacyverklaring",
+      "terms": "Relayvoorwaarden",
+      "dialogTitle": "HealthLog-pushrelay aanbieden",
+      "dialogBody": "De relay wordt beheerd door de maintainer van het HealthLog-project. Elke melding wordt op deze server versleuteld voor het eigen apparaat; de relay kan hem niet lezen, maar ziet dat deze server een apparaat iets stuurt, en wanneer. Na het aanzetten ziet iedereen op deze server één keer een aanbod in de app en beslist zelf. Herinneringen blijven op de apparaten. De relay is voor privé- en huishoudelijk gebruik en is geen medische dienst.",
+      "acceptTerms": "Ik ga akkoord met de relayvoorwaarden en heb de privacyverklaring gelezen.",
+      "householdOnly": "Ik beheer deze server privé voor mezelf of mijn huishouden.",
+      "enable": "Aanzetten",
+      "cancel": "Annuleren",
+      "disableTitle": "Relay uitzetten?",
+      "disableBody": "Deze server meldt zich af bij de relay. Apparaten die erdoor gekoppeld zijn, krijgen geen relaymeldingen meer en de apps schakelen vanzelf terug naar lokale herinneringen.",
+      "disable": "Uitzetten",
+      "enabled": "De pushrelay staat aan",
+      "disabled": "De pushrelay staat uit",
+      "saveFailed": "De relay-instelling kon niet worden opgeslagen",
+      "state": {
+        "ok": "Verbonden",
+        "degraded": "Verstoord",
+        "down": "Niet bereikbaar",
+        "off": "Uit"
+      },
+      "unavailable": {
+        "modeOff": "De relay is uitgeschakeld voor deze server (PUSH_RELAY_MODE=off).",
+        "invalidUrl": "PUSH_RELAY_URL is geen https-adres, dus de relay kan niet worden gebruikt.",
+        "keysUnpinned": "Voor deze relay zijn geen sleutels vastgelegd, dus zijn antwoorden kunnen niet worden gecontroleerd. Stel PUSH_RELAY_KEYS in."
+      },
+      "notice": {
+        "title": "Nieuw: meldingen via de HealthLog-pushrelay",
+        "body": "De HealthLog-app uit de App Store kan nu meldingen van deze server ontvangen via de relay van het HealthLog-project. De inhoud wordt hier per apparaat versleuteld en de relay kan hem niet lezen; hij ziet wanneer deze server een apparaat iets stuurt. De optie blijft uit tot je hem aanzet, en daarna beslist iedereen in de eigen app.",
+        "open": "Instellingen openen",
+        "dismiss": "Begrepen"
+      }
+    }
   },
   "achievements": {
     "title": "Prestaties",

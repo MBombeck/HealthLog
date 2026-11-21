@@ -9158,7 +9158,48 @@
     },
     "auditActedBy": "por {name}",
     "auditActorDeleted": "una cuenta eliminada",
-    "auditActedByColumn": "Realizado por"
+    "auditActedByColumn": "Realizado por",
+    "pushRelay": {
+      "title": "Relé push de HealthLog",
+      "description": "Permite que la app de la App Store reciba notificaciones de este servidor a través del relé del proyecto HealthLog.",
+      "whatItSees": "Cada notificación se cifra en este servidor para el dispositivo que la recibe, así que el relé no puede leerla. Ve cuándo este servidor envía algo a un dispositivo.",
+      "toggleLabel": "Ofrecer el relé push de HealthLog a los usuarios de este servidor",
+      "toggleDescription": "Desactivado hasta que lo actives. Después, cada persona decide en su propia app.",
+      "devices": "{count} dispositivos vinculados",
+      "since": "desde {time}",
+      "docs": "Más información",
+      "privacy": "Aviso de privacidad",
+      "terms": "Condiciones del relé",
+      "dialogTitle": "Ofrecer el relé push de HealthLog",
+      "dialogBody": "El relé lo opera el mantenedor del proyecto HealthLog. Cada notificación se cifra en este servidor para su dispositivo; el relé no puede leerla, pero ve que este servidor envía algo a un dispositivo y cuándo. Cuando lo actives, cada persona de este servidor verá una vez una oferta en su app y decidirá por sí misma. Los recordatorios se quedan en los dispositivos. El relé es para uso privado y doméstico y no es un servicio médico.",
+      "acceptTerms": "Acepto las condiciones del relé y he leído el aviso de privacidad.",
+      "householdOnly": "Mantengo este servidor de forma privada para mí o mi hogar.",
+      "enable": "Activar",
+      "cancel": "Cancelar",
+      "disableTitle": "¿Desactivar el relé?",
+      "disableBody": "Este servidor sale del relé. Los dispositivos vinculados a través de él dejan de recibir notificaciones del relé, y las apps vuelven solas a los recordatorios locales.",
+      "disable": "Desactivar",
+      "enabled": "El relé push está activado",
+      "disabled": "El relé push está desactivado",
+      "saveFailed": "No se pudo guardar el ajuste del relé",
+      "state": {
+        "ok": "Conectado",
+        "degraded": "Con problemas",
+        "down": "No disponible",
+        "off": "Desactivado"
+      },
+      "unavailable": {
+        "modeOff": "El relé está desactivado para este servidor (PUSH_RELAY_MODE=off).",
+        "invalidUrl": "PUSH_RELAY_URL no es una dirección https, por lo que no se puede usar el relé.",
+        "keysUnpinned": "No hay claves fijadas para este relé, así que sus respuestas no se pueden comprobar. Define PUSH_RELAY_KEYS."
+      },
+      "notice": {
+        "title": "Novedad: notificaciones a través del relé push de HealthLog",
+        "body": "La app HealthLog de la App Store ya puede recibir notificaciones de este servidor a través del relé del proyecto HealthLog. El contenido se cifra aquí para cada dispositivo y el relé no puede leerlo; ve cuándo este servidor envía algo a un dispositivo. La opción sigue desactivada hasta que la actives, y después cada persona decide en su propia app.",
+        "open": "Abrir ajustes",
+        "dismiss": "Entendido"
+      }
+    }
   },
   "achievements": {
     "title": "Logros",

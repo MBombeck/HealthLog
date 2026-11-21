@@ -9,6 +9,7 @@ import { SystemStatusSummary } from "@/components/admin/system-status-summary";
 import { VersionTileSection } from "@/components/admin/version-tile-section";
 import { RecentAuditPreview } from "@/components/admin/recent-audit-preview";
 import { useAdminSettings } from "@/components/admin/_shared";
+import { PushRelayNotice } from "@/components/admin/push-relay-notice";
 
 /**
  * `/admin` — overview landing page. v1.4.15 (phase A2) replaces the
@@ -45,6 +46,9 @@ export default function AdminOverviewPage() {
             onRetry={() => void refetchSettings()}
           />
         )}
+
+        {/* Once per admin: the push relay option exists. */}
+        <PushRelayNotice />
 
         <VersionTileSection />
 
