@@ -521,3 +521,38 @@ describe("client off-response handling — subscribeWebhook 294 idempotency", ()
     expect((err as WithingsApiError).classification).toBe("transient");
   });
 });
+
+describe("fetchMeasurements — request window", () => {
+  function sentParams(fetchMock: ReturnType<typeof installFetchMock>) {
+    const init = (
+      fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    )[1];
+    return new URLSearchParams(init.body as string);
+  }
+
+  it("sends `lastupdate` and no measure-date bounds for an upload-time read", async () => {
+    const fetchMock = installFetchMock(fakeGetmeasPayload([]));
+    const since = new Date("2026-03-01T08:00:00Z");
+    await fetchMeasurements(
+      "token",
+      new Date("2026-02-01T00:00:00Z"),
+      undefined,
+      {
+        updatedSince: since,
+      },
+    );
+    const params = sentParams(fetchMock);
+    expect(params.get("lastupdate")).toBe(String(since.getTime() / 1000));
+    expect(params.has("startdate")).toBe(false);
+    expect(params.has("enddate")).toBe(false);
+  });
+
+  it("sends `startdate` for a measure-date read", async () => {
+    const fetchMock = installFetchMock(fakeGetmeasPayload([]));
+    const start = new Date("2026-02-01T00:00:00Z");
+    await fetchMeasurements("token", start);
+    const params = sentParams(fetchMock);
+    expect(params.get("startdate")).toBe(String(start.getTime() / 1000));
+    expect(params.has("lastupdate")).toBe(false);
+  });
+});

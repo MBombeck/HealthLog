@@ -122,16 +122,15 @@ export async function getValidToken(
 }
 
 /**
- * Incremental overlap window (ms). Withings backdates some readings (a scale
- * step syncs to the cloud minutes after the reading's timestamp), and
- * `lastSyncedAt` advances on every success — including a healthy 200-with-0
- * cycle (F-SYNC-1). A too-tight overlap let a reading that landed just before
- * the next cycle's `now()` slip through the gap. 10 minutes is comfortably wider
- * than the observed backdating skew while staying far short of a full re-scan;
- * the upserts are idempotent, so a wider overlap only re-touches a handful of
- * rows. (Still narrower than Google's 24h / Oura's 7-day because Withings is
- * webhook-primary — this overlap is the poll-catch-up safety net, not the main
- * path.)
+ * Incremental overlap window (ms), subtracted from `lastSyncedAt` to form the
+ * `lastupdate` bound of an incremental read. `lastSyncedAt` is our wall clock
+ * at the end of the previous run and advances on every success, including a
+ * healthy 200-with-0 cycle (F-SYNC-1), while `lastupdate` is compared against
+ * the time Withings stored a group. The overlap absorbs the skew between the
+ * two clocks and a group that Withings committed while the previous run was
+ * reading. The upserts are idempotent, so a wider overlap only re-touches a
+ * handful of rows. Late uploads need no overlap at all: `lastupdate` follows
+ * the upload, not the measure date.
  */
 export const WITHINGS_INCREMENTAL_OVERLAP_MS = 10 * 60 * 1000;
 
@@ -179,12 +178,20 @@ export async function syncUserMeasurements(
   // No connection row is not a failure — there is nothing to sync.
   if (!connection) return { imported: 0, failed: false };
 
-  const startDate = opts.fullSync
-    ? undefined
-    : connection.lastSyncedAt
+  // The watermark is wall-clock time, so an incremental run must filter on
+  // the time Withings received a group (`lastupdate`), never on its measure
+  // date: a reading uploaded late through the phone app carries a measure
+  // date from before the watermark and a measure-date window would skip it
+  // for good. The first sync and the full sync read by measure date.
+  const updatedSince =
+    !opts.fullSync && connection.lastSyncedAt
       ? new Date(
           connection.lastSyncedAt.getTime() - WITHINGS_INCREMENTAL_OVERLAP_MS,
         )
+      : undefined;
+  const startDate =
+    opts.fullSync || updatedSince
+      ? undefined
       : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days back
 
   // Withings API plans (2026-10-12): a request naming one meastype outside the
@@ -207,6 +214,7 @@ export async function syncUserMeasurements(
       fetch: (measTypes) =>
         fetchMeasurements(tokenInfo.accessToken, startDate, undefined, {
           measTypes,
+          updatedSince,
         }),
     });
   } catch (err) {

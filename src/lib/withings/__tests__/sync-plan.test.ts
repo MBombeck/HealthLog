@@ -129,7 +129,7 @@ function installPlanFetch() {
       .filter(Boolean)
       .map(Number);
     requestedTypes.push(types);
-    requestedStartdates.push(params.get("startdate") ?? "");
+    requestedStartdates.push(params.get("lastupdate") ?? "");
     const body = types.some((t) => refused.has(t))
       ? {
           status: 277,
