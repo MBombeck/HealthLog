@@ -5,6 +5,7 @@ import { annotate } from "@/lib/logging/context";
 import { syncUserGarmin } from "@/lib/garmin/sync";
 import { isGarminKeyRefusal } from "@/lib/garmin/client";
 import { resolveSyncOutcome } from "@/lib/outcome/written-outcome";
+import { withDataChangeOrigin } from "@/lib/push-relay/data-changed";
 
 /**
  * Manually trigger a Garmin sync for the current user.
@@ -16,7 +17,7 @@ import { resolveSyncOutcome } from "@/lib/outcome/written-outcome";
  *
  * Rate-limited 5/60 s per user, like the sibling sync routes.
  */
-export const POST = apiHandler(async () => {
+export const POST = apiHandler(async (request: Request) => {
   const { user } = await requireAuth();
   annotate({ action: { name: "garmin.sync" } });
 
@@ -28,7 +29,10 @@ export const POST = apiHandler(async () => {
   }
 
   try {
-    const result = await syncUserGarmin(user.id);
+    const result = await withDataChangeOrigin(
+      request.headers.get("x-device-id"),
+      () => syncUserGarmin(user.id),
+    );
     return apiSuccess(resolveSyncOutcome(result));
   } catch (error) {
     if (isGarminKeyRefusal(error)) {

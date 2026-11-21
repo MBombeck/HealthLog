@@ -9676,7 +9676,15 @@
     "security": {
       "newDeviceTitle": "Nuovo accesso al tuo account",
       "newDeviceBody": "Un nuovo accesso da {device} ({location}). Se non sei stato tu, cambia subito la password.",
-      "unknownLocation": "posizione sconosciuta"
+      "unknownLocation": "posizione sconosciuta",
+      "passkeyAddedTitle": "Passkey aggiunta",
+      "passkeyAddedBody": "Al tuo account è stata aggiunta una nuova passkey. Se non sei stato tu, rimuovila nelle impostazioni di sicurezza e cambia la password.",
+      "passkeyRemovedTitle": "Passkey rimossa",
+      "passkeyRemovedBody": "Dal tuo account è stata rimossa una passkey. Se non sei stato tu, cambia la password e controlla i tuoi dispositivi.",
+      "tokenRevokedTitle": "Token di accesso revocato",
+      "tokenRevokedBody": "Un token di accesso del tuo account è stato revocato. Se non sei stato tu, cambia la password e controlla i tuoi token.",
+      "refreshReuseTitle": "Un dispositivo è stato disconnesso",
+      "refreshReuseBody": "Un token di accesso è stato usato due volte, quindi il suo dispositivo è stato disconnesso. Accedi di nuovo da lì. Se succede ancora, cambia la password."
     },
     "sharedRecordIntake": {
       "title": "{name} ha segnato una dose",

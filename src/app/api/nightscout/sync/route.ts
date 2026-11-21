@@ -4,6 +4,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
 import { syncUserNightscout } from "@/lib/nightscout/sync";
 import { resolveSyncOutcome } from "@/lib/outcome/written-outcome";
+import { withDataChangeOrigin } from "@/lib/push-relay/data-changed";
 
 /**
  * Manually trigger a Nightscout sync for the current user (v1.32.28).
@@ -25,7 +26,7 @@ import { resolveSyncOutcome } from "@/lib/outcome/written-outcome";
  * Rate-limited 5/60s per user, matching the hardened Google Health
  * route; every run is an outbound call to a user-supplied host.
  */
-export const POST = apiHandler(async () => {
+export const POST = apiHandler(async (request: Request) => {
   const { user } = await requireAuth();
   annotate({ action: { name: "nightscout.sync" } });
 
@@ -37,7 +38,10 @@ export const POST = apiHandler(async () => {
   }
 
   try {
-    const result = await syncUserNightscout(user.id);
+    const result = await withDataChangeOrigin(
+      request.headers.get("x-device-id"),
+      () => syncUserNightscout(user.id),
+    );
     return apiSuccess(resolveSyncOutcome(result));
   } catch (error) {
     if (

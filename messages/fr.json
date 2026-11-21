@@ -9676,7 +9676,15 @@
     "security": {
       "newDeviceTitle": "Nouvelle connexion à votre compte",
       "newDeviceBody": "Une nouvelle connexion depuis {device} ({location}). Si ce n'était pas vous, changez votre mot de passe immédiatement.",
-      "unknownLocation": "lieu inconnu"
+      "unknownLocation": "lieu inconnu",
+      "passkeyAddedTitle": "Clé d'accès ajoutée",
+      "passkeyAddedBody": "Une nouvelle clé d'accès a été ajoutée à votre compte. Si ce n'était pas vous, supprimez-la dans les paramètres de sécurité et changez votre mot de passe.",
+      "passkeyRemovedTitle": "Clé d'accès supprimée",
+      "passkeyRemovedBody": "Une clé d'accès a été supprimée de votre compte. Si ce n'était pas vous, changez votre mot de passe et vérifiez vos appareils.",
+      "tokenRevokedTitle": "Jeton d'accès révoqué",
+      "tokenRevokedBody": "Un jeton d'accès de votre compte a été révoqué. Si ce n'était pas vous, changez votre mot de passe et vérifiez vos jetons.",
+      "refreshReuseTitle": "Un appareil a été déconnecté",
+      "refreshReuseBody": "Un jeton de connexion a été utilisé deux fois, son appareil a donc été déconnecté. Reconnectez-vous sur cet appareil. Si cela se reproduit, changez votre mot de passe."
     },
     "sharedRecordIntake": {
       "title": "{name} a marqué une dose",

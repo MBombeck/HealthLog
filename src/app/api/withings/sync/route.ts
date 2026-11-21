@@ -6,6 +6,7 @@ import { readSyncTriggerBody } from "@/lib/integrations/sync-request";
 import { resolveSyncOutcome } from "@/lib/outcome/written-outcome";
 import { syncUserMeasurements } from "@/lib/withings/sync";
 import { NextRequest } from "next/server";
+import { withDataChangeOrigin } from "@/lib/push-relay/data-changed";
 
 /**
  * Manually trigger a Withings sync for the current user.
@@ -45,6 +46,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
     }
   }
 
-  const result = await syncUserMeasurements(user.id, { fullSync });
+  const result = await withDataChangeOrigin(
+    request.headers.get("x-device-id"),
+    () => syncUserMeasurements(user.id, { fullSync }),
+  );
   return apiSuccess({ ...resolveSyncOutcome(result), fullSync });
 });

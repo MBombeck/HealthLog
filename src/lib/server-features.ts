@@ -23,6 +23,9 @@ export const SERVER_FEATURES = [
   "medication.current-dose-open-slot",
   "cycle.pregnancy-state",
   "profile.emergency-card",
+  "push.data-changed",
+  "push.healthkit-catch-up",
+  "push.security-alert-relay",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -61,4 +64,10 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "CycleProfileDTO and the cycle calendar carry pregnancy (CyclePregnancyDTO): PREGNANT or POSTPARTUM with its dates, the resolved week and predictionsPaused; PATCH /api/auth/me/cycle-prefs takes pregnancy. While paused the forecast is empty and the verdict is INSUFFICIENT_DATA.",
   "profile.emergency-card":
     "GET /api/emergency-card returns the emergency card; /api/emergency-card/link mints, reads and revokes its read-only hlm_ link, served at /e/{token} with only the fields the owner ticked.",
+  "push.data-changed":
+    "A device with a push key gets a sealed silent DATA_CHANGED (d.domains, d.changedAt) when a server-side sync stores readings; per device at most once per five minutes and three times an hour, never for a change the device started itself.",
+  "push.healthkit-catch-up":
+    "A device with a push key whose app registered in the last three days gets a sealed silent HEALTHKIT_CATCH_UP (d.requestedAt) when the account's Apple Health upload is six hours behind; at most three a day, four hours apart.",
+  "push.security-alert-relay":
+    "SECURITY_ALERT (new sign-in, passkey added or removed, token revoked, refresh-token reuse) reaches sealed and relay-bound devices with ui.level time-sensitive and d.securityKind.",
 };

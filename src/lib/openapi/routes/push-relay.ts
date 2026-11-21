@@ -14,6 +14,7 @@ import {
   activityStatementSchema,
   pushKeySchema,
   relayBindingSchema,
+  liveActivityConsentSchema,
   relayConsentSchema,
 } from "@/lib/push-relay/device-registration";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
@@ -77,6 +78,11 @@ export const relayCapabilityBlock = z
     liveActivity: z
       .array(z.string())
       .describe('Live Activity events the relay carries (`["end"]`).'),
+    liveActivityConsentTextVersion: z
+      .string()
+      .describe(
+        "The text version of the Live Activity consent sentence; sent back as `liveActivityConsent.textVersion`.",
+      ),
     termsUrl: z.string().nullable(),
     privacyUrl: z.string().nullable(),
     consentTextVersion: z
@@ -116,6 +122,11 @@ export const devicePushBlockSchema = z
       ),
     senderKeys: z.array(senderKey),
     relayInstanceId: z.string().nullable(),
+    liveActivityConsent: z
+      .boolean()
+      .describe(
+        "The person gave the second consent: Live Activity start and update over the relay. Withdrawn with the relay consent.",
+      ),
   })
   .meta({ id: "DevicePushState" });
 
@@ -149,7 +160,12 @@ export const devicePushRequestFields = {
   relayConsent: relayConsentSchema
     .optional()
     .describe(
-      "The person's choice on the opt-in card. `granted: false` withdraws the consent: the binding is removed at the relay.",
+      "The person's choice on the opt-in card. `granted: false` withdraws the consent: the binding is removed at the relay, and the Live Activity consent with it.",
+    ),
+  liveActivityConsent: liveActivityConsentSchema
+    .optional()
+    .describe(
+      'The second, separate switch: Live Activity start and update over the relay, off by default ("The relay and Apple can see when a dose is due."). `granted: true` needs the relay consent, given now or before, else 422 `devices.push.relay_consent_required`; `granted: false` withdraws it. Recorded now; the server sends Live Activity start or update over the relay only once `push.relay.liveActivity` lists them.',
     ),
 };
 

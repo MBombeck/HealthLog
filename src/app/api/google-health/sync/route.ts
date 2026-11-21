@@ -11,6 +11,7 @@ import type {
 } from "@/lib/google-health/sync-progress";
 import { resolveSyncOutcome } from "@/lib/outcome/written-outcome";
 import { NextRequest } from "next/server";
+import { withDataChangeOrigin } from "@/lib/push-relay/data-changed";
 
 const RESOURCE_STATUSES = new Set<GoogleHealthResourceStatus>([
   "pending",
@@ -103,7 +104,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
     }
   }
 
-  const result = await syncUserGoogleHealth(user.id, { fullSync });
+  const result = await withDataChangeOrigin(
+    request.headers.get("x-device-id"),
+    () => syncUserGoogleHealth(user.id, { fullSync }),
+  );
   // Another run of this account holds it (the history backfill after a
   // reconnect, or the hourly poll). Starting a second one beside it is what
   // pushed accounts over Google's per-minute quota; the card follows the

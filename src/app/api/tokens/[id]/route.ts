@@ -1,3 +1,4 @@
+import { sendSecurityAlert } from "@/lib/auth/security-alert";
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth, requireCookieAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
@@ -38,6 +39,7 @@ export const DELETE = apiHandler(
       where: { id },
       data: { revoked: true },
     });
+    void sendSecurityAlert(user.id, "token_revoked");
 
     return apiSuccess({ revoked: true });
   },

@@ -20,9 +20,10 @@ import {
   coarseLocationSignal,
   computeDeviceHash,
 } from "@/lib/auth/device-fingerprint";
-import { dispatchNotification } from "@/lib/notifications/dispatcher";
-import { getServerTranslator } from "@/lib/i18n/server-translator";
-import { defaultLocale, isLocale, type Locale } from "@/lib/i18n/config";
+import {
+  sendSecurityAlert,
+  unknownLocationText,
+} from "@/lib/auth/security-alert";
 import { getEvent } from "@/lib/logging/context";
 import { isP2002 } from "@/lib/prisma-errors";
 
@@ -114,31 +115,11 @@ export async function recordSignInDevice(params: {
       details: { device: deviceLabel },
     });
 
-    // Localise against the recipient's own locale, then fan out through the
-    // dispatcher (which applies the user's per-channel SECURITY_ALERT prefs).
-    let locale: Locale = defaultLocale;
-    try {
-      const row = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { locale: true },
-      });
-      if (isLocale(row?.locale)) locale = row.locale;
-    } catch {
-      locale = defaultLocale;
-    }
-    const { t } = getServerTranslator(locale);
-    const locationText =
-      location ?? t("notifications.security.unknownLocation");
-
-    await dispatchNotification({
-      eventType: "SECURITY_ALERT",
-      userId,
-      title: t("notifications.security.newDeviceTitle"),
-      message: t("notifications.security.newDeviceBody", {
-        device: deviceLabel,
-        location: locationText,
-      }),
-      urgent: true,
+    // Localised against the recipient's own locale and fanned out through
+    // the dispatcher, which applies the per-channel SECURITY_ALERT prefs.
+    await sendSecurityAlert(userId, "new_device", {
+      device: deviceLabel,
+      location: location ?? (await unknownLocationText(userId)),
     });
 
     return { known: false, alerted: true };

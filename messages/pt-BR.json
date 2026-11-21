@@ -9676,7 +9676,15 @@
     "security": {
       "newDeviceTitle": "Novo login na sua conta",
       "newDeviceBody": "Um novo login de {device} ({location}). Se não foi você, altere sua senha imediatamente.",
-      "unknownLocation": "local desconhecido"
+      "unknownLocation": "local desconhecido",
+      "passkeyAddedTitle": "Chave de acesso adicionada",
+      "passkeyAddedBody": "Uma nova chave de acesso foi adicionada à sua conta. Se não foi você, remova-a nas configurações de segurança e altere sua senha.",
+      "passkeyRemovedTitle": "Chave de acesso removida",
+      "passkeyRemovedBody": "Uma chave de acesso foi removida da sua conta. Se não foi você, altere sua senha e confira seus dispositivos.",
+      "tokenRevokedTitle": "Token de acesso revogado",
+      "tokenRevokedBody": "Um token de acesso da sua conta foi revogado. Se não foi você, altere sua senha e confira seus tokens.",
+      "refreshReuseTitle": "Um dispositivo foi desconectado",
+      "refreshReuseBody": "Um token de login foi usado duas vezes, por isso o dispositivo foi desconectado. Entre de novo nele. Se isso se repetir, altere sua senha."
     },
     "sharedRecordIntake": {
       "title": "{name} marcou uma dose",

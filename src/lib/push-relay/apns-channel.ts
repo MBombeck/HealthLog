@@ -44,6 +44,19 @@ const LOCALLY_PLANNED = new Set([
   "CYCLE_FERTILE_SOON",
 ]);
 
+/**
+ * The types a receiver accepts `ui.level: time-sensitive` for
+ * (`spec/envelope.md`, "Plaintext schema"); `REMINDER` is every alert in
+ * discreet mode. A security alert is always time-sensitive, a system alert
+ * when the producer marks it urgent; any other urgent type stays `active`,
+ * because the receiver would drop the level anyway.
+ */
+const TIME_SENSITIVE_ALWAYS = new Set([
+  "MEDICATION_REMINDER",
+  "SECURITY_ALERT",
+]);
+const TIME_SENSITIVE_WHEN_URGENT = new Set(["SYSTEM_ALERT"]);
+
 const REMINDER_LIFETIME_S = 15 * 60;
 const ALERT_LIFETIME_S = 6 * 3600;
 
@@ -52,7 +65,9 @@ export function alertMessage(payload: ApnsChannelPayload): EnvelopeMessage {
   const managed = isManagedGuardianDelivery(payload);
   const type = payload.discreet ? "REMINDER" : payload.eventType;
   const timeSensitive =
-    payload.eventType === "MEDICATION_REMINDER" || payload.urgent === true;
+    TIME_SENSITIVE_ALWAYS.has(payload.eventType) ||
+    (payload.urgent === true &&
+      TIME_SENSITIVE_WHEN_URGENT.has(payload.eventType));
   // No URL rides an envelope: the app derives its target from `t` and `d`.
   const data = iosMetadataFor(payload, managed);
   delete data.url;

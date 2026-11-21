@@ -36,6 +36,10 @@ const IOS_METADATA_ALLOWLIST = new Set([
   // SEIZURE_CLUSTER names the seizure that formed the cluster, so the app
   // can open it; an opaque id, and dropped for a managed delivery.
   "eventId",
+  // SECURITY_ALERT: which change it reports (`new_device`, `passkey_added`,
+  // `passkey_removed`, `token_revoked`, `refresh_reuse`), so the app opens
+  // the account's security page. A closed set, no credential.
+  "securityKind",
 ]);
 
 export function pickIosMetadata(

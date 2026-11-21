@@ -4,6 +4,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
 import { resolveSyncOutcome } from "@/lib/outcome/written-outcome";
 import { syncUserOura } from "@/lib/oura/sync";
+import { withDataChangeOrigin } from "@/lib/push-relay/data-changed";
 
 /**
  * Manually trigger an Oura sync for the current user (v1.32.28).
@@ -20,7 +21,7 @@ import { syncUserOura } from "@/lib/oura/sync";
  * route; a sync is a fan-out of upstream requests plus a batched write, so a
  * tight retry loop must not be able to pin Prisma or burn the Oura budget.
  */
-export const POST = apiHandler(async () => {
+export const POST = apiHandler(async (request: Request) => {
   const { user } = await requireAuth();
   annotate({ action: { name: "oura.sync" } });
 
@@ -32,7 +33,10 @@ export const POST = apiHandler(async () => {
   }
 
   try {
-    const result = await syncUserOura(user.id);
+    const result = await withDataChangeOrigin(
+      request.headers.get("x-device-id"),
+      () => syncUserOura(user.id),
+    );
     return apiSuccess(resolveSyncOutcome(result));
   } catch {
     // The failure is already on the `oura` ledger, classified by the provider

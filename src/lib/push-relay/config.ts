@@ -35,6 +35,8 @@ export const RELAY_CLIENT_NAME = "healthlog";
 /** Envelope versions and Live Activity events this server can send. */
 export const ENVELOPE_VERSIONS: readonly number[] = Object.freeze([1]);
 export const LIVE_ACTIVITY_EVENTS: readonly string[] = Object.freeze(["end"]);
+/** The version of the Live Activity consent sentence the app shows. */
+export const LIVE_ACTIVITY_CONSENT_TEXT_VERSION = "2026-11-21";
 
 /** Request deadline for one relay call (`spec`: batch wait 8 s, plus margin). */
 export const RELAY_REQUEST_TIMEOUT_MS = 10_000;

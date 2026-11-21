@@ -9676,7 +9676,15 @@
     "security": {
       "newDeviceTitle": "Neue Anmeldung bei deinem Konto",
       "newDeviceBody": "Eine neue Anmeldung von {device} ({location}). Falls du das nicht warst, ändere sofort dein Passwort.",
-      "unknownLocation": "unbekannter Ort"
+      "unknownLocation": "unbekannter Ort",
+      "passkeyAddedTitle": "Passkey hinzugefügt",
+      "passkeyAddedBody": "Deinem Konto wurde ein neuer Passkey hinzugefügt. Falls du das nicht warst, entferne ihn in den Sicherheitseinstellungen und ändere dein Passwort.",
+      "passkeyRemovedTitle": "Passkey entfernt",
+      "passkeyRemovedBody": "Von deinem Konto wurde ein Passkey entfernt. Falls du das nicht warst, ändere dein Passwort und prüfe deine Geräte.",
+      "tokenRevokedTitle": "Zugriffstoken widerrufen",
+      "tokenRevokedBody": "Ein Zugriffstoken deines Kontos wurde widerrufen. Falls du das nicht warst, ändere dein Passwort und prüfe deine Tokens.",
+      "refreshReuseTitle": "Ein Gerät wurde abgemeldet",
+      "refreshReuseBody": "Ein Anmeldetoken wurde zweimal verwendet, deshalb wurde sein Gerät abgemeldet. Melde dich dort neu an. Passiert das wieder, ändere dein Passwort."
     },
     "sharedRecordIntake": {
       "title": "{name} hat eine Dosis markiert",

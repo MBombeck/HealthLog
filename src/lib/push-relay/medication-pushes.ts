@@ -92,8 +92,14 @@ export function sendSealedIntakeRecorded(
   );
 }
 
-/** Whether a relay device still has silent budget this hour. */
-async function silentBudgetLeft(deviceId: string, now: Date): Promise<boolean> {
+/**
+ * Whether a relay device still has silent budget this hour: every silent
+ * push the relay carried for it counts, whatever its type.
+ */
+export async function silentBudgetLeft(
+  deviceId: string,
+  now: Date,
+): Promise<boolean> {
   const sent = await prisma.pushRelayDelivery.count({
     where: {
       deviceId,

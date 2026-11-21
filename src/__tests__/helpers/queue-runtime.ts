@@ -404,6 +404,12 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "push-relay-maintenance": short(
     "One relay status probe, at most 500 outbox items in batches of 50, one receipt report; each relay call is bounded at 10 s.",
   ),
+  "push-data-changed": short(
+    "At most 500 pending accounts, one claim and one sealed silent send each, then one retention DELETE.",
+  ),
+  "healthkit-catch-up": short(
+    "One indexed scan of Apple Health accounts gone quiet, and at most one sealed silent send per recent device within its daily limit.",
+  ),
   "arrival-reaction-cleanup": short("One retention DELETE."),
   "rate-limit-cleanup": short("One retention DELETE."),
   "idempotency-cleanup": short("One retention DELETE."),

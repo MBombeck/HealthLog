@@ -1,3 +1,4 @@
+import { sendSecurityAlert } from "@/lib/auth/security-alert";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
@@ -143,6 +144,7 @@ export const DELETE = apiHandler(
       ipAddress: getClientIp(request),
       details: { passkeyId: id, passkeyName: passkey.name },
     });
+    void sendSecurityAlert(user.id, "passkey_removed");
 
     annotate({ action: { name: "auth.passkey.delete" } });
 

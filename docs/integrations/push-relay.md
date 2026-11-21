@@ -112,7 +112,37 @@ binding directly at the relay.
 - the end of a medication Live Activity, sent with a statement the device
   signed when the Activity started (the relay never learns when an Activity
   starts);
-- other server notifications such as low stock or a seizure cluster.
+- other server notifications such as low stock or a seizure cluster;
+- security alerts: a sign-in from a new device, a passkey added or removed,
+  an access token revoked, a device signed out because its sign-in token was
+  used twice. They break through a Focus (time-sensitive);
+- a silent wake when a server-side sync stored new readings (Withings,
+  Garmin, Oura, WHOOP, Polar, Strava, Google Health, Nightscout, or a food
+  tracker posting with a token), so the app, its widgets and the Watch are
+  current without opening the app. It names only the kind of data that
+  changed (measurements, sleep, workouts, nutrition), never a value;
+- a silent wake asking the app to run its Apple Health upload when the
+  server has received nothing from it for six hours while the app is still
+  in use.
+
+### How often
+
+The silent wakes are rationed, because Apple stops waking an app that gets
+too many of them:
+
+- the data wake goes out at most once every five minutes and three times an
+  hour per account; changes in between are merged into the next one, never
+  dropped. A sync you started from a device does not wake that device, it
+  already has the result;
+- the Apple Health wake goes to a device at most three times a day, at least
+  four hours apart, and only while the app was opened in the last three days;
+  after two weeks without any upload the server stops asking;
+- no device gets more than four of these wakes an hour together, and over the
+  relay none beyond the relay's own six silent pushes per device and hour.
+
+Both wakes go only to app versions that registered a push key; older app
+versions get nothing new. A server with its own APNs key sends the same
+sealed wakes itself.
 
 Mood, measurement and cycle reminders do not go over the relay; the app plans
 them itself. Medication reminders stay on the iPhone unless a device is set to

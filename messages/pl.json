@@ -9676,7 +9676,15 @@
     "security": {
       "newDeviceTitle": "Nowe logowanie do Twojego konta",
       "newDeviceBody": "Nowe logowanie z {device} ({location}). Jeśli to nie Ty, natychmiast zmień hasło.",
-      "unknownLocation": "nieznana lokalizacja"
+      "unknownLocation": "nieznana lokalizacja",
+      "passkeyAddedTitle": "Dodano klucz dostępu",
+      "passkeyAddedBody": "Do Twojego konta dodano nowy klucz dostępu. Jeśli to nie Ty, usuń go w ustawieniach bezpieczeństwa i zmień hasło.",
+      "passkeyRemovedTitle": "Usunięto klucz dostępu",
+      "passkeyRemovedBody": "Z Twojego konta usunięto klucz dostępu. Jeśli to nie Ty, zmień hasło i sprawdź swoje urządzenia.",
+      "tokenRevokedTitle": "Unieważniono token dostępu",
+      "tokenRevokedBody": "Unieważniono token dostępu do Twojego konta. Jeśli to nie Ty, zmień hasło i sprawdź swoje tokeny.",
+      "refreshReuseTitle": "Wylogowano urządzenie",
+      "refreshReuseBody": "Token logowania został użyty dwa razy, więc jego urządzenie zostało wylogowane. Zaloguj się na nim ponownie. Jeśli to się powtarza, zmień hasło."
     },
     "sharedRecordIntake": {
       "title": "{name} oznaczył(a) dawkę",

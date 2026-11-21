@@ -1,8 +1,10 @@
 /**
  * The user-facing reminder ticks: the medication overdue check, the daily
  * mood reminder, the cycle reminder, the checkup (measurement) reminder, and
- * the eventful reminder-satisfy queue, and the push relay's minute pass (its
- * outbox retries, breaker probe, sender-key rotation and receipt report).
+ * the eventful reminder-satisfy queue, the push relay's minute pass (its
+ * outbox retries, breaker probe, sender-key rotation and receipt report), and
+ * the two silent wakes: the DATA_CHANGED minute flush and the hourly
+ * HealthKit catch-up.
  *
  * The three daily reminders tick every 15 minutes and short-circuit unless
  * the user's local time is the reminder's hour, so one UTC cron serves every
@@ -41,6 +43,12 @@ const MEASUREMENT_ANOMALY_QUEUE = "measurement-anomaly-check";
 const MEASUREMENT_ANOMALY_CRON = "8-59/15 * * * *";
 const PUSH_RELAY_MAINTENANCE_QUEUE = "push-relay-maintenance";
 const PUSH_RELAY_MAINTENANCE_CRON = "* * * * *";
+// The DATA_CHANGED wakes whose five-minute window closed; every minute.
+const PUSH_DATA_CHANGED_QUEUE = "push-data-changed";
+const PUSH_DATA_CHANGED_CRON = "* * * * *";
+// Devices whose Apple Health upload fell behind; hourly, off the hour.
+const HEALTHKIT_CATCH_UP_QUEUE = "healthkit-catch-up";
+const HEALTHKIT_CATCH_UP_CRON = "23 * * * *";
 
 const checks = () => import("@/lib/jobs/reminder/mood-cycle-checks");
 
@@ -87,6 +95,21 @@ const jobs: readonly JobDefinition[] = [
     load: async () =>
       (await import("@/lib/jobs/push-relay-maintenance"))
         .handlePushRelayMaintenance,
+  }),
+  // Every minute; a pass with nothing pending reads one index and returns.
+  defineJob({
+    queue: PUSH_DATA_CHANGED_QUEUE,
+    cron: PUSH_DATA_CHANGED_CRON,
+    work: { localConcurrency: 1 },
+    load: async () =>
+      (await import("@/lib/jobs/push-data-changed")).handlePushDataChanged,
+  }),
+  defineJob({
+    queue: HEALTHKIT_CATCH_UP_QUEUE,
+    cron: HEALTHKIT_CATCH_UP_CRON,
+    work: { localConcurrency: 1 },
+    load: async () =>
+      (await import("@/lib/jobs/healthkit-catch-up")).handleHealthKitCatchUp,
   }),
   // No cron: enqueued by the ingest paths when a measurement or lab lands;
   // the 15-minute checkup tick is the safety net.

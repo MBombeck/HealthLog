@@ -4,6 +4,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
 import { syncUserPolarLegs } from "@/lib/jobs/reminder/polar-sync";
 import { resolveSyncOutcome } from "@/lib/outcome/written-outcome";
+import { withDataChangeOrigin } from "@/lib/push-relay/data-changed";
 
 /**
  * Manually trigger a Polar sync for the current user (v1.32.28).
@@ -20,7 +21,7 @@ import { resolveSyncOutcome } from "@/lib/outcome/written-outcome";
  * Rate-limited 5/60s per user, matching the hardened Google Health
  * route.
  */
-export const POST = apiHandler(async () => {
+export const POST = apiHandler(async (request: Request) => {
   const { user } = await requireAuth();
   annotate({ action: { name: "polar.sync" } });
 
@@ -32,7 +33,10 @@ export const POST = apiHandler(async () => {
   }
 
   try {
-    const result = await syncUserPolarLegs(user.id);
+    const result = await withDataChangeOrigin(
+      request.headers.get("x-device-id"),
+      () => syncUserPolarLegs(user.id),
+    );
     return apiSuccess(resolveSyncOutcome(result));
   } catch {
     // Both legs record their own classified failure on the `polar` ledger.
