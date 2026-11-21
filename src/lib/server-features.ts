@@ -14,6 +14,8 @@ export const SERVER_FEATURES = [
   "sync.medications-last-updated",
   "medication.live-activity-tokens",
   "medication.dose-state",
+  "measurement.reading-timezone",
+  "apple-health.types-2026-11",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -34,4 +36,8 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "POST /api/devices takes liveActivityTokens; each Activity is ended by its own push once its dose is answered.",
   "medication.dose-state":
     "Today rows and complianceDisplay.currentDose carry the resolved state, takenLate, dueAt, overdueSince and slotInstant.",
+  "measurement.reading-timezone":
+    "POST /api/measurements/batch accepts an optional IANA timeZone per entry; the reading's own zone sets its day for sleep, the day view, list day groups and daily charts.",
+  "apple-health.types-2026-11":
+    "The batch ingest accepts the Apple Health cycling distance, rowing distance and speed, and running speed, power, ground contact time, vertical oscillation and stride length types.",
 };
