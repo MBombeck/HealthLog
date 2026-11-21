@@ -162,6 +162,30 @@ describe("emergency card", () => {
     expect(statusBody).not.toContain(tokenOf(url));
   });
 
+  it("keeps serving a card that is reloaded again and again, auditing a bounded number", async () => {
+    const owner = await makeUser();
+    await seedCard(owner.id);
+    await signIn(owner.id);
+    const minted = await call("link", "POST", { fields: ["BLOOD_TYPE"] });
+    const { url } = (await minted.json()).data;
+
+    // Whoever has seen the card can reload it; that must not lock it for the
+    // person who needs it next.
+    for (let i = 0; i < 75; i++) {
+      const read = await readEmergencyCardByToken(anon(), tokenOf(url));
+      expect(read.ok).toBe(true);
+    }
+    const row = await db().emergencyCardLink.findFirstOrThrow({
+      where: { userId: owner.id },
+    });
+    expect(row.accessCount).toBe(60);
+    expect(
+      await db().auditLog.count({
+        where: { userId: owner.id, action: "emergency-card.link.access" },
+      }),
+    ).toBe(60);
+  });
+
   it("holds one live link, and revoked, expired or malformed links miss alike", async () => {
     const owner = await makeUser();
     await seedCard(owner.id);
