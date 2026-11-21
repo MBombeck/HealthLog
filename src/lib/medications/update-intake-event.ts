@@ -30,6 +30,7 @@ import {
   resolveForcedSlotForWrite,
   resolveSlotForWriteByBand,
 } from "@/lib/medications/scheduling/slot-upsert";
+import { resolveTakeSlotForExistingRow } from "@/lib/medications/scheduling/existing-row-slot";
 import { dateOnlyKey } from "@/lib/tz/date-only";
 import { resolveInjectionSiteForWrite } from "@/lib/medications/injection-site-write";
 import type { InjectionSiteKey } from "@/lib/medications/injection-sites";
@@ -187,8 +188,11 @@ async function resolveEditedInjectionSite(
  *      OR deliberately ad-hoc). The persisted marker is what keeps the
  *      nightly slot dedup from snapping the released row back into the
  *      cluster the user just detached it from;
- *   4. else a taken edit attributes by band (slot anchor on match, the
- *      take's own time on a miss → ad-hoc), provenance AUTO;
+ *   4. else a taken edit keeps the row's own slot when it is a real slot
+ *      not ahead of the take (`resolveTakeSlotForExistingRow`: AUTO when
+ *      the band agrees, USER_PIN when only the anchor holds it), and
+ *      otherwise attributes by band (the take's own time on a miss →
+ *      ad-hoc);
  *   5. a skip / pending edit keeps the existing `scheduledFor` anchor.
  */
 async function resolveEditAttribution(
@@ -262,17 +266,32 @@ async function resolveEditAttribution(
       nextTakenAt !== null &&
       !nextSkipped
     ) {
-      const attribution = await resolveSlotForWriteByBand({
-        userId: user.id,
-        medicationId: id,
-        userTz: user.timezone,
-        takenAt: nextTakenAt,
-      });
-      // band.at on match; the take's own time on a miss (ad-hoc).
-      resolvedScheduledFor = attribution.slotInstant ?? nextTakenAt;
-      // An explicit unpin stays user-fixed (USER_PIN) even on the released
-      // row; a plain taken/skipped edit re-attributes AUTO.
-      attributionSource = data.forceSlotInstant === null ? "USER_PIN" : "AUTO";
+      if (data.forceSlotInstant === null) {
+        // An explicit unpin releases the row from its anchor: band on the
+        // take's time, ad-hoc on a miss, and the release stays user-fixed
+        // (USER_PIN).
+        const attribution = await resolveSlotForWriteByBand({
+          userId: user.id,
+          medicationId: id,
+          userTz: user.timezone,
+          takenAt: nextTakenAt,
+        });
+        resolvedScheduledFor = attribution.slotInstant ?? nextTakenAt;
+        attributionSource = "USER_PIN";
+      } else {
+        // A corrected time or outcome on a row keeps the dose the row names
+        // (its own anchor), the same rule as the status route.
+        const bound = await resolveTakeSlotForExistingRow({
+          userId: user.id,
+          medicationId: id,
+          userTz: user.timezone,
+          rowScheduledFor: ctx.event.scheduledFor,
+          rowWasTaken: ctx.event.takenAt !== null && !ctx.event.skipped,
+          takenAt: nextTakenAt,
+        });
+        resolvedScheduledFor = bound.slotInstant;
+        attributionSource = bound.attributionSource;
+      }
     } else if (data.forceSlotInstant === null) {
       // Unpin on a row that is not a confirmed take (skip / pending):
       // nothing to re-attribute, but the provenance still resets — a
@@ -319,6 +338,8 @@ async function editIntakeInPlace(
       ...((data.takenAt !== undefined || data.skipped !== undefined) && {
         autoRecorded: false,
       }),
+      // A recorded outcome is no longer an auto-miss.
+      ...((nextSkipped || nextTakenAt !== null) && { autoMissed: false }),
       // Sync — bump the reconciliation counter on every server-side mutation
       // so the `/api/sync/changes` feed echoes a monotonic value to paired
       // clients.

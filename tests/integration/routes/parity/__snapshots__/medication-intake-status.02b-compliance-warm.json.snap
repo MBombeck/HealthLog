@@ -30,7 +30,7 @@
       {
         "date": "2026-10-14",
         "scheduled": 6,
-        "taken": 0
+        "taken": 1
       },
       {
         "date": "2026-10-15",
@@ -507,7 +507,7 @@
         "userId": "<id:2>",
         "medicationId": "<id:5>",
         "scheduledFor": "2026-10-14T08:00:00.000Z",
-        "takenAt": null,
+        "takenAt": "2026-10-14T08:05:00.000Z",
         "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,

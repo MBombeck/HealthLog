@@ -449,7 +449,7 @@
         "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
-        "attributionSource": "AUTO",
+        "attributionSource": "USER_PIN",
         "source": "WEB",
         "idempotencyKey": null,
         "createdAt": "<createdAt>",
@@ -513,7 +513,7 @@
         "userId": "<id:2>",
         "medicationId": "<id:5>",
         "scheduledFor": "2026-10-14T08:00:00.000Z",
-        "takenAt": null,
+        "takenAt": "2026-10-14T08:05:00.000Z",
         "skipped": false,
         "autoMissed": false,
         "autoRecorded": false,
@@ -544,12 +544,7 @@
         "createdAt": "<createdAt>",
         "injectionSite": "ABDOMEN_LEFT",
         "doseTaken": null,
-        "inventoryConsumption": [
-          {
-            "units": 1,
-            "itemId": "<id:19>"
-          }
-        ],
+        "inventoryConsumption": null,
         "externalId": null,
         "updatedAt": "<updatedAt>",
         "syncVersion": "<syncVersion>",
@@ -696,7 +691,7 @@
         "state": "IN_USE",
         "containerType": "OTHER",
         "unitsTotal": "30",
-        "unitsRemaining": "27",
+        "unitsRemaining": "28",
         "firstUseAt": "2026-10-15T08:30:00.000Z",
         "expiresAt": null,
         "printedExpiry": null,

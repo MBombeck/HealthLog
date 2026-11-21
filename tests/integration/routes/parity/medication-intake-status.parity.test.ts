@@ -196,8 +196,12 @@ beforeAll(async () => {
   await intake("todayEvening", twice.id, {
     scheduledFor: "2026-10-15T20:00:00.000Z",
   });
+  // A taken dose whose time is corrected into the evening band: a time
+  // correction says which dose it was, so it re-binds. An OPEN row marked
+  // taken keeps its own slot instead (medication-intake-keeps-its-slot).
   await intake("moveMe", twice.id, {
     scheduledFor: "2026-10-14T08:00:00.000Z",
+    takenAt: "2026-10-14T08:05:00.000Z",
     injectionSite: "ABDOMEN_LEFT",
   });
   await intake("pinMe", twice.id, {
