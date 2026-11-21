@@ -674,6 +674,21 @@ function entries(user: Pick<User, "id">): Entry[] {
       },
       me: { pick: (me) => at(me, "avatarUrl") },
     },
+    {
+      columns: ["aiCoachBudgets"],
+      write: {
+        handler: aiProvider.PATCH,
+        method: "PATCH",
+        route: "/api/user/ai-provider",
+        body: { localCoachBudget: { snapshotChars: 6000 } },
+      },
+      read: get(
+        aiProvider.GET,
+        "/api/user/ai-provider",
+        "localCoachBudget.snapshotChars",
+      ),
+      expected: 6000,
+    },
     // #1417 — Local's model is its own: saved from the Local card first, it
     // survives the OpenAI card being saved after it.
     {
