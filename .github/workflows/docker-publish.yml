@@ -12,7 +12,8 @@ name: Build & Publish Docker Image
 # the metadata-action (`type=raw,value=latest,...`) now keys on
 # the v* tag presence so each release still refreshes the `latest`
 # alias in the same run. PR + workflow_dispatch triggers stay so
-# the image still builds on PR validation and manual reruns.
+# the image still builds on PR validation and manual reruns. Pushes to
+# `main` build the amd64 `:edge` image in edge-image.yml instead.
 on:
   push:
     tags: ["v*"]
@@ -44,6 +45,8 @@ jobs:
     permissions:
       actions: read
       contents: read
+    outputs:
+      off_schedule: ${{ steps.calendar.outputs.off_schedule }}
     steps:
       - name: Checkout full history
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -88,6 +91,44 @@ jobs:
 
           echo "Release policy passed for $GITHUB_REF_NAME at $GITHUB_SHA."
 
+      # The release calendar (docs/contributing/release-policy.md). The
+      # push time comes from the event payload, so a re-run days later
+      # judges the tag by when it was pushed, not by when it was re-run.
+      # A tag outside the calendar needs an `Out of schedule:` line in its
+      # changelog section and sets off_schedule=true, which holds the
+      # build for the maintainer's approval below.
+      - name: Check release calendar
+        id: calendar
+        if: github.event_name != 'pull_request'
+        env:
+          TAG: ${{ github.ref_name }}
+          PUSHED_AT: ${{ github.event.repository.pushed_at }}
+        run: |
+          now_args=()
+          if [ "$GITHUB_EVENT_NAME" = "push" ] && [ -n "$PUSHED_AT" ]; then
+            now_args=(--now "$PUSHED_AT")
+          fi
+          node scripts/release-policy.mjs check "$TAG" "${now_args[@]}" --github-output "$GITHUB_OUTPUT"
+
+  # An out-of-schedule tag (security, data loss, broken install) waits
+  # here until the maintainer approves the `off-schedule-release`
+  # environment, which lists him as the required reviewer. A scheduled
+  # tag skips this job and builds without a click.
+  off-schedule-approval:
+    name: Approve out-of-schedule release
+    needs: [release-policy]
+    if: needs.release-policy.outputs.off_schedule == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: off-schedule-release
+    permissions:
+      contents: read
+    steps:
+      - name: Record approval
+        env:
+          TAG: ${{ github.ref_name }}
+        run: echo "::notice::Out-of-schedule release $TAG approved."
+
   # ── Stage 1 ────────────────────────────────────────────────────────
   # Build each architecture on its own native GitHub-hosted runner so
   # Next.js's static-page workers run on real silicon instead of QEMU
@@ -105,7 +146,14 @@ jobs:
   # manifest in a third step, so consumers see a single tag that
   # auto-selects on `docker pull` per local platform.
   build:
-    needs: [release-policy]
+    needs: [release-policy, off-schedule-approval]
+    # Runs when the policy passed and the approval either passed or was not
+    # needed. A refused or pending approval keeps every build job waiting.
+    if: >-
+      !cancelled() &&
+      needs.release-policy.result == 'success' &&
+      (needs.off-schedule-approval.result == 'success' ||
+       needs.off-schedule-approval.result == 'skipped')
     name: Build ${{ matrix.platform }}
     runs-on: ${{ matrix.runner }}
     # 25 min wall clock — native amd64 build finished inside 12 min

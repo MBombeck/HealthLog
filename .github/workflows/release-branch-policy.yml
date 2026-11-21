@@ -1,0 +1,36 @@
+name: Release branch policy
+
+# `main` is the fix line; features collect on `release/vX.Y.0` and reach
+# `main` with the monthly minor (docs/contributing/release-policy.md). A
+# pull request to `main` from any other branch fails when it carries a
+# `feat` commit or grows `## [Unreleased]` in CHANGELOG.md by a heading a
+# patch cannot have.
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-branch-policy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fix-line:
+    name: Features go to the release branch
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Check commits and changelog
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SOURCE_BRANCH: ${{ github.head_ref }}
+        run: |
+          node scripts/release-policy.mjs pr --base "$BASE_SHA" --head "$HEAD_SHA" --source "$SOURCE_BRANCH"
