@@ -143,6 +143,83 @@ describe("GET /api/devices/me/push-diagnostics", () => {
     expect(JSON.stringify(res.body)).not.toContain(TOKEN);
   });
 
+  it("shows who reminds the device of a dose, as the send decides it", async () => {
+    const { session, deviceId } = await boundDevice();
+    const { dispatchNotification } =
+      await import("@/lib/notifications/dispatcher");
+    /** Whether a medication reminder reaches the device over the relay. */
+    async function reminded(): Promise<boolean> {
+      fake.apns.length = 0;
+      await dispatchNotification({
+        userId: session.userId,
+        eventType: "MEDICATION_REMINDER",
+        title: "Time for your medication",
+        message: "1 tablet",
+        metadata: {
+          medicationId: "med-1",
+          scheduledAt: "2026-11-22T08:00:00.000Z",
+        },
+      });
+      return fake.apns.some((a) => a.pushClass === "alert");
+    }
+    const DAY = 24 * 60 * MIN;
+    const seen = new Date();
+    const cases: Array<{
+      data: {
+        medicationDelivery: "server" | "client" | null;
+        localRunwayUntil: Date | null;
+      };
+      accountLocal: boolean;
+      expected: { delivery: "server" | "client"; localUntil: string | null };
+    }> = [
+      {
+        data: { medicationDelivery: "client", localRunwayUntil: null },
+        accountLocal: false,
+        expected: {
+          delivery: "client",
+          localUntil: new Date(seen.getTime() + 3 * DAY).toISOString(),
+        },
+      },
+      {
+        data: {
+          medicationDelivery: "client",
+          localRunwayUntil: new Date(seen.getTime() - MIN),
+        },
+        accountLocal: true,
+        expected: { delivery: "server", localUntil: null },
+      },
+      {
+        data: { medicationDelivery: null, localRunwayUntil: null },
+        accountLocal: false,
+        expected: { delivery: "server", localUntil: null },
+      },
+      {
+        data: { medicationDelivery: null, localRunwayUntil: null },
+        accountLocal: true,
+        expected: {
+          delivery: "client",
+          localUntil: new Date(seen.getTime() + 3 * DAY).toISOString(),
+        },
+      },
+    ];
+    for (const c of cases) {
+      const why = JSON.stringify(c);
+      await prisma.device.update({
+        where: { id: deviceId },
+        data: { ...c.data, lastSeen: seen },
+      });
+      await prisma.user.update({
+        where: { id: session.userId },
+        data: {
+          notificationPrefs: { medication: { clientManaged: c.accountLocal } },
+        },
+      });
+      const res = await read(session, DEVICE_ID_HEADER);
+      expect(res.data.medicationReminder, why).toEqual(c.expected);
+      expect(await reminded(), why).toBe(c.expected.delivery === "server");
+    }
+  });
+
   it("answers the same 404 for another account's device, an unknown one and none", async () => {
     await boundDevice();
     const stranger = await makeSession(await makeUser());
@@ -362,9 +439,10 @@ describe("GET /api/devices/me/push-diagnostics", () => {
       read(session, DEVICE_ID_HEADER),
     );
     expect(measured.result.status).toBe(200);
-    // The session and its user, the rate-limit upsert, the device and its
-    // owed row, the relay registration, one outbox read per kind and the
-    // budget window: a fixed number, whatever the ledgers hold.
+    // The session and its user, the rate-limit upsert, the device, its owed
+    // row and its account's reminder switch, the relay registration, one
+    // outbox read per kind and the budget window: a fixed number, whatever
+    // the ledgers hold.
     expect(measured.count, measured.statements.join("\n")).toBeLessThanOrEqual(
       BUDGET,
     );
@@ -372,4 +450,4 @@ describe("GET /api/devices/me/push-diagnostics", () => {
 });
 
 /** Statements one read sends on this fixture; see the test above. */
-const BUDGET = 11;
+const BUDGET = 12;

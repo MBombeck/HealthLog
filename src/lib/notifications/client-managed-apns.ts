@@ -147,17 +147,30 @@ export function deviceDeliversLocally(
   accountDeliversLocally: boolean,
   now: Date = new Date(),
 ): boolean {
+  return localDeliveryUntil(device, accountDeliversLocally, now) !== null;
+}
+
+/**
+ * Until when this device delivers the reminder itself, or null when the
+ * server reminds it now. The instant {@link deviceDeliversLocally} reads, and
+ * what the device's push diagnostics show.
+ */
+export function localDeliveryUntil(
+  device: LocalDeliveryDevice,
+  accountDeliversLocally: boolean,
+  now: Date = new Date(),
+): Date | null {
   const local =
     device.medicationDelivery === "client"
       ? true
       : device.medicationDelivery === "server"
         ? false
         : accountDeliversLocally;
-  if (!local) return false;
+  if (!local) return null;
   const until =
     device.localRunwayUntil?.getTime() ??
     device.lastSeen.getTime() + CLIENT_DEVICE_QUIET_MS;
-  return now.getTime() <= until;
+  return now.getTime() <= until ? new Date(until) : null;
 }
 
 /**
@@ -169,6 +182,14 @@ export function deviceDeliversLocally(
  *   otherwise. `localDeviceIds` names the devices left out, for the wide
  *   event.
  *
+ * An event with per-device delivery also names `serverDeviceIds`: the devices
+ * that get the server's reminder, by {@link deviceDeliversLocally}. This is
+ * the one decision both APNs transports read. Over this server's own key it
+ * becomes `onlyDeviceIds` for a dispatch the flag covers; over the relay it
+ * is the only set the event may travel to, for every dispatch of the event,
+ * a follow-up included (`relayCarries`). A follow-up still reaches every
+ * device over the server's own key, as it always has.
+ *
  * An event without per-device overrides keeps the account-wide rule: skip
  * when the account delivers locally, send to every device otherwise.
  */
@@ -178,16 +199,19 @@ export type ApnsDeliveryTargets =
       kind: "send";
       onlyDeviceIds?: string[];
       localDeviceIds: string[];
+      serverDeviceIds?: string[];
     };
 
 export async function resolveApnsDeliveryTargets(
   eventType: string,
   recipientUserId: string,
   accountDeliversLocally: boolean,
+  metadata?: Record<string, unknown>,
 ): Promise<ApnsDeliveryTargets> {
   const gate = CLIENT_MANAGED_APNS_EVENTS[eventType];
+  const covered = hasClientManagedApnsGate(eventType, metadata);
   if (!gate?.perDevice) {
-    return accountDeliversLocally
+    return covered && accountDeliversLocally
       ? { kind: "skip" }
       : { kind: "send", localDeviceIds: [] };
   }
@@ -200,13 +224,6 @@ export async function resolveApnsDeliveryTargets(
       localRunwayUntil: true,
     },
   });
-  // No device to decide for: the account's rule, exactly as before. The
-  // sender then reports `apns_no_devices` when it is asked to send.
-  if (devices.length === 0) {
-    return accountDeliversLocally
-      ? { kind: "skip" }
-      : { kind: "send", localDeviceIds: [] };
-  }
   const local: string[] = [];
   const server: string[] = [];
   const now = new Date();
@@ -216,8 +233,25 @@ export async function resolveApnsDeliveryTargets(
       : server
     ).push(device.id);
   }
+  // A dispatch the flag does not cover (a follow-up) goes to every device
+  // over the server's own key; the relay still takes only `server`.
+  if (!covered) {
+    return { kind: "send", localDeviceIds: [], serverDeviceIds: server };
+  }
+  // No device to decide for: the account's rule, exactly as before. The
+  // sender then reports `apns_no_devices` when it is asked to send.
+  if (devices.length === 0) {
+    return accountDeliversLocally
+      ? { kind: "skip" }
+      : { kind: "send", localDeviceIds: [], serverDeviceIds: [] };
+  }
   if (server.length === 0) return { kind: "skip" };
   return local.length === 0
-    ? { kind: "send", localDeviceIds: [] }
-    : { kind: "send", onlyDeviceIds: server, localDeviceIds: local };
+    ? { kind: "send", localDeviceIds: [], serverDeviceIds: server }
+    : {
+        kind: "send",
+        onlyDeviceIds: server,
+        localDeviceIds: local,
+        serverDeviceIds: server,
+      };
 }

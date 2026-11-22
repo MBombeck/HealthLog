@@ -379,7 +379,7 @@ export async function dispatchNotification(
           channel.config,
           delivery.recipientUserId,
           recipientPayload,
-          apnsTargets?.kind === "send" ? apnsTargets.onlyDeviceIds : undefined,
+          apnsTargets?.kind === "send" ? apnsTargets : undefined,
         );
         let outcome: SendOutcome;
         if ("outcome" in prepared) {
@@ -487,6 +487,11 @@ type PreparedChannelSend =
  * client-managed gate applies (send to every device as ever), `skip` when no
  * device takes the server's push, or `send` with the devices that do. Devices
  * left out are annotated on the wide event, like a whole-channel skip.
+ *
+ * An event with per-device delivery is resolved for every dispatch, a
+ * follow-up the flag does not cover included: the relay carries it only to
+ * the devices that get the server's reminder (`serverDeviceIds`), so the one
+ * decision has to reach the channel either way.
  */
 async function resolveApnsTargetsFor(
   channelType: string,
@@ -497,7 +502,8 @@ async function resolveApnsTargetsFor(
   if (
     channelType !== "APNS" ||
     delivery.managed ||
-    !hasClientManagedApnsGate(payload.eventType, payload.metadata)
+    (!hasClientManagedApnsGate(payload.eventType, payload.metadata) &&
+      !CLIENT_MANAGED_APNS_EVENTS[payload.eventType]?.perDevice)
   ) {
     return null;
   }
@@ -505,6 +511,7 @@ async function resolveApnsTargetsFor(
     payload.eventType,
     delivery.recipientUserId,
     await accountDeliversLocally(),
+    payload.metadata,
   );
   if (targets.kind === "send" && targets.localDeviceIds.length > 0) {
     annotateClientManagedSkip(payload);
@@ -538,8 +545,15 @@ function prepareChannelSend(
   encryptedConfig: string,
   recipientUserId: string,
   payload: NotificationPayload,
-  /** APNs only: push to these devices alone (#179); all when absent. */
-  apnsDeviceIds?: readonly string[],
+  /**
+   * APNs only (#179): `onlyDeviceIds` limits the push to those devices (all
+   * when absent); `serverDeviceIds` are the devices that get the server's
+   * reminder of a per-device event, the only ones the relay carries it to.
+   */
+  apnsTargets?: Pick<
+    Extract<ApnsDeliveryTargets, { kind: "send" }>,
+    "onlyDeviceIds" | "serverDeviceIds"
+  >,
 ): PreparedChannelSend {
   let decrypted: string;
   try {
@@ -642,9 +656,14 @@ function prepareChannelSend(
       // changing the dispatcher shape.
       return {
         send: () =>
-          apnsDeviceIds
+          apnsTargets
             ? sendApnsChannel(recipientUserId, payload, {
-                onlyDeviceIds: apnsDeviceIds,
+                ...(apnsTargets.onlyDeviceIds && {
+                  onlyDeviceIds: apnsTargets.onlyDeviceIds,
+                }),
+                ...(apnsTargets.serverDeviceIds && {
+                  serverDeviceIds: apnsTargets.serverDeviceIds,
+                }),
               })
             : sendApnsChannel(recipientUserId, payload),
       };

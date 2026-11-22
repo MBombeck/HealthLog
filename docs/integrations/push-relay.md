@@ -193,8 +193,13 @@ versions get nothing new. A server with its own APNs key sends the same
 sealed wakes itself.
 
 Mood, measurement and cycle reminders do not go over the relay; the app plans
-them itself. Medication reminders stay on the iPhone unless a device is set to
-server delivery. Notifications about another person's record (guardian
+them itself. A medication reminder goes over the relay to exactly the devices
+the server would remind over its own APNs key: a device set to server
+delivery, a device without its own setting on an account set to server
+delivery, and a device that reminds itself but whose local plan has run out
+(past the runway it reported, or 3 days without a request). A device that
+reminds itself keeps the reminder, and the follow-ups for a dose still open,
+on the iPhone. Notifications about another person's record (guardian
 features) do not go over the relay.
 
 ### Diagnostics on the device
@@ -202,7 +207,9 @@ features) do not go over the relay.
 The app's push diagnostics screen reads `GET /api/devices/me/push-diagnostics`
 for the device it runs on (named by its `X-Device-Id`). It shows how pushes
 reach that device (the relay, the server's own APNs key, or not at all),
-whether they are sealed, the relay's state and the device's binding, and the
+whether they are sealed, the relay's state and the device's binding, whether
+the server or the app reminds the device of a dose (and until when the app
+does), and the
 silent budget: how many of the six silent pushes an hour the device has used,
 how many of the four wakes, whether an intake sync is owed and when the next
 one fits. It also lists the newest push of each kind (alert, silent sync,
