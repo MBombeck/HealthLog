@@ -460,6 +460,25 @@ export type RestoredEncounter = Pick<
  * report every one of those references as unresolvable and be counted as a
  * successful restore of a thinner record.
  */
+/**
+ * The visits' lab links pointed at the lab results the restore wrote. A
+ * portable restore mints fresh lab result ids, so a link names the source id
+ * (`labResultIdBySourceId`, filled by the labs step) and is written against
+ * the new one; without it every visit came back without its lab results.
+ */
+export function withRestoredLabIds<T extends VisitsRestoreInput>(
+  payload: T,
+  labResultIdBySourceId: ReadonlyMap<string, string>,
+): T {
+  return {
+    ...payload,
+    encounterLabLinks: payload.encounterLabLinks.map((link) => ({
+      ...link,
+      targetId: labResultIdBySourceId.get(link.targetId) ?? link.targetId,
+    })),
+  };
+}
+
 export async function restoreVisitsData(
   tx: Prisma.TransactionClient,
   ownerId: string,

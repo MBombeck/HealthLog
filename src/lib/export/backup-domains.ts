@@ -82,7 +82,10 @@ import { restoreSensitiveData } from "@/lib/export/sensitive-backup";
 import { restoreSymptomsData } from "@/lib/export/symptoms-backup";
 import { restoreSeizuresData } from "@/lib/export/seizures-backup";
 import { restoreVaccinationsData } from "@/lib/export/vaccinations-backup";
-import { restoreVisitsData } from "@/lib/export/visits-backup";
+import {
+  restoreVisitsData,
+  withRestoredLabIds,
+} from "@/lib/export/visits-backup";
 import { clearWorkouts, restoreWorkouts } from "@/lib/export/workouts-backup";
 
 /** One step of the restore transaction. */
@@ -318,7 +321,12 @@ export const RESTORE_STEPS: readonly RestoreStep[] = [
       ctx.reportSection("visits");
       Object.assign(
         ctx.cleared,
-        await restoreVisitsData(ctx.tx, ctx.ownerId, ctx.payload, ctx.skips),
+        await restoreVisitsData(
+          ctx.tx,
+          ctx.ownerId,
+          withRestoredLabIds(ctx.payload, ctx.links.labResultIdBySourceId),
+          ctx.skips,
+        ),
       );
     },
   },
