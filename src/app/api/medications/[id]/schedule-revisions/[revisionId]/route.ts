@@ -40,7 +40,7 @@ import {
   toRevisionPayloadEntry,
   type ScheduleRevisionEntry,
 } from "@/lib/medications/scheduling/schedule-eras";
-import { invalidateUserMedications } from "@/lib/cache/invalidate";
+import { afterMedicationChange } from "@/lib/medications/after-dose-change";
 import type { Prisma } from "@/generated/prisma/client";
 
 type RouteParams = { params: Promise<{ id: string; revisionId: string }> };
@@ -279,7 +279,7 @@ export const PATCH = apiHandler(
     // v1.16.9 — an era write re-segments the bands every cached payload
     // (list next-due, compliance cells, dashboard tally) was built on;
     // hard-evict so the next read reflects the new history immediately.
-    invalidateUserMedications(user.id, { evict: true });
+    afterMedicationChange(user.id, request.headers.get("x-device-id"));
 
     return apiSuccess({
       id: outcome.revision.id,
@@ -394,7 +394,7 @@ export const DELETE = apiHandler(
     // v1.16.9 — an era write re-segments the bands every cached payload
     // (list next-due, compliance cells, dashboard tally) was built on;
     // hard-evict so the next read reflects the new history immediately.
-    invalidateUserMedications(user.id, { evict: true });
+    afterMedicationChange(user.id, request.headers.get("x-device-id"));
 
     return apiSuccess({ deleted: true });
   },

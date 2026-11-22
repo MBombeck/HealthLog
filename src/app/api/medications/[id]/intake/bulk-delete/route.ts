@@ -13,7 +13,7 @@ import {
   refreshDoseDay,
 } from "@/lib/medications/dose-day-refresh";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
-import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
+import { afterDoseChange } from "@/lib/medications/after-dose-change";
 import { NextRequest } from "next/server";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -182,7 +182,8 @@ export const POST = apiHandler(
     // widget tally and any pending Live Activity on the user's other iOS
     // devices. Coalesced per user, best-effort — never affects the
     // response.
-    queueMedicationIntakeSync({
+    afterDoseChange({
+      scope: "intakes",
       userId: user.id,
       originDeviceToken: request.headers.get("x-device-id"),
     });

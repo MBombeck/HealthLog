@@ -16,8 +16,8 @@
  * holds under the same name and dose, or an earlier row of the file, is
  * skipped.
  */
+import { afterMedicationChange } from "@/lib/medications/after-dose-change";
 import { prisma } from "@/lib/db";
-import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import {
   readCsvRecords,
   type CsvDelimiter,
@@ -336,7 +336,7 @@ export async function importMedicationsCsv(args: {
   } finally {
     // Also after an import cut off part way: what was written is visible.
     if (!dryRun && written > 0) {
-      invalidateUserMedications(userId, { evict: true });
+      afterMedicationChange(userId);
     }
   }
   return report.toResult();

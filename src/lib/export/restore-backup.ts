@@ -27,6 +27,7 @@
  * still one transaction, so a failure part-way leaves the account exactly as
  * it was.
  */
+import { afterDoseChange } from "@/lib/medications/after-dose-change";
 import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserData } from "@/lib/cache/invalidate";
 import { prisma } from "@/lib/db";
@@ -576,6 +577,8 @@ async function afterCommit(
 
   // The complete transaction succeeded; only now evict owner-scoped caches.
   invalidateUserData(ownerId);
+  // The restored medications and doses replace what every device shows.
+  afterDoseChange({ userId: ownerId, scope: "medication" });
 
   // A restored unit preference leaves the stored status notes and period
   // narratives quoting the old unit, the same gap the settings routes close

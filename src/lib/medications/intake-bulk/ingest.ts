@@ -22,7 +22,7 @@ import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { refreshDoseDay } from "@/lib/medications/dose-day-refresh";
 import { unstableExternalIdMeta } from "@/lib/validations/external-id";
 import type { InjectionSiteValue } from "@/lib/validations/medication";
-import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
+import { afterDoseChange } from "@/lib/medications/after-dose-change";
 import {
   createBatchState,
   type BatchState,
@@ -194,7 +194,8 @@ async function settleLandedRows(input: BatchInput, state: BatchState) {
   if (state.syncSlots.size > 0) {
     // One sync per batch, and the visible confirmation once per recorded
     // slot (`medication-intake-recorded.ts`).
-    queueMedicationIntakeSync({
+    afterDoseChange({
+      scope: "intakes",
       userId: user.id,
       originDeviceToken: input.originDeviceToken,
       recorded: [...state.syncSlots.values()].flatMap((slot) =>

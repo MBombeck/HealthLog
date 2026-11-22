@@ -42,6 +42,7 @@
  * `src/lib/jobs/reminder-worker.ts` so pg-boss provisions it at boot; an
  * unregistered queue silently never drains.
  */
+import { afterDoseChange } from "@/lib/medications/after-dose-change";
 import { prisma } from "@/lib/db";
 import {
   MEDICATION_WINDOW_SELECT,
@@ -171,6 +172,29 @@ function pickWinner(rows: DedupIntakeRow[]): DedupIntakeRow {
     }
     return candidate.id > best.id ? candidate : best;
   });
+}
+
+/**
+ * After a pass that changed rows: evict the record's medication caches and
+ * tell the devices, since a collapsed slot is one dose fewer on a device
+ * that still shows two.
+ */
+function afterDedupe(
+  userId: string,
+  summary: {
+    slotsCollapsed: number;
+    rowsSoftDeleted: number;
+    rowsNormalised: number;
+  },
+): void {
+  if (
+    summary.slotsCollapsed > 0 ||
+    summary.rowsSoftDeleted > 0 ||
+    summary.rowsNormalised > 0
+  ) {
+    invalidateUserMedications(userId);
+    afterDoseChange({ userId, scope: "intakes" });
+  }
 }
 
 /**
@@ -481,13 +505,7 @@ export async function dedupeUserIntakeSlots(
   // deploy the worker shares the web process, so the eviction reaches the
   // serving instance; a split web/worker deployment falls back to the TTL
   // bound (see `server-cache.ts`).
-  if (
-    summary.slotsCollapsed > 0 ||
-    summary.rowsSoftDeleted > 0 ||
-    summary.rowsNormalised > 0
-  ) {
-    invalidateUserMedications(userId);
-  }
+  afterDedupe(userId, summary);
 
   annotate({
     action: {

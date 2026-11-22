@@ -7,6 +7,7 @@
  * what the route answers: a refusal, the existing row of a mirrored concept
  * the record already holds, or the new row.
  */
+import { afterMedicationChange } from "@/lib/medications/after-dose-change";
 import type { z } from "zod/v4";
 
 import { prisma } from "@/lib/db";
@@ -25,7 +26,6 @@ import {
   setMedicationCategory,
 } from "@/lib/medication-category";
 import { serializeScheduleRecurrence } from "@/lib/medication-schedule";
-import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import type { Medication, MedicationSchedule } from "@/generated/prisma/client";
 import {
   medicationDetail,
@@ -526,7 +526,8 @@ export async function createMedication(input: {
 
   // Bust per-user medications + compliance + achievement caches so the next
   // read reflects the new schedule.
-  invalidateUserMedications(user.id, { evict: true });
+  // A new schedule puts doses on every device.
+  afterMedicationChange(user.id);
 
   // The read model, exactly as `GET /api/medications/{id}` answers it.
   const body = await medicationDetail({

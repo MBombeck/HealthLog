@@ -8,6 +8,7 @@
  * to the setting's range, so a hand-made callback cannot park a medication
  * for days.
  */
+import { afterDoseChange } from "@/lib/medications/after-dose-change";
 import { prisma } from "@/lib/db";
 import { findTelegramDoseMedication } from "@/lib/telegram-dose-medications";
 import {
@@ -55,6 +56,8 @@ export async function answerDoseSnooze(input: {
     where: { id: medication.id },
     data: { snoozedUntil: new Date(Date.now() + minutes * 60000) },
   });
+  // The snoozed dose is no longer due on the phone either.
+  afterDoseChange({ userId: user.id, scope: "intakes" });
   await reply(
     t("telegram.snoozedFor", {
       name: medication.name,

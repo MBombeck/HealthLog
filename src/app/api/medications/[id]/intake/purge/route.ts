@@ -9,7 +9,7 @@ import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, getClientIp } from "@/lib/api-response";
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
-import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
+import { afterDoseChange } from "@/lib/medications/after-dose-change";
 import { NextRequest } from "next/server";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -94,7 +94,8 @@ export const DELETE = apiHandler(
     // (#22) — silent cross-device intake sync: a purged history changes
     // the intake state the user's other iOS devices render. Coalesced
     // per user, best-effort — never affects the response.
-    queueMedicationIntakeSync({
+    afterDoseChange({
+      scope: "intakes",
       userId: user.id,
       originDeviceToken: request.headers.get("x-device-id"),
     });

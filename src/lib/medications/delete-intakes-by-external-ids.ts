@@ -21,7 +21,7 @@ import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { restoreForIntake } from "@/lib/medications/inventory/consumption";
 import { reconcileOneShotState } from "@/lib/medications/lifecycle";
 import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
-import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
+import { afterDoseChange } from "@/lib/medications/after-dose-change";
 import { APP_MINTED_SOURCE } from "@/lib/sync/external-id-delete";
 
 export async function deleteAppleHealthIntakes(
@@ -71,6 +71,10 @@ export async function deleteAppleHealthIntakes(
   }
   invalidateUserMedications(user.id, { evict: true });
   // The widget count and a pending Live Activity on the other devices change.
-  queueMedicationIntakeSync({ userId: user.id, originDeviceToken });
+  afterDoseChange({
+    scope: "intakes",
+    userId: user.id,
+    originDeviceToken,
+  });
   return deleted;
 }

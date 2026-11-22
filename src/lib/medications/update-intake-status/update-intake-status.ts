@@ -18,7 +18,7 @@ import { DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
 import { restoreForIntake } from "@/lib/medications/inventory/consumption";
-import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
+import { afterDoseChange } from "@/lib/medications/after-dose-change";
 import { recordedEventOf } from "@/lib/notifications/medication-intake-recorded";
 import { notifyDelegatedIntake } from "@/lib/notifications/delegated-intake";
 import {
@@ -169,7 +169,8 @@ function startTails(
   // the canonical row is already persisted, so a sync-push miss never
   // affects the response. The originating device (the one that POSTed) is
   // excluded via its `X-Device-Id` (= registered `Device.token`).
-  queueMedicationIntakeSync({
+  afterDoseChange({
+    scope: "intakes",
     userId: user.id,
     originDeviceToken: ctx.originDeviceToken,
     recorded:
