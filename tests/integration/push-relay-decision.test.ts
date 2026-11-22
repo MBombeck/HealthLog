@@ -16,6 +16,11 @@
  *   answer route, nor does a non-admin cookie session.
  * - With the relay not available there is nothing to decide: `off`, and
  *   `canDecide` false.
+ * - A restore of instance settings never contradicts a running relay: the
+ *   registration does not travel, so onto a registered host the file's
+ *   `null` or `off` is not written, and a column that disagrees anyway still
+ *   publishes `on` while the registration sends. Onto a host that is not
+ *   registered, the file's answer is restored.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -105,6 +110,37 @@ async function relayOnMe(auth: SessionFixture | BearerFixture = adminSession) {
   });
   expect(me.status).toBe(200);
   return me.data.push.relay;
+}
+
+/**
+ * Put back the instance settings of a disaster-recovery file written while
+ * the relay answer was `decision`, the way the restore job does.
+ */
+async function restoreSettingsFile(decision: "on" | "off" | null) {
+  const prisma = getPrismaClient();
+  const { serialiseAppSettings, restoreAppSettings } =
+    await import("@/lib/export/app-settings-backup");
+  const row = await prisma.appSettings.upsert({
+    where: { id: "singleton" },
+    create: { id: "singleton" },
+    update: {},
+  });
+  const appSettings = {
+    ...serialiseAppSettings(row),
+    pushRelayDecision: decision,
+  };
+  await prisma.$transaction(async (tx) => {
+    await restoreAppSettings({
+      tx,
+      payload: { appSettings },
+      restoreInstanceSettings: true,
+    } as unknown as Parameters<typeof restoreAppSettings>[0]);
+  });
+}
+
+async function adminStatus(): Promise<Status> {
+  const { adminRelayStatus } = await import("@/lib/push-relay/admin-status");
+  return (await adminRelayStatus()) as unknown as Status;
 }
 
 async function stored(): Promise<string | null> {
@@ -252,6 +288,58 @@ describe("the relay question", () => {
     });
     const res = await answer({ enabled: false });
     expect(res.status).toBe(409);
+    expect(await stored()).toBeNull();
+  });
+
+  it.each([null, "off"] as const)(
+    "a restored %s keeps the host's yes while the relay runs",
+    async (decision) => {
+      expect((await answer(YES)).data.operatorDecision).toBe("on");
+      await restoreSettingsFile(decision);
+      expect(await stored()).toBe("on");
+      expect((await relayOnMe()).operatorDecision).toBe("on");
+      expect((await adminStatus()).operatorDecision).toBe("on");
+    },
+  );
+
+  it("publishes on while registered even when the column says otherwise", async () => {
+    expect((await answer(YES)).data.operatorDecision).toBe("on");
+    await getPrismaClient().appSettings.update({
+      where: { id: "singleton" },
+      data: { pushRelayDecision: "off" },
+    });
+    expect((await relayOnMe()).operatorDecision).toBe("on");
+    expect((await adminStatus()).operatorDecision).toBe("on");
+  });
+
+  it("restores the file's answer onto a host that is not registered", async () => {
+    await restoreSettingsFile("off");
+    expect(await stored()).toBe("off");
+    expect((await relayOnMe()).operatorDecision).toBe("off");
+
+    // A switched-off relay whose deletion the relay has not confirmed yet is
+    // not a registration that sends: the file's answer is written.
+    await getPrismaClient().appSettings.update({
+      where: { id: "singleton" },
+      data: { pushRelayDecision: null },
+    });
+    const { PUT } = await import("@/app/api/admin/push-relay/route");
+    await callRoute<Status>(PUT, {
+      method: "PUT",
+      route: "/api/admin/push-relay",
+      auth: adminSession,
+      body: YES,
+    });
+    fake.down = true;
+    await callRoute<Status>(PUT, {
+      method: "PUT",
+      route: "/api/admin/push-relay",
+      auth: adminSession,
+      body: { enabled: false },
+    });
+    const left = await getPrismaClient().pushRelayRegistration.findMany();
+    expect(left.map((r) => r.state)).toEqual(["deleting"]);
+    await restoreSettingsFile(null);
     expect(await stored()).toBeNull();
   });
 });

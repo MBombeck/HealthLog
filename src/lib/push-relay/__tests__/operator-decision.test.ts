@@ -10,7 +10,14 @@ import {
   storedRelayDecisionOf,
 } from "@/lib/push-relay/operator-decision";
 
-const open = { offered: false, available: true, apnsConfigured: false };
+const open = {
+  offered: false,
+  registered: false,
+  available: true,
+  apnsConfigured: false,
+};
+/** Registered at the relay: what `routeFor` sends by. */
+const live = { offered: true, registered: true };
 
 describe("operatorDecisionOf", () => {
   it.each([
@@ -45,6 +52,16 @@ describe("operatorDecisionOf", () => {
       "nothing to decide beside an APNs key of its own",
       { ...open, stored: null, apnsConfigured: true },
       "off",
+    ],
+    [
+      "a registration with an instance id is on, a restored no beside it included",
+      { ...open, ...live, stored: "off" },
+      "on",
+    ],
+    [
+      "a registration with an instance id is on with nothing stored",
+      { ...open, ...live, stored: null },
+      "on",
     ],
     [
       "a registered yes stays on beside an APNs key",

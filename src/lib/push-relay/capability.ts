@@ -194,6 +194,7 @@ async function relayCapabilityOf(
     operatorDecision: operatorDecisionOf({
       stored: storedRelayDecisionOf(operator?.pushRelayDecision),
       offered: row !== null,
+      registered: row?.instanceId != null,
       available: config.available,
       apnsConfigured: inputs.apnsConfigured,
     }),

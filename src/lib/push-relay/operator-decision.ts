@@ -8,7 +8,16 @@
  * answered no or switched the relay off. Nothing stored means nobody answered.
  *
  * What is published (`operatorDecisionOf`):
- * - `on`: the answer was yes and the registration is there.
+ * - `on`: this server is registered at the relay (a registration with an
+ *   instance id), whatever the column says, because that registration is
+ *   what `routeFor` sends by. The column and the registration can disagree
+ *   only when something other than the switch wrote the column, and a
+ *   restore of instance settings is that something: the registration never
+ *   travels, so a file from before the relay was switched on carries `null`
+ *   or `off` while the relay runs. The restore keeps the host's answer then
+ *   (`restoreAppSettings`); this rule is what holds should anything else
+ *   ever write the column. Also `on`: the answer was yes and a registration
+ *   is there that is not finished yet.
  * - `off`: the answer was no, or there is nothing to decide. A server whose
  *   relay is not available (`PUSH_RELAY_MODE=off`, no pinned relay keys) or
  *   that has an APNs key of its own never routes a push over the relay
@@ -38,11 +47,17 @@ export function operatorDecisionOf(input: {
   stored: StoredRelayDecision;
   /** A registration for the configured relay exists (`offered`). */
   offered: boolean;
+  /**
+   * That registration has an instance id: this server is registered at the
+   * relay and `routeFor` sends over it.
+   */
+  registered: boolean;
   /** The relay is available on this server (`relayConfig().available`). */
   available: boolean;
   /** This server has an APNs key of its own. */
   apnsConfigured: boolean;
 }): RelayOperatorDecision {
+  if (input.registered) return "on";
   if (input.offered && input.stored === "on") return "on";
   if (input.stored === "off") return "off";
   if (!input.available || input.apnsConfigured) return "off";
