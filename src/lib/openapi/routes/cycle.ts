@@ -31,6 +31,7 @@ import {
 } from "@/lib/cycle/custom-symptoms-shared";
 import {
   dataEnvelope,
+  deletedInHealthLogResponse,
   errorEnvelope,
   idempotencyKeyParameter,
   idempotentWrite,
@@ -793,7 +794,7 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Cycle"],
       summary: "Capture a single cycle day-log (v1.15.0)",
       description:
-        "Upserts on `(userId, source, externalId)` when externalId present, else `(userId, date)`. `note` encrypts at rest. 201 on insert, 200 on update. Gated: `cycle.disabled` 403 when the feature is off.",
+        "Upserts on `(userId, source, externalId)` when externalId present, else `(userId, date)`. `note` encrypts at rest. 201 on insert, 200 on update. An `APPLE_HEALTH` re-post whose `externalId` names a day the person deleted in HealthLog answers 410 (`cycle.day-log.deleted_in_healthlog`) and writes nothing; a `MANUAL` write revives the day from empty fields. Gated: `cycle.disabled` 403 when the feature is off.",
       parameters: [idempotencyKeyParameter],
       requestBody: {
         required: true,
@@ -820,6 +821,7 @@ export const cyclePaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
+        ...deletedInHealthLogResponse("cycle.day-log.deleted_in_healthlog"),
         ...cycleDisabledOnADelegableRoute,
         ...stdResponses,
         ...recordWriteRateLimitResponse,

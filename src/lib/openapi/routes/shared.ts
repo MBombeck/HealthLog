@@ -791,3 +791,30 @@ export const deviceRevokeResponse = z
     description:
       "What the revocation cascade actually removed. The counts let a client say how many credentials were killed rather than only that something happened.",
   });
+
+// ── Re-post of an entry deleted in HealthLog ─────────────────────────
+// The single create routes' answer when the `externalId` names an entry the
+// person deleted (`src/lib/sync/tombstone-repost-response.ts`). One object per
+// code so the YAML emitter can alias the shared prose.
+const deletedInHealthLogCache = new Map<
+  string,
+  {
+    "410": {
+      description: string;
+      content: { "application/json": { schema: typeof errorEnvelope } };
+    };
+  }
+>();
+
+export function deletedInHealthLogResponse(errorCode: string) {
+  const cached = deletedInHealthLogCache.get(errorCode);
+  if (cached) return cached;
+  const response = {
+    "410": {
+      description: `The \`externalId\` names an entry the person deleted in HealthLog. Nothing was written, and a re-post gets the same answer: treat it as final and drop the entry from the outbox. \`meta.errorCode\` = \`${errorCode}\`, \`meta.reason\` = \`deleted_in_healthlog\` (the word the bulk routes use per entry), \`meta.id\` = the deleted row. An entry the app reported deleted in Apple Health (\`DELETE …/by-external-ids\`) is written again instead.`,
+      content: { "application/json": { schema: errorEnvelope } },
+    },
+  };
+  deletedInHealthLogCache.set(errorCode, response);
+  return response;
+}

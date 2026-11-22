@@ -137,3 +137,66 @@ export const EXTERNAL_ID_TOMBSTONE_FAMILIES = {
     personDelete: { file: null, refusal: null },
   },
 } as const;
+
+/**
+ * Every single create route whose body takes an `externalId`, outside the
+ * by-external-ids families' bulk and batch routes, keyed by the route
+ * directory under `src/app/api`, with what a re-post of an entry deleted in
+ * HealthLog gets.
+ *
+ * `refuse`: nothing is written, and the request answers `410` with
+ * `reason: "deleted_in_healthlog"` (`deletedInHealthLogRefusal` in
+ * `tombstone-repost-response.ts`, called from one of `files`). A route that
+ * meets a tombstone the phone reported deleted in Apple Health writes it back.
+ * `exempt`: no re-post can meet an entry the person deleted, for the reason
+ * given.
+ *
+ * `src/__tests__/single-route-tombstone-guard.test.ts` finds the routes and
+ * holds them to this list. Before it, `POST /api/mood-entries` (the route the
+ * app posts State of Mind samples through, one by one) rewrote the hidden row,
+ * left it deleted and answered `201`; the sleep-stage arm of
+ * `POST /api/measurements` answered `200 duplicate` with the deleted row; the
+ * single cycle day revived a day the person had deleted; an AUDIT-C replay
+ * answered a deleted entry as live.
+ */
+export const SINGLE_ROUTE_EXTERNAL_ID_RULES = {
+  "mood-entries": {
+    rule: "refuse",
+    files: ["app/api/mood-entries/route.ts", "lib/mood/single-repost.ts"],
+  },
+  measurements: {
+    rule: "refuse",
+    files: ["lib/measurements/create/create-sleep-stage.ts"],
+  },
+  "cycle/day-logs": {
+    rule: "refuse",
+    files: ["app/api/cycle/day-logs/route.ts"],
+  },
+  "anamnesis/audit-c": {
+    rule: "refuse",
+    files: [
+      "app/api/anamnesis/audit-c/route.ts",
+      "lib/profile/life-circumstances.ts",
+    ],
+  },
+  "cycle/period": {
+    rule: "exempt",
+    reason:
+      "the person's own period tap (source MANUAL); writing the day again is a new entry by the person, which revives the day",
+  },
+  "mental-health/assessments": {
+    rule: "exempt",
+    reason:
+      "a screener has no delete route, so the person cannot delete one; a replay answers the stored entry",
+  },
+  medications: {
+    rule: "exempt",
+    reason:
+      "a mirrored medication is deleted outright, with no tombstone to remember it by; the next sync mirrors it again while it is in the Health medication list",
+  },
+  "notifications/action/[token]": {
+    rule: "exempt",
+    reason:
+      "the server mints the id from the action token; no client sends one",
+  },
+} as const;

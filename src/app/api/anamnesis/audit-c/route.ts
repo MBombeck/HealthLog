@@ -4,8 +4,9 @@
  * `{ items: [0..4, 0..4, 0..4], takenAt?, tz?, locale?, source, externalId? }`.
  * 201 `{ result: AuditCResult }` with the sum and the screening cut-off for
  * the entry's language and the profile's sex (null without one); a replay
- * with the same `externalId` answers 200 with the same result. Stored beside
- * the mental-health screeners but never listed by
+ * with the same `externalId` answers 200 with the same result, or `410`
+ * (`anamnesis.auditC.deleted_in_healthlog`) when that entry was deleted
+ * since. Stored beside the mental-health screeners but never listed by
  * `/api/mental-health/assessments`. At most 30 an hour, counted against the
  * person acting.
  *
@@ -24,6 +25,7 @@ import { annotate } from "@/lib/logging/context";
 import { auditCInstrument } from "@/lib/mental-health/audit-c";
 import { createAuditC } from "@/lib/profile/life-circumstances";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { deletedInHealthLogRefusal } from "@/lib/sync/tombstone-repost-response";
 import { auditCRequestSchema } from "@/lib/validations/life-circumstances";
 
 /** How far ahead of the server clock a `takenAt` may lie. */
@@ -73,7 +75,7 @@ async function postAuditC(request: NextRequest): Promise<Response> {
     });
   }
 
-  const { result, replayed } = await createAuditC(user.id, {
+  const { result, replayed, deleted } = await createAuditC(user.id, {
     items: input.items,
     takenAt,
     tz: input.tz,
@@ -81,6 +83,11 @@ async function postAuditC(request: NextRequest): Promise<Response> {
     source: input.source,
     externalId: input.externalId,
   });
+
+  // A replay of an entry the person deleted since stays deleted.
+  if (deleted) {
+    return deletedInHealthLogRefusal("auditC", result.id);
+  }
 
   annotate({
     action: {

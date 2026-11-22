@@ -1,7 +1,7 @@
 /**
  * v1.4.43 — multi-issue 422 envelope on GET + POST /api/mood-entries.
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { NextRequest } from "next/server";
 
 // v1.8.5 — the POST happy path writes the entry + its structured-tag
@@ -48,6 +48,8 @@ vi.mock("@/lib/db", () => ({
       findMany: vi.fn().mockResolvedValue([]),
       count: vi.fn().mockResolvedValue(0),
       create: vi.fn(),
+      // The tombstone probe of an `externalId` re-post (`single-repost.ts`).
+      findUnique: vi.fn().mockResolvedValue(null),
     },
     moodEntryTagLink: {
       findMany: vi.fn().mockResolvedValue([]),
@@ -492,6 +494,104 @@ describe("POST /api/mood-entries — rated factors (v1.12.0)", () => {
       }),
     );
     expect(res.status).toBe(422);
+  });
+});
+
+describe("POST /api/mood-entries — re-post of a deleted entry", () => {
+  // The probe selects three columns; the mock answers exactly those.
+  const probe = vi.mocked(prisma.moodEntry.findUnique) as unknown as Mock<
+    () => Promise<{
+      id: string;
+      deletedAt: Date | null;
+      appleHealthDeletedAt: Date | null;
+    } | null>
+  >;
+  const body = {
+    mood: "GUT",
+    moodLoggedAt: "2026-06-01T08:00:00.000Z",
+    source: "APPLE_HEALTH",
+    externalId: "hk-som-1",
+  };
+  const deletedAt = new Date("2026-06-02T08:00:00.000Z");
+
+  it("answers 410 deleted_in_healthlog for an entry deleted in HealthLog and writes nothing", async () => {
+    probe.mockResolvedValue({
+      id: "mood-gone",
+      deletedAt,
+      appleHealthDeletedAt: null,
+    });
+
+    const res = await POST(postReq(body));
+
+    expect(res.status).toBe(410);
+    const json = (await res.json()) as {
+      data: null;
+      meta: { errorCode: string; reason: string; id: string };
+    };
+    expect(json.data).toBeNull();
+    expect(json.meta).toMatchObject({
+      errorCode: "mood.deleted_in_healthlog",
+      reason: "deleted_in_healthlog",
+      id: "mood-gone",
+    });
+    expect(txClient.moodEntry.upsert).not.toHaveBeenCalled();
+    expect(txClient.moodEntry.create).not.toHaveBeenCalled();
+  });
+
+  it("writes an entry the phone reported deleted in Apple Health back as live", async () => {
+    probe.mockResolvedValue({
+      id: "mood-back",
+      deletedAt,
+      appleHealthDeletedAt: deletedAt,
+    });
+    txClient.moodEntry.upsert.mockResolvedValue({
+      id: "mood-back",
+      tags: null,
+      moodLoggedAt: new Date(body.moodLoggedAt),
+      mood: "GUT",
+      note: null,
+      source: "APPLE_HEALTH",
+      externalId: "hk-som-1",
+      date: "2026-06-01",
+    });
+
+    const res = await POST(postReq(body));
+
+    expect(res.status).toBe(201);
+    const call = txClient.moodEntry.upsert.mock.calls[0]?.[0] as {
+      update: Record<string, unknown>;
+    };
+    expect(call.update).toMatchObject({
+      deletedAt: null,
+      appleHealthDeletedAt: null,
+      syncVersion: { increment: 1 },
+    });
+  });
+
+  it("leaves the tombstone columns alone on a live row", async () => {
+    probe.mockResolvedValue({
+      id: "mood-live",
+      deletedAt: null,
+      appleHealthDeletedAt: null,
+    });
+    txClient.moodEntry.upsert.mockResolvedValue({
+      id: "mood-live",
+      tags: null,
+      moodLoggedAt: new Date(body.moodLoggedAt),
+      mood: "GUT",
+      note: null,
+      source: "APPLE_HEALTH",
+      externalId: "hk-som-1",
+      date: "2026-06-01",
+    });
+
+    const res = await POST(postReq(body));
+
+    expect(res.status).toBe(201);
+    const call = txClient.moodEntry.upsert.mock.calls[0]?.[0] as {
+      update: Record<string, unknown>;
+    };
+    expect(call.update).not.toHaveProperty("deletedAt");
   });
 });
 

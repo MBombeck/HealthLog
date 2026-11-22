@@ -16,7 +16,7 @@ export const intakeSchema = z
       .transform((s) => new Date(s))
       .optional()
       .describe(
-        "Slot the dose belongs to. Defaults to `takenAt` (or `now()` when both are absent) so the compliance pairing logic can pin the dose to a schedule slot.",
+        "Slot the dose belongs to. Defaults to `takenAt` (or `now()` when both are absent) so the compliance pairing logic can pin the dose to a schedule slot. A take that names a real slot of the medication counts for it when the slot lies behind the take (however late) or the take sits inside the slot's window, from its early grace on (a 20:00 dose taken at 19:30 counts for 20:00). A slot further ahead does not bind: the take answers the slot its own time falls into, or none. For a dose that is not open yet, send `forceSlotInstant`.",
       ),
     takenAt: boundedTakenAtSchema
       .optional()

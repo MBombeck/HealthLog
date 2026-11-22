@@ -19,9 +19,10 @@ import {
 import { resolveCanonicalSlotInstant } from "@/lib/medications/scheduling/resolve-slot-instant";
 import {
   attributeTakenToSlot,
-  resolveForcedSlotInstant,
+  resolveForcedSlotBand,
   type AttributeIntakeMedication,
 } from "@/lib/medications/scheduling/attribute-intake";
+import type { SlotBand } from "@/lib/medications/scheduling/attribution";
 import type { WorkerScheduleRow } from "@/lib/medications/scheduling/worker-helpers";
 import type { InjectionSiteKey } from "@/lib/medications/injection-sites";
 import * as autoTake from "./auto-take-correction";
@@ -729,6 +730,13 @@ export interface ResolveForcedSlotInput {
 export async function resolveForcedSlotForWrite(
   input: ResolveForcedSlotInput,
 ): Promise<Date | null> {
+  return (await resolveForcedSlotBandForWrite(input))?.at ?? null;
+}
+
+/** The band of the real slot the instant names, or `null` (not a slot). */
+export async function resolveForcedSlotBandForWrite(
+  input: ResolveForcedSlotInput,
+): Promise<SlotBand | null> {
   const client = input.client ?? defaultPrisma;
   const loaded = await loadAttributeMedication({
     userId: input.userId,
@@ -737,7 +745,7 @@ export async function resolveForcedSlotForWrite(
   });
   if (!loaded) return null;
 
-  return resolveForcedSlotInstant({
+  return resolveForcedSlotBand({
     medication: loaded.medication,
     userTz: input.userTz,
     slotInstant: input.slotInstant,
