@@ -28,6 +28,7 @@ import {
   recordScopeParameter,
 } from "./account-sharing";
 import { activityPaths } from "./activity";
+import { navigationPaths } from "./navigation";
 import { provenancePaths } from "./provenance";
 import { adminDiagnosticPaths, adminInvitePaths } from "./admin";
 import { aiUsagePaths } from "./ai-usage";
@@ -114,6 +115,7 @@ const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   ...cycleFeedPaths,
   ...careFeedPaths,
   ...emergencyCardPaths,
+  ...navigationPaths,
   ...reportSchedulePaths,
   ...metaPaths,
   ...healthRecordPaths,

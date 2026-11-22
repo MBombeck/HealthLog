@@ -1315,6 +1315,24 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
+  /api/nav/counts:
+    get:
+      tags:
+        - Dashboard
+      summary: The counts the navigation shows
+      description: Doses and check-ups due now for the caller's own record, read in a fixed number of statements; nothing is
+        written. Cookie session or a full-scope token; a switched record is refused.
+      responses:
+        "200":
+          description: The counts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NavCountsResponse"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
   /api/settings/report-schedule:
     get:
       tags:
@@ -47377,6 +47395,42 @@ components:
       required:
         - data
         - error
+      additionalProperties: false
+    NavCountsResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/NavCounts"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    NavCounts:
+      type: object
+      properties:
+        dosesDue:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Today's scheduled doses of active, tracked medications whose resolved state is `due` or `overdue` (the dose
+            resolver's own answer, as the today list gives it), not counting a slot the person snoozed.
+        checkupsDue:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: "Check-up reminders due now: enabled, not snoozed, no booked visit, due today on a long cycle or past their
+            time on a short one, as the daily digest's rail counts them."
+      required:
+        - dosesDue
+        - checkupsDue
       additionalProperties: false
     ReportScheduleStatus:
       type: object

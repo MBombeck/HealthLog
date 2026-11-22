@@ -13,7 +13,7 @@ import {
 } from "@/components/layout/nav-model";
 import { RailNavGroups } from "@/components/layout/rail-nav-groups";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { checkupsDueCount, dosesDueCount } from "@/hooks/use-nav-counts";
+import { navCountsByHref } from "@/hooks/use-nav-counts";
 import { I18nProvider } from "@/lib/i18n/context";
 
 function render(
@@ -88,41 +88,11 @@ describe("RailNavGroups", () => {
 });
 
 describe("the counts", () => {
-  it("counts doses due or overdue, nothing answered", () => {
-    expect(
-      dosesDueCount([
-        { state: "due" },
-        { state: "overdue" },
-        { state: "upcoming" },
-        { state: "taken" },
-        { state: "skipped" },
-        { state: null },
-      ]),
-    ).toBe(2);
-    expect(dosesDueCount(undefined)).toBe(0);
-  });
-
-  it("counts check-ups due today or overdue, not paused or snoozed", () => {
-    const now = Date.parse("2026-11-22T10:00:00Z");
-    const row = (
-      nextDueAt: string | null,
-      extra: Partial<{ enabled: boolean; snoozedUntil: string | null }> = {},
-    ) => ({ enabled: true, snoozedUntil: null, nextDueAt, ...extra });
-    expect(
-      checkupsDueCount(
-        [
-          row("2026-11-22T08:00:00Z"),
-          row("2026-11-10T08:00:00Z"),
-          row("2026-11-30T08:00:00Z"),
-          row(null),
-          row("2026-11-22T08:00:00Z", { enabled: false }),
-          row("2026-11-22T08:00:00Z", {
-            snoozedUntil: "2026-11-23T08:00:00Z",
-          }),
-        ],
-        now,
-        "Europe/Berlin",
-      ),
-    ).toBe(2);
+  it("maps the server's counts onto the two entries", () => {
+    expect(navCountsByHref({ dosesDue: 2, checkupsDue: 1 })).toEqual({
+      "/medications": 2,
+      "/checkups": 1,
+    });
+    expect(navCountsByHref(undefined)).toEqual({});
   });
 });

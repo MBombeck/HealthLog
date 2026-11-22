@@ -30,6 +30,7 @@ import {
 import { userDayKey } from "@/lib/tz/format";
 import { getUserTodayBounds } from "@/lib/tz/local-day";
 import { calendarDaysUntil } from "@/lib/measurement-reminders/due-day";
+import { isCheckupDueNow } from "@/lib/measurement-reminders/due-now";
 import { hasLongCycle } from "@/lib/measurement-reminders/holds-open";
 import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { DASHBOARD_REFETCH_INTERVAL_MS } from "@/lib/queries/refetch-interval";
@@ -906,9 +907,8 @@ export async function loadDailyDigest(
   // missed rolling one then stays here, overdue, until its reading lands.
   const preventiveDue: DailyDigestPreventiveDue[] = [];
   for (const row of dueReminders) {
-    if (row.nextDueAt === null) continue;
+    if (!row.nextDueAt || !isCheckupDueNow(row, user.timezone, now)) continue;
     const longCycle = hasLongCycle(row, user.timezone, row.nextDueAt);
-    if (!longCycle && row.nextDueAt.getTime() > now.getTime()) continue;
     let label = row.label;
     if (row.origin === "COACH") {
       label = translateOrNull(t, row.label) ?? label;

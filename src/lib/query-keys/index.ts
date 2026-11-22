@@ -244,6 +244,7 @@ export const moodDependentKeys = [
  */
 export const medicationDependentKeys = [
   queryKeys.medications(),
+  queryKeys.navCounts(),
   queryKeys.analytics(),
   queryKeys.insightsRoot(),
   queryKeys.insightsTargets(),
@@ -351,6 +352,7 @@ export const encounterDependentKeys = [
 export const vaccinationDependentKeys = [
   queryKeys.vaccinations(),
   queryKeys.measurementReminders(),
+  queryKeys.navCounts(),
   // A dose's form links and unlinks documents, and the document's sheet
   // seeds its replace-set dose picker from its own cached links: left stale,
   // the next tap there would delete the link just made.

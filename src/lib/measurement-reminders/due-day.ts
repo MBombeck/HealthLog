@@ -114,11 +114,3 @@ export function isOverdueDue(due: RelativeDue): boolean {
     due.key === "measurementReminders.overdueSinceYesterday"
   );
 }
-
-/**
- * Whether a phrase from {@link relativeDueKey} says the check-up is due now:
- * today, or overdue. The navigation's count on Checkups asks this.
- */
-export function isDueNowDue(due: RelativeDue): boolean {
-  return due.key === "measurementReminders.nextDue.today" || isOverdueDue(due);
-}
