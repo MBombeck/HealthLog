@@ -118,6 +118,8 @@ export interface Glp1Medication {
   todayEventCount?: number;
   /** #1371 — the person's own note, shown above the dose actions. */
   note?: string | null;
+  /** #1430 — the saved leaflet link; null = none. */
+  leafletUrl?: string | null;
   /**
    * v1.8.4 — server-computed next due instant from `GET /api/medications`
    * (the canonical recurrence engine anchored on the last intake). The card
@@ -436,14 +438,13 @@ export function Glp1MedicationCard({
     />
   );
 
-  // The four former header icon-buttons (open / edit / history /
-  // advanced) collapse into a SINGLE overflow menu so the GLP-1 card
-  // stays symmetric with the generic medication card. The card header
-  // itself links to the detail page (the former chevron target).
+  // The header icon-buttons collapse into ONE overflow menu, symmetric with
+  // the generic medication card; the card header links to the detail page.
   const headerActions = (
     <MedicationCardMenu
       onEdit={() => onEdit(medication)}
       onOpenHistory={() => onOpenHistory(medication)}
+      leaflet={medication}
     />
   );
 

@@ -17,7 +17,7 @@ import {
   summariseScheduleDraft,
   type WizardPayload,
 } from "../wizard-payload";
-import { Step8NoteField } from "./step8-note-field";
+import { Step8ExtrasFields } from "./step8-note-field";
 import { scaleForCadence } from "./step7-times";
 import {
   dayScaleLateDays,
@@ -161,7 +161,7 @@ export function Step8Summary({
         )}
       </div>
 
-      <Step8NoteField payload={payload} applyPartial={applyPartial} />
+      <Step8ExtrasFields payload={payload} applyPartial={applyPartial} />
       {/* Intake tracking (#1033): off keeps a record, nothing falls due. */}
       {payload.mode !== "asNeeded" && (
         <div className="flex items-start justify-between gap-3">

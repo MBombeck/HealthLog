@@ -1984,7 +1984,8 @@
         "dayOfMonth": "Escolha um dia do mês entre 1 e 31.",
         "rollingDays": "Digite um número de dias entre 1 e 365.",
         "time": "Adicione pelo menos um horário.",
-        "unknown": "Ainda falta algo nesta etapa."
+        "unknown": "Ainda falta algo nesta etapa.",
+        "leafletUrl": "O link da bula precisa começar com https://"
       }
     },
     "doseStrength": {
@@ -2737,6 +2738,28 @@
       "orderWithinGroups": "A ordem vale dentro de cada categoria.",
       "orderHeading": "Ordem das categorias",
       "orderDefault": "Até você mover uma, as categorias integradas seguem uma ordem fixa, as suas vêm em ordem alfabética e {other} fica por último."
+    },
+    "leaflet": {
+      "title": "Bula",
+      "find": "Encontrar bula",
+      "open": "Abrir",
+      "saved": "Bula oficial",
+      "newTab": "(abre em uma nova aba)",
+      "opensIn": "Abre a busca de {authority} com este medicamento.",
+      "searchThere": "Pesquise “{name}” na página de {authority} que vai abrir.",
+      "changeRegistry": "Mudar registro",
+      "noRegistry": "Nenhum registro de medicamentos foi escolhido, então não há busca de bula.",
+      "chooseRegistry": "Escolher um registro",
+      "disclaimer": "A bula vem do registro nacional de medicamentos. Confira se ela corresponde ao nome, à concentração e à forma do seu medicamento.",
+      "add": "Salvar link da bula",
+      "edit": "Editar link",
+      "remove": "Remover link",
+      "urlLabel": "Link da bula",
+      "urlHelper": "Cole o endereço da bula que você encontrou. Apenas links https://.",
+      "urlInvalid": "Digite um link que comece com https://",
+      "savedToast": "Link da bula salvo",
+      "removedToast": "Link da bula removido",
+      "saveError": "Não foi possível salvar o link da bula."
     }
   },
   "charts": {
@@ -6426,7 +6449,16 @@
         "subtitle": "Organize suas seções de visão geral e a ordem das tags."
       },
       "medications": {
-        "subtitle": "Gerencie a visualização e a ordem da sua lista de medicamentos."
+        "subtitle": "Gerencie a visualização e a ordem da sua lista de medicamentos.",
+        "registry": {
+          "title": "Registro de medicamentos",
+          "description": "Onde “Encontrar bula” procura bulas oficiais, seja qual for o idioma do app.",
+          "label": "Registro",
+          "none": "Nenhum",
+          "privacy": "O HealthLog apenas abre a página do registro no seu navegador. O servidor não envia nada para lá.",
+          "saved": "Registro de medicamentos salvo",
+          "saveError": "Não foi possível salvar o registro de medicamentos."
+        }
       },
       "mood": {
         "subtitle": "Organize suas tags de humor, grupos e a ordem do seletor."

@@ -92,17 +92,18 @@ import { SideEffectsSection } from "@/components/medications/side-effects-sectio
 import { ChartSkeleton } from "@/components/charts/chart-skeleton";
 import { TitrationTimeline } from "@/components/medications/titration-timeline";
 import { MedicationWizardDialog } from "@/components/medications/wizard/medication-wizard-dialog";
-import { parseScheduleRecurrence } from "@/lib/medication-schedule";
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
 import { formatDose } from "@/lib/medications/format-dose";
-import type { MedicationPayload } from "@/components/medications/wizard/wizard-payload";
 import type { ComplianceDisplay } from "@/lib/analytics/compliance";
 import { AutoMarkTakenBody } from "@/components/medications/sections/auto-mark-taken-section";
 import { IntakeTrackingBody } from "@/components/medications/sections/intake-tracking-section";
 import { MedicationRelatedSection } from "@/components/medications/detail/medication-related-section";
+import { MedicationLeafletSection } from "@/components/medications/detail/medication-leaflet-section";
+import { snapshotToWizardPayload } from "@/components/medications/detail/snapshot-wizard-payload";
+import type { LeafletSearch } from "@/lib/medications/leaflet-registries";
 import {
   OverviewStatusSection,
   ReminderPlanLine,
@@ -180,6 +181,9 @@ export interface MedicationDetailSnapshot {
   rxNormCode?: string | null;
   /** #1371 — the person's own note on the medication; null = none. */
   note?: string | null;
+  /** #1430 — the saved leaflet link, and the registry search. */
+  leafletUrl?: string | null;
+  leafletSearch?: LeafletSearch | null;
   /**
    * v1.15.20 — server-computed next due instant (the detail GET carries
    * it alongside the row). The Übersicht status surface renders it
@@ -241,43 +245,6 @@ const OWNER_ONLY_TABS: ReadonlySet<TabSlug> = new Set([
  * resolves the caller and would 403 under a switch.
  */
 const MANAGE_TABS: ReadonlySet<TabSlug> = new Set(["supply"]);
-
-function snapshotToWizardPayload(
-  med: MedicationDetailSnapshot,
-): MedicationPayload {
-  return {
-    id: med.id,
-    name: med.name,
-    dose: med.dose,
-    category: med.category,
-    treatmentClass: med.treatmentClass,
-    deliveryForm: med.deliveryForm,
-    dosesPerUnit: med.dosesPerUnit ?? null,
-    unitsPerDose: med.unitsPerDose ?? 1,
-    trackInjectionSites: med.trackInjectionSites ?? false,
-    allowedInjectionSites: med.allowedInjectionSites ?? [],
-    notificationsEnabled: med.notificationsEnabled,
-    startsOn: med.startsOn ? new Date(med.startsOn) : null,
-    endsOn: med.endsOn ? new Date(med.endsOn) : null,
-    oneShot: med.oneShot ?? false,
-    asNeeded: med.asNeeded ?? false,
-    trackIntake: med.trackIntake !== false,
-    autoMarkTaken: med.autoMarkTaken === true,
-    note: med.note ?? null,
-    schedules: med.schedules.map((s) => ({
-      id: s.id,
-      windowStart: s.windowStart,
-      windowEnd: s.windowEnd,
-      label: s.label ?? null,
-      dose: s.dose ?? null,
-      ...parseScheduleRecurrence(s.daysOfWeek),
-      timesOfDay: s.timesOfDay,
-      rrule: s.rrule ?? null,
-      rollingIntervalDays: s.rollingIntervalDays ?? null,
-      doseWindows: s.doseWindows ?? null,
-    })),
-  };
-}
 
 export function MedicationDetailTabs({
   medication: served,
@@ -455,10 +422,9 @@ export function MedicationDetailTabs({
         </Link>
       </Button>
 
-      {/* HERO — always-visible read-only summary. The structural edit
-          (wizard) moved out of the header: it lives as a row under
-          Erweitert → Lebenszyklus (the header button read as "edit this
-          page" and misled). `?edit=1` still opens the wizard directly. */}
+      {/* HERO — always-visible read-only summary. The structural edit (wizard)
+          lives under Erweitert → Lebenszyklus, not in the header, where it read
+          as "edit this page"; `?edit=1` still opens the wizard directly. */}
       <MedicationDetailSummary
         name={medication.name}
         dose={formatDose(medication.dose, t)}
@@ -546,6 +512,7 @@ export function MedicationDetailTabs({
             startsOn={medication.startsOn ?? null}
             related={medication.related}
           />
+          <MedicationLeafletSection medication={medication} />
         </TabsContent>
 
         {/* WIRKUNG — the per-medication efficacy view: the outcome metric(s)/

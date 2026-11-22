@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 76,
-  "total": 82274,
+  "total": 82231,
   "entries": {
     "components/cycle/log-day-sheet.tsx": 1646,
     "components/insights/coach-panel/chat-bubble.tsx": 821,
@@ -10,8 +10,8 @@
     "components/insights/derived/vitals-dashboard.tsx": 1033,
     "components/insights/health-score-card.tsx": 1023,
     "components/insights/insights-tab-strip.tsx": 1084,
-    "components/medications/detail/medication-detail-tabs.tsx": 977,
-    "components/medications/wizard/wizard-payload.ts": 1357,
+    "components/medications/detail/medication-detail-tabs.tsx": 944,
+    "components/medications/wizard/wizard-payload.ts": 1351,
     "components/mood/mood-list.tsx": 1130,
     "components/records/life-circumstances-manager.tsx": 828,
     "components/timeline/timeline-chart.tsx": 1095,
@@ -37,7 +37,7 @@
     "lib/dashboard-layout.ts": 981,
     "lib/dashboard/snapshot.ts": 1481,
     "lib/day/records.ts": 1147,
-    "lib/export/backup-plan.ts": 820,
+    "lib/export/backup-plan.ts": 816,
     "lib/export/coach-backup.ts": 1070,
     "lib/export/profile-backup.ts": 1019,
     "lib/gamification/achievements-result.ts": 1094,

@@ -1984,7 +1984,8 @@
         "dayOfMonth": "1에서 31 사이의 날짜를 고르세요.",
         "rollingDays": "1에서 365 사이의 일수를 입력하세요.",
         "time": "시간을 하나 이상 추가하세요.",
-        "unknown": "이 단계에서 아직 빠진 것이 있어요."
+        "unknown": "이 단계에서 아직 빠진 것이 있어요.",
+        "leafletUrl": "첨부문서 링크는 https://로 시작해야 합니다."
       }
     },
     "doseStrength": {
@@ -2737,6 +2738,28 @@
       "orderWithinGroups": "순서는 각 카테고리 안에서 적용돼요.",
       "orderHeading": "카테고리 순서",
       "orderDefault": "직접 옮기기 전에는 기본 카테고리가 정해진 순서로, 직접 만든 카테고리가 가나다순으로 이어지고 {other}가 마지막에 와요."
+    },
+    "leaflet": {
+      "title": "첨부문서",
+      "find": "첨부문서 찾기",
+      "open": "열기",
+      "saved": "공식 첨부문서",
+      "newTab": "(새 탭에서 열림)",
+      "opensIn": "이 약으로 {authority} 검색을 엽니다.",
+      "searchThere": "열리는 {authority} 페이지에서 ‘{name}’을(를) 검색하세요.",
+      "changeRegistry": "등록부 변경",
+      "noRegistry": "의약품 등록부를 선택하지 않아 첨부문서 검색을 사용할 수 없습니다.",
+      "chooseRegistry": "등록부 선택",
+      "disclaimer": "첨부문서는 국가 의약품 등록부에서 가져온 것입니다. 약의 이름, 함량, 제형이 맞는지 확인하세요.",
+      "add": "첨부문서 링크 저장",
+      "edit": "링크 편집",
+      "remove": "링크 삭제",
+      "urlLabel": "첨부문서 링크",
+      "urlHelper": "찾은 첨부문서의 주소를 붙여 넣으세요. https:// 링크만 가능합니다.",
+      "urlInvalid": "https://로 시작하는 링크를 입력하세요.",
+      "savedToast": "첨부문서 링크를 저장했습니다",
+      "removedToast": "첨부문서 링크를 삭제했습니다",
+      "saveError": "첨부문서 링크를 저장하지 못했습니다."
     }
   },
   "charts": {
@@ -6426,7 +6449,16 @@
         "subtitle": "개요 섹션과 칩 순서를 배치해요."
       },
       "medications": {
-        "subtitle": "약 목록 보기와 순서를 관리해요."
+        "subtitle": "약 목록 보기와 순서를 관리해요.",
+        "registry": {
+          "title": "의약품 등록부",
+          "description": "앱 언어와 관계없이 ‘첨부문서 찾기’가 공식 첨부문서를 검색하는 곳입니다.",
+          "label": "등록부",
+          "none": "없음",
+          "privacy": "HealthLog는 브라우저에서 등록부 페이지를 열기만 합니다. 서버는 그곳에 아무것도 보내지 않습니다.",
+          "saved": "의약품 등록부를 저장했습니다",
+          "saveError": "의약품 등록부를 저장하지 못했습니다."
+        }
       },
       "mood": {
         "subtitle": "기분 태그와 그룹, 선택기 순서를 정리해요."

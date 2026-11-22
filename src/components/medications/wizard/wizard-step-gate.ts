@@ -3,6 +3,7 @@
  * left. Pure; split from `./wizard-payload.ts`, which re-exports both.
  */
 import { parseUnitsPerDoseInput } from "@/lib/medications/units-per-dose";
+import { isAcceptableLeafletUrl } from "@/lib/medications/leaflet-url";
 
 import type { WizardPayload } from "./wizard-payload";
 
@@ -25,7 +26,8 @@ export const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
  *  - Step 6: cadence-specific (weekdays >= 1; interval >= 1; monthly
  *    day 1..31; rolling 1..365).
  *  - Step 7: >= 1 valid HH:mm time, a typed per-time unit count readable.
- *  - Step 8: mirrors Step 4 (the reminders toggle has no failure mode).
+ *  - Step 8: mirrors Step 4 (the reminders toggle has no failure mode), and
+ *    a leaflet link, when one is typed, must be an `https:` address (#1430).
  */
 export function stepBlocker(
   payload: WizardPayload,
@@ -91,7 +93,13 @@ export function stepBlocker(
         : "medications.wizard.blocked.unitsPerDose";
     }
     case 8:
-      return course();
+      return (
+        course() ??
+        (payload.leafletUrl.trim() === "" ||
+        isAcceptableLeafletUrl(payload.leafletUrl.trim())
+          ? null
+          : "medications.wizard.blocked.leafletUrl")
+      );
     default:
       return "medications.wizard.blocked.unknown";
   }

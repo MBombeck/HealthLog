@@ -1984,7 +1984,8 @@
         "dayOfMonth": "Elige un día del mes entre 1 y 31.",
         "rollingDays": "Escribe un número de días entre 1 y 365.",
         "time": "Añade al menos una hora.",
-        "unknown": "Todavía falta algo en este paso."
+        "unknown": "Todavía falta algo en este paso.",
+        "leafletUrl": "El enlace al prospecto debe empezar por https://"
       }
     },
     "doseStrength": {
@@ -2737,6 +2738,28 @@
       "orderWithinGroups": "El orden se aplica dentro de cada categoría.",
       "orderHeading": "Orden de las categorías",
       "orderDefault": "Hasta que muevas una, las categorías integradas siguen un orden fijo, las tuyas van por orden alfabético y {other} al final."
+    },
+    "leaflet": {
+      "title": "Prospecto",
+      "find": "Buscar prospecto",
+      "open": "Abrir",
+      "saved": "Prospecto oficial",
+      "newTab": "(se abre en una pestaña nueva)",
+      "opensIn": "Abre la búsqueda de {authority} con este medicamento.",
+      "searchThere": "Busca «{name}» en la página de {authority} que se abre.",
+      "changeRegistry": "Cambiar registro",
+      "noRegistry": "No has elegido ningún registro de medicamentos, así que no hay búsqueda de prospectos.",
+      "chooseRegistry": "Elegir un registro",
+      "disclaimer": "El prospecto procede del registro nacional de medicamentos. Comprueba que coincide con el nombre, la dosis y la forma de tu medicamento.",
+      "add": "Guardar enlace al prospecto",
+      "edit": "Editar enlace",
+      "remove": "Quitar enlace",
+      "urlLabel": "Enlace al prospecto",
+      "urlHelper": "Pega la dirección del prospecto que encontraste. Solo enlaces https://.",
+      "urlInvalid": "Introduce un enlace que empiece por https://",
+      "savedToast": "Enlace al prospecto guardado",
+      "removedToast": "Enlace al prospecto quitado",
+      "saveError": "No se pudo guardar el enlace al prospecto."
     }
   },
   "charts": {
@@ -6426,7 +6449,16 @@
         "subtitle": "Organiza las secciones de tu resumen y el orden de las pestañas."
       },
       "medications": {
-        "subtitle": "Gestiona la vista y el orden de tu lista de medicamentos."
+        "subtitle": "Gestiona la vista y el orden de tu lista de medicamentos.",
+        "registry": {
+          "title": "Registro de medicamentos",
+          "description": "Dónde busca «Buscar prospecto» los prospectos oficiales, sea cual sea el idioma de la app.",
+          "label": "Registro",
+          "none": "Ninguno",
+          "privacy": "HealthLog solo abre la página del registro en tu navegador. El servidor no le envía nada.",
+          "saved": "Registro de medicamentos guardado",
+          "saveError": "No se pudo guardar el registro de medicamentos."
+        }
       },
       "mood": {
         "subtitle": "Organiza tus etiquetas de ánimo, grupos y orden del selector."

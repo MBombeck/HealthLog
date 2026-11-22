@@ -1984,7 +1984,8 @@
         "dayOfMonth": "Choose a day of the month between 1 and 31.",
         "rollingDays": "Enter a number of days between 1 and 365.",
         "time": "Add at least one time of day.",
-        "unknown": "Something on this step is still missing."
+        "unknown": "Something on this step is still missing.",
+        "leafletUrl": "The leaflet link must start with https://"
       }
     },
     "doseStrength": {
@@ -2737,6 +2738,28 @@
       "orderWithinGroups": "The order applies within each category.",
       "orderHeading": "Category order",
       "orderDefault": "Until you move one, built-in categories keep a fixed order, your own follow alphabetically and {other} comes last."
+    },
+    "leaflet": {
+      "title": "Leaflet",
+      "find": "Find leaflet",
+      "open": "Open",
+      "saved": "Official leaflet",
+      "newTab": "(opens in a new tab)",
+      "opensIn": "Opens the {authority} search with this medication filled in.",
+      "searchThere": "Search for “{name}” on the {authority} page that opens.",
+      "changeRegistry": "Change registry",
+      "noRegistry": "No medicine registry is chosen, so there is no leaflet search.",
+      "chooseRegistry": "Choose a registry",
+      "disclaimer": "The leaflet comes from the national medicine registry. Check that it matches your medication’s name, strength and form.",
+      "add": "Save a leaflet link",
+      "edit": "Edit link",
+      "remove": "Remove link",
+      "urlLabel": "Leaflet link",
+      "urlHelper": "Paste the address of the leaflet you found. Only https:// links.",
+      "urlInvalid": "Enter a link that starts with https://",
+      "savedToast": "Leaflet link saved",
+      "removedToast": "Leaflet link removed",
+      "saveError": "The leaflet link could not be saved"
     }
   },
   "charts": {
@@ -6426,7 +6449,16 @@
         "subtitle": "Arrange your overview sections and chip order."
       },
       "medications": {
-        "subtitle": "Manage your medication list view and order."
+        "subtitle": "Manage your medication list view and order.",
+        "registry": {
+          "title": "Medicine registry",
+          "description": "Where “Find leaflet” searches for official patient leaflets, whatever language the app is in.",
+          "label": "Registry",
+          "none": "None",
+          "privacy": "HealthLog only opens the registry’s page in your browser. The server sends nothing to it.",
+          "saved": "Medicine registry saved",
+          "saveError": "The medicine registry could not be saved"
+        }
       },
       "mood": {
         "subtitle": "Organize your mood tags, groups, and picker order."

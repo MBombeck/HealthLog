@@ -1984,7 +1984,8 @@
         "dayOfMonth": "Kies een dag van de maand tussen 1 en 31.",
         "rollingDays": "Vul een aantal dagen in tussen 1 en 365.",
         "time": "Voeg minstens één tijdstip toe.",
-        "unknown": "Bij deze stap ontbreekt nog iets."
+        "unknown": "Bij deze stap ontbreekt nog iets.",
+        "leafletUrl": "De link naar de bijsluiter moet beginnen met https://"
       }
     },
     "doseStrength": {
@@ -2737,6 +2738,28 @@
       "orderWithinGroups": "De volgorde geldt binnen elke categorie.",
       "orderHeading": "Volgorde van de categorieën",
       "orderDefault": "Tot je er een verplaatst, staan de ingebouwde categorieën in een vaste volgorde, je eigen alfabetisch daarna en {other} als laatste."
+    },
+    "leaflet": {
+      "title": "Bijsluiter",
+      "find": "Bijsluiter zoeken",
+      "open": "Openen",
+      "saved": "Officiële bijsluiter",
+      "newTab": "(opent in een nieuw tabblad)",
+      "opensIn": "Opent de zoekfunctie van {authority} met dit geneesmiddel.",
+      "searchThere": "Zoek naar ‘{name}’ op de pagina van {authority} die opent.",
+      "changeRegistry": "Register wijzigen",
+      "noRegistry": "Er is geen geneesmiddelenregister gekozen, dus er is geen bijsluiter-zoekfunctie.",
+      "chooseRegistry": "Register kiezen",
+      "disclaimer": "De bijsluiter komt uit het nationale geneesmiddelenregister. Controleer of naam, sterkte en vorm bij je geneesmiddel passen.",
+      "add": "Link naar bijsluiter opslaan",
+      "edit": "Link bewerken",
+      "remove": "Link verwijderen",
+      "urlLabel": "Link naar bijsluiter",
+      "urlHelper": "Plak het adres van de bijsluiter die je hebt gevonden. Alleen https://-links.",
+      "urlInvalid": "Voer een link in die begint met https://",
+      "savedToast": "Link naar bijsluiter opgeslagen",
+      "removedToast": "Link naar bijsluiter verwijderd",
+      "saveError": "De link naar de bijsluiter kon niet worden opgeslagen."
     }
   },
   "charts": {
@@ -6426,7 +6449,16 @@
         "subtitle": "Rangschik de secties van je overzicht en de volgorde van de chips."
       },
       "medications": {
-        "subtitle": "Beheer de weergave en volgorde van je medicatielijst."
+        "subtitle": "Beheer de weergave en volgorde van je medicatielijst.",
+        "registry": {
+          "title": "Geneesmiddelenregister",
+          "description": "Waar ‘Bijsluiter zoeken’ naar officiële bijsluiters zoekt, in welke taal de app ook staat.",
+          "label": "Register",
+          "none": "Geen",
+          "privacy": "HealthLog opent alleen de pagina van het register in je browser. De server stuurt er niets naartoe.",
+          "saved": "Geneesmiddelenregister opgeslagen",
+          "saveError": "Het geneesmiddelenregister kon niet worden opgeslagen."
+        }
       },
       "mood": {
         "subtitle": "Orden je stemmingstags, groepen en de volgorde in de kiezer."

@@ -129,6 +129,8 @@ interface Medication {
   autoMarkTaken?: boolean;
   /** #1371 — the person's own note, shown above the dose actions. */
   note?: string | null;
+  /** #1430 — the saved leaflet link; null = none. */
+  leafletUrl?: string | null;
   /**
    * v1.39.4 (#1040) — server-resolved: taken / skip are offered today only
    * when true (active, tracked, and the course includes today).
@@ -374,13 +376,13 @@ export function MedicationCard({
     />
   );
 
-  // v1.7.2 — the four former header icon-buttons (open / edit /
-  // history / advanced) collapse into a single overflow kebab. The card
-  // header itself links to the detail page (the former chevron target).
+  // v1.7.2 — the header icon-buttons collapse into one overflow kebab; the
+  // card header itself links to the detail page (the former chevron target).
   const headerActions = (
     <MedicationCardMenu
       onEdit={() => onEdit(medication)}
       onOpenHistory={() => onOpenHistory(medication)}
+      leaflet={medication}
     />
   );
 
