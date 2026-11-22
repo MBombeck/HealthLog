@@ -1380,8 +1380,8 @@
       "allergiesEncrypted": "<sealed:v1:rt-UserHealthProfile-allergiesEncrypted>",
       "coachFocusEncrypted": "<sealed:v1:rt-UserHealthProfile-coachFocusEncrypted>",
       "pendingQuestionsEncrypted": "<sealed:v1:rt-UserHealthProfile-pendingQuestionsEncrypted>",
-      "createdAt": "2026-05-03T13:35:00.000Z",
-      "updatedAt": "2026-05-03T13:36:00.000Z"
+      "createdAt": "2026-05-03T13:36:00.000Z",
+      "updatedAt": "2026-05-03T13:37:00.000Z"
     },
     "healthProfileFacts": [
       {
@@ -4355,8 +4355,8 @@
       "allergiesEncrypted": "<sealed:v1:rt-UserHealthProfile-allergiesEncrypted>",
       "coachFocusEncrypted": "<sealed:v1:rt-UserHealthProfile-coachFocusEncrypted>",
       "pendingQuestionsEncrypted": "<sealed:v1:rt-UserHealthProfile-pendingQuestionsEncrypted>",
-      "createdAt": "2026-05-03T13:35:00.000Z",
-      "updatedAt": "2026-05-03T13:36:00.000Z"
+      "createdAt": "2026-05-03T13:36:00.000Z",
+      "updatedAt": "2026-05-03T13:37:00.000Z"
     },
     "healthProfileFacts": [
       {

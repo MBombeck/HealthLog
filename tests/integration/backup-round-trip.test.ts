@@ -3000,10 +3000,22 @@ describe("every column of every two-ended model survives a real restore", () => 
  * Columns of the account row the restore writes for reasons of its own, so
  * "unchanged on the target" does not apply to them.
  */
+/** A settings document's lock token (migration 0554). */
+const REVISION_MOVES =
+  "the database moves the lock token when the restore writes the document, so a token read before the restore is stale";
+
 const USER_ROW_STAMPED: Readonly<Record<string, string>> = {
   updatedAt: "@updatedAt; Prisma stamps it on the restore's write",
   syncResetAt:
     "the restore stamps it so paired clients' delta cursors are refused",
+  dashboardWidgetsRevisedAt: REVISION_MOVES,
+  insightsLayoutRevisedAt: REVISION_MOVES,
+  medicationListLayoutRevisedAt: REVISION_MOVES,
+  moodTagLayoutRevisedAt: REVISION_MOVES,
+  modulePreferencesRevisedAt: REVISION_MOVES,
+  notificationPrefsRevisedAt: REVISION_MOVES,
+  coachPrefsRevisedAt: REVISION_MOVES,
+  healthScoreConfigRevisedAt: REVISION_MOVES,
 };
 
 describe("the account's own settings survive a real restore", () => {
