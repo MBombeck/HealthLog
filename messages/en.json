@@ -9856,7 +9856,9 @@
       "tokenRevokedTitle": "Access token revoked",
       "tokenRevokedBody": "An access token of your account was revoked. If this wasn't you, change your password and review your tokens.",
       "refreshReuseTitle": "A device was signed out",
-      "refreshReuseBody": "A sign-in token was used twice, so its device was signed out. Sign in again there. If this keeps happening, change your password."
+      "refreshReuseBody": "A sign-in token was used twice, so its device was signed out. Sign in again there. If this keeps happening, change your password.",
+      "deviceReassignedTitle": "A device moved to another account",
+      "deviceReassignedBody": "A device that got this account's notifications is now signed in to another account and no longer gets them. If that wasn't you, check your devices and sign-ins."
     },
     "sharedRecordIntake": {
       "title": "{name} marked a dose",

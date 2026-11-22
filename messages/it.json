@@ -9856,7 +9856,9 @@
       "tokenRevokedTitle": "Token di accesso revocato",
       "tokenRevokedBody": "Un token di accesso del tuo account è stato revocato. Se non sei stato tu, cambia la password e controlla i tuoi token.",
       "refreshReuseTitle": "Un dispositivo è stato disconnesso",
-      "refreshReuseBody": "Un token di accesso è stato usato due volte, quindi il suo dispositivo è stato disconnesso. Accedi di nuovo da lì. Se succede ancora, cambia la password."
+      "refreshReuseBody": "Un token di accesso è stato usato due volte, quindi il suo dispositivo è stato disconnesso. Accedi di nuovo da lì. Se succede ancora, cambia la password.",
+      "deviceReassignedTitle": "Un dispositivo è passato a un altro account",
+      "deviceReassignedBody": "Un dispositivo che riceveva le notifiche di questo account ora è collegato a un altro account e non le riceve più. Se non sei stato tu, controlla i tuoi dispositivi e gli accessi."
     },
     "sharedRecordIntake": {
       "title": "{name} ha segnato una dose",

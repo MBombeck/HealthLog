@@ -9856,7 +9856,9 @@
       "tokenRevokedTitle": "Token de acceso revocado",
       "tokenRevokedBody": "Se revocó un token de acceso de tu cuenta. Si no fuiste tú, cambia tu contraseña y revisa tus tokens.",
       "refreshReuseTitle": "Se cerró la sesión de un dispositivo",
-      "refreshReuseBody": "Un token de inicio de sesión se usó dos veces, así que se cerró la sesión de su dispositivo. Vuelve a iniciar sesión allí. Si se repite, cambia tu contraseña."
+      "refreshReuseBody": "Un token de inicio de sesión se usó dos veces, así que se cerró la sesión de su dispositivo. Vuelve a iniciar sesión allí. Si se repite, cambia tu contraseña.",
+      "deviceReassignedTitle": "Un dispositivo pasó a otra cuenta",
+      "deviceReassignedBody": "Un dispositivo que recibía las notificaciones de esta cuenta ahora tiene la sesión iniciada en otra cuenta y ya no las recibe. Si no fuiste tú, revisa tus dispositivos e inicios de sesión."
     },
     "sharedRecordIntake": {
       "title": "{name} ha marcado una dosis",

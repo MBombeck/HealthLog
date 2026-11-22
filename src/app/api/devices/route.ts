@@ -13,8 +13,10 @@
  *     it over: A's row goes, with its push key, relay binding (unbound at the
  *     relay through the retrying queue before B's binding is forwarded) and
  *     Live Activity state, in the registration's transaction. Nothing sealed
- *     for A can reach the device under B. Both accounts get an audit row.
- *     A's running Live Activities get their end push before the row goes.
+ *     for A can reach the device under B. Both accounts get an audit row,
+ *     and A a SECURITY_ALERT (`device_reassigned`) on its other devices and
+ *     channels, so A does not lose its pushes there without a word. A's
+ *     running Live Activities get their end push before the row goes.
  *   * This used to answer 409, which left B without any server push on a
  *     phone A had signed out of, and A's reminders on B's lock screen.
  *     An APNs token is not a secret, so a takeover moves pushes only to the
@@ -45,6 +47,7 @@ import {
   localRunwayInBounds,
 } from "@/lib/notifications/client-managed-apns";
 import { drainQueuedUnbinds } from "@/lib/devices/signed-out-push";
+import { sendSecurityAlert } from "@/lib/auth/security-alert";
 import { endDeviceLiveActivities } from "@/lib/notifications/live-activity-end";
 import {
   activityStatementSchema,
@@ -320,7 +323,10 @@ async function endForeignLiveActivities(
 /**
  * After a takeover committed: the previous accounts' unbinds go out before
  * this request's binding is forwarded (the relay refuses a second binding key
- * for a token another binding still holds), and both sides get an audit row.
+ * for a token another binding still holds), both sides get an audit row, and
+ * each previous account a security alert. The alert reaches that account's
+ * other devices and channels only: the taken-over row is gone, and the
+ * dispatcher applies the account's own SECURITY_ALERT choices.
  */
 async function afterTakeover(
   userId: string,
@@ -333,6 +339,9 @@ async function afterTakeover(
       userId: previous.userId,
       details: { deviceId: previous.id },
     });
+  }
+  for (const previousUserId of new Set(takenOver.map((d) => d.userId))) {
+    await sendSecurityAlert(previousUserId, "device_reassigned");
   }
   if (takenOver.length === 0) return;
   await auditLog("devices.register.takeover", {
