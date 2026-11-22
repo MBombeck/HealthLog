@@ -21,6 +21,15 @@
  *     phone A had signed out of, and A's reminders on B's lock screen.
  *     An APNs token is not a secret, so a takeover moves pushes only to the
  *     device that holds the token; it never shows A's data to B.
+ *   * Only a device A is signed out of changes hands. While A still has a
+ *     live sign-in on it (`deviceHasLiveSignIn`: a live refresh token, or the
+ *     access token of a rotation's short sunset, naming the device or no
+ *     device at all), the registration answers 409
+ *     `devices.register.signed_in_elsewhere`, changes nothing and leaves an
+ *     audit row on both accounts. A stolen APNs token or install id is
+ *     therefore no way to pull a phone someone is using out of their account.
+ *     A's sign-out (or its family running out) frees the device; a reinstall
+ *     that kept A's sign-in alive waits for that.
  *
  * APNs registration:
  *   * `apnsToken` and `apnsEnvironment` are paired — supplying one
@@ -38,6 +47,7 @@ import { parseJsonBody } from "@/lib/api/body";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import { deleteDeviceRowsIn } from "@/lib/devices/delete-devices";
+import { deviceHasLiveSignIn } from "@/lib/devices/live-sign-in";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -268,21 +278,40 @@ const DEVICE_MERGE_SELECT = {
 
 type MergeRow = Prisma.DeviceGetPayload<{ select: typeof DEVICE_MERGE_SELECT }>;
 
-/**
- * Remove the rows of other accounts among the matches, queueing the relay
- * unbind of each token the relay may hold for them, inside the registration's
- * transaction. Returns the rows and the queued tokens.
- */
-async function takeOver(
-  tx: Prisma.TransactionClient,
+/** The rows among the matches that belong to another account, once each. */
+function foreignRows<T extends { id: string; userId: string }>(
   userId: string,
-  rows: Array<MergeRow | null>,
-) {
-  const foreign = new Map<string, MergeRow>();
+  rows: ReadonlyArray<T | null>,
+): T[] {
+  const foreign = new Map<string, T>();
   for (const row of rows) {
     if (row && row.userId !== userId) foreign.set(row.id, row);
   }
-  const takenOver = [...foreign.values()];
+  return [...foreign.values()];
+}
+
+/**
+ * The other accounts' rows whose device is still signed in to them: these
+ * are never taken over (see the header).
+ */
+async function stillSignedIn<T extends { userId: string; token: string }>(
+  db: Parameters<typeof deviceHasLiveSignIn>[0],
+  rows: readonly T[],
+): Promise<T[]> {
+  const now = new Date();
+  const live: T[] = [];
+  for (const row of rows) {
+    if (await deviceHasLiveSignIn(db, row, now)) live.push(row);
+  }
+  return live;
+}
+
+/**
+ * Remove the other accounts' rows being taken over, queueing the relay unbind
+ * of each token the relay may hold for them, inside the registration's
+ * transaction. Returns the rows and the queued tokens.
+ */
+async function takeOver(tx: Prisma.TransactionClient, takenOver: MergeRow[]) {
   const { unbinds } =
     takenOver.length > 0
       ? await deleteDeviceRowsIn(tx, {
@@ -310,8 +339,11 @@ async function endForeignLiveActivities(
         userId: { not: userId },
         OR: [{ token }, ...(apnsToken ? [{ apnsToken }] : [])],
       },
-      select: { id: true },
+      select: { id: true, userId: true, token: true },
     });
+    // A device still signed in to its account is not taken over, so its
+    // Activities keep running.
+    if ((await stillSignedIn(prisma, foreign)).length > 0) return;
     await endDeviceLiveActivities(foreign.map((d) => d.id));
   } catch (err) {
     getEvent()?.addWarning(
@@ -349,6 +381,36 @@ async function afterTakeover(
     details: { deviceId, previousDeviceIds: takenOver.map((d) => d.id) },
   });
   annotate({ meta: { device_takeover: takenOver.length } });
+}
+
+/**
+ * A takeover refused because the device is still signed in to the other
+ * account: both accounts get an audit row (without either token), and the
+ * request a 409. Nothing changed.
+ */
+async function refuseTakeover(
+  userId: string,
+  signedIn: ReadonlyArray<{ id: string; userId: string }>,
+) {
+  await auditLog("devices.register.takeover_refused", {
+    userId,
+    details: { reason: "signed_in_elsewhere", devices: signedIn.length },
+  });
+  for (const row of signedIn) {
+    await auditLog("devices.register.takeover_refused", {
+      userId: row.userId,
+      details: { reason: "signed_in_elsewhere", deviceId: row.id },
+    });
+  }
+  annotate({
+    action: { name: "devices.register.takeover_refused" },
+    meta: { devices: signedIn.length },
+  });
+  return apiError(
+    "This device is still signed in to another account. Sign out there first.",
+    409,
+    { errorCode: "devices.register.signed_in_elsewhere" },
+  );
 }
 
 /**
@@ -454,11 +516,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
         : null,
     ]);
 
-    // Another account's row for this install: taken over (see the header).
-    const { takenOver, unbinds } = await takeOver(tx, user.id, [
-      apnsDevice,
-      legacyDevice,
-    ]);
+    // Another account's row for this install: taken over (see the header),
+    // unless the device is still signed in to that account.
+    const foreign = foreignRows(user.id, [apnsDevice, legacyDevice]);
+    const signedIn = await stillSignedIn(tx, foreign);
+    if (signedIn.length > 0) return { kind: "refused" as const, signedIn };
+    const { takenOver, unbinds } = await takeOver(tx, foreign);
     const ownApns = apnsDevice?.userId === user.id ? apnsDevice : null;
     const ownLegacy = legacyDevice?.userId === user.id ? legacyDevice : null;
 
@@ -536,8 +599,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
       await endApnsNoDeviceRest(tx, user.id);
     }
 
-    return { id: device.id, takenOver, unbinds };
+    return { kind: "registered" as const, id: device.id, takenOver, unbinds };
   });
+  if (registration.kind === "refused") {
+    return refuseTakeover(user.id, registration.signedIn);
+  }
 
   const { id } = registration;
   await afterTakeover(user.id, id, registration);

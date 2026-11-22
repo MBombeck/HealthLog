@@ -109,7 +109,7 @@ const deviceRegisterRequest = z
   .meta({
     id: "DeviceRegisterRequest",
     description:
-      "Native device registration. A `token` or `apnsToken` another account holds is taken over (see `POST /api/devices`).",
+      "Native device registration. A `token` or `apnsToken` another account holds is taken over once that account is signed out of the device, and refused with 409 while it is still signed in there (see `POST /api/devices`).",
   });
 
 const lastDelivery = z
@@ -273,7 +273,7 @@ export const devicePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Devices"],
       summary: "Register native device + APNs token",
       description:
-        "Idempotent upsert by `token`. APNs token + environment are paired — supplying one without the other returns 422. A `token` (the `X-Device-Id`) or `apnsToken` another account holds is taken over, not refused: that account's device row goes, with its push key, relay binding (unbound at the relay before this request's binding is forwarded) and Live Activity state, so nothing sealed for it reaches the device. Both accounts get an audit row. A refused push field (push key, relay binding, consent) returns 422 with `meta.errorCode` `devices.push.<reason>` and changes nothing; more than 10 new relay bindings for one account in 24 hours return 429 `devices.push.relay_daily_limit`. When the device's APNs token changes, the old token's relay binding is removed and the device has to bind the new token (`relayState: rebind_needed` unless the request carries the new `relayBinding`). The answer's `push` block is the device's push state after the call.",
+        "Idempotent upsert by `token`. APNs token + environment are paired — supplying one without the other returns 422. A `token` (the `X-Device-Id`) or `apnsToken` another account holds is taken over when that account is signed out of the device: its device row goes, with its push key, relay binding (unbound at the relay before this request's binding is forwarded) and Live Activity state, so nothing sealed for it reaches the device. Both accounts get an audit row, and the previous one a security alert on its other devices and channels. Since v1.49.0 a device still signed in to the other account is not taken over: while that account holds a live refresh token for this `X-Device-Id` (or one naming no device), or the access token of a rotation's short sunset, the answer is 409 `devices.register.signed_in_elsewhere` and nothing changes. Signing out there, or that sign-in running out, frees the device; the app can then register again. A refused push field (push key, relay binding, consent) returns 422 with `meta.errorCode` `devices.push.<reason>` and changes nothing; more than 10 new relay bindings for one account in 24 hours return 429 `devices.push.relay_daily_limit`. When the device's APNs token changes, the old token's relay binding is removed and the device has to bind the new token (`relayState: rebind_needed` unless the request carries the new `relayBinding`). The answer's `push` block is the device's push state after the call.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: deviceRegisterRequest } },
@@ -289,6 +289,11 @@ export const devicePaths: NonNullable<ZodOpenApiObject["paths"]> = {
               ),
             },
           },
+        },
+        "409": {
+          description:
+            "`devices.register.signed_in_elsewhere`: the `token` or `apnsToken` belongs to a device still signed in to another account. Nothing changed; both accounts get an audit row.",
+          content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
       },

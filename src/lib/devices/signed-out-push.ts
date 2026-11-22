@@ -30,6 +30,7 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
+import { liveRefreshTokenWhere } from "@/lib/devices/live-sign-in";
 import { endDeviceLiveActivities } from "@/lib/notifications/live-activity-end";
 import { clearedRelayFields } from "@/lib/push-relay/binding";
 import { relayConfig } from "@/lib/push-relay/config";
@@ -138,9 +139,7 @@ export async function signedOutDevices(
       where: {
         userId,
         deviceId: { in: deviceTokens },
-        revokedAt: null,
-        usedAt: null,
-        expiresAt: { gt: now },
+        ...liveRefreshTokenWhere(now),
       },
       distinct: ["deviceId"],
       select: { deviceId: true },
