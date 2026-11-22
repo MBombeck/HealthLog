@@ -66,15 +66,7 @@ import type {
 } from "@/lib/medications/scheduling/worker-helpers";
 import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
 import { activeAccountSql } from "@/lib/account-deletion/active-account";
-
-export const INTAKE_SLOT_DEDUP_QUEUE = "intake-slot-dedup";
-
-/**
- * Serial concurrency — the populator walks a user's intake events and
- * writes per slot; concurrency-1 keeps it from crowding the request
- * pool, matching the other boot-time backfills.
- */
-export const INTAKE_SLOT_DEDUP_CONCURRENCY = 1;
+import { INTAKE_SLOT_DEDUP_QUEUE } from "@/lib/jobs/intake-slot-dedup-queue";
 
 export interface IntakeSlotDedupPayload {
   userId: string;

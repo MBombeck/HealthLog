@@ -199,7 +199,7 @@ import {
 import {
   INTAKE_SLOT_DEDUP_CONCURRENCY,
   INTAKE_SLOT_DEDUP_QUEUE,
-} from "@/lib/medications/intake-slot-dedup";
+} from "@/lib/jobs/intake-slot-dedup-queue";
 
 import { MAINTENANCE_DISCOVERY } from "./maintenance-discovery";
 import { MAINTENANCE_FILE_IMPORT_JOBS } from "./maintenance-file-imports";

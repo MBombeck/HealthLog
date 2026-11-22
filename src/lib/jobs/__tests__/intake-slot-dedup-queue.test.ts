@@ -44,7 +44,7 @@ import {
 import {
   INTAKE_SLOT_DEDUP_CONCURRENCY,
   INTAKE_SLOT_DEDUP_QUEUE,
-} from "@/lib/medications/intake-slot-dedup";
+} from "@/lib/jobs/intake-slot-dedup-queue";
 
 function job(data: { userId?: string }): Job<{ userId?: string }> {
   return {
