@@ -34275,6 +34275,12 @@ components:
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        extraDose:
+          description: "Since v1.49.0: true records this take as an extra dose outside the plan. It answers no scheduled slot
+            (neither by its time nor by the nearest-slot rule) and is never bound to one later. Only on a taken write;
+            cannot be combined with `scheduledFor` or `forceSlotInstant` (422). Absent or false keeps the default
+            attribution."
+          type: boolean
         doseTaken:
           description: Dose actually consumed for THIS intake when it deviates from (or documents) the medication's configured
             dose, e.g. a half tablet or a titration step. Free text, max 50 characters. Omit to record the take under
@@ -76726,14 +76732,18 @@ components:
                   - "null"
               compliance7:
                 type: number
-                description: Percent, 0-100.
+                description: "Percent, 0-100. When `taken7 + missed7` is 0 there is no dose to score and this is not adherence: show an
+                  empty state, not the number."
               compliance30:
                 type: number
-                description: Percent, 0-100.
+                description: "Percent, 0-100. When `expected30` is 0 there is no dose to score and this is not adherence: show an empty
+                  state, not the number."
               streak:
                 type: integer
                 minimum: -9007199254740991
                 maximum: 9007199254740991
+                description: Days in a row with every expected dose taken or skipped. Starts on a day with an answered dose, so it is 0
+                  before the first one.
               taken7:
                 type: integer
                 minimum: -9007199254740991
@@ -76746,6 +76756,11 @@ components:
                 type: integer
                 minimum: -9007199254740991
                 maximum: 9007199254740991
+              expected30:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+                description: "Since v1.49.0: the doses the 30-day rate counts (taken plus missed)."
             required:
               - id
               - name
@@ -76758,6 +76773,7 @@ components:
               - taken7
               - skipped7
               - missed7
+              - expected30
             additionalProperties: false
           description: Cadence-aware compliance per active medication.
         alerts:
@@ -103703,6 +103719,7 @@ components:
                 - medications
                 - illness
                 - symptoms
+                - seizures
                 - allergies
                 - labs
                 - visits
@@ -103835,6 +103852,7 @@ components:
             - illnessResolved
             - illnessDayLog
             - symptom
+            - seizure
             - allergyOnset
             - labResult
             - visit
@@ -103858,6 +103876,7 @@ components:
             - medications
             - illness
             - symptoms
+            - seizures
             - allergies
             - labs
             - visits
@@ -103975,6 +103994,7 @@ components:
               - medications
               - illness
               - symptoms
+              - seizures
               - allergies
               - labs
               - visits
@@ -104049,6 +104069,7 @@ components:
             - medications
             - illness
             - symptoms
+            - seizures
             - allergies
             - labs
             - visits
@@ -104220,6 +104241,7 @@ components:
             - illnessResolved
             - illnessDayLog
             - symptom
+            - seizure
             - allergyOnset
             - labResult
             - visit
@@ -104243,6 +104265,7 @@ components:
             - medications
             - illness
             - symptoms
+            - seizures
             - allergies
             - labs
             - visits
