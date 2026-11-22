@@ -10218,7 +10218,9 @@
     "intakeRecorded": {
       "title": "Dosis erfasst",
       "bodyTaken": "Eine Dosis wurde auf einem anderen Gerät als genommen erfasst.",
-      "bodySkipped": "Eine Dosis wurde auf einem anderen Gerät als übersprungen erfasst."
+      "bodySkipped": "Eine Dosis wurde auf einem anderen Gerät als übersprungen erfasst.",
+      "titleReopened": "Dosis geändert",
+      "bodyReopened": "Eine erfasste Dosis wurde auf einem anderen Gerät zurückgenommen."
     },
     "security": {
       "newDeviceTitle": "Neue Anmeldung bei deinem Konto",

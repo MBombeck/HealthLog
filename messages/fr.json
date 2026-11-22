@@ -10218,7 +10218,9 @@
     "intakeRecorded": {
       "title": "Dose enregistrée",
       "bodyTaken": "Une dose a été enregistrée comme prise sur un autre appareil.",
-      "bodySkipped": "Une dose a été enregistrée comme sautée sur un autre appareil."
+      "bodySkipped": "Une dose a été enregistrée comme sautée sur un autre appareil.",
+      "titleReopened": "Dose modifiée",
+      "bodyReopened": "Une dose enregistrée a été annulée sur un autre appareil."
     },
     "security": {
       "newDeviceTitle": "Nouvelle connexion à votre compte",

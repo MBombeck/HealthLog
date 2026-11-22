@@ -10218,7 +10218,9 @@
     "intakeRecorded": {
       "title": "Dosis registrada",
       "bodyTaken": "Se registró una dosis como tomada en otro dispositivo.",
-      "bodySkipped": "Se registró una dosis como omitida en otro dispositivo."
+      "bodySkipped": "Se registró una dosis como omitida en otro dispositivo.",
+      "titleReopened": "Dosis actualizada",
+      "bodyReopened": "Se deshizo una dosis registrada en otro dispositivo."
     },
     "security": {
       "newDeviceTitle": "Nuevo inicio de sesión en tu cuenta",

@@ -10218,7 +10218,9 @@
     "intakeRecorded": {
       "title": "Dose recorded",
       "bodyTaken": "A dose was recorded as taken on another device.",
-      "bodySkipped": "A dose was recorded as skipped on another device."
+      "bodySkipped": "A dose was recorded as skipped on another device.",
+      "titleReopened": "Dose updated",
+      "bodyReopened": "A recorded dose was undone on another device."
     },
     "security": {
       "newDeviceTitle": "New sign-in to your account",

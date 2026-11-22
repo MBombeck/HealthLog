@@ -10218,7 +10218,9 @@
     "intakeRecorded": {
       "title": "복용 기록됨",
       "bodyTaken": "다른 기기에서 복용으로 기록되었습니다.",
-      "bodySkipped": "다른 기기에서 건너뜀으로 기록되었습니다."
+      "bodySkipped": "다른 기기에서 건너뜀으로 기록되었습니다.",
+      "titleReopened": "복용 기록 변경됨",
+      "bodyReopened": "다른 기기에서 복용 기록이 취소되었습니다."
     },
     "security": {
       "newDeviceTitle": "계정에 새 로그인",

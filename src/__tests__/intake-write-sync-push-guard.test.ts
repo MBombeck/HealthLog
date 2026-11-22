@@ -178,14 +178,22 @@ const CONFIRMS: readonly string[] = [
   "app/api/ingest/medication/route.ts",
 ];
 
+/**
+ * Every path a person undoes a take or a skip through (delete, revert, move,
+ * purge) announces the slot as `reopened` on the other devices, through the
+ * one builder `reopenedEventOf`, so a device that does not run the app does
+ * not keep an undone dose as answered.
+ */
+const REOPENS: readonly string[] = [
+  "app/api/medications/[id]/intake/purge/route.ts",
+  "app/api/medications/[id]/intake/bulk-delete/route.ts",
+  "lib/medications/delete-intake-event.ts",
+  "lib/medications/update-intake-event.ts",
+];
+
 const SILENT_ONLY: Record<string, string> = {
-  "app/api/medications/[id]/intake/purge/route.ts": "deletes history",
-  "app/api/medications/[id]/intake/bulk-delete/route.ts": "deletes history",
-  "lib/medications/delete-intake-event.ts": "an undo reopens the dose",
   "lib/medications/delete-intakes-by-external-ids.ts":
-    "Apple Health removed its own records",
-  "lib/medications/update-intake-event.ts":
-    "a correction of a dose already recorded",
+    "Apple Health removed its own records: a mirror confirms nothing, as its inserts do not",
   "lib/jobs/medication-intake-import.ts": "a file import of past doses",
   "lib/jobs/intake-auto-skip.ts": "the auto-miss pass, no person's decision",
   "lib/jobs/intake-auto-take.ts": "the auto-take pass, no person's decision",
@@ -217,9 +225,22 @@ describe("every recorded take or skip is confirmed on the other devices", () => 
     );
   });
 
+  it("the undoing writers announce the reopened slot", () => {
+    expect(
+      REOPENS.filter(
+        (f) =>
+          !CONFIRMING_PUSH.test(source(f)) ||
+          !/\breopenedEventOf\s*\(/.test(source(f)),
+      ),
+    ).toEqual([]);
+  });
+
   it("every other pusher is listed with its reason", () => {
     expect(
-      pushers.filter((f) => !CONFIRMS.includes(f) && !(f in SILENT_ONLY)),
+      pushers.filter(
+        (f) =>
+          !CONFIRMS.includes(f) && !REOPENS.includes(f) && !(f in SILENT_ONLY),
+      ),
     ).toEqual([]);
   });
 });

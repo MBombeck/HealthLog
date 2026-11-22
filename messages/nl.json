@@ -10218,7 +10218,9 @@
     "intakeRecorded": {
       "title": "Dosis vastgelegd",
       "bodyTaken": "Een dosis is op een ander apparaat als ingenomen vastgelegd.",
-      "bodySkipped": "Een dosis is op een ander apparaat als overgeslagen vastgelegd."
+      "bodySkipped": "Een dosis is op een ander apparaat als overgeslagen vastgelegd.",
+      "titleReopened": "Dosis gewijzigd",
+      "bodyReopened": "Een vastgelegde dosis is op een ander apparaat ongedaan gemaakt."
     },
     "security": {
       "newDeviceTitle": "Nieuwe inlog op je account",

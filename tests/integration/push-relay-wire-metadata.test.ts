@@ -140,8 +140,24 @@ describe("relay wire metadata", () => {
         outcome: "taken",
         takenAt: new Date(),
         takenVia: "INTEGRATION",
+        asOf: new Date(),
       },
       { title: "Dose recorded", body: "Recorded on another device." },
+      ctx,
+    );
+    // The undo of that dose, which must look the same on the wire.
+    await sendSealedIntakeRecorded(
+      [device],
+      {
+        medicationId: "med-1",
+        intakeId: "intake-1",
+        slotInstant: new Date("2026-11-22T08:00:00.000Z"),
+        outcome: "reopened",
+        takenAt: null,
+        takenVia: null,
+        asOf: new Date(),
+      },
+      { title: "Dose updated", body: "Undone on another device." },
       ctx,
     );
     const { sendRelayTestPush } = await import("@/lib/push-relay/test-push");
@@ -163,14 +179,15 @@ describe("relay wire metadata", () => {
     );
 
     // Every kind reached the relay: four dispatcher alerts, the dose
-    // confirmation and the test push; the intake sync and two wakes.
+    // confirmation, its undo and the test push; the intake sync and two
+    // wakes.
     const byClass = new Map<string, ReturnType<typeof shape>[]>();
     for (const item of fake.wire) {
       const list = byClass.get(String(item.class)) ?? [];
       list.push(shape(item));
       byClass.set(String(item.class), list);
     }
-    expect(byClass.get("alert")).toHaveLength(alerts.length + 2);
+    expect(byClass.get("alert")).toHaveLength(alerts.length + 3);
     expect(byClass.get("silent")).toHaveLength(3);
 
     for (const [, shapes] of byClass) {
