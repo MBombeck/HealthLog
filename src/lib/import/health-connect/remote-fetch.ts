@@ -41,7 +41,8 @@ import {
   recordSyncSuccess,
   type FailureKind,
 } from "@/lib/integrations/status";
-import { annotate } from "@/lib/logging/context";
+import { FanOutTally } from "@/lib/jobs/fan-out-tally";
+import { annotate, getEvent } from "@/lib/logging/context";
 import { safeFetch, SafeFetchError } from "@/lib/safe-fetch";
 
 import { queueStagedHealthConnectImport } from "./queue-staged";
@@ -251,6 +252,24 @@ async function streamToFile(
   }
 }
 
+/**
+ * The outcome of a request or a body read that threw. Every throw on the wire
+ * maps to one: a refused private address, the download's time limit, and
+ * anything else the connection did (a reset, a hang-up, a TLS failure) as
+ * `network`.
+ */
+export function abortOutcome(err: unknown): RemoteOutcome {
+  if (err instanceof SafeFetchError) {
+    if (err.kind === "private_host") return "private_origin_not_approved";
+    if (err.kind === "timeout") return "timeout";
+    return "network";
+  }
+  const name = err instanceof Error ? err.name : "";
+  return name === "TimeoutError" || name === "AbortError"
+    ? "timeout"
+    : "network";
+}
+
 async function download(source: SourceRow): Promise<Download> {
   const target = evaluateWebdavFolderUrl(
     source.folderUrl,
@@ -294,18 +313,7 @@ async function download(source: SourceRow): Promise<Download> {
       },
     );
   } catch (err) {
-    if (err instanceof SafeFetchError) {
-      return {
-        kind: "outcome",
-        outcome:
-          err.kind === "private_host"
-            ? "private_origin_not_approved"
-            : err.kind === "timeout"
-              ? "timeout"
-              : "network",
-      };
-    }
-    throw err;
+    return { kind: "outcome", outcome: abortOutcome(err) };
   }
   const status = res.status;
   if (status === 304) return { kind: "outcome", outcome: "unchanged" };
@@ -321,7 +329,16 @@ async function download(source: SourceRow): Promise<Download> {
   }
   const declared = Number(res.headers.get("content-length") ?? 0);
   if (declared > REMOTE_MAX_BYTES) return refuse("too_large");
-  const file = await streamToFile(res.body);
+  // A body that stops mid-stream (the server hung up, the connection reset,
+  // the download ran out of time) is an outcome of the attempt like any
+  // other: the source is stamped with it and backs off, and the card says
+  // why. Thrown, it skipped the stamp and left the folder due every pass.
+  let file: Awaited<ReturnType<typeof streamToFile>>;
+  try {
+    file = await streamToFile(res.body);
+  } catch (err) {
+    return { kind: "outcome", outcome: abortOutcome(err) };
+  }
   if (!file) return { kind: "outcome", outcome: "too_large" };
   return { kind: "file", ...file, etag: res.headers.get("etag") };
 }
@@ -343,12 +360,19 @@ export async function fetchRemoteSource(
     outcome = "unchanged";
     etag = got.etag;
   } else {
-    const queued = await queueStagedHealthConnectImport({
-      userId: source.userId,
-      filePath: got.path,
-      bytes: got.bytes,
-      sha256: got.sha256,
-    });
+    let queued: Awaited<ReturnType<typeof queueStagedHealthConnectImport>>;
+    try {
+      queued = await queueStagedHealthConnectImport({
+        userId: source.userId,
+        filePath: got.path,
+        bytes: got.bytes,
+        sha256: got.sha256,
+      });
+    } catch (err) {
+      // Nothing took the staged file, so nothing will remove it.
+      await rm(got.path, { force: true });
+      throw err;
+    }
     switch (queued.outcome) {
       case "queued":
       case "idempotent":
@@ -444,7 +468,7 @@ export async function runWithinBudget<T, R>(
 export async function fetchDueRemoteSources(
   now: Date = new Date(),
   limit = 20,
-): Promise<Record<RemoteOutcome, number>> {
+): Promise<{ counts: Record<RemoteOutcome, number>; tally: FanOutTally }> {
   const due = await prisma.healthConnectRemoteSource.findMany({
     where: {
       enabled: true,
@@ -455,22 +479,38 @@ export async function fetchDueRemoteSources(
     take: limit,
     select: SOURCE_SELECT,
   });
+  const tally = new FanOutTally();
   const outcomes = await runWithinBudget(
     due,
     {
       concurrency: REMOTE_FETCH_CONCURRENCY,
       deadline: Date.now() + REMOTE_FETCH_START_BUDGET_MS,
     },
-    (source) => fetchRemoteSource(source, now),
+    // A folder whose attempt threw past its own stamp (the database or the
+    // import queue, not the folder) is counted and the others carry on; an
+    // outcome the folder caused is on the person's card already.
+    async (source): Promise<RemoteOutcome | null> => {
+      try {
+        const outcome = await fetchRemoteSource(source, now);
+        tally.ok();
+        return outcome;
+      } catch (err) {
+        tally.fail();
+        getEvent()?.addWarning(
+          `health_connect_remote_fetch_failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return null;
+      }
+    },
   );
   const counts = {} as Record<RemoteOutcome, number>;
   for (const outcome of outcomes) {
-    counts[outcome] = (counts[outcome] ?? 0) + 1;
+    if (outcome) counts[outcome] = (counts[outcome] ?? 0) + 1;
   }
   annotate({
     meta: { remote_due: due.length, remote_read: outcomes.length },
   });
-  return counts;
+  return { counts, tally };
 }
 
 /** One account's source, now, whatever its schedule (the "fetch now" act). */
