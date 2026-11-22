@@ -7,7 +7,7 @@ source. Rows from this path carry the source `IMPORT`.
 
 ## 1. Export on the phone
 
-In Gadgetbridge open **Settings → Data management → Export database**.
+In Gadgetbridge open **Settings > Data management > Export database**.
 Gadgetbridge writes one file named `Gadgetbridge` (a SQLite database, no
 extension) into its export folder. Move it to the computer or phone you use
 HealthLog on. The file is not encrypted, so treat it like any other export
@@ -15,7 +15,7 @@ of your health data.
 
 ## 2. Upload to HealthLog
 
-Open **Settings → Export & Import** and choose the file on the
+Open **Settings > Export & import** and choose the file on the
 **Gadgetbridge database** card. The endpoint is
 `POST /api/import/gadgetbridge` (`multipart/form-data`, field `file`):
 

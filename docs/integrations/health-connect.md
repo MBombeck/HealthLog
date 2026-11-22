@@ -38,7 +38,7 @@ data.
 ## 2. Upload to HealthLog
 
 Download the ZIP from the cloud to the computer or phone you use
-HealthLog on, open **Settings → Export & Import** and drop the file
+HealthLog on, open **Settings > Export & import** and drop the file
 onto the **Health Connect export** card.
 
 The endpoint is `POST /api/import/health-connect-export`
@@ -162,7 +162,7 @@ is never counted twice.
   160 MB of heap in total.
 - Split web and worker containers need a shared staging directory,
   exactly as for the Apple Health import.
-- The status of a running job shows up under **Settings → Export &
+- The status of a running job shows up under **Settings > Export &
   Import**; a job interrupted by a restart is marked failed by the
   same reconcile pass that watches Apple Health imports.
 
@@ -174,9 +174,9 @@ nothing has to be downloaded and uploaded by hand.
 
 1. On the phone, set up a **Scheduled export** into the Nextcloud app (or
    any app that writes to a WebDAV folder), for example daily.
-2. In Nextcloud, create an **app password** under **Personal settings →
+2. In Nextcloud, create an **app password** under **Personal settings >
    Security**. Use it instead of the account password.
-3. In HealthLog open **Settings → Export & Import → Health Connect from a
+3. In HealthLog open **Settings > Export & import > Health Connect from a
    folder** and enter:
    - the folder's WebDAV address, for Nextcloud
      `https://cloud.example/remote.php/dav/files/<user>/<folder>` (no user

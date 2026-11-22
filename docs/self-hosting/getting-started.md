@@ -197,19 +197,21 @@ many hops to read back.
 
 ## 7. Where to go next
 
-| Next step                                                           | File                                  |
-| ------------------------------------------------------------------- | ------------------------------------- |
-| TLS + reverse-proxy configuration                                   | `docs/self-hosting/reverse-proxy.md`  |
-| Tailnet-only HTTPS via `tailscale serve` (no reverse proxy)         | `docs/self-hosting/tailscale.md`      |
-| Push notifications — Web Push, Telegram, ntfy, webhook, email, APNs | `docs/self-hosting/notifications.md`  |
-| Web/worker process split for horizontal scale                       | `docs/self-hosting/scaling.md`        |
-| Off-host encrypted backups to S3/R2/B2                              | `docs/ops/backup-restore.md`          |
-| Encryption-key rotation procedure                                   | `docs/ops/encryption-key-rotation.md` |
-| Withings device sync                                                | `docs/integrations/withings.md`       |
-| WHOOP device sync (per-user BYO-keys)                               | `docs/integrations/whoop.md`          |
-| Google Health sync — Fitbit & Pixel (per-user BYO-keys)             | `docs/integrations/google-health.md`  |
-| Apple Health `export.zip` import                                    | `docs/integrations/apple-health.md`   |
-| AI provider setup (OpenAI / Anthropic / local / ChatGPT OAuth)      | `docs/integrations/ai-providers.md`   |
+| Next step                                                           | File                                                                                                                  |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| TLS + reverse-proxy configuration                                   | `docs/self-hosting/reverse-proxy.md`                                                                                  |
+| Tailnet-only HTTPS via `tailscale serve` (no reverse proxy)         | `docs/self-hosting/tailscale.md`                                                                                      |
+| Push notifications — Web Push, Telegram, ntfy, webhook, email, APNs | `docs/self-hosting/notifications.md`                                                                                  |
+| Web/worker process split for horizontal scale                       | `docs/self-hosting/scaling.md`                                                                                        |
+| Off-host encrypted backups to S3/R2/B2                              | `docs/ops/backup-restore.md`                                                                                          |
+| Encryption-key rotation procedure                                   | `docs/ops/encryption-key-rotation.md`                                                                                 |
+| Withings device sync                                                | `docs/integrations/withings.md`                                                                                       |
+| WHOOP device sync (per-user BYO-keys)                               | `docs/integrations/whoop.md`                                                                                          |
+| Google Health sync — Fitbit & Pixel (per-user BYO-keys)             | `docs/integrations/google-health.md`                                                                                  |
+| Apple Health `export.zip` import                                    | `docs/integrations/apple-health.md`                                                                                   |
+| AI provider setup (OpenAI / Anthropic / local / ChatGPT OAuth)      | `docs/integrations/ai-providers.md`                                                                                   |
+| Push relay for the App Store iPhone app                             | `docs/integrations/push-relay.md`                                                                                     |
+| Health Connect, Gadgetbridge and FHIR R4 Bundle imports             | `docs/integrations/health-connect.md`, `docs/integrations/gadgetbridge.md`, `docs/integrations/fhir-bundle-import.md` |
 
 ## Troubleshooting
 
@@ -396,30 +398,14 @@ encryption key safely (keep the old key until zero rows remain on it) see
 
 ## Updates
 
-A new image can bring database migrations, and `docker-entrypoint.sh`
-applies them on the first start of that image. Most are additive, but some
-rewrite data, and going back to the previous image does not undo them. The
-way back from a migration that went wrong is a dump taken before it. The
-entrypoint takes one itself (`healthlog-<time>-pre-migration.dump` in the
-`backups` volume, see
-[`docs/ops/disaster-recovery.md`](../ops/disaster-recovery.md)); a dump of
-your own before every pull, kept off the host, is the second copy:
-
-```bash
-# 1. Dump the database (same command as under "Backup and restore").
-docker compose exec -T db pg_dump -U healthlog healthlog \
-  | gzip > healthlog-before-update-$(date +%F).sql.gz
-
-# 2. Pull the new image and recreate the app container.
-docker compose pull app
-docker compose up -d app
-
-# 3. Confirm the running build.
-curl -s http://localhost:3000/api/version
-```
-
-Keep the dump until the new version has run for a few days, and keep your
-encryption key with it: a dump without the key cannot be read.
+The update itself (pull, migrate, verify, and the way back) is described
+once, in [Updates and deploy](https://docs.healthlog.dev/guides/updates-and-deploy/),
+with the operator detail and the notes for each release in
+[`docs/ops/deploy.md`](../ops/deploy.md). In short: when a new image brings
+migrations, the container writes a pre-migration dump into the `backups`
+volume before it migrates, and that dump is the way back; without the
+`backups` volume no dump is taken, so run `pg_dump` yourself first. Keep
+your encryption key with every dump: a dump without the key cannot be read.
 
 The database image is a separate matter: a new Postgres minor is a change of
 the `image:` line. The move from 16 to 18 runs by itself on the first start

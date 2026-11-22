@@ -36,6 +36,12 @@ plaintext. Flow, basal body temperature, ovulation-test results,
 cervical-mucus observations, and the cycle dates stay in plaintext
 because the prediction and correlation engines read them; they are
 health observations, not the disclosure-sensitive intent fields.
+The pregnancy state set under **Pregnancy and after the birth** (since
+v1.49.0: pregnant or after the birth, the first day, the due date and the
+date of the birth) is stored in plaintext as well, beside the cycle
+settings, because the predictions and every reader of the cycle read it on
+each request. The pregnancy test on a day log stays encrypted as described
+above.
 
 ## The residual threat (read this part)
 
