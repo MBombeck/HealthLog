@@ -538,7 +538,7 @@
       "reasonFit": "Nie można obliczyć",
       "excludedAdherence": "Pominięto {count} dni po rozpoczęciu (przyjęto mniej niż {floor}% dawek)",
       "excludedNotTaking": "Pominięto {count} dni (lek wstrzymany lub przerwa między kuracjami)",
-      "notTracked": "przyjmowanie nie jest rejestrowane, więc nie pominięto dni z powodu opuszczonych dawek",
+      "notTracked": "przyjmowanie nie jest rejestrowane, więc nie pominięto dni z powodu nieprzyjętych dawek",
       "endDoseChange": "okres kończy się {date}, przed pierwszą zmianą dawki",
       "days": "{before} dni przed, {after} dni po rozpoczęciu, pominięto {excluded} dni",
       "method": "Regresja segmentowa na wartościach dziennych od 90 dni przed do najwyżej 180 dni po rozpoczęciu, przedziały Neweya-Westa. Pominięto dni po rozpoczęciu, w których w ciągu poprzednich 14 dni przyjęto mniej niż 80% dawek. Opisuje związek w czasie, a nie udowodnione działanie leku.",
@@ -1923,11 +1923,11 @@
         },
         "rolling": {
           "label": "Elastycznie od ostatniej dawki",
-          "description": "Pozostaw kolejną dawkę otwartą. Po naciśnięciu „przyjęto” licznik startuje od nowa od tego momentu."
+          "description": "Pozostaw kolejną dawkę otwartą. Po naciśnięciu „Przyjmij” liczenie zaczyna się od nowa od tego momentu."
         },
         "oneShot": {
           "label": "Jednorazowo",
-          "description": "Jednorazowe podanie, np. szczepionka lub kuracja antybiotykowa."
+          "description": "Jednorazowe podanie, np. szczepionka lub zastrzyk u lekarza."
         },
         "asNeeded": {
           "label": "W razie potrzeby",
@@ -2154,11 +2154,11 @@
           "openButton": "Dostosuj"
         },
         "grace": {
-          "label": "Okno przypomnienia",
+          "label": "Czas przypomnień",
           "appliesToAllNote": "Dotyczy wszystkich harmonogramów tego leku.",
           "unit": "minut",
-          "saved": "Okno przypomnienia zapisane",
-          "failed": "Nie udało się zapisać okna przypomnienia.",
+          "saved": "Czas przypomnień zapisany",
+          "failed": "Nie udało się zapisać czasu przypomnień.",
           "description": "Jak długo po porze dawki przychodzą przypomnienia, zanim przyjdzie to o przekroczeniu terminu."
         },
         "codes": {
@@ -2370,8 +2370,8 @@
         "timesTitle": "Godziny przyjęcia",
         "timesNote": "Dostosuj godzinę i okno punktualności każdej dawki. Częstotliwość (codziennie, co tydzień…) zmieniasz w edytorze w sekcji Zaawansowane.",
         "scheduleLabel": "Harmonogram {index}",
-        "fullEditNote": "Częstotliwość, klasę leczenia i okno kuracji edytujesz w edytorze w sekcji Zaawansowane → Cykl życia.",
-        "graceEcho": "Okno przypomnienia: {minutes} minut",
+        "fullEditNote": "Częstotliwość, klasę leczenia i okres leczenia edytujesz w edytorze w sekcji Zaawansowane → Cykl życia.",
+        "graceEcho": "Czas przypomnień: {minutes} minut",
         "reminderTitle": "Przypomnienie",
         "manageChannels": "Zarządzaj kanałami powiadomień",
         "history": {
@@ -2509,7 +2509,7 @@
         "basis": "Na podstawie {before} dni przed i {after} dni po rozpoczęciu (od {from} do {to}).",
         "excludedAdherence": "Pominięto {count} dni po rozpoczęciu, bo w ciągu {lookback} dni przed nimi przyjęto mniej niż {floor}% dawek.",
         "excludedNotTaking": "Pominięto {count} dni, bo lek był wstrzymany albo przypadały między kuracjami.",
-        "notTracked": "Przyjmowanie tego leku nie jest rejestrowane, więc nie pominięto żadnych dni z powodu opuszczonych dawek.",
+        "notTracked": "Przyjmowanie tego leku nie jest rejestrowane, więc nie pominięto żadnych dni z powodu nieprzyjętych dawek.",
         "endDoseChange": "Okres kończy się przed pierwszą zmianą dawki, więc opisuje dawkę początkową.",
         "confoundersTitle": "Inne zmiany leków w tym okresie, których ten widok nie potrafi oddzielić od tego leku:",
         "confounderStarted": "{name} rozpoczęty {date}",
@@ -2685,13 +2685,13 @@
       "countsForLate": "Liczy się jako dawka z {time}, z opóźnieniem.",
       "countNearLabel": "Policz jako dawkę z {time}",
       "skips": "Pomija dawkę z {time}.",
-      "extraDose": "Zapisana jako dodatkowa dawka, poza planem.",
+      "extraDose": "Zapisana jako dodatkowa dawka, poza planem. Zostaje w historii i nie wlicza się do przestrzegania planu.",
       "scheduleLoading": "Sprawdzanie dawek zaplanowanych na ten dzień…",
       "scheduleUnavailable": "Nie udało się odczytać planu na ten dzień, więc zostanie zapisana jako dodatkowa dawka.",
       "noMedications": "Najpierw dodaj lek, a potem będziesz mógł rejestrować jego przyjęcia.",
       "saveError": "Nie udało się zapisać przyjęcia. Spróbuj ponownie"
     },
-    "phaseGreenHint": "Pierwsze przypomnienie, tyle przed końcem okna przypomnień.",
+    "phaseGreenHint": "Pierwsze przypomnienie, tyle przed końcem okna.",
     "phaseYellowHint": "Kolejne przypomnienie, tyle przed końcem okna.",
     "phaseOrangeHint": "Przypomnienie, że dawka jest po terminie, tyle po końcu okna.",
     "phaseRedHint": "Po tylu od końca okna dawka liczy się jako nieprzyjęta.",
@@ -10054,7 +10054,7 @@
     "noActiveMedications": "Nie znaleziono aktywnych leków.",
     "whichMedication": "<b>Który lek został przyjęty?</b>",
     "cancelButton": "Anuluj",
-    "askMedicationName": "Podaj lek, np. <b>przyjęty Ramipril</b>.",
+    "askMedicationName": "Podaj lek, np. <b>taken Ramipril</b>.",
     "medicationNotFoundExact": "Nie znaleziono leku. Wyślij nazwę dokładnie tak, jak w HealthLog.",
     "helpHeader": "<b>Dostępne polecenia:</b>",
     "helpBody": "/help: pokaż tę pomoc\n/add: zapisz przyjęcie\n/start: uruchom bota\n\n<b>Polecenia tekstowe:</b>\ntaken &lt;nazwa&gt;: potwierdź przyjęcie\n\n<b>Przyciski w przypomnieniach:</b>\n• ✅ Przyjmij: zapisz przyjęcie\n• 🕐 Przypomnij później: odłóż przypomnienie o czas ustawiony w ustawieniach\n• ⏭ Pomiń: pomiń dawkę\n• Zostaw jako nieprzyjęte: zostaw nieprzyjętą dawkę jako nieprzyjętą",
@@ -13338,7 +13338,7 @@
       }
     },
     "action": {
-      "logDose": "Zapisz dawkę",
+      "logDose": "Przyjmij",
       "reconnect": "Połącz ponownie",
       "viewCheckups": "Zobacz badania",
       "viewAppointment": "Zobacz wizytę",
@@ -15266,7 +15266,7 @@
       "triggersTitle": "Podejrzewane czynniki wyzwalające",
       "triggersNote": "Wskazane przez osobę lub opiekuna przy zapisie; nie są to ustalone przyczyny.",
       "overlaysTitle": "Zapisane w tym samym czasie",
-      "overlayMissedDose": "{followed} z {of} napadów wystąpiło w ciągu 48 godzin po pominiętej lub opuszczonej zaplanowanej dawce.",
+      "overlayMissedDose": "{followed} z {of} napadów wystąpiło w ciągu 48 godzin po nieprzyjętej lub pominiętej zaplanowanej dawce.",
       "overlayIllness": "Napady w trakcie jednego z {episodes} zapisanych epizodów chorobowych: {during}.",
       "overlaySleep": "Zapisany sen w nocy przed dniem z napadem: średnio {before} h (noce: {nightsBefore}); pozostałe noce: {other} h (noce: {nightsOther}).",
       "overlayCycleDays": "Napady według dnia cyklu (dzień: liczba): {list}.",

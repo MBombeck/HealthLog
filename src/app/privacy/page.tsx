@@ -652,7 +652,7 @@ export default function PrivacyPage() {
                 </li>
                 <li>
                   Einnahme-Ereignisse: geplante Zeit, tatsächliche Zeit, Status
-                  (eingenommen, ausgelassen, verpasst).
+                  (genommen, übersprungen, verpasst).
                 </li>
                 <li>
                   Bei GLP-1-Therapien: Dosis-Änderungs-Historie, Injektions-

@@ -536,12 +536,12 @@
       "reasonBefore": "Zu wenige Werte vor dem Start",
       "reasonAfter": "Zu wenige Werte seit dem Start",
       "reasonFit": "Nicht berechenbar",
-      "excludedAdherence": "{count} Tage nach dem Start ausgelassen (unter {floor} % der Dosen eingenommen)",
-      "excludedNotTaking": "{count} Tage ausgelassen (pausiert oder zwischen Einnahmezeiträumen)",
-      "notTracked": "Einnahme nicht erfasst, daher keine Tage wegen ausgelassener Dosen entfernt",
+      "excludedAdherence": "{count} Tage nach dem Start ausgeschlossen (unter {floor} % der Dosen eingenommen)",
+      "excludedNotTaking": "{count} Tage ausgeschlossen (pausiert oder zwischen Einnahmezeiträumen)",
+      "notTracked": "Einnahme nicht erfasst, daher keine Tage wegen nicht genommener Dosen entfernt",
       "endDoseChange": "Zeitraum endet am {date}, vor der ersten Dosisänderung",
-      "days": "{before} Tage vor, {after} Tage nach dem Start, {excluded} Tage ausgelassen",
-      "method": "Segmentierte Regression über die Tageswerte von 90 Tagen vor bis höchstens 180 Tagen nach dem Start, Intervalle nach Newey-West. Tage nach dem Start, an denen in den 14 Tagen davor weniger als 80 % der Dosen eingenommen wurden, sind ausgelassen. Beschreibt einen zeitlichen Zusammenhang, keine nachgewiesene Wirkung des Medikaments.",
+      "days": "{before} Tage vor, {after} Tage nach dem Start, {excluded} Tage ausgeschlossen",
+      "method": "Segmentierte Regression über die Tageswerte von 90 Tagen vor bis höchstens 180 Tagen nach dem Start, Intervalle nach Newey-West. Tage nach dem Start, an denen in den 14 Tagen davor weniger als 80 % der Dosen eingenommen wurden, sind ausgeschlossen. Beschreibt einen zeitlichen Zusammenhang, keine nachgewiesene Wirkung des Medikaments.",
       "autocorrelation": "starke Abhängigkeit vom Vortag, die Bereiche können daher noch zu eng sein",
       "window": "ausgewertet {from} bis {to}, das kann über den Berichtszeitraum hinausreichen",
       "windowLine": "Ausgewertet {from} bis {to}. Dieser Zeitraum kann über den Berichtszeitraum hinausreichen."
@@ -549,7 +549,7 @@
     "screenerUnvalidated": "{label}: {count} von {total} Ergebnissen wurden in einer nicht wissenschaftlich validierten Übersetzung beantwortet; sie dienen der Orientierung.",
     "pregnancy": {
       "title": "Schwangerschaft",
-      "pregnantWeek": "Schwanger, Woche {weeks}+{days} am Berichtsdatum",
+      "pregnantWeek": "SSW {weeks}+{days} am Berichtsdatum",
       "pregnant": "Schwanger",
       "startDate": "Erster Tag der letzten Periode",
       "dueDate": "Errechneter Geburtstermin",
@@ -1694,7 +1694,7 @@
           "everyNMonths": "Alle N Monate an einem bestimmten Tag",
           "yearly": "Einmal im Jahr",
           "rolling": "Alle N Tage seit der letzten Einnahme (flexibel)",
-          "rollingExplainer": "Zählt ab der letzten erfassten Einnahme und pausiert, wenn du eine Dosis auslässt.",
+          "rollingExplainer": "Zählt ab der letzten erfassten Einnahme und pausiert, wenn du eine Dosis überspringst.",
           "oneShot": "Einmaldosis"
         },
         "weekdays": {
@@ -1756,7 +1756,7 @@
         }
       },
       "courseWindow": {
-        "section": "Behandlungszeitraum",
+        "section": "Zeitraum",
         "startsOn": {
           "label": "Beginnt am"
         },
@@ -1841,7 +1841,7 @@
         "step5": {
           "title": "Wie oft nimmst du es?",
           "subline": "Wähle die Regelmäßigkeit, die Details kommen im nächsten Schritt.",
-          "short": "Takt"
+          "short": "Häufigkeit"
         },
         "step6": {
           "title": "Wie sieht das im Detail aus?",
@@ -1863,7 +1863,7 @@
         "step7": {
           "title": "Wann nimmst du es?",
           "subline": "Eine oder mehrere Uhrzeiten. Die Erinnerungen richten sich danach.",
-          "presetsLabel": "Tagespresets",
+          "presetsLabel": "Tageszeiten",
           "presets": {
             "morning": "Morgens",
             "noon": "Mittags",
@@ -1923,11 +1923,11 @@
         },
         "rolling": {
           "label": "Flexibel ab letzter Einnahme",
-          "description": "Du lässt den nächsten Termin offen, drückst 'genommen', wenn du sie genommen hast. Ab dem Zeitpunkt zählt der Counter wieder."
+          "description": "Der nächste Termin bleibt offen. Wenn du auf „Einnehmen“ tippst, beginnt die Zählung ab diesem Moment neu."
         },
         "oneShot": {
           "label": "Einmalig",
-          "description": "Einzelgabe, zum Beispiel eine Impfung oder ein Antibiotikum."
+          "description": "Einzelgabe, zum Beispiel eine Impfung oder eine Spritze beim Arzt."
         },
         "asNeeded": {
           "label": "Bei Bedarf",
@@ -2154,11 +2154,11 @@
           "openButton": "Anpassen"
         },
         "grace": {
-          "label": "Erinnerungsfenster",
+          "label": "Erinnerungsdauer",
           "appliesToAllNote": "Gilt für alle Zeitpläne dieses Medikaments.",
           "unit": "Minuten",
-          "saved": "Erinnerungsfenster gespeichert",
-          "failed": "Erinnerungsfenster konnte nicht gespeichert werden.",
+          "saved": "Erinnerungsdauer gespeichert",
+          "failed": "Die Erinnerungsdauer konnte nicht gespeichert werden.",
           "description": "Wie lange nach der Dosiszeit erinnert wird, bevor die Überfällig-Erinnerung kommt."
         },
         "codes": {
@@ -2370,8 +2370,8 @@
         "timesTitle": "Einnahmezeiten",
         "timesNote": "Passe die Uhrzeiten und das Zeitfenster jeder Dosis an. Die Häufigkeit (täglich, wöchentlich…) änderst du im Editor unter Erweitert.",
         "scheduleLabel": "Zeitplan {index}",
-        "fullEditNote": "Häufigkeit, Wirkstoffklasse und Kursfenster bearbeitest du im Editor unter Erweitert → Lebenszyklus.",
-        "graceEcho": "Erinnerungsfenster: {minutes} Minuten",
+        "fullEditNote": "Häufigkeit, Wirkstoffklasse und Zeitraum bearbeitest du im Editor unter Erweitert → Lebenszyklus.",
+        "graceEcho": "Erinnerungsdauer: {minutes} Minuten",
         "reminderTitle": "Erinnerung",
         "manageChannels": "Benachrichtigungskanäle verwalten",
         "history": {
@@ -2507,9 +2507,9 @@
         "preSlope": "Vor dem Start lag der Trend bei {value} {unit} pro Woche.",
         "includesZero": "Wo ein Bereich die Null einschließt, passen diese Werte auch zu gar keiner Veränderung.",
         "basis": "Grundlage: {before} Tage vor und {after} Tage nach dem Start ({from} bis {to}).",
-        "excludedAdherence": "{count} Tage nach dem Start wurden ausgelassen, weil in den {lookback} Tagen davor weniger als {floor} % der Dosen eingenommen wurden.",
-        "excludedNotTaking": "{count} Tage wurden ausgelassen, weil das Medikament pausiert war oder zwischen zwei Einnahmezeiträumen lag.",
-        "notTracked": "Für dieses Medikament wird die Einnahme nicht erfasst, deshalb wurden keine Tage wegen ausgelassener Dosen entfernt.",
+        "excludedAdherence": "{count} Tage nach dem Start wurden ausgeschlossen, weil in den {lookback} Tagen davor weniger als {floor} % der Dosen eingenommen wurden.",
+        "excludedNotTaking": "{count} Tage wurden ausgeschlossen, weil das Medikament pausiert war oder zwischen zwei Einnahmezeiträumen lag.",
+        "notTracked": "Für dieses Medikament wird die Einnahme nicht erfasst, deshalb wurden keine Tage wegen nicht genommener Dosen entfernt.",
         "endDoseChange": "Der Zeitraum endet vor der ersten Dosisänderung und beschreibt deshalb die Anfangsdosis.",
         "confoundersTitle": "Weitere Medikamentenänderungen in diesem Zeitraum, die diese Ansicht nicht von diesem Medikament trennen kann:",
         "confounderStarted": "{name} begonnen am {date}",
@@ -2685,14 +2685,14 @@
       "countsForLate": "Zählt für die Dosis um {time}, als verspätet.",
       "countNearLabel": "Für die Dosis um {time} zählen",
       "skips": "Überspringt die Dosis um {time}.",
-      "extraDose": "Wird als zusätzliche Dosis außerhalb des Plans erfasst.",
+      "extraDose": "Wird als zusätzliche Dosis außerhalb des Plans erfasst. Sie bleibt im Verlauf und zählt nicht zur Therapietreue.",
       "scheduleLoading": "Prüft, welche Dosen an dem Tag geplant sind…",
       "scheduleUnavailable": "Der Plan für diesen Tag ließ sich nicht laden, daher wird dies als zusätzliche Dosis erfasst.",
       "noMedications": "Lege zuerst ein Medikament an, dann kannst du Einnahmen dafür erfassen.",
       "saveError": "Die Einnahme konnte nicht gespeichert werden. Bitte erneut versuchen"
     },
-    "phaseGreenHint": "Erste Erinnerung, so lange vor dem Ende des Erinnerungsfensters.",
-    "phaseYellowHint": "Weitere Erinnerung, so lange vor dem Ende des Fensters.",
+    "phaseGreenHint": "Erste Erinnerung, so lange vor dem Ende des Einnahmefensters.",
+    "phaseYellowHint": "Weitere Erinnerung, so lange vor dem Ende des Einnahmefensters.",
     "phaseOrangeHint": "Erinnerung, dass die Dosis überfällig ist, so lange nach dem Ende des Fensters.",
     "phaseRedHint": "So lange nach dem Fenster zählt die Dosis als verpasst.",
     "filter": {
@@ -6201,7 +6201,7 @@
               "dosage": "Wird nur dann an der Dosis festgehalten, wenn sie von der geplanten Menge abweicht.",
               "scheduledDosage": "Wird mit der tatsächlichen Menge verglichen, um eine Abweichung zu erkennen. Nie eigenständig gespeichert.",
               "unit": "Wird mit der Menge geschrieben, geschrieben wie in der Datei. „count“ heißt Vielfache der konfigurierten Dosis.",
-              "status": "„Taken“ wird eine Dosis, „Skipped“ ein bewusstes Auslassen. Jeder andere Wert hält keine Entscheidung fest und die Zeile wird abgewiesen.",
+              "status": "„Taken“ wird eine Dosis, „Skipped“ ein bewusstes Überspringen. Jeder andere Wert hält keine Entscheidung fest und die Zeile wird abgewiesen.",
               "archived": "Wird gezählt und zurückgemeldet. Eine erfolgte Einnahme wird nicht dadurch ungültig, dass das Medikament später archiviert wurde.",
               "codings": "Die CSV dokumentiert für diese Spalte keine Kodierung, also bleibt sie unberührt statt geraten. Gefüllte Zellen werden gezählt.",
               "form": "Beschreibt das Medikament, nicht die Dosis.",
@@ -9805,7 +9805,7 @@
     "intakeRecorded": {
       "title": "Dosis erfasst",
       "bodyTaken": "Eine Dosis wurde auf einem anderen Gerät als genommen erfasst.",
-      "bodySkipped": "Eine Dosis wurde auf einem anderen Gerät als ausgelassen erfasst."
+      "bodySkipped": "Eine Dosis wurde auf einem anderen Gerät als übersprungen erfasst."
     },
     "security": {
       "newDeviceTitle": "Neue Anmeldung bei deinem Konto",
@@ -9822,8 +9822,8 @@
     },
     "sharedRecordIntake": {
       "title": "{name} hat eine Dosis markiert",
-      "bodyTaken": "{medication}: von {name} als eingenommen markiert.",
-      "bodySkipped": "{medication}: von {name} als ausgelassen markiert."
+      "bodyTaken": "{medication}: von {name} als genommen markiert.",
+      "bodySkipped": "{medication}: von {name} als übersprungen markiert."
     },
     "loginRequired": "Bitte melde dich an, um Benachrichtigungen zu verwalten.",
     "someChannelsGloballyDisabled": "Ein oder mehrere Kanäle sind in den Einstellungen deaktiviert und erhalten keine Benachrichtigungen.",
@@ -10037,7 +10037,7 @@
     "snoozedFor": "{name} für {duration} zurückgestellt.",
     "skipped": "{name} übersprungen.",
     "alreadyRecorded": "{name} war bereits erfasst.",
-    "recordedAsTaken": "{name} als eingenommen erfasst.",
+    "recordedAsTaken": "{name} als genommen erfasst.",
     "confirmed": "{name} bestätigt.",
     "genericConfirmed": "Bestätigt.",
     "cancelled": "Abgebrochen.",
@@ -13338,7 +13338,7 @@
       }
     },
     "action": {
-      "logDose": "Dosis erfassen",
+      "logDose": "Einnehmen",
       "reconnect": "Neu verbinden",
       "viewCheckups": "Vorsorge ansehen",
       "viewAppointment": "Termin ansehen",
@@ -13585,7 +13585,7 @@
       "accessReadCapability": "Sie kann alles lesen, was von dieser Akte geteilt wird. Hinzufügen oder ändern kann sie nichts.",
       "accessWriteLabel": "Darf lesen und hinzufügen",
       "accessWriteCapability": "Sie kann Einträge hinzufügen, aber nichts ändern oder löschen, auch nicht das, was sie selbst eingetragen hat.",
-      "accessWriteDetail": "Sie kann Messwerte, Laborergebnisse, einen neuen Laborwert, einen Krankheitseintrag, eine Nebenwirkung zu einem Medikament und ein neues Medikament hinzufügen sowie eine Dosis als genommen oder ausgelassen markieren. Ändern oder löschen kann sie nichts, auch nicht das Eigene, und eine deiner Erinnerungen verschieben kann sie nicht. Das kannst nur du.",
+      "accessWriteDetail": "Sie kann Messwerte, Laborergebnisse, einen neuen Laborwert, einen Krankheitseintrag, eine Nebenwirkung zu einem Medikament und ein neues Medikament hinzufügen sowie eine Dosis als genommen oder übersprungen markieren. Ändern oder löschen kann sie nichts, auch nicht das Eigene, und eine deiner Erinnerungen verschieben kann sie nicht. Das kannst nur du.",
       "accessManageLabel": "Darf verwalten",
       "accessManageCapability": "Sie kann Einträge anlegen, ändern und löschen, auch solche, die du selbst erfasst hast.",
       "accessManageDetail": "Sie kann außerdem die daraus erzeugten Insights lesen. Deine Anmeldung, deine Sicherheitseinstellungen, deine Verbindungen und den Zugriff anderer Personen kann sie nicht ändern. Du kannst das jederzeit beenden.",
@@ -15266,7 +15266,7 @@
       "triggersTitle": "Vermutete Auslöser",
       "triggersNote": "Von der Person oder ihren Betreuenden beim Eintragen genannt; keine gesicherten Ursachen.",
       "overlaysTitle": "Gleichzeitig erfasst",
-      "overlayMissedDose": "{followed} von {of} Anfällen folgten innerhalb der vorangegangenen 48 Stunden auf eine vergessene oder ausgelassene geplante Dosis.",
+      "overlayMissedDose": "{followed} von {of} Anfällen folgten innerhalb der vorangegangenen 48 Stunden auf eine verpasste oder übersprungene geplante Dosis.",
       "overlayIllness": "{during} Anfälle traten während einer von {episodes} erfassten Krankheitsepisoden auf.",
       "overlaySleep": "Erfasster Schlaf in der Nacht vor einem Anfallstag: durchschnittlich {before} h ({nightsBefore} Nächte); andere Nächte: {other} h ({nightsOther} Nächte).",
       "overlayCycleDays": "Anfälle nach Zyklustag (Tag: Anzahl): {list}.",

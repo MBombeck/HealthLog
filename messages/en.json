@@ -800,7 +800,7 @@
     "quickAddLifeEvent": "Log life event",
     "customizeDashboard": "Customize dashboard",
     "medicationIntakeQuickAdd": {
-      "sheetDescription": "Record a dose you took or skipped, also afterwards.",
+      "sheetDescription": "Log a dose you took or skipped, also afterwards.",
       "emptyTitle": "No medications yet",
       "emptyDescription": "Create a medication with a schedule first, then come back here to log the intake.",
       "emptyCta": "Add medication",
@@ -1505,7 +1505,7 @@
       "failedToast": "No intake recorded. Please try again"
     },
     "emptyTitle": "No medications yet",
-    "emptyDescription": "Add medications, dosages, and reminder windows to track adherence.",
+    "emptyDescription": "Add medications, doses and their times to track adherence.",
     "loadFailed": "Could not load medications",
     "retryLoad": "Retry",
     "inactive": "Paused",
@@ -1756,7 +1756,7 @@
         }
       },
       "courseWindow": {
-        "section": "Course window",
+        "section": "Course",
         "startsOn": {
           "label": "Starts on"
         },
@@ -1923,11 +1923,11 @@
         },
         "rolling": {
           "label": "Flexible from last dose",
-          "description": "Leave the next dose open. When you tap 'taken', the counter starts again from that moment."
+          "description": "Leave the next dose open. When you tap Take, the count starts again from that moment."
         },
         "oneShot": {
           "label": "Single dose",
-          "description": "One administration, e.g. a vaccine or an antibiotic course."
+          "description": "One administration, e.g. a vaccine or an injection at the doctor's."
         },
         "asNeeded": {
           "label": "As needed",
@@ -2154,11 +2154,11 @@
           "openButton": "Adjust"
         },
         "grace": {
-          "label": "Reminder window",
+          "label": "Reminder duration",
           "appliesToAllNote": "Applies to every schedule of this medication.",
           "unit": "minutes",
-          "saved": "Reminder window saved",
-          "failed": "Could not save the reminder window.",
+          "saved": "Reminder duration saved",
+          "failed": "Could not save the reminder duration.",
           "description": "How long the reminders keep coming after the dose time, before the overdue reminder."
         },
         "codes": {
@@ -2370,8 +2370,8 @@
         "timesTitle": "Dose times",
         "timesNote": "Adjust each dose's time and on-time window. The frequency (daily, weekly…) is edited in the editor under Advanced.",
         "scheduleLabel": "Schedule {index}",
-        "fullEditNote": "Frequency, treatment class and course window are edited in the editor under Advanced → Lifecycle.",
-        "graceEcho": "Reminder window: {minutes} minutes",
+        "fullEditNote": "Frequency, treatment class and course are edited in the editor under Advanced → Lifecycle.",
+        "graceEcho": "Reminder duration: {minutes} minutes",
         "reminderTitle": "Reminder",
         "manageChannels": "Manage notification channels",
         "history": {
@@ -2675,7 +2675,7 @@
     },
     "intakeForm": {
       "title": "Log intake",
-      "description": "Record a dose you took or skipped, also afterwards.",
+      "description": "Log a dose you took or skipped, also afterwards.",
       "medicationLabel": "Medication",
       "outcomeLabel": "What happened",
       "timeLabel": "Time",
@@ -2685,13 +2685,13 @@
       "countsForLate": "Counts for the {time} dose, as late.",
       "countNearLabel": "Count it for the {time} dose",
       "skips": "Skips the {time} dose.",
-      "extraDose": "Recorded as an extra dose, outside the schedule.",
+      "extraDose": "Logged as an extra dose, not part of the plan. It stays in your history and does not count toward adherence.",
       "scheduleLoading": "Checking which doses that day has…",
       "scheduleUnavailable": "Could not read that day's schedule, so this is recorded as an extra dose.",
       "noMedications": "Add a medication first, then you can log intakes against it.",
       "saveError": "Could not save the intake. Try again"
     },
-    "phaseGreenHint": "First reminder, this long before the reminder window ends.",
+    "phaseGreenHint": "First reminder, this long before the window ends.",
     "phaseYellowHint": "Another reminder, this long before the window ends.",
     "phaseOrangeHint": "A reminder that the dose is overdue, this long after the window ended.",
     "phaseRedHint": "After this long past the window, the dose counts as missed.",
@@ -10057,7 +10057,7 @@
     "askMedicationName": "Please specify a medication, e.g. <b>taken Ramipril</b>.",
     "medicationNotFoundExact": "Medication not found. Please send the name exactly as in HealthLog.",
     "helpHeader": "<b>Available commands:</b>",
-    "helpBody": "/help: show this help\n/add: record an intake\n/start: start the bot\n\n<b>Text commands:</b>\ntaken &lt;name&gt;: confirm an intake\n\n<b>Buttons in reminders:</b>\n• ✅ Take: record the dose\n• 🕐 Remind me later: postpone the reminder, by the length set in Settings\n• ⏭ Skip: skip the dose\n• Leave as missed: leave a missed dose as missed",
+    "helpBody": "/help: show this help\n/add: log an intake\n/start: start the bot\n\n<b>Text commands:</b>\ntaken &lt;name&gt;: confirm an intake\n\n<b>Buttons in reminders:</b>\n• ✅ Take: record the dose\n• 🕐 Remind me later: postpone the reminder, by the length set in Settings\n• ⏭ Skip: skip the dose\n• Leave as missed: leave a missed dose as missed",
     "measureValuePrompt": "Reply with the value to log it (optional).",
     "buttonMeasureValue": "Value…",
     "measureValueSaved": "Reading saved.",
@@ -13338,7 +13338,7 @@
       }
     },
     "action": {
-      "logDose": "Log dose",
+      "logDose": "Take",
       "reconnect": "Reconnect",
       "viewCheckups": "View check-ups",
       "viewAppointment": "View appointment",

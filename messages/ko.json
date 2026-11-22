@@ -1923,11 +1923,11 @@
         },
         "rolling": {
           "label": "마지막 복용 기준 유동",
-          "description": "다음 복용 시점을 열어 둬요. '복용함'을 누르면 그 순간부터 다시 세요."
+          "description": "다음 복용 시점을 열어 둬요. '복용'을 누르면 그 순간부터 다시 세요."
         },
         "oneShot": {
           "label": "1회 복용",
-          "description": "한 번만 투여해요. 예: 예방접종이나 항생제 한 코스."
+          "description": "한 번만 투여해요. 예: 예방접종이나 병원에서 맞는 주사."
         },
         "asNeeded": {
           "label": "필요시",
@@ -2685,16 +2685,16 @@
       "countsForLate": "{time} 복용분으로, 늦게 복용한 것으로 기록돼요.",
       "countNearLabel": "{time} 복용분으로 기록",
       "skips": "{time} 복용분을 건너뛰어요.",
-      "extraDose": "일정 외 추가 복용으로 기록돼요.",
+      "extraDose": "일정 외 추가 복용으로 기록돼요. 기록에는 남지만 복약 순응도에는 포함되지 않아요.",
       "scheduleLoading": "그날 예정된 복용을 확인하는 중…",
       "scheduleUnavailable": "그날 일정을 불러오지 못해 추가 복용으로 기록돼요.",
       "noMedications": "약을 먼저 추가하면 복용을 기록할 수 있어요.",
       "saveError": "복용 기록을 저장하지 못했어요. 다시 시도해 주세요"
     },
-    "phaseGreenHint": "알림 시간이 끝나기 이만큼 전에 첫 알림을 보내요.",
-    "phaseYellowHint": "알림 시간이 끝나기 이만큼 전에 한 번 더 알려요.",
-    "phaseOrangeHint": "알림 시간이 끝난 뒤 이만큼 지나면 복용이 늦었다고 알려요.",
-    "phaseRedHint": "알림 시간이 끝나고 이만큼 지나면 놓친 것으로 기록해요.",
+    "phaseGreenHint": "복용 범위가 끝나기 이만큼 전에 첫 알림을 보내요.",
+    "phaseYellowHint": "복용 범위가 끝나기 이만큼 전에 한 번 더 알려요.",
+    "phaseOrangeHint": "복용 범위가 끝난 뒤 이만큼 지나면 복용이 늦었다고 알려요.",
+    "phaseRedHint": "복용 범위가 끝나고 이만큼 지나면 놓친 것으로 기록해요.",
     "filter": {
       "searchPlaceholder": "약물 검색…",
       "searchLabel": "약물 검색",
@@ -13338,7 +13338,7 @@
       }
     },
     "action": {
-      "logDose": "복용 기록",
+      "logDose": "복용",
       "reconnect": "다시 연결",
       "viewCheckups": "건강검진 보기",
       "viewAppointment": "예약 보기",

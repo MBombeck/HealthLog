@@ -1505,7 +1505,7 @@
       "failedToast": "Nenhuma tomada registrada. Tente novamente"
     },
     "emptyTitle": "Nenhum medicamento ainda",
-    "emptyDescription": "Adicione medicamentos, doses e janelas de lembrete para acompanhar a adesão.",
+    "emptyDescription": "Adicione medicamentos, doses e horários para acompanhar a adesão.",
     "loadFailed": "Não foi possível carregar os medicamentos",
     "retryLoad": "Tentar novamente",
     "inactive": "Pausado",
@@ -1756,7 +1756,7 @@
         }
       },
       "courseWindow": {
-        "section": "Janela do curso",
+        "section": "Período do tratamento",
         "startsOn": {
           "label": "Começa em"
         },
@@ -1923,11 +1923,11 @@
         },
         "rolling": {
           "label": "Flexível a partir da última dose",
-          "description": "Deixe a próxima dose aberta. Quando você tocar 'tomada', o contador recomeça daquele momento."
+          "description": "Deixe a próxima dose aberta. Quando você tocar em 'Tomar', a contagem recomeça daquele momento."
         },
         "oneShot": {
           "label": "Dose única",
-          "description": "Uma administração, ex.: uma vacina ou um curso de antibiótico."
+          "description": "Uma administração, ex.: uma vacina ou uma injeção no consultório."
         },
         "asNeeded": {
           "label": "Conforme necessário",
@@ -2154,11 +2154,11 @@
           "openButton": "Ajustar"
         },
         "grace": {
-          "label": "Janela de lembrete",
+          "label": "Duração dos lembretes",
           "appliesToAllNote": "Aplica-se a todos os cronogramas deste medicamento.",
           "unit": "minutos",
-          "saved": "Janela de lembrete salva",
-          "failed": "Não foi possível salvar a janela de lembrete.",
+          "saved": "Duração dos lembretes salva",
+          "failed": "Não foi possível salvar a duração dos lembretes.",
           "description": "Por quanto tempo os lembretes continuam após a hora da dose, antes do lembrete de atraso."
         },
         "codes": {
@@ -2370,8 +2370,8 @@
         "timesTitle": "Horários das doses",
         "timesNote": "Ajuste o horário e a janela de pontualidade de cada dose. A frequência (diária, semanal…) é editada no editor em Avançado.",
         "scheduleLabel": "Cronograma {index}",
-        "fullEditNote": "Frequência, classe de tratamento e janela do curso são editadas no editor em Avançado → Ciclo de vida.",
-        "graceEcho": "Janela de lembrete: {minutes} minutos",
+        "fullEditNote": "Frequência, classe de tratamento e período do tratamento são editadas no editor em Avançado → Ciclo de vida.",
+        "graceEcho": "Duração dos lembretes: {minutes} minutos",
         "reminderTitle": "Lembrete",
         "manageChannels": "Gerenciar canais de notificação",
         "history": {
@@ -2685,13 +2685,13 @@
       "countsForLate": "Conta para a dose das {time}, como atrasada.",
       "countNearLabel": "Contar para a dose das {time}",
       "skips": "Pula a dose das {time}.",
-      "extraDose": "Registrada como dose extra, fora do cronograma.",
+      "extraDose": "Registrada como dose extra, fora do cronograma. Ela fica no histórico e não conta para a adesão.",
       "scheduleLoading": "Verificando as doses previstas para esse dia…",
       "scheduleUnavailable": "Não foi possível ler o cronograma desse dia, então ela é registrada como dose extra.",
       "noMedications": "Adicione um medicamento primeiro; depois você pode registrar tomadas dele.",
       "saveError": "Não foi possível salvar a tomada. Tente de novo"
     },
-    "phaseGreenHint": "Primeiro lembrete, este tempo antes do fim da janela de lembrete.",
+    "phaseGreenHint": "Primeiro lembrete, este tempo antes do fim da janela.",
     "phaseYellowHint": "Outro lembrete, este tempo antes do fim da janela.",
     "phaseOrangeHint": "Um lembrete de que a dose está atrasada, este tempo depois do fim da janela.",
     "phaseRedHint": "Passado este tempo após a janela, a dose conta como perdida.",
@@ -10054,7 +10054,7 @@
     "noActiveMedications": "Nenhum medicamento ativo encontrado.",
     "whichMedication": "<b>Qual medicamento você tomou?</b>",
     "cancelButton": "Cancelar",
-    "askMedicationName": "Especifique um medicamento, por exemplo <b>tomado Ramipril</b>.",
+    "askMedicationName": "Especifique um medicamento, por exemplo <b>taken Ramipril</b>.",
     "medicationNotFoundExact": "Medicamento não encontrado. Envie o nome exatamente como está no HealthLog.",
     "helpHeader": "<b>Comandos disponíveis:</b>",
     "helpBody": "/help: mostrar esta ajuda\n/add: registrar uma tomada\n/start: iniciar o bot\n\n<b>Comandos de texto:</b>\ntaken &lt;nome&gt;: confirmar uma tomada\n\n<b>Botões nos lembretes:</b>\n• ✅ Tomar: registrar a tomada\n• 🕐 Lembrar mais tarde: adiar o lembrete, pelo tempo definido nos ajustes\n• ⏭ Pular: pular a tomada\n• Deixar como perdida: deixar uma tomada perdida como perdida",
@@ -13338,7 +13338,7 @@
       }
     },
     "action": {
-      "logDose": "Registrar dose",
+      "logDose": "Tomar",
       "reconnect": "Reconectar",
       "viewCheckups": "Ver checks",
       "viewAppointment": "Ver consulta",

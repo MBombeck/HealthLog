@@ -1923,11 +1923,11 @@
         },
         "rolling": {
           "label": "Flexible depuis la dernière dose",
-          "description": "Laissez la prochaine dose ouverte. Quand vous appuyez sur « pris », le compteur repart à partir de ce moment."
+          "description": "Laissez la prochaine dose ouverte. Quand vous appuyez sur « Prendre », le décompte repart de ce moment."
         },
         "oneShot": {
           "label": "Dose unique",
-          "description": "Une seule administration, par exemple un vaccin ou une cure d’antibiotique."
+          "description": "Une seule administration, par exemple un vaccin ou une injection chez le médecin."
         },
         "asNeeded": {
           "label": "Au besoin",
@@ -2154,11 +2154,11 @@
           "openButton": "Ajuster"
         },
         "grace": {
-          "label": "Fenêtre de rappel",
+          "label": "Durée des rappels",
           "appliesToAllNote": "S’applique à tous les horaires de ce médicament.",
           "unit": "minutes",
-          "saved": "Fenêtre de rappel enregistrée",
-          "failed": "Impossible d’enregistrer la fenêtre de rappel.",
+          "saved": "Durée des rappels enregistrée",
+          "failed": "Impossible d’enregistrer la durée des rappels.",
           "description": "Combien de temps les rappels continuent après l'heure de la dose, avant le rappel de retard."
         },
         "codes": {
@@ -2370,8 +2370,8 @@
         "timesTitle": "Heures de prise",
         "timesNote": "Ajustez l'heure et la fenêtre à l'heure de chaque dose. La fréquence (quotidienne, hebdomadaire…) se modifie dans l'éditeur, sous Avancé.",
         "scheduleLabel": "Horaire {index}",
-        "fullEditNote": "La fréquence, la classe de traitement et la fenêtre de cure se modifient dans l'éditeur, sous Avancé → Cycle de vie.",
-        "graceEcho": "Fenêtre de rappel : {minutes} minutes",
+        "fullEditNote": "La fréquence, la classe de traitement et la période de traitement se modifient dans l'éditeur, sous Avancé → Cycle de vie.",
+        "graceEcho": "Durée des rappels : {minutes} minutes",
         "reminderTitle": "Rappel",
         "manageChannels": "Gérer les canaux de notification",
         "history": {
@@ -2685,14 +2685,14 @@
       "countsForLate": "Compte pour la dose de {time}, comme prise en retard.",
       "countNearLabel": "La compter pour la dose de {time}",
       "skips": "Saute la dose de {time}.",
-      "extraDose": "Enregistrée comme dose supplémentaire, hors planning.",
+      "extraDose": "Enregistrée comme dose supplémentaire, hors planning. Elle reste dans l’historique et ne compte pas dans l’observance.",
       "scheduleLoading": "Vérification des doses prévues ce jour-là…",
       "scheduleUnavailable": "Impossible de lire le planning de ce jour, elle est donc enregistrée comme dose supplémentaire.",
       "noMedications": "Ajoutez d’abord un médicament, puis vous pourrez enregistrer des prises pour celui-ci.",
       "saveError": "Impossible d'enregistrer la prise. Réessaie"
     },
-    "phaseGreenHint": "Premier rappel, ce délai avant la fin de la plage de rappel.",
-    "phaseYellowHint": "Un autre rappel, ce délai avant la fin de la plage.",
+    "phaseGreenHint": "Premier rappel, ce délai avant la fin de la fenêtre.",
+    "phaseYellowHint": "Un autre rappel, ce délai avant la fin de la fenêtre.",
     "phaseOrangeHint": "Un rappel que la dose est en retard, ce délai après la fin de la plage.",
     "phaseRedHint": "Passé ce délai après la plage, la dose compte comme manquée.",
     "filter": {
@@ -9793,7 +9793,7 @@
     "eventMeasurementReminder": "Rappel de mesure",
     "eventMeasurementReminderDesc": "Envoyé lorsqu'une mesure suivie est due.",
     "eventMedicationIntakeSync": "Synchronisation des prises",
-    "eventMedicationIntakeSyncDesc": "Mise à jour entre appareils quand une dose est enregistrée, prise ou ignorée.",
+    "eventMedicationIntakeSyncDesc": "Mise à jour entre appareils quand une dose est enregistrée, prise ou sautée.",
     "eventDailyBriefing": "Résumé quotidien",
     "eventDailyBriefingDesc": "Un résumé matinal et posé de votre journée. Désactivé jusqu'à ce que vous l'activiez.",
     "eventSecurityAlert": "Nouvelle connexion",
@@ -9823,7 +9823,7 @@
     "sharedRecordIntake": {
       "title": "{name} a marqué une dose",
       "bodyTaken": "{medication} : marquée comme prise par {name}.",
-      "bodySkipped": "{medication} : marquée comme ignorée par {name}."
+      "bodySkipped": "{medication} : marquée comme sautée par {name}."
     },
     "loginRequired": "Connectez-vous pour gérer les notifications.",
     "someChannelsGloballyDisabled": "Un ou plusieurs canaux sont désactivés dans les paramètres et ne recevront pas de notifications.",
@@ -10035,7 +10035,7 @@
     "snoozeOneHour": "1 heure",
     "snoozeThreeHours": "3 heures",
     "snoozedFor": "{name} reporté de {duration}.",
-    "skipped": "{name} ignoré.",
+    "skipped": "{name} sauté.",
     "alreadyRecorded": "{name} était déjà enregistré.",
     "recordedAsTaken": "{name} enregistré comme pris.",
     "confirmed": "{name} confirmé.",
@@ -10054,7 +10054,7 @@
     "noActiveMedications": "Aucun médicament actif trouvé.",
     "whichMedication": "<b>Quel médicament avez-vous pris ?</b>",
     "cancelButton": "Annuler",
-    "askMedicationName": "Indiquez le médicament, p. ex. <b>pris Ramipril</b>.",
+    "askMedicationName": "Indiquez le médicament, p. ex. <b>taken Ramipril</b>.",
     "medicationNotFoundExact": "Médicament introuvable. Envoyez le nom exactement tel qu’il apparaît dans HealthLog.",
     "helpHeader": "<b>Commandes disponibles :</b>",
     "helpBody": "/help : afficher cette aide\n/add : enregistrer une prise\n/start : démarrer le bot\n\n<b>Commandes texte :</b>\ntaken &lt;nom&gt; : confirmer une prise\n\n<b>Boutons dans les rappels :</b>\n• ✅ Prendre : enregistrer la prise\n• 🕐 Me le rappeler plus tard : reporter le rappel, de la durée choisie dans les réglages\n• ⏭ Sauter : sauter la prise\n• Laisser manquée : laisser une prise manquée comme manquée",
@@ -10067,14 +10067,14 @@
     "snoozeMinutes": "{minutes} min"
   },
   "medicationReminders": {
-    "phaseGreenTitle": "🟢 À prendre: {medName}",
-    "phaseGreenMessage": "🟢 À prendre:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nLa plage se termine dans {minutes} min.",
-    "phaseYellowTitle": "🟡 Toujours à prendre: {medName}",
-    "phaseYellowMessage": "🟡 Toujours à prendre:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nEncore {minutes} min dans la plage.",
-    "phaseOrangeTitle": "🟠 En retard: {medName}",
-    "phaseOrangeMessage": "🟠 En retard:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nEn retard de {minutes} min.",
-    "phaseRedTitle": "🔴 Manquée: {medName}",
-    "phaseRedMessage": "🔴 Manquée:\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nLa prendre maintenant compte encore, comme prise en retard.",
+    "phaseGreenTitle": "🟢 À prendre : {medName}",
+    "phaseGreenMessage": "🟢 À prendre :\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nLa fenêtre se termine dans {minutes} min.",
+    "phaseYellowTitle": "🟡 Toujours à prendre : {medName}",
+    "phaseYellowMessage": "🟡 Toujours à prendre :\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nEncore {minutes} min dans la fenêtre.",
+    "phaseOrangeTitle": "🟠 En retard : {medName}",
+    "phaseOrangeMessage": "🟠 En retard :\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nEn retard de {minutes} min.",
+    "phaseRedTitle": "🔴 Manquée : {medName}",
+    "phaseRedMessage": "🔴 Manquée :\n<b>{medName}</b> ({doseInfo}, {timeWindow})\nLa prendre maintenant compte encore, comme prise en retard.",
     "buttonTaken": "✅ Prendre",
     "buttonConfirm": "Laisser manquée",
     "buttonTakenLate": "✅ Prendre (compte en retard)",
@@ -13338,7 +13338,7 @@
       }
     },
     "action": {
-      "logDose": "Enregistrer la dose",
+      "logDose": "Prendre",
       "reconnect": "Reconnecter",
       "viewCheckups": "Voir les examens",
       "viewAppointment": "Voir le rendez-vous",

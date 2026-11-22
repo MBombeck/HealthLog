@@ -1505,7 +1505,7 @@
       "failedToast": "Geen inname geregistreerd. Probeer het opnieuw"
     },
     "emptyTitle": "Nog geen medicatie",
-    "emptyDescription": "Voeg medicijnen, doseringen en herinneringsvensters toe om je therapietrouw bij te houden.",
+    "emptyDescription": "Voeg medicijnen, doseringen en innametijden toe om je therapietrouw bij te houden.",
     "loadFailed": "Medicatie kon niet worden geladen",
     "retryLoad": "Opnieuw proberen",
     "inactive": "Gepauzeerd",
@@ -1923,11 +1923,11 @@
         },
         "rolling": {
           "label": "Flexibel vanaf laatste dosis",
-          "description": "Laat de volgende dosis open. Als je op 'ingenomen' tikt, begint de teller vanaf dat moment opnieuw."
+          "description": "Laat de volgende dosis open. Als je op 'Innemen' tikt, begint de telling vanaf dat moment opnieuw."
         },
         "oneShot": {
           "label": "Eenmalige dosis",
-          "description": "Eén toediening, bijv. een vaccin of een antibioticakuur."
+          "description": "Eén toediening, bijv. een vaccin of een injectie bij de arts."
         },
         "asNeeded": {
           "label": "Zo nodig",
@@ -2154,11 +2154,11 @@
           "openButton": "Aanpassen"
         },
         "grace": {
-          "label": "Herinneringsvenster",
+          "label": "Herinneringsduur",
           "appliesToAllNote": "Geldt voor elk schema van dit medicijn.",
           "unit": "minuten",
-          "saved": "Herinneringsvenster opgeslagen",
-          "failed": "Het herinneringsvenster kon niet worden opgeslagen.",
+          "saved": "Herinneringsduur opgeslagen",
+          "failed": "De herinneringsduur kon niet worden opgeslagen.",
           "description": "Hoe lang de herinneringen na het tijdstip van de dosis doorgaan, voor de te-laat-herinnering."
         },
         "codes": {
@@ -2371,7 +2371,7 @@
         "timesNote": "Pas per dosis het tijdstip en het venster voor op tijd aan. De frequentie (dagelijks, wekelijks…) bewerk je in de editor onder Geavanceerd.",
         "scheduleLabel": "Schema {index}",
         "fullEditNote": "Frequentie, behandelklasse en kuurperiode bewerk je in de editor onder Geavanceerd → Levenscyclus.",
-        "graceEcho": "Herinneringsvenster: {minutes} minuten",
+        "graceEcho": "Herinneringsduur: {minutes} minuten",
         "reminderTitle": "Herinnering",
         "manageChannels": "Meldingskanalen beheren",
         "history": {
@@ -2685,14 +2685,14 @@
       "countsForLate": "Telt voor de dosis van {time}, als te laat.",
       "countNearLabel": "Laten tellen voor de dosis van {time}",
       "skips": "Slaat de dosis van {time} over.",
-      "extraDose": "Wordt vastgelegd als extra dosis, buiten het schema.",
+      "extraDose": "Wordt vastgelegd als extra dosis, buiten het schema. Ze blijft in je geschiedenis en telt niet mee voor je therapietrouw.",
       "scheduleLoading": "Controleren welke doses die dag gepland zijn…",
       "scheduleUnavailable": "Het schema van die dag kon niet worden gelezen, dus dit wordt vastgelegd als extra dosis.",
       "noMedications": "Voeg eerst een medicijn toe, daarna kun je er innames bij vastleggen.",
       "saveError": "De inname kon niet worden opgeslagen. Probeer het opnieuw"
     },
-    "phaseGreenHint": "Eerste herinnering, zo lang voor het einde van het herinneringsvenster.",
-    "phaseYellowHint": "Nog een herinnering, zo lang voor het einde van het venster.",
+    "phaseGreenHint": "Eerste herinnering, zo lang voor het einde van het tijdvenster.",
+    "phaseYellowHint": "Nog een herinnering, zo lang voor het einde van het tijdvenster.",
     "phaseOrangeHint": "Een herinnering dat de dosis te laat is, zo lang na het einde van het venster.",
     "phaseRedHint": "Zo lang na het venster telt de dosis als gemist.",
     "filter": {
@@ -13338,7 +13338,7 @@
       }
     },
     "action": {
-      "logDose": "Dosis registreren",
+      "logDose": "Innemen",
       "reconnect": "Opnieuw verbinden",
       "viewCheckups": "Controles bekijken",
       "viewAppointment": "Afspraak bekijken",
