@@ -36,8 +36,8 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
-const POLICY_VERSION = "1.37.12";
-const LAST_UPDATED = "2026-08-11";
+const POLICY_VERSION = "1.49.0";
+const LAST_UPDATED = "2026-11-22";
 const LAST_UPDATED_DATE = new Date(`${LAST_UPDATED}T12:00:00Z`);
 // The date as each language writes it, on the line that language reads.
 const LAST_UPDATED_DE = new Intl.DateTimeFormat("de-DE", {
@@ -527,6 +527,15 @@ export default function PrivacyPage() {
                 an einen KI-Anbieter erfolgt nur über die separat aktivierten
                 und eingewilligten Pfade in Abschnitt 2.7.
               </p>
+              <p>
+                Laborwerte aus Apple Health Records (den klinischen Unterlagen,
+                die eine Praxis oder Klinik in der Health-App bereitstellt)
+                liest die iOS-Anwendung nur, nachdem der Nutzer sie in der App
+                verbunden und den Lesezugriff erteilt hat. Die Laborwerte gehen
+                ausschließlich an die eigene HealthLog-Instanz und werden dort
+                wie jeder andere Laborwert gespeichert. Andere klinische
+                Unterlagen werden nicht gelesen.
+              </p>
               <p className="font-medium">HKQuantityTypeIdentifier:</p>
               <ul
                 className="grid list-disc grid-cols-1 gap-x-6 gap-y-1 pl-5 sm:grid-cols-2"
@@ -751,6 +760,33 @@ export default function PrivacyPage() {
                   Telegram-Chat-Kennung — nur, wenn der Nutzer die optionale
                   Telegram-Bot-Benachrichtigung verbunden hat.
                 </li>
+                <li>
+                  Push-Relay (optional): Hat der Administrator dieser Instanz
+                  das HealthLog-Push-Relay (
+                  <code className="bg-muted rounded px-1 py-0.5 text-xs">
+                    push.healthlog.dev
+                  </code>
+                  ) eingeschaltet und schaltet eine Person es zusätzlich in der
+                  iPhone-App ein, gehen ihre Benachrichtigungen über das Relay.
+                  Das Relay erhält den APNs-Geräte-Token, einen Hash des
+                  Bindungsschlüssels, die Version der Einwilligung je Instanz
+                  sowie Zeitpunkt und Art jeder Benachrichtigung. Der Inhalt ist
+                  Ende-zu-Ende für das eine Gerät versiegelt; das Relay kann ihn
+                  nicht lesen. Apple sieht, wann zugestellt wird. Widerruf
+                  jederzeit in der App (Relay aus) oder durch den Administrator,
+                  was die Bindungen löscht. Betreiber des Relays, Speicherdauer
+                  und alle Einzelheiten stehen in dessen Datenschutzhinweis, der
+                  allein maßgeblich ist:{" "}
+                  <a
+                    href="https://push.healthlog.dev/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary underline underline-offset-2"
+                  >
+                    push.healthlog.dev/privacy
+                  </a>
+                  .
+                </li>
               </ul>
               <h3 className="text-foreground pt-2 text-base font-semibold">
                 2.10 Sicherheits- und Audit-Logs
@@ -877,6 +913,14 @@ export default function PrivacyPage() {
                 it is neither advertised nor collected. Transit to an AI
                 provider occurs only through the separately enabled and
                 consented paths in section 2.7.
+              </p>
+              <p>
+                The iOS application reads lab results from Apple Health Records
+                (the clinical records a practice or hospital makes available in
+                the Health app) only after the user connects them in the app and
+                grants read access. The lab results go to the user&apos;s own
+                HealthLog instance and nowhere else, and are stored there like
+                any other lab result. Other clinical record types are not read.
               </p>
               <p className="font-medium">HKQuantityTypeIdentifier:</p>
               <ul
@@ -1099,6 +1143,33 @@ export default function PrivacyPage() {
                 <li>
                   Telegram chat identifier — only when the user has explicitly
                   connected the optional Telegram-bot notifier.
+                </li>
+                <li>
+                  Push relay (optional): when the administrator of this instance
+                  has switched on the HealthLog push relay (
+                  <code className="bg-muted rounded px-1 py-0.5 text-xs">
+                    push.healthlog.dev
+                  </code>
+                  ) and a person also turns it on in the iPhone app, that
+                  person&apos;s notifications go through the relay. The relay
+                  receives the APNs device token, a hash of the binding key, the
+                  consent version per instance, and the time and kind of every
+                  notification. The content is sealed end to end for the one
+                  device; the relay cannot read it. Apple sees when a
+                  notification is delivered. A person withdraws at any time by
+                  turning the relay off in the app, and the administrator by
+                  switching it off, which deletes the bindings. Who runs the
+                  relay, how long it keeps what, and every detail are in its own
+                  privacy notice, which is the authoritative text:{" "}
+                  <a
+                    href="https://push.healthlog.dev/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary underline underline-offset-2"
+                  >
+                    push.healthlog.dev/privacy
+                  </a>
+                  .
                 </li>
               </ul>
               <h3 className="text-foreground pt-2 text-base font-semibold">
@@ -1329,6 +1400,16 @@ export default function PrivacyPage() {
                   locationDe="Apple verwaltet HealthKit-Daten nach den Apple-Konto- und Health-Einstellungen des Nutzers. Das ist keine iCloud- oder CloudKit-Speicherung durch HealthLog."
                   locationEn="Apple manages HealthKit data under the user's Apple-account and Health settings. This is not iCloud or CloudKit storage by HealthLog."
                   policyUrl="https://www.apple.com/legal/privacy/"
+                />
+                <SubProcessor
+                  name="HealthLog push relay (push.healthlog.dev)"
+                  roleDe="Optionale Zustellung von Benachrichtigungen an die HealthLog-iPhone-App aus dem App Store. Aus, bis der Administrator dieser Instanz es einschaltet, und dann nur für Personen, die es in der App einschalten. Betrieben vom Maintainer des HealthLog-Projekts als eigenständig Verantwortlicher für die Metadaten des Relays."
+                  roleEn="Optional delivery of notifications to the HealthLog iPhone app from the App Store. Off until the administrator of this instance switches it on, and then used only for people who turn it on in the app. Run by the maintainer of the HealthLog project as an independent controller for the relay's metadata."
+                  dataDe="Ein auf der Instanz für ein Gerät versiegelter Umschlag, den das Relay nicht öffnen kann, sowie die Zustell-Metadaten aus Abschnitt 2.9. Keine Gesundheitsdaten, Namen oder Kontodaten."
+                  dataEn="An envelope sealed on the instance for one device, which the relay cannot open, and the delivery metadata listed in section 2.9. No health data, names or account data."
+                  locationDe="Deutschland. Speicherdauer laut Datenschutzhinweis des Relays."
+                  locationEn="Germany. Retention as stated in the relay's privacy notice."
+                  policyUrl="https://push.healthlog.dev/privacy"
                 />
                 <SubProcessor
                   name="Telegram FZ-LLC"
