@@ -61,6 +61,8 @@ let origin = "";
 const requests: IncomingMessage[] = [];
 let fileBody = Buffer.from("PK-synthetic-export-1");
 let fileStatus = 200;
+/** The server sends part of the file and hangs up. */
+let hangUpMidStream = false;
 /** The password the test server accepts. */
 const ACCEPTED_PASSWORD = "app-pass";
 
@@ -86,6 +88,11 @@ beforeAll(async () => {
       res.end();
       return;
     }
+    if (hangUpMidStream) {
+      res.writeHead(200, { etag, "content-length": String(1024 * 1024) });
+      res.write(fileBody, () => res.socket?.destroy());
+      return;
+    }
     res.writeHead(200, { etag, "content-length": String(fileBody.length) });
     res.end(fileBody);
   });
@@ -107,6 +114,7 @@ beforeEach(async () => {
   requests.length = 0;
   fileBody = Buffer.from("PK-synthetic-export-1");
   fileStatus = 200;
+  hangUpMidStream = false;
   process.env.HEALTH_CONNECT_WEBDAV_PRIVATE_ORIGINS = origin;
   const user = await prisma.user.create({
     data: {
@@ -212,6 +220,27 @@ describe("scheduled Health Connect fetch", () => {
     // New credentials reset the backoff; the missing file starts it again.
     expect(row.consecutiveFailures).toBe(1);
     expect(row.lastOutcome).toBe("not_found");
+    expect(row.nextAttemptAt.getTime()).toBeGreaterThan(
+      Date.now() + 20 * 60_000,
+    );
+    expect(sent).toHaveLength(0);
+  });
+
+  it("stamps a download the server cut off mid-stream, and backs off", async () => {
+    await save({
+      folderUrl: `${origin}/dav`,
+      username: "me",
+      password: ACCEPTED_PASSWORD,
+    });
+    hangUpMidStream = true;
+    expect(await pass()).toBe("network");
+    const row =
+      await getPrismaClient().healthConnectRemoteSource.findUniqueOrThrow({
+        where: { userId },
+      });
+    expect(row.lastOutcome).toBe("network");
+    expect(row.consecutiveFailures).toBe(1);
+    expect(row.lastAttemptAt).not.toBeNull();
     expect(row.nextAttemptAt.getTime()).toBeGreaterThan(
       Date.now() + 20 * 60_000,
     );

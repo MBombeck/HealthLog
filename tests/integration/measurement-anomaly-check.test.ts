@@ -12,7 +12,11 @@ import { startOfLocalDayInTz } from "@/lib/tz/local-day";
 import { getPrismaClient, truncateAllTables } from "./setup";
 
 const dispatch = vi.hoisted(() =>
-  vi.fn(async (_payload: Record<string, unknown>) => ({ dispatched: true })),
+  vi.fn(async (_payload: Record<string, unknown>) => ({
+    dispatched: true,
+    channelsAttempted: 1,
+    channelsSucceeded: 1,
+  })),
 );
 vi.mock("@/lib/notifications/dispatcher", () => ({
   dispatchNotification: dispatch,
@@ -83,6 +87,7 @@ describe("the measurement anomaly push", () => {
     expect(await runMeasurementAnomalyTick(atTen())).toEqual({
       scanned: 1,
       sent: 1,
+      failed: 0,
     });
     expect(dispatch).toHaveBeenCalledTimes(1);
     expect(dispatch.mock.calls[0][0]).toMatchObject({
@@ -114,7 +119,30 @@ describe("the measurement anomaly push", () => {
     expect(await runMeasurementAnomalyTick(atTen())).toEqual({
       scanned: 0,
       sent: 0,
+      failed: 0,
     });
     expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  it("hands the week and the shift back when no channel delivered the notice", async () => {
+    const userId = await seedPerson(true);
+    dispatch.mockResolvedValueOnce({
+      dispatched: false,
+      channelsAttempted: 1,
+      channelsSucceeded: 0,
+    });
+    const { runMeasurementAnomalyTick } =
+      await import("@/lib/jobs/measurement-anomaly-check");
+    expect(await runMeasurementAnomalyTick(atTen())).toEqual({
+      scanned: 1,
+      sent: 0,
+      failed: 1,
+    });
+    const claims = await getPrismaClient().notificationEvent.findMany({
+      where: { recordUserId: userId },
+    });
+    expect(claims).toEqual([]);
+    // The next morning's tick tells it.
+    expect((await runMeasurementAnomalyTick(atTen())).sent).toBe(1);
   });
 });

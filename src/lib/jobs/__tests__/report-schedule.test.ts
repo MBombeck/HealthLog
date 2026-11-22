@@ -259,7 +259,13 @@ describe("reportScheduleFacts", () => {
       gone: 1,
     };
     const facts = reportScheduleFacts(counts);
-    expect(Object.keys(facts)).toHaveLength(Object.keys(counts).length);
+    // Every count, plus the three item facts every fan-out pass reports.
+    expect(Object.keys(facts)).toHaveLength(Object.keys(counts).length + 3);
+    expect(facts).toMatchObject({
+      items_attempted: 1,
+      items_failed: 1,
+      partial_failed: true,
+    });
     for (const key of Object.keys(facts)) {
       expect(JOB_FACT_ALLOWLIST.has(key), key).toBe(true);
     }

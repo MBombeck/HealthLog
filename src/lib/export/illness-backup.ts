@@ -105,7 +105,13 @@ export async function buildIllnessBackupSlice(
       }))
     : episodeRows.map((row) => ({
         ...toIllnessEpisodeDTO(row),
-        dayLogs: row.dayLogs.map(toIllnessDayLogDTO),
+        // The zone the day is anchored to travels with it, the rule the
+        // measurements follow: without it a day logged abroad files under
+        // another date once it is restored elsewhere.
+        dayLogs: row.dayLogs.map((dayLog) => ({
+          ...toIllnessDayLogDTO(dayLog),
+          tz: dayLog.tz,
+        })),
       }));
 
   return { illnessEpisodes };

@@ -141,12 +141,18 @@ function explainTimeout(message: string, expireSeconds: number | null): string {
 }
 
 /**
- * Say what a completed run that failed every account means (#1384). Such a
- * run's `output` is its outcome, `{"ok":true,"did":{…,"all_failed":true}}`,
- * and quoting that JSON told the operator nothing: not that the job ran, not
- * which provider failed. Null when `raw` is not such an outcome.
+ * Say what a completed run that reported failures means. Such a run's
+ * `output` is its outcome, `{"ok":true,"did":{…}}`, and quoting that JSON told
+ * the operator nothing: not that the job ran, not what failed. Two kinds:
+ *
+ *   - every account it attempted failed (`all_failed`, #1384), with the first
+ *     cause and provider;
+ *   - some of the items a fan-out pass attempted failed and it carried on
+ *     past them (`partial_failed`, `FanOutTally`), with the counts.
+ *
+ * Null when `raw` is not such an outcome.
  */
-function explainAllFailedRun(raw: string): string | null {
+function explainCompletedRun(raw: string): string | null {
   if (!raw.startsWith("{")) return null;
   let did: Record<string, unknown>;
   try {
@@ -156,7 +162,21 @@ function explainAllFailedRun(raw: string): string | null {
   } catch {
     return null;
   }
-  if (did.all_failed !== true) return null;
+  if (did.all_failed !== true) {
+    if (did.partial_failed !== true) return null;
+    const count = (value: unknown): number | null =>
+      typeof value === "number" && value >= 0 ? value : null;
+    const failed = count(did.items_failed);
+    const attempted = count(did.items_attempted);
+    const share =
+      failed !== null && attempted !== null
+        ? `${failed} of ${attempted} items`
+        : "some items";
+    return (
+      `The run completed, but ${share} it attempted failed. ` +
+      `It carried on past each one; the app log has a warning per item.`
+    );
+  }
   // Every attempted account failed, so the count is both sides of "of".
   const failed =
     typeof did.failed === "number" && did.failed > 0
@@ -181,7 +201,7 @@ function explainAllFailedRun(raw: string): string | null {
  * Turn whatever pg-boss stored in `output` into one line. A thrown `Error`
  * serialises to `{ message, stack, … }`; a thrown non-Error can be any JSON at
  * all, so the raw text is the fallback rather than an invented placeholder.
- * A completed run that reported every account failed is said in words.
+ * A completed run that reported failed accounts or items is said in words.
  */
 export function presentError(
   raw: string | null,
@@ -190,8 +210,8 @@ export function presentError(
   if (raw === null) return "";
   const trimmed = raw.trim();
   if (trimmed.length === 0) return "";
-  const allFailed = explainAllFailedRun(trimmed);
-  if (allFailed !== null) return allFailed;
+  const completed = explainCompletedRun(trimmed);
+  if (completed !== null) return completed;
   if (TIMEOUT_MESSAGE.test(trimmed))
     return explainTimeout(trimmed, expireSeconds);
   if (HEARTBEAT_MESSAGE.test(trimmed)) {
@@ -209,8 +229,10 @@ export function presentError(
 
 /**
  * Every queue with at least one failed run in the window, newest first:
- * a job that exhausted its retries, or a fan-out pass that completed but
- * reported that every account it attempted failed (`did.all_failed`). The
+ * a job that exhausted its retries, a fan-out pass that completed but
+ * reported that every account it attempted failed (`did.all_failed`), or one
+ * that carried on past failed items (`did.partial_failed`, listed so the
+ * operator sees it; the alert below does not count it). The
  * second kind is what the repeated-failure alert counts too
  * (`readConsecutiveRunFailures`, `system-job-alert.ts`); the page used to
  * list only the first, so an operator the alert sent here read "no job has
@@ -242,6 +264,7 @@ export async function readFailingQueues(
       WHERE (
           state = 'failed'
           OR (state = 'completed' AND output->'did'->>'all_failed' = 'true')
+          OR (state = 'completed' AND output->'did'->>'partial_failed' = 'true')
         )
         AND completed_on > now() - make_interval(hours => ${withinHours}::int)
       GROUP BY name

@@ -46,13 +46,18 @@ export async function queueRelayUnbind(
   await drainRelayUnbinds(new Date(), config, [token]);
 }
 
-/** Send the due unbinds. Returns how many the relay confirmed. */
+/**
+ * Send the due unbinds. Returns how many the relay confirmed, and how many
+ * were given up after 7 days of trying: an unbind that never reached the
+ * relay, counted so the run says so (`FanOutTally`) instead of the row
+ * simply going.
+ */
 export async function drainRelayUnbinds(
   now: Date = new Date(),
   config: RelayConfig = relayConfig(),
   onlyTokens?: readonly string[],
-): Promise<number> {
-  await prisma.pushRelayUnbind.deleteMany({
+): Promise<{ confirmed: number; givenUp: number }> {
+  const { count: givenUp } = await prisma.pushRelayUnbind.deleteMany({
     where: { createdAt: { lt: new Date(now.getTime() - GIVE_UP_MS) } },
   });
   const due = await prisma.pushRelayUnbind.findMany({
@@ -63,7 +68,7 @@ export async function drainRelayUnbinds(
     orderBy: { nextAttemptAt: "asc" },
     take: BATCH,
   });
-  if (due.length === 0) return 0;
+  if (due.length === 0) return { confirmed: 0, givenUp };
   const row = config.available ? await loadRegistration(config) : null;
   if (!row) {
     // No registration: this instance holds no binding at the relay any more
@@ -71,7 +76,7 @@ export async function drainRelayUnbinds(
     await prisma.pushRelayUnbind.deleteMany({
       where: { id: { in: due.map((d) => d.id) } },
     });
-    return due.length;
+    return { confirmed: due.length, givenUp };
   }
   let confirmed = 0;
   for (const unbind of due) {
@@ -100,5 +105,5 @@ export async function drainRelayUnbinds(
       },
     });
   }
-  return confirmed;
+  return { confirmed, givenUp };
 }

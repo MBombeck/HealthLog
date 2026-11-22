@@ -795,7 +795,9 @@ export async function seedEveryTwoEndedModel(
     data: {
       userId: OWNER_ID,
       kind: "SMOKING_STATUS",
-      valueEncrypted: encryptToBytes("never"),
+      // A value of the kind's closed set: a portable export carries only a
+      // value a reader of the fact accepts.
+      valueEncrypted: encryptToBytes("NEVER"),
       validFrom: AT("2026-01-01T00:00:00.000Z"),
     },
   });
@@ -1553,6 +1555,10 @@ export const FILL_OVERRIDES: Readonly<Record<string, unknown>> = {
   "MenstrualCycle.endDate": "2026-10-28",
   "MenstrualCycle.periodEndDate": "2026-10-05",
   "MenstrualCycle.ovulationDate": "2026-10-15",
+  // The sensitive-category envelope is one sealed JSON object; a value the
+  // export cannot parse travels as the unreadable marker.
+  "CycleDayLog.sensitiveEncrypted": () =>
+    encrypt(JSON.stringify({ sexualActivity: true })),
   // The pregnancy state is one sealed envelope the store opens; a tag it
   // cannot read would restore as no state (`pregnancy-store.ts`).
   "CycleProfile.pregnancyEncrypted": () =>

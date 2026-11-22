@@ -3,7 +3,8 @@
  * (`push-relay/data-changed.ts`): send every pending wake whose five-minute
  * window has closed and every intake sync the silent budget held back, then
  * prune the wake ledger. A pass that throws fails
- * the job; the next minute's run is the retry.
+ * the job; the next minute's run is the retry. A device that fails is
+ * counted and the pass carries on (`FanOutTally`).
  */
 import { type Job } from "pg-boss";
 
@@ -24,6 +25,9 @@ export async function handlePushDataChanged(
         push_data_changed_flushed: facts.flushed,
         intake_sync_owed_sent: facts.owedSynced,
         push_wakes_pruned: facts.pruned,
+        items_attempted: facts.tally.attempted,
+        items_failed: facts.tally.failed,
+        partial_failed: facts.tally.partialFailed,
       });
     } catch (err) {
       evt.addWarning(`push data-changed pass failed: ${err}`);

@@ -123,7 +123,11 @@ export async function runRecordFileImport(
     await importByKind(payload, tally, tz);
     const result = tally.toResult();
     await finish(importJobId, result);
-    await afterBulkImport(userId, toImportTail(result), `${kind}-import`);
+    const { rollupFailed } = await afterBulkImport(
+      userId,
+      toImportTail(result),
+      `${kind}-import`,
+    );
     annotate({
       action: { name: `import.${kind}.done` },
       meta: {
@@ -135,7 +139,16 @@ export async function runRecordFileImport(
         duration_ms: result.durationMs,
       },
     });
-    return jobDone({ imported: result.imported, skipped: result.skipped });
+    // The rollup recompute after the import fails soft, as for the other
+    // bulk imports; the run carries it (`FanOutTally`).
+    return jobDone({
+      imported: result.imported,
+      skipped: result.skipped,
+      rollup_failed: rollupFailed,
+      items_attempted: 1,
+      items_failed: rollupFailed ? 1 : 0,
+      partial_failed: rollupFailed,
+    });
   } catch (err) {
     const reason = failureReason(err);
     if (err instanceof RecordFileImportError) {

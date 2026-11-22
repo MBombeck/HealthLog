@@ -55,6 +55,7 @@ function report(over: Partial<Record<string, unknown>> = {}) {
     oversized: 0,
     alreadyUploaded: 0,
     stoppedEarly: false,
+    keyUseWritesFailed: 0,
     ...over,
   };
 }
@@ -75,6 +76,9 @@ describe("handleOffhostBackup", () => {
       offhost_backup_failed: 0,
       offhost_backup_total_users: 2,
       offhost_backup_oversized: 0,
+      items_attempted: 2,
+      items_failed: 0,
+      partial_failed: false,
     });
   });
 
@@ -121,6 +125,21 @@ describe("handleOffhostBackup", () => {
     // Fanning the whole cohort out again over one object would re-upload
     // everybody's.
     expect(outcome.ok).toBe(true);
+    // The failing jobs card lists the run all the same.
+    expect(outcome.ok && outcome.did).toMatchObject({
+      items_attempted: 2,
+      items_failed: 1,
+      partial_failed: true,
+    });
+  });
+
+  it("counts a key-use row that did not land, which the key readiness reads", async () => {
+    mocks.runOffhostBackup.mockResolvedValue(report({ keyUseWritesFailed: 1 }));
+    const outcome = await handleOffhostBackup([]);
+    expect(outcome.ok && outcome.did).toMatchObject({
+      items_failed: 1,
+      partial_failed: true,
+    });
   });
 
   it("does not fail a host that has no accounts at all", async () => {
