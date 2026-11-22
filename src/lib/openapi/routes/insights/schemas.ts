@@ -1427,7 +1427,7 @@ export const dashboardSnapshotResponse = z
           .optional(),
       })
       .describe(
-        "Today's medication block: active-medication count, today-window tally (scheduled / taken / skipped), every active medication's current display-due candidate, and legacy scalar fields projected from candidate zero. `overdue: true` marks an OPEN overdue slot (anchor passed, still inside its catch-up band); `availableFrom` is the canonical cadence- and dose-window-derived attribution-band start. `dueCandidates` is optional so older cached snapshots remain valid. Medication ids let consumers deep-link straight to the relevant card.",
+        "Today's medication block: active-medication count, today-window tally (scheduled / taken / skipped), every active medication's next dose, and legacy scalar fields projected from candidate zero. Since v1.49.0 each candidate comes from the dose resolver, the same one behind the today rows and `complianceDisplay.currentDose`: the medication's earliest open dose (`due` or `overdue`), else its earliest `upcoming` one. `overdue: true` means the resolver's `overdue` state (past the on-time window, before the miss cutoff); `availableFrom` is the resolver's `dueAt`, when the dose turns due. For the state of a dose, read the today rows or `currentDose`. `dueCandidates` is optional so older cached snapshots remain valid. Medication ids let consumers deep-link straight to the relevant card.",
       ),
     // Dashboard hero health score. The additive metadata lets clients suppress
     // false change narratives when eligibility or the algorithm changes.

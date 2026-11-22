@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2841,
-  "total": 8867,
+  "total": 8864,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1799,7 +1799,7 @@
     "lib/analytics/compliance/adapters.ts": 6,
     "lib/analytics/compliance/cycle.ts": 5,
     "lib/analytics/compliance/display.ts": 16,
-    "lib/analytics/compliance/dose-status.ts": 4,
+    "lib/analytics/compliance/dose-status.ts": 3,
     "lib/analytics/compliance/ledger.ts": 7,
     "lib/analytics/compliance/occurrences.ts": 9,
     "lib/analytics/compliance/parsing.ts": 1,
@@ -1917,7 +1917,7 @@
     "lib/dashboard/__tests__/target-bands.test.ts": 2,
     "lib/dashboard/bands.ts": 1,
     "lib/dashboard/batch-chart-types.ts": 1,
-    "lib/dashboard/meds-today.ts": 3,
+    "lib/dashboard/meds-today.ts": 1,
     "lib/dashboard/score-narrative.ts": 1,
     "lib/dashboard/score-rings.ts": 2,
     "lib/dashboard/snapshot-read.ts": 1,
