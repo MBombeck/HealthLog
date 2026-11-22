@@ -1,0 +1,93 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "generatedAt": "anchor+0d+12:00:00",
+      "phase": "final",
+      "sleepPending": false,
+      "score": {
+        "value": 86,
+        "band": "green",
+        "delta": null,
+        "deltaReason": "first_eligibility_window",
+        "scoreVersion": 4,
+        "composition": [
+          "BLOOD_PRESSURE",
+          "GLYCAEMIA",
+          "ACTIVITY",
+          "SLEEP"
+        ],
+        "configured": false,
+        "scoreBasis": {
+          "domains": 3,
+          "recommended": 3,
+          "tier": "full",
+          "physiological": true
+        },
+        "steadyWeeks": null,
+        "steadyAtLeast": false
+      },
+      "topSignal": null,
+      "briefingLead": null,
+      "lead": {
+        "text": "All 8 of your latest vitals sit inside their usual range.",
+        "source": "signal",
+        "language": "en"
+      },
+      "signalLine": null,
+      "today": [
+        {
+          "kind": "rest_mode",
+          "label": "Rest mode",
+          "value": "Day 4",
+          "href": "/illness",
+          "moduleKey": "illness"
+        },
+        {
+          "kind": "medications",
+          "label": "Medications",
+          "value": "0 of 2 taken",
+          "href": "/medications",
+          "moduleKey": "medications"
+        },
+        {
+          "kind": "sleep",
+          "label": "Last night",
+          "value": "5h 55m, 33m less than usual",
+          "href": "/insights/sleep",
+          "moduleKey": "sleep"
+        }
+      ],
+      "restMode": {
+        "day": 4
+      },
+      "line": "Your health score for today is ready.",
+      "worthALook": [],
+      "justIn": null,
+      "reactionLine": null,
+      "ai": {
+        "briefing": {
+          "available": false,
+          "reason": "no_provider",
+          "onDeviceAllowed": true
+        },
+        "coach": {
+          "available": false,
+          "reason": "no_provider",
+          "onDeviceAllowed": true
+        },
+        "reactionLines": {
+          "available": false,
+          "reason": "no_provider",
+          "onDeviceAllowed": true
+        }
+      },
+      "languages": {
+        "response": "en",
+        "briefing": null,
+        "reaction": "en"
+      }
+    },
+    "error": null
+  }
+}
