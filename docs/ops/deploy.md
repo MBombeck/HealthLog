@@ -214,12 +214,12 @@ always did, and finds nothing in the queue schema it did not create.
 ### v1.49.0 notes
 
 The sequence above covers this release, with one possible stop (`0517`, see
-below). It brings thirty-three migrations, `0514` to `0554` (`0516`, `0523`,
-`0527`, `0528`, `0541`, `0548`, `0550` and `0552` do not exist), so the boot
-log says `33 database migrations pending`. Copy the pre-migration dump of
-step 0 off the host before you start: it is the way back.
+below). It brings thirty-six migrations, `0514` to `0558` (`0516`, `0523`,
+`0527`, `0528`, `0541`, `0548`, `0550`, `0552` and `0555` do not exist), so
+the boot log says `36 database migrations pending`. Copy the pre-migration
+dump of step 0 off the host before you start: it is the way back.
 
-Six migrations touch data you already have:
+Seven migrations touch data you already have:
 
 - `0515` merges doses recorded twice for one slot. Of each slot's live rows
   it keeps the one that records a take, else a skip, else the oldest pending
@@ -266,7 +266,8 @@ Six migrations touch data you already have:
   `symptom_events`, `medication_intake_events` and `cycle_day_logs`
   (metadata-only, no rewrite). Rows deleted before the update read as
   deleted in HealthLog, so a phone that sends them again after a reinstall
-  is refused rather than writing them back. It drops the workout and ECG
+  is refused rather than writing them back; `0557` then sorts out the ones
+  the phone itself had reported deleted. It drops the workout and ECG
   ledger `apple_health_tombstones` from `0511`: those rows can only be
   deleted in Apple Health, so a sample that comes back there is written
   again.
@@ -278,8 +279,26 @@ Six migrations touch data you already have:
   fresh install has no account when the migration runs, keeps `NULL`, and
   offers the setup to its first admin. It stays reachable from Admin >
   System status either way.
+- `0557` backfills the origin `0546` could not know. A tombstone from before
+  the update is stamped as deleted in Apple Health
+  (`apple_health_deleted_at = deleted_at`) when the audit log proves it: it
+  lies in the window of one `<domain>.delete.by_external_ids` request (the
+  ten minutes up to five seconds past the audit row, and after the account's
+  previous request of that domain), it is an Apple Health row with an
+  `external_id`, and the window holds exactly as many such unstamped
+  tombstones as the request says it deleted. Any other count leaves the
+  whole window as `0546` set it, refused, which is the safe side for a
+  deletion a person made. It changes no schema and writes nothing but that
+  column on `measurements`, `mood_entries`, `symptom_events`,
+  `medication_intake_events` and `cycle_day_logs`: `updated_at` and
+  `sync_version` stay, so no tombstone goes down the sync feed again. The
+  five `UPDATE`s run in one transaction under a ten-minute
+  `statement_timeout` and lock only the rows they stamp, so readers and
+  other writers carry on. A run that is cut off has changed nothing, and a
+  second run stamps nothing new. An instance no phone ever reported a
+  deletion to has no such audit rows and nothing is written.
 
-Two more change data only on a host that ran a 1.49 pre-release. Coming from
+Four more change data only on a host that ran a 1.49 pre-release. Coming from
 1.48, the columns and tables they touch are created earlier in the same
 update and hold nothing:
 
@@ -296,6 +315,22 @@ update and hold nothing:
   was made by its owner), sets it `NOT NULL`, and adds an index and a
   cascading foreign key to `users` for each. A link a guardian makes for a
   managed profile ends when that guardian's grant does.
+- `0556` adds `app_settings.push_relay_decision` (nullable text with a CHECK
+  for `on` and `off`), the answer to the one-time relay question. One
+  `UPDATE` of the single `app_settings` row stamps `on` where the server is
+  already registered at the relay, so its admin is not asked what the switch
+  already answered. Coming from 1.48 no registration exists, the column
+  stays `NULL`, and an admin is asked after the update, unless the server
+  has its own Apple key or sets `PUSH_RELAY_MODE=off`. No rewrite; the
+  migration waits at most 5 s for its lock, and the boot retries it on a
+  timeout.
+- `0558` adds `devices.la_start_ref` and `devices.relay_conflict_at` (both
+  nullable) and, on `push_relay_registrations`, `bad_signature_count`
+  (`INTEGER NOT NULL DEFAULT 0`, a catalog change without a rewrite),
+  `status_checked_at` and `relay_status`. One `UPDATE` stamps
+  `relay_conflict_at` with the time of the migration on each device whose
+  relay binding is in conflict, so it gets the full 30 minutes before the
+  server asks it for a fresh binding. Same 5 s lock wait and retry.
 
 The rest is additive: enum values for Apple Health workout effort and sport
 quantities (`0514`, `0519`), nullable columns or columns with a default
@@ -329,7 +364,9 @@ your own network for the scheduled Health Connect fetch), and
 `PUSH_RELAY_LIVE_ACTIVITY` ([push-relay.md](../integrations/push-relay.md)).
 The relay is off until an admin turns it on: after the update an admin is
 asked once, on the dashboard and the admin start page, and No is final until
-someone switches it on in Admin > Push and channels. Live
+someone switches it on in Admin > Push and channels. A server that turned
+it on under a 1.49 pre-release is asked once, on the relay card, to read and
+confirm the updated relay text; the relay keeps working until then. Live
 Activity start and update go over it only with `PUSH_RELAY_LIVE_ACTIVITY=on`
 and a second consent on the device. `pnpm check-env` reports all five.
 
@@ -399,7 +436,10 @@ and CHECKs can be dropped. `0539` drops columns and an enum, and `0540` and
 `0540`'s tables are new in this release, and `0543`'s column has a default
 that covers v1.48.5's inserts. Nothing is renamed. `0551`'s columns are
 nullable, `0553` is a table v1.48.5 never touches, and `0554`'s columns have
-a default while its triggers only stamp columns v1.48.5 does not read. Every
+a default while its triggers only stamp columns v1.48.5 does not read.
+`0556` and `0558` add columns v1.48.5 never reads, the one `NOT NULL` among
+them with a default and on a table new in this release, and `0557` writes
+only a column v1.48.5 does not know. Every
 other migration is harmless to the old image, which ignores what it does not
 know. If the dump
 is gone, or too much has been written since, switch the image back only
