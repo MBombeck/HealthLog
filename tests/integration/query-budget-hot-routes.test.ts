@@ -13,6 +13,12 @@
  * statement it sent, grouped, so the new one is visible. Raising a budget is
  * a reviewed change with the reason beside the number.
  *
+ * The clock is pinned to the next noon in Berlin. Several reads exist only
+ * on one side of a local hour (the day projection's occupancy read before a
+ * slot it can still project, the resting-pulse edge read after the morning
+ * window), so on the live clock a budget measured by day failed when the
+ * suite ran after midnight. Only `Date` is faked; timers stay real.
+ *
  * Every read runs on a miss: the user's caches are evicted before the
  * measured call, after one warm-up call that fills the process-level caches
  * a running server already holds. The large-account numbers (latency and
@@ -20,7 +26,7 @@
  * docs/contributing/benchmarks.md.
  */
 import { NextRequest } from "next/server";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import type {
   MeasurementSource,
@@ -28,6 +34,8 @@ import type {
   Prisma,
   SleepStage,
 } from "@/generated/prisma/client";
+
+import { localHmAsUtc } from "@/lib/tz/local-day";
 
 import { cookieJar } from "./mock-next-headers";
 import { countStatements, summariseStatements } from "./query-counter";
@@ -75,11 +83,16 @@ const BUDGET = {
   // ledger (the courses and schedule eras the ledger needs, its window and
   // anchor reads) instead of the feeder reads of its own due computation.
   // A fixed number, whatever the number of medications.
-  dashboardSummary: 37,
+  // 37 → 38, snapshot 89 → 90: no new read. The day projection's occupancy
+  // read (which of today's slots already hold a row) runs on every read of a
+  // medication created before today's slot, which is every real one; the
+  // fixture's medication was created at seed time, so by day it had no slot
+  // left to project and the read went uncounted (see the clock note above).
+  dashboardSummary: 38,
   // 101 → 89 (1.49.0): the summaries slice reads the source ladder and the
   // zone once instead of four and two times, and the year-ago baseline of
   // every type in one statement instead of one per type.
-  dashboardSnapshot: 89,
+  dashboardSnapshot: 90,
   // The digest composes the snapshot (its own cell, rebuilt here) and adds
   // its rail's reads; 143 before the slice change above.
   // 133 → 134, targets 21 → 22 (1.49.0): the 90-day window aggregate folds
@@ -120,6 +133,14 @@ type Handler = (
   request: NextRequest,
   context: { params: Promise<Record<string, string>> },
 ) => Promise<Response>;
+
+/** The first 12:00 in Berlin at or after `from`: the pinned "now" of every budget. */
+function nextBerlinNoon(from: Date): Date {
+  const noon = localHmAsUtc(from, "Europe/Berlin", 12, 0);
+  return noon >= from
+    ? noon
+    : localHmAsUtc(new Date(from.getTime() + DAY_MS), "Europe/Berlin", 12, 0);
+}
 
 /** Midnight UTC `n` days before today. */
 function daysAgo(n: number): Date {
@@ -303,6 +324,11 @@ async function seed(): Promise<void> {
       userId: USER_ID,
       name: "Budget A",
       dose: "5 mg",
+      // Created before its history, the way a running account has it. The
+      // column default is the database's clock, not the pinned one: today's
+      // 08:00 slot then predated the medication whenever the suite ran after
+      // 08:00 Berlin time, and the day projection skipped its occupancy read.
+      createdAt: daysAgo(90),
       schedules: { create: { windowStart: "08:00", windowEnd: "09:00" } },
     },
   });
@@ -378,9 +404,15 @@ function expectWithin(
 
 describe("statement budgets on the hot routes (real Postgres)", () => {
   beforeAll(async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(nextBerlinNoon(new Date()));
     await truncateAllTables(getPrismaClient());
     cookieJar.clear();
     await seed();
+  });
+
+  afterAll(() => {
+    vi.useRealTimers();
   });
 
   it("GET /api/auth/me", async () => {
