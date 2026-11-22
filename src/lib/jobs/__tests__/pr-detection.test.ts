@@ -10,7 +10,9 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 
 import { setGlobalBoss } from "@/lib/jobs/boss-instance";
 import {
+  PR_DETECTION_DEBOUNCE_SECONDS,
   PR_DETECTION_QUEUE,
+  prDetectionSingletonKey,
   enqueuePrDetection,
 } from "@/lib/jobs/pr-detection";
 
@@ -39,6 +41,28 @@ describe("enqueuePrDetection", () => {
     expect(typeof (payload as { triggeredAt: string }).triggeredAt).toBe(
       "string",
     );
+  });
+
+  it("coalesces one account's sends per mode behind a short debounce", async () => {
+    const send = vi.fn().mockResolvedValue(undefined);
+    setGlobalBoss({ send } as unknown as Parameters<typeof setGlobalBoss>[0]);
+
+    await enqueuePrDetection("user-1", { silent: true });
+    await enqueuePrDetection("user-1", { silent: false });
+    await enqueuePrDetection("user-2", { silent: true });
+
+    const options = send.mock.calls.map(
+      (call) => call[2] as { singletonKey: string; startAfter: number },
+    );
+    // Same account and mode share a key, so the queue's `short` policy
+    // folds a burst into the one queued run; another mode or account does not.
+    expect(options[0]!.singletonKey).toBe(
+      prDetectionSingletonKey("user-1", true),
+    );
+    expect(new Set(options.map((o) => o.singletonKey)).size).toBe(3);
+    for (const o of options) {
+      expect(o.startAfter).toBe(PR_DETECTION_DEBOUNCE_SECONDS);
+    }
   });
 
   it("defaults silent to false when not provided", async () => {

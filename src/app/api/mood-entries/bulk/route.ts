@@ -39,6 +39,7 @@ import {
   sanitiseZodIssues,
 } from "@/lib/api-response";
 import { withIdempotency } from "@/lib/idempotency";
+import { withIngestAdmission } from "@/lib/ingest/admission";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { moodLevelEnum, moodSourceEnum } from "@/lib/validations/mood";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
@@ -154,7 +155,9 @@ const bulkPayloadSchema = z.object({
   entries: z.array(bulkEntrySchema).min(1).max(MAX_ENTRIES_PER_BATCH),
 });
 
-export const POST = apiHandler(withIdempotency<[NextRequest]>(postBulk));
+export const POST = apiHandler(
+  withIngestAdmission(withIdempotency<[NextRequest]>(postBulk)),
+);
 
 async function postBulk(request: NextRequest): Promise<Response> {
   // Metered by this route's own bulk bucket below, not the shared per-account

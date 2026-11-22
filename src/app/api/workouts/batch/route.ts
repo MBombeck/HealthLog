@@ -77,6 +77,7 @@ import {
   safeJson,
 } from "@/lib/api-response";
 import { withIdempotency } from "@/lib/idempotency";
+import { withIngestAdmission } from "@/lib/ingest/admission";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { MAX_WORKOUTS_PER_BATCH } from "@/lib/validations/workout";
 import { parseWorkoutBatch } from "@/lib/workouts/batch-ingest-parse";
@@ -101,7 +102,9 @@ const BATCH_RATE_LIMIT_WINDOW_MS = 60 * 1000;
 // the correct response to a misbehaving client or an attempted DoS.
 const MAX_BODY_BYTES = 5 * 1024 * 1024;
 
-export const POST = apiHandler(withIdempotency<[NextRequest]>(postBatch));
+export const POST = apiHandler(
+  withIngestAdmission(withIdempotency<[NextRequest]>(postBatch)),
+);
 
 async function postBatch(request: NextRequest): Promise<Response> {
   // Declares the workout-ingest scope, so a narrow `workouts:write` token

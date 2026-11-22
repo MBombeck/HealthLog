@@ -29,6 +29,7 @@ import {
 } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { withIdempotency } from "@/lib/idempotency";
+import { withIngestAdmission } from "@/lib/ingest/admission";
 import { requireIllnessEnabled } from "@/lib/illness/gate";
 import { annotate } from "@/lib/logging/context";
 import { ingestSymptomBatch } from "@/lib/symptoms/apple-health-ingest";
@@ -42,7 +43,9 @@ export const dynamic = "force-dynamic";
 
 const MAX_BODY_BYTES = 1024 * 1024;
 
-export const POST = apiHandler(withIdempotency<[NextRequest]>(postBatch));
+export const POST = apiHandler(
+  withIngestAdmission(withIdempotency<[NextRequest]>(postBatch)),
+);
 
 async function postBatch(request: NextRequest): Promise<Response> {
   // The owner's own device syncing its own samples. Metered by the shared

@@ -33,6 +33,7 @@ vi.mock("@/lib/ai/coach/context-reminders", () => ({
 
 import {
   enqueueReminderSatisfy,
+  REMINDER_SATISFY_DEBOUNCE_SECONDS,
   REMINDER_SATISFY_QUEUE,
 } from "../reminder-satisfy";
 import { runReminderSatisfyForUser } from "../measurement-reminder";
@@ -48,6 +49,20 @@ describe("enqueueReminderSatisfy", () => {
     expect(sendMock).toHaveBeenCalledTimes(1);
     expect(sendMock.mock.calls[0]![0]).toBe(REMINDER_SATISFY_QUEUE);
     expect(sendMock.mock.calls[0]![1]).toMatchObject({ userId: "u1" });
+  });
+
+  it("coalesces one account's sends behind a short debounce", async () => {
+    await enqueueReminderSatisfy("u1");
+    await enqueueReminderSatisfy("u1");
+    await enqueueReminderSatisfy("u2");
+    const options = sendMock.mock.calls.map(
+      (call) => call[2] as { singletonKey: string; startAfter: number },
+    );
+    expect(options[0]!.singletonKey).toBe(options[1]!.singletonKey);
+    expect(options[2]!.singletonKey).not.toBe(options[0]!.singletonKey);
+    for (const o of options) {
+      expect(o.startAfter).toBe(REMINDER_SATISFY_DEBOUNCE_SECONDS);
+    }
   });
 
   it("is a silent no-op when no boss is attached (tests / web process)", async () => {
