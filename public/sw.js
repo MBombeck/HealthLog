@@ -356,12 +356,12 @@ async function networkFirst(event, cacheName) {
 // person chose in the app: the worker cannot read it, but the page is served
 // on the app's origin, so its head script reads the same `healthlog-theme`
 // entry the app's theme bootstrap reads, with the same rule (light, dark, or
-// system = the device scheme; nothing stored = dark), and sets
+// anything else, nothing stored included = the device scheme), and sets
 // `data-theme` before the body paints. The worker's own response carries no
 // Content-Security-Policy, so the inline script is not refused; without
 // script the device scheme stands.
 const OFFLINE_THEME_SCRIPT =
-  '(function(){var c="dark";try{var t=localStorage.getItem("healthlog-theme");c=t==="light"||t==="dark"?t:t==="system"?(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"):"dark"}catch(e){}document.documentElement.setAttribute("data-theme",c);var m=document.querySelector(\'meta[name="theme-color"]\');if(m)m.setAttribute("content",c==="light"?"#f3f2f5":"#282a36")})()';
+  '(function(){var t=null,c="dark";try{t=localStorage.getItem("healthlog-theme")}catch(e){}if(t==="light"||t==="dark"){c=t}else{try{c=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"}catch(e){}}document.documentElement.setAttribute("data-theme",c);var m=document.querySelector(\'meta[name="theme-color"]\');if(m)m.setAttribute("content",c==="light"?"#f3f2f5":"#282a36")})()';
 
 const OFFLINE_PAGE =
   '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="dark light"><meta name="theme-color" content="#282a36"><title>HealthLog — Offline</title><script>' +
