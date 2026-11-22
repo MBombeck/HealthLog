@@ -3,7 +3,11 @@ import { describe, expect, it } from "vitest";
 import { ketoneFingerstickBatch } from "@/components/measurements/ketone-fingerstick";
 import { createBatchMeasurementSchema } from "@/lib/validations/measurement";
 
-const AT = "2026-11-01T08:00:00.000Z";
+// An hour ago, not a fixed date: the route's schema refuses a reading from
+// the future, so a fixed date fails on any clock that stands before it.
+const AT = new Date(
+  Math.floor(Date.now() / 60_000) * 60_000 - 3_600_000,
+).toISOString();
 
 function batch(
   overrides: Partial<Parameters<typeof ketoneFingerstickBatch>[0]>,

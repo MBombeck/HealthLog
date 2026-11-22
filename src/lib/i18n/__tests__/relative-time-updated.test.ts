@@ -171,3 +171,47 @@ describe("formatUpdatedLabel boundary-zone closure (#490)", () => {
     );
   });
 });
+
+// Yesterday is the key before today's in the profile zone. It used to be the
+// host's `setDate(-1)`, which on a UTC host is `now - 24 h`: two days back
+// just after the 23-hour day in Berlin, and still today late in the 25-hour
+// one. The suite runs under `TZ=UTC`, like a server.
+describe("yesterday across a change of clocks (Berlin profile, UTC host)", () => {
+  const tRel = (key: string): string =>
+    key === "medications.today"
+      ? "Today"
+      : key === "medications.yesterday"
+        ? "Yesterday"
+        : key;
+  const fmtDateAbs = (d: Date) => d.toISOString();
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("names the 23-hour Sunday yesterday, just after midnight on Monday", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    // Monday 2026-03-30 00:30 CEST; the target is Sunday 19:00 CEST.
+    vi.setSystemTime(new Date("2026-03-29T22:30:00Z"));
+    const target = "2026-03-29T17:00:00.000Z";
+    expect(
+      relativeCalendarDate(target, tRel, fmtDateAbs, "Europe/Berlin"),
+    ).toBe("Yesterday");
+    expect(
+      formatUpdatedLabel(target, t, fmtDate, fmtTime, "Europe/Berlin"),
+    ).toBe("Updated yesterday");
+  });
+
+  it("names Saturday yesterday, late in the 25-hour Sunday", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    // Sunday 2026-10-25 23:30 CET; the target is Saturday 20:00 CEST.
+    vi.setSystemTime(new Date("2026-10-25T22:30:00Z"));
+    const target = "2026-10-24T18:00:00.000Z";
+    expect(
+      relativeCalendarDate(target, tRel, fmtDateAbs, "Europe/Berlin"),
+    ).toBe("Yesterday");
+    expect(
+      formatUpdatedLabel(target, t, fmtDate, fmtTime, "Europe/Berlin"),
+    ).toBe("Updated yesterday");
+  });
+});

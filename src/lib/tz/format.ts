@@ -247,6 +247,28 @@ export function shiftDateKey(dateKey: string, deltaDays: number): string {
 }
 
 /**
+ * The label of the calendar day before `now`'s, for a labeller that carries
+ * its own zone (a formatter's `dateShortSmart`, say).
+ *
+ * Not the label of `now − 24 h`: in the first hour after a 23-hour day that
+ * lands two days back, and in the last hour of a 25-hour day it is still
+ * today. A local day lasts 23 to 25 hours, so of `now − 23 h`, `− 24 h` and
+ * `− 25 h` the first one off today's label is always yesterday. A caller that
+ * knows the zone can step the key instead: `shiftDateKey(userDayKey(now, tz), -1)`.
+ */
+export function previousDayLabel(
+  now: Date,
+  labelOf: (instant: Date) => string,
+): string {
+  const today = labelOf(now);
+  for (const hours of [23, 24, 25]) {
+    const label = labelOf(new Date(now.getTime() - hours * 3_600_000));
+    if (label !== today) return label;
+  }
+  return today;
+}
+
+/**
  * Whole calendar days from `fromKey` to `toKey` (negative when `toKey` is
  * earlier). Pure key arithmetic like {@link shiftDateKey}: both keys are
  * already resolved calendar dates, so no zone takes part. `NaN` when either

@@ -20,8 +20,6 @@ import type { MeasurementReminder } from "@/hooks/use-measurement-reminders";
 import { useDisplayTimezone, useTranslations } from "@/lib/i18n/context";
 import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 
-import { DAY_MS } from "./reminder-form";
-
 /** The offsets the postpone sheet's quick chips offer, in days. */
 const SNOOZE_CHIP_DAYS = [7, 30, 90] as const;
 
@@ -82,7 +80,7 @@ export function CheckupPostponeSheet({
     setSnoozeDate("");
     setConfirmSkip(false);
   };
-  const minSnoozeDate = userDayKey(new Date(now + DAY_MS), displayTz);
+  const minSnoozeDate = shiftDateKey(userDayKey(new Date(now), displayTz), 1);
   return (
     <>
       <ResponsiveSheet

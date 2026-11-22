@@ -240,10 +240,6 @@ const RAW_ALLOWLIST: ReadonlyArray<{ file: string; why: string }> = [
     why: "`todayKeyIn` asks `en-CA` for today's `YYYY-MM-DD` key in the record's zone, to compare with the timeline's calendar keys. Never rendered; every label there is a month name.",
   },
   {
-    file: "src/app/api/measurement-reminders/[id]/snooze/route.ts",
-    why: "An ISO day probe split back into numbers to do day arithmetic on the postpone target. Never rendered.",
-  },
-  {
     file: "src/components/ui/calendar.tsx",
     why: "The `data-day` attribute on a calendar cell. It identifies a cell to the DOM, it does not spell a date to a reader.",
   },

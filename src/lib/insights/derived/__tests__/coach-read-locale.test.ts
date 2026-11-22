@@ -13,7 +13,7 @@
  * have stayed green through the whole outage: the engine could always speak
  * German, it was simply never asked.
  */
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const measurementFindMany = vi.fn();
 const measurementFindFirst = vi.fn();
@@ -145,7 +145,17 @@ function seedSymptomDrivesSleep() {
 }
 
 describe("buildCoachReadStrip — the pattern line speaks the reader's language", () => {
+  // The driver scan reads a rolling window back from the wall clock, so the
+  // fixture's dates only stay inside it while the clock stands where the
+  // fixture was written for. Pin it a few days after the last seeded day:
+  // otherwise the test ages out of its own window as the calendar moves on.
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(BASE + (DAYS + 5) * 86_400_000);
     measurementFindMany.mockReset().mockResolvedValue([]);
     measurementFindFirst.mockReset().mockResolvedValue({ value: 7 });
     moodFindMany.mockReset().mockResolvedValue([]);

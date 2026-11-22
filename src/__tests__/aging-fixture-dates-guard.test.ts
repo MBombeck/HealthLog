@@ -170,8 +170,12 @@ describe("aging fixture dates", () => {
   });
 
   it("every allowlist entry still names a file with findings", () => {
-    // A stale entry would quietly allow the next finding in that file.
-    const findings = findAgingFixtureDates(files, Date.now());
+    // A stale entry would quietly allow the next finding in that file. Stale
+    // means the file no longer puts an absolute date next to a window at all,
+    // not that its dates have slid past the horizon: read against the clock,
+    // this check turned red by itself once an allowlisted fixture became 400
+    // days old, which is the calendar-driven failure this guard is against.
+    const findings = findAgingFixtureDates(files, Number.NEGATIVE_INFINITY);
     for (const file of Object.keys(ALLOWLIST)) {
       expect(
         findings.some((f) => f.file === file),

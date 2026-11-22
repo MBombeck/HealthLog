@@ -37,6 +37,7 @@ typecheck.
 - **`generate-sw-version.mjs`**, **`check-bundle-budget.mjs`**: service-worker version stamp and bundle-size report (`pnpm bundle-report`).
 - **`repair-google-health-sleep.ts`**: re-syncs every Google Health connection so nights stored twice before v1.28.18 collapse to one set; dry-run by default, `--run` to execute.
 - **`i18n-key-tool.mjs`**, **`split-description.mjs`**: edit one key across every `messages/*.json` (show, set, drop) and move an over-long card description's tail into its own key; **`measure-description-lengths.mjs`** measures the Settings and Admin description strings against the 120-character guideline.
+- **`test-shifted-clock.mjs`**: runs the unit suite under moved wall clocks (the hour before local midnight, both changes of clocks, the new year) and lists what fails there but not at the real time; `node scripts/test-shifted-clock.mjs --list` prints the instants, `--at <ISO>` picks your own. The clock shim is `shifted-clock-shim.mjs`. A probe for date-handling work, not wired into CI.
 - **`audit-column-readers.ts`**: lists write-only schema columns and open `@pending-consumer` markers; a review tool, not a gate.
 - **`migrate-demo-account.sh`**: copies the demo account from one instance to a separate demo instance; see its README.
 - **`__tests__/`**: tests for the scripts above.

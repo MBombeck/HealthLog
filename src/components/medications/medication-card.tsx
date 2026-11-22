@@ -42,7 +42,7 @@ import { LogInjectionSiteDialog } from "@/components/medications/log-injection-s
 import { useGlobalExcludedInjectionSites } from "@/lib/medications/use-injection-site-prefs";
 import { useAuth } from "@/hooks/use-auth";
 import type { InjectionSiteKey } from "@/lib/medications/injection-sites";
-import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE, shiftDateKey, userDayKey } from "@/lib/tz/format";
 
 interface Schedule {
   id: string;
@@ -345,14 +345,12 @@ export function MedicationCard({
   function formatLastTakenAt(value: string): string {
     // Day keys (YYYY-MM-DD) in the profile zone, string-comparable for the
     // today / yesterday / older bucketing below. The user-facing display goes
-    // through formatTime / formatDateTime.
-    const now = new Date();
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-
+    // through formatTime / formatDateTime. Yesterday is the key before
+    // today's: the browser's `setDate(-1)` steps in the browser's zone, which
+    // need not be the profile's.
     const intakeDay = userDayKey(new Date(value), userTz);
-    const todayDay = userDayKey(now, userTz);
-    const yesterdayDay = userDayKey(yesterday, userTz);
+    const todayDay = userDayKey(new Date(), userTz);
+    const yesterdayDay = shiftDateKey(todayDay, -1);
     const time = formatTime(value);
 
     if (intakeDay === todayDay) return `${t("medications.today")}, ${time}`;
