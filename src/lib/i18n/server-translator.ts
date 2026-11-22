@@ -1,4 +1,5 @@
 import { defaultLocale, type Locale } from "./config";
+import { formatMessage } from "./format-message";
 import { allMessages, resolveKey } from "./shared-resolve";
 
 export interface ServerTranslator {
@@ -17,26 +18,18 @@ export function getServerTranslator(locale: Locale): ServerTranslator {
   return {
     locale,
     t(key, params) {
+      let source: Locale = locale;
       let value = resolveKey(allMessages[locale], key);
       if (value === undefined && locale !== defaultLocale) {
         value = resolveKey(allMessages[defaultLocale], key);
+        source = defaultLocale;
       }
       if (value === undefined) return key;
-      if (params) {
-        for (const [k, v] of Object.entries(params)) {
-          // A REPLACER FUNCTION, not a replacement string. `String.replace`
-          // reads `$&`, `$\``, `$'`, `$1` and `$$` out of a replacement
-          // STRING, so a value carrying one of them rewrites the sentence
-          // around it: a display name of `$\'` splices everything after the
-          // placeholder back in, and `$\`` splices everything before it. Every
-          // interpolated value here is user-controlled — a person's display
-          // name is the common one, and it lands in sentences on the sharing
-          // panel that describe who did what. A function replacement is
-          // substituted verbatim and has no `$` grammar at all.
-          value = value.replace(new RegExp(`\\{${k}\\}`, "g"), () => String(v));
-        }
-      }
-      return value;
+      // Placeholders and plural blocks are filled literally: a parameter value
+      // is never re-read as a template or a `$` replacement pattern
+      // (`format-message.ts`). The plural rules are those of the bundle the
+      // text came from, so an English fallback picks English forms.
+      return formatMessage(value, params, source);
     },
   };
 }

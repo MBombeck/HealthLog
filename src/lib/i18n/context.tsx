@@ -29,6 +29,7 @@ import { readStoredDateFormat, subscribeDateFormat } from "../date-format";
 import { readStoredTimezone, subscribeTimezone } from "../timezone-mirror";
 import { resolveKey } from "./resolve-key";
 import { pluralKey } from "./plural";
+import { formatMessage } from "./format-message";
 import {
   getCachedMessages,
   getFallbackMessages,
@@ -290,12 +291,14 @@ export function I18nProvider({
   const t = useCallback(
     (key: string, params?: Record<string, string | number>): string => {
       let value = resolveKey(messages, key);
+      let source: Locale = locale;
 
       // Fallback to English if key missing in current locale
       if (value === undefined && locale !== "en") {
         const fallback = getFallbackMessages();
         if (fallback) {
           value = resolveKey(fallback, key);
+          source = "en";
         } else if (!fallbackRequestedRef.current) {
           // First miss without the EN floor in hand: fetch it once, then
           // re-render so this key (and any sibling misses) resolve. The
@@ -316,23 +319,9 @@ export function I18nProvider({
         return key;
       }
 
-      // Replace {param} placeholders
-      if (params) {
-        for (const [k, v] of Object.entries(params)) {
-          // A REPLACER FUNCTION, not a replacement string. `String.replace`
-          // reads `$&`, `$\``, `$'`, `$1` and `$$` out of a replacement
-          // STRING, so a value carrying one of them rewrites the sentence
-          // around it: a display name of `$\'` splices everything after the
-          // placeholder back in, and `$\`` splices everything before it. Every
-          // interpolated value here is user-controlled — a person's display
-          // name is the common one, and it lands in sentences on the sharing
-          // panel that describe who did what. A function replacement is
-          // substituted verbatim and has no `$` grammar at all.
-          value = value.replace(new RegExp(`\\{${k}\\}`, "g"), () => String(v));
-        }
-      }
-
-      return value;
+      // Placeholders and plural blocks, filled literally under the plural
+      // rules of the bundle the text came from (`format-message.ts`).
+      return formatMessage(value, params, source);
     },
     [locale, messages],
   );
