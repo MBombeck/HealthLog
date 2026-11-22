@@ -194,9 +194,19 @@ const RELAY_KIND_WHERE: Record<
 
 const KINDS: DeliveryKind[] = ["alert", "silentSync", "wake", "liveActivity"];
 
+/**
+ * The newest relay delivery per kind, and the relay's hold on the device's
+ * silent pushes (`owed-silent.ts`). The hold sits on the refused silent push,
+ * and no silent push goes to the device while it runs, so the newest silent
+ * row of either kind carries it whenever one runs.
+ */
 async function lastRelayDeliveries(
   deviceId: string,
-): Promise<Record<DeliveryKind, LastDelivery | null>> {
+  now: Date,
+): Promise<{
+  deliveries: Record<DeliveryKind, LastDelivery | null>;
+  silentHold: Date | null;
+}> {
   const rows = await Promise.all(
     KINDS.map((kind) =>
       prisma.pushRelayDelivery.findFirst({
@@ -208,10 +218,19 @@ async function lastRelayDeliveries(
           reason: true,
           confirmedAt: true,
           createdAt: true,
+          nextAttemptAt: true,
         },
       }),
     ),
   );
+  let silentHold: Date | null = null;
+  for (const row of [
+    rows[KINDS.indexOf("silentSync")],
+    rows[KINDS.indexOf("wake")],
+  ]) {
+    const at = row?.status === "dropped" ? row.nextAttemptAt : null;
+    if (at && at > now && (!silentHold || at > silentHold)) silentHold = at;
+  }
   const out = {} as Record<DeliveryKind, LastDelivery | null>;
   KINDS.forEach((kind, i) => {
     const row = rows[i];
@@ -224,7 +243,7 @@ async function lastRelayDeliveries(
         }
       : null;
   });
-  return out;
+  return { deliveries: out, silentHold };
 }
 
 async function lastServerDeliveries(device: {
@@ -370,13 +389,17 @@ export async function devicePushDiagnostics(
     registration,
     apnsConfigured: loadApnsConfig() !== null,
   });
-  const [window, lastDelivery] = await Promise.all([
+  const [window, delivered] = await Promise.all([
     silentWindow(device.id, now),
     route === "relay"
-      ? lastRelayDeliveries(device.id)
-      : lastServerDeliveries(device),
+      ? lastRelayDeliveries(device.id, now)
+      : lastServerDeliveries(device).then((deliveries) => ({
+          deliveries,
+          silentHold: null,
+        })),
   ]);
-  const budget = silentBudgetSummary(window, route);
+  const lastDelivery = delivered.deliveries;
+  const budget = silentBudgetSummary(window, route, delivered.silentHold);
   const owedSince = device.pushDataChange?.intakeSyncOwedAt ?? null;
   const health = relayHealth(registration);
   const localUntil = localDeliveryUntil(

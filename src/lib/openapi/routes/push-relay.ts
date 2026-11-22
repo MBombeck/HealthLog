@@ -459,12 +459,11 @@ export const pushRelayAdminPaths: NonNullable<ZodOpenApiObject["paths"]> = {
               schema: dataEnvelope(
                 z
                   .object({
-                    outcome: z.enum([
-                      "accepted",
-                      "failed",
-                      "waiting",
-                      "no_device",
-                    ]),
+                    outcome: z
+                      .enum(["accepted", "failed", "waiting", "no_device"])
+                      .describe(
+                        "`accepted` only when the relay accepted the push to every device; `failed` when one failed for good; `waiting` when the rest waits for a retry. Per device in `results`.",
+                      ),
                     results: z.array(
                       z.object({
                         deviceId: z.string(),

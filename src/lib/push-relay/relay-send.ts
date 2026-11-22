@@ -9,8 +9,25 @@
  * again. An item past its deadline is dropped and counted
  * (`push.relay.stale_dropped`), never delivered late.
  *
- * What an answer does:
+ * What an answer does ({@link classifyRelayAnswer}, the one reading of a
+ * result code). Only `200 accepted` is a delivery: the relay answers `200`
+ * for the batch and refuses items inside it, so no caller reads the batch
+ * status, only each item's outcome ({@link RelayItemOutcome}).
  * - `accepted`: done; the ledger row waits for the device's receipt.
+ * - a budget refusal (`429`: `device_quota`, `binding_quota`,
+ *   `instance_quota`, `instance_rate`, `global`): an alert or a Live Activity
+ *   push waits for the relay's signed `retryAfter` and is tried again until
+ *   its deadline. A silent push is not retried: the relay holds the device's
+ *   silent pushes until then, and the push is owed instead (`owed-silent.ts`):
+ *   the intake sync coalesces into the one sync the device is owed, a
+ *   `DATA_CHANGED` wake puts its domains back. The minute pass sends a fresh
+ *   one once the hold ends.
+ * - a transient answer (`503`: `apns_unavailable`, `maintenance`,
+ *   `queue_full`, `relay_misconfigured`; any other 5xx but `502`; a transport
+ *   failure): retried with backoff until the deadline. A retry that could
+ *   only come after the deadline drops the push at once, and the summary
+ *   counts it under the code `deadline` as owed (a silent push) or failed,
+ *   never as waiting.
  * - `soft_invalid`, `activity_gone`, `apns_rejected`, `invalid_item`,
  *   `activity_refused`: final for this push; nothing is deleted.
  * - `404 binding_unknown`: the device must bind again (`rebind_needed`).
@@ -19,13 +36,8 @@
  *   third of the relay devices in one hour holds every further deletion for
  *   24 hours, because that pattern is a relay or Apple defect, not a wave of
  *   uninstalls.
- * - quota, `queue_full`, `maintenance`, `apns_unavailable`, a transport
- *   failure: retried with backoff until the deadline. A retry that could
- *   only come after the deadline drops the push at once, and the summary
- *   counts it as failed with the code `deadline`, never as waiting.
- * - a silent intake sync dropped at its deadline is owed again
- *   (`owed-intake-sync.ts`): the minute pass sends a fresh one once the
- *   relay takes it.
+ * - a silent push dropped at its deadline is owed again, like one refused
+ *   for a budget.
  *
  * Nothing here records a channel failure: a relay or Apple outage never
  * counts against a device or a notification channel.
@@ -38,7 +50,11 @@ import { relayConfig, type RelayConfig } from "@/lib/push-relay/config";
 import { isCircuitOpen } from "@/lib/push-relay/circuit";
 import type { EnvelopeMessage } from "@/lib/push-relay/envelope";
 import { settleLiveActivityPush } from "@/lib/push-relay/live-activity-settle";
-import { oweIntakeSync } from "@/lib/push-relay/owed-intake-sync";
+import {
+  oweIntakeSync,
+  owePendingDomains,
+  relayHoldUntil,
+} from "@/lib/push-relay/owed-silent";
 import { MAX_RETRY_AFTER_S } from "@/lib/push-relay/responses";
 import {
   loadRegistration,
@@ -68,14 +84,35 @@ export interface RelayItemInput {
   collapse?: string;
   activity?: RelayActivity;
   expiresAt: Date;
+  /**
+   * `DATA_CHANGED` only: the domains the wake announces, kept beside the
+   * envelope (never on the wire), so a wake the relay refuses or drops puts
+   * them back for the next one.
+   */
+  domains?: readonly string[];
 }
+
+/**
+ * What became of one item in this attempt:
+ * - `accepted`: Apple has it;
+ * - `waiting`: the outbox tries it again (a transient answer, an alert's or
+ *   Live Activity push's budget refusal, the relay unreachable or paused);
+ * - `owed`: a silent push the relay refused for a budget, or dropped at its
+ *   deadline; the minute pass sends a fresh one (`owed-silent.ts`);
+ * - `failed`: final without delivery.
+ */
+export type RelayItemOutcome = "accepted" | "waiting" | "owed" | "failed";
 
 export interface RelaySendSummary {
   accepted: number;
   /** Items that will be retried or wait for the relay. */
   waiting: number;
+  /** Silent items owed to their device, sent afresh by the minute pass. */
+  owed: number;
   /** Items that are final without delivery. */
   failed: number;
+  /** Each item's outcome, by `ref`: every item of the attempt has one. */
+  byRef: Record<string, RelayItemOutcome>;
   /** Live Activity rows whose token the relay or Apple reported gone. */
   activityGone: string[];
   /**
@@ -180,16 +217,7 @@ export async function sendRelayItems(
   items: RelayItemInput[],
   config: RelayConfig = relayConfig(),
 ): Promise<RelaySendSummary> {
-  if (items.length === 0) {
-    return {
-      accepted: 0,
-      waiting: 0,
-      failed: 0,
-      activityGone: [],
-      answers: [],
-      outcomes: {},
-    };
-  }
+  if (items.length === 0) return emptySummary();
   const now = new Date();
   await prisma.pushRelayDelivery.createMany({
     data: items.map((item) => ({
@@ -211,6 +239,7 @@ export async function sendRelayItems(
               },
             }
           : {}),
+        ...(item.domains ? { domains: [...item.domains] } : {}),
       },
       expiresAt: item.expiresAt,
       nextAttemptAt: now,
@@ -258,12 +287,15 @@ function loadPending(ids: string[]) {
 /**
  * Make a push final. What depends on its answer is settled here, the one
  * place every final answer passes: a Live Activity start or update counts
- * as done only once accepted (`live-activity-settle.ts`).
+ * as done only once accepted (`live-activity-settle.ts`). `holdUntil` is
+ * kept only on a silent push the relay refused for a budget: the relay's
+ * hold on the device's silent pushes (`owed-silent.ts`).
  */
 async function finish(
   row: PendingRow,
   status: "accepted" | "dropped" | "failed",
   reason: string | null,
+  holdUntil: Date | null = null,
 ) {
   const now = new Date();
   await prisma.pushRelayDelivery.update({
@@ -272,7 +304,7 @@ async function finish(
       status,
       reason,
       item: Prisma.DbNull,
-      nextAttemptAt: null,
+      nextAttemptAt: holdUntil,
       ...(status === "accepted" ? { acceptedAt: now } : {}),
     },
   });
@@ -292,52 +324,138 @@ async function finish(
 
 /** The silent sync that makes the app re-read the doses. */
 const INTAKE_SYNC_EVENT = "MEDICATION_INTAKE_SYNC";
+const DATA_CHANGED_EVENT = "DATA_CHANGED";
+
+/** Codes that name a budget, whatever status carries them. */
+const BUDGET_CODES = new Set([
+  "device_quota",
+  "binding_quota",
+  "instance_quota",
+  "instance_rate",
+  "global",
+  "silent_budget",
+  "rate_limited",
+]);
+/** Codes that name a passing outage of the relay or Apple. */
+const TRANSIENT_CODES = new Set([
+  "apns_unavailable",
+  "maintenance",
+  "queue_full",
+  "relay_misconfigured",
+  "overloaded",
+  "storage_unavailable",
+]);
+
+export type RelayAnswerClass =
+  "accepted" | "budget" | "transient" | "rebind" | "unregistered" | "final";
 
 /**
- * Drop a push whose deadline has passed, or would pass before it could be
- * tried again. A dropped intake sync is owed to its device: the state it
- * announced is still unread there, and the next one may be hours away.
+ * The one reading of a relay item's answer (`spec/protocol.md`, "Results",
+ * "Per item"): `status` 0 is an item without a signed answer. Only `200
+ * accepted` is a delivery; every other answer is a budget to wait out, an
+ * outage to retry, or final.
  */
-async function dropAtDeadline(row: PendingRow, now: Date) {
-  await finish(row, "dropped", "deadline");
-  getEvent()?.addMeta("push_relay_stale_dropped", true);
+export function classifyRelayAnswer(
+  status: number,
+  code: string,
+): RelayAnswerClass {
+  if (status === 200 && code === "accepted") return "accepted";
+  if (code === "binding_unknown") return "rebind";
+  if (status === 410 && code === "unregistered") return "unregistered";
+  if (status === 429 || BUDGET_CODES.has(code)) return "budget";
+  if (
+    status === 0 ||
+    (status >= 500 && status !== 502) ||
+    TRANSIENT_CODES.has(code)
+  ) {
+    return "transient";
+  }
+  return "final";
+}
+
+function emptySummary(): RelaySendSummary {
+  return {
+    accepted: 0,
+    waiting: 0,
+    owed: 0,
+    failed: 0,
+    byRef: {},
+    activityGone: [],
+    answers: [],
+    outcomes: {},
+  };
+}
+
+/** Count one item under its outcome. */
+function mark(
+  summary: RelaySendSummary,
+  row: { ref: string },
+  outcome: RelayItemOutcome,
+) {
+  summary.byRef[row.ref] = outcome;
+  summary[outcome] += 1;
+}
+
+/**
+ * A silent push that did not go is owed to its device: an intake sync folds
+ * into the one sync the device is owed, a `DATA_CHANGED` wake puts its
+ * domains back. The state it announced is still unread there, and the next
+ * change may be hours away.
+ */
+async function oweAgain(row: PendingRow, now: Date) {
   if (row.eventType === INTAKE_SYNC_EVENT) {
     await oweIntakeSync([row.device.id], now);
+    return;
+  }
+  const domains = (row.item as { domains?: unknown } | null)?.domains;
+  if (row.eventType === DATA_CHANGED_EVENT && Array.isArray(domains)) {
+    const list = domains.filter((d): d is string => typeof d === "string");
+    if (list.length > 0) await owePendingDomains(row.device.id, list, now);
   }
 }
 
 /**
- * Schedule the next attempt. Returns false when that attempt would come
- * after the deadline: the push is dropped now, and the caller counts it as
- * failed, not as waiting.
+ * Drop a push whose deadline has passed, or would pass before it could be
+ * tried again. A silent one is owed again; anything else failed.
  */
-async function reschedule(
+async function dropAtDeadline(
+  row: PendingRow,
+  now: Date,
+  summary: RelaySendSummary,
+) {
+  await finish(row, "dropped", "deadline");
+  getEvent()?.addMeta("push_relay_stale_dropped", true);
+  count(summary, "deadline");
+  if (row.pushClass === "silent") {
+    await oweAgain(row, now);
+    mark(summary, row, "owed");
+    return;
+  }
+  mark(summary, row, "failed");
+}
+
+/**
+ * A silent push the relay refused for a budget: not retried, owed. Its row
+ * keeps the relay's hold, so no silent push to the device goes before it.
+ */
+async function oweForBudget(
   row: PendingRow,
   now: Date,
   hint: number | null,
   code: string,
-): Promise<boolean> {
-  const at = nextAttemptAt(
-    row.pushClass as RelayPushClass,
-    row.attempts,
-    now,
-    hint,
-  );
-  if (at >= row.expiresAt) {
-    await dropAtDeadline(row, now);
-    return false;
-  }
-  await prisma.pushRelayDelivery.update({
-    where: { id: row.id },
-    // A waiting push keeps the code it waits on as its reason, so the
-    // ledger and the diagnostics say why it has not gone yet
-    // (`bad_signature`, a quota, the relay unreachable).
-    data: { attempts: { increment: 1 }, nextAttemptAt: at, reason: code },
-  });
-  return true;
+  summary: RelaySendSummary,
+) {
+  const until = await relayHoldUntil(row.device.id, now, hint);
+  await finish(row, "dropped", reasonCode(code), until);
+  await oweAgain(row, now);
+  mark(summary, row, "owed");
 }
 
-/** Count a rescheduled push: waiting, or dropped at its deadline. */
+/**
+ * Schedule the next attempt, or drop the push when that attempt would come
+ * after its deadline: then it counts as owed (silent) or failed, never as
+ * waiting.
+ */
 async function retryLater(
   row: PendingRow,
   now: Date,
@@ -345,20 +463,43 @@ async function retryLater(
   code: string,
   summary: RelaySendSummary,
 ) {
-  if (await reschedule(row, now, hint, reasonCode(code))) {
-    summary.waiting += 1;
+  const at = nextAttemptAt(
+    row.pushClass as RelayPushClass,
+    row.attempts,
+    now,
+    hint,
+  );
+  if (at >= row.expiresAt) {
+    await dropAtDeadline(row, now, summary);
     return;
   }
-  summary.failed += 1;
-  count(summary, "deadline");
+  await prisma.pushRelayDelivery.update({
+    where: { id: row.id },
+    // A waiting push keeps the code it waits on as its reason, so the
+    // ledger and the diagnostics say why it has not gone yet
+    // (`bad_signature`, a quota, the relay unreachable).
+    data: {
+      attempts: { increment: 1 },
+      nextAttemptAt: at,
+      reason: reasonCode(code),
+    },
+  });
+  mark(summary, row, "waiting");
 }
 
 /** Hold everything until the relay can take it again. */
-async function holdAll(rows: PendingRow[], until: Date, reason: string) {
+async function holdAll(
+  rows: PendingRow[],
+  until: Date,
+  reason: string,
+  summary: RelaySendSummary,
+) {
   await prisma.pushRelayDelivery.updateMany({
     where: { id: { in: rows.map((r) => r.id) } },
     data: { nextAttemptAt: until, reason },
   });
+  for (const row of rows) mark(summary, row, "waiting");
+  count(summary, reason, rows.length);
 }
 
 /** Try the given pending deliveries now. */
@@ -366,14 +507,7 @@ export async function attemptDeliveries(
   ids: string[],
   config: RelayConfig = relayConfig(),
 ): Promise<RelaySendSummary> {
-  const summary: RelaySendSummary = {
-    accepted: 0,
-    waiting: 0,
-    failed: 0,
-    activityGone: [],
-    answers: [],
-    outcomes: {},
-  };
+  const summary = emptySummary();
   try {
     await attemptInto(summary, ids, config);
   } finally {
@@ -424,12 +558,10 @@ async function attemptInto(
   const live: PendingRow[] = [];
   for (const row of pending) {
     if (row.expiresAt <= now) {
-      await dropAtDeadline(row, now);
-      summary.failed += 1;
-      count(summary, "deadline");
+      await dropAtDeadline(row, now, summary);
     } else if (!row.device.apnsToken || row.device.relayState !== "bound") {
       await finish(row, "failed", "not_bound");
-      summary.failed += 1;
+      mark(summary, row, "failed");
       count(summary, "not_bound");
     } else {
       live.push(row);
@@ -441,15 +573,12 @@ async function attemptInto(
       live,
       registration?.nextProbeAt ?? new Date(now.getTime() + 60 * SECOND),
       "relay_unavailable",
+      summary,
     );
-    summary.waiting += live.length;
-    count(summary, "relay_unavailable", live.length);
     return;
   }
   if (registration.pausedUntil && registration.pausedUntil > now) {
-    await holdAll(live, registration.pausedUntil, "relay_paused");
-    summary.waiting += live.length;
-    count(summary, "relay_paused", live.length);
+    await holdAll(live, registration.pausedUntil, "relay_paused", summary);
     return;
   }
   for (let i = 0; i < live.length; i += BATCH) {
@@ -515,8 +644,16 @@ async function sendBatch(
           "failed",
           String(result.body?.error ?? "invalid_item"),
         );
-        summary.failed += 1;
+        mark(summary, row, "failed");
+      } else if (
+        row.pushClass === "silent" &&
+        result.kind === "response" &&
+        classifyRelayAnswer(result.status, code) === "budget"
+      ) {
+        await oweForBudget(row, now, hint, code, summary);
       } else {
+        // Anything else the whole request was refused with waits: an outage,
+        // and also `bad_signature`, which waits for a fix on this side.
         await retryLater(row, now, hint, code, summary);
       }
     }
@@ -552,31 +689,36 @@ async function applyItemResult(
     reason: typeof answer?.reason === "string" ? answer.reason : null,
   });
   count(summary, code);
-  if (status === 200 && code === "accepted") {
+  const kind = classifyRelayAnswer(status, code);
+  if (kind === "accepted") {
     await finish(row, "accepted", null);
-    summary.accepted += 1;
+    mark(summary, row, "accepted");
     return;
   }
   if (status === 200 && code === "activity_gone") {
     summary.activityGone.push(row.ref);
   }
-  if (status === 404 && code === "binding_unknown") {
+  if (kind === "rebind") {
     await prisma.device.update({
       where: { id: row.device.id },
       data: { relayState: "rebind_needed", relayBoundAt: null },
     });
   }
-  if (status === 410 && code === "unregistered") {
+  if (kind === "unregistered") {
     await releaseUnregistered(registration, row.device.id, now);
-    summary.failed += 1;
+    mark(summary, row, "failed");
     return;
   }
-  if (status === 429 || status === 503 || status === 0) {
+  if (kind === "budget" && row.pushClass === "silent") {
+    await oweForBudget(row, now, hint, code, summary);
+    return;
+  }
+  if (kind === "budget" || kind === "transient") {
     await retryLater(row, now, hint, code, summary);
     return;
   }
   await finish(row, "failed", code.slice(0, 40));
-  summary.failed += 1;
+  mark(summary, row, "failed");
 }
 
 /**

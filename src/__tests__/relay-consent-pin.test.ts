@@ -92,6 +92,13 @@ const PINS: ReadonlyArray<{
     covered:
       "The pin now also holds the push kinds, the confirmation outcomes and the occasions. Reviewed against what came after the text: the `reopened` alert on an undo, edit, move, delete, bulk delete or purge, the silent sync on every dose change beside the confirmation, the one sync when a device binds, the repeated Live Activity end. Each is an alert or a silent sync to the person's own device at the moment something changed, which the texts name: `seesWhen` (an alert, a silent sync or the end of a Live Activity), `seesTiming` and `dialogBody` (that something happened at that moment, when a dose is due), and the app's card (when your server sends you something, which can show when you take medication). The docs list each occasion and the hourly status request.",
   },
+  {
+    version: "2026-11-22",
+    fingerprint:
+      "3743ffff22d5e495365660d02acbef7d0ef14fe6121b3baec8b80eef1c012b80",
+    covered:
+      "The owed intake sync reads which devices a send spent budget on and which the relay refused (`budgetSpentBy`, `owedBy` from `wakes.ts`). No new kind and no new occasion: a silent push the relay refuses for its budget is no longer retried with the same envelope but owed, and the minute pass sends one fresh sync (or puts a wake's domains back) once the relay's window frees. That is the owed sync the texts already cover: a silent sync to the person's own device after a dose changed (`seesWhen`, `seesTiming`), now never more of them than before and never before the relay said it takes one.",
+  },
 ];
 
 /**

@@ -104,11 +104,13 @@ export async function sendRelayTestPush(userId: string): Promise<{
       delivery: rows.find((r) => r.ref === item.ref)?.status ?? "failed",
     };
   });
+  // `accepted` only when every device took it: one refused or failed item
+  // is no success, however many others went.
   const outcome =
-    summary.accepted > 0
+    items.length > 0 && summary.accepted === items.length
       ? "accepted"
-      : summary.waiting > 0
-        ? "waiting"
-        : "failed";
+      : summary.failed > 0 || summary.waiting + summary.owed === 0
+        ? "failed"
+        : "waiting";
   return { outcome, results };
 }

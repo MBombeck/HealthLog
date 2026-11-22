@@ -584,21 +584,40 @@ describe("queueMedicationIntakeSync — gating + failure isolation", () => {
 
 describe("a fan-out always names why it did not deliver", () => {
   const none = {
-    anySuccess: false,
+    accepted: 0,
     deferred: 0,
+    deferredReason: undefined,
+    failed: 0,
     guardianRelaySkipped: 0,
     unrouted: 0,
     lastFailureReason: undefined,
   };
 
   it.each([
-    [{ ...none, anySuccess: true }, "ok", null],
+    [{ ...none, accepted: 2 }, "ok", null],
+    // One device took it, the relay refused the other for its budget: owed,
+    // not "ok" (a flush that logged "ok" never owed the sync).
     [
-      { ...none, anySuccess: true, deferred: 1 },
-      "ok",
-      "intake_sync_deferred_budget",
+      {
+        ...none,
+        accepted: 1,
+        deferred: 1,
+        deferredReason: "relay_owed:device_quota",
+      },
+      "deferred",
+      "relay_owed:device_quota",
     ],
-    [{ ...none, deferred: 2 }, "skipped", "intake_sync_deferred_budget"],
+    [
+      { ...none, deferred: 1, deferredReason: "relay_owed:device_quota" },
+      "deferred",
+      "relay_owed:device_quota",
+    ],
+    [{ ...none, deferred: 2 }, "deferred", "intake_sync_deferred_budget"],
+    [
+      { ...none, deferred: 1, deferredReason: "relay_waiting" },
+      "deferred",
+      "relay_waiting",
+    ],
     [
       { ...none, guardianRelaySkipped: 1 },
       "skipped",
@@ -607,16 +626,40 @@ describe("a fan-out always names why it did not deliver", () => {
     [
       {
         ...none,
+        accepted: 1,
         deferred: 1,
-        lastFailureReason: "relay_item_failed:apns_rejected",
+        failed: 1,
+        lastFailureReason: "relay_item_failed:binding_unknown",
       },
       "error",
-      "relay_item_failed:apns_rejected",
+      "relay_item_failed:binding_unknown",
     ],
+    [{ ...none, failed: 1 }, "error", "intake_sync_send_failed"],
     [{ ...none, unrouted: 1 }, "error", "intake_sync_device_unrouted"],
     [none, "error", "intake_sync_nothing_sent"],
   ] as const)("%o -> %s %s", (input, result, reason) => {
     expect(fanOutResult(input)).toEqual({ result, reason });
+  });
+
+  it("answers ok only when nothing was deferred or failed", () => {
+    // Every combination of up to two devices per outcome: `ok` exactly when
+    // no device is owed, waiting or failed and one took it.
+    for (let accepted = 0; accepted <= 2; accepted += 1) {
+      for (let deferred = 0; deferred <= 2; deferred += 1) {
+        for (let failed = 0; failed <= 2; failed += 1) {
+          const out = fanOutResult({
+            ...none,
+            accepted,
+            deferred,
+            failed,
+          });
+          expect(out.result === "ok").toBe(
+            accepted > 0 && deferred === 0 && failed === 0,
+          );
+          if (out.result !== "ok") expect(out.reason).toBeTruthy();
+        }
+      }
+    }
   });
 
   it("puts the reason into the flush's wide event", async () => {

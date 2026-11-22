@@ -21,6 +21,14 @@
  * the channel: the outcome says `relayTransport`, which the channel state
  * leaves out of its failure count (`channel-state.ts`).
  *
+ * Two answers, two questions. The outcome the dispatcher gets says whether
+ * the person was reached: `ok` once any device took the alert, so a device
+ * whose push still waits at the relay never makes the dispatcher send the
+ * alert again to the ones that have it (the outbox retries the waiting push
+ * on its own). The ledger row says whether every device took it: `ok` only
+ * then, by the one rule of every sealed send (`sealedOutcome`), else the
+ * reason it waits on or failed with.
+ *
  * When nothing went anywhere the outcome says why, in the channel's own
  * words, and never borrows the plaintext sender's "not configured":
  * - {@link APNS_EVENT_NOT_CARRIED}: every device is a relay device and the
@@ -49,9 +57,11 @@ import { stripHtml } from "@/lib/notifications/strip-html";
 import { recordPushAttemptForPayload } from "@/lib/notifications/senders/push-attempt-record";
 import type { EnvelopeMessage } from "@/lib/push-relay/envelope";
 import {
+  attemptResultOf,
   loadPushContext,
   ROUTABLE_DEVICE_SELECT,
   routeOf,
+  sealedOutcome,
   sendSealed,
   type SealedTarget,
 } from "@/lib/push-relay/route-device";
@@ -203,25 +213,16 @@ export async function sendApnsChannel(
       excludeDeviceIds: devices.map((d) => d.id),
     });
   }
-  if (sealed.anyAccepted || legacy?.ok) {
-    recordPushAttemptForPayload(payload, userId, {
-      userId,
-      channel: "APNS",
-      eventType: payload.eventType,
-      result: "ok",
-    });
-    return { ok: true };
-  }
-  const reason = sealed.waiting
-    ? sealed.waitReason
-    : (sealed.lastFailure ?? "sealed_send_failed");
+  const outcome = sealedOutcome(sealed);
   recordPushAttemptForPayload(payload, userId, {
     userId,
     channel: "APNS",
     eventType: payload.eventType,
-    result: "error",
-    reason,
+    result: attemptResultOf(outcome),
+    ...(outcome.reason ? { reason: outcome.reason } : {}),
   });
+  if (sealed.anyAccepted || legacy?.ok) return { ok: true };
+  const reason = outcome.reason ?? "sealed_send_failed";
   return {
     ok: false,
     hardReject: false,

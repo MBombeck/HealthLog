@@ -95,7 +95,12 @@ import {
   queueIntakeRecorded,
   type IntakeRecordedEvent,
 } from "@/lib/notifications/medication-intake-recorded";
-import { loadPushContext, routeOf } from "@/lib/push-relay/route-device";
+import {
+  attemptResultOf,
+  loadPushContext,
+  owedReason,
+  routeOf,
+} from "@/lib/push-relay/route-device";
 import {
   intakeSyncEnabled,
   sendSealedIntakeSync,
@@ -333,13 +338,17 @@ async function mayReachAnyDevice(userId: string): Promise<boolean> {
 }
 
 /**
- * What a fan-out came to. Every result but a clean `ok` names its reason, so
- * the wide event (`intake_sync_reason`) and the ledger row always say why:
- * the type admits no `skipped` or `error` without one.
+ * What a fan-out came to. `ok` only when every device the sync was meant
+ * for took it: the relay or Apple accepted it. Every other result names its
+ * reason, so the wide event (`intake_sync_reason`) and the ledger row always
+ * say why: the type admits no `ok` with a reason and nothing else without
+ * one. `deferred`: a device is owed the sync (this server's silent budget,
+ * or the relay's, held it back) or its push waits in the outbox for a
+ * retry; the ledger records it as `skipped` (`attemptResultOf`).
  */
 export type FanOutResult =
-  | { result: "ok"; reason: "intake_sync_deferred_budget" | null }
-  | { result: "skipped" | "error"; reason: string };
+  | { result: "ok"; reason: null }
+  | { result: "deferred" | "skipped" | "error"; reason: string };
 
 /** A flush that stopped before the fan-out names its reason as well. */
 type FlushOutcome = (FanOutResult | { result: string; reason: string }) & {
@@ -352,32 +361,39 @@ type FlushOutcome = (FanOutResult | { result: string; reason: string }) & {
 };
 
 /**
- * The result of one fan-out from what it did. Nothing that went out and
- * nothing that failed is `skipped` when every device was left out on
- * purpose: the silent budget owes it its sync, or a Guardian's relay device
- * takes none. A send that failed is `error` with the failure's own code; a
- * flush that reached no device for no such reason is `error` too, and says
- * so.
+ * The result of one fan-out from what became of each device's sync:
+ * `accepted` (the relay or Apple took it), `deferred` (owed, or waiting in
+ * the outbox; `deferredReason` says which first), `failed` (for good; the
+ * last failure's code). A failure wins over a deferral, a deferral over a
+ * delivery: `ok` needs every device's sync accepted. A device without a
+ * route gets no sync to accept (it has to register again) and does not
+ * stand in the way of `ok`. A fan-out with nothing
+ * sent is `skipped` when every device was left out on purpose (a Guardian's
+ * relay device takes none), and `error` when it reached no device for no
+ * such reason.
  */
 export function fanOutResult(f: {
-  anySuccess: boolean;
+  accepted: number;
   deferred: number;
+  deferredReason: string | undefined;
+  failed: number;
   guardianRelaySkipped: number;
   unrouted: number;
   lastFailureReason: string | undefined;
 }): FanOutResult {
-  if (f.anySuccess) {
+  if (f.failed > 0) {
     return {
-      result: "ok",
-      reason: f.deferred > 0 ? "intake_sync_deferred_budget" : null,
+      result: "error",
+      reason: f.lastFailureReason ?? "intake_sync_send_failed",
     };
   }
-  if (f.lastFailureReason) {
-    return { result: "error", reason: f.lastFailureReason };
-  }
   if (f.deferred > 0) {
-    return { result: "skipped", reason: "intake_sync_deferred_budget" };
+    return {
+      result: "deferred",
+      reason: f.deferredReason ?? "intake_sync_deferred_budget",
+    };
   }
+  if (f.accepted > 0) return { result: "ok", reason: null };
   if (f.guardianRelaySkipped > 0) {
     return { result: "skipped", reason: "intake_sync_guardian_relay_skipped" };
   }
@@ -501,7 +517,11 @@ async function fanOutIntakeSyncApns(args: {
     syncedAt: new Date().toISOString(),
   };
 
-  let anySuccess = false;
+  // What became of each device's sync (`fanOutResult`).
+  let accepted = 0;
+  let failed = 0;
+  let deferred = 0;
+  let deferredReason: string | undefined;
   const deadDeviceIds: string[] = [];
   const spentLiveActivityDeviceIds: string[] = [];
   const spentActivityIds: string[] = [];
@@ -514,7 +534,6 @@ async function fanOutIntakeSyncApns(args: {
   // this server's own key or nothing.
   const ctx = sealedDevices.length > 0 ? await loadPushContext() : null;
   const routes: Record<string, number> = {};
-  let deferred = 0;
   let guardianRelaySkipped = 0;
   if (ctx && sealedDevices.length > 0) {
     // A push about another person's record never goes over the relay, the
@@ -535,9 +554,41 @@ async function fanOutIntakeSyncApns(args: {
       routes.guardian_relay_skipped = guardianRelaySkipped;
     }
     const sealed = await sendSealedIntakeSync(sealedSync, ctx);
-    deferred = sealed.deferred.length;
-    if (sealed.anyAccepted || sealed.waiting) anySuccess = true;
-    else if (sealed.lastFailure) lastFailureReason = sealed.lastFailure;
+    // Held back by this server's silent budget: owed before any send.
+    if (sealed.deferred.length > 0) {
+      deferred += sealed.deferred.length;
+      deferredReason ??= "intake_sync_deferred_budget";
+    }
+    for (const result of Object.values(sealed.devices)) {
+      if (result.outcome === "accepted") {
+        accepted += 1;
+      } else if (result.outcome === "failed") {
+        failed += 1;
+        lastFailureReason =
+          result.via === "relay"
+            ? `relay_item_failed:${result.code ?? "failed"}`
+            : (result.code ?? "apns_send_failed");
+      } else {
+        // Owed (the relay refused it for its budget, or dropped it), or
+        // waiting in the outbox for a retry: not delivered yet.
+        deferred += 1;
+        deferredReason ??=
+          result.outcome === "owed"
+            ? owedReason(result.code)
+            : sealed.waitReason;
+      }
+    }
+    // A device that was routable but whose envelope could not be sealed.
+    const unsealed = sealedSync.filter(
+      (d) =>
+        (routeOf(d, ctx) === "relay" || routeOf(d, ctx) === "direct") &&
+        !sealed.deferred.includes(d.id) &&
+        !(d.id in sealed.devices),
+    ).length;
+    if (unsealed > 0) {
+      failed += unsealed;
+      lastFailureReason = sealed.lastFailure ?? "envelope_seal_failed";
+    }
   }
 
   // 1) Silent background reconcile push, in plaintext, to every recipient
@@ -555,8 +606,9 @@ async function fanOutIntakeSyncApns(args: {
       priority: 5,
     });
     if (silent.ok) {
-      anySuccess = true;
+      accepted += 1;
     } else {
+      failed += 1;
       lastFailureReason = silent.reason;
       if (silent.shouldDisable) deadDeviceIds.push(device.id);
     }
@@ -587,8 +639,10 @@ async function fanOutIntakeSyncApns(args: {
   const activitiesEnded =
     spentActivityIds.length + spentLiveActivityDeviceIds.length;
   const outcome = fanOutResult({
-    anySuccess,
+    accepted,
     deferred,
+    deferredReason,
+    failed,
     guardianRelaySkipped,
     unrouted: routes.none ?? 0,
     lastFailureReason,
@@ -597,7 +651,7 @@ async function fanOutIntakeSyncApns(args: {
     userId: args.userId,
     channel: "APNS",
     eventType: EVENT_TYPE,
-    result: outcome.result,
+    result: attemptResultOf(outcome),
     reason: outcome.reason,
   });
   return { outcome, routes, deferred, activitiesEnded };

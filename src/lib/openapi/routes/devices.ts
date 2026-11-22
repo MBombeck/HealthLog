@@ -220,7 +220,7 @@ const devicePushDiagnostics = z
           .number()
           .int()
           .describe(
-            "Intake syncs held back by the budget and waiting, coalesced: 0 or 1, however many changes arrived. Sent once the budget frees up, never dropped.",
+            "Intake syncs held back by the budget and waiting, coalesced: 0 or 1, however many changes arrived. Held back by this server's count, or refused by the relay for its own (`device_quota`); sent once the budget frees up, never dropped.",
           ),
         owedSince: isoDateTime()
           .nullable()
@@ -228,7 +228,7 @@ const devicePushDiagnostics = z
         nextFreeAt: isoDateTime()
           .nullable()
           .describe(
-            "When the next intake sync fits the budget again (an owed one goes then); null when one fits now.",
+            "When the next intake sync fits the budget again (an owed one goes then): by this server's count, or later when the relay named a later time with a refusal; null when one fits now.",
           ),
       })
       .describe(

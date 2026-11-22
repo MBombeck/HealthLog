@@ -55,6 +55,7 @@ import { pendingDeletionOf } from "@/lib/account-deletion/pending";
 import {
   loadPushContext,
   ROUTABLE_DEVICE_SELECT,
+  sealedOutcome,
 } from "@/lib/push-relay/route-device";
 import {
   sendSealedIntakeRecorded,
@@ -321,8 +322,11 @@ async function sendIntakeRecorded(userId: string, item: Pending) {
       return;
     }
     const locale = localeOf(user?.locale);
+    // `ok` only when every device took the confirmation (`sealedOutcome`):
+    // a failure wins over a wait, a wait over a delivery.
     let anyOk = false;
-    let lastReason: string | undefined;
+    let failure: string | undefined;
+    let waitingOn: string | undefined;
     // Whether any device was handed a push at all, sealed or plaintext.
     let attempted = false;
     // A device with a push key gets the confirmation sealed, over this
@@ -335,12 +339,17 @@ async function sendIntakeRecorded(userId: string, item: Pending) {
         recordedText(item.event, locale),
         await loadPushContext(),
       );
-      if (sealed.handled.length > 0) attempted = true;
-      if (sealed.anyAccepted) anyOk = true;
-      else if (sealed.lastFailure) lastReason = sealed.lastFailure;
-      // The outbox holds it and tries again until its deadline: not
-      // accepted yet, and not the failure `intake_recorded_failed` named.
-      else if (sealed.waiting) lastReason = sealed.waitReason;
+      if (sealed.handled.length > 0) {
+        attempted = true;
+        const outcome = sealedOutcome(sealed);
+        if (outcome.result === "ok") anyOk = true;
+        else if (outcome.result === "error") failure = outcome.reason;
+        // The outbox holds it and tries again until its deadline: not
+        // accepted yet, and not the failure `intake_recorded_failed` named.
+        else waitingOn = outcome.reason;
+      } else if (sealed.lastFailure) {
+        failure = sealed.lastFailure;
+      }
     }
     const payload = intakeRecordedPayload(item.event, locale, item.asOf);
     for (const device of recipients) {
@@ -356,12 +365,12 @@ async function sendIntakeRecorded(userId: string, item: Pending) {
         payload,
       });
       if (result.ok) anyOk = true;
-      else lastReason = result.reason;
+      else failure = result.reason ?? "intake_recorded_failed";
     }
     // No device had a way to take it (a relay binding to renew, a plaintext
     // device on a server without its own key): nothing was sent, which is a
     // skip with its reason and no failed send.
-    if (!attempted && !lastReason) {
+    if (!attempted && !failure) {
       recordPushAttempt({
         userId,
         channel: "APNS",
@@ -375,8 +384,14 @@ async function sendIntakeRecorded(userId: string, item: Pending) {
       userId,
       channel: "APNS",
       eventType: INTAKE_RECORDED_EVENT,
-      result: anyOk ? "ok" : "error",
-      reason: anyOk ? null : (lastReason ?? "intake_recorded_failed"),
+      result: failure
+        ? "error"
+        : waitingOn
+          ? "skipped"
+          : anyOk
+            ? "ok"
+            : "error",
+      reason: failure ?? waitingOn ?? (anyOk ? null : "intake_recorded_failed"),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
