@@ -159,6 +159,7 @@ export async function assembleSnapshotBlocks(
     cycleBlock: reads.cycleBlock,
     illnessBlock: reads.illnessBlock,
     labsBlock: reads.labsBlock,
+    seizuresBlock: reads.seizuresBlock,
     visitsBlock: reads.visitsBlock,
     energyBalanceBlock: reads.energyBalanceBlock,
     snapshot,

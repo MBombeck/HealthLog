@@ -1,6 +1,7 @@
 /**
  * Narrative context for the Coach snapshot: rolling-profile memory, the
- * cycle/phase block, illness, labs, doctor visits and the energy balance.
+ * cycle/phase block, illness, labs, the seizure diary, doctor visits and the
+ * energy balance.
  * Each is built by its own helper (read in the parallel batch,
  * `snapshot-reads.ts`) and attached here in a fixed order; some register for
  * budget degradation, some do not.
@@ -12,6 +13,7 @@ interface NarrativeContextBlocksContext {
   cycleBlock: unknown;
   illnessBlock: unknown;
   labsBlock: unknown;
+  seizuresBlock: unknown;
   visitsBlock: unknown;
   energyBalanceBlock: unknown;
   snapshot: Record<string, unknown>;
@@ -69,6 +71,13 @@ export function buildNarrativeContextBlocks(
   // biomarker, never the decrypted note.
   if (ctx.labsBlock) {
     snapshot.labs = ctx.labsBlock;
+  }
+
+  // The seizure diary: counts, clusters and dates only. Like illness and
+  // labs it is attached WITHOUT a cluster registration, so the budget
+  // degrader never sheds it.
+  if (ctx.seizuresBlock) {
+    snapshot.seizures = ctx.seizuresBlock;
   }
 
   // Doctor-visit context. Registered for degradation, and placed EXPLICITLY

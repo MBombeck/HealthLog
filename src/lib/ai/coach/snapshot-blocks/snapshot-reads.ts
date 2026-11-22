@@ -49,6 +49,7 @@ import {
 import type { CoachScopeSource } from "../types";
 import { readCoachWorkoutRows } from "./workouts-read";
 import { GLUCOSE_CLINICAL_WINDOW_DAYS } from "./glucose-block";
+import { buildSeizuresSnapshotBlock } from "../seizures-snapshot";
 
 type SnapshotPrelude = Awaited<ReturnType<typeof resolveSnapshotPrelude>>;
 type SnapshotFeatures = Awaited<ReturnType<typeof extractFeatures>>;
@@ -379,6 +380,16 @@ async function startContextReads(ctx: Readonly<SnapshotReadsContext>) {
   // lookback limit, capped) so the Coach can answer "what was my LDL".
   const labsBlockPromise = buildLabsSnapshotBlock(userId, now, reach);
 
+  // The seizure diary: counts, clusters and dates, module-gated inside. Like
+  // illness it is context and not shed: a carer asking about seizures must
+  // not get "no data" because a series ran long.
+  const seizuresBlockPromise = buildSeizuresSnapshotBlock(
+    userId,
+    userTz,
+    now,
+    reach,
+  );
+
   // Doctor-visit context. Like illness/labs it is attempted always (a
   // visit is core, never module-gated) and short-circuits to null when there is
   // neither an upcoming appointment inside the 14-day horizon nor a past visit.
@@ -401,6 +412,7 @@ async function startContextReads(ctx: Readonly<SnapshotReadsContext>) {
     cycleBlockPromise,
     illnessBlockPromise,
     labsBlockPromise,
+    seizuresBlockPromise,
     visitsBlockPromise,
     energyBalanceBlockPromise,
   };
@@ -428,6 +440,7 @@ export async function readSnapshotBlockInputs(
     cycleBlock,
     illnessBlock,
     labsBlock,
+    seizuresBlock,
     visitsBlock,
     energyBalanceBlock,
   ] = await Promise.all([
@@ -446,6 +459,7 @@ export async function readSnapshotBlockInputs(
     c.cycleBlockPromise,
     c.illnessBlockPromise,
     c.labsBlockPromise,
+    c.seizuresBlockPromise,
     c.visitsBlockPromise,
     c.energyBalanceBlockPromise,
   ]);
@@ -465,6 +479,7 @@ export async function readSnapshotBlockInputs(
     cycleBlock,
     illnessBlock,
     labsBlock,
+    seizuresBlock,
     visitsBlock,
     energyBalanceBlock,
   };

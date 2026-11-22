@@ -14,6 +14,12 @@ vi.mock("@/lib/measurements/newest-per-type", async () =>
   ).newestPerTypeMock(),
 );
 
+// The seizure diary block reads the diary through its own server module;
+// its assembly is covered in seizures-snapshot.test.ts.
+vi.mock("../seizures-snapshot", () => ({
+  buildSeizuresSnapshotBlock: vi.fn().mockResolvedValue(null),
+}));
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     measurement: { findMany: vi.fn() },
