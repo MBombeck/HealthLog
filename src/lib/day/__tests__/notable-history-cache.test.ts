@@ -98,14 +98,18 @@ describe("notable history cache", () => {
     const before = await load(shiftDateKey(SPIKE, -1));
     const after = await load(shiftDateKey(SPIKE, 1));
 
-    // One read, plus one for an earlier block when the oldest of the three
-    // windows starts across a block boundary.
-    const starts = new Set(
-      [-1, 0, 1].map((d) =>
-        blockOf(shiftDateKey(SPIKE, d - NOTABLE_LOOKBACK_DAYS)),
-      ),
+    // One read for the spike's window. The day before reaches one day further
+    // back and reads again only when that day opens an earlier block; the day
+    // after reaches one day further forward and reads again only when that day
+    // opens a later block. Where the boundaries fall depends on the date the
+    // suite runs, so the count is worked out from the blocks, not assumed.
+    const reachesBack =
+      blockOf(shiftDateKey(SPIKE, -1 - NOTABLE_LOOKBACK_DAYS)) !==
+      blockOf(shiftDateKey(SPIKE, -NOTABLE_LOOKBACK_DAYS));
+    const reachesForward = blockOf(shiftDateKey(SPIKE, 1)) !== blockOf(SPIKE);
+    expect(readLocalDailyStats).toHaveBeenCalledTimes(
+      1 + Number(reachesBack) + Number(reachesForward),
     );
-    expect(readLocalDailyStats).toHaveBeenCalledTimes(starts.size);
     expect(spike).toEqual(expected(SPIKE));
     expect(spike.map((n) => n.kind)).toEqual(["extremeHigh"]);
     expect(before).toEqual(expected(shiftDateKey(SPIKE, -1)));

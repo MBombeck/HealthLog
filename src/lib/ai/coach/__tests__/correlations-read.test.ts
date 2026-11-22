@@ -3,7 +3,7 @@
  * discovery + coincident-deviation flag, returns descriptive driver rows, and
  * degrades to a clean { present: false } when nothing survives or a read fails.
  */
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const moduleMap = vi.hoisted(() => ({ value: {} as Record<string, boolean> }));
 const measurementFindMany = vi.fn();
@@ -82,8 +82,22 @@ vi.mock("@/lib/insights/correlation-discovery", async (importOriginal) => {
 
 import { readCoachCorrelations } from "@/lib/ai/coach/tools/correlations-read";
 
+/**
+ * The real-engine fixtures below seed 45 days from 1 May 2026, and the scan
+ * reads a rolling 180-day window back from the wall clock. Pin the clock a few
+ * days after the last seeded day, or the tests age out of their own window as
+ * the calendar moves on.
+ */
+const PINNED_NOW = Date.UTC(2026, 5, 20, 12, 0, 0);
+
 describe("readCoachCorrelations", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(PINNED_NOW);
     moduleMap.value = {};
     measurementFindMany.mockReset().mockResolvedValue([]);
     moodFindMany.mockReset().mockResolvedValue([]);

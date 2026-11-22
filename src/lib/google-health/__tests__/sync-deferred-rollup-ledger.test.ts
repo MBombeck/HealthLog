@@ -8,7 +8,7 @@
  * 1.3 M readings over about 900 days, so the ledger alone grew with the stream
  * for the whole walk. It now keeps one entry per touched `(type, UTC day)`.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { findManyMock, createManyMock } = vi.hoisted(() => ({
   findManyMock: vi.fn(async () => [] as unknown[]),
@@ -49,7 +49,17 @@ const DAYS = 3;
 const PER_DAY = 1440;
 const START = Date.parse("2026-09-01T00:00:00.000Z");
 
+// The backfill's readings must stay younger than the dense fold's retention
+// (90 days), or the write path starts asking whether the fold already took
+// them. Pin the clock just after the fixture, so the test does not age into
+// that branch as the calendar moves on.
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(START + (DAYS + 1) * 86_400_000);
   findManyMock.mockReset().mockResolvedValue([]);
   createManyMock
     .mockReset()
