@@ -196,7 +196,9 @@ only when no relay holds a binding of this server any more.
 - the medication reminder, to the devices that get their reminders from this
   server (see below);
 - the confirmation that a dose was recorded on another device;
-- the silent sync that tells another device to refresh;
+- the silent sync that tells another device to refresh. It goes out on every
+  dose change, also beside the confirmation, so a confirmation that does not
+  arrive never leaves a device with the old state;
 - the end of a medication Live Activity, sent with a statement the device
   signed when the Activity started (the relay never learns when an Activity
   starts);

@@ -19,15 +19,20 @@
  *      it needs over the authenticated channel.
  *
  *   2. A Live Activity end push (`apns-push-type: liveactivity`, topic
- *      `<bundle>.push-type.liveactivity`) to any device that has a
- *      stored `liveActivityPushToken`, so the lock-screen Activity ends
- *      immediately rather than waiting for the next background wake. The
- *      device stores one token and no medication, so the server cannot
- *      tell which dose an Activity shows; it ends Activities only when no
- *      dose the app could be showing is still open
- *      (`liveActivityEndState`), with a full content-state the app can
- *      decode. A token that pushed its end, or that APNs reports dead, is
- *      cleared: it addresses nothing any more.
+ *      `<bundle>.push-type.liveactivity`) for every Activity whose dose is
+ *      answered, so the lock-screen Activity ends immediately rather than
+ *      waiting for the next background wake
+ *      (`live-activity-answered.ts`). A token that pushed its end, or that
+ *      APNs reports dead, is cleared: it addresses nothing any more. The
+ *      five-minute pass sends an end again that the relay did not take.
+ *
+ * The silent push goes out on every change, whatever else goes to the
+ * device. A relay device used to get none when the visible confirmation of
+ * the same dose went to it, on the assumption that the alert would start
+ * the reconcile in the extension. The two are independent now: an alert
+ * that Apple does not deliver in time (it lives 15 minutes over the relay),
+ * or that the person's notification settings keep from the extension,
+ * leaves the device its sync.
  *
  * COALESCING. Mutations arrive in bursts — a bulk intake marking five
  * doses, or a user resolving several slots back-to-back. The fan-out is
@@ -50,7 +55,12 @@
  * `flushIntakeSync`.
  *
  * Origin skip: the device that POSTed the mutation already knows the new
- * state and must not be woken. The caller passes the originating
+ * state and must not be woken. It gets no Live Activity end either: the app
+ * is running there and ends its own Activity, and a server push to it would
+ * tell the relay and Apple the moment of every dose recorded on the phone
+ * itself, which the relay consent text rules out ("on one device, and
+ * another of your devices gets the confirmation"). The caller passes the
+ * originating
  * device's registered `token` (the value the iOS client sends as
  * `X-Device-Id`); the matching `Device` row is excluded from the
  * fan-out. A web caller — or a token with no matching row — skips
@@ -74,20 +84,19 @@ import {
   sendApnsRawPush,
 } from "@/lib/notifications/senders/apns";
 import { recordPushAttempt } from "@/lib/notifications/senders/push-attempt-record";
-import { sendLiveActivityEnd } from "@/lib/notifications/live-activity-end";
 import {
-  endedMedicationContentState,
-  type MedicationLiveActivityContentState,
-} from "@/lib/notifications/live-activity-content-state";
-import { openActivityDoses } from "@/lib/push-relay/live-activity";
+  ACTIVITY_DEVICE_SELECT,
+  endAnsweredActivities,
+  forgetEndedActivities,
+  memoEndState,
+  type ActivityEndState,
+} from "@/lib/notifications/live-activity-answered";
 import {
   queueIntakeRecorded,
-  recordedConfirmationEnabled,
   type IntakeRecordedEvent,
 } from "@/lib/notifications/medication-intake-recorded";
 import { loadPushContext, routeOf } from "@/lib/push-relay/route-device";
 import {
-  endActivitiesOverRelay,
   intakeSyncEnabled,
   sendSealedIntakeSync,
 } from "@/lib/push-relay/medication-pushes";
@@ -124,8 +133,6 @@ interface CoalesceWindow {
   queued: number;
   /** When the first of them arrived (the write the trailing flush answers). */
   firstQueuedAt: number | null;
-  /** Whether every queued mutation also recorded a take or a skip. */
-  allRecorded: boolean;
   /** Distinct non-null origin tokens among the queued mutations. */
   originTokens: Set<string>;
   /** Whether any queued mutation had no origin token (web caller). */
@@ -156,14 +163,10 @@ export function queueMedicationIntakeSync(input: IntakeSyncRequest): void {
       originDeviceToken: input.originDeviceToken ?? null,
     });
   }
-  const recordedHere = Array.isArray(recorded)
-    ? recorded.length > 0
-    : recorded !== undefined;
   const existing = openWindows.get(input.userId);
   if (existing) {
     existing.queued += 1;
     existing.firstQueuedAt ??= Date.now();
-    existing.allRecorded &&= recordedHere;
     if (input.originDeviceToken) {
       existing.originTokens.add(input.originDeviceToken);
     } else {
@@ -175,7 +178,6 @@ export function queueMedicationIntakeSync(input: IntakeSyncRequest): void {
   const window: CoalesceWindow = {
     queued: 0,
     firstQueuedAt: null,
-    allRecorded: true,
     originTokens: new Set(),
     sawNullOrigin: false,
   };
@@ -193,7 +195,6 @@ export function queueMedicationIntakeSync(input: IntakeSyncRequest): void {
     void flushIntakeSync(input.userId, {
       writtenAt: window.firstQueuedAt ?? Date.now(),
       coalesced: window.queued,
-      recordedInFlush: window.allRecorded,
       originDeviceToken: origin,
     });
   }, COALESCE_WINDOW_MS);
@@ -205,35 +206,19 @@ export function queueMedicationIntakeSync(input: IntakeSyncRequest): void {
   void flushIntakeSync(input.userId, {
     writtenAt: Date.now(),
     coalesced: 0,
-    recordedInFlush: recordedHere,
     originDeviceToken: input.originDeviceToken ?? null,
   });
 }
 
 /** What the device read of the fan-out selects. */
 const SYNC_DEVICE_SELECT = {
-  id: true,
-  userId: true,
+  ...ACTIVITY_DEVICE_SELECT,
   token: true,
-  apnsToken: true,
-  apnsEnvironment: true,
-  liveActivityPushToken: true,
-  pushKeyPublic: true,
-  relayState: true,
-  relayConsentAt: true,
-  relayBindingKey: true,
-  liveActivities: {
-    select: {
-      id: true,
-      pushToken: true,
-      medicationId: true,
-      slotInstant: true,
-      activityStatement: true,
-      activitySignature: true,
-    },
-    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-  },
 } satisfies Prisma.DeviceSelect;
+
+type SyncRecipient = Prisma.DeviceGetPayload<{
+  select: typeof SYNC_DEVICE_SELECT;
+}>;
 
 /**
  * The accounts whose devices hear of a change to `userId`'s doses: the
@@ -299,7 +284,6 @@ function flushIntakeSync(
     writtenAt: number;
     coalesced: number;
     originDeviceToken: string | null;
-    recordedInFlush: boolean;
   },
 ): Promise<void> {
   return (async () => {
@@ -319,7 +303,10 @@ function flushIntakeSync(
           evt.addMeta("intake_sync_devices", outcome.recipients);
           evt.addMeta("intake_sync_routes", outcome.routes ?? {});
           evt.addMeta("intake_sync_deferred", outcome.deferred ?? 0);
-          evt.addMeta("intake_sync_covered", outcome.covered ?? 0);
+          evt.addMeta(
+            "intake_sync_activities_ended",
+            outcome.activitiesEnded ?? 0,
+          );
           evt.addMeta(
             "intake_sync_guardian_devices",
             outcome.guardianDevices ?? 0,
@@ -359,22 +346,22 @@ type FlushOutcome = (FanOutResult | { result: string; reason: string }) & {
   recipients?: number;
   routes?: Record<string, number>;
   deferred?: number;
-  covered?: number;
+  /** Live Activities this flush ended. */
+  activitiesEnded?: number;
   guardianDevices?: number;
 };
 
 /**
  * The result of one fan-out from what it did. Nothing that went out and
  * nothing that failed is `skipped` when every device was left out on
- * purpose: the confirmation stands in for its sync, the silent budget owes
- * it, or a Guardian's relay device takes none. A send that failed is
- * `error` with the failure's own code; a flush that reached no device for
- * no such reason is `error` too, and says so.
+ * purpose: the silent budget owes it its sync, or a Guardian's relay device
+ * takes none. A send that failed is `error` with the failure's own code; a
+ * flush that reached no device for no such reason is `error` too, and says
+ * so.
  */
 export function fanOutResult(f: {
   anySuccess: boolean;
   deferred: number;
-  covered: number;
   guardianRelaySkipped: number;
   unrouted: number;
   lastFailureReason: string | undefined;
@@ -387,9 +374,6 @@ export function fanOutResult(f: {
   }
   if (f.lastFailureReason) {
     return { result: "error", reason: f.lastFailureReason };
-  }
-  if (f.covered > 0) {
-    return { result: "skipped", reason: "intake_sync_covered_by_confirmation" };
   }
   if (f.deferred > 0) {
     return { result: "skipped", reason: "intake_sync_deferred_budget" };
@@ -405,10 +389,7 @@ export function fanOutResult(f: {
 
 async function flushIntakeSyncInner(
   userId: string,
-  opts: {
-    originDeviceToken: string | null;
-    recordedInFlush: boolean;
-  },
+  opts: { originDeviceToken: string | null },
 ): Promise<FlushOutcome> {
   const config = loadApnsConfig();
   const candidates = await syncCandidates(userId);
@@ -469,61 +450,21 @@ async function flushIntakeSyncInner(
     };
   }
 
-  // A relay device may skip the silent sync only when the confirmation that
-  // stands in for it actually goes out. It is opt-in (off by default), so a
-  // dose recorded on another surface would otherwise reach the device as
-  // neither. The confirmation goes to the record's own devices only, never
-  // to a Guardian's.
-  const confirmationInFlush =
-    opts.recordedInFlush && (await recordedConfirmationEnabled(userId));
   const fanOut = await fanOutIntakeSyncApns({
     userId,
     recipients,
     bundleId: config?.bundleId ?? null,
     liveActivityEnd: memoEndState(userId),
     guardians,
-    confirmationFor: new Set(
-      confirmationInFlush
-        ? recipients.filter((d) => !guardians.has(d.userId)).map((d) => d.id)
-        : [],
-    ),
   });
   return {
     ...fanOut.outcome,
     recipients: recipients.length,
     routes: fanOut.routes,
     deferred: fanOut.deferred,
-    covered: fanOut.covered,
+    activitiesEnded: fanOut.activitiesEnded,
     guardianDevices: recipients.filter((d) => guardians.has(d.userId)).length,
   };
-}
-
-interface SyncRecipient {
-  id: string;
-  /** The account the device belongs to: the record, or a Guardian. */
-  userId: string;
-  token: string;
-  apnsToken: string | null;
-  apnsEnvironment: string | null;
-  liveActivityPushToken: string | null;
-  pushKeyPublic: string | null;
-  relayState: string;
-  relayConsentAt: Date | null;
-  relayBindingKey: string | null;
-  liveActivities: Array<{
-    id: string;
-    pushToken: string;
-    medicationId: string;
-    slotInstant: Date | null;
-    activityStatement: unknown;
-    activitySignature: string | null;
-  }>;
-}
-
-/** The dose a Live Activity shows, as far as the server knows it. */
-interface ActivityDose {
-  medicationId: string | null;
-  slotInstant: Date | null;
 }
 
 /**
@@ -533,28 +474,22 @@ interface ActivityDose {
  */
 async function fanOutIntakeSyncApns(args: {
   userId: string;
+  /** The devices the change is told to: every one but the origin. */
   recipients: SyncRecipient[];
   /** This server's own APNs topic, or null when it has no APNs key. */
   bundleId: string | null;
   /** The Guardian accounts among the recipients' owners. */
   guardians: ReadonlySet<string>;
   /**
-   * The devices the flush also sends the recorded-dose confirmation to: a
-   * relay device among them skips the silent sync (the alert triggers it).
-   */
-  confirmationFor: ReadonlySet<string>;
-  /**
    * The final content-state to end an Activity showing this dose with, or
    * null to leave it running.
    */
-  liveActivityEnd: (
-    dose: ActivityDose,
-  ) => Promise<MedicationLiveActivityContentState | null>;
+  liveActivityEnd: ActivityEndState;
 }): Promise<{
   outcome: FanOutResult;
   routes: Record<string, number>;
   deferred: number;
-  covered: number;
+  activitiesEnded: number;
 }> {
   // Pure sync trigger — deliberately NO medication id / name / dose
   // instant. The iOS reconcile re-reads the full state itself, and a
@@ -575,12 +510,13 @@ async function fanOutIntakeSyncApns(args: {
   // Devices with a push key get the sync sealed, over the relay or this
   // server's own key; never the plaintext trigger below.
   const sealedDevices = args.recipients.filter((d) => d.pushKeyPublic);
+  // Read only when a device with a push key is involved: the others take
+  // this server's own key or nothing.
   const ctx = sealedDevices.length > 0 ? await loadPushContext() : null;
   const routes: Record<string, number> = {};
   let deferred = 0;
-  let covered = 0;
   let guardianRelaySkipped = 0;
-  if (ctx) {
+  if (ctx && sealedDevices.length > 0) {
     // A push about another person's record never goes over the relay, the
     // silent sync included (`relayCarries` holds the same rule for alerts):
     // the timing of a managed profile's doses would reach the relay under the
@@ -598,107 +534,48 @@ async function fanOutIntakeSyncApns(args: {
     if (guardianRelaySkipped > 0) {
       routes.guardian_relay_skipped = guardianRelaySkipped;
     }
-    const sealed = await sendSealedIntakeSync(sealedSync, ctx, {
-      confirmationFor: args.confirmationFor,
-    });
+    const sealed = await sendSealedIntakeSync(sealedSync, ctx);
     deferred = sealed.deferred.length;
-    covered = sealed.covered.length;
     if (sealed.anyAccepted || sealed.waiting) anySuccess = true;
     else if (sealed.lastFailure) lastFailureReason = sealed.lastFailure;
   }
 
+  // 1) Silent background reconcile push, in plaintext, to every recipient
+  // without a push key. It needs this server's own APNs key.
   for (const device of args.recipients) {
-    if (!device.apnsToken) continue;
-    const environment: "sandbox" | "production" =
-      device.apnsEnvironment === "production" ? "production" : "sandbox";
-    if (!device.pushKeyPublic) routes.legacy = (routes.legacy ?? 0) + 1;
-    // A Guardian's device gets the silent sync only: its Activities show
-    // its own account's doses, which this change did not touch.
-    const guardianDevice = args.guardians.has(device.userId);
-
-    // A relay device's Activities end over the relay, with the statement the
-    // device signed at their start.
-    if (ctx && routeOf(device, ctx) === "relay") {
-      if (guardianDevice) continue;
-      const due = [];
-      for (const activity of device.liveActivities) {
-        if (await args.liveActivityEnd(activity)) due.push(activity);
-      }
-      spentActivityIds.push(
-        ...(await endActivitiesOverRelay(device, due, ctx)),
-      );
-      continue;
-    }
-    const bundleId = args.bundleId;
-    if (!bundleId) continue;
-
-    // 1) Silent background reconcile push — one per device without a key.
-    const silent = device.pushKeyPublic
-      ? null
-      : await sendApnsRawPush({
-          deviceToken: device.apnsToken,
-          environment,
-          pushType: "background",
-          payload: silentPayload,
-          priority: 5,
-        });
-    if (silent?.ok) {
+    if (!device.apnsToken || device.pushKeyPublic) continue;
+    routes.legacy = (routes.legacy ?? 0) + 1;
+    if (!args.bundleId) continue;
+    const silent = await sendApnsRawPush({
+      deviceToken: device.apnsToken,
+      environment:
+        device.apnsEnvironment === "production" ? "production" : "sandbox",
+      pushType: "background",
+      payload: silentPayload,
+      priority: 5,
+    });
+    if (silent.ok) {
       anySuccess = true;
-    } else if (silent) {
+    } else {
       lastFailureReason = silent.reason;
       if (silent.shouldDisable) deadDeviceIds.push(device.id);
     }
-
-    if (guardianDevice) continue;
-
-    // 2) Live Activity end pushes. Each registered Activity ends once the
-    // dose it shows is answered; the device-level token of a client that
-    // registers no list ends only when no dose it could show is open.
-    for (const activity of device.liveActivities) {
-      const endState = await args.liveActivityEnd(activity);
-      if (!endState) continue;
-      const spent = await sendLiveActivityEnd({
-        token: activity.pushToken,
-        environment,
-        bundleId,
-        contentState: endState,
-      });
-      if (spent) spentActivityIds.push(activity.id);
-    }
-    const endState = device.liveActivityPushToken
-      ? await args.liveActivityEnd({ medicationId: null, slotInstant: null })
-      : null;
-    if (device.liveActivityPushToken && endState) {
-      const spent = await sendLiveActivityEnd({
-        token: device.liveActivityPushToken,
-        environment,
-        bundleId,
-        contentState: endState,
-      });
-      if (spent) spentLiveActivityDeviceIds.push(device.id);
-    }
   }
 
-  if (spentActivityIds.length > 0) {
-    await prisma.liveActivityToken
-      .deleteMany({ where: { id: { in: spentActivityIds } } })
-      .catch(() => {
-        /* best-effort cleanup */
-      });
+  // 2) Live Activity end pushes. A Guardian's device gets the silent sync
+  // only: its Activities show its own account's doses, which this change
+  // did not touch.
+  for (const device of args.recipients) {
+    if (args.guardians.has(device.userId)) continue;
+    const ended = await endAnsweredActivities(
+      device,
+      { ctx, bundleId: args.bundleId },
+      args.liveActivityEnd,
+    );
+    spentActivityIds.push(...ended.activityIds);
+    if (ended.deviceToken) spentLiveActivityDeviceIds.push(device.id);
   }
-
-  // An ended Activity's token, or one APNs reports dead, addresses nothing;
-  // the app registers a fresh one with its next Activity.
-  if (spentLiveActivityDeviceIds.length > 0) {
-    await prisma.device
-      .updateMany({
-        where: { id: { in: spentLiveActivityDeviceIds } },
-        data: { liveActivityPushToken: null },
-      })
-      .catch(() => {
-        /* best-effort cleanup */
-      });
-  }
+  await forgetEndedActivities(spentActivityIds, spentLiveActivityDeviceIds);
 
   // Reap devices APNs reported as permanently dead on the silent send.
   if (deadDeviceIds.length > 0) {
@@ -707,10 +584,11 @@ async function fanOutIntakeSyncApns(args: {
     });
   }
 
+  const activitiesEnded =
+    spentActivityIds.length + spentLiveActivityDeviceIds.length;
   const outcome = fanOutResult({
     anySuccess,
     deferred,
-    covered,
     guardianRelaySkipped,
     unrouted: routes.none ?? 0,
     lastFailureReason,
@@ -722,71 +600,5 @@ async function fanOutIntakeSyncApns(args: {
     result: outcome.result,
     reason: outcome.reason,
   });
-  return { outcome, routes, deferred, covered };
-}
-
-/**
- * The content-state to end the user's medication Live Activities with, or
- * null while any tracked dose the app could be showing is still open (of the
- * Activity's medication, when the device registered it): ending
- * then could close the Activity of a dose that is still due. The silent push
- * beside it lets the app reconcile that case itself.
- */
-function memoEndState(userId: string) {
-  const memo = new Map<
-    string,
-    Promise<MedicationLiveActivityContentState | null>
-  >();
-  return (dose: ActivityDose) => {
-    const key = `${dose.medicationId ?? ""}|${dose.slotInstant?.getTime() ?? ""}`;
-    let state = memo.get(key);
-    if (!state) {
-      state = liveActivityEndState(userId, dose);
-      memo.set(key, state);
-    }
-    return state;
-  };
-}
-
-/**
- * The content-state to end an Activity showing `dose` with, or null while
- * that dose is still open. With a slot: once that slot's live row is taken
- * or skipped. With a medication only: once none of its tracked doses the
- * app could show is open (`openActivityDoses`: up to two hours ahead, and
- * not yet missed by the medication's own bands). With
- * neither (a device-level token): once no tracked dose of the account is.
- */
-async function liveActivityEndState(
-  userId: string,
-  dose: ActivityDose,
-): Promise<MedicationLiveActivityContentState | null> {
-  const now = Date.now();
-  if (dose.medicationId !== null && dose.slotInstant !== null) {
-    const answered = await prisma.medicationIntakeEvent.count({
-      where: {
-        userId,
-        medicationId: dose.medicationId,
-        scheduledFor: dose.slotInstant,
-        deletedAt: null,
-        OR: [{ takenAt: { not: null } }, { skipped: true }],
-      },
-    });
-    if (answered === 0) return null;
-  } else {
-    // Open by the resolver's bands, the same doses a relay pass would show.
-    const open = await openActivityDoses(
-      userId,
-      new Date(now),
-      dose.medicationId ?? undefined,
-    );
-    if (open.length > 0) return null;
-  }
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { timeFormat: true },
-  });
-  return endedMedicationContentState({
-    resolvedAt: new Date(now),
-    timeFormat: user?.timeFormat,
-  });
+  return { outcome, routes, deferred, activitiesEnded };
 }

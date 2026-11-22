@@ -20,7 +20,12 @@
  *   24 hours, because that pattern is a relay or Apple defect, not a wave of
  *   uninstalls.
  * - quota, `queue_full`, `maintenance`, `apns_unavailable`, a transport
- *   failure: retried with backoff until the deadline.
+ *   failure: retried with backoff until the deadline. A retry that could
+ *   only come after the deadline drops the push at once, and the summary
+ *   counts it as failed with the code `deadline`, never as waiting.
+ * - a silent intake sync dropped at its deadline is owed again
+ *   (`owed-intake-sync.ts`): the minute pass sends a fresh one once the
+ *   relay takes it.
  *
  * Nothing here records a channel failure: a relay or Apple outage never
  * counts against a device or a notification channel.
@@ -32,6 +37,7 @@ import { getEvent } from "@/lib/logging/context";
 import { relayConfig, type RelayConfig } from "@/lib/push-relay/config";
 import { isCircuitOpen } from "@/lib/push-relay/circuit";
 import type { EnvelopeMessage } from "@/lib/push-relay/envelope";
+import { oweIntakeSync } from "@/lib/push-relay/owed-intake-sync";
 import { MAX_RETRY_AFTER_S } from "@/lib/push-relay/responses";
 import {
   loadRegistration,
@@ -265,7 +271,32 @@ async function finish(
   });
 }
 
-async function reschedule(row: PendingRow, now: Date, hint: number | null) {
+/** The silent sync that makes the app re-read the doses. */
+const INTAKE_SYNC_EVENT = "MEDICATION_INTAKE_SYNC";
+
+/**
+ * Drop a push whose deadline has passed, or would pass before it could be
+ * tried again. A dropped intake sync is owed to its device: the state it
+ * announced is still unread there, and the next one may be hours away.
+ */
+async function dropAtDeadline(row: PendingRow, now: Date) {
+  await finish(row.id, "dropped", "deadline");
+  getEvent()?.addMeta("push_relay_stale_dropped", true);
+  if (row.eventType === INTAKE_SYNC_EVENT) {
+    await oweIntakeSync([row.device.id], now);
+  }
+}
+
+/**
+ * Schedule the next attempt. Returns false when that attempt would come
+ * after the deadline: the push is dropped now, and the caller counts it as
+ * failed, not as waiting.
+ */
+async function reschedule(
+  row: PendingRow,
+  now: Date,
+  hint: number | null,
+): Promise<boolean> {
   const at = nextAttemptAt(
     row.pushClass as RelayPushClass,
     row.attempts,
@@ -273,14 +304,29 @@ async function reschedule(row: PendingRow, now: Date, hint: number | null) {
     hint,
   );
   if (at >= row.expiresAt) {
-    await finish(row.id, "dropped", "deadline");
-    getEvent()?.addMeta("push_relay_stale_dropped", true);
-    return;
+    await dropAtDeadline(row, now);
+    return false;
   }
   await prisma.pushRelayDelivery.update({
     where: { id: row.id },
     data: { attempts: { increment: 1 }, nextAttemptAt: at },
   });
+  return true;
+}
+
+/** Count a rescheduled push: waiting, or dropped at its deadline. */
+async function retryLater(
+  row: PendingRow,
+  now: Date,
+  hint: number | null,
+  summary: RelaySendSummary,
+) {
+  if (await reschedule(row, now, hint)) {
+    summary.waiting += 1;
+    return;
+  }
+  summary.failed += 1;
+  count(summary, "deadline");
 }
 
 /** Hold everything until the relay can take it again. */
@@ -350,8 +396,7 @@ async function attemptInto(
   const live: PendingRow[] = [];
   for (const row of pending) {
     if (row.expiresAt <= now) {
-      await finish(row.id, "dropped", "deadline");
-      getEvent()?.addMeta("push_relay_stale_dropped", true);
+      await dropAtDeadline(row, now);
       summary.failed += 1;
       count(summary, "deadline");
     } else if (!row.device.apnsToken || row.device.relayState !== "bound") {
@@ -443,8 +488,7 @@ async function sendBatch(
         );
         summary.failed += 1;
       } else {
-        await reschedule(row, now, hint);
-        summary.waiting += 1;
+        await retryLater(row, now, hint, summary);
       }
     }
     if (defect) getEvent()?.addWarning("push_relay_request_refused_as_invalid");
@@ -499,8 +543,7 @@ async function applyItemResult(
     return;
   }
   if (status === 429 || status === 503 || status === 0) {
-    await reschedule(row, now, hint);
-    summary.waiting += 1;
+    await retryLater(row, now, hint, summary);
     return;
   }
   await finish(row.id, "failed", code.slice(0, 40));

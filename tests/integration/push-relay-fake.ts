@@ -85,6 +85,26 @@ export class FakeRelay {
   /** Apply a key rotation, then drop the connection before answering. */
   dropAfterRotate = false;
   apnsAnswer = new Map<string, "ok" | "unregistered">();
+  /**
+   * The state a bind answers with. The relay answers `provisional` for a new
+   * binding, which makes the server send its activating sync at once; the
+   * tests that are not about that bind as `active`, so the pushes they count
+   * are the ones they caused.
+   */
+  bindState: "provisional" | "active" = "active";
+  /**
+   * Answer one push item instead of delivering it: return the item result
+   * without `ref`, or null to deliver as usual.
+   */
+  itemAnswer:
+    | ((item: { class: string; ref: string }) => {
+        status: number;
+        result?: string;
+        error?: string;
+        retryAfter?: number;
+        scope?: string;
+      } | null)
+    | null = null;
   /** Live Activity consents by device token: the text version. */
   laConsents = new Map<string, string>();
   private nextId = 1;
@@ -311,7 +331,7 @@ export class FakeRelay {
       bindingKey: req.bindingKey,
       seq: st.seq,
     });
-    return this.reply(nonce, existing ? 200 : 201, { state: "provisional" });
+    return this.reply(nonce, existing ? 200 : 201, { state: this.bindState });
   }
 
   /** `POST /v1/bindings/liveactivity`, checked as the relay checks it. */
@@ -350,6 +370,8 @@ export class FakeRelay {
   ) {
     this.wire.push(...req.items);
     const results = req.items.map((item) => {
+      const forced = this.itemAnswer?.({ class: item.class, ref: item.ref });
+      if (forced) return { ref: item.ref, ...forced };
       const binding = this.bindings.get(item.token);
       if (!binding || binding.instanceId !== instanceId) {
         return { ref: item.ref, status: 404, error: "binding_unknown" };

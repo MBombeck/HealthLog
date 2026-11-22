@@ -36,6 +36,10 @@ import {
   silentBudgetLeft,
   wakeableDevices,
 } from "@/lib/push-relay/wakes";
+import {
+  clearOwedIntakeSync,
+  oweIntakeSync,
+} from "@/lib/push-relay/owed-intake-sync";
 import { sendRelayItems } from "@/lib/push-relay/relay-send";
 
 const RECORDED_LIFETIME_S = 2 * 3600;
@@ -105,39 +109,29 @@ export function sendSealedIntakeRecorded(
 export interface IntakeSyncSendResult extends SealedSendResult {
   /** Devices the silent budget held back: owed, sent by the minute pass. */
   deferred: string[];
-  /**
-   * Relay devices skipped on purpose: the recorded confirmation in the same
-   * flush stands in for their silent sync. Not a failure.
-   */
-  covered: string[];
 }
 
 /**
- * Send the silent sync sealed. A relay device is skipped when the flush also
- * sends it the recorded confirmation (that alert triggers the sync in the
- * extension); `confirmationFor` names those devices, and is empty when the
- * confirmation is off for the account: it is opt-in, and the sync must not
- * depend on it. A device whose silent budget (`wakes.ts`) is spent is not
- * skipped but owed the sync: the minute pass sends it once the budget frees
- * up, one for however many changes arrived meanwhile.
+ * Send the silent sync sealed, to every routable device. It goes out on
+ * every dose change, also when the visible confirmation of the same change
+ * goes to the device: no push stands in for another, so a confirmation that
+ * does not arrive never leaves the device without its sync. A device whose
+ * silent budget (`wakes.ts`) is spent is not skipped but owed the sync: the
+ * minute pass sends it once the budget frees up, one for however many
+ * changes arrived meanwhile. A sync the relay then drops at its deadline is
+ * owed again (`relay-send.ts`).
  */
 export async function sendSealedIntakeSync(
   devices: RoutableDevice[],
   ctx: PushContext,
-  options: { confirmationFor: ReadonlySet<string> },
   now: Date = new Date(),
 ): Promise<IntakeSyncSendResult> {
   const message = intakeSyncMessage(now);
   const targets = [];
   const deferred: string[] = [];
-  const covered: string[] = [];
   for (const device of devices) {
     const route = routeOf(device, ctx);
     if (route !== "relay" && route !== "direct") continue;
-    if (route === "relay" && options.confirmationFor.has(device.id)) {
-      covered.push(device.id);
-      continue;
-    }
     if (!(await silentBudgetLeft(device, SYNC_EVENT, ctx, now))) {
       deferred.push(device.id);
       continue;
@@ -147,18 +141,7 @@ export async function sendSealedIntakeSync(
   if (deferred.length > 0) await oweIntakeSync(deferred, now);
   const sealed = await sendSealed(targets, ctx);
   await recordSilentPushes(SYNC_EVENT, sealed.handled, now);
-  return { ...sealed, deferred, covered };
-}
-
-/** Mark the sync owed to these devices (the first time it is owed stays). */
-async function oweIntakeSync(deviceIds: string[], now: Date): Promise<void> {
-  for (const deviceId of deviceIds) {
-    await prisma.$executeRaw`
-      INSERT INTO "push_data_changes" ("device_id", "intake_sync_owed_at", "updated_at")
-      VALUES (${deviceId}, ${now.toISOString()}::timestamp(3), ${now.toISOString()}::timestamp(3))
-      ON CONFLICT ("device_id") DO UPDATE SET
-        "intake_sync_owed_at" = COALESCE("push_data_changes"."intake_sync_owed_at", EXCLUDED."intake_sync_owed_at")`;
-  }
+  return { ...sealed, deferred };
 }
 
 /**
@@ -209,17 +192,23 @@ export async function flushOwedIntakeSyncs(
       : undefined;
     const route = device ? routeOf(device, ctx) : "none";
     if (!device || (route !== "relay" && route !== "direct")) {
-      await clearOwed(row.deviceId);
+      await clearOwedIntakeSync(row.deviceId);
       continue;
     }
     if (!(await silentBudgetLeft(device, SYNC_EVENT, ctx, now))) continue;
+    // Settled before the send, not after it: a sync the relay drops at once
+    // is owed again by the outbox (`relay-send.ts`), and clearing afterwards
+    // would wipe that.
+    await clearOwedIntakeSync(row.deviceId);
     const result = await sendSealed(
       [{ device, message: intakeSyncMessage(now), collapseKey: "intake-sync" }],
       ctx,
     );
     await recordSilentPushes(SYNC_EVENT, result.handled, now);
-    if (result.handled.length > 0) {
-      await clearOwed(row.deviceId);
+    if (result.handled.length === 0) {
+      // Nothing was handed over (the envelope could not be sealed): still owed.
+      await oweIntakeSync([row.deviceId], now);
+    } else {
       recordPushAttempt({
         userId,
         channel: "APNS",
@@ -234,13 +223,6 @@ export async function flushOwedIntakeSyncs(
     }
   }
   return sent;
-}
-
-async function clearOwed(deviceId: string): Promise<void> {
-  await prisma.pushDataChange.updateMany({
-    where: { deviceId },
-    data: { intakeSyncOwedAt: null },
-  });
 }
 
 export interface RelayActivityRow {
