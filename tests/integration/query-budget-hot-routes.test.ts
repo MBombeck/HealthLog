@@ -82,10 +82,16 @@ const BUDGET = {
   dashboardSnapshot: 89,
   // The digest composes the snapshot (its own cell, rebuilt here) and adds
   // its rail's reads; 143 before the slice change above.
-  dailyDigest: 133,
+  // 133 → 134, targets 21 → 22 (1.49.0): the 90-day window aggregate folds
+  // the readings before it ranks the sources and keeps the whole days before
+  // today as a closed block, so a cold read (every cache evicted, as here)
+  // sends the block and the edge read where it sent one statement over every
+  // raw reading; once the block is cached (a sync of today keeps it) it is
+  // the edge read alone, one statement as before.
+  dailyDigest: 134,
   // The target cards; their seven-day means come from the slice when a
-  // fresh one is cached, here (evicted) from their own aggregate.
-  insightsTargets: 21,
+  // fresh one is cached, here (evicted) from the slice's window aggregate.
+  insightsTargets: 22,
   series30: 6,
   series365: 5,
   series3650: 5,

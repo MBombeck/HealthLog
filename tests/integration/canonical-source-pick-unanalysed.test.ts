@@ -38,6 +38,11 @@ import {
   canonicalMeasurementsCte,
   type CanonicalWindow,
 } from "@/lib/analytics/source-rank-sql";
+import { windowCuts } from "@/lib/analytics/canonical-window";
+import {
+  closedWindowSql,
+  edgeWindowSql,
+} from "@/lib/analytics/canonical-window-sql";
 import { prisma as appPrisma } from "@/lib/db";
 import { loadDenseMeasurementBuckets } from "@/lib/doctor-report/dense-buckets";
 import { readAllTimeExtremes } from "@/lib/insights/feature-blocks";
@@ -312,6 +317,41 @@ describe("canonical-source pick on a table without statistics", () => {
       );
       expect(n).toBeGreaterThan(0);
       expect(n).toBeLessThan(seeded);
+    },
+  );
+});
+
+/**
+ * The 90-day window aggregate of the launch reads (`canonical-window.ts`)
+ * folds the readings into cells and picks over the cells, with no join: its
+ * closed block and its edge read stay linear on a table without statistics.
+ */
+describe("canonical window aggregate on a table without statistics", () => {
+  const rank = buildSourceRankCase(null, '"type"', '"source"');
+  const cuts = windowCuts(NOW);
+  it.each<[string, string, unknown[]]>([
+    [
+      "the closed block",
+      closedWindowSql(rank),
+      [USER, cuts.blockFrom, cuts.blockTo],
+    ],
+    [
+      "the edge read",
+      edgeWindowSql(rank),
+      [
+        USER,
+        NOW,
+        cuts.blockFrom,
+        cuts.blockTo,
+        cuts.hour7,
+        cuts.hour30,
+        cuts.hour60,
+      ],
+    ],
+  ])(
+    "reads the window a bounded number of times: %s",
+    async (_l, sql, params) => {
+      await expectBoundedPlan(sql, params);
     },
   );
 });

@@ -125,6 +125,10 @@ import {
   type AccumulatorBucketRow,
 } from "@/lib/rollups/measurement-read";
 import { windowWeighting } from "@/lib/measurements/day-statistic";
+import {
+  readCanonicalWindow,
+  type CanonicalWindowRow,
+} from "@/lib/analytics/canonical-window";
 import { readLatestCanonical } from "@/lib/measurements/latest-canonical";
 import {
   SESSION_DAY_FRAME,
@@ -164,26 +168,6 @@ interface HeavyAggregateRow extends LiveTrendColumns {
   avg7: number | null;
   avg30: number | null;
   avg30_last_month: number | null;
-}
-
-/**
- * Narrow aggregate row — only the columns the DAY rollup buckets cannot
- * compose linearly. `count` rides along so the anomaly z-score loop
- * knows the divisor for the window-wide mean / stddev; the per-type
- * count exposed on `DataSummary` still comes from the bucket
- * composition.
- */
-interface NarrowAggregateRow {
-  type: string;
-  count: bigint;
-  stddev_value: number | null;
-  anomaly_count: bigint;
-  avg7: number | null;
-  avg30: number | null;
-  avg30_last_month: number | null;
-  // v1.20.0 — the slope7/30/90 + r2_7/30/90 columns have moved off this
-  // live query onto the rollup accumulators (composeWindowedRegression);
-  // they no longer scan the raw measurements partition on the warm path.
 }
 
 /**
@@ -400,47 +384,13 @@ async function buildFromRollups(
 
   const [narrows, latests, dayBuckets, bpRawRows, firstRows] =
     await Promise.all([
+      // The 90-day window means and the |z| > 2 anomaly count over the
+      // canonical source per (type, day), the slice's own window aggregate
+      // (`canonical-window.ts`), whose closed block the two share. The
+      // z-score's mean and spread stay over every reading: they measure how
+      // far one reading sits from the others, not the level the means report.
       timeSubquery(timings, "narrow", () =>
-        prisma.$queryRawUnsafe<NarrowAggregateRow[]>(
-          `
-      -- v1.18.11 perf#3a — the canonical-source pick is the dominant
-      -- cost; bind it ONCE as a CTE and reference it from both window_stats
-      -- and the outer aggregate so the pick runs a single time instead of
-      -- twice per rebuild. Output is identical.
-      WITH cm AS (${canonicalMeasurementsCte(rankUnqualified, NINETY_DAYS)}
-      ),
-      -- The z-score's mean and spread stay over every reading: they measure
-      -- how far one reading sits from the others, a per-reading dispersion,
-      -- not the level the window means below report.
-      window_stats AS (
-        SELECT
-          m."type",
-          AVG(m."value") AS mean_value,
-          STDDEV_POP(m."value") AS stddev_value
-        FROM cm m
-        GROUP BY m."type"
-      )
-      SELECT
-        m."type"::text                                                AS type,
-        COUNT(*)                                                      AS count,
-        ws.stddev_value::double precision                             AS stddev_value,
-        -- |z| > 2 anomaly count over the 90-day window. STDDEV_POP
-        -- matches the JS helper which divides by n (not n-1).
-        COUNT(*) FILTER (
-          WHERE ws.stddev_value IS NOT NULL
-            AND ws.stddev_value > 0
-            AND ABS(
-              (ROUND(((m."value" - ws.mean_value) / ws.stddev_value)::numeric, 2))
-            ) > 2
-        )                                                             AS anomaly_count,
-        ${windowMeanColumnsSql(NOW_SQL)}
-      FROM ${dayWeightedRows("cm", SESSION_DAY_FRAME)} m
-      JOIN window_stats ws ON ws."type" = m."type"
-      GROUP BY m."type", ws.stddev_value
-    `,
-          userId,
-          now,
-        ),
+        readCanonicalWindow(userId, now, priorityJson, rankUnqualified),
       ),
       timeSubquery(timings, "latests", () =>
         readLatestCanonical(userId, priorityJson, ninetyDaysAgo),
@@ -490,7 +440,7 @@ async function buildFromRollups(
   }
 
   const bucketsByType = partitionBucketsByType(dayBuckets, priorityJson);
-  const narrowByType = new Map<string, NarrowAggregateRow>();
+  const narrowByType = new Map<string, CanonicalWindowRow>();
   for (const row of narrows) {
     narrowByType.set(row.type, row);
   }
@@ -553,7 +503,7 @@ async function buildFromRollups(
       avg30: round2(narrow?.avg30 ?? null),
       slope7: composeWindowedTrend(accBuckets, since7, 7),
       slope30: composeWindowedTrend(accBuckets, since30, 30),
-      anomalyCount: Number(narrow?.anomaly_count ?? 0),
+      anomalyCount: narrow?.anomalies ?? 0,
       avg30LastMonth: round2(narrow?.avg30_last_month ?? null),
       // Legacy semantics: the 90-day window guarantees no rows from a
       // year ago. Always null.

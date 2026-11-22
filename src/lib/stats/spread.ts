@@ -47,3 +47,25 @@ export function standardDeviation(
   const v = variance(values, kind);
   return v === null ? null : Math.sqrt(v);
 }
+
+/**
+ * `variance` over readings given as distinct values and how often each
+ * occurs, for a reader that folds the readings before it sees them.
+ */
+export function varianceOfCounts(
+  entries: ReadonlyArray<readonly [value: number, count: number]>,
+  kind: VarianceKind,
+): number | null {
+  let n = 0;
+  let sum = 0;
+  for (const [v, c] of entries) {
+    n += c;
+    sum += v * c;
+  }
+  const divisor = kind === "sample" ? n - 1 : n;
+  if (divisor < 1) return null;
+  const mean = sum / n;
+  let squares = 0;
+  for (const [v, c] of entries) squares += c * (v - mean) ** 2;
+  return squares / divisor;
+}
