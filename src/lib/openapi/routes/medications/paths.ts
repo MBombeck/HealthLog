@@ -323,7 +323,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...recordRefusal(),
         "200": {
           description:
-            "`TodayIntakeEntry[]` for `scope=today`, `MedicationComplianceDayBucket[]` for `scope=compliance`. The array is the whole payload — there is no wrapper object inside `data`. `scope=today` carries `ETag` and `Cache-Control: private, no-cache`.",
+            "`TodayIntakeEntry[]` for `scope=today`, `MedicationComplianceDayBucket[]` for `scope=compliance`. The array is the whole payload — there is no wrapper object inside `data`. `scope=today` carries `ETag`, `HealthLog-As-Of` and `Cache-Control: private, no-cache`.",
           content: {
             "application/json": {
               schema: dataEnvelope(
@@ -341,11 +341,27 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
                 "`scope=today` only: the strong content tag of the body, for `If-None-Match`.",
               schema: { type: "string" as const },
             },
+            "HealthLog-As-Of": {
+              description:
+                "v1.49.0, `scope=today` only: the server instant the rows were read at (ISO 8601, UTC, milliseconds). Compare it with `asOf` of a `MEDICATION_INTAKE_RECORDED` push: a push newer than the list holds a change the list does not show yet. A header, not a body field, so it does not move the `ETag`.",
+              schema: { type: "string" as const, format: "date-time" },
+            },
           },
         },
         "304": {
           description:
-            "`scope=today` only: the rows are unchanged since the `If-None-Match` ETag. No body; the `ETag` is repeated.",
+            "`scope=today` only: the rows are unchanged since the `If-None-Match` ETag. No body; the `ETag` is repeated, and `HealthLog-As-Of` names the instant they were confirmed current.",
+          headers: {
+            ETag: {
+              description: "The same tag as the request's `If-None-Match`.",
+              schema: { type: "string" as const },
+            },
+            "HealthLog-As-Of": {
+              description:
+                "The server instant the rows were read and found unchanged (ISO 8601, UTC, milliseconds).",
+              schema: { type: "string" as const, format: "date-time" },
+            },
+          },
         },
         "422": {
           description:
