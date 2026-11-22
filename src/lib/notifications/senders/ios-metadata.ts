@@ -120,6 +120,7 @@ function stripCycleMetadata(
  */
 export function iosMetadataFor(
   payload: {
+    eventType?: string;
     metadata?: Record<string, unknown>;
     discreet?: boolean;
     suppressActions?: boolean;
@@ -130,7 +131,19 @@ export function iosMetadataFor(
   const base = payload.discreet
     ? stripCycleMetadata(payload.metadata)
     : payload.metadata;
-  return pickIosMetadata(
+  const picked = pickIosMetadata(
     payload.suppressActions ? stripActionMetadata(base) : base,
   );
+  // A medication reminder names the dose's canonical slot under the name
+  // every dose answer uses for it (`slotInstant` on the intake answers, the
+  // recorded confirmation, a Live Activity registration), so the app matches
+  // the push to the dose it holds. The reminder's `scheduledAt` is that
+  // instant; it stays for the builds that read it.
+  if (
+    payload.eventType === "MEDICATION_REMINDER" &&
+    typeof picked.scheduledAt === "string"
+  ) {
+    picked.slotInstant = picked.scheduledAt;
+  }
+  return picked;
 }
