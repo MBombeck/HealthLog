@@ -19,9 +19,10 @@ import {
   ROUTABLE_DEVICE_SELECT,
   routeOf,
 } from "@/lib/push-relay/route-device";
-import { sendRelayItems } from "@/lib/push-relay/relay-send";
-
-const TEST_LIFETIME_S = 10 * 60;
+import {
+  RELAY_CLASS_LIFETIME_S,
+  sendRelayItems,
+} from "@/lib/push-relay/relay-send";
 
 export interface RelayTestResult {
   deviceId: string;
@@ -61,7 +62,8 @@ export async function sendRelayTestPush(userId: string): Promise<{
       message: {
         pushClass: "alert",
         type: "RELAY_TEST",
-        lifetimeSeconds: TEST_LIFETIME_S,
+        // The class's one lifetime, like every other alert over the relay.
+        lifetimeSeconds: RELAY_CLASS_LIFETIME_S.alert,
         text: {
           title: t("notifications.relayTest.title"),
           body: t("notifications.relayTest.body"),

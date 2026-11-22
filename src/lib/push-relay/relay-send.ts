@@ -31,6 +31,7 @@ import { deleteDeviceRows } from "@/lib/devices/delete-devices";
 import { getEvent } from "@/lib/logging/context";
 import { relayConfig, type RelayConfig } from "@/lib/push-relay/config";
 import { isCircuitOpen } from "@/lib/push-relay/circuit";
+import type { EnvelopeMessage } from "@/lib/push-relay/envelope";
 import { MAX_RETRY_AFTER_S } from "@/lib/push-relay/responses";
 import {
   loadRegistration,
@@ -89,27 +90,69 @@ export interface RelayItemAnswer {
 const BATCH = 50;
 const SECOND = 1000;
 
-/** Retry delays in seconds per kind of push, before jitter. */
-function backoffSeconds(
-  eventType: string,
-  pushClass: RelayPushClass,
-): number[] {
+/**
+ * The one lifetime every sealed push of a class gets over the relay. The
+ * relay reads `ttlSeconds` in the clear beside the envelope (it becomes
+ * `apns-expiration`), so a lifetime per kind would tell it a reminder from a
+ * dose confirmation from a security alert. One value per class leaves it the
+ * class alone, which it knows anyway. The envelope's own `exp` is the same
+ * value, so a push never outlives what the app accepts.
+ *
+ * Alerts get the reminder's 15 minutes: a reminder later than that is stale,
+ * and every other alert is either shown elsewhere too or replaced by a newer
+ * one. Silent pushes get the hour every silent kind already had. A Live
+ * Activity push is not listed: its event (`end`, `start`, `update`) rides in
+ * the clear anyway, so its lifetime follows the event.
+ */
+export const RELAY_CLASS_LIFETIME_S = Object.freeze({
+  alert: 15 * 60,
+  silent: 3600,
+} as const);
+
+/** `message` as it travels over the relay: with its class's one lifetime. */
+export function overRelay(message: EnvelopeMessage): EnvelopeMessage {
+  return {
+    ...message,
+    lifetimeSeconds: RELAY_CLASS_LIFETIME_S[message.pushClass],
+  };
+}
+
+/** The step the remaining lifetime is rounded down to on the wire. */
+const WIRE_TTL_STEP_S = 60;
+
+/**
+ * Retry delays in seconds per class, before jitter. One schedule per class,
+ * for the same reason as the lifetime: during an outage the retry pattern is
+ * visible to the relay, and it must not differ by kind.
+ */
+function backoffSeconds(pushClass: RelayPushClass): number[] {
   if (pushClass === "liveactivity") return [5, 30, 120, 600];
   if (pushClass === "silent") return [30, 120, 600, 1800];
-  if (eventType === "MEDICATION_INTAKE_RECORDED")
-    return [5, 20, 60, 180, 480, 600];
-  return [30, 120, 600, 1800, 3600];
+  return [5, 20, 60, 180, 480, 600];
+}
+
+/**
+ * `ttlSeconds` on the wire: what is left of the push's lifetime, rounded
+ * down to whole minutes, so the value says nothing finer than the minute a
+ * push was sealed in. Never below a minute: the app still opens an envelope
+ * up to 300 s past its `exp`.
+ */
+function wireTtlSeconds(expiresAt: Date, now: Date): number {
+  const left = Math.floor((expiresAt.getTime() - now.getTime()) / SECOND);
+  return Math.max(
+    WIRE_TTL_STEP_S,
+    Math.floor(left / WIRE_TTL_STEP_S) * WIRE_TTL_STEP_S,
+  );
 }
 
 /** The next attempt after `attempts` failures, jittered by 20 %. */
 export function nextAttemptAt(
-  eventType: string,
   pushClass: RelayPushClass,
   attempts: number,
   now: Date,
   hintSeconds: number | null = null,
 ): Date {
-  const schedule = backoffSeconds(eventType, pushClass);
+  const schedule = backoffSeconds(pushClass);
   const base =
     hintSeconds ?? schedule[Math.min(attempts, schedule.length - 1)] ?? 60;
   const jitter = hintSeconds === null ? 0.8 + Math.random() * 0.4 : 1;
@@ -214,7 +257,6 @@ async function finish(
 
 async function reschedule(row: PendingRow, now: Date, hint: number | null) {
   const at = nextAttemptAt(
-    row.eventType,
     row.pushClass as RelayPushClass,
     row.attempts,
     now,
@@ -294,10 +336,7 @@ function wireItem(row: PendingRow, now: Date) {
     token: (row.device.apnsToken as string).toLowerCase(),
     env: row.device.apnsEnvironment === "sandbox" ? "sandbox" : "production",
     class: row.pushClass,
-    ttlSeconds: Math.max(
-      1,
-      Math.floor((row.expiresAt.getTime() - now.getTime()) / SECOND),
-    ),
+    ttlSeconds: wireTtlSeconds(row.expiresAt, now),
     ...(item.envelope ? { envelope: item.envelope } : {}),
     ...(item.collapse ? { collapse: item.collapse } : {}),
     ...(item.activity ? { activity: item.activity } : {}),

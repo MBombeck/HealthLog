@@ -57,6 +57,8 @@ export interface RelayMaintenanceFacts {
   unbound: number;
   /** Unbinds given up after 7 days without reaching the relay. */
   unbinds_given_up: number;
+  /** Unbinds dropped unsent: no relay holds a binding of this server. */
+  unbinds_moot: number;
   instance_key_rotated: boolean;
 }
 
@@ -72,6 +74,7 @@ export async function runRelayMaintenance(
     pruned: 0,
     unbound: 0,
     unbinds_given_up: 0,
+    unbinds_moot: 0,
     instance_key_rotated: false,
   };
   const config = relayConfig();
@@ -115,6 +118,7 @@ export async function runRelayMaintenance(
   const unbinds = await drainRelayUnbinds(now, config);
   facts.unbound = unbinds.confirmed;
   facts.unbinds_given_up = unbinds.givenUp;
+  facts.unbinds_moot = unbinds.moot;
 
   if (row?.instanceId && !isCircuitOpen(row) && instanceKeyDue(row, now)) {
     facts.instance_key_rotated =

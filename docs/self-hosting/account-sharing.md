@@ -281,13 +281,17 @@ as something to log in as.
   chain, the profile has no AI until somebody picks again. It never falls
   back to the server key.
 
-  The choice names the credential source and nothing more. The profile's
-  own AI switches, its usage level and its consent still decide every call:
-  a provider that leaves the server still needs the profile's consent, and
-  the guardian's own consent does not stand in for it. The activity log
-  names the guardian who changed the source, which source they chose, and
-  whether it was a named chain or the default chain (never the chain's
-  name). An adult who shares their record at manage level is not a managed
+  A managed profile uses the AI provider chain its guardian chose, and that
+  choice counts as the guardian's consent for the profile: a chain of the
+  guardian's own keys and sign-ins serves the profile's Coach, briefing and
+  summaries with no separate consent for the profile, the same way it serves
+  the guardian. The server key still needs the profile's consent before
+  anything leaves the server, and so does reading documents (above). The
+  profile's own AI switches and usage level still decide every call. To
+  switch AI off for the profile, the guardian picks **No AI provider**. The
+  activity log names the guardian who changed the source, which source they
+  chose, and whether it was a named chain or the default chain (never the
+  chain's name). An adult who shares their record at manage level is not a managed
   profile: their AI stays theirs, and a delegate's AI work has no provider.
 
   Picking the server key on an install without one leaves the profile

@@ -11628,13 +11628,13 @@ model PushRelayRegistration {
   receiptsSentAt               DateTime? @map("receipts_sent_at")
   lastSuccessAt                DateTime? @map("last_success_at")
   /// The operator's acceptance: terms version, household confirmation, who.
-  /// @internal: acceptance evidence, kept as the record of who accepted
-  /// which terms when; the admin view shows the current terms version, not
-  /// this row's.
+  /// Reader: the admin card, which asks for the current terms text to be
+  /// confirmed once while this is older (`termsConfirmationNeeded`).
   termsVersion                 String    @map("terms_version")
-  /// @internal: acceptance evidence, see `termsVersion`.
+  /// @internal: acceptance evidence, kept as the record of who accepted
+  /// which terms when.
   householdConfirmedAt         DateTime  @map("household_confirmed_at")
-  /// @internal: acceptance evidence, see `termsVersion`.
+  /// @internal: acceptance evidence, see `householdConfirmedAt`.
   enabledByUserId              String?   @map("enabled_by_user_id")
   createdAt                    DateTime  @default(now()) @map("created_at")
   updatedAt                    DateTime  @updatedAt @map("updated_at")
