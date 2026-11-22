@@ -343,14 +343,16 @@ export function parseOnboardingNeeds(value: unknown): OnboardingNeeds {
  * as `pending` for an account mid-way through rather than vanishing, and a
  * step removed from the flow stops being published without a migration.
  *
- * `completedAt` is the record's confirmation stamp. A follow-up step absent
- * from a confirmed record's blob reads as `skipped`: the record finished its
- * setup before that step existed. Every write stores the full list, so a
- * flow that runs on this release always carries the follow-ups it owes.
+ * `completedAt` is the record's confirmation stamp, required so no reader can
+ * forget it. A follow-up step absent from a confirmed record's blob reads as
+ * `skipped`: the record finished its setup before that step existed. Every
+ * write stores the full list, so a flow that runs on this release always
+ * carries the follow-ups it owes. The backup reads and writes through this
+ * too, which is what keeps a restored 1.48 ledger finished.
  */
 export function parseOnboardingSteps(
   value: unknown,
-  completedAt: Date | string | null = null,
+  completedAt: Date | string | null,
 ): OnboardingStepState[] {
   const stored = new Map<string, OnboardingStepStatus>();
   if (Array.isArray(value)) {

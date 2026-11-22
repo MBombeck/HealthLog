@@ -44,21 +44,24 @@ const AT = new Date("2026-09-10T08:00:00.000Z");
 
 describe("parseOnboardingSteps", () => {
   it("returns the full ordered nine whatever the column holds", () => {
-    expect(parseOnboardingSteps(null).map((s) => s.id)).toEqual([
+    expect(parseOnboardingSteps(null, null).map((s) => s.id)).toEqual([
       ...ONBOARDING_STEP_IDS,
     ]);
     expect(
-      parseOnboardingSteps(null).every((s) => s.status === "pending"),
+      parseOnboardingSteps(null, null).every((s) => s.status === "pending"),
     ).toBe(true);
   });
 
   it("keeps a stored status and ignores an id or status it does not know", () => {
-    const parsed = parseOnboardingSteps([
-      { id: "areas", status: "done" },
-      { id: "visit", status: "skipped" },
-      { id: "no-such-step", status: "done" },
-      { id: "who", status: "half-done" },
-    ]);
+    const parsed = parseOnboardingSteps(
+      [
+        { id: "areas", status: "done" },
+        { id: "visit", status: "skipped" },
+        { id: "no-such-step", status: "done" },
+        { id: "who", status: "half-done" },
+      ],
+      null,
+    );
     expect(parsed.find((s) => s.id === "areas")?.status).toBe("done");
     expect(parsed.find((s) => s.id === "visit")?.status).toBe("skipped");
     expect(parsed.find((s) => s.id === "who")?.status).toBe("pending");
