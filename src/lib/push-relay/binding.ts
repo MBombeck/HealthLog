@@ -11,8 +11,10 @@
  *
  * The relay's answer maps onto `Device.relayState`, which the app reads on
  * `/api/auth/me`: `bound`, `conflict` (the relay sent the device a challenge
- * push to answer directly), `rebind_needed` (a fresh statement is needed),
- * `none`. Nothing the relay answers here deletes the device row.
+ * push to answer directly), `rebind_needed` (a fresh statement is needed:
+ * the old one is stale, or the relay could not take the binding just now),
+ * `none` (the relay refused it for good). Nothing the relay answers here
+ * deletes the device row.
  */
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
@@ -95,6 +97,10 @@ export function stateAfterBind(
   if (status === null || (status === 401 && error === "stale_timestamp")) {
     return "rebind_needed";
   }
+  // The relay is busy, paused or over a limit for now (`429`, `503`): the
+  // binding is worth another try, and only a fresh statement can make it.
+  // `none` reads as "not available" in the app and ended the attempt.
+  if (status === 429 || status === 503) return "rebind_needed";
   return "none";
 }
 

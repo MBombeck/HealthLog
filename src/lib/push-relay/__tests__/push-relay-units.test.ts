@@ -240,7 +240,16 @@ describe("binding statement", () => {
     expect(stateAfterBind(401, "stale_timestamp")).toBe("rebind_needed");
     expect(stateAfterBind(null, null)).toBe("rebind_needed");
     expect(stateAfterBind(403, "binding_refused")).toBe("none");
-    expect(stateAfterBind(429, "binding_quota")).toBe("none");
+    expect(stateAfterBind(422, "env_unsupported")).toBe("none");
+  });
+
+  it("asks for another try when the relay could not take the binding just now", () => {
+    // `none` reads as "not available" in the app and ended the attempt for
+    // good, although the relay was only busy, paused or over a limit.
+    expect(stateAfterBind(429, "binding_quota")).toBe("rebind_needed");
+    expect(stateAfterBind(429, "instance_rate")).toBe("rebind_needed");
+    expect(stateAfterBind(503, "storage_unavailable")).toBe("rebind_needed");
+    expect(stateAfterBind(503, "maintenance")).toBe("rebind_needed");
   });
 });
 
