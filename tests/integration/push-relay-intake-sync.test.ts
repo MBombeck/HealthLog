@@ -313,12 +313,11 @@ describe("the intake sync's budget, audience and triggers", () => {
     expect((await flushDueDataChanges(later)).owedSynced).toBe(0);
   });
 
-  it("wakes a Guardian's device for a change to the managed profile", async () => {
+  it("keeps a managed profile's sync off a Guardian's relay device", async () => {
     const { instanceId } = await enableRelay();
     const guardian = await makeUser();
     const guardianSession = await makeSession(guardian);
-    const { body } = deviceBody(instanceId, TOKEN);
-    await registerDevice(guardianSession, body);
+    await registerDevice(guardianSession, deviceBody(instanceId, TOKEN).body);
     const prisma = getPrismaClient();
     const profile = await makeUser();
     await prisma.user.update({
@@ -333,23 +332,34 @@ describe("the intake sync's budget, audience and triggers", () => {
         acceptedAt: new Date(),
       },
     });
+    // A device of the profile's own, so the flush is seen to have run.
+    const PROFILE_TOKEN = "5b".repeat(32);
+    await registerDevice(
+      await makeSession(profile),
+      deviceBody(instanceId, PROFILE_TOKEN).body,
+    );
     const { queueMedicationIntakeSync } =
       await import("@/lib/notifications/medication-intake-sync");
     queueMedicationIntakeSync({ userId: profile.id, originDeviceToken: null });
     await eventually(() =>
-      fake.apns.some((a) => a.pushClass === "silent" && a.token === TOKEN),
+      fake.apns.some(
+        (a) => a.pushClass === "silent" && a.token === PROFILE_TOKEN,
+      ),
     );
-
-    // A revoked grant: nothing reaches the former Guardian.
-    fake.apns.length = 0;
-    await prisma.accountGrant.updateMany({
-      where: { grantorId: profile.id },
-      data: { revokedAt: new Date(), revokedBy: "GRANTOR" },
-    });
-    await new Promise((r) => setTimeout(r, 2200));
-    queueMedicationIntakeSync({ userId: profile.id, originDeviceToken: null });
     await settle();
-    expect(fake.apns.filter((a) => a.pushClass === "silent")).toHaveLength(0);
+    // A push about another person's record never goes over the relay: the
+    // Guardian's device gets neither the sync nor anything else, and owes
+    // nothing for later.
+    expect(fake.wire.filter((item) => item.token === TOKEN)).toHaveLength(0);
+    const guardianDevice = await prisma.device.findFirstOrThrow({
+      where: { userId: guardian.id },
+      select: { id: true },
+    });
+    expect(
+      await prisma.pushDataChange.findUnique({
+        where: { deviceId: guardianDevice.id },
+      }),
+    ).toBeNull();
   });
 
   it("wakes the devices on a medication change, with the dose domains on DATA_CHANGED", async () => {
