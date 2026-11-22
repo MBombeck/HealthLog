@@ -21,15 +21,16 @@ export const HOSTED_RELAY_URL = "https://push.healthlog.dev";
 /**
  * The identity keys (`current`, `next`, `emergency`) of the relay the
  * HealthLog project runs. Pinned per release; an operator of their own relay
- * sets `PUSH_RELAY_KEYS` instead. The emergency key is held offline and lets
- * the relay recover if both other keys are lost, without a new release.
+ * sets `PUSH_RELAY_KEYS` instead. The emergency key is held separately from
+ * the relay host and the operational keys, never deployed to the relay, and
+ * lets it recover if both other keys are lost, without a new release.
  */
 export const HOSTED_RELAY_KEYS: readonly string[] = Object.freeze([
   // current
   "IU8JGZzcE-O4gp4q2BL2o6YYNJeHyDg8MNmAGL5_Ypo",
   // next, published before the relay switches to it
   "kPhnCqIwrF_cyQIFTAgCHrWnPavdWkcwMB35oi_wCH0",
-  // emergency: kept offline, used only if current and next are both lost
+  // emergency: held apart from the relay, used only if current and next are both lost
   "dcrihMfqGY7srT95DZrVP7sKA-IS3oJPPhOVbbqTvBU",
 ]);
 
