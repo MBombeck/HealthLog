@@ -48,9 +48,13 @@ import {
 } from "@/lib/auth/native-client";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import {
+  confirmOpenedEnvelopes,
   openedFromQuery,
-  recordOpenedEnvelopes,
+  receiptDevice,
 } from "@/lib/push-relay/receipts";
+import { runDetached } from "@/lib/logging/detached";
+import { withBackgroundEvent } from "@/lib/logging/background";
+import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import {
   countLiveMeasurements,
   countTombstonedMeasurements,
@@ -63,13 +67,16 @@ export const GET = apiHandler(async (request?: NextRequest) => {
   // opened per class (`openedAlert`, `openedSilent`) for the device named by
   // `X-Device-Id`. It is the one write of this handshake: it confirms the
   // relay pushes that arrived, so the ones that did not show up as
-  // `intakeSync: degraded` (`push-relay/receipts.ts`).
-  const receipts = await recordOpenedEnvelopes(
+  // `intakeSync: degraded` (`push-relay/receipts.ts`). The device is read
+  // beside the other reads; the write itself runs after the answer, in its
+  // own event, so the app's launch never waits on it.
+  const opened = openedFromQuery(
+    request?.url ? new URL(request.url).searchParams : new URLSearchParams(),
+  );
+  const receiptDeviceRead = receiptDevice(
     user.id,
     request?.headers?.get("x-device-id") ?? null,
-    openedFromQuery(
-      request?.url ? new URL(request.url).searchParams : new URLSearchParams(),
-    ),
+    opened,
   );
 
   // Per-domain aggregate reads. The measurement counts are bounded by days
@@ -89,6 +96,7 @@ export const GET = apiHandler(async (request?: NextRequest) => {
     currentUser,
     medicationLatest,
     medicationDeleted,
+    receiptTarget,
   ] = await Promise.all([
     prisma.measurement.findFirst({
       where: { userId: user.id, deletedAt: null },
@@ -133,7 +141,19 @@ export const GET = apiHandler(async (request?: NextRequest) => {
       orderBy: { createdAt: "desc" },
       select: { createdAt: true },
     }),
+    receiptDeviceRead,
   ]);
+  const receipts = receiptTarget !== null;
+  if (receiptTarget) {
+    trackBackgroundTask(
+      runDetached(() =>
+        withBackgroundEvent("push.receipts.record", async (evt) => {
+          await confirmOpenedEnvelopes(receiptTarget, opened);
+          evt.setBackground({ task_name: "push.receipts.record" });
+        }),
+      ).catch(() => undefined),
+    );
+  }
   const medicationsUpdatedAt = [
     medicationLatest?.updatedAt,
     medicationDeleted?.createdAt,
