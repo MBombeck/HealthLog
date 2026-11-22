@@ -9537,7 +9537,9 @@
       "rotate": {
         "button": "Relaysleutel vernieuwen",
         "done": "De relaysleutel is vernieuwd",
-        "failed": "De relaysleutel kon nu niet worden vernieuwd; de relay staat één vernieuwing per dag toe"
+        "failed": "De relaysleutel kon nu niet worden vernieuwd; de relay staat één vernieuwing per dag toe",
+        "confirmTitle": "Relaysleutel nu vernieuwen?",
+        "confirmBody": "Deze server vervangt de sleutel waarmee hij verzoeken aan de relay ondertekent nu meteen, in plaats van volgens zijn cyclus van 30 dagen. De relay staat één vernieuwing per dag toe."
       },
       "invite": {
         "label": "Uitnodigingscode (optioneel)",

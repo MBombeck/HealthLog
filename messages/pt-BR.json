@@ -9537,7 +9537,9 @@
       "rotate": {
         "button": "Renovar a chave do relay",
         "done": "A chave do relay foi renovada",
-        "failed": "Não foi possível renovar a chave do relay agora; o relay permite uma renovação por dia"
+        "failed": "Não foi possível renovar a chave do relay agora; o relay permite uma renovação por dia",
+        "confirmTitle": "Renovar a chave do relay agora?",
+        "confirmBody": "Este servidor substitui agora a chave com que assina as solicitações ao relay, em vez de esperar o ciclo de 30 dias. O relay permite uma renovação por dia."
       },
       "invite": {
         "label": "Código de convite (opcional)",

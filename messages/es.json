@@ -9537,7 +9537,9 @@
       "rotate": {
         "button": "Renovar la clave del relé",
         "done": "La clave del relé se renovó",
-        "failed": "No se pudo renovar ahora la clave del relé; el relé permite una renovación al día"
+        "failed": "No se pudo renovar ahora la clave del relé; el relé permite una renovación al día",
+        "confirmTitle": "¿Renovar ahora la clave del relé?",
+        "confirmBody": "Este servidor sustituye ahora la clave con la que firma sus solicitudes al relé, en lugar de esperar a su ciclo de 30 días. El relé permite una renovación al día."
       },
       "invite": {
         "label": "Código de invitación (opcional)",

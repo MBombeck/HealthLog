@@ -9537,7 +9537,9 @@
       "rotate": {
         "button": "Odnów klucz przekaźnika",
         "done": "Klucz przekaźnika został odnowiony",
-        "failed": "Nie udało się teraz odnowić klucza przekaźnika; przekaźnik pozwala na jedno odnowienie dziennie"
+        "failed": "Nie udało się teraz odnowić klucza przekaźnika; przekaźnik pozwala na jedno odnowienie dziennie",
+        "confirmTitle": "Odnowić teraz klucz przekaźnika?",
+        "confirmBody": "Ten serwer od razu wymieni klucz, którym podpisuje żądania do przekaźnika, zamiast czekać na swój 30-dniowy cykl. Przekaźnik pozwala na jedno odnowienie dziennie."
       },
       "invite": {
         "label": "Kod zaproszenia (opcjonalnie)",

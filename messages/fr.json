@@ -9537,7 +9537,9 @@
       "rotate": {
         "button": "Renouveler la clé du relais",
         "done": "La clé du relais a été renouvelée",
-        "failed": "La clé du relais n'a pas pu être renouvelée maintenant ; le relais permet un renouvellement par jour"
+        "failed": "La clé du relais n'a pas pu être renouvelée maintenant ; le relais permet un renouvellement par jour",
+        "confirmTitle": "Renouveler la clé du relais maintenant ?",
+        "confirmBody": "Ce serveur remplace dès maintenant la clé avec laquelle il signe ses requêtes au relais, sans attendre son cycle de 30 jours. Le relais permet un renouvellement par jour."
       },
       "invite": {
         "label": "Code d'invitation (facultatif)",
