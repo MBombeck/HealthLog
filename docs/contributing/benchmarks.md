@@ -104,6 +104,34 @@ On the seeded account, idle, with the worker running and no requests (`results/v
 
 Result on the same machine (`results/v1.45.0-boot.md`): the worker graph loads in stretches of at most 246 ms instead of one of 753 ms (the longest application stretch left is the query compiler's start, 336 ms, unchanged); the live heap after five idle minutes went from 162 to 172 MB to 142 to 153 MB; two parsed catalogs (1.6 MB) instead of 32 (14.1 MB), and no catalog chunk sources.
 
+## First-sync burst under the heap ceiling
+
+`scripts/bench/ingest-burst.ts` replays what a phone sends right after it signs in to a fresh account, against the production build under the heap of a 1 GB container (`--max-old-space-size=524`), and reads the server's heap through the inspector while it runs.
+
+```sh
+pnpm dlx tsx scripts/bench/ingest-burst.ts --out scripts/bench/results/<label>-burst
+```
+
+It needs the same throwaway database, environment and build as the large-account benchmark; the account it creates is fresh and is deleted at the end. It starts `next start` with every role, so the worker runs the post-ingest jobs in the same process, as a single-container install does. Before the burst it renders every static page once with a session cookie, so the burst runs on a process that holds every page's modules, as a server that has been in use does, not on one that has just started.
+
+The burst: 160 Apple Health batches of 500 entries (ten-minute heart-rate buckets, HRV, sleep stages, resting heart rate and step-day totals, reaching back through the years) over 4 connections, 60 ECG strips of 15,360 samples over 12 connections, and six dashboard loads of thirteen concurrent reads. A 429 waits out its `Retry-After` and resends, as the native client does.
+
+It records the live heap (after a forced collection) before and after, the peak used heap sampled every 250 ms, every status per route, and the entries and serialised size of every server-cache bucket. It exits 1 when the server dies, a request ends in a 5xx, or the peak crosses `--ceiling-mb` (400 by default). Options: `--heap-mb`, `--batches`, `--batch-concurrency`, `--ecg`, `--ecg-concurrency`, `--read-rounds`, `--no-page-walk`, and for diagnosis `--snapshot <file>` (after the burst), `--snapshot-before` and `--snapshot-at-mb <n>` (once during the burst, when the used heap first reaches n).
+
+### What it found (v1.49.0, November 2026)
+
+A beta instance on a 1 GB container (below the supported 1.5 GB floor) ran out of heap during a phone's first sync. Its heap had sat at 0.80 to 0.85 of the 524 MB limit for five hours before: once a morning's test pass had loaded every page and API route, the used heap never fell below about 400 MB, and the sync needed more than the rest.
+
+The same shape locally, on the production build with a 524 MB heap: 180 MB live after the start, 250 MB once every page had rendered, a peak of 400 MB used during the burst, 270 MB live afterwards. Snapshots before and after the burst differ by the modules of the routes the burst loaded for the first time (about 18 MB), not by anything the requests left behind; the requests in flight held 30 to 50 MB at the burst's peak. Most of the live heap is code: module source strings (about 110 MB once every page has rendered) and the query compiler (about 42 MB). A 1 GB container leaves a long-running server about 120 MB above that; the 1.5 GB floor (792 MB heap) leaves about 400.
+
+### What changed (v1.49.0)
+
+- **Admission for heavy ingest** (`src/lib/ingest/admission.ts`). Every bulk route the native client syncs through (`/api/measurements/batch`, `/api/insights/ecg`, the workout, symptom, nutrient, mood, cycle and intake bulk routes) runs behind one process-wide gate: four at once, two per credential, a short wait in line, and past it a 429 with `Retry-After` and `X-RateLimit-Reset` before the body is read. One phone opening many connections holds at most two requests' bodies and rows at a time, however many it opens. `src/__tests__/ingest-admission-guard.test.ts` holds every bulk POST to it.
+- **Coalesced post-ingest jobs.** Every batch used to queue its own personal-record scan and reminder check; a send now waits a few seconds and joins the one already queued for the account (`singletonKey` on a `short` queue). On the burst: 160 of each before, 7 and 12 after.
+- **A byte budget on every server-cache bucket** (`src/lib/cache/approx-bytes.ts`): together a tenth of the heap limit, evicting from the least-recently-used end by estimated size, and an entry past its stale window is dropped on the next write instead of waiting for the entry cap.
+
+`tests/integration/ingest-burst-memory.test.ts` is the CI guard: one phone's burst of 48 batches and 24 ECG strips at once through the route handlers, the live heap sampled after forced collections. Behind the gate it stays under its budget with every row landed; with the gate opened wide it does not fit the same budget.
+
 ## Statement budgets in the integration suite
 
 `tests/integration/query-budget-hot-routes.test.ts` seeds a small account (four months of the main types with overlapping sources, sleep, glucose, a medication, workouts and mood), and counts the statements of one request per hot route on a cache miss: `/api/auth/me`, the dashboard summary and snapshot, the pulse series over 30, 365 and 3650 days, the day view, insights health status, correlations, and a 500-row batch ingest.
