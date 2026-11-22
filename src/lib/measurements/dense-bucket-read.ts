@@ -30,6 +30,7 @@ import {
   type PrismaClient,
 } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
+import { combineHourCells } from "@/lib/measurements/day-mean";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 import { plausibleMetricRange } from "@/lib/measurements/value-domain";
 import { isValidTimezone } from "@/lib/tz/format";
@@ -282,13 +283,14 @@ export async function readLocalDayExtremes(opts: {
 }
 
 /**
- * The mean of the most recent local day of `type` since `since`, every
- * reading of that day counted, and that day's key and newest instant. With
- * `plausibleOnly`, readings outside the metric's plausibility domain are
- * neither part of the mean nor able to make a day the latest, so a day
+ * The value of the most recent local day of `type` since `since`, every
+ * reading of that day counted, and that day's key and newest instant. The
+ * day value is the one `day-mean.ts` defines: the weighted mean of the day's
+ * hour means for an hour-weighted type (pulse), the plain mean otherwise.
+ * With `plausibleOnly`, readings outside the metric's plausibility domain are
+ * neither part of the value nor able to make a day the latest, so a day
  * holding only impossible values gives way to the day before it. `null` when
- * nothing qualifies. A plain mean: no caller passes a type whose day is the
- * mean of its hours' means (pulse); one that did would be refused.
+ * nothing qualifies. The day's readings arrive as one row per local hour.
  */
 export async function readLatestLocalDayMean(opts: {
   userId: string;
@@ -298,11 +300,6 @@ export async function readLatestLocalDayMean(opts: {
   plausibleOnly: boolean;
   db?: RawDb;
 }): Promise<{ value: number; day: string; lastAt: Date } | null> {
-  if (usesHourlyMeanDay(opts.type)) {
-    throw new RangeError(
-      `${opts.type} days are hour-weighted; read them with readDayAggregates`,
-    );
-  }
   const timeZone = zoneOrUtc(opts.timeZone);
   const range = opts.plausibleOnly
     ? plausibleMetricRange(opts.type)
@@ -310,12 +307,12 @@ export async function readLatestLocalDayMean(opts: {
   const valueFilter = range
     ? Prisma.sql`AND m."value" >= ${range.min} AND m."value" <= ${range.max}`
     : Prisma.empty;
-  const rows = await (opts.db ?? prisma).$queryRaw<
-    Array<{ day: string; mean: number; last_at: Date }>
+  const hours = await (opts.db ?? prisma).$queryRaw<
+    Array<{ day: string; n: number; sum: number; last_at: Date }>
   >(Prisma.sql`
     WITH src AS (
       SELECT
-        to_char(${readingWallSql("m", timeZone)}, 'YYYY-MM-DD') AS day,
+        ${readingWallSql("m", timeZone)} AS local_at,
         m."measured_at" AS measured_at,
         m."value" AS value
       FROM measurements m
@@ -324,19 +321,32 @@ export async function readLatestLocalDayMean(opts: {
         AND m."deleted_at" IS NULL
         AND m."measured_at" >= ${opts.since}
         ${valueFilter}
+    ),
+    dayed AS (
+      SELECT to_char(local_at, 'YYYY-MM-DD') AS day,
+             date_trunc('hour', local_at) AS local_hour,
+             measured_at, value
+      FROM src
     )
     SELECT
       day,
-      AVG(value)::double precision AS mean,
+      COUNT(*)::int                AS n,
+      SUM(value)::double precision AS sum,
       MAX(measured_at)             AS last_at
-    FROM src
-    WHERE day = (SELECT MAX(day) FROM src)
-    GROUP BY day
+    FROM dayed
+    WHERE day = (SELECT MAX(day) FROM dayed)
+    GROUP BY day, local_hour
   `);
-  const row = rows[0];
-  return row
-    ? { value: Number(row.mean), day: row.day, lastAt: row.last_at }
-    : null;
+  if (hours.length === 0) return null;
+  const cells = hours.map((h) => ({ n: Number(h.n), sum: Number(h.sum) }));
+  const value = usesHourlyMeanDay(opts.type)
+    ? combineHourCells(cells)
+    : cells.reduce((s, c) => s + c.sum, 0) / cells.reduce((s, c) => s + c.n, 0);
+  if (value === null) return null;
+  const lastAt = new Date(
+    Math.max(...hours.map((h) => new Date(h.last_at).getTime())),
+  );
+  return { value, day: hours[0].day, lastAt };
 }
 
 /** One local hour of readings, as one reading. */

@@ -102,10 +102,6 @@ const SQL_READERS: Record<string, Entry> = {
     exempt:
       "the scored day's mean SDNN over HEART_RATE_VARIABILITY rows only; pulse never enters",
   },
-  "lib/measurements/dense-bucket-read.ts": {
-    exempt:
-      "the latest-day mean of the vitals and glucose (readiness, coincident deviation, coach read), which refuses an hour-weighted type through `usesHourlyMeanDay`; the bucket reads return sums and counts, not means",
-  },
   "lib/insights/correlation-channel-series.ts": {
     exempt:
       "the one SQL mean is the room-climate hour mean, over INDOOR_CO2 / INDOOR_TEMPERATURE / INDOOR_HUMIDITY only; pulse reaches the correlation channels through `dayValueRows` and the rollup compose",

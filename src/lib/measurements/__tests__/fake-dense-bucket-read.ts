@@ -19,6 +19,7 @@ import type {
   LocalDayExtremes,
   LocalMinuteBucket,
 } from "@/lib/measurements/dense-bucket-read";
+import { dayValue } from "@/lib/measurements/day-mean";
 import { isPlausibleMetricValue } from "@/lib/measurements/value-domain";
 import { formatInUserTz, userDayKey } from "@/lib/tz/format";
 import { localDayWindow } from "@/lib/tz/local-day";
@@ -177,7 +178,7 @@ export function makeFakeDenseBucketRead(source: RowSource) {
         (r) => userDayKey(r.measuredAt, opts.timeZone) === day,
       );
       return {
-        value: sameDay.reduce((s, r) => s + r.value, 0) / sameDay.length,
+        value: dayValue(opts.type, sameDay, opts.timeZone)!,
         day,
         lastAt: new Date(
           Math.max(...sameDay.map((r) => r.measuredAt.getTime())),
