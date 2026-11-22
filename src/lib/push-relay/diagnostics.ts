@@ -34,6 +34,7 @@ import {
   type RelayHealth,
 } from "@/lib/push-relay/capability";
 import { relayConfig } from "@/lib/push-relay/config";
+import { relayStateAt } from "@/lib/push-relay/relay-state";
 import { loadRegistration } from "@/lib/push-relay/registration";
 import {
   ROUTABLE_DEVICE_SELECT,
@@ -114,6 +115,7 @@ export const DIAGNOSTIC_DEVICE_SELECT = {
   apnsEnvironment: true,
   lastSeen: true,
   relayState: true,
+  relayConflictAt: true,
   relayBoundAt: true,
   laStartedAt: true,
   envelopeReportedAt: true,
@@ -126,6 +128,7 @@ export function diagnosticDevice(d: {
   apnsEnvironment: string | null;
   lastSeen: Date;
   relayState: string;
+  relayConflictAt: Date | null;
   relayBoundAt: Date | null;
   laStartedAt: Date | null;
   envelopeReportedAt: Date | null;
@@ -139,7 +142,7 @@ export function diagnosticDevice(d: {
     apnsTokenSuffix: suffix,
     apnsEnvironment: d.apnsEnvironment,
     lastSeenAt: d.lastSeen.toISOString(),
-    relayState: d.relayState,
+    relayState: relayStateAt(d),
     relayBoundAt: d.relayBoundAt?.toISOString() ?? null,
     liveActivityStartedAt: d.laStartedAt?.toISOString() ?? null,
     envelopesReportedAt: d.envelopeReportedAt?.toISOString() ?? null,
@@ -333,6 +336,7 @@ const DEVICE_DIAGNOSTIC_SELECT = {
   ...ROUTABLE_DEVICE_SELECT,
   userId: true,
   relayBoundAt: true,
+  relayConflictAt: true,
   envelopeOpenedAlertId: true,
   envelopeOpenedSilentId: true,
   envelopeReportedAt: true,
@@ -394,7 +398,7 @@ export async function devicePushDiagnostics(
       reason: health.reason,
     },
     binding: {
-      state: device.relayState,
+      state: relayStateAt(device, now),
       consent: device.relayConsentAt !== null,
       boundAt: device.relayBoundAt?.toISOString() ?? null,
     },

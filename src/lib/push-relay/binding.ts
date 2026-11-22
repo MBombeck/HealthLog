@@ -15,6 +15,15 @@
  * the old one is stale, or the relay could not take the binding just now),
  * `none` (the relay refused it for good). Nothing the relay answers here
  * deletes the device row.
+ *
+ * The relay settles a conflict with the device directly (the challenge push
+ * the app answers at the relay) and tells this server nothing. The app then
+ * posts a fresh binding; one that does not would leave the device in
+ * `conflict` for good, with nothing sent to it. So a conflict holds for
+ * {@link CONFLICT_SETTLE_MS} (the challenge's own lifetime): after that it
+ * reads `rebind_needed` everywhere the state is published
+ * (`relayStateAt` in `relay-state.ts`), and the minute pass stores it
+ * ({@link expireRelayConflicts}), so the app sends a fresh binding.
  */
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
@@ -22,6 +31,7 @@ import { getEvent } from "@/lib/logging/context";
 import { activateRelayBinding } from "@/lib/push-relay/medication-pushes";
 import { relayConfig, type RelayConfig } from "@/lib/push-relay/config";
 import { tokenTagHex } from "@/lib/push-relay/encoding";
+import { CONFLICT_SETTLE_MS } from "@/lib/push-relay/relay-state";
 import { bindText, verifyEncoded } from "@/lib/push-relay/statements";
 import {
   loadRegistration,
@@ -48,6 +58,25 @@ export interface RelayBinding {
 }
 
 export type RelayState = "none" | "bound" | "rebind_needed" | "conflict";
+
+/** Store `rebind_needed` for every conflict older than the settle time. */
+export async function expireRelayConflicts(now: Date): Promise<number> {
+  const { count } = await prisma.device.updateMany({
+    where: {
+      relayState: "conflict",
+      OR: [
+        { relayConflictAt: null },
+        {
+          relayConflictAt: {
+            lte: new Date(now.getTime() - CONFLICT_SETTLE_MS),
+          },
+        },
+      ],
+    },
+    data: { relayState: "rebind_needed", relayConflictAt: null },
+  });
+  return count;
+}
 
 /** Why a binding was refused before it reached the relay. */
 export type BindingRefusal =
@@ -173,6 +202,7 @@ export async function forwardBinding(
     data: {
       relayState: state,
       relayBoundAt: state === "bound" ? new Date() : null,
+      relayConflictAt: state === "conflict" ? new Date() : null,
     },
   });
   // The token is bound to this device now: an unbind still queued for it
