@@ -21,7 +21,14 @@
  *   1. a day key or a date label of an instant one day away, in one call;
  *   2. a variable named for yesterday, tomorrow or a probe that is an instant
  *      one day away;
- *   3. the host-calendar step of exactly one day.
+ *   3. the host-calendar step of exactly one day;
+ *   4. a calendar day read off the host clock (`getFullYear()`, `getMonth()`,
+ *      `getDate()` of one instant into `Date.UTC` or `new Date`). The GLP-1
+ *      card's "today" / "yesterday" and days-to-next-injection were built that
+ *      way, in the browser's zone, after the medication card had moved to the
+ *      profile zone; so was the medication wizard's default start date. A day
+ *      is `userDayKey(instant, tz)`, and a day difference
+ *      `daysBetweenDateKeys` of two such keys.
  *
  * Limit: the matchers are textual. An instant shifted in one statement and
  * labelled in another, under a name these do not know, slips them. A rolling
@@ -47,6 +54,8 @@ const MATCHERS: Record<string, RegExp> = {
     "gi",
   ),
   hostCalendarStep: /\.setDate\(\s*\w+\.getDate\(\)\s*[-+]\s*1\s*\)/g,
+  hostCalendarDay:
+    /\b(?:Date\.UTC|new Date)\(\s*([\w.]+)\.getFullYear\(\),\s*\1\.getMonth\(\),\s*\1\.getDate\(\)/g,
 };
 
 /** The shapes this guard exists for, as they were written before the fix. */
@@ -56,6 +65,8 @@ const SAMPLES: Record<string, string> = {
   neighbourNamedInstant:
     "const probe = new Date(now.getTime() + 24 * 60 * 60 * 1000);",
   hostCalendarStep: "yesterday.setDate(yesterday.getDate() - 1);",
+  hostCalendarDay:
+    "Date.UTC(target.getFullYear(), target.getMonth(), target.getDate()) -",
 };
 
 function isProductSource(rel: string): boolean {
