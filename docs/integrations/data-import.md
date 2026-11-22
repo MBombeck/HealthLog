@@ -378,7 +378,7 @@ that is not an activity (a course or a daily monitoring file); or a file
 holding far more messages than any activity (a structural limit checked
 before the file is decoded).
 
-The file is deleted from the server as soon as the import ends. Ten
+The file is deleted from the server as soon as the import ends. Five
 uploads a minute per account; one import of any kind runs at a time.
 
 ## Converting a CSV into the import JSON

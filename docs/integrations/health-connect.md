@@ -44,9 +44,10 @@ onto the **Health Connect export** card.
 The endpoint is `POST /api/import/health-connect-export`
 (`multipart/form-data`, field `file`). It:
 
-1. Allows three uploads per minute per account.
+1. Allows five uploads per minute per account.
 2. Refuses anything above **1 GiB**, once against the declared
-   `Content-Length` and again while the body streams to disk.
+   `Content-Length` and again while the body streams to disk, with
+   `413` and `errorCode` `import.file.too_large` either way.
 3. Streams the body to a temp file and hashes it with SHA-256 on the
    way. Uploading the same bytes again returns the earlier job
    (`idempotent: true`) instead of importing twice; a failed job never
