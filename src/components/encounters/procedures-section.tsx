@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FieldGroup } from "@/components/ui/field-group";
 import { Input } from "@/components/ui/input";
+import { InHeaderSlot } from "@/components/layout/header-slot";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -82,17 +83,19 @@ export function ProceduresSection({ enabled = true }: { enabled?: boolean }) {
 
   return (
     <section aria-labelledby="procedures-section-title" className="space-y-4">
-      <PageHeader
-        titleId="procedures-section-title"
-        title={t("encounters.procedures.title")}
-        description={t("encounters.procedures.description")}
-        // The empty state carries the add action while there is none.
-        actions={
-          !list.isPending && !list.isError && total === 0 && !filtered
-            ? null
-            : addButton
-        }
-      />
+      <InHeaderSlot>
+        <PageHeader
+          titleId="procedures-section-title"
+          title={t("encounters.procedures.title")}
+          description={t("encounters.procedures.description")}
+          // The empty state carries the add action while there is none.
+          actions={
+            !list.isPending && !list.isError && total === 0 && !filtered
+              ? null
+              : addButton
+          }
+        />
+      </InHeaderSlot>
 
       {list.isError ? (
         <QueryErrorCard

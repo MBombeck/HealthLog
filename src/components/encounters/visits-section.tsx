@@ -19,6 +19,7 @@ import { Fragment, useState } from "react";
 import { SinceLastVisit } from "@/components/day/since-last-visit";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { InHeaderSlot } from "@/components/layout/header-slot";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { SectionHeading } from "@/components/ui/section-heading";
@@ -92,24 +93,26 @@ export function VisitsSection({ enabled = true }: { enabled?: boolean }) {
 
   return (
     <section aria-labelledby="visits-section-title" className="space-y-4">
-      <PageHeader
-        titleId="visits-section-title"
-        title={t("encounters.sectionTitle")}
-        description={t("encounters.sectionDescription")}
-        actions={
-          <>
-            <Button asChild variant="outline" className="min-h-11">
-              <Link href="/checkups/practitioners">
-                <ContactRound className="size-4" aria-hidden />
-                {t("practitioners.linkLabel")}
-              </Link>
-            </Button>
-            {/* The empty state carries the add action while there is no
-                visit. */}
-            {!list.isPending && !list.isError && empty ? null : addButton}
-          </>
-        }
-      />
+      <InHeaderSlot>
+        <PageHeader
+          titleId="visits-section-title"
+          title={t("encounters.sectionTitle")}
+          description={t("encounters.sectionDescription")}
+          actions={
+            <>
+              <Button asChild variant="outline" className="min-h-11">
+                <Link href="/checkups/practitioners">
+                  <ContactRound className="size-4" aria-hidden />
+                  {t("practitioners.linkLabel")}
+                </Link>
+              </Button>
+              {/* The empty state carries the add action while there is no
+                  visit. */}
+              {!list.isPending && !list.isError && empty ? null : addButton}
+            </>
+          }
+        />
+      </InHeaderSlot>
 
       {list.isError ? (
         <QueryErrorCard

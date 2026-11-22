@@ -9,6 +9,7 @@ import { useMounted } from "@/hooks/use-mounted";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { PullToRefreshIndicator } from "@/components/ui/pull-to-refresh-indicator";
 import { PageAuthGate } from "@/components/ui/page-auth-gate";
+import { HeaderSlotProvider } from "@/components/layout/header-slot";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VorsorgeSection } from "@/components/measurement-reminders/vorsorge-section";
 import { VisitsSection } from "@/components/encounters/visits-section";
@@ -43,6 +44,9 @@ import { invalidateKeys, queryKeys } from "@/lib/query-keys";
  * where on the body they are, with what is linked to them. It starts from the
  * visits (a procedure is one), so it sits here rather than under the illness
  * journal, and its read hangs off the same `["encounters"]` root.
+ *
+ * Each view's header stands above the view switch, not under it: the page
+ * reads title first, then the choice of view (`header-slot.tsx`).
  *
  * The pull invalidates both reads. Refreshing one and leaving the other stale
  * is how a page ends up showing a visit that closed a checkup still listed as
@@ -100,6 +104,9 @@ export default function CheckupsPageClient() {
     [queryClient],
   );
   const pull = usePullToRefresh({ onRefresh: refresh });
+  // The active view's header (its H1, sentence and actions) lands here,
+  // above the view switch; see `header-slot.tsx`.
+  const [headerSlot, setHeaderSlot] = useState<HTMLDivElement | null>(null);
 
   if (!mounted || isLoading) {
     return <PageAuthGate />;
@@ -108,40 +115,49 @@ export default function CheckupsPageClient() {
   return (
     <div className="space-y-6">
       <PullToRefreshIndicator {...pull} />
-      <Tabs value={view} onValueChange={setView}>
-        <TabsList aria-label={t("checkups.viewSwitchLabel")}>
-          <TabsTrigger value="vorsorge" data-testid="checkups-tab-vorsorge">
-            {t("checkups.tabVorsorge")}
-          </TabsTrigger>
-          <TabsTrigger value="visits" data-testid="checkups-tab-visits">
-            {t("checkups.tabVisits")}
-          </TabsTrigger>
-          <TabsTrigger value="procedures" data-testid="checkups-tab-procedures">
-            {t("checkups.tabProcedures")}
-          </TabsTrigger>
-          <TabsTrigger value="body-sites" data-testid="checkups-tab-body-sites">
-            {t("checkups.tabBodySites")}
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="vorsorge">
-          <VorsorgeSection enabled={isAuthenticated} variant="page" />
-        </TabsContent>
-        <TabsContent value="visits">
-          {/* Mounted only on the active tab, so the visits read does not fire
+      <div ref={setHeaderSlot} data-slot="checkups-view-header" />
+      <HeaderSlotProvider value={headerSlot}>
+        <Tabs value={view} onValueChange={setView}>
+          <TabsList aria-label={t("checkups.viewSwitchLabel")}>
+            <TabsTrigger value="vorsorge" data-testid="checkups-tab-vorsorge">
+              {t("checkups.tabVorsorge")}
+            </TabsTrigger>
+            <TabsTrigger value="visits" data-testid="checkups-tab-visits">
+              {t("checkups.tabVisits")}
+            </TabsTrigger>
+            <TabsTrigger
+              value="procedures"
+              data-testid="checkups-tab-procedures"
+            >
+              {t("checkups.tabProcedures")}
+            </TabsTrigger>
+            <TabsTrigger
+              value="body-sites"
+              data-testid="checkups-tab-body-sites"
+            >
+              {t("checkups.tabBodySites")}
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="vorsorge">
+            <VorsorgeSection enabled={isAuthenticated} variant="page" />
+          </TabsContent>
+          <TabsContent value="visits">
+            {/* Mounted only on the active tab, so the visits read does not fire
               for a person who never opens it. */}
-          <VisitsSection enabled={isAuthenticated} />
-        </TabsContent>
-        <TabsContent value="procedures">
-          <ProceduresSection enabled={isAuthenticated} />
-        </TabsContent>
-        <TabsContent value="body-sites">
-          <BodySitesSection
-            enabled={isAuthenticated}
-            initialSite={linkedSite}
-            initialSide={linkedSide}
-          />
-        </TabsContent>
-      </Tabs>
+            <VisitsSection enabled={isAuthenticated} />
+          </TabsContent>
+          <TabsContent value="procedures">
+            <ProceduresSection enabled={isAuthenticated} />
+          </TabsContent>
+          <TabsContent value="body-sites">
+            <BodySitesSection
+              enabled={isAuthenticated}
+              initialSite={linkedSite}
+              initialSide={linkedSide}
+            />
+          </TabsContent>
+        </Tabs>
+      </HeaderSlotProvider>
     </div>
   );
 }

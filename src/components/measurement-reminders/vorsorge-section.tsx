@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ContextLinks } from "@/components/layout/context-links";
+import { InHeaderSlot } from "@/components/layout/header-slot";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
@@ -214,32 +215,32 @@ export function VorsorgeSection({
   return (
     <section aria-labelledby="vorsorge-section-title" className="space-y-4">
       {variant === "page" ? (
-        <PageHeader
-          titleId="vorsorge-section-title"
-          title={
-            <span data-tour-id="vorsorge-hero">
-              {t("measurementReminders.sectionTitle")}
-            </span>
-          }
-          description={t("measurementReminders.sectionDescription")}
-          actions={
-            <>
-              {wrenchButton}
-              {/* The empty state carries the add action while there is
-                  nothing to list. */}
-              {!isLoading && !isError && (reminders?.length ?? 0) === 0
-                ? null
-                : addButton}
-            </>
-          }
-        />
+        <InHeaderSlot>
+          <PageHeader
+            titleId="vorsorge-section-title"
+            title={
+              <span data-tour-id="vorsorge-hero">
+                {t("measurementReminders.sectionTitle")}
+              </span>
+            }
+            description={t("measurementReminders.sectionDescription")}
+            actions={
+              <>
+                {wrenchButton}
+                {/* The empty state carries the add action when empty. */}
+                {!isLoading && !isError && (reminders?.length ?? 0) === 0
+                  ? null
+                  : addButton}
+              </>
+            }
+          />
+        </InHeaderSlot>
       ) : null}
       {variant === "page" ? (
-        // The reminder switches and the screening hints moved out of the
-        // checkups settings in v1.44 (Notifications, Health profile), and the
-        // care calendar these dates feed lives under Health record; all three
-        // stay one tap away from the page they are about. Which of them a
-        // shared record shows is the links' own rule.
+        // The reminder switches and screening hints (Notifications, Health
+        // profile) and the care calendar (Health record) stay one tap away
+        // from the page they are about; the links decide what a shared
+        // record shows.
         <ContextLinks page="/checkups" />
       ) : null}
       {variant === "page" ? null : (
