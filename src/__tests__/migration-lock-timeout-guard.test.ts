@@ -600,3 +600,135 @@ describe("long work since 0517", () => {
     ).toEqual([]);
   });
 });
+
+/**
+ * From 0517 on, a unique index built in place on a table the file first
+ * checks or rewrites takes a write-blocking lock on that table before the
+ * check. Between a clash count (0517) or a de-duplication (0529) and the
+ * build, an older container still serving during the upgrade can write a
+ * row that clashes again: the build fails with 23505, and the boot stops at
+ * P3009. `SHARE ROW EXCLUSIVE` holds writes back for the rest of the file
+ * and lets reads go on; the file's `lock_timeout` bounds the wait for it. A
+ * table the same file creates has no other writer.
+ */
+const UNIQUE_RACE_FROM = 517;
+
+const WRITE_BLOCKING_LOCK = new RegExp(
+  String.raw`\bLOCK\s+(?:TABLE\s+)?${TABLE}\s+IN\s+(?:SHARE\s+ROW\s+EXCLUSIVE|EXCLUSIVE|ACCESS\s+EXCLUSIVE)\s+MODE\b`,
+  "gi",
+);
+
+function uniqueBuildRaceViolations(name: string, sql: string): string[] {
+  const code = sql.replace(/--[^\n]*/g, "");
+  const found: string[] = [];
+  const builds = located(
+    new RegExp(
+      String.raw`\bCREATE\s+UNIQUE\s+INDEX\s+(?!CONCURRENTLY)[^;]*?\bON\s+${TABLE}`,
+      "gi",
+    ),
+    code,
+  );
+  const seen = new Set<string>();
+  for (const { table, at } of builds) {
+    if (seen.has(table)) continue;
+    seen.add(table);
+    const before = code.slice(0, at);
+    const created = located(
+      new RegExp(
+        String.raw`\bCREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?${TABLE}`,
+        "gi",
+      ),
+      before,
+    ).some((m) => m.table === table);
+    if (created) continue;
+    const firstTouch = located(
+      new RegExp(String.raw`\b(?:FROM|UPDATE|INTO)\s+${TABLE}`, "gi"),
+      before,
+    ).find((m) => m.table === table);
+    if (!firstTouch) continue;
+    const locked = located(WRITE_BLOCKING_LOCK, before).some(
+      (m) => m.table === table && m.at < firstTouch.at,
+    );
+    if (!locked) {
+      found.push(
+        `${name}: reads or rewrites ${table} before its unique index without LOCK TABLE "${table}" IN SHARE ROW EXCLUSIVE MODE first; a concurrent write can fail the build`,
+      );
+    }
+  }
+  return found;
+}
+
+describe("unique index builds since 0517", () => {
+  it("lock out writes between their check and the build", () => {
+    const found = migrations()
+      .filter(
+        ({ name }) => Number.parseInt(name.slice(0, 4), 10) >= UNIQUE_RACE_FROM,
+      )
+      .flatMap(({ name, sql }) => uniqueBuildRaceViolations(name, sql));
+    expect(found, found.join("\n")).toEqual([]);
+  });
+
+  it("sees the files it was written from", () => {
+    const byName = new Map(migrations().map(({ name, sql }) => [name, sql]));
+    for (const [name, table] of [
+      ["0517_case_insensitive_identity_and_retention_indexes", "users"],
+      ["0529_push_relay_hardening", "devices"],
+    ] as const) {
+      const sql = byName.get(name);
+      expect(sql, name).toBeDefined();
+      // Without its lock the file is exactly the shape the rule refuses.
+      const unlocked = (sql ?? "").replace(
+        new RegExp(
+          String.raw`LOCK TABLE "${table}" IN SHARE ROW EXCLUSIVE MODE;`,
+        ),
+        "",
+      );
+      expect(unlocked).not.toBe(sql);
+      expect(uniqueBuildRaceViolations(name, unlocked)).toEqual([
+        expect.stringContaining(`rewrites ${table} before its unique index`),
+      ]);
+    }
+  });
+
+  it("catches each shape it exists to refuse", () => {
+    const check =
+      'SELECT count(*) FROM "users" GROUP BY lower("email") HAVING count(*) > 1;';
+    const build =
+      'CREATE UNIQUE INDEX IF NOT EXISTS "k" ON "users" (lower("email"));';
+    const lock = 'LOCK TABLE "users" IN SHARE ROW EXCLUSIVE MODE;';
+    const block = (body: string) => `DO $m$ BEGIN ${body} END $m$;`;
+    expect(uniqueBuildRaceViolations("a", block(check + build))).toHaveLength(
+      1,
+    );
+    expect(uniqueBuildRaceViolations("b", block(lock + check + build))).toEqual(
+      [],
+    );
+    // A lock taken after the check comes too late.
+    expect(
+      uniqueBuildRaceViolations("c", block(check + lock + build)),
+    ).toHaveLength(1);
+    // A weaker lock lets writes through.
+    expect(
+      uniqueBuildRaceViolations(
+        "d",
+        block(
+          'LOCK TABLE "users" IN SHARE MODE;' +
+            'UPDATE "users" SET "email" = lower("email");' +
+            build,
+        ),
+      ),
+    ).toHaveLength(1);
+    // A build with no check before it, or on a table the file creates.
+    expect(uniqueBuildRaceViolations("e", block(build))).toEqual([]);
+    expect(
+      uniqueBuildRaceViolations(
+        "f",
+        block(
+          'CREATE TABLE IF NOT EXISTS "users" ("email" TEXT);' +
+            "INSERT INTO \"users\" VALUES ('a');" +
+            build,
+        ),
+      ),
+    ).toEqual([]);
+  });
+});

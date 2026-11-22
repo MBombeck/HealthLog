@@ -45,6 +45,11 @@ DECLARE
 BEGIN
     PERFORM set_config('lock_timeout', '10s', true);
 
+    -- Writes wait from the count to the build, so a still-running older
+    -- container cannot add a clashing account in between and fail the build
+    -- with 23505. Reads go on.
+    LOCK TABLE "users" IN SHARE ROW EXCLUSIVE MODE;
+
     SELECT count(*) INTO email_clashes FROM (
         SELECT lower("email") FROM "users"
          WHERE "email" IS NOT NULL
