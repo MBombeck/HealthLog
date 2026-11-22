@@ -17,20 +17,18 @@ The relay's source, protocol and test vectors are public in the
 
 ## What the relay sees, and what it does not
 
-The relay sees:
+The relay sees delivery metadata (the device's push token while it forwards,
+kept at rest only as a keyed hash; your server's instance id; the kind, size
+and time of each push; the version of the person's consent), never what a
+notification says; the full list, and how long each item is kept, is the
+relay's privacy notice at `https://push.healthlog.dev/privacy`, which is the
+authoritative text. With the separate Live Activity consent (see "Live
+Activity start and update" below), the content state of a Live Activity
+start or update passes the relay and Apple in the clear.
 
-- that your server sends a device something, when, and of which class
-  (alert, silent, or the end of a Live Activity);
-- the device's APNs token while a request is in flight (stored only as a
-  keyed hash), and your server's instance id;
-- your server's address while it is connected (not stored, not logged);
-- a hash of the device's binding key and the version and day of the
-  person's consent.
-
-It does not see the content: medication names, doses, readings, notes,
-account names or anything else inside a notification. Every alert and every
-silent push carries an envelope sealed with HPKE (RFC 9180, auth mode,
-X25519, HKDF-SHA256, ChaCha20-Poly1305) for that one device. The envelope has
+Every alert and every silent push carries an envelope sealed with HPKE
+(RFC 9180, auth mode, X25519, HKDF-SHA256, ChaCha20-Poly1305) for that one
+device. The envelope has
 a fixed size per class and its header names no key, so envelopes do not tell
 devices or servers apart either.
 
@@ -60,6 +58,8 @@ The relay is off until the admin turns it on.
    with the relay. The card then shows the relay's state and how many devices
    are bound.
 4. Each person sees a card in the iOS app once and decides for themselves.
+   This needs the iOS app 1.7 or later; an older build keeps its local
+   reminders.
    Only "Turn on" creates the keys on the iPhone and binds it. The choice
    stays in the app's notification settings and can be withdrawn there at any
    time, even while your server is unreachable.
@@ -215,18 +215,14 @@ nobody relies on a confirmation that did not come.
 
 ## Privacy notice in short
 
-- The relay operator is the maintainer of the HealthLog project, acting as
-  an independent controller for the relay's metadata. The relay serves its
-  full privacy notice at `https://push.healthlog.dev/privacy` and its terms at
-  `https://push.healthlog.dev/terms`.
-- Delivery rests on each person's consent, given on the app's card and
-  withdrawable at any time. Without it nothing goes over the relay and
-  everything else works as before.
-- The relay keeps bindings for at most 13 weeks without a push, daily counts
-  per instance for 7 days, totals without any instance for 400 days, and no
-  addresses or tokens in its logs.
-- In the app, "My data at the relay" shows what the relay holds about the
-  device, and turning the relay off erases it.
+The relay operator is the maintainer of the HealthLog project, acting as an
+independent controller for the relay's metadata. Delivery rests on each
+person's consent, given on the app's card and withdrawable there at any
+time; without it nothing goes over the relay and everything else works as
+before. In the app, "My data at the relay" shows what the relay holds about
+the device, and turning the relay off erases it. What is kept and for how
+long is in the relay's privacy notice, `https://push.healthlog.dev/privacy`,
+and its terms are at `https://push.healthlog.dev/terms`.
 
 ## Configuration
 
