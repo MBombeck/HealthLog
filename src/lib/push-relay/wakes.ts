@@ -42,7 +42,9 @@ import {
   type SealedSendResult,
 } from "@/lib/push-relay/route-device";
 
-export type WakeKind = "DATA_CHANGED" | "HEALTHKIT_CATCH_UP";
+/** The silent wakes, beside the medication sync. */
+export const WAKE_KINDS = ["DATA_CHANGED", "HEALTHKIT_CATCH_UP"] as const;
+export type WakeKind = (typeof WAKE_KINDS)[number];
 
 /** Every kind of silent push the budget counts. */
 export type SilentKind = WakeKind | "MEDICATION_INTAKE_SYNC";

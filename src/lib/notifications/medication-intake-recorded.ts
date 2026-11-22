@@ -56,7 +56,10 @@ import {
   loadPushContext,
   ROUTABLE_DEVICE_SELECT,
 } from "@/lib/push-relay/route-device";
-import { sendSealedIntakeRecorded } from "@/lib/push-relay/medication-pushes";
+import {
+  sendSealedIntakeRecorded,
+  type RecordedOutcome,
+} from "@/lib/push-relay/medication-pushes";
 
 /** The confirmation of a row that now records a take or a skip, else none. */
 export function recordedEventOf(
@@ -135,7 +138,7 @@ export interface IntakeRecordedEvent {
   intakeId: string;
   slotInstant: Date;
   /** `reopened`: the slot was answered and is open again (undone). */
-  outcome: "taken" | "skipped" | "reopened";
+  outcome: RecordedOutcome;
   takenAt: Date | null;
   takenVia:
     | "WEB"
@@ -269,7 +272,7 @@ const RECORDED_TEXT = {
     title: "notifications.intakeRecorded.titleReopened",
     body: "notifications.intakeRecorded.bodyReopened",
   },
-} as const;
+} as const satisfies Record<RecordedOutcome, { title: string; body: string }>;
 
 /** The neutral localised text of one confirmation. */
 function recordedText(event: IntakeRecordedEvent, locale: Locale) {
