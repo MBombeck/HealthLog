@@ -214,12 +214,12 @@ always did, and finds nothing in the queue schema it did not create.
 ### v1.49.0 notes
 
 The sequence above covers this release, with one possible stop (`0517`, see
-below). It brings thirty migrations, `0514` to `0549` (`0516`, `0523`,
-`0527`, `0528`, `0541` and `0548` do not exist), so the boot log says
-`30 database migrations pending`. Copy the pre-migration dump of step 0 off
-the host before you start: it is the way back.
+below). It brings thirty-three migrations, `0514` to `0554` (`0516`, `0523`,
+`0527`, `0528`, `0541`, `0548`, `0550` and `0552` do not exist), so the boot
+log says `33 database migrations pending`. Copy the pre-migration dump of
+step 0 off the host before you start: it is the way back.
 
-Five migrations touch data you already have:
+Six migrations touch data you already have:
 
 - `0515` merges doses recorded twice for one slot. Of each slot's live rows
   it keeps the one that records a take, else a skip, else the oldest pending
@@ -270,6 +270,14 @@ Five migrations touch data you already have:
   ledger `apple_health_tombstones` from `0511`: those rows can only be
   deleted in Apple Health, so a sample that comes back there is written
   again.
+- `0551` adds `app_settings.server_setup_completed_at` and
+  `server_setup_steps_json` (both nullable, no rewrite) and stamps the
+  first-admin server setup as finished on an instance that already has
+  accounts, with one `UPDATE` of the single `app_settings` row. An upgrade
+  therefore never offers the setup to a server that has been running; a
+  fresh install has no account when the migration runs, keeps `NULL`, and
+  offers the setup to its first admin. It stays reachable from Admin >
+  System status either way.
 
 Two more change data only on a host that ran a 1.49 pre-release. Coming from
 1.48, the columns and tables they touch are created earlier in the same
@@ -294,7 +302,18 @@ quantities (`0514`, `0519`), nullable columns or columns with a default
 (`0520`, `0521`, `0525`, `0526`, `0530`, `0533`, `0536`, `0537`, and
 `devices.local_runway_until` in `0542`, `push_data_changes.intake_sync_owed_at`
 in `0544`, `live_activity_tokens.relay_started BOOLEAN NOT NULL DEFAULT false`
-in `0545`, `measurements.stats_computed_at` in `0547`, `users.medicine_registry` and `medications.leaflet_url` in `0549`), and new tables (`0522`, `0524`, `0531`, `0532`, `0534`, `0535`).
+in `0545`, `measurements.stats_computed_at` in `0547`, `users.medicine_registry`
+and `medications.leaflet_url` in `0549`), and new tables (`0522`, `0524`,
+`0531`, `0532`, `0534`, `0535`, and `ai_job_failures` in `0553`, which holds
+why background AI work last stopped for a record: closed reason codes only,
+cleared by the next success, cascading with the account).
+`0554` gives each settings document its own lock token. It adds eight
+`*_revised_at` columns to `users` and `about_me_revised_at` to
+`user_health_profiles`, all `TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP`
+(a catalog change without a rewrite), and a `BEFORE UPDATE` trigger on each
+table that moves a document's revision when its value changes. Nothing
+stored is rewritten. A browser or app that read one of those settings before
+the update gets a single 409 on its next save, reads again, and saves.
 `0545` is metadata-only: existing Live Activity rows read `false`, and relay
 updates go only to an Activity the server started over the relay. `0538`
 only drops an index on `live_activity_tokens` that another index already
@@ -376,8 +395,11 @@ No other migration needs the dump. `0517` rewrites no row, and its indexes
 and CHECKs can be dropped. `0539` drops columns and an enum, and `0540` and
 `0543` add `NOT NULL` columns, but v1.48.5 never reads the dropped columns,
 `0540`'s tables are new in this release, and `0543`'s column has a default
-that covers v1.48.5's inserts. Nothing is renamed. Every other migration is
-harmless to the old image, which ignores what it does not know. If the dump
+that covers v1.48.5's inserts. Nothing is renamed. `0551`'s columns are
+nullable, `0553` is a table v1.48.5 never touches, and `0554`'s columns have
+a default while its triggers only stamp columns v1.48.5 does not read. Every
+other migration is harmless to the old image, which ignores what it does not
+know. If the dump
 is gone, or too much has been written since, switch the image back only
 after these three steps, run as the database owner:
 
