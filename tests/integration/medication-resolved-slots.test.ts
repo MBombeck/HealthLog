@@ -180,13 +180,13 @@ describe("GET /api/medications/resolved-slots", () => {
       timesOfDay: ["09:00"],
       daysOfWeek: "1,4",
     });
-    const rolling = await seedMedication(user.id, "Every other day", {
+    const rolling = await seedMedication(user.id, "Every other week", {
       timesOfDay: ["07:30"],
-      rollingIntervalDays: 2,
+      daysOfWeek: "i2;1,3,5",
     });
     const prisma = getPrismaClient();
     // Yesterday's morning dose taken late from the app, today's evening dose
-    // skipped ahead, the rolling dose taken two days ago.
+    // skipped ahead, the every-other-week dose taken yesterday.
     await prisma.medicationIntakeEvent.create({
       data: {
         userId: user.id,
@@ -210,8 +210,8 @@ describe("GET /api/medications/resolved-slots", () => {
       data: {
         userId: user.id,
         medicationId: rolling.id,
-        scheduledFor: new Date("2026-11-19T06:30:00.000Z"),
-        takenAt: new Date("2026-11-19T06:35:00.000Z"),
+        scheduledFor: new Date("2026-11-20T06:30:00.000Z"),
+        takenAt: new Date("2026-11-20T06:35:00.000Z"),
         source: "WEB",
         takenVia: "WEB",
       },
@@ -255,7 +255,20 @@ describe("GET /api/medications/resolved-slots", () => {
           intakeId: r.intake?.id ?? null,
           takenAt: r.intake?.takenAt ?? null,
         }));
-      expect(med.slots.length).toBeGreaterThan(0);
+      const name = {
+        [daily.id]: "daily",
+        [weekly.id]: "weekly",
+        [rolling.id]: "every other week",
+      }[med.medicationId];
+      expect({
+        name,
+        history: expected.length,
+        resolved: med.slots.length,
+      }).toMatchObject({ history: expected.length, resolved: expected.length });
+      expect(
+        expected.length,
+        `${name} has slots in the window`,
+      ).toBeGreaterThan(0);
       expect(
         med.slots.map((s) => ({
           slotInstant: s.slotInstant,
