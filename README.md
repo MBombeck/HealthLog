@@ -24,6 +24,12 @@
   <a href="https://testflight.apple.com/join/bucuTBpa">iOS TestFlight</a>
 </p>
 
+HealthLog is a health record you run yourself. It collects weight, blood pressure, pulse, glucose, sleep, mood, cycle, labs and medications from the devices and apps you already use, puts them on one timeline, and keeps them in a Postgres database on a NAS, homelab or small VPS of yours. It is a web app you can install on any phone or desktop, with a native iPhone and iPad app beside it.
+
+It is for people who track their health over years, often with a condition and several devices, and who would rather not hand that history to a vendor cloud. One `docker compose up` starts it, there is no subscription, and you can export everything.
+
+The [live demo](https://demo.healthlog.dev) is a working install with sample data. Sign in with `demo` / `demo123demo123`.
+
 <img width="2400" height="1500" alt="HealthLog dashboard in dark theme: a lead sentence on the latest vitals, today's medications, sleep and cycle, the health score ring, worth-a-look cards, and metric tiles with 7-day trends" src="docs/assets/dashboard.jpeg" />
 <p align="center">
   <img src="docs/assets/timeline.jpeg" alt="Timeline: life events, conditions, medications, vaccinations, labs and cycles on one time axis, above blood pressure, weight and resting heart rate" width="32%">
@@ -36,120 +42,99 @@
   <img src="docs/assets/coach.jpeg" alt="Coach: a conversation about the week's recovery, grounded in the recorded data" width="32%">
 </p>
 
-## What HealthLog is
+## What it does
 
-HealthLog is a self-hosted health tracking app (PWA + native iOS client) that runs from a single `docker compose up` on a NAS, homelab, or small VPS. It brings weight, blood pressure, pulse, blood glucose, body composition, sleep, mood, menstrual cycle, and medications onto one timeline, synced from the devices you already own, and keeps it in a Postgres database on hardware you control. It needs no vendor cloud or subscription and sends no usage telemetry. The few requests the server makes on its own (an update check, a password breach check, an IP geolocation lookup for logins) can each be switched off.
+| Area            | What is there                                                                                                                                                                                                                                                                                               |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vitals          | Weight, blood pressure, pulse, glucose, body composition, SpO₂, respiratory rate, HRV, sleep with a night timeline, workouts, nutrients and energy balance, and metrics you define yourself. Charts use published reference ranges (ESH 2023, ADA 2024) that you can replace with your clinician's targets. |
+| Diaries         | Mood, symptoms, illness episodes, a seizure diary, cycle tracking with pregnancy and the weeks after a birth, and validated questionnaires (WHO-5, PHQ-9, GAD-7, Sleep Condition Indicator) in their official wording.                                                                                      |
+| Health record   | Labs typed in or read from a scanned report (you confirm every value before it is saved), vaccinations, allergies, family history, conditions, visits and an encrypted document vault.                                                                                                                      |
+| Medications     | Weekly, weekday, interval, as-needed and cyclic schedules, a dose window per dose, and one answer per dose on every device. The list groups by category. Reminders go out over APNs, Telegram, ntfy, Web Push, email or a webhook, with one snooze setting for all of them.                                 |
+| Sync and import | Withings, WHOOP, Oura, Polar and Strava over OAuth, Garmin, Google Health (Fitbit, Pixel Watch), Nightscout, Apple Health live from the iOS app or as `export.zip`, Health Connect as a file or fetched from a WebDAV or Nextcloud folder, Gadgetbridge, FHIR R4 bundles from patient portals, FIT and CSV. |
+| Sharing         | A doctor-report PDF rendered on your server, on demand or filed every month, quarter or year. An emergency card with an offline copy and a QR link. Time-limited clinician share links, a calendar feed for visits and check-ups, a read-only FHIR R4 API and an MCP server.                                |
+| Households      | Invites, and managed profiles for someone without a login of their own (a child, a parent) that a guardian keeps, including where that profile's AI comes from.                                                                                                                                             |
+| Insights        | Health scores, trends and correlations computed on your server without a model. Optionally a daily briefing and a coach that read your data against guideline ranges, with your own OpenAI or Anthropic key, a ChatGPT subscription, or a local model (Ollama, LM Studio, vLLM).                            |
 
-HealthLog is a personal health record-keeping and wellness tool. It is not a medical device and does not diagnose, treat, cure, or prevent any disease. It helps you log, visualise, and export your own data, and leaves clinical judgement to a clinician.
+The app speaks English, German, Spanish, French, Italian, Polish, Korean, Dutch, Brazilian Portuguese and Russian. The [feature tour](https://docs.healthlog.dev/features/) and the [integration guides](https://docs.healthlog.dev/guides/integrations/) have the detail.
 
-Try the [live demo](https://demo.healthlog.dev) to see a working install. Sign in with `demo` / `demo123demo123`.
+### What it is not
 
-## Features
+HealthLog is not a medical device. It records, charts and exports what you give it, and it does not diagnose, treat or advise treatment; the AI texts say where a value sits, never what you have. It is not a hosted service: there is no HealthLog cloud, no account with us, no ads and no tracking. And it is not built to sell or run a clinic on; the license is noncommercial.
 
-- **Vitals and trends.** Weight, blood pressure, pulse, glucose, body composition, sleep, SpO₂, respiratory rate, mood, and cycle tracking, charted with trends, moving averages, and clinical reference ranges (ESH 2023, ADA 2024) that you can override with the targets your clinician set. Health scores and correlations between your metrics are computed on your server without an AI model.
-- **Questionnaires and self-checks.** Optional validated self-checks for mental wellbeing and sleep (WHO-5, PHQ-9, GAD-7 and the Sleep Condition Indicator, in their official wording, with crisis resources when an answer calls for them), grip strength, a pain score from 0 to 10, waist and body measurements, and a longevity lab panel. Each comes from one signal registry, so a new signal reaches charts, correlations, the coach, the FHIR map, and the API together.
-- **Allergies, family history, labs and vaccinations.** Allergies and family history are structured records that flow into the doctor report (reactions and notes are encrypted, the substance and condition names are not). Lab values are keyed in or scanned from a printed report: OCR reads the stated values, units, and dates for you to review and confirm before anything is saved. HealthLog transcribes what a report says; it never interprets or diagnoses from it. A vaccination record keeps a lifetime immunization log, doses grouped under the disease they protect against, and prints in the doctor report.
-- **Documents.** An opt-in module stores letters, reports, and scans encrypted at rest. PDFs and photos preview inline, Office and text files stay download-only, and nothing a user uploads can execute in the app. One searchable timeline with type, condition, and year filters, drag-and-drop and paste-to-upload, bulk filing, a delete you can undo within 30 days, and per-file and per-account limits the operator sets.
-- **Weather and environment.** An environmental module adds weather, daylight, temperature, air quality, and pollen as possible influences (winter darkness and mood, heat and blood pressure), based on a home location you set. It is on by default, and nothing leaves the host until someone sets that location.
-- **Devices and integrations.** Withings, WHOOP, Oura, Polar and Strava sync over OAuth2, Garmin through a Personal API key, Google Health connects Fitbit and Pixel Watch through your own Google Cloud client, Nightscout streams CGM glucose, an Apple Health `export.zip` or a Health Connect export folds your full history in, and the native iOS app streams HealthKit live. A per-metric source priority decides which reading is canonical when wearables overlap.
-- **Medications.** Flexible schedules (weekly injections, weekday-only, intervals, PRN, cyclic), a configurable intake window per dose, and a dose history where every slot reads taken, late, skipped, or missed. The compliance rate is computed from the same ledger, so the percentage always matches the timeline.
-- **AI features (optional).** A daily briefing and a conversational coach grounded in your own measurements and read against cited guideline reference bands: where a value sits and what that means, never a diagnosis. The coach proposes concrete if-then plans you accept or decline, and skips a proactive check-in when there is nothing new to say. Bring your own OpenAI or Anthropic key, or point at a local endpoint (Ollama, LM Studio, vLLM) so AI requests stay on your network.
-- **Doctor report and FHIR.** A doctor-report PDF rendered on your server, a read-only HL7 FHIR R4 API, and scoped, time-limited share links you revoke after the visit.
-- **Encryption and privacy.** AES-256-GCM encryption at rest for notes and other free text, documents, questionnaire answers, AI-written text and credentials, with zero-downtime key rotation. Measurement values, lab values, medication names and mood scores are stored unencrypted in the database, so the database volume and its backups need the same protection as the host. Passkey login, server-side sessions, strict CSP, and no third-party tracking anywhere.
-- **PWA, reminders and languages.** Installable PWA that keeps the open page readable when the connection drops, reminders over APNs, Telegram, ntfy, Web Push, email and a webhook, and a dashboard that stays fast on years of imported history. The app is available in English, German, Spanish, French, Italian, Polish, Korean, Dutch, Brazilian Portuguese and Russian.
+## How it works
 
-The full feature tour, integration guides, and API reference live at [docs.healthlog.dev](https://docs.healthlog.dev).
+Two containers: the Next.js app, which also runs the background jobs, and Postgres 18. Notes, documents, questionnaire answers, AI texts and every stored credential are encrypted with AES-256-GCM before they reach the database. AI is off until someone configures a provider, and a local endpoint keeps those requests on your network. The iOS app talks to the same API as the browser, and your server stays the only database. The [diagrams](docs/diagrams/README.md) show the data flow, the self-hosting topology and the security model.
 
 ## Quick start (Docker Compose)
+
+You need Docker with Compose. On the host:
 
 ```bash
 git clone https://github.com/MBombeck/HealthLog.git && cd HealthLog
 cp .env.example .env
 
-# Generate the three secrets (each a 64-char hex string = 32 bytes):
+# Three secrets, each 32 random bytes as hex:
 echo "POSTGRES_PASSWORD=$(openssl rand -hex 32)" >> .env
 echo "ENCRYPTION_KEY=$(openssl rand -hex 32)" >> .env
 echo "API_TOKEN_HMAC_KEY=$(openssl rand -hex 32)" >> .env
 
-# Required on a LAN or plain-HTTP host (NAS, homelab, Tailscale), or login fails:
+# Only if you open it over plain HTTP (LAN, NAS, Tailscale), or login fails:
 echo "SESSION_COOKIE_SECURE=false" >> .env
 
 docker compose up -d
 ```
 
-Open **http://localhost:3000** (or `http://<host>:3000`). The first registered user becomes admin. The compose file pulls a pre-built multi-arch image (`amd64` + `arm64`) from [GHCR](https://github.com/MBombeck/HealthLog/pkgs/container/healthlog); no build step required.
+Open `http://<host>:3000`. The first account you register becomes the admin, and onboarding walks you through the rest. The image comes pre-built for `amd64` and `arm64` from [GHCR](https://github.com/MBombeck/HealthLog/pkgs/container/healthlog). `curl -s http://localhost:3000/api/version` shows which version is running.
 
-Verify the running version:
+Keep a copy of `ENCRYPTION_KEY` somewhere other than this host. Without it the encrypted data cannot be read, and a database backup does not contain it.
 
-```bash
-curl -s http://localhost:3000/api/version   # returns version + buildSha + builtAt
-```
+Behind a TLS reverse proxy (Caddy, Traefik, Nginx, Coolify), leave `SESSION_COOKIE_SECURE` unset and set `NEXT_PUBLIC_APP_URL` and `APP_URL` to the public address. The [self-hosting guide](https://docs.healthlog.dev/getting-started/self-host-in-10-minutes/) covers that, and Unraid, Portainer and TrueNAS have [their own pages](https://docs.healthlog.dev/self-hosting/portainer-and-unraid/). Every variable is in the [environment reference](https://docs.healthlog.dev/reference/environment-variables/).
 
-`SESSION_COOKIE_SECURE=false` is the one setting plain-HTTP self-hosts must set: without it the session cookie carries the `Secure` flag, the browser drops it over HTTP, and login silently fails. Leave it unset (or `true`) only when a TLS reverse proxy serves HTTPS, and in that case set `NEXT_PUBLIC_APP_URL` and `APP_URL` to the public URL first (see the [self-hosting guide](https://docs.healthlog.dev/getting-started/self-host-in-10-minutes/)).
+Your data lives in the `postgres-data` volume. The app takes a database dump every night and before every migration into the `backups` volume, and can also send encrypted backups to an S3-compatible bucket. [Backups](https://docs.healthlog.dev/guides/backups/) explains both and how to restore.
 
-Persistent state lives in the database volume (`postgres-data`) and in `backups`, which holds the nightly database dumps; the app container is stateless. An install from v1.45 or earlier moves its Postgres 16 database from `pgdata` into the new volume on the first start ([details](docs/ops/postgres-major-upgrade.md)); recovering a lost server is in [disaster-recovery.md](docs/ops/disaster-recovery.md).
+## Updating
 
-NAS and homelab users have ready-made paths: [Unraid Community Applications](docs/self-hosting/unraid.md), [Portainer app templates](docs/self-hosting/portainer/README.md) and [TrueNAS](docs/self-hosting/truenas.md) (the Community train app is pending catalog review).
+From 1.49.0 on, releases follow a calendar: a feature release on the first Saturday of every month, fixes on the other Saturdays when there are any. Only a security problem, data loss or a broken install gets a release in between. `:latest` is the newest release; `:edge` is built from every push to `main` (amd64 only) for anyone who wants a fix before its Saturday.
 
-## Self-hosting
+To update, take a backup, run `docker compose pull && docker compose up -d`, and check `/api/version`. Migrations run on start and only go forward. Read the [release notes](https://github.com/MBombeck/HealthLog/releases) first, and see [Updates and deploy](https://docs.healthlog.dev/guides/updates-and-deploy/) for pinning a version and going back. The full rule is in [docs/contributing/release-policy.md](docs/contributing/release-policy.md).
 
-One container hosts both the web server and the job worker by default; split them via `HEALTHLOG_PROCESS_TYPE=web|worker` for horizontal scale. Encrypted nightly backups to any S3-compatible bucket are opt-in through five `BACKUP_*` environment variables (the admin panel shows their status), new users join by invite link or QR code, and the stack works out of the box behind Caddy, Traefik, Nginx, or [Coolify](https://coolify.io/).
+## Privacy and security
 
-HealthLog releases on a fixed schedule (see [Release schedule](#release-schedule)). Pin a tag, back up before upgrades, and read the [release notes](https://github.com/MBombeck/HealthLog/releases) before pulling `latest`. The operator manual (reverse proxy, migrations, encryption-key rotation, backup and restore) lives at [docs.healthlog.dev](https://docs.healthlog.dev).
+HealthLog sends no telemetry. The server makes three requests on its own (an update check, a password breach check and a geolocation lookup for sign-ins), and each can be switched off. Anything else leaving the host is something you set up: a sync, an AI provider, a weather location, the push relay. Measurement values, lab values, medication names and mood scores are stored unencrypted so the server can chart and search them, so the database volume and its backups need the same care as the host. Sign-in works with passkeys and a second factor or through your own OIDC provider, sessions stay on the server, and you get a notification when a passkey, token or device changes. The [security overview](https://docs.healthlog.dev/security/overview/) has the rest, and [SECURITY.md](SECURITY.md) says how to report a vulnerability.
 
-## Native iOS app
+## iPhone and iPad
 
-A SwiftUI companion on the [App Store](https://apps.apple.com/app/id6769501341), built on the same API as the web client: live HealthKit two-way sync, medication reminders with action buttons that work without opening the app, and an on-device coach on Apple-Intelligence-capable iPhones. Code lives in [MBombeck/healthlog-iOS](https://github.com/MBombeck/healthlog-iOS).
+The [HealthLog Companion App](https://apps.apple.com/app/id6769501341) is on the App Store, built on the same API as the web app: two-way Apple Health sync, medication reminders you can answer from the lock screen, and an on-device coach on iPhones with Apple Intelligence. The source is at [MBombeck/healthlog-iOS](https://github.com/MBombeck/healthlog-iOS).
 
-From app 1.7 on, a self-hosted server without its own Apple push key can reach the App Store app through the optional [push relay](https://docs.healthlog.dev/guides/push-relay/). It stays off until an admin of the server turns it on, and each person then decides on their own iPhone.
+App 1.7 is in [TestFlight](https://testflight.apple.com/join/bucuTBpa) and moves to the App Store once it has been tested against server 1.49.0. It adds an iPad layout with a sidebar, a timeline with a lane each for medications, symptoms, seizures, labs and measurements, and Spanish. It also works with the optional push relay. Apple only delivers pushes to the App Store app when they are signed with the publisher's key, which a self-hosted server does not have. The relay fills that gap: your server seals each notification for one device, the relay passes it to Apple and cannot read it. It is run by the project on donations, free for private and household use, off until an admin turns it on, and open source at [MBombeck/healthlog-push](https://github.com/MBombeck/healthlog-push). The [push relay guide](https://docs.healthlog.dev/guides/push-relay/) and the relay's [privacy notice](https://push.healthlog.dev/privacy) list what it sees.
 
-The App Store listing carries a small price, which exists to cover Apple's yearly developer fee rather than to earn anything; write to marc@healthlog.dev for a free code if that price is in your way. [TestFlight](https://testflight.apple.com/join/bucuTBpa) stays free and carries the newest builds, and the source builds on your own machine.
+The App Store price is there to cover Apple's yearly developer fee. TestFlight is free and gets new builds first, and you can build the app from source.
 
-## Tech stack
+## Help and contributing
 
-Next.js 16 (App Router, React Server Components), TypeScript strict, PostgreSQL 18 with Prisma, pg-boss for jobs, Tailwind CSS 4 + shadcn/ui, Recharts, WebAuthn passkeys, Vitest + Playwright, multi-stage Docker image on the official Node 22 Debian slim base. The OpenAPI 3.1 contract for native clients is generated from the Zod schemas at [`docs/api/openapi.yaml`](docs/api/openapi.yaml).
+Questions go to [Discussions](https://github.com/MBombeck/HealthLog/discussions), bugs to [Issues](https://github.com/MBombeck/HealthLog/issues). [Reporting a problem](https://docs.healthlog.dev/support/) shows how to copy the redacted support info that makes a report useful. Pull requests are welcome; [CONTRIBUTING.md](CONTRIBUTING.md) covers the setup, the branch model and [translations](CONTRIBUTING.md#translations). The API contract for clients is [`docs/api/openapi.yaml`](docs/api/openapi.yaml).
 
-## Documentation
-
-|                        |                                                                 |
-| ---------------------- | --------------------------------------------------------------- |
-| User and operator docs | [docs.healthlog.dev](https://docs.healthlog.dev)                |
-| Release history        | [Release notes](https://github.com/MBombeck/HealthLog/releases) |
-| API contract           | [`docs/api/openapi.yaml`](docs/api/openapi.yaml)                |
-| Security policy        | [SECURITY.md](SECURITY.md)                                      |
-| Contributing           | [CONTRIBUTING.md](CONTRIBUTING.md)                              |
-| Translating            | [CONTRIBUTING.md#translations](CONTRIBUTING.md#translations)    |
-
-## Status
-
-Actively developed. Issue reports and pull requests are welcome. Behaviour and schema can change between minor versions; migrations are forward-only.
-
-## Release schedule
-
-HealthLog ships on a calendar: a feature release on the first Saturday of every month, fixes on the other Saturdays when there are any, and a release out of schedule only for a security problem, data loss or a broken install. The calendar starts after 1.49.0. What that means for an update is in [Updates and deploy](https://docs.healthlog.dev/guides/updates-and-deploy/#release-schedule); the full rule is [docs/contributing/release-policy.md](docs/contributing/release-policy.md).
+If HealthLog is useful to you, [GitHub Sponsors](https://github.com/sponsors/MBombeck) and [Buy Me a Coffee](https://buymeacoffee.com/mbombeck) pay for the servers, the push relay and the Apple developer account.
 
 ## Thanks
 
 HealthLog started as something I built for myself. That it has turned into a project other people use, care about and help shape still surprises me, and I am grateful for every part of it.
 
-Thank you to everyone who sent code that shipped: [@TimonBed](https://github.com/TimonBed), [@Antiheld86](https://github.com/Antiheld86), [@BernhardBuckel](https://github.com/BernhardBuckel), [@balajiv113](https://github.com/balajiv113), [@aucun6352](https://github.com/aucun6352), [@mathewcsims](https://github.com/mathewcsims) and [@muhdusama](https://github.com/muhdusama).
+Thank you to everyone who sent code that shipped: [@TimonBed](https://github.com/TimonBed), [@Antiheld86](https://github.com/Antiheld86), [@BernhardBuckel](https://github.com/BernhardBuckel), [@balajiv113](https://github.com/balajiv113), [@aucun6352](https://github.com/aucun6352), [@mathewcsims](https://github.com/mathewcsims), [@muhdusama](https://github.com/muhdusama) and [@ferges123](https://github.com/ferges123).
 
 Thank you to everyone who opened an issue, asked a question in the discussions or wrote me an email, and especially to [@lutzkind](https://github.com/lutzkind), [@HercoGC](https://github.com/HercoGC), [@mills1975](https://github.com/mills1975), [@sreeramachandramurthy](https://github.com/sreeramachandramurthy), [@CritLoren](https://github.com/CritLoren), [@mbreitkreuz](https://github.com/mbreitkreuz), [@k-nacion](https://github.com/k-nacion), [@NebuPookins](https://github.com/NebuPookins), [@Nazza01](https://github.com/Nazza01), [@Cnote43](https://github.com/Cnote43) and [@juliaanvaneijndt](https://github.com/juliaanvaneijndt), whose reports shaped HealthLog again and again. Most of what got better in the last months started with someone describing what went wrong for them, often with a log, a screenshot and a second try when the first fix was not enough.
 
-And thank you to everyone who supported the project with a coffee or by buying the iPhone app. I don't name anyone here, but I read every message that comes with it. It pays for the servers and the Apple developer account, and it tells me that HealthLog is worth the evenings.
+And thank you to everyone who supported the project with a coffee or by buying the iPhone app. I don't name anyone here, but I read every message that comes with it. It tells me that HealthLog is worth the evenings.
 
 <a href="https://github.com/MBombeck/HealthLog/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=MBombeck/HealthLog" alt="Contributors to HealthLog" />
 </a>
 
-Every merged pull request keeps its author's name on the commit, so the
-[contributor graph](https://github.com/MBombeck/HealthLog/graphs/contributors)
-is the full list. Release notes name the people whose work is in that release,
-including anyone who found the defect without sending the fix.
+Every merged pull request keeps its author's name on the commit, so the [contributor graph](https://github.com/MBombeck/HealthLog/graphs/contributors) is the full list. Release notes name the people whose work is in that release, including anyone who found the defect without sending the fix.
 
 ## License
 
-HealthLog is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE): free to use, self-host, and modify for noncommercial purposes. Commercial use requires a separate agreement; open an issue or reach out via [healthlog.dev](https://healthlog.dev). Releases up to and including v1.15.18 were published under AGPL-3.0 and remain available under that license.
+HealthLog is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE): free to use, self-host and modify for noncommercial purposes. Commercial use needs a separate agreement; open an issue or get in touch through [healthlog.dev](https://healthlog.dev). Releases up to and including v1.15.18 were published under AGPL-3.0 and remain available under that license. The push relay is a separate project under Apache-2.0.
 
 ---
 
