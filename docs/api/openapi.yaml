@@ -48348,6 +48348,10 @@ components:
                   type:
                     - string
                     - "null"
+                medicineRegistry:
+                  type:
+                    - string
+                    - "null"
                 timeFormat:
                   type: string
                 dateFormat:
@@ -48831,6 +48835,10 @@ components:
                   - type: string
                     minLength: 1
                   - type: "null"
+              leafletUrl:
+                type:
+                  - string
+                  - "null"
               lowStockNotifiedAt:
                 anyOf:
                   - type: string

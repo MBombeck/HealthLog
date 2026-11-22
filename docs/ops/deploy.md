@@ -214,9 +214,9 @@ always did, and finds nothing in the queue schema it did not create.
 ### v1.49.0 notes
 
 The sequence above covers this release, with one possible stop (`0517`, see
-below). It brings twenty-nine migrations, `0514` to `0547` (`0516`, `0523`,
-`0527`, `0528` and `0541` do not exist), so the boot log says
-`29 database migrations pending`. Copy the pre-migration dump of step 0 off
+below). It brings thirty migrations, `0514` to `0549` (`0516`, `0523`,
+`0527`, `0528`, `0541` and `0548` do not exist), so the boot log says
+`30 database migrations pending`. Copy the pre-migration dump of step 0 off
 the host before you start: it is the way back.
 
 Five migrations touch data you already have:
@@ -294,7 +294,7 @@ quantities (`0514`, `0519`), nullable columns or columns with a default
 (`0520`, `0521`, `0525`, `0526`, `0530`, `0533`, `0536`, `0537`, and
 `devices.local_runway_until` in `0542`, `push_data_changes.intake_sync_owed_at`
 in `0544`, `live_activity_tokens.relay_started BOOLEAN NOT NULL DEFAULT false`
-in `0545`, `measurements.stats_computed_at` in `0547`), and new tables (`0522`, `0524`, `0531`, `0532`, `0534`, `0535`).
+in `0545`, `measurements.stats_computed_at` in `0547`, `users.medicine_registry` and `medications.leaflet_url` in `0549`), and new tables (`0522`, `0524`, `0531`, `0532`, `0534`, `0535`).
 `0545` is metadata-only: existing Live Activity rows read `false`, and relay
 updates go only to an Activity the server started over the relay. `0538`
 only drops an index on `live_activity_tokens` that another index already
