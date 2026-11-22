@@ -59,7 +59,8 @@ export { resolveInitialTimezone } from "./account-section-utils";
 
 export function AccountSection() {
   const { t } = useTranslations();
-  const { user, isLoading, isAuthenticated, refetch } = useAuth();
+  const { user, isLoading, isAuthenticated, profileLoaded, refetch } =
+    useAuth();
   // v1.16.4 — see `useMounted`: keeps the hydration render identical to
   // the SSR HTML when this boundary hydrates after `/api/auth/me`
   // settled (React #418 family).
@@ -142,8 +143,10 @@ export function AccountSection() {
   // React-recommended "store-the-prop-id alongside the state" pattern so the
   // sync-from-server happens during render (not in a setState-in-effect),
   // satisfying the strict `react-hooks/set-state-in-effect` rule.
+  // Not from the server-rendered seed: it withholds the identity fields, and a
+  // draft seeded from its `null`s would save them as cleared.
   const [seededUserId, setSeededUserId] = useState<string | null>(null);
-  if (user && user.id !== seededUserId) {
+  if (user && profileLoaded && user.id !== seededUserId) {
     const seed = {
       email: user.email ?? "",
       displayName: user.displayName ?? "",
@@ -359,9 +362,10 @@ export function AccountSection() {
     }
   }
 
-  if (!mounted || isLoading) {
+  if (!mounted || isLoading || (user && !profileLoaded)) {
     // §13 — a loading section paints its card + header, not a bare centered
-    // spinner (reference: admin/coach-feedback-section).
+    // spinner (reference: admin/coach-feedback-section). The seeded account
+    // counts as loading here: the form fields come with the full payload.
     return (
       <SettingsCard>
         <SettingsCardHeader

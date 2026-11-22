@@ -68,6 +68,14 @@ export interface AuthUser {
   id: string;
   username: string;
   /**
+   * Set only on the account the root layout wrote into the page
+   * (`src/lib/auth/account-seed.ts`): the identity, insurance and saved-report
+   * fields are `null` there because they were withheld, not because they are
+   * unset. Gone once the shell's own `/api/auth/me` read lands. Read it
+   * through `useAuth().profileLoaded`.
+   */
+  accountSeed?: true;
+  /**
    * When the account was created (ISO). Absent from an older server image,
    * which every reader treats as an established account.
    */
@@ -569,6 +577,16 @@ function resolveAccountAccess(value: object): {
     : { accountAccess: NO_ACCOUNT_ACCESS, status: "invalid" };
 }
 
+/**
+ * Whether `user` is the full `/api/auth/me` payload rather than the
+ * server-rendered seed (`src/lib/auth/account-seed.ts`), which writes the
+ * identity, insurance and saved-report fields as `null` because it withholds
+ * them. Read a withheld field only once this is true.
+ */
+export function isFullAccount(user: AuthUser | null): user is AuthUser {
+  return user !== null && user.accountSeed !== true;
+}
+
 export function useAuth() {
   const query = useQuery({
     // v1.4.40 — factory-routed to `queryKeys.authMe()`. Pre-fix
@@ -604,6 +622,14 @@ export function useAuth() {
     user,
     isLoading: query.isLoading,
     isAuthenticated,
+    /**
+     * True once `user` is the full `/api/auth/me` payload rather than the
+     * server-rendered seed, which withholds the identity, insurance and
+     * saved-report fields (`ACCOUNT_SEED_WITHHELD`). A reader of one of those
+     * fields waits for this before it seeds a form or draws a conclusion
+     * from a `null`: in the seed, `null` means "not sent", not "not set".
+     */
+    profileLoaded: isFullAccount(user),
     /**
      * True while the session question is genuinely unanswered — the auth
      * probe failed at the transport level (or 5xx) and no cached `/me`

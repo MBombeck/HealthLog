@@ -80,5 +80,12 @@ export const GET = apiHandler(async (request?: Request) => {
 
   // The payload itself is built by the one builder the root layout's server
   // render shares (`src/lib/auth/me-payload.ts`).
-  return apiSuccess(await buildAuthMePayload(auth, accountAccess, request));
+  const response = apiSuccess(
+    await buildAuthMePayload(auth, accountAccess, request),
+  );
+  // The whole account, identity and insurance fields included: no browser
+  // disk cache, no shared cache, no bfcache copy, the same posture as the
+  // pages rendered for a session.
+  response.headers.set("Cache-Control", "private, no-store");
+  return response;
 });

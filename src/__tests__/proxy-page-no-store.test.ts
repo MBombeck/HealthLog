@@ -23,6 +23,10 @@ vi.mock("@/lib/process-type", () => ({
 }));
 
 import { proxy } from "../proxy";
+import {
+  ACCOUNT_SEED_REQUEST_HEADER,
+  HEALTHLOG_PAGE_CACHE_HEADER,
+} from "@/lib/http/page-cache-headers";
 
 beforeEach(() => {
   vi.stubEnv("NODE_ENV", "production");
@@ -85,11 +89,53 @@ describe("proxy.ts no-store on session-gated pages", () => {
     expect(res.headers.get("location")).toContain("/auth/login");
   });
 
-  it("leaves the public legal + auth surfaces cacheable", () => {
-    for (const path of ["/privacy", "/about", "/auth/login"]) {
+  it("makes a public page rendered for a session private, no-store", () => {
+    // The page is public, but this request carries a session cookie, so the
+    // document is rendered for that session: it is no more cacheable than
+    // the dashboard. Pinned because 1.49.0 first shipped the account seed
+    // into `/about` while these pages stayed cacheable.
+    for (const path of ["/privacy", "/about", "/auth/login", "/onboarding"]) {
       const res = proxy(makeRequest(path));
-      expect(res.headers.get("cache-control"), path).toBeNull();
+      const cacheControl = res.headers.get("cache-control") ?? "";
+      expect(cacheControl, path).toContain("no-store");
+      expect(cacheControl, path).toContain("private");
+      expect(res.headers.get(HEALTHLOG_PAGE_CACHE_HEADER), path).toBeNull();
     }
+  });
+
+  it("leaves the public legal + auth surfaces cacheable for an anonymous visitor", () => {
+    for (const path of ["/privacy", "/about", "/auth/login"]) {
+      const res = proxy(new NextRequest(`http://localhost${path}`));
+      expect(res.headers.get("cache-control"), path).toBeNull();
+      // The service worker keeps only pages that carry this permit.
+      expect(res.headers.get(HEALTHLOG_PAGE_CACHE_HEADER), path).toBe(
+        "anonymous",
+      );
+    }
+  });
+
+  it("gives no cache permit to a token page, signed out or not", () => {
+    const res = proxy(new NextRequest("http://localhost/e/hle_abc"));
+    expect(res.headers.get("cache-control")).toContain("no-store");
+    expect(res.headers.get(HEALTHLOG_PAGE_CACHE_HEADER)).toBeNull();
+  });
+
+  it("gives no cache permit to a gated page", () => {
+    const res = proxy(makeRequest("/medications"));
+    expect(res.headers.get(HEALTHLOG_PAGE_CACHE_HEADER)).toBeNull();
+  });
+
+  it("hands the layout the seed permission on gated pages only, never from the client", () => {
+    const forwarded = (res: Response) =>
+      res.headers.get(`x-middleware-request-${ACCOUNT_SEED_REQUEST_HEADER}`);
+    expect(forwarded(proxy(makeRequest("/medications")))).toBe("1");
+    const spoofed = new NextRequest("http://localhost/about", {
+      headers: {
+        cookie: "healthlog_session=sess-1",
+        [ACCOUNT_SEED_REQUEST_HEADER]: "1",
+      },
+    });
+    expect(forwarded(proxy(spoofed))).toBeNull();
   });
 
   it("leaves the immutable locale catalog cacheable", () => {

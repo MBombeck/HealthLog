@@ -1,7 +1,7 @@
 /**
- * HealthLog service worker: Web Push, a page cache for public pages, and a
- * static cache for catalogs, icons, fonts and images. API answers and app
- * chunks are never stored here.
+ * HealthLog service worker: Web Push, a page cache for public pages opened
+ * signed out, and a static cache for catalogs, icons, fonts and images. API
+ * answers, app chunks and signed-in pages are never stored here.
  */
 
 // Cache names carry the release, so `activate` drops every older cache. The
@@ -27,6 +27,10 @@ const HEALTHLOG_CACHE_NAME_RE = /^healthlog-(?:static|pages|data)-/;
 const CURRENT_HEALTHLOG_CACHES = new Set([STATIC_CACHE, PAGE_CACHE]);
 // Set by `src/proxy.ts` on every HealthLog page; same name as there.
 const HEALTHLOG_PAGE_MARKER_HEADER = "X-HealthLog-Page";
+// Set by `src/proxy.ts`, value `anonymous`, only on a page answered to a
+// request without a session cookie; same name as there. The page cache keeps
+// nothing else.
+const HEALTHLOG_PAGE_CACHE_HEADER = "X-HealthLog-Page-Cache";
 // While set, the fetch handler declines every request. Set when a page looks
 // like another app, cleared unless the probe confirms another app.
 let foreignOrigin = false;
@@ -63,6 +67,9 @@ self.addEventListener("activate", (event) => {
               .map((k) => caches.delete(k)),
           ),
         ),
+      // A page kept by an earlier worker of the same release, before the
+      // page cache required the anonymous permit, goes too.
+      dropPagesWithoutPermit(),
       // The browser starts the navigation while the worker boots;
       // `networkFirst` uses `event.preloadResponse`.
       self.registration.navigationPreload
@@ -128,16 +135,46 @@ async function cacheFirst(request, cacheName) {
   return response;
 }
 
+/** Delete every page-cache entry that does not carry the anonymous permit. */
+async function dropPagesWithoutPermit() {
+  try {
+    const cache = await caches.open(PAGE_CACHE);
+    const requests = await cache.keys();
+    await Promise.all(
+      requests.map(async (request) => {
+        const response = await cache.match(request);
+        if (
+          !response ||
+          response.headers.get(HEALTHLOG_PAGE_CACHE_HEADER) !== "anonymous"
+        ) {
+          await cache.delete(request);
+        }
+      }),
+    );
+  } catch {
+    // CacheStorage unavailable; nothing was kept then either.
+  }
+}
+
 /**
- * Which navigation responses may land in the page cache. Signed-in pages
- * never do: the proxy sends them `private, no-store` because some carry one
- * account's record in the HTML. Two paths are skipped by name as well: the
- * clinician share view `/c/*` (no-store too; a revoked share must never
- * render back offline) and `/onboarding/*`. What is left are the public
- * pages (sign-in, legal), so a navigation to an app page without a
- * connection gets the offline page, never somebody's cached record.
+ * Which navigation responses may land in the page cache: only a page the
+ * proxy answered to a request WITHOUT a session cookie, which it marks with
+ * `X-HealthLog-Page-Cache: anonymous`. That is an allowlist: anything
+ * rendered for a session (every app page, and a public page such as `/about`
+ * opened while signed in) carries `private, no-store` and no permit, and a
+ * response without the permit is never kept, whatever else it says. The
+ * worker cannot read the HttpOnly session cookie itself, so the proxy's mark
+ * is the only reliable signal. Three paths are skipped by name as well: the
+ * clinician share view `/c/*`, the emergency card `/e/*` (both no-store; a
+ * revoked link must never render back offline) and `/onboarding/*`. What is
+ * left are the anonymous public pages (sign-in, legal), so a navigation to an
+ * app page without a connection gets the data-free offline page, never
+ * somebody's cached record.
  */
 function isCacheableNavigation(request, response) {
+  if (response.headers.get(HEALTHLOG_PAGE_CACHE_HEADER) !== "anonymous") {
+    return false;
+  }
   const cacheControl = response.headers.get("Cache-Control") || "";
   if (/no-store/i.test(cacheControl)) return false;
   try {
@@ -275,7 +312,8 @@ async function retireFromForeignOrigin() {
 /**
  * Network-first for pages: the navigation-preload response when the browser
  * already started it, else a fetch. Without a connection, a page from this
- * release's page cache (only public pages are there), else the offline page.
+ * release's page cache (only anonymous public pages are there), else the
+ * static, data-free offline page.
  * The lookup is scoped to this release's cache name: a page from an older
  * release would reference chunks that no longer exist.
  */

@@ -25,6 +25,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import vm from "node:vm";
+import { HEALTHLOG_PAGE_CACHE_HEADER } from "@/lib/http/page-cache-headers";
 
 const SW_SOURCE = readFileSync(
   resolve(__dirname, "../../public/sw.js"),
@@ -54,6 +55,18 @@ function healthlogPage(body: string, init: ResponseInit = {}): Response {
   const headers = new Headers(init.headers);
   headers.set(PAGE_MARKER, "1");
   return new Response(body, { ...init, headers });
+}
+
+const PAGE_CACHE_PERMIT = HEALTHLOG_PAGE_CACHE_HEADER;
+
+/**
+ * A page the proxy answered to a request without a session cookie: the only
+ * kind the worker may keep (`X-HealthLog-Page-Cache: anonymous`).
+ */
+function anonymousPage(body: string, init: ResponseInit = {}): Response {
+  const headers = new Headers(init.headers);
+  headers.set(PAGE_CACHE_PERMIT, "anonymous");
+  return healthlogPage(body, { ...init, headers });
 }
 
 class FakeCache {
@@ -424,7 +437,7 @@ describe("sw.js — best-effort cache writes", () => {
       notifyPutStarted = resolve;
     });
     pageCache.onPut = notifyPutStarted;
-    const networkResponse = healthlogPage("network shell");
+    const networkResponse = anonymousPage("network shell");
     harness.context.fetch = async () => networkResponse;
 
     const responsePromise = dispatchNavigationFetch(harness, "/measurements");
@@ -464,6 +477,18 @@ describe("sw.js — best-effort cache writes", () => {
 });
 
 describe("sw.js — activate", () => {
+  it("drops this release's kept pages that lack the anonymous permit", async () => {
+    const harness = bootServiceWorker();
+    const pages = await harness.cacheStorage.open(CURRENT_PAGE_CACHE);
+    await pages.put(`${ORIGIN}/about`, new Response("about with an account"));
+    await pages.put(`${ORIGIN}/auth/login`, anonymousPage("sign-in"));
+
+    await dispatchActivate(harness);
+
+    expect(await pages.match(`${ORIGIN}/about`)).toBeUndefined();
+    expect(await pages.match(`${ORIGIN}/auth/login`)).toBeDefined();
+  });
+
   it("drops stale-version caches and enables navigation preload", async () => {
     const harness = bootServiceWorker();
     const stale = await harness.cacheStorage.open("healthlog-pages-v0.0.1");
@@ -565,7 +590,7 @@ describe("sw.js — networkFirst offline fallback", () => {
     const res = await dispatchNavigationFetch(
       harness,
       "/",
-      Promise.resolve(healthlogPage("preloaded shell")),
+      Promise.resolve(anonymousPage("preloaded shell")),
     );
 
     expect(await res.clone().text()).toBe("preloaded shell");
@@ -684,15 +709,59 @@ describe("sw.js — networkFirst privacy gate", () => {
     },
   );
 
-  it("still caches an ordinary navigation response", async () => {
+  it("still caches a page the proxy answered to an anonymous request", async () => {
     const harness = bootServiceWorker();
-    harness.context.fetch = async () => healthlogPage("app shell");
+    harness.context.fetch = async () => anonymousPage("sign-in page");
 
-    const res = await dispatchNavigationFetch(harness, "/measurements");
-    expect(await res.clone().text()).toBe("app shell");
+    const res = await dispatchNavigationFetch(harness, "/auth/login");
+    expect(await res.clone().text()).toBe("sign-in page");
 
     const pages = await harness.cacheStorage.open(CURRENT_PAGE_CACHE);
-    expect(await pages.match(`${ORIGIN}/measurements`)).toBeDefined();
+    expect(await pages.match(`${ORIGIN}/auth/login`)).toBeDefined();
+  });
+
+  it("never caches a page without the anonymous permit, even when it looks cacheable", async () => {
+    // A public page opened while signed in, or any response the proxy did
+    // not mark: no `no-store` in sight (a proxy in front may strip it), and
+    // still nothing is kept. The permit is an allowlist.
+    for (const [path, response] of [
+      ["/about", () => healthlogPage("about, rendered for a session")],
+      [
+        "/privacy",
+        () =>
+          healthlogPage("privacy", {
+            headers: { [PAGE_CACHE_PERMIT]: "session" },
+          }),
+      ],
+    ] as const) {
+      const harness = bootServiceWorker();
+      harness.context.fetch = async () => response();
+      const res = await dispatchNavigationFetch(harness, path);
+      expect(res.status).toBe(200);
+      await Promise.all(harness.lifetimePromises);
+      expect(
+        await harness.cacheStorage.match(`${ORIGIN}${path}`),
+        path,
+      ).toBeUndefined();
+    }
+  });
+
+  it("keeps no-store as a veto over the permit", async () => {
+    const harness = bootServiceWorker();
+    harness.context.fetch = async () =>
+      anonymousPage("odd page", { headers: { "Cache-Control": "no-store" } });
+    await dispatchNavigationFetch(harness, "/auth/login");
+    await Promise.all(harness.lifetimePromises);
+    expect(
+      await harness.cacheStorage.match(`${ORIGIN}/auth/login`),
+    ).toBeUndefined();
+  });
+
+  it("names the permit header the proxy sets", () => {
+    const sw = readFileSync(resolve(process.cwd(), "public/sw.js"), "utf8");
+    expect(sw).toContain(
+      `const HEALTHLOG_PAGE_CACHE_HEADER = "${HEALTHLOG_PAGE_CACHE_HEADER}";`,
+    );
   });
 });
 

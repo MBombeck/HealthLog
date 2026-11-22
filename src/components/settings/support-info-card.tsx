@@ -9,7 +9,7 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import type { IntegrationStatusEnvelope } from "@/components/settings/integrations/shared";
-import { useAuth } from "@/hooks/use-auth";
+import { fetchMe, isFullAccount, useAuth } from "@/hooks/use-auth";
 import { apiGet } from "@/lib/api/api-fetch";
 import { recentErrorIds } from "@/lib/errors/error-id";
 import { showErrorToast } from "@/lib/errors/error-toast";
@@ -55,17 +55,25 @@ export function SupportInfoCard() {
           })
           .catch(() => null),
       ]);
+      // The scrubber needs the account's own name and email as known values;
+      // the server-rendered seed withholds the name, so ask for the full
+      // account when the shell's own read has not landed yet.
+      const me = isFullAccount(user)
+        ? user
+        : await queryClient
+            .fetchQuery({ queryKey: queryKeys.authMe(), queryFn: fetchMe })
+            .catch(() => user);
       const text = buildSupportInfo({
         version,
-        me: user
+        me: me
           ? {
-              id: user.id,
-              username: user.username,
-              email: user.email,
-              fullName: user.fullName,
-              timezone: user.timezone,
-              modules: user.modules,
-              ai: user.ai ?? null,
+              id: me.id,
+              username: me.username,
+              email: me.email,
+              fullName: me.fullName,
+              timezone: me.timezone,
+              modules: me.modules,
+              ai: me.ai ?? null,
             }
           : null,
         locale,

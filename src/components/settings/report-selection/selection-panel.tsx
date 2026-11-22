@@ -55,7 +55,7 @@ import {
   throwIfReproofRequired,
   useRecentProof,
 } from "@/components/settings/security-section/use-recent-proof";
-import { useAuth } from "@/hooks/use-auth";
+import { isFullAccount, useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
@@ -140,7 +140,9 @@ export function HealthRecordExportPanel() {
   const pickerPanelId = useId();
   const scopeSummaryId = useId();
 
-  if (user && user.id !== seededUserId) {
+  // The saved choices are withheld from the server-rendered seed; seeding
+  // from its `null`s would show a first run to somebody who saved one.
+  if (isFullAccount(user) && user.id !== seededUserId) {
     setSeededUserId(user.id);
     setPracticeName(user.lastReportPracticeName ?? "");
     const saved = parseSavedProfile(user.reportSelection);

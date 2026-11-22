@@ -9,6 +9,10 @@ import {
 } from "@/lib/http/retired-routes";
 import { setBaselineSecurityHeaders } from "@/lib/http/proxy-bypass-routes";
 import { setPathCredentialHeaders } from "@/lib/http/path-credential-headers";
+import {
+  ACCOUNT_SEED_REQUEST_HEADER,
+  HEALTHLOG_PAGE_CACHE_HEADER,
+} from "@/lib/http/page-cache-headers";
 import { DEMO_REFUSAL_BODY } from "@/lib/demo-refusal";
 import { resolveRequestId } from "@/lib/http/request-id";
 import { redactSecrets } from "@/lib/logging/redact";
@@ -625,6 +629,8 @@ export function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("x-request-id", requestId);
+  requestHeaders.delete(ACCOUNT_SEED_REQUEST_HEADER);
+  if (isSessionGatedPage) requestHeaders.set(ACCOUNT_SEED_REQUEST_HEADER, "1");
 
   const response = NextResponse.next({
     request: {
@@ -679,9 +685,19 @@ export function proxy(request: NextRequest) {
   // so a back-navigation after logout cannot repaint the record. The public
   // surfaces (`/auth/*`, `/privacy`, `/about`, `/i18n/*`) are excluded by the
   // same predicate that governs the auth redirect, so the statically
-  // rendered marketing/legal pages stay cacheable.
-  if (isSessionGatedPage) {
+  // rendered marketing/legal pages stay cacheable for an anonymous visitor.
+  //
+  // The rule follows the cookie as well as the path: a public page rendered
+  // for a request that carries a session cookie is rendered FOR that session
+  // (the shell, the account menu, anything a page reads off the session), so
+  // it is `private, no-store` too. Only a page answered to a request without
+  // a session cookie carries the service worker's page-cache permit.
+  const isPage = !isApiRoute && !isStaticFile && !pathname.startsWith("/i18n/");
+  const carriesSession = readSessionCookie(request.cookies) !== null;
+  if (isSessionGatedPage || (isPage && carriesSession)) {
     response.headers.set("Cache-Control", "private, no-store");
+  } else if (isPage) {
+    response.headers.set(HEALTHLOG_PAGE_CACHE_HEADER, "anonymous");
   }
 
   // Security headers. Framing is refused by the CSP's `frame-ancestors`; a
@@ -696,6 +712,10 @@ export function proxy(request: NextRequest) {
 
   // Paths whose credential is the URL itself (share view, invite, feed).
   setPathCredentialHeaders(pathname, response.headers);
+  // Nothing uncacheable carries the worker's page-cache permit.
+  if (/no-store/i.test(response.headers.get("Cache-Control") ?? "")) {
+    response.headers.delete(HEALTHLOG_PAGE_CACHE_HEADER);
+  }
   // COOP isolates this BrowsingContextGroup from cross-origin popups,
   // closing the Spectre-class side-channel surface a stray
   // `window.opener` reference would otherwise carry. CORP narrows the

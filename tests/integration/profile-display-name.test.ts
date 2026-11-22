@@ -84,6 +84,16 @@ describe("display name: profile save and account payload", () => {
     expect((await me()).displayName).toBe("Sam");
   });
 
+  it("answers /api/auth/me private, no-store", async () => {
+    // The payload carries the identity and insurance fields; no cache on the
+    // way may keep it.
+    await seed("Sam");
+    const { GET } = await import("@/app/api/auth/me/route");
+    const res = await GET();
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("private, no-store");
+  });
+
   it("a save lands in the column and comes back on the payload", async () => {
     const userId = await seed("Sam");
 
