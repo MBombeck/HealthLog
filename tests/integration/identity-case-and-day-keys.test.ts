@@ -126,43 +126,16 @@ describe("0517 day keys", () => {
     expect(await prisma.coachUsage.count()).toBe(1);
   });
 
-  it("refuses a pregnancy day on the cycle profile that is not YYYY-MM-DD", async () => {
-    // These days reach the backup verbatim, and the backup schema reads them
-    // as day keys: a column that took any text let the writer produce a copy
-    // its own preview and restore then refused.
-    const user = await prisma.user.create({ data: { username: "pregnancy" } });
-    for (const column of [
-      "pregnancyStartDate",
-      "pregnancyDueDate",
-      "deliveryDate",
-    ] as const) {
-      await expect(
-        prisma.cycleProfile.upsert({
-          where: { userId: user.id },
-          create: { userId: user.id, [column]: "2026-1-5" },
-          update: { [column]: "2026-1-5" },
-        }),
-      ).rejects.toThrow(/day_key_shape/);
-    }
-    await prisma.cycleProfile.create({
-      data: {
-        userId: user.id,
-        pregnancyStartDate: "2026-01-05",
-        pregnancyDueDate: "2026-10-12",
-        deliveryDate: null,
-      },
-    });
-    expect(await prisma.cycleProfile.count()).toBe(1);
-  });
-
   it("checks every listed column", async () => {
     const rows = await prisma.$queryRaw<
       Array<{ conname: string; validated: boolean }>
     >`
       SELECT conname, convalidated AS validated FROM pg_constraint
        WHERE conname LIKE '%\\_day\\_key\\_shape' ORDER BY conname`;
-    // 16 from 0517, three from 0533 (the pregnancy days on cycle_profiles).
-    expect(rows).toHaveLength(19);
+    // 16 from 0517. The three 0533 put on the pregnancy days went with the
+    // plaintext columns in 0539: the days are sealed now, and the store reads
+    // back only a well-formed day (`pregnancy-store.ts`).
+    expect(rows).toHaveLength(16);
     // A fresh database holds no misfit, so every check is validated.
     expect(rows.every((row) => row.validated)).toBe(true);
   });

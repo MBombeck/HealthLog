@@ -26,6 +26,7 @@ import {
   type CycleSnapshotBlock,
 } from "@/lib/ai/coach/cycle-snapshot";
 import { isCycleAvailableForUser } from "@/lib/cycle/gate";
+import { pregnancyContextPromptBlock } from "@/lib/ai/pregnancy-context";
 import type { Locale } from "@/lib/i18n/config";
 
 export interface BriefingIllnessCycleContext {
@@ -120,11 +121,18 @@ export function buildBriefingIllnessCyclePrompt(
     }
   }
 
-  if (lines.length === 0) return "";
+  // A pregnancy or the weeks after a birth: the same rule every model
+  // surface carries (`pregnancy-context.ts`), from the cycle block's state.
+  const pregnancy = ctx.cycle?.pregnancy
+    ? pregnancyContextPromptBlock(ctx.cycle.pregnancy, de ? "de" : "en")
+    : "";
+
+  if (lines.length === 0) return pregnancy;
 
   const body = lines.join("\n");
-  return de
-    ? `
+  return (
+    (de
+      ? `
 
 SYSTEM CONTEXT — GESUNDHEITSZUSTAND (KRANKHEIT / ZYKLUS)
 
@@ -132,12 +140,14 @@ Die App hat folgenden aktuellen Kontext aus den eigenen Daten des Nutzers ermitt
 ${body}
 
 Berücksichtige diesen Kontext im dailyBriefing-Ton; erfinde KEINE Zahlen und stelle KEINE medizinische Ursache her.`
-    : `
+      : `
 
 SYSTEM CONTEXT — HEALTH STATE (ILLNESS / CYCLE)
 
 The app derived this current context from the user's own data (descriptive, not a diagnosis):
 ${body}
 
-Factor this context into the dailyBriefing tone; do NOT invent numbers and do NOT attribute a medical cause.`;
+Factor this context into the dailyBriefing tone; do NOT invent numbers and do NOT attribute a medical cause.`) +
+    pregnancy
+  );
 }

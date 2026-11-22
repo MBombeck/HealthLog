@@ -41,6 +41,7 @@ import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 
 import { loadEmergencyCard, type EmergencyCardView } from "./card-data";
 import { parseCardTokenSegment } from "./token";
+import { guardianMintRefusal } from "@/lib/sharing/guardian-minted";
 
 /**
  * Per source address, across every card, before the lookup. A hospital or a
@@ -90,6 +91,7 @@ export async function readEmergencyCardByToken(
     select: {
       id: true,
       userId: true,
+      createdById: true,
       tokenPrefix: true,
       fields: true,
       expiresAt: true,
@@ -110,6 +112,9 @@ export async function readEmergencyCardByToken(
   ]);
   if (!owner) return miss("owner");
   if (!apiOn) return miss("api_disabled");
+  // A guardian's link rests on their live grant and the profile's marker.
+  const refusal = await guardianMintRefusal(link);
+  if (refusal) return miss(refusal);
 
   const tz = owner.timezone ?? DEFAULT_TIMEZONE;
   const today = moodDateKey(now, tz);

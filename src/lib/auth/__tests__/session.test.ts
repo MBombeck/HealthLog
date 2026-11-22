@@ -597,7 +597,10 @@ describe("destroyAllSessions", () => {
       data: { revokedAt: expect.any(Date) },
     });
     expect(prisma.careCalendarFeed.updateMany).toHaveBeenCalledWith({
-      where: { userId: "user-rotated", revokedAt: null },
+      where: {
+        OR: [{ userId: "user-rotated" }, { createdById: "user-rotated" }],
+        revokedAt: null,
+      },
       data: { revokedAt: expect.any(Date) },
     });
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);

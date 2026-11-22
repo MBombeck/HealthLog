@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   gestationalAgeOn,
-  pregnancySpans,
-  predictionsPausedOn,
-  resolvePregnancyState,
+  pregnancyFieldsFrom,
+  pregnancySpans as spansOf,
+  predictionsPausedOn as pausedOn,
+  resolvePregnancyState as resolveFields,
+  resolvePregnancyStateDuring,
+  type PregnancyProfileFields,
 } from "@/lib/cycle/pregnancy";
 import { decideImportedPregnancyState } from "@/lib/cycle/pregnancy-import";
 import { forecastActive } from "@/lib/cycle/engine-adapter";
@@ -12,6 +15,13 @@ import {
   mergePregnancyPatch,
   pregnancyPatchProblem,
 } from "@/lib/validations/cycle";
+
+type Partial_ = Partial<PregnancyProfileFields>;
+const resolvePregnancyState = (p: Partial_, day: string) =>
+  resolveFields(pregnancyFieldsFrom(p), day);
+const predictionsPausedOn = (p: Partial_, day: string) =>
+  pausedOn(pregnancyFieldsFrom(p), day);
+const pregnancySpans = (p: Partial_) => spansOf(pregnancyFieldsFrom(p));
 
 describe("resolvePregnancyState", () => {
   it("counts completed weeks and days from the first day", () => {
@@ -61,6 +71,101 @@ describe("resolvePregnancyState", () => {
 
   it("is the ordinary cycle with no state", () => {
     expect(predictionsPausedOn({}, "2026-11-21")).toBe(false);
+  });
+});
+
+describe("the state is bounded by its dates", () => {
+  const pregnant = {
+    reproductiveState: "PREGNANT" as const,
+    pregnancyStartDate: "2026-09-01",
+  };
+
+  it("does not hold before the first day of the pregnancy", () => {
+    const r = resolvePregnancyState(pregnant, "2025-12-31");
+    expect(r.state).toBeNull();
+    expect(r.predictionsPaused).toBe(false);
+  });
+
+  it("does not hold four weeks past the due date, and says so", () => {
+    // Due 2027-06-08 (start + 280); the last day it holds is 2027-07-06.
+    expect(resolvePregnancyState(pregnant, "2027-07-06").state).toBe(
+      "PREGNANT",
+    );
+    const lapsed = resolvePregnancyState(pregnant, "2027-07-07");
+    expect(lapsed.state).toBeNull();
+    expect(lapsed.lapsed).toBe(true);
+    expect(lapsed.gestationalAge).toBeNull();
+    // A stored pregnancy never resolves to an impossible week.
+    const later = resolvePregnancyState(
+      { reproductiveState: "PREGNANT", pregnancyStartDate: "2025-01-01" },
+      "2026-11-22",
+    );
+    expect(later.state).toBeNull();
+    expect(later.gestationalAge).toBeNull();
+  });
+
+  it("counts the lapse from the due date when one is given", () => {
+    const r = resolvePregnancyState(
+      { ...pregnant, pregnancyDueDate: "2027-05-20" },
+      "2027-06-18",
+    );
+    expect(r.state).toBeNull();
+    expect(r.lapsed).toBe(true);
+  });
+
+  it("reads a day before the delivery as the pregnancy, not the postpartum", () => {
+    const profile = {
+      reproductiveState: "POSTPARTUM" as const,
+      pregnancyStartDate: "2026-01-01",
+      deliveryDate: "2026-10-01",
+      postpartumWeeks: 12,
+    };
+    const before = resolvePregnancyState(profile, "2026-06-30");
+    expect(before.state).toBe("PREGNANT");
+    expect(before.gestationalAge).toEqual({ weeks: 25, days: 5 });
+    expect(resolvePregnancyState(profile, "2025-12-31").state).toBeNull();
+    expect(
+      resolvePregnancyState(
+        { ...profile, pregnancyStartDate: null },
+        "2026-06-30",
+      ).state,
+    ).toBeNull();
+  });
+
+  it("draws an ongoing pregnancy to its last plausible day", () => {
+    expect(pregnancySpans(pregnant)).toEqual([
+      { kind: "pregnancy", start: "2026-09-01", end: "2027-07-06" },
+    ]);
+  });
+});
+
+describe("resolvePregnancyStateDuring", () => {
+  const profile = pregnancyFieldsFrom({
+    reproductiveState: "POSTPARTUM",
+    pregnancyStartDate: "2026-01-01",
+    deliveryDate: "2026-10-01",
+    postpartumWeeks: 2,
+  });
+
+  it("has no state for a range before the pregnancy", () => {
+    expect(
+      resolvePregnancyStateDuring(profile, "2025-06-01", "2025-12-31").state,
+    ).toBeNull();
+  });
+
+  it("reads the range's last day when the state held then", () => {
+    const r = resolvePregnancyStateDuring(profile, "2026-09-01", "2026-10-05");
+    expect(r.state).toBe("POSTPARTUM");
+    expect(r.postpartumWeek).toBe(0);
+  });
+
+  it("reads the last day it held when the window closed inside the range", () => {
+    const r = resolvePregnancyStateDuring(profile, "2026-10-01", "2026-12-31");
+    expect(r.state).toBe("POSTPARTUM");
+    expect(r.postpartumWeek).toBe(1);
+    expect(
+      resolvePregnancyStateDuring(profile, "2026-11-01", "2026-12-31").state,
+    ).toBeNull();
   });
 });
 

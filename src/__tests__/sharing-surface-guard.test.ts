@@ -2346,6 +2346,18 @@ const GUARDIAN_ROUTES: Record<string, string> = {
     "The record's cycle calendar subscription (#1350): status, turning it on, its options, turning it off. A standing credential whose contents land in a third party's calendar cloud, so only the person the dates are about or the guardian of a managed profile may hold one; refused on an adult record at every grant level, MANAGE included. Cookie-only, fresh proof on the mint; the feed re-reads the grant and the marker on every fetch and a handover claim revokes it.",
   "app/api/cycle/feed-subscription/rotate/route.ts":
     "A new link for the record's cycle calendar subscription, the old one revoked in the same transaction (#1350). Same argument as the subscription route: owner or managed-profile guardian only, cookie-only, fresh proof.",
+  "app/api/settings/report-schedule/route.ts":
+    "The scheduled doctor report, a standing instruction that files a report into the record's vault every month, quarter or year. Only the person the record is about sets one, or the guardian of a managed profile, which has nobody who signs in to set it; refused on an adult record at every grant level, MANAGE included. The job re-checks both modules on every run.",
+  "app/api/emergency-card/route.ts":
+    "The emergency card. The person's own card for their own pocket, and for a managed profile (a child, a parent with dementia) the card its guardian carries for it. Refused on an adult record at every grant level: carrying another adult's emergency facts is that adult's decision.",
+  "app/api/emergency-card/offline/route.ts":
+    "The offline copy of the card, a file the holder keeps. The owner's own, or a managed profile's for its guardian; refused on an adult record at every grant level.",
+  "app/api/emergency-card/wallet/route.ts":
+    "The printed wallet card, with the QR code of the record's own link, in the printing person's language. The owner's own, or a managed profile's for its guardian; refused on an adult record at every grant level.",
+  "app/api/emergency-card/link/route.ts":
+    "The emergency card link, a standing URL credential printed on a card a stranger scans. Only the person the card is about, or the guardian of a managed profile, may make one; refused on an adult record at every grant level. Cookie-only, fresh proof of the person at the keyboard on the mint.",
+  "app/api/care/feed-subscription/route.ts":
+    "The record's care calendar subscription (appointments, check-ups, booster dates), a standing URL credential whose contents land in a third party's calendar cloud. Like the cycle feed: the person the dates are about, or the guardian of a managed profile, whose appointments they keep; refused on an adult record at every grant level, MANAGE included. Cookie-only, fresh proof on the mint.",
 };
 
 /**
@@ -2429,18 +2441,6 @@ const ACTOR_ROUTES: Record<string, string> = {
     "The UI language belongs to the person reading the screen, never to the record on it. Under a record scope this would transplant a delegate's choice onto the owner's row and send the owner's cron mail in a language they may not read. It has to keep working rather than merely refuse safely: the switcher's mount-time backfill fires on every page load, including the shared dashboard.",
   "app/api/settings/module-list-layout/route.ts":
     "How the person's own labs, illness and checkups lists are laid out: card or list view, manual order, sort. It reads and writes the caller's own row only. Inside another record the ids of a saved order simply match nothing and the list keeps the server order, so serving the person's own choice there reveals nothing of the owner's and grants nothing; refusing it under a switch broke the list controls in exactly the context they are used in.",
-  "app/api/settings/report-schedule/route.ts":
-    "The scheduled doctor report is a standing instruction that files a report into the vault every month, quarter or year. Only the person the record is about may set one, so the route always serves the caller's own record and never a record a switch opened; a delegate or a guardian reads and sets their own schedule, not the owner's.",
-  "app/api/emergency-card/route.ts":
-    "The emergency card is the person's own card for their own pocket. Under a record switch a delegate or a guardian reads their own card, never the owner's: carrying another person's emergency facts offline is a decision only that person makes.",
-  "app/api/emergency-card/offline/route.ts":
-    "The offline copy leaves the server as a file the holder keeps. Only the person the card is about may take one, so it is always the caller's own card.",
-  "app/api/emergency-card/wallet/route.ts":
-    "The wallet card is printed for the person carrying it, with a QR code of their own link. Always the caller's own card; a switch never prints the owner's.",
-  "app/api/emergency-card/link/route.ts":
-    "The emergency card link mints a standing URL credential printed on a card a stranger scans. Only the person the card is about may make one, so the route always serves the caller's own record and never a record a switch opened.",
-  "app/api/care/feed-subscription/route.ts":
-    "The care calendar subscription mints a standing URL credential whose contents end up in a third party's calendar cloud. Only the person the dates are about may make one, so the route always serves the caller's own record and never a record a switch opened; a delegate or a guardian gets their own feed, not the owner's.",
   "app/api/feature-flags/route.ts":
     "Reads the `AppSettings` singleton and no user row at all, so there is no record for a switch to substitute. It answers about the deployment, which for this purpose is the caller's side of the request; the shell gates the Coach launcher and the assistant surfaces on it, so a 403 here is a piece of chrome deciding it does not exist.",
 };
@@ -3972,5 +3972,42 @@ describe("the guard is quiet on the tree it was written against", () => {
       expect(namesSymbol(rel, ACTOR_RESOLVER), rel).toBe(false);
       expect(namesSymbol(rel, GUARDIAN_RESOLVER), rel).toBe(false);
     }
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+/* A record's standing link has a guardian path                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The class behind the emergency card, the care calendar feed and the report
+ * schedule shipping as actor routes: a new surface that hands out something
+ * standing for a record (a calendar feed, a link a stranger scans) was
+ * declared "the caller's own" without asking whether a managed profile, which
+ * has nobody who signs in, could ever get one. The cycle feed had already
+ * answered it (`requireGuardianAuth`).
+ *
+ * So every route module that mints a URL credential (`mint…Token(`) for a
+ * record resolves through the guardian resolver. A future one that means to
+ * serve only the caller's own account names its reason here.
+ */
+const OWN_ACCOUNT_TOKEN_MINTS: Record<string, string> = {};
+
+describe("a route that mints a standing link for a record", () => {
+  it("resolves through the guardian resolver", () => {
+    const minting = routeModules().filter((rel) =>
+      /\bmint[A-Z]\w*Token\s*\(/.test(readSourceText(join(SRC, rel))),
+    );
+    // The cycle feed, its rotation, the care feed and the emergency card link.
+    expect(minting.length).toBeGreaterThanOrEqual(4);
+    const offenders = minting.filter(
+      (rel) =>
+        !(rel in OWN_ACCOUNT_TOKEN_MINTS) &&
+        !(rel in GUARDIAN_ROUTES && namesSymbol(rel, GUARDIAN_RESOLVER)),
+    );
+    expect(
+      offenders,
+      "A record's standing link is the owner's or a managed profile's guardian's: resolve through requireGuardianAuth and list the route in GUARDIAN_ROUTES.",
+    ).toEqual([]);
   });
 });

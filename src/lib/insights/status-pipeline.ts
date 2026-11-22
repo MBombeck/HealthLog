@@ -25,6 +25,7 @@ import type { MeasurementType } from "@/generated/prisma/client";
 import { openerArchetypeHint } from "@/lib/ai/prompts/opener-archetype";
 import { statusSnapshotCharsForRecord } from "@/lib/ai/capabilities/usage";
 import type { Locale } from "@/lib/i18n/config";
+import { instructionLocale } from "@/lib/ai/prompts/output-language";
 import {
   buildAssessmentContextBlock,
   pickVarietyLead,
@@ -64,6 +65,11 @@ import type {
   InsightStatusScope,
 } from "@/lib/jobs/insight-status-generate-shared";
 import { annotate } from "@/lib/logging/context";
+import {
+  loadPregnancySnapshotBlock,
+  pregnancyContextPromptBlock,
+  pregnancySnapshotWeek,
+} from "@/lib/ai/pregnancy-context";
 import { resolveUserTimezone, userDayKey } from "@/lib/tz/resolver";
 
 /** What every public generator entry accepts. */
@@ -584,6 +590,20 @@ export async function prepareStatusCard<R extends StatusCardResult, I>(
   const build = await plugin.build(ctx);
   if ("phase" in build) return build;
 
+  // Every card reads its metric in the frame of a pregnancy or the weeks
+  // after a birth, the same context the Coach carries. It rides in the
+  // snapshot (state and week, so the card is written again when the week
+  // turns, not every day) and its rule rides in the prompt.
+  const pregnancy = await loadPregnancySnapshotBlock(
+    userId,
+    ctx.userTz,
+    new Date(),
+  );
+  if (pregnancy) {
+    (build.snapshot as Record<string, unknown>).pregnancyContext =
+      pregnancySnapshotWeek(pregnancy);
+  }
+
   const { snapshotJson, snapshotHash } = await sealStatusSnapshot(
     ctx,
     build.snapshot,
@@ -597,7 +617,15 @@ export async function prepareStatusCard<R extends StatusCardResult, I>(
 
   const tail = build.finish();
   const context = await buildStatusPromptContext(ctx, tail.context);
-  const { systemPrompt, userPrompt } = tail.prompts(snapshotJson, context);
+  const prompts = tail.prompts(snapshotJson, context);
+  const systemPrompt = prompts.systemPrompt;
+  const userPrompt = pregnancy
+    ? prompts.userPrompt +
+      pregnancyContextPromptBlock(
+        pregnancy,
+        instructionLocale(ctx.locale as Locale),
+      )
+    : prompts.userPrompt;
   return pendingStatusCard(ctx, plugin.codec, {
     systemPrompt,
     userPrompt,

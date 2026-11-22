@@ -124,7 +124,6 @@ export interface PendingEfficacyTarget {
 export interface RestoredIntakeSlot {
   medicationId: string;
   scheduledFor: Date;
-  source: string;
 }
 
 /**
@@ -200,6 +199,12 @@ export interface RestoreOutputs {
   /** Whether the fold repair marker was taken away and must be queued. */
   foldRepairReset: boolean;
   accountSettings: AccountSettingsRestoreResult;
+  /**
+   * The slots where the file held a second take the slot rule merged away
+   * (`slot-merge.ts`); their derived supplement days are refreshed after the
+   * commit.
+   */
+  mergedDoseSlots: { medicationId: string; scheduledFor: Date }[];
 }
 
 export interface RestoreContext {

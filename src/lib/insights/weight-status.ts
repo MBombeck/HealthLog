@@ -453,6 +453,7 @@ async function readWeightSeries(
         .map((measurement) => ({
           measuredAt: measurement.measuredAt,
           value: measurement.value,
+          timeZone: measurement.timeZone,
         })),
       { now, tz: userTz },
     );

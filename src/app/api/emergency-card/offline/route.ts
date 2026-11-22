@@ -4,11 +4,12 @@
  * external request, every value escaped (`buildOfflineCardHtml`); it opens
  * with no network. Sent as a download, never rendered in the app's origin.
  *
- * Always the caller's own record (`requireActorAuth`), cookie session only.
+ * The owner's card, or the card of a managed profile for its guardian
+ * (`requireGuardianAuth`), cookie session only.
  */
 import { NextRequest, NextResponse } from "next/server";
 
-import { apiHandler, requireActorAuth } from "@/lib/api-handler";
+import { apiHandler, requireGuardianAuth } from "@/lib/api-handler";
 import { loadEmergencyCard } from "@/lib/emergency-card/card-data";
 import { cardCookieOnlyRefusal } from "@/lib/emergency-card/manage";
 import { buildOfflineCardHtml } from "@/lib/emergency-card/offline-html";
@@ -21,7 +22,7 @@ import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 export const dynamic = "force-dynamic";
 
 export const GET = apiHandler(async (request: NextRequest) => {
-  const auth = await requireActorAuth();
+  const auth = await requireGuardianAuth();
   if (auth.authMethod !== "cookie") return cardCookieOnlyRefusal();
   const { user } = auth;
   annotate({ action: { name: "emergency-card.offline" } });

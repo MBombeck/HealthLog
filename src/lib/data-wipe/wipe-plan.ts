@@ -644,6 +644,10 @@ export const WIPE_OWNER_FIELDS: Readonly<Record<string, readonly string[]>> = {
   ManagedProfileHandover: ["profileId", "createdById"],
   // #1350 — the record the feed serves, and the carrier who minted it.
   CycleCalendarFeed: ["userId", "createdById"],
+  // The same for the care calendar feed and the emergency card link a
+  // guardian made for a managed profile.
+  CareCalendarFeed: ["userId", "createdById"],
+  EmergencyCardLink: ["userId", "createdById"],
   // Both sides. Wiping only the grantor side would leave the account still
   // holding read access to other people's records after it asked for
   // everything of its own to be deleted.

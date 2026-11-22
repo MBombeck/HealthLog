@@ -595,6 +595,38 @@ export async function clearManagedProfileMarker(
           client,
         });
       }
+      // The care calendar feed and the emergency card link a Guardian made
+      // for the profile end the same way: the grown-up decides again who
+      // holds a standing link to their appointments or their card.
+      const guardianMinted = {
+        userId: profile.id,
+        createdById: { not: profile.id },
+        revokedAt: null,
+      };
+      const [careFeeds, cardLinks] = await Promise.all([
+        client.careCalendarFeed.updateMany({
+          where: guardianMinted,
+          data: { revokedAt: new Date() },
+        }),
+        client.emergencyCardLink.updateMany({
+          where: guardianMinted,
+          data: { revokedAt: new Date() },
+        }),
+      ]);
+      if (careFeeds.count > 0) {
+        await auditLog("care.feed.revoke.handover", {
+          userId: profile.id,
+          details: { revoked: careFeeds.count },
+          client,
+        });
+      }
+      if (cardLinks.count > 0) {
+        await auditLog("emergency-card.link.revoke.handover", {
+          userId: profile.id,
+          details: { revoked: cardLinks.count },
+          client,
+        });
+      }
     });
   if (tx) {
     await clear(tx);

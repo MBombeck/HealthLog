@@ -11,6 +11,7 @@
  * the restore never holds more than one batch.
  */
 import { isStorableTimeZone } from "@/lib/tz/reading-zone";
+import { zonesKnownToPostgres } from "@/lib/tz/reading-zone-sql";
 import type { Prisma } from "@/generated/prisma/client";
 import { TOMBSTONE_RETENTION_DAYS } from "@/lib/auth/native-client";
 import { encryptNote } from "@/lib/crypto/note-cipher";
@@ -160,6 +161,7 @@ export async function clearMeasurementRollups(
 function toRestoredMeasurementData(
   measurement: BackupMeasurement,
   ownTokenIds: ReadonlySet<string>,
+  knownZones: ReadonlySet<string>,
 ) {
   return {
     type: isLegacyRmssdRow(measurement)
@@ -208,10 +210,14 @@ function toRestoredMeasurementData(
     sleepStage: (measurement.sleepStage ?? null) as never,
     rhythmClassification: (measurement.rhythmClassification ?? null) as never,
     deviceType: measurement.deviceType ?? null,
-    // A zone the runtime cannot read is restored as the profile zone, as the
-    // batch route stores it.
+    // A zone the runtime or the database cannot read is restored as the
+    // profile zone, as the batch route stores it: every SQL day reader hands
+    // the zone to `AT TIME ZONE`, and one Postgres does not know (a host with
+    // older tz data than the one that wrote the file) would fail them all.
     timeZone:
-      measurement.timeZone && isStorableTimeZone(measurement.timeZone)
+      measurement.timeZone &&
+      isStorableTimeZone(measurement.timeZone) &&
+      knownZones.has(measurement.timeZone)
         ? measurement.timeZone
         : null,
     // The token link (#1272) survives only onto the account that still holds
@@ -361,8 +367,13 @@ async function reconcileWithoutId(
   ownerId: string,
   measurement: BackupMeasurement,
   ownTokenIds: ReadonlySet<string>,
+  knownZones: ReadonlySet<string>,
 ): Promise<void> {
-  const restoredData = toRestoredMeasurementData(measurement, ownTokenIds);
+  const restoredData = toRestoredMeasurementData(
+    measurement,
+    ownTokenIds,
+    knownZones,
+  );
   const existing = await tx.measurement.findFirst({
     where: {
       userId: ownerId,
@@ -406,6 +417,23 @@ export async function restoreMeasurements(ctx: RestoreContext): Promise<void> {
       })
     ).map((token) => token.id),
   );
+  // The zones the database knows, asked once per zone the file names.
+  const knownZones = new Set<string>();
+  const askedZones = new Set<string>();
+  const learnZones = async (batch: readonly BackupMeasurement[]) => {
+    const fresh = [
+      ...new Set(
+        batch.flatMap((m) =>
+          m.timeZone && !askedZones.has(m.timeZone) ? [m.timeZone] : [],
+        ),
+      ),
+    ];
+    if (fresh.length === 0) return;
+    for (const zone of fresh) askedZones.add(zone);
+    for (const zone of await zonesKnownToPostgres(tx, fresh)) {
+      knownZones.add(zone);
+    }
+  };
   ctx.reportMeasurements(0);
   await streamed.forEachMeasurementBatch(
     measurementBatchSize,
@@ -417,13 +445,18 @@ export async function restoreMeasurements(ctx: RestoreContext): Promise<void> {
       const batch = kept.filter(
         (measurement) => !isShadowedLegacyRmssd(measurement),
       );
+      await learnZones(batch);
       const stableRows = batch.flatMap((measurement): MeasurementInsertRow[] =>
         measurement.id
           ? [
               {
                 id: measurement.id,
                 userId: ownerId,
-                ...toRestoredMeasurementData(measurement, ownTokenIds),
+                ...toRestoredMeasurementData(
+                  measurement,
+                  ownTokenIds,
+                  knownZones,
+                ),
               },
             ]
           : [],
@@ -440,7 +473,13 @@ export async function restoreMeasurements(ctx: RestoreContext): Promise<void> {
       }
       for (const measurement of batch) {
         if (measurement.id) continue;
-        await reconcileWithoutId(tx, ownerId, measurement, ownTokenIds);
+        await reconcileWithoutId(
+          tx,
+          ownerId,
+          measurement,
+          ownTokenIds,
+          knownZones,
+        );
       }
     },
   );

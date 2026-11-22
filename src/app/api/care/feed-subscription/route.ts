@@ -8,17 +8,19 @@
  *   PATCH  → change the options.
  *   DELETE → turn it off. The row is revoked, never deleted.
  *
- * Auth: cookie session only, and always the caller's own record
- * (`requireActorAuth`). A delegate or a guardian acting on someone else's
- * record cannot put that record's dates into a calendar cloud from here.
- * Turning it on needs a fresh proof, like every other standing credential.
+ * Auth: cookie session only, through `requireGuardianAuth()`, like the cycle
+ * feed: the owner on their own record, or the guardian of a managed profile,
+ * whose appointments and due dates they keep. A delegate on an adult's record
+ * cannot put that record's dates into a calendar cloud from here, at any
+ * grant level. Turning it on needs a fresh proof of the person at the
+ * keyboard, like every other standing credential.
  */
 import { NextRequest } from "next/server";
 
 import {
   apiHandler,
   assertRecentCookieProof,
-  requireActorAuth,
+  requireGuardianAuth,
 } from "@/lib/api-handler";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
@@ -48,7 +50,7 @@ import {
 import { careFeedOptionsPatchSchema } from "@/lib/validations/care-feed";
 
 export const GET = apiHandler(async () => {
-  const auth = await requireActorAuth();
+  const auth = await requireGuardianAuth();
   if (auth.authMethod !== "cookie") return careCookieOnlyRefusal();
   annotate({ action: { name: "care.feed.status" } });
   const live = await findLiveCareFeed(auth.user.id);
@@ -56,10 +58,11 @@ export const GET = apiHandler(async () => {
 });
 
 export const POST = apiHandler(async (request: NextRequest) => {
-  const auth = await requireActorAuth();
+  const auth = await requireGuardianAuth();
   if (auth.authMethod !== "cookie") return careCookieOnlyRefusal();
-  const { user } = auth;
-  await assertRecentCookieProof(user, auth.session.id);
+  const { user, actor } = auth;
+  // The proof is the person at the keyboard, so it is the actor's session.
+  await assertRecentCookieProof(actor, auth.session.id);
   annotate({ action: { name: "care.feed.create" } });
 
   // The operator's external-access switch covers this credential too.
@@ -70,7 +73,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
 
   const rl = await checkRateLimit(
-    `care-feed:mint:${user.id}`,
+    `care-feed:mint:${actor.id}`,
     CARE_FEED_MINT_LIMIT_PER_HOUR,
     CARE_FEED_MINT_WINDOW_MS,
   );
@@ -88,6 +91,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     created = await prisma.careCalendarFeed.create({
       data: {
         userId: user.id,
+        createdById: actor.id,
         tokenHash: minted.hash,
         tokenPrefix: minted.prefix,
       },
@@ -114,7 +118,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
 });
 
 export const PATCH = apiHandler(async (request: NextRequest) => {
-  const auth = await requireActorAuth();
+  const auth = await requireGuardianAuth();
   if (auth.authMethod !== "cookie") return careCookieOnlyRefusal();
   const { user } = auth;
   annotate({ action: { name: "care.feed.update" } });
@@ -170,7 +174,7 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
 });
 
 export const DELETE = apiHandler(async () => {
-  const auth = await requireActorAuth();
+  const auth = await requireGuardianAuth();
   if (auth.authMethod !== "cookie") return careCookieOnlyRefusal();
   const { user } = auth;
   annotate({ action: { name: "care.feed.revoke" } });

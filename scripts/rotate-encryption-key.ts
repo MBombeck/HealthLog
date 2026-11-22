@@ -492,6 +492,15 @@ async function main() {
     );
   }
 
+  // ───── CycleProfile — "pregnancyEncrypted" (String) ─────
+  results.push(
+    await rotateStringColumn(
+      "CycleProfile",
+      "pregnancyEncrypted",
+      prisma.cycleProfile,
+    ),
+  );
+
   // ───── Coach (Bytes columns) ─────
   // "encryptedContent" "resultsEncrypted" "trailEncrypted" "summaryEncrypted"
   // "titleEncrypted" "factEncrypted"

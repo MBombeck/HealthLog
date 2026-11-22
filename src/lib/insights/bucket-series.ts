@@ -17,6 +17,7 @@
  */
 
 import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
+import { readingZone } from "@/lib/tz/reading-zone";
 import { readingsMean } from "@/lib/measurements/day-mean";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 
@@ -140,8 +141,19 @@ function dayOffsetUser(
   return Math.round((todayMidnight - recordMidnight) / MS_PER_DAY);
 }
 
+/**
+ * A reading to bucket. `timeZone` is the reading's own zone, when it has one:
+ * its day is read there and not in `tz` (`reading-zone.ts`), so a reading
+ * taken abroad lands on the day it was taken, as in the day view.
+ */
+export interface BucketRecord {
+  measuredAt: Date;
+  value: number;
+  timeZone?: string | null;
+}
+
 export function bucketSeries(
-  records: Array<{ measuredAt: Date; value: number }>,
+  records: Array<BucketRecord>,
   options: BucketOptions = {},
 ): BucketedSeries {
   const dailyDays = options.dailyDays ?? 360;
@@ -181,7 +193,11 @@ export function bucketSeries(
   const monthlyMaxOffset = monthOffsetBase + monthlyMonths - 1;
 
   for (const record of records) {
-    const offset = dayOffsetUser(record.measuredAt, todayMidnight, tz);
+    const offset = dayOffsetUser(
+      record.measuredAt,
+      todayMidnight,
+      readingZone(record.timeZone, tz),
+    );
     if (offset < 0) continue; // future timestamp — ignore
 
     if (offset < dailyDays) {
@@ -243,7 +259,7 @@ export function bucketSeries(
  * `.slice` would silently bias the window away from the present.
  */
 export function applyPayloadBudget(
-  records: Array<{ measuredAt: Date; value: number }>,
+  records: Array<BucketRecord>,
   options: BucketOptions = {},
   maxBytes = 50_000,
   fallbackDailyDays = 180,

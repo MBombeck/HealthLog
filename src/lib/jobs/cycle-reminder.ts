@@ -44,10 +44,11 @@ import { resolveJobLocale } from "@/lib/i18n/job-locale";
 import { getUserTodayBounds } from "@/lib/tz/local-day";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { dayDiff } from "@/lib/cycle/day-math";
+import { predictionsPausedOn } from "@/lib/cycle/pregnancy";
 import {
   PREGNANCY_PROFILE_SELECT,
-  predictionsPausedOn,
-} from "@/lib/cycle/pregnancy";
+  pregnancyFieldsOf,
+} from "@/lib/cycle/pregnancy-store";
 import { isModuleEnabled } from "@/lib/modules/gate";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
 import type { EventType } from "@/lib/notifications/types";
@@ -405,7 +406,7 @@ export async function runCycleReminderTick(
       }
 
       // No push in a pregnancy or after a birth, even off a stale cache row.
-      if (profile && predictionsPausedOn(profile, today)) {
+      if (profile && predictionsPausedOn(pregnancyFieldsOf(profile), today)) {
         summary.skippedPregnancyPaused += 1;
         continue;
       }

@@ -117,6 +117,15 @@ $migration$;
 --    ties by creation time and id), and the rest are soft-deleted, with
 --    `sync_version` and `updated_at` moved so paired clients drop them. A
 --    tombstone keeps its identity; clearing `deleted_at` restores a row.
+--    The same rule merges the duplicates of a backup written before this
+--    migration when it is restored (`src/lib/medications/scheduling/
+--    slot-merge.ts`); the two must stay the same rule.
+--
+--    A merged take that took stock off a pack (its `inventory_consumption`
+--    stamp) gets the units back, the way deleting a dose refunds them:
+--    capped at the pack's size, and a pack that ran empty over it opens
+--    again (`IN_USE`; the daily expiry sweep moves one whose clock lapsed
+--    to `EXPIRED`). The stamp is cleared, so the refund happens once.
 --    The merge and the index swap run in one DO block, so a lock timeout
 --    leaves the file safe to run again.
 
@@ -137,13 +146,50 @@ BEGIN
             ) AS rn
         FROM "medication_intake_events"
         WHERE "deleted_at" IS NULL
+    ),
+    merged AS (
+        SELECT e."id", e."user_id", e."inventory_consumption"
+        FROM "medication_intake_events" e
+        JOIN ranked r ON r."id" = e."id"
+        WHERE r.rn > 1
+    ),
+    refund AS (
+        SELECT m."user_id", entry->>'itemId' AS "item_id",
+               SUM((entry->>'units')::numeric) AS "units"
+        FROM merged m
+        CROSS JOIN LATERAL jsonb_array_elements(
+            CASE WHEN jsonb_typeof(m."inventory_consumption") = 'array'
+                 THEN m."inventory_consumption" ELSE '[]'::jsonb END
+        ) AS entry
+        WHERE jsonb_typeof(entry->'itemId') = 'string'
+          AND jsonb_typeof(entry->'units') = 'number'
+          AND (entry->>'units')::numeric > 0
+        GROUP BY 1, 2
+    ),
+    refunded AS (
+        UPDATE "medication_inventory_items" i
+        SET "doses_remaining" = LEAST(i."doses_total", i."doses_remaining" + f."units"),
+            "state" = CASE
+                WHEN LEAST(i."doses_total", i."doses_remaining" + f."units") <= 0
+                    THEN 'USED_UP'::"medication_inventory_state"
+                WHEN i."state" = 'USED_UP' AND i."first_use_at" IS NULL
+                    THEN 'ACTIVE'::"medication_inventory_state"
+                WHEN i."state" = 'USED_UP'
+                    THEN 'IN_USE'::"medication_inventory_state"
+                ELSE i."state"
+            END,
+            "updated_at" = now()
+        FROM refund f
+        WHERE i."id" = f."item_id" AND i."user_id" = f."user_id"
+        RETURNING i."id"
     )
     UPDATE "medication_intake_events" e
     SET "deleted_at" = now(),
+        "inventory_consumption" = NULL,
         "sync_version" = e."sync_version" + 1,
         "updated_at" = now()
-    FROM ranked r
-    WHERE e."id" = r."id" AND r.rn > 1;
+    FROM merged m
+    WHERE e."id" = m."id";
 
     DROP INDEX IF EXISTS "medication_intake_events_user_med_slot_source_live_key";
     CREATE UNIQUE INDEX IF NOT EXISTS "medication_intake_events_user_med_slot_live_key"

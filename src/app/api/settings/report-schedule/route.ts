@@ -9,17 +9,17 @@
  *            its stamp, so a period already filed is not filed again.
  *   DELETE → turn it off. Reports already filed stay in the vault.
  *
- * Auth: the caller's own record (`requireActorAuth`), a cookie session or a
- * full token. A schedule is a standing instruction that keeps writing into
- * the vault, so only the person the record is about sets one; a delegate or
- * a guardian inside another record reads and sets their own, like the care
- * calendar subscription. Turning it on needs the `doctorReport` module; the
+ * Auth: `requireGuardianAuth()`, a cookie session or a full token. A schedule
+ * is a standing instruction that keeps writing into the vault, so only the
+ * person the record is about sets one, or the guardian of a managed profile,
+ * which has nobody who signs in; a delegate on an adult's record is refused
+ * at every grant level, like the care calendar subscription. Turning it on needs the `doctorReport` module; the
  * job checks it again, with the vault's module, on every run.
  */
 import { NextRequest } from "next/server";
 
 import { Prisma } from "@/generated/prisma/client";
-import { apiHandler, requireActorAuth } from "@/lib/api-handler";
+import { apiHandler, requireGuardianAuth } from "@/lib/api-handler";
 import { apiSuccess, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
@@ -63,13 +63,13 @@ async function view(userId: string, schedule: ReportSchedule | null) {
 }
 
 export const GET = apiHandler(async () => {
-  const { user } = await requireActorAuth();
+  const { user } = await requireGuardianAuth();
   annotate({ action: { name: "settings.report-schedule.read" } });
   return apiSuccess(await view(user.id, await readSchedule(user.id)));
 });
 
 export const PUT = apiHandler(async (request: NextRequest) => {
-  const { user } = await requireActorAuth();
+  const { user } = await requireGuardianAuth();
   const gate = await requireModuleEnabled(user.id, "doctorReport");
   if (!gate.enabled) return gate.response;
 
@@ -107,7 +107,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
 });
 
 export const DELETE = apiHandler(async (request: NextRequest) => {
-  const { user } = await requireActorAuth();
+  const { user } = await requireGuardianAuth();
   await prisma.user.update({
     where: { id: user.id },
     data: { reportScheduleJson: Prisma.DbNull },

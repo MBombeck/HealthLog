@@ -68,15 +68,16 @@ export function credentialRevocations(
       data: { revokedAt: now },
     }),
     // The care calendar feed is the same kind of door for visits and dates
-    // coming due; only the owner mints one, so the record side is enough.
+    // coming due: the feeds on this record and the ones this account minted
+    // as the guardian of a managed profile.
     db.careCalendarFeed.updateMany({
-      where: { userId, revokedAt: null },
+      where: { OR: [{ userId }, { createdById: userId }], revokedAt: null },
       data: { revokedAt: now },
     }),
     // The emergency card's QR link opens the card without signing in. A
     // printed card goes dark with it; the owner prints a fresh one.
     db.emergencyCardLink.updateMany({
-      where: { userId, revokedAt: null },
+      where: { OR: [{ userId }, { createdById: userId }], revokedAt: null },
       data: { revokedAt: now },
     }),
     db.stepUpElevation.deleteMany({ where: { userId } }),

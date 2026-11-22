@@ -18,6 +18,7 @@ import {
   WIPE_TRANSACTION_TIMEOUT_MS,
 } from "@/lib/data-wipe/wipe-plan";
 import { resolveGlobalWipeDelegate } from "@/lib/data-wipe/wipe-delegates";
+import { queueRelayUnbindsForAccount } from "@/lib/push-relay/unbind-queue";
 
 export const dynamic = "force-dynamic";
 
@@ -103,6 +104,24 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
 
   const counts = await prisma.$transaction(
     async (tx) => {
+      // Every device goes with the wipe; the push relay still holds their
+      // bindings to this instance. Queue the unbinds in the same
+      // transaction, account by account, as account deletion does.
+      const relayAccounts = await tx.device.findMany({
+        where: {
+          apnsToken: { not: null },
+          OR: [
+            { relayState: { not: "none" } },
+            { relayConsentAt: { not: null } },
+          ],
+        },
+        distinct: ["userId"],
+        select: { userId: true },
+      });
+      for (const { userId } of relayAccounts) {
+        await queueRelayUnbindsForAccount(tx, userId);
+      }
+
       const perModel: Record<string, number> = {};
       for (const model of ADMIN_WIPE_MODELS) {
         const { count } = await resolveGlobalWipeDelegate(tx, model).deleteMany(

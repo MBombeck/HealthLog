@@ -3,7 +3,10 @@
  *
  * A measurement may carry the IANA zone it was taken in (`Measurement.
  * timeZone`, sent by the iOS app from HealthKit's `HKMetadataKeyTimeZone`).
- * The rule every reader follows:
+ * The rule a reader that shows a local day follows (the day view, the day
+ * aggregates, the daily series, the sleep clock, the doctor report, the BP
+ * status; `reading-zone-reader-ratchet.test.ts` lists the ones that do not
+ * yet, and the list only shrinks):
  *
  *   the local day and the wall clock of a reading are read in its own zone
  *   when it has one, and in the profile zone otherwise.

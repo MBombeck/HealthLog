@@ -399,7 +399,6 @@ async function resolveRescueIntakes(
           userId: ownerId,
           medicationId: slot.medicationId,
           scheduledFor: slot.scheduledFor,
-          source: slot.source as any,
           deletedAt: null,
         },
         select: { id: true },

@@ -20,6 +20,7 @@
  */
 import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
 import { resolvePregnancyState } from "@/lib/cycle/pregnancy";
+import { loadPregnancyFields } from "@/lib/cycle/pregnancy-store";
 import { prisma } from "@/lib/db";
 import { decryptAllergyReaction } from "@/lib/doctor-report-helpers";
 import { getEvent } from "@/lib/logging/context";
@@ -144,12 +145,33 @@ async function readMedications(
   userId: string,
   today: string,
 ): Promise<EmergencyCardMedication[]> {
+  const day = dayKeyAsUtcMidnight(today);
   const rows = await prisma.medication.findMany({
     where: {
       userId,
       active: true,
       pausedAt: null,
-      OR: [{ endsOn: null }, { endsOn: { gte: dayKeyAsUtcMidnight(today) } }],
+      // Taken today: inside a course that covers today, or, for a drug
+      // without courses, inside its own window. A drug between two courses,
+      // or one that starts next week, is not on the card, the rule the
+      // doctor report's medication list uses for its range.
+      OR: [
+        {
+          courses: {
+            some: {
+              startsOn: { lte: day },
+              OR: [{ endsOn: null }, { endsOn: { gte: day } }],
+            },
+          },
+        },
+        {
+          courses: { none: {} },
+          AND: [
+            { OR: [{ startsOn: null }, { startsOn: { lte: day } }] },
+            { OR: [{ endsOn: null }, { endsOn: { gte: day } }] },
+          ],
+        },
+      ],
     },
     orderBy: [{ name: "asc" }, { id: "asc" }],
     take: LIST_CAP,
@@ -162,18 +184,8 @@ async function readPregnancy(
   userId: string,
   today: string,
 ): Promise<EmergencyCardPregnancy | null> {
-  const profile = await prisma.cycleProfile.findUnique({
-    where: { userId },
-    select: {
-      cycleTrackingEnabled: true,
-      reproductiveState: true,
-      pregnancyStartDate: true,
-      pregnancyDueDate: true,
-      deliveryDate: true,
-      postpartumWeeks: true,
-    },
-  });
-  if (!profile || profile.cycleTrackingEnabled === false) return null;
+  const profile = await loadPregnancyFields(prisma, userId);
+  if (!profile) return null;
   const resolved = resolvePregnancyState(profile, today);
   if (!resolved.state) return null;
   return {

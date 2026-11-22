@@ -48,6 +48,7 @@ import { NextRequest } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
 import { ZodError } from "zod/v4";
 import { prisma } from "@/lib/db";
+import { findUserIdByUsername } from "@/lib/auth/identity-lookup";
 import {
   apiHandler,
   HttpError,
@@ -286,11 +287,9 @@ async function checkTargetBeforeRead(
     return { ...verdict.target, created: false };
   }
   if (choice?.into === "new") {
-    const taken = await prisma.user.findUnique({
-      where: { username: choice.username },
-      select: { id: true },
-    });
-    if (taken) throw usernameTaken();
+    if ((await findUserIdByUsername(choice.username)) !== null) {
+      throw usernameTaken();
+    }
   }
   return null;
 }

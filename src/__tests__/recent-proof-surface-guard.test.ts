@@ -106,23 +106,15 @@ const TOKEN_ARM_COOKIE_PROOF_ROUTES = [
 
 /**
  * Routes that resolve through `requireGuardianAuth` and are cookie-only: they
- * refuse a Bearer caller outright, then take the cookie arm. The cycle
- * calendar feed's mint and rotate (#1350) hand out a standing URL credential,
- * so no token may reach them and the session needs a fresh proof.
+ * refuse a Bearer caller outright, then take the cookie arm. The cycle and
+ * care calendar feeds' mints and the emergency card link hand out a standing
+ * URL credential, so no token may reach them and the session needs a fresh
+ * proof.
  */
 const RECORD_COOKIE_ONLY_PROOF_ROUTES = [
+  "app/api/care/feed-subscription/route.ts",
   "app/api/cycle/feed-subscription/route.ts",
   "app/api/cycle/feed-subscription/rotate/route.ts",
-].sort();
-
-/**
- * Routes that resolve through `requireActorAuth` (always the caller's own
- * record) and are cookie-only. The care calendar feed's mint hands out a
- * standing URL credential, so no token may reach it and the session needs a
- * fresh proof.
- */
-const ACTOR_COOKIE_ONLY_PROOF_ROUTES = [
-  "app/api/care/feed-subscription/route.ts",
   "app/api/emergency-card/link/route.ts",
 ].sort();
 
@@ -173,7 +165,6 @@ describe("the recent-proof gate", () => {
         ...COOKIE_PROOF_ROUTES,
         ...TOKEN_ARM_COOKIE_PROOF_ROUTES,
         ...RECORD_COOKIE_ONLY_PROOF_ROUTES,
-        ...ACTOR_COOKIE_ONLY_PROOF_ROUTES,
         ...CONSENT_PROOF_ROUTES,
       ].sort(),
     );
@@ -184,23 +175,6 @@ describe("the recent-proof gate", () => {
       const src = read(rel);
       expect(importedAs(rel, "requireGuardianAuth"), rel).toHaveLength(1);
       // Every proof call sits after a Bearer refusal in the same handler.
-      const proofs = [...src.matchAll(/await assertRecentCookieProof\(/g)];
-      expect(proofs.length, rel).toBeGreaterThan(0);
-      for (const proof of proofs) {
-        const before = src.slice(0, proof.index);
-        const handlerStart = before.lastIndexOf("apiHandler(");
-        expect(handlerStart, rel).toBeGreaterThan(-1);
-        expect(before.slice(handlerStart), rel).toMatch(
-          /if \(auth\.authMethod !== "cookie"\) return cookieOnlyRefusal\(\);/,
-        );
-      }
-    }
-  });
-
-  it("an own-record cookie-only route refuses a token before it asks", () => {
-    for (const rel of ACTOR_COOKIE_ONLY_PROOF_ROUTES) {
-      const src = read(rel);
-      expect(importedAs(rel, "requireActorAuth"), rel).toHaveLength(1);
       const proofs = [...src.matchAll(/await assertRecentCookieProof\(/g)];
       expect(proofs.length, rel).toBeGreaterThan(0);
       for (const proof of proofs) {

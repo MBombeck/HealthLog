@@ -1258,8 +1258,10 @@ model User {
   // managed profile.
   cycleCalendarFeeds       CycleCalendarFeed[] @relation("CycleCalendarFeedSubject")
   cycleCalendarFeedsMinted CycleCalendarFeed[] @relation("CycleCalendarFeedCreator")
-  careCalendarFeeds        CareCalendarFeed[]
-  emergencyCardLinks       EmergencyCardLink[]
+  careCalendarFeeds        CareCalendarFeed[]  @relation("CareCalendarFeedSubject")
+  careCalendarFeedsMinted  CareCalendarFeed[]  @relation("CareCalendarFeedCreator")
+  emergencyCardLinks       EmergencyCardLink[] @relation("EmergencyCardLinkSubject")
+  emergencyCardLinksMinted EmergencyCardLink[] @relation("EmergencyCardLinkCreator")
 
   // v1.39 — the needs-based onboarding's answers and step ledger for THIS
   // record. 1:1, and keyed by record rather than by the person at the
@@ -8432,16 +8434,6 @@ enum CycleTrackingGoal {
   @@map("cycle_tracking_goal")
 }
 
-/// A reproductive state that pauses the cycle forecast. PREGNANT
-/// lasts until the owner changes it; POSTPARTUM lasts `postpartumWeeks` from
-/// the delivery date and then resolves back to the ordinary cycle.
-enum CycleReproductiveState {
-  PREGNANT
-  POSTPARTUM
-
-  @@map("cycle_reproductive_state")
-}
-
 /// Menstrual-flow intensity for a logged day. Mirrors the HealthKit
 /// `HKCategoryValueMenstrualFlow` ladder (unspecified collapses to the
 /// presence of a row; `NONE` is an explicit no-flow marker).
@@ -8655,19 +8647,20 @@ model CycleProfile {
   /// resolved state is PREGNANT, or POSTPARTUM inside its window, the period
   /// and fertility forecast pauses everywhere it is shown and every
   /// prediction push is suppressed. The goal above is kept untouched, so the
-  /// ordinary cycle resumes with the goal the owner had. The dates are
-  /// `YYYY-MM-DD` calendar days in the owner's zone, like every cycle date.
-  reproductiveState  CycleReproductiveState? @map("reproductive_state")
-  /// First day of the pregnancy as the owner gives it (usually the first day
-  /// of the last period). Optional; the due date alone also places the week.
-  pregnancyStartDate String?                 @map("pregnancy_start_date")
-  /// The expected due date the owner was given. Optional.
-  pregnancyDueDate   String?                 @map("pregnancy_due_date")
-  /// The day the pregnancy ended in a birth. Required for POSTPARTUM.
-  deliveryDate       String?                 @map("delivery_date")
+  /// ordinary cycle resumes with the goal the owner had.
+  ///
+  /// AES-256-GCM ciphertext of the state and its three calendar days
+  /// (`{ state, startDate, dueDate, deliveryDate }`, `YYYY-MM-DD` in the
+  /// owner's zone), sealed and opened only by `src/lib/cycle/pregnancy-store.ts`.
+  /// Always encrypted, whatever `sensitiveCategoryEncryption` says: that
+  /// switch exists so the day-log fields can stay queryable for the rollups
+  /// and correlations, and no query reads this state. Every reader resolves
+  /// it in the application on a given day, so nothing of it needs to be
+  /// plaintext. NULL is no state.
+  pregnancyEncrypted String? @map("pregnancy_encrypted")
   /// How many weeks after `deliveryDate` the postpartum state lasts before
   /// the ordinary cycle (and its forecast) resumes on its own.
-  postpartumWeeks    Int                     @default(12) @map("postpartum_weeks")
+  postpartumWeeks    Int     @default(12) @map("postpartum_weeks")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -8786,9 +8779,13 @@ enum CareCalendarFeedTitleMode {
 /// `revokedAt` and never deletes. Not in the backup, for the reason the cycle
 /// feed is not (`backup-plan.ts`).
 model CareCalendarFeed {
-  id     String @id @default(cuid())
-  /// The record whose care dates the feed serves, and who minted it.
-  userId String @map("user_id")
+  id          String @id @default(cuid())
+  /// The record whose care dates the feed serves.
+  userId      String @map("user_id")
+  /// Who minted it: the owner, or the guardian of a managed profile. A
+  /// guardian's feed is re-checked against their live MANAGE grant and the
+  /// managed-profile marker on every fetch, and ends with a handover.
+  createdById String @map("created_by_id")
 
   /// HMAC-SHA256 of the raw `hlf_` token.
   tokenHash   String @unique @map("token_hash")
@@ -8815,9 +8812,11 @@ model CareCalendarFeed {
   includeVaccinations Boolean                   @default(true) @map("include_vaccinations")
   titleMode           CareCalendarFeedTitleMode @default(DISCREET) @map("title_mode")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User @relation("CareCalendarFeedSubject", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy User @relation("CareCalendarFeedCreator", fields: [createdById], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt(sort: Desc)])
+  @@index([createdById])
   @@map("care_calendar_feeds")
 }
 
@@ -8850,6 +8849,10 @@ enum EmergencyCardField {
 model EmergencyCardLink {
   id          String               @id @default(cuid())
   userId      String               @map("user_id")
+  /// Who minted it: the owner, or the guardian of a managed profile. A
+  /// guardian's link is re-checked against their live MANAGE grant and the
+  /// managed-profile marker on every scan, and ends with a handover.
+  createdById String               @map("created_by_id")
   /// HMAC-SHA256 of the raw `hlm_` token.
   tokenHash   String               @unique @map("token_hash")
   /// The first 8 characters of the raw token, shown so the owner can tell
@@ -8865,9 +8868,11 @@ model EmergencyCardLink {
   lastAccessAt DateTime? @map("last_access_at")
   accessCount  Int       @default(0) @map("access_count")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User @relation("EmergencyCardLinkSubject", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy User @relation("EmergencyCardLinkCreator", fields: [createdById], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt(sort: Desc)])
+  @@index([createdById])
   @@map("emergency_card_links")
 }
 

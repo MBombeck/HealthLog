@@ -1461,10 +1461,7 @@
         "rawChartMode": true,
         "discreetNotifications": true,
         "sensitiveCategoryEncryption": false,
-        "reproductiveState": "PREGNANT",
-        "pregnancyStartDate": "2026-03-02",
-        "pregnancyDueDate": "2026-12-07",
-        "deliveryDate": "2026-11-30",
+        "pregnancyEncrypted": "<sealed:v2:{\"state\":\"POSTPARTUM\",\"startDate\":\"2026-03-02\",\"dueDate\":\"2026-12-07\",\"deliveryDate\":\"2026-11-30\",\"ownerDecided\":true}>",
         "postpartumWeeks": 3,
         "createdAt": "<now>",
         "updatedAt": "<now>"
@@ -3228,11 +3225,12 @@
       "rawChartMode": true,
       "discreetNotifications": true,
       "sensitiveCategoryEncryption": false,
-      "reproductiveState": "PREGNANT",
+      "reproductiveState": "POSTPARTUM",
       "pregnancyStartDate": "2026-03-02",
       "pregnancyDueDate": "2026-12-07",
       "deliveryDate": "2026-11-30",
-      "postpartumWeeks": 3
+      "postpartumWeeks": 3,
+      "pregnancyOwnerDecided": true
     },
     "cycles": [],
     "cycleDayLogs": [

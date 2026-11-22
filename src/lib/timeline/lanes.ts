@@ -37,6 +37,7 @@ import { userDayKey } from "@/lib/tz/format";
 import { visitPath } from "@/lib/encounters/visit-links";
 import { decryptSeizureText } from "@/lib/seizures/server";
 import { pregnancySpans } from "@/lib/cycle/pregnancy";
+import { loadPregnancyFields } from "@/lib/cycle/pregnancy-store";
 
 /**
  * The sharing domain each lane reads, or `null` for a lane only the record's
@@ -559,7 +560,7 @@ async function documentsLane(frame: LaneFrame): Promise<LaneRead> {
 async function cycleLane(frame: LaneFrame): Promise<LaneRead> {
   const [rows, profile] = await Promise.all([
     cycleRows(frame),
-    pregnancyRow(frame),
+    loadPregnancyFields(prisma, frame.userId),
   ]);
   // The pregnancy and postpartum stretches the owner set, drawn in
   // the cycle lane so the value lines above read in their frame.
@@ -591,19 +592,6 @@ async function cycleLane(frame: LaneFrame): Promise<LaneRead> {
     ],
     standing: [],
   };
-}
-
-function pregnancyRow(frame: LaneFrame) {
-  return prisma.cycleProfile.findUnique({
-    where: { userId: frame.userId },
-    select: {
-      reproductiveState: true,
-      pregnancyStartDate: true,
-      pregnancyDueDate: true,
-      deliveryDate: true,
-      postpartumWeeks: true,
-    },
-  });
 }
 
 async function cycleRows(frame: LaneFrame) {

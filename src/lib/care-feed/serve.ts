@@ -19,6 +19,7 @@ import { NextRequest } from "next/server";
 import { activeAccount } from "@/lib/account-deletion/active-account";
 import { apiError } from "@/lib/api-response";
 import { isApiGloballyEnabled } from "@/lib/app-settings";
+import { guardianMintRefusal } from "@/lib/sharing/guardian-minted";
 import { hashToken } from "@/lib/auth/hmac";
 import { fetcherFamily } from "@/lib/cycle/feed/fetcher";
 import { parseFeedTokenSegment } from "@/lib/cycle/feed/token";
@@ -105,6 +106,7 @@ export async function serveCareFeed(
     select: {
       id: true,
       userId: true,
+      createdById: true,
       bodyHash: true,
       contentChangedAt: true,
       includeVisits: true,
@@ -131,6 +133,9 @@ export async function serveCareFeed(
   ]);
   if (!subject) return notFound("subject");
   if (!apiOn) return notFound("api_disabled");
+  // A guardian's feed rests on their live grant and the profile's marker.
+  const refusal = await guardianMintRefusal(feed);
+  if (refusal) return notFound(refusal);
 
   const now = new Date();
   const built = await buildCareFeed(feed, subject, now);

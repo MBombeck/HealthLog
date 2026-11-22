@@ -36,6 +36,10 @@ import {
   pregnancyPatchProblem,
 } from "@/lib/validations/cycle";
 import { predictionsPausedOn } from "@/lib/cycle/pregnancy";
+import {
+  pregnancyFieldsOf,
+  pregnancyWriteData,
+} from "@/lib/cycle/pregnancy-store";
 import { moodDateKey } from "@/lib/mood/date-key";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
@@ -107,16 +111,7 @@ export const PATCH = apiHandler(async (req: Request) => {
   // as a whole: a patch that only moves the due date must still agree with
   // the first day already stored.
   const pregnancy = p.pregnancy
-    ? mergePregnancyPatch(
-        {
-          reproductiveState: stored.reproductiveState,
-          pregnancyStartDate: stored.pregnancyStartDate,
-          pregnancyDueDate: stored.pregnancyDueDate,
-          deliveryDate: stored.deliveryDate,
-          postpartumWeeks: stored.postpartumWeeks,
-        },
-        p.pregnancy,
-      )
+    ? mergePregnancyPatch(pregnancyFieldsOf(stored), p.pregnancy)
     : null;
   if (pregnancy) {
     const problem = pregnancyPatchProblem(pregnancy, today);
@@ -152,20 +147,15 @@ export const PATCH = apiHandler(async (req: Request) => {
       ...(p.lutealPhaseLength !== undefined && {
         lutealPhaseLength: p.lutealPhaseLength,
       }),
-      ...(pregnancy && {
-        reproductiveState: pregnancy.reproductiveState,
-        pregnancyStartDate: pregnancy.pregnancyStartDate,
-        pregnancyDueDate: pregnancy.pregnancyDueDate,
-        deliveryDate: pregnancy.deliveryDate,
-        postpartumWeeks: pregnancy.postpartumWeeks,
-      }),
+      ...(pregnancy &&
+        pregnancyWriteData({ ...pregnancy, ownerDecided: true })),
     },
   });
 
   // A state that pauses the forecast takes the cached forecast with it at
   // once, so the reminder cron has nothing left to push from; the refresh job
   // writes a new one once the state no longer holds.
-  if (pregnancy && predictionsPausedOn(updated, today)) {
+  if (pregnancy && predictionsPausedOn(pregnancy, today)) {
     await prisma.cyclePrediction.deleteMany({ where: { userId: user.id } });
   }
 

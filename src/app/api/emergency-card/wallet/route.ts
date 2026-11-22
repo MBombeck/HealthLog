@@ -8,11 +8,12 @@
  * live link before it prints it, so the PDF can only ever point at the
  * owner's card. Without it the card prints without a code.
  *
- * Always the caller's own record (`requireActorAuth`), cookie session only.
+ * The owner's card, or the card of a managed profile for its guardian
+ * (`requireGuardianAuth`), cookie session only.
  */
 import { NextRequest, NextResponse } from "next/server";
 
-import { apiHandler, requireActorAuth } from "@/lib/api-handler";
+import { apiHandler, requireGuardianAuth } from "@/lib/api-handler";
 import { apiError } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { hashToken } from "@/lib/auth/hmac";
@@ -35,9 +36,9 @@ import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 export const dynamic = "force-dynamic";
 
 export const POST = apiHandler(async (request: NextRequest) => {
-  const auth = await requireActorAuth();
+  const auth = await requireGuardianAuth();
   if (auth.authMethod !== "cookie") return cardCookieOnlyRefusal();
-  const { user } = auth;
+  const { user, actor } = auth;
   annotate({ action: { name: "emergency-card.wallet" } });
 
   const parsed = await parseJsonBody(request, emergencyWalletBodySchema, {
@@ -69,7 +70,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const today = moodDateKey(new Date(), user.timezone ?? DEFAULT_TIMEZONE);
   const [card, locale] = await Promise.all([
     loadEmergencyCard(user.id, today),
-    resolveServerLocale({ request, userLocale: user.locale ?? undefined }),
+    // In the language of the person printing it.
+    resolveServerLocale({ request, userLocale: actor.locale ?? undefined }),
   ]);
   const { t } = getServerTranslator(locale);
   const bytes = await buildWalletCardPdf({

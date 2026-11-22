@@ -295,11 +295,12 @@ const cyclePregnancyDto = z
     postpartumWeek: z.number().int().nullable(),
     postpartumEndsOn: pregnancyDate.nullable(),
     predictionsPaused: z.boolean(),
+    lapsed: z.boolean(),
   })
   .meta({
     id: "CyclePregnancyDTO",
     description:
-      "The pregnancy / postpartum state, resolved on the owner's calendar day. `storedState` is what the owner set; `state` is what holds today (POSTPARTUM past `postpartumEndsOn` reads null). `gestationalWeeks`+`gestationalDays` count completed weeks from `startDate`, or from `dueDate` less 280 days. While `predictionsPaused` is true the period and fertility forecast is empty on every surface and no prediction push is sent. Render these values; do not recompute them.",
+      "The pregnancy / postpartum state, resolved on the owner's calendar day. `storedState` is what the owner set; `state` is what holds today (POSTPARTUM past `postpartumEndsOn` reads null). `gestationalWeeks`+`gestationalDays` count completed weeks from `startDate`, or from `dueDate` less 280 days. While `predictionsPaused` is true the period and fertility forecast is empty on every surface and no prediction push is sent. The state is bounded by its dates: PREGNANT holds from `startDate` (or `dueDate` less 280 days) and no longer than four weeks past the due date; past that `state` is null and `lapsed` is true, so a client can ask whether the entry is still current. Render these values; do not recompute them.",
   });
 
 const cycleProfileDto = z

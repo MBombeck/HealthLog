@@ -53,6 +53,10 @@ import {
   buildNarrativeCorrection,
 } from "@/lib/insights/narrative/narrative-grounding";
 import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
+import {
+  loadPregnancySnapshotBlock,
+  pregnancyContextPromptBlock,
+} from "@/lib/ai/pregnancy-context";
 
 /**
  * Stable identifier for the narrative prompt revision. Bumped whenever the
@@ -295,6 +299,36 @@ export function buildNarrativeUserPrompt(
  * outcome the caller can log + branch on. Never throws on a provider failure
  * (a cron batch loop must continue to the next user).
  */
+/**
+ * A pregnancy or the weeks after a birth during the period: the frame the
+ * week's weight and vitals read in. Without the week number, because the
+ * grounding check refuses any number the context does not carry.
+ */
+async function narrativePregnancyBlock(
+  userId: string,
+  options: GenerateOptions,
+  tz: string,
+): Promise<string> {
+  const pregnancy = await loadPregnancySnapshotBlock(
+    userId,
+    tz,
+    options.now ?? new Date(),
+    {
+      lookbackDays: options.period === "month" ? 30 : 7,
+      db: options.prisma ?? defaultPrisma,
+    },
+  );
+  return pregnancy
+    ? pregnancyContextPromptBlock(
+        pregnancy,
+        instructionLocale(options.locale),
+        {
+          withWeek: false,
+        },
+      )
+    : "";
+}
+
 export async function generatePeriodNarrative(
   userId: string,
   options: GenerateOptions,
@@ -343,13 +377,14 @@ export async function generatePeriodNarrative(
     select: { timezone: true },
   });
   const tz = profile?.timezone ?? DEFAULT_TIMEZONE;
+  const pregnancyBlock = await narrativePregnancyBlock(userId, options, tz);
 
   const completion = await runCompletion({
     userId,
     cacheAction: `insights.narrative.${period}.${locale}`,
     capability: "periodNarrative",
     systemPrompt: buildNarrativeSystemPrompt(locale),
-    userPrompt: buildNarrativeUserPrompt(context, bodyLocale),
+    userPrompt: buildNarrativeUserPrompt(context, bodyLocale) + pregnancyBlock,
     temperature: AI_BUDGETS.narrative.temperature,
     maxTokens: AI_BUDGETS.narrative.maxTokens,
     // v1.18.7 / v1.22 — the reference/diff path pins the deterministic
@@ -463,6 +498,7 @@ export async function generatePeriodNarrative(
       systemPrompt: buildNarrativeSystemPrompt(locale),
       userPrompt:
         buildNarrativeUserPrompt(context, bodyLocale) +
+        pregnancyBlock +
         buildNarrativeCorrection(findings, bodyLocale),
       temperature: AI_BUDGETS.narrative.temperature,
       maxTokens: AI_BUDGETS.narrative.maxTokens,

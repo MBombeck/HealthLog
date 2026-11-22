@@ -17,6 +17,7 @@ import { addDays, dayDiff } from "./day-math";
 import { goalAllowsFertileWindow } from "./dto";
 import { BBT_WINDOW, type CyclePhase } from "./types";
 import { predictionsPausedOn } from "./pregnancy";
+import { pregnancyFieldsOf } from "./pregnancy-store";
 import { resolveCycleVerdict } from "./verdict";
 import { moodDateKey } from "@/lib/mood/date-key";
 import { startOfLocalDayKey } from "@/lib/tz/local-day";
@@ -48,7 +49,7 @@ export async function readTodayCycle(
   if (!profile) return null;
   // No cycle day while a pregnancy or postpartum state holds; the
   // cycle page says the same (`pausedCycleVerdict`).
-  if (predictionsPausedOn(profile, today)) return null;
+  if (predictionsPausedOn(pregnancyFieldsOf(profile), today)) return null;
   // The whole history, as the calendar route reads it: the forecast rests on
   // every observed cycle, and this read must agree with the cycle page.
   const [cycles, dayLogRows, nightlyTemps] = await Promise.all([

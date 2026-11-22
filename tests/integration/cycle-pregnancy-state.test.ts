@@ -13,6 +13,7 @@ import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildCycleBackupSection, restoreCycleData } from "@/lib/cycle/backup";
+import { pregnancyFieldsOf } from "@/lib/cycle/pregnancy-store";
 import type { RestoreSkipLog } from "@/lib/export/restore-skips";
 import { streamParseExportXml } from "@/lib/measurements/import-apple-health-export";
 import { parseBackupPayload } from "@/lib/validations/backup";
@@ -45,6 +46,12 @@ vi.mock("next/headers", async () => {
 });
 
 const db = () => getPrismaClient();
+
+async function storedPregnancy() {
+  return pregnancyFieldsOf(
+    await db().cycleProfile.findUniqueOrThrow({ where: { userId: USER_ID } }),
+  );
+}
 
 function dayKey(offsetDays: number): string {
   return new Date(Date.now() + offsetDays * 86_400_000)
@@ -152,11 +159,12 @@ describe("pregnancy state", () => {
     // Back to the ordinary cycle: the dates go, the forecast returns.
     const cleared = await patchPrefs({ pregnancy: { state: null } });
     expect(cleared.status).toBe(200);
-    const row = await db().cycleProfile.findUniqueOrThrow({
-      where: { userId: USER_ID },
-    });
+    const row = await storedPregnancy();
     expect(row.reproductiveState).toBeNull();
     expect(row.pregnancyStartDate).toBeNull();
+    // The owner's decision is kept, sealed, so an import does not set the
+    // state again behind them.
+    expect(row.ownerDecided).toBe(true);
     expect((await calendar()).prediction).not.toBeNull();
   });
 
@@ -170,9 +178,24 @@ describe("pregnancy state", () => {
       pregnancy: { state: "PREGNANT", startDate: dayKey(3) },
     });
     expect(future.status).toBe(422);
+    expect(await storedPregnancy()).toMatchObject({ reproductiveState: null });
+  });
+
+  it("keeps the state and its days encrypted at rest", async () => {
     expect(
-      await db().cycleProfile.findUniqueOrThrow({ where: { userId: USER_ID } }),
-    ).toMatchObject({ reproductiveState: null });
+      (
+        await patchPrefs({
+          pregnancy: { state: "PREGNANT", startDate: dayKey(-100) },
+        })
+      ).status,
+    ).toBe(200);
+    const raw = await db().$queryRaw<Array<{ row: string }>>`
+      SELECT row_to_json(c)::text AS row FROM "cycle_profiles" c
+       WHERE "user_id" = ${USER_ID}`;
+    expect(raw).toHaveLength(1);
+    expect(raw[0].row).not.toContain(dayKey(-100));
+    expect(raw[0].row).not.toContain("PREGNANT");
+    expect((await storedPregnancy()).pregnancyStartDate).toBe(dayKey(-100));
   });
 
   it("resumes the forecast once the postpartum weeks are over", async () => {
@@ -213,15 +236,13 @@ describe("pregnancy state", () => {
     });
     await db().cycleProfile.update({
       where: { userId: USER_ID },
-      data: { reproductiveState: null, pregnancyStartDate: null },
+      data: { pregnancyEncrypted: null },
     });
     const skips: RestoreSkipLog = [];
     await db().$transaction(async (tx) => {
       await restoreCycleData(tx, USER_ID, payload, skips);
     });
-    expect(
-      await db().cycleProfile.findUniqueOrThrow({ where: { userId: USER_ID } }),
-    ).toMatchObject({
+    expect(await storedPregnancy()).toMatchObject({
       reproductiveState: "PREGNANT",
       pregnancyStartDate: dayKey(-100),
       pregnancyDueDate: dayKey(180),
@@ -247,9 +268,7 @@ describe("pregnancy state", () => {
 
     const first = await run();
     expect(first.cycle.pregnancyStateSet).toBe("PREGNANT");
-    expect(
-      await db().cycleProfile.findUniqueOrThrow({ where: { userId: USER_ID } }),
-    ).toMatchObject({
+    expect(await storedPregnancy()).toMatchObject({
       reproductiveState: "PREGNANT",
       pregnancyStartDate: dayKey(-70),
     });
@@ -263,8 +282,6 @@ describe("pregnancy state", () => {
     expect((await patchPrefs({ pregnancy: { state: null } })).status).toBe(200);
     const again = await run();
     expect(again.cycle.pregnancyStateSet).toBeNull();
-    expect(
-      await db().cycleProfile.findUniqueOrThrow({ where: { userId: USER_ID } }),
-    ).toMatchObject({ reproductiveState: null });
+    expect(await storedPregnancy()).toMatchObject({ reproductiveState: null });
   });
 });
