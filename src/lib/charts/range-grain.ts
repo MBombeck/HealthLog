@@ -5,7 +5,7 @@
  * The tab decides the grain, not an off-by-one span threshold: 7 and 30 days
  * draw one point per day, 90 days one point per ISO week, and All picks week
  * or month (or day, on a history shorter than 90 days) from the span of the
- * data, as `pickBucket` always has. Until the tabs were relabelled as day
+ * data. Until the tabs were relabelled as day
  * windows, "90" was the last 90 readings, which for someone measuring twice a
  * week spanned far more than 90 days and drew weekly means; a 90-day window
  * never exceeds 90 days, so the span threshold quietly turned it daily. Naming
@@ -16,9 +16,9 @@
  */
 import type { ChartRangePoints } from "@/lib/dashboard-layout";
 
-import { pickBucket, type ChartBucketType } from "./bucket-time-series";
+import { MS_PER_DAY } from "@/lib/time-constants";
 
-const MS_PER_DAY = 86_400_000;
+import type { ChartBucketType } from "./bucket-time-series";
 
 /** The grain of each fixed-window tab. All (`0`) goes by the data's span. */
 export const RANGE_TAB_GRAIN = {
@@ -28,14 +28,26 @@ export const RANGE_TAB_GRAIN = {
 } as const satisfies Record<Exclude<ChartRangePoints, 0>, ChartBucketType>;
 
 /**
- * The grain for a range tab. `spanDays` is the span of the visible data and
- * only matters for All.
+ * The grain for a range tab. `timestamps` are the visible points' instants
+ * (any order) and only matter for All, which goes by their span: daily up to
+ * 90 days, weekly up to 730, monthly beyond.
  */
 export function pickRangeBucket(
   range: ChartRangePoints,
-  spanDays: number,
+  timestamps: readonly number[],
 ): ChartBucketType {
-  return range === 0 ? pickBucket(spanDays) : RANGE_TAB_GRAIN[range];
+  if (range !== 0) return RANGE_TAB_GRAIN[range];
+  let first = Infinity;
+  let last = -Infinity;
+  for (const t of timestamps) {
+    if (t < first) first = t;
+    if (t > last) last = t;
+  }
+  const spanDays =
+    timestamps.length < 2 ? 0 : Math.round((last - first) / MS_PER_DAY);
+  if (spanDays > 730) return "month";
+  if (spanDays > 90) return "week";
+  return "day";
 }
 
 /**
@@ -47,19 +59,6 @@ export function pickRangeBucket(
 export function firstWindowDayUtc(cutoffMs: number): number {
   const noon = MS_PER_DAY / 2;
   return Math.ceil((cutoffMs - noon) / MS_PER_DAY) * MS_PER_DAY;
-}
-
-/** Today in `timeZone`, as the UTC midnight that encodes the calendar day. */
-export function todayUtc(timeZone: string, now: Date = new Date()): number {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(now);
-  const part = (type: string) =>
-    Number(parts.find((p) => p.type === type)?.value);
-  return Date.UTC(part("year"), part("month") - 1, part("day"));
 }
 
 export interface BucketPeriod {

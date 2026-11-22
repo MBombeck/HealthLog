@@ -95,21 +95,6 @@ export function milestoneHref(milestone: Milestone): string {
   return METRIC_HREF[milestone.metricType] ?? "/insights";
 }
 
-// ── pure UTC day-key arithmetic ─────────────────────────────────────────────
-function dayKeyToSerial(key: string): number {
-  const [year, month, day] = key.split("-").map(Number);
-  return Date.UTC(year, month - 1, day) / 86_400_000;
-}
-
-function serialToDayKey(serial: number): string {
-  return shiftDateKey("1970-01-01", serial);
-}
-
-/** Shift a UTC-ISO day key by a whole number of days. */
-function shiftDayKey(key: string, deltaDays: number): string {
-  return serialToDayKey(dayKeyToSerial(key) + deltaDays);
-}
-
 /**
  * Fold a `StreakResult` into the durable milestones it represents. Reuses the
  * `detectStreak` engine's output verbatim — this adds no detection logic.
@@ -133,7 +118,7 @@ export function milestonesFromStreak(
   const out: Milestone[] = [];
 
   if (result.returnEvent) {
-    const reachedDay = shiftDayKey(
+    const reachedDay = shiftDateKey(
       latestDayKey,
       -(result.returnEvent.daysInside - MIN_IN_RUN),
     );
@@ -149,7 +134,10 @@ export function milestonesFromStreak(
     for (const weeks of SUSTAINED_WEEK_THRESHOLDS) {
       const days = weeks * 7;
       if (result.streakDays < days) continue;
-      const reachedDay = shiftDayKey(latestDayKey, -(result.streakDays - days));
+      const reachedDay = shiftDateKey(
+        latestDayKey,
+        -(result.streakDays - days),
+      );
       out.push({
         kind: "sustained_in_range",
         metricType,

@@ -84,7 +84,7 @@ describe("aggregateMoodEntries()", () => {
   });
 
   it("aggregates to weekly mean for windows in the 91-730d range", () => {
-    // 100-day span — pickBucket → "week".
+    // 100-day span — All goes weekly.
     const entries = dayEntries("2026-01-01", 100, 4);
     const out = aggregateMoodEntries(entries, BERLIN);
     expect(out.bucket).toBe("week");

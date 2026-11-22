@@ -53,7 +53,8 @@ import {
   readTieredRollupSeries,
   type RollupBucketRow,
 } from "../measurement-read-wmy";
-import { bucketTimeSeries, pickBucket } from "@/lib/charts/bucket-time-series";
+import { bucketTimeSeries } from "@/lib/charts/bucket-time-series";
+import { pickRangeBucket } from "@/lib/charts/range-grain";
 
 const { findMany, aggregate, queryRaw } = mocks;
 const DAY_MS = 86_400_000;
@@ -761,7 +762,7 @@ describe("readTieredRollupSeries", () => {
 });
 
 // v1.37.29 — the server tier ladder and the client caption ladder
-// (`pickBucket`) are DIFFERENT functions with different thresholds, and
+// (All in `pickRangeBucket`) are DIFFERENT functions with different thresholds, and
 // their divergence is exactly what shipped monthly means under a
 // "weekly average" chip. The invariant that keeps the caption honest is
 // directional: for any data span, the tier the server serves is never
@@ -774,7 +775,7 @@ describe("server tier vs client caption ladder", () => {
   it("never serves coarser than the client captions, for every span up to ten years", () => {
     for (let span = 1; span <= 3650; span++) {
       const server = pickRollupGranularityForWindow(span);
-      const client = pickBucket(span);
+      const client = pickRangeBucket(0, [0, span * 86_400_000]);
       expect(
         SERVER_COARSENESS[server],
         `span ${span}d: server ${server} vs client caption ${client}`,

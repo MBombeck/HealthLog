@@ -9,11 +9,15 @@ import {
   pickRangeBucket,
   pointPeriodLabel,
   RANGE_TAB_GRAIN,
-  todayUtc,
 } from "../range-grain";
 
 const DAY = 86_400_000;
 const utc = (iso: string) => Date.parse(`${iso}T00:00:00.000Z`);
+/** Two instants `days` apart. */
+const spanOf = (days: number) => [
+  utc("2026-01-01") + days * DAY,
+  utc("2026-01-01"),
+];
 
 describe("pickRangeBucket()", () => {
   // The fixed tabs name their grain: the data's span does not move it. A
@@ -22,9 +26,9 @@ describe("pickRangeBucket()", () => {
   it.each([0, 1, 30, 89, 90, 91, 400, 2000])(
     "7 and 30 days stay daily, 90 days is weekly, whatever the span (%d days)",
     (span) => {
-      expect(pickRangeBucket(7, span)).toBe("day");
-      expect(pickRangeBucket(30, span)).toBe("day");
-      expect(pickRangeBucket(90, span)).toBe("week");
+      expect(pickRangeBucket(7, spanOf(span))).toBe("day");
+      expect(pickRangeBucket(30, spanOf(span))).toBe("day");
+      expect(pickRangeBucket(90, spanOf(span))).toBe("week");
     },
   );
 
@@ -35,7 +39,12 @@ describe("pickRangeBucket()", () => {
     [730, "week"],
     [731, "month"],
   ] as const)("All goes by the span: %d days -> %s", (span, expected) => {
-    expect(pickRangeBucket(0, span)).toBe(expected);
+    expect(pickRangeBucket(0, spanOf(span))).toBe(expected);
+  });
+
+  it("reads a single point or none as a span of zero", () => {
+    expect(pickRangeBucket(0, [])).toBe("day");
+    expect(pickRangeBucket(0, [utc("2020-01-01")])).toBe("day");
   });
 
   it("names a grain for every fixed range tab", () => {
@@ -55,7 +64,9 @@ describe("pickRangeBucket()", () => {
       expect(
         server[pickRollupGranularityForWindow(tab.days)],
         `tab ${tab.days}`,
-      ).toBeLessThanOrEqual(coarseness[pickRangeBucket(tab.days, tab.days)]);
+      ).toBeLessThanOrEqual(
+        coarseness[pickRangeBucket(tab.days, spanOf(tab.days))],
+      );
     }
   });
 });
@@ -75,15 +86,6 @@ describe("firstWindowDayUtc()", () => {
     expect(first % DAY).toBe(0);
     expect(first + DAY / 2).toBeGreaterThanOrEqual(cutoff);
     expect(first - DAY / 2).toBeLessThan(cutoff);
-  });
-});
-
-describe("todayUtc()", () => {
-  it("encodes the calendar day of the zone, not of UTC", () => {
-    const now = new Date("2026-11-22T23:30:00.000Z");
-    expect(todayUtc("UTC", now)).toBe(utc("2026-11-22"));
-    expect(todayUtc("Europe/Berlin", now)).toBe(utc("2026-11-23"));
-    expect(todayUtc("America/New_York", now)).toBe(utc("2026-11-22"));
   });
 });
 

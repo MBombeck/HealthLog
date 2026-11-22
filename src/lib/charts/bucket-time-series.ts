@@ -123,8 +123,8 @@ export interface BucketInputPoint {
 }
 
 export interface BucketTimeSeriesOptions {
-  /** Override the bucketer when the caller already knows it. */
-  bucket?: ChartBucketType;
+  /** The grain; a chart with range tabs takes it from `pickRangeBucket`. */
+  bucket: ChartBucketType;
   /**
    * The calendar the day / week / month boundaries are drawn in.
    *
@@ -138,15 +138,6 @@ export interface BucketTimeSeriesOptions {
 }
 
 /**
- * Pick the bucket size from a time-range in days.
- */
-export function pickBucket(rangeDays: number): ChartBucketType {
-  if (rangeDays > 730) return "month";
-  if (rangeDays > 90) return "week";
-  return "day";
-}
-
-/**
  * Bucket a daily-aggregated chart series into day/week/month groups.
  * Weeks use ISO 8601 (Monday start); every boundary is drawn in the caller's
  * `timeZone`. Empty buckets are skipped so a sparse user does not get a flat
@@ -156,22 +147,10 @@ export function bucketTimeSeries(
   points: BucketInputPoint[],
   options: BucketTimeSeriesOptions,
 ): BucketedChartSeries {
-  const { timeZone } = options;
+  const { bucket, timeZone } = options;
   const sorted = [...points].sort(
     (a, b) => toMs(a.timestamp) - toMs(b.timestamp),
   );
-
-  const bucket =
-    options.bucket ??
-    pickBucket(
-      sorted.length < 2
-        ? 0
-        : Math.round(
-            (toMs(sorted[sorted.length - 1].timestamp) -
-              toMs(sorted[0].timestamp)) /
-              MS_PER_DAY,
-          ),
-    );
 
   if (bucket === "day") {
     // Day-granularity is the upstream's native shape, but we still go

@@ -13,8 +13,9 @@ import {
   PERIOD_END_KEY,
   PERIOD_START_KEY,
   READINGS_KEY,
-  todayUtc,
 } from "@/lib/charts/range-grain";
+import { dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
+import { userDayKey } from "@/lib/tz/format";
 import type {
   ChartRangePoints,
   ComparisonBaseline,
@@ -72,7 +73,9 @@ export function useMoodChartView({
         range: rangePoints,
         period: {
           firstDay: rangePoints > 0 ? firstWindowDayUtc(cutoff) : null,
-          lastDay: todayUtc(profileTimeZone, new Date(now)),
+          lastDay: dayKeyAsUtcMidnight(
+            userDayKey(new Date(now), profileTimeZone),
+          ).getTime(),
         },
       }),
     };

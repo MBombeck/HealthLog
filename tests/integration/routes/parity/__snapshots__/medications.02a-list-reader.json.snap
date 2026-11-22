@@ -79,7 +79,8 @@
         "canEndCourse": false,
         "stockUnitsRemaining": null,
         "stockDosesRemaining": null,
-        "runwayDays": null
+        "runwayDays": null,
+        "leafletSearch": null
       }
     ],
     "error": null

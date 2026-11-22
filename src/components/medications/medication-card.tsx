@@ -14,8 +14,10 @@ import { MedicationStateBadges } from "@/components/medications/card-parts/medic
 import { MedicationCardBody } from "@/components/medications/card-parts/medication-card-body";
 import { OverdueSlotValue } from "@/components/medications/dose-state-label";
 import { useWeekdayLabel } from "@/components/medications/card-parts/medication-next-last-slot";
+import { lastTakenLabel } from "@/components/medications/card-parts/last-taken-label";
+import type { LeafletSearch } from "@/lib/medications/leaflet-registries";
 import { formatTimeWindowRange } from "@/lib/time-window-format";
-import { formatDateTime, formatTime } from "@/lib/format";
+import { formatTime } from "@/lib/format";
 import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
 import { formatDose } from "@/lib/medications/format-dose";
 import { formatUnitsPerDose } from "@/lib/medications/units-per-dose";
@@ -42,7 +44,7 @@ import { LogInjectionSiteDialog } from "@/components/medications/log-injection-s
 import { useGlobalExcludedInjectionSites } from "@/lib/medications/use-injection-site-prefs";
 import { useAuth } from "@/hooks/use-auth";
 import type { InjectionSiteKey } from "@/lib/medications/injection-sites";
-import { DEFAULT_TIMEZONE, shiftDateKey, userDayKey } from "@/lib/tz/format";
+import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
 interface Schedule {
   id: string;
@@ -131,6 +133,8 @@ interface Medication {
   note?: string | null;
   /** #1430 — the saved leaflet link; null = none. */
   leafletUrl?: string | null;
+  /** #1430 — the caller's registry search, built by the list read. */
+  leafletSearch?: LeafletSearch | null;
   /**
    * v1.39.4 (#1040) — server-resolved: taken / skip are offered today only
    * when true (active, tracked, and the course includes today).
@@ -344,23 +348,6 @@ export function MedicationCard({
       ? stockRunwayDays
       : null;
 
-  function formatLastTakenAt(value: string): string {
-    // Day keys (YYYY-MM-DD) in the profile zone, string-comparable for the
-    // today / yesterday / older bucketing below. The user-facing display goes
-    // through formatTime / formatDateTime. Yesterday is the key before
-    // today's: the browser's `setDate(-1)` steps in the browser's zone, which
-    // need not be the profile's.
-    const intakeDay = userDayKey(new Date(value), userTz);
-    const todayDay = userDayKey(new Date(), userTz);
-    const yesterdayDay = shiftDateKey(todayDay, -1);
-    const time = formatTime(value);
-
-    if (intakeDay === todayDay) return `${t("medications.today")}, ${time}`;
-    if (intakeDay === yesterdayDay)
-      return `${t("medications.yesterday")}, ${time}`;
-    return formatDateTime(value);
-  }
-
   const stateBadges = (
     <MedicationStateBadges
       notificationsEnabled={medication.notificationsEnabled}
@@ -484,7 +471,7 @@ export function MedicationCard({
       nextLine={asNeededLine ?? nextLine}
       lastLine={
         medication.lastTakenAt
-          ? formatLastTakenAt(medication.lastTakenAt)
+          ? lastTakenLabel(medication.lastTakenAt, userTz, t)
           : null
       }
       asNeeded={medication.asNeeded === true}

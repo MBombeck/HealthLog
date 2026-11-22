@@ -47,7 +47,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
-import { useTranslations } from "@/lib/i18n/context";
+import { useDisplayTimezone, useTranslations } from "@/lib/i18n/context";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
 import { invalidateKeys, medicationDependentKeys } from "@/lib/query-keys";
 
@@ -149,9 +149,8 @@ function WizardDialogShell({
 }: MedicationWizardDialogProps) {
   const { t, locale } = useTranslations();
   // The "describe it in words" reader follows the `medicationExtract`
-  // capability: offered while available, and while only the document-reading
-  // consent is missing (the sheet asks for it). Otherwise the button is not
-  // there at all, and the manual steps are the whole wizard.
+  // capability: offered while available or while only the reading consent is
+  // missing (the sheet asks for it); otherwise the manual steps are all.
   const medicationExtract = useAiCapability("medicationExtract");
   const extractOffered =
     medicationExtract.available ||
@@ -159,10 +158,11 @@ function WizardDialogShell({
   const router = useRouter();
   const queryClient = useQueryClient();
 
+  const userTz = useDisplayTimezone();
   const [seed] = useState<WizardPayload>(() =>
     mode === "edit" && initial
-      ? hydrateWizardPayload(initial)
-      : emptyWizardPayload(),
+      ? hydrateWizardPayload(initial, userTz)
+      : emptyWizardPayload(userTz),
   );
   const [payload, setPayload] = useState<WizardPayload>(seed);
   const [step, setStep] = useState<StepNumber>(() =>

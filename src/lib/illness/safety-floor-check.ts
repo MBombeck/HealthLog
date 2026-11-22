@@ -35,7 +35,7 @@ import {
   type IllnessRedFlag,
 } from "@/lib/illness/correlation";
 import { notifyIllnessRedFlag } from "@/lib/illness/red-flag-notify";
-import { readLocalDayExtremes } from "@/lib/measurements/dense-bucket-read";
+import { readDayAggregates } from "@/lib/measurements/day-aggregates";
 
 /** A row the write hook just persisted (the subset the check needs). */
 export interface WrittenReading {
@@ -346,11 +346,11 @@ async function loadDailyWorst(
   // that samples SpO2 every minute of the night fills the lookback with more
   // rows than the 500 a capped read used to return, and the days the cap cut
   // off never entered the run.
-  const days = await readLocalDayExtremes({
+  const days = await readDayAggregates({
     userId,
     type,
-    from: windowStart,
-    to: candidateAt,
+    since: windowStart,
+    until: candidateAt,
     timeZone: tz,
   });
 
