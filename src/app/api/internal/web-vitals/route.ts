@@ -64,6 +64,8 @@ const webVitalsBodySchema = z
         "back-forward",
         "back-forward-cache",
         "prerender",
+        // A page restored from a discarded tab or a soft navigation back.
+        "restore",
       ])
       .optional(),
   })
