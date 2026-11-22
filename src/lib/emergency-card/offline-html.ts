@@ -112,16 +112,3 @@ export function buildLinkCardHtml(
       : t("emergencyCard.link.readOnly"),
   );
 }
-
-/**
- * Every miss behind `/e/<token>`, whatever it was: one document, no link into
- * the app (the reader is not a HealthLog user), served with a 404 status.
- */
-export function buildLinkMissHtml(t: Translate, locale: string): string {
-  return documentHtml(
-    locale,
-    t("emergencyCard.link.missTitle"),
-    `<h1>${escapeHtml(t("emergencyCard.link.missTitle"))}</h1>` +
-      `<p>${escapeHtml(t("emergencyCard.link.missBody"))}</p>`,
-  );
-}

@@ -20,6 +20,7 @@
 import { cookies } from "next/headers";
 
 import { apiError } from "@/lib/api-response";
+import { urlCredentialNotFound } from "@/lib/http/url-credential";
 import { auditLog } from "@/lib/auth/audit";
 import { getClientIp } from "@/lib/api-response";
 import {
@@ -51,11 +52,14 @@ import type {
 const REPORT_DOWNLOAD_LIMIT_PER_HOUR = 20;
 const REPORT_DOWNLOAD_WINDOW_MS = 60 * 60 * 1000;
 
-/** One blunt 404 for every miss class — a probe distinguishes nothing. */
+const NOT_FOUND_ERROR_CODE = "share-link.report.notFound";
+
+/**
+ * One blunt 404 for every miss class, the shared URL-credential answer — a
+ * probe distinguishes nothing.
+ */
 function notFound() {
-  return apiError("Not found", 404, {
-    errorCode: "share-link.report.notFound",
-  });
+  return urlCredentialNotFound(NOT_FOUND_ERROR_CODE, "share_link");
 }
 
 export type ReportDownloadResult =

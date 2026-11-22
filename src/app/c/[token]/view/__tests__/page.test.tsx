@@ -1,6 +1,6 @@
 /**
- * v1.11.0 — public clinician-view page gating.
- * v1.18.7 — passphrase gate: the page checks gate state first, gates a
+ * Public clinician-view page gating.
+ * Passphrase gate: the page checks gate state first, gates a
  * protected link until the unlock cookie is valid, and never bumps access
  * counters on a gate-blocked hit.
  *

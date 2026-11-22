@@ -1,4 +1,7 @@
+import { NextResponse } from "next/server";
+
 import { NATIVE_OIDC_RETURN_PATH } from "@/lib/auth/native-return";
+import { setBaselineSecurityHeaders } from "@/lib/http/proxy-bypass-routes";
 
 /**
  * Edge headers for the paths whose credential is the URL itself.
@@ -52,4 +55,22 @@ export function setPathCredentialHeaders(
   if (page) headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
   headers.set("X-Robots-Tag", "noindex, nofollow");
   headers.set("Referrer-Policy", "no-referrer");
+}
+
+/**
+ * The edge hop off a path whose credential is the URL itself (the invite and
+ * handover links, a clinician share page opened without its gate): a 307 that
+ * is uncacheable, unindexable and never leaked as a `Referer`, because the
+ * secret rides in the path of the request that produced it.
+ */
+export function credentialRedirect(target: URL): NextResponse {
+  const redirected = NextResponse.redirect(target, 307);
+  setBaselineSecurityHeaders(redirected.headers);
+  redirected.headers.set(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate",
+  );
+  redirected.headers.set("X-Robots-Tag", "noindex, nofollow");
+  redirected.headers.set("Referrer-Policy", "no-referrer");
+  return redirected;
 }

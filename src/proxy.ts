@@ -8,7 +8,14 @@ import {
   RETIRED_ROUTE_STATUS,
 } from "@/lib/http/retired-routes";
 import { setBaselineSecurityHeaders } from "@/lib/http/proxy-bypass-routes";
-import { setPathCredentialHeaders } from "@/lib/http/path-credential-headers";
+import {
+  credentialRedirect,
+  setPathCredentialHeaders,
+} from "@/lib/http/path-credential-headers";
+import {
+  SHARE_VIEW_GATE_COOKIE,
+  shareViewToken,
+} from "@/lib/clinician-share/view-gate";
 import {
   forwardAccountSeedPermission,
   setPageCachePolicy,
@@ -525,19 +532,9 @@ export function proxy(request: NextRequest) {
     if (/^hlv_[0-9a-f]{64}$/.test(token)) {
       target.searchParams.set("invite", token);
     }
-    const redirected = applyBaselineSecurityHeaders(
-      NextResponse.redirect(target, 307),
-    );
-    // The secret rides in the path of the request that produced this hop, so
-    // the hop itself carries the same defence the landing page earned in
-    // v1.17.0: uncacheable, unindexable, and never leaked as a `Referer`.
-    redirected.headers.set(
-      "Cache-Control",
-      "no-store, no-cache, must-revalidate",
-    );
-    redirected.headers.set("X-Robots-Tag", "noindex, nofollow");
-    redirected.headers.set("Referrer-Policy", "no-referrer");
-    return redirected;
+    // The secret rides in the path of this hop: uncacheable, unindexable,
+    // never leaked as a `Referer`.
+    return credentialRedirect(target);
   }
 
   // v1.42 (#959) — the managed-profile handover link answers at the edge for
@@ -551,16 +548,15 @@ export function proxy(request: NextRequest) {
     if (/^hlp_[0-9a-f]{64}$/.test(token)) {
       target.searchParams.set("token", token);
     }
-    const redirected = applyBaselineSecurityHeaders(
-      NextResponse.redirect(target, 307),
-    );
-    redirected.headers.set(
-      "Cache-Control",
-      "no-store, no-cache, must-revalidate",
-    );
-    redirected.headers.set("X-Robots-Tag", "noindex, nofollow");
-    redirected.headers.set("Referrer-Policy", "no-referrer");
-    return redirected;
+    return credentialRedirect(target);
+  }
+
+  // The clinician share page opened without the entry route's gate cookie:
+  // back to `/c/<token>`, which answers an unknown or ended link with a real
+  // 404 (`src/lib/clinician-share/view-gate.ts`).
+  const shareToken = shareViewToken(pathname);
+  if (shareToken && !request.cookies.has(SHARE_VIEW_GATE_COOKIE)) {
+    return credentialRedirect(new URL(`/c/${shareToken}`, request.url));
   }
 
   // Server-side route protection for pages (not API routes — those have their own getSession checks)

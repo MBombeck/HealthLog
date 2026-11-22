@@ -379,6 +379,9 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
   // document for whoever scans it, answered by a route since 1.49.0 so a miss
   // is a real 404. No client reads it.
   "/e/{token}": { kind: "shareLink", methods: ["GET"] },
+  // The clinician share link's entry: a 404 document for a dead link, a 307
+  // to the human-readable view for a live one. No client reads it.
+  "/c/{token}": { kind: "shareLink", methods: ["GET"] },
   "/.well-known/apple-app-site-association": {
     kind: "wellKnown",
     methods: ["GET"],

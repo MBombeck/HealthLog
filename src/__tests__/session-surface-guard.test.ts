@@ -256,7 +256,11 @@ describe("S2 — the URL-token authentication set is frozen", () => {
    */
   const URL_TOKEN_ALLOWLIST: Record<string, string> = {
     // Clinician share link: the `hls_` path segment is the whole credential.
-    "app/c/[token]/page.tsx": "serves the shared record view",
+    // Its entry: looks the token up first, answers every miss with a real
+    // 404 and sends a live link on to the page below with the gate cookie.
+    "app/c/[token]/route.ts":
+      "the share link's entry: gate lookup, uniform 404 on a miss, 307 to the view",
+    "app/c/[token]/view/page.tsx": "serves the shared record view",
     "app/c/[token]/d/[id]/route.ts": "serves a shared document's bytes",
     "app/c/[token]/fhir/route.ts": "serves the shared record as a FHIR bundle",
     "app/c/[token]/report.pdf/route.ts": "serves the shared record as a PDF",
@@ -389,8 +393,9 @@ describe("S2 — the URL-token authentication set is frozen", () => {
       "app/c/[token]/d/[id]/route.ts",
       "app/c/[token]/fhir/route.ts",
       "app/c/[token]/not-found.tsx",
-      "app/c/[token]/page.tsx",
       "app/c/[token]/report.pdf/route.ts",
+      "app/c/[token]/route.ts",
+      "app/c/[token]/view/page.tsx",
       "app/claim/[token]/page.tsx",
       "app/e/[token]/route.ts",
       "app/invite/[token]/page.tsx",
@@ -405,8 +410,9 @@ describe("S2 — the URL-token authentication set is frozen", () => {
       "app/api/c/[token]/unlock/route.ts",
       "app/c/[token]/d/[id]/route.ts",
       "app/c/[token]/fhir/route.ts",
-      "app/c/[token]/page.tsx",
       "app/c/[token]/report.pdf/route.ts",
+      "app/c/[token]/route.ts",
+      "app/c/[token]/view/page.tsx",
     ]);
   });
 

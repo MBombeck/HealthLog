@@ -1,14 +1,17 @@
 /**
- * v1.11.0 — public clinician view (Epic C, C5).
+ * Public clinician view (Epic C, C5).
  *
- * A standalone, read-only RSC at `/c/<token>`. It carries NO app chrome, NO
+ * A standalone, read-only RSC at `/c/<token>/view`. It carries NO app chrome, NO
  * coach / AI / insight generation, and NO session — it is authenticated solely
  * by the unguessable `hls_` token in the path, resolved through the C3
  * {@link resolveShareToken} security core (the only trust boundary here).
  *
- * An unknown / revoked / expired / malformed token resolves to `null` and the
- * page answers a flat `notFound()` (404) — the same blunt response for every
- * failure class so a probe learns nothing.
+ * Reached through `/c/<token>` (`../route.ts`), which answers an unknown,
+ * revoked, expired or malformed token with a real 404 before any page
+ * renders, and the proxy sends a visit without that route's gate cookie back
+ * there. A link that dies in between still resolves to `null` here and shows
+ * the segment's not-found copy (under the root loading boundary that one can
+ * only carry a 200, which is why the entry is a route).
  *
  * The descriptive wellness scores are fenced inside a muted card carrying the
  * load-bearing "not a clinical assessment / not a diagnosis" disclaimer. KVNR
@@ -52,7 +55,7 @@ export default async function ClinicianSharePage({
 }) {
   const { token } = await params;
 
-  // v1.18.7 — gate check first, WITHOUT bumping access counters. Resolves a
+  // Gate check first, WITHOUT bumping access counters. Resolves a
   // malformed / unknown / revoked / expired token to null → the same flat 404
   // the full read would. A legacy link (no passphrase) falls straight through.
   const gate = await resolveShareGateState(token);

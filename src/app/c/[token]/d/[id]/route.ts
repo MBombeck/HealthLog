@@ -39,6 +39,7 @@ import { NextResponse } from "next/server";
 
 import { apiHandler } from "@/lib/api-handler";
 import { apiError } from "@/lib/api-response";
+import { urlCredentialNotFound } from "@/lib/http/url-credential";
 import { stripImageMetadata } from "@/lib/clinician-share/exif-strip";
 import {
   resolveShareGateState,
@@ -118,11 +119,14 @@ function safeDownloadName(
   return cleaned.length > 0 ? cleaned : `document-${id}.${ext}`;
 }
 
-/** One blunt 404 for every miss class — a probe distinguishes nothing. */
+const NOT_FOUND_ERROR_CODE = "share-link.document.notFound";
+
+/**
+ * One blunt 404 for every miss class, the shared URL-credential answer — a
+ * probe distinguishes nothing.
+ */
 function notFound() {
-  return apiError("Not found", 404, {
-    errorCode: "share-link.document.notFound",
-  });
+  return urlCredentialNotFound(NOT_FOUND_ERROR_CODE, "share_link");
 }
 
 export const GET = apiHandler(

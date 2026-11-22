@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 76,
-  "total": 82548,
+  "total": 82544,
   "entries": {
     "components/cycle/log-day-sheet.tsx": 1646,
     "components/insights/coach-panel/chat-bubble.tsx": 821,
@@ -78,6 +78,6 @@
     "lib/validations/inbound-documents.ts": 989,
     "lib/withings/sync-sleep.ts": 879,
     "lib/withings/sync.ts": 926,
-    "proxy.ts": 837
+    "proxy.ts": 833
   }
 }

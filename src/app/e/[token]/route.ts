@@ -20,12 +20,12 @@
  */
 import { apiHandler } from "@/lib/api-handler";
 import { resolveShareViewLocale } from "@/lib/clinician-share/request-locale";
-import {
-  buildLinkCardHtml,
-  buildLinkMissHtml,
-} from "@/lib/emergency-card/offline-html";
+import { buildLinkCardHtml } from "@/lib/emergency-card/offline-html";
 import { readEmergencyCardByToken } from "@/lib/emergency-card/serve";
-import { urlCredentialHtml } from "@/lib/http/url-credential";
+import {
+  urlCredentialHtml,
+  urlCredentialMissPage,
+} from "@/lib/http/url-credential";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 
 type RouteParams = { params: Promise<{ token: string }> };
@@ -42,7 +42,13 @@ export const GET = apiHandler(
     const { t } = getServerTranslator(locale);
     const tr = (key: string, vars?: Record<string, string | number>) =>
       t(key, vars);
-    if (!read.ok) return urlCredentialHtml(buildLinkMissHtml(tr, locale), 404);
+    if (!read.ok) {
+      return urlCredentialMissPage({
+        locale,
+        title: tr("emergencyCard.link.missTitle"),
+        body: tr("emergencyCard.link.missBody"),
+      });
+    }
     return urlCredentialHtml(
       buildLinkCardHtml(read.view, tr, locale, read.expiresOn),
       200,

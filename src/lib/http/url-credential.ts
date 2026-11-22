@@ -118,7 +118,7 @@ export function icsFeedResponse(input: {
 }
 
 /**
- * A self-contained HTML page (the emergency card, or its miss), never kept by
+ * A self-contained HTML page (the emergency card, or a miss), never kept by
  * any cache. A miss is a real 404 status, not a 200 with a "not found" body.
  */
 export function urlCredentialHtml(html: string, status: 200 | 404): Response {
@@ -131,4 +131,44 @@ export function urlCredentialHtml(html: string, status: 200 | 404): Response {
       },
     }),
   );
+}
+
+const ESCAPES: Record<string, string> = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+};
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (c) => ESCAPES[c]);
+}
+
+const MISS_STYLE =
+  ":root{color-scheme:light dark;--bg:#ffffff;--fg:#1f2030;--muted:#5b5e78}" +
+  "@media (prefers-color-scheme:dark){:root{--bg:#1f2030;--fg:#f8f8f2;--muted:#a4a9c9}}" +
+  "body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,-apple-system,sans-serif}" +
+  "main{max-width:36rem;margin:0 auto;padding:48px 16px}" +
+  "h1{margin:0 0 8px;font-size:1.5rem}p{margin:0;color:var(--muted)}";
+
+/**
+ * The one answer of a URL-credential page to a link it does not know, or one
+ * that was revoked or has ended: the same small document for every miss,
+ * with a 404 status, no script, no link into the app (the reader holds no
+ * account), and colours from the device's own light or dark setting.
+ */
+export function urlCredentialMissPage(input: {
+  locale: string;
+  title: string;
+  body: string;
+}): Response {
+  const html =
+    `<!DOCTYPE html><html lang="${escapeHtml(input.locale)}"><head><meta charset="utf-8">` +
+    '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' +
+    '<meta name="robots" content="noindex,nofollow">' +
+    '<meta name="referrer" content="no-referrer">' +
+    `<title>${escapeHtml(input.title)}</title><style>${MISS_STYLE}</style></head>` +
+    `<body><main><h1>${escapeHtml(input.title)}</h1><p>${escapeHtml(input.body)}</p></main></body></html>`;
+  return urlCredentialHtml(html, 404);
 }
