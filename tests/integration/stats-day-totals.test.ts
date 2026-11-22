@@ -6,7 +6,7 @@
  *     with `value: 0`. That is a real total for every cumulative type, so it
  *     answers `updated` and stores 0, rather than `value_out_of_range`.
  *   - Newer wins: an entry carrying `computedAt` earlier than the stored
- *     row's is refused, `duplicate` with reason `stale`, and the newer value
+ *     row's is refused, `skipped` with reason `stale`, and the newer value
  *     stays. An entry without one overwrites as before, and clears the
  *     stored time, since the stored value no longer has a known one. Held at
  *     every write path: the prefilter, the set settle and the reconciler.
@@ -173,7 +173,7 @@ describe("newer wins for `stats:` rows", () => {
 
     // An older computation arrives late.
     expect(await send([total(STEPS, "count", 4000, T1)])).toEqual([
-      { status: "duplicate", reason: "stale" },
+      { status: "skipped", reason: "stale" },
     ]);
     expect(await stored(STEPS)).toMatchObject({ value: 9000 });
 

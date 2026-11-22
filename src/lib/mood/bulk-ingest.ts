@@ -41,7 +41,8 @@ import {
 } from "@/lib/mood/tag-links";
 import {
   deletedInHealthLog,
-  TOMBSTONED_ENTRY,
+  DELETED_IN_HEALTHLOG_ENTRY,
+  DELETED_IN_HEALTHLOG_REASON,
 } from "@/lib/sync/tombstone-repost";
 
 /** One entry as the route's batch schema parsed it. */
@@ -405,15 +406,16 @@ async function ingestEntry(args: {
     // (see the MoodEntry schema note); an offline client's later re-post of
     // the same entry is stale state, not a recreation, and must not resurrect
     // the row. True no-op: no value churn, no `updatedAt` bump, no tag-link
-    // writes on the hidden row; report `duplicate` so the client checkpoints
-    // past it exactly like a live-row match. A match the phone reported
+    // writes on the hidden row; report it `skipped`, reason
+    // `deleted_in_healthlog`, which the client treats as final and
+    // checkpoints past. A match the phone reported
     // deleted in Apple Health is written back below: the sample is in
     // HealthKit again (`tombstone-repost.ts`).
     if (existing && deletedInHealthLog(existing)) {
-      tally.duplicates += 1;
+      tally.skipped.push({ index: i, reason: DELETED_IN_HEALTHLOG_REASON });
       tally.results.push({
         index: i,
-        ...TOMBSTONED_ENTRY,
+        ...DELETED_IN_HEALTHLOG_ENTRY,
         id: existing.id,
         ...echoExternalId(entry),
       });

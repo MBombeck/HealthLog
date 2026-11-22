@@ -428,7 +428,7 @@ const bulkMoodEntryResult = z
       .string()
       .optional()
       .describe(
-        "Why an entry was `skipped`. On a `duplicate`: `tombstoned` (since v1.49.0) for an entry whose `(source, externalId)` names an entry the person deleted in HealthLog; it stays deleted and nothing is written. An entry the phone reported deleted through `DELETE /api/mood-entries/by-external-ids` is written back when it is posted again (`inserted`): it is in Apple Health again.",
+        "Why an entry was `skipped`. `deleted_in_healthlog` (since v1.49.0) for an entry whose `(source, externalId)` names an entry the person deleted in HealthLog; it stays deleted and nothing is written. An entry the phone reported deleted through `DELETE /api/mood-entries/by-external-ids` is written back when it is posted again (`inserted`): it is in Apple Health again.",
       ),
     id: z
       .string()

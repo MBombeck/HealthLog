@@ -772,7 +772,7 @@ export const medicationIntakeEventResource = z
       .nullable()
       .optional()
       .describe(
-        "Since v1.49.0: who deleted a tombstone. Equal to `deletedAt` when the phone reported the dose deleted through `DELETE /api/medications/intake/by-external-ids`; null, or different, when it was deleted in HealthLog. A re-post of a dose deleted in HealthLog is refused (`duplicate`, reason `tombstoned`), one the phone reported is written again. Null on every live row; do not show it.",
+        "Since v1.49.0: who deleted a tombstone. Equal to `deletedAt` when the phone reported the dose deleted through `DELETE /api/medications/intake/by-external-ids`; null, or different, when it was deleted in HealthLog. A re-post of a dose deleted in HealthLog is refused (`skipped`, reason `deleted_in_healthlog`), one the phone reported is written again. Null on every live row; do not show it.",
       ),
   })
   .meta({

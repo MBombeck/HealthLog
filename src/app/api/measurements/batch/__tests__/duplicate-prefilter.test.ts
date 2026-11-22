@@ -424,8 +424,8 @@ describe("exact-duplicate prefilter (v1.42)", () => {
     ]);
     expect(next.entries[0]).toEqual({
       index: 0,
-      status: "duplicate",
-      reason: "tombstoned",
+      status: "skipped",
+      reason: "deleted_in_healthlog",
     });
     expect(transactions).toBe(0);
     expect(store.rows[0].deletedAt).not.toBeNull();
@@ -743,10 +743,10 @@ describe("set-based insert (v1.44)", () => {
       "updated",
       "updated",
       "inserted",
-      "duplicate",
+      "skipped",
       "inserted",
     ]);
-    expect(next.entries[4]).toMatchObject({ reason: "tombstoned" });
+    expect(next.entries[4]).toMatchObject({ reason: "deleted_in_healthlog" });
     // One set statement, then the three rows it skipped.
     expect(transactions).toBe(4);
   });

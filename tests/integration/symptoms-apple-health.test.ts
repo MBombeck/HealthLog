@@ -543,7 +543,7 @@ describe("DELETE /api/symptoms/events/by-external-ids", () => {
     // Deleted in HealthLog: the re-post stays out (iOS #191).
     const replay = await ingest([sample(id)]);
     expect(replay.entries).toEqual([
-      { index: 0, status: "duplicate", reason: "tombstoned" },
+      { index: 0, status: "skipped", reason: "deleted_in_healthlog" },
     ]);
     expect(await listEvents()).toEqual([]);
     // A second delete finds nothing to delete.
@@ -685,7 +685,7 @@ describe("purging a built-in definition", () => {
     // definition stays hidden.
     const replay = await ingest([sample(id)]);
     expect(replay.entries).toEqual([
-      { index: 0, status: "duplicate", reason: "tombstoned" },
+      { index: 0, status: "skipped", reason: "deleted_in_healthlog" },
     ]);
     expect(
       (

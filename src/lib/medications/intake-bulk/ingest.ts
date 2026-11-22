@@ -33,7 +33,6 @@ import {
   OWNED_MEDICATION_SELECT,
   type BatchContext,
 } from "./entry";
-import { APP_MINTED_SOURCE } from "@/lib/sync/external-id-delete";
 import {
   deletedInHealthLog,
   type TombstoneOrigin,
@@ -65,7 +64,7 @@ export type BulkIntakeOutcome =
  *
  * A deleted Apple Health dose with no live row under its UUID is a
  * tombstone. When its newest deletion was the person's, in HealthLog, the
- * entry is refused, `duplicate` with reason `tombstoned`, so a fresh install
+ * entry is refused, `skipped` with reason `deleted_in_healthlog`, so a fresh install
  * reading the whole Apple Health history does not bring the dose back or take
  * its stock again (iOS #191). When the phone reported it deleted in Apple
  * Health, the re-post lands as a new dose (`tombstone-repost.ts`).
@@ -90,8 +89,11 @@ async function loadKnownExternalIds(
     const existingExternalRows = await prisma.medicationIntakeEvent.findMany({
       where: {
         userId,
+        // Every row of either kind, whatever its `source`: an Apple Health
+        // dose that converged onto a pre-minted slot row keeps that row's
+        // source and takes the dose-event id, and it is an Apple Health dose
+        // all the same. Only Apple Health entries carry an `externalId`.
         externalId: { in: batchExternalIds },
-        OR: [{ deletedAt: null }, { source: APP_MINTED_SOURCE }],
       },
       select: {
         id: true,

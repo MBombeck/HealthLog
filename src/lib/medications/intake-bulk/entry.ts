@@ -24,7 +24,7 @@ import {
   type BatchState,
   type BulkIntakeEntry,
 } from "./batch-state";
-import { TOMBSTONED_ENTRY } from "@/lib/sync/tombstone-repost";
+import { DELETED_IN_HEALTHLOG_REASON } from "@/lib/sync/tombstone-repost";
 import { attributeEntry } from "./entry-attribution";
 import { writeEntry } from "./entry-write";
 
@@ -114,8 +114,7 @@ function screenEntry(
     // the phone reported deleted in Apple Health is not in the set, and
     // lands as a new dose.
     if (state.tombstonedExternalIds.has(entry.externalId)) {
-      state.duplicates += 1;
-      state.results.push({ index: i, ...TOMBSTONED_ENTRY });
+      skipEntry(state, i, DELETED_IN_HEALTHLOG_REASON);
       return true;
     }
   }

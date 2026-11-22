@@ -458,8 +458,8 @@ describe("DELETE /api/cycle/day-logs/by-external-ids", () => {
       }
     ).data.entries;
     expect(entries[0]).toMatchObject({
-      status: "duplicate",
-      reason: "tombstoned",
+      status: "skipped",
+      reason: "deleted_in_healthlog",
     });
     const after = await prisma.cycleDayLog.findUniqueOrThrow({
       where: { id: row.id },
@@ -552,7 +552,7 @@ describe("DELETE /api/mood-entries/by-external-ids", () => {
     );
     expect(
       ((await again.json()) as typeof replayBody).data.entries[0],
-    ).toMatchObject({ status: "duplicate", reason: "tombstoned" });
+    ).toMatchObject({ status: "skipped", reason: "deleted_in_healthlog" });
     expect(
       await prisma.moodEntry.count({
         where: { userId: OWNER, deletedAt: null },
@@ -713,7 +713,7 @@ describe("DELETE /api/medications/intake/by-external-ids", () => {
     // A fresh install reads the whole history: the deleted dose stays out,
     // a dose it had not sent before lands.
     expect(await send([dose("DOSE-H", 0), dose("DOSE-NEW", 4)])).toEqual([
-      ["duplicate", "tombstoned"],
+      ["skipped", "deleted_in_healthlog"],
       ["inserted", undefined],
     ]);
     expect(
@@ -785,7 +785,7 @@ describe("DELETE /api/measurements/by-external-ids, then a re-post", () => {
     // A fresh install reads the whole history again.
     expect(await send([weight("W-AH"), weight("W-PERSON", 81)])).toEqual([
       ["updated", undefined],
-      ["duplicate", "tombstoned"],
+      ["skipped", "deleted_in_healthlog"],
     ]);
     const rows = await prisma.measurement.findMany({
       where: { userId: OWNER },

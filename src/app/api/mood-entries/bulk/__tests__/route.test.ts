@@ -640,7 +640,7 @@ describe("POST /api/mood-entries/bulk — unstable external ids", () => {
 });
 
 describe("POST /api/mood-entries/bulk — tombstone suppression", () => {
-  it("keeps a tombstoned match deleted: true no-op reported as duplicate", async () => {
+  it("keeps a tombstoned match deleted: true no-op reported as skipped", async () => {
     // A soft-deleted row under the batched pre-read: the sync feed already
     // surfaced the deletion to paired clients, so a stale offline re-post
     // must NOT resurrect it — and must not churn the hidden row either.
@@ -669,12 +669,22 @@ describe("POST /api/mood-entries/bulk — tombstone suppression", () => {
       data: {
         inserted: number;
         duplicates: number;
-        entries: Array<{ status: string; id?: string; externalId?: string }>;
+        skipped: Array<{ index: number; reason: string }>;
+        entries: Array<{
+          status: string;
+          reason?: string;
+          id?: string;
+          externalId?: string;
+        }>;
       };
     };
     expect(json.data.inserted).toBe(0);
-    expect(json.data.duplicates).toBe(1);
-    expect(json.data.entries[0].status).toBe("duplicate");
+    expect(json.data.duplicates).toBe(0);
+    expect(json.data.skipped).toEqual([
+      { index: 0, reason: "deleted_in_healthlog" },
+    ]);
+    expect(json.data.entries[0].status).toBe("skipped");
+    expect(json.data.entries[0].reason).toBe("deleted_in_healthlog");
     expect(json.data.entries[0].id).toBe("entry-tomb");
     expect(json.data.entries[0].externalId).toBe("ios-uuid-tomb");
     // No write at all on the hidden row: no upsert (value churn /
