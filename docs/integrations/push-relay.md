@@ -80,7 +80,7 @@ run your own relay, `healthlog-push admin invite` prints one. A code has 24
 characters (letters, digits, `-` and `_`), is valid for 7 days and registers
 exactly one server.
 
-Enter the code in the **Invite code** field of the dialog when you switch the
+Enter the code in the **Invite code (optional)** field of the dialog when you switch the
 relay on. Without a code the field stays empty and nothing changes for a relay
 that accepts everyone. The code is sent with that one registration and is
 never stored or logged on your server; the relay spends it only when the
