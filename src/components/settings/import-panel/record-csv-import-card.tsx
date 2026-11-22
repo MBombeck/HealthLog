@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { apiFetch, ApiError } from "@/lib/api/api-fetch";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
@@ -412,33 +412,25 @@ function RecordCsvImportSheet({
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-3">
-              <Label htmlFor="record-import-header">
-                {t("recordImport.header")}
-              </Label>
-              <Switch
-                id="record-import-header"
-                checked={header}
+            <SwitchRow
+              label={t("recordImport.header")}
+              id="record-import-header"
+              checked={header}
+              onCheckedChange={(v) => {
+                setCheck(null);
+                setHeader(v);
+              }}
+            />
+            {kind === "medications" ? (
+              <SwitchRow
+                label={t("recordImport.reminders")}
+                id="record-import-reminders"
+                checked={reminders}
                 onCheckedChange={(v) => {
                   setCheck(null);
-                  setHeader(v);
+                  setReminders(v);
                 }}
               />
-            </div>
-            {kind === "medications" ? (
-              <div className="flex items-center justify-between gap-3">
-                <Label htmlFor="record-import-reminders">
-                  {t("recordImport.reminders")}
-                </Label>
-                <Switch
-                  id="record-import-reminders"
-                  checked={reminders}
-                  onCheckedChange={(v) => {
-                    setCheck(null);
-                    setReminders(v);
-                  }}
-                />
-              </div>
             ) : null}
             <ImportNotes kind={kind} />
 

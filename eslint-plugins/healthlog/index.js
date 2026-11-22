@@ -25,6 +25,8 @@
  *                              a "use client" file imports no server module.
  *   - `card-action-row`      — the buttons of a card's action row take their
  *                              height, width and place from SettingsCardActions.
+ *   - `switch-row`           — a switch with a name is a SwitchRow; the rest
+ *                              are counted per file, and the count only falls.
  */
 
 "use strict";
@@ -42,6 +44,7 @@ const noUnlocalisedDecimal = require("./no-unlocalised-decimal.js");
 const noRawCardShell = require("./no-raw-card-shell.js");
 const importBoundaries = require("./import-boundaries.js");
 const cardActionRow = require("./card-action-row.js");
+const switchRow = require("./switch-row.js");
 
 module.exports = {
   rules: {
@@ -63,5 +66,6 @@ module.exports = {
     "no-raw-card-shell": noRawCardShell,
     "import-boundaries": importBoundaries,
     "card-action-row": cardActionRow,
+    "switch-row": switchRow,
   },
 };

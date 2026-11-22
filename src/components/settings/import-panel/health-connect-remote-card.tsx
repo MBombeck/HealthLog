@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import {
   ApiError,
@@ -201,17 +201,12 @@ export function HealthConnectRemoteCard() {
               placeholder={source ? t(`${k}.passwordKept`) : undefined}
             />
           </div>
-          <div className="flex items-center justify-between gap-3 text-sm">
-            <Label htmlFor="hc-remote-enabled" noColon className="font-normal">
-              {t(`${k}.enabled`)}
-            </Label>
-            <Switch
-              id="hc-remote-enabled"
-              checked={enabled ?? source?.enabled ?? true}
-              onCheckedChange={setEnabled}
-              className="shrink-0"
-            />
-          </div>
+          <SwitchRow
+            label={t(`${k}.enabled`)}
+            id="hc-remote-enabled"
+            checked={enabled ?? source?.enabled ?? true}
+            onCheckedChange={setEnabled}
+          />
           <p className="text-muted-foreground text-xs">
             {t(`${k}.privacyNote`)}
           </p>

@@ -4,11 +4,12 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Loader2 } from "lucide-react";
 
+import { FieldGroup } from "@/components/ui/field-group";
 import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { PasswordInput } from "@/components/ui/password-input";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
@@ -98,15 +99,13 @@ export function NtfyCard({ isAuthenticated }: { isAuthenticated: boolean }) {
       />
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="ntfy-toggle">{t("settings.ntfyEnable")}</Label>
-          <Switch
-            id="ntfy-toggle"
-            checked={settings?.enabled ?? false}
-            onCheckedChange={(checked) => toggle.mutate(checked)}
-            disabled={!settings || save.isPending || toggle.isPending}
-          />
-        </div>
+        <SwitchRow
+          label={t("settings.ntfyEnable")}
+          id="ntfy-toggle"
+          checked={settings?.enabled ?? false}
+          onCheckedChange={(checked) => toggle.mutate(checked)}
+          disabled={!settings || save.isPending || toggle.isPending}
+        />
 
         <form
           onSubmit={(e) => {
@@ -116,24 +115,22 @@ export function NtfyCard({ isAuthenticated }: { isAuthenticated: boolean }) {
           className="space-y-4"
         >
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="ntfy-server">{t("settings.ntfyServer")}</Label>
+            <FieldGroup htmlFor="ntfy-server" label={t("settings.ntfyServer")}>
               <Input
                 id="ntfy-server"
                 placeholder="https://ntfy.sh"
                 value={serverUrl}
                 onChange={(e) => setServerUrl(e.target.value)}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="ntfy-topic">{t("settings.ntfyTopic")}</Label>
+            </FieldGroup>
+            <FieldGroup htmlFor="ntfy-topic" label={t("settings.ntfyTopic")}>
               <Input
                 id="ntfy-topic"
                 placeholder="healthlog-mein-topic"
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
               />
-            </div>
+            </FieldGroup>
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="ntfy-auth">{t("settings.ntfyAuthToken")}</Label>
               <PasswordInput

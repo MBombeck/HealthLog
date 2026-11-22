@@ -15,7 +15,7 @@ import { ArrowUpDown, LayoutGrid, ListChecks } from "lucide-react";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslations } from "@/lib/i18n/context";
 import { SettingsCard } from "@/components/settings/settings-card";
@@ -133,38 +133,26 @@ export function VorsorgeReminderSwitchesCard() {
           <Card>
             <CardContent className="divide-border divide-y p-0">
               {ordered.map((reminder) => (
-                <div
+                <SwitchRow
                   key={reminder.id}
-                  className="flex items-center justify-between gap-3 px-4 py-3"
-                >
-                  <span
-                    id={`vorsorge-reminder-label-${reminder.id}`}
-                    className="min-w-0 truncate text-sm"
-                  >
-                    {resolveLabel(reminder, t)}
-                  </span>
-                  <Switch
-                    checked={reminder.enabled}
-                    onCheckedChange={(next) =>
-                      update.mutate(
-                        { id: reminder.id, body: { enabled: next } },
-                        {
-                          onSuccess: () =>
-                            toastWrittenOutcome("success", t("settings.saved")),
-                          onError: (failure) =>
-                            showErrorToast(t("settings.savingError"), {
-                              cause: failure,
-                            }),
-                        },
-                      )
-                    }
-                    disabled={update.isPending}
-                    // Label each row's Switch by its own name span so SR
-                    // users hear the reminder name (plus the switch role's
-                    // on/off state) instead of N identical generic labels.
-                    aria-labelledby={`vorsorge-reminder-label-${reminder.id}`}
-                  />
-                </div>
+                  className="px-4 py-3"
+                  label={resolveLabel(reminder, t)}
+                  checked={reminder.enabled}
+                  onCheckedChange={(next) =>
+                    update.mutate(
+                      { id: reminder.id, body: { enabled: next } },
+                      {
+                        onSuccess: () =>
+                          toastWrittenOutcome("success", t("settings.saved")),
+                        onError: (failure) =>
+                          showErrorToast(t("settings.savingError"), {
+                            cause: failure,
+                          }),
+                      },
+                    )
+                  }
+                  disabled={update.isPending}
+                />
               ))}
             </CardContent>
           </Card>

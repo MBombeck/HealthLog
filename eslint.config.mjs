@@ -178,6 +178,47 @@ const eslintConfig = defineConfig([
       // primary action, a save button has no disk glyph, and nothing follows
       // the row (UI standards §12). See the rule header.
       "healthlog/card-action-row": "error",
+      // A switch with a name is a SwitchRow (UI standards §6); a switch for
+      // a whole card stands in the card header's status slot. The files
+      // below hold the bare switches that remain, counted, so a new one
+      // fails and one that moves over has to take its number down. See the
+      // rule header.
+      "healthlog/switch-row": [
+        "error",
+        {
+          allow: {
+            // Not a row: a cell of a matrix, or a list row that also holds
+            // reorder, weight or remove controls.
+            "src/app/notifications/page.tsx": 2,
+            "src/components/settings/dashboard-layout/widget-lists.tsx": 4,
+            "src/components/settings/ai/fallback-chain-card.tsx": 1,
+            "src/components/settings/score-pillar-row.tsx": 1,
+            "src/components/settings/thresholds-editor-section.tsx": 1,
+            "src/components/insights/coach-panel/sources-rail.tsx": 1,
+            // The chart's own popover: compact 12 px rows that belong to the
+            // chart frame, not to a card.
+            "src/components/charts/chart-overlay-controls.tsx": 3,
+            // Rows still in their own shape (the switch on the left, a
+            // wrapper that carries a test handle, a row inside a sheet's
+            // field). Each moves to SwitchRow when its file is next touched.
+            "src/components/cycle/log-day-sheet.tsx": 3,
+            "src/components/medications/scheduling/course-window-row.tsx": 1,
+            "src/components/medications/scheduling/dose-window-editor.tsx": 1,
+            "src/components/medications/sections/auto-mark-taken-section.tsx": 1,
+            "src/components/medications/sections/data-portability-row.tsx": 1,
+            "src/components/medications/sections/intake-tracking-section.tsx": 1,
+            "src/components/medications/sections/notifications-section.tsx": 1,
+            "src/components/records/ai-profile-inclusion-manager.tsx": 1,
+            "src/components/records/life-circumstances-manager.tsx": 2,
+            "src/components/settings/apple-health-mirror-token.tsx": 1,
+            "src/components/settings/coach-nudge-card.tsx": 1,
+            "src/components/settings/coach-prefs-section.tsx": 2,
+            "src/components/settings/export-section.tsx": 2,
+            "src/components/settings/managed-record/documents-form.tsx": 1,
+            "src/components/settings/managed-record/form-kit.tsx": 1,
+          },
+        },
+      ],
       // Layer direction: src/lib never imports src/components or src/app, and
       // a "use client" file makes no value import of the database client,
       // crypto, the Prisma client entry, the job queue, pg or next/headers.

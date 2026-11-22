@@ -4,11 +4,12 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Webhook } from "lucide-react";
 
+import { FieldGroup } from "@/components/ui/field-group";
 import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { PasswordInput } from "@/components/ui/password-input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { SettingsCard } from "@/components/settings/settings-card";
@@ -107,15 +108,13 @@ export function WebhookCard({ isAuthenticated }: { isAuthenticated: boolean }) {
       />
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="webhook-toggle">{t("settings.webhookEnable")}</Label>
-          <Switch
-            id="webhook-toggle"
-            checked={settings?.enabled ?? false}
-            onCheckedChange={(checked) => toggle.mutate(checked)}
-            disabled={!settings || save.isPending || toggle.isPending}
-          />
-        </div>
+        <SwitchRow
+          label={t("settings.webhookEnable")}
+          id="webhook-toggle"
+          checked={settings?.enabled ?? false}
+          onCheckedChange={(checked) => toggle.mutate(checked)}
+          disabled={!settings || save.isPending || toggle.isPending}
+        />
 
         <form
           onSubmit={(e) => {
@@ -161,21 +160,21 @@ export function WebhookCard({ isAuthenticated }: { isAuthenticated: boolean }) {
                   : t("settings.webhookFormatGenericHint")}
               </p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="webhook-header-name">
-                {t("settings.webhookHeaderName")}
-              </Label>
+            <FieldGroup
+              htmlFor="webhook-header-name"
+              label={t("settings.webhookHeaderName")}
+            >
               <Input
                 id="webhook-header-name"
                 placeholder="Authorization"
                 value={headerName}
                 onChange={(e) => setHeaderName(e.target.value)}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="webhook-header-value">
-                {t("settings.webhookHeaderValue")}
-              </Label>
+            </FieldGroup>
+            <FieldGroup
+              htmlFor="webhook-header-value"
+              label={t("settings.webhookHeaderValue")}
+            >
               <PasswordInput
                 id="webhook-header-value"
                 placeholder={
@@ -186,7 +185,7 @@ export function WebhookCard({ isAuthenticated }: { isAuthenticated: boolean }) {
                 value={headerValue}
                 onChange={(e) => setHeaderValue(e.target.value)}
               />
-            </div>
+            </FieldGroup>
           </div>
 
           {saveError && (

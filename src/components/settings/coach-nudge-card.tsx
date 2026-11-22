@@ -20,6 +20,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MessageCircleHeart } from "lucide-react";
 
 import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { NativeSelect } from "@/components/ui/native-select";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
@@ -290,24 +291,16 @@ export function CoachNudgeCard({
               deterministic warm template is the baseline and the fail-closed
               fallback; this only lets the model phrase the nudge when a
               provider is healthy. */}
-          <div className="flex min-h-11 items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-sm">
-                {t("notifications.coachNudge.aiComposedLabel")}
-              </p>
-              <p className="text-muted-foreground text-xs">
-                {t("notifications.coachNudge.aiComposedDesc")}
-              </p>
-            </div>
-            <Switch
-              checked={resolved.nudgeAiComposed}
-              onCheckedChange={(next) =>
-                patchCoach({ nudgeAiComposed: next }, null)
-              }
-              disabled={!isAuthenticated || saving}
-              aria-label={t("notifications.coachNudge.aiComposedAria")}
-            />
-          </div>
+          <SwitchRow
+            label={t("notifications.coachNudge.aiComposedLabel")}
+            description={t("notifications.coachNudge.aiComposedDesc")}
+            checked={resolved.nudgeAiComposed}
+            onCheckedChange={(next) =>
+              patchCoach({ nudgeAiComposed: next }, null)
+            }
+            disabled={!isAuthenticated || saving}
+            aria-label={t("notifications.coachNudge.aiComposedAria")}
+          />
         </div>
       )}
       {msg && (

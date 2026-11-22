@@ -22,7 +22,7 @@ import { Label } from "@/components/ui/label";
 import { DateTimeField } from "@/components/ui/date-time-field";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Segmented } from "@/components/ui/segmented";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { MedicationNote } from "@/components/medications/medication-note";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { formatDose } from "@/lib/medications/format-dose";
@@ -196,22 +196,15 @@ function AttributionLine({
   return (
     <div className="space-y-2" data-slot="intake-form-attribution">
       {nearSlot && (
-        <label
-          htmlFor={`${idPrefix}-count-near`}
-          className="flex min-h-11 items-center justify-between gap-3"
-        >
-          <span className="text-sm font-medium">
-            {t("medications.intakeForm.countNearLabel", {
-              time: fmt.wallTime(nearSlot.slotHm),
-            })}
-          </span>
-          <Switch
-            id={`${idPrefix}-count-near`}
-            checked={countNear}
-            onCheckedChange={onCountNear}
-            data-slot="intake-form-count-near"
-          />
-        </label>
+        <SwitchRow
+          label={t("medications.intakeForm.countNearLabel", {
+            time: fmt.wallTime(nearSlot.slotHm),
+          })}
+          id={`${idPrefix}-count-near`}
+          checked={countNear}
+          onCheckedChange={onCountNear}
+          data-slot="intake-form-count-near"
+        />
       )}
       {text && (
         <p

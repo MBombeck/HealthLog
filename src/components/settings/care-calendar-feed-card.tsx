@@ -20,7 +20,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
@@ -150,20 +150,14 @@ export function CareCalendarFeedCard() {
           <FetchLine feed={feed} />
           <Separator />
           {TOGGLES.map(({ field, label }) => (
-            <div
+            <SwitchRow
               key={field}
-              className="flex items-center justify-between gap-4"
-            >
-              <Label htmlFor={`care-feed-${field}`} className="text-sm">
-                {t(label)}
-              </Label>
-              <Switch
-                id={`care-feed-${field}`}
-                checked={feed[field]}
-                disabled={update.isPending}
-                onCheckedChange={(v) => update.mutate({ [field]: v })}
-              />
-            </div>
+              label={t(label)}
+              id={`care-feed-${field}`}
+              checked={feed[field]}
+              disabled={update.isPending}
+              onCheckedChange={(v) => update.mutate({ [field]: v })}
+            />
           ))}
           <div className="space-y-1.5">
             <Label htmlFor="care-feed-title">{t("cycle.feed.titles")}</Label>

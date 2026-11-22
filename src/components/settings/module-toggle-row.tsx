@@ -34,8 +34,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { InlineAction } from "@/components/ui/inline-action";
 
 export interface ModuleToggleRowProps {
@@ -75,7 +74,7 @@ export interface ModuleToggleRowProps {
 
 export function ModuleToggleRow({
   moduleKey,
-  icon: Icon,
+  icon,
   label,
   description,
   enabled,
@@ -94,47 +93,32 @@ export function ModuleToggleRow({
   return (
     // `id="module-<key>"` is the anchor other pages link to when they show a
     // module's state and send the person here to change it.
-    <div
-      id={`module-${moduleKey}`}
-      className="flex scroll-mt-28 items-start justify-between gap-4 py-3"
-    >
-      <div className="flex min-w-0 items-start gap-3">
-        <Icon
-          className="text-muted-foreground mt-0.5 h-5 w-5 shrink-0"
-          aria-hidden="true"
-        />
-        <div className="min-w-0 space-y-0.5">
-          {/* A row title beside a switch, not a field label: no colon, and
-              on the description's left edge (the primitive's `pl-1` would
-              inset it), matching the admin `SettingsToggle` rows. */}
-          <Label htmlFor={inputId} noColon className="pl-0 text-sm font-medium">
-            {label}
-          </Label>
-          <p className="text-muted-foreground text-xs">{description}</p>
-          {locked && lockedNote ? (
-            <p className="text-muted-foreground text-xs">{lockedNote}</p>
-          ) : null}
-          {disabledReason ? (
-            <p className="text-muted-foreground text-xs">{disabledReason}</p>
-          ) : null}
-          {manageLink ? (
-            <InlineAction asChild tone="muted">
-              <Link href={manageLink.href}>
-                {manageLink.label}
-                <ChevronRight className="size-3.5" aria-hidden="true" />
-              </Link>
-            </InlineAction>
-          ) : null}
-        </div>
-      </div>
-      <Switch
+    <div id={`module-${moduleKey}`} className="scroll-mt-28 py-3">
+      <SwitchRow
         id={inputId}
+        icon={icon}
+        label={label}
+        description={description}
         checked={locked ? true : enabled}
         disabled={!interactive || pending}
         onCheckedChange={interactive ? (v) => onToggle?.(v) : undefined}
-        className="mt-0.5 shrink-0"
         aria-label={label}
-      />
+      >
+        {locked && lockedNote ? (
+          <p className="text-muted-foreground text-xs">{lockedNote}</p>
+        ) : null}
+        {disabledReason ? (
+          <p className="text-muted-foreground text-xs">{disabledReason}</p>
+        ) : null}
+        {manageLink ? (
+          <InlineAction asChild tone="muted">
+            <Link href={manageLink.href}>
+              {manageLink.label}
+              <ChevronRight className="size-3.5" aria-hidden="true" />
+            </Link>
+          </InlineAction>
+        ) : null}
+      </SwitchRow>
     </div>
   );
 }
