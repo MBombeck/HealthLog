@@ -522,7 +522,7 @@ const cycleBulkEntryResult = z.object({
     .string()
     .optional()
     .describe(
-      "On a `skipped` entry. `unstable_external_id` is a verdict on the entry and terminal: resending it unchanged is skipped again. `constraint` means the write met a database constraint (a key another write claimed at the same moment, or a reference that no longer exists). `upsert_failed` is a write failure on the server's side: nothing was stored, the entry should be sent again, and the response carrying it is `Cache-Control: no-store`, so a retry under the same `Idempotency-Key` writes again rather than replaying the failure.",
+      "On a `skipped` entry. `deleted_in_healthlog` (since v1.49.0): an `APPLE_HEALTH` re-post of a `cycle-hk:<day>` externalId whose day the person deleted in HealthLog; nothing is written, the day stays deleted, and resending gives the same answer. A day the phone reported deleted through `DELETE /api/cycle/day-logs/by-external-ids` is written again from empty fields. `unstable_external_id` is a verdict on the entry and terminal: resending it unchanged is skipped again. `constraint` means the write met a database constraint (a key another write claimed at the same moment, or a reference that no longer exists). `upsert_failed` is a write failure on the server's side: nothing was stored, the entry should be sent again, and the response carrying it is `Cache-Control: no-store`, so a retry under the same `Idempotency-Key` writes again rather than replaying the failure.",
     ),
 });
 

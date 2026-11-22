@@ -9,7 +9,7 @@
  *     phone's report). The re-post is refused per entry: nothing is written,
  *     no stock is deducted, and the entry answers
  *
- *         { status: "duplicate", reason: "tombstoned" }
+ *         { status: "skipped", reason: "deleted_in_healthlog" }
  *
  *   - **Apple Health**, reported by the phone through
  *     `DELETE /api/<domain>/by-external-ids`. The sample may come back: a
@@ -17,11 +17,11 @@
  *     got wrong, a sample restored through iCloud), so it is written like a
  *     new one, and the next deletion report removes it again if it is gone.
  *
- * `duplicate`, because every app build already treats it as final and moves
- * past the entry, which is exactly right: a build that does not know the
+ * `skipped`, because every bulk route already answers it for an entry it
+ * will not store and documents it as final: a build that does not know the
  * reason stops re-sending the sample instead of retrying it forever, and a
- * strictly decoded status set does not break on a new word. `reason` tells
- * the app why, for a build that wants to say so.
+ * strictly decoded status set does not break on a new word (each route's
+ * status enum carries `skipped`). `reason` tells the app why.
  *
  * The origin lives on the tombstone itself: the by-external-ids deletes stamp
  * `appleHealthDeletedAt` with the same instant as `deletedAt`
@@ -39,12 +39,12 @@
  */
 
 /** The `reason` of a refused re-post of a sample deleted in HealthLog. */
-export const TOMBSTONED_REASON = "tombstoned" as const;
+export const DELETED_IN_HEALTHLOG_REASON = "deleted_in_healthlog" as const;
 
 /** The per-entry answer to a refused re-post, without the entry's own fields. */
-export const TOMBSTONED_ENTRY = {
-  status: "duplicate",
-  reason: TOMBSTONED_REASON,
+export const DELETED_IN_HEALTHLOG_ENTRY = {
+  status: "skipped",
+  reason: DELETED_IN_HEALTHLOG_REASON,
 } as const;
 
 /** The tombstone columns the rule reads. */
@@ -80,7 +80,7 @@ export function deletedInHealthLog(row: TombstoneOrigin): boolean {
  *
  * `refuse`: one soft-deleted row per sample. The delete stamps the origin
  * (`delete`); the ingest refuses a re-post of a row deleted in HealthLog with
- * {@link TOMBSTONED_ENTRY} and writes one deleted in Apple Health again.
+ * {@link DELETED_IN_HEALTHLOG_ENTRY} and writes one deleted in Apple Health again.
  * `revive-empty`: one row per day that many samples feed (a cycle day). A
  * day deleted in HealthLog is refused like a sample; a day deleted in Apple
  * Health is written again from empty fields, so nothing it held comes back.

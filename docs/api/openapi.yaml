@@ -6138,11 +6138,11 @@ paths:
         it re-anchored. A later re-post of the same externalId through `POST /api/cycle/day-logs/bulk` writes the day
         again, since a day is fed by many samples; since v1.49.0 it starts from empty fields and no symptoms, so nothing
         the deleted day held comes back. A day the person deleted in HealthLog is the other case: since v1.49.0 an
-        `APPLE_HEALTH` re-post of its externalId is refused per entry, `duplicate` with `reason: \"tombstoned\"`, and
-        the person writing the day again in HealthLog brings it back. Only the caller's own rows with `source =
-        APPLE_HEALTH` are matched; an id naming anything else is a no-op, never an error. Idempotent. Cookie session or
-        a wildcard Bearer token (the native login); a narrow-scope token is refused 403. Metered by the shared
-        per-account write bucket."
+        `APPLE_HEALTH` re-post of its externalId is refused per entry, `skipped` with `reason:
+        \"deleted_in_healthlog\"`, and the person writing the day again in HealthLog brings it back. Only the caller's
+        own rows with `source = APPLE_HEALTH` are matched; an id naming anything else is a no-op, never an error.
+        Idempotent. Cookie session or a wildcard Bearer token (the native login); a narrow-scope token is refused 403.
+        Metered by the shared per-account write bucket."
       requestBody:
         required: true
         content:
@@ -6176,10 +6176,10 @@ paths:
         `DELETE /api/mood-entries/{id}` does; the tombstone reaches `/api/sync/changes`. A mood logged in HealthLog
         itself is never touched. Since v1.49.0 the tombstone records that the phone deleted it, so a later re-post
         through `POST /api/mood-entries/bulk` (the entry is back in Apple Health) writes it again, `inserted`; an entry
-        the person deleted in HealthLog stays deleted, `duplicate` with `reason: \"tombstoned\"`. Only the caller's own
-        rows with `source = APPLE_HEALTH` are matched; an id naming anything else is a no-op, never an error.
-        Idempotent. Cookie session or a wildcard Bearer token (the native login); a narrow-scope token is refused 403.
-        Metered by the shared per-account write bucket."
+        the person deleted in HealthLog stays deleted, `skipped` with `reason: \"deleted_in_healthlog\"`. Only the
+        caller's own rows with `source = APPLE_HEALTH` are matched; an id naming anything else is a no-op, never an
+        error. Idempotent. Cookie session or a wildcard Bearer token (the native login); a narrow-scope token is refused
+        403. Metered by the shared per-account write bucket."
       requestBody:
         required: true
         content:
@@ -6205,8 +6205,8 @@ paths:
       description: "Tombstones the symptom occurrences posted through `POST /api/symptoms/events/batch` whose externalId is
         listed. One logged in HealthLog is never touched. Since v1.49.0 the tombstone records that the phone deleted it,
         so a later re-post through the batch writes it again (`inserted`); an occurrence the person deleted in HealthLog
-        stays deleted, `duplicate` with `reason: \"tombstoned\"`. The tombstone is kept for 75 days, the retention every
-        Apple Health delete shares. Owner-only: a session switched into another record is refused 403
+        stays deleted, `skipped` with `reason: \"deleted_in_healthlog\"`. The tombstone is kept for 75 days, the
+        retention every Apple Health delete shares. Owner-only: a session switched into another record is refused 403
         `sharing.not_permitted`. Served when `GET /api/auth/me` reports `features.appleHealthSymptoms: true`. Only the
         caller's own rows with `source = APPLE_HEALTH` are matched; an id naming anything else is a no-op, never an
         error. Idempotent. Cookie session or a wildcard Bearer token (the native login); a narrow-scope token is refused
@@ -6247,19 +6247,20 @@ paths:
       tags:
         - Medications
       summary: Delete Apple Health dose records by external ID
-      description: "Soft-deletes the intake events posted with `source = APPLE_HEALTH` whose externalId (the HealthKit
-        dose-event UUID) is listed, each as `DELETE /api/medications/{id}/intake/{eventId}` does: the stock it consumed
-        is refunded, the tombstone reaches `/api/sync/changes`, and a one-shot medication whose only dose it was becomes
+      description: "Soft-deletes the intake events whose externalId (the HealthKit dose-event UUID) is listed, including a
+        dose that landed on a pending slot row (since v1.49.0; only an Apple Health entry of the bulk route sets the
+        externalId of an intake), each as `DELETE /api/medications/{id}/intake/{eventId}` does: the stock it consumed is
+        refunded, the tombstone reaches `/api/sync/changes`, and a one-shot medication whose only dose it was becomes
         active again. The caller's other devices get one silent intake-sync push (the device named by `x-device-id` is
         skipped). Since v1.49.0 the tombstone records that the phone deleted the dose, so a later re-post of the same
         externalId through `POST /api/medications/intake/bulk` (the dose is back in Apple Health) lands as a new dose
         and takes its stock again. The re-post of an Apple Health dose the person deleted in HealthLog is refused per
-        entry, `duplicate` with `reason: \"tombstoned\"`, writes nothing and takes no stock. A fresh install that reads
-        the whole Apple Health history therefore needs no list of deleted ids to skip. The tombstone is kept for 75
-        days, the retention every Apple Health delete shares. Only the caller's own rows with `source = APPLE_HEALTH`
-        are matched; an id naming anything else is a no-op, never an error. Idempotent. Cookie session or a wildcard
-        Bearer token (the native login); a narrow-scope token is refused 403. Metered by the shared per-account write
-        bucket."
+        entry, `skipped` with `reason: \"deleted_in_healthlog\"`, writes nothing and takes no stock, whatever row the
+        dose had landed on. A fresh install that reads the whole Apple Health history therefore needs no list of deleted
+        ids to skip. The tombstone is kept for 75 days, the retention every Apple Health delete shares. Only the
+        caller's own rows with `source = APPLE_HEALTH` are matched; an id naming anything else is a no-op, never an
+        error. Idempotent. Cookie session or a wildcard Bearer token (the native login); a narrow-scope token is refused
+        403. Metered by the shared per-account write bucket."
       requestBody:
         required: true
         content:
@@ -28675,7 +28676,8 @@ paths:
       summary: Hide or delete a symptom (v1.40)
       description: "Hides the definition and keeps its history. `?purge=true` deletes it and every occurrence of it. A
         built-in definition (`code` set) is not deleted: its occurrences are tombstoned and it stays hidden, so a later
-        Apple Health sync neither recreates it nor re-imports what was removed (a re-post answers `duplicate`)."
+        Apple Health sync neither recreates it nor re-imports what was removed (a re-post answers `skipped`, reason
+        `deleted_in_healthlog`)."
       parameters:
         - in: path
           name: id
@@ -28897,7 +28899,7 @@ paths:
         - Symptoms
       summary: Delete a symptom occurrence (v1.40)
       description: 'Removes the occurrence. One imported from Apple Health is tombstoned instead, so a re-post of its sample
-        answers `duplicate` with `reason: "tombstoned"`. Audits as `symptoms.event.delete`.'
+        answers `skipped` with `reason: "deleted_in_healthlog"`. Audits as `symptoms.event.delete`.'
       parameters:
         - in: path
           name: id
@@ -32792,7 +32794,7 @@ components:
           maxLength: 120
         computedAt:
           description: "Since v1.49.0, on a `stats:` entry: when the client computed this day total. A write of the same row
-            carrying an earlier `computedAt` than the stored row's is refused, `duplicate` with reason `stale`, so an
+            carrying an earlier `computedAt` than the stored row's is refused, `skipped` with reason `stale`, so an
             out-of-order replay never replaces a newer total; an equal or later one writes. Without it the entry
             overwrites as before and the stored row forgets its time, so the next entry that states one writes. Ignored
             on every other entry."
@@ -45660,12 +45662,16 @@ components:
                   externalId:
                     type: string
                   reason:
-                    description: "On a `skipped` entry. `unstable_external_id` is a verdict on the entry and terminal: resending it
-                      unchanged is skipped again. `constraint` means the write met a database constraint (a key another
-                      write claimed at the same moment, or a reference that no longer exists). `upsert_failed` is a
-                      write failure on the server's side: nothing was stored, the entry should be sent again, and the
-                      response carrying it is `Cache-Control: no-store`, so a retry under the same `Idempotency-Key`
-                      writes again rather than replaying the failure."
+                    description: "On a `skipped` entry. `deleted_in_healthlog` (since v1.49.0): an `APPLE_HEALTH` re-post of a
+                      `cycle-hk:<day>` externalId whose day the person deleted in HealthLog; nothing is written, the day
+                      stays deleted, and resending gives the same answer. A day the phone reported deleted through
+                      `DELETE /api/cycle/day-logs/by-external-ids` is written again from empty fields.
+                      `unstable_external_id` is a verdict on the entry and terminal: resending it unchanged is skipped
+                      again. `constraint` means the write met a database constraint (a key another write claimed at the
+                      same moment, or a reference that no longer exists). `upsert_failed` is a write failure on the
+                      server's side: nothing was stored, the entry should be sent again, and the response carrying it is
+                      `Cache-Control: no-store`, so a retry under the same `Idempotency-Key` writes again rather than
+                      replaying the failure."
                     type: string
                 required:
                   - index
@@ -57819,11 +57825,26 @@ components:
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        externalId:
+          description: "Since v1.49.0: the HealthKit dose-event UUID the dose recorded, null for a dose not from Apple Health.
+            Lets a client match a deleted dose to its Apple Health record without holding the server id. Informational:
+            `POST /api/medications/intake/bulk` already refuses the re-post of a dose the person deleted in HealthLog
+            (`skipped`, `deleted_in_healthlog`), and takes one the phone reported deleted in Apple Health."
+          type:
+            - string
+            - "null"
+        source:
+          type: string
+          description: "Since v1.49.0: the row's `source`, as on the upsert. A dose from Apple Health that landed on a pending
+            slot row keeps that row's source (`REMINDER`), so `externalId`, not `source`, says whether it came from
+            Apple Health."
       required:
         - id
         - syncVersion
         - deletedAt
         - updatedAt
+        - externalId
+        - source
       additionalProperties: false
       description: A soft-deleted medication intake, keyed on server `id`. Apply before upserts within the domain page.
     SyncCycleDayTombstone:
@@ -59009,18 +59030,19 @@ components:
             an existing row. `skipped` — validation no-op; see `reason`. `failed` — retryable database failure that must
             not advance the entry cursor; the response is marked `Cache-Control: no-store`."
         reason:
-          description: "Why a row was `skipped` or a `duplicate`. `tombstoned` (since v1.49.0): an immutable sample whose `(type,
-            source, externalId)` names a row the person deleted in HealthLog (web, app or MCP); it stays deleted and
-            nothing is written. A sample the phone reported deleted through `DELETE /api/measurements/by-external-ids`
-            is the other case: posted again, it is back in Apple Health, and the deleted row is written again in place
-            (`updated`). A `stats:` aggregate is a day's total, not a sample, and a re-post writes it again either way.
-            `stale` (since v1.49.0): a `stats:` entry whose `computedAt` is earlier than the one the stored row was
-            written with; the newer total stays. `superseded_in_batch`: a later entry of the same batch carries the same
-            `stats:` id. `folded_window` (since v1.42): a raw sample of a dense or mean type whose local day lies before
-            the fold boundary and whose hour or day a live `stats:` row of the same source already covers. Nothing to
-            retry; treat it like any duplicate. `hour_bucket_misaligned`, `hour_bucket_unsupported_type`,
-            `hour_bucket_too_old` (since v1.43): an hourly `stats:<HK>:<YYYY-MM-DD>T<HH>` row the server refused, see
-            `externalId`; permanent for the row as sent."
+          description: "Why a row was `skipped` or a `duplicate`. On a `skipped`: `deleted_in_healthlog` (since v1.49.0), an
+            immutable sample whose `(type, source, externalId)` names a row the person deleted in HealthLog (web, app or
+            MCP); it stays deleted and nothing is written. Final: drop the entry. A sample the phone reported deleted
+            through `DELETE /api/measurements/by-external-ids` is the other case: posted again, it is back in Apple
+            Health, and the deleted row is written again in place (`updated`). A `stats:` aggregate is a day's total,
+            not a sample, and a re-post writes it again either way. `stale` (since v1.49.0, on a `skipped`): a `stats:`
+            entry whose `computedAt` is earlier than the one the stored row was written with; the newer total stays.
+            Final: drop the entry. `superseded_in_batch`: a later entry of the same batch carries the same `stats:` id.
+            `folded_window` (since v1.42): a raw sample of a dense or mean type whose local day lies before the fold
+            boundary and whose hour or day a live `stats:` row of the same source already covers. Nothing to retry;
+            treat it like any duplicate. `hour_bucket_misaligned`, `hour_bucket_unsupported_type`, `hour_bucket_too_old`
+            (since v1.43): an hourly `stats:<HK>:<YYYY-MM-DD>T<HH>` row the server refused, see `externalId`; permanent
+            for the row as sent."
           type: string
         convertedValue:
           description: "Only on a `value_out_of_range` skip (since v1.39.1): the entry's value after conversion into the stored
@@ -63194,8 +63216,8 @@ components:
         appleHealthDeletedAt:
           description: "Since v1.49.0: who deleted a tombstone. Equal to `deletedAt` when the phone reported the dose deleted
             through `DELETE /api/medications/intake/by-external-ids`; null, or different, when it was deleted in
-            HealthLog. A re-post of a dose deleted in HealthLog is refused (`duplicate`, reason `tombstoned`), one the
-            phone reported is written again. Null on every live row; do not show it."
+            HealthLog. A re-post of a dose deleted in HealthLog is refused (`skipped`, reason `deleted_in_healthlog`),
+            one the phone reported is written again. Null on every live row; do not show it."
           anyOf:
             - type: string
               format: date-time
@@ -64045,18 +64067,18 @@ components:
             - duplicate
             - alreadyTaken
             - skipped
-          description: '`inserted`/`updated`/`duplicate` — the row landed (advance the cursor); `duplicate` is an idempotent
-            replay of an entry already stored, nothing else; since v1.49.0 also the re-post of an Apple Health dose
-            (`externalId`) the person deleted in HealthLog, which carries `reason: "tombstoned"` and no `id`: it stays
-            deleted, nothing was written and no stock was taken. A dose the phone reported deleted through `DELETE
+          description: "`inserted`/`updated`/`duplicate` — the row landed (advance the cursor); `duplicate` is an idempotent
+            replay of an entry already stored, nothing else. A dose the phone reported deleted through `DELETE
             /api/medications/intake/by-external-ids` is the other case: posted again, it is back in Apple Health and
             lands as a new dose (`inserted`). `alreadyTaken` — the slot already holds a take recorded by another writer
             or another key, and this entry was a take or a skip: nothing was written, no stock consumed or refunded;
             `intake` is the recorded row, `takenAt` and `takenVia` say when and how it was taken. Advance the cursor and
-            warn before a second dose. `skipped` — not stored; see `reason`.'
+            warn before a second dose. `skipped` — not stored; see `reason`. Since v1.49.0 that includes the re-post of
+            an Apple Health dose (`externalId`) the person deleted in HealthLog, `deleted_in_healthlog`: it stays
+            deleted, nothing was written and no stock was taken."
         reason:
-          description: "On a `duplicate`: `tombstoned` (since v1.49.0) for the re-post of a dose deleted in HealthLog. Why a
-            `skipped` entry was not stored. Among others: `medication_not_found`, `unstable_external_id`,
+          description: "Why a `skipped` entry was not stored. Among others: `deleted_in_healthlog` (since v1.49.0) for the re-post
+            of a dose the person deleted in HealthLog, `medication_not_found`, `unstable_external_id`,
             `force_slot_invalid`, `force_slot_occupied`, `injection_site_not_allowed`, and (v1.42.0)
             `intake_not_tracked` for an entry against a medication kept as a record only (`trackIntake: false`), the
             per-entry form of `medication.intake.notTracked`. A skip is final: resending the entry gives the same
@@ -65724,8 +65746,8 @@ components:
         appleHealthDeletedAt:
           description: "Since v1.49.0: who deleted a tombstone. Equal to `deletedAt` when the phone reported the dose deleted
             through `DELETE /api/medications/intake/by-external-ids`; null, or different, when it was deleted in
-            HealthLog. A re-post of a dose deleted in HealthLog is refused (`duplicate`, reason `tombstoned`), one the
-            phone reported is written again. Null on every live row; do not show it."
+            HealthLog. A re-post of a dose deleted in HealthLog is refused (`skipped`, reason `deleted_in_healthlog`),
+            one the phone reported is written again. Null on every live row; do not show it."
           anyOf:
             - type: string
               format: date-time
@@ -83442,7 +83464,7 @@ components:
             - skipped
           description: "`inserted`/`duplicate` — the row landed (advance the cursor). `skipped` — see `reason`."
         reason:
-          description: "Why an entry was `skipped`. On a `duplicate`: `tombstoned` (since v1.49.0) for an entry whose `(source,
+          description: "Why an entry was `skipped`. `deleted_in_healthlog` (since v1.49.0) for an entry whose `(source,
             externalId)` names an entry the person deleted in HealthLog; it stays deleted and nothing is written. An
             entry the phone reported deleted through `DELETE /api/mood-entries/by-external-ids` is written back when it
             is posted again (`inserted`): it is in Apple Health again."
@@ -104606,10 +104628,10 @@ components:
         reason:
           description: "Why an entry was `skipped`: `unsupported_source` (source other than `APPLE_HEALTH`),
             `unstable_external_id`, `unknown_code`, `value_out_of_range` (intensity not an integer 0-10),
-            `implausible_timestamp` (in the future beyond five minutes, before 1900, or ending before it started). On a
-            `duplicate`: `tombstoned` (since v1.49.0) for a sample the person deleted in HealthLog, which stays deleted.
-            A sample the phone reported deleted through `DELETE /api/symptoms/events/by-external-ids` is written back
-            when it is posted again (`inserted`). Decode unknown reasons leniently."
+            `implausible_timestamp` (in the future beyond five minutes, before 1900, or ending before it started).
+            `deleted_in_healthlog` (since v1.49.0) for a sample the person deleted in HealthLog, which stays deleted. A
+            sample the phone reported deleted through `DELETE /api/symptoms/events/by-external-ids` is written back when
+            it is posted again (`inserted`). Decode unknown reasons leniently."
           type: string
       required:
         - index

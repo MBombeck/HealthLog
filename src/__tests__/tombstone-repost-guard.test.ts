@@ -77,7 +77,7 @@ describe("by-external-ids tombstone families", () => {
     (_route, family) => {
       const source = family.ingest.map(code).join("\n");
       expect(source).toMatch(/\bdeletedInHealthLog\(/);
-      expect(source).toMatch(/\bTOMBSTONED_(ENTRY|REASON)\b/);
+      expect(source).toMatch(/\bDELETED_IN_HEALTHLOG_(ENTRY|REASON)\b/);
       expect(source).toMatch(/from\s+"@\/lib\/sync\/tombstone-repost"/);
     },
   );

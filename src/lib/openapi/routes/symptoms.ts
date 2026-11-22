@@ -182,7 +182,7 @@ const symptomBatchEntryResult = z
       .string()
       .optional()
       .describe(
-        "Why an entry was `skipped`: `unsupported_source` (source other than `APPLE_HEALTH`), `unstable_external_id`, `unknown_code`, `value_out_of_range` (intensity not an integer 0-10), `implausible_timestamp` (in the future beyond five minutes, before 1900, or ending before it started). On a `duplicate`: `tombstoned` (since v1.49.0) for a sample the person deleted in HealthLog, which stays deleted. A sample the phone reported deleted through `DELETE /api/symptoms/events/by-external-ids` is written back when it is posted again (`inserted`). Decode unknown reasons leniently.",
+        "Why an entry was `skipped`: `unsupported_source` (source other than `APPLE_HEALTH`), `unstable_external_id`, `unknown_code`, `value_out_of_range` (intensity not an integer 0-10), `implausible_timestamp` (in the future beyond five minutes, before 1900, or ending before it started). `deleted_in_healthlog` (since v1.49.0) for a sample the person deleted in HealthLog, which stays deleted. A sample the phone reported deleted through `DELETE /api/symptoms/events/by-external-ids` is written back when it is posted again (`inserted`). Decode unknown reasons leniently.",
       ),
   })
   .meta({ id: "SymptomBatchEntryResult" });
@@ -318,7 +318,7 @@ export const symptomPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Symptoms"],
       summary: "Hide or delete a symptom (v1.40)",
       description:
-        "Hides the definition and keeps its history. `?purge=true` deletes it and every occurrence of it. A built-in definition (`code` set) is not deleted: its occurrences are tombstoned and it stays hidden, so a later Apple Health sync neither recreates it nor re-imports what was removed (a re-post answers `duplicate`).",
+        "Hides the definition and keeps its history. `?purge=true` deletes it and every occurrence of it. A built-in definition (`code` set) is not deleted: its occurrences are tombstoned and it stays hidden, so a later Apple Health sync neither recreates it nor re-imports what was removed (a re-post answers `skipped`, reason `deleted_in_healthlog`).",
       requestParams: {
         ...pathId,
         query: z.object({ purge: z.enum(["true", "false"]).optional() }),
@@ -481,7 +481,7 @@ export const symptomPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Symptoms"],
       summary: "Delete a symptom occurrence (v1.40)",
       description:
-        'Removes the occurrence. One imported from Apple Health is tombstoned instead, so a re-post of its sample answers `duplicate` with `reason: "tombstoned"`. Audits as `symptoms.event.delete`.',
+        'Removes the occurrence. One imported from Apple Health is tombstoned instead, so a re-post of its sample answers `skipped` with `reason: "deleted_in_healthlog"`. Audits as `symptoms.event.delete`.',
       requestParams: pathId,
       responses: {
         ...recordRefusal(MODULE_OFF),

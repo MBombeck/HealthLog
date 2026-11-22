@@ -48,7 +48,7 @@ import {
   type EntryResult,
   type PreparedEntry,
 } from "./entries";
-import { TOMBSTONED_ENTRY } from "@/lib/sync/tombstone-repost";
+import { DELETED_IN_HEALTHLOG_ENTRY } from "@/lib/sync/tombstone-repost";
 
 /**
  * Rows per set-based insert statement. 500 entries fit two statements; each
@@ -69,6 +69,15 @@ type Verdict = Pick<MeasurementReconciliationVerdict, "status"> &
  * computed later than the entry's (`computedAt`).
  */
 export const STALE_STATS_REASON = "stale" as const;
+
+/**
+ * The answer to that write: `skipped`, final like every skip, so an older
+ * replay is dropped from the outbox and the newer total stays.
+ */
+const STALE_STATS_ENTRY = {
+  status: "skipped",
+  reason: STALE_STATS_REASON,
+} as const;
 
 /** What the reads before the write loop found for this batch. */
 interface StoredState {
@@ -338,12 +347,7 @@ export class MeasurementBatchWriter {
     // (an out-of-order replay). Decided again under the reconciler's lock,
     // which answers the same for a total that lands in between.
     if (statsRow && this.isStaleStatsRow(p)) {
-      this.results[p.index] = {
-        index: p.index,
-        status: "duplicate",
-        reason: STALE_STATS_REASON,
-      };
-      this.duplicateCount++;
+      this.results[p.index] = { index: p.index, ...STALE_STATS_ENTRY };
       return;
     }
 
@@ -373,16 +377,17 @@ export class MeasurementBatchWriter {
     const folded =
       !prefiltered && !statsRow && this.stored.foldedPrepared.has(p);
     if (prefiltered || folded) {
+      const deleted = !folded && this.isStoredTombstone(p);
       this.results[p.index] = folded
         ? {
             index: p.index,
             status: "duplicate",
             reason: FOLDED_WINDOW_REASON,
           }
-        : this.isStoredTombstone(p)
-          ? { index: p.index, ...TOMBSTONED_ENTRY }
+        : deleted
+          ? { index: p.index, ...DELETED_IN_HEALTHLOG_ENTRY }
           : { index: p.index, status: "duplicate" };
-      this.duplicateCount++;
+      if (!deleted) this.duplicateCount++;
       if (folded) this.foldedWindowCount++;
       this.pushMergeCandidate(p);
       return;
@@ -512,16 +517,19 @@ export class MeasurementBatchWriter {
         );
         break;
       case "duplicate":
-        this.results[p.index] = verdict.tombstoned
-          ? { index: p.index, ...TOMBSTONED_ENTRY }
-          : verdict.stale
-            ? {
-                index: p.index,
-                status: "duplicate",
-                reason: STALE_STATS_REASON,
-              }
-            : { index: p.index, status: "duplicate" };
-        this.duplicateCount++;
+        // The reconciler's `duplicate` covers two refusals the wire answers
+        // `skipped`: a sample deleted in HealthLog and an older total.
+        if (verdict.tombstoned) {
+          this.results[p.index] = {
+            index: p.index,
+            ...DELETED_IN_HEALTHLOG_ENTRY,
+          };
+        } else if (verdict.stale) {
+          this.results[p.index] = { index: p.index, ...STALE_STATS_ENTRY };
+        } else {
+          this.results[p.index] = { index: p.index, status: "duplicate" };
+          this.duplicateCount++;
+        }
         break;
       case "failed":
         this.results[p.index] = {

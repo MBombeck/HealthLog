@@ -15,11 +15,12 @@
  *     not an integer 0-10), `implausible_timestamp` (in the future beyond the
  *     shared five-minute skew, before 1900, or ending before it started). All
  *     permanent for the entry as sent.
+ *   - `skipped` with `deleted_in_healthlog`: the row was deleted by the
+ *     person in HealthLog, so a late re-post never brings it back
+ *     (`tombstone-repost.ts`).
  *   - `duplicate`: the `(userId, APPLE_HEALTH, externalId)` row exists. A
- *     row the person deleted in HealthLog counts too, so a late re-post never
- *     brings it back; that one carries `reason: "tombstoned"`
- *     (`tombstone-repost.ts`). A second entry with an externalId already in
- *     the same batch is a duplicate too.
+ *     second entry with an externalId already in the same batch is a
+ *     duplicate too.
  *   - `inserted`, or `failed` when the write itself failed (transient: the
  *     app keeps the row and resends it). A row the phone reported deleted in
  *     Apple Health is written back and answers `inserted`.
@@ -39,7 +40,7 @@ import { isP2002 } from "@/lib/prisma-errors";
 import { APP_MINTED_SOURCE } from "@/lib/sync/external-id-delete";
 import {
   deletedInHealthLog,
-  TOMBSTONED_ENTRY,
+  DELETED_IN_HEALTHLOG_ENTRY,
 } from "@/lib/sync/tombstone-repost";
 import {
   classifyExternalId,
@@ -235,7 +236,7 @@ export async function ingestSymptomBatch(args: {
     if (!row) {
       fresh.push(p);
     } else if (deletedInHealthLog(row)) {
-      results[p.index] = { index: p.index, ...TOMBSTONED_ENTRY };
+      results[p.index] = { index: p.index, ...DELETED_IN_HEALTHLOG_ENTRY };
     } else if (row.deletedAt !== null) {
       revive.set(p.externalId, row.id);
       fresh.push(p);

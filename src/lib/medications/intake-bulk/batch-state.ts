@@ -26,8 +26,8 @@ export interface BulkIntakeEntry {
 }
 
 /**
- * A `duplicate` with reason `tombstoned` is a re-post of a dose deleted
- * earlier: nothing was written (`tombstone-repost.ts`).
+ * A `skipped` with reason `deleted_in_healthlog` is a re-post of a dose the
+ * person deleted in HealthLog: nothing was written (`tombstone-repost.ts`).
  *
  * `updated` joins the per-entry status vocabulary: a write that snaps onto
  * an existing scheduled-slot row (e.g. the pending REMINDER row) updates it

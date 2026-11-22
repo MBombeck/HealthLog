@@ -225,6 +225,17 @@ const syncIntakeTombstone = z
     syncVersion: z.number().int().nonnegative(),
     deletedAt: isoDateTime(),
     updatedAt: isoDateTime(),
+    externalId: z
+      .string()
+      .nullable()
+      .describe(
+        "Since v1.49.0: the HealthKit dose-event UUID the dose recorded, null for a dose not from Apple Health. Lets a client match a deleted dose to its Apple Health record without holding the server id. Informational: `POST /api/medications/intake/bulk` already refuses the re-post of a dose the person deleted in HealthLog (`skipped`, `deleted_in_healthlog`), and takes one the phone reported deleted in Apple Health.",
+      ),
+    source: z
+      .string()
+      .describe(
+        "Since v1.49.0: the row's `source`, as on the upsert. A dose from Apple Health that landed on a pending slot row keeps that row's source (`REMINDER`), so `externalId`, not `source`, says whether it came from Apple Health.",
+      ),
   })
   .meta({
     id: "SyncIntakeTombstone",

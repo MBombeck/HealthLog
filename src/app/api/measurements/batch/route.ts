@@ -126,7 +126,7 @@ const batchEntrySchema = z.object({
   externalSourceVersion: z.string().min(1).max(120).optional(),
   // When the phone computed a `stats:` day total (iOS #191). A
   // write of the same row carrying an earlier one than the stored row's is
-  // refused (`duplicate`, reason `stale`), so an out-of-order replay never
+  // refused (`skipped`, reason `stale`), so an out-of-order replay never
   // replaces a newer total. Ignored on every other entry; absent, the write
   // overwrites as before.
   computedAt: isoDateTime().optional(),
