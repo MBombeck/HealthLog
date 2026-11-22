@@ -5,26 +5,41 @@
  * fetched the new key show the neutral placeholder until the app is opened
  * (`push-relay/sender-keys.ts`). The regular rotation is yearly and staged.
  *
- * Cookie-only (`requireAdmin()`) with a fresh second factor; audit-logged.
+ * Cookie-only (`requireAdmin()`) behind a fresh proof
+ * (`assertRecentCookieProof`): an admin with a second factor confirms it
+ * within the last five minutes, an admin without one re-enters the password
+ * (or signs in again, or uses a passkey). An emergency rotation must stay
+ * reachable for an admin who never enrolled a second factor, and must never
+ * run on a bare live session. Audit-logged, rate limited to 5 per hour.
  */
 import { NextRequest } from "next/server";
 
 import {
   apiHandler,
-  MFA_STEP_UP_MAX_AGE_SECONDS,
+  assertRecentCookieProof,
   requireAdmin,
-  requireFreshMfa,
 } from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { annotate } from "@/lib/logging/context";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { rotateSenderKey } from "@/lib/push-relay/sender-keys";
 
 export const dynamic = "force-dynamic";
 
 export const POST = apiHandler(async (request: NextRequest) => {
-  await requireAdmin();
-  const { user } = await requireFreshMfa(MFA_STEP_UP_MAX_AGE_SECONDS);
+  const { user, session } = await requireAdmin();
+  await assertRecentCookieProof(user, session.id);
+  const rl = await checkRateLimit(
+    `admin-push-relay-sender-rotate:${user.id}`,
+    5,
+    60 * 60 * 1000,
+  );
+  if (!rl.allowed) {
+    return apiError("Too many key rotations, try again later", 429, {
+      errorCode: "admin.pushRelay.rateLimited",
+    });
+  }
   const rotated = await rotateSenderKey();
   if (!rotated) {
     return apiError("This server seals no push envelopes yet", 409, {

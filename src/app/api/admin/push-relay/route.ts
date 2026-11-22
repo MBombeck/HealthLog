@@ -13,7 +13,9 @@
  * registration attempt and is neither stored nor logged. The answer is the
  * state after the attempt, so a refusal (`reason`) shows at once.
  *
- * Cookie-only (`requireAdmin()`): a Bearer token never reaches it.
+ * Cookie-only (`requireAdmin()`): a Bearer token never reaches it. The
+ * switch is rate limited to 10 per 15 minutes per admin, since each turn
+ * registers at or deletes from the relay.
  */
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
@@ -23,6 +25,7 @@ import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { annotate } from "@/lib/logging/context";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { relayConfig, RELAY_TERMS_VERSION } from "@/lib/push-relay/config";
 import { disableRelay, enableRelay } from "@/lib/push-relay/registration";
 import { adminRelayStatus } from "@/lib/push-relay/admin-status";
@@ -47,6 +50,16 @@ const switchSchema = z
 
 export const PUT = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAdmin();
+  const rl = await checkRateLimit(
+    `admin-push-relay:${user.id}`,
+    10,
+    15 * 60 * 1000,
+  );
+  if (!rl.allowed) {
+    return apiError("Too many relay changes, try again later", 429, {
+      errorCode: "admin.pushRelay.rateLimited",
+    });
+  }
   const parsed = await parseJsonBody(request, switchSchema, {
     maxBytes: 4 * 1024,
     action: "admin.push_relay.validation-failed",

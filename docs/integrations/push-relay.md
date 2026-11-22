@@ -123,7 +123,8 @@ A new sender key is announced to the apps as `next` at least 7 days before
 it seals anything, then becomes `current`; the old one stays pinned as
 `previous` for 30 days and is then deleted. The regular rotation is yearly.
 If a sender key is ever exposed, `POST /api/admin/push-relay/rotate-sender-key`
-(an admin with a fresh second factor, audit-logged) replaces it at once;
+(an admin with a fresh proof: the second factor if one is enrolled, otherwise
+the password; audit-logged) replaces it at once;
 devices that have not fetched the new key show a neutral notification until
 the app is opened.
 
