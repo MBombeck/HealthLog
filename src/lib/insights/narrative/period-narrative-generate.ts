@@ -305,25 +305,27 @@ export function buildNarrativeUserPrompt(
  * grounding check refuses any number the context does not carry.
  */
 async function narrativePregnancyBlock(
-  args: {
-    userId: string;
-    tz: string;
-    now: Date;
-    period: GenerateOptions["period"];
-    bodyLocale: string;
-  },
-  prisma: PrismaClient,
+  userId: string,
+  options: GenerateOptions,
+  tz: string,
 ): Promise<string> {
   const pregnancy = await loadPregnancySnapshotBlock(
-    args.userId,
-    args.tz,
-    args.now,
-    { lookbackDays: args.period === "month" ? 30 : 7, db: prisma },
+    userId,
+    tz,
+    options.now ?? new Date(),
+    {
+      lookbackDays: options.period === "month" ? 30 : 7,
+      db: options.prisma ?? defaultPrisma,
+    },
   );
   return pregnancy
-    ? pregnancyContextPromptBlock(pregnancy, args.bodyLocale, {
-        withWeek: false,
-      })
+    ? pregnancyContextPromptBlock(
+        pregnancy,
+        instructionLocale(options.locale),
+        {
+          withWeek: false,
+        },
+      )
     : "";
 }
 
@@ -375,10 +377,7 @@ export async function generatePeriodNarrative(
     select: { timezone: true },
   });
   const tz = profile?.timezone ?? DEFAULT_TIMEZONE;
-  const pregnancyBlock = await narrativePregnancyBlock(
-    { userId, tz, now, period, bodyLocale },
-    prisma,
-  );
+  const pregnancyBlock = await narrativePregnancyBlock(userId, options, tz);
 
   const completion = await runCompletion({
     userId,
