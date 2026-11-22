@@ -3,7 +3,8 @@
  *
  * The person's medicine registry (`PATCH /api/auth/me/medicine-registry`,
  * published on `/api/auth/me` as `medicineRegistry`), the registry search
- * link on the medication detail (`leafletSearch`), and the saved leaflet link
+ * link on the medication list and detail (`leafletSearch`), and the saved
+ * leaflet link
  * (`leafletUrl`, on the medication resource and the create and update
  * bodies). Nothing here makes the server fetch anything.
  *
@@ -27,7 +28,7 @@ const REGISTRY_LIST = MEDICINE_REGISTRIES.map((r) => `\`${r}\``).join(", ");
 export const medicineRegistryField = z
   .enum(MEDICINE_REGISTRY_CHOICES)
   .describe(
-    `#1430 — which official medicine registry the "Find leaflet" link opens: an ISO 3166 alpha-2 country code (${REGISTRY_LIST}; \`GB\` is the United Kingdom, \`EU\` the European Medicines Agency), or \`NONE\` for no leaflet search. Independent of the interface language. Never null: an account that never chose one has it derived once from its language and time zone where the two agree on one registry, otherwise \`NONE\`, and stored, so a later change of language does not move it. Set it with \`PATCH /api/auth/me/medicine-registry\`. Clients show and edit it; the link itself comes ready-built on the medication detail as \`leafletSearch\`.`,
+    `#1430 — which official medicine registry the "Find leaflet" link opens: an ISO 3166 alpha-2 country code (${REGISTRY_LIST}; \`GB\` is the United Kingdom, \`EU\` the European Medicines Agency), or \`NONE\` for no leaflet search. Independent of the interface language. Never null: an account that never chose one has it derived once from its language and time zone where the two agree on one registry, otherwise \`NONE\`, and stored, so a later change of language does not move it. Set it with \`PATCH /api/auth/me/medicine-registry\`. Clients show and edit it; the link itself comes ready-built on the medication list and detail as \`leafletSearch\`.`,
   );
 
 export const leafletSearchResource = z

@@ -15,6 +15,7 @@ import { MedicationCardBody } from "@/components/medications/card-parts/medicati
 import { OverdueSlotValue } from "@/components/medications/dose-state-label";
 import { useWeekdayLabel } from "@/components/medications/card-parts/medication-next-last-slot";
 import { lastTakenLabel } from "@/components/medications/card-parts/last-taken-label";
+import type { LeafletSearch } from "@/lib/medications/leaflet-registries";
 import { formatTimeWindowRange } from "@/lib/time-window-format";
 import { formatTime } from "@/lib/format";
 import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
@@ -132,6 +133,8 @@ interface Medication {
   note?: string | null;
   /** #1430 — the saved leaflet link; null = none. */
   leafletUrl?: string | null;
+  /** #1430 — the caller's registry search, built by the list read. */
+  leafletSearch?: LeafletSearch | null;
   /**
    * v1.39.4 (#1040) — server-resolved: taken / skip are offered today only
    * when true (active, tracked, and the course includes today).

@@ -16,6 +16,7 @@ import { useMedicationIntake } from "@/components/medications/use-medication-int
 import { useCardDoseSnooze } from "@/components/medications/card-parts/use-dose-snooze";
 import { useWeekdayLabel } from "@/components/medications/card-parts/medication-next-last-slot";
 import { lastTakenLabel } from "@/components/medications/card-parts/last-taken-label";
+import type { LeafletSearch } from "@/lib/medications/leaflet-registries";
 import {
   useTranslations,
   useFormatters,
@@ -125,6 +126,8 @@ export interface Glp1Medication {
   note?: string | null;
   /** #1430 — the saved leaflet link; null = none. */
   leafletUrl?: string | null;
+  /** #1430 — the caller's registry search, built by the list read. */
+  leafletSearch?: LeafletSearch | null;
   /**
    * v1.8.4 — server-computed next due instant from `GET /api/medications`
    * (the canonical recurrence engine anchored on the last intake). The card

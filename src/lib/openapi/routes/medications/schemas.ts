@@ -514,6 +514,7 @@ export const medicationListEntry = medicationResource
       .describe(
         "v1.43 — whether a composition per unit is stored (`GET /api/medications/{id}` carries it as `ingredients`). Absent on older servers.",
       ),
+    leafletSearch: leafletSearchResource,
   })
   .meta({
     id: "MedicationListEntry",

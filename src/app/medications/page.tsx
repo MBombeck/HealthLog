@@ -6,6 +6,8 @@ import {
 
 import { getUnswitchedSession } from "@/lib/auth/acting-carrier";
 import { readMedicationsListCached } from "@/lib/medications/list-read";
+import { withLeafletSearch } from "@/lib/medications/leaflet-registries";
+import { resolveMedicineRegistry } from "@/lib/medications/medicine-registry";
 import { resolveModuleMap } from "@/lib/modules/gate";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -71,12 +73,16 @@ export default async function MedicationsPage() {
       // absent key reads as enabled; only an explicit `false` disables.
       if (modules.medications !== false) {
         const list = await readMedicationsListCached(user);
+        // The route's answer, registry search included (#1430).
+        const registry = resolveMedicineRegistry(user);
         const queryClient = new QueryClient();
         // Match the client cell's wire shape exactly (JSON semantics, ISO date
         // strings) — same-key-different-shape is silent cache poison.
         queryClient.setQueryData(
           queryKeys.medications(),
-          JSON.parse(JSON.stringify(list)),
+          JSON.parse(
+            JSON.stringify(list.map((row) => withLeafletSearch(row, registry))),
+          ),
         );
         dehydratedState = dehydrate(queryClient);
       }

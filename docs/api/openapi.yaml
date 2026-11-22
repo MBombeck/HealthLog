@@ -63376,6 +63376,8 @@ components:
           description: v1.43 — whether a composition per unit is stored (`GET /api/medications/{id}` carries it as `ingredients`).
             Absent on older servers.
           type: boolean
+        leafletSearch:
+          $ref: "#/components/schemas/MedicationLeafletSearch"
       required:
         - id
         - name
@@ -63423,6 +63425,7 @@ components:
         - stockUnitsRemaining
         - stockDosesRemaining
         - runwayDays
+        - leafletSearch
       additionalProperties: false
       description: List-row variant of the medication resource enriched with the joined `category`, the v1.32.25
         `externalSource` provenance echo, `lastTakenAt`, `todayEventCount`, and the v1.16.10 aggregated stock fields
@@ -63493,6 +63496,61 @@ components:
       description: v1.40 (#1024) — one course of a medication. Courses never overlap and every course except the latest has
         ended, so the medication's `startsOn`/`endsOn`/`courseStatus`/`intakeActionable` are always those of the latest
         course.
+    MedicationLeafletSearch:
+      anyOf:
+        - type: object
+          properties:
+            registry:
+              type: string
+              enum:
+                - PL
+                - DE
+                - ES
+                - FR
+                - GB
+                - BE
+                - NL
+                - US
+                - CA
+                - AU
+                - BR
+                - EU
+            authority:
+              type: string
+              description: Who runs the search the link opens, as a proper name ("DailyMed", "AEMPS CIMA"). Not translated.
+            url:
+              type: string
+              description: The registry's own search page, ready to open in a browser (a new tab, or an in-app browser). Always
+                `https:` on `host`. Built by the server from a static table; the server never requests it.
+            host:
+              type: string
+              description: The registry's host, for a label that names where the link goes.
+            prefill:
+              type: string
+              enum:
+                - nameAndStrength
+                - name
+                - none
+              description: "How much of the medication the link carries. `nameAndStrength` and `name`: the registry opens on its
+                results for `searchTerm`. `none`: the registry's search takes nothing from its address, so the page
+                opens empty and the client asks the person to search for `searchTerm` there."
+            searchTerm:
+              type: string
+              description: "What is searched for: the medication name, plus the strength when `prefill` is `nameAndStrength` and the
+                dose reads as one."
+          required:
+            - registry
+            - authority
+            - url
+            - host
+            - prefill
+            - searchTerm
+          additionalProperties: false
+        - type: "null"
+      description: "#1430 — the official registry search for this medication, built for the CALLER's `medicineRegistry` (the
+        person who will open it, not the record's owner). NULL when the caller chose `NONE`. Remind the person that the
+        leaflet comes from the national registry and that they should check it matches the medication's name, strength
+        and form."
     CreateMedicationResponse:
       type: object
       properties:
@@ -63963,61 +64021,6 @@ components:
       additionalProperties: false
       description: One record related to the one shown. Only kinds whose module is on and that the caller's sharing grant
         covers are listed. Skip an unknown `kind`.
-    MedicationLeafletSearch:
-      anyOf:
-        - type: object
-          properties:
-            registry:
-              type: string
-              enum:
-                - PL
-                - DE
-                - ES
-                - FR
-                - GB
-                - BE
-                - NL
-                - US
-                - CA
-                - AU
-                - BR
-                - EU
-            authority:
-              type: string
-              description: Who runs the search the link opens, as a proper name ("DailyMed", "AEMPS CIMA"). Not translated.
-            url:
-              type: string
-              description: The registry's own search page, ready to open in a browser (a new tab, or an in-app browser). Always
-                `https:` on `host`. Built by the server from a static table; the server never requests it.
-            host:
-              type: string
-              description: The registry's host, for a label that names where the link goes.
-            prefill:
-              type: string
-              enum:
-                - nameAndStrength
-                - name
-                - none
-              description: "How much of the medication the link carries. `nameAndStrength` and `name`: the registry opens on its
-                results for `searchTerm`. `none`: the registry's search takes nothing from its address, so the page
-                opens empty and the client asks the person to search for `searchTerm` there."
-            searchTerm:
-              type: string
-              description: "What is searched for: the medication name, plus the strength when `prefill` is `nameAndStrength` and the
-                dose reads as one."
-          required:
-            - registry
-            - authority
-            - url
-            - host
-            - prefill
-            - searchTerm
-          additionalProperties: false
-        - type: "null"
-      description: "#1430 — the official registry search for this medication, built for the CALLER's `medicineRegistry` (the
-        person who will open it, not the record's owner). NULL when the caller chose `NONE`. Remind the person that the
-        leaflet comes from the national registry and that they should check it matches the medication's name, strength
-        and form."
     ListMedicationCategoriesResponse:
       type: object
       properties:
@@ -98127,7 +98130,7 @@ components:
             Never null: an account that never chose one has it derived once from its language and time zone where the
             two agree on one registry, otherwise `NONE`, and stored, so a later change of language does not move it. Set
             it with `PATCH /api/auth/me/medicine-registry`. Clients show and edit it; the link itself comes ready-built
-            on the medication detail as `leafletSearch`.'
+            on the medication list and detail as `leafletSearch`.'
         features:
           type: object
           properties:

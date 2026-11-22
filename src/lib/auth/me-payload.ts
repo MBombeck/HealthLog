@@ -287,7 +287,7 @@ function displayPreferences(
     dateFormat: user.dateFormat ?? "AUTO",
     // #1430 — which official medicine registry "Find leaflet" opens: an ISO
     // 3166 alpha-2 code, `EU`, or `NONE`. Independent of the language. The
-    // medication detail read builds the link itself (`leafletSearch`), so a
+    // medication list and detail reads build the link (`leafletSearch`), so a
     // client only reads this to show and edit the setting.
     medicineRegistry,
   };

@@ -6,9 +6,8 @@
  *  - "Find leaflet" opens the official registry search of the person's
  *    chosen country in a new tab, with the name (and strength where the
  *    registry takes it) filled in. The link comes ready-built on the detail
- *    read (`leafletSearch`); a detail seeded from the list read, which does
- *    not carry it, builds the same link with the same pure function from the
- *    account's `medicineRegistry`. Nothing is fetched by the server or here.
+ *    and the list read (`leafletSearch`); the server is its one builder.
+ *    Nothing is fetched by the server or here.
  *  - "Official leaflet" is the link the person saved: openable, editable and
  *    removable. It renders only as an external link, never embedded.
  *  - Under both, the plain reminder that the leaflet comes from the national
@@ -25,15 +24,11 @@ import { Button } from "@/components/ui/button";
 import { InlineAction } from "@/components/ui/inline-action";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/hooks/use-auth";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { apiPut } from "@/lib/api/api-fetch";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useTranslations } from "@/lib/i18n/context";
-import {
-  buildLeafletSearch,
-  type LeafletSearch,
-} from "@/lib/medications/leaflet-registries";
+import type { LeafletSearch } from "@/lib/medications/leaflet-registries";
 import {
   LEAFLET_URL_MAX_CHARS,
   isAcceptableLeafletUrl,
@@ -65,13 +60,9 @@ export function MedicationLeafletSection({
   medication: LeafletSectionMedication;
 }) {
   const { t } = useTranslations();
-  const { user } = useAuth();
   const { canManageDomain } = useRecordCapabilities();
   const canEdit = canManageDomain("medications");
-  const search =
-    medication.leafletSearch !== undefined
-      ? medication.leafletSearch
-      : buildLeafletSearch(user?.medicineRegistry, medication);
+  const search = medication.leafletSearch ?? null;
   const saved = medication.leafletUrl ?? null;
 
   return (
