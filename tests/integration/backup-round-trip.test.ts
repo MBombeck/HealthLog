@@ -2246,6 +2246,69 @@ describe("every model the plan claims two-ended survives a real restore", () => 
     },
   );
 
+  it.each(["portable-export", "disaster-recovery"] as const)(
+    "carries a medication's saved leaflet link through a %s round trip (#1430)",
+    async (purpose) => {
+      const LINK = "https://cima.aemps.es/cima/pdfs/es/p/12345/P_12345.pdf";
+      const prisma = getPrismaClient();
+      await seedAdminSession(prisma);
+      await createOwner(prisma);
+      await prisma.medication.create({
+        data: {
+          userId: OWNER_ID,
+          name: "Leaflet tablet",
+          dose: "5 mg",
+          leafletUrl: LINK,
+        },
+      });
+      await prisma.medication.create({
+        data: { userId: OWNER_ID, name: "No leaflet tablet", dose: "5 mg" },
+      });
+
+      const { payload } = await buildFullBackupPayload(prisma, OWNER_ID, {
+        purpose,
+      });
+      const { medications } = payload as {
+        medications: Array<Record<string, unknown>>;
+      };
+      expect(
+        medications.find((m) => m.name === "Leaflet tablet")!.leafletUrl,
+      ).toBe(LINK);
+      // A hand-edited file cannot plant a link the edit form refuses: the
+      // restore drops it rather than storing it.
+      medications.find((m) => m.name === "No leaflet tablet")!.leafletUrl =
+        "javascript:alert(1)";
+
+      await prisma.user.delete({ where: { id: OWNER_ID } });
+      await createOwner(prisma);
+      const backup = await prisma.dataBackup.create({
+        data: {
+          userId: OWNER_ID,
+          type: "TWO_ENDED_ROUND_TRIP",
+          data: encrypt(JSON.stringify(payload)),
+        },
+      });
+      const response = await POST(
+        new Request(`http://localhost/api/admin/backups/${backup.id}/restore`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ confirm: "RESTORE" }),
+        }) as never,
+        { params: Promise.resolve({ id: backup.id }) },
+      );
+      expect(response.status, JSON.stringify(await response.json())).toBe(200);
+
+      const restored = await prisma.medication.findFirstOrThrow({
+        where: { userId: OWNER_ID, name: "Leaflet tablet" },
+      });
+      expect(restored.leafletUrl).toBe(LINK);
+      const planted = await prisma.medication.findFirstOrThrow({
+        where: { userId: OWNER_ID, name: "No leaflet tablet" },
+      });
+      expect(planted.leafletUrl).toBeNull();
+    },
+  );
+
   it("drops and names a filing and a commitment a truncated file cannot resolve", async () => {
     const prisma = getPrismaClient();
     await seedAdminSession(prisma);

@@ -65,6 +65,14 @@ import { parseUnitsPerDoseInput } from "@/lib/medications/units-per-dose";
 
 import { TIME_RE, validateStep } from "./wizard-step-gate";
 import {
+  EMPTY_EXTRAS,
+  extrasBody,
+  hydrateExtras,
+  type ExtrasBody,
+  type ExtrasInitial,
+  type WizardExtras,
+} from "./wizard-extras";
+import {
   isExplicitRange,
   type DoseWindowEntry,
 } from "@/components/medications/scheduling/dose-window";
@@ -264,7 +272,7 @@ export interface ScheduleDraft {
  * stay single-schedule-aware; the list-mutating helpers below keep
  * the mirror in sync.
  */
-export interface WizardPayload {
+export interface WizardPayload extends WizardExtras {
   name: string;
   doseAmount: string;
   doseUnit: string;
@@ -353,10 +361,6 @@ export interface WizardPayload {
    * time has passed. No reminder is sent while it is on.
    */
   autoMarkTaken: boolean;
-  /** #1371 — the medication's own note; empty = none. */
-  note: string;
-  /** #1371 — the note an edit hydrated to; absent on create. */
-  initialNote?: string;
   /** Every parallel schedule under construction. Always >= 1 entry. */
   schedules: ScheduleDraft[];
   /** Which schedule Steps 5-7 currently edit. */
@@ -405,7 +409,7 @@ export function emptyWizardPayload(): WizardPayload {
     notificationsEnabled: true,
     trackIntake: true,
     autoMarkTaken: false,
-    note: "",
+    ...EMPTY_EXTRAS,
     schedules: [draft],
     activeScheduleIndex: 0,
   };
@@ -589,7 +593,7 @@ export function firstInvalidIndex(
 // buildCreateBody — POST /api/medications request body
 // ────────────────────────────────────────────────────────────────────
 
-export interface CreateMedicationBody {
+export interface CreateMedicationBody extends ExtrasBody {
   name: string;
   dose: string;
   /**
@@ -638,8 +642,6 @@ export interface CreateMedicationBody {
    * so re-sending the stored value never moves it. Off for as-needed.
    */
   autoMarkTaken: boolean;
-  /** #1371 — trimmed; sent only when set (create) or changed (edit). */
-  note?: string;
   schedules: Array<{
     id?: string;
     windowStart: string;
@@ -870,12 +872,7 @@ export function buildCreateBody(
     trackIntake: isAsNeeded ? true : committed.trackIntake,
     // An as-needed medication has no slot to record.
     autoMarkTaken: isAsNeeded ? false : committed.autoMarkTaken,
-    // An edit names the note only when it changed, so an unrelated save
-    // never clears it; a blank one then clears it.
-    ...(committed.note.trim() !==
-      (forMode === "edit" ? (committed.initialNote ?? "").trim() : "") && {
-      note: committed.note.trim(),
-    }),
+    ...extrasBody(committed, forMode),
     schedules: draftsToEmit.map((draft) =>
       encodeScheduleDraft(draft, isOneShot),
     ),
@@ -1076,7 +1073,7 @@ export function summariseScheduleDraft(
  * the v1.5 cadence fields and the legacy `(daysOfWeek, intervalWeeks)`
  * pair so the bridge can hydrate older medications cleanly.
  */
-export interface MedicationPayload {
+export interface MedicationPayload extends ExtrasInitial {
   id: string;
   name: string;
   dose: string;
@@ -1104,8 +1101,6 @@ export interface MedicationPayload {
   trackIntake?: boolean;
   /** v1.42.2 — auto-mark-taken; absent = off. */
   autoMarkTaken?: boolean;
-  /** #1371 — the person's own note; null or absent = none. */
-  note?: string | null;
   schedules: Array<{
     id?: string;
     windowStart: string;
@@ -1259,8 +1254,7 @@ export function hydrateWizardPayload(
     notificationsEnabled: initial.notificationsEnabled ?? true,
     trackIntake: initial.trackIntake !== false,
     autoMarkTaken: initial.autoMarkTaken === true,
-    note: initial.note ?? "",
-    initialNote: initial.note ?? "",
+    ...hydrateExtras(initial),
     schedules: drafts,
     activeScheduleIndex: 0,
   };

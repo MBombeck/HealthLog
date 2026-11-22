@@ -331,6 +331,10 @@ export const medicationSchema = z
     // before the note existed, which restores as no note.
     note: z.string().max(MEDICATION_NOTE_MAX_CHARS).nullable().optional(),
     noteEncrypted: base64BytesSchema.nullable().optional(),
+    // #1430 — the saved leaflet link. Absent in a file written before it
+    // existed, which restores as none; a link the write routes would refuse
+    // (not `https:`, too long) is dropped by the restore rather than stored.
+    leafletUrl: z.string().nullable().optional(),
     lowStockNotifiedAt: isoDateTime.nullable().optional(),
     lowStockNotifiedThresholdDays: z.number().int().nullable().optional(),
     reorderLeadDays: z.number().int().nullable().optional(),

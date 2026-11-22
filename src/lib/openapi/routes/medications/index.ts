@@ -12,3 +12,4 @@ export {
   medicationIngredientPaths,
   supplementLabelExtractResult,
 } from "./ingredients";
+export { medicineRegistryPaths } from "./leaflet";

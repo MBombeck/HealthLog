@@ -5,6 +5,7 @@
  * Schemas come from `src/lib/validations/*` where shared with the
  * runtime request parsing, so the wire contract stays single-source.
  */
+import { leafletSearchResource, leafletUrlResourceField } from "./leaflet";
 import { relatedList } from "../relation-links";
 import { medicationIngredient } from "./ingredients";
 import { z } from "zod/v4";
@@ -350,6 +351,7 @@ export const medicationResource = z
       .describe(
         '#1371 — the person\'s own note on the medication, for directions such as "30 to 60 minutes before food". Free text, at most 500 characters, decrypted on the way out (encrypted at rest). NULL = no note. Show it with the medication and wherever a dose is logged. Set or cleared through `note` on the create and update bodies.',
       ),
+    leafletUrl: leafletUrlResourceField,
     pausedAt: isoDateTime().nullable(),
     snoozedUntil: isoDateTime().nullable(),
     remindersActive: z
@@ -572,6 +574,7 @@ export const medicationDetailEntry = medicationResource
         "v1.43 — the composition per unit, empty when none is stored. Absent on older servers.",
       ),
     related: relatedList,
+    leafletSearch: leafletSearchResource,
   })
   .meta({
     id: "MedicationDetail",

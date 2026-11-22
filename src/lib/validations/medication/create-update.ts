@@ -7,6 +7,7 @@ import {
   atcCodeField,
   injectionSiteEnum,
   INJECTION_SITE_VALUES,
+  leafletUrlField,
   medicationNoteField,
   rxNormCodeField,
 } from "./base";
@@ -189,6 +190,8 @@ export const createMedicationSchema = z
     rxNormCode: rxNormCodeField,
     /** #1371 — the person's own note (directions). */
     note: medicationNoteField,
+    /** #1430 — the official leaflet link the person saved. */
+    leafletUrl: leafletUrlField,
     /**
      * v1.28 — mirrored-medication provenance. Only APPLE_HEALTH is
      * accepted here (the iOS 26+ HealthKit Medications sync); the other
@@ -345,6 +348,8 @@ export const updateMedicationSchema = z
     rxNormCode: rxNormCodeField,
     /** #1371 — the person's own note (directions). */
     note: medicationNoteField,
+    /** #1430 — the official leaflet link the person saved. */
+    leafletUrl: leafletUrlField,
     ...courseWindowFields,
     schedules: z.array(scheduleSchema).optional(),
     /**

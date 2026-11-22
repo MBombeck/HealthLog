@@ -1984,7 +1984,8 @@
         "dayOfMonth": "Choisissez un jour du mois entre 1 et 31.",
         "rollingDays": "Saisissez un nombre de jours entre 1 et 365.",
         "time": "Ajoutez au moins une heure.",
-        "unknown": "Il manque encore quelque chose à cette étape."
+        "unknown": "Il manque encore quelque chose à cette étape.",
+        "leafletUrl": "Le lien vers la notice doit commencer par https://"
       }
     },
     "doseStrength": {
@@ -2737,6 +2738,28 @@
       "orderWithinGroups": "L’ordre s’applique au sein de chaque catégorie.",
       "orderHeading": "Ordre des catégories",
       "orderDefault": "Tant que vous n’en déplacez aucune, les catégories intégrées suivent un ordre fixe, les vôtres l’ordre alphabétique et {other} vient en dernier."
+    },
+    "leaflet": {
+      "title": "Notice",
+      "find": "Trouver la notice",
+      "open": "Ouvrir",
+      "saved": "Notice officielle",
+      "newTab": "(s’ouvre dans un nouvel onglet)",
+      "opensIn": "Ouvre la recherche de {authority} avec ce médicament.",
+      "searchThere": "Recherchez « {name} » sur la page de {authority} qui s’ouvre.",
+      "changeRegistry": "Changer de registre",
+      "noRegistry": "Aucun registre des médicaments n’est choisi, il n’y a donc pas de recherche de notice.",
+      "chooseRegistry": "Choisir un registre",
+      "disclaimer": "La notice provient du registre national des médicaments. Vérifiez qu’elle correspond au nom, au dosage et à la forme de votre médicament.",
+      "add": "Enregistrer un lien vers la notice",
+      "edit": "Modifier le lien",
+      "remove": "Supprimer le lien",
+      "urlLabel": "Lien vers la notice",
+      "urlHelper": "Collez l’adresse de la notice trouvée. Liens https:// uniquement.",
+      "urlInvalid": "Saisissez un lien qui commence par https://",
+      "savedToast": "Lien vers la notice enregistré",
+      "removedToast": "Lien vers la notice supprimé",
+      "saveError": "Impossible d’enregistrer le lien vers la notice."
     }
   },
   "charts": {
@@ -6431,7 +6454,16 @@
         "subtitle": "Organisez les sections d'aperçu et l'ordre des onglets."
       },
       "medications": {
-        "subtitle": "Gérez l'affichage et l'ordre de votre liste de médicaments."
+        "subtitle": "Gérez l'affichage et l'ordre de votre liste de médicaments.",
+        "registry": {
+          "title": "Registre des médicaments",
+          "description": "Où « Trouver la notice » cherche les notices officielles, quelle que soit la langue de l’app.",
+          "label": "Registre",
+          "none": "Aucun",
+          "privacy": "HealthLog ouvre seulement la page du registre dans votre navigateur. Le serveur ne lui envoie rien.",
+          "saved": "Registre des médicaments enregistré",
+          "saveError": "Impossible d’enregistrer le registre des médicaments."
+        }
       },
       "mood": {
         "subtitle": "Organisez vos tags d'humeur, groupes et ordre du sélecteur."

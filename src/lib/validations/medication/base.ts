@@ -5,6 +5,10 @@ import { validateEntryInstant } from "@/lib/validations/entry-instant";
 import { hhmmToMinutes } from "@/lib/medications/scheduling/hhmm";
 import { isoDateTime } from "@/lib/validations/datetime";
 import { MEDICATION_NOTE_MAX_CHARS } from "@/lib/medications/note-limits";
+import {
+  LEAFLET_URL_MAX_CHARS,
+  isAcceptableLeafletUrl,
+} from "@/lib/medications/leaflet-url";
 import { MEDICATION_CATEGORY_ORDER_MAX } from "@/lib/medication-list-layout";
 import {
   CUSTOM_MEDICATION_CATEGORY_KEY_PATTERN,
@@ -86,6 +90,27 @@ export const medicationNoteField = z
   .optional()
   .describe(
     `#1371 — the person's own note on the medication, for directions such as "30 to 60 minutes before food". Free text, trimmed, at most ${MEDICATION_NOTE_MAX_CHARS} characters (counted after trimming). An empty string or NULL clears it; absent leaves it untouched. Encrypted at rest and returned decrypted as \`note\` on the medication read paths.`,
+  );
+/**
+ * #1430 — the official leaflet link the person saved. Trimmed; an empty
+ * string or NULL clears it, absent leaves it untouched. Only an `https:` URL
+ * of at most {@link LEAFLET_URL_MAX_CHARS} characters is accepted; anything
+ * else (`http:`, `javascript:`, `data:`, text) is a 422.
+ */
+export const leafletUrlField = z
+  .string()
+  .trim()
+  .max(
+    LEAFLET_URL_MAX_CHARS,
+    `Leaflet link must be at most ${LEAFLET_URL_MAX_CHARS} characters`,
+  )
+  .refine((value) => value === "" || isAcceptableLeafletUrl(value), {
+    message: "Leaflet link must be an https:// address",
+  })
+  .nullable()
+  .optional()
+  .describe(
+    `#1430 — the official leaflet the person found for this medication, saved as a link: an \`https:\` URL, any host, at most ${LEAFLET_URL_MAX_CHARS} characters after trimming. Any other scheme (\`http:\`, \`javascript:\`, \`data:\`) or text that is not a URL is refused with 422. An empty string or NULL clears it; absent leaves it untouched. The server never fetches it; clients show it only as an external link.`,
   );
 export { MEDICATION_CATEGORY_VALUES, type MedicationCategoryValue };
 

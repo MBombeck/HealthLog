@@ -391,7 +391,7 @@
           "seizureTypes": 0,
           "seizureEvents": 0
         },
-        "accountSettingsApplied": 66,
+        "accountSettingsApplied": 67,
         "skipped": {
           "catalogueKeys": [
             {
@@ -720,12 +720,13 @@
         "atcCode": null,
         "rxNormCode": null,
         "noteEncrypted": null,
+        "leafletUrl": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
         "externalSource": null,
         "externalId": null,
-        "createdAt": "2026-05-01T11:52:01.000Z",
+        "createdAt": "2026-05-01T11:53:01.000Z",
         "updatedAt": "<now>"
       },
       {
@@ -756,12 +757,13 @@
         "atcCode": null,
         "rxNormCode": null,
         "noteEncrypted": "<sealed:v2:before breakfast, with water>",
+        "leafletUrl": "https://medicinesdatabase.be/human-use/medicines/12345/leaflet",
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
         "externalSource": null,
         "externalId": null,
-        "createdAt": "2026-05-01T11:52:00.000Z",
+        "createdAt": "2026-05-01T11:53:00.000Z",
         "updatedAt": "<now>"
       }
     ],
@@ -2546,6 +2548,7 @@
         }
       },
       "glucoseUnit": "mmol/L",
+      "medicineRegistry": "GB",
       "hasDiabetes": true,
       "labsLocalOcrEnabled": true,
       "storeWorkoutRoutes": true,
@@ -2722,6 +2725,7 @@
       "locale": "fr",
       "unitPreference": "imperial",
       "glucoseUnit": "mmol/L",
+      "medicineRegistry": "GB",
       "timeFormat": "H12",
       "dateFormat": "DMY",
       "modulePreferencesJson": {
@@ -2915,7 +2919,8 @@
         "autoMarkTakenSince": "<now>",
         "category": "custom:5f0c6a52-6a43-4f63-9b39-0c1f4d7e2a10",
         "note": "before breakfast, with water",
-        "createdAt": "2026-05-01T11:52:00.000Z",
+        "leafletUrl": "https://medicinesdatabase.be/human-use/medicines/12345/leaflet",
+        "createdAt": "2026-05-01T11:53:00.000Z",
         "schedules": [
           {
             "windowStart": "08:00",
@@ -3112,7 +3117,8 @@
         "autoMarkTakenSince": null,
         "category": "OTHER",
         "note": null,
-        "createdAt": "2026-05-01T11:52:01.000Z",
+        "leafletUrl": null,
+        "createdAt": "2026-05-01T11:53:01.000Z",
         "schedules": [],
         "sideEffects": [],
         "pauseEras": [],

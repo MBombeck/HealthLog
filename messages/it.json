@@ -1984,7 +1984,8 @@
         "dayOfMonth": "Scegli un giorno del mese tra 1 e 31.",
         "rollingDays": "Inserisci un numero di giorni tra 1 e 365.",
         "time": "Aggiungi almeno un orario.",
-        "unknown": "In questo passaggio manca ancora qualcosa."
+        "unknown": "In questo passaggio manca ancora qualcosa.",
+        "leafletUrl": "Il link al foglietto illustrativo deve iniziare con https://"
       }
     },
     "doseStrength": {
@@ -2737,6 +2738,28 @@
       "orderWithinGroups": "L’ordine vale all’interno di ogni categoria.",
       "orderHeading": "Ordine delle categorie",
       "orderDefault": "Finché non ne sposti una, le categorie predefinite seguono un ordine fisso, le tue l’ordine alfabetico e {other} viene per ultima."
+    },
+    "leaflet": {
+      "title": "Foglietto illustrativo",
+      "find": "Trova il foglietto illustrativo",
+      "open": "Apri",
+      "saved": "Foglietto illustrativo ufficiale",
+      "newTab": "(si apre in una nuova scheda)",
+      "opensIn": "Apre la ricerca di {authority} con questo farmaco.",
+      "searchThere": "Cerca «{name}» nella pagina di {authority} che si apre.",
+      "changeRegistry": "Cambia registro",
+      "noRegistry": "Non hai scelto un registro dei farmaci, quindi la ricerca del foglietto illustrativo non è disponibile.",
+      "chooseRegistry": "Scegli un registro",
+      "disclaimer": "Il foglietto illustrativo proviene dal registro nazionale dei farmaci. Controlla che corrisponda a nome, dosaggio e forma del tuo farmaco.",
+      "add": "Salva il link al foglietto illustrativo",
+      "edit": "Modifica link",
+      "remove": "Rimuovi link",
+      "urlLabel": "Link al foglietto illustrativo",
+      "urlHelper": "Incolla l’indirizzo del foglietto illustrativo che hai trovato. Solo link https://.",
+      "urlInvalid": "Inserisci un link che inizi con https://",
+      "savedToast": "Link al foglietto illustrativo salvato",
+      "removedToast": "Link al foglietto illustrativo rimosso",
+      "saveError": "Impossibile salvare il link al foglietto illustrativo."
     }
   },
   "charts": {
@@ -6431,7 +6454,16 @@
         "subtitle": "Disponi le sezioni della panoramica e l'ordine delle schede."
       },
       "medications": {
-        "subtitle": "Gestisci vista e ordine del tuo elenco di farmaci."
+        "subtitle": "Gestisci vista e ordine del tuo elenco di farmaci.",
+        "registry": {
+          "title": "Registro dei farmaci",
+          "description": "Dove «Trova il foglietto illustrativo» cerca i fogli ufficiali, qualunque sia la lingua dell’app.",
+          "label": "Registro",
+          "none": "Nessuno",
+          "privacy": "HealthLog apre solo la pagina del registro nel tuo browser. Il server non vi invia nulla.",
+          "saved": "Registro dei farmaci salvato",
+          "saveError": "Impossibile salvare il registro dei farmaci."
+        }
       },
       "mood": {
         "subtitle": "Organizza i tag dell'umore, i gruppi e l'ordine del selettore."

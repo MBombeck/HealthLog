@@ -44,21 +44,26 @@ import { loadCoachReasoningState } from "@/lib/ai/reasoning/controls";
 import { parseCoachPrefs } from "@/lib/validations/coach-prefs";
 import { storedGlucoseUnit } from "@/lib/glucose";
 import { accountPushState } from "@/lib/push-relay/capability";
+import { settleMedicineRegistry } from "@/lib/medications/medicine-registry";
+import type { MedicineRegistryChoice } from "@/lib/medications/leaflet-registries";
 
 /**
- * The push block and the stored zone. Neither needs the record view, so they
- * run beside it rather than after it; the caller awaits the result, and it is
- * never left to reject unobserved if the view throws first.
+ * The push block, the stored zone and the medicine registry. None needs the
+ * record view, so they run beside it rather than after it; the caller awaits
+ * the result, and it is never left to reject unobserved if the view throws
+ * first.
  */
-function pushAndZone(
-  userId: string,
-  storedZone: string | null,
-  request: Request | undefined,
-) {
+function pushAndZone(user: AuthContext["user"], request: Request | undefined) {
   const read = Promise.all([
-    accountPushState(userId, request),
-    resolveStoredTimezone(storedZone),
-  ]).then(([push, timezone]) => ({ push, timezone }));
+    accountPushState(user.id, request),
+    resolveStoredTimezone(user.timezone),
+    // Settled once on the first read (#1430), then the stored choice.
+    settleMedicineRegistry(user),
+  ]).then(([push, timezone, medicineRegistry]) => ({
+    push,
+    timezone,
+    medicineRegistry,
+  }));
   read.catch(() => undefined);
   return read;
 }
@@ -73,7 +78,7 @@ export async function buildAuthMePayload(
   request?: Request,
 ) {
   const { user } = auth;
-  const sidecar = pushAndZone(user.id, user.timezone, request);
+  const sidecar = pushAndZone(user, request);
   const accountAccess = resolvedAccess ?? (await resolveAccountAccess(auth));
   const {
     onboarding,
@@ -140,19 +145,8 @@ export async function buildAuthMePayload(
     avatarUrl: user.avatarUpdatedAt
       ? buildAvatarUrl(user.id, user.avatarUpdatedAt)
       : null,
-    // The stored choice, published as the closed pair the contract names.
-    glucoseUnit: storedGlucoseUnit(user.glucoseUnit),
-    // Global metric/imperial display preference. Canonical
-    // storage stays SI; this only drives the display-time transform
-    // branch. Null defaults to "metric" on the client.
-    unitPreference: user.unitPreference === "imperial" ? "imperial" : "metric",
-    // Hour-cycle display preference (AUTO follows the locale convention,
-    // H12 / H24 pin the cycle). Clients mirror this into their formatters.
-    timeFormat: user.timeFormat ?? "AUTO",
-    // Date-order display preference (AUTO follows the locale convention,
-    // DMY / MDY / YMD pin the field order). Clients mirror this into their
-    // formatters and the <DateField> primitive.
-    dateFormat: user.dateFormat ?? "AUTO",
+    // Units, clock, date order and leaflet registry: the caller's own.
+    ...displayPreferences(user, (await sidecar).medicineRegistry),
     lastReportPracticeName: user.lastReportPracticeName ?? null,
     // The owner's saved report selection — the leaf inclusion list plus the
     // format / range / charts choices the export panel restores. `null` when
@@ -266,6 +260,37 @@ export async function buildAuthMePayload(
     push: (await sidecar).push,
   };
   return payload;
+}
+
+/**
+ * How the caller reads the app: the glucose unit, the unit system, the hour
+ * cycle, the date order and the medicine registry the leaflet search opens.
+ * Each is the caller's own preference, never the record's.
+ */
+function displayPreferences(
+  user: AuthContext["user"],
+  medicineRegistry: MedicineRegistryChoice,
+) {
+  return {
+    // The stored choice, published as the closed pair the contract names.
+    glucoseUnit: storedGlucoseUnit(user.glucoseUnit),
+    // Global metric/imperial display preference. Canonical
+    // storage stays SI; this only drives the display-time transform
+    // branch. Null defaults to "metric" on the client.
+    unitPreference: user.unitPreference === "imperial" ? "imperial" : "metric",
+    // Hour-cycle display preference (AUTO follows the locale convention,
+    // H12 / H24 pin the cycle). Clients mirror this into their formatters.
+    timeFormat: user.timeFormat ?? "AUTO",
+    // Date-order display preference (AUTO follows the locale convention,
+    // DMY / MDY / YMD pin the field order). Clients mirror this into their
+    // formatters and the <DateField> primitive.
+    dateFormat: user.dateFormat ?? "AUTO",
+    // #1430 — which official medicine registry "Find leaflet" opens: an ISO
+    // 3166 alpha-2 code, `EU`, or `NONE`. Independent of the language. The
+    // medication detail read builds the link itself (`leafletSearch`), so a
+    // client only reads this to show and edit the setting.
+    medicineRegistry,
+  };
 }
 
 /**

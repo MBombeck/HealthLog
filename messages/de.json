@@ -1984,7 +1984,8 @@
         "dayOfMonth": "Wähle einen Tag im Monat zwischen 1 und 31.",
         "rollingDays": "Gib eine Zahl von Tagen zwischen 1 und 365 ein.",
         "time": "Füge mindestens eine Uhrzeit hinzu.",
-        "unknown": "Auf diesem Schritt fehlt noch etwas."
+        "unknown": "Auf diesem Schritt fehlt noch etwas.",
+        "leafletUrl": "Der Link zum Beipackzettel muss mit https:// beginnen."
       }
     },
     "doseStrength": {
@@ -2737,6 +2738,28 @@
       "orderWithinGroups": "Die Reihenfolge gilt innerhalb jeder Kategorie.",
       "orderHeading": "Reihenfolge der Kategorien",
       "orderDefault": "Bis du eine verschiebst, stehen eingebaute Kategorien in fester Folge, deine eigenen alphabetisch und {other} zuletzt."
+    },
+    "leaflet": {
+      "title": "Beipackzettel",
+      "find": "Beipackzettel suchen",
+      "open": "Öffnen",
+      "saved": "Offizieller Beipackzettel",
+      "newTab": "(öffnet in einem neuen Tab)",
+      "opensIn": "Öffnet die Suche von {authority} mit diesem Medikament.",
+      "searchThere": "Suche auf der Seite von {authority}, die sich öffnet, nach „{name}“.",
+      "changeRegistry": "Register ändern",
+      "noRegistry": "Es ist kein Arzneimittelregister gewählt, daher gibt es keine Beipackzettel-Suche.",
+      "chooseRegistry": "Register wählen",
+      "disclaimer": "Der Beipackzettel stammt aus dem nationalen Arzneimittelregister. Prüfe, ob Name, Stärke und Darreichungsform zu deinem Medikament passen.",
+      "add": "Link zum Beipackzettel speichern",
+      "edit": "Link bearbeiten",
+      "remove": "Link entfernen",
+      "urlLabel": "Link zum Beipackzettel",
+      "urlHelper": "Füge die Adresse des gefundenen Beipackzettels ein. Nur https://-Links.",
+      "urlInvalid": "Gib einen Link ein, der mit https:// beginnt.",
+      "savedToast": "Link zum Beipackzettel gespeichert",
+      "removedToast": "Link zum Beipackzettel entfernt",
+      "saveError": "Der Link zum Beipackzettel konnte nicht gespeichert werden."
     }
   },
   "charts": {
@@ -6431,7 +6454,16 @@
         "subtitle": "Ordne die Übersichts-Bereiche und die Reihenfolge der Chips an."
       },
       "medications": {
-        "subtitle": "Verwalte Ansicht und Reihenfolge deiner Medikamentenliste."
+        "subtitle": "Verwalte Ansicht und Reihenfolge deiner Medikamentenliste.",
+        "registry": {
+          "title": "Arzneimittelregister",
+          "description": "Wo „Beipackzettel suchen“ nach offiziellen Beipackzetteln sucht, unabhängig von der App-Sprache.",
+          "label": "Register",
+          "none": "Keines",
+          "privacy": "HealthLog öffnet nur die Seite des Registers in deinem Browser. Der Server sendet nichts dorthin.",
+          "saved": "Arzneimittelregister gespeichert",
+          "saveError": "Das Arzneimittelregister konnte nicht gespeichert werden."
+        }
       },
       "mood": {
         "subtitle": "Organisiere deine Stimmungs-Tags, Gruppen und Auswahlreihenfolge."

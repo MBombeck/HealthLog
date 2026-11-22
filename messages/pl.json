@@ -1984,7 +1984,8 @@
         "dayOfMonth": "Wybierz dzień miesiąca od 1 do 31.",
         "rollingDays": "Wpisz liczbę dni od 1 do 365.",
         "time": "Dodaj co najmniej jedną godzinę.",
-        "unknown": "W tym kroku czegoś jeszcze brakuje."
+        "unknown": "W tym kroku czegoś jeszcze brakuje.",
+        "leafletUrl": "Link do ulotki musi zaczynać się od https://"
       }
     },
     "doseStrength": {
@@ -2737,6 +2738,28 @@
       "orderWithinGroups": "Kolejność obowiązuje w obrębie każdej kategorii.",
       "orderHeading": "Kolejność kategorii",
       "orderDefault": "Dopóki żadnej nie przesuniesz, wbudowane kategorie mają stałą kolejność, twoje własne idą alfabetycznie, a {other} na końcu."
+    },
+    "leaflet": {
+      "title": "Ulotka",
+      "find": "Znajdź ulotkę",
+      "open": "Otwórz",
+      "saved": "Oficjalna ulotka",
+      "newTab": "(otwiera się w nowej karcie)",
+      "opensIn": "Otwiera wyszukiwarkę {authority} z tym lekiem.",
+      "searchThere": "Wyszukaj „{name}” na stronie {authority}, która się otworzy.",
+      "changeRegistry": "Zmień rejestr",
+      "noRegistry": "Nie wybrano rejestru leków, więc wyszukiwanie ulotek jest niedostępne.",
+      "chooseRegistry": "Wybierz rejestr",
+      "disclaimer": "Ulotka pochodzi z krajowego rejestru leków. Sprawdź, czy nazwa, moc i postać zgadzają się z Twoim lekiem.",
+      "add": "Zapisz link do ulotki",
+      "edit": "Edytuj link",
+      "remove": "Usuń link",
+      "urlLabel": "Link do ulotki",
+      "urlHelper": "Wklej adres znalezionej ulotki. Tylko linki https://.",
+      "urlInvalid": "Wpisz link zaczynający się od https://",
+      "savedToast": "Zapisano link do ulotki",
+      "removedToast": "Usunięto link do ulotki",
+      "saveError": "Nie udało się zapisać linku do ulotki."
     }
   },
   "charts": {
@@ -6431,7 +6454,16 @@
         "subtitle": "Rozmieść sekcje przeglądu i kolejność chipów."
       },
       "medications": {
-        "subtitle": "Zarządzaj widokiem i kolejnością listy leków."
+        "subtitle": "Zarządzaj widokiem i kolejnością listy leków.",
+        "registry": {
+          "title": "Rejestr leków",
+          "description": "Gdzie „Znajdź ulotkę” szuka oficjalnych ulotek, niezależnie od języka aplikacji.",
+          "label": "Rejestr",
+          "none": "Brak",
+          "privacy": "HealthLog tylko otwiera stronę rejestru w Twojej przeglądarce. Serwer niczego tam nie wysyła.",
+          "saved": "Zapisano rejestr leków",
+          "saveError": "Nie udało się zapisać rejestru leków."
+        }
       },
       "mood": {
         "subtitle": "Uporządkuj tagi nastroju, grupy i kolejność wyboru."

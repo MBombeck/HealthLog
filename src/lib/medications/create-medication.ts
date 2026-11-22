@@ -33,6 +33,7 @@ import {
 } from "@/lib/medications/read-medication";
 import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
 import { sealMedicationNote } from "@/lib/medications/medication-note";
+import type { MedicineRegistryChoice } from "@/lib/medications/leaflet-registries";
 
 export type CreateMedicationInput = z.output<typeof createMedicationSchema>;
 type ScheduleInput = NonNullable<CreateMedicationInput["schedules"]>[number];
@@ -71,6 +72,7 @@ async function existingMirrorBody(
   user: ReadUser,
   grantId: string | null,
   medication: Medication & { schedules: MedicationSchedule[] },
+  leafletRegistry: MedicineRegistryChoice,
 ): Promise<CreateMedicationOutcome> {
   annotate({
     action: {
@@ -86,6 +88,7 @@ async function existingMirrorBody(
     grantId,
     medication,
     announce: false,
+    leafletRegistry,
   });
   return { kind: "existing", body };
 }
@@ -103,6 +106,7 @@ async function existingMirrorOrCap(
   grantId: string | null,
   externalSource: NonNullable<CreateMedicationInput["externalSource"]>,
   externalId: string,
+  leafletRegistry: MedicineRegistryChoice,
 ): Promise<CreateMedicationOutcome | null> {
   const userId = user.id;
   const existing = await prisma.medication.findFirst({
@@ -110,7 +114,7 @@ async function existingMirrorOrCap(
     include: { schedules: { orderBy: MEDICATION_SCHEDULE_ORDER } },
   });
   if (existing) {
-    return existingMirrorBody(user, grantId, existing);
+    return existingMirrorBody(user, grantId, existing, leafletRegistry);
   }
 
   // Growth guard. This point is only reached when the idempotency lookup
@@ -331,6 +335,7 @@ function insertMedication(
     atcCode,
     rxNormCode,
     note,
+    leafletUrl,
     externalSource,
     externalId,
     startsOn,
@@ -370,6 +375,8 @@ function insertMedication(
       ...(rxNormCode !== undefined && { rxNormCode }),
       // The person's own note (#1371), sealed; a blank one stores nothing.
       ...(noteEncrypted !== undefined && { noteEncrypted }),
+      // The saved leaflet link (#1430); a blank one stores nothing.
+      ...(leafletUrl && { leafletUrl }),
       // Mirrored-medication provenance (Apple Health). Zod enforces the
       // both-or-neither pairing; field-by-field like every other column.
       ...(externalSource !== undefined && { externalSource }),
@@ -421,8 +428,10 @@ export async function createMedication(input: {
   grantId: string | null;
   data: CreateMedicationInput;
   ipAddress: string | null;
+  /** The caller's medicine registry (#1430), for the read model. */
+  leafletRegistry: MedicineRegistryChoice;
 }): Promise<CreateMedicationOutcome> {
-  const { user, grantId, data } = input;
+  const { user, grantId, data, leafletRegistry } = input;
   const {
     name,
     category,
@@ -453,6 +462,7 @@ export async function createMedication(input: {
       grantId,
       externalSource,
       externalId,
+      leafletRegistry,
     );
     if (mirror) return mirror;
   }
@@ -497,7 +507,9 @@ export async function createMedication(input: {
         where: { userId: user.id, externalSource, externalId },
         include: { schedules: { orderBy: MEDICATION_SCHEDULE_ORDER } },
       });
-      if (winner) return existingMirrorBody(user, grantId, winner);
+      if (winner) {
+        return existingMirrorBody(user, grantId, winner, leafletRegistry);
+      }
     }
     throw err;
   }
@@ -535,6 +547,7 @@ export async function createMedication(input: {
     grantId,
     medication,
     announce: false,
+    leafletRegistry,
   });
   return { kind: "created", body };
 }

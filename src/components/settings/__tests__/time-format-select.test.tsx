@@ -47,6 +47,7 @@ function buildUser(timeFormat: TimeFormatPreference): AuthUser {
     unitPreference: "metric",
     timeFormat,
     dateFormat: "AUTO",
+    medicineRegistry: "NONE",
     disableCoach: false,
     fullName: null,
     insurerName: null,

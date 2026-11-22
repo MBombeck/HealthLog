@@ -69,6 +69,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
         active: true,
         trackIntake: true,
         noteEncrypted: true,
+        leafletUrl: true,
         schedules: {
           select: {
             windowStart: true,

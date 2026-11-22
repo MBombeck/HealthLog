@@ -7,6 +7,7 @@
  * everything after it run here, in the order they always ran. The outcome is
  * a refusal the route answers with `apiError`, or the edited medication.
  */
+import type { MedicineRegistryChoice } from "@/lib/medications/leaflet-registries";
 import { afterMedicationChange } from "@/lib/medications/after-dose-change";
 import {
   medicationDetail,
@@ -308,6 +309,8 @@ export async function updateMedication(input: {
   existing: EditableMedication;
   data: MedicationEdit;
   ipAddress: string | null;
+  /** The caller's medicine registry (#1430), for the read model. */
+  leafletRegistry: MedicineRegistryChoice;
 }): Promise<MedicationEditOutcome> {
   const { user, grantId, id } = input;
   const plan = await planMedicationEdit(input);
@@ -369,6 +372,7 @@ export async function updateMedication(input: {
     grantId,
     medication,
     announce: false,
+    leafletRegistry: input.leafletRegistry,
   });
   return { ok: true, body };
 }

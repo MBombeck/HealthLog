@@ -84,6 +84,7 @@ import { measurementReminderPaths } from "./measurement-reminders";
 import { mentalHealthPaths } from "./mental-health";
 import {
   medicationIngredientPaths,
+  medicineRegistryPaths,
   medicationPaths,
   medicationResource,
   medicationDoseHistoryImportFatalReasonEnum,
@@ -217,6 +218,7 @@ const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   // the relation links (appended, spread order is load-bearing).
   ...aiUsagePaths,
   ...medicationIngredientPaths,
+  ...medicineRegistryPaths,
   ...lifeCircumstancesPaths,
   ...dawarichPaths,
   ...relationLinkPaths,

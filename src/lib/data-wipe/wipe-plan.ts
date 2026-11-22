@@ -601,6 +601,8 @@ export const USER_KEPT_FIELDS: Readonly<Record<string, string>> = {
   timeFormat: "an interface preference — 12- or 24-hour rendering",
   dateFormat: "an interface preference — date-order rendering",
   glucoseUnit: "an interface preference — mg/dL or mmol/L rendering",
+  medicineRegistry:
+    "an interface preference — which official registry the leaflet search opens, not record content",
   disclaimerAcknowledgedAt:
     "the account's acknowledgement of the medical disclaimer, which is about the app and not about the record",
   disclaimerAcknowledgedVersion:

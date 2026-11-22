@@ -203,6 +203,9 @@ export async function seedEveryTwoEndedModel(
       dose: "5 mg",
       // #1371 — the person's own note on the medication.
       noteEncrypted: encryptToBytes("before breakfast, with water"),
+      // #1430 — the leaflet link the person saved.
+      leafletUrl:
+        "https://medicinesdatabase.be/human-use/medicines/12345/leaflet",
       startsOn: AT("2026-06-10T00:00:00.000Z"),
       endsOn: AT("2026-06-16T00:00:00.000Z"),
       endedAt: AT("2026-06-16T09:30:00.000Z"),
@@ -1686,6 +1689,7 @@ export const USER_FILL_OVERRIDES: Readonly<Record<string, unknown>> = {
   "User.homeTimezone": "Asia/Tokyo",
   "User.unitPreference": "imperial",
   "User.glucoseUnit": "mmol/L",
+  "User.medicineRegistry": "GB",
   "User.insightsPrivacyMode": "raw",
   "User.aiProvider": "LOCAL",
   "User.aiLocalBaseUrl": "https://llm.example.com/v1",

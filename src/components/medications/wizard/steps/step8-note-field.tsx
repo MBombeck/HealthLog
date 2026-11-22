@@ -6,6 +6,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { MEDICATION_NOTE_MAX_CHARS } from "@/lib/medications/note-limits";
 
 import type { StepProps } from "./step1-name";
+import { Step8LeafletField } from "./step8-leaflet-field";
 
 /**
  * #1371 — the medication's own note, for directions such as "30 to 60
@@ -33,5 +34,15 @@ export function Step8NoteField({ payload, applyPartial }: StepProps) {
         {t("medications.note.helper")}
       </p>
     </div>
+  );
+}
+
+/** The last step's free-standing fields: the note and the leaflet link. */
+export function Step8ExtrasFields(props: StepProps) {
+  return (
+    <>
+      <Step8NoteField {...props} />
+      <Step8LeafletField {...props} />
+    </>
   );
 }

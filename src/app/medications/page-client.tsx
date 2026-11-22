@@ -88,6 +88,8 @@ interface Medication {
   dose: string;
   /** #1371 — the person's own note; null = none. */
   note?: string | null;
+  /** #1430 — the saved leaflet link; null = none. */
+  leafletUrl?: string | null;
   category: string;
   /** v1.40 — the label of a custom category; null for a built-in one. */
   categoryLabel?: string | null;
