@@ -13,8 +13,7 @@ import { loadRegistration } from "@/lib/push-relay/registration";
 
 /** The id of the one-time notice that the relay option exists. */
 export const RELAY_NOTICE_ID = "push_relay_available";
-export const RELAY_DOCS_URL =
-  "https://docs.healthlog.dev/integrations/push-relay";
+export const RELAY_DOCS_URL = "https://docs.healthlog.dev/guides/push-relay/";
 
 /** How far back the usage counts reach. */
 export const RELAY_USAGE_WINDOW_DAYS = 7;
