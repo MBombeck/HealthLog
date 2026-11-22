@@ -12,14 +12,18 @@
  * still in flight, or one that failed, started nothing on the device
  * (`live-activity-settle.ts`). It is null again once there is nothing left
  * to show: the slot was taken, skipped
- * or turned missed, its row is gone, or the medication was paused, ended or
- * deleted. The server ends an Activity only in those cases
- * (`liveActivityEndState`), so an ended Activity reads null too. An Activity
+ * or turned missed, its row is gone, the medication was paused, ended or
+ * deleted, or its Live Activity opt-in (`liveActivityEnabled`) was turned
+ * off. The server ends an Activity only in those cases
+ * (`liveActivityEndState`, and the relay pass for a server-started Activity
+ * whose medication may no longer have one), so an ended Activity reads null
+ * too. An Activity
  * the person dismissed on the device keeps the value until the slot is
  * answered; the app knows it dismissed it, and the stored dose also keeps
  * the next pass from starting the same dose again.
  */
 import { prisma } from "@/lib/db";
+import { STARTABLE_MEDICATION_WHERE } from "@/lib/push-relay/activity-slot";
 
 export interface LiveActivityStarted {
   medicationId: string;
@@ -43,12 +47,7 @@ export async function liveActivityStartedOf(device: {
       takenAt: null,
       skipped: false,
       autoMissed: false,
-      medication: {
-        trackIntake: true,
-        active: true,
-        pausedAt: null,
-        endedAt: null,
-      },
+      medication: STARTABLE_MEDICATION_WHERE,
     },
     select: { id: true },
   });

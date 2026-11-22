@@ -175,7 +175,7 @@ export const createMedicationSchema = z
       .boolean()
       .optional()
       .describe(
-        "iOS Live Activity opt-in for this medication's reminders. Default false. The iOS client owns the ActivityKit lifecycle; the server only stores + echoes the flag.",
+        "iOS Live Activity opt-in for this medication's reminders. Default false. The iOS client plans its own Activities by it; a server start over the push relay requires it, and a server-started Activity ends once it is off.",
       ),
     /** v1.7.0 — iOS 26 AlarmKit critical-reminder opt-in. */
     criticalAlarmEnabled: z
@@ -333,7 +333,7 @@ export const updateMedicationSchema = z
       .boolean()
       .optional()
       .describe(
-        "iOS Live Activity opt-in for this medication's reminders. The iOS client owns the ActivityKit lifecycle; the server only stores + echoes the flag.",
+        "iOS Live Activity opt-in for this medication's reminders. The iOS client plans its own Activities by it; a server start over the push relay requires it, and a server-started Activity ends once it is off.",
       ),
     /** v1.7.0 — iOS 26 AlarmKit critical-reminder opt-in. */
     criticalAlarmEnabled: z

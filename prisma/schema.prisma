@@ -3215,9 +3215,10 @@ model Medication {
   /// set and 422s on a disallowed value.
   allowedInjectionSites         InjectionSite[]        @default([]) @map("allowed_injection_sites")
   /// v1.7.0 — iOS Live Activity opt-in for this medication's reminders.
-  /// Default false; existing rows backfill false. The server stores +
-  /// echoes the flag; the iOS client owns the ActivityKit lifecycle. No
-  /// server-side behaviour hangs off it.
+  /// Default false; existing rows backfill false. The iOS client plans its
+  /// own Activities by it, and the push relay's server-side start honours
+  /// it too: no relay start without it, and a server-started Activity ends
+  /// once it is turned off (`push-relay/live-activity.ts`).
   liveActivityEnabled           Boolean                @default(false) @map("live_activity_enabled")
   /// v1.7.0 — iOS 26 AlarmKit critical-reminder opt-in. Critical alarms
   /// bypass the device mute switch / Focus. Default false; the server

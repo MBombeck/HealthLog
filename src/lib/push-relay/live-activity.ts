@@ -20,10 +20,16 @@
  * (`HealthLogDoseAttributes`, `{ "v": 1 }`); the dose never travels.
  *
  * The pass (`push-live-activity`, every five minutes) starts an Activity for
- * the next open dose of each eligible device, once per dose, unless the
- * device already runs one for it. A start or update counts only once the
- * relay accepted it; one that failed for good is tried again after a
- * cool-down (`live-activity-settle.ts`); and it updates every running Activity
+ * one dose of each eligible device, once per dose, unless the device already
+ * runs one for it. The dose is the earliest of those entering their window
+ * ({@link pickStartDose}): its medication has the person's Live Activity
+ * opt-in (`liveActivityEnabled`), it lies no more than the lead ahead, and
+ * the resolver calls it pending or due. A dose already overdue, missed,
+ * taken or skipped never gets a start, so the first pass after the consent
+ * starts nothing that is already behind. A server-started Activity whose
+ * medication may no longer have one (opt-in off, paused, ended) ends. A
+ * start or update counts only once the relay accepted it; one that failed
+ * for good is tried again after a cool-down (`live-activity-settle.ts`); and it updates every running Activity
  * whose state changed since the last update, of those it started itself
  * (`relayStarted`). The state is the server's one resolved dose
  * (`medications/dose-state/resolve.ts`): the medication's own bands
@@ -53,6 +59,7 @@ import { resolveUserTimezone } from "@/lib/tz/resolver";
 import {
   activitySlotWindow,
   sameActivitySlot,
+  STARTABLE_MEDICATION_WHERE,
 } from "@/lib/push-relay/activity-slot";
 import { liveActivityRelayEnabled } from "@/lib/push-relay/config";
 import { endActivitiesOverRelay } from "@/lib/push-relay/medication-pushes";
@@ -193,6 +200,8 @@ export interface ActivityDose {
   resolved: ResolvedDose;
   /** The running snooze, only when it holds this slot. */
   snoozedUntil: Date | null;
+  /** The medication's Live Activity opt-in. */
+  liveActivityEnabled: boolean;
 }
 
 /**
@@ -321,6 +330,7 @@ const DOSE_ROW_SELECT = {
     select: {
       snoozedUntil: true,
       updatedAt: true,
+      liveActivityEnabled: true,
       schedules: { select: SNOOZE_SCHEDULE_SELECT },
     },
   },
@@ -379,6 +389,7 @@ async function resolveRows(
         scheduledFor: row.scheduledFor,
         resolved: dose,
         snoozedUntil: holds ? row.medication.snoozedUntil : null,
+        liveActivityEnabled: row.medication.liveActivityEnabled,
       },
     ];
   });
@@ -446,6 +457,51 @@ export async function openActivityDoses(
   );
 }
 
+/**
+ * Whether the pass may start an Activity for `dose` at `now`: the dose is
+ * entering its window. Its medication has the Live Activity opt-in; its slot
+ * lies no more than {@link ACTIVITY_LEAD_MS} ahead; and the resolver, the
+ * one the today list reads, calls it pending or due. Overdue and missed are
+ * behind: the app plans no Activity for them and neither does the server.
+ * Taken, skipped and extra doses are no open slot at all.
+ */
+export function startableDose(
+  dose: Pick<ActivityDose, "scheduledFor" | "resolved" | "liveActivityEnabled">,
+  now: Date,
+): boolean {
+  if (!dose.liveActivityEnabled) return false;
+  if (dose.resolved.state !== "pending" && dose.resolved.state !== "due") {
+    return false;
+  }
+  return dose.scheduledFor.getTime() - ACTIVITY_LEAD_MS <= now.getTime();
+}
+
+/**
+ * The one dose the pass starts an Activity for, or null: of the startable
+ * doses, the earliest slot; on a tie the lowest medication id, so the
+ * choice never depends on the order the rows were read in.
+ */
+export function pickStartDose<
+  T extends Pick<
+    ActivityDose,
+    "medicationId" | "scheduledFor" | "resolved" | "liveActivityEnabled"
+  >,
+>(doses: readonly T[], now: Date): T | null {
+  let best: T | null = null;
+  for (const dose of doses) {
+    if (!startableDose(dose, now)) continue;
+    if (
+      !best ||
+      dose.scheduledFor.getTime() < best.scheduledFor.getTime() ||
+      (dose.scheduledFor.getTime() === best.scheduledFor.getTime() &&
+        dose.medicationId < best.medicationId)
+    ) {
+      best = dose;
+    }
+  }
+  return best;
+}
+
 export interface LaPassFacts {
   devices: number;
   started: number;
@@ -454,7 +510,7 @@ export interface LaPassFacts {
   failed: number;
 }
 
-/** The start item for `device`'s next dose, or null when none is due. */
+/** The start item for `device`'s dose to start, or null when none is. */
 async function startItem(
   device: LaDevice,
   timeFormat: string | null,
@@ -470,7 +526,7 @@ async function startItem(
   ) {
     return null;
   }
-  const [dose] = await openActivityDoses(device.userId, now);
+  const dose = pickStartDose(await openActivityDoses(device.userId, now), now);
   if (!dose) return null;
   const state = doseContentState(dose, timeFormat, now);
   if (!state) return null;
@@ -519,7 +575,10 @@ type LaActivity = LaDevice["liveActivities"][number];
 
 /**
  * The update items for `device`'s running Activities whose state changed,
- * and the Activities whose dose the resolver calls missed: those end.
+ * and the Activities that end: those whose dose the resolver calls missed,
+ * and those the server started for a medication that may no longer have one
+ * (its Live Activity opt-in turned off, paused, ended, deleted; or started
+ * before the start honoured the opt-in).
  *
  * Only an Activity the server started over the relay (`relayStarted`) is
  * updated here. One the app started itself has the app's own attributes
@@ -537,12 +596,30 @@ async function updateItems(
     rowId: string;
     state: RelayContentState;
   }>;
-  missed: LaActivity[];
+  ending: LaActivity[];
 }> {
   const nowS = Math.floor(now.getTime() / 1000);
   const updates = [];
-  const missed: LaActivity[] = [];
+  const ending: LaActivity[] = [];
   const relayStarted = device.liveActivities.some((a) => a.relayStarted);
+  const startable = relayStarted
+    ? new Set(
+        (
+          await prisma.medication.findMany({
+            where: {
+              userId: device.userId,
+              id: {
+                in: device.liveActivities
+                  .filter((a) => a.relayStarted)
+                  .map((a) => a.medicationId),
+              },
+              ...STARTABLE_MEDICATION_WHERE,
+            },
+            select: { id: true },
+          })
+        ).map((m) => m.id),
+      )
+    : new Set<string>();
   // An update is final only once accepted: one still in flight is not sent
   // twice, and after a refusal the device's updates wait out the cool-down.
   const [inFlight, refused] = relayStarted
@@ -559,6 +636,10 @@ async function updateItems(
       iat === null ||
       nowS - iat > ACTIVITY_STATEMENT_MAX_AGE_S
     ) {
+      continue;
+    }
+    if (activity.relayStarted && !startable.has(activity.medicationId)) {
+      ending.push(activity);
       continue;
     }
     const dose = await doseAt(
@@ -580,7 +661,7 @@ async function updateItems(
     }
     const state = doseContentState(dose, timeFormat, now);
     if (!state) {
-      missed.push(activity);
+      ending.push(activity);
       continue;
     }
     if (!activity.relayStarted || refused) continue;
@@ -606,7 +687,7 @@ async function updateItems(
       },
     });
   }
-  return { updates, missed };
+  return { updates, ending };
 }
 
 /** Start and update the Live Activities of one device. */
@@ -623,11 +704,12 @@ export async function runDeviceLiveActivities(
   });
   const timeFormat = user?.timeFormat ?? null;
   const start = await startItem(device, timeFormat, now);
-  const { updates, missed } = await updateItems(device, timeFormat, now);
-  if (missed.length > 0) {
-    // A missed dose has nothing left to show: end its Activity, and forget
-    // the token once the relay took the end or reported the Activity gone.
-    const spent = await endActivitiesOverRelay(device, missed, ctx);
+  const { updates, ending } = await updateItems(device, timeFormat, now);
+  if (ending.length > 0) {
+    // A missed dose has nothing left to show, and a medication without the
+    // opt-in gets no server-started Activity: end it, and forget the token
+    // once the relay took the end or reported the Activity gone.
+    const spent = await endActivitiesOverRelay(device, ending, ctx);
     if (spent.length > 0) {
       await prisma.liveActivityToken.deleteMany({
         where: { id: { in: spent } },

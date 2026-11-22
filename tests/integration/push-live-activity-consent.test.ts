@@ -202,12 +202,14 @@ function hhmm(at: Date, tz: string): string {
 /**
  * A daily medication with a dose `minutesFromNow` away, its open row on that
  * slot, and, when given, a stored dose window around it (minutes relative to
- * the slot). Without one the band is the daily default.
+ * the slot). Without one the band is the daily default. The medication has
+ * the Live Activity opt-in unless `liveActivityEnabled` says otherwise.
  */
 async function dueDose(
   userId: string,
   minutesFromNow: number,
   window?: { start: number; end: number },
+  { liveActivityEnabled = true }: { liveActivityEnabled?: boolean } = {},
 ) {
   const tz = noonZone();
   await getPrismaClient().user.update({
@@ -220,7 +222,10 @@ async function dueDose(
   const minutes = (m: number) => new Date(slot.getTime() + m * 60_000);
   const medication = await makeMedication(
     { id: userId },
-    { createdAt: new Date(slot.getTime() - 2 * 24 * 3600_000) },
+    {
+      createdAt: new Date(slot.getTime() - 2 * 24 * 3600_000),
+      liveActivityEnabled,
+    },
     [
       {
         windowStart: time,
@@ -672,6 +677,163 @@ describe("the dose state", () => {
     ]);
     expect(await getPrismaClient().liveActivityToken.count()).toBe(0);
     expect(await pass(second(missedAfter, 301))).toEqual([]);
+  });
+});
+
+describe("the dose a start picks", () => {
+  const deviceRow = () =>
+    getPrismaClient().device.findFirstOrThrow({ where: { apnsToken: TOKEN } });
+  const startsOnWire = () =>
+    laPushes().filter(
+      (p) => (p.payload.aps as { event?: string }).event === "start",
+    );
+
+  async function consented() {
+    const t = await setUp();
+    await t.reg({
+      liveActivityConsent: t.consent(),
+      liveActivityStart: t.startField(),
+    });
+    return t;
+  }
+
+  it("is never a dose whose medication has the opt-in off", async () => {
+    const t = await consented();
+    await dueDose(t.session.userId, 30, undefined, {
+      liveActivityEnabled: false,
+    });
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 0 });
+    expect(laPushes()).toHaveLength(0);
+    expect((await deviceRow()).laStartedMedicationId).toBeNull();
+  });
+
+  it("is never a dose already overdue or answered", async () => {
+    const t = await consented();
+    // Past the daily band's on-time hour after the slot.
+    await dueDose(t.session.userId, -90);
+    const taken = await dueDose(t.session.userId, 20);
+    await getPrismaClient().medicationIntakeEvent.updateMany({
+      where: { medicationId: taken.medication.id },
+      data: { takenAt: new Date() },
+    });
+    const skipped = await dueDose(t.session.userId, 25);
+    await getPrismaClient().medicationIntakeEvent.updateMany({
+      where: { medicationId: skipped.medication.id },
+      data: { skipped: true },
+    });
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 0 });
+    expect(laPushes()).toHaveLength(0);
+  });
+
+  it("closes where the resolver turns the dose overdue", async () => {
+    const t = await consented();
+    // The daily band: on time until an hour after the slot.
+    const { at } = await dueDose(t.session.userId, -30);
+    expect(
+      await runLiveActivityRelayPass(new Date(at(60).getTime() + 1000)),
+    ).toMatchObject({ started: 0 });
+    expect(await runLiveActivityRelayPass(at(60))).toMatchObject({
+      started: 1,
+    });
+  });
+
+  it("is the earliest of several, and the next one once that is answered", async () => {
+    const t = await consented();
+    const later = await dueDose(t.session.userId, 70);
+    const sooner = await dueDose(t.session.userId, 20);
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 1 });
+    expect(await deviceRow()).toMatchObject({
+      laStartedMedicationId: sooner.medication.id,
+      laStartedSlot: sooner.slot,
+    });
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 0 });
+
+    await getPrismaClient().medicationIntakeEvent.updateMany({
+      where: { medicationId: sooner.medication.id },
+      data: { takenAt: new Date() },
+    });
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 1 });
+    expect(await deviceRow()).toMatchObject({
+      laStartedMedicationId: later.medication.id,
+      laStartedSlot: later.slot,
+    });
+    expect(startsOnWire()).toHaveLength(2);
+  });
+
+  it("after a fresh consent, starts the opted-in due dose and ends the wrong one", async () => {
+    // The first pass after the consent: one medication's evening dose, its
+    // window an hour from the slot and its opt-in off, stands about an hour
+    // and a half past that window; another medication's dose, opted in, is
+    // due. The pass used to start the first and leave the second.
+    const t = await consented();
+    const behind = await dueDose(
+      t.session.userId,
+      -146,
+      { start: 0, end: 60 },
+      { liveActivityEnabled: false },
+    );
+    const due = await dueDose(t.session.userId, 6, { start: -30, end: 60 });
+
+    expect(await runLiveActivityRelayPass()).toMatchObject({ started: 1 });
+    expect(startsOnWire()).toHaveLength(1);
+    expect(
+      (startsOnWire()[0]!.payload.aps as Record<string, unknown>)[
+        "content-state"
+      ],
+    ).toMatchObject({ status: "due" });
+    expect(await deviceRow()).toMatchObject({
+      laStartedMedicationId: due.medication.id,
+      laStartedSlot: due.slot,
+    });
+
+    // The Activity the old rule started for the wrong dose, registered by
+    // the app as server-started: the pass ends it and forgets its token.
+    await t.reg({
+      liveActivityTokens: [
+        t.activityEntry({
+          relayStart: true,
+          medicationId: behind.medication.id,
+          slotInstant: behind.slot.toISOString(),
+        }),
+      ],
+    });
+    const before = laPushes().length;
+    await runLiveActivityRelayPass();
+    expect(
+      laPushes()
+        .slice(before)
+        .map((p) => [p.token, (p.payload.aps as { event: string }).event]),
+    ).toEqual([[LA_TOKEN, "end"]]);
+    expect(await getPrismaClient().liveActivityToken.count()).toBe(0);
+    expect(startsOnWire()).toHaveLength(1);
+  });
+
+  it("ends a server-started Activity once its opt-in is turned off", async () => {
+    const t = await setUp();
+    await t.reg({ liveActivityConsent: t.consent() });
+    const { medication, slot } = await dueDose(t.session.userId, 10);
+    await t.reg({
+      liveActivityTokens: [
+        t.activityEntry({
+          relayStart: true,
+          medicationId: medication.id,
+          slotInstant: slot.toISOString(),
+        }),
+      ],
+    });
+    expect(await runLiveActivityRelayPass()).toMatchObject({ updated: 1 });
+    await getPrismaClient().medication.update({
+      where: { id: medication.id },
+      data: { liveActivityEnabled: false },
+    });
+    const before = laPushes().length;
+    await runLiveActivityRelayPass();
+    expect(
+      laPushes()
+        .slice(before)
+        .map((p) => (p.payload.aps as { event: string }).event),
+    ).toEqual(["end"]);
+    expect(await getPrismaClient().liveActivityToken.count()).toBe(0);
   });
 });
 

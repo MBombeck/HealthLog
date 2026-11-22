@@ -326,7 +326,7 @@ export const medicationResource = z
     liveActivityEnabled: z
       .boolean()
       .describe(
-        "v1.7.0 iOS Live Activity opt-in for this medication's reminders. Default false. The iOS client owns the ActivityKit lifecycle; the server only stores + echoes the flag.",
+        "v1.7.0 iOS Live Activity opt-in for this medication's reminders. Default false. The iOS client plans its own Activities by it; a server start over the push relay requires it, and a server-started Activity ends once it is off.",
       ),
     criticalAlarmEnabled: z
       .boolean()
