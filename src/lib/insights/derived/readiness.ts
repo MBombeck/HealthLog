@@ -40,7 +40,6 @@ import {
   type RollupCoverageMap,
 } from "@/lib/rollups/measurement-coverage";
 import { computeMoodStability } from "@/lib/insights/mood-aggregates";
-import { readLatestLocalDayMean } from "@/lib/measurements/dense-bucket-read";
 import { MS_PER_DAY } from "@/lib/time-constants";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import {
@@ -50,6 +49,7 @@ import {
   nowProvenanceTimestamp,
 } from "./coverage";
 import { computeVitalsBaseline, type BaselineProfile } from "./baseline";
+import { readLatestDayMean } from "./coincident-deviation";
 import { computeSleepScore } from "./sleep-score";
 import {
   SPARKLINE_MAX_POINTS,
@@ -198,31 +198,6 @@ export function blendReadinessComponents(
 // ── helpers ─────────────────────────────────────────────────────────────
 
 /**
- * The most recent DAY mean for a type within the window — the "today" value
- * the deviation is measured against; null when no reading is in the window.
- * Day keys are minted in the user's timezone so a 23:30-local reading lands
- * on the right "today" bucket regardless of UTC offset. Every reading of the
- * day is meaned in Postgres; a cap of the newest 50 rows used to stand for
- * the day, which on a dense stream was its last hours.
- */
-async function readLatestDayMean(
-  userId: string,
-  type: MeasurementType,
-  windowDays: number,
-  now: Date,
-  tz: string,
-): Promise<number | null> {
-  const latest = await readLatestLocalDayMean({
-    userId,
-    type,
-    since: new Date(now.getTime() - windowDays * MS_PER_DAY),
-    timeZone: tz,
-    plausibleOnly: false,
-  });
-  return latest?.value ?? null;
-}
-
-/**
  * Score one baseline-deviation vital component (RHR / HRV / respiratory).
  *
  * null-vs-0 contract (iOS v0.14.3 F2)
@@ -266,7 +241,12 @@ async function scoreVitalDeviation(
       historyDays: baseline.coverage.historyDays,
     };
   }
-  const today = await readLatestDayMean(userId, type, windowDays, now, tz);
+  const today =
+    (
+      await readLatestDayMean(userId, type, windowDays, now, tz, {
+        plausibleOnly: false,
+      })
+    )?.value ?? null;
   // No recent reading, or a non-finite baseline center / today value: there
   // is no scorable deviation. Return null (hidden) rather than letting a NaN
   // fall through `scoreDeviation` → `clamp100`, which would surface a

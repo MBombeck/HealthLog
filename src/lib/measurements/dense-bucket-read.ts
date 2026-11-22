@@ -30,9 +30,6 @@ import {
   type PrismaClient,
 } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
-import { combineHourCells } from "@/lib/measurements/day-mean";
-import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
-import { plausibleMetricRange } from "@/lib/measurements/value-domain";
 import { isValidTimezone } from "@/lib/tz/format";
 import { localDayWindow } from "@/lib/tz/local-day";
 import { READING_ZONE_SLACK_MS } from "@/lib/tz/reading-zone";
@@ -58,15 +55,6 @@ export interface LocalMinuteBucket extends DenseBucket {
 export interface ElapsedBucket extends DenseBucket {
   /** `floor((measuredAt − origin) / bucket)`; bucket 0 starts at the origin. */
   index: number;
-}
-
-/** One local day's extremes. */
-export interface LocalDayExtremes {
-  /** `YYYY-MM-DD` in the zone the read was cut in. */
-  day: string;
-  n: number;
-  min: number;
-  max: number;
 }
 
 function zoneOrUtc(timeZone: string): string {
@@ -241,128 +229,6 @@ export async function readElapsedBuckets(opts: {
     });
   }
   return { buckets, windowCount };
-}
-
-/**
- * Per local day, the lowest and highest reading of `type` in `[from, to]`,
- * every row counted (a `stats:` row is a reading of its own day here, as it
- * was for the row-by-row fold this replaces). Ascending by day.
- */
-export async function readLocalDayExtremes(opts: {
-  userId: string;
-  type: MeasurementType;
-  from: Date;
-  to: Date;
-  timeZone: string;
-  db?: RawDb;
-}): Promise<LocalDayExtremes[]> {
-  const timeZone = zoneOrUtc(opts.timeZone);
-  const rows = await (opts.db ?? prisma).$queryRaw<
-    Array<{ day: string; n: number; min_value: number; max_value: number }>
-  >(Prisma.sql`
-    SELECT
-      to_char(${readingWallSql("m", timeZone)}, 'YYYY-MM-DD') AS day,
-      COUNT(*)::int                  AS n,
-      MIN(m."value")::double precision AS min_value,
-      MAX(m."value")::double precision AS max_value
-    FROM measurements m
-    WHERE m."user_id" = ${opts.userId}
-      AND m."type" = ${opts.type}::measurement_type
-      AND m."deleted_at" IS NULL
-      AND m."measured_at" >= ${opts.from}
-      AND m."measured_at" <= ${opts.to}
-    GROUP BY 1
-    ORDER BY 1 ASC
-  `);
-  return rows.map((r) => ({
-    day: r.day,
-    n: Number(r.n),
-    min: Number(r.min_value),
-    max: Number(r.max_value),
-  }));
-}
-
-/**
- * The value of the most recent local day of `type` since `since`, every
- * reading of that day counted, and that day's key and newest instant. The
- * day value is the one `day-mean.ts` defines: the weighted mean of the day's
- * hour means for an hour-weighted type (pulse), the plain mean otherwise.
- * With `plausibleOnly`, readings outside the metric's plausibility domain are
- * neither part of the value nor able to make a day the latest, so a day
- * holding only impossible values gives way to the day before it. `null` when
- * nothing qualifies. The day's readings arrive as one row per local hour,
- * read from the newest reading back, never the whole window.
- */
-export async function readLatestLocalDayMean(opts: {
-  userId: string;
-  type: MeasurementType;
-  since: Date;
-  timeZone: string;
-  plausibleOnly: boolean;
-  db?: RawDb;
-}): Promise<{ value: number; day: string; lastAt: Date } | null> {
-  const timeZone = zoneOrUtc(opts.timeZone);
-  const range = opts.plausibleOnly
-    ? plausibleMetricRange(opts.type)
-    : undefined;
-  const valueFilter = range
-    ? Prisma.sql`AND m."value" >= ${range.min} AND m."value" <= ${range.max}`
-    : Prisma.empty;
-  // The latest local day holds the newest reading's day or a later one, and
-  // a reading's zone moves its day by at most `READING_ZONE_SLACK_MS` against
-  // another's, so every reading of the latest day lies within a day and two
-  // slacks of the newest reading: the read covers that tail, not the window.
-  const tailMs = 24 * 60 * 60 * 1000 + 2 * READING_ZONE_SLACK_MS;
-  const hours = await (opts.db ?? prisma).$queryRaw<
-    Array<{ day: string; n: number; sum: number; last_at: Date }>
-  >(Prisma.sql`
-    WITH newest AS (
-      SELECT MAX(m."measured_at") AS at
-      FROM measurements m
-      WHERE m."user_id" = ${opts.userId}
-        AND m."type" = ${opts.type}::measurement_type
-        AND m."deleted_at" IS NULL
-        AND m."measured_at" >= ${opts.since}
-        ${valueFilter}
-    ),
-    src AS (
-      SELECT
-        ${readingWallSql("m", timeZone)} AS local_at,
-        m."measured_at" AS measured_at,
-        m."value" AS value
-      FROM measurements m, newest
-      WHERE m."user_id" = ${opts.userId}
-        AND m."type" = ${opts.type}::measurement_type
-        AND m."deleted_at" IS NULL
-        AND m."measured_at" >= ${opts.since}
-        AND m."measured_at" >= newest.at - ${tailMs} * interval '1 millisecond'
-        ${valueFilter}
-    ),
-    dayed AS (
-      SELECT to_char(local_at, 'YYYY-MM-DD') AS day,
-             date_trunc('hour', local_at) AS local_hour,
-             measured_at, value
-      FROM src
-    )
-    SELECT
-      day,
-      COUNT(*)::int                AS n,
-      SUM(value)::double precision AS sum,
-      MAX(measured_at)             AS last_at
-    FROM dayed
-    WHERE day = (SELECT MAX(day) FROM dayed)
-    GROUP BY day, local_hour
-  `);
-  if (hours.length === 0) return null;
-  const cells = hours.map((h) => ({ n: Number(h.n), sum: Number(h.sum) }));
-  const value = usesHourlyMeanDay(opts.type)
-    ? combineHourCells(cells)
-    : cells.reduce((s, c) => s + c.sum, 0) / cells.reduce((s, c) => s + c.n, 0);
-  if (value === null) return null;
-  const lastAt = new Date(
-    Math.max(...hours.map((h) => new Date(h.last_at).getTime())),
-  );
-  return { value, day: hours[0].day, lastAt };
 }
 
 /** One local hour of readings, as one reading. */
