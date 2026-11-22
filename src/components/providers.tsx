@@ -16,7 +16,13 @@ import { I18nProvider, useTranslations } from "@/lib/i18n/context";
 import type { Locale } from "@/lib/i18n/config";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { Toaster } from "@/components/ui/sonner";
-import { applyThemeColor } from "@/lib/pwa/theme-color";
+import {
+  applyThemeColor,
+  parseThemeChoice,
+  THEME_STORAGE_KEY,
+  type ResolvedTheme,
+  type ThemeChoice,
+} from "@/lib/pwa/theme-color";
 import { KeyboardInsetBridge } from "@/components/keyboard-inset-bridge";
 import { VersionPoller } from "@/components/version-poller";
 import { ServiceWorkerRegistrar } from "@/components/service-worker-registrar";
@@ -55,11 +61,11 @@ const SHELL_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || "";
 
 // ── Theme Context ────────────────────────────────────
 
-type Theme = "dark" | "light" | "system";
+type Theme = ThemeChoice;
 
 interface ThemeContextValue {
   theme: Theme;
-  resolvedTheme: "dark" | "light";
+  resolvedTheme: ResolvedTheme;
   setTheme: (theme: Theme) => void;
 }
 
@@ -95,12 +101,12 @@ function applyTheme(resolved: "dark" | "light") {
 // initializer (server renders "dark", a client with a stored "light"/"system"
 // initializes differently → the React #418 hydration seam this repo already
 // hit with the sidebar). `useSyncExternalStore` is the sanctioned fix: it reads
-// the value with an SSR-stable server snapshot ("dark") and reconciles to the
+// the value with an SSR-stable server snapshot ("system", resolved as "dark"
+// because the server cannot see the device) and reconciles to the
 // real value after hydration without a setState-in-effect. The nonce-bound
 // inline script in layout.tsx stamps the correct class pre-paint, so there is
 // no visual FOUC while React reconciles.
 
-const THEME_STORAGE_KEY = "healthlog-theme";
 const themeListeners = new Set<() => void>();
 
 function notifyThemeListeners() {
@@ -120,15 +126,18 @@ function subscribeStoredTheme(onChange: () => void): () => void {
 }
 
 function getStoredThemeSnapshot(): Theme {
-  const saved = localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
-  // A stored "light"/"dark"/"system" choice wins. With no stored preference the
-  // app defaults to dark rather than tracking the OS.
-  if (saved === "light" || saved === "dark" || saved === "system") return saved;
-  return "dark";
+  // An explicit "light" or "dark" wins; anything else, nothing stored
+  // included, follows the system. The same rule as the boot script
+  // (`parseThemeChoice`), so the first paint and the hydrated app agree.
+  try {
+    return parseThemeChoice(localStorage.getItem(THEME_STORAGE_KEY));
+  } catch {
+    return "system";
+  }
 }
 
 function getServerThemeSnapshot(): Theme {
-  return "dark";
+  return "system";
 }
 
 function subscribeSystemTheme(onChange: () => void): () => void {
@@ -145,7 +154,7 @@ function getServerSystemSnapshot(): "dark" | "light" {
   return "dark";
 }
 
-function ThemeProvider({ children }: { children: ReactNode }) {
+export function ThemeProvider({ children }: { children: ReactNode }) {
   const theme = useSyncExternalStore(
     subscribeStoredTheme,
     getStoredThemeSnapshot,
@@ -166,12 +175,15 @@ function ThemeProvider({ children }: { children: ReactNode }) {
   }, [resolvedTheme]);
 
   const setTheme = useCallback((next: Theme) => {
-    // Persist every explicit choice, including "system" — the absence of a
-    // stored value is reserved for a fresh visitor and defaults to dark.
-    // Storing "system" verbatim keeps an explicit OS-tracking choice
-    // distinguishable from "never chose", so a reload honours it. The write +
-    // notify re-reads the external store; the effect above applies the class.
-    localStorage.setItem(THEME_STORAGE_KEY, next);
+    // Persist every explicit choice, "system" included, so a reload honours
+    // it. A fresh visitor with nothing stored also follows the system. The
+    // write + notify re-reads the external store; the effect above applies the
+    // class, and the matchMedia subscription keeps "system" live.
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, next);
+    } catch {
+      // Storage refused: nothing to persist; the stored value stays.
+    }
     notifyThemeListeners();
   }, []);
 
@@ -407,8 +419,8 @@ function OfflineMutationToaster() {
  * The app-wide toaster.
  *
  * Its theme is the one the page painted, not `"system"`: the app's theme is
- * its own setting (dark by default), and a phone in light mode showed light
- * toasts over the dark app.
+ * its own setting (following the system unless a person chose), and a phone
+ * in light mode showed light toasts over an app set to dark.
  *
  * Below 600 px Sonner lays toasts across the bottom edge, 16 px up, which on
  * a phone is on top of the bottom bar: the "new version" hint sat over the

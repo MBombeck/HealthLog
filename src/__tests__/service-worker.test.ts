@@ -26,6 +26,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import vm from "node:vm";
 import { HEALTHLOG_PAGE_CACHE_HEADER } from "@/lib/http/page-cache-headers";
+import { resolveTheme, THEME_COLOR } from "@/lib/pwa/theme-color";
 
 const SW_SOURCE = readFileSync(
   resolve(__dirname, "../../public/sw.js"),
@@ -654,8 +655,21 @@ describe("sw.js — offline page follows the chosen theme", () => {
     expect((await themeFor("dark")).theme).toBe("dark");
     expect((await themeFor("system", false)).theme).toBe("light");
     expect((await themeFor("system", true)).theme).toBe("dark");
-    // Nothing stored: the app's default, dark.
-    expect((await themeFor(null)).theme).toBe("dark");
+    // Nothing stored: the app's default, the device scheme.
+    expect((await themeFor(null, false)).theme).toBe("light");
+    expect((await themeFor(null, true)).theme).toBe("dark");
+  });
+
+  it("resolves exactly as the app does, for every stored value", async () => {
+    for (const stored of [null, "light", "dark", "system", "", "auto"]) {
+      for (const deviceDark of [false, true]) {
+        const expected = resolveTheme(stored, deviceDark);
+        expect(await themeFor(stored, deviceDark)).toEqual({
+          theme: expected,
+          themeColor: THEME_COLOR[expected],
+        });
+      }
+    }
   });
 
   it("styles both choices over the device scheme", async () => {
