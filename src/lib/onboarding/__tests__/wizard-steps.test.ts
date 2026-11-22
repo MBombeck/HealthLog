@@ -35,7 +35,9 @@ import {
 function state(
   statuses: Partial<Record<OnboardingStepId, OnboardingStepStatus>> = {},
   needs: Partial<OnboardingNeeds> = {},
-  extra: Partial<Pick<OnboardingStateDto, "completedAt" | "firstResult">> = {},
+  extra: Partial<
+    Pick<OnboardingStateDto, "completedAt" | "firstResult" | "offers">
+  > = {},
 ): OnboardingStateDto {
   return {
     steps: defaultOnboardingSteps().map((step) => ({
@@ -45,6 +47,7 @@ function state(
     needs: { ...emptyOnboardingNeeds(), ...needs },
     completedAt: extra.completedAt ?? null,
     firstResult: extra.firstResult ?? null,
+    offers: extra.offers ?? { ai: false },
   };
 }
 
@@ -86,7 +89,12 @@ describe("unitsQuestionApplies", () => {
           { units: "done" },
           {
             areas: ["glucose"],
-            units: { glucoseUnit: "mmol/L", unitPreference: null },
+            units: {
+              glucoseUnit: "mmol/L",
+              unitPreference: null,
+              timezone: null,
+              medicineRegistry: null,
+            },
           },
         ),
       ),
@@ -238,7 +246,7 @@ describe("firstResultApplies", () => {
 });
 
 describe("screenOrder", () => {
-  it("runs welcome, the questions, confirm, the first result, done", () => {
+  it("runs welcome, the questions, confirm, the follow-ups, the first result, done", () => {
     expect(
       screenOrder(
         state(
@@ -255,6 +263,7 @@ describe("screenOrder", () => {
       "visit",
       "units",
       "confirm",
+      "reminders",
       "first-result",
       "done",
     ]);
@@ -331,12 +340,19 @@ describe("resumeScreen", () => {
     ).toBe("units");
   });
 
-  it("offers the first result after confirm, then done", () => {
-    const confirmed = state(
-      { ...QUESTIONS_DONE, confirm: "done" },
+  it("offers the reminders, then the first result after confirm, then done", () => {
+    const afterConfirm = state(
+      { ...QUESTIONS_DONE, units: "done", confirm: "done" },
       { recordTarget: "me", medication: "yes" },
       { completedAt: "2026-09-10T08:00:00.000Z" },
     );
+    expect(resumeScreen(afterConfirm)).toBe("reminders");
+    const confirmed = {
+      ...afterConfirm,
+      steps: afterConfirm.steps.map((s) =>
+        s.id === "reminders" ? { ...s, status: "done" as const } : s,
+      ),
+    };
     expect(resumeScreen(confirmed)).toBe("first-result");
     expect(
       resumeScreen({
@@ -434,7 +450,12 @@ describe("questionsToPassBeforeConfirm", () => {
           {
             recordTarget: "me",
             areas: ["glucose"],
-            units: { glucoseUnit: "mg/dL", unitPreference: null },
+            units: {
+              glucoseUnit: "mg/dL",
+              unitPreference: null,
+              timezone: null,
+              medicineRegistry: null,
+            },
           },
         ),
       ),

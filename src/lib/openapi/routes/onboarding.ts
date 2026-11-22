@@ -30,6 +30,7 @@ import {
   ONBOARDING_VISIT_ANSWERS,
 } from "@/lib/onboarding/needs";
 import { tourProgressSchema } from "@/lib/onboarding/tour-progress";
+import { MEDICINE_REGISTRY_CHOICES } from "@/lib/medications/leaflet-registries";
 import { ONBOARDING_AREA_KEYS } from "@/lib/modules/registry";
 import { onboardingCompleteSchema } from "@/lib/validations/onboarding";
 import {
@@ -67,9 +68,21 @@ const onboardingNeedsResource = z
       .object({
         glucoseUnit: z.enum(["mg/dL", "mmol/L"]).nullable(),
         unitPreference: z.enum(["metric", "imperial"]).nullable(),
+        timezone: z
+          .string()
+          .nullable()
+          .describe(
+            '1.49 — the IANA time zone confirmed on the "Region & units" screen, as given. `timezone` on the account payload is the value every surface reads.',
+          ),
+        medicineRegistry: z
+          .enum(MEDICINE_REGISTRY_CHOICES)
+          .nullable()
+          .describe(
+            "1.49 — the medicine registry chosen on the same screen (asked only when medication was chosen), as given. `medicineRegistry` on the account payload is the value the medication read uses.",
+          ),
       })
       .describe(
-        "Q6 — the unit answers as given. NOT the source of truth for display: `glucoseUnit` and `unitPreference` on the account payload are, and the answers step writes them. This records what the flow was told.",
+        'Q6 ("Region & units" since 1.49, id unchanged) — the answers as given. NOT the source of truth for display: the account payload\'s columns are, and the answers step writes them. This records what the flow was told.',
       ),
   })
   .meta({
@@ -86,7 +99,7 @@ const onboardingStepResource = z
   .meta({
     id: "OnboardingStepState",
     description:
-      "One step of the setup flow. The ids are stable; a client that meets one it does not know SKIPS it rather than refusing the list, so the flow may grow a screen without a client release.\n\n`units` carries one resolution the others do not: a record whose account already holds BOTH unit preferences reads as `done` whether or not the question was ever put, which is what stops the flow re-asking a value the account holds.",
+      "One step of the setup flow. The ids are stable; a client that meets one it does not know SKIPS it rather than refusing the list, so the flow may grow a screen without a client release.\n\n`units` carries one resolution the others do not: a record whose account already holds BOTH unit preferences reads as `done` whether or not the question was ever put, which is what stops the flow re-asking a value the account holds.\n\n1.49 adds two follow-ups after `confirm`: `reminders` (where reminders arrive; for a medication schedule or a mood or cycle area) and `ai` (the Coach, yes or no; only while `offers.ai`). Neither holds the setup open for a client that skips them: a follow-up that does not apply reads `skipped`, and a ledger confirmed before 1.49 reads both as `skipped`.",
   });
 
 const onboardingFirstResultResource = z
@@ -118,11 +131,24 @@ export const onboardingStateResource = z
         "When the needs flow was completed. Distinct from the account payload's `onboardingCompletedAt`, which stays the first-run redirect's gate: `POST /api/onboarding/restart` clears this one and leaves that one alone.",
       ),
     firstResult: onboardingFirstResultResource.nullable(),
+    offers: z
+      .object({
+        ai: z
+          .boolean()
+          .describe(
+            "The server offers this record the Coach: available, waiting only for the person's consent, or waiting for a provider the person may set up. Never while the operator or the person switched it off. The `ai` step applies only while true.",
+          ),
+      })
+      .meta({
+        id: "OnboardingOffers",
+        description:
+          "1.49 — the server facts the conditional follow-up steps depend on, resolved on the server so no client recomputes them.",
+      }),
   })
   .meta({
     id: "OnboardingState",
     description:
-      "The needs-based setup flow for one record. Always present on the account payload — a record that never entered the flow reads as empty answers with nine `pending` steps, so a client branches on the step statuses rather than on the field's existence. On the account payload it describes the ACTIVE record, so a client under an account switch reads the same record its counts and module map describe; under a scoped grant the answers come back empty.",
+      "The needs-based setup flow for one record. Always present on the account payload — a record that never entered the flow reads as empty answers and every step `pending`, so a client branches on the step statuses rather than on the field's existence. On the account payload it describes the ACTIVE record, so a client under an account switch reads the same record its counts and module map describe; under a scoped grant the answers come back empty.",
   });
 
 const onboardingStateEnvelope = dataEnvelope(
@@ -133,7 +159,7 @@ const onboardingStateEnvelope = dataEnvelope(
 const onboardingAnswerRequest = onboardingAnswerSchema.meta({
   id: "OnboardingAnswerRequest",
   description:
-    "One step, answered or deliberately passed. The union has an arm per step id plus a skip arm for the six steps that may be passed — `who` is the one required question, and `confirm` / `done` are acknowledgements rather than questions, so none of the three has a skip arm. Every arm is strict: an unknown key is a 422, and a skip may never carry an answer.",
+    "One step, answered or deliberately passed. The union has an arm per step id plus a skip arm for the eight steps that may be passed (the two 1.49 follow-ups `reminders` and `ai` carry no payload: their settings have their own routes) — `who` is the one required question, and `confirm` / `done` are acknowledgements rather than questions, so none of the three has a skip arm. Every arm is strict: an unknown key is a 422, and a skip may never carry an answer.",
 });
 
 const onboardingRestartRequest = onboardingRestartSchema.meta({
@@ -260,7 +286,7 @@ export const onboardingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Onboarding"],
       summary: "Ask the setup questions again",
       description:
-        "\"Set up again\", from Settings. Puts the nine steps back to `pending`, clears the flow's own completion stamp, and clears the derivation marker so the next `POST /api/onboarding/complete` may derive a module map again.\n\nIt writes no module state at all: the ordering-versus-removal decision says a re-run never turns off a module somebody turned on by hand, and the protection against the second derivation lives in the merge rather than here. It also keeps the answers, as the prefill for the re-run, keeps a first result that really happened, and leaves the account payload's `onboardingCompletedAt` alone so nobody is pushed back through the first-run redirect.\n\nCookie or wildcard Bearer, own record only — same refusal under a switch as the answers route. Rate-limited to 10 restarts per 10 minutes per account.",
+        "\"Set up again\", from Settings. Puts every step back to `pending`, clears the flow's own completion stamp, and clears the derivation marker so the next `POST /api/onboarding/complete` may derive a module map again.\n\nIt writes no module state at all: the ordering-versus-removal decision says a re-run never turns off a module somebody turned on by hand, and the protection against the second derivation lives in the merge rather than here. It also keeps the answers, as the prefill for the re-run, keeps a first result that really happened, and leaves the account payload's `onboardingCompletedAt` alone so nobody is pushed back through the first-run redirect.\n\nCookie or wildcard Bearer, own record only — same refusal under a switch as the answers route. Rate-limited to 10 restarts per 10 minutes per account.",
       requestBody: {
         // The route accepts an absent body and treats it as `{}`; the schema
         // is strict, so a body that carries anything is a 422.

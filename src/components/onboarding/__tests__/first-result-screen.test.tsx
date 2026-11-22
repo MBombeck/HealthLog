@@ -115,6 +115,7 @@ function state(
     },
     completedAt: null,
     firstResult: null,
+    offers: { ai: false },
   };
 }
 

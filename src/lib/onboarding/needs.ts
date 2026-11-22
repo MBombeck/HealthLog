@@ -28,12 +28,24 @@ import type {
   OnboardingModuleNeeds,
 } from "@/lib/modules/registry";
 import { ONBOARDING_AREA_KEYS } from "@/lib/modules/registry";
+import {
+  MEDICINE_REGISTRY_CHOICES,
+  type MedicineRegistryChoice,
+} from "@/lib/medications/leaflet-registries";
+import { isValidTimezone } from "@/lib/tz/format";
 
 /**
  * The ordered steps, with the stable ids the spec names. Order is the order
  * they are asked in; the ids are the wire contract a client (web now, native
  * later) matches on, and a client that meets an id it does not know is
  * expected to skip it rather than refuse the list.
+ *
+ * `units` is shown as "Region & units" since 1.49 and keeps its id. The two
+ * steps after `confirm` that 1.49 added, `reminders` and `ai`, are follow-ups:
+ * offers made once the answers are confirmed, each conditional, each
+ * skippable, and neither ever holds the setup open (see
+ * `ONBOARDING_FOLLOW_UP_STEP_IDS`), so a client that predates them and skips
+ * them finishes exactly as it did.
  */
 export const ONBOARDING_STEP_IDS = [
   "who",
@@ -43,6 +55,8 @@ export const ONBOARDING_STEP_IDS = [
   "visit",
   "units",
   "confirm",
+  "reminders",
+  "ai",
   "first-result",
   "done",
 ] as const;
@@ -64,8 +78,34 @@ export const ONBOARDING_SKIPPABLE_STEP_IDS = [
   "sources",
   "visit",
   "units",
+  "reminders",
+  "ai",
   "first-result",
 ] as const;
+
+/**
+ * The follow-up steps: offered after the confirm screen, never required.
+ *
+ * Two rules keep them from reopening a setup that is finished:
+ *
+ *  - a ledger stored before a follow-up existed, on a record whose flow was
+ *    already confirmed, reads that follow-up as `skipped` (it was passed by
+ *    finishing; `parseOnboardingSteps`), so every 1.48 account stays settled
+ *    and is never sent back into the flow;
+ *  - a follow-up that does not apply to the record reads as `skipped` too
+ *    (`resolveOnboardingSteps`), so nothing waits for a screen the flow will
+ *    never show.
+ */
+export const ONBOARDING_FOLLOW_UP_STEP_IDS = ["reminders", "ai"] as const;
+
+export type OnboardingFollowUpStepId =
+  (typeof ONBOARDING_FOLLOW_UP_STEP_IDS)[number];
+
+export function isOnboardingFollowUpStep(
+  id: string,
+): id is OnboardingFollowUpStepId {
+  return (ONBOARDING_FOLLOW_UP_STEP_IDS as readonly string[]).includes(id);
+}
 
 /**
  * Q1 — whose record this is. The vocabularies below are pinned against the
@@ -143,6 +183,16 @@ export type OnboardingFirstResultTask =
 export interface OnboardingUnitAnswers {
   glucoseUnit: "mg/dL" | "mmol/L" | null;
   unitPreference: "metric" | "imperial" | null;
+  /**
+   * 1.49, "Region & units": the IANA time zone the person confirmed, as
+   * given. `User.timezone` is the value every surface reads.
+   */
+  timezone: string | null;
+  /**
+   * 1.49: the medicine registry the person chose for "Find leaflet", as
+   * given. `User.medicineRegistry` is the value the medication read uses.
+   */
+  medicineRegistry: MedicineRegistryChoice | null;
 }
 
 /** The answers as given. Every field is null / empty until it is answered. */
@@ -178,7 +228,27 @@ export interface OnboardingStateDto {
   needs: OnboardingNeeds;
   completedAt: string | null;
   firstResult: OnboardingFirstResult | null;
+  /** What this server offers the record, for the conditional follow-ups. */
+  offers: OnboardingOffers;
 }
+
+/**
+ * The server facts a follow-up step depends on, published beside the ledger
+ * so every client decides the same way and none recomputes them (1.49).
+ *
+ * `ai` is true while this record may use the Coach on this server: the
+ * operator offers it, a provider can serve it (or the person can set one up),
+ * and the person has not switched the Coach off. The `ai` step applies only
+ * then. Additive: a reader that predates it ignores it.
+ */
+export interface OnboardingOffers {
+  ai: boolean;
+}
+
+/** No offers: what a reader without the server facts assumes. */
+export const NO_ONBOARDING_OFFERS: OnboardingOffers = Object.freeze({
+  ai: false,
+});
 
 export function emptyOnboardingNeeds(): OnboardingNeeds {
   return {
@@ -187,11 +257,16 @@ export function emptyOnboardingNeeds(): OnboardingNeeds {
     medication: null,
     sources: [],
     visit: null,
-    units: { glucoseUnit: null, unitPreference: null },
+    units: {
+      glucoseUnit: null,
+      unitPreference: null,
+      timezone: null,
+      medicineRegistry: null,
+    },
   };
 }
 
-/** Nine steps, all pending, in the spec's order. */
+/** Every step, all pending, in the spec's order. */
 export function defaultOnboardingSteps(): OnboardingStepState[] {
   return ONBOARDING_STEP_IDS.map((id) => ({ id, status: "pending" as const }));
 }
@@ -248,19 +323,35 @@ export function parseOnboardingNeeds(value: unknown): OnboardingNeeds {
         ["metric", "imperial"] as const,
         units.unitPreference,
       ),
+      timezone:
+        typeof units.timezone === "string" && isValidTimezone(units.timezone)
+          ? units.timezone
+          : null,
+      medicineRegistry: member(
+        MEDICINE_REGISTRY_CHOICES,
+        units.medicineRegistry,
+      ),
     },
   };
 }
 
 /**
- * Read the stored steps as the full ordered nine.
+ * Read the stored steps as the full ordered list.
  *
  * The stored blob is treated as a status lookup, never as the order: the order
  * is this release's `ONBOARDING_STEP_IDS`, so a step added to the flow appears
  * as `pending` for an account mid-way through rather than vanishing, and a
  * step removed from the flow stops being published without a migration.
+ *
+ * `completedAt` is the record's confirmation stamp. A follow-up step absent
+ * from a confirmed record's blob reads as `skipped`: the record finished its
+ * setup before that step existed. Every write stores the full list, so a
+ * flow that runs on this release always carries the follow-ups it owes.
  */
-export function parseOnboardingSteps(value: unknown): OnboardingStepState[] {
+export function parseOnboardingSteps(
+  value: unknown,
+  completedAt: Date | string | null = null,
+): OnboardingStepState[] {
   const stored = new Map<string, OnboardingStepStatus>();
   if (Array.isArray(value)) {
     for (const entry of value) {
@@ -272,7 +363,13 @@ export function parseOnboardingSteps(value: unknown): OnboardingStepState[] {
   }
   return ONBOARDING_STEP_IDS.map((id) => ({
     id,
-    status: stored.get(id) ?? "pending",
+    status:
+      stored.get(id) ??
+      // A follow-up the stored ledger never had, on a confirmed flow: the
+      // flow was finished before the step existed, which passed it.
+      (completedAt !== null && isOnboardingFollowUpStep(id)
+        ? "skipped"
+        : "pending"),
   }));
 }
 
@@ -344,7 +441,11 @@ export function everyOnboardingStepSettled(
  * answers with nine pending steps — so this is what tells the two apart.
  */
 export function hasEnteredOnboardingFlow(
-  state: OnboardingStateDto | null | undefined,
+  state:
+    | (Pick<OnboardingStateDto, "completedAt" | "needs"> &
+        Partial<OnboardingStateDto>)
+    | null
+    | undefined,
 ): boolean {
   if (!state) return false;
   return state.completedAt !== null || state.needs.recordTarget !== null;
@@ -413,6 +514,71 @@ export function accountHoldsBothUnits(held: HeldUnitPreferences): boolean {
   return held.glucoseUnit !== null && held.unitPreference !== null;
 }
 
+/** Areas whose readings come with a reminder of their own. */
+const REMINDER_AREAS = new Set<OnboardingAreaKey>(["mood", "cycle"]);
+
+/**
+ * Whether the `reminders` follow-up applies: a medication on a schedule, or an
+ * area with reminders of its own, on the person's own record. Answers given
+ * for somebody else's record say nothing about where the guardian's own
+ * notifications should go.
+ */
+export function remindersFollowUpApplies(needs: OnboardingNeeds): boolean {
+  if (needs.recordTarget === "someone-else") return false;
+  return (
+    needs.medication === "yes" ||
+    needs.medication === "sometimes" ||
+    needs.areas.some((area) => REMINDER_AREAS.has(area))
+  );
+}
+
+/** Whether the `ai` follow-up applies: only when the server offers the Coach. */
+export function aiFollowUpApplies(
+  needs: OnboardingNeeds,
+  offers: OnboardingOffers,
+): boolean {
+  return needs.recordTarget !== "someone-else" && offers.ai;
+}
+
+export function followUpApplies(
+  id: OnboardingFollowUpStepId,
+  needs: OnboardingNeeds,
+  offers: OnboardingOffers,
+): boolean {
+  return id === "reminders"
+    ? remindersFollowUpApplies(needs)
+    : aiFollowUpApplies(needs, offers);
+}
+
+/**
+ * The Coach offer, read off the record's resolved AI block.
+ *
+ * Offered while the Coach is available, while the one thing missing is the
+ * person's consent, or while no provider is set up but the person could set
+ * one up. Never while the operator switched it off or the person did.
+ */
+export function onboardingOffersFromAi(ai: {
+  capabilities: {
+    coach: { available: boolean; reason: string | null };
+  };
+  provider: { canConfigure: boolean };
+}): OnboardingOffers {
+  const coach = ai.capabilities.coach;
+  return {
+    ai:
+      coach.available ||
+      coach.reason === "consent_required" ||
+      (coach.reason === "no_provider" && ai.provider.canConfigure),
+  };
+}
+
+/** What `resolveOnboardingSteps` needs beside the ledger. */
+export interface OnboardingResolveContext {
+  held: HeldUnitPreferences;
+  needs: OnboardingNeeds;
+  offers: OnboardingOffers;
+}
+
 /**
  * The steps as they should be READ, given what the account already holds.
  *
@@ -424,17 +590,28 @@ export function accountHoldsBothUnits(held: HeldUnitPreferences): boolean {
  * completion gate below waiting for an answer to a question the flow will
  * never show.
  *
+ * A follow-up that does not apply to the record reads as `skipped`, for the
+ * same reason: nothing may wait on a screen the flow will not show.
+ *
  * Read-side only: the stored ledger keeps saying `pending`, because the person
  * really has not answered it, and an answer given later still lands.
  */
 export function resolveOnboardingSteps(
   steps: readonly OnboardingStepState[],
-  held: HeldUnitPreferences,
+  context: OnboardingResolveContext,
 ): OnboardingStepState[] {
-  if (!accountHoldsBothUnits(held)) return [...steps];
-  return steps.map((step) =>
-    step.id === "units" && step.status === "pending"
-      ? { ...step, status: "done" as const }
-      : step,
-  );
+  const holdsUnits = accountHoldsBothUnits(context.held);
+  return steps.map((step) => {
+    if (step.status !== "pending") return step;
+    if (step.id === "units" && holdsUnits) {
+      return { ...step, status: "done" as const };
+    }
+    if (
+      isOnboardingFollowUpStep(step.id) &&
+      !followUpApplies(step.id, context.needs, context.offers)
+    ) {
+      return { ...step, status: "skipped" as const };
+    }
+    return step;
+  });
 }

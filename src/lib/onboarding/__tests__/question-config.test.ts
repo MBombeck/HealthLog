@@ -110,20 +110,22 @@ describe("units", () => {
   it("asks only about the units the ticked areas need", () => {
     expect(
       unitQuestionsFor({ ...emptyOnboardingNeeds(), areas: ["glucose"] }),
-    ).toEqual({ glucose: true, weight: false });
+    ).toEqual({ glucose: true, weight: false, registry: false });
     expect(
       unitQuestionsFor({
         ...emptyOnboardingNeeds(),
         areas: ["weight-body", "glucose"],
       }),
-    ).toEqual({ glucose: true, weight: true });
+    ).toEqual({ glucose: true, weight: true, registry: false });
   });
 
   it("sends only the units that were asked and chosen", () => {
     const body = unitsAnswerBody({
-      asked: { glucose: true, weight: false },
+      asked: { glucose: true, weight: false, registry: false },
       glucoseUnit: "mmol/L",
       unitPreference: "imperial",
+      timezone: null,
+      medicineRegistry: null,
     });
     expect(body).toEqual({ step: "units", units: { glucoseUnit: "mmol/L" } });
     expect(onboardingAnswerSchema.safeParse(body).success).toBe(true);
@@ -133,17 +135,21 @@ describe("units", () => {
     // An empty units answer marked Q6 done without recording a preference.
     expect(
       unitsAnswerBody({
-        asked: { glucose: true, weight: true },
+        asked: { glucose: true, weight: true, registry: false },
         glucoseUnit: null,
         unitPreference: null,
+        timezone: null,
+        medicineRegistry: null,
       }),
     ).toBeNull();
     // One of two asked questions answered is still an answer.
     expect(
       unitsAnswerBody({
-        asked: { glucose: true, weight: true },
+        asked: { glucose: true, weight: true, registry: false },
         glucoseUnit: "mg/dL",
         unitPreference: null,
+        timezone: null,
+        medicineRegistry: null,
       }),
     ).toEqual({ step: "units", units: { glucoseUnit: "mg/dL" } });
   });

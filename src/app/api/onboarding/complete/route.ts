@@ -25,6 +25,7 @@ import {
   readOnboardingRecordState,
   toOnboardingStateDto,
 } from "@/lib/onboarding/needs-store";
+import { loadOnboardingOffers } from "@/lib/onboarding/load-offers";
 import { readManagedProfileForGuardian } from "@/lib/managed-profiles/lifecycle";
 import { writeRecordModulePreferences } from "@/lib/record-settings/modules";
 import { NextRequest } from "next/server";
@@ -183,6 +184,17 @@ async function refuseManagedRecord(
  * needs flow — a legacy wizard completion then answers exactly the body it
  * always did.
  */
+/** The ledger as published: units and the follow-ups resolved (1.49). */
+async function resolvedFlow(
+  userId: string,
+  state: ReturnType<typeof readOnboardingRecordState>,
+  held: HeldUnitPreferences,
+) {
+  const offers = await loadOnboardingOffers(userId);
+  const context = { held, needs: state.needs, offers };
+  return { offers, steps: resolveOnboardingSteps(state.steps, context) };
+}
+
 async function completeNeedsFlow(
   userId: string,
   held: HeldUnitPreferences,
@@ -199,7 +211,7 @@ async function completeNeedsFlow(
   // The units question answers itself for an account that already holds both
   // preferences, so the gate and the published state read the same resolved
   // ledger rather than the raw one.
-  const steps = resolveOnboardingSteps(state.steps, held);
+  const { steps, offers } = await resolvedFlow(userId, state, held);
   if (state.needs.recordTarget === null) {
     // The row exists but Q1 was never answered, so there is nothing to derive
     // from. Stamping a completion here would claim a setup that did not happen.
@@ -207,7 +219,7 @@ async function completeNeedsFlow(
       action: { name: "onboarding.needs.complete" },
       meta: { outcome: "no_answers" },
     });
-    return toOnboardingStateDto(record, held);
+    return toOnboardingStateDto(record, held, offers);
   }
   if (!everyOnboardingQuestionSettled(steps)) {
     // The confirm screen is the only caller that may derive, and it is reached
@@ -222,7 +234,7 @@ async function completeNeedsFlow(
       action: { name: "onboarding.needs.complete" },
       meta: { outcome: "incomplete" },
     });
-    return toOnboardingStateDto(record, held);
+    return toOnboardingStateDto(record, held, offers);
   }
 
   const now = new Date();
@@ -399,5 +411,5 @@ async function completeNeedsFlow(
     },
   });
 
-  return toOnboardingStateDto(written, held);
+  return toOnboardingStateDto(written, held, offers);
 }

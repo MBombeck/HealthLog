@@ -7,6 +7,10 @@
  * Skip is the way past a question with no opinion, and Skip says so on the
  * ledger.
  *
+ * Since 1.49 the screen is "Region & units" and always carries the time zone,
+ * filled with the account's own; confirming it is an answer, so "Continue" is
+ * live from the start and the body is never empty.
+ *
  * Rendered server-side, this repo's component-test convention.
  */
 import { renderToStaticMarkup } from "react-dom/server";
@@ -38,6 +42,7 @@ function state(
     needs: { ...emptyOnboardingNeeds(), recordTarget: "me", ...needs },
     completedAt: null,
     firstResult: null,
+    offers: { ai: false },
   };
 }
 
@@ -64,18 +69,31 @@ function nextIsDisabled(html: string): boolean {
 }
 
 describe("<UnitsScreen>", () => {
-  it("does not let the person continue without choosing a unit", () => {
+  it("offers Continue with the time zone already filled, and Skip beside it", () => {
     const html = render({ areas: ["glucose"] });
-    expect(nextIsDisabled(html)).toBe(true);
-    // Skip is still there: it is the honest way past a question with no
-    // opinion, and it says "skipped" on the ledger.
+    expect(nextIsDisabled(html)).toBe(false);
+    expect(html).toContain('data-slot="onboarding-question-timezone"');
     expect(html).toContain('data-slot="onboarding-skip"');
+  });
+
+  it("asks for the medicine registry only when medication was chosen", () => {
+    expect(render({ areas: ["glucose"] })).not.toContain(
+      'data-slot="onboarding-question-medicine-registry"',
+    );
+    expect(render({ medication: "yes" })).toContain(
+      'data-slot="onboarding-question-medicine-registry"',
+    );
   });
 
   it("lets the person continue once a unit is chosen", () => {
     const html = render({
       areas: ["glucose"],
-      units: { glucoseUnit: "mg/dL", unitPreference: null },
+      units: {
+        glucoseUnit: "mg/dL",
+        unitPreference: null,
+        timezone: null,
+        medicineRegistry: null,
+      },
     });
     expect(nextIsDisabled(html)).toBe(false);
   });

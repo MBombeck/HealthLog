@@ -18,6 +18,7 @@ import {
   defaultOnboardingSteps,
   everyOnboardingQuestionSettled,
   hasEnteredOnboardingFlow,
+  isOnboardingFollowUpStep,
   ONBOARDING_QUESTION_STEP_IDS,
   emptyOnboardingNeeds,
   isOnboardingSettled,
@@ -35,6 +36,7 @@ function blank() {
     needs: emptyOnboardingNeeds(),
     steps: defaultOnboardingSteps(),
     firstResult: null,
+    offers: { ai: false },
   };
 }
 
@@ -89,6 +91,8 @@ describe("parseOnboardingNeeds", () => {
     expect(parsed.units).toEqual({
       glucoseUnit: "mmol/L",
       unitPreference: null,
+      timezone: null,
+      medicineRegistry: null,
     });
   });
 });
@@ -218,6 +222,8 @@ describe("applyOnboardingAnswer", () => {
     expect(one.needs.units).toEqual({
       glucoseUnit: "mmol/L",
       unitPreference: "imperial",
+      timezone: null,
+      medicineRegistry: null,
     });
   });
 });
@@ -254,6 +260,7 @@ describe("isOnboardingSettled", () => {
       target: null,
       completedAt: "2026-09-10T08:01:00.000Z",
     },
+    offers: { ai: false },
   };
 
   it("settles a record that never entered the flow", () => {
@@ -313,6 +320,7 @@ describe("isOnboardingSettled", () => {
         needs: emptyOnboardingNeeds(),
         completedAt: null,
         firstResult: null,
+        offers: { ai: false },
       }),
     ).toBe(true);
   });
@@ -324,6 +332,7 @@ describe("hasEnteredOnboardingFlow", () => {
     needs: emptyOnboardingNeeds(),
     completedAt: null,
     firstResult: null,
+    offers: { ai: false },
   };
 
   it("is false for a record the flow never touched", () => {
@@ -356,8 +365,9 @@ describe("hasEnteredOnboardingFlow", () => {
       hasEnteredOnboardingFlow({
         ...blankState,
         steps: resolveOnboardingSteps(defaultOnboardingSteps(), {
-          glucoseUnit: "mg/dL",
-          unitPreference: "metric",
+          held: { glucoseUnit: "mg/dL", unitPreference: "metric" },
+          needs: emptyOnboardingNeeds(),
+          offers: { ai: false },
         }),
       }),
     ).toBe(false);
@@ -410,8 +420,9 @@ describe("the unit preferences the account already holds", () => {
 
 describe("resolveOnboardingSteps", () => {
   const held = {
-    glucoseUnit: "mg/dL",
-    unitPreference: "metric",
+    held: { glucoseUnit: "mg/dL", unitPreference: "metric" },
+    needs: emptyOnboardingNeeds(),
+    offers: { ai: false },
   } as const;
 
   it("marks units done when the account already holds both preferences", () => {
@@ -425,10 +436,11 @@ describe("resolveOnboardingSteps", () => {
       { glucoseUnit: null, unitPreference: "metric" },
       { glucoseUnit: null, unitPreference: null },
     ] as const) {
-      const resolved = resolveOnboardingSteps(
-        defaultOnboardingSteps(),
-        partial,
-      );
+      const resolved = resolveOnboardingSteps(defaultOnboardingSteps(), {
+        held: partial,
+        needs: emptyOnboardingNeeds(),
+        offers: { ai: false },
+      });
       expect(resolved.find((s) => s.id === "units")?.status).toBe("pending");
     }
   });
@@ -443,13 +455,13 @@ describe("resolveOnboardingSteps", () => {
     ).toBe("skipped");
   });
 
-  it("touches no other step", () => {
+  it("touches no question, confirm, first-result or done step", () => {
     const resolved = resolveOnboardingSteps(defaultOnboardingSteps(), held);
-    expect(
-      resolved.filter((s) => s.id !== "units").map((s) => s.status),
-    ).toEqual(
+    const untouched = (s: { id: string }) =>
+      s.id !== "units" && !isOnboardingFollowUpStep(s.id);
+    expect(resolved.filter(untouched).map((s) => s.status)).toEqual(
       defaultOnboardingSteps()
-        .filter((s) => s.id !== "units")
+        .filter(untouched)
         .map((s) => s.status),
     );
   });

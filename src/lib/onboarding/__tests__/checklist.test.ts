@@ -36,6 +36,7 @@ function onboardingState(
     needs: { ...emptyOnboardingNeeds(), recordTarget: "me", ...needs },
     completedAt: "2026-09-10T08:00:00.000Z",
     firstResult: null,
+    offers: { ai: false },
     ...overrides,
   };
 }
@@ -610,6 +611,7 @@ describe("shouldShowChecklist and the setup flow", () => {
       needs: emptyOnboardingNeeds(),
       completedAt: null,
       firstResult: null,
+      offers: { ai: false },
     };
     expect(
       shouldShowChecklist({
@@ -655,6 +657,7 @@ describe("isStillInSetup", () => {
       needs: emptyOnboardingNeeds(),
       completedAt: null,
       firstResult: null,
+      offers: { ai: false },
     };
     expect(
       isStillInSetup({
