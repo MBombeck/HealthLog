@@ -231,11 +231,18 @@ describe("DELETE /api/medications/[id]/intake/[eventId] — one-shot reconcile",
     expect(calls).toContain("medication.oneShot.reconciled");
 
     // (#22) — the undo queues exactly one cross-device sync fan-out so
-    // the user's other iOS devices reconcile the restored dose state.
+    // the user's other iOS devices reconcile the restored dose state, and
+    // announces the undone take as reopened.
     expect(queueMedicationIntakeSync).toHaveBeenCalledTimes(1);
     expect(queueMedicationIntakeSync).toHaveBeenCalledWith({
       userId: "user-1",
       originDeviceToken: null,
+      recorded: expect.objectContaining({
+        intakeId: "e1",
+        outcome: "reopened",
+        takenAt: null,
+        takenVia: null,
+      }),
     });
   });
 

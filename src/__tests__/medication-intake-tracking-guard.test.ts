@@ -76,6 +76,8 @@ const INTAKE_MAY_SEE_EVERY_ROW: Record<string, string> = {
     "one medication's recorded history, listed",
   "app/api/medications/[id]/intake/bulk-delete/route.ts":
     "deletes rows the person chose",
+  "app/api/medications/[id]/intake/purge/route.ts":
+    "the recent takes and skips a purge of one medication removes, announced as reopened, no rate",
   "lib/medications/update-medication/write.ts":
     "one medication's open slots, tombstoned on a schedule replace or the tracking switch",
   "lib/medications/course-end-placeholders.ts":
