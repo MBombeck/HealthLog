@@ -64,18 +64,21 @@ function SignalRow({ signal }: { signal: SetupHealthSignal }) {
             signal.params,
           )}
         </p>
-        <div className="flex flex-wrap gap-x-4 gap-y-1">
-          {signal.fixPath && signal.state !== "ok" ? (
-            <InlineAction asChild size="sm" className="font-medium">
-              <Link href={signal.fixPath}>{t("admin.setupHealth.fix")}</Link>
+        {/* A row that is fine needs no way to fix it. */}
+        {signal.state !== "ok" ? (
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            {signal.fixPath ? (
+              <InlineAction asChild size="sm" className="font-medium">
+                <Link href={signal.fixPath}>{t("admin.setupHealth.fix")}</Link>
+              </InlineAction>
+            ) : null}
+            <InlineAction asChild size="sm" tone="muted">
+              <a href={signal.docsUrl} target="_blank" rel="noreferrer">
+                {t("admin.setupHealth.docs")}
+              </a>
             </InlineAction>
-          ) : null}
-          <InlineAction asChild size="sm" tone="muted">
-            <a href={signal.docsUrl} target="_blank" rel="noreferrer">
-              {t("admin.setupHealth.docs")}
-            </a>
-          </InlineAction>
-        </div>
+          </div>
+        ) : null}
       </div>
     </li>
   );

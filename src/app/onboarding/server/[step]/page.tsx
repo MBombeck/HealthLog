@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
-import { SetupFrame } from "@/components/onboarding/onboarding-shell";
+import { SetupFrame } from "@/components/onboarding/setup-frame";
 import { ServerSetupStep } from "@/components/onboarding/server/server-setup-step";
 import { getSession } from "@/lib/auth/session";
 import {
