@@ -23,6 +23,7 @@ import { FolderOpen, Loader2, SearchX, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ContextLinks } from "@/components/layout/context-links";
 import { PageHeader } from "@/components/ui/page-header";
 import { PullToRefreshIndicator } from "@/components/ui/pull-to-refresh-indicator";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
@@ -219,6 +220,7 @@ export function DocumentsView() {
           ) : null
         }
       />
+      <ContextLinks page="/documents" />
 
       {canManageDocuments && (
         <UploadZone
@@ -271,9 +273,8 @@ export function DocumentsView() {
         ) : (
           <div
             data-slot="documents-loading"
-            // The archive's tile shape (a 4:3 preview over two text lines),
-            // in the timeline's column counts, so the grid does not jump when
-            // the first page lands.
+            // The archive's tile shape (a 4:3 preview over two text lines) in
+            // the timeline's column counts: the grid holds when a page lands.
             className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4"
           >
             {Array.from({ length: 8 }, (_, i) => (

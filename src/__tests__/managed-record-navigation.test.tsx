@@ -85,7 +85,13 @@ function renderSettings(pathname = "/settings/security") {
  * the anamnesis form had no page a Guardian could open, while the routes
  * behind it had admitted the write since the level shipped.
  */
-const MANAGED_KINDS = new Set(["managed-guardian", "manage-writable"]);
+const MANAGED_KINDS = new Set([
+  "managed-guardian",
+  "manage-writable",
+  // A page of parts, each following its routes' guard: Health record holds
+  // the report, its schedule and the care calendar, all three a guardian's.
+  "record-surface",
+]);
 
 describe("managed record navigation", () => {
   it("shows only managed settings destinations while retaining an unavailable deep-link heading", () => {
@@ -103,8 +109,10 @@ describe("managed record navigation", () => {
     // emptied either would make one of the loops below prove nothing.
     expect(managedDestinations.length).toBeGreaterThan(1);
     expect(unavailableDestinations.length).toBeGreaterThan(1);
-    // And the destination this release opened is really on the offered side.
+    // And the destinations opened for a guardian are really on the offered
+    // side.
     expect(managedDestinations.map((s) => s.slug)).toContain("anamnesis");
+    expect(managedDestinations.map((s) => s.slug)).toContain("health-record");
 
     expect(html).toContain('data-active-record-id="managed-record"');
     expect(html).toContain('id="settings-section-security-title"');

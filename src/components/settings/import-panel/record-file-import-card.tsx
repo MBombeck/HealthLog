@@ -41,6 +41,15 @@ export interface RecordFileImportJob {
   failureReason: string | null;
 }
 
+/**
+ * The card's anchor per kind, written out so the search palette's anchor
+ * check (`settings-cards.test.ts`) can find each one.
+ */
+const RECORD_FILE_IMPORT_ANCHORS: Record<CardKind, { anchor: string }> = {
+  gadgetbridge: { anchor: "import-gadgetbridge" },
+  fhir_bundle: { anchor: "import-fhir-bundle" },
+};
+
 /** Literal `t(...)` calls, so the i18n call-site guard sees every key. */
 function useCopy(kind: CardKind) {
   const { t } = useTranslations();
@@ -157,7 +166,7 @@ export function RecordFileImportCard({ kind }: { kind: CardKind }) {
   return (
     <ImportCardShell
       testId={testId}
-      anchor={`import-${kind.replace("_", "-")}`}
+      anchor={RECORD_FILE_IMPORT_ANCHORS[kind].anchor}
       icon={kind === "gadgetbridge" ? Watch : FileHeart}
       title={copy.title}
       description={copy.description}

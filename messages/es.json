@@ -634,7 +634,14 @@
     "vaccinations": "Vacunas",
     "mentalWellbeing": "Bienestar mental",
     "timeline": "Cronología",
-    "seizures": "Crisis"
+    "seizures": "Crisis",
+    "emergencyCard": "Tarjeta de emergencia",
+    "groups": {
+      "tracking": "Seguimiento",
+      "record": "Historial médico",
+      "analysis": "Análisis"
+    },
+    "dueCount": "{label}, {count} pendientes"
   },
   "auth": {
     "login": "Iniciar sesión",
@@ -8114,7 +8121,8 @@
     "tokenNameLabel": "Nombre del token",
     "displayCard": {
       "title": "Visualización",
-      "description": "Idioma, unidades y formatos; se guardan en cuanto los cambias."
+      "description": "Idioma, unidades y formatos; se guardan en cuanto los cambias.",
+      "themeDescription": "Sistema sigue a tu dispositivo entre claro y oscuro. La elección se guarda en este dispositivo."
     },
     "integrationCard": {
       "state": {
@@ -14997,6 +15005,23 @@
         "measurement": "Nota de una medición",
         "illness": "Diario de enfermedad"
       }
+    },
+    "keywords": {
+      "emergencyCard": "emergencia, ICE, QR, cartera, grupo sanguíneo, en caso de emergencia",
+      "notificationsPerChannel": "canales, matriz, push, Telegram, ntfy",
+      "medicineRegistry": "prospecto, registro, país, base de medicamentos",
+      "snooze": "posponer, más tarde, aplazar, snooze",
+      "securityAlerts": "seguridad, inicio de sesión, dispositivo nuevo, alerta",
+      "lastingChange": "cambio duradero, signo vital, tendencia, pulso en reposo, tensión",
+      "theme": "tema, modo oscuro, modo claro, apariencia, colores",
+      "gadgetbridge": "Gadgetbridge, Android, reloj inteligente, base de datos",
+      "fhirBundle": "FHIR, paquete, historia clínica, importar",
+      "healthConnectFolder": "Health Connect, WebDAV, Nextcloud, carpeta, Android",
+      "reportSchedule": "programación, mensual, trimestral, informe médico, automático",
+      "careCalendar": "calendario, ICS, suscripción, citas, revisiones, vacunas",
+      "whoHasAccess": "acceso, quién ve, compartir, enlaces, tokens, sesiones",
+      "adminPush": "push, relé, Web Push, VAPID, APNs, entrega",
+      "adminSystemStatus": "migraciones, versión, actualización, canal, edge, base de datos"
     }
   },
   "shortcuts": {
@@ -15680,7 +15705,7 @@
   "careFeed": {
     "sectionTitle": "Calendario",
     "sectionSubtitle": "Tus citas y lo que vence, en la app de calendario que ya usas.",
-    "title": "Suscripción de calendario de citas y vencimientos",
+    "title": "Calendario de salud",
     "description": "Las visitas reservadas a su hora, y los chequeos y refuerzos de vacunas el día que vencen.",
     "loadError": "No se pudo cargar la suscripción de calendario.",
     "linkHidden": "Hay un enlace activo que empieza por {prefix}. Solo se muestra una vez, al crearlo; desactiva y vuelve a activar la suscripción para obtener uno nuevo.",
@@ -15782,7 +15807,6 @@
     "page": {
       "title": "Tarjeta de emergencia",
       "description": "Tus datos de emergencia para cuando estás fuera de casa.",
-      "back": "Perfil de salud",
       "loadError": "No se pudo cargar la tarjeta de emergencia.",
       "editHint": "El grupo sanguíneo, los contactos, los implantes y las declaraciones vienen de tus datos de emergencia.",
       "editLink": "Editarlos",
@@ -15805,6 +15829,9 @@
       "ORGAN_DONOR": "Donación de órganos",
       "NOTE": "Notas adicionales",
       "DATE_OF_BIRTH": "Fecha de nacimiento"
+    },
+    "entry": {
+      "description": "Grupo sanguíneo, alergias, medicamentos y contactos para una emergencia, con copia sin conexión, tarjeta y enlace QR."
     }
   }
 }

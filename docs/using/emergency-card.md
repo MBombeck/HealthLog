@@ -19,9 +19,15 @@ The card is assembled from what you already keep in HealthLog:
   state;
 - your date of birth.
 
-Open it from **Emergency information** with **Open the emergency card**, or go
-to `/emergency-card`. It is always your own card: inside a record someone
-shared with you, you see your own card, never theirs.
+Open **Emergency card** in the navigation (on a phone under **More**), or use
+the button on **Emergency information** in **Settings > Medical history**, the
+row in **Settings > Health record**, or search for "emergency card". The
+address is `/emergency-card`.
+
+It is the card of the record on screen. In your own record that is yours. The
+guardian of a managed profile holds the profile's card, so inside that profile
+the page shows and manages the profile's card. Someone who shares an adult's
+record never sees or manages that person's card, at any access level.
 
 ## On your phone, without a connection
 
@@ -66,7 +72,7 @@ unknown, revoked or expired link with the same "not found", keeps it out of
 its own logs, and never caches the page. Changing your password, or an
 administrator resetting it, revokes it as well. It is not part of a backup: after a
 restore, make a new link. If the operator turns off the **API** switch
-("Allow API endpoints and API tokens.") under **Admin > Services**, the link
+("Allow API endpoints and API tokens.") under **Admin > Push and channels**, the link
 stops working too, as do the cycle and care calendar feed links.
 
 ## Wallet passes

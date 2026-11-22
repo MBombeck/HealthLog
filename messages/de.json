@@ -634,7 +634,14 @@
     "vaccinations": "Impfungen",
     "mentalWellbeing": "Seelisches Wohlbefinden",
     "timeline": "Zeitleiste",
-    "seizures": "Anfälle"
+    "seizures": "Anfälle",
+    "emergencyCard": "Notfallkarte",
+    "groups": {
+      "tracking": "Erfassung",
+      "record": "Gesundheitsakte",
+      "analysis": "Auswertung"
+    },
+    "dueCount": "{label}, {count} fällig"
   },
   "auth": {
     "login": "Anmelden",
@@ -8114,7 +8121,8 @@
     "tokenNameLabel": "Token-Name",
     "displayCard": {
       "title": "Darstellung",
-      "description": "Sprache, Einheiten und Formate, gespeichert, sobald du sie änderst."
+      "description": "Sprache, Einheiten und Formate, gespeichert, sobald du sie änderst.",
+      "themeDescription": "System folgt deinem Gerät zwischen hell und dunkel. Die Wahl gilt auf diesem Gerät."
     },
     "integrationCard": {
       "state": {
@@ -14997,6 +15005,23 @@
         "measurement": "Notiz zu einem Messwert",
         "illness": "Krankheitstagebuch"
       }
+    },
+    "keywords": {
+      "emergencyCard": "Notfall, Notfallausweis, ICE, QR, Wallet, Blutgruppe",
+      "notificationsPerChannel": "Kanäle, Matrix, Push, Telegram, ntfy",
+      "medicineRegistry": "Beipackzettel, Packungsbeilage, Arzneiregister, Land, leaflet",
+      "snooze": "Snooze, später, verschieben, schlummern",
+      "securityAlerts": "Sicherheit, Anmeldung, Login, neues Gerät, Warnung",
+      "lastingChange": "dauerhafte Änderung, Vitalwert, Trend, Ruhepuls, Blutdruck",
+      "theme": "Design, Dunkelmodus, dunkel, hell, Darstellung, dark mode",
+      "gadgetbridge": "Gadgetbridge, Android, Smartwatch, Datenbank",
+      "fhirBundle": "FHIR, Bundle, Patientenakte, Import",
+      "healthConnectFolder": "Health Connect, WebDAV, Nextcloud, Ordner, Android",
+      "reportSchedule": "Zeitplan, monatlich, quartalsweise, Arztbericht, automatisch",
+      "careCalendar": "Kalender, ICS, Abo, Termine, Vorsorge, Impfungen",
+      "whoHasAccess": "Zugriff, wer sieht, Freigabe, Links, Tokens, Sitzungen",
+      "adminPush": "Push, Relay, Web Push, VAPID, APNs, Zustellung",
+      "adminSystemStatus": "Migrationen, Version, Update, Kanal, Edge, Datenbank"
     }
   },
   "shortcuts": {
@@ -15680,7 +15705,7 @@
   "careFeed": {
     "sectionTitle": "Kalender",
     "sectionSubtitle": "Deine Termine und was fällig wird, in der Kalender-App, die du schon nutzt.",
-    "title": "Kalender-Abo für Termine und Fälligkeiten",
+    "title": "Gesundheitskalender",
     "description": "Gebuchte Besuche zu ihrer Uhrzeit, Vorsorge und Impfauffrischungen am Tag ihrer Fälligkeit.",
     "loadError": "Das Kalender-Abo konnte nicht geladen werden.",
     "linkHidden": "Ein Link, der mit {prefix} beginnt, ist aktiv. Er wird nur einmal gezeigt, beim Erstellen; schalte das Abo aus und wieder ein, um einen neuen zu bekommen.",
@@ -15782,7 +15807,6 @@
     "page": {
       "title": "Notfallkarte",
       "description": "Deine Notfalldaten für unterwegs.",
-      "back": "Anamnese",
       "loadError": "Die Notfallkarte konnte nicht geladen werden.",
       "editHint": "Blutgruppe, Kontakte, Implantate und Verfügungen stammen aus deinen Notfalldaten.",
       "editLink": "Bearbeiten",
@@ -15805,6 +15829,9 @@
       "ORGAN_DONOR": "Organspende",
       "NOTE": "Weitere Hinweise",
       "DATE_OF_BIRTH": "Geburtsdatum"
+    },
+    "entry": {
+      "description": "Blutgruppe, Allergien, Medikamente und Kontakte für den Notfall, mit Offline-Kopie, Portemonnaie-Karte und QR-Link."
     }
   }
 }

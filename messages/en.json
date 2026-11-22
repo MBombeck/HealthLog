@@ -634,7 +634,14 @@
     "vaccinations": "Vaccinations",
     "mentalWellbeing": "Mental wellbeing",
     "timeline": "Timeline",
-    "seizures": "Seizures"
+    "seizures": "Seizures",
+    "emergencyCard": "Emergency card",
+    "groups": {
+      "tracking": "Tracking",
+      "record": "Health record",
+      "analysis": "Analysis"
+    },
+    "dueCount": "{label}, {count} due"
   },
   "auth": {
     "login": "Sign in",
@@ -8114,7 +8121,8 @@
     "tokenNameLabel": "Token name",
     "displayCard": {
       "title": "Display",
-      "description": "Language, units and formats, saved as soon as you change them."
+      "description": "Language, units and formats, saved as soon as you change them.",
+      "themeDescription": "System follows your device between light and dark. The choice is kept on this device."
     },
     "integrationCard": {
       "state": {
@@ -14997,6 +15005,23 @@
         "measurement": "Note on a reading",
         "illness": "Illness diary"
       }
+    },
+    "keywords": {
+      "emergencyCard": "emergency, ICE, QR, wallet, blood group, in case of emergency",
+      "notificationsPerChannel": "channels, matrix, push, Telegram, ntfy",
+      "medicineRegistry": "leaflet, package insert, registry, country, medicine database",
+      "snooze": "snooze, later, postpone, remind me later",
+      "securityAlerts": "security, sign-in, login, new device, alert",
+      "lastingChange": "lasting change, vital, trend, resting heart rate, blood pressure",
+      "theme": "theme, dark mode, light mode, appearance, colours",
+      "gadgetbridge": "Gadgetbridge, Android, smartwatch, database",
+      "fhirBundle": "FHIR, bundle, medical record, import",
+      "healthConnectFolder": "Health Connect, WebDAV, Nextcloud, folder, Android",
+      "reportSchedule": "schedule, monthly, quarterly, doctor report, automatic",
+      "careCalendar": "calendar, ICS, subscription, appointments, check-ups, vaccinations",
+      "whoHasAccess": "access, who can see, sharing, links, tokens, sessions",
+      "adminPush": "push, relay, Web Push, VAPID, APNs, delivery",
+      "adminSystemStatus": "migrations, version, update, channel, edge, database"
     }
   },
   "shortcuts": {
@@ -15680,7 +15705,7 @@
   "careFeed": {
     "sectionTitle": "Calendar",
     "sectionSubtitle": "Your appointments and what is coming due, in the calendar app you already use.",
-    "title": "Care calendar subscription",
+    "title": "Care calendar",
     "description": "Booked visits at their time, and check-ups and vaccination boosters on the day they come due.",
     "loadError": "The calendar subscription could not be loaded.",
     "linkHidden": "A link starting with {prefix} is active. It is shown only once, when it is made; turn the subscription off and on again for a new one.",
@@ -15782,7 +15807,6 @@
     "page": {
       "title": "Emergency card",
       "description": "Your emergency information for when you are away from home.",
-      "back": "Health profile",
       "loadError": "The emergency card could not be loaded.",
       "editHint": "Blood type, contacts, implants and the declarations come from your emergency details.",
       "editLink": "Edit them",
@@ -15805,6 +15829,9 @@
       "ORGAN_DONOR": "Organ donor",
       "NOTE": "Additional notes",
       "DATE_OF_BIRTH": "Date of birth"
+    },
+    "entry": {
+      "description": "Blood group, allergies, medications and contacts for an emergency, with an offline copy, a wallet card and a QR link."
     }
   }
 }

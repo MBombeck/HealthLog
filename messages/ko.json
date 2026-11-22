@@ -634,7 +634,14 @@
     "vaccinations": "예방접종",
     "mentalWellbeing": "정신 건강",
     "timeline": "타임라인",
-    "seizures": "발작"
+    "seizures": "발작",
+    "emergencyCard": "응급 카드",
+    "groups": {
+      "tracking": "기록",
+      "record": "건강 기록",
+      "analysis": "분석"
+    },
+    "dueCount": "{label}, {count}개 예정"
   },
   "auth": {
     "login": "로그인",
@@ -8114,7 +8121,8 @@
     "tokenNameLabel": "토큰 이름",
     "displayCard": {
       "title": "표시",
-      "description": "언어, 단위, 형식은 바꾸는 즉시 저장돼요."
+      "description": "언어, 단위, 형식은 바꾸는 즉시 저장돼요.",
+      "themeDescription": "시스템은 기기 설정에 따라 밝은 테마와 어두운 테마를 오갑니다. 선택은 이 기기에 저장됩니다."
     },
     "integrationCard": {
       "state": {
@@ -14997,6 +15005,23 @@
         "measurement": "측정값 메모",
         "illness": "질병 일지"
       }
+    },
+    "keywords": {
+      "emergencyCard": "응급, 비상, ICE, QR, 지갑, 혈액형",
+      "notificationsPerChannel": "채널, 매트릭스, 푸시, Telegram, ntfy",
+      "medicineRegistry": "첨부 문서, 설명서, 의약품 등록부, 국가",
+      "snooze": "다시 알림, 나중에, 미루기, 스누즈",
+      "securityAlerts": "보안, 로그인, 새 기기, 경고",
+      "lastingChange": "지속적 변화, 활력 징후, 추세, 안정 시 심박수, 혈압",
+      "theme": "테마, 다크 모드, 라이트 모드, 화면, 색상",
+      "gadgetbridge": "Gadgetbridge, 안드로이드, 스마트워치, 데이터베이스",
+      "fhirBundle": "FHIR, 번들, 진료 기록, 가져오기",
+      "healthConnectFolder": "Health Connect, WebDAV, Nextcloud, 폴더, 안드로이드",
+      "reportSchedule": "일정, 매월, 분기별, 진료 보고서, 자동",
+      "careCalendar": "캘린더, ICS, 구독, 예약, 검진, 예방접종",
+      "whoHasAccess": "접근, 누가 보는지, 공유, 링크, 토큰, 세션",
+      "adminPush": "푸시, 릴레이, Web Push, VAPID, APNs, 전송",
+      "adminSystemStatus": "마이그레이션, 버전, 업데이트, 채널, edge, 데이터베이스"
     }
   },
   "shortcuts": {
@@ -15680,7 +15705,7 @@
   "careFeed": {
     "sectionTitle": "캘린더",
     "sectionSubtitle": "예약과 다가오는 일정을 이미 쓰는 캘린더 앱에서 확인하세요.",
-    "title": "진료 캘린더 구독",
+    "title": "건강 캘린더",
     "description": "예약된 방문은 해당 시간에, 검진과 백신 추가 접종은 예정일에 표시됩니다.",
     "loadError": "캘린더 구독을 불러오지 못했습니다.",
     "linkHidden": "{prefix}(으)로 시작하는 링크가 활성 상태입니다. 링크는 생성할 때 한 번만 표시됩니다. 새 링크가 필요하면 구독을 껐다가 다시 켜세요.",
@@ -15782,7 +15807,6 @@
     "page": {
       "title": "응급 카드",
       "description": "외출 시를 위한 응급 정보입니다.",
-      "back": "건강 프로필",
       "loadError": "응급 카드를 불러오지 못했습니다.",
       "editHint": "혈액형, 연락처, 이식 장치 및 의사 표시는 응급 정보에서 가져옵니다.",
       "editLink": "편집",
@@ -15805,6 +15829,9 @@
       "ORGAN_DONOR": "장기 기증",
       "NOTE": "추가 메모",
       "DATE_OF_BIRTH": "생년월일"
+    },
+    "entry": {
+      "description": "응급 상황용 혈액형, 알레르기, 약, 연락처. 오프라인 사본, 지갑용 카드, QR 링크를 함께 제공합니다."
     }
   }
 }

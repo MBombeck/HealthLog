@@ -634,7 +634,14 @@
     "vaccinations": "Vaccinazioni",
     "mentalWellbeing": "Benessere mentale",
     "timeline": "Cronologia",
-    "seizures": "Crisi"
+    "seizures": "Crisi",
+    "emergencyCard": "Tessera di emergenza",
+    "groups": {
+      "tracking": "Monitoraggio",
+      "record": "Cartella clinica",
+      "analysis": "Analisi"
+    },
+    "dueCount": "{label}, {count} da fare"
   },
   "auth": {
     "login": "Accedi",
@@ -8114,7 +8121,8 @@
     "tokenNameLabel": "Nome del token",
     "displayCard": {
       "title": "Visualizzazione",
-      "description": "Lingua, unità e formati, salvati appena li modifichi."
+      "description": "Lingua, unità e formati, salvati appena li modifichi.",
+      "themeDescription": "Sistema segue il dispositivo tra chiaro e scuro. La scelta resta su questo dispositivo."
     },
     "integrationCard": {
       "state": {
@@ -14997,6 +15005,23 @@
         "measurement": "Nota su una misurazione",
         "illness": "Diario di malattia"
       }
+    },
+    "keywords": {
+      "emergencyCard": "emergenza, ICE, QR, portafoglio, gruppo sanguigno, in caso di emergenza",
+      "notificationsPerChannel": "canali, matrice, push, Telegram, ntfy",
+      "medicineRegistry": "foglietto illustrativo, bugiardino, registro, paese, banca dati farmaci",
+      "snooze": "posticipa, più tardi, rimanda, snooze",
+      "securityAlerts": "sicurezza, accesso, nuovo dispositivo, avviso",
+      "lastingChange": "cambiamento duraturo, parametro vitale, tendenza, frequenza a riposo, pressione",
+      "theme": "tema, modalità scura, modalità chiara, aspetto, colori",
+      "gadgetbridge": "Gadgetbridge, Android, smartwatch, banca dati",
+      "fhirBundle": "FHIR, pacchetto, cartella clinica, importazione",
+      "healthConnectFolder": "Health Connect, WebDAV, Nextcloud, cartella, Android",
+      "reportSchedule": "pianificazione, mensile, trimestrale, referto medico, automatico",
+      "careCalendar": "calendario, ICS, abbonamento, appuntamenti, controlli, vaccini",
+      "whoHasAccess": "accesso, chi vede, condivisione, link, token, sessioni",
+      "adminPush": "push, relay, Web Push, VAPID, APNs, recapito",
+      "adminSystemStatus": "migrazioni, versione, aggiornamento, canale, edge, database"
     }
   },
   "shortcuts": {
@@ -15680,7 +15705,7 @@
   "careFeed": {
     "sectionTitle": "Calendario",
     "sectionSubtitle": "I tuoi appuntamenti e le scadenze, nell'app calendario che usi già.",
-    "title": "Abbonamento al calendario di appuntamenti e scadenze",
+    "title": "Calendario della salute",
     "description": "Le visite prenotate al loro orario, i controlli e i richiami dei vaccini nel giorno della scadenza.",
     "loadError": "Non è stato possibile caricare l'abbonamento al calendario.",
     "linkHidden": "È attivo un link che inizia con {prefix}. Viene mostrato una sola volta, alla creazione; disattiva e riattiva l'abbonamento per averne uno nuovo.",
@@ -15782,7 +15807,6 @@
     "page": {
       "title": "Tessera di emergenza",
       "description": "I tuoi dati di emergenza per quando sei fuori casa.",
-      "back": "Profilo sanitario",
       "loadError": "Impossibile caricare la tessera di emergenza.",
       "editHint": "Gruppo sanguigno, contatti, impianti e dichiarazioni provengono dai tuoi dati di emergenza.",
       "editLink": "Modificali",
@@ -15805,6 +15829,9 @@
       "ORGAN_DONOR": "Donazione di organi",
       "NOTE": "Note aggiuntive",
       "DATE_OF_BIRTH": "Data di nascita"
+    },
+    "entry": {
+      "description": "Gruppo sanguigno, allergie, farmaci e contatti per un’emergenza, con copia offline, tessera e link QR."
     }
   }
 }

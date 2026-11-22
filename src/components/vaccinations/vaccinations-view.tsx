@@ -16,6 +16,7 @@ import { Plus, Syringe } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ContextLinks } from "@/components/layout/context-links";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -110,6 +111,8 @@ export function VaccinationsView() {
           !isLoading && !isError && records.length === 0 ? null : addButton
         }
       />
+      {/* Boosters coming due also reach the care calendar. */}
+      <ContextLinks page="/vaccinations" />
 
       <VaccinationSheet
         key={session}

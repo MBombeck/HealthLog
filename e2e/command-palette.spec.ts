@@ -120,6 +120,36 @@ test.describe("command palette", () => {
     ]);
   });
 
+  test("finds the surfaces of the registry by the word people type", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/");
+    await shellReady(page);
+    for (const [query, entry] of [
+      ["emergency card", "nav:/emergency-card"],
+      ["snooze", "settings:notifications#dose-snooze"],
+      ["dark mode", "settings:account#theme"],
+      ["lasting change", "settings:notifications#lasting-change"],
+    ] as const) {
+      await page.keyboard.press("ControlOrMeta+k");
+      await expect(input(page)).toBeFocused();
+      await input(page).fill(query);
+      const active = await input(page).getAttribute("aria-activedescendant");
+      await expect(page.locator(`[id="${active}"]`)).toHaveAttribute(
+        "data-entry",
+        entry,
+      );
+      await page.keyboard.press("Escape");
+      await expect(palette(page)).toHaveCount(0);
+    }
+    // Enter on the emergency card opens the page.
+    await page.keyboard.press("ControlOrMeta+k");
+    await input(page).fill("emergency card");
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/emergency-card$/);
+  });
+
   test("Cmd/Ctrl+K, sleep, Enter opens the sleep page", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/");

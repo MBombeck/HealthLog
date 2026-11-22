@@ -634,7 +634,14 @@
     "vaccinations": "Vaccinaties",
     "mentalWellbeing": "Mentaal welzijn",
     "timeline": "Tijdlijn",
-    "seizures": "Aanvallen"
+    "seizures": "Aanvallen",
+    "emergencyCard": "Noodkaart",
+    "groups": {
+      "tracking": "Bijhouden",
+      "record": "Gezondheidsdossier",
+      "analysis": "Analyse"
+    },
+    "dueCount": "{label}, {count} open"
   },
   "auth": {
     "login": "Inloggen",
@@ -8114,7 +8121,8 @@
     "tokenNameLabel": "Tokennaam",
     "displayCard": {
       "title": "Weergave",
-      "description": "Taal, eenheden en notaties, opgeslagen zodra je ze wijzigt."
+      "description": "Taal, eenheden en notaties, opgeslagen zodra je ze wijzigt.",
+      "themeDescription": "Systeem volgt je apparaat tussen licht en donker. De keuze blijft op dit apparaat."
     },
     "integrationCard": {
       "state": {
@@ -14997,6 +15005,23 @@
         "measurement": "Notitie bij een meting",
         "illness": "Ziektedagboek"
       }
+    },
+    "keywords": {
+      "emergencyCard": "nood, noodgeval, ICE, QR, portemonnee, bloedgroep",
+      "notificationsPerChannel": "kanalen, matrix, push, Telegram, ntfy",
+      "medicineRegistry": "bijsluiter, register, land, geneesmiddelendatabase",
+      "snooze": "sluimeren, later, uitstellen, snooze",
+      "securityAlerts": "beveiliging, aanmelding, inloggen, nieuw apparaat, waarschuwing",
+      "lastingChange": "blijvende verandering, vitale waarde, trend, rusthartslag, bloeddruk",
+      "theme": "thema, donkere modus, lichte modus, weergave, kleuren",
+      "gadgetbridge": "Gadgetbridge, Android, smartwatch, databank",
+      "fhirBundle": "FHIR, bundel, medisch dossier, importeren",
+      "healthConnectFolder": "Health Connect, WebDAV, Nextcloud, map, Android",
+      "reportSchedule": "planning, maandelijks, per kwartaal, artsrapport, automatisch",
+      "careCalendar": "agenda, kalender, ICS, abonnement, afspraken, vaccinaties",
+      "whoHasAccess": "toegang, wie ziet, delen, links, tokens, sessies",
+      "adminPush": "push, relay, Web Push, VAPID, APNs, bezorging",
+      "adminSystemStatus": "migraties, versie, update, kanaal, edge, database"
     }
   },
   "shortcuts": {
@@ -15680,7 +15705,7 @@
   "careFeed": {
     "sectionTitle": "Agenda",
     "sectionSubtitle": "Je afspraken en wat eraan komt, in de agenda-app die je al gebruikt.",
-    "title": "Agenda-abonnement voor afspraken en vervaldata",
+    "title": "Zorgagenda",
     "description": "Geboekte bezoeken op hun tijd, controles en boosters op de dag dat ze aan de beurt zijn.",
     "loadError": "Het agenda-abonnement kon niet worden geladen.",
     "linkHidden": "Er is een link actief die begint met {prefix}. Hij wordt maar één keer getoond, bij het maken; zet het abonnement uit en weer aan voor een nieuwe.",
@@ -15782,7 +15807,6 @@
     "page": {
       "title": "Noodkaart",
       "description": "Je noodgegevens voor onderweg.",
-      "back": "Gezondheidsprofiel",
       "loadError": "De noodkaart kon niet worden geladen.",
       "editHint": "Bloedgroep, contacten, implantaten en verklaringen komen uit je noodgegevens.",
       "editLink": "Bewerken",
@@ -15805,6 +15829,9 @@
       "ORGAN_DONOR": "Orgaandonatie",
       "NOTE": "Aanvullende notities",
       "DATE_OF_BIRTH": "Geboortedatum"
+    },
+    "entry": {
+      "description": "Bloedgroep, allergieën, medicijnen en contactpersonen voor een noodgeval, met offline kopie, pasje en QR-link."
     }
   }
 }

@@ -634,7 +634,14 @@
     "vaccinations": "Szczepienia",
     "mentalWellbeing": "Dobrostan psychiczny",
     "timeline": "Oś czasu",
-    "seizures": "Napady"
+    "seizures": "Napady",
+    "emergencyCard": "Karta ratunkowa",
+    "groups": {
+      "tracking": "Śledzenie",
+      "record": "Dokumentacja zdrowotna",
+      "analysis": "Analiza"
+    },
+    "dueCount": "{label}, do zrobienia: {count}"
   },
   "auth": {
     "login": "Zaloguj się",
@@ -8114,7 +8121,8 @@
     "tokenNameLabel": "Nazwa tokena",
     "displayCard": {
       "title": "Wyświetlanie",
-      "description": "Język, jednostki i formaty zapisywane od razu po zmianie."
+      "description": "Język, jednostki i formaty zapisywane od razu po zmianie.",
+      "themeDescription": "Systemowy podąża za urządzeniem między jasnym a ciemnym. Wybór zostaje na tym urządzeniu."
     },
     "integrationCard": {
       "state": {
@@ -14997,6 +15005,23 @@
         "measurement": "Notatka do pomiaru",
         "illness": "Dziennik choroby"
       }
+    },
+    "keywords": {
+      "emergencyCard": "nagły wypadek, ICE, QR, portfel, grupa krwi, karta ICE",
+      "notificationsPerChannel": "kanały, macierz, push, Telegram, ntfy",
+      "medicineRegistry": "ulotka, rejestr, kraj, baza leków",
+      "snooze": "drzemka, później, odłóż, przypomnij później",
+      "securityAlerts": "bezpieczeństwo, logowanie, nowe urządzenie, alert",
+      "lastingChange": "trwała zmiana, parametr życiowy, trend, tętno spoczynkowe, ciśnienie",
+      "theme": "motyw, tryb ciemny, tryb jasny, wygląd, kolory",
+      "gadgetbridge": "Gadgetbridge, Android, smartwatch, baza danych",
+      "fhirBundle": "FHIR, pakiet, dokumentacja medyczna, import",
+      "healthConnectFolder": "Health Connect, WebDAV, Nextcloud, folder, katalog, Android",
+      "reportSchedule": "harmonogram, miesięcznie, kwartalnie, raport dla lekarza, automatycznie",
+      "careCalendar": "kalendarz, ICS, subskrypcja, wizyty, badania, szczepienia",
+      "whoHasAccess": "dostęp, kto widzi, udostępnianie, linki, tokeny, sesje",
+      "adminPush": "push, przekaźnik, Web Push, VAPID, APNs, dostarczanie",
+      "adminSystemStatus": "migracje, wersja, aktualizacja, kanał, edge, baza danych"
     }
   },
   "shortcuts": {
@@ -15680,7 +15705,7 @@
   "careFeed": {
     "sectionTitle": "Kalendarz",
     "sectionSubtitle": "Twoje wizyty i zbliżające się terminy w aplikacji kalendarza, której już używasz.",
-    "title": "Subskrypcja kalendarza wizyt i terminów",
+    "title": "Kalendarz zdrowia",
     "description": "Zarezerwowane wizyty o ich godzinie, badania i dawki przypominające w dniu, w którym przypadają.",
     "loadError": "Nie udało się wczytać subskrypcji kalendarza.",
     "linkHidden": "Aktywny jest link zaczynający się od {prefix}. Jest pokazywany tylko raz, przy tworzeniu; wyłącz i włącz subskrypcję ponownie, aby dostać nowy.",
@@ -15782,7 +15807,6 @@
     "page": {
       "title": "Karta ratunkowa",
       "description": "Twoje dane ratunkowe na czas poza domem.",
-      "back": "Profil zdrowia",
       "loadError": "Nie udało się wczytać karty ratunkowej.",
       "editHint": "Grupa krwi, kontakty, implanty i oświadczenia pochodzą z Twoich danych ratunkowych.",
       "editLink": "Edytuj",
@@ -15805,6 +15829,9 @@
       "ORGAN_DONOR": "Dawstwo narządów",
       "NOTE": "Dodatkowe uwagi",
       "DATE_OF_BIRTH": "Data urodzenia"
+    },
+    "entry": {
+      "description": "Grupa krwi, alergie, leki i kontakty na nagły wypadek, z kopią offline, kartą do portfela i linkiem QR."
     }
   }
 }

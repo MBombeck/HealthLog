@@ -1,6 +1,6 @@
 "use client";
 
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import { useRecordSurfacePart } from "@/hooks/use-record-surface";
 
 import { CycleCalendarFeedCard } from "./cycle-calendar-feed-card";
 import { CyclePregnancyCard } from "./cycle-pregnancy-card";
@@ -18,9 +18,8 @@ import type { CycleProfileDTO } from "./types";
  * there rather than opening onto a refusal.
  */
 export function CycleSettingsTab({ profile }: { profile: CycleProfileDTO }) {
-  const { inSharedRecord, recordKind, level } = useRecordCapabilities();
-  const mayHoldFeed =
-    !inSharedRecord || (recordKind === "managed" && level === "manage");
+  // The rule of the feed's routes (`RECORD_PAGE_SURFACES`).
+  const mayHoldFeed = useRecordSurfacePart("/cycle", "calendarFeed");
   return (
     <div className="space-y-4">
       <CyclePregnancyCard key={`p-${profile.updatedAt}`} profile={profile} />

@@ -634,7 +634,14 @@
     "vaccinations": "Vaccinations",
     "mentalWellbeing": "Bien-être mental",
     "timeline": "Chronologie",
-    "seizures": "Crises"
+    "seizures": "Crises",
+    "emergencyCard": "Carte d'urgence",
+    "groups": {
+      "tracking": "Suivi",
+      "record": "Dossier médical",
+      "analysis": "Analyse"
+    },
+    "dueCount": "{label}, {count} à faire"
   },
   "auth": {
     "login": "Se connecter",
@@ -8114,7 +8121,8 @@
     "tokenNameLabel": "Nom du jeton",
     "displayCard": {
       "title": "Affichage",
-      "description": "Langue, unités et formats, enregistrés dès que vous les modifiez."
+      "description": "Langue, unités et formats, enregistrés dès que vous les modifiez.",
+      "themeDescription": "Système suit votre appareil entre clair et sombre. Le choix est gardé sur cet appareil."
     },
     "integrationCard": {
       "state": {
@@ -14997,6 +15005,23 @@
         "measurement": "Note sur une mesure",
         "illness": "Journal de maladie"
       }
+    },
+    "keywords": {
+      "emergencyCard": "urgence, ICE, QR, portefeuille, groupe sanguin, en cas d'urgence",
+      "notificationsPerChannel": "canaux, matrice, push, Telegram, ntfy",
+      "medicineRegistry": "notice, notice du médicament, registre, pays, base des médicaments",
+      "snooze": "snooze, plus tard, reporter, rappel",
+      "securityAlerts": "sécurité, connexion, nouvel appareil, alerte",
+      "lastingChange": "changement durable, constante, tendance, pouls au repos, tension",
+      "theme": "thème, mode sombre, mode clair, apparence, couleurs",
+      "gadgetbridge": "Gadgetbridge, Android, montre connectée, base de données",
+      "fhirBundle": "FHIR, bundle, dossier médical, importation",
+      "healthConnectFolder": "Health Connect, WebDAV, Nextcloud, dossier partagé, Android",
+      "reportSchedule": "planification, mensuel, trimestriel, rapport médical, automatique",
+      "careCalendar": "calendrier, agenda, ICS, abonnement, rendez-vous, vaccins",
+      "whoHasAccess": "accès, qui voit, partage, liens, jetons, sessions",
+      "adminPush": "push, relais, Web Push, VAPID, APNs, diffusion",
+      "adminSystemStatus": "migrations, version, mise à jour, canal, edge, base de données"
     }
   },
   "shortcuts": {
@@ -15680,7 +15705,7 @@
   "careFeed": {
     "sectionTitle": "Calendrier",
     "sectionSubtitle": "Tes rendez-vous et ce qui arrive à échéance, dans l'application de calendrier que tu utilises déjà.",
-    "title": "Abonnement agenda des rendez-vous et échéances",
+    "title": "Calendrier santé",
     "description": "Les visites prévues à leur heure, les bilans et les rappels de vaccins le jour de leur échéance.",
     "loadError": "L'abonnement agenda n'a pas pu être chargé.",
     "linkHidden": "Un lien commençant par {prefix} est actif. Il n'est affiché qu'une fois, à sa création ; désactive puis réactive l'abonnement pour en obtenir un nouveau.",
@@ -15782,7 +15807,6 @@
     "page": {
       "title": "Carte d'urgence",
       "description": "Tes informations d'urgence quand tu n'es pas chez toi.",
-      "back": "Profil de santé",
       "loadError": "La carte d'urgence n'a pas pu être chargée.",
       "editHint": "Le groupe sanguin, les contacts, les implants et les déclarations viennent de tes informations d'urgence.",
       "editLink": "Les modifier",
@@ -15805,6 +15829,9 @@
       "ORGAN_DONOR": "Don d'organes",
       "NOTE": "Notes complémentaires",
       "DATE_OF_BIRTH": "Date de naissance"
+    },
+    "entry": {
+      "description": "Groupe sanguin, allergies, médicaments et contacts pour une urgence, avec copie hors ligne, carte et lien QR."
     }
   }
 }

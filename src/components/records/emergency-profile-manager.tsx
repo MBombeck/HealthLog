@@ -215,17 +215,23 @@ export function EmergencyProfileManager() {
       {textField("note", EMERGENCY_NOTE_MAX, 3)}
 
       <p className="text-muted-foreground text-xs">
-        {t("records.emergency.reportHint")}{" "}
-        <Link
-          href="/emergency-card"
-          className="text-primary underline-offset-4 hover:underline"
-          data-slot="emergency-card-entry"
-        >
-          {t("records.emergency.cardLink")}
-        </Link>
+        {t("records.emergency.reportHint")}
       </p>
 
+      {/* The card these details fill: a page of its own, so the way there is
+          a button in the action row (ui-standards §12), secondary to Save. */}
       <SettingsCardActions>
+        <Button
+          asChild
+          type="button"
+          variant="outline"
+          size="sm"
+          className="min-h-11 sm:min-h-9"
+        >
+          <Link href="/emergency-card" data-slot="emergency-card-entry">
+            {t("records.emergency.cardLink")}
+          </Link>
+        </Button>
         <Button
           type="button"
           size="sm"

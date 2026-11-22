@@ -87,6 +87,7 @@ export function ReportScheduleCard() {
   return (
     <SettingsCard data-slot="report-schedule">
       <SettingsCardHeader
+        anchor="report-schedule"
         icon={CalendarClock}
         title={t("reportSchedule.title")}
         description={t("reportSchedule.description")}

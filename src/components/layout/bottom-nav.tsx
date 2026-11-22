@@ -14,14 +14,16 @@ import { useQueryClient } from "@tanstack/react-query";
 import { medicationsPrefetchIntentProps } from "@/lib/queries/prefetch-medications";
 import {
   isNavDestinationActive,
-  isDestinationInSharedRecord,
   mobileMoreHubDestinations,
+  type MobileMoreHubEntry,
 } from "@/components/layout/nav-model";
 import { isSurfaceVisible } from "@/lib/modules/surface";
 import { useCallback, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavModules } from "@/hooks/use-nav-modules";
 import { useMounted } from "@/hooks/use-mounted";
+import { isSharedRecordPathOpen } from "@/lib/navigation/shared-record";
+import { MoreHubGroups } from "@/components/layout/more-hub-groups";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import {
   Sheet,
@@ -104,22 +106,22 @@ export function BottomNav() {
     visibleCaptureKinds(capabilities, CAPTURE_KIND_ORDER, user?.modules)
       .length > 0;
 
-  // v1.17.1 — the More hub is the model-computed hub: every visible
-  // feature destination that isn't a primary slot, plus the shared utility
-  // tail. Cycle is gated by the same flag the sidebar uses, so the two
-  // surfaces gate identically and cannot drift.
+  // v1.17.1 — the More hub is the model-computed hub: every visible feature
+  // destination that isn't a primary slot. Cycle is gated by the same flag
+  // the sidebar uses, so the two surfaces gate identically.
   // The Coach entry follows the `coach` AI capability (a Coach that cannot
   // answer is not offered); the sidebar reads the same map.
   const navModules = useNavModules();
-  const moreHub = useMemo<ReadonlyArray<NavLink>>(
+  const moreHub = useMemo<ReadonlyArray<MobileMoreHubEntry>>(
     () =>
       mobileMoreHubDestinations({
         modules: navModules,
         mounted,
         sharedRecord,
         sections,
+        record: capabilities,
       }),
-    [navModules, mounted, sharedRecord, sections],
+    [navModules, mounted, sharedRecord, sections, capabilities],
   );
 
   // Every slot but Home asks two things: does sharing cover it, and does its
@@ -135,12 +137,12 @@ export function BottomNav() {
         // v1.36.0 — the fixed slot asks the shared destination model
         // whether sharing covers it, rather than carrying its own answer:
         // Insights drops out under a switch.
-        (!sharedRecord || isDestinationInSharedRecord(item.href, sections)) &&
+        (!sharedRecord || isSharedRecordPathOpen(item.href, capabilities)) &&
         mounted &&
         isSurfaceVisible(`nav:${item.href}`, navModules)
       );
     },
-    [navModules, mounted, sharedRecord, sections],
+    [navModules, mounted, sharedRecord, capabilities],
   );
 
   // Both fixed flanks run through the ONE slot filter, so a module-gated
@@ -281,56 +283,11 @@ export function BottomNav() {
             <SheetTitle>{t("nav.moreSheetTitle")}</SheetTitle>
             <SheetDescription>{t("nav.moreSheetDescription")}</SheetDescription>
           </SheetHeader>
-          {/* v1.22.1 — tighten the grid gutters (`px-3`) so each tile claims a
-              little more width on a 320 px phone; the long single-word labels
-              (de "Benachrichtigungen") then have room to break onto a clean
-              second line instead of clipping the last character at the tile
-              edge. It scrolls: a phone held sideways is shorter than the hub. */}
-          <div className="grid min-h-0 grid-cols-2 gap-2 overflow-y-auto overscroll-contain px-3 pt-4 pb-4">
-            {moreHub.map((item) => {
-              const isActive = isActiveLink(item.href);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMoreOpen(false)}
-                  aria-current={isActive ? "page" : undefined}
-                  // v1.12 — `min-h-14` matches the capture-picker tiles so
-                  // the equivalent tappable rows share one height at this
-                  // tier (and the larger row is a more comfortable target).
-                  // v1.22.1 — trim the inner padding/gap (`px-3`, `gap-2.5`)
-                  // to hand the label more horizontal room without changing
-                  // the shared tile height.
-                  className={cn(
-                    "border-border flex min-h-14 items-center gap-2.5 rounded-lg border px-3 py-3 transition-colors",
-                    isActive
-                      ? "text-primary bg-primary/5"
-                      : "text-foreground hover:bg-accent/40",
-                  )}
-                >
-                  <item.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-                  {/* v1.18.10 — show the FULL label, never an ellipsis
-                      that hides meaning. The W7 `truncate` clipped long words
-                      ("Benachrichtigungen" → "Benachrichtigun…"); the goal is a
-                      readable label, not a balanced tile. Shrink the type to
-                      `text-xs` so long single-word locales (de/es/fr/it) fit on
-                      one line where they can, and allow a 2-line `line-clamp-2`
-                      fallback (with `[overflow-wrap:anywhere]` so a long word
-                      breaks rather than overflowing) for the rare label that
-                      still cannot fit one line. `min-w-0` lets the flex child
-                      shrink below its content width. v1.22.1 — with the wider
-                      text area above, "Benachrichtigungen" wraps fully inside
-                      two lines down to a 320 px viewport. */}
-                  <span
-                    className="line-clamp-2 min-w-0 text-xs leading-tight font-medium [overflow-wrap:anywhere]"
-                    title={t(item.tKey)}
-                  >
-                    {t(item.tKey)}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
+          <MoreHubGroups
+            entries={moreHub}
+            isActive={isActiveLink}
+            onNavigate={() => setMoreOpen(false)}
+          />
         </SheetContent>
       </Sheet>
     </>
