@@ -32,8 +32,6 @@ const NOT_YET_MATCHED: readonly string[] = [
   "components/settings/ai/openai-provider-form.tsx",
   "components/settings/environment-travel-suggestions.tsx",
   "components/settings/integrations/fitbit-removal-notice.tsx",
-  "components/settings/integrations/garmin-card.tsx",
-  "components/settings/integrations/nightscout-card.tsx",
   "components/settings/notification-status-card.tsx",
   "components/settings/security-section/passkey-upgrade-nudge.tsx",
   "components/settings/security-section/totp-card.tsx",
