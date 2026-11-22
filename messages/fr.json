@@ -584,7 +584,7 @@
     "admin": "Console d’administration",
     "logout": "Se déconnecter",
     "login": "Se connecter",
-    "notifications": "Notifications",
+    "notifications": "Notifications par canal",
     "theme": "Thème",
     "themeSystem": "Système",
     "themeDark": "Sombre",
@@ -5886,6 +5886,13 @@
           "label": "Reporter de",
           "option": "{minutes} min",
           "saveError": "Enregistrement impossible. Réessaie"
+        },
+        "alerts": {
+          "heading": "Alertes",
+          "noChannel": "Aucun canal de diffusion n'est encore configuré, rien ne peut donc être envoyé. Dès qu'il y en a un, cet interrupteur décide pour tous à la fois.",
+          "setUpChannel": "Configurer un canal de diffusion",
+          "perChannel": "Choisir par canal",
+          "saveError": "Le réglage de notification n'a pas pu être enregistré. Veuillez réessayer."
         }
       },
       "layout": {
@@ -7901,6 +7908,52 @@
         "title": "Sessions et appareils",
         "description": "Où vous êtes connecté, les appareils qui sautent le second facteur et l'activité de sécurité de votre compte.",
         "open": "Ouvrir la sécurité"
+      },
+      "whoHasAccess": {
+        "title": "Qui peut accéder à votre dossier",
+        "description": "Chaque accès à votre dossier, et où le voir et le fermer.",
+        "doors": {
+          "accounts": {
+            "title": "Autres comptes",
+            "description": "Les personnes de ce serveur avec qui vous partagez votre dossier, et les tuteurs des profils que vous gérez.",
+            "link": "Ouvrir l'accès partagé"
+          },
+          "shareLinks": {
+            "title": "Liens pour soignants",
+            "description": "Des liens en lecture seule vers votre rapport médical, qui expirent à la date que vous choisissez.",
+            "link": "Ouvrir les liens"
+          },
+          "emergencyCard": {
+            "title": "Lien de la carte d'urgence",
+            "description": "Le lien QR de votre carte d'urgence. Quiconque le scanne peut lire la carte jusqu'à ce que vous le révoquiez.",
+            "link": "Ouvrir la carte d'urgence"
+          },
+          "careCalendar": {
+            "title": "Calendrier santé",
+            "description": "Un abonnement d'agenda avec vos rendez-vous réservés et les échéances de soins à venir.",
+            "link": "Ouvrir le calendrier santé"
+          },
+          "cycleCalendar": {
+            "title": "Calendrier du cycle",
+            "description": "Un abonnement d'agenda avec les dates de votre cycle.",
+            "link": "Ouvrir les réglages du cycle"
+          },
+          "apiTokens": {
+            "title": "Jetons d'API",
+            "description": "Des jetons qui permettent à des applications et des scripts de lire ou d'écrire vos données.",
+            "link": "Ouvrir les jetons d'API"
+          },
+          "mcp": {
+            "title": "Connecteur MCP",
+            "description": "Les assistants IA que vous avez reliés à votre dossier.",
+            "link": "Ouvrir le connecteur MCP"
+          },
+          "sessions": {
+            "title": "Appareils connectés",
+            "description": "Les navigateurs et téléphones connectés à votre compte en ce moment.",
+            "link": "Ouvrir les sessions actives"
+          }
+        }
       }
     },
     "mcp": {
@@ -9793,7 +9846,7 @@
     }
   },
   "notifications": {
-    "title": "Notifications",
+    "title": "Notifications par canal",
     "eventColumn": "Événement",
     "subtitle": "Choisissez quelles notifications vous recevez et par quel canal.",
     "loadError": "Impossible de charger les paramètres de notification.",
@@ -9901,7 +9954,7 @@
     "eventMedicationIntakeSyncDesc": "Mise à jour entre appareils quand une dose est enregistrée, prise ou sautée.",
     "eventDailyBriefing": "Résumé quotidien",
     "eventDailyBriefingDesc": "Un résumé matinal et posé de votre journée. Désactivé jusqu'à ce que vous l'activiez.",
-    "eventSecurityAlert": "Sécurité du compte",
+    "eventSecurityAlert": "Alertes de sécurité du compte",
     "eventSecurityAlertDesc": "Envoyé lors d’une connexion depuis un appareil ou un lieu inconnus, quand une clé d’accès est ajoutée ou supprimée, quand un jeton d’accès est révoqué et quand un appareil est déconnecté parce que son jeton de connexion a servi deux fois.",
     "eventSharedRecordIntake": "Une personne avec accès marque une dose",
     "eventSharedRecordIntakeDesc": "Envoyé uniquement quand une autre personne le fait, jamais pour vos propres saisies.",
@@ -9934,8 +9987,8 @@
     },
     "loginRequired": "Connectez-vous pour gérer les notifications.",
     "someChannelsGloballyDisabled": "Un ou plusieurs canaux sont désactivés dans les paramètres et ne recevront pas de notifications.",
-    "reminderSettingsLink": "Réglages des rappels",
-    "channelsLink": "Canaux",
+    "reminderSettingsLink": "Réglages des notifications",
+    "channelsLink": "Canaux de diffusion",
     "handover": {
       "claimedTitle": "{name} a maintenant son propre compte",
       "claimedEnd": "{name} a repris son dossier de santé. Votre accès a pris fin.",

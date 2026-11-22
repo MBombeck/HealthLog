@@ -1,7 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, BellRing, ChevronRight, Smartphone } from "lucide-react";
+import {
+  Activity,
+  Bell,
+  BellRing,
+  ChevronRight,
+  ShieldAlert,
+  Siren,
+  Smartphone,
+} from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useMounted } from "@/hooks/use-mounted";
@@ -9,6 +17,10 @@ import { useTranslations } from "@/lib/i18n/context";
 import { isSurfaceVisible } from "@/lib/modules/surface";
 import { CoachNudgeCard } from "@/components/settings/coach-nudge-card";
 import { DoseSnoozeCard } from "@/components/settings/dose-snooze-card";
+import {
+  CHANNELS_HREF,
+  EventSwitchCard,
+} from "@/components/settings/event-switch-card";
 import { LowStockCard } from "@/components/settings/low-stock-card";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { MoodReminderCard } from "@/components/settings/mood-reminder-card";
@@ -151,7 +163,30 @@ export function NotificationsSection() {
         ) : null}
       </section>
 
-      {/* Group 2 — How notifications look on the phone. Not module-gated:
+      {/* Group 2 — Alerts: what the app tells you about on its own, not a
+          reminder you set. Each card switches its kind on every channel at
+          once and stays visible before any channel exists, so a kind that is
+          off by default can be found at all. */}
+      <section className="space-y-4">
+        <SectionHeading
+          icon={Siren}
+          title={t("settings.sections.notifications.alerts.heading")}
+        />
+        <EventSwitchCard
+          eventType="SECURITY_ALERT"
+          anchor="security-alerts"
+          icon={ShieldAlert}
+          isAuthenticated={isAuthenticated}
+        />
+        <EventSwitchCard
+          eventType="MEASUREMENT_ANOMALY"
+          anchor="lasting-change"
+          icon={Activity}
+          isAuthenticated={isAuthenticated}
+        />
+      </section>
+
+      {/* Group 3 — How notifications look on the phone. Not module-gated:
           it applies to every notification the account receives. */}
       <section className="space-y-4">
         <SectionHeading
@@ -175,7 +210,7 @@ export function NotificationsSection() {
           </Link>
         </Button>
         <Button asChild variant="outline" size="sm">
-          <Link href="/settings/integrations#channels">
+          <Link href={CHANNELS_HREF}>
             {t("settings.sections.notifications.channelsLink")}
           </Link>
         </Button>

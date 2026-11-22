@@ -584,7 +584,7 @@
     "admin": "Beheeromgeving",
     "logout": "Uitloggen",
     "login": "Inloggen",
-    "notifications": "Meldingen",
+    "notifications": "Meldingen per kanaal",
     "theme": "Thema",
     "themeSystem": "Systeem",
     "themeDark": "Donker",
@@ -5886,6 +5886,13 @@
           "label": "Uitstellen met",
           "option": "{minutes} min",
           "saveError": "Opslaan mislukt. Probeer het opnieuw"
+        },
+        "alerts": {
+          "heading": "Waarschuwingen",
+          "noChannel": "Er is nog geen bezorgkanaal ingesteld, dus er kan niets worden verstuurd. Zodra er een is, geldt deze schakelaar voor alle kanalen tegelijk.",
+          "setUpChannel": "Bezorgkanaal instellen",
+          "perChannel": "Per kanaal kiezen",
+          "saveError": "De meldingsinstelling kon niet worden opgeslagen. Probeer het opnieuw."
         }
       },
       "layout": {
@@ -7901,6 +7908,52 @@
         "title": "Sessies en apparaten",
         "description": "Waar je bent ingelogd, welke apparaten de tweede factor overslaan en de beveiligingsactiviteit van je account.",
         "open": "Beveiliging openen"
+      },
+      "whoHasAccess": {
+        "title": "Wie bij je dossier kan",
+        "description": "Elke weg naar je dossier, en waar je die ziet en sluit.",
+        "doors": {
+          "accounts": {
+            "title": "Andere accounts",
+            "description": "Mensen op deze server met wie je je dossier deelt, en de voogden van profielen die je beheert.",
+            "link": "Gedeelde toegang openen"
+          },
+          "shareLinks": {
+            "title": "Links voor zorgverleners",
+            "description": "Alleen-lezen-links naar je artsrapport die vervallen op een dag die jij kiest.",
+            "link": "Links openen"
+          },
+          "emergencyCard": {
+            "title": "Link van de noodkaart",
+            "description": "De QR-link op je noodkaart. Wie hem scant, kan de kaart lezen tot je hem intrekt.",
+            "link": "Noodkaart openen"
+          },
+          "careCalendar": {
+            "title": "Zorgagenda",
+            "description": "Een agenda-abonnement met je geboekte afspraken en de zorgdata die eraan komen.",
+            "link": "Zorgagenda openen"
+          },
+          "cycleCalendar": {
+            "title": "Cyclusagenda",
+            "description": "Een agenda-abonnement met je cyclusdata.",
+            "link": "Cyclusinstellingen openen"
+          },
+          "apiTokens": {
+            "title": "API-tokens",
+            "description": "Tokens waarmee apps en scripts je gegevens lezen of schrijven.",
+            "link": "API-tokens openen"
+          },
+          "mcp": {
+            "title": "MCP-connector",
+            "description": "AI-assistenten die je met je dossier hebt verbonden.",
+            "link": "MCP-connector openen"
+          },
+          "sessions": {
+            "title": "Aangemelde apparaten",
+            "description": "Browsers en telefoons die nu bij je account zijn aangemeld.",
+            "link": "Actieve sessies openen"
+          }
+        }
       }
     },
     "mcp": {
@@ -9793,7 +9846,7 @@
     }
   },
   "notifications": {
-    "title": "Meldingen",
+    "title": "Meldingen per kanaal",
     "eventColumn": "Gebeurtenis",
     "subtitle": "Kies welke meldingen je via welk kanaal wilt ontvangen.",
     "loadError": "Je meldingsvoorkeuren konden niet worden geladen.",
@@ -9901,7 +9954,7 @@
     "eventMedicationIntakeSyncDesc": "Update op al je apparaten als een dosis wordt geregistreerd, ingenomen of overgeslagen.",
     "eventDailyBriefing": "Dagelijkse briefing",
     "eventDailyBriefingDesc": "Eén rustige ochtendsamenvatting van hoe je dag ervoor staat. Staat uit totdat je hem inschakelt.",
-    "eventSecurityAlert": "Accountbeveiliging",
+    "eventSecurityAlert": "Waarschuwingen over accountbeveiliging",
     "eventSecurityAlertDesc": "Wordt verstuurd bij een inlog vanaf een onbekend apparaat of een onbekende plek, als een passkey wordt toegevoegd of verwijderd, als een toegangstoken wordt ingetrokken en als een apparaat wordt afgemeld omdat zijn inlogtoken twee keer is gebruikt.",
     "eventSharedRecordIntake": "Iemand met wie je je dossier deelt, registreert een dosis",
     "eventSharedRecordIntakeDesc": "Alleen als iemand anders dat doet, nooit voor je eigen registraties.",
@@ -9934,8 +9987,8 @@
     },
     "loginRequired": "Log in om je meldingen te beheren.",
     "someChannelsGloballyDisabled": "Een of meer kanalen zijn uitgeschakeld in Instellingen en ontvangen geen meldingen.",
-    "reminderSettingsLink": "Herinneringsinstellingen",
-    "channelsLink": "Kanalen",
+    "reminderSettingsLink": "Meldingsinstellingen",
+    "channelsLink": "Bezorgkanalen",
     "handover": {
       "claimedTitle": "{name} heeft nu een eigen account",
       "claimedEnd": "{name} heeft het eigen gezondheidsdossier overgenomen. Je toegang is beëindigd.",

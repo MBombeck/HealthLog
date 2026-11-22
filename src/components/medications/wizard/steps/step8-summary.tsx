@@ -249,7 +249,7 @@ export function Step8Summary({
           >
             {t("medications.wizard.steps.step8.noChannelHint")}{" "}
             <Link
-              href="/settings/notifications"
+              href="/settings/integrations#channels"
               className="text-primary underline-offset-2 hover:underline"
             >
               {t("medications.wizard.steps.step8.noChannelHintLink")}

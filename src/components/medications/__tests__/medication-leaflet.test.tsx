@@ -126,7 +126,7 @@ describe("MedicationLeafletSection", () => {
     expect(html).toContain("BfArM AMIce");
   });
 
-  it("offers the registry setting instead of a search when none is chosen", () => {
+  it("offers the registry choice in place when none is chosen", () => {
     const html = render(
       <MedicationLeafletSection
         medication={{ ...medication, leafletSearch: null }}
@@ -134,7 +134,9 @@ describe("MedicationLeafletSection", () => {
     );
     expect(html).not.toContain("medication-leaflet-find-link");
     expect(html).toContain('data-slot="medication-leaflet-no-registry"');
-    expect(html).toContain('href="/settings/medications#medicine-registry"');
+    // The select itself, not a link into Settings: no dead end.
+    expect(html).toContain('data-slot="medicine-registry-select"');
+    expect(html).toContain("Choose a registry");
   });
 
   it("shows the saved leaflet as an external link only", () => {

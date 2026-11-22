@@ -584,7 +584,7 @@
     "admin": "관리자 콘솔",
     "logout": "로그아웃",
     "login": "로그인",
-    "notifications": "알림",
+    "notifications": "채널별 알림",
     "theme": "테마",
     "themeSystem": "시스템",
     "themeDark": "다크",
@@ -5886,6 +5886,13 @@
           "label": "미루는 시간",
           "option": "{minutes}분",
           "saveError": "저장하지 못했어요. 다시 시도해 주세요"
+        },
+        "alerts": {
+          "heading": "알림 사항",
+          "noChannel": "아직 설정된 전송 채널이 없어 아무것도 보낼 수 없습니다. 채널이 생기면 이 스위치가 모든 채널에 한 번에 적용됩니다.",
+          "setUpChannel": "전송 채널 설정",
+          "perChannel": "채널별로 선택",
+          "saveError": "알림 설정을 저장하지 못했습니다. 다시 시도해 주세요."
         }
       },
       "layout": {
@@ -7901,6 +7908,52 @@
         "title": "세션 및 기기",
         "description": "로그인된 위치, 2단계 인증을 건너뛰는 기기, 계정의 보안 활동을 확인해요.",
         "open": "보안 열기"
+      },
+      "whoHasAccess": {
+        "title": "내 기록에 접근할 수 있는 사람",
+        "description": "내 기록으로 들어오는 모든 경로와, 각 경로를 확인하고 닫는 곳.",
+        "doors": {
+          "accounts": {
+            "title": "다른 계정",
+            "description": "이 서버에서 기록을 공유하는 사람과, 내가 관리하는 프로필의 보호자.",
+            "link": "공유 접근 열기"
+          },
+          "shareLinks": {
+            "title": "의료진용 링크",
+            "description": "정한 날짜에 만료되는 진료 보고서 읽기 전용 링크.",
+            "link": "링크 열기"
+          },
+          "emergencyCard": {
+            "title": "응급 카드 링크",
+            "description": "응급 카드의 QR 링크. 철회하기 전까지는 스캔한 누구나 카드를 읽을 수 있습니다.",
+            "link": "응급 카드 열기"
+          },
+          "careCalendar": {
+            "title": "건강 캘린더",
+            "description": "예약한 진료와 다가오는 검진·접종 일정이 담긴 캘린더 구독.",
+            "link": "건강 캘린더 열기"
+          },
+          "cycleCalendar": {
+            "title": "주기 캘린더",
+            "description": "주기 날짜가 담긴 캘린더 구독.",
+            "link": "주기 설정 열기"
+          },
+          "apiTokens": {
+            "title": "API 토큰",
+            "description": "앱과 스크립트가 내 데이터를 읽거나 쓰게 하는 토큰.",
+            "link": "API 토큰 열기"
+          },
+          "mcp": {
+            "title": "MCP 커넥터",
+            "description": "내 기록에 연결한 AI 어시스턴트.",
+            "link": "MCP 커넥터 열기"
+          },
+          "sessions": {
+            "title": "로그인된 기기",
+            "description": "지금 내 계정에 로그인되어 있는 브라우저와 휴대폰.",
+            "link": "활성 세션 열기"
+          }
+        }
       }
     },
     "mcp": {
@@ -9793,7 +9846,7 @@
     }
   },
   "notifications": {
-    "title": "알림",
+    "title": "채널별 알림",
     "eventColumn": "이벤트",
     "subtitle": "어떤 알림을 어떤 채널로 받을지 선택하세요.",
     "loadError": "알림 설정을 불러오지 못했어요.",
@@ -9901,7 +9954,7 @@
     "eventMedicationIntakeSyncDesc": "복용을 기록하거나 복용·건너뜀으로 표시하면 기기 간에 업데이트해요.",
     "eventDailyBriefing": "데일리 브리핑",
     "eventDailyBriefingDesc": "그날의 요약을 아침에 한 번 차분하게 알려줘요. 켜기 전에는 보내지 않아요.",
-    "eventSecurityAlert": "계정 보안",
+    "eventSecurityAlert": "계정 보안 알림",
     "eventSecurityAlertDesc": "처음 보는 기기나 장소에서 로그인할 때, 패스키를 추가하거나 삭제할 때, 액세스 토큰이 취소될 때, 로그인 토큰이 두 번 쓰여 기기가 로그아웃될 때 보내요.",
     "eventSharedRecordIntake": "기록을 공유한 사람이 복용을 표시할 때",
     "eventSharedRecordIntakeDesc": "다른 사람이 표시했을 때만 보내고, 내 기록에는 보내지 않아요.",
@@ -9935,7 +9988,7 @@
     "loginRequired": "알림을 관리하려면 로그인해 주세요.",
     "someChannelsGloballyDisabled": "설정에서 꺼둔 채널이 있어서 그 채널로는 알림을 받지 못해요.",
     "reminderSettingsLink": "알림 설정",
-    "channelsLink": "채널",
+    "channelsLink": "전송 채널",
     "handover": {
       "claimedTitle": "{name} 님에게 이제 자신의 계정이 있습니다",
       "claimedEnd": "{name} 님이 자신의 건강 기록을 넘겨받았습니다. 내 접근 권한은 종료되었습니다.",

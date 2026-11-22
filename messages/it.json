@@ -584,7 +584,7 @@
     "admin": "Console di amministrazione",
     "logout": "Esci",
     "login": "Accedi",
-    "notifications": "Notifiche",
+    "notifications": "Notifiche per canale",
     "theme": "Tema",
     "themeSystem": "Sistema",
     "themeDark": "Scuro",
@@ -5886,6 +5886,13 @@
           "label": "Rinvia di",
           "option": "{minutes} min",
           "saveError": "Impossibile salvare. Riprova"
+        },
+        "alerts": {
+          "heading": "Avvisi",
+          "noChannel": "Non è ancora configurato nessun canale di recapito, quindi non si può inviare nulla. Appena ce n’è uno, questo interruttore vale per tutti insieme.",
+          "setUpChannel": "Configura un canale di recapito",
+          "perChannel": "Scegli per canale",
+          "saveError": "Non è stato possibile salvare l’impostazione della notifica. Riprova."
         }
       },
       "layout": {
@@ -7901,6 +7908,52 @@
         "title": "Sessioni e dispositivi",
         "description": "Dove hai effettuato l'accesso, i dispositivi che saltano il secondo fattore e l'attività di sicurezza del tuo account.",
         "open": "Apri sicurezza"
+      },
+      "whoHasAccess": {
+        "title": "Chi può accedere alla tua cartella",
+        "description": "Ogni accesso alla tua cartella, e dove vederlo e chiuderlo.",
+        "doors": {
+          "accounts": {
+            "title": "Altri account",
+            "description": "Le persone di questo server con cui condividi la cartella, e i tutori dei profili che gestisci.",
+            "link": "Apri l’accesso condiviso"
+          },
+          "shareLinks": {
+            "title": "Link per i medici",
+            "description": "Link in sola lettura al tuo referto medico che scadono nel giorno che scegli.",
+            "link": "Apri i link"
+          },
+          "emergencyCard": {
+            "title": "Link della tessera di emergenza",
+            "description": "Il link QR della tua tessera di emergenza. Chi lo scansiona può leggere la tessera finché non lo revochi.",
+            "link": "Apri la tessera di emergenza"
+          },
+          "careCalendar": {
+            "title": "Calendario della salute",
+            "description": "Un abbonamento al calendario con le visite prenotate e le scadenze di cura in arrivo.",
+            "link": "Apri il calendario della salute"
+          },
+          "cycleCalendar": {
+            "title": "Calendario del ciclo",
+            "description": "Un abbonamento al calendario con le date del tuo ciclo.",
+            "link": "Apri le impostazioni del ciclo"
+          },
+          "apiTokens": {
+            "title": "Token API",
+            "description": "Token con cui app e script leggono o scrivono i tuoi dati.",
+            "link": "Apri i token API"
+          },
+          "mcp": {
+            "title": "Connettore MCP",
+            "description": "Gli assistenti IA che hai collegato alla tua cartella.",
+            "link": "Apri il connettore MCP"
+          },
+          "sessions": {
+            "title": "Dispositivi connessi",
+            "description": "Browser e telefoni connessi al tuo account in questo momento.",
+            "link": "Apri le sessioni attive"
+          }
+        }
       }
     },
     "mcp": {
@@ -9793,7 +9846,7 @@
     }
   },
   "notifications": {
-    "title": "Notifiche",
+    "title": "Notifiche per canale",
     "eventColumn": "Evento",
     "subtitle": "Scegli quali notifiche ricevere e su quale canale.",
     "loadError": "Impossibile caricare le impostazioni di notifica.",
@@ -9901,7 +9954,7 @@
     "eventMedicationIntakeSyncDesc": "Aggiornamento tra dispositivi quando una dose viene registrata, assunta o saltata.",
     "eventDailyBriefing": "Riepilogo quotidiano",
     "eventDailyBriefingDesc": "Un riepilogo mattutino e tranquillo della tua giornata. Disattivato finché non lo attivi.",
-    "eventSecurityAlert": "Sicurezza dell’account",
+    "eventSecurityAlert": "Avvisi di sicurezza dell’account",
     "eventSecurityAlertDesc": "Inviato per un accesso da un dispositivo o un luogo sconosciuti, quando una passkey viene aggiunta o rimossa, quando un token di accesso viene revocato e quando un dispositivo viene disconnesso perché il suo token di accesso è stato usato due volte.",
     "eventSharedRecordIntake": "Una persona con accesso segna una dose",
     "eventSharedRecordIntakeDesc": "Inviato solo quando lo fa un'altra persona, mai per le tue voci.",
@@ -9934,8 +9987,8 @@
     },
     "loginRequired": "Accedi per gestire le notifiche.",
     "someChannelsGloballyDisabled": "Uno o più canali sono disattivati nelle impostazioni e non riceveranno notifiche.",
-    "reminderSettingsLink": "Impostazioni promemoria",
-    "channelsLink": "Canali",
+    "reminderSettingsLink": "Impostazioni notifiche",
+    "channelsLink": "Canali di recapito",
     "handover": {
       "claimedTitle": "{name} ora ha un proprio account",
       "claimedEnd": "{name} ha preso in carico la propria cartella sanitaria. Il tuo accesso è terminato.",

@@ -584,7 +584,7 @@
     "admin": "Admin console",
     "logout": "Sign out",
     "login": "Sign in",
-    "notifications": "Notifications",
+    "notifications": "Notifications per channel",
     "theme": "Theme",
     "themeSystem": "System",
     "themeDark": "Dark",
@@ -5857,13 +5857,13 @@
         "connectionsHeading": "Connections",
         "channelsHeading": "Delivery channels",
         "channelsDescription": "Where reminders and alerts are delivered.",
-        "matrixLink": "Per-channel notifications"
+        "matrixLink": "Notifications per channel"
       },
       "notifications": {
         "title": "Notifications",
         "subtitle": "Choose which reminders you receive and where they're delivered.",
         "remindersHeading": "Reminders",
-        "matrixLink": "Per-channel notifications",
+        "matrixLink": "Notifications per channel",
         "channelsLink": "Delivery channels",
         "displayHeading": "On your phone",
         "elsewhere": {
@@ -5886,6 +5886,13 @@
           "label": "Push back by",
           "option": "{minutes} min",
           "saveError": "Could not save. Try again"
+        },
+        "alerts": {
+          "heading": "Alerts",
+          "noChannel": "No delivery channel is set up yet, so nothing can be sent. Once one is, this switch decides for all of them at once.",
+          "setUpChannel": "Set up a delivery channel",
+          "perChannel": "Choose per channel",
+          "saveError": "The notification setting could not be saved. Please try again."
         }
       },
       "layout": {
@@ -7901,6 +7908,52 @@
         "title": "Sessions and devices",
         "description": "Where you are signed in, the devices that skip the second factor, and the security activity of your account.",
         "open": "Open security"
+      },
+      "whoHasAccess": {
+        "title": "Who can reach your record",
+        "description": "Every way into your record, and where to see and close each one.",
+        "doors": {
+          "accounts": {
+            "title": "Other accounts",
+            "description": "People on this server you share your record with, and the guardians of profiles you manage.",
+            "link": "Open shared access"
+          },
+          "shareLinks": {
+            "title": "Clinician links",
+            "description": "Read-only links to your doctor report that end on a date you set.",
+            "link": "Open clinician links"
+          },
+          "emergencyCard": {
+            "title": "Emergency card link",
+            "description": "The QR link on your emergency card. Anyone who scans it can read the card until you revoke it.",
+            "link": "Open the emergency card"
+          },
+          "careCalendar": {
+            "title": "Care calendar",
+            "description": "A calendar subscription with your booked visits and the care dates coming due.",
+            "link": "Open the care calendar"
+          },
+          "cycleCalendar": {
+            "title": "Cycle calendar",
+            "description": "A calendar subscription with your cycle dates.",
+            "link": "Open the cycle settings"
+          },
+          "apiTokens": {
+            "title": "API tokens",
+            "description": "Tokens that let apps and scripts read or write your data.",
+            "link": "Open API tokens"
+          },
+          "mcp": {
+            "title": "MCP connector",
+            "description": "AI assistants you connected to your record.",
+            "link": "Open the MCP connector"
+          },
+          "sessions": {
+            "title": "Signed-in devices",
+            "description": "Browsers and phones signed in to your account right now.",
+            "link": "Open active sessions"
+          }
+        }
       }
     },
     "mcp": {
@@ -9793,7 +9846,7 @@
     }
   },
   "notifications": {
-    "title": "Notifications",
+    "title": "Notifications per channel",
     "eventColumn": "Event",
     "subtitle": "Choose which notifications you want to receive through which channel.",
     "loadError": "Notification preferences could not be loaded.",
@@ -9901,7 +9954,7 @@
     "eventMedicationIntakeSyncDesc": "Cross-device update when a dose is logged, taken or skipped.",
     "eventDailyBriefing": "Daily briefing",
     "eventDailyBriefingDesc": "One calm morning summary of your day's read. Off until you turn it on.",
-    "eventSecurityAlert": "Account security",
+    "eventSecurityAlert": "Account security alerts",
     "eventSecurityAlertDesc": "Sent on a sign-in from a device or place not seen before, when a passkey is added or removed, when an access token is revoked, and when a device is signed out because its sign-in token was used twice.",
     "eventSharedRecordIntake": "Someone you shared your record with marks a dose",
     "eventSharedRecordIntakeDesc": "Only sent when another person does it, never for your own entries.",
@@ -9934,8 +9987,8 @@
     },
     "loginRequired": "Please sign in to manage notifications.",
     "someChannelsGloballyDisabled": "One or more channels are turned off in Settings and won’t receive notifications.",
-    "reminderSettingsLink": "Reminder settings",
-    "channelsLink": "Channels",
+    "reminderSettingsLink": "Notification settings",
+    "channelsLink": "Delivery channels",
     "handover": {
       "claimedTitle": "{name} now has their own account",
       "claimedEnd": "{name} took over their health record. Your access has ended.",

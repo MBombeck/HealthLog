@@ -584,7 +584,7 @@
     "admin": "Konsola administratora",
     "logout": "Wyloguj",
     "login": "Zaloguj",
-    "notifications": "Powiadomienia",
+    "notifications": "Powiadomienia wg kanału",
     "theme": "Motyw",
     "themeSystem": "Systemowy",
     "themeDark": "Ciemny",
@@ -5886,6 +5886,13 @@
           "label": "Odłóż o",
           "option": "{minutes} min",
           "saveError": "Nie udało się zapisać. Spróbuj ponownie"
+        },
+        "alerts": {
+          "heading": "Alerty",
+          "noChannel": "Nie skonfigurowano jeszcze żadnego kanału dostarczania, więc nic nie może zostać wysłane. Gdy pojawi się kanał, ten przełącznik decyduje za wszystkie naraz.",
+          "setUpChannel": "Skonfiguruj kanał dostarczania",
+          "perChannel": "Wybierz dla każdego kanału",
+          "saveError": "Nie udało się zapisać ustawienia powiadomienia. Spróbuj ponownie."
         }
       },
       "layout": {
@@ -7901,6 +7908,52 @@
         "title": "Sesje i urządzenia",
         "description": "Gdzie jesteś zalogowany, które urządzenia pomijają drugi składnik i aktywność zabezpieczeń twojego konta.",
         "open": "Otwórz zabezpieczenia"
+      },
+      "whoHasAccess": {
+        "title": "Kto ma dostęp do twojej dokumentacji",
+        "description": "Każda droga do twojej dokumentacji i miejsce, gdzie ją zobaczysz i zamkniesz.",
+        "doors": {
+          "accounts": {
+            "title": "Inne konta",
+            "description": "Osoby na tym serwerze, którym udostępniasz dokumentację, oraz opiekunowie profili, którymi zarządzasz.",
+            "link": "Otwórz udostępniony dostęp"
+          },
+          "shareLinks": {
+            "title": "Linki dla lekarzy",
+            "description": "Linki tylko do odczytu do raportu dla lekarza, które wygasają w wybranym przez ciebie dniu.",
+            "link": "Otwórz linki"
+          },
+          "emergencyCard": {
+            "title": "Link karty ratunkowej",
+            "description": "Link QR na twojej karcie ratunkowej. Każdy, kto go zeskanuje, może czytać kartę, dopóki go nie unieważnisz.",
+            "link": "Otwórz kartę ratunkową"
+          },
+          "careCalendar": {
+            "title": "Kalendarz zdrowia",
+            "description": "Subskrypcja kalendarza z zarezerwowanymi wizytami i nadchodzącymi terminami opieki.",
+            "link": "Otwórz kalendarz zdrowia"
+          },
+          "cycleCalendar": {
+            "title": "Kalendarz cyklu",
+            "description": "Subskrypcja kalendarza z datami twojego cyklu.",
+            "link": "Otwórz ustawienia cyklu"
+          },
+          "apiTokens": {
+            "title": "Tokeny API",
+            "description": "Tokeny, dzięki którym aplikacje i skrypty czytają lub zapisują twoje dane.",
+            "link": "Otwórz tokeny API"
+          },
+          "mcp": {
+            "title": "Łącznik MCP",
+            "description": "Asystenci AI, których połączyłeś ze swoją dokumentacją.",
+            "link": "Otwórz łącznik MCP"
+          },
+          "sessions": {
+            "title": "Zalogowane urządzenia",
+            "description": "Przeglądarki i telefony zalogowane teraz na twoje konto.",
+            "link": "Otwórz aktywne sesje"
+          }
+        }
       }
     },
     "mcp": {
@@ -9793,7 +9846,7 @@
     }
   },
   "notifications": {
-    "title": "Powiadomienia",
+    "title": "Powiadomienia wg kanału",
     "eventColumn": "Zdarzenie",
     "subtitle": "Wybierz, które powiadomienia chcesz otrzymywać i którym kanałem.",
     "loadError": "Nie udało się załadować ustawień powiadomień.",
@@ -9901,7 +9954,7 @@
     "eventMedicationIntakeSyncDesc": "Aktualizacja między urządzeniami, gdy dawka zostanie zapisana, przyjęta lub pominięta.",
     "eventDailyBriefing": "Codzienne podsumowanie",
     "eventDailyBriefingDesc": "Spokojne poranne podsumowanie Twojego dnia. Wyłączone, dopóki go nie włączysz.",
-    "eventSecurityAlert": "Bezpieczeństwo konta",
+    "eventSecurityAlert": "Alerty bezpieczeństwa konta",
     "eventSecurityAlertDesc": "Wysyłane przy logowaniu z nieznanego urządzenia lub miejsca, po dodaniu lub usunięciu klucza dostępu, po unieważnieniu tokenu dostępu oraz gdy urządzenie zostanie wylogowane, bo jego token logowania użyto dwa razy.",
     "eventSharedRecordIntake": "Ktoś z dostępem oznacza dawkę",
     "eventSharedRecordIntakeDesc": "Wysyłane tylko wtedy, gdy robi to inna osoba, nigdy przy Twoich własnych wpisach.",
@@ -9934,8 +9987,8 @@
     },
     "loginRequired": "Zaloguj się, aby zarządzać powiadomieniami.",
     "someChannelsGloballyDisabled": "Co najmniej jeden kanał jest wyłączony w ustawieniach i nie będzie otrzymywać powiadomień.",
-    "reminderSettingsLink": "Ustawienia przypomnień",
-    "channelsLink": "Kanały",
+    "reminderSettingsLink": "Ustawienia powiadomień",
+    "channelsLink": "Kanały dostarczania",
     "handover": {
       "claimedTitle": "{name} ma teraz własne konto",
       "claimedEnd": "{name} przejmuje swoją kartę zdrowia. Twój dostęp się zakończył.",

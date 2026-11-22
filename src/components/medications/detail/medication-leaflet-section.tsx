@@ -20,6 +20,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react";
 
 import { MedicationDetailSection } from "@/components/medications/medication-detail-section";
+import { MedicineRegistrySelect } from "@/components/settings/medicine-registry-card";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { Button } from "@/components/ui/button";
 import { InlineAction } from "@/components/ui/inline-action";
@@ -65,8 +66,8 @@ export function MedicationLeafletSection({
   medication: LeafletSectionMedication;
 }) {
   const { t } = useTranslations();
-  const { user } = useAuth();
-  const { canManageDomain } = useRecordCapabilities();
+  const { user, isAuthenticated } = useAuth();
+  const { canManageDomain, inSharedRecord } = useRecordCapabilities();
   const canEdit = canManageDomain("medications");
   const search =
     medication.leafletSearch !== undefined
@@ -112,16 +113,25 @@ export function MedicationLeafletSection({
         )}
 
         {search ? (
-          <FindLeaflet search={search} name={medication.name} />
+          <FindLeaflet
+            search={search}
+            name={medication.name}
+            inSharedRecord={inSharedRecord}
+          />
         ) : (
-          <p className="text-sm" data-slot="medication-leaflet-no-registry">
-            {t("medications.leaflet.noRegistry")}{" "}
-            <InlineAction size="sm" asChild>
-              <Link href="/settings/medications#medicine-registry">
-                {t("medications.leaflet.chooseRegistry")}
-              </Link>
-            </InlineAction>
-          </p>
+          <div className="space-y-2" data-slot="medication-leaflet-no-registry">
+            <p className="text-sm">{t("medications.leaflet.noRegistry")}</p>
+            {/* The registry is the person's own setting: chosen right here,
+                and the search appears in place once it is saved. Inside
+                somebody else's record it stays theirs to choose. */}
+            {inSharedRecord ? null : (
+              <MedicineRegistrySelect
+                isAuthenticated={isAuthenticated}
+                id={`medication-leaflet-registry-${medication.id}`}
+                labelKey="medications.leaflet.chooseRegistry"
+              />
+            )}
+          </div>
         )}
 
         <p className="text-sm" data-slot="medication-leaflet-disclaimer">
@@ -139,9 +149,11 @@ export function MedicationLeafletSection({
 function FindLeaflet({
   search,
   name,
+  inSharedRecord,
 }: {
   search: LeafletSearch;
   name: string;
+  inSharedRecord: boolean;
 }) {
   const { t } = useTranslations();
   return (
@@ -172,11 +184,15 @@ function FindLeaflet({
           {t("medications.leaflet.opensIn", { authority: search.authority })}
         </p>
       )}
-      <InlineAction tone="muted" asChild>
-        <Link href="/settings/medications#medicine-registry">
-          {t("medications.leaflet.changeRegistry")}
-        </Link>
-      </InlineAction>
+      {/* The registry is the person's own setting, chosen under Settings >
+          Modules > Medications, which a switched session does not open. */}
+      {!inSharedRecord && (
+        <InlineAction tone="muted" asChild>
+          <Link href="/settings/modules/medications#medicine-registry">
+            {t("medications.leaflet.changeRegistry")}
+          </Link>
+        </InlineAction>
+      )}
     </div>
   );
 }

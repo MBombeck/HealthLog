@@ -17,10 +17,10 @@ import {
   registryAuthority,
   type MedicineRegistryChoice,
 } from "@/lib/medications/leaflet-registries";
-import { queryKeys } from "@/lib/query-keys";
+import { invalidateMedicationReads, queryKeys } from "@/lib/query-keys";
 
 /**
- * Settings → Medications: which official medicine registry "Find leaflet"
+ * Settings → Modules → Medications: which official medicine registry "Find leaflet"
  * searches (#1430). One value per person, independent of the interface
  * language: someone reading the app in English in Warsaw picks Poland. "None"
  * hides the search. Saves on change through
@@ -31,11 +31,12 @@ import { queryKeys } from "@/lib/query-keys";
  * language (`Intl.DisplayNames`), so every locale reads them natively; the
  * registry's name beside each is a proper name and stays as it is.
  */
-export function MedicineRegistryCard({
-  isAuthenticated,
-}: {
-  isAuthenticated: boolean;
-}) {
+/**
+ * The registry choice and its save, shared by the card here and the leaflet
+ * section on a medication, so both write through one mutation and re-read the
+ * same queries.
+ */
+function useMedicineRegistryChoice(isAuthenticated: boolean) {
   const { t, locale } = useTranslations();
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -80,9 +81,8 @@ export function MedicineRegistryCard({
         t("settings.sections.medications.registry.saved"),
       );
       await queryClient.invalidateQueries({ queryKey: queryKeys.authMe() });
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.medications(),
-      });
+      // Every medication read carries `leafletSearch`, built from the setting.
+      await invalidateMedicationReads(queryClient);
       setOptimistic(null);
     },
     onError: (err) => {
@@ -93,12 +93,59 @@ export function MedicineRegistryCard({
     },
   });
 
-  function handleSelect(next: MedicineRegistryChoice) {
+  function select(next: MedicineRegistryChoice) {
     if (next === value || mutation.isPending || !isAuthenticated) return;
     setOptimistic(next);
     mutation.mutate(next);
   }
 
+  return { value, options, select, pending: mutation.isPending };
+}
+
+/** The registry select, with its label; the privacy line is the caller's. */
+export function MedicineRegistrySelect({
+  isAuthenticated,
+  id,
+  labelKey = "settings.sections.medications.registry.label",
+}: {
+  isAuthenticated: boolean;
+  id: string;
+  labelKey?: string;
+}) {
+  const { t } = useTranslations();
+  const { value, options, select, pending } =
+    useMedicineRegistryChoice(isAuthenticated);
+  return (
+    <div className="space-y-2">
+      <label htmlFor={id} className="text-sm font-medium">
+        {t(labelKey)}
+      </label>
+      <NativeSelect
+        id={id}
+        data-slot="medicine-registry-select"
+        value={value}
+        disabled={!isAuthenticated || pending}
+        onChange={(e) => select(e.target.value as MedicineRegistryChoice)}
+      >
+        <option value="NONE">
+          {t("settings.sections.medications.registry.none")}
+        </option>
+        {options.map((option) => (
+          <option key={option.code} value={option.code}>
+            {option.label}
+          </option>
+        ))}
+      </NativeSelect>
+    </div>
+  );
+}
+
+export function MedicineRegistryCard({
+  isAuthenticated,
+}: {
+  isAuthenticated: boolean;
+}) {
+  const { t } = useTranslations();
   return (
     <SettingsCard
       as="section"
@@ -113,30 +160,10 @@ export function MedicineRegistryCard({
         description={t("settings.sections.medications.registry.description")}
       />
       <div className="space-y-2">
-        <label
-          htmlFor="medicine-registry-select"
-          className="text-sm font-medium"
-        >
-          {t("settings.sections.medications.registry.label")}
-        </label>
-        <NativeSelect
+        <MedicineRegistrySelect
+          isAuthenticated={isAuthenticated}
           id="medicine-registry-select"
-          data-slot="medicine-registry-select"
-          value={value}
-          disabled={!isAuthenticated || mutation.isPending}
-          onChange={(e) =>
-            handleSelect(e.target.value as MedicineRegistryChoice)
-          }
-        >
-          <option value="NONE">
-            {t("settings.sections.medications.registry.none")}
-          </option>
-          {options.map((option) => (
-            <option key={option.code} value={option.code}>
-              {option.label}
-            </option>
-          ))}
-        </NativeSelect>
+        />
         <p className="text-muted-foreground text-xs">
           {t("settings.sections.medications.registry.privacy")}
         </p>
