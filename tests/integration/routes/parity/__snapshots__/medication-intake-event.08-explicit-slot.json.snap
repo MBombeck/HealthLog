@@ -47,7 +47,15 @@
       "args": [
         {
           "userId": "<id:2>",
-          "originDeviceToken": null
+          "originDeviceToken": null,
+          "recorded": {
+            "medicationId": "<id:3>",
+            "intakeId": "<id:4>",
+            "slotInstant": "2026-10-14T20:00:00.000Z",
+            "outcome": "reopened",
+            "takenAt": null,
+            "takenVia": null
+          }
         }
       ]
     }
