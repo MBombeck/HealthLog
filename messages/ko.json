@@ -9642,6 +9642,17 @@
         "lastSuccess": "마지막 전송 {time}.",
         "lastFailure": "마지막 실패 {time}: {reason}.",
         "noReason": "사유 없음"
+      },
+      "handoff": {
+        "title": "릴레이 전달 소요 시간, 최근 {hours}시간",
+        "median": "중앙값",
+        "p95": "95번째 백분위수",
+        "pushes": "푸시",
+        "retried": "재시도됨",
+        "milliseconds": "{value}ms",
+        "seconds": "{value}초",
+        "empty": "최근 {hours, plural, other {#시간}} 동안 푸시 없음",
+        "helper": "이 서버의 대기열에 들어간 때부터 릴레이가 응답할 때까지입니다. 릴레이는 Apple이 푸시를 수락한 뒤에 응답합니다."
       }
     },
     "serverSetup": {

@@ -9642,6 +9642,17 @@
         "lastSuccess": "Dernière livraison {time}.",
         "lastFailure": "Dernier échec {time} : {reason}.",
         "noReason": "sans motif"
+      },
+      "handoff": {
+        "title": "Délai de remise au relais, dernières {hours} h",
+        "median": "Médiane",
+        "p95": "95e centile",
+        "pushes": "Notifications",
+        "retried": "Relancées",
+        "milliseconds": "{value} ms",
+        "seconds": "{value} s",
+        "empty": "Aucune notification push {hours, plural, =1 {au cours de la dernière heure} other {au cours des # dernières heures}}",
+        "helper": "De la mise en file d'attente sur ce serveur à la réponse du relais. Le relais répond une fois qu'Apple a accepté la notification."
       }
     },
     "serverSetup": {

@@ -28,6 +28,20 @@ export interface AdminPushRelayStatus {
     failed: number;
     lastFailure: { reason: string | null; at: string } | null;
   };
+  /**
+   * From queueing a push on this server to the relay's `accepted`, over the
+   * pushes accepted in the window. Absent on a response from a build before
+   * the field.
+   */
+  handoff?: {
+    windowHours: number;
+    count: number;
+    /** Whole milliseconds; null when `count` is 0. */
+    p50Ms: number | null;
+    p95Ms: number | null;
+    /** How many of them waited for at least one retry on this server. */
+    retried: number;
+  };
   termsVersion: string;
   /** The relay is on and its accepted terms text is older than `termsVersion`. */
   termsConfirmationNeeded: boolean;
