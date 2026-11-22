@@ -7,6 +7,7 @@
  * heap; see `backup-schema-lazy-guard.test.ts`).
  */
 import { z } from "zod/v4";
+import { AiUsageLevel } from "@/generated/prisma/enums";
 import { REASONING_MAX_EFFORTS } from "@/lib/ai/reasoning/levels";
 import { isoDateTime } from "@/lib/export/backup-schema-kit";
 
@@ -54,6 +55,13 @@ export const appSettingsBackupSchema = z
     // Optional for the same reason.
     aiReasoningEnabled: z.boolean().optional(),
     aiReasoningMaxEffort: z.enum(REASONING_MAX_EFFORTS).optional(),
+    // The operator's AI usage bounds. Optional for the same reason: an older
+    // file left them out although it could have carried them, and restores
+    // them at their defaults.
+    aiUsageMaxLevel: z.enum(AiUsageLevel).optional(),
+    aiUsageDefaultLevel: z.enum(AiUsageLevel).optional(),
+    // The admin write path's bounds (`adminAiUsageSchema`).
+    aiSyncRegenGapHours: z.number().int().min(1).max(48).nullable().optional(),
     moduleAvailabilityJson: z.unknown().nullable(),
     documentMaxFileBytes: z.number().int(),
     documentQuotaBytes: z.string().regex(/^\d+$/),

@@ -48232,6 +48232,24 @@ components:
                     - low
                     - medium
                     - high
+                aiUsageMaxLevel:
+                  type: string
+                  enum:
+                    - FRUGAL
+                    - STANDARD
+                    - FULL
+                aiUsageDefaultLevel:
+                  type: string
+                  enum:
+                    - FRUGAL
+                    - STANDARD
+                    - FULL
+                aiSyncRegenGapHours:
+                  anyOf:
+                    - type: integer
+                      minimum: 1
+                      maximum: 48
+                    - type: "null"
                 moduleAvailabilityJson:
                   anyOf:
                     - {}
