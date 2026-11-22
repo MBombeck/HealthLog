@@ -373,7 +373,7 @@
     "colExpected": "Expected",
     "colComplianceRate": "Adherence rate",
     "moodTitle": "Mood trajectory",
-    "moodSummary": "Average {avg} / 5.0, {count} entries, range {min}–{max}",
+    "moodSummary": "Average {avg} / 5.0, {count, plural, one {# entry} other {# entries}}, range {min} to {max}",
     "colMood": "Mood",
     "colCount": "Count",
     "colShare": "Share",
@@ -412,7 +412,7 @@
     "insurer": "Health insurer",
     "insuranceNumber": "Insurance no.",
     "summaryTitle": "Clinical summary",
-    "summaryReadings": "Recorded over {days} days: {count} measurements across {params} parameters.",
+    "summaryReadings": "Recorded over {days, plural, one {# day} other {# days}}: {count, plural, one {# measurement} other {# measurements}} across {params, plural, one {# parameter} other {# parameters}}.",
     "summaryTrend": "{label}: latest {latest} {arrow}",
     "summaryAdherence": "Medication adherence: {rate}% (weighted mean).",
     "chartsTitle": "Trend charts",
@@ -506,22 +506,22 @@
     "lifeAuditCBelow": "Below the cut-off of {cutoff} ({source}).",
     "lifeAuditCNoCutoff": "No sex-specific cut-off applied.",
     "lifeActivity": "Physical activity",
-    "lifeActivityValue": "{minutes} minutes a week, self-reported",
+    "lifeActivityValue": "{minutes, plural, one {# minute} other {# minutes}} a week, self-reported",
     "lifeSitting": "Sitting on a workday",
-    "lifeSittingValue": "{hours} hours, self-reported",
+    "lifeSittingValue": "{hours, plural, one {# hour} other {# hours}}, self-reported",
     "lifeWork": "Work",
     "lifeNightWork": "night work",
     "lifeExposures": "exposures: {list}",
     "workouts": {
       "title": "Workouts",
-      "summary": "{sessions} sessions, {hours} h in total; on average {perWeek} sessions and {minutesPerWeek} minutes per week.",
+      "summary": "{sessions, plural, one {# session} other {# sessions}}, {hours} h in total; on average {perWeek, plural, one {# session} other {# sessions}} and {minutesPerWeek, plural, one {# minute} other {# minutes}} per week.",
       "colSport": "Sport",
       "colSessions": "Sessions",
       "colTime": "Time",
       "colDistance": "Distance",
       "colEnergy": "Energy",
       "colHeartRate": "Avg heart rate",
-      "moreSports": "{count} more sports are counted in the totals but not listed."
+      "moreSports": "{count, plural, one {# more sport is counted in the totals but not listed.} other {# more sports are counted in the totals but not listed.}}"
     },
     "medicationEffect": {
       "title": "Change around each medication start",
@@ -536,17 +536,17 @@
       "reasonBefore": "Too few readings before the start",
       "reasonAfter": "Too few readings since the start",
       "reasonFit": "Could not be computed",
-      "excludedAdherence": "{count} days after the start left out (under {floor} % of doses taken)",
-      "excludedNotTaking": "{count} days left out (paused or between courses)",
+      "excludedAdherence": "{count, plural, one {# day} other {# days}} after the start left out (under {floor} % of doses taken)",
+      "excludedNotTaking": "{count, plural, one {# day} other {# days}} left out (paused or between courses)",
       "notTracked": "intake not tracked, so no days left out for missed doses",
       "endDoseChange": "window ends {date}, before the first dose change",
-      "days": "{before} days before, {after} days after the start, {excluded} days left out",
+      "days": "{before, plural, one {# day} other {# days}} before, {after, plural, one {# day} other {# days}} after the start, {excluded, plural, one {# day} other {# days}} left out",
       "method": "Segmented regression on daily values from 90 days before to at most 180 days after the start, with Newey-West intervals. Days after the start on which fewer than 80 % of the doses of the preceding 14 days were taken are left out. Describes an association over time, not a proven effect of the medication.",
       "autocorrelation": "strong day-to-day carry-over, so the ranges may still be too narrow",
       "window": "analysed {from} to {to}, which can reach beyond the report period",
       "windowLine": "Analysed {from} to {to}. This window can reach beyond the report period."
     },
-    "screenerUnvalidated": "{label}: {count} of {total} results were answered in a translation that has not been scientifically validated; treat them as orientation.",
+    "screenerUnvalidated": "{label}: {count} of {total, plural, one {# result was} other {# results were}} answered in a translation that has not been scientifically validated; treat them as orientation.",
     "pregnancy": {
       "title": "Pregnancy",
       "pregnantWeek": "Pregnant, week {weeks}+{days} on the report date",
@@ -669,7 +669,7 @@
     "backToPasskey": "Back to Passkey",
     "passkeySetupLater": "You can set up passkeys at any time in Settings.",
     "passwordMinLength": "Min. 12 characters",
-    "passwordTooShort": "Password must be at least {minLength} characters long.",
+    "passwordTooShort": "Password must be at least {minLength, plural, one {# character} other {# characters}} long.",
     "privacyPolicy": "Privacy policy",
     "passwordBreached": "This password has appeared in known data breaches. Please choose a different one.",
     "oidc": {
@@ -1014,7 +1014,7 @@
     "invalidTimestamp": "Please select a valid time.",
     "loginRequired": "Please sign in to view measurements.",
     "allTypes": "All types",
-    "measurementCount": "{count} measurements",
+    "measurementCount": "{count, plural, one {# measurement} other {# measurements}}",
     "emptyTitle": "No measurements yet",
     "emptyDescription": "Log your weight, blood pressure, pulse, or other vitals to start tracking trends.",
     "emptyFilteredTitle": "No measurements match this filter",
@@ -1029,10 +1029,10 @@
     "pageInfo": "Page {page} of {total}",
     "previousPage": "Previous page",
     "nextPage": "Next page",
-    "dailyTotalCaption": "({count} samples)",
+    "dailyTotalCaption": "({count, plural, one {# sample} other {# samples}})",
     "openMetricInsights": "Open {type} insights",
-    "sleepNapCaption": "incl. {count} nap(s)",
-    "sleepAwakeningsCaption": "{count} awakening(s)",
+    "sleepNapCaption": "incl. {count, plural, one {# nap} other {# naps}}",
+    "sleepAwakeningsCaption": "{count, plural, one {# awakening} other {# awakenings}}",
     "expandDay": "Show samples for this day",
     "collapseDay": "Hide samples for this day",
     "loadError": "Could not load measurements.",
@@ -1087,12 +1087,12 @@
     "sourceGoogleHealth": "Google Health",
     "sourceStrava": "Strava",
     "sourceExternal": "External device",
-    "bulkDeleteSuccess": "{count} measurements deleted",
+    "bulkDeleteSuccess": "{count, plural, one {# measurement deleted} other {# measurements deleted}}",
     "bulkDeleteSuccessOne": "Measurement deleted",
     "bulkDeleteError": "Error deleting the selected measurements",
-    "bulkDeleteConfirmTitle": "Delete {count} measurements?",
+    "bulkDeleteConfirmTitle": "Delete {count, plural, one {# measurement} other {# measurements}}?",
     "bulkDeleteConfirmTitleOne": "Delete this measurement?",
-    "bulkDeleteConfirmBody": "The {count} selected measurements will be deleted. You can undo this for a short moment afterwards.",
+    "bulkDeleteConfirmBody": "{count, plural, one {The selected measurement will be deleted.} other {The # selected measurements will be deleted.}} You can undo this for a short moment afterwards.",
     "bulkDeleteConfirmBodyOne": "The selected measurement will be deleted. You can undo this for a short moment afterwards.",
     "typePhq9Score": "PHQ-9 score",
     "typeGad7Score": "GAD-7 score",
@@ -1173,7 +1173,7 @@
     "levelLausig": "Terrible",
     "sourceMoodlog": "moodLog",
     "allMoods": "All moods",
-    "entryCount": "{count} entries",
+    "entryCount": "{count, plural, one {# entry} other {# entries}}",
     "emptyTitle": "No mood entries yet",
     "emptyDescription": "Log how you feel today to spot patterns over time.",
     "emptyFilteredTitle": "No mood entries match this filter",
@@ -1267,12 +1267,12 @@
     "sourceWeb": "Web",
     "sourceTelegram": "Telegram",
     "sourceDaylio": "Daylio",
-    "bulkDeleteSuccess": "{count} entries deleted",
+    "bulkDeleteSuccess": "{count, plural, one {# entry deleted} other {# entries deleted}}",
     "bulkDeleteSuccessOne": "Entry deleted",
     "bulkDeleteError": "Error deleting the selected entries",
-    "bulkDeleteConfirmTitle": "Delete {count} entries?",
+    "bulkDeleteConfirmTitle": "Delete {count, plural, one {# entry} other {# entries}}?",
     "bulkDeleteConfirmTitleOne": "Delete this entry?",
-    "bulkDeleteConfirmBody": "The {count} selected mood entries will be deleted. You can undo this for a short moment afterwards.",
+    "bulkDeleteConfirmBody": "{count, plural, one {The selected mood entry will be deleted.} other {The # selected mood entries will be deleted.}} You can undo this for a short moment afterwards.",
     "bulkDeleteConfirmBodyOne": "The selected mood entry will be deleted. You can undo this for a short moment afterwards.",
     "customize": "Customize mood tags",
     "addTagInline": "Add tag",
@@ -1295,7 +1295,7 @@
       "tagLabel": "Tag name",
       "tagIcon": "Icon",
       "tagGroup": "Group",
-      "usageCount": "{count} entries",
+      "usageCount": "{count, plural, one {# entry} other {# entries}}",
       "hideTag": "Hide tag",
       "showTag": "Show tag",
       "moveToGroup": "Move to group",
@@ -1305,7 +1305,7 @@
       "archivedDescription": "Archived tags stay in your past entries. They only disappear from the picker.",
       "archivedEmpty": "Nothing archived.",
       "purgeTitle": "Delete tag permanently?",
-      "purgeBody": "This removes the tag from {count} past entries. This cannot be undone.",
+      "purgeBody": "This removes the tag from {count, plural, one {# past entry} other {# past entries}}. This cannot be undone.",
       "purgeAction": "Delete permanently",
       "purged": "Tag deleted",
       "tagLimitReached": "Tag limit reached",
@@ -1484,7 +1484,7 @@
       "linkedActiveEnergy": "Active energy",
       "linkedRestingHeartRate": "Resting heart rate",
       "linkedHrv": "Heart rate variability",
-      "bodyLogged": "Logged in the illness journal: {count} symptoms",
+      "bodyLogged": "Logged in the illness journal: {count, plural, one {# symptom} other {# symptoms}}",
       "bodyNotLogged": "Nothing is logged in the illness journal for this day",
       "openIllness": "Open"
     },
@@ -1507,7 +1507,7 @@
       "dialogTitle": "Take due medications",
       "dialogDescription": "These medications are due now. Confirm to record all of them as taken.",
       "confirm": "Take all ({count})",
-      "successToast": "{count} intakes recorded",
+      "successToast": "{count, plural, one {# intake recorded} other {# intakes recorded}}",
       "partialToast": "{taken} recorded, {failed} failed. Please try again",
       "failedToast": "No intake recorded. Please try again"
     },
@@ -1582,7 +1582,7 @@
     },
     "withoutNotification": "Without notification",
     "pausedSince": "Paused since",
-    "complianceWindow": "Adherence ({days} days)",
+    "complianceWindow": "Adherence ({days, plural, one {# day} other {# days}})",
     "complianceUnavailable": "Adherence could not be loaded",
     "complianceNotApplicable": "Adherence not applicable",
     "complianceNoDoses": "No doses yet",
@@ -1604,7 +1604,7 @@
     "intakeAlreadyTaken": "{name} was already recorded as taken. Nothing new was saved.",
     "intakeUndoFailed": "Could not undo. Open the history to fix it",
     "glp1LastInjection": "{label}",
-    "glp1NextInjectionDays": "{label} (in {days} days)",
+    "glp1NextInjectionDays": "{label} (in {days, plural, one {# day} other {# days}})",
     "glp1NextInjectionToday": "today",
     "glp1NextInjectionTomorrow": "tomorrow",
     "glp1RotationSuggested": "Recommended next: {site}",
@@ -1955,11 +1955,11 @@
           "monthly": "Monthly",
           "quarterly": "Every three months",
           "yearly": "Once a year",
-          "rolling": "Every {n} days from your last intake",
+          "rolling": "Every {n, plural, one {# day} other {# days}} from your last intake",
           "oneShot": "A single dose",
           "asNeeded": "As needed",
-          "everyNWeeks": "Every {n} weeks",
-          "everyNMonths": "Every {n} months"
+          "everyNWeeks": "Every {n, plural, one {# week} other {# weeks}}",
+          "everyNMonths": "Every {n, plural, one {# month} other {# months}}"
         },
         "weekdaysDetail": ", on {days}",
         "dayOfMonthDetail": ", on day {day}.",
@@ -1968,7 +1968,7 @@
         "endsOn": "Ends: {date}",
         "noEndDate": "No end date",
         "windowLine": "{time}: on time until {onTime}, late until {late}, then missed.",
-        "windowDays": "A dose counts as on time on its day, as late for up to {days} days after, then as missed."
+        "windowDays": "A dose counts as on time on its day, as late for up to {days, plural, one {# day} other {# days}} after, then as missed."
       },
       "compose": {
         "scheduleIndex": "Schedule {n} of {total}",
@@ -2062,7 +2062,7 @@
     "intakeHistoryInjectionSite": "Injection site: {site}",
     "intakeHistorySortByTaken": "Sort by taken time",
     "intakeHistorySortByScheduled": "Sort by scheduled time",
-    "intakeHistoryPageInfo": "Page {page} of {total}, {count} entries",
+    "intakeHistoryPageInfo": "Page {page} of {total}, {count, plural, one {# entry} other {# entries}}",
     "intakeHistoryPrev": "Previous",
     "intakeHistoryNext": "Next",
     "glp1": {
@@ -2219,10 +2219,10 @@
         },
         "purge": {
           "title": "Delete history",
-          "helper": "{count} intake events are stored for this medication.",
+          "helper": "{count, plural, one {# intake event is stored} other {# intake events are stored}} for this medication.",
           "button": "Delete history",
           "dialogTitle": "Really delete the history?",
-          "dialogBody": "The {count} intake events will be removed permanently. The medication itself stays.",
+          "dialogBody": "{count, plural, one {The intake event will be removed permanently.} other {The # intake events will be removed permanently.}} The medication itself stays.",
           "toast": "History deleted",
           "failed": "Could not delete the history."
         },
@@ -2297,7 +2297,7 @@
         "reminderOn": "On",
         "reminderOff": "Off",
         "supplyLabel": "Supply",
-        "supplyRunway": "Lasts about {days} more days",
+        "supplyRunway": "Lasts about {days, plural, one {# more day} other {# more days}}",
         "jumpToZeitplan": "Open schedule",
         "jumpToBestand": "Open supply",
         "complianceTitle": "Adherence",
@@ -2305,9 +2305,9 @@
       },
       "bestand": {
         "title": "Supply",
-        "summary": "{remaining} of {total} doses remaining",
+        "summary": "{remaining} of {total, plural, one {# dose} other {# doses}} remaining",
         "itemsTitle": "Packs & containers",
-        "doses": "{remaining} / {total} doses",
+        "doses": "{remaining} / {total, plural, one {# dose} other {# doses}}",
         "unknown": "Unknown",
         "state": {
           "ACTIVE": "Unopened",
@@ -2319,7 +2319,7 @@
         "emptyHelper": "Register a pack or container to track remaining supply and runway.",
         "emptyCta": "Register a pack",
         "addButton": "Register",
-        "lowStockLinkOn": "Low-stock notification: below {days} days",
+        "lowStockLinkOn": "Low-stock notification: below {days, plural, one {# day} other {# days}}",
         "lowStockLinkOff": "Low-stock notification: off",
         "addTitle": "Register a pack or container",
         "addDescription": "Record a new supply with its unit count; the expiry date is optional.",
@@ -2333,7 +2333,7 @@
         "adjustTitle": "Correct container",
         "adjustDescription": "Set the remaining units and correct the dates printed on or recorded for this container. 0 units marks it as used up.",
         "adjustQuantityLabel": "Remaining units",
-        "adjustHelper": "Capacity: {total} units.",
+        "adjustHelper": "Capacity: {total, plural, one {# unit} other {# units}}.",
         "adjustSubmit": "Save",
         "adjustSuccess": "Stock updated",
         "adjustFailed": "The stock could not be updated.",
@@ -2350,16 +2350,16 @@
           "BOTTLE": "Bottle",
           "OTHER": "Other"
         },
-        "unitsDetail": "{remaining} / {total} units",
+        "unitsDetail": "{remaining} / {total, plural, one {# unit} other {# units}}",
         "quantityModeDoses": "Doses",
         "quantityModeUnits": "Units",
-        "quantityInUnits": "= {units} units",
-        "quantityInDoses": "≈ {doses} doses",
+        "quantityInUnits": "= {units, plural, one {# unit} other {# units}}",
+        "quantityInDoses": "≈ {doses, plural, one {# dose} other {# doses}}",
         "quantityUnderOneDose": "< 1 dose",
-        "expiredSuffix": "+ {units} units expired",
+        "expiredSuffix": "+ {units, plural, one {# unit} other {# units}} expired",
         "packagingTitle": "Packaging & dose",
-        "packagingUnitsPerDose": "1 dose = {units} units",
-        "packagingDefaultPack": "Default pack size: {units} units",
+        "packagingUnitsPerDose": "1 dose = {units, plural, one {# unit} other {# units}}",
+        "packagingDefaultPack": "Default pack size: {units, plural, one {# unit} other {# units}}",
         "packagingNoDefaultPack": "No default pack size set",
         "packagingEdit": "Edit",
         "packagingDescription": "Set how many units one dose consumes and how large a new pack usually is, e.g. after a manufacturer switch with a different blister size.",
@@ -2374,7 +2374,7 @@
         "addDoseStrengthHint": "As printed on the container, e.g. 5 mg/0.5 ml.",
         "openedOn": "Opened {date}",
         "expiresOn": "Expires {date}",
-        "summaryAllExpired": "No usable supply: {units} units marked expired",
+        "summaryAllExpired": "No usable supply: {units, plural, one {# unit} other {# units}} marked expired",
         "editExpiryLabel": "Printed expiry date",
         "editExpiryHelper": "The date printed on the carton. Leave empty if none is recorded.",
         "editOpenedLabel": "Opened on",
@@ -2400,7 +2400,7 @@
         "timesNote": "Adjust each dose's time and on-time window. The frequency (daily, weekly…) is edited in the editor under Advanced.",
         "scheduleLabel": "Schedule {index}",
         "fullEditNote": "Frequency, treatment class and course are edited in the editor under Advanced → Lifecycle.",
-        "graceEcho": "Reminder duration: {minutes} minutes",
+        "graceEcho": "Reminder duration: {minutes, plural, one {# minute} other {# minutes}}",
         "reminderTitle": "Reminder",
         "manageChannels": "Manage notification channels",
         "history": {
@@ -2449,7 +2449,7 @@
           "endLabel": "Window end",
           "onTimeBand": "On time: {start}–{end}",
           "lateUntil": "late until {time}",
-          "lateDays": "late until {days} days after",
+          "lateDays": "late until {days, plural, one {# day} other {# days}} after",
           "orderError": "The start must be before the end.",
           "noTimes": "No dose times set yet."
         }
@@ -2481,9 +2481,9 @@
     "tableSortBy": "Sort by {column}",
     "tableComplianceDays": "{days} d",
     "tableStockDoseOne": "1 dose",
-    "tableStockDoses": "{count} doses",
-    "tableStockRunway": "≈ {days} days left",
-    "cardLowStockRunway": "Supply: ≈ {days} days",
+    "tableStockDoses": "{count, plural, one {# dose} other {# doses}}",
+    "tableStockRunway": "≈ {days, plural, one {# day} other {# days}} left",
+    "cardLowStockRunway": "Supply: ≈ {days, plural, one {# day} other {# days}}",
     "reorderDescription": "Set the order of your medications for both the card and the table view.",
     "reorderSaved": "Order saved",
     "reorderSaveFailed": "Order could not be saved",
@@ -2503,7 +2503,7 @@
       "levelShift": "A shift in the level was detected around {date}.",
       "plateau": {
         "title": "Weight plateau on the current dose",
-        "evidence": "Weight moved by {delta} {unit} over the last {window} days ({readings} readings), {days} days on {dose}."
+        "evidence": "Weight moved by {delta} {unit} over the last {window, plural, one {# day} other {# days}} ({readings, plural, one {# reading} other {# readings}}), {days, plural, one {# day} other {# days}} on {dose}."
       },
       "retarget": {
         "label": "Not the right measurement?",
@@ -2514,11 +2514,11 @@
       },
       "beforeAfter": {
         "summary": "Ø {before} before → Ø {after} since, a change of {delta}.",
-        "counts": "Based on {beforeCount} readings before and {afterCount} since.",
-        "needBefore": "Not enough readings before the start yet. About {weeks} weeks are needed before and after to compare.",
-        "needAfter": "Not enough readings since the start yet. About {weeks} weeks are needed before and after to compare.",
+        "counts": "Based on {beforeCount, plural, one {# reading} other {# readings}} before and {afterCount} since.",
+        "needBefore": "Not enough readings before the start yet. {weeks, plural, one {About # week is} other {About # weeks are}} needed before and after to compare.",
+        "needAfter": "Not enough readings since the start yet. {weeks, plural, one {About # week is} other {About # weeks are}} needed before and after to compare.",
         "needStart": "Set a start date to compare the readings before and after it began.",
-        "needData": "Not enough readings yet. About {weeks} weeks are needed before and after the start to compare."
+        "needData": "Not enough readings yet. {weeks, plural, one {About # week is} other {About # weeks are}} needed before and after the start to compare."
       },
       "insights": {
         "title": "Medication effect",
@@ -2535,9 +2535,9 @@
         "slope": "After the start, the weekly trend changed by {value} {unit} per week (95 % range {low} to {high}).",
         "preSlope": "Before the start, the trend was {value} {unit} per week.",
         "includesZero": "Where a range includes zero, these readings are also consistent with no change.",
-        "basis": "Based on {before} days before and {after} days after the start ({from} to {to}).",
-        "excludedAdherence": "{count} days after the start were left out because fewer than {floor} % of the doses in the {lookback} days before them were taken.",
-        "excludedNotTaking": "{count} days were left out because the medication was paused or between courses.",
+        "basis": "Based on {before, plural, one {# day} other {# days}} before and {after, plural, one {# day} other {# days}} after the start ({from} to {to}).",
+        "excludedAdherence": "{count, plural, one {# day after the start was left out because fewer than {floor} % of the doses in the {lookback, plural, one {# day} other {# days}} before it were taken.} other {# days after the start were left out because fewer than {floor} % of the doses in the {lookback, plural, one {# day} other {# days}} before them were taken.}}",
+        "excludedNotTaking": "{count, plural, one {# day was left out} other {# days were left out}} because the medication was paused or between courses.",
         "notTracked": "Intake is not tracked for this medication, so no days were left out for missed doses.",
         "endDoseChange": "The window ends before the first dose change, so this describes the starting dose.",
         "confoundersTitle": "Other medication changes in this window, which this view cannot separate from this one:",
@@ -2548,21 +2548,21 @@
         "confounderResumed": "{name} resumed on {date}",
         "method": "How this is worked out: one line is fitted to the daily values before the start and one after it. The jump between them at the start is the level change, the difference in their slopes the trend change. The ranges allow for readings that carry over from one day to the next.",
         "needStart": "Set a start date to see the change at the start.",
-        "needBefore": "The change at the start needs readings on at least {days} days spread over {span} days before the start.",
-        "needAfter": "The change at the start needs readings on at least {days} days spread over {span} days since the start, on days the doses were taken.",
+        "needBefore": "The change at the start needs readings on at least {days, plural, one {# day} other {# days}} spread over {span, plural, one {# day} other {# days}} before the start.",
+        "needAfter": "The change at the start needs readings on at least {days, plural, one {# day} other {# days}} spread over {span, plural, one {# day} other {# days}} since the start, on days the doses were taken.",
         "fitFailed": "These readings could not be fitted, so no change at the start is shown.",
         "autocorrelation": "The daily values carry over strongly from one day to the next, so even these ranges may be too narrow."
       }
     },
     "import": {
-      "resultSuccess": "{imported} intakes imported",
+      "resultSuccess": "{imported, plural, one {# intake} other {# intakes}} imported",
       "resultPartial": "{imported} imported, {skipped} skipped.",
-      "resultNothing": "Nothing was imported: all {skipped} entries were skipped.",
-      "resultAlreadyRecorded": "{recorded} intakes are already recorded. Nothing new was added.",
+      "resultNothing": "Nothing was imported: {skipped, plural, one {the # entry was} other {all # entries were}} skipped.",
+      "resultAlreadyRecorded": "{recorded, plural, one {# intake is} other {# intakes are}} already recorded. Nothing new was added.",
       "resultEmpty": "That file carried no intakes.",
       "showSkipDetails": "Show skipped rows ({count})",
       "skipDetailLine": "Line {line}: {reason}",
-      "skipDetailsOmitted": "{count} more skipped rows are not shown.",
+      "skipDetailsOmitted": "{count, plural, one {# more skipped row is not shown.} other {# more skipped rows are not shown.}}",
       "skipGroupOne": "{count} entry skipped: {reason}",
       "skipGroupFew": "{count} entries skipped: {reason}",
       "skipGroupOther": "{count} entries skipped: {reason}",
@@ -2603,13 +2603,13 @@
         "manage": "Manage categories",
         "manageDescription": "Your own categories, shown next to the built-in ones.",
         "hidden": "Hidden",
-        "count": "{count} medications",
+        "count": "{count, plural, one {# medication} other {# medications}}",
         "rename": "Rename",
         "hide": "Hide from the picker",
         "show": "Show in the picker",
         "delete": "Delete",
         "deleteTitle": "Delete this category?",
-        "deleteBody": "{count} medications filed under it move to Other. The medications themselves stay.",
+        "deleteBody": "{count, plural, one {# medication filed under it moves to Other. The medication itself stays.} other {# medications filed under it move to Other. The medications themselves stay.}}",
         "movedToOther": "Category deleted. {count} medications moved to Other."
       },
       "filter": {
@@ -2631,7 +2631,7 @@
       "none": "Taken continuously, no separate courses.",
       "range": "{start} to {end}",
       "since": "Since {start}",
-      "meta": "Course {n}, {status}, {taken} doses taken",
+      "meta": "Course {n}, {status}, {taken, plural, one {# dose} other {# doses}} taken",
       "status": {
         "current": "running",
         "upcoming": "upcoming",
@@ -2804,7 +2804,7 @@
     "days7Title": "Last 7 days",
     "days30Label": "30d",
     "daysNLabel": "{days}d",
-    "daysNAria": "Last {days} days",
+    "daysNAria": "Last {days, plural, one {# day} other {# days}}",
     "days30Title": "Last 30 days",
     "days90Label": "90d",
     "days90Title": "Last 90 days",
@@ -2896,9 +2896,9 @@
       "trendUp": "rising",
       "trendDown": "falling",
       "trendFlat": "steady",
-      "scatterSummary": "Correlation chart, {count} points plotting {xLabel} against {yLabel}.",
+      "scatterSummary": "Correlation chart, {count, plural, one {# point} other {# points}} plotting {xLabel} against {yLabel}.",
       "scatterNoData": "Correlation chart of {xLabel} against {yLabel}. No data available.",
-      "moodHeatmap": "Mood heatmap from {start} to {end}, {days} days logged.",
+      "moodHeatmap": "Mood heatmap from {start} to {end}, {days, plural, one {# day} other {# days}} logged.",
       "moodHeatmapEmpty": "Mood heatmap, no days logged yet.",
       "complianceHeatmap": "Medication compliance heatmap from {start} to {end}, {days} active days.",
       "complianceHeatmapEmpty": "Medication compliance heatmap, no active days yet."
@@ -3088,7 +3088,7 @@
         "red": "One or more pillars are outside the reference range"
       },
       "insufficient": "Nothing has enough recent data to score yet. One area of health is enough to start, and the score will say which areas it rests on.",
-      "basis": "Based on {count} of {recommended} areas of health.",
+      "basis": "Based on {count} of {recommended, plural, one {# area of health} other {# areas of health}}.",
       "compositionNotice": {
         "item": "{pillar} ({reason})",
         "left": "No longer counting toward the score: {pillars}.",
@@ -3098,7 +3098,7 @@
       "notScored": "Not scored yet ({count})",
       "method": "The score is the equal-weighted average of the pillars that count toward it, on a 0 to 100 scale. Each pillar is graded against a published reference band, and the weakest pillar can set the overall band. A pillar without enough recent data is left out rather than counted as a zero. The reference bands come from published sources; which pillars count is yours to choose, so the combined number is not itself a clinical standard.",
       "bandSetter": "Overall band set by {pillar}",
-      "versionAndNoise": "Method version {version}. Weekly comparison floor: {noise} points.",
+      "versionAndNoise": "Method version {version}. Weekly comparison floor: {noise, plural, one {# point} other {# points}}.",
       "methodVersion": "Method version {version}.",
       "configured": "You chose which pillars count toward this score.",
       "none": "none",
@@ -3131,13 +3131,13 @@
       "bpBasisBelowFloor": "{axis} sets this score: about {offset} mmHg under the low-pressure floor of {boundary} mmHg.",
       "bpBasisInBand": "Both values are at or below their reference ceilings.",
       "bpScale": "At the ceiling the score is 85; 100 means roughly 12 mmHg below it.",
-      "bpRepresentative": "Based on a recency-weighted average of the last {days} days, so it may not match any single reading.",
+      "bpRepresentative": "Based on a recency-weighted average of the last {days, plural, one {# day} other {# days}}, so it may not match any single reading.",
       "source": "Source: {source}, as of {date}",
-      "observedActivity": "{value} steps per day",
-      "observedSleep": "{value} minutes per night",
+      "observedActivity": "{value, plural, one {# step} other {# steps}} per day",
+      "observedSleep": "{value, plural, one {# minute} other {# minutes}} per night",
       "observedAdiposity": "Waist-to-height ratio {value}",
-      "referenceActivity": "Benefit plateaus by {high} steps per day",
-      "referenceSleep": "At least {low} minutes per night; longer sleep is not penalised",
+      "referenceActivity": "Benefit plateaus by {high, plural, one {# step} other {# steps}} per day",
+      "referenceSleep": "At least {low, plural, one {# minute} other {# minutes}} per night; longer sleep is not penalised",
       "referenceAdiposity": "Waist-to-height ratio below {high}",
       "referenceHba1c": "HbA1c {low} to {high}%",
       "referenceDetail": "{label}: {low} to {high} ({kind}, {source})",
@@ -3160,7 +3160,7 @@
         "unavailable": "This pillar is not currently eligible"
       },
       "tension": "Readiness signals differ. Supportive: {positive}. Under strain: {negative}.",
-      "returnToBand": "{metric} has been back inside your usual range for {days} days.",
+      "returnToBand": "{metric} has been back inside your usual range for {days, plural, one {# day} other {# days}}.",
       "weightGoal": {
         "title": "Personal weight goal",
         "value": "{current} {unit} now. Goal {min} to {max} {unit}. Distance to goal: {distance} {unit}.",
@@ -3175,7 +3175,7 @@
       "configureLink": "Choose what counts toward your score",
       "coverage": {
         "recommendedMet": "Covers the three areas the score recommends",
-        "areas": "{present} of {required} areas of health"
+        "areas": "{present} of {required, plural, one {# area of health} other {# areas of health}}"
       },
       "historyLink": "History"
     },
@@ -3234,7 +3234,7 @@
     "correlationRow": {
       "title": "Relationships",
       "emptyTitle": "Need more data to see this relationship",
-      "sourceChip": "based on {n} paired readings ({window})",
+      "sourceChip": "based on {n, plural, one {# paired reading} other {# paired readings}} ({window})",
       "sourceWindowLast30": "last 30 days",
       "confidenceHigh": "High confidence",
       "confidenceModerate": "Moderate confidence",
@@ -3301,7 +3301,7 @@
         "alreadyKept": "The Coach already remembers this."
       },
       "guided": {
-        "offerTitle": "The Coach has {count} follow-up questions for you",
+        "offerTitle": "The Coach has {count, plural, one {# follow-up question} other {# follow-up questions}} for you",
         "offerTitleOne": "The Coach has a follow-up question for you",
         "offerBody": "Short answers sharpen your self-context, one question at a time, right here in the chat.",
         "offerStart": "Answer now",
@@ -3465,15 +3465,15 @@
       "lookback": {
         "label": "How far back the Coach can look",
         "option": {
-          "last7days": "{days} days",
-          "last30days": "{days} days",
-          "last90days": "{days} days",
-          "lastYear": "{months} months",
-          "allTime": "{months} months in detail, longer for labs"
+          "last7days": "{days, plural, one {# day} other {# days}}",
+          "last30days": "{days, plural, one {# day} other {# days}}",
+          "last90days": "{days, plural, one {# day} other {# days}}",
+          "lastYear": "{months, plural, one {# month} other {# months}}",
+          "allTime": "{months, plural, one {# month} other {# months}} in detail, longer for labs"
         },
-        "detailDays": "The Coach reads nothing older than {days} days, in any answer.",
-        "detailMonths": "The Coach reads nothing older than {months} months, in any answer.",
-        "detailAll": "Without a limit, the Coach reads {dailyMonths} months of readings in daily detail and older readings as monthly values up to {years} years back. For lab results it reads the latest value of the most recently measured markers and, for a marker you ask about, its {labRecent} previous results, with older ones summarised per year up to {labYears} years back; earlier years are only counted.",
+        "detailDays": "The Coach reads nothing older than {days, plural, one {# day} other {# days}}, in any answer.",
+        "detailMonths": "The Coach reads nothing older than {months, plural, one {# month} other {# months}}, in any answer.",
+        "detailAll": "Without a limit, the Coach reads {dailyMonths, plural, one {# month} other {# months}} of readings in daily detail and older readings as monthly values up to {years, plural, one {# year} other {# years}} back. For lab results it reads the latest value of the most recently measured markers and, for a marker you ask about, its {labRecent, plural, one {# previous result} other {# previous results}}, with older ones summarised per year up to {labYears, plural, one {# year} other {# years}} back; earlier years are only counted.",
         "note": "Your profile, current medications, an ongoing illness and upcoming visits stay visible; summaries that need more history are shortened or left out. Answers the Coach gave earlier in older conversations may still quote older values."
       },
       "showConversations": "Show conversations",
@@ -3483,7 +3483,7 @@
       "thinkingDuration": "Thought for {seconds}s",
       "thinkingExpandAria": "Show what the Coach considered",
       "thinkingDetail": "Answered from your health snapshot.",
-      "tokensUsed": "{count} tokens",
+      "tokensUsed": "{count, plural, one {# token} other {# tokens}}",
       "askAboutThis": "Ask the coach about this",
       "readStrip": {
         "label": "Usual range",
@@ -3645,7 +3645,7 @@
       "plan": {
         "accept": "Take on this plan",
         "decline": "Not now",
-        "confirmed": "Noted. I'll check in with you in {days} days.",
+        "confirmed": "Noted. I'll check in with you in {days, plural, one {# day} other {# days}}.",
         "declined": "Okay, not now."
       },
       "assumption": {
@@ -3907,8 +3907,8 @@
       "mainSleep": "Main sleep",
       "totalSleep": "Total sleep",
       "compositionTitle": "Stage composition",
-      "compositionSubtitle": "Last {nights} nights",
-      "compositionAriaLabel": "Sleep stage composition over {nights} nights",
+      "compositionSubtitle": "Last {nights, plural, one {# night} other {# nights}}",
+      "compositionAriaLabel": "Sleep stage composition over {nights, plural, one {# night} other {# nights}}",
       "sourceDiscrepancy": {
         "tooltipTitle": "Sources disagree"
       },
@@ -3920,20 +3920,20 @@
         "awake": "Awake",
         "inBed": "In bed",
         "nap": "Nap",
-        "napCount": "{count} naps",
+        "napCount": "{count, plural, one {# nap} other {# naps}}",
         "unavailable": "No stage data yet. Sleep stages appear here as soon as a connected source delivers them."
       },
       "hypnogram": {
         "title": "Night timeline",
         "wokeOn": "Woke on {date}",
-        "summary": "{asleep} asleep, {awakenings} awakenings",
+        "summary": "{asleep} asleep, {awakenings, plural, one {# awakening} other {# awakenings}}",
         "source": "from {source}",
         "previous": "Previous night",
         "next": "Next night",
         "empty": "No night recorded for this day.",
         "estimateNote": "This source reports stage totals without times, so there is no timeline for this night.",
         "noStages": "This night has no stage times.",
-        "ariaLabel": "Sleep stages over the night: {asleep} asleep, {awakenings} awakenings"
+        "ariaLabel": "Sleep stages over the night: {asleep} asleep, {awakenings, plural, one {# awakening} other {# awakenings}}"
       },
       "empty": {
         "title": "No sleep data yet",
@@ -3943,17 +3943,17 @@
       "debt": {
         "title": "Sleep debt",
         "value": "{hours}h {minutes}m short",
-        "caption": "Outstanding balance over the last {nights} nights",
+        "caption": "Outstanding balance over the last {nights, plural, one {# night} other {# nights}}",
         "clearValue": "All caught up",
-        "clearCaption": "Nothing outstanding over the last {nights} nights",
-        "learning": "Still learning your sleep: {counted} nights so far, {remaining} more to read a reliable balance.",
+        "clearCaption": "Nothing outstanding over the last {nights, plural, one {# night} other {# nights}}",
+        "learning": "Still learning your sleep: {counted, plural, one {# night} other {# nights}} so far, {remaining} more to read a reliable balance.",
         "computedInfo": "This is HealthLog's own estimate: a rolling balance of need minus sleep over recent nights, with catch-up sleep paying it down. It can differ from a wearable's native sleep-debt figure, which uses its own need model."
       },
       "average": {
         "title": "Average per night",
         "value": "{hours}h {minutes}m",
-        "caption": "Mean sleep across the last {nights} nights",
-        "learning": "Still learning your sleep: {counted} nights so far, {remaining} more for a reliable average."
+        "caption": "Mean sleep across the last {nights, plural, one {# night} other {# nights}}",
+        "learning": "Still learning your sleep: {counted, plural, one {# night} other {# nights}} so far, {remaining} more for a reliable average."
       },
       "chronotype": {
         "title": "Chronotype",
@@ -3978,7 +3978,7 @@
       }
     },
     "medicationCompliance": "Medication adherence",
-    "dayStreak": "{count} day streak",
+    "dayStreak": "{count, plural, one {# day streak} other {# day streak}}",
     "dayStreakOne": "{count} day streak",
     "compliance7d": "Adherence (7 days)",
     "compliance30d": "Adherence (30 days)",
@@ -4097,7 +4097,7 @@
         "daySleepTitle": "The night before",
         "daySleepNone": "No sleep recorded for that night",
         "daySleepAwakeningsOne": "{count} awakening",
-        "daySleepAwakeningsMany": "{count} awakenings",
+        "daySleepAwakeningsMany": "{count, plural, one {# awakening} other {# awakenings}}",
         "dayMoodTitle": "Mood that day",
         "dayMoodNone": "No mood logged that day",
         "sleepTrendsLink": "Sleep trends",
@@ -4178,8 +4178,8 @@
         "fatigue": "Fatigue",
         "form": "Form",
         "explainer": "Fitness is your heart-rate training impulse averaged over about six weeks, fatigue over about one week, and form is the difference. The numbers compare with your own past, not with other people or other apps.",
-        "warmingUp": "Based on {days} days so far: until six weeks are covered, fitness reads lower than it is.",
-        "coverage": "{rated} of the last {days} days could be rated. A day with no activity data, or with a workout that could not be scored, is left out rather than counted as rest.",
+        "warmingUp": "Based on {days, plural, one {# day} other {# days}} so far: until six weeks are covered, fitness reads lower than it is.",
+        "coverage": "{rated} of the last {days, plural, one {# day} other {# days}} could be rated. A day with no activity data, or with a workout that could not be scored, is left out rather than counted as rest.",
         "asOf": "As of {date}, the last day that could be rated."
       }
     },
@@ -4194,15 +4194,15 @@
       },
       "clinical": {
         "title": "Glucose overview",
-        "subtitle": "A read on your last {days} days, from {count} readings.",
+        "subtitle": "A read on your last {days, plural, one {# day} other {# days}}, from {count, plural, one {# reading} other {# readings}}.",
         "spotCaveat": "These are spot-reading estimates from individual measurements, not a continuous-monitor profile. Read them as a direction of travel rather than a clinical verdict.",
         "labsLink": "Lab results? Log a blood-draw HbA1c or fasting glucose under Labs.",
         "learningTitle": "Still learning your glucose",
         "learningBody": "So far that's {count} over {days}. A little more history and a fuller picture comes into focus. Keep logging, or let a connected device fill it in.",
         "learningBodyEmpty": "Once a handful of readings come in (logged by you or synced from a device), your time-in-range, average, and variability take shape here.",
-        "readingsCount": "{count} readings",
+        "readingsCount": "{count, plural, one {# reading} other {# readings}}",
         "readingsCountOne": "1 reading",
-        "daysCount": "{days} days",
+        "daysCount": "{days, plural, one {# day} other {# days}}",
         "daysCountOne": "1 day",
         "tir": {
           "title": "Time in range",
@@ -4254,7 +4254,7 @@
             "random": "Random",
             "bedtime": "Bedtime",
             "unspecified": "Untagged",
-            "readingsShort": "{count} readings",
+            "readingsShort": "{count, plural, one {# reading} other {# readings}}",
             "readingsShortOne": "1 reading"
           }
         }
@@ -4547,13 +4547,13 @@
         "strengthModerate": "Moderate",
         "strengthWeak": "Weak",
         "strengthNone": "None",
-        "source": "{n} paired days, r = {r}",
+        "source": "{n, plural, one {# paired day} other {# paired days}}, r = {r}",
         "sourceLabel": "How this was computed",
         "emptyTitle": "Not enough paired data yet",
         "emptyDescription": "Log mood and this metric on the same days to see a correlation.",
-        "pendingDescription": "{n} of {needed} paired days so far. A correlation appears once there are enough days to tell a pattern from chance.",
+        "pendingDescription": "{n} of {needed, plural, one {# paired day} other {# paired days}} so far. A correlation appears once there are enough days to tell a pattern from chance.",
         "noLinkTitle": "No clear link",
-        "noLinkDescription": "{n} paired days, and nothing stands out beyond what chance would produce.",
+        "noLinkDescription": "{n, plural, one {# paired day} other {# paired days}}, and nothing stands out beyond what chance would produce.",
         "weightTitle": "Mood vs. weight",
         "bloodPressureTitle": "Mood vs. blood pressure",
         "weightAxis": "Weight",
@@ -4566,14 +4566,14 @@
         "title": "What stands out",
         "weekdayDip": "Your mood dips most on {weekday}, {delta} below your week.",
         "weekdayPeak": "{weekday} is consistently your best day, averaging {value}.",
-        "trendUp": "Your mood is trending up over the last {days} days (+{delta} vs the prior period).",
-        "trendDown": "Your mood is trending down over the last {days} days (-{delta} vs the prior period).",
+        "trendUp": "Your mood is trending up over the last {days, plural, one {# day} other {# days}} (+{delta} vs the prior period).",
+        "trendDown": "Your mood is trending down over the last {days, plural, one {# day} other {# days}} (-{delta} vs the prior period).",
         "weekendUp": "You feel better on weekends (+{delta} vs weekdays).",
         "weekendDown": "Your mood runs lower on weekends (-{delta} vs weekdays).",
         "tagLift": "Days tagged \"{tag}\" average {delta} above your overall mood.",
         "tagDrop": "Days tagged \"{tag}\" run {delta} below your average.",
         "inTarget": "You've been in your good-mood range {pct}% of the last 30 days.",
-        "streak": "You've logged your mood {days} days in a row. Keep it up.",
+        "streak": "You've logged your mood {days, plural, one {# day} other {# days}} in a row. Keep it up.",
         "timeOfDay": "You feel best in the {bucket}, averaging {value}."
       },
       "timeOfDay": {
@@ -4594,7 +4594,7 @@
       },
       "influence": {
         "title": "Influence on mood",
-        "detail": "Averages {withAvg} on the {withDays} days you tagged this vs {withoutAvg} without it.",
+        "detail": "Averages {withAvg} on the {withDays, plural, one {# day} other {# days}} you tagged this vs {withoutAvg} without it.",
         "confidenceLow": "Low confidence",
         "confidenceMedium": "Medium confidence",
         "confidenceHigh": "High confidence"
@@ -4612,8 +4612,8 @@
         "metricNextDayRecovery": "Next-day recovery",
         "metricNextDayRestingHr": "Next-day resting heart rate",
         "metricNextDayHrv": "Next-day heart-rate variability",
-        "detailSameDay": "Averages {withAvg} on the {withDays} days you tagged this vs {withoutAvg} without it.",
-        "detailNextDay": "Averages {withAvg} the day after the {withDays} days you tagged this vs {withoutAvg} otherwise."
+        "detailSameDay": "Averages {withAvg} on the {withDays, plural, one {# day} other {# days}} you tagged this vs {withoutAvg} without it.",
+        "detailNextDay": "Averages {withAvg} the day after the {withDays, plural, one {# day} other {# days}} you tagged this vs {withoutAvg} otherwise."
       },
       "factorCrosstab": {
         "title": "Your rated factors and your vitals",
@@ -4625,19 +4625,19 @@
         "metricHrv": "Heart-rate variability",
         "metricWeight": "Weight",
         "metricBloodPressureSys": "Systolic",
-        "detail": "Averages {lowAvg} on the {lowDays} days you rated {factor} low vs {highAvg} on the days you rated it high.",
+        "detail": "Averages {lowAvg} on the {lowDays, plural, one {# day} other {# days}} you rated {factor} low vs {highAvg} on the days you rated it high.",
         "detailInverse": "Averages {lowAvg} on your {lowDays} worse {factor} days vs {highAvg} on your better ones."
       },
       "discovery": {
         "title": "What stands out",
         "subheading": "Discovered relationships",
-        "footer": "Surfaced from {tested} day-to-day pairs tested across all your metrics, after the false-discovery correction.",
+        "footer": "Surfaced from {tested, plural, one {# day-to-day pair} other {# day-to-day pairs}} tested across all your metrics, after the false-discovery correction.",
         "disclaimer": "Statistically filtered, but still observational: a pattern worth watching, not a cause.",
         "moodUp": "Higher {factor} tends to go with higher next-day mood in your data.",
         "moodDown": "Higher {factor} tends to go with lower next-day mood in your data.",
         "outcomeUp": "Higher mood tends to go with higher next-day {factor} in your data.",
         "outcomeDown": "Higher mood tends to go with lower next-day {factor} in your data.",
-        "stat": "{n} paired days, r = {r}, q = {q}",
+        "stat": "{n, plural, one {# paired day} other {# paired days}}, r = {r}, q = {q}",
         "statLabel": "How this was computed",
         "explainerLabel": "How this was computed",
         "channel": {
@@ -4650,7 +4650,7 @@
       "dimensions": {
         "title": "State of mind",
         "none": "Nothing recorded on your state of mind yet.",
-        "window": "{days} days",
+        "window": "{days, plural, one {# day} other {# days}}",
         "noneInWindow": "nothing in this range",
         "higherIsMore": "higher = {anchor}",
         "notRecorded": "Not recorded: {list}."
@@ -4661,7 +4661,7 @@
         "lower": "lower",
         "higher": "higher",
         "statement": "On days with “{label}” the mood averaged {direction}: {withAvg} against {withoutAvg}.",
-        "counts": "{withDays} days with, {withoutDays} days without",
+        "counts": "{withDays, plural, one {# day} other {# days}} with, {withoutDays, plural, one {# day} other {# days}} without",
         "caveat": "That shows a connection, not a cause."
       },
       "prognosis": {
@@ -4673,14 +4673,14 @@
         "provisional": "Still provisional: the pattern rests on a short stretch of days.",
         "notToday": "This describes {date}, not today.",
         "deviationWithin": "Your own rating sits inside that range.",
-        "deviationAbove": "Your own rating sits {amount} points above that range.",
-        "deviationBelow": "Your own rating sits {amount} points below that range.",
+        "deviationAbove": "Your own rating sits {amount, plural, one {# point} other {# points}} above that range.",
+        "deviationBelow": "Your own rating sits {amount, plural, one {# point} other {# points}} below that range.",
         "weightedTitle": "What weighed most in this day's comparison",
         "weightedUp": "{label}: counted towards a higher expected value",
         "weightedDown": "{label}: counted towards a lower expected value",
         "caveat": "This is a comparison with your own past days, not a statement about how a day came to go the way it did.",
-        "learning": "Learning phase: {entries} of {threshold} days recorded. A comparison appears once there are enough of them.",
-        "noPattern": "Nothing in the {entries} days recorded so far is steady enough to compare a day against. When you also capture a day's context, more of it becomes comparable.",
+        "learning": "Learning phase: {entries} of {threshold, plural, one {# day} other {# days}} recorded. A comparison appears once there are enough of them.",
+        "noPattern": "Nothing in the {entries, plural, one {# day} other {# days}} recorded so far is steady enough to compare a day against. When you also capture a day's context, more of it becomes comparable.",
         "featureValue": "{field}: {value}",
         "loadError": "Could not load the value expected on your own pattern."
       },
@@ -4702,9 +4702,9 @@
     },
     "derived": {
       "coverage": {
-        "summary": "{present} of {required} inputs ({percent}%)",
+        "summary": "{present} of {required, plural, one {# input} other {# inputs}} ({percent}%)",
         "ratioLabel": "{present}/{required}",
-        "historyDays": "Based on {count} days of history",
+        "historyDays": "Based on {count, plural, one {# day} other {# days}} of history",
         "missing": "Track these to sharpen this: {list}",
         "summaryLabelled": "{label} ({percent}%)"
       },
@@ -4724,7 +4724,7 @@
         "inputsLabel": "Inputs",
         "noInputs": "No inputs backed this value yet.",
         "methodLabel": "Method",
-        "window": "From your last {days} days of {source} data",
+        "window": "From your last {days, plural, one {# day} other {# days}} of {source} data",
         "asOf": "as of {date}",
         "standardLink": "Standard: {name}"
       },
@@ -4734,7 +4734,7 @@
         "loadingLabel": "Loading your vitals",
         "loadError": "Could not load your vitals right now.",
         "infoLabel": "How is this calculated?",
-        "building": "Building your typical range: {count} of {target} days",
+        "building": "Building your typical range: {count} of {target, plural, one {# day} other {# days}}",
         "typicalRange": "Typical for you: {low}–{high}",
         "fitnessYounger": "Cardio fitness of someone ~{years} yr younger",
         "fitnessOlder": "Cardio fitness ~{years} yr above your age",
@@ -4871,7 +4871,7 @@
         "stress": "Stress",
         "strain": "Strain",
         "historyTitle": "History",
-        "historyWindow": "Last {days} days"
+        "historyWindow": "Last {days, plural, one {# day} other {# days}}"
       },
       "coincident": {
         "label": "Several vitals off baseline",
@@ -4889,16 +4889,16 @@
       },
       "trajectory": {
         "cardTitle": "Short-horizon projection",
-        "headline": "If this pattern continues: the next {days} days",
-        "range": "Projected around {low}–{high} {unit} in {days} days.",
+        "headline": "If this pattern continues: the next {days, plural, one {# day} other {# days}}",
+        "range": "Projected around {low} to {high} {unit} in {days, plural, one {# day} other {# days}}.",
         "caveat": "A projection of your own recent trend, not a prediction. The shaded band widens to show how quickly the uncertainty grows.",
         "insufficient": "Not enough of a clear trend to project yet. Keep tracking and a projection will appear once the recent pattern is strong enough.",
-        "daysNeeded": "About {count} more days of tracking needed before a projection can appear."
+        "daysNeeded": "About {count, plural, one {# more day} other {# more days}} of tracking needed before a projection can appear."
       },
       "sameTime": {
         "sectionTitle": "Today so far",
         "sectionSubtitle": "Your running totals against what is usual for you at this hour",
-        "learning": "Learning your usual day: {count} of {target} days",
+        "learning": "Learning your usual day: {count} of {target, plural, one {# day} other {# days}}",
         "framing": "Typical by {time}: {typical} {unit}",
         "comparisonLabel": "Your typical day"
       }
@@ -5115,7 +5115,7 @@
       "rangeContext": "Now {value}, usually {low}–{high}.",
       "rangeContextTimeOfDay": "Now {value}, usually {low}–{high} at this time of day.",
       "shiftContext": "Around {before} before, {after} since.",
-      "shiftDays": "Based on {before} days before and {after} since."
+      "shiftDays": "Based on {before, plural, one {# day} other {# days}} before and {after} since."
     },
     "breathingScreening": {
       "sectionTitle": "Breathing during sleep",
@@ -5125,9 +5125,9 @@
       "trendUp": "Trending higher than your earlier nights.",
       "trendDown": "Trending lower than your earlier nights.",
       "trendStable": "Holding steady against your earlier nights.",
-      "nights": "{count} nights tracked",
+      "nights": "{count, plural, one {# night tracked} other {# nights tracked}}",
       "indexLine": "recent average index {value}",
-      "eventsFlagged": "{count} events flagged by your device",
+      "eventsFlagged": "{count, plural, one {# event flagged} other {# events flagged}} by your device",
       "disclaimer": "This is a screening signal, not a diagnosis. Discuss with a clinician."
     },
     "labsChanges": {
@@ -5216,7 +5216,7 @@
       "crossLink": {
         "title": "ECG recordings",
         "recordingsOne": "1 recording on file.",
-        "recordingsMany": "{count} recordings on file.",
+        "recordingsMany": "{count, plural, one {# recording on file.} other {# recordings on file.}}",
         "latestResult": "Latest device result: {result}.",
         "cta": "View recordings"
       },
@@ -5230,7 +5230,7 @@
       "hourlyNote": "Showing this day's hourly average; recent days show the full 10-minute detail.",
       "empty": "Not enough heart-rate readings for this day to show its shape yet.",
       "coverageOne": "Based on 1 reading across {hours}h.",
-      "coverageMany": "Based on {count} readings across {hours}h.",
+      "coverageMany": "Based on {count, plural, one {# reading} other {# readings}} across {hours}h.",
       "baseline": "Resting",
       "today": "Today",
       "previousDay": "Previous day",
@@ -5281,7 +5281,7 @@
       "notEnough": "Too few readings",
       "pulse": "Pulse {value} bpm",
       "difference": "Morning minus evening: {systolic}/{diastolic} mmHg.",
-      "differencePending": "Morning and evening are compared once each has at least {min} readings.",
+      "differencePending": "Morning and evening are compared once each has at least {min, plural, one {# reading} other {# readings}}.",
       "hours": "Morning {morning}, midday {midday}, evening {evening}, in your time zone.",
       "hourRange": "{start}–{end}",
       "emptyTitle": "No complete readings in this range",
@@ -5766,7 +5766,7 @@
   "trendHints": {
     "title": "First trend after 5 readings",
     "remainingOne": "1 more reading to go.",
-    "remainingMany": "{count} more readings to go."
+    "remainingMany": "{count, plural, one {# more reading to go.} other {# more readings to go.}}"
   },
   "settings": {
     "oauthCallbackPreflightItem": "{provider}: callback address {configuredOrigin} differs from this app address {currentOrigin}.",
@@ -6098,10 +6098,10 @@
         "subtitle": "Decide which source wins when two report the same metric.",
         "nutrients": {
           "title": "Synced nutrient intake",
-          "description": "Daily totals over the last {days} days: what Apple Health or a food tracker synced plus the supplements you took.",
+          "description": "Daily totals over the last {days, plural, one {# day} other {# days}}: what Apple Health or a food tracker synced plus the supplements you took.",
           "empty": "No nutrient data has been synced yet.",
           "latest": "{amount} {unit} on {date}",
-          "daysWithData": "{count} of {days} days",
+          "daysWithData": "{count} of {days, plural, one {# day} other {# days}}",
           "moduleHint": "Syncing is controlled by the Nutrient intake module.",
           "moduleHintLink": "Manage modules",
           "detail": "Read-only: the source app owns the numbers."
@@ -6161,7 +6161,7 @@
         "import": {
           "heading": "Import",
           "description": "Bring data into HealthLog from Apple Health, Health Connect, a watch's activity file, a JSON file or a CSV. Imports skip rows that already exist, so re-running one is safe.",
-          "charCount": "{used} / {max} characters",
+          "charCount": "{used} / {max, plural, one {# character} other {# characters}}",
           "appleHealth": {
             "title": "Apple Health",
             "description": "Upload the export.zip from the Health app on iPhone (Profile → Export All Health Data).",
@@ -6177,10 +6177,10 @@
             "failed": "The import failed.",
             "failureInterrupted": "The import was interrupted before it finished, usually by a server restart or an out-of-memory stop. Your data is safe; upload the export again to retry.",
             "failureInsufficientMemory": "The server's memory limit is too low for an archive this size. Ask whoever runs the server to raise the Node.js heap limit (NODE_OPTIONS=--max-old-space-size), then upload the export again.",
-            "rowsImported": "{count} rows imported so far",
-            "doneSummary": "Done: {imported} of {read} records imported, {skipped} clinical records skipped.",
-            "doneSummaryAuxOnly": "Done: nothing new among the {read} records, but the lab results or ECGs below were imported.",
-            "doneNothing": "Nothing was imported from that archive: 0 of {read} records landed.",
+            "rowsImported": "{count, plural, one {# row imported so far} other {# rows imported so far}}",
+            "doneSummary": "Done: {imported} of {read, plural, one {# record} other {# records}} imported, {skipped, plural, one {# clinical record} other {# clinical records}} skipped.",
+            "doneSummaryAuxOnly": "Done: nothing new among the {read, plural, one {# record} other {# records}}, but the lab results or ECGs below were imported.",
+            "doneNothing": "Nothing was imported from that archive: 0 of {read, plural, one {# record} other {# records}} landed.",
             "writtenByHealthLogOne": "{count} record that HealthLog wrote into Apple Health itself was left out, because it is already in your data.",
             "writtenByHealthLogOther": "{count} records that HealthLog wrote into Apple Health itself were left out, because they are already in your data.",
             "writtenByHealthLogFew": "{count} records that HealthLog wrote into Apple Health itself were left out, because they are already in your data.",
@@ -6218,20 +6218,20 @@
             "labsMarkersCreatedOther": "{count} new markers were added to Labs.",
             "labsMarkersCreatedFew": "{count} new markers were added to Labs.",
             "viewInLabs": "View in Labs",
-            "estimateWarning": "Cumulative totals for {count} day(s) were estimated from the largest export source. Native Apple Health statistics remain authoritative.",
+            "estimateWarning": "Cumulative totals for {count, plural, one {# day} other {# days}} were estimated from the largest export source. Native Apple Health statistics remain authoritative.",
             "phase": {
               "queued": "Queued…",
               "unpacking": "Unpacking the archive…",
               "parsing": "Reading the export…",
               "upserting": "Importing records…"
             },
-            "skipUnsupported": "{count} samples skipped: data types HealthLog doesn't import.",
-            "skipRefused": "{count} samples couldn't be written (unreadable, out of range, or the save failed).",
-            "skipBreakdown": "Show breakdown ({count} types)",
-            "skipBreakdownMore": "+ {count} more types",
-            "cycleSummary": "{samples} cycle samples merged into {days} day logs.",
-            "cycleModuleOff": "{count} cycle samples skipped because cycle tracking is off for this account.",
-            "cycleDaysFailed": "{count} cycle days couldn't be written: {reason}"
+            "skipUnsupported": "{count, plural, one {# sample skipped} other {# samples skipped}}: data types HealthLog doesn't import.",
+            "skipRefused": "{count, plural, one {# sample couldn't be written} other {# samples couldn't be written}} (unreadable, out of range, or the save failed).",
+            "skipBreakdown": "Show breakdown ({count, plural, one {# type} other {# types}})",
+            "skipBreakdownMore": "+ {count, plural, one {# more type} other {# more types}}",
+            "cycleSummary": "{samples, plural, one {# cycle sample} other {# cycle samples}} merged into {days, plural, one {# day log} other {# day logs}}.",
+            "cycleModuleOff": "{count, plural, one {# cycle sample skipped} other {# cycle samples skipped}} because cycle tracking is off for this account.",
+            "cycleDaysFailed": "{count, plural, one {# cycle day couldn't be written} other {# cycle days couldn't be written}}: {reason}"
           },
           "json": {
             "title": "Measurements and mood (JSON)",
@@ -6248,13 +6248,13 @@
             "rateLimited": "Too many imports this hour (limit 5). Please try again later.",
             "failed": "The import failed. Please try again.",
             "readFailed": "Couldn't read that file.",
-            "resultSummary": "Imported {measurements} measurements and {moods} mood entries, {skipped} skipped.",
-            "resultSuccess": "Imported {measurements} measurements and {moods} mood entries",
+            "resultSummary": "Imported {measurements, plural, one {# measurement} other {# measurements}} and {moods} mood entries, {skipped} skipped.",
+            "resultSuccess": "Imported {measurements, plural, one {# measurement} other {# measurements}} and {moods} mood entries",
             "droppedLinks": "Imported without these tags, because this account has none by that name: {keys}",
             "keptLabels": "This account already has tags or groups with these keys under its own names, so those were kept: {keys}",
-            "resultNothing": "Nothing was imported. All {skipped} entries were skipped.",
+            "resultNothing": "Nothing was imported. {skipped, plural, one {The # entry was} other {All # entries were}} skipped.",
             "resultEmpty": "That file carried no measurements and no mood entries.",
-            "limitsHint": "Up to {mb} MB and up to {rows} entries in each list. It adds entries to your record; it does not restore a full backup."
+            "limitsHint": "Up to {mb} MB and up to {rows, plural, one {# entry} other {# entries}} in each list. It adds entries to your record; it does not restore a full backup."
           },
           "csv": {
             "title": "CSV file",
@@ -6277,10 +6277,10 @@
             "resultSummary": "Imported {inserted} new and updated {updated}, {skipped} skipped.",
             "rowError": "Line {line}: {reason}",
             "resultSuccess": "Imported {inserted} new and updated {updated}",
-            "resultNothing": "Nothing was imported. All {skipped} rows were skipped.",
+            "resultNothing": "Nothing was imported. {skipped, plural, one {The # row was} other {All # rows were}} skipped.",
             "resultEmpty": "That file has a header but no data rows.",
             "previewSuccess": "Preview: {inserted} would import",
-            "previewNothing": "Preview: nothing would import. All {skipped} rows would be skipped.",
+            "previewNothing": "Preview: nothing would import. {skipped, plural, one {The # row} other {All # rows}} would be skipped.",
             "skipGroupOne": "{count} row skipped: {reason}",
             "skipGroupFew": "{count} rows skipped: {reason}",
             "skipGroupOther": "{count} rows skipped: {reason}",
@@ -6319,8 +6319,8 @@
             "stillRunning": "The import is taking longer than usual and may still finish. Look at your doses again in a few minutes.",
             "columnsHeading": "What each column does",
             "jsonOnly": "JSON only",
-            "previewLine": "{rows} rows read, {queued} would be imported, {refused} refused",
-            "submittedLine": "{rows} rows read, {queued} queued for import",
+            "previewLine": "{rows, plural, one {# row} other {# rows}} read, {queued} would be imported, {refused} refused",
+            "submittedLine": "{rows, plural, one {# row} other {# rows}} read, {queued} queued for import",
             "unmatched": "No medication on record matches: {names}",
             "ambiguous": "Matches more than one medication: {names}",
             "mirrored": "Mirrored from another app, so no dose can be added: {names}",
@@ -6364,7 +6364,7 @@
             "uploading": "Uploading…",
             "uploadFailed": "The upload failed. Please try again.",
             "tooLarge": "The file is larger than this server accepts.",
-            "doneSummary": "{count} values imported.",
+            "doneSummary": "{count, plural, one {# value imported.} other {# values imported.}}",
             "failed": "The import failed: {reason}",
             "phase": {
               "queued": "Waiting to start",
@@ -6385,10 +6385,10 @@
             "privacyNote": "The file is deleted from the server as soon as the import ends. Records from apps you already connect directly, such as Withings or Fitbit, are left out so nothing arrives twice. Uploading the same file again changes nothing.",
             "rateLimited": "Too many uploads in a short time. Wait a minute and try again.",
             "busy": "An import is already running for your account. Wait until it has finished.",
-            "rowsSoFar": "{count} values saved so far",
+            "rowsSoFar": "{count, plural, one {# value saved so far} other {# values saved so far}}",
             "doneNothing": "The import finished, but there was nothing new to add.",
             "workouts": "Workouts",
-            "leftOutConnected": "{count} records from apps you already connect directly were left out.",
+            "leftOutConnected": "{count, plural, one {# record from apps you already connect directly was left out.} other {# records from apps you already connect directly were left out.}}",
             "nutrientsModuleOff": "Water and nutrient totals were not imported because the Nutrients module is switched off.",
             "cycleModuleOff": "Period data was not imported because cycle tracking is switched off.",
             "failure": {
@@ -6643,7 +6643,7 @@
         "backfillError": "Could not start the backfill.",
         "startDate": "Start date",
         "endDate": "End date",
-        "storedDays": "{count} days of weather stored.",
+        "storedDays": "{count, plural, one {# day of weather stored.} other {# days of weather stored.}}",
         "home": {
           "title": "Home location",
           "description": "A coarse, city-level location, never a precise track. Weather and daylight are fetched for this place on days no location period applies, from the date you set it onward.",
@@ -6678,10 +6678,10 @@
           "description": "Daily air quality, pollen and UV for your location, from the CAMS model via Open-Meteo.",
           "toggle": "Include air quality and pollen",
           "operatorDisabled": "Air quality is turned off on this server.",
-          "coverage": "{count} days with air-quality data",
+          "coverage": "{count, plural, one {# day} other {# days}} with air-quality data",
           "pollenEuropeOnly": "Pollen data covers Europe only.",
-          "historyProgress": "Backfilling air quality: {done} of {total} days",
-          "historyComplete": "Air quality is filled in for every earlier day with entries that the source covers ({total} days). Older days stay empty.",
+          "historyProgress": "Backfilling air quality: {done} of {total, plural, one {# day} other {# days}}",
+          "historyComplete": "Air quality is filled in for every earlier day with entries that the source covers ({total, plural, one {# day} other {# days}}). Older days stay empty.",
           "attribution": "Data sources and licences",
           "saveError": "The setting could not be saved.",
           "latest": "Newest day ({date})",
@@ -6716,7 +6716,7 @@
         "error": "Couldn't save. Please try again.",
         "loadFailed": "Couldn't load your selection.",
         "eligibilityFailed": "Couldn't check which pillars currently have data. The switches below still work.",
-        "omitted": "{count} pillars are not listed because their tracking is switched off. Turn a module back on and its pillar comes back.",
+        "omitted": "{count, plural, one {# pillar is not listed because its tracking is switched off.} other {# pillars are not listed because their tracking is switched off.}} Turn a module back on and its pillar comes back.",
         "omittedLink": "Open modules",
         "refusal": {
           "empty": "A health score needs at least one area of health to score. Keep one selected; the score will say which areas it is built from."
@@ -7083,7 +7083,7 @@
         "loadError": "Could not load what the Coach remembers.",
         "forgotToast": "Fact forgotten.",
         "forgotError": "Could not forget that fact. Please try again.",
-        "clearedToast": "Forgot {count} stored facts.",
+        "clearedToast": "Forgot {count, plural, one {# stored fact} other {# stored facts}}.",
         "clearError": "Could not clear the stored facts. Please try again.",
         "detail": "It uses these to keep its replies relevant. Remove anything you would rather it forgot.",
         "categoryMedication": "Medications"
@@ -7119,7 +7119,7 @@
         "title": "About me",
         "description": "Personal context the Coach and the daily briefing read alongside your data.",
         "placeholder": "E.g. shift work, vegetarian diet, knee injury, training for a half marathon…",
-        "charCount": "{used} / {max} characters",
+        "charCount": "{used} / {max, plural, one {# character} other {# characters}}",
         "clear": "Clear",
         "clearTitle": "Clear the about-me note?",
         "clearBody": "This removes the free-text note only. Your allergies and intolerances stay exactly as they are.",
@@ -7234,8 +7234,8 @@
           }
         },
         "limited": "Limited by the server operator.",
-        "estimate": "about {tokens} tokens a day, estimated",
-        "measured": "Measured: {tokens} tokens a day over the last {days} days, the Coach included. The figures per level are estimates.",
+        "estimate": "about {tokens, plural, one {# token} other {# tokens}} a day, estimated",
+        "measured": "Measured: {tokens, plural, one {# token} other {# tokens}} a day over the last {days, plural, one {# day} other {# days}}, the Coach included. The figures per level are estimates.",
         "noEstimate": "An estimate per level appears after three days of AI use.",
         "capped": "You chose {choice}, which the server does not allow at the moment, so {level} applies. Your choice is kept.",
         "followsDefault": "You follow the server default ({level}).",
@@ -7292,13 +7292,13 @@
     "withingsFullSync": "Sync all data",
     "withingsFullSyncTitle": "Full synchronization?",
     "withingsFullSyncDescription": "All available Withings data will be fully synchronized. This may take some time depending on your history.",
-    "withingsSyncResult": "{count} measurements synchronized",
+    "withingsSyncResult": "{count, plural, one {# measurement synchronized} other {# measurements synchronized}}",
     "syncOutcome": {
       "empty": "Nothing new to import. Everything is up to date.",
       "failed": "Nothing was saved. The next run retries it.",
-      "partial": "{count} measurements synchronized. Some data could not be saved; the next run retries it."
+      "partial": "{count, plural, one {# measurement synchronized.} other {# measurements synchronized.}} Some data could not be saved; the next run retries it."
     },
-    "withingsFullSyncResult": "{count} measurements fully synchronized",
+    "withingsFullSyncResult": "{count, plural, one {# measurement fully synchronized} other {# measurements fully synchronized}}",
     "withingsSyncFailed": "Sync failed",
     "withingsOauthConnected": "Withings connected. The first sync starts in the background.",
     "withingsOauthFailed": "Withings connection failed",
@@ -7333,7 +7333,7 @@
     "whoopFullSync": "Sync all data",
     "whoopFullSyncTitle": "Full synchronization?",
     "whoopFullSyncDescription": "All available WHOOP history will be fully synchronized. This may take some time depending on your history.",
-    "whoopSyncResult": "{count} measurements synchronized",
+    "whoopSyncResult": "{count, plural, one {# measurement synchronized} other {# measurements synchronized}}",
     "whoopSyncFailed": "Sync failed",
     "whoopSynchronize": "Synchronize",
     "whoopDisconnect": "Disconnect",
@@ -7379,9 +7379,9 @@
     "googleHealthFullSync": "Sync all data",
     "googleHealthFullSyncTitle": "Full synchronization?",
     "googleHealthFullSyncDescription": "All available Google Health history will be fully synchronized. This may take some time depending on your history.",
-    "googleHealthSyncResult": "{count} measurements synchronized",
+    "googleHealthSyncResult": "{count, plural, one {# measurement synchronized} other {# measurements synchronized}}",
     "googleHealthSyncFailed": "Sync failed",
-    "googleHealthSyncInProgress": "Sync in progress: {count} measurements saved, {completed} of {total} areas processed.",
+    "googleHealthSyncInProgress": "Sync in progress: {count, plural, one {# measurement saved} other {# measurements saved}}, {completed} of {total, plural, one {# area} other {# areas}} processed.",
     "googleHealthResourceFailuresTitle": "These areas still need attention:",
     "googleHealthResource": {
       "workout": "Workouts",
@@ -7470,7 +7470,7 @@
     },
     "integrationFreshness": {
       "title": "Data received",
-      "summary": "{count} data types, newest {relative}",
+      "summary": "{count, plural, one {# data type} other {# data types}}, newest {relative}",
       "quiet": "{count} quiet",
       "workouts": "Workouts",
       "medicationDoses": "Medication doses",
@@ -7678,8 +7678,8 @@
       "range": "Days of history",
       "rangeHint": "How far back the shared window reaches.",
       "expiry": "Expires in (days)",
-      "expiryHint": "At most {max} days.",
-      "expiryInvalid": "Expiry must be between 1 and {max} days.",
+      "expiryHint": "At most {max, plural, one {# day} other {# days}}.",
+      "expiryInvalid": "Expiry must be between 1 and {max, plural, one {# day} other {# days}}.",
       "create": "Create link",
       "tokenCreated": "Share link created",
       "copied": "Copied to clipboard",
@@ -7717,7 +7717,7 @@
       "pickerEmpty": "No documents found.",
       "pickerDone": "Done",
       "pickerSelectedCount": "{count} of {max} selected",
-      "pickerMaxReached": "You've reached the maximum of {max} documents.",
+      "pickerMaxReached": "You've reached the maximum of {max, plural, one {# document} other {# documents}}.",
       "scopeTitle": "What this link contains",
       "scopeInsuranceExcluded": "Insurance details are never shared through a link.",
       "statusNeedsReselect": "Pick contents again",
@@ -7746,7 +7746,7 @@
     "nightscoutConnected": "Nightscout connected.",
     "nightscoutConnectFailed": "Could not connect to Nightscout.",
     "nightscoutSync": "Sync now",
-    "nightscoutSyncResult": "{count} measurements synchronized",
+    "nightscoutSyncResult": "{count, plural, one {# measurement synchronized} other {# measurements synchronized}}",
     "nightscoutSyncFailed": "Sync failed",
     "nightscoutDisconnect": "Disconnect",
     "nightscoutDisconnectTitle": "Disconnect Nightscout?",
@@ -7763,7 +7763,7 @@
     "polarUnavailable": "Polar is not configured on this server. Add your own Polar OAuth credentials above, or ask your administrator to configure the shared app.",
     "polarConnect": "Connect Polar",
     "polarSync": "Sync now",
-    "polarSyncResult": "{count} measurements synchronized",
+    "polarSyncResult": "{count, plural, one {# measurement synchronized} other {# measurements synchronized}}",
     "polarSyncFailed": "Sync failed",
     "polarDisconnect": "Disconnect",
     "polarDisconnectTitle": "Disconnect Polar?",
@@ -7793,7 +7793,7 @@
     "ouraUnavailable": "Oura is not configured on this server. Add your own Oura OAuth credentials above, or ask your administrator to configure the shared app.",
     "ouraConnect": "Connect Oura",
     "ouraSync": "Sync now",
-    "ouraSyncResult": "{count} measurements synchronized",
+    "ouraSyncResult": "{count, plural, one {# measurement synchronized} other {# measurements synchronized}}",
     "ouraSyncFailed": "Sync failed",
     "ouraDisconnect": "Disconnect",
     "ouraDisconnectTitle": "Disconnect Oura?",
@@ -7845,7 +7845,7 @@
       "revokeSession": "Sign out",
       "revokeError": "Could not complete the request. Please try again.",
       "signOutEverywhere": "Sign out everywhere else",
-      "signOutEverywhereDone": "Signed out {count} other session(s)",
+      "signOutEverywhereDone": "Signed out {count, plural, one {# other session} other {# other sessions}}",
       "activityTitle": "Security activity",
       "activityDescription": "Recent sign-ins, security changes, and data exports on your account.",
       "activityEmpty": "No security activity yet.",
@@ -7928,7 +7928,7 @@
         "revokeError": "Could not revoke the device. Please try again.",
         "revoke": "Revoke",
         "revokeAll": "Forget all devices",
-        "revokeAllDone": "Forgot {count} trusted device(s)",
+        "revokeAllDone": "Forgot {count, plural, one {# trusted device} other {# trusted devices}}",
         "unnamed": "Unknown device",
         "current": "This device",
         "expires": "Trusted until {date}",
@@ -7943,14 +7943,14 @@
       "signOutEverywhereConfirmBody": "Every other device, every connected AI assistant and every API token will need to sign in or be set up again. This device stays signed in. Nothing you have recorded is affected.",
       "signOutEverywhereShareLinks": "Also end the doctor share links",
       "signOutEverywhereInvites": "Invitations to your record that nobody has accepted yet are withdrawn. People who already accepted keep their access; you can end it next.",
-      "signOutEverywhereInvitesDone": "Withdrew {count} invitation(s) nobody had accepted.",
+      "signOutEverywhereInvitesDone": "Withdrew {count, plural, one {# invitation} other {# invitations}} nobody had accepted.",
       "grantsKeptTitle": "These people can still see your record",
       "grantsKeptBody": "Signing out does not end access you gave someone. End it here if you did not give it, or no longer want them to have it."
     },
     "privacy": {
       "encryption": {
         "title": "Encrypted at rest",
-        "summary": "Your sensitive data is encrypted at rest with {algorithm} across {columns} fields in {models} record types.",
+        "summary": "Your sensitive data is encrypted at rest with {algorithm} across {columns, plural, one {# field} other {# fields}} in {models, plural, one {# record type} other {# record types}}.",
         "statement": "Your sensitive data is encrypted at rest with AES-256-GCM."
       },
       "stored": {
@@ -7970,11 +7970,11 @@
       "retention": {
         "title": "Retention",
         "description": "How long time-bound records are kept before automatic cleanup.",
-        "coach": "Coach conversations: kept {days} days",
-        "audit": "Security activity log: kept {days} days",
-        "delivery": "Notification delivery log: kept {days} days",
+        "coach": "Coach conversations: kept {days, plural, one {# day} other {# days}}",
+        "audit": "Security activity log: kept {days, plural, one {# day} other {# days}}",
+        "delivery": "Notification delivery log: kept {days, plural, one {# day} other {# days}}",
         "unavailable": "Retention details are unavailable right now.",
-        "accountDeletion": "Deleting your account, a managed profile or all data: completed after {days} days",
+        "accountDeletion": "Deleting your account, a managed profile or all data: completed after {days, plural, one {# day} other {# days}}",
         "accountDeletionImmediate": "Deleting your account, a managed profile or all data: completed immediately"
       },
       "delete": {
@@ -7982,7 +7982,7 @@
         "description": "Remove your account entirely, or wipe your health records while keeping the account.",
         "openAdvanced": "Delete or reset",
         "immediateNotice": "Deletion removes your data immediately. If this server keeps encrypted off-host backups, the copies of your data are deleted from that storage right after, or on the next nightly run if the storage is unreachable. Copies in this server's backups age out after their retention period.",
-        "graceNotice": "When you delete your account, it is locked immediately and erased after {days} days, together with every copy this server keeps of it, including encrypted off-host copies. Until then, an admin of this server can undo the deletion. Deleting all data works the same way: a copy of the record is kept for {days} days, so an admin can restore it. Copies in this server's backups age out after their retention period."
+        "graceNotice": "When you delete your account, it is locked immediately and erased after {days, plural, one {# day} other {# days}}, together with every copy this server keeps of it, including encrypted off-host copies. Until then, an admin of this server can undo the deletion. Deleting all data works the same way: a copy of the record is kept for {days, plural, one {# day} other {# days}}, so an admin can restore it. Copies in this server's backups age out after their retention period."
       },
       "posture": {
         "title": "Privacy posture",
@@ -8077,7 +8077,7 @@
     "stravaUnavailable": "Strava is not configured on this server. Add your own Strava API credentials above, or ask your administrator to configure the shared app.",
     "stravaConnect": "Connect Strava",
     "stravaSync": "Sync now",
-    "stravaSyncResult": "{count} measurements synchronized",
+    "stravaSyncResult": "{count, plural, one {# measurement synchronized} other {# measurements synchronized}}",
     "stravaSyncFailed": "Sync failed",
     "stravaDisconnect": "Disconnect",
     "stravaDisconnectTitle": "Disconnect Strava?",
@@ -8324,9 +8324,9 @@
       "change": "Change in Modules"
     },
     "timezoneUseDevice": "Use this device's timezone ({zone})",
-    "dangerZoneConfirmDescriptionGrace": "This deletes everything in your record: measurements, medications, mood entries, lab results, cycle entries, documents, AI conversations and every integration connection, together with everything derived from them and anything you deleted earlier. Share links you gave to a doctor stop working immediately. Your account stays, along with the credentials you sign in with and display settings such as language, timezone and units. A copy of your record is kept for {days} days, so an admin of this server can restore it until then. After that the deletion is final.",
-    "deleteAccountCardDetailGrace": "Your account is locked right away and erased after {days} days. Until then, an admin of this server can undo the deletion.",
-    "deleteAccountConfirmDescriptionGrace": "You are signed out and your account is locked right away. After {days} days it is erased for good, with all health data, passkeys, sessions and audit entries. Until then, an admin of this server can undo the deletion. Copies in this server's backups age out after their retention period.",
+    "dangerZoneConfirmDescriptionGrace": "This deletes everything in your record: measurements, medications, mood entries, lab results, cycle entries, documents, AI conversations and every integration connection, together with everything derived from them and anything you deleted earlier. Share links you gave to a doctor stop working immediately. Your account stays, along with the credentials you sign in with and display settings such as language, timezone and units. A copy of your record is kept for {days, plural, one {# day} other {# days}}, so an admin of this server can restore it until then. After that the deletion is final.",
+    "deleteAccountCardDetailGrace": "Your account is locked right away and erased after {days, plural, one {# day} other {# days}}. Until then, an admin of this server can undo the deletion.",
+    "deleteAccountConfirmDescriptionGrace": "You are signed out and your account is locked right away. After {days, plural, one {# day} other {# days}} it is erased for good, with all health data, passkeys, sessions and audit entries. Until then, an admin of this server can undo the deletion. Copies in this server's backups age out after their retention period.",
     "deleteAccountScheduled": "Your account is locked and will be erased on {date}. Signing you out.",
     "dangerZoneSuccessGrace": "Your health record has been deleted. An admin of this server can restore it until {date}.",
     "dangerZoneRestoreLimits": "Access ends too: what you share with others, what they share with you, and any Guardian role. A restore puts the record back as it is now. Anything added after the deletion is replaced, and integration connections, sharing, Guardian roles and share links do not come back; they have to be set up again.",
@@ -8334,7 +8334,7 @@
     "garminTag": "Personal API",
     "garminDescription": "Paste a Garmin Personal API key to sync sleep, HRV, Body Battery, stress, steps, weight and activities from Garmin Connect.",
     "garminSync": "Sync now",
-    "garminSyncResult": "{count} entries synchronized",
+    "garminSyncResult": "{count, plural, one {# entry synchronized} other {# entries synchronized}}",
     "garminSyncFailed": "Sync failed",
     "garminViewData": "View your recovery",
     "garminReplaceKey": "Replace key",
@@ -8354,7 +8354,7 @@
     "garminApiKeySavedPlaceholder": "Saved. Paste a new key to replace it",
     "garminKeyValidity": "Validity you picked",
     "garminKeyValidityUnknown": "I don't know",
-    "garminKeyValidityDays": "{count} days",
+    "garminKeyValidityDays": "{count, plural, one {# day} other {# days}}",
     "garminKeyValidityHelp": "Garmin does not report when a key expires. With the validity, this card warns you a week before the key stops working.",
     "garminConnect": "Connect",
     "garminUpdate": "Save changes",
@@ -8442,7 +8442,7 @@
       "loading": "Loading provider health…",
       "loadError": "Provider health could not be loaded.",
       "empty": "No AI calls have been recorded yet.",
-      "trackedUsers": "{count} users tracked",
+      "trackedUsers": "{count, plural, one {# user tracked} other {# users tracked}}",
       "lastOk": "last success {at}",
       "lastFailure": "last failure {at}",
       "lastFailureStatus": "HTTP {status}",
@@ -8455,9 +8455,9 @@
       "typeCodex": "ChatGPT sign-in (personal)",
       "typeLocal": "Local model (personal)",
       "typeGateway": "OpenAI-compatible gateway (personal)",
-      "spendToday": "Today, on each account's own calendar day: {total} tokens, {operator} of them on the operator's own key (accounts with spend: {accounts}).",
+      "spendToday": "Today, on each account's own calendar day: {total, plural, one {# token} other {# tokens}}, {operator} of them on the operator's own key (accounts with spend: {accounts}).",
       "statusPaused": "Paused",
-      "pausedHint": "Paused after repeated failures for {count} users until {at}. It is tried again automatically then.",
+      "pausedHint": "Paused after repeated failures for {count, plural, one {# user} other {# users}} until {at}. It is tried again automatically then.",
       "modelNotServed": "The endpoint no longer offers the model {model}. Choose a model it lists in the AI settings.",
       "usageLevels": "Accounts per AI usage level: {frugal} frugal, {standard} standard, {full} full."
     },
@@ -8466,7 +8466,7 @@
       "loading": "Loading feedback summary…",
       "loadError": "Failed to load Insights quality summary. Try refreshing the page.",
       "empty": "No feedback yet. The aggregator runs daily at 04:00. Once users start rating recommendations, helpful-rate bands appear here.",
-      "windowLabel": "Last {days} days",
+      "windowLabel": "Last {days, plural, one {# day} other {# days}}",
       "generatedAtLabel": "Generated",
       "colSeverity": "Severity",
       "colMetric": "Metric",
@@ -8481,7 +8481,7 @@
       "loading": "Loading Coach feedback summary…",
       "loadError": "Failed to load Coach feedback summary. Try refreshing the page.",
       "empty": "No Coach feedback yet. The aggregator runs daily at 04:00. Once users rate Coach replies, helpful-rate bands appear here.",
-      "windowLabel": "Last {days} days",
+      "windowLabel": "Last {days, plural, one {# day} other {# days}}",
       "generatedAtLabel": "Generated",
       "colPromptVersion": "Prompt version",
       "colTone": "Tone",
@@ -8603,7 +8603,7 @@
       "createTitle": "Create invite",
       "createDescription": "The link admits a signup even while registration is closed.",
       "ttlLegend": "Valid for",
-      "createDays": "{days} days",
+      "createDays": "{days, plural, one {# day} other {# days}}",
       "maxUsesLabel": "Maximum uses",
       "maxUsesHint": "How many signups this link admits (1–50).",
       "createConfirm": "Create invite",
@@ -8634,7 +8634,7 @@
       "statusRevoked": "Revoked",
       "redeemerDeleted": "deleted account",
       "redeemedByMore": "{username} + {count} more",
-      "redemptionsTitle": "{count} redemptions",
+      "redemptionsTitle": "{count, plural, one {# redemption} other {# redemptions}}",
       "revoke": "Revoke",
       "revokeAria": "Revoke invite",
       "revokeConfirmTitle": "Revoke this invite?",
@@ -8710,7 +8710,7 @@
     "deleteButton": "Delete all data",
     "deleteAllPromptLabel": "Type {token} to continue",
     "finalDelete": "Delete permanently",
-    "deletedResult": "Deleted {rows} rows across {tables} tables. User accounts and sign-in credentials were kept.",
+    "deletedResult": "Deleted {rows, plural, one {# row} other {# rows}} across {tables, plural, one {# table} other {# tables}}. User accounts and sign-in credentials were kept.",
     "authRegister": "Registration",
     "authClaim": "Profile taken over",
     "authLogin": "Login",
@@ -8814,7 +8814,7 @@
         "forceLogout": "Force logout",
         "forceLogoutConfirmTitle": "Force logout {name}?",
         "forceLogoutConfirmBody": "All active sessions for this user will be revoked. They will need to sign in again on every device.",
-        "forceLogoutSuccess": "Logged {name} out of {count} session(s)",
+        "forceLogoutSuccess": "Logged {name} out of {count, plural, one {# session} other {# sessions}}",
         "forceLogoutFailed": "Failed to force logout",
         "cannotLogoutSelf": "Cannot force-logout yourself",
         "emptyTitle": "No users in this view",
@@ -8927,7 +8927,7 @@
         "colCreatedAt": "Last snapshot",
         "colActions": "Actions",
         "scheduleStaleTitle": "The weekly backup has stopped",
-        "scheduleStaleDescription": "The newest scheduled copy is {days} days old. A working weekly run never leaves one older than {threshold} days.",
+        "scheduleStaleDescription": "The newest scheduled copy is {days, plural, one {# day} other {# days}} old. A working weekly run never leaves one older than {threshold, plural, one {# day} other {# days}}.",
         "scheduleFailedTitle": "The last scheduled backup run failed",
         "scheduleFailedDescription": "{when}: {reason}",
         "scheduleFailedNoReason": "no reason recorded",
@@ -8946,7 +8946,7 @@
         "uploadDescription": "Check an account copy and store it beside this server's copies. A copy whose account is no longer on this server can go into another account. Restoring is a separate step.",
         "uploadButton": "Upload file",
         "uploadHelp": "A HealthLog backup as .json or .json.gz. The file is compressed before upload; compressed, it may be up to 512 MB.",
-        "uploadSuccess": "Backup uploaded ({count} records)",
+        "uploadSuccess": "Backup uploaded ({count, plural, one {# record} other {# records}})",
         "uploadFailed": "Upload failed",
         "restore": "Restore",
         "restoreAria": "Restore from backup for {username}",
@@ -8977,10 +8977,10 @@
         "restoreInProgress": "Restoring…",
         "restoreSuccess": "Restore complete",
         "restoreFailed": "Restore failed",
-        "restoreSkippedToast": "Restore complete, {links} symptom links could not be put back",
-        "restoreSkippedTitle": "{links} links were not restored",
+        "restoreSkippedToast": "Restore complete, {links, plural, one {# symptom link} other {# symptom links}} could not be put back",
+        "restoreSkippedTitle": "{links, plural, one {# link was} other {# links were}} not restored",
         "restoreSkippedDescription": "The file references entries this installation does not know. Everything else was restored. The same list is in the audit log.",
-        "restoreSkippedLinks": "{count} links",
+        "restoreSkippedLinks": "{count, plural, one {# link} other {# links}}",
         "restoreSkippedCycleSymptom": "Cycle symptom",
         "restoreSkippedIllnessSymptom": "Illness symptom",
         "restoreSkippedMoodFactor": "Mood factor",
@@ -9023,11 +9023,11 @@
           "unknownDetail": "No nightly run has recorded this account yet.",
           "age": "{hours} h ago",
           "scheduleNote": "The upload runs every {hours} h. Fresh means inside one run, due means one run produced nothing, stale means two did not.",
-          "lifecycleConfigured": "The bucket deletes copies after {days} days by its own lifecycle rule.",
+          "lifecycleConfigured": "The bucket deletes copies after {days, plural, one {# day} other {# days}} by its own lifecycle rule.",
           "lifecycleMissing": "The bucket has no lifecycle rule, so every nightly copy is kept forever. Add a rule that expires objects after BACKUP_RETENTION_DAYS.",
           "lifecycleUnknown": "Whether the bucket deletes old copies could not be read: the credential may not read its lifecycle rule. Check that a rule expires objects after BACKUP_RETENTION_DAYS.",
-          "pendingDeletions": "Copies of {count} deleted or wiped accounts are still in the bucket and are being removed.",
-          "pendingDeletionsFailing": "Copies of {count} deleted or wiped accounts are still in the bucket because it refused to delete them ({error}). Give the credential DeleteObject; the deletion is retried every night."
+          "pendingDeletions": "Copies of {count, plural, one {# deleted or wiped account} other {# deleted or wiped accounts}} are still in the bucket and are being removed.",
+          "pendingDeletionsFailing": "Copies of {count, plural, one {# deleted or wiped account} other {# deleted or wiped accounts}} are still in the bucket because it refused to delete them ({error}). Give the credential DeleteObject; the deletion is retried every night."
         },
         "restoreStarted": "Restore started. Its progress shows above the list.",
         "restoreActive": "A restore of this account is already running. Wait for it to finish.",
@@ -9039,13 +9039,13 @@
         "restoreJobRunningTitle": "Restoring {username}",
         "restoreJobRunningNote": "The account keeps showing its current data until the restore finishes. You can leave this page; the restore continues on the server.",
         "restoreJobResumed": "Started again after the server restarted.",
-        "restoreJobPhaseValidating": "Checking the backup file: {checked} readings checked",
+        "restoreJobPhaseValidating": "Checking the backup file: {checked, plural, one {# reading} other {# readings}} checked",
         "restoreJobPhaseClearing": "Clearing the account's current data",
         "restoreJobPhaseMeasurements": "Writing readings: {done} of {total}",
         "restoreJobPhaseSections": "Writing the other records: {done} of {total} sections",
         "restoreJobPhaseRebuilding": "Rebuilding charts and summaries",
         "restoreJobSucceededTitle": "Restore of {username} finished",
-        "restoreJobSucceededDescription": "{count} records restored. Finished {when}.",
+        "restoreJobSucceededDescription": "{count, plural, one {# record restored.} other {# records restored.}} Finished {when}.",
         "restoreJobFailedTitle": "Restore of {username} did not complete",
         "restoreJobFailedKept": "Nothing was changed. The backup is kept, so you can start the restore again from its row without uploading it again.",
         "restoreFailureNotFound": "The backup was deleted before the restore could read it.",
@@ -9081,7 +9081,7 @@
         "restoreSkippedVaccinationCiphertext": "Vaccination note sealed with a key this server does not hold (dose kept without it)",
         "restoreSkippedEnvironmentLocationCiphertext": "Location of an environment period or day sealed with a key this server does not hold (kept sealed, those days are not refreshed)",
         "typePreWipe": "Before all data was deleted",
-        "retentionNote": "The weekly copy is replaced every Sunday. A copy taken before \"Delete all data\" is deleted after {days} days. Uploaded copies stay until their account is erased.",
+        "retentionNote": "The weekly copy is replaced every Sunday. A copy taken before \"Delete all data\" is deleted after {days, plural, one {# day} other {# days}}. Uploaded copies stay until their account is erased.",
         "retentionNoteNoGrace": "The weekly copy is replaced every Sunday. Uploaded copies stay until their account is erased.",
         "database": {
           "title": "Database dump",
@@ -9096,7 +9096,7 @@
           "noDirectoryOffhost": "This server cannot write to {dir}, so dumps go off-host only and none is kept here. Mount the backups volume.",
           "noDirectory": "This server cannot write to {dir} and no off-host bucket is set, so no database dump can be taken. Mount the backups volume.",
           "retentionLocal": "Deleted accounts stay in the dumps until those age out: the newest {nights} nightly dumps are kept on this server, and the dump taken before the latest update stays until the next update.",
-          "retentionOffhost": "Off-host copies are removed after {days} days by the bucket's lifecycle rule.",
+          "retentionOffhost": "Off-host copies are removed after {days, plural, one {# day} other {# days}} by the bucket's lifecycle rule.",
           "retentionOffhostMissing": "No lifecycle rule in the bucket covers database/, so dumps there, and the deleted accounts inside them, are never removed. Add a rule for that prefix.",
           "notPersistentOffhost": "{dir} is not on persistent storage (it sits inside the container rather than on a mounted volume, or in memory), so a dump written there would be lost at the next update. Dumps go off-host only: none is kept here and none is taken before a migration. Mount the backups volume.",
           "notPersistent": "{dir} is not on persistent storage (it sits inside the container rather than on a mounted volume, or in memory) and no off-host bucket is set, so no database dump is kept anywhere. Mount the backups volume.",
@@ -9121,7 +9121,7 @@
           "confirmLabel": "Type {username} to confirm",
           "submit": "Upload into this account",
           "submitting": "Uploading…",
-          "success": "Backup stored for {username} ({count} records). Restore it from its row.",
+          "success": "Backup stored for {username} ({count, plural, one {# record} other {# records}}). Restore it from its row.",
           "failureHoldsRecords": "This account already holds records. A restore replaces records instead of adding to them, so choose an account without records or create a new one.",
           "failureManagedProfile": "This account is a managed profile. The people who look after it run it, so a copy cannot go into it.",
           "failurePendingDeletion": "This account is pending deletion. Undo the deletion first, or choose another account.",
@@ -9158,7 +9158,7 @@
         "totalRows": "Encrypted rows",
         "staleRows": "Rows not on the active key",
         "safeToDropLegacy": "Safe to drop the legacy key",
-        "rotationIncomplete": "{count} rows still need rotation",
+        "rotationIncomplete": "{count, plural, one {# row still needs rotation} other {# rows still need rotation}}",
         "rotationTitle": "Key rotation",
         "rotationDescription": "Re-encrypt every encrypted column to the active key.",
         "rotationState": "State",
@@ -9187,8 +9187,8 @@
         "coverageDetail": "Only key ids and counts are shown, never key material.",
         "backupsTitle": "Keys the backups still need",
         "backupsDescription": "A retired key stays needed while any backup below still lists it.",
-        "backupsStoredLine": "Key {key}: {count} stored copies, the oldest from {when}",
-        "backupsUnrecordedLine": "{count} stored copies were written before backups recorded their keys (the oldest on {when}). They may need any key that existed then: keep every old key until they are replaced or deleted.",
+        "backupsStoredLine": "Key {key}: {count, plural, one {# stored copy, from {when}} other {# stored copies, the oldest from {when}}}",
+        "backupsUnrecordedLine": "{count, plural, one {# stored copy was written before backups recorded their keys (on {when}). It may need any key that existed then: keep every old key until it is replaced or deleted.} other {# stored copies were written before backups recorded their keys (the oldest on {when}). They may need any key that existed then: keep every old key until they are replaced or deleted.}}",
         "backupsOffhostLine": "Key {key}: the last off-host copy that needs it went into the bucket on {when}; needed there until {until}",
         "backupsOffhostLineUnknown": "Key {key}: the last off-host copy that needs it went into the bucket on {when}. The bucket's expiry is unknown, so keep the key until you know that copy is gone.",
         "backupsNone": "No backup has recorded the keys it needs yet.",
@@ -9197,10 +9197,10 @@
         "backupsDetail": "Rotation re-encrypts every row, but a backup keeps the key its content was written under, and restoring it needs that key. Keep a retired key in ENCRYPTION_KEYS until nothing below lists it.",
         "columnsShow": "Show the table ({count} with rows)",
         "columnsHide": "Hide the table",
-        "columnsShowAll": "Show all {count} columns",
+        "columnsShowAll": "{count, plural, one {Show # column} other {Show all # columns}}",
         "columnsShowWithRows": "Only columns with rows",
         "columnsNoneWithRows": "No encrypted column holds rows yet.",
-        "backupsDumpLocalLine": "Key {key}: {count} database dumps on this server were written under it; it is needed until retention removes them.",
+        "backupsDumpLocalLine": "Key {key}: {count, plural, one {# database dump on this server was written under it; it is needed until retention removes it.} other {# database dumps on this server were written under it; it is needed until retention removes them.}}",
         "backupsDumpOffhostLine": "Key {key}: the newest database dump written under it went into the bucket on {when}; needed there until {until}",
         "backupsDumpOffhostLineUnknown": "Key {key}: the newest database dump written under it went into the bucket on {when}. How long the bucket keeps database/ is unknown, so keep the key until you know that dump is gone."
       },
@@ -9256,7 +9256,7 @@
           "maxValue": "{value} bpm",
           "bucket": "{range} bpm",
           "account": "Account {account}",
-          "accountDays": "{changed} of {days} days move"
+          "accountDays": "{changed} of {days, plural, one {# day} other {# days}} move"
         },
         "appliedAt": "Weighted method applied on {at}.",
         "dryRun": "Dry run",
@@ -9276,7 +9276,7 @@
         "rebuild": {
           "queued": "The recalculation is waiting for the background worker.",
           "running": "The pulse days are being recalculated.",
-          "done": "Pulse days recalculated on {at} for {accounts} accounts.",
+          "done": "Pulse days recalculated on {at} for {accounts, plural, one {# account} other {# accounts}}.",
           "failed": "The recalculation stopped. The app log names the cause; run it again."
         },
         "rebuildAgain": "Recalculate again",
@@ -9320,7 +9320,7 @@
     "failingJobs": {
       "title": "Background jobs",
       "description": "Queues whose jobs gave up after their retries, or whose run ended with every account it tried failing.",
-      "none": "No job has failed in the last {hours} hours.",
+      "none": "No job has failed in the last {hours, plural, one {# hour} other {# hours}}.",
       "unavailable": "No job queue to read. This deployment runs without the background worker.",
       "countOne": "{count} failure",
       "countFew": "{count} failures",
@@ -9383,13 +9383,13 @@
       "need": {
         "active": "Encrypts new data.",
         "configured": "Held by this server.",
-        "storedCopies": "Needed by {count} stored copies.",
+        "storedCopies": "Needed by {count, plural, one {# stored copy} other {# stored copies}}.",
         "offhostUntil": "Needed by off-host copies until {date}.",
         "offhostUnknown": "Needed by off-host copies for as long as the bucket keeps them.",
         "backupActive": "Seals every new off-host copy.",
         "backupPrevious": "Opens off-host copies written before the last key change.",
         "token": "Signs sessions, tokens and share links. Without it everyone is signed out, but no data is lost.",
-        "localDumps": "Needed by {count} database dumps on this server.",
+        "localDumps": "Needed by {count, plural, one {# database dump} other {# database dumps}} on this server.",
         "offhostDumpsUntil": "Needed by off-host database dumps until {date}.",
         "offhostDumpsUnknown": "Needed by off-host database dumps for as long as the bucket keeps them."
       },
@@ -9478,22 +9478,22 @@
           "disabled": "The scheduled database dump is switched off, so no copy can rebuild this server. To turn it back on, remove DB_BACKUP_ENABLED or set it to true, then restart HealthLog.",
           "unreadable": "The status of the database dump could not be read.",
           "never_succeeded": "No database dump has succeeded yet, and the last attempt failed.",
-          "never_ran": "No database dump has been written in the {hours} hours since dumps were switched on.",
+          "never_ran": "No database dump has been written in the {hours, plural, one {# hour} other {# hours}} since dumps were switched on.",
           "first_pending": "The first database dump has not run yet.",
-          "stale": "The newest database dump is {hours} hours old.",
+          "stale": "The newest database dump is {hours, plural, one {# hour} other {# hours}} old.",
           "last_failed": "The last database dump failed. The one before it is still recent.",
           "fresh": "The newest database dump is recent.",
           "nowhere_to_write": "The dump directory {directory} cannot be written to and no off-host bucket is set up, so no dump can be kept.",
           "not_persistent": "The dump directory {directory} is not on persistent storage and no off-host bucket is set up, so every dump would be lost at the next update. Mount the backups volume.",
           "fresh_offhost_only": "The newest database dump is recent and in the off-host bucket. None is kept on this server, because {directory} is not on persistent storage, and none is taken before a migration.",
           "offhost_failed": "The newest database dump is kept on this server, but its upload to the off-host bucket failed.",
-          "offhost_stale": "No database dump has reached the off-host bucket for {hours} hours: the uploads keep failing. If this server is lost, there is no recent dump to rebuild it from.",
+          "offhost_stale": "No database dump has reached the off-host bucket for {hours, plural, one {# hour} other {# hours}}: the uploads keep failing. If this server is lost, there is no recent dump to rebuild it from.",
           "offhost_never": "No database dump has ever reached the off-host bucket: the upload fails. If this server is lost, there is no dump to rebuild it from."
         },
         "weekly_copy": {
           "no_accounts": "There are no accounts to copy yet.",
-          "stale": "The oldest weekly copy is {days} days old. Accounts behind: {accounts}.",
-          "never": "An account has had no weekly copy for {days} days. Accounts behind: {accounts}.",
+          "stale": "The oldest weekly copy is {days, plural, one {# day} other {# days}} old. Accounts behind: {accounts}.",
+          "never": "An account has had no weekly copy for {days, plural, one {# day} other {# days}}. Accounts behind: {accounts}.",
           "first_pending": "The first weekly copy is made early on Sunday.",
           "fresh": "Every account has a copy from the last week."
         },
@@ -9506,9 +9506,9 @@
         "restore_drill": {
           "not_configured": "The drill reads the off-host bucket, which is not set up.",
           "not_run_yet": "The monthly restore drill has not run yet.",
-          "failed": "The last restore drill failed: {failed} of {checked} copies could not be read back.",
+          "failed": "The last restore drill failed: {failed} of {checked, plural, one {# copy} other {# copies}} could not be read back.",
           "failed_run": "The last restore drill could not finish.",
-          "passed": "The last restore drill read back {checked} copies.",
+          "passed": "The last restore drill read back {checked, plural, one {# copy} other {# copies}}.",
           "nothing_checked": "The last restore drill stopped on its time limit before it read back a single copy, so it proved nothing."
         },
         "offhost_setup": {
@@ -9528,7 +9528,7 @@
           "not_configured": "No off-host bucket is set up.",
           "no_offhost_dumps": "No database dump goes to the bucket.",
           "missing": "No lifecycle rule in the bucket covers database/, so dumps there, and the deleted accounts inside them, are never removed. Add a rule for that prefix.",
-          "configured": "The bucket removes dumps after {days} days.",
+          "configured": "The bucket removes dumps after {days, plural, one {# day} other {# days}}.",
           "unknown": "The bucket does not say whether a rule removes old dumps. Check that a lifecycle rule covers database/."
         }
       },
@@ -9562,7 +9562,7 @@
       "toggleLabel": "Offer the HealthLog push relay to this server's users",
       "toggleDescription": "Off until you turn it on. After that each person decides in their own app.",
       "toggleDescriptionOn": "On. Each person decides in their own app whether their devices use it.",
-      "devices": "{count} devices bound",
+      "devices": "{count, plural, one {# device bound} other {# devices bound}}",
       "unbindsPending": "Device unbinds waiting for the relay: {count}",
       "unreachable": "This server is still registered with {host}, but its current settings cannot reach it (PUSH_RELAY_MODE or PUSH_RELAY_URL changed). That relay keeps this server's device bindings until the server leaves it: change the setting back, then turn the relay off here.",
       "since": "since {time}",
@@ -9637,7 +9637,7 @@
         "pending": "Waiting",
         "dropped": "Dropped",
         "failed": "Failed",
-        "window": "Pushes this server handed the relay in the last {days} days.",
+        "window": "Pushes this server handed the relay in the last {days, plural, one {# day} other {# days}}.",
         "lastSuccess": "Last delivered {time}.",
         "lastFailure": "Last failure {time}: {reason}.",
         "noReason": "no reason given"
@@ -9786,7 +9786,7 @@
     "goalReached": "Goal reached",
     "remainingUnlocks": "{count} still unlockable",
     "noneUnlockedYet": "No achievements unlocked yet.",
-    "pointsValue": "{points} points",
+    "pointsValue": "{points, plural, one {# point} other {# points}}",
     "metricCount": "{count}",
     "metricDaysOne": "{count} day",
     "metricDaysFew": "{count} days",
@@ -10081,7 +10081,7 @@
       "reminderCheckMissedTitle": "Reminder missed: {medication}",
       "reminderCheckMissedBody": "{medication} ({dose}) was not logged in the {window} window.",
       "reminderCheckOverdueTitle": "Dose overdue: {medication}",
-      "reminderCheckOverdueBody": "{medication} ({dose}) in the {window} window is {minutes} minutes overdue.",
+      "reminderCheckOverdueBody": "{medication} ({dose}) in the {window} window is {minutes, plural, one {# minute} other {# minutes}} overdue.",
       "offlineGeoUnavailableTitle": "Offline geolocation databases not loaded",
       "offlineGeoUnavailableBody": "HealthLog is resolving login locations through the online lookup at {host}, so every login IP address leaves this server. To resolve them locally instead, download the GeoLite2-City and GeoLite2-ASN databases with a free MaxMind account, mount the directory into the container, and point GEOLITE2_DIR at it. Steps: {docsUrl}",
       "tlsPinChangedTitle": "TLS leaf certificate changed: {host}",
@@ -10264,14 +10264,14 @@
       "titleFailing": "Background job failing: {queue}",
       "titleReminder": "Background job still failing: {queue}",
       "titleRecovered": "Background job working again: {queue}",
-      "bodyFailing": "The background job {queue} has failed {failures} times in a row and is listed on the admin status page. Last error: {error}",
+      "bodyFailing": "The background job {queue} has failed {failures, plural, one {# time} other {# times}} in a row and is listed on the admin status page. Last error: {error}",
       "bodyRecovered": "The background job {queue} has run successfully again."
     },
     "eventSeizureCluster": "Seizure cluster",
     "eventSeizureClusterDesc": "When a seizure someone else logs forms a cluster under the diary's rule. Once per cluster.",
     "seizureCluster": {
       "title": "Seizure cluster",
-      "body": "{count} seizures within {hours} h, logged by {name}. The rescue plan is in the seizure diary."
+      "body": "{count, plural, one {# seizure} other {# seizures}} within {hours} h, logged by {name}. The rescue plan is in the seizure diary."
     },
     "eventMeasurementAnomaly": "Lasting change in a vital",
     "eventMeasurementAnomalyDesc": "When a vital such as resting heart rate or blood pressure has held a new level for at least ten days. At most once a week, in the morning, never during an open illness.",
@@ -10405,7 +10405,7 @@
     "veryStrong": "Very strong",
     "tooShort": "Too short",
     "characters": "characters",
-    "minLength": "At least {count} characters required."
+    "minLength": "At least {count, plural, one {# character} other {# characters}} required."
   },
   "telegram": {
     "errorInvalidAction": "Invalid action.",
@@ -10463,11 +10463,11 @@
   },
   "lowStockReminders": {
     "title": "Low supply: {medName}",
-    "bodyToday": "{medName}: {units} units left, less than one day of supply.",
-    "bodyReorder": "{medName}: {units} units left. Supply runs out around {runsOutOn}. Reorder by {reorderBy}.",
-    "bodyLastDose": "{medName}: {units} units left, about your final dose. Supply runs out around {runsOutOn}.",
-    "bodyExpired": "{medName}: no usable supply left. {units} units are marked expired.",
-    "bodyAsNeeded": "{medName}: only {units} units left. Reorder before you need the next dose."
+    "bodyToday": "{medName}: {units, plural, one {# unit} other {# units}} left, less than one day of supply.",
+    "bodyReorder": "{medName}: {units, plural, one {# unit} other {# units}} left. Supply runs out around {runsOutOn}. Reorder by {reorderBy}.",
+    "bodyLastDose": "{medName}: {units, plural, one {# unit} other {# units}} left, about your final dose. Supply runs out around {runsOutOn}.",
+    "bodyExpired": "{medName}: no usable supply left. {units, plural, one {# unit is} other {# units are}} marked expired.",
+    "bodyAsNeeded": "{medName}: only {units, plural, one {# unit} other {# units}} left. Reorder before you need the next dose."
   },
   "moodReminders": {
     "dailyTitle": "Log your mood",
@@ -10488,7 +10488,7 @@
     "focusNote": "It also ties into what you said you wanted to keep an eye on.",
     "reminderSurfacedTitle": "The reminder you asked for",
     "reminderSurfacedLeadOne": "You asked me to bring this back to you today:",
-    "reminderSurfacedLeadMany": "You asked me to bring {count} things back to you today:",
+    "reminderSurfacedLeadMany": "You asked me to bring {count, plural, one {# thing} other {# things}} back to you today:",
     "questionConditions": "Do you have any chronic conditions the Coach should know about?",
     "questionFocus": "Is there anything specific the Coach should pay attention to?",
     "questionAllergies": "Do you have any allergies or intolerances?",
@@ -10613,7 +10613,7 @@
       "crosstab": {
         "description": "How each measurement compares between your luteal and follicular phases, on your own data.",
         "pairLabel": "{metric}: luteal vs follicular",
-        "detail": "Luteal {lutealAvg} ({lutealDays} days) vs follicular {follicularAvg} ({follicularDays} days).",
+        "detail": "Luteal {lutealAvg} ({lutealDays, plural, one {# day} other {# days}}) vs follicular {follicularAvg} ({follicularDays, plural, one {# day} other {# days}}).",
         "metricRestingHeartRate": "Resting heart rate",
         "metricHrv": "Heart-rate variability",
         "metricSleepDuration": "Sleep duration",
@@ -10628,7 +10628,7 @@
       "title": "Cycle insights",
       "symptomPatternsTitle": "Symptom patterns by phase",
       "symptomPatternsEmpty": "Log symptoms across a cycle to see which phase they cluster in.",
-      "symptomMostlyIn": "Mostly in {phase} ({count}/{total} days)"
+      "symptomMostlyIn": "Mostly in {phase} ({count}/{total, plural, one {# day} other {# days}})"
     },
     "phaseEducation": {
       "title": "What's happening now",
@@ -10729,7 +10729,7 @@
       "caption": "of your cycle",
       "firstPeriodCta": "Log my first period",
       "periodOverdue": "Your period is later than usual. The day count pauses until the next period is logged.",
-      "periodOverdueDays": "Your period is {days} days later than usual. The day count pauses until the next period is logged.",
+      "periodOverdueDays": "Your period is {days, plural, one {# day} other {# days}} later than usual. The day count pauses until the next period is logged.",
       "logPeriodCta": "Log period"
     },
     "calendar": {
@@ -10776,8 +10776,8 @@
       "regularityREGULAR": "Regular",
       "regularityIRREGULAR": "Irregular",
       "regularityLEARNING": "Learning",
-      "days": "{count} days",
-      "daysPlusMinus": "± {count} days",
+      "days": "{count, plural, one {# day} other {# days}}",
+      "daysPlusMinus": "± {count, plural, one {# day} other {# days}}",
       "none": "No cycles recorded yet.",
       "recentCycles": "Recent cycles",
       "ongoing": "ongoing",
@@ -10785,7 +10785,7 @@
       "ovulationChip": "Ovulation",
       "chartTitle": "Cycle length over time",
       "chartCaption": "Each bar is one cycle: the rose base is your period, the rest is the cycle length.",
-      "chartAria": "Cycle-length chart of your last {count} cycles, averaging {avg} days, classified as {regularity}.",
+      "chartAria": "Cycle-length chart of {count, plural, one {your last cycle} other {your last # cycles}}, averaging {avg, plural, one {# day} other {# days}}, classified as {regularity}.",
       "legendPeriodSegment": "Period days",
       "legendRestSegment": "Rest of cycle"
     },
@@ -11063,7 +11063,7 @@
       "menuItem": "Postpone…",
       "title": "Postpone due date",
       "description": "Only moves the current due date; the regular rhythm stays unchanged.",
-      "chip": "+{days} days",
+      "chip": "+{days, plural, one {# day} other {# days}}",
       "dateLabel": "New date",
       "confirm": "Postpone"
     },
@@ -11081,12 +11081,12 @@
       "none": "Not scheduled",
       "today": "Due today",
       "tomorrow": "Due tomorrow",
-      "inDays": "In {days} days"
+      "inDays": "In {days, plural, one {# day} other {# days}}"
     },
-    "overdueByDays": "Overdue by {days} days",
+    "overdueByDays": "Overdue by {days, plural, one {# day} other {# days}}",
     "overdueSinceYesterday": "Overdue since yesterday",
     "cadence": {
-      "everyNDays": "Every {days} days",
+      "everyNDays": "Every {days, plural, one {# day} other {# days}}",
       "custom": "Custom schedule",
       "customInterval": "Custom (every N days)",
       "rruleOption": "Custom rule (RRULE)"
@@ -11200,7 +11200,7 @@
     "emptyTitle": "No lab results yet",
     "emptyDescription": "Record bloodwork like HbA1c, LDL or ferritin to track it over time and share it with your doctor.",
     "referenceLabel": "Reference",
-    "readingsCount": "{count} readings",
+    "readingsCount": "{count, plural, one {# reading} other {# readings}}",
     "deleteConfirmTitle": "Delete lab result?",
     "deleteConfirmDescription": "This lab result will be deleted. You can undo this for a short moment afterwards.",
     "deleteAppleHealthNote": "It will not come back on the next Apple Health import.",
@@ -11428,7 +11428,7 @@
       "bilirubin-total": "Total bilirubin"
     },
     "noteLoadFailed": "Note could not be loaded; it will be kept unchanged when you save.",
-    "showingLatestOf": "Showing the latest {shown} of {total} readings",
+    "showingLatestOf": "Showing the latest {shown} of {total, plural, one {# reading} other {# readings}}",
     "convertedFrom": "converted from {value} {unit}",
     "ocr": {
       "scanButton": "Scan a report",
@@ -11444,7 +11444,7 @@
       "rangeVerify": "Verify the reference range",
       "reviewTitle": "Review before saving",
       "reviewHint": "Check each reading, then save the ones you want to keep.",
-      "foundCount": "{count} readings found",
+      "foundCount": "{count, plural, one {# reading found} other {# readings found}}",
       "pagesCapped": "Only the first {read} of {total} pages were read. Values on later pages are not in this list.",
       "stoppedBudget": "Your AI budget for today ran out partway through the report, so the remaining pages were not read.",
       "stoppedUnavailable": "AI was turned off while the report was being read, so the remaining pages were not read.",
@@ -11454,9 +11454,9 @@
       "truncatedPages": "The AI provider reached its output limit partway through these pages: {pages}. Readings further down them may be missing, so check them against the report.",
       "unreadPages": "These pages could not be read, and their readings are not in this list: {pages}.",
       "unreadParts": "Part of the report could not be read, and its readings are not in this list.",
-      "rowsCapped": "The report lists {found} readings. One scan takes {kept}, so only the first {kept} are shown.",
+      "rowsCapped": "The report lists {found, plural, one {# reading} other {# readings}}. One scan takes {kept}, so only the first {kept} are shown.",
       "outputLimit": "The AI provider reached its output limit before it returned a single reading. Try a photo of one page, or a model that allows longer answers.",
-      "errorTooLong": "Shorten this to {max} characters.",
+      "errorTooLong": "Shorten this to {max, plural, one {# character} other {# characters}}.",
       "confirmRow": "Include this reading",
       "analyteLabel": "Test name",
       "resultLabel": "Result",
@@ -11473,9 +11473,9 @@
       "valueUnreadable": "Value unreadable. Enter it manually",
       "saveSelected": "Save {count} selected",
       "discardAll": "Discard all",
-      "savedToast": "{count} lab results saved",
-      "savedPartialToast": "{count} lab results saved, {skipped} skipped as duplicates",
-      "savedNothingToast": "Nothing saved: {skipped} readings were already recorded",
+      "savedToast": "{count, plural, one {# lab result saved} other {# lab results saved}}",
+      "savedPartialToast": "{count, plural, one {# lab result saved} other {# lab results saved}}, {skipped} skipped as duplicates",
+      "savedNothingToast": "Nothing saved: {skipped, plural, one {# reading was} other {# readings were}} already recorded",
       "savedEmptyToast": "Nothing to save",
       "noRows": "No readings could be found in this report.",
       "nothingToSave": "Select at least one reading to save.",
@@ -11488,7 +11488,7 @@
       "errorUnitMismatch": "This marker is tracked in {markerUnit}. Change the unit if the report was misread, or deselect this reading.",
       "unitDiffersBadge": "Tracked in {markerUnit}; this report says {unit}",
       "unitConvertedBadge": "Saved as {value} {markerUnit}, converted from {statedValue} {unit}",
-      "savedPartialUnitToast": "{count} lab results saved. Not saved, because the unit differs from the marker's: {analytes}",
+      "savedPartialUnitToast": "{count, plural, one {# lab result saved.} other {# lab results saved.}} Not saved, because the unit differs from the marker's: {analytes}",
       "savedNothingUnitToast": "Nothing saved: the unit differs from the marker's for {analytes}",
       "saveFailed": "Couldn't save the readings. Please try again.",
       "providerUnsupported": "Your AI provider can't read images. Configure a vision-capable model.",
@@ -11584,17 +11584,17 @@
     "trend": {
       "title": "Trend",
       "slope": {
-        "rising": "Rising by about {amount} {unit} a year across {n} readings since {since}.",
-        "falling": "Falling by about {amount} {unit} a year across {n} readings since {since}.",
-        "flat": "No change across {n} readings since {since}."
+        "rising": "Rising by about {amount} {unit} a year across {n, plural, one {# reading} other {# readings}} since {since}.",
+        "falling": "Falling by about {amount} {unit} a year across {n, plural, one {# reading} other {# readings}} since {since}.",
+        "flat": "No change across {n, plural, one {# reading} other {# readings}} since {since}."
       },
       "projection": {
         "exits": {
           "high": "If this straight line continued, it would reach the upper end of your reference range around {date}. That is a projection, not a forecast.",
           "low": "If this straight line continued, it would reach the lower end of your reference range around {date}. That is a projection, not a forecast."
         },
-        "beyond_horizon": "At this pace the line stays inside your reference range for more than {years} years, the span your readings cover.",
-        "beyond_horizon_capped": "At this pace the line stays inside your reference range for more than {years} years, as far ahead as the projection looks.",
+        "beyond_horizon": "At this pace the line stays inside your reference range for more than {years, plural, one {# year} other {# years}}, the span your readings cover.",
+        "beyond_horizon_capped": "At this pace the line stays inside your reference range for more than {years, plural, one {# year} other {# years}}, as far ahead as the projection looks.",
         "no_exit": "The line heads away from the edges of your reference range.",
         "already_outside": "The line already sits outside your reference range.",
         "no_clear_trend": "Across these readings the change is not clearly different from no change, so no projection is drawn.",
@@ -11984,10 +11984,10 @@
       "nadirTitle": "What changed",
       "nadirBody": "How far each tracked signal strayed from your typical range.",
       "recoveryGapTitle": "Recovery gap",
-      "recoveryGapLag": "Your numbers settled {days} days after you felt better.",
-      "recoveryGapLead": "Your numbers settled {days} days before you marked recovery.",
-      "recoveryGapLagSymptom": "You felt better {days} days before your logged symptoms eased.",
-      "recoveryGapLeadSymptom": "Your logged symptoms eased {days} days before you marked recovery.",
+      "recoveryGapLag": "Your numbers settled {days, plural, one {# day} other {# days}} after you felt better.",
+      "recoveryGapLead": "Your numbers settled {days, plural, one {# day} other {# days}} before you marked recovery.",
+      "recoveryGapLagSymptom": "You felt better {days, plural, one {# day} other {# days}} before your logged symptoms eased.",
+      "recoveryGapLeadSymptom": "Your logged symptoms eased {days, plural, one {# day} other {# days}} before you marked recovery.",
       "recoveryGapSame": "Your numbers settled the same day you felt better.",
       "sleepContextMore": "During this episode you slept noticeably more than usual (about {hours}h/night).",
       "sleepContextLess": "During this episode you slept noticeably less than usual (about {hours}h/night).",
@@ -12004,8 +12004,8 @@
       "title": "Your illness history",
       "countOne": "You logged 1 episode in this period.",
       "countOther": "You logged {count} episodes in this period.",
-      "typicalGap": "Typical recovery gap: {days} days between feeling better and your numbers settling.",
-      "typicalGapWithDriver": "Typical recovery gap: {days} days; you tend to feel better before your {vital} settles.",
+      "typicalGap": "Typical recovery gap: {days, plural, one {# day} other {# days}} between feeling better and your numbers settling.",
+      "typicalGapWithDriver": "Typical recovery gap: {days, plural, one {# day} other {# days}}; you tend to feel better before your {vital} settles.",
       "typicalGapLearning": "A few more resolved episodes and a typical recovery gap will appear here.",
       "none": "No episodes logged in this period.",
       "analyze": "Analyse the recovery gap"
@@ -12240,7 +12240,7 @@
       "viewTable": "Table",
       "chartSummary": "{title}, shown as a chart. The table view lists every value.",
       "dataUsed": "Data used ({count})",
-      "truncated": "Showing the latest {shown} of {total} rows",
+      "truncated": "Showing the latest {shown} of {total, plural, one {# row} other {# rows}}",
       "withheld": {
         "moduleDisabled": "This table is hidden because its module is switched off.",
         "unavailable": "This table couldn't be loaded."
@@ -12491,8 +12491,8 @@
     "historyLoadErrorHint": "This does not mean you have no results; the list could not be fetched. Try again.",
     "privacyNote": "Your answers are stored encrypted and never reach the AI Coach.",
     "trend": {
-      "sincePrevious": "Since your previous check-in on {date}: {change} points.",
-      "sinceFirst": "Since your first check-in on {date}: {change} points.",
+      "sincePrevious": "Since your previous check-in on {date}: {change, plural, one {# point} other {# points}}.",
+      "sinceFirst": "Since your first check-in on {date}: {change, plural, one {# point} other {# points}}.",
       "verdict": {
         "improved": "That reaches the {threshold}-point change studies treat as meaningful, in the better direction.",
         "worsened": "That reaches the {threshold}-point change studies treat as meaningful, in the less good direction.",
@@ -12893,7 +12893,7 @@
       "derived": {
         "packYears": "{value} pack-years",
         "packYearsMissing": "Pack-years need cigarettes per day and the year you started.",
-        "activityMinutes": "{value} minutes a week.",
+        "activityMinutes": "{value, plural, one {# minute} other {# minutes}} a week.",
         "meetsWho": "That meets the WHO recommendation of 150 minutes a week.",
         "belowWho": "That is below the WHO recommendation of 150 minutes a week.",
         "measuredSteps": "Your measured steps come first; this answer adds context.",
@@ -13042,7 +13042,7 @@
       "yearGroup": "Year",
       "clear": "Clear filters",
       "typeAll": "All types",
-      "typeCount": "{count} types",
+      "typeCount": "{count, plural, one {# type} other {# types}}",
       "conditionAll": "All conditions",
       "procedureAll": "All procedures",
       "yearAll": "All years"
@@ -13073,7 +13073,7 @@
       "duplicate": "Already stored. The existing document is highlighted.",
       "deleted": "Document deleted",
       "restoreFailed": "Couldn't restore the document.",
-      "deletedHint": "Deleted documents stay in Recently deleted for {days} days."
+      "deletedHint": "Deleted documents stay in Recently deleted for {days, plural, one {# day} other {# days}}."
     },
     "timeline": {
       "loadingMore": "Loading more…",
@@ -13083,7 +13083,7 @@
       "browse": "Choose files",
       "quotaAlmostFull": "Storage almost full",
       "quotaUsed": "{used} of {quota} used",
-      "queuedAnnouncement": "{count} file(s) added to the upload queue",
+      "queuedAnnouncement": "{count, plural, one {# file added} other {# files added}} to the upload queue",
       "storageUsed": "Storage: {used} of {quota} used"
     },
     "selection": {
@@ -13145,7 +13145,7 @@
       "sourceOther": "another system",
       "sourceReportSchedule": "the report schedule",
       "share": "Share",
-      "labValuesLink": "View {count} lab values",
+      "labValuesLink": "View {count, plural, one {# lab value} other {# lab values}}",
       "visitsLabel": "Belongs to visit",
       "vaccinationsLabel": "Vaccinations",
       "noVisitsToLink": "No visits recorded yet.",
@@ -13163,13 +13163,13 @@
       "setKind": "Change type",
       "linkCondition": "Link condition",
       "delete": "Delete",
-      "updated": "{count} document(s) updated",
-      "deleted": "{count} document(s) deleted",
-      "restored": "{count} document(s) restored",
+      "updated": "{count, plural, one {# document updated} other {# documents updated}}",
+      "deleted": "{count, plural, one {# document deleted} other {# documents deleted}}",
+      "restored": "{count, plural, one {# document restored} other {# documents restored}}",
       "partialFailure": "{failed} of {total} could not be updated",
       "failed": "The action could not be completed",
       "share": "Share",
-      "shareTooMany": "A share link can hold at most {max} documents. Deselect some and try again.",
+      "shareTooMany": "A share link can hold at most {max, plural, one {# document} other {# documents}}. Deselect some and try again.",
       "linkVisit": "File against visit"
     },
     "episodeCard": {
@@ -13282,14 +13282,14 @@
       "indexPrompt": "Make document contents searchable.",
       "indexAll": "Index all for search",
       "indexAllPending": "Starting…",
-      "indexAllQueued": "Indexing {count} document(s) in the background.",
+      "indexAllQueued": "Indexing {count, plural, one {# document} other {# documents}} in the background.",
       "indexAllNothing": "Everything is already indexed.",
       "indexAllError": "Couldn't start indexing."
     },
     "share": {
       "title": "Share this document",
       "multiTitle": "Share these documents",
-      "multiLabel": "{count} documents",
+      "multiLabel": "{count, plural, one {# document} other {# documents}}",
       "description": "Create a read-only clinician link with this document attached. The link and its passphrase appear once."
     },
     "chat": {
@@ -13365,7 +13365,7 @@
       },
       "pickMore": "Pick more",
       "finishedHint": "Search again or change a filter to pick more documents.",
-      "maxReached": "You can import up to {max} documents at a time.",
+      "maxReached": "You can import up to {max, plural, one {# document} other {# documents}} at a time.",
       "noMatchHint": "Try part of the name, or clear the tag and dates."
     },
     "customize": "Customize view",
@@ -13379,24 +13379,24 @@
     },
     "deleteConfirm": {
       "titleOne": "Delete this document?",
-      "titleMany": "Delete {count} documents?",
-      "body": "Deleted documents stay in Recently deleted for {days} days, then they are removed for good.",
+      "titleMany": "Delete {count, plural, one {# document} other {# documents}}?",
+      "body": "Deleted documents stay in Recently deleted for {days, plural, one {# day} other {# days}}, then they are removed for good.",
       "action": "Delete"
     },
     "trash": {
       "title": "Recently deleted",
-      "subtitle": "Deleted documents stay here for {days} days, then they are removed for good.",
+      "subtitle": "Deleted documents stay here for {days, plural, one {# day} other {# days}}, then they are removed for good.",
       "back": "Documents",
       "entryLabel": "Recently deleted ({count})",
       "loadError": "Couldn't load Recently deleted.",
       "emptyTitle": "Nothing in Recently deleted",
-      "emptyDescription": "Documents you delete wait here for {days} days before they are removed for good.",
+      "emptyDescription": "Documents you delete wait here for {days, plural, one {# day} other {# days}} before they are removed for good.",
       "count": "Deleted documents ({count})",
       "restoreAll": "Restore all",
       "restore": "Restore",
       "purge": "Delete now",
       "deletedOn": "Deleted {date}.",
-      "removesIn": "Removed for good in {days} days.",
+      "removesIn": "Removed for good in {days, plural, one {# day} other {# days}}.",
       "removesSoon": "Removed for good within a day.",
       "restored": "Document restored",
       "openRestored": "Open",
@@ -13409,7 +13409,7 @@
     },
     "picker": {
       "capped": "Showing the newest {count}. Search to find an older document.",
-      "cappedSearching": "Showing the newest {count} matches. Narrow the search to find an older one."
+      "cappedSearching": "{count, plural, one {Showing the newest match.} other {Showing the newest # matches.}} Narrow the search to find an older one."
     },
     "recordAi": {
       "noProvider": "No AI provider on this server can read the documents in this record, so they get no summary, no search by content and no document chat.",
@@ -13584,8 +13584,8 @@
         "mineral": "Minerals",
         "omega3": "Omega-3 fatty acids"
       },
-      "rowMeta": "{days} of {window} days, ref {value} {unit} ({authority})",
-      "rowMetaNoRef": "{days} of {window} days",
+      "rowMeta": "{days} of {window, plural, one {# day} other {# days}}, ref {value} {unit} ({authority})",
+      "rowMetaNoRef": "{days} of {window, plural, one {# day} other {# days}}",
       "footer": "{tracked} of {total} tracked micronutrients have data in this window.",
       "emptyTitle": "No micronutrient data synced yet",
       "loadError": "Your nutrient data could not be loaded",
@@ -13634,8 +13634,8 @@
       "loadError": "The energy balance could not be loaded.",
       "perDay": "{value} a day",
       "trendMeta": "Average of the last seven days: what you ate minus resting and active energy.",
-      "meanMeta": "Average over {days} days: what you ate minus resting and active energy.",
-      "means": "Over {days} days, on average {intake} kcal eaten and {used} kcal used.",
+      "meanMeta": "Average over {days, plural, one {# day} other {# days}}: what you ate minus resting and active energy.",
+      "means": "Over {days, plural, one {# day} other {# days}}, on average {intake} kcal eaten and {used} kcal used.",
       "dayLine": "{intake} kcal eaten, {used} kcal used",
       "estimated": "On {days} of these days resting energy is an estimate from your weight, height, age and sex (Mifflin-St Jeor), because no reading arrived.",
       "needsProfile": "Your intake is here, but no resting energy arrived. Add your height, date of birth and sex to your profile, with a weight reading, and the balance is estimated.",
@@ -13706,8 +13706,8 @@
           "above": "Ahead of your usual pace"
         },
         "body": {
-          "below": "By {time} you are at {today} steps. On a usual day you are around {typical} by now.",
-          "above": "By {time} you are at {today} steps, ahead of the {typical} that is usual for you by now."
+          "below": "By {time} you are at {today, plural, one {# step} other {# steps}}. On a usual day you are around {typical} by now.",
+          "above": "By {time} you are at {today, plural, one {# step} other {# steps}}, ahead of the {typical} that is usual for you by now."
         }
       },
       "upcomingVisit": {
@@ -13898,7 +13898,7 @@
     "groupDisclosure": "Show the entries in {group}",
     "sensitiveHint": "Nothing here is ever preselected. Pick each entry yourself.",
     "scopeNone": "Nothing selected yet. Choose what to include, or apply the standard report.",
-    "scopeCount": "{count} entries from {groups} areas",
+    "scopeCount": "{count, plural, one {# entry} other {# entries}} from {groups, plural, one {# area} other {# areas}}",
     "scopeSensitive": "incl. {names}",
     "leafVisits": "Visits",
     "leafSurgicalHistory": "Surgical history",
@@ -14008,7 +14008,7 @@
       "revokeTitle": "End {name}'s access?",
       "revokeBody": "They lose access immediately, including any browser they have your record open in. What they have already seen cannot be taken back. You can invite them again at any time.",
       "revokeEntriesStay": "Anything they entered stays in your record, and you can remove any of it yourself.",
-      "revokeAttribution": "Who entered what stays visible in your activity view for {days} days.",
+      "revokeAttribution": "Who entered what stays visible in your activity view for {days, plural, one {# day} other {# days}}.",
       "revokeConfirm": "End access"
     },
     "received": {
@@ -14031,7 +14031,7 @@
     "activity": {
       "title": "When my record was opened",
       "description": "Every time someone else opened your record.",
-      "retention": "This covers the last {days} days. Older entries are deleted.",
+      "retention": "This covers the last {days, plural, one {# day} other {# days}}. Older entries are deleted.",
       "emptyTitle": "Nobody has opened your record",
       "emptyDescription": "Openings by anyone other than you appear here, one line per person per day.",
       "loadError": "The activity could not be loaded.",
@@ -14165,7 +14165,7 @@
         "methodSso": "{name} signs in through single sign-on when they use the link.",
         "methodBoth": "{name} can set a password or sign in through single sign-on."
       },
-      "deleteBodyGrace": "Everything recorded for {name} goes with the profile: readings, medications, documents and notes. The profile is locked right away and erased after {days} days. Until then, an admin of this server can undo the deletion."
+      "deleteBodyGrace": "Everything recorded for {name} goes with the profile: readings, medications, documents and notes. The profile is locked right away and erased after {days, plural, one {# day} other {# days}}. Until then, an admin of this server can undo the deletion."
     },
     "toast": {
       "savedTo": "Saved to {name}'s record"
@@ -14506,7 +14506,7 @@
       "practitioner": "Since your last visit with {name} on {date}",
       "specialty": "Since your last {specialty} visit on {date}",
       "kind": "Since your last visit of the same kind ({kind}) on {date}",
-      "default": "The last {days} days",
+      "default": "The last {days, plural, one {# day} other {# days}}",
       "defaultReason": "No earlier visit with the same practice, specialty or kind.",
       "capped": "The last two years",
       "cappedReason": "The last matching visit is more than two years ago, and a report covers two years at most."
@@ -14624,7 +14624,7 @@
       "title": "Background AI that stopped",
       "description": "Work that stopped recently and why; an entry goes once the work succeeds again.",
       "line": "{job}: {reason}",
-      "repeated": "Failed {count} times in a row, last on {when}.",
+      "repeated": "Failed {count, plural, one {once} other {# times in a row}}, last on {when}.",
       "lastAt": "Last tried on {when}.",
       "openDocument": "Open the document",
       "retry": "Try again",
@@ -14689,7 +14689,7 @@
       "Thermometer": "Thermometer",
       "Stethoscope": "Stethoscope"
     },
-    "limitReached": "You have {limit} symptoms. Hide one to add another.",
+    "limitReached": "You have {limit, plural, one {# symptom} other {# symptoms}}. Hide one to add another.",
     "saveError": "Couldn't save the symptom. Please try again.",
     "nameRequired": "Give the symptom a name.",
     "unreadableLabel": "Unreadable symptom",
@@ -14710,7 +14710,7 @@
       "reset": "Reset form",
       "emptyHint": "Add your first symptom, for example aura or headache.",
       "emptyHintNoManage": "No symptoms have been set up for this record yet.",
-      "limitHint": "Up to {limit} symptoms. Hide one on the illness page to add another.",
+      "limitHint": "Up to {limit, plural, one {# symptom} other {# symptoms}}. Hide one on the illness page to add another.",
       "intensityFor": "Intensity: {symptom}",
       "partlySaved": "{saved} of {total} saved, the rest is still picked.",
       "severalHint": "Pick several if they came together.",
@@ -14818,7 +14818,7 @@
     "dayOf": "Day {n} of {m}",
     "dayN": "Day {n}",
     "seizure": "Seizure",
-    "seizureCount": "{count} seizures",
+    "seizureCount": "{count, plural, one {# seizure} other {# seizures}}",
     "usualRange": "Usually {lo} to {hi}",
     "groups": {
       "scores": "Scores",
@@ -14832,7 +14832,7 @@
       "extremeHigh": "Highest daily value since {since}",
       "extremeLow": "Lowest daily value since {since}",
       "firstValue": "First reading of this kind",
-      "gap": "No reading for {days} days"
+      "gap": "No reading for {days, plural, one {# day} other {# days}}"
     },
     "previousDayShortcut": "Previous day (Alt + Left arrow)",
     "nextDayShortcut": "Next day (Alt + Right arrow)",
@@ -14956,12 +14956,12 @@
         "environment": "Environment",
         "life": "Life events"
       },
-      "meter": "{carrying} of {total} lanes carry",
-      "carriesDetail": "{carrying} of {total} lanes give an overview from {since}.",
+      "meter": "{carrying} of {total, plural, one {# lane} other {# lanes}} carry",
+      "carriesDetail": "{carrying} of {total, plural, one {# lane} other {# lanes}} give an overview from {since}.",
       "loadFailed": "The inventory could not be loaded.",
       "card": {
         "title": "What the timeline already carries",
-        "summary": "It reaches back to {since}; {carrying} of {total} lanes already carry.",
+        "summary": "It reaches back to {since}; {carrying} of {total, plural, one {# lane} other {# lanes}} already carry.",
         "dismiss": "Hide"
       },
       "detail": {
@@ -15137,7 +15137,7 @@
     "labs": {
       "menuTitle": "Lab values",
       "otherPanel": "Other",
-      "full": "Up to {max} lab values at once. Remove one to add another.",
+      "full": "Up to {max, plural, one {# lab value} other {# lab values}} at once. Remove one to add another.",
       "above": "above range",
       "below": "below range",
       "reference": "reference {range}",
@@ -15153,7 +15153,7 @@
     "legendSymptom": "Symptom line: each logged day's highest intensity (0 to 10), averaged over the logged days",
     "symptoms": {
       "menuTitle": "Symptoms",
-      "full": "Up to {max} symptoms at once. Remove one to add another.",
+      "full": "Up to {max, plural, one {# symptom} other {# symptoms}} at once. Remove one to add another.",
       "hidden": "hidden",
       "unnamed": "Symptom",
       "daysOne": "on 1 day",
@@ -15334,7 +15334,7 @@
     "weekGoalsMet": "All weekly goals met",
     "weekGoalsNotMet": "Not all weekly goals met",
     "cell": {
-      "steps": "{value} steps",
+      "steps": "{value, plural, one {# step} other {# steps}}",
       "activeMinutes": "{value} active minutes",
       "workouts": "{value} workouts: {sports}"
     },
@@ -15351,7 +15351,7 @@
     "legend": "Compared with your 12 weeks before:",
     "noBaseline": "Your usual range shows after 14 days with data.",
     "summary": {
-      "steps": "{value} steps",
+      "steps": "{value, plural, one {# step} other {# steps}}",
       "activeMinutes": "{value} active minutes",
       "workouts": "{value} workouts",
       "load": "Average training load {value}",
@@ -15403,13 +15403,13 @@
       "name_tiebreak": "Same rank as the source used; the name decided."
     },
     "used": "Used",
-    "readings": "{count} readings, devices: {devices}",
+    "readings": "{count, plural, one {# reading} other {# readings}}, devices: {devices}",
     "ladder": "Your order for this metric: {ladder}",
     "utcNote": "The source is chosen per day from midnight to midnight UTC, the same way the charts choose it.",
     "openSettings": "Change the order in Source priority",
     "compareTitle": "Compare two sources",
     "range": "Range",
-    "rangeDays": "{days} days",
+    "rangeDays": "{days, plural, one {# day} other {# days}}",
     "compareNeedsTwo": "Only one source has readings of this metric in this range.",
     "side": {
       "a": "First source",
@@ -15470,10 +15470,10 @@
     "missing": "Still to choose: {fields}",
     "check": "Check file",
     "runIdle": "Import",
-    "run": "Import {count} rows",
+    "run": "Import {count, plural, one {# row} other {# rows}}",
     "close": "Close",
-    "summaryCheck": "{rows} rows read: {inserted} can be imported, {duplicates} already in your record, {failed} with a problem.",
-    "summaryDone": "Imported {inserted} rows. Skipped {duplicates} already in your record, {failed} with a problem.",
+    "summaryCheck": "{rows, plural, one {# row} other {# rows}} read: {inserted} can be imported, {duplicates} already in your record, {failed} with a problem.",
+    "summaryDone": "Imported {inserted, plural, one {# row} other {# rows}}. Skipped {duplicates} already in your record, {failed} with a problem.",
     "markersMatched": "Matched to your markers:",
     "markersCreated": "New markers:",
     "line": "Line {line}",
@@ -15668,7 +15668,7 @@
       "seizureFreeDays": "Days without a recorded seizure",
       "per28Days": "Seizures per 28 days",
       "longestFree": "Longest run without a recorded seizure",
-      "daysValue": "{count} days",
+      "daysValue": "{count, plural, one {# day} other {# days}}",
       "daysSinceLast": "Days since the last recorded seizure",
       "convulsive": "Bilateral tonic-clonic seizures",
       "fromSleep": "Seizures from sleep",
@@ -15707,11 +15707,11 @@
       "triggersTitle": "Suspected triggers",
       "triggersNote": "Named by the person or carer when recording; not established causes.",
       "overlaysTitle": "Recorded alongside",
-      "overlayMissedDose": "{followed} of {of} seizures followed a missed or skipped scheduled dose within the previous 48 hours.",
-      "overlayIllness": "{during} seizures happened during one of {episodes} recorded illness episodes.",
-      "overlaySleep": "Recorded sleep the night before a seizure day: {before} h on average ({nightsBefore} nights); other nights: {other} h ({nightsOther} nights).",
+      "overlayMissedDose": "{followed} of {of, plural, one {# seizure} other {# seizures}} followed a missed or skipped scheduled dose within the previous 48 hours.",
+      "overlayIllness": "{during, plural, one {# seizure} other {# seizures}} happened during one of {episodes} recorded illness episodes.",
+      "overlaySleep": "Recorded sleep the night before a seizure day: {before} h on average ({nightsBefore, plural, one {# night} other {# nights}}); other nights: {other} h ({nightsOther, plural, one {# night} other {# nights}}).",
       "overlayCycleDays": "Seizures by cycle day (day: count): {list}.",
-      "overlayCycleRatio": "Over {cycles} complete tracked cycles, the seizure rate per day was {c1} times the rate on other days around the period (day −3 to +3) and {c2} times around ovulation (day 10 to −13). Herzog's catamenial criterion is a twofold or greater increase; this is a reference, not a finding.",
+      "overlayCycleRatio": "Over {cycles} complete tracked cycles, the seizure rate per day was {c1, plural, other {# times}} the rate on other days around the period (day −3 to +3) and {c2, plural, other {# times}} around ovulation (day 10 to −13). Herzog's catamenial criterion is a twofold or greater increase; this is a reference, not a finding.",
       "overlayCycleTooFew": "Rates by cycle phase are shown from three complete tracked cycles ({cycles} so far).",
       "overlaysNote": "These are things recorded at the same time, not causes.",
       "eventsTitle": "All recorded events",
@@ -15724,7 +15724,7 @@
       "eventsTruncated": "Only the most recent 200 events are listed; the figures above cover all of them.",
       "classificationNote": "Seizure types follow the ILAE 2025 classification; the ILAE 2017 names are:",
       "footer": "Patient or carer recorded diary. These are recorded seizures, likely an undercount, especially for seizures from sleep. The diary records observations and does not diagnose or assess seizures.",
-      "seizureDaysValue": "on {count} days"
+      "seizureDaysValue": "on {count, plural, one {# day} other {# days}}"
     },
     "title": "Seizure diary",
     "subtitle": "Seizures as they were seen, with the type, the duration and the rescue medication given.",
@@ -15770,8 +15770,8 @@
       "longestFree": "Longest run without one, days",
       "clusters": "Clusters ({rule})",
       "niceClusters": "Clusters under NICE (3 in 24 h)",
-      "suspected": "{count} suspected seizures are listed but not counted.",
-      "clusterLine": "From {start}: {count} seizures",
+      "suspected": "{count, plural, one {# suspected seizure is listed but not counted.} other {# suspected seizures are listed but not counted.}}",
+      "clusterLine": "From {start}: {count, plural, one {# seizure} other {# seizures}}",
       "monthlyCaption": "Seizures per type and month",
       "undercount": "Recorded seizures, likely an undercount, especially for seizures from sleep."
     },
@@ -15946,7 +15946,7 @@
     },
     "rule": {
       "title": "Cluster rule",
-      "explainer": "A cluster is this many seizures within this many hours. Use the rule in the emergency plan; NICE uses {niceCount} in {niceHours} hours, and the summary counts clusters under both.",
+      "explainer": "A cluster is this many seizures within this many hours. Use the rule in the emergency plan; NICE uses {niceCount} in {niceHours, plural, one {# hour} other {# hours}}, and the summary counts clusters under both.",
       "count": "Seizures",
       "hours": "Window (hours)",
       "invalid": "Use 2 to 20 seizures within 1 to 168 hours.",
@@ -16053,7 +16053,7 @@
       "expired": "This link has ended and answers nothing.",
       "expiresOn": "Ends on {date}.",
       "noExpiry": "No end date. It works until you revoke it.",
-      "opened": "Opened {count} times, last {when}.",
+      "opened": "Opened {count, plural, one {once} other {# times}}, last {when}.",
       "notOpened": "Not opened yet.",
       "revoke": "Revoke link",
       "revokeTitle": "Revoke the emergency card link?",

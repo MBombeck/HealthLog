@@ -64,7 +64,7 @@ describe("RestoreSkipReport", () => {
     // The cycle key cost two links and the other two cost one each. A panel
     // that printed the grand total against every row would read as six.
     expect(html).toContain("2 links");
-    expect(html).toContain("1 links");
+    expect(html).toContain("1 link");
     expect(html).toContain("Cycle symptom");
     expect(html).toContain("Illness symptom");
     expect(html).toContain("Mood factor");

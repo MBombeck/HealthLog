@@ -14,8 +14,10 @@
 Theme, spacing, typography, radius and colour tokens are defined in the
 standards (§1 to §5 there). Two things to add:
 
-- Dark is the default theme, and the light theme remaps the same semantic
-  tokens. Check every component in both before shipping it.
+- The theme follows the system scheme until a person picks light or dark
+  (Settings > Account, Display, or the avatar menu), and the light theme
+  remaps the same semantic tokens. Check every component in both before
+  shipping it.
 - Elevation stays light: `shadow-xs` or `shadow-sm` in chrome, never the
   heavy `shadow-lg` and up.
 

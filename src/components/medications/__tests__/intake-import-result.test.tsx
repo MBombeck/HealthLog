@@ -118,7 +118,7 @@ describe("<IntakeImportResultView> — an import that wrote nothing", () => {
     expect(html).toContain('data-testid="intake-import-skip-details"');
     expect(html).toContain("Line 2");
     expect(html).toContain("Line 9");
-    expect(html).toContain("1 more skipped rows");
+    expect(html).toContain("1 more skipped row is not shown");
     expect(html).not.toContain("medicationId");
     expect(html).not.toContain("takenAt");
   });

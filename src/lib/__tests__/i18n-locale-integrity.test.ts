@@ -388,9 +388,46 @@ describe("i18n locale file integrity", () => {
    * A singular plural form (`…One`) may name the count in words instead of
    * `{count}`, or name it where English does not.
    */
+  /**
+   * An ICU plural block (`{count, plural, one {…} other {…}}`) reads as its
+   * parameter followed by its branch texts, so `{count}` counts once and a
+   * `{name}` inside a branch counts as a placeholder while a branch body
+   * (`{once}`) does not.
+   */
+  function flattenPluralBlocks(value: string): string {
+    const head = /\{(\w+)\s*,\s*plural\s*,/.exec(value);
+    if (!head) return value;
+    let depth = 0;
+    let end = value.length;
+    for (let i = head.index; i < value.length; i++) {
+      if (value[i] === "{") depth++;
+      else if (value[i] === "}" && --depth === 0) {
+        end = i;
+        break;
+      }
+    }
+    const body = value.slice(head.index + head[0].length, end);
+    const branches: string[] = [];
+    let level = 0;
+    let start = 0;
+    for (let i = 0; i < body.length; i++) {
+      if (body[i] === "{") {
+        if (level === 0) start = i + 1;
+        level++;
+      } else if (body[i] === "}" && --level === 0) {
+        branches.push(body.slice(start, i));
+      }
+    }
+    return flattenPluralBlocks(
+      `${value.slice(0, head.index)}{${head[1]}} ${branches.join(" ")}${value.slice(end + 1)}`,
+    );
+  }
+
   function placeholderSet(value: string, singular: boolean): string {
     const names = new Set(
-      [...value.matchAll(/\{(\w+)\}/g)].map((match) => match[1]),
+      [...flattenPluralBlocks(value).matchAll(/\{(\w+)\}/g)].map(
+        (match) => match[1],
+      ),
     );
     if (singular) names.delete("count");
     return [...names].sort().join(",");

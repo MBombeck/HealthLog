@@ -337,7 +337,7 @@
     "colExpected": "Erwartet",
     "colComplianceRate": "Therapietreue",
     "moodTitle": "Stimmungsverlauf",
-    "moodSummary": "Durchschnitt {avg} / 5,0, {count} Einträge, Bereich {min}–{max}",
+    "moodSummary": "Durchschnitt {avg} / 5,0, {count, plural, one {# Eintrag} other {# Einträge}}, Bereich {min} bis {max}",
     "colMood": "Stimmung",
     "colCount": "Anzahl",
     "colShare": "Anteil",
@@ -376,7 +376,7 @@
     "insurer": "Krankenkasse",
     "insuranceNumber": "Versichertennr.",
     "summaryTitle": "Klinische Zusammenfassung",
-    "summaryReadings": "Über {days} Tage erfasst: {count} Messwerte über {params} Parameter.",
+    "summaryReadings": "Über {days, plural, one {# Tag} other {# Tage}} erfasst: {count, plural, one {# Messwert} other {# Messwerte}} über {params, plural, one {# Parameter} other {# Parameter}}.",
     "summaryTrend": "{label}: zuletzt {latest} {arrow}",
     "summaryAdherence": "Medikamenten-Therapietreue: {rate}% (gewichteter Mittelwert).",
     "chartsTitle": "Trend-Diagramme",
@@ -506,22 +506,22 @@
     "lifeAuditCBelow": "Unter dem Grenzwert {cutoff} ({source}).",
     "lifeAuditCNoCutoff": "Kein geschlechtsbezogener Grenzwert angewandt.",
     "lifeActivity": "Körperliche Aktivität",
-    "lifeActivityValue": "{minutes} Minuten pro Woche, Selbstauskunft",
+    "lifeActivityValue": "{minutes, plural, one {# Minute} other {# Minuten}} pro Woche, Selbstauskunft",
     "lifeSitting": "Sitzen am Werktag",
-    "lifeSittingValue": "{hours} Stunden, Selbstauskunft",
+    "lifeSittingValue": "{hours, plural, one {# Stunde} other {# Stunden}}, Selbstauskunft",
     "lifeWork": "Arbeit",
     "lifeNightWork": "Nachtarbeit",
     "lifeExposures": "Belastungen: {list}",
     "workouts": {
       "title": "Trainings",
-      "summary": "{sessions} Einheiten, insgesamt {hours} h; im Schnitt {perWeek} Einheiten und {minutesPerWeek} Minuten pro Woche.",
+      "summary": "{sessions, plural, one {# Einheit} other {# Einheiten}}, insgesamt {hours} h; im Schnitt {perWeek, plural, one {# Einheit} other {# Einheiten}} und {minutesPerWeek, plural, one {# Minute} other {# Minuten}} pro Woche.",
       "colSport": "Sportart",
       "colSessions": "Einheiten",
       "colTime": "Dauer",
       "colDistance": "Strecke",
       "colEnergy": "Energie",
       "colHeartRate": "Ø Herzfrequenz",
-      "moreSports": "{count} weitere Sportarten sind in den Summen enthalten, aber nicht einzeln aufgeführt."
+      "moreSports": "{count, plural, one {# weitere Sportart ist in den Summen enthalten, aber nicht einzeln aufgeführt.} other {# weitere Sportarten sind in den Summen enthalten, aber nicht einzeln aufgeführt.}}"
     },
     "medicationEffect": {
       "title": "Veränderung rund um den Start der Medikamente",
@@ -536,17 +536,17 @@
       "reasonBefore": "Zu wenige Werte vor dem Start",
       "reasonAfter": "Zu wenige Werte seit dem Start",
       "reasonFit": "Nicht berechenbar",
-      "excludedAdherence": "{count} Tage nach dem Start ausgeschlossen (unter {floor} % der Dosen eingenommen)",
-      "excludedNotTaking": "{count} Tage ausgeschlossen (pausiert oder zwischen Einnahmezeiträumen)",
+      "excludedAdherence": "{count, plural, one {# Tag} other {# Tage}} nach dem Start ausgeschlossen (unter {floor} % der Dosen eingenommen)",
+      "excludedNotTaking": "{count, plural, one {# Tag} other {# Tage}} ausgeschlossen (pausiert oder zwischen Einnahmezeiträumen)",
       "notTracked": "Einnahme nicht erfasst, daher keine Tage wegen nicht genommener Dosen entfernt",
       "endDoseChange": "Zeitraum endet am {date}, vor der ersten Dosisänderung",
-      "days": "{before} Tage vor, {after} Tage nach dem Start, {excluded} Tage ausgeschlossen",
+      "days": "{before, plural, one {# Tag} other {# Tage}} vor, {after, plural, one {# Tag} other {# Tage}} nach dem Start, {excluded, plural, one {# Tag} other {# Tage}} ausgeschlossen",
       "method": "Segmentierte Regression über die Tageswerte von 90 Tagen vor bis höchstens 180 Tagen nach dem Start, Intervalle nach Newey-West. Tage nach dem Start, an denen in den 14 Tagen davor weniger als 80 % der Dosen eingenommen wurden, sind ausgeschlossen. Beschreibt einen zeitlichen Zusammenhang, keine nachgewiesene Wirkung des Medikaments.",
       "autocorrelation": "starke Abhängigkeit vom Vortag, die Bereiche können daher noch zu eng sein",
       "window": "ausgewertet {from} bis {to}, das kann über den Berichtszeitraum hinausreichen",
       "windowLine": "Ausgewertet {from} bis {to}. Dieser Zeitraum kann über den Berichtszeitraum hinausreichen."
     },
-    "screenerUnvalidated": "{label}: {count} von {total} Ergebnissen wurden in einer nicht wissenschaftlich validierten Übersetzung beantwortet; sie dienen der Orientierung.",
+    "screenerUnvalidated": "{label}: {count} von {total, plural, one {# Ergebnis} other {# Ergebnissen}} wurden in einer nicht wissenschaftlich validierten Übersetzung beantwortet; sie dienen der Orientierung.",
     "pregnancy": {
       "title": "Schwangerschaft",
       "pregnantWeek": "SSW {weeks}+{days} am Berichtsdatum",
@@ -669,7 +669,7 @@
     "backToPasskey": "Zurück zu Passkey",
     "passkeySetupLater": "Passkeys kannst du jederzeit in den Einstellungen einrichten.",
     "passwordMinLength": "Min. 12 Zeichen",
-    "passwordTooShort": "Passwort muss mindestens {minLength} Zeichen lang sein.",
+    "passwordTooShort": "Passwort muss mindestens {minLength, plural, one {# Zeichen} other {# Zeichen}} lang sein.",
     "privacyPolicy": "Datenschutzerklärung",
     "passwordBreached": "Dieses Passwort taucht in bekannten Datenlecks auf. Bitte wähle ein anderes.",
     "oidc": {
@@ -1014,7 +1014,7 @@
     "invalidTimestamp": "Wähle einen gültigen Zeitpunkt.",
     "loginRequired": "Bitte anmelden, um Messwerte zu sehen.",
     "allTypes": "Alle Typen",
-    "measurementCount": "{count} Messwerte",
+    "measurementCount": "{count, plural, one {# Messwert} other {# Messwerte}}",
     "emptyTitle": "Noch keine Messwerte",
     "emptyDescription": "Erfasse Gewicht, Blutdruck, Puls oder andere Werte, um Trends zu erkennen.",
     "emptyFilteredTitle": "Kein Messwert passt zum Filter",
@@ -1029,10 +1029,10 @@
     "pageInfo": "Seite {page} von {total}",
     "previousPage": "Vorherige Seite",
     "nextPage": "Nächste Seite",
-    "dailyTotalCaption": "({count} Einzelwerte)",
+    "dailyTotalCaption": "({count, plural, one {# Einzelwert} other {# Einzelwerte}})",
     "openMetricInsights": "{type} in Insights öffnen",
-    "sleepNapCaption": "inkl. {count} Nickerchen",
-    "sleepAwakeningsCaption": "{count} Wachphasen",
+    "sleepNapCaption": "inkl. {count, plural, one {# Nickerchen} other {# Nickerchen}}",
+    "sleepAwakeningsCaption": "{count, plural, one {# Wachphase} other {# Wachphasen}}",
     "expandDay": "Einzelwerte dieses Tages anzeigen",
     "collapseDay": "Einzelwerte dieses Tages ausblenden",
     "loadError": "Messwerte konnten nicht geladen werden.",
@@ -1087,12 +1087,12 @@
     "sourceGoogleHealth": "Google Health",
     "sourceStrava": "Strava",
     "sourceExternal": "Externes Gerät",
-    "bulkDeleteSuccess": "{count} Messwerte gelöscht",
+    "bulkDeleteSuccess": "{count, plural, one {# Messwert gelöscht} other {# Messwerte gelöscht}}",
     "bulkDeleteSuccessOne": "Messwert gelöscht",
     "bulkDeleteError": "Fehler beim Löschen der ausgewählten Messungen",
-    "bulkDeleteConfirmTitle": "{count} Messwerte löschen?",
+    "bulkDeleteConfirmTitle": "{count, plural, one {# Messwert} other {# Messwerte}} löschen?",
     "bulkDeleteConfirmTitleOne": "Diesen Messwert löschen?",
-    "bulkDeleteConfirmBody": "Die {count} ausgewählten Messungen werden gelöscht. Direkt danach kannst du das kurz rückgängig machen.",
+    "bulkDeleteConfirmBody": "{count, plural, one {Die ausgewählte Messung wird gelöscht.} other {Die # ausgewählten Messungen werden gelöscht.}} Direkt danach kannst du das kurz rückgängig machen.",
     "bulkDeleteConfirmBodyOne": "Die ausgewählte Messung wird gelöscht. Direkt danach kannst du das kurz rückgängig machen.",
     "typePhq9Score": "PHQ-9-Wert",
     "typeGad7Score": "GAD-7-Wert",
@@ -1173,7 +1173,7 @@
     "levelLausig": "Lausig",
     "sourceMoodlog": "moodLog",
     "allMoods": "Alle Stimmungen",
-    "entryCount": "{count} Einträge",
+    "entryCount": "{count, plural, one {# Eintrag} other {# Einträge}}",
     "emptyTitle": "Noch keine Stimmungseinträge",
     "emptyDescription": "Erfasse, wie du dich heute fühlst, um Muster über die Zeit zu erkennen.",
     "emptyFilteredTitle": "Kein Eintrag passt zum Filter",
@@ -1267,12 +1267,12 @@
     "sourceWeb": "Web",
     "sourceTelegram": "Telegram",
     "sourceDaylio": "Daylio",
-    "bulkDeleteSuccess": "{count} Einträge gelöscht",
+    "bulkDeleteSuccess": "{count, plural, one {# Eintrag gelöscht} other {# Einträge gelöscht}}",
     "bulkDeleteSuccessOne": "Eintrag gelöscht",
     "bulkDeleteError": "Fehler beim Löschen der ausgewählten Einträge",
-    "bulkDeleteConfirmTitle": "{count} Einträge löschen?",
+    "bulkDeleteConfirmTitle": "{count, plural, one {# Eintrag} other {# Einträge}} löschen?",
     "bulkDeleteConfirmTitleOne": "Diesen Eintrag löschen?",
-    "bulkDeleteConfirmBody": "Die {count} ausgewählten Stimmungseinträge werden gelöscht. Direkt danach kannst du das kurz rückgängig machen.",
+    "bulkDeleteConfirmBody": "{count, plural, one {Der ausgewählte Stimmungseintrag wird gelöscht.} other {Die # ausgewählten Stimmungseinträge werden gelöscht.}} Direkt danach kannst du das kurz rückgängig machen.",
     "bulkDeleteConfirmBodyOne": "Der ausgewählte Stimmungseintrag wird gelöscht. Direkt danach kannst du das kurz rückgängig machen.",
     "customize": "Stimmungs-Tags anpassen",
     "addTagInline": "Tag hinzufügen",
@@ -1295,7 +1295,7 @@
       "tagLabel": "Tag-Name",
       "tagIcon": "Symbol",
       "tagGroup": "Gruppe",
-      "usageCount": "{count} Einträge",
+      "usageCount": "{count, plural, one {# Eintrag} other {# Einträge}}",
       "hideTag": "Tag ausblenden",
       "showTag": "Tag einblenden",
       "moveToGroup": "In Gruppe verschieben",
@@ -1305,7 +1305,7 @@
       "archivedDescription": "Archivierte Tags bleiben in deinen bisherigen Einträgen erhalten. Sie verschwinden nur aus der Auswahl.",
       "archivedEmpty": "Nichts archiviert.",
       "purgeTitle": "Tag endgültig löschen?",
-      "purgeBody": "Der Tag wird aus {count} bisherigen Einträgen entfernt. Das lässt sich nicht rückgängig machen.",
+      "purgeBody": "Der Tag wird aus {count, plural, one {# bisherigen Eintrag} other {# bisherigen Einträgen}} entfernt. Das lässt sich nicht rückgängig machen.",
       "purgeAction": "Endgültig löschen",
       "purged": "Tag gelöscht",
       "tagLimitReached": "Tag-Limit erreicht",
@@ -1484,7 +1484,7 @@
       "linkedActiveEnergy": "Aktive Energie",
       "linkedRestingHeartRate": "Ruhepuls",
       "linkedHrv": "Herzratenvariabilität",
-      "bodyLogged": "Im Krankheitstagebuch erfasst: {count} Symptome",
+      "bodyLogged": "Im Krankheitstagebuch erfasst: {count, plural, one {# Symptom} other {# Symptome}}",
       "bodyNotLogged": "Für diesen Tag ist im Krankheitstagebuch nichts erfasst",
       "openIllness": "Öffnen"
     },
@@ -1507,7 +1507,7 @@
       "dialogTitle": "Fällige Medikamente einnehmen",
       "dialogDescription": "Diese Medikamente sind jetzt fällig. Bestätige, um sie alle als genommen zu erfassen.",
       "confirm": "Alle einnehmen ({count})",
-      "successToast": "{count} Einnahmen erfasst",
+      "successToast": "{count, plural, one {# Einnahme erfasst} other {# Einnahmen erfasst}}",
       "partialToast": "{taken} erfasst, {failed} fehlgeschlagen. Bitte erneut versuchen",
       "failedToast": "Keine Einnahme erfasst. Bitte erneut versuchen"
     },
@@ -1582,7 +1582,7 @@
     },
     "withoutNotification": "Ohne Benachrichtigung",
     "pausedSince": "Pausiert seit",
-    "complianceWindow": "Therapietreue ({days} Tage)",
+    "complianceWindow": "Therapietreue ({days, plural, one {# Tag} other {# Tage}})",
     "complianceUnavailable": "Therapietreue konnte nicht geladen werden",
     "complianceNotApplicable": "Therapietreue nicht anwendbar",
     "complianceNoDoses": "Noch keine Dosen",
@@ -1604,7 +1604,7 @@
     "intakeAlreadyTaken": "{name} war schon als genommen erfasst. Nichts Neues gespeichert.",
     "intakeUndoFailed": "Rückgängig fehlgeschlagen. Im Verlauf korrigieren",
     "glp1LastInjection": "{label}",
-    "glp1NextInjectionDays": "{label} (in {days} Tagen)",
+    "glp1NextInjectionDays": "{label} (in {days, plural, one {# Tag} other {# Tagen}})",
     "glp1NextInjectionToday": "heute",
     "glp1NextInjectionTomorrow": "morgen",
     "glp1RotationSuggested": "Empfohlen: {site}",
@@ -1955,11 +1955,11 @@
           "monthly": "Monatlich",
           "quarterly": "Alle drei Monate",
           "yearly": "Einmal im Jahr",
-          "rolling": "Alle {n} Tage seit der letzten Einnahme",
+          "rolling": "{n, plural, =1 {Jeden Tag} other {Alle # Tage}} seit der letzten Einnahme",
           "oneShot": "Eine Einmaldosis",
           "asNeeded": "Bei Bedarf",
-          "everyNWeeks": "Alle {n} Wochen",
-          "everyNMonths": "Alle {n} Monate"
+          "everyNWeeks": "{n, plural, =1 {Jede Woche} other {Alle # Wochen}}",
+          "everyNMonths": "{n, plural, =1 {Jeden Monat} other {Alle # Monate}}"
         },
         "weekdaysDetail": ", an {days}",
         "dayOfMonthDetail": ", am {day}.",
@@ -1968,7 +1968,7 @@
         "endsOn": "Ende: {date}",
         "noEndDate": "Kein Enddatum",
         "windowLine": "{time}: pünktlich bis {onTime}, verspätet bis {late}, danach verpasst.",
-        "windowDays": "Eine Dosis zählt an ihrem Tag als pünktlich, bis zu {days} Tage danach als verspätet, danach als verpasst."
+        "windowDays": "Eine Dosis zählt an ihrem Tag als pünktlich, bis zu {days, plural, one {# Tag} other {# Tage}} danach als verspätet, danach als verpasst."
       },
       "compose": {
         "scheduleIndex": "Zeitplan {n} von {total}",
@@ -2062,7 +2062,7 @@
     "intakeHistoryInjectionSite": "Injektionsstelle: {site}",
     "intakeHistorySortByTaken": "Nach Einnahme-Zeitpunkt sortieren",
     "intakeHistorySortByScheduled": "Nach geplantem Zeitpunkt sortieren",
-    "intakeHistoryPageInfo": "Seite {page} von {total}, {count} Einträge",
+    "intakeHistoryPageInfo": "Seite {page} von {total}, {count, plural, one {# Eintrag} other {# Einträge}}",
     "intakeHistoryPrev": "Zurück",
     "intakeHistoryNext": "Weiter",
     "glp1": {
@@ -2219,10 +2219,10 @@
         },
         "purge": {
           "title": "Verlauf löschen",
-          "helper": "Es sind {count} Einnahmen für dieses Medikament gespeichert.",
+          "helper": "{count, plural, one {Es ist # Einnahme} other {Es sind # Einnahmen}} für dieses Medikament gespeichert.",
           "button": "Verlauf löschen",
           "dialogTitle": "Verlauf löschen?",
-          "dialogBody": "Die {count} Einnahmen werden unwiderruflich gelöscht. Das Medikament selbst bleibt.",
+          "dialogBody": "{count, plural, one {Die Einnahme wird unwiderruflich gelöscht.} other {Die # Einnahmen werden unwiderruflich gelöscht.}} Das Medikament selbst bleibt.",
           "toast": "Verlauf gelöscht",
           "failed": "Verlauf konnte nicht gelöscht werden."
         },
@@ -2297,7 +2297,7 @@
         "reminderOn": "Aktiv",
         "reminderOff": "Aus",
         "supplyLabel": "Bestand",
-        "supplyRunway": "Reicht noch ca. {days} Tage",
+        "supplyRunway": "Reicht noch ca. {days, plural, one {# Tag} other {# Tage}}",
         "jumpToZeitplan": "Zum Zeitplan",
         "jumpToBestand": "Zum Bestand",
         "complianceTitle": "Therapietreue",
@@ -2305,9 +2305,9 @@
       },
       "bestand": {
         "title": "Bestand",
-        "summary": "{remaining} von {total} Dosen übrig",
+        "summary": "{remaining} von {total, plural, one {# Dosis} other {# Dosen}} übrig",
         "itemsTitle": "Packungen & Behälter",
-        "doses": "{remaining} / {total} Dosen",
+        "doses": "{remaining} / {total, plural, one {# Dosis} other {# Dosen}}",
         "unknown": "Unbekannt",
         "state": {
           "ACTIVE": "Ungeöffnet",
@@ -2319,7 +2319,7 @@
         "emptyHelper": "Erfasse eine Packung oder einen Behälter, um den verbleibenden Vorrat und die Reichweite zu verfolgen.",
         "emptyCta": "Packung erfassen",
         "addButton": "Erfassen",
-        "lowStockLinkOn": "Benachrichtigung bei niedrigem Bestand: unter {days} Tagen",
+        "lowStockLinkOn": "Benachrichtigung bei niedrigem Bestand: unter {days, plural, one {# Tag} other {# Tagen}}",
         "lowStockLinkOff": "Benachrichtigung bei niedrigem Bestand: aus",
         "addTitle": "Packung oder Behälter erfassen",
         "addDescription": "Lege einen neuen Vorrat mit seiner Einheitenanzahl an; das Ablaufdatum ist optional.",
@@ -2333,7 +2333,7 @@
         "adjustTitle": "Behälter korrigieren",
         "adjustDescription": "Verbleibende Einheiten setzen und die Daten dieses Behälters korrigieren. 0 Einheiten markiert ihn als aufgebraucht.",
         "adjustQuantityLabel": "Verbleibende Einheiten",
-        "adjustHelper": "Kapazität: {total} Einheiten.",
+        "adjustHelper": "Kapazität: {total, plural, one {# Einheit} other {# Einheiten}}.",
         "adjustSubmit": "Speichern",
         "adjustSuccess": "Bestand aktualisiert",
         "adjustFailed": "Bestand konnte nicht aktualisiert werden.",
@@ -2350,16 +2350,16 @@
           "BOTTLE": "Flasche",
           "OTHER": "Sonstiges"
         },
-        "unitsDetail": "{remaining} / {total} Einheiten",
+        "unitsDetail": "{remaining} / {total, plural, one {# Einheit} other {# Einheiten}}",
         "quantityModeDoses": "Dosen",
         "quantityModeUnits": "Einheiten",
-        "quantityInUnits": "= {units} Einheiten",
-        "quantityInDoses": "≈ {doses} Dosen",
+        "quantityInUnits": "= {units, plural, one {# Einheit} other {# Einheiten}}",
+        "quantityInDoses": "≈ {doses, plural, one {# Dosis} other {# Dosen}}",
         "quantityUnderOneDose": "< 1 Dosis",
-        "expiredSuffix": "+ {units} Einheiten abgelaufen",
+        "expiredSuffix": "+ {units, plural, one {# Einheit} other {# Einheiten}} abgelaufen",
         "packagingTitle": "Packung & Dosis",
-        "packagingUnitsPerDose": "1 Dosis = {units} Einheiten",
-        "packagingDefaultPack": "Standard-Packungsgröße: {units} Einheiten",
+        "packagingUnitsPerDose": "1 Dosis = {units, plural, one {# Einheit} other {# Einheiten}}",
+        "packagingDefaultPack": "Standard-Packungsgröße: {units, plural, one {# Einheit} other {# Einheiten}}",
         "packagingNoDefaultPack": "Keine Standard-Packungsgröße hinterlegt",
         "packagingEdit": "Bearbeiten",
         "packagingDescription": "Lege fest, wie viele Einheiten eine Dosis verbraucht und wie groß eine neue Packung üblicherweise ist, z. B. nach einem Herstellerwechsel mit anderer Blistergröße.",
@@ -2374,7 +2374,7 @@
         "addDoseStrengthHint": "Wie auf dem Behälter aufgedruckt, z. B. 5 mg/0,5 ml.",
         "openedOn": "Geöffnet {date}",
         "expiresOn": "Haltbar bis {date}",
-        "summaryAllExpired": "Kein nutzbarer Bestand: {units} Einheiten als abgelaufen markiert",
+        "summaryAllExpired": "Kein nutzbarer Bestand: {units, plural, one {# Einheit} other {# Einheiten}} als abgelaufen markiert",
         "editExpiryLabel": "Aufgedrucktes Haltbarkeitsdatum",
         "editExpiryHelper": "Das Datum auf der Packung. Leer lassen, wenn keines erfasst ist.",
         "editOpenedLabel": "Geöffnet am",
@@ -2400,7 +2400,7 @@
         "timesNote": "Passe die Uhrzeiten und das Zeitfenster jeder Dosis an. Die Häufigkeit (täglich, wöchentlich…) änderst du im Editor unter Erweitert.",
         "scheduleLabel": "Zeitplan {index}",
         "fullEditNote": "Häufigkeit, Wirkstoffklasse und Zeitraum bearbeitest du im Editor unter Erweitert → Lebenszyklus.",
-        "graceEcho": "Erinnerungsdauer: {minutes} Minuten",
+        "graceEcho": "Erinnerungsdauer: {minutes, plural, one {# Minute} other {# Minuten}}",
         "reminderTitle": "Erinnerung",
         "manageChannels": "Benachrichtigungskanäle verwalten",
         "history": {
@@ -2449,7 +2449,7 @@
           "endLabel": "Fensterende",
           "onTimeBand": "Pünktlich: {start}–{end}",
           "lateUntil": "verspätet bis {time}",
-          "lateDays": "verspätet bis {days} Tage danach",
+          "lateDays": "verspätet bis {days, plural, one {# Tag} other {# Tage}} danach",
           "orderError": "Der Beginn muss vor dem Ende liegen.",
           "noTimes": "Noch keine Einnahmezeiten festgelegt."
         }
@@ -2481,9 +2481,9 @@
     "tableSortBy": "Sortieren nach {column}",
     "tableComplianceDays": "{days} T",
     "tableStockDoseOne": "1 Dosis",
-    "tableStockDoses": "{count} Dosen",
-    "tableStockRunway": "≈ {days} Tage übrig",
-    "cardLowStockRunway": "Vorrat: ≈ {days} Tage",
+    "tableStockDoses": "{count, plural, one {# Dosis} other {# Dosen}}",
+    "tableStockRunway": "≈ {days, plural, one {# Tag} other {# Tage}} übrig",
+    "cardLowStockRunway": "Vorrat: ≈ {days, plural, one {# Tag} other {# Tage}}",
     "reorderDescription": "Bestimme die Reihenfolge deiner Medikamente für die Karten- und die Tabellenansicht.",
     "reorderSaved": "Reihenfolge gespeichert",
     "reorderSaveFailed": "Reihenfolge konnte nicht gespeichert werden",
@@ -2503,7 +2503,7 @@
       "levelShift": "Um {date} wurde eine Verschiebung des Niveaus erkannt.",
       "plateau": {
         "title": "Gewichts-Plateau auf aktueller Dosis",
-        "evidence": "Gewichtsveränderung von {delta} {unit} in den letzten {window} Tagen ({readings} Messungen), seit {days} Tagen auf {dose}."
+        "evidence": "Gewichtsveränderung von {delta} {unit} {window, plural, =1 {am letzten Tag} other {in den letzten # Tagen}} ({readings, plural, one {# Messung} other {# Messungen}}), seit {days, plural, one {# Tag} other {# Tagen}} auf {dose}."
       },
       "retarget": {
         "label": "Nicht der richtige Messwert?",
@@ -2514,11 +2514,11 @@
       },
       "beforeAfter": {
         "summary": "Ø {before} davor → Ø {after} seitdem, eine Veränderung von {delta}.",
-        "counts": "Basierend auf {beforeCount} Werten davor und {afterCount} seitdem.",
-        "needBefore": "Noch zu wenige Werte vor dem Beginn. Für einen Vergleich werden etwa {weeks} Wochen davor und danach benötigt.",
-        "needAfter": "Noch zu wenige Werte seit dem Beginn. Für einen Vergleich werden etwa {weeks} Wochen davor und danach benötigt.",
+        "counts": "Basierend auf {beforeCount, plural, one {# Wert} other {# Werten}} davor und {afterCount} seitdem.",
+        "needBefore": "Noch zu wenige Werte vor dem Beginn. Für einen Vergleich {weeks, plural, one {wird etwa # Woche} other {werden etwa # Wochen}} davor und danach benötigt.",
+        "needAfter": "Noch zu wenige Werte seit dem Beginn. Für einen Vergleich {weeks, plural, one {wird etwa # Woche} other {werden etwa # Wochen}} davor und danach benötigt.",
         "needStart": "Hinterlege ein Startdatum, um die Werte vor und nach Beginn zu vergleichen.",
-        "needData": "Noch zu wenige Werte. Für einen Vergleich werden etwa {weeks} Wochen vor und nach dem Beginn benötigt."
+        "needData": "Noch zu wenige Werte. Für einen Vergleich {weeks, plural, one {wird etwa # Woche} other {werden etwa # Wochen}} vor und nach dem Beginn benötigt."
       },
       "insights": {
         "title": "Medikamenten-Wirkung",
@@ -2535,9 +2535,9 @@
         "slope": "Nach dem Start hat sich der Wochentrend um {value} {unit} pro Woche verändert (95-%-Bereich {low} bis {high}).",
         "preSlope": "Vor dem Start lag der Trend bei {value} {unit} pro Woche.",
         "includesZero": "Wo ein Bereich die Null einschließt, passen diese Werte auch zu gar keiner Veränderung.",
-        "basis": "Grundlage: {before} Tage vor und {after} Tage nach dem Start ({from} bis {to}).",
-        "excludedAdherence": "{count} Tage nach dem Start wurden ausgeschlossen, weil in den {lookback} Tagen davor weniger als {floor} % der Dosen eingenommen wurden.",
-        "excludedNotTaking": "{count} Tage wurden ausgeschlossen, weil das Medikament pausiert war oder zwischen zwei Einnahmezeiträumen lag.",
+        "basis": "Grundlage: {before, plural, one {# Tag} other {# Tage}} vor und {after, plural, one {# Tag} other {# Tage}} nach dem Start ({from} bis {to}).",
+        "excludedAdherence": "{count, plural, one {# Tag nach dem Start wurde ausgeschlossen} other {# Tage nach dem Start wurden ausgeschlossen}}, weil in den {lookback, plural, one {# Tag} other {# Tagen}} davor weniger als {floor} % der Dosen eingenommen wurden.",
+        "excludedNotTaking": "{count, plural, one {# Tag wurde ausgeschlossen} other {# Tage wurden ausgeschlossen}}, weil das Medikament pausiert war oder zwischen zwei Einnahmezeiträumen lag.",
         "notTracked": "Für dieses Medikament wird die Einnahme nicht erfasst, deshalb wurden keine Tage wegen nicht genommener Dosen entfernt.",
         "endDoseChange": "Der Zeitraum endet vor der ersten Dosisänderung und beschreibt deshalb die Anfangsdosis.",
         "confoundersTitle": "Weitere Medikamentenänderungen in diesem Zeitraum, die diese Ansicht nicht von diesem Medikament trennen kann:",
@@ -2548,21 +2548,21 @@
         "confounderResumed": "{name} fortgesetzt am {date}",
         "method": "So wird gerechnet: Eine Gerade wird durch die Tageswerte vor dem Start gelegt, eine zweite durch die danach. Der Sprung zwischen beiden am Start ist die Niveauänderung, der Unterschied ihrer Steigungen die Trendänderung. Die Bereiche berücksichtigen, dass Werte von einem Tag auf den nächsten nachwirken.",
         "needStart": "Lege ein Startdatum fest, um die Veränderung zum Start zu sehen.",
-        "needBefore": "Für die Veränderung zum Start braucht es Werte an mindestens {days} Tagen, verteilt über {span} Tage vor dem Start.",
-        "needAfter": "Für die Veränderung zum Start braucht es Werte an mindestens {days} Tagen, verteilt über {span} Tage seit dem Start und an Tagen mit eingenommenen Dosen.",
+        "needBefore": "Für die Veränderung zum Start braucht es Werte an mindestens {days, plural, one {# Tag} other {# Tagen}}, verteilt über {span, plural, one {# Tag} other {# Tage}} vor dem Start.",
+        "needAfter": "Für die Veränderung zum Start braucht es Werte an mindestens {days, plural, one {# Tag} other {# Tagen}}, verteilt über {span, plural, one {# Tag} other {# Tage}} seit dem Start und an Tagen mit eingenommenen Dosen.",
         "fitFailed": "Diese Werte ließen sich nicht auswerten, deshalb wird keine Veränderung zum Start gezeigt.",
         "autocorrelation": "Die Tageswerte hängen stark vom Vortag ab, deshalb können selbst diese Bereiche zu eng sein."
       }
     },
     "import": {
-      "resultSuccess": "{imported} Einnahmen importiert",
+      "resultSuccess": "{imported, plural, one {# Einnahme} other {# Einnahmen}} importiert",
       "resultPartial": "{imported} importiert, {skipped} übersprungen.",
-      "resultNothing": "Nichts importiert: alle {skipped} Einträge wurden übersprungen.",
-      "resultAlreadyRecorded": "{recorded} Einnahmen sind bereits erfasst. Es wurde nichts Neues hinzugefügt.",
+      "resultNothing": "Nichts importiert: {skipped, plural, =1 {der eine Eintrag wurde} other {alle # Einträge wurden}} übersprungen.",
+      "resultAlreadyRecorded": "{recorded, plural, one {# Einnahme ist} other {# Einnahmen sind}} bereits erfasst. Es wurde nichts Neues hinzugefügt.",
       "resultEmpty": "Diese Datei enthielt keine Einnahmen.",
       "showSkipDetails": "Übersprungene Zeilen anzeigen ({count})",
       "skipDetailLine": "Zeile {line}: {reason}",
-      "skipDetailsOmitted": "{count} weitere übersprungene Zeilen werden nicht angezeigt.",
+      "skipDetailsOmitted": "{count, plural, one {# weitere übersprungene Zeile wird nicht angezeigt.} other {# weitere übersprungene Zeilen werden nicht angezeigt.}}",
       "skipGroupOne": "{count} Eintrag übersprungen: {reason}",
       "skipGroupFew": "{count} Einträge übersprungen: {reason}",
       "skipGroupOther": "{count} Einträge übersprungen: {reason}",
@@ -2603,13 +2603,13 @@
         "manage": "Kategorien verwalten",
         "manageDescription": "Deine eigenen Kategorien, neben den eingebauten.",
         "hidden": "Ausgeblendet",
-        "count": "{count} Medikamente",
+        "count": "{count, plural, one {# Medikament} other {# Medikamente}}",
         "rename": "Umbenennen",
         "hide": "In der Auswahl ausblenden",
         "show": "In der Auswahl zeigen",
         "delete": "Löschen",
         "deleteTitle": "Diese Kategorie löschen?",
-        "deleteBody": "{count} Medikamente in dieser Kategorie wandern zu Sonstige. Die Medikamente selbst bleiben.",
+        "deleteBody": "{count, plural, one {# Medikament in dieser Kategorie wandert zu Sonstige. Das Medikament selbst bleibt.} other {# Medikamente in dieser Kategorie wandern zu Sonstige. Die Medikamente selbst bleiben.}}",
         "movedToOther": "Kategorie gelöscht. {count} Medikamente sind jetzt unter Sonstige."
       },
       "filter": {
@@ -2631,7 +2631,7 @@
       "none": "Durchgehend genommen, keine einzelnen Phasen.",
       "range": "{start} bis {end}",
       "since": "Seit {start}",
-      "meta": "Phase {n}, {status}, {taken} Einnahmen",
+      "meta": "Phase {n}, {status}, {taken, plural, one {# Einnahme} other {# Einnahmen}}",
       "status": {
         "current": "läuft",
         "upcoming": "geplant",
@@ -2804,7 +2804,7 @@
     "days7Title": "Letzte 7 Tage",
     "days30Label": "30T",
     "daysNLabel": "{days}T",
-    "daysNAria": "Letzte {days} Tage",
+    "daysNAria": "{days, plural, =1 {Letzter Tag} other {Letzte # Tage}}",
     "days30Title": "Letzte 30 Tage",
     "days90Label": "90T",
     "days90Title": "Letzte 90 Tage",
@@ -2896,9 +2896,9 @@
       "trendUp": "steigend",
       "trendDown": "fallend",
       "trendFlat": "gleichbleibend",
-      "scatterSummary": "Korrelationsdiagramm, {count} Punkte: {xLabel} gegen {yLabel}.",
+      "scatterSummary": "Korrelationsdiagramm, {count, plural, one {# Punkt} other {# Punkte}}: {xLabel} gegen {yLabel}.",
       "scatterNoData": "Korrelationsdiagramm {xLabel} gegen {yLabel}. Keine Daten verfügbar.",
-      "moodHeatmap": "Stimmungs-Heatmap von {start} bis {end}, {days} Tage erfasst.",
+      "moodHeatmap": "Stimmungs-Heatmap von {start} bis {end}, {days, plural, one {# Tag} other {# Tage}} erfasst.",
       "moodHeatmapEmpty": "Stimmungs-Heatmap, noch keine Tage erfasst.",
       "complianceHeatmap": "Heatmap zur Medikamenteneinnahme von {start} bis {end}, {days} aktive Tage.",
       "complianceHeatmapEmpty": "Heatmap zur Medikamenteneinnahme, noch keine aktiven Tage."
@@ -3088,7 +3088,7 @@
         "red": "Mindestens ein Bereich liegt außerhalb des Referenzbereichs"
       },
       "insufficient": "Noch hat nichts genug aktuelle Daten für einen Score. Ein Feld der Gesundheit reicht für den Anfang, und der Score nennt selbst, worauf er beruht.",
-      "basis": "Beruht auf {count} von {recommended} Feldern der Gesundheit.",
+      "basis": "Beruht auf {count} von {recommended, plural, one {# Feld} other {# Feldern}} der Gesundheit.",
       "compositionNotice": {
         "item": "{pillar} ({reason})",
         "left": "Zählt nicht mehr in den Score: {pillars}.",
@@ -3098,7 +3098,7 @@
       "notScored": "Noch nicht bewertet ({count})",
       "method": "Der Score ist der gleich gewichtete Mittelwert der Säulen, die für ihn zählen, auf einer Skala von 0 bis 100. Jede Säule wird an einem veröffentlichten Referenzbereich gemessen, und die schwächste Säule kann den Gesamtbereich bestimmen. Eine Säule ohne ausreichend aktuelle Daten bleibt außen vor und zählt nicht als null. Die Referenzbereiche stammen aus veröffentlichten Quellen; welche Säulen zählen, entscheidest du selbst, deshalb ist die zusammengefasste Zahl selbst kein klinischer Standard.",
       "bandSetter": "Gesamtstufe bestimmt durch {pillar}",
-      "versionAndNoise": "Methodenversion {version}. Schwelle für den Wochenvergleich: {noise} Punkte.",
+      "versionAndNoise": "Methodenversion {version}. Schwelle für den Wochenvergleich: {noise, plural, one {# Punkt} other {# Punkte}}.",
       "methodVersion": "Methodenversion {version}.",
       "configured": "Du hast festgelegt, welche Bereiche in diesen Score einfließen.",
       "none": "keiner",
@@ -3131,13 +3131,13 @@
       "bpBasisBelowFloor": "Ausschlaggebend: {axis}, etwa {offset} mmHg unter der Grenze für niedrigen Blutdruck von {boundary} mmHg.",
       "bpBasisInBand": "Beide Werte liegen auf oder unter ihren Referenz-Obergrenzen.",
       "bpScale": "An der Obergrenze liegt der Wert bei 85; 100 bedeutet rund 12 mmHg darunter.",
-      "bpRepresentative": "Beruht auf einem Durchschnitt der letzten {days} Tage, der neuere Messungen stärker gewichtet, und kann deshalb von jeder einzelnen Messung abweichen.",
+      "bpRepresentative": "Beruht auf einem Durchschnitt {days, plural, =1 {des letzten Tages} other {der letzten # Tage}}, der neuere Messungen stärker gewichtet, und kann deshalb von jeder einzelnen Messung abweichen.",
       "source": "Quelle: {source}, Stand {date}",
-      "observedActivity": "{value} Schritte pro Tag",
-      "observedSleep": "{value} Minuten pro Nacht",
+      "observedActivity": "{value, plural, one {# Schritt} other {# Schritte}} pro Tag",
+      "observedSleep": "{value, plural, one {# Minute} other {# Minuten}} pro Nacht",
       "observedAdiposity": "Taille-zu-Körpergröße-Verhältnis {value}",
-      "referenceActivity": "Der Nutzen flacht bei {high} Schritten pro Tag ab",
-      "referenceSleep": "Mindestens {low} Minuten pro Nacht; längerer Schlaf wird nicht abgewertet",
+      "referenceActivity": "Der Nutzen flacht bei {high, plural, one {# Schritt} other {# Schritten}} pro Tag ab",
+      "referenceSleep": "Mindestens {low, plural, one {# Minute} other {# Minuten}} pro Nacht; längerer Schlaf wird nicht abgewertet",
       "referenceAdiposity": "Taille-zu-Körpergröße-Verhältnis unter {high}",
       "referenceHba1c": "HbA1c {low} bis {high} %",
       "referenceDetail": "{label}: {low} bis {high} ({kind}, {source})",
@@ -3160,7 +3160,7 @@
         "unavailable": "Dieser Bereich kann derzeit nicht bewertet werden"
       },
       "tension": "Die Bereitschaftssignale unterscheiden sich. Unterstützend: {positive}. Belastet: {negative}.",
-      "returnToBand": "{metric} liegt seit {days} Tagen wieder im üblichen Bereich.",
+      "returnToBand": "{metric} liegt seit {days, plural, one {# Tag} other {# Tagen}} wieder im üblichen Bereich.",
       "weightGoal": {
         "title": "Persönliches Gewichtsziel",
         "value": "Aktuell {current} {unit}. Ziel {min} bis {max} {unit}. Abstand zum Ziel: {distance} {unit}.",
@@ -3175,7 +3175,7 @@
       "configureLink": "Festlegen, was in deinen Score einfließt",
       "coverage": {
         "recommendedMet": "Deckt die drei Felder ab, die der Score empfiehlt",
-        "areas": "{present} von {required} Feldern der Gesundheit"
+        "areas": "{present} von {required, plural, one {# Feld} other {# Feldern}} der Gesundheit"
       },
       "historyLink": "Verlauf"
     },
@@ -3234,7 +3234,7 @@
     "correlationRow": {
       "title": "Zusammenhänge",
       "emptyTitle": "Mehr Daten nötig, um diesen Zusammenhang zu zeigen",
-      "sourceChip": "basierend auf {n} gepaarten Messungen ({window})",
+      "sourceChip": "basierend auf {n, plural, one {# gepaarten Messung} other {# gepaarten Messungen}} ({window})",
       "sourceWindowLast30": "letzte 30 Tage",
       "confidenceHigh": "Hohe Konfidenz",
       "confidenceModerate": "Mittlere Konfidenz",
@@ -3301,7 +3301,7 @@
         "alreadyKept": "Das weiß der Coach schon."
       },
       "guided": {
-        "offerTitle": "Der Coach hat {count} Rückfragen an dich",
+        "offerTitle": "Der Coach hat {count, plural, one {# Rückfrage} other {# Rückfragen}} an dich",
         "offerTitleOne": "Der Coach hat eine Rückfrage an dich",
         "offerBody": "Kurze Antworten schärfen deine Selbstauskunft: eine Frage nach der anderen, direkt hier im Chat.",
         "offerStart": "Jetzt beantworten",
@@ -3465,15 +3465,15 @@
       "lookback": {
         "label": "Wie weit der Coach zurückblickt",
         "option": {
-          "last7days": "{days} Tage",
-          "last30days": "{days} Tage",
-          "last90days": "{days} Tage",
-          "lastYear": "{months} Monate",
-          "allTime": "{months} Monate im Detail, Labor länger"
+          "last7days": "{days, plural, one {# Tag} other {# Tage}}",
+          "last30days": "{days, plural, one {# Tag} other {# Tage}}",
+          "last90days": "{days, plural, one {# Tag} other {# Tage}}",
+          "lastYear": "{months, plural, one {# Monat} other {# Monate}}",
+          "allTime": "{months, plural, one {# Monat} other {# Monate}} im Detail, Labor länger"
         },
-        "detailDays": "Der Coach liest nichts, was älter als {days} Tage ist, in keiner Antwort.",
-        "detailMonths": "Der Coach liest nichts, was älter als {months} Monate ist, in keiner Antwort.",
-        "detailAll": "Ohne Begrenzung liest der Coach {dailyMonths} Monate tagesgenau und ältere Werte als Monatswerte bis {years} Jahre zurück. Von Laborwerten liest er den jüngsten Wert der zuletzt gemessenen Marker und, wenn du nach einem Marker fragst, dessen {labRecent} vorherige Werte; ältere Werte sind pro Jahr zusammengefasst, bis {labYears} Jahre zurück, noch frühere Jahre werden nur gezählt.",
+        "detailDays": "Der Coach liest nichts, was älter als {days, plural, one {# Tag} other {# Tage}} ist, in keiner Antwort.",
+        "detailMonths": "Der Coach liest nichts, was älter als {months, plural, one {# Monat} other {# Monate}} ist, in keiner Antwort.",
+        "detailAll": "Ohne Begrenzung liest der Coach {dailyMonths, plural, one {# Monat} other {# Monate}} tagesgenau und ältere Werte als Monatswerte bis {years, plural, one {# Jahr} other {# Jahre}} zurück. Von Laborwerten liest er den jüngsten Wert der zuletzt gemessenen Marker und, wenn du nach einem Marker fragst, dessen {labRecent, plural, one {# vorherigen Wert} other {# vorherige Werte}}; ältere Werte sind pro Jahr zusammengefasst, bis {labYears, plural, one {# Jahr} other {# Jahre}} zurück, noch frühere Jahre werden nur gezählt.",
         "note": "Dein Profil, aktuelle Medikamente, eine laufende Erkrankung und anstehende Termine bleiben sichtbar; Auswertungen, die mehr Verlauf brauchen, werden gekürzt oder weggelassen. Antworten, die der Coach früher in älteren Unterhaltungen gegeben hat, können noch ältere Werte nennen."
       },
       "showConversations": "Unterhaltungen anzeigen",
@@ -3483,7 +3483,7 @@
       "thinkingDuration": "Nachgedacht für {seconds}s",
       "thinkingExpandAria": "Zeigen, was der Coach berücksichtigt hat",
       "thinkingDetail": "Beantwortet aus deinem Gesundheits-Snapshot.",
-      "tokensUsed": "{count} Tokens",
+      "tokensUsed": "{count, plural, one {# Token} other {# Tokens}}",
       "askAboutThis": "Den Coach dazu fragen",
       "readStrip": {
         "label": "Üblicher Bereich",
@@ -3645,7 +3645,7 @@
       "plan": {
         "accept": "Plan übernehmen",
         "decline": "Nicht jetzt",
-        "confirmed": "Ist notiert. Ich schaue in {days} Tagen mit dir drauf.",
+        "confirmed": "Ist notiert. Ich schaue in {days, plural, one {# Tag} other {# Tagen}} mit dir drauf.",
         "declined": "Alles klar, dann nicht jetzt."
       },
       "assumption": {
@@ -3907,8 +3907,8 @@
       "mainSleep": "Hauptschlaf",
       "totalSleep": "Schlaf gesamt",
       "compositionTitle": "Phasen-Verteilung",
-      "compositionSubtitle": "Letzte {nights} Nächte",
-      "compositionAriaLabel": "Schlafphasen-Verteilung über {nights} Nächte",
+      "compositionSubtitle": "{nights, plural, =1 {Letzte Nacht} other {Letzte # Nächte}}",
+      "compositionAriaLabel": "Schlafphasen-Verteilung über {nights, plural, one {# Nacht} other {# Nächte}}",
       "sourceDiscrepancy": {
         "tooltipTitle": "Quellen weichen ab"
       },
@@ -3920,20 +3920,20 @@
         "awake": "Wach",
         "inBed": "Im Bett",
         "nap": "Nickerchen",
-        "napCount": "{count} Nickerchen",
+        "napCount": "{count, plural, one {# Nickerchen} other {# Nickerchen}}",
         "unavailable": "Noch keine Phasen-Daten. Schlafphasen erscheinen hier, sobald eine verbundene Quelle sie liefert."
       },
       "hypnogram": {
         "title": "Nachtverlauf",
         "wokeOn": "Aufgewacht am {date}",
-        "summary": "{asleep} Schlaf, {awakenings}× wach",
+        "summary": "{asleep} Schlaf, {awakenings, plural, other {#× wach}}",
         "source": "von {source}",
         "previous": "Vorherige Nacht",
         "next": "Nächste Nacht",
         "empty": "Für diesen Tag ist keine Nacht erfasst.",
         "estimateNote": "Diese Quelle meldet Phasensummen ohne Uhrzeiten, deshalb gibt es für diese Nacht keinen Verlauf.",
         "noStages": "Diese Nacht hat keine Phasenzeiten.",
-        "ariaLabel": "Schlafphasen über die Nacht: {asleep} Schlaf, {awakenings}× wach"
+        "ariaLabel": "Schlafphasen über die Nacht: {asleep} Schlaf, {awakenings, plural, other {#× wach}}"
       },
       "empty": {
         "title": "Noch keine Schlafdaten",
@@ -3943,17 +3943,17 @@
       "debt": {
         "title": "Schlafschuld",
         "value": "{hours} Std. {minutes} Min. zu wenig",
-        "caption": "Offene Bilanz der letzten {nights} Nächte",
+        "caption": "Offene Bilanz {nights, plural, =1 {der letzten Nacht} other {der letzten # Nächte}}",
         "clearValue": "Ausgeglichen",
-        "clearCaption": "Nichts offen über die letzten {nights} Nächte",
-        "learning": "Dein Schlaf wird noch erfasst: {counted} Nächte bisher, noch {remaining} für eine verlässliche Bilanz.",
+        "clearCaption": "Nichts offen {nights, plural, =1 {in der letzten Nacht} other {über die letzten # Nächte}}",
+        "learning": "Dein Schlaf wird noch erfasst: {counted, plural, one {# Nacht} other {# Nächte}} bisher, noch {remaining} für eine verlässliche Bilanz.",
         "computedInfo": "Das ist HealthLogs eigene Schätzung: eine gleitende Bilanz aus Bedarf minus Schlaf über die letzten Nächte, die Aufholschlaf wieder abbaut. Sie kann vom nativen Schlafdefizit eines Wearables abweichen, das ein eigenes Bedarfsmodell nutzt."
       },
       "average": {
         "title": "Durchschnitt pro Nacht",
         "value": "{hours} Std. {minutes} Min.",
-        "caption": "Mittlerer Schlaf über die letzten {nights} Nächte",
-        "learning": "Dein Schlaf wird noch erfasst: {counted} Nächte bisher, noch {remaining} für einen verlässlichen Durchschnitt."
+        "caption": "Mittlerer Schlaf {nights, plural, =1 {in der letzten Nacht} other {über die letzten # Nächte}}",
+        "learning": "Dein Schlaf wird noch erfasst: {counted, plural, one {# Nacht} other {# Nächte}} bisher, noch {remaining} für einen verlässlichen Durchschnitt."
       },
       "chronotype": {
         "title": "Chronotyp",
@@ -3978,7 +3978,7 @@
       }
     },
     "medicationCompliance": "Therapietreue",
-    "dayStreak": "{count} Tage Serie",
+    "dayStreak": "{count, plural, one {# Tag Serie} other {# Tage Serie}}",
     "dayStreakOne": "{count} Tag Serie",
     "compliance7d": "Therapietreue (7 Tage)",
     "compliance30d": "Therapietreue (30 Tage)",
@@ -4097,7 +4097,7 @@
         "daySleepTitle": "Die Nacht davor",
         "daySleepNone": "Für diese Nacht ist kein Schlaf erfasst",
         "daySleepAwakeningsOne": "{count}× aufgewacht",
-        "daySleepAwakeningsMany": "{count}× aufgewacht",
+        "daySleepAwakeningsMany": "{count, plural, one {einmal aufgewacht} other {#-mal aufgewacht}}",
         "dayMoodTitle": "Stimmung an diesem Tag",
         "dayMoodNone": "An diesem Tag ist keine Stimmung erfasst",
         "sleepTrendsLink": "Schlaf-Trends",
@@ -4178,8 +4178,8 @@
         "fatigue": "Ermüdung",
         "form": "Form",
         "explainer": "Fitness ist dein Trainingsimpuls aus der Herzfrequenz, gemittelt über etwa sechs Wochen, Ermüdung über etwa eine Woche, und Form ist der Unterschied. Die Zahlen lassen sich mit deinen eigenen früheren vergleichen, nicht mit anderen Menschen oder Apps.",
-        "warmingUp": "Auf Basis von bisher {days} Tagen: Bis sechs Wochen abgedeckt sind, fällt die Fitness niedriger aus, als sie ist.",
-        "coverage": "{rated} der letzten {days} Tage ließen sich bewerten. Ein Tag ohne Aktivitätsdaten oder mit einem Training, das sich nicht auswerten ließ, bleibt außen vor, statt als Ruhetag zu zählen.",
+        "warmingUp": "Auf Basis von bisher {days, plural, one {# Tag} other {# Tagen}}: Bis sechs Wochen abgedeckt sind, fällt die Fitness niedriger aus, als sie ist.",
+        "coverage": "{rated} {days, plural, =1 {des letzten Tages} other {der letzten # Tage}} ließen sich bewerten. Ein Tag ohne Aktivitätsdaten oder mit einem Training, das sich nicht auswerten ließ, bleibt außen vor, statt als Ruhetag zu zählen.",
         "asOf": "Stand {date}, der letzte Tag, der sich bewerten ließ."
       }
     },
@@ -4194,15 +4194,15 @@
       },
       "clinical": {
         "title": "Glukose-Überblick",
-        "subtitle": "Ein Blick auf deine letzten {days} Tage, aus {count} Messungen.",
+        "subtitle": "Ein Blick auf {days, plural, =1 {deinen letzten Tag} other {deine letzten # Tage}}, aus {count, plural, one {# Messung} other {# Messungen}}.",
         "spotCaveat": "Das sind Schätzungen aus einzelnen Stichproben-Messungen, kein Profil eines kontinuierlichen Sensors. Lies sie als Richtung, nicht als klinisches Urteil.",
         "labsLink": "Laborergebnisse? HbA1c und Nüchternglukose aus einer Blutabnahme trägst du unter Labor ein.",
         "learningTitle": "Lerne deine Glukose noch kennen",
         "learningBody": "Bisher sind das {count} über {days}. Mit etwas mehr Verlauf wird das Bild klarer. Mess weiter oder lass es ein verbundenes Gerät ergänzen.",
         "learningBodyEmpty": "Sobald ein paar Messungen vorliegen (von dir erfasst oder von einem Gerät synchronisiert), nehmen Zeit-im-Zielbereich, Durchschnitt und Schwankung hier Gestalt an.",
-        "readingsCount": "{count} Messungen",
+        "readingsCount": "{count, plural, one {# Messung} other {# Messungen}}",
         "readingsCountOne": "1 Messung",
-        "daysCount": "{days} Tage",
+        "daysCount": "{days, plural, one {# Tag} other {# Tage}}",
         "daysCountOne": "1 Tag",
         "tir": {
           "title": "Zeit im Zielbereich",
@@ -4254,7 +4254,7 @@
             "random": "Beliebig",
             "bedtime": "Vor dem Schlafen",
             "unspecified": "Ohne Angabe",
-            "readingsShort": "{count} Messungen",
+            "readingsShort": "{count, plural, one {# Messung} other {# Messungen}}",
             "readingsShortOne": "1 Messung"
           }
         }
@@ -4547,12 +4547,12 @@
         "strengthModerate": "Moderat",
         "strengthWeak": "Schwach",
         "strengthNone": "Keine",
-        "source": "{n} gepaarte Tage, r = {r}",
+        "source": "{n, plural, one {# gepaarter Tag} other {# gepaarte Tage}}, r = {r}",
         "emptyTitle": "Noch nicht genug gepaarte Daten",
         "emptyDescription": "Erfasse Stimmung und diesen Wert an denselben Tagen, um einen Zusammenhang zu sehen.",
-        "pendingDescription": "{n} von {needed} gepaarten Tagen. Ein Zusammenhang erscheint, sobald genug Tage da sind, um Muster von Zufall zu unterscheiden.",
+        "pendingDescription": "{n} von {needed, plural, one {# gepaarten Tag} other {# gepaarten Tagen}}. Ein Zusammenhang erscheint, sobald genug Tage da sind, um Muster von Zufall zu unterscheiden.",
         "noLinkTitle": "Kein klarer Zusammenhang",
-        "noLinkDescription": "{n} gepaarte Tage, und nichts hebt sich vom Zufall ab.",
+        "noLinkDescription": "{n, plural, one {# gepaarter Tag} other {# gepaarte Tage}}, und nichts hebt sich vom Zufall ab.",
         "weightTitle": "Stimmung vs. Gewicht",
         "bloodPressureTitle": "Stimmung vs. Blutdruck",
         "weightAxis": "Gewicht",
@@ -4566,14 +4566,14 @@
         "title": "Das fällt auf",
         "weekdayDip": "Deine Stimmung sinkt am stärksten am {weekday}, {delta} unter deinem Wochenschnitt.",
         "weekdayPeak": "{weekday} ist durchgehend dein bester Tag mit einem Schnitt von {value}.",
-        "trendUp": "Deine Stimmung steigt über die letzten {days} Tage (+{delta} gegenüber dem Vorzeitraum).",
-        "trendDown": "Deine Stimmung sinkt über die letzten {days} Tage (-{delta} gegenüber dem Vorzeitraum).",
+        "trendUp": "Deine Stimmung steigt {days, plural, =1 {seit gestern} other {über die letzten # Tage}} (+{delta} gegenüber dem Vorzeitraum).",
+        "trendDown": "Deine Stimmung sinkt {days, plural, =1 {seit gestern} other {über die letzten # Tage}} (-{delta} gegenüber dem Vorzeitraum).",
         "weekendUp": "Am Wochenende geht es dir besser (+{delta} gegenüber Wochentagen).",
         "weekendDown": "Am Wochenende ist deine Stimmung niedriger (-{delta} gegenüber Wochentagen).",
         "tagLift": "Tage mit „{tag}“ liegen im Schnitt {delta} über deiner allgemeinen Stimmung.",
         "tagDrop": "Tage mit „{tag}“ liegen {delta} unter deinem Durchschnitt.",
         "inTarget": "Du warst an {pct} % der letzten 30 Tage in deinem guten Stimmungsbereich.",
-        "streak": "Du hast deine Stimmung {days} Tage in Folge erfasst. Weiter so.",
+        "streak": "Du hast deine Stimmung {days, plural, one {# Tag} other {# Tage}} in Folge erfasst. Weiter so.",
         "timeOfDay": "Am {bucket} fühlst du dich am besten, im Schnitt {value}."
       },
       "timeOfDay": {
@@ -4594,7 +4594,7 @@
       },
       "influence": {
         "title": "Einfluss auf die Stimmung",
-        "detail": "Durchschnitt {withAvg} an den {withDays} Tagen mit diesem Tag, {withoutAvg} ohne.",
+        "detail": "Durchschnitt {withAvg} {withDays, plural, =1 {an dem einen Tag} other {an den # Tagen}} mit diesem Tag, {withoutAvg} ohne.",
         "confidenceLow": "Geringe Sicherheit",
         "confidenceMedium": "Mittlere Sicherheit",
         "confidenceHigh": "Hohe Sicherheit"
@@ -4612,8 +4612,8 @@
         "metricNextDayRecovery": "Erholung am Folgetag",
         "metricNextDayRestingHr": "Ruhepuls am Folgetag",
         "metricNextDayHrv": "Herzfrequenzvariabilität am Folgetag",
-        "detailSameDay": "Durchschnittlich {withAvg} an den {withDays} Tagen mit diesem Tag gegenüber {withoutAvg} ohne.",
-        "detailNextDay": "Durchschnittlich {withAvg} am Tag nach den {withDays} Tagen mit diesem Tag gegenüber {withoutAvg} sonst."
+        "detailSameDay": "Durchschnittlich {withAvg} {withDays, plural, =1 {an dem einen Tag} other {an den # Tagen}} mit diesem Tag gegenüber {withoutAvg} ohne.",
+        "detailNextDay": "Durchschnittlich {withAvg} am Tag {withDays, plural, =1 {nach dem einen Tag} other {nach den # Tagen}} mit diesem Tag gegenüber {withoutAvg} sonst."
       },
       "factorCrosstab": {
         "title": "Deine bewerteten Faktoren und deine Vitalwerte",
@@ -4625,19 +4625,19 @@
         "metricHrv": "Herzfrequenzvariabilität",
         "metricWeight": "Gewicht",
         "metricBloodPressureSys": "Systolisch",
-        "detail": "Durchschnittlich {lowAvg} an den {lowDays} Tagen mit niedriger {factor}-Bewertung gegenüber {highAvg} an den Tagen mit hoher Bewertung.",
+        "detail": "Durchschnittlich {lowAvg} {lowDays, plural, =1 {an dem einen Tag} other {an den # Tagen}} mit niedriger {factor}-Bewertung gegenüber {highAvg} an den Tagen mit hoher Bewertung.",
         "detailInverse": "Durchschnittlich {lowAvg} an deinen {lowDays} schlechteren {factor}-Tagen gegenüber {highAvg} an deinen besseren."
       },
       "discovery": {
         "title": "Was auffällt",
         "subheading": "Entdeckte Zusammenhänge",
-        "footer": "Herausgefiltert aus {tested} Tag-zu-Tag-Paaren, die über all deine Werte getestet wurden, nach der Korrektur für Fehlentdeckungen.",
+        "footer": "Herausgefiltert aus {tested, plural, one {# Tag-zu-Tag-Paar} other {# Tag-zu-Tag-Paaren}}, die über all deine Werte getestet wurden, nach der Korrektur für Fehlentdeckungen.",
         "disclaimer": "Statistisch gefiltert, aber weiterhin beobachtend: ein Muster, das einen Blick wert ist, keine Ursache.",
         "moodUp": "Höheres {factor} geht in deinen Daten tendenziell mit besserer Stimmung am Folgetag einher.",
         "moodDown": "Höheres {factor} geht in deinen Daten tendenziell mit schlechterer Stimmung am Folgetag einher.",
         "outcomeUp": "Bessere Stimmung geht in deinen Daten tendenziell mit höherem {factor} am Folgetag einher.",
         "outcomeDown": "Bessere Stimmung geht in deinen Daten tendenziell mit niedrigerem {factor} am Folgetag einher.",
-        "stat": "{n} gepaarte Tage, r = {r}, q = {q}",
+        "stat": "{n, plural, one {# gepaarter Tag} other {# gepaarte Tage}}, r = {r}, q = {q}",
         "statLabel": "Wie das berechnet wurde",
         "explainerLabel": "Wie das berechnet wurde",
         "channel": {
@@ -4650,7 +4650,7 @@
       "dimensions": {
         "title": "Gefühlslage",
         "none": "Zur Gefühlslage ist noch nichts erfasst.",
-        "window": "{days} Tage",
+        "window": "{days, plural, one {# Tag} other {# Tage}}",
         "noneInWindow": "nichts im Zeitraum",
         "higherIsMore": "höher = {anchor}",
         "notRecorded": "Nicht erfasst: {list}."
@@ -4661,7 +4661,7 @@
         "lower": "niedriger",
         "higher": "höher",
         "statement": "An Tagen mit „{label}“ lag die Stimmung im Durchschnitt {direction}: {withAvg} gegenüber {withoutAvg}.",
-        "counts": "{withDays} Tage mit, {withoutDays} Tage ohne",
+        "counts": "{withDays, plural, one {# Tag} other {# Tage}} mit, {withoutDays, plural, one {# Tag} other {# Tage}} ohne",
         "caveat": "Das zeigt einen Zusammenhang, keine Ursache."
       },
       "prognosis": {
@@ -4673,14 +4673,14 @@
         "provisional": "Noch vorläufig: das Muster stützt sich auf eine kurze Strecke von Tagen.",
         "notToday": "Das beschreibt {date}, nicht heute.",
         "deviationWithin": "Deine eigene Einschätzung liegt in diesem Bereich.",
-        "deviationAbove": "Deine eigene Einschätzung liegt {amount} Punkte über diesem Bereich.",
-        "deviationBelow": "Deine eigene Einschätzung liegt {amount} Punkte unter diesem Bereich.",
+        "deviationAbove": "Deine eigene Einschätzung liegt {amount, plural, one {# Punkt} other {# Punkte}} über diesem Bereich.",
+        "deviationBelow": "Deine eigene Einschätzung liegt {amount, plural, one {# Punkt} other {# Punkte}} unter diesem Bereich.",
         "weightedTitle": "Was an diesem Tag am stärksten gewichtet wurde",
         "weightedUp": "{label}: zählte in Richtung eines höheren erwarteten Werts",
         "weightedDown": "{label}: zählte in Richtung eines niedrigeren erwarteten Werts",
         "caveat": "Das ist ein Vergleich mit deinen eigenen bisherigen Tagen, keine Aussage darüber, wie ein Tag zustande gekommen ist.",
-        "learning": "Lernphase: {entries} von {threshold} Tagen erfasst. Ein Vergleich erscheint, sobald genug davon zusammengekommen sind.",
-        "noPattern": "In den bisher erfassten {entries} Tagen ist noch nichts gleichmäßig genug, um einen Tag damit zu vergleichen. Wenn du auch den Kontext eines Tages festhältst, wird mehr davon vergleichbar.",
+        "learning": "Lernphase: {entries} von {threshold, plural, one {# Tag} other {# Tagen}} erfasst. Ein Vergleich erscheint, sobald genug davon zusammengekommen sind.",
+        "noPattern": "{entries, plural, =1 {An dem einen bisher erfassten Tag} other {In den bisher erfassten # Tagen}} ist noch nichts gleichmäßig genug, um einen Tag damit zu vergleichen. Wenn du auch den Kontext eines Tages festhältst, wird mehr davon vergleichbar.",
         "featureValue": "{field}: {value}",
         "loadError": "Der auf Basis deiner Muster erwartete Wert konnte nicht geladen werden."
       },
@@ -4702,9 +4702,9 @@
     },
     "derived": {
       "coverage": {
-        "summary": "{present} von {required} Eingaben ({percent}%)",
+        "summary": "{present} von {required, plural, one {# Eingabe} other {# Eingaben}} ({percent}%)",
         "ratioLabel": "{present}/{required}",
-        "historyDays": "Basiert auf {count} Tagen Verlauf",
+        "historyDays": "Basiert auf {count, plural, one {# Tag} other {# Tagen}} Verlauf",
         "missing": "Erfasse diese, um den Wert zu schärfen: {list}",
         "summaryLabelled": "{label} ({percent}%)"
       },
@@ -4724,7 +4724,7 @@
         "inputsLabel": "Eingaben",
         "noInputs": "Noch keine Eingaben für diesen Wert vorhanden.",
         "methodLabel": "Methode",
-        "window": "Aus deinen letzten {days} Tagen mit {source}-Daten",
+        "window": "{days, plural, =1 {Aus deinem letzten Tag} other {Aus deinen letzten # Tagen}} mit {source}-Daten",
         "asOf": "Stand {date}",
         "standardLink": "Standard: {name}"
       },
@@ -4734,7 +4734,7 @@
         "loadingLabel": "Vitalwerte werden geladen",
         "loadError": "Deine Vitalwerte konnten gerade nicht geladen werden.",
         "infoLabel": "Wie wird das berechnet?",
-        "building": "Typischer Bereich entsteht: {count} von {target} Tagen",
+        "building": "Typischer Bereich entsteht: {count} von {target, plural, one {# Tag} other {# Tagen}}",
         "typicalRange": "Typisch für dich: {low}–{high}",
         "fitnessYounger": "Ausdauer wie ~{years} J. jünger",
         "fitnessOlder": "Ausdauer ~{years} J. über deinem Alter",
@@ -4871,7 +4871,7 @@
         "stress": "Stress",
         "strain": "Belastung",
         "historyTitle": "Verlauf",
-        "historyWindow": "Letzte {days} Tage"
+        "historyWindow": "{days, plural, =1 {Letzter Tag} other {Letzte # Tage}}"
       },
       "coincident": {
         "label": "Mehrere Vitalwerte außerhalb der Baseline",
@@ -4889,16 +4889,16 @@
       },
       "trajectory": {
         "cardTitle": "Kurzfrist-Projektion",
-        "headline": "Wenn dieses Muster anhält: die nächsten {days} Tage",
-        "range": "Projiziert auf rund {low}–{high} {unit} in {days} Tagen.",
+        "headline": "Wenn dieses Muster anhält: {days, plural, =1 {der nächste Tag} other {die nächsten # Tage}}",
+        "range": "Projiziert auf rund {low} bis {high} {unit} in {days, plural, one {# Tag} other {# Tagen}}.",
         "caveat": "Eine Fortschreibung deines eigenen jüngsten Trends, keine Vorhersage. Das schattierte Band wird breiter und zeigt, wie schnell die Unsicherheit wächst.",
         "insufficient": "Noch kein klar genuger Trend für eine Projektion. Erfasse weiter, dann erscheint eine Projektion, sobald das jüngste Muster deutlich genug ist.",
-        "daysNeeded": "Noch etwa {count} Tage Erfassung nötig, bis eine Projektion erscheinen kann."
+        "daysNeeded": "Noch etwa {count, plural, one {# Tag} other {# Tage}} Erfassung nötig, bis eine Projektion erscheinen kann."
       },
       "sameTime": {
         "sectionTitle": "Heute bisher",
         "sectionSubtitle": "Deine laufenden Summen im Vergleich zu dem, was zu dieser Stunde für dich üblich ist",
-        "learning": "Lernt deinen üblichen Tag: {count} von {target} Tagen",
+        "learning": "Lernt deinen üblichen Tag: {count} von {target, plural, one {# Tag} other {# Tagen}}",
         "framing": "Üblich bis {time}: {typical} {unit}",
         "comparisonLabel": "Dein üblicher Tag"
       }
@@ -5115,7 +5115,7 @@
       "rangeContext": "Aktuell {value}, sonst {low}–{high}.",
       "rangeContextTimeOfDay": "Aktuell {value}, zu dieser Tageszeit sonst {low}–{high}.",
       "shiftContext": "Etwa {before} davor, {after} seitdem.",
-      "shiftDays": "Grundlage: {before} Tage davor und {after} seither."
+      "shiftDays": "Grundlage: {before, plural, one {# Tag} other {# Tage}} davor und {after} seither."
     },
     "breathingScreening": {
       "sectionTitle": "Atmung im Schlaf",
@@ -5125,9 +5125,9 @@
       "trendUp": "Höher als an deinen früheren Nächten.",
       "trendDown": "Niedriger als an deinen früheren Nächten.",
       "trendStable": "Stabil gegenüber deinen früheren Nächten.",
-      "nights": "{count} Nächte erfasst",
+      "nights": "{count, plural, one {# Nacht erfasst} other {# Nächte erfasst}}",
       "indexLine": "jüngster Durchschnittsindex {value}",
-      "eventsFlagged": "{count} vom Gerät gemeldete Ereignisse",
+      "eventsFlagged": "{count, plural, one {# vom Gerät gemeldetes Ereignis} other {# vom Gerät gemeldete Ereignisse}}",
       "disclaimer": "Dies ist ein Screening-Signal, keine Diagnose. Bitte mit einer Ärztin oder einem Arzt besprechen."
     },
     "labsChanges": {
@@ -5216,7 +5216,7 @@
       "crossLink": {
         "title": "EKG-Aufzeichnungen",
         "recordingsOne": "1 Aufzeichnung vorhanden.",
-        "recordingsMany": "{count} Aufzeichnungen vorhanden.",
+        "recordingsMany": "{count, plural, one {# Aufzeichnung vorhanden.} other {# Aufzeichnungen vorhanden.}}",
         "latestResult": "Letztes Geräte-Ergebnis: {result}.",
         "cta": "Aufzeichnungen ansehen"
       },
@@ -5230,7 +5230,7 @@
       "hourlyNote": "Stündlicher Durchschnitt für diesen Tag; aktuelle Tage zeigen das volle 10-Minuten-Detail.",
       "empty": "Für diesen Tag noch nicht genug Pulswerte, um den Tagesverlauf zu zeigen.",
       "coverageOne": "Basierend auf 1 Messung über {hours}h.",
-      "coverageMany": "Basierend auf {count} Messungen über {hours}h.",
+      "coverageMany": "Basierend auf {count, plural, one {# Messung} other {# Messungen}} über {hours}h.",
       "baseline": "Ruhe",
       "today": "Heute",
       "previousDay": "Vorheriger Tag",
@@ -5281,7 +5281,7 @@
       "notEnough": "Zu wenige Messungen",
       "pulse": "Puls {value} bpm",
       "difference": "Morgens minus abends: {systolic}/{diastolic} mmHg.",
-      "differencePending": "Morgen und Abend werden verglichen, sobald beide mindestens {min} Messungen haben.",
+      "differencePending": "Morgen und Abend werden verglichen, sobald beide mindestens {min, plural, one {# Messung} other {# Messungen}} haben.",
       "hours": "Morgens {morning}, mittags {midday}, abends {evening}, in deiner Zeitzone.",
       "hourRange": "{start} bis {end} Uhr",
       "emptyTitle": "Keine vollständigen Messungen in diesem Zeitraum",
@@ -5766,7 +5766,7 @@
   "trendHints": {
     "title": "Erster Trend nach 5 Messungen",
     "remainingOne": "Noch 1 Messung bis zum Trend.",
-    "remainingMany": "Noch {count} Messungen bis zum Trend."
+    "remainingMany": "Noch {count, plural, one {# Messung} other {# Messungen}} bis zum Trend."
   },
   "settings": {
     "oauthCallbackPreflightItem": "{provider}: Die Callback-Adresse {configuredOrigin} unterscheidet sich von der App-Adresse {currentOrigin}.",
@@ -6098,10 +6098,10 @@
         "subtitle": "Lege fest, welche Quelle gewinnt, wenn zwei dieselbe Messgröße liefern.",
         "nutrients": {
           "title": "Synchronisierte Nährstoffzufuhr",
-          "description": "Tagessummen der letzten {days} Tage aus Apple Health oder einem Ernährungstracker und den eingenommenen Supplementen.",
+          "description": "Tagessummen {days, plural, =1 {des letzten Tages} other {der letzten # Tage}} aus Apple Health oder einem Ernährungstracker und den eingenommenen Supplementen.",
           "empty": "Noch keine Nährstoffdaten synchronisiert.",
           "latest": "{amount} {unit} am {date}",
-          "daysWithData": "{count} von {days} Tagen",
+          "daysWithData": "{count} von {days, plural, one {# Tag} other {# Tagen}}",
           "moduleHint": "Die Synchronisierung steuert das Modul „Nährstoffzufuhr“.",
           "moduleHintLink": "Module verwalten",
           "detail": "Nur lesend, die Quell-App besitzt die Werte."
@@ -6161,7 +6161,7 @@
         "import": {
           "heading": "Import",
           "description": "Importiere Daten aus Apple Health, Health Connect, der Aktivitätsdatei einer Uhr, einer JSON- oder einer CSV-Datei. Bereits vorhandene Einträge werden übersprungen, ein erneuter Import ist also unbedenklich.",
-          "charCount": "{used} / {max} Zeichen",
+          "charCount": "{used} / {max, plural, one {# Zeichen} other {# Zeichen}}",
           "appleHealth": {
             "title": "Apple Health",
             "description": "Lade die export.zip aus der Health-App auf dem iPhone hoch (Profil → Alle Gesundheitsdaten exportieren).",
@@ -6177,10 +6177,10 @@
             "failed": "Der Import ist fehlgeschlagen.",
             "failureInterrupted": "Der Import wurde unterbrochen, bevor er fertig war, meist durch einen Server-Neustart oder Speichermangel. Die Daten sind sicher; das Archiv einfach erneut hochladen.",
             "failureInsufficientMemory": "Das Speicherlimit des Servers ist für ein Archiv dieser Größe zu niedrig. Bitte die Betreiberin oder den Betreiber das Node.js-Heap-Limit erhöhen lassen (NODE_OPTIONS=--max-old-space-size) und das Archiv danach erneut hochladen.",
-            "rowsImported": "Bisher {count} Einträge importiert",
-            "doneSummary": "Fertig: {imported} von {read} Datensätzen importiert, {skipped} klinische Datensätze übersprungen.",
-            "doneSummaryAuxOnly": "Fertig: Unter den {read} Datensätzen war nichts Neues, die Laborwerte oder EKGs unten wurden aber importiert.",
-            "doneNothing": "Aus diesem Archiv wurde nichts importiert: 0 von {read} Datensätzen sind angekommen.",
+            "rowsImported": "Bisher {count, plural, one {# Eintrag} other {# Einträge}} importiert",
+            "doneSummary": "Fertig: {imported} von {read, plural, one {# Datensatz} other {# Datensätzen}} importiert, {skipped, plural, one {# klinischer Datensatz} other {# klinische Datensätze}} übersprungen.",
+            "doneSummaryAuxOnly": "Fertig: {read, plural, =1 {In dem einen Datensatz} other {Unter den # Datensätzen}} war nichts Neues, die Laborwerte oder EKGs unten wurden aber importiert.",
+            "doneNothing": "Aus diesem Archiv wurde nichts importiert: 0 von {read, plural, one {# Datensatz} other {# Datensätzen}} sind angekommen.",
             "writtenByHealthLogOne": "{count} Eintrag, den HealthLog selbst in Apple Health geschrieben hat, wurde ausgelassen, weil er schon in deinen Daten ist.",
             "writtenByHealthLogOther": "{count} Einträge, die HealthLog selbst in Apple Health geschrieben hat, wurden ausgelassen, weil sie schon in deinen Daten sind.",
             "writtenByHealthLogFew": "{count} Einträge, die HealthLog selbst in Apple Health geschrieben hat, wurden ausgelassen, weil sie schon in deinen Daten sind.",
@@ -6218,20 +6218,20 @@
             "labsMarkersCreatedOther": "{count} neue Marker wurden unter Laborwerte angelegt.",
             "labsMarkersCreatedFew": "{count} neue Marker wurden unter Laborwerte angelegt.",
             "viewInLabs": "In Laborwerten ansehen",
-            "estimateWarning": "Kumulative Summen für {count} Tag(e) wurden anhand der größten Exportquelle geschätzt. Native Apple-Health-Statistiken bleiben maßgeblich.",
+            "estimateWarning": "Kumulative Summen für {count, plural, one {# Tag} other {# Tage}} wurden anhand der größten Exportquelle geschätzt. Native Apple-Health-Statistiken bleiben maßgeblich.",
             "phase": {
               "queued": "In Warteschlange…",
               "unpacking": "Archiv wird entpackt…",
               "parsing": "Export wird gelesen…",
               "upserting": "Datensätze werden importiert…"
             },
-            "skipUnsupported": "{count} Samples übersprungen: Datentypen, die HealthLog nicht importiert.",
-            "skipRefused": "{count} Samples konnten nicht geschrieben werden (unlesbar, außerhalb des Wertebereichs oder Speichern fehlgeschlagen).",
-            "skipBreakdown": "Aufschlüsselung anzeigen ({count} Typen)",
-            "skipBreakdownMore": "+ {count} weitere Typen",
-            "cycleSummary": "{samples} Zyklus-Samples zu {days} Tagesprotokollen zusammengeführt.",
-            "cycleModuleOff": "{count} Zyklus-Samples übersprungen, weil Zyklus-Tracking für dieses Konto deaktiviert ist.",
-            "cycleDaysFailed": "{count} Zyklustage konnten nicht geschrieben werden: {reason}"
+            "skipUnsupported": "{count, plural, one {# Sample} other {# Samples}} übersprungen: Datentypen, die HealthLog nicht importiert.",
+            "skipRefused": "{count, plural, one {# Sample konnte} other {# Samples konnten}} nicht geschrieben werden (unlesbar, außerhalb des Wertebereichs oder Speichern fehlgeschlagen).",
+            "skipBreakdown": "Aufschlüsselung anzeigen ({count, plural, one {# Typ} other {# Typen}})",
+            "skipBreakdownMore": "+ {count, plural, one {# weiterer Typ} other {# weitere Typen}}",
+            "cycleSummary": "{samples, plural, one {# Zyklus-Sample} other {# Zyklus-Samples}} zu {days, plural, one {# Tagesprotokoll} other {# Tagesprotokollen}} zusammengeführt.",
+            "cycleModuleOff": "{count, plural, one {# Zyklus-Sample} other {# Zyklus-Samples}} übersprungen, weil Zyklus-Tracking für dieses Konto deaktiviert ist.",
+            "cycleDaysFailed": "{count, plural, one {# Zyklustag konnte} other {# Zyklustage konnten}} nicht geschrieben werden: {reason}"
           },
           "json": {
             "title": "Messwerte und Stimmung (JSON)",
@@ -6248,13 +6248,13 @@
             "rateLimited": "Zu viele Importe in dieser Stunde (Grenze 5). Bitte später erneut versuchen.",
             "failed": "Der Import ist fehlgeschlagen. Bitte erneut versuchen.",
             "readFailed": "Diese Datei konnte nicht gelesen werden.",
-            "resultSummary": "{measurements} Messwerte und {moods} Stimmungseinträge importiert, {skipped} übersprungen.",
-            "resultSuccess": "{measurements} Messwerte und {moods} Stimmungseinträge importiert",
+            "resultSummary": "{measurements, plural, one {# Messwert} other {# Messwerte}} und {moods} Stimmungseinträge importiert, {skipped} übersprungen.",
+            "resultSuccess": "{measurements, plural, one {# Messwert} other {# Messwerte}} und {moods} Stimmungseinträge importiert",
             "droppedLinks": "Ohne diese Tags importiert, weil dieses Konto keine mit dem Namen hat: {keys}",
             "keptLabels": "Dieses Konto hat Tags oder Gruppen mit diesen Schlüsseln schon unter eigenem Namen, die wurden behalten: {keys}",
-            "resultNothing": "Nichts importiert. Alle {skipped} Einträge wurden übersprungen.",
+            "resultNothing": "Nichts importiert. {skipped, plural, =1 {Der eine Eintrag wurde} other {Alle # Einträge wurden}} übersprungen.",
             "resultEmpty": "Diese Datei enthielt weder Messwerte noch Stimmungseinträge.",
-            "limitsHint": "Bis {mb} MB und bis zu {rows} Einträge je Liste. Das ergänzt deine Akte um Einträge; ein vollständiges Backup lässt sich so nicht wiederherstellen."
+            "limitsHint": "Bis {mb} MB und bis zu {rows, plural, one {# Eintrag} other {# Einträge}} je Liste. Das ergänzt deine Akte um Einträge; ein vollständiges Backup lässt sich so nicht wiederherstellen."
           },
           "csv": {
             "title": "CSV-Datei",
@@ -6277,10 +6277,10 @@
             "resultSummary": "{inserted} neu importiert und {updated} aktualisiert, {skipped} übersprungen.",
             "rowError": "Zeile {line}: {reason}",
             "resultSuccess": "{inserted} neu importiert und {updated} aktualisiert",
-            "resultNothing": "Nichts importiert. Alle {skipped} Zeilen wurden übersprungen.",
+            "resultNothing": "Nichts importiert. {skipped, plural, =1 {Die eine Zeile wurde} other {Alle # Zeilen wurden}} übersprungen.",
             "resultEmpty": "Diese Datei hat eine Kopfzeile, aber keine Datenzeilen.",
             "previewSuccess": "Vorschau: {inserted} würden importiert",
-            "previewNothing": "Vorschau: nichts würde importiert. Alle {skipped} Zeilen würden übersprungen.",
+            "previewNothing": "Vorschau: nichts würde importiert. {skipped, plural, =1 {Die eine Zeile würde} other {Alle # Zeilen würden}} übersprungen.",
             "skipGroupOne": "{count} Zeile übersprungen: {reason}",
             "skipGroupFew": "{count} Zeilen übersprungen: {reason}",
             "skipGroupOther": "{count} Zeilen übersprungen: {reason}",
@@ -6319,8 +6319,8 @@
             "stillRunning": "Der Import dauert länger als üblich und kann noch fertig werden. Sieh dir deine Einnahmen in ein paar Minuten noch einmal an.",
             "columnsHeading": "Was mit jeder Spalte passiert",
             "jsonOnly": "nur JSON",
-            "previewLine": "{rows} Zeilen gelesen, {queued} würden importiert, {refused} abgewiesen",
-            "submittedLine": "{rows} Zeilen gelesen, {queued} zum Import eingereiht",
+            "previewLine": "{rows, plural, one {# Zeile} other {# Zeilen}} gelesen, {queued} würden importiert, {refused} abgewiesen",
+            "submittedLine": "{rows, plural, one {# Zeile} other {# Zeilen}} gelesen, {queued} zum Import eingereiht",
             "unmatched": "Kein Medikament im Bestand passt zu: {names}",
             "ambiguous": "Passt auf mehr als ein Medikament: {names}",
             "mirrored": "Aus einer anderen App gespiegelt, daher keine Dosis ergänzbar: {names}",
@@ -6364,7 +6364,7 @@
             "uploading": "Wird hochgeladen …",
             "uploadFailed": "Das Hochladen ist fehlgeschlagen. Bitte versuch es noch einmal.",
             "tooLarge": "Die Datei ist größer, als dieser Server annimmt.",
-            "doneSummary": "{count} Werte importiert.",
+            "doneSummary": "{count, plural, one {# Wert} other {# Werte}} importiert.",
             "failed": "Der Import ist fehlgeschlagen: {reason}",
             "phase": {
               "queued": "Wartet auf den Start",
@@ -6385,10 +6385,10 @@
             "privacyNote": "Die Datei wird vom Server gelöscht, sobald der Import endet. Einträge von Apps, die du schon direkt verbunden hast, etwa Withings oder Fitbit, werden ausgelassen, damit nichts doppelt ankommt. Dieselbe Datei noch einmal hochzuladen ändert nichts.",
             "rateLimited": "Zu viele Uploads in kurzer Zeit. Warte eine Minute und versuch es noch einmal.",
             "busy": "Für dein Konto läuft schon ein Import. Warte, bis er fertig ist.",
-            "rowsSoFar": "Bisher {count} Werte gespeichert",
+            "rowsSoFar": "Bisher {count, plural, one {# Wert} other {# Werte}} gespeichert",
             "doneNothing": "Der Import ist fertig, es gab aber nichts Neues.",
             "workouts": "Trainings",
-            "leftOutConnected": "{count} Einträge von Apps, die du schon direkt verbunden hast, wurden ausgelassen.",
+            "leftOutConnected": "{count, plural, one {# Eintrag von Apps, die du schon direkt verbunden hast, wurde ausgelassen.} other {# Einträge von Apps, die du schon direkt verbunden hast, wurden ausgelassen.}}",
             "nutrientsModuleOff": "Wasser- und Nährstoffsummen wurden nicht importiert, weil das Modul Nährstoffe ausgeschaltet ist.",
             "cycleModuleOff": "Periodendaten wurden nicht importiert, weil das Zyklus-Tracking ausgeschaltet ist.",
             "failure": {
@@ -6643,7 +6643,7 @@
         "backfillError": "Nacherfassung konnte nicht gestartet werden.",
         "startDate": "Startdatum",
         "endDate": "Enddatum",
-        "storedDays": "{count} Tage Wetter gespeichert.",
+        "storedDays": "{count, plural, one {# Tag} other {# Tage}} Wetter gespeichert.",
         "home": {
           "title": "Heimatort",
           "description": "Ein grober Standort auf Stadtebene, niemals eine genaue Spur. Wetter und Tageslicht werden für diesen Ort an Tagen ohne Ortszeitraum abgerufen, ab dem Tag der Festlegung.",
@@ -6678,10 +6678,10 @@
           "description": "Tägliche Luftqualität, Pollen und UV für deinen Ort, aus dem CAMS-Modell über Open-Meteo.",
           "toggle": "Luftqualität und Pollen einbeziehen",
           "operatorDisabled": "Luftqualität ist auf diesem Server abgeschaltet.",
-          "coverage": "{count} Tage mit Luftqualitätsdaten",
+          "coverage": "{count, plural, one {# Tag} other {# Tage}} mit Luftqualitätsdaten",
           "pollenEuropeOnly": "Pollendaten gibt es nur für Europa.",
-          "historyProgress": "Luftqualität wird nachgeladen: {done} von {total} Tagen",
-          "historyComplete": "Luftqualität ist für alle früheren Tage mit Einträgen nachgeladen, die die Quelle abdeckt ({total} Tage). Ältere Tage bleiben leer.",
+          "historyProgress": "Luftqualität wird nachgeladen: {done} von {total, plural, one {# Tag} other {# Tagen}}",
+          "historyComplete": "Luftqualität ist für alle früheren Tage mit Einträgen nachgeladen, die die Quelle abdeckt ({total, plural, one {# Tag} other {# Tage}}). Ältere Tage bleiben leer.",
           "attribution": "Datenquellen und Lizenzen",
           "saveError": "Die Einstellung konnte nicht gespeichert werden.",
           "latest": "Jüngster Tag ({date})",
@@ -6716,7 +6716,7 @@
         "error": "Konnte nicht gespeichert werden. Bitte versuche es erneut.",
         "loadFailed": "Deine Auswahl konnte nicht geladen werden.",
         "eligibilityFailed": "Es ließ sich nicht prüfen, für welche Bereiche gerade Daten vorliegen. Die Schalter unten funktionieren trotzdem.",
-        "omitted": "{count} Bereiche stehen nicht in der Liste, weil ihre Erfassung abgeschaltet ist. Schalte ein Modul wieder ein, dann kommt sein Bereich zurück.",
+        "omitted": "{count, plural, one {# Bereich steht nicht in der Liste, weil seine Erfassung abgeschaltet ist.} other {# Bereiche stehen nicht in der Liste, weil ihre Erfassung abgeschaltet ist.}} Schalte ein Modul wieder ein, dann kommt sein Bereich zurück.",
         "omittedLink": "Module öffnen",
         "refusal": {
           "empty": "Ein Gesundheitsscore braucht mindestens ein Feld der Gesundheit, das er bewerten kann. Behalte mindestens eines ausgewählt. Der Score nennt selbst, worauf er beruht."
@@ -7083,7 +7083,7 @@
         "loadError": "Konnte nicht laden, woran sich der Coach erinnert.",
         "forgotToast": "Angabe vergessen.",
         "forgotError": "Konnte diese Angabe nicht vergessen. Bitte erneut versuchen.",
-        "clearedToast": "{count} gespeicherte Angaben vergessen.",
+        "clearedToast": "{count, plural, one {# gespeicherte Angabe} other {# gespeicherte Angaben}} vergessen.",
         "clearError": "Konnte die gespeicherten Angaben nicht löschen. Bitte erneut versuchen.",
         "detail": "Er nutzt sie, damit seine Antworten relevant bleiben. Entferne alles, was er besser vergessen sollte.",
         "categoryMedication": "Medikamente"
@@ -7119,7 +7119,7 @@
         "title": "Über mich",
         "description": "Persönlicher Kontext, den Coach und Tagesbriefing zusätzlich zu deinen Daten lesen.",
         "placeholder": "Z. B. Schichtarbeit, vegetarische Ernährung, Knieverletzung, Training für einen Halbmarathon…",
-        "charCount": "{used} / {max} Zeichen",
+        "charCount": "{used} / {max, plural, one {# Zeichen} other {# Zeichen}}",
         "clear": "Leeren",
         "clearTitle": "Über-mich-Notiz leeren?",
         "clearBody": "Entfernt nur den Freitext. Allergien und Unverträglichkeiten bleiben unverändert.",
@@ -7234,8 +7234,8 @@
           }
         },
         "limited": "Vom Betreiber begrenzt.",
-        "estimate": "etwa {tokens} Tokens am Tag, geschätzt",
-        "measured": "Gemessen: {tokens} Tokens am Tag in den letzten {days} Tagen, Coach eingeschlossen. Die Werte je Stufe sind Schätzungen.",
+        "estimate": "etwa {tokens, plural, one {# Token} other {# Tokens}} am Tag, geschätzt",
+        "measured": "Gemessen: {tokens, plural, one {# Token} other {# Tokens}} am Tag {days, plural, =1 {über den letzten Tag} other {in den letzten # Tagen}}, Coach eingeschlossen. Die Werte je Stufe sind Schätzungen.",
         "noEstimate": "Eine Schätzung je Stufe erscheint nach drei Tagen KI-Nutzung.",
         "capped": "Du hast {choice} gewählt, das der Server gerade nicht erlaubt, deshalb gilt {level}. Deine Wahl bleibt gespeichert.",
         "followsDefault": "Du folgst dem Standard des Servers ({level}).",
@@ -7292,13 +7292,13 @@
     "withingsFullSync": "Alle Daten synchronisieren",
     "withingsFullSyncTitle": "Vollsynchronisierung?",
     "withingsFullSyncDescription": "Alle verfügbaren Withings-Daten werden vollständig synchronisiert. Das kann je nach Historie etwas dauern.",
-    "withingsSyncResult": "{count} Messwerte synchronisiert",
+    "withingsSyncResult": "{count, plural, one {# Messwert} other {# Messwerte}} synchronisiert",
     "syncOutcome": {
       "empty": "Nichts Neues zu importieren. Alles ist aktuell.",
       "failed": "Es wurde nichts gespeichert. Der nächste Lauf versucht es erneut.",
-      "partial": "{count} Messwerte synchronisiert. Ein Teil der Daten konnte nicht gespeichert werden; der nächste Lauf versucht es erneut."
+      "partial": "{count, plural, one {# Messwert} other {# Messwerte}} synchronisiert. Ein Teil der Daten konnte nicht gespeichert werden; der nächste Lauf versucht es erneut."
     },
-    "withingsFullSyncResult": "{count} Messwerte vollständig synchronisiert",
+    "withingsFullSyncResult": "{count, plural, one {# Messwert} other {# Messwerte}} vollständig synchronisiert",
     "withingsSyncFailed": "Sync fehlgeschlagen",
     "withingsOauthConnected": "Withings verbunden. Der erste Sync startet im Hintergrund.",
     "withingsOauthFailed": "Withings-Verbindung fehlgeschlagen",
@@ -7333,7 +7333,7 @@
     "whoopFullSync": "Alle Daten synchronisieren",
     "whoopFullSyncTitle": "Vollständige Synchronisierung?",
     "whoopFullSyncDescription": "Der gesamte verfügbare WHOOP-Verlauf wird vollständig synchronisiert. Je nach Verlauf kann das einige Zeit dauern.",
-    "whoopSyncResult": "{count} Messwerte synchronisiert",
+    "whoopSyncResult": "{count, plural, one {# Messwert} other {# Messwerte}} synchronisiert",
     "whoopSyncFailed": "Synchronisierung fehlgeschlagen",
     "whoopSynchronize": "Synchronisieren",
     "whoopDisconnect": "Trennen",
@@ -7379,9 +7379,9 @@
     "googleHealthFullSync": "Alle Daten synchronisieren",
     "googleHealthFullSyncTitle": "Vollständige Synchronisierung?",
     "googleHealthFullSyncDescription": "Der gesamte verfügbare Google-Health-Verlauf wird vollständig synchronisiert. Je nach Verlauf kann das eine Weile dauern.",
-    "googleHealthSyncResult": "{count} Messwerte synchronisiert",
+    "googleHealthSyncResult": "{count, plural, one {# Messwert} other {# Messwerte}} synchronisiert",
     "googleHealthSyncFailed": "Synchronisierung fehlgeschlagen",
-    "googleHealthSyncInProgress": "Synchronisierung läuft: {count} Messwerte gespeichert, {completed} von {total} Bereichen verarbeitet.",
+    "googleHealthSyncInProgress": "Synchronisierung läuft: {count, plural, one {# Messwert} other {# Messwerte}} gespeichert, {completed} von {total, plural, one {# Bereich} other {# Bereichen}} verarbeitet.",
     "googleHealthResourceFailuresTitle": "Diese Bereiche benötigen noch Aufmerksamkeit:",
     "googleHealthResource": {
       "workout": "Workouts",
@@ -7470,7 +7470,7 @@
     },
     "integrationFreshness": {
       "title": "Empfangene Daten",
-      "summary": "{count} Datentypen, neuestes {relative}",
+      "summary": "{count, plural, one {# Datentyp} other {# Datentypen}}, neuestes {relative}",
       "quiet": "{count} still",
       "workouts": "Workouts",
       "medicationDoses": "Medikamenteneinnahmen",
@@ -7678,8 +7678,8 @@
       "range": "Tage Verlauf",
       "rangeHint": "Wie weit das geteilte Zeitfenster zurückreicht.",
       "expiry": "Läuft ab in (Tagen)",
-      "expiryHint": "Höchstens {max} Tage.",
-      "expiryInvalid": "Die Gültigkeit muss zwischen 1 und {max} Tagen liegen.",
+      "expiryHint": "Höchstens {max, plural, one {# Tag} other {# Tage}}.",
+      "expiryInvalid": "Die Gültigkeit muss zwischen 1 und {max, plural, one {# Tag} other {# Tagen}} liegen.",
       "create": "Link erstellen",
       "tokenCreated": "Freigabe-Link erstellt",
       "copied": "In die Zwischenablage kopiert",
@@ -7717,7 +7717,7 @@
       "pickerEmpty": "Keine Dokumente gefunden.",
       "pickerDone": "Fertig",
       "pickerSelectedCount": "{count} von {max} ausgewählt",
-      "pickerMaxReached": "Maximum von {max} Dokumenten erreicht.",
+      "pickerMaxReached": "Maximum von {max, plural, one {# Dokument} other {# Dokumenten}} erreicht.",
       "scopeTitle": "Was dieser Link enthält",
       "scopeInsuranceExcluded": "Versichertendaten werden über einen Link nie geteilt.",
       "statusNeedsReselect": "Inhalt neu wählen",
@@ -7746,7 +7746,7 @@
     "nightscoutConnected": "Nightscout verbunden.",
     "nightscoutConnectFailed": "Verbindung zu Nightscout fehlgeschlagen.",
     "nightscoutSync": "Jetzt synchronisieren",
-    "nightscoutSyncResult": "{count} Messwerte synchronisiert",
+    "nightscoutSyncResult": "{count, plural, one {# Messwert} other {# Messwerte}} synchronisiert",
     "nightscoutSyncFailed": "Synchronisierung fehlgeschlagen",
     "nightscoutDisconnect": "Trennen",
     "nightscoutDisconnectTitle": "Nightscout trennen?",
@@ -7763,7 +7763,7 @@
     "polarUnavailable": "Polar ist auf diesem Server nicht konfiguriert. Füge oben deine eigenen Polar-OAuth-Zugangsdaten hinzu oder bitte deinen Administrator, die gemeinsame App zu konfigurieren.",
     "polarConnect": "Polar verbinden",
     "polarSync": "Jetzt synchronisieren",
-    "polarSyncResult": "{count} Messwerte synchronisiert",
+    "polarSyncResult": "{count, plural, one {# Messwert} other {# Messwerte}} synchronisiert",
     "polarSyncFailed": "Synchronisierung fehlgeschlagen",
     "polarDisconnect": "Trennen",
     "polarDisconnectTitle": "Polar trennen?",
@@ -7793,7 +7793,7 @@
     "ouraUnavailable": "Oura ist auf diesem Server nicht konfiguriert. Füge oben deine eigenen Oura-OAuth-Zugangsdaten hinzu oder bitte deinen Administrator, die gemeinsame App zu konfigurieren.",
     "ouraConnect": "Oura verbinden",
     "ouraSync": "Jetzt synchronisieren",
-    "ouraSyncResult": "{count} Messwerte synchronisiert",
+    "ouraSyncResult": "{count, plural, one {# Messwert} other {# Messwerte}} synchronisiert",
     "ouraSyncFailed": "Synchronisierung fehlgeschlagen",
     "ouraDisconnect": "Trennen",
     "ouraDisconnectTitle": "Oura trennen?",
@@ -7845,7 +7845,7 @@
       "revokeSession": "Abmelden",
       "revokeError": "Anfrage konnte nicht abgeschlossen werden. Bitte erneut versuchen.",
       "signOutEverywhere": "Überall sonst abmelden",
-      "signOutEverywhereDone": "{count} andere Sitzung(en) abgemeldet",
+      "signOutEverywhereDone": "{count, plural, one {# andere Sitzung} other {# andere Sitzungen}} abgemeldet",
       "activityTitle": "Sicherheitsaktivität",
       "activityDescription": "Letzte Anmeldungen, Sicherheitsänderungen und Datenexporte deines Kontos.",
       "activityEmpty": "Noch keine Sicherheitsaktivität.",
@@ -7928,7 +7928,7 @@
         "revokeError": "Gerät konnte nicht entfernt werden. Bitte erneut versuchen.",
         "revoke": "Entfernen",
         "revokeAll": "Alle Geräte vergessen",
-        "revokeAllDone": "{count} vertrauenswürdige(s) Gerät(e) entfernt",
+        "revokeAllDone": "{count, plural, one {# vertrauenswürdiges Gerät} other {# vertrauenswürdige Geräte}} entfernt",
         "unnamed": "Unbekanntes Gerät",
         "current": "Dieses Gerät",
         "expires": "Vertraut bis {date}",
@@ -7943,14 +7943,14 @@
       "signOutEverywhereConfirmBody": "Alle anderen Geräte, jeder verbundene KI-Assistent und jedes API-Token müssen sich neu anmelden oder neu eingerichtet werden. Dieses Gerät bleibt angemeldet. Deine Einträge bleiben unberührt.",
       "signOutEverywhereShareLinks": "Auch die Freigabelinks für Ärztinnen und Ärzte beenden",
       "signOutEverywhereInvites": "Einladungen zu deiner Akte, die noch niemand angenommen hat, werden zurückgezogen. Wer schon angenommen hat, behält den Zugriff; du kannst ihn gleich danach beenden.",
-      "signOutEverywhereInvitesDone": "{count} nicht angenommene Einladung(en) zurückgezogen.",
+      "signOutEverywhereInvitesDone": "{count, plural, one {# nicht angenommene Einladung} other {# nicht angenommene Einladungen}} zurückgezogen.",
       "grantsKeptTitle": "Diese Personen sehen deine Akte weiterhin",
       "grantsKeptBody": "Das Abmelden beendet keinen Zugriff, den du jemandem gegeben hast. Beende ihn hier, wenn du ihn nicht gegeben hast oder nicht mehr willst."
     },
     "privacy": {
       "encryption": {
         "title": "Verschlüsselt gespeichert",
-        "summary": "Deine sensiblen Daten werden mit {algorithm} verschlüsselt gespeichert: über {columns} Felder in {models} Datensatztypen.",
+        "summary": "Deine sensiblen Daten werden mit {algorithm} verschlüsselt gespeichert: über {columns, plural, one {# Feld} other {# Felder}} in {models, plural, one {# Datensatztyp} other {# Datensatztypen}}.",
         "statement": "Deine sensiblen Daten werden mit AES-256-GCM verschlüsselt gespeichert."
       },
       "stored": {
@@ -7970,11 +7970,11 @@
       "retention": {
         "title": "Aufbewahrung",
         "description": "Wie lange zeitgebundene Datensätze vor der automatischen Bereinigung gespeichert bleiben.",
-        "coach": "Coach-Unterhaltungen: {days} Tage",
-        "audit": "Sicherheitsprotokoll: {days} Tage",
-        "delivery": "Benachrichtigungsprotokoll: {days} Tage",
+        "coach": "Coach-Unterhaltungen: {days, plural, one {# Tag} other {# Tage}}",
+        "audit": "Sicherheitsprotokoll: {days, plural, one {# Tag} other {# Tage}}",
+        "delivery": "Benachrichtigungsprotokoll: {days, plural, one {# Tag} other {# Tage}}",
         "unavailable": "Aufbewahrungsdetails sind derzeit nicht verfügbar.",
-        "accountDeletion": "Löschen deines Kontos, eines verwalteten Profils oder aller Daten: abgeschlossen nach {days} Tagen",
+        "accountDeletion": "Löschen deines Kontos, eines verwalteten Profils oder aller Daten: abgeschlossen nach {days, plural, one {# Tag} other {# Tagen}}",
         "accountDeletionImmediate": "Löschen deines Kontos, eines verwalteten Profils oder aller Daten: sofort abgeschlossen"
       },
       "delete": {
@@ -7982,7 +7982,7 @@
         "description": "Lösche dein Konto vollständig oder lösche deine Gesundheitsdaten und behalte das Konto.",
         "openAdvanced": "Löschen oder zurücksetzen",
         "immediateNotice": "Die Löschung entfernt deine Daten sofort. Wenn dieser Server verschlüsselte externe Sicherungen anlegt, werden die Kopien deiner Daten gleich danach aus diesem Speicher gelöscht, oder in der nächsten Nacht, falls der Speicher nicht erreichbar ist. Kopien in den Sicherungen dieses Servers verfallen nach ihrer Aufbewahrungsfrist.",
-        "graceNotice": "Wenn du dein Konto löschst, wird es sofort gesperrt und nach {days} Tagen endgültig gelöscht, zusammen mit jeder Kopie, die dieser Server davon aufbewahrt, auch verschlüsselten Kopien außerhalb des Servers. Bis dahin kann ein Admin dieses Servers die Löschung rückgängig machen. Beim Löschen aller Daten gilt dasselbe: Eine Kopie der Akte bleibt {days} Tage erhalten, sodass ein Admin sie wiederherstellen kann. Kopien in den Sicherungen dieses Servers verfallen nach ihrer Aufbewahrungsfrist."
+        "graceNotice": "Wenn du dein Konto löschst, wird es sofort gesperrt und nach {days, plural, one {# Tag} other {# Tagen}} endgültig gelöscht, zusammen mit jeder Kopie, die dieser Server davon aufbewahrt, auch verschlüsselten Kopien außerhalb des Servers. Bis dahin kann ein Admin dieses Servers die Löschung rückgängig machen. Beim Löschen aller Daten gilt dasselbe: Eine Kopie der Akte bleibt {days, plural, one {# Tag} other {# Tage}} erhalten, sodass ein Admin sie wiederherstellen kann. Kopien in den Sicherungen dieses Servers verfallen nach ihrer Aufbewahrungsfrist."
       },
       "posture": {
         "title": "Datenschutz-Einstellung",
@@ -8077,7 +8077,7 @@
     "stravaUnavailable": "Strava ist auf diesem Server nicht konfiguriert. Füge oben deine eigenen Strava-API-Zugangsdaten hinzu oder bitte deinen Administrator, die gemeinsame App zu konfigurieren.",
     "stravaConnect": "Strava verbinden",
     "stravaSync": "Jetzt synchronisieren",
-    "stravaSyncResult": "{count} Messwerte synchronisiert",
+    "stravaSyncResult": "{count, plural, one {# Messwert} other {# Messwerte}} synchronisiert",
     "stravaSyncFailed": "Synchronisierung fehlgeschlagen",
     "stravaDisconnect": "Trennen",
     "stravaDisconnectTitle": "Strava trennen?",
@@ -8324,9 +8324,9 @@
       "change": "Unter Module ändern"
     },
     "timezoneUseDevice": "Zeitzone dieses Geräts übernehmen ({zone})",
-    "dangerZoneConfirmDescriptionGrace": "Dieser Vorgang löscht alles in deiner Akte: Messwerte, Medikamente, Stimmungseinträge, Laborwerte, Zykluseinträge, Dokumente, KI-Gespräche und jede Integrationsverbindung, dazu alles daraus Abgeleitete und alles, was du früher gelöscht hast. Freigabe-Links, die du an eine Praxis gegeben hast, funktionieren sofort nicht mehr. Dein Konto bleibt bestehen, ebenso deine Anmeldedaten und Anzeigeeinstellungen wie Sprache, Zeitzone und Einheiten. Eine Kopie deiner Akte wird {days} Tage aufbewahrt, sodass ein Admin dieses Servers sie bis dahin wiederherstellen kann. Danach ist die Löschung endgültig.",
-    "deleteAccountCardDetailGrace": "Dein Konto wird sofort gesperrt und nach {days} Tagen endgültig gelöscht. Bis dahin kann ein Admin dieses Servers die Löschung rückgängig machen.",
-    "deleteAccountConfirmDescriptionGrace": "Du wirst abgemeldet und dein Konto wird sofort gesperrt. Nach {days} Tagen wird es endgültig gelöscht, mit allen Gesundheitsdaten, Passkeys, Sessions und Audit-Einträgen. Bis dahin kann ein Admin dieses Servers die Löschung rückgängig machen. Kopien in den Sicherungen dieses Servers verfallen nach ihrer Aufbewahrungsfrist.",
+    "dangerZoneConfirmDescriptionGrace": "Dieser Vorgang löscht alles in deiner Akte: Messwerte, Medikamente, Stimmungseinträge, Laborwerte, Zykluseinträge, Dokumente, KI-Gespräche und jede Integrationsverbindung, dazu alles daraus Abgeleitete und alles, was du früher gelöscht hast. Freigabe-Links, die du an eine Praxis gegeben hast, funktionieren sofort nicht mehr. Dein Konto bleibt bestehen, ebenso deine Anmeldedaten und Anzeigeeinstellungen wie Sprache, Zeitzone und Einheiten. Eine Kopie deiner Akte wird {days, plural, one {# Tag} other {# Tage}} aufbewahrt, sodass ein Admin dieses Servers sie bis dahin wiederherstellen kann. Danach ist die Löschung endgültig.",
+    "deleteAccountCardDetailGrace": "Dein Konto wird sofort gesperrt und nach {days, plural, one {# Tag} other {# Tagen}} endgültig gelöscht. Bis dahin kann ein Admin dieses Servers die Löschung rückgängig machen.",
+    "deleteAccountConfirmDescriptionGrace": "Du wirst abgemeldet und dein Konto wird sofort gesperrt. Nach {days, plural, one {# Tag} other {# Tagen}} wird es endgültig gelöscht, mit allen Gesundheitsdaten, Passkeys, Sessions und Audit-Einträgen. Bis dahin kann ein Admin dieses Servers die Löschung rückgängig machen. Kopien in den Sicherungen dieses Servers verfallen nach ihrer Aufbewahrungsfrist.",
     "deleteAccountScheduled": "Dein Konto ist gesperrt und wird am {date} endgültig gelöscht. Du wirst abgemeldet.",
     "dangerZoneSuccessGrace": "Deine Gesundheitsakte wurde gelöscht. Ein Admin dieses Servers kann sie bis zum {date} wiederherstellen.",
     "dangerZoneRestoreLimits": "Auch Zugriffe enden: was du mit anderen teilst, was andere mit dir teilen, und jede Rolle als betreuende Person. Eine Wiederherstellung bringt die Akte so zurück, wie sie jetzt ist. Was nach dem Löschen hinzukommt, wird dabei ersetzt, und Integrationsverbindungen, Freigaben, Betreuungsrollen und Freigabe-Links kommen nicht zurück; sie müssen neu eingerichtet werden.",
@@ -8334,7 +8334,7 @@
     "garminTag": "Personal API",
     "garminDescription": "Füge einen Garmin-Personal-API-Schlüssel ein, um Schlaf, HRV, Body Battery, Stress, Schritte, Gewicht und Aktivitäten aus Garmin Connect zu synchronisieren.",
     "garminSync": "Jetzt synchronisieren",
-    "garminSyncResult": "{count} Einträge synchronisiert",
+    "garminSyncResult": "{count, plural, one {# Eintrag} other {# Einträge}} synchronisiert",
     "garminSyncFailed": "Synchronisierung fehlgeschlagen",
     "garminViewData": "Erholung ansehen",
     "garminReplaceKey": "Schlüssel ersetzen",
@@ -8354,7 +8354,7 @@
     "garminApiKeySavedPlaceholder": "Gespeichert. Füge einen neuen Schlüssel ein, um ihn zu ersetzen",
     "garminKeyValidity": "Gewählte Gültigkeit",
     "garminKeyValidityUnknown": "Weiß ich nicht",
-    "garminKeyValidityDays": "{count} Tage",
+    "garminKeyValidityDays": "{count, plural, one {# Tag} other {# Tage}}",
     "garminKeyValidityHelp": "Garmin meldet nicht, wann ein Schlüssel abläuft. Mit der Gültigkeit warnt dich diese Karte eine Woche, bevor der Schlüssel nicht mehr funktioniert.",
     "garminConnect": "Verbinden",
     "garminUpdate": "Änderungen speichern",
@@ -8442,7 +8442,7 @@
       "loading": "Provider-Zustand wird geladen…",
       "loadError": "Der Provider-Zustand konnte nicht geladen werden.",
       "empty": "Es wurden noch keine KI-Aufrufe aufgezeichnet.",
-      "trackedUsers": "{count} Nutzer erfasst",
+      "trackedUsers": "{count, plural, one {# Nutzer erfasst} other {# Nutzer erfasst}}",
       "lastOk": "letzter Erfolg {at}",
       "lastFailure": "letzter Fehlschlag {at}",
       "lastFailureStatus": "HTTP {status}",
@@ -8455,9 +8455,9 @@
       "typeCodex": "ChatGPT-Anmeldung (persönlich)",
       "typeLocal": "Lokales Modell (persönlich)",
       "typeGateway": "OpenAI-kompatibles Gateway (persönlich)",
-      "spendToday": "Heute, jeweils am eigenen Kalendertag jedes Kontos: {total} Tokens, davon {operator} auf dem Schlüssel des Betreibers (Konten mit Verbrauch: {accounts}).",
+      "spendToday": "Heute, jeweils am eigenen Kalendertag jedes Kontos: {total, plural, one {# Token} other {# Tokens}}, davon {operator} auf dem Schlüssel des Betreibers (Konten mit Verbrauch: {accounts}).",
       "statusPaused": "Pausiert",
-      "pausedHint": "Nach wiederholten Fehlern für {count} Nutzer pausiert bis {at}. Danach wird er automatisch wieder versucht.",
+      "pausedHint": "Nach wiederholten Fehlern für {count, plural, one {# Nutzer} other {# Nutzer}} pausiert bis {at}. Danach wird er automatisch wieder versucht.",
       "modelNotServed": "Der Endpunkt bietet das Modell {model} nicht mehr an. Wähle in den KI-Einstellungen ein Modell, das er anbietet.",
       "usageLevels": "Konten je KI-Stufe: {frugal} sparsam, {standard} Standard, {full} voll."
     },
@@ -8466,7 +8466,7 @@
       "loading": "Feedback-Zusammenfassung wird geladen…",
       "loadError": "Qualitätszusammenfassung konnte nicht geladen werden. Bitte die Seite neu laden.",
       "empty": "Noch kein Feedback. Der Aggregator läuft täglich um 04:00. Sobald Nutzer Empfehlungen bewerten, erscheinen hier die Hilfreich-Quoten.",
-      "windowLabel": "Letzte {days} Tage",
+      "windowLabel": "{days, plural, =1 {Letzter Tag} other {Letzte # Tage}}",
       "generatedAtLabel": "Erstellt",
       "colSeverity": "Schweregrad",
       "colMetric": "Metrik",
@@ -8481,7 +8481,7 @@
       "loading": "Coach-Feedback-Zusammenfassung wird geladen…",
       "loadError": "Coach-Feedback-Zusammenfassung konnte nicht geladen werden. Bitte die Seite neu laden.",
       "empty": "Noch kein Coach-Feedback. Der Aggregator läuft täglich um 04:00. Sobald Nutzer Coach-Antworten bewerten, erscheinen hier die Hilfreich-Quoten.",
-      "windowLabel": "Letzte {days} Tage",
+      "windowLabel": "{days, plural, =1 {Letzter Tag} other {Letzte # Tage}}",
       "generatedAtLabel": "Erstellt",
       "colPromptVersion": "Prompt-Version",
       "colTone": "Tonfall",
@@ -8603,7 +8603,7 @@
       "createTitle": "Einladung erstellen",
       "createDescription": "Der Link erlaubt eine Registrierung auch bei geschlossener Registrierung.",
       "ttlLegend": "Gültig für",
-      "createDays": "{days} Tage",
+      "createDays": "{days, plural, one {# Tag} other {# Tage}}",
       "maxUsesLabel": "Maximale Nutzungen",
       "maxUsesHint": "Wie viele Registrierungen dieser Link zulässt (1–50).",
       "createConfirm": "Einladung erstellen",
@@ -8634,7 +8634,7 @@
       "statusRevoked": "Widerrufen",
       "redeemerDeleted": "gelöschtes Konto",
       "redeemedByMore": "{username} + {count} weitere",
-      "redemptionsTitle": "{count} Einlösungen",
+      "redemptionsTitle": "{count, plural, one {# Einlösung} other {# Einlösungen}}",
       "revoke": "Widerrufen",
       "revokeAria": "Einladung widerrufen",
       "revokeConfirmTitle": "Einladung widerrufen?",
@@ -8710,7 +8710,7 @@
     "deleteButton": "Alle Daten löschen",
     "deleteAllPromptLabel": "Tippe {token} zum Fortfahren",
     "finalDelete": "Endgültig löschen",
-    "deletedResult": "Gelöscht: {rows} Zeilen in {tables} Tabellen. Nutzerkonten und Anmelde-Zugangsdaten bleiben erhalten.",
+    "deletedResult": "Gelöscht: {rows, plural, one {# Zeile} other {# Zeilen}} in {tables, plural, one {# Tabelle} other {# Tabellen}}. Nutzerkonten und Anmelde-Zugangsdaten bleiben erhalten.",
     "authRegister": "Registrierung",
     "authClaim": "Profil übernommen",
     "authLogin": "Anmeldung",
@@ -8814,7 +8814,7 @@
         "forceLogout": "Abmeldung erzwingen",
         "forceLogoutConfirmTitle": "{name} abmelden?",
         "forceLogoutConfirmBody": "Alle aktiven Sitzungen dieses Nutzers werden widerrufen. Auf allen Geräten ist eine erneute Anmeldung erforderlich.",
-        "forceLogoutSuccess": "{name} aus {count} Sitzung(en) abgemeldet",
+        "forceLogoutSuccess": "{name} aus {count, plural, one {# Sitzung} other {# Sitzungen}} abgemeldet",
         "forceLogoutFailed": "Abmeldung fehlgeschlagen",
         "cannotLogoutSelf": "Eigene Sitzungen können nicht beendet werden",
         "emptyTitle": "Keine Nutzer in dieser Ansicht",
@@ -8927,7 +8927,7 @@
         "colCreatedAt": "Letzter Snapshot",
         "colActions": "Aktionen",
         "scheduleStaleTitle": "Die wöchentliche Sicherung läuft nicht mehr",
-        "scheduleStaleDescription": "Die neueste geplante Kopie ist {days} Tage alt. Ein funktionierender wöchentlicher Lauf lässt keine älter als {threshold} Tage werden.",
+        "scheduleStaleDescription": "Die neueste geplante Kopie ist {days, plural, one {# Tag} other {# Tage}} alt. Ein funktionierender wöchentlicher Lauf lässt keine älter als {threshold, plural, one {# Tag} other {# Tage}} werden.",
         "scheduleFailedTitle": "Der letzte geplante Sicherungslauf ist fehlgeschlagen",
         "scheduleFailedDescription": "{when}: {reason}",
         "scheduleFailedNoReason": "kein Grund aufgezeichnet",
@@ -8946,7 +8946,7 @@
         "uploadDescription": "Prüft eine Kontokopie und speichert sie neben den Kopien dieses Servers. Eine Kopie, deren Konto es auf diesem Server nicht mehr gibt, kann in ein anderes Konto gehen. Das Wiederherstellen ist ein eigener Schritt.",
         "uploadButton": "Datei hochladen",
         "uploadHelp": "HealthLog-Backup als .json oder .json.gz. Die Datei wird vor dem Hochladen komprimiert; komprimiert darf sie bis zu 512 MB groß sein.",
-        "uploadSuccess": "Backup hochgeladen ({count} Datensätze)",
+        "uploadSuccess": "Backup hochgeladen ({count, plural, one {# Datensatz} other {# Datensätze}})",
         "uploadFailed": "Upload fehlgeschlagen",
         "restore": "Wiederherstellen",
         "restoreAria": "Backup für {username} wiederherstellen",
@@ -8977,10 +8977,10 @@
         "restoreInProgress": "Wiederherstellung läuft…",
         "restoreSuccess": "Wiederherstellung abgeschlossen",
         "restoreFailed": "Wiederherstellung fehlgeschlagen",
-        "restoreSkippedToast": "Wiederherstellung abgeschlossen, {links} Symptomverknüpfungen konnten nicht zurückgeschrieben werden",
-        "restoreSkippedTitle": "{links} Verknüpfungen wurden nicht wiederhergestellt",
+        "restoreSkippedToast": "Wiederherstellung abgeschlossen, {links, plural, one {# Symptomverknüpfung konnte} other {# Symptomverknüpfungen konnten}} nicht zurückgeschrieben werden",
+        "restoreSkippedTitle": "{links, plural, one {# Verknüpfung wurde} other {# Verknüpfungen wurden}} nicht wiederhergestellt",
         "restoreSkippedDescription": "Die Datei verweist auf Einträge, die diese Installation nicht kennt. Alles andere wurde wiederhergestellt. Dieselbe Liste steht im Audit-Log.",
-        "restoreSkippedLinks": "{count} Verknüpfungen",
+        "restoreSkippedLinks": "{count, plural, one {# Verknüpfung} other {# Verknüpfungen}}",
         "restoreSkippedCycleSymptom": "Zyklussymptom",
         "restoreSkippedIllnessSymptom": "Krankheitssymptom",
         "restoreSkippedMoodFactor": "Stimmungsfaktor",
@@ -9023,11 +9023,11 @@
           "unknownDetail": "Noch kein nächtlicher Lauf hat dieses Konto erfasst.",
           "age": "vor {hours} h",
           "scheduleNote": "Der Upload läuft alle {hours} h. Frisch heißt innerhalb eines Laufs, fällig heißt ein Lauf blieb ohne Ergebnis, veraltet heißt zwei.",
-          "lifecycleConfigured": "Der Bucket löscht Kopien nach {days} Tagen über seine eigene Lifecycle-Regel.",
+          "lifecycleConfigured": "Der Bucket löscht Kopien nach {days, plural, one {# Tag} other {# Tagen}} über seine eigene Lifecycle-Regel.",
           "lifecycleMissing": "Der Bucket hat keine Lifecycle-Regel, jede nächtliche Kopie bleibt also für immer liegen. Lege eine Regel an, die Objekte nach BACKUP_RETENTION_DAYS löscht.",
           "lifecycleUnknown": "Ob der Bucket alte Kopien löscht, ließ sich nicht lesen: Die Zugangsdaten dürfen seine Lifecycle-Regel nicht lesen. Prüfe, dass eine Regel Objekte nach BACKUP_RETENTION_DAYS löscht.",
-          "pendingDeletions": "Kopien von {count} gelöschten oder geleerten Konten liegen noch im Bucket und werden entfernt.",
-          "pendingDeletionsFailing": "Kopien von {count} gelöschten oder geleerten Konten liegen noch im Bucket, weil er das Löschen verweigert hat ({error}). Gib den Zugangsdaten DeleteObject; das Löschen wird jede Nacht wiederholt."
+          "pendingDeletions": "Kopien von {count, plural, one {# gelöschten oder geleerten Konto} other {# gelöschten oder geleerten Konten}} liegen noch im Bucket und werden entfernt.",
+          "pendingDeletionsFailing": "Kopien von {count, plural, one {# gelöschten oder geleerten Konto} other {# gelöschten oder geleerten Konten}} liegen noch im Bucket, weil er das Löschen verweigert hat ({error}). Gib den Zugangsdaten DeleteObject; das Löschen wird jede Nacht wiederholt."
         },
         "restoreStarted": "Wiederherstellung gestartet. Der Fortschritt steht über der Liste.",
         "restoreActive": "Für dieses Konto läuft schon eine Wiederherstellung. Warte, bis sie fertig ist.",
@@ -9039,13 +9039,13 @@
         "restoreJobRunningTitle": "{username} wird wiederhergestellt",
         "restoreJobRunningNote": "Das Konto zeigt seine bisherigen Daten, bis die Wiederherstellung fertig ist. Du kannst die Seite verlassen; die Wiederherstellung läuft auf dem Server weiter.",
         "restoreJobResumed": "Nach einem Neustart des Servers erneut gestartet.",
-        "restoreJobPhaseValidating": "Backup-Datei wird geprüft: {checked} Messwerte geprüft",
+        "restoreJobPhaseValidating": "Backup-Datei wird geprüft: {checked, plural, one {# Messwert} other {# Messwerte}} geprüft",
         "restoreJobPhaseClearing": "Bisherige Daten des Kontos werden entfernt",
         "restoreJobPhaseMeasurements": "Messwerte werden geschrieben: {done} von {total}",
         "restoreJobPhaseSections": "Übrige Einträge werden geschrieben: {done} von {total} Bereichen",
         "restoreJobPhaseRebuilding": "Diagramme und Zusammenfassungen werden neu berechnet",
         "restoreJobSucceededTitle": "Wiederherstellung von {username} abgeschlossen",
-        "restoreJobSucceededDescription": "{count} Datensätze wiederhergestellt. Fertig {when}.",
+        "restoreJobSucceededDescription": "{count, plural, one {# Datensatz} other {# Datensätze}} wiederhergestellt. Fertig {when}.",
         "restoreJobFailedTitle": "Wiederherstellung von {username} nicht abgeschlossen",
         "restoreJobFailedKept": "Es wurde nichts geändert. Das Backup bleibt erhalten, du kannst die Wiederherstellung also über seine Zeile erneut starten, ohne es noch einmal hochzuladen.",
         "restoreFailureNotFound": "Das Backup wurde gelöscht, bevor die Wiederherstellung es lesen konnte.",
@@ -9081,7 +9081,7 @@
         "restoreSkippedVaccinationCiphertext": "Impf-Notiz mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (Impfung ohne sie behalten)",
         "restoreSkippedEnvironmentLocationCiphertext": "Ort eines Umweltzeitraums oder -tags mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (verschlüsselt behalten, diese Tage werden nicht neu abgerufen)",
         "typePreWipe": "Vor dem Löschen aller Daten",
-        "retentionNote": "Die wöchentliche Kopie wird jeden Sonntag ersetzt. Eine Kopie, die vor „Alle Daten löschen“ angelegt wurde, wird nach {days} Tagen gelöscht. Hochgeladene Kopien bleiben, bis ihr Konto gelöscht wird.",
+        "retentionNote": "Die wöchentliche Kopie wird jeden Sonntag ersetzt. Eine Kopie, die vor „Alle Daten löschen“ angelegt wurde, wird nach {days, plural, one {# Tag} other {# Tagen}} gelöscht. Hochgeladene Kopien bleiben, bis ihr Konto gelöscht wird.",
         "retentionNoteNoGrace": "Die wöchentliche Kopie wird jeden Sonntag ersetzt. Hochgeladene Kopien bleiben, bis ihr Konto gelöscht wird.",
         "database": {
           "title": "Datenbank-Dump",
@@ -9096,7 +9096,7 @@
           "noDirectoryOffhost": "Dieser Server kann nicht nach {dir} schreiben. Dumps gehen deshalb nur extern, hier wird keiner aufbewahrt. Binde das Backup-Volume ein.",
           "noDirectory": "Dieser Server kann nicht nach {dir} schreiben und es ist kein externer Speicher eingerichtet. Deshalb entsteht kein Datenbank-Dump. Binde das Backup-Volume ein.",
           "retentionLocal": "Gelöschte Konten bleiben in den Dumps, bis diese aussortiert werden: Auf diesem Server bleiben die neuesten {nights} nächtlichen Dumps, und der Dump vor dem letzten Update bleibt bis zum nächsten Update.",
-          "retentionOffhost": "Externe Kopien entfernt die Lebenszyklus-Regel des Buckets nach {days} Tagen.",
+          "retentionOffhost": "Externe Kopien entfernt die Lebenszyklus-Regel des Buckets nach {days, plural, one {# Tag} other {# Tagen}}.",
           "retentionOffhostMissing": "Keine Lebenszyklus-Regel im Bucket gilt für database/. Dumps dort und die gelöschten Konten darin werden deshalb nie entfernt. Lege eine Regel für dieses Präfix an.",
           "notPersistentOffhost": "{dir} liegt nicht auf dauerhaftem Speicher (im Container statt auf einem eingebundenen Volume, oder im Arbeitsspeicher). Ein Dump dort wäre beim nächsten Update verloren. Dumps gehen deshalb nur extern: Hier wird keiner aufbewahrt, und vor einer Migration wird keiner erstellt. Binde das Backup-Volume ein.",
           "notPersistent": "{dir} liegt nicht auf dauerhaftem Speicher (im Container statt auf einem eingebundenen Volume, oder im Arbeitsspeicher), und es ist kein externer Bucket eingerichtet. Damit wird nirgends ein Datenbank-Dump aufbewahrt. Binde das Backup-Volume ein.",
@@ -9121,7 +9121,7 @@
           "confirmLabel": "Tippe {username} zum Bestätigen",
           "submit": "In dieses Konto hochladen",
           "submitting": "Wird hochgeladen …",
-          "success": "Backup für {username} gespeichert ({count} Datensätze). Stelle es über seine Zeile wieder her.",
+          "success": "Backup für {username} gespeichert ({count, plural, one {# Datensatz} other {# Datensätze}}). Stelle es über seine Zeile wieder her.",
           "failureHoldsRecords": "Dieses Konto hat schon Datensätze. Eine Wiederherstellung ersetzt Datensätze, statt sie zu ergänzen. Wähle ein Konto ohne Datensätze oder lege ein neues an.",
           "failureManagedProfile": "Dieses Konto ist ein verwaltetes Profil. Die betreuenden Personen führen es, deshalb kann keine Kopie hinein.",
           "failurePendingDeletion": "Dieses Konto wird gerade gelöscht. Mach die Löschung zuerst rückgängig oder wähle ein anderes Konto.",
@@ -9158,7 +9158,7 @@
         "totalRows": "Verschlüsselte Zeilen",
         "staleRows": "Zeilen nicht auf dem aktiven Schlüssel",
         "safeToDropLegacy": "Alter Schlüssel kann entfernt werden",
-        "rotationIncomplete": "{count} Zeilen brauchen noch eine Rotation",
+        "rotationIncomplete": "{count, plural, one {# Zeile braucht} other {# Zeilen brauchen}} noch eine Rotation",
         "rotationTitle": "Schlüsselrotation",
         "rotationDescription": "Jede verschlüsselte Spalte auf den aktiven Schlüssel neu verschlüsseln.",
         "rotationState": "Status",
@@ -9187,8 +9187,8 @@
         "coverageDetail": "Es werden nur Schlüssel-IDs und Anzahlen gezeigt, niemals Schlüsselmaterial.",
         "backupsTitle": "Schlüssel, die die Sicherungen noch brauchen",
         "backupsDescription": "Ein alter Schlüssel bleibt nötig, solange eine Sicherung unten ihn noch aufführt.",
-        "backupsStoredLine": "Schlüssel {key}: {count} gespeicherte Kopien, die älteste vom {when}",
-        "backupsUnrecordedLine": "{count} gespeicherte Kopien stammen aus der Zeit, bevor Sicherungen ihre Schlüssel festhielten (die älteste vom {when}). Sie können jeden damals vorhandenen Schlüssel brauchen: Behalte alle alten Schlüssel, bis sie ersetzt oder gelöscht sind.",
+        "backupsStoredLine": "Schlüssel {key}: {count, plural, one {# gespeicherte Kopie vom {when}} other {# gespeicherte Kopien, die älteste vom {when}}}",
+        "backupsUnrecordedLine": "{count, plural, one {# gespeicherte Kopie stammt aus der Zeit, bevor Sicherungen ihre Schlüssel festhielten (vom {when}). Sie kann jeden damals vorhandenen Schlüssel brauchen: Behalte alle alten Schlüssel, bis sie ersetzt oder gelöscht ist.} other {# gespeicherte Kopien stammen aus der Zeit, bevor Sicherungen ihre Schlüssel festhielten (die älteste vom {when}). Sie können jeden damals vorhandenen Schlüssel brauchen: Behalte alle alten Schlüssel, bis sie ersetzt oder gelöscht sind.}}",
         "backupsOffhostLine": "Schlüssel {key}: Die letzte externe Kopie, die ihn braucht, kam am {when} in den Bucket; dort gebraucht bis {until}",
         "backupsOffhostLineUnknown": "Schlüssel {key}: Die letzte externe Kopie, die ihn braucht, kam am {when} in den Bucket. Wie lange der Bucket Kopien behält, ist unbekannt; behalte den Schlüssel, bis diese Kopie sicher weg ist.",
         "backupsNone": "Noch keine Sicherung hat die Schlüssel festgehalten, die sie braucht.",
@@ -9197,10 +9197,10 @@
         "backupsDetail": "Die Rotation verschlüsselt jede Zeile neu, aber eine Sicherung behält den Schlüssel, unter dem ihr Inhalt geschrieben wurde, und ihre Wiederherstellung braucht ihn. Behalte einen ausgemusterten Schlüssel in ENCRYPTION_KEYS, bis er unten nicht mehr aufgeführt ist.",
         "columnsShow": "Tabelle anzeigen ({count} mit Zeilen)",
         "columnsHide": "Tabelle ausblenden",
-        "columnsShowAll": "Alle {count} Spalten anzeigen",
+        "columnsShowAll": "{count, plural, one {# Spalte anzeigen} other {Alle # Spalten anzeigen}}",
         "columnsShowWithRows": "Nur Spalten mit Zeilen",
         "columnsNoneWithRows": "Noch keine verschlüsselte Spalte enthält Zeilen.",
-        "backupsDumpLocalLine": "Schlüssel {key}: {count} Datenbank-Dumps auf diesem Server wurden unter ihm geschrieben; er wird gebraucht, bis die Aufbewahrung sie entfernt.",
+        "backupsDumpLocalLine": "Schlüssel {key}: {count, plural, one {# Datenbank-Dump auf diesem Server wurde unter ihm geschrieben; er wird gebraucht, bis die Aufbewahrung den Dump entfernt.} other {# Datenbank-Dumps auf diesem Server wurden unter ihm geschrieben; er wird gebraucht, bis die Aufbewahrung sie entfernt.}}",
         "backupsDumpOffhostLine": "Schlüssel {key}: Der neueste Datenbank-Dump, der unter ihm geschrieben wurde, kam am {when} in den Bucket; dort gebraucht bis {until}",
         "backupsDumpOffhostLineUnknown": "Schlüssel {key}: Der neueste Datenbank-Dump, der unter ihm geschrieben wurde, kam am {when} in den Bucket. Wie lange der Bucket database/ behält, ist unbekannt; behalte den Schlüssel, bis dieser Dump sicher weg ist."
       },
@@ -9256,7 +9256,7 @@
           "maxValue": "{value} bpm",
           "bucket": "{range} bpm",
           "account": "Konto {account}",
-          "accountDays": "{changed} von {days} Tagen ändern sich"
+          "accountDays": "{changed} von {days, plural, one {# Tag} other {# Tagen}} ändern sich"
         },
         "appliedAt": "Gewichtete Methode angewendet am {at}.",
         "dryRun": "Probelauf",
@@ -9276,7 +9276,7 @@
         "rebuild": {
           "queued": "Die Neuberechnung wartet auf den Hintergrunddienst.",
           "running": "Die Pulstage werden neu berechnet.",
-          "done": "Pulstage am {at} für {accounts} Konten neu berechnet.",
+          "done": "Pulstage am {at} für {accounts, plural, one {# Konto} other {# Konten}} neu berechnet.",
           "failed": "Die Neuberechnung ist abgebrochen. Das App-Log nennt die Ursache; starte sie erneut."
         },
         "rebuildAgain": "Erneut berechnen",
@@ -9320,7 +9320,7 @@
     "failingJobs": {
       "title": "Hintergrundjobs",
       "description": "Queues, deren Jobs nach allen Wiederholungen aufgaben oder deren Lauf bei jedem versuchten Konto scheiterte.",
-      "none": "In den letzten {hours} Stunden ist kein Job fehlgeschlagen.",
+      "none": "{hours, plural, =1 {In der letzten Stunde} other {In den letzten # Stunden}} ist kein Job fehlgeschlagen.",
       "unavailable": "Keine Job-Queue lesbar. Dieses Deployment läuft ohne Hintergrund-Worker.",
       "countOne": "{count} Fehlschlag",
       "countFew": "{count} Fehlschläge",
@@ -9383,13 +9383,13 @@
       "need": {
         "active": "Verschlüsselt neue Daten.",
         "configured": "Liegt auf diesem Server.",
-        "storedCopies": "Wird von {count} gespeicherten Kopien gebraucht.",
+        "storedCopies": "Wird von {count, plural, one {# gespeicherten Kopie} other {# gespeicherten Kopien}} gebraucht.",
         "offhostUntil": "Wird von externen Kopien bis {date} gebraucht.",
         "offhostUnknown": "Wird von externen Kopien gebraucht, solange der Bucket sie aufbewahrt.",
         "backupActive": "Versiegelt jede neue externe Kopie.",
         "backupPrevious": "Öffnet externe Kopien, die vor dem letzten Schlüsselwechsel geschrieben wurden.",
         "token": "Signiert Sitzungen, Tokens und Freigabelinks. Ohne ihn werden alle abgemeldet, Daten gehen aber nicht verloren.",
-        "localDumps": "Wird von {count} Datenbank-Dumps auf diesem Server gebraucht.",
+        "localDumps": "Wird von {count, plural, one {# Datenbank-Dump} other {# Datenbank-Dumps}} auf diesem Server gebraucht.",
         "offhostDumpsUntil": "Wird von externen Datenbank-Dumps bis {date} gebraucht.",
         "offhostDumpsUnknown": "Wird von externen Datenbank-Dumps gebraucht, solange der Bucket sie aufbewahrt."
       },
@@ -9478,22 +9478,22 @@
           "disabled": "Der geplante Datenbank-Dump ist ausgeschaltet, daher kann keine Kopie diesen Server wieder aufbauen. Zum Wiedereinschalten DB_BACKUP_ENABLED entfernen oder auf true setzen und HealthLog neu starten.",
           "unreadable": "Der Zustand des Datenbank-Dumps konnte nicht gelesen werden.",
           "never_succeeded": "Noch kein Datenbank-Dump ist gelungen, und der letzte Versuch ist fehlgeschlagen.",
-          "never_ran": "In den {hours} Stunden, seit Dumps eingeschaltet sind, wurde kein Datenbank-Dump geschrieben.",
+          "never_ran": "{hours, plural, =1 {In der einen Stunde} other {In den # Stunden}}, seit Dumps eingeschaltet sind, wurde kein Datenbank-Dump geschrieben.",
           "first_pending": "Der erste Datenbank-Dump ist noch nicht gelaufen.",
-          "stale": "Der neueste Datenbank-Dump ist {hours} Stunden alt.",
+          "stale": "Der neueste Datenbank-Dump ist {hours, plural, one {# Stunde} other {# Stunden}} alt.",
           "last_failed": "Der letzte Datenbank-Dump ist fehlgeschlagen. Der davor ist noch aktuell.",
           "fresh": "Der neueste Datenbank-Dump ist aktuell.",
           "nowhere_to_write": "Das Dump-Verzeichnis {directory} ist nicht beschreibbar und es ist kein externer Bucket eingerichtet, daher kann kein Dump aufbewahrt werden.",
           "not_persistent": "Das Dump-Verzeichnis {directory} liegt nicht auf dauerhaftem Speicher, und es ist kein externer Bucket eingerichtet. Jeder Dump wäre beim nächsten Update verloren. Binde das Backup-Volume ein.",
           "fresh_offhost_only": "Der neueste Datenbank-Dump ist aktuell und liegt im externen Bucket. Auf diesem Server wird keiner aufbewahrt, weil {directory} nicht auf dauerhaftem Speicher liegt, und vor einer Migration wird keiner erstellt.",
           "offhost_failed": "Der neueste Datenbank-Dump liegt auf diesem Server, aber das Hochladen in den externen Bucket ist fehlgeschlagen.",
-          "offhost_stale": "Seit {hours} Stunden ist kein Datenbank-Dump im externen Bucket angekommen, das Hochladen schlägt immer wieder fehl. Geht dieser Server verloren, gibt es keinen aktuellen Dump, um ihn wiederherzustellen.",
+          "offhost_stale": "Seit {hours, plural, one {# Stunde} other {# Stunden}} ist kein Datenbank-Dump im externen Bucket angekommen, das Hochladen schlägt immer wieder fehl. Geht dieser Server verloren, gibt es keinen aktuellen Dump, um ihn wiederherzustellen.",
           "offhost_never": "Noch nie ist ein Datenbank-Dump im externen Bucket angekommen, das Hochladen schlägt fehl. Geht dieser Server verloren, gibt es keinen Dump, um ihn wiederherzustellen."
         },
         "weekly_copy": {
           "no_accounts": "Es gibt noch keine Konten zum Kopieren.",
-          "stale": "Die älteste wöchentliche Kopie ist {days} Tage alt. Konten im Rückstand: {accounts}.",
-          "never": "Ein Konto hat seit {days} Tagen keine wöchentliche Kopie. Konten im Rückstand: {accounts}.",
+          "stale": "Die älteste wöchentliche Kopie ist {days, plural, one {# Tag} other {# Tage}} alt. Konten im Rückstand: {accounts}.",
+          "never": "Ein Konto hat seit {days, plural, one {# Tag} other {# Tagen}} keine wöchentliche Kopie. Konten im Rückstand: {accounts}.",
           "first_pending": "Die erste wöchentliche Kopie entsteht am frühen Sonntagmorgen.",
           "fresh": "Jedes Konto hat eine Kopie aus der letzten Woche."
         },
@@ -9506,9 +9506,9 @@
         "restore_drill": {
           "not_configured": "Die Probe liest den externen Bucket, und der ist nicht eingerichtet.",
           "not_run_yet": "Die monatliche Wiederherstellungsprobe ist noch nicht gelaufen.",
-          "failed": "Die letzte Wiederherstellungsprobe ist fehlgeschlagen: {failed} von {checked} Kopien ließen sich nicht zurücklesen.",
+          "failed": "Die letzte Wiederherstellungsprobe ist fehlgeschlagen: {failed} von {checked, plural, one {# Kopie} other {# Kopien}} ließen sich nicht zurücklesen.",
           "failed_run": "Die letzte Wiederherstellungsprobe konnte nicht zu Ende laufen.",
-          "passed": "Die letzte Wiederherstellungsprobe hat {checked} Kopien zurückgelesen.",
+          "passed": "Die letzte Wiederherstellungsprobe hat {checked, plural, one {# Kopie} other {# Kopien}} zurückgelesen.",
           "nothing_checked": "Die letzte Wiederherstellungsprobe hat ihr Zeitlimit erreicht, bevor sie eine einzige Kopie zurückgelesen hat, und hat damit nichts belegt."
         },
         "offhost_setup": {
@@ -9528,7 +9528,7 @@
           "not_configured": "Es ist kein externer Bucket eingerichtet.",
           "no_offhost_dumps": "Es geht kein Datenbank-Dump in den Bucket.",
           "missing": "Keine Lebenszyklus-Regel im Bucket gilt für database/. Dumps dort und die gelöschten Konten darin werden deshalb nie entfernt. Lege eine Regel für dieses Präfix an.",
-          "configured": "Der Bucket entfernt Dumps nach {days} Tagen.",
+          "configured": "Der Bucket entfernt Dumps nach {days, plural, one {# Tag} other {# Tagen}}.",
           "unknown": "Der Bucket gibt nicht an, ob eine Regel alte Dumps entfernt. Prüfe, ob eine Lebenszyklus-Regel database/ erfasst."
         }
       },
@@ -9562,7 +9562,7 @@
       "toggleLabel": "Das HealthLog-Push-Relay den Nutzern dieses Servers anbieten",
       "toggleDescription": "Aus, bis du es einschaltest. Danach entscheidet jede Person in ihrer eigenen App.",
       "toggleDescriptionOn": "An. Jede Person entscheidet in ihrer eigenen App, ob ihre Geräte es nutzen.",
-      "devices": "{count} Geräte verbunden",
+      "devices": "{count, plural, one {# Gerät verbunden} other {# Geräte verbunden}}",
       "unbindsPending": "Geräte-Abmeldungen, die auf das Relay warten: {count}",
       "unreachable": "Dieser Server ist noch bei {host} angemeldet, erreicht es mit seinen jetzigen Einstellungen aber nicht (PUSH_RELAY_MODE oder PUSH_RELAY_URL wurde geändert). Das Relay behält die Gerätebindungen dieses Servers, bis er sich dort abmeldet: Stell die Einstellung zurück und schalte das Relay dann hier aus.",
       "since": "seit {time}",
@@ -9637,7 +9637,7 @@
         "pending": "Wartend",
         "dropped": "Verworfen",
         "failed": "Fehlgeschlagen",
-        "window": "Pushes, die dieser Server in den letzten {days} Tagen an das Relay gegeben hat.",
+        "window": "Pushes, die dieser Server {days, plural, =1 {am letzten Tag} other {in den letzten # Tagen}} an das Relay gegeben hat.",
         "lastSuccess": "Zuletzt zugestellt {time}.",
         "lastFailure": "Letzter Fehler {time}: {reason}.",
         "noReason": "ohne Angabe"
@@ -9786,7 +9786,7 @@
     "goalReached": "Ziel erreicht",
     "remainingUnlocks": "Noch {count} freischaltbar",
     "noneUnlockedYet": "Noch keine Erfolge freigeschaltet.",
-    "pointsValue": "{points} Punkte",
+    "pointsValue": "{points, plural, one {# Punkt} other {# Punkte}}",
     "metricCount": "{count}",
     "metricDaysOne": "{count} Tag",
     "metricDaysFew": "{count} Tage",
@@ -10081,7 +10081,7 @@
       "reminderCheckMissedTitle": "Erinnerung verpasst: {medication}",
       "reminderCheckMissedBody": "{medication} ({dose}) im Zeitfenster {window} wurde nicht geloggt.",
       "reminderCheckOverdueTitle": "Einnahme überfällig: {medication}",
-      "reminderCheckOverdueBody": "{medication} ({dose}) im Zeitfenster {window} ist seit {minutes} Minuten überfällig.",
+      "reminderCheckOverdueBody": "{medication} ({dose}) im Zeitfenster {window} ist seit {minutes, plural, one {# Minute} other {# Minuten}} überfällig.",
       "offlineGeoUnavailableTitle": "Offline-Geodatenbanken nicht geladen",
       "offlineGeoUnavailableBody": "HealthLog löst Login-Standorte über die Online-Abfrage bei {host} auf, damit verlässt jede Login-IP diesen Server. Um sie stattdessen lokal aufzulösen, lade die Datenbanken GeoLite2-City und GeoLite2-ASN mit einem kostenlosen MaxMind-Konto herunter, binde das Verzeichnis in den Container ein und setze GEOLITE2_DIR darauf. Anleitung: {docsUrl}",
       "tlsPinChangedTitle": "TLS-Leaf-Zertifikat geändert: {host}",
@@ -10264,14 +10264,14 @@
       "titleFailing": "Hintergrundjob schlägt fehl: {queue}",
       "titleReminder": "Hintergrundjob schlägt weiter fehl: {queue}",
       "titleRecovered": "Hintergrundjob läuft wieder: {queue}",
-      "bodyFailing": "Der Hintergrundjob {queue} ist {failures}-mal in Folge fehlgeschlagen und steht auf der Admin-Statusseite. Letzter Fehler: {error}",
+      "bodyFailing": "Der Hintergrundjob {queue} ist {failures, plural, other {#-mal}} in Folge fehlgeschlagen und steht auf der Admin-Statusseite. Letzter Fehler: {error}",
       "bodyRecovered": "Der Hintergrundjob {queue} ist wieder erfolgreich gelaufen."
     },
     "eventSeizureCluster": "Anfallsserie",
     "eventSeizureClusterDesc": "Wenn ein von jemand anderem eingetragener Anfall nach der Regel im Tagebuch eine Serie bildet. Einmal je Serie.",
     "seizureCluster": {
       "title": "Anfallsserie",
-      "body": "{count} Anfälle innerhalb von {hours} h, eingetragen von {name}. Der Notfallplan steht im Anfallstagebuch."
+      "body": "{count, plural, one {# Anfall} other {# Anfälle}} innerhalb von {hours} h, eingetragen von {name}. Der Notfallplan steht im Anfallstagebuch."
     },
     "eventMeasurementAnomaly": "Anhaltende Veränderung eines Vitalwerts",
     "eventMeasurementAnomalyDesc": "Wenn ein Vitalwert wie Ruhepuls oder Blutdruck seit mindestens zehn Tagen auf einem neuen Niveau bleibt. Höchstens einmal pro Woche, morgens, nie während einer offenen Erkrankung.",
@@ -10405,7 +10405,7 @@
     "veryStrong": "Sehr stark",
     "tooShort": "Zu kurz",
     "characters": "Zeichen",
-    "minLength": "Mindestens {count} Zeichen erforderlich."
+    "minLength": "Mindestens {count, plural, one {# Zeichen} other {# Zeichen}} erforderlich."
   },
   "telegram": {
     "errorInvalidAction": "Ungültige Aktion.",
@@ -10463,11 +10463,11 @@
   },
   "lowStockReminders": {
     "title": "Vorrat niedrig: {medName}",
-    "bodyToday": "Dein Vorrat an {medName} reicht keinen ganzen Tag mehr ({units} Einheiten übrig).",
-    "bodyReorder": "Dein Vorrat an {medName} ({units} Einheiten) ist um den {runsOutOn} aufgebraucht. Bestelle bis zum {reorderBy} nach.",
-    "bodyLastDose": "Dein Vorrat an {medName} ({units} Einheiten) reicht noch etwa für die letzte Dosis. Aufgebraucht um den {runsOutOn}.",
-    "bodyExpired": "{medName}: kein nutzbarer Bestand mehr. {units} Einheiten sind als abgelaufen markiert.",
-    "bodyAsNeeded": "Von {medName} sind nur noch {units} Einheiten übrig. Bestelle nach, bevor du die nächste Dosis brauchst."
+    "bodyToday": "Dein Vorrat an {medName} reicht keinen ganzen Tag mehr ({units, plural, one {# Einheit} other {# Einheiten}} übrig).",
+    "bodyReorder": "Dein Vorrat an {medName} ({units, plural, one {# Einheit} other {# Einheiten}}) ist um den {runsOutOn} aufgebraucht. Bestelle bis zum {reorderBy} nach.",
+    "bodyLastDose": "Dein Vorrat an {medName} ({units, plural, one {# Einheit} other {# Einheiten}}) reicht noch etwa für die letzte Dosis. Aufgebraucht um den {runsOutOn}.",
+    "bodyExpired": "{medName}: kein nutzbarer Bestand mehr. {units, plural, one {# Einheit ist} other {# Einheiten sind}} als abgelaufen markiert.",
+    "bodyAsNeeded": "Von {medName} {units, plural, one {ist nur noch # Einheit} other {sind nur noch # Einheiten}} übrig. Bestelle nach, bevor du die nächste Dosis brauchst."
   },
   "moodReminders": {
     "dailyTitle": "Stimmung erfassen",
@@ -10488,7 +10488,7 @@
     "focusNote": "Das passt auch zu dem, was du selbst im Blick behalten möchtest.",
     "reminderSurfacedTitle": "Deine Erinnerung",
     "reminderSurfacedLeadOne": "Du wolltest heute daran erinnert werden:",
-    "reminderSurfacedLeadMany": "Du wolltest heute an {count} Dinge erinnert werden:",
+    "reminderSurfacedLeadMany": "Du wolltest heute an {count, plural, one {# Ding} other {# Dinge}} erinnert werden:",
     "questionConditions": "Hast du chronische Erkrankungen, die der Coach kennen sollte?",
     "questionFocus": "Gibt es etwas Bestimmtes, worauf der Coach achten soll?",
     "questionAllergies": "Hast du Allergien oder Unverträglichkeiten?",
@@ -10613,7 +10613,7 @@
       "crosstab": {
         "description": "Wie sich jeder Messwert zwischen deiner Luteal- und Follikelphase vergleicht, auf deinen eigenen Daten.",
         "pairLabel": "{metric}: Luteal- vs. Follikelphase",
-        "detail": "Luteal {lutealAvg} ({lutealDays} Tage) vs. Follikel {follicularAvg} ({follicularDays} Tage).",
+        "detail": "Luteal {lutealAvg} ({lutealDays, plural, one {# Tag} other {# Tage}}) vs. Follikel {follicularAvg} ({follicularDays, plural, one {# Tag} other {# Tage}}).",
         "metricRestingHeartRate": "Ruhepuls",
         "metricHrv": "Herzfrequenzvariabilität",
         "metricSleepDuration": "Schlafdauer",
@@ -10628,7 +10628,7 @@
       "title": "Zyklus-Erkenntnisse",
       "symptomPatternsTitle": "Symptommuster nach Phase",
       "symptomPatternsEmpty": "Erfasse Symptome über einen Zyklus, um zu sehen, in welcher Phase sie sich häufen.",
-      "symptomMostlyIn": "Meist in {phase} ({count}/{total} Tage)"
+      "symptomMostlyIn": "Meist in {phase} ({count}/{total, plural, one {# Tag} other {# Tage}})"
     },
     "phaseEducation": {
       "title": "Was gerade passiert",
@@ -10729,7 +10729,7 @@
       "caption": "deines Zyklus",
       "firstPeriodCta": "Erste Periode erfassen",
       "periodOverdue": "Deine Periode ist später als üblich. Die Tageszählung pausiert, bis die nächste Periode erfasst ist.",
-      "periodOverdueDays": "Deine Periode ist {days} Tage später als üblich. Die Tageszählung pausiert, bis die nächste Periode erfasst ist.",
+      "periodOverdueDays": "Deine Periode ist {days, plural, one {# Tag} other {# Tage}} später als üblich. Die Tageszählung pausiert, bis die nächste Periode erfasst ist.",
       "logPeriodCta": "Periode erfassen"
     },
     "calendar": {
@@ -10776,8 +10776,8 @@
       "regularityREGULAR": "Regelmäßig",
       "regularityIRREGULAR": "Unregelmäßig",
       "regularityLEARNING": "Lernend",
-      "days": "{count} Tage",
-      "daysPlusMinus": "± {count} Tage",
+      "days": "{count, plural, one {# Tag} other {# Tage}}",
+      "daysPlusMinus": "± {count, plural, one {# Tag} other {# Tage}}",
       "none": "Noch keine Zyklen erfasst.",
       "recentCycles": "Letzte Zyklen",
       "ongoing": "laufend",
@@ -10785,7 +10785,7 @@
       "ovulationChip": "Eisprung",
       "chartTitle": "Zykluslänge im Verlauf",
       "chartCaption": "Jeder Balken ist ein Zyklus: die rosa Basis ist deine Periode, der Rest die Zykluslänge.",
-      "chartAria": "Zykluslängen-Diagramm deiner letzten {count} Zyklen, Durchschnitt {avg} Tage, eingestuft als {regularity}.",
+      "chartAria": "Zykluslängen-Diagramm {count, plural, one {deines letzten Zyklus} other {deiner letzten # Zyklen}}, Durchschnitt {avg, plural, one {# Tag} other {# Tage}}, eingestuft als {regularity}.",
       "legendPeriodSegment": "Periodentage",
       "legendRestSegment": "Rest des Zyklus"
     },
@@ -11063,7 +11063,7 @@
       "menuItem": "Verschieben…",
       "title": "Fälligkeit verschieben",
       "description": "Verschiebt nur die aktuelle Fälligkeit, der reguläre Rhythmus bleibt unverändert.",
-      "chip": "+{days} Tage",
+      "chip": "+{days, plural, one {# Tag} other {# Tage}}",
       "dateLabel": "Neues Datum",
       "confirm": "Verschieben"
     },
@@ -11081,12 +11081,12 @@
       "none": "Nicht geplant",
       "today": "Heute fällig",
       "tomorrow": "Morgen fällig",
-      "inDays": "In {days} Tagen"
+      "inDays": "In {days, plural, one {# Tag} other {# Tagen}}"
     },
-    "overdueByDays": "Überfällig seit {days} Tagen",
+    "overdueByDays": "Überfällig seit {days, plural, one {# Tag} other {# Tagen}}",
     "overdueSinceYesterday": "Überfällig seit gestern",
     "cadence": {
-      "everyNDays": "Alle {days} Tage",
+      "everyNDays": "{days, plural, =1 {Jeden Tag} other {Alle # Tage}}",
       "custom": "Eigener Zeitplan",
       "customInterval": "Individuell (alle N Tage)",
       "rruleOption": "Eigene Regel (RRULE)"
@@ -11200,7 +11200,7 @@
     "emptyTitle": "Noch keine Laborwerte",
     "emptyDescription": "Erfasse Blutwerte wie HbA1c, LDL oder Ferritin, um sie über die Zeit zu verfolgen und mit deiner Ärztin oder deinem Arzt zu teilen.",
     "referenceLabel": "Referenz",
-    "readingsCount": "{count} Messungen",
+    "readingsCount": "{count, plural, one {# Messung} other {# Messungen}}",
     "deleteConfirmTitle": "Laborwert löschen?",
     "deleteConfirmDescription": "Dieser Laborwert wird gelöscht. Direkt danach kannst du das kurz rückgängig machen.",
     "deleteAppleHealthNote": "Beim nächsten Apple-Health-Import kommt er nicht zurück.",
@@ -11428,7 +11428,7 @@
       "bilirubin-total": "Bilirubin gesamt"
     },
     "noteLoadFailed": "Notiz konnte nicht geladen werden; sie bleibt beim Speichern unverändert.",
-    "showingLatestOf": "Die neuesten {shown} von {total} Messwerten werden angezeigt",
+    "showingLatestOf": "Die neuesten {shown} von {total, plural, one {# Messwert} other {# Messwerten}} werden angezeigt",
     "convertedFrom": "umgerechnet aus {value} {unit}",
     "ocr": {
       "scanButton": "Befund scannen",
@@ -11444,7 +11444,7 @@
       "rangeVerify": "Referenzbereich prüfen",
       "reviewTitle": "Vor dem Speichern prüfen",
       "reviewHint": "Prüfe jeden Wert und speichere die gewünschten Einträge.",
-      "foundCount": "{count} Werte gefunden",
+      "foundCount": "{count, plural, one {# Wert gefunden} other {# Werte gefunden}}",
       "pagesCapped": "Nur die ersten {read} von {total} Seiten wurden gelesen. Werte auf späteren Seiten fehlen in dieser Liste.",
       "stoppedBudget": "Dein KI-Budget für heute war mitten im Befund aufgebraucht, deshalb wurden die übrigen Seiten nicht gelesen.",
       "stoppedUnavailable": "KI wurde abgeschaltet, während der Befund gelesen wurde, deshalb wurden die übrigen Seiten nicht gelesen.",
@@ -11454,9 +11454,9 @@
       "truncatedPages": "Der KI-Anbieter hat auf diesen Seiten sein Ausgabelimit erreicht: {pages}. Werte weiter unten auf diesen Seiten können fehlen, vergleiche sie deshalb mit dem Befund.",
       "unreadPages": "Diese Seiten konnten nicht gelesen werden, ihre Werte fehlen in dieser Liste: {pages}.",
       "unreadParts": "Ein Teil des Befunds konnte nicht gelesen werden, seine Werte fehlen in dieser Liste.",
-      "rowsCapped": "Der Befund enthält {found} Werte. Ein Scan übernimmt {kept}, deshalb siehst du nur die ersten {kept}.",
+      "rowsCapped": "Der Befund enthält {found, plural, one {# Wert} other {# Werte}}. Ein Scan übernimmt {kept}, deshalb siehst du nur die ersten {kept}.",
       "outputLimit": "Der KI-Anbieter hat sein Ausgabelimit erreicht, bevor er einen einzigen Wert geliefert hat. Versuche ein Foto einer einzelnen Seite oder ein Modell, das längere Antworten erlaubt.",
-      "errorTooLong": "Bitte auf {max} Zeichen kürzen.",
+      "errorTooLong": "Bitte auf {max, plural, one {# Zeichen} other {# Zeichen}} kürzen.",
       "confirmRow": "Diesen Wert übernehmen",
       "analyteLabel": "Bezeichnung",
       "resultLabel": "Ergebnis",
@@ -11473,9 +11473,9 @@
       "valueUnreadable": "Wert unleserlich, bitte manuell eingeben",
       "saveSelected": "{count} ausgewählte speichern",
       "discardAll": "Alle verwerfen",
-      "savedToast": "{count} Laborwerte gespeichert",
-      "savedPartialToast": "{count} Laborwerte gespeichert, {skipped} als Dubletten übersprungen",
-      "savedNothingToast": "Nichts gespeichert: {skipped} Werte waren bereits erfasst",
+      "savedToast": "{count, plural, one {# Laborwert} other {# Laborwerte}} gespeichert",
+      "savedPartialToast": "{count, plural, one {# Laborwert} other {# Laborwerte}} gespeichert, {skipped} als Dubletten übersprungen",
+      "savedNothingToast": "Nichts gespeichert: {skipped, plural, one {# Wert war} other {# Werte waren}} bereits erfasst",
       "savedEmptyToast": "Nichts zu speichern",
       "noRows": "In diesem Befund konnten keine Werte gefunden werden.",
       "nothingToSave": "Wähle mindestens einen Wert zum Speichern aus.",
@@ -11488,7 +11488,7 @@
       "errorUnitMismatch": "Dieser Marker wird in {markerUnit} geführt. Ändere die Einheit, falls der Befund falsch gelesen wurde, oder wähle den Wert ab.",
       "unitDiffersBadge": "Geführt in {markerUnit}; dieser Befund nennt {unit}",
       "unitConvertedBadge": "Wird als {value} {markerUnit} gespeichert, umgerechnet aus {statedValue} {unit}",
-      "savedPartialUnitToast": "{count} Laborwerte gespeichert. Nicht gespeichert, weil die Einheit von der des Markers abweicht: {analytes}",
+      "savedPartialUnitToast": "{count, plural, one {# Laborwert} other {# Laborwerte}} gespeichert. Nicht gespeichert, weil die Einheit von der des Markers abweicht: {analytes}",
       "savedNothingUnitToast": "Nichts gespeichert: Die Einheit weicht bei {analytes} von der des Markers ab",
       "saveFailed": "Werte konnten nicht gespeichert werden. Bitte erneut versuchen.",
       "providerUnsupported": "Dein KI-Anbieter kann keine Bilder lesen. Konfiguriere ein Modell mit Bildverständnis.",
@@ -11584,17 +11584,17 @@
     "trend": {
       "title": "Verlauf",
       "slope": {
-        "rising": "Steigt um etwa {amount} {unit} pro Jahr, über {n} Werte seit {since}.",
-        "falling": "Sinkt um etwa {amount} {unit} pro Jahr, über {n} Werte seit {since}.",
-        "flat": "Keine Veränderung über {n} Werte seit {since}."
+        "rising": "Steigt um etwa {amount} {unit} pro Jahr, über {n, plural, one {# Wert} other {# Werte}} seit {since}.",
+        "falling": "Sinkt um etwa {amount} {unit} pro Jahr, über {n, plural, one {# Wert} other {# Werte}} seit {since}.",
+        "flat": "Keine Veränderung über {n, plural, one {# Wert} other {# Werte}} seit {since}."
       },
       "projection": {
         "exits": {
           "high": "Liefe diese Gerade so weiter, erreichte sie um den {date} das obere Ende deines Referenzbereichs. Das ist eine Fortschreibung, keine Vorhersage.",
           "low": "Liefe diese Gerade so weiter, erreichte sie um den {date} das untere Ende deines Referenzbereichs. Das ist eine Fortschreibung, keine Vorhersage."
         },
-        "beyond_horizon": "In diesem Tempo bleibt die Gerade länger als {years} Jahre in deinem Referenzbereich, so weit reichen deine Werte zurück.",
-        "beyond_horizon_capped": "In diesem Tempo bleibt die Gerade länger als {years} Jahre in deinem Referenzbereich, so weit schaut die Fortschreibung voraus.",
+        "beyond_horizon": "In diesem Tempo bleibt die Gerade länger als {years, plural, one {# Jahr} other {# Jahre}} in deinem Referenzbereich, so weit reichen deine Werte zurück.",
+        "beyond_horizon_capped": "In diesem Tempo bleibt die Gerade länger als {years, plural, one {# Jahr} other {# Jahre}} in deinem Referenzbereich, so weit schaut die Fortschreibung voraus.",
         "no_exit": "Die Gerade läuft von den Grenzen deines Referenzbereichs weg.",
         "already_outside": "Die Gerade liegt bereits außerhalb deines Referenzbereichs.",
         "no_clear_trend": "Über diese Werte ist die Veränderung nicht klar von keiner Veränderung zu unterscheiden, deshalb wird nichts fortgeschrieben.",
@@ -11984,10 +11984,10 @@
       "nadirTitle": "Was sich änderte",
       "nadirBody": "Wie weit jeder erfasste Wert von deinem typischen Bereich abwich.",
       "recoveryGapTitle": "Erholungslücke",
-      "recoveryGapLag": "Deine Werte normalisierten sich {days} Tage, nachdem es dir besser ging.",
-      "recoveryGapLead": "Deine Werte normalisierten sich {days} Tage, bevor du Genesung vermerktest.",
-      "recoveryGapLagSymptom": "Dir ging es {days} Tage besser, bevor deine erfassten Symptome abklangen.",
-      "recoveryGapLeadSymptom": "Deine erfassten Symptome klangen {days} Tage ab, bevor du Genesung vermerktest.",
+      "recoveryGapLag": "Deine Werte normalisierten sich {days, plural, one {# Tag} other {# Tage}}, nachdem es dir besser ging.",
+      "recoveryGapLead": "Deine Werte normalisierten sich {days, plural, one {# Tag} other {# Tage}}, bevor du Genesung vermerktest.",
+      "recoveryGapLagSymptom": "Dir ging es {days, plural, one {# Tag} other {# Tage}} besser, bevor deine erfassten Symptome abklangen.",
+      "recoveryGapLeadSymptom": "Deine erfassten Symptome klangen {days, plural, one {# Tag} other {# Tage}} ab, bevor du Genesung vermerktest.",
       "recoveryGapSame": "Deine Werte normalisierten sich am selben Tag, an dem es dir besser ging.",
       "sleepContextMore": "Während dieser Episode hast du deutlich mehr geschlafen als sonst (etwa {hours} Std./Nacht).",
       "sleepContextLess": "Während dieser Episode hast du deutlich weniger geschlafen als sonst (etwa {hours} Std./Nacht).",
@@ -12004,8 +12004,8 @@
       "title": "Dein Krankheitsverlauf",
       "countOne": "Du hast in diesem Zeitraum 1 Episode erfasst.",
       "countOther": "Du hast in diesem Zeitraum {count} Episoden erfasst.",
-      "typicalGap": "Typische Erholungslücke: {days} Tage zwischen Besserung und normalisierten Werten.",
-      "typicalGapWithDriver": "Typische Erholungslücke: {days} Tage. Du fühlst dich meist besser, bevor sich {vital} normalisiert.",
+      "typicalGap": "Typische Erholungslücke: {days, plural, one {# Tag} other {# Tage}} zwischen Besserung und normalisierten Werten.",
+      "typicalGapWithDriver": "Typische Erholungslücke: {days, plural, one {# Tag} other {# Tage}}. Du fühlst dich meist besser, bevor sich {vital} normalisiert.",
       "typicalGapLearning": "Noch ein paar abgeschlossene Episoden und hier erscheint eine typische Erholungslücke.",
       "none": "In diesem Zeitraum keine Episoden erfasst.",
       "analyze": "Erholungslücke analysieren"
@@ -12240,7 +12240,7 @@
       "viewTable": "Tabelle",
       "chartSummary": "{title} als Diagramm. Die Tabellenansicht listet jeden Wert auf.",
       "dataUsed": "Verwendete Daten ({count})",
-      "truncated": "Die letzten {shown} von {total} Zeilen",
+      "truncated": "Die letzten {shown} von {total, plural, one {# Zeile} other {# Zeilen}}",
       "withheld": {
         "moduleDisabled": "Diese Tabelle ist ausgeblendet, weil ihr Modul ausgeschaltet ist.",
         "unavailable": "Diese Tabelle konnte nicht geladen werden."
@@ -12491,8 +12491,8 @@
     "historyLoadErrorHint": "Das heißt nicht, dass keine Ergebnisse vorliegen. Die Liste konnte nicht abgerufen werden. Versuche es erneut.",
     "privacyNote": "Deine Antworten sind verschlüsselt gespeichert und erreichen den KI-Coach nicht.",
     "trend": {
-      "sincePrevious": "Seit deinem vorigen Check-in am {date}: {change} Punkte.",
-      "sinceFirst": "Seit deinem ersten Check-in am {date}: {change} Punkte.",
+      "sincePrevious": "Seit deinem vorigen Check-in am {date}: {change, plural, one {# Punkt} other {# Punkte}}.",
+      "sinceFirst": "Seit deinem ersten Check-in am {date}: {change, plural, one {# Punkt} other {# Punkte}}.",
       "verdict": {
         "improved": "Das erreicht die Veränderung von {threshold} Punkten, die Studien als bedeutsam ansehen, in die bessere Richtung.",
         "worsened": "Das erreicht die Veränderung von {threshold} Punkten, die Studien als bedeutsam ansehen, in die weniger gute Richtung.",
@@ -12893,7 +12893,7 @@
       "derived": {
         "packYears": "{value} Packungsjahre",
         "packYearsMissing": "Für Packungsjahre fehlen Zigaretten pro Tag oder das Jahr des Rauchbeginns.",
-        "activityMinutes": "{value} Minuten pro Woche.",
+        "activityMinutes": "{value, plural, one {# Minute} other {# Minuten}} pro Woche.",
         "meetsWho": "Damit erreichst du die WHO-Empfehlung von 150 Minuten pro Woche.",
         "belowWho": "Das liegt unter der WHO-Empfehlung von 150 Minuten pro Woche.",
         "measuredSteps": "Deine gemessenen Schritte haben Vorrang, diese Angabe ergänzt sie.",
@@ -13042,7 +13042,7 @@
       "yearGroup": "Jahr",
       "clear": "Filter zurücksetzen",
       "typeAll": "Alle Typen",
-      "typeCount": "{count} Typen",
+      "typeCount": "{count, plural, one {# Typ} other {# Typen}}",
       "conditionAll": "Alle Erkrankungen",
       "procedureAll": "Alle Eingriffe",
       "yearAll": "Alle Jahre"
@@ -13073,7 +13073,7 @@
       "duplicate": "Bereits gespeichert. Das vorhandene Dokument ist hervorgehoben.",
       "deleted": "Dokument gelöscht",
       "restoreFailed": "Das Dokument konnte nicht wiederhergestellt werden.",
-      "deletedHint": "Gelöschte Dokumente bleiben {days} Tage unter Zuletzt gelöscht."
+      "deletedHint": "Gelöschte Dokumente bleiben {days, plural, one {# Tag} other {# Tage}} unter Zuletzt gelöscht."
     },
     "timeline": {
       "loadingMore": "Mehr wird geladen…",
@@ -13083,7 +13083,7 @@
       "browse": "Dateien auswählen",
       "quotaAlmostFull": "Speicher fast voll",
       "quotaUsed": "{used} von {quota} belegt",
-      "queuedAnnouncement": "{count} Datei(en) zur Upload-Warteschlange hinzugefügt",
+      "queuedAnnouncement": "{count, plural, one {# Datei} other {# Dateien}} zur Upload-Warteschlange hinzugefügt",
       "storageUsed": "Speicher: {used} von {quota} belegt"
     },
     "selection": {
@@ -13145,7 +13145,7 @@
       "sourceOther": "einem anderen System",
       "sourceReportSchedule": "dem Berichtsplan",
       "share": "Teilen",
-      "labValuesLink": "{count} Laborwerte ansehen",
+      "labValuesLink": "{count, plural, one {# Laborwert} other {# Laborwerte}} ansehen",
       "visitsLabel": "Gehört zu Termin",
       "vaccinationsLabel": "Impfungen",
       "noVisitsToLink": "Noch keine Termine erfasst.",
@@ -13163,13 +13163,13 @@
       "setKind": "Typ ändern",
       "linkCondition": "Erkrankung verknüpfen",
       "delete": "Löschen",
-      "updated": "{count} Dokument(e) aktualisiert",
-      "deleted": "{count} Dokument(e) gelöscht",
-      "restored": "{count} Dokument(e) wiederhergestellt",
+      "updated": "{count, plural, one {# Dokument} other {# Dokumente}} aktualisiert",
+      "deleted": "{count, plural, one {# Dokument} other {# Dokumente}} gelöscht",
+      "restored": "{count, plural, one {# Dokument} other {# Dokumente}} wiederhergestellt",
       "partialFailure": "{failed} von {total} konnten nicht aktualisiert werden",
       "failed": "Die Aktion konnte nicht ausgeführt werden",
       "share": "Teilen",
-      "shareTooMany": "Ein Freigabelink fasst höchstens {max} Dokumente. Wähle einige ab und versuche es erneut.",
+      "shareTooMany": "Ein Freigabelink fasst höchstens {max, plural, one {# Dokument} other {# Dokumente}}. Wähle einige ab und versuche es erneut.",
       "linkVisit": "Termin zuordnen"
     },
     "episodeCard": {
@@ -13282,14 +13282,14 @@
       "indexPrompt": "Dokumentinhalte durchsuchbar machen.",
       "indexAll": "Alle für Suche indizieren",
       "indexAllPending": "Wird gestartet…",
-      "indexAllQueued": "{count} Dokument(e) werden im Hintergrund indiziert.",
+      "indexAllQueued": "{count, plural, one {# Dokument wird} other {# Dokumente werden}} im Hintergrund indiziert.",
       "indexAllNothing": "Alles ist bereits indiziert.",
       "indexAllError": "Indizierung konnte nicht gestartet werden."
     },
     "share": {
       "title": "Dieses Dokument teilen",
       "multiTitle": "Diese Dokumente teilen",
-      "multiLabel": "{count} Dokumente",
+      "multiLabel": "{count, plural, one {# Dokument} other {# Dokumente}}",
       "description": "Erstelle einen schreibgeschützten Ärzte-Link mit diesem angehängten Dokument. Link und Passphrase erscheinen nur einmal."
     },
     "chat": {
@@ -13365,7 +13365,7 @@
       },
       "pickMore": "Weitere auswählen",
       "finishedHint": "Suche erneut oder ändere einen Filter, um weitere Dokumente auszuwählen.",
-      "maxReached": "Du kannst höchstens {max} Dokumente auf einmal importieren.",
+      "maxReached": "Du kannst höchstens {max, plural, one {# Dokument} other {# Dokumente}} auf einmal importieren.",
       "noMatchHint": "Versuche einen Teil des Namens oder setze Tag und Datum zurück."
     },
     "customize": "Darstellung anpassen",
@@ -13379,24 +13379,24 @@
     },
     "deleteConfirm": {
       "titleOne": "Dieses Dokument löschen?",
-      "titleMany": "{count} Dokumente löschen?",
-      "body": "Gelöschte Dokumente bleiben {days} Tage unter Zuletzt gelöscht, danach werden sie endgültig entfernt.",
+      "titleMany": "{count, plural, one {# Dokument} other {# Dokumente}} löschen?",
+      "body": "Gelöschte Dokumente bleiben {days, plural, one {# Tag} other {# Tage}} unter Zuletzt gelöscht, danach werden sie endgültig entfernt.",
       "action": "Löschen"
     },
     "trash": {
       "title": "Zuletzt gelöscht",
-      "subtitle": "Gelöschte Dokumente bleiben {days} Tage hier, danach werden sie endgültig entfernt.",
+      "subtitle": "Gelöschte Dokumente bleiben {days, plural, one {# Tag} other {# Tage}} hier, danach werden sie endgültig entfernt.",
       "back": "Dokumente",
       "entryLabel": "Zuletzt gelöscht ({count})",
       "loadError": "Zuletzt gelöscht konnte nicht geladen werden.",
       "emptyTitle": "Nichts unter Zuletzt gelöscht",
-      "emptyDescription": "Was du löschst, wartet hier {days} Tage, bevor es endgültig entfernt wird.",
+      "emptyDescription": "Was du löschst, wartet hier {days, plural, one {# Tag} other {# Tage}}, bevor es endgültig entfernt wird.",
       "count": "Gelöschte Dokumente ({count})",
       "restoreAll": "Alle wiederherstellen",
       "restore": "Wiederherstellen",
       "purge": "Jetzt löschen",
       "deletedOn": "Gelöscht am {date}.",
-      "removesIn": "Wird in {days} Tagen endgültig entfernt.",
+      "removesIn": "Wird in {days, plural, one {# Tag} other {# Tagen}} endgültig entfernt.",
       "removesSoon": "Wird innerhalb eines Tages endgültig entfernt.",
       "restored": "Dokument wiederhergestellt",
       "openRestored": "Öffnen",
@@ -13409,7 +13409,7 @@
     },
     "picker": {
       "capped": "Hier stehen die neuesten {count}. Ältere Dokumente findest du über die Suche.",
-      "cappedSearching": "Hier stehen die neuesten {count} Treffer. Ältere findest du mit einer genaueren Suche."
+      "cappedSearching": "{count, plural, one {Hier steht der neueste Treffer.} other {Hier stehen die neuesten # Treffer.}} Ältere findest du mit einer genaueren Suche."
     },
     "recordAi": {
       "noProvider": "Kein KI-Anbieter auf diesem Server kann die Dokumente in dieser Akte lesen, deshalb gibt es keine Zusammenfassung, keine Suche im Inhalt und keinen Dokumenten-Chat.",
@@ -13584,8 +13584,8 @@
         "mineral": "Mineralstoffe",
         "omega3": "Omega-3-Fettsäuren"
       },
-      "rowMeta": "{days} von {window} Tagen, Richtwert {value} {unit} ({authority})",
-      "rowMetaNoRef": "{days} von {window} Tagen",
+      "rowMeta": "{days} von {window, plural, one {# Tag} other {# Tagen}}, Richtwert {value} {unit} ({authority})",
+      "rowMetaNoRef": "{days} von {window, plural, one {# Tag} other {# Tagen}}",
       "footer": "{tracked} von {total} erfassten Mikronährstoffen haben Daten in diesem Zeitraum.",
       "emptyTitle": "Noch keine Mikronährstoffdaten synchronisiert",
       "loadError": "Deine Nährstoffdaten konnten nicht geladen werden",
@@ -13634,8 +13634,8 @@
       "loadError": "Die Energiebilanz konnte nicht geladen werden.",
       "perDay": "{value} pro Tag",
       "trendMeta": "Mittel der letzten sieben Tage: Gegessenes minus Ruhe- und Aktivenergie.",
-      "meanMeta": "Mittel über {days} Tage: Gegessenes minus Ruhe- und Aktivenergie.",
-      "means": "Über {days} Tage im Mittel {intake} kcal gegessen und {used} kcal verbraucht.",
+      "meanMeta": "Mittel über {days, plural, one {# Tag} other {# Tage}}: Gegessenes minus Ruhe- und Aktivenergie.",
+      "means": "Über {days, plural, one {# Tag} other {# Tage}} im Mittel {intake} kcal gegessen und {used} kcal verbraucht.",
       "dayLine": "{intake} kcal gegessen, {used} kcal verbraucht",
       "estimated": "An {days} dieser Tage ist die Ruheenergie eine Schätzung aus Gewicht, Größe, Alter und Geschlecht (Mifflin-St Jeor), weil kein Messwert ankam.",
       "needsProfile": "Deine Aufnahme ist da, aber keine Ruheenergie kam an. Trag Größe, Geburtsdatum und Geschlecht im Profil ein und erfasse ein Gewicht, dann wird die Bilanz geschätzt.",
@@ -13706,8 +13706,8 @@
           "above": "Vor deinem üblichen Tempo"
         },
         "body": {
-          "below": "Bis {time} stehst du bei {today} Schritten. An einem üblichen Tag sind es um diese Zeit etwa {typical}.",
-          "above": "Bis {time} stehst du bei {today} Schritten, mehr als die {typical}, die um diese Zeit für dich üblich sind."
+          "below": "Bis {time} stehst du bei {today, plural, one {# Schritt} other {# Schritten}}. An einem üblichen Tag sind es um diese Zeit etwa {typical}.",
+          "above": "Bis {time} stehst du bei {today, plural, one {# Schritt} other {# Schritten}}, mehr als die {typical}, die um diese Zeit für dich üblich sind."
         }
       },
       "upcomingVisit": {
@@ -13898,7 +13898,7 @@
     "groupDisclosure": "Einträge in {group} anzeigen",
     "sensitiveHint": "Hier ist nie etwas vorausgewählt. Wähle jeden Eintrag selbst.",
     "scopeNone": "Noch nichts ausgewählt. Wähle aus, was enthalten sein soll, oder übernimm den Standardbericht.",
-    "scopeCount": "{count} Einträge aus {groups} Bereichen",
+    "scopeCount": "{count, plural, one {# Eintrag} other {# Einträge}} aus {groups, plural, one {# Bereich} other {# Bereichen}}",
     "scopeSensitive": "inkl. {names}",
     "leafVisits": "Arztbesuche",
     "leafSurgicalHistory": "Operationen und Eingriffe",
@@ -14008,7 +14008,7 @@
       "revokeTitle": "Zugriff von {name} beenden?",
       "revokeBody": "Der Zugriff endet sofort, auch in jedem Browser, in dem deine Akte gerade offen ist. Was bereits gesehen wurde, lässt sich nicht zurückholen. Du kannst jederzeit erneut einladen.",
       "revokeEntriesStay": "Was diese Person eingetragen hat, bleibt in deiner Akte, und du kannst alles davon selbst entfernen.",
-      "revokeAttribution": "Wer was eingetragen hat, bleibt {days} Tage lang in deiner Aktivitätsübersicht sichtbar.",
+      "revokeAttribution": "Wer was eingetragen hat, bleibt {days, plural, one {# Tag} other {# Tage}} lang in deiner Aktivitätsübersicht sichtbar.",
       "revokeConfirm": "Zugriff beenden"
     },
     "received": {
@@ -14031,7 +14031,7 @@
     "activity": {
       "title": "Wann meine Akte geöffnet wurde",
       "description": "Jedes Mal, wenn jemand anderes deine Akte geöffnet hat.",
-      "retention": "Das umfasst die letzten {days} Tage. Ältere Einträge werden gelöscht.",
+      "retention": "Das umfasst {days, plural, =1 {den letzten Tag} other {die letzten # Tage}}. Ältere Einträge werden gelöscht.",
       "emptyTitle": "Niemand hat deine Akte geöffnet",
       "emptyDescription": "Zugriffe von anderen erscheinen hier, eine Zeile pro Person und Tag.",
       "loadError": "Die Aktivität konnte nicht geladen werden.",
@@ -14165,7 +14165,7 @@
         "methodSso": "{name} meldet sich beim Einlösen des Links über Single Sign-on an.",
         "methodBoth": "{name} kann ein Passwort festlegen oder sich über Single Sign-on anmelden."
       },
-      "deleteBodyGrace": "Alles, was für {name} erfasst wurde, verschwindet mit dem Profil: Messwerte, Medikamente, Dokumente und Notizen. Das Profil wird sofort gesperrt und nach {days} Tagen endgültig gelöscht. Bis dahin kann ein Admin dieses Servers die Löschung rückgängig machen."
+      "deleteBodyGrace": "Alles, was für {name} erfasst wurde, verschwindet mit dem Profil: Messwerte, Medikamente, Dokumente und Notizen. Das Profil wird sofort gesperrt und nach {days, plural, one {# Tag} other {# Tagen}} endgültig gelöscht. Bis dahin kann ein Admin dieses Servers die Löschung rückgängig machen."
     },
     "toast": {
       "savedTo": "In der Akte von {name} gespeichert"
@@ -14506,7 +14506,7 @@
       "practitioner": "Seit deinem letzten Termin bei {name} am {date}",
       "specialty": "Seit deinem letzten Termin ({specialty}) am {date}",
       "kind": "Seit deinem letzten Termin der gleichen Art ({kind}) am {date}",
-      "default": "Die letzten {days} Tage",
+      "default": "{days, plural, =1 {Der letzte Tag} other {Die letzten # Tage}}",
       "defaultReason": "Kein früherer Termin bei derselben Praxis, in derselben Fachrichtung oder derselben Art.",
       "capped": "Die letzten zwei Jahre",
       "cappedReason": "Der letzte passende Termin liegt mehr als zwei Jahre zurück, und ein Bericht umfasst höchstens zwei Jahre."
@@ -14624,7 +14624,7 @@
       "title": "Angehaltene KI im Hintergrund",
       "description": "Was zuletzt nicht durchlief und warum; ein Eintrag verschwindet, sobald es wieder klappt.",
       "line": "{job}: {reason}",
-      "repeated": "{count}-mal hintereinander fehlgeschlagen, zuletzt am {when}.",
+      "repeated": "{count, plural, one {Einmal} other {#-mal hintereinander}} fehlgeschlagen, zuletzt am {when}.",
       "lastAt": "Zuletzt versucht am {when}.",
       "openDocument": "Dokument öffnen",
       "retry": "Erneut versuchen",
@@ -14689,7 +14689,7 @@
       "Thermometer": "Fieberthermometer",
       "Stethoscope": "Stethoskop"
     },
-    "limitReached": "Du hast {limit} Symptome. Blende eins aus, um ein neues anzulegen.",
+    "limitReached": "Du hast {limit, plural, one {# Symptom} other {# Symptome}}. Blende eins aus, um ein neues anzulegen.",
     "saveError": "Das Symptom konnte nicht gespeichert werden. Bitte versuch es noch einmal.",
     "nameRequired": "Gib dem Symptom einen Namen.",
     "unreadableLabel": "Unlesbares Symptom",
@@ -14710,7 +14710,7 @@
       "reset": "Formular zurücksetzen",
       "emptyHint": "Leg dein erstes Symptom an, zum Beispiel Aura oder Kopfschmerz.",
       "emptyHintNoManage": "Für diesen Datensatz sind noch keine Symptome angelegt.",
-      "limitHint": "Bis zu {limit} Symptome. Blende auf der Krankheitsseite eins aus, um ein neues anzulegen.",
+      "limitHint": "Bis zu {limit, plural, one {# Symptom} other {# Symptome}}. Blende auf der Krankheitsseite eins aus, um ein neues anzulegen.",
       "intensityFor": "Stärke: {symptom}",
       "partlySaved": "{saved} von {total} gespeichert, der Rest ist noch ausgewählt.",
       "severalHint": "Wähle mehrere, wenn sie zusammen auftraten.",
@@ -14818,7 +14818,7 @@
     "dayOf": "Tag {n} von {m}",
     "dayN": "Tag {n}",
     "seizure": "Anfall",
-    "seizureCount": "{count} Anfälle",
+    "seizureCount": "{count, plural, one {# Anfall} other {# Anfälle}}",
     "usualRange": "Üblich {lo} bis {hi}",
     "groups": {
       "scores": "Scores",
@@ -14832,7 +14832,7 @@
       "extremeHigh": "Höchster Tageswert seit {since}",
       "extremeLow": "Niedrigster Tageswert seit {since}",
       "firstValue": "Erster Wert dieser Art",
-      "gap": "{days} Tage ohne Wert"
+      "gap": "{days, plural, one {# Tag} other {# Tage}} ohne Wert"
     },
     "previousDayShortcut": "Vortag (Alt + Pfeil links)",
     "nextDayShortcut": "Folgetag (Alt + Pfeil rechts)",
@@ -14956,12 +14956,12 @@
         "environment": "Umwelt",
         "life": "Lebensereignisse"
       },
-      "meter": "{carrying} von {total} Spuren tragen",
-      "carriesDetail": "{carrying} von {total} Spuren reichen für einen Überblick ab {since}.",
+      "meter": "{carrying} von {total, plural, one {# Spur} other {# Spuren}} tragen",
+      "carriesDetail": "{carrying} von {total, plural, one {# Spur} other {# Spuren}} reichen für einen Überblick ab {since}.",
       "loadFailed": "Die Bestandsaufnahme konnte nicht geladen werden.",
       "card": {
         "title": "Was die Zeitleiste schon trägt",
-        "summary": "Sie reicht bis {since} zurück, {carrying} von {total} Spuren tragen schon.",
+        "summary": "Sie reicht bis {since} zurück, {carrying} von {total, plural, one {# Spur} other {# Spuren}} tragen schon.",
         "dismiss": "Ausblenden"
       },
       "detail": {
@@ -15137,7 +15137,7 @@
     "labs": {
       "menuTitle": "Laborwerte",
       "otherPanel": "Weitere",
-      "full": "Bis zu {max} Laborwerte gleichzeitig. Entferne einen, um einen anderen hinzuzufügen.",
+      "full": "Bis zu {max, plural, one {# Laborwert} other {# Laborwerte}} gleichzeitig. Entferne einen, um einen anderen hinzuzufügen.",
       "above": "über dem Referenzbereich",
       "below": "unter dem Referenzbereich",
       "reference": "Referenz {range}",
@@ -15153,7 +15153,7 @@
     "legendSymptom": "Symptomlinie: höchste Stärke jedes erfassten Tages (0 bis 10), gemittelt über die erfassten Tage",
     "symptoms": {
       "menuTitle": "Symptome",
-      "full": "Bis zu {max} Symptome gleichzeitig. Entferne eines, um ein anderes hinzuzufügen.",
+      "full": "Bis zu {max, plural, one {# Symptom} other {# Symptome}} gleichzeitig. Entferne eines, um ein anderes hinzuzufügen.",
       "hidden": "ausgeblendet",
       "unnamed": "Symptom",
       "daysOne": "an 1 Tag",
@@ -15334,7 +15334,7 @@
     "weekGoalsMet": "Alle Wochenziele erreicht",
     "weekGoalsNotMet": "Nicht alle Wochenziele erreicht",
     "cell": {
-      "steps": "{value} Schritte",
+      "steps": "{value, plural, one {# Schritt} other {# Schritte}}",
       "activeMinutes": "{value} aktive Minuten",
       "workouts": "{value} Trainings: {sports}"
     },
@@ -15351,7 +15351,7 @@
     "legend": "Verglichen mit deinen 12 Wochen davor:",
     "noBaseline": "Dein üblicher Bereich erscheint nach 14 Tagen mit Daten.",
     "summary": {
-      "steps": "{value} Schritte",
+      "steps": "{value, plural, one {# Schritt} other {# Schritte}}",
       "activeMinutes": "{value} aktive Minuten",
       "workouts": "{value} Trainings",
       "load": "Durchschnittliche Trainingslast {value}",
@@ -15403,13 +15403,13 @@
       "name_tiebreak": "Gleicher Rang wie die verwendete Quelle; der Name hat entschieden."
     },
     "used": "Verwendet",
-    "readings": "{count} Messungen, Geräte: {devices}",
+    "readings": "{count, plural, one {# Messung} other {# Messungen}}, Geräte: {devices}",
     "ladder": "Deine Reihenfolge für diesen Wert: {ladder}",
     "utcNote": "Die Quelle wird pro Tag von Mitternacht bis Mitternacht UTC gewählt, genauso wie bei den Diagrammen.",
     "openSettings": "Reihenfolge in der Quellen-Priorität ändern",
     "compareTitle": "Zwei Quellen vergleichen",
     "range": "Zeitraum",
-    "rangeDays": "{days} Tage",
+    "rangeDays": "{days, plural, one {# Tag} other {# Tage}}",
     "compareNeedsTwo": "In diesem Zeitraum hat nur eine Quelle Werte dieser Art.",
     "side": {
       "a": "Erste Quelle",
@@ -15470,10 +15470,10 @@
     "missing": "Noch auszuwählen: {fields}",
     "check": "Datei prüfen",
     "runIdle": "Importieren",
-    "run": "{count} Zeilen importieren",
+    "run": "{count, plural, one {# Zeile} other {# Zeilen}} importieren",
     "close": "Schließen",
-    "summaryCheck": "{rows} Zeilen gelesen: {inserted} können importiert werden, {duplicates} sind schon da, {failed} haben ein Problem.",
-    "summaryDone": "{inserted} Zeilen importiert. Übersprungen: {duplicates}, die schon da waren, und {failed} mit einem Problem.",
+    "summaryCheck": "{rows, plural, one {# Zeile} other {# Zeilen}} gelesen: {inserted} können importiert werden, {duplicates} sind schon da, {failed} haben ein Problem.",
+    "summaryDone": "{inserted, plural, one {# Zeile} other {# Zeilen}} importiert. Übersprungen: {duplicates}, die schon da waren, und {failed} mit einem Problem.",
     "markersMatched": "Deinen Markern zugeordnet:",
     "markersCreated": "Neue Marker:",
     "line": "Zeile {line}",
@@ -15668,7 +15668,7 @@
       "seizureFreeDays": "Tage ohne erfassten Anfall",
       "per28Days": "Anfälle pro 28 Tage",
       "longestFree": "Längster Zeitraum ohne erfassten Anfall",
-      "daysValue": "{count} Tage",
+      "daysValue": "{count, plural, one {# Tag} other {# Tage}}",
       "daysSinceLast": "Tage seit dem letzten erfassten Anfall",
       "convulsive": "Bilateral tonisch-klonische Anfälle",
       "fromSleep": "Anfälle aus dem Schlaf",
@@ -15707,11 +15707,11 @@
       "triggersTitle": "Vermutete Auslöser",
       "triggersNote": "Von der Person oder ihren Betreuenden beim Eintragen genannt; keine gesicherten Ursachen.",
       "overlaysTitle": "Gleichzeitig erfasst",
-      "overlayMissedDose": "{followed} von {of} Anfällen folgten innerhalb der vorangegangenen 48 Stunden auf eine verpasste oder übersprungene geplante Dosis.",
-      "overlayIllness": "{during} Anfälle traten während einer von {episodes} erfassten Krankheitsepisoden auf.",
-      "overlaySleep": "Erfasster Schlaf in der Nacht vor einem Anfallstag: durchschnittlich {before} h ({nightsBefore} Nächte); andere Nächte: {other} h ({nightsOther} Nächte).",
+      "overlayMissedDose": "{followed} von {of, plural, one {# Anfall} other {# Anfällen}} folgten innerhalb der vorangegangenen 48 Stunden auf eine verpasste oder übersprungene geplante Dosis.",
+      "overlayIllness": "{during, plural, one {# Anfall trat} other {# Anfälle traten}} während einer von {episodes} erfassten Krankheitsepisoden auf.",
+      "overlaySleep": "Erfasster Schlaf in der Nacht vor einem Anfallstag: durchschnittlich {before} h ({nightsBefore, plural, one {# Nacht} other {# Nächte}}); andere Nächte: {other} h ({nightsOther, plural, one {# Nacht} other {# Nächte}}).",
       "overlayCycleDays": "Anfälle nach Zyklustag (Tag: Anzahl): {list}.",
-      "overlayCycleRatio": "Über {cycles} vollständig erfasste Zyklen lag die Anfallsrate pro Tag rund um die Periode (Tag −3 bis +3) beim {c1}-Fachen der Rate an den übrigen Tagen und rund um den Eisprung (Tag 10 bis −13) beim {c2}-Fachen. Herzogs Kriterium für katameniale Epilepsie ist ein mindestens zweifacher Anstieg; dies ist ein Referenzwert, kein Befund.",
+      "overlayCycleRatio": "Über {cycles} vollständig erfasste Zyklen lag die Anfallsrate pro Tag rund um die Periode (Tag −3 bis +3) beim {c1, plural, other {#-Fachen}} der Rate an den übrigen Tagen und rund um den Eisprung (Tag 10 bis −13) beim {c2, plural, other {#-Fachen}}. Herzogs Kriterium für katameniale Epilepsie ist ein mindestens zweifacher Anstieg; dies ist ein Referenzwert, kein Befund.",
       "overlayCycleTooFew": "Raten nach Zyklusphase werden ab drei vollständig erfassten Zyklen angezeigt (bisher {cycles}).",
       "overlaysNote": "Dies sind gleichzeitig erfasste Dinge, keine Ursachen.",
       "eventsTitle": "Alle erfassten Ereignisse",
@@ -15724,7 +15724,7 @@
       "eventsTruncated": "Nur die letzten 200 Ereignisse sind aufgeführt; die Zahlen oben umfassen alle.",
       "classificationNote": "Die Anfallsarten folgen der ILAE-Klassifikation 2025; die Bezeichnungen nach ILAE 2017 lauten:",
       "footer": "Von Patient oder Betreuungsperson geführter Kalender. Es handelt sich um erfasste Anfälle, wahrscheinlich zu wenige, insbesondere bei Anfällen aus dem Schlaf. Der Kalender hält Beobachtungen fest und stellt keine Diagnose oder Beurteilung von Anfällen dar.",
-      "seizureDaysValue": "an {count} Tagen"
+      "seizureDaysValue": "an {count, plural, one {# Tag} other {# Tagen}}"
     },
     "title": "Anfallskalender",
     "subtitle": "Anfälle so, wie sie beobachtet wurden, mit Anfallsart, Dauer und gegebener Notfallmedikation.",
@@ -15770,8 +15770,8 @@
       "longestFree": "Längster anfallsfreier Zeitraum, Tage",
       "clusters": "Anfallsserien ({rule})",
       "niceClusters": "Anfallsserien nach NICE (3 in 24 h)",
-      "suspected": "{count} Verdachtsfälle sind aufgeführt, aber nicht mitgezählt.",
-      "clusterLine": "Ab {start}: {count} Anfälle",
+      "suspected": "{count, plural, one {# Verdachtsfall ist aufgeführt, aber nicht mitgezählt.} other {# Verdachtsfälle sind aufgeführt, aber nicht mitgezählt.}}",
+      "clusterLine": "Ab {start}: {count, plural, one {# Anfall} other {# Anfälle}}",
       "monthlyCaption": "Anfälle pro Anfallsart und Monat",
       "undercount": "Erfasste Anfälle, wahrscheinlich zu wenige, insbesondere bei Anfällen aus dem Schlaf."
     },
@@ -15946,7 +15946,7 @@
     },
     "rule": {
       "title": "Regel für Anfallsserien",
-      "explainer": "Eine Anfallsserie sind so viele Anfälle innerhalb so vieler Stunden. Verwende die Regel aus dem Notfallplan; NICE verwendet {niceCount} in {niceHours} Stunden, und die Übersicht zählt Anfallsserien nach beiden Regeln.",
+      "explainer": "Eine Anfallsserie sind so viele Anfälle innerhalb so vieler Stunden. Verwende die Regel aus dem Notfallplan; NICE verwendet {niceCount} in {niceHours, plural, one {# Stunde} other {# Stunden}}, und die Übersicht zählt Anfallsserien nach beiden Regeln.",
       "count": "Anfälle",
       "hours": "Zeitfenster (Std.)",
       "invalid": "Erlaubt sind 2 bis 20 Anfälle innerhalb von 1 bis 168 Stunden.",
@@ -16053,7 +16053,7 @@
       "expired": "Dieser Link ist abgelaufen und zeigt nichts mehr.",
       "expiresOn": "Endet am {date}.",
       "noExpiry": "Kein Enddatum. Er gilt, bis du ihn widerrufst.",
-      "opened": "{count}-mal geöffnet, zuletzt {when}.",
+      "opened": "{count, plural, one {Einmal} other {#-mal}} geöffnet, zuletzt {when}.",
       "notOpened": "Noch nicht geöffnet.",
       "revoke": "Link widerrufen",
       "revokeTitle": "Link zur Notfallkarte widerrufen?",

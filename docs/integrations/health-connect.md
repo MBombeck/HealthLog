@@ -202,7 +202,7 @@ now**:
   An import that is already running for the account is retried in thirty
   minutes.
 - Every fetch is also recorded as a connection, `health-connect-remote`, so
-  its state shows on **Settings → Integrations**, in
+  its state shows on **Settings > Integrations**, in
   `GET /api/integrations/status` and in the assistant's integration status
   like any other source. A refused user name or app password reads as
   "action needed" until a new password is saved; a missing file, a redirect
