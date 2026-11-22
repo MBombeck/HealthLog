@@ -36,7 +36,6 @@ const NOT_YET_MATCHED: readonly string[] = [
   "components/settings/security-section/totp-card.tsx",
   "components/settings/security-sessions-card.tsx",
   "components/settings/share-link-create-form.tsx",
-  "components/settings/trusted-devices-card.tsx",
 ];
 
 const writers = readSourceFolder("src/components", {
