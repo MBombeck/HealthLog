@@ -249,6 +249,8 @@ async function sendIntakeRecorded(userId: string, item: Pending) {
     const locale = localeOf(user?.locale);
     let anyOk = false;
     let lastReason: string | undefined;
+    // Whether any device was handed a push at all, sealed or plaintext.
+    let attempted = false;
     // A device with a push key gets the confirmation sealed, over this
     // server's APNs key or the relay; never the plaintext below.
     const sealedDevices = recipients.filter((d) => d.pushKeyPublic !== null);
@@ -259,12 +261,17 @@ async function sendIntakeRecorded(userId: string, item: Pending) {
         recordedText(item.event, locale),
         await loadPushContext(),
       );
+      if (sealed.handled.length > 0) attempted = true;
       if (sealed.anyAccepted) anyOk = true;
       else if (sealed.lastFailure) lastReason = sealed.lastFailure;
+      // The outbox holds it and tries again until its deadline: not
+      // accepted yet, and not the failure `intake_recorded_failed` named.
+      else if (sealed.waiting) lastReason = "relay_waiting";
     }
     const payload = intakeRecordedPayload(item.event, locale);
     for (const device of recipients) {
       if (!config || !device.apnsToken || device.pushKeyPublic) continue;
+      attempted = true;
       const result = await sendApnsRawPush({
         deviceToken: device.apnsToken,
         environment:
@@ -276,6 +283,19 @@ async function sendIntakeRecorded(userId: string, item: Pending) {
       });
       if (result.ok) anyOk = true;
       else lastReason = result.reason;
+    }
+    // No device had a way to take it (a relay binding to renew, a plaintext
+    // device on a server without its own key): nothing was sent, which is a
+    // skip with its reason and no failed send.
+    if (!attempted && !lastReason) {
+      recordPushAttempt({
+        userId,
+        channel: "APNS",
+        eventType: INTAKE_RECORDED_EVENT,
+        result: "skipped",
+        reason: "intake_recorded_device_unrouted",
+      });
+      return;
     }
     recordPushAttempt({
       userId,
