@@ -825,6 +825,10 @@ A passing verification proves the image was built by this repository's
 release workflow on a `v*` tag — not by anyone who merely obtained push
 access to the GHCR package.
 
+From v1.49.0 on, the GitHub release carries the same facts as files you
+can check without asking the registry; see
+[Verify a release from its assets](#verify-a-release-from-its-assets).
+
 ### Prefer digest-pinned deploys
 
 Tags (`:latest`, `:1.16.4`) are mutable aliases: a registry-side
@@ -944,6 +948,85 @@ becomes part of the release routine, not an optional extra.
 Digest pinning is the recommended hardening for operators with a
 threat model that includes the registry; `:latest` remains the
 low-friction default.
+
+## The GitHub release
+
+From v1.49.0 on, the tag build attaches three files to the GitHub release
+for the tag (the jobs `release-manifest`, `release-provenance` and
+`release-assets` in `docker-publish.yml`):
+
+| File                                  | What it is                                                                                                    |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `healthlog-<tag>-image.txt`           | the image refs: both release tags pinned to the index digest, and the `linux/amd64` and `linux/arm64` digests |
+| `healthlog-<tag>-image.sigstore.json` | keyless cosign bundle for that file, signed by `docker-publish.yml` at the tag                                |
+| `healthlog-<tag>.intoto.jsonl`        | SLSA v1 provenance for that file, signed by the SLSA generator (`generator_generic_slsa3.yml`)                |
+
+The files are written after the image index is signed and the published
+image has passed `post-publish-verify.yml`, so a release whose image
+failed verification gets no assets.
+
+### Publishing the release
+
+The build runs before the notes exist. If no release exists for the tag
+when the assets are ready, the workflow creates one as a **draft** with
+the tag as its title and no notes, and attaches the files. It never
+publishes a release and never edits one.
+
+After the deploy, the maintainer therefore edits that draft instead of
+creating a release:
+
+```sh
+gh release edit v1.49.0 --notes-file notes.md --draft=false --latest
+```
+
+Do not run `gh release create` for the tag once the draft exists: GitHub
+allows a draft next to a release with the same tag, and the files would sit
+on the draft nobody publishes. A release created by hand before the build
+finishes is fine: the workflow attaches the files to it (`--clobber`, so a
+re-run replaces them). A draft is invisible to the public releases API, so
+the update badge on self-hosted instances (`/releases/latest`) moves only
+when the draft is published.
+
+### Verify a release from its assets
+
+Download the three files of a release (here v1.49.0) and check each link:
+the manifest was signed by this repository's release workflow at that tag,
+the provenance says the same workflow run produced it, and the image the
+manifest names carries the release signature.
+
+```sh
+TAG=v1.49.0
+gh release download "$TAG" --repo MBombeck/HealthLog \
+  --pattern "healthlog-$TAG-image.txt" \
+  --pattern "healthlog-$TAG-image.sigstore.json" \
+  --pattern "healthlog-$TAG.intoto.jsonl"
+
+# 1. The manifest is signed by docker-publish.yml at the tag.
+cosign verify-blob \
+  --bundle "healthlog-$TAG-image.sigstore.json" \
+  --certificate-identity "https://github.com/MBombeck/HealthLog/.github/workflows/docker-publish.yml@refs/tags/$TAG" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  "healthlog-$TAG-image.txt"
+
+# 2. Its SLSA provenance names this repository and tag.
+slsa-verifier verify-artifact "healthlog-$TAG-image.txt" \
+  --provenance-path "healthlog-$TAG.intoto.jsonl" \
+  --source-uri github.com/MBombeck/HealthLog \
+  --source-tag "$TAG"
+
+# 3. The image index it names carries the release signature.
+IMAGE="$(awk '$2 == "index" { print $1; exit }' "healthlog-$TAG-image.txt")"
+cosign verify \
+  --certificate-identity-regexp '^https://github\.com/MBombeck/HealthLog/\.github/workflows/docker-publish\.yml@refs/tags/v' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  "$IMAGE"
+```
+
+`$IMAGE` is `ghcr.io/mbombeck/healthlog:<tag>@sha256:<index>`: pull that
+reference (or set `HEALTHLOG_IMAGE_REF=@sha256:<index>`) and you run
+exactly the image the release describes. Releases before v1.49.0 have no
+assets; their image signature is checked with `cosign verify` alone, as
+above.
 
 ## Deploy-status webhook: replay protection
 
