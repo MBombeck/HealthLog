@@ -260,6 +260,39 @@ const adminRelayStatus = z
       .describe(
         "What this instance handed the relay in the last `windowDays` days, from its own delivery ledger: counts per outcome and the last failure. Aggregate only.",
       ),
+    handoff: z
+      .object({
+        windowHours: z.number().int(),
+        count: z
+          .number()
+          .int()
+          .describe(
+            "Pushes the relay answered `accepted` in the window: what the percentiles are computed over.",
+          ),
+        p50Ms: z
+          .number()
+          .int()
+          .nullable()
+          .describe(
+            "The median hand-off time in whole milliseconds; null when `count` is 0.",
+          ),
+        p95Ms: z
+          .number()
+          .int()
+          .nullable()
+          .describe(
+            "The 95th percentile of the hand-off time in whole milliseconds; null when `count` is 0.",
+          ),
+        retried: z
+          .number()
+          .int()
+          .describe(
+            "How many of the `count` pushes waited for at least one retry on this server, so their time includes its backoff.",
+          ),
+      })
+      .describe(
+        "v1.49.0. The hand-off time as this server sees it, over the pushes the relay accepted in the last `windowHours` hours: from queueing a push on this server until the relay answered `accepted`. The relay answers `accepted` only once Apple accepted the push, so the time covers this server's hand-off, the network and the relay's request to Apple. From this instance's own delivery ledger. Aggregate only: nothing per person, device or kind of push.",
+      ),
     termsVersion: z.string(),
     termsConfirmationNeeded: z
       .boolean()

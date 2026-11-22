@@ -28,6 +28,7 @@ import {
   useSetPushRelay,
   type AdminPushRelayStatus,
 } from "./use-push-relay";
+import { PushRelayHandoff } from "./push-relay-handoff";
 import { PushRelayTools } from "./push-relay-tools";
 import {
   INVITE_REASONS,
@@ -206,6 +207,9 @@ export function PushRelaySection() {
           />
         )}
         <RelayUsage status={status} />
+        {status.offered && status.handoff && (
+          <PushRelayHandoff handoff={status.handoff} />
+        )}
         <RelayLeftovers status={status} />
         {reasonKey && (
           <div className="space-y-2" data-slot="push-relay-refusal">
@@ -419,7 +423,7 @@ function RelayUsage({ status }: { status: AdminPushRelayStatus }) {
   ] as const;
   return (
     <div className="space-y-1 text-xs" data-slot="push-relay-usage">
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4">
         {counts.map(([key, value]) => (
           <div key={key}>
             <dt className="text-muted-foreground">

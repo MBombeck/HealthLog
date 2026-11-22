@@ -9642,6 +9642,17 @@
         "lastSuccess": "Ultimo recapito {time}.",
         "lastFailure": "Ultimo errore {time}: {reason}.",
         "noReason": "motivo non indicato"
+      },
+      "handoff": {
+        "title": "Tempo di passaggio al relay, ultime {hours} h",
+        "median": "Mediana",
+        "p95": "95° percentile",
+        "pushes": "Notifiche",
+        "retried": "Ritentate",
+        "milliseconds": "{value} ms",
+        "seconds": "{value} s",
+        "empty": "Nessuna notifica push {hours, plural, =1 {nell'ultima ora} other {nelle ultime # ore}}",
+        "helper": "Dall'inserimento in coda su questo server alla risposta del relay. Il relay risponde quando Apple ha accettato la notifica."
       }
     },
     "serverSetup": {

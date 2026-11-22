@@ -9642,6 +9642,17 @@
         "lastSuccess": "Zuletzt zugestellt {time}.",
         "lastFailure": "Letzter Fehler {time}: {reason}.",
         "noReason": "ohne Angabe"
+      },
+      "handoff": {
+        "title": "Übergabezeit, letzte {hours} h",
+        "median": "Median",
+        "p95": "95. Perzentil",
+        "pushes": "Pushes",
+        "retried": "Erneut versucht",
+        "milliseconds": "{value} ms",
+        "seconds": "{value} s",
+        "empty": "Keine Pushes {hours, plural, =1 {in der letzten Stunde} other {in den letzten # Stunden}}",
+        "helper": "Vom Einreihen in die Warteschlange dieses Servers bis zur Antwort des Relays. Das Relay antwortet, sobald Apple den Push angenommen hat."
       }
     },
     "serverSetup": {

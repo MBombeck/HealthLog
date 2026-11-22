@@ -9642,6 +9642,17 @@
         "lastSuccess": "Last delivered {time}.",
         "lastFailure": "Last failure {time}: {reason}.",
         "noReason": "no reason given"
+      },
+      "handoff": {
+        "title": "Hand-off time, last {hours} h",
+        "median": "Median",
+        "p95": "95th percentile",
+        "pushes": "Pushes",
+        "retried": "Needed a retry",
+        "milliseconds": "{value} ms",
+        "seconds": "{value} s",
+        "empty": "No pushes in the last {hours, plural, one {# hour} other {# hours}}",
+        "helper": "From queueing on this server to the relay's answer. The relay answers once Apple has accepted the push."
       }
     },
     "serverSetup": {

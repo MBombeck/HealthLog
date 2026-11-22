@@ -11,6 +11,7 @@
  * of the seed is that the lists the contract run reads are not empty.
  */
 import { NextRequest } from "next/server";
+import { randomBytes } from "node:crypto";
 import { join } from "node:path";
 
 import type { PrismaClient } from "@/generated/prisma/client";
@@ -1083,6 +1084,23 @@ export async function seedContractAccount(
       tokenHash: "contract-trusted-device-hash",
       label: "Phone",
       expiresAt: new Date(Date.now() + 20 * DAY),
+    },
+  });
+  // A relay this server registered with before its settings pointed
+  // elsewhere, which the admin relay status lists as out of reach. Written by
+  // the admin switch, which needs a relay to answer.
+  const { encrypt } = await import("@/lib/crypto");
+  const { toBase64Url } = await import("@/lib/push-relay/encoding");
+  const { RELAY_TERMS_VERSION } = await import("@/lib/push-relay/config");
+  await prisma.pushRelayRegistration.create({
+    data: {
+      relayHost: "relay.previous.example",
+      instanceId: "contract-instance",
+      instanceKeyEncrypted: encrypt(toBase64Url(randomBytes(32))),
+      state: "ok",
+      termsVersion: RELAY_TERMS_VERSION,
+      householdConfirmedAt: daysAgo(30),
+      enabledByUserId: CONTRACT_USER_ID,
     },
   });
   if (ids.biomarker) {
