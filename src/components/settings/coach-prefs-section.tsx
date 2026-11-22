@@ -443,7 +443,6 @@ export function CoachPrefsSection({ isAuthenticated }: CoachPrefsSectionProps) {
         <Button
           type="button"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           onClick={() => save.mutate(draft)}
           disabled={save.isPending || isLoading}
           data-slot="coach-prefs-save"

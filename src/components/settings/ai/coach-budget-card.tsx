@@ -10,7 +10,7 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Gauge, Loader2, Save } from "lucide-react";
+import { Gauge, Loader2 } from "lucide-react";
 
 import { WrittenOutcomeLine } from "@/components/outcome/written-outcome-line";
 import { Button } from "@/components/ui/button";
@@ -212,15 +212,12 @@ export function CoachBudgetCard({
         <Button
           type="submit"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           aria-busy={saveMutation.isPending || undefined}
           disabled={saveMutation.isPending}
         >
           {saveMutation.isPending ? (
             <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <Save className="size-4" />
-          )}
+          ) : null}
           {t("settings.ai.saveCta")}
         </Button>
       </SettingsCardActions>

@@ -225,7 +225,6 @@ export function AiUsageCard() {
             type="button"
             size="sm"
             variant="outline"
-            className="min-h-11 sm:min-h-9"
             disabled={!editable}
             onClick={() => save.mutate(null)}
             data-slot="ai-usage-use-default"

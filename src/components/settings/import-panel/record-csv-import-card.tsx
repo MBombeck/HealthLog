@@ -66,14 +66,13 @@ export function RecordCsvImportCard() {
       description={t("recordImport.description")}
     >
       <p className="text-sm">{t("recordImport.detail")}</p>
-      <SettingsCardActions align="start">
+      <SettingsCardActions>
         {(["labs", "medications"] as const).map((kind) => (
           <Button
             key={kind}
             type="button"
             variant="outline"
             size="sm"
-            className="min-h-11 sm:min-h-9"
             data-slot={`record-import-open-${kind}`}
             onClick={() => {
               setSession((n) => n + 1);

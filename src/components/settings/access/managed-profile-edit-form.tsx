@@ -308,7 +308,6 @@ function ManagedProfileEditFields({
             type="button"
             variant="outline"
             size="sm"
-            className="min-h-11 sm:min-h-9"
             data-slot="managed-profile-edit-cancel"
             onClick={onDone}
           >
@@ -317,7 +316,6 @@ function ManagedProfileEditFields({
           <Button
             type="submit"
             size="sm"
-            className="min-h-11 sm:min-h-9"
             data-slot="managed-profile-edit-submit"
             disabled={blocked || update.isPending}
           >

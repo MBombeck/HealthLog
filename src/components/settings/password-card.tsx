@@ -120,11 +120,7 @@ export function PasswordCard() {
           description={t("settings.changePasswordDescription")}
         />
         <SettingsCardActions>
-          <Button
-            type="button"
-            onClick={() => setDialogOpen(true)}
-            className="min-h-11 w-full sm:min-h-9 sm:w-auto"
-          >
+          <Button size="sm" type="button" onClick={() => setDialogOpen(true)}>
             {t("settings.changePassword")}
           </Button>
         </SettingsCardActions>

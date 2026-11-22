@@ -202,9 +202,9 @@ export function WebhookCard({ isAuthenticated }: { isAuthenticated: boolean }) {
               unsavedChanges={dirty}
             />
             <Button
+              size="sm"
               type="submit"
               disabled={save.isPending || toggle.isPending}
-              className="min-h-11"
             >
               {save.isPending && (
                 <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />

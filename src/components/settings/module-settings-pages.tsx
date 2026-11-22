@@ -41,7 +41,7 @@ function ArrangementLinkCard({ id }: { id: ModuleSettingsPageId }) {
         )}
       />
       <SettingsCardActions align="start">
-        <Button asChild variant="outline" size="sm" className="min-h-11">
+        <Button asChild variant="outline" size="sm">
           <Link href={`/settings/layout/${id}`}>
             {t("settings.sections.modules.pages.openArrangement")}
             <ChevronRight className="size-4" aria-hidden="true" />

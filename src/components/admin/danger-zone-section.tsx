@@ -127,7 +127,6 @@ export function DangerZoneSection() {
               variant="destructive"
               size="sm"
               disabled={wipeAllData.isPending}
-              className="min-h-11"
             >
               {wipeAllData.isPending ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />

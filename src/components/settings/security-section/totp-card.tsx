@@ -294,11 +294,12 @@ export function TotpCard({
         {/* The enable CTA is the card's primary, right-aligned in the one
             action row like every other Settings card (design standards §12). */}
         {!enabled && !setup && !freshCodes && (
+          // eslint-disable-next-line healthlog/card-action-row -- the row shows only before setup starts; the steps below take its place
           <SettingsCardActions>
             <Button
+              size="sm"
               type="button"
               data-testid="totp-setup-start"
-              className="min-h-11 sm:min-h-9"
               onClick={() => beginSetup.mutate(undefined)}
               disabled={beginSetup.isPending}
             >
@@ -421,10 +422,10 @@ export function TotpCard({
             <RecoveryCodesPanel codes={freshCodes} />
             <SettingsCardActions>
               <Button
+                size="sm"
                 type="button"
                 data-testid="recovery-codes-dismiss"
                 variant="outline"
-                className="min-h-11 sm:min-h-9"
                 onClick={() => setFreshCodes(null)}
               >
                 {t("settings.security.recovery.savedIt")}
@@ -451,10 +452,10 @@ export function TotpCard({
               >
                 <AlertDialogTrigger asChild>
                   <Button
+                    size="sm"
                     type="button"
                     data-testid="recovery-regenerate"
                     variant="outline"
-                    className="min-h-11 sm:min-h-9"
                     disabled={regenerate.isPending}
                   >
                     {regenerate.isPending && (
@@ -501,11 +502,7 @@ export function TotpCard({
                 }}
               >
                 <AlertDialogTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    className="min-h-11 sm:min-h-9"
-                  >
+                  <Button size="sm" type="button" variant="destructive">
                     {t("settings.security.totp.disable")}
                   </Button>
                 </AlertDialogTrigger>

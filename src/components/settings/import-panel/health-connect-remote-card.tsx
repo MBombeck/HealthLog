@@ -230,25 +230,13 @@ export function HealthConnectRemoteCard() {
               {error}
             </p>
           )}
-          <SettingsCardActions className="mt-auto" align="start">
-            <Button
-              type="submit"
-              size="sm"
-              className="min-h-11 sm:min-h-9"
-              disabled={busy}
-            >
-              {save.isPending && (
-                <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-              )}
-              {t("common.save")}
-            </Button>
+          <SettingsCardActions className="mt-auto">
             {source && (
               <>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="min-h-11 sm:min-h-9"
                   disabled={busy}
                   onClick={() => fetchNow.mutate()}
                 >
@@ -258,7 +246,6 @@ export function HealthConnectRemoteCard() {
                   slot="hc-remote-remove"
                   destructive
                   size="sm"
-                  className="min-h-11 sm:min-h-9"
                   label={t(`${k}.remove`)}
                   title={t(`${k}.removeTitle`)}
                   body={t(`${k}.removeBody`)}
@@ -268,6 +255,12 @@ export function HealthConnectRemoteCard() {
                 />
               </>
             )}
+            <Button type="submit" size="sm" disabled={busy}>
+              {save.isPending && (
+                <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+              )}
+              {t("common.save")}
+            </Button>
           </SettingsCardActions>
         </form>
       </CardQueryBody>

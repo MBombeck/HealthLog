@@ -200,7 +200,6 @@ export function MeasurementMaintenanceCard() {
           <AlertDialogTrigger asChild>
             <Button
               size="sm"
-              className="min-h-11 sm:min-h-9"
               disabled={blocked || start.isPending}
               data-testid="admin-maintenance-start"
             >

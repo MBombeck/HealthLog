@@ -128,7 +128,6 @@ export function CareCalendarFeedCard() {
           <SettingsCardActions>
             <Button
               size="sm"
-              className="min-h-11 w-full sm:w-auto"
               onClick={() => void turnOn()}
               disabled={mint.isPending}
             >
@@ -205,7 +204,6 @@ export function CareCalendarFeedCard() {
               variant="destructive"
               destructive
               size="sm"
-              className="min-h-11 w-full sm:w-auto"
             />
           </SettingsCardActions>
         </>

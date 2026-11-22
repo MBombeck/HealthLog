@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Info, Loader2, MessageCircle, Save } from "lucide-react";
+import { Info, Loader2, MessageCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SettingsInfoTile } from "@/components/settings/_info-tile";
@@ -178,15 +178,13 @@ export function TelegramCard({
               unsavedChanges={dirty}
             />
             <Button
+              size="sm"
               type="submit"
               disabled={saving || toggle.isPending}
-              className="min-h-11"
             >
               {saving ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-              ) : (
-                <Save className="h-3.5 w-3.5" />
-              )}
+              ) : null}
               {t("common.save")}
             </Button>
           </SettingsCardActions>

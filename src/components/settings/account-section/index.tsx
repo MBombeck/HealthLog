@@ -3,7 +3,7 @@
 import { DISPLAY_NAME_MAX_LENGTH } from "@/lib/validations/display-name";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Languages, Loader2, Save, User } from "lucide-react";
+import { Languages, Loader2, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
@@ -665,16 +665,10 @@ export function AccountSection() {
           )}
 
           <SettingsCardActions>
-            <Button
-              type="submit"
-              className="min-h-11 sm:min-h-9"
-              disabled={saving}
-            >
+            <Button size="sm" type="submit" disabled={saving}>
               {saving ? (
                 <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
+              ) : null}
               {t("common.save")}
             </Button>
           </SettingsCardActions>

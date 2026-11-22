@@ -55,7 +55,6 @@ export function RemoveSavedKeyButton({ field }: { field: SavedKeyField }) {
       destructive
       variant="destructive"
       size="sm"
-      className="min-h-11 sm:min-h-9"
       icon={<Trash2 className="size-4" aria-hidden />}
       label={t("settings.ai.removeKey.label")}
       title={t("settings.ai.removeKey.title")}

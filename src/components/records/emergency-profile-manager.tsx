@@ -229,7 +229,6 @@ export function EmergencyProfileManager() {
         <Button
           type="button"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           disabled={disabled || !dirty}
           onClick={() => current && save.mutate(current)}
         >

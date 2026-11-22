@@ -162,7 +162,6 @@ export function AiProfileInclusionManager() {
         <Button
           type="button"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           disabled={disabled || !dirty}
           onClick={() => save.mutate(value)}
         >

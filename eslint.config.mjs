@@ -172,6 +172,12 @@ const eslintConfig = defineConfig([
           ],
         },
       ],
+      // The action row of a card: SettingsCardActions sets its buttons'
+      // height and width, so a button inside says size="sm" and carries no
+      // sizing class, the row takes no layout class, align="start" holds no
+      // primary action, a save button has no disk glyph, and nothing follows
+      // the row (UI standards §12). See the rule header.
+      "healthlog/card-action-row": "error",
       // Layer direction: src/lib never imports src/components or src/app, and
       // a "use client" file makes no value import of the database client,
       // crypto, the Prisma client entry, the job queue, pg or next/headers.

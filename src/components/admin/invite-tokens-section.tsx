@@ -696,7 +696,6 @@ export function InviteTokensSection() {
         <Button
           type="button"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           onClick={openCreateDialog}
           data-testid="admin-invites-open-create"
         >

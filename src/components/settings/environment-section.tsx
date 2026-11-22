@@ -639,7 +639,6 @@ export function EnvironmentSection() {
           <Button
             type="button"
             size="sm"
-            className="min-h-11 sm:min-h-9"
             disabled={
               !home ||
               effectiveBackfillStart.length === 0 ||

@@ -20,7 +20,6 @@ import {
   Loader2,
   Plug,
   RefreshCw,
-  Save,
   Unlink,
 } from "lucide-react";
 
@@ -352,7 +351,6 @@ function NightscoutForm({
           type="submit"
           size="sm"
           variant={connected ? "outline" : "default"}
-          className="min-h-11 w-full sm:min-h-9 sm:w-auto"
           disabled={saving || !url.trim()}
           data-slot={connected ? undefined : "integration-primary-action"}
           data-action={connected ? undefined : "connect"}
@@ -360,9 +358,7 @@ function NightscoutForm({
         >
           {saving ? (
             <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" />
-          ) : connected ? (
-            <Save className="size-3.5" aria-hidden="true" />
-          ) : (
+          ) : connected ? null : (
             <Link2 className="size-3.5" aria-hidden="true" />
           )}
           {connected

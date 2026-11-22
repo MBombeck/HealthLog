@@ -23,6 +23,8 @@
  *                              primitive, not bg-card + border + rounded-xl.
  *   - `import-boundaries`    — src/lib never imports components or app, and
  *                              a "use client" file imports no server module.
+ *   - `card-action-row`      — the buttons of a card's action row take their
+ *                              height, width and place from SettingsCardActions.
  */
 
 "use strict";
@@ -39,6 +41,7 @@ const noPlanningTags = require("./no-planning-tags.js");
 const noUnlocalisedDecimal = require("./no-unlocalised-decimal.js");
 const noRawCardShell = require("./no-raw-card-shell.js");
 const importBoundaries = require("./import-boundaries.js");
+const cardActionRow = require("./card-action-row.js");
 
 module.exports = {
   rules: {
@@ -59,5 +62,6 @@ module.exports = {
     "no-unlocalised-decimal": noUnlocalisedDecimal,
     "no-raw-card-shell": noRawCardShell,
     "import-boundaries": importBoundaries,
+    "card-action-row": cardActionRow,
   },
 };

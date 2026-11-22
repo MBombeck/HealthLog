@@ -705,7 +705,6 @@ export function SourcesSection() {
             slot="settings-sources-reset"
             variant="outline"
             size="sm"
-            className="min-h-11 sm:min-h-9"
             icon={<RotateCcw className="h-3.5 w-3.5" />}
             label={t("settings.sections.sources.resetDefaults")}
             title={t("settings.sections.sources.resetDefaultsTitle")}
@@ -722,7 +721,6 @@ export function SourcesSection() {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="min-h-11 sm:min-h-9"
                 onClick={() => setDraft(null)}
                 disabled={saveMutation.isPending}
               >
@@ -731,7 +729,6 @@ export function SourcesSection() {
               <Button
                 type="button"
                 size="sm"
-                className="min-h-11 sm:min-h-9"
                 onClick={() => saveMutation.mutate(priority)}
                 disabled={saveMutation.isPending}
               >

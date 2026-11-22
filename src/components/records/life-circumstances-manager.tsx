@@ -641,7 +641,6 @@ function SectionBody({
         <Button
           type="button"
           size="sm"
-          className="min-h-11 sm:min-h-9"
           disabled={disabled}
           onClick={() => save.mutate()}
           data-slot={`life-save-${section.key}`}

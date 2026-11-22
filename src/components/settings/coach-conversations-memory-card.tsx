@@ -138,7 +138,6 @@ export function CoachConversationsMemoryCard({
             type="button"
             variant="outline"
             size="sm"
-            className="min-h-11 sm:min-h-9"
             disabled={history.isFetchingNextPage}
             onClick={() => void history.fetchNextPage()}
           >
@@ -146,12 +145,7 @@ export function CoachConversationsMemoryCard({
           </Button>
         ) : null}
         {visible.length > 0 ? (
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="min-h-11 sm:min-h-9"
-          >
+          <Button asChild variant="outline" size="sm">
             <Link
               href="/coach/conversations"
               data-slot="settings-coach-conversations-open-all"

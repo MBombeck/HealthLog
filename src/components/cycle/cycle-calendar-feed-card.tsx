@@ -128,12 +128,7 @@ function OffState({
         </p>
       ) : null}
       <SettingsCardActions>
-        <Button
-          size="sm"
-          className="min-h-11 w-full sm:w-auto"
-          onClick={onTurnOn}
-          disabled={pending}
-        >
+        <Button size="sm" onClick={onTurnOn} disabled={pending}>
           {pending ? (
             <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
           ) : null}
@@ -190,7 +185,7 @@ function OnState({
           {error ?? t("cycle.feed.error")}
         </p>
       ) : null}
-      <SettingsCardActions className="flex-col items-stretch sm:flex-row sm:items-center">
+      <SettingsCardActions>
         <ConfirmButton
           label={t("cycle.feed.turnOff")}
           title={t("cycle.feed.turnOffTitle")}
@@ -201,7 +196,6 @@ function OnState({
           variant="destructive"
           destructive
           size="sm"
-          className="min-h-11 w-full sm:w-auto"
         />
         <ConfirmButton
           label={t("cycle.feed.rotate")}
@@ -211,7 +205,6 @@ function OnState({
           onConfirm={onRotate}
           pending={pending}
           size="sm"
-          className="min-h-11 w-full sm:w-auto"
         />
       </SettingsCardActions>
     </>

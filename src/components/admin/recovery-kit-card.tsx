@@ -522,7 +522,6 @@ export function RecoveryKitCard() {
         <SettingsCardActions>
           <Button
             size="sm"
-            className="min-h-11"
             onClick={() => confirm.mutate(kit)}
             disabled={confirm.isPending}
           >

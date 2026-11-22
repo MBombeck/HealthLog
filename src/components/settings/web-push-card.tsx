@@ -215,24 +215,14 @@ export function WebPushCard() {
         <TestConnectionButton endpoint="/api/notifications/web-push/test" />
       )}
       {isSubscribed ? (
-        <Button
-          size="sm"
-          className="min-h-11"
-          onClick={handleUnsubscribe}
-          disabled={actionLoading}
-        >
+        <Button size="sm" onClick={handleUnsubscribe} disabled={actionLoading}>
           {actionLoading && (
             <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
           )}
           {t("settings.webPushUnsubscribe")}
         </Button>
       ) : (
-        <Button
-          size="sm"
-          className="min-h-11"
-          onClick={handleSubscribe}
-          disabled={actionLoading}
-        >
+        <Button size="sm" onClick={handleSubscribe} disabled={actionLoading}>
           {actionLoading ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
           ) : (

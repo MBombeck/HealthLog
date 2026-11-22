@@ -132,6 +132,32 @@ describe("SettingsCardActions — one row, one shape", () => {
     expect(html).toContain("justify-start");
     expect(html).not.toContain("justify-end");
   });
+
+  it("sets its buttons' height and width itself", () => {
+    // 44 px on a phone and under a finger, 36 px on a wider screen with a
+    // mouse, never full width. The selectors reach a button through its
+    // `data-slot`, so they outrank a class the button brings.
+    const html = render(
+      <SettingsCardActions>
+        <button data-slot="button">Save</button>
+      </SettingsCardActions>,
+    );
+    const button = "[&amp;_[data-slot=button]:not([data-size^=icon])]";
+    expect(html).toContain(`${button}:min-h-11`);
+    expect(html).toContain(`sm:pointer-fine:${button}:min-h-9`);
+    expect(html).toContain(`${button}:w-auto`);
+  });
+
+  it("keeps a leading control on the left and the actions on the right", () => {
+    const html = render(
+      <SettingsCardActions leading={<button>Details</button>}>
+        <button data-slot="button">Sync</button>
+      </SettingsCardActions>,
+    );
+    expect(html).toContain("justify-between");
+    expect(html.indexOf("Details")).toBeLessThan(html.indexOf("Sync"));
+    expect(html).toMatch(/ml-auto[^"]*justify-end/);
+  });
 });
 
 describe("PageHeader — the one page heading, including the shells", () => {
