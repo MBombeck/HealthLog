@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -310,34 +310,28 @@ export default function NotificationsPage() {
                   const disabled = !ch.enabled;
                   const switchId = `notification-${eventType}-${ch.id}`;
                   return (
-                    <div
+                    <SwitchRow
                       key={ch.id}
-                      className="flex items-center justify-between"
-                    >
-                      <Label
-                        htmlFor={switchId}
-                        className={`text-sm ${disabled ? "text-muted-foreground" : ""}`}
-                      >
-                        {ch.label}
-                        {disabled && (
-                          <span className="text-muted-foreground ml-1 text-xs">
-                            ({t("notifications.channelDisabled")})
-                          </span>
-                        )}
-                      </Label>
-                      <Switch
-                        id={switchId}
-                        checked={enabled && !disabled}
-                        disabled={disabled || toggleMutation.isPending}
-                        onCheckedChange={(checked: boolean) =>
-                          toggleMutation.mutate({
-                            channelId: ch.id,
-                            eventType,
-                            enabled: checked,
-                          })
-                        }
-                      />
-                    </div>
+                      id={switchId}
+                      label={ch.label}
+                      // The same name as the desktop matrix cell: the event
+                      // and the channel, since each card repeats the channels.
+                      aria-label={`${t(nameKey)} - ${ch.label}`}
+                      description={
+                        disabled
+                          ? t("notifications.channelDisabled")
+                          : undefined
+                      }
+                      checked={enabled && !disabled}
+                      disabled={disabled || toggleMutation.isPending}
+                      onCheckedChange={(checked: boolean) =>
+                        toggleMutation.mutate({
+                          channelId: ch.id,
+                          eventType,
+                          enabled: checked,
+                        })
+                      }
+                    />
                   );
                 })}
               </CardContent>

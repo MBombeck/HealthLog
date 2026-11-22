@@ -189,7 +189,7 @@ const eslintConfig = defineConfig([
           allow: {
             // Not a row: a cell of a matrix, or a list row that also holds
             // reorder, weight or remove controls.
-            "src/app/notifications/page.tsx": 2,
+            "src/app/notifications/page.tsx": 1,
             "src/components/settings/dashboard-layout/widget-lists.tsx": 4,
             "src/components/settings/ai/fallback-chain-card.tsx": 1,
             "src/components/settings/score-pillar-row.tsx": 1,
@@ -214,8 +214,6 @@ const eslintConfig = defineConfig([
             "src/components/settings/coach-nudge-card.tsx": 1,
             "src/components/settings/coach-prefs-section.tsx": 2,
             "src/components/settings/export-section.tsx": 2,
-            "src/components/settings/managed-record/documents-form.tsx": 1,
-            "src/components/settings/managed-record/form-kit.tsx": 1,
           },
         },
       ],
