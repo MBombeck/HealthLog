@@ -45,6 +45,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAiConsent } from "@/hooks/use-ai-capability";
 import { useAuth } from "@/hooks/use-auth";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
+import { CONFIRM_SAVED } from "@/lib/api/mutation-feedback";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import {
   aiInputDependentKeys,
@@ -76,6 +77,8 @@ export function AiConsentCard({
 
   const revoke = useMutation({
     mutationKey: queryKeys.aiConsentReceipt("ai_full"),
+    // The card simply goes once consent ends; say the withdrawal landed.
+    meta: CONFIRM_SAVED,
     mutationFn: async () => {
       const res = await apiFetchRaw("/api/consent/ai/latest?kind=ai_full", {
         method: "DELETE",
@@ -237,6 +240,8 @@ function DocumentReadingConsentRow({
 
   const revoke = useMutation({
     mutationKey: queryKeys.aiConsentReceipt("ai_extraction"),
+    // The row simply goes once consent ends; say the withdrawal landed.
+    meta: CONFIRM_SAVED,
     mutationFn: async () => {
       const res = await apiFetchRaw(
         "/api/consent/ai/latest?kind=ai_extraction",

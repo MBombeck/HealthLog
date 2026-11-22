@@ -10,10 +10,12 @@
  * `meta: CONFIRM_SAVED` gets "Saved" unless its call site already said more.
  *
  * This holds the settings and cycle writers to one of: a toast of their own
- * (through `toastWrittenOutcome` or sonner), a written-outcome line, or the
- * meta. The files below still answer in ways this matcher cannot see (an
- * inline "saved" state, a form that closes into the changed list) or not at
- * all; the list may only shrink. A new silent writer fails here.
+ * (through `toastWrittenOutcome` or sonner), a written-outcome line, the
+ * meta, or `meta: CONFIRMS_INLINE` where the change answers in place (a saved
+ * line, a link or code that appears, a row that leaves the list). An inline
+ * marker carries a comment on the line above saying what the answer is, so a
+ * reviewer can check the claim against the render code. There are no
+ * exemptions: a new silent writer fails here.
  */
 import { describe, expect, it } from "vitest";
 
@@ -21,30 +23,6 @@ import { readSourceFolder } from "@/__tests__/helpers/source-files";
 
 const ANSWERS =
   /toast(\.(success|info|message|warning))?\(|toastWrittenOutcome\(|WrittenOutcomeLine|CONFIRM_SAVED|CONFIRMS_INLINE/;
-
-/** Writers that do not answer through a matched path yet. Only shrinks. */
-const NOT_YET_MATCHED: readonly string[] = [
-  "components/cycle/use-cycle-feed.ts",
-  "components/settings/account-section/avatar-section.tsx",
-  "components/settings/ai/ai-consent-card.tsx",
-  "components/settings/ai/anthropic-provider-form.tsx",
-  "components/settings/ai/compat-provider-form.tsx",
-  "components/settings/ai/fallback-chain-card.tsx",
-  "components/settings/ai/local-provider-form.tsx",
-  "components/settings/ai/openai-provider-form.tsx",
-  "components/settings/care-calendar-feed-card.tsx",
-  "components/settings/environment-travel-suggestions.tsx",
-  "components/settings/integrations/fitbit-removal-notice.tsx",
-  "components/settings/integrations/garmin-card.tsx",
-  "components/settings/integrations/nightscout-card.tsx",
-  "components/settings/managed-record-settings-section.tsx",
-  "components/settings/notification-status-card.tsx",
-  "components/settings/security-section/passkey-upgrade-nudge.tsx",
-  "components/settings/security-section/totp-card.tsx",
-  "components/settings/security-sessions-card.tsx",
-  "components/settings/share-link-create-form.tsx",
-  "components/settings/trusted-devices-card.tsx",
-];
 
 const writers = readSourceFolder("src/components", {
   floor: 200,
@@ -64,20 +42,27 @@ describe("settings writes answer", () => {
   it("every new writer confirms its change", () => {
     const silent = writers
       .filter((w) => !ANSWERS.test(w.text))
-      .map((w) => w.path)
-      .filter((path) => !NOT_YET_MATCHED.includes(path));
+      .map((w) => w.path);
     expect(
       silent,
       "confirm the write: meta CONFIRM_SAVED, toastWrittenOutcome, or an inline line (CONFIRMS_INLINE)",
     ).toEqual([]);
   });
 
-  it("the list of unmatched writers only shrinks", () => {
-    const nowAnswering = NOT_YET_MATCHED.filter((path) => {
-      const writer = writers.find((w) => w.path === path);
-      return !writer || ANSWERS.test(writer.text);
+  it("says what every inline confirmation is", () => {
+    const unexplained = writers.flatMap((w) => {
+      const lines = w.text.split("\n");
+      return lines.flatMap((line, i) =>
+        /meta:\s*CONFIRMS_INLINE/.test(line) &&
+        !/^\s*\/\//.test(lines[i - 1] ?? "")
+          ? [`${w.path}:${i + 1}`]
+          : [],
+      );
     });
-    expect(nowAnswering, "remove these from NOT_YET_MATCHED").toEqual([]);
+    expect(
+      unexplained,
+      "put a one-line comment above meta: CONFIRMS_INLINE naming the answer",
+    ).toEqual([]);
   });
 
   it("confirms the changes that saved without a word", () => {
@@ -86,6 +71,10 @@ describe("settings writes answer", () => {
       "components/settings/report-schedule-card.tsx",
       "components/settings/import-panel/health-connect-remote-card.tsx",
       "components/settings/glucose-reference-card.tsx",
+      "components/cycle/use-cycle-feed.ts",
+      "components/settings/care-calendar-feed-card.tsx",
+      "components/settings/managed-record-settings-section.tsx",
+      "components/settings/ai/ai-consent-card.tsx",
     ]) {
       const writer = writers.find((w) => w.path === path);
       expect(writer?.text, path).toMatch(/CONFIRM_SAVED/);
