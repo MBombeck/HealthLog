@@ -24,12 +24,19 @@
  * this wake at all: they do not go through these seams.
  *
  * Best effort throughout: nothing here can fail the sync that caused it.
+ *
+ * A note that has a device to tell writes its own wide event
+ * (`notification.data_changed.send`). It is called fire and forget, mostly
+ * from a request that has answered by the time the relay did: what the send
+ * annotated landed on an event that was already written, so a wake that
+ * demonstrably reached a phone left no line in the log.
  */
 import { AsyncLocalStorage } from "node:async_hooks";
 
 import type { MeasurementType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { FanOutTally } from "@/lib/jobs/fan-out-tally";
+import { withBackgroundEvent } from "@/lib/logging/background";
 import { getEvent } from "@/lib/logging/context";
 import { flushOwedIntakeSyncs } from "@/lib/push-relay/medication-pushes";
 import { pruneWakes, sendWake, wakeableDevices } from "@/lib/push-relay/wakes";
@@ -47,6 +54,8 @@ export type DataDomain = (typeof DATA_DOMAINS)[number];
 
 /** The quiet spell after one send. */
 export const COALESCE_WINDOW_MS = 5 * 60_000;
+/** The wide event a note with a device to tell writes for itself. */
+const SEND_EVENT = "notification.data_changed.send";
 const origin = new AsyncLocalStorage<string | null>();
 
 /** The notes a batch holds back, by account and origin device. */
@@ -144,10 +153,30 @@ export function noteDataChanged(
       const devices = (await wakeableDevices(userId)).filter(
         (d) => d.token !== skip,
       );
-      for (const device of devices) {
-        await addPending(device.id, list, now);
-        await flushDataChange(device.id, now);
-      }
+      // Nobody to tell: no event either, or every write of an account
+      // without the app would log a no-op.
+      if (devices.length === 0) return;
+      await withBackgroundEvent(SEND_EVENT, async (evt) => {
+        let sent = 0;
+        let waiting = 0;
+        let held = 0;
+        for (const device of devices) {
+          await addPending(device.id, list, now);
+          const out = await flushDataChange(device.id, now);
+          if (out === true) sent += 1;
+          else if (out === null) waiting += 1;
+          else held += 1;
+        }
+        evt.addMeta("data_changed_domains", list);
+        evt.addMeta("data_changed_devices", devices.length);
+        // Went out now (or waits at the relay for a retry).
+        evt.addMeta("data_changed_sent", sent);
+        // Inside the five-minute window of the last wake: the minute pass
+        // sends the merged domains when it closes.
+        evt.addMeta("data_changed_window_open", waiting);
+        // The silent budget is spent, or the device has no route.
+        evt.addMeta("data_changed_held", held);
+      });
     } catch (err) {
       getEvent()?.addWarning(
         `data_changed_note_failed: ${err instanceof Error ? err.message : String(err)}`,
