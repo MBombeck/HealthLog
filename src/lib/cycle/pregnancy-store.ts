@@ -14,7 +14,7 @@
  */
 import type { PrismaClient } from "@/generated/prisma/client";
 import { decrypt, encrypt } from "@/lib/crypto";
-import { annotate } from "@/lib/logging/context";
+import { annotate, getEvent } from "@/lib/logging/context";
 import { isCycleAvailableForUser } from "@/lib/cycle/gate";
 
 import {
@@ -140,7 +140,56 @@ export function pregnancyWriteData(
  * reader goes through): a state the cycle pages do not show is not shown
  * anywhere else either.
  */
-export async function loadPregnancyFields(
+export function loadPregnancyFields(
+  db: Pick<PrismaClient, "cycleProfile">,
+  userId: string,
+): Promise<OpenedPregnancy | null> {
+  const memo = readRequestMemo(db);
+  if (!memo) return readPregnancyFields(db, userId);
+  const held = memo.get(userId);
+  if (held) return held;
+  const read = readPregnancyFields(db, userId);
+  memo.set(userId, read);
+  // A failed read is not kept: the next reader in the request asks again.
+  read.catch(() => memo.delete(userId));
+  return read;
+}
+
+/**
+ * One read per GET request. A dashboard, a series or a status read asks for
+ * the state from every reader that frames weight (the targets, the verdicts,
+ * the BMI note, the score), and each asked the database on its own: up to
+ * three point reads of one row per request. A GET writes no state, so the
+ * first answer holds for the rest of the request; any other method, a job or
+ * a script reads afresh each time, because it may have just written the row.
+ * Keyed by the client too, so a transaction never sees a read made outside it.
+ */
+const requestMemos = new WeakMap<
+  object,
+  WeakMap<object, Map<string, Promise<OpenedPregnancy | null>>>
+>();
+
+function readRequestMemo(
+  db: object,
+): Map<string, Promise<OpenedPregnancy | null>> | null {
+  const event = getEvent();
+  if (!event || (event.getHttpMethod() ?? "").toUpperCase() !== "GET") {
+    return null;
+  }
+  let byClient = requestMemos.get(event);
+  if (!byClient) {
+    byClient = new WeakMap();
+    requestMemos.set(event, byClient);
+  }
+  let memo = byClient.get(db);
+  if (!memo) {
+    memo = new Map();
+    byClient.set(db, memo);
+  }
+  return memo;
+}
+
+async function readPregnancyFields(
   db: Pick<PrismaClient, "cycleProfile">,
   userId: string,
 ): Promise<OpenedPregnancy | null> {
