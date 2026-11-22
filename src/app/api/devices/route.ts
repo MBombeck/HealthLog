@@ -197,6 +197,17 @@ async function replaceLiveActivityTokens(
   },
 ): Promise<void> {
   if (sent.liveActivityTokens === undefined) return;
+  // A token the app once registered as relay-started stays so when a later
+  // post of the set omits `relayStart`: the mark is the Activity's
+  // attributes type, which never changes.
+  const relayStarted = new Set(
+    (
+      await tx.liveActivityToken.findMany({
+        where: { deviceId, relayStarted: true },
+        select: { pushToken: true },
+      })
+    ).map((row) => row.pushToken.toLowerCase()),
+  );
   await tx.liveActivityToken.deleteMany({ where: { deviceId } });
   if (sent.liveActivityTokens.length === 0) return;
   // The dose a relay start was for, for an Activity that knows none.
@@ -226,6 +237,8 @@ async function replaceLiveActivityTokens(
       pushToken: a.token,
       medicationId: a.medicationId,
       slotInstant: a.slotInstant ?? null,
+      relayStarted:
+        a.relayStart === true || relayStarted.has(a.token.toLowerCase()),
       ...(a.statement && a.signature
         ? {
             activityStatement: a.statement as Prisma.InputJsonObject,

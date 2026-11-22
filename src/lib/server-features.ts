@@ -74,7 +74,7 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
   "push.security-alert-relay":
     "SECURITY_ALERT (new sign-in, passkey added or removed, token revoked, refresh-token reuse) reaches sealed and relay-bound devices with ui.level time-sensitive and d.securityKind.",
   "push.live-activity-relay":
-    "POST /api/devices takes liveActivityConsent (hl-la-consent-v1), liveActivityWithdraw (hl-la-withdraw-v1), liveActivityStart (push-to-start token with hl-la-start-v1) and liveActivityTokens[].relayStart; the server starts and updates medication Live Activities over the relay with the closed content state while push.relay.liveActivity lists start and update (operator switch PUSH_RELAY_LIVE_ACTIVITY, off by default).",
+    "POST /api/devices takes liveActivityConsent (hl-la-consent-v1), liveActivityWithdraw (hl-la-withdraw-v1), liveActivityStart (push-to-start token with hl-la-start-v1) and liveActivityTokens[].relayStart; the server starts medication Live Activities over the relay and updates only those registered with relayStart, with the closed content state, while push.relay.liveActivity lists start and update (operator switch PUSH_RELAY_LIVE_ACTIVITY, off by default).",
   "push.live-activity-started":
     "push.device.liveActivityStarted on /api/auth/me and in the POST /api/devices answer names the dose ({ medicationId, slotInstant }) of the Live Activity the server started on the calling device; null once that slot is answered, its medication paused or ended, or nothing was started.",
   "day.dose-offset":

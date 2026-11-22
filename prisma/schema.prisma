@@ -6518,6 +6518,13 @@ model LiveActivityToken {
   /// The content state the last relay update sent, so an unchanged state is
   /// not sent again. Reader and writer: `push-relay/live-activity.ts`.
   lastRelayState    Json?     @map("last_relay_state")
+  /// The server started this Activity over the relay (the app registered it
+  /// with `relayStart: true`; the mark sticks to the token on later
+  /// registrations). Only these get relay updates: an Activity the app
+  /// started itself has another attributes type, and gets only the direct
+  /// path and the end push. Writer: `POST /api/devices`; reader:
+  /// `push-relay/live-activity.ts`.
+  relayStarted      Boolean   @default(false) @map("relay_started")
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 

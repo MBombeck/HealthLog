@@ -153,15 +153,18 @@ async function setUp() {
       ).toString("base64url"),
     };
   };
-  const activityEntry = (extra: Record<string, unknown>) => {
+  const activityEntry = (
+    extra: Record<string, unknown>,
+    activityToken: string = LA_TOKEN,
+  ) => {
     const statement = {
       instanceId,
       tokenTag: base.tokenTag,
-      laTokenTag: tokenTagHex(LA_TOKEN) as string,
+      laTokenTag: tokenTagHex(activityToken) as string,
       iat: now(),
     };
     return {
-      token: LA_TOKEN,
+      token: activityToken,
       statement,
       signature: signText(
         seed,
@@ -404,6 +407,7 @@ describe("start and update", () => {
     await t.reg({
       liveActivityTokens: [
         t.activityEntry({
+          relayStart: true,
           medicationId: medication.id,
           slotInstant: slot.toISOString(),
         }),
@@ -486,6 +490,7 @@ describe("the dose state", () => {
     await t.reg({
       liveActivityTokens: [
         t.activityEntry({
+          relayStart: true,
           medicationId: medication.id,
           slotInstant: slot.toISOString(),
         }),
@@ -540,5 +545,81 @@ describe("the dose state", () => {
     ]);
     expect(await getPrismaClient().liveActivityToken.count()).toBe(0);
     expect(await pass(second(missedAfter, 301))).toEqual([]);
+  });
+});
+
+describe("who started the Activity", () => {
+  const APP_LA_TOKEN = "7c".repeat(32);
+
+  it("updates only the one the server started, and ends both", async () => {
+    const t = await setUp();
+    await t.reg({ liveActivityConsent: t.consent() });
+    // Past the daily band's on-time hour after the slot: overdue.
+    const { medication, slot, at } = await dueDose(t.session.userId, -90);
+    const dose = {
+      medicationId: medication.id,
+      slotInstant: slot.toISOString(),
+    };
+    await t.reg({
+      liveActivityTokens: [
+        t.activityEntry({ ...dose, relayStart: true }),
+        // The app's own Activity of the same dose, its own attributes type.
+        t.activityEntry(dose, APP_LA_TOKEN),
+      ],
+    });
+    const rows = await getPrismaClient().liveActivityToken.findMany({
+      orderBy: { pushToken: "asc" },
+      select: { pushToken: true, relayStarted: true },
+    });
+    expect(rows).toEqual([
+      { pushToken: LA_TOKEN, relayStarted: true },
+      { pushToken: APP_LA_TOKEN, relayStarted: false },
+    ]);
+
+    expect(await runLiveActivityRelayPass()).toMatchObject({ updated: 1 });
+    expect(laPushes().map((p) => [p.token, p.payload.aps])).toEqual([
+      [LA_TOKEN, expect.objectContaining({ event: "update" })],
+    ]);
+
+    // A later post of the set that names the dose and leaves `relayStart`
+    // out keeps the mark: it belongs to the Activity, not to the post.
+    await t.reg({
+      liveActivityTokens: [
+        t.activityEntry(dose),
+        t.activityEntry(dose, APP_LA_TOKEN),
+      ],
+    });
+    expect(
+      await getPrismaClient().liveActivityToken.count({
+        where: { relayStarted: true },
+      }),
+    ).toBe(1);
+    await getPrismaClient().medication.update({
+      where: { id: medication.id },
+      data: { snoozedUntil: new Date(Date.now() + 20 * 60_000) },
+    });
+    const before = laPushes().length;
+    expect(await runLiveActivityRelayPass()).toMatchObject({ updated: 1 });
+    expect(
+      laPushes()
+        .slice(before)
+        .map((p) => p.token),
+    ).toEqual([LA_TOKEN]);
+
+    // Missed: both end, whoever started them.
+    const ended = laPushes().length;
+    await runLiveActivityRelayPass(at(24 * 60));
+    expect(
+      laPushes()
+        .slice(ended)
+        .map((p) => [p.token, (p.payload.aps as { event: string }).event])
+        .sort(),
+    ).toEqual(
+      [
+        [APP_LA_TOKEN, "end"],
+        [LA_TOKEN, "end"],
+      ].sort(),
+    );
+    expect(await getPrismaClient().liveActivityToken.count()).toBe(0);
   });
 });
