@@ -28,7 +28,11 @@ vi.mock("@/lib/queries/use-achievements-query", () => ({
 }));
 
 const toast = vi.fn();
-vi.mock("sonner", () => ({ toast: (...args: unknown[]) => toast(...args) }));
+vi.mock("sonner", () => ({
+  toast: Object.assign((...args: unknown[]) => toast(...args), {
+    getToasts: () => [],
+  }),
+}));
 
 import { AchievementUnlockNotifier } from "../achievement-unlock-notifier";
 
