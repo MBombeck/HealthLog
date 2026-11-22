@@ -23,6 +23,14 @@ import {
 import type { ComparisonBaseline } from "@/lib/dashboard-layout";
 import type { Formatters } from "@/lib/format-locale";
 import { computeTickPositions } from "@/lib/charts/x-axis-density";
+import {
+  PERIOD_END_KEY,
+  PERIOD_START_KEY,
+  pointPeriodLabel,
+  READINGS_KEY,
+} from "@/lib/charts/range-grain";
+import type { ChartBucketType } from "@/lib/charts/bucket-time-series";
+
 import { RichChartTooltip, type RichTooltipRow } from "../chart-tooltip";
 
 export interface ChartDataPoint {
@@ -34,6 +42,10 @@ export interface ChartDataPoint {
   trend?: number;
   /** The prior-period overlay value. */
   scoreCompare?: number;
+  /** The days a week or month point covers, and the entries behind it. */
+  [PERIOD_START_KEY]?: number;
+  [PERIOD_END_KEY]?: number;
+  [READINGS_KEY]?: number;
 }
 
 // Mood-level bands ride the same Dracula good→bad ramp the mood
@@ -93,6 +105,8 @@ export interface MoodChartPlotProps {
   animationsEnabled: boolean;
   t: (key: string, params?: Record<string, string | number>) => string;
   dayLinkSource: ChartDataPoint[] | undefined;
+  /** The grain the points are drawn at, for the tooltip and `data-bucket`. */
+  bucket: ChartBucketType;
 }
 
 function renderMoodTooltip(props: unknown, p: MoodChartPlotProps) {
@@ -117,9 +131,31 @@ function renderMoodTooltip(props: unknown, p: MoodChartPlotProps) {
     (typeof rechartsLabel === "number"
       ? p.chartData?.[Math.round(rechartsLabel)]?.timestamp
       : undefined);
-  const dateLabel = ts ? p.tzFmt.date(new Date(ts)) : "";
-  const rows: RichTooltipRow[] = [];
   const hoverPoint = payload[0]?.payload as ChartDataPoint | undefined;
+  // A week or month names the days it covers and that it is an average, as
+  // the measurement chart's tooltip does.
+  const dateLabel = hoverPoint
+    ? pointPeriodLabel(hoverPoint, p.tzFmt.date, p.t)
+    : ts
+      ? p.tzFmt.date(new Date(ts))
+      : "";
+  const caption =
+    p.bucket === "week"
+      ? p.t("charts.bucketWeekly")
+      : p.bucket === "month"
+        ? p.t("charts.bucketMonthly")
+        : null;
+  const readings = hoverPoint?.[READINGS_KEY];
+  const label = [
+    dateLabel,
+    caption,
+    caption && typeof readings === "number"
+      ? p.t("charts.bucketEntries", { count: p.fmt.integer(readings) })
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const rows: RichTooltipRow[] = [];
   for (const item of payload) {
     if (typeof item.value !== "number") continue;
     const dataKey = String(item.dataKey ?? "");
@@ -184,7 +220,7 @@ function renderMoodTooltip(props: unknown, p: MoodChartPlotProps) {
   return (
     <RichChartTooltip
       active
-      label={dateLabel}
+      label={label}
       rows={rows}
       action={p.chartDays.tooltipAction(
         hoverPoint ? p.dayLinkSource?.indexOf(hoverPoint) : undefined,
@@ -212,6 +248,7 @@ export function MoodChartPlot(p: MoodChartPlotProps) {
       // branch only, so the browser suite can gate on it instead of on
       // Recharts' own class names.
       data-slot="chart-plot"
+      data-bucket={p.bucket}
       role="img"
       aria-label={p.moodAriaLabel}
     >

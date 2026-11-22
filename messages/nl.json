@@ -2760,6 +2760,9 @@
     "bucketMonthly": "Maandgemiddelde",
     "bucketWeeklyDaily": "Daggemiddelde per week",
     "bucketMonthlyDaily": "Daggemiddelde per maand",
+    "bucketPeriod": "{start}–{end}",
+    "bucketReadings": "Metingen: {count}",
+    "bucketEntries": "Registraties: {count}",
     "days7Label": "7 d",
     "days7Title": "Afgelopen 7 dagen",
     "days30Label": "30 d",
@@ -2828,6 +2831,8 @@
     "dataTable": {
       "toggle": "Datapunten ({count})",
       "columnDate": "Datum",
+      "columnReadings": "Metingen",
+      "columnEntries": "Registraties",
       "noValue": "Geen waarde",
       "captionDay": "Eén rij per dag voor {metric}, dezelfde punten die de grafiek tekent.",
       "captionWeek": "Eén rij per week voor {metric}, het gemiddelde van de dagen in die week, dezelfde punten die de grafiek tekent.",

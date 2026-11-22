@@ -18,10 +18,10 @@ import { readStoredTimezone } from "@/lib/timezone-mirror";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import type { DataSummary } from "@/lib/analytics/trends";
 import {
-  bucketTimeSeries,
-  pickBucket,
-  type ChartBucketType,
-} from "@/lib/charts/bucket-time-series";
+  PERIOD_END_KEY,
+  PERIOD_START_KEY,
+  READINGS_KEY,
+} from "@/lib/charts/range-grain";
 import { ChartDataTable } from "./chart-data-table";
 import { chartPointDayKey } from "@/components/day/chart-day";
 import {
@@ -32,9 +32,9 @@ import { ChartEmptyState } from "./chart-empty-state";
 import { ChartRangeTabs } from "./chart-range-tabs";
 import { ChartErrorState } from "./chart-error-state";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
-import { shiftDailySeriesForward } from "@/lib/charts/comparison-shift";
 import type {
   ChartOverlayKey,
+  ChartRangePoints,
   ComparisonBaseline,
 } from "@/lib/dashboard-layout";
 import { ChartOverlayControls } from "./chart-overlay-controls";
@@ -44,12 +44,8 @@ import { CHART_HEIGHT_PX } from "@/lib/charts/constants";
 import { shouldFireDataReady } from "@/lib/charts/data-ready-latch";
 import { moodLabelKeyForScore } from "@/lib/mood/labels";
 import { apiGet } from "@/lib/api/api-fetch";
-import { trendLineByTime } from "@/lib/stats/linear-fit";
-import {
-  dayKeyToTimestamp,
-  movingAverageByPoints,
-} from "./health-chart/series-math";
-import { MoodChartPlot, type ChartDataPoint } from "./mood-chart/plot";
+import { MoodChartPlot } from "./mood-chart/plot";
+import { useMoodChartView } from "./mood-chart/use-mood-chart-view";
 
 // --- Types ---
 
@@ -114,89 +110,11 @@ interface MoodChartProps {
 
 // --- Helpers ---
 
-// --- Aggregation helpers (exported for unit tests) ---
-
-interface MoodEntryDay {
-  date: string; // "YYYY-MM-DD" Berlin
-  score: number;
-}
-
-/**
- * Pick the time bucket for a window of mood entries based on the same
- * thresholds the dashboard charts use. Pure: no DOM/i18n side-effects.
- *
- * - ≤ 90 days → "day"   (raw daily averages)
- * - 91-730   → "week"  (ISO weekly mean)
- * - > 730    → "month" (Berlin calendar monthly mean)
- */
-export function pickMoodBucket(entries: MoodEntryDay[]): ChartBucketType {
-  if (entries.length < 2) return "day";
-  const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
-  const firstTs = dayKeyToTimestamp(sorted[0].date);
-  const lastTs = dayKeyToTimestamp(sorted[sorted.length - 1].date);
-  const rangeDays = Math.round((lastTs - firstTs) / (24 * 60 * 60 * 1000));
-  return pickBucket(rangeDays);
-}
-
-/**
- * Aggregate daily mood entries into the bucket chosen by `pickMoodBucket`.
- * Returns `{ timestamp, score }` rows so the chart can render them
- * without re-formatting. Days/weeks/months without an observation are
- * skipped, never emitted as 0.
- *
- * Pure & deterministic so the unit test can pin the exact aggregated
- * mean per bucket.
- */
-export function aggregateMoodEntries(
-  entries: MoodEntryDay[],
-  /**
-   * The calendar the week / month boundaries are drawn in. Required rather
-   * than defaulted for the same reason `bucketTimeSeries` requires it: a
-   * default would leave a forgotten caller quietly bucketing someone else's
-   * evening into the wrong month.
-   */
-  timeZone: string,
-): {
-  bucket: ChartBucketType;
-  points: Array<{ timestamp: number; score: number }>;
-} {
-  if (entries.length === 0) return { bucket: "day", points: [] };
-
-  const bucket = pickMoodBucket(entries);
-  const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
-
-  if (bucket === "day") {
-    return {
-      bucket,
-      points: sorted.map((entry) => ({
-        timestamp: dayKeyToTimestamp(entry.date),
-        score: entry.score,
-      })),
-    };
-  }
-
-  const out = bucketTimeSeries(
-    sorted.map((entry) => ({
-      timestamp: dayKeyToTimestamp(entry.date),
-      values: { score: entry.score },
-    })),
-    { bucket, timeZone },
-  );
-
-  return {
-    bucket,
-    points: out.points.map((point) => ({
-      timestamp: point.timestamp,
-      score: point.values.score,
-    })),
-  };
-}
-
 // --- Component ---
 
 const MINI_RANGE_POINTS: Record<
   NonNullable<MoodChartProps["windowOverride"]>,
-  number
+  ChartRangePoints
 > = {
   last7days: 7,
   last30days: 30,
@@ -237,7 +155,8 @@ export function MoodChart({
   const initialRangePoints = windowOverride
     ? MINI_RANGE_POINTS[windowOverride]
     : 30;
-  const [rangePoints, setRangePoints] = useState(initialRangePoints);
+  const [rangePoints, setRangePoints] =
+    useState<ChartRangePoints>(initialRangePoints);
 
   // v1.4.18 — three overlay toggles persisted per chart. Mini-mode
   // renders without controls and stays at the clean-line default.
@@ -339,149 +258,21 @@ export function MoodChart({
     );
   }, [data]);
 
-  const chartData = useMemo((): ChartDataPoint[] | undefined => {
-    if (!data?.entries?.length) return undefined;
-
-    // v1.37.29 — a calendar-day window, not "the last N logged days":
-    // the tabs promise days, and the measurement charts window by days.
-    // The bucketing (≤90d → day, 91-730d → week, >730d → month, the same
-    // `pickBucket()` thresholds every dashboard chart uses) is
-    // `aggregateMoodEntries`, the function the unit tests pin.
-    const cutoff = new Date().getTime() - rangePoints * 86_400_000;
-    const windowed =
-      rangePoints > 0
-        ? data.entries.filter(
-            (entry) => dayKeyToTimestamp(entry.date) >= cutoff,
-          )
-        : data.entries;
-    const visibleData: ChartDataPoint[] = aggregateMoodEntries(
-      windowed,
-      profileTimeZone,
-    ).points.map((point) => ({
-      date: tzFmt.dateShortSmart(new Date(point.timestamp)),
-      timestamp: point.timestamp,
-      pointIndex: 0,
-      score: point.score,
-    }));
-
-    const enriched: ChartDataPoint[] = visibleData.map((d, index) => ({
-      ...d,
-      pointIndex: index,
-    }));
-
-    if (showMA) {
-      const scoreData = enriched.map((d) => ({
-        date: new Date(d.timestamp),
-        value: d.score,
-      }));
-
-      if (scoreData.length >= 2) {
-        const ma = movingAverageByPoints(scoreData, 7);
-        for (const point of ma) {
-          const pointTimestamp = point.date.getTime();
-          const existing = enriched.find((d) => d.timestamp === pointTimestamp);
-          if (existing) {
-            existing.ma = point.value;
-          }
-        }
-      }
-    }
-
-    if (showTrend) {
-      const scoreData = enriched.map((d) => ({
-        date: new Date(d.timestamp),
-        value: d.score,
-      }));
-
-      if (scoreData.length >= 2) {
-        const trend = trendLineByTime(scoreData);
-        if (trend) {
-          for (const point of trend.points) {
-            const pointTimestamp = point.date.getTime();
-            const existing = enriched.find(
-              (d) => d.timestamp === pointTimestamp,
-            );
-            if (existing) {
-              existing.trend = point.value;
-            }
-          }
-        }
-      }
-    }
-
-    return enriched;
-  }, [data, rangePoints, showMA, showTrend, tzFmt, profileTimeZone]);
-
-  /**
-   * v1.4.16 — comparison overlay merged into chartData.
-   *
-   * Same mechanic as HealthChart: shift the full mood-entries history
-   * forward by 30 / 365 days, key by the existing `date` formatter, and
-   * stamp the prior-period score onto each visible point as
-   * `scoreCompare`. The Recharts <Line dataKey="scoreCompare" />
-   * below renders the dimmed dashed overlay.
-   */
-  const chartDataWithCompare = useMemo<ChartDataPoint[] | undefined>(() => {
-    if (!chartData || effectiveCompareBaseline === "none") return chartData;
-    if (!data?.entries?.length) return chartData;
-
-    const shifted = shiftDailySeriesForward(
-      data.entries.map((entry) => ({
-        timestamp: dayKeyToTimestamp(entry.date),
-        score: entry.score,
-      })),
-      effectiveCompareBaseline,
-    );
-
-    const shiftedByDay = new Map<string, number>();
-    for (const row of shifted) {
-      const dayKey = tzFmt.dateShortSmart(new Date(row.timestamp));
-      if (typeof row.score === "number" && Number.isFinite(row.score)) {
-        shiftedByDay.set(dayKey, row.score);
-      }
-    }
-
-    return chartData.map((point) => {
-      const compareValue = shiftedByDay.get(point.date);
-      if (typeof compareValue === "number" && Number.isFinite(compareValue)) {
-        return { ...point, scoreCompare: compareValue };
-      }
-      return point;
-    });
-  }, [chartData, effectiveCompareBaseline, data, tzFmt]);
-
-  const hasComparisonData = useMemo(() => {
-    if (effectiveCompareBaseline === "none" || !chartDataWithCompare)
-      return false;
-    return chartDataWithCompare.some((point) =>
-      typeof point.scoreCompare === "number"
-        ? Number.isFinite(point.scoreCompare)
-        : false,
-    );
-  }, [chartDataWithCompare, effectiveCompareBaseline]);
-
-  // Mirror the activeBucket calculation from health-chart so the chip
-  // in the header reflects the *same* aggregation chartData used.
-  // Computed independently of chartData so an empty/loading dataset
-  // doesn't crash the chip render.
-  const activeBucket: ChartBucketType = useMemo(() => {
-    if (!data?.entries?.length) return "day";
-    const cutoff = new Date().getTime() - rangePoints * 86_400_000;
-    const sorted = [...data.entries].sort((a, b) =>
-      a.date.localeCompare(b.date),
-    );
-    // v1.37.29 — the same calendar-day window `chartData` applies, so the
-    // chip describes the points actually painted.
-    const sliced =
-      rangePoints > 0
-        ? sorted.filter((entry) => dayKeyToTimestamp(entry.date) >= cutoff)
-        : sorted;
-    if (sliced.length < 2) return "day";
-    const firstTs = dayKeyToTimestamp(sliced[0].date);
-    const lastTs = dayKeyToTimestamp(sliced[sliced.length - 1].date);
-    const rangeDays = Math.round((lastTs - firstTs) / (24 * 60 * 60 * 1000));
-    return pickBucket(rangeDays);
-  }, [data, rangePoints]);
+  const {
+    visible,
+    activeBucket,
+    chartData,
+    chartDataWithCompare,
+    hasComparisonData,
+  } = useMoodChartView({
+    entries: data?.entries,
+    rangePoints,
+    profileTimeZone,
+    tzFmt,
+    showMA,
+    showTrend,
+    effectiveCompareBaseline,
+  });
 
   const maxPointIndex = Math.max(0, (chartData?.length ?? 1) - 1);
 
@@ -617,7 +408,7 @@ export function MoodChart({
     />
   ) : !chartData?.length ? (
     <ChartEmptyState title={t("charts.noData")} height={192} />
-  ) : chartData.length < 3 ? (
+  ) : (visible?.days ?? 0) < 3 ? (
     // v1.4.16 — sparse-data placeholder consistent with the
     // BP/weight/pulse charts. Height tracks the chart strip's
     // shared CHART_HEIGHT_PX so the empty state preserves the
@@ -651,7 +442,10 @@ export function MoodChart({
       moodAriaLabel={moodAriaLabel}
       showBands={showBands}
       showTrend={showTrend}
-      showMA={showMA}
+      // The 7-day average is a daily overlay; on week or month points it is
+      // not drawn and leaves no legend entry behind.
+      showMA={showMA && activeBucket === "day"}
+      bucket={activeBucket}
       personalBaseline={personalBaseline}
       maxPointIndex={maxPointIndex}
       tzFmt={tzFmt}
@@ -765,7 +559,7 @@ export function MoodChart({
       </CardHeader>
       <CardContent>
         {chartBody}
-        {!isLoading && !isError && chartData && chartData.length >= 3 ? (
+        {!isLoading && !isError && chartData && (visible?.days ?? 0) >= 3 ? (
           <>
             <ChartDayFooter
               links={chartDays}
@@ -775,19 +569,23 @@ export function MoodChart({
               insetLeft={8 + 65 + 10}
               insetRight={8 + 10}
             />
-            {dayLinksActive ? (
+            {dayLinks ? (
               <ChartDataTable
                 points={chartData.map((point) => ({
                   date: point.date,
                   timestamp: point.timestamp,
                   score: point.score,
+                  [PERIOD_START_KEY]: point[PERIOD_START_KEY],
+                  [PERIOD_END_KEY]: point[PERIOD_END_KEY],
+                  [READINGS_KEY]: point[READINGS_KEY],
                 }))}
                 columns={[{ key: "score", label: t("charts.moodScore") }]}
                 formatValue={formatTooltipValue}
                 formatDate={tzFmt.date}
-                bucket="day"
+                bucket={activeBucket}
                 metricLabel={displayTitle}
-                dayLinks
+                dayLinks={dayLinksActive}
+                countLabel={t("charts.dataTable.columnEntries")}
               />
             ) : null}
           </>

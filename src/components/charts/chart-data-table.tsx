@@ -18,6 +18,7 @@ import type { ChartBucketType } from "@/lib/charts/bucket-time-series";
 import { chartPointDayKey } from "@/components/day/chart-day";
 import { DayLink } from "@/components/day/day-link";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
+import { pointPeriodLabel, READINGS_KEY } from "@/lib/charts/range-grain";
 
 /**
  * The data points behind the chart, as a table.
@@ -90,6 +91,11 @@ export interface ChartDataTableProps {
    * only; a week or month row has no single day.
    */
   dayLinks?: boolean;
+  /**
+   * The header of the count column a week or month table carries; defaults
+   * to "Readings". The mood chart counts entries.
+   */
+  countLabel?: string;
 }
 
 const BUCKET_CAPTION_KEY: Record<ChartBucketType, string> = {
@@ -107,6 +113,7 @@ export function ChartDataTable({
   bucket,
   metricLabel,
   dayLinks = false,
+  countLabel,
 }: ChartDataTableProps) {
   const { t } = useTranslations();
   const [open, setOpen] = useState(false);
@@ -132,6 +139,13 @@ export function ChartDataTable({
   // Newest first, matching the measurement list — the two places the app
   // prints the same readings must not disagree on reading order.
   const rows = [...points].reverse();
+
+  // A week or month row says how many readings its average stands on, so a
+  // week with one reading does not read like a week with fourteen. Daily rows
+  // are one day's readings and carry no count column.
+  const showReadings =
+    bucket !== "day" &&
+    points.some((point) => typeof point[READINGS_KEY] === "number");
 
   return (
     <div
@@ -188,6 +202,15 @@ export function ChartDataTable({
                   {unit ? `${column.label} (${unit})` : column.label}
                 </TableHead>
               ))}
+              {showReadings ? (
+                <TableHead
+                  scope="col"
+                  className="text-right"
+                  data-slot="chart-data-table-readings-head"
+                >
+                  {countLabel ?? t("charts.dataTable.columnReadings")}
+                </TableHead>
+              ) : null}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -197,6 +220,7 @@ export function ChartDataTable({
               <TableRow
                 key={`${point.timestamp}-${index}`}
                 data-slot="chart-data-table-row"
+                data-bucket={bucket}
               >
                 {/* The date is the row's header, so a screen reader reads
                     "12 July, systolic 128" rather than a bare number. */}
@@ -212,7 +236,7 @@ export function ChartDataTable({
                       {formatDate(new Date(point.timestamp))}
                     </DayLink>
                   ) : (
-                    formatDate(new Date(point.timestamp))
+                    pointPeriodLabel(point, formatDate, t)
                   )}
                 </TableHead>
                 {columns.map((column) => {
@@ -239,6 +263,16 @@ export function ChartDataTable({
                     </TableCell>
                   );
                 })}
+                {showReadings ? (
+                  <TableCell
+                    className="text-foreground text-right tabular-nums"
+                    data-slot="chart-data-table-readings"
+                  >
+                    {typeof point[READINGS_KEY] === "number"
+                      ? String(point[READINGS_KEY])
+                      : null}
+                  </TableCell>
+                ) : null}
               </TableRow>
             ))}
           </TableBody>

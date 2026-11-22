@@ -2760,6 +2760,9 @@
     "bucketMonthly": "월 평균",
     "bucketWeeklyDaily": "주별 일평균",
     "bucketMonthlyDaily": "월별 일평균",
+    "bucketPeriod": "{start}–{end}",
+    "bucketReadings": "측정 {count}회",
+    "bucketEntries": "기록 {count}개",
     "systolic": "수축기",
     "diastolic": "이완기",
     "bodyWater": "체수분",
@@ -2818,6 +2821,8 @@
     "dataTable": {
       "toggle": "데이터 포인트 ({count})",
       "columnDate": "날짜",
+      "columnReadings": "측정 횟수",
+      "columnEntries": "기록 수",
       "noValue": "값 없음",
       "captionDay": "{metric} 하루당 한 행, 차트가 그리는 값과 같아요.",
       "captionWeek": "{metric} 한 주당 한 행, 그 주 일별 평균이에요. 차트가 그리는 값과 같아요.",

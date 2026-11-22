@@ -91,6 +91,14 @@ export function toDayKey(
 }
 
 /** A day key's position on a chart's time axis: noon UTC of that date. */
+/**
+ * The key a daily point carries its raw reading count under, per type. The
+ * week and month points sum it into the count the data table prints.
+ */
+export function readingsKey(type: string): string {
+  return `${type}__readings`;
+}
+
 export function dayKeyToTimestamp(dayKey: string): number {
   return dateOnlyAtNoonUtc(dayKey).getTime();
 }

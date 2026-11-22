@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import type { useFormatters } from "@/lib/i18n/context";
 import type { ComparisonBaseline } from "@/lib/dashboard-layout";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
+import { pointPeriodLabel, READINGS_KEY } from "@/lib/charts/range-grain";
 
 import { RichChartTooltip, type RichTooltipRow } from "../chart-tooltip";
 
@@ -78,11 +79,18 @@ export function makeTooltipContent({
       (typeof rechartsLabel === "number"
         ? chartData?.[Math.round(rechartsLabel)]?.timestamp
         : undefined);
-    const dateLabel = ts ? dateLabelFor(new Date(ts)) : "";
-    const rows: RichTooltipRow[] = [];
     // The current and prior values of the hovered day come from the same
     // payload object.
     const hoverPoint = payload[0]?.payload as ChartDataPoint | undefined;
+    // A week or month names the days it covers, so a week still running
+    // reads as the shorter stretch it is.
+    const dateLabel = hoverPoint
+      ? pointPeriodLabel(hoverPoint, dateLabelFor, t)
+      : ts
+        ? dateLabelFor(new Date(ts))
+        : "";
+    const readings = hoverPoint?.[READINGS_KEY];
+    const rows: RichTooltipRow[] = [];
     for (const item of payload) {
       if (typeof item.value !== "number") continue;
       const dataKey = String(item.dataKey ?? "");
@@ -147,7 +155,15 @@ export function makeTooltipContent({
     return (
       <RichChartTooltip
         active
-        label={bucketCaption ? `${dateLabel} · ${t(bucketCaption)}` : dateLabel}
+        label={[
+          dateLabel,
+          bucketCaption ? t(bucketCaption) : null,
+          bucketCaption && typeof readings === "number"
+            ? t("charts.bucketReadings", { count: fmt.integer(readings) })
+            : null,
+        ]
+          .filter(Boolean)
+          .join(" · ")}
         rows={rows}
         action={tooltipAction(
           hoverPoint ? dayLinkSource?.indexOf(hoverPoint) : undefined,

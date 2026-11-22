@@ -131,7 +131,6 @@ export function HealthChart({
   // Overlays and comparison persist per chart; an unbound chart (mini mode,
   // ad-hoc use) gets the clean-line default and skips the layout read.
   const overlayPrefs = useChartOverlayPrefs(chartKey);
-  const showMA = overlayPrefs.prefs.showTrendIndicator;
   const showTrend = overlayPrefs.prefs.showTrendArrow;
   const showBands = overlayPrefs.prefs.showTargetRange;
   const effectiveCompareBaseline = chartKey
@@ -186,6 +185,7 @@ export function HealthChart({
     hasComparisonData,
     activeBucket,
     bucketCaption,
+    drawMA,
     yDomain,
     yTicks,
   } = useHealthChartView({
@@ -194,7 +194,7 @@ export function HealthChart({
     types,
     userTimezone,
     tzFmt,
-    showMA,
+    showMA: overlayPrefs.prefs.showTrendIndicator,
     showTrend,
     effectiveCompareBaseline,
     mini,
@@ -273,7 +273,7 @@ export function HealthChart({
   const openDayPoint =
     openDayIndex !== undefined ? chartData?.[openDayIndex] : undefined;
 
-  const showContextDetails = showMA || showTrend || showBands;
+  const showContextDetails = drawMA || showTrend || showBands;
   const animationsEnabled = !prefersReducedMotion();
   const label = (type: string) => getTypeLabel(type, valueMode, t);
 
@@ -376,6 +376,7 @@ export function HealthChart({
               // A stable hook for the browser suite, rendered by the data
               // branch only, so a check does not depend on Recharts' markup.
               data-slot="chart-plot"
+              data-bucket={activeBucket}
               {...chartDays.plotProps}
               className={`relative z-10 h-full touch-pan-y ${chartDays.plotClassName}`}
               role="img"
@@ -485,7 +486,7 @@ export function HealthChart({
                     t,
                     mini,
                     showBands,
-                    showMA,
+                    showMA: drawMA,
                     showTrend,
                     compareBaseline: effectiveCompareBaseline,
                     hasComparisonData,
@@ -494,9 +495,8 @@ export function HealthChart({
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
-            {/* With fewer than three daily points the chart still paints
-                every reading; this note says more days fill out the trend. */}
-            {!mini && (chartData?.length ?? 0) < 3 ? (
+            {/* Under three days in the window: more days fill the trend. */}
+            {!mini && (visibleSlice?.sliced.length ?? 0) < 3 ? (
               <p
                 className="text-muted-foreground mt-2 text-center text-xs"
                 data-slot="chart-sparse-caption"
