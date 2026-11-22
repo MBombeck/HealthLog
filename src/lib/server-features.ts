@@ -50,7 +50,7 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
   "push.relay":
     "The server seals push envelopes and can use the push relay; /api/auth/me push.relay and push.device carry the state, POST /api/devices takes pushKey, relayConsent and relayBinding.",
   "medication.dose-state":
-    "Today rows and complianceDisplay.currentDose carry the resolved state, takenLate, dueAt, overdueSince and slotInstant.",
+    "Today rows carry the resolved state, takenLate, dueAt, overdueSince and slotInstant; complianceDisplay.currentDose carries the same state, takenLate, dueAt and overdueSince, with its slot as targetAt.",
   "measurement.reading-timezone":
     "POST /api/measurements/batch accepts an optional IANA timeZone per entry; the reading's own zone sets its day for sleep, the day view, list day groups and daily charts.",
   "medication.snooze-setting":
