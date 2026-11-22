@@ -5,6 +5,9 @@
     "error": "forceSlotInstant already carries a recorded dose action",
     "meta": {
       "errorCode": "medications.intake.force_slot.occupied",
+      "slotInstant": "2026-10-14T20:00:00.000Z",
+      "takenAt": "2026-10-14T20:05:00.000Z",
+      "takenVia": null,
       "requestId": "<requestId>"
     }
   },

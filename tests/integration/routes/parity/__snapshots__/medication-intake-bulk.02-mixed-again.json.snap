@@ -40,17 +40,20 @@
         {
           "index": 0,
           "status": "skipped",
-          "reason": "medication_not_found"
+          "reason": "medication_not_found",
+          "slotInstant": null
         },
         {
           "index": 1,
           "status": "skipped",
-          "reason": "intake_not_tracked"
+          "reason": "intake_not_tracked",
+          "slotInstant": null
         },
         {
           "index": 2,
           "status": "skipped",
-          "reason": "unstable_external_id"
+          "reason": "unstable_external_id",
+          "slotInstant": null
         },
         {
           "index": 3,
@@ -86,6 +89,7 @@
           },
           "takenAt": "2026-10-15T08:30:00.000Z",
           "takenVia": "APP",
+          "slotInstant": "2026-10-15T08:00:00.000Z",
           "syncVersion": "<syncVersion>"
         },
         {
@@ -122,75 +126,90 @@
           },
           "takenAt": "2026-10-13T11:00:00.000Z",
           "takenVia": "APP",
+          "slotInstant": "2026-10-13T08:00:00.000Z",
           "syncVersion": "<syncVersion>"
         },
         {
           "index": 5,
           "status": "skipped",
-          "reason": "force_slot_invalid"
+          "reason": "force_slot_invalid",
+          "slotInstant": null
         },
         {
           "index": 6,
           "status": "skipped",
-          "reason": "force_slot_occupied"
+          "reason": "force_slot_occupied",
+          "slotInstant": "2026-10-14T20:00:00.000Z",
+          "takenAt": "2026-10-14T20:05:00.000Z",
+          "takenVia": null
         },
         {
           "index": 7,
           "status": "updated",
           "id": "<id:6>",
+          "slotInstant": "2026-10-15T20:00:00.000Z",
           "syncVersion": "<syncVersion>"
         },
         {
           "index": 8,
           "status": "duplicate",
           "id": "<id:7>",
+          "slotInstant": "2026-10-14T20:00:00.000Z",
           "syncVersion": "<syncVersion>"
         },
         {
           "index": 9,
           "status": "updated",
           "id": "<id:8>",
+          "slotInstant": "2026-10-16T08:00:00.000Z",
           "syncVersion": "<syncVersion>"
         },
         {
           "index": 10,
           "status": "duplicate",
           "id": "<id:9>",
+          "slotInstant": null,
           "syncVersion": "<syncVersion>"
         },
         {
           "index": 11,
           "status": "duplicate",
           "id": "<id:9>",
+          "slotInstant": null,
           "syncVersion": "<syncVersion>"
         },
         {
           "index": 12,
           "status": "skipped",
-          "reason": "injection_site_not_allowed"
+          "reason": "injection_site_not_allowed",
+          "slotInstant": null
         },
         {
           "index": 13,
           "status": "duplicate",
           "id": "<id:10>",
+          "slotInstant": "2026-10-15T09:00:00.000Z",
           "syncVersion": "<syncVersion>"
         },
         {
           "index": 14,
           "status": "duplicate",
           "id": "<id:10>",
+          "slotInstant": "2026-10-15T09:00:00.000Z",
           "syncVersion": "<syncVersion>"
         },
         {
           "index": 15,
           "status": "duplicate",
           "id": "<id:11>",
+          "slotInstant": null,
           "syncVersion": "<syncVersion>"
         },
         {
           "index": 16,
           "status": "skipped",
-          "reason": "unstable_external_id"
+          "reason": "unstable_external_id",
+          "slotInstant": null
         },
         {
           "index": 17,
@@ -221,6 +240,7 @@
           },
           "takenAt": "2026-10-15T10:00:00.000Z",
           "takenVia": "APP",
+          "slotInstant": "2026-10-15T10:00:00.000Z",
           "syncVersion": "<syncVersion>"
         }
       ]
