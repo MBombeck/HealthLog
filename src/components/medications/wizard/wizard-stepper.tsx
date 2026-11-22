@@ -140,9 +140,10 @@ export function WizardStepper({
                   aria-current={isActive ? "step" : undefined}
                   aria-label={`${index + 1}. ${label}`}
                   className={cn(
-                    // 44 px hit target via padding even though the visual
-                    // dot is small.
-                    "group focus-visible:ring-ring/50 flex shrink-0 flex-col items-center gap-1 rounded-md p-2 transition-colors focus-visible:ring-2 focus-visible:outline-none",
+                    // The dot paints at 28 px. The hit area around it is
+                    // 44 px tall and 36 px wide: eight dots share a 390 px
+                    // row, so a wider one would reach into its neighbour.
+                    "group focus-visible:ring-ring/50 relative flex shrink-0 flex-col items-center gap-1 rounded-md p-2 transition-colors before:absolute before:-inset-x-1 before:-inset-y-2 before:content-[''] focus-visible:ring-2 focus-visible:outline-none",
                     enabled
                       ? "cursor-pointer"
                       : "cursor-not-allowed opacity-60",
