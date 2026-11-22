@@ -15,7 +15,11 @@
  *
  * Owner-only: a cookie session or a full-scope login token; a narrow token is
  * refused by `requireAuth()`'s default arm. No module gate: labs is a data
- * layer (see `src/app/api/labs/route.ts`). Metered by its own bulk bucket.
+ * layer (see `src/app/api/labs/route.ts`). Runs behind the heavy-ingest gate
+ * (`src/lib/ingest/admission.ts`) like every bulk sync route, so a first
+ * Health Records sync waits its turn with the rest of the phone's batches
+ * instead of holding a megabyte body next to them. Metered by its own bulk
+ * bucket after admission.
  * Only counts and closed reasons reach the response, the audit row and the
  * wide event; nothing from a resource does.
  */
@@ -26,6 +30,7 @@ import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { withIdempotency } from "@/lib/idempotency";
+import { withIngestAdmission } from "@/lib/ingest/admission";
 import { afterLabReadingsWritten } from "@/lib/labs/fhir-import/after-write";
 import {
   assignPanels,
@@ -57,7 +62,9 @@ type RecordResult =
   | { index: number; status: "skipped"; reason: FhirLabSkipReason }
   | { index: number; status: "failed"; reason: FhirLabFailureReason };
 
-export const POST = apiHandler(withIdempotency<[NextRequest]>(postBatch));
+export const POST = apiHandler(
+  withIngestAdmission(withIdempotency<[NextRequest]>(postBatch)),
+);
 
 async function postBatch(request: NextRequest): Promise<Response> {
   const { user } = await requireAuth(undefined, { writeBucket: "own" });
