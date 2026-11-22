@@ -8,6 +8,7 @@ import {
   DEFAULT_SNAPSHOT_CHARS,
   coachBudgetInputSchema,
   coachBudgetsAfterWrite,
+  coachTurnWindowMs,
   parseCoachBudgets,
   resolveCoachLimits,
 } from "../coach-budgets";
@@ -77,6 +78,36 @@ describe("coach budgets", () => {
     expect(limits.snapshotChars).toBe(MAX_SNAPSHOT_CHARS);
   });
 
+  it("caps the turn at the built-in limits behind an operator fallback", () => {
+    // The fallback hop runs on the operator's key: a larger budget set for
+    // the person's own model must not carry over to it.
+    const limits = resolveCoachLimits({
+      payer: "user",
+      chain: [local, adminOpenai],
+      budgets: {
+        local: { turnTokens: 600_000, maxRounds: 24, turnSeconds: 600 },
+      },
+    });
+    expect(limits.turn).toEqual(TURN_LIMITS.user);
+    expect(limits.custom).toBe(false);
+  });
+
+  it("keeps a smaller budget behind an operator fallback", () => {
+    const limits = resolveCoachLimits({
+      payer: "user",
+      chain: [local, { providerType: "admin-codex" as const }],
+      budgets: {
+        local: { turnTokens: 40_000, maxRounds: 24, turnSeconds: 60 },
+      },
+    });
+    expect(limits.turn).toEqual({
+      tokens: 40_000,
+      maxRounds: TURN_LIMITS.user.maxRounds,
+      wallMs: 60_000,
+    });
+    expect(limits.custom).toBe(true);
+  });
+
   it("takes the smaller snapshot of a later provider", () => {
     const limits = resolveCoachLimits({
       payer: "user",
@@ -143,5 +174,21 @@ describe("coach budgets", () => {
 
   it("holds the turn slot for the longest turn a budget allows", () => {
     expect(COACH_MAX_TURN_MS).toBe(COACH_BUDGET_BOUNDS.turnSeconds.max * 1000);
+  });
+
+  it("holds the long turn slot only for a stored longer turn", () => {
+    expect(coachTurnWindowMs({})).toBe(TURN_LIMITS.user.wallMs);
+    expect(coachTurnWindowMs({ local: { snapshotChars: 60_000 } })).toBe(
+      TURN_LIMITS.user.wallMs,
+    );
+    expect(coachTurnWindowMs({ local: { turnSeconds: 60 } })).toBe(
+      TURN_LIMITS.user.wallMs,
+    );
+    expect(
+      coachTurnWindowMs({
+        local: { turnSeconds: 300 },
+        "openai-compatible": { turnSeconds: 480 },
+      }),
+    ).toBe(480_000);
   });
 });
