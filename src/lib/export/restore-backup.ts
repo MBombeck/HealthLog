@@ -44,6 +44,7 @@ import {
   type MeasurementRestorePrepass,
   type RestoreCleared,
   type RestoreContext,
+  type RestoreOutputs,
   type RestoreSectionStep,
 } from "@/lib/export/restore-context";
 import {
@@ -77,6 +78,7 @@ import {
 } from "@/lib/export/tenant-boundary";
 import { refreshTextsAfterUnitChange } from "@/lib/insights/unit-change-refresh";
 import { enqueueMeasurementFoldRepair } from "@/lib/jobs/measurement-fold-repair";
+import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
 import { annotate } from "@/lib/logging/context";
 import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";
 import { recomputeUserMoodRollups } from "@/lib/rollups/mood-rollups";
@@ -234,6 +236,7 @@ interface TransactionResult {
   expiredTombstonesSkipped: number;
   foldRepairReset: boolean;
   accountSettings: AccountSettingsRestoreResult;
+  mergedDoseSlots: RestoreOutputs["mergedDoseSlots"];
 }
 
 /**
@@ -299,6 +302,7 @@ async function replaceAccount(
           expiredTombstonesSkipped: 0,
           foldRepairReset: false,
           accountSettings: { applied: 0, refused: [], unitsChanged: false },
+          mergedDoseSlots: [],
         },
         cleared: {},
         reportSection: tracker.reportSection,
@@ -328,6 +332,7 @@ async function replaceAccount(
         expiredTombstonesSkipped: ctx.outputs.expiredTombstonesSkipped,
         foldRepairReset: ctx.outputs.foldRepairReset,
         accountSettings: ctx.outputs.accountSettings,
+        mergedDoseSlots: ctx.outputs.mergedDoseSlots,
       };
     },
     {
@@ -535,6 +540,25 @@ async function afterCommit(
         }),
       "measurement_rollup_restore_failed",
       "measurement_rollup_restore_error",
+    );
+  }
+
+  // A second take the slot rule merged away was counted into the derived
+  // supplement days the file carries; those days are derived again from the
+  // row that stayed.
+  if (result.mergedDoseSlots.length > 0) {
+    await bestEffort(
+      async () => {
+        const { timezone } = await prisma.user.findUniqueOrThrow({
+          where: { id: ownerId },
+          select: { timezone: true },
+        });
+        for (const slot of result.mergedDoseSlots) {
+          await refreshDoseSlot({ userId: ownerId, ...slot, tz: timezone });
+        }
+      },
+      "merged_dose_refresh_failed",
+      "merged_dose_refresh_error",
     );
   }
 
