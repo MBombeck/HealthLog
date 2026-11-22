@@ -15,7 +15,7 @@ If you discover a security vulnerability, please report it responsibly.
 
 **Do not open a public GitHub issue for security vulnerabilities.**
 
-Instead, send an email to **security@bombeck.io** with:
+Instead, send an email to **security@healthlog.dev** with:
 
 - A description of the vulnerability
 - Steps to reproduce
