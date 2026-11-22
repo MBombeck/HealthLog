@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 
+import { FieldGroup } from "@/components/ui/field-group";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import {
@@ -56,8 +57,10 @@ export function ThresholdsSettingsForm({
 
   return (
     <form className="grid gap-4 sm:grid-cols-3" onSubmit={submit}>
-      <label className="grid gap-1 text-sm" htmlFor="managed-threshold-metric">
-        {t("settings.sharedRecord.managedSettings.thresholds.metric")}
+      <FieldGroup
+        htmlFor="managed-threshold-metric"
+        label={t("settings.sharedRecord.managedSettings.thresholds.metric")}
+      >
         <NativeSelect
           onChange={(event) => setMetric(event.target.value as ThresholdMetric)}
           value={metric}
@@ -71,9 +74,11 @@ export function ThresholdsSettingsForm({
             </option>
           ))}
         </NativeSelect>
-      </label>
-      <label className="grid gap-1 text-sm" htmlFor="managed-threshold-minimum">
-        {t("settings.sharedRecord.managedSettings.thresholds.minimum")}
+      </FieldGroup>
+      <FieldGroup
+        htmlFor="managed-threshold-minimum"
+        label={t("settings.sharedRecord.managedSettings.thresholds.minimum")}
+      >
         <Input
           defaultValue={minimum}
           disabled={disabled}
@@ -83,9 +88,11 @@ export function ThresholdsSettingsForm({
           required
           type="number"
         />
-      </label>
-      <label className="grid gap-1 text-sm" htmlFor="managed-threshold-maximum">
-        {t("settings.sharedRecord.managedSettings.thresholds.maximum")}
+      </FieldGroup>
+      <FieldGroup
+        htmlFor="managed-threshold-maximum"
+        label={t("settings.sharedRecord.managedSettings.thresholds.maximum")}
+      >
         <Input
           defaultValue={maximum}
           disabled={disabled}
@@ -95,7 +102,7 @@ export function ThresholdsSettingsForm({
           required
           type="number"
         />
-      </label>
+      </FieldGroup>
       <FormFooter
         disabled={disabled}
         label={saveLabel}

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 
+import { FieldGroup } from "@/components/ui/field-group";
 import { NativeSelect } from "@/components/ui/native-select";
 import { useTranslations } from "@/lib/i18n/context";
 
@@ -62,8 +63,7 @@ export function AiSourceSettingsForm({
   return (
     <form className="space-y-4" onSubmit={submit}>
       <p className="text-foreground text-sm">{t(`${base}.honesty`)}</p>
-      <label className="grid gap-1 text-sm" htmlFor="managed-ai-source">
-        {t(`${base}.label`)}
+      <FieldGroup htmlFor="managed-ai-source" label={t(`${base}.label`)}>
         <NativeSelect
           value={choice}
           onChange={(event) => setChoice(event.currentTarget.value)}
@@ -88,7 +88,7 @@ export function AiSourceSettingsForm({
             </option>
           ) : null}
         </NativeSelect>
-      </label>
+      </FieldGroup>
       {choice === INSTANCE && settings.instanceKeyConfigured !== true ? (
         <p className="text-muted-foreground text-xs">
           {t(`${base}.noInstanceKey`)}
