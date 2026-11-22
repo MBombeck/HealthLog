@@ -15590,6 +15590,8 @@
     "link": {
       "validUntil": "Nur lesbar. Dieser Link gilt bis {date}.",
       "readOnly": "Nur lesbar. Von der Person geteilt, die den Link jederzeit widerrufen kann.",
+      "missTitle": "Dieser Link zur Notfallkarte funktioniert nicht",
+      "missBody": "Der Link wurde vielleicht widerrufen oder ist abgelaufen. Die Person, der die Karte gehört, kann einen neuen erstellen.",
       "title": "QR-Link",
       "loadError": "Der Status des Links konnte nicht geladen werden.",
       "disclosure": "Wer den Code scannt, sieht die angehakten Punkte, ohne Anmeldung. Du kannst dem Link ein Ende geben und ihn jederzeit widerrufen; jedes Öffnen wird für dich festgehalten.",

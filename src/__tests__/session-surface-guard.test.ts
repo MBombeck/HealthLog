@@ -320,7 +320,7 @@ describe("S2 — the URL-token authentication set is frozen", () => {
     // the lookup, HMAC-hashed at rest, revocable, optionally expiring, every
     // access audited on the owner's trail, the items frozen at mint, and
     // scrubbed from logs by `PATH_SECRET_PATHS`.
-    "app/e/[token]/page.tsx":
+    "app/e/[token]/route.ts":
       "the hlm_ path segment is the emergency card link's only credential",
     // The native https return (#163 B2). A sign-in in the app finishes here
     // with a one-time, PKCE-locked handoff code or a second-factor ticket in
@@ -392,7 +392,7 @@ describe("S2 — the URL-token authentication set is frozen", () => {
       "app/c/[token]/page.tsx",
       "app/c/[token]/report.pdf/route.ts",
       "app/claim/[token]/page.tsx",
-      "app/e/[token]/page.tsx",
+      "app/e/[token]/route.ts",
       "app/invite/[token]/page.tsx",
     ]);
   });

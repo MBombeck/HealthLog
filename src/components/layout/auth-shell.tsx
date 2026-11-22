@@ -71,8 +71,6 @@ const PUBLIC_PATHS = [
   // bare; the route is also in `proxy.ts` PUBLIC_PATHS so it never round-trips
   // the sign-in redirect.
   "/c/",
-  // The emergency card's read-only QR view, the same: standalone, no gate.
-  "/e/",
   // v1.17.0 — the invite universal-link landing is a server redirect onto
   // `/auth/register?invite=…`. It is public in `proxy.ts`, and it must be
   // public here too: Next streams this shell before the redirect resolves,
@@ -204,13 +202,13 @@ export function AuthShell({
   // render edge-to-edge while still resolving as a public page for the
   // auth gate above.
   // v1.4.27 — `/about` has the same shape, so it joins the standalone list.
-  // v1.11.0 — the clinician view (`/c/*`) and the emergency card's view
-  // (`/e/*`) render edge-to-edge with their own chrome, like the legal pages.
+  // v1.11.0 — the clinician view (`/c/*`) renders edge-to-edge with its own
+  // chrome, like the legal pages. The emergency card's view (`/e/*`) is a
+  // route that answers its own document and never mounts this shell.
   const isStandalonePublicPage =
     pathname.startsWith("/privacy") ||
     pathname.startsWith("/about") ||
-    pathname.startsWith("/c/") ||
-    pathname.startsWith("/e/");
+    pathname.startsWith("/c/");
   const isAdminPage = pathname.startsWith("/admin");
   // v1.36.0 — is this browser inside somebody else's record. Read from the
   // capability hook rather than off `accountAccess.active` directly: the shell

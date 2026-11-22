@@ -1,6 +1,6 @@
 /**
  * The emergency card as one self-contained HTML file (v1.49): the offline
- * copy the owner saves to their phone.
+ * copy the owner saves to their phone, and the page behind the QR code.
  *
  * The app's own pages never work without a connection on purpose: a
  * signed-in page is never cached, so a lost phone does not hand out a
@@ -36,10 +36,23 @@ const STYLE =
   "dt{font-size:.75rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}" +
   "dd{margin:4px 0 0;overflow-wrap:anywhere;white-space:pre-line}dd.strong{font-weight:700;font-size:1.0625rem}";
 
-export function buildOfflineCardHtml(
+function documentHtml(locale: string, title: string, body: string): string {
+  const lang = escapeHtml(locale);
+  return (
+    `<!DOCTYPE html><html lang="${lang}"><head><meta charset="utf-8">` +
+    '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' +
+    '<meta name="robots" content="noindex,nofollow">' +
+    '<meta name="referrer" content="no-referrer">' +
+    `<title>${escapeHtml(title)}</title><style>${STYLE}</style></head>` +
+    `<body><main>${body}</main></body></html>`
+  );
+}
+
+function cardHtml(
   view: EmergencyCardView,
   t: Translate,
   locale: string,
+  note: string,
 ): string {
   const rows = emergencyCardRows(view, t, locale)
     .map(
@@ -52,15 +65,63 @@ export function buildOfflineCardHtml(
           .join("")}</div>`,
     )
     .join("");
-  const lang = escapeHtml(locale);
-  return (
-    `<!DOCTYPE html><html lang="${lang}"><head><meta charset="utf-8">` +
-    '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' +
-    '<meta name="robots" content="noindex,nofollow">' +
-    `<title>${escapeHtml(t("emergencyCard.title"))}</title><style>${STYLE}</style></head>` +
-    `<body><main><h1>${escapeHtml(t("emergencyCard.title"))}</h1>` +
-    `<p>${escapeHtml(t("emergencyCard.subtitle"))}</p>` +
-    `<p>${escapeHtml(t("emergencyCard.savedOn", { date: formatCardDay(locale, view.asOf) }))}</p>` +
-    `<dl>${rows}</dl></main></body></html>`
+  return documentHtml(
+    locale,
+    t("emergencyCard.title"),
+    `<h1>${escapeHtml(t("emergencyCard.title"))}</h1>` +
+      `<p>${escapeHtml(t("emergencyCard.subtitle"))}</p>` +
+      `<p>${escapeHtml(note)}</p>` +
+      `<dl>${rows}</dl>`,
+  );
+}
+
+/** The offline copy: says the day it was saved. */
+export function buildOfflineCardHtml(
+  view: EmergencyCardView,
+  t: Translate,
+  locale: string,
+): string {
+  return cardHtml(
+    view,
+    t,
+    locale,
+    t("emergencyCard.savedOn", { date: formatCardDay(locale, view.asOf) }),
+  );
+}
+
+/**
+ * The page behind the QR code (`/e/<token>`), the same document as the
+ * offline copy: no script, no app shell, so nothing registers a service
+ * worker on a stranger's phone, and the colours follow the phone's own light
+ * or dark setting. The note says how long the link works.
+ */
+export function buildLinkCardHtml(
+  view: EmergencyCardView,
+  t: Translate,
+  locale: string,
+  expiresOn: string | null,
+): string {
+  return cardHtml(
+    view,
+    t,
+    locale,
+    expiresOn
+      ? t("emergencyCard.link.validUntil", {
+          date: formatCardDay(locale, expiresOn),
+        })
+      : t("emergencyCard.link.readOnly"),
+  );
+}
+
+/**
+ * Every miss behind `/e/<token>`, whatever it was: one document, no link into
+ * the app (the reader is not a HealthLog user), served with a 404 status.
+ */
+export function buildLinkMissHtml(t: Translate, locale: string): string {
+  return documentHtml(
+    locale,
+    t("emergencyCard.link.missTitle"),
+    `<h1>${escapeHtml(t("emergencyCard.link.missTitle"))}</h1>` +
+      `<p>${escapeHtml(t("emergencyCard.link.missBody"))}</p>`,
   );
 }

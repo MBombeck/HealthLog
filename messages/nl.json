@@ -15590,6 +15590,8 @@
     "link": {
       "validUntil": "Alleen lezen. Deze link werkt tot {date}.",
       "readOnly": "Alleen lezen. Gedeeld door de eigenaar, die de link altijd kan intrekken.",
+      "missTitle": "Deze link naar de noodkaart werkt niet",
+      "missBody": "De link is misschien ingetrokken of verlopen. De persoon van wie de kaart is, kan een nieuwe maken.",
       "title": "QR-link",
       "loadError": "De status van de link kon niet worden geladen.",
       "disclosure": "Wie de code scant, ziet de aangevinkte onderdelen zonder in te loggen. Je kunt de link een einddatum geven en altijd intrekken; elke keer openen wordt voor je vastgelegd.",

@@ -15590,6 +15590,8 @@
     "link": {
       "validUntil": "Sola lettura. Questo link funziona fino al {date}.",
       "readOnly": "Sola lettura. Condiviso dalla persona, che può revocarlo in qualsiasi momento.",
+      "missTitle": "Questo link alla tessera di emergenza non funziona",
+      "missBody": "Il link potrebbe essere stato revocato o essere scaduto. La persona a cui appartiene la tessera può crearne uno nuovo.",
       "title": "Link QR",
       "loadError": "Impossibile caricare lo stato del link.",
       "disclosure": "Chi scansiona il codice vede le voci selezionate, senza accedere. Puoi dare una scadenza al link e revocarlo in qualsiasi momento; ogni apertura viene registrata per te.",

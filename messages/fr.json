@@ -15590,6 +15590,8 @@
     "link": {
       "validUntil": "Lecture seule. Ce lien fonctionne jusqu'au {date}.",
       "readOnly": "Lecture seule. Partagé par la personne, qui peut le révoquer à tout moment.",
+      "missTitle": "Ce lien vers la carte d'urgence ne fonctionne pas",
+      "missBody": "Le lien a peut-être été révoqué ou a expiré. La personne à qui appartient la carte peut en créer un nouveau.",
       "title": "Lien QR",
       "loadError": "Le statut du lien n'a pas pu être chargé.",
       "disclosure": "Toute personne qui scanne le code voit les éléments cochés, sans se connecter. Tu peux donner une fin au lien et le révoquer à tout moment ; chaque ouverture est enregistrée pour toi.",

@@ -15590,6 +15590,8 @@
     "link": {
       "validUntil": "Read-only. This link works until {date}.",
       "readOnly": "Read-only. Shared by its owner, who can revoke it at any time.",
+      "missTitle": "This emergency card link does not work",
+      "missBody": "The link may have been revoked or may have ended. The person whose card it is can make a new one.",
       "title": "QR link",
       "loadError": "The link status could not be loaded.",
       "disclosure": "Anyone who scans the code sees the items you tick, without signing in. You can give the link an end and revoke it at any time; every opening is recorded for you.",

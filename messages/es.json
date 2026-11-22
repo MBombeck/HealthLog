@@ -15590,6 +15590,8 @@
     "link": {
       "validUntil": "Solo lectura. Este enlace funciona hasta el {date}.",
       "readOnly": "Solo lectura. Compartido por su titular, que puede revocarlo en cualquier momento.",
+      "missTitle": "Este enlace a la tarjeta de emergencia no funciona",
+      "missBody": "Puede que el enlace se haya revocado o haya caducado. La persona a quien pertenece la tarjeta puede crear uno nuevo.",
       "title": "Enlace QR",
       "loadError": "No se pudo cargar el estado del enlace.",
       "disclosure": "Quien escanee el código verá lo que marques, sin iniciar sesión. Puedes darle una fecha de fin y revocarlo cuando quieras; cada apertura queda registrada para ti.",

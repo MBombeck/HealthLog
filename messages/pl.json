@@ -15590,6 +15590,8 @@
     "link": {
       "validUntil": "Tylko do odczytu. Ten link działa do {date}.",
       "readOnly": "Tylko do odczytu. Udostępnione przez właściciela, który może je w każdej chwili cofnąć.",
+      "missTitle": "Ten link do karty ratunkowej nie działa",
+      "missBody": "Link mógł zostać cofnięty lub wygasnąć. Osoba, do której należy karta, może utworzyć nowy.",
       "title": "Link QR",
       "loadError": "Nie udało się wczytać stanu linku.",
       "disclosure": "Każdy, kto zeskanuje kod, zobaczy zaznaczone pozycje bez logowania. Możesz ustawić koniec ważności i w każdej chwili cofnąć link; każde otwarcie jest zapisywane.",

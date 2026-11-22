@@ -13,7 +13,8 @@
  *   4. The record is not pending deletion, and the operator's external-access
  *      switch is on.
  *
- * Every miss is the same null, which the page answers with the same 404.
+ * Every miss is the same null, which `/e/<token>` answers with the same
+ * document and a 404 status.
  * A hit bumps the counters and writes an audit row on the owner's trail, so
  * the owner sees every time the card was opened. The content is read for the
  * frozen items only (`loadEmergencyCard`).
@@ -36,22 +37,15 @@ import { hashToken } from "@/lib/auth/hmac";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { moodDateKey } from "@/lib/mood/date-key";
-import { checkAuthSurfaceRateLimit, checkRateLimit } from "@/lib/rate-limit";
+import { checkUrlCredentialSurface, HOUR_MS } from "@/lib/http/url-credential";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 
 import { loadEmergencyCard, type EmergencyCardView } from "./card-data";
 import { parseCardTokenSegment } from "./token";
 
-/**
- * Per source address, across every card, before the lookup. A hospital or a
- * mobile carrier puts many people behind one address, so it is set well
- * above what one ward opens in an hour; guessing a 192-bit token gains
- * nothing from it either way.
- */
-const SURFACE_LIMIT_PER_HOUR = 600;
 /** Per card and address: how many openings are counted and audited. */
 const AUDIT_LIMIT_PER_HOUR = 60;
-const HOUR_MS = 60 * 60 * 1000;
 
 export type CardRead =
   | {
@@ -63,7 +57,7 @@ export type CardRead =
   | { ok: false; reason: string };
 
 function miss(reason: string): CardRead {
-  annotate({ meta: { emergency_card_miss: reason } });
+  annotate({ meta: { url_credential_miss: reason } });
   return { ok: false, reason };
 }
 
@@ -74,42 +68,44 @@ export async function readEmergencyCardByToken(
 ): Promise<CardRead> {
   annotate({ action: { name: "emergency-card.view" } });
 
-  const surface = await checkAuthSurfaceRateLimit(
+  // The shared per-address limit of the URL-credential surfaces (a ward or
+  // a carrier puts many people behind one address).
+  const surface = await checkUrlCredentialSurface(
     request,
     "emergency-card:surface",
-    SURFACE_LIMIT_PER_HOUR,
-    HOUR_MS,
   );
   if (!surface.allowed) return miss("rate_limited");
 
   const raw = parseCardTokenSegment(segment);
   if (!raw) return miss("shape");
 
-  const link = await prisma.emergencyCardLink.findUnique({
-    where: { tokenHash: hashToken(raw) },
-    select: {
-      id: true,
-      userId: true,
-      tokenPrefix: true,
-      fields: true,
-      expiresAt: true,
-      revokedAt: true,
-    },
-  });
+  // The operator switch is read beside the lookup, not after it, so an
+  // unknown token and a known one on a switched-off instance cost the same.
+  const [link, apiOn] = await Promise.all([
+    prisma.emergencyCardLink.findUnique({
+      where: { tokenHash: hashToken(raw) },
+      select: {
+        id: true,
+        userId: true,
+        tokenPrefix: true,
+        fields: true,
+        expiresAt: true,
+        revokedAt: true,
+      },
+    }),
+    isApiGloballyEnabled(),
+  ]);
   if (!link || link.revokedAt !== null) return miss("unknown");
   if (link.expiresAt !== null && link.expiresAt.getTime() <= now.getTime()) {
     return miss("expired");
   }
 
-  const [owner, apiOn] = await Promise.all([
-    prisma.user.findFirst({
-      where: activeAccount({ id: link.userId }),
-      select: { timezone: true },
-    }),
-    isApiGloballyEnabled(),
-  ]);
-  if (!owner) return miss("owner");
   if (!apiOn) return miss("api_disabled");
+  const owner = await prisma.user.findFirst({
+    where: activeAccount({ id: link.userId }),
+    select: { timezone: true },
+  });
+  if (!owner) return miss("owner");
 
   const tz = owner.timezone ?? DEFAULT_TIMEZONE;
   const today = moodDateKey(now, tz);
