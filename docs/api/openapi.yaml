@@ -6857,8 +6857,11 @@ paths:
         trailing `days`. The `today` scope WRITES before it reads: it projects the pending intake rows for every active
         schedule whose window opens today and idempotently backfills the missing ones, because a daily schedule has no
         row to read until the reminder worker reaches the end of its dose window — so a plain read would return an empty
-        morning. The `compliance` scope is cached per (record, days, timezone). Delegable at READ level over the
-        `medications` section. Not module-gated. Cookie or Bearer auth."
+        morning. The `compliance` scope is cached per (record, days, timezone). v1.49.0: the `today` scope answers with
+        an `ETag`, a hash of the exact body, which changes on any change to the rows (an edit, a new row, a tombstoned
+        row that leaves the list, a dose whose resolved state moved with the clock) and on nothing else; a request whose
+        `If-None-Match` names it answers 304 with no body, so a client confirms its cached rows in one round trip.
+        Delegable at READ level over the `medications` section. Not module-gated. Cookie or Bearer auth."
       parameters:
         - in: query
           name: scope
@@ -6881,14 +6884,28 @@ paths:
             minimum: 1
             maximum: 365
           description: Trailing window for the `compliance` scope, 1..365, default 30. Ignored by the `today` scope.
+        - in: header
+          name: if-none-match
+          schema:
+            description: "`scope=today` only: the `ETag` of the rows the client holds. A match answers 304."
+            type: string
+          description: "`scope=today` only: the `ETag` of the rows the client holds. A match answers 304."
       responses:
         "200":
           description: "`TodayIntakeEntry[]` for `scope=today`, `MedicationComplianceDayBucket[]` for `scope=compliance`. The
-            array is the whole payload — there is no wrapper object inside `data`."
+            array is the whole payload — there is no wrapper object inside `data`. `scope=today` carries `ETag` and
+            `Cache-Control: private, no-cache`."
+          headers:
+            ETag:
+              description: "`scope=today` only: the strong content tag of the body, for `If-None-Match`."
+              schema:
+                type: string
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/MedicationIntakeAggregateEnvelope"
+        "304":
+          description: "`scope=today` only: the rows are unchanged since the `If-None-Match` ETag. No body; the `ETag` is repeated."
         "401": *a1
         "403": *a23
         "422":
@@ -47389,23 +47406,25 @@ components:
             INSUFFICIENT_DATA. `profile.emergency-card`: GET /api/emergency-card returns the emergency card;
             /api/emergency-card/link mints, reads and revokes its read-only hlm_ link, served at /e/{token} with only
             the fields the owner ticked. `push.data-changed`: A device with a push key gets a sealed silent DATA_CHANGED
-            (d.domains, d.changedAt) when a server-side sync stores readings; per device at most once per five minutes
-            and three times an hour, never for a change the device started itself. `push.healthkit-catch-up`: A device
-            with a push key whose app registered in the last three days gets a sealed silent HEALTHKIT_CATCH_UP
-            (d.requestedAt) when the account's Apple Health upload is six hours behind; at most three a day, four hours
-            apart. `push.security-alert-relay`: SECURITY_ALERT (new sign-in, passkey added or removed, token revoked,
-            refresh-token reuse) reaches sealed and relay-bound devices with ui.level time-sensitive and d.securityKind.
-            `push.live-activity-relay`: POST /api/devices takes liveActivityConsent (hl-la-consent-v1),
-            liveActivityWithdraw (hl-la-withdraw-v1), liveActivityStart (push-to-start token with hl-la-start-v1) and
-            liveActivityTokens[].relayStart; the server starts and updates medication Live Activities over the relay
-            with the closed content state while push.relay.liveActivity lists start and update (operator switch
-            PUSH_RELAY_LIVE_ACTIVITY, off by default). `push.live-activity-started`: push.device.liveActivityStarted on
-            /api/auth/me and in the POST /api/devices answer names the dose ({ medicationId, slotInstant }) of the Live
-            Activity the server started on the calling device; null once that slot is answered, its medication paused or
-            ended, or nothing was started. `day.dose-offset`: GET /api/day/{date} symptom events and every GET
-            /api/symptoms/events occurrence carry doseOffset (intakeId, title, minutes) from one rule: the nearest dose
-            taken at or before it on the same local day of the record's zone, else the nearest after it (negative
-            minutes); absent without a timed dose that day or when medications are not readable."
+            (d.domains, d.changedAt) when a server-side sync stores readings, and since v1.49.0 when doses or schedules
+            change (domains intakes, medications); per device at most once per five minutes and three times an hour,
+            within one silent budget shared with MEDICATION_INTAKE_SYNC, never for a change the device started itself.
+            `push.healthkit-catch-up`: A device with a push key whose app registered in the last three days gets a
+            sealed silent HEALTHKIT_CATCH_UP (d.requestedAt) when the account's Apple Health upload is six hours behind;
+            at most three a day, four hours apart. `push.security-alert-relay`: SECURITY_ALERT (new sign-in, passkey
+            added or removed, token revoked, refresh-token reuse) reaches sealed and relay-bound devices with ui.level
+            time-sensitive and d.securityKind. `push.live-activity-relay`: POST /api/devices takes liveActivityConsent
+            (hl-la-consent-v1), liveActivityWithdraw (hl-la-withdraw-v1), liveActivityStart (push-to-start token with
+            hl-la-start-v1) and liveActivityTokens[].relayStart; the server starts and updates medication Live
+            Activities over the relay with the closed content state while push.relay.liveActivity lists start and update
+            (operator switch PUSH_RELAY_LIVE_ACTIVITY, off by default). `push.live-activity-started`:
+            push.device.liveActivityStarted on /api/auth/me and in the POST /api/devices answer names the dose ({
+            medicationId, slotInstant }) of the Live Activity the server started on the calling device; null once that
+            slot is answered, its medication paused or ended, or nothing was started. `day.dose-offset`: GET
+            /api/day/{date} symptom events and every GET /api/symptoms/events occurrence carry doseOffset (intakeId,
+            title, minutes) from one rule: the nearest dose taken at or before it on the same local day of the record's
+            zone, else the nearest after it (negative minutes); absent without a timed dose that day or when medications
+            are not readable."
       required:
         - version
         - buildSha
@@ -74518,6 +74537,30 @@ components:
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        relayState:
+          type: string
+          description: v1.49.0 — `none` | `bound` | `rebind_needed` | `conflict`, as the push routing reads it.
+        relayBoundAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: v1.49.0 — when the relay last confirmed the binding.
+        liveActivityStartedAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: v1.49.0 — when the server last started a Live Activity on the device over the relay.
+        envelopesReportedAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: v1.49.0 — when the device last reported which sealed pushes it opened (`GET /api/sync/state`).
       required:
         - id
         - platform
@@ -74526,6 +74569,10 @@ components:
         - apnsTokenSuffix
         - apnsEnvironment
         - lastSeenAt
+        - relayState
+        - relayBoundAt
+        - liveActivityStartedAt
+        - envelopesReportedAt
       additionalProperties: false
       description: Per-device APNs registration snapshot. The APNs token is masked to its 8-char hex prefix + 8-char suffix so
         an operator can correlate with iOS-side logs without disclosing the delivery target.
@@ -75140,10 +75187,13 @@ components:
             - nextDueMedicationId
           additionalProperties: false
           description: "Today's medication block: active-medication count, today-window tally (scheduled / taken / skipped), every
-            active medication's current display-due candidate, and legacy scalar fields projected from candidate zero.
-            `overdue: true` marks an OPEN overdue slot (anchor passed, still inside its catch-up band); `availableFrom`
-            is the canonical cadence- and dose-window-derived attribution-band start. `dueCandidates` is optional so
-            older cached snapshots remain valid. Medication ids let consumers deep-link straight to the relevant card."
+            active medication's next dose, and legacy scalar fields projected from candidate zero. Since v1.49.0 each
+            candidate comes from the dose resolver, the same one behind the today rows and
+            `complianceDisplay.currentDose`: the medication's earliest open dose (`due` or `overdue`), else its earliest
+            `upcoming` one. `overdue: true` means the resolver's `overdue` state (past the on-time window, before the
+            miss cutoff); `availableFrom` is the resolver's `dueAt`, when the dose turns due. For the state of a dose,
+            read the today rows or `currentDose`. `dueCandidates` is optional so older cached snapshots remain valid.
+            Medication ids let consumers deep-link straight to the relevant card."
         healthScore:
           anyOf:
             - type: object

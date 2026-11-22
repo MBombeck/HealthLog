@@ -49,6 +49,11 @@ interface DiagnosticDevice {
   apnsTokenSuffix: string | null;
   apnsEnvironment: string | null;
   lastSeenAt: string;
+  /** How the push routing reads the relay binding. */
+  relayState: string;
+  relayBoundAt: string | null;
+  liveActivityStartedAt: string | null;
+  envelopesReportedAt: string | null;
 }
 
 interface DiagnosticChannel {
@@ -164,6 +169,10 @@ export const GET = apiHandler(async () => {
         apnsToken: true,
         apnsEnvironment: true,
         lastSeen: true,
+        relayState: true,
+        relayBoundAt: true,
+        laStartedAt: true,
+        envelopeReportedAt: true,
       },
       orderBy: { lastSeen: "desc" },
     }),
@@ -203,6 +212,10 @@ export const GET = apiHandler(async () => {
       apnsTokenSuffix: suffix,
       apnsEnvironment: d.apnsEnvironment,
       lastSeenAt: d.lastSeen.toISOString(),
+      relayState: d.relayState,
+      relayBoundAt: d.relayBoundAt?.toISOString() ?? null,
+      liveActivityStartedAt: d.laStartedAt?.toISOString() ?? null,
+      envelopesReportedAt: d.envelopeReportedAt?.toISOString() ?? null,
     };
   });
 

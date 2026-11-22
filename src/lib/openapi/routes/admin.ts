@@ -29,6 +29,24 @@ const adminDiagnosticDevice = z
     apnsTokenSuffix: z.string().nullable(),
     apnsEnvironment: z.string().nullable(),
     lastSeenAt: isoDateTime(),
+    relayState: z
+      .string()
+      .describe(
+        "v1.49.0 — `none` | `bound` | `rebind_needed` | `conflict`, as the push routing reads it.",
+      ),
+    relayBoundAt: isoDateTime()
+      .nullable()
+      .describe("v1.49.0 — when the relay last confirmed the binding."),
+    liveActivityStartedAt: isoDateTime()
+      .nullable()
+      .describe(
+        "v1.49.0 — when the server last started a Live Activity on the device over the relay.",
+      ),
+    envelopesReportedAt: isoDateTime()
+      .nullable()
+      .describe(
+        "v1.49.0 — when the device last reported which sealed pushes it opened (`GET /api/sync/state`).",
+      ),
   })
   .meta({
     id: "AdminDiagnosticDevice",

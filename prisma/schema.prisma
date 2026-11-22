@@ -6588,6 +6588,8 @@ model Device {
   /// Readers: the Live Activity relay sender (`push-relay/live-activity.ts`)
   /// and `/api/auth/me` `push.device.liveActivityConsent`.
   liveActivityConsentAt      DateTime? @map("live_activity_consent_at")
+  /// @internal: consent evidence, the text version the person agreed to;
+  /// kept as the record of that consent, never surfaced.
   liveActivityConsentVersion String?   @map("live_activity_consent_version")
   /// The ActivityKit push-to-start token and the device's `hl-la-start-v1`
   /// statement over it (`liveActivityStart`), handed to the relay only
@@ -6600,11 +6602,17 @@ model Device {
   /// its dose. Reader and writer: `push-relay/live-activity.ts`.
   laStartedMedicationId      String?   @map("la_started_medication_id")
   laStartedSlot              DateTime? @map("la_started_slot")
+  /// When the last relay start went out. Reader: the admin diagnostic
+  /// (`/api/admin/notifications/diagnostic`, `liveActivityStartedAt`).
   laStartedAt                DateTime? @map("la_started_at")
+  /// When the relay last confirmed the binding. Reader: the admin diagnostic
+  /// (`relayBoundAt`).
   relayBoundAt           DateTime?           @map("relay_bound_at")
   /// The newest envelope ids this device reports it opened, per class
-  /// (`GET /api/sync/state`), and when it reported them. Reader: the delivery
-  /// ledger, which marks earlier relay pushes confirmed (`receipts.ts`).
+  /// (`GET /api/sync/state`), and when it reported them. Reader: the receipt
+  /// write (`push-relay/receipts.ts`), which keeps the newer of the stored and
+  /// the reported id, so a late report cannot move them back; the time is
+  /// read by `intakeSync` (`capability.ts`) and the admin diagnostic.
   envelopeOpenedAlertId  String?             @map("envelope_opened_alert_id")
   envelopeOpenedSilentId String?             @map("envelope_opened_silent_id")
   envelopeReportedAt     DateTime?           @map("envelope_reported_at")
@@ -11508,8 +11516,13 @@ model PushRelayRegistration {
   receiptsSentAt               DateTime? @map("receipts_sent_at")
   lastSuccessAt                DateTime? @map("last_success_at")
   /// The operator's acceptance: terms version, household confirmation, who.
+  /// @internal: acceptance evidence, kept as the record of who accepted
+  /// which terms when; the admin view shows the current terms version, not
+  /// this row's.
   termsVersion                 String    @map("terms_version")
+  /// @internal: acceptance evidence, see `termsVersion`.
   householdConfirmedAt         DateTime  @map("household_confirmed_at")
+  /// @internal: acceptance evidence, see `termsVersion`.
   enabledByUserId              String?   @map("enabled_by_user_id")
   createdAt                    DateTime  @default(now()) @map("created_at")
   updatedAt                    DateTime  @updatedAt @map("updated_at")
