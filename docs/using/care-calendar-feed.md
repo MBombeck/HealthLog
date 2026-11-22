@@ -8,16 +8,19 @@ the data is kept.
 
 ## Turning it on
 
-Open **Settings**, then **Health record**, and find **Care calendar
-subscription** under **Calendar**. Before the button, the card says what it
+Open **Settings**, then **Health record**, and find **Care calendar** under
+**Calendar**. **Check-ups** and **Vaccinations** link to it from the row under
+their heading, and **Settings > Data & privacy** lists it under **Who can reach
+your record**. Before the button, the card says what it
 means: your calendar provider stores the dates on its servers, and turning the
 subscription off later does not remove copies it already holds. HealthLog asks
 you to confirm it is you (a password or passkey) and then shows the link once.
 Copy it, or use **Open in calendar app**.
 
-Only you can turn it on, and only for your own record. Someone you have shared
-your record with, or the guardian of a managed profile, gets a feed of their
-own dates, never yours. It is managed on the web.
+Only you can turn it on for your own record. Someone you have shared your
+record with gets a feed of their own dates, never yours. The guardian of a
+managed profile turns on the profile's feed inside that profile, under the same
+**Settings > Health record**. It is managed on the web.
 
 Adding it works as for the cycle feed: see
 [Subscribing to your cycle forecast](cycle-calendar-feed.md#adding-it-to-your-calendar).

@@ -584,7 +584,7 @@
     "admin": "Admin-Konsole",
     "logout": "Abmelden",
     "login": "Anmelden",
-    "notifications": "Benachrichtigungen",
+    "notifications": "Benachrichtigungen je Kanal",
     "theme": "Design",
     "themeSystem": "System",
     "themeDark": "Dunkel",
@@ -634,7 +634,14 @@
     "vaccinations": "Impfungen",
     "mentalWellbeing": "Seelisches Wohlbefinden",
     "timeline": "Zeitleiste",
-    "seizures": "Anfälle"
+    "seizures": "Anfälle",
+    "emergencyCard": "Notfallkarte",
+    "groups": {
+      "tracking": "Erfassung",
+      "record": "Gesundheitsakte",
+      "analysis": "Auswertung"
+    },
+    "dueCount": "{label}, {count} fällig"
   },
   "auth": {
     "login": "Anmelden",
@@ -5767,7 +5774,6 @@
       "sectionsNav": "Einstellungs-Bereiche",
       "groups": {
         "account": "Konto",
-        "yourData": "Deine Daten",
         "healthProfile": "Gesundheitsprofil",
         "ai": "KI",
         "connectivity": "Konnektivität",
@@ -5776,7 +5782,8 @@
         "arrangement": "Anordnung",
         "notifications": "Benachrichtigungen",
         "connections": "Verbindungen",
-        "data": "Daten"
+        "data": "Daten",
+        "serverData": "Serverdaten"
       },
       "allSections": "Alle Bereiche"
     },
@@ -5962,6 +5969,13 @@
           "label": "Verschieben um",
           "option": "{minutes} Min.",
           "saveError": "Konnte nicht gespeichert werden. Bitte erneut versuchen"
+        },
+        "alerts": {
+          "heading": "Hinweise",
+          "noChannel": "Noch ist kein Zustellkanal eingerichtet, also kann nichts gesendet werden. Sobald es einen gibt, gilt dieser Schalter für alle Kanäle auf einmal.",
+          "setUpChannel": "Zustellkanal einrichten",
+          "perChannel": "Je Kanal wählen",
+          "saveError": "Die Benachrichtigung konnte nicht gespeichert werden. Bitte versuch es noch einmal."
         }
       },
       "layout": {
@@ -7979,6 +7993,52 @@
         "title": "Sitzungen und Geräte",
         "description": "Wo du angemeldet bist, welche Geräte den zweiten Faktor überspringen, und die Sicherheitsaktivität deines Kontos.",
         "open": "Sicherheit öffnen"
+      },
+      "whoHasAccess": {
+        "title": "Wer an deine Akte kommt",
+        "description": "Jeder Weg in deine Akte, und wo du ihn siehst und schließt.",
+        "doors": {
+          "accounts": {
+            "title": "Andere Konten",
+            "description": "Personen auf diesem Server, mit denen du deine Akte teilst, und die Vormünder der Profile, die du verwaltest.",
+            "link": "Geteilten Zugriff öffnen"
+          },
+          "shareLinks": {
+            "title": "Links für Ärztinnen und Ärzte",
+            "description": "Nur-Lese-Links zu deinem Arztbericht, die an einem Tag deiner Wahl enden.",
+            "link": "Links öffnen"
+          },
+          "emergencyCard": {
+            "title": "Link der Notfallkarte",
+            "description": "Der QR-Link auf deiner Notfallkarte. Wer ihn scannt, kann die Karte lesen, bis du ihn widerrufst.",
+            "link": "Notfallkarte öffnen"
+          },
+          "careCalendar": {
+            "title": "Gesundheitskalender",
+            "description": "Ein Kalender-Abo mit deinen gebuchten Terminen und fälligen Vorsorge- und Impfterminen.",
+            "link": "Gesundheitskalender öffnen"
+          },
+          "cycleCalendar": {
+            "title": "Zykluskalender",
+            "description": "Ein Kalender-Abo mit deinen Zyklusdaten.",
+            "link": "Zyklus-Einstellungen öffnen"
+          },
+          "apiTokens": {
+            "title": "API-Tokens",
+            "description": "Tokens, mit denen Apps und Skripte deine Daten lesen oder schreiben.",
+            "link": "API-Tokens öffnen"
+          },
+          "mcp": {
+            "title": "MCP-Connector",
+            "description": "KI-Assistenten, die du mit deiner Akte verbunden hast.",
+            "link": "MCP-Connector öffnen"
+          },
+          "sessions": {
+            "title": "Angemeldete Geräte",
+            "description": "Browser und Telefone, die gerade bei deinem Konto angemeldet sind.",
+            "link": "Aktive Sitzungen öffnen"
+          }
+        }
       }
     },
     "mcp": {
@@ -8139,7 +8199,8 @@
     "tokenNameLabel": "Token-Name",
     "displayCard": {
       "title": "Darstellung",
-      "description": "Sprache, Einheiten und Formate, gespeichert, sobald du sie änderst."
+      "description": "Sprache, Einheiten und Formate, gespeichert, sobald du sie änderst.",
+      "themeDescription": "System folgt deinem Gerät zwischen hell und dunkel. Die Wahl gilt auf diesem Gerät."
     },
     "integrationCard": {
       "state": {
@@ -8671,7 +8732,8 @@
       "ok": "OK",
       "error": "Fehlgeschlagen",
       "skipped": "Übersprungen",
-      "autoDisabled": "Automatisch deaktivierte Kanäle"
+      "autoDisabled": "Automatisch deaktivierte Kanäle",
+      "loadError": "Die Zustellung konnte nicht geladen werden."
     },
     "reminderLateMinutes": "Spät-Schwellenwert (Minuten)",
     "reminderLateMinutesDescription": "Minuten nach Fenster-Ende bis der Badge von Gelb auf Orange wechselt.",
@@ -8725,12 +8787,12 @@
         "subtitle": "Registrierung, Standardsprache und weitere globale Schalter."
       },
       "services": {
-        "title": "Dienste",
-        "subtitle": "Benachrichtigungskanäle und die API für den ganzen Server ein- oder ausschalten."
+        "title": "Push und Kanäle",
+        "subtitle": "Benachrichtigungskanäle, Web-Push-Schlüssel, das Push-Relay und die Zustellung für den ganzen Server."
       },
       "integrations": {
-        "title": "Integrationen",
-        "subtitle": "Umami, GlitchTip, Web Push und Bug-Reports konfigurieren."
+        "title": "Monitoring",
+        "subtitle": "Umami, GlitchTip und Fehlerberichte einrichten."
       },
       "coach": {
         "title": "Coach",
@@ -9558,6 +9620,16 @@
         "inviteRequired": "Dieses Relay nimmt neue Server nur auf Einladung auf. Gib einen Einladungscode ein.",
         "inviteRejected": "Das Relay hat diesen Einladungscode nicht angenommen. Er ist vielleicht abgelaufen oder schon benutzt. Lass dir einen neuen geben und gib ihn ein.",
         "registrationPaused": "Das Relay nimmt gerade keine neuen Server auf. Dieser Server fragt später von selbst wieder an."
+      },
+      "usage": {
+        "accepted": "Angenommen",
+        "pending": "Wartend",
+        "dropped": "Verworfen",
+        "failed": "Fehlgeschlagen",
+        "window": "Pushes, die dieser Server in den letzten {days} Tagen an das Relay gegeben hat.",
+        "lastSuccess": "Zuletzt zugestellt {time}.",
+        "lastFailure": "Letzter Fehler {time}: {reason}.",
+        "noReason": "ohne Angabe"
       }
     },
     "serverSetup": {
@@ -9670,6 +9742,25 @@
           "scheduled": "Nächtlicher Dump geplant ({cron})."
         }
       }
+    },
+    "versionMigrations": {
+      "title": "Version und Datenbank",
+      "description": "Welcher Build läuft, aus welcher Image-Linie, und ob die Datenbank jede Migration hat, die dieser Build mitbringt.",
+      "version": "Version",
+      "channel": {
+        "release": "Release",
+        "edge": "Edge",
+        "development": "Entwicklungsbuild"
+      },
+      "built": "Build {sha} vom {time}",
+      "migrations": "Datenbank-Migrationen",
+      "applied": "{applied} von {shipped} angewendet",
+      "appliedOnly": "{applied} angewendet",
+      "pending": "{count} ausstehend: {names}",
+      "failed": "Fehlgeschlagen, das Update hängt daran: {names}",
+      "upToDate": "Auf dem neuesten Stand",
+      "lastApplied": "Zuletzt: {name}, {time}",
+      "loadError": "Der Stand der Migrationen konnte nicht geladen werden."
     }
   },
   "achievements": {
@@ -9964,7 +10055,7 @@
     }
   },
   "notifications": {
-    "title": "Benachrichtigungen",
+    "title": "Benachrichtigungen je Kanal",
     "eventColumn": "Ereignis",
     "subtitle": "Wähle aus, welche Benachrichtigungen du über welchen Kanal erhalten möchtest.",
     "loadError": "Benachrichtigungseinstellungen konnten nicht geladen werden.",
@@ -10072,7 +10163,7 @@
     "eventMedicationIntakeSyncDesc": "Geräteübergreifende Aktualisierung, wenn eine Dosis protokolliert, eingenommen oder übersprungen wird.",
     "eventDailyBriefing": "Täglicher Überblick",
     "eventDailyBriefingDesc": "Eine ruhige Morgenzusammenfassung deines Tages. Standardmäßig aus, bis du sie aktivierst.",
-    "eventSecurityAlert": "Kontosicherheit",
+    "eventSecurityAlert": "Hinweise zur Kontosicherheit",
     "eventSecurityAlertDesc": "Bei einer Anmeldung von einem unbekannten Gerät oder Ort, wenn ein Passkey hinzugefügt oder entfernt wird, wenn ein Zugriffstoken widerrufen wird und wenn ein Gerät abgemeldet wird, weil sein Anmeldetoken zweimal verwendet wurde.",
     "eventSharedRecordIntake": "Jemand mit Zugriff markiert eine Dosis",
     "eventSharedRecordIntakeDesc": "Wird nur gesendet, wenn eine andere Person es tut, nie bei deinen eigenen Einträgen.",
@@ -10105,8 +10196,8 @@
     },
     "loginRequired": "Bitte melde dich an, um Benachrichtigungen zu verwalten.",
     "someChannelsGloballyDisabled": "Ein oder mehrere Kanäle sind in den Einstellungen deaktiviert und erhalten keine Benachrichtigungen.",
-    "reminderSettingsLink": "Erinnerungseinstellungen",
-    "channelsLink": "Kanäle",
+    "reminderSettingsLink": "Benachrichtigungseinstellungen",
+    "channelsLink": "Zustellkanäle",
     "handover": {
       "claimedTitle": "{name} hat jetzt ein eigenes Konto",
       "claimedEnd": "{name} hat die eigene Gesundheitsakte übernommen. Dein Zugriff ist beendet.",
@@ -15158,6 +15249,23 @@
         "measurement": "Notiz zu einem Messwert",
         "illness": "Krankheitstagebuch"
       }
+    },
+    "keywords": {
+      "emergencyCard": "Notfall, Notfallausweis, ICE, QR, Wallet, Blutgruppe",
+      "notificationsPerChannel": "Kanäle, Matrix, Push, Telegram, ntfy",
+      "medicineRegistry": "Beipackzettel, Packungsbeilage, Arzneiregister, Land, leaflet",
+      "snooze": "Snooze, später, verschieben, schlummern",
+      "securityAlerts": "Sicherheit, Anmeldung, Login, neues Gerät, Warnung",
+      "lastingChange": "dauerhafte Änderung, Vitalwert, Trend, Ruhepuls, Blutdruck",
+      "theme": "Design, Dunkelmodus, dunkel, hell, Darstellung, dark mode",
+      "gadgetbridge": "Gadgetbridge, Android, Smartwatch, Datenbank",
+      "fhirBundle": "FHIR, Bundle, Patientenakte, Import",
+      "healthConnectFolder": "Health Connect, WebDAV, Nextcloud, Ordner, Android",
+      "reportSchedule": "Zeitplan, monatlich, quartalsweise, Arztbericht, automatisch",
+      "careCalendar": "Kalender, ICS, Abo, Termine, Vorsorge, Impfungen",
+      "whoHasAccess": "Zugriff, wer sieht, Freigabe, Links, Tokens, Sitzungen",
+      "adminPush": "Push, Relay, Web Push, VAPID, APNs, Zustellung",
+      "adminSystemStatus": "Migrationen, Version, Update, Kanal, Edge, Datenbank"
     }
   },
   "shortcuts": {
@@ -15842,7 +15950,7 @@
   "careFeed": {
     "sectionTitle": "Kalender",
     "sectionSubtitle": "Deine Termine und was fällig wird, in der Kalender-App, die du schon nutzt.",
-    "title": "Kalender-Abo für Termine und Fälligkeiten",
+    "title": "Gesundheitskalender",
     "description": "Gebuchte Besuche zu ihrer Uhrzeit, Vorsorge und Impfauffrischungen am Tag ihrer Fälligkeit.",
     "loadError": "Das Kalender-Abo konnte nicht geladen werden.",
     "linkHidden": "Ein Link, der mit {prefix} beginnt, ist aktiv. Er wird nur einmal gezeigt, beim Erstellen; schalte das Abo aus und wieder ein, um einen neuen zu bekommen.",
@@ -15944,7 +16052,6 @@
     "page": {
       "title": "Notfallkarte",
       "description": "Deine Notfalldaten für unterwegs.",
-      "back": "Anamnese",
       "loadError": "Die Notfallkarte konnte nicht geladen werden.",
       "editHint": "Blutgruppe, Kontakte, Implantate und Verfügungen stammen aus deinen Notfalldaten.",
       "editLink": "Bearbeiten",
@@ -15967,6 +16074,9 @@
       "ORGAN_DONOR": "Organspende",
       "NOTE": "Weitere Hinweise",
       "DATE_OF_BIRTH": "Geburtsdatum"
+    },
+    "entry": {
+      "description": "Blutgruppe, Allergien, Medikamente und Kontakte für den Notfall, mit Offline-Kopie, Portemonnaie-Karte und QR-Link."
     }
   }
 }

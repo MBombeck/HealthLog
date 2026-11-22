@@ -1315,6 +1315,24 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
+  /api/nav/counts:
+    get:
+      tags:
+        - Dashboard
+      summary: The counts the navigation shows
+      description: Doses and check-ups due now for the caller's own record, read in a fixed number of statements; nothing is
+        written. Cookie session or a full-scope token; a switched record is refused.
+      responses:
+        "200":
+          description: The counts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NavCountsResponse"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
   /api/settings/report-schedule:
     get:
       tags:
@@ -14181,6 +14199,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+  /api/admin/migrations:
+    get:
+      tags:
+        - Admin
+      summary: "Database migrations: applied, pending, failed"
+      description: "Compares the migrations this image ships (`prisma/migrations`) with the finished rows of
+        `_prisma_migrations`. Read-only. Cookie auth only: `requireAdmin()` refuses every Bearer caller."
+      responses:
+        "200":
+          description: The status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMigrationStatusResponse"
+        "401": *a1
+        "403": *a25
         "422": *a4
         "429": *a5
   /api/admin/maintenance/measurements:
@@ -47360,6 +47396,42 @@ components:
         - data
         - error
       additionalProperties: false
+    NavCountsResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/NavCounts"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    NavCounts:
+      type: object
+      properties:
+        dosesDue:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Today's scheduled doses of active, tracked medications whose resolved state is `due` or `overdue` (the dose
+            resolver's own answer, as the today list gives it), not counting a slot the person snoozed.
+        checkupsDue:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: "Check-up reminders due now: enabled, not snoozed, no booked visit, due today on a long cycle or past their
+            time on a short one, as the daily digest's rail counts them."
+      required:
+        - dosesDue
+        - checkupsDue
+      additionalProperties: false
     ReportScheduleStatus:
       type: object
       properties:
@@ -62250,6 +62322,54 @@ components:
             - bound
             - consented
           additionalProperties: false
+        usage:
+          type: object
+          properties:
+            windowDays:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            accepted:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            pending:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            dropped:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            failed:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            lastFailure:
+              anyOf:
+                - type: object
+                  properties:
+                    reason:
+                      type:
+                        - string
+                        - "null"
+                    at:
+                      type: string
+                  required:
+                    - reason
+                    - at
+                  additionalProperties: false
+                - type: "null"
+          required:
+            - windowDays
+            - accepted
+            - pending
+            - dropped
+            - failed
+            - lastFailure
+          additionalProperties: false
+          description: "What this instance handed the relay in the last `windowDays` days, from its own delivery ledger: counts
+            per outcome and the last failure. Aggregate only."
         termsVersion:
           type: string
         termsUrl:
@@ -62278,6 +62398,7 @@ components:
         - notice
         - lastSuccessAt
         - devices
+        - usage
         - termsVersion
         - termsUrl
         - privacyUrl
@@ -75494,6 +75615,72 @@ components:
       required:
         - data
         - error
+      additionalProperties: false
+    AdminMigrationStatusResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/AdminMigrationStatus"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AdminMigrationStatus:
+      type: object
+      properties:
+        shipped:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+          description: Migrations in this image; null when the folder is absent.
+        applied:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        pending:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        pendingNames:
+          type: array
+          items:
+            type: string
+          description: The first 20 pending migrations, in apply order.
+        failedNames:
+          type: array
+          items:
+            type: string
+          description: Migrations that started and did not finish (first 20).
+        lastApplied:
+          anyOf:
+            - type: object
+              properties:
+                name:
+                  type: string
+                at:
+                  type: string
+              required:
+                - name
+                - at
+              additionalProperties: false
+            - type: "null"
+      required:
+        - shipped
+        - applied
+        - pending
+        - pendingNames
+        - failedNames
+        - lastApplied
       additionalProperties: false
     AdminMeasurementMaintenanceStatusResponse:
       type: object

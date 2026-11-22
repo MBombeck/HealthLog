@@ -16,8 +16,6 @@ import {
 } from "@/components/medications/medication-order-editor";
 import { MedicationViewToggle } from "@/components/medications/medication-view-toggle";
 import { SettingsCard } from "@/components/settings/settings-card";
-import { MedicineRegistryCard } from "@/components/settings/medicine-registry-card";
-import { useAuth } from "@/hooks/use-auth";
 import {
   ModuleOrderEditor,
   type ReorderItem,
@@ -58,9 +56,9 @@ import { useMedicationCategories } from "@/components/medications/use-medication
  *   3. The manual ORDER editor — two grouped lists (Aktiv / Inaktiv)
  *      with drag + arrow reordering, flushed by an explicit Save,
  *      persisted as active-ids-then-inactive-ids on the same layout row.
- *   4. #1430 — the medicine registry the leaflet search opens, first,
- *      because it is a choice rather than an arrangement.
  *
+ * The medicine registry the leaflet search opens (#1430) is a choice rather
+ * than an arrangement, so it lives on the medications page under Modules.
  * v1.44 — Arrangement holds order and view only; the injection-site
  * exclusions moved to the medications page under Modules.
  *
@@ -78,7 +76,6 @@ interface MedicationListEntry {
 
 export function MedicationsSection() {
   const { t } = useTranslations();
-  const { isAuthenticated } = useAuth();
   const {
     layout,
     isLayoutLoading,
@@ -115,9 +112,6 @@ export function MedicationsSection() {
   // `<SettingsSectionFrame>` in the route; this body is the medication cards.
   return (
     <div className="space-y-6">
-      {/* #1430 — where "Find leaflet" searches; independent of language. */}
-      <MedicineRegistryCard isAuthenticated={isAuthenticated} />
-
       {/* View preference — cards vs table. The shared header toggle
           writes optimistically, so there is no Save button here. */}
       <SettingsCard id="medications-view" className="scroll-mt-28">

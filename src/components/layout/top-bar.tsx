@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  ChevronDown,
-  LogIn,
-  LogOut,
-  Monitor,
-  Moon,
-  Shield,
-  Sun,
-} from "lucide-react";
+import { ChevronDown, LogIn, LogOut, Shield } from "lucide-react";
 import { CommandPaletteTrigger } from "@/components/command-palette/command-palette-trigger";
 import { AccountSwitcherMenuItems } from "@/components/layout/account-switcher-menu";
 import {
@@ -28,7 +20,10 @@ import Link from "next/link";
 import { useAuth, useLogout } from "@/hooks/use-auth";
 import { accountName, nameInitials } from "@/lib/account-name";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
-import { useTheme } from "@/components/providers";
+import {
+  ThemeChoiceIcon,
+  ThemeMenuItems,
+} from "@/components/layout/theme-choice";
 import { useTranslations } from "@/lib/i18n/context";
 import {
   DropdownMenu,
@@ -62,19 +57,9 @@ export function TopBar() {
       : null,
   });
   const logout = useLogout();
-  const { theme, setTheme } = useTheme();
   const { t } = useTranslations();
   const avatarUrl = user?.avatarUrl ?? null;
   const isAdmin = user?.role === "ADMIN";
-
-  const themeIcon =
-    theme === "system" ? (
-      <Monitor className="h-4 w-4" />
-    ) : theme === "dark" ? (
-      <Moon className="h-4 w-4" />
-    ) : (
-      <Sun className="h-4 w-4" />
-    );
 
   return (
     <header
@@ -191,37 +176,11 @@ export function TopBar() {
                     unevenly spaced. Match the item height here (instance-level
                     override, so no other dropdown's sub-trigger is touched). */}
                 <DropdownMenuSubTrigger className="min-h-11 py-2">
-                  {themeIcon}
+                  <ThemeChoiceIcon />
                   <span className="ml-2">{t("nav.theme")}</span>
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
-                  <DropdownMenuItem onClick={() => setTheme("system")}>
-                    <Monitor className="mr-2 h-4 w-4" />
-                    {t("nav.themeSystem")}
-                    {theme === "system" && (
-                      <span className="text-primary ml-auto text-xs">
-                        &#10003;
-                      </span>
-                    )}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setTheme("dark")}>
-                    <Moon className="mr-2 h-4 w-4" />
-                    {t("nav.themeDark")}
-                    {theme === "dark" && (
-                      <span className="text-primary ml-auto text-xs">
-                        &#10003;
-                      </span>
-                    )}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setTheme("light")}>
-                    <Sun className="mr-2 h-4 w-4" />
-                    {t("nav.themeLight")}
-                    {theme === "light" && (
-                      <span className="text-primary ml-auto text-xs">
-                        &#10003;
-                      </span>
-                    )}
-                  </DropdownMenuItem>
+                  <ThemeMenuItems />
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
               {/* v1.36.0 — the same switcher slice the desktop sidebar menu

@@ -584,7 +584,7 @@
     "admin": "Console d’administration",
     "logout": "Se déconnecter",
     "login": "Se connecter",
-    "notifications": "Notifications",
+    "notifications": "Notifications par canal",
     "theme": "Thème",
     "themeSystem": "Système",
     "themeDark": "Sombre",
@@ -634,7 +634,14 @@
     "vaccinations": "Vaccinations",
     "mentalWellbeing": "Bien-être mental",
     "timeline": "Chronologie",
-    "seizures": "Crises"
+    "seizures": "Crises",
+    "emergencyCard": "Carte d'urgence",
+    "groups": {
+      "tracking": "Suivi",
+      "record": "Dossier médical",
+      "analysis": "Analyse"
+    },
+    "dueCount": "{label}, {count} à faire"
   },
   "auth": {
     "login": "Se connecter",
@@ -5767,7 +5774,6 @@
       "sectionsNav": "Sections des réglages",
       "groups": {
         "account": "Compte",
-        "yourData": "Vos données",
         "healthProfile": "Profil de santé",
         "ai": "IA",
         "connectivity": "Connectivité",
@@ -5776,7 +5782,8 @@
         "arrangement": "Disposition",
         "notifications": "Notifications",
         "connections": "Connexions",
-        "data": "Données"
+        "data": "Données",
+        "serverData": "Données du serveur"
       },
       "allSections": "Toutes les sections"
     },
@@ -5962,6 +5969,13 @@
           "label": "Reporter de",
           "option": "{minutes} min",
           "saveError": "Enregistrement impossible. Réessaie"
+        },
+        "alerts": {
+          "heading": "Alertes",
+          "noChannel": "Aucun canal de diffusion n'est encore configuré, rien ne peut donc être envoyé. Dès qu'il y en a un, cet interrupteur décide pour tous à la fois.",
+          "setUpChannel": "Configurer un canal de diffusion",
+          "perChannel": "Choisir par canal",
+          "saveError": "Le réglage de notification n'a pas pu être enregistré. Veuillez réessayer."
         }
       },
       "layout": {
@@ -7979,6 +7993,52 @@
         "title": "Sessions et appareils",
         "description": "Où vous êtes connecté, les appareils qui sautent le second facteur et l'activité de sécurité de votre compte.",
         "open": "Ouvrir la sécurité"
+      },
+      "whoHasAccess": {
+        "title": "Qui peut accéder à votre dossier",
+        "description": "Chaque accès à votre dossier, et où le voir et le fermer.",
+        "doors": {
+          "accounts": {
+            "title": "Autres comptes",
+            "description": "Les personnes de ce serveur avec qui vous partagez votre dossier, et les tuteurs des profils que vous gérez.",
+            "link": "Ouvrir l'accès partagé"
+          },
+          "shareLinks": {
+            "title": "Liens pour soignants",
+            "description": "Des liens en lecture seule vers votre rapport médical, qui expirent à la date que vous choisissez.",
+            "link": "Ouvrir les liens"
+          },
+          "emergencyCard": {
+            "title": "Lien de la carte d'urgence",
+            "description": "Le lien QR de votre carte d'urgence. Quiconque le scanne peut lire la carte jusqu'à ce que vous le révoquiez.",
+            "link": "Ouvrir la carte d'urgence"
+          },
+          "careCalendar": {
+            "title": "Calendrier santé",
+            "description": "Un abonnement d'agenda avec vos rendez-vous réservés et les échéances de soins à venir.",
+            "link": "Ouvrir le calendrier santé"
+          },
+          "cycleCalendar": {
+            "title": "Calendrier du cycle",
+            "description": "Un abonnement d'agenda avec les dates de votre cycle.",
+            "link": "Ouvrir les réglages du cycle"
+          },
+          "apiTokens": {
+            "title": "Jetons d'API",
+            "description": "Des jetons qui permettent à des applications et des scripts de lire ou d'écrire vos données.",
+            "link": "Ouvrir les jetons d'API"
+          },
+          "mcp": {
+            "title": "Connecteur MCP",
+            "description": "Les assistants IA que vous avez reliés à votre dossier.",
+            "link": "Ouvrir le connecteur MCP"
+          },
+          "sessions": {
+            "title": "Appareils connectés",
+            "description": "Les navigateurs et téléphones connectés à votre compte en ce moment.",
+            "link": "Ouvrir les sessions actives"
+          }
+        }
       }
     },
     "mcp": {
@@ -8139,7 +8199,8 @@
     "tokenNameLabel": "Nom du jeton",
     "displayCard": {
       "title": "Affichage",
-      "description": "Langue, unités et formats, enregistrés dès que vous les modifiez."
+      "description": "Langue, unités et formats, enregistrés dès que vous les modifiez.",
+      "themeDescription": "Système suit votre appareil entre clair et sombre. Le choix est gardé sur cet appareil."
     },
     "integrationCard": {
       "state": {
@@ -8671,7 +8732,8 @@
       "ok": "OK",
       "error": "Échecs",
       "skipped": "Ignorées",
-      "autoDisabled": "Canaux désactivés automatiquement"
+      "autoDisabled": "Canaux désactivés automatiquement",
+      "loadError": "L'état de la diffusion n'a pas pu être chargé."
     },
     "reminderLateMinutes": "Seuil de retard (minutes)",
     "reminderLateMinutesDescription": "Minutes après la fin de la fenêtre avant que le badge passe du jaune à l'orange.",
@@ -8725,12 +8787,12 @@
         "subtitle": "Inscription, langue par défaut et autres commutateurs applicables à toute l'application."
       },
       "services": {
-        "title": "Services",
-        "subtitle": "Activez ou désactivez les canaux de notification et l'API pour tout le serveur."
+        "title": "Push et canaux",
+        "subtitle": "Canaux de notification, clés Web Push, relais push et état de la diffusion pour tout le serveur."
       },
       "integrations": {
-        "title": "Intégrations",
-        "subtitle": "Configurez Umami, GlitchTip, Web Push et les rapports de bug."
+        "title": "Supervision",
+        "subtitle": "Configurer Umami, GlitchTip et les rapports de bug."
       },
       "coach": {
         "title": "Coach",
@@ -9558,6 +9620,16 @@
         "inviteRequired": "Ce relais n'accepte de nouveaux serveurs que sur invitation. Saisissez un code d'invitation.",
         "inviteRejected": "Le relais n'a pas accepté ce code d'invitation. Il a peut-être expiré ou déjà été utilisé. Demandez-en un nouveau et saisissez-le.",
         "registrationPaused": "Le relais n'accepte pas de nouveaux serveurs pour le moment. Ce serveur réessaiera plus tard de lui-même."
+      },
+      "usage": {
+        "accepted": "Acceptés",
+        "pending": "En attente",
+        "dropped": "Abandonnés",
+        "failed": "Échoués",
+        "window": "Notifications push que ce serveur a confiées au relais ces {days} derniers jours.",
+        "lastSuccess": "Dernière livraison {time}.",
+        "lastFailure": "Dernier échec {time} : {reason}.",
+        "noReason": "sans motif"
       }
     },
     "serverSetup": {
@@ -9670,6 +9742,25 @@
           "scheduled": "Sauvegarde nocturne planifiée ({cron})."
         }
       }
+    },
+    "versionMigrations": {
+      "title": "Version et base de données",
+      "description": "Quelle version tourne, depuis quelle ligne d'images, et si la base de données a toutes les migrations livrées avec elle.",
+      "version": "Version",
+      "channel": {
+        "release": "Publication",
+        "edge": "Edge",
+        "development": "Version de développement"
+      },
+      "built": "Compilation {sha}, {time}",
+      "migrations": "Migrations de la base",
+      "applied": "{applied} sur {shipped} appliquées",
+      "appliedOnly": "{applied} appliquées",
+      "pending": "{count} en attente : {names}",
+      "failed": "En échec, et bloquant la mise à jour : {names}",
+      "upToDate": "À jour",
+      "lastApplied": "Dernière : {name}, {time}",
+      "loadError": "L'état des migrations n'a pas pu être chargé."
     }
   },
   "achievements": {
@@ -9964,7 +10055,7 @@
     }
   },
   "notifications": {
-    "title": "Notifications",
+    "title": "Notifications par canal",
     "eventColumn": "Événement",
     "subtitle": "Choisissez quelles notifications vous recevez et par quel canal.",
     "loadError": "Impossible de charger les paramètres de notification.",
@@ -10072,7 +10163,7 @@
     "eventMedicationIntakeSyncDesc": "Mise à jour entre appareils quand une dose est enregistrée, prise ou sautée.",
     "eventDailyBriefing": "Résumé quotidien",
     "eventDailyBriefingDesc": "Un résumé matinal et posé de votre journée. Désactivé jusqu'à ce que vous l'activiez.",
-    "eventSecurityAlert": "Sécurité du compte",
+    "eventSecurityAlert": "Alertes de sécurité du compte",
     "eventSecurityAlertDesc": "Envoyé lors d’une connexion depuis un appareil ou un lieu inconnus, quand une clé d’accès est ajoutée ou supprimée, quand un jeton d’accès est révoqué et quand un appareil est déconnecté parce que son jeton de connexion a servi deux fois.",
     "eventSharedRecordIntake": "Une personne avec accès marque une dose",
     "eventSharedRecordIntakeDesc": "Envoyé uniquement quand une autre personne le fait, jamais pour vos propres saisies.",
@@ -10105,8 +10196,8 @@
     },
     "loginRequired": "Connectez-vous pour gérer les notifications.",
     "someChannelsGloballyDisabled": "Un ou plusieurs canaux sont désactivés dans les paramètres et ne recevront pas de notifications.",
-    "reminderSettingsLink": "Réglages des rappels",
-    "channelsLink": "Canaux",
+    "reminderSettingsLink": "Réglages des notifications",
+    "channelsLink": "Canaux de diffusion",
     "handover": {
       "claimedTitle": "{name} a maintenant son propre compte",
       "claimedEnd": "{name} a repris son dossier de santé. Votre accès a pris fin.",
@@ -15158,6 +15249,23 @@
         "measurement": "Note sur une mesure",
         "illness": "Journal de maladie"
       }
+    },
+    "keywords": {
+      "emergencyCard": "urgence, ICE, QR, portefeuille, groupe sanguin, en cas d'urgence",
+      "notificationsPerChannel": "canaux, matrice, push, Telegram, ntfy",
+      "medicineRegistry": "notice, notice du médicament, registre, pays, base des médicaments",
+      "snooze": "snooze, plus tard, reporter, rappel",
+      "securityAlerts": "sécurité, connexion, nouvel appareil, alerte",
+      "lastingChange": "changement durable, constante, tendance, pouls au repos, tension",
+      "theme": "thème, mode sombre, mode clair, apparence, couleurs",
+      "gadgetbridge": "Gadgetbridge, Android, montre connectée, base de données",
+      "fhirBundle": "FHIR, bundle, dossier médical, importation",
+      "healthConnectFolder": "Health Connect, WebDAV, Nextcloud, dossier partagé, Android",
+      "reportSchedule": "planification, mensuel, trimestriel, rapport médical, automatique",
+      "careCalendar": "calendrier, agenda, ICS, abonnement, rendez-vous, vaccins",
+      "whoHasAccess": "accès, qui voit, partage, liens, jetons, sessions",
+      "adminPush": "push, relais, Web Push, VAPID, APNs, diffusion",
+      "adminSystemStatus": "migrations, version, mise à jour, canal, edge, base de données"
     }
   },
   "shortcuts": {
@@ -15842,7 +15950,7 @@
   "careFeed": {
     "sectionTitle": "Calendrier",
     "sectionSubtitle": "Tes rendez-vous et ce qui arrive à échéance, dans l'application de calendrier que tu utilises déjà.",
-    "title": "Abonnement agenda des rendez-vous et échéances",
+    "title": "Calendrier santé",
     "description": "Les visites prévues à leur heure, les bilans et les rappels de vaccins le jour de leur échéance.",
     "loadError": "L'abonnement agenda n'a pas pu être chargé.",
     "linkHidden": "Un lien commençant par {prefix} est actif. Il n'est affiché qu'une fois, à sa création ; désactive puis réactive l'abonnement pour en obtenir un nouveau.",
@@ -15944,7 +16052,6 @@
     "page": {
       "title": "Carte d'urgence",
       "description": "Tes informations d'urgence quand tu n'es pas chez toi.",
-      "back": "Profil de santé",
       "loadError": "La carte d'urgence n'a pas pu être chargée.",
       "editHint": "Le groupe sanguin, les contacts, les implants et les déclarations viennent de tes informations d'urgence.",
       "editLink": "Les modifier",
@@ -15967,6 +16074,9 @@
       "ORGAN_DONOR": "Don d'organes",
       "NOTE": "Notes complémentaires",
       "DATE_OF_BIRTH": "Date de naissance"
+    },
+    "entry": {
+      "description": "Groupe sanguin, allergies, médicaments et contacts pour une urgence, avec copie hors ligne, carte et lien QR."
     }
   }
 }

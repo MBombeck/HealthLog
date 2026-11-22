@@ -46,6 +46,7 @@ export function invalidateReminderReads(qc: QueryClient): Promise<unknown> {
   return Promise.all([
     invalidateKeys(qc, [
       queryKeys.measurementReminders(),
+      queryKeys.navCounts(),
       queryKeys.dailyDigest(),
       queryKeys.dashboardSnapshot(),
       queryKeys.dayRoot(),

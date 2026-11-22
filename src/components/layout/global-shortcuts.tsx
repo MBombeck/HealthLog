@@ -111,10 +111,14 @@ function useShortcutOffer(): ShortcutOffer & { canCapture: boolean } {
       .length > 0;
   const navHrefs = useMemo(
     () =>
-      visibleNavDestinations(navModules, true, inSharedRecord, sections).map(
-        (d) => d.href,
-      ),
-    [navModules, inSharedRecord, sections],
+      visibleNavDestinations(
+        navModules,
+        true,
+        inSharedRecord,
+        sections,
+        capabilities,
+      ).map((d) => d.href),
+    [navModules, inSharedRecord, sections, capabilities],
   );
   const settingsHref = useMemo(
     () =>

@@ -1429,11 +1429,11 @@ export async function dispatchAdminSystemAlert(input: {
       metadata: {
         ...payload.metadata,
         // Tap target: an admin whose own sync fails fixes it in their own
-        // integration settings; anyone else's shows on the admin page.
+        // integration settings; anyone else's fails jobs on System status.
         url:
           admin.id === input.subjectUserId
             ? "/settings/integrations"
-            : "/admin/integrations",
+            : "/admin/system-status",
       },
     });
     outcome.dispatched ||= adminOutcome.dispatched;

@@ -124,6 +124,8 @@ const CHECKED_FLOOR = 235;
  * about the operation: a list a fixture could fill is a row to seed.
  */
 const EMPTY_ALLOWED: Record<string, string> = {
+  "/api/admin/migrations":
+    "The lists are the pending and the failed migrations, empty on a migrated database by definition; `admin-operator-insights.test.ts` writes a half-done row and reads it back.",
   "/api/auth/me/mfa":
     "The list is the account's security keys, and an enrolled second factor turns the export and backup reads this run also calls into a re-proof a seeded session cannot give.",
   "/api/auth/passkeys":

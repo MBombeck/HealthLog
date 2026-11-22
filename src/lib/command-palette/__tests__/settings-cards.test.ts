@@ -30,9 +30,15 @@ function sourceFiles(dir: string): string[] {
 
 // A sweep that read nothing would find no anchor and fail loudly anyway; the
 // floor makes a walker that stopped descending fail by name.
+// The settings pages also render cards kept beside their records (the
+// anamnesis cards, the checkup reminder switches).
 const SETTINGS_SRC = requireFloor(
   "settings source files",
-  sourceFiles(join(process.cwd(), "src/components/settings")),
+  [
+    ...sourceFiles(join(process.cwd(), "src/components/settings")),
+    ...sourceFiles(join(process.cwd(), "src/components/records")),
+    ...sourceFiles(join(process.cwd(), "src/components/measurement-reminders")),
+  ],
   150,
 )
   .map((path) => readFileSync(path, "utf8"))

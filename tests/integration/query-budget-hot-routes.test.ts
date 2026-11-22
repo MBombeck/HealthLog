@@ -103,6 +103,11 @@ const BUDGET = {
   // the oldest reading of each type are two index probes per type in ONE
   // statement, so `oldestSeenAt` costs no statement of its own.
   integrationsHealthkit: 17,
+  // The navigation's two counts (1.49.0): the session and the user, the
+  // active medications with their schedules, schedule eras and courses, the
+  // ledgers' anchor and window reads in one batch, and the due check-ups.
+  // Fixed, whatever the number of medications.
+  navCounts: 9,
 } as const;
 
 type Handler = (
@@ -457,6 +462,15 @@ describe("statement budgets on the hot routes (real Postgres)", () => {
       "http://localhost/api/insights/correlations",
     );
     expectWithin("/api/insights/correlations", m, BUDGET.correlations);
+  });
+
+  it("GET /api/nav/counts", async () => {
+    const { GET } = await import("@/app/api/nav/counts/route");
+    const m = await measureRead(
+      GET as unknown as Handler,
+      "http://localhost/api/nav/counts",
+    );
+    expectWithin("/api/nav/counts", m, BUDGET.navCounts);
   });
 
   it("GET /api/integrations/healthkit", async () => {

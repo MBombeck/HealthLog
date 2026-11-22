@@ -1,6 +1,7 @@
 # Scheduled doctor report
 
 Under **Settings**, **Health record**, the **Scheduled doctor report** card
+(also linked from the top of **Documents**, where the reports land)
 files the doctor report into your documents on its own, once a month,
 quarter or year has ended. It is off until you turn it on, and it sends no
 notification: the PDF is simply there, in the documents and in anything

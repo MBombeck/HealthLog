@@ -37,6 +37,18 @@ const BUILDER = "lib/encounters/visit-links.ts";
  */
 const BARE_CHECKUPS: Record<string, { count: number; why: string }> = {
   "components/layout/nav-model.ts": { count: 1, why: "the page's nav entry" },
+  "hooks/use-nav-counts.ts": {
+    count: 1,
+    why: "the key of the checkups count in the navigation, not a link",
+  },
+  "components/layout/context-links.tsx": {
+    count: 1,
+    why: "the key of the checkups page's own context-link row, not a link",
+  },
+  "components/measurement-reminders/vorsorge-section.tsx": {
+    count: 1,
+    why: "the checkups page mounting its own context-link row",
+  },
   "components/measurement-reminders/vorsorge-dashboard-card.tsx": {
     count: 1,
     why: "the checkups card's empty state opens the checkups",

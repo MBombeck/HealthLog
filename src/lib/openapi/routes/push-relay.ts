@@ -233,6 +233,20 @@ const adminRelayStatus = z
       .nullable(),
     lastSuccessAt: z.string().nullable(),
     devices: z.object({ bound: z.number().int(), consented: z.number().int() }),
+    usage: z
+      .object({
+        windowDays: z.number().int(),
+        accepted: z.number().int(),
+        pending: z.number().int(),
+        dropped: z.number().int(),
+        failed: z.number().int(),
+        lastFailure: z
+          .object({ reason: z.string().nullable(), at: z.string() })
+          .nullable(),
+      })
+      .describe(
+        "What this instance handed the relay in the last `windowDays` days, from its own delivery ledger: counts per outcome and the last failure. Aggregate only.",
+      ),
     termsVersion: z.string(),
     termsUrl: z.string().nullable(),
     privacyUrl: z.string().nullable(),

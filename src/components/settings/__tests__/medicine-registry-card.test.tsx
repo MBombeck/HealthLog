@@ -70,6 +70,8 @@ describe("MedicineRegistryCard", () => {
     expect(source).toContain('method: "PATCH"');
     expect(source).toContain("JSON.stringify({ medicineRegistry: next })");
     expect(source).toContain("queryKeys.authMe()");
-    expect(source).toContain("queryKeys.medications()");
+    // Every medication read carries `leafletSearch`: the list, the detail,
+    // the schedule and the rest refetch together.
+    expect(source).toContain("invalidateMedicationReads(queryClient)");
   });
 });

@@ -52,20 +52,26 @@ interface AdminSection {
 }
 
 type AdminSectionGroup =
-  "system" | "connectivity" | "ai" | "account" | "yourData";
+  "system" | "notifications" | "ai" | "connectivity" | "account" | "serverData";
 
 const ADMIN_SECTION_GROUP_LABEL_KEYS: Record<AdminSectionGroup, string> = {
   system: "settings.shell.groups.system",
-  connectivity: "settings.shell.groups.connectivity",
+  notifications: "settings.shell.groups.notifications",
   ai: "settings.shell.groups.ai",
+  connectivity: "settings.shell.groups.connectivity",
   account: "settings.shell.groups.account",
-  yourData: "settings.shell.groups.yourData",
+  serverData: "settings.shell.groups.serverData",
 };
 
 /**
  * Source of truth for the admin section list. Order matches the in-app
  * navigation order so the sidebar, mobile strip, and `generateStaticParams()`
  * all line up. Don't reorder without updating tests.
+ *
+ * Each group holds one subject: push lives in one place (channels,
+ * Web Push keys, the relay and delivery health under Notifications), the AI
+ * group holds only the Coach, server-wide module availability sits with the
+ * system, and the group for what the server stores is "Server data".
  */
 export const ADMIN_SECTIONS: readonly AdminSection[] = [
   {
@@ -80,10 +86,12 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     icon: Settings,
     group: "system",
   },
+  // v1.18.6 — server-wide module availability; it gates every module, so it
+  // is a property of the server rather than of the AI.
   {
-    slug: "services",
-    titleKey: "admin.section.services.title",
-    icon: Radio,
+    slug: "module-availability",
+    titleKey: "admin.section.module-availability.title",
+    icon: Blocks,
     group: "system",
   },
   // v1.4.36 — About / version / update check folded into Admin.
@@ -92,6 +100,27 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     titleKey: "admin.section.about.title",
     icon: Info,
     group: "system",
+  },
+  {
+    slug: "services",
+    titleKey: "admin.section.services.title",
+    icon: Radio,
+    group: "notifications",
+  },
+  {
+    slug: "reminders",
+    titleKey: "admin.section.reminders.title",
+    icon: Bell,
+    group: "notifications",
+  },
+  // v1.18.1 — single "Coach" entry replacing the former ai-quality,
+  // assistant, and coach-feedback trio. The section body stacks all
+  // three surfaces so the coach-quality picture lives in one place.
+  {
+    slug: "coach",
+    titleKey: "admin.section.coach.title",
+    icon: Sparkles,
+    group: "ai",
   },
   {
     slug: "integrations",
@@ -104,29 +133,6 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     titleKey: "admin.section.api-tokens.title",
     icon: KeyRound,
     group: "connectivity",
-  },
-  // v1.18.1 — single "Coach" entry replacing the former ai-quality,
-  // assistant, and coach-feedback trio. The section body stacks all
-  // three surfaces so the coach-quality picture lives in one place.
-  {
-    slug: "coach",
-    titleKey: "admin.section.coach.title",
-    icon: Sparkles,
-    group: "ai",
-  },
-  // v1.18.6 — server-wide module availability split out of Coach into
-  // its own entry, sitting next to it.
-  {
-    slug: "module-availability",
-    titleKey: "admin.section.module-availability.title",
-    icon: Blocks,
-    group: "ai",
-  },
-  {
-    slug: "reminders",
-    titleKey: "admin.section.reminders.title",
-    icon: Bell,
-    group: "ai",
   },
   {
     slug: "users",
@@ -152,26 +158,26 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     slug: "app-logs",
     titleKey: "admin.section.app-logs.title",
     icon: FileText,
-    group: "yourData",
+    group: "serverData",
   },
   {
     slug: "backups",
     titleKey: "admin.section.backups.title",
     icon: Database,
-    group: "yourData",
+    group: "serverData",
   },
   // v1.23 — encryption coverage + key-rotation status / safe trigger.
   {
     slug: "encryption",
     titleKey: "admin.section.encryption.title",
     icon: ShieldCheck,
-    group: "yourData",
+    group: "serverData",
   },
   {
     slug: "danger-zone",
     titleKey: "admin.section.danger-zone.title",
     icon: ShieldAlert,
-    group: "yourData",
+    group: "serverData",
   },
 ] as const;
 

@@ -584,7 +584,7 @@
     "admin": "관리자 콘솔",
     "logout": "로그아웃",
     "login": "로그인",
-    "notifications": "알림",
+    "notifications": "채널별 알림",
     "theme": "테마",
     "themeSystem": "시스템",
     "themeDark": "다크",
@@ -634,7 +634,14 @@
     "vaccinations": "예방접종",
     "mentalWellbeing": "정신 건강",
     "timeline": "타임라인",
-    "seizures": "발작"
+    "seizures": "발작",
+    "emergencyCard": "응급 카드",
+    "groups": {
+      "tracking": "기록",
+      "record": "건강 기록",
+      "analysis": "분석"
+    },
+    "dueCount": "{label}, {count}개 예정"
   },
   "auth": {
     "login": "로그인",
@@ -5767,7 +5774,6 @@
       "sectionsNav": "설정 섹션",
       "groups": {
         "account": "계정",
-        "yourData": "내 데이터",
         "healthProfile": "건강 프로필",
         "ai": "AI",
         "connectivity": "연결",
@@ -5776,7 +5782,8 @@
         "arrangement": "배치",
         "notifications": "알림",
         "connections": "연결",
-        "data": "데이터"
+        "data": "데이터",
+        "serverData": "서버 데이터"
       },
       "allSections": "모든 항목"
     },
@@ -5962,6 +5969,13 @@
           "label": "미루는 시간",
           "option": "{minutes}분",
           "saveError": "저장하지 못했어요. 다시 시도해 주세요"
+        },
+        "alerts": {
+          "heading": "알림 사항",
+          "noChannel": "아직 설정된 전송 채널이 없어 아무것도 보낼 수 없습니다. 채널이 생기면 이 스위치가 모든 채널에 한 번에 적용됩니다.",
+          "setUpChannel": "전송 채널 설정",
+          "perChannel": "채널별로 선택",
+          "saveError": "알림 설정을 저장하지 못했습니다. 다시 시도해 주세요."
         }
       },
       "layout": {
@@ -7979,6 +7993,52 @@
         "title": "세션 및 기기",
         "description": "로그인된 위치, 2단계 인증을 건너뛰는 기기, 계정의 보안 활동을 확인해요.",
         "open": "보안 열기"
+      },
+      "whoHasAccess": {
+        "title": "내 기록에 접근할 수 있는 사람",
+        "description": "내 기록으로 들어오는 모든 경로와, 각 경로를 확인하고 닫는 곳.",
+        "doors": {
+          "accounts": {
+            "title": "다른 계정",
+            "description": "이 서버에서 기록을 공유하는 사람과, 내가 관리하는 프로필의 보호자.",
+            "link": "공유 접근 열기"
+          },
+          "shareLinks": {
+            "title": "의료진용 링크",
+            "description": "정한 날짜에 만료되는 진료 보고서 읽기 전용 링크.",
+            "link": "링크 열기"
+          },
+          "emergencyCard": {
+            "title": "응급 카드 링크",
+            "description": "응급 카드의 QR 링크. 철회하기 전까지는 스캔한 누구나 카드를 읽을 수 있습니다.",
+            "link": "응급 카드 열기"
+          },
+          "careCalendar": {
+            "title": "건강 캘린더",
+            "description": "예약한 진료와 다가오는 검진·접종 일정이 담긴 캘린더 구독.",
+            "link": "건강 캘린더 열기"
+          },
+          "cycleCalendar": {
+            "title": "주기 캘린더",
+            "description": "주기 날짜가 담긴 캘린더 구독.",
+            "link": "주기 설정 열기"
+          },
+          "apiTokens": {
+            "title": "API 토큰",
+            "description": "앱과 스크립트가 내 데이터를 읽거나 쓰게 하는 토큰.",
+            "link": "API 토큰 열기"
+          },
+          "mcp": {
+            "title": "MCP 커넥터",
+            "description": "내 기록에 연결한 AI 어시스턴트.",
+            "link": "MCP 커넥터 열기"
+          },
+          "sessions": {
+            "title": "로그인된 기기",
+            "description": "지금 내 계정에 로그인되어 있는 브라우저와 휴대폰.",
+            "link": "활성 세션 열기"
+          }
+        }
       }
     },
     "mcp": {
@@ -8139,7 +8199,8 @@
     "tokenNameLabel": "토큰 이름",
     "displayCard": {
       "title": "표시",
-      "description": "언어, 단위, 형식은 바꾸는 즉시 저장돼요."
+      "description": "언어, 단위, 형식은 바꾸는 즉시 저장돼요.",
+      "themeDescription": "시스템은 기기 설정에 따라 밝은 테마와 어두운 테마를 오갑니다. 선택은 이 기기에 저장됩니다."
     },
     "integrationCard": {
       "state": {
@@ -8646,7 +8707,8 @@
       "ok": "정상",
       "error": "실패",
       "skipped": "건너뜀",
-      "autoDisabled": "자동으로 꺼진 채널"
+      "autoDisabled": "자동으로 꺼진 채널",
+      "loadError": "전송 상태를 불러오지 못했습니다."
     },
     "reminderLateMinutes": "지연 기준선 (분)",
     "reminderLateMinutesDescription": "복용 시간대가 끝난 뒤 배지가 노랑에서 주황으로 바뀌기까지의 분이에요.",
@@ -8700,12 +8762,12 @@
         "subtitle": "회원가입, 기본 언어 등 앱 전체 설정이에요."
       },
       "services": {
-        "title": "서비스",
-        "subtitle": "알림 채널과 API를 서버 전체에서 켜거나 꺼요."
+        "title": "푸시와 채널",
+        "subtitle": "서버 전체의 알림 채널, Web Push 키, 푸시 릴레이, 전송 상태."
       },
       "integrations": {
-        "title": "연동",
-        "subtitle": "Umami, GlitchTip, 웹 푸시, 버그 신고를 설정해요."
+        "title": "모니터링",
+        "subtitle": "Umami, GlitchTip, 버그 보고를 설정합니다."
       },
       "coach": {
         "title": "코치",
@@ -9558,6 +9620,16 @@
         "inviteRequired": "이 릴레이는 초대로만 새 서버를 받습니다. 초대 코드를 입력하세요.",
         "inviteRejected": "릴레이가 이 초대 코드를 받아들이지 않았습니다. 만료되었거나 이미 사용되었을 수 있습니다. 새 코드를 받아 입력하세요.",
         "registrationPaused": "릴레이가 지금은 새 서버를 받지 않습니다. 이 서버가 나중에 스스로 다시 시도합니다."
+      },
+      "usage": {
+        "accepted": "수락됨",
+        "pending": "대기 중",
+        "dropped": "폐기됨",
+        "failed": "실패",
+        "window": "최근 {days}일 동안 이 서버가 릴레이에 넘긴 푸시.",
+        "lastSuccess": "마지막 전송 {time}.",
+        "lastFailure": "마지막 실패 {time}: {reason}.",
+        "noReason": "사유 없음"
       }
     },
     "serverSetup": {
@@ -9670,6 +9742,25 @@
           "scheduled": "야간 덤프 예약됨({cron})."
         }
       }
+    },
+    "versionMigrations": {
+      "title": "버전과 데이터베이스",
+      "description": "어떤 빌드가 어느 이미지 계열에서 실행 중인지, 그리고 그 빌드에 포함된 마이그레이션이 데이터베이스에 모두 적용되었는지.",
+      "version": "버전",
+      "channel": {
+        "release": "정식 릴리스",
+        "edge": "Edge",
+        "development": "개발 빌드"
+      },
+      "built": "빌드 {sha}, {time}",
+      "migrations": "데이터베이스 마이그레이션",
+      "applied": "{shipped}개 중 {applied}개 적용",
+      "appliedOnly": "{applied}개 적용",
+      "pending": "{count}개 대기: {names}",
+      "failed": "실패하여 업데이트를 막고 있음: {names}",
+      "upToDate": "최신 상태",
+      "lastApplied": "마지막: {name}, {time}",
+      "loadError": "마이그레이션 상태를 불러오지 못했습니다."
     }
   },
   "achievements": {
@@ -9964,7 +10055,7 @@
     }
   },
   "notifications": {
-    "title": "알림",
+    "title": "채널별 알림",
     "eventColumn": "이벤트",
     "subtitle": "어떤 알림을 어떤 채널로 받을지 선택하세요.",
     "loadError": "알림 설정을 불러오지 못했어요.",
@@ -10072,7 +10163,7 @@
     "eventMedicationIntakeSyncDesc": "복용을 기록하거나 복용·건너뜀으로 표시하면 기기 간에 업데이트해요.",
     "eventDailyBriefing": "데일리 브리핑",
     "eventDailyBriefingDesc": "그날의 요약을 아침에 한 번 차분하게 알려줘요. 켜기 전에는 보내지 않아요.",
-    "eventSecurityAlert": "계정 보안",
+    "eventSecurityAlert": "계정 보안 알림",
     "eventSecurityAlertDesc": "처음 보는 기기나 장소에서 로그인할 때, 패스키를 추가하거나 삭제할 때, 액세스 토큰이 취소될 때, 로그인 토큰이 두 번 쓰여 기기가 로그아웃될 때 보내요.",
     "eventSharedRecordIntake": "기록을 공유한 사람이 복용을 표시할 때",
     "eventSharedRecordIntakeDesc": "다른 사람이 표시했을 때만 보내고, 내 기록에는 보내지 않아요.",
@@ -10106,7 +10197,7 @@
     "loginRequired": "알림을 관리하려면 로그인해 주세요.",
     "someChannelsGloballyDisabled": "설정에서 꺼둔 채널이 있어서 그 채널로는 알림을 받지 못해요.",
     "reminderSettingsLink": "알림 설정",
-    "channelsLink": "채널",
+    "channelsLink": "전송 채널",
     "handover": {
       "claimedTitle": "{name} 님에게 이제 자신의 계정이 있습니다",
       "claimedEnd": "{name} 님이 자신의 건강 기록을 넘겨받았습니다. 내 접근 권한은 종료되었습니다.",
@@ -15158,6 +15249,23 @@
         "measurement": "측정값 메모",
         "illness": "질병 일지"
       }
+    },
+    "keywords": {
+      "emergencyCard": "응급, 비상, ICE, QR, 지갑, 혈액형",
+      "notificationsPerChannel": "채널, 매트릭스, 푸시, Telegram, ntfy",
+      "medicineRegistry": "첨부 문서, 설명서, 의약품 등록부, 국가",
+      "snooze": "다시 알림, 나중에, 미루기, 스누즈",
+      "securityAlerts": "보안, 로그인, 새 기기, 경고",
+      "lastingChange": "지속적 변화, 활력 징후, 추세, 안정 시 심박수, 혈압",
+      "theme": "테마, 다크 모드, 라이트 모드, 화면, 색상",
+      "gadgetbridge": "Gadgetbridge, 안드로이드, 스마트워치, 데이터베이스",
+      "fhirBundle": "FHIR, 번들, 진료 기록, 가져오기",
+      "healthConnectFolder": "Health Connect, WebDAV, Nextcloud, 폴더, 안드로이드",
+      "reportSchedule": "일정, 매월, 분기별, 진료 보고서, 자동",
+      "careCalendar": "캘린더, ICS, 구독, 예약, 검진, 예방접종",
+      "whoHasAccess": "접근, 누가 보는지, 공유, 링크, 토큰, 세션",
+      "adminPush": "푸시, 릴레이, Web Push, VAPID, APNs, 전송",
+      "adminSystemStatus": "마이그레이션, 버전, 업데이트, 채널, edge, 데이터베이스"
     }
   },
   "shortcuts": {
@@ -15842,7 +15950,7 @@
   "careFeed": {
     "sectionTitle": "캘린더",
     "sectionSubtitle": "예약과 다가오는 일정을 이미 쓰는 캘린더 앱에서 확인하세요.",
-    "title": "진료 캘린더 구독",
+    "title": "건강 캘린더",
     "description": "예약된 방문은 해당 시간에, 검진과 백신 추가 접종은 예정일에 표시됩니다.",
     "loadError": "캘린더 구독을 불러오지 못했습니다.",
     "linkHidden": "{prefix}(으)로 시작하는 링크가 활성 상태입니다. 링크는 생성할 때 한 번만 표시됩니다. 새 링크가 필요하면 구독을 껐다가 다시 켜세요.",
@@ -15944,7 +16052,6 @@
     "page": {
       "title": "응급 카드",
       "description": "외출 시를 위한 응급 정보입니다.",
-      "back": "건강 프로필",
       "loadError": "응급 카드를 불러오지 못했습니다.",
       "editHint": "혈액형, 연락처, 이식 장치 및 의사 표시는 응급 정보에서 가져옵니다.",
       "editLink": "편집",
@@ -15967,6 +16074,9 @@
       "ORGAN_DONOR": "장기 기증",
       "NOTE": "추가 메모",
       "DATE_OF_BIRTH": "생년월일"
+    },
+    "entry": {
+      "description": "응급 상황용 혈액형, 알레르기, 약, 연락처. 오프라인 사본, 지갑용 카드, QR 링크를 함께 제공합니다."
     }
   }
 }
