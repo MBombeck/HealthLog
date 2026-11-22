@@ -62,8 +62,8 @@ vi.mock("@/lib/notifications/senders/ntfy", () => ({
 vi.mock("@/lib/notifications/senders/web-push", () => ({
   sendViaWebPush: vi.fn(),
 }));
-vi.mock("@/lib/notifications/senders/apns", () => ({
-  sendViaApns: vi.fn(),
+vi.mock("@/lib/push-relay/apns-channel", () => ({
+  sendApnsTestPush: vi.fn(),
 }));
 vi.mock("@/lib/notifications/senders/webhook", () => ({
   sendViaWebhook: vi.fn(),
@@ -81,7 +81,7 @@ vi.mock("@/lib/i18n/server-translator", () => ({
 import { POST } from "../route";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/api-handler";
-import { sendViaApns } from "@/lib/notifications/senders/apns";
+import { sendApnsTestPush } from "@/lib/push-relay/apns-channel";
 import { sendViaWebPush } from "@/lib/notifications/senders/web-push";
 import { sendViaNtfy } from "@/lib/notifications/senders/ntfy";
 import { sendViaWebhook } from "@/lib/notifications/senders/webhook";
@@ -136,7 +136,7 @@ interface ResultEnvelope {
 }
 
 describe("POST /api/admin/notifications/test — APNS branch (v1.4.46)", () => {
-  it("routes APNS channel through sendViaApns with title/message/eventType", async () => {
+  it("routes APNS channel through the sealed APNs channel with title/message/eventType", async () => {
     const apnsChannel: FakeChannelRow = {
       id: "ch-apns",
       userId: ADMIN_USER_ID,
@@ -148,13 +148,13 @@ describe("POST /api/admin/notifications/test — APNS branch (v1.4.46)", () => {
     vi.mocked(prisma.notificationChannel.findMany).mockResolvedValue([
       apnsChannel,
     ] as never);
-    vi.mocked(sendViaApns).mockResolvedValue({ ok: true });
+    vi.mocked(sendApnsTestPush).mockResolvedValue({ ok: true });
 
     const res = await POST();
     const body = (await res.json()) as ResultEnvelope;
 
-    expect(sendViaApns).toHaveBeenCalledTimes(1);
-    expect(sendViaApns).toHaveBeenCalledWith(
+    expect(sendApnsTestPush).toHaveBeenCalledTimes(1);
+    expect(sendApnsTestPush).toHaveBeenCalledWith(
       ADMIN_USER_ID,
       expect.objectContaining({
         title: expect.any(String),
@@ -178,7 +178,7 @@ describe("POST /api/admin/notifications/test — APNS branch (v1.4.46)", () => {
     vi.mocked(prisma.notificationChannel.findMany).mockResolvedValue([
       apnsChannel,
     ] as never);
-    vi.mocked(sendViaApns).mockResolvedValue({
+    vi.mocked(sendApnsTestPush).mockResolvedValue({
       ok: false,
       hardReject: false,
       reason: "apns_no_devices",
@@ -209,7 +209,7 @@ describe("POST /api/admin/notifications/test — APNS branch (v1.4.46)", () => {
     vi.mocked(prisma.notificationChannel.findMany).mockResolvedValue([
       apnsChannel,
     ] as never);
-    vi.mocked(sendViaApns).mockResolvedValue({
+    vi.mocked(sendApnsTestPush).mockResolvedValue({
       ok: false,
       hardReject: false,
     });
@@ -246,13 +246,13 @@ describe("POST /api/admin/notifications/test — APNS branch (v1.4.46)", () => {
     vi.mocked(prisma.notificationChannel.findMany).mockResolvedValue(
       channels as never,
     );
-    vi.mocked(sendViaApns).mockResolvedValue({ ok: true });
+    vi.mocked(sendApnsTestPush).mockResolvedValue({ ok: true });
     vi.mocked(sendViaWebPush).mockResolvedValue({ ok: true });
 
     const res = await POST();
     const body = (await res.json()) as ResultEnvelope;
 
-    expect(sendViaApns).toHaveBeenCalledTimes(1);
+    expect(sendApnsTestPush).toHaveBeenCalledTimes(1);
     expect(sendViaWebPush).toHaveBeenCalledTimes(1);
     expect(body.data.results).toEqual([
       { channel: "APNS", success: true },
@@ -276,13 +276,13 @@ describe("POST /api/admin/notifications/test — APNS branch (v1.4.46)", () => {
     vi.mocked(prisma.notificationChannel.findMany).mockResolvedValue([
       apnsChannel,
     ] as never);
-    vi.mocked(sendViaApns).mockResolvedValue({ ok: true });
+    vi.mocked(sendApnsTestPush).mockResolvedValue({ ok: true });
 
     const res = await POST();
     const body = (await res.json()) as ResultEnvelope;
 
     expect(body.data.results[0].error).not.toBe("Unknown channel type");
-    expect(sendViaApns).toHaveBeenCalled();
+    expect(sendApnsTestPush).toHaveBeenCalled();
   });
 });
 

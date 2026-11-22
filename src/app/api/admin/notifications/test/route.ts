@@ -6,7 +6,7 @@ import { decrypt, encrypt } from "@/lib/crypto";
 import { sendViaTelegram } from "@/lib/notifications/senders/telegram";
 import { sendViaNtfy } from "@/lib/notifications/senders/ntfy";
 import { sendViaWebPush } from "@/lib/notifications/senders/web-push";
-import { sendViaApns } from "@/lib/notifications/senders/apns";
+import { sendApnsTestPush } from "@/lib/push-relay/apns-channel";
 import { sendViaWebhook } from "@/lib/notifications/senders/webhook";
 import { sendViaEmail } from "@/lib/notifications/senders/email";
 import type { SendOutcome } from "@/lib/notifications/retry-policy";
@@ -238,13 +238,11 @@ export const POST = apiHandler(async () => {
         }
         // v1.4.46 — APNs was missing from the admin-test switch even
         // though the dispatcher already routes the same payload to the
-        // sender in production. Mirrors the WEB_PUSH branch: the sender
-        // owns its own DB lookup (`prisma.device.findMany` for the
-        // user's iOS devices) and its own per-device fan-out, so the
-        // admin route just calls the per-channel entry point and reads
-        // the boolean outcome.
+        // sender in production. It takes the dispatcher's channel
+        // (`sendApnsTestPush`), so a device with a push key gets the test
+        // sealed and only a device without one gets it in plaintext.
         case "APNS": {
-          const apnsResult = await sendViaApns(user.id, {
+          const apnsResult = await sendApnsTestPush(user.id, {
             title: payload.title,
             message: payload.message,
             eventType: payload.eventType,

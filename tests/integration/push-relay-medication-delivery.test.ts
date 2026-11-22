@@ -63,6 +63,7 @@ vi.mock("@parse/node-apn", () => {
 });
 
 import { getPrismaClient, truncateAllTables } from "./setup";
+import { callRoute } from "../kit/call-route";
 import { makeSession, makeUser } from "../kit/factories";
 import { bindDevice, enableRelay } from "./push-relay-kit";
 
@@ -363,6 +364,57 @@ describe("the relay and the server's own APNs key select the same devices", () =
       // the relay exactly the devices that get the server's reminder.
       expect(directFollowUp, why).toEqual(ALL);
       expect(relayFollowUp, why).toEqual(directDose);
+    }
+  });
+});
+
+describe("the APNs test push", () => {
+  const TITLE = "HealthLog test notification";
+
+  async function sendTest(session: Awaited<ReturnType<typeof makeSession>>) {
+    const { POST } = await import("@/app/api/notifications/apns/test/route");
+    return callRoute<{ ok: boolean }>(POST, {
+      method: "POST",
+      route: "/api/notifications/apns/test",
+      auth: session,
+    });
+  }
+
+  it("reaches a relay-bound device sealed over the relay", async () => {
+    const { instanceId } = await enableRelay();
+    const session = await makeSession(await makeUser());
+    const token = tokenFor(1);
+    await bindDevice(instanceId, token, session);
+    fake.apns.length = 0;
+    const res = await sendTest(session);
+    expect(res.status).toBe(200);
+    expect(res.data.ok).toBe(true);
+    const alerts = fake.apns.filter(
+      (a) => a.pushClass === "alert" && a.token === token,
+    );
+    expect(alerts).toHaveLength(1);
+    expect(JSON.stringify(alerts[0])).not.toContain(TITLE);
+    expect(apnsSendMock).not.toHaveBeenCalled();
+  });
+
+  it("never carries its text in the clear to a device with a push key", async () => {
+    await withOwnApnsKey();
+    const { instanceId } = await enableRelay();
+    const session = await makeSession(await makeUser());
+    const token = tokenFor(2);
+    await bindDevice(instanceId, token, session);
+    fake.apns.length = 0;
+    apnsSendMock.mockClear();
+    const res = await sendTest(session);
+    expect(res.status).toBe(200);
+    // Whichever way the sealed push went, nothing that left this server
+    // for the device carries the test text in the clear.
+    const sent =
+      apnsSendMock.mock.calls.length +
+      fake.apns.filter((a) => a.token === token).length;
+    expect(sent).toBeGreaterThan(0);
+    for (const [note] of apnsSendMock.mock.calls) {
+      expect(JSON.stringify(note)).not.toContain(TITLE);
     }
   });
 });

@@ -202,3 +202,23 @@ export async function sendApnsChannel(
     relayTransport: sealed.directFailures === 0,
   };
 }
+
+/**
+ * A test push the person asked for, on the same channel as a real alert:
+ * sealed to every device with a push key (over the relay too, since the
+ * person asked for it on all their devices), plaintext only to a device
+ * without one. The test routes call this and never the plaintext sender
+ * (`apns-plaintext-sender-guard.test.ts`).
+ */
+export async function sendApnsTestPush(
+  userId: string,
+  payload: ApnsChannelPayload,
+): Promise<SendOutcome> {
+  const devices = await prisma.device.findMany({
+    where: { userId, apnsToken: { not: null } },
+    select: { id: true },
+  });
+  return sendApnsChannel(userId, payload, {
+    serverDeviceIds: devices.map((d) => d.id),
+  });
+}
