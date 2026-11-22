@@ -606,9 +606,10 @@ describe("who started the Activity", () => {
         .map((p) => p.token),
     ).toEqual([LA_TOKEN]);
 
-    // Missed: both end, whoever started them.
+    // Missed (the daily band's late tail ends four hours after the slot):
+    // both end, whoever started them. Inside the statements' 12-hour life.
     const ended = laPushes().length;
-    await runLiveActivityRelayPass(at(24 * 60));
+    await runLiveActivityRelayPass(at(4 * 60 + 5));
     expect(
       laPushes()
         .slice(ended)
