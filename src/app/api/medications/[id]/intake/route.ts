@@ -141,18 +141,40 @@ async function postIntake(request: NextRequest, { params }: RouteParams) {
     },
     parsed.data,
   );
+  // `slotInstant` tells the device that recorded the dose which slot it
+  // landed on. The silent intake sync is not sent back to that device: it
+  // has this answer already, and the sync would spend its silent-push budget
+  // to say the same (`after-dose-change.ts` leaves the origin out).
   switch (outcome.kind) {
     case "refused":
-      return apiError(outcome.message, 422, { errorCode: outcome.errorCode });
+      return apiError(outcome.message, 422, {
+        errorCode: outcome.errorCode,
+        ...outcome.meta,
+      });
     case "existing":
-      return apiSuccess({ ...outcome.row, alreadyTaken: false });
+      return apiSuccess({
+        ...outcome.row,
+        alreadyTaken: false,
+        slotInstant: outcome.slotInstant?.toISOString() ?? null,
+      });
     case "outcome_change_refused":
       return refuseOutcomeChange();
     case "recorded":
-      return apiSuccess({ ...outcome.event, alreadyTaken: false }, 201);
+      return apiSuccess(
+        {
+          ...outcome.event,
+          alreadyTaken: false,
+          slotInstant: outcome.slotInstant?.toISOString() ?? null,
+        },
+        201,
+      );
     case "alreadyTaken":
       // The same dose reported twice: nothing written, the recorded row.
-      return apiSuccess({ ...outcome.row, alreadyTaken: true });
+      return apiSuccess({
+        ...outcome.row,
+        alreadyTaken: true,
+        slotInstant: outcome.slotInstant?.toISOString() ?? null,
+      });
   }
 }
 

@@ -25,10 +25,13 @@ import { afterDoseChange } from "@/lib/medications/after-dose-change";
 import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
 import {
   applyCanonicalSlotWrite,
-  findPinConflict,
   resolveForcedSlotForWrite,
   resolveSlotForWriteByBand,
 } from "@/lib/medications/scheduling/slot-upsert";
+import {
+  findPinConflictRow,
+  pinConflictWire,
+} from "@/lib/medications/scheduling/pin-conflict";
 import { resolveTakeSlotForExistingRow } from "@/lib/medications/scheduling/existing-row-slot";
 import { moveRowToSlot } from "@/lib/medications/scheduling/slot-move";
 import { dateOnlyKey } from "@/lib/tz/date-only";
@@ -44,6 +47,8 @@ export interface IntakeEditRefusal {
   ok: false;
   message: string;
   errorCode: string;
+  /** On an occupied pin: the slot and the take that holds it. */
+  meta?: ReturnType<typeof pinConflictWire>;
 }
 
 type AttributionSource = "AUTO" | "USER_PIN";
@@ -241,15 +246,14 @@ async function resolveEditAttribution(
       // rule would silently overwrite that dose record. The ledger UI only
       // offers the pin for unserved slots, so this only fires for stale
       // clients / raw API calls.
-      if (
-        await findPinConflict({
-          userId: user.id,
-          medicationId: id,
-          canonicalSlot: forced,
-          incomingTakenAt: nextSkipped ? null : nextTakenAt,
-          excludeEventId: eventId,
-        })
-      ) {
+      const held = await findPinConflictRow({
+        userId: user.id,
+        medicationId: id,
+        canonicalSlot: forced,
+        incomingTakenAt: nextSkipped ? null : nextTakenAt,
+        excludeEventId: eventId,
+      });
+      if (held) {
         annotate({
           action: { name: "medication.intake.force_slot.occupied" },
           meta: { medication_id: id, event_id: eventId },
@@ -258,6 +262,7 @@ async function resolveEditAttribution(
           ok: false,
           message: "forceSlotInstant already carries a recorded dose action",
           errorCode: "medications.intake.force_slot.occupied",
+          meta: pinConflictWire(held),
         };
       }
       resolvedScheduledFor = forced;

@@ -45,8 +45,16 @@ type WrittenIntake = Extract<IntakeWriteResult, { kind: "written" }>;
 export type RecordIntakeOutcome =
   | IntakeWriteRefusal
   | Exclude<IntakeWriteResult, WrittenIntake>
-  | { kind: "recorded"; event: WrittenIntake["event"] }
-  | { kind: "alreadyTaken"; row: MedicationIntakeEvent };
+  | {
+      kind: "recorded";
+      event: WrittenIntake["event"];
+      slotInstant: Date | null;
+    }
+  | {
+      kind: "alreadyTaken";
+      row: MedicationIntakeEvent;
+      slotInstant: Date | null;
+    };
 
 interface RecordIntakeContext {
   user: Pick<SessionUser, "id" | "timezone">;
@@ -358,18 +366,23 @@ export async function recordIntake(
       action: { name: "medication.intake.already_taken" },
       meta: { medication_id: id, event_id: bound.alreadyTaken.id },
     });
-    return { kind: "alreadyTaken", row: bound.alreadyTaken };
+    return {
+      kind: "alreadyTaken",
+      row: bound.alreadyTaken,
+      slotInstant: bound.canonicalSlot,
+    };
   }
 
   const written = await writeIntake(write);
-  if (written.kind === "alreadyTaken") {
-    return { kind: "alreadyTaken", row: written.row };
-  }
   if (written.kind !== "written") return written;
 
   await settleInventory(ctx, skipped, written);
   await recordAfterWrite(ctx, skipped, written.event);
   startTails(ctx, skipped, written.event);
 
-  return { kind: "recorded", event: written.event };
+  return {
+    kind: "recorded",
+    event: written.event,
+    slotInstant: written.slotInstant,
+  };
 }

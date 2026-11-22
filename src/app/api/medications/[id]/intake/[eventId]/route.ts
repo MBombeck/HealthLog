@@ -90,7 +90,10 @@ export const PUT = apiHandler(
       return apiError(
         outcome.message,
         "status" in outcome ? outcome.status : 422,
-        { errorCode: outcome.errorCode },
+        {
+          errorCode: outcome.errorCode,
+          ...("meta" in outcome && outcome.meta),
+        },
       );
     }
 

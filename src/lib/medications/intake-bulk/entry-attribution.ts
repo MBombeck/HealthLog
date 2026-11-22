@@ -10,7 +10,10 @@
  */
 import type { SessionUser } from "@/lib/auth/session-user";
 import {
-  findPinConflict,
+  findPinConflictRow,
+  pinConflictWire,
+} from "@/lib/medications/scheduling/pin-conflict";
+import {
   resolveForcedSlotForWrite,
   resolveSlotForWriteByBand,
   resolveSlotInstantForWrite,
@@ -39,10 +42,19 @@ interface EntryContext {
   incomingScheduledFor: Date;
 }
 
+/**
+ * A per-entry refusal. An occupied pin also says what holds the slot, the
+ * way an `alreadyTaken` entry does.
+ */
+interface EntryRefusal {
+  reason: string;
+  held?: ReturnType<typeof pinConflictWire>;
+}
+
 async function attributePin(
   ctx: EntryContext,
   forceSlotInstant: Date,
-): Promise<EntryAttribution | { reason: string }> {
+): Promise<EntryAttribution | EntryRefusal> {
   const { user, entry } = ctx;
   const canonicalSlot = await resolveForcedSlotForWrite({
     userId: user.id,
@@ -60,15 +72,14 @@ async function attributePin(
   // already serves: the explicit-write last-write-wins rule would
   // silently overwrite that dose record. Per-entry skip, mirroring
   // the single route's 422 `medications.intake.force_slot.occupied`.
-  if (
-    await findPinConflict({
-      userId: user.id,
-      medicationId: entry.medicationId,
-      canonicalSlot,
-      incomingTakenAt: entry.takenAt ?? null,
-    })
-  ) {
-    return { reason: "force_slot_occupied" };
+  const held = await findPinConflictRow({
+    userId: user.id,
+    medicationId: entry.medicationId,
+    canonicalSlot,
+    incomingTakenAt: entry.takenAt ?? null,
+  });
+  if (held) {
+    return { reason: "force_slot_occupied", held: pinConflictWire(held) };
   }
   return {
     canonicalSlot,
@@ -121,7 +132,7 @@ async function attributeTake(ctx: EntryContext): Promise<EntryAttribution> {
 export async function attributeEntry(
   ctx: EntryContext,
   flags: { isExplicitTaken: boolean; isExplicitSkip: boolean },
-): Promise<EntryAttribution | { reason: string }> {
+): Promise<EntryAttribution | EntryRefusal> {
   const { user, entry, incomingScheduledFor } = ctx;
   if (flags.isExplicitTaken && entry.forceSlotInstant !== undefined) {
     return attributePin(ctx, entry.forceSlotInstant);

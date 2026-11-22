@@ -68,9 +68,12 @@ vi.mock("@/lib/medications/scheduling/slot-upsert", () => ({
   resolveSlotForWriteByBand: vi.fn(async () => ({ slotInstant: null })),
   resolveSlotInstantForWrite: vi.fn(async () => null),
   resolveForcedSlotForWrite: vi.fn(async () => null),
-  findPinConflict: vi.fn(async () => false),
   mayConvergeOntoSuppliedSlot: vi.fn(() => true),
   applyCanonicalSlotWrite: vi.fn(),
+}));
+vi.mock("@/lib/medications/scheduling/pin-conflict", () => ({
+  findPinConflictRow: vi.fn(async () => null),
+  pinConflictWire: vi.fn(),
 }));
 
 vi.mock("@/lib/medications/inventory/consumption", () => ({

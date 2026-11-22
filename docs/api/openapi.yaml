@@ -6727,14 +6727,19 @@ paths:
         - Devices
       summary: Register native device + APNs token
       description: "Idempotent upsert by `token`. APNs token + environment are paired — supplying one without the other
-        returns 422. A `token` (the `X-Device-Id`) or `apnsToken` another account holds is taken over, not refused: that
-        account's device row goes, with its push key, relay binding (unbound at the relay before this request's binding
-        is forwarded) and Live Activity state, so nothing sealed for it reaches the device. Both accounts get an audit
-        row. A refused push field (push key, relay binding, consent) returns 422 with `meta.errorCode`
-        `devices.push.<reason>` and changes nothing; more than 10 new relay bindings for one account in 24 hours return
-        429 `devices.push.relay_daily_limit`. When the device's APNs token changes, the old token's relay binding is
-        removed and the device has to bind the new token (`relayState: rebind_needed` unless the request carries the new
-        `relayBinding`). The answer's `push` block is the device's push state after the call."
+        returns 422. A `token` (the `X-Device-Id`) or `apnsToken` another account holds is taken over when that account
+        is signed out of the device: its device row goes, with its push key, relay binding (unbound at the relay before
+        this request's binding is forwarded) and Live Activity state, so nothing sealed for it reaches the device. Both
+        accounts get an audit row, and the previous one a security alert on its other devices and channels. Since
+        v1.49.0 a device still signed in to the other account is not taken over: while that account holds a live refresh
+        token for this `X-Device-Id` (or one naming no device), or the access token of a rotation's short sunset, the
+        answer is 409 `devices.register.signed_in_elsewhere` and nothing changes. Signing out there, or that sign-in
+        running out, frees the device; the app can then register again. A refused push field (push key, relay binding,
+        consent) returns 422 with `meta.errorCode` `devices.push.<reason>` and changes nothing; more than 10 new relay
+        bindings for one account in 24 hours return 429 `devices.push.relay_daily_limit`. When the device's APNs token
+        changes, the old token's relay binding is removed and the device has to bind the new token (`relayState:
+        rebind_needed` unless the request carries the new `relayBinding`). The answer's `push` block is the device's
+        push state after the call."
       requestBody:
         required: true
         content:
@@ -6750,6 +6755,13 @@ paths:
                 $ref: "#/components/schemas/DeviceRegisterResponse"
         "401": *a1
         "403": *a9
+        "409":
+          description: "`devices.register.signed_in_elsewhere`: the `token` or `apnsToken` belongs to a device still signed in to
+            another account. Nothing changed; both accounts get an audit row."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
   /api/devices/me/push-diagnostics:
@@ -7922,9 +7934,10 @@ paths:
           description: "Body validation failed (multi-issue), or one of three coded refusals:
             `medications.intake.taken_at.before_start` when the edited take predates the medication's start day in the
             record's timezone, `medications.intake.force_slot.invalid` when the pinned instant is not a real slot, and
-            `medications.intake.force_slot.occupied` when it is a real slot that another live dose already holds, or
-            when the corrected dose would move onto a slot that already holds a take (nothing changes; the dose stays
-            where it was)."
+            `medications.intake.force_slot.occupied` when it is a real slot that another live dose already holds (since
+            v1.49.0 with `meta.slotInstant`, `meta.takenAt` and `meta.takenVia` of the dose that holds it), or when the
+            corrected dose would move onto a slot that already holds a take (nothing changes; the dose stays where it
+            was)."
           content:
             application/json:
               schema:
@@ -8795,7 +8808,10 @@ paths:
         "409": *a7
         "422":
           description: "Body validation failed (multi-issue envelope), or `meta.errorCode` names the refusal:
-            `medications.intake.injection_site.disallowed`, `medications.intake.force_slot.invalid`, or (v1.42.0)
+            `medications.intake.injection_site.disallowed`, `medications.intake.force_slot.invalid`,
+            `medications.intake.force_slot.occupied` (the pinned slot already holds a recorded take or skip; since
+            v1.49.0 `meta.slotInstant`, `meta.takenAt` and `meta.takenVia` name the slot and the take that holds it,
+            both null when a skip holds it, the way an `alreadyTaken` answer does), or (v1.42.0)
             `medication.intake.notTracked` when the medication is kept as a record only (`trackIntake: false`). Its
             stored history stays; a new dose is refused rather than stored and counted nowhere. The check runs after
             ownership, so a foreign medication is still a 404."
@@ -9327,6 +9343,56 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
+        "429": *a5
+  /api/medications/resolved-slots:
+    get:
+      tags:
+        - Medications
+      summary: Resolved slots of every medication over a window
+      description: "Since v1.49.0. Every scheduled dose of the record's medications that can be due (active, not as-needed,
+        intake tracked) with its slot time in [from, to], each with its resolved state. One request for what a client
+        otherwise reads per medication from `GET /api/medications/{id}/dose-history`: the slots and states come from the
+        same dose ledger and resolver as the dose history, the today list and the medication card, over the same window,
+        so they never disagree. The statement count does not grow with the number of medications. The window is at most
+        14 days; without `from` and `to` it runs from two days back to eight days ahead. Auth, scope and rate limit as
+        `dose-history`: a read of the `medications` section of the record the request resolves (cookie, or a Bearer
+        token that reads medications), 60 requests a minute per caller, no server cache."
+      parameters:
+        - in: query
+          name: from
+          schema:
+            description: Window start (inclusive). Defaults to two days before now, or to ten days before `to` when only `to` is
+              given.
+            type: string
+            format: date-time
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          description: Window start (inclusive). Defaults to two days before now, or to ten days before `to` when only `to` is
+            given.
+        - in: query
+          name: to
+          schema:
+            description: Window end (inclusive). Defaults to eight days after now, or to ten days after `from` when only `from` is
+              given. Must be ≥ `from` and at most 14 days after it, else 422.
+            type: string
+            format: date-time
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          description: Window end (inclusive). Defaults to eight days after now, or to ten days after `from` when only `from` is
+            given. Must be ≥ `from` and at most 14 days after it, else 422.
+      responses:
+        "200":
+          description: Resolved slots per medication.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetResolvedMedicationSlotsResponse"
+        "401": *a1
+        "403": *a18
+        "422":
+          description: "Query validation failed: an instant that is not ISO 8601, `to` before `from`, or a window over 14 days."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
   /api/medications/{id}/schedule-revisions:
     get:
@@ -33402,8 +33468,8 @@ components:
       required:
         - token
         - bundleId
-      description: Native device registration. A `token` or `apnsToken` another account holds is taken over (see `POST
-        /api/devices`).
+      description: Native device registration. A `token` or `apnsToken` another account holds is taken over once that account
+        is signed out of the device, and refused with 409 while it is still signed in there (see `POST /api/devices`).
     AdminPushRelaySwitch:
       type: object
       properties:
@@ -44955,20 +45021,21 @@ components:
                 devices.push.bad_signature, devices.push.consent_required, devices.push.instance_mismatch,
                 devices.push.invalid_push_key, devices.push.push_key_required, devices.push.relay_consent_required,
                 devices.push.relay_daily_limit, devices.push.relay_device_limit, devices.push.relay_not_offered,
-                devices.push.statement_stale, devices.push.token_mismatch, devices.push.unsupported_suite; admin —
-                admin.pushRelay.confirmationsRequired, admin.pushRelay.noSenderKey, admin.pushRelay.notRegistered,
-                admin.pushRelay.rateLimited, admin.pushRelay.unavailable, admin.serverSetup.invalid,
-                admin.serverSetup.notOffered, admin.serverSetup.rateLimited, admin.users.delete.managed_profile,
-                admin.users.delete.self; ai — ai.budget.exceeded, ai.provider.none, ai.record.notPermitted,
-                ai.unavailable, ai.usage.aboveCeiling, ai.usage.defaultAboveCeiling, ai.usage.invalid,
-                ai.usage.levelTooLow, ai.usage.rateLimited; ai_provider — ai_provider.invalid, ai_provider.no_fields,
-                ai_provider.private_host; aiRuns — aiRuns.failed, aiRuns.notFound, aiRuns.readerBusy, aiRuns.timedOut,
-                aiRuns.workerUnavailable; allergy — allergy.invalid; analytics — analytics.invalid_query; anamnesis —
-                anamnesis.auditC.invalid, anamnesis.auditC.notFound, anamnesis.auditC.rateLimited,
-                anamnesis.fact.conflict, anamnesis.fact.currentExists, anamnesis.fact.invalidValue,
-                anamnesis.lifeConfirm.invalid, anamnesis.lifeSections.invalid; auth — auth.account.deletion_pending,
-                auth.admin.required, auth.already_authenticated, auth.mfa.already_active, auth.mfa.code_invalid,
-                auth.missing, auth.passkey.last_method, auth.refresh.invalid, auth.refresh.reuse, auth.refresh.revoked,
+                devices.push.statement_stale, devices.push.token_mismatch, devices.push.unsupported_suite,
+                devices.register.signed_in_elsewhere; admin — admin.pushRelay.confirmationsRequired,
+                admin.pushRelay.noSenderKey, admin.pushRelay.notRegistered, admin.pushRelay.rateLimited,
+                admin.pushRelay.unavailable, admin.serverSetup.invalid, admin.serverSetup.notOffered,
+                admin.serverSetup.rateLimited, admin.users.delete.managed_profile, admin.users.delete.self; ai —
+                ai.budget.exceeded, ai.provider.none, ai.record.notPermitted, ai.unavailable, ai.usage.aboveCeiling,
+                ai.usage.defaultAboveCeiling, ai.usage.invalid, ai.usage.levelTooLow, ai.usage.rateLimited; ai_provider
+                — ai_provider.invalid, ai_provider.no_fields, ai_provider.private_host; aiRuns — aiRuns.failed,
+                aiRuns.notFound, aiRuns.readerBusy, aiRuns.timedOut, aiRuns.workerUnavailable; allergy —
+                allergy.invalid; analytics — analytics.invalid_query; anamnesis — anamnesis.auditC.invalid,
+                anamnesis.auditC.notFound, anamnesis.auditC.rateLimited, anamnesis.fact.conflict,
+                anamnesis.fact.currentExists, anamnesis.fact.invalidValue, anamnesis.lifeConfirm.invalid,
+                anamnesis.lifeSections.invalid; auth — auth.account.deletion_pending, auth.admin.required,
+                auth.already_authenticated, auth.mfa.already_active, auth.mfa.code_invalid, auth.missing,
+                auth.passkey.last_method, auth.refresh.invalid, auth.refresh.reuse, auth.refresh.revoked,
                 auth.refresh.superseded, auth.register.invite_invalid, auth.register.taken, auth.reproof.failed,
                 auth.reproof.required, auth.reproof.too_weak, auth.scope.insufficient, auth.session.insecure_transport,
                 auth.session.unavailable, auth.stepup.required, auth.token.expired, auth.token.invalid; backup —
@@ -64047,14 +64114,16 @@ components:
           description: "On `alreadyTaken`: the recorded row the slot already holds."
           $ref: "#/components/schemas/MedicationIntakeEvent"
         takenAt:
-          description: "On `alreadyTaken`: when the slot's take was recorded."
+          description: "On `alreadyTaken`, and since v1.49.0 on a `force_slot_occupied` skip: when the take that holds the slot
+            was recorded (null when a skip holds it)."
           anyOf:
             - type: string
               format: date-time
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
         takenVia:
-          description: "On `alreadyTaken`: where the slot's take came from (null for takes before migration 0515)."
+          description: "On `alreadyTaken`, and since v1.49.0 on a `force_slot_occupied` skip: where the slot's take came from
+            (null for takes before migration 0515, and when a skip holds the slot)."
           anyOf:
             - type: string
               enum:
@@ -64066,9 +64135,23 @@ components:
                 - IMPORT
                 - AUTO
             - type: "null"
+        slotInstant:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: "Since v1.49.0, on every entry. The canonical slot the entry's row is on, as `POST
+            /api/medications/{id}/intake` answers it: the slot a take or skip bound to (by its window, a named
+            `scheduledFor` or a `forceSlotInstant` pin), and on `alreadyTaken` the slot of the recorded take. Null for a
+            row on no slot (an ad-hoc take, an extra dose) and for an entry that stored nothing; a `force_slot_occupied`
+            skip names the slot it was refused. An entry answered by a row it did not write (`duplicate`) reads the slot
+            off that row. The device that sent the batch gets no silent `MEDICATION_INTAKE_SYNC` for it; this field is
+            its answer."
       required:
         - index
         - status
+        - slotInstant
       additionalProperties: false
     ListMedicationsResponse:
       type: object
@@ -65560,7 +65643,7 @@ components:
       type: object
       properties:
         data:
-          $ref: "#/components/schemas/RepeatedMedicationIntakeEvent"
+          $ref: "#/components/schemas/RecordedMedicationIntakeEvent"
         error:
           type: "null"
         meta:
@@ -65573,7 +65656,7 @@ components:
         - data
         - error
       additionalProperties: false
-    RepeatedMedicationIntakeEvent:
+    RecordedMedicationIntakeEvent:
       type: object
       properties:
         id:
@@ -65707,6 +65790,17 @@ components:
           description: "True when this POST reported a dose already recorded, or skipped one: the slot it binds to already holds a
             take. Nothing was written and no stock was consumed; the body is the recorded row, so `takenAt` and
             `takenVia` say when and how. False on a fresh dose (201) and on an idempotency replay (200)."
+        slotInstant:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: "Since v1.49.0. The canonical slot the dose is on: the slot the take or skip bound to (by its window, the
+            nearest open slot, a named `scheduledFor` or a `forceSlotInstant` pin), equal to `scheduledFor` then. Null
+            for a dose on no slot (an ad-hoc take or an extra dose, stored on its own instant). On `alreadyTaken` the
+            slot of the recorded take. The device that recorded the dose gets no silent `MEDICATION_INTAKE_SYNC` for it:
+            this field is its answer, and the sync goes to the account's other devices only."
       required:
         - id
         - userId
@@ -65729,12 +65823,13 @@ components:
         - syncVersion
         - deletedAt
         - alreadyTaken
+        - slotInstant
       additionalProperties: false
     CreateMedicationIntakeResponse:
       type: object
       properties:
         data:
-          $ref: "#/components/schemas/RepeatedMedicationIntakeEvent"
+          $ref: "#/components/schemas/RecordedMedicationIntakeEvent"
         error:
           type: "null"
         meta:
@@ -67546,6 +67641,154 @@ components:
         - state
         - takenLate
         - intake
+      additionalProperties: false
+    GetResolvedMedicationSlotsResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ResolvedMedicationSlotsResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    ResolvedMedicationSlotsResponse:
+      type: object
+      properties:
+        from:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          description: The window start the slots were read over.
+        to:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          description: The window end the slots were read over.
+        medications:
+          type: array
+          items:
+            type: object
+            properties:
+              medicationId:
+                type: string
+              family:
+                type: string
+                enum:
+                  - daily
+                  - weekly
+                  - one_shot
+                  - none
+                description: Cadence family the window's slots were minted under.
+              slots:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ResolvedMedicationSlot"
+                description: Every scheduled dose of the medication with its slot time in the window, oldest first. Off-schedule takes
+                  are not slots and are not listed; the dose history has them.
+            required:
+              - medicationId
+              - family
+              - slots
+            additionalProperties: false
+      required:
+        - from
+        - to
+        - medications
+      additionalProperties: false
+      description: Every active medication of the record that can be due (active, not as-needed, intake tracked), each with
+        its resolved slots over the window.
+    ResolvedMedicationSlot:
+      type: object
+      properties:
+        slotInstant:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          description: "The slot's scheduled time: the same instant as `at` in the dose history and `slotInstant` on the today
+            rows, and what a take of this dose answers as `slotInstant`."
+        state:
+          type: string
+          enum:
+            - upcoming
+            - due
+            - overdue
+            - taken
+            - skipped
+            - missed
+          description: "The resolved dose state, the vocabulary of the today rows and the dose history's `state`: `upcoming`
+            before `dueAt`, `due` from `dueAt`, `overdue` past `overdueSince`, `missed` past `missedAfter` with nothing
+            recorded (or closed by the auto-miss pass), `taken` (see `takenLate`), `skipped`."
+        takenLate:
+          type: boolean
+          description: "With `state: taken`: taken after the on-time window."
+        dueAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          description: When the dose window opens.
+        overdueSince:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          description: The end of the on-time window; past it an open dose is `overdue`. Always present here, unlike the today rows.
+        missedAfter:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          description: The miss cutoff; past it an unanswered dose is `missed`.
+        lateTakeCounts:
+          type: boolean
+          description: "A take recorded for this dose now still counts for it: true while `due`, `overdue` and `missed`."
+        takenAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: When the dose was taken; null unless `state` is `taken`.
+        takenVia:
+          anyOf:
+            - type: string
+              enum:
+                - WEB
+                - APP
+                - INTEGRATION
+                - TELEGRAM
+                - APPLE_HEALTH
+                - IMPORT
+                - AUTO
+            - type: "null"
+          description: How the take was recorded (as on the today rows); null while not taken and for takes recorded before the
+            field existed.
+        intakeId:
+          description: The intake row on the slot, when one exists (a projected pending row included); null for a slot no row
+            holds yet.
+          type:
+            - string
+            - "null"
+        pinned:
+          type: boolean
+          description: True when a deliberate user pin serves the slot.
+      required:
+        - slotInstant
+        - state
+        - takenLate
+        - dueAt
+        - overdueSince
+        - missedAfter
+        - lateTakeCounts
+        - takenAt
+        - takenVia
+        - intakeId
+        - pinned
       additionalProperties: false
     ListScheduleRevisionsResponse:
       type: object
@@ -103484,6 +103727,163 @@ components:
       required:
         - data
         - error
+      additionalProperties: false
+    RepeatedMedicationIntakeEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        medicationId:
+          type: string
+        scheduledFor:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        takenAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+        skipped:
+          type: boolean
+        autoMissed:
+          type: boolean
+          description: True when the nightly cron closed the slot as missed (no user action). Auto-missed rows count against
+            adherence but never consume inventory.
+        autoRecorded:
+          type: boolean
+          description: v1.42.2 — true when the server recorded this dose because the medication has `autoMarkTaken` on, not the
+            person. It counts as taken everywhere (adherence, history, Coach) and consumed inventory like a manual take.
+            Any take or skip the person records on the row clears it. Clients label such a dose "recorded
+            automatically".
+        attributionSource:
+          type: string
+          enum:
+            - AUTO
+            - USER_PIN
+          description: "How the row bound to its schedule slot: AUTO = the write path's nearest-slot resolution; USER_PIN = the
+            user explicitly pinned the slot (the dedup converge keeps the pinned row)."
+        source:
+          type: string
+          enum:
+            - WEB
+            - API
+            - REMINDER
+            - IMPORT
+            - APPLE_HEALTH
+        takenVia:
+          anyOf:
+            - type: string
+              enum:
+                - WEB
+                - APP
+                - INTEGRATION
+                - TELEGRAM
+                - APPLE_HEALTH
+                - IMPORT
+                - AUTO
+            - type: "null"
+          description: Where the take on this row came from, whatever wrote the row (`source` keeps the writer that created it,
+            `REMINDER` for a projected slot). Null until a take reaches the row, and on takes recorded before migration
+            0515.
+        idempotencyKey:
+          type:
+            - string
+            - "null"
+        createdAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        updatedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        injectionSite:
+          anyOf:
+            - type: string
+              enum:
+                - ABDOMEN_LEFT
+                - ABDOMEN_RIGHT
+                - ABDOMEN_UPPER_LEFT
+                - ABDOMEN_UPPER_RIGHT
+                - THIGH_LEFT
+                - THIGH_RIGHT
+                - UPPER_ARM_LEFT
+                - UPPER_ARM_RIGHT
+            - type: "null"
+          description: Recorded injection site for a site-tracked medication (GLP-1 rotation surface). NULL when the medication
+            does not track sites or none was recorded.
+        doseTaken:
+          description: Free-text dose actually taken when it differed from the scheduled dose (titration weeks, split doses). NULL
+            = the scheduled dose.
+          type:
+            - string
+            - "null"
+        inventoryConsumption:
+          anyOf:
+            - {}
+            - type: "null"
+          description: JSON ledger of the container decrements this intake caused (`[{itemId, units}]`), written by the
+            consumption hook. NULL when nothing was consumed (skipped / no tracked inventory).
+        externalId:
+          description: v1.28 — client-supplied stable id for externally-mirrored intakes (Apple Health sync); the dedup key for
+            re-synced rows. NULL for native rows.
+          type:
+            - string
+            - "null"
+        syncVersion:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Monotonic per-row version for incremental sync readers; bumps on every mutation.
+        deletedAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: Soft-delete tombstone. Non-null rows are excluded from every list/aggregate read; sync readers use it to
+            propagate deletions.
+        appleHealthDeletedAt:
+          description: "Since v1.49.0: who deleted a tombstone. Equal to `deletedAt` when the phone reported the dose deleted
+            through `DELETE /api/medications/intake/by-external-ids`; null, or different, when it was deleted in
+            HealthLog. A re-post of a dose deleted in HealthLog is refused (`duplicate`, reason `tombstoned`), one the
+            phone reported is written again. Null on every live row; do not show it."
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+        alreadyTaken:
+          type: boolean
+          description: "True when this POST reported a dose already recorded, or skipped one: the slot it binds to already holds a
+            take. Nothing was written and no stock was consumed; the body is the recorded row, so `takenAt` and
+            `takenVia` say when and how. False on a fresh dose (201) and on an idempotency replay (200)."
+      required:
+        - id
+        - userId
+        - medicationId
+        - scheduledFor
+        - takenAt
+        - skipped
+        - autoMissed
+        - autoRecorded
+        - attributionSource
+        - source
+        - takenVia
+        - idempotencyKey
+        - createdAt
+        - updatedAt
+        - injectionSite
+        - doseTaken
+        - inventoryConsumption
+        - externalId
+        - syncVersion
+        - deletedAt
+        - alreadyTaken
       additionalProperties: false
     ExternalMedicationIntakeCreatedEnvelope:
       type: object

@@ -1365,6 +1365,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "record",
     why: "The record's dashboard layout, read only. Settled by a fact rather than a preference: the snapshot already carries this layout and the client seeds the same cache cell from it, so an actor answer would put two people's arrangements in one key. The PUT and DELETE stay bare — a delegate adds to a record, never redecorates it.",
   },
+  "app/api/medications/resolved-slots/route.ts": {
+    domain: "medications",
+    why: "Every scheduled dose of the record's medications over at most 14 days, the batched form of the dose history: the medications, the intake rows and the takes' origin are all read under the resolved record id, through the same ledger as `dose-history`. No cache. The rate bucket keys on the ACTOR.",
+  },
   "app/api/medications/layout/route.ts": {
     domain: "medications",
     why: "The record's medication-list presentation, read only. The stored `order` is a list of the OWNER's medication ids and unknown ids are dropped at apply time, so the caller's own order resolves to nothing against the owner's cabinet. The PUT and DELETE stay bare, and this is the refusal a delegate can actually walk into, since `/medications` is a shared destination.",
@@ -2607,7 +2611,7 @@ const ACTOR_ROUTES: Record<string, string> = {
  * 1.49: the getting-started checklist's optional-row presence read joins the
  * guardian list. 342 -> 343.
  */
-const FROZEN_ENTRY_COUNT = 343;
+const FROZEN_ENTRY_COUNT = 344;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

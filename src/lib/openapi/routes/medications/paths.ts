@@ -89,7 +89,9 @@ import {
   medicationInventoryItemResource,
   medicationSupplySummaryResource,
   medicationIntakeEventResource,
-  repeatedIntakeEventResource,
+  recordedIntakeEventResource,
+  resolvedSlotsQuery,
+  resolvedSlotsResponse,
   medicationCadenceResponse,
   medicationComplianceResponse,
   medicationComplianceSummaryEntry,
@@ -241,7 +243,9 @@ const bulkIntakeEntryResult = z
     takenAt: isoDateTime()
       .nullable()
       .optional()
-      .describe("On `alreadyTaken`: when the slot's take was recorded."),
+      .describe(
+        "On `alreadyTaken`, and since v1.49.0 on a `force_slot_occupied` skip: when the take that holds the slot was recorded (null when a skip holds it).",
+      ),
     takenVia: z
       .enum([
         "WEB",
@@ -255,7 +259,12 @@ const bulkIntakeEntryResult = z
       .nullable()
       .optional()
       .describe(
-        "On `alreadyTaken`: where the slot's take came from (null for takes before migration 0515).",
+        "On `alreadyTaken`, and since v1.49.0 on a `force_slot_occupied` skip: where the slot's take came from (null for takes before migration 0515, and when a skip holds the slot).",
+      ),
+    slotInstant: isoDateTime()
+      .nullable()
+      .describe(
+        "Since v1.49.0, on every entry. The canonical slot the entry's row is on, as `POST /api/medications/{id}/intake` answers it: the slot a take or skip bound to (by its window, a named `scheduledFor` or a `forceSlotInstant` pin), and on `alreadyTaken` the slot of the recorded take. Null for a row on no slot (an ad-hoc take, an extra dose) and for an entry that stored nothing; a `force_slot_occupied` skip names the slot it was refused. An entry answered by a row it did not write (`duplicate`) reads the slot off that row. The device that sent the batch gets no silent `MEDICATION_INTAKE_SYNC` for it; this field is its answer.",
       ),
   })
   .meta({ id: "BulkMedicationIntakeEntryResult" });
@@ -892,7 +901,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "422": {
           description:
-            "Body validation failed (multi-issue), or one of three coded refusals: `medications.intake.taken_at.before_start` when the edited take predates the medication's start day in the record's timezone, `medications.intake.force_slot.invalid` when the pinned instant is not a real slot, and `medications.intake.force_slot.occupied` when it is a real slot that another live dose already holds, or when the corrected dose would move onto a slot that already holds a take (nothing changes; the dose stays where it was).",
+            "Body validation failed (multi-issue), or one of three coded refusals: `medications.intake.taken_at.before_start` when the edited take predates the medication's start day in the record's timezone, `medications.intake.force_slot.invalid` when the pinned instant is not a real slot, and `medications.intake.force_slot.occupied` when it is a real slot that another live dose already holds (since v1.49.0 with `meta.slotInstant`, `meta.takenAt` and `meta.takenVia` of the dose that holds it), or when the corrected dose would move onto a slot that already holds a take (nothing changes; the dose stays where it was).",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "401": stdResponses["401"],
@@ -1672,7 +1681,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: {
             "application/json": {
               schema: dataEnvelope(
-                repeatedIntakeEventResource,
+                recordedIntakeEventResource,
                 "CreateMedicationIntakeResponse",
               ),
             },
@@ -1684,7 +1693,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: {
             "application/json": {
               schema: dataEnvelope(
-                repeatedIntakeEventResource,
+                recordedIntakeEventResource,
                 "ReplayMedicationIntakeResponse",
               ),
             },
@@ -1698,7 +1707,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...recordWriteRateLimitResponse,
         "422": {
           description:
-            "Body validation failed (multi-issue envelope), or `meta.errorCode` names the refusal: `medications.intake.injection_site.disallowed`, `medications.intake.force_slot.invalid`, or (v1.42.0) `medication.intake.notTracked` when the medication is kept as a record only (`trackIntake: false`). Its stored history stays; a new dose is refused rather than stored and counted nowhere. The check runs after ownership, so a foreign medication is still a 404.",
+            "Body validation failed (multi-issue envelope), or `meta.errorCode` names the refusal: `medications.intake.injection_site.disallowed`, `medications.intake.force_slot.invalid`, `medications.intake.force_slot.occupied` (the pinned slot already holds a recorded take or skip; since v1.49.0 `meta.slotInstant`, `meta.takenAt` and `meta.takenVia` name the slot and the take that holds it, both null when a skip holds it, the way an `alreadyTaken` answer does), or (v1.42.0) `medication.intake.notTracked` when the medication is kept as a record only (`trackIntake: false`). Its stored history stays; a new dose is refused rather than stored and counted nowhere. The check runs after ownership, so a foreign medication is still a 404.",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },
@@ -2140,6 +2149,35 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...recordRefusal(),
         ...stdResponses,
+      },
+    },
+  },
+  "/api/medications/resolved-slots": {
+    get: {
+      tags: ["Medications"],
+      summary: "Resolved slots of every medication over a window",
+      description:
+        "Since v1.49.0. Every scheduled dose of the record's medications that can be due (active, not as-needed, intake tracked) with its slot time in [from, to], each with its resolved state. One request for what a client otherwise reads per medication from `GET /api/medications/{id}/dose-history`: the slots and states come from the same dose ledger and resolver as the dose history, the today list and the medication card, over the same window, so they never disagree. The statement count does not grow with the number of medications. The window is at most 14 days; without `from` and `to` it runs from two days back to eight days ahead. Auth, scope and rate limit as `dose-history`: a read of the `medications` section of the record the request resolves (cookie, or a Bearer token that reads medications), 60 requests a minute per caller, no server cache.",
+      requestParams: { query: resolvedSlotsQuery },
+      responses: {
+        "200": {
+          description: "Resolved slots per medication.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                resolvedSlotsResponse,
+                "GetResolvedMedicationSlotsResponse",
+              ),
+            },
+          },
+        },
+        ...recordRefusal(),
+        ...stdResponses,
+        "422": {
+          description:
+            "Query validation failed: an instant that is not ISO 8601, `to` before `from`, or a window over 14 days.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
       },
     },
   },

@@ -37,6 +37,21 @@ type AdHocIntakeData = Omit<
   takenAt: Date | null;
 };
 
+/**
+ * The slot a stored row is on, read off the row alone: none for a row on its
+ * own instant (the ad-hoc marker, `scheduledFor = takenAt`), its
+ * `scheduledFor` otherwise. For a row the caller did not just write; a
+ * writer knows the slot it wrote onto.
+ */
+export function slotOfStoredRow(row: {
+  scheduledFor: Date;
+  takenAt: Date | null;
+}): Date | null {
+  return row.takenAt?.getTime() === row.scheduledFor.getTime()
+    ? null
+    : row.scheduledFor;
+}
+
 /** How far an ad-hoc row may move off its instant: a second. */
 const MAX_SHIFT_MS = 1_000;
 /** How often a race outside a transaction is probed again. */
