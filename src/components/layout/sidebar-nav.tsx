@@ -542,6 +542,7 @@ export function SidebarNav() {
             <Link
               href={item.href}
               aria-current={isActive ? "page" : undefined}
+              aria-label={t(item.tKey)}
               data-tour-id={tourId}
               data-slot={isSettings ? "nav-settings-link" : undefined}
               className={cn(
@@ -551,7 +552,7 @@ export function SidebarNav() {
                   : "text-foreground hover:bg-accent",
               )}
             >
-              <Icon className="h-4 w-4" />
+              <Icon aria-hidden="true" className="h-4 w-4" />
             </Link>
           </TooltipTrigger>
           <TooltipContent side="right" sideOffset={8}>
@@ -589,6 +590,7 @@ export function SidebarNav() {
             <Link
               href="/admin"
               aria-current={onAdminPage ? "page" : undefined}
+              aria-label={t("nav.admin")}
               className={cn(
                 railRowClass(true),
                 onAdminPage
@@ -596,7 +598,7 @@ export function SidebarNav() {
                   : "text-foreground hover:bg-accent",
               )}
             >
-              <Shield className="h-4 w-4" />
+              <Shield aria-hidden="true" className="h-4 w-4" />
             </Link>
           </TooltipTrigger>
           <TooltipContent side="right" sideOffset={8}>
@@ -661,6 +663,7 @@ export function SidebarNav() {
           >
             <Link
               href="/"
+              aria-label={collapsed ? "HealthLog" : undefined}
               className={cn(
                 "flex h-full items-center",
                 collapsed ? "justify-center px-0" : "gap-2",
@@ -697,6 +700,7 @@ export function SidebarNav() {
                         <Link
                           href={item.href}
                           aria-current={isActive ? "page" : undefined}
+                          aria-label={label}
                           data-tour-id={item.tourId}
                           {...(item.href === "/medications" ? medsIntent : {})}
                           className={cn(
@@ -706,7 +710,7 @@ export function SidebarNav() {
                               : "text-foreground hover:bg-accent",
                           )}
                         >
-                          <item.icon className="h-4 w-4" />
+                          <item.icon aria-hidden="true" className="h-4 w-4" />
                         </Link>
                       </TooltipTrigger>
                       <TooltipContent side="right" sideOffset={8}>

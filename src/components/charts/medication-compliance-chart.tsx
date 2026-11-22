@@ -499,9 +499,11 @@ export function MedicationComplianceChart({
               variant={days === r ? "default" : "ghost"}
               size="sm"
               className="min-h-11 px-2 text-xs sm:px-3"
+              aria-pressed={days === r}
+              aria-label={t("charts.daysNAria", { days: r })}
               onClick={() => setDays(r)}
             >
-              {r}T
+              {t("charts.daysNLabel", { days: r })}
             </Button>
           ))}
           {/* v1.4.18 — overlay-controls dropdown next to the range
