@@ -282,6 +282,38 @@ once; Azure refuses it, and the request goes out again with
 deployment until the container restarts. Any other gateway that
 refuses `max_tokens` the same way is handled the same way.
 
+**Google Gemini.** Google serves Gemini on the same wire, so it goes
+in as a gateway; there is no separate Gemini provider.
+
+- Base URL: `https://generativelanguage.googleapis.com/v1beta/openai`
+  (Google's compatibility layer,
+  <https://ai.google.dev/gemini-api/docs/openai>).
+- API key: create one in Google AI Studio (<https://aistudio.google.com/apikey>)
+  and paste it into the gateway's key field.
+- Model: the bare model name, such as `gemini-3.8-flash` or
+  `gemini-flash-latest`. The endpoint's model listing spells them
+  `models/gemini-3.8-flash`; both spellings name the same model, and
+  the provider health check treats them alike.
+- What the endpoint accepts: chat, `max_tokens` and `temperature`,
+  JSON mode (`response_format`), `reasoning_effort` (the Reasoning
+  setting on the gateway entry), tool calls for the Coach, and images
+  (lab photos) as `image_url` data URLs. It refuses the `seed` field
+  that the briefing, status and summary calls send; HealthLog asks
+  once more without it and remembers that for the endpoint until the
+  container restarts.
+- Data use: under Google's Gemini API terms
+  (<https://ai.google.dev/gemini-api/terms>), prompts and replies on a
+  paid (billing-enabled) project are not used to improve Google's
+  products. On the free tier they may be, and may be read by human
+  reviewers, except for users in the EEA, Switzerland and the UK, where
+  the paid-tier rules apply. For health data a key from a project with
+  billing turned on is the safer choice.
+- Cost: Google bills per input and output token, with thinking tokens
+  counted as output; see <https://ai.google.dev/gemini-api/docs/pricing>.
+  A higher Reasoning setting spends more output tokens per call. A
+  prepaid project that runs out of credit
+  answers HTTP 402, which the provider health card shows as such.
+
 **When the gateway refuses.** OpenRouter answers a refused generation
 with HTTP 200 and the reason inside the body, so every refusal used to
 reach the provider health card as an empty reply with no status. It now

@@ -114,6 +114,40 @@ export function isMaxTokensRejection(status: number, body: string): boolean {
 }
 
 /**
+ * Endpoints that refused the `seed` field, for the process lifetime. Google's
+ * Gemini OpenAI-compatible endpoint answers a request carrying `seed` with
+ * HTTP 400 `Unknown name "seed": Cannot find field.`, so every seeded call
+ * (briefing, status, narrative) failed there. Keyed by endpoint: the field is
+ * a property of the server's request schema, not of the model.
+ */
+const seedRefused = new Set<string>();
+
+export function rememberSeedRefused(baseUrl: string): void {
+  seedRefused.add(baseUrl);
+}
+
+export function refusesSeed(baseUrl: string): boolean {
+  return seedRefused.has(baseUrl);
+}
+
+/** Test hook — clears the learned `seed` refusals. */
+export function resetSeedRefusals(): void {
+  seedRefused.clear();
+}
+
+/**
+ * True when a 400 refuses the `seed` field by name: an unknown, unsupported
+ * or unrecognised field called `seed`. A complaint about its value
+ * ("seed must be an integer") is not a refusal of the field.
+ */
+export function isSeedRejection(status: number, body: string): boolean {
+  if (status !== 400 || !/\bseed\b/.test(body)) return false;
+  return /(unknown|unrecognized|unrecognised|unsupported|unexpected|extra)[\s_-]*(name|parameter|field|argument|property|key)?\W{0,4}seed\b|\bseed\W{0,6}(is\s+)?(not\s+supported|unsupported|not\s+permitted|cannot\s+find\s+field)/i.test(
+    body,
+  );
+}
+
+/**
  * Select Chat Completions request capabilities from both endpoint and model.
  * Custom OpenAI-compatible gateways retain the broadly supported legacy wire,
  * even when their model name resembles a modern OpenAI model, until the

@@ -82,6 +82,7 @@
 - The FHIR endpoint and the MCP doctor visit read the saved report selection again instead of an empty one.
 - A relay outage no longer counts toward switching the iPhone channel off.
 - The admin relay card shows a failed status read instead of nothing.
+- An OpenAI-compatible gateway that has no `seed` field, such as Google Gemini, no longer fails the briefing, status and summary calls: the request goes out again without it, and the endpoint is remembered. A model listing that names models as `models/<id>` now counts the bare name as listed. (`docs/integrations/ai-providers.md`)
 
 ### Security
 
