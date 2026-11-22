@@ -266,6 +266,93 @@ describe("a ledger written by 1.48", () => {
     expect(statusOf(state, "ai")).toBe("skipped");
     expect(isOnboardingSettled(state)).toBe(true);
   });
+
+  /**
+   * The upgrade itself, end to end on the server: a person who finished the
+   * setup on 1.48 (with "Region & units" passed, which 1.49 would now ask for
+   * a medication schedule) opens the app after the update. Nothing may send
+   * them back into the flow: the account payload clears the first-run hint
+   * (even a stale one the browser still holds), the edge lets every page
+   * through, and `/onboarding` itself, opened by hand, offers the setup again
+   * instead of resuming a step.
+   */
+  it("is never sent back into the flow after the upgrade", async () => {
+    const user = await makeUser("upgrade");
+    const stamp = new Date("2026-11-01T08:00:00.000Z");
+    await db().onboardingRecord.create({
+      data: {
+        userId: user.id,
+        needsJson: toJson({
+          recordTarget: "me",
+          areas: ["blood-pressure"],
+          medication: "sometimes",
+          sources: ["manual"],
+          visit: "within-a-month",
+          units: { glucoseUnit: null, unitPreference: null },
+        }),
+        stepsJson: toJson(
+          [
+            ["who", "done"],
+            ["areas", "done"],
+            ["medication", "done"],
+            ["sources", "done"],
+            ["visit", "done"],
+            ["units", "skipped"],
+            ["confirm", "done"],
+            ["first-result", "skipped"],
+            ["done", "done"],
+          ].map(([id, status]) => ({ id, status })),
+        ),
+        modulesDerivedAt: stamp,
+        completedAt: stamp,
+      },
+    });
+    await db().user.update({
+      where: { id: user.id },
+      data: { onboardingCompletedAt: stamp },
+    });
+    const session = await signInAs(user.id);
+    cookieJar.set("hl_onboarding", "pending");
+
+    const state = await readMe();
+    expect(isOnboardingSettled(state)).toBe(true);
+    expect(cookieJar.has("hl_onboarding")).toBe(false);
+
+    const { proxy } = await import("@/proxy");
+    for (const path of ["/", "/medications", "/settings/account"]) {
+      const response = proxy(
+        new NextRequest(`http://localhost${path}`, {
+          headers: { cookie: `healthlog_session=${session.id}` },
+        }),
+      );
+      const location = response.headers.get("location");
+      expect(location ?? "", `${path} redirected`).not.toContain("/onboarding");
+    }
+
+    const { default: OnboardingRootPage } =
+      await import("@/app/onboarding/page");
+    // `redirect()` throws; a page that renders returns its tree.
+    await expect(OnboardingRootPage()).resolves.toBeTruthy();
+  });
+
+  it("an account that skipped the setup on 1.48 is not sent into it either", async () => {
+    // "Skip for now" stamped the account and left no answers.
+    const user = await makeUser("skipped", {
+      onboardingCompletedAt: new Date("2026-10-01T08:00:00.000Z"),
+    });
+    const session = await signInAs(user.id);
+
+    await readMe();
+    expect(cookieJar.has("hl_onboarding")).toBe(false);
+
+    const { proxy } = await import("@/proxy");
+    const response = proxy(
+      new NextRequest("http://localhost/", {
+        headers: { cookie: `healthlog_session=${session.id}` },
+      }),
+    );
+    expect(response.headers.get("location") ?? "").not.toContain("/onboarding");
+  });
 });
 
 describe("GET /api/onboarding/extras", () => {
