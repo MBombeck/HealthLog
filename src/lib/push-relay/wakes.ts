@@ -24,6 +24,13 @@
  * - Any device takes at most {@link WAKES_PER_DEVICE_HOUR} wakes an hour,
  *   and of those at most {@link DATA_CHANGED_PER_HOUR} `DATA_CHANGED`.
  *
+ * The relay keeps its own count. When it refuses a silent push for a budget
+ * anyway (its count halves after a restart, Apple throttled the device), it
+ * holds every silent push to the device until the time it named
+ * (`owed-silent.ts`), and the budget here says no until then. Only a push the
+ * relay or Apple took, or that waits for a retry, is recorded: a refused one
+ * spent nothing.
+ *
  * A wake over budget waits (`DATA_CHANGED` keeps its domains pending); an
  * intake sync over budget is owed and sent by the minute pass once the
  * budget frees up (`medication-pushes.ts`). Nothing is dropped unrecorded.
@@ -31,6 +38,7 @@
 import { prisma } from "@/lib/db";
 import { pendingDeletionOf } from "@/lib/account-deletion/pending";
 import type { EnvelopeMessage } from "@/lib/push-relay/envelope";
+import { relaySilentHold } from "@/lib/push-relay/owed-silent";
 import {
   loadPushContext,
   ROUTABLE_DEVICE_SELECT,
@@ -171,19 +179,26 @@ export interface SilentBudgetSummary {
   nextFreeAt: Date | null;
 }
 
-/** The budget numbers of one device, from the same rule the send asks. */
+/**
+ * The budget numbers of one device, from the same rule the send asks.
+ * `heldUntil` is the relay's hold on the device's silent pushes, if any.
+ */
 export function silentBudgetSummary(
   rows: readonly SilentWindowRow[],
   route: DeviceRoute,
+  heldUntil: Date | null = null,
 ): SilentBudgetSummary {
   const relay = route === "relay";
   // `rows` is oldest first: the sync fits again once enough of them aged out
   // of the window that fewer than the cap remain.
   const blocking = rows.length - SILENT_PER_DEVICE_HOUR;
-  const nextFreeAt =
+  const ledgerFreeAt =
     relay && !silentBudgetAllows(rows, route, "MEDICATION_INTAKE_SYNC")
       ? new Date(rows[blocking]!.createdAt.getTime() + HOUR_MS)
       : null;
+  const hold = relay ? heldUntil : null;
+  const nextFreeAt =
+    hold && (!ledgerFreeAt || hold > ledgerFreeAt) ? hold : ledgerFreeAt;
   return {
     windowMinutes: SILENT_WINDOW_MINUTES,
     limit: relay ? SILENT_PER_DEVICE_HOUR : null,
@@ -196,7 +211,8 @@ export function silentBudgetSummary(
 
 /**
  * Whether `device` may take one more silent push of `kind` now: the one
- * budget every silent push asks (see the module doc).
+ * budget every silent push asks (see the module doc), and over the relay
+ * no hold of the relay's own.
  */
 export async function silentBudgetLeft(
   device: RoutableDevice,
@@ -204,11 +220,31 @@ export async function silentBudgetLeft(
   ctx: PushContext,
   now: Date,
 ): Promise<boolean> {
-  return silentBudgetAllows(
-    await silentWindow(device.id, now),
-    routeOf(device, ctx),
-    kind,
-  );
+  const route = routeOf(device, ctx);
+  if (route === "relay" && (await relaySilentHold(device.id, now))) {
+    return false;
+  }
+  return silentBudgetAllows(await silentWindow(device.id, now), route, kind);
+}
+
+/**
+ * The devices a sealed send spent budget on: the push was accepted, or waits
+ * for a retry. One the relay refused or dropped, or that failed, spent none.
+ */
+export function budgetSpentBy(sealed: SealedSendResult): string[] {
+  return Object.entries(sealed.devices)
+    .filter(([, r]) => r.outcome === "accepted" || r.outcome === "waiting")
+    .map(([id]) => id);
+}
+
+/**
+ * The devices of a sealed send the relay refused for a budget, or dropped:
+ * their push is owed, not sent.
+ */
+export function owedBy(sealed: SealedSendResult): string[] {
+  return Object.entries(sealed.devices)
+    .filter(([, r]) => r.outcome === "owed")
+    .map(([id]) => id);
 }
 
 /** Record the silent pushes that went out, for the budget. */
@@ -226,7 +262,10 @@ export async function recordSilentPushes(
 export interface WakeSendResult {
   /** Devices the wake went to (or waits at the relay for). */
   sent: string[];
-  /** Devices left out because their budget was spent. */
+  /**
+   * Devices left out because their budget was spent: by this server's count,
+   * or the relay's, which refused the wake.
+   */
   overBudget: string[];
   sealed: SealedSendResult | null;
 }
@@ -254,12 +293,20 @@ export async function sendWake(
       overBudget.push(device.id);
       continue;
     }
-    targets.push({ device, message, collapseKey: options.collapseKey });
+    targets.push({
+      device,
+      message,
+      collapseKey: options.collapseKey,
+      ...(kind === "DATA_CHANGED" && Array.isArray(data.domains)
+        ? { domains: data.domains as string[] }
+        : {}),
+    });
   }
   if (targets.length === 0) return { sent: [], overBudget, sealed: null };
   const sealed = await sendSealed(targets, ctx);
-  await recordSilentPushes(kind, sealed.handled, now);
-  return { sent: sealed.handled, overBudget, sealed };
+  const sent = budgetSpentBy(sealed);
+  await recordSilentPushes(kind, sent, now);
+  return { sent, overBudget: [...overBudget, ...owedBy(sealed)], sealed };
 }
 
 /** Drop wake ledger rows past every window a limit reads. */

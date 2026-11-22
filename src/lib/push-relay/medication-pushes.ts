@@ -25,14 +25,18 @@ import { EVENT_DEFAULT_ENABLED } from "@/lib/notifications/types";
 import { fromBase64Url } from "@/lib/push-relay/encoding";
 import type { EnvelopeMessage } from "@/lib/push-relay/envelope";
 import {
+  attemptResultOf,
   loadPushContext,
   routeOf,
+  sealedOutcome,
   sendSealed,
   type PushContext,
   type RoutableDevice,
   type SealedSendResult,
 } from "@/lib/push-relay/route-device";
 import {
+  budgetSpentBy,
+  owedBy,
   recordSilentPushes,
   silentBudgetLeft,
   wakeableDevices,
@@ -40,7 +44,7 @@ import {
 import {
   clearOwedIntakeSync,
   oweIntakeSync,
-} from "@/lib/push-relay/owed-intake-sync";
+} from "@/lib/push-relay/owed-silent";
 import { sendRelayItems } from "@/lib/push-relay/relay-send";
 
 const RECORDED_LIFETIME_S = 2 * 3600;
@@ -133,8 +137,9 @@ export interface IntakeSyncSendResult extends SealedSendResult {
  * does not arrive never leaves the device without its sync. A device whose
  * silent budget (`wakes.ts`) is spent is not skipped but owed the sync: the
  * minute pass sends it once the budget frees up, one for however many
- * changes arrived meanwhile. A sync the relay then drops at its deadline is
- * owed again (`relay-send.ts`).
+ * changes arrived meanwhile. A sync the relay refuses for its own budget, or
+ * drops at its deadline, is owed the same way (`relay-send.ts`), and the
+ * relay's hold keeps the minute pass from trying before it ends.
  */
 export async function sendSealedIntakeSync(
   devices: RoutableDevice[],
@@ -155,7 +160,7 @@ export async function sendSealedIntakeSync(
   }
   if (deferred.length > 0) await oweIntakeSync(deferred, now);
   const sealed = await sendSealed(targets, ctx);
-  await recordSilentPushes(SYNC_EVENT, sealed.handled, now);
+  await recordSilentPushes(SYNC_EVENT, budgetSpentBy(sealed), now);
   return { ...sealed, deferred };
 }
 
@@ -184,9 +189,16 @@ export async function intakeSyncEnabled(userId: string): Promise<boolean> {
 
 /**
  * The minute pass: send every owed intake sync whose device has silent
- * budget again, and clear what is settled. A device whose account no longer
- * takes the sync (pending deletion, APNs channel or the sync switched off)
- * or that lost its route is owed nothing any more. Returns how many went out.
+ * budget again (and no hold of the relay's), and clear what is settled. A
+ * device whose account no longer takes the sync (pending deletion, APNs
+ * channel or the sync switched off) or that lost its route is owed nothing
+ * any more. Returns how many the relay or Apple accepted.
+ *
+ * Settled means handed on for good: accepted, waiting in the outbox for a
+ * retry (the outbox owes it again if it drops it), or failed for good (a
+ * binding the relay forgot; the device's next registration sends its own
+ * sync). A sync the relay refused for its budget stays owed, since when it
+ * was first owed, and goes once the relay's hold ends.
  */
 export async function flushOwedIntakeSyncs(
   now: Date = new Date(),
@@ -211,31 +223,23 @@ export async function flushOwedIntakeSyncs(
       continue;
     }
     if (!(await silentBudgetLeft(device, SYNC_EVENT, ctx, now))) continue;
-    // Settled before the send, not after it: a sync the relay drops at once
-    // is owed again by the outbox (`relay-send.ts`), and clearing afterwards
-    // would wipe that.
-    await clearOwedIntakeSync(row.deviceId);
     const result = await sendSealed(
       [{ device, message: intakeSyncMessage(now), collapseKey: "intake-sync" }],
       ctx,
     );
-    await recordSilentPushes(SYNC_EVENT, result.handled, now);
-    if (result.handled.length === 0) {
-      // Nothing was handed over (the envelope could not be sealed): still owed.
-      await oweIntakeSync([row.deviceId], now);
-    } else {
-      recordPushAttempt({
-        userId,
-        channel: "APNS",
-        eventType: SYNC_EVENT,
-        result: result.anyAccepted || result.waiting ? "ok" : "error",
-        reason:
-          result.anyAccepted || result.waiting
-            ? "intake_sync_owed_sent"
-            : (result.lastFailure ?? "intake_sync_nothing_sent"),
-      });
-      sent += 1;
-    }
+    await recordSilentPushes(SYNC_EVENT, budgetSpentBy(result), now);
+    // Nothing was handed over (the envelope could not be sealed): still owed.
+    if (result.handled.length === 0) continue;
+    const outcome = sealedOutcome(result);
+    if (owedBy(result).length === 0) await clearOwedIntakeSync(row.deviceId);
+    recordPushAttempt({
+      userId,
+      channel: "APNS",
+      eventType: SYNC_EVENT,
+      result: attemptResultOf(outcome),
+      reason: outcome.reason ?? "intake_sync_owed_sent",
+    });
+    if (outcome.result === "ok") sent += 1;
   }
   return sent;
 }
@@ -289,27 +293,29 @@ export async function activateRelayBinding(
           return;
         }
         const sent = await sendSealedIntakeSync([device], ctx);
-        const owed = sent.deferred.length > 0;
-        const handed = sent.anyAccepted || sent.waiting;
+        // Held back by this server's budget: owed, nothing handed on.
+        const outcome =
+          sent.deferred.length > 0
+            ? ({ result: "deferred", reason: "owed" } as const)
+            : sealedOutcome(sent);
+        const state = sent.devices[device.id]?.outcome;
         evt.addMeta(
           "relay_binding_activation",
-          sent.anyAccepted
-            ? "accepted"
-            : sent.waiting
-              ? "waiting"
-              : owed
-                ? "owed"
-                : (sent.lastFailure ?? "not_sent"),
+          sent.deferred.length > 0
+            ? "owed"
+            : state && state !== "failed"
+              ? state
+              : (sent.lastFailure ?? outcome.reason ?? "not_sent"),
         );
         recordPushAttempt({
           userId,
           channel: "APNS",
           eventType: SYNC_EVENT,
-          result: handed ? "ok" : owed ? "skipped" : "error",
+          result: attemptResultOf(outcome),
           reason:
-            handed || owed
-              ? BINDING_ACTIVATION_REASON
-              : (sent.lastFailure ?? "intake_sync_nothing_sent"),
+            outcome.result === "error"
+              ? outcome.reason
+              : BINDING_ACTIVATION_REASON,
         });
       },
     );

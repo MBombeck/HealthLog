@@ -39,6 +39,7 @@ import { FanOutTally } from "@/lib/jobs/fan-out-tally";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { getEvent } from "@/lib/logging/context";
 import { flushOwedIntakeSyncs } from "@/lib/push-relay/medication-pushes";
+import { owePendingDomains } from "@/lib/push-relay/owed-silent";
 import { pruneWakes, sendWake, wakeableDevices } from "@/lib/push-relay/wakes";
 
 export const DATA_DOMAINS = [
@@ -161,7 +162,7 @@ export function noteDataChanged(
         let waiting = 0;
         let held = 0;
         for (const device of devices) {
-          await addPending(device.id, list, now);
+          await owePendingDomains(device.id, list, now);
           const out = await flushDataChange(device.id, now);
           if (out === true) sent += 1;
           else if (out === null) waiting += 1;
@@ -185,30 +186,18 @@ export function noteDataChanged(
   })();
 }
 
-/** Merge `domains` into the device's pending wake. */
-async function addPending(
-  deviceId: string,
-  domains: readonly string[],
-  now: Date,
-): Promise<void> {
-  await prisma.$executeRaw`
-    INSERT INTO "push_data_changes" ("device_id", "domains", "updated_at")
-    VALUES (${deviceId}, ${[...domains]}::text[], ${sqlTime(now)}::timestamp(3))
-    ON CONFLICT ("device_id") DO UPDATE SET
-      "domains" = ARRAY(
-        SELECT DISTINCT d
-          FROM unnest("push_data_changes"."domains" || EXCLUDED."domains") AS d
-         ORDER BY d
-      ),
-      "updated_at" = EXCLUDED."updated_at"`;
-}
-
 /**
  * Take the device's pending domains if its window is open: at least five
- * minutes since its last wake. The row lock makes the claim exclusive, so two
- * processes never both send. The hourly limits are the silent budget's
- * (`wakes.ts`), asked when the wake is sent; the send time is stamped only
- * once a wake went out, so a claim that sent nothing costs no slot.
+ * minutes since its last wake, and no intake sync owed to it. The row lock
+ * makes the claim exclusive, so two processes never both send. The hourly
+ * limits are the silent budget's (`wakes.ts`), asked when the wake is sent;
+ * the send time is stamped only once a wake went out, so a claim that sent
+ * nothing costs no slot.
+ *
+ * An owed intake sync goes ahead of the wake: a dose decision waits on it,
+ * and over the relay both draw on the same six silent pushes an hour. The
+ * minute pass sends the sync first (`flushDueDataChanges`); the wake follows
+ * once the sync is settled.
  */
 async function claim(deviceId: string, now: Date): Promise<string[] | null> {
   const at = sqlTime(now);
@@ -218,6 +207,7 @@ async function claim(deviceId: string, now: Date): Promise<string[] | null> {
         FROM "push_data_changes"
        WHERE "device_id" = ${deviceId}
          AND cardinality("domains") > 0
+         AND "intake_sync_owed_at" IS NULL
          AND (cardinality("sent_at") = 0
               OR "sent_at"[cardinality("sent_at")]
                  <= ${at}::timestamp(3) - make_interval(secs => ${COALESCE_WINDOW_MS / 1000}))
@@ -270,13 +260,15 @@ export async function flushDataChange(
     );
   } catch (err) {
     // The claim already took the domains; a failed send puts them back.
-    await addPending(deviceId, domains, now);
+    await owePendingDomains(deviceId, domains, now);
     throw err;
   }
   if (result.sent.length === 0) {
-    // Not sent (the silent budget is spent, or no route took it): the
-    // domains wait for the next window instead of being lost.
-    await addPending(deviceId, domains, now);
+    // Not sent (the silent budget is spent, the relay refused it, or no
+    // route took it): the domains wait for the next window instead of being
+    // lost. A wake the relay refused has put them back already; the merge
+    // is idempotent.
+    await owePendingDomains(deviceId, domains, now);
     if (result.overBudget.length > 0) {
       getEvent()?.addMeta("push_data_changed_over_budget", true);
     }

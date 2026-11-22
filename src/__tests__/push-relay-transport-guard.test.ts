@@ -62,8 +62,13 @@ describe("push relay transport guard", () => {
       "src/lib/push-relay/relay-send.ts",
       "releaseUnregistered",
     );
+    // Only a 410 `unregistered` reads as gone, and only that reading
+    // releases the device.
     expect(relay).toMatch(
-      /status\s*===\s*410\s*&&\s*code\s*===\s*"unregistered"\)\s*\{\s*await\s+releaseUnregistered/,
+      /status\s*===\s*410\s*&&\s*code\s*===\s*"unregistered"\)\s*return\s+"unregistered"/,
+    );
+    expect(relay).toMatch(
+      /kind\s*===\s*"unregistered"\)\s*\{\s*await\s+releaseUnregistered/,
     );
   });
 

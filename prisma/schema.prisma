@@ -11718,6 +11718,9 @@ model PushRelayDelivery {
   status            String    @default("pending")
   reason            String?
   attempts          Int       @default(0)
+  /// Pending: the next attempt. Dropped silent push the relay refused for a
+  /// budget: the relay's hold on the device's silent pushes
+  /// (`push-relay/owed-silent.ts`). Null on every other final row.
   nextAttemptAt     DateTime? @map("next_attempt_at")
   acceptedAt        DateTime? @map("accepted_at")
   confirmedAt       DateTime? @map("confirmed_at")
@@ -11750,9 +11753,10 @@ model PushDataChange {
   sentAt           DateTime[] @default([]) @map("sent_at")
   updatedAt        DateTime   @default(now()) @map("updated_at")
   /// An intake sync (`MEDICATION_INTAKE_SYNC`) the silent budget held back,
-  /// since when: owed, never dropped. The minute job sends it once the budget
-  /// frees up and clears it. Writer and reader:
-  /// `push-relay/medication-pushes.ts`.
+  /// or the relay refused or dropped, since when: owed, never dropped. The
+  /// minute job sends it once the budget frees up and clears it. Writers:
+  /// `push-relay/medication-pushes.ts`, `push-relay/relay-send.ts` (through
+  /// `owed-silent.ts`); reader: `medication-pushes.ts`.
   intakeSyncOwedAt DateTime?  @map("intake_sync_owed_at")
 
   device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)

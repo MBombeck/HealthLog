@@ -36,6 +36,7 @@ import {
   overRelay,
   sendRelayItems,
   type RelayItemInput,
+  type RelayItemOutcome,
   type RelaySendSummary,
 } from "@/lib/push-relay/relay-send";
 
@@ -126,11 +127,27 @@ export interface SealedTarget {
   message: EnvelopeMessage;
   /** What a newer push replaces: the dose for a dose, else the push itself. */
   collapseKey?: string;
+  /** `DATA_CHANGED`: the domains the wake announces (`RelayItemInput`). */
+  domains?: readonly string[];
+}
+
+/** What became of the push to one device, and the code that says why. */
+export interface SealedDeviceResult {
+  outcome: RelayItemOutcome;
+  /** The relay's or Apple's code; null when accepted. */
+  code: string | null;
+  via: "relay" | "direct";
 }
 
 export interface SealedSendResult {
-  /** Devices a sealed push went to (or waits for the relay), by id. */
+  /** Devices a sealed push was handed to, by id: sealed and sent or queued. */
   handled: string[];
+  /**
+   * The outcome per handled device: over the relay its item's outcome
+   * (`relay-send.ts`), over this server's own key `accepted` or `failed`.
+   * Whether a send succeeded is read here, never from a batch answer.
+   */
+  devices: Record<string, SealedDeviceResult>;
   anyAccepted: boolean;
   /** Something waits for the relay or Apple to come back. */
   waiting: boolean;
@@ -153,6 +170,7 @@ export async function sendSealed(
 ): Promise<SealedSendResult> {
   const result: SealedSendResult = {
     handled: [],
+    devices: {},
     anyAccepted: false,
     waiting: false,
     waitReason: "relay_waiting",
@@ -195,6 +213,7 @@ export async function sendSealed(
         envelope: sealed.envelope,
         collapse,
         expiresAt: new Date(sealed.exp * 1000),
+        ...(target.domains ? { domains: target.domains } : {}),
       });
       continue;
     }
@@ -217,8 +236,18 @@ export async function sendSealed(
     });
     if (direct.ok) {
       result.anyAccepted = true;
+      result.devices[target.device.id] = {
+        outcome: "accepted",
+        code: null,
+        via: "direct",
+      };
     } else {
       result.lastFailure = direct.reason ?? "apns_send_failed";
+      result.devices[target.device.id] = {
+        outcome: "failed",
+        code: result.lastFailure,
+        via: "direct",
+      };
       result.directFailures += 1;
       // Only Apple's `Unregistered` is final for a sealed push.
       if (direct.reason === "Unregistered") {
@@ -229,6 +258,20 @@ export async function sendSealed(
   if (relayItems.length > 0) {
     const summary = await sendRelayItems(relayItems, ctx.config);
     result.relay = summary;
+    for (const item of relayItems) {
+      // An item the attempt did not reach (never the case today) is failed,
+      // not assumed sent.
+      const outcome = summary.byRef[item.ref] ?? "failed";
+      const answer = summary.answers.find((a) => a.ref === item.ref);
+      result.devices[item.deviceId] = {
+        outcome,
+        code:
+          outcome === "accepted"
+            ? null
+            : (answer?.code ?? (outcome === "failed" ? "failed" : "deadline")),
+        via: "relay",
+      };
+    }
     if (summary.accepted > 0) result.anyAccepted = true;
     if (summary.waiting > 0) result.waiting = true;
     if (summary.outcomes.bad_signature) {
@@ -246,4 +289,61 @@ export async function sendSealed(
     getEvent()?.addMeta("push_sealed_last_failure", result.lastFailure);
   }
   return result;
+}
+
+/**
+ * What a sealed send came to, by the one rule every send path records with:
+ * `ok` only when the push to every handled device was accepted. Otherwise
+ * `error` when one failed for good, else `deferred` when the rest waits for
+ * a retry or is owed; both name their reason. A send that handed nothing is
+ * `error` too: the caller decides first whether that is a rest.
+ */
+export type SealedOutcome =
+  | { result: "ok"; reason: null }
+  | { result: "deferred" | "error"; reason: string };
+
+export function sealedOutcome(
+  sealed: Pick<SealedSendResult, "devices" | "lastFailure" | "waitReason">,
+): SealedOutcome {
+  const results = Object.values(sealed.devices);
+  const failed = results.find((r) => r.outcome === "failed");
+  if (failed) {
+    return {
+      result: "error",
+      // Apple's reason stands as it is; a relay item's is named the relay's.
+      reason:
+        failed.via === "relay"
+          ? `relay_item_failed:${failed.code ?? "failed"}`
+          : (failed.code ?? "apns_send_failed"),
+    };
+  }
+  const owed = results.find((r) => r.outcome === "owed");
+  if (owed) return { result: "deferred", reason: owedReason(owed.code) };
+  if (results.some((r) => r.outcome === "waiting")) {
+    return { result: "deferred", reason: sealed.waitReason };
+  }
+  if (results.length === 0) {
+    return {
+      result: "error",
+      reason: sealed.lastFailure ?? "sealed_nothing_sent",
+    };
+  }
+  return { result: "ok", reason: null };
+}
+
+/** The reason of a push owed after the relay refused or dropped it. */
+export function owedReason(code: string | null): string {
+  return `relay_owed:${code ?? "deadline"}`;
+}
+
+/**
+ * The `push_attempts` result of an outcome: that ledger knows `ok`, `skipped`
+ * and `error`, and a deferred push is not sent yet, so it is `skipped` with
+ * the reason it waits on.
+ */
+export function attemptResultOf(outcome: {
+  result: "ok" | "deferred" | "skipped" | "error";
+}): "ok" | "skipped" | "error" {
+  if (outcome.result === "deferred") return "skipped";
+  return outcome.result;
 }

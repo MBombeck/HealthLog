@@ -387,17 +387,12 @@ describe("the intake sync's budget, audience and triggers", () => {
     );
     const deviceId = registered.data.id;
     const prisma = getPrismaClient();
-    // The relay's own count says the device has had its silent pushes for
-    // this hour and more (its limit halves after a restart): the hint lies
-    // beyond the sync's one-hour lifetime.
+    // Apple is out for longer than the sync lives: the relay's hint lies
+    // beyond the sync's one-hour lifetime. (A budget refusal is owed at once,
+    // without a retry: `push-relay-owed-sync.test.ts`.)
     fake.itemAnswer = (item) =>
       item.class === "silent"
-        ? {
-            status: 429,
-            error: "device_quota",
-            scope: "device",
-            retryAfter: 7200,
-          }
+        ? { status: 503, error: "apns_unavailable", retryAfter: 7200 }
         : null;
     const { queueMedicationIntakeSync } =
       await import("@/lib/notifications/medication-intake-sync");
@@ -413,8 +408,7 @@ describe("the intake sync's budget, audience and triggers", () => {
         select: { status: true, reason: true },
       }),
     ).toEqual([{ status: "dropped", reason: "deadline" }]);
-    // Dropped is failed with the relay's code, never "waiting" (which the
-    // flush reads as sent).
+    // Dropped is owed with the relay's code, never "ok".
     await eventually(
       async () =>
         (await prisma.pushAttempt.count({
@@ -426,14 +420,16 @@ describe("the intake sync's budget, audience and triggers", () => {
         where: { userId: user.id, eventType: "MEDICATION_INTAKE_SYNC" },
         select: { result: true, reason: true },
       }),
-    ).toEqual([{ result: "error", reason: "relay_item_failed:device_quota" }]);
+    ).toEqual([{ result: "skipped", reason: "relay_owed:apns_unavailable" }]);
     expect(fake.apns.filter((a) => a.pushClass === "silent")).toHaveLength(0);
 
-    // While the relay still refuses, the minute pass tries and the sync
-    // stays owed: the pass must not settle what the outbox has just dropped.
+    // While the relay still refuses, the minute pass tries (an outage sets no
+    // hold) and the sync stays owed: the pass must not settle what the
+    // outbox has just dropped, nor count it as sent.
     const { flushDueDataChanges } =
       await import("@/lib/push-relay/data-changed");
-    expect((await flushDueDataChanges(new Date())).owedSynced).toBe(1);
+    expect((await flushDueDataChanges(new Date())).owedSynced).toBe(0);
+    expect(fake.wire.filter((i) => i.class === "silent")).toHaveLength(2);
     expect(
       (await prisma.pushDataChange.findUniqueOrThrow({ where: { deviceId } }))
         .intakeSyncOwedAt,
