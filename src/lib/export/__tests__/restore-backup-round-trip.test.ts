@@ -62,7 +62,11 @@ vi.mock("@/lib/logging/context", () => ({
   annotate: vi.fn(),
   getEvent: vi.fn(() => null),
 }));
-vi.mock("@/lib/cache/invalidate", () => ({ invalidateUserData: vi.fn() }));
+vi.mock("@/lib/cache/invalidate", () => ({
+  invalidateUserData: vi.fn(),
+  // The dose seam evicts these after a restore (`after-dose-change.ts`).
+  invalidateUserMedications: vi.fn(),
+}));
 vi.mock("@/lib/rollups/mood-rollups", () => ({
   recomputeUserMoodRollups: vi.fn(),
 }));
