@@ -2,8 +2,8 @@
  * Which slot one bulk intake entry binds to.
  *
  * Taken writes attribute through the window-band engine (the SAME minter the
- * read ledger + the compliance % consume), so a bulk-synced take binds to a
- * slot identically to the single-route write. The optional
+ * read ledger + the compliance % consume) and the shared named-slot rule, so
+ * a bulk-synced take binds to a slot identically to the single-route write. The optional
  * `forceSlotInstant` pins an off-window take onto a named real slot. Pending
  * echoes and skips carry no take to attribute by, so they keep the canonical
  * anchor snap that binds them to the projector/worker-minted slot row.
@@ -19,6 +19,7 @@ import {
   resolveSlotInstantForWrite,
 } from "@/lib/medications/scheduling/slot-upsert";
 import { slotHeldByAnotherDose } from "@/lib/medications/scheduling/extra-dose";
+import { bindNamedTake } from "@/lib/medications/scheduling/named-slot";
 import type { BulkIntakeEntry } from "./batch-state";
 
 export interface EntryAttribution {
@@ -90,13 +91,24 @@ async function attributePin(
 
 async function attributeTake(ctx: EntryContext): Promise<EntryAttribution> {
   const { user, entry } = ctx;
+  const takenAt = entry.takenAt as Date;
   const attribution = await resolveSlotForWriteByBand({
     userId: user.id,
     medicationId: entry.medicationId,
     userTz: user.timezone,
-    takenAt: entry.takenAt as Date,
+    takenAt,
   });
-  let canonicalSlot = attribution.slotInstant;
+  // A named slot binds the way it does on the single route: behind the take
+  // however late, ahead of it from the slot's window on (`named-slot.ts`).
+  const bound = await bindNamedTake({
+    userId: user.id,
+    medicationId: entry.medicationId,
+    userTz: user.timezone,
+    takenAt,
+    bandSlot: attribution.slotInstant,
+    namedSlot: entry.scheduledFor,
+  });
+  let canonicalSlot = bound.canonicalSlot;
   let heldByAnotherDose = false;
   // An external dose record (a HealthKit dose event) whose band slot
   // already carries a different recorded dose is an extra dose, not a
@@ -110,7 +122,7 @@ async function attributeTake(ctx: EntryContext): Promise<EntryAttribution> {
       userId: user.id,
       medicationId: entry.medicationId,
       canonicalSlot,
-      takenAt: entry.takenAt as Date,
+      takenAt,
       externalId: entry.externalId,
       scheduledFor: entry.scheduledFor ?? null,
       userTz: user.timezone,
@@ -119,7 +131,11 @@ async function attributeTake(ctx: EntryContext): Promise<EntryAttribution> {
     canonicalSlot = null;
     heldByAnotherDose = true;
   }
-  return { canonicalSlot, attributionSource: "AUTO", heldByAnotherDose };
+  return {
+    canonicalSlot,
+    attributionSource: bound.attributionSource,
+    heldByAnotherDose,
+  };
 }
 
 /**

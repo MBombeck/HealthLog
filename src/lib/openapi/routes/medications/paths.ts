@@ -154,7 +154,9 @@ const bulkIntakeEntry = z
     medicationId: z.string().min(1),
     scheduledFor: isoDateTime()
       .optional()
-      .describe("ISO instant; defaults to `takenAt` then now() when omitted."),
+      .describe(
+        "ISO instant; defaults to `takenAt` then now() when omitted. On a take the same rule as `POST /api/medications/{id}/intake`: A take that names a real slot of the medication counts for it when the slot lies behind the take (however late) or the take sits inside the slot's window, from its early grace on (a 20:00 dose taken at 19:30 counts for 20:00). A slot further ahead does not bind: the take answers the slot its own time falls into, or none. For a dose that is not open yet, send `forceSlotInstant`.",
+      ),
     takenAt: isoDateTime()
       .optional()
       .describe("ISO instant of the take; omit + `skipped:false` = pending."),

@@ -229,16 +229,31 @@ export function attributeTakenToSlot(
  * `scheduledFor`) when the instant matches a band anchor within a minute, else
  * `null`.
  */
-export function resolveForcedSlotInstant(input: {
+export function resolveForcedSlotInstant(
+  input: ResolveForcedSlotBandInput,
+): Date | null {
+  return resolveForcedSlotBand(input)?.at ?? null;
+}
+
+export interface ResolveForcedSlotBandInput {
   medication: AttributeIntakeMedication;
   userTz: string;
-  /** The slot instant the client asks to pin the take onto. */
+  /** The slot instant the client names. */
   slotInstant: Date;
   lastIntakeAt?: Date | null;
   intakeInstants?: Date[];
   windowConfig?: DoseWindowConfig;
   now?: Date;
-}): Date | null {
+}
+
+/**
+ * The band of the real slot `slotInstant` names (its anchor within a minute),
+ * or `null` when the instant is not a slot. The band carries the reach a take
+ * still counts for the slot in (`earlyStart` to `overdueEnd`).
+ */
+export function resolveForcedSlotBand(
+  input: ResolveForcedSlotBandInput,
+): SlotBand | null {
   const { bands, hasExpectedSlots } = buildMedicationDayBands({
     medication: input.medication,
     userTz: input.userTz,
@@ -251,17 +266,17 @@ export function resolveForcedSlotInstant(input: {
   if (!hasExpectedSlots) return null;
 
   const target = input.slotInstant.getTime();
-  let best: { at: Date; dist: number } | null = null;
+  let best: { band: SlotBand; dist: number } | null = null;
   for (const band of bands) {
     const dist = Math.abs(band.at.getTime() - target);
     if (
       dist <= ANCHOR_MATCH_EPSILON_MS &&
       (best === null || dist < best.dist)
     ) {
-      best = { at: band.at, dist };
+      best = { band, dist };
     }
   }
-  return best?.at ?? null;
+  return best?.band ?? null;
 }
 
 /**

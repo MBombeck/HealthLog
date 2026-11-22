@@ -33796,7 +33796,11 @@ components:
           type: string
           minLength: 1
         scheduledFor:
-          description: ISO instant; defaults to `takenAt` then now() when omitted.
+          description: "ISO instant; defaults to `takenAt` then now() when omitted. On a take the same rule as `POST
+            /api/medications/{id}/intake`: A take that names a real slot of the medication counts for it when the slot
+            lies behind the take (however late) or the take sits inside the slot's window, from its early grace on (a
+            20:00 dose taken at 19:30 counts for 20:00). A slot further ahead does not bind: the take answers the slot
+            its own time falls into, or none. For a dose that is not open yet, send `forceSlotInstant`."
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
@@ -34537,8 +34541,12 @@ components:
           description: Server-narrowed from the URL path. The route layer overwrites whatever the body supplies before Zod parsing
             so a caller cannot log an intake against another medication.
         scheduledFor:
-          description: Slot the dose belongs to. Defaults to `takenAt` (or `now()` when both are absent) so the compliance pairing
-            logic can pin the dose to a schedule slot.
+          description: "Slot the dose belongs to. Defaults to `takenAt` (or `now()` when both are absent) so the compliance
+            pairing logic can pin the dose to a schedule slot. A take that names a real slot of the medication counts
+            for it when the slot lies behind the take (however late) or the take sits inside the slot's window, from its
+            early grace on (a 20:00 dose taken at 19:30 counts for 20:00). A slot further ahead does not bind: the take
+            answers the slot its own time falls into, or none. For a dose that is not open yet, send
+            `forceSlotInstant`."
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
