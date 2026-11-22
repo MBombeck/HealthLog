@@ -19,6 +19,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  SubNavLink,
+  SubNavRow,
+  subNavItemClass,
+} from "@/components/ui/sub-nav";
 import { useMounted } from "@/hooks/use-mounted";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
@@ -842,7 +847,7 @@ function InsightsTabStripImpl({
         >
           <ChevronLeft className="h-4 w-4" aria-hidden="true" />
         </button>
-        <div
+        <SubNavRow
           ref={scrollerRef}
           onScroll={updateScrollAffordance}
           data-slot="insights-tab-strip-scroller"
@@ -855,7 +860,7 @@ function InsightsTabStripImpl({
           // gives that room back to the layout so the strip height is
           // unchanged. `px-1 -mx-1` does the same horizontally so the
           // first/last pill's focus ring isn't clipped at the row edges.
-          className="scroll-touch -mx-1 -my-1 flex min-w-0 flex-1 [scrollbar-width:none] gap-2 overflow-x-auto px-1 py-1 [&::-webkit-scrollbar]:hidden"
+          className="flex-1"
         >
           {tabs.map((tab) => {
             if (tab.kind === "link") {
@@ -869,9 +874,10 @@ function InsightsTabStripImpl({
                   : pathname === tab.href ||
                     pathname.startsWith(`${tab.href}/`);
               return (
-                <Link
+                <SubNavLink
                   key={tab.href}
                   href={tab.href}
+                  active={isActive}
                   // Full route prefetch (RSC payload incl. the dynamic
                   // sub-page, not just the loading boundary) the moment
                   // the pill scrolls into view. The insights sub-pages
@@ -879,22 +885,10 @@ function InsightsTabStripImpl({
                   // only warms `loading.tsx`; the full prefetch removes
                   // the route-payload round-trip from the pill switch.
                   prefetch={true}
-                  aria-current={isActive ? "page" : undefined}
                   data-slot="insights-tab-strip-pill"
-                  data-active={isActive ? "true" : undefined}
-                  className={cn(
-                    // 44px touch-target floor (W8.3) — pills are primary
-                    // navigation; the regenerate icon-button to the right
-                    // already meets the same minimum.
-                    "inline-flex min-h-11 shrink-0 items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                    "focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
-                    isActive
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border text-muted-foreground hover:text-foreground",
-                  )}
                 >
                   {t(tab.labelKey)}
-                </Link>
+                </SubNavLink>
               );
             }
             // v1.4.34 — group parent pill. Renders as a popover
@@ -917,13 +911,7 @@ function InsightsTabStripImpl({
                     data-slot="insights-tab-strip-group"
                     data-group={tab.group}
                     data-active={isGroupActive ? "true" : undefined}
-                    className={cn(
-                      "inline-flex min-h-11 shrink-0 items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                      "focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
-                      isGroupActive
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border text-muted-foreground hover:text-foreground",
-                    )}
+                    className={cn(subNavItemClass(isGroupActive), "gap-1")}
                   >
                     {t(tab.labelKey)}
                     <ChevronDown
@@ -973,7 +961,7 @@ function InsightsTabStripImpl({
               </Popover>
             );
           })}
-        </div>
+        </SubNavRow>
         <button
           type="button"
           onClick={() => scrollPills(1)}
