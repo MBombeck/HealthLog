@@ -27,6 +27,7 @@ import {
 import { prisma } from "@/lib/db";
 import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
 import { withIdempotency } from "@/lib/idempotency";
+import { withIngestAdmission } from "@/lib/ingest/admission";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { requireCycleEnabled } from "@/lib/cycle/gate";
 import {
@@ -72,7 +73,9 @@ function entryOutcome(r: DayLogWriteResult): {
   return { status: r.changed ? "updated" : "duplicate" };
 }
 
-export const POST = apiHandler(withIdempotency<[NextRequest]>(postBulk));
+export const POST = apiHandler(
+  withIngestAdmission(withIdempotency<[NextRequest]>(postBulk)),
+);
 
 async function postBulk(request: NextRequest): Promise<Response> {
   // Metered by this route's own bulk bucket below, not the shared per-account

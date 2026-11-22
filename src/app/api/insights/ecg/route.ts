@@ -42,6 +42,7 @@ import { annotate } from "@/lib/logging/context";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/db";
 import { persistEcgRecording } from "@/lib/ecg/persist-recording";
+import { withIngestAdmission } from "@/lib/ingest/admission";
 import { isoDateTime } from "@/lib/validations/datetime";
 import { apiListSuccess } from "@/lib/api/list-cap";
 import { listPage } from "@/lib/http/list-query";
@@ -198,7 +199,9 @@ export const GET = apiHandler(async () => {
  * recording carries its own identity, so a retried or replayed POST resolves
  * to the same row by construction rather than by a cached response.
  */
-export const POST = apiHandler(async (request: NextRequest) => {
+export const POST = apiHandler(withIngestAdmission(postRecording));
+
+async function postRecording(request: NextRequest): Promise<Response> {
   // Metered by this route's own bulk bucket below, not the shared per-account
   // write bucket: the native client syncs through here in bursts (see
   // `meterAccountWrite`).
@@ -277,4 +280,4 @@ export const POST = apiHandler(async (request: NextRequest) => {
     },
     result.outcome === "inserted" ? 201 : 200,
   );
-});
+}

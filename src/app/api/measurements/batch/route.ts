@@ -50,6 +50,7 @@ import {
   sanitiseZodIssues,
 } from "@/lib/api-response";
 import { withIdempotency } from "@/lib/idempotency";
+import { withIngestAdmission } from "@/lib/ingest/admission";
 import type { BatchIngestEntry } from "@/lib/measurements/batch-ingest/entries";
 import { ingestMeasurementBatch } from "@/lib/measurements/batch-ingest/ingest";
 import { HEALTHKIT_REQUEST_SYNC_TRIGGERS } from "@/lib/integrations/healthkit-type-sync";
@@ -172,7 +173,9 @@ const batchPayloadSchema = z.object({
   syncTrigger: syncTriggerEnum.optional(),
 });
 
-export const POST = apiHandler(withIdempotency<[NextRequest]>(postBatch));
+export const POST = apiHandler(
+  withIngestAdmission(withIdempotency<[NextRequest]>(postBatch)),
+);
 
 async function postBatch(request: NextRequest): Promise<Response> {
   // Declares the third-party ingest scope, so a narrow `measurements:write`
