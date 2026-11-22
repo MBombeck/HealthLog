@@ -2,9 +2,18 @@
  * When a named slot counts for a take (`named-slot.ts`): behind the take
  * however late, ahead of it only from the slot's early grace on.
  */
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { namedSlotCountsForTake } from "@/lib/medications/scheduling/named-slot";
+const resolveBand = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/medications/scheduling/slot-upsert", () => ({
+  TAKEN_SLOT_FORWARD_GRACE_MS: 5 * 60 * 1000,
+  resolveForcedSlotBandForWrite: resolveBand,
+}));
+
+import {
+  bindNamedTake,
+  namedSlotCountsForTake,
+} from "@/lib/medications/scheduling/named-slot";
 
 const at = (hm: string) => new Date(`2026-11-21T${hm}:00.000Z`);
 
@@ -40,5 +49,68 @@ describe("namedSlotCountsForTake", () => {
         at("12:00"),
       ),
     ).toBe(true);
+  });
+});
+
+describe("bindNamedTake", () => {
+  const base = {
+    userId: "u",
+    medicationId: "m",
+    userTz: "UTC",
+    takenAt: at("19:30"),
+  };
+
+  beforeEach(() => {
+    resolveBand.mockReset();
+  });
+
+  it("keeps the band's slot without a second read when it is the named one", async () => {
+    const bound = await bindNamedTake({
+      ...base,
+      bandSlot: at("20:00"),
+      namedSlot: new Date(at("20:00").getTime() + 30_000),
+    });
+    expect(bound).toEqual({
+      canonicalSlot: at("20:00"),
+      attributionSource: "AUTO",
+    });
+    expect(resolveBand).not.toHaveBeenCalled();
+  });
+
+  it("puts the take on the named slot over the band's neighbour, as a pin", async () => {
+    resolveBand.mockResolvedValue(evening);
+    const bound = await bindNamedTake({
+      ...base,
+      bandSlot: at("19:00"),
+      namedSlot: at("20:00"),
+    });
+    expect(bound).toEqual({
+      canonicalSlot: at("20:00"),
+      attributionSource: "USER_PIN",
+    });
+  });
+
+  it("keeps the band when the named instant is not a slot, or the take is before its window", async () => {
+    resolveBand.mockResolvedValue(null);
+    expect(
+      await bindNamedTake({ ...base, bandSlot: null, namedSlot: at("20:07") }),
+    ).toEqual({ canonicalSlot: null, attributionSource: "AUTO" });
+
+    resolveBand.mockResolvedValue(evening);
+    expect(
+      await bindNamedTake({
+        ...base,
+        takenAt: at("12:00"),
+        bandSlot: null,
+        namedSlot: at("20:00"),
+      }),
+    ).toEqual({ canonicalSlot: null, attributionSource: "AUTO" });
+  });
+
+  it("answers the band alone when no slot is named", async () => {
+    expect(
+      await bindNamedTake({ ...base, bandSlot: null, namedSlot: undefined }),
+    ).toEqual({ canonicalSlot: null, attributionSource: "AUTO" });
+    expect(resolveBand).not.toHaveBeenCalled();
   });
 });

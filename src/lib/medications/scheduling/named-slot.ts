@@ -27,6 +27,12 @@ import {
   TAKEN_SLOT_FORWARD_GRACE_MS,
 } from "@/lib/medications/scheduling/slot-upsert";
 
+/**
+ * A named instant this close to the band's slot names that slot: the minute
+ * of slop the pin validation allows for a client-echoed anchor.
+ */
+const SAME_SLOT_MS = 60_000;
+
 /** Whether a take at `takenAt` counts for the named slot's band. */
 export function namedSlotCountsForTake(
   band: Pick<SlotBand, "at" | "earlyStart">,
@@ -68,6 +74,15 @@ export async function bindNamedTake(input: {
     attributionSource: "AUTO",
   };
   if (input.namedSlot === undefined) return byBand;
+  // The usual case: the band already put the take on the slot it names. No
+  // second read of the schedule (the bulk route runs this per entry).
+  if (
+    input.bandSlot !== null &&
+    Math.abs(input.bandSlot.getTime() - input.namedSlot.getTime()) <=
+      SAME_SLOT_MS
+  ) {
+    return byBand;
+  }
   const band = await resolveForcedSlotBandForWrite({
     userId: input.userId,
     medicationId: input.medicationId,
