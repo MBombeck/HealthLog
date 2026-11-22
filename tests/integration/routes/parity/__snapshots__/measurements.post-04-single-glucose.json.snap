@@ -75,6 +75,8 @@
             "deviceType": null,
             "syncVersion": "<syncVersion>",
             "deletedAt": null,
+            "appleHealthDeletedAt": null,
+            "statsComputedAt": null,
             "createdAt": "<createdAt>",
             "updatedAt": "<updatedAt>",
             "ingestTokenId": null,

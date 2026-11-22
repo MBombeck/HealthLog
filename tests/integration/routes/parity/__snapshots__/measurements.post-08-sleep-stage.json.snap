@@ -68,7 +68,9 @@
             "sleepStage": "DEEP",
             "externalId": "bridge-sleep-1",
             "deletedAt": null,
-            "aggregationProvenance": null
+            "appleHealthDeletedAt": null,
+            "aggregationProvenance": null,
+            "statsComputedAt": null
           }
         ],
         "manual"
