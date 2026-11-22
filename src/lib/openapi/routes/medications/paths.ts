@@ -1655,7 +1655,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Medications"],
       summary: "Log an intake event for a medication",
       description:
-        "Records a taken or skipped dose. Idempotent via the `Idempotency-Key` header AND the optional `idempotencyKey` body field (the route walks both paths); a re-post inside the 60 s server-side dedup window returns the original event. Non-skipped intakes auto-decrement pen inventory (best-effort), refresh the per-day compliance rollup, and — for `oneShot:true` medications — flip `active` to false.",
+        "Records a taken or skipped dose. Idempotent via the `Idempotency-Key` header AND the optional `idempotencyKey` body field (the route walks both paths). Without a key, a dose no slot answers that repeats a recorded one within a minute (a take of the same kind with its `takenAt` within 60 s, a skip anchored within 60 s) is answered with that row; the check reads what rows record, so a pending slot, a deleted row or a take at another time never counts. Non-skipped intakes auto-decrement pen inventory (best-effort), refresh the per-day compliance rollup, and — for `oneShot:true` medications — flip `active` to false.",
       requestParams: {
         path: z.object({ id: z.string() }),
       },
@@ -1667,7 +1667,8 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...idempotentWrite(),
         ...recordRefusal(),
         "201": {
-          description: "Intake event created.",
+          description:
+            "Intake event created. A dose no slot answers is stored on its own instant (`scheduledFor = takenAt`); when another live row of the medication holds that exact instant (an extra dose logged on the minute of a slot), it is stored on the next free millisecond, both fields moved together.",
           content: {
             "application/json": {
               schema: dataEnvelope(
@@ -1679,7 +1680,7 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "200": {
           description:
-            "Idempotent replay — the original event is returned without creating a new row. Also a repeat: a take that names no slot, for a slot already holding a take recorded within two hours, returns that row with `alreadyTaken: true` and writes nothing (one further away is a dose of its own and answers the nearest open slot, 201). A take or a skip that names a slot already holding a take answers the same way: the first take is never overwritten from here, and a deliberate change of a recorded take goes through the row (`POST /api/medications/intake`, `PUT /api/medications/{id}/intake/{eventId}`).",
+            "Idempotent replay — the original event is returned without creating a new row (a key replay with `alreadyTaken: false`, a keyless skip within a minute of a recorded skip the same way). A keyless take that no slot answers, within a minute of a recorded take of the same kind on its own instant (an extra dose of an extra dose, a plain take of a plain take), is a double tap: that row with `alreadyTaken: true`, nothing written. Also a repeat: a take that names no slot, for a slot already holding a take recorded within two hours, returns that row with `alreadyTaken: true` and writes nothing (one further away is a dose of its own and answers the nearest open slot, 201). A take or a skip that names a slot already holding a take answers the same way: the first take is never overwritten from here, and a deliberate change of a recorded take goes through the row (`POST /api/medications/intake`, `PUT /api/medications/{id}/intake/{eventId}`).",
           content: {
             "application/json": {
               schema: dataEnvelope(

@@ -6,6 +6,7 @@
  * cross-device intake sync).
  */
 import { prisma } from "@/lib/db";
+import { createAdHocIntake } from "@/lib/medications/ad-hoc-intake";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import type { Locale } from "@/lib/i18n/config";
 import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
@@ -199,18 +200,16 @@ export async function markMedicationTaken(
         alreadyTaken = applied.alreadyTaken === true;
       } else {
         // Ad-hoc / PRN — standalone row under the documented contract
-        // (`scheduledFor = takenAt`).
-        const created = await tx.medicationIntakeEvent.create({
-          data: {
-            userId,
-            medicationId: medication.id,
-            scheduledFor: takenAt,
-            takenAt,
-            skipped: false,
-            source: "REMINDER",
-            takenVia: "TELEGRAM",
-            idempotencyKey,
-          },
+        // (`scheduledFor = takenAt`), off any slot row on the same instant.
+        const created = await createAdHocIntake(tx, {
+          userId,
+          medicationId: medication.id,
+          scheduledFor: takenAt,
+          takenAt,
+          skipped: false,
+          source: "REMINDER",
+          takenVia: "TELEGRAM",
+          idempotencyKey,
         });
         slotScheduledFor = created.scheduledFor;
         eventId = created.id;
@@ -366,16 +365,14 @@ export async function markMedicationSkipped(input: {
         slotScheduledFor = applied.row.scheduledFor;
         eventId = applied.row.id;
       } else {
-        const created = await tx.medicationIntakeEvent.create({
-          data: {
-            userId: userId,
-            medicationId: medicationId,
-            scheduledFor: skipMoment,
-            takenAt: null,
-            skipped: true,
-            source: "REMINDER",
-            idempotencyKey,
-          },
+        const created = await createAdHocIntake(tx, {
+          userId: userId,
+          medicationId: medicationId,
+          scheduledFor: skipMoment,
+          takenAt: null,
+          skipped: true,
+          source: "REMINDER",
+          idempotencyKey,
         });
         slotScheduledFor = created.scheduledFor;
         eventId = created.id;

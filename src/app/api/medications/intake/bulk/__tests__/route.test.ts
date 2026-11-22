@@ -590,9 +590,12 @@ describe("POST /api/medications/intake/bulk — v1.15.19 resolver-null convergen
     // (resolver null); the convergence probe must honour the same
     // `mayConvergeOntoSuppliedSlot` guard rather than re-binding the take
     // forward onto the pre-minted REMINDER row. It records standalone instead.
-    vi.mocked(prisma.medicationIntakeEvent.create).mockResolvedValueOnce({
-      id: "row-standalone",
-    } as never);
+    vi.mocked(prisma.medicationIntakeEvent.create).mockImplementationOnce(
+      (async ({ data }: { data: object }) => ({
+        id: "row-standalone",
+        ...data,
+      })) as never,
+    );
 
     const res = await POST(
       postReq({
@@ -639,9 +642,12 @@ describe("POST /api/medications/intake/bulk — v1.15.19 resolver-null convergen
     vi.mocked(prisma.medicationIntakeEvent.findFirst).mockResolvedValueOnce(
       null as never,
     );
-    vi.mocked(prisma.medicationIntakeEvent.create).mockResolvedValueOnce({
-      id: "row-standalone",
-    } as never);
+    vi.mocked(prisma.medicationIntakeEvent.create).mockImplementationOnce(
+      (async ({ data }: { data: object }) => ({
+        id: "row-standalone",
+        ...data,
+      })) as never,
+    );
 
     const res = await POST(
       postReq({
@@ -950,9 +956,12 @@ describe("POST /api/medications/intake/bulk — v1.15.20 band attribution", () =
 
   it("files an out-of-band take as ad-hoc (scheduledFor = takenAt)", async () => {
     // 14:00 Berlin, no band, no pin → standalone row anchored on the take.
-    vi.mocked(prisma.medicationIntakeEvent.create).mockResolvedValueOnce({
-      id: "row-adhoc",
-    } as never);
+    vi.mocked(prisma.medicationIntakeEvent.create).mockImplementationOnce(
+      (async ({ data }: { data: object }) => ({
+        id: "row-adhoc",
+        ...data,
+      })) as never,
+    );
 
     const res = await POST(
       postReq({
@@ -1341,9 +1350,12 @@ describe("POST /api/medications/intake/bulk — v1.28 Apple Health dose events",
       [] as never,
     );
     // 14:00 Berlin — off-band, so the take records standalone (ad-hoc).
-    vi.mocked(prisma.medicationIntakeEvent.create).mockResolvedValueOnce({
-      id: "row-apple",
-    } as never);
+    vi.mocked(prisma.medicationIntakeEvent.create).mockImplementationOnce(
+      (async ({ data }: { data: object }) => ({
+        id: "row-apple",
+        ...data,
+      })) as never,
+    );
 
     const res = await POST(
       postReq({
@@ -1441,9 +1453,12 @@ describe("POST /api/medications/intake/bulk — v1.28 Apple Health dose events",
   it("keeps a source-less entry byte-identical to today: source API, no externalId column", async () => {
     // No entry carries an externalId, so the dedup pre-check must not
     // fire a findMany at all — the hot path pays zero extra reads.
-    vi.mocked(prisma.medicationIntakeEvent.create).mockResolvedValueOnce({
-      id: "row-adhoc",
-    } as never);
+    vi.mocked(prisma.medicationIntakeEvent.create).mockImplementationOnce(
+      (async ({ data }: { data: object }) => ({
+        id: "row-adhoc",
+        ...data,
+      })) as never,
+    );
 
     const res = await POST(
       postReq({
@@ -1460,10 +1475,14 @@ describe("POST /api/medications/intake/bulk — v1.28 Apple Health dose events",
       data: { inserted: number; entries: Array<{ status: string }> };
     };
     expect(body.data.inserted).toBe(1);
-    // The one read is the settled-version read after the batch, by row id.
+    // Two reads: the ad-hoc insert's free-instant probe, and the
+    // settled-version read after the batch, by row id. Neither is an
+    // externalId lookup.
     const reads = vi.mocked(prisma.medicationIntakeEvent.findMany).mock.calls;
-    expect(reads).toHaveLength(1);
-    expect(JSON.stringify(reads[0][0])).not.toContain("externalId");
+    expect(reads).toHaveLength(2);
+    for (const read of reads) {
+      expect(JSON.stringify(read[0])).not.toContain("externalId");
+    }
     const createArgs = vi.mocked(prisma.medicationIntakeEvent.create).mock
       .calls[0][0] as { data: Record<string, unknown> };
     expect(createArgs.data.source).toBe("API");
@@ -1494,9 +1513,11 @@ describe("POST /api/medications/intake/bulk — identity stability floor", () =>
     vi.mocked(prisma.medicationIntakeEvent.findUnique).mockResolvedValue(
       null as never,
     );
-    vi.mocked(prisma.medicationIntakeEvent.create).mockResolvedValue({
-      id: "evt-new",
-    } as never);
+    vi.mocked(prisma.medicationIntakeEvent.create).mockImplementation((async ({
+      data,
+    }: {
+      data: object;
+    }) => ({ id: "evt-new", ...data })) as never);
   });
 
   function entry(overrides: Record<string, unknown>) {

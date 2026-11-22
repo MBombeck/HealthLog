@@ -83,9 +83,9 @@ async function takeAt(clock: string) {
       method: "POST",
       route: "/api/medications/{id}/intake",
       params: { id: medication.id },
-      // A stable key keeps the route off its sixty-second duplicate check,
-      // which compares the database's own clock with the pinned test clock.
-      body: { ...cardIntakeBody(false, slot), idempotencyKey: `take-${clock}` },
+      // Exactly what the card sends: no key, so the route's repeat check runs
+      // as it does for the web.
+      body: cardIntakeBody(false, slot),
       auth,
     },
   );
@@ -137,7 +137,7 @@ describe("an extra dose the person asks for", () => {
         method: "POST",
         route: "/api/medications/{id}/intake",
         params: { id: medication.id },
-        body: { skipped: false, extraDose: true, idempotencyKey: "extra-1" },
+        body: { skipped: false, extraDose: true },
         auth,
       },
     );

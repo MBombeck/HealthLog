@@ -36,6 +36,7 @@ import type { MeasurementType } from "@/generated/prisma/enums";
 
 import { reconstructSleepNights } from "@/lib/analytics/sleep-night";
 import { caches, cached } from "@/lib/cache/server-cache";
+import { PROCESS_CACHE_MAX_TTL_MS } from "@/lib/cache/ttl-ceiling";
 import { readLocalDailyCells, type DayCell } from "@/lib/day/daily-stats";
 import type { TimelineBucket, TimelineSeries } from "@/lib/day/contract";
 import { prisma } from "@/lib/db";
@@ -56,9 +57,12 @@ export type SeriesPoint = TimelineSeries["points"][number];
 /**
  * How long the buckets before the fold window stay cached. They change only
  * when an old reading is imported or deleted, and either write marks the
- * entry stale at once.
+ * entry stale at once in its own process. An import or a restore in a split
+ * worker (`docs/self-hosting/scaling.md`) cannot reach the web's entry, so
+ * the lifetime is the cache's ceiling: the longest the web serves buckets
+ * from before such a write.
  */
-const PRE_FOLD_TTL_MS = 6 * 3_600_000;
+const PRE_FOLD_TTL_MS = PROCESS_CACHE_MAX_TTL_MS;
 
 /** Windows longer than this read the rollup tier rather than live days. */
 const LIVE_WINDOW_MAX_DAYS = 366;

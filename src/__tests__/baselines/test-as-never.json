@@ -1,7 +1,7 @@
 {
   "$comment": "as never casts in tests, per test file under src/. Maintained by src/__tests__/test-realism-ratchet.test.ts.",
   "count": 517,
-  "total": 5335,
+  "total": 5332,
   "entries": {
     "__tests__/api/auth/login/mfa-branch.test.ts": 10,
     "__tests__/api/auth/mfa/verify.test.ts": 9,
@@ -188,8 +188,8 @@
     "app/api/medications/[id]/compliance/__tests__/route.test.ts": 18,
     "app/api/medications/[id]/dose-history/__tests__/route.test.ts": 15,
     "app/api/medications/[id]/glp1/__tests__/route.test.ts": 47,
-    "app/api/medications/[id]/intake/__tests__/route.test.ts": 45,
-    "app/api/medications/[id]/intake/__tests__/source-provenance.test.ts": 12,
+    "app/api/medications/[id]/intake/__tests__/route.test.ts": 43,
+    "app/api/medications/[id]/intake/__tests__/source-provenance.test.ts": 11,
     "app/api/medications/[id]/intake/[eventId]/__tests__/route.test.ts": 63,
     "app/api/medications/[id]/intake/import/__tests__/route.test.ts": 9,
     "app/api/medications/[id]/schedule-revisions/__tests__/route.test.ts": 24,

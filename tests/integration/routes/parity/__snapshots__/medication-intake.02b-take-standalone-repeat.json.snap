@@ -23,15 +23,20 @@
       "syncVersion": "<syncVersion>",
       "deletedAt": null,
       "appleHealthDeletedAt": null,
-      "alreadyTaken": false
+      "alreadyTaken": true
     },
     "error": null
   },
   "events": [
     {
       "status": 200,
-      "action": null,
-      "meta": null,
+      "action": {
+        "name": "medication.intake.repeat_tap"
+      },
+      "meta": {
+        "medication_id": "<id:3>",
+        "event_id": "<id:1>"
+      },
       "warnings": null,
       "error": null
     }

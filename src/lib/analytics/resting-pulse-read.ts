@@ -34,6 +34,7 @@
  */
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { closedBlockKeyPart } from "@/lib/cache/closed-block";
+import { PROCESS_CACHE_MAX_TTL_MS } from "@/lib/cache/ttl-ceiling";
 import { caches, type ServerCache } from "@/lib/cache/server-cache";
 import { prisma } from "@/lib/db";
 import { isValidTimezone, userDayKey } from "@/lib/tz/format";
@@ -46,13 +47,16 @@ import {
 } from "./resting-pulse";
 
 /**
- * How long a closed block of proxy days lives when no write reaches it. Every
- * measurement write runs the write tail, which invalidates it, and nothing
- * else rewrites raw pulse inside 30 days (the dense retention fold starts at
- * 90), so the lifetime only bounds memory; the key moves on at local
- * midnight in any case.
+ * How long a closed block of proxy days lives when no write reaches it. A
+ * measurement write runs the write tail, which drops the block in its own
+ * process only: with a split web and worker (`docs/self-hosting/scaling.md`)
+ * a cloud sync, a file import or a restore in the worker leaves the web's
+ * block in place, so the lifetime is the longest the web can serve a proxy
+ * from before such a write. Fifteen minutes, the cache's ceiling, as for the
+ * other closed blocks (`canonical-window.ts`, `sleep-night-history.ts`); the
+ * key moves on at local midnight in any case.
  */
-const CLOSED_PROXY_TTL_MS = 6 * 60 * 60_000;
+const CLOSED_PROXY_TTL_MS = PROCESS_CACHE_MAX_TTL_MS;
 
 /**
  * The cache key of the closed proxy days `[blockFrom, blockTo)`. Exported so

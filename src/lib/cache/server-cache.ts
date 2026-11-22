@@ -25,16 +25,16 @@
  *     entry count). Read these via `stats()` for the wide-event
  *     annotations the route handlers attach to each request.
  *
- *   - The cache is process-local. A multi-instance Coolify deploy keeps
- *     each container's cache isolated; the TTL bounds the staleness
- *     window. The Redis migration path is sketched in the blueprint
- *     (`.planning/research/v1434-r-cache-aggregation.md` §7).
+ *   - The cache is process-local: another container's or the worker's
+ *     write cannot evict an entry here, so the TTL bounds the staleness
+ *     window, and no entry outlives `PROCESS_CACHE_MAX_TTL_MS`.
  *
  *   - `__resetForTests()` matches the snapshot pattern's escape hatch so
  *     vitest's afterEach can clear every instance between tests without
  *     reaching into the private `Map`.
  */
 
+import { assertBucketTtl, cappedTtl } from "@/lib/cache/ttl-ceiling";
 import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import { runDetached } from "@/lib/logging/detached";
 import type { WorkoutsProjection } from "@/lib/workouts/list-read";
@@ -110,7 +110,9 @@ export class ServerCache<T> {
   private stampedes = 0;
   private totalWeight = 0;
 
-  constructor(private readonly opts: ServerCacheOptions<T>) {}
+  constructor(private readonly opts: ServerCacheOptions<T>) {
+    assertBucketTtl(opts.ttlMs, opts.name);
+  }
 
   /**
    * Fence + detach the in-flight builder for one key (no-op when none).
@@ -203,27 +205,25 @@ export class ServerCache<T> {
    * instance — used by the dashboard-snapshot key, which must outlive
    * the 60 s analytics default so the client's 120 s refetch interval
    * lands on a warm entry, while still sharing the bucket's `${userId}|`
-   * prefix-sweep invalidation.
+   * prefix-sweep invalidation. Capped at the ceiling (`ttl-ceiling.ts`).
    */
   set(key: string, value: T, ttlMsOverride?: number): void {
     const weight = this.entryWeight(key, value);
     if (this.opts.maxWeight !== undefined && weight > this.opts.maxWeight) {
       return;
     }
-    // The key might already exist. Remove its old weight before replacing it,
-    // then reinsert at the most-recently-used end.
+    // Replace an existing key: drop its weight, reinsert at the MRU end.
     const existing = this.map.get(key);
     if (existing) {
       this.map.delete(key);
       this.totalWeight -= existing.weight;
     }
     const now = Date.now();
-    const expiresAt = now + (ttlMsOverride ?? this.opts.ttlMs);
+    const expiresAt = now + cappedTtl(ttlMsOverride ?? this.opts.ttlMs);
     this.map.set(key, {
       expiresAt,
-      // The stale window extends past the fresh TTL only when the
-      // bucket opted into SWR; otherwise `staleUntil === expiresAt`
-      // so `getAllowStale` behaves exactly like `get`.
+      // Past the fresh TTL only for an SWR bucket; otherwise equal to
+      // `expiresAt`, so `getAllowStale` behaves exactly like `get`.
       staleUntil: expiresAt + (this.opts.staleTtlMs ?? 0),
       value,
       weight,

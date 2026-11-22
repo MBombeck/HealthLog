@@ -5,6 +5,7 @@
  */
 import type { MedicationIntakeEvent } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
+import { createAdHocIntake } from "@/lib/medications/ad-hoc-intake";
 import type { InjectionSiteKey } from "@/lib/medications/injection-sites";
 import {
   applyCanonicalSlotWrite,
@@ -37,13 +38,33 @@ export type IntakeWriteResult =
   | { kind: "alreadyTaken"; row: MedicationIntakeEvent }
   | { kind: "written"; event: IntakeRow; consumedTransition: boolean };
 
+/** How close to a recorded dose a second one is the same tap: a minute. */
+const REPEAT_TAP_MS = 60_000;
+
+type ReplayedIntake =
+  | { kind: "existing"; row: MedicationIntakeEvent }
+  | { kind: "alreadyTaken"; row: MedicationIntakeEvent };
+
 /**
- * Idempotency check (explicit key or server-side dedup window). The row a
- * replay or a double-log answers with, or null when the dose is new.
+ * The dose a write repeats, when it is one: the row its idempotency key
+ * already wrote, or, for a dose without a key that no slot answers, the same
+ * dose recorded within a minute of it (a double tap, a retried request).
+ *
+ * The repeat is judged on what a row records, never on when the row was
+ * created: a live take of the same kind with its take time within a minute,
+ * or a live skip with its anchor within a minute. A row created a moment ago
+ * that records nothing (a pending slot the same request or the page load
+ * projected), a take undone a moment ago, and a take logged for two hours
+ * earlier are not this dose, and answering with one of them stored nothing
+ * behind a success. An extra dose repeats only an extra dose, a plain take
+ * only a plain take, and either only a row on its own instant (no slot).
+ *
+ * A key replay answers the row as it stands; a repeated take answers
+ * `alreadyTaken`, like a repeat the slot write or the new-take rule finds.
  */
 export async function findReplayedIntake(
   write: IntakeWrite,
-): Promise<MedicationIntakeEvent | null> {
+): Promise<ReplayedIntake | null> {
   const { userId, medicationId: id, idempotencyKey, skipped } = write;
   if (idempotencyKey) {
     const existing = await prisma.medicationIntakeEvent.findFirst({
@@ -53,27 +74,51 @@ export async function findReplayedIntake(
         medicationId: id,
       },
     });
-    if (existing) {
-      return existing;
-    }
-  } else if (!write.canonicalSlot) {
-    // Unscheduled / PRN only — the slot upsert handles dedup for
-    // scheduled doses by collapsing onto the canonical slot row.
-    // Server-side dedup: prevent double-logging within 60 seconds.
-    const recentDuplicate = await prisma.medicationIntakeEvent.findFirst({
+    return existing ? { kind: "existing", row: existing } : null;
+  }
+  // A scheduled dose converges onto its slot row, whose write answers its
+  // own repeats under the slot lock.
+  if (write.canonicalSlot) return null;
+  if (skipped) {
+    const at = write.incomingScheduledFor.getTime();
+    const skip = await prisma.medicationIntakeEvent.findFirst({
       where: {
         userId,
         medicationId: id,
-        skipped,
-        createdAt: { gte: new Date(Date.now() - 60_000) },
+        deletedAt: null,
+        skipped: true,
+        scheduledFor: {
+          gte: new Date(at - REPEAT_TAP_MS),
+          lte: new Date(at + REPEAT_TAP_MS),
+        },
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     });
-    if (recentDuplicate) {
-      return recentDuplicate;
-    }
+    return skip ? { kind: "existing", row: skip } : null;
   }
-  return null;
+  const takenAt = write.resolvedTakenAt;
+  if (takenAt === null) return null;
+  const extra = write.attributionSource === "USER_PIN";
+  const candidates = await prisma.medicationIntakeEvent.findMany({
+    where: {
+      userId,
+      medicationId: id,
+      deletedAt: null,
+      skipped: false,
+      takenAt: {
+        gte: new Date(takenAt.getTime() - REPEAT_TAP_MS),
+        lte: new Date(takenAt.getTime() + REPEAT_TAP_MS),
+      },
+    },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+  });
+  const repeat = candidates.find(
+    (row) =>
+      row.takenAt !== null &&
+      row.scheduledFor.getTime() === row.takenAt.getTime() &&
+      (row.attributionSource === "USER_PIN") === extra,
+  );
+  return repeat ? { kind: "alreadyTaken", row: repeat } : null;
 }
 
 /**
@@ -140,7 +185,8 @@ async function writeOntoSlot(
  * documented ad-hoc contract (`scheduledFor = takenAt`) — so an unresolvable
  * client anchor can never park a live row exactly on a slot instant a pending
  * REMINDER row is minted for later. A skip without a slot keeps the incoming
- * instant (it has no takenAt).
+ * instant (it has no takenAt). On the exact instant of a slot row it moves to
+ * the next free millisecond (`ad-hoc-intake.ts`).
  */
 async function insertStandalone(write: IntakeWrite): Promise<IntakeRow> {
   const {
@@ -151,45 +197,41 @@ async function insertStandalone(write: IntakeWrite): Promise<IntakeRow> {
     resolvedInjectionSite,
     resolvedDoseTaken,
   } = write;
-  const [event] = await prisma.$transaction([
-    prisma.medicationIntakeEvent.create({
-      data: {
-        userId,
-        medicationId: id,
-        scheduledFor: resolvedTakenAt ?? write.incomingScheduledFor,
-        takenAt: resolvedTakenAt,
-        skipped,
-        source: write.intakeSource,
-        ...(resolvedTakenAt !== null && {
-          takenVia: write.intakeSource === "WEB" ? "WEB" : "APP",
-        }),
-        idempotencyKey: write.idempotencyKey ?? null,
-        // An extra dose is a released pin: USER_PIN on its own instant, so no
-        // reader binds it to a band.
-        ...(write.attributionSource === "USER_PIN" && {
-          attributionSource: "USER_PIN",
-        }),
-        // Site only on a resolved taken-injection write.
-        ...(resolvedInjectionSite !== null && {
-          injectionSite: resolvedInjectionSite,
-        }),
-        // Dose override only on a taken write carrying one.
-        ...(resolvedDoseTaken !== null && {
-          doseTaken: resolvedDoseTaken,
-        }),
-      },
-    }),
+  return prisma.$transaction(async (tx) => {
+    const event = await createAdHocIntake(tx, {
+      userId,
+      medicationId: id,
+      scheduledFor: resolvedTakenAt ?? write.incomingScheduledFor,
+      takenAt: resolvedTakenAt,
+      skipped,
+      source: write.intakeSource,
+      ...(resolvedTakenAt !== null && {
+        takenVia: write.intakeSource === "WEB" ? "WEB" : "APP",
+      }),
+      idempotencyKey: write.idempotencyKey ?? null,
+      // An extra dose is a released pin: USER_PIN on its own instant, so no
+      // reader binds it to a band.
+      ...(write.attributionSource === "USER_PIN" && {
+        attributionSource: "USER_PIN",
+      }),
+      // Site only on a resolved taken-injection write.
+      ...(resolvedInjectionSite !== null && {
+        injectionSite: resolvedInjectionSite,
+      }),
+      // Dose override only on a taken write carrying one.
+      ...(resolvedDoseTaken !== null && {
+        doseTaken: resolvedDoseTaken,
+      }),
+    });
     // Reset snooze when medication is taken
-    ...(!skipped
-      ? [
-          prisma.medication.update({
-            where: { id },
-            data: { snoozedUntil: null },
-          }),
-        ]
-      : []),
-  ]);
-  return event;
+    if (!skipped) {
+      await tx.medication.update({
+        where: { id },
+        data: { snoozedUntil: null },
+      });
+    }
+    return event;
+  });
 }
 
 /** Write the dose; the caller already answered a replay. */
