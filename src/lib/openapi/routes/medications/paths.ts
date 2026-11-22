@@ -300,13 +300,21 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Medications"],
       summary: "Today's doses, or per-day compliance",
       description:
-        "Two reads behind one path, chosen by `scope`. `today` lists every dose slot for the current local day across all medications, ordered by slot. `compliance` returns per-day scheduled-versus-taken buckets over the trailing `days`. The `today` scope WRITES before it reads: it projects the pending intake rows for every active schedule whose window opens today and idempotently backfills the missing ones, because a daily schedule has no row to read until the reminder worker reaches the end of its dose window — so a plain read would return an empty morning. The `compliance` scope is cached per (record, days, timezone). Delegable at READ level over the `medications` section. Not module-gated. Cookie or Bearer auth.",
-      requestParams: { query: intakeAggregateQuerySchema },
+        "Two reads behind one path, chosen by `scope`. `today` lists every dose slot for the current local day across all medications, ordered by slot. `compliance` returns per-day scheduled-versus-taken buckets over the trailing `days`. The `today` scope WRITES before it reads: it projects the pending intake rows for every active schedule whose window opens today and idempotently backfills the missing ones, because a daily schedule has no row to read until the reminder worker reaches the end of its dose window — so a plain read would return an empty morning. The `compliance` scope is cached per (record, days, timezone). v1.49.0: the `today` scope answers with an `ETag`, a hash of the exact body, which changes on any change to the rows (an edit, a new row, a tombstoned row that leaves the list, a dose whose resolved state moved with the clock) and on nothing else; a request whose `If-None-Match` names it answers 304 with no body, so a client confirms its cached rows in one round trip. Delegable at READ level over the `medications` section. Not module-gated. Cookie or Bearer auth.",
+      requestParams: {
+        query: intakeAggregateQuerySchema,
+        header: z.object({
+          "if-none-match": z.string().optional().meta({
+            description:
+              "`scope=today` only: the `ETag` of the rows the client holds. A match answers 304.",
+          }),
+        }),
+      },
       responses: {
         ...recordRefusal(),
         "200": {
           description:
-            "`TodayIntakeEntry[]` for `scope=today`, `MedicationComplianceDayBucket[]` for `scope=compliance`. The array is the whole payload — there is no wrapper object inside `data`.",
+            "`TodayIntakeEntry[]` for `scope=today`, `MedicationComplianceDayBucket[]` for `scope=compliance`. The array is the whole payload — there is no wrapper object inside `data`. `scope=today` carries `ETag` and `Cache-Control: private, no-cache`.",
           content: {
             "application/json": {
               schema: dataEnvelope(
@@ -318,6 +326,17 @@ export const medicationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
               ),
             },
           },
+          headers: {
+            ETag: {
+              description:
+                "`scope=today` only: the strong content tag of the body, for `If-None-Match`.",
+              schema: { type: "string" as const },
+            },
+          },
+        },
+        "304": {
+          description:
+            "`scope=today` only: the rows are unchanged since the `If-None-Match` ETag. No body; the `ETag` is repeated.",
         },
         "422": {
           description:
