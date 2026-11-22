@@ -246,7 +246,7 @@
     "lib/cycle/backup.ts :: restoreCycleData": 224,
     "lib/cycle/day-log-write.ts :: writeDayLog": 311,
     "lib/daily/digest.ts :: buildDailyDigest": 239,
-    "lib/daily/load-digest.ts :: loadDailyDigest": 462,
+    "lib/daily/load-digest.ts :: loadDailyDigest": 438,
     "lib/dashboard/snapshot.ts :: buildDashboardSnapshot": 290,
     "lib/dashboard/snapshot.ts :: buildExtras": 236,
     "lib/day/records.ts :: medicationsPart": 280,
