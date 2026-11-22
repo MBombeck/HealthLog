@@ -14,7 +14,9 @@ import {
   formatDay,
   main,
   outOfScheduleLine,
+  readTags,
   releaseWindow,
+  tagCommand,
 } from "../release-policy.mjs";
 
 const at = (iso: string) => new Date(iso);
@@ -413,6 +415,10 @@ describe("release:next", () => {
       changelog: changelog({ Unreleased: ["Fixed"] }),
     }).join("\n");
     expect(lines).toContain("Today: release day for v1.49.1");
+    expect(lines).toContain(tagCommand("v1.49.1"));
+    expect(tagCommand("v1.49.1")).toContain(
+      'git tag -s -m "v1.49.1" v1.49.1 <sha>',
+    );
   });
 
   it("finds no patch to ship with nothing under Unreleased", () => {
@@ -452,6 +458,12 @@ describe("command line against a real repository", () => {
         encoding: "utf8",
         env: {
           ...process.env,
+          // Hermetic: the fixture repository must not inherit the machine's
+          // git config. A maintainer's `tag.gpgsign=true` turns every bare
+          // `git tag` into "no tag message?", and `commit.gpgsign` would
+          // sign (or fail to sign) every fixture commit.
+          GIT_CONFIG_GLOBAL: "/dev/null",
+          GIT_CONFIG_NOSYSTEM: "1",
           GIT_AUTHOR_NAME: "Fixture",
           GIT_AUTHOR_EMAIL: "fixture@example.invalid",
           GIT_COMMITTER_NAME: "Fixture",
@@ -579,6 +591,49 @@ describe("command line against a real repository", () => {
     );
     expect(result.code, result.err).toBe(0);
     expect(readFileSync(output, "utf8")).toBe("off_schedule=true\n");
+  });
+
+  it("dates an annotated tag by its tagger date and a lightweight one by its commit", () => {
+    const { cwd, run, commit } = repository();
+    commit("chore(release): v1.48.5", "2026-11-21T09:44:00+01:00");
+    run(["tag", "v1.48.5"]);
+    commit(
+      "chore(release): v1.49.0",
+      "2026-12-10T18:00:00+01:00",
+      changelog({ "1.49.0": ["Added"] }),
+    );
+    // The release tag is annotated (signed in real use, `-s`); the fixture
+    // has no key, so `-a` stands in. Its tagger date is two days after the
+    // commit, the way a tag made on Saturday points at Thursday's commit.
+    run(["tag", "-a", "-m", "v1.49.0", "v1.49.0"], "2026-12-12T10:00:00+01:00");
+    expect(
+      run(["cat-file", "-t", "v1.49.0"]).trim(),
+      "the fixture tag must be an annotated tag object",
+    ).toBe("tag");
+
+    const tags = Object.fromEntries(
+      readTags(cwd).map((t) => [t.name, t.date.toISOString()]),
+    );
+    expect(tags).toEqual({
+      "v1.48.5": "2026-11-21T08:44:00.000Z",
+      "v1.49.0": "2026-12-12T09:00:00.000Z",
+    });
+
+    const output = join(cwd, "github-output");
+    writeFileSync(output, "");
+    const result = capture(
+      [
+        "check",
+        "v1.49.0",
+        "--now",
+        "2026-12-12T10:05:00+01:00",
+        "--github-output",
+        output,
+      ],
+      cwd,
+    );
+    expect(result.code, result.err).toBe(0);
+    expect(readFileSync(output, "utf8")).toBe("off_schedule=false\n");
   });
 
   it("checks a pull request range", () => {
