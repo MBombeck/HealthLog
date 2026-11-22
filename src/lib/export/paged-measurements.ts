@@ -47,6 +47,7 @@ export async function* iterateMeasurementPages<
 
   let cursorId: string | null = null;
   for (;;) {
+    // dense-take: a page of a cursor walk that the generator continues until the window is exhausted.
     let page = (await db.measurement.findMany({
       where,
       orderBy: [{ measuredAt: "desc" }, { id: "desc" }],

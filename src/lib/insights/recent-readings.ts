@@ -45,6 +45,7 @@ export async function readRecentReadings(
   timeZone: string,
   now: Date = new Date(),
 ): Promise<RecentReading[]> {
+  // dense-take: the newest 365 only; when they span under 30 days the 30-day window is read by time below.
   const latest = await prisma.measurement.findMany({
     where: { userId, type, deletedAt: null },
     orderBy: { measuredAt: "desc" },

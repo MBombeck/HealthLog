@@ -337,6 +337,7 @@ export async function* iterateSourcePages<
       : baseWhere;
 
     // account-deletion: pages through the rows its caller scoped (`baseWhere`), one account at a time.
+    // dense-take: a page of a keyset walk that continues from the last row until a page comes back short.
     const page = (await prismaClient.measurement.findMany({
       where,
       select: scanSelect,

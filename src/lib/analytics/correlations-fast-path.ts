@@ -394,6 +394,7 @@ async function fetchSeriesChunked(
   const out: ChunkedRow[] = [];
   let cursorId: string | undefined;
   for (let page = 0; page < 1000; page++) {
+    // dense-take: a page of a cursor walk over sparse types (a cuff, a scale, one resting row a day) that reads to the end.
     const chunk = await prisma.measurement.findMany({
       where: { userId, type, measuredAt: { gte: since }, deletedAt: null },
       orderBy: [{ measuredAt: "asc" }, { id: "asc" }],

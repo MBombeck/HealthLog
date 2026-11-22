@@ -172,6 +172,7 @@ async function readMeasurementMirrorRows(
     // later stamp starts from its first row.
     const resume = wm && group.stampMs === wm.updatedAtMs ? wm.id : null;
     const byId = new Map(group.tokens.map((t) => [t.id, t]));
+    // dense-take: one page of the sync feed; the client resumes from the watermark for the next.
     const rows = await prisma.measurement.findMany({
       where: {
         ingestTokenId:
@@ -213,6 +214,7 @@ export async function readDomainRows(
 ): Promise<DomainRows> {
   const [measurements, mood, intakes, cycleDays, cycles, measurementMirror] =
     await Promise.all([
+      // dense-take: one page of the sync feed (limit + 1 to tell whether more follow).
       prisma.measurement.findMany({
         where: { userId, ...keysetFilter(cursor.measurements) },
         orderBy: [{ updatedAt: "asc" }, { id: "asc" }],

@@ -44,6 +44,7 @@ export async function retireOuraEquivalentDistance(
 ): Promise<number> {
   let retired = 0;
   for (;;) {
+    // dense-take: a batch of a loop that retires rows until none is left.
     const rows = await prisma.measurement.findMany({
       where: { userId, ...OURA_EQUIVALENT_DISTANCE_WHERE },
       select: { id: true, type: true, measuredAt: true },
