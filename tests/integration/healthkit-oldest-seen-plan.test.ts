@@ -6,7 +6,7 @@
  * server holds of a type (iOS #191), so the read answers it on every config
  * read. It rides the statement that already finds the newest reading of each
  * type: one `LIMIT 1` probe from each end of the live `(user_id, type,
- * measured_at)` index. A probe reads past the rows of other sources at its
+ * measured_at …)` index. A probe reads past the rows of other sources at its
  * end of the range, the same as the newest-reading probe always has, and
  * never another account's rows or the middle of a dense stream.
  */
@@ -104,7 +104,9 @@ describe("oldestSeenAt", () => {
     const ledger = await explainStatements(() =>
       getSourceFreshness(ACCOUNT, "APPLE_HEALTH"),
     );
-    const probe = ledger.plans.find((p) => p.text.includes('"last_seen"'));
+    const probe = ledger.plans.find((p) =>
+      p.text.startsWith('SELECT live."type"'),
+    );
     expect(probe, describeLedger(ledger)).toBeDefined();
     expect(probe!.seqScan, describeLedger(ledger)).toBe(false);
     // Per type one row from each end, plus the hand-entered weights the
@@ -113,8 +115,10 @@ describe("oldestSeenAt", () => {
     expect(probe!.rowVisits, describeLedger(ledger)).toBeLessThanOrEqual(
       2 * 2 + MANUAL_WEIGHTS + 2,
     );
-    expect(JSON.stringify(probe!.plan)).toContain(
-      "measurements_live_covering_idx",
+    // Either `(user_id, type, measured_at …)` index serves: the live one, or
+    // the natural-identity one, which skips to the source within a type.
+    expect(JSON.stringify(probe!.plan)).toMatch(
+      /measurements_live_covering_idx|measurements_user_id_type_measured_at_source_sleep_stage_key/,
     );
   });
 });

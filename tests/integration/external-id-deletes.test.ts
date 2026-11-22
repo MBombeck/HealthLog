@@ -469,7 +469,11 @@ describe("DELETE /api/cycle/day-logs/by-external-ids", () => {
     // The person writing the day again here brings it back.
     const own = await import("@/app/api/cycle/day-logs/route");
     const written = await own.POST(
-      post("/api/cycle/day-logs", { date: day.date, flow: "HEAVY" }),
+      post("/api/cycle/day-logs", {
+        date: day.date,
+        flow: "HEAVY",
+        loggedAt: day.loggedAt,
+      }),
     );
     expect(written.status).toBeLessThan(300);
     expect(

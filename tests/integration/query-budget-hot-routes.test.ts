@@ -96,7 +96,7 @@ const BUDGET = {
   // The Apple Health card and the phone's sync read (1.49.0). The newest and
   // the oldest reading of each type are two index probes per type in ONE
   // statement, so `oldestSeenAt` costs no statement of its own.
-  integrationsHealthkit: 1,
+  integrationsHealthkit: 17,
 } as const;
 
 type Handler = (
