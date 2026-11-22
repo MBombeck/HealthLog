@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2838,
-  "total": 8850,
+  "total": 8847,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -748,7 +748,7 @@
     "components/charts/health-chart-dynamic.tsx": 3,
     "components/charts/medication-compliance-chart.tsx": 21,
     "components/charts/mini-window.ts": 1,
-    "components/charts/mood-chart.tsx": 28,
+    "components/charts/mood-chart.tsx": 25,
     "components/charts/mood-heatmap.tsx": 5,
     "components/charts/nutrient-daily-bar-chart-dynamic.tsx": 1,
     "components/charts/nutrient-daily-bar-chart.tsx": 2,
