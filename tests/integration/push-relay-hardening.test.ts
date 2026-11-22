@@ -11,7 +11,9 @@
  * - M6: revoking a device, withdrawing consent and switching the relay off
  *   reach the relay even when it is down at that moment.
  * - M7: one APNs token in other letters is the same token for the ownership
- *   guard.
+ *   guard (a takeover by another account since v1.49.0, not a 409).
+ * - An account switch on one device unbinds the previous account at the relay
+ *   before the new binding, and a sign-out drops the binding.
  * - A changed APNs token unbinds the old one at the relay, and an account
  *   starts at most 10 new relay bindings a day.
  */
@@ -199,6 +201,67 @@ describe("H4: staged sender keys", () => {
     expect(row.previousSenderPublicKey).toBeNull();
   });
 
+  it("never seals with a key that was published as next for less than 7 days", async () => {
+    const { instanceId } = await enableRelay();
+    const token = "e2".repeat(32);
+    const { session } = await bindDevice(instanceId, token);
+    const prisma = getPrismaClient();
+    const { advanceSenderKeys, loadSenderKeyMaterial } =
+      await import("@/lib/push-relay/sender-keys");
+    const original = (await senderKeys(session))[0].publicKey;
+    const sealing = async () =>
+      (await loadSenderKeyMaterial())!.senderPrivateKey.toString("base64");
+    const before = await sealing();
+    await prisma.pushEnvelopeKeys.update({
+      where: { id: "singleton" },
+      data: { senderCreatedAt: new Date(Date.now() - 358 * DAY) },
+    });
+
+    // Two instances running the minute pass at once announce one key.
+    const steps = await Promise.all([advanceSenderKeys(), advanceSenderKeys()]);
+    expect(steps.filter((s) => s === "announced")).toHaveLength(1);
+    const announced = await senderKeys(session);
+    expect(announced.map((k) => k.status)).toEqual(["next", "current"]);
+    const next = announced[0].publicKey;
+
+    // A minute short of the notice: nothing moves, the old key still seals.
+    await prisma.pushEnvelopeKeys.update({
+      where: { id: "singleton" },
+      data: { nextAnnouncedAt: new Date(Date.now() - 7 * DAY + 60_000) },
+    });
+    expect(await advanceSenderKeys()).toBeNull();
+    expect(await sealing()).toBe(before);
+    expect((await senderKeys(session))[0]).toEqual({
+      publicKey: next,
+      status: "next",
+    });
+
+    // The notice served: promoted once, even when two passes race.
+    await prisma.pushEnvelopeKeys.update({
+      where: { id: "singleton" },
+      data: { nextAnnouncedAt: new Date(Date.now() - 7 * DAY) },
+    });
+    const promoted = await Promise.all([
+      advanceSenderKeys(),
+      advanceSenderKeys(),
+    ]);
+    expect(promoted.filter((s) => s === "promoted")).toHaveLength(1);
+    expect(await sealing()).not.toBe(before);
+    expect(await senderKeys(session)).toEqual([
+      { publicKey: next, status: "current" },
+      { publicKey: original, status: "previous" },
+    ]);
+
+    // A current key due again while `previous` is still published waits, so
+    // at most three keys are ever out.
+    await prisma.pushEnvelopeKeys.update({
+      where: { id: "singleton" },
+      data: { senderCreatedAt: new Date(Date.now() - 400 * DAY) },
+    });
+    expect(await advanceSenderKeys()).toBeNull();
+    expect((await senderKeys(session)).length).toBe(2);
+  });
+
   it("keeps the emergency rotation behind a fresh second factor", async () => {
     const { adminSession } = await enableRelay();
     const { POST } =
@@ -289,31 +352,112 @@ describe("M6: unbinds reach the relay through an outage", () => {
 });
 
 describe("M7: token ownership ignores letter case", () => {
-  it("refuses another account the same token in other letters", async () => {
+  it("takes over the same token in other letters for another account, leaving one row", async () => {
     const { POST } = await import("@/app/api/devices/route");
-    const token = "AbCdEf01".repeat(8);
+    const token = "c7".repeat(32);
     const base = {
       bundleId: "dev.healthlog.app",
       apnsEnvironment: "production",
     };
+    const firstOwner = await makeUser();
     const first = await callRoute(POST, {
       method: "POST",
       route: "/api/devices",
-      auth: await makeSession(await makeUser()),
-      body: { ...base, token: "device-upper", apnsToken: token.toUpperCase() },
+      auth: await makeSession(firstOwner),
+      body: { ...base, token: "case-install-a", apnsToken: token.toUpperCase() },
     });
     expect(first.status).toBe(201);
     const stored = await getPrismaClient().device.findFirstOrThrow({
-      where: { token: "device-upper" },
+      where: { token: "case-install-a" },
     });
     expect(stored.apnsToken).toBe(token.toLowerCase());
+    const secondOwner = await makeUser();
     const second = await callRoute(POST, {
       method: "POST",
       route: "/api/devices",
-      auth: await makeSession(await makeUser()),
-      body: { ...base, token: "device-lower", apnsToken: token.toLowerCase() },
+      auth: await makeSession(secondOwner),
+      body: { ...base, token: "case-install-b", apnsToken: token.toLowerCase() },
     });
-    expect(second.status).toBe(409);
+    expect(second.status).toBe(201);
+    const rows = await getPrismaClient().device.findMany({
+      where: { apnsToken: token.toLowerCase() },
+      select: { userId: true },
+    });
+    expect(rows).toEqual([{ userId: secondOwner.id }]);
+  });
+});
+
+describe("an account switch on one device (iOS #190)", () => {
+  it("unbinds the previous account at the relay before the new binding goes out", async () => {
+    const { instanceId } = await enableRelay();
+    const token = "d9".repeat(32);
+    const previous = await bindDevice(instanceId, token);
+    expect(fake.bindings.has(token)).toBe(true);
+    fake.calls.length = 0;
+
+    const next = await makeSession(await makeUser());
+    const fresh = deviceBody(instanceId, token);
+    const res = await registerDevice(next, fresh.body);
+    expect(res.status).toBe(201);
+    expect(res.data.push.relayState).toBe("bound");
+
+    // The previous account's binding went first, then the new one was bound.
+    const unbind = fake.calls.indexOf("DELETE /v1/bindings");
+    const bind = fake.calls.indexOf("POST /v1/bindings");
+    expect(unbind).toBeGreaterThanOrEqual(0);
+    expect(bind).toBeGreaterThan(unbind);
+    const prisma = getPrismaClient();
+    expect(await prisma.device.count({ where: { id: previous.deviceId } })).toBe(
+      0,
+    );
+    expect(await prisma.pushRelayUnbind.count()).toBe(0);
+    const row = await prisma.device.findUniqueOrThrow({
+      where: { id: res.data.id },
+    });
+    // The new account's own push key, not the previous one's.
+    expect(row.userId).toBe(next.userId);
+    expect(row.pushKeyPublic).toBe(
+      fresh.pushKey.publicKey.toString("base64url"),
+    );
+    expect(row.pushKeyPublic).not.toBe(
+      previous.pushKey.publicKey.toString("base64url"),
+    );
+  });
+
+  it("drops the device's binding and push key when its account signs out", async () => {
+    const { instanceId } = await enableRelay();
+    const token = "da".repeat(32);
+    const { session, deviceId } = await bindDevice(instanceId, token);
+    const prisma = getPrismaClient();
+    const device = await prisma.device.findUniqueOrThrow({
+      where: { id: deviceId },
+    });
+    const { makeToken } = await import("../kit/factories");
+    const { hashToken } = await import("@/lib/auth/hmac");
+    const access = await makeToken({ id: session.userId });
+    await prisma.refreshToken.create({
+      data: {
+        userId: session.userId,
+        tokenHash: hashToken(`hlr_${token}`),
+        accessTokenHash: hashToken(access.token),
+        deviceId: device.token,
+        expiresAt: new Date(Date.now() + 30 * DAY),
+      },
+    });
+    const { POST } = await import("@/app/api/auth/logout/route");
+    const res = await callRoute(POST, {
+      method: "POST",
+      route: "/api/auth/logout",
+      auth: access,
+    });
+    expect(res.status).toBe(200);
+    expect(fake.bindings.has(token)).toBe(false);
+    expect(
+      await prisma.device.findUniqueOrThrow({
+        where: { id: deviceId },
+        select: { apnsToken: true, pushKeyPublic: true, relayState: true },
+      }),
+    ).toEqual({ apnsToken: null, pushKeyPublic: null, relayState: "none" });
   });
 });
 

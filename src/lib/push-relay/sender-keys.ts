@@ -9,12 +9,18 @@
  * 1. Announce: a year after the current key was made (less the 7 days), a new
  *    pair is published as `next` and seals nothing.
  * 2. Overlap: after at least 7 days as `next` it becomes `current` and seals
- *    every push; the old current becomes `previous`.
+ *    every push; the old current becomes `previous`. Sealing only ever reads
+ *    `current`, and the promotion is the only regular writer of it, so no
+ *    push is sealed with a key that was not published as `next` for 7 days
+ *    (`nextKeyNoticeServed`).
  * 3. Retire: 30 days later `previous` is deleted.
  *
- * At most three keys are published (`next`, `current`, `previous`). An
- * emergency rotation (`rotateSenderKey({ emergency: true })`, an audited
- * operator action) skips the announcement and drops `previous` at once.
+ * At most three keys are published (`next`, `current`, `previous`): a `next`
+ * is announced only once `previous` has retired. The only exceptions to the
+ * notice are the first key of a server (nothing was pinned before it) and
+ * the emergency rotation (`rotateSenderKey`, an audited operator action for a
+ * key known to be exposed), which skips the announcement and drops
+ * `previous` at once.
  *
  * The same row holds the secret the per-device collapse ids are derived from
  * (`collapseIdFor`): the HMAC over the device token makes the id differ per
@@ -112,15 +118,37 @@ export function publishedSenderKeys(
   return keys;
 }
 
-/** Whether the next key is due to be announced (a year less the overlap). */
+/**
+ * Whether the next key is due to be announced (a year less the overlap). Not
+ * while a `previous` is still published: at most three keys at a time.
+ */
 export function senderKeyDue(
-  row: { senderCreatedAt: Date; nextSenderPublicKey?: string | null },
+  row: {
+    senderCreatedAt: Date;
+    nextSenderPublicKey?: string | null;
+    previousSenderPublicKey?: string | null;
+  },
   now: Date = new Date(),
 ): boolean {
   return (
     !row.nextSenderPublicKey &&
+    !row.previousSenderPublicKey &&
     now.getTime() - row.senderCreatedAt.getTime() >=
       (SENDER_KEY_ROTATION_DAYS - NEXT_SENDER_KEY_DAYS) * DAY_MS
+  );
+}
+
+/**
+ * Whether an announced key may seal: published as `next` for the full
+ * notice. The one rule the promotion below is written against.
+ */
+export function nextKeyNoticeServed(
+  nextAnnouncedAt: Date | null,
+  now: Date = new Date(),
+): boolean {
+  return (
+    nextAnnouncedAt !== null &&
+    now.getTime() - nextAnnouncedAt.getTime() >= NEXT_SENDER_KEY_DAYS * DAY_MS
   );
 }
 
@@ -130,6 +158,12 @@ export type SenderKeyStep = "announced" | "promoted" | "retired" | null;
  * Move the staged rollout one step: retire a `previous` past its 30 days,
  * promote a `next` announced at least 7 days ago, or announce a `next` when
  * the current key is due. Returns what happened, at most one step per call.
+ *
+ * Every step is a compare-and-set on the row it read: two instances running
+ * the minute pass at once take the step once. Without it, two announcements
+ * racing each other replaced the `next` a device had already pinned with one
+ * it never saw, and that key then sealed after its own notice only, which a
+ * device that fetched in between never had.
  */
 export async function advanceSenderKeys(
   now: Date = new Date(),
@@ -144,21 +178,29 @@ export async function advanceSenderKeys(
     now.getTime() - row.previousRetiredAt.getTime() >=
       PREVIOUS_SENDER_KEY_DAYS * DAY_MS
   ) {
-    await prisma.pushEnvelopeKeys.update({
-      where: { id: "singleton" },
+    const { count } = await prisma.pushEnvelopeKeys.updateMany({
+      where: {
+        id: "singleton",
+        previousSenderPublicKey: row.previousSenderPublicKey,
+      },
       data: { previousSenderPublicKey: null, previousRetiredAt: null },
     });
-    return "retired";
+    return count === 1 ? "retired" : null;
   }
   if (
     row.nextSenderKeyEncrypted &&
     row.nextSenderPublicKey &&
-    row.nextAnnouncedAt &&
-    now.getTime() - row.nextAnnouncedAt.getTime() >=
-      NEXT_SENDER_KEY_DAYS * DAY_MS
+    nextKeyNoticeServed(row.nextAnnouncedAt, now)
   ) {
-    await prisma.pushEnvelopeKeys.update({
-      where: { id: "singleton" },
+    const { count } = await prisma.pushEnvelopeKeys.updateMany({
+      where: {
+        id: "singleton",
+        senderPublicKey: row.senderPublicKey,
+        nextSenderPublicKey: row.nextSenderPublicKey,
+        nextAnnouncedAt: {
+          lte: new Date(now.getTime() - NEXT_SENDER_KEY_DAYS * DAY_MS),
+        },
+      },
       data: {
         senderKeyEncrypted: row.nextSenderKeyEncrypted,
         senderPublicKey: row.nextSenderPublicKey,
@@ -170,19 +212,24 @@ export async function advanceSenderKeys(
         nextAnnouncedAt: null,
       },
     });
-    return "promoted";
+    return count === 1 ? "promoted" : null;
   }
   if (senderKeyDue(row, now)) {
     const pair = generateX25519();
-    await prisma.pushEnvelopeKeys.update({
-      where: { id: "singleton" },
+    const { count } = await prisma.pushEnvelopeKeys.updateMany({
+      where: {
+        id: "singleton",
+        senderPublicKey: row.senderPublicKey,
+        nextSenderPublicKey: null,
+        previousSenderPublicKey: null,
+      },
       data: {
         nextSenderKeyEncrypted: encrypt(toBase64Url(pair.privateKey)),
         nextSenderPublicKey: toBase64Url(pair.publicKey),
         nextAnnouncedAt: now,
       },
     });
-    return "announced";
+    return count === 1 ? "announced" : null;
   }
   return null;
 }

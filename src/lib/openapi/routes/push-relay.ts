@@ -28,7 +28,11 @@ const senderKey = z
     publicKey: z
       .string()
       .describe("X25519 sender public key, 32 bytes, unpadded base64url."),
-    status: z.enum(["next", "current", "previous"]),
+    status: z
+      .enum(["next", "current", "previous"])
+      .describe(
+        "`current` seals every envelope now. `next` is the incoming key: published at least 7 days before it seals anything, then it becomes `current` and the old `current` becomes `previous`. `previous` sealed until its retirement and stays published for 30 days after it. Pin every listed key and try each when opening.",
+      ),
   })
   .meta({ id: "PushSenderKey" });
 
@@ -72,7 +76,7 @@ export const relayCapabilityBlock = z
     senderKeys: z
       .array(senderKey)
       .describe(
-        "The keys to pin for this account, at most three: `next` (announced at least 7 days before it seals anything), `current`, and `previous` for 30 days after it retired. Pin all of them and try each. Present whenever this server seals envelopes, over the relay or over its own APNs key.",
+        "The keys to pin for this account, at most three: `next` (announced at least 7 days before it seals anything), `current`, and `previous` for 30 days after it retired. Pin all of them and try each. The server enforces the notice: sealing switches only to a key that was published as `next` for 7 days, and a new `next` is announced only after `previous` retired. The one exception is the operator's emergency rotation of an exposed key, which replaces `current` at once and drops `next` and `previous`. Present whenever this server seals envelopes, over the relay or over its own APNs key.",
       ),
     envelopeVersions: z
       .array(z.number().int())
@@ -126,7 +130,9 @@ export const devicePushBlockSchema = z
       .describe(
         "`degraded` when the relay is not healthy, the last dose confirmation to this device was dropped, or a push the relay accepted was never opened.",
       ),
-    senderKeys: z.array(senderKey),
+    senderKeys: z
+      .array(senderKey)
+      .describe("The same keys as `push.relay.senderKeys`."),
     relayInstanceId: z.string().nullable(),
     liveActivityConsent: z
       .boolean()
