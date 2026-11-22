@@ -516,6 +516,8 @@ const APP_SETTINGS_OVERRIDES: Readonly<Record<string, unknown>> = {
   "AppSettings.moduleAvailabilityJson": { mood: "off" },
   "AppSettings.adminAiInsightsFeedbackSummary": { helpful: 3 },
   "AppSettings.aiReasoningMaxEffort": "low",
+  // CHECK in migration 0556.
+  "AppSettings.pushRelayDecision": "off",
 };
 
 /** The whole account, and the host around it. */

@@ -9601,11 +9601,12 @@
         "invalidUrl": "PUSH_RELAY_URL is not an https address, so the relay cannot be used.",
         "keysUnpinned": "No relay keys are pinned for this relay, so its answers cannot be checked. Set PUSH_RELAY_KEYS."
       },
-      "notice": {
-        "title": "New: notifications through the HealthLog push relay",
-        "body": "The HealthLog app from the App Store can now receive notifications from this server through the relay run by the HealthLog project. The content is encrypted here for each device and the relay cannot read it; it sees when this server sends a device something. The option stays off until you turn it on, and then each person decides in their own app.",
-        "open": "Open settings",
-        "dismiss": "Got it"
+      "question": {
+        "title": "Send push notifications through the HealthLog relay?",
+        "body": "The HealthLog app from the App Store gets notifications from a server without its own Apple push key through the relay run by the HealthLog project. The content is encrypted here for each device and the relay cannot read it; it sees when this server sends a device something. Your answer holds for the whole server, and each person still decides in their own app.",
+        "yes": "Yes",
+        "no": "No",
+        "declined": "The relay stays off. You can turn it on later under Push and channels."
       },
       "test": {
         "button": "Send test push",

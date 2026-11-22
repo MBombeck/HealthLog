@@ -63,6 +63,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     ],
     admin: [
       "admin.pushRelay.confirmationsRequired",
+      "admin.pushRelay.decisionNotOpen",
       "admin.pushRelay.noSenderKey",
       "admin.pushRelay.notRegistered",
       "admin.pushRelay.rateLimited",

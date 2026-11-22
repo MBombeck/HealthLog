@@ -9,6 +9,7 @@ import { AssistantSection } from "@/components/admin/assistant-section";
 import { CentralCodexSection } from "@/components/admin/central-codex-section";
 import { GeneralSettingsSection } from "@/components/admin/general-settings-section";
 import { GlitchtipSection } from "@/components/admin/glitchtip-section";
+import { PushRelayQuestion } from "@/components/admin/push-relay-question";
 import { PushRelaySection } from "@/components/admin/push-relay-section";
 import { RecoveryKitCard } from "@/components/admin/recovery-kit-card";
 import { ServicesSection } from "@/components/admin/services-section";
@@ -16,10 +17,6 @@ import { SetupHealthCard } from "@/components/admin/setup-health-card";
 import { GeoLookupStatusItem } from "@/components/admin/system-status-section";
 import { UmamiSection } from "@/components/admin/umami-section";
 import { StatusItem, useSystemStatus } from "@/components/admin/_shared";
-import {
-  useDismissPushRelayNotice,
-  usePushRelayStatus,
-} from "@/components/admin/use-push-relay";
 import {
   useServerSetup,
   useServerSetupStep,
@@ -190,6 +187,7 @@ function StepBody({
         <>
           {facts ? <FactsCard step="notifications" facts={facts} /> : null}
           <ServicesSection />
+          <PushRelayQuestion />
           <PushRelaySection />
         </>
       );
@@ -250,26 +248,21 @@ function StepBody({
  * record the step (`PATCH /api/admin/server-setup`). Nothing is forced: every
  * step is skippable, and every card stays where it always was under Admin.
  *
- * Passing the notifications step acknowledges the push relay's one-time admin
- * notice, under the same id the start-page notice uses: the admin has now
- * seen the relay and its terms, and the notice would only repeat it.
+ * Passing the notifications step decides nothing about the push relay: only
+ * an answer to the relay question (or the switch) does, so a skipped step
+ * leaves the question open.
  */
 export function ServerSetupStep({ step }: { step: ServerSetupStepId }) {
   const { t } = useTranslations();
   const router = useRouter();
   const setup = useServerSetup();
   const write = useServerSetupStep();
-  const relay = usePushRelayStatus({ enabled: step === "notifications" });
-  const dismissRelayNotice = useDismissPushRelayNotice();
   const back = previousServerSetupStep(step);
   const next = nextServerSetupStep(step);
 
   async function persist(status: "done" | "skipped") {
     try {
       await write.mutateAsync({ step, status });
-      if (step === "notifications" && relay.data?.noticePending) {
-        await dismissRelayNotice.mutateAsync();
-      }
       router.push(next ? serverSetupHref(next) : "/");
     } catch (err) {
       showErrorToast(localizedApiError(err, t, "onboarding.errorGeneric"), {

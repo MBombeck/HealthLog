@@ -42,12 +42,12 @@ import {
   deleteEnvelopeKeys,
   ensureEnvelopeKeys,
 } from "@/lib/push-relay/sender-keys";
+import { recordRelayDecision } from "@/lib/push-relay/operator-decision";
 
 export type RegistrationRow = NonNullable<
   Awaited<ReturnType<typeof prisma.pushRelayRegistration.findUnique>>
 >;
 
-/** The registration for the configured relay host, if the relay is on. */
 /**
  * The registration for the configured relay host, if the relay is on. A
  * registration the operator switched off that the relay has not confirmed
@@ -344,6 +344,9 @@ export async function ensureInstanceRegistered(
       lastSuccessAt: new Date(),
       pausedUntil: null,
     });
+    // The operator's yes holds from the first registration that took, also
+    // when the minute pass finishes one the switch left pending.
+    await recordRelayDecision("on");
     return true;
   }
   if (result.kind === "transport") {
@@ -410,7 +413,13 @@ export async function enableRelay(input: {
   } else {
     await ensureInstanceRegistered(row, config, { invite: input.invite });
   }
-  return (await loadRegistration(config)) ?? row;
+  const after = (await loadRegistration(config)) ?? row;
+  // Switched on again before the relay confirmed a switch-off: the instance
+  // it kept is registered, so the answer is yes again.
+  if (after.instanceId && after.state !== "deleting") {
+    await recordRelayDecision("on");
+  }
+  return after;
 }
 
 /**
@@ -425,6 +434,8 @@ export async function enableRelay(input: {
 export async function disableRelay(
   config: RelayConfig = relayConfig(),
 ): Promise<{ unregistered: boolean }> {
+  // Switching the relay off is the operator's no: nobody is asked again.
+  await recordRelayDecision("off");
   const row = await loadRegistration(config, { includeDeleting: true });
   await prisma.device.updateMany({
     where: { relayState: { not: "none" } },

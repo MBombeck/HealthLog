@@ -38,7 +38,8 @@ export interface AdminPushRelayStatus {
   termsUrl: string | null;
   privacyUrl: string | null;
   docsUrl: string;
-  noticePending: boolean;
+  /** The operator's one answer to the relay question (`operator-decision.ts`). */
+  operatorDecision: "undecided" | "on" | "off";
 }
 
 /**
@@ -59,28 +60,43 @@ export function usePushRelayStatus({
   });
 }
 
-export function useSetPushRelay() {
+/** The body the switch and the relay question's answer both take. */
+export interface PushRelaySwitchBody {
+  enabled: boolean;
+  acceptTerms?: boolean;
+  householdOnly?: boolean;
+  invite?: string;
+}
+
+/**
+ * The status both mutations answer with, adopted; `/api/auth/me` carries the
+ * decision too (`push.relay.operatorDecision`), so it is read again.
+ */
+function useAdoptRelayStatus() {
   const queryClient = useQueryClient();
+  return (data: AdminPushRelayStatus) => {
+    queryClient.setQueryData(queryKeys.adminPushRelay(), data);
+    void queryClient.invalidateQueries({ queryKey: queryKeys.authMe() });
+  };
+}
+
+export function useSetPushRelay() {
+  const adopt = useAdoptRelayStatus();
   return useMutation({
     mutationKey: queryKeys.adminPushRelay(),
-    mutationFn: (body: {
-      enabled: boolean;
-      acceptTerms?: boolean;
-      householdOnly?: boolean;
-      invite?: string;
-    }) => apiPut<AdminPushRelayStatus>("/api/admin/push-relay", body),
-    onSuccess: (data) => {
-      queryClient.setQueryData(queryKeys.adminPushRelay(), data);
-    },
+    mutationFn: (body: PushRelaySwitchBody) =>
+      apiPut<AdminPushRelayStatus>("/api/admin/push-relay", body),
+    onSuccess: adopt,
   });
 }
 
-export function useDismissPushRelayNotice() {
-  const queryClient = useQueryClient();
+/** `POST /api/admin/push-relay/decision`: the answer to the relay question. */
+export function useAnswerPushRelayQuestion() {
+  const adopt = useAdoptRelayStatus();
   return useMutation({
-    mutationFn: () => apiPost("/api/admin/push-relay/notice"),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: queryKeys.adminPushRelay() }),
+    mutationFn: (body: PushRelaySwitchBody) =>
+      apiPost<AdminPushRelayStatus>("/api/admin/push-relay/decision", body),
+    onSuccess: adopt,
   });
 }
 

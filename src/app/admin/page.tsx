@@ -9,7 +9,7 @@ import { SystemStatusSummary } from "@/components/admin/system-status-summary";
 import { VersionTileSection } from "@/components/admin/version-tile-section";
 import { RecentAuditPreview } from "@/components/admin/recent-audit-preview";
 import { useAdminSettings } from "@/components/admin/_shared";
-import { PushRelayNotice } from "@/components/admin/push-relay-notice";
+import { PushRelayQuestion } from "@/components/admin/push-relay-question";
 import { ServerSetupNotice } from "@/components/admin/server-setup-notice";
 
 /**
@@ -51,8 +51,8 @@ export default function AdminOverviewPage() {
         {/* Once per admin: the server setup is not finished (1.49). */}
         <ServerSetupNotice />
 
-        {/* Once per admin: the push relay option exists. */}
-        <PushRelayNotice />
+        {/* Once for the server, until an admin answers: the relay question. */}
+        <PushRelayQuestion />
 
         <VersionTileSection />
 

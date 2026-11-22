@@ -3230,7 +3230,8 @@
       "serverSetupCompletedAt": "2026-06-30T12:34:56.789Z",
       "serverSetupStepsJson": {
         "roundTrip": "rt-AppSettings-serverSetupStepsJson"
-      }
+      },
+      "pushRelayDecision": "off"
     }
   },
   "reexport": {
@@ -3288,7 +3289,8 @@
       "serverSetupCompletedAt": "2026-06-30T12:34:56.789Z",
       "serverSetupStepsJson": {
         "roundTrip": "rt-AppSettings-serverSetupStepsJson"
-      }
+      },
+      "pushRelayDecision": "off"
     },
     "accountSettings": {
       "heightCm": 2.5,

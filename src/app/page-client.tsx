@@ -7,6 +7,7 @@ import { useDashboardChartReveal } from "@/components/dashboard/chart-reveal";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { EnvironmentChip } from "@/components/dashboard/environment-chip";
 import { RecoveryKitBanner } from "@/components/dashboard/recovery-kit-banner";
+import { PushRelayQuestion } from "@/components/admin/push-relay-question";
 import {
   QuickEntrySheets,
   type QuickEntryDialog,
@@ -117,6 +118,9 @@ export default function DashboardPageClient({
       <PullToRefreshIndicator {...pull} />
       <DashboardHeader onQuickEntry={setQuickEntryDialog} />
       <RecoveryKitBanner isAdmin={user?.role === "ADMIN"} />
+      {/* Where an admin lands after signing in: the relay question, once for
+          the server, until an admin answers it. Nothing for anyone else. */}
+      <PushRelayQuestion />
 
       {/* Records other people share with you are reached from the account
           switcher in the top bar and the sidebar, not from a card here. The

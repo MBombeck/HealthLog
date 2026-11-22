@@ -141,6 +141,12 @@ export const APP_SETTINGS_COLUMNS = {
   // its own state.
   serverSetupCompletedAt: { class: "SETTING", codec: "date" },
   serverSetupStepsJson: { class: "SETTING", codec: "json" },
+  // The operator's answer to the relay question, carried so a restored host
+  // does not ask an admin who said no again. A carried `on` without the
+  // registration (which never travels: its key is this host's) reads as
+  // undecided there, so the admin is asked to register the new host
+  // (`operator-decision.ts`). A file from before 1.49 carries none.
+  pushRelayDecision: { class: "SETTING", codec: "plain" },
 } as const satisfies {
   [K in keyof AppSettings]-?: AppSettingsColumnVerdict<AppSettings[K]>;
 };

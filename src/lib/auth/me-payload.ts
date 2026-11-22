@@ -56,7 +56,7 @@ import type { MedicineRegistryChoice } from "@/lib/medications/leaflet-registrie
  */
 function pushAndZone(user: AuthContext["user"], request: Request | undefined) {
   const read = Promise.all([
-    accountPushState(user.id, request),
+    accountPushState(user.id, request, { isAdmin: user.role === "ADMIN" }),
     resolveStoredTimezone(user.timezone),
     // Settled once on the first read (#1430), then the stored choice.
     settleMedicineRegistry(user),

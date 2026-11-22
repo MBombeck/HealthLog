@@ -1,8 +1,9 @@
 /**
- * What the admin card and the one-time admin notice read
+ * What the admin card and the relay question read
  * (`GET /api/admin/push-relay`).
  */
 import { prisma } from "@/lib/db";
+import { loadApnsConfig } from "@/lib/notifications/senders/apns";
 import {
   relayConfig,
   relayDocumentUrls,
@@ -10,9 +11,11 @@ import {
 } from "@/lib/push-relay/config";
 import { relayHealth } from "@/lib/push-relay/capability";
 import { loadRegistration } from "@/lib/push-relay/registration";
+import {
+  loadStoredRelayDecision,
+  operatorDecisionOf,
+} from "@/lib/push-relay/operator-decision";
 
-/** The id of the one-time notice that the relay option exists. */
-export const RELAY_NOTICE_ID = "push_relay_available";
 export const RELAY_DOCS_URL = "https://docs.healthlog.dev/guides/push-relay/";
 
 /** How far back the usage counts reach. */
@@ -60,15 +63,12 @@ async function relayUsage(now: Date) {
   };
 }
 
-export async function adminRelayStatus(userId: string, now = new Date()) {
+export async function adminRelayStatus(now = new Date()) {
   const config = relayConfig();
-  const [row, admin, bound, consented, usage, unbindsPending, held] =
+  const [row, stored, bound, consented, usage, unbindsPending, held] =
     await Promise.all([
       config.available ? loadRegistration(config) : null,
-      prisma.user.findUnique({
-        where: { id: userId },
-        select: { adminNoticesDismissed: true },
-      }),
+      loadStoredRelayDecision(),
       prisma.device.count({ where: { relayState: "bound" } }),
       prisma.device.count({ where: { relayConsentAt: { not: null } } }),
       relayUsage(now),
@@ -115,12 +115,14 @@ export async function adminRelayStatus(userId: string, now = new Date()) {
     termsUrl: docs?.termsUrl ?? null,
     privacyUrl: docs?.privacyUrl ?? null,
     docsUrl: RELAY_DOCS_URL,
-    // The one-time notice that the relay exists: shown while it may be
-    // offered, is not offered yet, and this admin has not dismissed it. Once
-    // it is on, "the option stays off until you turn it on" is no longer true.
-    noticePending:
-      config.allowed &&
-      row === null &&
-      !(admin?.adminNoticesDismissed ?? []).includes(RELAY_NOTICE_ID),
+    // The operator's one answer for the whole server, as `/api/auth/me`
+    // publishes it (`push.relay.operatorDecision`): the relay question is
+    // asked while it is `undecided`, and never again once it is `off`.
+    operatorDecision: operatorDecisionOf({
+      stored,
+      offered: row !== null,
+      available: config.available,
+      apnsConfigured: loadApnsConfig() !== null,
+    }),
   };
 }

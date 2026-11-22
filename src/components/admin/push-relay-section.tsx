@@ -7,11 +7,8 @@ import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Disclosure } from "@/components/ui/disclosure";
 import { InlineAction } from "@/components/ui/inline-action";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +29,11 @@ import {
   type AdminPushRelayStatus,
 } from "./use-push-relay";
 import { PushRelayTools } from "./push-relay-tools";
+import {
+  INVITE_REASONS,
+  PushRelayEnableDialog,
+  relayRefusalLabel,
+} from "./push-relay-enable-dialog";
 
 const STATE_LABEL = {
   ok: "admin.pushRelay.state.ok",
@@ -39,27 +41,6 @@ const STATE_LABEL = {
   down: "admin.pushRelay.state.down",
   off: "admin.pushRelay.state.off",
 } as const;
-
-/**
- * Registration refusals the admin can act on, by the `reason` the server
- * reports. Any other reason stays with the state badge.
- */
-const REASON_LABEL = new Map<
-  string,
-  | "admin.pushRelay.reason.inviteRequired"
-  | "admin.pushRelay.reason.inviteRejected"
-  | "admin.pushRelay.reason.registrationPaused"
->([
-  ["invite_required", "admin.pushRelay.reason.inviteRequired"],
-  ["invite_rejected", "admin.pushRelay.reason.inviteRejected"],
-  ["registration_paused", "admin.pushRelay.reason.registrationPaused"],
-]);
-
-/** The reasons an invite code moves on. */
-const INVITE_REASONS = new Set(["invite_required", "invite_rejected"]);
-
-/** The relay's one-time invite code: 24 base64url characters. */
-const INVITE_PATTERN = /^[A-Za-z0-9_-]{24}$/;
 
 const UNAVAILABLE_LABEL = {
   mode_off: "admin.pushRelay.unavailable.modeOff",
@@ -126,10 +107,7 @@ export function PushRelaySection() {
   // the relay unbinds: say so rather than hide it.
   if (!status.allowed) return <PushRelayOffCard status={status} />;
 
-  const reasonKey =
-    status.offered && !status.instanceId && status.reason
-      ? REASON_LABEL.get(status.reason)
-      : undefined;
+  const reasonKey = relayRefusalLabel(status);
 
   function openEnable(mode: "enable" | "confirm" = "enable") {
     setEnableMode(mode);
@@ -144,10 +122,7 @@ export function PushRelaySection() {
       // but not yet registered at the relay is a partial result, and a
       // refusal the admin can act on says why.
       onSuccess: (next) => {
-        const refusal =
-          next.offered && !next.instanceId && next.reason
-            ? REASON_LABEL.get(next.reason)
-            : undefined;
+        const refusal = relayRefusalLabel(next);
         toastWrittenOutcome(
           next.offered !== body.enabled
             ? "failed"
@@ -356,8 +331,6 @@ function PushRelayDisableDialog({
   );
 }
 
-type SwitchBody = Parameters<ReturnType<typeof useSetPushRelay>["mutate"]>[0];
-
 /**
  * What the relay sees and what it does not, one disclosure level below the
  * card's summary sentence. The list follows the relay's own privacy notice
@@ -401,185 +374,6 @@ function RelayLink({ href, children }: { href: string; children: ReactNode }) {
         {children}
       </a>
     </InlineAction>
-  );
-}
-
-/**
- * One confirmation of the enable dialog: a checkbox, its sentence, and the
- * document the sentence is about.
- */
-function ConfirmationRow({
-  id,
-  checked,
-  onCheckedChange,
-  label,
-  link,
-}: {
-  id: string;
-  checked: boolean;
-  onCheckedChange: (checked: boolean) => void;
-  label: string;
-  link: { href: string; label: string } | null;
-}) {
-  return (
-    <div className="flex items-start gap-2 text-sm">
-      <Checkbox
-        id={id}
-        data-slot={id}
-        checked={checked}
-        onCheckedChange={(next) => onCheckedChange(next === true)}
-        className="mt-0.5"
-      />
-      <div className="space-y-0.5">
-        <Label htmlFor={id} noColon className="pl-0 leading-snug font-normal">
-          {label}
-        </Label>
-        {link && (
-          <a
-            className="block text-xs underline"
-            href={link.href}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {link.label}
-          </a>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/**
- * Turning the relay on: the three confirmations, and the relay's invite code
- * for a relay that accepts new servers by invitation only. In `confirm` mode
- * the relay is on already and the admin confirms a changed text: the same
- * text and confirmations, no invite code.
- */
-function PushRelayEnableDialog({
-  mode,
-  termsUrl,
-  privacyUrl,
-  open,
-  onOpenChange,
-  onConfirm,
-}: {
-  mode: "enable" | "confirm";
-  termsUrl: string | null;
-  privacyUrl: string | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onConfirm: (body: SwitchBody) => void;
-}) {
-  const { t } = useTranslations();
-  // Two confirmations the admin gives separately: accepting the terms and
-  // having read the privacy notice. Both travel as the one `acceptTerms`
-  // field the relay registration has always taken.
-  const [acceptTerms, setAcceptTerms] = useState(false);
-  const [readPrivacy, setReadPrivacy] = useState(false);
-  const [householdOnly, setHouseholdOnly] = useState(false);
-  const [invite, setInvite] = useState("");
-  const inviteTrimmed = invite.trim();
-  const inviteInvalid =
-    inviteTrimmed !== "" && !INVITE_PATTERN.test(inviteTrimmed);
-
-  return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>
-            {t(
-              mode === "confirm"
-                ? "admin.pushRelay.reconfirm.title"
-                : "admin.pushRelay.dialogTitle",
-            )}
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {t("admin.pushRelay.dialogBody")}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <div className="space-y-3">
-          <ConfirmationRow
-            id="push-relay-accept-terms"
-            checked={acceptTerms}
-            onCheckedChange={setAcceptTerms}
-            label={t("admin.pushRelay.acceptTerms")}
-            link={
-              termsUrl
-                ? { href: termsUrl, label: t("admin.pushRelay.terms") }
-                : null
-            }
-          />
-          <ConfirmationRow
-            id="push-relay-read-privacy"
-            checked={readPrivacy}
-            onCheckedChange={setReadPrivacy}
-            label={t("admin.pushRelay.readPrivacy")}
-            link={
-              privacyUrl
-                ? { href: privacyUrl, label: t("admin.pushRelay.privacy") }
-                : null
-            }
-          />
-          <ConfirmationRow
-            id="push-relay-household"
-            checked={householdOnly}
-            onCheckedChange={setHouseholdOnly}
-            label={t("admin.pushRelay.householdOnly")}
-            link={null}
-          />
-          {mode === "enable" && (
-            <div className="space-y-1">
-              <Label htmlFor="push-relay-invite">
-                {t("admin.pushRelay.invite.label")}
-              </Label>
-              <Input
-                id="push-relay-invite"
-                data-slot="push-relay-invite"
-                value={invite}
-                onChange={(event) => setInvite(event.target.value)}
-                autoComplete="off"
-                spellCheck={false}
-                maxLength={64}
-                aria-invalid={inviteInvalid || undefined}
-                aria-describedby="push-relay-invite-hint"
-              />
-              <p
-                id="push-relay-invite-hint"
-                className="text-muted-foreground text-xs"
-              >
-                {t(
-                  inviteInvalid
-                    ? "admin.pushRelay.invite.invalid"
-                    : "admin.pushRelay.invite.hint",
-                )}
-              </p>
-            </div>
-          )}
-        </div>
-        <AlertDialogFooter>
-          <AlertDialogCancel>{t("admin.pushRelay.cancel")}</AlertDialogCancel>
-          <AlertDialogAction
-            disabled={
-              !acceptTerms || !readPrivacy || !householdOnly || inviteInvalid
-            }
-            onClick={() =>
-              onConfirm({
-                enabled: true,
-                acceptTerms: true,
-                householdOnly: true,
-                ...(inviteTrimmed ? { invite: inviteTrimmed } : {}),
-              })
-            }
-          >
-            {t(
-              mode === "confirm"
-                ? "admin.pushRelay.reconfirm.confirm"
-                : "admin.pushRelay.enable",
-            )}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
   );
 }
 

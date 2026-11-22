@@ -70,5 +70,8 @@ export const appSettingsBackupSchema = z
     // the server has them.
     serverSetupCompletedAt: isoDateTime.nullable().optional(),
     serverSetupStepsJson: z.unknown().nullable().optional(),
+    // 1.49 — the operator's answer to the relay question (CHECK in migration
+    // 0556). Absent on an older file; the host keeps its own answer.
+    pushRelayDecision: z.enum(["on", "off"]).nullable().optional(),
   })
   .passthrough();
