@@ -43,7 +43,7 @@ vi.mock("@/lib/db", () => ({
     encounter: { findMany: vi.fn() },
     allergy: { findMany: vi.fn() },
     vaccinationRecord: { findMany: vi.fn() },
-    seizureTypeProfile: { findMany: vi.fn() },
+    seizureTypeProfile: { findMany: vi.fn(), findFirst: vi.fn() },
     seizureEvent: { findMany: vi.fn(), findFirst: vi.fn() },
     seizureDiarySettings: { findUnique: vi.fn() },
     familyHistoryEntry: { findMany: vi.fn() },
@@ -198,6 +198,7 @@ beforeEach(() => {
   vi.mocked(prisma.allergy.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.vaccinationRecord.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.seizureTypeProfile.findMany).mockResolvedValue([]);
+  vi.mocked(prisma.seizureTypeProfile.findFirst).mockResolvedValue(null);
   vi.mocked(prisma.seizureEvent.findMany).mockResolvedValue([]);
   vi.mocked(prisma.seizureEvent.findFirst).mockResolvedValue(null);
   vi.mocked(prisma.seizureDiarySettings.findUnique).mockResolvedValue(null);

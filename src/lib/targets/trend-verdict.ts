@@ -261,6 +261,15 @@ const DIRECTION_BY_POSITION: Record<
   inside: "hold",
 };
 
+/**
+ * Whether the verdict of `key` reads `pregnancy` at all: only weight and BMI
+ * do. A reader that judges one other metric (a pulse chart) passes `false`
+ * without reading the state, which is a statement per request saved.
+ */
+export function verdictReadsPregnancy(key: TrendVerdictKey): boolean {
+  return key === "WEIGHT" || key === "BMI";
+}
+
 export function resolveTrendVerdict(
   key: TrendVerdictKey,
   ctx: TrendVerdictContext,
@@ -273,7 +282,7 @@ export function resolveTrendVerdict(
   // Weight, and BMI which moves exactly when weight does: only the person's
   // own target counts (see the module comment). For `BMI` the reference is
   // the WEIGHT it is derived from, in kg, since the target is a weight.
-  if (key === "WEIGHT" || key === "BMI") {
+  if (verdictReadsPregnancy(key)) {
     const target = ctx.pregnancy
       ? null
       : resolveWeightTargetOverride(ctx.thresholdsJson);
