@@ -13,7 +13,11 @@ import {
   setPathCredentialHeaders,
 } from "@/lib/http/path-credential-headers";
 import {
+  isFreshShareViewHop,
   SHARE_VIEW_GATE_COOKIE,
+  SHARE_VIEW_HOP_PARAM,
+  SHARE_VIEW_NO_COOKIE_PARAM,
+  SHARE_VIEW_NO_COOKIE_VALUE,
   shareViewToken,
 } from "@/lib/clinician-share/view-gate";
 import {
@@ -553,10 +557,24 @@ export function proxy(request: NextRequest) {
 
   // The clinician share page opened without the entry route's gate cookie:
   // back to `/c/<token>`, which answers an unknown or ended link with a real
-  // 404 (`src/lib/clinician-share/view-gate.ts`).
+  // 404 (`src/lib/clinician-share/view-gate.ts`). Straight from the route's
+  // own hop, no cookie means the browser refused it: the route explains that
+  // instead of the two of them redirecting in a circle.
   const shareToken = shareViewToken(pathname);
   if (shareToken && !request.cookies.has(SHARE_VIEW_GATE_COOKIE)) {
-    return credentialRedirect(new URL(`/c/${shareToken}`, request.url));
+    const back = new URL(`/c/${shareToken}`, request.url);
+    if (
+      isFreshShareViewHop(
+        request.nextUrl.searchParams.get(SHARE_VIEW_HOP_PARAM),
+        Date.now(),
+      )
+    ) {
+      back.searchParams.set(
+        SHARE_VIEW_NO_COOKIE_PARAM,
+        SHARE_VIEW_NO_COOKIE_VALUE,
+      );
+    }
+    return credentialRedirect(back);
   }
 
   // Server-side route protection for pages (not API routes — those have their own getSession checks)

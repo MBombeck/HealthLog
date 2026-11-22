@@ -10550,6 +10550,10 @@
     "unavailable": {
       "title": "Link verlopen of ongeldig",
       "description": "Deze deellink is verlopen, ingetrokken of onvolledig. Vraag de persoon die hem heeft gedeeld om een nieuwe link."
+    },
+    "cookiesNeeded": {
+      "title": "Deze link heeft cookies nodig",
+      "description": "Je browser heeft de cookie niet geaccepteerd waarmee deze deellink het gedeelde gezondheidsdossier opent. Sta cookies toe voor deze site en open de link daarna opnieuw."
     }
   },
   "cycle": {

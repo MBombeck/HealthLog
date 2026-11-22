@@ -10550,6 +10550,10 @@
     "unavailable": {
       "title": "Link abgelaufen oder ungültig",
       "description": "Dieser Freigabelink ist abgelaufen, wurde zurückgezogen oder ist unvollständig. Bitte die Person, die ihn geteilt hat, um einen neuen Link."
+    },
+    "cookiesNeeded": {
+      "title": "Dieser Link braucht Cookies",
+      "description": "Ihr Browser hat das Cookie nicht angenommen, mit dem dieser Freigabelink die geteilte Gesundheitsakte öffnet. Erlauben Sie Cookies für diese Seite und öffnen Sie den Link dann noch einmal."
     }
   },
   "cycle": {
