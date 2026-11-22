@@ -211,7 +211,8 @@ describe("the intake sync's budget, audience and triggers", () => {
     const { instanceId } = await enableRelay();
     const user = await makeUser();
     const session = await makeSession(user);
-    const { body } = deviceBody(instanceId, TOKEN);
+    const registeredKeys = deviceBody(instanceId, TOKEN);
+    const { body } = registeredKeys;
     await registerDevice(session, body);
     const prisma = getPrismaClient();
     const channel = await prisma.notificationChannel.findUniqueOrThrow({
@@ -239,10 +240,17 @@ describe("the intake sync's budget, audience and triggers", () => {
     });
     expect(res.status).toBe(201);
     await eventually(() => fake.apns.some((a) => a.pushClass === "alert"));
-    // The alert triggers the sync in the extension; a silent push beside it
-    // would spend the relay's budget twice for one dose.
+    // The alert triggers the sync in the extension; a silent sync beside it
+    // would spend the relay's budget twice for one dose. The DATA_CHANGED
+    // wake that names `intakes` follows its own window.
     await settle();
-    expect(fake.apns.filter((a) => a.pushClass === "silent")).toHaveLength(0);
+    const sender = await senderKey(session);
+    const { pushKey } = registeredKeys;
+    expect(
+      silentTypes(TOKEN, pushKey, sender).filter(
+        (p) => p.t === "MEDICATION_INTAKE_SYNC",
+      ),
+    ).toHaveLength(0);
     expect(
       await prisma.pushWake.count({
         where: { kind: "MEDICATION_INTAKE_SYNC" },
@@ -336,7 +344,7 @@ describe("the intake sync's budget, audience and triggers", () => {
     fake.apns.length = 0;
     await prisma.accountGrant.updateMany({
       where: { grantorId: profile.id },
-      data: { revokedAt: new Date() },
+      data: { revokedAt: new Date(), revokedBy: "GRANTOR" },
     });
     await new Promise((r) => setTimeout(r, 2200));
     queueMedicationIntakeSync({ userId: profile.id, originDeviceToken: null });
@@ -357,7 +365,7 @@ describe("the intake sync's budget, audience and triggers", () => {
     const { DELETE } = await import("@/app/api/medications/[id]/route");
     const res = await callRoute(DELETE, {
       method: "DELETE",
-      route: "/api/medications/[id]",
+      route: "/api/medications/{id}",
       params: { id: medication.id },
       auth: session,
     });

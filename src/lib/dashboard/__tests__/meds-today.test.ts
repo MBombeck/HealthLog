@@ -103,6 +103,8 @@ const fakePrisma = {
     }),
   },
   medicationIntakeEvent: {
+    // One medication's anchor read (the newest take before the window).
+    findFirst: vi.fn(async () => null),
     findMany: vi.fn(
       async (args: { where: { OR?: unknown; scheduledFor?: unknown } }) => {
         if (args.where.OR) {

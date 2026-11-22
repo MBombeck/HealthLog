@@ -58,6 +58,8 @@ export interface DoseLedger {
   horizon: Date;
   /** The latest take the cadence re-anchors on (a rolling grid), or null. */
   lastIntakeAt: Date | null;
+  /** The window's intake rows the ledger placed (slot and ad-hoc alike). */
+  intakes: HistoryIntake[];
 }
 
 /** What the window read selects of each intake row. */
@@ -398,5 +400,12 @@ function composeDoseLedger(input: {
     medication.createdAt,
   );
 
-  return { rows, bands, family, horizon, lastIntakeAt };
+  return {
+    rows,
+    bands,
+    family,
+    horizon,
+    lastIntakeAt,
+    intakes: historyIntakes,
+  };
 }

@@ -31,10 +31,13 @@ import { projectTodayIntakesAndRecompute } from "@/lib/medications/scheduling/pr
 import {
   computeNextDueAt,
   OVERDUE_LOOKBACK_MS,
+  toResolvedSlotMark,
 } from "@/lib/medications/scheduling/next-due";
+import { liveEraStart } from "@/lib/medications/scheduling/live-era";
 import {
   DOSE_LEDGER_MEDICATION_INCLUDE,
   loadDoseLedgers,
+  type DoseLedger,
   type DoseLedgerMedication,
 } from "@/lib/medications/dose-state/ledger";
 import {
@@ -235,7 +238,7 @@ export async function buildMedsTodayBlock(
     const ledger = ledgers.get(m.id);
     const dose =
       nextDoseOf(ledger?.rows ?? [], now) ??
-      unmintedNextDose(m, ledger?.lastIntakeAt ?? null, userTz, now);
+      unmintedNextDose(m, ledger, userTz, now);
     if (!dose) continue;
     dueCandidates.push({
       medicationId: m.id,
@@ -310,7 +313,7 @@ function doseWindowOpening(
  */
 function unmintedNextDose(
   m: DoseLedgerMedication,
-  lastIntakeAt: Date | null,
+  ledger: DoseLedger | undefined,
   userTz: string,
   now: Date,
 ): (ResolvedDose & { timeOfDay: string | null }) | null {
@@ -326,7 +329,13 @@ function unmintedNextDose(
     schedules,
     now,
     userTz,
-    lastIntakeAt,
+    lastIntakeAt: ledger?.lastIntakeAt ?? null,
+    // An occurrence already answered (taken, skipped or closed by the
+    // auto-miss pass) is nobody's next dose: the search walks past it.
+    resolvedSlots: (ledger?.intakes ?? [])
+      .filter((i) => i.takenAt !== null || i.skipped || i.autoMissed)
+      .map(toResolvedSlotMark),
+    eraStart: liveEraStart(m.scheduleRevisions),
   });
   if (!at) return null;
   const resolved = resolveDoseState(
