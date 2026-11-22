@@ -38,12 +38,18 @@ import {
   hourCellsSql,
   localDayMinuteBucketsSql,
 } from "@/lib/measurements/dense-bucket-read";
-import { readRestingPulseProxy } from "@/lib/analytics/resting-pulse-read";
+import {
+  readRestingPulseProxy,
+  restingPulseProxyBlockKey,
+} from "@/lib/analytics/resting-pulse-read";
+import { caches } from "@/lib/cache/server-cache";
 import { readCumulativeDayProfiles } from "@/lib/measurements/intraday-cumulative-profile";
 import { buildWorkoutHrSeries, foldHrBuckets } from "@/lib/workouts/hr-series";
 import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { localDayWindow } from "@/lib/tz/local-day";
 import { invalidateUserTimezone } from "@/lib/tz/resolver";
+import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
+import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";
 
 vi.mock("next/headers", async () => {
   const { cookieJar, headerJar } = await import("./mock-next-headers");
@@ -91,6 +97,8 @@ const DAY = shiftDateKey(userDayKey(NOW, TZ), -3);
 const YESTERDAY = shiftDateKey(userDayKey(NOW, TZ), -1);
 /** Statements the chart route sends on a miss (session, zone, five reads). */
 const INTRADAY_BUDGET = 12;
+/** Statements the daily digest sends on a dense account after a sync (measured 89 to 91). */
+const DIGEST_AFTER_SYNC_BUDGET = 95;
 
 async function session(userId: string): Promise<void> {
   const s = await prisma.session.create({
@@ -194,8 +202,11 @@ beforeAll(async () => {
     valueSql: "0.25 + (g % 4) * 0.125",
     unit: "kcal",
   });
+  // The rollup tier a running instance holds, so the readers that sit on it
+  // read it rather than folding the raw stream on a coverage miss.
+  await recomputeUserRollups(DENSE);
   await prisma.$executeRawUnsafe(`ANALYZE measurements`);
-}, 300_000);
+}, 600_000);
 
 describe("GET /api/insights/pulse/intraday on a 35 000-row day", () => {
   async function intraday(date: string) {
@@ -549,5 +560,170 @@ describe("the other dense-day readers", () => {
       ],
     });
     expect(notifyIllnessRedFlag).toHaveBeenCalledOnce();
+  });
+});
+
+/**
+ * The 30-day fold as it ran before the closed block: one statement over the
+ * whole window. The reference the cached read must equal.
+ */
+async function referenceProxy(userId: string, since: Date) {
+  const rows = await prisma.$queryRaw<Array<{ first_at: Date; p: number }>>(
+    Prisma.sql`
+    WITH src AS (
+      SELECT
+        to_char((m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${TZ}, 'YYYY-MM-DD') AS day,
+        m."measured_at" AS measured_at,
+        m."value" AS value
+      FROM measurements m
+      WHERE m."user_id" = ${userId}
+        AND m."type" = 'PULSE'::measurement_type
+        AND m."deleted_at" IS NULL
+        AND m."measured_at" >= ${since}
+    )
+    SELECT
+      MIN(measured_at) AS first_at,
+      (percentile_cont(0.2::double precision) WITHIN GROUP (ORDER BY value))::double precision AS p
+    FROM src
+    GROUP BY day
+    HAVING COUNT(*) >= 3
+    ORDER BY first_at ASC
+  `,
+  );
+  return rows.map((r) => ({
+    measuredAt: r.first_at,
+    value: Math.round(Number(r.p)),
+  }));
+}
+
+/** The proxy fold's statements, by the start the counter keeps of them. */
+const PROXY_STATEMENT =
+  /^WITH src AS \( SELECT to_char\(\(m\."measured_at" AT TIME ZONE 'UTC'\) AT TIME ZONE \$\d+, 'YYYY-MM-DD'\) AS day, m\."measured_at" AS measured_at, m\."value" AS value/;
+
+/** Three pulse readings at `at`, a minute apart, and the write tail's eviction. */
+async function writePulse(at: Date, value: number, tag: string) {
+  const rows = [0, 1, 2].map((i) => ({
+    id: `${tag}-${i}`,
+    userId: DENSE,
+    type: "PULSE" as const,
+    value,
+    unit: "bpm",
+    // Manual readings at odd milliseconds: no seeded row shares the key.
+    source: "MANUAL" as const,
+    measuredAt: new Date(at.getTime() + i * 60_000 + 777),
+  }));
+  await prisma.measurement.createMany({ data: rows });
+  invalidateUserMeasurements(DENSE, { touchedFrom: rows[0].measuredAt });
+}
+
+describe("the 30-day resting-pulse proxy, folded once and shared", () => {
+  const since = new Date(NOW.getTime() - 30 * 86_400_000);
+  const read = () =>
+    readRestingPulseProxy({ userId: DENSE, since, timeZone: TZ, now: NOW });
+  /** Whether the closed proxy days of this window are cached. */
+  const blockCached = () =>
+    caches.analytics.get(
+      restingPulseProxyBlockKey(
+        DENSE,
+        TZ,
+        localDayWindow(userDayKey(since, TZ), TZ).dayEnd,
+        localDayWindow(userDayKey(NOW, TZ), TZ).dayStart,
+      ),
+    ) !== null;
+
+  it("equals the one-statement fold cold, warm, after a sync and after a backfill", async () => {
+    invalidateUserMeasurements(DENSE, { evict: true });
+    expect(blockCached()).toBe(false);
+    const started = performance.now();
+    const cold = await countStatements(read);
+    const coldMs = performance.now() - started;
+    expect(cold.result).toEqual(await referenceProxy(DENSE, since));
+    expect(cold.result.length).toBeGreaterThanOrEqual(26);
+    // A miss is the old single statement, and it keeps the closed days.
+    expect(cold.count).toBe(1);
+    expect(blockCached()).toBe(true);
+
+    const warmStarted = performance.now();
+    const warm = await countStatements(read);
+    const warmMs = performance.now() - warmStarted;
+    expect(warm.result).toEqual(cold.result);
+    // Only the partial first day and today are folded again.
+    expect(warm.count).toBe(1);
+    report(
+      `resting proxy, 30 days: cold ${coldMs.toFixed(0)} ms, warm ${warmMs.toFixed(0)} ms`,
+    );
+
+    // A sync of today's readings leaves the closed days in place.
+    await writePulse(new Date(NOW.getTime() - 10 * 60_000), 41, "today");
+    expect(blockCached()).toBe(true);
+    const synced = await countStatements(read);
+    expect(synced.count).toBe(1);
+    expect(synced.result).toEqual(await referenceProxy(DENSE, since));
+    expect(synced.result.at(-1)!.value).toBe(41);
+
+    // A backfill that reaches into the closed days drops the block.
+    const { dayStart } = localDayWindow(shiftDateKey(DAY, -5), TZ);
+    await writePulse(new Date(dayStart.getTime() + 3 * 3_600_000), 20, "old");
+    expect(blockCached()).toBe(false);
+    const backfilled = await countStatements(read);
+    expect(backfilled.result).toEqual(await referenceProxy(DENSE, since));
+    expect(blockCached()).toBe(true);
+  });
+
+  it("keeps the daily digest after a sync off the 30-day fold", async () => {
+    await session(DENSE);
+    const { GET } = await import("@/app/api/daily/digest/route");
+    const digest = async () => {
+      const res = await (GET as unknown as (r: Request) => Promise<Response>)(
+        new NextRequest("http://localhost/api/daily/digest"),
+      );
+      await res.arrayBuffer();
+      return res.status;
+    };
+    await digest(); // fill the process-level caches a running server holds
+
+    invalidateUserMeasurements(DENSE, { evict: true });
+    expect(blockCached()).toBe(false);
+    const coldStarted = performance.now();
+    const cold = await countStatements(digest);
+    const coldMs = performance.now() - coldStarted;
+    expect(cold.result).toBe(200);
+
+    // The sync at launch: today's readings land, the digest rebuilds. Once
+    // as the write tail evicts (the closed proxy days stay), once with the
+    // block dropped as well, which is what every rebuild paid before it.
+    const sync = async (keepBlock: boolean, tag: string) => {
+      const at = new Date(NOW.getTime() - (keepBlock ? 5 : 20) * 60_000);
+      await writePulse(at, 44, tag);
+      invalidateUserMeasurements(DENSE, {
+        evict: true,
+        ...(keepBlock ? { touchedFrom: at } : {}),
+      });
+      expect(blockCached()).toBe(keepBlock);
+      const started = performance.now();
+      const m = await countStatements(digest);
+      expect(m.result).toBe(200);
+      return { ...m, ms: performance.now() - started };
+    };
+    const after = await sync(true, "launch");
+    const afterMs = after.ms;
+    const unshared = await sync(false, "launch-unshared");
+    const folds = (m: { statements: string[] }) =>
+      m.statements.filter((t) => PROXY_STATEMENT.test(t)).length;
+    report(
+      `daily digest: cold ${coldMs.toFixed(0)} ms / ${cold.count} statements / ${folds(cold)} proxy folds, ` +
+        `after a sync ${afterMs.toFixed(0)} ms / ${after.count} statements / ${folds(after)} proxy folds, ` +
+        `after a sync without the block ${unshared.ms.toFixed(0)} ms / ${folds(unshared)} proxy folds`,
+    );
+    // One proxy fold either way: the whole window on a miss, the two live
+    // days on a hit.
+    expect(folds(cold)).toBe(1);
+    expect(folds(after)).toBe(1);
+    expect(folds(unshared)).toBe(1);
+    expect(
+      after.count,
+      `${after.count} statements against ${DIGEST_AFTER_SYNC_BUDGET}:\n` +
+        summariseStatements(after.statements),
+    ).toBeLessThanOrEqual(DIGEST_AFTER_SYNC_BUDGET);
   });
 });
