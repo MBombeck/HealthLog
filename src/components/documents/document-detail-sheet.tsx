@@ -46,6 +46,7 @@ import { DocumentEncounterSuggestion } from "./document-encounter-suggestion";
 import { DocumentFactsSection } from "./document-facts-review";
 import { DocumentRecordLinks } from "./document-record-links";
 import { DocumentShareSheet } from "./document-share-sheet";
+import { DocumentAiFailureNotes } from "./document-ai-failure-notes";
 import { DocumentSummaryBlock } from "./document-summary-block";
 
 /** The grace window the delete confirmation names. */
@@ -61,11 +62,8 @@ export function DocumentDetailSheet({
   documentId: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /**
-   * Whether the AI "Suggest details" / summary actions can run (from
-   * `usage.assistAvailable`). When false the AI area shows a calm pointer to
-   * the AI settings instead of an error — the manual form stays fully usable.
-   */
+  /** Whether the AI suggest and summary actions can run (`usage.assistAvailable`);
+   *  when false the AI area points to the AI settings and the form stays usable. */
   assistAvailable?: boolean;
   /** Whether content indexing is available (from `usage.contentIndex.enabled`). */
   contentIndexEnabled?: boolean;
@@ -140,11 +138,8 @@ export function DocumentDetailSheet({
         contentWidth="3xl"
         showCloseButton={false}
         headerAction={
-          // Enlarged close control rendered in the header's trailing slot —
-          // the sheet's own X glyph is `size-4` via the primitive; we hide it
-          // (`showCloseButton={false}`) and render this larger `size-5` X with
-          // a comfortable min tap target instead. Scoped to this sheet only,
-          // so the global primitive default is unchanged for other callers.
+          // A larger `size-5` close with a full tap target in place of the
+          // primitive's `size-4` X (`showCloseButton={false}`), this sheet only.
           <Button
             type="button"
             variant="ghost"
@@ -202,8 +197,7 @@ export function DocumentDetailSheet({
 
             <DocumentSummaryBlock
               summary={doc.summary}
-              // Generating writes to the record: the owner and a managed
-              // profile's guardian; an adult's delegate reads what is there.
+              // Writing a summary is the owner's or a guardian's, never a delegate's.
               canGenerate={canManageDocuments}
               summaryState={doc.summaryState}
               generatedAtLabel={
@@ -215,7 +209,14 @@ export function DocumentDetailSheet({
               isGenerating={storedSummary.isPending}
               runPhase={storedSummary.runPhase}
               actionsDisabled={capability.isPending}
+              failures={doc.aiFailures}
               onGenerate={generateStoredSummary}
+            />
+            <DocumentAiFailureNotes
+              failures={doc.aiFailures}
+              canRetry={canManageDocuments && documentAi.available}
+              retryPending={indexDoc.isPending}
+              onRetry={runIndex}
             />
 
             {detail.ownsVault && documentAi.reason === "consent_required" ? (

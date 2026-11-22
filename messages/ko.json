@@ -8700,7 +8700,19 @@
         "next": "다음",
         "pageOf": "{total}쪽 중 {page}쪽",
         "export": "CSV 내보내기",
-        "empty": "현재 필터에 맞는 감사 기록이 없어요."
+        "empty": "현재 필터에 맞는 감사 기록이 없어요.",
+        "family": {
+          "auth": "로그인",
+          "documents": "문서",
+          "sharing": "공유 및 관리 프로필",
+          "medication": "약"
+        },
+        "familyAll": {
+          "auth": "모든 로그인 작업",
+          "documents": "모든 문서 작업",
+          "sharing": "모든 공유 및 프로필 작업",
+          "medication": "모든 약 작업"
+        }
       },
       "app-logs": {
         "title": "앱 로그",
@@ -14316,7 +14328,48 @@
     "waitingForWorker": "백그라운드 작업자를 기다리고 있어요. 계속 그대로라면 서버의 작업자가 실행 중이 아닐 수 있어요.",
     "errorWorkerUnavailable": "지금은 백그라운드 작업자를 사용할 수 없어요. 잠시 후 다시 시도하거나 서버 운영자에게 확인을 요청하세요.",
     "errorTimedOut": "AI 응답 시간 설정보다 읽기가 오래 걸렸어요. 다시 시도하거나 AI 설정에서 응답 시간을 늘려 주세요.",
-    "errorReaderBusy": "문서 판독기가 다른 작업으로 바빠요. 1분 후에 다시 시도하세요."
+    "errorReaderBusy": "문서 판독기가 다른 작업으로 바빠요. 1분 후에 다시 시도하세요.",
+    "jobFailure": {
+      "title": "멈춘 백그라운드 AI 작업",
+      "description": "최근에 멈춘 작업과 그 이유예요. 작업이 다시 성공하면 항목이 사라져요.",
+      "line": "{job}: {reason}",
+      "repeated": "연속 {count}번 실패했어요. 마지막: {when}.",
+      "lastAt": "마지막 시도: {when}.",
+      "openDocument": "문서 열기",
+      "retry": "다시 시도",
+      "job": {
+        "documentSummary": "문서 요약",
+        "documentIndex": "검색용 문서 읽기",
+        "documentRead": "문서 값 읽기",
+        "labScan": "검사 결과지 스캔",
+        "supplementLabel": "영양제 라벨",
+        "statusText": "카드의 설명",
+        "briefing": "오늘의 브리핑",
+        "periodNarrative": "주간·월간 돌아보기",
+        "workoutInsight": "운동 메모",
+        "reactionLine": "새 데이터에 대한 반응",
+        "coachNudge": "코치 알림",
+        "coachMemory": "코치 기억",
+        "other": "백그라운드 AI 작업"
+      },
+      "code": {
+        "no_provider": "이 작업을 할 수 있는 AI 제공자가 설정되어 있지 않아요.",
+        "chain_no_provider": "이 작업은 제공자 체인에 묶여 있는데, 체인의 제공자가 하나도 설정되어 있지 않아요. AI 설정에서 체인과 키를 확인해 주세요.",
+        "consent_required": "AI 제공자에게 먼저 동의가 필요해요. AI 설정에서 동의할 수 있어요.",
+        "not_permitted": "이 기록에서는 AI 작업이 허용되지 않아요.",
+        "check_failed": "서버가 AI 실행 가능 여부를 확인하지 못했어요. 다음에 다시 시도해요.",
+        "credential_expired": "AI 제공자가 키를 거부했어요. AI 설정에서 확인하거나 다시 연결해 주세요.",
+        "rate_limited": "AI 제공자가 요청이 너무 많다고 알렸어요. 나중에 다시 시도해요.",
+        "provider_timeout": "AI 제공자가 제시간에 응답하지 않았어요.",
+        "provider_unreachable": "AI 제공자에 연결할 수 없었어요. 실행 중인지 확인해 주세요.",
+        "provider_empty": "AI 제공자가 빈 응답을 보냈어요.",
+        "provider_reasoning_only": "모델이 추론만 하고 답을 내지 않았어요.",
+        "provider_paused": "AI 제공자가 여러 번 연속 실패해서, 백그라운드 작업은 잠시 기다렸다가 다시 시도해요.",
+        "provider_error": "AI 제공자가 오류를 반환했어요.",
+        "budget_exhausted": "오늘의 AI 사용량을 다 썼어요. 내일 다시 사용할 수 있어요.",
+        "unreadable_file": "AI 제공자에게 보낼 수 있도록 파일을 준비하지 못했어요."
+      }
+    }
   },
   "symptoms": {
     "add": "새 증상",

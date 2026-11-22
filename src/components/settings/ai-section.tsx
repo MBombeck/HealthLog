@@ -20,6 +20,7 @@
 
 import { AiConsentRequest } from "@/components/ai/ai-consent-request";
 import { AiInsightsCard } from "@/components/settings/ai/ai-insights-card";
+import { AiJobFailuresCard } from "@/components/settings/ai/ai-job-failures-card";
 import { OperatorOffNotice } from "@/components/settings/ai/operator-off-notice";
 import { StoredCoachMemory } from "@/components/settings/coach-memory-section";
 import { AiSetupHint } from "@/components/insights/ai-setup-hint";
@@ -58,6 +59,7 @@ export function AiSection() {
       {/* v1.43.2 — the consent question, above the provider card, while the
           operator's provider is closed by nothing but the missing consent. */}
       <AiConsentRequest surface="settings" />
+      <AiJobFailuresCard isAuthenticated={authed} />
       <AiInsightsCard isAuthenticated={authed} />
       {authed && !coachSettingsReachable ? (
         <StoredCoachMemory isAuthenticated={authed} />

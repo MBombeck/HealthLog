@@ -35,6 +35,7 @@
 import { findActiveGrant } from "@/lib/sharing/grant-access";
 import { resolveGrantSections } from "@/lib/sharing/grant-view";
 import { getEvent } from "@/lib/logging/context";
+import { noteAiJobEvent } from "@/lib/ai/job-failure/witness";
 import { providerWorkAuthorityForRecord } from "@/lib/sharing/provider-work-authority";
 
 import { loadAiCapabilityInputs, type AiCapabilityScope } from "./load";
@@ -151,6 +152,26 @@ export async function requireAiCapability(
  * record in view. Never throws.
  */
 export async function aiCapabilityForJob(
+  userId: string,
+  key: AiCapabilityKey,
+): Promise<AiCapabilityState> {
+  const state = await capabilityForJob(userId, key);
+  // #1404 — a refusal, for the background job this runs inside
+  // (`job-failure/witness.ts`). A provider or consent answer is tentative:
+  // the job's own pick decides those exactly.
+  if (state.reason !== null) {
+    noteAiJobEvent({
+      type: "refused",
+      capability: key,
+      userId,
+      reason: state.reason,
+      tentative: PICK_DECIDED_REASONS.has(state.reason),
+    });
+  }
+  return state;
+}
+
+async function capabilityForJob(
   userId: string,
   key: AiCapabilityKey,
 ): Promise<AiCapabilityState> {

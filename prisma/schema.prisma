@@ -1177,6 +1177,7 @@ model User {
   // instance for the document picker. See DocumentSourceConnection.
   documentSourceConnections                 DocumentSourceConnection[]
   documentAiRuns                            DocumentAiRun[]
+  aiJobFailures                             AiJobFailure[]
   extractedFacts                            ExtractedFact[]
   documentConditionLinks                    DocumentConditionLink[]
   documentContentIndexes                    DocumentContentIndex[]
@@ -11171,6 +11172,38 @@ model DocumentAiRun {
   @@index([documentId, kind, status])
   @@index([status, expiresAt])
   @@map("document_ai_runs")
+}
+
+/// v1.49 (#1404) — why the latest background AI work of one kind stopped for
+/// a record, so the person reads the reason where they look: on the document
+/// and under Settings, AI. One row per record, job kind and subject (a
+/// document id, or "" for work that has none); a later success deletes it, a
+/// later failure overwrites it and counts up. Written only by the shared
+/// reporter (`src/lib/ai/job-failure/report.ts`), which stores closed codes
+/// and nothing else: no message, no prompt, no reply, no provider payload.
+/// Status of this host's runs, not part of the record: never in a backup.
+model AiJobFailure {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  /// The job kind, closed in code (`AI_JOB_KINDS`).
+  job           String
+  /// The document the work was for, or "" when it had none. No foreign key:
+  /// a deleted document's row is skipped on read and ages out.
+  subjectId     String   @default("") @map("subject_id")
+  /// Why it stopped, closed in code (`AI_JOB_FAILURE_CODES`).
+  code          String
+  /// The provider type that failed (a closed chain type), when one was called.
+  providerType  String?  @map("provider_type")
+  /// Failures in a row since the last success.
+  failCount     Int      @default(1) @map("fail_count")
+  firstFailedAt DateTime @default(now()) @map("first_failed_at")
+  lastFailedAt  DateTime @default(now()) @map("last_failed_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, job, subjectId])
+  @@index([userId, lastFailedAt])
+  @@map("ai_job_failures")
 }
 
 /// A dated anchor in the person's life for the timeline (v1.42, #613): a move,

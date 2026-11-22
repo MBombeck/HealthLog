@@ -8725,7 +8725,19 @@
         "next": "Next",
         "pageOf": "Page {page} of {total}",
         "export": "Export CSV",
-        "empty": "No audit entries match the current filters."
+        "empty": "No audit entries match the current filters.",
+        "family": {
+          "auth": "Sign-ins",
+          "documents": "Documents",
+          "sharing": "Sharing and managed profiles",
+          "medication": "Medications"
+        },
+        "familyAll": {
+          "auth": "All sign-in actions",
+          "documents": "All document actions",
+          "sharing": "All sharing and profile actions",
+          "medication": "All medication actions"
+        }
       },
       "app-logs": {
         "title": "App logs",
@@ -14316,7 +14328,48 @@
     "waitingForWorker": "Waiting for the background worker. If this does not change, the server's worker may not be running.",
     "errorWorkerUnavailable": "The background worker is not available right now. Try again in a moment, or ask the server operator to check it.",
     "errorTimedOut": "Reading took longer than your AI response time allows. Try again, or raise the response time in the AI settings.",
-    "errorReaderBusy": "The document reader is busy with other work. Try again in a minute."
+    "errorReaderBusy": "The document reader is busy with other work. Try again in a minute.",
+    "jobFailure": {
+      "title": "Background AI that stopped",
+      "description": "Work that stopped recently and why; an entry goes once the work succeeds again.",
+      "line": "{job}: {reason}",
+      "repeated": "Failed {count} times in a row, last on {when}.",
+      "lastAt": "Last tried on {when}.",
+      "openDocument": "Open the document",
+      "retry": "Try again",
+      "job": {
+        "documentSummary": "Document summary",
+        "documentIndex": "Reading a document for search",
+        "documentRead": "Reading a document's values",
+        "labScan": "Lab report scan",
+        "supplementLabel": "Supplement label",
+        "statusText": "Notes on the cards",
+        "briefing": "Daily briefing",
+        "periodNarrative": "Week and month review",
+        "workoutInsight": "Workout note",
+        "reactionLine": "Reaction to new data",
+        "coachNudge": "Coach nudge",
+        "coachMemory": "Coach memory",
+        "other": "Background AI work"
+      },
+      "code": {
+        "no_provider": "No AI provider is set up that could do this.",
+        "chain_no_provider": "This task is bound to a provider chain, and none of its providers is set up. Check the chain and its keys in the AI settings.",
+        "consent_required": "The AI provider needs your consent first. You can give it in the AI settings.",
+        "not_permitted": "AI work is not allowed on this record.",
+        "check_failed": "The server could not check whether AI may run. It tries again next time.",
+        "credential_expired": "The AI provider refused the key. Check or reconnect it in the AI settings.",
+        "rate_limited": "The AI provider reported too many requests. It tries again later.",
+        "provider_timeout": "The AI provider did not answer in time.",
+        "provider_unreachable": "The AI provider could not be reached. Check that it is running.",
+        "provider_empty": "The AI provider answered with nothing.",
+        "provider_reasoning_only": "The model reasoned but gave no answer.",
+        "provider_paused": "The AI provider failed several times in a row, so background work waits before trying it again.",
+        "provider_error": "The AI provider returned an error.",
+        "budget_exhausted": "Today's AI allowance is used up. It works again tomorrow.",
+        "unreadable_file": "The file could not be prepared for the AI provider."
+      }
+    }
   },
   "symptoms": {
     "add": "New symptom",

@@ -31,6 +31,7 @@ import { activityPaths } from "./activity";
 import { provenancePaths } from "./provenance";
 import { adminDiagnosticPaths, adminInvitePaths } from "./admin";
 import { aiUsagePaths } from "./ai-usage";
+import { aiJobFailurePaths } from "./ai-job-failures";
 import { dawarichPaths } from "./dawarich";
 import { lifeCircumstancesPaths } from "./life-circumstances";
 import { relationLinkPaths } from "./relation-links";
@@ -217,6 +218,7 @@ const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   // composition, life circumstances and AUDIT-C, Dawarich movement context and
   // the relation links (appended, spread order is load-bearing).
   ...aiUsagePaths,
+  ...aiJobFailurePaths,
   ...medicationIngredientPaths,
   ...medicineRegistryPaths,
   ...lifeCircumstancesPaths,

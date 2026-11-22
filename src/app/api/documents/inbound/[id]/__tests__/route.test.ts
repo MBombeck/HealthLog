@@ -10,6 +10,10 @@ import { NextRequest } from "next/server";
  * assignment).
  */
 
+vi.mock("@/lib/ai/job-failure/read", () => ({
+  documentAiJobFailures: vi.fn(async () => []),
+}));
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     inboundDocument: {

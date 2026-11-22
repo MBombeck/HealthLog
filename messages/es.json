@@ -8725,7 +8725,19 @@
         "next": "Siguiente",
         "pageOf": "Página {page} de {total}",
         "export": "Exportar CSV",
-        "empty": "Ninguna entrada de auditoría coincide con los filtros actuales."
+        "empty": "Ninguna entrada de auditoría coincide con los filtros actuales.",
+        "family": {
+          "auth": "Inicios de sesión",
+          "documents": "Documentos",
+          "sharing": "Compartir y perfiles gestionados",
+          "medication": "Medicamentos"
+        },
+        "familyAll": {
+          "auth": "Todas las acciones de inicio de sesión",
+          "documents": "Todas las acciones de documentos",
+          "sharing": "Todas las acciones de compartir y perfiles",
+          "medication": "Todas las acciones de medicamentos"
+        }
       },
       "app-logs": {
         "title": "Registros de la app",
@@ -14316,7 +14328,48 @@
     "waitingForWorker": "Esperando al proceso en segundo plano. Si no cambia, puede que el worker del servidor no esté en marcha.",
     "errorWorkerUnavailable": "El proceso en segundo plano no está disponible ahora mismo. Inténtalo de nuevo en un momento o pide a quien administra el servidor que lo revise.",
     "errorTimedOut": "La lectura tardó más de lo que permite tu tiempo de respuesta de IA. Inténtalo de nuevo o aumenta el tiempo de respuesta en los ajustes de IA.",
-    "errorReaderBusy": "El lector de documentos está ocupado con otras tareas. Inténtalo de nuevo en un minuto."
+    "errorReaderBusy": "El lector de documentos está ocupado con otras tareas. Inténtalo de nuevo en un minuto.",
+    "jobFailure": {
+      "title": "IA en segundo plano que se detuvo",
+      "description": "Tareas que se detuvieron hace poco y por qué; cada entrada desaparece cuando vuelve a funcionar.",
+      "line": "{job}: {reason}",
+      "repeated": "Falló {count} veces seguidas; la última, el {when}.",
+      "lastAt": "Último intento el {when}.",
+      "openDocument": "Abrir el documento",
+      "retry": "Intentar de nuevo",
+      "job": {
+        "documentSummary": "Resumen del documento",
+        "documentIndex": "Lectura del documento para la búsqueda",
+        "documentRead": "Lectura de los valores de un documento",
+        "labScan": "Escaneo de un informe de laboratorio",
+        "supplementLabel": "Etiqueta de un suplemento",
+        "statusText": "Notas de las tarjetas",
+        "briefing": "Resumen del día",
+        "periodNarrative": "Repaso de la semana y del mes",
+        "workoutInsight": "Nota del entrenamiento",
+        "reactionLine": "Reacción a datos nuevos",
+        "coachNudge": "Aviso del Coach",
+        "coachMemory": "Memoria del Coach",
+        "other": "Tarea de IA en segundo plano"
+      },
+      "code": {
+        "no_provider": "No hay ningún proveedor de IA configurado que pueda hacerlo.",
+        "chain_no_provider": "Esta tarea está vinculada a una cadena de proveedores y ninguno de sus proveedores está configurado. Revisa la cadena y sus claves en los ajustes de IA.",
+        "consent_required": "El proveedor de IA necesita antes tu consentimiento. Puedes darlo en los ajustes de IA.",
+        "not_permitted": "En este registro no se permite el trabajo con IA.",
+        "check_failed": "El servidor no pudo comprobar si la IA puede ejecutarse. Lo intentará de nuevo la próxima vez.",
+        "credential_expired": "El proveedor de IA rechazó la clave. Revísala o vuelve a conectarla en los ajustes de IA.",
+        "rate_limited": "El proveedor de IA indicó demasiadas solicitudes. Se volverá a intentar más tarde.",
+        "provider_timeout": "El proveedor de IA no respondió a tiempo.",
+        "provider_unreachable": "No se pudo contactar con el proveedor de IA. Comprueba que esté en marcha.",
+        "provider_empty": "El proveedor de IA respondió sin contenido.",
+        "provider_reasoning_only": "El modelo razonó, pero no dio ninguna respuesta.",
+        "provider_paused": "El proveedor de IA falló varias veces seguidas, así que el trabajo en segundo plano espera antes de volver a probarlo.",
+        "provider_error": "El proveedor de IA devolvió un error.",
+        "budget_exhausted": "Se agotó la cuota de IA de hoy. Mañana vuelve a funcionar.",
+        "unreadable_file": "No se pudo preparar el archivo para el proveedor de IA."
+      }
+    }
   },
   "symptoms": {
     "add": "Nuevo síntoma",

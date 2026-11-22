@@ -8725,7 +8725,19 @@
         "next": "Suivant",
         "pageOf": "Page {page} sur {total}",
         "export": "Exporter en CSV",
-        "empty": "Aucune entrée d'audit ne correspond aux filtres actuels."
+        "empty": "Aucune entrée d'audit ne correspond aux filtres actuels.",
+        "family": {
+          "auth": "Connexions",
+          "documents": "Documents",
+          "sharing": "Partage et profils gérés",
+          "medication": "Médicaments"
+        },
+        "familyAll": {
+          "auth": "Toutes les actions de connexion",
+          "documents": "Toutes les actions sur les documents",
+          "sharing": "Toutes les actions de partage et de profils",
+          "medication": "Toutes les actions sur les médicaments"
+        }
       },
       "app-logs": {
         "title": "Journaux de l'app",
@@ -14316,7 +14328,48 @@
     "waitingForWorker": "En attente du traitement en arrière-plan. Si rien ne change, le worker du serveur n'est peut-être pas lancé.",
     "errorWorkerUnavailable": "Le traitement en arrière-plan n'est pas disponible pour le moment. Réessayez dans un instant ou demandez à la personne qui gère le serveur de le vérifier.",
     "errorTimedOut": "La lecture a pris plus de temps que votre délai de réponse IA ne le permet. Réessayez ou augmentez ce délai dans les réglages IA.",
-    "errorReaderBusy": "Le lecteur de documents est occupé par d'autres tâches. Réessayez dans une minute."
+    "errorReaderBusy": "Le lecteur de documents est occupé par d'autres tâches. Réessayez dans une minute.",
+    "jobFailure": {
+      "title": "IA en arrière-plan interrompue",
+      "description": "Les tâches interrompues récemment et pourquoi ; une entrée disparaît dès que la tâche réussit à nouveau.",
+      "line": "{job} : {reason}",
+      "repeated": "Échec {count} fois de suite, la dernière le {when}.",
+      "lastAt": "Dernière tentative le {when}.",
+      "openDocument": "Ouvrir le document",
+      "retry": "Réessayer",
+      "job": {
+        "documentSummary": "Résumé du document",
+        "documentIndex": "Lecture du document pour la recherche",
+        "documentRead": "Lecture des valeurs d’un document",
+        "labScan": "Scan d’un compte rendu de laboratoire",
+        "supplementLabel": "Étiquette d’un complément",
+        "statusText": "Notes des cartes",
+        "briefing": "Briefing du jour",
+        "periodNarrative": "Bilan de la semaine et du mois",
+        "workoutInsight": "Note d’entraînement",
+        "reactionLine": "Réaction aux nouvelles données",
+        "coachNudge": "Rappel du Coach",
+        "coachMemory": "Mémoire du Coach",
+        "other": "Tâche d’IA en arrière-plan"
+      },
+      "code": {
+        "no_provider": "Aucun fournisseur d’IA capable de le faire n’est configuré.",
+        "chain_no_provider": "Cette tâche est liée à une chaîne de fournisseurs, et aucun de ses fournisseurs n’est configuré. Vérifiez la chaîne et ses clés dans les réglages IA.",
+        "consent_required": "Le fournisseur d’IA a d’abord besoin de votre consentement. Vous pouvez le donner dans les réglages IA.",
+        "not_permitted": "Le travail d’IA n’est pas autorisé sur ce dossier.",
+        "check_failed": "Le serveur n’a pas pu vérifier si l’IA peut s’exécuter. Il réessaiera la prochaine fois.",
+        "credential_expired": "Le fournisseur d’IA a refusé la clé. Vérifiez-la ou reconnectez-la dans les réglages IA.",
+        "rate_limited": "Le fournisseur d’IA signale trop de requêtes. Une nouvelle tentative aura lieu plus tard.",
+        "provider_timeout": "Le fournisseur d’IA n’a pas répondu à temps.",
+        "provider_unreachable": "Le fournisseur d’IA était injoignable. Vérifiez qu’il est en marche.",
+        "provider_empty": "Le fournisseur d’IA a répondu sans contenu.",
+        "provider_reasoning_only": "Le modèle a raisonné, mais n’a donné aucune réponse.",
+        "provider_paused": "Le fournisseur d’IA a échoué plusieurs fois de suite ; le travail en arrière-plan attend avant de le réessayer.",
+        "provider_error": "Le fournisseur d’IA a renvoyé une erreur.",
+        "budget_exhausted": "Le quota d’IA du jour est épuisé. Cela refonctionnera demain.",
+        "unreadable_file": "Le fichier n’a pas pu être préparé pour le fournisseur d’IA."
+      }
+    }
   },
   "symptoms": {
     "add": "Nouveau symptôme",

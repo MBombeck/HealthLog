@@ -8725,7 +8725,19 @@
         "next": "Dalej",
         "pageOf": "Strona {page} z {total}",
         "export": "Eksportuj CSV",
-        "empty": "Żaden wpis audytu nie pasuje do bieżących filtrów."
+        "empty": "Żaden wpis audytu nie pasuje do bieżących filtrów.",
+        "family": {
+          "auth": "Logowania",
+          "documents": "Dokumenty",
+          "sharing": "Udostępnianie i profile zarządzane",
+          "medication": "Leki"
+        },
+        "familyAll": {
+          "auth": "Wszystkie działania logowania",
+          "documents": "Wszystkie działania na dokumentach",
+          "sharing": "Wszystkie działania udostępniania i profili",
+          "medication": "Wszystkie działania dotyczące leków"
+        }
       },
       "app-logs": {
         "title": "Logi aplikacji",
@@ -14316,7 +14328,48 @@
     "waitingForWorker": "Oczekiwanie na proces w tle. Jeśli nic się nie zmienia, worker na serwerze może nie działać.",
     "errorWorkerUnavailable": "Proces w tle jest teraz niedostępny. Spróbuj ponownie za chwilę albo poproś administratora serwera o sprawdzenie go.",
     "errorTimedOut": "Odczyt trwał dłużej, niż pozwala ustawiony czas odpowiedzi AI. Spróbuj ponownie albo wydłuż czas odpowiedzi w ustawieniach AI.",
-    "errorReaderBusy": "Czytnik dokumentów jest zajęty innymi zadaniami. Spróbuj ponownie za minutę."
+    "errorReaderBusy": "Czytnik dokumentów jest zajęty innymi zadaniami. Spróbuj ponownie za minutę.",
+    "jobFailure": {
+      "title": "Zatrzymana praca AI w tle",
+      "description": "Zadania, które ostatnio się zatrzymały, i powód; wpis znika, gdy zadanie znów się uda.",
+      "line": "{job}: {reason}",
+      "repeated": "Nieudane próby z rzędu: {count}, ostatnia {when}.",
+      "lastAt": "Ostatnia próba: {when}.",
+      "openDocument": "Otwórz dokument",
+      "retry": "Spróbuj ponownie",
+      "job": {
+        "documentSummary": "Podsumowanie dokumentu",
+        "documentIndex": "Odczyt dokumentu do wyszukiwania",
+        "documentRead": "Odczyt wartości z dokumentu",
+        "labScan": "Skan wyniku badań",
+        "supplementLabel": "Etykieta suplementu",
+        "statusText": "Opisy na kartach",
+        "briefing": "Podsumowanie dnia",
+        "periodNarrative": "Przegląd tygodnia i miesiąca",
+        "workoutInsight": "Notatka o treningu",
+        "reactionLine": "Reakcja na nowe dane",
+        "coachNudge": "Przypomnienie Coacha",
+        "coachMemory": "Pamięć Coacha",
+        "other": "Praca AI w tle"
+      },
+      "code": {
+        "no_provider": "Nie skonfigurowano dostawcy AI, który mógłby to zrobić.",
+        "chain_no_provider": "To zadanie jest powiązane z łańcuchem dostawców, a żaden z jego dostawców nie jest skonfigurowany. Sprawdź łańcuch i jego klucze w ustawieniach AI.",
+        "consent_required": "Dostawca AI potrzebuje najpierw Twojej zgody. Możesz ją wyrazić w ustawieniach AI.",
+        "not_permitted": "W tej kartotece praca AI jest niedozwolona.",
+        "check_failed": "Serwer nie mógł sprawdzić, czy AI może działać. Spróbuje ponownie następnym razem.",
+        "credential_expired": "Dostawca AI odrzucił klucz. Sprawdź go lub połącz ponownie w ustawieniach AI.",
+        "rate_limited": "Dostawca AI zgłasza zbyt wiele żądań. Kolejna próba nastąpi później.",
+        "provider_timeout": "Dostawca AI nie odpowiedział na czas.",
+        "provider_unreachable": "Nie udało się połączyć z dostawcą AI. Sprawdź, czy działa.",
+        "provider_empty": "Dostawca AI odpowiedział pustą odpowiedzią.",
+        "provider_reasoning_only": "Model rozważał, ale nie udzielił odpowiedzi.",
+        "provider_paused": "Dostawca AI zawiódł kilka razy z rzędu, więc praca w tle czeka, zanim spróbuje ponownie.",
+        "provider_error": "Dostawca AI zwrócił błąd.",
+        "budget_exhausted": "Dzisiejszy limit AI został wykorzystany. Jutro znów zadziała.",
+        "unreadable_file": "Nie udało się przygotować pliku dla dostawcy AI."
+      }
+    }
   },
   "symptoms": {
     "add": "Nowy objaw",

@@ -6,6 +6,7 @@
  * the same `*Encrypted` format every other sensitive column uses) plus the
  * DTO serialisers that turn the persisted rows into the wire shapes.
  */
+import type { AiJobFailureDto } from "@/lib/ai/job-failure/types";
 import { Buffer } from "node:buffer";
 
 import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
@@ -325,6 +326,7 @@ export function serialiseDocumentDetail(
   encounterLinks: DocumentEncounterLinkDto[] = [],
   vaccinationLinks: DocumentVaccinationLinkDto[] | null = [],
   markerIndex: MarkerIndex | null = null,
+  aiFailures: AiJobFailureDto[] = [],
 ): InboundDocumentDetailDto {
   const pendingCount = facts.filter((f) => f.status === "PENDING").length;
   // `factCount` excludes REJECTED facts (a rejected fact is discarded, not part
@@ -381,5 +383,6 @@ export function serialiseDocumentDetail(
       : null,
     summaryState,
     extractionIncomplete: doc.extractionIncomplete,
+    aiFailures,
   };
 }
