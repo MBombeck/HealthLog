@@ -2760,6 +2760,9 @@
     "bucketMonthly": "Среднее за месяц",
     "bucketWeeklyDaily": "Среднее за день по неделям",
     "bucketMonthlyDaily": "Среднее за день по месяцам",
+    "bucketPeriod": "{start}–{end}",
+    "bucketReadings": "Измерений: {count}",
+    "bucketEntries": "Записей: {count}",
     "days7Label": "7 дн.",
     "days7Title": "Последние 7 дней",
     "days30Label": "30 дн.",
@@ -2828,6 +2831,8 @@
     "dataTable": {
       "toggle": "Точки данных ({count})",
       "columnDate": "Дата",
+      "columnReadings": "Измерения",
+      "columnEntries": "Записи",
       "noValue": "Нет значения",
       "captionDay": "Одна строка на день {metric}, те же точки, что рисует график.",
       "captionWeek": "Одна строка на неделю {metric}, среднее за дни этой недели, те же точки, что рисует график.",

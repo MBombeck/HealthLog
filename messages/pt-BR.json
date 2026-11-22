@@ -2760,6 +2760,9 @@
     "bucketMonthly": "Média mensal",
     "bucketWeeklyDaily": "Média diária por semana",
     "bucketMonthlyDaily": "Média diária por mês",
+    "bucketPeriod": "{start}–{end}",
+    "bucketReadings": "Medições: {count}",
+    "bucketEntries": "Registros: {count}",
     "days7Label": "7d",
     "days7Title": "Últimos 7 dias",
     "days30Label": "30d",
@@ -2828,6 +2831,8 @@
     "dataTable": {
       "toggle": "Pontos de dados ({count})",
       "columnDate": "Data",
+      "columnReadings": "Medições",
+      "columnEntries": "Registros",
       "noValue": "Sem valor",
       "captionDay": "Uma linha por dia de {metric}, os mesmos pontos que o gráfico desenha.",
       "captionWeek": "Uma linha por semana de {metric}, a média dos dias daquela semana, os mesmos pontos que o gráfico desenha.",

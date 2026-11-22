@@ -2760,6 +2760,9 @@
     "bucketMonthly": "Średnia miesięczna",
     "bucketWeeklyDaily": "Średnia dzienna w tygodniu",
     "bucketMonthlyDaily": "Średnia dzienna w miesiącu",
+    "bucketPeriod": "{start}–{end}",
+    "bucketReadings": "Pomiary: {count}",
+    "bucketEntries": "Wpisy: {count}",
     "days7Label": "7 dni",
     "days7Title": "Ostatnie 7 dni",
     "days30Label": "30 dni",
@@ -2828,6 +2831,8 @@
     "dataTable": {
       "toggle": "Punkty danych ({count})",
       "columnDate": "Data",
+      "columnReadings": "Pomiary",
+      "columnEntries": "Wpisy",
       "noValue": "Brak wartości",
       "captionDay": "Jeden wiersz na dzień dla {metric}: dokładnie te punkty, które rysuje wykres.",
       "captionWeek": "Jeden wiersz na tydzień dla {metric}, średnia z dni tego tygodnia: dokładnie te punkty, które rysuje wykres.",

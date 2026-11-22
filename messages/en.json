@@ -2760,6 +2760,9 @@
     "bucketMonthly": "Monthly avg",
     "bucketWeeklyDaily": "Daily avg per week",
     "bucketMonthlyDaily": "Daily avg per month",
+    "bucketPeriod": "{start}–{end}",
+    "bucketReadings": "Readings: {count}",
+    "bucketEntries": "Entries: {count}",
     "days7Label": "7d",
     "days7Title": "Last 7 days",
     "days30Label": "30d",
@@ -2828,6 +2831,8 @@
     "dataTable": {
       "toggle": "Data points ({count})",
       "columnDate": "Date",
+      "columnReadings": "Readings",
+      "columnEntries": "Entries",
       "noValue": "No value",
       "captionDay": "One row per day of {metric}, the same points the chart draws.",
       "captionWeek": "One row per week of {metric}, the average of that week's days, the same points the chart draws.",
