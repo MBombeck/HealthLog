@@ -115,6 +115,7 @@ async function buildBmiSnapshot(
       select: {
         value: true,
         measuredAt: true,
+        timeZone: true,
       },
     })
     .then((rows) => rows.reverse());
@@ -128,6 +129,7 @@ async function buildBmiSnapshot(
   const bmiPoints = measurements.map((measurement) => ({
     measuredAt: measurement.measuredAt,
     value: round(measurement.value / heightFactor, 2),
+    timeZone: measurement.timeZone,
   }));
   // `applyPayloadBudget` daily buckets drive the latest/previous focus;
   // the compact graded series is what reaches the prompt.

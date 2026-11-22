@@ -49,6 +49,11 @@ import type { BpTargets } from "./bp-targets";
 export interface BpReading {
   measuredAt: Date;
   value: number;
+  /**
+   * The reading's own zone, when it has one: the same-day fallback compares
+   * the local days the readings were taken on (`reading-zone.ts`).
+   */
+  timeZone?: string | null;
 }
 
 /**
@@ -60,7 +65,8 @@ export interface BpReading {
 export const SYS_HYPOTENSION_FLOOR = 90;
 export const DIA_HYPOTENSION_FLOOR = 50;
 
-import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/resolver";
+import { DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
+import { readingDayKey } from "@/lib/tz/reading-zone";
 
 /**
  * Pair a systolic reading with its closest diastolic by absolute time
@@ -158,7 +164,8 @@ export function computeBpInTargetPct(
     const sameSession = match.deltaMs <= SAME_SESSION_MS;
     const sameLocalDay =
       !sameSession &&
-      userDayKey(sys.measuredAt, tz) === userDayKey(match.dia.measuredAt, tz);
+      readingDayKey(sys.measuredAt, sys.timeZone, tz) ===
+        readingDayKey(match.dia.measuredAt, match.dia.timeZone, tz);
 
     if (!sameSession && !sameLocalDay) continue;
 
@@ -198,7 +205,8 @@ export function collectBpPairs(
     const sameSession = match.deltaMs <= SAME_SESSION_MS;
     const sameLocalDay =
       !sameSession &&
-      userDayKey(sys.measuredAt, tz) === userDayKey(match.dia.measuredAt, tz);
+      readingDayKey(sys.measuredAt, sys.timeZone, tz) ===
+        readingDayKey(match.dia.measuredAt, match.dia.timeZone, tz);
     if (!sameSession && !sameLocalDay) continue;
     out.push({ at: sys.measuredAt, sys: sys.value, dia: match.dia.value });
   }
