@@ -22,7 +22,8 @@ import {
   POPULATION_DEFAULT_CYCLE,
   PERIOD_MAX,
 } from "@/lib/cycle";
-import { predictionsPausedOn } from "./pregnancy";
+import { predictionsPausedOn, pregnancyFieldsFrom } from "./pregnancy";
+import { pregnancyFieldsOf } from "./pregnancy-store";
 import { resolveCycleDay } from "./verdict";
 import type {
   CycleProfile,
@@ -173,11 +174,7 @@ export function toProfileInput(profile: CycleProfile): CycleProfileInput {
     predictionEnabled: profile.predictionEnabled,
     rawChartMode: profile.rawChartMode,
     secondarySymptom: profile.secondarySymptom,
-    reproductiveState: profile.reproductiveState,
-    pregnancyStartDate: profile.pregnancyStartDate,
-    pregnancyDueDate: profile.pregnancyDueDate,
-    deliveryDate: profile.deliveryDate,
-    postpartumWeeks: profile.postpartumWeeks,
+    ...pregnancyFieldsOf(profile),
   };
 }
 
@@ -375,7 +372,7 @@ export function forecastActive(
   today: string,
 ): boolean {
   if (!profile.predictionEnabled || profile.rawChartMode) return false;
-  return !predictionsPausedOn(profile, today);
+  return !predictionsPausedOn(pregnancyFieldsFrom(profile), today);
 }
 
 /**

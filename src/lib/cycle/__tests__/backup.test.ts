@@ -130,6 +130,8 @@ describe("buildCycleBackupSection disaster-recovery mode", () => {
       rawChartMode: false,
       discreetNotifications: true,
       sensitiveCategoryEncryption: true,
+      // A disaster-recovery file carries the sealed state verbatim.
+      pregnancyEncrypted: undefined,
       createdAt: createdAt.toISOString(),
       updatedAt: updatedAt.toISOString(),
     });

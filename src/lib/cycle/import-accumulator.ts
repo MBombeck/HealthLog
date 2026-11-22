@@ -34,6 +34,11 @@ import {
   decideImportedPregnancyState,
   type StatusSample,
 } from "@/lib/cycle/pregnancy-import";
+import {
+  PREGNANCY_PROFILE_SELECT,
+  pregnancyFieldsOf,
+  pregnancyWriteData,
+} from "@/lib/cycle/pregnancy-store";
 import { userDayKey } from "@/lib/tz/format";
 import type { CycleDayLogInput } from "@/lib/validations/cycle";
 import type { ContraceptiveKind } from "@/generated/prisma/client";
@@ -375,19 +380,18 @@ export class CycleImportAccumulator {
       today,
     );
     if (!decision) return null;
-    const data =
-      decision.state === "PREGNANT"
-        ? {
-            reproductiveState: "PREGNANT" as const,
-            pregnancyStartDate: decision.startDate,
-          }
-        : {
-            reproductiveState: "POSTPARTUM" as const,
-            deliveryDate: decision.deliveryDate,
-          };
+    const data = pregnancyWriteData({
+      reproductiveState: decision.state,
+      pregnancyStartDate:
+        decision.state === "PREGNANT" ? decision.startDate : null,
+      pregnancyDueDate: null,
+      deliveryDate:
+        decision.state === "POSTPARTUM" ? decision.deliveryDate : null,
+      postpartumWeeks: null,
+    });
     const profile = await prisma.cycleProfile.findUnique({
       where: { userId: this.userId },
-      select: { reproductiveState: true },
+      select: PREGNANCY_PROFILE_SELECT,
     });
     if (!profile) {
       // No cycle settings yet, so no choice of the owner's to respect.
@@ -395,21 +399,20 @@ export class CycleImportAccumulator {
         data: { userId: this.userId, ...data },
       });
     } else {
-      if (profile.reproductiveState !== null) return null;
-      // A state the owner ever set or cleared is theirs: an import never
-      // sets it again behind them.
-      const touched = await prisma.auditLog.findFirst({
+      // A state the owner holds, or ever set or cleared, is theirs: an
+      // import never sets it behind them. Both live in the sealed state, so
+      // a profile without one is the only one an import may write, and the
+      // write claims exactly that.
+      const opened = pregnancyFieldsOf(profile);
+      if (opened.reproductiveState !== null || opened.ownerDecided) {
+        return null;
+      }
+      const written = await prisma.cycleProfile.updateMany({
         where: {
           userId: this.userId,
-          action: "user.cycle-prefs.update",
-          details: { contains: '"pregnancy"' },
+          pregnancyEncrypted: profile.pregnancyEncrypted,
         },
-        select: { id: true },
-      });
-      if (touched) return null;
-      const written = await prisma.cycleProfile.updateMany({
-        where: { userId: this.userId, reproductiveState: null },
-        data,
+        data: { pregnancyEncrypted: data.pregnancyEncrypted },
       });
       if (written.count === 0) return null;
     }

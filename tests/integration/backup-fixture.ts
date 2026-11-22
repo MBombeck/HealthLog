@@ -1553,10 +1553,18 @@ export const FILL_OVERRIDES: Readonly<Record<string, unknown>> = {
   "MenstrualCycle.endDate": "2026-10-28",
   "MenstrualCycle.periodEndDate": "2026-10-05",
   "MenstrualCycle.ovulationDate": "2026-10-15",
-  // The same CHECK in migration 0533, on the pregnancy days.
-  "CycleProfile.pregnancyStartDate": "2026-03-02",
-  "CycleProfile.pregnancyDueDate": "2026-12-07",
-  "CycleProfile.deliveryDate": "2026-11-30",
+  // The pregnancy state is one sealed envelope the store opens; a tag it
+  // cannot read would restore as no state (`pregnancy-store.ts`).
+  "CycleProfile.pregnancyEncrypted": () =>
+    encrypt(
+      JSON.stringify({
+        state: "POSTPARTUM",
+        startDate: "2026-03-02",
+        dueDate: "2026-12-07",
+        deliveryDate: "2026-11-30",
+        ownerDecided: true,
+      }),
+    ),
 };
 
 /**

@@ -287,6 +287,8 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   // ───── Cycle day-log sensitive payloads (String?) ─────
   { model: "CycleDayLog", field: "sensitiveEncrypted", kind: "string" },
   { model: "CycleDayLog", field: "notesEncrypted", kind: "string" },
+  // The pregnancy state and its days (`src/lib/cycle/pregnancy-store.ts`).
+  { model: "CycleProfile", field: "pregnancyEncrypted", kind: "string" },
 
   // ───── Coach (Bytes columns) ─────
   { model: "CoachMessage", field: "encryptedContent", kind: "bytes" },
@@ -692,6 +694,7 @@ export const UPDATED_AT_MODELS: ReadonlySet<string> = new Set([
   "CoachPlan",
   "CoachReminder",
   "CycleDayLog",
+  "CycleProfile",
   "DawarichDay",
   "DocumentContentIndex",
   "DocumentSourceConnection",

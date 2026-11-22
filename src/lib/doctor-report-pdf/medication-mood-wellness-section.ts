@@ -474,7 +474,7 @@ export function buildMedicationMoodWellnessSection(
     const summaryBits: string[] = [];
     if (cyc.lastPeriodStart) {
       summaryBits.push(
-        `${t("doctorReport.cycleLmp")}: ${fmtDate(`${cyc.lastPeriodStart}T12:00:00.000Z`)}`,
+        `${t("doctorReport.cycleLmp")}: ${context.fmtCalendarDate(cyc.lastPeriodStart)}`,
       );
     }
     if (cyc.averageCycleLengthDays !== null) {

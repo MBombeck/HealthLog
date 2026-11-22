@@ -77,7 +77,7 @@ vi.mock("@/lib/db", () => ({
 // route, so it is stubbed to a fixed shape. Whether it is CALLED at all is the
 // property that matters here, and the aggregator sweep asserts that directly.
 vi.mock("@/lib/cycle/export-data", () => ({
-  buildCycleExportSummary: vi.fn(async () => ({
+  buildCycleReportSummary: vi.fn(async () => ({
     lastPeriodStart: "2026-02-01",
     recentCycles: [
       { startDate: "2026-02-01", lengthDays: 28, periodLengthDays: 5 },

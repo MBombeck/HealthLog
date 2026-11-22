@@ -22,8 +22,11 @@
  *     AND mirrors `CycleDayLog.basalBodyTempC`; it is NOT routed here (it
  *     is a quantity sample handled by the measurement mapping + the cycle
  *     day-log mirror).
- *   - BleedingDuringPregnancy / BleedingAfterPregnancy stay DEFERRED
- *     (pregnancy-mode is a later release).
+ *   - BleedingDuringPregnancy / BleedingAfterPregnancy stay unmapped. The
+ *     pregnancy state is set by the owner, or from the pregnancy and
+ *     lactation status samples (`pregnancy-import.ts`); bleeding in or after
+ *     a pregnancy is not a period and must not start a cycle, and the day
+ *     log has no field of its own for it.
  *
  * Apple's `export.xml` writes a category sample's `value` as the symbolic
  * `HKCategoryValue…` name; the live HealthKit API uses the integer

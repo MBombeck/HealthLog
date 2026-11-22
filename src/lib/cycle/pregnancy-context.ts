@@ -5,14 +5,16 @@
  * records. While the state holds, weight is shown as data and never measured
  * against a goal or celebrated as a low.
  *
- * One point read. A record that never set up cycle tracking, or turned it
- * off, has no state here. A database client without the cycle model (a unit
+ * One point read (`loadPregnancyFields`). A record that never set up cycle
+ * tracking, or has the cycle module off (its own switch or the operator's),
+ * has no state here. A database client without the cycle model (a unit
  * test's partial mock) reads as no state.
  */
 import type { PrismaClient } from "@/generated/prisma/client";
 import { userDayKey } from "@/lib/tz/format";
 
 import { resolvePregnancyState } from "./pregnancy";
+import { loadPregnancyFields } from "./pregnancy-store";
 
 export async function pregnancyContextActive(
   db: Pick<PrismaClient, "cycleProfile">,
@@ -20,20 +22,9 @@ export async function pregnancyContextActive(
   timezone: string,
   now: Date = new Date(),
 ): Promise<boolean> {
-  if (typeof db.cycleProfile?.findUnique !== "function") return false;
-  const profile = await db.cycleProfile.findUnique({
-    where: { userId },
-    select: {
-      cycleTrackingEnabled: true,
-      reproductiveState: true,
-      pregnancyStartDate: true,
-      pregnancyDueDate: true,
-      deliveryDate: true,
-      postpartumWeeks: true,
-    },
-  });
-  if (!profile || profile.cycleTrackingEnabled === false) return false;
-  return resolvePregnancyState(profile, userDayKey(now, timezone))
+  const fields = await loadPregnancyFields(db, userId);
+  if (!fields) return false;
+  return resolvePregnancyState(fields, userDayKey(now, timezone))
     .predictionsPaused;
 }
 

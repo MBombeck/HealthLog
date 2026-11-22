@@ -5,13 +5,22 @@
  * means on a given day. It is pure: every caller passes the owner's own
  * calendar day, so the answer near midnight agrees with the calendar.
  *
- *   - PREGNANT holds until the owner changes it. The week is counted the
- *     usual way, in completed weeks and days from the first day of the
- *     pregnancy (`pregnancyStartDate`), or from the due date less 280 days
- *     when only the due date is known. Neither known: no week, the state
- *     still holds.
+ * The stored state is what holds now, and the dates bound it. A reader asks
+ * about a day (today, the last day of a report's range), and the answer is
+ * what held on THAT day:
+ *
+ *   - PREGNANT holds from the first day of the pregnancy, counted the usual
+ *     way in completed weeks and days from `pregnancyStartDate`, or from the
+ *     due date less 280 days when only the due date is known. Neither known:
+ *     no week, the state holds. It holds until the owner changes it, but not
+ *     past `PREGNANCY_OVERDUE_DAYS` after the due date (or after 280 days
+ *     from the start without one): a state left standing after the birth is
+ *     a stale entry, not a 60th week, and resolves to the ordinary cycle with
+ *     `lapsed` set so the cycle page can ask.
  *   - POSTPARTUM holds from `deliveryDate` for `postpartumWeeks` weeks, then
- *     resolves to the ordinary cycle on its own.
+ *     resolves to the ordinary cycle on its own. Before the delivery it was a
+ *     pregnancy: from its first day, when one is known, the day resolves to
+ *     PREGNANT with that day's week; before that, to nothing.
  *
  * While the resolved state is set the period and fertility forecast pauses
  * (`predictionsPaused`). That is the one predicate: the engine gate, the
@@ -28,39 +37,45 @@ import type { CycleReproductiveState } from "./types";
 /** Days from the first day of the pregnancy to the due date. */
 export const PREGNANCY_TERM_DAYS = 280;
 
+/**
+ * How long after the due date a PREGNANT state still holds: four weeks, so
+ * 44 weeks from the first day. Past it no pregnancy is still running, and
+ * the state is read as an entry the owner forgot to change.
+ */
+export const PREGNANCY_OVERDUE_DAYS = 28;
+
 /** Default length of the postpartum state, in weeks. */
 export const POSTPARTUM_WEEKS_DEFAULT = 12;
 export const POSTPARTUM_WEEKS_MIN = 1;
 export const POSTPARTUM_WEEKS_MAX = 78;
 
-/** The columns this module reads off a `CycleProfile`. */
+/**
+ * The state as this module reads it. Every field is required, so a stored
+ * `CycleProfile` row (which keeps the state sealed, `pregnancy-store.ts`)
+ * cannot be passed by mistake and read as "no state": open it with
+ * `pregnancyFieldsOf` first.
+ */
 export interface PregnancyProfileFields {
-  reproductiveState?: CycleReproductiveState | null;
-  pregnancyStartDate?: string | null;
-  pregnancyDueDate?: string | null;
-  deliveryDate?: string | null;
-  postpartumWeeks?: number | null;
+  reproductiveState: CycleReproductiveState | null;
+  pregnancyStartDate: string | null;
+  pregnancyDueDate: string | null;
+  deliveryDate: string | null;
+  postpartumWeeks: number | null;
 }
 
-/** The `CycleProfile` columns the state lives in, for a Prisma `select`. */
-export const PREGNANCY_PROFILE_SELECT = {
-  reproductiveState: true,
-  pregnancyStartDate: true,
-  pregnancyDueDate: true,
-  deliveryDate: true,
-  postpartumWeeks: true,
-} as const;
-
-/** The state's columns off a row that carries them. */
-export function pregnancyFieldsOf(
-  row: PregnancyProfileFields,
+/**
+ * The state off an input whose fields may be absent (the engine's
+ * `CycleProfileInput`, where absent reads as the ordinary cycle).
+ */
+export function pregnancyFieldsFrom(
+  input: Partial<PregnancyProfileFields>,
 ): PregnancyProfileFields {
   return {
-    reproductiveState: row.reproductiveState ?? null,
-    pregnancyStartDate: row.pregnancyStartDate ?? null,
-    pregnancyDueDate: row.pregnancyDueDate ?? null,
-    deliveryDate: row.deliveryDate ?? null,
-    postpartumWeeks: row.postpartumWeeks ?? null,
+    reproductiveState: input.reproductiveState ?? null,
+    pregnancyStartDate: input.pregnancyStartDate ?? null,
+    pregnancyDueDate: input.pregnancyDueDate ?? null,
+    deliveryDate: input.deliveryDate ?? null,
+    postpartumWeeks: input.postpartumWeeks ?? null,
   };
 }
 
@@ -89,6 +104,12 @@ export interface ResolvedPregnancyState {
   postpartumEndsOn: string | null;
   /** The one predicate every forecast surface reads. */
   predictionsPaused: boolean;
+  /**
+   * PREGNANT is stored but its time is past (`PREGNANCY_OVERDUE_DAYS` after
+   * the due date): the state no longer holds, and the owner may want to
+   * change it.
+   */
+  lapsed: boolean;
 }
 
 function clampWeeks(weeks: number | null | undefined): number {
@@ -122,6 +143,20 @@ export function gestationalAgeOn(
   return { weeks: Math.floor(elapsed / 7), days: elapsed % 7 };
 }
 
+/**
+ * The first day a stored PREGNANT state no longer holds, or null when neither
+ * a first day nor a due date is known.
+ */
+export function pregnancyLapsesOn(
+  profile: PregnancyProfileFields,
+): string | null {
+  const start = pregnancyStartFor(profile);
+  const due =
+    profile.pregnancyDueDate ??
+    (start ? addDays(start, PREGNANCY_TERM_DAYS) : null);
+  return due ? addDays(due, PREGNANCY_OVERDUE_DAYS + 1) : null;
+}
+
 /** The day the postpartum state ends (exclusive), or null without a delivery. */
 export function postpartumEndFor(
   profile: PregnancyProfileFields,
@@ -130,10 +165,14 @@ export function postpartumEndFor(
   return addDays(profile.deliveryDate, clampWeeks(profile.postpartumWeeks) * 7);
 }
 
-/** Resolve the stored state on the owner's calendar day `today`. */
+/**
+ * Resolve the stored state on the owner's calendar day `day`: what held on
+ * that day, bounded by the dates (see the module comment). Today for the
+ * live surfaces, the last day of the range for a report.
+ */
 export function resolvePregnancyState(
   profile: PregnancyProfileFields,
-  today: string,
+  day: string,
 ): ResolvedPregnancyState {
   const storedState = profile.reproductiveState ?? null;
   const postpartumWeeks = clampWeeks(profile.postpartumWeeks);
@@ -149,30 +188,38 @@ export function resolvePregnancyState(
     postpartumWeek: null,
     postpartumEndsOn: null,
     predictionsPaused: false,
+    lapsed: false,
   };
+  const pregnantOn = (): ResolvedPregnancyState => ({
+    ...base,
+    state: "PREGNANT",
+    gestationalAge: effectiveStartDate
+      ? gestationalAgeOn(effectiveStartDate, day)
+      : null,
+    predictionsPaused: true,
+  });
 
   if (storedState === "PREGNANT") {
-    return {
-      ...base,
-      state: "PREGNANT",
-      gestationalAge: effectiveStartDate
-        ? gestationalAgeOn(effectiveStartDate, today)
-        : null,
-      predictionsPaused: true,
-    };
+    if (effectiveStartDate && day < effectiveStartDate) return base;
+    const lapsesOn = pregnancyLapsesOn(profile);
+    if (lapsesOn && day >= lapsesOn) return { ...base, lapsed: true };
+    return pregnantOn();
   }
 
   if (storedState === "POSTPARTUM" && profile.deliveryDate) {
     const endsOn = postpartumEndFor(profile);
-    const elapsed = dayDiff(today, profile.deliveryDate);
-    // A delivery date in the future is a typo, not a state that has not
-    // begun: the owner said "postpartum", so it holds from today.
-    const inWindow = endsOn === null || today < endsOn;
-    if (inWindow) {
+    if (day < profile.deliveryDate) {
+      return effectiveStartDate &&
+        day >= effectiveStartDate &&
+        effectiveStartDate <= profile.deliveryDate
+        ? pregnantOn()
+        : { ...base, postpartumEndsOn: endsOn };
+    }
+    if (endsOn === null || day < endsOn) {
       return {
         ...base,
         state: "POSTPARTUM",
-        postpartumWeek: Math.max(0, Math.floor(elapsed / 7)),
+        postpartumWeek: Math.floor(dayDiff(day, profile.deliveryDate) / 7),
         postpartumEndsOn: endsOn,
         predictionsPaused: true,
       };
@@ -181,6 +228,28 @@ export function resolvePregnancyState(
   }
 
   return base;
+}
+
+/**
+ * The state as it stood on the last day of `[from, to]` it held, for a
+ * report over a range: the range's last day when the state held then, else
+ * the last day of a stretch that ended inside the range. A range that ended
+ * before the pregnancy began, or began after the postpartum window closed,
+ * resolves to no state.
+ */
+export function resolvePregnancyStateDuring(
+  profile: PregnancyProfileFields,
+  from: string,
+  to: string,
+): ResolvedPregnancyState {
+  const atEnd = resolvePregnancyState(profile, to);
+  if (atEnd.state !== null) return atEnd;
+  const lastHeld = pregnancySpans(profile)
+    .filter((span) => span.start <= to && (span.end ?? to) >= from)
+    .map((span) => (span.end !== null && span.end < to ? span.end : to))
+    .sort()
+    .pop();
+  return lastHeld ? resolvePregnancyState(profile, lastHeld) : atEnd;
 }
 
 /** Shorthand for the one predicate. */
@@ -193,7 +262,8 @@ export function predictionsPausedOn(
 
 /**
  * The stretches a timeline draws: the pregnancy (from its first day to the
- * delivery, or open while it is ongoing) and the postpartum window. Only what
+ * delivery, or to its last plausible day while it is stored as ongoing) and
+ * the postpartum window. Only what
  * the owner's dates place; a stretch without a known first day is not drawn.
  */
 export function pregnancySpans(profile: PregnancyProfileFields): Array<{
@@ -210,7 +280,14 @@ export function pregnancySpans(profile: PregnancyProfileFields): Array<{
   if (state === null) return spans;
   const start = pregnancyStartFor(profile);
   if (state === "PREGNANT") {
-    if (start) spans.push({ kind: "pregnancy", start, end: null });
+    const lapsesOn = pregnancyLapsesOn(profile);
+    if (start) {
+      spans.push({
+        kind: "pregnancy",
+        start,
+        end: lapsesOn ? addDays(lapsesOn, -1) : null,
+      });
+    }
     return spans;
   }
   // POSTPARTUM

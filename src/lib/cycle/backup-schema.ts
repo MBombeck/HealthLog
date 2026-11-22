@@ -13,7 +13,6 @@ import {
   CervixOpening,
   CervixPosition,
   ContraceptiveKind,
-  CycleReproductiveState,
   CycleTrackingGoal,
   FlowLevel,
   HomeTestResult,
@@ -149,7 +148,7 @@ export const cycleProfileSchema = z
     rawChartMode: z.boolean().optional(),
     discreetNotifications: z.boolean().optional(),
     sensitiveCategoryEncryption: z.boolean().optional(),
-    reproductiveState: z.enum(CycleReproductiveState).nullable().optional(),
+    reproductiveState: z.enum(["PREGNANT", "POSTPARTUM"]).nullable().optional(),
     pregnancyStartDate: dateKey.nullable().optional(),
     pregnancyDueDate: dateKey.nullable().optional(),
     deliveryDate: dateKey.nullable().optional(),
@@ -159,6 +158,12 @@ export const cycleProfileSchema = z
       .min(POSTPARTUM_WEEKS_MIN)
       .max(POSTPARTUM_WEEKS_MAX)
       .optional(),
+    // The owner set or cleared the state at least once, so an import does
+    // not set it behind them. Absent in files written before v1.49.0.
+    pregnancyOwnerDecided: z.boolean().optional(),
+    // A disaster-recovery file's sealed pregnancy state, verbatim. Absent in
+    // a portable file and in files written before v1.49.0.
+    pregnancyEncrypted: z.string().min(1).nullable().optional(),
     createdAt: isoDateTime.optional(),
     updatedAt: isoDateTime.optional(),
   })

@@ -11,10 +11,11 @@
 import { decrypt } from "@/lib/crypto";
 import { getEvent } from "@/lib/logging/context";
 import type { CyclePredictionResult } from "@/lib/cycle/types";
+import { resolvePregnancyState } from "@/lib/cycle/pregnancy";
 import {
-  resolvePregnancyState,
-  type PregnancyProfileFields,
-} from "@/lib/cycle/pregnancy";
+  pregnancyFieldsOf,
+  type StoredPregnancyRow,
+} from "@/lib/cycle/pregnancy-store";
 import type {
   CycleDayLog,
   CycleSymptomLink,
@@ -307,17 +308,23 @@ export interface CyclePregnancyDTO {
   postpartumWeek: number | null;
   postpartumEndsOn: string | null;
   predictionsPaused: boolean;
+  /**
+   * PREGNANT is stored, but four weeks past the due date: the state no
+   * longer holds (`state` is null) and the owner may want to change it.
+   */
+  lapsed: boolean;
 }
 
 export function toCyclePregnancyDTO(
-  row: PregnancyProfileFields,
+  row: StoredPregnancyRow,
   today: string,
 ): CyclePregnancyDTO {
-  const resolved = resolvePregnancyState(row, today);
+  const fields = pregnancyFieldsOf(row);
+  const resolved = resolvePregnancyState(fields, today);
   return {
     storedState: resolved.storedState,
     state: resolved.state,
-    startDate: row.pregnancyStartDate ?? null,
+    startDate: fields.pregnancyStartDate,
     dueDate: resolved.dueDate,
     deliveryDate: resolved.deliveryDate,
     postpartumWeeks: resolved.postpartumWeeks,
@@ -326,6 +333,7 @@ export function toCyclePregnancyDTO(
     postpartumWeek: resolved.postpartumWeek,
     postpartumEndsOn: resolved.postpartumEndsOn,
     predictionsPaused: resolved.predictionsPaused,
+    lapsed: resolved.lapsed,
   };
 }
 
@@ -350,7 +358,7 @@ export function toCycleProfileDTO(
   };
 }
 
-type MenstrualCycleProfileRow = PregnancyProfileFields & {
+type MenstrualCycleProfileRow = StoredPregnancyRow & {
   goal: string;
   secondarySymptom: string;
   rawChartMode: boolean;

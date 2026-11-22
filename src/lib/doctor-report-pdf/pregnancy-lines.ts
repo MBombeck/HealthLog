@@ -15,12 +15,17 @@ type Translate = (
   vars?: Record<string, string | number>,
 ) => string;
 
+/**
+ * `fmtCalendarDate` formats the day key as the calendar date it is. Read as
+ * an instant at noon UTC in the report zone, it moved to the next day in
+ * zones at UTC+13 and +14.
+ */
 export function pregnancyReportLines(
   pregnancy: CycleExportPregnancy,
   t: Translate,
-  fmtDate: (iso: string) => string,
+  fmtCalendarDate: (dayKey: string) => string,
 ): string[] {
-  const day = (d: string) => fmtDate(`${d}T12:00:00.000Z`);
+  const day = fmtCalendarDate;
   const lines: string[] = [];
   if (pregnancy.state === "PREGNANT") {
     lines.push(
@@ -61,18 +66,18 @@ export function pregnancyReportLines(
 export function drawPregnancyBlock(
   context: Pick<
     DoctorReportPdfRenderContext,
-    "doc" | "t" | "fmtDate" | "margin" | "ensureSpace"
+    "doc" | "t" | "fmtCalendarDate" | "margin" | "ensureSpace"
   >,
   pregnancy: CycleExportPregnancy | null | undefined,
   y: number,
 ): number {
   if (!pregnancy) return y;
-  const { doc, t, fmtDate, margin, ensureSpace } = context;
+  const { doc, t, fmtCalendarDate, margin, ensureSpace } = context;
   doc.setFont(PDF_FONT_FAMILY, "bold");
   doc.text(t("doctorReport.pregnancy.title"), margin, y);
   let cursor = y + 4.5;
   doc.setFont(PDF_FONT_FAMILY, "normal");
-  for (const line of pregnancyReportLines(pregnancy, t, fmtDate)) {
+  for (const line of pregnancyReportLines(pregnancy, t, fmtCalendarDate)) {
     cursor = ensureSpace(cursor, 4.5);
     doc.text(line, margin, cursor);
     cursor += 4.5;

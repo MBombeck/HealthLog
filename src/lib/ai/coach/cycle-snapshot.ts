@@ -32,10 +32,17 @@ import {
 import { resolveLuteal } from "@/lib/cycle";
 import type { CyclePhase } from "@/lib/cycle/types";
 import {
-  PREGNANCY_PROFILE_SELECT,
-  pregnancyFieldsOf,
+  pregnancyFieldsFrom,
   resolvePregnancyState,
 } from "@/lib/cycle/pregnancy";
+import {
+  PREGNANCY_PROFILE_SELECT,
+  pregnancyFieldsOf,
+} from "@/lib/cycle/pregnancy-store";
+import {
+  pregnancySnapshotBlock,
+  type PregnancySnapshotBlock,
+} from "@/lib/ai/pregnancy-context";
 import {
   phaseForDate,
   buildPhaseDayMap,
@@ -145,14 +152,7 @@ export interface CycleSnapshotBlock {
    * today. While it does, the forecast is paused: `phase`, `dayOfCycle`,
    * `nextEvent` and `upcoming` are empty. Dates and counts only.
    */
-  pregnancy: {
-    state: "PREGNANT" | "POSTPARTUM";
-    gestationalWeeks: number | null;
-    gestationalDays: number | null;
-    dueDate: string | null;
-    deliveryDate: string | null;
-    postpartumWeek: number | null;
-  } | null;
+  pregnancy: PregnancySnapshotBlock | null;
 }
 
 /**
@@ -204,20 +204,8 @@ function snapshotPregnancy(
   profile: CycleProfileInput,
   today: string,
 ): { paused: boolean; block: CycleSnapshotBlock["pregnancy"] } {
-  const r = resolvePregnancyState(profile, today);
-  return {
-    paused: r.predictionsPaused,
-    block: r.state
-      ? {
-          state: r.state,
-          gestationalWeeks: r.gestationalAge?.weeks ?? null,
-          gestationalDays: r.gestationalAge?.days ?? null,
-          dueDate: r.dueDate,
-          deliveryDate: r.deliveryDate,
-          postpartumWeek: r.postpartumWeek,
-        }
-      : null,
-  };
+  const r = resolvePregnancyState(pregnancyFieldsFrom(profile), today);
+  return { paused: r.predictionsPaused, block: pregnancySnapshotBlock(r) };
 }
 
 /**

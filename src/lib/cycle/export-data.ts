@@ -18,7 +18,12 @@ import { median, mad } from "@/lib/cycle/prediction";
 import { phaseForDay } from "@/lib/cycle/phase";
 import { dayDiff, addDays } from "@/lib/cycle/day-math";
 import { LUTEAL_DEFAULT, type CyclePhase } from "@/lib/cycle/types";
-import { resolvePregnancyState } from "@/lib/cycle/pregnancy";
+import {
+  resolvePregnancyState,
+  resolvePregnancyStateDuring,
+} from "@/lib/cycle/pregnancy";
+import { loadPregnancyFields } from "@/lib/cycle/pregnancy-store";
+import { userDayKey } from "@/lib/tz/format";
 
 /** One observed cycle in the recent-cycles table. */
 export interface CycleExportCycle {
@@ -69,33 +74,52 @@ export interface CycleExportPregnancy {
   postpartumWeek: number | null;
 }
 
-/** The pregnancy block on `asOf`, or null when no state holds then. */
+/**
+ * The pregnancy block of a report over `[from, asOf]`: the state as it stood
+ * on the last day of the range it held (`resolvePregnancyStateDuring`), or
+ * null when it held on none of them. `heldOnAsOf` says whether it still held
+ * on the report's last day, which is what pauses the current phase.
+ */
 async function exportPregnancy(
   userId: string,
+  from: string,
   asOf: string,
-): Promise<CycleExportPregnancy | null> {
-  const profile = await prisma.cycleProfile.findUnique({
-    where: { userId },
-    select: {
-      reproductiveState: true,
-      pregnancyStartDate: true,
-      pregnancyDueDate: true,
-      deliveryDate: true,
-      postpartumWeeks: true,
-    },
-  });
+): Promise<{ block: CycleExportPregnancy; heldOnAsOf: boolean } | null> {
+  const profile = await loadPregnancyFields(prisma, userId);
   if (!profile) return null;
-  const resolved = resolvePregnancyState(profile, asOf);
+  const resolved = resolvePregnancyStateDuring(profile, from, asOf);
   if (!resolved.state) return null;
   return {
-    state: resolved.state,
-    startDate: profile.pregnancyStartDate,
-    dueDate: resolved.dueDate,
-    deliveryDate: resolved.deliveryDate,
-    gestationalWeeks: resolved.gestationalAge?.weeks ?? null,
-    gestationalDays: resolved.gestationalAge?.days ?? null,
-    postpartumWeek: resolved.postpartumWeek,
+    block: {
+      state: resolved.state,
+      startDate: profile.pregnancyStartDate,
+      dueDate: resolved.dueDate,
+      deliveryDate: resolved.deliveryDate,
+      gestationalWeeks: resolved.gestationalAge?.weeks ?? null,
+      gestationalDays: resolved.gestationalAge?.days ?? null,
+      postpartumWeek: resolved.postpartumWeek,
+    },
+    heldOnAsOf: resolvePregnancyState(profile, asOf).state !== null,
   };
+}
+
+/**
+ * The cycle summary of a doctor report over `[start, end]`, read in the
+ * report zone: the phase on the last day, the pregnancy as it stood in the
+ * range.
+ */
+export function buildCycleReportSummary(
+  userId: string,
+  start: Date,
+  end: Date,
+  reportTz: string,
+): Promise<CycleExportSummary | null> {
+  return buildCycleExportSummary(
+    userId,
+    userDayKey(end, reportTz),
+    LUTEAL_DEFAULT,
+    userDayKey(start, reportTz),
+  );
 }
 
 /** Max observed cycles surfaced in the recent-cycles table. */
@@ -110,6 +134,7 @@ export async function buildCycleExportSummary(
   userId: string,
   asOf: string,
   lutealLength: number = LUTEAL_DEFAULT,
+  from: string = asOf,
 ): Promise<CycleExportSummary | null> {
   const cycles = await prisma.menstrualCycle.findMany({
     where: { userId, deletedAt: null, isPredicted: false },
@@ -123,7 +148,8 @@ export async function buildCycleExportSummary(
     },
   });
 
-  const pregnancy = await exportPregnancy(userId, asOf);
+  const pregnancyRead = await exportPregnancy(userId, from, asOf);
+  const pregnancy = pregnancyRead?.block ?? null;
   if (cycles.length === 0) {
     // A pregnancy with no logged cycle is still the section's content.
     return pregnancy
@@ -176,7 +202,7 @@ export async function buildCycleExportSummary(
   // Current phase: resolve against the cycle whose window contains `asOf`.
   let currentPhase: CyclePhase | null = null;
   const last = cycles[cycles.length - 1];
-  if (last && !pregnancy) {
+  if (last && !pregnancyRead?.heldOnAsOf) {
     // The open cycle's nextStart is unknown; estimate it from the median
     // length so the phase math has a window.
     const estLength = averageCycleLengthDays ?? 28;

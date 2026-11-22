@@ -38,7 +38,7 @@ import {
   reconstructSleepNights,
   type SleepStageRow,
 } from "@/lib/analytics/sleep-night";
-import { buildCycleExportSummary } from "@/lib/cycle/export-data";
+import { buildCycleReportSummary } from "@/lib/cycle/export-data";
 import { resolveModuleMap } from "@/lib/modules/gate";
 import { MEASUREMENT_LEAF_IDS } from "@/lib/report-selection/catalogue";
 import type { ReportSelection } from "@/lib/report-selection/selection";
@@ -574,7 +574,7 @@ export async function collectDoctorReportData(
         })
       : Promise.resolve(null),
     gate.admits("CYCLE")
-      ? buildCycleExportSummary(userId, userDayKey(end, reportTz))
+      ? buildCycleReportSummary(userId, start, end, reportTz)
       : Promise.resolve(null),
     gate.admits("LAB_RESULTS")
       ? loadLabResults(userId, start, end)
