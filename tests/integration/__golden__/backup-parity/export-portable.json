@@ -546,11 +546,12 @@
       "rawChartMode": true,
       "discreetNotifications": true,
       "sensitiveCategoryEncryption": false,
-      "reproductiveState": "PREGNANT",
+      "reproductiveState": "POSTPARTUM",
       "pregnancyStartDate": "2026-03-02",
       "pregnancyDueDate": "2026-12-07",
       "deliveryDate": "2026-11-30",
-      "postpartumWeeks": 3
+      "postpartumWeeks": 3,
+      "pregnancyOwnerDecided": true
     },
     "cycles": [],
     "cycleDayLogs": [
@@ -2407,11 +2408,12 @@
       "rawChartMode": true,
       "discreetNotifications": true,
       "sensitiveCategoryEncryption": false,
-      "reproductiveState": "PREGNANT",
+      "reproductiveState": "POSTPARTUM",
       "pregnancyStartDate": "2026-03-02",
       "pregnancyDueDate": "2026-12-07",
       "deliveryDate": "2026-11-30",
-      "postpartumWeeks": 3
+      "postpartumWeeks": 3,
+      "pregnancyOwnerDecided": true
     },
     "cycles": [],
     "cycleDayLogs": [

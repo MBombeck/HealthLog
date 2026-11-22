@@ -1149,13 +1149,10 @@
         "rawChartMode": true,
         "discreetNotifications": true,
         "sensitiveCategoryEncryption": false,
-        "reproductiveState": "PREGNANT",
-        "pregnancyStartDate": "2026-03-02",
-        "pregnancyDueDate": "2026-12-07",
-        "deliveryDate": "2026-11-30",
+        "pregnancyEncrypted": "<sealed:v1:{\"state\":\"POSTPARTUM\",\"startDate\":\"2026-03-02\",\"dueDate\":\"2026-12-07\",\"deliveryDate\":\"2026-11-30\",\"ownerDecided\":true}>",
         "postpartumWeeks": 3,
-        "createdAt": "2026-05-03T16:57:00.000Z",
-        "updatedAt": "2026-05-03T16:58:00.000Z"
+        "createdAt": "2026-05-03T16:54:00.000Z",
+        "updatedAt": "2026-05-03T16:55:00.000Z"
       }
     ],
     "MenstrualCycle": [
