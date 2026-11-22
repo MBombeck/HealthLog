@@ -130,7 +130,7 @@ The same shape locally, on the production build with a 524 MB heap: 180 MB live 
 - **Coalesced post-ingest jobs.** Every batch used to queue its own personal-record scan and reminder check; a send now waits a few seconds and joins the one already queued for the account (`singletonKey` on a `short` queue). On the burst: 160 of each before, 7 and 12 after.
 - **A byte budget on every server-cache bucket** (`src/lib/cache/approx-bytes.ts`): together a tenth of the heap limit, evicting from the least-recently-used end by estimated size, and an entry past its stale window is dropped on the next write instead of waiting for the entry cap.
 
-`tests/integration/ingest-burst-memory.test.ts` is the CI guard: one phone's burst of 48 batches and 24 ECG strips at once through the route handlers, the live heap sampled after forced collections. Behind the gate it stays under its budget with every row landed; with the gate opened wide it does not fit the same budget.
+`tests/integration/ingest-burst-memory.test.ts` is the CI guard: one phone's burst of 48 batches and 24 ECG strips at once through the route handlers, the live heap sampled after forced collections. Behind the gate it stays under its 48 MB budget with every row landed (23.5 MB held at most, two requests running); with the gate opened wide it does not fit the same budget (88 MB held, 72 requests running, and in one of two runs 16 batches failed to get a database transaction in time).
 
 ## Statement budgets in the integration suite
 
