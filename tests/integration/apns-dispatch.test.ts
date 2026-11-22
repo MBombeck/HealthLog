@@ -139,6 +139,8 @@ async function seedDevice(opts: {
   apnsEnvironment?: "sandbox" | "production";
   token?: string;
   medicationDelivery?: "server" | "client" | null;
+  lastSeen?: Date;
+  localRunwayUntil?: Date | null;
 }): Promise<string> {
   const device = await getPrismaClient().device.create({
     data: {
@@ -149,6 +151,8 @@ async function seedDevice(opts: {
       apnsToken: opts.apnsToken,
       apnsEnvironment: opts.apnsEnvironment ?? "sandbox",
       medicationDelivery: opts.medicationDelivery ?? null,
+      ...(opts.lastSeen ? { lastSeen: opts.lastSeen } : {}),
+      localRunwayUntil: opts.localRunwayUntil ?? null,
     },
   });
   return device.id;
@@ -391,6 +395,56 @@ describe("APNs per-device medication delivery", () => {
     expect(attempts.map((a) => [a.result, a.reason])).toEqual([
       ["skipped", "client_managed"],
     ]);
+  });
+
+  it("hands a client device quiet for over 3 days back to the server until it shows up", async () => {
+    const day = 86_400_000;
+    await seedApnsChannel();
+    await seedDevice({
+      apnsToken: "quiet",
+      medicationDelivery: "client",
+      lastSeen: new Date(Date.now() - 3 * day - 60_000),
+    });
+    await seedDevice({
+      apnsToken: "inherits",
+      lastSeen: new Date(Date.now() - 4 * day),
+    });
+    await seedDevice({
+      apnsToken: "recent",
+      medicationDelivery: "client",
+      lastSeen: new Date(Date.now() - 2 * day),
+    });
+    await setAccountClientManaged(true);
+    expect(await dispatch()).toEqual(["inherits", "quiet"]);
+
+    // It shows up again: local again.
+    await getPrismaClient().device.updateMany({
+      where: { userId: TEST_USER_ID },
+      data: { lastSeen: new Date() },
+    });
+    apnsSendMock.mockClear();
+    expect(await dispatch()).toEqual([]);
+  });
+
+  it("follows the runway a client device reported instead of the 3 days", async () => {
+    const day = 86_400_000;
+    await seedApnsChannel();
+    // Quiet for 5 days, but planned for 2 more: still local.
+    await seedDevice({
+      apnsToken: "planned",
+      medicationDelivery: "client",
+      lastSeen: new Date(Date.now() - 5 * day),
+      localRunwayUntil: new Date(Date.now() + 2 * day),
+    });
+    // Seen just now, but its plan ran out an hour ago: the server reminds.
+    await seedDevice({
+      apnsToken: "dry",
+      medicationDelivery: "client",
+      lastSeen: new Date(),
+      localRunwayUntil: new Date(Date.now() - 3_600_000),
+    });
+    await setAccountClientManaged(false);
+    expect(await dispatch()).toEqual(["dry"]);
   });
 
   it("pushes a follow-up for an open dose to every device", async () => {

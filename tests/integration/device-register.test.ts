@@ -12,7 +12,8 @@
  *     token, and we must not enable APNs delivery prematurely.
  *  3. Re-registering the same `apnsToken` is idempotent, including when the
  *     legacy token changes: the route returns 201 and keeps one canonical
- *     device and one channel. Foreign ownership still returns 409.
+ *     device and one channel. A token another account holds is taken over
+ *     (iOS #190, #191): that account's row goes with its push credentials.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { NextRequest } from "next/server";
@@ -278,8 +279,8 @@ describe("POST /api/devices", () => {
     ).resolves.toEqual({ deviceId: "legacy-token-original" });
   });
 
-  it("rejects an APNs token owned by another user without mutating either account", async () => {
-    const user = await seedSession("device-apns-conflict");
+  it("takes over an APNs token another account holds, with nothing of that account left on it", async () => {
+    const user = await seedSession("device-apns-takeover");
     const prisma = getPrismaClient();
     const owner = await prisma.user.create({
       data: {
@@ -287,36 +288,177 @@ describe("POST /api/devices", () => {
         email: "device-apns-owner@example.test",
       },
     });
+    const apns = "ab".repeat(32);
     const ownedDevice = await prisma.device.create({
       data: {
         userId: owner.id,
         platform: "ios",
-        token: "foreign-legacy-token",
+        token: "owner-install-token",
         bundleId: "io.healthlog.ios",
-        apnsToken: "9999aaaabbbbcccc",
+        apnsToken: apns,
         apnsEnvironment: "sandbox",
+        pushKeyPublic: "A".repeat(43),
+        pushKeySuites: [1],
+        relayState: "bound",
+        relayConsentAt: new Date(),
+        relayConsentVersion: "1",
+        liveActivityPushToken: "cd".repeat(32),
+        laStartToken: "ef".repeat(32),
+      },
+    });
+    const medication = await prisma.medication.create({
+      data: { userId: owner.id, name: "Owner med", dose: "1" },
+    });
+    await prisma.liveActivityToken.create({
+      data: {
+        deviceId: ownedDevice.id,
+        pushToken: "12".repeat(32),
+        medicationId: medication.id,
       },
     });
 
     const response = await registerDevice({
-      token: "requesting-user-token",
+      token: "taker-install-token",
       bundleId: "io.healthlog.ios.changed",
-      apnsToken: "9999aaaabbbbcccc",
+      apnsToken: apns.toUpperCase(),
       apnsEnvironment: "production",
     });
-    expect(response.status).toBe(409);
+    expect(response.status).toBe(201);
+    const body = (await response.json()) as { data: { id: string } };
+
+    // The previous account's row went, with its push key, binding and Live
+    // Activity state.
+    await expect(
+      prisma.device.count({ where: { id: ownedDevice.id } }),
+    ).resolves.toBe(0);
+    await expect(
+      prisma.liveActivityToken.count({ where: { deviceId: ownedDevice.id } }),
+    ).resolves.toBe(0);
+    const taken = await prisma.device.findUniqueOrThrow({
+      where: { id: body.data.id },
+    });
+    expect(taken).toMatchObject({
+      userId: user.id,
+      token: "taker-install-token",
+      apnsToken: apns,
+      apnsEnvironment: "production",
+      pushKeyPublic: null,
+      relayState: "none",
+      relayConsentAt: null,
+      liveActivityPushToken: null,
+      laStartToken: null,
+    });
+    // Both accounts can see what happened, without the token itself.
+    const audits = await prisma.auditLog.findMany({
+      where: {
+        action: {
+          in: ["devices.register.takeover", "devices.register.taken_over"],
+        },
+      },
+      select: { userId: true, action: true, details: true },
+    });
+    expect(audits.map((a) => [a.userId, a.action]).sort()).toEqual(
+      [
+        [owner.id, "devices.register.taken_over"],
+        [user.id, "devices.register.takeover"],
+      ].sort(),
+    );
+    for (const audit of audits) expect(audit.details ?? "").not.toContain(apns);
+  });
+
+  it("takes over the same install token (X-Device-Id) another account registered", async () => {
+    const user = await seedSession("device-token-takeover");
+    const prisma = getPrismaClient();
+    const owner = await prisma.user.create({
+      data: {
+        username: "device-token-owner",
+        email: "device-token-owner@example.test",
+      },
+    });
+    const previous = await prisma.device.create({
+      data: {
+        userId: owner.id,
+        platform: "ios",
+        token: "shared-install-token",
+        bundleId: "io.healthlog.ios",
+        medicationDelivery: "client",
+      },
+    });
+
+    const response = await registerDevice({
+      token: "shared-install-token",
+      bundleId: "io.healthlog.ios",
+      apnsToken: "fe".repeat(32),
+      apnsEnvironment: "production",
+    });
+    expect(response.status).toBe(201);
 
     await expect(
-      prisma.device.findUniqueOrThrow({ where: { id: ownedDevice.id } }),
-    ).resolves.toMatchObject({
-      userId: owner.id,
-      token: "foreign-legacy-token",
-      bundleId: "io.healthlog.ios",
-      apnsEnvironment: "sandbox",
+      prisma.device.count({ where: { id: previous.id } }),
+    ).resolves.toBe(0);
+    const rows = await prisma.device.findMany({
+      where: { token: "shared-install-token" },
+    });
+    expect(rows).toHaveLength(1);
+    // The previous account's per-device choice does not carry over.
+    expect(rows[0]).toMatchObject({
+      userId: user.id,
+      medicationDelivery: null,
     });
     await expect(
-      prisma.device.count({ where: { userId: user.id } }),
+      prisma.device.count({ where: { userId: owner.id } }),
     ).resolves.toBe(0);
+  });
+
+  it("stores a bounded localRunwayUntil, clears it on null, keeps it when omitted", async () => {
+    const user = await seedSession("device-local-runway");
+    const prisma = getPrismaClient();
+    const base = {
+      token: "runway-install-token",
+      bundleId: "io.healthlog.ios",
+      medicationDelivery: "client",
+    };
+    const inAWeek = new Date(Date.now() + 7 * 86_400_000);
+    expect(
+      (
+        await registerDevice({
+          ...base,
+          localRunwayUntil: inAWeek.toISOString(),
+        })
+      ).status,
+    ).toBe(201);
+    const stored = () =>
+      prisma.device.findFirstOrThrow({
+        where: { userId: user.id },
+        select: { localRunwayUntil: true },
+      });
+    expect((await stored()).localRunwayUntil?.getTime()).toBe(
+      inAWeek.getTime(),
+    );
+
+    expect((await registerDevice(base)).status).toBe(201);
+    expect((await stored()).localRunwayUntil?.getTime()).toBe(
+      inAWeek.getTime(),
+    );
+
+    for (const outOfBounds of [
+      new Date(Date.now() - 3_600_000),
+      new Date(Date.now() + 15 * 86_400_000),
+    ]) {
+      const refused = await registerDevice({
+        ...base,
+        localRunwayUntil: outOfBounds.toISOString(),
+      });
+      expect(refused.status).toBe(422);
+    }
+    expect((await stored()).localRunwayUntil?.getTime()).toBe(
+      inAWeek.getTime(),
+    );
+
+    expect(
+      (await registerDevice({ ...base, localRunwayUntil: null })).status,
+    ).toBe(201);
+    expect((await stored()).localRunwayUntil).toBeNull();
   });
 
   it("serializes concurrent registration into one canonical device and channel", async () => {

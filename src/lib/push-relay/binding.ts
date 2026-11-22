@@ -25,7 +25,10 @@ import {
   relayCall,
   type RegistrationRow,
 } from "@/lib/push-relay/registration";
-import { queueRelayUnbind } from "@/lib/push-relay/unbind-queue";
+import {
+  drainRelayUnbinds,
+  queueRelayUnbind,
+} from "@/lib/push-relay/unbind-queue";
 
 export interface BindingStatement {
   instanceId: string;
@@ -126,12 +129,17 @@ export async function forwardBinding(
   ) {
     return "none";
   }
+  const token = device.apnsToken.toLowerCase();
+  // An unbind still owed for this token (the account that held the device
+  // before, `signed-out-push.ts`) goes out first: the relay refuses a second
+  // binding key for a token another binding still holds.
+  await drainRelayUnbinds(new Date(), config, [token]);
   const result = await relayCall(
     registration,
     "POST",
     "/v1/bindings",
     {
-      token: device.apnsToken.toLowerCase(),
+      token,
       env: device.apnsEnvironment === "sandbox" ? "sandbox" : "production",
       bindingKey: device.relayBindingKey,
       statement: device.relayBindingStatement,
@@ -159,6 +167,11 @@ export async function forwardBinding(
       relayBoundAt: state === "bound" ? new Date() : null,
     },
   });
+  // The token is bound to this device now: an unbind still queued for it
+  // would remove the binding just made.
+  if (state === "bound") {
+    await prisma.pushRelayUnbind.deleteMany({ where: { token } });
+  }
   return state;
 }
 

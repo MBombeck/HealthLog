@@ -6546,6 +6546,15 @@ model Device {
   /// medication reminder that announces a dose; NULL there follows the
   /// account-wide client-managed flag (`deviceDeliversLocally`).
   medicationDelivery     String?             @map("medication_delivery")
+  /// Until when a device that delivers its own medication reminders has
+  /// them planned (`POST /api/devices` `localRunwayUntil`, at most 14 days
+  /// ahead; null clears it, omitted keeps it). A device delivers locally
+  /// only while `now <= localRunwayUntil`, or, without a runway, while it
+  /// was seen in the last 3 days (`lastSeen`, which every request on its
+  /// sign-in token moves): a quiet phone whose plan ran dry gets the
+  /// server's reminder push again until it shows up. Reader: the dispatcher's
+  /// APNs branch (`client-managed-apns.ts`, `deviceDeliversLocally`).
+  localRunwayUntil       DateTime?           @map("local_runway_until")
   /// v1.17.1 (#22) — APNs push token for the iOS Live Activity update/end
   /// channel. ActivityKit issues a per-Activity push token distinct from the
   /// device APNs token; the server stores the most recent one so the worker
