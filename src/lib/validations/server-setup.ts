@@ -15,4 +15,3 @@ export const serverSetupStepPatchSchema = z
     status: z.enum(["done", "skipped"]),
   })
   .strict();
-
