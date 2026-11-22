@@ -5905,7 +5905,7 @@
         "aiSource": {
           "title": "KI-Anbieter",
           "label": "KI für dieses Profil nutzt",
-          "honesty": "Ein verwaltetes Profil hat keine eigenen KI-Schlüssel. Wähle, wohin seine KI-Arbeit geht: an den KI-Schlüssel des Servers, nirgendwohin, oder an eine der Ketten, die du in deinem eigenen Konto eingerichtet hast. Die KI-Schalter und Einwilligungen des Profils gelten bei jeder Wahl weiter.",
+          "honesty": "Ein verwaltetes Profil hat keine eigenen KI-Schlüssel und nutzt deshalb den KI-Anbieter, den du hier wählst: den KI-Schlüssel des Servers, keinen oder eine der Ketten aus deinem eigenen Konto. Wählst du eine deiner Ketten, gilt das als deine Einwilligung für das Profil. Der KI-Schlüssel des Servers und das Lesen von Dokumenten fragen trotzdem zuerst nach der Einwilligung des Profils. Mit „Kein KI-Anbieter“ schaltest du die KI für dieses Profil aus.",
           "instance": "KI-Schlüssel des Servers",
           "none": "Kein KI-Anbieter",
           "yourDefault": "Deine Standardkette",

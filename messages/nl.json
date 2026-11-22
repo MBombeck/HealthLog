@@ -5905,7 +5905,7 @@
         "aiSource": {
           "title": "AI-aanbieder",
           "label": "AI voor dit profiel gebruikt",
-          "honesty": "Een beheerd profiel heeft geen eigen AI-sleutels. Kies waar het AI-werk heen gaat: naar de AI-sleutel van de server, nergens heen, of naar een van de ketens die je in je eigen account hebt ingesteld. De AI-schakelaars en toestemmingen van het profiel blijven bij elke keuze gelden.",
+          "honesty": "Een beheerd profiel heeft geen eigen AI-sleutels en gebruikt daarom de AI-aanbieder die je hier kiest: de AI-sleutel van de server, geen, of een van de ketens uit je eigen account. Kies je een van je ketens, dan geldt dat als jouw toestemming voor het profiel. De AI-sleutel van de server en het lezen van documenten vragen toch eerst om de toestemming van het profiel. Kies ‘Geen AI-aanbieder’ om AI voor dit profiel uit te zetten.",
           "instance": "De AI-sleutel van de server",
           "none": "Geen AI-aanbieder",
           "yourDefault": "Je standaardketen",

@@ -5905,7 +5905,7 @@
         "aiSource": {
           "title": "AI provider",
           "label": "AI for this profile uses",
-          "honesty": "A managed profile has no AI keys of its own. Choose where its AI work goes: the server's AI key, none at all, or one of the chains you set up on your own account. The profile's own AI switches and consents still apply to whichever you choose.",
+          "honesty": "A managed profile has no AI keys of its own, so it uses the AI provider you choose here: the server's AI key, none at all, or one of the chains you set up on your own account. Choosing one of your chains counts as your consent for the profile. The server's AI key and reading documents still ask for the profile's consent first. Choose “No AI provider” to switch AI off for this profile.",
           "instance": "The server's AI key",
           "none": "No AI provider",
           "yourDefault": "Your default chain",

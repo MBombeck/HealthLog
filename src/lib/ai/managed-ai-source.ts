@@ -16,10 +16,15 @@
  *     this chain for the profile, and a chain that cannot serve refuses
  *     rather than reaching for one nobody picked.
  *
- * The choice only names the credential source. Everything else stays the
- * profile's: its module switches, its consent receipts (a cloud entry still
- * needs the profile's own receipt at the wire, `aiEgressRefusal`), its usage
- * level, its call log. A delegate's chain stays empty whatever this says,
+ * The guardian's choice of a `GUARDIAN` chain counts as the guardian's
+ * consent for the profile: its entries are the guardian's own keys and
+ * sign-ins, which the consent rule (`consentNeeded`, `capabilities/resolve.ts`)
+ * treats as self-chosen, so Coach, briefing and summaries need no separate
+ * receipt of the profile's. An operator-held entry (`INSTANCE`) still needs
+ * the profile's receipt at the wire (`aiEgressRefusal`), and so does every
+ * document read. `NONE` is the guardian's off switch for the profile's AI.
+ * The profile's module switches, usage level and call log stay its own. A
+ * delegate's chain stays empty whatever this says,
  * because the credential policy (`providerCredentialPolicy`) is decided before
  * this module is asked.
  *

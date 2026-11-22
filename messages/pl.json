@@ -5905,7 +5905,7 @@
         "aiSource": {
           "title": "Dostawca AI",
           "label": "AI tego profilu używa",
-          "honesty": "Profil zarządzany nie ma własnych kluczy AI. Wybierz, dokąd trafia jego praca AI: do klucza AI serwera, donikąd albo do jednego z łańcuchów ustawionych na twoim własnym koncie. Przełączniki i zgody AI profilu obowiązują przy każdym wyborze.",
+          "honesty": "Profil zarządzany nie ma własnych kluczy AI, więc korzysta z dostawcy AI, którego tu wybierzesz: klucza AI serwera, żadnego albo jednego z łańcuchów z twojego własnego konta. Wybór jednego z twoich łańcuchów liczy się jako twoja zgoda w imieniu profilu. Klucz AI serwera i czytanie dokumentów i tak najpierw pytają o zgodę profilu. Wybierz „Brak dostawcy AI”, aby wyłączyć AI dla tego profilu.",
           "instance": "Klucz AI serwera",
           "none": "Brak dostawcy AI",
           "yourDefault": "Twój domyślny łańcuch",

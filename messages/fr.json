@@ -5905,7 +5905,7 @@
         "aiSource": {
           "title": "Fournisseur d'IA",
           "label": "L'IA de ce profil utilise",
-          "honesty": "Un profil géré n'a pas de clés d'IA à lui. Choisissez où va son travail d'IA : vers la clé d'IA du serveur, nulle part, ou vers l'une des chaînes configurées sur votre propre compte. Les interrupteurs et consentements d'IA du profil s'appliquent quel que soit le choix.",
+          "honesty": "Un profil géré n'a pas de clés d'IA à lui : il utilise le fournisseur d'IA que vous choisissez ici, la clé d'IA du serveur, aucun, ou l'une des chaînes configurées sur votre propre compte. Choisir l'une de vos chaînes vaut consentement de votre part pour le profil. La clé d'IA du serveur et la lecture de documents demandent tout de même d'abord le consentement du profil. Choisissez « Aucun fournisseur d'IA » pour désactiver l'IA de ce profil.",
           "instance": "La clé d'IA du serveur",
           "none": "Aucun fournisseur d'IA",
           "yourDefault": "Votre chaîne par défaut",

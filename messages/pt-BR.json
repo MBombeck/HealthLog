@@ -5905,7 +5905,7 @@
         "aiSource": {
           "title": "Provedor de IA",
           "label": "A IA deste perfil usa",
-          "honesty": "Um perfil gerenciado não tem chaves de IA próprias. Escolha para onde vai o trabalho de IA dele: para a chave de IA do servidor, para lugar nenhum ou para uma das cadeias que você configurou na sua própria conta. Os botões e consentimentos de IA do perfil continuam valendo em qualquer escolha.",
+          "honesty": "Um perfil gerenciado não tem chaves de IA próprias, então usa o provedor de IA que você escolher aqui: a chave de IA do servidor, nenhum, ou uma das cadeias que você configurou na sua própria conta. Escolher uma das suas cadeias conta como o seu consentimento pelo perfil. A chave de IA do servidor e a leitura de documentos ainda pedem antes o consentimento do perfil. Escolha “Nenhum provedor de IA” para desligar a IA deste perfil.",
           "instance": "A chave de IA do servidor",
           "none": "Nenhum provedor de IA",
           "yourDefault": "Sua cadeia padrão",

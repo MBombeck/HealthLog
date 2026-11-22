@@ -5905,7 +5905,7 @@
         "aiSource": {
           "title": "Proveedor de IA",
           "label": "La IA de este perfil usa",
-          "honesty": "Un perfil gestionado no tiene claves de IA propias. Elige adónde va su trabajo de IA: a la clave de IA del servidor, a ninguna parte o a una de las cadenas que configuraste en tu propia cuenta. Los interruptores y consentimientos de IA del perfil siguen aplicándose con cualquier opción.",
+          "honesty": "Un perfil gestionado no tiene claves de IA propias, así que usa el proveedor de IA que elijas aquí: la clave de IA del servidor, ninguno o una de las cadenas que configuraste en tu propia cuenta. Elegir una de tus cadenas cuenta como tu consentimiento para el perfil. La clave de IA del servidor y la lectura de documentos siguen pidiendo antes el consentimiento del perfil. Elige «Ningún proveedor de IA» para desactivar la IA en este perfil.",
           "instance": "La clave de IA del servidor",
           "none": "Ningún proveedor de IA",
           "yourDefault": "Tu cadena predeterminada",
