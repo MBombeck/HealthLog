@@ -7,8 +7,10 @@
  * The confirmation carries the same flat fields as the plaintext push
  * (`medicationId`, `intakeId`, `slotInstant`, `outcome`, `takenAt`,
  * `takenVia`) in `d`, the neutral localised text in `n`, and a passive level
- * in `ui`; no medication name. Its deadline is two hours: a confirmation that
- * arrives later than that no longer withdraws anything useful.
+ * in `ui`; no medication name. Its deadline is two hours over this server's
+ * own APNs key: a confirmation that arrives later than that no longer
+ * withdraws anything useful. Over the relay it lives as long as every other
+ * alert (`RELAY_CLASS_LIFETIME_S`), so its lifetime does not single it out.
  *
  * The Live Activity end travels without an envelope: the relay sends its own
  * fixed content state. Its token and the device's signed activity statement

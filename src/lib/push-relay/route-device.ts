@@ -33,6 +33,7 @@ import {
   type RegistrationRow,
 } from "@/lib/push-relay/registration";
 import {
+  overRelay,
   sendRelayItems,
   type RelayItemInput,
   type RelaySendSummary,
@@ -162,7 +163,9 @@ export async function sendSealed(
     let sealed;
     try {
       sealed = sealForDevice({
-        message: target.message,
+        // Over the relay every push of a class lives equally long, so the
+        // clear `ttlSeconds` names the class and not the kind.
+        message: route === "relay" ? overRelay(target.message) : target.message,
         device: { apnsToken, pushKeyPublic: pushKey },
         senderPrivateKey: ctx.keys.senderPrivateKey,
       });
