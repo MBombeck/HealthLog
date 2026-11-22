@@ -12,6 +12,14 @@
  * the device's own direct revoke has had its chance, and the relay drops a
  * binding without pushes on its own.
  *
+ * Only a signed `204` confirms an unbind. While this server cannot reach the
+ * relay its registration names (`PUSH_RELAY_MODE=off`, a changed
+ * `PUSH_RELAY_URL`, a switch-off the relay has not confirmed, a registration
+ * still pending) the rows wait, and the admin card counts them
+ * (`admin-status.ts`). A row is dropped unsent only when no registration
+ * that ever reached a relay is left: then no relay holds a binding of this
+ * server, and the drop is counted as `moot`, never as confirmed.
+ *
  * Queueing is idempotent (one row per token), and so is sending.
  */
 import type { Prisma } from "@/generated/prisma/client";
@@ -47,16 +55,37 @@ export async function queueRelayUnbind(
 }
 
 /**
- * Send the due unbinds. Returns how many the relay confirmed, and how many
- * were given up after 7 days of trying: an unbind that never reached the
- * relay, counted so the run says so (`FanOutTally`) instead of the row
- * simply going.
+ * Whether a relay may still hold a binding of this server: a registration
+ * that reached a relay (it has an instance id), under any host and in any
+ * state, a switch-off in flight included.
+ */
+async function relayMayHoldBindings(): Promise<boolean> {
+  const held = await prisma.pushRelayRegistration.count({
+    where: { instanceId: { not: null } },
+  });
+  return held > 0;
+}
+
+export interface UnbindDrainResult {
+  /** Unbinds the relay answered with a signed `204`. */
+  confirmed: number;
+  /** Unbinds given up after 7 days without reaching the relay. */
+  givenUp: number;
+  /** Unbinds dropped unsent because no relay holds a binding of this server. */
+  moot: number;
+}
+
+/**
+ * Send the due unbinds. Returns how many the relay confirmed, how many were
+ * given up after 7 days of trying (an unbind that never reached the relay,
+ * counted so the run says so instead of the row simply going), and how many
+ * had nothing left to unbind.
  */
 export async function drainRelayUnbinds(
   now: Date = new Date(),
   config: RelayConfig = relayConfig(),
   onlyTokens?: readonly string[],
-): Promise<{ confirmed: number; givenUp: number }> {
+): Promise<UnbindDrainResult> {
   const { count: givenUp } = await prisma.pushRelayUnbind.deleteMany({
     where: { createdAt: { lt: new Date(now.getTime() - GIVE_UP_MS) } },
   });
@@ -68,19 +97,20 @@ export async function drainRelayUnbinds(
     orderBy: { nextAttemptAt: "asc" },
     take: BATCH,
   });
-  if (due.length === 0) return { confirmed: 0, givenUp };
+  if (due.length === 0) return { confirmed: 0, givenUp, moot: 0 };
   const row = config.available ? await loadRegistration(config) : null;
-  if (!row) {
-    // No registration: this instance holds no binding at the relay any more
-    // (switching it off deleted the instance with every binding).
+  if (!row?.instanceId && !(await relayMayHoldBindings())) {
+    // No relay holds a binding of this server any more: switching it off
+    // deleted the instance with every binding, or it never registered.
     await prisma.pushRelayUnbind.deleteMany({
       where: { id: { in: due.map((d) => d.id) } },
     });
-    return { confirmed: due.length, givenUp };
+    return { confirmed: 0, givenUp, moot: due.length };
   }
   let confirmed = 0;
   for (const unbind of due) {
-    const fresh = await loadRegistration(config);
+    // Without a registration this config can use, the row waits for one.
+    const fresh = row ? await loadRegistration(config) : null;
     const result =
       fresh?.instanceId && !isCircuitOpen(fresh)
         ? await relayCall(
@@ -105,5 +135,5 @@ export async function drainRelayUnbinds(
       },
     });
   }
-  return { confirmed, givenUp };
+  return { confirmed, givenUp, moot: 0 };
 }
