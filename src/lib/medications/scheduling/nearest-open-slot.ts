@@ -40,6 +40,10 @@ import { getUserTodayBounds } from "@/lib/tz/local-day";
 import { projectTodayIntakesAndRecompute } from "@/lib/medications/scheduling/project-today-intakes";
 import { resolveForcedSlotForWrite } from "@/lib/medications/scheduling/slot-upsert";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
+import {
+  holdsAnswer,
+  holdsTake,
+} from "@/lib/medications/scheduling/holds-take";
 
 /** How far from its slot a take still answers it: six hours either side. */
 export const NEAREST_SLOT_REACH_MS = 6 * 60 * 60 * 1000;
@@ -121,9 +125,9 @@ export async function findSlotsNearTake(input: {
       slotInstant: new Date(instant),
     });
     if (real === null || real.getTime() !== instant) continue;
-    const answered =
-      byInstant.get(instant)?.find((r) => r.takenAt !== null || r.skipped) ??
-      null;
+    // An outcome the server recorded on its own (auto-miss, auto-skip, an
+    // automatic take) leaves the slot open: a real take replaces it.
+    const answered = byInstant.get(instant)?.find(holdsAnswer) ?? null;
     slots.push({ slot: real, answered });
   }
   return slots;
@@ -154,6 +158,8 @@ export async function resolveNewTake(input: {
     // lock. One whose take lies further back is a further dose (bands split
     // the day between two dose times, so 10:20 still falls in the 08:00
     // band): it goes to the nearest open slot like a take outside every band.
+    // Only a take the person recorded counts (`holdsTake`): an automatic
+    // one is replaced by the slot write, never repeated.
     const held = await prisma.medicationIntakeEvent.findFirst({
       where: {
         userId: input.userId,
@@ -163,9 +169,14 @@ export async function resolveNewTake(input: {
         skipped: false,
         takenAt: { not: null },
       },
-      select: { takenAt: true },
+      select: {
+        takenAt: true,
+        skipped: true,
+        autoMissed: true,
+        autoRecorded: true,
+      },
     });
-    if (!held?.takenAt || isRepeatOf(held.takenAt, input.takenAt)) {
+    if (!held || !holdsTake(held) || isRepeatOf(held.takenAt!, input.takenAt)) {
       return { kind: "slot", slot: bandSlot, attributionSource: "AUTO" };
     }
     return furtherDose(await findSlotsNearTake(input));
@@ -176,8 +187,9 @@ export async function resolveNewTake(input: {
   if (nearest.answered === null) {
     return { kind: "slot", slot: nearest.slot, attributionSource: "USER_PIN" };
   }
-  const recorded = nearest.answered.takenAt;
-  if (recorded === null || nearest.answered.skipped) return { kind: "adHoc" };
+  // A real skip answered the slot: the take stands on its own.
+  if (!holdsTake(nearest.answered)) return { kind: "adHoc" };
+  const recorded = nearest.answered.takenAt as Date;
   if (isRepeatOf(recorded, input.takenAt)) {
     return { kind: "alreadyTaken", row: nearest.answered };
   }
