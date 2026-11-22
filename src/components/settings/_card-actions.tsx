@@ -38,9 +38,12 @@ import { cn } from "@/lib/utils";
  * actions (the "Details" disclosure of an integration card). It stands on
  * the left, the actions stay on the right.
  */
-// An icon button (a card's overflow menu) keeps its square.
+// A button is found by the `data-variant` and `data-size` it always carries,
+// not by its `data-slot`: a button that opens a dialog (`ConfirmButton`, an
+// `AlertDialogTrigger asChild`) takes the trigger's slot name. An icon button
+// (a card's overflow menu) keeps its square.
 const ACTION_BUTTONS =
-  "[&_[data-slot=button]:not([data-size^=icon])]:h-8 [&_[data-slot=button]:not([data-size^=icon])]:min-h-11 [&_[data-slot=button]:not([data-size^=icon])]:w-auto sm:pointer-fine:[&_[data-slot=button]:not([data-size^=icon])]:min-h-9";
+  "[&_:is(button,a)[data-variant][data-size]:not([data-size^=icon])]:h-8 [&_:is(button,a)[data-variant][data-size]:not([data-size^=icon])]:min-h-11 [&_:is(button,a)[data-variant][data-size]:not([data-size^=icon])]:w-auto sm:pointer-fine:[&_:is(button,a)[data-variant][data-size]:not([data-size^=icon])]:min-h-9";
 
 export function SettingsCardActions({
   align = "end",
