@@ -399,11 +399,13 @@ describe("applyProfileUpdate top-level error message", () => {
 describe("applyProfileUpdate email conflict", () => {
   it("carries an errorCode alongside the specific 409 message", async () => {
     // The email budget answers first, then the case-blind address probe.
+    const rows = (value: unknown) =>
+      value as unknown as Awaited<ReturnType<typeof prisma.$queryRaw>>;
     vi.mocked(prisma.$queryRaw)
-      .mockResolvedValueOnce([
-        { count: 1, reset_at: new Date(Date.now() + 60_000) },
-      ] as never)
-      .mockResolvedValueOnce([{ id: "someone-else" }] as never);
+      .mockResolvedValueOnce(
+        rows([{ count: 1, reset_at: new Date(Date.now() + 60_000) }]),
+      )
+      .mockResolvedValueOnce(rows([{ id: "someone-else" }]));
 
     const result = await applyProfileUpdate(USER_ID, {
       email: "taken@example.com",

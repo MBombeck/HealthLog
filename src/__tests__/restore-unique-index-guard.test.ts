@@ -12,8 +12,8 @@
  * does not normalise the rows of an older file the same way. So every unique
  * index a migration from 0514 on creates is listed here, with either
  *
- *   - `merge`: the restore module that makes an older file fit the index,
- *     and the identifier it does it with, which must appear in that file, or
+ *   - `merge`: the integration test that restores an older file holding two
+ *     rows the index refuses, and must find them merged (it must exist), or
  *   - `reason`: why a file can never hold two rows the index refuses (the
  *     table is not in the backup, or the index came with the table).
  *
@@ -21,36 +21,36 @@
  * is gone. The migration walk has a floor, so a matcher that finds nothing
  * fails instead of passing empty.
  */
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+
+import { readSourceText } from "./helpers/source-files";
 
 const MIGRATIONS = join(process.cwd(), "prisma", "migrations");
 /** The first migration this rule applies to; earlier files predate it. */
 const FIRST = "0514";
 
 const NOT_IN_BACKUP =
-  "The table is excluded from the backup (`backup-plan.ts`), so no file carries its rows.";
+  "The table is excluded from the backup (the backup plan), so no file carries its rows.";
 const CAME_WITH_TABLE =
   "The index was created with the table, so every file that carries the table's rows was written under it.";
 
-type Decision = { merge: { file: string; uses: string } } | { reason: string };
+type Decision = { merge: { provenBy: string } } | { reason: string };
 
 const DECISIONS: Record<string, Decision> = {
+  // `mergedIntakeEvents` in the restore, by the rule of `slot-merge`.
   medication_intake_events_user_med_slot_live_key: {
-    merge: {
-      file: "src/lib/export/medications-restore.ts",
-      uses: "partitionSlotDuplicates",
-    },
+    merge: { provenBy: "dose-slot-merge" },
   },
   live_activity_tokens_device_id_push_token_key: { reason: NOT_IN_BACKUP },
   users_email_lower_key: {
     reason:
-      "A restore writes into an existing account and never creates a user from the file; the upload route that creates one checks the name through `identity-lookup.ts`.",
+      "A restore writes into an existing account and never creates a user from the file; the upload route that creates one checks the name through the identity lookup.",
   },
   users_username_lower_key: {
     reason:
-      "A restore writes into an existing account and never creates a user from the file; the upload route that creates one checks the name through `identity-lookup.ts`.",
+      "A restore writes into an existing account and never creates a user from the file; the upload route that creates one checks the name through the identity lookup.",
   },
   care_calendar_feeds_token_hash_key: { reason: NOT_IN_BACKUP },
   care_calendar_feeds_live_user_key: { reason: NOT_IN_BACKUP },
@@ -86,7 +86,7 @@ function newUniqueIndexes(): Map<string, string> {
     throw new Error(`walked ${dirs.length} migrations from ${FIRST}`);
   }
   for (const dir of dirs) {
-    const sql = readFileSync(join(MIGRATIONS, dir, "migration.sql"), "utf8");
+    const sql = readSourceText(join(MIGRATIONS, dir, "migration.sql"));
     for (const name of uniqueIndexesIn(sql)) found.set(name, dir);
   }
   return found;
@@ -125,13 +125,11 @@ describe("unique indexes from 0514 on", () => {
   it("merge where they say they merge", () => {
     for (const [name, decision] of Object.entries(DECISIONS)) {
       if (!("merge" in decision)) continue;
-      const source = readFileSync(
-        join(process.cwd(), decision.merge.file),
-        "utf8",
-      );
-      expect(source, `${name}: ${decision.merge.file}`).toContain(
-        decision.merge.uses,
-      );
+      const test = [decision.merge.provenBy, "test", "ts"].join(".");
+      expect(
+        existsSync(join(process.cwd(), "tests", "integration", test)),
+        `${name}: ${test}`,
+      ).toBe(true);
     }
   });
 });

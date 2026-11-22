@@ -27,7 +27,7 @@ import {
   projectCourseWindow,
 } from "@/lib/medications/course-window";
 import { restoreForIntake } from "@/lib/medications/inventory/consumption";
-import { partitionSlotDuplicates } from "@/lib/medications/scheduling/slot-merge";
+import { mergedIntakeEvents } from "@/lib/export/intake-slot-merge";
 import { DEFAULT_TIMEZONE, userDayKey, validTimezoneOr } from "@/lib/tz/format";
 import type { BackupPayload } from "@/lib/validations/backup";
 
@@ -608,31 +608,6 @@ async function restoreIntakeEvents(
       });
     }
   }
-}
-
-/**
- * The intake events of a file the slot rule (`slot-merge.ts`) merges away:
- * every live row but one per medication and slot.
- */
-function mergedIntakeEvents(
-  events: BackupPayload["intakeEvents"],
-  medicationFor: (
-    e: BackupPayload["intakeEvents"][number],
-  ) => string | undefined,
-): Set<BackupPayload["intakeEvents"][number]> {
-  const { merged } = partitionSlotDuplicates(
-    events.map((event) => ({
-      event,
-      takenAt: event.takenAt ? new Date(event.takenAt) : null,
-      skipped: event.skipped ?? false,
-      createdAt: event.createdAt ? new Date(event.createdAt) : null,
-      id: event.id ?? null,
-    })),
-    (r) =>
-      `${medicationFor(r.event)}|${new Date(r.event.scheduledFor).getTime()}`,
-    (r) => !r.event.deletedAt,
-  );
-  return new Set([...merged].map((r) => r.event));
 }
 
 /**
