@@ -326,6 +326,40 @@ export function trailingComplianceLedger(
 }
 
 /**
+ * The ledger row of one dose that lies ahead of `now`, minted by the same
+ * band minter as every other slot: the medication's stored per-dose window,
+ * its late tail capped at the next dose and its early reach capped at the
+ * previous one. The trailing ledger stops at `now`, so a dose whose window
+ * has opened but whose target time has not come (due from 11:30 for 12:00)
+ * is not in it; reading that dose from the default band instead is how one
+ * dose came to show two windows. `undefined` when the minter has no slot at
+ * `at` (a rolling cadence's open occurrence, which it mints only once taken).
+ */
+export function forwardComplianceSlot(
+  events: IntakeEvent[],
+  schedules: ComplianceSchedule[],
+  ctx: ComplianceMedicationContext,
+  at: Date,
+  now: Date,
+): DoseHistoryRow | undefined {
+  if (schedules.length === 0) return undefined;
+  // Neighbours on both sides, so both caps apply: a day before, and the next
+  // dose of a weekly cadence after.
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const rows = buildComplianceLedgerRows(
+    events,
+    schedules,
+    ctx,
+    new Date(at.getTime() - DAY_MS),
+    new Date(at.getTime() + 8 * DAY_MS),
+    now,
+  );
+  return rows.find(
+    (row) => row.kind === "slot" && row.at.getTime() === at.getTime(),
+  );
+}
+
+/**
  * The tally of the trailing `days` ending at `now`, carved out of
  * {@link trailingComplianceLedger}: the same rows, so the same window reads
  * the same rate on every surface.

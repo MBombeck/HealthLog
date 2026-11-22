@@ -20,8 +20,11 @@ import {
 /**
  * The open dose, resolved by `dose-state/resolve.ts`. `status` is the wire
  * value clients read before the resolver (`legacyDoseStatus`); `state` and
- * the instants are the resolved dose: from the ledger's band when the dose
- * is already minted (due or past), else from the default windows.
+ * the instants are the resolved dose, always from the band the minter gives
+ * the medication's slot (its stored window included): the trailing ledger's
+ * when the dose is already minted, else the forward slot the caller mints.
+ * The default band is the fallback only for a dose the minter has no slot
+ * for (a rolling cadence's open occurrence).
  */
 export interface CurrentDose {
   status: DoseStatus;
@@ -64,6 +67,8 @@ export function currentDoseOf(
   now: Date,
   cadence: DoseCadenceFamily,
   ledgerRows?: DoseHistoryRow[],
+  /** Mints the slot at an instant the trailing ledger does not reach. */
+  forwardSlot?: (at: Date) => DoseHistoryRow | undefined,
 ): CurrentDose {
   const open = earliestOpenSlot(ledgerRows, now);
   if (open) return fromResolved(open.at, open.resolved);
@@ -79,9 +84,10 @@ export function currentDoseOf(
       lateTakeCounts: false,
     };
   }
-  const ledgerSlot = ledgerRows?.find(
-    (row) => row.kind === "slot" && row.at.getTime() === nextDueAt.getTime(),
-  );
+  const ledgerSlot =
+    ledgerRows?.find(
+      (row) => row.kind === "slot" && row.at.getTime() === nextDueAt.getTime(),
+    ) ?? forwardSlot?.(nextDueAt);
   const resolved =
     (ledgerSlot && resolveLedgerSlot(ledgerSlot, now)) ??
     resolveDoseState(defaultDoseBand(nextDueAt, cadence), null, now);
