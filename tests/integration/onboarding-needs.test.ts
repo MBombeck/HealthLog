@@ -54,7 +54,10 @@ import {
   serializeDashboardLayout,
 } from "@/lib/dashboard-layout";
 import { toJson } from "@/lib/db";
-import { emptyOnboardingNeeds } from "@/lib/onboarding/needs";
+import {
+  emptyOnboardingNeeds,
+  ONBOARDING_STEP_IDS,
+} from "@/lib/onboarding/needs";
 import type {
   OnboardingStateDto,
   OnboardingStepId,
@@ -175,7 +178,7 @@ afterEach(() => {
 });
 
 describe("PATCH /api/onboarding/answers", () => {
-  it("saves one step at a time and answers with the full nine", async () => {
+  it("saves one step at a time and answers with the full list", async () => {
     const user = await makeUser("answers");
     await signIn(user.id);
 
@@ -183,7 +186,7 @@ describe("PATCH /api/onboarding/answers", () => {
     expect(first.status).toBe(200);
     const state = await readState(first);
     expect(state.needs.recordTarget).toBe("both");
-    expect(state.steps).toHaveLength(9);
+    expect(state.steps).toHaveLength(ONBOARDING_STEP_IDS.length);
     expect(statusOf(state, "who")).toBe("done");
     expect(statusOf(state, "areas")).toBe("pending");
 
@@ -238,6 +241,8 @@ describe("PATCH /api/onboarding/answers", () => {
     expect(state.needs.units).toEqual({
       glucoseUnit: "mmol/L",
       unitPreference: "imperial",
+      timezone: null,
+      medicineRegistry: null,
     });
     const row = await getPrismaClient().user.findUniqueOrThrow({
       where: { id: user.id },
@@ -273,6 +278,8 @@ describe("PATCH /api/onboarding/answers", () => {
     expect(state.needs.units).toEqual({
       glucoseUnit: null,
       unitPreference: null,
+      timezone: null,
+      medicineRegistry: null,
     });
 
     // Half a preference is not an answer.

@@ -536,12 +536,19 @@ describe("every model the plan claims two-ended survives a real restore", () => 
         medication: "yes",
         sources: ["withings"],
         visit: "within-a-month",
-        units: { glucoseUnit: "mmol/L", unitPreference: "metric" },
+        units: {
+          glucoseUnit: "mmol/L",
+          unitPreference: "metric",
+          timezone: "Europe/Berlin",
+          medicineRegistry: "DE",
+        },
       },
       // The stored blob is a status LOOKUP, and the reader answers with the
-      // full ordered nine — a step the fixture never mentioned comes back
+      // full ordered list — a step the fixture never mentioned comes back
       // `pending` rather than missing, which is what lets the flow grow a
-      // screen without a migration.
+      // screen without a migration. The two 1.49 follow-ups are the one
+      // exception: the fixture's flow was confirmed before they existed, so
+      // they come back passed and the restored setup stays finished.
       steps: [
         { id: "who", status: "done" },
         { id: "areas", status: "done" },
@@ -550,6 +557,8 @@ describe("every model the plan claims two-ended survives a real restore", () => 
         { id: "visit", status: "pending" },
         { id: "units", status: "pending" },
         { id: "confirm", status: "pending" },
+        { id: "reminders", status: "skipped" },
+        { id: "ai", status: "skipped" },
         { id: "first-result", status: "pending" },
         { id: "done", status: "pending" },
       ],
@@ -2650,7 +2659,11 @@ const RELEASE_PENDING_COLUMNS: Readonly<Record<string, string>> = {};
  * through that same function: the restore writes the parsed form.
  */
 const READ_THROUGH: Readonly<Record<string, (value: unknown) => unknown>> = {
-  "OnboardingRecord.stepsJson": parseOnboardingSteps,
+  // Read as every reader reads it: beside the record's confirmation stamp,
+  // which decides how a follow-up the stored blob never had reads. The seeded
+  // record is the fixture's one, confirmed at this instant.
+  "OnboardingRecord.stepsJson": (value) =>
+    parseOnboardingSteps(value, "2026-07-01T08:00:00.000Z"),
 };
 
 /** Plaintext behind a sealed value, or the value itself when it is not one. */

@@ -2791,8 +2791,10 @@
             "sleep"
           ],
           "units": {
+            "timezone": "Europe/Berlin",
             "glucoseUnit": "mmol/L",
-            "unitPreference": "metric"
+            "unitPreference": "metric",
+            "medicineRegistry": "DE"
           },
           "visit": "within-a-month",
           "sources": [
@@ -2829,6 +2831,14 @@
           {
             "id": "confirm",
             "status": "pending"
+          },
+          {
+            "id": "reminders",
+            "status": "skipped"
+          },
+          {
+            "id": "ai",
+            "status": "skipped"
           },
           {
             "id": "first-result",
@@ -3207,7 +3217,11 @@
       "pulseDayMeanDryRunJson": {
         "roundTrip": "rt-AppSettings-pulseDayMeanDryRunJson"
       },
-      "workoutClimbBackfillCursor": "rt-AppSettings-workoutClimbBackfillCursor"
+      "workoutClimbBackfillCursor": "rt-AppSettings-workoutClimbBackfillCursor",
+      "serverSetupCompletedAt": "2026-06-30T12:34:56.789Z",
+      "serverSetupStepsJson": {
+        "roundTrip": "rt-AppSettings-serverSetupStepsJson"
+      }
     }
   },
   "reexport": {
@@ -3271,7 +3285,11 @@
       "pulseDayMeanDryRunJson": {
         "roundTrip": "rt-AppSettings-pulseDayMeanDryRunJson"
       },
-      "workoutClimbBackfillCursor": "rt-AppSettings-workoutClimbBackfillCursor"
+      "workoutClimbBackfillCursor": "rt-AppSettings-workoutClimbBackfillCursor",
+      "serverSetupCompletedAt": "2026-06-30T12:34:56.789Z",
+      "serverSetupStepsJson": {
+        "roundTrip": "rt-AppSettings-serverSetupStepsJson"
+      }
     },
     "accountSettings": {
       "heightCm": 2.5,
@@ -4809,7 +4827,9 @@
         "visit": "within-a-month",
         "units": {
           "glucoseUnit": "mmol/L",
-          "unitPreference": "metric"
+          "unitPreference": "metric",
+          "timezone": "Europe/Berlin",
+          "medicineRegistry": "DE"
         }
       },
       "steps": [
@@ -4840,6 +4860,14 @@
         {
           "id": "confirm",
           "status": "pending"
+        },
+        {
+          "id": "reminders",
+          "status": "skipped"
+        },
+        {
+          "id": "ai",
+          "status": "skipped"
         },
         {
           "id": "first-result",

@@ -978,7 +978,9 @@
         "visit": "within-a-month",
         "units": {
           "glucoseUnit": "mmol/L",
-          "unitPreference": "metric"
+          "unitPreference": "metric",
+          "timezone": "Europe/Berlin",
+          "medicineRegistry": "DE"
         }
       },
       "steps": [
@@ -1009,6 +1011,14 @@
         {
           "id": "confirm",
           "status": "pending"
+        },
+        {
+          "id": "reminders",
+          "status": "skipped"
+        },
+        {
+          "id": "ai",
+          "status": "skipped"
         },
         {
           "id": "first-result",
@@ -3117,7 +3127,9 @@
         "visit": "within-a-month",
         "units": {
           "glucoseUnit": "mmol/L",
-          "unitPreference": "metric"
+          "unitPreference": "metric",
+          "timezone": "Europe/Berlin",
+          "medicineRegistry": "DE"
         }
       },
       "steps": [
@@ -3148,6 +3160,14 @@
         {
           "id": "confirm",
           "status": "pending"
+        },
+        {
+          "id": "reminders",
+          "status": "skipped"
+        },
+        {
+          "id": "ai",
+          "status": "skipped"
         },
         {
           "id": "first-result",
