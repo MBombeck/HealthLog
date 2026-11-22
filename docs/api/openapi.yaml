@@ -62018,6 +62018,16 @@ components:
             - type: "null"
           description: Soft-delete tombstone. Non-null rows are excluded from every list/aggregate read; sync readers use it to
             propagate deletions.
+        appleHealthDeletedAt:
+          description: "Since v1.49.0: who deleted a tombstone. Equal to `deletedAt` when the phone reported the dose deleted
+            through `DELETE /api/medications/intake/by-external-ids`; null, or different, when it was deleted in
+            HealthLog. A re-post of a dose deleted in HealthLog is refused (`duplicate`, reason `tombstoned`), one the
+            phone reported is written again. Null on every live row; do not show it."
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
       required:
         - id
         - userId
@@ -64460,6 +64470,16 @@ components:
             - type: "null"
           description: Soft-delete tombstone. Non-null rows are excluded from every list/aggregate read; sync readers use it to
             propagate deletions.
+        appleHealthDeletedAt:
+          description: "Since v1.49.0: who deleted a tombstone. Equal to `deletedAt` when the phone reported the dose deleted
+            through `DELETE /api/medications/intake/by-external-ids`; null, or different, when it was deleted in
+            HealthLog. A re-post of a dose deleted in HealthLog is refused (`duplicate`, reason `tombstoned`), one the
+            phone reported is written again. Null on every live row; do not show it."
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
         alreadyTaken:
           type: boolean
           description: "True when this POST reported a dose already recorded, or skipped one: the slot it binds to already holds a
