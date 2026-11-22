@@ -49,8 +49,20 @@ export interface EntryResult {
   syncVersion?: number;
   /** On `alreadyTaken`: the recorded row and the take it holds. */
   intake?: MedicationIntakeEvent;
+  /**
+   * On `alreadyTaken` and on a `force_slot_occupied` skip: when and how the
+   * take that holds the slot was recorded (both null when a skip holds it).
+   */
   takenAt?: string | null;
   takenVia?: string | null;
+  /**
+   * The slot the entry's row is on, as the single route's `slotInstant`
+   * says it: the canonical slot of a scheduled dose, null for a row on no
+   * slot (an ad-hoc take, an extra dose) and for an entry that stored
+   * nothing. A `force_slot_occupied` skip names the slot it was refused.
+   * Set on every entry once the batch settled (`ingest.ts`).
+   */
+  slotInstant?: string | null;
 }
 
 export interface BatchState {
@@ -125,8 +137,16 @@ export function createBatchState(
   };
 }
 
-/** Record an entry the batch skipped, with its reason. */
-export function skipEntry(state: BatchState, index: number, reason: string) {
+/**
+ * Record an entry the batch skipped, with its reason and, for an occupied
+ * pin, what holds the slot.
+ */
+export function skipEntry(
+  state: BatchState,
+  index: number,
+  reason: string,
+  held?: Pick<EntryResult, "slotInstant" | "takenAt" | "takenVia">,
+) {
   state.skipped.push({ index, reason });
-  state.results.push({ index, status: "skipped", reason });
+  state.results.push({ index, status: "skipped", reason, ...held });
 }

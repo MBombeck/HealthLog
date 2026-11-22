@@ -33,6 +33,8 @@ vi.mock("@/lib/db", () => ({
     refreshToken: {
       updateMany: vi.fn(),
     },
+    // Also answers the live sign-in check (`live-sign-in.ts`) with no row:
+    // the other account holds no sign-in on the device.
     $queryRaw: vi.fn(),
     $transaction: vi.fn(),
     notificationChannel: {

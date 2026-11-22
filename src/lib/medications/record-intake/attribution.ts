@@ -21,7 +21,10 @@
 import { annotate } from "@/lib/logging/context";
 import type { SessionUser } from "@/lib/auth/session-user";
 import {
-  findPinConflict,
+  findPinConflictRow,
+  pinConflictWire,
+} from "@/lib/medications/scheduling/pin-conflict";
+import {
   mayConvergeOntoSuppliedSlot,
   resolveForcedSlotForWrite,
   resolveSlotForWriteByBand,
@@ -33,6 +36,8 @@ export interface IntakeWriteRefusal {
   kind: "refused";
   message: string;
   errorCode: string;
+  /** On an occupied pin: the slot and the take that holds it. */
+  meta?: ReturnType<typeof pinConflictWire>;
 }
 
 export type AttributionSource = "AUTO" | "USER_PIN";
@@ -112,14 +117,13 @@ async function attributePin(
   // serves: the explicit-write last-write-wins rule would silently
   // overwrite that dose record. The ledger UI only offers the pin for
   // unserved slots, so this only fires for stale clients / raw API calls.
-  if (
-    await findPinConflict({
-      userId: user.id,
-      medicationId: id,
-      canonicalSlot,
-      incomingTakenAt: resolvedTakenAt ?? null,
-    })
-  ) {
+  const held = await findPinConflictRow({
+    userId: user.id,
+    medicationId: id,
+    canonicalSlot,
+    incomingTakenAt: resolvedTakenAt ?? null,
+  });
+  if (held) {
     annotate({
       action: { name: "medication.intake.force_slot.occupied" },
       meta: { medication_id: id },
@@ -128,6 +132,7 @@ async function attributePin(
       kind: "refused",
       message: "forceSlotInstant already carries a recorded dose action",
       errorCode: "medications.intake.force_slot.occupied",
+      meta: pinConflictWire(held),
     };
   }
   return { kind: "attributed", canonicalSlot, attributionSource: "USER_PIN" };

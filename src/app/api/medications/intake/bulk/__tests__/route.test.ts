@@ -268,7 +268,12 @@ describe("POST /api/medications/intake/bulk — v1.8.2 reconcile", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.data.entries).toEqual([
-      { index: 0, status: "skipped", reason: "intake_not_tracked" },
+      {
+        index: 0,
+        status: "skipped",
+        reason: "intake_not_tracked",
+        slotInstant: null,
+      },
     ]);
     expect(prisma.medicationIntakeEvent.create).not.toHaveBeenCalled();
   });

@@ -23,6 +23,7 @@ import { refreshDoseDay } from "@/lib/medications/dose-day-refresh";
 import { unstableExternalIdMeta } from "@/lib/validations/external-id";
 import type { InjectionSiteValue } from "@/lib/validations/medication";
 import { afterDoseChange } from "@/lib/medications/after-dose-change";
+import { slotOfStoredRow } from "@/lib/medications/ad-hoc-intake";
 import {
   createBatchState,
   type BatchState,
@@ -280,21 +281,39 @@ async function recordSyncArrival(input: BatchInput, state: BatchState) {
  * Every landed entry carries its row's current `syncVersion`, read once after
  * the batch settled (a later entry or the dedup pass may have moved it), so
  * an undo with `expectedSyncVersion` matches what the client was told.
+ *
+ * Every entry also carries `slotInstant`. The write knew it where it wrote;
+ * an entry answered by a row it did not write (a replay, a known Apple dose)
+ * reads it off that row: a row on its own instant (`scheduledFor = takenAt`,
+ * the ad-hoc marker, `ad-hoc-intake.ts`) is on no slot, any other row is on
+ * its `scheduledFor`. An entry that stored nothing is on none.
  */
 async function stampSyncVersions(userId: string, state: BatchState) {
   const ids = [...new Set(state.results.flatMap((r) => (r.id ? [r.id] : [])))];
-  if (ids.length === 0) return;
-  const rows = await prisma.medicationIntakeEvent.findMany({
-    where: { id: { in: ids }, userId },
-    select: { id: true, syncVersion: true },
-  });
-  const versionById = new Map(rows.map((r) => [r.id, r.syncVersion]));
+  const rows =
+    ids.length === 0
+      ? []
+      : await prisma.medicationIntakeEvent.findMany({
+          where: { id: { in: ids }, userId },
+          select: {
+            id: true,
+            syncVersion: true,
+            scheduledFor: true,
+            takenAt: true,
+          },
+        });
+  const rowById = new Map(rows.map((r) => [r.id, r]));
   for (const result of state.results) {
-    const version = result.id ? versionById.get(result.id) : undefined;
-    if (version === undefined) continue;
-    result.syncVersion = version;
+    const row = result.id ? rowById.get(result.id) : undefined;
+    if (result.slotInstant === undefined) {
+      result.slotInstant = row
+        ? (slotOfStoredRow(row)?.toISOString() ?? null)
+        : null;
+    }
+    if (!row) continue;
+    result.syncVersion = row.syncVersion;
     if (result.intake)
-      result.intake = { ...result.intake, syncVersion: version };
+      result.intake = { ...result.intake, syncVersion: row.syncVersion };
   }
 }
 

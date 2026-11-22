@@ -1336,6 +1336,100 @@ export const doseHistoryResponse = z
       "Per-slot dose ledger over [from, to]: every expected slot with a status plus every off-schedule intake tagged ad-hoc. Built from the same band minter + `reconstructDoseHistory` the compliance % consumes, so the history view and the rate never contradict each other.",
   });
 
+// `GET /api/medications/resolved-slots` (v1.49.0, iOS #191): every scheduled
+// dose of the record's active medications over a window of at most 14 days,
+// from the same ledger and resolver as the dose history and the today list.
+export const resolvedSlotsQuery = z.object({
+  from: isoDateTime()
+    .optional()
+    .describe(
+      "Window start (inclusive). Defaults to two days before now, or to ten days before `to` when only `to` is given.",
+    ),
+  to: isoDateTime()
+    .optional()
+    .describe(
+      "Window end (inclusive). Defaults to eight days after now, or to ten days after `from` when only `from` is given. Must be ≥ `from` and at most 14 days after it, else 422.",
+    ),
+});
+
+const resolvedSlot = z
+  .object({
+    slotInstant: isoDateTime().describe(
+      "The slot's scheduled time: the same instant as `at` in the dose history and `slotInstant` on the today rows, and what a take of this dose answers as `slotInstant`.",
+    ),
+    state: z
+      .enum(["upcoming", "due", "overdue", "taken", "skipped", "missed"])
+      .describe(
+        "The resolved dose state, the vocabulary of the today rows and the dose history's `state`: `upcoming` before `dueAt`, `due` from `dueAt`, `overdue` past `overdueSince`, `missed` past `missedAfter` with nothing recorded (or closed by the auto-miss pass), `taken` (see `takenLate`), `skipped`.",
+      ),
+    takenLate: z
+      .boolean()
+      .describe("With `state: taken`: taken after the on-time window."),
+    dueAt: isoDateTime().describe("When the dose window opens."),
+    overdueSince: isoDateTime().describe(
+      "The end of the on-time window; past it an open dose is `overdue`. Always present here, unlike the today rows.",
+    ),
+    missedAfter: isoDateTime().describe(
+      "The miss cutoff; past it an unanswered dose is `missed`.",
+    ),
+    lateTakeCounts: z
+      .boolean()
+      .describe(
+        "A take recorded for this dose now still counts for it: true while `due`, `overdue` and `missed`.",
+      ),
+    takenAt: isoDateTime()
+      .nullable()
+      .describe("When the dose was taken; null unless `state` is `taken`."),
+    takenVia: z
+      .enum([
+        "WEB",
+        "APP",
+        "INTEGRATION",
+        "TELEGRAM",
+        "APPLE_HEALTH",
+        "IMPORT",
+        "AUTO",
+      ])
+      .nullable()
+      .describe(
+        "How the take was recorded (as on the today rows); null while not taken and for takes recorded before the field existed.",
+      ),
+    intakeId: z
+      .string()
+      .nullable()
+      .describe(
+        "The intake row on the slot, when one exists (a projected pending row included); null for a slot no row holds yet.",
+      ),
+    pinned: z
+      .boolean()
+      .describe("True when a deliberate user pin serves the slot."),
+  })
+  .meta({ id: "ResolvedMedicationSlot" });
+
+export const resolvedSlotsResponse = z
+  .object({
+    from: isoDateTime().describe("The window start the slots were read over."),
+    to: isoDateTime().describe("The window end the slots were read over."),
+    medications: z.array(
+      z.object({
+        medicationId: z.string(),
+        family: z
+          .enum(["daily", "weekly", "one_shot", "none"])
+          .describe("Cadence family the window's slots were minted under."),
+        slots: z
+          .array(resolvedSlot)
+          .describe(
+            "Every scheduled dose of the medication with its slot time in the window, oldest first. Off-schedule takes are not slots and are not listed; the dose history has them.",
+          ),
+      }),
+    ),
+  })
+  .meta({
+    id: "ResolvedMedicationSlotsResponse",
+    description:
+      "Every active medication of the record that can be due (active, not as-needed, intake tracked), each with its resolved slots over the window.",
+  });
+
 // Zod 4's `.meta()` returns a NEW instance carrying the id rather than
 // annotating in place, so the annotated clone is exported and the path table
 // references it — a bare call would register nothing.
@@ -1695,6 +1789,21 @@ export const repeatedIntakeEventResource = medicationIntakeEventResource
       ),
   })
   .meta({ id: "RepeatedMedicationIntakeEvent" });
+
+/**
+ * The answer of `POST /api/medications/{id}/intake`: the row, and the slot it
+ * is on, so the device that recorded the dose lines its own slot up without
+ * reading the history again.
+ */
+export const recordedIntakeEventResource = repeatedIntakeEventResource
+  .extend({
+    slotInstant: isoDateTime()
+      .nullable()
+      .describe(
+        "Since v1.49.0. The canonical slot the dose is on: the slot the take or skip bound to (by its window, the nearest open slot, a named `scheduledFor` or a `forceSlotInstant` pin), equal to `scheduledFor` then. Null for a dose on no slot (an ad-hoc take or an extra dose, stored on its own instant). On `alreadyTaken` the slot of the recorded take. The device that recorded the dose gets no silent `MEDICATION_INTAKE_SYNC` for it: this field is its answer, and the sync goes to the account's other devices only.",
+      ),
+  })
+  .meta({ id: "RecordedMedicationIntakeEvent" });
 
 export const todayIntakeEntry = z
   .object({

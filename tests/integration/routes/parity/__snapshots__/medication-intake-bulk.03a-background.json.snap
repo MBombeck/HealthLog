@@ -12,6 +12,7 @@
           "index": 0,
           "status": "inserted",
           "id": "<id:1>",
+          "slotInstant": "2026-10-13T09:00:00.000Z",
           "syncVersion": "<syncVersion>"
         }
       ]

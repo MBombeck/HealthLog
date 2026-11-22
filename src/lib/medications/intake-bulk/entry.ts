@@ -224,7 +224,7 @@ async function writeScreenedEntry(
     { isExplicitTaken, isExplicitSkip },
   );
   if ("reason" in attribution) {
-    skipEntry(state, i, attribution.reason);
+    skipEntry(state, i, attribution.reason, attribution.held);
     return;
   }
   if (attribution.heldByAnotherDose) state.extraDosesUnscheduled += 1;

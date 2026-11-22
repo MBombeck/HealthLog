@@ -221,7 +221,7 @@ function pickSlotRow(rows: SlotIntakeRow[]): SlotIntakeRow | null {
   return (actioned.length > 0 ? actioned : rows)[0];
 }
 
-async function findSlotRows(
+export async function findSlotRows(
   client: PrismaLike,
   userId: string,
   medicationId: string,
@@ -707,53 +707,6 @@ export async function resolveSlotForWriteByBand(
       client,
     ),
     now: input.now,
-  });
-}
-
-/**
- * v1.16.0 — pin-conflict probe for the USER_PIN write paths. A pin moves a
- * DIFFERENT take onto a named slot; converging it onto a slot whose live
- * row is already actioned (taken or explicitly skipped) would overwrite
- * that recorded action through the explicit-write last-write-wins rule —
- * a silent loss of a dose record. The read ledger only offers the pin for
- * UNSERVED slots (`nearestSlot.filled` gates the kebab action), so a
- * conflict here means a stale client or a hand-rolled API call: the route
- * refuses it with 422 `medications.intake.force_slot.occupied`.
- *
- * Not a conflict:
- *   - a pending projection row at the slot (that is the normal target the
- *     pin converges onto);
- *   - the row being edited itself (`excludeEventId` on the PUT path);
- *   - an actioned row whose `takenAt` equals the incoming instant — that
- *     is an idempotent re-post of the same pinned dose.
- */
-export async function findPinConflict(input: {
-  userId: string;
-  medicationId: string;
-  /** The validated canonical slot anchor the pin targets. */
-  canonicalSlot: Date;
-  /** The incoming row's takenAt (null for a skip-shaped edit). */
-  incomingTakenAt: Date | null;
-  /** The event being edited (PUT path) — never conflicts with itself. */
-  excludeEventId?: string;
-  client?: PrismaLike;
-}): Promise<boolean> {
-  const client = input.client ?? defaultPrisma;
-  const rows = await findSlotRows(
-    client,
-    input.userId,
-    input.medicationId,
-    input.canonicalSlot,
-  );
-  return rows.some((row) => {
-    if (input.excludeEventId && row.id === input.excludeEventId) return false;
-    const actioned = row.takenAt !== null || row.skipped;
-    if (!actioned) return false;
-    const sameTake =
-      input.incomingTakenAt !== null &&
-      row.takenAt !== null &&
-      row.takenAt.getTime() === input.incomingTakenAt.getTime();
-    return !sameTake;
   });
 }
 

@@ -23,7 +23,8 @@
       "syncVersion": "<syncVersion>",
       "deletedAt": null,
       "appleHealthDeletedAt": null,
-      "alreadyTaken": false
+      "alreadyTaken": false,
+      "slotInstant": "2026-10-13T08:00:00.000Z"
     },
     "error": null
   },

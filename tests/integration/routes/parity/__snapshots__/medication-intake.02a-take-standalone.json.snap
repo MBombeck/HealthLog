@@ -23,7 +23,8 @@
       "syncVersion": "<syncVersion>",
       "deletedAt": null,
       "appleHealthDeletedAt": null,
-      "alreadyTaken": false
+      "alreadyTaken": false,
+      "slotInstant": null
     },
     "error": null
   },

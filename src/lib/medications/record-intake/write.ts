@@ -5,7 +5,10 @@
  */
 import type { MedicationIntakeEvent } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
-import { createAdHocIntake } from "@/lib/medications/ad-hoc-intake";
+import {
+  createAdHocIntake,
+  slotOfStoredRow,
+} from "@/lib/medications/ad-hoc-intake";
 import type { InjectionSiteKey } from "@/lib/medications/injection-sites";
 import {
   applyCanonicalSlotWrite,
@@ -32,18 +35,33 @@ export interface IntakeWrite {
   resolvedDoseTaken: string | null;
 }
 
+/**
+ * `slotInstant` is the slot the answered row is on, null for a row on no
+ * slot (an ad-hoc take, an extra dose): what the route answers as
+ * `slotInstant`.
+ */
 export type IntakeWriteResult =
-  | { kind: "existing"; row: MedicationIntakeEvent }
+  | { kind: "existing"; row: MedicationIntakeEvent; slotInstant: Date | null }
   | { kind: "outcome_change_refused" }
-  | { kind: "alreadyTaken"; row: MedicationIntakeEvent }
-  | { kind: "written"; event: IntakeRow; consumedTransition: boolean };
+  | {
+      kind: "alreadyTaken";
+      row: MedicationIntakeEvent;
+      slotInstant: Date | null;
+    }
+  | {
+      kind: "written";
+      event: IntakeRow;
+      consumedTransition: boolean;
+      slotInstant: Date | null;
+    };
 
 /** How close to a recorded dose a second one is the same tap: a minute. */
 const REPEAT_TAP_MS = 60_000;
 
-type ReplayedIntake =
-  | { kind: "existing"; row: MedicationIntakeEvent }
-  | { kind: "alreadyTaken"; row: MedicationIntakeEvent };
+type ReplayedIntake = Extract<
+  IntakeWriteResult,
+  { kind: "existing" } | { kind: "alreadyTaken" }
+>;
 
 /**
  * The dose a write repeats, when it is one: the row its idempotency key
@@ -74,7 +92,13 @@ export async function findReplayedIntake(
         medicationId: id,
       },
     });
-    return existing ? { kind: "existing", row: existing } : null;
+    return existing
+      ? {
+          kind: "existing",
+          row: existing,
+          slotInstant: slotOfStoredRow(existing),
+        }
+      : null;
   }
   // A scheduled dose converges onto its slot row, whose write answers its
   // own repeats under the slot lock.
@@ -94,7 +118,8 @@ export async function findReplayedIntake(
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     });
-    return skip ? { kind: "existing", row: skip } : null;
+    // Found only for a skip no slot answers: on no slot either.
+    return skip ? { kind: "existing", row: skip, slotInstant: null } : null;
   }
   const takenAt = write.resolvedTakenAt;
   if (takenAt === null) return null;
@@ -118,7 +143,10 @@ export async function findReplayedIntake(
       row.scheduledFor.getTime() === row.takenAt.getTime() &&
       (row.attributionSource === "USER_PIN") === extra,
   );
-  return repeat ? { kind: "alreadyTaken", row: repeat } : null;
+  // A row on its own instant, by the filter above: on no slot.
+  return repeat
+    ? { kind: "alreadyTaken", row: repeat, slotInstant: null }
+    : null;
 }
 
 /**
@@ -162,10 +190,15 @@ async function writeOntoSlot(
     takenVia: write.intakeSource === "WEB" ? "WEB" : "APP",
   });
   if (applied.outcomeChangeRefused) return { kind: "outcome_change_refused" };
-  if (applied.alreadyTaken) return { kind: "alreadyTaken", row: applied.row };
+  const slotInstant = canonicalSlot;
+  if (applied.alreadyTaken) {
+    return { kind: "alreadyTaken", row: applied.row, slotInstant };
+  }
   // A no-op (a replayed decision) wrote nothing: no audit row, no push, no
   // guardian notice, no stock movement.
-  if (applied.noDowngradeNoOp) return { kind: "existing", row: applied.row };
+  if (applied.noDowngradeNoOp) {
+    return { kind: "existing", row: applied.row, slotInstant };
+  }
   // Reset the snooze when a dose is actually recorded.
   if (!skipped) {
     await prisma.medication.update({
@@ -177,6 +210,7 @@ async function writeOntoSlot(
     kind: "written",
     event: applied.row,
     consumedTransition: applied.consumedTransition,
+    slotInstant,
   };
 }
 
@@ -289,5 +323,6 @@ export async function writeIntake(
     kind: "written",
     event: await insertStandalone(write),
     consumedTransition: !skipped,
+    slotInstant: null,
   };
 }

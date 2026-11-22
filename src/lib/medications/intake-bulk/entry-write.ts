@@ -65,6 +65,7 @@ async function writeOntoSlot(
     externalId: entry.externalId ?? null,
     takenVia: entry.source === "APPLE_HEALTH" ? "APPLE_HEALTH" : "APP",
   });
+  const slotInstant = canonicalSlot.toISOString();
   if (applied.alreadyTaken) {
     // The slot already holds a take: nothing written, and the entry says
     // when and how that take was recorded so the app can warn before a
@@ -77,6 +78,7 @@ async function writeOntoSlot(
       intake: applied.row,
       takenAt: applied.row.takenAt?.toISOString() ?? null,
       takenVia: applied.row.takenVia ?? null,
+      slotInstant,
     });
   } else if (applied.noDowngradeNoOp) {
     // Pending echo onto an already-actioned slot. Report it as a
@@ -84,13 +86,28 @@ async function writeOntoSlot(
     // recorded dose. A pending echo is never a taken write, so it
     // must never reach the inventory consume below.
     state.duplicates += 1;
-    state.results.push({ index: i, status: "duplicate", id: applied.row.id });
+    state.results.push({
+      index: i,
+      status: "duplicate",
+      id: applied.row.id,
+      slotInstant,
+    });
   } else if (applied.outcome === "updated") {
     state.updated += 1;
-    state.results.push({ index: i, status: "updated", id: applied.row.id });
+    state.results.push({
+      index: i,
+      status: "updated",
+      id: applied.row.id,
+      slotInstant,
+    });
   } else {
     state.inserted += 1;
-    state.results.push({ index: i, status: "inserted", id: applied.row.id });
+    state.results.push({
+      index: i,
+      status: "inserted",
+      id: applied.row.id,
+      slotInstant,
+    });
   }
   // Inventory: only the genuine pending→taken
   // transition consumes (the upsert's `consumedTransition` flag —
@@ -183,7 +200,13 @@ async function insertStandalone(
     ...(!entry.skipped && entry.doseTaken && { doseTaken: entry.doseTaken }),
   });
   state.inserted += 1;
-  state.results.push({ index: i, status: "inserted", id: row.id });
+  // On no slot: the row is anchored on its own instant.
+  state.results.push({
+    index: i,
+    status: "inserted",
+    id: row.id,
+    slotInstant: null,
+  });
   // A fresh standalone taken row consumes inventory
   // units (a fresh skip / pending row has nothing to consume or
   // refund).
