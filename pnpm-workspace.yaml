@@ -71,6 +71,17 @@ overrides:
   # The scanner suggests 10.x (latest), but the ReDoS fix is backported: only
   # <3.1.4 is vulnerable, so the 3.x line stays where its consumers expect it.
   "minimatch@<3.1.4": "^3.1.4"
+  # GHSA-g3hv-75wg-m249 (minimatch 7.0.0 to 11.0.0) and GHSA-3g3m-2fjr-6pw4
+  # (glob 9.0.0 to 14.0.1). Both are development-only: glob 10 and minimatch 9
+  # arrive under testcontainers -> archiver -> archiver-utils, minimatch 10
+  # under Stryker, ts-morph (shadcn) and typescript-eslint. No release of
+  # archiver-utils leaves glob 10, and Stryker still asks for ~10.2.4, so no
+  # parent bump reaches them. archiver-utils calls only `glob.sync(pattern,
+  # options)`, which glob 14 still exports, and every integration run loads
+  # archiver through testcontainers. The 3.x and 5.x minimatch lines sit below
+  # the advisory range and stay put.
+  "glob@>=9.0.0 <14.0.2": "^14.0.2"
+  "minimatch@>=7.0.0 <11.0.1": "^11.0.1"
   # Address4 decoded leading-zero octets as decimal, so `010.0.0.1` parsed as
   # 10.0.0.1 rather than being rejected. That is the exact alt-notation class
   # `isPublicUrl` exists to catch, and this copy arrives under the MCP SDK's
