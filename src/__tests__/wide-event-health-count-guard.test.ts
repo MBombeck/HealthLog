@@ -13,13 +13,13 @@
  * count, so a parser that stops matching fails instead of passing on
  * nothing.
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-const ROOT = process.cwd();
-const DIRS = ["src/app", "src/lib"];
+import { readSourceText, walkSourceFiles } from "./helpers/source-files";
+
+const SRC = join(process.cwd(), "src");
 
 const NOUNS = "doses?|checkups?|seizures?|symptoms?|intakes?|readings?";
 const STATES = "due|taken|missed|skipped|overdue|offsets";
@@ -28,15 +28,15 @@ const FORBIDDEN = [
   new RegExp(`^(?:${NOUNS})(?:Due|Taken|Missed|Skipped|Overdue|Offsets)$`),
 ];
 
-function walk(dir: string, out: string[]): void {
-  for (const name of readdirSync(dir)) {
-    if (name === "__tests__" || name === "generated") continue;
-    const path = join(dir, name);
-    if (statSync(path).isDirectory()) walk(path, out);
-    else if (/\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name)) {
-      out.push(path);
-    }
-  }
+/** Every non-test source file under `src/app` and `src/lib`. */
+function sourceFiles(): string[] {
+  return walkSourceFiles(SRC, { floor: 1500 }).filter(
+    (rel) =>
+      (rel.startsWith("app/") || rel.startsWith("lib/")) &&
+      !rel.includes("/__tests__/") &&
+      !rel.startsWith("generated/") &&
+      !/\.test\.tsx?$/.test(rel),
+  );
 }
 
 /** The top-level keys of every `meta: { ... }` literal in a source text. */
@@ -90,16 +90,14 @@ describe("wide-event health counts", () => {
   });
 
   it("finds no health count in any wide-event meta", () => {
-    const files: string[] = [];
-    for (const dir of DIRS) walk(join(ROOT, dir), files);
     let total = 0;
     const offenders: string[] = [];
-    for (const file of files) {
-      const keys = metaKeys(readFileSync(file, "utf8"));
+    for (const file of sourceFiles()) {
+      const keys = metaKeys(readSourceText(join(SRC, file)));
       total += keys.length;
       for (const key of keys) {
         if (FORBIDDEN.some((re) => re.test(key))) {
-          offenders.push(`${relative(ROOT, file)}: ${key}`);
+          offenders.push(`${file}: ${key}`);
         }
       }
     }

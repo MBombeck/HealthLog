@@ -57,3 +57,22 @@ export function isFreshShareViewHop(
   const age = now - Number(value);
   return age >= -HOP_SKEW_MS && age <= SHARE_VIEW_HOP_WINDOW_MS;
 }
+
+/**
+ * Where the proxy sends a visit to the share page that came without the gate
+ * cookie, or null when the visit may go on: back to `/c/<token>`, with
+ * `?cookies=off` when it arrived on a fresh hop of the route.
+ */
+export function shareViewGateBounce(
+  pathname: string,
+  search: URLSearchParams,
+  hasGateCookie: boolean,
+  now: number = Date.now(),
+): string | null {
+  const token = shareViewToken(pathname);
+  if (!token || hasGateCookie) return null;
+  const back = `/c/${token}`;
+  return isFreshShareViewHop(search.get(SHARE_VIEW_HOP_PARAM), now)
+    ? `${back}?${SHARE_VIEW_NO_COOKIE_PARAM}=${SHARE_VIEW_NO_COOKIE_VALUE}`
+    : back;
+}
