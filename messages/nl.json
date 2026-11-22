@@ -584,7 +584,7 @@
     "admin": "Beheeromgeving",
     "logout": "Uitloggen",
     "login": "Inloggen",
-    "notifications": "Meldingen",
+    "notifications": "Meldingen per kanaal",
     "theme": "Thema",
     "themeSystem": "Systeem",
     "themeDark": "Donker",
@@ -634,7 +634,14 @@
     "vaccinations": "Vaccinaties",
     "mentalWellbeing": "Mentaal welzijn",
     "timeline": "Tijdlijn",
-    "seizures": "Aanvallen"
+    "seizures": "Aanvallen",
+    "emergencyCard": "Noodkaart",
+    "groups": {
+      "tracking": "Bijhouden",
+      "record": "Gezondheidsdossier",
+      "analysis": "Analyse"
+    },
+    "dueCount": "{label}, {count} open"
   },
   "auth": {
     "login": "Inloggen",
@@ -1578,6 +1585,7 @@
     "complianceWindow": "Therapietrouw ({days} dagen)",
     "complianceUnavailable": "Therapietrouw kon niet worden geladen",
     "complianceNotApplicable": "Therapietrouw niet van toepassing",
+    "complianceNoDoses": "Nog geen doses",
     "complianceNotApplicableReason": "Er is geen lokaal schema opgeslagen in HealthLog.",
     "complianceInfo": "Aandeel van de verwachte doses dat je hebt vastgelegd. Wekelijkse schema's tellen per week.",
     "complianceInfoLabel": "Wat betekent therapietrouw?",
@@ -1588,6 +1596,8 @@
     "cycleDueToday": "Vandaag gepland",
     "cycleNoClosedCycles": "Nog geen afgeronde doseringscycli",
     "intakeToastTaken": "{name}: ingenomen, {time}",
+    "intakeToastTakenFor": "{name}: ingenomen, {time}, voor de dosis van {slot}",
+    "intakeToastExtra": "{name}: ingenomen, {time}, als extra dosis",
     "intakeToastSkipped": "{name}: overgeslagen",
     "intakeToastFailed": "{name} kon niet worden geregistreerd. Probeer het opnieuw",
     "intakeUndone": "Registratie teruggedraaid",
@@ -2675,7 +2685,9 @@
         "undo": "Ongedaan maken",
         "takeFor": "{name} innemen",
         "skipFor": "{name} overslaan",
-        "takeSlot": "Innemen ({time})"
+        "takeSlot": "Innemen ({time})",
+        "takeExtra": "Extra dosis innemen",
+        "takeExtraFor": "Extra dosis {name} innemen"
       },
       "state": {
         "pending": "Gepland",
@@ -2690,7 +2702,8 @@
       },
       "snoozedToast": "{name}: herinnering om {time}",
       "snoozeFailed": "{name} kon niet worden uitgesteld. Probeer het opnieuw",
-      "earlyHint": "Vroeg: deze dosis is vanaf {time} aan de beurt."
+      "earlyHint": "Vroeg: deze dosis is vanaf {time} aan de beurt.",
+      "extraHint": "Telt als extra dosis, niet voor de dosis van {time}."
     },
     "intakeForm": {
       "title": "Inname vastleggen",
@@ -2702,6 +2715,7 @@
       "doseHint": "Vooraf ingevuld met de geplande dosis. Pas hem alleen aan als je een andere hoeveelheid nam.",
       "countsFor": "Telt voor de dosis van {time}.",
       "countsForLate": "Telt voor de dosis van {time}, als te laat.",
+      "countsForEarly": "Telt voor de dosis van {time}, eerder ingenomen.",
       "countNearLabel": "Laten tellen voor de dosis van {time}",
       "skips": "Slaat de dosis van {time} over.",
       "extraDose": "Wordt vastgelegd als extra dosis, buiten het schema. Ze blijft in je geschiedenis en telt niet mee voor je therapietrouw.",
@@ -5760,7 +5774,6 @@
       "sectionsNav": "Onderdelen van Instellingen",
       "groups": {
         "account": "Account",
-        "yourData": "Je gegevens",
         "healthProfile": "Gezondheidsprofiel",
         "ai": "AI",
         "connectivity": "Verbindingen",
@@ -5769,7 +5782,8 @@
         "arrangement": "Indeling",
         "notifications": "Meldingen",
         "connections": "Verbindingen",
-        "data": "Gegevens"
+        "data": "Gegevens",
+        "serverData": "Servergegevens"
       },
       "allSections": "Alle onderdelen"
     },
@@ -5955,6 +5969,13 @@
           "label": "Uitstellen met",
           "option": "{minutes} min",
           "saveError": "Opslaan mislukt. Probeer het opnieuw"
+        },
+        "alerts": {
+          "heading": "Waarschuwingen",
+          "noChannel": "Er is nog geen bezorgkanaal ingesteld, dus er kan niets worden verstuurd. Zodra er een is, geldt deze schakelaar voor alle kanalen tegelijk.",
+          "setUpChannel": "Bezorgkanaal instellen",
+          "perChannel": "Per kanaal kiezen",
+          "saveError": "De meldingsinstelling kon niet worden opgeslagen. Probeer het opnieuw."
         }
       },
       "layout": {
@@ -6504,6 +6525,8 @@
             "privacyNote": "Het wachtwoord wordt versleuteld opgeslagen en nooit meer getoond. Elk bestand wordt één keer geïmporteerd: een bestand dat HealthLog al heeft wordt niet opnieuw gelezen. Een map op je thuisnetwerk werkt alleen als wie de server beheert het adres toestaat.",
             "lastAttempt": "Laatste poging {when}: {outcome}",
             "fetchNow": "Nu ophalen",
+            "fetchStarted": "Wordt nu opgehaald. Het resultaat verschijnt op deze kaart.",
+            "removed": "Map verwijderd",
             "remove": "Map verwijderen",
             "removeTitle": "Deze map verwijderen?",
             "removeBody": "HealthLog haalt daar niets meer op en vergeet het wachtwoord. Wat al geïmporteerd is, blijft."
@@ -7970,6 +7993,52 @@
         "title": "Sessies en apparaten",
         "description": "Waar je bent ingelogd, welke apparaten de tweede factor overslaan en de beveiligingsactiviteit van je account.",
         "open": "Beveiliging openen"
+      },
+      "whoHasAccess": {
+        "title": "Wie bij je dossier kan",
+        "description": "Elke weg naar je dossier, en waar je die ziet en sluit.",
+        "doors": {
+          "accounts": {
+            "title": "Andere accounts",
+            "description": "Mensen op deze server met wie je je dossier deelt, en de voogden van profielen die je beheert.",
+            "link": "Gedeelde toegang openen"
+          },
+          "shareLinks": {
+            "title": "Links voor zorgverleners",
+            "description": "Alleen-lezen-links naar je artsrapport die vervallen op een dag die jij kiest.",
+            "link": "Links openen"
+          },
+          "emergencyCard": {
+            "title": "Link van de noodkaart",
+            "description": "De QR-link op je noodkaart. Wie hem scant, kan de kaart lezen tot je hem intrekt.",
+            "link": "Noodkaart openen"
+          },
+          "careCalendar": {
+            "title": "Zorgagenda",
+            "description": "Een agenda-abonnement met je geboekte afspraken en de zorgdata die eraan komen.",
+            "link": "Zorgagenda openen"
+          },
+          "cycleCalendar": {
+            "title": "Cyclusagenda",
+            "description": "Een agenda-abonnement met je cyclusdata.",
+            "link": "Cyclusinstellingen openen"
+          },
+          "apiTokens": {
+            "title": "API-tokens",
+            "description": "Tokens waarmee apps en scripts je gegevens lezen of schrijven.",
+            "link": "API-tokens openen"
+          },
+          "mcp": {
+            "title": "MCP-connector",
+            "description": "AI-assistenten die je met je dossier hebt verbonden.",
+            "link": "MCP-connector openen"
+          },
+          "sessions": {
+            "title": "Aangemelde apparaten",
+            "description": "Browsers en telefoons die nu bij je account zijn aangemeld.",
+            "link": "Actieve sessies openen"
+          }
+        }
       }
     },
     "mcp": {
@@ -8130,7 +8199,8 @@
     "tokenNameLabel": "Tokennaam",
     "displayCard": {
       "title": "Weergave",
-      "description": "Taal, eenheden en notaties, opgeslagen zodra je ze wijzigt."
+      "description": "Taal, eenheden en notaties, opgeslagen zodra je ze wijzigt.",
+      "themeDescription": "Systeem volgt je apparaat tussen licht en donker. De keuze blijft op dit apparaat."
     },
     "integrationCard": {
       "state": {
@@ -8662,7 +8732,8 @@
       "ok": "OK",
       "error": "Mislukt",
       "skipped": "Overgeslagen",
-      "autoDisabled": "Automatisch uitgeschakelde kanalen"
+      "autoDisabled": "Automatisch uitgeschakelde kanalen",
+      "loadError": "De bezorgstatus kon niet worden geladen."
     },
     "reminderLateMinutes": "Drempelwaarde te laat (minuten)",
     "reminderLateMinutesDescription": "Minuten na het einde van het tijdvenster tot het label van geel naar oranje gaat.",
@@ -8716,12 +8787,12 @@
         "subtitle": "Registratie, standaardtaal en andere appbrede schakelaars."
       },
       "services": {
-        "title": "Diensten",
-        "subtitle": "Zet meldingskanalen en de API aan of uit voor de hele server."
+        "title": "Push en kanalen",
+        "subtitle": "Meldingskanalen, Web Push-sleutels, de push-relay en de bezorgstatus voor de hele server."
       },
       "integrations": {
-        "title": "Koppelingen",
-        "subtitle": "Configureer Umami, GlitchTip, Web Push en bugmeldingen."
+        "title": "Bewaking",
+        "subtitle": "Umami, GlitchTip en foutrapporten instellen."
       },
       "coach": {
         "title": "Coach",
@@ -9551,6 +9622,16 @@
         "inviteRequired": "Deze relay laat nieuwe servers alleen op uitnodiging toe. Voer een uitnodigingscode in.",
         "inviteRejected": "De relay heeft deze uitnodigingscode niet geaccepteerd. Misschien is hij verlopen of al gebruikt. Vraag een nieuwe aan en voer die in.",
         "registrationPaused": "De relay neemt op dit moment geen nieuwe servers aan. Deze server probeert het later vanzelf opnieuw."
+      },
+      "usage": {
+        "accepted": "Aangenomen",
+        "pending": "Wachtend",
+        "dropped": "Verworpen",
+        "failed": "Mislukt",
+        "window": "Pushberichten die deze server de afgelopen {days} dagen aan de relay gaf.",
+        "lastSuccess": "Laatst bezorgd {time}.",
+        "lastFailure": "Laatste fout {time}: {reason}.",
+        "noReason": "geen reden opgegeven"
       }
     },
     "serverSetup": {
@@ -9663,6 +9744,25 @@
           "scheduled": "Nachtelijke dump gepland ({cron})."
         }
       }
+    },
+    "versionMigrations": {
+      "title": "Versie en database",
+      "description": "Welke build draait, uit welke image-lijn, en of de database elke migratie heeft die deze build meebrengt.",
+      "version": "Versie",
+      "channel": {
+        "release": "Release",
+        "edge": "Edge",
+        "development": "Ontwikkelbuild"
+      },
+      "built": "Bouw {sha}, {time}",
+      "migrations": "Databasemigraties",
+      "applied": "{applied} van {shipped} toegepast",
+      "appliedOnly": "{applied} toegepast",
+      "pending": "{count} in afwachting: {names}",
+      "failed": "Mislukt, en houdt de update tegen: {names}",
+      "upToDate": "Bijgewerkt",
+      "lastApplied": "Laatste: {name}, {time}",
+      "loadError": "De status van de migraties kon niet worden geladen."
     }
   },
   "achievements": {
@@ -9957,7 +10057,7 @@
     }
   },
   "notifications": {
-    "title": "Meldingen",
+    "title": "Meldingen per kanaal",
     "eventColumn": "Gebeurtenis",
     "subtitle": "Kies welke meldingen je via welk kanaal wilt ontvangen.",
     "loadError": "Je meldingsvoorkeuren konden niet worden geladen.",
@@ -10065,7 +10165,7 @@
     "eventMedicationIntakeSyncDesc": "Update op al je apparaten als een dosis wordt geregistreerd, ingenomen of overgeslagen.",
     "eventDailyBriefing": "Dagelijkse briefing",
     "eventDailyBriefingDesc": "Eén rustige ochtendsamenvatting van hoe je dag ervoor staat. Staat uit totdat je hem inschakelt.",
-    "eventSecurityAlert": "Accountbeveiliging",
+    "eventSecurityAlert": "Waarschuwingen over accountbeveiliging",
     "eventSecurityAlertDesc": "Wordt verstuurd bij een inlog vanaf een onbekend apparaat of een onbekende plek, als een passkey wordt toegevoegd of verwijderd, als een toegangstoken wordt ingetrokken en als een apparaat wordt afgemeld omdat zijn inlogtoken twee keer is gebruikt.",
     "eventSharedRecordIntake": "Iemand met wie je je dossier deelt, registreert een dosis",
     "eventSharedRecordIntakeDesc": "Alleen als iemand anders dat doet, nooit voor je eigen registraties.",
@@ -10098,8 +10198,8 @@
     },
     "loginRequired": "Log in om je meldingen te beheren.",
     "someChannelsGloballyDisabled": "Een of meer kanalen zijn uitgeschakeld in Instellingen en ontvangen geen meldingen.",
-    "reminderSettingsLink": "Herinneringsinstellingen",
-    "channelsLink": "Kanalen",
+    "reminderSettingsLink": "Meldingsinstellingen",
+    "channelsLink": "Bezorgkanalen",
     "handover": {
       "claimedTitle": "{name} heeft nu een eigen account",
       "claimedEnd": "{name} heeft het eigen gezondheidsdossier overgenomen. Je toegang is beëindigd.",
@@ -14708,6 +14808,8 @@
     "loadFailed": "Deze dag kon niet worden geladen.",
     "dayOf": "Dag {n} van {m}",
     "dayN": "Dag {n}",
+    "seizure": "Aanval",
+    "seizureCount": "{count} aanvallen",
     "usualRange": "Meestal {lo} tot {hi}",
     "groups": {
       "scores": "Scores",
@@ -15149,6 +15251,23 @@
         "measurement": "Notitie bij een meting",
         "illness": "Ziektedagboek"
       }
+    },
+    "keywords": {
+      "emergencyCard": "nood, noodgeval, ICE, QR, portemonnee, bloedgroep",
+      "notificationsPerChannel": "kanalen, matrix, push, Telegram, ntfy",
+      "medicineRegistry": "bijsluiter, register, land, geneesmiddelendatabase",
+      "snooze": "sluimeren, later, uitstellen, snooze",
+      "securityAlerts": "beveiliging, aanmelding, inloggen, nieuw apparaat, waarschuwing",
+      "lastingChange": "blijvende verandering, vitale waarde, trend, rusthartslag, bloeddruk",
+      "theme": "thema, donkere modus, lichte modus, weergave, kleuren",
+      "gadgetbridge": "Gadgetbridge, Android, smartwatch, databank",
+      "fhirBundle": "FHIR, bundel, medisch dossier, importeren",
+      "healthConnectFolder": "Health Connect, WebDAV, Nextcloud, map, Android",
+      "reportSchedule": "planning, maandelijks, per kwartaal, artsrapport, automatisch",
+      "careCalendar": "agenda, kalender, ICS, abonnement, afspraken, vaccinaties",
+      "whoHasAccess": "toegang, wie ziet, delen, links, tokens, sessies",
+      "adminPush": "push, relay, Web Push, VAPID, APNs, bezorging",
+      "adminSystemStatus": "migraties, versie, update, kanaal, edge, database"
     }
   },
   "shortcuts": {
@@ -15535,6 +15654,7 @@
       "untyped": "Geen type vastgelegd",
       "ruleText": "{count} of meer in {hours} u",
       "recorded": "Vastgelegde aanvallen",
+      "diarySince": "Dagboek bijgehouden sinds",
       "seizureDays": "Dagen met een aanval",
       "seizureFreeDays": "Dagen zonder vastgelegde aanval",
       "per28Days": "Aanvallen per 28 dagen",
@@ -15832,7 +15952,7 @@
   "careFeed": {
     "sectionTitle": "Agenda",
     "sectionSubtitle": "Je afspraken en wat eraan komt, in de agenda-app die je al gebruikt.",
-    "title": "Agenda-abonnement voor afspraken en vervaldata",
+    "title": "Zorgagenda",
     "description": "Geboekte bezoeken op hun tijd, controles en boosters op de dag dat ze aan de beurt zijn.",
     "loadError": "Het agenda-abonnement kon niet worden geladen.",
     "linkHidden": "Er is een link actief die begint met {prefix}. Hij wordt maar één keer getoond, bij het maken; zet het abonnement uit en weer aan voor een nieuwe.",
@@ -15934,7 +16054,6 @@
     "page": {
       "title": "Noodkaart",
       "description": "Je noodgegevens voor onderweg.",
-      "back": "Gezondheidsprofiel",
       "loadError": "De noodkaart kon niet worden geladen.",
       "editHint": "Bloedgroep, contacten, implantaten en verklaringen komen uit je noodgegevens.",
       "editLink": "Bewerken",
@@ -15957,6 +16076,9 @@
       "ORGAN_DONOR": "Orgaandonatie",
       "NOTE": "Aanvullende notities",
       "DATE_OF_BIRTH": "Geboortedatum"
+    },
+    "entry": {
+      "description": "Bloedgroep, allergieën, medicijnen en contactpersonen voor een noodgeval, met offline kopie, pasje en QR-link."
     }
   }
 }

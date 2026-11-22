@@ -256,7 +256,7 @@ export function ManageChannelsLink() {
   return (
     <p className="text-muted-foreground text-xs">
       <Link
-        href="/settings/notifications"
+        href="/settings/integrations#channels"
         className="focus-visible:ring-ring rounded-sm underline underline-offset-2 focus-visible:ring-2 focus-visible:outline-none"
         data-slot="zeitplan-manage-channels-link"
       >

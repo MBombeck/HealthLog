@@ -584,7 +584,7 @@
     "admin": "Console di amministrazione",
     "logout": "Esci",
     "login": "Accedi",
-    "notifications": "Notifiche",
+    "notifications": "Notifiche per canale",
     "theme": "Tema",
     "themeSystem": "Sistema",
     "themeDark": "Scuro",
@@ -634,7 +634,14 @@
     "vaccinations": "Vaccinazioni",
     "mentalWellbeing": "Benessere mentale",
     "timeline": "Cronologia",
-    "seizures": "Crisi"
+    "seizures": "Crisi",
+    "emergencyCard": "Tessera di emergenza",
+    "groups": {
+      "tracking": "Monitoraggio",
+      "record": "Cartella clinica",
+      "analysis": "Analisi"
+    },
+    "dueCount": "{label}, {count} da fare"
   },
   "auth": {
     "login": "Accedi",
@@ -1578,6 +1585,7 @@
     "complianceWindow": "Aderenza {days} giorni",
     "complianceUnavailable": "Impossibile caricare l'aderenza",
     "complianceNotApplicable": "Aderenza non applicabile",
+    "complianceNoDoses": "Ancora nessuna dose",
     "complianceNotApplicableReason": "In HealthLog non è memorizzato alcun programma locale.",
     "complianceInfo": "Quota delle dosi attese che hai registrato. I piani settimanali contano settimana per settimana.",
     "complianceInfoLabel": "Cosa significa aderenza?",
@@ -1588,6 +1596,8 @@
     "cycleDueToday": "In scadenza oggi",
     "cycleNoClosedCycles": "Ancora nessun ciclo di dose completato",
     "intakeToastTaken": "{name}: assunta, {time}",
+    "intakeToastTakenFor": "{name}: assunta, {time}, per la dose delle {slot}",
+    "intakeToastExtra": "{name}: assunta, {time}, come dose extra",
     "intakeToastSkipped": "{name}: saltata",
     "intakeToastFailed": "Impossibile registrare {name}; riprova",
     "intakeUndone": "Voce annullata",
@@ -2675,7 +2685,9 @@
         "undo": "Annulla",
         "takeFor": "Assumi {name}",
         "skipFor": "Salta {name}",
-        "takeSlot": "Assumi ({time})"
+        "takeSlot": "Assumi ({time})",
+        "takeExtra": "Assumi una dose extra",
+        "takeExtraFor": "Assumi una dose extra di {name}"
       },
       "state": {
         "pending": "In attesa",
@@ -2690,7 +2702,8 @@
       },
       "snoozedToast": "{name}: promemoria di nuovo alle {time}",
       "snoozeFailed": "Impossibile rinviare {name}. Riprova",
-      "earlyHint": "In anticipo: questa dose è prevista dalle {time}."
+      "earlyHint": "In anticipo: questa dose è prevista dalle {time}.",
+      "extraHint": "Conta come dose extra, non per la dose delle {time}."
     },
     "intakeForm": {
       "title": "Registra assunzione",
@@ -2702,6 +2715,7 @@
       "doseHint": "Precompilata con la dose prevista. Cambiala solo se ne hai assunta una quantità diversa.",
       "countsFor": "Conta per la dose delle {time}.",
       "countsForLate": "Conta per la dose delle {time}, come in ritardo.",
+      "countsForEarly": "Conta per la dose delle {time}, assunta in anticipo.",
       "countNearLabel": "Contala per la dose delle {time}",
       "skips": "Salta la dose delle {time}.",
       "extraDose": "Registrata come dose extra, fuori programma. Resta nella cronologia e non conta per l’aderenza.",
@@ -5760,7 +5774,6 @@
       "sectionsNav": "Sezioni delle impostazioni",
       "groups": {
         "account": "Account",
-        "yourData": "I tuoi dati",
         "healthProfile": "Profilo sanitario",
         "ai": "IA",
         "connectivity": "Connettività",
@@ -5769,7 +5782,8 @@
         "arrangement": "Disposizione",
         "notifications": "Notifiche",
         "connections": "Connessioni",
-        "data": "Dati"
+        "data": "Dati",
+        "serverData": "Dati del server"
       },
       "allSections": "Tutte le sezioni"
     },
@@ -5955,6 +5969,13 @@
           "label": "Rinvia di",
           "option": "{minutes} min",
           "saveError": "Impossibile salvare. Riprova"
+        },
+        "alerts": {
+          "heading": "Avvisi",
+          "noChannel": "Non è ancora configurato nessun canale di recapito, quindi non si può inviare nulla. Appena ce n’è uno, questo interruttore vale per tutti insieme.",
+          "setUpChannel": "Configura un canale di recapito",
+          "perChannel": "Scegli per canale",
+          "saveError": "Non è stato possibile salvare l’impostazione della notifica. Riprova."
         }
       },
       "layout": {
@@ -6504,6 +6525,8 @@
             "privacyNote": "La password viene salvata cifrata e non viene più mostrata. Ogni file viene importato una volta: un file che HealthLog ha già non viene letto due volte. Una cartella sulla rete di casa funziona solo se chi gestisce il server ne consente l'indirizzo.",
             "lastAttempt": "Ultimo tentativo {when}: {outcome}",
             "fetchNow": "Preleva ora",
+            "fetchStarted": "Recupero in corso. Il risultato comparirà in questa scheda.",
+            "removed": "Cartella rimossa",
             "remove": "Rimuovi cartella",
             "removeTitle": "Rimuovere questa cartella?",
             "removeBody": "HealthLog smette di prelevare da lì e dimentica la password. Ciò che è già stato importato resta."
@@ -7970,6 +7993,52 @@
         "title": "Sessioni e dispositivi",
         "description": "Dove hai effettuato l'accesso, i dispositivi che saltano il secondo fattore e l'attività di sicurezza del tuo account.",
         "open": "Apri sicurezza"
+      },
+      "whoHasAccess": {
+        "title": "Chi può accedere alla tua cartella",
+        "description": "Ogni accesso alla tua cartella, e dove vederlo e chiuderlo.",
+        "doors": {
+          "accounts": {
+            "title": "Altri account",
+            "description": "Le persone di questo server con cui condividi la cartella, e i tutori dei profili che gestisci.",
+            "link": "Apri l’accesso condiviso"
+          },
+          "shareLinks": {
+            "title": "Link per i medici",
+            "description": "Link in sola lettura al tuo referto medico che scadono nel giorno che scegli.",
+            "link": "Apri i link"
+          },
+          "emergencyCard": {
+            "title": "Link della tessera di emergenza",
+            "description": "Il link QR della tua tessera di emergenza. Chi lo scansiona può leggere la tessera finché non lo revochi.",
+            "link": "Apri la tessera di emergenza"
+          },
+          "careCalendar": {
+            "title": "Calendario della salute",
+            "description": "Un abbonamento al calendario con le visite prenotate e le scadenze di cura in arrivo.",
+            "link": "Apri il calendario della salute"
+          },
+          "cycleCalendar": {
+            "title": "Calendario del ciclo",
+            "description": "Un abbonamento al calendario con le date del tuo ciclo.",
+            "link": "Apri le impostazioni del ciclo"
+          },
+          "apiTokens": {
+            "title": "Token API",
+            "description": "Token con cui app e script leggono o scrivono i tuoi dati.",
+            "link": "Apri i token API"
+          },
+          "mcp": {
+            "title": "Connettore MCP",
+            "description": "Gli assistenti IA che hai collegato alla tua cartella.",
+            "link": "Apri il connettore MCP"
+          },
+          "sessions": {
+            "title": "Dispositivi connessi",
+            "description": "Browser e telefoni connessi al tuo account in questo momento.",
+            "link": "Apri le sessioni attive"
+          }
+        }
       }
     },
     "mcp": {
@@ -8130,7 +8199,8 @@
     "tokenNameLabel": "Nome del token",
     "displayCard": {
       "title": "Visualizzazione",
-      "description": "Lingua, unità e formati, salvati appena li modifichi."
+      "description": "Lingua, unità e formati, salvati appena li modifichi.",
+      "themeDescription": "Sistema segue il dispositivo tra chiaro e scuro. La scelta resta su questo dispositivo."
     },
     "integrationCard": {
       "state": {
@@ -8662,7 +8732,8 @@
       "ok": "OK",
       "error": "Non riuscite",
       "skipped": "Saltate",
-      "autoDisabled": "Canali disattivati automaticamente"
+      "autoDisabled": "Canali disattivati automaticamente",
+      "loadError": "Non è stato possibile caricare lo stato dei recapiti."
     },
     "reminderLateMinutes": "Soglia di ritardo (minuti)",
     "reminderLateMinutesDescription": "Minuti dopo la fine della finestra prima che il badge passi da giallo ad arancione.",
@@ -8716,12 +8787,12 @@
         "subtitle": "Registrazione, lingua predefinita e altri interruttori validi per l'intera app."
       },
       "services": {
-        "title": "Servizi",
-        "subtitle": "Attiva o disattiva i canali di notifica e l'API per l'intero server."
+        "title": "Push e canali",
+        "subtitle": "Canali di notifica, chiavi Web Push, il relay push e lo stato dei recapiti per tutto il server."
       },
       "integrations": {
-        "title": "Integrazioni",
-        "subtitle": "Configura Umami, GlitchTip, Web Push e le segnalazioni di bug."
+        "title": "Monitoraggio",
+        "subtitle": "Configura Umami, GlitchTip e le segnalazioni di errori."
       },
       "coach": {
         "title": "Coach",
@@ -9551,6 +9622,16 @@
         "inviteRequired": "Questo relay accetta nuovi server solo su invito. Inserisci un codice di invito.",
         "inviteRejected": "Il relay non ha accettato questo codice di invito. Potrebbe essere scaduto o già usato. Chiedine uno nuovo e inseriscilo.",
         "registrationPaused": "Il relay al momento non accetta nuovi server. Questo server riproverà più tardi da solo."
+      },
+      "usage": {
+        "accepted": "Accettati",
+        "pending": "In attesa",
+        "dropped": "Scartati",
+        "failed": "Non riusciti",
+        "window": "Notifiche push che questo server ha passato al relay negli ultimi {days} giorni.",
+        "lastSuccess": "Ultimo recapito {time}.",
+        "lastFailure": "Ultimo errore {time}: {reason}.",
+        "noReason": "motivo non indicato"
       }
     },
     "serverSetup": {
@@ -9663,6 +9744,25 @@
           "scheduled": "Dump notturno pianificato ({cron})."
         }
       }
+    },
+    "versionMigrations": {
+      "title": "Versione e database",
+      "description": "Quale build è in esecuzione, da quale linea di immagini, e se il database ha tutte le migrazioni che porta con sé.",
+      "version": "Versione",
+      "channel": {
+        "release": "Rilascio",
+        "edge": "Edge",
+        "development": "Build di sviluppo"
+      },
+      "built": "Versione compilata {sha}, {time}",
+      "migrations": "Migrazioni del database",
+      "applied": "{applied} di {shipped} applicate",
+      "appliedOnly": "{applied} applicate",
+      "pending": "{count} in sospeso: {names}",
+      "failed": "Non riuscite, e bloccano l’aggiornamento: {names}",
+      "upToDate": "Aggiornato",
+      "lastApplied": "Ultima: {name}, {time}",
+      "loadError": "Non è stato possibile caricare lo stato delle migrazioni."
     }
   },
   "achievements": {
@@ -9957,7 +10057,7 @@
     }
   },
   "notifications": {
-    "title": "Notifiche",
+    "title": "Notifiche per canale",
     "eventColumn": "Evento",
     "subtitle": "Scegli quali notifiche ricevere e su quale canale.",
     "loadError": "Impossibile caricare le impostazioni di notifica.",
@@ -10065,7 +10165,7 @@
     "eventMedicationIntakeSyncDesc": "Aggiornamento tra dispositivi quando una dose viene registrata, assunta o saltata.",
     "eventDailyBriefing": "Riepilogo quotidiano",
     "eventDailyBriefingDesc": "Un riepilogo mattutino e tranquillo della tua giornata. Disattivato finché non lo attivi.",
-    "eventSecurityAlert": "Sicurezza dell’account",
+    "eventSecurityAlert": "Avvisi di sicurezza dell’account",
     "eventSecurityAlertDesc": "Inviato per un accesso da un dispositivo o un luogo sconosciuti, quando una passkey viene aggiunta o rimossa, quando un token di accesso viene revocato e quando un dispositivo viene disconnesso perché il suo token di accesso è stato usato due volte.",
     "eventSharedRecordIntake": "Una persona con accesso segna una dose",
     "eventSharedRecordIntakeDesc": "Inviato solo quando lo fa un'altra persona, mai per le tue voci.",
@@ -10098,8 +10198,8 @@
     },
     "loginRequired": "Accedi per gestire le notifiche.",
     "someChannelsGloballyDisabled": "Uno o più canali sono disattivati nelle impostazioni e non riceveranno notifiche.",
-    "reminderSettingsLink": "Impostazioni promemoria",
-    "channelsLink": "Canali",
+    "reminderSettingsLink": "Impostazioni notifiche",
+    "channelsLink": "Canali di recapito",
     "handover": {
       "claimedTitle": "{name} ora ha un proprio account",
       "claimedEnd": "{name} ha preso in carico la propria cartella sanitaria. Il tuo accesso è terminato.",
@@ -14708,6 +14808,8 @@
     "loadFailed": "Impossibile caricare questo giorno.",
     "dayOf": "Giorno {n} di {m}",
     "dayN": "Giorno {n}",
+    "seizure": "Crisi",
+    "seizureCount": "{count} crisi",
     "usualRange": "Di solito da {lo} a {hi}",
     "groups": {
       "scores": "Punteggi",
@@ -15149,6 +15251,23 @@
         "measurement": "Nota su una misurazione",
         "illness": "Diario di malattia"
       }
+    },
+    "keywords": {
+      "emergencyCard": "emergenza, ICE, QR, portafoglio, gruppo sanguigno, in caso di emergenza",
+      "notificationsPerChannel": "canali, matrice, push, Telegram, ntfy",
+      "medicineRegistry": "foglietto illustrativo, bugiardino, registro, paese, banca dati farmaci",
+      "snooze": "posticipa, più tardi, rimanda, snooze",
+      "securityAlerts": "sicurezza, accesso, nuovo dispositivo, avviso",
+      "lastingChange": "cambiamento duraturo, parametro vitale, tendenza, frequenza a riposo, pressione",
+      "theme": "tema, modalità scura, modalità chiara, aspetto, colori",
+      "gadgetbridge": "Gadgetbridge, Android, smartwatch, banca dati",
+      "fhirBundle": "FHIR, pacchetto, cartella clinica, importazione",
+      "healthConnectFolder": "Health Connect, WebDAV, Nextcloud, cartella, Android",
+      "reportSchedule": "pianificazione, mensile, trimestrale, referto medico, automatico",
+      "careCalendar": "calendario, ICS, abbonamento, appuntamenti, controlli, vaccini",
+      "whoHasAccess": "accesso, chi vede, condivisione, link, token, sessioni",
+      "adminPush": "push, relay, Web Push, VAPID, APNs, recapito",
+      "adminSystemStatus": "migrazioni, versione, aggiornamento, canale, edge, database"
     }
   },
   "shortcuts": {
@@ -15535,6 +15654,7 @@
       "untyped": "Nessun tipo registrato",
       "ruleText": "{count} o più in {hours} h",
       "recorded": "Crisi registrate",
+      "diarySince": "Diario tenuto dal",
       "seizureDays": "Giorni con crisi",
       "seizureFreeDays": "Giorni senza crisi registrate",
       "per28Days": "Crisi ogni 28 giorni",
@@ -15832,7 +15952,7 @@
   "careFeed": {
     "sectionTitle": "Calendario",
     "sectionSubtitle": "I tuoi appuntamenti e le scadenze, nell'app calendario che usi già.",
-    "title": "Abbonamento al calendario di appuntamenti e scadenze",
+    "title": "Calendario della salute",
     "description": "Le visite prenotate al loro orario, i controlli e i richiami dei vaccini nel giorno della scadenza.",
     "loadError": "Non è stato possibile caricare l'abbonamento al calendario.",
     "linkHidden": "È attivo un link che inizia con {prefix}. Viene mostrato una sola volta, alla creazione; disattiva e riattiva l'abbonamento per averne uno nuovo.",
@@ -15934,7 +16054,6 @@
     "page": {
       "title": "Tessera di emergenza",
       "description": "I tuoi dati di emergenza per quando sei fuori casa.",
-      "back": "Profilo sanitario",
       "loadError": "Impossibile caricare la tessera di emergenza.",
       "editHint": "Gruppo sanguigno, contatti, impianti e dichiarazioni provengono dai tuoi dati di emergenza.",
       "editLink": "Modificali",
@@ -15957,6 +16076,9 @@
       "ORGAN_DONOR": "Donazione di organi",
       "NOTE": "Note aggiuntive",
       "DATE_OF_BIRTH": "Data di nascita"
+    },
+    "entry": {
+      "description": "Gruppo sanguigno, allergie, farmaci e contatti per un’emergenza, con copia offline, tessera e link QR."
     }
   }
 }

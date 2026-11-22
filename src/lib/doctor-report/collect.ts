@@ -86,6 +86,7 @@ import { PATIENT_NAME_SELECT, patientName } from "@/lib/account-name";
 import { readingsMean } from "@/lib/measurements/day-mean";
 import { loadScreenerUnvalidatedTranslations } from "./screener-translations";
 import { bmiOf } from "@/lib/analytics/classifications";
+import { pregnancyContextActive } from "@/lib/cycle/pregnancy-context";
 import {
   findReportIntakeEvents,
   findReportMedications,
@@ -422,12 +423,12 @@ export async function collectDoctorReportData(
         }
       : null;
 
-  // BMI from the latest weight and the profile height. Gated by its own leaf,
-  // which is also the leaf that gates any recorded BODY_MASS_INDEX rows — one
-  // control for the figure and the series alike.
+  // BMI from the latest weight and the profile height, gated by the leaf that
+  // gates the BODY_MASS_INDEX rows too; none at the end of a pregnancy period.
   const weightStats = stats.WEIGHT;
+  const pregnant = await pregnancyContextActive(prisma, userId, reportTz, end);
   const bmiRaw =
-    weightStats && userProfile?.heightCm
+    weightStats && userProfile?.heightCm && !pregnant
       ? bmiOf(weightStats.latest, userProfile.heightCm)
       : null;
   const bmi = bmiRaw !== null ? Math.round(bmiRaw * 10) / 10 : null;

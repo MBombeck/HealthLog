@@ -30,6 +30,7 @@ import { SubPageShell } from "@/components/insights/sub-page-shell";
 import { TileHeader } from "@/components/insights/tile-header";
 import { apiGet } from "@/lib/api/api-fetch";
 import { getMedicationCategoryLabel } from "@/lib/medications/category-label";
+import { scoredRate } from "@/lib/medications/shown-adherence";
 
 /**
  * v1.4.25 — `/insights/medications`.
@@ -60,6 +61,8 @@ interface MedicationEntry {
   taken7: number;
   skipped7: number;
   missed7: number;
+  /** Absent on a payload cached before it existed. */
+  expected30?: number;
 }
 
 interface ComprehensiveMedicationData {
@@ -272,30 +275,16 @@ export default function InsightsMedikamentePage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs">
-                    <span>{t("insights.compliance7d")}</span>
-                    <span className="font-medium">{med.compliance7}%</span>
-                  </div>
-                  {/* v1.4.33 — aria-label so the bar has an
-                      accessible name (Lighthouse a11y 91/94). */}
-                  <Progress
-                    value={med.compliance7}
-                    className="h-1.5"
-                    aria-label={t("insights.compliance7d")}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs">
-                    <span>{t("insights.compliance30d")}</span>
-                    <span className="font-medium">{med.compliance30}%</span>
-                  </div>
-                  <Progress
-                    value={med.compliance30}
-                    className="h-1.5"
-                    aria-label={t("insights.compliance30d")}
-                  />
-                </div>
+                {/* A window with no dose to score shows "no doses yet",
+                    never a rate. */}
+                <ShownRate
+                  label={t("insights.compliance7d")}
+                  rate={scoredRate(med.compliance7, med.taken7 + med.missed7)}
+                />
+                <ShownRate
+                  label={t("insights.compliance30d")}
+                  rate={scoredRate(med.compliance30, med.expected30)}
+                />
                 <div className="text-muted-foreground flex justify-between text-xs">
                   <span>
                     <span className="text-success">{med.taken7}</span>{" "}
@@ -363,6 +352,29 @@ export default function InsightsMedikamentePage() {
         preparing={status?.preparing ?? false}
       />
     </SubPageShell>
+  );
+}
+
+/**
+ * One adherence row: its label, the rate or "no doses yet" when there is
+ * nothing to score, and the bar (with an accessible name).
+ */
+function ShownRate({ label, rate }: { label: string; rate: number | null }) {
+  const { t } = useTranslations();
+  return (
+    <div className="space-y-1">
+      <div className="flex justify-between text-xs">
+        <span>{label}</span>
+        {rate === null ? (
+          <span className="text-muted-foreground">
+            {t("medications.complianceNoDoses")}
+          </span>
+        ) : (
+          <span className="font-medium">{rate}%</span>
+        )}
+      </div>
+      <Progress value={rate ?? 0} className="h-1.5" aria-label={label} />
+    </div>
   );
 }
 

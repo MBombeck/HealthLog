@@ -338,6 +338,34 @@ const labReferenceList = () =>
   );
 
 /**
+ * Workout GPS tracks, on opt-in only, fail-soft like the ECGs: a track that
+ * cannot be read is only counted, for the result and the run's facts.
+ */
+async function attachWorkoutRoutes(input: {
+  archivePath: string;
+  userId: string;
+  references: ReturnType<typeof routeReferenceList>;
+  result: AppleHealthImportJobResult;
+  prisma: PrismaClient;
+}): Promise<{ attempted: number; failed: number }> {
+  const references = input.references;
+  if (references.total === 0) return { attempted: 0, failed: 0 };
+  const routes = await importAppleHealthWorkoutRoutes({
+    archivePath: input.archivePath,
+    userId: input.userId,
+    ...references.handOver(),
+    prisma: input.prisma,
+  });
+  input.result.workouts.routesAttached = routes.attached;
+  annotate({
+    action: { name: "apple_health.import.workout_routes" },
+    meta: { referenced: references.total, ...routes },
+  });
+  references.clear();
+  return { attempted: routes.attached + routes.failed, failed: routes.failed };
+}
+
+/**
  * Top-level handler. Thrown errors land the job in `failed` with the
  * error message recorded on `ImportJob.failureReason` and re-thrown
  * so pg-boss sees the failure.
@@ -509,30 +537,13 @@ export async function handleAppleHealthImport(
       labs: emptyFhirLabCounts(),
     };
 
-    // Workout GPS tracks, on opt-in only. Fail-soft like the ECGs: the
-    // workouts are committed, a track that cannot be read is only counted.
-    // Read one member at a time from the archive; nothing about a track
-    // reaches the result but the count.
-    if (routeReferences.total > 0) {
-      const routes = await importAppleHealthWorkoutRoutes({
-        archivePath: uploadPath,
-        userId,
-        ...routeReferences.handOver(),
-        prisma,
-      });
-      result.workouts.routesAttached = routes.attached;
-      annotate({
-        action: { name: "apple_health.import.workout_routes" },
-        meta: {
-          referenced: routeReferences.total,
-          discovered: routes.discovered,
-          attached: routes.attached,
-          skipped: routes.skipped,
-          failed: routes.failed,
-        },
-      });
-      routeReferences.clear();
-    }
+    const routes = await attachWorkoutRoutes({
+      archivePath: uploadPath,
+      userId,
+      references: routeReferences,
+      result,
+      prisma,
+    });
 
     // Lab results from Health Records, one FHIR file at a time; only counts
     // reach the result.
@@ -582,6 +593,10 @@ export async function handleAppleHealthImport(
       rows_upserted: result.totals.rowsUpserted,
       duration_ms: result.totals.durationMs,
       rollup_failed: rollupFailed,
+      // The legs that fail soft, the tracks and the rollup tail (`FanOutTally`).
+      items_attempted: routes.attempted + 1,
+      items_failed: routes.failed + (rollupFailed ? 1 : 0),
+      partial_failed: routes.failed > 0 || rollupFailed,
     });
   } catch (err) {
     // v1.28.33 (issue #486) — a missing staging file is an operational

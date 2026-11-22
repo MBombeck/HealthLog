@@ -2,26 +2,34 @@
  * Optimistic-concurrency guard for per-user read-modify-write endpoints.
  *
  * Extracted from the shipped `/api/dashboard/widgets` fix (issue #581,
- * v1.32.16): a Save carrying the `updatedAt` it was based on writes
- * CONDITIONALLY on the stored row still carrying that token, so a Save
- * that already committed can never be silently reverted by a later
- * request that started from an older snapshot. A stale base returns 409
- * and writes NOTHING. A request that omits the token keeps the prior
- * unconditional write — byte-for-byte the pre-guard behaviour, so older
- * web builds and the native client are unaffected.
+ * v1.32.16): a Save carrying the token it was based on writes CONDITIONALLY
+ * on the stored document still carrying that token, so a Save that already
+ * committed can never be silently reverted by a later request that started
+ * from an older snapshot. A stale base returns 409 and writes NOTHING. A
+ * request that omits the token keeps the prior unconditional write, byte for
+ * byte the pre-guard behaviour, so older web builds and the native client
+ * are unaffected.
  *
- * The wire token is OPAQUE by contract: the client only ever echoes a
- * server-returned value, never parses or synthesises one. That keeps the
- * escalation path (a per-column jsonb value guard instead of the shared
- * `User.updatedAt`) wire-compatible — the token can become a hash of the
- * column value without any client change.
+ * The token is the DOCUMENT's revision, never the row's `updatedAt`. These
+ * guards once compared `User.updatedAt`, which every write to the account
+ * row moves (a registry choice, a profile save, a sync cursor), so a
+ * save on one surface made every other surface's token stale, and where a GET
+ * served its token from the server cache the following saves answered 409
+ * for minutes. Each document now has its own `*RevisedAt` column that the
+ * database moves whenever that document's value changes (migration 0554);
+ * no code sets one, and a closed list of files names them
+ * (`src/__tests__/document-revision-guard.test.ts`).
+ *
+ * The wire token is OPAQUE by contract (an ISO instant today): the client
+ * only ever echoes a server-returned value as `baseUpdatedAt`, never parses
+ * or synthesises one.
  *
  * Two consumer shapes:
- *   - `guardedUserUpdate` — the common case: a field-by-field
- *     `Prisma.UserUpdateInput` guarded on `User.updatedAt`.
- *   - `guardedRowUpdate` — the generic core `guardedUserUpdate` wraps, for
- *     a non-`User` row that carries its own `@updatedAt` (e.g.
- *     `UserHealthProfile` behind `/api/coach/about-me`).
+ *   - `guardedUserDocumentUpdate` — a field-by-field `Prisma.UserUpdateInput`
+ *     on one settings document of the `User` row, guarded on that
+ *     document's revision.
+ *   - `guardedRowUpdate` — the generic core it wraps, for any row with a
+ *     token column of its own.
  *
  * The caller always builds the `data` object field-by-field (no mass
  * assignment); this helper never spreads a parsed request body.
@@ -141,17 +149,79 @@ export async function guardedRowUpdate(opts: {
 }
 
 /**
- * `guardedRowUpdate` specialised to the `User` row: a field-by-field
- * `Prisma.UserUpdateInput` guarded on `User.updatedAt`. The `data` object is
- * always built by the caller — this helper never spreads a request body.
+ * The settings documents on the `User` row that carry their own lock token,
+ * each mapped to the revision column the database moves when it changes.
+ * Keep in step with the trigger `users_bump_document_revisions` (0554).
  */
-export function guardedUserUpdate(opts: {
+export const USER_DOCUMENT_REVISION = {
+  dashboardWidgets: "dashboardWidgetsRevisedAt",
+  insightsLayout: "insightsLayoutRevisedAt",
+  medicationListLayout: "medicationListLayoutRevisedAt",
+  moodTagLayout: "moodTagLayoutRevisedAt",
+  modulePreferences: "modulePreferencesRevisedAt",
+  notificationPrefs: "notificationPrefsRevisedAt",
+  coachPrefs: "coachPrefsRevisedAt",
+  healthScoreConfig: "healthScoreConfigRevisedAt",
+} as const satisfies Record<string, keyof Prisma.UserSelect>;
+
+export type UserDocument = keyof typeof USER_DOCUMENT_REVISION;
+
+/** A `select` that reads one document's revision. */
+export function userDocumentRevisionSelect(
+  document: UserDocument,
+): Prisma.UserSelect {
+  return { [USER_DOCUMENT_REVISION[document]]: true };
+}
+
+/** The wire token of one document from a row read with its revision. */
+export function userDocumentToken(
+  row: object | null | undefined,
+  document: UserDocument,
+): string | undefined {
+  if (!row) return undefined;
+  const value = (row as Record<string, unknown>)[
+    USER_DOCUMENT_REVISION[document]
+  ];
+  return value instanceof Date ? value.toISOString() : undefined;
+}
+
+/** Read one document's current token straight from the row. */
+export async function readUserDocumentToken(
+  userId: string,
+  document: UserDocument,
+): Promise<string | undefined> {
+  const row = await prisma.user.findUnique({
+    where: { id: userId },
+    select: userDocumentRevisionSelect(document),
+  });
+  return userDocumentToken(row, document);
+}
+
+function revisionOf(
+  row: object | null | undefined,
+  document: UserDocument,
+): Date | undefined {
+  const value = row
+    ? (row as Record<string, unknown>)[USER_DOCUMENT_REVISION[document]]
+    : undefined;
+  return value instanceof Date ? value : undefined;
+}
+
+/**
+ * `guardedRowUpdate` on one settings document of the `User` row, guarded on
+ * that document's revision. The `data` object is always built by the caller
+ * and must write only that document's columns.
+ */
+export function guardedUserDocumentUpdate(opts: {
   userId: string;
+  document: UserDocument;
   base: Date | undefined;
   data: Prisma.UserUpdateInput;
   conflict: ConflictSpec;
 }): Promise<GuardedUpdateResult> {
-  const { userId, base, data, conflict } = opts;
+  const { userId, document, base, data, conflict } = opts;
+  const revision = USER_DOCUMENT_REVISION[document];
+  const select = userDocumentRevisionSelect(document);
   return guardedRowUpdate({
     base,
     conflict,
@@ -160,13 +230,13 @@ export function guardedUserUpdate(opts: {
         const updated = await prisma.user.update({
           where: { id: userId },
           data,
-          select: { updatedAt: true },
+          select,
         });
-        return { updatedAt: updated?.updatedAt ?? new Date() };
+        return { updatedAt: revisionOf(updated, document) ?? new Date() };
       },
       conditional: async (b) => {
         const res = await prisma.user.updateMany({
-          where: { id: userId, updatedAt: b },
+          where: { id: userId, [revision]: b },
           data,
         });
         return res.count;
@@ -174,9 +244,9 @@ export function guardedUserUpdate(opts: {
       freshToken: async () => {
         const fresh = await prisma.user.findUnique({
           where: { id: userId },
-          select: { updatedAt: true },
+          select,
         });
-        return fresh?.updatedAt;
+        return revisionOf(fresh, document);
       },
     },
   });

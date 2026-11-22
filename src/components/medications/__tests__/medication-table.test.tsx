@@ -453,7 +453,9 @@ describe("<MedicationTable> — structure + shared payloads", () => {
     );
 
     expect(html).toContain("Mounjaro");
-    expect(html).toContain('aria-label="Take Mounjaro"');
+    // The next injection is tomorrow, so a take now is an extra dose, and
+    // the button says so (the one take rule the cards use).
+    expect(html).toContain('aria-label="Take an extra dose of Mounjaro"');
     expect(html).toContain("4 doses");
   });
 
@@ -720,7 +722,7 @@ describe("medication-table — shared mutation/status sources (source guard)", (
   it("reads the server's resolved dose exactly like the cards, with no window math of its own", () => {
     expect(source).toContain("cardWindowPill(currentDose");
     expect(source).toContain("liveDoseState(currentDose");
-    expect(source).toContain("cardDisplayedSlot(");
+    expect(source).toContain("cardTakeSlot(currentDose");
     expect(source).not.toContain("window-status");
   });
 });

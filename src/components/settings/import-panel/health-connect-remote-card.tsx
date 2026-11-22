@@ -10,6 +10,8 @@
  * The password is never shown again; the card shows the last attempt as a
  * translated outcome.
  */
+import { CONFIRM_SAVED } from "@/lib/api/mutation-feedback";
+import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CloudDownload, Loader2 } from "lucide-react";
@@ -115,6 +117,7 @@ export function HealthConnectRemoteCard() {
   // the re-proof dialog on that refusal and retries.
   const recentProof = useRecentProof();
   const save = useMutation({
+    meta: CONFIRM_SAVED,
     mutationFn: (body: Record<string, unknown>) =>
       recentProof.run(() =>
         apiPut<RemoteState>("/api/import/health-connect-remote", body),
@@ -124,12 +127,19 @@ export function HealthConnectRemoteCard() {
   });
   const fetchNow = useMutation({
     mutationFn: () => apiPost(`${ROUTE}/fetch`, {}),
-    onSuccess: done,
+    // The fetch runs in the background; its outcome lands on this card.
+    onSuccess: () => {
+      done();
+      toastWrittenOutcome("success", t(`${k}.fetchStarted`));
+    },
     onError: () => setError(t(`${k}.error.fetchFailed`)),
   });
   const remove = useMutation({
     mutationFn: () => apiDelete(ROUTE),
-    onSuccess: done,
+    onSuccess: () => {
+      done();
+      toastWrittenOutcome("success", t(`${k}.removed`));
+    },
     onError: () => setError(t(`${k}.error.removeFailed`)),
   });
 

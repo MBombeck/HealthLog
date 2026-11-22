@@ -9,7 +9,10 @@
  *   1. Apple Health `export.zip`  — `apple-health-import-card.tsx`
  *      (multipart POST + status poll).
  *   1b. Health Connect export ZIP — `health-connect-import-card.tsx`
- *      (v1.42; multipart POST + poll of the account's latest job).
+ *      (v1.42; multipart POST + poll of the account's latest job). Fetching
+ *      that export from a WebDAV folder on a schedule is a connection, not a
+ *      file import, and lives under Settings > Integrations
+ *      (`health-connect-remote-card.tsx`).
  *   1c. Activity file (.fit, .fit.gz, Garmin "Export original" ZIP) —
  *      `fit-import-card.tsx` (multipart POST + poll, like Health Connect).
  *   2. Generic JSON import        — `json-import-card.tsx`
@@ -30,7 +33,6 @@ import { useTranslations } from "@/lib/i18n/context";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { AppleHealthImportCard } from "./apple-health-import-card";
 import { HealthConnectImportCard } from "./health-connect-import-card";
-import { HealthConnectRemoteCard } from "./health-connect-remote-card";
 import { FitImportCard } from "./fit-import-card";
 import { RecordFileImportCard } from "./record-file-import-card";
 import { JsonImportCard } from "./json-import-card";
@@ -64,7 +66,6 @@ export function ImportPanel() {
       <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,16rem),1fr))] gap-4">
         <AppleHealthImportCard />
         <HealthConnectImportCard />
-        <HealthConnectRemoteCard />
         <FitImportCard />
         <RecordFileImportCard kind="gadgetbridge" />
         <RecordFileImportCard kind="fhir_bundle" />

@@ -3,9 +3,6 @@
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import {
-  createContext,
-  useCallback,
-  useContext,
   useEffect,
   useRef,
   useState,
@@ -15,15 +12,11 @@ import {
 import { I18nProvider, useTranslations } from "@/lib/i18n/context";
 import type { Locale } from "@/lib/i18n/config";
 import { showErrorToast } from "@/lib/errors/error-toast";
+import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
-import {
-  applyThemeColor,
-  parseThemeChoice,
-  resolveTheme,
-  THEME_STORAGE_KEY,
-  type ResolvedTheme,
-  type ThemeChoice,
-} from "@/lib/pwa/theme-color";
+import { ThemeProvider, useTheme } from "@/components/theme-provider";
+import { confirmsSaved } from "@/lib/api/mutation-feedback";
+import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { KeyboardInsetBridge } from "@/components/keyboard-inset-bridge";
 import { VersionPoller } from "@/components/version-poller";
 import { ServiceWorkerRegistrar } from "@/components/service-worker-registrar";
@@ -59,141 +52,6 @@ import {
 } from "@/lib/pwa/query-client-options";
 
 const SHELL_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || "";
-
-// ── Theme Context ────────────────────────────────────
-
-type Theme = ThemeChoice;
-
-interface ThemeContextValue {
-  theme: Theme;
-  resolvedTheme: ResolvedTheme;
-  setTheme: (theme: Theme) => void;
-}
-
-const ThemeContext = createContext<ThemeContextValue>({
-  theme: "system",
-  resolvedTheme: "dark",
-  setTheme: () => {},
-});
-
-export function useTheme() {
-  return useContext(ThemeContext);
-}
-
-function getSystemTheme(): "dark" | "light" {
-  if (typeof window === "undefined") return "dark";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
-}
-
-function applyTheme(resolved: "dark" | "light") {
-  document.documentElement.classList.remove("dark", "light");
-  document.documentElement.classList.add(resolved);
-  // The browser bar and an installed app's status bar follow the theme the
-  // page painted, not the operating system's scheme (see theme-color.ts).
-  applyThemeColor(document, resolved);
-}
-
-// ── Theme as an external store ───────────────────────
-//
-// The stored preference lives in localStorage, and the OS preference in
-// matchMedia — both browser-only values that must NOT be read in a `useState`
-// initializer (server renders "dark", a client with a stored "light"/"system"
-// initializes differently → the React #418 hydration seam this repo already
-// hit with the sidebar). `useSyncExternalStore` is the sanctioned fix: it reads
-// the value with an SSR-stable server snapshot ("system", resolved as "dark"
-// because the server cannot see the device) and reconciles to the
-// real value after hydration without a setState-in-effect. The nonce-bound
-// inline script in layout.tsx stamps the correct class pre-paint, so there is
-// no visual FOUC while React reconciles.
-
-const themeListeners = new Set<() => void>();
-
-function notifyThemeListeners() {
-  for (const cb of themeListeners) cb();
-}
-
-function subscribeStoredTheme(onChange: () => void): () => void {
-  themeListeners.add(onChange);
-  const onStorage = (e: StorageEvent) => {
-    if (e.key === THEME_STORAGE_KEY) onChange();
-  };
-  window.addEventListener("storage", onStorage);
-  return () => {
-    themeListeners.delete(onChange);
-    window.removeEventListener("storage", onStorage);
-  };
-}
-
-function getStoredThemeSnapshot(): Theme {
-  // An explicit "light" or "dark" wins; anything else, nothing stored
-  // included, follows the system. The same rule as the boot script
-  // (`parseThemeChoice`), so the first paint and the hydrated app agree.
-  try {
-    return parseThemeChoice(localStorage.getItem(THEME_STORAGE_KEY));
-  } catch {
-    return "system";
-  }
-}
-
-function getServerThemeSnapshot(): Theme {
-  return "system";
-}
-
-function subscribeSystemTheme(onChange: () => void): () => void {
-  const mq = window.matchMedia("(prefers-color-scheme: dark)");
-  mq.addEventListener("change", onChange);
-  return () => mq.removeEventListener("change", onChange);
-}
-
-function getSystemThemeSnapshot(): "dark" | "light" {
-  return getSystemTheme();
-}
-
-function getServerSystemSnapshot(): "dark" | "light" {
-  return "dark";
-}
-
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const theme = useSyncExternalStore(
-    subscribeStoredTheme,
-    getStoredThemeSnapshot,
-    getServerThemeSnapshot,
-  );
-  const systemTheme = useSyncExternalStore(
-    subscribeSystemTheme,
-    getSystemThemeSnapshot,
-    getServerSystemSnapshot,
-  );
-  const resolvedTheme = resolveTheme(theme, systemTheme === "dark");
-
-  // Keep the <html> class in sync with the resolved theme. This is a DOM write,
-  // not a setState — it runs on mount (reconciling the class the inline script
-  // set to any stored preference) and whenever the resolved theme changes.
-  useEffect(() => {
-    applyTheme(resolvedTheme);
-  }, [resolvedTheme]);
-
-  const setTheme = useCallback((next: Theme) => {
-    // Persist every explicit choice, "system" included, so a reload honours
-    // it. A fresh visitor with nothing stored also follows the system. The
-    // write + notify re-reads the external store; the effect above applies the
-    // class, and the matchMedia subscription keeps "system" live.
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, next);
-    } catch {
-      // Storage refused: nothing to persist; the stored value stays.
-    }
-    notifyThemeListeners();
-  }, []);
-
-  return (
-    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
-}
 
 // ── Dashboard snapshot preloader ─────────────────────
 //
@@ -414,6 +272,46 @@ function OfflineMutationToaster() {
   return null;
 }
 
+// ── Save confirmation ────────────────────────────────
+
+/**
+ * The one place a change confirms itself (`src/lib/api/mutation-feedback.ts`).
+ * A mutation that declares `meta: CONFIRM_SAVED` gets "Saved" once it
+ * succeeds, unless its call site raised a toast of its own meanwhile (an
+ * Undo toast, a named confirmation): the newest toast is compared before and
+ * shortly after, so a call site that toasts after `await mutateAsync()` is
+ * not answered twice.
+ */
+function MutationSavedToaster() {
+  const { t } = useTranslations();
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    const cache = queryClient.getMutationCache();
+    const lastToastAt = new Map<number, unknown>();
+    const newestToast = () => toast.getHistory().at(-1)?.id;
+    const unsubscribe = cache.subscribe((event) => {
+      if (event.type !== "updated") return;
+      const mutation = event.mutation;
+      if (!confirmsSaved(mutation.options.meta)) return;
+      if (event.action.type === "pending") {
+        lastToastAt.set(mutation.mutationId, newestToast());
+      } else if (event.action.type === "success") {
+        const before = lastToastAt.get(mutation.mutationId);
+        lastToastAt.delete(mutation.mutationId);
+        setTimeout(() => {
+          if (newestToast() === before) {
+            toastWrittenOutcome("success", t("common.saved"));
+          }
+        }, 250);
+      } else if (event.action.type === "error") {
+        lastToastAt.delete(mutation.mutationId);
+      }
+    });
+    return unsubscribe;
+  }, [queryClient, t]);
+  return null;
+}
+
 // ── Root Providers ───────────────────────────────────
 
 /**
@@ -464,6 +362,7 @@ export function Providers({
           <QueryVisibilityRefreshBridge />
           <DashboardSnapshotPreloader />
           <OfflineMutationToaster />
+          <MutationSavedToaster />
           {/* v1.36.0 — a grant that ends while a browser is inside the record
               leaves the session stamped and every read refused. One cache
               subscriber notices the stable errorCode and puts the browser back

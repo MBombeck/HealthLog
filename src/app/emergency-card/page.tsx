@@ -9,8 +9,10 @@ import { useAuth } from "@/hooks/use-auth";
 
 /**
  * The emergency card for when you are away from home: the card, its
- * offline copy and wallet card, and the read-only QR link. Always the signed-in
- * person's own card; the routes behind it serve the caller's own record.
+ * offline copy and wallet card, and the read-only QR link. The card of the
+ * record on screen: one's own, or, for the guardian of a managed profile, the
+ * profile's. The shell opens the page by its routes' rule
+ * (`RECORD_PAGE_SURFACES`), so an adult's delegate never reaches it.
  */
 export default function EmergencyCardRoute() {
   const { isLoading, isAuthenticated } = useAuth();

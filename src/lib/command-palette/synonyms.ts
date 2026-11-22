@@ -133,3 +133,31 @@ export const PALETTE_SYNONYMS: Readonly<Record<string, ReadonlyArray<string>>> =
 export const PALETTE_TASK_BOOST: Readonly<Record<string, number>> = {
   "settings:health-record": 100,
 };
+
+/**
+ * Search words in the reader's own language, per entry id: an i18n key under
+ * `palette.keywords.*` holding a comma-separated list, present in every
+ * locale (`surface-registry-guard.test.ts`). Where `PALETTE_SYNONYMS` carries
+ * a few cross-language words, these carry the words a person types in their
+ * interface language for a concept the title names differently ("snooze" for
+ * "Remind me later", "dark mode" for "Theme", "Nextcloud" for the folder).
+ */
+export const PALETTE_KEYWORD_KEYS: Readonly<Record<string, string>> = {
+  "nav:/emergency-card": "palette.keywords.emergencyCard",
+  "nav:/notifications": "palette.keywords.notificationsPerChannel",
+  "settings:modules/medications#medicine-registry":
+    "palette.keywords.medicineRegistry",
+  "settings:notifications#dose-snooze": "palette.keywords.snooze",
+  "settings:notifications#security-alerts": "palette.keywords.securityAlerts",
+  "settings:notifications#lasting-change": "palette.keywords.lastingChange",
+  "settings:account#theme": "palette.keywords.theme",
+  "settings:export#import-gadgetbridge": "palette.keywords.gadgetbridge",
+  "settings:export#import-fhir-bundle": "palette.keywords.fhirBundle",
+  "settings:integrations#import-health-connect-remote":
+    "palette.keywords.healthConnectFolder",
+  "settings:health-record#report-schedule": "palette.keywords.reportSchedule",
+  "settings:health-record#calendar": "palette.keywords.careCalendar",
+  "settings:privacy#who-has-access": "palette.keywords.whoHasAccess",
+  "admin:services": "palette.keywords.adminPush",
+  "admin:system-status": "palette.keywords.adminSystemStatus",
+};

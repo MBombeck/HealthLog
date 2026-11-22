@@ -5,6 +5,7 @@ import {
   BrainCircuit,
   ClipboardList,
   Droplets,
+  HeartPulse,
   FileScan,
   FlaskConical,
   History,
@@ -29,7 +30,8 @@ import {
   recordSettingsLandingDestination,
   type SettingsRecordContext,
 } from "@/lib/record-settings/classification";
-import { isSharedRecordPathPresentable } from "@/lib/navigation/shared-record";
+import { isSharedRecordPathOpen } from "@/lib/navigation/shared-record";
+import type { RecordViewer } from "@/lib/sharing/record-page-surfaces";
 import type { ShareDomain } from "@/lib/sharing/scope";
 
 /**
@@ -51,6 +53,8 @@ import type { ShareDomain } from "@/lib/sharing/scope";
  */
 export interface NavDestination {
   href: string;
+  /** The rail group it is listed under (`NAV_GROUPS`). */
+  group: NavGroupId;
   /** i18n key under the `nav.*` namespace. */
   tKey: string;
   icon: LucideIcon;
@@ -82,17 +86,53 @@ export interface NavDestination {
 }
 
 /**
- * The canonical ordered destination list. Cycle sits where it always has
- * (after Medications) and is filtered out when the account gate is off;
- * the order is otherwise identical for both surfaces.
+ * The rail's groups, in order: the one map the sidebar, the phone's More
+ * sheet and the search palette read (#1113). Dashboard stands alone on top
+ * without a heading; the three headings are plain labels, never a control, so
+ * nothing can be hidden behind a closed group. Each group keeps one entry no
+ * module can switch off (Measurements, Checkups, Insights), and a group whose
+ * entries are all gone in a shared record loses its heading with them.
  */
-// v1.19.1 — the clinical/insight spine below the dashboard/measurements/
-// mood/cycle head follows one fixed sequence, each entry directly below the
-// previous: Medications → Vorsorge → Labs → Illness → Insights → Coach →
-// Achievements. A disabled module simply drops out; the rest keep this order.
+export const NAV_GROUPS = [
+  { id: "home", labelKey: null },
+  { id: "tracking", labelKey: "nav.groups.tracking" },
+  { id: "record", labelKey: "nav.groups.record" },
+  { id: "analysis", labelKey: "nav.groups.analysis" },
+] as const satisfies ReadonlyArray<{ id: string; labelKey: string | null }>;
+
+export type NavGroupId = (typeof NAV_GROUPS)[number]["id"];
+
+/** The heading key of a group, null for the unheaded top group. */
+export function navGroupLabelKey(group: NavGroupId): string | null {
+  return NAV_GROUPS.find((g) => g.id === group)?.labelKey ?? null;
+}
+
+/**
+ * Visible destinations under their groups, in group order, entries in list
+ * order. A group with no visible entry is left out, heading and all, so a
+ * switched-off module leaves neither a gap nor an empty heading.
+ */
+export function groupNavDestinations<T extends { group: NavGroupId }>(
+  items: ReadonlyArray<T>,
+): Array<{ id: NavGroupId; labelKey: string | null; items: T[] }> {
+  return NAV_GROUPS.map((g) => ({
+    id: g.id,
+    labelKey: g.labelKey,
+    items: items.filter((item) => item.group === g.id),
+  })).filter((g) => g.items.length > 0);
+}
+
+/**
+ * The canonical ordered destination list, grouped (`NAV_GROUPS`): the entries
+ * of a group sit together and the groups follow the map's order, which
+ * `nav-model.test.ts` holds. A disabled module simply drops out; the rest keep
+ * this order. Since #1113 Medications sits second, beside Measurements, and
+ * Timeline opens the Analysis group.
+ */
 export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
   {
     href: "/",
+    group: "home",
     sharedRecord: true,
     tKey: "nav.dashboard",
     icon: Home,
@@ -100,13 +140,25 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
   },
   {
     href: "/measurements",
+    group: "tracking",
     sharedRecord: true,
     tKey: "nav.measurements",
     icon: Activity,
     tourId: "nav-measurements",
   },
   {
+    href: "/medications",
+    group: "tracking",
+    sharedRecord: true,
+    tKey: "nav.medications",
+    icon: Pill,
+    tourId: "nav-medications",
+    // v1.18.1 — medications graduated from a CORE domain to a toggleable
+    // module; the nav entry now drops when the account turns the module off.
+  },
+  {
     href: "/mood",
+    group: "tracking",
     sharedRecord: true,
     tKey: "nav.mood",
     icon: Waves,
@@ -118,6 +170,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
   // no longer borrows the Insights tab strip / layout shell).
   {
     href: "/mental-wellbeing",
+    group: "tracking",
     sharedRecord: true,
     tKey: "nav.mentalWellbeing",
     icon: Brain,
@@ -125,19 +178,11 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
   },
   {
     href: "/cycle",
+    group: "tracking",
     sharedRecord: true,
     tKey: "nav.cycle",
     icon: Droplets,
     tourId: "nav-cycle",
-  },
-  {
-    href: "/medications",
-    sharedRecord: true,
-    tKey: "nav.medications",
-    icon: Pill,
-    tourId: "nav-medications",
-    // v1.18.1 — medications graduated from a CORE domain to a toggleable
-    // module; the nav entry now drops when the account turns the module off.
   },
   // v1.17.1 — Vorsorge (preventive-care) gets a top-level nav home in the
   // clinical spine. It is a first-class tracking surface ("wann muss ich was
@@ -146,6 +191,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
   // Reminders hub still links to it; this is the direct front door.
   {
     href: "/checkups",
+    group: "record",
     sharedRecord: true,
     tKey: "nav.vorsorge",
     icon: Stethoscope,
@@ -161,6 +207,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
   },
   {
     href: "/labs",
+    group: "record",
     sharedRecord: true,
     tKey: "nav.labs",
     icon: FlaskConical,
@@ -168,6 +215,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
   },
   {
     href: "/profile",
+    group: "record",
     sharedRecord: true,
     sharedRecordOnly: true,
     tKey: "nav.profile",
@@ -178,6 +226,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
   // next to Labs. Owned by `illness` in the surface map.
   {
     href: "/illness",
+    group: "record",
     sharedRecord: true,
     tKey: "nav.illness",
     icon: Thermometer,
@@ -188,6 +237,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
   // the record switches the diary on.
   {
     href: "/seizures",
+    group: "record",
     sharedRecord: true,
     tKey: "nav.seizures",
     icon: BrainCircuit,
@@ -200,6 +250,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
   // re-enabling finds every dose intact.
   {
     href: "/vaccinations",
+    group: "record",
     sharedRecord: true,
     tKey: "nav.vaccinations",
     icon: Syringe,
@@ -213,18 +264,35 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
   // spine after Illness. Owned by `inboundDocuments` in the surface map.
   {
     href: "/documents",
+    group: "record",
     sharedRecord: true,
     tKey: "nav.documents",
     icon: FileScan,
     tourId: "nav-documents",
   },
-  // v1.42 (#613) — the life timeline, after Documents and before Insights.
+  // The emergency card: blood group, allergies, medications and
+  // contacts to show a stranger, with its offline copy, wallet card and QR
+  // link. A page people use rather than a setting, so it is a destination of
+  // its own after the record pages, and on a phone it sits in the More hub
+  // (two taps). Core: no module owns it. Inside a shared record it follows
+  // its routes' rule (`RECORD_PAGE_SURFACES`): the guardian of a managed
+  // profile holds the profile's card, an adult's delegate never does.
+  {
+    href: "/emergency-card",
+    group: "record",
+    sharedRecord: true,
+    tKey: "nav.emergencyCard",
+    icon: HeartPulse,
+    tourId: "nav-emergency-card",
+  },
+  // v1.42 (#613) — the life timeline, first under Analysis.
   // Owned by the opt-in `timeline` module in the surface map, so it appears
   // only once the person switches it on; on a phone it lands in the More hub
   // and takes no primary slot. A record read across sections: a delegate
   // holding the whole record sees it, a scoped grant never does.
   {
     href: "/timeline",
+    group: "analysis",
     sharedRecord: true,
     tKey: "nav.timeline",
     icon: History,
@@ -257,6 +325,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
   // generation surface rather than a read of one.
   {
     href: "/insights",
+    group: "analysis",
     tKey: "nav.insights",
     icon: Lightbulb,
     tourId: "nav-insights",
@@ -267,12 +336,14 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
   // could miss the differentiator entirely. The other entry points stay.
   {
     href: "/coach",
+    group: "analysis",
     tKey: "nav.coach",
     icon: MessagesSquare,
     tourId: "nav-coach",
   },
   {
     href: "/achievements",
+    group: "analysis",
     sharedRecord: true,
     tKey: "nav.achievements",
     icon: Trophy,
@@ -382,17 +453,37 @@ export function navDestinationModule(
  * mounted the real map applies. The default keeps the pure helper fail-open
  * for non-component callers that pass a settled map.
  */
+/**
+ * The kind of record on screen and the grant's level, as the server resolved
+ * them (`useRecordCapabilities`). Absent reads as an adult's record with no
+ * level, which opens no page whose routes admit only a guardian.
+ */
+export type NavRecordContext = Pick<RecordViewer, "recordKind" | "level">;
+
+function sharedViewer(
+  sections: readonly ShareDomain[] | null,
+  record: NavRecordContext | null,
+): RecordViewer {
+  return {
+    inSharedRecord: true,
+    recordKind: record?.recordKind ?? "shared",
+    level: record?.level ?? null,
+    sections,
+  };
+}
+
 function isNavDestinationVisible(
   d: NavDestination,
   modules: ModuleVisibilityMap | undefined,
   mounted = true,
   sharedRecord = false,
   sections: readonly ShareDomain[] | null = null,
+  record: NavRecordContext | null = null,
 ): boolean {
   if (
     sharedRecord &&
     (d.sharedRecord !== true ||
-      !isSharedRecordPathPresentable(d.href, sections))
+      !isSharedRecordPathOpen(d.href, sharedViewer(sections, record)))
   ) {
     return false;
   }
@@ -432,7 +523,7 @@ export function isDestinationInSharedRecord(
   pathname: string,
   sections: readonly ShareDomain[] | null = null,
 ): boolean {
-  return isSharedRecordPathPresentable(pathname, sections);
+  return isSharedRecordPathOpen(pathname, sharedViewer(sections, null));
 }
 
 /**
@@ -451,9 +542,17 @@ export function visibleNavDestinations(
   mounted = true,
   sharedRecord = false,
   sections: readonly ShareDomain[] | null = null,
+  record: NavRecordContext | null = null,
 ): NavDestination[] {
   return NAV_DESTINATIONS.filter((d) =>
-    isNavDestinationVisible(d, modules, mounted, sharedRecord, sections),
+    isNavDestinationVisible(
+      d,
+      modules,
+      mounted,
+      sharedRecord,
+      sections,
+      record,
+    ),
   );
 }
 
@@ -474,6 +573,7 @@ export interface MobileMoreHubEntry {
   href: string;
   tKey: string;
   icon: LucideIcon;
+  group: NavGroupId;
 }
 
 /**
@@ -494,15 +594,18 @@ export function mobileMoreHubDestinations(opts: {
   sharedRecord?: boolean;
   /** Server-resolved scope for the active shared record. */
   sections?: readonly ShareDomain[] | null;
+  /** Server-resolved kind and level of the active shared record. */
+  record?: NavRecordContext | null;
 }): MobileMoreHubEntry[] {
   return visibleNavDestinations(
     opts.modules,
     opts.mounted ?? true,
     opts.sharedRecord ?? false,
     opts.sections ?? null,
+    opts.record ?? null,
   )
     .filter((d) => !BOTTOM_NAV_PRIMARY_SLOT_HREFS.includes(d.href))
-    .map((d) => ({ href: d.href, tKey: d.tKey, icon: d.icon }));
+    .map((d) => ({ href: d.href, tKey: d.tKey, icon: d.icon, group: d.group }));
 }
 
 /**

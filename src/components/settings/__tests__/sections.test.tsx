@@ -45,6 +45,15 @@ vi.mock("@tanstack/react-query", () => ({
   useMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
+// The theme row in Display reads the app's theme store.
+vi.mock("@/components/theme-provider", () => ({
+  useTheme: () => ({
+    theme: "system",
+    resolvedTheme: "dark",
+    setTheme: vi.fn(),
+  }),
+}));
+
 // The AI capability map on `/api/auth/me`: everything available, a provider
 // configured, nothing switched off by the operator.
 vi.mock("@/hooks/use-ai-capability", () => ({

@@ -2,21 +2,13 @@
  * The dashboard's seven-day means without the rest of its summaries slice,
  * for the target verdicts (`/api/insights/targets`).
  */
-import { prisma } from "@/lib/db";
-import { avg7Sql, boundInstantSql } from "@/lib/analytics/request-clock-sql";
-import {
-  buildSourceRankCase,
-  canonicalMeasurementsCte,
-} from "@/lib/analytics/source-rank-sql";
+import { readCanonicalWindow } from "@/lib/analytics/canonical-window";
+import { buildSourceRankCase } from "@/lib/analytics/source-rank-sql";
 import {
   summariesSliceCacheKey,
   type SummariesSlice,
 } from "@/lib/analytics/summaries-slice";
 import { caches, type ServerCache } from "@/lib/cache/server-cache";
-import {
-  SESSION_DAY_FRAME,
-  dayWeightedRows,
-} from "@/lib/measurements/day-mean";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 
 /**
@@ -24,10 +16,10 @@ import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
  * canonical-source CTE, the same day weighting, the same rounding), without
  * the rest of the slice. Sleep is absent: the slice summarises it per night.
  * For a reader that needs only the dashboard's basis, such as the target
- * verdicts: one aggregate query, no reading ever leaves the database as a
- * row.
+ * verdicts: no reading ever leaves the database as a row.
  *
- * The query is the slice's own window aggregate, so when a fresh slice is
+ * The read is the slice's own window aggregate (`readCanonicalWindow`, whose
+ * closed block the two share), so when a fresh slice is
  * cached (the dashboard and the insights page read it on the same load) its
  * `avg7` is taken instead of running the aggregate a second time.
  * A type is in the answer when it has readings in the aggregate's 90-day
@@ -53,20 +45,11 @@ export async function readSevenDayMeans(
     '"type"',
     '"source"',
   );
-  const rows = await prisma.$queryRawUnsafe<
-    Array<{ type: string; avg7: number | null }>
-  >(
-    `
-      WITH cm AS (${canonicalMeasurementsCte(rankUnqualified, { from: boundInstantSql(2), interval: "90 days" })}
-      )
-      SELECT
-        m."type"::text                    AS type,
-        ${avg7Sql(boundInstantSql(2))}::double precision     AS avg7
-      FROM ${dayWeightedRows("cm", SESSION_DAY_FRAME)} m
-      GROUP BY m."type"
-    `,
+  const rows = await readCanonicalWindow(
     userId,
     new Date(),
+    priorityJson,
+    rankUnqualified,
   );
   const out: Record<string, number | null> = {};
   for (const row of rows) {

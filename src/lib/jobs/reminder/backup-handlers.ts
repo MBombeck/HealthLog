@@ -108,6 +108,11 @@ export async function handleOffhostBackup(
         offhost_backup_failed: report.failed,
         offhost_backup_total_users: report.totalUsers,
         offhost_backup_oversized: report.oversized,
+        // Failed accounts and key-use rows that did not land, counted for
+        // the run (`FanOutTally`) so the failing jobs card lists it.
+        items_attempted: report.uploaded + report.failed,
+        items_failed: report.failed + report.keyUseWritesFailed,
+        partial_failed: report.failed + report.keyUseWritesFailed > 0,
       };
 
       // A run that uploaded nothing for anybody put nothing off-host, and

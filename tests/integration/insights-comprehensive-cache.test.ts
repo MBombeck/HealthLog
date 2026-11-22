@@ -120,15 +120,19 @@ describe("GET /api/insights/comprehensive — server cache", () => {
       new Request("http://localhost/api/insights/comprehensive"),
     );
     expect(first.status).toBe(200);
-    expect(caches.analytics.stats().misses).toBe(1);
-    expect(caches.analytics.stats().hits).toBe(0);
+    // The build misses its own cell and the cells it reads inside it (the
+    // 90-day window aggregate's closed block among them), and hits nothing.
+    const primed = caches.analytics.stats();
+    expect(primed.misses).toBeGreaterThanOrEqual(1);
+    expect(primed.hits).toBe(0);
 
-    // Second call inside the TTL — hit.
+    // Second call inside the TTL — one hit on the route's cell, no build.
     const second = await (
       GET as unknown as (req: Request) => Promise<Response>
     )(new Request("http://localhost/api/insights/comprehensive"));
     expect(second.status).toBe(200);
     expect(caches.analytics.stats().hits).toBe(1);
+    expect(caches.analytics.stats().misses).toBe(primed.misses);
 
     // The wide-event annotation carries the cache outcome on the hit.
     const events = readLogBuffer({});

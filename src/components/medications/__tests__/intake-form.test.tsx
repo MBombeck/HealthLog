@@ -149,7 +149,27 @@ describe("attributeIntake", () => {
       countNear: false,
     });
     expect(extra.kind).toBe("extra");
-    expect(slotFieldsOf(extra)).toEqual({});
+    // Said, not left unnamed: the server would bind an unnamed take within
+    // six hours of a slot to it, and the form said "extra dose".
+    expect(slotFieldsOf(extra)).toEqual({ extraDose: true });
+  });
+
+  it("measures early and late takes alike, by the server's six-hour reach", () => {
+    const early = attributeIntake({
+      takenAtLocal: "2026-06-01T14:00",
+      slots: [slot("19:00")],
+      skipped: false,
+      countNear: true,
+    });
+    expect(early).toMatchObject({ kind: "late", early: true });
+    expect(Object.keys(slotFieldsOf(early))).toEqual(["forceSlotInstant"]);
+    const far = attributeIntake({
+      takenAtLocal: "2026-06-01T12:30",
+      slots: [slot("19:00")],
+      skipped: false,
+      countNear: true,
+    });
+    expect(far.kind).toBe("extra");
   });
 
   it("names the slot a skip skips", () => {

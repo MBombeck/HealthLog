@@ -53,6 +53,7 @@ import { RemindersSection } from "../reminders-section";
 import { ServicesSection } from "../services-section";
 import { SystemStatusSection } from "../system-status-section";
 import { UserManagementSection } from "../user-management-section";
+import { WebPushVapidSection } from "../web-push-vapid-section";
 
 function render(node: React.ReactElement) {
   return renderToStaticMarkup(
@@ -88,10 +89,16 @@ describe("admin sections — SSR smoke", () => {
     expect(html).toContain("Telegram");
   });
 
-  it("<IntegrationsGroupSection> renders all sub-sections", () => {
+  it("<IntegrationsGroupSection> renders the monitoring sub-sections", () => {
     const html = render(<IntegrationsGroupSection />);
     expect(html).toContain("Umami");
     expect(html).toContain("GlitchTip");
+    // The Web Push keys live with the push switches under Push and channels.
+    expect(html).not.toContain("VAPID");
+  });
+
+  it("<WebPushVapidSection> renders where push lives", () => {
+    const html = render(<WebPushVapidSection />);
     expect(html).toContain("Web Push");
   });
 

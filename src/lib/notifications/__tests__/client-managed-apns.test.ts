@@ -328,8 +328,11 @@ describe("dispatchNotification — per-device medication delivery (#179)", () =>
     await dispatchNotification(MEDICATION_PAYLOAD);
 
     expect(sendViaApnsMock).toHaveBeenCalledTimes(1);
+    // The same decision for both transports: the server's own key pushes to
+    // `onlyDeviceIds`, the relay carries it to `serverDeviceIds`.
     expect(sendViaApnsMock.mock.calls[0][2]).toEqual({
       onlyDeviceIds: ["dev-pad"],
+      serverDeviceIds: ["dev-pad"],
     });
     expect(addMetaMock).toHaveBeenCalledWith(
       "medication_reminder_suppressed_client_managed",
@@ -352,10 +355,31 @@ describe("dispatchNotification — per-device medication delivery (#179)", () =>
 
     await dispatchNotification(MEDICATION_PAYLOAD);
 
-    expect(sendViaApnsMock.mock.calls[0][2]).toBeUndefined();
+    // Every device over the server's own key; the relay reads the same set.
+    expect(sendViaApnsMock.mock.calls[0][2]).toEqual({
+      serverDeviceIds: ["dev-phone", "dev-pad"],
+    });
     expect(addMetaMock).not.toHaveBeenCalledWith(
       "apns_devices_suppressed_client_managed",
       expect.anything(),
     );
+  });
+  it("hands a follow-up the same decision: every device directly, the relay only the server-delivered ones", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      notificationPrefs: { medication: { clientManaged: true } },
+    } as unknown as UserRow);
+    devices([
+      ["dev-phone", "client"],
+      ["dev-pad", "server"],
+    ]);
+
+    await dispatchNotification({
+      ...MEDICATION_PAYLOAD,
+      metadata: { ...MEDICATION_PAYLOAD.metadata, followUp: true },
+    });
+
+    expect(sendViaApnsMock.mock.calls[0][2]).toEqual({
+      serverDeviceIds: ["dev-pad"],
+    });
   });
 });

@@ -6,8 +6,12 @@ import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { InlineAction } from "@/components/ui/inline-action";
 
 interface MedicationComplianceBarsProps {
-  rate7: number;
-  rate30: number;
+  /**
+   * The two rates through `shownAdherence`: null when the window holds no
+   * dose to score, rendered as "no doses yet" and never as a figure.
+   */
+  rate7: number | null;
+  rate30: number | null;
   streak: number;
   /**
    * v1.8.6 — the span of the short row in days. The server scales the two
@@ -108,10 +112,13 @@ export function MedicationComplianceBars({
   // v1.12.2 — route the rate through the locale number formatter and round
   // so a non-integer rate (e.g. 33.333) never leaks raw into the caption,
   // matching how every other percentage renders.
-  const shortRounded = Math.round(rate7);
-  const longRounded = Math.round(rate30);
-  const shortPct = fmt.number(shortRounded);
-  const longPct = fmt.number(longRounded);
+  const shortRounded = rate7 === null ? null : Math.round(rate7);
+  const longRounded = rate30 === null ? null : Math.round(rate30);
+  const noDoses = t("medications.complianceNoDoses");
+  const shortPct =
+    shortRounded === null ? noDoses : `${fmt.number(shortRounded)}%`;
+  const longPct =
+    longRounded === null ? noDoses : `${fmt.number(longRounded)}%`;
 
   // v1.16.6 — both rows carry an identical, FIXED geometry: the label line
   // is pinned to one text line (`h-5` + `truncate`) and the bar to `h-2`,
@@ -132,8 +139,8 @@ export function MedicationComplianceBars({
     <div
       className="space-y-2.5"
       data-slot="medication-card-compliance"
-      data-rate-short={shortRounded}
-      data-rate-long={longRounded}
+      data-rate-short={shortRounded ?? undefined}
+      data-rate-long={longRounded ?? undefined}
     >
       <div className="space-y-1.5">
         <div className="flex h-5 items-center justify-between text-sm">
@@ -144,10 +151,18 @@ export function MedicationComplianceBars({
                 long row would only add noise. */}
             <ComplianceInfoTip />
           </span>
-          <span className="shrink-0 font-medium">{shortPct}%</span>
+          <span
+            className={
+              shortRounded === null
+                ? "text-muted-foreground shrink-0"
+                : "shrink-0 font-medium"
+            }
+          >
+            {shortPct}
+          </span>
         </div>
         {/* aria-label so the bar has an accessible name. */}
-        <Progress value={rate7} className="h-2" aria-label={shortLabel} />
+        <Progress value={rate7 ?? 0} className="h-2" aria-label={shortLabel} />
       </div>
 
       <div className="space-y-1.5">
@@ -155,9 +170,17 @@ export function MedicationComplianceBars({
           <span className="text-muted-foreground min-w-0 truncate">
             {longLabel}
           </span>
-          <span className="shrink-0 font-medium">{longPct}%</span>
+          <span
+            className={
+              longRounded === null
+                ? "text-muted-foreground shrink-0"
+                : "shrink-0 font-medium"
+            }
+          >
+            {longPct}
+          </span>
         </div>
-        <Progress value={rate30} className="h-2" aria-label={longLabel} />
+        <Progress value={rate30 ?? 0} className="h-2" aria-label={longLabel} />
       </div>
 
       {/* Streak flame + low-stock notice — the shared meta row, always

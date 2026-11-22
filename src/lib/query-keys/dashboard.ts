@@ -26,6 +26,13 @@ export const dashboardKeys = {
     ["analytics", "range", type, range] as const,
 
   /**
+   * The navigation's two counts (`GET /api/nav/counts`): doses and
+   * check-ups due now. Evicted with every dose write
+   * (`medicationDependentKeys`) and every check-up write
+   * (`invalidateReminderReads`, `vaccinationDependentKeys`).
+   */
+  navCounts: () => ["nav-counts"] as const,
+  /**
    * v1.7.0 — unified dashboard first-paint snapshot. One client cell
    * hydrates every above-the-fold tile from `GET /api/dashboard/snapshot`,
    * replacing the four independent analytics-slim / analytics-thick /

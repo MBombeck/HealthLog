@@ -176,6 +176,10 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "intakes_pruned",
   "inventory_expired_count",
   "inventory_items_migrated",
+  // A fan-out pass's items: how many it attempted, how many it caught a
+  // failure for and carried on past, and whether any did (`FanOutTally`).
+  "items_attempted",
+  "items_failed",
   "jobs",
   // A batch whose every job named an account pending deletion
   // (`pending-deletion-gate.ts`): completed without running.
@@ -227,6 +231,7 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "offhost_purge_objects_deleted",
   "offhost_purge_pending",
   "outcome",
+  "partial_failed",
   "passes_failed",
   "per_sample_rows_deleted",
   "per_sample_rows_soft_deleted",

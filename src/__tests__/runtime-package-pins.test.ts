@@ -8,8 +8,8 @@
  * another pg_dump than the one the release was checked with. Dependabot's
  * `docker` ecosystem proposes the next digest or minor; the image scan
  * names a fix the pinned base has not absorbed. This file holds the pins'
- * shape, the runner's lack of npm, and the client's agreement with the
- * bundled database.
+ * shape, the runner's lack of npm, and the client's lead over the bundled
+ * database.
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -85,24 +85,36 @@ describe("runtime package pins", () => {
     expect(runner).not.toMatch(/\bapk\b/);
   });
 
-  it("takes the PostgreSQL client from the bundled database's minor", () => {
+  it("keeps the PostgreSQL client at or above the bundled database's major", () => {
     const pg = froms().find((f) => f.stage === "pgclient");
     expect(pg, "the Dockerfile has a pgclient stage").toBeDefined();
-    const client = /^postgres:(18\.\d+)-trixie@sha256:[0-9a-f]{64}$/.exec(
+    const client = /^postgres:(\d+)\.\d+-trixie@sha256:[0-9a-f]{64}$/.exec(
       pg!.image,
     );
-    expect(client, `a pinned major 18 image, not ${pg!.image}`).not.toBeNull();
+    expect(client, `a pinned minor, not ${pg!.image}`).not.toBeNull();
     // The `db` service's own image line, not the first postgres image in the
     // file: `db-upgrade` carries the previous major.
     const db =
-      /^ {2}db:\n(?:(?! {2}\S).*\n)*? {4}image:\s*postgres:(\d+\.\d+)-alpine$/m.exec(
+      /^ {2}db:\n(?:(?! {2}\S).*\n)*? {4}image:\s*postgres:(\d+)\.\d+-alpine$/m.exec(
         COMPOSE,
       );
     expect(db, "the compose file pins the database").not.toBeNull();
-    // One decision: a database minor bump moves the client with it.
-    expect(client![1]).toBe(db![1]);
+    const clientMajor = Number(client![1]);
+    const dbMajor = Number(db![1]);
+    // One decision, and its direction is the whole point: a client reads
+    // servers of its own major and older and refuses a newer one, so the
+    // client may lead the bundled database but never trail it. Below the
+    // bundled major it cannot dump the stack's own database; below the major
+    // an operator runs their own server on, it takes their install down at
+    // the next release that migrates, having stopped their dumps before that.
+    expect(clientMajor).toBeGreaterThanOrEqual(dbMajor);
+    // The binaries land under the major they are, and the image's own build
+    // check greps for that same major.
     expect(stage("runner")).toContain(
-      "COPY --from=pgclient /out/bin/ /usr/lib/postgresql/18/bin/",
+      `COPY --from=pgclient /out/bin/ /usr/lib/postgresql/${clientMajor}/bin/`,
+    );
+    expect(DOCKERFILE).toContain(
+      `pg_dump --version | grep -q "(PostgreSQL) ${clientMajor}\\."`,
     );
   });
 });

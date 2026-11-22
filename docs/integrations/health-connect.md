@@ -177,8 +177,9 @@ nothing has to be downloaded and uploaded by hand.
    any app that writes to a WebDAV folder), for example daily.
 2. In Nextcloud, create an **app password** under **Personal settings >
    Security**. Use it instead of the account password.
-3. In HealthLog open **Settings > Export & import > Health Connect from a
-   folder** and enter:
+3. In HealthLog open **Settings > Integrations > Health Connect from a
+   folder** (it sits with the other connections, since HealthLog fetches the
+   file on its own) and enter:
    - the folder's WebDAV address, for Nextcloud
      `https://cloud.example/remote.php/dav/files/<user>/<folder>` (no user
      name or password inside the address);

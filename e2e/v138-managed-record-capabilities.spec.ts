@@ -195,6 +195,26 @@ test.describe.serial("a guardian's controls inside a managed profile", () => {
     await expect(settings).toHaveAttribute("href", "/settings/account");
     await expect(sidebar.locator('a[href="/notifications"]')).toHaveCount(0);
 
+    // The guardian holds the profile's emergency card, and the page opens for
+    // them exactly as far as its routes admit (`RECORD_PAGE_SURFACES`).
+    await sidebar.locator('a[href="/emergency-card"]').click();
+    await expect(page).toHaveURL(/\/emergency-card$/);
+    await expect(
+      page.locator('[data-slot="emergency-card-preview"]'),
+    ).toBeVisible({ timeout: 30_000 });
+    // Settings > Health record: the report schedule and the care calendar are
+    // the guardian's; the clinician links stay the owner's.
+    await page.goto("/settings/health-record");
+    await expect(page.locator('[data-slot="report-schedule"]')).toBeVisible({
+      timeout: 30_000,
+    });
+    await expect(
+      page.locator('[data-slot="care-calendar-feed"]'),
+    ).toBeVisible();
+    await expect(page.locator("#sharing")).toHaveCount(0);
+    await page.goto("/");
+    await expect(banner).toBeVisible({ timeout: 30_000 });
+
     await settings.click();
     await expect(page).toHaveURL(/\/settings\/account$/);
     await expect(

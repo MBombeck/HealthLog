@@ -31,6 +31,7 @@
  * administration.
  */
 
+import { shownAdherence } from "@/lib/medications/shown-adherence";
 import type { MedicationCourseWire } from "@/components/medications/course-fields";
 import {
   CoursesRow,
@@ -407,11 +408,9 @@ export function MedicationDetailTabs({
 
   const complianceNotApplicable = compliance?.applicable === false;
   const display = compliance?.complianceDisplay ?? undefined;
-  const rate7 = display?.short.rate ?? compliance?.compliance7?.rate ?? 0;
-  const rate30 = display?.long.rate ?? compliance?.compliance30?.rate ?? 0;
-  const streak = display?.short.streak ?? compliance?.compliance7?.streak ?? 0;
-  const shortDays = display?.shortDays ?? 7;
-  const longDays = display?.longDays ?? 30;
+  // A window with no dose to score shows "no doses yet", never a rate.
+  const { shortDays, longDays, rate7, rate30, streak } =
+    shownAdherence(compliance);
 
   return (
     <div className="space-y-6" data-slot="medication-detail-page">

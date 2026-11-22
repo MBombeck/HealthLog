@@ -173,10 +173,10 @@ const ALLOWED: Readonly<Record<string, { count: number; reason: string }>> = {
     reason:
       "No pgboss schema on a web-only deployment; null means no queue to ask, and the evaluation then judges nothing.",
   },
-  "lib/jobs/job-failures.ts::explainAllFailedRun": {
+  "lib/jobs/job-failures.ts::explainCompletedRun": {
     count: 1,
     reason:
-      "A pg-boss output that does not parse as a run's outcome is not an all-failed run; presentError then shows the raw text as it always did.",
+      "A pg-boss output that does not parse as a run's outcome is not a completed run with failures; presentError then shows the raw text as it always did.",
   },
   "lib/jobs/job-failures.ts::readActiveJobsStartedBefore": {
     count: 1,

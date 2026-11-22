@@ -137,6 +137,9 @@ export const getSeizuresTool: McpToolDefinition = {
       windowDays: days,
       clusterRule: diary.settings.rule,
       summary: {
+        // The figures count from here: the window's start, or the diary's
+        // when it began later. No run is claimed before the diary existed.
+        countedFrom: s.from,
         recordedSeizures: s.seizures,
         suspected: s.suspected,
         seizureDays: s.seizureDays,

@@ -495,7 +495,7 @@ describe("GET /api/mood/tags/layout", () => {
     expect(res.data.updatedAt).toBe(
       (
         await prisma.user.findUniqueOrThrow({ where: { id: owner.id } })
-      ).updatedAt.toISOString(),
+      ).moodTagLayoutRevisedAt.toISOString(),
     );
   });
 
@@ -645,7 +645,7 @@ describe("PUT /api/mood/tags/layout", () => {
     expect(res.data.updatedAt).toBe(
       (
         await prisma.user.findUniqueOrThrow({ where: { id: owner.id } })
-      ).updatedAt.toISOString(),
+      ).moodTagLayoutRevisedAt.toISOString(),
     );
     expect(await storedLayout(owner.id)).toEqual({
       groupOrder: ["custom", "feelings"],

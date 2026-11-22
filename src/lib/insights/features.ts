@@ -3,6 +3,7 @@
  * Extracts aggregated health metrics from the database.
  * No raw timestamps or exact values are sent in aggregated mode.
  */
+import { weightTargetFor } from "@/lib/cycle/pregnancy-context";
 import { ageInYears } from "@/lib/tz/date-only";
 import { prisma } from "@/lib/db";
 import { summarize } from "@/lib/analytics/trends";
@@ -61,10 +62,7 @@ import {
   readNewestRowsPerType,
 } from "@/lib/measurements/newest-per-type";
 
-import {
-  resolveEffectiveBpTargets,
-  resolveWeightTargetOverride,
-} from "@/lib/analytics/effective-range";
+import { resolveEffectiveBpTargets } from "@/lib/analytics/effective-range";
 import {
   buildWeightTargetFeature,
   type WeightTargetFeature,
@@ -1244,7 +1242,7 @@ export async function extractFeatures(
       coverage: computeCoverage(weightData, now),
     };
     const weightTarget = buildWeightTargetFeature(
-      resolveWeightTargetOverride(user?.thresholdsJson),
+      (await weightTargetFor(prisma, userId, user)).target,
       { avg7: summary.avg7, latest: summary.latest },
     );
     if (weightTarget) features.weight.target = weightTarget;

@@ -152,10 +152,16 @@ const PINNED_AFFORDANCES: Record<
     CheckCircle2: 2,
     "text-success": 1,
   },
-  "src/components/admin/reminders-section.tsx": {
+  // The delivery-health card took the test push and its per-channel result
+  // with it when push moved to one place; the pins moved along.
+  "src/components/admin/notification-health-card.tsx": {
     CheckCircle2: 2,
-    "text-success": 4,
-    "toast.success": 2,
+    "text-success": 2,
+    "toast.success": 1,
+  },
+  "src/components/admin/reminders-section.tsx": {
+    "text-success": 2,
+    "toast.success": 1,
   },
   "src/components/admin/umami-section.tsx": { "toast.success": 1 },
   "src/components/admin/user-management-section.tsx": {

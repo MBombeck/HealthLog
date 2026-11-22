@@ -13,6 +13,9 @@ import { describe, expect, it } from "vitest";
 import {
   BOTTOM_NAV_PRIMARY_SLOT_HREFS,
   NAV_DESTINATIONS,
+  NAV_GROUPS,
+  groupNavDestinations,
+  navGroupLabelKey,
   NAV_UTILITY_DESTINATIONS,
   isNavDestinationActive,
   mobileMoreHubDestinations,
@@ -32,11 +35,94 @@ describe("nav-model destination list", () => {
     expect(coach[0]!.tKey).toBe("nav.coach");
   });
 
-  it("orders the core spine: dashboard → measurements → mood → medications", () => {
-    const hrefs = NAV_DESTINATIONS.map((d) => d.href);
-    expect(hrefs.indexOf("/")).toBeLessThan(hrefs.indexOf("/measurements"));
-    expect(hrefs.indexOf("/measurements")).toBeLessThan(hrefs.indexOf("/mood"));
-    expect(hrefs.indexOf("/mood")).toBeLessThan(hrefs.indexOf("/medications"));
+  it("lists the groups of #1113 in order, from the one group map", () => {
+    expect(NAV_GROUPS.map((g) => g.id)).toEqual([
+      "home",
+      "tracking",
+      "record",
+      "analysis",
+    ]);
+    // The list is ordered by the map: a group's entries sit together, and
+    // the groups follow NAV_GROUPS. An entry filed out of place fails here.
+    const rank = (d: { group: string }) =>
+      NAV_GROUPS.findIndex((g) => g.id === d.group);
+    const ranks = NAV_DESTINATIONS.map(rank);
+    expect(ranks.every((r) => r >= 0)).toBe(true);
+    expect([...ranks].sort((a, b) => a - b)).toEqual(ranks);
+    expect(
+      groupNavDestinations(NAV_DESTINATIONS).map((g) => [
+        g.id,
+        g.items.map((d) => d.href),
+      ]),
+    ).toEqual([
+      ["home", ["/"]],
+      [
+        "tracking",
+        [
+          "/measurements",
+          "/medications",
+          "/mood",
+          "/mental-wellbeing",
+          "/cycle",
+        ],
+      ],
+      [
+        "record",
+        [
+          "/checkups",
+          "/labs",
+          "/profile",
+          "/illness",
+          "/seizures",
+          "/vaccinations",
+          "/documents",
+          "/emergency-card",
+        ],
+      ],
+      ["analysis", ["/timeline", "/insights", "/coach", "/achievements"]],
+    ]);
+  });
+
+  it("a group whose entries are all switched off loses its heading", () => {
+    const tracking = NAV_DESTINATIONS.filter((d) => d.group === "tracking");
+    const rest = NAV_DESTINATIONS.filter((d) => d.group !== "tracking");
+    expect(tracking.length).toBeGreaterThan(0);
+    const groups = groupNavDestinations(rest).map((g) => g.id);
+    expect(groups).not.toContain("tracking");
+    expect(groupNavDestinations(rest).every((g) => g.items.length > 0)).toBe(
+      true,
+    );
+  });
+
+  it("with every module off, each heading still stands over an entry", () => {
+    const off = Object.fromEntries(
+      [
+        "mood",
+        "mentalHealth",
+        "cycle",
+        "medications",
+        "labs",
+        "illness",
+        "seizures",
+        "vaccinations",
+        "inboundDocuments",
+        "timeline",
+        "coach",
+        "achievements",
+      ].map((key) => [key, false]),
+    );
+    const grouped = groupNavDestinations(visibleNavDestinations(off));
+    expect(grouped.map((g) => g.id)).toEqual([
+      "home",
+      "tracking",
+      "record",
+      "analysis",
+    ]);
+    for (const group of grouped) expect(group.items.length).toBeGreaterThan(0);
+    // Every heading has a name.
+    for (const group of NAV_GROUPS.slice(1)) {
+      expect(navGroupLabelKey(group.id)).toMatch(/^nav\.groups\./);
+    }
   });
 
   it("every destination carries an i18n key under the nav namespace", () => {
@@ -50,8 +136,7 @@ describe("nav-model destination list", () => {
     expect(hrefs).toContain("/checkups");
     const vorsorge = NAV_DESTINATIONS.find((d) => d.href === "/checkups");
     expect(vorsorge?.tKey).toBe("nav.vorsorge");
-    // v1.19.1 — the fixed spine is Medications → Checkups → Labs →
-    // Illness → Insights, so Checkups sits after Medications and before Labs.
+    // Checkups opens the Health record group, after the Tracking group.
     expect(hrefs.indexOf("/medications")).toBeLessThan(
       hrefs.indexOf("/checkups"),
     );
@@ -89,17 +174,16 @@ describe("nav-model utility tail (N-1 — one shared list)", () => {
 });
 
 describe("visibleNavDestinations module gate", () => {
-  it("includes Cycle (between Mood and Medications) only when its module is enabled", () => {
+  it("includes Cycle (after Mood, before Checkups) only when its module is enabled", () => {
     // v1.18.0 — cycle is owned by `cycle` in the surface map and reads the delegated
     // `cycle` key from the same resolved module map every other gate uses.
-    // v1.19.1 — cycle sits in the head block, after Mood and before the
-    // fixed Medications → … → Achievements spine.
+    // #1113 — cycle closes the Tracking group, after Mood.
     const off = visibleNavDestinations({ cycle: false }).map((d) => d.href);
     const on = visibleNavDestinations({ cycle: true }).map((d) => d.href);
     expect(off).not.toContain("/cycle");
     expect(on).toContain("/cycle");
     expect(on.indexOf("/mood")).toBeLessThan(on.indexOf("/cycle"));
-    expect(on.indexOf("/cycle")).toBeLessThan(on.indexOf("/medications"));
+    expect(on.indexOf("/cycle")).toBeLessThan(on.indexOf("/checkups"));
   });
 
   it("drops a module-gated entry (mood / labs / coach / achievements / medications) when its module is disabled", () => {

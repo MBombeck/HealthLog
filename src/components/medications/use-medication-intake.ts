@@ -10,6 +10,8 @@ import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { invalidateMedicationReads } from "@/lib/query-keys";
 import { apiDelete, apiPost } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
+import type { TakeSlot } from "@/lib/medications/dose-state/pill";
+import { takeFields } from "@/lib/medications/dose-state/take-rule";
 
 /**
  * Every intake write in this hook clears the Today hero + dashboard through
@@ -81,7 +83,10 @@ export function intakeToastOptions(input: {
 
 /**
  * The one confirmation of a recorded dose, on every surface: "{name}: taken,
- * 08:12" or "{name}: skipped".
+ * 08:12" or "{name}: skipped". With `countedFor` it names the dose the take
+ * was counted for ("taken, 11:59, for the 07:00 PM dose"), and with
+ * `extra` it says the take was filed as an extra dose: a control that named
+ * a slot never confirms a take the server did not count for it.
  */
 export function intakeToastMessage(input: {
   t: Translator;
@@ -89,13 +94,43 @@ export function intakeToastMessage(input: {
   skipped: boolean;
   takenAt: Date;
   formatTime: (at: Date) => string;
+  countedFor?: Date | null;
+  extra?: boolean;
 }): string {
-  return input.skipped
-    ? input.t("medications.intakeToastSkipped", { name: input.name })
-    : input.t("medications.intakeToastTaken", {
-        name: input.name,
-        time: input.formatTime(input.takenAt),
-      });
+  if (input.skipped) {
+    return input.t("medications.intakeToastSkipped", { name: input.name });
+  }
+  const time = input.formatTime(input.takenAt);
+  if (input.extra) {
+    return input.t("medications.intakeToastExtra", { name: input.name, time });
+  }
+  if (input.countedFor) {
+    return input.t("medications.intakeToastTakenFor", {
+      name: input.name,
+      time,
+      slot: input.formatTime(input.countedFor),
+    });
+  }
+  return input.t("medications.intakeToastTaken", { name: input.name, time });
+}
+
+/** Within a minute, the slot the server filed a take under is the named one. */
+const SAME_SLOT_MS = 60_000;
+
+/**
+ * The POST body of a card take or skip. A skip names its slot; a take binds
+ * by the one take rule the card computed (`cardTakeSlot`): `scheduledFor`
+ * through the band, `forceSlotInstant` for a pinned take, `extraDose` for
+ * an extra dose.
+ */
+export function cardIntakeBody(
+  skipped: boolean,
+  slot: TakeSlot | null | undefined,
+): Record<string, unknown> {
+  if (!slot) return { skipped };
+  return skipped
+    ? { skipped, scheduledFor: slot.at.toISOString() }
+    : { skipped, ...takeFields(slot.binding, slot.at) };
 }
 
 /**
@@ -136,7 +171,7 @@ interface UseMedicationIntakeResult {
    * the nearest one (v1.12.3). Omit it (or pass null) for an unscheduled /
    * PRN dose to keep the legacy now-snap path.
    */
-  recordIntake: (skipped: boolean, scheduledFor?: Date | null) => Promise<void>;
+  recordIntake: (skipped: boolean, slot?: TakeSlot | null) => Promise<void>;
   /** Reverse a just-recorded intake via the soft-delete route. */
   undoIntake: (eventId: string, expectedSyncVersion?: number) => Promise<void>;
 }
@@ -152,13 +187,12 @@ export async function runRecordIntake(deps: {
   medication: MedicationIntakeIdentity;
   skipped: boolean;
   /**
-   * v1.12.3 — slot instant of the dose the card is showing. Threaded onto
-   * the POST so the server marks the displayed dose deterministically
-   * instead of snapping "now" to the nearest slot (a morning tap on a
-   * 07:00 / 19:00 med no longer mis-records the 07:00 dose). `null` /
-   * undefined keeps the legacy now-snap (unscheduled / PRN doses).
+   * The dose the card is showing and how a take binds to it
+   * (`cardTakeSlot`). Threaded onto the POST so the server marks THAT dose
+   * instead of snapping "now" to the nearest slot. `null` / undefined keeps
+   * the legacy now-snap (unscheduled / PRN doses).
    */
-  scheduledFor?: Date | null;
+  slot?: TakeSlot | null;
   t: Translator;
   queryClient: QueryClient;
   setIntakeLoading: (value: string | null) => void;
@@ -180,7 +214,7 @@ export async function runRecordIntake(deps: {
   const {
     medication,
     skipped,
-    scheduledFor,
+    slot,
     t,
     queryClient,
     setIntakeLoading,
@@ -211,13 +245,12 @@ export async function runRecordIntake(deps: {
           syncVersion?: number;
           alreadyTaken?: boolean;
           takenAt?: string | null;
+          scheduledFor?: string | null;
         }
       | undefined
     >(
       `/api/medications/${medication.id}/intake`,
-      scheduledFor
-        ? { skipped, scheduledFor: scheduledFor.toISOString() }
-        : { skipped },
+      cardIntakeBody(skipped, slot),
     );
     const eventId: string | undefined = created?.id;
     // The slot already held a take (another device, a pill box): nothing was
@@ -232,6 +265,15 @@ export async function runRecordIntake(deps: {
     const seenVersion = created?.syncVersion;
     // v1.11.3 — the success toast carries an Undo action so a misclicked
     // take / skip no longer needs a history dive to correct.
+    // Name what the server actually counted the take for: the slot the
+    // card named, or an extra dose when it was filed outside the plan.
+    const filedAt = created?.scheduledFor
+      ? Date.parse(created.scheduledFor)
+      : NaN;
+    const counted =
+      slot != null &&
+      slot.binding !== "extra" &&
+      Math.abs(filedAt - slot.at.getTime()) <= SAME_SLOT_MS;
     toast.success(
       intakeToastMessage({
         t,
@@ -239,6 +281,8 @@ export async function runRecordIntake(deps: {
         skipped,
         takenAt: created?.takenAt ? new Date(created.takenAt) : new Date(),
         formatTime,
+        countedFor: counted ? slot.at : null,
+        extra: slot != null && !counted,
       }),
       intakeToastOptions({
         recordName,
@@ -291,6 +335,8 @@ export async function runLogIntake(deps: {
    * instant that is no slot of the medication.
    */
   forceSlotInstant?: string;
+  /** A take recorded as an extra dose outside the plan (`extraDose`). */
+  extraDose?: true;
   /**
    * v1.16.4 — per-intake dose override. Sent only on a taken write; the
    * caller passes it only when the user's dose edit deviates from the
@@ -326,6 +372,7 @@ export async function runLogIntake(deps: {
     takenAt,
     scheduledFor,
     forceSlotInstant,
+    extraDose,
     doseTaken,
     t,
     queryClient,
@@ -340,6 +387,7 @@ export async function runLogIntake(deps: {
     if (!skipped) body.takenAt = takenAt;
     if (scheduledFor) body.scheduledFor = scheduledFor;
     if (!skipped && forceSlotInstant) body.forceSlotInstant = forceSlotInstant;
+    if (!skipped && extraDose) body.extraDose = true;
     if (!skipped && doseTaken) body.doseTaken = doseTaken;
     // v1.30.1 — the route returns the created event
     // (`apiSuccess(event, 201)`, same as the card's `runRecordIntake`);
@@ -366,6 +414,7 @@ export async function runLogIntake(deps: {
       skipped,
       takenAt: new Date(takenAt),
       formatTime,
+      extra: !skipped && extraDose === true,
     });
     // v1.30.1 — only pass a second `toast.success` argument when there's
     // a real Undo action to attach; keeps the no-undo call signature
@@ -529,11 +578,11 @@ export function useMedicationIntake({
   const undoIntake = (eventId: string, expectedSyncVersion?: number) =>
     runUndoIntake({ medication, eventId, expectedSyncVersion, t, queryClient });
 
-  const recordIntake = (skipped: boolean, scheduledFor?: Date | null) =>
+  const recordIntake = (skipped: boolean, slot?: TakeSlot | null) =>
     runRecordIntake({
       medication,
       skipped,
-      scheduledFor,
+      slot,
       t,
       queryClient,
       setIntakeLoading,

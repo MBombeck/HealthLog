@@ -330,7 +330,48 @@ const adminMeasurementMaintenanceStatus = z
   })
   .meta({ id: "AdminMeasurementMaintenanceStatus" });
 
+const adminMigrationStatus = z
+  .object({
+    shipped: z
+      .number()
+      .int()
+      .nullable()
+      .describe("Migrations in this image; null when the folder is absent."),
+    applied: z.number().int(),
+    pending: z.number().int(),
+    pendingNames: z
+      .array(z.string())
+      .describe("The first 20 pending migrations, in apply order."),
+    failedNames: z
+      .array(z.string())
+      .describe("Migrations that started and did not finish (first 20)."),
+    lastApplied: z.object({ name: z.string(), at: z.string() }).nullable(),
+  })
+  .meta({ id: "AdminMigrationStatus" });
+
 export const adminDiagnosticPaths: NonNullable<ZodOpenApiObject["paths"]> = {
+  "/api/admin/migrations": {
+    get: {
+      tags: ["Admin"],
+      summary: "Database migrations: applied, pending, failed",
+      description:
+        "Compares the migrations this image ships (`prisma/migrations`) with the finished rows of `_prisma_migrations`. Read-only. Cookie auth only: `requireAdmin()` refuses every Bearer caller.",
+      responses: {
+        "200": {
+          description: "The status.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                adminMigrationStatus,
+                "AdminMigrationStatusResponse",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
   "/api/admin/maintenance/measurements": {
     get: {
       tags: ["Admin"],

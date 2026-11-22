@@ -6,6 +6,7 @@ import type {
   AccountAccessLevel,
   AccountRecordKind,
 } from "@/lib/sharing/account-access-view";
+import { isRecordSurfacePagePresentable } from "@/lib/sharing/record-page-surfaces";
 import type { ShareDomain } from "@/lib/sharing/scope";
 
 export type SettingsDestinationKind =
@@ -13,6 +14,7 @@ export type SettingsDestinationKind =
   | "managed-guardian"
   | "manage-writable"
   | "adult-shared-unavailable"
+  | "record-surface"
   | "unavailable";
 
 export interface SettingsDestinationClassification {
@@ -66,6 +68,18 @@ const ADULT_SHARED_UNAVAILABLE: SettingsDestinationClassification = {
   guardianWritable: false,
 };
 
+/**
+ * A page of parts, each answering to the guard of its own routes
+ * (`RECORD_PAGE_SURFACES` in `@/lib/sharing/record-page-surfaces`). Listed in
+ * a shared record exactly when one of its parts admits the record on screen,
+ * and the page renders only those parts. Not guardian-writable as a
+ * destination: what a guardian may change there is each part's own route.
+ */
+const RECORD_SURFACE: SettingsDestinationClassification = {
+  kind: "record-surface",
+  guardianWritable: false,
+};
+
 const UNAVAILABLE: SettingsDestinationClassification = {
   kind: "unavailable",
   guardianWritable: false,
@@ -96,7 +110,9 @@ export const SETTINGS_DESTINATION_INVENTORY = {
   coach: MANAGED_GUARDIAN,
   api: PERSONAL,
   mcp: PERSONAL,
-  "health-record": PERSONAL,
+  // The doctor report, the report schedule, the care calendar and the
+  // clinician links: each part follows its own routes' guard.
+  "health-record": RECORD_SURFACE,
   export: PERSONAL,
   advanced: PERSONAL,
   privacy: PERSONAL,
@@ -177,6 +193,13 @@ export interface SettingsRecordContext {
   recordKind: AccountRecordKind;
   level: AccountAccessLevel | null;
   manageableDomains: readonly ShareDomain[];
+  /**
+   * The grant's sections, `accountAccess.active.sections`; null or absent is
+   * the whole record. Read only by a page of parts, whose section-scoped rule
+   * needs MANAGE, and a MANAGE grant is whole-record at every layer, so a
+   * caller that leaves it out cannot list more than the grant opens.
+   */
+  sections?: readonly ShareDomain[] | null;
 }
 
 function managesRecordContentSection(
@@ -213,8 +236,9 @@ function managesRecordContentSection(
  * true if a scoped MANAGE grant ever reaches the client, rather than offering a
  * page whose writes answer 403.
  *
- * Every destination on either list needs MANAGE, so the level is checked once
- * for both record kinds. A guardian grant is always MANAGE today, which is
+ * A `record-surface` destination answers from its parts' rules first, since
+ * its parts need different levels. Every other destination on either list
+ * needs MANAGE, so the level is checked once for both record kinds. A guardian grant is always MANAGE today, which is
  * exactly why the check was easy to leave out, and a managed entry that ever
  * arrived below it would have listed destinations the section gate refuses.
  *
@@ -224,8 +248,16 @@ export function isSettingsDestinationListedForRecord(
   destination: string,
   record: SettingsRecordContext,
 ): boolean {
-  if (record.level !== "manage") return false;
   const kind = classifySettingsDestination(destination).kind;
+  if (kind === "record-surface") {
+    return isRecordSurfacePagePresentable(`/settings/${destination}`, {
+      inSharedRecord: true,
+      recordKind: record.recordKind,
+      level: record.level,
+      sections: record.sections ?? null,
+    });
+  }
+  if (record.level !== "manage") return false;
   if (kind === "manage-writable") {
     return (
       (record.recordKind === "managed" || record.recordKind === "shared") &&

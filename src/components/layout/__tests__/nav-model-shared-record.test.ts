@@ -165,6 +165,7 @@ describe("the utility tail under a switch", () => {
             "manage",
             recordKind,
           ),
+    sections,
   });
   const MANAGED_AT_MANAGE = context("managed", "manage");
   const SHARED_AT_MANAGE = context("shared", "manage");

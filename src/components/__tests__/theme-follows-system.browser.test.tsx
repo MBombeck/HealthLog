@@ -9,7 +9,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render } from "vitest-browser-react";
 
-import { ThemeProvider, useTheme } from "@/components/providers";
+import { ThemeProvider, useTheme } from "@/components/theme-provider";
 import { THEME_STORAGE_KEY } from "@/lib/pwa/theme-color";
 
 function stubDeviceScheme(initialDark: boolean) {

@@ -7,7 +7,6 @@ import { prisma } from "@/lib/db";
 import { readDenseSeries } from "@/lib/measurements/dense-series-read";
 import { countLiveReadingsPerType } from "@/lib/measurements/newest-per-type";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
-import { seriesRowsFrom } from "@/lib/measurements/series-canonical";
 import { resolveUserTimezone, userDayKey } from "@/lib/tz/resolver";
 import { convertGlucose, resolveGlucoseUnit } from "@/lib/glucose";
 
@@ -70,7 +69,6 @@ export async function readBucketedSeries(
     loadUserSourcePriority(userId),
   ]);
   const type = KIND_TO_TYPE[kind];
-  const seriesRows = seriesRowsFrom(priorityJson, type, since);
   // A day of a type with an activity-dependent sampling rate (pulse) is the
   // weighted mean of its local hours' means, so a workout hour with hundreds
   // of times the readings does not outweigh the rest of the day (see
@@ -81,7 +79,7 @@ export async function readBucketedSeries(
     grain,
     userTz,
     since,
-    seriesRows,
+    priorityJson,
   });
   const round2 = (v: number) => Math.round(v * 100) / 100;
   const dayId = (d: Date) =>

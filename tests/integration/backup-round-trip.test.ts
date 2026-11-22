@@ -52,6 +52,7 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { decrypt, decryptBytes, encrypt, encryptBytes } from "@/lib/crypto";
 import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { openLocation } from "@/lib/environment/location-cipher";
+import { openDayCountry } from "@/lib/dawarich/connection";
 import { readNote } from "@/lib/crypto/note-cipher";
 import {
   decryptFactData,
@@ -2664,6 +2665,9 @@ const READ_THROUGH: Readonly<Record<string, (value: unknown) => unknown>> = {
   // record is the fixture's one, confirmed at this instant.
   "OnboardingRecord.stepsJson": (value) =>
     parseOnboardingSteps(value, "2026-07-01T08:00:00.000Z"),
+  // Sealed again on a portable restore, so compared as the code it opens to.
+  "DawarichDay.countryCodeEncrypted": (value) =>
+    openDayCountry(value as Uint8Array | null),
 };
 
 /** Plaintext behind a sealed value, or the value itself when it is not one. */
@@ -2758,12 +2762,13 @@ function lostColumns(
   models: AuditModel[],
   before: Map<string, Record<string, unknown>[]>,
   after: Map<string, Record<string, unknown>[]>,
+  how_: (column: AuditColumn) => ReturnType<typeof comparison> = comparison,
 ): { lost: string[]; compared: number } {
   const lost: string[] = [];
   let compared = 0;
   for (const model of models) {
     for (const column of model.columns) {
-      const how = comparison(column);
+      const how = how_(column);
       if (typeof how === "object") continue;
       const plain = column.name.replace(/Encrypted$/, "");
       if (
@@ -2789,62 +2794,201 @@ function lostColumns(
  */
 const PORTABLE_CIPHERTEXT_ALLOWED: ReadonlyMap<string, string> = new Map();
 
+const DOCUMENTS_ONLY_DR =
+  "a portable file carries document metadata without the bytes, and a restore cannot make a document of it (the parity test strips the section for the same reason); what hangs off a document goes with it";
+
+/**
+ * Models a portable file does not carry at all, each with the reason. A
+ * portable file is what a person takes to another instance, so every model
+ * missing from it is a decision, not an accident.
+ */
+const PORTABLE_MODEL_ONLY_DR: Readonly<Record<string, string>> = {
+  MentalHealthAssessment:
+    "the screener history leaves the instance only in a disaster-recovery file (`sensitive-backup.ts`); the portable manifest says so",
+  ConsentReceipt:
+    "the consent record, disaster-recovery only for the reason in `sensitive-backup.ts`",
+  InboundDocument: DOCUMENTS_ONLY_DR,
+  ExtractedFact: DOCUMENTS_ONLY_DR,
+  DocumentConditionLink: DOCUMENTS_ONLY_DR,
+  CoachConversationDocument: DOCUMENTS_ONLY_DR,
+  EncounterDocumentLink: DOCUMENTS_ONLY_DR,
+  LabResultDocumentLink: DOCUMENTS_ONLY_DR,
+  MedicationDocumentLink: DOCUMENTS_ONLY_DR,
+  VaccinationDocumentLink: DOCUMENTS_ONLY_DR,
+};
+
+/**
+ * Columns only a disaster-recovery file carries, by name on every model,
+ * each with the reason: this host's bookkeeping about a row rather than
+ * anything the row says.
+ */
+const PORTABLE_BOOKKEEPING_COLUMNS: Readonly<Record<string, string>> = {
+  syncVersion:
+    "the offline-sync counter of this host; a portable restore starts every row at its first version",
+  appleHealthDeletedAt:
+    "who deleted a tombstone; a portable file carries no tombstones",
+  statsComputedAt:
+    "when this host computed a statistics total; sync bookkeeping",
+  externalSourceVersion:
+    "the source's own version marker, sync bookkeeping (the measurements' documented rule)",
+  idempotencyKey: "a client's retry key on this host",
+  syncedAt: "when this host last synced the row",
+};
+
+/**
+ * Further columns only a disaster-recovery file carries, by `Model.column`,
+ * each with the reason. The portable file is the person-facing subset: what
+ * a record says travels in both purposes (the measurements' rule), the
+ * instance's own bookkeeping does not. Ids, owners, foreign keys and
+ * `@updatedAt` follow the rules in `comparison()`.
+ */
+const PORTABLE_COLUMN_ONLY_DR: Readonly<Record<string, string>> = {
+  ...Object.fromEntries(
+    [
+      "Biomarker",
+      "BiomarkerAlias",
+      "CustomMetric",
+      "CustomMetricEntry",
+      "CycleDayLog",
+      "CycleProfile",
+      "CycleSymptomLink",
+      "HealthScoreRecord",
+      "IllnessDayLog",
+      "IllnessSymptomLink",
+      "IntradayCumulativeProfile",
+      "LabResult",
+      "Measurement",
+      "MenstrualCycle",
+      "MedicationEfficacyTarget",
+      "MedicationIntakeEvent",
+      "MedicationSideEffect",
+      "MoodContext",
+      "MoodEntry",
+      "MoodEntryTagLink",
+      "OnboardingRecord",
+      "UserHealthProfile",
+      "Workout",
+    ].map((model) => [
+      `${model}.createdAt`,
+      "when this host wrote the row; a portable restore writes it anew. A model whose creation instant means something (the medication, the course) carries it in both purposes and is compared",
+    ]),
+  ),
+  "Measurement.externalId":
+    "the source's own sample id, sync bookkeeping (documented on the portable branch)",
+  "Measurement.aggregationProvenance":
+    "how the source aggregated the value, sync bookkeeping (documented on the portable branch)",
+  "MedicationIntakeEvent.externalId":
+    "the phone's dose-event id, which dedups a re-sync on this host",
+  "MedicationIntakeEvent.inventoryConsumption":
+    "the pack lots the take came off, by id; a portable restore mints fresh pack ids and the pack's own count carries the stock",
+  "Medication.externalId": "the importer's reference, sync bookkeeping",
+  "Medication.externalSource": "the importer's reference, sync bookkeeping",
+  "Medication.snoozedUntil":
+    "a reminder snoozed for the next hour, this host's reminder state",
+  "Medication.lowStockNotifiedAt": "the low-stock notice's cursor on this host",
+  "Medication.lowStockNotifiedThresholdDays":
+    "the low-stock notice's cursor on this host",
+  "Workout.metadata":
+    "the provider's raw payload (HealthKit events, zones, bundle id); the readable fields travel as columns",
+  "UserHealthProfile.pendingQuestionsEncrypted":
+    "suggestion chips this host derived after a save, derived again after the next one",
+};
+
+/**
+ * Columns a portable round trip holds to "set where it was set": a bare id
+ * pointer that a portable restore re-points at the row it minted.
+ */
+const PORTABLE_PRESENCE_ONLY: Readonly<Record<string, string>> = {
+  "MedicationScheduleRevision.supersededByRevisionId":
+    "travels as a position in the drug's own era list and is written against the id the era got",
+};
+
+/** How a column is compared after a portable round trip, or why it is not. */
+function portableComparison(
+  column: AuditColumn,
+): ReturnType<typeof comparison> {
+  const model = PORTABLE_MODEL_ONLY_DR[column.model];
+  if (model) return { excluded: model };
+  const key = `${column.model}.${column.name}`;
+  if (key in PORTABLE_COLUMN_ONLY_DR) {
+    return { excluded: PORTABLE_COLUMN_ONLY_DR[key] };
+  }
+  const bookkeeping = PORTABLE_BOOKKEEPING_COLUMNS[column.name];
+  if (bookkeeping) return { excluded: bookkeeping };
+  const how = comparison(column);
+  if (how === "value" && key in PORTABLE_PRESENCE_ONLY) return "presence";
+  return how;
+}
+
+/**
+ * One account with a row of every two-ended model and every column the
+ * fixture left empty filled, so an empty column cannot come back empty and
+ * read as carried. Shared by the two purposes' column comparisons.
+ */
+async function seedFilledAccount(prisma: PrismaClient) {
+  await seedAdminSession(prisma);
+  await createOwner(prisma);
+  // A catalogue row the fixture adds, which survives both the account delete
+  // and the per-test truncation; left behind by the first test in this file.
+  await prisma.illnessSymptom.deleteMany({
+    where: { key: "round_trip_cough" },
+  });
+  await seedEveryTwoEndedModel(prisma);
+  await seedColumnShapes(prisma);
+
+  const models = readAuditModels(prisma, TWO_ENDED_MODELS);
+  const byName = new Map(models.map((m) => [m.name, m]));
+  const wheres = new Map(
+    models.map((m) => [m.name, ownerWhere(byName, prisma, m.name, OWNER_ID)]),
+  );
+  const enumValues = enumValuesFromSchema();
+
+  // Fill what the fixture left empty, so an empty column cannot come back
+  // empty and read as carried. One column at a time on one row, so a value
+  // the database refuses names its column instead of failing the batch.
+  const unfillable: string[] = [];
+  const seededRows = await snapshot(prisma, models, wheres);
+  for (const model of models) {
+    const rows = seededRows.get(model.name)!;
+    expect(rows.length, `${model.name} seeded no row`).toBeGreaterThan(0);
+    for (const column of model.columns) {
+      if (
+        comparison(column) !== "value" &&
+        !(`${model.name}.${column.name}` in COLUMN_PRESENCE_ONLY)
+      ) {
+        continue;
+      }
+      // Filling it would turn the fixture's row into a tombstone, and which
+      // models carry tombstones is a row decision, not a column one.
+      if (column.name === "deletedAt") continue;
+      if (rows.some((row) => !isDefaultValue(column, row[column.name]))) {
+        continue;
+      }
+      // A live row where there is one: a portable file omits tombstones, so
+      // a value filled into one would leave its comparison with nothing.
+      const target = rows.find((row) => row.deletedAt == null) ?? rows[0];
+      try {
+        await delegateOf(prisma, model).update({
+          where: primaryKeyWhere(model, target),
+          data: {
+            [column.name]: syntheticValue(column, enumValues, FILL_OVERRIDES),
+          },
+        });
+      } catch (error) {
+        unfillable.push(
+          `${model.name}.${column.name}: ${String(error).split("\n").slice(-3).join(" ").slice(0, 200)}`,
+        );
+      }
+    }
+  }
+  expect(unfillable, "columns the fill could not set").toEqual([]);
+  return { models, wheres };
+}
+
 describe("every column of every two-ended model survives a real restore", () => {
   it("brings each column back with the value it left with", async () => {
     const prisma = getPrismaClient();
-    await seedAdminSession(prisma);
-    await createOwner(prisma);
-    // A catalogue row the fixture adds, which survives both the account delete
-    // and the per-test truncation; left behind by the first test in this file.
-    await prisma.illnessSymptom.deleteMany({
-      where: { key: "round_trip_cough" },
-    });
-    await seedEveryTwoEndedModel(prisma);
-    await seedColumnShapes(prisma);
-
-    const models = readAuditModels(prisma, TWO_ENDED_MODELS);
-    const byName = new Map(models.map((m) => [m.name, m]));
-    const wheres = new Map(
-      models.map((m) => [m.name, ownerWhere(byName, prisma, m.name, OWNER_ID)]),
-    );
-    const enumValues = enumValuesFromSchema();
-
-    // Fill what the fixture left empty, so an empty column cannot come back
-    // empty and read as carried. One column at a time on one row, so a value
-    // the database refuses names its column instead of failing the batch.
-    const unfillable: string[] = [];
-    const seededRows = await snapshot(prisma, models, wheres);
-    for (const model of models) {
-      const rows = seededRows.get(model.name)!;
-      expect(rows.length, `${model.name} seeded no row`).toBeGreaterThan(0);
-      for (const column of model.columns) {
-        if (
-          comparison(column) !== "value" &&
-          !(`${model.name}.${column.name}` in COLUMN_PRESENCE_ONLY)
-        ) {
-          continue;
-        }
-        // Filling it would turn the fixture's row into a tombstone, and which
-        // models carry tombstones is a row decision, not a column one.
-        if (column.name === "deletedAt") continue;
-        if (rows.some((row) => !isDefaultValue(column, row[column.name]))) {
-          continue;
-        }
-        try {
-          await delegateOf(prisma, model).update({
-            where: primaryKeyWhere(model, rows[0]),
-            data: {
-              [column.name]: syntheticValue(column, enumValues, FILL_OVERRIDES),
-            },
-          });
-        } catch (error) {
-          unfillable.push(
-            `${model.name}.${column.name}: ${String(error).split("\n").slice(-3).join(" ").slice(0, 200)}`,
-          );
-        }
-      }
-    }
-    expect(unfillable, "columns the fill could not set").toEqual([]);
+    const { models, wheres } = await seedFilledAccount(prisma);
 
     const before = await snapshot(prisma, models, wheres);
 
@@ -2964,6 +3108,128 @@ describe("every column of every two-ended model survives a real restore", () => 
     ).toEqual([]);
   });
 
+  it("brings each person-facing column back from a portable file", async () => {
+    const prisma = getPrismaClient();
+    const { models, wheres } = await seedFilledAccount(prisma);
+    // The fill marks the one live cycle predicted, which a portable file
+    // omits; a confirmed one with every field set is what it is held to.
+    const confirmed = await prisma.menstrualCycle.create({
+      data: {
+        userId: OWNER_ID,
+        startDate: "2026-05-04",
+        endDate: "2026-05-31",
+        periodEndDate: "2026-05-08",
+        ovulationDate: "2026-05-18",
+        ovulationConfirmed: true,
+        lengthDays: 28,
+        tz: "Europe/Berlin",
+      },
+    });
+    // The day log hangs off a recorded cycle, which the portable file carries
+    // and the restore attaches it to again by date.
+    await prisma.cycleDayLog.updateMany({
+      where: { userId: OWNER_ID },
+      data: { cycleId: confirmed.id },
+    });
+    // A portable file omits tombstones and predicted cycles by design, so
+    // the rows it is held to are the live, recorded ones.
+    const liveWheres = new Map(
+      models.map((m) => {
+        const has = (name: string) => m.columns.some((c) => c.name === name);
+        return [
+          m.name,
+          {
+            ...wheres.get(m.name)!,
+            ...(has("deletedAt") ? { deletedAt: null } : {}),
+            ...(has("isPredicted") ? { isPredicted: false } : {}),
+          },
+        ];
+      }),
+    );
+    const before = await snapshot(prisma, models, liveWheres);
+
+    let json = "";
+    await streamFullBackupJson(
+      prisma,
+      OWNER_ID,
+      (chunk) => {
+        json += chunk;
+      },
+      {
+        purpose: "portable-export",
+        exportedAt: new Date("2026-08-01T00:00:00.000Z"),
+      },
+    );
+    await prisma.user.delete({ where: { id: OWNER_ID } });
+    await createOwner(prisma);
+    const backup = await prisma.dataBackup.create({
+      data: {
+        userId: OWNER_ID,
+        type: "PORTABLE_COLUMN_ROUND_TRIP",
+        data: await legacyStreamedBlobFrom(async (write) => {
+          // A portable file carries document metadata only, which the
+          // restore refuses to turn into documents (`PORTABLE_MODEL_ONLY_DR`).
+          await write(JSON.stringify({ ...JSON.parse(json), documents: [] }));
+        }),
+      },
+    });
+    const response = await POST(
+      new Request(`http://localhost/api/admin/backups/${backup.id}/restore`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ confirm: "RESTORE" }),
+      }) as never,
+      { params: Promise.resolve({ id: backup.id }) },
+    );
+    const body = await response.json();
+    expect(response.status, JSON.stringify(body)).toBe(200);
+
+    const after = await snapshot(prisma, models, liveWheres);
+    const { lost, compared } = lostColumns(
+      models,
+      before,
+      after,
+      portableComparison,
+    );
+    // The floor, for the reason the disaster-recovery case gives.
+    expect(compared).toBeGreaterThanOrEqual(450);
+    expect(
+      lost,
+      "these columns left in a portable file with a value and came back " +
+        "without it. Carry each in both purposes when it is part of what the " +
+        "record says, or name it in PORTABLE_COLUMN_ONLY_DR with the reason " +
+        "only a disaster-recovery file carries it",
+    ).toEqual([]);
+  });
+
+  it("holds the portable list to columns a portable file actually drops", () => {
+    // An entry for a column a portable file carries is a reason nobody can
+    // check, and a model-wide entry hides every column added to it later.
+    const models = readAuditModels(getPrismaClient(), TWO_ENDED_MODELS);
+    const known = new Set(
+      models.flatMap((m) => m.columns.map((c) => `${m.name}.${c.name}`)),
+    );
+    expect(
+      Object.keys(PORTABLE_COLUMN_ONLY_DR).filter((key) => !known.has(key)),
+    ).toEqual([]);
+    const modelNames = new Set(models.map((m) => m.name));
+    expect(
+      Object.keys(PORTABLE_MODEL_ONLY_DR).filter((m) => !modelNames.has(m)),
+    ).toEqual([]);
+    expect(
+      Object.keys(PORTABLE_PRESENCE_ONLY).filter((key) => !known.has(key)),
+    ).toEqual([]);
+    const names = new Set(models.flatMap((m) => m.columns.map((c) => c.name)));
+    expect(
+      Object.keys(PORTABLE_BOOKKEEPING_COLUMNS).filter((n) => !names.has(n)),
+    ).toEqual([]);
+    // Mutation check, by hand: a column of a carried model that the portable
+    // file drops is found by the comparison itself.
+    const probe = models.find((m) => m.name === "MedicationIntakeEvent")!;
+    const site = probe.columns.find((c) => c.name === "injectionSite")!;
+    expect(portableComparison(site)).toBe("value");
+  });
+
   it("notices a column nobody told it about", () => {
     const model: AuditModel = {
       name: "Probe",
@@ -3013,10 +3279,22 @@ describe("every column of every two-ended model survives a real restore", () => 
  * Columns of the account row the restore writes for reasons of its own, so
  * "unchanged on the target" does not apply to them.
  */
+/** A settings document's lock token (migration 0554). */
+const REVISION_MOVES =
+  "the database moves the lock token when the restore writes the document, so a token read before the restore is stale";
+
 const USER_ROW_STAMPED: Readonly<Record<string, string>> = {
   updatedAt: "@updatedAt; Prisma stamps it on the restore's write",
   syncResetAt:
     "the restore stamps it so paired clients' delta cursors are refused",
+  dashboardWidgetsRevisedAt: REVISION_MOVES,
+  insightsLayoutRevisedAt: REVISION_MOVES,
+  medicationListLayoutRevisedAt: REVISION_MOVES,
+  moodTagLayoutRevisedAt: REVISION_MOVES,
+  modulePreferencesRevisedAt: REVISION_MOVES,
+  notificationPrefsRevisedAt: REVISION_MOVES,
+  coachPrefsRevisedAt: REVISION_MOVES,
+  healthScoreConfigRevisedAt: REVISION_MOVES,
 };
 
 describe("the account's own settings survive a real restore", () => {

@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 
+import { ContextLinks } from "@/components/layout/context-links";
 import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -141,6 +142,8 @@ export function ProfileSummaryPage() {
     // <main> landmark; this page only sets its rhythm.
     <div className="space-y-6">
       <PageHeader title={t("settings.sections.anamnesis.title")} />
+      {/* The emergency card, for the guardian who holds the profile's. */}
+      <ContextLinks page="/profile" />
       {summary.isPending ? (
         <p className="text-muted-foreground text-sm" aria-live="polite">
           {t("common.loading")}

@@ -137,6 +137,7 @@ export function intakeWriteOf(form: IntakeFormState): {
   takenAt: string;
   scheduledFor?: string;
   forceSlotInstant?: string;
+  extraDose?: true;
   doseTaken?: string;
 } {
   const skipped = form.outcome === "skipped";
@@ -183,9 +184,12 @@ function AttributionLine({
               time: fmt.wallTime(attribution.slot.slotHm),
             })
           : attribution.kind === "late"
-            ? t("medications.intakeForm.countsForLate", {
-                time: fmt.wallTime(attribution.slot.slotHm),
-              })
+            ? t(
+                attribution.early
+                  ? "medications.intakeForm.countsForEarly"
+                  : "medications.intakeForm.countsForLate",
+                { time: fmt.wallTime(attribution.slot.slotHm) },
+              )
             : attribution.kind === "skip"
               ? t("medications.intakeForm.skips", {
                   time: fmt.wallTime(attribution.slot.slotHm),

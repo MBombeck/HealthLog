@@ -18,7 +18,10 @@ import type { ModuleKey } from "@/lib/modules/registry";
  * sections that are a single card, where the section entry is the card.
  */
 export interface SettingsCardEntry {
-  /** The settings section slug, or a `layout/<module>` sub-page. */
+  /**
+   * The settings section slug, or a module's page under it
+   * (`modules/<module>`, `layout/<module>`).
+   */
   section: string;
   anchor: string;
   /** i18n key of the card title, as the card itself renders it. */
@@ -36,6 +39,7 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
     anchor: "display",
     titleKey: "settings.displayCard.title",
   },
+  { section: "account", anchor: "theme", titleKey: "nav.theme" },
   // ── Security ──
   {
     section: "security",
@@ -84,6 +88,16 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
     section: "privacy",
     anchor: "encryption",
     titleKey: "settings.privacy.encryption.title",
+  },
+  {
+    section: "privacy",
+    anchor: "who-has-access",
+    titleKey: "settings.privacy.whoHasAccess.title",
+  },
+  {
+    section: "privacy",
+    anchor: "workout-routes",
+    titleKey: "settings.privacy.workoutRoutes.title",
   },
   {
     section: "privacy",
@@ -147,6 +161,11 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
   },
   {
     section: "integrations",
+    anchor: "import-health-connect-remote",
+    titleKey: "settings.sections.export.import.healthConnectRemote.title",
+  },
+  {
+    section: "integrations",
     anchor: "garmin",
     titleKey: "settings.garmin",
   },
@@ -184,6 +203,16 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
     anchor: "share-links-active",
     titleKey: "settings.sharing.activeTitle",
   },
+  {
+    section: "health-record",
+    anchor: "report-schedule",
+    titleKey: "reportSchedule.title",
+  },
+  {
+    section: "health-record",
+    anchor: "calendar",
+    titleKey: "careFeed.title",
+  },
   // ── Export and import ──
   {
     section: "export",
@@ -217,6 +246,21 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
   },
   {
     section: "export",
+    anchor: "import-fit",
+    titleKey: "settings.sections.export.import.fit.title",
+  },
+  {
+    section: "export",
+    anchor: "import-gadgetbridge",
+    titleKey: "settings.sections.export.import.recordFile.gadgetbridge.title",
+  },
+  {
+    section: "export",
+    anchor: "import-fhir-bundle",
+    titleKey: "settings.sections.export.import.recordFile.fhirBundle.title",
+  },
+  {
+    section: "export",
     anchor: "import-json",
     titleKey: "settings.sections.export.import.json.title",
   },
@@ -229,6 +273,11 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
     section: "export",
     anchor: "import-dose-history",
     titleKey: "settings.sections.export.import.doseHistory.title",
+  },
+  {
+    section: "export",
+    anchor: "import-records-csv",
+    titleKey: "recordImport.title",
   },
   // ── Thresholds ──
   {
@@ -256,8 +305,24 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
   },
   {
     section: "notifications",
+    anchor: "dose-snooze",
+    titleKey: "settings.sections.notifications.snooze.title",
+    modules: ["medications"],
+  },
+  {
+    section: "notifications",
     anchor: "vorsorge-reminders",
     titleKey: "notifications.checkupReminders.title",
+  },
+  {
+    section: "notifications",
+    anchor: "security-alerts",
+    titleKey: "notifications.eventSecurityAlert",
+  },
+  {
+    section: "notifications",
+    anchor: "lasting-change",
+    titleKey: "notifications.eventMeasurementAnomaly",
   },
   // ── Anamnesis ──
   {
@@ -298,6 +363,24 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
     anchor: "emergency",
     titleKey: "records.emergency.cardTitle",
   },
+  {
+    section: "anamnesis",
+    anchor: "screening-hints",
+    titleKey: "records.life.screening.cardTitle",
+  },
+  // ── Modules > Medications ──
+  {
+    section: "modules/medications",
+    anchor: "medicine-registry",
+    titleKey: "settings.sections.medications.registry.title",
+    modules: ["medications"],
+  },
+  {
+    section: "modules/medications",
+    anchor: "injection-sites",
+    titleKey: "settings.globalExcludedInjectionSitesLabel",
+    modules: ["medications"],
+  },
   // ── Environment ──
   {
     section: "environment",
@@ -333,6 +416,21 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
     section: "ai",
     anchor: "provider-chain",
     titleKey: "settings.ai.providerChain.title",
+  },
+  {
+    section: "ai",
+    anchor: "provider-chains",
+    titleKey: "settings.ai.namedChains.title",
+  },
+  {
+    section: "ai",
+    anchor: "coach-budget",
+    titleKey: "settings.ai.coachBudgetHeading",
+  },
+  {
+    section: "ai",
+    anchor: "ai-usage",
+    titleKey: "settings.ai.usage.title",
   },
   {
     section: "ai",

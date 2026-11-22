@@ -1,38 +1,37 @@
 import {
-  Bell,
   CalendarDays,
-  ChartLine,
   DatabaseBackup,
   Keyboard,
   MessagesSquare,
-  Palette,
   Plus,
   type LucideIcon,
 } from "lucide-react";
 
-import { ADMIN_SECTIONS } from "@/components/admin/admin-shell";
-import { SUB_PAGE_TABS } from "@/components/insights/insights-tab-strip";
-import { visibleNavDestinations } from "@/components/layout/nav-model";
+import {
+  visibleNavDestinations,
+  type NavRecordContext,
+} from "@/components/layout/nav-model";
 import { MODULE_ICONS } from "@/components/settings/module-icons";
-import { SETTINGS_SECTIONS } from "@/components/settings/settings-shell";
-import { SUB_PAGE_SLUGS } from "@/lib/insights/sub-page-metric";
 import { MODULE_REGISTRY, type ModuleKey } from "@/lib/modules/registry";
 import { isSurfaceVisible, type SurfaceModuleMap } from "@/lib/modules/surface";
 import type { ShareDomain } from "@/lib/sharing/scope";
 
+import { SETTINGS_MODULE_PAGES } from "@/lib/command-palette/settings-cards";
+import { PALETTE_SYNONYMS } from "@/lib/command-palette/synonyms";
 import {
-  SETTINGS_CARDS,
-  SETTINGS_LAYOUT_PAGES,
-  SETTINGS_MODULE_PAGES,
-} from "@/lib/command-palette/settings-cards";
-import {
-  PALETTE_SYNONYMS,
-  PALETTE_TASK_BOOST,
-} from "@/lib/command-palette/synonyms";
+  SURFACE_REGISTRY,
+  type SurfaceEntry,
+} from "@/components/layout/surface-registry";
+
+/** The module that owns each page under Settings > Modules. */
+const SETTINGS_MODULE_PAGE_OWNER: Readonly<Record<string, ModuleKey>> =
+  Object.fromEntries(SETTINGS_MODULE_PAGES.map((p) => [p.slug, p.module]));
 
 /**
  * The command palette's index: every place and action this session may
- * reach, built on the client from the same lists the navigation renders.
+ * reach, built on the client from the one surface registry
+ * (`@/components/layout/surface-registry`), which reads the lists the
+ * navigation, Settings and Admin render.
  *
  * Nothing here is a second opinion about access. A page comes from
  * `visibleNavDestinations` (modules, the Coach's AI capability folded into
@@ -82,6 +81,8 @@ export interface PaletteIndexInput {
   inSharedRecord: boolean;
   /** The shared record's covered sections, when there is one. */
   sections: ReadonlyArray<ShareDomain> | null;
+  /** The shared record's kind and the grant's level, when there is one. */
+  record?: NavRecordContext | null;
   isAdmin: boolean;
   /**
    * Whether the Settings shell lists a section for the record on screen.
@@ -97,20 +98,6 @@ export interface PaletteIndexInput {
    */
   moduleToggles: ReadonlyArray<{ key: ModuleKey; enabled: boolean }>;
 }
-
-const INSIGHTS_EXTRA: ReadonlyArray<{
-  slug: string;
-  labelKey: string;
-  surface?: string;
-}> = [
-  { slug: "catalog", labelKey: "insights.navCatalog" },
-  {
-    slug: "recovery",
-    labelKey: "insights.navRecovery",
-    surface: "insights-page:recovery",
-  },
-  { slug: "ecg", labelKey: "insights.navEcg" },
-];
 
 /**
  * The ranked hits with every module switch after every other hit. A switch
@@ -130,160 +117,128 @@ function keywordsFor(id: string, extra: ReadonlyArray<string> = []) {
   return [...extra, ...(PALETTE_SYNONYMS[id] ?? [])];
 }
 
+const HINT_IS_KEYWORD: ReadonlySet<SurfaceEntry["entry"]["kind"]> = new Set([
+  "admin",
+  "settings-card",
+  "settings-page",
+]);
+
+/** The localized search words of an entry: `palette.keywords.*`, split. */
+function localizedKeywords(t: Translate, key: string | undefined): string[] {
+  if (!key) return [];
+  return t(key)
+    .split(",")
+    .map((word) => word.trim())
+    .filter(Boolean);
+}
+
 export function buildPaletteIndex(input: PaletteIndexInput): PaletteEntry[] {
   const { t, modules } = input;
   const entries: PaletteEntry[] = [];
 
-  // ── Pages: the navigation's own list. ──
+  // What the navigation offers this session: its own visibility rules
+  // (modules, the Coach's capability, what a shared record covers).
   const nav = visibleNavDestinations(
     input.navModules,
     true,
     input.inSharedRecord,
     input.sections,
+    input.record ?? null,
   );
   const navHrefs = new Set(nav.map((d) => d.href));
-  for (const d of nav) {
-    const id = `nav:${d.href}`;
-    entries.push({
-      id,
-      group: "pages",
-      title: t(d.tKey),
-      keywords: keywordsFor(id),
-      icon: d.icon,
-      run: { kind: "href", href: d.href },
-    });
-  }
-  if (!input.inSharedRecord) {
-    entries.push({
-      id: "nav:/notifications",
-      group: "pages",
-      title: t("nav.notifications"),
-      keywords: keywordsFor("nav:/notifications"),
-      icon: Bell,
-      run: { kind: "href", href: "/notifications" },
-    });
-  }
-  if (input.isAdmin && !input.inSharedRecord) {
-    const admin = t("nav.admin");
-    for (const section of ADMIN_SECTIONS) {
-      const id = `admin:${section.slug}`;
-      entries.push({
-        id,
-        group: "pages",
-        title: t(section.titleKey),
-        hint: admin,
-        keywords: keywordsFor(id, [admin]),
-        icon: section.icon,
-        run: { kind: "href", href: `/admin/${section.slug}` },
-      });
-    }
-  }
 
-  // ── Insights pages, while the area is offered at all. ──
-  if (navHrefs.has("/insights")) {
-    const area = t("nav.insights");
-    const pages = [
-      ...SUB_PAGE_SLUGS.map((slug) => ({
-        slug: slug as string,
-        labelKey: SUB_PAGE_TABS[slug].labelKey,
-        surface: `insights-page:${slug}`,
-      })),
-      ...INSIGHTS_EXTRA,
-    ];
-    for (const page of pages) {
-      if (page.surface && !isSurfaceVisible(page.surface, modules)) continue;
-      const id = `insights:${page.slug}`;
-      entries.push({
-        id,
-        group: "insights",
-        title: t(page.labelKey),
-        hint: area,
-        keywords: keywordsFor(id),
-        icon: ChartLine,
-        run: { kind: "href", href: `/insights/${page.slug}` },
-      });
-    }
-  }
-
-  // ── Settings: sections, then each card, then the Appearance pages. ──
+  // Settings sections the shell lists for the record on screen.
   const sectionTitle = new Map<string, string>();
   const sectionVisible = new Set<string>();
-  for (const section of SETTINGS_SECTIONS) {
-    if (!isSurfaceVisible(`settings:${section.slug}`, modules)) continue;
-    if (!input.settingsListed(section.slug)) continue;
-    const title = t(section.titleKey);
-    sectionTitle.set(section.slug, title);
-    sectionVisible.add(section.slug);
-    const id = `settings:${section.slug}`;
-    entries.push({
-      id,
-      group: "settings",
-      title,
-      hint: t("nav.settings"),
-      keywords: keywordsFor(id),
-      boost: PALETTE_TASK_BOOST[id],
-      icon: section.icon,
-      run: { kind: "href", href: `/settings/${section.slug}` },
-    });
+  for (const entry of SURFACE_REGISTRY) {
+    if (entry.entry.kind !== "settings-section") continue;
+    const slug = entry.entry.slug;
+    if (!isSurfaceVisible(`settings:${slug}`, modules)) continue;
+    if (!input.settingsListed(slug)) continue;
+    sectionTitle.set(slug, t(entry.labelKey));
+    sectionVisible.add(slug);
   }
-  if (!input.inSharedRecord) {
-    for (const card of SETTINGS_CARDS) {
-      if (!sectionVisible.has(card.section)) continue;
-      if (
-        card.modules &&
-        !card.modules.some((key) => modules?.[key] !== false)
-      ) {
-        continue;
+
+  const offered = (entry: SurfaceEntry): { hint?: string } | null => {
+    const point = entry.entry;
+    switch (point.kind) {
+      case "nav":
+        // The rail group it sits under, as the sidebar and More show it.
+        if (!navHrefs.has(entry.href)) return null;
+        return point.groupKey ? { hint: t(point.groupKey) } : {};
+      case "menu":
+        return input.inSharedRecord ? null : {};
+      case "admin":
+        return input.isAdmin && !input.inSharedRecord
+          ? { hint: t("nav.admin") }
+          : null;
+      case "insights":
+        if (!navHrefs.has("/insights")) return null;
+        if (point.surface && !isSurfaceVisible(point.surface, modules)) {
+          return null;
+        }
+        return { hint: t("nav.insights") };
+      case "settings-section":
+        return sectionVisible.has(point.slug)
+          ? { hint: t("nav.settings") }
+          : null;
+      case "settings-card": {
+        // Inside somebody else's record the palette lists the Settings pages
+        // the record lists, and no card of the account around it.
+        if (input.inSharedRecord) return null;
+        const [slug, page] = point.section.split("/");
+        if (!sectionVisible.has(slug)) return null;
+        if (page !== undefined) {
+          const owner = SETTINGS_MODULE_PAGE_OWNER[page];
+          if (slug === "modules" && owner && modules?.[owner] === false) {
+            return null;
+          }
+        }
+        if (
+          point.modules &&
+          !point.modules.some((key) => modules?.[key] !== false)
+        ) {
+          return null;
+        }
+        return { hint: sectionTitle.get(slug) ?? "" };
       }
-      const section = sectionTitle.get(card.section) ?? "";
-      const id = `settings:${card.section}#${card.anchor}`;
-      entries.push({
-        id,
-        group: "settings",
-        title: t(card.titleKey),
-        hint: section,
-        keywords: keywordsFor(id, [section]),
-        icon:
-          SETTINGS_SECTIONS.find((s) => s.slug === card.section)?.icon ??
-          Palette,
-        run: {
-          kind: "href",
-          href: `/settings/${card.section}#${card.anchor}`,
-        },
-      });
-    }
-    if (sectionVisible.has("layout")) {
-      const layout = sectionTitle.get("layout") ?? "";
-      for (const page of SETTINGS_LAYOUT_PAGES) {
-        if (page.module && modules?.[page.module] === false) continue;
-        const id = `settings:layout/${page.slug}`;
-        entries.push({
-          id,
-          group: "settings",
-          title: t(page.titleKey),
-          hint: layout,
-          keywords: keywordsFor(id, [layout]),
-          icon: Palette,
-          run: { kind: "href", href: `/settings/layout/${page.slug}` },
-        });
-      }
-    }
-    if (sectionVisible.has("modules")) {
-      const modulesTitle = sectionTitle.get("modules") ?? "";
-      for (const page of SETTINGS_MODULE_PAGES) {
-        if (modules?.[page.module] === false) continue;
-        const id = `settings:modules/${page.slug}`;
-        entries.push({
-          id,
-          group: "settings",
-          title: t(page.titleKey),
-          hint: modulesTitle,
-          keywords: keywordsFor(id, [modulesTitle]),
-          icon: MODULE_ICONS[page.module],
-          run: { kind: "href", href: `/settings/modules/${page.slug}` },
-        });
+      case "settings-page": {
+        if (input.inSharedRecord) return null;
+        if (!sectionVisible.has(point.parent)) return null;
+        if (point.module && modules?.[point.module] === false) return null;
+        return { hint: sectionTitle.get(point.parent) ?? "" };
       }
     }
+  };
+
+  for (const entry of SURFACE_REGISTRY) {
+    const offer = offered(entry);
+    if (offer === null) continue;
+    const group: PaletteEntry["group"] =
+      entry.entry.kind === "insights"
+        ? "insights"
+        : entry.entry.kind === "nav" ||
+            entry.entry.kind === "menu" ||
+            entry.entry.kind === "admin"
+          ? "pages"
+          : "settings";
+    entries.push({
+      id: entry.id,
+      group,
+      title: t(entry.labelKey),
+      ...(offer.hint !== undefined ? { hint: offer.hint } : {}),
+      // A card, a module page and an admin page are also found by the name
+      // of the page they sit on.
+      keywords: keywordsFor(entry.id, [
+        ...(offer.hint && HINT_IS_KEYWORD.has(entry.entry.kind)
+          ? [offer.hint]
+          : []),
+        ...localizedKeywords(t, entry.keywordsKey),
+      ]),
+      ...(entry.boost !== undefined ? { boost: entry.boost } : {}),
+      icon: entry.icon,
+      run: { kind: "href", href: entry.href },
+    });
   }
 
   // ── Module switches. ──

@@ -1127,8 +1127,9 @@
         "lifeConfirmedJson": {
           "roundTrip": "rt-UserHealthProfile-lifeConfirmedJson"
         },
-        "createdAt": "2026-05-03T13:35:00.000Z",
-        "updatedAt": "2026-05-03T13:36:00.000Z"
+        "aboutMeRevisedAt": "2026-05-03T13:35:00.000Z",
+        "createdAt": "2026-05-03T13:36:00.000Z",
+        "updatedAt": "2026-05-03T13:37:00.000Z"
       }
     ],
     "HealthProfileFactRevision": [
@@ -1136,7 +1137,7 @@
         "id": "<id:56>",
         "userId": "round-trip-owner",
         "kind": "SMOKING_STATUS",
-        "valueEncrypted": "<sealed:v1:never>",
+        "valueEncrypted": "<sealed:v1:NEVER>",
         "validFrom": "2026-01-01T00:00:00.000Z",
         "validUntil": "2026-06-30T12:34:56.789Z",
         "provenance": "USER_CORRECTION",
@@ -1248,7 +1249,7 @@
         "pregnancyTest": "NEGATIVE",
         "progesteroneTest": "NEGATIVE",
         "contraceptive": "NONE",
-        "sensitiveEncrypted": "<sealed:v1:rt-CycleDayLog-sensitiveEncrypted>",
+        "sensitiveEncrypted": "<sealed:v1:{\"sexualActivity\":true}>",
         "notesEncrypted": "<sealed:v1:rt-CycleDayLog-notesEncrypted>",
         "source": "WITHINGS",
         "externalId": "rt-CycleDayLog-externalId",
@@ -2651,6 +2652,14 @@
       "moodTagLayoutJson": {
         "roundTrip": "rt-User-moodTagLayoutJson"
       },
+      "dashboardWidgetsRevisedAt": "2026-06-30T12:34:56.789Z",
+      "insightsLayoutRevisedAt": "2026-06-30T12:34:56.789Z",
+      "medicationListLayoutRevisedAt": "2026-06-30T12:34:56.789Z",
+      "moodTagLayoutRevisedAt": "2026-06-30T12:34:56.789Z",
+      "modulePreferencesRevisedAt": "2026-05-07T12:15:00.000Z",
+      "notificationPrefsRevisedAt": "2026-05-07T12:16:00.000Z",
+      "coachPrefsRevisedAt": "2026-05-07T12:17:00.000Z",
+      "healthScoreConfigRevisedAt": "2026-05-07T12:18:00.000Z",
       "moduleListLayoutJson": {
         "roundTrip": "rt-User-moduleListLayoutJson"
       },

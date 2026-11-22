@@ -36,8 +36,9 @@ import { prisma, toJson } from "@/lib/db";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import {
   takeBaseToken,
-  guardedUserUpdate,
+  guardedUserDocumentUpdate,
   invalidBaseTokenError,
+  userDocumentToken,
 } from "@/lib/optimistic-lock";
 import {
   notificationPrefsSchema,
@@ -57,12 +58,13 @@ export const GET = apiHandler(async () => {
   const row = await prisma.user.findUnique({
     where: { id: user.id },
     // v1.32.22 — `updatedAt` rides the response as the optimistic-
-    // concurrency token so a client can echo it on its next PATCH.
-    select: { notificationPrefs: true, updatedAt: true },
+    // concurrency token so a client can echo it on its next PATCH. It is the
+    // prefs' own revision, never the row's `updatedAt`.
+    select: { notificationPrefs: true, notificationPrefsRevisedAt: true },
   });
   return apiSuccess({
     ...parseNotificationPrefs(row?.notificationPrefs ?? null),
-    updatedAt: row?.updatedAt?.toISOString(),
+    updatedAt: userDocumentToken(row, "notificationPrefs"),
   });
 });
 
@@ -129,8 +131,9 @@ export const PATCH = apiHandler(async (req: Request) => {
   // stale base 409s and writes NOTHING, so a concurrent web PATCH can't revert
   // a category (e.g. `medication.clientManaged`) another writer just set from a
   // fresher read. A tokenless request keeps the prior unconditional write.
-  const guarded = await guardedUserUpdate({
+  const guarded = await guardedUserDocumentUpdate({
     userId: user.id,
+    document: "notificationPrefs",
     base,
     data: { notificationPrefs: toJson(merged) },
     conflict: {

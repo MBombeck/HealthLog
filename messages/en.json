@@ -584,7 +584,7 @@
     "admin": "Admin console",
     "logout": "Sign out",
     "login": "Sign in",
-    "notifications": "Notifications",
+    "notifications": "Notifications per channel",
     "theme": "Theme",
     "themeSystem": "System",
     "themeDark": "Dark",
@@ -634,7 +634,14 @@
     "vaccinations": "Vaccinations",
     "mentalWellbeing": "Mental wellbeing",
     "timeline": "Timeline",
-    "seizures": "Seizures"
+    "seizures": "Seizures",
+    "emergencyCard": "Emergency card",
+    "groups": {
+      "tracking": "Tracking",
+      "record": "Health record",
+      "analysis": "Analysis"
+    },
+    "dueCount": "{label}, {count} due"
   },
   "auth": {
     "login": "Sign in",
@@ -1578,6 +1585,7 @@
     "complianceWindow": "Adherence ({days} days)",
     "complianceUnavailable": "Adherence could not be loaded",
     "complianceNotApplicable": "Adherence not applicable",
+    "complianceNoDoses": "No doses yet",
     "complianceNotApplicableReason": "No local schedule is stored in HealthLog.",
     "complianceInfo": "Share of expected doses you logged. Weekly schedules count week by week.",
     "complianceInfoLabel": "What does adherence mean?",
@@ -1588,6 +1596,8 @@
     "cycleDueToday": "Due today",
     "cycleNoClosedCycles": "No closed dose cycles yet",
     "intakeToastTaken": "{name}: taken, {time}",
+    "intakeToastTakenFor": "{name}: taken, {time}, for the {slot} dose",
+    "intakeToastExtra": "{name}: taken, {time}, as an extra dose",
     "intakeToastSkipped": "{name}: skipped",
     "intakeToastFailed": "Could not record {name}. Try again",
     "intakeUndone": "Entry reverted",
@@ -2675,7 +2685,9 @@
         "undo": "Undo",
         "takeFor": "Take {name}",
         "skipFor": "Skip {name}",
-        "takeSlot": "Take ({time})"
+        "takeSlot": "Take ({time})",
+        "takeExtra": "Take an extra dose",
+        "takeExtraFor": "Take an extra dose of {name}"
       },
       "state": {
         "pending": "Pending",
@@ -2690,7 +2702,8 @@
       },
       "snoozedToast": "{name}: reminder again at {time}",
       "snoozeFailed": "Could not snooze {name}. Try again",
-      "earlyHint": "Early: this dose is due from {time}."
+      "earlyHint": "Early: this dose is due from {time}.",
+      "extraHint": "Counts as an extra dose, not for the {time} dose."
     },
     "intakeForm": {
       "title": "Log intake",
@@ -2702,6 +2715,7 @@
       "doseHint": "Pre-filled with the planned dose. Change it only if you took a different amount.",
       "countsFor": "Counts for the {time} dose.",
       "countsForLate": "Counts for the {time} dose, as late.",
+      "countsForEarly": "Counts for the {time} dose, taken early.",
       "countNearLabel": "Count it for the {time} dose",
       "skips": "Skips the {time} dose.",
       "extraDose": "Logged as an extra dose, not part of the plan. It stays in your history and does not count toward adherence.",
@@ -5760,7 +5774,6 @@
       "sectionsNav": "Settings sections",
       "groups": {
         "account": "Account",
-        "yourData": "Your data",
         "healthProfile": "Health profile",
         "ai": "AI",
         "connectivity": "Connectivity",
@@ -5769,7 +5782,8 @@
         "arrangement": "Arrangement",
         "notifications": "Notifications",
         "connections": "Connections",
-        "data": "Data"
+        "data": "Data",
+        "serverData": "Server data"
       },
       "allSections": "All sections"
     },
@@ -5926,13 +5940,13 @@
         "connectionsHeading": "Connections",
         "channelsHeading": "Delivery channels",
         "channelsDescription": "Where reminders and alerts are delivered.",
-        "matrixLink": "Per-channel notifications"
+        "matrixLink": "Notifications per channel"
       },
       "notifications": {
         "title": "Notifications",
         "subtitle": "Choose which reminders you receive and where they're delivered.",
         "remindersHeading": "Reminders",
-        "matrixLink": "Per-channel notifications",
+        "matrixLink": "Notifications per channel",
         "channelsLink": "Delivery channels",
         "displayHeading": "On your phone",
         "elsewhere": {
@@ -5955,6 +5969,13 @@
           "label": "Push back by",
           "option": "{minutes} min",
           "saveError": "Could not save. Try again"
+        },
+        "alerts": {
+          "heading": "Alerts",
+          "noChannel": "No delivery channel is set up yet, so nothing can be sent. Once one is, this switch decides for all of them at once.",
+          "setUpChannel": "Set up a delivery channel",
+          "perChannel": "Choose per channel",
+          "saveError": "The notification setting could not be saved. Please try again."
         }
       },
       "layout": {
@@ -6504,6 +6525,8 @@
             "privacyNote": "The password is stored encrypted and never shown again. Each file is imported once: a file HealthLog already has is not read twice. A folder on your home network works only when the person running the server allows its address.",
             "lastAttempt": "Last attempt {when}: {outcome}",
             "fetchNow": "Fetch now",
+            "fetchStarted": "Fetching now. The result appears on this card.",
+            "removed": "Folder removed",
             "remove": "Remove folder",
             "removeTitle": "Remove this folder?",
             "removeBody": "HealthLog stops fetching from it and forgets the password. What was already imported stays."
@@ -7970,6 +7993,52 @@
         "title": "Sessions and devices",
         "description": "Where you are signed in, the devices that skip the second factor, and the security activity of your account.",
         "open": "Open security"
+      },
+      "whoHasAccess": {
+        "title": "Who can reach your record",
+        "description": "Every way into your record, and where to see and close each one.",
+        "doors": {
+          "accounts": {
+            "title": "Other accounts",
+            "description": "People on this server you share your record with, and the guardians of profiles you manage.",
+            "link": "Open shared access"
+          },
+          "shareLinks": {
+            "title": "Clinician links",
+            "description": "Read-only links to your doctor report that end on a date you set.",
+            "link": "Open clinician links"
+          },
+          "emergencyCard": {
+            "title": "Emergency card link",
+            "description": "The QR link on your emergency card. Anyone who scans it can read the card until you revoke it.",
+            "link": "Open the emergency card"
+          },
+          "careCalendar": {
+            "title": "Care calendar",
+            "description": "A calendar subscription with your booked visits and the care dates coming due.",
+            "link": "Open the care calendar"
+          },
+          "cycleCalendar": {
+            "title": "Cycle calendar",
+            "description": "A calendar subscription with your cycle dates.",
+            "link": "Open the cycle settings"
+          },
+          "apiTokens": {
+            "title": "API tokens",
+            "description": "Tokens that let apps and scripts read or write your data.",
+            "link": "Open API tokens"
+          },
+          "mcp": {
+            "title": "MCP connector",
+            "description": "AI assistants you connected to your record.",
+            "link": "Open the MCP connector"
+          },
+          "sessions": {
+            "title": "Signed-in devices",
+            "description": "Browsers and phones signed in to your account right now.",
+            "link": "Open active sessions"
+          }
+        }
       }
     },
     "mcp": {
@@ -8130,7 +8199,8 @@
     "tokenNameLabel": "Token name",
     "displayCard": {
       "title": "Display",
-      "description": "Language, units and formats, saved as soon as you change them."
+      "description": "Language, units and formats, saved as soon as you change them.",
+      "themeDescription": "System follows your device between light and dark. The choice is kept on this device."
     },
     "integrationCard": {
       "state": {
@@ -8662,7 +8732,8 @@
       "ok": "OK",
       "error": "Failed",
       "skipped": "Skipped",
-      "autoDisabled": "Auto-disabled channels"
+      "autoDisabled": "Auto-disabled channels",
+      "loadError": "Delivery health could not be loaded."
     },
     "reminderLateMinutes": "Late threshold (minutes)",
     "reminderLateMinutesDescription": "Minutes after window end until the badge changes from yellow to orange.",
@@ -8716,12 +8787,12 @@
         "subtitle": "Registration, default language, and other app-wide toggles."
       },
       "services": {
-        "title": "Services",
-        "subtitle": "Turn notification channels and the API on or off for the whole server."
+        "title": "Push and channels",
+        "subtitle": "Notification channels, Web Push keys, the push relay and delivery health for the whole server."
       },
       "integrations": {
-        "title": "Integrations",
-        "subtitle": "Configure Umami, GlitchTip, Web Push, and bug reports."
+        "title": "Monitoring",
+        "subtitle": "Configure Umami, GlitchTip and bug reports."
       },
       "coach": {
         "title": "Coach",
@@ -9551,6 +9622,16 @@
         "inviteRequired": "This relay accepts new servers by invitation only. Enter an invite code.",
         "inviteRejected": "The relay did not accept this invite code. It may have expired or already been used. Ask for a new one and enter it.",
         "registrationPaused": "The relay is not taking new servers right now. This server asks again later on its own."
+      },
+      "usage": {
+        "accepted": "Accepted",
+        "pending": "Waiting",
+        "dropped": "Dropped",
+        "failed": "Failed",
+        "window": "Pushes this server handed the relay in the last {days} days.",
+        "lastSuccess": "Last delivered {time}.",
+        "lastFailure": "Last failure {time}: {reason}.",
+        "noReason": "no reason given"
       }
     },
     "serverSetup": {
@@ -9663,6 +9744,25 @@
           "scheduled": "Nightly dump scheduled ({cron})."
         }
       }
+    },
+    "versionMigrations": {
+      "title": "Version and database",
+      "description": "Which build runs, from which image line, and whether the database has every migration that build ships with.",
+      "version": "Version",
+      "channel": {
+        "release": "Release",
+        "edge": "Edge",
+        "development": "Development build"
+      },
+      "built": "Build {sha}, {time}",
+      "migrations": "Database migrations",
+      "applied": "{applied} of {shipped} applied",
+      "appliedOnly": "{applied} applied",
+      "pending": "{count} pending: {names}",
+      "failed": "Failed, and holding back the update: {names}",
+      "upToDate": "Up to date",
+      "lastApplied": "Last: {name}, {time}",
+      "loadError": "The migration status could not be loaded."
     }
   },
   "achievements": {
@@ -9957,7 +10057,7 @@
     }
   },
   "notifications": {
-    "title": "Notifications",
+    "title": "Notifications per channel",
     "eventColumn": "Event",
     "subtitle": "Choose which notifications you want to receive through which channel.",
     "loadError": "Notification preferences could not be loaded.",
@@ -10065,7 +10165,7 @@
     "eventMedicationIntakeSyncDesc": "Cross-device update when a dose is logged, taken or skipped.",
     "eventDailyBriefing": "Daily briefing",
     "eventDailyBriefingDesc": "One calm morning summary of your day's read. Off until you turn it on.",
-    "eventSecurityAlert": "Account security",
+    "eventSecurityAlert": "Account security alerts",
     "eventSecurityAlertDesc": "Sent on a sign-in from a device or place not seen before, when a passkey is added or removed, when an access token is revoked, and when a device is signed out because its sign-in token was used twice.",
     "eventSharedRecordIntake": "Someone you shared your record with marks a dose",
     "eventSharedRecordIntakeDesc": "Only sent when another person does it, never for your own entries.",
@@ -10098,8 +10198,8 @@
     },
     "loginRequired": "Please sign in to manage notifications.",
     "someChannelsGloballyDisabled": "One or more channels are turned off in Settings and won’t receive notifications.",
-    "reminderSettingsLink": "Reminder settings",
-    "channelsLink": "Channels",
+    "reminderSettingsLink": "Notification settings",
+    "channelsLink": "Delivery channels",
     "handover": {
       "claimedTitle": "{name} now has their own account",
       "claimedEnd": "{name} took over their health record. Your access has ended.",
@@ -14708,6 +14808,8 @@
     "loadFailed": "This day could not be loaded.",
     "dayOf": "Day {n} of {m}",
     "dayN": "Day {n}",
+    "seizure": "Seizure",
+    "seizureCount": "{count} seizures",
     "usualRange": "Usually {lo} to {hi}",
     "groups": {
       "scores": "Scores",
@@ -15149,6 +15251,23 @@
         "measurement": "Note on a reading",
         "illness": "Illness diary"
       }
+    },
+    "keywords": {
+      "emergencyCard": "emergency, ICE, QR, wallet, blood group, in case of emergency",
+      "notificationsPerChannel": "channels, matrix, push, Telegram, ntfy",
+      "medicineRegistry": "leaflet, package insert, registry, country, medicine database",
+      "snooze": "snooze, later, postpone, remind me later",
+      "securityAlerts": "security, sign-in, login, new device, alert",
+      "lastingChange": "lasting change, vital, trend, resting heart rate, blood pressure",
+      "theme": "theme, dark mode, light mode, appearance, colours",
+      "gadgetbridge": "Gadgetbridge, Android, smartwatch, database",
+      "fhirBundle": "FHIR, bundle, medical record, import",
+      "healthConnectFolder": "Health Connect, WebDAV, Nextcloud, folder, Android",
+      "reportSchedule": "schedule, monthly, quarterly, doctor report, automatic",
+      "careCalendar": "calendar, ICS, subscription, appointments, check-ups, vaccinations",
+      "whoHasAccess": "access, who can see, sharing, links, tokens, sessions",
+      "adminPush": "push, relay, Web Push, VAPID, APNs, delivery",
+      "adminSystemStatus": "migrations, version, update, channel, edge, database"
     }
   },
   "shortcuts": {
@@ -15535,6 +15654,7 @@
       "untyped": "No type recorded",
       "ruleText": "{count} or more in {hours} h",
       "recorded": "Recorded seizures",
+      "diarySince": "Diary kept since",
       "seizureDays": "Days with a seizure",
       "seizureFreeDays": "Days without a recorded seizure",
       "per28Days": "Seizures per 28 days",
@@ -15832,7 +15952,7 @@
   "careFeed": {
     "sectionTitle": "Calendar",
     "sectionSubtitle": "Your appointments and what is coming due, in the calendar app you already use.",
-    "title": "Care calendar subscription",
+    "title": "Care calendar",
     "description": "Booked visits at their time, and check-ups and vaccination boosters on the day they come due.",
     "loadError": "The calendar subscription could not be loaded.",
     "linkHidden": "A link starting with {prefix} is active. It is shown only once, when it is made; turn the subscription off and on again for a new one.",
@@ -15934,7 +16054,6 @@
     "page": {
       "title": "Emergency card",
       "description": "Your emergency information for when you are away from home.",
-      "back": "Health profile",
       "loadError": "The emergency card could not be loaded.",
       "editHint": "Blood type, contacts, implants and the declarations come from your emergency details.",
       "editLink": "Edit them",
@@ -15957,6 +16076,9 @@
       "ORGAN_DONOR": "Organ donor",
       "NOTE": "Additional notes",
       "DATE_OF_BIRTH": "Date of birth"
+    },
+    "entry": {
+      "description": "Blood group, allergies, medications and contacts for an emergency, with an offline copy, a wallet card and a QR link."
     }
   }
 }

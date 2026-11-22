@@ -5,7 +5,8 @@
  *
  * Settings > Arrangement holds order and view only. What a module needs
  * beyond that (the biomarker catalog and on-device text recognition for
- * labs, the mood tags, the injection sites a medication rotation leaves out)
+ * labs, the mood tags, the medicine registry the leaflet search opens and the
+ * injection sites a medication rotation leaves out)
  * lives on the module's page under Modules, reached from the module's row in
  * Settings > Modules and from the wrench on the module's own page. Each page
  * links to the module's arrangement page and back.
@@ -19,6 +20,7 @@ import { ArrowUpDown, ChevronRight } from "lucide-react";
 
 import { LabsModuleSettings } from "@/components/labs/labs-settings";
 import { InjectionSitesCard } from "@/components/settings/injection-sites-card";
+import { MedicineRegistryCard } from "@/components/settings/medicine-registry-card";
 import { MoodSection } from "@/components/settings/mood-section";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
@@ -56,6 +58,8 @@ function MedicationsModulePage() {
   const { isAuthenticated } = useAuth();
   return (
     <div className="space-y-6">
+      {/* #1430 — where "Find leaflet" searches; independent of language. */}
+      <MedicineRegistryCard isAuthenticated={isAuthenticated} />
       <InjectionSitesCard isAuthenticated={isAuthenticated} />
       <ArrangementLinkCard id="medications" />
     </div>

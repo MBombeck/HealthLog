@@ -1315,6 +1315,24 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
+  /api/nav/counts:
+    get:
+      tags:
+        - Dashboard
+      summary: The counts the navigation shows
+      description: Doses and check-ups due now for the caller's own record, read in a fixed number of statements; nothing is
+        written. Cookie session or a full-scope token; a switched record is refused.
+      responses:
+        "200":
+          description: The counts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NavCountsResponse"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
   /api/settings/report-schedule:
     get:
       tags:
@@ -9829,7 +9847,7 @@ paths:
       summary: Replace per-user Coach prompt-tuning preferences
       description: "Persists the supplied prefs. Body is validated against `CoachPrefs`; missing keys fall back to the
         documented defaults. Supports optimistic concurrency: echo the `updatedAt` from the last read as `baseUpdatedAt`
-        and the write is refused with 409 if the row changed since; omit it for the legacy unconditional write."
+        and the write is refused with 409 if the prefs changed since; omit it for the legacy unconditional write."
       requestBody:
         required: true
         content:
@@ -12683,8 +12701,8 @@ paths:
       summary: Replace the calling user's Insights tile layout
       description: "Persists the full tile layout. The normalised layout plus the advanced `updatedAt` token is returned.
         Optimistic concurrency (v1.32.21): send `baseUpdatedAt` (the token from a prior read) and the write 409s if the
-        stored row changed since; omit it for the legacy unconditional write. Invalid bodies return the multi-issue 422
-        envelope, matching the dashboard-widgets route."
+        stored layout changed since; omit it for the legacy unconditional write. Invalid bodies return the multi-issue
+        422 envelope, matching the dashboard-widgets route."
       requestBody:
         required: true
         content:
@@ -12948,7 +12966,8 @@ paths:
         deterministic completion hints otherwise, with no provider call) and returns them as `pendingQuestions`.
         Rate-limited per user. Optimistic concurrency (v1.32.21): send `baseUpdatedAt` (the `updatedAt` from a prior
         read) and the write 409s if the stored self-context changed since; omit it for the legacy unconditional write.
-        The token is per-surface (`UserHealthProfile.updatedAt`), so it is not perturbed by unrelated account writes."
+        The token is the about-me document's own revision, so it is not perturbed by unrelated account or
+        emergency-profile writes."
       requestBody:
         required: true
         content:
@@ -12985,11 +13004,11 @@ paths:
                 baseUpdatedAt:
                   description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
                     legacy unconditional write (older clients are unaffected). When present, the write is guarded on the
-                    stored row still carrying this exact value — a stale token fails with 409 and changes nothing. A
-                    present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` — note
-                    that this is NOT the unconditional write: sending `null` or a malformed string is rejected rather
-                    than treated as an omitted token. Treat as opaque: only ever echo a server-returned value, never
-                    parse or synthesise it."
+                    stored resource still carrying this exact value — a stale token fails with 409 and changes nothing.
+                    A present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` —
+                    note that this is NOT the unconditional write: sending `null` or a malformed string is rejected
+                    rather than treated as an omitted token. Treat as opaque: only ever echo a server-returned value,
+                    never parse or synthesise it."
                   type: string
                   format: date-time
                   pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
@@ -14180,6 +14199,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+  /api/admin/migrations:
+    get:
+      tags:
+        - Admin
+      summary: "Database migrations: applied, pending, failed"
+      description: "Compares the migrations this image ships (`prisma/migrations`) with the finished rows of
+        `_prisma_migrations`. Read-only. Cookie auth only: `requireAdmin()` refuses every Bearer caller."
+      responses:
+        "200":
+          description: The status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMigrationStatusResponse"
+        "401": *a1
+        "403": *a25
         "422": *a4
         "429": *a5
   /api/admin/maintenance/measurements:
@@ -25542,9 +25579,9 @@ paths:
       summary: Replace the calling user's dashboard widget layout
       description: "Persists the layout with preserve-when-absent semantics and returns the normalised layout plus the
         advanced `updatedAt` token. Optimistic concurrency (v1.32.16): send `baseUpdatedAt` (the token from a prior
-        read) and the write 409s if the stored row changed since — so a committed Save can never be silently reverted by
-        a later request that started from an older snapshot; omit it for the legacy unconditional write. Invalid bodies
-        return the multi-issue 422 envelope."
+        read) and the write 409s if the stored layout changed since — so a committed Save can never be silently reverted
+        by a later request that started from an older snapshot; omit it for the legacy unconditional write. Invalid
+        bodies return the multi-issue 422 envelope."
       requestBody:
         required: true
         content:
@@ -33086,9 +33123,11 @@ components:
             (see `localRunwayUntil`; without one, for 3 days after its last authenticated request), \"server\" pushes it
             to this device whatever the account says, and null / no override follows the account-wide switch
             (`notificationPrefs.medication.clientManaged` or `deliveryDefault: \"client\"`). Since v1.48.0 the server
-            honours it per device on the APNs send; before, it was stored and echoed only. Only the reminder that
-            announces a dose is affected: follow-ups for a dose still open, every other push, and the Telegram, ntfy,
-            webhook, email and Web Push channels are not."
+            honours it per device on the APNs send; before, it was stored and echoed only. Since v1.49.0 the relay
+            follows the same decision as this server's own APNs key. Only the reminder that announces a dose is
+            affected: follow-ups for a dose still open (except over the relay, which carries them only to a device the
+            server reminds), every other push, and the Telegram, ntfy, webhook, email and Web Push channels are not.
+            `GET /api/devices/me/push-diagnostics` shows the resolved value as `medicationReminder`."
           anyOf:
             - type: string
               enum:
@@ -34161,7 +34200,7 @@ components:
         baseUpdatedAt:
           description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
             legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored
-            row still carrying this exact value — a stale token fails with 409 and changes nothing. A
+            resource still carrying this exact value — a stale token fails with 409 and changes nothing. A
             present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` — note that
             this is NOT the unconditional write: sending `null` or a malformed string is rejected rather than treated as
             an omitted token. Treat as opaque: only ever echo a server-returned value, never parse or synthesise it."
@@ -34420,6 +34459,12 @@ components:
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        extraDose:
+          description: "Since v1.49.0: true records this take as an extra dose outside the plan. It answers no scheduled slot
+            (neither by its time nor by the nearest-slot rule) and is never bound to one later. Only on a taken write;
+            cannot be combined with `scheduledFor` or `forceSlotInstant` (422). Absent or false keeps the default
+            attribution."
+          type: boolean
         doseTaken:
           description: Dose actually consumed for THIS intake when it deviates from (or documents) the medication's configured
             dose, e.g. a half tablet or a titration step. Free text, max 50 characters. Omit to record the take under
@@ -35041,7 +35086,7 @@ components:
         baseUpdatedAt:
           description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
             legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored
-            row still carrying this exact value — a stale token fails with 409 and changes nothing. A
+            resource still carrying this exact value — a stale token fails with 409 and changes nothing. A
             present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` — note that
             this is NOT the unconditional write: sending `null` or a malformed string is rejected rather than treated as
             an omitted token. Treat as opaque: only ever echo a server-returned value, never parse or synthesise it."
@@ -35083,7 +35128,7 @@ components:
         baseUpdatedAt:
           description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
             legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored
-            row still carrying this exact value — a stale token fails with 409 and changes nothing. A
+            resource still carrying this exact value — a stale token fails with 409 and changes nothing. A
             present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` — note that
             this is NOT the unconditional write: sending `null` or a malformed string is rejected rather than treated as
             an omitted token. Treat as opaque: only ever echo a server-returned value, never parse or synthesise it."
@@ -35150,7 +35195,7 @@ components:
         baseUpdatedAt:
           description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
             legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored
-            row still carrying this exact value — a stale token fails with 409 and changes nothing. A
+            resource still carrying this exact value — a stale token fails with 409 and changes nothing. A
             present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` — note that
             this is NOT the unconditional write: sending `null` or a malformed string is rejected rather than treated as
             an omitted token. Treat as opaque: only ever echo a server-returned value, never parse or synthesise it."
@@ -35237,7 +35282,7 @@ components:
         baseUpdatedAt:
           description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
             legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored
-            row still carrying this exact value — a stale token fails with 409 and changes nothing. A
+            resource still carrying this exact value — a stale token fails with 409 and changes nothing. A
             present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` — note that
             this is NOT the unconditional write: sending `null` or a malformed string is rejected rather than treated as
             an omitted token. Treat as opaque: only ever echo a server-returned value, never parse or synthesise it."
@@ -35990,7 +36035,7 @@ components:
         baseUpdatedAt:
           description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
             legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored
-            row still carrying this exact value — a stale token fails with 409 and changes nothing. A
+            resource still carrying this exact value — a stale token fails with 409 and changes nothing. A
             present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` — note that
             this is NOT the unconditional write: sending `null` or a malformed string is rejected rather than treated as
             an omitted token. Treat as opaque: only ever echo a server-returned value, never parse or synthesise it."
@@ -37046,7 +37091,7 @@ components:
         baseUpdatedAt:
           description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
             legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored
-            row still carrying this exact value — a stale token fails with 409 and changes nothing. A
+            resource still carrying this exact value — a stale token fails with 409 and changes nothing. A
             present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` — note that
             this is NOT the unconditional write: sending `null` or a malformed string is rejected rather than treated as
             an omitted token. Treat as opaque: only ever echo a server-returned value, never parse or synthesise it."
@@ -42259,7 +42304,7 @@ components:
         baseUpdatedAt:
           description: "Optimistic-concurrency base token: the `updatedAt` the client last read for this resource. Omit it for the
             legacy unconditional write (older clients are unaffected). When present, the write is guarded on the stored
-            row still carrying this exact value — a stale token fails with 409 and changes nothing. A
+            resource still carrying this exact value — a stale token fails with 409 and changes nothing. A
             present-but-unparseable value fails with 422 and `meta.errorCode` = `invalid_base_updated_at` — note that
             this is NOT the unconditional write: sending `null` or a malformed string is rejected rather than treated as
             an omitted token. Treat as opaque: only ever echo a server-returned value, never parse or synthesise it."
@@ -47353,6 +47398,42 @@ components:
         - data
         - error
       additionalProperties: false
+    NavCountsResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/NavCounts"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    NavCounts:
+      type: object
+      properties:
+        dosesDue:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Today's scheduled doses of active, tracked medications whose resolved state is `due` or `overdue` (the dose
+            resolver's own answer, as the today list gives it), not counting a slot the person snoozed.
+        checkupsDue:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: "Check-up reminders due now: enabled, not snoozed, no booked visit, due today on a long cycle or past their
+            time on a short one, as the daily digest's rail counts them."
+      required:
+        - dosesDue
+        - checkupsDue
+      additionalProperties: false
     ReportScheduleStatus:
       type: object
       properties:
@@ -48445,6 +48526,24 @@ components:
                     - low
                     - medium
                     - high
+                aiUsageMaxLevel:
+                  type: string
+                  enum:
+                    - FRUGAL
+                    - STANDARD
+                    - FULL
+                aiUsageDefaultLevel:
+                  type: string
+                  enum:
+                    - FRUGAL
+                    - STANDARD
+                    - FULL
+                aiSyncRegenGapHours:
+                  anyOf:
+                    - type: integer
+                      minimum: 1
+                      maximum: 48
+                    - type: "null"
                 moduleAvailabilityJson:
                   anyOf:
                     - {}
@@ -61880,6 +61979,33 @@ components:
             - nextFreeAt
           additionalProperties: false
           description: The device's silent budget, from the rule the send asks (`src/lib/push-relay/wakes.ts`).
+        medicationReminder:
+          type: object
+          properties:
+            delivery:
+              type: string
+              enum:
+                - server
+                - client
+              description: "Who reminds this device of a dose now, by the same decision the send reads: `server` when the server's
+                medication reminder goes to this device (over `transport`, the relay included), `client` while the app
+                reminds locally. The device's `medicationDelivery`, else the account switch; a device that reminds
+                locally counts as `server` once its local plan has run out (`localRunwayUntil`, else 3 days after its
+                last request)."
+            localUntil:
+              anyOf:
+                - type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                - type: "null"
+              description: "While `delivery` is `client`: when the server takes over unless the device reports a new runway or shows
+                up again. Null while `delivery` is `server`."
+          required:
+            - delivery
+            - localUntil
+          additionalProperties: false
+          description: The medication-reminder delivery resolved for this device. A follow-up for a dose still open goes to every
+            device over this server's own key, and over the relay only while `delivery` is `server`.
         lastDelivery:
           type: object
           properties:
@@ -62081,6 +62207,7 @@ components:
         - relay
         - binding
         - budget
+        - medicationReminder
         - lastDelivery
         - receipt
         - serverTime
@@ -62225,6 +62352,54 @@ components:
             - bound
             - consented
           additionalProperties: false
+        usage:
+          type: object
+          properties:
+            windowDays:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            accepted:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            pending:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            dropped:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            failed:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            lastFailure:
+              anyOf:
+                - type: object
+                  properties:
+                    reason:
+                      type:
+                        - string
+                        - "null"
+                    at:
+                      type: string
+                  required:
+                    - reason
+                    - at
+                  additionalProperties: false
+                - type: "null"
+          required:
+            - windowDays
+            - accepted
+            - pending
+            - dropped
+            - failed
+            - lastFailure
+          additionalProperties: false
+          description: "What this instance handed the relay in the last `windowDays` days, from its own delivery ledger: counts
+            per outcome and the last failure. Aggregate only."
         termsVersion:
           type: string
         termsUrl:
@@ -62253,6 +62428,7 @@ components:
         - notice
         - lastSuccessAt
         - devices
+        - usage
         - termsVersion
         - termsUrl
         - privacyUrl
@@ -65249,8 +65425,9 @@ components:
               - type: string
                 pattern: ^custom:[0-9a-f-]{36}$
         updatedAt:
-          description: "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as
-            `baseUpdatedAt` on the next write. Opaque."
+          description: "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this
+            resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write.
+            Opaque."
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
@@ -68382,9 +68559,9 @@ components:
             - medium
             - high
         updatedAt:
-          description: "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as
-            `baseUpdatedAt` on the next write. Opaque — only ever echo a server-returned value, never parse or
-            synthesise it."
+          description: "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this
+            resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write.
+            Opaque — only ever echo a server-returned value, never parse or synthesise it."
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
@@ -68531,9 +68708,9 @@ components:
             - type: "null"
           description: When the recipe last changed; null while it never has.
         updatedAt:
-          description: "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as
-            `baseUpdatedAt` on the next write. Opaque — only ever echo a server-returned value, never parse or
-            synthesise it."
+          description: "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this
+            resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write.
+            Opaque — only ever echo a server-returned value, never parse or synthesise it."
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
@@ -68586,9 +68763,9 @@ components:
         modules:
           $ref: "#/components/schemas/ModuleMap"
         updatedAt:
-          description: "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as
-            `baseUpdatedAt` on the next write. Opaque — only ever echo a server-returned value, never parse or
-            synthesise it."
+          description: "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this
+            resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write.
+            Opaque — only ever echo a server-returned value, never parse or synthesise it."
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
@@ -70319,9 +70496,9 @@ components:
             - detail
           additionalProperties: false
         updatedAt:
-          description: "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as
-            `baseUpdatedAt` on the next write. Opaque — only ever echo a server-returned value, never parse or
-            synthesise it."
+          description: "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this
+            resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write.
+            Opaque — only ever echo a server-returned value, never parse or synthesise it."
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
@@ -73541,8 +73718,9 @@ components:
               - order
             additionalProperties: false
         updatedAt:
-          description: "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as
-            `baseUpdatedAt` on the next write. Opaque."
+          description: "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this
+            resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write.
+            Opaque."
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
@@ -75468,6 +75646,72 @@ components:
         - data
         - error
       additionalProperties: false
+    AdminMigrationStatusResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/AdminMigrationStatus"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AdminMigrationStatus:
+      type: object
+      properties:
+        shipped:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+          description: Migrations in this image; null when the folder is absent.
+        applied:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        pending:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        pendingNames:
+          type: array
+          items:
+            type: string
+          description: The first 20 pending migrations, in apply order.
+        failedNames:
+          type: array
+          items:
+            type: string
+          description: Migrations that started and did not finish (first 20).
+        lastApplied:
+          anyOf:
+            - type: object
+              properties:
+                name:
+                  type: string
+                at:
+                  type: string
+              required:
+                - name
+                - at
+              additionalProperties: false
+            - type: "null"
+      required:
+        - shipped
+        - applied
+        - pending
+        - pendingNames
+        - failedNames
+        - lastApplied
+      additionalProperties: false
     AdminMeasurementMaintenanceStatusResponse:
       type: object
       properties:
@@ -77154,14 +77398,18 @@ components:
                   - "null"
               compliance7:
                 type: number
-                description: Percent, 0-100.
+                description: "Percent, 0-100. When `taken7 + missed7` is 0 there is no dose to score and this is not adherence: show an
+                  empty state, not the number."
               compliance30:
                 type: number
-                description: Percent, 0-100.
+                description: "Percent, 0-100. When `expected30` is 0 there is no dose to score and this is not adherence: show an empty
+                  state, not the number."
               streak:
                 type: integer
                 minimum: -9007199254740991
                 maximum: 9007199254740991
+                description: Days in a row with every expected dose taken or skipped. Starts on a day with an answered dose, so it is 0
+                  before the first one.
               taken7:
                 type: integer
                 minimum: -9007199254740991
@@ -77174,6 +77422,11 @@ components:
                 type: integer
                 minimum: -9007199254740991
                 maximum: 9007199254740991
+              expected30:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+                description: "Since v1.49.0: the doses the 30-day rate counts (taken plus missed)."
             required:
               - id
               - name
@@ -77186,6 +77439,7 @@ components:
               - taken7
               - skipped7
               - missed7
+              - expected30
             additionalProperties: false
           description: Cadence-aware compliance per active medication.
         alerts:
@@ -83592,9 +83846,9 @@ components:
             items:
               type: string
         updatedAt:
-          description: "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as
-            `baseUpdatedAt` on the next write. Opaque — only ever echo a server-returned value, never parse or
-            synthesise it."
+          description: "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this
+            resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write.
+            Opaque — only ever echo a server-returned value, never parse or synthesise it."
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
@@ -98656,8 +98910,9 @@ components:
             again. Additive.
           type: boolean
         updatedAt:
-          description: "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as
-            `baseUpdatedAt` on the next write. Opaque."
+          description: "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this
+            resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write.
+            Opaque."
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
@@ -98924,8 +99179,9 @@ components:
             again. Additive.
           type: boolean
         updatedAt:
-          description: "Optimistic-concurrency token: the stored row's `updatedAt` at read/write time. Echo it back as
-            `baseUpdatedAt` on the next write. Opaque."
+          description: "Optimistic-concurrency token: this resource's own revision at read/write time, which moves only when this
+            resource changes, never on another write to the account. Echo it back as `baseUpdatedAt` on the next write.
+            Opaque."
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
@@ -104386,6 +104642,7 @@ components:
                 - medications
                 - illness
                 - symptoms
+                - seizures
                 - allergies
                 - labs
                 - visits
@@ -104518,6 +104775,7 @@ components:
             - illnessResolved
             - illnessDayLog
             - symptom
+            - seizure
             - allergyOnset
             - labResult
             - visit
@@ -104541,6 +104799,7 @@ components:
             - medications
             - illness
             - symptoms
+            - seizures
             - allergies
             - labs
             - visits
@@ -104658,6 +104917,7 @@ components:
               - medications
               - illness
               - symptoms
+              - seizures
               - allergies
               - labs
               - visits
@@ -104732,6 +104992,7 @@ components:
             - medications
             - illness
             - symptoms
+            - seizures
             - allergies
             - labs
             - visits
@@ -104903,6 +105164,7 @@ components:
             - illnessResolved
             - illnessDayLog
             - symptom
+            - seizure
             - allergyOnset
             - labResult
             - visit
@@ -104926,6 +105188,7 @@ components:
             - medications
             - illness
             - symptoms
+            - seizures
             - allergies
             - labs
             - visits

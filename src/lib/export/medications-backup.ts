@@ -82,26 +82,16 @@ function serialiseMedicationRow(
     ...(disasterRecovery
       ? {
           id: m.id,
-          treatmentClass: m.treatmentClass,
-          dosesPerUnit: m.dosesPerUnit,
-          unitsPerDose: m.unitsPerDose.toString(),
-          notificationsEnabled: m.notificationsEnabled,
-          pausedAt: m.pausedAt?.toISOString() ?? null,
-          snoozedUntil: m.snoozedUntil?.toISOString() ?? null,
+          // The projection of the courses, which both purposes carry; a
+          // portable restore projects it again from them.
           startsOn: m.startsOn?.toISOString() ?? null,
           endsOn: m.endsOn?.toISOString() ?? null,
-          oneShot: m.oneShot,
-          asNeeded: m.asNeeded,
-          deliveryForm: m.deliveryForm,
-          trackInjectionSites: m.trackInjectionSites,
-          allowedInjectionSites: m.allowedInjectionSites,
-          liveActivityEnabled: m.liveActivityEnabled,
-          criticalAlarmEnabled: m.criticalAlarmEnabled,
-          atcCode: m.atcCode,
-          rxNormCode: m.rxNormCode,
+          // A reminder snoozed for the next hour, the low-stock notice's
+          // cursor and the importer's own reference: this host's state
+          // around the drug, not what the drug is.
+          snoozedUntil: m.snoozedUntil?.toISOString() ?? null,
           lowStockNotifiedAt: m.lowStockNotifiedAt?.toISOString() ?? null,
           lowStockNotifiedThresholdDays: m.lowStockNotifiedThresholdDays,
-          reorderLeadDays: m.reorderLeadDays,
           externalSource: m.externalSource,
           externalId: m.externalId,
           updatedAt: m.updatedAt.toISOString(),
@@ -111,6 +101,25 @@ function serialiseMedicationRow(
       : // No id: a portable restore mints a fresh one. The relation links
         // still name this drug, so the file says which row they mean.
         { ref: m.id }),
+    // What the drug is and how the person set it up, so both purposes: a
+    // portable restore without them brought an injection back as a tablet,
+    // an as-needed drug back as a scheduled one, and every reminder switch
+    // back at its default.
+    treatmentClass: m.treatmentClass,
+    dosesPerUnit: m.dosesPerUnit,
+    unitsPerDose: m.unitsPerDose.toString(),
+    notificationsEnabled: m.notificationsEnabled,
+    pausedAt: m.pausedAt?.toISOString() ?? null,
+    oneShot: m.oneShot,
+    asNeeded: m.asNeeded,
+    deliveryForm: m.deliveryForm,
+    trackInjectionSites: m.trackInjectionSites,
+    allowedInjectionSites: m.allowedInjectionSites,
+    liveActivityEnabled: m.liveActivityEnabled,
+    criticalAlarmEnabled: m.criticalAlarmEnabled,
+    atcCode: m.atcCode,
+    rxNormCode: m.rxNormCode,
+    reorderLeadDays: m.reorderLeadDays,
     name: m.name,
     dose: m.dose,
     active: m.active,
@@ -152,25 +161,23 @@ function serialiseMedicationHistory(
   disasterRecovery: boolean,
 ) {
   return {
+    // The plan itself, so every field in both purposes: a portable restore
+    // without the days, the times or the rule kept the window and lost when
+    // the drug is due.
     schedules: m.schedules.map((s) => ({
-      ...(disasterRecovery
-        ? {
-            id: s.id,
-            daysOfWeek: s.daysOfWeek,
-            timesOfDay: s.timesOfDay,
-            reminderGraceMinutes: s.reminderGraceMinutes,
-            rrule: s.rrule,
-            rollingIntervalDays: s.rollingIntervalDays,
-            scheduleType: s.scheduleType,
-            cyclicOnWeeks: s.cyclicOnWeeks,
-            cyclicOffWeeks: s.cyclicOffWeeks,
-            doseWindows: s.doseWindows,
-            // #219 — per-schedule units per dose. Decimal → string like the
-            // medication-level column; NULL (inherit) stays NULL.
-            unitsPerDose:
-              s.unitsPerDose == null ? null : s.unitsPerDose.toString(),
-          }
-        : {}),
+      ...(disasterRecovery ? { id: s.id } : {}),
+      daysOfWeek: s.daysOfWeek,
+      timesOfDay: s.timesOfDay,
+      reminderGraceMinutes: s.reminderGraceMinutes,
+      rrule: s.rrule,
+      rollingIntervalDays: s.rollingIntervalDays,
+      scheduleType: s.scheduleType,
+      cyclicOnWeeks: s.cyclicOnWeeks,
+      cyclicOffWeeks: s.cyclicOffWeeks,
+      doseWindows: s.doseWindows,
+      // #219 — per-schedule units per dose. Decimal → string like the
+      // medication-level column; NULL (inherit) stays NULL.
+      unitsPerDose: s.unitsPerDose == null ? null : s.unitsPerDose.toString(),
       windowStart: s.windowStart,
       windowEnd: s.windowEnd,
       label: s.label,
@@ -414,12 +421,11 @@ function serialiseIntakeEvent(e: BackupIntakeEvent, disasterRecovery: boolean) {
       ? {
           id: e.id,
           medicationId: e.medicationId,
-          autoMissed: e.autoMissed,
-          attributionSource: e.attributionSource,
           idempotencyKey: e.idempotencyKey,
           createdAt: e.createdAt.toISOString(),
-          injectionSite: e.injectionSite,
-          doseTaken: e.doseTaken,
+          // The pack lots the take came off, by their ids. A portable
+          // restore mints fresh pack ids, so the stamp would point at
+          // nothing there; the pack's own count already carries the stock.
           inventoryConsumption: e.inventoryConsumption,
           externalId: e.externalId,
           updatedAt: e.updatedAt.toISOString(),
@@ -449,6 +455,16 @@ function serialiseIntakeEvent(e: BackupIntakeEvent, disasterRecovery: boolean) {
     // automatically", and a restore that dropped the marker would relabel
     // it as one the person confirmed.
     autoRecorded: e.autoRecorded,
+    // What the dose itself says, so both purposes, the rule the measurements
+    // follow: where it was injected, the amount actually taken where it
+    // differed from the plan, whether it was pinned to its slot by hand
+    // (without it a restored dose falls back to the clock's attribution),
+    // and whether the system marked it missed rather than the person
+    // skipping it.
+    injectionSite: e.injectionSite,
+    doseTaken: e.doseTaken,
+    attributionSource: e.attributionSource,
+    autoMissed: e.autoMissed,
   };
 }
 

@@ -29,6 +29,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 
 import type { MeasurementType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
+import { FanOutTally } from "@/lib/jobs/fan-out-tally";
 import { getEvent } from "@/lib/logging/context";
 import { flushOwedIntakeSyncs } from "@/lib/push-relay/medication-pushes";
 import { pruneWakes, sendWake, wakeableDevices } from "@/lib/push-relay/wakes";
@@ -259,16 +260,23 @@ export async function flushDataChange(
 /**
  * The minute pass: send every pending wake whose window has opened and every
  * owed intake sync whose budget freed up (`medication-pushes.ts`), then prune
- * the wake ledger. Returns how many devices were woken and synced.
+ * the wake ledger. Returns how many devices were woken and synced, and the
+ * tally of what was attempted and failed (`FanOutTally`): a failed device
+ * puts its domains back and the pass carries on, and the run says so.
  */
-export async function flushDueDataChanges(
-  now: Date = new Date(),
-): Promise<{ flushed: number; owedSynced: number; pruned: number }> {
+export async function flushDueDataChanges(now: Date = new Date()): Promise<{
+  flushed: number;
+  owedSynced: number;
+  pruned: number;
+  tally: FanOutTally;
+}> {
+  const tally = new FanOutTally();
   // The owed intake syncs go first: a dose decision waits on them.
   let owedSynced = 0;
   try {
     owedSynced = await flushOwedIntakeSyncs(now);
   } catch (err) {
+    tally.fail();
     getEvent()?.addWarning(
       `intake_sync_owed_flush_failed: ${err instanceof Error ? err.message : String(err)}`,
     );
@@ -282,12 +290,15 @@ export async function flushDueDataChanges(
   let flushed = 0;
   for (const row of pending) {
     try {
-      if (await flushDataChange(row.deviceId, now)) flushed += 1;
+      const sent = await flushDataChange(row.deviceId, now);
+      if (sent !== null) tally.ok();
+      if (sent) flushed += 1;
     } catch (err) {
+      tally.fail();
       getEvent()?.addWarning(
         `data_changed_flush_failed: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
   }
-  return { flushed, owedSynced, pruned: await pruneWakes(now) };
+  return { flushed, owedSynced, pruned: await pruneWakes(now), tally };
 }

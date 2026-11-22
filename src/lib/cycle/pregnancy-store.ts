@@ -17,13 +17,26 @@ import { decrypt, encrypt } from "@/lib/crypto";
 import { annotate } from "@/lib/logging/context";
 import { isCycleAvailableForUser } from "@/lib/cycle/gate";
 
-import type { PregnancyProfileFields } from "./pregnancy";
+import {
+  POSTPARTUM_WEEKS_DEFAULT,
+  type PregnancyProfileFields,
+} from "./pregnancy";
 import type { CycleReproductiveState } from "./types";
 
 /** The `CycleProfile` columns the state lives in, for a Prisma `select`. */
 export const PREGNANCY_PROFILE_SELECT = {
   pregnancyEncrypted: true,
   postpartumWeeks: true,
+} as const;
+
+/**
+ * The columns of a record with no pregnancy state and the default setting,
+ * for a purge that removes the cycle data ("delete all cycle data"): the
+ * state is the most disclosure-sensitive part of it and must not outlive it.
+ */
+export const PREGNANCY_CLEARED = {
+  pregnancyEncrypted: null,
+  postpartumWeeks: POSTPARTUM_WEEKS_DEFAULT,
 } as const;
 
 /** The state as it was opened: the setting beside it is always there. */

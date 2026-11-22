@@ -587,6 +587,22 @@ export const USER_KEPT_FIELDS: Readonly<Record<string, string>> = {
   oidcSub: "a sign-in credential — the external identity binding",
   createdAt: "when the account was created; the account is preserved",
   updatedAt: "row bookkeeping maintained by Prisma",
+  dashboardWidgetsRevisedAt:
+    "lock-token bookkeeping the database moves itself when the wipe resets the document (migration 0554)",
+  insightsLayoutRevisedAt:
+    "lock-token bookkeeping the database moves itself when the wipe resets the document (migration 0554)",
+  medicationListLayoutRevisedAt:
+    "lock-token bookkeeping the database moves itself when the wipe resets the document (migration 0554)",
+  moodTagLayoutRevisedAt:
+    "lock-token bookkeeping the database moves itself when the wipe resets the document (migration 0554)",
+  modulePreferencesRevisedAt:
+    "lock-token bookkeeping the database moves itself when the wipe resets the document (migration 0554)",
+  notificationPrefsRevisedAt:
+    "lock-token bookkeeping the database moves itself when the wipe resets the document (migration 0554)",
+  coachPrefsRevisedAt:
+    "lock-token bookkeeping the database moves itself when the wipe resets the document (migration 0554)",
+  healthScoreConfigRevisedAt:
+    "lock-token bookkeeping the database moves itself when the wipe resets the document (migration 0554)",
   managedProfileAt:
     "whether this record is one somebody else runs — account shape, not record content. Clearing it would strip the guardian's reach from a record that has no credentials of its own, leaving an account nobody can open, administer or delete. Emptying a record is not emancipating the person in it.",
   totpSecretEncrypted: "a second-factor credential",

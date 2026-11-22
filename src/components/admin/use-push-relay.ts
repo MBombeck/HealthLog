@@ -19,6 +19,15 @@ export interface AdminPushRelayStatus {
   notice: { id: string; level: string | null } | null;
   lastSuccessAt: string | null;
   devices: { bound: number; consented: number };
+  /** Absent on a response from a build before the field. */
+  usage?: {
+    windowDays: number;
+    accepted: number;
+    pending: number;
+    dropped: number;
+    failed: number;
+    lastFailure: { reason: string | null; at: string } | null;
+  };
   termsVersion: string;
   termsUrl: string | null;
   privacyUrl: string | null;
