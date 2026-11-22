@@ -127,6 +127,11 @@ const jobs: readonly JobDefinition[] = [
   // the 15-minute checkup tick is the safety net.
   defineJob({
     queue: REMINDER_SATISFY_QUEUE,
+    policy: {
+      policy: "short",
+      reason:
+        "Per-account singleton key; a burst of ingest sends joins the one queued run, and a send during a run queues the next.",
+    },
     work: { localConcurrency: REMINDER_SATISFY_CONCURRENCY },
     load: async () => (await checks()).handleReminderSatisfy,
   }),
