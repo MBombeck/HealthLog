@@ -25,6 +25,8 @@
  */
 import type { MeasurementType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
+import { pregnancyContextActive } from "@/lib/cycle/pregnancy-context";
+import { DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
 import {
   bmiOf,
   classifyBMI,
@@ -129,6 +131,35 @@ export async function computeBmi(
         computedAt,
       },
       reason: "no_height_on_profile",
+    });
+  }
+
+  // During a pregnancy or its postpartum weeks a BMI category frames a body
+  // that is supposed to change, so there is no BMI to show.
+  if (
+    await pregnancyContextActive(
+      prisma,
+      userId,
+      profile.timezone ?? DEFAULT_TIMEZONE,
+      now,
+    )
+  ) {
+    const { coverage } = deriveCoverage({
+      requiredInputs: 2,
+      presentInputs: 1,
+      historyDays: 0,
+      missing: [],
+      fullHistoryDays: 1,
+    });
+    return buildInsufficient<BmiValue>({
+      coverage,
+      provenance: {
+        inputs: ["HEIGHT"],
+        source: "none",
+        windowDays,
+        computedAt,
+      },
+      reason: "pregnancy",
     });
   }
 

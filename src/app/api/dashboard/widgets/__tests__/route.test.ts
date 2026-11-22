@@ -789,7 +789,7 @@ describe("dashboard widgets — optimistic concurrency (issue #581)", () => {
     vi.mocked(prisma.user.updateMany).mockResolvedValue({ count: 1 } as never);
     // The post-write token read.
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
-      updatedAt: advanced,
+      dashboardWidgetsRevisedAt: advanced,
     } as never);
 
     const res = await callPut(makeReq(fullLayoutBody(base.toISOString())));
@@ -798,9 +798,11 @@ describe("dashboard widgets — optimistic concurrency (issue #581)", () => {
     // Wrote conditionally on the exact base token — never unconditionally.
     expect(prisma.user.updateMany).toHaveBeenCalledTimes(1);
     const whereArg = vi.mocked(prisma.user.updateMany).mock.calls[0]?.[0]
-      ?.where as { id: string; updatedAt: Date };
+      ?.where as { id: string; dashboardWidgetsRevisedAt: Date };
     expect(whereArg.id).toBe("user-1");
-    expect((whereArg.updatedAt as Date).toISOString()).toBe(base.toISOString());
+    expect((whereArg.dashboardWidgetsRevisedAt as Date).toISOString()).toBe(
+      base.toISOString(),
+    );
     expect(prisma.user.update).not.toHaveBeenCalled();
 
     // The response echoes the advanced token so the client can rebase.
@@ -846,7 +848,7 @@ describe("dashboard widgets — optimistic concurrency (issue #581)", () => {
       dashboardWidgetsJson: null,
     } as never);
     vi.mocked(prisma.user.update).mockResolvedValue({
-      updatedAt: new Date("2026-07-24T11:00:00.000Z"),
+      dashboardWidgetsRevisedAt: new Date("2026-07-24T11:00:00.000Z"),
     } as never);
 
     const res = await callPut(makeReq(fullLayoutBody()));
@@ -888,7 +890,9 @@ describe("DELETE /api/dashboard/widgets — web-owned reset scope", () => {
     transactionUser.findUnique.mockResolvedValue({
       dashboardWidgetsJson: stored,
     });
-    transactionUser.update.mockResolvedValue({ updatedAt: advanced });
+    transactionUser.update.mockResolvedValue({
+      dashboardWidgetsRevisedAt: advanced,
+    });
 
     const res = await callDelete();
     expect(res.status).toBe(200);
@@ -908,9 +912,9 @@ describe("DELETE /api/dashboard/widgets — web-owned reset scope", () => {
 
     const updateArg = transactionUser.update.mock.calls[0]?.[0] as {
       data: { dashboardWidgetsJson: DashboardLayout };
-      select: { updatedAt: true };
+      select: { dashboardWidgetsRevisedAt: true };
     };
-    expect(updateArg.select).toEqual({ updatedAt: true });
+    expect(updateArg.select).toEqual({ dashboardWidgetsRevisedAt: true });
     const persisted = updateArg.data.dashboardWidgetsJson;
     expect(persisted.widgets).toEqual(DEFAULT_DASHBOARD_LAYOUT.widgets);
     expect(

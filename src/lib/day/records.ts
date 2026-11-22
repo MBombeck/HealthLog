@@ -14,14 +14,13 @@
  *     belongs to and a second derivation could disagree with it; a
  *     screener's `takenAt` is cut in its own `tz` the same way;
  *   - **a calendar date** (`@db.Date` medication and course bounds, a
- *     document's stated date stored at noon UTC): compared as a date key,
- *     never through a zone.
+ *     document's noon-UTC date): compared as a date key, never through a zone.
  *
  * Free text is decrypted here for the caller that resolved the record and
- * nowhere else. A value that cannot be decrypted is `null` with a warning on
- * the request's event, never the ciphertext and never a blank that looks
- * like "no note".
+ * nowhere else; a value that cannot be decrypted is `null` with a warning on
+ * the request's event, never the ciphertext. Seizures: `./seizures-part.ts`.
  */
+import { seizuresPart } from "@/lib/day/seizures-part";
 import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
 import type {
   DayEvent,
@@ -1132,6 +1131,7 @@ export const RECORD_SECTION_READERS: Readonly<
   medications: medicationsPart,
   illness: illnessPart,
   symptoms: symptomsPart,
+  seizures: seizuresPart,
   allergies: allergiesPart,
   labs: labsPart,
   visits: visitsPart,

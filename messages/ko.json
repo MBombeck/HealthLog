@@ -1578,6 +1578,7 @@
     "complianceWindow": "복약 순응도 ({days}일)",
     "complianceUnavailable": "복약 순응도를 불러오지 못했어요",
     "complianceNotApplicable": "복약 순응도 해당 없음",
+    "complianceNoDoses": "아직 복용 기록 없음",
     "complianceNotApplicableReason": "HealthLog에 로컬 복용 일정이 저장되어 있지 않습니다.",
     "complianceInfo": "예정된 복용 중 기록한 비율이에요. 주간 일정은 주 단위로 계산해요.",
     "complianceInfoLabel": "복약 순응도란?",
@@ -1588,6 +1589,8 @@
     "cycleDueToday": "오늘 예정",
     "cycleNoClosedCycles": "아직 완료된 복용 주기가 없어요",
     "intakeToastTaken": "{name}: 복용함, {time}",
+    "intakeToastTakenFor": "{name}: 복용함, {time}, {slot} 복용분",
+    "intakeToastExtra": "{name}: 복용함, {time}, 추가 복용",
     "intakeToastSkipped": "{name}: 건너뜀",
     "intakeToastFailed": "기록하지 못했어요: {name}. 다시 시도해 주세요",
     "intakeUndone": "기록을 되돌렸어요",
@@ -2675,7 +2678,9 @@
         "undo": "실행 취소",
         "takeFor": "{name} 복용",
         "skipFor": "{name} 건너뛰기",
-        "takeSlot": "복용 ({time})"
+        "takeSlot": "복용 ({time})",
+        "takeExtra": "추가로 복용",
+        "takeExtraFor": "{name} 추가로 복용"
       },
       "state": {
         "pending": "예정",
@@ -2690,7 +2695,8 @@
       },
       "snoozedToast": "{name}: {time}에 다시 알려 드려요",
       "snoozeFailed": "{name} 알림을 미루지 못했어요. 다시 시도해 주세요",
-      "earlyHint": "이른 복용: 이 용량은 {time}부터 복용 시간입니다."
+      "earlyHint": "이른 복용: 이 용량은 {time}부터 복용 시간입니다.",
+      "extraHint": "추가 복용으로 기록돼요. {time} 복용분에는 포함되지 않아요."
     },
     "intakeForm": {
       "title": "복용 기록",
@@ -2702,6 +2708,7 @@
       "doseHint": "계획된 용량이 채워져 있어요. 다른 양을 복용했을 때만 바꾸세요.",
       "countsFor": "{time} 복용분으로 기록돼요.",
       "countsForLate": "{time} 복용분으로, 늦게 복용한 것으로 기록돼요.",
+      "countsForEarly": "{time} 복용분으로, 일찍 복용한 것으로 기록돼요.",
       "countNearLabel": "{time} 복용분으로 기록",
       "skips": "{time} 복용분을 건너뛰어요.",
       "extraDose": "일정 외 추가 복용으로 기록돼요. 기록에는 남지만 복약 순응도에는 포함되지 않아요.",
@@ -6504,6 +6511,8 @@
             "privacyNote": "비밀번호는 암호화되어 저장되고 다시 표시되지 않아요. 파일마다 한 번만 가져오며 HealthLog에 이미 있는 파일은 다시 읽지 않아요. 집 네트워크의 폴더는 서버 운영자가 주소를 허용한 경우에만 쓸 수 있어요.",
             "lastAttempt": "마지막 시도 {when}: {outcome}",
             "fetchNow": "지금 가져오기",
+            "fetchStarted": "지금 가져오는 중이에요. 결과는 이 카드에 표시돼요.",
+            "removed": "폴더를 삭제했어요",
             "remove": "폴더 제거",
             "removeTitle": "이 폴더를 제거할까요?",
             "removeBody": "HealthLog가 더 이상 이 폴더에서 가져오지 않고 비밀번호를 잊어요. 이미 가져온 항목은 그대로 남아요."
@@ -14706,6 +14715,8 @@
     "loadFailed": "이 날을 불러오지 못했어요.",
     "dayOf": "{m}일 중 {n}일째",
     "dayN": "{n}일째",
+    "seizure": "발작",
+    "seizureCount": "발작 {count}회",
     "usualRange": "평소 {lo}~{hi}",
     "groups": {
       "scores": "점수",
@@ -15533,6 +15544,7 @@
       "untyped": "기록된 유형 없음",
       "ruleText": "{hours}시간 내 {count}회 이상",
       "recorded": "기록된 발작",
+      "diarySince": "일지 작성 시작일",
       "seizureDays": "발작이 있었던 날",
       "seizureFreeDays": "기록된 발작이 없는 날",
       "per28Days": "28일당 발작 횟수",

@@ -140,7 +140,6 @@ export function OverviewStatusSection({
     courseStatus !== "ENDED" &&
     courseStatus !== "UPCOMING";
   const takeSlot = cardTakeSlot(currentDose, medication.nextDueAt, now);
-  const slotAt = takeSlot?.at ?? null;
   const { intakeLoading, recordIntake } = useMedicationIntake({ medication });
   const snooze = useCardDoseSnooze({
     ...medication,
@@ -183,7 +182,7 @@ export function OverviewStatusSection({
           {canAct && (
             <MedicationIntakeActions
               intakeLoading={intakeLoading}
-              onRecordIntake={(skipped) => void recordIntake(skipped, slotAt)}
+              onRecordIntake={(skipped) => void recordIntake(skipped, takeSlot)}
               slot={takeSlot}
               snooze={snooze}
             />

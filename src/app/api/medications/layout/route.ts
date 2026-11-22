@@ -24,8 +24,10 @@ import { annotate } from "@/lib/logging/context";
 import { prisma, toJson } from "@/lib/db";
 import {
   takeBaseToken,
-  guardedUserUpdate,
+  guardedUserDocumentUpdate,
   invalidBaseTokenError,
+  readUserDocumentToken,
+  userDocumentToken,
 } from "@/lib/optimistic-lock";
 import {
   resolveMedicationListLayout,
@@ -45,7 +47,8 @@ import {
 } from "@/lib/validations/medication/base";
 import { z } from "zod/v4";
 import { invalidateUserMedicationListLayout } from "@/lib/cache/invalidate";
-import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
+import { caches, type ServerCache } from "@/lib/cache/server-cache";
+import { cachedAtRevision } from "@/lib/cache/cached-at-revision";
 import { redactForExcerpt } from "@/lib/observability/redact-payload";
 import { shouldEmitAuditRow } from "@/lib/audit-dedup";
 import type { NextRequest } from "next/server";
@@ -100,14 +103,16 @@ async function buildMedicationListLayout(
 ): Promise<MedicationListLayoutWithToken> {
   const row = await prisma.user.findUnique({
     where: { id: userId },
-    // v1.32.21 — `updatedAt` rides the cached blob so GET hands the
-    // client the optimistic-concurrency token alongside the presentation it
-    // applies to (busted on every write, so the pair stays consistent).
-    select: { medicationListLayoutJson: true, updatedAt: true },
+    // The lock token rides with the presentation it applies to: the
+    // document's own revision, never the row's `updatedAt`.
+    select: {
+      medicationListLayoutJson: true,
+      medicationListLayoutRevisedAt: true,
+    },
   });
   return {
     ...resolveMedicationListLayout(row?.medicationListLayoutJson),
-    updatedAt: row?.updatedAt?.toISOString(),
+    updatedAt: userDocumentToken(row, "medicationListLayout"),
   };
 }
 
@@ -123,13 +128,15 @@ export const GET = apiHandler(async () => {
   // destination, so this is a list a delegate really does see.
   const { user } = await requireRecordAuth("read", "medications");
 
-  // 5-minute TTL matches the dashboard-widgets / insights-layout caches; the
-  // blob changes only on a view toggle or an order save, which invalidates via
-  // `invalidateUserMedicationListLayout()`. Keyed on the resolved id, so a
-  // delegated read fills the owner's cell and never their own.
-  const layout = await cached(
+  // 5-minute TTL matches the dashboard-widgets / insights-layout caches.
+  // The cell is served only while its token is the document's current
+  // revision, so a writer that forgot to invalidate can never hand out a
+  // stale token. Keyed on the resolved id, so a delegated read fills the
+  // owner's cell and never their own.
+  const layout = await cachedAtRevision(
     caches.medicationListLayout as ServerCache<MedicationListLayoutWithToken>,
     user.id,
+    await readUserDocumentToken(user.id, "medicationListLayout"),
     () => buildMedicationListLayout(user.id),
     annotate,
   );
@@ -236,8 +243,9 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   // 409s and writes NOTHING, so a view toggle can't resurrect an order the
   // reorder Save just committed (or vice versa); a tokenless request keeps the
   // prior unconditional write.
-  const guarded = await guardedUserUpdate({
+  const guarded = await guardedUserDocumentUpdate({
     userId: user.id,
+    document: "medicationListLayout",
     base,
     data: { medicationListLayoutJson: toJson(normalized) },
     conflict: {

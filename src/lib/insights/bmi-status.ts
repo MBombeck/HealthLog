@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { getBmiSystemPrompt, getBmiUserPrompt } from "@/lib/ai/prompts/bmi";
 import { classifyBMI } from "@/lib/analytics/classifications";
+import { pregnancyContextActive } from "@/lib/cycle/pregnancy-context";
 import { getNoKeyBmiStatusText } from "@/lib/insights/no-key-fallbacks";
 import { computeSteadyRun } from "@/lib/insights/assessment-context";
 import { applyPayloadBudget } from "@/lib/insights/bucket-series";
@@ -77,6 +78,23 @@ async function buildBmiSnapshot(
           locale === "de"
             ? "Für die BMI-Einschätzung fehlen aktuell Größenangaben im Profil."
             : "BMI assessment currently requires height data in the profile.",
+        cached: true,
+        updatedAt: null,
+      },
+    };
+  }
+
+  // During a pregnancy or its postpartum weeks a BMI band frames a body that
+  // is supposed to change: no assessment, and no model call to write one.
+  if (await pregnancyContextActive(prisma, userId, userTz)) {
+    return {
+      phase: "served",
+      result: {
+        hasProvider: true,
+        text:
+          locale === "de"
+            ? "Während der Schwangerschaft und der Zeit danach gibt es keine BMI-Einschätzung."
+            : "There is no BMI assessment during a pregnancy and the weeks after it.",
         cached: true,
         updatedAt: null,
       },

@@ -11,7 +11,8 @@ import { annotate } from "@/lib/logging/context";
 import { toJson } from "@/lib/db";
 import {
   takeBaseToken,
-  guardedUserUpdate,
+  guardedUserDocumentUpdate,
+  readUserDocumentToken,
   invalidBaseTokenError,
 } from "@/lib/optimistic-lock";
 import {
@@ -36,7 +37,8 @@ import { resetDashboardLayout } from "@/lib/dashboard/widgets/reset-layout";
 import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
 import { z } from "zod/v4";
 import { invalidateUserDashboardWidgets } from "@/lib/cache/invalidate";
-import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
+import { caches, type ServerCache } from "@/lib/cache/server-cache";
+import { cachedAtRevision } from "@/lib/cache/cached-at-revision";
 import type { NextRequest } from "next/server";
 
 // Single source of truth — every widget id the layout accepts. The
@@ -191,13 +193,15 @@ export const GET = apiHandler(async () => {
   // arranged it.
   const { user } = await requireRecordAuth("read", "record");
 
-  // 5-minute TTL per blueprint §5; the layout changes only when the user
-  // hits the Settings → Dashboard save button, which invalidates this
-  // cache via `invalidateUserDashboardWidgets()`. Keyed on the resolved id, so
-  // a delegated read fills the owner's cell and never their own.
-  const layout = await cached(
+  // 5-minute TTL per blueprint §5. The cell is served only while its token
+  // is the layout's current revision, so a writer that changed the layout
+  // without invalidating (the chart-overlay toggle, a restore) can never hand
+  // out a stale token. Keyed on the resolved id, so a delegated read fills
+  // the owner's cell and never their own.
+  const layout = await cachedAtRevision(
     caches.dashboardWidgets as ServerCache<DashboardLayoutWithToken>,
     user.id,
+    await readUserDocumentToken(user.id, "dashboardWidgets"),
     () => buildDashboardLayout(user.id),
     annotate,
   );
@@ -233,7 +237,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   // v1.32.21 — pull the optimistic-concurrency base token off the body
   // BEFORE anything else touches it (issue #581). A malformed token 422s
   // without a write; an absent token takes the unconditional backward-compat
-  // arm inside `guardedUserUpdate` below.
+  // arm inside `guardedUserDocumentUpdate` below.
   const taken = takeBaseToken(rawBody);
   if ("invalid" in taken) return invalidBaseTokenError();
   const base = taken.base;
@@ -263,13 +267,15 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     parsed.data as Partial<DashboardLayout>,
   );
 
-  // Optimistic concurrency through the shared `guardedUserUpdate` helper.
-  // When a client sends the `baseUpdatedAt` token it read with the layout, the
-  // write succeeds only while the stored row still carries that token. A stale
+  // Optimistic concurrency through the shared `guardedUserDocumentUpdate`
+  // helper. When a client sends the `baseUpdatedAt` token it read with the
+  // layout, the write succeeds only while the stored layout still carries that
+  // revision. A stale
   // base returns 409 without writing. Clients that omit the token keep the
   // legacy unconditional write.
-  const guarded = await guardedUserUpdate({
+  const guarded = await guardedUserDocumentUpdate({
     userId: user.id,
+    document: "dashboardWidgets",
     base,
     data: { dashboardWidgetsJson: toJson(normalized) },
     conflict: {

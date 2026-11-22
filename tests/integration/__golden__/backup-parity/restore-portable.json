@@ -1458,6 +1458,7 @@
         "lifeConfirmedJson": {
           "roundTrip": "rt-UserHealthProfile-lifeConfirmedJson"
         },
+        "aboutMeRevisedAt": "<now>",
         "createdAt": "<now>",
         "updatedAt": "<now>"
       }
@@ -2540,6 +2541,14 @@
       "moodTagLayoutJson": {
         "roundTrip": "rt-User-moodTagLayoutJson"
       },
+      "dashboardWidgetsRevisedAt": "<now>",
+      "insightsLayoutRevisedAt": "<now>",
+      "medicationListLayoutRevisedAt": "<now>",
+      "moodTagLayoutRevisedAt": "<now>",
+      "modulePreferencesRevisedAt": "<now>",
+      "notificationPrefsRevisedAt": "<now>",
+      "coachPrefsRevisedAt": "<now>",
+      "healthScoreConfigRevisedAt": "<now>",
       "moduleListLayoutJson": {
         "roundTrip": "rt-User-moduleListLayoutJson"
       },

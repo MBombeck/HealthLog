@@ -2153,12 +2153,31 @@ export const insightsComprehensiveResponse = z
             .describe(
               "The label of a custom category; null for a built-in one.",
             ),
-          compliance7: z.number().describe("Percent, 0-100."),
-          compliance30: z.number().describe("Percent, 0-100."),
-          streak: z.number().int(),
+          compliance7: z
+            .number()
+            .describe(
+              "Percent, 0-100. When `taken7 + missed7` is 0 there is no dose to score and this is not adherence: show an empty state, not the number.",
+            ),
+          compliance30: z
+            .number()
+            .describe(
+              "Percent, 0-100. When `expected30` is 0 there is no dose to score and this is not adherence: show an empty state, not the number.",
+            ),
+          streak: z
+            .number()
+            .int()
+            .describe(
+              "Days in a row with every expected dose taken or skipped. Starts on a day with an answered dose, so it is 0 before the first one.",
+            ),
           taken7: z.number().int(),
           skipped7: z.number().int(),
           missed7: z.number().int(),
+          expected30: z
+            .number()
+            .int()
+            .describe(
+              "Since v1.49.0: the doses the 30-day rate counts (taken plus missed).",
+            ),
         }),
       )
       .describe("Cadence-aware compliance per active medication."),

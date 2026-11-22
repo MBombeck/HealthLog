@@ -38,8 +38,10 @@ import type {
 } from "./report-types";
 import {
   decryptSeizureText,
+  figuresFrom,
   formatRescueDose,
   readClusterRule,
+  seizureDiaryStart,
   toDerivable,
   type EventRow,
   type TypeLookup,
@@ -161,6 +163,12 @@ export interface SeizureReportInput {
   rule: ClusterRule;
   tz: string;
   start: Date;
+  /**
+   * Where the figures start counting: the diary's start when it began inside
+   * the period (`figuresFrom` in `./server`), so no run is claimed for days
+   * before the diary existed. Defaults to `start`.
+   */
+  figuresFrom?: Date;
   end: Date;
   /** Calendar today in `tz`, for "days since the last seizure". */
   todayKey: string;
@@ -176,6 +184,7 @@ export function buildSeizureReportSection(
   input: SeizureReportInput,
 ): SeizureReportSection {
   const { rows, tz, start, end } = input;
+  const countFrom = input.figuresFrom ?? start;
   const lookup: TypeLookup = new Map(
     input.types.map((t) => [
       t.id,
@@ -184,7 +193,7 @@ export function buildSeizureReportSection(
   );
   const derivable = rows.map((r) => toDerivable(r, lookup));
   const confirmed = derivable.filter((e) => e.certainty === "CONFIRMED");
-  const fromKey = userDayKey(start, tz);
+  const fromKey = userDayKey(countFrom, tz);
   const toKey = userDayKey(end, tz);
   const days = Math.max(1, daysBetweenDateKeys(fromKey, toKey) + 1);
   const seizures = totalSeizures(confirmed);
@@ -337,6 +346,8 @@ export function buildSeizureReportSection(
       seizureFreeDays: Math.max(0, days - seizureDays),
       per28Days: Math.round((seizures / days) * 28 * 10) / 10,
       longestFreeDays: streak.longestFreeDays,
+      diaryFrom:
+        countFrom.getTime() > start.getTime() ? countFrom.toISOString() : null,
       daysSinceLast,
       convulsive: totalSeizures(
         confirmed.filter((e) => isConvulsiveType(e.ilaeType)),
@@ -612,37 +623,39 @@ export async function loadSeizureReport(
   now: Date = new Date(),
 ): Promise<SeizureReportSection | null> {
   const yearAgo = new Date(now.getTime() - 365 * 24 * HOUR_MS);
-  const [typeRows, rule, rows, lastConfirmed, yearRows] = await Promise.all([
-    prisma.seizureTypeProfile.findMany({
-      where: { userId },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }, { id: "asc" }],
-      select: {
-        id: true,
-        labelEncrypted: true,
-        ilaeType: true,
-        usualDurationSec: true,
-      },
-    }),
-    readClusterRule(userId),
-    prisma.seizureEvent.findMany({
-      where: { userId, onsetAt: { gte: start, lte: end } },
-      include: { rescueDoses: true },
-      orderBy: [{ onsetAt: "asc" }, { id: "asc" }],
-    }),
-    prisma.seizureEvent.findFirst({
-      where: { userId, certainty: "CONFIRMED", onsetAt: { lte: now } },
-      orderBy: { onsetAt: "desc" },
-      select: { onsetAt: true },
-    }),
-    prisma.seizureEvent.findMany({
-      where: {
-        userId,
-        certainty: "CONFIRMED",
-        onsetAt: { gte: yearAgo, lte: now },
-      },
-      select: { onsetAt: true, count: true },
-    }),
-  ]);
+  const [typeRows, rule, rows, lastConfirmed, yearRows, diaryStart] =
+    await Promise.all([
+      prisma.seizureTypeProfile.findMany({
+        where: { userId },
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }, { id: "asc" }],
+        select: {
+          id: true,
+          labelEncrypted: true,
+          ilaeType: true,
+          usualDurationSec: true,
+        },
+      }),
+      readClusterRule(userId),
+      prisma.seizureEvent.findMany({
+        where: { userId, onsetAt: { gte: start, lte: end } },
+        include: { rescueDoses: true },
+        orderBy: [{ onsetAt: "asc" }, { id: "asc" }],
+      }),
+      prisma.seizureEvent.findFirst({
+        where: { userId, certainty: "CONFIRMED", onsetAt: { lte: now } },
+        orderBy: { onsetAt: "desc" },
+        select: { onsetAt: true },
+      }),
+      prisma.seizureEvent.findMany({
+        where: {
+          userId,
+          certainty: "CONFIRMED",
+          onsetAt: { gte: yearAgo, lte: now },
+        },
+        select: { onsetAt: true, count: true },
+      }),
+      seizureDiaryStart(userId),
+    ]);
   if (rows.length === 0) return null;
 
   const confirmed = rows.filter((r) => r.certainty === "CONFIRMED");
@@ -667,6 +680,7 @@ export async function loadSeizureReport(
     tz,
     start,
     end,
+    figuresFrom: figuresFrom(start, end, diaryStart),
     todayKey: userDayKey(now, tz),
     lastConfirmedAt: lastConfirmed?.onsetAt ?? null,
     markers,

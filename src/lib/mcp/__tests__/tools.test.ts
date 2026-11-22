@@ -71,7 +71,10 @@ vi.mock("@/lib/db", () => ({
     // v1.30 — ECG recording metadata.
     ecgRecording: { findMany: vi.fn(async () => []) },
     // The seizure diary (#1368): an empty diary.
-    seizureTypeProfile: { findMany: vi.fn(async () => []) },
+    seizureTypeProfile: {
+      findMany: vi.fn(async () => []),
+      findFirst: vi.fn(async () => null),
+    },
     seizureEvent: {
       findMany: vi.fn(async () => []),
       findFirst: vi.fn(async () => null),

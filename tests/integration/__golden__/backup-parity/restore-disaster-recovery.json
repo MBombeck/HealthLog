@@ -1542,8 +1542,9 @@
         "lifeConfirmedJson": {
           "roundTrip": "rt-UserHealthProfile-lifeConfirmedJson"
         },
-        "createdAt": "2026-05-03T13:35:00.000Z",
-        "updatedAt": "2026-05-03T13:36:00.000Z"
+        "aboutMeRevisedAt": "<now>",
+        "createdAt": "2026-05-03T13:36:00.000Z",
+        "updatedAt": "2026-05-03T13:37:00.000Z"
       }
     ],
     "HealthProfileFactRevision": [
@@ -3054,6 +3055,14 @@
       "moodTagLayoutJson": {
         "roundTrip": "rt-User-moodTagLayoutJson"
       },
+      "dashboardWidgetsRevisedAt": "<now>",
+      "insightsLayoutRevisedAt": "<now>",
+      "medicationListLayoutRevisedAt": "<now>",
+      "moodTagLayoutRevisedAt": "<now>",
+      "modulePreferencesRevisedAt": "<now>",
+      "notificationPrefsRevisedAt": "<now>",
+      "coachPrefsRevisedAt": "<now>",
+      "healthScoreConfigRevisedAt": "<now>",
       "moduleListLayoutJson": {
         "roundTrip": "rt-User-moduleListLayoutJson"
       },
@@ -4609,8 +4618,8 @@
       "allergiesEncrypted": "<sealed:v1:rt-UserHealthProfile-allergiesEncrypted>",
       "coachFocusEncrypted": "<sealed:v1:rt-UserHealthProfile-coachFocusEncrypted>",
       "pendingQuestionsEncrypted": "<sealed:v1:rt-UserHealthProfile-pendingQuestionsEncrypted>",
-      "createdAt": "2026-05-03T13:35:00.000Z",
-      "updatedAt": "2026-05-03T13:36:00.000Z"
+      "createdAt": "2026-05-03T13:36:00.000Z",
+      "updatedAt": "2026-05-03T13:37:00.000Z"
     },
     "healthProfileFacts": [
       {

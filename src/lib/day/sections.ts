@@ -56,6 +56,8 @@ export const DAY_SECTION_SHARE_DOMAIN: Readonly<
   medications: "medications",
   illness: "illness",
   symptoms: "illness",
+  // The seizure diary shares the illness domain (`src/lib/sharing/scope.ts`).
+  seizures: "illness",
   allergies: "profile",
   labs: "labs",
   visits: "profile",

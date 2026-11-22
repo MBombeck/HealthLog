@@ -1578,6 +1578,7 @@
     "complianceWindow": "Adherence ({days} days)",
     "complianceUnavailable": "Adherence could not be loaded",
     "complianceNotApplicable": "Adherence not applicable",
+    "complianceNoDoses": "No doses yet",
     "complianceNotApplicableReason": "No local schedule is stored in HealthLog.",
     "complianceInfo": "Share of expected doses you logged. Weekly schedules count week by week.",
     "complianceInfoLabel": "What does adherence mean?",
@@ -1588,6 +1589,8 @@
     "cycleDueToday": "Due today",
     "cycleNoClosedCycles": "No closed dose cycles yet",
     "intakeToastTaken": "{name}: taken, {time}",
+    "intakeToastTakenFor": "{name}: taken, {time}, for the {slot} dose",
+    "intakeToastExtra": "{name}: taken, {time}, as an extra dose",
     "intakeToastSkipped": "{name}: skipped",
     "intakeToastFailed": "Could not record {name}. Try again",
     "intakeUndone": "Entry reverted",
@@ -2675,7 +2678,9 @@
         "undo": "Undo",
         "takeFor": "Take {name}",
         "skipFor": "Skip {name}",
-        "takeSlot": "Take ({time})"
+        "takeSlot": "Take ({time})",
+        "takeExtra": "Take an extra dose",
+        "takeExtraFor": "Take an extra dose of {name}"
       },
       "state": {
         "pending": "Pending",
@@ -2690,7 +2695,8 @@
       },
       "snoozedToast": "{name}: reminder again at {time}",
       "snoozeFailed": "Could not snooze {name}. Try again",
-      "earlyHint": "Early: this dose is due from {time}."
+      "earlyHint": "Early: this dose is due from {time}.",
+      "extraHint": "Counts as an extra dose, not for the {time} dose."
     },
     "intakeForm": {
       "title": "Log intake",
@@ -2702,6 +2708,7 @@
       "doseHint": "Pre-filled with the planned dose. Change it only if you took a different amount.",
       "countsFor": "Counts for the {time} dose.",
       "countsForLate": "Counts for the {time} dose, as late.",
+      "countsForEarly": "Counts for the {time} dose, taken early.",
       "countNearLabel": "Count it for the {time} dose",
       "skips": "Skips the {time} dose.",
       "extraDose": "Logged as an extra dose, not part of the plan. It stays in your history and does not count toward adherence.",
@@ -6504,6 +6511,8 @@
             "privacyNote": "The password is stored encrypted and never shown again. Each file is imported once: a file HealthLog already has is not read twice. A folder on your home network works only when the person running the server allows its address.",
             "lastAttempt": "Last attempt {when}: {outcome}",
             "fetchNow": "Fetch now",
+            "fetchStarted": "Fetching now. The result appears on this card.",
+            "removed": "Folder removed",
             "remove": "Remove folder",
             "removeTitle": "Remove this folder?",
             "removeBody": "HealthLog stops fetching from it and forgets the password. What was already imported stays."
@@ -14706,6 +14715,8 @@
     "loadFailed": "This day could not be loaded.",
     "dayOf": "Day {n} of {m}",
     "dayN": "Day {n}",
+    "seizure": "Seizure",
+    "seizureCount": "{count} seizures",
     "usualRange": "Usually {lo} to {hi}",
     "groups": {
       "scores": "Scores",
@@ -15533,6 +15544,7 @@
       "untyped": "No type recorded",
       "ruleText": "{count} or more in {hours} h",
       "recorded": "Recorded seizures",
+      "diarySince": "Diary kept since",
       "seizureDays": "Days with a seizure",
       "seizureFreeDays": "Days without a recorded seizure",
       "per28Days": "Seizures per 28 days",

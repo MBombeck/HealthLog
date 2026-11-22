@@ -1578,6 +1578,7 @@
     "complianceWindow": "Therapietrouw ({days} dagen)",
     "complianceUnavailable": "Therapietrouw kon niet worden geladen",
     "complianceNotApplicable": "Therapietrouw niet van toepassing",
+    "complianceNoDoses": "Nog geen doses",
     "complianceNotApplicableReason": "Er is geen lokaal schema opgeslagen in HealthLog.",
     "complianceInfo": "Aandeel van de verwachte doses dat je hebt vastgelegd. Wekelijkse schema's tellen per week.",
     "complianceInfoLabel": "Wat betekent therapietrouw?",
@@ -1588,6 +1589,8 @@
     "cycleDueToday": "Vandaag gepland",
     "cycleNoClosedCycles": "Nog geen afgeronde doseringscycli",
     "intakeToastTaken": "{name}: ingenomen, {time}",
+    "intakeToastTakenFor": "{name}: ingenomen, {time}, voor de dosis van {slot}",
+    "intakeToastExtra": "{name}: ingenomen, {time}, als extra dosis",
     "intakeToastSkipped": "{name}: overgeslagen",
     "intakeToastFailed": "{name} kon niet worden geregistreerd. Probeer het opnieuw",
     "intakeUndone": "Registratie teruggedraaid",
@@ -2675,7 +2678,9 @@
         "undo": "Ongedaan maken",
         "takeFor": "{name} innemen",
         "skipFor": "{name} overslaan",
-        "takeSlot": "Innemen ({time})"
+        "takeSlot": "Innemen ({time})",
+        "takeExtra": "Extra dosis innemen",
+        "takeExtraFor": "Extra dosis {name} innemen"
       },
       "state": {
         "pending": "Gepland",
@@ -2690,7 +2695,8 @@
       },
       "snoozedToast": "{name}: herinnering om {time}",
       "snoozeFailed": "{name} kon niet worden uitgesteld. Probeer het opnieuw",
-      "earlyHint": "Vroeg: deze dosis is vanaf {time} aan de beurt."
+      "earlyHint": "Vroeg: deze dosis is vanaf {time} aan de beurt.",
+      "extraHint": "Telt als extra dosis, niet voor de dosis van {time}."
     },
     "intakeForm": {
       "title": "Inname vastleggen",
@@ -2702,6 +2708,7 @@
       "doseHint": "Vooraf ingevuld met de geplande dosis. Pas hem alleen aan als je een andere hoeveelheid nam.",
       "countsFor": "Telt voor de dosis van {time}.",
       "countsForLate": "Telt voor de dosis van {time}, als te laat.",
+      "countsForEarly": "Telt voor de dosis van {time}, eerder ingenomen.",
       "countNearLabel": "Laten tellen voor de dosis van {time}",
       "skips": "Slaat de dosis van {time} over.",
       "extraDose": "Wordt vastgelegd als extra dosis, buiten het schema. Ze blijft in je geschiedenis en telt niet mee voor je therapietrouw.",
@@ -6504,6 +6511,8 @@
             "privacyNote": "Het wachtwoord wordt versleuteld opgeslagen en nooit meer getoond. Elk bestand wordt één keer geïmporteerd: een bestand dat HealthLog al heeft wordt niet opnieuw gelezen. Een map op je thuisnetwerk werkt alleen als wie de server beheert het adres toestaat.",
             "lastAttempt": "Laatste poging {when}: {outcome}",
             "fetchNow": "Nu ophalen",
+            "fetchStarted": "Wordt nu opgehaald. Het resultaat verschijnt op deze kaart.",
+            "removed": "Map verwijderd",
             "remove": "Map verwijderen",
             "removeTitle": "Deze map verwijderen?",
             "removeBody": "HealthLog haalt daar niets meer op en vergeet het wachtwoord. Wat al geïmporteerd is, blijft."
@@ -14706,6 +14715,8 @@
     "loadFailed": "Deze dag kon niet worden geladen.",
     "dayOf": "Dag {n} van {m}",
     "dayN": "Dag {n}",
+    "seizure": "Aanval",
+    "seizureCount": "{count} aanvallen",
     "usualRange": "Meestal {lo} tot {hi}",
     "groups": {
       "scores": "Scores",
@@ -15533,6 +15544,7 @@
       "untyped": "Geen type vastgelegd",
       "ruleText": "{count} of meer in {hours} u",
       "recorded": "Vastgelegde aanvallen",
+      "diarySince": "Dagboek bijgehouden sinds",
       "seizureDays": "Dagen met een aanval",
       "seizureFreeDays": "Dagen zonder vastgelegde aanval",
       "per28Days": "Aanvallen per 28 dagen",

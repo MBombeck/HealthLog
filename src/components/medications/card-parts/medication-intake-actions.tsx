@@ -24,7 +24,10 @@ interface MedicationIntakeActionsProps {
   /**
    * The slot the take records (`cardTakeSlot`): named on the button, so a
    * tap says which dose it answers, with an "early" line under the buttons
-   * while that dose's window has not opened. Null keeps the plain label.
+   * while that dose's window has not opened. When a take now would not count
+   * for that dose (`binding: "extra"`), the button says it logs an extra
+   * dose and the line says which dose it does not count for. Null keeps the
+   * plain label.
    */
   slot?: TakeSlot | null;
   /**
@@ -69,19 +72,31 @@ export function MedicationIntakeActions({
   const canRecordIntake = canWriteDomain("medications");
   if (!canRecordIntake) return null;
 
-  // The slot's clock time, with its day when it is not today.
-  const slotLabel = slot
-    ? userDayKey(slot.at, tz) === userDayKey(new Date(), tz)
-      ? fmt.time(slot.at)
-      : `${fmt.dateShortSmart(slot.at)}, ${fmt.time(slot.at)}`
-    : null;
-  const earlyHint = slot?.earlyFrom ? (
-    <p
-      className="text-muted-foreground text-xs"
-      data-slot="medication-intake-early"
-    >
-      {t("medications.dose.earlyHint", { time: fmt.time(slot.earlyFrom) })}
-    </p>
+  // A clock time, with its day when it is not today.
+  const instantLabel = (at: Date) =>
+    userDayKey(at, tz) === userDayKey(new Date(), tz)
+      ? fmt.time(at)
+      : `${fmt.dateShortSmart(at)}, ${fmt.time(at)}`;
+  const slotLabel = slot ? instantLabel(slot.at) : null;
+  const extra = slot?.binding === "extra";
+  const earlyHint = slot ? (
+    extra ? (
+      <p
+        className="text-muted-foreground text-xs"
+        data-slot="medication-intake-extra"
+      >
+        {t("medications.dose.extraHint", { time: slotLabel ?? "" })}
+      </p>
+    ) : slot.earlyFrom ? (
+      <p
+        className="text-muted-foreground text-xs"
+        data-slot="medication-intake-early"
+      >
+        {t("medications.dose.earlyHint", {
+          time: instantLabel(slot.earlyFrom),
+        })}
+      </p>
+    ) : null
   ) : null;
 
   const buttons = (
@@ -100,9 +115,11 @@ export function MedicationIntakeActions({
         ) : (
           <Check className="h-4 w-4" />
         )}
-        {slotLabel
-          ? t("medications.dose.action.takeSlot", { time: slotLabel })
-          : t(DOSE_ACTION_TERM.take)}
+        {extra
+          ? t("medications.dose.action.takeExtra")
+          : slotLabel
+            ? t("medications.dose.action.takeSlot", { time: slotLabel })
+            : t(DOSE_ACTION_TERM.take)}
       </Button>
       <Button
         data-slot="medication-intake-skip"

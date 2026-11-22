@@ -54,6 +54,8 @@ interface AttributionInput {
   skipped: boolean;
   scheduledFor: Date | undefined;
   forceSlotInstant: Date | undefined;
+  /** A take recorded as an extra dose outside the plan. */
+  extraDose?: boolean;
   resolvedTakenAt: Date | null;
   incomingScheduledFor: Date;
 }
@@ -218,6 +220,15 @@ export async function resolveIntakeAttribution(
   }
   if (input.forceSlotInstant !== undefined) {
     return attributePin(input, input.forceSlotInstant);
+  }
+  // An extra dose answers no slot. Stored as a released pin (USER_PIN on its
+  // own instant), so no reader binds it to a band afterwards either.
+  if (input.extraDose === true) {
+    return {
+      kind: "attributed",
+      canonicalSlot: null,
+      attributionSource: "USER_PIN",
+    };
   }
   return attributeTake(input);
 }

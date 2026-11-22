@@ -108,8 +108,8 @@ export interface MedicationCardBodyProps {
    * flight (the body then renders the constant-height skeleton).
    */
   compliance: {
-    rate7: number;
-    rate30: number;
+    rate7: number | null;
+    rate30: number | null;
     streak: number;
     shortDays: number;
     longDays: number;

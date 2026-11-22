@@ -907,8 +907,8 @@ export async function getPendingQuestionsForUser(
  * Persist (or clear, with `null` / `[]`) the pending questions.
  *
  * When `expectedUpdatedAt` is present, the write is conditional on the
- * profile version that produced the questions. A false result means the
- * profile advanced while the questions were being derived.
+ * about-me revision (`aboutMeRevisedAt`) that produced the questions. A false
+ * result means the document advanced while the questions were being derived.
  *
  * Without a version, retain the unconditional upsert used by direct question
  * dismissal and callers that may not have a profile row yet.
@@ -924,7 +924,7 @@ export async function setPendingQuestionsForUser(
 
   if (expectedUpdatedAt !== undefined) {
     const result = await prisma.userHealthProfile.updateMany({
-      where: { userId, updatedAt: expectedUpdatedAt },
+      where: { userId, aboutMeRevisedAt: expectedUpdatedAt },
       data: { pendingQuestionsEncrypted: payload },
     });
     return result.count === 1;

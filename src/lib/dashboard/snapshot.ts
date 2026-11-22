@@ -36,6 +36,7 @@
  */
 import type { PrismaClient, MeasurementType } from "@/generated/prisma/client";
 import { readSummariesSlice } from "@/lib/analytics/summaries-slice";
+import { weightTargetFor } from "@/lib/cycle/pregnancy-context";
 import type { SleepSourceDiscrepancy } from "@/lib/analytics/sleep-night";
 import { getUnitForType } from "@/lib/validations/measurement";
 import {
@@ -54,10 +55,7 @@ import {
   computeBpInTargetFastPath,
   type BpInTargetEnvelope,
 } from "@/lib/analytics/bp-in-target-fast-path";
-import {
-  resolveEffectiveBpTargets,
-  resolveWeightTargetOverride,
-} from "@/lib/analytics/effective-range";
+import { resolveEffectiveBpTargets } from "@/lib/analytics/effective-range";
 import { deriveBpWindow90 } from "@/lib/analytics/window-confidence";
 import {
   resolveWeightTrend,
@@ -1404,7 +1402,7 @@ export async function buildDashboardSnapshot(
 
   const gender = toProfileSex(user.gender);
 
-  const weightTargetOverride = resolveWeightTargetOverride(user.thresholdsJson);
+  const framing = await weightTargetFor(prisma, user.id, user, now);
 
   return {
     user: {
@@ -1441,13 +1439,13 @@ export async function buildDashboardSnapshot(
       // disabled sleep module carries no sleep annotation either.
       sleepSourceDiscrepancy:
         modules.sleep === false ? null : slimRaw.sleepSourceDiscrepancy,
-      // v1.39 — the weight tile's progress direction, judged against the
-      // stored target from the same summary the tile renders.
+      // The weight tile's direction, against the target (none in a pregnancy).
       weightTrend: resolveWeightTrend(
-        weightTargetOverride,
+        framing.target,
         weightTrendReferenceKg(slim.summaries.WEIGHT),
       ),
       directions: resolveSummaryVerdicts(slim.summaries, {
+        pregnancy: framing.pregnancy,
         profile: { ...user, timezone: userTz },
         thresholdsJson: user.thresholdsJson,
       }),

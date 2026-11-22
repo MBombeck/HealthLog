@@ -388,10 +388,10 @@ model User {
   //   { "WEIGHT": { "min": 70, "max": 85 },
   //     "BLOOD_PRESSURE_SYS": { "min": 110, "max": 130 }, ... }
   // Null or missing metric → use computed default.
-  thresholdsJson           Json?                @map("thresholds_json")
+  thresholdsJson                Json?                @map("thresholds_json")
   // Per-user dashboard layout — widget visibility + ordering.
   // Shape: { "widgets": [{ "id": "weight", "visible": true, "order": 0 }, ...], "version": 1 }
-  dashboardWidgetsJson     Json?                @map("dashboard_widgets_json")
+  dashboardWidgetsJson          Json?                @map("dashboard_widgets_json")
   // Per-user insights tile layout — tile visibility + ordering for the
   // `/insights` surface. Mirrors `dashboardWidgetsJson` so the iOS
   // client and the web Settings UI can persist insights tile order +
@@ -400,7 +400,7 @@ model User {
   // endpoint never lazy-writes — the column only carries data once
   // the user has explicitly saved a layout.
   // Shape: { "tiles": [{ "id": "blutdruck", "visible": true, "order": 0 }, ...], "version": 1 }
-  insightsLayoutJson       Json?                @map("insights_layout_json")
+  insightsLayoutJson            Json?                @map("insights_layout_json")
   // Per-user medications list presentation — the card/table view choice
   // plus the user-defined manual medication order shared by BOTH views.
   // Follows the per-surface-column convention of `dashboardWidgetsJson` /
@@ -408,20 +408,33 @@ model User {
   // The GET endpoint never lazy-writes — the column only carries data
   // once the user has explicitly toggled the view or saved an order.
   // Shape: { "version": 1, "view": "table", "order": ["<medicationId>", ...] }
-  medicationListLayoutJson Json?                @map("medication_list_layout_json")
+  medicationListLayoutJson      Json?                @map("medication_list_layout_json")
   // v1.42 — per-user document vault presentation: the card/list view and
   // the stacked/flowing month arrangement. Display-only, preserve-when-absent
   // PUT on `/api/documents/inbound/layout`, resolved field by field on read
   // (`src/lib/documents/documents-layout.ts`). Null = defaults (cards, stacked).
   // Shape: { "version": 1, "view": "list", "arrangement": "flow" }
-  documentsLayoutJson      Json?                @map("documents_layout_json")
+  documentsLayoutJson           Json?                @map("documents_layout_json")
   // v1.17.0 — per-user mood-tag presentation: group order + per-group tag
   // placement (catalogue tags "moved" into a group live here only — their
   // `categoryId` never changes). Display-only, preserve-when-absent PUT,
   // unknown keys dropped at read. Null = seeded defaults.
   // Shape: { "groupOrder": ["<categoryKey>", ...],
   //          "placements": { "<categoryKey>": ["<tagKey>", ...] } }
-  moodTagLayoutJson        Json?                @map("mood_tag_layout_json")
+  moodTagLayoutJson             Json?                @map("mood_tag_layout_json")
+  // v1.49 — one optimistic-lock token per settings document. The database
+  // moves each on any write that changes its document (trigger
+  // `users_document_revision_bump`, migration 0554), so a write to another
+  // column of this row never makes a settings save answer 409. Read and
+  // compared only by `src/lib/optimistic-lock.ts`.
+  dashboardWidgetsRevisedAt     DateTime             @default(now()) @map("dashboard_widgets_revised_at")
+  insightsLayoutRevisedAt       DateTime             @default(now()) @map("insights_layout_revised_at")
+  medicationListLayoutRevisedAt DateTime             @default(now()) @map("medication_list_layout_revised_at")
+  moodTagLayoutRevisedAt        DateTime             @default(now()) @map("mood_tag_layout_revised_at")
+  modulePreferencesRevisedAt    DateTime             @default(now()) @map("module_preferences_revised_at")
+  notificationPrefsRevisedAt    DateTime             @default(now()) @map("notification_prefs_revised_at")
+  coachPrefsRevisedAt           DateTime             @default(now()) @map("coach_prefs_revised_at")
+  healthScoreConfigRevisedAt    DateTime             @default(now()) @map("health_score_config_revised_at")
   // Per-user list presentation for the labs, illness and checkups lists:
   // card/list view, manual order, and (labs only) the sort. One blob keyed by
   // list, resolved field by field on read (`src/lib/settings/module-list-layout.ts`),
@@ -429,22 +442,22 @@ model User {
   // defaults. Earlier releases kept the same choices in the browser; the client
   // copies a stored browser value up once when the server has none for that list.
   // Shape: { "version": 1, "labs": { "view": "list", "order": ["<id>"], "sortDir": "manual" }, ... }
-  moduleListLayoutJson     Json?                @map("module_list_layout_json")
+  moduleListLayoutJson          Json?                @map("module_list_layout_json")
   /// Optional activity goals the person set for themselves: workouts, active
   /// minutes and steps per week, steps per month. Null or an absent key = no
   /// goal. Parsed by `src/lib/validations/activity-goals.ts`, written through
   /// `/api/activity/goals`, read by the activity calendar
   /// (`/api/activity/calendar`), which reports progress against each goal set.
-  activityGoalsJson        Json?                @map("activity_goals_json")
+  activityGoalsJson             Json?                @map("activity_goals_json")
   /// Optional daily nutrient targets the person set for themselves, keyed by
   /// catalog code: `{ value, direction: "target" | "limit" }` in the code's
   /// canonical unit. Null or an absent key = no target. Parsed by
   /// `src/lib/validations/nutrient-targets.ts`, written through
   /// `/api/nutrients/targets`, read by `/api/nutrients/daily` and the MCP
   /// `get_nutrients` tool, whose charts prefer it over the dietary reference.
-  nutrientTargetsJson      Json?                @map("nutrient_targets_json")
+  nutrientTargetsJson           Json?                @map("nutrient_targets_json")
   // Blood-glucose display unit preference. Canonical storage is mg/dL.
-  glucoseUnit              String?              @map("glucose_unit") // "mg/dL" | "mmol/L" | null = default "mg/dL"
+  glucoseUnit                   String?              @map("glucose_unit") // "mg/dL" | "mmol/L" | null = default "mg/dL"
   /// #1430 — which country's (or the EU's) official medicine registry the
   /// "Find leaflet" link opens: an ISO 3166 alpha-2 code from
   /// `MEDICINE_REGISTRIES` (`src/lib/medications/leaflet-registries.ts`), or
@@ -455,14 +468,14 @@ model User {
   /// `PATCH /api/auth/me/medicine-registry`; read by `/api/auth/me` and the
   /// medication detail read, which builds the link. The server never fetches
   /// anything from a registry.
-  medicineRegistry         String?              @map("medicine_registry")
+  medicineRegistry              String?              @map("medicine_registry")
   // v1.18.6 — explicit "I have diabetes / clinician glucose targets" opt-in.
   // When `true`, the glucose target resolver applies the tighter ADA glycemic
   // GOAL bands (fasting 80–130, postprandial < 180) instead of the general
   // non-diabetic normal bands. NEVER auto-inferred from values, NEVER a
   // diagnosis — purely a user-declared preference that selects which target
   // band the user is judged against. Default `false`.
-  hasDiabetes              Boolean              @default(false) @map("has_diabetes")
+  hasDiabetes                   Boolean              @default(false) @map("has_diabetes")
   // v1.18.10 — opt-in local (in-browser) OCR for lab-report scans. When `true`,
   // a user whose AI provider cannot read images (e.g. ChatGPT-OAuth/Codex, a
   // text-only model) can still scan a report: the image is OCR'd in the browser
@@ -470,32 +483,32 @@ model User {
   // provider for structuring. Less accurate than native vision — the mandatory
   // review screen remains the safety backstop. Default `false`; vision-capable
   // users keep the higher-accuracy native path and never pay the WASM download.
-  labsLocalOcrEnabled      Boolean              @default(false) @map("labs_local_ocr_enabled")
+  labsLocalOcrEnabled           Boolean              @default(false) @map("labs_local_ocr_enabled")
   /// v1.44 — keep the GPS track of a workout. OFF by default: a route is
   /// where a person lives, works and runs, so it is stored only after they
   /// opt in. Read by the workout batch route and the export.zip import, which
   /// drop the track while it is off (the workout itself is always kept).
   /// Never read by any AI path; the AI egress guard freezes the route readers.
-  storeWorkoutRoutes       Boolean              @default(false) @map("store_workout_routes")
+  storeWorkoutRoutes            Boolean              @default(false) @map("store_workout_routes")
   // v1.7.0 unit pref — global metric/imperial display preference.
   // Canonical storage stays SI; this only selects the display-time
   // transform branch (km/h vs mph, km vs mi). Null = default "metric".
-  unitPreference           String?              @map("unit_preference") // "metric" | "imperial" | null = default "metric"
+  unitPreference                String?              @map("unit_preference") // "metric" | "imperial" | null = default "metric"
   // Hour-cycle display preference. AUTO follows the locale convention
   // (en → AM/PM, de → 24h), H12 forces AM/PM, H24 forces 24-hour.
   // Display-time only — canonical storage stays UTC instants.
-  timeFormat               TimeFormatPreference @default(AUTO) @map("time_format")
+  timeFormat                    TimeFormatPreference @default(AUTO) @map("time_format")
   // Date display preference. AUTO follows the active locale convention
   // (de → dd.MM.yyyy, en → MM/dd/yyyy); DMY pins day-month-year,
   // MDY pins month-day-year, YMD pins ISO yyyy-MM-dd. Display-time only —
   // canonical storage stays UTC instants.
-  dateFormat               DateFormatPreference @default(AUTO) @map("date_format")
+  dateFormat                    DateFormatPreference @default(AUTO) @map("date_format")
   // AI provider selection for insights. Null = OPENAI fallback.
-  aiProvider               String?              @map("ai_provider") // "OPENAI" | "ANTHROPIC" | "LOCAL" | "CHATGPT_OAUTH"
+  aiProvider                    String?              @map("ai_provider") // "OPENAI" | "ANTHROPIC" | "LOCAL" | "CHATGPT_OAUTH"
   /// The model of the OpenAI and Anthropic providers (and the gateway's
   /// fallback when `aiCompatModel` is empty). Not read for Local, which has
   /// `aiLocalModel`.
-  aiModel                  String?              @map("ai_model")
+  aiModel                       String?              @map("ai_model")
   /// #1417 — the Local provider's base URL, and nothing else's. The column is
   /// the former `aiBaseUrl` (kept as `ai_base_url`, so no copy and a rollback
   /// finds it): it was only ever read for Local, but the field name read as
@@ -504,17 +517,17 @@ model User {
   /// provider switch. A cloud key can never reach it because no other
   /// provider's resolution reads this field: OpenAI pins api.openai.com,
   /// Anthropic takes no base URL, the gateway reads `aiCompatBaseUrl`.
-  aiLocalBaseUrl           String?              @map("ai_base_url")
+  aiLocalBaseUrl                String?              @map("ai_base_url")
   /// #1417 — the Local provider's own model (migration 0512 copied it out of
   /// the shared `aiModel`), so saving another provider never changes it.
-  aiLocalModel             String?              @map("ai_local_model")
-  aiAnthropicKeyEncrypted  String?              @map("ai_anthropic_key_encrypted")
-  aiLocalKeyEncrypted      String?              @map("ai_local_key_encrypted")
+  aiLocalModel                  String?              @map("ai_local_model")
+  aiAnthropicKeyEncrypted       String?              @map("ai_anthropic_key_encrypted")
+  aiLocalKeyEncrypted           String?              @map("ai_local_key_encrypted")
   // v1.4.3: per-user OpenAI API key for the OPENAI provider — previously
   // the schema only stored Anthropic and Local keys, leaving OPENAI without
   // a credential surface. Encrypted with the active ENCRYPTION_KEYS entry
   // before storage.
-  aiOpenaiKeyEncrypted     String?              @map("ai_openai_key_encrypted")
+  aiOpenaiKeyEncrypted          String?              @map("ai_openai_key_encrypted")
 
   // v1.33.1 (#470) — the OpenAI-compatible gateway provider (LiteLLM,
   // OpenRouter, vLLM, any endpoint speaking `/v1/chat/completions`).
@@ -7730,6 +7743,12 @@ model UserHealthProfile {
   /// `lastConfirmedAt` / `reviewDue` by the life-circumstances read route.
   /// Plaintext: section keys and timestamps only, never an answer.
   lifeConfirmedJson          Json?                    @map("life_confirmed_json")
+  /// v1.49 — the optimistic-lock token of the about-me document (the four
+  /// texts and `aiIncludedSections`). Moved by the database on any write that
+  /// changes one of them (trigger `user_health_profiles_about_me_revision_bump`,
+  /// migration 0554), so an emergency-profile or pending-question write never
+  /// makes an about-me save answer 409.
+  aboutMeRevisedAt           DateTime                 @default(now()) @map("about_me_revised_at")
   createdAt                  DateTime                 @default(now()) @map("created_at")
   updatedAt                  DateTime                 @updatedAt @map("updated_at")
 

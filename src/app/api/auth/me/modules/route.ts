@@ -39,8 +39,9 @@ import { invalidateUserHealthScore } from "@/lib/cache/invalidate";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import {
   takeBaseToken,
-  guardedUserUpdate,
+  guardedUserDocumentUpdate,
   invalidBaseTokenError,
+  userDocumentToken,
 } from "@/lib/optimistic-lock";
 import { resolveModuleMap, normalisePrefs } from "@/lib/modules/gate";
 import { modulePrefsPatchSchema } from "@/lib/validations/modules";
@@ -56,13 +57,17 @@ export const GET = apiHandler(async () => {
   annotate({ action: { name: "auth.me.modules.get" } });
 
   const modules = await resolveModuleMap(user.id);
-  // v1.32.22 — surface the optimistic-concurrency token. `resolveModuleMap`
-  // returns no row metadata, so read `updatedAt` on its own.
+  // v1.32.22 — surface the optimistic-concurrency token: the module
+  // document's own revision. `resolveModuleMap` returns no row metadata, so
+  // read it on its own.
   const row = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { updatedAt: true },
+    select: { modulePreferencesRevisedAt: true },
   });
-  return apiSuccess({ modules, updatedAt: row?.updatedAt?.toISOString() });
+  return apiSuccess({
+    modules,
+    updatedAt: userDocumentToken(row, "modulePreferences"),
+  });
 });
 
 export const PATCH = apiHandler(async (req: Request) => {
@@ -129,8 +134,9 @@ export const PATCH = apiHandler(async (req: Request) => {
 
   // v1.32.22 — guard the write on the client's base token; a stale base
   // 409s and writes nothing. Tokenless requests keep the unconditional write.
-  const guarded = await guardedUserUpdate({
+  const guarded = await guardedUserDocumentUpdate({
     userId: user.id,
+    document: "modulePreferences",
     base,
     data: { modulePreferencesJson: merged },
     conflict: {

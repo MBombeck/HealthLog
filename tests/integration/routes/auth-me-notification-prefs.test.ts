@@ -81,9 +81,9 @@ async function stored(userId: string): Promise<unknown> {
 async function storedUpdatedAt(userId: string): Promise<string> {
   const row = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
-    select: { updatedAt: true },
+    select: { notificationPrefsRevisedAt: true },
   });
-  return row.updatedAt.toISOString();
+  return row.notificationPrefsRevisedAt.toISOString();
 }
 
 function userWithPrefs(prefs?: Prisma.InputJsonValue) {
