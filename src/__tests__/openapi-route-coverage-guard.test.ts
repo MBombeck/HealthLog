@@ -375,6 +375,10 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
   // route away in the same tree, which is what makes the exemption read as an
   // oversight rather than a decision. The `shareLink` reason stays: the next
   // recipient-facing route is likelier to want it than not.
+  // The emergency card behind a wallet card's QR code: a human-readable
+  // document for whoever scans it, answered by a route since 1.49.0 so a miss
+  // is a real 404. No client reads it.
+  "/e/{token}": { kind: "shareLink", methods: ["GET"] },
   "/.well-known/apple-app-site-association": {
     kind: "wellKnown",
     methods: ["GET"],

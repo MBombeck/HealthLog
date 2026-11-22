@@ -68,10 +68,12 @@ const TOKEN_LIMIT_PER_HOUR = 120;
 /** The longest User-Agent kept for the status read. */
 const UA_MAX_LENGTH = 80;
 
+const NOT_FOUND_ERROR_CODE = "cycle.feed.notFound";
+const RATE_LIMITED_ERROR_CODE = "cycle.feed.rateLimited";
 const notFound = (reason: string) =>
-  urlCredentialNotFound("cycle.feed.notFound", reason);
+  urlCredentialNotFound(NOT_FOUND_ERROR_CODE, reason);
 const tooMany = (snapshot: Parameters<typeof urlCredentialTooMany>[1]) =>
-  urlCredentialTooMany("cycle.feed.rateLimited", snapshot);
+  urlCredentialTooMany(RATE_LIMITED_ERROR_CODE, snapshot);
 
 const FEED_SELECT = {
   id: true,

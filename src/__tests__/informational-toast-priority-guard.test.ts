@@ -6,37 +6,34 @@
  * `*-notifier.tsx`; this keeps every one of them, and every future one, on
  * the rule.
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const ROOT = process.cwd();
-
-function walk(dir: string, out: string[] = []): string[] {
-  for (const name of readdirSync(dir)) {
-    if (name === "__tests__") continue;
-    const path = join(dir, name);
-    if (statSync(path).isDirectory()) walk(path, out);
-    else if (/-notifier\.tsx?$/.test(name)) out.push(path);
-  }
-  return out;
-}
+import { readSourceFolder } from "./helpers/source-files";
 
 const TOAST_CALL = /\btoast(?:\.(?:success|info|message|warning))?\(/g;
 
 describe("background notifiers yield to action toasts", () => {
-  const notifiers = walk(join(ROOT, "src")).map((f) => relative(ROOT, f));
+  const notifiers = new Map(
+    readSourceFolder("src", {
+      floor: 1,
+      include: (rel) =>
+        !rel.includes("__tests__") && /-notifier\.tsx?$/.test(rel),
+    }).map(([rel, text]) => [`src/${rel}`, text] as const),
+  );
 
   it("finds the notifiers (the matcher is not blind)", () => {
-    expect(notifiers).toContain(
+    expect([...notifiers.keys()]).toContain(
       "src/components/gamification/achievement-unlock-notifier.tsx",
     );
   });
 
-  it.each(notifiers)("%s raises every toast through the queue", (file) => {
-    const source = readFileSync(join(ROOT, file), "utf8");
-    const toasts = source.match(TOAST_CALL)?.length ?? 0;
-    const queued = source.match(/showInformationalToast\(/g)?.length ?? 0;
-    expect(queued).toBeGreaterThanOrEqual(toasts);
-  });
+  it.each([...notifiers.keys()])(
+    "%s raises every toast through the queue",
+    (file) => {
+      const source = notifiers.get(file) ?? "";
+      const toasts = source.match(TOAST_CALL)?.length ?? 0;
+      const queued = source.match(/showInformationalToast\(/g)?.length ?? 0;
+      expect(queued).toBeGreaterThanOrEqual(toasts);
+    },
+  );
 });

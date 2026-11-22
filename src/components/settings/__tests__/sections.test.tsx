@@ -80,6 +80,8 @@ vi.mock("@/hooks/use-mounted", () => ({
 // We return `isAuthenticated: true` + a minimal user so the loading-spinner
 // branch in AccountSection paints the real form.
 vi.mock("@/hooks/use-auth", () => ({
+  isFullAccount: (user: { accountSeed?: true } | null) =>
+    user !== null && user.accountSeed !== true,
   useAuth: () => ({
     user: {
       id: "u1",

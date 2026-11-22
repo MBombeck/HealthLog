@@ -19,8 +19,6 @@
  *     those fields are `null` for "not sent", and a form seeded from that
  *     would save them as cleared.
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -29,7 +27,7 @@ import {
   toAccountSeed,
 } from "@/lib/auth/account-seed";
 
-const ROOT = process.cwd();
+import { readSource, readSourceFolder } from "./helpers/source-files";
 
 /** Never in a document, whatever else changes. */
 const MUST_BE_WITHHELD = [
@@ -96,7 +94,7 @@ describe("account seed allowlist", () => {
 });
 
 describe("the root layout writes the seed only through the allowlist", () => {
-  const layout = readFileSync(join(ROOT, "src/app/layout.tsx"), "utf8");
+  const layout = readSource("src/app/layout.tsx", ["<AuthMeSeed"]);
 
   it("projects the payload with toAccountSeed", () => {
     expect(layout).toMatch(/toAccountSeed\(/);
@@ -125,23 +123,17 @@ const EXEMPT: Record<string, string> = {
   "src/components/dashboard/tiles/tile-context.ts": "band fallback",
 };
 
-function walk(dir: string, out: string[] = []): string[] {
-  for (const name of readdirSync(dir)) {
-    const path = join(dir, name);
-    if (name === "__tests__" || name === "node_modules") continue;
-    if (statSync(path).isDirectory()) walk(path, out);
-    else if (/\.(ts|tsx)$/.test(name)) out.push(path);
-  }
-  return out;
-}
-
 describe("readers of withheld fields wait for the full account", () => {
-  const files = ["src/components", "src/app", "src/hooks"]
-    .flatMap((d) => walk(join(ROOT, d)))
-    .map((f) => relative(ROOT, f))
-    .filter((f) => !f.startsWith("src/app/api/"));
-  const readers = files.filter((f) =>
-    WITHHELD_READ.test(readFileSync(join(ROOT, f), "utf8")),
+  const sources = new Map(
+    ["src/components", "src/app", "src/hooks"].flatMap((dir) =>
+      readSourceFolder(dir, {
+        floor: 20,
+        include: (rel) => !rel.includes("__tests__") && !rel.startsWith("api/"),
+      }).map(([rel, text]) => [`${dir}/${rel}`, text] as const),
+    ),
+  );
+  const readers = [...sources.keys()].filter((f) =>
+    WITHHELD_READ.test(sources.get(f) ?? ""),
   );
 
   it("finds the readers (the matcher is not blind)", () => {
@@ -154,8 +146,7 @@ describe("readers of withheld fields wait for the full account", () => {
   it.each(readers.filter((f) => !(f in EXEMPT)))(
     "%s gates on profileLoaded or isFullAccount",
     (file) => {
-      const source = readFileSync(join(ROOT, file), "utf8");
-      expect(source).toMatch(/\bprofileLoaded\b|\bisFullAccount\(/);
+      expect(sources.get(file)).toMatch(/\bprofileLoaded\b|\bisFullAccount\(/);
     },
   );
 

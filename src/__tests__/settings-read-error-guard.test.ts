@@ -11,14 +11,12 @@
  * error); the list may only shrink: a new file cannot join it, and a file
  * that gains its error state has to leave it.
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const ROOT = join(process.cwd(), "src");
+import { readSourceFolder } from "./helpers/source-files";
 
 const HANDLES_ERROR =
-  /isError|QueryErrorRow|QueryErrorCard|ChartErrorState|CardQueryBody/;
+  /isError|QueryErrorRow|QueryErrorCard|ChartErrorState|CardQueryBody|ImportStatusRegion/;
 
 const KNOWN_GAPS = new Set([
   "components/admin/_shared.tsx",
@@ -62,23 +60,21 @@ const KNOWN_GAPS = new Set([
   "components/settings/webhook-card.tsx",
 ]);
 
-function walk(dir: string, out: string[] = []): string[] {
-  for (const name of readdirSync(dir)) {
-    if (name === "__tests__") continue;
-    const path = join(dir, name);
-    if (statSync(path).isDirectory()) walk(path, out);
-    else if (/\.tsx?$/.test(name)) out.push(path);
-  }
-  return out;
-}
-
 describe("settings and admin reads render their failure", () => {
-  const readers = ["components/settings", "components/admin"]
-    .flatMap((d) => walk(join(ROOT, d)))
-    .filter((f) => readFileSync(f, "utf8").includes("useQuery("));
+  const readers: Array<readonly [string, string]> = [
+    "components/settings",
+    "components/admin",
+  ].flatMap((dir) =>
+    readSourceFolder(`src/${dir}`, {
+      floor: 50,
+      include: (rel) => !rel.includes("__tests__"),
+    })
+      .filter(([, text]) => text.includes("useQuery("))
+      .map(([rel, text]) => [`${dir}/${rel}`, text] as const),
+  );
   const gaps = readers
-    .filter((f) => !HANDLES_ERROR.test(readFileSync(f, "utf8")))
-    .map((f) => relative(ROOT, f))
+    .filter(([, text]) => !HANDLES_ERROR.test(text))
+    .map(([file]) => file)
     .sort();
 
   it("finds the readers (the matcher is not blind)", () => {

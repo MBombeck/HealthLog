@@ -43,10 +43,12 @@ import { buildCareFeed } from "./build";
 const TOKEN_LIMIT_PER_HOUR = 120;
 const UA_MAX_LENGTH = 80;
 
+const NOT_FOUND_ERROR_CODE = "care.feed.notFound";
+const RATE_LIMITED_ERROR_CODE = "care.feed.rateLimited";
 const notFound = (reason: string) =>
-  urlCredentialNotFound("care.feed.notFound", reason);
+  urlCredentialNotFound(NOT_FOUND_ERROR_CODE, reason);
 const tooMany = (snapshot: Parameters<typeof urlCredentialTooMany>[1]) =>
-  urlCredentialTooMany("care.feed.rateLimited", snapshot);
+  urlCredentialTooMany(RATE_LIMITED_ERROR_CODE, snapshot);
 
 export async function serveCareFeed(
   request: NextRequest,

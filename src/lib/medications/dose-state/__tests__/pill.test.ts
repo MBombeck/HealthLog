@@ -6,11 +6,9 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-
 import { cardDisplayedSlot, cardWindowPill, liveDoseState } from "../pill";
 import { openDoseStateAt } from "../resolve";
+import { readSource } from "@/__tests__/helpers/source-files";
 
 const SLOT = "2026-11-21T13:59:00.000Z";
 const dose = {
@@ -112,11 +110,10 @@ describe("liveDoseState speaks the resolver's vocabulary", () => {
 
 describe("the dose ladder exists once", () => {
   it("pill.ts compares no instants of its own: it calls openDoseStateAt", () => {
-    const source = readFileSync(
-      resolve(process.cwd(), "src/lib/medications/dose-state/pill.ts"),
-      "utf8",
-    );
-    expect(source).toContain("openDoseStateAt(");
+    const source = readSource("src/lib/medications/dose-state/pill.ts", [
+      "openDoseStateAt(",
+      "export function liveDoseState",
+    ]);
     // The ladder's comparisons (`t < dueAt`, `<= overdueSince`, `<=
     // missedAfter`) belong to `resolve.ts` alone.
     expect(source).not.toMatch(/[<>]=?\s*(dueAt|overdueSince|missedAfter)\b/);

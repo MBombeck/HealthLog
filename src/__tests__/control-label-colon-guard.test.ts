@@ -9,21 +9,9 @@
  * hold arrow functions, whose `>` a plain regex would stop at) and checks the
  * `<Label>` that directly follows it.
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const ROOT = process.cwd();
-
-function walk(dir: string, out: string[] = []): string[] {
-  for (const name of readdirSync(dir)) {
-    if (name === "__tests__") continue;
-    const path = join(dir, name);
-    if (statSync(path).isDirectory()) walk(path, out);
-    else if (name.endsWith(".tsx")) out.push(path);
-  }
-  return out;
-}
+import { readSourceFolder } from "./helpers/source-files";
 
 /** Index just past a self-closing tag that starts at `start`, or -1. */
 function selfClosingEnd(source: string, start: number): number {
@@ -65,13 +53,15 @@ describe("labels after their own control carry no colon", () => {
   });
 
   it("holds across every component and page", () => {
-    const offenders = ["src/components", "src/app"]
-      .flatMap((d) => walk(join(ROOT, d)))
-      .flatMap((file) =>
-        controlLabelsWithColon(readFileSync(file, "utf8")).map(
-          (line) => `${relative(ROOT, file)}:${line}`,
-        ),
-      );
+    const offenders = ["src/components", "src/app"].flatMap((dir) =>
+      readSourceFolder(dir, {
+        floor: 50,
+        extensions: [".tsx"],
+        include: (rel) => !rel.includes("__tests__"),
+      }).flatMap(([rel, text]) =>
+        controlLabelsWithColon(text).map((line) => `${dir}/${rel}:${line}`),
+      ),
+    );
     expect(offenders).toEqual([]);
   });
 });

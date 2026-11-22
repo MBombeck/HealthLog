@@ -65,6 +65,8 @@ const MAY_TOUCH_WINDOWS: Record<string, string> = {
   "lib/openapi/routes/medications/schemas.ts": "documents the windows",
   "components/medications/scheduling/dose-window.ts":
     "the schedule editor's window preview",
+  "lib/medications/scheduling/dose-window-plan.ts":
+    "the wizard's plain-words window plan, read off the band minter",
   "lib/daily/digest.ts": "the digest's due-soon horizon",
   "components/medications/sections/inventory-section.tsx":
     "passes the thresholds to the card it renders",
