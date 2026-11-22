@@ -140,22 +140,35 @@ RUN mkdir -p /opt/prisma-cli && \
     npm install --omit=dev prisma@7.10.1 @prisma/engines@7.10.1 tsx@4.23.1 dotenv@18.0.10 --no-fund --no-audit
 
 # ── Stage 4: PostgreSQL client ─────────────────────────────
-# pg_dump and pg_restore of the bundled database's major, taken from the
-# official PostgreSQL image (Debian trixie, the runner's own release; its
-# binaries are the PGDG builds) together with the libpq they link. Debian
-# trixie itself ships major 17. The PGDG apt package was the other route: it
-# brings Perl and Debian's version-picking wrapper scripts for two binaries
-# the app calls by name, and its repository drops a minor once the next one
-# is out, so a pinned package version stops installing. A digest-pinned
-# image stays buildable, and Dependabot proposes its next minor the way it
-# does for the bundled database. The libpq file is found through the loader
-# rather than by an architecture path, so the step is the same on amd64 and
-# arm64.
-FROM postgres:18.6-trixie@sha256:e3d24f6906d0760bf4da0dae872415391ededefad23fd471c47dc53b0ddf3c42 AS pgclient
+# pg_dump and pg_restore of the newest PostgreSQL major this project
+# supports, taken from the official PostgreSQL image (Debian trixie, the
+# runner's own release; its binaries are the PGDG builds) together with the
+# libpq they link. Debian trixie itself ships major 17.
+#
+# The client leads the bundled database rather than matching it, because the
+# compatibility runs one way only: a client reads servers of its own major
+# and older and refuses a newer one outright ("aborting because of server
+# version mismatch"). Whatever major stands here is therefore the ceiling on
+# the server an install may run — the installs that bring their own database
+# included, which docs/ops/postgres-major-upgrade.md invites. A ceiling
+# below the current major takes those installs down at their next migration,
+# having stopped their nightly dumps unnoticed well before that. So: this
+# pin names the newest major the project supports, the bundled database in
+# docker-compose.yml is at or below it, and
+# src/__tests__/runtime-package-pins.test.ts holds that order.
+#
+# The PGDG apt package was the other route: it brings Perl and Debian's
+# version-picking wrapper scripts for two binaries the app calls by name,
+# and its repository drops a minor once the next one is out, so a pinned
+# package version stops installing. A digest-pinned image stays buildable,
+# and Dependabot proposes its next minor the way it does for the bundled
+# database. The libpq file is found through the loader rather than by an
+# architecture path, so the step is the same on amd64 and arm64.
+FROM postgres:19.0-trixie@sha256:bb6e70add742cd868fb62cb3b2f67d1dd2bdd2b65a521e778420748753687c60 AS pgclient
 RUN set -eu; \
     mkdir -p /out/bin /out/lib; \
-    cp /usr/lib/postgresql/18/bin/pg_dump /usr/lib/postgresql/18/bin/pg_restore /out/bin/; \
-    LIBPQ="$(ldd /usr/lib/postgresql/18/bin/pg_dump | awk '$1 == "libpq.so.5" { print $3 }')"; \
+    cp /usr/lib/postgresql/19/bin/pg_dump /usr/lib/postgresql/19/bin/pg_restore /out/bin/; \
+    LIBPQ="$(ldd /usr/lib/postgresql/19/bin/pg_dump | awk '$1 == "libpq.so.5" { print $3 }')"; \
     [ -n "$LIBPQ" ] || { echo "ERROR: pg_dump links no libpq.so.5"; exit 1; }; \
     cp -L "$LIBPQ" /out/lib/libpq.so.5
 
@@ -180,16 +193,18 @@ FROM node:22-trixie-slim@sha256:68c76cfad89921b927eae28ba21407475e29d0ce450afcdb
 #
 # `pg_dump` and `pg_restore` serve the nightly database dump, the
 # pre-migration dump in the entrypoint and the `db-restore` service
-# (docs/ops/disaster-recovery.md). Major 18 matches the bundled database; a
-# client dumps servers of its own major and older, so it also serves an
-# install still on its own Postgres 16. The two binaries and their libpq come
+# (docs/ops/disaster-recovery.md). Major 19 is the newest major the project
+# supports; a client reads servers of its own major and older, so one client
+# serves the bundled database on 18, an install still on its own Postgres 16,
+# and an install that has moved its own server to 19 — which an 18 client
+# refuses, taking that install down. The two binaries and their libpq come
 # from the `pgclient` stage above; the Debian libraries libpq links
 # (Kerberos, LDAP, SASL) come from apt below, so the build-time upgrade and
 # the image scan see them. The copied binaries are outside dpkg: the scan
 # does not see them and `apt-get upgrade` does not patch them, so a
 # PostgreSQL client fix arrives by moving the `pgclient` pin.
-# `src/__tests__/runtime-package-pins.test.ts` holds that pin to the bundled
-# database's minor in docker-compose.yml.
+# `src/__tests__/runtime-package-pins.test.ts` keeps that pin at or above the
+# bundled database's major in docker-compose.yml.
 #
 # `ca-certificates` is the system trust store the OpenSSL-linked tools use
 # (the Prisma schema engine, libpq) for a TLS connection to the database.
@@ -207,12 +222,12 @@ RUN set -eux; \
       ca-certificates tzdata libgssapi-krb5-2 libldap2 libsasl2-2; \
     apt-get clean; \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* /root/.npm /root/.cache
-COPY --from=pgclient /out/bin/ /usr/lib/postgresql/18/bin/
-COPY --from=pgclient /out/lib/libpq.so.5 /usr/lib/postgresql/18/lib/libpq.so.5
-RUN echo /usr/lib/postgresql/18/lib > /etc/ld.so.conf.d/postgresql-18.conf && \
+COPY --from=pgclient /out/bin/ /usr/lib/postgresql/19/bin/
+COPY --from=pgclient /out/lib/libpq.so.5 /usr/lib/postgresql/19/lib/libpq.so.5
+RUN echo /usr/lib/postgresql/19/lib > /etc/ld.so.conf.d/postgresql-19.conf && \
     ldconfig && \
-    ! ldd /usr/lib/postgresql/18/bin/pg_dump /usr/lib/postgresql/18/bin/pg_restore | grep -q "not found"
-ENV PATH=/usr/lib/postgresql/18/bin:$PATH
+    ! ldd /usr/lib/postgresql/19/bin/pg_dump /usr/lib/postgresql/19/bin/pg_restore | grep -q "not found"
+ENV PATH=/usr/lib/postgresql/19/bin:$PATH
 # The builder and the runner start from the same image, so the two agree
 # today. The check stays: it fails the build the day one of them moves to
 # another base or another Node major without the other.
@@ -418,14 +433,14 @@ RUN node scripts/reset-password.mjs 2>&1 | grep -q "reset-password: usage:"
 RUN env -u DATABASE_URL node scripts/pending-migrations.mjs && \
     node --input-type=module -e "await import('pg')" && \
     node --input-type=module -e "await import('./scripts/migrate-deploy.mjs')"
-# The dump and restore scripts load, the client tools they run are the
-# major the bundled database runs, and the S3 client `db-restore --from-bucket`
+# The dump and restore scripts load, the client tools they run are the newest
+# major the project supports, and the S3 client `db-restore --from-bucket`
 # loads resolves from the shared module's place in the tree.
 RUN node scripts/db-dump.mjs 2>&1 | grep -q "db-dump: usage:" && \
     node --input-type=module -e "import { createRequire } from 'node:module'; createRequire('/app/src/lib/database-backup/dump-core.mjs').resolve('@aws-sdk/client-s3')" && \
     node scripts/db-restore.mjs 2>&1 | grep -q "db-restore: usage:" && \
-    pg_dump --version | grep -q "(PostgreSQL) 18\." && \
-    pg_restore --version | grep -q "(PostgreSQL) 18\."
+    pg_dump --version | grep -q "(PostgreSQL) 19\." && \
+    pg_restore --version | grep -q "(PostgreSQL) 19\."
 
 # The migration CLI from the `prisma-cli` stage. The Prisma config loads
 # dotenv from /app, so expose the isolated copy there. /opt/prisma-cli is
