@@ -23,7 +23,7 @@ import { useState } from "react";
 import { Download, Loader2, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { useTranslations } from "@/lib/i18n/context";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
 
@@ -122,22 +122,16 @@ export function DataPortabilityRow({
             {t("medications.detail.advanced.dataPortability.export.helper")}
           </p>
         </div>
-        <label
-          htmlFor={`advanced-export-include-intake-${medicationId}`}
-          className="flex min-h-11 cursor-pointer items-center gap-2 text-xs sm:min-h-8"
-        >
-          <Switch
-            id={`advanced-export-include-intake-${medicationId}`}
-            checked={includeIntake}
-            onCheckedChange={setIncludeIntake}
-            data-slot="advanced-export-include-intake"
-          />
-          <span className="text-muted-foreground">
-            {t(
-              "medications.detail.advanced.dataPortability.export.includeIntake",
-            )}
-          </span>
-        </label>
+        <SwitchRow
+          className="min-h-11 sm:min-h-8"
+          label={t(
+            "medications.detail.advanced.dataPortability.export.includeIntake",
+          )}
+          id={`advanced-export-include-intake-${medicationId}`}
+          checked={includeIntake}
+          onCheckedChange={setIncludeIntake}
+          data-slot="advanced-export-include-intake"
+        />
         <Button
           variant="outline"
           size="sm"

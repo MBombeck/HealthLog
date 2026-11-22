@@ -13,6 +13,7 @@ import {
 } from "@/components/onboarding/use-onboarding-flow";
 import { TimezonePicker } from "@/components/settings/timezone-picker";
 import { useMedicineRegistryOptions } from "@/components/settings/use-medicine-registry-options";
+import { FieldGroup } from "@/components/ui/field-group";
 import { InlineAction } from "@/components/ui/inline-action";
 import { NativeSelect } from "@/components/ui/native-select";
 import { useAuth } from "@/hooks/use-auth";
@@ -183,35 +184,29 @@ export function UnitsScreen({ state }: { state: OnboardingStateDto }) {
       ) : null}
 
       {asked.registry ? (
-        <div
-          className="space-y-2"
-          data-slot="onboarding-question-medicine-registry"
-        >
-          <label
+        <div data-slot="onboarding-question-medicine-registry">
+          <FieldGroup
             htmlFor="onboarding-medicine-registry"
-            className="text-foreground text-sm font-medium"
+            label={t("onboarding.flow.units.registryLegend")}
+            hint={t("settings.sections.medications.registry.privacy")}
           >
-            {t("onboarding.flow.units.registryLegend")}
-          </label>
-          <NativeSelect
-            id="onboarding-medicine-registry"
-            value={medicineRegistry}
-            onChange={(e) =>
-              setMedicineRegistry(e.target.value as MedicineRegistryChoice)
-            }
-          >
-            <option value="NONE">
-              {t("settings.sections.medications.registry.none")}
-            </option>
-            {registryOptions.map((option) => (
-              <option key={option.code} value={option.code}>
-                {option.label}
+            <NativeSelect
+              id="onboarding-medicine-registry"
+              value={medicineRegistry}
+              onChange={(e) =>
+                setMedicineRegistry(e.target.value as MedicineRegistryChoice)
+              }
+            >
+              <option value="NONE">
+                {t("settings.sections.medications.registry.none")}
               </option>
-            ))}
-          </NativeSelect>
-          <p className="text-muted-foreground text-xs">
-            {t("settings.sections.medications.registry.privacy")}
-          </p>
+              {registryOptions.map((option) => (
+                <option key={option.code} value={option.code}>
+                  {option.label}
+                </option>
+              ))}
+            </NativeSelect>
+          </FieldGroup>
         </div>
       ) : null}
 

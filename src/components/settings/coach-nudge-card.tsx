@@ -21,6 +21,7 @@ import { MessageCircleHeart } from "lucide-react";
 
 import { Switch } from "@/components/ui/switch";
 import { SwitchRow } from "@/components/ui/switch-row";
+import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
@@ -235,35 +236,24 @@ export function CoachNudgeCard({
             {t("notifications.coachNudge.groupsLabel")}
           </p>
           {GROUP_FIELDS.map((field) => (
-            <div
+            <SwitchRow
               key={field}
-              className="flex min-h-11 items-center justify-between gap-3"
+              className="min-h-11"
+              label={t(GROUP_I18N[field].label)}
+              description={t(GROUP_I18N[field].desc)}
               data-testid={`coach-nudge-group-${field}`}
-            >
-              <div className="min-w-0">
-                <p className="text-sm">{t(GROUP_I18N[field].label)}</p>
-                <p className="text-muted-foreground text-xs">
-                  {t(GROUP_I18N[field].desc)}
-                </p>
-              </div>
-              <Switch
-                checked={resolved[field]}
-                onCheckedChange={(next) => patchCoach({ [field]: next }, null)}
-                disabled={!isAuthenticated || saving}
-                aria-label={t(GROUP_I18N[field].label)}
-              />
-            </div>
+              checked={resolved[field]}
+              onCheckedChange={(next) => patchCoach({ [field]: next }, null)}
+              disabled={!isAuthenticated || saving}
+            />
           ))}
           {/* Stacked on a phone: at 16 px touch type the longest option
               ("At most every two weeks") plus the label no longer fits one
               row inside a 390 px card. */}
           <div className="flex min-h-11 flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-3">
-            <label
-              htmlFor="coach-nudge-frequency"
-              className="text-sm font-medium"
-            >
+            <Label htmlFor="coach-nudge-frequency">
               {t("notifications.coachNudge.frequencyLabel")}
-            </label>
+            </Label>
             <NativeSelect
               id="coach-nudge-frequency"
               className="sm:w-auto"

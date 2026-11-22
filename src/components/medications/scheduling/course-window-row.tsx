@@ -27,7 +27,7 @@ import { useCallback, useId, useMemo } from "react";
 
 import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { useTranslations } from "@/lib/i18n/context";
 
 export interface CourseWindowRowProps {
@@ -175,22 +175,15 @@ export function CourseWindowRow({
 
         {/* No end date switch — hidden when locked to start. */}
         {!lockEndsToStart && (
-          <div
-            className="flex min-h-11 items-center gap-2 pb-1"
-            data-slot="course-window-no-end-wrap"
-          >
-            <Switch
-              id={`${endId}-no-end`}
-              checked={noEndDate}
-              disabled={disabled}
-              onCheckedChange={onNoEndToggle}
-              aria-label={t(`${i18nPrefix}.noEndDate`)}
-              data-slot="course-window-no-end"
-            />
-            <Label noColon htmlFor={`${endId}-no-end`} className="text-sm">
-              {t(`${i18nPrefix}.noEndDate`)}
-            </Label>
-          </div>
+          <SwitchRow
+            className="min-h-11 pb-1"
+            label={t(`${i18nPrefix}.noEndDate`)}
+            id={`${endId}-no-end`}
+            checked={noEndDate}
+            disabled={disabled}
+            onCheckedChange={onNoEndToggle}
+            data-slot="course-window-no-end"
+          />
         )}
       </div>
 

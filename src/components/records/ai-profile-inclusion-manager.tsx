@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
-import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
 import { useAboutMeSaveTimeoutMs } from "@/hooks/use-ai-capability";
 import {
@@ -130,31 +130,22 @@ export function AiProfileInclusionManager() {
         ).map((section) => {
           const checked = value.includes(section);
           return (
-            <div
+            <SwitchRow
               key={section}
-              className="flex min-h-11 items-center justify-between gap-4 py-2"
-            >
-              <label
-                htmlFor={`ai-profile-section-${section}`}
-                className="text-sm"
-              >
-                {t(SECTION_LABEL_KEY[section])}
-              </label>
-              <Switch
-                id={`ai-profile-section-${section}`}
-                checked={checked}
-                disabled={disabled}
-                onCheckedChange={(next) => {
-                  const current = draft ?? saved;
-                  setDraft(
-                    next
-                      ? [...current, section]
-                      : current.filter((item) => item !== section),
-                  );
-                }}
-                aria-label={t(SECTION_LABEL_KEY[section])}
-              />
-            </div>
+              className="min-h-11 py-2"
+              label={t(SECTION_LABEL_KEY[section])}
+              id={`ai-profile-section-${section}`}
+              checked={checked}
+              disabled={disabled}
+              onCheckedChange={(next) => {
+                const current = draft ?? saved;
+                setDraft(
+                  next
+                    ? [...current, section]
+                    : current.filter((item) => item !== section),
+                );
+              }}
+            />
           );
         })}
       </div>

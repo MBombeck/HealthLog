@@ -47,6 +47,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { apiDelete } from "@/lib/api/api-fetch";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   COACH_MEMORY_LIST_KEYS,
@@ -137,9 +138,9 @@ function FactRow({
             }
           }}
         >
-          <label htmlFor={inputId} className="sr-only">
+          <Label htmlFor={inputId} className="sr-only" noColon>
             {t(COACH_MEMORY_LIST_KEYS.edit)}
-          </label>
+          </Label>
           <Textarea
             id={inputId}
             data-slot="settings-coach-memory-edit-input"

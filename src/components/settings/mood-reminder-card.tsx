@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SmilePlus } from "lucide-react";
 
+import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Switch } from "@/components/ui/switch";
 import { SettingsCard } from "@/components/settings/settings-card";
@@ -217,9 +218,9 @@ export function MoodReminderCard({
       <p className="text-sm">{t("notifications.moodReminder.detail")}</p>
       {enabled && (
         <div className="flex min-h-11 items-center justify-between gap-3">
-          <label htmlFor="mood-reminder-hour" className="text-sm font-medium">
+          <Label htmlFor="mood-reminder-hour">
             {t("notifications.moodReminder.hourLabel")}
-          </label>
+          </Label>
           <NativeSelect
             id="mood-reminder-hour"
             className="w-auto"

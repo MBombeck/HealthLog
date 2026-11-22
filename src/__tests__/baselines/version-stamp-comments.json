@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
-  "count": 2836,
-  "total": 8824,
+  "count": 2835,
+  "total": 8822,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1168,7 +1168,6 @@
     "components/medications/scheduling/schedule-times-editor.tsx": 2,
     "components/medications/scheduling/times-of-day-chips.tsx": 1,
     "components/medications/scheduling/types.ts": 1,
-    "components/medications/sections/__tests__/notifications-section.test.tsx": 1,
     "components/medications/sections/api-tokens-row.tsx": 2,
     "components/medications/sections/auto-mark-taken-section.tsx": 1,
     "components/medications/sections/composition-section.tsx": 1,
@@ -1179,7 +1178,7 @@
     "components/medications/sections/inventory-dialogs.tsx": 3,
     "components/medications/sections/inventory-section.tsx": 8,
     "components/medications/sections/inventory-shared.ts": 1,
-    "components/medications/sections/notifications-section.tsx": 4,
+    "components/medications/sections/notifications-section.tsx": 3,
     "components/medications/sections/phase-config-sheet.tsx": 1,
     "components/medications/sections/settings-section.tsx": 7,
     "components/medications/sections/use-composition.ts": 1,
