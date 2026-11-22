@@ -7,8 +7,20 @@ on the first start after the update. Nothing needs doing by hand on a stack
 that runs the project's `docker-compose.yml`.
 
 Installs that bring their own Postgres (Unraid, an existing database server)
-are not touched: HealthLog runs on 16 and 18 alike, and the move there is
+are not touched: HealthLog runs on 16, 18 and 19 alike, and the move there is
 yours to schedule with the steps under [By hand](#by-hand).
+
+One limit holds in the other direction, though. The image carries `pg_dump`
+and `pg_restore` of major 19, and a PostgreSQL client reads servers of its own
+major and older but refuses a newer one. A server above the client's major
+fails the dump the app takes before every migration, and the app then stops
+rather than migrate without one — by which time its nightly dumps have been
+failing for as long as the server has been newer. So keep your own server at
+or below the major the image carries; this names it for the release you run:
+
+```bash
+docker run --rm --entrypoint pg_dump ghcr.io/mbombeck/healthlog:latest --version
+```
 
 ## What happens on the first start
 
