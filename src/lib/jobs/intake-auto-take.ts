@@ -56,7 +56,6 @@ import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { MEDICATION_WINDOW_SELECT } from "@/lib/medications/course-window";
 
-import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 import {
   autoTakeEligibleWhere,
@@ -317,7 +316,6 @@ export async function runIntakeAutoTakePass(
   }
 
   for (const userId of touchedUsers) {
-    invalidateUserMedications(userId, { evict: true });
     // Wakes the person's iOS devices so a widget or Live Activity showing
     // the dose as open reconciles. Coalesced per user, best-effort.
     afterDoseChange({

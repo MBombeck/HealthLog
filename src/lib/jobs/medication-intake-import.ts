@@ -1,7 +1,6 @@
 import type { Job, JobWithMetadata } from "pg-boss";
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 
-import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma, toJson } from "@/lib/db";
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
@@ -732,7 +731,6 @@ async function workMedicationIntakeImport(
     }
     if (outcome.finalized && outcome.userId && outcome.result) {
       if (outcome.result.imported > 0) {
-        invalidateUserMedications(outcome.userId, { evict: true });
         afterDoseChange({ scope: "intakes", userId: outcome.userId });
         // v1.43 — the chunks recomputed their compliance days inside their
         // own transactions; the supplement nutrient rows follow once, now

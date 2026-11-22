@@ -48,7 +48,6 @@ import {
   MEDICATION_WINDOW_SELECT,
   medicationWindow,
 } from "@/lib/medications/course-window";
-import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { restoreForIntake } from "@/lib/medications/inventory/consumption";
 import { isP2002 } from "@/lib/prisma-errors";
 import { annotate } from "@/lib/logging/context";
@@ -184,7 +183,6 @@ function afterDedupe(
     summary.rowsSoftDeleted > 0 ||
     summary.rowsNormalised > 0
   ) {
-    invalidateUserMedications(userId);
     afterDoseChange({ userId, scope: "intakes" });
   }
 }

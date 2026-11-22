@@ -30,7 +30,6 @@ import {
   resolveSlotForWriteByBand,
 } from "@/lib/medications/scheduling/slot-upsert";
 import { consumeForIntake } from "@/lib/medications/inventory/consumption";
-import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { afterDoseChange } from "@/lib/medications/after-dose-change";
 import { recordedEventOf } from "@/lib/notifications/medication-intake-recorded";
 import { resolveNewTake } from "@/lib/medications/scheduling/nearest-open-slot";
@@ -96,7 +95,6 @@ async function afterIngestedDose(input: {
   tz: string | null;
   event: MedicationIntakeEvent;
 }): Promise<void> {
-  invalidateUserMedications(input.userId, { evict: true });
   afterDoseChange({
     scope: "intakes",
     userId: input.userId,

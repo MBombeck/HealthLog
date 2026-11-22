@@ -15,7 +15,6 @@ import {
   resolveForcedSlotForWrite,
   resolveSlotForWriteByBand,
 } from "@/lib/medications/scheduling/slot-upsert";
-import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import {
   consumeForIntake,
   restoreForIntake,
@@ -239,7 +238,6 @@ export async function markMedicationTaken(
     }
     // The confirmation must reflect on the next read (today feed, card
     // pill, compliance) rather than wait out the cache TTL.
-    invalidateUserMedications(userId, { evict: true });
     // Wake the owner's iOS devices like a web take does, so a running Live
     // Activity and the widgets reconcile a dose confirmed in Telegram.
     afterDoseChange({
@@ -401,7 +399,6 @@ export async function markMedicationSkipped(input: {
       userId: userId,
       eventId: writtenSkip.eventId,
     });
-    invalidateUserMedications(userId, { evict: true });
     afterDoseChange({
       scope: "intakes",
       userId,

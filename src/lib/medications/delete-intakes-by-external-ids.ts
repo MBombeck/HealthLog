@@ -22,7 +22,6 @@
  * dose event (`tombstone-repost.ts`).
  */
 import { prisma } from "@/lib/db";
-import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { restoreForIntake } from "@/lib/medications/inventory/consumption";
 import { reconcileOneShotState } from "@/lib/medications/lifecycle";
 import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
@@ -79,7 +78,6 @@ export async function deleteAppleHealthIntakes(
   for (const medicationId of medications) {
     await reconcileOneShotState(prisma, medicationId, user.id);
   }
-  invalidateUserMedications(user.id, { evict: true });
   // The widget count and a pending Live Activity on the other devices change.
   afterDoseChange({
     scope: "intakes",
