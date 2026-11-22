@@ -76,6 +76,15 @@ export interface RelaySendSummary {
    * valid relay signature get here; anything else is `transport`.
    */
   answers: RelayItemAnswer[];
+  /**
+   * How many items ended this attempt with each code: the relay's per-item
+   * `result` or `error`, the request's refusal, the transport reason, or the
+   * local decision (`deadline`, `not_bound`, `relay_unavailable`,
+   * `relay_paused`). Every item counts once, so a send is never reported
+   * without its reason; it also goes into the wide event as
+   * `push_relay_send_results`.
+   */
+  outcomes: Record<string, number>;
 }
 
 export interface RelayItemAnswer {
@@ -171,6 +180,7 @@ export async function sendRelayItems(
       failed: 0,
       activityGone: [],
       answers: [],
+      outcomes: {},
     };
   }
   const now = new Date();
@@ -292,7 +302,48 @@ export async function attemptDeliveries(
     failed: 0,
     activityGone: [],
     answers: [],
+    outcomes: {},
   };
+  try {
+    await attemptInto(summary, ids, config);
+  } finally {
+    noteOutcomes(summary.outcomes);
+  }
+  return summary;
+}
+
+/**
+ * Count one item's outcome under its code. The relay names most codes, so
+ * one that is not a plain snake_case word is counted as `unrecognised`
+ * rather than written into a log key verbatim.
+ */
+function count(summary: RelaySendSummary, code: string, n = 1) {
+  const key = /^[a-z][a-z0-9_]{0,39}$/.test(code) ? code : "unrecognised";
+  summary.outcomes[key] = (summary.outcomes[key] ?? 0) + n;
+}
+
+const eventOutcomes = new WeakMap<object, Record<string, number>>();
+
+/**
+ * Add these outcomes to the wide event's `push_relay_send_results`, summed
+ * over every send the event saw (a flush can send more than once).
+ */
+function noteOutcomes(outcomes: Record<string, number>) {
+  const evt = getEvent();
+  if (!evt || Object.keys(outcomes).length === 0) return;
+  const total = eventOutcomes.get(evt) ?? {};
+  for (const [code, n] of Object.entries(outcomes)) {
+    total[code] = (total[code] ?? 0) + n;
+  }
+  eventOutcomes.set(evt, total);
+  evt.addMeta("push_relay_send_results", { ...total });
+}
+
+async function attemptInto(
+  summary: RelaySendSummary,
+  ids: string[],
+  config: RelayConfig,
+): Promise<void> {
   const now = new Date();
   const registration = config.available ? await loadRegistration(config) : null;
   const pending = await loadPending(ids);
@@ -302,31 +353,34 @@ export async function attemptDeliveries(
       await finish(row.id, "dropped", "deadline");
       getEvent()?.addMeta("push_relay_stale_dropped", true);
       summary.failed += 1;
+      count(summary, "deadline");
     } else if (!row.device.apnsToken || row.device.relayState !== "bound") {
       await finish(row.id, "failed", "not_bound");
       summary.failed += 1;
+      count(summary, "not_bound");
     } else {
       live.push(row);
     }
   }
-  if (live.length === 0) return summary;
+  if (live.length === 0) return;
   if (!registration?.instanceId || isCircuitOpen(registration)) {
     await holdAll(
       live,
       registration?.nextProbeAt ?? new Date(now.getTime() + 60 * SECOND),
     );
     summary.waiting += live.length;
-    return summary;
+    count(summary, "relay_unavailable", live.length);
+    return;
   }
   if (registration.pausedUntil && registration.pausedUntil > now) {
     await holdAll(live, registration.pausedUntil);
     summary.waiting += live.length;
-    return summary;
+    count(summary, "relay_paused", live.length);
+    return;
   }
   for (let i = 0; i < live.length; i += BATCH) {
     await sendBatch(registration, live.slice(i, i + BATCH), summary, config);
   }
-  return summary;
 }
 
 function wireItem(row: PendingRow, now: Date) {
@@ -369,16 +423,18 @@ async function sendBatch(
     const defect =
       result.kind === "response" &&
       (result.status === 413 || result.status === 422);
+    const code =
+      result.kind === "transport"
+        ? result.reason
+        : String(result.body?.error ?? "refused");
     for (const row of rows) {
       summary.answers.push({
         ref: row.ref,
         status: result.kind === "transport" ? 0 : result.status,
-        code:
-          result.kind === "transport"
-            ? result.reason
-            : String(result.body?.error ?? "refused"),
+        code,
         reason: null,
       });
+      count(summary, code);
       if (defect) {
         await finish(
           row.id,
@@ -422,6 +478,7 @@ async function applyItemResult(
     code,
     reason: typeof answer?.reason === "string" ? answer.reason : null,
   });
+  count(summary, code);
   if (status === 200 && code === "accepted") {
     await finish(row.id, "accepted", null);
     summary.accepted += 1;

@@ -104,7 +104,10 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
+import {
+  fanOutResult,
+  queueMedicationIntakeSync,
+} from "@/lib/notifications/medication-intake-sync";
 
 const APNS_CONFIG = { bundleId: "test.healthlog.ios" };
 
@@ -575,6 +578,63 @@ describe("queueMedicationIntakeSync — gating + failure isolation", () => {
     expect(rawSendMock).not.toHaveBeenCalled();
     expect(addWarningMock).toHaveBeenCalledWith(
       expect.stringContaining("medication_intake_sync_dispatch_failed"),
+    );
+  });
+});
+
+describe("a fan-out always names why it did not deliver", () => {
+  const none = {
+    anySuccess: false,
+    deferred: 0,
+    covered: 0,
+    guardianRelaySkipped: 0,
+    unrouted: 0,
+    lastFailureReason: undefined,
+  };
+
+  it.each([
+    [{ ...none, anySuccess: true }, "ok", null],
+    [
+      { ...none, anySuccess: true, deferred: 1 },
+      "ok",
+      "intake_sync_deferred_budget",
+    ],
+    // The relay device whose recorded confirmation stands in for the sync:
+    // nothing was sent and nothing failed. This used to read `error`.
+    [{ ...none, covered: 1 }, "skipped", "intake_sync_covered_by_confirmation"],
+    [{ ...none, deferred: 2 }, "skipped", "intake_sync_deferred_budget"],
+    [
+      { ...none, guardianRelaySkipped: 1 },
+      "skipped",
+      "intake_sync_guardian_relay_skipped",
+    ],
+    [
+      {
+        ...none,
+        covered: 1,
+        lastFailureReason: "relay_item_failed:apns_rejected",
+      },
+      "error",
+      "relay_item_failed:apns_rejected",
+    ],
+    [{ ...none, unrouted: 1 }, "error", "intake_sync_device_unrouted"],
+    [none, "error", "intake_sync_nothing_sent"],
+  ] as const)("%o -> %s %s", (input, result, reason) => {
+    expect(fanOutResult(input)).toEqual({ result, reason });
+  });
+
+  it("puts the reason into the flush's wide event", async () => {
+    loadConfigMock.mockReturnValue(APNS_CONFIG);
+    deviceFindMany.mockResolvedValue([device()]);
+    rawSendMock.mockResolvedValue({ ok: false, reason: "BadTopic" });
+
+    queueMedicationIntakeSync({ userId: nextUserId() });
+    await drainFlush();
+
+    expect(metaMock).toHaveBeenCalledWith("intake_sync_outcome", "error");
+    expect(metaMock).toHaveBeenCalledWith("intake_sync_reason", "BadTopic");
+    expect(recordPushAttemptMock).toHaveBeenCalledWith(
+      expect.objectContaining({ result: "error", reason: "BadTopic" }),
     );
   });
 });
