@@ -10,7 +10,9 @@
  * by one would.
  *
  * A later re-post of a deleted externalId through the day-log bulk route
- * brings the day back: the upsert there treats a re-post as the newer state.
+ * writes the day again, since many samples feed one day, but from empty
+ * fields: nothing the deleted day held comes back (`day-log-write.ts`,
+ * `tombstone-repost.ts`).
  */
 import { prisma } from "@/lib/db";
 import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
