@@ -623,3 +623,65 @@ describe("who started the Activity", () => {
     expect(await getPrismaClient().liveActivityToken.count()).toBe(0);
   });
 });
+
+describe("a device leaving the account", () => {
+  const APP_LA_TOKEN = "8d".repeat(32);
+  const endedTokens = (from: number) =>
+    laPushes()
+      .slice(from)
+      .filter((p) => (p.payload.aps as { event?: string }).event === "end")
+      .map((p) => p.token)
+      .sort();
+
+  async function twoActivities() {
+    const t = await setUp();
+    await t.reg({ liveActivityConsent: t.consent() });
+    const { medication, slot } = await dueDose(t.session.userId, 10);
+    const dose = {
+      medicationId: medication.id,
+      slotInstant: slot.toISOString(),
+    };
+    await t.reg({
+      liveActivityTokens: [
+        t.activityEntry({ ...dose, relayStart: true }),
+        t.activityEntry(dose, APP_LA_TOKEN),
+      ],
+    });
+    return t;
+  }
+
+  it("ends its running Activities when its sign-in ends", async () => {
+    const t = await twoActivities();
+    const deviceToken = `device-${TOKEN.slice(0, 6)}`;
+    await getPrismaClient().refreshToken.create({
+      data: {
+        userId: t.session.userId,
+        tokenHash: "sign-out-test-hash",
+        deviceId: deviceToken,
+        expiresAt: new Date(Date.now() + 3600_000),
+        revokedAt: new Date(),
+      },
+    });
+    const before = laPushes().length;
+    const { afterRefreshRevocation } =
+      await import("@/lib/devices/signed-out-push");
+    await afterRefreshRevocation(t.session.userId);
+    expect(endedTokens(before)).toEqual([APP_LA_TOKEN, LA_TOKEN].sort());
+    expect(await getPrismaClient().liveActivityToken.count()).toBe(0);
+  });
+
+  it("ends its running Activities when another account takes it over", async () => {
+    await twoActivities();
+    const other = await makeSession(await makeUser());
+    const before = laPushes().length;
+    const taken = await registerDevice(other, {
+      token: `device-${TOKEN.slice(0, 6)}`,
+      bundleId: "dev.healthlog.app",
+      apnsToken: TOKEN,
+      apnsEnvironment: "production",
+    });
+    expect(taken.status).toBe(201);
+    expect(endedTokens(before)).toEqual([APP_LA_TOKEN, LA_TOKEN].sort());
+    expect(await getPrismaClient().liveActivityToken.count()).toBe(0);
+  });
+});

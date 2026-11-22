@@ -14,6 +14,7 @@
  *     relay through the retrying queue before B's binding is forwarded) and
  *     Live Activity state, in the registration's transaction. Nothing sealed
  *     for A can reach the device under B. Both accounts get an audit row.
+ *     A's running Live Activities get their end push before the row goes.
  *   * This used to answer 409, which left B without any server push on a
  *     phone A had signed out of, and A's reminders on B's lock screen.
  *     An APNs token is not a secret, so a takeover moves pushes only to the
@@ -32,7 +33,7 @@ import { z } from "zod/v4";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess, sanitiseZodIssues } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
-import { annotate } from "@/lib/logging/context";
+import { annotate, getEvent } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import { deleteDeviceRowsIn } from "@/lib/devices/delete-devices";
 import { auditLog } from "@/lib/auth/audit";
@@ -44,6 +45,7 @@ import {
   localRunwayInBounds,
 } from "@/lib/notifications/client-managed-apns";
 import { drainQueuedUnbinds } from "@/lib/devices/signed-out-push";
+import { endDeviceLiveActivities } from "@/lib/notifications/live-activity-end";
 import {
   activityStatementSchema,
   applyPushFields,
@@ -288,6 +290,34 @@ async function takeOver(
 }
 
 /**
+ * Before a takeover: end the running Live Activities of the other accounts'
+ * rows for this install, while their tokens and relay binding still reach
+ * them. The transaction decides the takeover again under its locks; a row
+ * that changed hands in between only had its Activities ended early. Best
+ * effort: the registration goes on either way.
+ */
+async function endForeignLiveActivities(
+  userId: string,
+  token: string,
+  apnsToken: string | undefined,
+): Promise<void> {
+  try {
+    const foreign = await prisma.device.findMany({
+      where: {
+        userId: { not: userId },
+        OR: [{ token }, ...(apnsToken ? [{ apnsToken }] : [])],
+      },
+      select: { id: true },
+    });
+    await endDeviceLiveActivities(foreign.map((d) => d.id));
+  } catch (err) {
+    getEvent()?.addWarning(
+      `device_takeover_activity_end_failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+}
+
+/**
  * After a takeover committed: the previous accounts' unbinds go out before
  * this request's binding is forwarded (the relay refuses a second binding key
  * for a token another binding still holds), and both sides get an audit row.
@@ -312,26 +342,32 @@ async function afterTakeover(
   annotate({ meta: { device_takeover: takenOver.length } });
 }
 
-export const POST = apiHandler(async (request: NextRequest) => {
-  const { user } = await requireAuth();
-
-  // Per-user rate cap on device registration. A registration can take a
-  // token over from another account, so an unbounded rate would let one
-  // account churn another's device rows. 20 device-mutations per 15 minutes
-  // is well outside any realistic client behaviour (the iOS app registers
-  // once on login + on token rotation; not 20× / window).
+/**
+ * Per-user rate cap on device registration. A registration can take a token
+ * over from another account, so an unbounded rate would let one account
+ * churn another's device rows. 20 device-mutations per 15 minutes is well
+ * outside any realistic client behaviour (the iOS app registers once on
+ * login + on token rotation; not 20× / window). The 429, or null.
+ */
+async function registrationRateLimited(userId: string) {
   const rl = await checkRateLimit(
-    `devices:register:${user.id}`,
+    `devices:register:${userId}`,
     20,
     15 * 60 * 1000,
   );
-  if (!rl.allowed) {
-    annotate({
-      action: { name: "devices.register.rate-limited" },
-      meta: { userId: user.id, resetAt: rl.resetAt },
-    });
-    return apiError("Too many device registrations, please slow down", 429);
-  }
+  if (rl.allowed) return null;
+  annotate({
+    action: { name: "devices.register.rate-limited" },
+    meta: { userId, resetAt: rl.resetAt },
+  });
+  return apiError("Too many device registrations, please slow down", 429);
+}
+
+export const POST = apiHandler(async (request: NextRequest) => {
+  const { user } = await requireAuth();
+
+  const limited = await registrationRateLimited(user.id);
+  if (limited) return limited;
 
   // v1.4.43 — iOS device-registration multi-issue 422 + audit
   // breadcrumb. APNs-token + bundleId + environment + model + locale
@@ -375,6 +411,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // written; a relay-bound APNs token this replaces is noted for unbinding.
   const push = await preparePushFields(user.id, parsed.data);
   if (push.refused) return push.refused;
+
+  await endForeignLiveActivities(user.id, token, apnsToken);
 
   const registration = await prisma.$transaction(async (tx) => {
     // Token ownership is decided from one database snapshot. Advisory

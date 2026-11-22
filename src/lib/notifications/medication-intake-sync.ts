@@ -67,7 +67,6 @@ import { pendingDeletionOf } from "@/lib/account-deletion/pending";
 import { prisma } from "@/lib/db";
 import { deleteDeviceRows } from "@/lib/devices/delete-devices";
 import type { Prisma } from "@/generated/prisma/client";
-import { getEvent } from "@/lib/logging/context";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { activeGuardianWhere } from "@/lib/managed-profiles/guardian-where";
 import {
@@ -75,6 +74,7 @@ import {
   sendApnsRawPush,
 } from "@/lib/notifications/senders/apns";
 import { recordPushAttempt } from "@/lib/notifications/senders/push-attempt-record";
+import { sendLiveActivityEnd } from "@/lib/notifications/live-activity-end";
 import {
   endedMedicationContentState,
   type MedicationLiveActivityContentState,
@@ -706,53 +706,4 @@ async function liveActivityEndState(
     resolvedAt: new Date(now),
     timeFormat: user?.timeFormat,
   });
-}
-
-/**
- * Push an ActivityKit `end` event to a running Live Activity. The Activity
- * push topic is the app bundle id suffixed with `.push-type.liveactivity`;
- * the body carries the ActivityKit envelope (`event: "end"`, a timestamp,
- * the full final content-state the app decodes) and nothing else — the push
- * token itself addresses the Activity, so no health data rides along.
- * Best-effort: a failure is annotated, never thrown. Returns whether the
- * token is spent: the end went out, or APNs reported the token dead.
- */
-async function sendLiveActivityEnd(args: {
-  token: string;
-  environment: "sandbox" | "production";
-  bundleId: string;
-  contentState: MedicationLiveActivityContentState;
-}): Promise<boolean> {
-  try {
-    const nowS = Math.floor(Date.now() / 1000);
-    const result = await sendApnsRawPush({
-      deviceToken: args.token,
-      environment: args.environment,
-      pushType: "liveactivity",
-      topic: `${args.bundleId}.push-type.liveactivity`,
-      priority: 10,
-      payload: {
-        aps: {
-          timestamp: nowS,
-          event: "end",
-          "content-state": args.contentState,
-          // Dismiss the ended Activity from the lock screen promptly.
-          "dismissal-date": nowS,
-        },
-      },
-    });
-    if (!result.ok) {
-      getEvent()?.addMeta(
-        "medication_intake_sync_liveactivity_failed",
-        result.reason ?? "unknown",
-      );
-    }
-    return result.ok || result.shouldDisable === true;
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    getEvent()?.addWarning(
-      `medication_intake_sync_liveactivity_threw: ${message}`,
-    );
-    return false;
-  }
 }
