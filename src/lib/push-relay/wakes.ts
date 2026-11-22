@@ -36,6 +36,7 @@ import {
   ROUTABLE_DEVICE_SELECT,
   routeOf,
   sendSealed,
+  type DeviceRoute,
   type PushContext,
   type RoutableDevice,
   type SealedSendResult,
@@ -100,6 +101,97 @@ export async function wakeableDevices(userId: string): Promise<WakeDevice[]> {
   });
 }
 
+/** One silent push inside the budget window, as the ledger holds it. */
+export interface SilentWindowRow {
+  kind: string;
+  createdAt: Date;
+}
+
+/** The budget window, in minutes: every limit counts the last hour. */
+export const SILENT_WINDOW_MINUTES = HOUR_MS / 60_000;
+
+/** The silent pushes `deviceId` got in the hour before `now`, oldest first. */
+export function silentWindow(
+  deviceId: string,
+  now: Date,
+): Promise<SilentWindowRow[]> {
+  return prisma.pushWake.findMany({
+    where: {
+      deviceId,
+      createdAt: { gte: new Date(now.getTime() - HOUR_MS) },
+    },
+    select: { kind: true, createdAt: true },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
+const isWake = (row: SilentWindowRow) =>
+  row.kind === "DATA_CHANGED" || row.kind === "HEALTHKIT_CATCH_UP";
+
+/**
+ * Whether one more silent push of `kind` fits the window `rows` for a device
+ * reached by `route`: the one budget rule (see the module doc).
+ */
+export function silentBudgetAllows(
+  rows: readonly SilentWindowRow[],
+  route: DeviceRoute,
+  kind: SilentKind,
+): boolean {
+  const isSync = kind === "MEDICATION_INTAKE_SYNC";
+  if (route === "relay") {
+    const cap = isSync
+      ? SILENT_PER_DEVICE_HOUR
+      : SILENT_PER_DEVICE_HOUR - SYNC_RESERVE;
+    if (rows.length >= cap) return false;
+  }
+  if (isSync) return true;
+  if (rows.filter(isWake).length >= WAKES_PER_DEVICE_HOUR) return false;
+  if (
+    kind === "DATA_CHANGED" &&
+    rows.filter((r) => r.kind === "DATA_CHANGED").length >=
+      DATA_CHANGED_PER_HOUR
+  )
+    return false;
+  return true;
+}
+
+export interface SilentBudgetSummary {
+  windowMinutes: number;
+  /** Every silent kind together; null where no overall cap applies. */
+  limit: number | null;
+  wakeLimit: number;
+  usedInWindow: number;
+  wakesUsedInWindow: number;
+  /**
+   * When the next intake sync fits again (an owed one goes then); null when
+   * one fits now.
+   */
+  nextFreeAt: Date | null;
+}
+
+/** The budget numbers of one device, from the same rule the send asks. */
+export function silentBudgetSummary(
+  rows: readonly SilentWindowRow[],
+  route: DeviceRoute,
+): SilentBudgetSummary {
+  const relay = route === "relay";
+  // `rows` is oldest first: the sync fits again once enough of them aged out
+  // of the window that fewer than the cap remain.
+  const blocking = rows.length - SILENT_PER_DEVICE_HOUR;
+  const nextFreeAt =
+    relay && !silentBudgetAllows(rows, route, "MEDICATION_INTAKE_SYNC")
+      ? new Date(rows[blocking]!.createdAt.getTime() + HOUR_MS)
+      : null;
+  return {
+    windowMinutes: SILENT_WINDOW_MINUTES,
+    limit: relay ? SILENT_PER_DEVICE_HOUR : null,
+    wakeLimit: WAKES_PER_DEVICE_HOUR,
+    usedInWindow: rows.length,
+    wakesUsedInWindow: rows.filter(isWake).length,
+    nextFreeAt,
+  };
+}
+
 /**
  * Whether `device` may take one more silent push of `kind` now: the one
  * budget every silent push asks (see the module doc).
@@ -110,33 +202,11 @@ export async function silentBudgetLeft(
   ctx: PushContext,
   now: Date,
 ): Promise<boolean> {
-  const rows = await prisma.pushWake.groupBy({
-    by: ["kind"],
-    where: {
-      deviceId: device.id,
-      createdAt: { gte: new Date(now.getTime() - HOUR_MS) },
-    },
-    _count: { _all: true },
-  });
-  const sent = (k: SilentKind) =>
-    rows.find((r) => r.kind === k)?._count._all ?? 0;
-  const total = rows.reduce((sum, r) => sum + r._count._all, 0);
-  const isSync = kind === "MEDICATION_INTAKE_SYNC";
-  if (routeOf(device, ctx) === "relay") {
-    const cap = isSync
-      ? SILENT_PER_DEVICE_HOUR
-      : SILENT_PER_DEVICE_HOUR - SYNC_RESERVE;
-    if (total >= cap) return false;
-  }
-  if (isSync) return true;
-  if (
-    sent("DATA_CHANGED") + sent("HEALTHKIT_CATCH_UP") >=
-    WAKES_PER_DEVICE_HOUR
-  )
-    return false;
-  if (kind === "DATA_CHANGED" && sent("DATA_CHANGED") >= DATA_CHANGED_PER_HOUR)
-    return false;
-  return true;
+  return silentBudgetAllows(
+    await silentWindow(device.id, now),
+    routeOf(device, ctx),
+    kind,
+  );
 }
 
 /** Record the silent pushes that went out, for the budget. */
