@@ -248,6 +248,22 @@ const adminRelayStatus = z
         "What this instance handed the relay in the last `windowDays` days, from its own delivery ledger: counts per outcome and the last failure. Aggregate only.",
       ),
     termsVersion: z.string(),
+    termsConfirmationNeeded: z
+      .boolean()
+      .describe(
+        "The relay is on, and the terms text the operator accepted is older than `termsVersion`. The relay keeps running; turning it on again with both confirmations records the current text.",
+      ),
+    unbindsPending: z
+      .number()
+      .int()
+      .describe(
+        "Device unbinds owed to the relay that it has not confirmed yet.",
+      ),
+    unreachableRegistrations: z
+      .array(z.string())
+      .describe(
+        "Relay hosts this server is still registered with but cannot reach under its current settings (`PUSH_RELAY_MODE=off`, a changed `PUSH_RELAY_URL`); they keep its device bindings until it leaves them.",
+      ),
     termsUrl: z.string().nullable(),
     privacyUrl: z.string().nullable(),
     docsUrl: z.string(),
@@ -280,7 +296,7 @@ export const pushRelayAdminPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Admin"],
       summary: "Offer the push relay to this server's users, or stop",
       description:
-        "Turning it on needs `acceptTerms` and `householdOnly`, registers the instance at the relay and creates its key; `invite` carries the relay's one-time code when the relay is invite-only. The answer is the state after the registration attempt: a refusal reads `offered: true`, `instanceId: null` and a `reason` (`invite_required`, `invite_rejected`, `registration_paused`, or a transport code). Turning it off deletes the instance at the relay, every device binding with it, and the key. Admin-only, cookie-only, audit-logged, 10 per 15 minutes (429 `admin.pushRelay.rateLimited`).",
+        "Turning it on needs `acceptTerms` and `householdOnly`, registers the instance at the relay and creates its key; `invite` carries the relay's one-time code when the relay is invite-only. The answer is the state after the registration attempt: a refusal reads `offered: true`, `instanceId: null` and a `reason` (`invite_required`, `invite_rejected`, `registration_paused`, or a transport code). Turning it off deletes the instance at the relay, every device binding with it, and the key. On a relay that is on and registered, turning it on again records the operator's acceptance of the current terms text and changes nothing else. Admin-only, cookie-only, audit-logged, 10 per 15 minutes (429 `admin.pushRelay.rateLimited`).",
       requestBody: {
         required: true,
         content: {

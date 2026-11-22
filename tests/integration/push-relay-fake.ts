@@ -75,6 +75,8 @@ export class FakeRelay {
     { instanceId: string; bindingKey: string; seq: number }
   >();
   apns: ApnsDelivery[] = [];
+  /** Every `/v1/push` item as it arrived, in order. */
+  wire: Array<Record<string, unknown>> = [];
   receipts: Array<{ accepted: number; confirmed: number }> = [];
   calls: string[] = [];
   down = false;
@@ -346,6 +348,7 @@ export class FakeRelay {
     instanceId: string,
     req: { items: Array<Wire> },
   ) {
+    this.wire.push(...req.items);
     const results = req.items.map((item) => {
       const binding = this.bindings.get(item.token);
       if (!binding || binding.instanceId !== instanceId) {

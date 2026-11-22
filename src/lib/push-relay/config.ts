@@ -33,10 +33,21 @@ export const HOSTED_RELAY_KEYS: readonly string[] = Object.freeze([
   "dcrihMfqGY7srT95DZrVP7sKA-IS3oJPPhOVbbqTvBU",
 ]);
 
-/** The version of the consent text the app shows on its opt-in card. */
-export const RELAY_CONSENT_TEXT_VERSION = "2026-11-21";
-/** The version of the relay terms the operator accepts with the switch. */
-export const RELAY_TERMS_VERSION = "2026-11-21";
+/**
+ * The version of the consent text the app shows on its opt-in card. Raised
+ * whenever what the relay carries changes (`relay-consent-pin.test.ts`):
+ * `2026-11-22` names the medication reminder to a device the server reminds.
+ * The server accepts any version a device sends and never unbinds over it;
+ * the app shows its card again for a version it has not shown.
+ */
+export const RELAY_CONSENT_TEXT_VERSION = "2026-11-22";
+/**
+ * The version of the relay text the operator accepts with the switch,
+ * raised with the consent text. A registration that accepted an older one
+ * keeps running and is asked to confirm the current text once
+ * (`termsConfirmationNeeded`, `admin-status.ts`).
+ */
+export const RELAY_TERMS_VERSION = "2026-11-22";
 /** The client name and version every signed request names. */
 export const RELAY_CLIENT_NAME = "healthlog";
 

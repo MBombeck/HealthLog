@@ -70,8 +70,35 @@ HealthLog Docker images are built and published from this repository's CI:
 - **Registry**: [`ghcr.io/mbombeck/healthlog`](https://github.com/MBombeck/HealthLog/pkgs/container/healthlog)
 - **Architectures**: `linux/amd64` and `linux/arm64`
 - **Provenance attestation**: each image carries a [SLSA build provenance](https://slsa.dev/spec/v1.0/provenance) statement linking it back to the GitHub Actions run, the commit SHA, and the workflow definition
+- **Signature**: the multi-arch image index is signed keyless with [cosign](https://docs.sigstore.dev/) by the release workflow; no long-lived signing key exists
+- **Release assets** (from v1.49.0): every GitHub release carries `healthlog-<tag>-image.txt` (the image refs with the index and per-platform digests), its Sigstore bundle `healthlog-<tag>-image.sigstore.json`, and SLSA v1 provenance `healthlog-<tag>.intoto.jsonl`
 - **SBOM**: each image includes a [Software Bill of Materials](https://docs.docker.com/build/metadata/attestations/sbom/) you can inspect with `docker buildx imagetools inspect ghcr.io/mbombeck/healthlog:latest --format '{{ json .SBOM }}'`
 
 To pin to a specific version in production, replace `:latest` with the released tag in your `docker-compose.yml`, e.g. `ghcr.io/mbombeck/healthlog:1.3.2`. Pinning is recommended for self-hosters who want explicit control over upgrades.
+
+### Verifying a release
+
+```sh
+TAG=v1.49.0
+gh release download "$TAG" --repo MBombeck/HealthLog --pattern "healthlog-$TAG*"
+
+cosign verify-blob \
+  --bundle "healthlog-$TAG-image.sigstore.json" \
+  --certificate-identity-regexp '^https://github\.com/MBombeck/HealthLog/\.github/workflows/docker-publish\.yml@refs/tags/v' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  "healthlog-$TAG-image.txt"
+
+slsa-verifier verify-artifact "healthlog-$TAG-image.txt" \
+  --provenance-path "healthlog-$TAG.intoto.jsonl" \
+  --source-uri github.com/MBombeck/HealthLog \
+  --source-tag "$TAG"
+
+cosign verify \
+  --certificate-identity-regexp '^https://github\.com/MBombeck/HealthLog/\.github/workflows/docker-publish\.yml@refs/tags/v' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  "$(awk '$2 == "index" { print $1; exit }' "healthlog-$TAG-image.txt")"
+```
+
+The last command checks the image the manifest names, pinned by its digest. Older releases have no assets; verify their image with `cosign verify` alone. Details: [docs/ops/deploy.md](docs/ops/deploy.md#verify-a-release-from-its-assets).
 
 If you discover a tampered or unexpected image, please report it as a vulnerability via the email above.

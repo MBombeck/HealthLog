@@ -13,6 +13,12 @@
  * registration attempt and is neither stored nor logged. The answer is the
  * state after the attempt, so a refusal (`reason`) shows at once.
  *
+ * On a relay that is on and registered already, the same call with both
+ * confirmations records the operator's acceptance of the current terms text
+ * (`termsConfirmationNeeded` in the status), audit-logged as
+ * `admin.push_relay.terms_confirmed`. The relay keeps running through it: a
+ * newer text never switches it off or holds a push back.
+ *
  * Cookie-only (`requireAdmin()`): a Bearer token never reaches it. The
  * switch is rate limited to 10 per 15 minutes per admin, since each turn
  * registers at or deletes from the relay.
@@ -27,7 +33,11 @@ import { auditLog } from "@/lib/auth/audit";
 import { annotate } from "@/lib/logging/context";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { relayConfig, RELAY_TERMS_VERSION } from "@/lib/push-relay/config";
-import { disableRelay, enableRelay } from "@/lib/push-relay/registration";
+import {
+  disableRelay,
+  enableRelay,
+  loadRegistration,
+} from "@/lib/push-relay/registration";
 import { adminRelayStatus } from "@/lib/push-relay/admin-status";
 import { relayInviteSchema } from "@/lib/push-relay/invite";
 
@@ -81,11 +91,29 @@ export const PUT = apiHandler(async (request: NextRequest) => {
         errorCode: "admin.pushRelay.confirmationsRequired",
       });
     }
+    const before = await loadRegistration(config);
     const row = await enableRelay({
       userId: user.id,
       config,
       invite: parsed.data.invite,
     });
+    if (before?.instanceId) {
+      await auditLog("admin.push_relay.terms_confirmed", {
+        userId: user.id,
+        ipAddress: getClientIp(request),
+        details: {
+          relayHost: config.host,
+          termsVersion: RELAY_TERMS_VERSION,
+          previousTermsVersion: before.termsVersion,
+          householdOnly: true,
+        },
+      });
+      annotate({
+        action: { name: "admin.push_relay.terms_confirmed" },
+        meta: { changed: before.termsVersion !== RELAY_TERMS_VERSION },
+      });
+      return apiSuccess(await adminRelayStatus(user.id));
+    }
     await auditLog("admin.push_relay.enabled", {
       userId: user.id,
       ipAddress: getClientIp(request),

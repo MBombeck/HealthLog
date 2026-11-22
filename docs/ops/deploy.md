@@ -214,12 +214,12 @@ always did, and finds nothing in the queue schema it did not create.
 ### v1.49.0 notes
 
 The sequence above covers this release, with one possible stop (`0517`, see
-below). It brings thirty migrations, `0514` to `0549` (`0516`, `0523`,
-`0527`, `0528`, `0541` and `0548` do not exist), so the boot log says
-`30 database migrations pending`. Copy the pre-migration dump of step 0 off
-the host before you start: it is the way back.
+below). It brings thirty-three migrations, `0514` to `0554` (`0516`, `0523`,
+`0527`, `0528`, `0541`, `0548`, `0550` and `0552` do not exist), so the boot
+log says `33 database migrations pending`. Copy the pre-migration dump of
+step 0 off the host before you start: it is the way back.
 
-Five migrations touch data you already have:
+Six migrations touch data you already have:
 
 - `0515` merges doses recorded twice for one slot. Of each slot's live rows
   it keeps the one that records a take, else a skip, else the oldest pending
@@ -270,6 +270,14 @@ Five migrations touch data you already have:
   ledger `apple_health_tombstones` from `0511`: those rows can only be
   deleted in Apple Health, so a sample that comes back there is written
   again.
+- `0551` adds `app_settings.server_setup_completed_at` and
+  `server_setup_steps_json` (both nullable, no rewrite) and stamps the
+  first-admin server setup as finished on an instance that already has
+  accounts, with one `UPDATE` of the single `app_settings` row. An upgrade
+  therefore never offers the setup to a server that has been running; a
+  fresh install has no account when the migration runs, keeps `NULL`, and
+  offers the setup to its first admin. It stays reachable from Admin >
+  System status either way.
 
 Two more change data only on a host that ran a 1.49 pre-release. Coming from
 1.48, the columns and tables they touch are created earlier in the same
@@ -294,7 +302,18 @@ quantities (`0514`, `0519`), nullable columns or columns with a default
 (`0520`, `0521`, `0525`, `0526`, `0530`, `0533`, `0536`, `0537`, and
 `devices.local_runway_until` in `0542`, `push_data_changes.intake_sync_owed_at`
 in `0544`, `live_activity_tokens.relay_started BOOLEAN NOT NULL DEFAULT false`
-in `0545`, `measurements.stats_computed_at` in `0547`, `users.medicine_registry` and `medications.leaflet_url` in `0549`), and new tables (`0522`, `0524`, `0531`, `0532`, `0534`, `0535`).
+in `0545`, `measurements.stats_computed_at` in `0547`, `users.medicine_registry`
+and `medications.leaflet_url` in `0549`), and new tables (`0522`, `0524`,
+`0531`, `0532`, `0534`, `0535`, and `ai_job_failures` in `0553`, which holds
+why background AI work last stopped for a record: closed reason codes only,
+cleared by the next success, cascading with the account).
+`0554` gives each settings document its own lock token. It adds eight
+`*_revised_at` columns to `users` and `about_me_revised_at` to
+`user_health_profiles`, all `TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP`
+(a catalog change without a rewrite), and a `BEFORE UPDATE` trigger on each
+table that moves a document's revision when its value changes. Nothing
+stored is rewritten. A browser or app that read one of those settings before
+the update gets a single 409 on its next save, reads again, and saves.
 `0545` is metadata-only: existing Live Activity rows read `false`, and relay
 updates go only to an Activity the server started over the relay. `0538`
 only drops an index on `live_activity_tokens` that another index already
@@ -376,8 +395,11 @@ No other migration needs the dump. `0517` rewrites no row, and its indexes
 and CHECKs can be dropped. `0539` drops columns and an enum, and `0540` and
 `0543` add `NOT NULL` columns, but v1.48.5 never reads the dropped columns,
 `0540`'s tables are new in this release, and `0543`'s column has a default
-that covers v1.48.5's inserts. Nothing is renamed. Every other migration is
-harmless to the old image, which ignores what it does not know. If the dump
+that covers v1.48.5's inserts. Nothing is renamed. `0551`'s columns are
+nullable, `0553` is a table v1.48.5 never touches, and `0554`'s columns have
+a default while its triggers only stamp columns v1.48.5 does not read. Every
+other migration is harmless to the old image, which ignores what it does not
+know. If the dump
 is gone, or too much has been written since, switch the image back only
 after these three steps, run as the database owner:
 
@@ -803,6 +825,10 @@ A passing verification proves the image was built by this repository's
 release workflow on a `v*` tag — not by anyone who merely obtained push
 access to the GHCR package.
 
+From v1.49.0 on, the GitHub release carries the same facts as files you
+can check without asking the registry; see
+[Verify a release from its assets](#verify-a-release-from-its-assets).
+
 ### Prefer digest-pinned deploys
 
 Tags (`:latest`, `:1.16.4`) are mutable aliases: a registry-side
@@ -922,6 +948,85 @@ becomes part of the release routine, not an optional extra.
 Digest pinning is the recommended hardening for operators with a
 threat model that includes the registry; `:latest` remains the
 low-friction default.
+
+## The GitHub release
+
+From v1.49.0 on, the tag build attaches three files to the GitHub release
+for the tag (the jobs `release-manifest`, `release-provenance` and
+`release-assets` in `docker-publish.yml`):
+
+| File                                  | What it is                                                                                                    |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `healthlog-<tag>-image.txt`           | the image refs: both release tags pinned to the index digest, and the `linux/amd64` and `linux/arm64` digests |
+| `healthlog-<tag>-image.sigstore.json` | keyless cosign bundle for that file, signed by `docker-publish.yml` at the tag                                |
+| `healthlog-<tag>.intoto.jsonl`        | SLSA v1 provenance for that file, signed by the SLSA generator (`generator_generic_slsa3.yml`)                |
+
+The files are written after the image index is signed and the published
+image has passed `post-publish-verify.yml`, so a release whose image
+failed verification gets no assets.
+
+### Publishing the release
+
+The build runs before the notes exist. If no release exists for the tag
+when the assets are ready, the workflow creates one as a **draft** with
+the tag as its title and no notes, and attaches the files. It never
+publishes a release and never edits one.
+
+After the deploy, the maintainer therefore edits that draft instead of
+creating a release:
+
+```sh
+gh release edit v1.49.0 --notes-file notes.md --draft=false --latest
+```
+
+Do not run `gh release create` for the tag once the draft exists: GitHub
+allows a draft next to a release with the same tag, and the files would sit
+on the draft nobody publishes. A release created by hand before the build
+finishes is fine: the workflow attaches the files to it (`--clobber`, so a
+re-run replaces them). A draft is invisible to the public releases API, so
+the update badge on self-hosted instances (`/releases/latest`) moves only
+when the draft is published.
+
+### Verify a release from its assets
+
+Download the three files of a release (here v1.49.0) and check each link:
+the manifest was signed by this repository's release workflow at that tag,
+the provenance says the same workflow run produced it, and the image the
+manifest names carries the release signature.
+
+```sh
+TAG=v1.49.0
+gh release download "$TAG" --repo MBombeck/HealthLog \
+  --pattern "healthlog-$TAG-image.txt" \
+  --pattern "healthlog-$TAG-image.sigstore.json" \
+  --pattern "healthlog-$TAG.intoto.jsonl"
+
+# 1. The manifest is signed by docker-publish.yml at the tag.
+cosign verify-blob \
+  --bundle "healthlog-$TAG-image.sigstore.json" \
+  --certificate-identity "https://github.com/MBombeck/HealthLog/.github/workflows/docker-publish.yml@refs/tags/$TAG" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  "healthlog-$TAG-image.txt"
+
+# 2. Its SLSA provenance names this repository and tag.
+slsa-verifier verify-artifact "healthlog-$TAG-image.txt" \
+  --provenance-path "healthlog-$TAG.intoto.jsonl" \
+  --source-uri github.com/MBombeck/HealthLog \
+  --source-tag "$TAG"
+
+# 3. The image index it names carries the release signature.
+IMAGE="$(awk '$2 == "index" { print $1; exit }' "healthlog-$TAG-image.txt")"
+cosign verify \
+  --certificate-identity-regexp '^https://github\.com/MBombeck/HealthLog/\.github/workflows/docker-publish\.yml@refs/tags/v' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  "$IMAGE"
+```
+
+`$IMAGE` is `ghcr.io/mbombeck/healthlog:<tag>@sha256:<index>`: pull that
+reference (or set `HEALTHLOG_IMAGE_REF=@sha256:<index>`) and you run
+exactly the image the release describes. Releases before v1.49.0 have no
+assets; their image signature is checked with `cosign verify` alone, as
+above.
 
 ## Deploy-status webhook: replay protection
 

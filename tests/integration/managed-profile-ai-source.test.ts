@@ -238,6 +238,34 @@ describe("aiSource record-settings family", () => {
   });
 });
 
+describe("the guardian's chain and the off switch", () => {
+  it("serves a lent cloud chain without a profile receipt, and NONE switches AI off", async () => {
+    const { guardian, profile } = await guardianWithProfile();
+    const session = await signIn(guardian.id);
+    await switchSessionTo(session.id, profile.id);
+    const { aiCapabilityForJob } = await import("@/lib/ai/capabilities/gate");
+
+    expect(
+      (await aiSource("PATCH", { source: "GUARDIAN", chainId: "family" }))
+        .status,
+    ).toBe(200);
+    // The guardian chose the chain for the profile; that choice is the
+    // consent, as `docs/self-hosting/account-sharing.md` says.
+    const lent = await aiCapabilityForJob(profile.id, "coach");
+    expect(lent.reason).not.toBe("consent_required");
+    expect(lent.reason).not.toBe("no_provider");
+
+    // The off switch: no provider, every capability says so.
+    expect((await aiSource("PATCH", { source: "NONE" })).status).toBe(200);
+    expect((await presenceFor(profile.id)).entries).toEqual([]);
+    for (const key of ["coach", "briefing", "documentAi"] as const) {
+      expect((await aiCapabilityForJob(profile.id, key)).reason).toBe(
+        "no_provider",
+      );
+    }
+  });
+});
+
 describe("GET /api/managed-profiles/{id}/activity", () => {
   it("shows a guardian who did what, and refuses anybody else", async () => {
     const { guardian, profile } = await guardianWithProfile();

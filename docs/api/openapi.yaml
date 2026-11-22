@@ -6852,8 +6852,9 @@ paths:
         key; `invite` carries the relay's one-time code when the relay is invite-only. The answer is the state after the
         registration attempt: a refusal reads `offered: true`, `instanceId: null` and a `reason` (`invite_required`,
         `invite_rejected`, `registration_paused`, or a transport code). Turning it off deletes the instance at the
-        relay, every device binding with it, and the key. Admin-only, cookie-only, audit-logged, 10 per 15 minutes (429
-        `admin.pushRelay.rateLimited`)."
+        relay, every device binding with it, and the key. On a relay that is on and registered, turning it on again
+        records the operator's acceptance of the current terms text and changes nothing else. Admin-only, cookie-only,
+        audit-logged, 10 per 15 minutes (429 `admin.pushRelay.rateLimited`)."
       requestBody:
         required: true
         content:
@@ -62406,6 +62407,21 @@ components:
             per outcome and the last failure. Aggregate only."
         termsVersion:
           type: string
+        termsConfirmationNeeded:
+          type: boolean
+          description: The relay is on, and the terms text the operator accepted is older than `termsVersion`. The relay keeps
+            running; turning it on again with both confirmations records the current text.
+        unbindsPending:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Device unbinds owed to the relay that it has not confirmed yet.
+        unreachableRegistrations:
+          type: array
+          items:
+            type: string
+          description: Relay hosts this server is still registered with but cannot reach under its current settings
+            (`PUSH_RELAY_MODE=off`, a changed `PUSH_RELAY_URL`); they keep its device bindings until it leaves them.
         termsUrl:
           type:
             - string
@@ -62434,6 +62450,9 @@ components:
         - devices
         - usage
         - termsVersion
+        - termsConfirmationNeeded
+        - unbindsPending
+        - unreachableRegistrations
         - termsUrl
         - privacyUrl
         - docsUrl

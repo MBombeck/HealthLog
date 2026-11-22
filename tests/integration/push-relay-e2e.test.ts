@@ -275,9 +275,8 @@ describe("push relay end to end", () => {
       takenVia: "INTEGRATION",
     });
     expect(JSON.stringify(plaintext)).not.toContain("Ramipril");
-    expect(plaintext.exp as number).toBeLessThanOrEqual(
-      (plaintext.iat as number) + 7200,
-    );
+    // Over the relay the confirmation lives as long as every other alert.
+    expect((plaintext.exp as number) - (plaintext.iat as number)).toBe(15 * 60);
 
     // The confirmation's delivery; the silent sync beside it has its own.
     const delivery = await prisma.pushRelayDelivery.findFirstOrThrow({
