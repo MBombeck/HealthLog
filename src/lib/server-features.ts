@@ -30,6 +30,9 @@ export const SERVER_FEATURES = [
   "push.live-activity-started",
   "day.dose-offset",
   "push.device-diagnostics",
+  "medication.resolved-slots",
+  "medication.intake-reopened",
+  "push.relay-operator-decision",
 ] as const;
 
 export type ServerFeature = (typeof SERVER_FEATURES)[number];
@@ -82,4 +85,10 @@ export const SERVER_FEATURE_DOCS: Record<ServerFeature, string> = {
     "GET /api/day/{date} symptom events and every GET /api/symptoms/events occurrence carry doseOffset (intakeId, title, minutes) from one rule: the nearest dose taken at or before it on the same local day of the record's zone, else the nearest after it (negative minutes); absent without a timed dose that day or when medications are not readable.",
   "push.device-diagnostics":
     "GET /api/devices/me/push-diagnostics returns the X-Device-Id device's push state: transport, relay and binding state, the silent budget (windowMinutes, limit, wakeLimit, usedInWindow, wakesUsedInWindow, owedSyncs, nextFreeAt), the last delivery per kind, the last receipt and the masked APNs token; 404 for a device that is not the caller's.",
+  "medication.resolved-slots":
+    "GET /api/medications/resolved-slots?from=&to= returns every medication's resolved slots with their state for a window of at most 14 days (default two days back to eight ahead), from the same resolver as dose-history and the today list.",
+  "medication.intake-reopened":
+    'MEDICATION_INTAKE_RECORDED carries outcome "reopened" with takenAt and takenVia null when a dose is undone elsewhere, plus asOf (server time) in d and in plaintext; the today list answers with a HealthLog-As-Of header on 200 and 304.',
+  "push.relay-operator-decision":
+    "/api/auth/me carries push.relay.operatorDecision (undecided | on | off) and push.relay.canDecide; an admin answers the one-time relay question in the web admin (POST /api/admin/push-relay/decision is cookie-only).",
 };
