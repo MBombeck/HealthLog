@@ -20,8 +20,25 @@
  * A relay that is down, paused or still holding the push is not a failure of
  * the channel: the outcome says `relayTransport`, which the channel state
  * leaves out of its failure count (`channel-state.ts`).
+ *
+ * When nothing went anywhere the outcome says why, in the channel's own
+ * words, and never borrows the plaintext sender's "not configured":
+ * - {@link APNS_EVENT_NOT_CARRIED}: every device is a relay device and the
+ *   relay does not carry this event to it (the app plans it itself, or the
+ *   device reminds itself). Nothing was due; the channel is left alone.
+ * - {@link APNS_DEVICE_UNROUTED}: the devices have a push key but no route
+ *   (the relay binding is missing, in conflict or has to be renewed). The
+ *   channel rests until a device binds (`endApnsNoDeviceRest`).
+ * On a server without its own APNs key both used to answer
+ * `apns_not_configured`, which rests the channel for an hour: a mood
+ * reminder the phone plans itself kept the next security alert from going
+ * out over the relay.
  */
 import { prisma } from "@/lib/db";
+import {
+  APNS_DEVICE_UNROUTED,
+  APNS_EVENT_NOT_CARRIED,
+} from "@/lib/notifications/apns-idle-reasons";
 import type { SendOutcome } from "@/lib/notifications/retry-policy";
 import { sendViaApns } from "@/lib/notifications/senders/apns";
 import { iosMetadataFor } from "@/lib/notifications/senders/ios-metadata";
@@ -149,11 +166,12 @@ export async function sendApnsChannel(
     typeof payload.metadata?.webPushTag === "string"
       ? payload.metadata.webPushTag
       : undefined;
+  const notCarried = devices.filter(
+    (d) =>
+      routeOf(d, ctx) === "relay" && !relayCarries(payload, d, serverReminded),
+  );
   const targets: SealedTarget[] = devices
-    .filter(
-      (d) =>
-        routeOf(d, ctx) !== "relay" || relayCarries(payload, d, serverReminded),
-    )
+    .filter((d) => !notCarried.includes(d))
     .map((device) => ({ device, message, collapseKey: slotTag }));
   const sealed = await sendSealed(targets, ctx);
   const legacy =
@@ -164,15 +182,26 @@ export async function sendApnsChannel(
         })
       : null;
   if (sealed.handled.length === 0) {
-    // Nothing sealed went anywhere: answer as the plaintext sender does for
-    // a user without a reachable device (a rest, not a failure).
-    return (
-      legacy ??
-      sendViaApns(userId, payload, {
-        ...apnsOptions,
-        excludeDeviceIds: devices.map((d) => d.id),
-      })
-    );
+    // Nothing sealed went anywhere. A plaintext device answers for the
+    // channel when there is one.
+    if (legacy) return legacy;
+    const idle = idleReason(devices, notCarried, sealed, ctx);
+    if (idle) {
+      recordPushAttemptForPayload(payload, userId, {
+        userId,
+        channel: "APNS",
+        eventType: payload.eventType,
+        result: "skipped",
+        reason: idle,
+      });
+      return { ok: false, hardReject: false, reason: idle };
+    }
+    // Answer as the plaintext sender does for a user without a reachable
+    // device (a rest, not a failure).
+    return sendViaApns(userId, payload, {
+      ...apnsOptions,
+      excludeDeviceIds: devices.map((d) => d.id),
+    });
   }
   if (sealed.anyAccepted || legacy?.ok) {
     recordPushAttemptForPayload(payload, userId, {
@@ -201,6 +230,29 @@ export async function sendApnsChannel(
     // refusal from this server's own APNs key counts as it always has.
     relayTransport: sealed.directFailures === 0,
   };
+}
+
+/**
+ * Why no sealed push went anywhere, when the reason is the relay's and not
+ * a failed send: the event is none the relay carries to these devices, or
+ * they have no route on a server that offers the relay and has no APNs key
+ * of its own. Null for anything else (a seal that failed, no transport at
+ * all), which keeps the answer it had.
+ */
+function idleReason(
+  devices: readonly { id: string }[],
+  notCarried: readonly { id: string }[],
+  sealed: { lastFailure: string | null },
+  ctx: { apnsConfigured: boolean; registration: unknown },
+): string | null {
+  if (sealed.lastFailure || devices.length === 0) return null;
+  // A device with a route that this event is not for: the channel works,
+  // it had nothing to carry. That holds beside a device without a route too.
+  if (notCarried.length > 0) return APNS_EVENT_NOT_CARRIED;
+  if (!ctx.apnsConfigured && ctx.registration !== null) {
+    return APNS_DEVICE_UNROUTED;
+  }
+  return null;
 }
 
 /**
