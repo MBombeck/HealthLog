@@ -63,21 +63,30 @@ a sender key it pinned from your server.
 
 ## Turning it on
 
-The relay is off until the admin turns it on.
+The relay is off until an admin turns it on, and the server asks once.
 
-1. After the update every admin sees a one-time notice on the admin start
-   page that the option exists. It can be dismissed and does not come back.
-2. In **Admin > Push and channels**, switch on **Offer the HealthLog push relay to this
-   server's users**. The dialog asks for three confirmations, each with its
-   own checkbox: that you accept the relay terms, that you have read its
-   privacy notice, and that you run this server privately for yourself or
-   your household. The hosted relay is for private and household use only and
-   is not a medical service. The card lists what the relay sees and what it
-   does not under **What the relay sees**, with a link to the full privacy
-   notice.
+1. After the update an admin is asked, once for the whole server: **Send push
+   notifications through the HealthLog relay?** The question sits where an
+   admin lands: on the dashboard after signing in, on the admin start page,
+   and in the server setup's notifications step. It goes away only by an
+   answer. **No** keeps the relay off, and nobody on this server is asked
+   again. **Yes** opens the dialog of step 2.
+2. The dialog asks for three confirmations, each with its own checkbox: that
+   you accept the relay terms, that you have read its privacy notice, and that
+   you run this server privately for yourself or your household. The hosted
+   relay is for private and household use only and is not a medical service.
+   A relay that takes new servers by invitation only also needs its code
+   (below). The same dialog opens from the switch **Offer the HealthLog push
+   relay to this server's users** in **Admin > Push and channels**, which is
+   also where you change your answer later; the card there lists what the
+   relay sees and what it does not under **What the relay sees**, with a link
+   to the full privacy notice.
 3. Your server creates its instance key, stores it encrypted, and registers
-   with the relay. The card then shows the relay's state and how many devices
-   are bound.
+   with the relay. The answer counts as yes only once that registration
+   succeeded: a refused one (a missing or used invite code, a relay that
+   is not taking new servers) leaves the question open with the reason, and
+   you can answer yes again. The card then shows the relay's state and how
+   many devices are bound.
 4. Each person sees a card in the iOS app once and decides for themselves.
    This needs the iOS app 1.7 or later; an older build keeps its local
    reminders.
@@ -92,6 +101,17 @@ running until then, and confirming changes nothing at the relay. The version
 of the consent text people see in the app (`push.relay.consentTextVersion` on
 `/api/auth/me`) moves with it, so the app can show its card again; the server
 never unbinds a device over an older version.
+
+The question is not asked where it would change nothing: with
+`PUSH_RELAY_MODE=off`, without pinned relay keys, or on a server with an APNs
+key of its own, which never sends over the relay. The answer is published to
+the apps as `push.relay.operatorDecision` on `/api/auth/me` (`undecided`,
+`on`, `off`), with `push.relay.canDecide` for an admin of a server whose relay
+is available; the app asks each person only while it is `on`. The answer is
+given on the web admin page: the routes behind it are admin routes and take a
+signed-in browser session only, never an app token. A backup carries the
+answer; restored onto a new host, a no stays no, and a yes asks again,
+because the registration belongs to the old host and does not travel.
 
 Turning the switch off deletes your instance at the relay, which removes every
 device binding with it, and deletes the instance key here. If the relay is not
@@ -302,7 +322,7 @@ All optional, all on the compose whitelist.
 
 | Variable                   | Default                      | Meaning                                                                                                                                                                        |
 | -------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `PUSH_RELAY_MODE`          | `allowed`                    | `off` hides the relay and its admin notice; a server still registered with a relay keeps the card, saying so, until it has left that relay                                     |
+| `PUSH_RELAY_MODE`          | `allowed`                    | `off` hides the relay and its admin question; a server still registered with a relay keeps the card, saying so, until it has left that relay                                   |
 | `PUSH_RELAY_URL`           | `https://push.healthlog.dev` | the relay origin; `https` only                                                                                                                                                 |
 | `PUSH_RELAY_KEYS`          | the hosted relay's keys      | the relay's identity public keys, Ed25519, unpadded base64url, comma separated                                                                                                 |
 | `PUSH_RELAY_LIVE_ACTIVITY` | off                          | `on` lets Live Activity start and update go over the relay to devices whose owner gave the separate Live Activity consent; leave it off until the app's device test has passed |

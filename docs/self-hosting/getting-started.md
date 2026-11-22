@@ -152,7 +152,7 @@ Five steps, each one the admin cards you would otherwise find under
 2. **Notifications.** Which channels people may use, whether email (SMTP)
    is configured and which variables are missing, whether Telegram replies
    work, and the push relay for the App Store app, which stays off unless
-   you switch it on.
+   you answer yes when the server asks (once, for the whole server).
 3. **AI.** Off, people's own keys, this server's key, or a local model, and
    what leaves the server in each case.
 4. **Privacy.** How sign-in locations are looked up (the local GeoLite2
