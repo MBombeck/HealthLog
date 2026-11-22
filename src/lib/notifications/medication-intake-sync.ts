@@ -300,28 +300,45 @@ function flushIntakeSync(
     recordedInFlush: boolean;
   },
 ): Promise<void> {
-  return withBackgroundEvent(FLUSH_EVENT, async (evt) => {
-    const flushAt = Date.now();
-    evt.addMeta("intake_sync_write_to_flush_ms", flushAt - opts.writtenAt);
-    evt.addMeta("intake_sync_coalesced", opts.coalesced);
-    try {
-      const outcome = await flushIntakeSyncInner(userId, opts);
-      evt.addMeta("intake_sync_outcome", outcome.result);
-      if (outcome.recipients !== undefined) {
-        evt.addMeta("intake_sync_devices", outcome.recipients);
-        evt.addMeta("intake_sync_routes", outcome.routes ?? {});
-        evt.addMeta("intake_sync_deferred", outcome.deferred ?? 0);
-        evt.addMeta(
-          "intake_sync_guardian_devices",
-          outcome.guardianDevices ?? 0,
-        );
-        evt.addMeta("intake_sync_flush_to_handoff_ms", Date.now() - flushAt);
+  return (async () => {
+    // Nothing to reach (no APNs key of its own and no sealed device): no
+    // event either, or every write on such a server would log a no-op. A
+    // failing probe falls through to the flush, which records it.
+    if (!(await mayReachAnyDevice(userId).catch(() => true))) return;
+    await withBackgroundEvent(FLUSH_EVENT, async (evt) => {
+      const flushAt = Date.now();
+      evt.addMeta("intake_sync_write_to_flush_ms", flushAt - opts.writtenAt);
+      evt.addMeta("intake_sync_coalesced", opts.coalesced);
+      try {
+        const outcome = await flushIntakeSyncInner(userId, opts);
+        evt.addMeta("intake_sync_outcome", outcome.result);
+        if (outcome.recipients !== undefined) {
+          evt.addMeta("intake_sync_devices", outcome.recipients);
+          evt.addMeta("intake_sync_routes", outcome.routes ?? {});
+          evt.addMeta("intake_sync_deferred", outcome.deferred ?? 0);
+          evt.addMeta(
+            "intake_sync_guardian_devices",
+            outcome.guardianDevices ?? 0,
+          );
+          evt.addMeta("intake_sync_flush_to_handoff_ms", Date.now() - flushAt);
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        evt.addWarning(`medication_intake_sync_dispatch_failed: ${message}`);
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      evt.addWarning(`medication_intake_sync_dispatch_failed: ${message}`);
-    }
-  }).catch(() => undefined);
+    });
+  })().catch(() => undefined);
+}
+
+/** Whether a flush for `userId` could reach any device at all. */
+async function mayReachAnyDevice(userId: string): Promise<boolean> {
+  if (loadApnsConfig()) return true;
+  const candidates = await syncCandidates(userId);
+  return (
+    (await prisma.device.count({
+      where: { userId: { in: candidates }, pushKeyPublic: { not: null } },
+    })) > 0
+  );
 }
 
 interface FlushOutcome {
